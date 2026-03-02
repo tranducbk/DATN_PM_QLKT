@@ -1,0 +1,18 @@
+module.exports = {
+  PORT: process.env.PORT || 4000,
+  MONGODB_ATLAS_URL: process.env.MONGODB_ATLAS_URL,
+  DATABASE_URL: process.env.DATABASE_URL,
+  PG_HOST: process.env.PG_HOST || 'localhost',
+  PG_PORT: parseInt(process.env.PG_PORT || '5432', 10),
+  PG_DATABASE: process.env.PG_DATABASE || 'QLHV',
+  PG_USER: process.env.PG_USER,
+  PG_PASSWORD: process.env.PG_PASSWORD || '',
+  JWT_ACCESS_KEY: process.env.JWT_ACCESS_KEY,
+  EMAIL_SERVICE: process.env.EMAIL_SERVICE,
+  EMAIL_USER: process.env.EMAIL_USER,
+  EMAIL_PASS: process.env.EMAIL_PASS,
+  SMTP_HOST: process.env.SMTP_HOST,
+  SMTP_PORT: process.env.SMTP_PORT,
+  SMTP_SECURE: process.env.SMTP_SECURE,
+  CLIENT_URL: process.env.CLIENT_URL || 'http://localhost:3000',
+};

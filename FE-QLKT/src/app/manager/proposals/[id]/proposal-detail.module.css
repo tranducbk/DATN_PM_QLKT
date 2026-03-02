@@ -1,0 +1,65 @@
+/* File attachment container */
+.fileItem {
+  padding: 12px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.3s;
+}
+
+.fileItemLight {
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+}
+
+.fileItemDark {
+  background-color: #1f2937;
+  border: 1px solid #4b5563;
+}
+
+.fileContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.fileHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.fileIconLight {
+  color: #3b82f6;
+  flex-shrink: 0;
+}
+
+.fileIconDark {
+  color: #60a5fa;
+  flex-shrink: 0;
+}
+
+.fileNameLight {
+  color: #111827;
+}
+
+.fileNameDark {
+  color: #f3f4f6;
+}
+
+.fileInfoLight {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.fileInfoDark {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.downloadButton {
+  margin-left: 16px;
+  flex-shrink: 0;
+}
+

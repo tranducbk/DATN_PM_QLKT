@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Hệ thống quản lý sinh viên toàn diện - Giải pháp quản lý giáo dục hiện đại"
+    />
+    <title>Hệ thống Quản lý Sinh viên - Trang chủ</title>
+    <link rel="icon" type="image/png" href="/logo-msa.png" />
+    <link rel="apple-touch-icon" href="/logo-msa.png" />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #333;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+      }
+
+      /* Header */
+      .header {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        padding: 1rem 0;
+        position: fixed;
+        top: 0;
+        width: 100%;
+        z-index: 1000;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .nav {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 2rem;
+      }
+
+      .nav-logo {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: white;
+        text-decoration: none;
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 2rem;
+        list-style: none;
+      }
+
+      .nav-links a {
+        color: white;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+      }
+
+      .nav-links a:hover {
+        color: #f0f0f0;
+        transform: translateY(-2px);
+      }
+
+      /* Hero Section */
+      .hero {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 6rem 2rem 2rem;
+      }
+
+      .hero-container {
+        max-width: 1200px;
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4rem;
+        align-items: center;
+      }
+
+      .hero-content {
+        color: white;
+      }
+
+      .hero-title {
+        font-size: 3.5rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        line-height: 1.2;
+      }
+
+      .hero-subtitle {
+        font-size: 1.25rem;
+        margin-bottom: 2rem;
+        opacity: 0.9;
+      }
+
+      .hero-buttons {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+
+      .btn {
+        padding: 1rem 2rem;
+        border-radius: 50px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        display: inline-block;
+        border: none;
+        cursor: pointer;
+        font-size: 1rem;
+      }
+
+      .btn-primary {
+        background: white;
+        color: #667eea;
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      }
+
+      .btn-secondary {
+        background: transparent;
+        color: white;
+        border: 2px solid white;
+      }
+
+      .btn-secondary:hover {
+        background: white;
+        color: #667eea;
+        transform: translateY(-3px);
+      }
+
+      /* Features Section */
+      .features-section {
+        background: rgba(255, 255, 255, 0.95);
+        padding: 5rem 2rem;
+        margin: 2rem;
+        border-radius: 20px;
+        backdrop-filter: blur(10px);
+      }
+
+      .features-container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      .section-title {
+        text-align: center;
+        font-size: 2.5rem;
+        margin-bottom: 3rem;
+        color: #4a5568;
+        font-weight: 700;
+      }
+
+      .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+      }
+
+      .feature-card {
+        background: white;
+        padding: 2rem;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        border: 1px solid #e2e8f0;
+      }
+
+      .feature-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+      }
+
+      .feature-icon {
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+        font-size: 1.5rem;
+        color: white;
+        font-weight: bold;
+      }
+
+      .feature-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: #4a5568;
+      }
+
+      .feature-description {
+        color: #718096;
+        line-height: 1.6;
+      }
+
+      /* Stats Section */
+      .stats-section {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 4rem 2rem;
+        margin: 2rem;
+        border-radius: 20px;
+        backdrop-filter: blur(10px);
+      }
+
+      .stats-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        text-align: center;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 2rem;
+        margin-top: 3rem;
+      }
+
+      .stat-item {
+        color: white;
+      }
+
+      .stat-number {
+        font-size: 3rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+      }
+
+      .stat-label {
+        font-size: 1.1rem;
+        opacity: 0.9;
+      }
+
+      /* Footer */
+      .footer {
+        background: rgba(0, 0, 0, 0.3);
+        color: white;
+        padding: 3rem 2rem 1rem;
+        margin-top: 4rem;
+      }
+
+      .footer-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+      }
+
+      .footer-section h3 {
+        margin-bottom: 1rem;
+        font-size: 1.25rem;
+      }
+
+      .footer-section p,
+      .footer-section a {
+        color: rgba(255, 255, 255, 0.8);
+        text-decoration: none;
+        line-height: 1.6;
+      }
+
+      .footer-section a:hover {
+        color: white;
+      }
+
+      .footer-bottom {
+        text-align: center;
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.2);
+        color: rgba(255, 255, 255, 0.6);
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        .hero-container {
+          grid-template-columns: 1fr;
+          text-align: center;
+        }
+
+        .hero-title {
+          font-size: 2.5rem;
+        }
+
+        .nav-links {
+          display: none;
+        }
+
+        .features-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .stats-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Header -->
+    <header class="header">
+      <nav class="nav">
+        <a href="/" class="nav-logo">Student Manager</a>
+        <ul class="nav-links">
+          <li><a href="#features">Tính năng</a></li>
+          <li><a href="#about">Giới thiệu</a></li>
+          <li><a href="#contact">Liên hệ</a></li>
+          <li><a href="/login">Đăng nhập</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="hero-container">
+        <div class="hero-content">
+          <h1 class="hero-title">Hệ thống Quản lý Sinh viên</h1>
+          <p class="hero-subtitle">
+            Giải pháp quản lý toàn diện cho môi trường giáo dục hiện đại. Tối ưu
+            hóa quy trình quản lý, nâng cao hiệu quả giáo dục.
+          </p>
+          <div class="hero-buttons">
+            <a href="/login" class="btn btn-primary">Đăng nhập ngay</a>
+            <a href="#features" class="btn btn-secondary">Tìm hiểu thêm</a>
+          </div>
+        </div>
+        <div class="hero-visual">
+          <div
+            style="
+              width: 100%;
+              height: 400px;
+              background: rgba(255, 255, 255, 0.1);
+              border-radius: 20px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 4rem;
+              color: white;
+            "
+          >
+            📚
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features-section">
+      <div class="features-container">
+        <h2 class="section-title">Tính năng nổi bật</h2>
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="feature-icon">👥</div>
+            <h3 class="feature-title">Quản lý thông tin sinh viên</h3>
+            <p class="feature-description">
+              Lưu trữ và cập nhật thông tin cá nhân, học tập một cách có hệ
+              thống và bảo mật.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">📊</div>
+            <h3 class="feature-title">Theo dõi kết quả học tập</h3>
+            <p class="feature-description">
+              Quản lý điểm số, thành tích và tiến độ học tập với báo cáo chi
+              tiết.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">📅</div>
+            <h3 class="feature-title">Quản lý thời khóa biểu</h3>
+            <p class="feature-description">
+              Lập lịch học tập và hoạt động ngoại khóa một cách khoa học và hiệu
+              quả.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">📈</div>
+            <h3 class="feature-title">Báo cáo và thống kê</h3>
+            <p class="feature-description">
+              Tạo báo cáo chi tiết và phân tích dữ liệu để đưa ra quyết định
+              chính xác.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">⚠️</div>
+            <h3 class="feature-title">Quản lý vi phạm</h3>
+            <p class="feature-description">
+              Theo dõi và xử lý các vi phạm nội trú một cách công bằng và minh
+              bạch.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🔔</div>
+            <h3 class="feature-title">Thông báo thông minh</h3>
+            <p class="feature-description">
+              Hệ thống thông báo tự động giúp cập nhật thông tin kịp thời cho
+              tất cả người dùng.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats-section">
+      <div class="stats-container">
+        <h2 class="section-title" style="color: white">Thống kê ấn tượng</h2>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-number">1000+</div>
+            <div class="stat-label">Sinh viên được quản lý</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number">50+</div>
+            <div class="stat-label">Lớp học</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number">99%</div>
+            <div class="stat-label">Độ chính xác</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number">24/7</div>
+            <div class="stat-label">Hỗ trợ</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer-container">
+        <div class="footer-section">
+          <h3>Student Manager</h3>
+          <p>
+            Hệ thống quản lý sinh viên hàng đầu, cung cấp giải pháp toàn diện
+            cho việc quản lý giáo dục trong thời đại số.
+          </p>
+        </div>
+        <div class="footer-section">
+          <h3>Liên kết nhanh</h3>
+          <p><a href="/login">Đăng nhập</a></p>
+          <p><a href="#features">Tính năng</a></p>
+          <p><a href="#about">Giới thiệu</a></p>
+          <p><a href="#contact">Liên hệ</a></p>
+        </div>
+        <div class="footer-section">
+          <h3>Hỗ trợ</h3>
+          <p>Email: support@studentmanager.com</p>
+          <p>Điện thoại: (84) 123-456-789</p>
+          <p>
+            Địa chỉ: 322E Lê Trọng Tấn, Phường Phương Liệt, Thành phố Hà Nội
+          </p>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2025 Student Manager. Tất cả quyền được bảo lưu.</p>
+      </div>
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,312 @@
+// @ts-nocheck
+'use client';
+import { useState, useMemo } from 'react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Tag } from 'antd';
+import { Loader2, Clock, User, Shield, Activity, FileText, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { format } from 'date-fns';
+import { vi } from 'date-fns/locale';
+
+interface LogsTableProps {
+  logs: any[];
+  loading?: boolean;
+}
+
+type SortField = 'time' | 'actor' | 'role' | 'action' | null;
+type SortOrder = 'asc' | 'desc' | null;
+
+// Mapping cho resource labels
+const resourceLabels: Record<string, string> = {
+  accounts: 'Tài khoản',
+  personnel: 'Quân nhân',
+  units: 'Đơn vị',
+  positions: 'Chức vụ',
+  proposals: 'Đề xuất',
+  'annual-rewards': 'Danh hiệu hằng năm',
+  'annual_rewards': 'Danh hiệu hằng năm',
+  'position-history': 'Lịch sử chức vụ',
+  'position_history': 'Lịch sử chức vụ',
+  'scientific-achievements': 'Thành tích khoa học',
+  'scientific_achievements': 'Thành tích khoa học',
+  decisions: 'Quyết định',
+  auth: 'Xác thực',
+  'adhoc-awards': 'Khen thưởng đột xuất',
+  'adhoc_awards': 'Khen thưởng đột xuất',
+  'commemorative-medals': 'Kỷ niệm chương',
+  'commemorative_medals': 'Kỷ niệm chương',
+  'contribution-awards': 'Huân chương Bảo vệ Tổ quốc',
+  'contribution_awards': 'Huân chương Bảo vệ Tổ quốc',
+  'military-flag': 'Cờ thi đua',
+  'military_flag': 'Cờ thi đua',
+  'service-rewards': 'Huy chương Chiến sĩ vẻ vang',
+  'service_rewards': 'Huy chương Chiến sĩ vẻ vang',
+  'unit-annual-awards': 'Khen thưởng đơn vị hằng năm',
+  'unit_annual_awards': 'Khen thưởng đơn vị hằng năm',
+  hccsvv: 'Huy chương Chiến sĩ Vẻ vang',
+  categories: 'Danh mục',
+};
+
+// Mapping cho action labels
+const actionLabels: Record<string, string> = {
+  CREATE: 'Tạo',
+  UPDATE: 'Cập nhật',
+  DELETE: 'Xóa',
+  APPROVE: 'Phê duyệt',
+  REJECT: 'Từ chối',
+  LOGIN: 'Đăng nhập',
+  LOGOUT: 'Đăng xuất',
+  RESET_PASSWORD: 'Đặt lại mật khẩu',
+  CHANGE_PASSWORD: 'Đổi mật khẩu',
+  IMPORT: 'Import',
+  EXPORT: 'Xuất dữ liệu',
+  BULK: 'Thêm đồng loạt',
+};
+
+// Helper function để lấy label cho resource
+function getResourceLabel(resource: string): string {
+  if (!resource) return '';
+  const normalized = resource.replace(/_/g, '-');
+  return resourceLabels[resource] || resourceLabels[normalized] || resource;
+}
+
+// Helper function để lấy label cho action
+function getActionLabel(action: string): string {
+  if (!action) return '-';
+  const actionUpper = action.toUpperCase();
+  return actionLabels[actionUpper] || actionUpper;
+}
+
+const actionColors: Record<string, string> = {
+  CREATE:
+    'bg-green-100/50 text-green-900 dark:bg-green-900/60 dark:text-green-50 border-green-300 dark:border-green-600',
+  UPDATE:
+    'bg-blue-100/50 text-blue-900 dark:bg-blue-900/60 dark:text-blue-50 border-blue-300 dark:border-blue-600',
+  DELETE:
+    'bg-red-100/50 text-red-900 dark:bg-red-900/60 dark:text-red-50 border-red-300 dark:border-red-600',
+  RESET:
+    'bg-yellow-100/50 text-yellow-900 dark:bg-yellow-900/60 dark:text-yellow-50 border-yellow-300 dark:border-yellow-600',
+  APPROVE:
+    'bg-emerald-100/50 text-emerald-900 dark:bg-emerald-900/60 dark:text-emerald-50 border-emerald-300 dark:border-emerald-600',
+  REJECT:
+    'bg-orange-100/50 text-orange-900 dark:bg-orange-900/60 dark:text-orange-50 border-orange-300 dark:border-orange-600',
+};
+
+function getActionColor(action: string): string {
+  if (action.includes('CREATE')) return actionColors.CREATE;
+  if (action.includes('UPDATE')) return actionColors.UPDATE;
+  if (action.includes('DELETE')) return actionColors.DELETE;
+  if (action.includes('RESET')) return actionColors.RESET;
+  if (action.includes('APPROVE')) return actionColors.APPROVE;
+  if (action.includes('REJECT')) return actionColors.REJECT;
+  return 'bg-gray-100/50 text-gray-900 dark:bg-gray-800/60 dark:text-gray-50 border-gray-300 dark:border-gray-600';
+}
+
+const roleColors: Record<string, string> = {
+  SUPER_ADMIN:
+    'bg-red-100/50 text-red-900 dark:bg-red-900/60 dark:text-red-50 border-red-300 dark:border-red-600',
+  ADMIN:
+    'bg-orange-100/50 text-orange-900 dark:bg-orange-900/60 dark:text-orange-50 border-orange-300 dark:border-orange-600',
+  MANAGER:
+    'bg-blue-100/50 text-blue-900 dark:bg-blue-900/60 dark:text-blue-50 border-blue-300 dark:border-blue-600',
+  USER: 'bg-green-100/50 text-green-900 dark:bg-green-900/60 dark:text-green-50 border-green-300 dark:border-green-600',
+};
+
+function getRoleTagColor(role: string): string {
+  const colorMap: Record<string, string> = {
+    SUPER_ADMIN: 'red',
+    ADMIN: 'orange',
+    MANAGER: 'blue',
+    USER: 'green',
+  };
+  return colorMap[role] || 'default';
+}
+
+function getRoleText(role: string): string {
+  const textMap: Record<string, string> = {
+    SUPER_ADMIN: 'Super Admin',
+    ADMIN: 'Admin',
+    MANAGER: 'Quản lý',
+    USER: 'Người dùng',
+  };
+  return textMap[role] || role;
+}
+
+export function LogsTable({ logs, loading }: LogsTableProps) {
+  const [sortField, setSortField] = useState<SortField>(null);
+  const [sortOrder, setSortOrder] = useState<SortOrder>(null);
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      if (sortOrder === 'asc') {
+        setSortOrder('desc');
+      } else if (sortOrder === 'desc') {
+        setSortField(null);
+        setSortOrder(null);
+      } else {
+        setSortOrder('asc');
+      }
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
+  };
+
+  const sortedLogs = useMemo(() => {
+    if (!sortField || !sortOrder) return logs;
+
+    const sorted = [...logs].sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortField) {
+        case 'time':
+          aValue = new Date(a.created_at).getTime();
+          bValue = new Date(b.created_at).getTime();
+          break;
+        case 'actor':
+          aValue = (a.actor_name || a.actor_id || '').toLowerCase();
+          bValue = (b.actor_name || b.actor_id || '').toLowerCase();
+          break;
+        case 'role':
+          aValue = (a.actor_role || '').toLowerCase();
+          bValue = (b.actor_role || '').toLowerCase();
+          break;
+        case 'action':
+          aValue = (actionLabels[a.action] || a.action || '').toLowerCase();
+          bValue = (actionLabels[b.action] || b.action || '').toLowerCase();
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    return sorted;
+  }, [logs, sortField, sortOrder]);
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="h-3 w-3 ml-1 text-gray-400" />;
+    }
+    if (sortOrder === 'asc') {
+      return <ArrowUp className="h-3 w-3 ml-1 text-blue-500" />;
+    }
+    return <ArrowDown className="h-3 w-3 ml-1 text-blue-500" />;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16">
+        <Loader2 className="h-10 w-10 animate-spin text-blue-500 dark:text-blue-400 mb-4" />
+        <p className="text-gray-600 dark:text-gray-400">Đang tải nhật ký...</p>
+      </div>
+    );
+  }
+
+  if (!logs || logs.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16">
+        <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-full mb-4">
+          <FileText className="h-10 w-10 text-gray-400 dark:text-gray-500" />
+        </div>
+        <p className="text-gray-600 dark:text-gray-400 text-lg font-medium">Không có nhật ký nào</p>
+        <p className="text-gray-500 dark:text-gray-500 text-sm mt-1">
+          Hệ thống chưa ghi nhận hoạt động nào
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+          <TableRow className="bg-gray-50 dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 border-0">
+            <TableHead 
+              className="font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              onClick={() => handleSort('time')}
+            >
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                Thời gian
+                <SortIcon field="time" />
+              </div>
+            </TableHead>
+            <TableHead 
+              className="font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              onClick={() => handleSort('actor')}
+            >
+              <div className="flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Người dùng
+                <SortIcon field="actor" />
+              </div>
+            </TableHead>
+            <TableHead 
+              className="font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              onClick={() => handleSort('role')}
+            >
+              <div className="flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                Vai trò
+                <SortIcon field="role" />
+              </div>
+            </TableHead>
+            <TableHead 
+              className="font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              onClick={() => handleSort('action')}
+            >
+              <div className="flex items-center gap-2">
+                <Activity className="h-4 w-4" />
+                Hành động
+                <SortIcon field="action" />
+              </div>
+            </TableHead>
+            <TableHead className="font-semibold text-gray-700 dark:text-gray-300">
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Chi tiết
+              </div>
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {sortedLogs.map(log => (
+            <TableRow
+              key={log.id}
+              className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors border-gray-200 dark:border-gray-700"
+            >
+              <TableCell className="text-sm text-gray-900 dark:text-gray-100 font-medium whitespace-nowrap">
+                {format(new Date(log.created_at), 'HH:mm:ss dd/MM/yyyy', { locale: vi })}
+              </TableCell>
+              <TableCell className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                {log.actor_name || log.actor_id}
+              </TableCell>
+              <TableCell>
+                <Tag color={getRoleTagColor(log.actor_role)}>{getRoleText(log.actor_role)}</Tag>
+              </TableCell>
+              <TableCell className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                {getActionLabel(log.action)}
+              </TableCell>
+              <TableCell className="text-sm text-gray-600 dark:text-gray-400 max-w-md">
+                <div className="whitespace-normal break-words line-clamp-2">
+                  {log.details || log.description || '-'}
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}

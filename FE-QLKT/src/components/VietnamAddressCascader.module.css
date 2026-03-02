@@ -1,0 +1,145 @@
+/* Container cho display text */
+.displayWrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Icon địa điểm */
+.locationIcon {
+  color: #1890ff;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+/* Label chính (Xã/Phường) */
+.primaryLabel {
+  font-weight: 600;
+  color: #262626;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Label phụ (Quận/Huyện, Tỉnh) */
+.secondaryLabel {
+  color: #8c8c8c;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 400;
+}
+
+/* Cascader component */
+.cascader :global(.ant-select-selector) {
+  border-radius: 8px !important;
+  border: 1.5px solid #d9d9d9 !important;
+  transition: all 0.3s ease !important;
+  padding: 8px 12px !important;
+  min-height: 42px !important;
+}
+
+.cascader :global(.ant-select-selector:hover) {
+  border-color: #40a9ff !important;
+}
+
+.cascader :global(.ant-select-focused .ant-select-selector) {
+  border-color: #1890ff !important;
+  box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.1) !important;
+}
+
+.cascader :global(.ant-select-selection-placeholder) {
+  color: #bfbfbf;
+  font-size: 14px;
+}
+
+/* Dropdown panel */
+.dropdown {
+  border-radius: 8px !important;
+  box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.08),
+              0 3px 6px -4px rgba(0, 0, 0, 0.12),
+              0 9px 28px 8px rgba(0, 0, 0, 0.05) !important;
+}
+
+.dropdown :global(.ant-cascader-menu) {
+  min-height: 180px;
+  max-height: 280px;
+}
+
+.dropdown :global(.ant-cascader-menu-item) {
+  padding: 8px 12px;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+  margin: 2px 4px;
+}
+
+.dropdown :global(.ant-cascader-menu-item:hover) {
+  background-color: #f0f5ff !important;
+}
+
+.dropdown :global(.ant-cascader-menu-item-active) {
+  background-color: #e6f7ff !important;
+  color: #1890ff !important;
+  font-weight: 500;
+}
+
+.dropdown :global(.ant-cascader-menu-item-expand-icon) {
+  color: #8c8c8c;
+}
+
+/* Search input trong dropdown */
+.dropdown :global(.ant-select-selection-search-input) {
+  padding: 6px 12px;
+  border-radius: 6px;
+}
+
+/* Loading state */
+.cascader :global(.ant-select-arrow .anticon-loading) {
+  color: #1890ff;
+}
+
+/* Clear icon */
+.cascader :global(.ant-select-clear) {
+  background-color: rgba(0, 0, 0, 0.06);
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.cascader :global(.ant-select-clear:hover) {
+  background-color: rgba(0, 0, 0, 0.15);
+}
+
+/* Disabled state */
+.cascader :global(.ant-select-disabled .ant-select-selector) {
+  background-color: #f5f5f5 !important;
+  cursor: not-allowed !important;
+  opacity: 0.6;
+}
+
+/* Empty state */
+.dropdown :global(.ant-empty-description) {
+  color: #8c8c8c;
+  font-size: 13px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .displayWrapper {
+    font-size: 14px;
+  }
+
+  .primaryLabel {
+    font-size: 14px;
+  }
+
+  .secondaryLabel {
+    font-size: 12px;
+  }
+
+  .dropdown :global(.ant-cascader-menu) {
+    max-height: 240px;
+  }
+}

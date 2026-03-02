@@ -1,0 +1,47 @@
+.personnelTabs {
+  margin-bottom: 24px;
+}
+
+.personnelTabs :global(.ant-tabs-tab) {
+  transition: color 0.2s ease;
+}
+
+.personnelTabs :global(.ant-tabs-tab:focus),
+.personnelTabs :global(.ant-tabs-tab:focus-visible),
+.personnelTabs :global(.ant-tabs-tab-active:focus),
+.personnelTabs :global(.ant-tabs-tab-active:focus-visible) {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.personnelTabs :global(.ant-tabs-tab-btn:focus),
+.personnelTabs :global(.ant-tabs-tab-btn:focus-visible) {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.light :global(.ant-tabs-tab) {
+  color: #4b5563;
+}
+
+.dark :global(.ant-tabs-tab) {
+  color: #9ca3af;
+}
+
+.light :global(.ant-tabs-tab-active .ant-tabs-tab-btn),
+.light :global(.ant-tabs-tab:hover .ant-tabs-tab-btn) {
+  color: #1d4ed8 !important;
+}
+
+.dark :global(.ant-tabs-tab-active .ant-tabs-tab-btn),
+.dark :global(.ant-tabs-tab:hover .ant-tabs-tab-btn) {
+  color: #3b82f6 !important;
+}
+
+.light :global(.ant-tabs-ink-bar) {
+  background: #1d4ed8;
+}
+
+.dark :global(.ant-tabs-ink-bar) {
+  background: #3b82f6;
+}
