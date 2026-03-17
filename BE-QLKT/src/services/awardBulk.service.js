@@ -389,10 +389,10 @@ class AwardBulkService {
                   months === 0
                     ? '-'
                     : years > 0 && remainingMonths > 0
-                    ? `${years} năm ${remainingMonths} tháng`
-                    : years > 0
-                    ? `${years} năm`
-                    : `${remainingMonths} tháng`,
+                      ? `${years} năm ${remainingMonths} tháng`
+                      : years > 0
+                        ? `${years} năm`
+                        : `${remainingMonths} tháng`,
               };
             }
 
@@ -433,7 +433,9 @@ class AwardBulkService {
         for (const item of titleData) {
           try {
             if (!item.danh_hieu) {
-              errors.push(`Huy chương Chiến sĩ vẻ vang thiếu danh_hieu cho quân nhân ${item.personnel_id}`);
+              errors.push(
+                `Huy chương Chiến sĩ vẻ vang thiếu danh_hieu cho quân nhân ${item.personnel_id}`
+              );
               continue;
             }
 
@@ -483,10 +485,10 @@ class AwardBulkService {
                   months === 0
                     ? '-'
                     : years > 0 && remainingMonths > 0
-                    ? `${years} năm ${remainingMonths} tháng`
-                    : years > 0
-                    ? `${years} năm`
-                    : `${remainingMonths} tháng`,
+                      ? `${years} năm ${remainingMonths} tháng`
+                      : years > 0
+                        ? `${years} năm`
+                        : `${remainingMonths} tháng`,
               };
             }
 
@@ -567,10 +569,10 @@ class AwardBulkService {
                   months === 0
                     ? '-'
                     : years > 0 && remainingMonths > 0
-                    ? `${years} năm ${remainingMonths} tháng`
-                    : years > 0
-                    ? `${years} năm`
-                    : `${remainingMonths} tháng`,
+                      ? `${years} năm ${remainingMonths} tháng`
+                      : years > 0
+                        ? `${years} năm`
+                        : `${remainingMonths} tháng`,
               };
             }
 
@@ -611,7 +613,9 @@ class AwardBulkService {
         for (const item of titleData) {
           try {
             if (!item.danh_hieu) {
-              errors.push(`Huân chương Bảo vệ Tổ quốc thiếu danh_hieu cho quân nhân ${item.personnel_id}`);
+              errors.push(
+                `Huân chương Bảo vệ Tổ quốc thiếu danh_hieu cho quân nhân ${item.personnel_id}`
+              );
               continue;
             }
 

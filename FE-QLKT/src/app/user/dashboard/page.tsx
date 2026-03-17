@@ -130,8 +130,10 @@ export default function UserDashboard() {
   const calculateServiceMonths = () => {
     if (!personnelInfo?.ngay_nhap_ngu) return 0;
     const startDate = new Date(personnelInfo.ngay_nhap_ngu);
-    const endDate = personnelInfo?.ngay_xuat_ngu ? new Date(personnelInfo.ngay_xuat_ngu) : new Date();
-    
+    const endDate = personnelInfo?.ngay_xuat_ngu
+      ? new Date(personnelInfo.ngay_xuat_ngu)
+      : new Date();
+
     let months = (endDate.getFullYear() - startDate.getFullYear()) * 12;
     months += endDate.getMonth() - startDate.getMonth();
     if (endDate.getDate() < startDate.getDate()) {
@@ -193,7 +195,9 @@ export default function UserDashboard() {
             style={{
               borderRadius: '12px',
               boxShadow:
-                theme === 'dark' ? '0 4px 16px rgba(0, 0, 0, 0.4)' : '0 4px 16px rgba(0, 0, 0, 0.1)',
+                theme === 'dark'
+                  ? '0 4px 16px rgba(0, 0, 0, 0.4)'
+                  : '0 4px 16px rgba(0, 0, 0, 0.1)',
               overflow: 'hidden',
               border: 'none',
             }}
@@ -266,12 +270,14 @@ export default function UserDashboard() {
               marginBottom: '24px',
             }}
           >
-              <Card
+            <Card
               hoverable
               style={{
                 borderRadius: '10px',
                 boxShadow:
-                  theme === 'dark' ? '0 1px 6px rgba(0, 0, 0, 0.35)' : '0 1px 4px rgba(0, 0, 0, 0.06)',
+                  theme === 'dark'
+                    ? '0 1px 6px rgba(0, 0, 0, 0.35)'
+                    : '0 1px 4px rgba(0, 0, 0, 0.06)',
                 transition: 'all 0.3s ease',
               }}
               bodyStyle={{ padding: '20px' }}
@@ -287,11 +293,11 @@ export default function UserDashboard() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     boxShadow:
-                  theme === 'dark'
+                      theme === 'dark'
                         ? '0 1px 3px rgba(59, 130, 246, 0.3)'
                         : '0 1px 3px rgba(59, 130, 246, 0.2)',
                   }}
-              >
+                >
                   <TrophyOutlined
                     style={{
                       fontSize: '26px',
@@ -324,14 +330,16 @@ export default function UserDashboard() {
                   </div>
                 </div>
               </div>
-              </Card>
+            </Card>
 
-              <Card
+            <Card
               hoverable
               style={{
                 borderRadius: '10px',
                 boxShadow:
-                  theme === 'dark' ? '0 1px 6px rgba(0, 0, 0, 0.35)' : '0 1px 4px rgba(0, 0, 0, 0.06)',
+                  theme === 'dark'
+                    ? '0 1px 6px rgba(0, 0, 0, 0.35)'
+                    : '0 1px 4px rgba(0, 0, 0, 0.06)',
                 transition: 'all 0.3s ease',
               }}
               bodyStyle={{ padding: '20px' }}
@@ -347,7 +355,7 @@ export default function UserDashboard() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     boxShadow:
-                  theme === 'dark'
+                      theme === 'dark'
                         ? '0 1px 3px rgba(16, 185, 129, 0.3)'
                         : '0 1px 3px rgba(16, 185, 129, 0.2)',
                   }}
@@ -370,7 +378,7 @@ export default function UserDashboard() {
                       color: theme === 'dark' ? '#cbd5e1' : '#475569',
                     }}
                   >
-                      Tổng NCKH
+                    Tổng NCKH
                   </Text>
                   <div
                     style={{
@@ -386,14 +394,16 @@ export default function UserDashboard() {
                   </div>
                 </div>
               </div>
-              </Card>
+            </Card>
 
-              <Card
+            <Card
               hoverable
               style={{
                 borderRadius: '10px',
                 boxShadow:
-                  theme === 'dark' ? '0 1px 6px rgba(0, 0, 0, 0.35)' : '0 1px 4px rgba(0, 0, 0, 0.06)',
+                  theme === 'dark'
+                    ? '0 1px 6px rgba(0, 0, 0, 0.35)'
+                    : '0 1px 4px rgba(0, 0, 0, 0.06)',
                 transition: 'all 0.3s ease',
               }}
               bodyStyle={{ padding: '20px' }}
@@ -409,7 +419,7 @@ export default function UserDashboard() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     boxShadow:
-                  theme === 'dark'
+                      theme === 'dark'
                         ? '0 1px 3px rgba(234, 179, 8, 0.3)'
                         : '0 1px 3px rgba(234, 179, 8, 0.2)',
                   }}
@@ -432,7 +442,7 @@ export default function UserDashboard() {
                       color: theme === 'dark' ? '#cbd5e1' : '#475569',
                     }}
                   >
-                      CSTDCS liên tục
+                    CSTDCS liên tục
                   </Text>
                   <div
                     style={{
@@ -456,14 +466,16 @@ export default function UserDashboard() {
                   </div>
                 </div>
               </div>
-              </Card>
+            </Card>
 
-              <Card
+            <Card
               hoverable
               style={{
                 borderRadius: '10px',
                 boxShadow:
-                  theme === 'dark' ? '0 1px 6px rgba(0, 0, 0, 0.35)' : '0 1px 4px rgba(0, 0, 0, 0.06)',
+                  theme === 'dark'
+                    ? '0 1px 6px rgba(0, 0, 0, 0.35)'
+                    : '0 1px 4px rgba(0, 0, 0, 0.06)',
                 transition: 'all 0.3s ease',
               }}
               bodyStyle={{ padding: '20px' }}
@@ -479,7 +491,7 @@ export default function UserDashboard() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     boxShadow:
-                  theme === 'dark'
+                      theme === 'dark'
                         ? '0 1px 3px rgba(139, 92, 246, 0.3)'
                         : '0 1px 3px rgba(139, 92, 246, 0.2)',
                   }}
@@ -502,7 +514,7 @@ export default function UserDashboard() {
                       color: theme === 'dark' ? '#cbd5e1' : '#475569',
                     }}
                   >
-                      Tháng cống hiến
+                    Tháng cống hiến
                   </Text>
                   <div
                     style={{
@@ -510,13 +522,13 @@ export default function UserDashboard() {
                       fontWeight: 'bold',
                       color: theme === 'dark' ? '#e5e7eb' : '#0f172a',
                       lineHeight: '1.2',
-                      }}
-                    >
-                      {serviceMonths} tháng
+                    }}
+                  >
+                    {serviceMonths} tháng
                   </div>
                 </div>
               </div>
-              </Card>
+            </Card>
           </div>
 
           {/* Personal Info Card */}
@@ -538,18 +550,20 @@ export default function UserDashboard() {
                   {personnelInfo.cccd || 'Chưa có dữ liệu'}
                 </Descriptions.Item>
                 <Descriptions.Item label="Ngày sinh" labelStyle={{ fontWeight: 500 }}>
-                  {personnelInfo.ngay_sinh ? formatDate(personnelInfo.ngay_sinh) : 'Chưa có dữ liệu'}
+                  {personnelInfo.ngay_sinh
+                    ? formatDate(personnelInfo.ngay_sinh)
+                    : 'Chưa có dữ liệu'}
                 </Descriptions.Item>
                 <Descriptions.Item label="Giới tính" labelStyle={{ fontWeight: 500 }}>
                   {personnelInfo.gioi_tinh === 'NAM'
                     ? 'Nam'
                     : personnelInfo.gioi_tinh === 'NU'
-                    ? 'Nữ'
-                    : 'Chưa có dữ liệu'}
+                      ? 'Nữ'
+                      : 'Chưa có dữ liệu'}
                 </Descriptions.Item>
                 <Descriptions.Item label="Đơn vị" labelStyle={{ fontWeight: 500 }}>
                   {personnelInfo.DonViTrucThuoc?.ten_don_vi ||
-                      personnelInfo.CoQuanDonVi?.ten_don_vi ||
+                    personnelInfo.CoQuanDonVi?.ten_don_vi ||
                     'Chưa có dữ liệu'}
                 </Descriptions.Item>
                 <Descriptions.Item label="Cấp bậc" labelStyle={{ fontWeight: 500 }}>
@@ -559,10 +573,14 @@ export default function UserDashboard() {
                   {personnelInfo.ChucVu?.ten_chuc_vu || 'Chưa có dữ liệu'}
                 </Descriptions.Item>
                 <Descriptions.Item label="Ngày nhập ngũ" labelStyle={{ fontWeight: 500 }}>
-                  {personnelInfo.ngay_nhap_ngu ? formatDate(personnelInfo.ngay_nhap_ngu) : 'Chưa có dữ liệu'}
+                  {personnelInfo.ngay_nhap_ngu
+                    ? formatDate(personnelInfo.ngay_nhap_ngu)
+                    : 'Chưa có dữ liệu'}
                 </Descriptions.Item>
                 <Descriptions.Item label="Ngày xuất ngũ" labelStyle={{ fontWeight: 500 }}>
-                  {personnelInfo.ngay_xuat_ngu ? formatDate(personnelInfo.ngay_xuat_ngu) : 'Chưa có dữ liệu'}
+                  {personnelInfo.ngay_xuat_ngu
+                    ? formatDate(personnelInfo.ngay_xuat_ngu)
+                    : 'Chưa có dữ liệu'}
                 </Descriptions.Item>
               </Descriptions>
             </Card>
@@ -663,7 +681,7 @@ export default function UserDashboard() {
                       }
 
                       return (
-                    <div>
+                        <div>
                           <PieChart
                             data={chartData}
                             title="Tổng các danh hiệu đã nhận"
@@ -679,8 +697,8 @@ export default function UserDashboard() {
                           <div className="mt-4 text-center">
                             <Text type="secondary" className="text-sm">
                               Tổng số danh hiệu/thành tích đã nhận: <Text strong>{total}</Text>
-                      </Text>
-                    </div>
+                            </Text>
+                          </div>
                         </div>
                       );
                     })()}
@@ -734,20 +752,24 @@ export default function UserDashboard() {
                             serviceProfile.hccsvv_hang_ba_status === 'DA_NHAN'
                               ? 'success'
                               : serviceProfile.hccsvv_hang_ba_status === 'DU_DIEU_KIEN'
-                              ? 'processing'
-                              : 'default'
+                                ? 'processing'
+                                : 'default'
                           }
                           text={
                             serviceProfile.hccsvv_hang_ba_status === 'DA_NHAN'
                               ? 'Đã nhận'
                               : serviceProfile.hccsvv_hang_ba_status === 'DU_DIEU_KIEN'
-                              ? 'Đủ điều kiện'
-                              : 'Chưa đủ'
+                                ? 'Đủ điều kiện'
+                                : 'Chưa đủ'
                           }
                         />
                       </div>
                       <Progress
-                        {...getProgressData(serviceProfile.hccsvv_hang_ba_status, serviceMonths, 120)}
+                        {...getProgressData(
+                          serviceProfile.hccsvv_hang_ba_status,
+                          serviceMonths,
+                          120
+                        )}
                         format={() => `${serviceMonths}/120 tháng`}
                       />
                     </div>
@@ -761,15 +783,15 @@ export default function UserDashboard() {
                             serviceProfile.hccsvv_hang_nhi_status === 'DA_NHAN'
                               ? 'success'
                               : serviceProfile.hccsvv_hang_nhi_status === 'DU_DIEU_KIEN'
-                              ? 'processing'
-                              : 'default'
+                                ? 'processing'
+                                : 'default'
                           }
                           text={
                             serviceProfile.hccsvv_hang_nhi_status === 'DA_NHAN'
                               ? 'Đã nhận'
                               : serviceProfile.hccsvv_hang_nhi_status === 'DU_DIEU_KIEN'
-                              ? 'Đủ điều kiện'
-                              : 'Chưa đủ'
+                                ? 'Đủ điều kiện'
+                                : 'Chưa đủ'
                           }
                         />
                       </div>
@@ -792,15 +814,15 @@ export default function UserDashboard() {
                             serviceProfile.hccsvv_hang_nhat_status === 'DA_NHAN'
                               ? 'success'
                               : serviceProfile.hccsvv_hang_nhat_status === 'DU_DIEU_KIEN'
-                              ? 'processing'
-                              : 'default'
+                                ? 'processing'
+                                : 'default'
                           }
                           text={
                             serviceProfile.hccsvv_hang_nhat_status === 'DA_NHAN'
                               ? 'Đã nhận'
                               : serviceProfile.hccsvv_hang_nhat_status === 'DU_DIEU_KIEN'
-                              ? 'Đủ điều kiện'
-                              : 'Chưa đủ'
+                                ? 'Đủ điều kiện'
+                                : 'Chưa đủ'
                           }
                         />
                       </div>
@@ -815,7 +837,11 @@ export default function UserDashboard() {
                     </div>
                   </Space>
                 ) : (
-                  <Alert message="Chưa có dữ liệu hồ sơ huy chương chiến sĩ vẻ vang" type="warning" showIcon />
+                  <Alert
+                    message="Chưa có dữ liệu hồ sơ huy chương chiến sĩ vẻ vang"
+                    type="warning"
+                    showIcon
+                  />
                 )}
               </Card>
             </Col>
@@ -873,119 +899,117 @@ export default function UserDashboard() {
 
                       return (
                         <>
-                    {/* HCBVTQ - Hạng Ba */}
-                    <div>
-                      <div className="flex justify-between items-center mb-2">
-                              <Text strong>
-                                Hạng Ba ({targetMonths} tháng)
-                              </Text>
-                        <Badge
-                          status={
-                            contributionProfile.hcbvtq_hang_ba_status === 'DA_NHAN'
-                              ? 'success'
-                              : contributionProfile.hcbvtq_hang_ba_status === 'DU_DIEU_KIEN'
-                              ? 'processing'
-                              : 'default'
-                          }
-                          text={
-                            contributionProfile.hcbvtq_hang_ba_status === 'DA_NHAN'
-                              ? 'Đã nhận'
-                              : contributionProfile.hcbvtq_hang_ba_status === 'DU_DIEU_KIEN'
-                              ? 'Đủ điều kiện'
-                              : 'Chưa đủ'
-                          }
-                        />
-                      </div>
-                      <Progress
-                        {...getProgressData(
-                          contributionProfile.hcbvtq_hang_ba_status,
+                          {/* HCBVTQ - Hạng Ba */}
+                          <div>
+                            <div className="flex justify-between items-center mb-2">
+                              <Text strong>Hạng Ba ({targetMonths} tháng)</Text>
+                              <Badge
+                                status={
+                                  contributionProfile.hcbvtq_hang_ba_status === 'DA_NHAN'
+                                    ? 'success'
+                                    : contributionProfile.hcbvtq_hang_ba_status === 'DU_DIEU_KIEN'
+                                      ? 'processing'
+                                      : 'default'
+                                }
+                                text={
+                                  contributionProfile.hcbvtq_hang_ba_status === 'DA_NHAN'
+                                    ? 'Đã nhận'
+                                    : contributionProfile.hcbvtq_hang_ba_status === 'DU_DIEU_KIEN'
+                                      ? 'Đủ điều kiện'
+                                      : 'Chưa đủ'
+                                }
+                              />
+                            </div>
+                            <Progress
+                              {...getProgressData(
+                                contributionProfile.hcbvtq_hang_ba_status,
                                 hangBaMonths,
                                 targetMonths
-                        )}
+                              )}
                               format={() => `${hangBaMonths}/${targetMonths} tháng`}
-                      />
+                            />
                             <Text type="secondary" className="text-xs">
                               Tổng tháng cống hiến từ nhóm có hệ số chức vụ từ 0.7 đến 1.0
                             </Text>
-                    </div>
+                          </div>
 
-                    {/* HCBVTQ - Hạng Nhì */}
-                    <div>
-                      <div className="flex justify-between items-center mb-2">
-                              <Text strong>
-                                Hạng Nhì ({targetMonths} tháng)
-                              </Text>
-                        <Badge
-                          status={
-                            contributionProfile.hcbvtq_hang_nhi_status === 'DA_NHAN'
-                              ? 'success'
-                              : contributionProfile.hcbvtq_hang_nhi_status === 'DU_DIEU_KIEN'
-                              ? 'processing'
-                              : 'default'
-                          }
-                          text={
-                            contributionProfile.hcbvtq_hang_nhi_status === 'DA_NHAN'
-                              ? 'Đã nhận'
-                              : contributionProfile.hcbvtq_hang_nhi_status === 'DU_DIEU_KIEN'
-                              ? 'Đủ điều kiện'
-                              : 'Chưa đủ'
-                          }
-                        />
-                      </div>
-                      <Progress
-                        {...getProgressData(
-                          contributionProfile.hcbvtq_hang_nhi_status,
+                          {/* HCBVTQ - Hạng Nhì */}
+                          <div>
+                            <div className="flex justify-between items-center mb-2">
+                              <Text strong>Hạng Nhì ({targetMonths} tháng)</Text>
+                              <Badge
+                                status={
+                                  contributionProfile.hcbvtq_hang_nhi_status === 'DA_NHAN'
+                                    ? 'success'
+                                    : contributionProfile.hcbvtq_hang_nhi_status === 'DU_DIEU_KIEN'
+                                      ? 'processing'
+                                      : 'default'
+                                }
+                                text={
+                                  contributionProfile.hcbvtq_hang_nhi_status === 'DA_NHAN'
+                                    ? 'Đã nhận'
+                                    : contributionProfile.hcbvtq_hang_nhi_status === 'DU_DIEU_KIEN'
+                                      ? 'Đủ điều kiện'
+                                      : 'Chưa đủ'
+                                }
+                              />
+                            </div>
+                            <Progress
+                              {...getProgressData(
+                                contributionProfile.hcbvtq_hang_nhi_status,
                                 hangNhiMonths,
                                 targetMonths
-                        )}
+                              )}
                               format={() => `${hangNhiMonths}/${targetMonths} tháng`}
-                      />
+                            />
                             <Text type="secondary" className="text-xs">
                               Tổng tháng cống hiến từ nhóm có hệ số chức vụ từ 0.8 đến 1.0
                             </Text>
-                    </div>
+                          </div>
 
-                    {/* HCBVTQ - Hạng Nhất */}
-                    <div>
-                      <div className="flex justify-between items-center mb-2">
-                              <Text strong>
-                                Hạng Nhất ({targetMonths} tháng)
-                              </Text>
-                        <Badge
-                          status={
-                            contributionProfile.hcbvtq_hang_nhat_status === 'DA_NHAN'
-                              ? 'success'
-                              : contributionProfile.hcbvtq_hang_nhat_status === 'DU_DIEU_KIEN'
-                              ? 'processing'
-                              : 'default'
-                          }
-                          text={
-                            contributionProfile.hcbvtq_hang_nhat_status === 'DA_NHAN'
-                              ? 'Đã nhận'
-                              : contributionProfile.hcbvtq_hang_nhat_status === 'DU_DIEU_KIEN'
-                              ? 'Đủ điều kiện'
-                              : 'Chưa đủ'
-                          }
-                        />
-                      </div>
-                      <Progress
-                        {...getProgressData(
-                          contributionProfile.hcbvtq_hang_nhat_status,
+                          {/* HCBVTQ - Hạng Nhất */}
+                          <div>
+                            <div className="flex justify-between items-center mb-2">
+                              <Text strong>Hạng Nhất ({targetMonths} tháng)</Text>
+                              <Badge
+                                status={
+                                  contributionProfile.hcbvtq_hang_nhat_status === 'DA_NHAN'
+                                    ? 'success'
+                                    : contributionProfile.hcbvtq_hang_nhat_status === 'DU_DIEU_KIEN'
+                                      ? 'processing'
+                                      : 'default'
+                                }
+                                text={
+                                  contributionProfile.hcbvtq_hang_nhat_status === 'DA_NHAN'
+                                    ? 'Đã nhận'
+                                    : contributionProfile.hcbvtq_hang_nhat_status === 'DU_DIEU_KIEN'
+                                      ? 'Đủ điều kiện'
+                                      : 'Chưa đủ'
+                                }
+                              />
+                            </div>
+                            <Progress
+                              {...getProgressData(
+                                contributionProfile.hcbvtq_hang_nhat_status,
                                 hangNhatMonths,
                                 targetMonths
-                        )}
+                              )}
                               format={() => `${hangNhatMonths}/${targetMonths} tháng`}
-                      />
+                            />
                             <Text type="secondary" className="text-xs">
                               Tổng tháng cống hiến từ nhóm có hệ số chức vụ từ 0.9 đến 1.0
                             </Text>
-                    </div>
+                          </div>
                         </>
                       );
                     })()}
                   </Space>
                 ) : (
-                  <Alert message="Chưa có dữ liệu hồ sơ huân chương bảo vệ tổ quốc" type="warning" showIcon />
+                  <Alert
+                    message="Chưa có dữ liệu hồ sơ huân chương bảo vệ tổ quốc"
+                    type="warning"
+                    showIcon
+                  />
                 )}
               </Card>
             </Col>

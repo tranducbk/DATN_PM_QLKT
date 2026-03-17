@@ -22,6 +22,7 @@ import {
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { useTheme } from '@/components/theme-provider';
+import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api-client';
 import { formatDateTime } from '@/lib/utils';
 import '@/lib/chart-config';
@@ -31,6 +32,7 @@ const { Title } = Typography;
 
 export default function AdminDashboard() {
   const { theme } = useTheme();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [displayName, setDisplayName] = useState('Admin');
   const [stats, setStats] = useState({
@@ -51,8 +53,7 @@ export default function AdminDashboard() {
       try {
         setLoading(true);
 
-        // Lấy tên hiển thị từ localStorage (ưu tiên họ tên, rồi username, rồi vai trò)
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        // Lấy tên hiển thị từ AuthContext (ưu tiên họ tên, rồi username, rồi vai trò)
         if (user) {
           const name = (user.ho_ten || '').trim();
           const username = (user.username || '').trim();
@@ -91,7 +92,7 @@ export default function AdminDashboard() {
     };
 
     fetchStats();
-  }, []);
+  }, [user]);
 
   const statCards = [
     {

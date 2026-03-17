@@ -156,8 +156,7 @@ export default function AdminAccountsPage() {
       title: 'Đơn vị',
       key: 'don_vi',
       align: 'center' as const,
-      render: (_: any, record: any) =>
-        record.don_vi || <span className="text-gray-400">-</span>,
+      render: (_: any, record: any) => record.don_vi || <span className="text-gray-400">-</span>,
     },
     {
       title: 'Cấp bậc / Chức vụ',

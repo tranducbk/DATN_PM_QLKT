@@ -14,7 +14,6 @@ import {
   message,
   Table,
   ConfigProvider,
-  theme as antdTheme,
 } from 'antd';
 import {
   HomeOutlined,
@@ -34,6 +33,7 @@ import { apiClient } from '@/lib/api-client';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { previewFileWithApi } from '@/utils/filePreview';
 import { useTheme } from '@/components/theme-provider';
+import { getAntdTableThemeConfig } from '@/lib/antd-theme';
 import styles from './proposal-detail.module.css';
 
 const { Title, Text } = Typography;
@@ -147,7 +147,7 @@ interface ProposalDetail {
 export default function ManagerProposalDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const { theme: currentTheme } = useTheme();
+  const { isDark } = useTheme();
   const proposalId = params?.id as string;
   const [proposal, setProposal] = useState<ProposalDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -158,9 +158,11 @@ export default function ManagerProposalDetailPage() {
     if (proposalId) {
       fetchProposalDetail();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [proposalId]);
 
   const fetchProposalDetail = async () => {
+    if (!proposalId) return;
     try {
       setLoading(true);
       const response = await apiClient.getProposalById(proposalId);
@@ -176,8 +178,8 @@ export default function ManagerProposalDetailPage() {
           const danhHieuData = Array.isArray(response.data.data_danh_hieu)
             ? response.data.data_danh_hieu
             : typeof response.data.data_danh_hieu === 'string'
-            ? JSON.parse(response.data.data_danh_hieu)
-            : [];
+              ? JSON.parse(response.data.data_danh_hieu)
+              : [];
           personnelData = [...personnelData, ...danhHieuData];
         }
 
@@ -185,8 +187,8 @@ export default function ManagerProposalDetailPage() {
           const nienHanData = Array.isArray(response.data.data_nien_han)
             ? response.data.data_nien_han
             : typeof response.data.data_nien_han === 'string'
-            ? JSON.parse(response.data.data_nien_han)
-            : [];
+              ? JSON.parse(response.data.data_nien_han)
+              : [];
           personnelData = [...personnelData, ...nienHanData];
         }
 
@@ -194,8 +196,8 @@ export default function ManagerProposalDetailPage() {
           const congHienData = Array.isArray(response.data.data_cong_hien)
             ? response.data.data_cong_hien
             : typeof response.data.data_cong_hien === 'string'
-            ? JSON.parse(response.data.data_cong_hien)
-            : [];
+              ? JSON.parse(response.data.data_cong_hien)
+              : [];
           personnelData = [...personnelData, ...congHienData];
         }
 
@@ -207,10 +209,12 @@ export default function ManagerProposalDetailPage() {
         }
       } else {
         message.error(response.message || 'Không thể tải chi tiết đề xuất');
+        router.replace('/manager/proposals');
       }
     } catch (error: any) {
-      message.error('Lỗi khi tải chi tiết đề xuất');
+      message.error('Không tìm thấy đề xuất hoặc bạn không có quyền truy cập');
       console.error('Fetch proposal detail error:', error);
+      router.replace('/manager/proposals');
     } finally {
       setLoading(false);
     }
@@ -364,25 +368,7 @@ export default function ManagerProposalDetailPage() {
   }
 
   return (
-    <ConfigProvider
-      theme={{
-        algorithm: currentTheme === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
-        token: {
-          colorBgContainer: currentTheme === 'dark' ? '#1f2937' : '#ffffff',
-          colorText: currentTheme === 'dark' ? '#f3f4f6' : '#111827',
-          colorBorder: currentTheme === 'dark' ? '#4b5563' : '#d1d5db',
-        },
-        components: {
-          Table: {
-            rowHoverBg: currentTheme === 'dark' ? '#374151' : '#f9fafb',
-            colorBgContainer: currentTheme === 'dark' ? '#111827' : '#ffffff',
-            colorText: currentTheme === 'dark' ? '#f3f4f6' : '#111827',
-            colorTextHeading: currentTheme === 'dark' ? '#f9fafb' : '#111827',
-            colorBorderSecondary: currentTheme === 'dark' ? '#374151' : '#e5e7eb',
-          },
-        },
-      }}
-    >
+    <ConfigProvider theme={getAntdTableThemeConfig(isDark)}>
       <div className="space-y-6 p-6">
         {/* Breadcrumb */}
         <Breadcrumb>
@@ -521,14 +507,14 @@ export default function ManagerProposalDetailPage() {
                 })()}
               </Descriptions.Item>
             )}
-              <Descriptions.Item label="Ghi chú" span={2}>
+            <Descriptions.Item label="Ghi chú" span={2}>
               {proposal.ghi_chu ? (
                 <Text>{proposal.ghi_chu}</Text>
               ) : (
                 <Text type="secondary" style={{ fontStyle: 'italic', opacity: 0.6 }}>
                   Không có ghi chú
                 </Text>
-            )}
+              )}
             </Descriptions.Item>
           </Descriptions>
         </Card>
@@ -541,20 +527,20 @@ export default function ManagerProposalDetailPage() {
                 <div
                   key={index}
                   className={`${styles.fileItem} ${
-                    currentTheme === 'dark' ? styles.fileItemDark : styles.fileItemLight
+                    isDark ? styles.fileItemDark : styles.fileItemLight
                   }`}
                 >
                   <div className={styles.fileContent}>
                     <div className={styles.fileHeader}>
                       <FilePdfOutlined
                         className={
-                          currentTheme === 'dark' ? styles.fileIconDark : styles.fileIconLight
+                          isDark ? styles.fileIconDark : styles.fileIconLight
                         }
                       />
                       <Text
                         strong
                         className={`break-all ${
-                          currentTheme === 'dark' ? styles.fileNameDark : styles.fileNameLight
+                          isDark ? styles.fileNameDark : styles.fileNameLight
                         }`}
                       >
                         {(() => {
@@ -578,7 +564,7 @@ export default function ManagerProposalDetailPage() {
                     <Text
                       type="secondary"
                       className={`text-xs ${
-                        currentTheme === 'dark' ? styles.fileInfoDark : styles.fileInfoLight
+                        isDark ? styles.fileInfoDark : styles.fileInfoLight
                       }`}
                     >
                       Kích thước: {(file.size / 1024).toFixed(2)} KB • Ngày tải lên:{' '}
@@ -725,7 +711,7 @@ export default function ManagerProposalDetailPage() {
                         key: 'so_quyet_dinh',
                         width: 180,
                         align: 'center' as const,
-                        render: (text: string, record: ThanhTichItem) => {
+                        render: (text: string, _record: ThanhTichItem) => {
                           if (!text || (typeof text === 'string' && text.trim() === '')) {
                             return <Text type="secondary">-</Text>;
                           }
@@ -865,9 +851,7 @@ export default function ManagerProposalDetailPage() {
                       KNC_VSNXD_QDNDVN: 'Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN',
                     };
                     return text ? (
-                      <Text style={{ whiteSpace: 'nowrap' }}>
-                        {danhHieuMap[text] || text}
-                      </Text>
+                      <Text style={{ whiteSpace: 'nowrap' }}>{danhHieuMap[text] || text}</Text>
                     ) : (
                       <Text type="secondary">-</Text>
                     );
@@ -883,7 +867,11 @@ export default function ManagerProposalDetailPage() {
                     if (thoiGian && typeof thoiGian === 'object' && thoiGian.display) {
                       return <Text style={{ whiteSpace: 'nowrap' }}>{thoiGian.display}</Text>;
                     }
-                    return <Text style={{ whiteSpace: 'nowrap' }}>{calculateTotalTimeByGroup(record.personnel_id || '', '0.7')}</Text>;
+                    return (
+                      <Text style={{ whiteSpace: 'nowrap' }}>
+                        {calculateTotalTimeByGroup(record.personnel_id || '', '0.7')}
+                      </Text>
+                    );
                   },
                 },
                 {
@@ -896,7 +884,11 @@ export default function ManagerProposalDetailPage() {
                     if (thoiGian && typeof thoiGian === 'object' && thoiGian.display) {
                       return <Text style={{ whiteSpace: 'nowrap' }}>{thoiGian.display}</Text>;
                     }
-                    return <Text style={{ whiteSpace: 'nowrap' }}>{calculateTotalTimeByGroup(record.personnel_id || '', '0.8')}</Text>;
+                    return (
+                      <Text style={{ whiteSpace: 'nowrap' }}>
+                        {calculateTotalTimeByGroup(record.personnel_id || '', '0.8')}
+                      </Text>
+                    );
                   },
                 },
                 {
@@ -909,7 +901,11 @@ export default function ManagerProposalDetailPage() {
                     if (thoiGian && typeof thoiGian === 'object' && thoiGian.display) {
                       return <Text style={{ whiteSpace: 'nowrap' }}>{thoiGian.display}</Text>;
                     }
-                    return <Text style={{ whiteSpace: 'nowrap' }}>{calculateTotalTimeByGroup(record.personnel_id || '', '0.9-1.0')}</Text>;
+                    return (
+                      <Text style={{ whiteSpace: 'nowrap' }}>
+                        {calculateTotalTimeByGroup(record.personnel_id || '', '0.9-1.0')}
+                      </Text>
+                    );
                   },
                 },
                 ...(proposal.status === 'APPROVED'
@@ -920,7 +916,7 @@ export default function ManagerProposalDetailPage() {
                         key: 'so_quyet_dinh',
                         width: 180,
                         align: 'center' as const,
-                        render: (text: string, record: DanhHieuItem) => {
+                        render: (text: string, _record: DanhHieuItem) => {
                           if (!text || (typeof text === 'string' && text.trim() === '')) {
                             return <Text type="secondary">-</Text>;
                           }
@@ -985,7 +981,9 @@ export default function ManagerProposalDetailPage() {
                         <div
                           style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
                         >
-                          <Text strong style={{ whiteSpace: 'nowrap' }}>{text || '-'}</Text>
+                          <Text strong style={{ whiteSpace: 'nowrap' }}>
+                            {text || '-'}
+                          </Text>
                         </div>
                       );
                     } else {
@@ -1001,9 +999,14 @@ export default function ManagerProposalDetailPage() {
                         <div
                           style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
                         >
-                          <Text strong style={{ whiteSpace: 'nowrap' }}>{text || '-'}</Text>
+                          <Text strong style={{ whiteSpace: 'nowrap' }}>
+                            {text || '-'}
+                          </Text>
                           {unitInfo && (
-                            <Text type="secondary" style={{ fontSize: '12px', marginTop: '4px', whiteSpace: 'nowrap' }}>
+                            <Text
+                              type="secondary"
+                              style={{ fontSize: '12px', marginTop: '4px', whiteSpace: 'nowrap' }}
+                            >
                               {unitInfo}
                             </Text>
                           )}
@@ -1022,7 +1025,11 @@ export default function ManagerProposalDetailPage() {
                   render: (_: any, record: any) => {
                     if (proposal.loai_de_xuat === 'DON_VI_HANG_NAM') {
                       // For units, show unit code
-                      return <Text strong style={{ whiteSpace: 'nowrap' }}>{record.ma_don_vi || '-'}</Text>;
+                      return (
+                        <Text strong style={{ whiteSpace: 'nowrap' }}>
+                          {record.ma_don_vi || '-'}
+                        </Text>
+                      );
                     } else {
                       // For personnel, show rank and position
                       const capBac = record.cap_bac;
@@ -1037,12 +1044,18 @@ export default function ManagerProposalDetailPage() {
                           style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
                         >
                           {capBac && (
-                            <Text strong style={{ marginBottom: chucVu ? '4px' : '0', whiteSpace: 'nowrap' }}>
+                            <Text
+                              strong
+                              style={{ marginBottom: chucVu ? '4px' : '0', whiteSpace: 'nowrap' }}
+                            >
                               {capBac}
                             </Text>
                           )}
                           {chucVu && (
-                            <Text type="secondary" style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>
+                            <Text
+                              type="secondary"
+                              style={{ fontSize: '12px', whiteSpace: 'nowrap' }}
+                            >
                               {chucVu}
                             </Text>
                           )}
@@ -1087,9 +1100,7 @@ export default function ManagerProposalDetailPage() {
                       KNC_VSNXD_QDNDVN: 'Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN',
                     };
                     return text ? (
-                      <Text style={{ whiteSpace: 'nowrap' }}>
-                        {danhHieuMap[text] || text}
-                      </Text>
+                      <Text style={{ whiteSpace: 'nowrap' }}>{danhHieuMap[text] || text}</Text>
                     ) : (
                       <Text type="secondary">-</Text>
                     );
@@ -1293,7 +1304,9 @@ export default function ManagerProposalDetailPage() {
                     if (typeof thoiGian === 'string') {
                       try {
                         const parsed = JSON.parse(thoiGian);
-                        return <Text style={{ whiteSpace: 'nowrap' }}>{parsed.display || '-'}</Text>;
+                        return (
+                          <Text style={{ whiteSpace: 'nowrap' }}>{parsed.display || '-'}</Text>
+                        );
                       } catch {
                         return <Text style={{ whiteSpace: 'nowrap' }}>{thoiGian}</Text>;
                       }
@@ -1369,13 +1382,13 @@ export default function ManagerProposalDetailPage() {
                 Hướng dẫn tạo đề xuất mới
               </Title>
               <Text>
-                1. Nhấn nút "Tạo đề xuất mới" để tạo đề xuất mới
+                1. Nhấn nút &quot;Tạo đề xuất mới&quot; để tạo đề xuất mới
                 <br />
                 2. Điền thông tin đề xuất mới
                 <br />
                 3. Xem lại thông tin đề xuất mới
                 <br />
-                4. Nhấn nút "Gửi đề xuất" để gửi đề xuất mới
+                4. Nhấn nút &quot;Gửi đề xuất&quot; để gửi đề xuất mới
               </Text>
               <Link href="/manager/proposals/create">
                 <Button type="primary" size="large">

@@ -215,7 +215,6 @@ export default function CreateProposalPage() {
       const responses = await Promise.all(promises);
       const personnelData = responses.filter(r => r.data.success).map(r => r.data.data);
       setPersonnelDetails(personnelData);
-
     } catch (error) {
       console.error('Error fetching personnel details:', error);
     }
@@ -264,9 +263,7 @@ export default function CreateProposalPage() {
           return titleData.every(d => d.danh_hieu);
         }
 
-        return titleData.every(
-          d => d.danh_hieu && d.cap_bac?.trim() && d.chuc_vu?.trim()
-        );
+        return titleData.every(d => d.danh_hieu && d.cap_bac?.trim() && d.chuc_vu?.trim());
       case 3: // Step 4: Always allow to continue (attachedFiles is optional)
         return true;
       default:
@@ -493,12 +490,14 @@ export default function CreateProposalPage() {
       // Validation cho cấp bậc và chức vụ bắt buộc (cho tất cả loại trừ DON_VI_HANG_NAM)
       // Cấp bậc/chức vụ đã được nhập ở bước 3 (Set Titles), kiểm tra trong titleData
       if (proposalType !== 'DON_VI_HANG_NAM' && selectedPersonnelIds.length > 0) {
-        const missingInfo = titleData.filter(
-          item => !item.cap_bac || !item.chuc_vu
-        );
+        const missingInfo = titleData.filter(item => !item.cap_bac || !item.chuc_vu);
         if (missingInfo.length > 0) {
           const missingNames = missingInfo
-            .map(item => personnelDetails.find(p => p.id === item.personnel_id || p.id === item.personnelId)?.ho_ten)
+            .map(
+              item =>
+                personnelDetails.find(p => p.id === item.personnel_id || p.id === item.personnelId)
+                  ?.ho_ten
+            )
             .filter(Boolean)
             .join(', ');
           antMessage.error(`Vui lòng nhập đầy đủ cấp bậc và chức vụ cho: ${missingNames}`);
@@ -1228,17 +1227,16 @@ export default function CreateProposalPage() {
                     proposalType === 'NCKH'
                       ? 1100
                       : proposalType === 'NIEN_HAN' ||
-                        proposalType === 'HC_QKQT' ||
-                        proposalType === 'KNC_VSNXD_QDNDVN'
-                      ? 1150
-                      : 1000,
+                          proposalType === 'HC_QKQT' ||
+                          proposalType === 'KNC_VSNXD_QDNDVN'
+                        ? 1150
+                        : 1000,
                 }}
                 locale={{
                   emptyText: 'Không có dữ liệu',
                 }}
               />
             </Card>
-
 
             {/* Ghi chú */}
             <Card

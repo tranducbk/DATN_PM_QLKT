@@ -18,11 +18,6 @@ router.post(
 );
 router.post('/', verifyToken, requireManager, scientificAchievementController.createAchievement);
 router.put('/:id', verifyToken, requireAuth, scientificAchievementController.updateAchievement);
-router.delete(
-  '/:id',
-  verifyToken,
-  requireAuth,
-  scientificAchievementController.deleteAchievement
-);
+router.delete('/:id', verifyToken, requireAuth, scientificAchievementController.deleteAchievement);
 
 module.exports = router;

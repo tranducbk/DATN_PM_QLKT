@@ -166,8 +166,8 @@ export default function PositionHistoryPage() {
           values.ngay_ket_thuc === null
             ? null
             : values.ngay_ket_thuc
-            ? dayjs(values.ngay_ket_thuc).format('YYYY-MM-DD')
-            : undefined,
+              ? dayjs(values.ngay_ket_thuc).format('YYYY-MM-DD')
+              : undefined,
         he_so_chuc_vu: values.he_so_chuc_vu || undefined, // Gửi hệ số chức vụ nếu có
       };
 
@@ -517,8 +517,8 @@ export default function PositionHistoryPage() {
                 <Text type="warning">
                   <InfoCircleOutlined style={{ marginRight: 8 }} />
                   Đây là chức vụ hiện tại. Bạn chỉ có thể sửa thời gian (ngày bắt đầu, ngày kết
-                  thúc). Để thay đổi chức vụ đảm nhận, vui lòng sử dụng mục "Cập nhật thông tin cá
-                  nhân".
+                  thúc). Để thay đổi chức vụ đảm nhận, vui lòng sử dụng mục &quot;Cập nhật thông tin
+                  cá nhân&quot;.
                 </Text>
               </div>
             )}

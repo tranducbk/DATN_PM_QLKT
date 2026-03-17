@@ -157,7 +157,10 @@ export default function SystemLogsPage() {
             hoverable
             style={{
               borderRadius: '10px',
-              boxShadow: theme === 'dark' ? '0 1px 6px rgba(0, 0, 0, 0.35)' : '0 1px 4px rgba(0, 0, 0, 0.06)',
+              boxShadow:
+                theme === 'dark'
+                  ? '0 1px 6px rgba(0, 0, 0, 0.35)'
+                  : '0 1px 4px rgba(0, 0, 0, 0.06)',
               transition: 'all 0.3s ease',
             }}
             bodyStyle={{ padding: '20px' }}
@@ -216,7 +219,10 @@ export default function SystemLogsPage() {
             hoverable
             style={{
               borderRadius: '10px',
-              boxShadow: theme === 'dark' ? '0 1px 6px rgba(0, 0, 0, 0.35)' : '0 1px 4px rgba(0, 0, 0, 0.06)',
+              boxShadow:
+                theme === 'dark'
+                  ? '0 1px 6px rgba(0, 0, 0, 0.35)'
+                  : '0 1px 4px rgba(0, 0, 0, 0.06)',
               transition: 'all 0.3s ease',
             }}
             bodyStyle={{ padding: '20px' }}
@@ -275,7 +281,10 @@ export default function SystemLogsPage() {
             hoverable
             style={{
               borderRadius: '10px',
-              boxShadow: theme === 'dark' ? '0 1px 6px rgba(0, 0, 0, 0.35)' : '0 1px 4px rgba(0, 0, 0, 0.06)',
+              boxShadow:
+                theme === 'dark'
+                  ? '0 1px 6px rgba(0, 0, 0, 0.35)'
+                  : '0 1px 4px rgba(0, 0, 0, 0.06)',
               transition: 'all 0.3s ease',
             }}
             bodyStyle={{ padding: '20px' }}
@@ -334,7 +343,10 @@ export default function SystemLogsPage() {
             hoverable
             style={{
               borderRadius: '10px',
-              boxShadow: theme === 'dark' ? '0 1px 6px rgba(0, 0, 0, 0.35)' : '0 1px 4px rgba(0, 0, 0, 0.06)',
+              boxShadow:
+                theme === 'dark'
+                  ? '0 1px 6px rgba(0, 0, 0, 0.35)'
+                  : '0 1px 4px rgba(0, 0, 0, 0.06)',
               transition: 'all 0.3s ease',
             }}
             bodyStyle={{ padding: '20px' }}

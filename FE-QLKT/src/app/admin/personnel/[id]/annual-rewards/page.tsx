@@ -112,9 +112,7 @@ export default function AnnualRewardsPage() {
       key: 'nam',
       width: 80,
       align: 'center',
-      render: (text: number) => (
-        <div style={{ textAlign: 'center' }}>{text || '-'}</div>
-      ),
+      render: (text: number) => <div style={{ textAlign: 'center' }}>{text || '-'}</div>,
     },
     {
       title: 'Danh hiệu',
@@ -124,7 +122,9 @@ export default function AnnualRewardsPage() {
       align: 'center',
       ellipsis: true,
       render: (text: string) => (
-        <div style={{ textAlign: 'center' }} title={text}>{text || '-'}</div>
+        <div style={{ textAlign: 'center' }} title={text}>
+          {text || '-'}
+        </div>
       ),
     },
     {
@@ -135,7 +135,9 @@ export default function AnnualRewardsPage() {
       align: 'center',
       ellipsis: true,
       render: (text: string) => (
-        <div style={{ textAlign: 'center' }} title={text}>{text || '-'}</div>
+        <div style={{ textAlign: 'center' }} title={text}>
+          {text || '-'}
+        </div>
       ),
     },
     {
@@ -146,7 +148,9 @@ export default function AnnualRewardsPage() {
       align: 'center',
       ellipsis: true,
       render: (text: string) => (
-        <div style={{ textAlign: 'center' }} title={text}>{text || '-'}</div>
+        <div style={{ textAlign: 'center' }} title={text}>
+          {text || '-'}
+        </div>
       ),
     },
     {

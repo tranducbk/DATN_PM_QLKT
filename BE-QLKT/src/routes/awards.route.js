@@ -5,6 +5,7 @@ const awardBulkController = require('../controllers/awardBulk.controller');
 const { verifyToken, checkRole, requireAdmin } = require('../middlewares/auth');
 const { auditLog } = require('../middlewares/auditLog');
 const { getLogDescription, getResourceId } = require('../helpers/auditLogHelper');
+const { ROLES } = require('../constants/roles');
 
 // Cấu hình multer cho file upload
 const upload = multer({
@@ -35,7 +36,7 @@ const upload = multer({
 router.get(
   '/template',
   verifyToken,
-  checkRole(['ADMIN', 'MANAGER']),
+  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
   proposalController.getAwardsTemplate
 );
 
@@ -47,7 +48,7 @@ router.get(
 router.post(
   '/import',
   verifyToken,
-  checkRole(['ADMIN']),
+  checkRole([ROLES.ADMIN]),
   upload.single('file'),
   proposalController.importAwards
 );
@@ -57,7 +58,7 @@ router.post(
  * @desc    Lấy danh sách tất cả khen thưởng (Admin: tất cả, Manager: đơn vị mình)
  * @access  ADMIN, MANAGER
  */
-router.get('/', verifyToken, checkRole(['ADMIN', 'MANAGER']), proposalController.getAllAwards);
+router.get('/', verifyToken, checkRole([ROLES.ADMIN, ROLES.MANAGER]), proposalController.getAllAwards);
 
 /**
  * @route   GET /api/awards/export
@@ -67,7 +68,7 @@ router.get('/', verifyToken, checkRole(['ADMIN', 'MANAGER']), proposalController
 router.get(
   '/export',
   verifyToken,
-  checkRole(['ADMIN', 'MANAGER']),
+  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
   proposalController.exportAllAwardsExcel
 );
 
@@ -79,7 +80,7 @@ router.get(
 router.get(
   '/statistics',
   verifyToken,
-  checkRole(['ADMIN', 'MANAGER']),
+  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
   proposalController.getAwardsStatistics
 );
 

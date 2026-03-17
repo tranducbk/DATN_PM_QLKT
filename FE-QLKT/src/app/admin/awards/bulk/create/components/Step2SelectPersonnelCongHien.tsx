@@ -297,7 +297,8 @@ export default function Step2SelectPersonnelCongHien({
     }
 
     // Kiểm tra giới tính
-    const missingGender = !record.gioi_tinh || (record.gioi_tinh !== 'NAM' && record.gioi_tinh !== 'NU');
+    const missingGender =
+      !record.gioi_tinh || (record.gioi_tinh !== 'NAM' && record.gioi_tinh !== 'NU');
     if (missingGender) return 3;
 
     // Kiểm tra đủ điều kiện
@@ -733,7 +734,9 @@ export default function Step2SelectPersonnelCongHien({
               `Quân nhân ${record.ho_ten} đã nhận danh hiệu huân chương bảo vệ tổ quốc năm ${ineligible.awardYear}`
             );
           } else if (ineligible.status === 'PENDING') {
-            message.warning(`Quân nhân ${record.ho_ten} đang có đề xuất huân chương bảo vệ tổ quốc chờ duyệt`);
+            message.warning(
+              `Quân nhân ${record.ho_ten} đang có đề xuất huân chương bảo vệ tổ quốc chờ duyệt`
+            );
           }
           return false;
         }
@@ -756,7 +759,9 @@ export default function Step2SelectPersonnelCongHien({
         description={
           <div>
             <p>1. Nhập năm đề xuất khen thưởng</p>
-            <p>2. Chọn các quân nhân cần đề xuất Huân chương Bảo vệ Tổ quốc từ danh sách dưới đây</p>
+            <p>
+              2. Chọn các quân nhân cần đề xuất Huân chương Bảo vệ Tổ quốc từ danh sách dưới đây
+            </p>
             <p>3. Sau khi chọn xong, nhấn &quot;Tiếp tục&quot; để sang bước chọn danh hiệu</p>
           </div>
         }

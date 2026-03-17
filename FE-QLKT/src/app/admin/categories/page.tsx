@@ -277,8 +277,8 @@ export default function CategoriesPage() {
                   : 'Sửa Cơ quan đơn vị'
                 : 'Thêm Cơ quan đơn vị mới'
               : editingItem
-              ? 'Sửa Chức vụ'
-              : 'Thêm Chức vụ mới'
+                ? 'Sửa Chức vụ'
+                : 'Thêm Chức vụ mới'
           }
         >
           {dialogType === 'unit' && (

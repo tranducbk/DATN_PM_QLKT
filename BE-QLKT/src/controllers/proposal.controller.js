@@ -1,5 +1,6 @@
 const proposalService = require('../services/proposal.service');
 const notificationHelper = require('../helpers/notificationHelper');
+const { ROLES } = require('../constants/roles');
 
 class ProposalController {
   /**
@@ -90,7 +91,7 @@ class ProposalController {
       }
 
       // Manager không được đề xuất loại ĐỘT XUẤT (chỉ Admin mới thêm được)
-      if (userRole === 'MANAGER' && type === 'DOT_XUAT') {
+      if (userRole === ROLES.MANAGER && type === 'DOT_XUAT') {
         return res.status(403).json({
           success: false,
           message:
@@ -206,7 +207,10 @@ class ProposalController {
       });
     } catch (error) {
       console.error('Get proposal by id error:', error);
-      return res.status(403).json({
+      const isNotFound = error.message === 'Không tìm thấy đề xuất';
+      const isUnauthorized = error.message === 'Bạn không có quyền xem đề xuất này';
+      const statusCode = isNotFound ? 404 : isUnauthorized ? 403 : 500;
+      return res.status(statusCode).json({
         success: false,
         message: error.message || 'Lấy chi tiết đề xuất thất bại',
       });
@@ -437,7 +441,7 @@ class ProposalController {
       if (danh_hieu) filters.danh_hieu = danh_hieu;
 
       // Nếu là Manager, chỉ xem khen thưởng đơn vị mình
-      if (userRole === 'MANAGER') {
+      if (userRole === ROLES.MANAGER) {
         const user = await proposalService.getUserWithUnit(userId);
         if (!user || !user.QuanNhan) {
           return res.status(403).json({
@@ -552,7 +556,7 @@ class ProposalController {
       if (danh_hieu) filters.danh_hieu = danh_hieu;
 
       // Nếu là Manager, chỉ xuất khen thưởng đơn vị mình
-      if (userRole === 'MANAGER') {
+      if (userRole === ROLES.MANAGER) {
         const user = await proposalService.getUserWithUnit(userId);
         if (!user || !user.QuanNhan) {
           return res.status(403).json({
@@ -810,7 +814,7 @@ class ProposalController {
       if (nam) filters.nam = nam;
       if (danh_hieu) filters.danh_hieu = danh_hieu;
 
-      if (userRole === 'MANAGER') {
+      if (userRole === ROLES.MANAGER) {
         const user = await proposalService.getUserWithUnit(userId);
         if (!user || !user.QuanNhan) {
           return res.status(403).json({
@@ -852,7 +856,7 @@ class ProposalController {
       if (nam) filters.nam = nam;
       if (danh_hieu) filters.danh_hieu = danh_hieu;
 
-      if (userRole === 'MANAGER') {
+      if (userRole === ROLES.MANAGER) {
         const user = await proposalService.getUserWithUnit(userId);
         if (!user || !user.QuanNhan) {
           return res.status(403).json({
@@ -965,7 +969,7 @@ class ProposalController {
       if (nam) filters.nam = nam;
       if (danh_hieu) filters.danh_hieu = danh_hieu;
 
-      if (userRole === 'MANAGER') {
+      if (userRole === ROLES.MANAGER) {
         const user = await proposalService.getUserWithUnit(userId);
         if (!user || !user.QuanNhan) {
           return res.status(403).json({
@@ -1003,7 +1007,7 @@ class ProposalController {
       if (nam) filters.nam = nam;
       if (danh_hieu) filters.danh_hieu = danh_hieu;
 
-      if (userRole === 'MANAGER') {
+      if (userRole === ROLES.MANAGER) {
         const user = await proposalService.getUserWithUnit(userId);
         if (!user || !user.QuanNhan) {
           return res.status(403).json({
@@ -1111,7 +1115,7 @@ class ProposalController {
       if (don_vi_id) filters.don_vi_id = don_vi_id;
       if (nam) filters.nam = nam;
 
-      if (userRole === 'MANAGER') {
+      if (userRole === ROLES.MANAGER) {
         const user = await proposalService.getUserWithUnit(userId);
         if (!user || !user.QuanNhan) {
           return res.status(403).json({
@@ -1148,7 +1152,7 @@ class ProposalController {
       if (don_vi_id) filters.don_vi_id = don_vi_id;
       if (nam) filters.nam = nam;
 
-      if (userRole === 'MANAGER') {
+      if (userRole === ROLES.MANAGER) {
         const user = await proposalService.getUserWithUnit(userId);
         if (!user || !user.QuanNhan) {
           return res.status(403).json({
@@ -1256,7 +1260,7 @@ class ProposalController {
       if (don_vi_id) filters.don_vi_id = don_vi_id;
       if (nam) filters.nam = nam;
 
-      if (userRole === 'MANAGER') {
+      if (userRole === ROLES.MANAGER) {
         const user = await proposalService.getUserWithUnit(userId);
         if (!user || !user.QuanNhan) {
           return res.status(403).json({
@@ -1293,7 +1297,7 @@ class ProposalController {
       if (don_vi_id) filters.don_vi_id = don_vi_id;
       if (nam) filters.nam = nam;
 
-      if (userRole === 'MANAGER') {
+      if (userRole === ROLES.MANAGER) {
         const user = await proposalService.getUserWithUnit(userId);
         if (!user || !user.QuanNhan) {
           return res.status(403).json({

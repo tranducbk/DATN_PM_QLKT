@@ -1,4 +1,5 @@
 const commemorativeMedalService = require('../services/commemorativeMedal.service');
+const { ROLES } = require('../constants/roles');
 
 class CommemorativeMedalController {
   /**
@@ -71,7 +72,7 @@ class CommemorativeMedalController {
       if (nam) filters.nam = nam;
       if (ho_ten) filters.ho_ten = ho_ten;
 
-      if (userRole === 'MANAGER') {
+      if (userRole === ROLES.MANAGER) {
         const userQuanNhanId = req.user?.quan_nhan_id;
         if (!userQuanNhanId) {
           return res.status(403).json({
@@ -128,7 +129,7 @@ class CommemorativeMedalController {
       if (don_vi_id) filters.don_vi_id = don_vi_id;
       if (nam) filters.nam = nam;
 
-      if (userRole === 'MANAGER') {
+      if (userRole === ROLES.MANAGER) {
         const user = await commemorativeMedalService.getUserWithUnit(userId);
         if (!user || !user.QuanNhan) {
           return res.status(403).json({
@@ -192,7 +193,7 @@ class CommemorativeMedalController {
       const userPersonnelId = req.user.quan_nhan_id;
 
       // Nếu là USER, chỉ cho phép xem của chính mình
-      if (userRole === 'USER' && userPersonnelId !== personnel_id) {
+      if (userRole === ROLES.USER && userPersonnelId !== personnel_id) {
         return res.status(403).json({
           success: false,
           message: 'Bạn chỉ có thể xem thông tin của mình',
@@ -200,7 +201,7 @@ class CommemorativeMedalController {
       }
 
       // Nếu là MANAGER, kiểm tra personnel có thuộc đơn vị của mình không
-      if (userRole === 'MANAGER') {
+      if (userRole === ROLES.MANAGER) {
         const user = await commemorativeMedalService.getUserWithUnit(userId);
         if (!user || !user.QuanNhan) {
           return res.status(403).json({

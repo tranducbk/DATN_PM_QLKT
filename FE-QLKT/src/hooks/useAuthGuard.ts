@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 
 type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'USER';
 
@@ -26,39 +27,25 @@ const ROLE_DASHBOARD_MAP: Record<UserRole, string> = {
  */
 export function useAuthGuard(requiredRole: UserRole) {
   const router = useRouter();
+  const { user, isLoading } = useAuth();
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
-    const checkAuth = () => {
-      const token = localStorage.getItem('accessToken');
-      const role = localStorage.getItem('role') as UserRole | null;
+    if (isLoading) return;
 
-      if (!token) {
-        router.push('/login');
-        return;
-      }
+    if (!user) {
+      router.push('/login');
+      return;
+    }
 
-      if (role !== requiredRole) {
-        const redirectPath = role && ROLE_DASHBOARD_MAP[role]
-          ? ROLE_DASHBOARD_MAP[role]
-          : '/login';
-        router.push(redirectPath);
-        return;
-      }
+    if (user.role !== requiredRole) {
+      const redirectPath = ROLE_DASHBOARD_MAP[user.role] ?? '/login';
+      router.push(redirectPath);
+      return;
+    }
 
-      setIsChecking(false);
-    };
+    setIsChecking(false);
+  }, [user, isLoading, router, requiredRole]);
 
-    checkAuth();
-
-    const handleTokenRefreshed = () => {
-      setIsChecking(true);
-      checkAuth();
-    };
-
-    window.addEventListener('tokenRefreshed', handleTokenRefreshed);
-    return () => window.removeEventListener('tokenRefreshed', handleTokenRefreshed);
-  }, [router, requiredRole]);
-
-  return { isChecking };
+  return { isChecking: isLoading || isChecking };
 }

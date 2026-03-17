@@ -1,16 +1,6 @@
 'use client';
 
-import {
-  Modal,
-  Descriptions,
-  Tag,
-  Typography,
-  Space,
-  Card,
-  List,
-  Button,
-  Divider,
-} from 'antd';
+import { Modal, Descriptions, Tag, Typography, Space, Card, List, Button, Divider } from 'antd';
 import {
   UserOutlined,
   TeamOutlined,
@@ -120,9 +110,7 @@ export default function AwardDetailModal({
         capBac: award.cap_bac || award.QuanNhan.cap_bac,
         chucVu: award.chuc_vu || award.QuanNhan.ChucVu?.ten_chuc_vu,
         ngaySinh: award.QuanNhan.ngay_sinh,
-        donVi:
-          award.QuanNhan.DonViTrucThuoc?.ten_don_vi ||
-          award.QuanNhan.CoQuanDonVi?.ten_don_vi,
+        donVi: award.QuanNhan.DonViTrucThuoc?.ten_don_vi || award.QuanNhan.CoQuanDonVi?.ten_don_vi,
         coQuanDonVi: award.QuanNhan.CoQuanDonVi?.ten_don_vi,
       };
     }
@@ -168,9 +156,7 @@ export default function AwardDetailModal({
         </Descriptions.Item>
         <Descriptions.Item label="Cấp bậc">{personnel.capBac || '-'}</Descriptions.Item>
         <Descriptions.Item label="Chức vụ">{personnel.chucVu || '-'}</Descriptions.Item>
-        <Descriptions.Item label="Ngày sinh">
-          {formatDate(personnel.ngaySinh)}
-        </Descriptions.Item>
+        <Descriptions.Item label="Ngày sinh">{formatDate(personnel.ngaySinh)}</Descriptions.Item>
         <Descriptions.Item label="Đơn vị">{personnel.donVi || '-'}</Descriptions.Item>
         {personnel.coQuanDonVi && personnel.coQuanDonVi !== personnel.donVi && (
           <Descriptions.Item label="Cơ quan đơn vị" span={2}>
@@ -189,9 +175,7 @@ export default function AwardDetailModal({
           <Text strong>{unit.tenDonVi || '-'}</Text>
         </Descriptions.Item>
         {unit.coQuanDonVi && (
-          <Descriptions.Item label="Thuộc cơ quan đơn vị">
-            {unit.coQuanDonVi}
-          </Descriptions.Item>
+          <Descriptions.Item label="Thuộc cơ quan đơn vị">{unit.coQuanDonVi}</Descriptions.Item>
         )}
       </Descriptions>
     </Card>
@@ -503,9 +487,7 @@ export default function AwardDetailModal({
               <Descriptions column={2} size="small" bordered>
                 <Descriptions.Item label="Năm">{award.nam}</Descriptions.Item>
                 <Descriptions.Item label="Loại">
-                  <Tag color="cyan">
-                    {DANH_HIEU_DISPLAY[award.loai] || award.loai || '-'}
-                  </Tag>
+                  <Tag color="cyan">{DANH_HIEU_DISPLAY[award.loai] || award.loai || '-'}</Tag>
                 </Descriptions.Item>
                 <Descriptions.Item label="Mô tả" span={2}>
                   {award.mo_ta || '-'}
@@ -570,9 +552,7 @@ export default function AwardDetailModal({
                 {(award.doi_tuong || award.loai) === 'TAP_THE' && (
                   <Descriptions.Item label="Đơn vị" span={2}>
                     <Text strong>
-                      {award.CoQuanDonVi?.ten_don_vi ||
-                        award.DonViTrucThuoc?.ten_don_vi ||
-                        '-'}
+                      {award.CoQuanDonVi?.ten_don_vi || award.DonViTrucThuoc?.ten_don_vi || '-'}
                     </Text>
                     {award.DonViTrucThuoc?.CoQuanDonVi?.ten_don_vi && (
                       <Text type="secondary" style={{ display: 'block', marginTop: 4 }}>

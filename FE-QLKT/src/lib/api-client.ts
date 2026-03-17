@@ -451,7 +451,7 @@ export const apiClient = {
       if (body.cap_bac) jsonBody.cap_bac = body.cap_bac;
       if (body.chuc_vu) jsonBody.chuc_vu = body.chuc_vu;
       if (body.ghi_chu) jsonBody.ghi_chu = body.ghi_chu;
-      
+
       const res = await axiosInstance.post('/api/annual-rewards/bulk', jsonBody);
       return { success: true, data: res.data?.data || res.data, message: res.data?.message };
     } catch (e: any) {
@@ -1382,9 +1382,12 @@ export const apiClient = {
    * @param soQuyetDinh - Số quyết định
    */
   async downloadDecisionFile(soQuyetDinh: string): Promise<Blob> {
-    const res = await axiosInstance.get(`/api/decisions/download/${encodeURIComponent(soQuyetDinh)}`, {
-      responseType: 'blob',
-    });
+    const res = await axiosInstance.get(
+      `/api/decisions/download/${encodeURIComponent(soQuyetDinh)}`,
+      {
+        responseType: 'blob',
+      }
+    );
     return res.data;
   },
 

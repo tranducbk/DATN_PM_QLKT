@@ -63,7 +63,7 @@ export default function AccountsListPage() {
   const fetchAccounts = async (page = 1, pageSize = 10, search = '', role?: string) => {
     // Chỉ set loading ban đầu, khi chuyển trang thì dùng tableLoading
     if (accounts.length === 0 || page === 1) {
-    setLoading(true);
+      setLoading(true);
     } else {
       setTableLoading(true);
     }

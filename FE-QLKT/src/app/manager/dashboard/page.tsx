@@ -23,6 +23,7 @@ import {
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { useTheme } from '@/components/theme-provider';
+import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api-client';
 import { formatDateTime } from '@/lib/utils';
 import '@/lib/chart-config';
@@ -37,6 +38,7 @@ const { Title, Text } = Typography;
 
 export default function ManagerDashboard() {
   const { theme } = useTheme();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [displayName, setDisplayName] = useState('Trưởng phòng');
   const [stats, setStats] = useState({
@@ -61,8 +63,7 @@ export default function ManagerDashboard() {
       try {
         setLoading(true);
 
-        // Lấy thông tin đơn vị của manager
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        // Lấy thông tin đơn vị của manager từ AuthContext
         if (user) {
           const name = (user.ho_ten || '').trim();
           const username = (user.username || '').trim();
@@ -78,7 +79,7 @@ export default function ManagerDashboard() {
         }
         let unitId = null;
 
-        if (user?.quan_nhan_id) {
+        if (user && user.quan_nhan_id) {
           const personnelDetailRes = await apiClient.getPersonnelById(user.quan_nhan_id);
           if (personnelDetailRes.success && personnelDetailRes.data?.don_vi_id) {
             unitId = personnelDetailRes.data.don_vi_id;
@@ -133,7 +134,7 @@ export default function ManagerDashboard() {
     };
 
     fetchStats();
-  }, []);
+  }, [user]);
 
   const statCards = [
     {
@@ -233,10 +234,22 @@ export default function ManagerDashboard() {
                   ? '0 1px 6px rgba(0, 0, 0, 0.35)'
                   : '0 1px 4px rgba(0, 0, 0, 0.06)';
               const iconShadows = {
-                blue: theme === 'dark' ? '0 1px 3px rgba(59, 130, 246, 0.3)' : '0 1px 3px rgba(59, 130, 246, 0.2)',
-                green: theme === 'dark' ? '0 1px 3px rgba(16, 185, 129, 0.3)' : '0 1px 3px rgba(16, 185, 129, 0.2)',
-                yellow: theme === 'dark' ? '0 1px 3px rgba(234, 179, 8, 0.3)' : '0 1px 3px rgba(234, 179, 8, 0.2)',
-                purple: theme === 'dark' ? '0 1px 3px rgba(139, 92, 246, 0.3)' : '0 1px 3px rgba(139, 92, 246, 0.2)',
+                blue:
+                  theme === 'dark'
+                    ? '0 1px 3px rgba(59, 130, 246, 0.3)'
+                    : '0 1px 3px rgba(59, 130, 246, 0.2)',
+                green:
+                  theme === 'dark'
+                    ? '0 1px 3px rgba(16, 185, 129, 0.3)'
+                    : '0 1px 3px rgba(16, 185, 129, 0.2)',
+                yellow:
+                  theme === 'dark'
+                    ? '0 1px 3px rgba(234, 179, 8, 0.3)'
+                    : '0 1px 3px rgba(234, 179, 8, 0.2)',
+                purple:
+                  theme === 'dark'
+                    ? '0 1px 3px rgba(139, 92, 246, 0.3)'
+                    : '0 1px 3px rgba(139, 92, 246, 0.2)',
               };
               const iconBgs = {
                 blue: theme === 'dark' ? '#1e3a8a' : '#e6f0ff',

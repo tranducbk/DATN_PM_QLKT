@@ -22,6 +22,7 @@ import { useTheme } from '@/components/theme-provider';
 import { apiClient } from '@/lib/api-client';
 import dayjs from 'dayjs';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
+import { useAuth } from '@/contexts/AuthContext';
 
 const { Title } = Typography;
 
@@ -37,7 +38,9 @@ export default function PersonnelEditPage() {
   const [coQuanDonViList, setCoQuanDonViList] = useState<any[]>([]);
   const [donViTrucThuocList, setDonViTrucThuocList] = useState<any[]>([]);
   const [positions, setPositions] = useState([]);
-  const [currentUserRole, setCurrentUserRole] = useState<string>('');
+
+  const { user } = useAuth();
+  const currentUserRole = user?.role || '';
   const [currentUnitName, setCurrentUnitName] = useState<string>('');
   const [personnelRole, setPersonnelRole] = useState<string>(''); // Role của personnel đang edit
   const [selectedCoQuanDonViId, setSelectedCoQuanDonViId] = useState<string | undefined>(undefined);
@@ -47,10 +50,6 @@ export default function PersonnelEditPage() {
   const [currentPositionId, setCurrentPositionId] = useState<string | undefined>(undefined); // Chức vụ hiện tại để luôn hiển thị
 
   useEffect(() => {
-    // Lấy role của user hiện tại
-    const role = localStorage.getItem('role');
-    setCurrentUserRole(role || '');
-
     const fetchData = async () => {
       try {
         setLoadingData(true);
@@ -540,10 +539,10 @@ export default function PersonnelEditPage() {
                         loadingData
                           ? 'Đang tải...'
                           : filteredPositions.length === 0
-                          ? isManagerPersonnel
-                            ? 'Vui lòng chọn cơ quan đơn vị trước'
-                            : 'Vui lòng chọn đơn vị trực thuộc trước'
-                          : 'Chọn chức vụ'
+                            ? isManagerPersonnel
+                              ? 'Vui lòng chọn cơ quan đơn vị trước'
+                              : 'Vui lòng chọn đơn vị trực thuộc trước'
+                            : 'Chọn chức vụ'
                       }
                       disabled={loading}
                       showSearch

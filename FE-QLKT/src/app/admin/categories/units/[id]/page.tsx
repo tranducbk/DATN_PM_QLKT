@@ -398,8 +398,8 @@ export default function UnitDetailPage() {
                       : 'Chỉnh sửa Cơ quan đơn vị'
                     : 'Thêm Đơn vị trực thuộc'
                   : editingItem?.id
-                  ? 'Chỉnh sửa Chức vụ'
-                  : 'Thêm Chức vụ mới'}
+                    ? 'Chỉnh sửa Chức vụ'
+                    : 'Thêm Chức vụ mới'}
               </span>
             </div>
           }

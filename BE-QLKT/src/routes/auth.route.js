@@ -1,9 +1,21 @@
 const express = require('express');
 const router = express.Router();
+const rateLimit = require('express-rate-limit');
 const authController = require('../controllers/auth.controller');
 const { verifyToken } = require('../middlewares/auth');
-const { auditLog, createDescription } = require('../middlewares/auditLog');
+const { auditLog } = require('../middlewares/auditLog');
 const { getLogDescription } = require('../helpers/auditLogHelper');
+
+const loginRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 phút
+  max: 10, // Tối đa 10 lần thử mỗi IP trong 15 phút
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Quá nhiều lần thử đăng nhập. Vui lòng thử lại sau 15 phút.',
+  },
+});
 
 /**
  * @route   POST /api/auth/login
@@ -12,6 +24,7 @@ const { getLogDescription } = require('../helpers/auditLogHelper');
  */
 router.post(
   '/login',
+  loginRateLimiter,
   auditLog({
     action: 'LOGIN',
     resource: 'auth',

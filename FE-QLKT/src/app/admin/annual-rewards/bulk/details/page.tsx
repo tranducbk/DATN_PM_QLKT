@@ -51,7 +51,11 @@ interface PersonnelRewardData {
   has_reward?: boolean; // Đã có khen thưởng
   has_proposal?: boolean; // Đang có đề xuất
   CoQuanDonVi?: { id: string; ten_don_vi: string };
-  DonViTrucThuoc?: { id: string; ten_don_vi: string; CoQuanDonVi?: { id: string; ten_don_vi: string } };
+  DonViTrucThuoc?: {
+    id: string;
+    ten_don_vi: string;
+    CoQuanDonVi?: { id: string; ten_don_vi: string };
+  };
 }
 
 export default function BulkRewardDetailsPage() {
@@ -91,7 +95,7 @@ export default function BulkRewardDetailsPage() {
 
       const nam = parseInt(namParam);
       const danhHieu = danhHieuParam;
-      
+
       let checkResultsData = null;
       if (checkResultsParam) {
         checkResultsData = JSON.parse(decodeURIComponent(checkResultsParam));
@@ -118,7 +122,6 @@ export default function BulkRewardDetailsPage() {
           has_proposal: result?.has_proposal || false,
         };
       });
-
 
       setPersonnelData(initialData);
       form.setFieldsValue({ nam, danh_hieu: danhHieu });
@@ -149,7 +152,7 @@ export default function BulkRewardDetailsPage() {
   const loadPersonnelInfo = async (personnelIds: string[]) => {
     try {
       setLoading(true);
-      const personnelInfoPromises = personnelIds.map(async (id) => {
+      const personnelInfoPromises = personnelIds.map(async id => {
         const res = await apiClient.getPersonnelById(id);
         if (res.success && res.data) {
           return {
@@ -169,8 +172,8 @@ export default function BulkRewardDetailsPage() {
       });
 
       const personnelInfo = (await Promise.all(personnelInfoPromises)).filter(Boolean);
-      
-      setPersonnelData(prev => 
+
+      setPersonnelData(prev =>
         prev.map(item => {
           const info = personnelInfo.find(p => p?.personnel_id === item.personnel_id);
           if (info) {
@@ -201,15 +204,17 @@ export default function BulkRewardDetailsPage() {
 
       // Chỉ gửi các quân nhân eligible (có thể thêm khen thưởng)
       const eligiblePersonnel = personnelData.filter(p => p.isEligible);
-      
+
       if (eligiblePersonnel.length === 0) {
         message.warning('Không có quân nhân nào có thể thêm khen thưởng');
         return;
       }
 
       // Chỉ lấy các quân nhân có số quyết định (đã được set từ modal)
-      const personnelWithDecision = eligiblePersonnel.filter(p => p.so_quyet_dinh && p.so_quyet_dinh.trim() !== '');
-      
+      const personnelWithDecision = eligiblePersonnel.filter(
+        p => p.so_quyet_dinh && p.so_quyet_dinh.trim() !== ''
+      );
+
       if (personnelWithDecision.length === 0) {
         message.warning('Vui lòng thêm số quyết định cho ít nhất một quân nhân');
         return;
@@ -248,11 +253,13 @@ export default function BulkRewardDetailsPage() {
     }
   };
 
-  const updatePersonnelData = (personnelId: string, field: keyof PersonnelRewardData, value: any) => {
+  const updatePersonnelData = (
+    personnelId: string,
+    field: keyof PersonnelRewardData,
+    value: any
+  ) => {
     setPersonnelData(prev =>
-      prev.map(item =>
-        item.personnel_id === personnelId ? { ...item, [field]: value } : item
-      )
+      prev.map(item => (item.personnel_id === personnelId ? { ...item, [field]: value } : item))
     );
   };
 
@@ -275,9 +282,9 @@ export default function BulkRewardDetailsPage() {
     }
 
     const soQuyetDinh = decision.so_quyet_dinh;
-    const personnelIdsToUpdate = editingPersonnelId 
-      ? [editingPersonnelId] 
-      : selectedRowKeys as string[];
+    const personnelIdsToUpdate = editingPersonnelId
+      ? [editingPersonnelId]
+      : (selectedRowKeys as string[]);
 
     // Áp dụng số quyết định cho các quân nhân đã chọn
     setPersonnelData(prev =>
@@ -296,7 +303,9 @@ export default function BulkRewardDetailsPage() {
       return uniqueKeys;
     });
 
-    message.success(`Đã áp dụng số quyết định "${soQuyetDinh}" cho ${personnelIdsToUpdate.length} quân nhân`);
+    message.success(
+      `Đã áp dụng số quyết định "${soQuyetDinh}" cho ${personnelIdsToUpdate.length} quân nhân`
+    );
     setDecisionModalVisible(false);
     setEditingPersonnelId(null);
   };
@@ -319,12 +328,8 @@ export default function BulkRewardDetailsPage() {
           <Text strong={record.isEligible}>{text || '-'}</Text>
           {!record.isEligible && (
             <div style={{ marginTop: 4 }}>
-              {record.has_reward && (
-                <Tag color="orange">Đã có khen thưởng</Tag>
-              )}
-              {record.has_proposal && (
-                <Tag color="blue">Đang có đề xuất</Tag>
-              )}
+              {record.has_reward && <Tag color="orange">Đã có khen thưởng</Tag>}
+              {record.has_proposal && <Tag color="blue">Đang có đề xuất</Tag>}
             </div>
           )}
         </div>
@@ -454,7 +459,7 @@ export default function BulkRewardDetailsPage() {
               onClick={async e => {
                 e.preventDefault();
                 e.stopPropagation();
-                
+
                 // Nếu click vào số quyết định, có thể mở modal để thay đổi hoặc tải file
                 // Ở đây cho phép click để thay đổi (hoặc có thể thêm menu để chọn)
                 if (e.ctrlKey || e.metaKey) {
@@ -477,7 +482,11 @@ export default function BulkRewardDetailsPage() {
                 textDecoration: 'underline',
                 cursor: record.isEligible ? 'pointer' : 'not-allowed',
               }}
-              title={record.isEligible ? 'Click để thay đổi, Ctrl+Click để tải file' : 'Không thể thay đổi'}
+              title={
+                record.isEligible
+                  ? 'Click để thay đổi, Ctrl+Click để tải file'
+                  : 'Không thể thay đổi'
+              }
             >
               {soQuyetDinh}
             </a>
@@ -572,11 +581,7 @@ export default function BulkRewardDetailsPage() {
             />
           </Form.Item>
 
-          <Form.Item
-            name="file_dinh_kem"
-            label="File đính kèm"
-            rules={[{ required: false }]}
-          >
+          <Form.Item name="file_dinh_kem" label="File đính kèm" rules={[{ required: false }]}>
             <Upload
               fileList={fileList}
               onChange={({ fileList: newFileList }) => setFileList(newFileList)}

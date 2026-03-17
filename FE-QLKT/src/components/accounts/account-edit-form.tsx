@@ -28,6 +28,7 @@ import { apiClient } from '@/lib/api-client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useAuth } from '@/contexts/AuthContext';
 
 type AccountEditValues = z.infer<typeof accountEditSchema>;
 
@@ -40,9 +41,10 @@ export function AccountEditForm({ accountId }: AccountEditFormProps) {
   const [loadingData, setLoadingData] = useState(true);
   const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
   const [account, setAccount] = useState<any>(null);
-  const [currentUserRole, setCurrentUserRole] = useState<string>('');
   const router = useRouter();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const currentUserRole = user?.role || '';
 
   const form = useForm<AccountEditValues>({
     resolver: zodResolver(accountEditSchema),
@@ -52,10 +54,6 @@ export function AccountEditForm({ accountId }: AccountEditFormProps) {
   });
 
   useEffect(() => {
-    // Lấy role của user hiện tại
-    const role = localStorage.getItem('role');
-    setCurrentUserRole(role || '');
-
     const fetchAccount = async () => {
       try {
         const response = await apiClient.getAccountById(accountId);
@@ -142,7 +140,7 @@ export function AccountEditForm({ accountId }: AccountEditFormProps) {
   async function handleResetPassword() {
     try {
       setResetPasswordLoading(true);
-      const response = await apiClient.resetPassword({ account_id: parseInt(accountId) });
+      const response = await apiClient.resetAccountPassword(accountId);
 
       if (response.success) {
         toast({

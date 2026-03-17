@@ -16,12 +16,7 @@ import {
   Popconfirm,
 } from 'antd';
 import type { TableColumnsType } from 'antd';
-import {
-  DownloadOutlined,
-  FilterOutlined,
-  HomeOutlined,
-  DeleteOutlined,
-} from '@ant-design/icons';
+import { DownloadOutlined, FilterOutlined, HomeOutlined, DeleteOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/api-client';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import {
@@ -271,8 +266,7 @@ export default function AdminAwardsPage() {
     await downloadDecisionFile(soQuyetDinh);
   };
 
-  const getPersonName = (record: any) =>
-    record?.QuanNhan?.ho_ten || record?.ho_ten || '';
+  const getPersonName = (record: any) => record?.QuanNhan?.ho_ten || record?.ho_ten || '';
 
   const getUnitName = (record: any) =>
     record?.DonViTrucThuoc?.ten_don_vi ||
@@ -356,10 +350,8 @@ export default function AdminAwardsPage() {
             const nhanBKTTCP = (record as any)?.nhan_bkttcp;
 
             const hasBKBQPFlag = nhanBKBQP === true || nhanBKBQP === 'true' || nhanBKBQP === 1;
-            const hasCSTDTQFlag =
-              nhanCSTDTQ === true || nhanCSTDTQ === 'true' || nhanCSTDTQ === 1;
-            const hasBKTTCPFlag =
-              nhanBKTTCP === true || nhanBKTTCP === 'true' || nhanBKTTCP === 1;
+            const hasCSTDTQFlag = nhanCSTDTQ === true || nhanCSTDTQ === 'true' || nhanCSTDTQ === 1;
+            const hasBKTTCPFlag = nhanBKTTCP === true || nhanBKTTCP === 'true' || nhanBKTTCP === 1;
 
             const isBKBQP = danhHieuFilter === 'BKBQP' && hasBKBQPFlag;
             const isCSTDTQ = danhHieuFilter === 'CSTDTQ' && hasCSTDTQFlag;
@@ -376,17 +368,13 @@ export default function AdminAwardsPage() {
 
       // Scientific topic filter
       if (activeTab === 'scientific' && topicFilter) {
-        const topic =
-          record.mo_ta?.toLowerCase() ||
-          record.ten_de_tai?.toLowerCase() ||
-          '';
+        const topic = record.mo_ta?.toLowerCase() || record.ten_de_tai?.toLowerCase() || '';
         if (!topic.includes(topicFilter)) return false;
       }
 
       return true;
     });
   }, [awards, debouncedFilters, activeTab]);
-
 
   const columns: TableColumnsType<Award> = [
     {
@@ -556,8 +544,8 @@ export default function AdminAwardsPage() {
         activeTab === 'scientific'
           ? 'Mô tả'
           : activeTab === 'militaryFlag' || activeTab === 'commemoration'
-          ? 'Số quyết định / Ghi chú'
-          : 'Danh hiệu',
+            ? 'Số quyết định / Ghi chú'
+            : 'Danh hiệu',
       dataIndex: activeTab === 'scientific' ? 'mo_ta' : 'danh_hieu',
       key: activeTab === 'scientific' ? 'mo_ta' : 'danh_hieu',
       width: 220,
@@ -872,7 +860,14 @@ export default function AdminAwardsPage() {
               />
             </div>
             {activeTab !== 'unit' && activeTab !== 'adhoc' && (
-              <div style={{ flex: '1 1 200px', minWidth: '200px', display: 'flex', flexDirection: 'column' }}>
+              <div
+                style={{
+                  flex: '1 1 200px',
+                  minWidth: '200px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
                 <Text strong style={{ display: 'block', marginBottom: '8px' }}>
                   Tìm kiếm theo họ tên
                 </Text>
@@ -887,7 +882,14 @@ export default function AdminAwardsPage() {
             )}
             {activeTab === 'adhoc' && (
               <>
-                <div style={{ flex: '1 1 200px', minWidth: '200px', display: 'flex', flexDirection: 'column' }}>
+                <div
+                  style={{
+                    flex: '1 1 200px',
+                    minWidth: '200px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                >
                   <Text strong style={{ display: 'block', marginBottom: '8px' }}>
                     Tìm kiếm
                   </Text>
@@ -921,7 +923,14 @@ export default function AdminAwardsPage() {
               activeTab === 'hccsvv' ||
               activeTab === 'contribution' ||
               activeTab === 'unit') && (
-              <div style={{ flex: '1 1 250px', minWidth: '250px', display: 'flex', flexDirection: 'column' }}>
+              <div
+                style={{
+                  flex: '1 1 250px',
+                  minWidth: '250px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
                 <Text strong style={{ display: 'block', marginBottom: '8px' }}>
                   Danh hiệu
                 </Text>
@@ -934,8 +943,8 @@ export default function AdminAwardsPage() {
                     activeTab === 'unit'
                       ? 'Chọn danh hiệu đơn vị'
                       : activeTab === 'annual'
-                      ? 'Chọn danh hiệu cá nhân'
-                      : 'Chọn danh hiệu'
+                        ? 'Chọn danh hiệu cá nhân'
+                        : 'Chọn danh hiệu'
                   }
                   value={filters.danh_hieu === '' ? '' : filters.danh_hieu || undefined}
                   onChange={value => handleFilterChange('danh_hieu', value || '')}
@@ -945,7 +954,14 @@ export default function AdminAwardsPage() {
               </div>
             )}
             {activeTab === 'scientific' && (
-              <div style={{ flex: '1 1 200px', minWidth: '200px', display: 'flex', flexDirection: 'column' }}>
+              <div
+                style={{
+                  flex: '1 1 200px',
+                  minWidth: '200px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
                 <Text strong style={{ display: 'block', marginBottom: '8px' }}>
                   Đề tài
                 </Text>
@@ -960,9 +976,11 @@ export default function AdminAwardsPage() {
             )}
             <div style={{ flex: '0 0 auto', display: 'flex', flexDirection: 'column' }}>
               <div style={{ height: '22px', marginBottom: '8px' }}></div>
-              <Button 
+              <Button
                 size="large"
-                onClick={() => setFilters({ nam: '', ho_ten: '', danh_hieu: '', de_tai: '', doi_tuong: '' })}
+                onClick={() =>
+                  setFilters({ nam: '', ho_ten: '', danh_hieu: '', de_tai: '', doi_tuong: '' })
+                }
                 icon={null}
               >
                 Xóa bộ lọc

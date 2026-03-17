@@ -18,10 +18,7 @@ import {
   Tag,
 } from 'antd';
 import type { TableColumnsType } from 'antd';
-import {
-  LeftOutlined,
-  HomeOutlined,
-} from '@ant-design/icons';
+import { LeftOutlined, HomeOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/api-client';
 import { useTheme } from '@/components/theme-provider';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';

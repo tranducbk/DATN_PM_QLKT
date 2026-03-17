@@ -48,7 +48,7 @@ export default function ManagerSystemLogsPage() {
       try {
         // Chỉ set loading ban đầu, khi chuyển trang thì dùng tableLoading
         if (logs.length === 0) {
-        setLoading(true);
+          setLoading(true);
         } else {
           setTableLoading(true);
         }
@@ -131,12 +131,12 @@ export default function ManagerSystemLogsPage() {
 
         {/* Header */}
         <div style={{ marginBottom: '24px' }}>
-            <Title level={1} style={{ margin: 0 }}>
-              Nhật ký Hệ thống
-            </Title>
-            <Text type="secondary" style={{ display: 'block', marginTop: '4px' }}>
-              Xem lịch sử hoạt động và thay đổi trong hệ thống
-            </Text>
+          <Title level={1} style={{ margin: 0 }}>
+            Nhật ký Hệ thống
+          </Title>
+          <Text type="secondary" style={{ display: 'block', marginTop: '4px' }}>
+            Xem lịch sử hoạt động và thay đổi trong hệ thống
+          </Text>
         </div>
 
         {/* Filter Section */}
@@ -155,7 +155,10 @@ export default function ManagerSystemLogsPage() {
             hoverable
             style={{
               borderRadius: '10px',
-              boxShadow: theme === 'dark' ? '0 1px 6px rgba(0, 0, 0, 0.35)' : '0 1px 4px rgba(0, 0, 0, 0.06)',
+              boxShadow:
+                theme === 'dark'
+                  ? '0 1px 6px rgba(0, 0, 0, 0.35)'
+                  : '0 1px 4px rgba(0, 0, 0, 0.06)',
               transition: 'all 0.3s ease',
             }}
             bodyStyle={{ padding: '20px' }}
@@ -214,7 +217,10 @@ export default function ManagerSystemLogsPage() {
             hoverable
             style={{
               borderRadius: '10px',
-              boxShadow: theme === 'dark' ? '0 1px 6px rgba(0, 0, 0, 0.35)' : '0 1px 4px rgba(0, 0, 0, 0.06)',
+              boxShadow:
+                theme === 'dark'
+                  ? '0 1px 6px rgba(0, 0, 0, 0.35)'
+                  : '0 1px 4px rgba(0, 0, 0, 0.06)',
               transition: 'all 0.3s ease',
             }}
             bodyStyle={{ padding: '20px' }}
@@ -273,7 +279,10 @@ export default function ManagerSystemLogsPage() {
             hoverable
             style={{
               borderRadius: '10px',
-              boxShadow: theme === 'dark' ? '0 1px 6px rgba(0, 0, 0, 0.35)' : '0 1px 4px rgba(0, 0, 0, 0.06)',
+              boxShadow:
+                theme === 'dark'
+                  ? '0 1px 6px rgba(0, 0, 0, 0.35)'
+                  : '0 1px 4px rgba(0, 0, 0, 0.06)',
               transition: 'all 0.3s ease',
             }}
             bodyStyle={{ padding: '20px' }}
@@ -332,7 +341,10 @@ export default function ManagerSystemLogsPage() {
             hoverable
             style={{
               borderRadius: '10px',
-              boxShadow: theme === 'dark' ? '0 1px 6px rgba(0, 0, 0, 0.35)' : '0 1px 4px rgba(0, 0, 0, 0.06)',
+              boxShadow:
+                theme === 'dark'
+                  ? '0 1px 6px rgba(0, 0, 0, 0.35)'
+                  : '0 1px 4px rgba(0, 0, 0, 0.06)',
               transition: 'all 0.3s ease',
             }}
             bodyStyle={{ padding: '20px' }}

@@ -1,5 +1,6 @@
 const adhocAwardService = require('../services/adhocAward.service');
 const { prisma } = require('../models');
+const { ROLES } = require('../constants/roles');
 
 /**
  * Helper: Get manager's unit info
@@ -133,7 +134,7 @@ class AdhocAwardController {
       };
 
       // For Manager, filter by their unit
-      if (userRole === 'MANAGER') {
+      if (userRole === ROLES.MANAGER) {
         if (!userQuanNhanId) {
           return res.status(403).json({
             success: false,

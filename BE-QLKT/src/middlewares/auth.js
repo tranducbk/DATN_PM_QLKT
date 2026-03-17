@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { ROLES } = require('../constants/roles');
 
 /**
  * Middleware xác thực token - Kiểm tra người dùng đã đăng nhập
@@ -45,7 +46,7 @@ const requireSuperAdmin = (req, res, next) => {
     });
   }
 
-  if (req.user.role !== 'SUPER_ADMIN') {
+  if (req.user.role !== ROLES.SUPER_ADMIN) {
     return res.status(403).json({
       success: false,
       message: 'Chỉ SUPER_ADMIN mới có quyền thực hiện thao tác này.',
@@ -66,7 +67,7 @@ const requireAdmin = (req, res, next) => {
     });
   }
 
-  const allowedRoles = ['SUPER_ADMIN', 'ADMIN'];
+  const allowedRoles = [ROLES.SUPER_ADMIN, ROLES.ADMIN];
   if (!allowedRoles.includes(req.user.role)) {
     return res.status(403).json({
       success: false,
@@ -88,7 +89,7 @@ const requireManager = (req, res, next) => {
     });
   }
 
-  const allowedRoles = ['SUPER_ADMIN', 'ADMIN', 'MANAGER'];
+  const allowedRoles = [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER];
   if (!allowedRoles.includes(req.user.role)) {
     return res.status(403).json({
       success: false,

@@ -154,7 +154,9 @@ export default function SuperAdminAddAwardsPage() {
           antMessage.warning('Vui lòng chọn ít nhất một quân nhân!');
           break;
         case 2:
-          antMessage.warning('Vui lòng chọn danh hiệu và nhập đầy đủ cấp bậc/chức vụ cho tất cả quân nhân!');
+          antMessage.warning(
+            'Vui lòng chọn danh hiệu và nhập đầy đủ cấp bậc/chức vụ cho tất cả quân nhân!'
+          );
           break;
         case 4:
           antMessage.warning('Vui lòng nhập số quyết định cho tất cả quân nhân!');
@@ -179,7 +181,9 @@ export default function SuperAdminAddAwardsPage() {
         id => !decisionDataMap[id]?.so_quyet_dinh?.trim()
       );
       if (missingDecision) {
-        antMessage.error('Vui lòng nhập số quyết định cho tất cả quân nhân trước khi thêm khen thưởng!');
+        antMessage.error(
+          'Vui lòng nhập số quyết định cho tất cả quân nhân trước khi thêm khen thưởng!'
+        );
         return;
       }
 
@@ -272,8 +276,8 @@ export default function SuperAdminAddAwardsPage() {
                       type="secondary"
                       style={{ fontSize: 13, display: 'block', marginLeft: 28 }}
                     >
-                      Huy chương Chiến sĩ vẻ vang 3 hạng (Hạng Ba, Nhì, Nhất) - Không kiểm tra
-                      điều kiện thời gian phục vụ
+                      Huy chương Chiến sĩ vẻ vang 3 hạng (Hạng Ba, Nhì, Nhất) - Không kiểm tra điều
+                      kiện thời gian phục vụ
                     </Text>
                   </Space>
                 </Radio.Button>
@@ -307,7 +311,8 @@ export default function SuperAdminAddAwardsPage() {
           />
         );
 
-      case 3: { // Step 4: Review
+      case 3: {
+        // Step 4: Review
         const reviewTableData = personnelDetails.map(p => {
           const titleInfo = titleData.find(t => String(t.personnel_id) === String(p.id));
           return {
@@ -356,9 +361,7 @@ export default function SuperAdminAddAwardsPage() {
             width: 250,
             align: 'center',
             render: (_, record) => {
-              const titleInfo = titleData.find(
-                t => String(t.personnel_id) === String(record.id)
-              );
+              const titleInfo = titleData.find(t => String(t.personnel_id) === String(record.id));
               const danh_hieu = titleInfo?.danh_hieu;
               const fullName = getDanhHieuName(danh_hieu);
               return <Text>{fullName || '-'}</Text>;
@@ -425,7 +428,8 @@ export default function SuperAdminAddAwardsPage() {
         );
       }
 
-      case 4: { // Step 5: Decision numbers
+      case 4: {
+        // Step 5: Decision numbers
         const decisionColumns: ColumnsType<any> = [
           {
             title: 'STT',
@@ -522,7 +526,8 @@ export default function SuperAdminAddAwardsPage() {
         );
       }
 
-      case 5: { // Step 6: Final confirm
+      case 5: {
+        // Step 6: Final confirm
         const finalColumns: ColumnsType<any> = [
           {
             title: 'STT',
@@ -545,9 +550,7 @@ export default function SuperAdminAddAwardsPage() {
             width: 250,
             align: 'center',
             render: (_, record) => {
-              const titleInfo = titleData.find(
-                t => String(t.personnel_id) === String(record.id)
-              );
+              const titleInfo = titleData.find(t => String(t.personnel_id) === String(record.id));
               const danh_hieu = titleInfo?.danh_hieu;
               const fullName = getDanhHieuName(danh_hieu);
               return <Text>{fullName || '-'}</Text>;
@@ -655,8 +658,8 @@ export default function SuperAdminAddAwardsPage() {
           Thêm khen thưởng đồng loạt
         </Title>
         <Paragraph type="secondary">
-          Theo dõi các bước bên dưới để thêm khen thưởng vào hệ thống.
-          Không kiểm tra điều kiện thời gian phục vụ, dùng để bổ sung dữ liệu quá khứ.
+          Theo dõi các bước bên dưới để thêm khen thưởng vào hệ thống. Không kiểm tra điều kiện thời
+          gian phục vụ, dùng để bổ sung dữ liệu quá khứ.
         </Paragraph>
       </div>
 

@@ -99,7 +99,9 @@ export default function BulkAddAwardsPage() {
   const [note, setNote] = useState<string>('');
 
   // Step 6: Decision data (so_quyet_dinh cho từng quân nhân/đơn vị)
-  const [decisionDataMap, setDecisionDataMap] = useState<Record<string, { so_quyet_dinh: string; decision?: any }>>({});
+  const [decisionDataMap, setDecisionDataMap] = useState<
+    Record<string, { so_quyet_dinh: string; decision?: any }>
+  >({});
   const [decisionModalVisible, setDecisionModalVisible] = useState(false);
   const [selectedPersonnelForDecision, setSelectedPersonnelForDecision] = useState<string[]>([]);
 
@@ -256,9 +258,7 @@ export default function BulkAddAwardsPage() {
           return titleData.every(d => d.danh_hieu);
         }
 
-        return titleData.every(
-          d => d.danh_hieu && d.cap_bac?.trim() && d.chuc_vu?.trim()
-        );
+        return titleData.every(d => d.danh_hieu && d.cap_bac?.trim() && d.chuc_vu?.trim());
       case 3:
         return true; // Review step
       case 4: {
@@ -308,9 +308,7 @@ export default function BulkAddAwardsPage() {
     try {
       // Validate số quyết định
       const ids = awardType === 'DON_VI_HANG_NAM' ? selectedUnitIds : selectedPersonnelIds;
-      const missingDecision = ids.some(
-        id => !decisionDataMap[id]?.so_quyet_dinh?.trim()
-      );
+      const missingDecision = ids.some(id => !decisionDataMap[id]?.so_quyet_dinh?.trim());
       if (missingDecision) {
         antMessage.error('Vui lòng nhập số quyết định cho tất cả trước khi thêm khen thưởng!');
         return;
@@ -352,7 +350,7 @@ export default function BulkAddAwardsPage() {
         const data = result.data || {};
         const importedCount = data.importedCount || 0;
         const errorCount = data.errorCount || 0;
-        
+
         const message =
           importedCount > 0
             ? `Đã thêm thành công ${importedCount} ${awardType === 'DON_VI_HANG_NAM' ? 'đơn vị' : 'quân nhân'}${
@@ -749,32 +747,30 @@ export default function BulkAddAwardsPage() {
 
             {/* Chỉ hiển thị trường ghi chú nếu loại khen thưởng hỗ trợ lưu ghi chú */}
             {canShowNote && (
-            <Card
-              title={
-                <Space>
-                  <EditOutlined />
-                  <span>Ghi chú (tùy chọn)</span>
-                </Space>
-              }
-              style={{ marginTop: 16 }}
-            >
-              <Input.TextArea
-                placeholder="Nhập ghi chú (không bắt buộc)..."
-                value={note}
-                onChange={e => setNote(e.target.value)}
-                rows={3}
-                maxLength={1000}
-                showCount
-              />
-            </Card>
+              <Card
+                title={
+                  <Space>
+                    <EditOutlined />
+                    <span>Ghi chú (tùy chọn)</span>
+                  </Space>
+                }
+                style={{ marginTop: 16 }}
+              >
+                <Input.TextArea
+                  placeholder="Nhập ghi chú (không bắt buộc)..."
+                  value={note}
+                  onChange={e => setNote(e.target.value)}
+                  rows={3}
+                  maxLength={1000}
+                  showCount
+                />
+              </Card>
             )}
           </div>
         );
 
       case 4: // Step 5: Thêm số quyết định
-        const decisionTableData = awardType === 'DON_VI_HANG_NAM' 
-          ? unitDetails 
-          : personnelDetails;
+        const decisionTableData = awardType === 'DON_VI_HANG_NAM' ? unitDetails : personnelDetails;
 
         const decisionColumns: ColumnsType<any> = [
           {
@@ -805,11 +801,15 @@ export default function BulkAddAwardsPage() {
               return (
                 <Space>
                   {soQuyetDinh ? (
-                    <Tag color="green" closable onClose={() => {
-                      const newMap = { ...decisionDataMap };
-                      delete newMap[id];
-                      setDecisionDataMap(newMap);
-                    }}>
+                    <Tag
+                      color="green"
+                      closable
+                      onClose={() => {
+                        const newMap = { ...decisionDataMap };
+                        delete newMap[id];
+                        setDecisionDataMap(newMap);
+                      }}
+                    >
                       {soQuyetDinh}
                     </Tag>
                   ) : (
@@ -847,9 +847,8 @@ export default function BulkAddAwardsPage() {
                 <Button
                   type="primary"
                   onClick={() => {
-                    const allIds = awardType === 'DON_VI_HANG_NAM'
-                      ? selectedUnitIds
-                      : selectedPersonnelIds;
+                    const allIds =
+                      awardType === 'DON_VI_HANG_NAM' ? selectedUnitIds : selectedPersonnelIds;
                     setSelectedPersonnelForDecision(allIds);
                     setDecisionModalVisible(true);
                   }}
@@ -871,9 +870,7 @@ export default function BulkAddAwardsPage() {
         );
 
       case 5: // Step 6: Final review before submit
-        const finalTableData = awardType === 'DON_VI_HANG_NAM' 
-          ? unitDetails 
-          : personnelDetails;
+        const finalTableData = awardType === 'DON_VI_HANG_NAM' ? unitDetails : personnelDetails;
 
         const finalColumns: ColumnsType<any> = [
           {
@@ -903,9 +900,7 @@ export default function BulkAddAwardsPage() {
               width: 150,
               align: 'center',
               render: (_, record) => {
-                const titleInfo = titleData.find(
-                  t => String(t.personnel_id) === String(record.id)
-                );
+                const titleInfo = titleData.find(t => String(t.personnel_id) === String(record.id));
                 const loai = titleInfo?.loai;
                 return (
                   <Tag color={loai === 'NCKH' ? 'blue' : 'green'}>
@@ -920,9 +915,7 @@ export default function BulkAddAwardsPage() {
               width: 300,
               align: 'center',
               render: (_, record) => {
-                const titleInfo = titleData.find(
-                  t => String(t.personnel_id) === String(record.id)
-                );
+                const titleInfo = titleData.find(t => String(t.personnel_id) === String(record.id));
                 return <Text>{titleInfo?.mo_ta || '-'}</Text>;
               },
             }

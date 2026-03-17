@@ -12,7 +12,7 @@
  * @param {string|number} value - Giá trị CCCD cần parse
  * @returns {string} CCCD đã chuẩn hóa (12 ký tự)
  */
-const parseCCCD = (value) => {
+const parseCCCD = value => {
   if (!value) return '';
 
   let cccd = value.toString().trim();

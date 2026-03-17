@@ -153,7 +153,7 @@ export default function UserChangePasswordPage() {
                     size="large"
                     disabled={loading}
                     style={{ borderRadius: '8px' }}
-                    onChange={(e) => setNewPassword(e.target.value)}
+                    onChange={e => setNewPassword(e.target.value)}
                   />
                 </Form.Item>
                 {newPassword && (
@@ -237,7 +237,10 @@ export default function UserChangePasswordPage() {
               className="shadow-lg"
               style={{
                 borderRadius: '12px',
-                border: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.06)',
+                border:
+                  theme === 'dark'
+                    ? '1px solid rgba(255, 255, 255, 0.1)'
+                    : '1px solid rgba(0, 0, 0, 0.06)',
               }}
             >
               <style>{`
@@ -302,7 +305,8 @@ export default function UserChangePasswordPage() {
                       Đăng xuất sau khi sử dụng
                     </Text>
                     <Text type="secondary" style={{ fontSize: '14px' }}>
-                      Luôn đăng xuất khỏi hệ thống khi sử dụng xong, đặc biệt trên máy tính công cộng
+                      Luôn đăng xuất khỏi hệ thống khi sử dụng xong, đặc biệt trên máy tính công
+                      cộng
                     </Text>
                   </div>
                 </div>

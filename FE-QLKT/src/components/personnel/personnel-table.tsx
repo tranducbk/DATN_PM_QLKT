@@ -29,7 +29,6 @@ export function PersonnelTable({
   readOnly = false,
   viewLinkPrefix = '/admin/personnel',
 }: PersonnelTableProps) {
-
   return (
     <>
       <div className="overflow-hidden">
@@ -56,9 +55,7 @@ export function PersonnelTable({
               personnel.map((p, index) => {
                 // Lấy tên cơ quan đơn vị
                 const coQuanDonViName =
-                  p.DonViTrucThuoc?.CoQuanDonVi?.ten_don_vi ||
-                  p.CoQuanDonVi?.ten_don_vi ||
-                  '-';
+                  p.DonViTrucThuoc?.CoQuanDonVi?.ten_don_vi || p.CoQuanDonVi?.ten_don_vi || '-';
 
                 // Lấy tên đơn vị trực thuộc
                 const donViTrucThuocName = p.DonViTrucThuoc?.ten_don_vi || '-';
@@ -78,9 +75,7 @@ export function PersonnelTable({
                     </TableCell>
                     <TableCell className="text-center">{coQuanDonViName}</TableCell>
                     <TableCell className="text-center">{donViTrucThuocName}</TableCell>
-                    <TableCell className="text-center">
-                      {p.cap_bac || '-'}
-                    </TableCell>
+                    <TableCell className="text-center">{p.cap_bac || '-'}</TableCell>
                     <TableCell className="text-center">
                       {p.ChucVu?.ten_chuc_vu || p.ten_chuc_vu || '-'}
                     </TableCell>

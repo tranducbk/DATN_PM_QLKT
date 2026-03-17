@@ -139,7 +139,8 @@ export default function ManagerUnitsPage() {
       await previewFileWithApi(`/${filePath}`, filename);
     } catch (error: any) {
       console.error('Error opening decision file:', error);
-      const errorMessage = error?.response?.data?.message || error?.message || 'Lỗi khi mở file quyết định';
+      const errorMessage =
+        error?.response?.data?.message || error?.message || 'Lỗi khi mở file quyết định';
       message.error({ content: errorMessage, key: 'preview' });
     }
   };
@@ -378,27 +379,41 @@ export default function ManagerUnitsPage() {
                   ]}
                 />
               </div>
-              <div style={{ flex: '1 1 200px', minWidth: '200px', display: 'flex', flexDirection: 'column' }}>
+              <div
+                style={{
+                  flex: '1 1 200px',
+                  minWidth: '200px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
                 <Text strong style={{ display: 'block', marginBottom: '8px' }}>
                   Tìm kiếm theo tên đơn vị
                 </Text>
-            <Input
+                <Input
                   placeholder="Nhập tên đơn vị để tìm kiếm"
-              value={filters.ten_don_vi}
-              onChange={e => setFilters(prev => ({ ...prev, ten_don_vi: e.target.value }))}
-              allowClear
+                  value={filters.ten_don_vi}
+                  onChange={e => setFilters(prev => ({ ...prev, ten_don_vi: e.target.value }))}
+                  allowClear
                   size="large"
                 />
               </div>
-              <div style={{ flex: '1 1 250px', minWidth: '250px', display: 'flex', flexDirection: 'column' }}>
+              <div
+                style={{
+                  flex: '1 1 250px',
+                  minWidth: '250px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
                 <Text strong style={{ display: 'block', marginBottom: '8px' }}>
                   Danh hiệu
                 </Text>
-            <Select
+                <Select
                   placeholder="Tất cả danh hiệu"
                   value={filters.danh_hieu === '' ? '' : filters.danh_hieu || undefined}
-              onChange={value => setFilters(prev => ({ ...prev, danh_hieu: value || '' }))}
-              allowClear
+                  onChange={value => setFilters(prev => ({ ...prev, danh_hieu: value || '' }))}
+                  allowClear
                   showSearch
                   optionFilterProp="label"
                   size="large"
@@ -408,13 +423,13 @@ export default function ManagerUnitsPage() {
               </div>
               <div style={{ flex: '0 0 auto', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ height: '22px', marginBottom: '8px' }}></div>
-                <Button 
+                <Button
                   size="large"
                   onClick={() => setFilters({ nam: '', ten_don_vi: '', danh_hieu: '' })}
                   icon={null}
                 >
-              Xóa bộ lọc
-            </Button>
+                  Xóa bộ lọc
+                </Button>
               </div>
             </div>
           </Card>

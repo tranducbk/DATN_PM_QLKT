@@ -5,6 +5,7 @@ import { Form, Input, Button, Alert } from 'antd';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
+import { useAuth } from '@/contexts/AuthContext';
 import Image from 'next/image';
 import './login-form.css';
 
@@ -13,6 +14,7 @@ export function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
+  const { login } = useAuth();
 
   const handleLogin = async (values: { username: string; password: string }) => {
     setLoading(true);
@@ -28,10 +30,13 @@ export function LoginForm() {
         const user = payload.user || {};
         const role = user.role;
 
-        localStorage.setItem('accessToken', accessToken || '');
-        if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
-        localStorage.setItem('role', role);
-        localStorage.setItem('user', JSON.stringify(user));
+        login(accessToken || '', refreshToken || '', {
+          id: user.id || '',
+          username: user.username || user.ten_dang_nhap || '',
+          role: user.role,
+          quan_nhan_id: user.quan_nhan_id || undefined,
+          ho_ten: user.ho_ten || undefined,
+        });
 
         if (role === 'SUPER_ADMIN') {
           router.push('/super-admin/dashboard');
@@ -43,13 +48,18 @@ export function LoginForm() {
           router.push('/user/dashboard');
         }
       } else {
-        const errorMessage = response.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại tài khoản và mật khẩu.';
+        const errorMessage =
+          response.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại tài khoản và mật khẩu.';
         setError(errorMessage);
         setLoading(false);
         return;
       }
     } catch (err: any) {
-      const errorMessage = err?.response?.data?.message || err?.response?.data?.error || err?.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại tài khoản và mật khẩu.';
+      const errorMessage =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        'Đăng nhập thất bại. Vui lòng kiểm tra lại tài khoản và mật khẩu.';
       setError(errorMessage);
       setLoading(false);
       return;
@@ -86,9 +96,15 @@ export function LoginForm() {
           </Link>
 
           <div className="nav-links">
-            <Link href="/#features" className="nav-link">Tính năng</Link>
-            <Link href="/#stats" className="nav-link">Thống kê</Link>
-            <Link href="/#contact" className="nav-link">Liên hệ</Link>
+            <Link href="/#features" className="nav-link">
+              Tính năng
+            </Link>
+            <Link href="/#stats" className="nav-link">
+              Thống kê
+            </Link>
+            <Link href="/#contact" className="nav-link">
+              Liên hệ
+            </Link>
             <Link href="/" className="nav-btn">
               Trang chủ
             </Link>
@@ -137,7 +153,7 @@ export function LoginForm() {
             }}
             autoComplete="off"
             className="login-form"
-            onKeyDown={(e) => {
+            onKeyDown={e => {
               if (e.key === 'Enter' && loading) {
                 e.preventDefault();
               }
@@ -150,9 +166,17 @@ export function LoginForm() {
             >
               <Input
                 prefix={
-                  <svg className="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                    <circle cx="12" cy="7" r="4"/>
+                  <svg
+                    className="input-icon"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
                   </svg>
                 }
                 placeholder="Nhập tài khoản"
@@ -168,9 +192,17 @@ export function LoginForm() {
             >
               <Input.Password
                 prefix={
-                  <svg className="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                  <svg
+                    className="input-icon"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                   </svg>
                 }
                 placeholder="Nhập mật khẩu"

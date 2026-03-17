@@ -100,12 +100,7 @@ export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicato
             {label}
           </Text>
         </div>
-        <Progress
-          percent={strength}
-          strokeColor={color}
-          showInfo={false}
-          className="mb-2"
-        />
+        <Progress percent={strength} strokeColor={color} showInfo={false} className="mb-2" />
       </div>
 
       <div className="space-y-2">
@@ -132,4 +127,3 @@ export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicato
     </div>
   );
 }
-

@@ -14,7 +14,12 @@ import {
   ConfigProvider,
   theme as antdTheme,
 } from 'antd';
-import { LockOutlined, SafetyOutlined, DashboardOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import {
+  LockOutlined,
+  SafetyOutlined,
+  DashboardOutlined,
+  CheckCircleOutlined,
+} from '@ant-design/icons';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
 import { useTheme } from '@/components/theme-provider';
@@ -126,7 +131,7 @@ export default function ManagerChangePasswordPage() {
                     placeholder="Nhập mật khẩu mới"
                     size="large"
                     disabled={loading}
-                    onChange={(e) => setNewPassword(e.target.value)}
+                    onChange={e => setNewPassword(e.target.value)}
                   />
                 </Form.Item>
                 {newPassword && (
@@ -195,7 +200,10 @@ export default function ManagerChangePasswordPage() {
               className="shadow-lg"
               style={{
                 borderRadius: '12px',
-                border: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.06)',
+                border:
+                  theme === 'dark'
+                    ? '1px solid rgba(255, 255, 255, 0.1)'
+                    : '1px solid rgba(0, 0, 0, 0.06)',
               }}
             >
               <style>{`

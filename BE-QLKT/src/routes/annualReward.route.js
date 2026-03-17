@@ -13,6 +13,7 @@ const {
 } = require('../middlewares/auth');
 const { auditLog } = require('../middlewares/auditLog');
 const { getLogDescription, getResourceId } = require('../helpers/auditLogHelper');
+const { ROLES } = require('../constants/roles');
 
 // Memory storage để xử lý file Excel từ buffer
 const upload = multer({ storage: multer.memoryStorage() });
@@ -102,12 +103,7 @@ router.delete(
 );
 
 // Kiểm tra quân nhân đã có khen thưởng hoặc đề xuất cho năm đó chưa
-router.post(
-  '/check',
-  verifyToken,
-  requireAdmin,
-  annualRewardController.checkAnnualRewards
-);
+router.post('/check', verifyToken, requireAdmin, annualRewardController.checkAnnualRewards);
 
 // Thêm danh hiệu đồng loạt cho nhiều quân nhân (có thể kèm file đính kèm)
 router.post(
@@ -146,7 +142,7 @@ router.get('/template', verifyToken, requireManager, annualRewardController.getT
 router.get(
   '/export',
   verifyToken,
-  checkRole(['ADMIN', 'MANAGER']),
+  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
   annualRewardController.exportToExcel
 );
 
@@ -154,7 +150,7 @@ router.get(
 router.get(
   '/statistics',
   verifyToken,
-  checkRole(['ADMIN', 'MANAGER']),
+  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
   annualRewardController.getStatistics
 );
 

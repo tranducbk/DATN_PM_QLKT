@@ -338,16 +338,16 @@ export default function ManagerAdhocAwardsPage() {
       render: (text: string) => (
         <div style={{ textAlign: 'center' }}>
           {text ? (
-          <Tooltip title={text}>
-            <Text style={{ fontSize: '13px' }}>{text}</Text>
-          </Tooltip>
-        ) : (
+            <Tooltip title={text}>
+              <Text style={{ fontSize: '13px' }}>{text}</Text>
+            </Tooltip>
+          ) : (
             <Text type="secondary" style={{ fontStyle: 'italic', opacity: 0.6 }}>
               Không có ghi chú
             </Text>
           )}
         </div>
-        ),
+      ),
     },
     {
       title: 'Thao tác',
@@ -405,7 +405,12 @@ export default function ManagerAdhocAwardsPage() {
                 style={{ width: '100%' }}
                 placeholder="Tất cả các năm"
                 value={tableFilters.year !== null ? tableFilters.year : ''}
-                onChange={value => setTableFilters(prev => ({ ...prev, year: value === '' ? null : value }))}
+                onChange={value =>
+                  setTableFilters(prev => ({
+                    ...prev,
+                    year: value === '' ? null : Number(value),
+                  }))
+                }
                 allowClear
                 size="large"
               >
@@ -447,10 +452,17 @@ export default function ManagerAdhocAwardsPage() {
               />
             </Col>
             <Col xs={24} sm={8} md={4}>
-              <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'transparent' }}>
+              <label
+                style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'transparent' }}
+              >
                 .
               </label>
-              <Button icon={null} onClick={handleResetFilters} size="large" style={{ width: '100%' }}>
+              <Button
+                icon={null}
+                onClick={handleResetFilters}
+                size="large"
+                style={{ width: '100%' }}
+              >
                 Xoá bộ lọc
               </Button>
             </Col>
@@ -487,9 +499,7 @@ export default function ManagerAdhocAwardsPage() {
         open={detailModalVisible}
         onCancel={handleCloseDetailModal}
         width={720}
-        footer={
-          <Button onClick={handleCloseDetailModal}>Đóng</Button>
-        }
+        footer={<Button onClick={handleCloseDetailModal}>Đóng</Button>}
         centered
         maskClosable={false}
         styles={{

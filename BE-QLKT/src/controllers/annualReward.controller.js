@@ -1,6 +1,7 @@
 const annualRewardService = require('../services/annualReward.service');
 const profileService = require('../services/profile.service');
 const { prisma } = require('../models');
+const { ROLES } = require('../constants/roles');
 
 class AnnualRewardController {
   async getAnnualRewards(req, res) {
@@ -34,7 +35,7 @@ class AnnualRewardController {
       // Phân quyền: Manager chỉ xem được dữ liệu đơn vị mình
       const userRole = req.user?.role;
       const userQuanNhanId = req.user?.quan_nhan_id;
-      if (userRole === 'MANAGER' && userQuanNhanId) {
+      if (userRole === ROLES.MANAGER && userQuanNhanId) {
         const managerPersonnel = await prisma.quanNhan.findUnique({
           where: { id: userQuanNhanId },
           select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true },
@@ -572,7 +573,7 @@ class AnnualRewardController {
       };
 
       // Manager chỉ được xuất dữ liệu đơn vị mình
-      if (role === 'MANAGER' && userUnitId) {
+      if (role === ROLES.MANAGER && userUnitId) {
         filters.don_vi_id = userUnitId;
       }
 
@@ -611,7 +612,7 @@ class AnnualRewardController {
       };
 
       // Manager chỉ được xem thống kê đơn vị mình
-      if (role === 'MANAGER' && userUnitId) {
+      if (role === ROLES.MANAGER && userUnitId) {
         filters.don_vi_id = userUnitId;
       }
 

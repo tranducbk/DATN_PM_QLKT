@@ -204,9 +204,12 @@ export async function previewDecisionFile(soQuyetDinh: string): Promise<void> {
   try {
     message.loading({ content: 'Đang tải file...', key: 'preview' });
 
-    const response = await axiosInstance.get(`/api/decisions/download/${encodeURIComponent(soQuyetDinh)}`, {
-      responseType: 'blob',
-    });
+    const response = await axiosInstance.get(
+      `/api/decisions/download/${encodeURIComponent(soQuyetDinh)}`,
+      {
+        responseType: 'blob',
+      }
+    );
 
     const blob = new Blob([response.data], { type: 'application/pdf' });
     const blobUrl = window.URL.createObjectURL(blob);
@@ -223,7 +226,10 @@ export async function previewDecisionFile(soQuyetDinh: string): Promise<void> {
       try {
         const text = await error.response.data.text();
         const errorData = JSON.parse(text);
-        message.error({ content: errorData.message || 'Lỗi khi mở file quyết định', key: 'preview' });
+        message.error({
+          content: errorData.message || 'Lỗi khi mở file quyết định',
+          key: 'preview',
+        });
       } catch {
         message.error({ content: 'Lỗi khi mở file quyết định', key: 'preview' });
       }

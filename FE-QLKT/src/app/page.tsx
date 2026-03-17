@@ -1,36 +1,24 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { TrophyOutlined } from '@ant-design/icons';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function HomePage() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userRole, setUserRole] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { user, isLoading } = useAuth();
 
-  useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    const role = localStorage.getItem('role');
-
-    if (token && role) {
-      setIsLoggedIn(true);
-      setUserRole(role);
-    }
-
-    setLoading(false);
-  }, []);
+  const isLoggedIn = !!user;
 
   const handleRedirect = () => {
-    if (!isLoggedIn) {
+    if (!user) {
       router.push('/login');
       return;
     }
 
-    switch (userRole) {
+    switch (user.role) {
       case 'SUPER_ADMIN':
         router.push('/super-admin/dashboard');
         break;
@@ -48,7 +36,7 @@ export default function HomePage() {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-900 via-slate-900 to-slate-950">
         <div className="relative">
@@ -62,38 +50,58 @@ export default function HomePage() {
     {
       icon: (
         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+          />
         </svg>
       ),
       title: 'Hồ sơ quân nhân',
-      desc: 'Thông tin, cấp bậc, cơ cấu đơn vị tập trung'
+      desc: 'Thông tin, cấp bậc, cơ cấu đơn vị tập trung',
     },
     {
       icon: (
         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
+          />
         </svg>
       ),
       title: 'Khen thưởng',
-      desc: 'Danh hiệu, quyết định, minh chứng file tập trung'
+      desc: 'Danh hiệu, quyết định, minh chứng file tập trung',
     },
     {
       icon: (
         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+          />
         </svg>
       ),
       title: 'Đề xuất khen thưởng',
-      desc: 'Luồng phê duyệt rõ ràng, cảnh báo trùng lặp'
+      desc: 'Luồng phê duyệt rõ ràng, cảnh báo trùng lặp',
     },
     {
       icon: (
         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+          />
         </svg>
       ),
       title: 'Báo cáo & thống kê',
-      desc: 'Số liệu khen thưởng, tình trạng đề xuất, tiến độ xử lý'
+      desc: 'Số liệu khen thưởng, tình trạng đề xuất, tiến độ xử lý',
     },
   ];
 
@@ -113,7 +121,7 @@ export default function HomePage() {
         <div
           className="absolute top-0 left-0 w-full h-full"
           style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
           }}
         />
       </div>
@@ -128,20 +136,20 @@ export default function HomePage() {
         {/* Left Side - Branding & Info */}
         <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 xl:p-16">
           {/* Logo */}
-              <div className="flex items-center gap-4">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-white/20 rounded-2xl blur-xl"></div>
-                  <Image
-                    src="/logo-msa.png"
-                    alt="Logo"
-                    width={64}
-                    height={64}
-                    className="relative rounded-2xl"
-                    priority
-                  />
-                </div>
-                <h2 className="text-xl font-bold text-white">HỌC VIỆN KHOA HỌC QUÂN SỰ</h2>
-              </div>
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <div className="absolute inset-0 bg-white/20 rounded-2xl blur-xl"></div>
+              <Image
+                src="/logo-msa.png"
+                alt="Logo"
+                width={64}
+                height={64}
+                className="relative rounded-2xl"
+                priority
+              />
+            </div>
+            <h2 className="text-xl font-bold text-white">HỌC VIỆN KHOA HỌC QUÂN SỰ</h2>
+          </div>
 
           {/* Main Content */}
           <div className="space-y-8">
@@ -154,7 +162,8 @@ export default function HomePage() {
                 </span>
               </h1>
               <p className="text-xl text-blue-100/80 leading-relaxed max-w-lg">
-                Giải pháp số hóa toàn diện cho công tác quản lý khen thưởng, danh hiệu và thành tích khoa học.
+                Giải pháp số hóa toàn diện cho công tác quản lý khen thưởng, danh hiệu và thành tích
+                khoa học.
               </p>
             </div>
 
@@ -187,7 +196,9 @@ export default function HomePage() {
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-white/0" />
                   <div className="relative">
-                    <div className="text-3xl font-bold text-white leading-none mb-1">{stat.value}</div>
+                    <div className="text-3xl font-bold text-white leading-none mb-1">
+                      {stat.value}
+                    </div>
                     <div className="text-blue-300/70 text-sm">{stat.label}</div>
                   </div>
                 </div>
@@ -196,9 +207,7 @@ export default function HomePage() {
           </div>
 
           {/* Footer */}
-          <div className="text-blue-300/50 text-sm">
-            © 2025 Học viện Khoa học Quân sự
-          </div>
+          <div className="text-blue-300/50 text-sm">© 2025 Học viện Khoa học Quân sự</div>
         </div>
 
         {/* Right Side - Login/CTA Card */}
@@ -220,18 +229,16 @@ export default function HomePage() {
             </div>
 
             {/* Card */}
-              <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 sm:p-10 border border-white/20 shadow-2xl">
-                <div className="text-center mb-8">
-                  <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 via-cyan-500 to-blue-600 mb-6 shadow-lg shadow-blue-500/30">
-                    <TrophyOutlined className="text-white drop-shadow-lg" style={{ fontSize: 40 }} />
-                  </div>
+            <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 sm:p-10 border border-white/20 shadow-2xl">
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 via-cyan-500 to-blue-600 mb-6 shadow-lg shadow-blue-500/30">
+                  <TrophyOutlined className="text-white drop-shadow-lg" style={{ fontSize: 40 }} />
+                </div>
                 <h2 className="text-2xl font-bold text-white mb-2">
                   {isLoggedIn ? 'Chào mừng trở lại!' : 'Truy cập Hệ thống'}
                 </h2>
                 <p className="text-blue-200/70">
-                  {isLoggedIn
-                    ? 'Bạn đã đăng nhập thành công'
-                    : 'Đăng nhập để quản lý khen thưởng'}
+                  {isLoggedIn ? 'Bạn đã đăng nhập thành công' : 'Đăng nhập để quản lý khen thưởng'}
                 </p>
               </div>
 
@@ -241,16 +248,33 @@ export default function HomePage() {
               >
                 {isLoggedIn ? 'Vào Dashboard' : 'Đăng nhập ngay'}
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M17 8l4 4m0 0l-4 4m4-4H3"
+                  />
                 </svg>
               </button>
 
               {/* Quick Links */}
               <div className="mt-8 pt-6 border-t border-white/10">
                 <div className="flex justify-center gap-6 text-sm">
-                  <a href="#features" className="text-blue-300/70 hover:text-white transition-colors">Tính năng</a>
-                  <a href="#contact" className="text-blue-300/70 hover:text-white transition-colors">Liên hệ</a>
-                  <a href="#about" className="text-blue-300/70 hover:text-white transition-colors">Giới thiệu</a>
+                  <a
+                    href="#features"
+                    className="text-blue-300/70 hover:text-white transition-colors"
+                  >
+                    Tính năng
+                  </a>
+                  <a
+                    href="#contact"
+                    className="text-blue-300/70 hover:text-white transition-colors"
+                  >
+                    Liên hệ
+                  </a>
+                  <a href="#about" className="text-blue-300/70 hover:text-white transition-colors">
+                    Giới thiệu
+                  </a>
                 </div>
               </div>
             </div>
@@ -277,16 +301,19 @@ export default function HomePage() {
       </div>
 
       {/* Bottom Info Section (Desktop) */}
-      <div id="features" className="hidden lg:block relative z-10 border-t border-white/10 bg-black/20 backdrop-blur-sm">
+      <div
+        id="features"
+        className="hidden lg:block relative z-10 border-t border-white/10 bg-black/20 backdrop-blur-sm"
+      >
         <div className="max-w-7xl mx-auto px-12 py-16">
           <div className="grid grid-cols-4 gap-8">
             {/* About */}
             <div className="col-span-2">
               <h3 className="text-white font-bold text-lg mb-4">Về Hệ thống Quản lý Khen thưởng</h3>
               <p className="text-blue-200/60 leading-relaxed mb-6">
-                Hệ thống Quản lý Khen thưởng là giải pháp công nghệ hiện đại được phát triển
-                dành riêng cho Học viện Khoa học Quân sự, hỗ trợ số hóa toàn bộ quy trình quản lý
-                khen thưởng, danh hiệu và thành tích khoa học.
+                Hệ thống Quản lý Khen thưởng là giải pháp công nghệ hiện đại được phát triển dành
+                riêng cho Học viện Khoa học Quân sự, hỗ trợ số hóa toàn bộ quy trình quản lý khen
+                thưởng, danh hiệu và thành tích khoa học.
               </p>
               <div className="flex gap-8">
                 <div>

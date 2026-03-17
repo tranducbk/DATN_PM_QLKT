@@ -49,7 +49,9 @@ export default function UnitAnnualAwardHistoryModal({
       message.loading({ content: 'Đang tải file...', key: 'preview' });
 
       // Luôn query từ DB để lấy file path mới nhất
-      const response = await axiosInstance.get(`/api/decisions/file-path/${encodeURIComponent(soQuyetDinh)}`);
+      const response = await axiosInstance.get(
+        `/api/decisions/file-path/${encodeURIComponent(soQuyetDinh)}`
+      );
 
       if (!response.data?.success || !response.data?.data?.file_path) {
         message.warning({ content: 'Không tìm thấy file quyết định', key: 'preview' });
@@ -63,7 +65,8 @@ export default function UnitAnnualAwardHistoryModal({
       await previewFileWithApi(`/${filePath}`, filename);
     } catch (error: any) {
       console.error('Error opening decision file:', error);
-      const errorMessage = error?.response?.data?.message || error?.message || 'Lỗi khi mở file quyết định';
+      const errorMessage =
+        error?.response?.data?.message || error?.message || 'Lỗi khi mở file quyết định';
       message.error({ content: errorMessage, key: 'preview' });
     }
   };
@@ -210,14 +213,14 @@ export default function UnitAnnualAwardHistoryModal({
               </Descriptions.Item>
             </Descriptions>
             <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <Table
-              columns={columns}
-              dataSource={annualAwards?.tong_dvqt_json}
-              rowKey={(record, index) => `${record.nam}-${index}`}
-              pagination={false}
-              size="small"
-              scroll={{ x: 900 }}
-            />
+              <Table
+                columns={columns}
+                dataSource={annualAwards?.tong_dvqt_json}
+                rowKey={(record, index) => `${record.nam}-${index}`}
+                pagination={false}
+                size="small"
+                scroll={{ x: 900 }}
+              />
             </div>
           </div>
         ) : (

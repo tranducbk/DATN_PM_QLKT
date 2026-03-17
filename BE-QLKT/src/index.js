@@ -1,22 +1,27 @@
+const http = require('http');
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const cron = require('node-cron');
 require('dotenv').config();
+
+const REQUIRED_ENV = ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'DATABASE_URL'];
+const missingEnv = REQUIRED_ENV.filter(key => !process.env[key]);
+if (missingEnv.length > 0) {
+  console.error(`❌ Thiếu biến môi trường bắt buộc: ${missingEnv.join(', ')}`);
+  process.exit(1);
+}
+
 const { PORT } = require('./configs');
 const { prisma } = require('./models');
 const profileService = require('./services/profile.service');
 const { errorHandler, notFoundHandler } = require('./middlewares/errorHandler');
+const { initSocket } = require('./utils/socketService');
 const app = express();
+const httpServer = http.createServer(app);
 
 // Cấu hình CORS
-const allowedOrigins = [
-  'https://qlhv.vercel.app',
-  'https://fe-student-manager.vercel.app',
-  'https://fe-qlhv-ahnzq9nap-tran-ducs-projects-6b0bdbb3.vercel.app',
-  'http://localhost:3000',
-  'http://localhost:3001',
-];
+const allowedOrigins = ['http://localhost:3000', 'http://localhost:3001'];
 
 const corsOptions = {
   origin: function (origin, callback) {
@@ -92,8 +97,11 @@ app.use(require('./routes/index'));
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-app.listen(PORT, () => {
+initSocket(httpServer);
+
+httpServer.listen(PORT, () => {
   console.log(`🚀 Server đang chạy trên cổng ${PORT}`);
+  console.log(`🔌 Socket.IO đã khởi động`);
   console.log(`🔍 Prisma Studio: npx prisma studio`);
 });
 

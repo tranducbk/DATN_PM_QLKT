@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs').promises;
 const notificationHelper = require('../helpers/notificationHelper');
 const { NOTIFICATION_TYPES, RESOURCE_TYPES } = require('../constants/notificationTypes');
+const { ROLES } = require('../constants/roles');
 
 class AdhocAwardService {
   /**
@@ -28,7 +29,7 @@ class AdhocAwardService {
         where: { id: adminId },
       });
 
-      if (!admin || admin.role !== 'ADMIN') {
+      if (!admin || admin.role !== ROLES.ADMIN) {
         throw new Error('Chỉ Admin mới có quyền tạo khen thưởng đột xuất');
       }
 
@@ -170,7 +171,7 @@ class AdhocAwardService {
       if (donViId) {
         const managers = await prisma.taiKhoan.findMany({
           where: {
-            role: 'MANAGER',
+            role: ROLES.MANAGER,
             QuanNhan: {
               OR: [
                 { co_quan_don_vi_id: personnel.co_quan_don_vi_id },
@@ -223,7 +224,7 @@ class AdhocAwardService {
         unitName = adhocAward.CoQuanDonVi.ten_don_vi;
         const managers = await prisma.taiKhoan.findMany({
           where: {
-            role: 'MANAGER',
+            role: ROLES.MANAGER,
             QuanNhan: { co_quan_don_vi_id: adhocAward.co_quan_don_vi_id },
           },
           select: { id: true, role: true },
@@ -249,7 +250,7 @@ class AdhocAwardService {
         if (adhocAward.DonViTrucThuoc.co_quan_don_vi_id) {
           const parentManagers = await prisma.taiKhoan.findMany({
             where: {
-              role: 'MANAGER',
+              role: ROLES.MANAGER,
               QuanNhan: { co_quan_don_vi_id: adhocAward.DonViTrucThuoc.co_quan_don_vi_id },
             },
             select: { id: true, role: true },
@@ -500,7 +501,7 @@ class AdhocAwardService {
         where: { id: adminId },
       });
 
-      if (!admin || admin.role !== 'ADMIN') {
+      if (!admin || admin.role !== ROLES.ADMIN) {
         throw new Error('Chỉ Admin mới có quyền cập nhật khen thưởng đột xuất');
       }
 
@@ -628,7 +629,7 @@ class AdhocAwardService {
       if (donViId) {
         const managers = await prisma.taiKhoan.findMany({
           where: {
-            role: 'MANAGER',
+            role: ROLES.MANAGER,
             QuanNhan: {
               OR: [
                 { co_quan_don_vi_id: personnel.co_quan_don_vi_id },
@@ -678,7 +679,7 @@ class AdhocAwardService {
         unitName = adhocAward.CoQuanDonVi.ten_don_vi;
         const managers = await prisma.taiKhoan.findMany({
           where: {
-            role: 'MANAGER',
+            role: ROLES.MANAGER,
             QuanNhan: { co_quan_don_vi_id: adhocAward.co_quan_don_vi_id },
           },
           select: { id: true, role: true },
@@ -704,7 +705,7 @@ class AdhocAwardService {
         if (adhocAward.DonViTrucThuoc.co_quan_don_vi_id) {
           const parentManagers = await prisma.taiKhoan.findMany({
             where: {
-              role: 'MANAGER',
+              role: ROLES.MANAGER,
               QuanNhan: { co_quan_don_vi_id: adhocAward.DonViTrucThuoc.co_quan_don_vi_id },
             },
             select: { id: true, role: true },
@@ -817,7 +818,7 @@ class AdhocAwardService {
       if (donViId) {
         const managers = await prisma.taiKhoan.findMany({
           where: {
-            role: 'MANAGER',
+            role: ROLES.MANAGER,
             QuanNhan: {
               OR: [
                 { co_quan_don_vi_id: personnel.co_quan_don_vi_id },
@@ -867,7 +868,7 @@ class AdhocAwardService {
         unitName = adhocAward.CoQuanDonVi.ten_don_vi;
         const managers = await prisma.taiKhoan.findMany({
           where: {
-            role: 'MANAGER',
+            role: ROLES.MANAGER,
             QuanNhan: { co_quan_don_vi_id: adhocAward.co_quan_don_vi_id },
           },
           select: { id: true, role: true },
@@ -893,7 +894,7 @@ class AdhocAwardService {
         if (adhocAward.DonViTrucThuoc.co_quan_don_vi_id) {
           const parentManagers = await prisma.taiKhoan.findMany({
             where: {
-              role: 'MANAGER',
+              role: ROLES.MANAGER,
               QuanNhan: { co_quan_don_vi_id: adhocAward.DonViTrucThuoc.co_quan_don_vi_id },
             },
             select: { id: true, role: true },

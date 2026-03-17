@@ -95,7 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const updateUser = useCallback((updates: Partial<AuthUser>) => {
-    setUser(prev => prev ? { ...prev, ...updates } : null);
+    setUser(prev => (prev ? { ...prev, ...updates } : null));
   }, []);
 
   const value = useMemo(

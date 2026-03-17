@@ -2,12 +2,13 @@ const { prisma } = require('../models');
 const ExcelJS = require('exceljs');
 const proposalService = require('./proposal.service');
 const notificationHelper = require('../helpers/notificationHelper');
+const { ROLES } = require('../constants/roles');
 
 class CommemorativeMedalService {
   /**
    * Export template Excel for Commemorative Medal (KNC VSNXD) import
    */
-  async exportTemplate(userRole = 'MANAGER') {
+  async exportTemplate(userRole = ROLES.MANAGER) {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('KNC_VSNXD');
 
@@ -21,7 +22,7 @@ class CommemorativeMedalService {
     ];
 
     // ADMIN có thêm các cột chi tiết
-    if (userRole === 'ADMIN') {
+    if (userRole === ROLES.ADMIN) {
       columns.push(
         { header: 'Ghi chú', key: 'ghi_chu', width: 30 },
         { header: 'Số quyết định', key: 'so_quyet_dinh', width: 20 }
@@ -44,7 +45,7 @@ class CommemorativeMedalService {
     });
 
     // Thêm sample data cho ADMIN
-    if (userRole === 'ADMIN') {
+    if (userRole === ROLES.ADMIN) {
       worksheet.addRow({
         ho_ten: 'Trần Thị B',
         ngay_sinh: '20/08/1985',
@@ -450,44 +451,40 @@ class CommemorativeMedalService {
    * @returns {Promise<Object>}
    */
   async deleteAward(id, adminUsername = 'Admin') {
-    try {
-      const award = await prisma.kyNiemChuongVSNXDQDNDVN.findUnique({
-        where: { id },
-        include: {
-          QuanNhan: true,
-        },
-      });
+    const award = await prisma.kyNiemChuongVSNXDQDNDVN.findUnique({
+      where: { id },
+      include: {
+        QuanNhan: true,
+      },
+    });
 
-      if (!award) {
-        throw new Error('Bản ghi khen thưởng không tồn tại');
-      }
-
-      const personnelId = award.quan_nhan_id;
-      const personnel = award.QuanNhan;
-
-      // Xóa bản ghi (không xóa đề xuất - proposal)
-      await prisma.kyNiemChuongVSNXDQDNDVN.delete({
-        where: { id },
-      });
-
-      // KNC VSNXD không ảnh hưởng đến hồ sơ hằng năm, niên hạn hay cống hiến
-      // Không cần recalculate
-
-      // Gửi thông báo cho Manager và quân nhân
-      try {
-        await notificationHelper.notifyOnAwardDeleted(award, personnel, 'KNC_VSNXD', adminUsername);
-        console.log(`✅ Sent notification for deleted KNC VSNXD award`);
-      } catch (notifyError) {
-        console.error(`⚠️ Failed to send notification:`, notifyError.message);
-      }
-
-      return {
-        message: 'Xóa khen thưởng KNC VSNXD thành công',
-        personnelId,
-      };
-    } catch (error) {
-      throw error;
+    if (!award) {
+      throw new Error('Bản ghi khen thưởng không tồn tại');
     }
+
+    const personnelId = award.quan_nhan_id;
+    const personnel = award.QuanNhan;
+
+    // Xóa bản ghi (không xóa đề xuất - proposal)
+    await prisma.kyNiemChuongVSNXDQDNDVN.delete({
+      where: { id },
+    });
+
+    // KNC VSNXD không ảnh hưởng đến hồ sơ hằng năm, niên hạn hay cống hiến
+    // Không cần recalculate
+
+    // Gửi thông báo cho Manager và quân nhân
+    try {
+      await notificationHelper.notifyOnAwardDeleted(award, personnel, 'KNC_VSNXD', adminUsername);
+      console.log(`✅ Sent notification for deleted KNC VSNXD award`);
+    } catch (notifyError) {
+      console.error(`⚠️ Failed to send notification:`, notifyError.message);
+    }
+
+    return {
+      message: 'Xóa khen thưởng KNC VSNXD thành công',
+      personnelId,
+    };
   }
 }
 

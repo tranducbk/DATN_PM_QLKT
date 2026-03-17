@@ -387,11 +387,12 @@ export default function Step3SetTitlesNienHan({
 
         if (bypassEligibility) {
           const eligibility = checkHCCSVVEligibilityForPersonnel(record);
-          const isNotEligible = data.danh_hieu && eligibility && (
-            (data.danh_hieu === 'HCCSVV_HANG_BA' && !eligibility.hangBa) ||
-            (data.danh_hieu === 'HCCSVV_HANG_NHI' && !eligibility.hangNhi) ||
-            (data.danh_hieu === 'HCCSVV_HANG_NHAT' && !eligibility.hangNhat)
-          );
+          const isNotEligible =
+            data.danh_hieu &&
+            eligibility &&
+            ((data.danh_hieu === 'HCCSVV_HANG_BA' && !eligibility.hangBa) ||
+              (data.danh_hieu === 'HCCSVV_HANG_NHI' && !eligibility.hangNhi) ||
+              (data.danh_hieu === 'HCCSVV_HANG_NHAT' && !eligibility.hangNhat));
 
           return (
             <div>

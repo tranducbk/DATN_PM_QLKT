@@ -12,11 +12,12 @@
  */
 
 const { prisma } = require('../models');
+const { ROLES } = require('../constants/roles');
 
 /**
  * Lấy thông tin đơn vị của user hiện tại
  */
-const getUnitInfo = async (quanNhanId) => {
+const getUnitInfo = async quanNhanId => {
   if (!quanNhanId) return null;
 
   const personnel = await prisma.quanNhan.findUnique({
@@ -46,7 +47,7 @@ const getUnitInfo = async (quanNhanId) => {
 /**
  * Lấy danh sách quân nhân trong đơn vị
  */
-const getPersonnelInUnit = async (unitInfo) => {
+const getPersonnelInUnit = async unitInfo => {
   if (!unitInfo) return [];
 
   if (unitInfo.isCoQuanDonVi) {
@@ -86,7 +87,7 @@ const attachUnitFilter = async (req, res, next) => {
     const userRole = req.user?.role;
 
     // ADMIN và SUPER_ADMIN không cần filter
-    if (userRole !== 'MANAGER') {
+    if (userRole !== ROLES.MANAGER) {
       req.unitFilter = null;
       return next();
     }
@@ -122,7 +123,7 @@ const attachUnitFilterWithPersonnel = async (req, res, next) => {
   try {
     const userRole = req.user?.role;
 
-    if (userRole !== 'MANAGER') {
+    if (userRole !== ROLES.MANAGER) {
       req.unitFilter = null;
       return next();
     }

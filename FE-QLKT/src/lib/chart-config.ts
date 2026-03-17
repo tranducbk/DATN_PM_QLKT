@@ -27,4 +27,3 @@ ChartJS.register(
   Legend,
   Filler
 );
-

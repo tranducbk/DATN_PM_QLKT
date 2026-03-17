@@ -59,13 +59,13 @@ export default function VietnamAddressCascader({
       const data: Province[] = await response.json();
 
       // Transform data to Cascader format
-      const cascaderOptions: Option[] = data.map((province) => ({
+      const cascaderOptions: Option[] = data.map(province => ({
         value: province.Name,
         label: province.Name,
-        children: province.Districts.map((district) => ({
+        children: province.Districts.map(district => ({
           value: district.Name,
           label: district.Name,
-          children: district.Wards.map((ward) => ({
+          children: district.Wards.map(ward => ({
             value: ward.Name,
             label: ward.Name,
           })),
@@ -80,7 +80,7 @@ export default function VietnamAddressCascader({
     }
   };
 
-  const handleChange: CascaderProps<Option>['onChange'] = (selectedValues) => {
+  const handleChange: CascaderProps<Option>['onChange'] = selectedValues => {
     if (onChange) {
       onChange(selectedValues as string[]);
     }
@@ -104,7 +104,7 @@ export default function VietnamAddressCascader({
         showSearch={{
           filter: (inputValue, path) =>
             path.some(
-              (option) =>
+              option =>
                 option.label && option.label.toLowerCase().indexOf(inputValue.toLowerCase()) > -1
             ),
         }}

@@ -11,12 +11,9 @@ import {
   Space,
   Breadcrumb,
   Typography,
-  Modal,
   message,
-  Tag,
   ConfigProvider,
   theme as antdTheme,
-  Popover,
   Spin,
 } from 'antd';
 import { useTheme } from '@/components/theme-provider';
@@ -122,7 +119,7 @@ export default function PersonnelPage() {
         });
 
         setPersonnel(personnelData);
-        
+
         // Cập nhật pagination total từ API (tổng số records)
         const total = personnelRes.data?.pagination?.total || personnelData.length;
         setPagination(prev => ({
@@ -427,7 +424,6 @@ export default function PersonnelPage() {
                   setSelectedDonViTrucThuoc(newValue !== 'ALL' ? 'ALL' : null);
                   setSelectedChucVu('ALL'); // Reset chức vụ
                   setChucVuSearchValue(''); // Clear search value khi đổi cơ quan đơn vị
-                  setChucVuSearchValue(''); // Clear search value
                 }}
                 onClear={() => {
                   setSelectedCoQuanDonVi('ALL');
@@ -640,8 +636,7 @@ export default function PersonnelPage() {
               pageSize: pagination.pageSize,
               total: filteredPersonnel.length, // Dùng filteredPersonnel.length thay vì total từ API
               showSizeChanger: true,
-              showTotal: (total, range) =>
-                `${range[0]}-${range[1]} của ${total} quân nhân`,
+              showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} quân nhân`,
               pageSizeOptions: ['10', '20', '50', '100'],
               onChange: (page, pageSize) => {
                 // Client-side pagination - không cần gọi API, không cần loading
@@ -666,7 +661,6 @@ export default function PersonnelPage() {
             }}
           />
         </Card>
-
       </div>
     </ConfigProvider>
   );

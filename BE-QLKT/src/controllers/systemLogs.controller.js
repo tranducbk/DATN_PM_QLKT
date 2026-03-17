@@ -1,4 +1,5 @@
 const { prisma } = require('../models');
+const { ROLES } = require('../constants/roles');
 
 class SystemLogsController {
   /**
@@ -39,7 +40,7 @@ class SystemLogsController {
       // - MANAGER: xem được USER và MANAGER (trong đơn vị của mình)
       // - ADMIN: xem được USER, MANAGER, ADMIN
       // - SUPER_ADMIN: xem được tất cả (USER, MANAGER, ADMIN, SUPER_ADMIN)
-      if (currentUser.role === 'MANAGER') {
+      if (currentUser.role === ROLES.MANAGER) {
         // MANAGER chỉ xem được USER và MANAGER trong đơn vị của mình
         where.actor_role = { in: ['USER', 'MANAGER'] };
 
@@ -105,10 +106,10 @@ class SystemLogsController {
             }
           }
         }
-      } else if (currentUser.role === 'ADMIN') {
+      } else if (currentUser.role === ROLES.ADMIN) {
         // ADMIN xem được USER, MANAGER, ADMIN
         where.actor_role = { in: ['USER', 'MANAGER', 'ADMIN'] };
-      } else if (currentUser.role === 'SUPER_ADMIN') {
+      } else if (currentUser.role === ROLES.SUPER_ADMIN) {
         // SUPER_ADMIN xem được tất cả
         if (actorRole && allowedRoles.includes(actorRole)) {
           where.actor_role = actorRole;

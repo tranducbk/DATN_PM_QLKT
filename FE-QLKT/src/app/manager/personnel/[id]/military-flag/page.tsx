@@ -18,10 +18,7 @@ import {
   Tag,
 } from 'antd';
 import type { TableColumnsType } from 'antd';
-import {
-  LeftOutlined,
-  HomeOutlined,
-} from '@ant-design/icons';
+import { LeftOutlined, HomeOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/api-client';
 import { useTheme } from '@/components/theme-provider';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
@@ -291,7 +288,8 @@ export default function ManagerMilitaryFlagPage() {
           okButtonProps={{ danger: true }}
         >
           <Paragraph>
-            Bạn có chắc chắn muốn xóa Huy chương quân kỳ Quyết thắng này? Hành động này không thể hoàn tác.
+            Bạn có chắc chắn muốn xóa Huy chương quân kỳ Quyết thắng này? Hành động này không thể
+            hoàn tác.
           </Paragraph>
         </Modal>
       </div>

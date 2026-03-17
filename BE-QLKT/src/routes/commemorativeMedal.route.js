@@ -4,6 +4,7 @@ const commemorativeMedalController = require('../controllers/commemorativeMedal.
 const { verifyToken, checkRole, requireAdmin } = require('../middlewares/auth');
 const { auditLog } = require('../middlewares/auditLog');
 const { getLogDescription, getResourceId } = require('../helpers/auditLogHelper');
+const { ROLES } = require('../constants/roles');
 
 // Cấu hình multer cho file upload
 const upload = multer({
@@ -34,7 +35,7 @@ const upload = multer({
 router.get(
   '/template',
   verifyToken,
-  checkRole(['ADMIN', 'MANAGER']),
+  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
   commemorativeMedalController.getTemplate
 );
 
@@ -46,7 +47,7 @@ router.get(
 router.post(
   '/import',
   verifyToken,
-  checkRole(['ADMIN', 'MANAGER']),
+  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
   upload.single('file'),
   commemorativeMedalController.importFromExcel
 );
@@ -56,7 +57,7 @@ router.post(
  * @desc    Lấy danh sách Kỷ niệm chương (Admin: tất cả, Manager: đơn vị mình)
  * @access  ADMIN, MANAGER
  */
-router.get('/', verifyToken, checkRole(['ADMIN', 'MANAGER']), commemorativeMedalController.getAll);
+router.get('/', verifyToken, checkRole([ROLES.ADMIN, ROLES.MANAGER]), commemorativeMedalController.getAll);
 
 /**
  * @route   GET /api/commemorative-medals/export
@@ -66,7 +67,7 @@ router.get('/', verifyToken, checkRole(['ADMIN', 'MANAGER']), commemorativeMedal
 router.get(
   '/export',
   verifyToken,
-  checkRole(['ADMIN', 'MANAGER']),
+  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
   commemorativeMedalController.exportToExcel
 );
 
@@ -78,7 +79,7 @@ router.get(
 router.get(
   '/statistics',
   verifyToken,
-  checkRole(['ADMIN', 'MANAGER']),
+  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
   commemorativeMedalController.getStatistics
 );
 
@@ -90,7 +91,7 @@ router.get(
 router.get(
   '/personnel/:personnel_id',
   verifyToken,
-  checkRole(['ADMIN', 'MANAGER', 'USER']),
+  checkRole([ROLES.ADMIN, ROLES.MANAGER, ROLES.USER]),
   commemorativeMedalController.getByPersonnelId
 );
 

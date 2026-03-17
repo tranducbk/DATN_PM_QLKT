@@ -8,7 +8,6 @@ import {
   Alert,
   message,
   ConfigProvider,
-  theme as antdTheme,
   Tag,
   Breadcrumb,
 } from 'antd';
@@ -26,6 +25,7 @@ import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
 import { formatDate } from '@/lib/utils';
 import { useTheme } from '@/components/theme-provider';
+import { getAntdThemeConfig } from '@/lib/antd-theme';
 
 // Helper function để hiển thị tên quyền
 const getRoleName = (role: string) => {
@@ -46,7 +46,7 @@ export default function ProfileViewForm({
   personnelId: externalPersonnelId,
 }: ProfileViewFormProps = {}) {
   const router = useRouter();
-  const { theme: currentTheme } = useTheme();
+  const { isDark } = useTheme();
   const [loading, setLoading] = useState(true);
   const [personnelData, setPersonnelData] = useState<any>(null);
 
@@ -111,9 +111,7 @@ export default function ProfileViewForm({
 
   return (
     <ConfigProvider
-      theme={{
-        algorithm: currentTheme === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
-      }}
+      theme={getAntdThemeConfig(isDark)}
     >
       <div className="p-6 max-w-7xl mx-auto">
         {/* Breadcrumb */}
@@ -144,7 +142,7 @@ export default function ProfileViewForm({
               <div className="overflow-x-auto">
                 <table
                   className={`min-w-full rounded-lg border ${
-                    currentTheme === 'dark'
+                    isDark
                       ? 'border-gray-700 bg-gray-900/60'
                       : 'border-gray-200 bg-white'
                   }`}
@@ -159,8 +157,8 @@ export default function ProfileViewForm({
                           personnelData.gioi_tinh === 'NAM'
                             ? 'Nam'
                             : personnelData.gioi_tinh === 'NU'
-                            ? 'Nữ'
-                            : '-',
+                              ? 'Nữ'
+                              : '-',
                       },
                       { label: 'CCCD', value: personnelData.cccd || '-' },
                       { label: 'Số điện thoại', value: personnelData.so_dien_thoai || '-' },
@@ -171,19 +169,19 @@ export default function ProfileViewForm({
                       <tr
                         key={item.label}
                         className={`border-b last:border-b-0 ${
-                          currentTheme === 'dark' ? 'border-gray-800' : 'border-gray-100'
+                          isDark ? 'border-gray-800' : 'border-gray-100'
                         }`}
                       >
                         <td
                           className={`px-4 py-3 text-sm font-semibold w-56 whitespace-nowrap ${
-                            currentTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                            isDark ? 'text-gray-400' : 'text-gray-600'
                           }`}
                         >
                           {item.label}
                         </td>
                         <td
                           className={`px-4 py-3 text-base break-words ${
-                            currentTheme === 'dark' ? 'text-gray-200' : 'text-gray-800'
+                            isDark ? 'text-gray-200' : 'text-gray-800'
                           }`}
                         >
                           {item.value ?? '-'}
@@ -199,7 +197,7 @@ export default function ProfileViewForm({
               <div className="overflow-x-auto">
                 <table
                   className={`min-w-full rounded-lg border ${
-                    currentTheme === 'dark'
+                    isDark
                       ? 'border-gray-700 bg-gray-900/60'
                       : 'border-gray-200 bg-white'
                   }`}
@@ -220,19 +218,19 @@ export default function ProfileViewForm({
                       <tr
                         key={item.label}
                         className={`border-b last:border-b-0 ${
-                          currentTheme === 'dark' ? 'border-gray-800' : 'border-gray-100'
+                          isDark ? 'border-gray-800' : 'border-gray-100'
                         }`}
                       >
                         <td
                           className={`px-4 py-3 text-sm font-semibold w-56 whitespace-nowrap ${
-                            currentTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                            isDark ? 'text-gray-400' : 'text-gray-600'
                           }`}
                         >
                           {item.label}
                         </td>
                         <td
                           className={`px-4 py-3 text-base break-words ${
-                            currentTheme === 'dark' ? 'text-gray-200' : 'text-gray-800'
+                            isDark ? 'text-gray-200' : 'text-gray-800'
                           }`}
                         >
                           {item.value ?? '-'}
@@ -248,7 +246,7 @@ export default function ProfileViewForm({
               <div className="overflow-x-auto">
                 <table
                   className={`min-w-full rounded-lg border ${
-                    currentTheme === 'dark'
+                    isDark
                       ? 'border-gray-700 bg-gray-900/60'
                       : 'border-gray-200 bg-white'
                   }`}
@@ -278,19 +276,19 @@ export default function ProfileViewForm({
                       <tr
                         key={item.label}
                         className={`border-b last:border-b-0 ${
-                          currentTheme === 'dark' ? 'border-gray-800' : 'border-gray-100'
+                          isDark ? 'border-gray-800' : 'border-gray-100'
                         }`}
                       >
                         <td
                           className={`px-4 py-3 text-sm font-semibold w-56 whitespace-nowrap ${
-                            currentTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                            isDark ? 'text-gray-400' : 'text-gray-600'
                           }`}
                         >
                           {item.label}
                         </td>
                         <td
                           className={`px-4 py-3 text-base break-words ${
-                            currentTheme === 'dark' ? 'text-gray-200' : 'text-gray-800'
+                            isDark ? 'text-gray-200' : 'text-gray-800'
                           }`}
                         >
                           {item.value ?? '-'}
@@ -307,7 +305,7 @@ export default function ProfileViewForm({
                 <div className="overflow-x-auto">
                   <table
                     className={`min-w-full rounded-lg border ${
-                      currentTheme === 'dark'
+                      isDark
                         ? 'border-gray-700 bg-gray-900/60'
                         : 'border-gray-200 bg-white'
                     }`}
@@ -323,12 +321,12 @@ export default function ProfileViewForm({
                                 personnelData.TaiKhoan.role === 'SUPER_ADMIN'
                                   ? 'purple'
                                   : personnelData.TaiKhoan.role === 'ADMIN'
-                                  ? 'red'
-                                  : personnelData.TaiKhoan.role === 'MANAGER'
-                                  ? 'blue'
-                                  : personnelData.TaiKhoan.role === 'USER'
-                                  ? 'green'
-                                  : 'default'
+                                    ? 'red'
+                                    : personnelData.TaiKhoan.role === 'MANAGER'
+                                      ? 'blue'
+                                      : personnelData.TaiKhoan.role === 'USER'
+                                        ? 'green'
+                                        : 'default'
                               }
                             >
                               {getRoleName(personnelData.TaiKhoan.role)}
@@ -339,19 +337,19 @@ export default function ProfileViewForm({
                         <tr
                           key={item.label}
                           className={`border-b last:border-b-0 ${
-                            currentTheme === 'dark' ? 'border-gray-800' : 'border-gray-100'
+                            isDark ? 'border-gray-800' : 'border-gray-100'
                           }`}
                         >
                           <td
                             className={`px-4 py-3 text-sm font-semibold w-48 ${
-                              currentTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                              isDark ? 'text-gray-400' : 'text-gray-600'
                             }`}
                           >
                             {item.label}
                           </td>
                           <td
                             className={`px-4 py-3 text-base break-words ${
-                              currentTheme === 'dark' ? 'text-gray-200' : 'text-gray-800'
+                              isDark ? 'text-gray-200' : 'text-gray-800'
                             }`}
                           >
                             {item.value ?? '-'}

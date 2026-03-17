@@ -334,12 +334,14 @@ export default function DecisionModal({
           label="Số quyết định"
           rules={[{ required: true, message: 'Vui lòng nhập số quyết định' }]}
           extra={
-            <div style={{ marginTop: '12px', paddingTop: '4px', fontSize: '12px', color: '#8c8c8c' }}>
+            <div
+              style={{ marginTop: '12px', paddingTop: '4px', fontSize: '12px', color: '#8c8c8c' }}
+            >
               {selectedDecision
                 ? 'Đã chọn quyết định. Click nút X để chọn lại quyết định khác. Để sửa thông tin, vui lòng vào trang "Quản lý Quyết định".'
                 : initialDecision
-                ? 'Chế độ chỉnh sửa. Có thể thay đổi các thông tin quyết định.'
-                : 'Nhập để tìm kiếm quyết định đã có hoặc tạo mới'}
+                  ? 'Chế độ chỉnh sửa. Có thể thay đổi các thông tin quyết định.'
+                  : 'Nhập để tìm kiếm quyết định đã có hoặc tạo mới'}
             </div>
           }
         >
@@ -368,12 +370,7 @@ export default function DecisionModal({
             label="Năm"
             rules={[{ required: true, message: 'Vui lòng nhập năm' }]}
           >
-            <Input
-              type="number"
-              placeholder="2024"
-              size="large"
-              disabled={!!selectedDecision}
-            />
+            <Input type="number" placeholder="2024" size="large" disabled={!!selectedDecision} />
           </Form.Item>
 
           <Form.Item
@@ -444,8 +441,8 @@ export default function DecisionModal({
               {selectedDecision?.file_path
                 ? 'File quyết định đã có sẵn. Click nút X để chọn lại quyết định khác.'
                 : initialDecision?.file_path
-                ? 'File quyết định đã có sẵn. Có thể upload file mới để thay thế.'
-                : 'Kéo thả file vào đây hoặc click để chọn file'}
+                  ? 'File quyết định đã có sẵn. Có thể upload file mới để thay thế.'
+                  : 'Kéo thả file vào đây hoặc click để chọn file'}
             </p>
             <p className="ant-upload-hint">Chỉ chấp nhận file PDF</p>
           </Upload.Dragger>

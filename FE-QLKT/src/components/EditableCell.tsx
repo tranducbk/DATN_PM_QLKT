@@ -19,7 +19,7 @@ export function EditableCell({
   editable = true,
   options = [],
 }: EditableCellProps) {
-  const { theme: currentTheme } = useTheme();
+  const { isDark } = useTheme();
   const [isEditing, setIsEditing] = useState(false);
   const [currentValue, setCurrentValue] = useState(value);
 
@@ -54,7 +54,7 @@ export function EditableCell({
       return (
         <span
           style={{
-            color: currentTheme === 'dark' ? '#9ca3af' : '#666',
+            color: isDark ? '#9ca3af' : '#666',
           }}
         >
           {option?.label || value || '-'}
@@ -64,7 +64,7 @@ export function EditableCell({
     return (
       <span
         style={{
-          color: currentTheme === 'dark' ? '#9ca3af' : '#666',
+          color: isDark ? '#9ca3af' : '#666',
         }}
       >
         {value || '-'}
@@ -118,8 +118,8 @@ export function EditableCell({
     );
   }
 
-  const hoverBgColor = currentTheme === 'dark' ? '#374151' : '#f5f5f5';
-  const placeholderColor = currentTheme === 'dark' ? '#6b7280' : '#bfbfbf';
+  const hoverBgColor = isDark ? '#374151' : '#f5f5f5';
+  const placeholderColor = isDark ? '#6b7280' : '#bfbfbf';
 
   return (
     <div

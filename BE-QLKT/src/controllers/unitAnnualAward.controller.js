@@ -14,7 +14,7 @@ exports.list = async (req, res) => {
     });
     res.json({ success: true, data });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -24,11 +24,11 @@ exports.getById = async (req, res) => {
     if (!data) {
       return res
         .status(404)
-        .json({ success: false, error: 'Không tìm thấy bản ghi hoặc không có quyền xem' });
+        .json({ success: false, message: 'Không tìm thấy bản ghi hoặc không có quyền xem' });
     }
     res.json({ success: true, data });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -50,7 +50,7 @@ exports.upsert = async (req, res) => {
       .status(201)
       .json({ success: true, data, message: 'Lưu khen thưởng đơn vị hằng năm thành công' });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -70,7 +70,7 @@ exports.propose = async (req, res) => {
       message: 'Đã gửi đề xuất khen thưởng đơn vị. Hãy chờ admin duyệt',
     });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -89,7 +89,7 @@ exports.approve = async (req, res) => {
     });
     res.json({ success: true, data, message: 'Đã phê duyệt đề xuất' });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -101,7 +101,7 @@ exports.reject = async (req, res) => {
     });
     res.json({ success: true, data, message: 'Đã từ chối đề xuất' });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -110,7 +110,7 @@ exports.recalculate = async (req, res) => {
     const count = await service.recalculate({ don_vi_id: req.body?.don_vi_id, nam: req.body?.nam });
     res.json({ success: true, data: { updated: count } });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -119,7 +119,7 @@ exports.remove = async (req, res) => {
     await service.remove(req.params.id);
     res.json({ success: true, data: true, message: 'Đã xóa bản ghi' });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 

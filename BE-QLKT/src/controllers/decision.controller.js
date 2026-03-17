@@ -294,7 +294,9 @@ class DecisionController {
   async getFilePath(req, res) {
     try {
       const { soQuyetDinh } = req.params;
-      const result = await decisionService.getFilePathBySoQuyetDinh(decodeURIComponent(soQuyetDinh));
+      const result = await decisionService.getFilePathBySoQuyetDinh(
+        decodeURIComponent(soQuyetDinh)
+      );
 
       if (!result.success) {
         return res.status(result.decision ? 200 : 404).json({
@@ -388,7 +390,10 @@ class DecisionController {
 
       // Set headers để download file
       res.setHeader('Content-Type', contentType);
-      res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${encodeURIComponent(filename)}"`
+      );
 
       // Trả về file
       return res.sendFile(result.filePath);

@@ -4,6 +4,7 @@ const hccsvvController = require('../controllers/hccsvv.controller');
 const { verifyToken, checkRole, requireManager, requireAdmin } = require('../middlewares/auth');
 const { auditLog } = require('../middlewares/auditLog');
 const { getLogDescription, getResourceId } = require('../helpers/auditLogHelper');
+const { ROLES } = require('../constants/roles');
 
 // Cấu hình multer cho file upload
 const upload = multer({
@@ -41,7 +42,7 @@ router.get('/template', verifyToken, requireManager, hccsvvController.getTemplat
 router.post(
   '/import',
   verifyToken,
-  checkRole(['ADMIN', 'MANAGER']),
+  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
   upload.single('file'),
   hccsvvController.importFromExcel
 );
@@ -51,14 +52,14 @@ router.post(
  * @desc    Lấy danh sách Huy chương Chiến sĩ Vẻ vang (Admin: tất cả, Manager: đơn vị mình)
  * @access  ADMIN, MANAGER
  */
-router.get('/', verifyToken, checkRole(['ADMIN', 'MANAGER']), hccsvvController.getAll);
+router.get('/', verifyToken, checkRole([ROLES.ADMIN, ROLES.MANAGER]), hccsvvController.getAll);
 
 /**
  * @route   GET /api/hccsvv/export
  * @desc    Xuất file Excel Huy chương Chiến sĩ Vẻ vang (Admin: tất cả, Manager: đơn vị mình)
  * @access  ADMIN, MANAGER
  */
-router.get('/export', verifyToken, checkRole(['ADMIN', 'MANAGER']), hccsvvController.exportToExcel);
+router.get('/export', verifyToken, checkRole([ROLES.ADMIN, ROLES.MANAGER]), hccsvvController.exportToExcel);
 
 /**
  * @route   GET /api/hccsvv/statistics
@@ -68,7 +69,7 @@ router.get('/export', verifyToken, checkRole(['ADMIN', 'MANAGER']), hccsvvContro
 router.get(
   '/statistics',
   verifyToken,
-  checkRole(['ADMIN', 'MANAGER']),
+  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
   hccsvvController.getStatistics
 );
 
@@ -80,7 +81,7 @@ router.get(
 router.post(
   '/',
   verifyToken,
-  checkRole(['SUPER_ADMIN']),
+  checkRole([ROLES.SUPER_ADMIN]),
   auditLog({
     action: 'CREATE',
     resource: 'hccsvv',

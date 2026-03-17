@@ -1,9 +1,6 @@
 import { Typography } from 'antd';
 import type { CSSProperties } from 'react';
-import {
-  DANH_HIEU_MAP,
-  getLoaiKhenThuongByDanhHieu,
-} from '@/constants/danhHieu.constants';
+import { DANH_HIEU_MAP, getLoaiKhenThuongByDanhHieu } from '@/constants/danhHieu.constants';
 
 const { Text } = Typography;
 
@@ -75,15 +72,7 @@ export const renderAnnualAwards = (
   // Danh hiệu hằng năm
   if (text) {
     const fullName = DANH_HIEU_MAP[text] || text;
-    items.push(
-      renderAwardItem(
-        'danh_hieu',
-        fullName,
-        record.so_quyet_dinh,
-        true,
-        onDownload
-      )
-    );
+    items.push(renderAwardItem('danh_hieu', fullName, record.so_quyet_dinh, true, onDownload));
   }
 
   // Các bằng khen bổ sung
@@ -110,9 +99,7 @@ export const renderAnnualAwards = (
 
   additionalAwards.forEach(({ key, flag, decision, code }) => {
     if (flag && decision) {
-      items.push(
-        renderAwardItem(key, DANH_HIEU_MAP[code] || code, decision, false, onDownload)
-      );
+      items.push(renderAwardItem(key, DANH_HIEU_MAP[code] || code, decision, false, onDownload));
     }
   });
 
@@ -137,4 +124,3 @@ export const getLoaiKhenThuong = (danhHieu: string | null): string => {
   const result = getLoaiKhenThuongByDanhHieu(danhHieu);
   return result === 'Chưa xác định' ? '-' : result;
 };
-

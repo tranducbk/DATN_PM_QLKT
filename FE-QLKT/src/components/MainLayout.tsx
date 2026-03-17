@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, ReactNode } from 'react';
+import { useState, useEffect, useCallback, ReactNode } from 'react';
+import { useSocket } from '@/hooks/useSocket';
 import {
   Layout,
   Menu,
@@ -38,6 +39,7 @@ import {
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useTheme } from './theme-provider';
+import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api-client';
 import { formatDate } from '@/lib/utils';
 
@@ -48,19 +50,67 @@ interface MainLayoutProps {
   role?: 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'USER';
 }
 
+/**
+ * Component hiển thị toast khi có thông báo mới qua socket.
+ * Phải đặt bên trong <App> để dùng được App.useApp().
+ */
+function NotificationToast({ notification }: { notification: any }) {
+  const { notification: antNotification } = App.useApp();
+
+  useEffect(() => {
+    if (!notification) return;
+    antNotification.info({
+      message: notification.title || 'Thông báo mới',
+      description: notification.message,
+      placement: 'bottomRight',
+      duration: 5,
+    });
+  }, [notification]);
+
+  return null;
+}
+
 export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [userName, setUserName] = useState('User');
   const [notificationCount, setNotificationCount] = useState(0);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [notificationLoading, setNotificationLoading] = useState(false);
-  const [actualRole, setActualRole] = useState<'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'USER'>(role);
-  const [personnelId, setPersonnelId] = useState<string | null>(null);
+  const [latestNotification, setLatestNotification] = useState<any>(null);
   const router = useRouter();
   const pathname = usePathname();
   const { theme, toggle } = useTheme();
+  const { user, logout: authLogout } = useAuth();
+
+  const actualRole = (user?.role ?? role) as 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'USER';
+  const userName = user?.username || 'User';
+  const personnelId = user?.quan_nhan_id ?? null;
+  const [accessToken, setAccessToken] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('accessToken');
+    }
+    return null;
+  });
+
+  // Cập nhật token khi user thay đổi (login/logout)
+  useEffect(() => {
+    if (user) {
+      const token = localStorage.getItem('accessToken');
+      setAccessToken(token);
+    } else {
+      setAccessToken(null);
+    }
+  }, [user]);
+
+  // Nhận thông báo real-time qua Socket.IO
+  const handleNewNotification = useCallback((notification: unknown) => {
+    setNotificationCount(prev => prev + 1);
+    setNotifications(prev => [notification as any, ...prev]);
+    setLatestNotification(notification);
+  }, []);
+
+  useSocket(accessToken, handleNewNotification);
 
   useEffect(() => {
     // Kiểm tra kích thước màn hình
@@ -74,32 +124,9 @@ export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps
   }, []);
 
   useEffect(() => {
-    // Lấy role thực tế từ localStorage (ưu tiên hơn prop)
-    const storedRole = localStorage.getItem('role');
-    if (storedRole && ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'USER'].includes(storedRole)) {
-      setActualRole(storedRole as 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'USER');
-    } else {
-      setActualRole(role);
-    }
-
-    // Lấy tên người dùng từ localStorage
-    const user = localStorage.getItem('user');
-    if (user) {
-      try {
-        const userData = JSON.parse(user);
-        setUserName(userData.username || userData.name || userData.email || 'User');
-        if (userData.quan_nhan_id) {
-          setPersonnelId(userData.quan_nhan_id);
-        }
-      } catch (e) {
-        setUserName('User');
-        setPersonnelId(null);
-      }
-    }
-
     // Lấy số lượng thông báo chưa đọc
     loadNotificationCount();
-  }, [role]);
+  }, []);
 
   const loadNotificationCount = async () => {
     try {
@@ -115,13 +142,13 @@ export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps
   const loadNotifications = async () => {
     try {
       setNotificationLoading(true);
-      // Load all notifications (both read and unread)
       const response = await apiClient.getNotifications({
         page: 1,
-        limit: 20,
+        limit: 1000,
       });
       if (response.success && response.data) {
-        setNotifications(response.data.notifications || []);
+        const list = response.data.notifications || [];
+        setNotifications(list);
       }
     } catch (error) {
       console.error('Failed to load notifications:', error);
@@ -142,26 +169,10 @@ export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps
 
       // Navigate to the link if provided
       if (link) {
-        // For manager role, if link contains proposal detail, redirect to proposals list
-        if (actualRole === 'MANAGER' && link.match(/\/manager\/proposals\/\d+/)) {
-          router.push('/manager/proposals');
-        }
-        // For admin role, fix proposal detail URL to include /review
-        else if (actualRole === 'ADMIN' && link.match(/\/admin\/proposals\/\d+$/)) {
-          const proposalId = link.match(/\/admin\/proposals\/(\d+)$/)?.[1];
-          if (proposalId) {
-            router.push(`/admin/proposals/review/${proposalId}`);
-          } else {
-            router.push(link);
-          }
-        } else {
-          router.push(link);
-        }
+        router.push(link);
       } else if (actualRole === 'MANAGER') {
-        // Default to proposals page for managers
         router.push('/manager/proposals');
       } else if (actualRole === 'ADMIN') {
-        // Default to proposals review page for admin
         router.push('/admin/proposals/review');
       }
     } catch (error) {
@@ -196,11 +207,7 @@ export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('token');
-    localStorage.removeItem('role');
-    localStorage.removeItem('user');
+    authLogout();
     router.push('/login');
   };
 
@@ -324,13 +331,7 @@ export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps
           key: 'profile',
           icon: <SolutionOutlined />,
           label: (
-            <Link
-              href={
-                personnelId
-                  ? `/manager/personnel/${personnelId}`
-                  : '/manager/dashboard'
-              }
-            >
+            <Link href={personnelId ? `/manager/personnel/${personnelId}` : '/manager/dashboard'}>
               Hồ sơ của tôi
             </Link>
           ),
@@ -583,6 +584,7 @@ export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps
       }}
     >
       <App>
+        <NotificationToast notification={latestNotification} />
         <Layout className="min-h-screen">
           {/* Desktop Sidebar */}
           {!isMobile && (
@@ -664,118 +666,119 @@ export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps
                           },
                         ]
                       : notifications.length === 0
-                      ? [
-                          {
-                            key: 'empty',
-                            label: (
-                              <div className="text-center py-12 px-6 min-w-[320px] max-w-[420px]">
-                                <div className="flex flex-col items-center justify-center">
-                                  <BellOutlined className="text-4xl text-gray-300 dark:text-gray-600 mb-4" />
-                                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-                                    Không có thông báo
-                                  </p>
-                                  <p className="text-xs text-gray-400 dark:text-gray-500">
-                                    Các thông báo mới sẽ xuất hiện ở đây
-                                  </p>
+                        ? [
+                            {
+                              key: 'empty',
+                              label: (
+                                <div className="text-center py-12 px-6 min-w-[320px] max-w-[420px]">
+                                  <div className="flex flex-col items-center justify-center">
+                                    <BellOutlined className="text-4xl text-gray-300 dark:text-gray-600 mb-4" />
+                                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                                      Không có thông báo
+                                    </p>
+                                    <p className="text-xs text-gray-400 dark:text-gray-500">
+                                      Các thông báo mới sẽ xuất hiện ở đây
+                                    </p>
+                                  </div>
                                 </div>
-                              </div>
-                            ),
-                          },
-                        ]
-                      : [
-                          // Header với nút "Đọc tất cả"
-                          {
-                            key: 'notification-header',
-                            label: (
-                              <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between">
-                                <h3 className="text-base font-bold text-gray-900 dark:text-white">
-                                  Thông báo
-                                </h3>
-                                {notifications.some(n => !n.is_read) && (
-                                  <button
-                                    onClick={e => {
-                                      e.stopPropagation();
-                                      handleMarkAllAsRead();
-                                    }}
-                                    className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors px-3 py-1.5 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/20 active:bg-blue-100 dark:active:bg-blue-900/30"
-                                  >
-                                    Đọc tất cả
-                                  </button>
-                                )}
-                              </div>
-                            ),
-                          },
-                          {
-                            type: 'divider' as const,
-                          },
-                          // Notification items
-                          ...notifications.map(notif => ({
-                            key: `notification-${notif.id}`,
-                            label: (
-                              <div
-                                className={`max-w-xs cursor-pointer p-4 rounded-lg transition-all duration-200 mx-2 mb-2 ${
-                                  notif.is_read
-                                    ? 'bg-gray-50 dark:bg-gray-700/60 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-600'
-                                    : 'bg-blue-50 dark:bg-gray-700/80 hover:bg-blue-100 dark:hover:bg-gray-600 border-l-4 border-blue-500 dark:border-blue-400 shadow-sm'
-                                }`}
-                                onClick={() => {
-                                  handleMarkAsRead(notif.id, notif.is_read, notif.link);
-                                }}
-                              >
-                                <div className="flex items-start gap-3">
-                                  {!notif.is_read && (
-                                    <div className="w-2.5 h-2.5 bg-blue-500 dark:bg-blue-300 rounded-full mt-1.5 flex-shrink-0 animate-pulse"></div>
-                                  )}
-                                  {notif.is_read && (
-                                    <div className="w-2.5 h-2.5 mt-1.5 flex-shrink-0"></div>
-                                  )}
-                                  <div className="flex-1 min-w-0">
-                                    <p
-                                      className={`font-semibold text-sm mb-2 leading-snug ${
-                                        notif.is_read
-                                          ? 'text-gray-700 dark:text-gray-300'
-                                          : 'text-gray-900 dark:text-white'
-                                      }`}
+                              ),
+                            },
+                          ]
+                        : [
+                            // Header với nút "Đọc tất cả"
+                            {
+                              key: 'notification-header',
+                              label: (
+                                <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between">
+                                  <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                                    Thông báo
+                                  </h3>
+                                  {notifications.some(n => !n.is_read) && (
+                                    <button
+                                      onClick={e => {
+                                        e.stopPropagation();
+                                        handleMarkAllAsRead();
+                                      }}
+                                      className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors px-3 py-1.5 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/20 active:bg-blue-100 dark:active:bg-blue-900/30"
                                     >
-                                      {notif.title}
-                                    </p>
-                                    <p
-                                      className={`text-sm mt-1.5 leading-relaxed ${
-                                        notif.is_read
-                                          ? 'text-gray-600 dark:text-gray-400'
-                                          : 'text-gray-800 dark:text-gray-200'
-                                      }`}
-                                    >
-                                      {notif.message}
-                                    </p>
-                                    <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-200 dark:border-gray-700">
+                                      Đọc tất cả
+                                    </button>
+                                  )}
+                                </div>
+                              ),
+                            },
+                            {
+                              type: 'divider' as const,
+                            },
+                            // Notification items
+                            ...notifications.map(notif => ({
+                              key: `notification-${notif.id}`,
+                              label: (
+                                <div
+                                  className={`max-w-xs cursor-pointer p-4 rounded-lg transition-all duration-200 mx-2 mb-2 ${
+                                    notif.is_read
+                                      ? 'bg-gray-50 dark:bg-gray-700/60 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-600'
+                                      : 'bg-blue-50 dark:bg-gray-700/80 hover:bg-blue-100 dark:hover:bg-gray-600 border-l-4 border-blue-500 dark:border-blue-400 shadow-sm'
+                                  }`}
+                                  onClick={() => {
+                                    handleMarkAsRead(notif.id, notif.is_read, notif.link);
+                                  }}
+                                >
+                                  <div className="flex items-start gap-3">
+                                    {!notif.is_read && (
+                                      <div className="w-2.5 h-2.5 bg-blue-500 dark:bg-blue-300 rounded-full mt-1.5 flex-shrink-0 animate-pulse"></div>
+                                    )}
+                                    {notif.is_read && (
+                                      <div className="w-2.5 h-2.5 mt-1.5 flex-shrink-0"></div>
+                                    )}
+                                    <div className="flex-1 min-w-0">
                                       <p
-                                        className={`text-xs flex items-center gap-1.5 ${
+                                        className={`font-semibold text-sm mb-2 leading-snug ${
                                           notif.is_read
-                                            ? 'text-gray-400 dark:text-gray-500'
-                                            : 'text-gray-500 dark:text-gray-400'
+                                            ? 'text-gray-700 dark:text-gray-300'
+                                            : 'text-gray-900 dark:text-white'
                                         }`}
                                       >
-                                        <span>{formatNotificationTime(notif.created_at)}</span>
+                                        {notif.title}
                                       </p>
-                                      {notif.is_read && (
-                                        <span className="text-[10px] font-medium text-gray-400 dark:text-gray-400 px-2 py-0.5 bg-gray-100 dark:bg-gray-600 rounded">
-                                          Đã đọc
-                                        </span>
-                                      )}
+                                      <p
+                                        className={`text-sm mt-1.5 leading-relaxed ${
+                                          notif.is_read
+                                            ? 'text-gray-600 dark:text-gray-400'
+                                            : 'text-gray-800 dark:text-gray-200'
+                                        }`}
+                                      >
+                                        {notif.message}
+                                      </p>
+                                      <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-200 dark:border-gray-700">
+                                        <p
+                                          className={`text-xs flex items-center gap-1.5 ${
+                                            notif.is_read
+                                              ? 'text-gray-400 dark:text-gray-500'
+                                              : 'text-gray-500 dark:text-gray-400'
+                                          }`}
+                                        >
+                                          <span>{formatNotificationTime(notif.created_at)}</span>
+                                        </p>
+                                        {notif.is_read && (
+                                          <span className="text-[10px] font-medium text-gray-400 dark:text-gray-400 px-2 py-0.5 bg-gray-100 dark:bg-gray-600 rounded">
+                                            Đã đọc
+                                          </span>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
-                              </div>
-                            ),
-                          })),
-                        ],
+                              ),
+                            })),
+                          ],
                   }}
                   placement="bottomRight"
                   trigger={['click']}
                   onOpenChange={open => {
                     if (open) {
                       loadNotifications();
+                      loadNotificationCount();
                     }
                   }}
                   overlayStyle={{ maxWidth: '420px', marginTop: '-35px' }}

@@ -50,5 +50,3 @@ module.exports = {
   getDecisionFilePath,
   getDecisionInfo,
 };
-
-

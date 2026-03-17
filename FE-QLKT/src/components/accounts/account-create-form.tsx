@@ -27,6 +27,7 @@ import { accountCreateSchema } from '@/lib/schemas';
 import { apiClient } from '@/lib/api-client';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { message } from 'antd';
+import { useAuth } from '@/contexts/AuthContext';
 
 type AccountCreateValues = z.infer<typeof accountCreateSchema>;
 
@@ -34,17 +35,14 @@ export function AccountCreateForm() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [currentUserRole, setCurrentUserRole] = useState<string>('');
   const [coQuanDonViList, setCoQuanDonViList] = useState<any[]>([]); // Danh sách Cơ quan đơn vị
   const [donViTrucThuocList, setDonViTrucThuocList] = useState<any[]>([]); // Danh sách Đơn vị trực thuộc (tất cả)
   const [positions, setPositions] = useState<any[]>([]);
   const router = useRouter();
+  const { user } = useAuth();
+  const currentUserRole = user?.role || '';
 
   useEffect(() => {
-    // Lấy role của user hiện tại từ localStorage
-    const role = localStorage.getItem('role');
-    setCurrentUserRole(role || '');
-
     // Lấy danh sách đơn vị và chức vụ
     fetchUnitsAndPositions();
   }, []);
@@ -233,8 +231,7 @@ export function AccountCreateForm() {
       if (response.success) {
         message.success('Tạo tài khoản thành công');
         // Redirect về đúng trang dựa trên role hiện tại
-        const currentRole = localStorage.getItem('role');
-        if (currentRole === 'SUPER_ADMIN') {
+        if (currentUserRole === 'SUPER_ADMIN') {
           router.push('/super-admin/accounts');
         } else if (currentRole === 'ADMIN') {
           router.push('/admin/accounts');
@@ -453,8 +450,8 @@ export function AccountCreateForm() {
                               !selectedCoQuanDonViId
                                 ? 'Vui lòng chọn cơ quan đơn vị trước'
                                 : filteredDonViTrucThuoc.length === 0
-                                ? 'Không có đơn vị trực thuộc nào'
-                                : 'Chọn đơn vị trực thuộc'
+                                  ? 'Không có đơn vị trực thuộc nào'
+                                  : 'Chọn đơn vị trực thuộc'
                             }
                           />
                         </SelectTrigger>
@@ -505,8 +502,8 @@ export function AccountCreateForm() {
                                   ? 'Vui lòng chọn cơ quan đơn vị trước'
                                   : 'Vui lòng chọn đơn vị trực thuộc trước'
                                 : filteredPositions.length === 0
-                                ? 'Không có chức vụ nào'
-                                : 'Chọn chức vụ'
+                                  ? 'Không có chức vụ nào'
+                                  : 'Chọn chức vụ'
                             }
                           />
                         </SelectTrigger>

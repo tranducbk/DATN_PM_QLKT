@@ -1,4 +1,5 @@
 const hccsvvService = require('../services/hccsvv.service');
+const { ROLES } = require('../constants/roles');
 
 class HCCSVVController {
   /**
@@ -73,7 +74,7 @@ class HCCSVVController {
       if (ho_ten) filters.ho_ten = ho_ten;
 
       // Nếu là Manager, chỉ xem khen thưởng đơn vị mình
-      if (userRole === 'MANAGER') {
+      if (userRole === ROLES.MANAGER) {
         const userQuanNhanId = req.user?.quan_nhan_id;
         if (!userQuanNhanId) {
           return res.status(403).json({
@@ -134,7 +135,7 @@ class HCCSVVController {
       if (danh_hieu) filters.danh_hieu = danh_hieu;
 
       // Nếu là Manager, chỉ xuất khen thưởng đơn vị mình
-      if (userRole === 'MANAGER') {
+      if (userRole === ROLES.MANAGER) {
         const user = await hccsvvService.getUserWithUnit(userId);
         if (!user || !user.QuanNhan) {
           return res.status(403).json({
@@ -203,15 +204,18 @@ class HCCSVVController {
         });
       }
 
-      const result = await hccsvvService.createDirect({
-        quan_nhan_id,
-        danh_hieu,
-        nam: parseInt(nam),
-        cap_bac,
-        chuc_vu,
-        so_quyet_dinh,
-        ghi_chu,
-      }, adminUsername);
+      const result = await hccsvvService.createDirect(
+        {
+          quan_nhan_id,
+          danh_hieu,
+          nam: parseInt(nam),
+          cap_bac,
+          chuc_vu,
+          so_quyet_dinh,
+          ghi_chu,
+        },
+        adminUsername
+      );
 
       // Save created ID for audit log
       res.locals.createdId = result.id;

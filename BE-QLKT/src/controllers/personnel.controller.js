@@ -13,13 +13,10 @@ class PersonnelController {
       const userRole = req.user.role;
       const userQuanNhanId = req.user.quan_nhan_id;
 
-      const result = await personnelService.getPersonnel(
-        page,
-        limit,
-        userRole,
-        userQuanNhanId,
-        { search, unit_id }
-      );
+      const result = await personnelService.getPersonnel(page, limit, userRole, userQuanNhanId, {
+        search,
+        unit_id,
+      });
 
       return res.status(200).json({
         success: true,
@@ -101,7 +98,7 @@ class PersonnelController {
       return res.status(201).json({
         success: true,
         message:
-          'Thêm quân nhân và tạo tài khoản thành công. Username: ' + cccd + ', Password: 123456',
+          `Thêm quân nhân và tạo tài khoản thành công. Username: ${cccd}, Password: mật khẩu mặc định`,
         data: result,
       });
     } catch (error) {

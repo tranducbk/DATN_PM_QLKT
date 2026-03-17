@@ -2,160 +2,139 @@ const { prisma } = require('../models');
 const proposalService = require('./proposal.service');
 const profileService = require('./profile.service');
 const notificationHelper = require('../helpers/notificationHelper');
+const { ROLES } = require('../constants/roles');
 
 class ScientificAchievementService {
   async getAchievements(personnelId) {
-    try {
-      if (!personnelId) {
-        throw new Error('personnel_id là bắt buộc');
-      }
-
-      const personnel = await prisma.quanNhan.findUnique({
-        where: { id: personnelId },
-      });
-
-      if (!personnel) {
-        throw new Error('Quân nhân không tồn tại');
-      }
-
-      const achievements = await prisma.thanhTichKhoaHoc.findMany({
-        where: { quan_nhan_id: personnelId },
-        orderBy: { nam: 'desc' },
-      });
-
-      return achievements;
-    } catch (error) {
-      throw error;
+    if (!personnelId) {
+      throw new Error('personnel_id là bắt buộc');
     }
+
+    const personnel = await prisma.quanNhan.findUnique({
+      where: { id: personnelId },
+    });
+
+    if (!personnel) {
+      throw new Error('Quân nhân không tồn tại');
+    }
+
+    const achievements = await prisma.thanhTichKhoaHoc.findMany({
+      where: { quan_nhan_id: personnelId },
+      orderBy: { nam: 'desc' },
+    });
+
+    return achievements;
   }
 
   async createAchievement(data) {
-    try {
-      const { personnel_id, nam, loai, mo_ta, cap_bac, chuc_vu, so_quyet_dinh, ghi_chu, status } =
-        data;
+    const { personnel_id, nam, loai, mo_ta, cap_bac, chuc_vu, so_quyet_dinh, ghi_chu, status } =
+      data;
 
-      console.log('=== CREATE ACHIEVEMENT ===');
-      console.log('Received data:', data);
-      console.log('cap_bac:', cap_bac);
-      console.log('chuc_vu:', chuc_vu);
-      console.log('so_quyet_dinh:', so_quyet_dinh);
+    const personnel = await prisma.quanNhan.findUnique({
+      where: { id: personnel_id },
+    });
 
-      const personnel = await prisma.quanNhan.findUnique({
-        where: { id: personnel_id },
-      });
-
-      if (!personnel) {
-        throw new Error('Quân nhân không tồn tại');
-      }
-
-      const validLoai = ['DTKH', 'SKKH'];
-      if (!validLoai.includes(loai)) {
-        throw new Error('Loại thành tích không hợp lệ. Loại hợp lệ: ' + validLoai.join(', '));
-      }
-
-      const validStatus = ['APPROVED', 'PENDING'];
-      if (status && !validStatus.includes(status)) {
-        throw new Error('Trạng thái không hợp lệ. Trạng thái hợp lệ: ' + validStatus.join(', '));
-      }
-
-      const createData = {
-        quan_nhan_id: personnel_id,
-        nam,
-        loai,
-        mo_ta,
-        cap_bac: cap_bac || null,
-        chuc_vu: chuc_vu || null,
-        so_quyet_dinh: so_quyet_dinh || null,
-        ghi_chu: ghi_chu || null,
-        status: status || 'PENDING',
-      };
-
-      console.log('Create data:', createData);
-
-      const newAchievement = await prisma.thanhTichKhoaHoc.create({
-        data: createData,
-      });
-
-      console.log('Created achievement:', newAchievement);
-
-      // Tự động cập nhật lại hồ sơ hằng năm (chỉ khi status = APPROVED)
-      const finalStatus = status || 'PENDING';
-      if (finalStatus === 'APPROVED') {
-        try {
-          await profileService.recalculateAnnualProfile(personnel_id);
-        } catch (recalcError) {
-          console.error(
-            `⚠️ Failed to auto-recalculate annual profile for personnel ${personnel_id}:`,
-            recalcError.message
-          );
-          // Không throw error, chỉ log để không ảnh hưởng đến việc tạo thành tích
-        }
-      }
-
-      return newAchievement;
-    } catch (error) {
-      throw error;
+    if (!personnel) {
+      throw new Error('Quân nhân không tồn tại');
     }
+
+    const validLoai = ['DTKH', 'SKKH'];
+    if (!validLoai.includes(loai)) {
+      throw new Error('Loại thành tích không hợp lệ. Loại hợp lệ: ' + validLoai.join(', '));
+    }
+
+    const validStatus = ['APPROVED', 'PENDING'];
+    if (status && !validStatus.includes(status)) {
+      throw new Error('Trạng thái không hợp lệ. Trạng thái hợp lệ: ' + validStatus.join(', '));
+    }
+
+    const createData = {
+      quan_nhan_id: personnel_id,
+      nam,
+      loai,
+      mo_ta,
+      cap_bac: cap_bac || null,
+      chuc_vu: chuc_vu || null,
+      so_quyet_dinh: so_quyet_dinh || null,
+      ghi_chu: ghi_chu || null,
+      status: status || 'PENDING',
+    };
+
+    const newAchievement = await prisma.thanhTichKhoaHoc.create({
+      data: createData,
+    });
+
+    // Tự động cập nhật lại hồ sơ hằng năm (chỉ khi status = APPROVED)
+    const finalStatus = status || 'PENDING';
+    if (finalStatus === 'APPROVED') {
+      try {
+        await profileService.recalculateAnnualProfile(personnel_id);
+      } catch (recalcError) {
+        console.error(
+          `⚠️ Failed to auto-recalculate annual profile for personnel ${personnel_id}:`,
+          recalcError.message
+        );
+        // Không throw error, chỉ log để không ảnh hưởng đến việc tạo thành tích
+      }
+    }
+
+    return newAchievement;
   }
 
   async updateAchievement(id, data) {
-    try {
-      const { nam, loai, mo_ta, cap_bac, chuc_vu, ghi_chu, status } = data;
+    const { nam, loai, mo_ta, cap_bac, chuc_vu, ghi_chu, status } = data;
 
-      const achievement = await prisma.thanhTichKhoaHoc.findUnique({
-        where: { id },
-      });
+    const achievement = await prisma.thanhTichKhoaHoc.findUnique({
+      where: { id },
+    });
 
-      if (!achievement) {
-        throw new Error('Thành tích không tồn tại');
-      }
-
-      if (loai) {
-        const validLoai = ['DTKH', 'SKKH'];
-        if (!validLoai.includes(loai)) {
-          throw new Error('Loại thành tích không hợp lệ');
-        }
-      }
-
-      if (status) {
-        const validStatus = ['APPROVED', 'PENDING'];
-        if (!validStatus.includes(status)) {
-          throw new Error('Trạng thái không hợp lệ');
-        }
-      }
-
-      const updateData = {};
-      if (nam !== undefined) updateData.nam = nam;
-      if (loai !== undefined) updateData.loai = loai;
-      if (mo_ta !== undefined) updateData.mo_ta = mo_ta;
-      if (cap_bac !== undefined) updateData.cap_bac = cap_bac;
-      if (chuc_vu !== undefined) updateData.chuc_vu = chuc_vu;
-      if (ghi_chu !== undefined) updateData.ghi_chu = ghi_chu;
-      if (status !== undefined) updateData.status = status;
-
-      const updatedAchievement = await prisma.thanhTichKhoaHoc.update({
-        where: { id },
-        data: updateData,
-      });
-
-      // Tự động cập nhật lại hồ sơ hằng năm (chỉ khi status = APPROVED)
-      const finalStatus = status || achievement.status;
-      if (finalStatus === 'APPROVED') {
-        try {
-          await profileService.recalculateAnnualProfile(achievement.quan_nhan_id);
-        } catch (recalcError) {
-          console.error(
-            `⚠️ Failed to auto-recalculate annual profile for personnel ${achievement.quan_nhan_id}:`,
-            recalcError.message
-          );
-          // Không throw error, chỉ log để không ảnh hưởng đến việc cập nhật thành tích
-        }
-      }
-
-      return updatedAchievement;
-    } catch (error) {
-      throw error;
+    if (!achievement) {
+      throw new Error('Thành tích không tồn tại');
     }
+
+    if (loai) {
+      const validLoai = ['DTKH', 'SKKH'];
+      if (!validLoai.includes(loai)) {
+        throw new Error('Loại thành tích không hợp lệ');
+      }
+    }
+
+    if (status) {
+      const validStatus = ['APPROVED', 'PENDING'];
+      if (!validStatus.includes(status)) {
+        throw new Error('Trạng thái không hợp lệ');
+      }
+    }
+
+    const updateData = {};
+    if (nam !== undefined) updateData.nam = nam;
+    if (loai !== undefined) updateData.loai = loai;
+    if (mo_ta !== undefined) updateData.mo_ta = mo_ta;
+    if (cap_bac !== undefined) updateData.cap_bac = cap_bac;
+    if (chuc_vu !== undefined) updateData.chuc_vu = chuc_vu;
+    if (ghi_chu !== undefined) updateData.ghi_chu = ghi_chu;
+    if (status !== undefined) updateData.status = status;
+
+    const updatedAchievement = await prisma.thanhTichKhoaHoc.update({
+      where: { id },
+      data: updateData,
+    });
+
+    // Tự động cập nhật lại hồ sơ hằng năm (chỉ khi status = APPROVED)
+    const finalStatus = status || achievement.status;
+    if (finalStatus === 'APPROVED') {
+      try {
+        await profileService.recalculateAnnualProfile(achievement.quan_nhan_id);
+      } catch (recalcError) {
+        console.error(
+          `⚠️ Failed to auto-recalculate annual profile for personnel ${achievement.quan_nhan_id}:`,
+          recalcError.message
+        );
+        // Không throw error, chỉ log để không ảnh hưởng đến việc cập nhật thành tích
+      }
+    }
+
+    return updatedAchievement;
   }
 
   /**
@@ -164,59 +143,50 @@ class ScientificAchievementService {
    * @param {string} adminUsername - Username của admin thực hiện xóa
    */
   async deleteAchievement(id, adminUsername = 'Admin') {
-    try {
-      const achievement = await prisma.thanhTichKhoaHoc.findUnique({
-        where: { id },
-        include: {
-          QuanNhan: true,
-        },
-      });
+    const achievement = await prisma.thanhTichKhoaHoc.findUnique({
+      where: { id },
+      include: {
+        QuanNhan: true,
+      },
+    });
 
-      if (!achievement) {
-        throw new Error('Thành tích không tồn tại');
-      }
-
-      const personnelId = achievement.quan_nhan_id;
-      const personnel = achievement.QuanNhan;
-      const wasApproved = achievement.status === 'APPROVED';
-
-      await prisma.thanhTichKhoaHoc.delete({
-        where: { id },
-      });
-
-      // Tự động cập nhật lại hồ sơ hằng năm (chỉ khi thành tích đã được duyệt)
-      if (wasApproved) {
-        try {
-          await profileService.recalculateAnnualProfile(personnelId);
-          console.log(`✅ Auto-recalculated annual profile for personnel ${personnelId}`);
-        } catch (recalcError) {
-          console.error(
-            `⚠️ Failed to auto-recalculate annual profile for personnel ${personnelId}:`,
-            recalcError.message
-          );
-        }
-      }
-
-      // Gửi thông báo cho Manager và quân nhân
-      try {
-        await notificationHelper.notifyOnAwardDeleted(
-          achievement,
-          personnel,
-          'NCKH',
-          adminUsername
-        );
-        console.log(`✅ Sent notification for deleted scientific achievement`);
-      } catch (notifyError) {
-        console.error(`⚠️ Failed to send notification:`, notifyError.message);
-      }
-
-      return {
-        message: 'Xóa thành tích thành công',
-        personnelId,
-      };
-    } catch (error) {
-      throw error;
+    if (!achievement) {
+      throw new Error('Thành tích không tồn tại');
     }
+
+    const personnelId = achievement.quan_nhan_id;
+    const personnel = achievement.QuanNhan;
+    const wasApproved = achievement.status === 'APPROVED';
+
+    await prisma.thanhTichKhoaHoc.delete({
+      where: { id },
+    });
+
+    // Tự động cập nhật lại hồ sơ hằng năm (chỉ khi thành tích đã được duyệt)
+    if (wasApproved) {
+      try {
+        await profileService.recalculateAnnualProfile(personnelId);
+        console.log(`✅ Auto-recalculated annual profile for personnel ${personnelId}`);
+      } catch (recalcError) {
+        console.error(
+          `⚠️ Failed to auto-recalculate annual profile for personnel ${personnelId}:`,
+          recalcError.message
+        );
+      }
+    }
+
+    // Gửi thông báo cho Manager và quân nhân
+    try {
+      await notificationHelper.notifyOnAwardDeleted(achievement, personnel, 'NCKH', adminUsername);
+      console.log(`✅ Sent notification for deleted scientific achievement`);
+    } catch (notifyError) {
+      console.error(`⚠️ Failed to send notification:`, notifyError.message);
+    }
+
+    return {
+      message: 'Xóa thành tích thành công',
+      personnelId,
+    };
   }
 
   /**
@@ -283,14 +253,14 @@ class ScientificAchievementService {
         achievement.loai === 'DTKH'
           ? 'Đề tài khoa học'
           : achievement.loai === 'SKKH'
-          ? 'Sáng kiến khoa học'
-          : achievement.loai;
+            ? 'Sáng kiến khoa học'
+            : achievement.loai;
       const statusText =
         achievement.status === 'APPROVED'
           ? 'Đã duyệt'
           : achievement.status === 'PENDING'
-          ? 'Chờ duyệt'
-          : achievement.status || '';
+            ? 'Chờ duyệt'
+            : achievement.status || '';
 
       worksheet.addRow({
         stt: index + 1,
@@ -314,7 +284,7 @@ class ScientificAchievementService {
   /**
    * Generate Excel template for importing scientific achievements
    */
-  async generateTemplate(userRole = 'MANAGER') {
+  async generateTemplate(userRole = ROLES.MANAGER) {
     const ExcelJS = require('exceljs');
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Thành tích khoa học');
@@ -332,7 +302,7 @@ class ScientificAchievementService {
     ];
 
     // Chỉ ADMIN mới có cột số quyết định
-    if (userRole === 'ADMIN') {
+    if (userRole === ROLES.ADMIN) {
       columns.splice(8, 0, { header: 'Ghi chú', key: 'ghi_chu', width: 30 });
       columns.splice(9, 0, { header: 'Số quyết định', key: 'so_quyet_dinh', width: 20 });
     }
@@ -359,7 +329,7 @@ class ScientificAchievementService {
     };
 
     // Chỉ ADMIN mới có trường số quyết định trong sample
-    if (userRole === 'ADMIN') {
+    if (userRole === ROLES.ADMIN) {
       sampleRow.so_quyet_dinh = '123/QĐ-BQP';
     }
 

@@ -1,4 +1,5 @@
 const accountService = require('../services/account.service');
+const { ROLES } = require('../constants/roles');
 
 class AccountController {
   /**
@@ -12,7 +13,7 @@ class AccountController {
 
       // Nếu là ADMIN, chỉ cho phép xem MANAGER và USER
       let roleFilter = role;
-      if (userRole === 'ADMIN') {
+      if (userRole === ROLES.ADMIN) {
         // Nếu có role filter, kiểm tra xem có hợp lệ không
         if (role && !['MANAGER', 'USER'].includes(role)) {
           return res.status(403).json({
@@ -25,7 +26,7 @@ class AccountController {
       }
 
       // Nếu là SUPER_ADMIN, exclude SUPER_ADMIN khỏi danh sách
-      const excludeSuperAdmin = userRole === 'SUPER_ADMIN';
+      const excludeSuperAdmin = userRole === ROLES.SUPER_ADMIN;
 
       const result = await accountService.getAccounts(
         page,
@@ -98,7 +99,7 @@ class AccountController {
 
       // Validate role based on user's role
       let validRoles = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'USER'];
-      if (userRole === 'ADMIN') {
+      if (userRole === ROLES.ADMIN) {
         // ADMIN chỉ có thể tạo MANAGER hoặc USER
         validRoles = ['MANAGER', 'USER'];
         if (!validRoles.includes(role)) {
@@ -118,7 +119,7 @@ class AccountController {
       }
 
       // Validation theo role
-      if (role === 'MANAGER') {
+      if (role === ROLES.MANAGER) {
         // MANAGER: Bắt buộc có co_quan_don_vi_id và chuc_vu_id, KHÔNG có don_vi_truc_thuoc_id
         if (!co_quan_don_vi_id || !chuc_vu_id) {
           return res.status(400).json({
@@ -133,7 +134,7 @@ class AccountController {
               'Tài khoản MANAGER chỉ được chọn Cơ quan đơn vị, không được chọn Đơn vị trực thuộc',
           });
         }
-      } else if (role === 'USER') {
+      } else if (role === ROLES.USER) {
         // USER: Bắt buộc có CẢ HAI co_quan_don_vi_id VÀ don_vi_truc_thuoc_id VÀ chuc_vu_id
         if (!co_quan_don_vi_id || !don_vi_truc_thuoc_id || !chuc_vu_id) {
           return res.status(400).json({
@@ -192,7 +193,7 @@ class AccountController {
       if (role) {
         // Validate role based on user's role
         let validRoles = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'USER'];
-        if (userRole === 'ADMIN') {
+        if (userRole === ROLES.ADMIN) {
           // ADMIN chỉ có thể cập nhật MANAGER hoặc USER
           validRoles = ['MANAGER', 'USER'];
           if (!validRoles.includes(role)) {
@@ -225,7 +226,7 @@ class AccountController {
       // Xử lý password nếu có
       if (password) {
         // Chỉ SUPER_ADMIN mới có thể đặt lại mật khẩu
-        if (userRole !== 'SUPER_ADMIN') {
+        if (userRole !== ROLES.SUPER_ADMIN) {
           return res.status(403).json({
             success: false,
             message: 'Chỉ SUPER_ADMIN mới có thể đặt lại mật khẩu',

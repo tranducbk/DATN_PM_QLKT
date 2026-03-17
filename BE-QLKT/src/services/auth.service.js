@@ -7,87 +7,83 @@ class AuthService {
    * Đăng nhập
    */
   async login(username, password) {
-    try {
-      // Tìm tài khoản theo username
-      const account = await prisma.taiKhoan.findUnique({
-        where: { username },
-        include: {
-          QuanNhan: {
-            include: {
-              CoQuanDonVi: true,
-              DonViTrucThuoc: {
-                include: {
-                  CoQuanDonVi: true,
-                },
+    // Tìm tài khoản theo username
+    const account = await prisma.taiKhoan.findUnique({
+      where: { username },
+      include: {
+        QuanNhan: {
+          include: {
+            CoQuanDonVi: true,
+            DonViTrucThuoc: {
+              include: {
+                CoQuanDonVi: true,
               },
-              ChucVu: true,
             },
+            ChucVu: true,
           },
         },
-      });
+      },
+    });
 
-      if (!account) {
-        throw new Error('Tên đăng nhập hoặc mật khẩu không đúng');
-      }
+    if (!account) {
+      throw new Error('Tên đăng nhập hoặc mật khẩu không đúng');
+    }
 
-      // Kiểm tra mật khẩu
-      const isPasswordValid = await bcrypt.compare(password, account.password_hash);
-      if (!isPasswordValid) {
-        throw new Error('Tên đăng nhập hoặc mật khẩu không đúng');
-      }
+    // Kiểm tra mật khẩu
+    const isPasswordValid = await bcrypt.compare(password, account.password_hash);
+    if (!isPasswordValid) {
+      throw new Error('Tên đăng nhập hoặc mật khẩu không đúng');
+    }
 
-      // Tạo access token (thời hạn ngắn - 15 phút)
-      const accessToken = jwt.sign(
-        {
-          id: account.id,
-          username: account.username,
-          role: account.role,
-          quan_nhan_id: account.quan_nhan_id,
-        },
-        process.env.JWT_SECRET,
-        { expiresIn: '15m' }
-      );
-
-      // Tạo refresh token (thời hạn dài - 1 ngày)
-      const refreshToken = jwt.sign(
-        {
-          id: account.id,
-          username: account.username,
-        },
-        process.env.JWT_REFRESH_SECRET,
-        { expiresIn: '1d' }
-      );
-
-      // Lưu refresh token vào database
-      await prisma.taiKhoan.update({
-        where: { id: account.id },
-        data: { refreshToken },
-      });
-
-      // Chuẩn bị thông tin user trả về
-      const quanNhan = account.QuanNhan;
-      const donVi = quanNhan?.DonViTrucThuoc || quanNhan?.CoQuanDonVi;
-      const donViId = quanNhan?.don_vi_truc_thuoc_id || quanNhan?.co_quan_don_vi_id;
-
-      const userInfo = {
+    // Tạo access token (thời hạn ngắn - 15 phút)
+    const accessToken = jwt.sign(
+      {
         id: account.id,
         username: account.username,
         role: account.role,
         quan_nhan_id: account.quan_nhan_id,
-        ho_ten: quanNhan?.ho_ten || null,
-        don_vi: donVi?.ten_don_vi || null,
-        don_vi_id: donViId || null,
-        chuc_vu: quanNhan?.ChucVu?.ten_chuc_vu || null,
-      };
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '15m' }
+    );
 
-      return {
-        accessToken,
-        refreshToken,
-        user: userInfo,
-      };
-    } catch (error) {
-      throw error;
-    }
+    // Tạo refresh token (thời hạn dài - 1 ngày)
+    const refreshToken = jwt.sign(
+      {
+        id: account.id,
+        username: account.username,
+      },
+      process.env.JWT_REFRESH_SECRET,
+      { expiresIn: '1d' }
+    );
+
+    // Lưu refresh token vào database
+    await prisma.taiKhoan.update({
+      where: { id: account.id },
+      data: { refreshToken },
+    });
+
+    // Chuẩn bị thông tin user trả về
+    const quanNhan = account.QuanNhan;
+    const donVi = quanNhan?.DonViTrucThuoc || quanNhan?.CoQuanDonVi;
+    const donViId = quanNhan?.don_vi_truc_thuoc_id || quanNhan?.co_quan_don_vi_id;
+
+    const userInfo = {
+      id: account.id,
+      username: account.username,
+      role: account.role,
+      quan_nhan_id: account.quan_nhan_id,
+      ho_ten: quanNhan?.ho_ten || null,
+      don_vi: donVi?.ten_don_vi || null,
+      don_vi_id: donViId || null,
+      chuc_vu: quanNhan?.ChucVu?.ten_chuc_vu || null,
+    };
+
+    return {
+      accessToken,
+      refreshToken,
+      user: userInfo,
+    };
   }
 
   /**
@@ -158,56 +154,48 @@ class AuthService {
    * Đăng xuất
    */
   async logout(refreshToken) {
-    try {
-      if (!refreshToken) {
-        throw new Error('Refresh token không được cung cấp');
-      }
-
-      // Xóa refresh token khỏi database
-      await prisma.taiKhoan.updateMany({
-        where: { refreshToken },
-        data: { refreshToken: null },
-      });
-
-      return { message: 'Đăng xuất thành công' };
-    } catch (error) {
-      throw error;
+    if (!refreshToken) {
+      throw new Error('Refresh token không được cung cấp');
     }
+
+    // Xóa refresh token khỏi database
+    await prisma.taiKhoan.updateMany({
+      where: { refreshToken },
+      data: { refreshToken: null },
+    });
+
+    return { message: 'Đăng xuất thành công' };
   }
 
   /**
    * Đổi mật khẩu
    */
   async changePassword(userId, oldPassword, newPassword) {
-    try {
-      // Tìm tài khoản
-      const account = await prisma.taiKhoan.findUnique({
-        where: { id: userId },
-      });
+    // Tìm tài khoản
+    const account = await prisma.taiKhoan.findUnique({
+      where: { id: userId },
+    });
 
-      if (!account) {
-        throw new Error('Tài khoản không tồn tại');
-      }
-
-      // Kiểm tra mật khẩu cũ
-      const isOldPasswordValid = await bcrypt.compare(oldPassword, account.password_hash);
-      if (!isOldPasswordValid) {
-        throw new Error('Mật khẩu hiện tại không chính xác');
-      }
-
-      // Mã hóa mật khẩu mới
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-      // Cập nhật mật khẩu
-      await prisma.taiKhoan.update({
-        where: { id: userId },
-        data: { password_hash: hashedPassword },
-      });
-
-      return { message: 'Đổi mật khẩu thành công' };
-    } catch (error) {
-      throw error;
+    if (!account) {
+      throw new Error('Tài khoản không tồn tại');
     }
+
+    // Kiểm tra mật khẩu cũ
+    const isOldPasswordValid = await bcrypt.compare(oldPassword, account.password_hash);
+    if (!isOldPasswordValid) {
+      throw new Error('Mật khẩu hiện tại không chính xác');
+    }
+
+    // Mã hóa mật khẩu mới
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Cập nhật mật khẩu
+    await prisma.taiKhoan.update({
+      where: { id: userId },
+      data: { password_hash: hashedPassword },
+    });
+
+    return { message: 'Đổi mật khẩu thành công' };
   }
 }
 

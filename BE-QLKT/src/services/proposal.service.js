@@ -6,12 +6,8 @@ const profileService = require('./profile.service');
 const unitAnnualAwardService = require('./unitAnnualAward.service');
 const { getDanhHieuName } = require('../constants/danhHieu.constants');
 
-// Dynamic import for uuid (ES Module) - load once and cache
-let uuidv4;
-(async () => {
-  const uuidModule = await import('uuid');
-  uuidv4 = uuidModule.v4;
-})();
+const { v4: uuidv4 } = require('uuid');
+const { ROLES } = require('../constants/roles');
 
 // Constants
 const SHEET_NAMES = {
@@ -130,7 +126,6 @@ class ProposalService {
    * @param {string} sheetName - Name of the sheet
    */
   logSheetInfo(sheet, sheetName) {
-    // Removed console.log for production
   }
 
   /**
@@ -1089,10 +1084,10 @@ class ProposalService {
                 months === 0
                   ? '-'
                   : years > 0 && remainingMonths > 0
-                  ? `${years} năm ${remainingMonths} tháng`
-                  : years > 0
-                  ? `${years} năm`
-                  : `${remainingMonths} tháng`,
+                    ? `${years} năm ${remainingMonths} tháng`
+                    : years > 0
+                      ? `${years} năm`
+                      : `${remainingMonths} tháng`,
             };
           }
 
@@ -1245,10 +1240,10 @@ class ProposalService {
                       totalMonths === 0
                         ? '-'
                         : years > 0 && remainingMonths > 0
-                        ? `${years} năm ${remainingMonths} tháng`
-                        : years > 0
-                        ? `${years} năm`
-                        : `${remainingMonths} tháng`,
+                          ? `${years} năm ${remainingMonths} tháng`
+                          : years > 0
+                            ? `${years} năm`
+                            : `${remainingMonths} tháng`,
                   };
                 };
 
@@ -1683,8 +1678,8 @@ class ProposalService {
               totalYears > 0 && remainingMonths > 0
                 ? `${totalYears} năm ${remainingMonths} tháng`
                 : totalYears > 0
-                ? `${totalYears} năm`
-                : `${remainingMonths} tháng`;
+                  ? `${totalYears} năm`
+                  : `${remainingMonths} tháng`;
 
             const requiredYears = Math.floor(requiredMonths / 12);
             const requiredRemainingMonths = requiredMonths % 12;
@@ -1692,8 +1687,8 @@ class ProposalService {
               requiredYears > 0 && requiredRemainingMonths > 0
                 ? `${requiredYears} năm ${requiredRemainingMonths} tháng`
                 : requiredYears > 0
-                ? `${requiredYears} năm`
-                : `${requiredRemainingMonths} tháng`;
+                  ? `${requiredYears} năm`
+                  : `${requiredRemainingMonths} tháng`;
 
             const genderText = gioiTinh === 'NU' ? ' (Nữ giảm 1/3 thời gian)' : '';
 
@@ -1783,7 +1778,7 @@ class ProposalService {
       // Xây dựng điều kiện where
       let whereCondition = {};
 
-      if (userRole === 'MANAGER') {
+      if (userRole === ROLES.MANAGER) {
         // Manager chỉ xem đề xuất của đơn vị mình
         const user = await prisma.taiKhoan.findUnique({
           where: { id: userId },
@@ -1914,7 +1909,7 @@ class ProposalService {
       }
 
       // Kiểm tra quyền truy cập
-      if (userRole === 'MANAGER') {
+      if (userRole === ROLES.MANAGER) {
         const user = await prisma.taiKhoan.findUnique({
           where: { id: userId },
           include: {
@@ -1941,26 +1936,26 @@ class ProposalService {
       let dataDanhHieu = Array.isArray(proposal.data_danh_hieu)
         ? proposal.data_danh_hieu
         : proposal.data_danh_hieu
-        ? [proposal.data_danh_hieu]
-        : [];
+          ? [proposal.data_danh_hieu]
+          : [];
 
       let dataThanhTich = Array.isArray(proposal.data_thanh_tich)
         ? proposal.data_thanh_tich
         : proposal.data_thanh_tich
-        ? [proposal.data_thanh_tich]
-        : [];
+          ? [proposal.data_thanh_tich]
+          : [];
 
       let dataNienHan = Array.isArray(proposal.data_nien_han)
         ? proposal.data_nien_han
         : proposal.data_nien_han
-        ? [proposal.data_nien_han]
-        : [];
+          ? [proposal.data_nien_han]
+          : [];
 
       let dataCongHien = Array.isArray(proposal.data_cong_hien)
         ? proposal.data_cong_hien
         : proposal.data_cong_hien
-        ? [proposal.data_cong_hien]
-        : [];
+          ? [proposal.data_cong_hien]
+          : [];
 
       // Enrich thông tin quân nhân/đơn vị nếu thiếu (dữ liệu cũ)
       // Xử lý riêng cho DON_VI_HANG_NAM (khen thưởng tập thể)
@@ -3186,12 +3181,6 @@ class ProposalService {
 
             importedDanhHieu++;
             affectedPersonnelIds.add(quanNhan.id); // Track personnel bị ảnh hưởng
-            console.log(
-              `✅ Đã lưu danh hiệu ${item.danh_hieu} cho quân nhân ${quanNhan.ho_ten} (ID: ${quanNhan.id}, năm: ${namLuu})`
-            );
-            console.log(
-              `📝 Đã add quân nhân ${quanNhan.id} vào affectedPersonnelIds. Tổng số: ${affectedPersonnelIds.size}`
-            );
           } catch (error) {
             errors.push(
               `Lỗi import danh hiệu personnel_id ${item.personnel_id || 'N/A'}: ${error.message}`
@@ -3207,7 +3196,9 @@ class ProposalService {
         for (const item of nienHanData) {
           try {
             if (!item.personnel_id) {
-              errors.push(`Huy chương Chiến sĩ vẻ vang thiếu personnel_id: ${JSON.stringify(item)}`);
+              errors.push(
+                `Huy chương Chiến sĩ vẻ vang thiếu personnel_id: ${JSON.stringify(item)}`
+              );
               continue;
             }
 
@@ -3221,7 +3212,9 @@ class ProposalService {
             }
 
             if (!item.danh_hieu) {
-              errors.push(`Huy chương Chiến sĩ vẻ vang thiếu danh_hieu cho quân nhân ${quanNhan.id}`);
+              errors.push(
+                `Huy chương Chiến sĩ vẻ vang thiếu danh_hieu cho quân nhân ${quanNhan.id}`
+              );
               continue;
             }
 
@@ -3260,10 +3253,10 @@ class ProposalService {
                     months === 0
                       ? '-'
                       : years > 0 && remainingMonths > 0
-                      ? `${years} năm ${remainingMonths} tháng`
-                      : years > 0
-                      ? `${years} năm`
-                      : `${remainingMonths} tháng`,
+                        ? `${years} năm ${remainingMonths} tháng`
+                        : years > 0
+                          ? `${years} năm`
+                          : `${remainingMonths} tháng`,
                 };
               }
 
@@ -3358,10 +3351,10 @@ class ProposalService {
                   months === 0
                     ? '-'
                     : years > 0 && remainingMonths > 0
-                    ? `${years} năm ${remainingMonths} tháng`
-                    : years > 0
-                    ? `${years} năm`
-                    : `${remainingMonths} tháng`,
+                      ? `${years} năm ${remainingMonths} tháng`
+                      : years > 0
+                        ? `${years} năm`
+                        : `${remainingMonths} tháng`,
               };
             }
 
@@ -3461,10 +3454,10 @@ class ProposalService {
                   months === 0
                     ? '-'
                     : years > 0 && remainingMonths > 0
-                    ? `${years} năm ${remainingMonths} tháng`
-                    : years > 0
-                    ? `${years} năm`
-                    : `${remainingMonths} tháng`,
+                      ? `${years} năm ${remainingMonths} tháng`
+                      : years > 0
+                        ? `${years} năm`
+                        : `${remainingMonths} tháng`,
               };
             }
 
@@ -3854,12 +3847,6 @@ class ProposalService {
           }
         }
 
-        console.log(
-          `📋 Danh sách ${affectedUnits.size} đơn vị cần recalculate: ${Array.from(
-            affectedUnits
-          ).join(', ')}`
-        );
-
         for (const donViId of affectedUnits) {
           try {
             console.log(`🔄 Đang recalculate hồ sơ đơn vị ID: ${donViId}, năm: ${proposal.nam}...`);
@@ -3881,17 +3868,13 @@ class ProposalService {
           proposal.loai_de_xuat === 'NIEN_HAN'
             ? 'hồ sơ niên hạn (HCCSVV)'
             : proposal.loai_de_xuat === 'CONG_HIEN'
-            ? 'hồ sơ cống hiến (HCBVTQ)'
-            : 'hồ sơ hằng năm';
+              ? 'hồ sơ cống hiến (HCBVTQ)'
+              : 'hồ sơ hằng năm';
 
         // Log để debug
         console.log(
           `📊 Bắt đầu recalculate ${recalculateType} cho ${affectedPersonnelIds.size} quân nhân (loại đề xuất: ${proposal.loai_de_xuat})`
         );
-        console.log(
-          `📋 Danh sách quân nhân cần recalculate: ${Array.from(affectedPersonnelIds).join(', ')}`
-        );
-
         if (affectedPersonnelIds.size === 0) {
           console.warn(
             `⚠️ Cảnh báo: Không có quân nhân nào trong affectedPersonnelIds để recalculate!`
@@ -4239,8 +4222,6 @@ class ProposalService {
               status: true,
             },
           });
-          console.log(a);
-
           return {
             id: a.id,
             cccd: a.QuanNhan.cccd,
@@ -4676,7 +4657,7 @@ class ProposalService {
       }
 
       // Kiểm tra quyền: Manager chỉ có thể xóa đề xuất của chính mình
-      if (userRole === 'MANAGER') {
+      if (userRole === ROLES.MANAGER) {
         if (proposal.nguoi_de_xuat_id !== userId) {
           throw new Error('Bạn chỉ có thể xóa đề xuất của chính mình');
         }
@@ -4845,7 +4826,14 @@ class ProposalService {
    * @param {string} proposalType - Loại đề xuất
    * @returns {Promise<Object>} - { exists: boolean, message?: string }
    */
-  async checkDuplicateAward(personnelId, nam, danhHieu, proposalType, status = null, excludeProposalId = null) {
+  async checkDuplicateAward(
+    personnelId,
+    nam,
+    danhHieu,
+    proposalType,
+    status = null,
+    excludeProposalId = null
+  ) {
     try {
       const { prisma } = require('../models');
 
@@ -5072,7 +5060,6 @@ class ProposalService {
   async checkDuplicateUnitAward(donViId, nam, danhHieu, proposalType) {
     try {
       const { prisma } = require('../models');
-
       // DON_VI_HANG_NAM: Kiểm tra trong BangDeXuat
       if (proposalType === 'DON_VI_HANG_NAM') {
         const proposals = await prisma.bangDeXuat.findMany({

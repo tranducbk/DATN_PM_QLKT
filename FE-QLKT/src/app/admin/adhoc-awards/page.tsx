@@ -49,7 +49,6 @@ import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { previewFileWithApi } from '@/utils/filePreview';
 import axiosInstance from '@/utils/axiosInstance';
 
-
 const { Title, Text } = Typography;
 const { TextArea } = Input;
 const { Search } = Input;
@@ -441,7 +440,9 @@ export default function AdhocAwardsPage() {
         if (type === 'CA_NHAN') {
           formData.append('personnelId', targetId);
           // Lấy thông tin cấp bậc và chức vụ từ personnelAwardInfo (bắt buộc)
-          const awardInfo = createFormData.personnelAwardInfo.find(info => info.personnelId === targetId);
+          const awardInfo = createFormData.personnelAwardInfo.find(
+            info => info.personnelId === targetId
+          );
           formData.append('rank', awardInfo?.rank || '');
           formData.append('position', awardInfo?.position || '');
         } else {
@@ -679,8 +680,10 @@ export default function AdhocAwardsPage() {
   // FILTERED DATA FOR CREATE MODAL
   // =============================================================================
   const filteredPersonnel = personnel.filter(p => {
-    if (personnelFilters.coQuanId && p.co_quan_don_vi_id !== personnelFilters.coQuanId) return false;
-    if (personnelFilters.donViId && p.don_vi_truc_thuoc_id !== personnelFilters.donViId) return false;
+    if (personnelFilters.coQuanId && p.co_quan_don_vi_id !== personnelFilters.coQuanId)
+      return false;
+    if (personnelFilters.donViId && p.don_vi_truc_thuoc_id !== personnelFilters.donViId)
+      return false;
     if (
       personnelFilters.searchName &&
       !p.ho_ten.toLowerCase().includes(personnelFilters.searchName.toLowerCase())
@@ -817,16 +820,16 @@ export default function AdhocAwardsPage() {
       render: (text: string) => (
         <div style={{ textAlign: 'center' }}>
           {text ? (
-          <Tooltip title={text}>
-            <span>{text}</span>
-          </Tooltip>
-        ) : (
+            <Tooltip title={text}>
+              <span>{text}</span>
+            </Tooltip>
+          ) : (
             <Text type="secondary" style={{ fontStyle: 'italic', opacity: 0.6 }}>
               Không có ghi chú
             </Text>
           )}
         </div>
-        ),
+      ),
     },
     {
       title: 'Thao tác',
@@ -906,7 +909,13 @@ export default function AdhocAwardsPage() {
                 style={{ width: '100%' }}
                 value={type}
                 onChange={value =>
-                  setCreateFormData({ ...createFormData, type: value, personnelIds: [], personnelAwardInfo: [], unitIds: [] })
+                  setCreateFormData({
+                    ...createFormData,
+                    type: value,
+                    personnelIds: [],
+                    personnelAwardInfo: [],
+                    unitIds: [],
+                  })
                 }
               >
                 <Select.Option value="CA_NHAN">Cá nhân</Select.Option>
@@ -960,7 +969,11 @@ export default function AdhocAwardsPage() {
                     style={{ width: '100%' }}
                     value={personnelFilters.coQuanId || undefined}
                     onChange={value =>
-                      setPersonnelFilters({ ...personnelFilters, coQuanId: value || '', donViId: '' })
+                      setPersonnelFilters({
+                        ...personnelFilters,
+                        coQuanId: value || '',
+                        donViId: '',
+                      })
                     }
                     allowClear
                     placeholder="Chọn cơ quan đơn vị"
@@ -1012,10 +1025,14 @@ export default function AdhocAwardsPage() {
                   const newPersonnelIds = selectedRowKeys as string[];
                   // Cập nhật personnelAwardInfo: giữ lại info cũ nếu có, điền sẵn từ thông tin quân nhân nếu mới
                   const newAwardInfo = newPersonnelIds.map(id => {
-                    const existing = createFormData.personnelAwardInfo.find(info => info.personnelId === id);
+                    const existing = createFormData.personnelAwardInfo.find(
+                      info => info.personnelId === id
+                    );
                     if (existing) return existing;
                     // Điền sẵn cấp bậc/chức vụ từ thông tin quân nhân để admin có thể chỉnh sửa hoặc xóa
-                    const person = selectedRows.find((r: Personnel) => r.id === id) || personnel.find(p => p.id === id);
+                    const person =
+                      selectedRows.find((r: Personnel) => r.id === id) ||
+                      personnel.find(p => p.id === id);
                     return {
                       personnelId: id,
                       rank: person?.cap_bac || '',
@@ -1098,7 +1115,10 @@ export default function AdhocAwardsPage() {
                           gridTemplateColumns: '180px 1fr 1fr',
                           gap: 12,
                           padding: '8px 0',
-                          borderBottom: index < createFormData.personnelAwardInfo.length - 1 ? '1px solid var(--ant-color-border)' : 'none',
+                          borderBottom:
+                            index < createFormData.personnelAwardInfo.length - 1
+                              ? '1px solid var(--ant-color-border)'
+                              : 'none',
                           alignItems: 'center',
                         }}
                       >
@@ -1199,9 +1219,7 @@ export default function AdhocAwardsPage() {
               <Text strong style={{ display: 'block', marginBottom: 4 }}>
                 Tải file đính kèm
               </Text>
-              <Text type="secondary">
-                Tải lên các file đính kèm (không bắt buộc)
-              </Text>
+              <Text type="secondary">Tải lên các file đính kèm (không bắt buộc)</Text>
             </div>
             <Upload
               fileList={createAttachedFileList}
@@ -1563,7 +1581,12 @@ export default function AdhocAwardsPage() {
                 style={{ width: '100%' }}
                 placeholder="Tất cả các năm"
                 value={tableFilters.year !== null ? tableFilters.year : ''}
-                onChange={value => setTableFilters(prev => ({ ...prev, year: value === '' ? null : (typeof value === 'number' ? value : Number(value)) }))}
+                onChange={value =>
+                  setTableFilters(prev => ({
+                    ...prev,
+                    year: value === '' ? null : typeof value === 'number' ? value : Number(value),
+                  }))
+                }
                 allowClear
                 size="large"
               >
@@ -1605,10 +1628,17 @@ export default function AdhocAwardsPage() {
               />
             </Col>
             <Col xs={24} sm={8} md={4}>
-              <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'transparent' }}>
+              <label
+                style={{ display: 'block', marginBottom: 4, fontSize: 12, color: 'transparent' }}
+              >
                 .
               </label>
-              <Button icon={null} onClick={handleResetFilters} size="large" style={{ width: '100%' }}>
+              <Button
+                icon={null}
+                onClick={handleResetFilters}
+                size="large"
+                style={{ width: '100%' }}
+              >
                 Xoá bộ lọc
               </Button>
             </Col>
@@ -1686,7 +1716,10 @@ export default function AdhocAwardsPage() {
         >
           <Button
             onClick={() =>
-              setCreateFormData(prev => ({ ...prev, currentStep: Math.max(prev.currentStep - 1, 0) }))
+              setCreateFormData(prev => ({
+                ...prev,
+                currentStep: Math.max(prev.currentStep - 1, 0),
+              }))
             }
             disabled={createFormData.currentStep === 0}
           >
@@ -1820,7 +1853,9 @@ export default function AdhocAwardsPage() {
                 options={decisionOptions}
                 onSearch={handleSearchDecision}
                 onSelect={value => handleDecisionSelect(value, true)}
-                onChange={value => setEditFormData({ ...editFormData, decisionNumber: value || '' })}
+                onChange={value =>
+                  setEditFormData({ ...editFormData, decisionNumber: value || '' })
+                }
                 placeholder="Nhập số quyết định"
                 notFoundContent={searchingDecision ? <Spin size="small" /> : null}
                 style={{ width: '100%' }}
@@ -1859,7 +1894,9 @@ export default function AdhocAwardsPage() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <FileOutlined style={{ color: '#1890ff' }} />
                         <Text>{file.name}</Text>
-                        {file.uid.startsWith('existing-attached-') && <Tag color="blue">Đã lưu</Tag>}
+                        {file.uid.startsWith('existing-attached-') && (
+                          <Tag color="blue">Đã lưu</Tag>
+                        )}
                       </div>
                       <Button
                         type="text"
@@ -1879,19 +1916,23 @@ export default function AdhocAwardsPage() {
                 </div>
               )}
               <div style={{ textAlign: 'center' }}>
-              <Upload
-                fileList={editAttachedFileList.filter(f => !f.uid.startsWith('existing-attached-'))}
-                onChange={({ fileList }) => {
-                  const existingFiles = editAttachedFileList.filter(f => f.uid.startsWith('existing-attached-'));
-                  setEditAttachedFileList([...existingFiles, ...fileList]);
-                }}
-                beforeUpload={() => false}
-                multiple
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
-                showUploadList={false}
-              >
-                <Button icon={<UploadOutlined />}>Thêm file đính kèm</Button>
-              </Upload>
+                <Upload
+                  fileList={editAttachedFileList.filter(
+                    f => !f.uid.startsWith('existing-attached-')
+                  )}
+                  onChange={({ fileList }) => {
+                    const existingFiles = editAttachedFileList.filter(f =>
+                      f.uid.startsWith('existing-attached-')
+                    );
+                    setEditAttachedFileList([...existingFiles, ...fileList]);
+                  }}
+                  beforeUpload={() => false}
+                  multiple
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                  showUploadList={false}
+                >
+                  <Button icon={<UploadOutlined />}>Thêm file đính kèm</Button>
+                </Upload>
               </div>
             </Card>
 

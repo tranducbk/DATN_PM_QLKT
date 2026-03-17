@@ -25,6 +25,7 @@ import {
 import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
 import { useTheme } from '@/components/theme-provider';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -57,6 +58,7 @@ const { Title, Text } = Typography;
 
 export default function SuperAdminDashboard() {
   const { theme } = useTheme();
+  const { user } = useAuth();
   const [displayName, setDisplayName] = useState('Super Admin');
   const [stats, setStats] = useState({
     totalAccounts: 0,
@@ -78,8 +80,7 @@ export default function SuperAdminDashboard() {
       try {
         setLoading(true);
 
-        // Lấy tên hiển thị từ localStorage (ưu tiên họ tên, rồi username, rồi vai trò)
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        // Lấy tên hiển thị từ AuthContext (ưu tiên họ tên, rồi username, rồi vai trò)
         if (user) {
           const name = (user.ho_ten || '').trim();
           const username = (user.username || '').trim();
@@ -98,7 +99,6 @@ export default function SuperAdminDashboard() {
           apiClient.getSystemLogs({ page: 1, limit: 1 }),
           apiClient.getDashboardStatistics(),
         ]);
-
 
         setStats({
           totalAccounts: accountsRes?.data?.pagination?.total || 0,
@@ -369,7 +369,7 @@ export default function SuperAdminDashboard() {
             // Map action sang tiếng Việt
             const action = item.action?.toUpperCase() || '';
             const vietnameseLabel = actionLabelsMap[action] || action;
-            
+
             // Rút gọn tên hành động nếu quá dài
             if (vietnameseLabel && vietnameseLabel.length > 20) {
               return vietnameseLabel.substring(0, 20) + '...';

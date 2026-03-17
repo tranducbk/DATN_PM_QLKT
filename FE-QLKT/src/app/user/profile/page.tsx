@@ -14,13 +14,13 @@ import {
   Space,
   Descriptions,
   ConfigProvider,
-  theme as antdTheme,
   Row,
   Col,
   Statistic,
   Divider,
   Empty,
 } from 'antd';
+import { getAntdThemeConfig } from '@/lib/antd-theme';
 import {
   HomeOutlined,
   TrophyOutlined,
@@ -33,7 +33,6 @@ import {
   CrownOutlined,
   FireOutlined,
   FileTextOutlined,
-  CalendarOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
@@ -44,7 +43,7 @@ import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 const { Title, Text } = Typography;
 
 export default function UserProfilePage() {
-  const { theme: currentTheme } = useTheme();
+  const { isDark } = useTheme();
   const [loading, setLoading] = useState(true);
   const [personnelId, setPersonnelId] = useState<string | null>(null);
   const [personnelInfo, setPersonnelInfo] = useState<any>(null);
@@ -57,8 +56,6 @@ export default function UserProfilePage() {
   const [contributionProfile, setContributionProfile] = useState<any>(null);
   const [militaryFlag, setMilitaryFlag] = useState<any>(null);
   const [commemorationMedals, setCommemorationMedals] = useState<any>(null);
-
-  const isDarkMode = currentTheme === 'dark';
 
   const calculateYearsOfService = (ngayNhapNgu: string) => {
     if (!ngayNhapNgu) return 0;
@@ -87,7 +84,7 @@ export default function UserProfilePage() {
     <div className="overflow-x-auto">
       <table
         className={`min-w-full rounded-lg border ${
-          isDarkMode ? 'border-gray-700 bg-gray-900/60' : 'border-gray-200 bg-white'
+          isDark ? 'border-gray-700 bg-gray-900/60' : 'border-gray-200 bg-white'
         }`}
       >
         <tbody>
@@ -95,19 +92,19 @@ export default function UserProfilePage() {
             <tr
               key={item.label}
               className={`border-b last:border-b-0 ${
-                isDarkMode ? 'border-gray-800' : 'border-gray-100'
+                isDark ? 'border-gray-800' : 'border-gray-100'
               }`}
             >
               <td
                 className={`px-4 py-3 text-sm font-semibold w-48 ${
-                  isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                  isDark ? 'text-gray-400' : 'text-gray-600'
                 }`}
               >
                 {item.label}
               </td>
               <td
                 className={`px-4 py-3 text-base break-words ${
-                  isDarkMode ? 'text-gray-200' : 'text-gray-800'
+                  isDark ? 'text-gray-200' : 'text-gray-800'
                 }`}
               >
                 {item.value ?? '-'}
@@ -239,9 +236,9 @@ export default function UserProfilePage() {
       align: 'center' as const,
       render: (text: string, record: any) => {
         if (!text) return '-';
-        
+
         const decisions: ReactNode[] = [];
-        
+
         // Bằng khen BQP
         if (record.so_quyet_dinh_bkbqp && record.so_quyet_dinh_bkbqp.trim() !== '') {
           decisions.push(
@@ -264,7 +261,7 @@ export default function UserProfilePage() {
             </div>
           );
         }
-        
+
         // CSTĐ Toàn quân
         if (record.so_quyet_dinh_cstdtq && record.so_quyet_dinh_cstdtq.trim() !== '') {
           decisions.push(
@@ -310,7 +307,7 @@ export default function UserProfilePage() {
             </div>
           );
         }
-        
+
         return (
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontWeight: 500 }}>{text}</div>
@@ -520,7 +517,7 @@ export default function UserProfilePage() {
       align: 'center' as const,
       render: (text: string, record: any) => {
         if (!text || text.trim() === '') return '-';
-        
+
         // Luôn cho phép bấm để truy vấn DB và tải file
         return (
           <a
@@ -553,11 +550,7 @@ export default function UserProfilePage() {
 
   if (!personnelInfo) {
     return (
-      <ConfigProvider
-        theme={{
-          algorithm: currentTheme === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
-        }}
-      >
+      <ConfigProvider theme={getAntdThemeConfig(isDark)}>
         <div className="space-y-4 p-6">
           <Title level={2}>Không tìm thấy thông tin</Title>
           <Alert message="Không thể tải thông tin cá nhân" type="error" />
@@ -975,7 +968,7 @@ export default function UserProfilePage() {
             <Empty
               image={Empty.PRESENTED_IMAGE_SIMPLE}
               description={
-                <span style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
+                <span style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>
                   Chưa có dữ liệu danh hiệu hằng năm
                 </span>
               }
@@ -985,12 +978,17 @@ export default function UserProfilePage() {
             <div className="space-y-5">
               {/* Summary Stats */}
               <Row gutter={[16, 16]} className="mb-6" style={{ display: 'flex', flexWrap: 'wrap' }}>
-                <Col xs={24} sm={12} style={{ flex: '1 1 20%', minWidth: 0 }} className="summary-stat-col">
+                <Col
+                  xs={24}
+                  sm={12}
+                  style={{ flex: '1 1 20%', minWidth: 0 }}
+                  className="summary-stat-col"
+                >
                   <Card
                     size="small"
                     className="text-center"
                     style={{
-                      background: isDarkMode
+                      background: isDark
                         ? 'linear-gradient(135deg, #1e3a5f 0%, #1e293b 100%)'
                         : 'linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%)',
                       border: 'none',
@@ -998,29 +996,34 @@ export default function UserProfilePage() {
                   >
                     <Statistic
                       title={
-                        <span style={{ color: isDarkMode ? '#93c5fd' : '#1e40af' }}>
+                        <span style={{ color: isDark ? '#93c5fd' : '#1e40af' }}>
                           Tổng số năm
                         </span>
                       }
                       value={
                         Object.keys(
                           annualRewards.reduce((acc: Record<number, any[]>, r: any) => {
-                        if (!acc[r.nam]) acc[r.nam] = [];
-                        acc[r.nam].push(r);
-                        return acc;
+                            if (!acc[r.nam]) acc[r.nam] = [];
+                            acc[r.nam].push(r);
+                            return acc;
                           }, {})
                         ).length
                       }
-                      valueStyle={{ color: isDarkMode ? '#60a5fa' : '#2563eb', fontWeight: 700 }}
+                      valueStyle={{ color: isDark ? '#60a5fa' : '#2563eb', fontWeight: 700 }}
                     />
                   </Card>
                 </Col>
-                <Col xs={24} sm={12} style={{ flex: '1 1 20%', minWidth: 0 }} className="summary-stat-col">
+                <Col
+                  xs={24}
+                  sm={12}
+                  style={{ flex: '1 1 20%', minWidth: 0 }}
+                  className="summary-stat-col"
+                >
                   <Card
                     size="small"
                     className="text-center"
                     style={{
-                      background: isDarkMode
+                      background: isDark
                         ? 'linear-gradient(135deg, #134e4a 0%, #1e293b 100%)'
                         : 'linear-gradient(135deg, #d1fae5 0%, #ecfdf5 100%)',
                       border: 'none',
@@ -1028,21 +1031,26 @@ export default function UserProfilePage() {
                   >
                     <Statistic
                       title={
-                        <span style={{ color: isDarkMode ? '#6ee7b7' : '#047857' }}>
+                        <span style={{ color: isDark ? '#6ee7b7' : '#047857' }}>
                           CSTĐ Cơ sở
                         </span>
                       }
                       value={annualRewards.filter((r: any) => r.danh_hieu === 'CSTDCS').length}
-                      valueStyle={{ color: isDarkMode ? '#34d399' : '#059669', fontWeight: 700 }}
+                      valueStyle={{ color: isDark ? '#34d399' : '#059669', fontWeight: 700 }}
                     />
                   </Card>
                 </Col>
-                <Col xs={24} sm={12} style={{ flex: '1 1 20%', minWidth: 0 }} className="summary-stat-col">
+                <Col
+                  xs={24}
+                  sm={12}
+                  style={{ flex: '1 1 20%', minWidth: 0 }}
+                  className="summary-stat-col"
+                >
                   <Card
                     size="small"
                     className="text-center"
                     style={{
-                      background: isDarkMode
+                      background: isDark
                         ? 'linear-gradient(135deg, #713f12 0%, #1e293b 100%)'
                         : 'linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%)',
                       border: 'none',
@@ -1050,21 +1058,26 @@ export default function UserProfilePage() {
                   >
                     <Statistic
                       title={
-                        <span style={{ color: isDarkMode ? '#fcd34d' : '#b45309' }}>
+                        <span style={{ color: isDark ? '#fcd34d' : '#b45309' }}>
                           Bằng khen của Bộ trưởng BQP
                         </span>
                       }
                       value={annualRewards.filter((r: any) => r.nhan_bkbqp).length}
-                      valueStyle={{ color: isDarkMode ? '#fbbf24' : '#d97706', fontWeight: 700 }}
+                      valueStyle={{ color: isDark ? '#fbbf24' : '#d97706', fontWeight: 700 }}
                     />
                   </Card>
                 </Col>
-                <Col xs={24} sm={12} style={{ flex: '1 1 20%', minWidth: 0 }} className="summary-stat-col">
+                <Col
+                  xs={24}
+                  sm={12}
+                  style={{ flex: '1 1 20%', minWidth: 0 }}
+                  className="summary-stat-col"
+                >
                   <Card
                     size="small"
                     className="text-center"
                     style={{
-                      background: isDarkMode
+                      background: isDark
                         ? 'linear-gradient(135deg, #7c2d12 0%, #1e293b 100%)'
                         : 'linear-gradient(135deg, #fed7aa 0%, #fff7ed 100%)',
                       border: 'none',
@@ -1072,21 +1085,26 @@ export default function UserProfilePage() {
                   >
                     <Statistic
                       title={
-                        <span style={{ color: isDarkMode ? '#fb923c' : '#c2410c' }}>
+                        <span style={{ color: isDark ? '#fb923c' : '#c2410c' }}>
                           CSTĐ Toàn quân
                         </span>
                       }
                       value={annualRewards.filter((r: any) => r.nhan_cstdtq).length}
-                      valueStyle={{ color: isDarkMode ? '#fb923c' : '#ea580c', fontWeight: 700 }}
+                      valueStyle={{ color: isDark ? '#fb923c' : '#ea580c', fontWeight: 700 }}
                     />
                   </Card>
                 </Col>
-                <Col xs={24} sm={12} style={{ flex: '1 1 20%', minWidth: 0 }} className="summary-stat-col">
+                <Col
+                  xs={24}
+                  sm={12}
+                  style={{ flex: '1 1 20%', minWidth: 0 }}
+                  className="summary-stat-col"
+                >
                   <Card
                     size="small"
                     className="text-center"
                     style={{
-                      background: isDarkMode
+                      background: isDark
                         ? 'linear-gradient(135deg, #78350f 0%, #1e293b 100%)'
                         : 'linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%)',
                       border: 'none',
@@ -1094,12 +1112,12 @@ export default function UserProfilePage() {
                   >
                     <Statistic
                       title={
-                        <span style={{ color: isDarkMode ? '#fcd34d' : '#b45309' }}>
+                        <span style={{ color: isDark ? '#fcd34d' : '#b45309' }}>
                           BK của Thủ tướng Chính phủ
                         </span>
                       }
                       value={annualRewards.filter((r: any) => r.nhan_bkttcp).length}
-                      valueStyle={{ color: isDarkMode ? '#fbbf24' : '#d97706', fontWeight: 700 }}
+                      valueStyle={{ color: isDark ? '#fbbf24' : '#d97706', fontWeight: 700 }}
                     />
                   </Card>
                 </Col>
@@ -1111,7 +1129,7 @@ export default function UserProfilePage() {
                 <div
                   className="absolute left-6 top-0 bottom-0 w-0.5"
                   style={{
-                    backgroundColor: isDarkMode ? '#374151' : '#e5e7eb',
+                    backgroundColor: isDark ? '#374151' : '#e5e7eb',
                     marginLeft: '7px',
                   }}
                 />
@@ -1133,7 +1151,7 @@ export default function UserProfilePage() {
                       <div
                         className="absolute left-0 flex items-center justify-center w-14 h-14 rounded-full shadow-lg"
                         style={{
-                          background: isDarkMode
+                          background: isDark
                             ? 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)'
                             : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
                           top: '0px',
@@ -1148,8 +1166,8 @@ export default function UserProfilePage() {
                         className="shadow-md hover:shadow-lg transition-shadow duration-300"
                         style={{
                           borderRadius: '12px',
-                          border: isDarkMode ? '1px solid #374151' : '1px solid #e5e7eb',
-                          background: isDarkMode ? '#1f2937' : '#ffffff',
+                          border: isDark ? '1px solid #374151' : '1px solid #e5e7eb',
+                          background: isDark ? '#1f2937' : '#ffffff',
                         }}
                       >
                         <div className="space-y-4">
@@ -1162,20 +1180,20 @@ export default function UserProfilePage() {
                                 CSTDCS: {
                                   text: 'Chiến sĩ thi đua cơ sở',
                                   icon: <StarOutlined />,
-                                  color: isDarkMode ? '#34d399' : '#059669',
-                                  bgColor: isDarkMode
+                                  color: isDark ? '#34d399' : '#059669',
+                                  bgColor: isDark
                                     ? 'rgba(52, 211, 153, 0.1)'
                                     : 'rgba(5, 150, 105, 0.1)',
-                                  borderColor: isDarkMode ? '#10b981' : '#059669',
+                                  borderColor: isDark ? '#10b981' : '#059669',
                                 },
                                 CSTT: {
                                   text: 'Chiến sĩ tiên tiến',
                                   icon: <FireOutlined />,
-                                  color: isDarkMode ? '#60a5fa' : '#2563eb',
-                                  bgColor: isDarkMode
+                                  color: isDark ? '#60a5fa' : '#2563eb',
+                                  bgColor: isDark
                                     ? 'rgba(96, 165, 250, 0.1)'
                                     : 'rgba(37, 99, 235, 0.1)',
-                                  borderColor: isDarkMode ? '#3b82f6' : '#2563eb',
+                                  borderColor: isDark ? '#3b82f6' : '#2563eb',
                                 },
                               };
 
@@ -1184,11 +1202,11 @@ export default function UserProfilePage() {
                               ] || {
                                 text: reward.danh_hieu,
                                 icon: <TrophyOutlined />,
-                                color: isDarkMode ? '#9ca3af' : '#6b7280',
-                                bgColor: isDarkMode
+                                color: isDark ? '#9ca3af' : '#6b7280',
+                                bgColor: isDark
                                   ? 'rgba(156, 163, 175, 0.1)'
                                   : 'rgba(107, 114, 128, 0.1)',
-                                borderColor: isDarkMode ? '#6b7280' : '#9ca3af',
+                                borderColor: isDark ? '#6b7280' : '#9ca3af',
                               };
 
                               items.push(
@@ -1220,7 +1238,7 @@ export default function UserProfilePage() {
                                       <div
                                         className="flex items-center gap-1.5 mt-1"
                                         style={{
-                                          color: isDarkMode ? '#9ca3af' : '#6b7280',
+                                          color: isDark ? '#9ca3af' : '#6b7280',
                                           fontSize: '13px',
                                         }}
                                       >
@@ -1255,16 +1273,16 @@ export default function UserProfilePage() {
                                   key={`${reward.id}-bkbqp`}
                                   className="flex items-start gap-3 p-3 rounded-lg transition-all hover:scale-[1.01]"
                                   style={{
-                                    background: isDarkMode
+                                    background: isDark
                                       ? 'rgba(251, 191, 36, 0.1)'
                                       : 'rgba(217, 119, 6, 0.1)',
-                                    border: `1px solid ${isDarkMode ? '#f59e0b' : '#d97706'}`,
+                                    border: `1px solid ${isDark ? '#f59e0b' : '#d97706'}`,
                                   }}
                                 >
                                   <div
                                     className="flex items-center justify-center w-10 h-10 rounded-full flex-shrink-0"
                                     style={{
-                                      backgroundColor: isDarkMode ? '#f59e0b' : '#d97706',
+                                      backgroundColor: isDark ? '#f59e0b' : '#d97706',
                                       color: '#fff',
                                     }}
                                   >
@@ -1273,14 +1291,14 @@ export default function UserProfilePage() {
                                   <div className="flex-1 min-w-0">
                                     <div
                                       className="font-semibold text-base"
-                                      style={{ color: isDarkMode ? '#fbbf24' : '#b45309' }}
+                                      style={{ color: isDark ? '#fbbf24' : '#b45309' }}
                                     >
                                       Bằng khen của Bộ trưởng Bộ Quốc phòng
                                     </div>
                                     <div
                                       className="flex items-center gap-1.5 mt-1"
                                       style={{
-                                        color: isDarkMode ? '#9ca3af' : '#6b7280',
+                                        color: isDark ? '#9ca3af' : '#6b7280',
                                         fontSize: '13px',
                                       }}
                                     >
@@ -1314,16 +1332,16 @@ export default function UserProfilePage() {
                                   key={`${reward.id}-cstdtq`}
                                   className="flex items-start gap-3 p-3 rounded-lg transition-all hover:scale-[1.01]"
                                   style={{
-                                    background: isDarkMode
+                                    background: isDark
                                       ? 'rgba(251, 146, 60, 0.1)'
                                       : 'rgba(234, 88, 12, 0.1)',
-                                    border: `1px solid ${isDarkMode ? '#fb923c' : '#ea580c'}`,
+                                    border: `1px solid ${isDark ? '#fb923c' : '#ea580c'}`,
                                   }}
                                 >
                                   <div
                                     className="flex items-center justify-center w-10 h-10 rounded-full flex-shrink-0"
                                     style={{
-                                      backgroundColor: isDarkMode ? '#fb923c' : '#ea580c',
+                                      backgroundColor: isDark ? '#fb923c' : '#ea580c',
                                       color: '#fff',
                                     }}
                                   >
@@ -1332,14 +1350,14 @@ export default function UserProfilePage() {
                                   <div className="flex-1 min-w-0">
                                     <div
                                       className="font-semibold text-base"
-                                      style={{ color: isDarkMode ? '#fb923c' : '#c2410c' }}
+                                      style={{ color: isDark ? '#fb923c' : '#c2410c' }}
                                     >
                                       Chiến sĩ thi đua Toàn quân
                                     </div>
                                     <div
                                       className="flex items-center gap-1.5 mt-1"
                                       style={{
-                                        color: isDarkMode ? '#9ca3af' : '#6b7280',
+                                        color: isDark ? '#9ca3af' : '#6b7280',
                                         fontSize: '13px',
                                       }}
                                     >
@@ -1373,16 +1391,16 @@ export default function UserProfilePage() {
                                   key={`${reward.id}-bkttcp`}
                                   className="flex items-start gap-3 p-3 rounded-lg transition-all hover:scale-[1.01]"
                                   style={{
-                                    background: isDarkMode
+                                    background: isDark
                                       ? 'rgba(251, 191, 36, 0.1)'
                                       : 'rgba(217, 119, 6, 0.1)',
-                                    border: `1px solid ${isDarkMode ? '#f59e0b' : '#d97706'}`,
+                                    border: `1px solid ${isDark ? '#f59e0b' : '#d97706'}`,
                                   }}
                                 >
                                   <div
                                     className="flex items-center justify-center w-10 h-10 rounded-full flex-shrink-0"
                                     style={{
-                                      backgroundColor: isDarkMode ? '#f59e0b' : '#d97706',
+                                      backgroundColor: isDark ? '#f59e0b' : '#d97706',
                                       color: '#fff',
                                     }}
                                   >
@@ -1391,14 +1409,14 @@ export default function UserProfilePage() {
                                   <div className="flex-1 min-w-0">
                                     <div
                                       className="font-semibold text-base"
-                                      style={{ color: isDarkMode ? '#fbbf24' : '#b45309' }}
+                                      style={{ color: isDark ? '#fbbf24' : '#b45309' }}
                                     >
                                       Bằng khen của Thủ tướng Chính phủ
                                     </div>
                                     <div
                                       className="flex items-center gap-1.5 mt-1"
                                       style={{
-                                        color: isDarkMode ? '#9ca3af' : '#6b7280',
+                                        color: isDark ? '#9ca3af' : '#6b7280',
                                         fontSize: '13px',
                                       }}
                                     >
@@ -1458,7 +1476,7 @@ export default function UserProfilePage() {
                 <Empty
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                   description={
-                    <span style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
+                    <span style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>
                       Chưa có thành tích khoa học nào
                     </span>
                   }
@@ -1495,7 +1513,7 @@ export default function UserProfilePage() {
                 <Empty
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                   description={
-                    <span style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
+                    <span style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>
                       Chưa có lịch sử chức vụ nào
                     </span>
                   }
@@ -1532,7 +1550,7 @@ export default function UserProfilePage() {
                 <Empty
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                   description={
-                    <span style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
+                    <span style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>
                       Chưa có khen thưởng đột xuất nào
                     </span>
                   }
@@ -1547,11 +1565,7 @@ export default function UserProfilePage() {
   ];
 
   return (
-    <ConfigProvider
-      theme={{
-        algorithm: currentTheme === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
-      }}
-    >
+    <ConfigProvider theme={getAntdThemeConfig(isDark)}>
       <div className="p-6 space-y-6">
         {/* Breadcrumb */}
         <Breadcrumb

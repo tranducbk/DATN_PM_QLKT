@@ -1,6 +1,7 @@
 const { prisma } = require('../models');
 const proposalService = require('./proposal.service');
 const { getDanhHieuName } = require('../constants/danhHieu.constants');
+const { ROLES } = require('../constants/roles');
 
 class UnitAnnualAwardService {
   /**
@@ -19,7 +20,7 @@ class UnitAnnualAwardService {
     }
 
     // Role-based filtering - ưu tiên filter manager trước
-    if (userRole === 'MANAGER' && userQuanNhanId) {
+    if (userRole === ROLES.MANAGER && userQuanNhanId) {
       const managerPersonnel = await prisma.quanNhan.findUnique({
         where: { id: userQuanNhanId },
         select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true },
@@ -87,7 +88,7 @@ class UnitAnnualAwardService {
     }
 
     // Role-based access check
-    if (userRole === 'MANAGER' && userQuanNhanId) {
+    if (userRole === ROLES.MANAGER && userQuanNhanId) {
       const user = await prisma.quanNhan.findUnique({
         where: { id: userQuanNhanId },
         select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true },
@@ -337,20 +338,20 @@ class UnitAnnualAwardService {
     if (status) where.status = status;
 
     // Phân quyền: USER và MANAGER chỉ xem được đơn vị của mình
-    if ((userRole === 'USER' || userRole === 'MANAGER') && userQuanNhanId) {
+    if ((userRole === ROLES.USER || userRole === ROLES.MANAGER) && userQuanNhanId) {
       const user = await prisma.quanNhan.findUnique({
         where: { id: userQuanNhanId },
         select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true },
       });
 
       if (user) {
-        if (userRole === 'MANAGER' && user.co_quan_don_vi_id) {
+        if (userRole === ROLES.MANAGER && user.co_quan_don_vi_id) {
           // Manager xem tất cả đơn vị thuộc cơ quan đơn vị
           where.OR = [
             { co_quan_don_vi_id: user.co_quan_don_vi_id },
             { don_vi_truc_thuoc_id: { in: await this.getSubUnits(user.co_quan_don_vi_id) } },
           ];
-        } else if (userRole === 'USER' && user.don_vi_truc_thuoc_id) {
+        } else if (userRole === ROLES.USER && user.don_vi_truc_thuoc_id) {
           // User chỉ xem đơn vị trực thuộc của mình
           where.don_vi_truc_thuoc_id = user.don_vi_truc_thuoc_id;
         }
@@ -405,7 +406,7 @@ class UnitAnnualAwardService {
     if (!record) return null;
 
     // Phân quyền: USER và MANAGER chỉ xem được đơn vị của mình
-    if ((userRole === 'USER' || userRole === 'MANAGER') && userQuanNhanId) {
+    if ((userRole === ROLES.USER || userRole === ROLES.MANAGER) && userQuanNhanId) {
       const user = await prisma.quanNhan.findUnique({
         where: { id: userQuanNhanId },
         select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true },
@@ -415,7 +416,7 @@ class UnitAnnualAwardService {
 
       const recordDonViId = record.co_quan_don_vi_id || record.don_vi_truc_thuoc_id;
 
-      if (userRole === 'MANAGER') {
+      if (userRole === ROLES.MANAGER) {
         // Manager kiểm tra xem đơn vị có thuộc cơ quan đơn vị của mình không
         if (
           user.co_quan_don_vi_id !== record.co_quan_don_vi_id &&
@@ -423,7 +424,7 @@ class UnitAnnualAwardService {
         ) {
           return null;
         }
-      } else if (userRole === 'USER') {
+      } else if (userRole === ROLES.USER) {
         // User chỉ xem được đơn vị trực thuộc của mình
         if (user.don_vi_truc_thuoc_id !== recordDonViId) {
           return null;
@@ -567,57 +568,53 @@ class UnitAnnualAwardService {
    * Lấy hồ sơ gợi ý hằng năm của đơn vị (tương tự getAnnualProfile)
    */
   async getAnnualUnit(donViId, year) {
-    try {
-      // Kiểm tra đơn vị tồn tại
-      const donVi =
-        (await prisma.coQuanDonVi.findUnique({ where: { id: donViId } })) ||
-        (await prisma.donViTrucThuoc.findUnique({ where: { id: donViId } }));
+    // Kiểm tra đơn vị tồn tại
+    const donVi =
+      (await prisma.coQuanDonVi.findUnique({ where: { id: donViId } })) ||
+      (await prisma.donViTrucThuoc.findUnique({ where: { id: donViId } }));
 
-      if (!donVi) {
-        throw new Error('Đơn vị không tồn tại');
-      }
+    if (!donVi) {
+      throw new Error('Đơn vị không tồn tại');
+    }
 
-      const isCoQuanDonVi = !!donVi.ma_don_vi && !donVi.co_quan_don_vi_id;
+    const isCoQuanDonVi = !!donVi.ma_don_vi && !donVi.co_quan_don_vi_id;
 
-      // Lấy hồ sơ năm gần nhất
-      let profile = await prisma.hoSoDonViHangNam.findFirst({
-        where: {
-          OR: [{ co_quan_don_vi_id: donViId }, { don_vi_truc_thuoc_id: donViId }],
-          nam: year,
+    // Lấy hồ sơ năm gần nhất
+    let profile = await prisma.hoSoDonViHangNam.findFirst({
+      where: {
+        OR: [{ co_quan_don_vi_id: donViId }, { don_vi_truc_thuoc_id: donViId }],
+        nam: year,
+      },
+      orderBy: { nam: 'desc' },
+      include: {
+        CoQuanDonVi: true,
+        DonViTrucThuoc: true,
+      },
+    });
+
+    // Nếu chưa có hồ sơ, tạo mới với giá trị mặc định
+    if (!profile) {
+      const currentYear = new Date().getFullYear();
+      profile = await prisma.hoSoDonViHangNam.create({
+        data: {
+          co_quan_don_vi_id: isCoQuanDonVi ? donViId : null,
+          don_vi_truc_thuoc_id: isCoQuanDonVi ? null : donViId,
+          nam: currentYear,
+          tong_dvqt: 0,
+          tong_dvqt_json: [],
+          dvqt_lien_tuc: 0,
+          du_dieu_kien_bk_tong_cuc: false,
+          du_dieu_kien_bk_thu_tuong: false,
+          goi_y: 'Chưa có dữ liệu để tính toán. Vui lòng nhập danh hiệu đơn vị.',
         },
-        orderBy: { nam: 'desc' },
         include: {
           CoQuanDonVi: true,
           DonViTrucThuoc: true,
         },
       });
-
-      // Nếu chưa có hồ sơ, tạo mới với giá trị mặc định
-      if (!profile) {
-        const currentYear = new Date().getFullYear();
-        profile = await prisma.hoSoDonViHangNam.create({
-          data: {
-            co_quan_don_vi_id: isCoQuanDonVi ? donViId : null,
-            don_vi_truc_thuoc_id: isCoQuanDonVi ? null : donViId,
-            nam: currentYear,
-            tong_dvqt: 0,
-            tong_dvqt_json: [],
-            dvqt_lien_tuc: 0,
-            du_dieu_kien_bk_tong_cuc: false,
-            du_dieu_kien_bk_thu_tuong: false,
-            goi_y: 'Chưa có dữ liệu để tính toán. Vui lòng nhập danh hiệu đơn vị.',
-          },
-          include: {
-            CoQuanDonVi: true,
-            DonViTrucThuoc: true,
-          },
-        });
-      }
-
-      return profile;
-    } catch (error) {
-      throw error;
     }
+
+    return profile;
   }
 
   /**
@@ -637,10 +634,6 @@ class UnitAnnualAwardService {
       const isCoQuanDonVi = !!donVi.ma_don_vi && !donVi.co_quan_don_vi_id;
       const targetYear = year || new Date().getFullYear();
 
-      console.log(
-        `📋 [recalculateAnnualUnit] Đơn vị ID: ${donViId}, Năm: ${targetYear}, IsCoQuanDonVi: ${isCoQuanDonVi}`
-      );
-
       // Lấy tất cả danh hiệu của đơn vị đến năm hiện tại
       const danhHieuList = await prisma.danhHieuDonViHangNam.findMany({
         where: {
@@ -650,11 +643,6 @@ class UnitAnnualAwardService {
         },
         orderBy: { nam: 'asc' },
       });
-
-      console.log(
-        `📋 [recalculateAnnualUnit] Số danh hiệu: ${danhHieuList.length}`,
-        danhHieuList.map(dh => `${dh.nam}: ${dh.danh_hieu}`).join(', ')
-      );
 
       // Tính toán các chỉ số
       const dvqtResult = await this.calculateTotalDVQT(donViId, targetYear);
@@ -670,21 +658,6 @@ class UnitAnnualAwardService {
       const hasDecision = !!currentYearAward?.so_quyet_dinh;
 
       const goi_y = this.buildSuggestion(dvqtLienTuc, hasDecision);
-
-      console.log(
-        `📋 [recalculateAnnualUnit] Kết quả tính toán:`,
-        JSON.stringify(
-          {
-            tong_dvqt: dvqtResult.total,
-            dvqt_lien_tuc: dvqtLienTuc,
-            du_dieu_kien_bk_tong_cuc,
-            du_dieu_kien_bk_thu_tuong,
-            goi_y,
-          },
-          null,
-          2
-        )
-      );
 
       // Upsert HoSoDonViHangNam
       const whereCondition = isCoQuanDonVi
@@ -738,9 +711,9 @@ class UnitAnnualAwardService {
     if (!donVi) throw new Error('Đơn vị không tồn tại');
 
     // Phân quyền
-    if (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') {
+    if (userRole === ROLES.ADMIN || userRole === ROLES.SUPER_ADMIN) {
       // admin xem được tất cả
-    } else if ((userRole === 'MANAGER' || userRole === 'USER') && userQuanNhanId) {
+    } else if ((userRole === ROLES.MANAGER || userRole === ROLES.USER) && userQuanNhanId) {
       const user = await prisma.quanNhan.findUnique({
         where: { id: userQuanNhanId },
         select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true },
@@ -748,13 +721,13 @@ class UnitAnnualAwardService {
 
       if (!user) throw new Error('Không tìm thấy thông tin người dùng');
 
-      if (userRole === 'MANAGER') {
+      if (userRole === ROLES.MANAGER) {
         // Manager được xem tất cả đơn vị thuộc cùng co_quan_don_vi_id
         let targetCoQuanId = donVi.co_quan_don_vi_id || donVi.id;
         if (!user.co_quan_don_vi_id || user.co_quan_don_vi_id !== targetCoQuanId) {
           throw new Error('Không có quyền xem lịch sử khen thưởng của đơn vị này');
         }
-      } else if (userRole === 'USER') {
+      } else if (userRole === ROLES.USER) {
         // User chỉ được xem đơn vị trực thuộc của chính họ
         if (!user.don_vi_truc_thuoc_id || user.don_vi_truc_thuoc_id !== donViId) {
           throw new Error('Không có quyền xem lịch sử khen thưởng của đơn vị này');
@@ -779,7 +752,7 @@ class UnitAnnualAwardService {
   /**
    * Xuất file mẫu Excel để import
    */
-  async exportTemplate(userRole = 'MANAGER') {
+  async exportTemplate(userRole = ROLES.MANAGER) {
     const ExcelJS = require('exceljs');
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Khen thưởng đơn vị');
@@ -793,7 +766,7 @@ class UnitAnnualAwardService {
     ];
 
     // ADMIN có thêm các cột chi tiết
-    if (userRole === 'ADMIN') {
+    if (userRole === ROLES.ADMIN) {
       columns.push(
         { header: 'Ghi chú', key: 'ghi_chu', width: 30 },
         { header: 'Số quyết định', key: 'so_quyet_dinh', width: 20 }
@@ -817,7 +790,7 @@ class UnitAnnualAwardService {
     };
 
     // ADMIN có thêm các trường chi tiết trong sample
-    if (userRole === 'ADMIN') {
+    if (userRole === ROLES.ADMIN) {
       sampleRow.ghi_chu = 'Ghi chú mẫu';
       sampleRow.so_quyet_dinh = '123/QĐ-BQP';
     }
@@ -874,15 +847,8 @@ class UnitAnnualAwardService {
         .replace(/_+/g, '_') // Replace multiple underscores with single
         .replace(/^_|_$/g, ''); // Remove leading/trailing underscores
 
-      console.log(`=== DEBUG: Header Processing ===`);
-      console.log(`Column ${colNumber}: raw="${rawValue}" -> normalized="${normalized}"`);
-
       if (normalized) headerMap[normalized] = colNumber;
     });
-
-    console.log('=== DEBUG: Header Map ===');
-    console.log('Available headers:', Object.keys(headerMap));
-    console.log('Full headerMap:', headerMap);
 
     // Try multiple variations of headers
     const getHeaderCol = variations => {
@@ -898,22 +864,6 @@ class UnitAnnualAwardService {
     const danhHieuCol = getHeaderCol(['danh_hieu', 'danhhieu', 'danh_hiu', 'danhieu']);
     const soQuyetDinhCol = getHeaderCol(['so_quyet_dinh', 'soquyetdinh', 'so_qd', 'soqd']);
     const ghiChuCol = getHeaderCol(['ghi_chu', 'ghichu', 'ghi_ch', 'ghich']);
-
-    console.log('=== DEBUG: Column Detection ===');
-    console.log('maDonViCol:', maDonViCol);
-    console.log('tenDonViCol:', tenDonViCol);
-    console.log('namCol:', namCol);
-    console.log('danhHieuCol:', danhHieuCol);
-    console.log('soQuyetDinhCol:', soQuyetDinhCol);
-    console.log('ghiChuCol:', ghiChuCol);
-
-    console.log('=== DEBUG: Column Detection ===');
-    console.log('maDonViCol:', maDonViCol);
-    console.log('tenDonViCol:', tenDonViCol);
-    console.log('namCol:', namCol);
-    console.log('danhHieuCol:', danhHieuCol);
-    console.log('soQuyetDinhCol:', soQuyetDinhCol);
-    console.log('ghiChuCol:', ghiChuCol);
 
     if (!maDonViCol || !namCol || !danhHieuCol) {
       throw new Error(
@@ -938,13 +888,6 @@ class UnitAnnualAwardService {
         : '';
       const ghiChu = ghiChuCol ? String(row.getCell(ghiChuCol).value || '').trim() : '';
 
-      console.log(`=== DEBUG: Row ${i} Data ===`);
-      console.log('maDonVi:', maDonVi);
-      console.log('namVal:', namVal);
-      console.log('danhHieu:', danhHieu);
-      console.log('soQuyetDinh:', soQuyetDinh);
-      console.log('ghiChu:', ghiChu);
-
       if (!maDonVi && !namVal && !danhHieu) continue; // dòng trống
 
       total++; // Đếm tổng số dòng có data
@@ -955,9 +898,6 @@ class UnitAnnualAwardService {
             `Thiếu thông tin bắt buộc: Mã đơn vị=${maDonVi}, Năm=${namVal}, Danh hiệu=${danhHieu}`
           );
         }
-
-        console.log(`=== DEBUG: Processing row ${i} ===`);
-        console.log(`maDonVi: "${maDonVi}", namVal: ${namVal}, danhHieu: "${danhHieu}"`);
 
         const nam = parseInt(namVal);
         if (!Number.isInteger(nam)) {
@@ -970,31 +910,18 @@ class UnitAnnualAwardService {
           );
         }
 
-        console.log(`=== DEBUG: Looking up unit with ma_don_vi: "${maDonVi}" ===`);
         const donVi = await prisma.coQuanDonVi.findFirst({
           where: { ma_don_vi: maDonVi },
         });
-
-        console.log(
-          `=== DEBUG: CoQuanDonVi lookup result:`,
-          donVi ? `Found ID: ${donVi.id}` : 'Not found'
-        );
 
         if (!donVi) {
           const donViTrucThuoc = await prisma.donViTrucThuoc.findFirst({
             where: { ma_don_vi: maDonVi },
           });
 
-          console.log(
-            `=== DEBUG: DonViTrucThuoc lookup result:`,
-            donViTrucThuoc ? `Found ID: ${donViTrucThuoc.id}` : 'Not found'
-          );
-
           if (!donViTrucThuoc) {
             throw new Error(`Không tìm thấy đơn vị với mã ${maDonVi}`);
           }
-
-          console.log(`=== DEBUG: Processing DonViTrucThuoc ID: ${donViTrucThuoc.id} ===`);
 
           // Check for duplicate unit awards in proposals
           try {
@@ -1040,13 +967,8 @@ class UnitAnnualAwardService {
           imported.push(award);
           if (!selectedUnitIds.includes(donViTrucThuoc.id)) {
             selectedUnitIds.push(donViTrucThuoc.id);
-            console.log(
-              `=== DEBUG: Added DonViTrucThuoc ID ${donViTrucThuoc.id} to selectedUnitIds ===`
-            );
           }
         } else {
-          console.log(`=== DEBUG: Processing CoQuanDonVi ID: ${donVi.id} ===`);
-
           // Check for duplicate unit awards in proposals
           try {
             const duplicateCheck = await proposalService.checkDuplicateUnitAward(
@@ -1091,19 +1013,12 @@ class UnitAnnualAwardService {
           imported.push(award);
           if (!selectedUnitIds.includes(donVi.id)) {
             selectedUnitIds.push(donVi.id);
-            console.log(`=== DEBUG: Added CoQuanDonVi ID ${donVi.id} to selectedUnitIds ===`);
           }
         }
       } catch (error) {
         errors.push(`Dòng ${i}: ${error.message}`);
       }
     }
-
-    console.log(`=== DEBUG: Import Summary ===`);
-    console.log(`Total rows processed: ${total}`);
-    console.log(`Imported records: ${imported.length}`);
-    console.log(`Errors: ${errors.length}`, errors);
-    console.log(`Selected Unit IDs:`, selectedUnitIds);
 
     return {
       total,
@@ -1125,7 +1040,7 @@ class UnitAnnualAwardService {
     if (danh_hieu) where.danh_hieu = danh_hieu;
 
     // Filter theo role
-    if (userRole === 'MANAGER' && userQuanNhanId) {
+    if (userRole === ROLES.MANAGER && userQuanNhanId) {
       const user = await prisma.quanNhan.findUnique({
         where: { id: userQuanNhanId },
         select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true },
@@ -1203,7 +1118,7 @@ class UnitAnnualAwardService {
     if (nam) where.nam = nam;
 
     // Filter theo role
-    if (userRole === 'MANAGER' && userQuanNhanId) {
+    if (userRole === ROLES.MANAGER && userQuanNhanId) {
       const user = await prisma.quanNhan.findUnique({
         where: { id: userQuanNhanId },
         select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true },

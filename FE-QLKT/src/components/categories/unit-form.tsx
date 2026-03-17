@@ -76,8 +76,8 @@ export function UnitForm({ unit, units = [], onSuccess, onClose }: UnitFormProps
               ? 'Cập nhật đơn vị trực thuộc thành công'
               : 'Cập nhật cơ quan đơn vị thành công'
             : unit?.co_quan_don_vi_id
-            ? 'Tạo đơn vị trực thuộc thành công'
-            : 'Tạo cơ quan đơn vị thành công'
+              ? 'Tạo đơn vị trực thuộc thành công'
+              : 'Tạo cơ quan đơn vị thành công'
         );
         onSuccess?.();
         onClose?.();
@@ -117,9 +117,7 @@ export function UnitForm({ unit, units = [], onSuccess, onClose }: UnitFormProps
         ]}
       >
         <Input
-          placeholder={
-            isDonViTrucThuoc ? 'Nhập mã đơn vị trực thuộc' : 'Nhập mã cơ quan đơn vị'
-          }
+          placeholder={isDonViTrucThuoc ? 'Nhập mã đơn vị trực thuộc' : 'Nhập mã cơ quan đơn vị'}
         />
       </Form.Item>
 
@@ -136,9 +134,7 @@ export function UnitForm({ unit, units = [], onSuccess, onClose }: UnitFormProps
         ]}
       >
         <Input
-          placeholder={
-            isDonViTrucThuoc ? 'Nhập tên đơn vị trực thuộc' : 'Nhập tên cơ quan đơn vị'
-          }
+          placeholder={isDonViTrucThuoc ? 'Nhập tên đơn vị trực thuộc' : 'Nhập tên cơ quan đơn vị'}
         />
       </Form.Item>
 

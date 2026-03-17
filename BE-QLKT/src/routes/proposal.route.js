@@ -4,6 +4,7 @@ const proposalController = require('../controllers/proposal.controller');
 const { verifyToken, checkRole } = require('../middlewares/auth');
 const { auditLog } = require('../middlewares/auditLog');
 const { getLogDescription, getResourceId } = require('../helpers/auditLogHelper');
+const { ROLES } = require('../constants/roles');
 
 // Cấu hình multer để xử lý file upload (lưu vào memory)
 const upload = multer({
@@ -41,7 +42,7 @@ const upload = multer({
 router.get(
   '/template',
   verifyToken,
-  checkRole(['MANAGER', 'ADMIN']),
+  checkRole([ROLES.MANAGER, ROLES.ADMIN]),
   proposalController.exportTemplate
 );
 
@@ -53,7 +54,7 @@ router.get(
 router.post(
   '/',
   verifyToken,
-  checkRole(['MANAGER', 'ADMIN']),
+  checkRole([ROLES.MANAGER, ROLES.ADMIN]),
   upload.fields([
     { name: 'attached_files' }, // Không giới hạn số lượng file
   ]),
@@ -74,7 +75,7 @@ router.post(
 router.get(
   '/check-duplicate',
   verifyToken,
-  checkRole(['MANAGER', 'ADMIN']),
+  checkRole([ROLES.MANAGER, ROLES.ADMIN]),
   proposalController.checkDuplicateAward
 );
 
@@ -86,7 +87,7 @@ router.get(
 router.get(
   '/check-duplicate-unit',
   verifyToken,
-  checkRole(['MANAGER', 'ADMIN']),
+  checkRole([ROLES.MANAGER, ROLES.ADMIN]),
   proposalController.checkDuplicateUnitAward
 );
 
@@ -95,7 +96,7 @@ router.get(
  * @desc    Lấy danh sách đề xuất
  * @access  MANAGER, ADMIN
  */
-router.get('/', verifyToken, checkRole(['MANAGER', 'ADMIN']), proposalController.getProposals);
+router.get('/', verifyToken, checkRole([ROLES.MANAGER, ROLES.ADMIN]), proposalController.getProposals);
 
 /**
  * @route   GET /api/proposals/:id
@@ -105,7 +106,7 @@ router.get('/', verifyToken, checkRole(['MANAGER', 'ADMIN']), proposalController
 router.get(
   '/:id',
   verifyToken,
-  checkRole(['MANAGER', 'ADMIN']),
+  checkRole([ROLES.MANAGER, ROLES.ADMIN]),
   proposalController.getProposalById
 );
 
@@ -117,7 +118,7 @@ router.get(
 router.post(
   '/:id/approve',
   verifyToken,
-  checkRole(['ADMIN']),
+  checkRole([ROLES.ADMIN]),
   upload.fields([
     // File PDF cho từng loại đề xuất
     { name: 'file_pdf_ca_nhan_hang_nam', maxCount: 1 }, // CA_NHAN_HANG_NAM
@@ -144,7 +145,7 @@ router.post(
 router.post(
   '/:id/reject',
   verifyToken,
-  checkRole(['ADMIN']),
+  checkRole([ROLES.ADMIN]),
   auditLog({
     action: 'REJECT',
     resource: 'proposals',
@@ -162,7 +163,7 @@ router.post(
 router.get(
   '/:id/download-excel',
   verifyToken,
-  checkRole(['MANAGER', 'ADMIN']),
+  checkRole([ROLES.MANAGER, ROLES.ADMIN]),
   proposalController.downloadProposalExcel
 );
 
@@ -174,7 +175,7 @@ router.get(
 router.get(
   '/uploads/:filename',
   verifyToken,
-  checkRole(['MANAGER', 'ADMIN', 'USER']),
+  checkRole([ROLES.MANAGER, ROLES.ADMIN, ROLES.USER]),
   proposalController.getPdfFile
 );
 
@@ -186,7 +187,7 @@ router.get(
 router.delete(
   '/:id',
   verifyToken,
-  checkRole(['MANAGER', 'ADMIN']),
+  checkRole([ROLES.MANAGER, ROLES.ADMIN]),
   auditLog({
     action: 'DELETE',
     resource: 'proposals',

@@ -10,7 +10,17 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tag } from 'antd';
-import { Loader2, Clock, User, Shield, Activity, FileText, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import {
+  Loader2,
+  Clock,
+  User,
+  Shield,
+  Activity,
+  FileText,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+} from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 
@@ -30,25 +40,25 @@ const resourceLabels: Record<string, string> = {
   positions: 'Chức vụ',
   proposals: 'Đề xuất',
   'annual-rewards': 'Danh hiệu hằng năm',
-  'annual_rewards': 'Danh hiệu hằng năm',
+  annual_rewards: 'Danh hiệu hằng năm',
   'position-history': 'Lịch sử chức vụ',
-  'position_history': 'Lịch sử chức vụ',
+  position_history: 'Lịch sử chức vụ',
   'scientific-achievements': 'Thành tích khoa học',
-  'scientific_achievements': 'Thành tích khoa học',
+  scientific_achievements: 'Thành tích khoa học',
   decisions: 'Quyết định',
   auth: 'Xác thực',
   'adhoc-awards': 'Khen thưởng đột xuất',
-  'adhoc_awards': 'Khen thưởng đột xuất',
+  adhoc_awards: 'Khen thưởng đột xuất',
   'commemorative-medals': 'Kỷ niệm chương',
-  'commemorative_medals': 'Kỷ niệm chương',
+  commemorative_medals: 'Kỷ niệm chương',
   'contribution-awards': 'Huân chương Bảo vệ Tổ quốc',
-  'contribution_awards': 'Huân chương Bảo vệ Tổ quốc',
+  contribution_awards: 'Huân chương Bảo vệ Tổ quốc',
   'military-flag': 'Cờ thi đua',
-  'military_flag': 'Cờ thi đua',
+  military_flag: 'Cờ thi đua',
   'service-rewards': 'Huy chương Chiến sĩ vẻ vang',
-  'service_rewards': 'Huy chương Chiến sĩ vẻ vang',
+  service_rewards: 'Huy chương Chiến sĩ vẻ vang',
   'unit-annual-awards': 'Khen thưởng đơn vị hằng năm',
-  'unit_annual_awards': 'Khen thưởng đơn vị hằng năm',
+  unit_annual_awards: 'Khen thưởng đơn vị hằng năm',
   hccsvv: 'Huy chương Chiến sĩ Vẻ vang',
   categories: 'Danh mục',
 };
@@ -232,7 +242,7 @@ export function LogsTable({ logs, loading }: LogsTableProps) {
       <Table>
         <TableHeader className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
           <TableRow className="bg-gray-50 dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 border-0">
-            <TableHead 
+            <TableHead
               className="font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               onClick={() => handleSort('time')}
             >
@@ -242,7 +252,7 @@ export function LogsTable({ logs, loading }: LogsTableProps) {
                 <SortIcon field="time" />
               </div>
             </TableHead>
-            <TableHead 
+            <TableHead
               className="font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               onClick={() => handleSort('actor')}
             >
@@ -252,7 +262,7 @@ export function LogsTable({ logs, loading }: LogsTableProps) {
                 <SortIcon field="actor" />
               </div>
             </TableHead>
-            <TableHead 
+            <TableHead
               className="font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               onClick={() => handleSort('role')}
             >
@@ -262,7 +272,7 @@ export function LogsTable({ logs, loading }: LogsTableProps) {
                 <SortIcon field="role" />
               </div>
             </TableHead>
-            <TableHead 
+            <TableHead
               className="font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               onClick={() => handleSort('action')}
             >

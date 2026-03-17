@@ -4,6 +4,7 @@ const militaryFlagController = require('../controllers/militaryFlag.controller')
 const { verifyToken, checkRole, requireManager, requireAdmin } = require('../middlewares/auth');
 const { auditLog } = require('../middlewares/auditLog');
 const { getLogDescription, getResourceId } = require('../helpers/auditLogHelper');
+const { ROLES } = require('../constants/roles');
 
 // Cấu hình multer cho file upload
 const upload = multer({
@@ -41,7 +42,7 @@ router.get('/template', verifyToken, requireManager, militaryFlagController.getT
 router.post(
   '/import',
   verifyToken,
-  checkRole(['ADMIN', 'MANAGER']),
+  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
   upload.single('file'),
   militaryFlagController.importFromExcel
 );
@@ -51,7 +52,7 @@ router.post(
  * @desc    Lấy danh sách Huy chương quân kỳ Quyết thắng (Admin: tất cả, Manager: đơn vị mình)
  * @access  ADMIN, MANAGER
  */
-router.get('/', verifyToken, checkRole(['ADMIN', 'MANAGER']), militaryFlagController.getAll);
+router.get('/', verifyToken, checkRole([ROLES.ADMIN, ROLES.MANAGER]), militaryFlagController.getAll);
 
 /**
  * @route   GET /api/military-flag/export
@@ -61,7 +62,7 @@ router.get('/', verifyToken, checkRole(['ADMIN', 'MANAGER']), militaryFlagContro
 router.get(
   '/export',
   verifyToken,
-  checkRole(['ADMIN', 'MANAGER']),
+  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
   militaryFlagController.exportToExcel
 );
 
@@ -73,7 +74,7 @@ router.get(
 router.get(
   '/statistics',
   verifyToken,
-  checkRole(['ADMIN', 'MANAGER']),
+  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
   militaryFlagController.getStatistics
 );
 
@@ -85,7 +86,7 @@ router.get(
 router.get(
   '/personnel/:personnel_id',
   verifyToken,
-  checkRole(['ADMIN', 'MANAGER', 'USER']),
+  checkRole([ROLES.ADMIN, ROLES.MANAGER, ROLES.USER]),
   militaryFlagController.getByPersonnelId
 );
 

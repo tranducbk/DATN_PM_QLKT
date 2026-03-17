@@ -124,8 +124,8 @@ export default function ProposalReviewPage() {
       // Filter theo loại đề xuất
       if (typeFilter !== '' && p.loai_de_xuat !== typeFilter) return false;
 
-    return true;
-  });
+      return true;
+    });
   }, [proposals, activeTab, yearFilter, typeFilter]);
 
   const handleResetFilters = () => {
@@ -273,13 +273,13 @@ export default function ProposalReviewPage() {
       render: (_: any, record: Proposal) => (
         <div style={{ textAlign: 'center' }}>
           <Space>
-        <Button
-          type="default"
-          icon={<EyeOutlined />}
-          onClick={() => router.push(`/admin/proposals/review/${record.id}`)}
-        >
-          {record.status === 'PENDING' ? 'Xem và Duyệt' : 'Xem Chi Tiết'}
-        </Button>
+            <Button
+              type="default"
+              icon={<EyeOutlined />}
+              onClick={() => router.push(`/admin/proposals/review/${record.id}`)}
+            >
+              {record.status === 'PENDING' ? 'Xem và Duyệt' : 'Xem Chi Tiết'}
+            </Button>
             <Popconfirm
               title="Xóa đề xuất"
               description="Bạn có chắc chắn muốn xóa đề xuất này? Hành động này không thể hoàn tác."
@@ -288,11 +288,7 @@ export default function ProposalReviewPage() {
               cancelText="Hủy"
               okButtonProps={{ danger: true }}
             >
-              <Button
-                danger
-                icon={<DeleteOutlined />}
-                loading={deletingId === record.id}
-              >
+              <Button danger icon={<DeleteOutlined />} loading={deletingId === record.id}>
                 Xóa
               </Button>
             </Popconfirm>
@@ -313,43 +309,43 @@ export default function ProposalReviewPage() {
     );
 
     return [
-    {
-      key: 'all',
-      label: (
-        <span>
-          <UnorderedListOutlined style={{ marginRight: 8 }} />
-          Tất cả ({proposals.length})
-        </span>
-      ),
-    },
-    {
-      key: 'pending',
-      label: (
-        <span>
-          <ClockCircleOutlined style={{ marginRight: 8 }} />
+      {
+        key: 'all',
+        label: (
+          <span>
+            <UnorderedListOutlined style={{ marginRight: 8 }} />
+            Tất cả ({proposals.length})
+          </span>
+        ),
+      },
+      {
+        key: 'pending',
+        label: (
+          <span>
+            <ClockCircleOutlined style={{ marginRight: 8 }} />
             Chờ duyệt ({statusCounts.PENDING || 0})
-        </span>
-      ),
-    },
-    {
-      key: 'approved',
-      label: (
-        <span>
-          <CheckCircleOutlined style={{ marginRight: 8 }} />
+          </span>
+        ),
+      },
+      {
+        key: 'approved',
+        label: (
+          <span>
+            <CheckCircleOutlined style={{ marginRight: 8 }} />
             Đã duyệt ({statusCounts.APPROVED || 0})
-        </span>
-      ),
-    },
-    {
-      key: 'rejected',
-      label: (
-        <span>
-          <WarningOutlined style={{ marginRight: 8 }} />
+          </span>
+        ),
+      },
+      {
+        key: 'rejected',
+        label: (
+          <span>
+            <WarningOutlined style={{ marginRight: 8 }} />
             Đã từ chối ({statusCounts.REJECTED || 0})
-        </span>
-      ),
-    },
-  ];
+          </span>
+        ),
+      },
+    ];
   }, [proposals]);
 
   return (
@@ -377,29 +373,25 @@ export default function ProposalReviewPage() {
                 activeTab === 'all'
                   ? 'Tất cả đề xuất'
                   : activeTab === 'pending'
-                  ? 'Đề xuất đang chờ phê duyệt'
-                  : activeTab === 'approved'
-                  ? 'Đề xuất đã được phê duyệt'
-                  : 'Đề xuất đã bị từ chối'
+                    ? 'Đề xuất đang chờ phê duyệt'
+                    : activeTab === 'approved'
+                      ? 'Đề xuất đã được phê duyệt'
+                      : 'Đề xuất đã bị từ chối'
               }
               extra={
                 <Paragraph style={{ margin: 0, color: '#666' }}>
                   {activeTab === 'all'
                     ? 'Danh sách tất cả các đề xuất'
                     : activeTab === 'pending'
-                    ? "Nhấn 'Xem và Duyệt' để kiểm tra và phê duyệt đề xuất"
-                    : activeTab === 'approved'
-                    ? 'Danh sách các đề xuất đã được phê duyệt và import vào hệ thống'
-                    : 'Danh sách các đề xuất đã bị từ chối'}
+                      ? "Nhấn 'Xem và Duyệt' để kiểm tra và phê duyệt đề xuất"
+                      : activeTab === 'approved'
+                        ? 'Danh sách các đề xuất đã được phê duyệt và import vào hệ thống'
+                        : 'Danh sách các đề xuất đã bị từ chối'}
                 </Paragraph>
               }
             >
               {/* Filter Section */}
-              <Card
-                size="small"
-                style={{ marginBottom: 16 }}
-                bodyStyle={{ padding: '16px' }}
-              >
+              <Card size="small" style={{ marginBottom: 16 }} bodyStyle={{ padding: '16px' }}>
                 <Row gutter={[16, 16]} align="bottom">
                   <Col xs={24} sm={12} md={6}>
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -498,10 +490,10 @@ export default function ProposalReviewPage() {
                         {activeTab === 'all'
                           ? 'Chưa có đề xuất nào'
                           : activeTab === 'pending'
-                          ? 'Chưa có đề xuất chờ phê duyệt'
-                          : activeTab === 'approved'
-                          ? 'Chưa có đề xuất nào được phê duyệt'
-                          : 'Chưa có đề xuất nào bị từ chối'}
+                            ? 'Chưa có đề xuất chờ phê duyệt'
+                            : activeTab === 'approved'
+                              ? 'Chưa có đề xuất nào được phê duyệt'
+                              : 'Chưa có đề xuất nào bị từ chối'}
                       </div>
                     </div>
                   }

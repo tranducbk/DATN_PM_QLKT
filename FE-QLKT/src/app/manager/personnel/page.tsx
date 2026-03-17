@@ -165,9 +165,7 @@ export default function ManagerPersonnelPage() {
   // Filter positions: Chỉ hiển thị các chức vụ đang được sử dụng bởi quân nhân trong đơn vị
   // Lấy danh sách chức vụ ID từ quân nhân thực tế
   const usedPositionIds = new Set(
-    personnel
-      .map(p => p.chuc_vu_id)
-      .filter(id => id !== null && id !== undefined)
+    personnel.map(p => p.chuc_vu_id).filter(id => id !== null && id !== undefined)
   );
 
   // Lọc các chức vụ từ positions dựa trên:
@@ -177,7 +175,7 @@ export default function ManagerPersonnelPage() {
   const filteredPositionsMapById = new Map();
   // Sử dụng Map với tên làm key để loại bỏ trùng lặp theo tên
   const filteredPositionsMapByName = new Map();
-  
+
   positions.forEach(pos => {
     if (!managerUnitId) return;
 
@@ -210,7 +208,7 @@ export default function ManagerPersonnelPage() {
     // - Chưa có trong Map theo tên (loại bỏ trùng lặp theo tên)
     if (shouldInclude) {
       const positionName = pos.ten_chuc_vu?.trim() || '';
-      
+
       // Kiểm tra trùng lặp theo ID
       if (!filteredPositionsMapById.has(pos.id)) {
         // Kiểm tra trùng lặp theo tên
@@ -227,8 +225,8 @@ export default function ManagerPersonnelPage() {
 
   const filteredPersonnel = personnel
     .filter(p => {
-      const matchesSearch = !searchTerm || 
-        (p.ho_ten && p.ho_ten.toLowerCase().includes(searchTerm.toLowerCase()));
+      const matchesSearch =
+        !searchTerm || (p.ho_ten && p.ho_ten.toLowerCase().includes(searchTerm.toLowerCase()));
       const matchesPosition = !selectedPosition || p.chuc_vu_id === parseInt(selectedPosition);
       const matchesCapBac = !selectedCapBac || p.cap_bac === selectedCapBac;
       return matchesSearch && matchesPosition && matchesCapBac;
@@ -246,18 +244,16 @@ export default function ManagerPersonnelPage() {
     });
 
   const totalPersonnel = pagination.total;
-  
+
   const totalSubUnits = units.filter((u: any) => {
     if (u.id === managerUnitId) {
       return false;
     }
     return !!(u.co_quan_don_vi_id || u.CoQuanDonVi);
   }).length;
-  
+
   const uniquePositionIds = new Set(
-    personnel
-      .map(p => p.chuc_vu_id)
-      .filter(id => id !== null && id !== undefined)
+    personnel.map(p => p.chuc_vu_id).filter(id => id !== null && id !== undefined)
   );
   const uniquePositions = uniquePositionIds.size;
   const statTextColor = theme === 'dark' ? '#e5e7eb' : '#0f172a';
@@ -265,8 +261,10 @@ export default function ManagerPersonnelPage() {
   const iconBgBlue = theme === 'dark' ? '#1e3a8a' : '#e6f0ff';
   const iconBgGreen = theme === 'dark' ? '#0b3d2e' : '#e8f5e9';
   const iconBgPurple = theme === 'dark' ? '#3b0764' : '#f3e8ff';
-  const iconShadow = theme === 'dark' ? '0 1px 3px rgba(0, 0, 0, 0.45)' : '0 1px 3px rgba(0, 0, 0, 0.05)';
-  const cardShadow = theme === 'dark' ? '0 1px 6px rgba(0, 0, 0, 0.35)' : '0 1px 4px rgba(0, 0, 0, 0.06)';
+  const iconShadow =
+    theme === 'dark' ? '0 1px 3px rgba(0, 0, 0, 0.45)' : '0 1px 3px rgba(0, 0, 0, 0.05)';
+  const cardShadow =
+    theme === 'dark' ? '0 1px 6px rgba(0, 0, 0, 0.35)' : '0 1px 4px rgba(0, 0, 0, 0.06)';
 
   if (loading && personnel.length === 0 && managerUnitId !== null) {
     return (
@@ -617,4 +615,3 @@ export default function ManagerPersonnelPage() {
     </ConfigProvider>
   );
 }
-

@@ -344,8 +344,7 @@ export default function AdminAwardsPage() {
     await downloadDecisionFile(soQuyetDinh);
   };
 
-  const getPersonName = (record: any) =>
-    record?.QuanNhan?.ho_ten || record?.ho_ten || '';
+  const getPersonName = (record: any) => record?.QuanNhan?.ho_ten || record?.ho_ten || '';
 
   const danhHieuOptions = useMemo(() => {
     const options = DANH_HIEU_OPTIONS[activeTab] || [];
@@ -388,15 +387,9 @@ export default function AdminAwardsPage() {
       if (danhHieuFilter) {
         if (['annual', 'hccsvv', 'contribution'].includes(activeTab)) {
           if (activeTab === 'annual') {
-            const isBKBQP =
-              danhHieuFilter === 'BKBQP' &&
-              (record.nhan_bkbqp === true);
-            const isCSTDTQ =
-              danhHieuFilter === 'CSTDTQ' &&
-              (record.nhan_cstdtq === true);
-            const isBKTTCP =
-              danhHieuFilter === 'BKTTCP' &&
-              (record.nhan_bkttcp === true);
+            const isBKBQP = danhHieuFilter === 'BKBQP' && record.nhan_bkbqp === true;
+            const isCSTDTQ = danhHieuFilter === 'CSTDTQ' && record.nhan_cstdtq === true;
+            const isBKTTCP = danhHieuFilter === 'BKTTCP' && record.nhan_bkttcp === true;
 
             if (!isBKBQP && !isCSTDTQ && !isBKTTCP && record.danh_hieu !== danhHieuFilter) {
               return false;
@@ -409,10 +402,7 @@ export default function AdminAwardsPage() {
 
       // Scientific topic filter
       if (activeTab === 'scientific' && topicFilter) {
-        const topic =
-          record.mo_ta?.toLowerCase() ||
-          record.ten_de_tai?.toLowerCase() ||
-          '';
+        const topic = record.mo_ta?.toLowerCase() || record.ten_de_tai?.toLowerCase() || '';
         if (!topic.includes(topicFilter)) return false;
       }
 
@@ -506,14 +496,14 @@ export default function AdminAwardsPage() {
           activeTab === 'contribution' ||
           activeTab === 'hccsvv' ||
           activeTab === 'commemoration';
-        
+
         // For annual tab, check if QuanNhan exists, otherwise use direct field
         const isAnnualTab = activeTab === 'annual';
         const ngaySinh = hasNestedQuanNhan
           ? record.QuanNhan?.ngay_sinh
           : isAnnualTab
-          ? record.QuanNhan?.ngay_sinh || record.ngay_sinh
-          : record.ngay_sinh;
+            ? record.QuanNhan?.ngay_sinh || record.ngay_sinh
+            : record.ngay_sinh;
 
         if (!ngaySinh) return <Text type="secondary">-</Text>;
 
@@ -595,8 +585,8 @@ export default function AdminAwardsPage() {
         activeTab === 'scientific'
           ? 'Mô tả'
           : activeTab === 'militaryFlag' || activeTab === 'commemoration'
-              ? 'Số quyết định / Ghi chú'
-              : 'Danh hiệu',
+            ? 'Số quyết định / Ghi chú'
+            : 'Danh hiệu',
       dataIndex: activeTab === 'scientific' ? 'mo_ta' : 'danh_hieu',
       key: activeTab === 'scientific' ? 'mo_ta' : 'danh_hieu',
       width: 220,
@@ -614,7 +604,8 @@ export default function AdminAwardsPage() {
 
         // Commemoration medals (KNC_VSNXD_QDNDVN) - Nếu có bản ghi thì mặc định là KNC
         if (activeTab === 'commemoration') {
-          const danhHieu = DANH_HIEU_MAP['KNC_VSNXD_QDNDVN'] || 'Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN';
+          const danhHieu =
+            DANH_HIEU_MAP['KNC_VSNXD_QDNDVN'] || 'Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN';
           return (
             <div style={COLUMN_STYLES.container}>
               <Text strong>{danhHieu}</Text>
@@ -879,7 +870,14 @@ export default function AdminAwardsPage() {
                 ]}
               />
             </div>
-            <div style={{ flex: '1 1 200px', minWidth: '200px', display: 'flex', flexDirection: 'column' }}>
+            <div
+              style={{
+                flex: '1 1 200px',
+                minWidth: '200px',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
               <Text strong style={{ display: 'block', marginBottom: '8px' }}>
                 Tìm kiếm theo họ tên
               </Text>
@@ -891,10 +889,15 @@ export default function AdminAwardsPage() {
                 size="large"
               />
             </div>
-            {(activeTab === 'annual' ||
-              activeTab === 'hccsvv' ||
-              activeTab === 'contribution') && (
-              <div style={{ flex: '1 1 250px', minWidth: '250px', display: 'flex', flexDirection: 'column' }}>
+            {(activeTab === 'annual' || activeTab === 'hccsvv' || activeTab === 'contribution') && (
+              <div
+                style={{
+                  flex: '1 1 250px',
+                  minWidth: '250px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
                 <Text strong style={{ display: 'block', marginBottom: '8px' }}>
                   Danh hiệu
                 </Text>
@@ -903,11 +906,7 @@ export default function AdminAwardsPage() {
                   showSearch
                   optionFilterProp="label"
                   style={{ width: '100%' }}
-                  placeholder={
-                    activeTab === 'annual'
-                      ? 'Chọn danh hiệu cá nhân'
-                      : 'Chọn danh hiệu'
-                  }
+                  placeholder={activeTab === 'annual' ? 'Chọn danh hiệu cá nhân' : 'Chọn danh hiệu'}
                   value={filters.danh_hieu === '' ? '' : filters.danh_hieu || undefined}
                   onChange={value => handleFilterChange('danh_hieu', value || '')}
                   options={danhHieuOptions}
@@ -916,7 +915,14 @@ export default function AdminAwardsPage() {
               </div>
             )}
             {activeTab === 'scientific' && (
-              <div style={{ flex: '1 1 200px', minWidth: '200px', display: 'flex', flexDirection: 'column' }}>
+              <div
+                style={{
+                  flex: '1 1 200px',
+                  minWidth: '200px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
                 <Text strong style={{ display: 'block', marginBottom: '8px' }}>
                   Đề tài
                 </Text>
@@ -931,7 +937,7 @@ export default function AdminAwardsPage() {
             )}
             <div style={{ flex: '0 0 auto', display: 'flex', flexDirection: 'column' }}>
               <div style={{ height: '22px', marginBottom: '8px' }}></div>
-              <Button 
+              <Button
                 size="large"
                 onClick={() => setFilters({ nam: '', ho_ten: '', danh_hieu: '', de_tai: '' })}
                 icon={null}

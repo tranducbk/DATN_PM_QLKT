@@ -6,17 +6,41 @@ class ProfileService {
    * Lấy hồ sơ gợi ý hằng năm
    */
   async getAnnualProfile(personnelId) {
-    try {
-      const personnel = await prisma.quanNhan.findUnique({
-        where: { id: personnelId },
-      });
+    const personnel = await prisma.quanNhan.findUnique({
+      where: { id: personnelId },
+    });
 
-      if (!personnel) {
-        throw new Error('Quân nhân không tồn tại');
-      }
+    if (!personnel) {
+      throw new Error('Quân nhân không tồn tại');
+    }
 
-      let profile = await prisma.hoSoHangNam.findUnique({
-        where: { quan_nhan_id: personnelId },
+    let profile = await prisma.hoSoHangNam.findUnique({
+      where: { quan_nhan_id: personnelId },
+      include: {
+        QuanNhan: {
+          include: {
+            CoQuanDonVi: true,
+            DonViTrucThuoc: true,
+            ChucVu: true,
+          },
+        },
+      },
+    });
+
+    // Nếu chưa có hồ sơ, tạo mới với giá trị mặc định
+    if (!profile) {
+      profile = await prisma.hoSoHangNam.create({
+        data: {
+          quan_nhan_id: personnelId,
+          tong_cstdcs: 0,
+          tong_nckh: 0,
+          tong_cstdcs_json: [],
+          tong_nckh_json: [],
+          cstdcs_lien_tuc: 0,
+          du_dieu_kien_bkbqp: false,
+          du_dieu_kien_cstdtq: false,
+          goi_y: 'Chưa có dữ liệu để tính toán. Vui lòng nhập danh hiệu và thành tích.',
+        },
         include: {
           QuanNhan: {
             include: {
@@ -27,54 +51,54 @@ class ProfileService {
           },
         },
       });
-
-      // Nếu chưa có hồ sơ, tạo mới với giá trị mặc định
-      if (!profile) {
-        profile = await prisma.hoSoHangNam.create({
-          data: {
-            quan_nhan_id: personnelId,
-            tong_cstdcs: 0,
-            tong_nckh: 0,
-            tong_cstdcs_json: [],
-            tong_nckh_json: [],
-            cstdcs_lien_tuc: 0,
-            du_dieu_kien_bkbqp: false,
-            du_dieu_kien_cstdtq: false,
-            goi_y: 'Chưa có dữ liệu để tính toán. Vui lòng nhập danh hiệu và thành tích.',
-          },
-          include: {
-            QuanNhan: {
-              include: {
-                CoQuanDonVi: true,
-                DonViTrucThuoc: true,
-                ChucVu: true,
-              },
-            },
-          },
-        });
-      }
-
-      return profile;
-    } catch (error) {
-      throw error;
     }
+
+    return profile;
   }
 
   /**
    * Lấy hồ sơ gợi ý niên hạn (HCCSVV - Huy chương Chiến sĩ Vẻ vang)
    */
   async getTenureProfile(personnelId) {
-    try {
-      const personnel = await prisma.quanNhan.findUnique({
-        where: { id: personnelId },
-      });
+    const personnel = await prisma.quanNhan.findUnique({
+      where: { id: personnelId },
+    });
 
-      if (!personnel) {
-        throw new Error('Quân nhân không tồn tại');
-      }
+    if (!personnel) {
+      throw new Error('Quân nhân không tồn tại');
+    }
 
-      let profile = await prisma.hoSoNienHan.findUnique({
-        where: { quan_nhan_id: personnelId },
+    let profile = await prisma.hoSoNienHan.findUnique({
+      where: { quan_nhan_id: personnelId },
+      include: {
+        QuanNhan: {
+          include: {
+            CoQuanDonVi: true,
+            DonViTrucThuoc: {
+              include: {
+                CoQuanDonVi: true,
+              },
+            },
+            ChucVu: true,
+          },
+        },
+      },
+    });
+
+    // Nếu chưa có hồ sơ, tạo mới với giá trị mặc định
+    if (!profile) {
+      profile = await prisma.hoSoNienHan.create({
+        data: {
+          quan_nhan_id: personnelId,
+          hccsvv_hang_ba_status: 'CHUA_DU',
+          hccsvv_hang_nhi_status: 'CHUA_DU',
+          hccsvv_hang_nhat_status: 'CHUA_DU',
+          hcbvtq_total_months: 0,
+          hcbvtq_hang_ba_status: 'CHUA_DU',
+          hcbvtq_hang_nhi_status: 'CHUA_DU',
+          hcbvtq_hang_nhat_status: 'CHUA_DU',
+          goi_y: 'Chưa có dữ liệu để tính toán. Vui lòng nhập lịch sử chức vụ.',
+        },
         include: {
           QuanNhan: {
             include: {
@@ -89,58 +113,51 @@ class ProfileService {
           },
         },
       });
-
-      // Nếu chưa có hồ sơ, tạo mới với giá trị mặc định
-      if (!profile) {
-        profile = await prisma.hoSoNienHan.create({
-          data: {
-            quan_nhan_id: personnelId,
-            hccsvv_hang_ba_status: 'CHUA_DU',
-            hccsvv_hang_nhi_status: 'CHUA_DU',
-            hccsvv_hang_nhat_status: 'CHUA_DU',
-            hcbvtq_total_months: 0,
-            hcbvtq_hang_ba_status: 'CHUA_DU',
-            hcbvtq_hang_nhi_status: 'CHUA_DU',
-            hcbvtq_hang_nhat_status: 'CHUA_DU',
-            goi_y: 'Chưa có dữ liệu để tính toán. Vui lòng nhập lịch sử chức vụ.',
-          },
-          include: {
-            QuanNhan: {
-              include: {
-                CoQuanDonVi: true,
-                DonViTrucThuoc: {
-                  include: {
-                    CoQuanDonVi: true,
-                  },
-                },
-                ChucVu: true,
-              },
-            },
-          },
-        });
-      }
-
-      return profile;
-    } catch (error) {
-      throw error;
     }
+
+    return profile;
   }
 
   /**
    * Lấy hồ sơ gợi ý cống hiến (HCBVTQ - Huân chương Bảo vệ Tổ quốc)
    */
   async getContributionProfile(personnelId) {
-    try {
-      const personnel = await prisma.quanNhan.findUnique({
-        where: { id: personnelId },
-      });
+    const personnel = await prisma.quanNhan.findUnique({
+      where: { id: personnelId },
+    });
 
-      if (!personnel) {
-        throw new Error('Quân nhân không tồn tại');
-      }
+    if (!personnel) {
+      throw new Error('Quân nhân không tồn tại');
+    }
 
-      let profile = await prisma.hoSoCongHien.findUnique({
-        where: { quan_nhan_id: personnelId },
+    let profile = await prisma.hoSoCongHien.findUnique({
+      where: { quan_nhan_id: personnelId },
+      include: {
+        QuanNhan: {
+          include: {
+            CoQuanDonVi: true,
+            DonViTrucThuoc: {
+              include: {
+                CoQuanDonVi: true,
+              },
+            },
+            ChucVu: true,
+          },
+        },
+      },
+    });
+
+    // Nếu chưa có hồ sơ, tạo mới với giá trị mặc định
+    if (!profile) {
+      profile = await prisma.hoSoCongHien.create({
+        data: {
+          quan_nhan_id: personnelId,
+          hcbvtq_total_months: 0,
+          hcbvtq_hang_ba_status: 'CHUA_DU',
+          hcbvtq_hang_nhi_status: 'CHUA_DU',
+          hcbvtq_hang_nhat_status: 'CHUA_DU',
+          goi_y: 'Chưa có dữ liệu để tính toán. Vui lòng nhập lịch sử chức vụ.',
+        },
         include: {
           QuanNhan: {
             include: {
@@ -155,38 +172,9 @@ class ProfileService {
           },
         },
       });
-
-      // Nếu chưa có hồ sơ, tạo mới với giá trị mặc định
-      if (!profile) {
-        profile = await prisma.hoSoCongHien.create({
-          data: {
-            quan_nhan_id: personnelId,
-            hcbvtq_total_months: 0,
-            hcbvtq_hang_ba_status: 'CHUA_DU',
-            hcbvtq_hang_nhi_status: 'CHUA_DU',
-            hcbvtq_hang_nhat_status: 'CHUA_DU',
-            goi_y: 'Chưa có dữ liệu để tính toán. Vui lòng nhập lịch sử chức vụ.',
-          },
-          include: {
-            QuanNhan: {
-              include: {
-                CoQuanDonVi: true,
-                DonViTrucThuoc: {
-                  include: {
-                    CoQuanDonVi: true,
-                  },
-                },
-                ChucVu: true,
-              },
-            },
-          },
-        });
-      }
-
-      return profile;
-    } catch (error) {
-      throw error;
     }
+
+    return profile;
   }
 
   /**
@@ -253,7 +241,6 @@ class ProfileService {
     let count = 0;
     const sortedRewards = [...danhHieuList].sort((a, b) => b.nam - a.nam);
     const filteredRewards = sortedRewards.filter(r => r.nhan_bkbqp === true && r.nam <= year - 1);
-    console.log('Filtered BKBQP Rewards:', filteredRewards);
     let currentYear = year - 1;
 
     for (const reward of filteredRewards) {
@@ -261,7 +248,6 @@ class ProfileService {
       count++;
       currentYear -= 2;
     }
-    console.log('Continuous BKBQP count:', count);
     return count;
   }
 
@@ -275,7 +261,6 @@ class ProfileService {
     let count = 0;
     const sortedRewards = [...danhHieuList].sort((a, b) => b.nam - a.nam);
     const filteredRewards = sortedRewards.filter(r => r.nhan_cstdtq === true && r.nam <= year - 1);
-    console.log('Filtered CSTDTQ Rewards:', filteredRewards);
     let currentYear = year - 1;
 
     for (const reward of filteredRewards) {
@@ -283,7 +268,6 @@ class ProfileService {
       count++;
       currentYear -= 3;
     }
-    console.log('Continuous CSTDTQ count:', count);
     return count;
   }
 
@@ -666,14 +650,6 @@ class ProfileService {
       const danhHieuList = personnel.DanhHieuHangNam || [];
       const thanhTichList = personnel.ThanhTichKhoaHoc || [];
 
-      console.log(
-        `📋 [recalculateAnnualProfile] Quân nhân ID: ${personnelId}, Số danh hiệu: ${danhHieuList.length}, Số thành tích: ${thanhTichList.length}`
-      );
-      console.log(
-        `📋 [recalculateAnnualProfile] Danh sách danh hiệu:`,
-        danhHieuList.map(dh => `${dh.nam}: ${dh.danh_hieu}`).join(', ')
-      );
-
       // ==============================================
       // BƯỚC 2: Định nghĩa Biến Tính toán
       // ==============================================
@@ -683,7 +659,9 @@ class ProfileService {
       // Lưu danh hiệu vào JSON - bao gồm CSTDCS và các năm có BKBQP/CSTDTQ/BKTTCP
       // Điều này đảm bảo hiển thị được các năm có CSTDTQ mà không có CSTDCS
       const tong_cstdcs_json = danhHieuList
-        .filter(dh => dh.danh_hieu === 'CSTDCS' || dh.nhan_bkbqp || dh.nhan_cstdtq || dh.nhan_bkttcp)
+        .filter(
+          dh => dh.danh_hieu === 'CSTDCS' || dh.nhan_bkbqp || dh.nhan_cstdtq || dh.nhan_bkttcp
+        )
         .map(dh => ({
           nam: dh.nam,
           danh_hieu: dh.danh_hieu,
@@ -713,11 +691,6 @@ class ProfileService {
         }))
         .sort((a, b) => a.nam - b.nam); // Sắp xếp theo năm tăng dần
       const tong_nckh = tong_nckh_json.length;
-      console.log(
-        `📋 [recalculateAnnualProfile] Số NCKH: ${tong_nckh}, JSON:`,
-        JSON.stringify(tong_nckh_json, null, 2)
-      );
-
       // ==============================================
       // BƯỚC 3: Logic "Bộ não" (Lặp và Kiểm tra)
       // ==============================================
@@ -782,25 +755,6 @@ class ProfileService {
       // ==============================================
       // BƯỚC 5: Cập nhật Kết quả (Output)
       // ==============================================
-      console.log(
-        `💾 [recalculateAnnualProfile] Chuẩn bị lưu vào hoSoHangNam:`,
-        JSON.stringify(
-          {
-            tong_cstdcs: tong_cstdcs_json,
-            tong_nckh: tong_nckh_json,
-            cstdcs_lien_tuc: cstdcs_lien_tuc % 7,
-            bkbqp_lien_tuc: bkbqp_lien_tuc % 3,
-            cstdtq_lien_tuc: cstdtq_lien_tuc % 2,
-            du_dieu_kien_bkbqp: du_dieu_kien_bkbqp,
-            du_dieu_kien_cstdtq: du_dieu_kien_cstdtq,
-            du_dieu_kien_bkttcp: du_dieu_kien_bkttcp,
-            goi_y: goi_y,
-          },
-          null,
-          2
-        )
-      );
-
       const hoSoHangNam = await prisma.hoSoHangNam.upsert({
         where: { quan_nhan_id: personnelId },
         update: {
@@ -837,21 +791,6 @@ class ProfileService {
       console.log(
         `✅ [recalculateAnnualProfile] Đã lưu hoSoHangNam thành công. ID: ${hoSoHangNam.id}`
       );
-      console.log(
-        `✅ [recalculateAnnualProfile] Dữ liệu đã lưu:`,
-        JSON.stringify(
-          {
-            tong_cstdcs: hoSoHangNam.tong_cstdcs,
-            tong_nckh: hoSoHangNam.tong_nckh,
-            cstdcs_lien_tuc: hoSoHangNam.cstdcs_lien_tuc,
-            nckh_lien_tuc: hoSoHangNam.nckh_lien_tuc,
-            bkbqp_lien_tuc: hoSoHangNam.bkbqp_lien_tuc,
-            cstdtq_lien_tuc: hoSoHangNam.cstdtq_lien_tuc,
-          },
-          null,
-          2
-        )
-      );
 
       return {
         success: true,
@@ -881,10 +820,6 @@ class ProfileService {
       if (!personnel) {
         throw new Error('Quân nhân không tồn tại');
       }
-
-      console.log(
-        `[recalculateTenureProfile] Quân nhân: ${personnel.ho_ten}, Ngày nhập ngũ: ${personnel.ngay_nhap_ngu}`
-      );
 
       // Lấy hồ sơ niên hạn hiện tại
       const existingProfile = await prisma.hoSoNienHan.findUnique({
@@ -1010,10 +945,6 @@ class ProfileService {
       const months0_9_1_0 = getTotalMonthsByGroup(personnel.LichSuChucVu, '0.9-1.0');
       const months0_8 = getTotalMonthsByGroup(personnel.LichSuChucVu, '0.8');
       const months0_7 = getTotalMonthsByGroup(personnel.LichSuChucVu, '0.7');
-      console.log(
-        `[checkEligibleForRank] Kiểm tra điều kiện hạng ${rank} cho quân nhân ID: ${personnelId} - Tháng 0.9-1.0: ${months0_9_1_0}, Tháng 0.8: ${months0_8}, Tháng 0.7: ${months0_7}`
-      );
-
       const baseRequiredMonths = 10 * 12;
       const femaleRequiredMonths = Math.round(baseRequiredMonths * (2 / 3));
 
@@ -1057,10 +988,6 @@ class ProfileService {
         }
       });
 
-      console.log(
-        `[getTotalMonthsByGroup] Tổng số tháng cho nhóm ${group} của quân nhân ID: ${personnelId} là ${totalMonths}`
-      );
-
       return totalMonths;
     };
     try {
@@ -1083,9 +1010,6 @@ class ProfileService {
         throw new Error('Quân nhân không tồn tại');
       }
 
-      console.log(
-        `[recalculateContributionProfile] Quân nhân: ${personnel.ho_ten}, Giới tính: ${personnel.gioi_tinh}, Số lịch sử chức vụ: ${personnel.LichSuChucVu.length}`
-      );
       // Lấy hồ sơ cống hiến hiện tại
       const existingProfile = await prisma.hoSoCongHien.findUnique({
         where: { quan_nhan_id: personnelId },
@@ -1102,28 +1026,24 @@ class ProfileService {
             status: 'DA_NHAN',
           }
         : (await checkEligibleForRank(personnel, 'HANG_BA'))
-        ? { status: 'DU_DIEU_KIEN' }
-        : { status: 'CHUA_DU' };
+          ? { status: 'DU_DIEU_KIEN' }
+          : { status: 'CHUA_DU' };
 
       const hcbvtqNhi = personnelHCBVTQ.find(kt => kt.danh_hieu === 'HCBVTQ_HANG_NHI')
         ? {
             status: 'DA_NHAN',
           }
         : (await checkEligibleForRank(personnel, 'HANG_NHI'))
-        ? { status: 'DU_DIEU_KIEN' }
-        : { status: 'CHUA_DU' };
+          ? { status: 'DU_DIEU_KIEN' }
+          : { status: 'CHUA_DU' };
 
       const hcbvtqNhat = personnelHCBVTQ.find(kt => kt.danh_hieu === 'HCBVTQ_HANG_NHAT')
         ? {
             status: 'DA_NHAN',
           }
         : (await checkEligibleForRank(personnel, 'HANG_NHAT'))
-        ? { status: 'DU_DIEU_KIEN' }
-        : { status: 'CHUA_DU' };
-
-      console.log(
-        `[recalculateContributionProfile] Kết quả tính HCBVTQ - Ba: ${hcbvtqBa.status}, Nhì: ${hcbvtqNhi.status}, Nhất: ${hcbvtqNhat.status}`
-      );
+          ? { status: 'DU_DIEU_KIEN' }
+          : { status: 'CHUA_DU' };
 
       const months0_7 = getTotalMonthsByGroup(personnel.LichSuChucVu, '0.7');
       const months0_8 = getTotalMonthsByGroup(personnel.LichSuChucVu, '0.8');
@@ -1241,131 +1161,114 @@ class ProfileService {
    */
   async recalculateAll() {
     console.log('[recalculateAll] Bắt đầu tính toán lại cho tất cả quân nhân...');
-    try {
-      const allPersonnel = await prisma.quanNhan.findMany({
-        select: { id: true },
-      });
 
-      console.log(`[recalculateAll] Tổng số quân nhân: ${allPersonnel.length}`);
+    const allPersonnel = await prisma.quanNhan.findMany({
+      select: { id: true },
+    });
 
-      let successCount = 0;
-      let errorCount = 0;
+    console.log(`[recalculateAll] Tổng số quân nhân: ${allPersonnel.length}`);
 
-      for (const personnel of allPersonnel) {
-        try {
-          await this.recalculateAnnualProfile(personnel.id);
-          successCount++;
-          if (successCount % 10 === 0) {
-            console.log(`[recalculateAll] Tiến độ: ${successCount}/${allPersonnel.length}`);
-          }
-        } catch (error) {
-          console.error(`Lỗi khi tính toán cho quân nhân ID ${personnel.id}:`, error.message);
-          errorCount++;
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const personnel of allPersonnel) {
+      try {
+        await this.recalculateAnnualProfile(personnel.id);
+        successCount++;
+        if (successCount % 10 === 0) {
+          console.log(`[recalculateAll] Tiến độ: ${successCount}/${allPersonnel.length}`);
         }
+      } catch (error) {
+        console.error(`Lỗi khi tính toán cho quân nhân ID ${personnel.id}:`, error.message);
+        errorCount++;
       }
-
-      console.log(`[recalculateAll] Hoàn tất. Thành công: ${successCount}, Lỗi: ${errorCount}`);
-
-      return {
-        message: `Tính toán hoàn tất. Thành công: ${successCount}, Lỗi: ${errorCount}`,
-        success: successCount,
-        errors: errorCount,
-      };
-    } catch (error) {
-      throw error;
     }
+
+    console.log(`[recalculateAll] Hoàn tất. Thành công: ${successCount}, Lỗi: ${errorCount}`);
+
+    return {
+      message: `Tính toán hoàn tất. Thành công: ${successCount}, Lỗi: ${errorCount}`,
+      success: successCount,
+      errors: errorCount,
+    };
   }
 
   /**
    * Lấy danh sách tất cả hồ sơ niên hạn (cho admin)
    */
   async getAllTenureProfiles() {
-    try {
-      const profiles = await prisma.hoSoNienHan.findMany({
-        include: {
-          QuanNhan: {
-            include: {
-              CoQuanDonVi: true,
-              DonViTrucThuoc: {
-                include: {
-                  CoQuanDonVi: true,
-                },
+    const profiles = await prisma.hoSoNienHan.findMany({
+      include: {
+        QuanNhan: {
+          include: {
+            CoQuanDonVi: true,
+            DonViTrucThuoc: {
+              include: {
+                CoQuanDonVi: true,
               },
-              ChucVu: true,
             },
+            ChucVu: true,
           },
         },
-        orderBy: {
-          quan_nhan_id: 'asc',
-        },
-      });
+      },
+      orderBy: {
+        quan_nhan_id: 'asc',
+      },
+    });
 
-      return profiles;
-    } catch (error) {
-      throw error;
-    }
+    return profiles;
   }
 
   /**
    * Cập nhật trạng thái hồ sơ niên hạn (ADMIN duyệt huân chương)
    */
   async updateTenureProfile(personnelId, updates) {
-    try {
-      const profile = await prisma.hoSoNienHan.findUnique({
-        where: { quan_nhan_id: personnelId },
-      });
+    const profile = await prisma.hoSoNienHan.findUnique({
+      where: { quan_nhan_id: personnelId },
+    });
 
-      if (!profile) {
-        throw new Error('Hồ sơ Huy chương Chiến sĩ vẻ vang không tồn tại');
-      }
-
-      // Validate và cập nhật
-      const validStatuses = ['CHUA_DU', 'DU_DIEU_KIEN', 'DA_NHAN'];
-      const updateData = {};
-
-      // HCCSVV updates
-      if (updates.hccsvv_hang_ba_status && validStatuses.includes(updates.hccsvv_hang_ba_status)) {
-        updateData.hccsvv_hang_ba_status = updates.hccsvv_hang_ba_status;
-      }
-      if (
-        updates.hccsvv_hang_nhi_status &&
-        validStatuses.includes(updates.hccsvv_hang_nhi_status)
-      ) {
-        updateData.hccsvv_hang_nhi_status = updates.hccsvv_hang_nhi_status;
-      }
-      if (
-        updates.hccsvv_hang_nhat_status &&
-        validStatuses.includes(updates.hccsvv_hang_nhat_status)
-      ) {
-        updateData.hccsvv_hang_nhat_status = updates.hccsvv_hang_nhat_status;
-      }
-
-      // HCBVTQ updates
-      if (updates.hcbvtq_hang_ba_status && validStatuses.includes(updates.hcbvtq_hang_ba_status)) {
-        updateData.hcbvtq_hang_ba_status = updates.hcbvtq_hang_ba_status;
-      }
-      if (
-        updates.hcbvtq_hang_nhi_status &&
-        validStatuses.includes(updates.hcbvtq_hang_nhi_status)
-      ) {
-        updateData.hcbvtq_hang_nhi_status = updates.hcbvtq_hang_nhi_status;
-      }
-      if (
-        updates.hcbvtq_hang_nhat_status &&
-        validStatuses.includes(updates.hcbvtq_hang_nhat_status)
-      ) {
-        updateData.hcbvtq_hang_nhat_status = updates.hcbvtq_hang_nhat_status;
-      }
-
-      const updatedProfile = await prisma.hoSoNienHan.update({
-        where: { quan_nhan_id: personnelId },
-        data: updateData,
-      });
-
-      return updatedProfile;
-    } catch (error) {
-      throw error;
+    if (!profile) {
+      throw new Error('Hồ sơ Huy chương Chiến sĩ vẻ vang không tồn tại');
     }
+
+    // Validate và cập nhật
+    const validStatuses = ['CHUA_DU', 'DU_DIEU_KIEN', 'DA_NHAN'];
+    const updateData = {};
+
+    // HCCSVV updates
+    if (updates.hccsvv_hang_ba_status && validStatuses.includes(updates.hccsvv_hang_ba_status)) {
+      updateData.hccsvv_hang_ba_status = updates.hccsvv_hang_ba_status;
+    }
+    if (updates.hccsvv_hang_nhi_status && validStatuses.includes(updates.hccsvv_hang_nhi_status)) {
+      updateData.hccsvv_hang_nhi_status = updates.hccsvv_hang_nhi_status;
+    }
+    if (
+      updates.hccsvv_hang_nhat_status &&
+      validStatuses.includes(updates.hccsvv_hang_nhat_status)
+    ) {
+      updateData.hccsvv_hang_nhat_status = updates.hccsvv_hang_nhat_status;
+    }
+
+    // HCBVTQ updates
+    if (updates.hcbvtq_hang_ba_status && validStatuses.includes(updates.hcbvtq_hang_ba_status)) {
+      updateData.hcbvtq_hang_ba_status = updates.hcbvtq_hang_ba_status;
+    }
+    if (updates.hcbvtq_hang_nhi_status && validStatuses.includes(updates.hcbvtq_hang_nhi_status)) {
+      updateData.hcbvtq_hang_nhi_status = updates.hcbvtq_hang_nhi_status;
+    }
+    if (
+      updates.hcbvtq_hang_nhat_status &&
+      validStatuses.includes(updates.hcbvtq_hang_nhat_status)
+    ) {
+      updateData.hcbvtq_hang_nhat_status = updates.hcbvtq_hang_nhat_status;
+    }
+
+    const updatedProfile = await prisma.hoSoNienHan.update({
+      where: { quan_nhan_id: personnelId },
+      data: updateData,
+    });
+
+    return updatedProfile;
   }
 }
 

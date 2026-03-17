@@ -183,8 +183,8 @@ export default function ManagerProposalsPage() {
       // Filter theo loại đề xuất
       if (typeFilter !== '' && p.loai_de_xuat !== typeFilter) return false;
 
-    return true;
-  });
+      return true;
+    });
   }, [proposals, activeTab, yearFilter, typeFilter]);
 
   const handleResetFilters = () => {
@@ -328,24 +328,24 @@ export default function ManagerProposalsPage() {
       render: (status: string) => getStatusTag(status),
     },
     {
-        title: 'Thời gian cập nhật',
+      title: 'Thời gian cập nhật',
       key: 'ngay_duyet',
       width: 180,
       align: 'center' as const,
       render: (_: any, record: Proposal) => {
-          // Hiển thị thời gian cập nhật khi đã duyệt hoặc từ chối
-          if ((record.status !== 'APPROVED' && record.status !== 'REJECTED') || !record.ngay_duyet) {
+        // Hiển thị thời gian cập nhật khi đã duyệt hoặc từ chối
+        if ((record.status !== 'APPROVED' && record.status !== 'REJECTED') || !record.ngay_duyet) {
           return <Text type="secondary">-</Text>;
         }
 
-          // Format: giờ đứng trước ngày (HH:mm dd/MM/yyyy)
-          const date = new Date(record.ngay_duyet);
-          const hours = String(date.getHours()).padStart(2, '0');
-          const minutes = String(date.getMinutes()).padStart(2, '0');
-          const day = String(date.getDate()).padStart(2, '0');
-          const month = String(date.getMonth() + 1).padStart(2, '0');
-          const year = date.getFullYear();
-          return `${hours}:${minutes} ${day}/${month}/${year}`;
+        // Format: giờ đứng trước ngày (HH:mm dd/MM/yyyy)
+        const date = new Date(record.ngay_duyet);
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${hours}:${minutes} ${day}/${month}/${year}`;
       },
     },
     {
@@ -409,39 +409,39 @@ export default function ManagerProposalsPage() {
     );
 
     return [
-    {
-      key: 'all',
-      label: (
-        <span>
-          <HomeOutlined /> Tất cả ({proposals.length})
-        </span>
-      ),
-    },
-    {
-      key: 'pending',
-      label: (
-        <span>
+      {
+        key: 'all',
+        label: (
+          <span>
+            <HomeOutlined /> Tất cả ({proposals.length})
+          </span>
+        ),
+      },
+      {
+        key: 'pending',
+        label: (
+          <span>
             <ClockCircleOutlined /> Chờ duyệt ({statusCounts.PENDING || 0})
-        </span>
-      ),
-    },
-    {
-      key: 'approved',
-      label: (
-        <span>
+          </span>
+        ),
+      },
+      {
+        key: 'approved',
+        label: (
+          <span>
             <CheckCircleOutlined /> Đã duyệt ({statusCounts.APPROVED || 0})
-        </span>
-      ),
-    },
-    {
-      key: 'rejected',
-      label: (
-        <span>
+          </span>
+        ),
+      },
+      {
+        key: 'rejected',
+        label: (
+          <span>
             <CloseCircleOutlined /> Từ chối ({statusCounts.REJECTED || 0})
-        </span>
-      ),
-    },
-  ];
+          </span>
+        ),
+      },
+    ];
   }, [proposals]);
 
   return (
@@ -488,11 +488,7 @@ export default function ManagerProposalsPage() {
         <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
 
         {/* Filter Section */}
-        <Card
-          size="small"
-          style={{ marginBottom: 16 }}
-          bodyStyle={{ padding: '16px' }}
-        >
+        <Card size="small" style={{ marginBottom: 16 }} bodyStyle={{ padding: '16px' }}>
           <Row gutter={[16, 16]} align="bottom">
             <Col xs={24} sm={12} md={6}>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -569,8 +565,8 @@ export default function ManagerProposalsPage() {
           {(yearFilter !== '' || typeFilter !== '') && (
             <div style={{ marginTop: 12 }}>
               <Typography.Text type="secondary">
-                Đang hiển thị <strong>{filteredProposals.length}</strong> / {proposals.length}{' '}
-                đề xuất
+                Đang hiển thị <strong>{filteredProposals.length}</strong> / {proposals.length} đề
+                xuất
               </Typography.Text>
             </div>
           )}
@@ -597,10 +593,10 @@ export default function ManagerProposalsPage() {
                   activeTab === 'all'
                     ? 'Chưa có đề xuất nào'
                     : activeTab === 'pending'
-                    ? 'Không có đề xuất chờ duyệt'
-                    : activeTab === 'approved'
-                    ? 'Không có đề xuất đã duyệt'
-                    : 'Không có đề xuất bị từ chối'
+                      ? 'Không có đề xuất chờ duyệt'
+                      : activeTab === 'approved'
+                        ? 'Không có đề xuất đã duyệt'
+                        : 'Không có đề xuất bị từ chối'
                 }
               />
             ),

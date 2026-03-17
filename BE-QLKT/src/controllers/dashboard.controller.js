@@ -220,7 +220,7 @@ class DashboardController {
 
       // 8. Total proposals
       const pendingApprovals = await prisma.bangDeXuat.count({
-        where: { status: 'PENDING' }
+        where: { status: 'PENDING' },
       });
 
       return res.status(200).json({
@@ -276,7 +276,6 @@ class DashboardController {
           },
         });
 
-
         // Manager có thể thuộc co_quan_don_vi_id hoặc don_vi_truc_thuoc_id
         // Nếu có co_quan_don_vi_id, lấy tất cả quân nhân trong cơ quan đơn vị đó
         // Nếu có don_vi_truc_thuoc_id, lấy quân nhân trong đơn vị trực thuộc đó
@@ -293,7 +292,6 @@ class DashboardController {
           where: { id: currentUser.id },
           select: { quan_nhan_id: true },
         });
-
 
         if (account?.quan_nhan_id) {
           const personnel = await prisma.quanNhan.findUnique({
@@ -366,7 +364,6 @@ class DashboardController {
 
       const personnelIds = personnelInUnit.map(p => p.id);
 
-
       // Lấy danh hiệu hằng năm
       const annualAwards =
         personnelIds.length > 0
@@ -379,7 +376,6 @@ class DashboardController {
               },
             })
           : [];
-
 
       const awardsByType = {};
       annualAwards.forEach(award => {

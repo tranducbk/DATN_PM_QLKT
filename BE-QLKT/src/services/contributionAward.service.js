@@ -4,12 +4,13 @@ const proposalService = require('./proposal.service');
 const profileService = require('./profile.service');
 const notificationHelper = require('../helpers/notificationHelper');
 const { getDanhHieuName } = require('../constants/danhHieu.constants');
+const { ROLES } = require('../constants/roles');
 
 class ContributionAwardService {
   /**
    * Export template Excel for Contribution Awards (HCBVTQ) import
    */
-  async exportTemplate(userRole = 'MANAGER') {
+  async exportTemplate(userRole = ROLES.MANAGER) {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('HCBVTQ');
 
@@ -28,7 +29,7 @@ class ContributionAwardService {
     ];
 
     // ADMIN có thêm các cột chi tiết
-    if (userRole === 'ADMIN') {
+    if (userRole === ROLES.ADMIN) {
       columns.push(
         { header: 'Ghi chú', key: 'ghi_chu', width: 30 },
         { header: 'Số quyết định', key: 'so_quyet_dinh', width: 20 }
@@ -52,7 +53,7 @@ class ContributionAwardService {
     });
 
     // Thêm sample data cho ADMIN
-    if (userRole === 'ADMIN') {
+    if (userRole === ROLES.ADMIN) {
       worksheet.addRow({
         ho_ten: 'Trần Thị B',
         ngay_sinh: '20/08/1985',
@@ -456,52 +457,48 @@ class ContributionAwardService {
    * @returns {Promise<Object>}
    */
   async deleteAward(id, adminUsername = 'Admin') {
-    try {
-      const award = await prisma.khenThuongCongHien.findUnique({
-        where: { id },
-        include: {
-          QuanNhan: true,
-        },
-      });
+    const award = await prisma.khenThuongCongHien.findUnique({
+      where: { id },
+      include: {
+        QuanNhan: true,
+      },
+    });
 
-      if (!award) {
-        throw new Error('Bản ghi khen thưởng không tồn tại');
-      }
-
-      const personnelId = award.quan_nhan_id;
-      const personnel = award.QuanNhan;
-
-      // Xóa bản ghi (không xóa đề xuất - proposal)
-      await prisma.khenThuongCongHien.delete({
-        where: { id },
-      });
-
-      // Tự động cập nhật lại hồ sơ cống hiến (giống như khi thêm mới)
-      try {
-        await profileService.recalculateContributionProfile(personnelId);
-        console.log(`✅ Auto-recalculated contribution profile for personnel ${personnelId}`);
-      } catch (recalcError) {
-        console.error(
-          `⚠️ Failed to auto-recalculate contribution profile for personnel ${personnelId}:`,
-          recalcError.message
-        );
-      }
-
-      // Gửi thông báo cho Manager và quân nhân
-      try {
-        await notificationHelper.notifyOnAwardDeleted(award, personnel, 'HCBVTQ', adminUsername);
-        console.log(`✅ Sent notification for deleted HCBVTQ award`);
-      } catch (notifyError) {
-        console.error(`⚠️ Failed to send notification:`, notifyError.message);
-      }
-
-      return {
-        message: 'Xóa khen thưởng HCBVTQ thành công',
-        personnelId,
-      };
-    } catch (error) {
-      throw error;
+    if (!award) {
+      throw new Error('Bản ghi khen thưởng không tồn tại');
     }
+
+    const personnelId = award.quan_nhan_id;
+    const personnel = award.QuanNhan;
+
+    // Xóa bản ghi (không xóa đề xuất - proposal)
+    await prisma.khenThuongCongHien.delete({
+      where: { id },
+    });
+
+    // Tự động cập nhật lại hồ sơ cống hiến (giống như khi thêm mới)
+    try {
+      await profileService.recalculateContributionProfile(personnelId);
+      console.log(`✅ Auto-recalculated contribution profile for personnel ${personnelId}`);
+    } catch (recalcError) {
+      console.error(
+        `⚠️ Failed to auto-recalculate contribution profile for personnel ${personnelId}:`,
+        recalcError.message
+      );
+    }
+
+    // Gửi thông báo cho Manager và quân nhân
+    try {
+      await notificationHelper.notifyOnAwardDeleted(award, personnel, 'HCBVTQ', adminUsername);
+      console.log(`✅ Sent notification for deleted HCBVTQ award`);
+    } catch (notifyError) {
+      console.error(`⚠️ Failed to send notification:`, notifyError.message);
+    }
+
+    return {
+      message: 'Xóa khen thưởng HCBVTQ thành công',
+      personnelId,
+    };
   }
 }
 

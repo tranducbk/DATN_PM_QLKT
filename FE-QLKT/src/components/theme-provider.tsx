@@ -6,6 +6,7 @@ type Theme = 'light' | 'dark';
 
 interface ThemeContextType {
   theme: Theme;
+  isDark: boolean;
   setTheme: (theme: Theme) => void;
   toggle: () => void;
 }
@@ -40,9 +41,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setTheme(newTheme);
   };
 
+  const isDark = theme === 'dark';
+
   const value = useMemo(
     () => ({
       theme,
+      isDark,
       setTheme,
       toggle,
     }),

@@ -13,6 +13,7 @@ const {
 } = require('../middlewares/auth');
 const { auditLog } = require('../middlewares/auditLog');
 const { getLogDescription, getResourceId } = require('../helpers/auditLogHelper');
+const { ROLES } = require('../constants/roles');
 
 // Memory storage for small file imports (if needed in future)
 const upload = multer({ storage: multer.memoryStorage() });
@@ -67,7 +68,7 @@ router.get('/template', verifyToken, requireManager, ctrl.getTemplate);
 router.post(
   '/import',
   verifyToken,
-  checkRole(['ADMIN', 'MANAGER']),
+  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
   upload.single('file'),
   auditLog({
     action: 'IMPORT',
@@ -83,14 +84,14 @@ router.post(
  * @desc    Xuất danh sách khen thưởng đơn vị hằng năm ra Excel
  * @access  ADMIN, MANAGER
  */
-router.get('/export', verifyToken, checkRole(['ADMIN', 'MANAGER']), ctrl.exportToExcel);
+router.get('/export', verifyToken, checkRole([ROLES.ADMIN, ROLES.MANAGER]), ctrl.exportToExcel);
 
 /**
  * @route   GET /api/awards/units/annual/statistics
  * @desc    Thống kê khen thưởng đơn vị hằng năm
  * @access  ADMIN, MANAGER
  */
-router.get('/statistics', verifyToken, checkRole(['ADMIN', 'MANAGER']), ctrl.getStatistics);
+router.get('/statistics', verifyToken, checkRole([ROLES.ADMIN, ROLES.MANAGER]), ctrl.getStatistics);
 
 /**
  * @route   GET /api/awards/units/annual/history

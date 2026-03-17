@@ -103,9 +103,8 @@ export function PieChart({
   return (
     <Card>
       <div style={{ height: `${height}px` }}>
-        <Pie data={chartData} options={options} />
+        <Pie data={chartData} options={options as any} />
       </div>
     </Card>
   );
 }
-

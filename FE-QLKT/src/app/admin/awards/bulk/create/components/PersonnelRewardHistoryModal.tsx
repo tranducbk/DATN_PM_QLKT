@@ -49,14 +49,14 @@ export default function PersonnelRewardHistoryModal({
     annualProfile?.tong_cstdcs_json && Array.isArray(annualProfile.tong_cstdcs_json)
       ? annualProfile.tong_cstdcs_json
       : annualProfile?.tong_cstdcs && Array.isArray(annualProfile.tong_cstdcs)
-      ? annualProfile.tong_cstdcs
-      : [];
+        ? annualProfile.tong_cstdcs
+        : [];
   const tongNckh =
     annualProfile?.tong_nckh_json && Array.isArray(annualProfile.tong_nckh_json)
       ? annualProfile.tong_nckh_json
       : annualProfile?.tong_nckh && Array.isArray(annualProfile.tong_nckh)
-      ? annualProfile.tong_nckh
-      : [];
+        ? annualProfile.tong_nckh
+        : [];
 
   const hasData = tongCstdcs.length > 0 || tongNckh.length > 0;
 
@@ -211,7 +211,7 @@ export default function PersonnelRewardHistoryModal({
       width: 120,
       align: 'center',
       render: value => (value ? <Tag color="green">Có</Tag> : <Tag>Không</Tag>),
-    }
+    },
   ];
 
   const nckhColumns: ColumnsType<any> = [

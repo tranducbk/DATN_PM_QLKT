@@ -47,20 +47,20 @@ const actionLabels: Record<string, string> = {
 // Helper function để map action với format khác nhau
 const getActionLabel = (action: string): string => {
   if (!action) return action;
-  
+
   // Nếu action có format như "CREATE_PERSONNEL", chỉ lấy phần đầu
   const baseAction = action.split('_')[0];
-  
+
   // Thử tìm label cho base action
   if (actionLabels[baseAction]) {
     return actionLabels[baseAction];
   }
-  
+
   // Nếu không tìm thấy, thử tìm cho toàn bộ action
   if (actionLabels[action]) {
     return actionLabels[action];
   }
-  
+
   // Nếu vẫn không có, format lại action
   return action
     .split('_')
@@ -73,7 +73,6 @@ const getBaseAction = (action: string): string => {
   if (!action) return action;
   return action.split('_')[0];
 };
-
 
 export function LogsFilter({ onFilterChange }: LogsFilterProps) {
   const [search, setSearch] = useState('');
@@ -97,17 +96,43 @@ export function LogsFilter({ onFilterChange }: LogsFilterProps) {
           const uniqueActions = Array.from(
             new Set(actionsRes.data.filter((a): a is string => Boolean(a)))
           ).sort();
-          
+
           setActions(uniqueActions);
         } else {
           console.warn('Invalid actions response:', actionsRes);
           // Fallback to default values - các action thực tế trong database
-          setActions(['CREATE', 'UPDATE', 'DELETE', 'APPROVE', 'REJECT', 'LOGIN', 'LOGOUT', 'CHANGE_PASSWORD', 'RESET_PASSWORD', 'IMPORT', 'EXPORT', 'BULK']);
+          setActions([
+            'CREATE',
+            'UPDATE',
+            'DELETE',
+            'APPROVE',
+            'REJECT',
+            'LOGIN',
+            'LOGOUT',
+            'CHANGE_PASSWORD',
+            'RESET_PASSWORD',
+            'IMPORT',
+            'EXPORT',
+            'BULK',
+          ]);
         }
       } catch (error) {
         console.error('Error fetching filter options:', error);
         // Fallback to default values với đầy đủ các action
-        setActions(['CREATE', 'UPDATE', 'DELETE', 'APPROVE', 'REJECT', 'LOGIN', 'LOGOUT', 'CHANGE_PASSWORD', 'RESET_PASSWORD', 'IMPORT', 'EXPORT', 'BULK']);
+        setActions([
+          'CREATE',
+          'UPDATE',
+          'DELETE',
+          'APPROVE',
+          'REJECT',
+          'LOGIN',
+          'LOGOUT',
+          'CHANGE_PASSWORD',
+          'RESET_PASSWORD',
+          'IMPORT',
+          'EXPORT',
+          'BULK',
+        ]);
       } finally {
         setLoading(false);
       }
@@ -119,15 +144,18 @@ export function LogsFilter({ onFilterChange }: LogsFilterProps) {
   // Sync filter changes to parent component
   useEffect(() => {
     // Debounce search - only delay if there's search text
-    const timeout = setTimeout(() => {
-      onFilterChange({
-        search: search.trim() || undefined,
-        startDate: startDate?.toISOString(),
-        endDate: endDate?.toISOString(),
-        actorRole,
-        action,
-      });
-    }, search ? 300 : 0); // No delay if clearing search
+    const timeout = setTimeout(
+      () => {
+        onFilterChange({
+          search: search.trim() || undefined,
+          startDate: startDate?.toISOString(),
+          endDate: endDate?.toISOString(),
+          actorRole,
+          action,
+        });
+      },
+      search ? 300 : 0
+    ); // No delay if clearing search
 
     return () => {
       clearTimeout(timeout);
@@ -216,9 +244,8 @@ export function LogsFilter({ onFilterChange }: LogsFilterProps) {
     })),
   ];
 
-
   return (
-    <Card 
+    <Card
       className="mb-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm"
       title={
         <div className="flex items-center gap-2">
@@ -254,21 +281,36 @@ export function LogsFilter({ onFilterChange }: LogsFilterProps) {
             <Space wrap>
               <Button
                 size="small"
-                type={startDate && endDate && dayjs().isSame(startDate, 'day') && dayjs().isSame(endDate, 'day') ? 'primary' : 'default'}
+                type={
+                  startDate &&
+                  endDate &&
+                  dayjs().isSame(startDate, 'day') &&
+                  dayjs().isSame(endDate, 'day')
+                    ? 'primary'
+                    : 'default'
+                }
                 onClick={() => handleQuickDateFilter('today')}
               >
                 Hôm nay
               </Button>
               <Button
                 size="small"
-                type={startDate && endDate && dayjs().startOf('week').isSame(startDate, 'day') ? 'primary' : 'default'}
+                type={
+                  startDate && endDate && dayjs().startOf('week').isSame(startDate, 'day')
+                    ? 'primary'
+                    : 'default'
+                }
                 onClick={() => handleQuickDateFilter('week')}
               >
                 Tuần này
               </Button>
               <Button
                 size="small"
-                type={startDate && endDate && dayjs().startOf('month').isSame(startDate, 'day') ? 'primary' : 'default'}
+                type={
+                  startDate && endDate && dayjs().startOf('month').isSame(startDate, 'day')
+                    ? 'primary'
+                    : 'default'
+                }
                 onClick={() => handleQuickDateFilter('month')}
               >
                 Tháng này
@@ -354,7 +396,8 @@ export function LogsFilter({ onFilterChange }: LogsFilterProps) {
                 className="bg-white dark:bg-gray-700"
                 showSearch
                 filterOption={(input, option) => {
-                  const label = typeof option?.label === 'string' ? option.label : String(option?.label ?? '');
+                  const label =
+                    typeof option?.label === 'string' ? option.label : String(option?.label ?? '');
                   return label.toLowerCase().includes(input.toLowerCase());
                 }}
               />
@@ -375,7 +418,8 @@ export function LogsFilter({ onFilterChange }: LogsFilterProps) {
                 className="bg-white dark:bg-gray-700"
                 showSearch
                 filterOption={(input, option) => {
-                  const label = typeof option?.label === 'string' ? option.label : String(option?.label ?? '');
+                  const label =
+                    typeof option?.label === 'string' ? option.label : String(option?.label ?? '');
                   return label.toLowerCase().includes(input.toLowerCase());
                 }}
               />

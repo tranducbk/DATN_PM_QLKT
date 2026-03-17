@@ -306,7 +306,8 @@ export default function Step2SelectPersonnelNienHan({
   // Hàm lấy priority sắp xếp: 0=đủ điều kiện, 1=đang chờ duyệt, 2=đã nhận đủ, 3=không đủ điều kiện
   const getSortPriority = (record: Personnel): number => {
     // Kiểm tra giới tính
-    const missingGender = !record.gioi_tinh || (record.gioi_tinh !== 'NAM' && record.gioi_tinh !== 'NU');
+    const missingGender =
+      !record.gioi_tinh || (record.gioi_tinh !== 'NAM' && record.gioi_tinh !== 'NU');
     if (missingGender) return 3;
 
     // Kiểm tra ngày nhập ngũ
@@ -884,7 +885,9 @@ export default function Step2SelectPersonnelNienHan({
         description={
           <div>
             <p>1. Nhập năm đề xuất khen thưởng</p>
-            <p>2. Chọn các quân nhân cần đề xuất Huy chương Chiến sĩ vẻ vang từ danh sách dưới đây</p>
+            <p>
+              2. Chọn các quân nhân cần đề xuất Huy chương Chiến sĩ vẻ vang từ danh sách dưới đây
+            </p>
             <p>
               3. Bảng hiển thị thông tin ngày nhập ngũ, xuất ngũ và tổng tháng để hỗ trợ lựa chọn
             </p>

@@ -114,7 +114,6 @@ export default function AdminDecisionsPage() {
         const decisions = Array.isArray(response.data) ? response.data : [];
         const paginationData = (response as any).pagination;
 
-
         setDecisions(decisions);
         setPagination({
           ...paginationToUse,
@@ -191,11 +190,7 @@ export default function AdminDecisionsPage() {
       key: 'so_quyet_dinh',
       width: 200,
       align: 'center',
-      render: (text: string) => (
-        <Text strong>
-          {text}
-        </Text>
-      ),
+      render: (text: string) => <Text strong>{text}</Text>,
     },
     {
       title: 'Năm',
@@ -320,7 +315,14 @@ export default function AdminDecisionsPage() {
       />
 
       <Card>
-        <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div
+          style={{
+            marginBottom: 16,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
           <Title level={4} style={{ margin: 0 }}>
             Quản lý Quyết định Khen thưởng
           </Title>
@@ -369,7 +371,7 @@ export default function AdminDecisionsPage() {
           columns={columns}
           dataSource={decisions}
           rowKey="id"
-            loading={loading || tableLoading}
+          loading={loading || tableLoading}
           pagination={{
             current: pagination.current,
             pageSize: pagination.pageSize,
@@ -378,11 +380,15 @@ export default function AdminDecisionsPage() {
             showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} quyết định`,
             pageSizeOptions: ['10', '20', '50', '100'],
             onChange: (page, pageSize) => {
-                setTableLoading(true);
-              setPagination({ ...pagination, current: page, pageSize: pageSize || pagination.pageSize });
+              setTableLoading(true);
+              setPagination({
+                ...pagination,
+                current: page,
+                pageSize: pageSize || pagination.pageSize,
+              });
             },
             onShowSizeChange: (current, size) => {
-                setTableLoading(true);
+              setTableLoading(true);
               setPagination({ ...pagination, current: 1, pageSize: size });
             },
           }}
@@ -431,16 +437,15 @@ export default function AdminDecisionsPage() {
             <Descriptions.Item label="Loại khen thưởng">
               {selectedDecision.loai_khen_thuong ? (
                 <Tag color="blue">
-                  {loaiKhenThuongOptions.find(opt => opt.value === selectedDecision.loai_khen_thuong)?.label ||
-                    selectedDecision.loai_khen_thuong}
+                  {loaiKhenThuongOptions.find(
+                    opt => opt.value === selectedDecision.loai_khen_thuong
+                  )?.label || selectedDecision.loai_khen_thuong}
                 </Tag>
               ) : (
                 '-'
               )}
             </Descriptions.Item>
-            <Descriptions.Item label="Ghi chú">
-              {selectedDecision.ghi_chu || '-'}
-            </Descriptions.Item>
+            <Descriptions.Item label="Ghi chú">{selectedDecision.ghi_chu || '-'}</Descriptions.Item>
             <Descriptions.Item label="File PDF">
               {selectedDecision.file_path ? (
                 <Button
@@ -473,18 +478,21 @@ export default function AdminDecisionsPage() {
         }}
         onSuccess={handleModalSuccess}
         loaiKhenThuong={editingDecision?.loai_khen_thuong || undefined}
-        initialDecision={editingDecision ? {
-          id: editingDecision.id,
-          so_quyet_dinh: editingDecision.so_quyet_dinh,
-          nam: editingDecision.nam,
-          ngay_ky: dayjs(editingDecision.ngay_ky),
-          nguoi_ky: editingDecision.nguoi_ky,
-          file_path: editingDecision.file_path,
-          loai_khen_thuong: editingDecision.loai_khen_thuong || undefined,
-          ghi_chu: editingDecision.ghi_chu || undefined,
-        } : undefined}
+        initialDecision={
+          editingDecision
+            ? {
+                id: editingDecision.id,
+                so_quyet_dinh: editingDecision.so_quyet_dinh,
+                nam: editingDecision.nam,
+                ngay_ky: dayjs(editingDecision.ngay_ky),
+                nguoi_ky: editingDecision.nguoi_ky,
+                file_path: editingDecision.file_path,
+                loai_khen_thuong: editingDecision.loai_khen_thuong || undefined,
+                ghi_chu: editingDecision.ghi_chu || undefined,
+              }
+            : undefined
+        }
       />
     </div>
   );
 }
-

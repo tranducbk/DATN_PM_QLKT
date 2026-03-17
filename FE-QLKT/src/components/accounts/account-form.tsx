@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { z } from 'zod';
@@ -34,6 +34,7 @@ import { accountFormSchema } from '@/lib/schemas';
 import { apiClient } from '@/lib/api-client';
 import { useToast } from '@/hooks/use-toast';
 import { Check, ChevronsUpDown } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 
 type AccountFormValues = z.infer<typeof accountFormSchema>;
@@ -48,14 +49,9 @@ interface AccountFormProps {
 export function AccountForm({ account, personnel = [], onSuccess, onClose }: AccountFormProps) {
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
-  const [currentUserRole, setCurrentUserRole] = useState<string>('');
   const { toast } = useToast();
-
-  useEffect(() => {
-    // Lấy role của user hiện tại từ localStorage
-    const role = localStorage.getItem('role');
-    setCurrentUserRole(role || '');
-  }, []);
+  const { user } = useAuth();
+  const currentUserRole = user?.role || '';
 
   const form = useForm<AccountFormValues>({
     resolver: zodResolver(accountFormSchema),
@@ -97,7 +93,7 @@ export function AccountForm({ account, personnel = [], onSuccess, onClose }: Acc
           description: 'Cập nhật tài khoản thành công',
         });
       } else {
-        await apiClient.createAccount(values);
+        await apiClient.createAccount(values as any);
         toast({
           title: 'Thành công',
           description: 'Tạo tài khoản thành công',

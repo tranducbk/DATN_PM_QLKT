@@ -487,10 +487,10 @@ export default function ManagerPersonnelEditPage() {
                         loadingData
                           ? 'Đang tải...'
                           : filteredPositions.length === 0
-                          ? isManagerPersonnel
-                            ? 'Vui lòng chọn cơ quan đơn vị trước'
-                            : 'Vui lòng chọn đơn vị trực thuộc trước'
-                          : 'Chọn chức vụ'
+                            ? isManagerPersonnel
+                              ? 'Vui lòng chọn cơ quan đơn vị trước'
+                              : 'Vui lòng chọn đơn vị trực thuộc trước'
+                            : 'Chọn chức vụ'
                       }
                       disabled={loading}
                       showSearch

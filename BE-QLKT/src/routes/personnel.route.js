@@ -3,8 +3,8 @@ const router = express.Router();
 const multer = require('multer');
 const personnelController = require('../controllers/personnel.controller');
 const { verifyToken, requireAdmin, requireManager, requireAuth } = require('../middlewares/auth');
-const { auditLog, createDescription, getResourceId } = require('../middlewares/auditLog');
-const { getLogDescription } = require('../helpers/auditLogHelper');
+const { auditLog } = require('../middlewares/auditLog');
+const { getLogDescription, getResourceId } = require('../helpers/auditLogHelper');
 
 // Sử dụng memory storage để đọc file Excel trực tiếp từ buffer
 const upload = multer({ storage: multer.memoryStorage() });
@@ -61,7 +61,7 @@ router.post(
 router.put(
   '/:id',
   verifyToken,
-  requireManager, 
+  requireManager,
   auditLog({
     action: 'UPDATE',
     resource: 'personnel',

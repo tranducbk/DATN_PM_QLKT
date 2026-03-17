@@ -8,8 +8,6 @@ import {
   Space,
   Breadcrumb,
   ConfigProvider,
-  theme as antdTheme,
-  Descriptions,
   Tag,
   message,
   Tabs,
@@ -23,7 +21,6 @@ import {
   ArrowLeftOutlined,
   EditOutlined,
   UserOutlined,
-  HomeOutlined,
   TeamOutlined,
   TrophyOutlined,
   ExperimentOutlined,
@@ -33,6 +30,7 @@ import {
 import Link from 'next/link';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useTheme } from '@/components/theme-provider';
+import { getAntdThemeConfig } from '@/lib/antd-theme';
 import { apiClient } from '@/lib/api-client';
 import { formatDate } from '@/lib/utils';
 import styles from './personnel-detail.module.css';
@@ -40,7 +38,7 @@ import styles from './personnel-detail.module.css';
 const { Title, Text } = Typography;
 
 export default function PersonnelDetailPage() {
-  const { theme: currentTheme } = useTheme();
+  const { isDark } = useTheme();
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -106,8 +104,6 @@ export default function PersonnelDetailPage() {
     }
   }, [personnelId]);
 
-  const isDarkMode = currentTheme === 'dark';
-
   const getStatusTag = (status: string) => {
     const statusMap: Record<string, { label: string; color: string }> = {
       DA_NHAN: { label: 'Đã nhận', color: 'green' },
@@ -150,7 +146,7 @@ export default function PersonnelDetailPage() {
     <div className="overflow-x-auto">
       <table
         className={`min-w-full rounded-lg border ${
-          isDarkMode ? 'border-gray-700 bg-gray-900/60' : 'border-gray-200 bg-white'
+          isDark ? 'border-gray-700 bg-gray-900/60' : 'border-gray-200 bg-white'
         }`}
       >
         <tbody>
@@ -158,19 +154,19 @@ export default function PersonnelDetailPage() {
             <tr
               key={item.label}
               className={`border-b last:border-b-0 ${
-                isDarkMode ? 'border-gray-800' : 'border-gray-100'
+                isDark ? 'border-gray-800' : 'border-gray-100'
               }`}
             >
               <td
                 className={`px-4 py-3 text-sm font-semibold w-48 ${
-                  isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                  isDark ? 'text-gray-400' : 'text-gray-600'
                 }`}
               >
                 {item.label}
               </td>
               <td
                 className={`px-4 py-3 text-base break-words ${
-                  isDarkMode ? 'text-gray-200' : 'text-gray-800'
+                  isDark ? 'text-gray-200' : 'text-gray-800'
                 }`}
               >
                 {item.value ?? '-'}
@@ -192,11 +188,7 @@ export default function PersonnelDetailPage() {
 
   if (!personnel) {
     return (
-      <ConfigProvider
-        theme={{
-          algorithm: currentTheme === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
-        }}
-      >
+      <ConfigProvider theme={getAntdThemeConfig(isDark)}>
         <div className="space-y-4 p-6">
           <Title level={2}>Không tìm thấy quân nhân</Title>
           <Link href="/admin/personnel">
@@ -228,8 +220,8 @@ export default function PersonnelDetailPage() {
                     personnel.gioi_tinh === 'NAM'
                       ? 'Nam'
                       : personnel.gioi_tinh === 'NU'
-                      ? 'Nữ'
-                      : '-',
+                        ? 'Nữ'
+                        : '-',
                 },
                 { label: 'CCCD', value: personnel.cccd || '-' },
                 { label: 'Số điện thoại', value: personnel.so_dien_thoai || '-' },
@@ -867,11 +859,7 @@ export default function PersonnelDetailPage() {
   ];
 
   return (
-    <ConfigProvider
-      theme={{
-        algorithm: currentTheme === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
-      }}
-    >
+    <ConfigProvider theme={getAntdThemeConfig(isDark)}>
       <div className="p-6 space-y-6">
         {/* Breadcrumb */}
         <Breadcrumb
@@ -918,10 +906,10 @@ export default function PersonnelDetailPage() {
         <Card className="shadow-sm">
           <Tabs
             activeKey={activeTab}
-            onChange={(key) => {
+            onChange={key => {
               router.push(`/admin/personnel/${personnelId}?tab=${key}`);
             }}
-            className={`${styles.personnelTabs} ${isDarkMode ? styles.dark : styles.light}`}
+            className={`${styles.personnelTabs} ${isDark ? styles.dark : styles.light}`}
             items={tabItems}
             tabBarGutter={32}
             centered

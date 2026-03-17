@@ -16,12 +16,7 @@ import {
   Spin,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import {
-  LeftOutlined,
-  DeleteOutlined,
-  EditOutlined,
-  HomeOutlined,
-} from '@ant-design/icons';
+import { LeftOutlined, DeleteOutlined, EditOutlined, HomeOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/api-client';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 

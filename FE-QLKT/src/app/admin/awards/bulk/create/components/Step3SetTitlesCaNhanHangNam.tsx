@@ -1,7 +1,19 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Table, Select, Alert, Typography, Space, message, Button, Modal, Tabs, Tag, Input } from 'antd';
+import {
+  Table,
+  Select,
+  Alert,
+  Typography,
+  Space,
+  message,
+  Button,
+  Modal,
+  Tabs,
+  Tag,
+  Input,
+} from 'antd';
 import { EditOutlined, HistoryOutlined, EyeOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import axiosInstance from '@/utils/axiosInstance';

@@ -1,5 +1,7 @@
 const { prisma } = require('../models');
 const { NOTIFICATION_TYPES, RESOURCE_TYPES } = require('../constants/notificationTypes');
+const { ROLES } = require('../constants/roles');
+const { emitNotificationToUser } = require('../utils/socketService');
 const {
   DANH_HIEU_MAP,
   LOAI_DE_XUAT_MAP,
@@ -79,6 +81,7 @@ class NotificationHelper {
         await prisma.thongBao.createMany({
           data: notifications,
         });
+        notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
       }
 
       return notifications.length;
@@ -109,6 +112,7 @@ class NotificationHelper {
         },
       });
 
+      emitNotificationToUser(notification.nguoi_nhan_id, notification);
       return notification;
     } catch (error) {
       console.error('Error sending proposal approval notification:', error);
@@ -137,6 +141,7 @@ class NotificationHelper {
         },
       });
 
+      emitNotificationToUser(notification.nguoi_nhan_id, notification);
       return notification;
     } catch (error) {
       console.error('Error sending proposal rejection notification:', error);
@@ -185,6 +190,7 @@ class NotificationHelper {
       await prisma.thongBao.createMany({
         data: notifications,
       });
+        notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
 
       return notifications.length;
     } catch (error) {
@@ -234,6 +240,7 @@ class NotificationHelper {
       await prisma.thongBao.createMany({
         data: notifications,
       });
+        notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
 
       return notifications.length;
     } catch (error) {
@@ -286,6 +293,7 @@ class NotificationHelper {
         },
       });
 
+      emitNotificationToUser(notification.nguoi_nhan_id, notification);
       return notification;
     } catch (error) {
       console.error('Error sending achievement approval notification:', error);
@@ -385,6 +393,7 @@ class NotificationHelper {
         await prisma.thongBao.createMany({
           data: notifications,
         });
+        notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
       }
 
       return notifications.length;
@@ -447,9 +456,7 @@ class NotificationHelper {
             );
           }
           if (item.nhan_bkbqp) {
-            userAwards.push(
-              `${DANH_HIEU_MAP['BKBQP']}${item.nam ? ` (năm ${item.nam})` : ''}`
-            );
+            userAwards.push(`${DANH_HIEU_MAP['BKBQP']}${item.nam ? ` (năm ${item.nam})` : ''}`);
           }
           if (item.nhan_cstdtq) {
             userAwards.push(`${DANH_HIEU_MAP['CSTDTQ']}${item.nam ? ` (năm ${item.nam})` : ''}`);
@@ -515,6 +522,7 @@ class NotificationHelper {
         await prisma.thongBao.createMany({
           data: notifications,
         });
+        notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
       }
 
       return notifications.length;
@@ -582,25 +590,15 @@ class NotificationHelper {
 
           userTitleData.forEach(item => {
             if (awardType === 'CA_NHAN_HANG_NAM' && item.danh_hieu) {
-              userAwards.push(
-                `${getDanhHieuName(item.danh_hieu)}${nam ? ` (năm ${nam})` : ''}`
-              );
+              userAwards.push(`${getDanhHieuName(item.danh_hieu)}${nam ? ` (năm ${nam})` : ''}`);
             } else if (awardType === 'NCKH' && item.loai) {
-              userAwards.push(
-                `${getDanhHieuName(item.loai)}${nam ? ` (năm ${nam})` : ''}`
-              );
+              userAwards.push(`${getDanhHieuName(item.loai)}${nam ? ` (năm ${nam})` : ''}`);
             } else if (awardType === 'NIEN_HAN' && item.danh_hieu) {
-              userAwards.push(
-                `${getDanhHieuName(item.danh_hieu)}${nam ? ` (năm ${nam})` : ''}`
-              );
+              userAwards.push(`${getDanhHieuName(item.danh_hieu)}${nam ? ` (năm ${nam})` : ''}`);
             } else if (awardType === 'CONG_HIEN' && item.danh_hieu) {
-              userAwards.push(
-                `${getDanhHieuName(item.danh_hieu)}${nam ? ` (năm ${nam})` : ''}`
-              );
+              userAwards.push(`${getDanhHieuName(item.danh_hieu)}${nam ? ` (năm ${nam})` : ''}`);
             } else if (awardType === 'HC_QKQT') {
-              userAwards.push(
-                `${getDanhHieuName('HC_QKQT')}${nam ? ` (năm ${nam})` : ''}`
-              );
+              userAwards.push(`${getDanhHieuName('HC_QKQT')}${nam ? ` (năm ${nam})` : ''}`);
             } else if (awardType === 'KNC_VSNXD_QDNDVN') {
               userAwards.push(
                 `${getDanhHieuName('KNC_VSNXD_QDNDVN')}${nam ? ` (năm ${nam})` : ''}`
@@ -650,7 +648,7 @@ class NotificationHelper {
             managers.forEach(manager => {
               // Kiểm tra xem đã có thông báo cho manager này chưa (tránh duplicate)
               const existingNotif = notifications.find(
-                n => n.nguoi_nhan_id === manager.id && n.recipient_role === 'MANAGER'
+                n => n.nguoi_nhan_id === manager.id && n.recipient_role === ROLES.MANAGER
               );
               if (!existingNotif) {
                 notifications.push({
@@ -708,9 +706,7 @@ class NotificationHelper {
 
           // Lấy danh hiệu của đơn vị
           const unitTitleData = titleData.find(item => item.don_vi_id === unitId);
-          const danhHieu = unitTitleData?.danh_hieu
-            ? getDanhHieuName(unitTitleData.danh_hieu)
-            : '';
+          const danhHieu = unitTitleData?.danh_hieu ? getDanhHieuName(unitTitleData.danh_hieu) : '';
 
           managers.forEach(manager => {
             notifications.push({
@@ -734,6 +730,7 @@ class NotificationHelper {
         await prisma.thongBao.createMany({
           data: notifications,
         });
+        notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
       }
 
       return notifications.length;
@@ -780,7 +777,8 @@ class NotificationHelper {
       const newCoQuanDonViId = await getCoQuanDonViId(newUnit);
 
       // Kiểm tra xem có phải chuyển trong cùng cơ quan đơn vị không
-      const isSameCoQuanDonVi = oldCoQuanDonViId && newCoQuanDonViId && oldCoQuanDonViId === newCoQuanDonViId;
+      const isSameCoQuanDonVi =
+        oldCoQuanDonViId && newCoQuanDonViId && oldCoQuanDonViId === newCoQuanDonViId;
 
       if (isSameCoQuanDonVi) {
         // Trường hợp: Chuyển giữa các đơn vị trực thuộc trong cùng cơ quan đơn vị
@@ -896,7 +894,7 @@ class NotificationHelper {
           message: `${adminDisplayName} đã chuyển bạn từ đơn vị ${oldUnit?.ten_don_vi || 'cũ'} sang đơn vị ${newUnit?.ten_don_vi || 'mới'}`,
           resource: RESOURCE_TYPES.PERSONNEL,
           tai_nguyen_id: personnel.id,
-          link: personnelAccount.role === 'MANAGER' ? '/manager/dashboard' : '/user/dashboard',
+          link: personnelAccount.role === ROLES.MANAGER ? '/manager/dashboard' : '/user/dashboard',
         });
       }
 
@@ -905,6 +903,7 @@ class NotificationHelper {
         await prisma.thongBao.createMany({
           data: notifications,
         });
+        notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
       }
 
       return notifications.length;
@@ -943,6 +942,7 @@ class NotificationHelper {
         await prisma.thongBao.createMany({
           data: notifications,
         });
+        notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
       }
 
       return notifications.length;

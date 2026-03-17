@@ -5,6 +5,7 @@ const { verifyToken, checkRole } = require('../middlewares/auth');
 const { auditLog } = require('../middlewares/auditLog');
 const { getLogDescription, getResourceId } = require('../helpers/auditLogHelper');
 const multer = require('multer');
+const { ROLES } = require('../constants/roles');
 
 // Configure multer for file uploads
 const storage = multer.memoryStorage();
@@ -47,7 +48,7 @@ router.use(verifyToken);
  * @desc    Get all ad-hoc awards with filters
  * @access  Admin (all), Manager (own unit only)
  */
-router.get('/', checkRole(['ADMIN', 'MANAGER']), adhocAwardController.getAdhocAwards);
+router.get('/', checkRole([ROLES.ADMIN, ROLES.MANAGER]), adhocAwardController.getAdhocAwards);
 
 /**
  * @route   GET /api/adhoc-awards/personnel/:personnelId
@@ -56,7 +57,7 @@ router.get('/', checkRole(['ADMIN', 'MANAGER']), adhocAwardController.getAdhocAw
  */
 router.get(
   '/personnel/:personnelId',
-  checkRole(['ADMIN', 'MANAGER', 'USER']),
+  checkRole([ROLES.ADMIN, ROLES.MANAGER, ROLES.USER]),
   adhocAwardController.getAdhocAwardsByPersonnel
 );
 
@@ -67,7 +68,7 @@ router.get(
  */
 router.get(
   '/unit/:unitId',
-  checkRole(['ADMIN', 'MANAGER']),
+  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
   adhocAwardController.getAdhocAwardsByUnit
 );
 
@@ -76,10 +77,10 @@ router.get(
  * @desc    Get single ad-hoc award by ID
  * @access  Admin (all), Manager (own unit only)
  */
-router.get('/:id', checkRole(['ADMIN', 'MANAGER']), adhocAwardController.getAdhocAwardById);
+router.get('/:id', checkRole([ROLES.ADMIN, ROLES.MANAGER]), adhocAwardController.getAdhocAwardById);
 
 // Routes accessible by ADMIN only (write operations)
-router.use(checkRole(['ADMIN']));
+router.use(checkRole([ROLES.ADMIN]));
 
 /**
  * @route   POST /api/adhoc-awards

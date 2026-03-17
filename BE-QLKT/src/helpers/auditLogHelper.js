@@ -416,7 +416,9 @@ const createLogDescription = {
         const typeName = getLoaiDeXuatName(proposal.loai_de_xuat);
 
         const nguoiDeXuat =
-          proposal.NguoiDeXuat?.QuanNhan?.ho_ten || proposal.NguoiDeXuat?.username || FALLBACK.UNKNOWN;
+          proposal.NguoiDeXuat?.QuanNhan?.ho_ten ||
+          proposal.NguoiDeXuat?.username ||
+          FALLBACK.UNKNOWN;
         const nam = proposal.nam || FALLBACK.UNKNOWN;
 
         // Đếm số lượng
@@ -427,24 +429,24 @@ const createLogDescription = {
           const dataDanhHieu = Array.isArray(proposal.data_danh_hieu)
             ? proposal.data_danh_hieu
             : typeof proposal.data_danh_hieu === 'string'
-            ? JSON.parse(proposal.data_danh_hieu)
-            : [];
+              ? JSON.parse(proposal.data_danh_hieu)
+              : [];
           soLuong = dataDanhHieu.length;
           loaiSoLuong = 'đơn vị';
         } else if (proposal.loai_de_xuat === 'NCKH') {
           const dataThanhTich = Array.isArray(proposal.data_thanh_tich)
             ? proposal.data_thanh_tich
             : typeof proposal.data_thanh_tich === 'string'
-            ? JSON.parse(proposal.data_thanh_tich)
-            : [];
+              ? JSON.parse(proposal.data_thanh_tich)
+              : [];
           soLuong = dataThanhTich.length;
           loaiSoLuong = 'đề tài';
         } else if (proposal.loai_de_xuat === 'CONG_HIEN') {
           const dataCongHien = Array.isArray(proposal.data_cong_hien)
             ? proposal.data_cong_hien
             : typeof proposal.data_cong_hien === 'string'
-            ? JSON.parse(proposal.data_cong_hien)
-            : [];
+              ? JSON.parse(proposal.data_cong_hien)
+              : [];
           soLuong = dataCongHien.length;
           loaiSoLuong = 'đồng chí';
         } else if (
@@ -455,8 +457,8 @@ const createLogDescription = {
           const dataNienHan = Array.isArray(proposal.data_nien_han)
             ? proposal.data_nien_han
             : typeof proposal.data_nien_han === 'string'
-            ? JSON.parse(proposal.data_nien_han)
-            : [];
+              ? JSON.parse(proposal.data_nien_han)
+              : [];
           soLuong = dataNienHan.length;
           loaiSoLuong = 'đồng chí';
         } else {
@@ -464,8 +466,8 @@ const createLogDescription = {
           const dataDanhHieu = Array.isArray(proposal.data_danh_hieu)
             ? proposal.data_danh_hieu
             : typeof proposal.data_danh_hieu === 'string'
-            ? JSON.parse(proposal.data_danh_hieu)
-            : [];
+              ? JSON.parse(proposal.data_danh_hieu)
+              : [];
           soLuong = dataDanhHieu.length;
           loaiSoLuong = 'đồng chí';
         }
@@ -511,7 +513,9 @@ const createLogDescription = {
       if (proposal) {
         const typeName = getLoaiDeXuatName(proposal.loai_de_xuat);
         const nguoiDeXuat =
-          proposal.NguoiDeXuat?.QuanNhan?.ho_ten || proposal.NguoiDeXuat?.username || FALLBACK.UNKNOWN;
+          proposal.NguoiDeXuat?.QuanNhan?.ho_ten ||
+          proposal.NguoiDeXuat?.username ||
+          FALLBACK.UNKNOWN;
         const nam = proposal.nam || FALLBACK.UNKNOWN;
 
         return `Xóa đề xuất ${typeName} (năm ${nam}) do ${nguoiDeXuat} đề xuất`;
@@ -808,8 +812,8 @@ const createLogDescription = {
         history?.ngay_ket_thuc !== undefined
           ? history.ngay_ket_thuc
           : req.body?.ngay_ket_thuc !== undefined
-          ? req.body.ngay_ket_thuc
-          : undefined;
+            ? req.body.ngay_ket_thuc
+            : undefined;
 
       // Query database nếu thiếu thông tin
       if ((!hoTen || !tenChucVu) && historyId) {
@@ -994,7 +998,8 @@ const createLogDescription = {
       }
 
       // Tạo mô tả
-      let displayName = hoTen && hoTen !== username ? `${hoTen} (${username})` : username || FALLBACK.UNKNOWN;
+      let displayName =
+        hoTen && hoTen !== username ? `${hoTen} (${username})` : username || FALLBACK.UNKNOWN;
       let description = `Cập nhật tài khoản: ${displayName}`;
 
       const changes = [];

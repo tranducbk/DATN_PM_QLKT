@@ -39,8 +39,8 @@ async function initializeSuperAdmin() {
       process.exit(1);
     }
 
-    // Hash password - Mật khẩu mặc định: 123456
-    const defaultPassword = '123456';
+    // Hash password - Mật khẩu mặc định lấy từ env
+    const defaultPassword = process.env.DEFAULT_PASSWORD || '123456';
     const hashedPassword = await bcrypt.hash(defaultPassword, 10);
 
     // Tạo tài khoản SUPER_ADMIN (không cần liên kết với quân nhân)

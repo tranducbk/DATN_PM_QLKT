@@ -1,4 +1,5 @@
 const contributionAwardService = require('../services/contributionAward.service');
+const { ROLES } = require('../constants/roles');
 
 class ContributionAwardController {
   /**
@@ -72,7 +73,7 @@ class ContributionAwardController {
       if (danh_hieu) filters.danh_hieu = danh_hieu;
       if (ho_ten) filters.ho_ten = ho_ten;
 
-      if (userRole === 'MANAGER') {
+      if (userRole === ROLES.MANAGER) {
         const userQuanNhanId = req.user?.quan_nhan_id;
         if (!userQuanNhanId) {
           return res.status(403).json({
@@ -130,7 +131,7 @@ class ContributionAwardController {
       if (nam) filters.nam = nam;
       if (danh_hieu) filters.danh_hieu = danh_hieu;
 
-      if (userRole === 'MANAGER') {
+      if (userRole === ROLES.MANAGER) {
         const user = await contributionAwardService.getUserWithUnit(userId);
         if (!user || !user.QuanNhan) {
           return res.status(403).json({

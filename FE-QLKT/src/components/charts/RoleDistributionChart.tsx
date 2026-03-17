@@ -23,9 +23,7 @@ export function RoleDistributionChart({ data, height = 250 }: RoleDistributionCh
 
   const chartData = {
     labels:
-      data.length > 0
-        ? data.map(item => roleMap[item.role] || item.role)
-        : ['Chưa có dữ liệu'],
+      data.length > 0 ? data.map(item => roleMap[item.role] || item.role) : ['Chưa có dữ liệu'],
     datasets: [
       {
         label: 'Số lượng',
@@ -84,4 +82,3 @@ export function RoleDistributionChart({ data, height = 250 }: RoleDistributionCh
     </Card>
   );
 }
-

@@ -44,7 +44,11 @@ interface Personnel {
   don_vi_truc_thuoc_id?: string;
   chuc_vu_id?: string;
   CoQuanDonVi?: { id: string; ten_don_vi: string };
-  DonViTrucThuoc?: { id: string; ten_don_vi: string; CoQuanDonVi?: { id: string; ten_don_vi: string } };
+  DonViTrucThuoc?: {
+    id: string;
+    ten_don_vi: string;
+    CoQuanDonVi?: { id: string; ten_don_vi: string };
+  };
   ChucVu?: { id: string; ten_chuc_vu: string };
 }
 
@@ -83,7 +87,9 @@ export default function BulkAddAnnualRewardsPage() {
 
     if (filterUnitId) {
       filtered = filtered.filter(
-        p => p.CoQuanDonVi?.id === filterUnitId || p.DonViTrucThuoc?.id === filterUnitId
+        p =>
+          String(p.CoQuanDonVi?.id) === String(filterUnitId) ||
+          String(p.DonViTrucThuoc?.id) === String(filterUnitId)
       );
     }
 
@@ -132,14 +138,13 @@ export default function BulkAddAnnualRewardsPage() {
   };
 
   const handleCheckAndOpenModal = async () => {
-    
     if (selectedRowKeys.length === 0) {
       message.warning('Vui lòng chọn ít nhất một quân nhân');
       return;
     }
 
     const values = form.getFieldsValue();
-    
+
     if (!values.nam || !values.danh_hieu) {
       message.warning('Vui lòng chọn năm và danh hiệu');
       return;
@@ -150,7 +155,7 @@ export default function BulkAddAnnualRewardsPage() {
 
       // Kiểm tra khen thưởng/đề xuất
       // Lọc bỏ null/undefined (giữ nguyên string IDs vì Prisma dùng String cho ID)
-      
+
       const validPersonnelIds = selectedRowKeys
         .filter(k => {
           const isValid = k !== null && k !== undefined && k !== '' && typeof k === 'string';
@@ -161,18 +166,16 @@ export default function BulkAddAnnualRewardsPage() {
           return k;
         });
 
-
       if (validPersonnelIds.length === 0) {
         message.warning('Vui lòng chọn ít nhất một quân nhân hợp lệ');
         return;
       }
 
       const requestData = {
-        personnel_ids: validPersonnelIds,
-        nam: values.nam,
+        personnel_ids: validPersonnelIds as string[],
+        nam: Number(values.nam),
         danh_hieu: values.danh_hieu,
       };
-      
 
       const checkResult = await apiClient.checkAnnualRewards(requestData);
 
@@ -183,7 +186,9 @@ export default function BulkAddAnnualRewardsPage() {
           .map((r: any) => r.personnel_id);
 
         if (eligible.length === 0) {
-          message.warning('Tất cả quân nhân đã chọn đều đã có khen thưởng hoặc đề xuất cho năm này');
+          message.warning(
+            'Tất cả quân nhân đã chọn đều đã có khen thưởng hoặc đề xuất cho năm này'
+          );
           return;
         }
 
@@ -355,11 +360,7 @@ export default function BulkAddAnnualRewardsPage() {
               </Select>
             </Form.Item>
 
-            <Form.Item
-              name="file_dinh_kem"
-              label="File đính kèm"
-              rules={[{ required: false }]}
-            >
+            <Form.Item name="file_dinh_kem" label="File đính kèm" rules={[{ required: false }]}>
               <Upload
                 fileList={fileList}
                 onChange={({ fileList: newFileList }) => setFileList(newFileList)}
@@ -450,7 +451,7 @@ export default function BulkAddAnnualRewardsPage() {
           rowSelection={rowSelection}
           columns={columns}
           dataSource={filteredPersonnel}
-          rowKey={(record) => record?.id || `key-${Math.random()}`}
+          rowKey={record => record?.id || `key-${Math.random()}`}
           loading={loading}
           pagination={{
             pageSize: 10,
@@ -479,7 +480,6 @@ export default function BulkAddAnnualRewardsPage() {
           </Button>
         </div>
       </Card>
-
     </div>
   );
 }

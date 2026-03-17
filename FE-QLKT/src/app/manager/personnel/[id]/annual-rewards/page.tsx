@@ -18,10 +18,7 @@ import {
   Tag,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import {
-  LeftOutlined,
-  HomeOutlined,
-} from '@ant-design/icons';
+import { LeftOutlined, HomeOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/api-client';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { useTheme } from '@/components/theme-provider';
@@ -121,7 +118,9 @@ export default function ManagerAnnualRewardsPage() {
       align: 'center',
       ellipsis: true,
       render: (text: string) => (
-        <div style={{ textAlign: 'center' }} title={text}>{text || '-'}</div>
+        <div style={{ textAlign: 'center' }} title={text}>
+          {text || '-'}
+        </div>
       ),
     },
     {
@@ -132,7 +131,9 @@ export default function ManagerAnnualRewardsPage() {
       align: 'center',
       ellipsis: true,
       render: (text: string) => (
-        <div style={{ textAlign: 'center' }} title={text}>{text || '-'}</div>
+        <div style={{ textAlign: 'center' }} title={text}>
+          {text || '-'}
+        </div>
       ),
     },
     {
@@ -143,7 +144,9 @@ export default function ManagerAnnualRewardsPage() {
       align: 'center',
       ellipsis: true,
       render: (text: string) => (
-        <div style={{ textAlign: 'center' }} title={text}>{text || '-'}</div>
+        <div style={{ textAlign: 'center' }} title={text}>
+          {text || '-'}
+        </div>
       ),
     },
     {

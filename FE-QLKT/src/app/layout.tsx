@@ -2,6 +2,7 @@ import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import AntdRegistry from '@/lib/AntdRegistry';
 import { Toaster } from '@/components/ui/toaster';
+import { AuthProvider } from '@/contexts/AuthContext';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -18,10 +19,12 @@ export default function RootLayout({ children }) {
     <html lang="vi" suppressHydrationWarning>
       <body className="font-sans antialiased">
         <AntdRegistry>
-          <ThemeProvider>
-            {children}
-            <Toaster />
-          </ThemeProvider>
+          <AuthProvider>
+            <ThemeProvider>
+              {children}
+              <Toaster />
+            </ThemeProvider>
+          </AuthProvider>
         </AntdRegistry>
       </body>
     </html>

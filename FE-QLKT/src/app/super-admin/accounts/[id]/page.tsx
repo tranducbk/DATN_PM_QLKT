@@ -206,8 +206,8 @@ export default function AccountDetailPage() {
                 {account.QuanNhan.gioi_tinh === 'NAM'
                   ? 'Nam'
                   : account.QuanNhan.gioi_tinh === 'NU'
-                  ? 'Nữ'
-                  : '-'}
+                    ? 'Nữ'
+                    : '-'}
               </Descriptions.Item>
               <Descriptions.Item label="Ngày sinh">
                 {account.QuanNhan.ngay_sinh ? formatDate(account.QuanNhan.ngay_sinh) : '-'}
