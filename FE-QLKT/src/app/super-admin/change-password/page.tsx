@@ -23,12 +23,14 @@ import {
 import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
 import { useTheme } from '@/components/theme-provider';
+import { useAuth } from '@/contexts/AuthContext';
 import { PasswordStrengthIndicator } from '@/components/PasswordStrengthIndicator';
 
 const { Title, Text } = Typography;
 
 export default function SuperAdminChangePasswordPage() {
   const { theme } = useTheme();
+  const { logout } = useAuth();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [newPassword, setNewPassword] = useState('');
@@ -40,9 +42,11 @@ export default function SuperAdminChangePasswordPage() {
       const result = await apiClient.changePassword(values.oldPassword, values.newPassword);
 
       if (result.success) {
-        message.success(result.message || 'Đổi mật khẩu thành công');
-        form.resetFields();
-        setNewPassword('');
+        message.success('Đổi mật khẩu thành công. Đang chuyển về trang đăng nhập...');
+        setTimeout(() => {
+          logout();
+          window.location.href = '/login';
+        }, 1500);
       } else {
         message.error(result.message || 'Đổi mật khẩu thất bại');
       }

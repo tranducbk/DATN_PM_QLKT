@@ -1,24 +1,16 @@
-/**
- * Axios instance với auto-refresh token interceptor
- * Token được lưu trong httpOnly cookie (không cần manual handling)
- */
 import axios, { AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
 import { BASE_URL } from '@/configs';
 
-// Tạo axios instance
 const axiosInstance = axios.create({
   baseURL: BASE_URL,
-  withCredentials: true, // Quan trọng! Để tự động gửi cookies
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  timeout: 30000, // 30 giây timeout
+  withCredentials: true,
+  headers: { 'Content-Type': 'application/json' },
+  timeout: 30000,
 });
 
-// Request interceptor để fallback localStorage
+// Gắn token từ localStorage nếu không có cookie
 axiosInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // Fallback: Nếu cookies không có, gửi token từ localStorage
     if (!document.cookie.includes('accessToken') && localStorage.getItem('accessToken')) {
       config.headers.Authorization = `Bearer ${localStorage.getItem('accessToken')}`;
     }
@@ -27,54 +19,65 @@ axiosInstance.interceptors.request.use(
   error => Promise.reject(error)
 );
 
-// Response interceptor: Tự động refresh token khi 401
 let isRefreshing = false;
 let failedQueue: Array<{ resolve: (value: unknown) => void; reject: (reason?: unknown) => void }> =
   [];
 
 const processQueue = (error: unknown, token: string | null = null) => {
-  failedQueue.forEach(prom => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token);
-    }
-  });
-
+  failedQueue.forEach(prom => (error ? prom.reject(error) : prom.resolve(token)));
   failedQueue = [];
 };
+
+function forceLogout() {
+  if (typeof window !== 'undefined') {
+    localStorage.clear();
+    window.location.href = '/login';
+  }
+}
+
+function extractTokens(data: Record<string, any>): {
+  accessToken: string | null;
+  refreshToken: string | null;
+} {
+  const nested = data?.data;
+  return {
+    accessToken: nested?.accessToken || data?.accessToken || null,
+    refreshToken: nested?.refreshToken || data?.refreshToken || null,
+  };
+}
 
 axiosInstance.interceptors.response.use(
   response => response,
   async error => {
     const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
+    const status = error.response?.status;
 
-    // Xử lý lỗi 429 (Rate Limited)
-    if (error.response?.status === 429) {
+    // Rate limit → retry sau 1s
+    if (status === 429) {
       await new Promise(resolve => setTimeout(resolve, 1000));
       return axiosInstance(originalRequest);
     }
 
-    // Nếu lỗi 401 và chưa retry
-    // Bỏ qua interceptor cho login request để tránh reload trang
-    const isLoginRequest =
+    const isAuthRequest =
       originalRequest?.url?.includes('/api/auth/login') ||
-      originalRequest?.url?.includes('/auth/login');
+      originalRequest?.url?.includes('/api/auth/refresh');
     const isDevZoneRequest = originalRequest?.url?.includes('/api/dev-zone');
 
-    if (
-      error.response?.status === 401 &&
-      !originalRequest._retry &&
-      !isLoginRequest &&
-      !isDevZoneRequest
-    ) {
+    // Refresh request fail → force logout ngay
+    if (status === 401 && originalRequest?.url?.includes('/api/auth/refresh')) {
+      isRefreshing = false;
+      processQueue(error, null);
+      forceLogout();
+      return Promise.reject(error);
+    }
+
+    // 401 từ API thường → cố refresh token
+    if (status === 401 && !originalRequest._retry && !isAuthRequest && !isDevZoneRequest) {
       if (isRefreshing) {
-        // Nếu đang refresh, đợi trong queue
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
           .then(token => {
-            // Cập nhật token cho request này nếu cần
             if (token && !document.cookie.includes('accessToken')) {
               originalRequest.headers = {
                 ...originalRequest.headers,
@@ -83,77 +86,41 @@ axiosInstance.interceptors.response.use(
             }
             return axiosInstance(originalRequest);
           })
-          .catch(err => {
-            return Promise.reject(err);
-          });
+          .catch(err => Promise.reject(err));
       }
 
       originalRequest._retry = true;
       isRefreshing = true;
 
       try {
-        // Lấy refreshToken từ localStorage (backend hiện mong nhận trong body)
-        const storedRefresh =
-          typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null;
-
+        const storedRefresh = localStorage.getItem('refreshToken');
         if (!storedRefresh) {
-          // Không có refresh token -> bắt buộc đăng nhập lại
           isRefreshing = false;
-          processQueue(new Error('No refresh token available'), null);
-          if (typeof window !== 'undefined') {
-            localStorage.clear();
-            window.location.href = '/login';
-          }
-          return Promise.reject(new Error('No refresh token available'));
+          processQueue(new Error('No refresh token'), null);
+          forceLogout();
+          return Promise.reject(new Error('No refresh token'));
         }
 
-        const refreshResponse = await axiosInstance.post(
-          `/api/auth/refresh`,
-          { refreshToken: storedRefresh },
-          {
-            withCredentials: true,
-            timeout: 10000,
-          }
+        const refreshResponse = await axiosInstance.post('/api/auth/refresh', {
+          refreshToken: storedRefresh,
+        });
+
+        const { accessToken: newAccessToken, refreshToken: newRefreshToken } = extractTokens(
+          refreshResponse.data
         );
 
-        // Lưu token mới vào localStorage
-        let newAccessToken: string | null = null;
+        if (newAccessToken) {
+          localStorage.setItem('accessToken', newAccessToken);
+          if (newRefreshToken) localStorage.setItem('refreshToken', newRefreshToken);
 
-        if (refreshResponse.data?.data?.accessToken) {
-          newAccessToken = refreshResponse.data.data.accessToken;
-          const newRefresh = refreshResponse.data.data.refreshToken;
-
-          localStorage.setItem('accessToken', newAccessToken!);
-
-          // Cập nhật refresh token mới (token rotation)
-          if (newRefresh) {
-            localStorage.setItem('refreshToken', newRefresh);
-          }
-        } else if (refreshResponse.data?.accessToken) {
-          // Fallback cho format response khác
-          newAccessToken = refreshResponse.data.accessToken;
-          const newRefresh = refreshResponse.data.refreshToken;
-
-          localStorage.setItem('accessToken', newAccessToken!);
-
-          if (newRefresh) {
-            localStorage.setItem('refreshToken', newRefresh);
-          }
-        }
-
-        // Dispatch event để thông báo token đã được refresh thành công
-        if (typeof window !== 'undefined' && newAccessToken) {
           window.dispatchEvent(
-            new CustomEvent('tokenRefreshed', {
-              detail: { accessToken: newAccessToken },
-            })
+            new CustomEvent('tokenRefreshed', { detail: { accessToken: newAccessToken } })
           );
         }
 
         processQueue(null, newAccessToken);
         isRefreshing = false;
 
-        // Cập nhật token cho request hiện tại
         if (newAccessToken && !document.cookie.includes('accessToken')) {
           originalRequest.headers = {
             ...originalRequest.headers,
@@ -165,25 +132,18 @@ axiosInstance.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError, null);
         isRefreshing = false;
-
-        if (typeof window !== 'undefined') {
-          localStorage.clear();
-          window.location.href = '/login';
-        }
-
+        forceLogout();
         return Promise.reject(refreshError);
       }
     }
 
-    // Hiển thị thông báo lỗi toàn cục cho lỗi server (5xx) và validation (400)
-    const status = error.response?.status;
+    // Hiển thị lỗi toàn cục (trừ 401 và 429)
     if (status && status !== 401 && status !== 429) {
       const errorMsg =
         error.response?.data?.message ||
         error.response?.data?.errors?.join(', ') ||
         'Đã xảy ra lỗi. Vui lòng thử lại.';
 
-      // Dispatch custom event để MainLayout hiển thị thông báo
       if (typeof window !== 'undefined') {
         window.dispatchEvent(
           new CustomEvent('apiError', { detail: { message: errorMsg, status } })

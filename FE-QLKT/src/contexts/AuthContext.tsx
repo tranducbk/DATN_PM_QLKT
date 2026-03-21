@@ -24,27 +24,49 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-/**
- * AuthProvider - Context Pattern
- *
- * Centralized authentication state thay thế việc đọc localStorage rải rác.
- * Wrap toàn bộ app trong provider này.
- */
+/** Decode JWT payload without library (chỉ đọc, không verify signature) */
+function decodeTokenPayload(token: string): { exp?: number } | null {
+  try {
+    const base64 = token.split('.')[1];
+    return JSON.parse(atob(base64));
+  } catch {
+    return null;
+  }
+}
+
+/** Check xem token còn valid không (chưa hết hạn) */
+function isTokenValid(token: string | null): boolean {
+  if (!token) return false;
+  const payload = decodeTokenPayload(token);
+  if (!payload?.exp) return false;
+  return payload.exp * 1000 > Date.now();
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load auth state from localStorage on mount
   useEffect(() => {
     const loadAuth = () => {
       try {
         const token = localStorage.getItem('accessToken');
+        const refreshToken = localStorage.getItem('refreshToken');
         const role = localStorage.getItem('role') as UserRole | null;
         const username = localStorage.getItem('username');
         const userId = localStorage.getItem('userId');
         const quanNhanId = localStorage.getItem('quan_nhan_id');
         const hoTen = localStorage.getItem('ho_ten');
         const donViId = localStorage.getItem('don_vi_id');
+
+        // Cả access token và refresh token đều hết hạn → buộc đăng nhập lại
+        if (!isTokenValid(token) && !isTokenValid(refreshToken)) {
+          localStorage.clear();
+          setUser(null);
+          if (window.location.pathname !== '/login') {
+            window.location.href = '/login';
+          }
+          return;
+        }
 
         if (token && role && userId) {
           setUser({
@@ -65,7 +87,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     loadAuth();
 
-    // Listen for token refresh events
     const handleTokenRefreshed = () => loadAuth();
     window.addEventListener('tokenRefreshed', handleTokenRefreshed);
     return () => window.removeEventListener('tokenRefreshed', handleTokenRefreshed);
