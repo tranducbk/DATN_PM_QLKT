@@ -36,6 +36,8 @@ router.patch('/read-all', verifyToken, notificationController.markAllAsRead);
  * @desc    Xóa thông báo
  * @access  Private - All authenticated users
  */
+router.delete('/all', verifyToken, notificationController.deleteAllNotifications);
+
 router.delete('/:id', verifyToken, notificationController.deleteNotification);
 
 module.exports = router;

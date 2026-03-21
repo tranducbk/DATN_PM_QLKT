@@ -11,8 +11,6 @@ import {
   Spin,
   Alert,
   message,
-  Space,
-  Descriptions,
   ConfigProvider,
   Row,
   Col,
@@ -22,14 +20,10 @@ import {
 } from 'antd';
 import { getAntdThemeConfig } from '@/lib/antd-theme';
 import {
-  HomeOutlined,
   TrophyOutlined,
   StarOutlined,
-  HistoryOutlined,
   UserOutlined,
-  TeamOutlined,
   SafetyOutlined,
-  ExperimentOutlined,
   CrownOutlined,
   FireOutlined,
   FileTextOutlined,
@@ -39,11 +33,13 @@ import { apiClient } from '@/lib/api-client';
 import { calculateDuration, formatDate } from '@/lib/utils';
 import { useTheme } from '@/components/theme-provider';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
+import { useAuth } from '@/contexts/AuthContext';
 
 const { Title, Text } = Typography;
 
 export default function UserProfilePage() {
   const { isDark } = useTheme();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [personnelId, setPersonnelId] = useState<string | null>(null);
   const [personnelInfo, setPersonnelInfo] = useState<any>(null);
@@ -125,9 +121,6 @@ export default function UserProfilePage() {
       try {
         setLoading(true);
 
-        // Lấy thông tin user từ localStorage
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-
         if (!user?.quan_nhan_id) {
           message.error('Không tìm thấy thông tin quân nhân.');
           return;
@@ -201,7 +194,7 @@ export default function UserProfilePage() {
           setCommemorationMedals(commRes.data);
         }
       } catch (error: any) {
-        console.error('Error fetching profile data:', error);
+        // Error handled by UI message
         message.error('Không thể tải dữ liệu hồ sơ');
       } finally {
         setLoading(false);
@@ -996,9 +989,7 @@ export default function UserProfilePage() {
                   >
                     <Statistic
                       title={
-                        <span style={{ color: isDark ? '#93c5fd' : '#1e40af' }}>
-                          Tổng số năm
-                        </span>
+                        <span style={{ color: isDark ? '#93c5fd' : '#1e40af' }}>Tổng số năm</span>
                       }
                       value={
                         Object.keys(
@@ -1031,9 +1022,7 @@ export default function UserProfilePage() {
                   >
                     <Statistic
                       title={
-                        <span style={{ color: isDark ? '#6ee7b7' : '#047857' }}>
-                          CSTĐ Cơ sở
-                        </span>
+                        <span style={{ color: isDark ? '#6ee7b7' : '#047857' }}>CSTĐ Cơ sở</span>
                       }
                       value={annualRewards.filter((r: any) => r.danh_hieu === 'CSTDCS').length}
                       valueStyle={{ color: isDark ? '#34d399' : '#059669', fontWeight: 700 }}

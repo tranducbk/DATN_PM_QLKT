@@ -1,5 +1,6 @@
 const accountService = require('../services/account.service');
 const { ROLES } = require('../constants/roles');
+const { parsePagination } = require('../helpers/paginationHelper');
 
 class AccountController {
   /**
@@ -8,7 +9,8 @@ class AccountController {
    */
   async getAccounts(req, res) {
     try {
-      const { page = 1, limit = 10, search = '', role } = req.query;
+      const { page, limit } = parsePagination(req.query);
+      const { search = '', role } = req.query;
       const userRole = req.user?.role;
 
       // Nếu là ADMIN, chỉ cho phép xem MANAGER và USER
@@ -42,10 +44,10 @@ class AccountController {
         data: result,
       });
     } catch (error) {
-      console.error('Get accounts error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy danh sách tài khoản thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -65,9 +67,10 @@ class AccountController {
         data: result,
       });
     } catch (error) {
-      return res.status(404).json({
+      const statusCode = error.statusCode || 404;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Không tìm thấy tài khoản',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -161,10 +164,10 @@ class AccountController {
         data: result,
       });
     } catch (error) {
-      console.error('Create account error:', error);
-      return res.status(400).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Tạo tài khoản thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -233,14 +236,6 @@ class AccountController {
           });
         }
 
-        // Validate password length
-        if (password.length < 6) {
-          return res.status(400).json({
-            success: false,
-            message: 'Mật khẩu phải có ít nhất 6 ký tự',
-          });
-        }
-
         updateData.password = password;
       }
 
@@ -252,10 +247,10 @@ class AccountController {
         data: result,
       });
     } catch (error) {
-      console.error('Update account error:', error);
-      return res.status(400).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Cập nhật tài khoản thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -282,10 +277,10 @@ class AccountController {
         message: result.message,
       });
     } catch (error) {
-      console.error('Reset password error:', error);
-      return res.status(400).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Đặt lại mật khẩu thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -311,10 +306,10 @@ class AccountController {
         data: result,
       });
     } catch (error) {
-      console.error('Delete account error:', error);
-      return res.status(400).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Xóa tài khoản thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }

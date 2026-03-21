@@ -108,7 +108,7 @@ export default function AdminContributionAwardsPage() {
           }
         });
       } else if (!contributionRes.success) {
-        console.error('Error loading contribution awards:', contributionRes.message);
+        // Error handled by UI
       }
 
       setAwards(mappedAwards);

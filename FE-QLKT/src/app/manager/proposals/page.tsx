@@ -93,7 +93,7 @@ export default function ManagerProposalsPage() {
       }
     } catch (error: any) {
       message.error('Lỗi khi tải danh sách đề xuất');
-      console.error('Fetch proposals error:', error);
+      // Error handled by UI message
     } finally {
       setLoading(false);
     }
@@ -117,7 +117,7 @@ export default function ManagerProposalsPage() {
       message.success('Tải file thành công');
     } catch (error: any) {
       message.error(error.message || 'Lỗi khi tải file');
-      console.error('Download error:', error);
+      // Error handled by UI message
     } finally {
       setDownloadingId(null);
     }
@@ -137,7 +137,7 @@ export default function ManagerProposalsPage() {
       }
     } catch (error: any) {
       message.error(error.message || 'Lỗi khi xóa đề xuất');
-      console.error('Delete error:', error);
+      // Error handled by UI message
     } finally {
       setDeletingId(null);
     }

@@ -1,20 +1,25 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
 const personnelController = require('../controllers/personnel.controller');
 const { verifyToken, requireAdmin, requireManager, requireAuth } = require('../middlewares/auth');
 const { auditLog } = require('../middlewares/auditLog');
-const { getLogDescription, getResourceId } = require('../helpers/auditLogHelper');
-
-// Sử dụng memory storage để đọc file Excel trực tiếp từ buffer
-const upload = multer({ storage: multer.memoryStorage() });
+const { getLogDescription, getResourceId } = require('../helpers/auditLog');
+const { excelUpload: upload } = require('../configs/multer.config');
+const { validate } = require('../middlewares/validate');
+const { personnelValidation } = require('../validations');
 
 /**
  * @route   GET /api/personnel
  * @desc    Lấy danh sách quân nhân (có phân trang)
  * @access  Private - ADMIN, MANAGER
  */
-router.get('/', verifyToken, requireManager, personnelController.getPersonnel);
+router.get(
+  '/',
+  verifyToken,
+  requireManager,
+  validate(personnelValidation.listQuery, 'query'),
+  personnelController.getPersonnel
+);
 
 /**
  * @route   POST /api/personnel/check-contribution-eligibility
@@ -44,6 +49,7 @@ router.post(
   '/',
   verifyToken,
   requireAdmin,
+  validate(personnelValidation.createPersonnel),
   auditLog({
     action: 'CREATE',
     resource: 'personnel',
@@ -62,6 +68,7 @@ router.put(
   '/:id',
   verifyToken,
   requireManager,
+  validate(personnelValidation.updatePersonnel),
   auditLog({
     action: 'UPDATE',
     resource: 'personnel',

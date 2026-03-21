@@ -98,7 +98,7 @@ export default function Step3SetTitlesCongHien({
                 profilesMap[p.id] = response.data;
               }
             } catch (error) {
-              console.error(`Error fetching contribution profile for ${p.id}:`, error);
+              // Error handled silently per-item
             }
           }
         })
@@ -162,7 +162,7 @@ export default function Step3SetTitlesCongHien({
         }
       }
     } catch (error) {
-      console.error('Error fetching personnel details:', error);
+      // Error handled by UI
     } finally {
       setLoading(false);
     }
@@ -189,7 +189,7 @@ export default function Step3SetTitlesCongHien({
 
       setPositionHistoriesMap(historiesMap);
     } catch (error) {
-      console.error('Error fetching position histories:', error);
+      // Error handled by UI
     }
   };
 
@@ -231,7 +231,7 @@ export default function Step3SetTitlesCongHien({
   };
 
   // Lấy huân chương cao nhất mà quân nhân đủ điều kiện từ API data
-  const getHighestEligibleAward = (profile: any): string | null => {
+  const getHighestEligibleAward = (profile: any): string | undefined => {
     if (checkEligibleForRank(profile, 'HANG_NHAT')) {
       return 'HCBVTQ_HANG_NHAT';
     } else if (checkEligibleForRank(profile, 'HANG_NHI')) {
@@ -239,7 +239,7 @@ export default function Step3SetTitlesCongHien({
     } else if (checkEligibleForRank(profile, 'HANG_BA')) {
       return 'HCBVTQ_HANG_BA';
     }
-    return null;
+    return undefined;
   };
 
   const getDanhHieuOptions = () => {
@@ -281,7 +281,7 @@ export default function Step3SetTitlesCongHien({
         setPositionHistory([]);
       }
     } catch (error: any) {
-      console.error('Error fetching history:', error);
+      // Error handled by UI
       message.error('Không thể tải lịch sử chức vụ');
       setPositionHistory([]);
     } finally {

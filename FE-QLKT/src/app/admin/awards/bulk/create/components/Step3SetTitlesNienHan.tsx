@@ -8,6 +8,7 @@ import axiosInstance from '@/utils/axiosInstance';
 import { apiClient } from '@/lib/api-client';
 import ServiceHistoryModal from './ServiceHistoryModal';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
+import { formatDate } from '@/lib/utils';
 
 const { Text } = Typography;
 
@@ -130,7 +131,7 @@ export default function Step3SetTitlesNienHan({
         }
       }
     } catch (error) {
-      console.error('Error fetching personnel details:', error);
+      // Error handled by UI
     } finally {
       setLoading(false);
     }
@@ -218,7 +219,10 @@ export default function Step3SetTitlesNienHan({
     };
   };
 
-  const getHighestEligibleAwardNienHan = (record: Personnel, serviceProfile: any) => {
+  const getHighestEligibleAwardNienHan = (
+    record: Personnel,
+    serviceProfile: any
+  ): string | undefined => {
     if (serviceProfile?.hccsvv_hang_nhat_status === 'DU_DIEU_KIEN') {
       return 'HCCSVV_HANG_NHAT';
     }
@@ -228,7 +232,7 @@ export default function Step3SetTitlesNienHan({
     if (serviceProfile?.hccsvv_hang_ba_status === 'DU_DIEU_KIEN') {
       return 'HCCSVV_HANG_BA';
     }
-    return null;
+    return undefined;
   };
 
   const getTitleData = (id: string) => {
@@ -259,7 +263,7 @@ export default function Step3SetTitlesNienHan({
         setServiceProfile(null);
       }
     } catch (error: any) {
-      console.error('Error fetching history:', error);
+      // Error handled by UI message
       message.error('Không thể tải lịch sử niên hạn');
       setServiceProfile(null);
     } finally {
@@ -289,8 +293,7 @@ export default function Step3SetTitlesNienHan({
       key: 'ngay_sinh',
       width: 140,
       align: 'center',
-      render: (date: string | undefined | null) =>
-        date ? new Date(date).toLocaleDateString() : '-',
+      render: (date: string | undefined | null) => formatDate(date),
     },
     {
       title: (

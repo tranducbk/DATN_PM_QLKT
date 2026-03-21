@@ -218,7 +218,7 @@ export default function BulkAddAwardsPage() {
       const personnelData = responses.filter(r => r.data.success).map(r => r.data.data);
       setPersonnelDetails(personnelData);
     } catch (error) {
-      console.error('Error fetching personnel details:', error);
+      // Error handled by UI
     }
   };
 
@@ -231,7 +231,7 @@ export default function BulkAddAwardsPage() {
         setUnitDetails(selectedUnits);
       }
     } catch (error) {
-      console.error('Error fetching unit details:', error);
+      // Error handled by UI
     }
   };
 
@@ -360,7 +360,6 @@ export default function BulkAddAwardsPage() {
 
         if (errorCount > 0 && data.errors) {
           antMessage.warning(message);
-          console.error('Lỗi chi tiết:', data.errors);
         } else {
           antMessage.success(message);
         }
@@ -985,7 +984,7 @@ export default function BulkAddAwardsPage() {
   };
 
   // Handle decision modal success
-  const handleDecisionSuccess = (decision: any, isNewDecision: boolean) => {
+  const handleDecisionSuccess = (decision: any, isNewDecision: boolean = false) => {
     // Áp dụng số quyết định cho tất cả quân nhân/đơn vị đã chọn
     const newMap = { ...decisionDataMap };
     selectedPersonnelForDecision.forEach(id => {

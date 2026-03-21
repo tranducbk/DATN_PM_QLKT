@@ -30,6 +30,7 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
+import { formatDate } from '@/lib/utils';
 
 const { Title, Text } = Typography;
 const { Search } = Input;
@@ -124,7 +125,7 @@ export default function BulkAddAnnualRewardsPage() {
       }
     } catch (error: any) {
       message.error('Không thể tải dữ liệu');
-      console.error('Load data error:', error);
+      // Error handled by UI message
     } finally {
       setLoading(false);
     }
@@ -235,11 +236,7 @@ export default function BulkAddAnnualRewardsPage() {
       dataIndex: 'ngay_sinh',
       key: 'ngay_sinh',
       width: 120,
-      render: (date: string) => {
-        if (!date) return '-';
-        const d = new Date(date);
-        return d.toLocaleDateString('vi-VN');
-      },
+      render: (date: string) => formatDate(date),
     },
     {
       title: 'Cơ quan đơn vị',

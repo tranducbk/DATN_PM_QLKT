@@ -111,7 +111,7 @@ export default function Step2SelectPersonnelNienHan({
         }
       }
     } catch (error: any) {
-      console.error('Error fetching personnel:', error);
+      // Error handled by UI
     } finally {
       setLoading(false);
     }
@@ -141,7 +141,7 @@ export default function Step2SelectPersonnelNienHan({
 
       setServiceProfilesMap(profilesMap);
     } catch (error) {
-      console.error('Error fetching service profiles:', error);
+      // Error handled by UI
     } finally {
       setCheckingProfiles(false);
     }
@@ -645,9 +645,7 @@ export default function Step2SelectPersonnelNienHan({
                 const nameMatch = personnelName === excelName;
 
                 // So sánh ngày sinh
-                const personnelBirth = p.ngay_sinh
-                  ? new Date(p.ngay_sinh).toLocaleDateString('vi-VN')
-                  : '';
+                const personnelBirth = p.ngay_sinh ? formatDate(p.ngay_sinh) : '';
                 const excelBirth = ngaySinh;
 
                 return nameMatch && personnelBirth === excelBirth;
@@ -757,7 +755,7 @@ export default function Step2SelectPersonnelNienHan({
           ghi_chu: award.ghi_chu,
         }));
 
-        onTitleDataChange(titleData);
+        onTitleDataChange?.(titleData);
 
         // Update nam from imported data if available
         if (result.titleData[0].nam) {
@@ -766,14 +764,10 @@ export default function Step2SelectPersonnelNienHan({
       }
     }
 
-    // Tự động chuyển sang bước 4 (Upload file) sau khi Đã thêm thành công
-    // Bỏ qua bước 3 vì dữ liệu đã được import từ Excel
+    // Chuyển sang bước 3 (Review) để xem trước dữ liệu trước khi xác nhận
     if (onNextStep) {
       setTimeout(() => {
-        onNextStep(); // Chuyển sang bước 3
-        setTimeout(() => {
-          onNextStep(); // Chuyển sang bước 4
-        }, 100);
+        onNextStep(); // Chuyển sang bước 3 — dừng lại ở đây để review
       }, 500);
     }
   };
@@ -901,18 +895,23 @@ export default function Step2SelectPersonnelNienHan({
       />
 
       {/* Upload Excel Section */}
-      {/* <ExcelImportSection
+      <ExcelImportSection
+        awardType="NIEN_HAN"
         templateEndpoint="/api/hccsvv/template"
         importEndpoint="/api/hccsvv/import"
         templateFileName="mau_import_hccsvv"
         onImportSuccess={handleImportSuccess}
         selectedCount={selectedPersonnelIds.length}
+        selectedPersonnelIds={selectedPersonnelIds}
         entityLabel="quân nhân"
         localProcessing={true}
         onLocalProcess={handleLocalExcelProcess}
+        previewEndpoint="/api/hccsvv/import/preview"
+        reviewPath="/admin/awards/bulk/import-review-hccsvv"
+        sessionStorageKey="importPreviewDataHCCSVV"
       />
 
-      <Divider>Hoặc chọn thủ công</Divider> */}
+      <Divider>Hoặc chọn thủ công</Divider>
 
       <Space style={{ marginBottom: 16 }} size="middle">
         <div>

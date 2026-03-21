@@ -1,10 +1,11 @@
 const jwt = require('jsonwebtoken');
 const { ROLES } = require('../constants/roles');
+const { prisma } = require('../models');
 
 /**
  * Middleware xác thực token - Kiểm tra người dùng đã đăng nhập
  */
-const verifyToken = (req, res, next) => {
+const verifyToken = async (req, res, next) => {
   // Đọc accessToken từ Authorization header
   const authHeader = req.headers.authorization || req.headers.Authorization;
 
@@ -19,6 +20,20 @@ const verifyToken = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // Kiểm tra tài khoản còn phiên đăng nhập hợp lệ không
+    const account = await prisma.taiKhoan.findUnique({
+      where: { id: decoded.id },
+      select: { refreshToken: true },
+    });
+
+    if (!account || !account.refreshToken) {
+      return res.status(401).json({
+        success: false,
+        message: 'Phiên đăng nhập đã kết thúc. Vui lòng đăng nhập lại.',
+      });
+    }
+
     req.user = decoded; // { id, username, role, quan_nhan_id }
     next();
   } catch (err) {

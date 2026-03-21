@@ -115,7 +115,7 @@ export default function Step2SelectPersonnelKNCVSNXD({
               }
             }
           } catch (error) {
-            console.error(`Error checking KNC VSNXD for ${p.id}:`, error);
+            // Error handled silently per-item
             receivedMap[p.id] = false;
           }
         })
@@ -124,7 +124,7 @@ export default function Step2SelectPersonnelKNCVSNXD({
       setAlreadyReceivedMap(receivedMap);
       setReceivedReasonMap(reasonMap);
     } catch (error) {
-      console.error('Error checking already received:', error);
+      // Error handled by UI
     } finally {
       setCheckingReceived(false);
     }
@@ -150,7 +150,7 @@ export default function Step2SelectPersonnelKNCVSNXD({
         message.error(response.data.message || 'Không thể lấy danh sách quân nhân');
       }
     } catch (error: any) {
-      console.error('Error fetching personnel:', error);
+      // Error handled by UI
       message.error(
         error?.response?.data?.message || error?.message || 'Lỗi khi tải danh sách quân nhân'
       );
@@ -516,9 +516,7 @@ export default function Step2SelectPersonnelKNCVSNXD({
                 const nameMatch = personnelName === excelName;
 
                 // So sánh ngày sinh
-                const personnelBirth = p.ngay_sinh
-                  ? new Date(p.ngay_sinh).toLocaleDateString('vi-VN')
-                  : '';
+                const personnelBirth = p.ngay_sinh ? formatDate(p.ngay_sinh) : '';
                 const excelBirth = ngaySinh;
 
                 return nameMatch && personnelBirth === excelBirth;
@@ -628,7 +626,7 @@ export default function Step2SelectPersonnelKNCVSNXD({
           ghi_chu: award.ghi_chu,
         }));
 
-        onTitleDataChange(titleData);
+        onTitleDataChange?.(titleData);
 
         // Update nam from imported data if available
         if (result.titleData[0].nam) {
@@ -637,14 +635,10 @@ export default function Step2SelectPersonnelKNCVSNXD({
       }
     }
 
-    // Tự động chuyển sang bước 4 (Upload file) sau khi Đã thêm thành công
-    // Bỏ qua bước 3 vì dữ liệu đã được import từ Excel
+    // Chuyển sang bước 3 (Review) để xem trước dữ liệu trước khi xác nhận
     if (onNextStep) {
       setTimeout(() => {
-        onNextStep(); // Chuyển sang bước 3
-        setTimeout(() => {
-          onNextStep(); // Chuyển sang bước 4
-        }, 100);
+        onNextStep(); // Chuyển sang bước 3 — dừng lại ở đây để review
       }, 500);
     }
   };
@@ -707,18 +701,23 @@ export default function Step2SelectPersonnelKNCVSNXD({
       />
 
       {/* Upload Excel Section */}
-      {/* <ExcelImportSection
+      <ExcelImportSection
+        awardType="KNC_VSNXD_QDNDVN"
         templateEndpoint="/api/commemorative-medals/template"
         importEndpoint="/api/commemorative-medals/import"
         templateFileName="mau_import_knc_vsnxd"
         onImportSuccess={handleImportSuccess}
         selectedCount={selectedPersonnelIds.length}
+        selectedPersonnelIds={selectedPersonnelIds}
         entityLabel="quân nhân"
         localProcessing={true}
         onLocalProcess={handleLocalExcelProcess}
+        previewEndpoint="/api/commemorative-medals/import/preview"
+        reviewPath="/admin/awards/bulk/import-review-kncvsnxd"
+        sessionStorageKey="importPreviewDataKNCVSNXD"
       />
 
-      <Divider>Hoặc chọn thủ công</Divider> */}
+      <Divider>Hoặc chọn thủ công</Divider>
 
       <Space style={{ marginBottom: 16 }} size="middle">
         <div>

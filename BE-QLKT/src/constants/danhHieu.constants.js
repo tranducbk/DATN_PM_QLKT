@@ -3,9 +3,7 @@
  * Đây là nguồn dữ liệu duy nhất (Single Source of Truth) cho tất cả mapping danh hiệu
  */
 
-// =====================================================
 // DANH HIỆU CODES (để sử dụng trong code logic)
-// =====================================================
 
 /**
  * Mã các danh hiệu cá nhân hằng năm
@@ -60,9 +58,7 @@ const THANH_TICH_KHOA_HOC = {
   SKKH: 'SKKH', // Sáng kiến khoa học
 };
 
-// =====================================================
 // MAPPING DANH HIỆU -> TÊN TIẾNG VIỆT
-// =====================================================
 
 /**
  * Mapping đầy đủ mã danh hiệu sang tên tiếng Việt
@@ -99,9 +95,7 @@ const DANH_HIEU_MAP = {
   SKKH: 'Sáng kiến khoa học',
 };
 
-// =====================================================
 // MAPPING LOẠI ĐỀ XUẤT -> TÊN TIẾNG VIỆT
-// =====================================================
 
 /**
  * Mapping mã loại đề xuất sang tên tiếng Việt
@@ -129,9 +123,7 @@ const AWARD_TYPE_MAP = {
   SCIENTIFIC: 'Thành tích khoa học',
 };
 
-// =====================================================
 // HELPER FUNCTIONS
-// =====================================================
 
 /**
  * Lấy tên tiếng Việt của danh hiệu
@@ -179,9 +171,7 @@ function getLoaiKhenThuongByDanhHieu(danhHieu) {
   return 'Đột xuất';
 }
 
-// =====================================================
 // EXPORTS
-// =====================================================
 
 module.exports = {
   // Codes

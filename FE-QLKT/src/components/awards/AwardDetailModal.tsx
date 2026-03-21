@@ -10,6 +10,7 @@ import {
   CalendarOutlined,
 } from '@ant-design/icons';
 import { DANH_HIEU_MAP } from '@/utils/awardsHelpers';
+import { formatDate, formatDateTime } from '@/lib/utils';
 
 const { Text, Title } = Typography;
 
@@ -72,26 +73,6 @@ const AWARD_TYPE_LABELS: Record<AwardType, string> = {
 const getFileUrl = (filePath: string) => {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
   return `${baseUrl}/${filePath}`;
-};
-
-// Format date
-const formatDate = (date: string | null | undefined, includeTime = false) => {
-  if (!date) return '-';
-  try {
-    const d = new Date(date);
-    if (includeTime) {
-      return d.toLocaleDateString('vi-VN', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    }
-    return d.toLocaleDateString('vi-VN');
-  } catch {
-    return '-';
-  }
 };
 
 export default function AwardDetailModal({
@@ -585,7 +566,7 @@ export default function AwardDetailModal({
                 </Descriptions.Item>
                 <Descriptions.Item label="Ghi chú">{award.ghi_chu || '-'}</Descriptions.Item>
                 <Descriptions.Item label="Ngày tạo">
-                  {formatDate(award.createdAt, true)}
+                  {formatDateTime(award.createdAt)}
                 </Descriptions.Item>
               </Descriptions>
             </Card>

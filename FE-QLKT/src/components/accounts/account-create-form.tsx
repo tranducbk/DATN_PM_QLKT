@@ -90,7 +90,7 @@ export function AccountCreateForm() {
         setPositions(positionsRes.data || []);
       }
     } catch (error) {
-      console.error('Error fetching units and positions:', error);
+      // Error handled by UI
     }
   };
 
@@ -240,7 +240,7 @@ export function AccountCreateForm() {
         }
       } else {
         // Hiển thị lỗi từ backend
-        console.error('Create account error:', response);
+        // Error handled by UI message below
         message.error(response.message || 'Có lỗi xảy ra khi tạo tài khoản');
       }
     } catch (error: any) {

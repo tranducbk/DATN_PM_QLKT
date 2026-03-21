@@ -17,10 +17,10 @@ class UnitController {
         data: result,
       });
     } catch (error) {
-      console.error('Get units error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy danh sách cơ quan đơn vị và đơn vị trực thuộc thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -53,10 +53,10 @@ class UnitController {
         data: result,
       });
     } catch (error) {
-      console.error('Create unit error:', error);
-      return res.status(400).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Tạo cơ quan đơn vị/đơn vị trực thuộc thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -89,10 +89,10 @@ class UnitController {
         data: result,
       });
     } catch (error) {
-      console.error('Update unit error:', error);
-      return res.status(400).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Cập nhật cơ quan đơn vị/đơn vị trực thuộc thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -113,10 +113,10 @@ class UnitController {
         data: result,
       });
     } catch (error) {
-      console.error('Get sub units error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy danh sách đơn vị trực thuộc thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -136,10 +136,10 @@ class UnitController {
         data: result,
       });
     } catch (error) {
-      console.error('Get unit by id error:', error);
-      return res.status(404).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Không tìm thấy cơ quan đơn vị hoặc đơn vị trực thuộc',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -159,10 +159,10 @@ class UnitController {
         message: result.message,
       });
     } catch (error) {
-      console.error('Delete unit error:', error);
-      return res.status(400).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Xóa cơ quan đơn vị/đơn vị trực thuộc thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -191,10 +191,10 @@ class UnitController {
         data: result,
       });
     } catch (error) {
-      console.error('Get my units error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy danh sách đơn vị thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }

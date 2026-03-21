@@ -110,12 +110,12 @@ export default function Step2SelectUnits({
           message.warning('Không có đơn vị nào trong hệ thống');
         }
       } else {
-        console.warn('Failed to fetch units:', response.message);
+        // Failed to fetch units
         message.error(response.message || 'Không thể tải danh sách đơn vị');
         setUnits([]);
       }
     } catch (error: any) {
-      console.error('Error fetching units:', error);
+      // Error handled by UI message
       message.error('Lỗi khi tải danh sách đơn vị: ' + (error.message || 'Unknown error'));
       setUnits([]);
     } finally {
@@ -325,14 +325,10 @@ export default function Step2SelectUnits({
       onNamChange(result.titleData[0].nam);
     }
 
-    // Tự động chuyển sang bước 4 (Upload file) sau khi Đã thêm thành công
-    // Bỏ qua bước 3 vì dữ liệu đã được import từ Excel
+    // Chuyển sang bước 3 (Review) để xem trước dữ liệu trước khi xác nhận
     if (onNextStep) {
       setTimeout(() => {
-        onNextStep(); // Chuyển sang bước 3
-        setTimeout(() => {
-          onNextStep(); // Chuyển sang bước 4
-        }, 100);
+        onNextStep(); // Chuyển sang bước 3 — dừng lại ở đây để review
       }, 500);
     }
   };
@@ -366,18 +362,23 @@ export default function Step2SelectUnits({
       />
 
       {/* Upload Excel Section */}
-      {/* <ExcelImportSection
+      <ExcelImportSection
+        awardType="DON_VI_HANG_NAM"
         templateEndpoint="/api/awards/units/annual/template"
         importEndpoint="/api/awards/units/annual/import"
         templateFileName="mau_import_don_vi_hang_nam"
         onImportSuccess={handleImportSuccess}
         selectedCount={selectedUnitIds.length}
+        selectedPersonnelIds={selectedUnitIds}
         entityLabel="đơn vị"
         localProcessing={true}
         onLocalProcess={handleLocalExcelProcess}
+        previewEndpoint="/api/awards/units/annual/import/preview"
+        reviewPath="/admin/awards/bulk/import-review-unit"
+        sessionStorageKey="importPreviewDataUnit"
       />
 
-      <Divider>Hoặc chọn thủ công</Divider> */}
+      <Divider>Hoặc chọn thủ công</Divider>
 
       {/* Filters */}
       <Space style={{ marginBottom: 16 }} size="middle">

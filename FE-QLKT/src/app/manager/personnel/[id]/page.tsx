@@ -188,9 +188,7 @@ export default function ManagerPersonnelDetailPage() {
 
   if (!personnel) {
     return (
-      <ConfigProvider
-        theme={getAntdThemeConfig(isDark)}
-      >
+      <ConfigProvider theme={getAntdThemeConfig(isDark)}>
         <div className="space-y-4 p-6">
           <Title level={2}>Không tìm thấy quân nhân</Title>
           <Link href="/manager/personnel">
@@ -872,9 +870,7 @@ export default function ManagerPersonnelDetailPage() {
   ];
 
   return (
-    <ConfigProvider
-      theme={getAntdThemeConfig(isDark)}
-    >
+    <ConfigProvider theme={getAntdThemeConfig(isDark)}>
       <div className="p-6 space-y-6">
         {/* Breadcrumb */}
         <Breadcrumb

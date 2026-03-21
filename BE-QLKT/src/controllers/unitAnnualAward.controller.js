@@ -1,4 +1,5 @@
 const service = require('../services/unitAnnualAward.service');
+const { writeSystemLog } = require('../helpers/systemLogHelper');
 
 exports.list = async (req, res) => {
   try {
@@ -14,7 +15,8 @@ exports.list = async (req, res) => {
     });
     res.json({ success: true, data });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    const statusCode = error.statusCode || 500;
+    res.status(statusCode).json({ success: false, message: error.message || 'Lỗi hệ thống' });
   }
 };
 
@@ -28,7 +30,8 @@ exports.getById = async (req, res) => {
     }
     res.json({ success: true, data });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    const statusCode = error.statusCode || 500;
+    res.status(statusCode).json({ success: false, message: error.message || 'Lỗi hệ thống' });
   }
 };
 
@@ -50,7 +53,8 @@ exports.upsert = async (req, res) => {
       .status(201)
       .json({ success: true, data, message: 'Lưu khen thưởng đơn vị hằng năm thành công' });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    const statusCode = error.statusCode || 500;
+    res.status(statusCode).json({ success: false, message: error.message || 'Lỗi hệ thống' });
   }
 };
 
@@ -70,7 +74,8 @@ exports.propose = async (req, res) => {
       message: 'Đã gửi đề xuất khen thưởng đơn vị. Hãy chờ admin duyệt',
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    const statusCode = error.statusCode || 500;
+    res.status(statusCode).json({ success: false, message: error.message || 'Lỗi hệ thống' });
   }
 };
 
@@ -89,7 +94,8 @@ exports.approve = async (req, res) => {
     });
     res.json({ success: true, data, message: 'Đã phê duyệt đề xuất' });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    const statusCode = error.statusCode || 500;
+    res.status(statusCode).json({ success: false, message: error.message || 'Lỗi hệ thống' });
   }
 };
 
@@ -101,7 +107,8 @@ exports.reject = async (req, res) => {
     });
     res.json({ success: true, data, message: 'Đã từ chối đề xuất' });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    const statusCode = error.statusCode || 500;
+    res.status(statusCode).json({ success: false, message: error.message || 'Lỗi hệ thống' });
   }
 };
 
@@ -110,7 +117,8 @@ exports.recalculate = async (req, res) => {
     const count = await service.recalculate({ don_vi_id: req.body?.don_vi_id, nam: req.body?.nam });
     res.json({ success: true, data: { updated: count } });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    const statusCode = error.statusCode || 500;
+    res.status(statusCode).json({ success: false, message: error.message || 'Lỗi hệ thống' });
   }
 };
 
@@ -119,7 +127,8 @@ exports.remove = async (req, res) => {
     await service.remove(req.params.id);
     res.json({ success: true, data: true, message: 'Đã xóa bản ghi' });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    const statusCode = error.statusCode || 500;
+    res.status(statusCode).json({ success: false, message: error.message || 'Lỗi hệ thống' });
   }
 };
 
@@ -145,12 +154,10 @@ exports.getUnitAnnualAwards = async (req, res) => {
       .status(200)
       .json({ success: true, message: 'Lấy lịch sử khen thưởng đơn vị thành công', data: result });
   } catch (error) {
-    console.error('Get unit annual awards error:', error);
-    const msg = error?.message || 'Lấy lịch sử thất bại';
-    if (msg.includes('quyền')) {
-      return res.status(403).json({ success: false, message: msg });
-    }
-    return res.status(500).json({ success: false, message: msg });
+    const statusCode = error.statusCode || 500;
+    return res
+      .status(statusCode)
+      .json({ success: false, message: error.message || 'Lỗi hệ thống' });
   }
 };
 
@@ -182,19 +189,80 @@ exports.getUnitAnnualProfile = async (req, res) => {
       data: result,
     });
   } catch (error) {
-    console.error('Get unit annual profile error:', error);
-    const msg = error?.message || 'Lấy hồ sơ hằng năm đơn vị thất bại';
-    if (msg.includes('quyền')) {
-      return res.status(403).json({ success: false, message: msg });
+    const statusCode = error.statusCode || 500;
+    return res
+      .status(statusCode)
+      .json({ success: false, message: error.message || 'Lỗi hệ thống' });
+  }
+};
+
+exports.previewImport = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'Vui lòng upload file Excel' });
     }
-    return res.status(500).json({ success: false, message: msg });
+    const result = await service.previewImport(req.file.buffer);
+
+    await writeSystemLog({
+      userId: req.user?.id,
+      userRole: req.user?.role,
+      action: 'IMPORT_PREVIEW',
+      resource: 'unit-annual-awards',
+      description: `Tải lên file ${req.file?.originalname || 'Excel'} để review khen thưởng đơn vị hằng năm: ${result.total || result.valid?.length || 0} dòng, ${result.errors?.length || 0} lỗi`,
+      payload: { filename: req.file?.originalname, total: result.total, errors: result.errors?.length || 0 },
+    });
+
+    return res.json({ success: true, data: result });
+  } catch (error) {
+    const statusCode = error.statusCode || 500;
+    return res
+      .status(statusCode)
+      .json({ success: false, message: error.message || 'Lỗi hệ thống' });
+  }
+};
+
+exports.confirmImport = async (req, res) => {
+  try {
+    const { items } = req.body;
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ success: false, message: 'Không có dữ liệu để import' });
+    }
+    const adminId = req.user.id;
+    const result = await service.confirmImport(items, adminId);
+
+    await writeSystemLog({
+      userId: req.user?.id,
+      userRole: req.user?.role,
+      action: 'IMPORT',
+      resource: 'unit-annual-awards',
+      description: `Import khen thưởng đơn vị hằng năm thành công: ${result.imported || items.length} bản ghi`,
+      payload: { imported: result.imported || items.length },
+    });
+
+    return res.json({ success: true, data: result });
+  } catch (error) {
+    const statusCode = error.statusCode || 500;
+    return res
+      .status(statusCode)
+      .json({ success: false, message: error.message || 'Lỗi hệ thống' });
   }
 };
 
 exports.getTemplate = async (req, res) => {
   try {
     const userRole = req.user?.role || 'MANAGER';
-    const workbook = await service.exportTemplate(userRole);
+
+    // Parse unit_ids from query string (comma-separated), fallback to personnel_ids
+    const rawIds = req.query.unit_ids ?? req.query.personnel_ids ?? '';
+    let unitIds = [];
+    if (rawIds) {
+      unitIds = rawIds
+        .split(',')
+        .map(id => id.trim())
+        .filter(id => id.length > 0);
+    }
+
+    const workbook = await service.exportTemplate(unitIds, userRole);
 
     res.setHeader(
       'Content-Type',
@@ -210,10 +278,10 @@ exports.getTemplate = async (req, res) => {
     const buffer = await workbook.xlsx.writeBuffer();
     return res.send(buffer);
   } catch (error) {
-    console.error('Export template error:', error);
-    return res.status(500).json({
+    const statusCode = error.statusCode || 500;
+    return res.status(statusCode).json({
       success: false,
-      message: error.message || 'Xuất file mẫu thất bại',
+      message: error.message || 'Lỗi hệ thống',
     });
   }
 };
@@ -235,10 +303,10 @@ exports.importFromExcel = async (req, res) => {
       data: result,
     });
   } catch (error) {
-    console.error('Import unit annual awards error:', error);
-    return res.status(500).json({
+    const statusCode = error.statusCode || 500;
+    return res.status(statusCode).json({
       success: false,
-      message: error.message || 'Import thất bại',
+      message: error.message || 'Lỗi hệ thống',
     });
   }
 };
@@ -270,10 +338,10 @@ exports.exportToExcel = async (req, res) => {
     const buffer = await workbook.xlsx.writeBuffer();
     return res.send(buffer);
   } catch (error) {
-    console.error('Export unit annual awards error:', error);
-    return res.status(500).json({
+    const statusCode = error.statusCode || 500;
+    return res.status(statusCode).json({
       success: false,
-      message: error.message || 'Xuất danh sách thất bại',
+      message: error.message || 'Lỗi hệ thống',
     });
   }
 };
@@ -295,10 +363,10 @@ exports.getStatistics = async (req, res) => {
       data: statistics,
     });
   } catch (error) {
-    console.error('Get statistics error:', error);
-    return res.status(500).json({
+    const statusCode = error.statusCode || 500;
+    return res.status(statusCode).json({
       success: false,
-      message: error.message || 'Lấy thống kê thất bại',
+      message: error.message || 'Lỗi hệ thống',
     });
   }
 };

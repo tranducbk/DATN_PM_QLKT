@@ -119,7 +119,7 @@ export default function Step3SetTitlesNCKH({
         }
       }
     } catch (error) {
-      console.error('Error fetching personnel details:', error);
+      // Error handled by UI
     } finally {
       setLoading(false);
     }
@@ -154,7 +154,7 @@ export default function Step3SetTitlesNCKH({
         setAnnualProfile(null);
       }
     } catch (error: any) {
-      console.error('Error fetching profile:', error);
+      // Error handled by UI
       setAnnualProfile(null);
     } finally {
       setLoadingModal(false);
@@ -174,7 +174,7 @@ export default function Step3SetTitlesNCKH({
         setScientificAchievements([]);
       }
     } catch (error: any) {
-      console.error('Error fetching history:', error);
+      // Error handled by UI
       setScientificAchievements([]);
     } finally {
       setLoadingModal(false);

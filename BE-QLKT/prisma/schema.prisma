@@ -551,6 +551,16 @@ model FileQuyetDinh {
   @@map("file_quyet_dinh")
 }
 
+// Bảng cấu hình hệ thống (key-value)
+model SystemSetting {
+  id        String   @id @default(cuid()) @db.VarChar(30)
+  key       String   @unique @db.VarChar(100) // Tên cấu hình
+  value     String   @db.Text // Giá trị (JSON hoặc string)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  @@map("system_settings")
+}
+
 generator erd {
   provider = "prisma-erd-generator"
   output   = "ERD.svg"

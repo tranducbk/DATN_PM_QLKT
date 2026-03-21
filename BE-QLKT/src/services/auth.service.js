@@ -1,6 +1,8 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { prisma } = require('../models');
+const { AppError, NotFoundError, ValidationError } = require('../middlewares/errorHandler');
+const { emitToUser } = require('../utils/socketService');
 
 class AuthService {
   /**
@@ -26,13 +28,13 @@ class AuthService {
     });
 
     if (!account) {
-      throw new Error('Tên đăng nhập hoặc mật khẩu không đúng');
+      throw new AppError('Tên đăng nhập hoặc mật khẩu không đúng', 401);
     }
 
     // Kiểm tra mật khẩu
     const isPasswordValid = await bcrypt.compare(password, account.password_hash);
     if (!isPasswordValid) {
-      throw new Error('Tên đăng nhập hoặc mật khẩu không đúng');
+      throw new AppError('Tên đăng nhập hoặc mật khẩu không đúng', 401);
     }
 
     // Tạo access token (thời hạn ngắn - 15 phút)
@@ -57,7 +59,12 @@ class AuthService {
       { expiresIn: '1d' }
     );
 
-    // Lưu refresh token vào database
+    // Thông báo thiết bị cũ bị đăng xuất (nếu đang online)
+    emitToUser(account.id, 'force_logout', {
+      message: 'Tài khoản của bạn đã được đăng nhập ở nơi khác.',
+    });
+
+    // Lưu refresh token vào database (ghi đè token cũ)
     await prisma.taiKhoan.update({
       where: { id: account.id },
       data: { refreshToken },
@@ -92,7 +99,7 @@ class AuthService {
   async refreshAccessToken(refreshToken) {
     try {
       if (!refreshToken) {
-        throw new Error('Refresh token không được cung cấp');
+        throw new AppError('Refresh token không được cung cấp', 401);
       }
 
       // Verify refresh token
@@ -104,7 +111,7 @@ class AuthService {
       });
 
       if (!account || account.refreshToken !== refreshToken) {
-        throw new Error('Refresh token không hợp lệ');
+        throw new AppError('Refresh token không hợp lệ', 401);
       }
 
       // Tạo access token mới
@@ -141,10 +148,10 @@ class AuthService {
       };
     } catch (error) {
       if (error.name === 'TokenExpiredError') {
-        throw new Error('Refresh token đã hết hạn. Vui lòng đăng nhập lại.');
+        throw new AppError('Refresh token đã hết hạn. Vui lòng đăng nhập lại.', 401);
       }
       if (error.name === 'JsonWebTokenError') {
-        throw new Error('Refresh token không hợp lệ');
+        throw new AppError('Refresh token không hợp lệ', 401);
       }
       throw error;
     }
@@ -155,7 +162,7 @@ class AuthService {
    */
   async logout(refreshToken) {
     if (!refreshToken) {
-      throw new Error('Refresh token không được cung cấp');
+      throw new AppError('Refresh token không được cung cấp', 401);
     }
 
     // Xóa refresh token khỏi database
@@ -177,25 +184,42 @@ class AuthService {
     });
 
     if (!account) {
-      throw new Error('Tài khoản không tồn tại');
+      throw new NotFoundError('Tài khoản');
     }
 
     // Kiểm tra mật khẩu cũ
     const isOldPasswordValid = await bcrypt.compare(oldPassword, account.password_hash);
     if (!isOldPasswordValid) {
-      throw new Error('Mật khẩu hiện tại không chính xác');
+      throw new AppError('Mật khẩu hiện tại không chính xác', 401);
     }
 
     // Mã hóa mật khẩu mới
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // Cập nhật mật khẩu
+    // Validate mật khẩu mới
+    if (newPassword.length < 8) {
+      throw new ValidationError('Mật khẩu mới phải có ít nhất 8 ký tự');
+    }
+    if (!/[A-Z]/.test(newPassword)) {
+      throw new ValidationError('Mật khẩu mới phải chứa ít nhất 1 chữ hoa');
+    }
+    if (!/[a-z]/.test(newPassword)) {
+      throw new ValidationError('Mật khẩu mới phải chứa ít nhất 1 chữ thường');
+    }
+    if (!/[0-9]/.test(newPassword)) {
+      throw new ValidationError('Mật khẩu mới phải chứa ít nhất 1 chữ số');
+    }
+
+    // Cập nhật mật khẩu và thu hồi refresh token (buộc đăng nhập lại)
     await prisma.taiKhoan.update({
       where: { id: userId },
-      data: { password_hash: hashedPassword },
+      data: {
+        password_hash: hashedPassword,
+        refreshToken: null,
+      },
     });
 
-    return { message: 'Đổi mật khẩu thành công' };
+    return { message: 'Đổi mật khẩu thành công. Vui lòng đăng nhập lại.' };
   }
 }
 

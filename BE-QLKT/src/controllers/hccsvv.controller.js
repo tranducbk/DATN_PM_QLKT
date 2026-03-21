@@ -1,5 +1,7 @@
 const hccsvvService = require('../services/hccsvv.service');
+const { prisma } = require('../models');
 const { ROLES } = require('../constants/roles');
+const { writeSystemLog } = require('../helpers/systemLogHelper');
 
 class HCCSVVController {
   /**
@@ -8,8 +10,19 @@ class HCCSVVController {
    */
   async getTemplate(req, res) {
     try {
-      const userRole = req.user?.role || 'MANAGER';
-      const buffer = await hccsvvService.exportTemplate(userRole);
+      const userRole = req.user?.role ?? 'MANAGER';
+
+      // Parse personnel_ids from query string (comma-separated)
+      let personnelIds = [];
+      if (req.query.personnel_ids) {
+        personnelIds = req.query.personnel_ids
+          .split(',')
+          .map(id => id.trim())
+          .filter(Boolean);
+      }
+
+      const workbook = await hccsvvService.exportTemplate(personnelIds, userRole);
+      const buffer = await workbook.xlsx.writeBuffer();
 
       const fileName = `mau_import_hccsvv_${new Date().toISOString().slice(0, 10)}.xlsx`;
       res.setHeader(
@@ -20,11 +33,66 @@ class HCCSVVController {
 
       return res.status(200).send(buffer);
     } catch (error) {
-      console.error('Get HCCSVV template error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode ?? 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Tải file mẫu thất bại',
+        message: error.message ?? 'Lỗi hệ thống',
       });
+    }
+  }
+
+  /**
+   * POST /api/hccsvv/import/preview
+   * Preview import HCCSVV — chỉ validate, không ghi DB
+   */
+  async previewImport(req, res) {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ success: false, message: 'Vui lòng upload file Excel' });
+      }
+      const result = await hccsvvService.previewImport(req.file.buffer);
+
+      await writeSystemLog({
+        userId: req.user?.id,
+        userRole: req.user?.role,
+        action: 'IMPORT_PREVIEW',
+        resource: 'hccsvv',
+        description: `Tải lên file ${req.file?.originalname || 'Excel'} để review huy chương chiến sĩ vẻ vang: ${result.total || result.valid?.length || 0} dòng, ${result.errors?.length || 0} lỗi`,
+        payload: { filename: req.file?.originalname, total: result.total, errors: result.errors?.length || 0 },
+      });
+
+      return res.json({ success: true, data: result });
+    } catch (error) {
+      const statusCode = error.statusCode ?? 500;
+      return res.status(statusCode).json({ success: false, message: error.message });
+    }
+  }
+
+  /**
+   * POST /api/hccsvv/import/confirm
+   * Confirm import HCCSVV — lưu dữ liệu đã validate vào DB
+   */
+  async confirmImport(req, res) {
+    try {
+      const { items } = req.body;
+      if (!items || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ success: false, message: 'Không có dữ liệu để import' });
+      }
+      const result = await hccsvvService.confirmImport(items, req.user.id);
+
+      await writeSystemLog({
+        userId: req.user?.id,
+        userRole: req.user?.role,
+        action: 'IMPORT',
+        resource: 'hccsvv',
+        description: `Import huy chương chiến sĩ vẻ vang thành công: ${result.imported || items.length} bản ghi`,
+        payload: { imported: result.imported || items.length },
+      });
+
+      return res.json({ success: true, data: result });
+    } catch (error) {
+      const statusCode = error.statusCode ?? 500;
+      return res.status(statusCode).json({ success: false, message: error.message });
     }
   }
 
@@ -49,10 +117,10 @@ class HCCSVVController {
         data: result,
       });
     } catch (error) {
-      console.error('Import HCCSVV error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode ?? 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Import thất bại',
+        message: error.message ?? 'Lỗi hệ thống',
       });
     }
   }
@@ -82,7 +150,6 @@ class HCCSVVController {
             message: 'Không tìm thấy thông tin quân nhân',
           });
         }
-        const { prisma } = require('../models');
         const managerPersonnel = await prisma.quanNhan.findUnique({
           where: { id: userQuanNhanId },
           select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true },
@@ -111,10 +178,10 @@ class HCCSVVController {
         data: result,
       });
     } catch (error) {
-      console.error('Get all HCCSVV error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode ?? 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy danh sách thất bại',
+        message: error.message ?? 'Lỗi hệ thống',
       });
     }
   }
@@ -143,7 +210,7 @@ class HCCSVVController {
             message: 'Không tìm thấy thông tin đơn vị',
           });
         }
-        filters.don_vi_id = user.QuanNhan.co_quan_don_vi_id || user.QuanNhan.don_vi_truc_thuoc_id;
+        filters.don_vi_id = user.QuanNhan.co_quan_don_vi_id ?? user.QuanNhan.don_vi_truc_thuoc_id;
       }
 
       const buffer = await hccsvvService.exportToExcel(filters);
@@ -157,10 +224,10 @@ class HCCSVVController {
 
       return res.status(200).send(buffer);
     } catch (error) {
-      console.error('Export HCCSVV Excel error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode ?? 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Xuất file Excel thất bại',
+        message: error.message ?? 'Lỗi hệ thống',
       });
     }
   }
@@ -179,10 +246,10 @@ class HCCSVVController {
         data: statistics,
       });
     } catch (error) {
-      console.error('Get HCCSVV statistics error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode ?? 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy thống kê thất bại',
+        message: error.message ?? 'Lỗi hệ thống',
       });
     }
   }
@@ -194,7 +261,7 @@ class HCCSVVController {
   async createDirect(req, res) {
     try {
       const { quan_nhan_id, danh_hieu, nam, cap_bac, chuc_vu, so_quyet_dinh, ghi_chu } = req.body;
-      const adminUsername = req.user?.username || 'SuperAdmin';
+      const adminUsername = req.user?.username ?? 'SuperAdmin';
 
       // Validate required fields
       if (!quan_nhan_id || !danh_hieu || !nam) {
@@ -226,10 +293,10 @@ class HCCSVVController {
         data: result,
       });
     } catch (error) {
-      console.error('Create HCCSVV direct error:', error);
-      return res.status(400).json({
+      const statusCode = error.statusCode ?? 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Thêm khen thưởng thất bại',
+        message: error.message ?? 'Lỗi hệ thống',
       });
     }
   }
@@ -241,7 +308,7 @@ class HCCSVVController {
   async deleteAward(req, res) {
     try {
       const { id } = req.params;
-      const adminUsername = req.user?.username || 'Admin';
+      const adminUsername = req.user?.username ?? 'Admin';
       const result = await hccsvvService.deleteAward(id, adminUsername);
 
       return res.status(200).json({
@@ -249,10 +316,10 @@ class HCCSVVController {
         message: result.message,
       });
     } catch (error) {
-      console.error('Delete HCCSVV award error:', error);
-      return res.status(400).json({
+      const statusCode = error.statusCode ?? 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Xóa khen thưởng thất bại',
+        message: error.message ?? 'Lỗi hệ thống',
       });
     }
   }

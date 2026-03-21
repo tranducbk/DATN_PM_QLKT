@@ -29,8 +29,8 @@ const { Option } = Select;
 
 export default function CategoriesPage() {
   const { theme } = useTheme();
-  const [units, setUnits] = useState([]);
-  const [positions, setPositions] = useState([]);
+  const [units, setUnits] = useState<any[]>([]);
+  const [positions, setPositions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogType, setDialogType] = useState<'unit' | 'position'>('unit');
@@ -53,7 +53,7 @@ export default function CategoriesPage() {
       setUnits(unitsRes.data || []);
       setPositions(positionsRes.data || []);
     } catch (error) {
-      console.error('Load data error:', error);
+      // Error handled by UI message
       message.error('Không thể tải dữ liệu');
     } finally {
       setLoading(false);

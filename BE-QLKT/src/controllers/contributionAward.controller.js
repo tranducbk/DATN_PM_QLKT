@@ -1,5 +1,7 @@
 const contributionAwardService = require('../services/contributionAward.service');
+const { prisma } = require('../models');
 const { ROLES } = require('../constants/roles');
+const { writeSystemLog } = require('../helpers/systemLogHelper');
 
 class ContributionAwardController {
   /**
@@ -8,8 +10,21 @@ class ContributionAwardController {
    */
   async getTemplate(req, res) {
     try {
-      const userRole = req.user?.role || 'MANAGER';
-      const buffer = await contributionAwardService.exportTemplate(userRole);
+      const userRole = req.user?.role ?? 'MANAGER';
+
+      // Parse personnel_ids from query string (comma-separated)
+      let personnelIds = [];
+      if (req.query.personnel_ids) {
+        personnelIds = req.query.personnel_ids
+          .split(',')
+          .map(id => id.trim())
+          .filter(id => id.length > 0);
+      }
+
+      const workbook = await contributionAwardService.exportTemplate(personnelIds, userRole);
+
+      // Chuyển workbook thành buffer
+      const buffer = await workbook.xlsx.writeBuffer();
 
       const fileName = `mau_import_hcbvtq_${new Date().toISOString().slice(0, 10)}.xlsx`;
       res.setHeader(
@@ -20,40 +35,71 @@ class ContributionAwardController {
 
       return res.status(200).send(buffer);
     } catch (error) {
-      console.error('Get contribution awards template error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode ?? 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Tải file mẫu thất bại',
+        message: error.message ?? 'Lỗi hệ thống',
       });
     }
   }
 
   /**
-   * POST /api/contribution-awards/import
-   * Import Huân chương Bảo vệ Tổ quốc từ file Excel
+   * POST /api/contribution-awards/import/preview
+   * Preview import HCBVTQ — validate only, no DB write
    */
-  async importFromExcel(req, res) {
+  async previewImport(req, res) {
     try {
       if (!req.file) {
-        return res.status(400).json({
-          success: false,
-          message: 'Vui lòng gửi file Excel',
-        });
+        return res.status(400).json({ success: false, message: 'Vui lòng upload file Excel' });
       }
+      const result = await contributionAwardService.previewImport(req.file.buffer);
 
-      const result = await contributionAwardService.importFromExcel(req.file.buffer, req.user.id);
-
-      return res.status(200).json({
-        success: true,
-        message: 'Import Huân chương Bảo vệ Tổ quốc thành công',
-        data: result,
+      await writeSystemLog({
+        userId: req.user?.id,
+        userRole: req.user?.role,
+        action: 'IMPORT_PREVIEW',
+        resource: 'contribution-awards',
+        description: `Tải lên file ${req.file?.originalname || 'Excel'} để review huân chương bảo vệ tổ quốc: ${result.total || result.valid?.length || 0} dòng, ${result.errors?.length || 0} lỗi`,
+        payload: { filename: req.file?.originalname, total: result.total, errors: result.errors?.length || 0 },
       });
+
+      return res.json({ success: true, data: result });
     } catch (error) {
-      console.error('Import contribution awards error:', error);
-      return res.status(500).json({
-        success: false,
-        message: error.message || 'Import thất bại',
+      const statusCode = error.statusCode ?? 500;
+      return res
+        .status(statusCode)
+        .json({ success: false, message: error.message ?? 'Lỗi hệ thống' });
+    }
+  }
+
+  /**
+   * POST /api/contribution-awards/import/confirm
+   * Confirm import HCBVTQ — save validated items to DB
+   */
+  async confirmImport(req, res) {
+    try {
+      const { items } = req.body;
+      if (!items || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ success: false, message: 'Không có dữ liệu để import' });
+      }
+      const adminId = req.user?.id;
+      const result = await contributionAwardService.confirmImport(items, adminId);
+
+      await writeSystemLog({
+        userId: req.user?.id,
+        userRole: req.user?.role,
+        action: 'IMPORT',
+        resource: 'contribution-awards',
+        description: `Import huân chương bảo vệ tổ quốc thành công: ${result.imported || items.length} bản ghi`,
+        payload: { imported: result.imported || items.length },
       });
+
+      return res.json({ success: true, data: result });
+    } catch (error) {
+      const statusCode = error.statusCode ?? 500;
+      return res
+        .status(statusCode)
+        .json({ success: false, message: error.message ?? 'Lỗi hệ thống' });
     }
   }
 
@@ -81,7 +127,6 @@ class ContributionAwardController {
             message: 'Không tìm thấy thông tin quân nhân',
           });
         }
-        const { prisma } = require('../models');
         const managerPersonnel = await prisma.quanNhan.findUnique({
           where: { id: userQuanNhanId },
           select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true },
@@ -108,10 +153,10 @@ class ContributionAwardController {
         data: result,
       });
     } catch (error) {
-      console.error('Get all contribution awards error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode ?? 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy danh sách thất bại',
+        message: error.message ?? 'Lỗi hệ thống',
       });
     }
   }
@@ -139,7 +184,7 @@ class ContributionAwardController {
             message: 'Không tìm thấy thông tin đơn vị',
           });
         }
-        filters.don_vi_id = user.QuanNhan.co_quan_don_vi_id || user.QuanNhan.don_vi_truc_thuoc_id;
+        filters.don_vi_id = user.QuanNhan.co_quan_don_vi_id ?? user.QuanNhan.don_vi_truc_thuoc_id;
       }
 
       const buffer = await contributionAwardService.exportToExcel(filters);
@@ -153,10 +198,10 @@ class ContributionAwardController {
 
       return res.status(200).send(buffer);
     } catch (error) {
-      console.error('Export contribution awards Excel error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode ?? 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Xuất file Excel thất bại',
+        message: error.message ?? 'Lỗi hệ thống',
       });
     }
   }
@@ -175,10 +220,10 @@ class ContributionAwardController {
         data: statistics,
       });
     } catch (error) {
-      console.error('Get contribution awards statistics error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode ?? 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy thống kê thất bại',
+        message: error.message ?? 'Lỗi hệ thống',
       });
     }
   }
@@ -190,7 +235,7 @@ class ContributionAwardController {
   async deleteAward(req, res) {
     try {
       const { id } = req.params;
-      const adminUsername = req.user?.username || 'Admin';
+      const adminUsername = req.user?.username ?? 'Admin';
       const result = await contributionAwardService.deleteAward(id, adminUsername);
 
       return res.status(200).json({
@@ -198,10 +243,10 @@ class ContributionAwardController {
         message: result.message,
       });
     } catch (error) {
-      console.error('Delete contribution award error:', error);
-      return res.status(400).json({
+      const statusCode = error.statusCode ?? 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Xóa khen thưởng thất bại',
+        message: error.message ?? 'Lỗi hệ thống',
       });
     }
   }

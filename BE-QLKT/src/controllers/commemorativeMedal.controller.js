@@ -1,15 +1,30 @@
 const commemorativeMedalService = require('../services/commemorativeMedal.service');
+const { prisma } = require('../models');
 const { ROLES } = require('../constants/roles');
+const { writeSystemLog } = require('../helpers/systemLogHelper');
 
 class CommemorativeMedalController {
   /**
    * GET /api/commemorative-medals/template
-   * Tải file mẫu Excel để import Kỷ niệm chương
+   * Tải file mẫu Excel để import Kỷ niệm chương (pre-filled with selected personnel)
    */
   async getTemplate(req, res) {
     try {
-      const userRole = req.user?.role || 'MANAGER';
-      const buffer = await commemorativeMedalService.exportTemplate(userRole);
+      const userRole = req.user?.role ?? 'MANAGER';
+
+      // Parse personnel_ids from query string (comma-separated)
+      let personnelIds = [];
+      if (req.query.personnel_ids) {
+        personnelIds = req.query.personnel_ids
+          .split(',')
+          .map(id => id.trim())
+          .filter(id => id.length > 0);
+      }
+
+      const workbook = await commemorativeMedalService.exportTemplate(personnelIds, userRole);
+
+      // Chuyển workbook thành buffer
+      const buffer = await workbook.xlsx.writeBuffer();
 
       const fileName = `mau_import_knc_vsnxd_${new Date().toISOString().slice(0, 10)}.xlsx`;
       res.setHeader(
@@ -20,17 +35,72 @@ class CommemorativeMedalController {
 
       return res.status(200).send(buffer);
     } catch (error) {
-      console.error('Get commemorative medals template error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode ?? 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Tải file mẫu thất bại',
+        message: error.message ?? 'Lỗi hệ thống',
       });
     }
   }
 
   /**
+   * POST /api/commemorative-medals/import/preview
+   * Preview import KNC VSNXD từ file Excel (chỉ validate, không ghi DB)
+   */
+  async previewImport(req, res) {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ success: false, message: 'Vui lòng upload file Excel' });
+      }
+      const result = await commemorativeMedalService.previewImport(req.file.buffer);
+
+      await writeSystemLog({
+        userId: req.user?.id,
+        userRole: req.user?.role,
+        action: 'IMPORT_PREVIEW',
+        resource: 'commemorative-medals',
+        description: `Tải lên file ${req.file?.originalname || 'Excel'} để review kỷ niệm chương: ${result.total || result.valid?.length || 0} dòng, ${result.errors?.length || 0} lỗi`,
+        payload: { filename: req.file?.originalname, total: result.total, errors: result.errors?.length || 0 },
+      });
+
+      return res.json({ success: true, data: result });
+    } catch (error) {
+      const statusCode = error.statusCode ?? 500;
+      return res.status(statusCode).json({ success: false, message: error.message });
+    }
+  }
+
+  /**
+   * POST /api/commemorative-medals/import/confirm
+   * Confirm import KNC VSNXD — lưu dữ liệu đã validate vào DB
+   */
+  async confirmImport(req, res) {
+    try {
+      const { items } = req.body;
+      if (!items || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ success: false, message: 'Không có dữ liệu để import' });
+      }
+      const result = await commemorativeMedalService.confirmImport(items, req.user.id);
+
+      await writeSystemLog({
+        userId: req.user?.id,
+        userRole: req.user?.role,
+        action: 'IMPORT',
+        resource: 'commemorative-medals',
+        description: `Import kỷ niệm chương thành công: ${result.imported || items.length} bản ghi`,
+        payload: { imported: result.imported || items.length },
+      });
+
+      return res.json({ success: true, data: result });
+    } catch (error) {
+      const statusCode = error.statusCode ?? 500;
+      return res.status(statusCode).json({ success: false, message: error.message });
+    }
+  }
+
+  /**
    * POST /api/commemorative-medals/import
-   * Import Kỷ niệm chương từ file Excel
+   * Import Kỷ niệm chương từ file Excel (legacy — direct import)
    */
   async importFromExcel(req, res) {
     try {
@@ -49,10 +119,10 @@ class CommemorativeMedalController {
         data: result,
       });
     } catch (error) {
-      console.error('Import commemorative medals error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode ?? 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Import thất bại',
+        message: error.message ?? 'Lỗi hệ thống',
       });
     }
   }
@@ -80,7 +150,6 @@ class CommemorativeMedalController {
             message: 'Không tìm thấy thông tin quân nhân',
           });
         }
-        const { prisma } = require('../models');
         const managerPersonnel = await prisma.quanNhan.findUnique({
           where: { id: userQuanNhanId },
           select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true },
@@ -107,10 +176,10 @@ class CommemorativeMedalController {
         data: result,
       });
     } catch (error) {
-      console.error('Get all commemorative medals error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode ?? 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy danh sách thất bại',
+        message: error.message ?? 'Lỗi hệ thống',
       });
     }
   }
@@ -137,7 +206,7 @@ class CommemorativeMedalController {
             message: 'Không tìm thấy thông tin đơn vị',
           });
         }
-        filters.don_vi_id = user.QuanNhan.co_quan_don_vi_id || user.QuanNhan.don_vi_truc_thuoc_id;
+        filters.don_vi_id = user.QuanNhan.co_quan_don_vi_id ?? user.QuanNhan.don_vi_truc_thuoc_id;
       }
 
       const buffer = await commemorativeMedalService.exportToExcel(filters);
@@ -151,10 +220,10 @@ class CommemorativeMedalController {
 
       return res.status(200).send(buffer);
     } catch (error) {
-      console.error('Export commemorative medals Excel error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode ?? 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Xuất file Excel thất bại',
+        message: error.message ?? 'Lỗi hệ thống',
       });
     }
   }
@@ -173,10 +242,10 @@ class CommemorativeMedalController {
         data: statistics,
       });
     } catch (error) {
-      console.error('Get commemorative medals statistics error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode ?? 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy thống kê thất bại',
+        message: error.message ?? 'Lỗi hệ thống',
       });
     }
   }
@@ -209,7 +278,7 @@ class CommemorativeMedalController {
             message: 'Không tìm thấy thông tin đơn vị',
           });
         }
-        const managerUnitId = user.QuanNhan.co_quan_don_vi_id || user.QuanNhan.don_vi_truc_thuoc_id;
+        const managerUnitId = user.QuanNhan.co_quan_don_vi_id ?? user.QuanNhan.don_vi_truc_thuoc_id;
 
         // Lấy thông tin personnel để kiểm tra đơn vị
         const personnel = await commemorativeMedalService.getPersonnelById(personnel_id);
@@ -220,7 +289,7 @@ class CommemorativeMedalController {
           });
         }
 
-        const personnelUnitId = personnel.co_quan_don_vi_id || personnel.don_vi_truc_thuoc_id;
+        const personnelUnitId = personnel.co_quan_don_vi_id ?? personnel.don_vi_truc_thuoc_id;
         if (personnelUnitId !== managerUnitId) {
           return res.status(403).json({
             success: false,
@@ -240,10 +309,10 @@ class CommemorativeMedalController {
         },
       });
     } catch (error) {
-      console.error('Get commemorative medal by personnel id error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode ?? 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy dữ liệu thất bại',
+        message: error.message ?? 'Lỗi hệ thống',
       });
     }
   }
@@ -255,7 +324,7 @@ class CommemorativeMedalController {
   async deleteAward(req, res) {
     try {
       const { id } = req.params;
-      const adminUsername = req.user?.username || 'Admin';
+      const adminUsername = req.user?.username ?? 'Admin';
       const result = await commemorativeMedalService.deleteAward(id, adminUsername);
 
       return res.status(200).json({
@@ -263,10 +332,10 @@ class CommemorativeMedalController {
         message: result.message,
       });
     } catch (error) {
-      console.error('Delete commemorative medal error:', error);
-      return res.status(400).json({
+      const statusCode = error.statusCode ?? 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Xóa khen thưởng thất bại',
+        message: error.message ?? 'Lỗi hệ thống',
       });
     }
   }

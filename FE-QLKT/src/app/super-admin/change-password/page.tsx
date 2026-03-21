@@ -47,7 +47,7 @@ export default function SuperAdminChangePasswordPage() {
         message.error(result.message || 'Đổi mật khẩu thất bại');
       }
     } catch (error: any) {
-      console.error('Error changing password:', error);
+      // Error handled by UI message
       message.error(error.message || 'Có lỗi xảy ra khi đổi mật khẩu');
     } finally {
       setLoading(false);

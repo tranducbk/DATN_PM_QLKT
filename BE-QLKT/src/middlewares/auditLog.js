@@ -1,6 +1,36 @@
 const { prisma } = require('../models');
 
 /**
+ * Redact sensitive fields từ payload trước khi lưu vào log
+ */
+const SENSITIVE_FIELDS = [
+  'password',
+  'password_hash',
+  'refreshToken',
+  'cccd',
+  'oldPassword',
+  'newPassword',
+  'confirmPassword',
+];
+
+const redactSensitiveFields = obj => {
+  if (!obj || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(redactSensitiveFields);
+
+  const redacted = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (SENSITIVE_FIELDS.includes(key)) {
+      redacted[key] = '[REDACTED]';
+    } else if (typeof value === 'object' && value !== null) {
+      redacted[key] = redactSensitiveFields(value);
+    } else {
+      redacted[key] = value;
+    }
+  }
+  return redacted;
+};
+
+/**
  * Middleware ghi log hoạt động của người dùng
  * @param {Object} options - Cấu hình middleware
  * @param {string} options.action - Hành động (CREATE, UPDATE, DELETE, LOGIN, etc.)
@@ -43,7 +73,8 @@ const auditLog = (options = {}) => {
           const descriptionPromise = getDescription(req, res, responseData);
           const description =
             descriptionPromise instanceof Promise ? await descriptionPromise : descriptionPromise;
-          const payload = getPayload(req, res, responseData);
+          const rawPayload = getPayload(req, res, responseData);
+          const payload = redactSensitiveFields(rawPayload);
 
           // Lấy IP và User Agent
           const ipAddress = req.ip || req.connection.remoteAddress || req.socket.remoteAddress;
@@ -63,7 +94,6 @@ const auditLog = (options = {}) => {
             },
           });
         } catch (logError) {
-          console.error('Audit log error:', logError);
           // Không throw error để không ảnh hưởng đến response chính
         }
       }
@@ -109,7 +139,7 @@ const createDescription = {
 
 /**
  * Helper function để lấy ID từ params hoặc response
- * @deprecated Use getResourceId from helpers/auditLogHelper.js instead
+ * @deprecated Use getResourceId from helpers/auditLog instead
  */
 const getResourceId = {
   fromParams: paramName => req => {

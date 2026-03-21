@@ -183,6 +183,16 @@ class NotificationService {
   }
 
   /**
+   * Xóa tất cả thông báo của user
+   */
+  async deleteAllNotifications(userId) {
+    const result = await prisma.thongBao.deleteMany({
+      where: { nguoi_nhan_id: userId },
+    });
+    return { message: `Đã xóa ${result.count} thông báo`, deleted: result.count };
+  }
+
+  /**
    * Xóa thông báo đã đọc cũ (sau 30 ngày)
    */
   async cleanupOldNotifications() {

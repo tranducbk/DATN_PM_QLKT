@@ -29,12 +29,14 @@ import { PersonnelForm } from '@/components/personnel/personnel-form';
 import { apiClient } from '@/lib/api-client';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
 import Link from 'next/link';
+import { useAuth } from '@/contexts/AuthContext';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
 
 export default function ManagerPersonnelPage() {
   const { theme } = useTheme();
+  const { user } = useAuth();
   const [personnel, setPersonnel] = useState([]);
   const [units, setUnits] = useState([]);
   const [positions, setPositions] = useState([]);
@@ -51,10 +53,8 @@ export default function ManagerPersonnelPage() {
   });
   const [managerUnitId, setManagerUnitId] = useState<number | null>(null);
 
-  // Lấy thông tin đơn vị của manager từ localStorage
+  // Lấy thông tin đơn vị của manager từ auth context
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-
     // Ưu tiên lấy don_vi_id trực tiếp từ user info
     if (user?.don_vi_id) {
       setManagerUnitId(user.don_vi_id);

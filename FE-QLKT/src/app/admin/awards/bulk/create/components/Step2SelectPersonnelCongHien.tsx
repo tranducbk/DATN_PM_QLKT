@@ -123,7 +123,7 @@ export default function Step2SelectPersonnelCongHien({
         setPersonnel(personnelData);
       }
     } catch (error: any) {
-      console.error('Error fetching personnel:', error);
+      // Error handled by UI
     } finally {
       setLoading(false);
     }
@@ -152,7 +152,7 @@ export default function Step2SelectPersonnelCongHien({
 
       setPositionHistoriesMap(historiesMap);
     } catch (error) {
-      console.error('Error fetching position histories:', error);
+      // Error handled by UI
     }
   };
 
@@ -168,14 +168,14 @@ export default function Step2SelectPersonnelCongHien({
               profilesMap[id] = response.data;
             }
           } catch (error) {
-            console.error(`Error fetching contribution profile for ${id}:`, error);
+            // Error handled silently per-item
           }
         })
       );
 
       setContributionProfiles(profilesMap);
     } catch (error) {
-      console.error('Error fetching contribution profiles:', error);
+      // Error handled by UI
     }
   };
 
@@ -190,7 +190,7 @@ export default function Step2SelectPersonnelCongHien({
         setIneligiblePersonnel(response.data.data.ineligiblePersonnel || []);
       }
     } catch (error: any) {
-      console.error('Error checking contribution eligibility:', error);
+      // Error handled by UI
       message.error('Không thể kiểm tra tính đủ điều kiện nhận khen thưởng');
     } finally {
       setCheckingEligibility(false);
@@ -538,9 +538,7 @@ export default function Step2SelectPersonnelCongHien({
                 const nameMatch = personnelName === excelName;
 
                 // So sánh ngày sinh
-                const personnelBirth = p.ngay_sinh
-                  ? new Date(p.ngay_sinh).toLocaleDateString('vi-VN')
-                  : '';
+                const personnelBirth = p.ngay_sinh ? formatDate(p.ngay_sinh) : '';
                 const excelBirth = ngaySinh;
 
                 return nameMatch && personnelBirth === excelBirth;
@@ -650,7 +648,7 @@ export default function Step2SelectPersonnelCongHien({
           ghi_chu: award.ghi_chu,
         }));
 
-        onTitleDataChange(titleData);
+        onTitleDataChange?.(titleData);
 
         // Update nam from imported data if available
         if (result.titleData[0].nam) {
@@ -659,14 +657,10 @@ export default function Step2SelectPersonnelCongHien({
       }
     }
 
-    // Tự động chuyển sang bước 4 (Upload file) sau khi Đã thêm thành công
-    // Bỏ qua bước 3 vì dữ liệu đã được import từ Excel
+    // Chuyển sang bước 3 (Review) để xem trước dữ liệu trước khi xác nhận
     if (onNextStep) {
       setTimeout(() => {
-        onNextStep(); // Chuyển sang bước 3
-        setTimeout(() => {
-          onNextStep(); // Chuyển sang bước 4
-        }, 100);
+        onNextStep(); // Chuyển sang bước 3 — dừng lại ở đây để review
       }, 500);
     }
   };
@@ -772,18 +766,23 @@ export default function Step2SelectPersonnelCongHien({
       />
 
       {/* Upload Excel Section */}
-      {/* <ExcelImportSection
+      <ExcelImportSection
+        awardType="CONG_HIEN"
         templateEndpoint="/api/contribution-awards/template"
         importEndpoint="/api/contribution-awards/import"
         templateFileName="mau_import_hcbvtq"
         onImportSuccess={handleImportSuccess}
         selectedCount={selectedPersonnelIds.length}
+        selectedPersonnelIds={selectedPersonnelIds}
         entityLabel="quân nhân"
         localProcessing={true}
         onLocalProcess={handleLocalExcelProcess}
+        previewEndpoint="/api/contribution-awards/import/preview"
+        reviewPath="/admin/awards/bulk/import-review-hcbvtq"
+        sessionStorageKey="importPreviewDataHCBVTQ"
       />
 
-      <Divider>Hoặc chọn thủ công</Divider> */}
+      <Divider>Hoặc chọn thủ công</Divider>
 
       <Space style={{ marginBottom: 16 }} size="middle">
         <div>

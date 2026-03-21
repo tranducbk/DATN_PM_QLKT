@@ -33,8 +33,8 @@ const { Title, Text } = Typography;
 
 export default function PositionsPage() {
   const { theme } = useTheme();
-  const [positions, setPositions] = useState([]);
-  const [units, setUnits] = useState([]);
+  const [positions, setPositions] = useState<any[]>([]);
+  const [units, setUnits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingPosition, setEditingPosition] = useState<any>(null);
@@ -134,7 +134,7 @@ export default function PositionsPage() {
               Quản lý Chức vụ
             </Title>
             <Text type="secondary" style={{ display: 'block', marginTop: '8px', fontSize: '15px' }}>
-              Quản lý thông tin chức vụ, cấp bậc và nhóm công hiến
+              Quản lý thông tin chức vụ, cấp bậc và nhóm cống hiến
             </Text>
           </div>
           <Button

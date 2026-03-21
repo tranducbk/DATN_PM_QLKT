@@ -36,6 +36,7 @@ export function LoginForm() {
           role: user.role,
           quan_nhan_id: user.quan_nhan_id || undefined,
           ho_ten: user.ho_ten || undefined,
+          don_vi_id: user.don_vi_id || undefined,
         });
 
         if (role === 'SUPER_ADMIN') {

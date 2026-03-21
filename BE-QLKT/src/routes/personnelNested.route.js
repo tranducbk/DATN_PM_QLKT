@@ -6,14 +6,13 @@ const scientificAchievementController = require('../controllers/scientificAchiev
 const profileController = require('../controllers/profile.controller');
 const { verifyToken, requireManager, requireAuth } = require('../middlewares/auth');
 const { auditLog } = require('../middlewares/auditLog');
-const { getLogDescription, getResourceId } = require('../helpers/auditLogHelper');
+const { getLogDescription, getResourceId } = require('../helpers/auditLog');
 
 /**
  * Nested routes for /api/personnel/:personnelId/*
  * These are alias routes that convert nested URLs to query param format
  */
 
-// ===== ANNUAL REWARDS =====
 /**
  * @route   GET /api/personnel/:personnelId/annual-rewards
  * @desc    Lấy danh sách danh hiệu hằng năm (alias)
@@ -47,7 +46,6 @@ router.post(
   }
 );
 
-// ===== POSITION HISTORY =====
 /**
  * @route   GET /api/personnel/:personnelId/position-history
  * @desc    Lấy lịch sử chức vụ (alias)
@@ -117,7 +115,6 @@ router.delete(
   positionHistoryController.deletePositionHistory
 );
 
-// ===== SCIENTIFIC ACHIEVEMENTS =====
 /**
  * @route   GET /api/personnel/:personnelId/scientific-achievements
  * @desc    Lấy danh sách thành tích khoa học (alias)
@@ -140,7 +137,6 @@ router.post('/scientific-achievements', verifyToken, requireManager, (req, res, 
   scientificAchievementController.createAchievement(req, res);
 });
 
-// ===== PROFILE =====
 /**
  * @route   GET /api/personnel/:personnelId/profile
  * @desc    Lấy hồ sơ hằng năm (alias)

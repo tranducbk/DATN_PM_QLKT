@@ -3,7 +3,9 @@ const router = express.Router();
 const positionController = require('../controllers/position.controller');
 const { verifyToken, requireAdmin, requireManager } = require('../middlewares/auth');
 const { auditLog, createDescription, getResourceId } = require('../middlewares/auditLog');
-const { getLogDescription } = require('../helpers/auditLogHelper');
+const { getLogDescription } = require('../helpers/auditLog');
+const { validate } = require('../middlewares/validate');
+const { positionValidation } = require('../validations');
 
 /**
  * @route   GET /api/positions?unit_id={id}
@@ -21,6 +23,7 @@ router.post(
   '/',
   verifyToken,
   requireAdmin,
+  validate(positionValidation.createPosition),
   auditLog({
     action: 'CREATE',
     resource: 'positions',
@@ -39,6 +42,7 @@ router.put(
   '/:id',
   verifyToken,
   requireAdmin,
+  validate(positionValidation.updatePosition),
   auditLog({
     action: 'UPDATE',
     resource: 'positions',

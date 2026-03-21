@@ -121,10 +121,10 @@ class DashboardController {
         },
       });
     } catch (error) {
-      console.error('Get dashboard statistics error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lỗi khi lấy thống kê',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -247,10 +247,10 @@ class DashboardController {
         },
       });
     } catch (error) {
-      console.error('Get admin statistics error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lỗi khi lấy thống kê Admin',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -630,10 +630,10 @@ class DashboardController {
         },
       });
     } catch (error) {
-      console.error('Get manager statistics error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lỗi khi lấy thống kê Manager',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }

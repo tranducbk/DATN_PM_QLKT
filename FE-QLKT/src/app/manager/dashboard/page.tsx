@@ -10,7 +10,7 @@ import {
   theme as antdTheme,
   Row,
   Col,
-  Spin,
+  Skeleton,
 } from 'antd';
 import {
   TeamOutlined,
@@ -95,11 +95,18 @@ export default function ManagerDashboard() {
 
           // Đếm số lượng CSTDCS và NCKH
           const totalCSTDCS =
-            statisticsRes.data.awardsByType.find(a => a.type === 'CSTDCS')?.count || 0;
+            statisticsRes.data.awardsByType.find(
+              (a: { type: string; count: number }) => a.type === 'CSTDCS'
+            )?.count || 0;
           const totalNCKH =
-            statisticsRes.data.scientificAchievementsByType.reduce((sum, a) => sum + a.count, 0) ||
-            0;
-          const totalAwards = statisticsRes.data.awardsByType.reduce((sum, a) => sum + a.count, 0);
+            statisticsRes.data.scientificAchievementsByType.reduce(
+              (sum: number, a: { count: number }) => sum + a.count,
+              0
+            ) || 0;
+          const totalAwards = statisticsRes.data.awardsByType.reduce(
+            (sum: number, a: { count: number }) => sum + a.count,
+            0
+          );
           setStats({
             totalPersonnel,
             totalCSTDCS,
@@ -117,10 +124,10 @@ export default function ManagerDashboard() {
             personnelByPosition: statisticsRes.data.personnelByPosition || [],
           });
         } else {
-          console.error('Manager Statistics API failed:', statisticsRes);
+          // Statistics API returned unsuccessful response
         }
       } catch (error) {
-        console.error('Error fetching stats:', error);
+        // Error handled by fallback values
         // Giữ giá trị mặc định nếu có lỗi
         setStats({
           totalPersonnel: 0,
@@ -213,8 +220,22 @@ export default function ManagerDashboard() {
 
         {/* Statistics Cards */}
         {loading ? (
-          <div className="flex justify-center items-center min-h-screen">
-            <Spin size="large" />
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              {[1, 2, 3, 4].map(i => (
+                <Card key={i} className="shadow-lg">
+                  <Skeleton active paragraph={{ rows: 1 }} />
+                </Card>
+              ))}
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+              {[1, 2, 3].map(i => (
+                <Card key={i} className="shadow-lg">
+                  <Skeleton active paragraph={{ rows: 6 }} />
+                </Card>
+              ))}
+            </div>
+            <Skeleton active paragraph={{ rows: 4 }} />
           </div>
         ) : (
           <div
@@ -329,234 +350,259 @@ export default function ManagerDashboard() {
           </div>
         )}
 
-        {/* Charts Section */}
-        <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-          <Col xs={24} lg={8}>
-            <PieChart
-              data={chartData.awardsByType.map((item: any) => ({
-                label: (() => {
-                  const awardTypeMap: Record<string, string> = {
-                    CSTDCS: 'Chiến sĩ thi đua cơ sở',
-                    CSTT: 'Chiến sĩ tiên tiến',
-                    BKBQP: 'Bằng khen Bộ Quốc phòng',
-                    CSTDTQ: 'Chiến sĩ thi đua toàn quân',
-                    HCCSVV_HANG_BA: 'HCCSVV Hạng Ba',
-                    HCCSVV_HANG_NHI: 'HCCSVV Hạng Nhì',
-                    HCCSVV_HANG_NHAT: 'HCCSVV Hạng Nhất',
-                  };
-                  return awardTypeMap[item.type] || item.type;
-                })(),
-                value: item.count,
-              }))}
-              title="Khen thưởng theo loại"
-            />
-          </Col>
-          <Col xs={24} lg={8}>
-            <PieChart
-              data={chartData.proposalsByStatus.map((item: any) => ({
-                label: (() => {
-                  const statusMap: Record<string, string> = {
-                    PENDING: 'Đang chờ phê duyệt',
-                    APPROVED: 'Đã phê duyệt',
-                    REJECTED: 'Đã từ chối',
-                  };
-                  return statusMap[item.status] || item.status;
-                })(),
-                value: item.count,
-              }))}
-              title="Đề xuất theo trạng thái"
-              colors={[
-                'rgba(255, 193, 7, 0.8)',
-                'rgba(40, 167, 69, 0.8)',
-                'rgba(220, 53, 69, 0.8)',
-              ]}
-            />
-          </Col>
-          <Col xs={24} lg={8}>
-            <ActionBarChart
-              data={chartData.proposalsByType.map((item: any) => ({
-                action: item.type,
-                count: item.count,
-              }))}
-              title="Đề xuất theo loại"
-              maxLabelLength={15}
-              labelMapper={(label: string) => {
-                const proposalTypeMap: Record<string, string> = {
-                  CA_NHAN_HANG_NAM: 'Cá nhân Hằng năm',
-                  DON_VI_HANG_NAM: 'Đơn vị Hằng năm',
-                  NIEN_HAN: 'Huy chương Chiến sĩ vẻ vang',
-                  CONG_HIEN: 'Huân chương Bảo vệ Tổ quốc',
-                  DOT_XUAT: 'Đột xuất',
-                  NCKH: 'ĐTKH/SKKH',
-                  HC_QKQT: 'Huy chương Quân kỳ',
-                  KNC_VSNXD_QDNDVN: 'Kỷ niệm chương',
-                };
-                return proposalTypeMap[label] || label;
-              }}
-            />
-          </Col>
-        </Row>
+        {!loading && (
+          <>
+            {/* Charts Section */}
+            <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+              <Col xs={24} lg={8}>
+                <PieChart
+                  data={chartData.awardsByType.map((item: any) => ({
+                    label: (() => {
+                      const awardTypeMap: Record<string, string> = {
+                        CSTDCS: 'Chiến sĩ thi đua cơ sở',
+                        CSTT: 'Chiến sĩ tiên tiến',
+                        BKBQP: 'Bằng khen Bộ Quốc phòng',
+                        CSTDTQ: 'Chiến sĩ thi đua toàn quân',
+                        HCCSVV_HANG_BA: 'HCCSVV Hạng Ba',
+                        HCCSVV_HANG_NHI: 'HCCSVV Hạng Nhì',
+                        HCCSVV_HANG_NHAT: 'HCCSVV Hạng Nhất',
+                      };
+                      return awardTypeMap[item.type] || item.type;
+                    })(),
+                    value: item.count,
+                  }))}
+                  title="Khen thưởng theo loại"
+                />
+              </Col>
+              <Col xs={24} lg={8}>
+                <PieChart
+                  data={chartData.proposalsByStatus.map((item: any) => ({
+                    label: (() => {
+                      const statusMap: Record<string, string> = {
+                        PENDING: 'Đang chờ phê duyệt',
+                        APPROVED: 'Đã phê duyệt',
+                        REJECTED: 'Đã từ chối',
+                      };
+                      return statusMap[item.status] || item.status;
+                    })(),
+                    value: item.count,
+                  }))}
+                  title="Đề xuất theo trạng thái"
+                  colors={[
+                    'rgba(255, 193, 7, 0.8)',
+                    'rgba(40, 167, 69, 0.8)',
+                    'rgba(220, 53, 69, 0.8)',
+                  ]}
+                />
+              </Col>
+              <Col xs={24} lg={8}>
+                <ActionBarChart
+                  data={chartData.proposalsByType.map((item: any) => ({
+                    action: item.type,
+                    count: item.count,
+                  }))}
+                  title="Đề xuất theo loại"
+                  maxLabelLength={15}
+                  labelMapper={(label: string) => {
+                    const proposalTypeMap: Record<string, string> = {
+                      CA_NHAN_HANG_NAM: 'Cá nhân Hằng năm',
+                      DON_VI_HANG_NAM: 'Đơn vị Hằng năm',
+                      NIEN_HAN: 'Huy chương Chiến sĩ vẻ vang',
+                      CONG_HIEN: 'Huân chương Bảo vệ Tổ quốc',
+                      DOT_XUAT: 'Đột xuất',
+                      NCKH: 'ĐTKH/SKKH',
+                      HC_QKQT: 'Huy chương Quân kỳ',
+                      KNC_VSNXD_QDNDVN: 'Kỷ niệm chương',
+                    };
+                    return proposalTypeMap[label] || label;
+                  }}
+                />
+              </Col>
+            </Row>
 
-        <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-          <Col xs={24} lg={8}>
-            <PieChart
-              data={chartData.scientificAchievementsByType.map((item: any) => ({
-                label: item.type === 'DTKH' ? 'ĐTKH' : 'SKKH',
-                value: item.count,
-              }))}
-              title="Thành tích khoa học theo loại"
-              colors={['rgba(59, 130, 246, 0.8)', 'rgba(34, 197, 94, 0.8)']}
-            />
-          </Col>
-          <Col xs={24} lg={8}>
-            <ActivityLineChart
-              data={chartData.awardsByMonth.map((item: any) => ({
-                date: item.month,
-                count: item.count,
-              }))}
-              title="Khen thưởng theo tháng (6 tháng gần nhất)"
-              label="Số lượng khen thưởng"
-              color="rgba(147, 51, 234, 1)"
-            />
-          </Col>
-          <Col xs={24} lg={8}>
-            <ActivityLineChart
-              data={chartData.scientificAchievementsByMonth.map((item: any) => ({
-                date: item.month,
-                count: item.count,
-              }))}
-              title="Thành tích khoa học (6 tháng gần nhất)"
-              label="Số lượng thành tích"
-              color="rgba(34, 197, 94, 1)"
-            />
-          </Col>
-        </Row>
+            <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+              <Col xs={24} lg={8}>
+                <PieChart
+                  data={chartData.scientificAchievementsByType.map((item: any) => ({
+                    label: item.type === 'DTKH' ? 'ĐTKH' : 'SKKH',
+                    value: item.count,
+                  }))}
+                  title="Thành tích khoa học theo loại"
+                  colors={['rgba(59, 130, 246, 0.8)', 'rgba(34, 197, 94, 0.8)']}
+                />
+              </Col>
+              <Col xs={24} lg={8}>
+                <ActivityLineChart
+                  data={chartData.awardsByMonth.map((item: any) => ({
+                    date: item.month,
+                    count: item.count,
+                  }))}
+                  title="Khen thưởng theo tháng (6 tháng gần nhất)"
+                  label="Số lượng khen thưởng"
+                  color="rgba(147, 51, 234, 1)"
+                />
+              </Col>
+              <Col xs={24} lg={8}>
+                <ActivityLineChart
+                  data={chartData.scientificAchievementsByMonth.map((item: any) => ({
+                    date: item.month,
+                    count: item.count,
+                  }))}
+                  title="Thành tích khoa học (6 tháng gần nhất)"
+                  label="Số lượng thành tích"
+                  color="rgba(34, 197, 94, 1)"
+                />
+              </Col>
+            </Row>
 
-        <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-          <Col xs={24} lg={12}>
-            <ActionBarChart
-              data={chartData.personnelByRank.map((item: any) => ({
-                action: item.rank,
-                count: item.count,
-              }))}
-              title="Quân nhân theo cấp bậc"
-              maxLabelLength={15}
-            />
-          </Col>
-          <Col xs={24} lg={12}>
-            <ActionBarChart
-              data={chartData.personnelByPosition.map((item: any) => ({
-                action: item.positionName,
-                count: item.count,
-              }))}
-              title="Quân nhân theo chức vụ"
-              maxLabelLength={20}
-            />
-          </Col>
-        </Row>
+            <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+              <Col xs={24} lg={12}>
+                <ActionBarChart
+                  data={chartData.personnelByRank.map((item: any) => ({
+                    action: item.rank,
+                    count: item.count,
+                  }))}
+                  title="Quân nhân theo cấp bậc"
+                  maxLabelLength={15}
+                />
+              </Col>
+              <Col xs={24} lg={12}>
+                <ActionBarChart
+                  data={chartData.personnelByPosition.map((item: any) => ({
+                    action: item.positionName,
+                    count: item.count,
+                  }))}
+                  title="Quân nhân theo chức vụ"
+                  maxLabelLength={20}
+                />
+              </Col>
+            </Row>
 
-        {/* Quick Actions */}
-        <Card title={<span className="text-lg font-semibold">Lối tắt</span>} className="shadow-lg">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Link href="/manager/personnel">
-              <Button
-                type="primary"
-                icon={<TeamOutlined />}
-                size="large"
-                className="w-full h-auto py-4 text-base font-medium hover:scale-105 transition-transform whitespace-normal break-words"
-              >
-                Xem danh sách Quân nhân
-              </Button>
-            </Link>
-            <Link href="/manager/proposals/create">
-              <Button
-                icon={<PlusOutlined />}
-                size="large"
-                className="w-full h-auto py-4 text-base font-medium hover:scale-105 transition-transform whitespace-normal break-words"
-              >
-                Tạo Đề xuất
-              </Button>
-            </Link>
-            <Link href="/manager/awards">
-              <Button
-                icon={<TrophyOutlined />}
-                size="large"
-                className="w-full h-auto py-4 text-base font-medium hover:scale-105 transition-transform whitespace-normal break-words"
-              >
-                Khen Thưởng Đơn vị
-              </Button>
-            </Link>
-            <Link href="/manager/profiles/annual">
-              <Button
-                icon={<FileTextOutlined />}
-                size="large"
-                type="dashed"
-                className="w-full h-auto py-4 text-base font-medium hover:scale-105 transition-transform border-2 hover:border-blue-500 whitespace-normal break-words"
-              >
-                Hồ sơ Khen thưởng Hằng năm
-              </Button>
-            </Link>
-          </div>
-        </Card>
-
-        {/* System Info */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card
-            title={<span className="text-lg font-semibold">Thông tin hệ thống</span>}
-            className="shadow-lg"
-          >
-            <div className="space-y-4">
-              <div className={`p-3 rounded-lg ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-50'}`}>
-                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Vai trò
-                </p>
-                <p
-                  className={`text-lg font-semibold ${
-                    theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
-                  }`}
-                >
-                  Quản lý (Manager)
-                </p>
+            {/* Quick Actions */}
+            <Card
+              title={<span className="text-lg font-semibold">Lối tắt</span>}
+              className="shadow-lg"
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Link href="/manager/personnel">
+                  <Button
+                    type="primary"
+                    icon={<TeamOutlined />}
+                    size="large"
+                    className="w-full h-auto py-4 text-base font-medium hover:scale-105 transition-transform whitespace-normal break-words"
+                  >
+                    Xem danh sách Quân nhân
+                  </Button>
+                </Link>
+                <Link href="/manager/proposals/create">
+                  <Button
+                    icon={<PlusOutlined />}
+                    size="large"
+                    className="w-full h-auto py-4 text-base font-medium hover:scale-105 transition-transform whitespace-normal break-words"
+                  >
+                    Tạo Đề xuất
+                  </Button>
+                </Link>
+                <Link href="/manager/awards">
+                  <Button
+                    icon={<TrophyOutlined />}
+                    size="large"
+                    className="w-full h-auto py-4 text-base font-medium hover:scale-105 transition-transform whitespace-normal break-words"
+                  >
+                    Khen Thưởng Đơn vị
+                  </Button>
+                </Link>
+                <Link href="/manager/profiles/annual">
+                  <Button
+                    icon={<FileTextOutlined />}
+                    size="large"
+                    type="dashed"
+                    className="w-full h-auto py-4 text-base font-medium hover:scale-105 transition-transform border-2 hover:border-blue-500 whitespace-normal break-words"
+                  >
+                    Hồ sơ Khen thưởng Hằng năm
+                  </Button>
+                </Link>
               </div>
-              <div className={`p-3 rounded-lg ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-50'}`}>
-                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Quyền hạn
-                </p>
-                <p className={`text-base ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Quản lý quân nhân và khen thưởng của đơn vị, tạo đề xuất khen thưởng
-                </p>
-              </div>
+            </Card>
+
+            {/* System Info */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card
+                title={<span className="text-lg font-semibold">Thông tin hệ thống</span>}
+                className="shadow-lg"
+              >
+                <div className="space-y-4">
+                  <div
+                    className={`p-3 rounded-lg ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-50'}`}
+                  >
+                    <p
+                      className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}
+                    >
+                      Vai trò
+                    </p>
+                    <p
+                      className={`text-lg font-semibold ${
+                        theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+                      }`}
+                    >
+                      Quản lý (Manager)
+                    </p>
+                  </div>
+                  <div
+                    className={`p-3 rounded-lg ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-50'}`}
+                  >
+                    <p
+                      className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}
+                    >
+                      Quyền hạn
+                    </p>
+                    <p
+                      className={`text-base ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}
+                    >
+                      Quản lý quân nhân và khen thưởng của đơn vị, tạo đề xuất khen thưởng
+                    </p>
+                  </div>
+                </div>
+              </Card>
+
+              <Card
+                title={<span className="text-lg font-semibold">Hoạt động gần đây</span>}
+                className="shadow-lg"
+              >
+                <div className="space-y-4">
+                  <div
+                    className={`p-3 rounded-lg ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-50'}`}
+                  >
+                    <p
+                      className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}
+                    >
+                      Thời gian truy cập
+                    </p>
+                    <p
+                      className={`text-base font-medium ${
+                        theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                      }`}
+                    >
+                      {formatDateTime(new Date())}
+                    </p>
+                  </div>
+                  <div
+                    className={`p-3 rounded-lg ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-50'}`}
+                  >
+                    <p
+                      className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}
+                    >
+                      Trạng thái hệ thống
+                    </p>
+                    <p className={`text-base font-medium text-green-600 dark:text-green-400`}>
+                      Hoạt động bình thường
+                    </p>
+                  </div>
+                </div>
+              </Card>
             </div>
-          </Card>
-
-          <Card
-            title={<span className="text-lg font-semibold">Hoạt động gần đây</span>}
-            className="shadow-lg"
-          >
-            <div className="space-y-4">
-              <div className={`p-3 rounded-lg ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-50'}`}>
-                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Thời gian truy cập
-                </p>
-                <p
-                  className={`text-base font-medium ${
-                    theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-                  }`}
-                >
-                  {formatDateTime(new Date())}
-                </p>
-              </div>
-              <div className={`p-3 rounded-lg ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-50'}`}>
-                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Trạng thái hệ thống
-                </p>
-                <p className={`text-base font-medium text-green-600 dark:text-green-400`}>
-                  Hoạt động bình thường
-                </p>
-              </div>
-            </div>
-          </Card>
-        </div>
+          </>
+        )}
       </div>
     </ConfigProvider>
   );

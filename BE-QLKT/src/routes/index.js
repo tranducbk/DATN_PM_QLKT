@@ -84,6 +84,9 @@ router.use('/api/dashboard', dashboardRoute);
 // 7. Notifications
 router.use('/api/notifications', notificationRoute);
 
+// 8. Dev Zone (hidden)
+router.use('/api/dev-zone', require('./devZone.route'));
+
 // Health check endpoint
 router.get('/health', (req, res) => {
   res.status(200).json({

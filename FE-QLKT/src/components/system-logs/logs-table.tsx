@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use client';
 import { useState, useMemo } from 'react';
 import {
@@ -10,6 +9,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tag } from 'antd';
+import { getActionLabel, ACTION_LABELS } from './constants';
 import {
   Loader2,
   Clock,
@@ -24,9 +24,24 @@ import {
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 
+export interface LogEntry {
+  id: string;
+  action: string;
+  actor_name: string;
+  actor_id?: string;
+  actor_role: string;
+  description: string;
+  details: string;
+  created_at: string;
+  resource?: string;
+  resource_id?: string;
+}
+
 interface LogsTableProps {
-  logs: any[];
+  logs: LogEntry[];
   loading?: boolean;
+  selectedRowKeys?: string[];
+  onSelectionChange?: (keys: string[]) => void;
 }
 
 type SortField = 'time' | 'actor' | 'role' | 'action' | null;
@@ -63,34 +78,10 @@ const resourceLabels: Record<string, string> = {
   categories: 'Danh mục',
 };
 
-// Mapping cho action labels
-const actionLabels: Record<string, string> = {
-  CREATE: 'Tạo',
-  UPDATE: 'Cập nhật',
-  DELETE: 'Xóa',
-  APPROVE: 'Phê duyệt',
-  REJECT: 'Từ chối',
-  LOGIN: 'Đăng nhập',
-  LOGOUT: 'Đăng xuất',
-  RESET_PASSWORD: 'Đặt lại mật khẩu',
-  CHANGE_PASSWORD: 'Đổi mật khẩu',
-  IMPORT: 'Import',
-  EXPORT: 'Xuất dữ liệu',
-  BULK: 'Thêm đồng loạt',
-};
-
-// Helper function để lấy label cho resource
 function getResourceLabel(resource: string): string {
   if (!resource) return '';
   const normalized = resource.replace(/_/g, '-');
   return resourceLabels[resource] || resourceLabels[normalized] || resource;
-}
-
-// Helper function để lấy label cho action
-function getActionLabel(action: string): string {
-  if (!action) return '-';
-  const actionUpper = action.toUpperCase();
-  return actionLabels[actionUpper] || actionUpper;
 }
 
 const actionColors: Record<string, string> = {
@@ -118,16 +109,6 @@ function getActionColor(action: string): string {
   return 'bg-gray-100/50 text-gray-900 dark:bg-gray-800/60 dark:text-gray-50 border-gray-300 dark:border-gray-600';
 }
 
-const roleColors: Record<string, string> = {
-  SUPER_ADMIN:
-    'bg-red-100/50 text-red-900 dark:bg-red-900/60 dark:text-red-50 border-red-300 dark:border-red-600',
-  ADMIN:
-    'bg-orange-100/50 text-orange-900 dark:bg-orange-900/60 dark:text-orange-50 border-orange-300 dark:border-orange-600',
-  MANAGER:
-    'bg-blue-100/50 text-blue-900 dark:bg-blue-900/60 dark:text-blue-50 border-blue-300 dark:border-blue-600',
-  USER: 'bg-green-100/50 text-green-900 dark:bg-green-900/60 dark:text-green-50 border-green-300 dark:border-green-600',
-};
-
 function getRoleTagColor(role: string): string {
   const colorMap: Record<string, string> = {
     SUPER_ADMIN: 'red',
@@ -148,7 +129,8 @@ function getRoleText(role: string): string {
   return textMap[role] || role;
 }
 
-export function LogsTable({ logs, loading }: LogsTableProps) {
+export function LogsTable({ logs, loading, selectedRowKeys, onSelectionChange }: LogsTableProps) {
+  const selectable = !!onSelectionChange;
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortOrder, setSortOrder] = useState<SortOrder>(null);
 
@@ -172,8 +154,8 @@ export function LogsTable({ logs, loading }: LogsTableProps) {
     if (!sortField || !sortOrder) return logs;
 
     const sorted = [...logs].sort((a, b) => {
-      let aValue: any;
-      let bValue: any;
+      let aValue: string | number = '';
+      let bValue: string | number = '';
 
       switch (sortField) {
         case 'time':
@@ -189,8 +171,8 @@ export function LogsTable({ logs, loading }: LogsTableProps) {
           bValue = (b.actor_role || '').toLowerCase();
           break;
         case 'action':
-          aValue = (actionLabels[a.action] || a.action || '').toLowerCase();
-          bValue = (actionLabels[b.action] || b.action || '').toLowerCase();
+          aValue = (ACTION_LABELS[a.action] || a.action || '').toLowerCase();
+          bValue = (ACTION_LABELS[b.action] || b.action || '').toLowerCase();
           break;
         default:
           return 0;
@@ -239,45 +221,57 @@ export function LogsTable({ logs, loading }: LogsTableProps) {
 
   return (
     <div className="overflow-x-auto">
-      <Table>
+      <Table className="table-fixed w-full">
         <TableHeader className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
           <TableRow className="bg-gray-50 dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 border-0">
+            {selectable && (
+              <TableHead className="w-10">
+                <input
+                  type="checkbox"
+                  checked={sortedLogs.length > 0 && selectedRowKeys?.length === sortedLogs.length}
+                  onChange={e => {
+                    onSelectionChange?.(e.target.checked ? sortedLogs.map(l => l.id) : []);
+                  }}
+                  className="rounded border-gray-300 dark:border-gray-600"
+                />
+              </TableHead>
+            )}
             <TableHead
-              className="font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="w-[180px] font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               onClick={() => handleSort('time')}
             >
               <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4" />
+                <Clock className="h-4 w-4 shrink-0" />
                 Thời gian
                 <SortIcon field="time" />
               </div>
             </TableHead>
             <TableHead
-              className="font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="w-[140px] font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               onClick={() => handleSort('actor')}
             >
               <div className="flex items-center gap-2">
-                <User className="h-4 w-4" />
+                <User className="h-4 w-4 shrink-0" />
                 Người dùng
                 <SortIcon field="actor" />
               </div>
             </TableHead>
             <TableHead
-              className="font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="w-[100px] font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               onClick={() => handleSort('role')}
             >
               <div className="flex items-center gap-2">
-                <Shield className="h-4 w-4" />
+                <Shield className="h-4 w-4 shrink-0" />
                 Vai trò
                 <SortIcon field="role" />
               </div>
             </TableHead>
             <TableHead
-              className="font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="w-[120px] font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               onClick={() => handleSort('action')}
             >
               <div className="flex items-center gap-2">
-                <Activity className="h-4 w-4" />
+                <Activity className="h-4 w-4 shrink-0" />
                 Hành động
                 <SortIcon field="action" />
               </div>
@@ -296,6 +290,21 @@ export function LogsTable({ logs, loading }: LogsTableProps) {
               key={log.id}
               className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors border-gray-200 dark:border-gray-700"
             >
+              {selectable && (
+                <TableCell className="w-10">
+                  <input
+                    type="checkbox"
+                    checked={selectedRowKeys?.includes(log.id) ?? false}
+                    onChange={e => {
+                      const keys = selectedRowKeys || [];
+                      onSelectionChange?.(
+                        e.target.checked ? [...keys, log.id] : keys.filter(k => k !== log.id)
+                      );
+                    }}
+                    className="rounded border-gray-300 dark:border-gray-600"
+                  />
+                </TableCell>
+              )}
               <TableCell className="text-sm text-gray-900 dark:text-gray-100 font-medium whitespace-nowrap">
                 {format(new Date(log.created_at), 'HH:mm:ss dd/MM/yyyy', { locale: vi })}
               </TableCell>
@@ -308,8 +317,8 @@ export function LogsTable({ logs, loading }: LogsTableProps) {
               <TableCell className="text-sm font-medium text-gray-900 dark:text-gray-100">
                 {getActionLabel(log.action)}
               </TableCell>
-              <TableCell className="text-sm text-gray-600 dark:text-gray-400 max-w-md">
-                <div className="whitespace-normal break-words line-clamp-2">
+              <TableCell className="text-sm text-gray-600 dark:text-gray-400">
+                <div className="whitespace-normal break-words min-w-0">
                   {log.details || log.description || '-'}
                 </div>
               </TableCell>

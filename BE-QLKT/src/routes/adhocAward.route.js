@@ -3,7 +3,7 @@ const router = express.Router();
 const adhocAwardController = require('../controllers/adhocAward.controller');
 const { verifyToken, checkRole } = require('../middlewares/auth');
 const { auditLog } = require('../middlewares/auditLog');
-const { getLogDescription, getResourceId } = require('../helpers/auditLogHelper');
+const { getLogDescription, getResourceId } = require('../helpers/auditLog');
 const multer = require('multer');
 const { ROLES } = require('../constants/roles');
 

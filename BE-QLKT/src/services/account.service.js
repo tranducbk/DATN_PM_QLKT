@@ -1,12 +1,19 @@
 const bcrypt = require('bcrypt');
 const { prisma } = require('../models');
 const { ROLES } = require('../constants/roles');
+const {
+  AppError,
+  NotFoundError,
+  ValidationError,
+  ForbiddenError,
+} = require('../middlewares/errorHandler');
 
 class AccountService {
   /**
    * Lấy danh sách tài khoản (có phân trang)
    */
-  async getAccounts(page = 1, limit = 10, search = '', role, excludeSuperAdmin = false) {    const skip = (page - 1) * limit;
+  async getAccounts(page = 1, limit = 10, search = '', role, excludeSuperAdmin = false) {
+    const skip = (page - 1) * limit;
 
     // Hỗ trợ lọc nhiều role (ví dụ: "MANAGER,USER")
     let roleFilter = {};
@@ -91,7 +98,8 @@ class AccountService {
   /**
    * Lấy chi tiết tài khoản theo id
    */
-  async getAccountById(id) {    const account = await prisma.taiKhoan.findUnique({
+  async getAccountById(id) {
+    const account = await prisma.taiKhoan.findUnique({
       where: { id },
       include: {
         QuanNhan: {
@@ -109,7 +117,7 @@ class AccountService {
     });
 
     if (!account) {
-      throw new Error('Tài khoản không tồn tại');
+      throw new NotFoundError('Tài khoản');
     }
 
     return {
@@ -171,7 +179,8 @@ class AccountService {
   /**
    * Tạo tài khoản mới
    */
-  async createAccount(data) {    const {
+  async createAccount(data) {
+    const {
       personnel_id,
       username,
       password,
@@ -187,10 +196,12 @@ class AccountService {
     });
 
     if (existingAccount) {
-      throw new Error('Tên đăng nhập đã tồn tại');
+      throw new ValidationError('Tên đăng nhập đã tồn tại');
     }
 
     let finalPersonnelId = personnel_id || null;
+    let personnelDataForCreate = null;
+    let heSoChucVu = 0;
 
     // Nếu có personnel_id, kiểm tra quân nhân có tồn tại không
     if (personnel_id) {
@@ -199,7 +210,7 @@ class AccountService {
       });
 
       if (!personnel) {
-        throw new Error('Quân nhân không tồn tại');
+        throw new NotFoundError('Quân nhân');
       }
 
       // Kiểm tra quân nhân đã có tài khoản chưa
@@ -208,29 +219,28 @@ class AccountService {
       });
 
       if (existingPersonnelAccount) {
-        throw new Error('Quân nhân này đã có tài khoản');
+        throw new ValidationError('Quân nhân này đã có tài khoản');
       }
     }
 
     // Tự động tạo QuanNhan cho MANAGER/USER
     if ((role === ROLES.MANAGER || role === ROLES.USER) && !personnel_id) {
-      // ==================== VALIDATION THEO ROLE ====================
       if (role === ROLES.MANAGER) {
         // MANAGER: Bắt buộc có co_quan_don_vi_id, KHÔNG có don_vi_truc_thuoc_id
         if (!co_quan_don_vi_id) {
-          throw new Error(
+          throw new ValidationError(
             'Tài khoản MANAGER phải có thông tin Cơ quan đơn vị. Vui lòng chọn Cơ quan đơn vị.'
           );
         }
         if (don_vi_truc_thuoc_id) {
-          throw new Error(
+          throw new ValidationError(
             'Tài khoản MANAGER chỉ được chọn Cơ quan đơn vị, không được chọn Đơn vị trực thuộc.'
           );
         }
       } else if (role === ROLES.USER) {
         // USER: Bắt buộc có CẢ HAI co_quan_don_vi_id VÀ don_vi_truc_thuoc_id
         if (!co_quan_don_vi_id || !don_vi_truc_thuoc_id) {
-          throw new Error(
+          throw new ValidationError(
             'Tài khoản USER phải có đầy đủ thông tin Cơ quan đơn vị và Đơn vị trực thuộc. Vui lòng chọn cả hai.'
           );
         }
@@ -238,17 +248,16 @@ class AccountService {
 
       // Kiểm tra chuc_vu_id
       if (!chuc_vu_id) {
-        throw new Error('Vui lòng chọn chức vụ');
+        throw new ValidationError('Vui lòng chọn chức vụ');
       }
 
-      // ==================== VALIDATION DATABASE ====================
       // Kiểm tra cơ quan đơn vị có tồn tại không
       if (co_quan_don_vi_id) {
         const coQuanDonVi = await prisma.coQuanDonVi.findUnique({
           where: { id: co_quan_don_vi_id },
         });
         if (!coQuanDonVi) {
-          throw new Error('Cơ quan đơn vị không tồn tại');
+          throw new NotFoundError('Cơ quan đơn vị');
         }
       }
 
@@ -258,11 +267,11 @@ class AccountService {
           where: { id: don_vi_truc_thuoc_id },
         });
         if (!donViTrucThuoc) {
-          throw new Error('Đơn vị trực thuộc không tồn tại');
+          throw new NotFoundError('Đơn vị trực thuộc');
         }
         // Validate đơn vị trực thuộc phải thuộc cơ quan đơn vị đã chọn
         if (co_quan_don_vi_id && donViTrucThuoc.co_quan_don_vi_id !== co_quan_don_vi_id) {
-          throw new Error('Đơn vị trực thuộc không thuộc cơ quan đơn vị đã chọn');
+          throw new ValidationError('Đơn vị trực thuộc không thuộc cơ quan đơn vị đã chọn');
         }
       }
 
@@ -272,111 +281,87 @@ class AccountService {
         select: { he_so_chuc_vu: true },
       });
       if (!chucVu) {
-        throw new Error('Chức vụ không tồn tại');
+        throw new NotFoundError('Chức vụ');
       }
 
-      // ==================== TẠO QUÂN NHÂN ====================
-      const personnelData = {
-        cccd: null, // CCCD có thể null, người dùng sẽ cập nhật sau
-        ho_ten: username, // Dùng username làm họ tên mặc định
+      // Lưu thông tin cần thiết cho transaction
+      personnelDataForCreate = {
+        cccd: null,
+        ho_ten: username,
         chuc_vu_id,
         ngay_sinh: null,
         ngay_nhap_ngu: null,
         co_quan_don_vi_id: co_quan_don_vi_id || null,
         don_vi_truc_thuoc_id: don_vi_truc_thuoc_id || null,
       };
-
-      // Tạo QuanNhan mới với thông tin tối thiểu
-      const newPersonnel = await prisma.quanNhan.create({
-        data: personnelData,
-      });
-
-      finalPersonnelId = newPersonnel.id;
-
-      // Tạo LichSuChucVu cho chức vụ ban đầu
-      const ngayBatDau = new Date();
-      await prisma.lichSuChucVu.create({
-        data: {
-          quan_nhan_id: newPersonnel.id,
-          chuc_vu_id: chuc_vu_id,
-          he_so_chuc_vu: chucVu?.he_so_chuc_vu || 0,
-          ngay_bat_dau: ngayBatDau,
-          ngay_ket_thuc: null,
-          so_thang: null, // Chưa kết thúc nên chưa tính được
-        },
-      });
-
-      // ==================== CẬP NHẬT SỐ LƯỢNG QUÂN NHÂN ====================
-      // Cập nhật số lượng cho Cơ quan đơn vị (nếu có)
-      if (co_quan_don_vi_id) {
-        try {
-          await prisma.coQuanDonVi.update({
-            where: { id: co_quan_don_vi_id },
-            data: {
-              so_luong: {
-                increment: 1,
-              },
-            },
-          });
-        } catch (error) {
-          console.error(
-            `Lỗi khi cập nhật số lượng quân nhân cho Cơ quan đơn vị ID: ${co_quan_don_vi_id}`,
-            error
-          );
-          throw new Error(
-            `Không thể cập nhật số lượng quân nhân của cơ quan đơn vị: ${error.message}`
-          );
-        }
-      }
-
-      // Cập nhật số lượng cho Đơn vị trực thuộc (nếu có)
-      if (don_vi_truc_thuoc_id) {
-        try {
-          await prisma.donViTrucThuoc.update({
-            where: { id: don_vi_truc_thuoc_id },
-            data: {
-              so_luong: {
-                increment: 1,
-              },
-            },
-          });
-
-        } catch (error) {
-          console.error(
-            `Lỗi khi cập nhật số lượng quân nhân cho Đơn vị trực thuộc ID: ${don_vi_truc_thuoc_id}`,
-            error
-          );
-          throw new Error(
-            `Không thể cập nhật số lượng quân nhân của đơn vị trực thuộc: ${error.message}`
-          );
-        }
-      }
+      heSoChucVu = chucVu?.he_so_chuc_vu || 0;
     }
+
+    // Validate mật khẩu
+    this.validatePassword(password);
 
     // Mã hóa mật khẩu
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Tạo tài khoản
-    const newAccount = await prisma.taiKhoan.create({
-      data: {
-        quan_nhan_id: finalPersonnelId || null,
-        username,
-        password_hash: hashedPassword,
-        role,
-      },
-      include: {
-        QuanNhan: {
-          include: {
-            CoQuanDonVi: true,
-            DonViTrucThuoc: {
-              include: {
-                CoQuanDonVi: true,
+    const newAccount = await prisma.$transaction(async tx => {
+      // Tạo QuanNhan nếu cần
+      if (personnelDataForCreate) {
+        const newPersonnel = await tx.quanNhan.create({
+          data: personnelDataForCreate,
+        });
+        finalPersonnelId = newPersonnel.id;
+
+        // Tạo LichSuChucVu cho chức vụ ban đầu
+        await tx.lichSuChucVu.create({
+          data: {
+            quan_nhan_id: newPersonnel.id,
+            chuc_vu_id: chuc_vu_id,
+            he_so_chuc_vu: heSoChucVu,
+            ngay_bat_dau: new Date(),
+            ngay_ket_thuc: null,
+            so_thang: null,
+          },
+        });
+
+        // Cập nhật số lượng cho Cơ quan đơn vị
+        if (co_quan_don_vi_id) {
+          await tx.coQuanDonVi.update({
+            where: { id: co_quan_don_vi_id },
+            data: { so_luong: { increment: 1 } },
+          });
+        }
+
+        // Cập nhật số lượng cho Đơn vị trực thuộc
+        if (don_vi_truc_thuoc_id) {
+          await tx.donViTrucThuoc.update({
+            where: { id: don_vi_truc_thuoc_id },
+            data: { so_luong: { increment: 1 } },
+          });
+        }
+      }
+
+      // Tạo tài khoản
+      return tx.taiKhoan.create({
+        data: {
+          quan_nhan_id: finalPersonnelId || null,
+          username,
+          password_hash: hashedPassword,
+          role,
+        },
+        include: {
+          QuanNhan: {
+            include: {
+              CoQuanDonVi: true,
+              DonViTrucThuoc: {
+                include: {
+                  CoQuanDonVi: true,
+                },
               },
+              ChucVu: true,
             },
-            ChucVu: true,
           },
         },
-      },
+      });
     });
 
     return {
@@ -395,7 +380,8 @@ class AccountService {
   /**
    * Cập nhật tài khoản (đổi vai trò)
    */
-  async updateAccount(id, data) {    const { role, password } = data;
+  async updateAccount(id, data) {
+    const { role, password } = data;
 
     // Kiểm tra tài khoản có tồn tại không
     const account = await prisma.taiKhoan.findUnique({
@@ -403,7 +389,7 @@ class AccountService {
     });
 
     if (!account) {
-      throw new Error('Tài khoản không tồn tại');
+      throw new NotFoundError('Tài khoản');
     }
 
     // Chuẩn bị data để cập nhật
@@ -416,6 +402,7 @@ class AccountService {
 
     // Cập nhật mật khẩu nếu có
     if (password) {
+      this.validatePassword(password);
       const hashedPassword = await bcrypt.hash(password, 10);
       updateData.password_hash = hashedPassword;
     }
@@ -455,13 +442,14 @@ class AccountService {
   /**
    * Đặt lại mật khẩu cho tài khoản (mật khẩu mặc định: 123456)
    */
-  async resetPassword(accountId) {    // Kiểm tra tài khoản có tồn tại không
+  async resetPassword(accountId) {
+    // Kiểm tra tài khoản có tồn tại không
     const account = await prisma.taiKhoan.findUnique({
       where: { id: accountId },
     });
 
     if (!account) {
-      throw new Error('Tài khoản không tồn tại');
+      throw new NotFoundError('Tài khoản');
     }
 
     // Mật khẩu mặc định
@@ -482,7 +470,8 @@ class AccountService {
    * @param {string} id - ID tài khoản
    * @param {boolean} forceDelete - Bắt buộc xóa ngay cả khi có đề xuất PENDING
    */
-  async deleteAccount(id, forceDelete = false) {    // Kiểm tra tài khoản có tồn tại không
+  async deleteAccount(id, forceDelete = false) {
+    // Kiểm tra tài khoản có tồn tại không
     const account = await prisma.taiKhoan.findUnique({
       where: { id },
       include: {
@@ -491,12 +480,12 @@ class AccountService {
     });
 
     if (!account) {
-      throw new Error('Tài khoản không tồn tại');
+      throw new NotFoundError('Tài khoản');
     }
 
     // Không cho phép xóa SUPER_ADMIN
     if (account.role === ROLES.SUPER_ADMIN) {
-      throw new Error('Không thể xóa tài khoản SUPER_ADMIN');
+      throw new ForbiddenError('Không thể xóa tài khoản SUPER_ADMIN');
     }
 
     let deletedProposals = 0;
@@ -531,7 +520,7 @@ class AccountService {
       const pendingProposals = proposals.filter(p => p.status === 'PENDING');
 
       if (pendingProposals.length > 0 && !forceDelete) {
-        throw new Error(
+        throw new ValidationError(
           `Không thể xóa tài khoản này vì quân nhân đang có ${pendingProposals.length} đề xuất chờ duyệt. ` +
             `Hãy xử lý các đề xuất trước hoặc sử dụng force delete.`
         );
@@ -624,11 +613,9 @@ class AccountService {
               });
             }
           } catch (error) {
-            console.error(`Lỗi khi cập nhật số lượng quân nhân cho đơn vị ID: ${unitId}`, error);
             throw new Error(`Không thể cập nhật số lượng quân nhân của đơn vị: ${error.message}`);
           }
         } else {
-          console.warn(`Quân nhân ID: ${personnelId} không có đơn vị`);
         }
       });
 
@@ -643,6 +630,24 @@ class AccountService {
       });
 
       return { message: 'Xóa tài khoản thành công' };
+    }
+  }
+
+  /**
+   * Validate độ mạnh mật khẩu
+   */
+  validatePassword(password) {
+    if (!password || password.length < 8) {
+      throw new ValidationError('Mật khẩu phải có ít nhất 8 ký tự');
+    }
+    if (!/[A-Z]/.test(password)) {
+      throw new ValidationError('Mật khẩu phải chứa ít nhất 1 chữ hoa');
+    }
+    if (!/[a-z]/.test(password)) {
+      throw new ValidationError('Mật khẩu phải chứa ít nhất 1 chữ thường');
+    }
+    if (!/[0-9]/.test(password)) {
+      throw new ValidationError('Mật khẩu phải chứa ít nhất 1 chữ số');
     }
   }
 }

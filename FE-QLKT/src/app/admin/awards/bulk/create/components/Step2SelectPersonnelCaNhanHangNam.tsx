@@ -90,7 +90,7 @@ export default function Step2SelectPersonnelCaNhanHangNam({
         setPersonnel(personnelData);
       }
     } catch (error: any) {
-      console.error('Error fetching personnel:', error);
+      // Error handled by UI
     } finally {
       setLoading(false);
     }
@@ -105,136 +105,116 @@ export default function Step2SelectPersonnelCaNhanHangNam({
           const data = new Uint8Array(e.target?.result as ArrayBuffer);
           const workbook = XLSX.read(data, { type: 'array' });
 
-          // Lấy sheet đầu tiên
           const sheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[sheetName];
-
-          // Chuyển đổi sang JSON
           const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
           if (jsonData.length < 2) {
             throw new Error('File Excel không có dữ liệu hoặc thiếu header');
           }
 
-          // Bỏ qua header row
           const dataRows = jsonData.slice(1);
-
           const titleData: any[] = [];
           const errors: string[] = [];
           const processedPersonnelIds: string[] = [];
 
+          // Cột theo template: STT(0), ID(1), Họ tên(2), Cấp bậc(3), Chức vụ(4), Năm(5), Danh hiệu(6),
+          // BKBQP(7), CSTDTQ(8), BKTTCP(9), Số QĐ danh hiệu(10), Số QĐ BKBQP(11), Số QĐ CSTDTQ(12), Số QĐ BKTTCP(13), Ghi chú(14)
+          const seenKeys = new Set<string>();
+
           dataRows.forEach((row: any, index: number) => {
-            const rowNumber = index + 2; // +2 vì bỏ header và index từ 0
+            const rowNumber = index + 2;
 
-            // Validate required fields
-            const hoTen = row[0]?.toString().trim();
-            const ngaySinh = row[1]?.toString().trim();
-            const nam = row[2]?.toString().trim();
-            const capBac = row[3]?.toString().trim();
-            const chucVu = row[4]?.toString().trim();
-            const danhHieu = row[5]?.toString().trim();
+            const personnelId = row[1]?.toString().trim();
+            const hoTen = row[2]?.toString().trim() || '';
+            const nam = row[5]?.toString().trim();
+            const danhHieu = row[6]?.toString().trim();
+            const nhanBkbqp = row[7]?.toString().trim();
+            const nhanCstdtq = row[8]?.toString().trim();
+            const nhanBkttcp = row[9]?.toString().trim();
+            const soQuyetDinh = row[10]?.toString().trim() || '';
+            const soQdBkbqp = row[11]?.toString().trim() || '';
+            const soQdCstdtq = row[12]?.toString().trim() || '';
+            const soQdBkttcp = row[13]?.toString().trim() || '';
+            const ghiChu = row[14]?.toString().trim() || '';
 
-            if (!hoTen) {
-              errors.push(`Dòng ${rowNumber}: Thiếu họ tên`);
+            // Bỏ qua dòng trống hoặc dòng ghi chú
+            if (!personnelId && !nam && !danhHieu) return;
+
+            if (!personnelId) {
+              errors.push(`Dòng ${rowNumber}: Thiếu ID quân nhân`);
               return;
             }
 
             if (!nam) {
-              errors.push(`Dòng ${rowNumber}: Thiếu năm`);
+              errors.push(`Dòng ${rowNumber} (${hoTen}): Thiếu năm`);
               return;
             }
 
             if (!danhHieu) {
-              errors.push(`Dòng ${rowNumber}: Thiếu danh hiệu`);
+              errors.push(`Dòng ${rowNumber} (${hoTen}): Thiếu danh hiệu`);
               return;
             }
 
-            // Validate năm
             const namInt = parseInt(nam);
-
-            // Tìm personnel ID dựa trên họ tên và ngày sinh (ngày sinh optional)
-            let matchingPersonnel;
-            if (ngaySinh) {
-              // Nếu có ngày sinh, so sánh cả tên và ngày sinh
-              matchingPersonnel = personnel.find(p => {
-                const personnelName = p.ho_ten.toLowerCase().trim();
-                const excelName = hoTen.toLowerCase().trim();
-
-                // So sánh tên chính xác
-                const nameMatch = personnelName === excelName;
-
-                // So sánh ngày sinh
-                const personnelBirth = p.ngay_sinh
-                  ? new Date(p.ngay_sinh).toLocaleDateString('vi-VN')
-                  : '';
-                const excelBirth = ngaySinh;
-
-                return nameMatch && personnelBirth === excelBirth;
-              });
-            } else {
-              // Nếu không có ngày sinh, chỉ so sánh tên và lấy kết quả đầu tiên
-              matchingPersonnel = personnel.find(p => {
-                const personnelName = p.ho_ten.toLowerCase().trim();
-                const excelName = hoTen.toLowerCase().trim();
-
-                // So sánh tên chính xác
-                return personnelName === excelName;
-              });
-            }
-
-            if (!matchingPersonnel) {
-              const errorMsg = ngaySinh
-                ? `Dòng ${rowNumber}: Không tìm thấy quân nhân "${hoTen}" sinh ngày ${ngaySinh}`
-                : `Dòng ${rowNumber}: Không tìm thấy quân nhân "${hoTen}"`;
-              errors.push(errorMsg);
+            if (isNaN(namInt) || namInt < 1900 || namInt > new Date().getFullYear()) {
+              errors.push(`Dòng ${rowNumber} (${hoTen}): Năm không hợp lệ: ${nam}`);
               return;
             }
 
-            // Thêm vào danh sách
-            processedPersonnelIds.push(matchingPersonnel.id);
+            const validDanhHieu = ['CSTT', 'CSTDCS'];
+            if (!validDanhHieu.includes(danhHieu.toUpperCase())) {
+              errors.push(
+                `Dòng ${rowNumber} (${hoTen}): Danh hiệu không hợp lệ: ${danhHieu}. Chỉ chấp nhận: ${validDanhHieu.join(', ')}`
+              );
+              return;
+            }
 
+            // Kiểm tra quân nhân có trong danh sách đã load không
+            const matchingPersonnel = personnel.find((p: any) => p.id === personnelId);
+            if (!matchingPersonnel) {
+              errors.push(
+                `Dòng ${rowNumber}: Không tìm thấy quân nhân ID "${personnelId}" (${hoTen}) trong danh sách`
+              );
+              return;
+            }
+
+            // Kiểm tra trùng trong cùng file (cùng người cùng năm cùng danh hiệu)
+            const key = `${personnelId}_${namInt}_${danhHieu}`;
+            if (seenKeys.has(key)) {
+              errors.push(
+                `Dòng ${rowNumber} (${hoTen}): Trùng lặp — cùng quân nhân, năm ${namInt}, danh hiệu ${danhHieu}`
+              );
+              return;
+            }
+            seenKeys.add(key);
+
+            const parseBool = (val: string) =>
+              ['có', 'co', 'true', '1', 'x'].includes((val || '').toLowerCase());
+
+            processedPersonnelIds.push(matchingPersonnel.id);
             titleData.push({
               personnel_id: matchingPersonnel.id,
-              danh_hieu: danhHieu,
+              danh_hieu: danhHieu.toUpperCase(),
               nam: namInt,
-              cap_bac: capBac,
-              chuc_vu: chucVu,
+              cap_bac: row[3]?.toString().trim() || matchingPersonnel.cap_bac || '',
+              chuc_vu: row[4]?.toString().trim() || matchingPersonnel.ChucVu?.ten_chuc_vu || '',
+              nhan_bkbqp: parseBool(nhanBkbqp),
+              nhan_cstdtq: parseBool(nhanCstdtq),
+              nhan_bkttcp: parseBool(nhanBkttcp),
+              so_quyet_dinh: soQuyetDinh,
+              so_quyet_dinh_bkbqp: soQdBkbqp,
+              so_quyet_dinh_cstdtq: soQdCstdtq,
+              so_quyet_dinh_bkttcp: soQdBkttcp,
+              ghi_chu: ghiChu,
             });
           });
 
-          // Remove duplicates from personnel IDs
           const uniquePersonnelIds = Array.from(new Set(processedPersonnelIds));
-
-          // Kiểm tra trùng lặp trước khi resolve
-          try {
-            for (const item of titleData) {
-              const checkResponse = await axiosInstance.get('/api/proposals/check-duplicate', {
-                params: {
-                  personnel_id: item.personnel_id,
-                  nam: item.nam,
-                  danh_hieu: item.danh_hieu,
-                  proposal_type: 'CA_NHAN_HANG_NAM',
-                },
-              });
-
-              if (checkResponse.data.data.success === false) {
-                throw new Error(checkResponse.data.data.message || 'Có lỗi khi kiểm tra trùng lặp');
-              }
-
-              if (checkResponse.data.data.exists === true) {
-                throw new Error(
-                  'Dữ liệu import có trùng lặp với đề xuất đã tồn tại. Vui lòng kiểm tra lại.'
-                );
-              }
-            }
-          } catch (error: any) {
-            reject(new Error(`Lỗi kiểm tra trùng lặp: ${error.message}`));
-            return;
-          }
 
           resolve({
             imported: titleData.length,
-            total: dataRows.length,
+            total: dataRows.filter((r: any) => r[1] || r[5] || r[6]).length,
             errors,
             selectedPersonnelIds: uniquePersonnelIds,
             titleData,
@@ -279,19 +259,15 @@ export default function Step2SelectPersonnelCaNhanHangNam({
       onTitleDataChange(titleData);
 
       // Update nam from imported data if available
-      if (result.titleData[0].nam) {
+      if (result.titleData[0]?.nam) {
         onNamChange(result.titleData[0].nam);
       }
     }
 
-    // Tự động chuyển sang bước 4 (Upload file) sau khi Đã thêm thành công
-    // Bỏ qua bước 3 vì đã import dữ liệu từ Excel
+    // Chuyển sang bước 3 (Review) để xem trước dữ liệu trước khi xác nhận
     if (onNextStep) {
       setTimeout(() => {
-        onNextStep(); // Chuyển sang bước 3
-        setTimeout(() => {
-          onNextStep(); // Chuyển sang bước 4
-        }, 100);
+        onNextStep(); // Chuyển sang bước 3 — dừng lại ở đây để review
       }, 500);
     }
   };
@@ -402,18 +378,23 @@ export default function Step2SelectPersonnelCaNhanHangNam({
   return (
     <div>
       {/* Upload Excel Section */}
-      {/* <ExcelImportSection
+      <ExcelImportSection
+        awardType="CA_NHAN_HANG_NAM"
         templateEndpoint="/api/annual-rewards/template"
         importEndpoint="/api/annual-rewards/import"
         templateFileName="mau_import_ca_nhan_hang_nam"
         onImportSuccess={handleImportSuccess}
         selectedCount={selectedPersonnelIds.length}
+        selectedPersonnelIds={selectedPersonnelIds}
         entityLabel="quân nhân"
         localProcessing={true}
         onLocalProcess={handleLocalExcelProcess}
+        previewEndpoint="/api/annual-rewards/import/preview"
+        reviewPath="/admin/awards/bulk/import-review"
+        sessionStorageKey="importPreviewData"
       />
 
-      <Divider>Hoặc chọn thủ công</Divider> */}
+      <Divider>Hoặc chọn thủ công</Divider>
 
       <Space style={{ marginBottom: 16 }} size="middle">
         <div>

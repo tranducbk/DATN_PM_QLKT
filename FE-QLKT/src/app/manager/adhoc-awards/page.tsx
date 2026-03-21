@@ -39,9 +39,7 @@ import { previewFileWithApi } from '@/utils/filePreview';
 
 const { Title, Text } = Typography;
 
-// =============================================================================
 // TYPES
-// =============================================================================
 interface AdhocAward {
   id: string;
   loai: string;
@@ -91,9 +89,7 @@ const INITIAL_TABLE_FILTERS: TableFilters = {
   type: 'ALL',
 };
 
-// =============================================================================
 // MAIN COMPONENT
-// =============================================================================
 export default function ManagerAdhocAwardsPage() {
   // Data states
   const [awards, setAwards] = useState<AdhocAward[]>([]);
@@ -107,9 +103,7 @@ export default function ManagerAdhocAwardsPage() {
   const [tableFilters, setTableFilters] = useState<TableFilters>(INITIAL_TABLE_FILTERS);
   const [searchDraft, setSearchDraft] = useState(INITIAL_TABLE_FILTERS.searchText);
 
-  // =============================================================================
   // DATA FETCHING
-  // =============================================================================
   const fetchAwards = useCallback(async () => {
     try {
       setLoading(true);
@@ -119,7 +113,7 @@ export default function ManagerAdhocAwardsPage() {
         : res?.data?.data || res?.data?.items || [];
       setAwards(awardsData);
     } catch (err) {
-      console.error('fetchAwards error', err);
+      // Error handled by UI message
       message.error('Không tải được danh sách khen thưởng đột xuất');
     } finally {
       setLoading(false);
@@ -130,9 +124,7 @@ export default function ManagerAdhocAwardsPage() {
     fetchAwards();
   }, [fetchAwards]);
 
-  // =============================================================================
   // FILE HANDLING
-  // =============================================================================
   const handleOpenDecisionFile = async (soQuyetDinh: string) => {
     await downloadDecisionFile(soQuyetDinh);
   };
@@ -141,9 +133,7 @@ export default function ManagerAdhocAwardsPage() {
     await previewFileWithApi(`/api/adhoc-awards/uploads/${file.filename}`, file.originalName);
   };
 
-  // =============================================================================
   // DETAIL MODAL HANDLERS
-  // =============================================================================
   const handleOpenDetailModal = (award: AdhocAward) => {
     setDetailAward(award);
     setDetailModalVisible(true);
@@ -154,9 +144,7 @@ export default function ManagerAdhocAwardsPage() {
     setDetailAward(null);
   };
 
-  // =============================================================================
   // TABLE FILTER HANDLERS
-  // =============================================================================
   const handleResetFilters = () => {
     setTableFilters(INITIAL_TABLE_FILTERS);
     setSearchDraft(INITIAL_TABLE_FILTERS.searchText);
@@ -176,9 +164,7 @@ export default function ManagerAdhocAwardsPage() {
     return () => clearTimeout(handler);
   }, [searchDraft]);
 
-  // =============================================================================
   // FILTERED TABLE DATA
-  // =============================================================================
   const filteredAwards = useMemo(() => {
     return awards.filter(award => {
       // Filter by year
@@ -216,9 +202,7 @@ export default function ManagerAdhocAwardsPage() {
     });
   }, [awards, tableFilters]);
 
-  // =============================================================================
   // TABLE COLUMNS
-  // =============================================================================
   const columns: TableColumnsType<AdhocAward> = [
     {
       title: 'STT',
@@ -373,9 +357,7 @@ export default function ManagerAdhocAwardsPage() {
     },
   ];
 
-  // =============================================================================
   // RENDER
-  // =============================================================================
   return (
     <div style={{ padding: 24 }}>
       <Breadcrumb

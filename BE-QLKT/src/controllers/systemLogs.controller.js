@@ -198,10 +198,10 @@ class SystemLogsController {
         },
       });
     } catch (error) {
-      console.error('Get system logs error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lỗi khi lấy nhật ký hệ thống',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -224,10 +224,10 @@ class SystemLogsController {
         data: actions.map(item => item.action),
       });
     } catch (error) {
-      console.error('Get actions error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lỗi khi lấy danh sách hành động',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -250,10 +250,70 @@ class SystemLogsController {
         data: resources.map(item => item.resource),
       });
     } catch (error) {
-      console.error('Get resources error:', error);
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
+        success: false,
+        message: error.message || 'Lỗi hệ thống',
+      });
+    }
+  }
+  /**
+   * DELETE /api/system-logs
+   * Xoá nhật ký hệ thống (yêu cầu DevZone bật allow_delete_logs)
+   */
+  async deleteLogs(req, res) {
+    try {
+      const { ids } = req.body;
+
+      if (!ids || !Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Danh sách ID không hợp lệ',
+        });
+      }
+
+      const result = await prisma.systemLog.deleteMany({
+        where: { id: { in: ids } },
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: `Đã xoá ${result.count} nhật ký`,
+        data: { deleted: result.count },
+      });
+    } catch (error) {
       return res.status(500).json({
         success: false,
-        message: error.message || 'Lỗi khi lấy danh sách tài nguyên',
+        message: error.message || 'Lỗi hệ thống',
+      });
+    }
+  }
+
+  async deleteAllLogs(req, res) {
+    try {
+      const count = await prisma.systemLog.count();
+      await prisma.systemLog.deleteMany({});
+
+      // Ghi log hành động xoá (sau khi xoá xong, log này sẽ là bản ghi duy nhất)
+      await prisma.systemLog.create({
+        data: {
+          nguoi_thuc_hien_id: req.user.id,
+          actor_role: req.user.role,
+          action: 'DELETE',
+          resource: 'system-logs',
+          description: `Xoá toàn bộ ${count} nhật ký hệ thống`,
+        },
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: `Đã xoá toàn bộ ${count} nhật ký`,
+        data: { deleted: count },
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }

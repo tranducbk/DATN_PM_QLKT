@@ -2,7 +2,6 @@ const http = require('http');
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
-const cron = require('node-cron');
 require('dotenv').config();
 
 const REQUIRED_ENV = ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'DATABASE_URL'];
@@ -14,14 +13,15 @@ if (missingEnv.length > 0) {
 
 const { PORT } = require('./configs');
 const { prisma } = require('./models');
-const profileService = require('./services/profile.service');
 const { errorHandler, notFoundHandler } = require('./middlewares/errorHandler');
 const { initSocket } = require('./utils/socketService');
 const app = express();
 const httpServer = http.createServer(app);
 
 // Cấu hình CORS
-const allowedOrigins = ['http://localhost:3000', 'http://localhost:3001'];
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+  : ['http://localhost:3000', 'http://localhost:3001'];
 
 const corsOptions = {
   origin: function (origin, callback) {
@@ -35,7 +35,14 @@ const corsOptions = {
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'token', 'x-access-token', 'Cookie'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'token',
+    'x-access-token',
+    'Cookie',
+    'x-dev-password',
+  ],
   exposedHeaders: ['Set-Cookie'],
   preflightContinue: false,
   maxAge: 86400,
@@ -47,8 +54,8 @@ app.options('*', cors(corsOptions));
 // Trust proxy for production deployment (Render.com, Heroku, etc.)
 app.set('trust proxy', 1);
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
 // Test Prisma connection
@@ -64,32 +71,7 @@ async function testDatabaseConnection() {
 
 testDatabaseConnection();
 
-// Cron job: Tự động cập nhật hồ sơ hàng tháng
-// Chạy vào ngày 1 hàng tháng lúc 01:00 sáng
-cron.schedule('0 1 1 * *', async () => {
-  console.log('\n📅 [CRON JOB] Bắt đầu cập nhật hồ sơ định kỳ hàng tháng...');
-  console.log(`📅 Thời gian: ${new Date().toLocaleString('vi-VN')}`);
-
-  try {
-    const result = await profileService.recalculateAll();
-    console.log(`✅ [CRON JOB] Hoàn thành cập nhật hồ sơ định kỳ`);
-    console.log(`   - Thành công: ${result.success} quân nhân`);
-    console.log(`   - Thất bại: ${result.errors.length} quân nhân`);
-
-    if (result.errors.length > 0) {
-      console.log('⚠️  [CRON JOB] Danh sách lỗi:');
-      result.errors.forEach(err => {
-        console.log(`   - ID ${err.personnelId}: ${err.error}`);
-      });
-    }
-  } catch (error) {
-    console.error('❌ [CRON JOB] Lỗi khi cập nhật hồ sơ định kỳ:', error.message);
-  }
-
-  console.log('📅 [CRON JOB] Kết thúc\n');
-});
-
-console.log('⏰ Cron job đã được kích hoạt: Cập nhật hồ sơ vào 01:00 ngày 1 hàng tháng');
+// Cron job được quản lý bởi devZone.route.js (đọc lịch từ DB bảng system_settings)
 
 app.use(require('./routes/index'));
 

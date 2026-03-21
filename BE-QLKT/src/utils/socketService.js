@@ -19,6 +19,8 @@ function initSocket(httpServer) {
       origin: ['http://localhost:3000', 'http://localhost:3001'],
       credentials: true,
     },
+    pingTimeout: 60000,
+    pingInterval: 25000,
   });
 
   // Middleware xác thực JWT khi connect
@@ -55,4 +57,12 @@ function emitNotificationToUser(userId, notification) {
   io.to(`user_${userId}`).emit('new_notification', notification);
 }
 
-module.exports = { initSocket, emitNotificationToUser };
+/**
+ * Gửi một event bất kỳ đến một user cụ thể
+ */
+function emitToUser(userId, event, data) {
+  if (!io) return;
+  io.to(`user_${userId}`).emit(event, data);
+}
+
+module.exports = { initSocket, emitNotificationToUser, emitToUser };

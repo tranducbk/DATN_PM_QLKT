@@ -3,7 +3,9 @@ const router = express.Router();
 const unitController = require('../controllers/unit.controller');
 const { verifyToken, requireAdmin, requireManager } = require('../middlewares/auth');
 const { auditLog, createDescription, getResourceId } = require('../middlewares/auditLog');
-const { getLogDescription } = require('../helpers/auditLogHelper');
+const { getLogDescription } = require('../helpers/auditLog');
+const { validate } = require('../middlewares/validate');
+const { unitValidation } = require('../validations');
 
 /**
  * @route   GET /api/units/my-units
@@ -35,6 +37,7 @@ router.post(
   '/',
   verifyToken,
   requireAdmin,
+  validate(unitValidation.createUnit),
   auditLog({
     action: 'CREATE',
     resource: 'units',
@@ -53,6 +56,7 @@ router.put(
   '/:id',
   verifyToken,
   requireAdmin,
+  validate(unitValidation.updateUnit),
   auditLog({
     action: 'UPDATE',
     resource: 'units',

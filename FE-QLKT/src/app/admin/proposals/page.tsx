@@ -99,7 +99,7 @@ export default function AdminProposalsPage() {
         setProposals(response.data.data || []);
       }
     } catch (error: any) {
-      console.error('Error fetching proposals:', error);
+      // Error handled by UI message
       message.error('Lỗi khi tải danh sách đề xuất');
     } finally {
       setLoading(false);
@@ -551,7 +551,7 @@ export default function AdminProposalsPage() {
             setSelectedDecision(null);
             fetchProposals();
           } catch (error: any) {
-            console.error('Upload decision error:', error);
+            // Error handled by UI message
             if (error.response?.status === 404) {
               message.warning(
                 'API endpoint chưa được tạo. Quyết định đã được lưu nhưng chưa gắn vào đề xuất.'

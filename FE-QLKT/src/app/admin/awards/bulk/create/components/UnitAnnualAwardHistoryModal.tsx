@@ -64,7 +64,7 @@ export default function UnitAnnualAwardHistoryModal({
       message.destroy('preview');
       await previewFileWithApi(`/${filePath}`, filename);
     } catch (error: any) {
-      console.error('Error opening decision file:', error);
+      // Error handled by UI message
       const errorMessage =
         error?.response?.data?.message || error?.message || 'Lỗi khi mở file quyết định';
       message.error({ content: errorMessage, key: 'preview' });

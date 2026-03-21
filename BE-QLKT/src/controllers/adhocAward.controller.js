@@ -1,6 +1,7 @@
 const adhocAwardService = require('../services/adhocAward.service');
 const { prisma } = require('../models');
 const { ROLES } = require('../constants/roles');
+const { parsePagination } = require('../helpers/paginationHelper');
 
 /**
  * Helper: Get manager's unit info
@@ -102,10 +103,10 @@ class AdhocAwardController {
         data: result,
       });
     } catch (error) {
-      console.error('Create ad-hoc award error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Tạo khen thưởng đột xuất thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -118,7 +119,8 @@ class AdhocAwardController {
    */
   async getAdhocAwards(req, res) {
     try {
-      const { type, year, personnelId, unitId, ho_ten, page = 1, limit = 1000 } = req.query;
+      const { type, year, personnelId, unitId, ho_ten, page, limit } = req.query;
+      const { page: pageNum, limit: limitNum } = parsePagination({ page, limit });
       const userRole = req.user?.role;
       const userQuanNhanId = req.user?.quan_nhan_id;
 
@@ -129,8 +131,8 @@ class AdhocAwardController {
         personnelId,
         unitId,
         ho_ten,
-        page: parseInt(page),
-        limit: parseInt(limit),
+        page: pageNum,
+        limit: limitNum,
       };
 
       // For Manager, filter by their unit
@@ -168,10 +170,10 @@ class AdhocAwardController {
         pagination: result.pagination,
       });
     } catch (error) {
-      console.error('Get ad-hoc awards error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy danh sách khen thưởng đột xuất thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -191,10 +193,10 @@ class AdhocAwardController {
         data: result,
       });
     } catch (error) {
-      console.error('Get ad-hoc award by ID error:', error);
-      return res.status(error.message === 'Khen thưởng đột xuất không tồn tại' ? 404 : 500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy thông tin khen thưởng đột xuất thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -235,10 +237,10 @@ class AdhocAwardController {
         data: result,
       });
     } catch (error) {
-      console.error('Update ad-hoc award error:', error);
-      return res.status(error.message === 'Khen thưởng đột xuất không tồn tại' ? 404 : 500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Cập nhật khen thưởng đột xuất thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -259,10 +261,10 @@ class AdhocAwardController {
         message: 'Xóa khen thưởng đột xuất thành công',
       });
     } catch (error) {
-      console.error('Delete ad-hoc award error:', error);
-      return res.status(error.message === 'Khen thưởng đột xuất không tồn tại' ? 404 : 500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Xóa khen thưởng đột xuất thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -295,10 +297,10 @@ class AdhocAwardController {
         data: result,
       });
     } catch (error) {
-      console.error('Get ad-hoc awards by personnel error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy danh sách khen thưởng đột xuất của quân nhân thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -327,10 +329,10 @@ class AdhocAwardController {
         data: result,
       });
     } catch (error) {
-      console.error('Get ad-hoc awards by unit error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy danh sách khen thưởng đột xuất của đơn vị thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }

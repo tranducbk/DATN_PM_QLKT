@@ -12,11 +12,11 @@ const {
   checkRole,
 } = require('../middlewares/auth');
 const { auditLog } = require('../middlewares/auditLog');
-const { getLogDescription, getResourceId } = require('../helpers/auditLogHelper');
+const { getLogDescription, getResourceId } = require('../helpers/auditLog');
 const { ROLES } = require('../constants/roles');
-
-// Memory storage để xử lý file Excel từ buffer
-const upload = multer({ storage: multer.memoryStorage() });
+const { excelUpload: upload } = require('../configs/multer.config');
+const { validate } = require('../middlewares/validate');
+const { annualRewardValidation } = require('../validations');
 
 // Disk storage để lưu file PDF quyết định
 const uploadDir = path.join(__dirname, '../../uploads/decisions');
@@ -69,6 +69,7 @@ router.post(
   '/',
   verifyToken,
   requireManager,
+  validate(annualRewardValidation.createAnnualReward),
   auditLog({
     action: 'CREATE',
     resource: 'annual-rewards',
@@ -81,6 +82,7 @@ router.put(
   '/:id',
   verifyToken,
   requireAdmin,
+  validate(annualRewardValidation.updateAnnualReward),
   auditLog({
     action: 'UPDATE',
     resource: 'annual-rewards',
@@ -119,6 +121,18 @@ router.post(
   }),
   annualRewardController.bulkCreateAnnualRewards
 );
+
+// Preview import danh hiệu hằng năm từ Excel (chỉ validate, không ghi DB)
+router.post(
+  '/import/preview',
+  verifyToken,
+  requireAdmin,
+  upload.single('file'),
+  annualRewardController.previewImport
+);
+
+// Confirm import danh hiệu hằng năm (lưu dữ liệu đã validate vào DB)
+router.post('/import/confirm', verifyToken, requireAdmin, annualRewardController.confirmImport);
 
 // Import danh hiệu hằng năm từ Excel
 router.post(
@@ -171,7 +185,6 @@ router.get('/decision-files/:filename', verifyToken, (req, res) => {
     res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
     res.sendFile(filePath);
   } catch (error) {
-    console.error('Serve PDF error:', error);
     res.status(500).json({
       success: false,
       message: 'Không thể tải file',

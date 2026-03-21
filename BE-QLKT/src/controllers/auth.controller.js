@@ -25,10 +25,10 @@ class AuthController {
         data: result,
       });
     } catch (error) {
-      console.error('Login error:', error);
-      return res.status(401).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Đăng nhập thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -56,10 +56,10 @@ class AuthController {
         data: result,
       });
     } catch (error) {
-      console.error('Refresh token error:', error);
-      return res.status(401).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Làm mới token thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -86,10 +86,10 @@ class AuthController {
         message: result.message,
       });
     } catch (error) {
-      console.error('Logout error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Đăng xuất thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -111,13 +111,6 @@ class AuthController {
         });
       }
 
-      if (newPassword.length < 6) {
-        return res.status(400).json({
-          success: false,
-          message: 'Mật khẩu mới phải có ít nhất 6 ký tự',
-        });
-      }
-
       const result = await authService.changePassword(userId, oldPassword, newPassword);
 
       return res.status(200).json({
@@ -125,10 +118,10 @@ class AuthController {
         message: result.message,
       });
     } catch (error) {
-      console.error('Change password error:', error);
-      return res.status(400).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Đổi mật khẩu thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }

@@ -1,63 +1,372 @@
 const { prisma } = require('../models');
 const ExcelJS = require('exceljs');
-const proposalService = require('./proposal.service');
-const notificationHelper = require('../helpers/notificationHelper');
+const proposalService = require('./proposal');
+const notificationHelper = require('../helpers/notification');
 const { ROLES } = require('../constants/roles');
+const { ValidationError } = require('../middlewares/errorHandler');
+const { parseHeaderMap, getHeaderCol } = require('../helpers/excelHelper');
 
 class MilitaryFlagService {
   /**
-   * Export template Excel for Military Flag (HCQKQT) import
+   * Preview import: parse + validate file Excel, trả về danh sách valid/errors
    */
-  async exportTemplate(userRole = ROLES.MANAGER) {
+  async previewImport(buffer) {
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('HCQKQT');
+    await workbook.xlsx.load(buffer);
+    const worksheet = workbook.worksheets[0];
 
-    // Define columns - MANAGER chỉ có các trường cơ bản
-    const columns = [
-      { header: 'Họ tên', key: 'ho_ten', width: 25 },
-      { header: 'Ngày sinh', key: 'ngay_sinh', width: 15 },
-      { header: 'Năm', key: 'nam', width: 10 },
-      { header: 'Cấp bậc', key: 'cap_bac', width: 15 },
-      { header: 'Chức vụ', key: 'chuc_vu', width: 30 },
-    ];
+    if (!worksheet) {
+      throw new ValidationError('File Excel không hợp lệ');
+    }
 
-    // ADMIN có thêm các cột chi tiết
-    if (userRole === ROLES.ADMIN) {
-      columns.push(
-        { header: 'Ghi chú', key: 'ghi_chu', width: 30 },
-        { header: 'Số quyết định', key: 'so_quyet_dinh', width: 20 }
+    // Verify sheet name
+    if (worksheet.name !== 'HC QKQT') {
+      throw new ValidationError(
+        `Sai loại file. Sheet phải có tên "HC QKQT", tìm thấy "${worksheet.name}"`
       );
     }
 
-    worksheet.columns = columns;
+    // Header map
+    const headerMap = parseHeaderMap(worksheet);
 
-    worksheet.getRow(1).font = { bold: true };
-    worksheet.getRow(1).fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFD9E1F2' },
-    };
+    const idCol = getHeaderCol(headerMap, ['id', 'ma_quan_nhan', 'personnel_id']);
+    const hoTenCol = getHeaderCol(headerMap, ['ho_va_ten', 'ho_ten', 'hoten', 'hovaten', 'ten']);
+    const capBacCol = getHeaderCol(headerMap, ['cap_bac', 'capbac', 'cap_bc']);
+    const chucVuCol = getHeaderCol(headerMap, ['chuc_vu', 'chucvu', 'chc_vu']);
+    const namCol = getHeaderCol(headerMap, ['nam', 'year']);
+    const soQuyetDinhCol = getHeaderCol(headerMap, ['so_quyet_dinh', 'soquyetdinh', 'so_qd']);
+    const ghiChuCol = getHeaderCol(headerMap, ['ghi_chu', 'ghichu', 'ghi_ch']);
 
-    worksheet.addRow({
-      ho_ten: 'Nguyễn Văn A',
-      ngay_sinh: '15/05/1990',
-      nam: 2024,
+    if (!idCol || !namCol) {
+      throw new ValidationError(
+        `Thiếu cột bắt buộc: ID, Năm. Tìm thấy headers: ${Object.keys(headerMap).join(', ')}`
+      );
+    }
+
+    const errors = [];
+    const valid = [];
+    let total = 0;
+    const seenInFile = new Set();
+    const currentYear = new Date().getFullYear();
+
+    // Query danh sách số quyết định hợp lệ trên hệ thống
+    const existingDecisions = await prisma.fileQuyetDinh.findMany({
+      select: { so_quyet_dinh: true },
     });
+    const validDecisionNumbers = new Set(existingDecisions.map(d => d.so_quyet_dinh));
 
-    // Thêm sample data cho ADMIN
-    if (userRole === ROLES.ADMIN) {
-      worksheet.addRow({
-        ho_ten: 'Trần Thị B',
-        ngay_sinh: '20/08/1985',
-        nam: 2024,
-        cap_bac: 'Thiếu tá',
-        chuc_vu: 'Phó Chỉ huy trưởng',
-        ghi_chu: 'Ghi chú mẫu',
-        so_quyet_dinh: '123/QĐ-BQP',
+    for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
+      const row = worksheet.getRow(rowNumber);
+      const idValue = idCol ? row.getCell(idCol).value : null;
+      const ho_ten = hoTenCol ? String(row.getCell(hoTenCol).value ?? '').trim() : '';
+      const namVal = row.getCell(namCol).value;
+      const cap_bac = capBacCol ? String(row.getCell(capBacCol).value ?? '').trim() : null;
+      const chuc_vu = chucVuCol ? String(row.getCell(chucVuCol).value ?? '').trim() : null;
+      const so_quyet_dinh = soQuyetDinhCol
+        ? String(row.getCell(soQuyetDinhCol).value ?? '').trim()
+        : null;
+      const ghi_chu = ghiChuCol ? String(row.getCell(ghiChuCol).value ?? '').trim() : null;
+
+      // Skip empty rows
+      if (!idValue && !namVal) continue;
+
+      total++;
+
+      // Validate required fields
+      const missingFields = [];
+      if (!idValue) missingFields.push('ID');
+      if (!namVal) missingFields.push('Năm');
+      if (missingFields.length > 0) {
+        errors.push({
+          row: rowNumber,
+          ho_ten,
+          nam: namVal,
+          message: `Thiếu ${missingFields.join(', ')}`,
+        });
+        continue;
+      }
+
+      // Validate personnel ID
+      const personnelId = String(idValue).trim();
+      if (!personnelId) {
+        errors.push({
+          row: rowNumber,
+          ho_ten,
+          nam: namVal,
+          message: `ID không hợp lệ: ${idValue}`,
+        });
+        continue;
+      }
+      const personnel = await prisma.quanNhan.findUnique({
+        where: { id: personnelId },
+        select: { id: true, ho_ten: true, cap_bac: true, ngay_nhap_ngu: true },
+      });
+      if (!personnel) {
+        errors.push({
+          row: rowNumber,
+          ho_ten,
+          nam: namVal,
+          message: `Không tìm thấy quân nhân với ID ${personnelId}`,
+        });
+        continue;
+      }
+
+      // Validate year
+      const nam = parseInt(namVal);
+      if (!Number.isInteger(nam)) {
+        errors.push({
+          row: rowNumber,
+          ho_ten,
+          nam: namVal,
+          message: `Giá trị năm không hợp lệ: ${namVal}`,
+        });
+        continue;
+      }
+      if (nam < 1900 || nam > currentYear) {
+        errors.push({
+          row: rowNumber,
+          ho_ten,
+          nam,
+          message: `Năm ${nam} không hợp lệ. Chỉ được nhập đến năm hiện tại (${currentYear})`,
+        });
+        continue;
+      }
+
+      // Validate số quyết định — bắt buộc + phải có trên hệ thống
+      if (!so_quyet_dinh) {
+        errors.push({ row: rowNumber, ho_ten, nam, message: 'Thiếu số quyết định' });
+        continue;
+      }
+      if (!validDecisionNumbers.has(so_quyet_dinh)) {
+        errors.push({
+          row: rowNumber,
+          ho_ten,
+          nam,
+          message: `Số quyết định "${so_quyet_dinh}" không tồn tại trên hệ thống`,
+        });
+        continue;
+      }
+
+      // Check duplicate in file — HC QKQT unique on quan_nhan_id
+      if (seenInFile.has(personnelId)) {
+        errors.push({
+          row: rowNumber,
+          ho_ten,
+          nam,
+          message: `Trùng lặp trong file — quân nhân ${ho_ten ?? personnel.ho_ten} đã xuất hiện ở dòng trước`,
+        });
+        continue;
+      }
+      seenInFile.add(personnelId);
+
+      // Check duplicate in DB — person already has HC QKQT
+      const existingAward = await prisma.huanChuongQuanKyQuyetThang.findUnique({
+        where: { quan_nhan_id: personnelId },
+      });
+      if (existingAward) {
+        errors.push({
+          row: rowNumber,
+          ho_ten,
+          nam,
+          message: `Quân nhân đã có HC QKQT trên hệ thống (năm ${existingAward.nam})`,
+        });
+        continue;
+      }
+
+      // Check eligibility: >= 25 years service from ngay_nhap_ngu
+      if (personnel.ngay_nhap_ngu) {
+        const nhapNguDate = new Date(personnel.ngay_nhap_ngu);
+        const yearsServed = nam - nhapNguDate.getFullYear();
+        if (yearsServed < 25) {
+          errors.push({
+            row: rowNumber,
+            ho_ten,
+            nam,
+            message: `Chưa đủ 25 năm phục vụ (mới ${yearsServed} năm, nhập ngũ ${nhapNguDate.getFullYear()})`,
+          });
+          continue;
+        }
+      }
+
+      // Query history (last 5 awards across types)
+      const history = await prisma.huanChuongQuanKyQuyetThang.findMany({
+        where: { quan_nhan_id: personnelId },
+        orderBy: { nam: 'desc' },
+        take: 5,
+        select: { nam: true, so_quyet_dinh: true },
+      });
+
+      valid.push({
+        row: rowNumber,
+        personnel_id: personnelId,
+        ho_ten: ho_ten ?? personnel.ho_ten,
+        cap_bac,
+        chuc_vu,
+        nam,
+        so_quyet_dinh,
+        ghi_chu,
+        history,
       });
     }
 
-    return await workbook.xlsx.writeBuffer();
+    return { total, valid, errors };
+  }
+
+  /**
+   * Confirm import: lưu dữ liệu đã validate vào DB
+   */
+  async confirmImport(validItems, adminId) {
+    return await prisma.$transaction(
+      async tx => {
+        const results = [];
+        for (const item of validItems) {
+          const result = await tx.huanChuongQuanKyQuyetThang.upsert({
+            where: { quan_nhan_id: item.personnel_id },
+            update: {
+              nam: item.nam,
+              cap_bac: item.cap_bac ?? null,
+              chuc_vu: item.chuc_vu ?? null,
+              so_quyet_dinh: item.so_quyet_dinh ?? null,
+              ghi_chu: item.ghi_chu ?? null,
+            },
+            create: {
+              quan_nhan_id: item.personnel_id,
+              nam: item.nam,
+              cap_bac: item.cap_bac ?? null,
+              chuc_vu: item.chuc_vu ?? null,
+              so_quyet_dinh: item.so_quyet_dinh ?? null,
+              ghi_chu: item.ghi_chu ?? null,
+            },
+          });
+          results.push(result);
+        }
+        return { imported: results.length };
+      },
+      { timeout: 30000 }
+    );
+  }
+
+  /**
+   * Export template Excel for Military Flag (HC QKQT) import
+   * Pre-fills with selected personnel when personnelIds provided
+   */
+  async exportTemplate(personnelIds = [], userRole = ROLES.MANAGER) {
+    // Query personnel by IDs
+    const personnelList =
+      personnelIds.length > 0
+        ? await prisma.quanNhan.findMany({
+            where: { id: { in: personnelIds } },
+            include: { ChucVu: true },
+          })
+        : [];
+
+    // Query danh sách số quyết định hiện có để tạo dropdown
+    const existingDecisions = await prisma.fileQuyetDinh.findMany({
+      select: { so_quyet_dinh: true },
+      orderBy: { nam: 'desc' },
+      take: 200,
+    });
+    const decisionNumbers = existingDecisions.map(d => d.so_quyet_dinh).filter(Boolean);
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('HC QKQT');
+
+    // Định nghĩa các cột — HC QKQT không có danh_hieu (chỉ 1 loại)
+    const columns = [
+      { header: 'STT', key: 'stt', width: 6 },
+      { header: 'ID', key: 'id', width: 10 },
+      { header: 'Họ và tên', key: 'ho_ten', width: 25 },
+      { header: 'Cấp bậc', key: 'cap_bac', width: 15 },
+      { header: 'Chức vụ', key: 'chuc_vu', width: 20 },
+      { header: 'Năm (*)', key: 'nam', width: 10 },
+      { header: 'Số quyết định', key: 'so_quyet_dinh', width: 20 },
+      { header: 'Ghi chú', key: 'ghi_chu', width: 25 },
+    ];
+
+    worksheet.columns = columns;
+
+    // Style cho header row: bold + gray background
+    const headerRow = worksheet.getRow(1);
+    headerRow.font = { bold: true };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFD3D3D3' },
+    };
+
+    // Pre-fill rows with personnel data
+    personnelList.forEach((person, index) => {
+      const rowData = {
+        stt: index + 1,
+        id: person.id,
+        ho_ten: person.ho_ten ?? '',
+        cap_bac: person.cap_bac ?? '',
+        chuc_vu: person.ChucVu ? person.ChucVu.ten_chuc_vu : '',
+      };
+      worksheet.addRow(rowData);
+    });
+
+    // Light yellow background for readonly columns (STT, ID, Họ và tên)
+    const readonlyColIndices = [1, 2, 3];
+    const yellowFill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFFFFCC' },
+    };
+
+    for (let rowNum = 2; rowNum <= Math.max(personnelList.length + 1, 2); rowNum++) {
+      const row = worksheet.getRow(rowNum);
+      readonlyColIndices.forEach(colIdx => {
+        row.getCell(colIdx).fill = yellowFill;
+      });
+    }
+
+    // Data validation for Cấp bậc column (col 4) — dropdown
+    const capBacOptions =
+      'Binh nhì,Binh nhất,Hạ sĩ,Trung sĩ,Thượng sĩ,Thiếu úy,Trung úy,Thượng úy,Đại úy,Thiếu tá,Trung tá,Thượng tá,Đại tá,Thiếu tướng,Trung tướng,Thượng tướng,Đại tướng';
+    const capBacSheet = workbook.addWorksheet('_CapBac', { state: 'veryHidden' });
+    capBacOptions.split(',').forEach((cb, idx) => {
+      capBacSheet.getCell(`A${idx + 1}`).value = cb;
+    });
+    const capBacCount = capBacOptions.split(',').length;
+    const maxRows = Math.max(personnelList.length + 1, 50);
+    for (let rowNum = 2; rowNum <= maxRows; rowNum++) {
+      worksheet.getRow(rowNum).getCell(4).dataValidation = {
+        type: 'list',
+        allowBlank: true,
+        formulae: [`_CapBac!$A$1:$A$${capBacCount}`],
+      };
+    }
+
+    // Data validation cho cột số quyết định (col 7) — dropdown từ DB
+    if (decisionNumbers.length > 0) {
+      const soQdColNumber = columns.findIndex(c => c.key === 'so_quyet_dinh') + 1;
+      const decisionListStr = decisionNumbers.join(',');
+
+      if (decisionListStr.length <= 250) {
+        for (let rowNum = 2; rowNum <= maxRows; rowNum++) {
+          worksheet.getRow(rowNum).getCell(soQdColNumber).dataValidation = {
+            type: 'list',
+            allowBlank: true,
+            formulae: [`"${decisionListStr}"`],
+          };
+        }
+      } else {
+        const refSheet = workbook.addWorksheet('_QuyetDinh', { state: 'veryHidden' });
+        decisionNumbers.forEach((sqd, idx) => {
+          refSheet.getCell(`A${idx + 1}`).value = sqd;
+        });
+        for (let rowNum = 2; rowNum <= maxRows; rowNum++) {
+          worksheet.getRow(rowNum).getCell(soQdColNumber).dataValidation = {
+            type: 'list',
+            allowBlank: true,
+            formulae: [`_QuyetDinh!$A$1:$A$${decisionNumbers.length}`],
+          };
+        }
+      }
+    }
+
+    return workbook;
   }
 
   /**
@@ -94,10 +403,10 @@ class MilitaryFlagService {
         const ho_ten = row.getCell(1).value?.toString().trim();
         const ngay_sinh_raw = row.getCell(2).value;
         const nam = parseInt(row.getCell(3).value);
-        const cap_bac = row.getCell(4).value?.toString() || null;
-        const chuc_vu = row.getCell(5).value?.toString() || null;
-        const ghi_chu = row.getCell(6).value?.toString() || null;
-        const so_quyet_dinh = row.getCell(7).value?.toString() || null;
+        const cap_bac = row.getCell(4).value?.toString() ?? null;
+        const chuc_vu = row.getCell(5).value?.toString() ?? null;
+        const ghi_chu = row.getCell(6).value?.toString() ?? null;
+        const so_quyet_dinh = row.getCell(7).value?.toString() ?? null;
 
         if (!ho_ten || !nam) {
           results.errors.push(`Dòng ${rowNumber}: Thiếu thông tin bắt buộc`);
@@ -176,7 +485,6 @@ class MilitaryFlagService {
             continue;
           }
         } catch (checkError) {
-          console.error('Error checking duplicates:', checkError);
           // Continue processing but log the error
         }
 
@@ -186,17 +494,17 @@ class MilitaryFlagService {
           create: {
             quan_nhan_id: personnel.id,
             nam,
-            cap_bac: cap_bac || null,
-            chuc_vu: chuc_vu || null,
-            ghi_chu: ghi_chu || null,
-            so_quyet_dinh: so_quyet_dinh || null,
+            cap_bac: cap_bac ?? null,
+            chuc_vu: chuc_vu ?? null,
+            ghi_chu: ghi_chu ?? null,
+            so_quyet_dinh: so_quyet_dinh ?? null,
           },
           update: {
             nam,
-            cap_bac: cap_bac || null,
-            chuc_vu: chuc_vu || null,
-            ghi_chu: ghi_chu || null,
-            so_quyet_dinh: so_quyet_dinh || null,
+            cap_bac: cap_bac ?? null,
+            chuc_vu: chuc_vu ?? null,
+            ghi_chu: ghi_chu ?? null,
+            so_quyet_dinh: so_quyet_dinh ?? null,
           },
         });
 
@@ -314,60 +622,36 @@ class MilitaryFlagService {
     const worksheet = workbook.addWorksheet('HCQKQT');
 
     worksheet.columns = [
-      { header: 'STT', key: 'stt', width: 5 },
-      { header: 'CCCD', key: 'cccd', width: 15 },
-      { header: 'Họ tên', key: 'ho_ten', width: 25 },
-      { header: 'Đơn vị', key: 'don_vi', width: 30 },
-      { header: 'Năm', key: 'nam', width: 10 },
+      { header: 'STT', key: 'stt', width: 6 },
+      { header: 'ID', key: 'id', width: 10 },
+      { header: 'Họ và tên', key: 'ho_ten', width: 25 },
       { header: 'Cấp bậc', key: 'cap_bac', width: 15 },
-      { header: 'Chức vụ', key: 'chuc_vu', width: 30 },
-      { header: 'Thời gian (tháng)', key: 'thoi_gian', width: 18 },
+      { header: 'Chức vụ', key: 'chuc_vu', width: 20 },
+      { header: 'Năm', key: 'nam', width: 10 },
       { header: 'Số quyết định', key: 'so_quyet_dinh', width: 20 },
-      { header: 'Ghi chú', key: 'ghi_chu', width: 30 },
+      { header: 'Ghi chú', key: 'ghi_chu', width: 25 },
+      { header: 'Đơn vị', key: 'don_vi', width: 30 },
     ];
 
     worksheet.getRow(1).font = { bold: true };
     worksheet.getRow(1).fill = {
       type: 'pattern',
       pattern: 'solid',
-      fgColor: { argb: 'FFD9E1F2' },
-    };
-
-    // Helper function để convert thoi_gian từ object {years, months} sang số tháng
-    const convertThoiGian = thoiGian => {
-      if (!thoiGian) return '';
-      if (typeof thoiGian === 'object') {
-        const years = thoiGian.years || 0;
-        const months = thoiGian.months || 0;
-        return years * 12 + months;
-      } else if (typeof thoiGian === 'number') {
-        return thoiGian;
-      } else if (typeof thoiGian === 'string') {
-        try {
-          const parsed = JSON.parse(thoiGian);
-          const years = parsed.years || 0;
-          const months = parsed.months || 0;
-          return years * 12 + months;
-        } catch {
-          return thoiGian;
-        }
-      }
-      return '';
+      fgColor: { argb: 'FFD3D3D3' },
     };
 
     data.forEach((item, index) => {
       worksheet.addRow({
         stt: index + 1,
-        cccd: item.QuanNhan.cccd,
-        ho_ten: item.QuanNhan.ho_ten,
-        don_vi:
-          item.QuanNhan.CoQuanDonVi?.ten_don_vi || item.QuanNhan.DonViTrucThuoc?.ten_don_vi || '',
+        id: item.quan_nhan_id,
+        ho_ten: item.QuanNhan?.ho_ten ?? '',
+        cap_bac: item.cap_bac ?? '',
+        chuc_vu: item.chuc_vu ?? '',
         nam: item.nam,
-        cap_bac: item.cap_bac,
-        chuc_vu: item.chuc_vu,
-        thoi_gian: convertThoiGian(item.thoi_gian),
-        so_quyet_dinh: item.so_quyet_dinh,
-        ghi_chu: item.ghi_chu || '',
+        so_quyet_dinh: item.so_quyet_dinh ?? '',
+        ghi_chu: item.ghi_chu ?? '',
+        don_vi:
+          item.QuanNhan?.CoQuanDonVi?.ten_don_vi ?? item.QuanNhan?.DonViTrucThuoc?.ten_don_vi ?? '',
       });
     });
 
@@ -476,10 +760,7 @@ class MilitaryFlagService {
     // Gửi thông báo cho Manager và quân nhân
     try {
       await notificationHelper.notifyOnAwardDeleted(award, personnel, 'HCQKQT', adminUsername);
-      console.log(`✅ Sent notification for deleted HCQKQT award`);
-    } catch (notifyError) {
-      console.error(`⚠️ Failed to send notification:`, notifyError.message);
-    }
+    } catch (notifyError) {}
 
     return {
       message: 'Xóa khen thưởng HCQKQT thành công',

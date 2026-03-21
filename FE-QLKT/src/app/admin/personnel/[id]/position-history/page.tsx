@@ -57,7 +57,7 @@ export default function PositionHistoryPage() {
   const [loading, setLoading] = useState(true);
   const [personnel, setPersonnel] = useState<any>(null);
   const [histories, setHistories] = useState<HistoryRecord[]>([]);
-  const [positions, setPositions] = useState([]);
+  const [positions, setPositions] = useState<any[]>([]);
   const [units, setUnits] = useState<any[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingHistory, setEditingHistory] = useState<any>(null);

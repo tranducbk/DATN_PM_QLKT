@@ -89,7 +89,7 @@ export default function Step2SelectPersonnelNCKH({
         setPersonnel(personnelData);
       }
     } catch (error: any) {
-      console.error('Error fetching personnel:', error);
+      // Error handled by UI
     } finally {
       setLoading(false);
     }
@@ -260,9 +260,7 @@ export default function Step2SelectPersonnelNCKH({
                 const nameMatch = personnelName === excelName;
 
                 // So sánh ngày sinh
-                const personnelBirth = p.ngay_sinh
-                  ? new Date(p.ngay_sinh).toLocaleDateString('vi-VN')
-                  : '';
+                const personnelBirth = p.ngay_sinh ? formatDate(p.ngay_sinh) : '';
                 const excelBirth = ngaySinh;
 
                 return nameMatch && personnelBirth === excelBirth;
@@ -374,7 +372,7 @@ export default function Step2SelectPersonnelNCKH({
           ghi_chu: achievement.ghi_chu,
         }));
 
-        onTitleDataChange(titleData);
+        onTitleDataChange?.(titleData);
 
         // Update nam from imported data if available
         if (result.titleData[0].nam) {
@@ -383,14 +381,10 @@ export default function Step2SelectPersonnelNCKH({
       }
     }
 
-    // Tự động chuyển sang bước 4 (Upload file) sau khi Đã thêm thành công
-    // Bỏ qua bước 3 vì dữ liệu đã được import từ Excel
+    // Chuyển sang bước 3 (Review) để xem trước dữ liệu trước khi xác nhận
     if (onNextStep) {
       setTimeout(() => {
-        onNextStep(); // Chuyển sang bước 3
-        setTimeout(() => {
-          onNextStep(); // Chuyển sang bước 4
-        }, 100);
+        onNextStep(); // Chuyển sang bước 3 — dừng lại ở đây để review
       }, 500);
     }
   };
@@ -422,18 +416,23 @@ export default function Step2SelectPersonnelNCKH({
       />
 
       {/* Upload Excel Section */}
-      {/* <ExcelImportSection
+      <ExcelImportSection
+        awardType="NCKH"
         templateEndpoint="/api/scientific-achievements/template"
         importEndpoint="/api/scientific-achievements/import"
         templateFileName="mau_import_thanh_tich_khoa_hoc"
         onImportSuccess={handleImportSuccess}
         selectedCount={selectedPersonnelIds.length}
+        selectedPersonnelIds={selectedPersonnelIds}
         entityLabel="quân nhân"
         localProcessing={true}
         onLocalProcess={handleLocalExcelProcess}
+        previewEndpoint="/api/scientific-achievements/import/preview"
+        reviewPath="/admin/awards/bulk/import-review-nckh"
+        sessionStorageKey="importPreviewDataNCKH"
       />
 
-      <Divider>Hoặc chọn thủ công</Divider> */}
+      <Divider>Hoặc chọn thủ công</Divider>
 
       <Space style={{ marginBottom: 16 }} size="middle">
         <div>

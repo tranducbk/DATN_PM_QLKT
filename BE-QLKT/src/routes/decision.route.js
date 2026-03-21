@@ -6,7 +6,9 @@ const fs = require('fs');
 const decisionController = require('../controllers/decision.controller');
 const { verifyToken, requireAdmin } = require('../middlewares/auth');
 const { auditLog, createDescription, getResourceId } = require('../middlewares/auditLog');
-const { getLogDescription } = require('../helpers/auditLogHelper');
+const { getLogDescription } = require('../helpers/auditLog');
+const { validate } = require('../middlewares/validate');
+const { decisionValidation } = require('../validations');
 
 // Cấu hình multer để lưu file vào thư mục uploads/decisions
 const storage = multer.diskStorage({

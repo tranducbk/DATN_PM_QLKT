@@ -116,10 +116,10 @@ export default function SuperAdminDashboard() {
             newAccountsByDate: statisticsRes.data.newAccountsByDate || [],
           });
         } else {
-          console.error('Statistics API failed:', statisticsRes);
+          // Statistics API returned unsuccessful response
         }
       } catch (error) {
-        console.error('Error fetching data:', error);
+        // Error handled by UI
       } finally {
         setLoading(false);
       }

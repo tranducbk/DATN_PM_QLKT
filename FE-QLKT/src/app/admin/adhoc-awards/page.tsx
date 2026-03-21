@@ -53,9 +53,7 @@ const { Title, Text } = Typography;
 const { TextArea } = Input;
 const { Search } = Input;
 
-// =============================================================================
 // TYPES
-// =============================================================================
 interface AdhocAward {
   id: string;
   loai: string; // KHEN_THUONG_DOT_XUAT
@@ -143,9 +141,7 @@ interface EditFormData {
   decisionNumber: string;
 }
 
-// =============================================================================
 // CONSTANTS
-// =============================================================================
 const INITIAL_CREATE_FORM: CreateFormData = {
   type: 'CA_NHAN',
   year: new Date().getFullYear(),
@@ -203,9 +199,7 @@ const RANK_OPTIONS = [
   { value: 'Đại tướng', label: 'Đại tướng' },
 ];
 
-// =============================================================================
 // MAIN COMPONENT
-// =============================================================================
 export default function AdhocAwardsPage() {
   // Data states
   const [awards, setAwards] = useState<AdhocAward[]>([]);
@@ -253,9 +247,7 @@ export default function AdhocAwardsPage() {
   });
   const [unitFilters, setUnitFilters] = useState({ type: 'ALL' });
 
-  // =============================================================================
   // DATA FETCHING
-  // =============================================================================
   const fetchAwards = useCallback(async () => {
     try {
       setLoading(true);
@@ -265,7 +257,7 @@ export default function AdhocAwardsPage() {
         : res?.data?.data || res?.data?.items || [];
       setAwards(awardsData);
     } catch (err) {
-      console.error('fetchAwards error', err);
+      // Error handled by UI message
       message.error('Không tải được danh sách khen thưởng đột xuất');
     } finally {
       setLoading(false);
@@ -297,7 +289,7 @@ export default function AdhocAwardsPage() {
       setUnits(coQuanDonVi);
       setSubUnits(donViTrucThuoc);
     } catch (err) {
-      console.error('fetchPersonnelAndUnits error', err);
+      // Error handled by UI message
       message.error('Không tải được dữ liệu đối tượng');
     }
   }, []);
@@ -307,9 +299,7 @@ export default function AdhocAwardsPage() {
     fetchPersonnelAndUnits();
   }, [fetchAwards, fetchPersonnelAndUnits]);
 
-  // =============================================================================
   // DECISION AUTOCOMPLETE
-  // =============================================================================
   const handleSearchDecision = async (value: string) => {
     if (!value || value.trim().length === 0) {
       setDecisionOptions([]);
@@ -367,16 +357,12 @@ export default function AdhocAwardsPage() {
     }
   };
 
-  // =============================================================================
   // FILE HANDLING
-  // =============================================================================
   const handleOpenDecisionFile = async (soQuyetDinh: string) => {
     await downloadDecisionFile(soQuyetDinh);
   };
 
-  // =============================================================================
   // CREATE HANDLERS
-  // =============================================================================
   const handleOpenCreateModal = () => {
     setCreateFormData(INITIAL_CREATE_FORM);
     setCreateAttachedFileList([]);
@@ -479,9 +465,7 @@ export default function AdhocAwardsPage() {
     }
   };
 
-  // =============================================================================
   // EDIT HANDLERS
-  // =============================================================================
   const handleOpenEditModal = (award: AdhocAward) => {
     setEditingAward(award);
     setEditFormData({
@@ -576,9 +560,7 @@ export default function AdhocAwardsPage() {
     }
   };
 
-  // =============================================================================
   // DELETE HANDLER
-  // =============================================================================
   const handleDelete = async (id: string) => {
     try {
       const result = await apiClient.deleteAdhocAward(id);
@@ -593,9 +575,7 @@ export default function AdhocAwardsPage() {
     }
   };
 
-  // =============================================================================
   // DETAIL MODAL HANDLERS
-  // =============================================================================
   const handleOpenDetailModal = (award: AdhocAward) => {
     setDetailAward(award);
     setDetailModalVisible(true);
@@ -606,9 +586,7 @@ export default function AdhocAwardsPage() {
     setDetailAward(null);
   };
 
-  // =============================================================================
   // FILES MODAL HANDLERS
-  // =============================================================================
   const handleOpenFilesModal = (files: FileInfo[]) => {
     setFilesModalData(files);
     setFilesModalVisible(true);
@@ -623,9 +601,7 @@ export default function AdhocAwardsPage() {
     await previewFileWithApi(`/api/adhoc-awards/uploads/${file.filename}`, file.originalName);
   };
 
-  // =============================================================================
   // TABLE FILTER HANDLERS
-  // =============================================================================
   const handleResetFilters = () => {
     setTableFilters(INITIAL_TABLE_FILTERS);
   };
@@ -636,9 +612,7 @@ export default function AdhocAwardsPage() {
     return years;
   }, [awards]);
 
-  // =============================================================================
   // FILTERED TABLE DATA
-  // =============================================================================
   const filteredAwards = useMemo(() => {
     return awards.filter(award => {
       // Filter by year
@@ -676,9 +650,7 @@ export default function AdhocAwardsPage() {
     });
   }, [awards, tableFilters]);
 
-  // =============================================================================
   // FILTERED DATA FOR CREATE MODAL
-  // =============================================================================
   const filteredPersonnel = personnel.filter(p => {
     if (personnelFilters.coQuanId && p.co_quan_don_vi_id !== personnelFilters.coQuanId)
       return false;
@@ -698,9 +670,7 @@ export default function AdhocAwardsPage() {
     return true;
   });
 
-  // =============================================================================
   // TABLE COLUMNS
-  // =============================================================================
   const columns: TableColumnsType<AdhocAward> = [
     {
       title: 'STT',
@@ -891,9 +861,7 @@ export default function AdhocAwardsPage() {
     },
   ];
 
-  // =============================================================================
   // RENDER CREATE MODAL STEPS
-  // =============================================================================
   const renderCreateStep = () => {
     const { currentStep, type } = createFormData;
 
@@ -1481,8 +1449,8 @@ export default function AdhocAwardsPage() {
                     {
                       title: 'Loại',
                       key: 'loai',
-                      render: (_, record: Unit) => {
-                        const isCoQuan = units.find(u => u.id === record.id);
+                      render: (_: any, record: Unit | undefined) => {
+                        const isCoQuan = units.find(u => u.id === record?.id);
                         return (
                           <Tag color={isCoQuan ? 'blue' : 'green'}>
                             {isCoQuan ? 'Cơ quan đơn vị' : 'Đơn vị trực thuộc'}
@@ -1547,9 +1515,7 @@ export default function AdhocAwardsPage() {
     }
   };
 
-  // =============================================================================
   // RENDER
-  // =============================================================================
   return (
     <div style={{ padding: 24 }}>
       <Breadcrumb

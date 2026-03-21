@@ -86,7 +86,7 @@ export default function Step2SelectPersonnel({
         setPersonnel(personnelData);
       }
     } catch (error: any) {
-      console.error('Error fetching personnel:', error);
+      // Error handled by UI
     } finally {
       setLoading(false);
     }

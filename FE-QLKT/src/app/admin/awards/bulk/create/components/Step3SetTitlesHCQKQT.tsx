@@ -100,7 +100,7 @@ export default function Step3SetTitlesHCQKQT({
         }
       }
     } catch (error) {
-      console.error('Error fetching personnel details:', error);
+      // Error handled by UI
     } finally {
       setLoading(false);
     }

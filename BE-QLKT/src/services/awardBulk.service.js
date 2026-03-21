@@ -1,6 +1,7 @@
 const { prisma } = require('../models');
-const proposalService = require('./proposal.service');
-const notificationHelper = require('../helpers/notificationHelper');
+const proposalService = require('./proposal');
+const notificationHelper = require('../helpers/notification');
+const { getLoaiDeXuatName } = require('../constants/danhHieu.constants');
 
 class AwardBulkService {
   /**
@@ -196,9 +197,7 @@ class AwardBulkService {
       const affectedPersonnelIds = new Set();
       let importedCount = 0;
 
-      // ============================================
       // VALIDATION 1: Kiểm tra duplicate (cùng năm và cùng danh hiệu)
-      // ============================================
       const duplicateErrors = [];
 
       // Kiểm tra duplicate cho cá nhân
@@ -221,9 +220,7 @@ class AwardBulkService {
         );
       }
 
-      // ============================================
       // VALIDATION 2: Kiểm tra điều kiện đủ (ngày nhập ngũ, giới tính, thời gian phục vụ)
-      // ============================================
       if (['KNC_VSNXD_QDNDVN', 'NIEN_HAN', 'HC_QKQT'].includes(type)) {
         const validationErrors = await this.validatePersonnelConditions(type, selectedPersonnel);
         errors.push(...validationErrors);
@@ -275,9 +272,7 @@ class AwardBulkService {
         throw new Error(`Phát hiện lỗi validation:\n${errors.join('\n')}`);
       }
 
-      // ============================================
       // LƯU VÀO DATABASE - Sử dụng logic từ approveProposal
-      // ============================================
       // Tạo một proposal giả để tái sử dụng logic approveProposal
       // Hoặc gọi trực tiếp các service tương ứng
 
@@ -350,54 +345,21 @@ class AwardBulkService {
         }
       }
 
-      // Với HC_QKQT: Tạo/cập nhật HuanChuongQuanKyQuyetThang
+      // Với HC_QKQT: Tạo/cập nhật HuanChuongQuanKyQuyetThang (atomic transaction)
       else if (type === 'HC_QKQT') {
-        for (const item of titleData) {
-          try {
-            // Lấy thông tin quân nhân để tính thời gian
-            const quanNhan = await prisma.quanNhan.findUnique({
+        await prisma.$transaction(async tx => {
+          for (const item of titleData) {
+            const quanNhan = await tx.quanNhan.findUnique({
               where: { id: item.personnel_id },
             });
 
             if (!quanNhan) {
-              errors.push(`Không tìm thấy quân nhân với ID: ${item.personnel_id}`);
-              continue;
+              throw new Error(`Không tìm thấy quân nhân với ID: ${item.personnel_id}`);
             }
 
-            // Tính thời gian từ ngày nhập ngũ
-            let thoiGian = null;
-            if (quanNhan.ngay_nhap_ngu) {
-              const ngayNhapNgu = new Date(quanNhan.ngay_nhap_ngu);
-              const ngayKetThuc = quanNhan.ngay_xuat_ngu
-                ? new Date(quanNhan.ngay_xuat_ngu)
-                : new Date();
+            const thoiGian = this.calculateThoiGian(quanNhan);
 
-              let months = (ngayKetThuc.getFullYear() - ngayNhapNgu.getFullYear()) * 12;
-              months += ngayKetThuc.getMonth() - ngayNhapNgu.getMonth();
-              if (ngayKetThuc.getDate() < ngayNhapNgu.getDate()) {
-                months--;
-              }
-              months = Math.max(0, months);
-
-              const years = Math.floor(months / 12);
-              const remainingMonths = months % 12;
-              thoiGian = {
-                total_months: months,
-                years: years,
-                months: remainingMonths,
-                display:
-                  months === 0
-                    ? '-'
-                    : years > 0 && remainingMonths > 0
-                      ? `${years} năm ${remainingMonths} tháng`
-                      : years > 0
-                        ? `${years} năm`
-                        : `${remainingMonths} tháng`,
-              };
-            }
-
-            // Upsert (mỗi quân nhân chỉ có 1 bản ghi)
-            await prisma.huanChuongQuanKyQuyetThang.upsert({
+            await tx.huanChuongQuanKyQuyetThang.upsert({
               where: { quan_nhan_id: item.personnel_id },
               create: {
                 quan_nhan_id: item.personnel_id,
@@ -420,80 +382,40 @@ class AwardBulkService {
 
             importedCount++;
             affectedPersonnelIds.add(item.personnel_id);
-          } catch (error) {
+          }
+        });
+      }
+
+      // Với NIEN_HAN: Tạo/cập nhật KhenThuongHCCSVV (atomic transaction)
+      else if (type === 'NIEN_HAN') {
+        // Validate trước transaction
+        const allowedDanhHieus = ['HCCSVV_HANG_BA', 'HCCSVV_HANG_NHI', 'HCCSVV_HANG_NHAT'];
+        for (const item of titleData) {
+          if (!item.danh_hieu) {
+            errors.push(`Huy chương CSVV thiếu danh_hieu cho quân nhân ${item.personnel_id}`);
+          } else if (!allowedDanhHieus.includes(item.danh_hieu)) {
             errors.push(
-              `Lỗi khi thêm HC_QKQT cho quân nhân ${item.personnel_id}: ${error.message}`
+              `Danh hiệu "${item.danh_hieu}" không hợp lệ. Chỉ cho phép: ${allowedDanhHieus.join(', ')}`
             );
           }
         }
-      }
+        if (errors.length > 0) {
+          throw new Error(`Phát hiện lỗi validation:\n${errors.join('\n')}`);
+        }
 
-      // Với NIEN_HAN: Tạo/cập nhật KhenThuongHCCSVV
-      else if (type === 'NIEN_HAN') {
-        for (const item of titleData) {
-          try {
-            if (!item.danh_hieu) {
-              errors.push(
-                `Huy chương Chiến sĩ vẻ vang thiếu danh_hieu cho quân nhân ${item.personnel_id}`
-              );
-              continue;
-            }
-
-            // Chỉ xử lý các hạng HCCSVV
-            const allowedDanhHieus = ['HCCSVV_HANG_BA', 'HCCSVV_HANG_NHI', 'HCCSVV_HANG_NHAT'];
-            if (!allowedDanhHieus.includes(item.danh_hieu)) {
-              errors.push(
-                `Danh hiệu "${
-                  item.danh_hieu
-                }" không hợp lệ cho Huy chương Chiến sĩ vẻ vang. Chỉ cho phép: ${allowedDanhHieus.join(', ')}`
-              );
-              continue;
-            }
-
-            // Lấy thông tin quân nhân để tính thời gian
-            const quanNhan = await prisma.quanNhan.findUnique({
+        await prisma.$transaction(async tx => {
+          for (const item of titleData) {
+            const quanNhan = await tx.quanNhan.findUnique({
               where: { id: item.personnel_id },
             });
 
             if (!quanNhan) {
-              errors.push(`Không tìm thấy quân nhân với ID: ${item.personnel_id}`);
-              continue;
+              throw new Error(`Không tìm thấy quân nhân với ID: ${item.personnel_id}`);
             }
 
-            // Tính thời gian từ ngày nhập ngũ
-            let thoiGian = null;
-            if (quanNhan.ngay_nhap_ngu) {
-              const ngayNhapNgu = new Date(quanNhan.ngay_nhap_ngu);
-              const ngayKetThuc = quanNhan.ngay_xuat_ngu
-                ? new Date(quanNhan.ngay_xuat_ngu)
-                : new Date();
+            const thoiGian = this.calculateThoiGian(quanNhan);
 
-              let months = (ngayKetThuc.getFullYear() - ngayNhapNgu.getFullYear()) * 12;
-              months += ngayKetThuc.getMonth() - ngayNhapNgu.getMonth();
-              if (ngayKetThuc.getDate() < ngayNhapNgu.getDate()) {
-                months--;
-              }
-              months = Math.max(0, months);
-
-              const years = Math.floor(months / 12);
-              const remainingMonths = months % 12;
-              thoiGian = {
-                total_months: months,
-                years: years,
-                months: remainingMonths,
-                display:
-                  months === 0
-                    ? '-'
-                    : years > 0 && remainingMonths > 0
-                      ? `${years} năm ${remainingMonths} tháng`
-                      : years > 0
-                        ? `${years} năm`
-                        : `${remainingMonths} tháng`,
-              };
-            }
-
-            // Upsert (mỗi người có thể có tối đa 3 bản ghi: Hạng Ba, Nhì, Nhất)
-            await prisma.khenThuongHCCSVV.upsert({
+            await tx.khenThuongHCCSVV.upsert({
               where: {
                 quan_nhan_id_danh_hieu: {
                   quan_nhan_id: item.personnel_id,
@@ -522,116 +444,241 @@ class AwardBulkService {
 
             importedCount++;
             affectedPersonnelIds.add(item.personnel_id);
-          } catch (error) {
-            errors.push(
-              `Lỗi khi thêm Huy chương Chiến sĩ vẻ vang cho quân nhân ${item.personnel_id}: ${error.message}`
-            );
           }
-        }
+        });
       }
 
-      // Với KNC_VSNXD_QDNDVN: Tạo/cập nhật KyNiemChuongVSNXDQDNDVN
+      // Với KNC_VSNXD_QDNDVN: Tạo/cập nhật KyNiemChuongVSNXDQDNDVN (atomic transaction)
       else if (type === 'KNC_VSNXD_QDNDVN') {
-        for (const item of titleData) {
-          try {
-            // Lấy thông tin quân nhân để tính thời gian
-            const quanNhan = await prisma.quanNhan.findUnique({
+        await prisma.$transaction(async tx => {
+          for (const item of titleData) {
+            const quanNhan = await tx.quanNhan.findUnique({
               where: { id: item.personnel_id },
             });
 
             if (!quanNhan) {
-              errors.push(`Không tìm thấy quân nhân với ID: ${item.personnel_id}`);
-              continue;
+              throw new Error(`Không tìm thấy quân nhân với ID: ${item.personnel_id}`);
             }
 
-            // Tính thời gian từ ngày nhập ngũ
-            let thoiGian = null;
-            if (quanNhan.ngay_nhap_ngu) {
-              const ngayNhapNgu = new Date(quanNhan.ngay_nhap_ngu);
-              const ngayKetThuc = quanNhan.ngay_xuat_ngu
-                ? new Date(quanNhan.ngay_xuat_ngu)
-                : new Date();
+            const thoiGian = this.calculateThoiGian(quanNhan);
 
-              let months = (ngayKetThuc.getFullYear() - ngayNhapNgu.getFullYear()) * 12;
-              months += ngayKetThuc.getMonth() - ngayNhapNgu.getMonth();
-              if (ngayKetThuc.getDate() < ngayNhapNgu.getDate()) {
-                months--;
-              }
-              months = Math.max(0, months);
+            await tx.kyNiemChuongVSNXDQDNDVN.upsert({
+              where: { quan_nhan_id: item.personnel_id },
+              create: {
+                quan_nhan_id: item.personnel_id,
+                nam: nam,
+                cap_bac: item.cap_bac || null,
+                chuc_vu: item.chuc_vu || null,
+                ghi_chu: ghiChu || null,
+                so_quyet_dinh: item.so_quyet_dinh || null,
+                thoi_gian: thoiGian,
+              },
+              update: {
+                nam: nam,
+                cap_bac: item.cap_bac || null,
+                chuc_vu: item.chuc_vu || null,
+                ghi_chu: ghiChu || null,
+                so_quyet_dinh: item.so_quyet_dinh || null,
+                thoi_gian: thoiGian,
+              },
+            });
 
-              const years = Math.floor(months / 12);
-              const remainingMonths = months % 12;
-              thoiGian = {
-                total_months: months,
-                years: years,
-                months: remainingMonths,
-                display:
-                  months === 0
-                    ? '-'
-                    : years > 0 && remainingMonths > 0
-                      ? `${years} năm ${remainingMonths} tháng`
-                      : years > 0
-                        ? `${years} năm`
-                        : `${remainingMonths} tháng`,
+            importedCount++;
+            affectedPersonnelIds.add(item.personnel_id);
+          }
+        });
+      }
+
+      // Với CONG_HIEN: Tạo/cập nhật KhenThuongCongHien (atomic transaction)
+      else if (type === 'CONG_HIEN') {
+        // Validate trước transaction
+        const allowedDanhHieus = ['HCBVTQ_HANG_BA', 'HCBVTQ_HANG_NHI', 'HCBVTQ_HANG_NHAT'];
+        for (const item of titleData) {
+          if (!item.danh_hieu) {
+            errors.push(`HC BVTQ thiếu danh_hieu cho quân nhân ${item.personnel_id}`);
+          } else if (!allowedDanhHieus.includes(item.danh_hieu)) {
+            errors.push(
+              `Danh hiệu "${item.danh_hieu}" không hợp lệ. Chỉ cho phép: ${allowedDanhHieus.join(', ')}`
+            );
+          }
+        }
+        if (errors.length > 0) {
+          throw new Error(`Phát hiện lỗi validation:\n${errors.join('\n')}`);
+        }
+
+        // VALIDATION: Kiểm tra điều kiện thời gian cống hiến (tương tự submit.js)
+        const baseRequiredMonths = 10 * 12; // 10 năm = 120 tháng (cho nam)
+        const femaleRequiredMonths = Math.round(baseRequiredMonths * (2 / 3)); // Nữ: 80 tháng
+
+        const congHienPersonnelIds = titleData.map(item => item.personnel_id).filter(Boolean);
+        const positionHistoriesMap = {};
+        const personnelGenderMap = {};
+
+        for (const personnelId of congHienPersonnelIds) {
+          try {
+            const quanNhan = await prisma.quanNhan.findUnique({
+              where: { id: personnelId },
+              select: { id: true, ho_ten: true, gioi_tinh: true },
+            });
+
+            if (quanNhan) {
+              personnelGenderMap[personnelId] = {
+                gioi_tinh: quanNhan.gioi_tinh,
+                ho_ten: quanNhan.ho_ten,
               };
             }
 
-            // Upsert (mỗi quân nhân chỉ có 1 bản ghi)
-            await prisma.kyNiemChuongVSNXDQDNDVN.upsert({
-              where: { quan_nhan_id: item.personnel_id },
-              create: {
-                quan_nhan_id: item.personnel_id,
-                nam: nam,
-                cap_bac: item.cap_bac || null,
-                chuc_vu: item.chuc_vu || null,
-                ghi_chu: ghiChu || null,
-                so_quyet_dinh: item.so_quyet_dinh || null,
-                thoi_gian: thoiGian,
-              },
-              update: {
-                nam: nam,
-                cap_bac: item.cap_bac || null,
-                chuc_vu: item.chuc_vu || null,
-                ghi_chu: ghiChu || null,
-                so_quyet_dinh: item.so_quyet_dinh || null,
-                thoi_gian: thoiGian,
+            const histories = await prisma.lichSuChucVu.findMany({
+              where: { quan_nhan_id: personnelId },
+              select: {
+                he_so_chuc_vu: true,
+                so_thang: true,
+                ngay_bat_dau: true,
+                ngay_ket_thuc: true,
               },
             });
 
-            importedCount++;
-            affectedPersonnelIds.add(item.personnel_id);
+            const today = new Date();
+            const updatedHistories = histories.map(item => {
+              if (item.so_thang === null || item.so_thang === undefined) {
+                if (item.ngay_bat_dau && !item.ngay_ket_thuc) {
+                  const ngayBatDau = new Date(item.ngay_bat_dau);
+                  let months = (today.getFullYear() - ngayBatDau.getFullYear()) * 12;
+                  months += today.getMonth() - ngayBatDau.getMonth();
+                  if (today.getDate() < ngayBatDau.getDate()) {
+                    months--;
+                  }
+                  return { ...item, so_thang: Math.max(0, months) };
+                }
+              }
+              return item;
+            });
+
+            positionHistoriesMap[personnelId] = updatedHistories;
           } catch (error) {
-            errors.push(
-              `Lỗi khi thêm KNC_VSNXD_QDNDVN cho quân nhân ${item.personnel_id}: ${error.message}`
-            );
+            positionHistoriesMap[personnelId] = [];
           }
         }
-      }
 
-      // Với CONG_HIEN: Tạo/cập nhật KhenThuongCongHien
-      else if (type === 'CONG_HIEN') {
+        const getTotalMonthsByGroup = (personnelId, group) => {
+          const histories = positionHistoriesMap[personnelId] || [];
+          let totalMonths = 0;
+          histories.forEach(history => {
+            const heSo = Number(history.he_so_chuc_vu) || 0;
+            let belongsToGroup = false;
+            if (group === '0.7') {
+              belongsToGroup = heSo >= 0.7 && heSo < 0.8;
+            } else if (group === '0.8') {
+              belongsToGroup = heSo >= 0.8 && heSo < 0.9;
+            } else if (group === '0.9-1.0') {
+              belongsToGroup = heSo >= 0.9 && heSo <= 1.0;
+            }
+            if (belongsToGroup && history.so_thang !== null && history.so_thang !== undefined) {
+              totalMonths += Number(history.so_thang);
+            }
+          });
+          return totalMonths;
+        };
+
+        const getRequiredMonths = personnelId => {
+          const info = personnelGenderMap[personnelId];
+          return info && info.gioi_tinh === 'NU' ? femaleRequiredMonths : baseRequiredMonths;
+        };
+
+        const checkEligibleForRank = (personnelId, rank) => {
+          const months0_9_1_0 = getTotalMonthsByGroup(personnelId, '0.9-1.0');
+          const months0_8 = getTotalMonthsByGroup(personnelId, '0.8');
+          const months0_7 = getTotalMonthsByGroup(personnelId, '0.7');
+          const requiredMonths = getRequiredMonths(personnelId);
+
+          if (rank === 'HANG_NHAT') {
+            return months0_9_1_0 >= requiredMonths;
+          } else if (rank === 'HANG_NHI') {
+            return months0_8 + months0_9_1_0 >= requiredMonths;
+          } else if (rank === 'HANG_BA') {
+            return months0_7 + months0_8 + months0_9_1_0 >= requiredMonths;
+          }
+          return false;
+        };
+
+        // Filter out ineligible personnel
+        const eligibleTitleData = [];
         for (const item of titleData) {
-          try {
-            if (!item.danh_hieu) {
-              errors.push(
-                `Huân chương Bảo vệ Tổ quốc thiếu danh_hieu cho quân nhân ${item.personnel_id}`
-              );
-              continue;
+          if (!item.danh_hieu || !item.personnel_id) {
+            eligibleTitleData.push(item);
+            continue;
+          }
+
+          const info = personnelGenderMap[item.personnel_id];
+          const hoTen = (info && info.ho_ten) || item.personnel_id;
+          const gioiTinh = info && info.gioi_tinh;
+          const requiredMonths = getRequiredMonths(item.personnel_id);
+
+          let eligible = false;
+          let rankName = '';
+
+          if (item.danh_hieu === 'HCBVTQ_HANG_NHAT') {
+            eligible = checkEligibleForRank(item.personnel_id, 'HANG_NHAT');
+            rankName = 'Hạng Nhất';
+          } else if (item.danh_hieu === 'HCBVTQ_HANG_NHI') {
+            eligible = checkEligibleForRank(item.personnel_id, 'HANG_NHI');
+            rankName = 'Hạng Nhì';
+          } else if (item.danh_hieu === 'HCBVTQ_HANG_BA') {
+            eligible = checkEligibleForRank(item.personnel_id, 'HANG_BA');
+            rankName = 'Hạng Ba';
+          }
+
+          if (!eligible) {
+            const months0_9_1_0 = getTotalMonthsByGroup(item.personnel_id, '0.9-1.0');
+            const months0_8 = getTotalMonthsByGroup(item.personnel_id, '0.8');
+            const months0_7 = getTotalMonthsByGroup(item.personnel_id, '0.7');
+
+            let totalMonths = 0;
+            if (item.danh_hieu === 'HCBVTQ_HANG_NHAT') {
+              totalMonths = months0_9_1_0;
+            } else if (item.danh_hieu === 'HCBVTQ_HANG_NHI') {
+              totalMonths = months0_8 + months0_9_1_0;
+            } else if (item.danh_hieu === 'HCBVTQ_HANG_BA') {
+              totalMonths = months0_7 + months0_8 + months0_9_1_0;
             }
 
-            // Chỉ xử lý các hạng HCBVTQ
-            const allowedDanhHieus = ['HCBVTQ_HANG_BA', 'HCBVTQ_HANG_NHI', 'HCBVTQ_HANG_NHAT'];
-            if (!allowedDanhHieus.includes(item.danh_hieu)) {
-              errors.push(
-                `Danh hiệu "${
-                  item.danh_hieu
-                }" không hợp lệ cho Huân chương Bảo vệ Tổ quốc. Chỉ cho phép: ${allowedDanhHieus.join(', ')}`
-              );
-              continue;
-            }
+            const totalYears = Math.floor(totalMonths / 12);
+            const remainingMonths = totalMonths % 12;
+            const totalYearsText =
+              totalYears > 0 && remainingMonths > 0
+                ? `${totalYears} nam ${remainingMonths} thang`
+                : totalYears > 0
+                  ? `${totalYears} nam`
+                  : `${remainingMonths} thang`;
 
-            // Upsert (mỗi quân nhân chỉ có 1 bản ghi)
-            await prisma.khenThuongCongHien.upsert({
+            const requiredYears = Math.floor(requiredMonths / 12);
+            const requiredRemainingMonths = requiredMonths % 12;
+            const requiredYearsText =
+              requiredYears > 0 && requiredRemainingMonths > 0
+                ? `${requiredYears} nam ${requiredRemainingMonths} thang`
+                : requiredYears > 0
+                  ? `${requiredYears} nam`
+                  : `${requiredRemainingMonths} thang`;
+
+            const genderText = gioiTinh === 'NU' ? ' (Nu giam 1/3 thoi gian)' : '';
+
+            errors.push(
+              `Quan nhan "${hoTen}" khong du dieu kien Huan chuong Bao ve To quoc ${rankName}. ` +
+                `Yeu cau: it nhat ${requiredYearsText}${genderText}. Hien tai: ${totalYearsText}.`
+            );
+            continue;
+          }
+
+          eligibleTitleData.push(item);
+        }
+
+        if (eligibleTitleData.length === 0 && errors.length > 0) {
+          throw new Error(`Phát hiện lỗi validation:\n${errors.join('\n')}`);
+        }
+
+        await prisma.$transaction(async tx => {
+          for (const item of eligibleTitleData) {
+            await tx.khenThuongCongHien.upsert({
               where: { quan_nhan_id: item.personnel_id },
               create: {
                 quan_nhan_id: item.personnel_id,
@@ -660,12 +707,8 @@ class AwardBulkService {
 
             importedCount++;
             affectedPersonnelIds.add(item.personnel_id);
-          } catch (error) {
-            errors.push(
-              `Lỗi khi thêm Huân chương Bảo vệ Tổ quốc cho quân nhân ${item.personnel_id}: ${error.message}`
-            );
           }
-        }
+        });
       }
 
       // Các loại khác chưa được hỗ trợ
@@ -698,9 +741,11 @@ class AwardBulkService {
           );
         }
       } catch (notifError) {
-        console.error('Failed to send bulk award notifications:', notifError);
         // Không throw error để không ảnh hưởng đến quá trình thêm khen thưởng
       }
+
+      const typeName = getLoaiDeXuatName(type);
+      console.log(`[Bulk khen thưởng] ${typeName} năm ${nam}: ${importedCount} thành công, ${errors.length} lỗi`);
 
       return {
         message:
@@ -717,9 +762,41 @@ class AwardBulkService {
         },
       };
     } catch (error) {
-      console.error('Bulk create awards service error:', error);
       throw error;
     }
+  }
+
+  /**
+   * Tính thời gian phục vụ từ thông tin quân nhân
+   */
+  calculateThoiGian(quanNhan) {
+    if (!quanNhan.ngay_nhap_ngu) return null;
+
+    const ngayNhapNgu = new Date(quanNhan.ngay_nhap_ngu);
+    const ngayKetThuc = quanNhan.ngay_xuat_ngu ? new Date(quanNhan.ngay_xuat_ngu) : new Date();
+
+    let months = (ngayKetThuc.getFullYear() - ngayNhapNgu.getFullYear()) * 12;
+    months += ngayKetThuc.getMonth() - ngayNhapNgu.getMonth();
+    if (ngayKetThuc.getDate() < ngayNhapNgu.getDate()) {
+      months--;
+    }
+    months = Math.max(0, months);
+
+    const years = Math.floor(months / 12);
+    const remainingMonths = months % 12;
+    return {
+      total_months: months,
+      years,
+      months: remainingMonths,
+      display:
+        months === 0
+          ? '-'
+          : years > 0 && remainingMonths > 0
+            ? `${years} năm ${remainingMonths} tháng`
+            : years > 0
+              ? `${years} năm`
+              : `${remainingMonths} tháng`,
+    };
   }
 }
 

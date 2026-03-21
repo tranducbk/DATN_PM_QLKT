@@ -3,14 +3,23 @@ const router = express.Router();
 const accountController = require('../controllers/account.controller');
 const { verifyToken, requireSuperAdmin, requireAdmin } = require('../middlewares/auth');
 const { auditLog, createDescription, getResourceId } = require('../middlewares/auditLog');
-const { getLogDescription } = require('../helpers/auditLogHelper');
+const { getLogDescription } = require('../helpers/auditLog');
+const { writeLimiter } = require('../configs/rateLimiter.config');
+const { validate } = require('../middlewares/validate');
+const { accountValidation } = require('../validations');
 
 /**
  * @route   GET /api/accounts
  * @desc    Lấy danh sách tài khoản (có phân trang)
  * @access  Private - ADMIN and above
  */
-router.get('/', verifyToken, requireAdmin, accountController.getAccounts);
+router.get(
+  '/',
+  verifyToken,
+  requireAdmin,
+  validate(accountValidation.listQuery, 'query'),
+  accountController.getAccounts
+);
 
 /**
  * @route   GET /api/accounts/:id
@@ -28,6 +37,8 @@ router.post(
   '/',
   verifyToken,
   requireAdmin,
+  writeLimiter,
+  validate(accountValidation.createAccount),
   auditLog({
     action: 'CREATE',
     resource: 'accounts',
@@ -46,6 +57,7 @@ router.put(
   '/:id',
   verifyToken,
   requireAdmin,
+  validate(accountValidation.updateAccount),
   auditLog({
     action: 'UPDATE',
     resource: 'accounts',
@@ -64,6 +76,7 @@ router.post(
   '/reset-password',
   verifyToken,
   requireAdmin,
+  validate(accountValidation.resetPassword),
   auditLog({
     action: 'RESET_PASSWORD',
     resource: 'accounts',
@@ -82,6 +95,7 @@ router.delete(
   '/:id',
   verifyToken,
   requireAdmin,
+  writeLimiter,
   auditLog({
     action: 'DELETE',
     resource: 'accounts',

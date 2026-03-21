@@ -282,7 +282,7 @@ export default function ProfileEditForm({
         });
       }
     } catch (error: any) {
-      console.error('Load personnel error:', error);
+      // Error handled by UI
       const errorMessage =
         error?.response?.data?.message ||
         error?.response?.data?.error ||
@@ -359,7 +359,7 @@ export default function ProfileEditForm({
         message.error(response.message || 'Cập nhật thất bại');
       }
     } catch (error: any) {
-      console.error('Update error:', error);
+      // Error handled by UI
       const errorMessage =
         error?.response?.data?.message ||
         error?.response?.data?.error ||
@@ -381,9 +381,7 @@ export default function ProfileEditForm({
 
   if (!isEditing) {
     return (
-      <ConfigProvider
-        theme={getAntdThemeConfig(isDark)}
-      >
+      <ConfigProvider theme={getAntdThemeConfig(isDark)}>
         <div className="p-6 max-w-7xl mx-auto">
           <Card
             title={
@@ -405,9 +403,7 @@ export default function ProfileEditForm({
                 <div className="overflow-x-auto">
                   <table
                     className={`min-w-full rounded-lg border ${
-                      isDark
-                        ? 'border-gray-700 bg-gray-900/60'
-                        : 'border-gray-200 bg-white'
+                      isDark ? 'border-gray-700 bg-gray-900/60' : 'border-gray-200 bg-white'
                     }`}
                   >
                     <tbody>
@@ -460,9 +456,7 @@ export default function ProfileEditForm({
                 <div className="overflow-x-auto">
                   <table
                     className={`min-w-full rounded-lg border ${
-                      isDark
-                        ? 'border-gray-700 bg-gray-900/60'
-                        : 'border-gray-200 bg-white'
+                      isDark ? 'border-gray-700 bg-gray-900/60' : 'border-gray-200 bg-white'
                     }`}
                   >
                     <tbody>
@@ -509,9 +503,7 @@ export default function ProfileEditForm({
                 <div className="overflow-x-auto">
                   <table
                     className={`min-w-full rounded-lg border ${
-                      isDark
-                        ? 'border-gray-700 bg-gray-900/60'
-                        : 'border-gray-200 bg-white'
+                      isDark ? 'border-gray-700 bg-gray-900/60' : 'border-gray-200 bg-white'
                     }`}
                   >
                     <tbody>
@@ -568,9 +560,7 @@ export default function ProfileEditForm({
                   <div className="overflow-x-auto">
                     <table
                       className={`min-w-full rounded-lg border ${
-                        isDark
-                          ? 'border-gray-700 bg-gray-900/60'
-                          : 'border-gray-200 bg-white'
+                        isDark ? 'border-gray-700 bg-gray-900/60' : 'border-gray-200 bg-white'
                       }`}
                     >
                       <tbody>
@@ -633,332 +623,332 @@ export default function ProfileEditForm({
 
   return (
     <ConfigProvider theme={getAntdThemeConfig(isDark)}>
-    <div className="p-6 max-w-7xl mx-auto">
-      <Card
-        title={
-          <div className="flex items-center gap-2">
-            <UserOutlined className="text-2xl" />
-            <span className="text-2xl font-bold">Thông tin cá nhân</span>
-          </div>
-        }
-        className="shadow-lg"
-      >
-        <p className="text-gray-600 mb-6">
-          Vui lòng cập nhật đầy đủ thông tin cá nhân, đặc biệt là <strong>CCCD</strong>,{' '}
-          <strong>Ngày nhập ngũ</strong> và các thông tin địa chỉ, Đảng để hệ thống tính toán khen
-          thưởng chính xác.
-        </p>
-
-        {showTempCCCDWarning && (
-          <Alert
-            message="Cảnh báo: CCCD chưa được cập nhật"
-            description="Bạn đang sử dụng CCCD tạm thời. Vui lòng cập nhật CCCD chính thức của bạn ngay."
-            type="warning"
-            showIcon
-            closable
-            className="mb-6"
-            onClose={() => setShowTempCCCDWarning(false)}
-          />
-        )}
-
-        <Form form={form} layout="vertical" onFinish={handleSubmit}>
-          {/* Thông tin cơ bản */}
-          <Divider orientation="left">
-            <span className="text-lg font-semibold flex items-center gap-2">
-              <UserOutlined className="text-blue-500" />
-              Thông tin cơ bản
-            </span>
-          </Divider>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-            <Form.Item
-              label="Họ và tên"
-              name="ho_ten"
-              rules={[{ required: true, message: 'Vui lòng nhập họ tên!' }]}
-            >
-              <Input
-                prefix={<UserOutlined />}
-                placeholder="Nhập họ và tên"
-                size="large"
-                className="rounded-lg"
-              />
-            </Form.Item>
-
-            <Form.Item
-              label="Số CCCD/CMND"
-              name="cccd"
-              rules={[
-                {
-                  validator: (_, value) => {
-                    if (!value) return Promise.resolve(); // Cho phép để trống
-                    if (/^[0-9]{9,12}$/.test(value)) {
-                      return Promise.resolve();
-                    }
-                    if (value.startsWith('TEMP-')) {
-                      return Promise.resolve(); // Cho phép CCCD tạm thời
-                    }
-                    return Promise.reject(new Error('CCCD phải là số từ 9-12 chữ số!'));
-                  },
-                },
-              ]}
-            >
-              <Input
-                prefix={<IdcardOutlined />}
-                placeholder="Nhập số CCCD/CMND"
-                size="large"
-                className="rounded-lg"
-              />
-            </Form.Item>
-
-            <Form.Item
-              label="Giới tính"
-              name="gioi_tinh"
-              rules={[{ required: true, message: 'Vui lòng chọn giới tính' }]}
-            >
-              <Select placeholder="Chọn giới tính" size="large" className="rounded-lg">
-                <Select.Option value="NAM">Nam</Select.Option>
-                <Select.Option value="NU">Nữ</Select.Option>
-              </Select>
-            </Form.Item>
-
-            <Form.Item label="Ngày sinh" name="ngay_sinh">
-              <DatePicker
-                format="DD/MM/YYYY"
-                placeholder="Chọn ngày sinh"
-                size="large"
-                className="w-full rounded-lg"
-                suffixIcon={<CalendarOutlined />}
-              />
-            </Form.Item>
-
-            <Form.Item label="Số điện thoại" name="so_dien_thoai">
-              <Input
-                prefix={<PhoneOutlined />}
-                placeholder="Nhập số điện thoại"
-                size="large"
-                className="rounded-lg"
-              />
-            </Form.Item>
-          </div>
-
-          {/* Thông tin địa chỉ */}
-          <Divider orientation="left">
-            <span className="text-lg font-semibold flex items-center gap-2">
-              <EnvironmentOutlined className="text-green-500" />
-              Thông tin địa chỉ
-            </span>
-          </Divider>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <Form.Item
-              label="Quê quán (2 cấp)"
-              name="que_quan_2_cap"
-              tooltip="Nhập địa chỉ, hệ thống sẽ tự động định dạng (VD: xã hoà an, tỉnh ninh bình → Xã Hoà An, tỉnh Ninh Bình)"
-            >
-              <Input.TextArea
-                placeholder="Ví dụ: xã hoà an, tỉnh ninh bình"
-                size="large"
-                className="rounded-lg"
-                rows={1}
-                onBlur={() => handleAddressBlur('que_quan_2_cap')}
-              />
-            </Form.Item>
-
-            <Form.Item label="Quê quán (3 cấp)" name="que_quan_3_cap">
-              <VietnamAddressCascader
-                placeholder="Chọn Tỉnh/Thành phố, Quận/Huyện, Xã/Phường"
-                size="large"
-                className="rounded-lg"
-              />
-            </Form.Item>
-
-            <Form.Item
-              label="Trú quán"
-              name="tru_quan"
-              tooltip="Nhập địa chỉ, hệ thống sẽ tự động định dạng"
-            >
-              <Input.TextArea
-                placeholder="Ví dụ: phường lào cai, tỉnh lào cai"
-                size="large"
-                className="rounded-lg"
-                rows={1}
-                onBlur={() => handleAddressBlur('tru_quan')}
-              />
-            </Form.Item>
-
-            <Form.Item
-              label="Chỗ ở hiện nay"
-              name="cho_o_hien_nay"
-              tooltip="Nhập địa chỉ, hệ thống sẽ tự động định dạng"
-            >
-              <Input.TextArea
-                placeholder="Ví dụ: xã an hoà, huyện yên bình, tỉnh nam định"
-                size="large"
-                className="rounded-lg"
-                rows={1}
-                onBlur={() => handleAddressBlur('cho_o_hien_nay')}
-              />
-            </Form.Item>
-          </div>
-
-          {/* Thông tin công tác */}
-          <Divider orientation="left">
-            <span className="text-lg font-semibold flex items-center gap-2">
-              <BankOutlined className="text-purple-500" />
-              Thông tin công tác
-            </span>
-          </Divider>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-            <Form.Item
-              label="Ngày nhập ngũ"
-              name="ngay_nhap_ngu"
-              rules={[{ required: true, message: 'Vui lòng chọn ngày nhập ngũ!' }]}
-            >
-              <DatePicker
-                format="DD/MM/YYYY"
-                placeholder="Chọn ngày nhập ngũ"
-                size="large"
-                className="w-full rounded-lg"
-                suffixIcon={<CalendarOutlined />}
-              />
-            </Form.Item>
-
-            <Form.Item label="Ngày xuất ngũ" name="ngay_xuat_ngu">
-              <DatePicker
-                format="DD/MM/YYYY"
-                placeholder="Chọn ngày xuất ngũ (nếu có)"
-                size="large"
-                className="w-full rounded-lg"
-                suffixIcon={<CalendarOutlined />}
-              />
-            </Form.Item>
-
-            <Form.Item
-              label="Quyền hạn"
-              name="role"
-              extra={
-                <span className="text-xs text-gray-500 flex items-center gap-1 mt-1">
-                  <InfoCircleOutlined className="text-amber-500" />
-                  Chỉ quản trị viên mới có thể thay đổi quyền
-                </span>
-              }
-            >
-              <Input disabled size="large" className="rounded-lg bg-gray-50" />
-            </Form.Item>
-
-            <Form.Item
-              label="Cơ quan đơn vị"
-              name="co_quan_don_vi"
-              extra={
-                <span className="text-xs text-gray-500 flex items-center gap-1 mt-1">
-                  <InfoCircleOutlined className="text-amber-500" />
-                  Chỉ quản trị viên mới có thể thay đổi cơ quan đơn vị
-                </span>
-              }
-            >
-              <Input disabled size="large" className="rounded-lg bg-gray-50" />
-            </Form.Item>
-
-            <Form.Item
-              label="Đơn vị trực thuộc"
-              name="don_vi_truc_thuoc"
-              extra={
-                <span className="text-xs text-gray-500 flex items-center gap-1 mt-1">
-                  <InfoCircleOutlined className="text-amber-500" />
-                  Chỉ quản trị viên mới có thể thay đổi đơn vị trực thuộc
-                </span>
-              }
-            >
-              <Input disabled size="large" className="rounded-lg bg-gray-50" />
-            </Form.Item>
-
-            <Form.Item label="Cấp bậc" name="cap_bac" required={false}>
-              <Select placeholder="Chọn cấp bậc" size="large" className="rounded-lg" allowClear>
-                {MILITARY_RANKS.map(rank => (
-                  <Select.Option key={rank} value={rank}>
-                    {rank}
-                  </Select.Option>
-                ))}
-              </Select>
-            </Form.Item>
-
-            <Form.Item
-              label="Chức vụ"
-              name="chuc_vu"
-              extra={
-                <span className="text-xs text-gray-500 flex items-center gap-1 mt-1">
-                  <InfoCircleOutlined className="text-amber-500" />
-                  Chỉ quản trị viên mới có thể thay đổi chức vụ
-                </span>
-              }
-            >
-              <Input disabled size="large" className="rounded-lg bg-gray-50" />
-            </Form.Item>
-          </div>
-
-          {/* Thông tin Đảng */}
-          <Divider orientation="left">
-            <span className="text-lg font-semibold flex items-center gap-2">
-              <TeamOutlined className="text-red-500" />
-              Thông tin Đảng
-            </span>
-          </Divider>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-            <Form.Item label="Ngày vào Đảng" name="ngay_vao_dang">
-              <DatePicker
-                format="DD/MM/YYYY"
-                placeholder="Chọn ngày vào Đảng"
-                size="large"
-                className="w-full rounded-lg"
-                suffixIcon={<CalendarOutlined />}
-              />
-            </Form.Item>
-
-            <Form.Item label="Ngày vào Đảng chính thức" name="ngay_vao_dang_chinh_thuc">
-              <DatePicker
-                format="DD/MM/YYYY"
-                placeholder="Chọn ngày vào Đảng chính thức"
-                size="large"
-                className="w-full rounded-lg"
-                suffixIcon={<CalendarOutlined />}
-              />
-            </Form.Item>
-
-            <Form.Item label="Số thẻ Đảng viên" name="so_the_dang_vien">
-              <Input
-                prefix={<IdcardOutlined />}
-                placeholder="Nhập số thẻ Đảng viên"
-                size="large"
-                className="rounded-lg"
-              />
-            </Form.Item>
-          </div>
-
-          {/* Submit Button */}
-          <Form.Item className="mb-0 mt-6">
-            <div className="flex justify-end items-center">
-              <Button
-                onClick={() => setIsEditing(false)}
-                size="large"
-                className="min-w-[200px] rounded-lg h-12"
-              >
-                Hủy chỉnh sửa
-              </Button>
-
-              <div className="ml-4">
-                <Button
-                  type="primary"
-                  htmlType="submit"
-                  size="large"
-                  loading={saving}
-                  className="min-w-[200px] rounded-lg h-12 text-lg font-semibold"
-                >
-                  Cập nhật thông tin
-                </Button>
-              </div>
+      <div className="p-6 max-w-7xl mx-auto">
+        <Card
+          title={
+            <div className="flex items-center gap-2">
+              <UserOutlined className="text-2xl" />
+              <span className="text-2xl font-bold">Thông tin cá nhân</span>
             </div>
-          </Form.Item>
-        </Form>
-      </Card>
-    </div>
+          }
+          className="shadow-lg"
+        >
+          <p className="text-gray-600 mb-6">
+            Vui lòng cập nhật đầy đủ thông tin cá nhân, đặc biệt là <strong>CCCD</strong>,{' '}
+            <strong>Ngày nhập ngũ</strong> và các thông tin địa chỉ, Đảng để hệ thống tính toán khen
+            thưởng chính xác.
+          </p>
+
+          {showTempCCCDWarning && (
+            <Alert
+              message="Cảnh báo: CCCD chưa được cập nhật"
+              description="Bạn đang sử dụng CCCD tạm thời. Vui lòng cập nhật CCCD chính thức của bạn ngay."
+              type="warning"
+              showIcon
+              closable
+              className="mb-6"
+              onClose={() => setShowTempCCCDWarning(false)}
+            />
+          )}
+
+          <Form form={form} layout="vertical" onFinish={handleSubmit}>
+            {/* Thông tin cơ bản */}
+            <Divider orientation="left">
+              <span className="text-lg font-semibold flex items-center gap-2">
+                <UserOutlined className="text-blue-500" />
+                Thông tin cơ bản
+              </span>
+            </Divider>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+              <Form.Item
+                label="Họ và tên"
+                name="ho_ten"
+                rules={[{ required: true, message: 'Vui lòng nhập họ tên!' }]}
+              >
+                <Input
+                  prefix={<UserOutlined />}
+                  placeholder="Nhập họ và tên"
+                  size="large"
+                  className="rounded-lg"
+                />
+              </Form.Item>
+
+              <Form.Item
+                label="Số CCCD/CMND"
+                name="cccd"
+                rules={[
+                  {
+                    validator: (_, value) => {
+                      if (!value) return Promise.resolve(); // Cho phép để trống
+                      if (/^[0-9]{9,12}$/.test(value)) {
+                        return Promise.resolve();
+                      }
+                      if (value.startsWith('TEMP-')) {
+                        return Promise.resolve(); // Cho phép CCCD tạm thời
+                      }
+                      return Promise.reject(new Error('CCCD phải là số từ 9-12 chữ số!'));
+                    },
+                  },
+                ]}
+              >
+                <Input
+                  prefix={<IdcardOutlined />}
+                  placeholder="Nhập số CCCD/CMND"
+                  size="large"
+                  className="rounded-lg"
+                />
+              </Form.Item>
+
+              <Form.Item
+                label="Giới tính"
+                name="gioi_tinh"
+                rules={[{ required: true, message: 'Vui lòng chọn giới tính' }]}
+              >
+                <Select placeholder="Chọn giới tính" size="large" className="rounded-lg">
+                  <Select.Option value="NAM">Nam</Select.Option>
+                  <Select.Option value="NU">Nữ</Select.Option>
+                </Select>
+              </Form.Item>
+
+              <Form.Item label="Ngày sinh" name="ngay_sinh">
+                <DatePicker
+                  format="DD/MM/YYYY"
+                  placeholder="Chọn ngày sinh"
+                  size="large"
+                  className="w-full rounded-lg"
+                  suffixIcon={<CalendarOutlined />}
+                />
+              </Form.Item>
+
+              <Form.Item label="Số điện thoại" name="so_dien_thoai">
+                <Input
+                  prefix={<PhoneOutlined />}
+                  placeholder="Nhập số điện thoại"
+                  size="large"
+                  className="rounded-lg"
+                />
+              </Form.Item>
+            </div>
+
+            {/* Thông tin địa chỉ */}
+            <Divider orientation="left">
+              <span className="text-lg font-semibold flex items-center gap-2">
+                <EnvironmentOutlined className="text-green-500" />
+                Thông tin địa chỉ
+              </span>
+            </Divider>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <Form.Item
+                label="Quê quán (2 cấp)"
+                name="que_quan_2_cap"
+                tooltip="Nhập địa chỉ, hệ thống sẽ tự động định dạng (VD: xã hoà an, tỉnh ninh bình → Xã Hoà An, tỉnh Ninh Bình)"
+              >
+                <Input.TextArea
+                  placeholder="Ví dụ: xã hoà an, tỉnh ninh bình"
+                  size="large"
+                  className="rounded-lg"
+                  rows={1}
+                  onBlur={() => handleAddressBlur('que_quan_2_cap')}
+                />
+              </Form.Item>
+
+              <Form.Item label="Quê quán (3 cấp)" name="que_quan_3_cap">
+                <VietnamAddressCascader
+                  placeholder="Chọn Tỉnh/Thành phố, Quận/Huyện, Xã/Phường"
+                  size="large"
+                  className="rounded-lg"
+                />
+              </Form.Item>
+
+              <Form.Item
+                label="Trú quán"
+                name="tru_quan"
+                tooltip="Nhập địa chỉ, hệ thống sẽ tự động định dạng"
+              >
+                <Input.TextArea
+                  placeholder="Ví dụ: phường lào cai, tỉnh lào cai"
+                  size="large"
+                  className="rounded-lg"
+                  rows={1}
+                  onBlur={() => handleAddressBlur('tru_quan')}
+                />
+              </Form.Item>
+
+              <Form.Item
+                label="Chỗ ở hiện nay"
+                name="cho_o_hien_nay"
+                tooltip="Nhập địa chỉ, hệ thống sẽ tự động định dạng"
+              >
+                <Input.TextArea
+                  placeholder="Ví dụ: xã an hoà, huyện yên bình, tỉnh nam định"
+                  size="large"
+                  className="rounded-lg"
+                  rows={1}
+                  onBlur={() => handleAddressBlur('cho_o_hien_nay')}
+                />
+              </Form.Item>
+            </div>
+
+            {/* Thông tin công tác */}
+            <Divider orientation="left">
+              <span className="text-lg font-semibold flex items-center gap-2">
+                <BankOutlined className="text-purple-500" />
+                Thông tin công tác
+              </span>
+            </Divider>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+              <Form.Item
+                label="Ngày nhập ngũ"
+                name="ngay_nhap_ngu"
+                rules={[{ required: true, message: 'Vui lòng chọn ngày nhập ngũ!' }]}
+              >
+                <DatePicker
+                  format="DD/MM/YYYY"
+                  placeholder="Chọn ngày nhập ngũ"
+                  size="large"
+                  className="w-full rounded-lg"
+                  suffixIcon={<CalendarOutlined />}
+                />
+              </Form.Item>
+
+              <Form.Item label="Ngày xuất ngũ" name="ngay_xuat_ngu">
+                <DatePicker
+                  format="DD/MM/YYYY"
+                  placeholder="Chọn ngày xuất ngũ (nếu có)"
+                  size="large"
+                  className="w-full rounded-lg"
+                  suffixIcon={<CalendarOutlined />}
+                />
+              </Form.Item>
+
+              <Form.Item
+                label="Quyền hạn"
+                name="role"
+                extra={
+                  <span className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                    <InfoCircleOutlined className="text-amber-500" />
+                    Chỉ quản trị viên mới có thể thay đổi quyền
+                  </span>
+                }
+              >
+                <Input disabled size="large" className="rounded-lg bg-gray-50" />
+              </Form.Item>
+
+              <Form.Item
+                label="Cơ quan đơn vị"
+                name="co_quan_don_vi"
+                extra={
+                  <span className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                    <InfoCircleOutlined className="text-amber-500" />
+                    Chỉ quản trị viên mới có thể thay đổi cơ quan đơn vị
+                  </span>
+                }
+              >
+                <Input disabled size="large" className="rounded-lg bg-gray-50" />
+              </Form.Item>
+
+              <Form.Item
+                label="Đơn vị trực thuộc"
+                name="don_vi_truc_thuoc"
+                extra={
+                  <span className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                    <InfoCircleOutlined className="text-amber-500" />
+                    Chỉ quản trị viên mới có thể thay đổi đơn vị trực thuộc
+                  </span>
+                }
+              >
+                <Input disabled size="large" className="rounded-lg bg-gray-50" />
+              </Form.Item>
+
+              <Form.Item label="Cấp bậc" name="cap_bac" required={false}>
+                <Select placeholder="Chọn cấp bậc" size="large" className="rounded-lg" allowClear>
+                  {MILITARY_RANKS.map(rank => (
+                    <Select.Option key={rank} value={rank}>
+                      {rank}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </Form.Item>
+
+              <Form.Item
+                label="Chức vụ"
+                name="chuc_vu"
+                extra={
+                  <span className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                    <InfoCircleOutlined className="text-amber-500" />
+                    Chỉ quản trị viên mới có thể thay đổi chức vụ
+                  </span>
+                }
+              >
+                <Input disabled size="large" className="rounded-lg bg-gray-50" />
+              </Form.Item>
+            </div>
+
+            {/* Thông tin Đảng */}
+            <Divider orientation="left">
+              <span className="text-lg font-semibold flex items-center gap-2">
+                <TeamOutlined className="text-red-500" />
+                Thông tin Đảng
+              </span>
+            </Divider>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+              <Form.Item label="Ngày vào Đảng" name="ngay_vao_dang">
+                <DatePicker
+                  format="DD/MM/YYYY"
+                  placeholder="Chọn ngày vào Đảng"
+                  size="large"
+                  className="w-full rounded-lg"
+                  suffixIcon={<CalendarOutlined />}
+                />
+              </Form.Item>
+
+              <Form.Item label="Ngày vào Đảng chính thức" name="ngay_vao_dang_chinh_thuc">
+                <DatePicker
+                  format="DD/MM/YYYY"
+                  placeholder="Chọn ngày vào Đảng chính thức"
+                  size="large"
+                  className="w-full rounded-lg"
+                  suffixIcon={<CalendarOutlined />}
+                />
+              </Form.Item>
+
+              <Form.Item label="Số thẻ Đảng viên" name="so_the_dang_vien">
+                <Input
+                  prefix={<IdcardOutlined />}
+                  placeholder="Nhập số thẻ Đảng viên"
+                  size="large"
+                  className="rounded-lg"
+                />
+              </Form.Item>
+            </div>
+
+            {/* Submit Button */}
+            <Form.Item className="mb-0 mt-6">
+              <div className="flex justify-end items-center">
+                <Button
+                  onClick={() => setIsEditing(false)}
+                  size="large"
+                  className="min-w-[200px] rounded-lg h-12"
+                >
+                  Hủy chỉnh sửa
+                </Button>
+
+                <div className="ml-4">
+                  <Button
+                    type="primary"
+                    htmlType="submit"
+                    size="large"
+                    loading={saving}
+                    className="min-w-[200px] rounded-lg h-12 text-lg font-semibold"
+                  >
+                    Cập nhật thông tin
+                  </Button>
+                </div>
+              </div>
+            </Form.Item>
+          </Form>
+        </Card>
+      </div>
     </ConfigProvider>
   );
 }

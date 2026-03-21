@@ -1,4 +1,5 @@
 const { prisma } = require('../models');
+const { parsePagination } = require('../helpers/paginationHelper');
 
 class NotificationController {
   /**
@@ -7,7 +8,8 @@ class NotificationController {
    */
   async getNotifications(req, res) {
     try {
-      const { page = 1, limit = 20, isRead, type } = req.query;
+      const { page, limit } = parsePagination(req.query);
+      const { isRead, type } = req.query;
       const currentUser = req.user;
 
       const skip = (page - 1) * limit;
@@ -60,10 +62,10 @@ class NotificationController {
         },
       });
     } catch (error) {
-      console.error('Get notifications error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lỗi khi lấy danh sách thông báo',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -89,10 +91,10 @@ class NotificationController {
         data: { count },
       });
     } catch (error) {
-      console.error('Get unread count error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lỗi khi lấy số lượng thông báo chưa đọc',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -143,10 +145,10 @@ class NotificationController {
         data: updatedNotification,
       });
     } catch (error) {
-      console.error('Mark as read error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lỗi khi đánh dấu đã đọc',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -176,10 +178,10 @@ class NotificationController {
         data: { count: result.count },
       });
     } catch (error) {
-      console.error('Mark all as read error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lỗi khi đánh dấu tất cả đã đọc',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -225,10 +227,32 @@ class NotificationController {
         message: 'Xóa thông báo thành công',
       });
     } catch (error) {
-      console.error('Delete notification error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lỗi khi xóa thông báo',
+        message: error.message || 'Lỗi hệ thống',
+      });
+    }
+  }
+
+  /**
+   * DELETE /api/notifications
+   * Xoá tất cả thông báo của user
+   */
+  async deleteAllNotifications(req, res) {
+    try {
+      const result = await prisma.thongBao.deleteMany({
+        where: { nguoi_nhan_id: req.user.id },
+      });
+      return res.status(200).json({
+        success: true,
+        message: `Đã xóa ${result.count} thông báo`,
+      });
+    } catch (error) {
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
+        success: false,
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }

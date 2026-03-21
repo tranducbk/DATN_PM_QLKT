@@ -1,21 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const rateLimit = require('express-rate-limit');
 const authController = require('../controllers/auth.controller');
 const { verifyToken } = require('../middlewares/auth');
 const { auditLog } = require('../middlewares/auditLog');
-const { getLogDescription } = require('../helpers/auditLogHelper');
-
-const loginRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 phút
-  max: 10, // Tối đa 10 lần thử mỗi IP trong 15 phút
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    success: false,
-    message: 'Quá nhiều lần thử đăng nhập. Vui lòng thử lại sau 15 phút.',
-  },
-});
+const { getLogDescription } = require('../helpers/auditLog');
+const { authLimiter } = require('../configs/rateLimiter.config');
+const { validate } = require('../middlewares/validate');
+const { authValidation } = require('../validations');
 
 /**
  * @route   POST /api/auth/login
@@ -24,7 +15,8 @@ const loginRateLimiter = rateLimit({
  */
 router.post(
   '/login',
-  loginRateLimiter,
+  authLimiter,
+  validate(authValidation.login),
   auditLog({
     action: 'LOGIN',
     resource: 'auth',
@@ -38,7 +30,7 @@ router.post(
  * @desc    Lấy access token mới khi hết hạn
  * @access  Public
  */
-router.post('/refresh', authController.refresh);
+router.post('/refresh', validate(authValidation.refreshToken), authController.refresh);
 
 /**
  * @route   POST /api/auth/logout
@@ -63,6 +55,7 @@ router.post(
 router.post(
   '/change-password',
   verifyToken,
+  validate(authValidation.changePassword),
   auditLog({
     action: 'CHANGE_PASSWORD',
     resource: 'auth',

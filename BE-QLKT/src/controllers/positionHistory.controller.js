@@ -18,7 +18,6 @@ class PositionHistoryController {
         try {
           await profileService.recalculateContributionProfile(personnel_id);
         } catch (recalcError) {
-          console.error('Lỗi khi recalculate contribution profile:', recalcError);
           // Không throw error, tiếp tục lấy dữ liệu
         }
       }
@@ -31,9 +30,10 @@ class PositionHistoryController {
         data: result,
       });
     } catch (error) {
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy lịch sử chức vụ thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -71,9 +71,10 @@ class PositionHistoryController {
         data: result,
       });
     } catch (error) {
-      return res.status(400).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Thêm lịch sử chức vụ thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -110,9 +111,10 @@ class PositionHistoryController {
 
       return res.status(200).json(response);
     } catch (error) {
-      return res.status(400).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Cập nhật lịch sử chức vụ thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -142,9 +144,10 @@ class PositionHistoryController {
         },
       });
     } catch (error) {
-      return res.status(400).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Xóa lịch sử chức vụ thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }

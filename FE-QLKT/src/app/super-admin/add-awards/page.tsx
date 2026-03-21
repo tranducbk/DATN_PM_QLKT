@@ -117,7 +117,7 @@ export default function SuperAdminAddAwardsPage() {
       const personnelData = responses.filter(r => r.data.success).map(r => r.data.data);
       setPersonnelDetails(personnelData);
     } catch (error) {
-      console.error('Error fetching personnel details:', error);
+      // Error handled by UI
     }
   };
 
@@ -226,7 +226,6 @@ export default function SuperAdminAddAwardsPage() {
 
         if (errorCount > 0 && data.errors) {
           antMessage.warning(message);
-          console.error('Lỗi chi tiết:', data.errors);
         } else {
           antMessage.success(message);
         }

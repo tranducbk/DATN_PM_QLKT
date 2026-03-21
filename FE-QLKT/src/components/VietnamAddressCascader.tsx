@@ -74,7 +74,7 @@ export default function VietnamAddressCascader({
 
       setOptions(cascaderOptions);
     } catch (error) {
-      console.error('Error loading address data:', error);
+      // Error handled silently
     } finally {
       setLoading(false);
     }

@@ -3,40 +3,58 @@
 import { useState } from 'react';
 import { Button, Upload, message, Space, Alert, theme } from 'antd';
 import { DownloadOutlined, UploadOutlined, CloudUploadOutlined } from '@ant-design/icons';
-import type { UploadFile } from 'antd/es/upload/interface';
+
+import { useRouter } from 'next/navigation';
 import axiosInstance from '@/utils/axiosInstance';
+import { useDevZoneFeature } from '@/contexts/DevZoneContext';
 
 interface ExcelImportSectionProps {
+  awardType: string;
   templateEndpoint: string;
   importEndpoint: string;
   templateFileName: string;
   onImportSuccess?: (result: any) => void;
   selectedCount?: number;
-  entityLabel?: string; // 'quân nhân', 'đơn vị', etc.
-  localProcessing?: boolean; // Nếu true, xử lý file local thay vì gửi lên server
-  onLocalProcess?: (file: File) => Promise<any>; // Hàm xử lý local
+  selectedPersonnelIds?: (string | number)[];
+  entityLabel?: string;
+  localProcessing?: boolean;
+  onLocalProcess?: (file: File) => Promise<any>;
+  previewEndpoint?: string;
+  reviewPath?: string;
+  sessionStorageKey?: string;
 }
 
 export default function ExcelImportSection({
+  awardType,
   templateEndpoint,
   importEndpoint,
   templateFileName,
   onImportSuccess,
   selectedCount = 0,
+  selectedPersonnelIds = [],
   entityLabel = 'bản ghi',
   localProcessing = false,
   onLocalProcess,
+  previewEndpoint,
+  reviewPath = '/admin/awards/bulk/import-review',
+  sessionStorageKey = 'importPreviewData',
 }: ExcelImportSectionProps) {
+  const allowImport = useDevZoneFeature(awardType);
+  const router = useRouter();
   const [uploading, setUploading] = useState(false);
-  const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [importSuccess, setImportSuccess] = useState(false);
   const [importedCount, setImportedCount] = useState(0);
   const { token } = theme.useToken();
 
   const handleDownloadTemplate = async () => {
     try {
+      const params: Record<string, string> = {};
+      if (selectedPersonnelIds.length > 0) {
+        params.personnel_ids = selectedPersonnelIds.join(',');
+      }
       const response = await axiosInstance.get(templateEndpoint, {
         responseType: 'blob',
+        params,
       });
 
       // Check if response is actually a blob
@@ -58,7 +76,6 @@ export default function ExcelImportSection({
 
       message.success('Tải file mẫu thành công');
     } catch (error: any) {
-      console.error('Error downloading template:', error);
       const errorMsg = error.response?.data?.message || error.message || 'Tải file mẫu thất bại';
       message.error(errorMsg);
     }
@@ -68,6 +85,35 @@ export default function ExcelImportSection({
     // Reset success state for new upload
     setImportSuccess(false);
     setImportedCount(0);
+
+    // Preview mode: upload to preview endpoint and navigate to review page
+    if (previewEndpoint) {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        setUploading(true);
+        const response = await axiosInstance.post(previewEndpoint, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+
+        const data = response.data?.data || response.data;
+        sessionStorage.setItem(sessionStorageKey, JSON.stringify(data));
+
+        message.success('Đã phân tích file Excel. Đang chuyển đến trang xem trước...');
+        router.push(reviewPath);
+        return true;
+      } catch (error: any) {
+        const errorMsg =
+          error.response?.data?.message || error.message || 'Phân tích file thất bại';
+        message.error(errorMsg);
+        return false;
+      } finally {
+        setUploading(false);
+      }
+    }
 
     if (localProcessing && onLocalProcess) {
       // Xử lý local
@@ -98,10 +144,9 @@ export default function ExcelImportSection({
           onImportSuccess(result);
         }
 
-        setFileList([]);
+
         return true;
       } catch (error: any) {
-        console.error('Error processing Excel locally:', error);
         const errorMsg = error.message || 'Xử lý file thất bại';
         message.error(errorMsg);
         return false;
@@ -146,11 +191,10 @@ export default function ExcelImportSection({
             onImportSuccess(result);
           }
 
-          setFileList([]);
+  
           return true;
         }
       } catch (error: any) {
-        console.error('Error importing Excel:', error);
         const errorMsg = error.response?.data?.message || 'Import thất bại';
         message.error(errorMsg);
         return false;
@@ -159,6 +203,8 @@ export default function ExcelImportSection({
       }
     }
   };
+
+  if (!allowImport) return null;
 
   return (
     <div
@@ -187,10 +233,13 @@ export default function ExcelImportSection({
         <Space size="middle">
           <Button icon={<DownloadOutlined />} onClick={handleDownloadTemplate} size="large">
             Tải file mẫu Excel
+            {selectedPersonnelIds.length > 0
+              ? ` (${selectedPersonnelIds.length} ${entityLabel})`
+              : ''}
           </Button>
 
           <Upload
-            fileList={fileList}
+            showUploadList={false}
             beforeUpload={file => {
               const isExcel =
                 file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
@@ -204,7 +253,6 @@ export default function ExcelImportSection({
               handleUploadExcel(file);
               return false;
             }}
-            onChange={({ fileList }) => setFileList(fileList)}
             maxCount={1}
             accept=".xlsx,.xls"
           >

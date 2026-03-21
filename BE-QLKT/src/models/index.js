@@ -1,6 +1,4 @@
-// ============================================
 // PRISMA CLIENT - SINGLETON PATTERN
-// ============================================
 const { PrismaClient } = require('../generated/prisma');
 
 const prisma = new PrismaClient({

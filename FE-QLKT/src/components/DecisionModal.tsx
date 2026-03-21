@@ -121,7 +121,7 @@ export default function DecisionModal({
         setAutocompleteOptions([]);
       }
     } catch (error) {
-      console.error('Autocomplete error:', error);
+      // Error handled by UI
       setAutocompleteOptions([]);
     } finally {
       setSearching(false);
@@ -215,7 +215,7 @@ export default function DecisionModal({
             throw new Error('Không tìm thấy quyết định để cập nhật');
           }
         }
-        response = await apiClient.updateDecision(decisionId, formData);
+        response = await apiClient.updateDecision(decisionId!, formData);
         message.success('Đã cập nhật quyết định thành công');
       } else if (saveChanges && selectedDecision) {
         // Update existing decision from autocomplete

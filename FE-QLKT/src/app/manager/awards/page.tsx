@@ -7,7 +7,6 @@ import {
   Input,
   Select,
   Table,
-  Tag,
   Alert,
   Space,
   Typography,
@@ -16,8 +15,8 @@ import {
   message,
   Tabs,
 } from 'antd';
-import type { TabsProps, TableColumnsType } from 'antd';
-import { FilterOutlined, HomeOutlined } from '@ant-design/icons';
+import type { TableColumnsType } from 'antd';
+import { FilterOutlined, HomeOutlined, DownloadOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/api-client';
 import {
   DANH_HIEU_MAP,
@@ -28,6 +27,7 @@ import {
 } from '@/utils/awardsHelpers';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import AwardDetailModal from '@/components/awards/AwardDetailModal';
+import { formatDate } from '@/lib/utils';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -150,7 +150,7 @@ export default function AdminAwardsPage() {
         }
       }
     } catch (error) {
-      console.error('Error fetching awards:', error);
+      // Error handled by UI message
       message.error('Không thể tải danh sách khen thưởng');
     } finally {
       setLoading(false);
@@ -207,7 +207,7 @@ export default function AdminAwardsPage() {
       document.body.removeChild(a);
       message.success('Xuất file thành công');
     } catch (error) {
-      console.error('Error exporting awards:', error);
+      // Error handled by UI message
       message.error('Xuất file thất bại');
     } finally {
       setExporting(false);
@@ -263,7 +263,7 @@ export default function AdminAwardsPage() {
       document.body.removeChild(a);
       message.success('Tải file mẫu thành công');
     } catch (error) {
-      console.error('Error downloading template:', error);
+      // Error handled by UI message
       message.error('Tải file mẫu thất bại');
     } finally {
       setDownloadingTemplate(false);
@@ -321,7 +321,7 @@ export default function AdminAwardsPage() {
         message.error(result.message || 'Import thất bại');
       }
     } catch (error: any) {
-      console.error('Error importing awards:', error);
+      // Error handled by UI message
       setImportResult({
         type: 'error',
         message: error.message || 'Có lỗi xảy ra khi import file',
@@ -505,14 +505,7 @@ export default function AdminAwardsPage() {
             ? record.QuanNhan?.ngay_sinh || record.ngay_sinh
             : record.ngay_sinh;
 
-        if (!ngaySinh) return <Text type="secondary">-</Text>;
-
-        try {
-          const date = new Date(ngaySinh);
-          return <Text>{date.toLocaleDateString('vi-VN')}</Text>;
-        } catch {
-          return <Text type="secondary">-</Text>;
-        }
+        return <Text>{formatDate(ngaySinh)}</Text>;
       },
     },
     {
@@ -698,15 +691,11 @@ export default function AdminAwardsPage() {
             Danh sách khen thưởng tất cả các đơn vị
           </Paragraph>
         </div>
-        {/* <Button
-          type="primary"
-          icon={<DownloadOutlined />}
-          onClick={handleExport}
-          loading={exporting}
-          size="large"
-        >
-          {exporting ? 'Đang xuất...' : 'Xuất Excel'}
-        </Button> */}
+        {activeTab === 'annual' && (
+          <Button icon={<DownloadOutlined />} onClick={handleDownloadTemplate} size="large">
+            Tải file mẫu
+          </Button>
+        )}
       </div>
 
       {/* Award Detail Modal */}

@@ -45,6 +45,14 @@ router.post(
 );
 
 /**
+ * @route   POST /api/profiles/check-eligibility
+ * @desc    Kiểm tra điều kiện khen thưởng chuỗi cho 1 hoặc nhiều quân nhân
+ *          Body: { items: [{ personnel_id, nam, danh_hieu }] }
+ * @access  Private - MANAGER trở lên
+ */
+router.post('/check-eligibility', verifyToken, requireManager, profileController.checkEligibility);
+
+/**
  * @route   POST /api/profiles/recalculate-all
  * @desc    Tính toán lại cho toàn bộ quân nhân
  * @access  Private - ADMIN only

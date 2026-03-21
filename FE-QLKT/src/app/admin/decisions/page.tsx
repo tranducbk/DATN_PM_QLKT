@@ -120,11 +120,11 @@ export default function AdminDecisionsPage() {
           total: paginationData?.total || decisions.length,
         });
       } else {
-        console.error('❌ API trả về success: false:', response);
+        // API returned unsuccessful response
         message.error(response.message || 'Lỗi khi tải danh sách quyết định');
       }
     } catch (error: any) {
-      console.error('❌ Error fetching decisions:', error);
+      // Error handled by UI message
       message.error('Lỗi khi tải danh sách quyết định');
     } finally {
       setLoading(false);

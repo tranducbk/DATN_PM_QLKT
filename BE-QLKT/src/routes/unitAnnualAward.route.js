@@ -12,11 +12,9 @@ const {
   checkRole,
 } = require('../middlewares/auth');
 const { auditLog } = require('../middlewares/auditLog');
-const { getLogDescription, getResourceId } = require('../helpers/auditLogHelper');
+const { getLogDescription, getResourceId } = require('../helpers/auditLog');
 const { ROLES } = require('../constants/roles');
-
-// Memory storage for small file imports (if needed in future)
-const upload = multer({ storage: multer.memoryStorage() });
+const { excelUpload: upload } = require('../configs/multer.config');
 
 // Disk storage to save PDF decision files
 const uploadDir = path.join(__dirname, '../../uploads/decisions');
@@ -59,6 +57,37 @@ router.get('/', verifyToken, requireAuth, ctrl.list);
  * @access  ADMIN
  */
 router.get('/template', verifyToken, requireManager, ctrl.getTemplate);
+
+/**
+ * @route   POST /api/awards/units/annual/import/preview
+ * @desc    Preview import khen thưởng đơn vị hằng năm từ file Excel (chỉ validate, không ghi DB)
+ * @access  ADMIN, MANAGER
+ */
+router.post(
+  '/import/preview',
+  verifyToken,
+  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
+  upload.single('file'),
+  ctrl.previewImport
+);
+
+/**
+ * @route   POST /api/awards/units/annual/import/confirm
+ * @desc    Confirm import khen thưởng đơn vị hằng năm (lưu dữ liệu đã validate vào DB)
+ * @access  ADMIN, MANAGER
+ */
+router.post(
+  '/import/confirm',
+  verifyToken,
+  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
+  auditLog({
+    action: 'IMPORT',
+    resource: 'unit-annual-awards',
+    getDescription: getLogDescription('unit-annual-awards', 'IMPORT'),
+    getResourceId: () => null,
+  }),
+  ctrl.confirmImport
+);
 
 /**
  * @route   POST /api/awards/units/annual/import
@@ -261,7 +290,6 @@ router.get('/decision-files/:filename', verifyToken, requireAdmin, (req, res) =>
     res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
     res.sendFile(filePath);
   } catch (error) {
-    console.error('Serve PDF error:', error);
     res.status(500).json({ success: false, message: 'Không thể tải file' });
   }
 });

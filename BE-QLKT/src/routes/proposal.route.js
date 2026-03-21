@@ -3,8 +3,9 @@ const multer = require('multer');
 const proposalController = require('../controllers/proposal.controller');
 const { verifyToken, checkRole } = require('../middlewares/auth');
 const { auditLog } = require('../middlewares/auditLog');
-const { getLogDescription, getResourceId } = require('../helpers/auditLogHelper');
+const { getLogDescription, getResourceId } = require('../helpers/auditLog');
 const { ROLES } = require('../constants/roles');
+const { writeLimiter } = require('../configs/rateLimiter.config');
 
 // Cấu hình multer để xử lý file upload (lưu vào memory)
 const upload = multer({
@@ -30,9 +31,7 @@ const upload = multer({
   },
 });
 
-// ============================================
 // ROUTES
-// ============================================
 
 /**
  * @route   GET /api/proposals/template
@@ -55,6 +54,7 @@ router.post(
   '/',
   verifyToken,
   checkRole([ROLES.MANAGER, ROLES.ADMIN]),
+  writeLimiter,
   upload.fields([
     { name: 'attached_files' }, // Không giới hạn số lượng file
   ]),
@@ -96,7 +96,12 @@ router.get(
  * @desc    Lấy danh sách đề xuất
  * @access  MANAGER, ADMIN
  */
-router.get('/', verifyToken, checkRole([ROLES.MANAGER, ROLES.ADMIN]), proposalController.getProposals);
+router.get(
+  '/',
+  verifyToken,
+  checkRole([ROLES.MANAGER, ROLES.ADMIN]),
+  proposalController.getProposals
+);
 
 /**
  * @route   GET /api/proposals/:id
@@ -119,6 +124,7 @@ router.post(
   '/:id/approve',
   verifyToken,
   checkRole([ROLES.ADMIN]),
+  writeLimiter,
   upload.fields([
     // File PDF cho từng loại đề xuất
     { name: 'file_pdf_ca_nhan_hang_nam', maxCount: 1 }, // CA_NHAN_HANG_NAM

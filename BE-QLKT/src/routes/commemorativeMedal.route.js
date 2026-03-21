@@ -3,7 +3,7 @@ const multer = require('multer');
 const commemorativeMedalController = require('../controllers/commemorativeMedal.controller');
 const { verifyToken, checkRole, requireAdmin } = require('../middlewares/auth');
 const { auditLog } = require('../middlewares/auditLog');
-const { getLogDescription, getResourceId } = require('../helpers/auditLogHelper');
+const { getLogDescription, getResourceId } = require('../helpers/auditLog');
 const { ROLES } = require('../constants/roles');
 
 // Cấu hình multer cho file upload
@@ -23,9 +23,7 @@ const upload = multer({
   },
 });
 
-// ============================================
 // ROUTES - QUẢN LÝ KỶ NIỆM CHƯƠNG VÌ SỰ NGHIỆP XÂY DỰNG QĐNDVN
-// ============================================
 
 /**
  * @route   GET /api/commemorative-medals/template
@@ -40,8 +38,33 @@ router.get(
 );
 
 /**
+ * @route   POST /api/commemorative-medals/import/preview
+ * @desc    Preview import KNC VSNXD từ file Excel (chỉ validate, không ghi DB)
+ * @access  ADMIN
+ */
+router.post(
+  '/import/preview',
+  verifyToken,
+  requireAdmin,
+  upload.single('file'),
+  commemorativeMedalController.previewImport
+);
+
+/**
+ * @route   POST /api/commemorative-medals/import/confirm
+ * @desc    Confirm import KNC VSNXD — lưu dữ liệu đã validate vào DB
+ * @access  ADMIN
+ */
+router.post(
+  '/import/confirm',
+  verifyToken,
+  requireAdmin,
+  commemorativeMedalController.confirmImport
+);
+
+/**
  * @route   POST /api/commemorative-medals/import
- * @desc    Import Kỷ niệm chương từ file Excel
+ * @desc    Import Kỷ niệm chương từ file Excel (legacy — direct import)
  * @access  ADMIN, MANAGER
  */
 router.post(
@@ -57,7 +80,12 @@ router.post(
  * @desc    Lấy danh sách Kỷ niệm chương (Admin: tất cả, Manager: đơn vị mình)
  * @access  ADMIN, MANAGER
  */
-router.get('/', verifyToken, checkRole([ROLES.ADMIN, ROLES.MANAGER]), commemorativeMedalController.getAll);
+router.get(
+  '/',
+  verifyToken,
+  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
+  commemorativeMedalController.getAll
+);
 
 /**
  * @route   GET /api/commemorative-medals/export

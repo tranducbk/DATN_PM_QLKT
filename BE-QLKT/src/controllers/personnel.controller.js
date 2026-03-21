@@ -1,15 +1,16 @@
 const personnelService = require('../services/personnel.service');
-const profileService = require('../services/profile.service');
-const notificationHelper = require('../helpers/notificationHelper');
+const { parsePagination } = require('../helpers/paginationHelper');
+const { writeSystemLog } = require('../helpers/systemLogHelper');
 
 class PersonnelController {
   /**
-   * GET /api/personnel?page=1&limit=10&search=&unit_id=
+   * GET /api/personnel?page=1&limit=20&search=&unit_id=
    * Lấy danh sách quân nhân
    */
   async getPersonnel(req, res) {
     try {
-      const { page = 1, limit = 10, search, unit_id } = req.query;
+      const { page, limit } = parsePagination(req.query);
+      const { search, unit_id } = req.query;
       const userRole = req.user.role;
       const userQuanNhanId = req.user.quan_nhan_id;
 
@@ -24,10 +25,10 @@ class PersonnelController {
         data: result,
       });
     } catch (error) {
-      console.error('Get personnel error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy danh sách quân nhân thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -58,10 +59,10 @@ class PersonnelController {
         data: result,
       });
     } catch (error) {
-      console.error('Get personnel by id error:', error);
-      return res.status(403).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy thông tin quân nhân thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -97,15 +98,14 @@ class PersonnelController {
 
       return res.status(201).json({
         success: true,
-        message:
-          `Thêm quân nhân và tạo tài khoản thành công. Username: ${cccd}, Password: mật khẩu mặc định`,
+        message: `Thêm quân nhân và tạo tài khoản thành công. Username: ${cccd}, Password: mật khẩu mặc định`,
         data: result,
       });
     } catch (error) {
-      console.error('Create personnel error:', error);
-      return res.status(400).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Thêm quân nhân thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -171,40 +171,9 @@ class PersonnelController {
           so_dien_thoai,
         },
         userRole,
-        userQuanNhanId
+        userQuanNhanId,
+        req.user.username
       );
-
-      // Tự động cập nhật lại hồ sơ sau khi update
-      try {
-        await profileService.recalculateAnnualProfile(id);
-        console.log(`✅ Auto-recalculated profile for personnel ${id}`);
-      } catch (recalcError) {
-        console.error(
-          `⚠️ Failed to auto-recalculate profile for personnel ${id}:`,
-          recalcError.message
-        );
-        // Không throw error để không ảnh hưởng đến việc update personnel
-      }
-
-      // Gửi thông báo nếu có chuyển đơn vị
-      if (result.unitTransferInfo) {
-        try {
-          const { unitTransferInfo, ...personnelData } = result;
-          await notificationHelper.notifyOnPersonnelTransfer(
-            personnelData,
-            unitTransferInfo.oldUnit,
-            unitTransferInfo.newUnit,
-            req.user.username
-          );
-          console.log(`✅ Sent transfer notifications for personnel ${id}`);
-        } catch (notifError) {
-          console.error(
-            `⚠️ Failed to send transfer notifications for personnel ${id}:`,
-            notifError.message
-          );
-          // Không throw error để không ảnh hưởng đến việc update personnel
-        }
-      }
 
       return res.status(200).json({
         success: true,
@@ -212,10 +181,10 @@ class PersonnelController {
         data: result,
       });
     } catch (error) {
-      console.error('Update personnel error:', error);
-      return res.status(400).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Cập nhật quân nhân thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -248,10 +217,10 @@ class PersonnelController {
         data: result,
       });
     } catch (error) {
-      console.error('Delete personnel error:', error);
-      return res.status(400).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Xóa quân nhân thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -271,16 +240,26 @@ class PersonnelController {
 
       const result = await personnelService.importFromExcelBuffer(req.file.buffer);
 
+      // Ghi system log
+      await writeSystemLog({
+        userId: req.user?.id,
+        userRole: req.user?.role,
+        action: 'IMPORT',
+        resource: 'personnel',
+        description: `Import quân nhân: ${result.createdCount} tạo mới, ${result.updatedCount} cập nhật, ${result.errors?.length || 0} lỗi`,
+        payload: { created: result.createdCount, updated: result.updatedCount, errorCount: result.errors?.length || 0 },
+      });
+
       return res.status(200).json({
         success: true,
         message: 'Import quân nhân hoàn tất',
         data: result,
       });
     } catch (error) {
-      console.error('Import personnel error:', error);
-      return res.status(400).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Import quân nhân thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -301,10 +280,10 @@ class PersonnelController {
       res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
       return res.status(200).send(buffer);
     } catch (error) {
-      console.error('Export personnel error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Xuất dữ liệu quân nhân thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -325,10 +304,10 @@ class PersonnelController {
       res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
       return res.status(200).send(buffer);
     } catch (error) {
-      console.error('Export personnel sample error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Xuất file mẫu quân nhân thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -357,10 +336,10 @@ class PersonnelController {
         data: result,
       });
     } catch (error) {
-      console.error('Check contribution eligibility error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Kiểm tra tính đủ điều kiện thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }

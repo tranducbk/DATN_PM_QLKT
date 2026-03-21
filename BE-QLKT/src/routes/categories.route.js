@@ -5,7 +5,6 @@ const positionController = require('../controllers/position.controller');
 const { verifyToken, requireAdmin, requireManager } = require('../middlewares/auth');
 const { auditLog, createDescription, getResourceId } = require('../middlewares/auditLog');
 
-// ===== UNITS =====
 /**
  * @route   GET /api/categories/units
  * @desc    Lấy tất cả đơn vị (alias for /api/units)
@@ -67,7 +66,6 @@ router.delete(
   unitController.deleteUnit
 );
 
-// ===== POSITIONS =====
 /**
  * @route   GET /api/categories/positions?unit_id={id}
  * @desc    Lấy chức vụ (alias for /api/positions)

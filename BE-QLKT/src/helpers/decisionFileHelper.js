@@ -19,7 +19,6 @@ async function getDecisionFilePath(soQuyetDinh) {
 
     return decision?.file_path || null;
   } catch (error) {
-    console.error(`Error getting file path for decision ${soQuyetDinh}:`, error);
     return null;
   }
 }
@@ -41,7 +40,6 @@ async function getDecisionInfo(soQuyetDinh) {
 
     return decision;
   } catch (error) {
-    console.error(`Error getting decision info for ${soQuyetDinh}:`, error);
     return null;
   }
 }

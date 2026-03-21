@@ -10,6 +10,7 @@ interface AuthUser {
   role: UserRole;
   quan_nhan_id?: string;
   ho_ten?: string;
+  don_vi_id?: number;
 }
 
 interface AuthContextType {
@@ -43,6 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const userId = localStorage.getItem('userId');
         const quanNhanId = localStorage.getItem('quan_nhan_id');
         const hoTen = localStorage.getItem('ho_ten');
+        const donViId = localStorage.getItem('don_vi_id');
 
         if (token && role && userId) {
           setUser({
@@ -51,6 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             role,
             quan_nhan_id: quanNhanId || undefined,
             ho_ten: hoTen || undefined,
+            don_vi_id: donViId ? Number(donViId) : undefined,
           });
         }
       } catch {
@@ -80,6 +83,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (userData.ho_ten) {
       localStorage.setItem('ho_ten', userData.ho_ten);
     }
+    if (userData.don_vi_id) {
+      localStorage.setItem('don_vi_id', String(userData.don_vi_id));
+    }
     setUser(userData);
   }, []);
 
@@ -91,6 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('userId');
     localStorage.removeItem('quan_nhan_id');
     localStorage.removeItem('ho_ten');
+    localStorage.removeItem('don_vi_id');
     setUser(null);
   }, []);
 

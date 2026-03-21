@@ -34,6 +34,7 @@ import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { DANH_HIEU_MAP } from '@/utils/awardsHelpers';
 import DecisionModal from '@/components/DecisionModal';
+import { formatDate } from '@/lib/utils';
 
 const { Title, Text } = Typography;
 
@@ -132,7 +133,7 @@ export default function BulkRewardDetailsPage() {
       // Load thông tin quân nhân
       loadPersonnelInfo(personnelIds);
     } catch (error) {
-      console.error('Error parsing params:', error);
+      // Error handled by UI message
       message.error('Dữ liệu không hợp lệ');
       router.push('/admin/annual-rewards/bulk');
     }
@@ -145,7 +146,7 @@ export default function BulkRewardDetailsPage() {
         setPositions(res.data || []);
       }
     } catch (error) {
-      console.error('Error loading positions:', error);
+      // Error handled by UI
     }
   };
 
@@ -188,7 +189,7 @@ export default function BulkRewardDetailsPage() {
         })
       );
     } catch (error) {
-      console.error('Error loading personnel info:', error);
+      // Error handled by UI message
       message.error('Không thể tải thông tin quân nhân');
     } finally {
       setLoading(false);
@@ -340,11 +341,7 @@ export default function BulkRewardDetailsPage() {
       dataIndex: 'ngay_sinh',
       key: 'ngay_sinh',
       width: 120,
-      render: (date: string) => {
-        if (!date) return '-';
-        const d = new Date(date);
-        return d.toLocaleDateString('vi-VN');
-      },
+      render: (date: string) => formatDate(date),
     },
     {
       title: 'Cơ quan đơn vị',

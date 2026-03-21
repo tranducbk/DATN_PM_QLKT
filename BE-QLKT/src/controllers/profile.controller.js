@@ -1,4 +1,5 @@
 const profileService = require('../services/profile.service');
+const unitAnnualAwardService = require('../services/unitAnnualAward.service');
 
 class ProfileController {
   /**
@@ -25,10 +26,10 @@ class ProfileController {
         data: result,
       });
     } catch (error) {
-      console.error('Get annual profile error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy hồ sơ hằng năm thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -52,10 +53,10 @@ class ProfileController {
         data: result,
       });
     } catch (error) {
-      console.error('Get tenure profile error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy hồ sơ Huy chương Chiến sĩ vẻ vang thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -79,10 +80,10 @@ class ProfileController {
         data: result,
       });
     } catch (error) {
-      console.error('Get contribution profile error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy hồ sơ Huân chương Bảo vệ Tổ quốc thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -105,10 +106,10 @@ class ProfileController {
         message: result.message,
       });
     } catch (error) {
-      console.error('Recalculate profile error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Tính toán lại hồ sơ thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -130,10 +131,66 @@ class ProfileController {
         },
       });
     } catch (error) {
-      console.error('Recalculate all profiles error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Tính toán lại toàn bộ hồ sơ thất bại',
+        message: error.message || 'Lỗi hệ thống',
+      });
+    }
+  }
+
+  /**
+   * POST /api/profiles/check-eligibility
+   * Kiểm tra điều kiện khen thưởng chuỗi cho 1 hoặc nhiều quân nhân
+   * Body: { items: [{ personnel_id, nam, danh_hieu }] }
+   */
+  async checkEligibility(req, res) {
+    try {
+      const { items } = req.body;
+      if (!items || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ success: false, message: 'Thiếu danh sách cần kiểm tra' });
+      }
+
+      const results = [];
+      for (const item of items) {
+        let result;
+        if (item.type === 'DON_VI' && item.don_vi_id) {
+          // Check đơn vị
+          result = await unitAnnualAwardService.checkUnitAwardEligibility(
+            item.don_vi_id,
+            item.nam,
+            item.danh_hieu
+          );
+          results.push({
+            don_vi_id: item.don_vi_id,
+            nam: item.nam,
+            danh_hieu: item.danh_hieu,
+            type: 'DON_VI',
+            ...result,
+          });
+        } else {
+          // Check cá nhân (mặc định)
+          result = await profileService.checkAwardEligibility(
+            item.personnel_id,
+            item.nam,
+            item.danh_hieu
+          );
+          results.push({
+            personnel_id: item.personnel_id,
+            nam: item.nam,
+            danh_hieu: item.danh_hieu,
+            type: 'CA_NHAN',
+            ...result,
+          });
+        }
+      }
+
+      return res.json({ success: true, data: results });
+    } catch (error) {
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
+        success: false,
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -152,10 +209,10 @@ class ProfileController {
         data: result,
       });
     } catch (error) {
-      console.error('Get all tenure profiles error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy danh sách hồ sơ Huy chương Chiến sĩ vẻ vang thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -177,10 +234,10 @@ class ProfileController {
         data: result,
       });
     } catch (error) {
-      console.error('Update tenure profile error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Cập nhật hồ sơ Huy chương Chiến sĩ vẻ vang thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }

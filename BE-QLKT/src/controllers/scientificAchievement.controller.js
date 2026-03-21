@@ -2,6 +2,8 @@ const scientificAchievementService = require('../services/scientificAchievement.
 const profileService = require('../services/profile.service');
 const { prisma } = require('../models');
 const { ROLES } = require('../constants/roles');
+const { parsePagination } = require('../helpers/paginationHelper');
+const { writeSystemLog } = require('../helpers/systemLogHelper');
 
 class ScientificAchievementController {
   async getAchievements(req, res) {
@@ -19,8 +21,7 @@ class ScientificAchievementController {
       }
 
       // Nếu không có personnel_id, lấy danh sách tất cả với phân trang
-      const pageNum = parseInt(page) || 1;
-      const limitNum = parseInt(limit) || 1000;
+      const { page: pageNum, limit: limitNum } = parsePagination({ page, limit });
       const where = {};
       const { ho_ten } = req.query;
 
@@ -102,10 +103,10 @@ class ScientificAchievementController {
         },
       });
     } catch (error) {
-      console.error('Get achievements error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy danh sách thành tích thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -135,10 +136,7 @@ class ScientificAchievementController {
       // Tự động cập nhật lại hồ sơ sau khi thêm thành tích
       try {
         await profileService.recalculateAnnualProfile(personnel_id);
-        console.log(`✅ Auto-recalculated profile for personnel ${personnel_id}`);
-      } catch (recalcError) {
-        console.error(`⚠️ Failed to auto-recalculate profile:`, recalcError.message);
-      }
+      } catch (recalcError) {}
 
       return res.status(201).json({
         success: true,
@@ -146,10 +144,10 @@ class ScientificAchievementController {
         data: result,
       });
     } catch (error) {
-      console.error('Create achievement error:', error);
-      return res.status(400).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Thêm thành tích thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -172,10 +170,7 @@ class ScientificAchievementController {
       // Tự động cập nhật lại hồ sơ sau khi cập nhật thành tích
       try {
         await profileService.recalculateAnnualProfile(result.quan_nhan_id);
-        console.log(`✅ Auto-recalculated profile for personnel ${result.quan_nhan_id}`);
-      } catch (recalcError) {
-        console.error(`⚠️ Failed to auto-recalculate profile:`, recalcError.message);
-      }
+      } catch (recalcError) {}
 
       return res.status(200).json({
         success: true,
@@ -183,10 +178,10 @@ class ScientificAchievementController {
         data: result,
       });
     } catch (error) {
-      console.error('Update achievement error:', error);
-      return res.status(400).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Cập nhật thành tích thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -203,10 +198,10 @@ class ScientificAchievementController {
         message: result.message,
       });
     } catch (error) {
-      console.error('Delete achievement error:', error);
-      return res.status(400).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Xóa thành tích thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -243,18 +238,28 @@ class ScientificAchievementController {
       const buffer = await workbook.xlsx.writeBuffer();
       return res.send(buffer);
     } catch (error) {
-      console.error('Export scientific achievements error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Xuất danh sách thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
 
   async downloadTemplate(req, res) {
     try {
-      const userRole = req.user?.role || 'MANAGER';
-      const workbook = await scientificAchievementService.generateTemplate(userRole);
+      const userRole = req.user?.role ?? 'MANAGER';
+
+      // Parse personnel_ids from query string (comma-separated)
+      let personnelIds = [];
+      if (req.query.personnel_ids) {
+        personnelIds = req.query.personnel_ids
+          .split(',')
+          .map(id => id.trim())
+          .filter(id => id.length > 0);
+      }
+
+      const workbook = await scientificAchievementService.generateTemplate(personnelIds, userRole);
 
       res.setHeader(
         'Content-Type',
@@ -270,36 +275,59 @@ class ScientificAchievementController {
       const buffer = await workbook.xlsx.writeBuffer();
       return res.send(buffer);
     } catch (error) {
-      console.error('Download template error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode ?? 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Tải file mẫu thất bại',
+        message: error.message ?? 'Lỗi hệ thống',
       });
     }
   }
 
-  async importFromExcel(req, res) {
+  async previewImport(req, res) {
     try {
       if (!req.file) {
-        return res.status(400).json({
-          success: false,
-          message: 'Vui lòng tải lên file Excel',
-        });
+        return res.status(400).json({ success: false, message: 'Vui lòng upload file Excel' });
       }
+      const result = await scientificAchievementService.previewImport(req.file.buffer);
 
-      const result = await scientificAchievementService.importFromExcel(req.file.buffer);
-
-      return res.status(200).json({
-        success: true,
-        message: `Đã thêm thành công ${result.imported}/${result.total} bản ghi`,
-        data: result,
+      await writeSystemLog({
+        userId: req.user?.id,
+        userRole: req.user?.role,
+        action: 'IMPORT_PREVIEW',
+        resource: 'scientific-achievements',
+        description: `Tải lên file ${req.file?.originalname || 'Excel'} để review thành tích khoa học: ${result.total || result.valid?.length || 0} dòng, ${result.errors?.length || 0} lỗi`,
+        payload: { filename: req.file?.originalname, total: result.total, errors: result.errors?.length || 0 },
       });
+
+      return res.json({ success: true, data: result });
     } catch (error) {
-      console.error('Import scientific achievements error:', error);
-      return res.status(500).json({
-        success: false,
-        message: error.message || 'Import thất bại',
+      const statusCode = error.statusCode ?? 500;
+      return res.status(statusCode).json({ success: false, message: error.message });
+    }
+  }
+
+  async confirmImport(req, res) {
+    try {
+      const { items } = req.body;
+      if (!items || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ success: false, message: 'Không có dữ liệu để import' });
+      }
+      const adminId = req.user?.id;
+      const result = await scientificAchievementService.confirmImport(items, adminId);
+
+      await writeSystemLog({
+        userId: req.user?.id,
+        userRole: req.user?.role,
+        action: 'IMPORT',
+        resource: 'scientific-achievements',
+        description: `Import thành tích khoa học thành công: ${result.imported || items.length} bản ghi`,
+        payload: { imported: result.imported || items.length },
       });
+
+      return res.json({ success: true, data: result });
+    } catch (error) {
+      const statusCode = error.statusCode ?? 500;
+      return res.status(statusCode).json({ success: false, message: error.message });
     }
   }
 }

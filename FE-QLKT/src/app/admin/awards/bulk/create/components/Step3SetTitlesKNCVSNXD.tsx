@@ -101,7 +101,7 @@ export default function Step3SetTitlesKNCVSNXD({
         }
       }
     } catch (error) {
-      console.error('Error fetching personnel details:', error);
+      // Error handled by UI
     } finally {
       setLoading(false);
     }

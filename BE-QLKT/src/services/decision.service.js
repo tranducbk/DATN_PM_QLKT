@@ -218,7 +218,6 @@ class DecisionService {
         };
       }
     } catch (error) {
-      console.error('Get decision file for download error:', error);
       return {
         success: false,
         filePath: null,

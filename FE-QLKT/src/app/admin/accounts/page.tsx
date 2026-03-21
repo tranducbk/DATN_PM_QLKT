@@ -13,6 +13,7 @@ import {
   Modal,
   ConfigProvider,
   theme as antdTheme,
+  Skeleton,
 } from 'antd';
 import {
   PlusOutlined,
@@ -223,6 +224,21 @@ export default function AdminAccountsPage() {
       },
     },
   ];
+
+  if (loading && accounts.length === 0) {
+    return (
+      <ConfigProvider
+        theme={{
+          algorithm: theme === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
+        }}
+      >
+        <div className="p-6">
+          <Skeleton active paragraph={{ rows: 2 }} className="mb-6" />
+          <Skeleton active paragraph={{ rows: 10 }} />
+        </div>
+      </ConfigProvider>
+    );
+  }
 
   return (
     <ConfigProvider

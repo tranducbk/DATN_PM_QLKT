@@ -26,6 +26,9 @@ import {
   renderAnnualAwards,
   getLoaiKhenThuong,
 } from '@/utils/awardsHelpers';
+import { AWARD_TAB_DANH_HIEU } from '@/constants/danhHieu.constants';
+import ExportModal from './ExportModal';
+import { formatDate } from '@/lib/utils';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -57,7 +60,7 @@ export default function AdminAwardsPage() {
   const [activeTab, setActiveTab] = useState('annual');
   const [awards, setAwards] = useState<Award[]>([]);
   const [loading, setLoading] = useState(true);
-  const [exporting, setExporting] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
   const [filters, setFilters] = useState({
     nam: '',
     ho_ten: '',
@@ -67,13 +70,6 @@ export default function AdminAwardsPage() {
   });
   const [debouncedFilters, setDebouncedFilters] = useState(filters);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  const DANH_HIEU_OPTIONS: Record<string, string[]> = {
-    annual: ['CSTDCS', 'CSTT', 'BKBQP', 'CSTDTQ'],
-    unit: ['ĐVQT', 'ĐVTT', 'BKBQP', 'BKTTCP'],
-    hccsvv: ['HCCSVV_HANG_NHAT', 'HCCSVV_HANG_NHI', 'HCCSVV_HANG_BA'],
-    contribution: ['HCBVTQ_HANG_NHAT', 'HCBVTQ_HANG_NHI', 'HCBVTQ_HANG_BA'],
-  };
 
   useEffect(() => {
     fetchAwards();
@@ -143,71 +139,10 @@ export default function AdminAwardsPage() {
         }
       }
     } catch (error) {
-      console.error('Error fetching awards:', error);
+      // Error handled by UI message
       message.error('Không thể tải danh sách khen thưởng');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleExport = async () => {
-    try {
-      setExporting(true);
-      const params: any = {};
-      if (debouncedFilters.nam) params.nam = parseInt(debouncedFilters.nam);
-      if (debouncedFilters.ho_ten) params.ho_ten = debouncedFilters.ho_ten;
-      if (debouncedFilters.danh_hieu) params.danh_hieu = debouncedFilters.danh_hieu;
-
-      let blob;
-      let filename = `danh_sach_khen_thuong`;
-
-      switch (activeTab) {
-        case 'annual':
-          blob = await apiClient.exportAnnualRewards(params);
-          filename = `ca_nhan_hang_nam`;
-          break;
-        case 'unit':
-          blob = await apiClient.exportUnitAnnualAwards(params);
-          filename = `don_vi_hang_nam`;
-          break;
-        case 'hccsvv':
-          blob = await apiClient.exportHCCSVV(params);
-          filename = `hccsvv`;
-          break;
-        case 'contribution':
-          blob = await apiClient.exportContributionAwards(params);
-          filename = `hcbvtq_cong_hien`;
-          break;
-        case 'commemoration':
-          blob = await apiClient.exportCommemorationMedals(params);
-          filename = `knc_vsnxd`;
-          break;
-        case 'militaryFlag':
-          blob = await apiClient.exportMilitaryFlag(params);
-          filename = `hc_quan_ky_quyet_thang`;
-          break;
-        case 'scientific':
-          blob = await apiClient.exportScientificAchievements(params);
-          filename = `thanh_tich_khoa_hoc`;
-          break;
-        default:
-          blob = await apiClient.exportAwards(params);
-      }
-
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${filename}_${new Date().toISOString().slice(0, 10)}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      message.success('Xuất file thành công');
-    } catch (error) {
-      console.error('Error exporting awards:', error);
-      message.error('Xuất file thất bại');
-    } finally {
-      setExporting(false);
     }
   };
 
@@ -255,7 +190,7 @@ export default function AdminAwardsPage() {
         message.error(result.message || 'Xóa khen thưởng thất bại');
       }
     } catch (error: any) {
-      console.error('Error deleting award:', error);
+      // Error handled by UI message
       message.error(error.message || 'Có lỗi xảy ra khi xóa khen thưởng');
     } finally {
       setDeletingId(null);
@@ -277,7 +212,7 @@ export default function AdminAwardsPage() {
     '';
 
   const danhHieuOptions = useMemo(() => {
-    const options = DANH_HIEU_OPTIONS[activeTab] || [];
+    const options = AWARD_TAB_DANH_HIEU[activeTab] || [];
     return [
       { value: '', label: 'Tất cả danh hiệu' },
       ...options.map(value => ({
@@ -464,14 +399,7 @@ export default function AdminAwardsPage() {
 
         const ngaySinh = hasNestedQuanNhan ? record.QuanNhan?.ngay_sinh : record.ngay_sinh;
 
-        if (!ngaySinh) return <Text type="secondary">-</Text>;
-
-        try {
-          const date = new Date(ngaySinh);
-          return <Text>{date.toLocaleDateString('vi-VN')}</Text>;
-        } catch {
-          return <Text type="secondary">-</Text>;
-        }
+        return <Text>{formatDate(ngaySinh)}</Text>;
       },
     },
     {
@@ -690,15 +618,16 @@ export default function AdminAwardsPage() {
             Danh sách khen thưởng tất cả các đơn vị
           </Paragraph>
         </div>
-        <Button
-          type="primary"
-          icon={<DownloadOutlined />}
-          onClick={handleExport}
-          loading={exporting}
-          size="large"
-        >
-          {exporting ? 'Đang xuất...' : 'Xuất Excel'}
-        </Button>
+        <Space>
+          <Button
+            type="primary"
+            icon={<DownloadOutlined />}
+            onClick={() => setExportModalOpen(true)}
+            size="large"
+          >
+            Xuất Excel
+          </Button>
+        </Space>
       </div>
 
       <Tabs
@@ -743,84 +672,18 @@ export default function AdminAwardsPage() {
           },
         ]}
       />
+
+      <ExportModal
+        open={exportModalOpen}
+        onCancel={() => setExportModalOpen(false)}
+        activeTab={activeTab}
+      />
     </div>
   );
 
   function renderAwardContent() {
     return (
       <>
-        {/* Import Section */}
-        {/* {(activeTab === 'annual' ||
-          activeTab === 'unit' ||
-          activeTab === 'scientific' ||
-          activeTab === 'hccsvv' ||
-          activeTab === 'contribution' ||
-          activeTab === 'commemoration' ||
-          activeTab === 'militaryFlag') && (
-          <Card
-            title={
-              <Space>
-                <UploadOutlined />
-                Import Khen Thưởng
-              </Space>
-            }
-            style={{ marginBottom: '24px' }}
-          >
-            <Space direction="vertical" style={{ width: '100%' }} size="large">
-              <Space wrap>
-                <Button
-                  icon={<FileExcelOutlined />}
-                  onClick={handleDownloadTemplate}
-                  loading={downloadingTemplate}
-                >
-                  {downloadingTemplate ? 'Đang tải...' : 'Tải File Mẫu Excel'}
-                </Button>
-                <Button
-                  type="primary"
-                  icon={<UploadOutlined />}
-                  onClick={handleUploadClick}
-                  loading={importing}
-                >
-                  {importing ? 'Đang import...' : 'Upload File Excel'}
-                </Button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".xlsx,.xls"
-                  onChange={handleFileChange}
-                  style={{ display: 'none' }}
-                />
-              </Space>
-
-              {importResult && (
-                <Alert
-                  type={importResult.type === 'success' ? 'success' : 'error'}
-                  message={<Text strong>{importResult.message}</Text>}
-                  description={
-                    importResult.details?.errors && importResult.details.errors.length > 0 ? (
-                      <div style={{ marginTop: '8px' }}>
-                        <Text strong>Lỗi chi tiết:</Text>
-                        <ul style={{ marginTop: '4px', marginBottom: 0 }}>
-                          {importResult.details.errors.slice(0, 5).map((err, idx) => (
-                            <li key={idx}>{err}</li>
-                          ))}
-                          {importResult.details.errors.length > 5 && (
-                            <li style={{ color: '#8c8c8c' }}>
-                              ... và {importResult.details.errors.length - 5} lỗi khác
-                            </li>
-                          )}
-                        </ul>
-                      </div>
-                    ) : null
-                  }
-                  closable
-                  onClose={() => setImportResult(null)}
-                />
-              )}
-            </Space>
-          </Card>
-        )} */}
-
         {/* Filters */}
         <Card
           title={

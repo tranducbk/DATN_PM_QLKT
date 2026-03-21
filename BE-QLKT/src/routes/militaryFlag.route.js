@@ -3,7 +3,7 @@ const multer = require('multer');
 const militaryFlagController = require('../controllers/militaryFlag.controller');
 const { verifyToken, checkRole, requireManager, requireAdmin } = require('../middlewares/auth');
 const { auditLog } = require('../middlewares/auditLog');
-const { getLogDescription, getResourceId } = require('../helpers/auditLogHelper');
+const { getLogDescription, getResourceId } = require('../helpers/auditLog');
 const { ROLES } = require('../constants/roles');
 
 // Cấu hình multer cho file upload
@@ -23,9 +23,7 @@ const upload = multer({
   },
 });
 
-// ============================================
 // ROUTES - QUẢN LÝ Huy chương quân kỳ QUYẾT THẮNG
-// ============================================
 
 /**
  * @route   GET /api/military-flag/template
@@ -35,8 +33,28 @@ const upload = multer({
 router.get('/template', verifyToken, requireManager, militaryFlagController.getTemplate);
 
 /**
+ * @route   POST /api/military-flag/import/preview
+ * @desc    Preview import HC QKQT — parse + validate file Excel
+ * @access  ADMIN
+ */
+router.post(
+  '/import/preview',
+  verifyToken,
+  requireAdmin,
+  upload.single('file'),
+  militaryFlagController.previewImport
+);
+
+/**
+ * @route   POST /api/military-flag/import/confirm
+ * @desc    Confirm import HC QKQT — lưu dữ liệu đã validate vào DB
+ * @access  ADMIN
+ */
+router.post('/import/confirm', verifyToken, requireAdmin, militaryFlagController.confirmImport);
+
+/**
  * @route   POST /api/military-flag/import
- * @desc    Import Huy chương quân kỳ Quyết thắng từ file Excel
+ * @desc    Import Huy chương quân kỳ Quyết thắng từ file Excel (legacy)
  * @access  ADMIN, MANAGER
  */
 router.post(
@@ -52,7 +70,12 @@ router.post(
  * @desc    Lấy danh sách Huy chương quân kỳ Quyết thắng (Admin: tất cả, Manager: đơn vị mình)
  * @access  ADMIN, MANAGER
  */
-router.get('/', verifyToken, checkRole([ROLES.ADMIN, ROLES.MANAGER]), militaryFlagController.getAll);
+router.get(
+  '/',
+  verifyToken,
+  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
+  militaryFlagController.getAll
+);
 
 /**
  * @route   GET /api/military-flag/export

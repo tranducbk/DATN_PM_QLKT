@@ -111,7 +111,7 @@ export default function ApproveModal({ visible, proposal, onClose, onSuccess }: 
         setDecisionOptions([]);
       }
     } catch (error) {
-      console.error('Error searching decisions:', error);
+      // Error handled by UI
       setDecisionOptions([]);
     } finally {
       setSearchingDecision(false);

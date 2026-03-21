@@ -1,7 +1,7 @@
 const { prisma } = require('../models');
 const path = require('path');
 const fs = require('fs').promises;
-const notificationHelper = require('../helpers/notificationHelper');
+const notificationHelper = require('../helpers/notification');
 const { NOTIFICATION_TYPES, RESOURCE_TYPES } = require('../constants/notificationTypes');
 const { ROLES } = require('../constants/roles');
 
@@ -143,13 +143,11 @@ class AdhocAwardService {
       try {
         await this._notifyOnAdhocAwardCreated(adhocAward, admin.username);
       } catch (notifyError) {
-        console.error('Error sending notification:', notifyError);
         // Không throw error để không ảnh hưởng đến việc tạo khen thưởng
       }
 
       return adhocAward;
     } catch (error) {
-      console.error('Create ad-hoc award error:', error);
       throw error;
     }
   }
@@ -292,7 +290,7 @@ class AdhocAwardService {
     unitId,
     ho_ten,
     page = 1,
-    limit = 1000,
+    limit = 20,
     // Manager-specific filters
     managerCoQuanId,
     managerDonViTrucThuocIds,
@@ -440,7 +438,6 @@ class AdhocAwardService {
         },
       };
     } catch (error) {
-      console.error('Get ad-hoc awards error:', error);
       throw error;
     }
   }
@@ -475,7 +472,6 @@ class AdhocAwardService {
 
       return adhocAward;
     } catch (error) {
-      console.error('Get ad-hoc award by ID error:', error);
       throw error;
     }
   }
@@ -528,9 +524,7 @@ class AdhocAwardService {
           try {
             const fullPath = path.join(__dirname, '..', '..', fileToRemove.path);
             await fs.unlink(fullPath);
-          } catch (err) {
-            console.error(`Failed to delete attached file: ${fileToRemove.path}`, err);
-          }
+          } catch (err) {}
           existingAttachedFiles.splice(index, 1);
         }
       }
@@ -602,13 +596,10 @@ class AdhocAwardService {
       // Gửi thông báo
       try {
         await this._notifyOnAdhocAwardUpdated(updated, admin.username);
-      } catch (notifyError) {
-        console.error('Error sending notification:', notifyError);
-      }
+      } catch (notifyError) {}
 
       return updated;
     } catch (error) {
-      console.error('Update ad-hoc award error:', error);
       throw error;
     }
   }
@@ -778,9 +769,7 @@ class AdhocAwardService {
         try {
           const fullPath = path.join(__dirname, '..', '..', file.path);
           await fs.unlink(fullPath);
-        } catch (err) {
-          console.error(`Failed to delete file: ${file.path}`, err);
-        }
+        } catch (err) {}
       }
 
       // Delete record
@@ -791,13 +780,10 @@ class AdhocAwardService {
       // Gửi thông báo
       try {
         await this._notifyOnAdhocAwardDeleted(awardInfo, admin?.username || 'Admin');
-      } catch (notifyError) {
-        console.error('Error sending notification:', notifyError);
-      }
+      } catch (notifyError) {}
 
       return { success: true };
     } catch (error) {
-      console.error('Delete ad-hoc award error:', error);
       throw error;
     }
   }
@@ -959,7 +945,6 @@ class AdhocAwardService {
 
       return adhocAwards;
     } catch (error) {
-      console.error('Get ad-hoc awards by personnel error:', error);
       throw error;
     }
   }
@@ -1012,7 +997,6 @@ class AdhocAwardService {
 
       return adhocAwards;
     } catch (error) {
-      console.error('Get ad-hoc awards by unit error:', error);
       throw error;
     }
   }

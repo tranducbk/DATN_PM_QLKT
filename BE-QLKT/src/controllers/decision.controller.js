@@ -1,14 +1,17 @@
+const path = require('path');
 const decisionService = require('../services/decision.service');
+const { parsePagination } = require('../helpers/paginationHelper');
 
 class DecisionController {
   /**
    * GET /api/decisions
    * Lấy tất cả quyết định khen thưởng
-   * Query params: ?nam=2024&loai_khen_thuong=CA_NHAN_HANG_NAM&search=...&page=1&limit=50
+   * Query params: ?nam=2024&loai_khen_thuong=CA_NHAN_HANG_NAM&search=...&page=1&limit=20
    */
   async getAllDecisions(req, res) {
     try {
-      const { nam, loai_khen_thuong, search, page = 1, limit = 50 } = req.query;
+      const { page, limit } = parsePagination(req.query);
+      const { nam, loai_khen_thuong, search } = req.query;
 
       const filters = {};
       if (nam) filters.nam = nam;
@@ -28,10 +31,10 @@ class DecisionController {
         pagination: result.pagination,
       });
     } catch (error) {
-      console.error('Get decisions error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy danh sách quyết định thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -60,10 +63,10 @@ class DecisionController {
         data: decisions,
       });
     } catch (error) {
-      console.error('Autocomplete decisions error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Tìm kiếm quyết định thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -83,10 +86,10 @@ class DecisionController {
         data: decision,
       });
     } catch (error) {
-      console.error('Get decision by id error:', error);
-      return res.status(404).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Không tìm thấy quyết định',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -113,10 +116,10 @@ class DecisionController {
         data: decision,
       });
     } catch (error) {
-      console.error('Get decision by number error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy thông tin quyết định thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -159,10 +162,10 @@ class DecisionController {
         data: decision,
       });
     } catch (error) {
-      console.error('Create decision error:', error);
-      return res.status(400).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Tạo quyết định thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -213,10 +216,10 @@ class DecisionController {
         data: decision,
       });
     } catch (error) {
-      console.error('Update decision error:', error);
-      return res.status(400).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Cập nhật quyết định thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -235,10 +238,10 @@ class DecisionController {
         message: result.message,
       });
     } catch (error) {
-      console.error('Delete decision error:', error);
-      return res.status(400).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Xóa quyết định thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -257,10 +260,10 @@ class DecisionController {
         data: years,
       });
     } catch (error) {
-      console.error('Get available years error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy danh sách năm thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -279,10 +282,10 @@ class DecisionController {
         data: types,
       });
     } catch (error) {
-      console.error('Get award types error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy danh sách loại khen thưởng thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -315,10 +318,10 @@ class DecisionController {
         },
       });
     } catch (error) {
-      console.error('Get file path error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy file path thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -347,10 +350,10 @@ class DecisionController {
         data: result,
       });
     } catch (error) {
-      console.error('Get file paths error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy file paths thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -365,6 +368,18 @@ class DecisionController {
       const { soQuyetDinh } = req.params;
       const decodedSoQuyetDinh = decodeURIComponent(soQuyetDinh);
 
+      // Prevent path traversal
+      if (
+        decodedSoQuyetDinh.includes('..') ||
+        decodedSoQuyetDinh.includes('/') ||
+        decodedSoQuyetDinh.includes('\\')
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: 'Tên file không hợp lệ',
+        });
+      }
+
       const result = await decisionService.getDecisionFileForDownload(decodedSoQuyetDinh);
 
       if (!result.success) {
@@ -374,7 +389,6 @@ class DecisionController {
         });
       }
 
-      const path = require('path');
       const filename = result.filename;
 
       // Xác định Content-Type dựa trên extension
@@ -398,10 +412,10 @@ class DecisionController {
       // Trả về file
       return res.sendFile(result.filePath);
     } catch (error) {
-      console.error('Download decision file error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Không thể tải file quyết định',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }

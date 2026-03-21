@@ -3,7 +3,7 @@ const router = express.Router();
 const positionHistoryController = require('../controllers/positionHistory.controller');
 const { verifyToken, requireManager, requireAuth } = require('../middlewares/auth');
 const { auditLog } = require('../middlewares/auditLog');
-const { getLogDescription, getResourceId } = require('../helpers/auditLogHelper');
+const { getLogDescription, getResourceId } = require('../helpers/auditLog');
 
 router.get('/', verifyToken, requireAuth, positionHistoryController.getPositionHistory);
 router.post(

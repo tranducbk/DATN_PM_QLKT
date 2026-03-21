@@ -3,7 +3,7 @@ const multer = require('multer');
 const hccsvvController = require('../controllers/hccsvv.controller');
 const { verifyToken, checkRole, requireManager, requireAdmin } = require('../middlewares/auth');
 const { auditLog } = require('../middlewares/auditLog');
-const { getLogDescription, getResourceId } = require('../helpers/auditLogHelper');
+const { getLogDescription, getResourceId } = require('../helpers/auditLog');
 const { ROLES } = require('../constants/roles');
 
 // Cấu hình multer cho file upload
@@ -23,9 +23,7 @@ const upload = multer({
   },
 });
 
-// ============================================
 // ROUTES - QUẢN LÝ Huy chương Chiến sĩ VẺ VANG
-// ============================================
 
 /**
  * @route   GET /api/hccsvv/template
@@ -33,6 +31,26 @@ const upload = multer({
  * @access  ADMIN
  */
 router.get('/template', verifyToken, requireManager, hccsvvController.getTemplate);
+
+/**
+ * @route   POST /api/hccsvv/import/preview
+ * @desc    Preview import HCCSVV — chỉ validate, không ghi DB
+ * @access  ADMIN
+ */
+router.post(
+  '/import/preview',
+  verifyToken,
+  requireAdmin,
+  upload.single('file'),
+  hccsvvController.previewImport
+);
+
+/**
+ * @route   POST /api/hccsvv/import/confirm
+ * @desc    Confirm import HCCSVV — lưu dữ liệu đã validate vào DB
+ * @access  ADMIN
+ */
+router.post('/import/confirm', verifyToken, requireAdmin, hccsvvController.confirmImport);
 
 /**
  * @route   POST /api/hccsvv/import
@@ -59,7 +77,12 @@ router.get('/', verifyToken, checkRole([ROLES.ADMIN, ROLES.MANAGER]), hccsvvCont
  * @desc    Xuất file Excel Huy chương Chiến sĩ Vẻ vang (Admin: tất cả, Manager: đơn vị mình)
  * @access  ADMIN, MANAGER
  */
-router.get('/export', verifyToken, checkRole([ROLES.ADMIN, ROLES.MANAGER]), hccsvvController.exportToExcel);
+router.get(
+  '/export',
+  verifyToken,
+  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
+  hccsvvController.exportToExcel
+);
 
 /**
  * @route   GET /api/hccsvv/statistics
@@ -86,7 +109,7 @@ router.post(
     action: 'CREATE',
     resource: 'hccsvv',
     getDescription: getLogDescription('hccsvv', 'CREATE'),
-    getResourceId: (req, res) => res.locals.createdId || null,
+    getResourceId: (req, res) => res.locals.createdId ?? null,
   }),
   hccsvvController.createDirect
 );

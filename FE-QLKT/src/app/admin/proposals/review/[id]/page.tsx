@@ -293,7 +293,7 @@ export default function ProposalDetailPage() {
 
       setPersonnelDetails(detailsMap);
     } catch (error) {
-      console.error('Error fetching personnel details:', error);
+      // Error handled by UI
     }
   };
 
@@ -320,7 +320,7 @@ export default function ProposalDetailPage() {
 
       setPositionHistoriesMap(historiesMap);
     } catch (error) {
-      console.error('Error fetching position histories:', error);
+      // Error handled by UI
     }
   };
 
@@ -412,6 +412,7 @@ export default function ProposalDetailPage() {
   };
 
   const handleApprove = async () => {
+    if (!proposal) return;
     // Kiểm tra tất cả danh hiệu/thành tích đã có số quyết định chưa
     let missingDecisions: string[] = [];
 
@@ -763,9 +764,7 @@ export default function ProposalDetailPage() {
     );
   }
 
-  // ============================================
   // COLUMNS CHO TỪNG LOẠI ĐỀ XUẤT
-  // ============================================
 
   // Columns cho CA_NHAN_HANG_NAM (Cá nhân Hằng năm)
   const caNhanHangNamColumns = [
@@ -870,7 +869,7 @@ export default function ProposalDetailPage() {
             width: 150,
             align: 'center' as const,
             render: (_: any, record: DanhHieuItem) =>
-              calculateTotalTimeByGroup(record.personnel_id, '0.7'),
+              calculateTotalTimeByGroup(record.personnel_id ?? '', '0.7'),
           },
           {
             title: 'Tổng thời gian (0.8)',
@@ -878,7 +877,7 @@ export default function ProposalDetailPage() {
             width: 150,
             align: 'center' as const,
             render: (_: any, record: DanhHieuItem) =>
-              calculateTotalTimeByGroup(record.personnel_id, '0.8'),
+              calculateTotalTimeByGroup(record.personnel_id ?? '', '0.8'),
           },
           {
             title: 'Tổng thời gian (0.9-1.0)',
@@ -886,7 +885,7 @@ export default function ProposalDetailPage() {
             width: 150,
             align: 'center' as const,
             render: (_: any, record: DanhHieuItem) =>
-              calculateTotalTimeByGroup(record.personnel_id, '0.9-1.0'),
+              calculateTotalTimeByGroup(record.personnel_id ?? '', '0.9-1.0'),
           },
         ]
       : []),
@@ -1517,7 +1516,7 @@ export default function ProposalDetailPage() {
                 rowSelection={proposal.status === 'PENDING' ? thanhTichRowSelection : undefined}
                 columns={thanhTichColumns}
                 dataSource={editedThanhTich}
-                rowKey={(_, index) => index}
+                rowKey={(_, index) => index ?? 0}
                 pagination={false}
                 scroll={{ x: true }}
               />
@@ -1561,7 +1560,7 @@ export default function ProposalDetailPage() {
                 rowSelection={proposal.status === 'PENDING' ? rowSelection : undefined}
                 columns={caNhanHangNamColumns}
                 dataSource={editedNienHan}
-                rowKey={(_, index) => index}
+                rowKey={(_, index) => index ?? 0}
                 pagination={false}
                 scroll={{ x: true }}
               />
@@ -1597,7 +1596,7 @@ export default function ProposalDetailPage() {
                 rowSelection={proposal.status === 'PENDING' ? rowSelection : undefined}
                 columns={caNhanHangNamColumns}
                 dataSource={editedCongHien}
-                rowKey={(_, index) => index}
+                rowKey={(_, index) => index ?? 0}
                 pagination={false}
                 scroll={{ x: true }}
               />
@@ -1644,7 +1643,7 @@ export default function ProposalDetailPage() {
                       : caNhanHangNamColumns
                 }
                 dataSource={editedDanhHieu}
-                rowKey={(_, index) => index}
+                rowKey={(_, index) => index ?? 0}
                 pagination={false}
                 scroll={{ x: true }}
               />

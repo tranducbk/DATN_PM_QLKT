@@ -60,32 +60,22 @@ class ProfileService {
    * Lấy hồ sơ gợi ý niên hạn (HCCSVV - Huy chương Chiến sĩ Vẻ vang)
    */
   async getTenureProfile(personnelId) {
-    const personnel = await prisma.quanNhan.findUnique({
-      where: { id: personnelId },
-    });
-
-    if (!personnel) {
-      throw new Error('Quân nhân không tồn tại');
-    }
+    const includeQuanNhan = {
+      QuanNhan: {
+        include: {
+          CoQuanDonVi: true,
+          DonViTrucThuoc: { include: { CoQuanDonVi: true } },
+          ChucVu: true,
+          KhenThuongHCCSVV: { select: { danh_hieu: true, nam: true } },
+        },
+      },
+    };
 
     let profile = await prisma.hoSoNienHan.findUnique({
       where: { quan_nhan_id: personnelId },
-      include: {
-        QuanNhan: {
-          include: {
-            CoQuanDonVi: true,
-            DonViTrucThuoc: {
-              include: {
-                CoQuanDonVi: true,
-              },
-            },
-            ChucVu: true,
-          },
-        },
-      },
+      include: includeQuanNhan,
     });
 
-    // Nếu chưa có hồ sơ, tạo mới với giá trị mặc định
     if (!profile) {
       profile = await prisma.hoSoNienHan.create({
         data: {
@@ -99,21 +89,13 @@ class ProfileService {
           hcbvtq_hang_nhat_status: 'CHUA_DU',
           goi_y: 'Chưa có dữ liệu để tính toán. Vui lòng nhập lịch sử chức vụ.',
         },
-        include: {
-          QuanNhan: {
-            include: {
-              CoQuanDonVi: true,
-              DonViTrucThuoc: {
-                include: {
-                  CoQuanDonVi: true,
-                },
-              },
-              ChucVu: true,
-            },
-          },
-        },
+        include: includeQuanNhan,
       });
     }
+
+    profile.hccsvv_nam_nhan = Object.fromEntries(
+      (profile.QuanNhan?.KhenThuongHCCSVV || []).map(r => [r.danh_hieu, r.nam])
+    );
 
     return profile;
   }
@@ -283,91 +265,6 @@ class ProfileService {
     return {
       hasNCKH: foundYears.length > 0,
       years: foundYears,
-    };
-  }
-
-  /**
-   * Tính toán gợi ý BKBQP (5 năm CSTDCS liên tục)
-   * @param {number} CSTDCSLienTuc - Số năm CSTDCS liên tục
-   * @param {Array} danhHieuList - Danh sách danh hiệu
-   * @param {Array} nckhList - Danh sách NCKH đã approved
-   * @returns {Object} { duDieuKien: boolean, goiY: string }
-   */
-  calculateBKBQP(CSTDCSLienTuc, danhHieuList, nckhList) {
-    // Chưa đủ 5 năm CSTDCS liên tục
-    if (CSTDCSLienTuc < 5) {
-      return {
-        duDieuKien: false,
-        goiY: `Hiện có ${CSTDCSLienTuc} năm CSTDCS liên tục. Cần ${
-          5 - CSTDCSLienTuc
-        } năm CSTDCS nữa để xét BKBQP.`,
-      };
-    }
-
-    // Đã có đủ 5 năm CSTDCS liên tục
-    if (CSTDCSLienTuc >= 5) {
-      return {
-        duDieuKien: true,
-        goiY: 'Đã đủ điều kiện đề nghị xét Bằng khen Bộ Quốc phòng.',
-      };
-    }
-
-    // Trường hợp mặc định: chưa đủ
-    return {
-      duDieuKien: false,
-      goiY: `Hiện có ${CSTDCSLienTuc} năm CSTDCS liên tục. Cần ${
-        5 - CSTDCSLienTuc
-      } năm CSTDCS nữa để xét BKBQP.`,
-    };
-  }
-
-  /**
-   * Tính toán gợi ý CSTDTQ (10 năm CSTDCS liên tục + 1 ĐTKH/SKKH)
-   * @param {number} CSTDCSLienTuc - Số năm CSTDCS liên tục
-   * @param {Object} bkbqpResult - Kết quả tính toán BKBQP
-   * @param {Array} danhHieuList - Danh sách danh hiệu
-   * @param {Array} nckhList - Danh sách NCKH đã approved
-   * @returns {Object} { duDieuKien: boolean, goiY: string }
-   */
-  calculateCSTDTQ(CSTDCSLienTuc, bkbqpResult, danhHieuList, nckhList) {
-    // CSTDTQ chỉ xét nếu đã đủ điều kiện BKBQP (5 năm)
-    if (!bkbqpResult.duDieuKien) {
-      return {
-        duDieuKien: false,
-        goiY: '',
-      };
-    }
-
-    // Chưa đủ 10 năm CSTDCS liên tục
-    if (CSTDCSLienTuc < 10) {
-      return {
-        duDieuKien: false,
-        goiY: `Đã đủ điều kiện BKBQP. Hiện có ${CSTDCSLienTuc} năm CSTDCS liên tục. Cần ${
-          10 - CSTDCSLienTuc
-        } năm CSTDCS nữa để xét CSTDTQ.`,
-      };
-    }
-
-    // Đã có đủ 10 năm CSTDCS liên tục
-    if (CSTDCSLienTuc >= 10) {
-      // Kiểm tra có ít nhất 1 ĐTKH/SKKH
-      if (nckhList.length > 0) {
-        return {
-          duDieuKien: true,
-          goiY: 'Đã đủ điều kiện đề nghị xét Chiến sĩ thi đua Toàn quân.',
-        };
-      } else {
-        return {
-          duDieuKien: false,
-          goiY: `Đã có ${CSTDCSLienTuc} năm CSTDCS liên tục. Cần thêm ít nhất 1 ĐTKH/SKKH để đủ điều kiện xét CSTDTQ.`,
-        };
-      }
-    }
-
-    // Trường hợp mặc định
-    return {
-      duDieuKien: false,
-      goiY: '',
     };
   }
 
@@ -618,15 +515,8 @@ class ProfileService {
    * @returns {Promise<Object>} Kết quả tính toán
    */
   async recalculateAnnualProfile(personnelId, year = new Date().getFullYear()) {
-    console.log(
-      `[recalculateAnnualProfile] Bắt đầu tính toán cho quân nhân ID: ${personnelId}, năm: ${
-        year || 'all'
-      }`
-    );
     try {
-      // ==============================================
       // BƯỚC 1: Thu thập Toàn bộ Dữ liệu Lịch sử (Input)
-      // ==============================================
       const personnel = await prisma.quanNhan.findUnique({
         where: { id: personnelId },
         include: {
@@ -650,9 +540,7 @@ class ProfileService {
       const danhHieuList = personnel.DanhHieuHangNam || [];
       const thanhTichList = personnel.ThanhTichKhoaHoc || [];
 
-      // ==============================================
       // BƯỚC 2: Định nghĩa Biến Tính toán
-      // ==============================================
       let du_dieu_kien_bkbqp = false;
       let du_dieu_kien_cstdtq = false;
       let du_dieu_kien_bkttcp = false;
@@ -691,9 +579,7 @@ class ProfileService {
         }))
         .sort((a, b) => a.nam - b.nam); // Sắp xếp theo năm tăng dần
       const tong_nckh = tong_nckh_json.length;
-      // ==============================================
       // BƯỚC 3: Logic "Bộ não" (Lặp và Kiểm tra)
-      // ==============================================
 
       const cstdcs_lien_tuc = this.calculateContinuousCSTDCS(
         danhHieuList.filter(dh => dh.danh_hieu === 'CSTDCS'),
@@ -732,9 +618,7 @@ class ProfileService {
         bkbqp_lien_tuc >= 3 &&
         cstdtq_lien_tuc >= 2;
 
-      // ==============================================
       // BƯỚC 4: Logic Tạo Gợi ý (Suggestion) - CHỈ GỢI Ý BKBQP, CSTDTQ VÀ BKTTCP
-      // ==============================================
       let goi_y = '';
 
       if (du_dieu_kien_bkttcp === true) {
@@ -752,9 +636,7 @@ class ProfileService {
           'Chưa đủ điều kiện đề nghị xét Bằng khen Bộ Quốc phòng hoặc Chiến sĩ thi đua Toàn quân.';
       }
 
-      // ==============================================
       // BƯỚC 5: Cập nhật Kết quả (Output)
-      // ==============================================
       const hoSoHangNam = await prisma.hoSoHangNam.upsert({
         where: { quan_nhan_id: personnelId },
         update: {
@@ -788,19 +670,114 @@ class ProfileService {
         },
       });
 
-      console.log(
-        `✅ [recalculateAnnualProfile] Đã lưu hoSoHangNam thành công. ID: ${hoSoHangNam.id}`
-      );
-
       return {
         success: true,
         message: 'Tính toán hồ sơ hằng năm thành công',
         data: hoSoHangNam,
       };
     } catch (error) {
-      console.error('Lỗi khi tính toán hồ sơ hằng năm:', error);
       throw error;
     }
+  }
+
+  /**
+   * Kiểm tra điều kiện khen thưởng chuỗi cho 1 quân nhân tại 1 năm
+   * Dùng cho: proposal submit, approve, import preview
+   * @param {string} personnelId - ID quân nhân
+   * @param {number} year - Năm cần kiểm tra
+   * @param {string} danhHieu - Danh hiệu muốn kiểm tra (BKBQP, CSTDTQ, BKTTCP)
+   * @returns {Object} { eligible: boolean, reason: string }
+   */
+  async checkAwardEligibility(personnelId, year, danhHieu) {
+    // Chỉ check chuỗi cho BKBQP, CSTDTQ, BKTTCP
+    // CSTT, CSTDCS không cần check chuỗi
+    if (!['BKBQP', 'CSTDTQ', 'BKTTCP'].includes(danhHieu)) {
+      return { eligible: true, reason: '' };
+    }
+
+    const personnel = await prisma.quanNhan.findUnique({
+      where: { id: personnelId },
+      include: {
+        DanhHieuHangNam: {
+          where: { nam: { lte: year } },
+          orderBy: { nam: 'asc' },
+        },
+        ThanhTichKhoaHoc: {
+          where: { status: 'APPROVED', nam: { lte: year } },
+          orderBy: { nam: 'asc' },
+        },
+      },
+    });
+
+    if (!personnel) {
+      return { eligible: false, reason: 'Quân nhân không tồn tại' };
+    }
+
+    const danhHieuList = personnel.DanhHieuHangNam;
+    const thanhTichList = personnel.ThanhTichKhoaHoc;
+
+    const cstdcs_lien_tuc = this.calculateContinuousCSTDCS(
+      danhHieuList.filter(dh => dh.danh_hieu === 'CSTDCS'),
+      year
+    );
+    const nckh_lien_tuc = this.calculateContinuousNCKH(thanhTichList, year);
+    const bkbqp_lien_tuc = this.calculateContinuousBKBQP(danhHieuList, year);
+    const cstdtq_lien_tuc = this.calculateContinuousCSTDTQ(danhHieuList, year);
+
+    if (danhHieu === 'BKBQP') {
+      const eligible =
+        cstdcs_lien_tuc % 2 === 0 && cstdcs_lien_tuc >= 1 && nckh_lien_tuc >= cstdcs_lien_tuc;
+      if (!eligible) {
+        return {
+          eligible: false,
+          reason: `Chưa đủ điều kiện BKBQP: cần 2 năm CSTDCS liên tục + mỗi năm có NCKH (hiện có ${cstdcs_lien_tuc} năm CSTDCS, ${nckh_lien_tuc} năm NCKH liên tục)`,
+        };
+      }
+      return { eligible: true, reason: 'Đủ điều kiện BKBQP' };
+    }
+
+    if (danhHieu === 'CSTDTQ') {
+      let eligible =
+        cstdcs_lien_tuc % 3 === 0 &&
+        bkbqp_lien_tuc >= 1 &&
+        cstdcs_lien_tuc >= 3 &&
+        nckh_lien_tuc >= cstdcs_lien_tuc;
+      if (cstdcs_lien_tuc % 6 === 0) {
+        const bkbqp_lt = this.calculateContinuousBKBQP(danhHieuList, year - 1);
+        eligible =
+          cstdcs_lien_tuc % 3 === 0 &&
+          bkbqp_lt >= 1 &&
+          cstdcs_lien_tuc >= 3 &&
+          nckh_lien_tuc >= cstdcs_lien_tuc;
+      }
+      if (!eligible) {
+        return {
+          eligible: false,
+          reason: `Chưa đủ điều kiện CSTDTQ: cần 3 năm CSTDCS liên tục + đã có BKBQP + mỗi năm có NCKH (hiện có ${cstdcs_lien_tuc} năm CSTDCS, ${bkbqp_lien_tuc} lần BKBQP, ${nckh_lien_tuc} năm NCKH liên tục)`,
+        };
+      }
+      return { eligible: true, reason: 'Đủ điều kiện CSTDTQ' };
+    }
+
+    if (danhHieu === 'BKTTCP') {
+      const eligible =
+        cstdcs_lien_tuc % 7 === 0 &&
+        bkbqp_lien_tuc % 3 === 0 &&
+        cstdtq_lien_tuc % 2 === 0 &&
+        nckh_lien_tuc >= cstdcs_lien_tuc &&
+        cstdcs_lien_tuc >= 7 &&
+        bkbqp_lien_tuc >= 3 &&
+        cstdtq_lien_tuc >= 2;
+      if (!eligible) {
+        return {
+          eligible: false,
+          reason: `Chưa đủ điều kiện BKTTCP: cần 7 năm CSTDCS + 3 lần BKBQP + 2 lần CSTDTQ + NCKH mỗi năm (hiện có ${cstdcs_lien_tuc} CSTDCS, ${bkbqp_lien_tuc} BKBQP, ${cstdtq_lien_tuc} CSTDTQ, ${nckh_lien_tuc} NCKH)`,
+        };
+      }
+      return { eligible: true, reason: 'Đủ điều kiện BKTTCP' };
+    }
+
+    return { eligible: true, reason: '' };
   }
 
   /**
@@ -808,9 +785,6 @@ class ProfileService {
    * @param {string} personnelId - ID quân nhân
    */
   async recalculateTenureProfile(personnelId) {
-    console.log(
-      `[recalculateTenureProfile] Bắt đầu tính toán hồ sơ niên hạn cho quân nhân ID: ${personnelId}`
-    );
     try {
       // Load thông tin quân nhân
       const personnel = await prisma.quanNhan.findUnique({
@@ -928,7 +902,6 @@ class ProfileService {
       });
       return { message: 'Tính toán lại hồ sơ Huy chương Chiến sĩ vẻ vang thành công' };
     } catch (error) {
-      console.error('Lỗi recalculateTenureProfile:', error);
       throw error;
     }
   }
@@ -938,9 +911,6 @@ class ProfileService {
    * @param {string} personnelId - ID quân nhân
    */
   async recalculateContributionProfile(personnelId) {
-    console.log(
-      `[recalculateContributionProfile] Bắt đầu tính toán hồ sơ cống hiến cho quân nhân ID: ${personnelId}`
-    );
     const checkEligibleForRank = (personnel, rank) => {
       const months0_9_1_0 = getTotalMonthsByGroup(personnel.LichSuChucVu, '0.9-1.0');
       const months0_8 = getTotalMonthsByGroup(personnel.LichSuChucVu, '0.8');
@@ -1081,10 +1051,8 @@ class ProfileService {
         },
       });
 
-      // ============================================
       // ĐỒNG BỘ STATUS VÀO BẢNG KhenThuongCongHien
       // Kiểm tra và cập nhật status của huân chương đã có
-      // ============================================
 
       const existingCongHien = await prisma.khenThuongCongHien.findUnique({
         where: { quan_nhan_id: personnelId },
@@ -1109,7 +1077,6 @@ class ProfileService {
 
       return { message: 'Tính toán lại hồ sơ Huân chương Bảo vệ Tổ quốc thành công' };
     } catch (error) {
-      console.error('Lỗi recalculateContributionProfile:', error);
       throw error;
     }
   }
@@ -1160,36 +1127,37 @@ class ProfileService {
    * Tính toán lại cho toàn bộ quân nhân
    */
   async recalculateAll() {
-    console.log('[recalculateAll] Bắt đầu tính toán lại cho tất cả quân nhân...');
-
     const allPersonnel = await prisma.quanNhan.findMany({
-      select: { id: true },
+      select: { id: true, ho_ten: true },
     });
 
-    console.log(`[recalculateAll] Tổng số quân nhân: ${allPersonnel.length}`);
+    console.log(`[Recalculate] Bắt đầu tính toán cho ${allPersonnel.length} quân nhân`);
 
     let successCount = 0;
-    let errorCount = 0;
+    const errors = [];
 
     for (const personnel of allPersonnel) {
       try {
         await this.recalculateAnnualProfile(personnel.id);
         successCount++;
-        if (successCount % 10 === 0) {
-          console.log(`[recalculateAll] Tiến độ: ${successCount}/${allPersonnel.length}`);
-        }
       } catch (error) {
-        console.error(`Lỗi khi tính toán cho quân nhân ID ${personnel.id}:`, error.message);
-        errorCount++;
+        errors.push({
+          personnelId: personnel.id,
+          hoTen: personnel.ho_ten,
+          error: error.message,
+        });
+        console.error(
+          `[Recalculate] Lỗi: ${personnel.ho_ten} (${personnel.id}) — ${error.message}`
+        );
       }
     }
 
-    console.log(`[recalculateAll] Hoàn tất. Thành công: ${successCount}, Lỗi: ${errorCount}`);
+    console.log(`[Recalculate] Hoàn tất: ${successCount} thành công, ${errors.length} lỗi`);
 
     return {
-      message: `Tính toán hoàn tất. Thành công: ${successCount}, Lỗi: ${errorCount}`,
+      message: `Tính toán hoàn tất. Thành công: ${successCount}, Lỗi: ${errors.length}`,
       success: successCount,
-      errors: errorCount,
+      errors,
     };
   }
 

@@ -2248,6 +2248,38 @@ button[class*='bg-primary']:hover:not(:disabled) {
   border-color: #374151 !important;
 }
 
+.notification-dropdown .ant-dropdown-menu-item[data-menu-id*='notification-footer'] {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  background-color: white !important;
+  border-top: 1px solid #e5e7eb !important;
+}
+
+.dark .notification-dropdown .ant-dropdown-menu-item[data-menu-id*='notification-footer'] {
+  background-color: #1f2937 !important;
+  background: #1f2937 !important;
+  border-top-color: #374151 !important;
+}
+
+.notification-dropdown .ant-dropdown-menu-item[data-menu-id*='notification-footer']:hover {
+  background-color: white !important;
+}
+
+.dark .notification-dropdown .ant-dropdown-menu-item[data-menu-id*='notification-footer']:hover {
+  background-color: #1f2937 !important;
+  background: #1f2937 !important;
+}
+
+.notification-dropdown .ant-dropdown-menu-item[data-menu-id*='notification-header']:hover {
+  background-color: white !important;
+}
+
+.dark .notification-dropdown .ant-dropdown-menu-item[data-menu-id*='notification-header']:hover {
+  background-color: #1f2937 !important;
+  background: #1f2937 !important;
+}
+
 /* Override header div inside menu item in dark mode */
 .dark .notification-dropdown .ant-dropdown-menu-item[data-menu-id*='notification-header'] div {
   background-color: #1f2937 !important;

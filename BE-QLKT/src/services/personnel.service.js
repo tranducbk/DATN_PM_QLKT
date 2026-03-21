@@ -3,6 +3,9 @@ const ExcelJS = require('exceljs');
 const bcrypt = require('bcrypt');
 const { parseCCCD } = require('../helpers/cccdHelper');
 const { ROLES } = require('../constants/roles');
+const { NotFoundError, ValidationError, ForbiddenError } = require('../middlewares/errorHandler');
+const profileService = require('../services/profile.service');
+const notificationHelper = require('../helpers/notification');
 
 class PersonnelService {
   parseCCCD(value) {
@@ -143,13 +146,13 @@ class PersonnelService {
     });
 
     if (!personnel) {
-      throw new Error('Quân nhân không tồn tại');
+      throw new NotFoundError('Quân nhân');
     }
 
     // Kiểm tra quyền truy cập
     // USER chỉ xem được thông tin của chính mình
     if (userRole === ROLES.USER && userQuanNhanId !== id) {
-      throw new Error('Bạn không có quyền xem thông tin này');
+      throw new ForbiddenError('Bạn không có quyền xem thông tin này');
     }
 
     // MANAGER chỉ xem được quân nhân trong đơn vị của mình (bao gồm đơn vị trực thuộc)
@@ -174,7 +177,7 @@ class PersonnelService {
           donViTrucThuocIds.includes(personnel.don_vi_truc_thuoc_id);
 
         if (!isInCoQuanDonVi && !isInDonViTrucThuoc) {
-          throw new Error('Bạn không có quyền xem thông tin quân nhân ngoài đơn vị');
+          throw new ForbiddenError('Bạn không có quyền xem thông tin quân nhân ngoài đơn vị');
         }
       }
     }
@@ -194,7 +197,7 @@ class PersonnelService {
     });
 
     if (existingPersonnel) {
-      throw new Error('CCCD đã tồn tại trong hệ thống');
+      throw new ValidationError('CCCD đã tồn tại trong hệ thống');
     }
 
     // Kiểm tra đơn vị có tồn tại không (có thể là CoQuanDonVi hoặc DonViTrucThuoc)
@@ -204,7 +207,7 @@ class PersonnelService {
     ]);
 
     if (!coQuanDonVi && !donViTrucThuoc) {
-      throw new Error('Đơn vị không tồn tại');
+      throw new NotFoundError('Đơn vị');
     }
 
     // Kiểm tra chức vụ có tồn tại không
@@ -213,7 +216,7 @@ class PersonnelService {
     });
 
     if (!position) {
-      throw new Error('Chức vụ không tồn tại');
+      throw new NotFoundError('Chức vụ');
     }
 
     // Tạo username từ CCCD
@@ -225,7 +228,7 @@ class PersonnelService {
     });
 
     if (existingAccount) {
-      throw new Error('Username (CCCD) đã tồn tại trong hệ thống tài khoản');
+      throw new ValidationError('Username (CCCD) đã tồn tại trong hệ thống tài khoản');
     }
 
     // Xác định loại đơn vị và set đúng foreign key
@@ -246,56 +249,58 @@ class PersonnelService {
       personnelData.don_vi_truc_thuoc_id = unit_id;
     }
 
-    // Tạo quân nhân mới với họ tên mặc định = username (CCCD)
-    const newPersonnel = await prisma.quanNhan.create({
-      data: personnelData,
-      include: {
-        CoQuanDonVi: true,
-        DonViTrucThuoc: {
-          include: {
-            CoQuanDonVi: true,
-          },
-        },
-        ChucVu: true,
-      },
-    });
-
-    // Lấy thông tin chức vụ để lưu hệ số chức vụ
-    const chucVu = await prisma.chucVu.findUnique({
-      where: { id: position_id },
-      select: { he_so_chuc_vu: true },
-    });
-
-    // Tạo LichSuChucVu cho chức vụ ban đầu
-    const ngayBatDau = new Date();
-    await prisma.lichSuChucVu.create({
-      data: {
-        quan_nhan_id: newPersonnel.id,
-        chuc_vu_id: position_id,
-        he_so_chuc_vu: chucVu?.he_so_chuc_vu || 0,
-        ngay_bat_dau: ngayBatDau, // Bắt đầu từ ngày tạo
-        ngay_ket_thuc: null, // Chức vụ hiện tại
-        so_thang: null, // Chưa kết thúc nên chưa tính được
-      },
-    });
-
-    // Tự động tạo tài khoản
+    // Hash password trước transaction (CPU-intensive, không cần trong transaction)
     const defaultPassword = process.env.DEFAULT_PASSWORD || '123456'; // Mật khẩu mặc định
     const hashedPassword = await bcrypt.hash(defaultPassword, 10);
 
-    const account = await prisma.taiKhoan.create({
-      data: {
-        username,
-        password_hash: hashedPassword,
-        role: role,
-        quan_nhan_id: newPersonnel.id,
-      },
-    });
+    // Sử dụng transaction để đảm bảo tính toàn vẹn dữ liệu
+    const result = await prisma.$transaction(async tx => {
+      // Tạo quân nhân mới với họ tên mặc định = username (CCCD)
+      const newPersonnel = await tx.quanNhan.create({
+        data: personnelData,
+        include: {
+          CoQuanDonVi: true,
+          DonViTrucThuoc: {
+            include: {
+              CoQuanDonVi: true,
+            },
+          },
+          ChucVu: true,
+        },
+      });
 
-    // Cập nhật số lượng quân nhân trong đơn vị
-    try {
+      // Lấy thông tin chức vụ để lưu hệ số chức vụ
+      const chucVu = await tx.chucVu.findUnique({
+        where: { id: position_id },
+        select: { he_so_chuc_vu: true },
+      });
+
+      // Tạo LichSuChucVu cho chức vụ ban đầu
+      const ngayBatDau = new Date();
+      await tx.lichSuChucVu.create({
+        data: {
+          quan_nhan_id: newPersonnel.id,
+          chuc_vu_id: position_id,
+          he_so_chuc_vu: chucVu?.he_so_chuc_vu || 0,
+          ngay_bat_dau: ngayBatDau, // Bắt đầu từ ngày tạo
+          ngay_ket_thuc: null, // Chức vụ hiện tại
+          so_thang: null, // Chưa kết thúc nên chưa tính được
+        },
+      });
+
+      // Tự động tạo tài khoản
+      const account = await tx.taiKhoan.create({
+        data: {
+          username,
+          password_hash: hashedPassword,
+          role: role,
+          quan_nhan_id: newPersonnel.id,
+        },
+      });
+
+      // Cập nhật số lượng quân nhân trong đơn vị
       if (isCoQuanDonVi) {
-        await prisma.coQuanDonVi.update({
+        await tx.coQuanDonVi.update({
           where: { id: unit_id },
           data: {
             so_luong: {
@@ -304,7 +309,7 @@ class PersonnelService {
           },
         });
       } else {
-        await prisma.donViTrucThuoc.update({
+        await tx.donViTrucThuoc.update({
           where: { id: unit_id },
           data: {
             so_luong: {
@@ -313,26 +318,25 @@ class PersonnelService {
           },
         });
       }
-    } catch (error) {
-      console.error(`Lỗi khi cập nhật số lượng quân nhân cho đơn vị ID: ${unit_id}`, error);
-      throw new Error(`Không thể cập nhật số lượng quân nhân của đơn vị: ${error.message}`);
-    }
 
-    // Trả về kèm thông tin tài khoản
-    return {
-      ...newPersonnel,
-      TaiKhoan: {
-        id: account.id,
-        username: account.username,
-        role: account.role,
-      },
-    };
+      // Trả về kèm thông tin tài khoản
+      return {
+        ...newPersonnel,
+        TaiKhoan: {
+          id: account.id,
+          username: account.username,
+          role: account.role,
+        },
+      };
+    });
+
+    return result;
   }
 
   /**
    * Cập nhật quân nhân (chuyển đơn vị, chức vụ)
    */
-  async updatePersonnel(id, data, userRole, userQuanNhanId) {
+  async updatePersonnel(id, data, userRole, userQuanNhanId, adminUsername) {
     const {
       unit_id,
       position_id,
@@ -361,19 +365,19 @@ class PersonnelService {
     });
 
     if (!personnel) {
-      throw new Error('Quân nhân không tồn tại');
+      throw new NotFoundError('Quân nhân');
     }
 
     // Kiểm tra quyền truy cập
     // USER chỉ sửa được thông tin của chính mình
     if (userRole === ROLES.USER) {
       if (userQuanNhanId !== id) {
-        throw new Error('Bạn không có quyền sửa thông tin của người khác');
+        throw new ForbiddenError('Bạn không có quyền sửa thông tin của người khác');
       }
 
       // USER không được phép đổi unit_id và position_id
       if (unit_id || position_id) {
-        throw new Error('Bạn không có quyền thay đổi đơn vị hoặc chức vụ');
+        throw new ForbiddenError('Bạn không có quyền thay đổi đơn vị hoặc chức vụ');
       }
     }
 
@@ -428,7 +432,7 @@ class PersonnelService {
         }
 
         if (!hasPermission) {
-          throw new Error('Bạn không có quyền sửa thông tin quân nhân ngoài đơn vị');
+          throw new ForbiddenError('Bạn không có quyền sửa thông tin quân nhân ngoài đơn vị');
         }
       }
     }
@@ -440,7 +444,7 @@ class PersonnelService {
       });
 
       if (existingPersonnel) {
-        throw new Error('CCCD đã tồn tại trong hệ thống');
+        throw new ValidationError('CCCD đã tồn tại trong hệ thống');
       }
     }
 
@@ -453,7 +457,7 @@ class PersonnelService {
       ]);
 
       if (!coQuanDonVi && !donViTrucThuoc) {
-        throw new Error('Đơn vị không tồn tại');
+        throw new NotFoundError('Đơn vị');
       }
     }
 
@@ -464,18 +468,18 @@ class PersonnelService {
       });
 
       if (!position) {
-        throw new Error('Chức vụ không tồn tại');
+        throw new NotFoundError('Chức vụ');
       }
     }
 
     // Validate giới tính: bắt buộc khi cập nhật
     if (gioi_tinh !== undefined) {
       if (!gioi_tinh || (gioi_tinh !== 'NAM' && gioi_tinh !== 'NU')) {
-        throw new Error('Giới tính là bắt buộc và phải là NAM hoặc NU');
+        throw new ValidationError('Giới tính là bắt buộc và phải là NAM hoặc NU');
       }
     } else if (!personnel.gioi_tinh) {
       // Nếu chưa có giới tính và không được cung cấp trong lần cập nhật này
-      throw new Error('Giới tính là bắt buộc. Vui lòng cập nhật thông tin giới tính.');
+      throw new ValidationError('Giới tính là bắt buộc. Vui lòng cập nhật thông tin giới tính.');
     }
 
     // Chuẩn bị data update
@@ -534,7 +538,7 @@ class PersonnelService {
           updateData.co_quan_don_vi_id = donViTrucThuoc.co_quan_don_vi_id;
           updateData.don_vi_truc_thuoc_id = don_vi_truc_thuoc_id;
         } else {
-          throw new Error('Đơn vị trực thuộc không tồn tại');
+          throw new NotFoundError('Đơn vị trực thuộc');
         }
       } else if (co_quan_don_vi_id) {
         // Chỉ có cơ quan đơn vị, không có đơn vị trực thuộc
@@ -570,169 +574,195 @@ class PersonnelService {
       updateData.don_vi_truc_thuoc_id = personnel.don_vi_truc_thuoc_id;
     }
 
-    // Cập nhật quân nhân
-    const updatedPersonnel = await prisma.quanNhan.update({
-      where: { id: String(id) },
-      data: updateData,
-      include: {
-        CoQuanDonVi: true,
-        DonViTrucThuoc: {
-          include: {
-            CoQuanDonVi: true,
+    // Sử dụng transaction để đảm bảo tính toàn vẹn dữ liệu cho tất cả writes
+    const { updatedPersonnel, unitTransferInfo } = await prisma.$transaction(async tx => {
+      // Cập nhật quân nhân
+      const txUpdatedPersonnel = await tx.quanNhan.update({
+        where: { id: String(id) },
+        data: updateData,
+        include: {
+          CoQuanDonVi: true,
+          DonViTrucThuoc: {
+            include: {
+              CoQuanDonVi: true,
+            },
           },
-        },
-        ChucVu: true,
-      },
-    });
-
-    // Nếu đổi chức vụ, cập nhật lịch sử chức vụ
-    if (position_id && position_id !== personnel.chuc_vu_id) {
-      const today = new Date();
-
-      // 1. Đóng lịch sử chức vụ cũ và tính số tháng
-      const oldHistories = await prisma.lichSuChucVu.findMany({
-        where: {
-          quan_nhan_id: id,
-          ngay_ket_thuc: null, // Chỉ đóng lịch sử đang active
+          ChucVu: true,
         },
       });
 
-      // Cập nhật từng lịch sử cũ với số tháng đã tính
-      for (const oldHistory of oldHistories) {
-        const ngayBatDauOld = new Date(oldHistory.ngay_bat_dau);
-        let months = (today.getFullYear() - ngayBatDauOld.getFullYear()) * 12;
-        months += today.getMonth() - ngayBatDauOld.getMonth();
-        // Nếu ngày kết thúc < ngày bắt đầu trong tháng thì trừ 1 tháng
-        if (today.getDate() < ngayBatDauOld.getDate()) {
-          months--;
-        }
-        const soThangOld = Math.max(0, months);
+      // Nếu đổi chức vụ, cập nhật lịch sử chức vụ
+      if (position_id && position_id !== personnel.chuc_vu_id) {
+        const today = new Date();
 
-        await prisma.lichSuChucVu.update({
-          where: { id: oldHistory.id },
+        // 1. Đóng lịch sử chức vụ cũ và tính số tháng
+        const oldHistories = await tx.lichSuChucVu.findMany({
+          where: {
+            quan_nhan_id: id,
+            ngay_ket_thuc: null, // Chỉ đóng lịch sử đang active
+          },
+        });
+
+        // Cập nhật từng lịch sử cũ với số tháng đã tính
+        for (const oldHistory of oldHistories) {
+          const ngayBatDauOld = new Date(oldHistory.ngay_bat_dau);
+          let months = (today.getFullYear() - ngayBatDauOld.getFullYear()) * 12;
+          months += today.getMonth() - ngayBatDauOld.getMonth();
+          // Nếu ngày kết thúc < ngày bắt đầu trong tháng thì trừ 1 tháng
+          if (today.getDate() < ngayBatDauOld.getDate()) {
+            months--;
+          }
+          const soThangOld = Math.max(0, months);
+
+          await tx.lichSuChucVu.update({
+            where: { id: oldHistory.id },
+            data: {
+              ngay_ket_thuc: today,
+              so_thang: soThangOld,
+            },
+          });
+        }
+
+        // 2. Lấy thông tin chức vụ mới để lưu hệ số chức vụ
+        const newChucVu = await tx.chucVu.findUnique({
+          where: { id: position_id },
+          select: { he_so_chuc_vu: true },
+        });
+
+        // 3. Tạo lịch sử chức vụ mới
+        await tx.lichSuChucVu.create({
           data: {
-            ngay_ket_thuc: today,
-            so_thang: soThangOld,
+            quan_nhan_id: id,
+            chuc_vu_id: position_id,
+            he_so_chuc_vu: newChucVu?.he_so_chuc_vu || 0,
+            ngay_bat_dau: today,
+            ngay_ket_thuc: null, // Chức vụ hiện tại
+            so_thang: null, // Chưa kết thúc nên chưa tính được
           },
         });
       }
 
-      // 2. Lấy thông tin chức vụ mới để lưu hệ số chức vụ
-      const newChucVu = await prisma.chucVu.findUnique({
-        where: { id: position_id },
-        select: { he_so_chuc_vu: true },
-      });
+      // Nếu đổi đơn vị, cập nhật số lượng quân nhân
+      let txUnitTransferInfo = null;
 
-      // 3. Tạo lịch sử chức vụ mới
-      await prisma.lichSuChucVu.create({
-        data: {
-          quan_nhan_id: id,
-          chuc_vu_id: position_id,
-          he_so_chuc_vu: newChucVu?.he_so_chuc_vu || 0,
-          ngay_bat_dau: today,
-          ngay_ket_thuc: null, // Chức vụ hiện tại
-          so_thang: null, // Chưa kết thúc nên chưa tính được
-        },
-      });
+      // Phát hiện chuyển đơn vị: so sánh đơn vị cũ và mới
+      const oldCoQuanDonViId = personnel.co_quan_don_vi_id;
+      const oldDonViTrucThuocId = personnel.don_vi_truc_thuoc_id;
+      const newCoQuanDonViId = updateData.co_quan_don_vi_id;
+      const newDonViTrucThuocId = updateData.don_vi_truc_thuoc_id;
+
+      // Kiểm tra xem đơn vị có thay đổi không
+      const coQuanDonViChanged = oldCoQuanDonViId !== newCoQuanDonViId;
+      const donViTrucThuocChanged = oldDonViTrucThuocId !== newDonViTrucThuocId;
+      const unitChanged = coQuanDonViChanged || donViTrucThuocChanged;
+
+      if (unitChanged) {
+        // Lấy thông tin đơn vị cũ và mới để gửi notification
+        let oldUnitInfo = null;
+        let newUnitInfo = null;
+
+        // Xác định đơn vị cũ (ưu tiên đơn vị trực thuộc nếu có)
+        const oldPrimaryUnitId = oldDonViTrucThuocId || oldCoQuanDonViId;
+        if (oldPrimaryUnitId) {
+          if (oldDonViTrucThuocId) {
+            const oldDvtt = await tx.donViTrucThuoc.findUnique({
+              where: { id: oldDonViTrucThuocId },
+              select: { id: true, ten_don_vi: true },
+            });
+            if (oldDvtt) {
+              oldUnitInfo = {
+                id: oldDvtt.id,
+                ten_don_vi: oldDvtt.ten_don_vi,
+                isCoQuanDonVi: false,
+              };
+              // Giảm số lượng ở đơn vị trực thuộc cũ
+              await tx.donViTrucThuoc.update({
+                where: { id: oldDonViTrucThuocId },
+                data: { so_luong: { decrement: 1 } },
+              });
+            }
+          } else if (oldCoQuanDonViId) {
+            const oldCqDv = await tx.coQuanDonVi.findUnique({
+              where: { id: oldCoQuanDonViId },
+              select: { id: true, ten_don_vi: true },
+            });
+            if (oldCqDv) {
+              oldUnitInfo = { id: oldCqDv.id, ten_don_vi: oldCqDv.ten_don_vi, isCoQuanDonVi: true };
+              // Giảm số lượng ở cơ quan đơn vị cũ
+              await tx.coQuanDonVi.update({
+                where: { id: oldCoQuanDonViId },
+                data: { so_luong: { decrement: 1 } },
+              });
+            }
+          }
+        }
+
+        // Xác định đơn vị mới (ưu tiên đơn vị trực thuộc nếu có)
+        const newPrimaryUnitId = newDonViTrucThuocId || newCoQuanDonViId;
+        if (newPrimaryUnitId) {
+          if (newDonViTrucThuocId) {
+            const newDvtt = await tx.donViTrucThuoc.findUnique({
+              where: { id: newDonViTrucThuocId },
+              select: { id: true, ten_don_vi: true },
+            });
+            if (newDvtt) {
+              newUnitInfo = {
+                id: newDvtt.id,
+                ten_don_vi: newDvtt.ten_don_vi,
+                isCoQuanDonVi: false,
+              };
+              // Tăng số lượng ở đơn vị trực thuộc mới
+              await tx.donViTrucThuoc.update({
+                where: { id: newDonViTrucThuocId },
+                data: { so_luong: { increment: 1 } },
+              });
+            }
+          } else if (newCoQuanDonViId) {
+            const newCqDv = await tx.coQuanDonVi.findUnique({
+              where: { id: newCoQuanDonViId },
+              select: { id: true, ten_don_vi: true },
+            });
+            if (newCqDv) {
+              newUnitInfo = { id: newCqDv.id, ten_don_vi: newCqDv.ten_don_vi, isCoQuanDonVi: true };
+              // Tăng số lượng ở cơ quan đơn vị mới
+              await tx.coQuanDonVi.update({
+                where: { id: newCoQuanDonViId },
+                data: { so_luong: { increment: 1 } },
+              });
+            }
+          }
+        }
+
+        // Lưu thông tin chuyển đơn vị để trả về và gửi notification
+        if (oldUnitInfo || newUnitInfo) {
+          txUnitTransferInfo = {
+            oldUnit: oldUnitInfo,
+            newUnit: newUnitInfo,
+          };
+        }
+      }
+
+      return { updatedPersonnel: txUpdatedPersonnel, unitTransferInfo: txUnitTransferInfo };
+    });
+
+    // Tự động cập nhật lại hồ sơ sau khi update (ngoài transaction)
+    try {
+      await profileService.recalculateAnnualProfile(id);
+    } catch (recalcError) {
+      // Không throw error để không ảnh hưởng đến việc update personnel
     }
 
-    // Nếu đổi đơn vị, cập nhật số lượng quân nhân và gửi thông báo
-    let unitTransferInfo = null;
-
-    // Phát hiện chuyển đơn vị: so sánh đơn vị cũ và mới
-    const oldCoQuanDonViId = personnel.co_quan_don_vi_id;
-    const oldDonViTrucThuocId = personnel.don_vi_truc_thuoc_id;
-    const newCoQuanDonViId = updateData.co_quan_don_vi_id;
-    const newDonViTrucThuocId = updateData.don_vi_truc_thuoc_id;
-
-    // Kiểm tra xem đơn vị có thay đổi không
-    const coQuanDonViChanged = oldCoQuanDonViId !== newCoQuanDonViId;
-    const donViTrucThuocChanged = oldDonViTrucThuocId !== newDonViTrucThuocId;
-    const unitChanged = coQuanDonViChanged || donViTrucThuocChanged;
-
-    if (unitChanged) {
-      // Lấy thông tin đơn vị cũ và mới để gửi notification
-      let oldUnitInfo = null;
-      let newUnitInfo = null;
-
-      // Xác định đơn vị cũ (ưu tiên đơn vị trực thuộc nếu có)
-      const oldPrimaryUnitId = oldDonViTrucThuocId || oldCoQuanDonViId;
-      if (oldPrimaryUnitId) {
-        if (oldDonViTrucThuocId) {
-          const oldDvtt = await prisma.donViTrucThuoc.findUnique({
-            where: { id: oldDonViTrucThuocId },
-            select: { id: true, ten_don_vi: true },
-          });
-          if (oldDvtt) {
-            oldUnitInfo = {
-              id: oldDvtt.id,
-              ten_don_vi: oldDvtt.ten_don_vi,
-              isCoQuanDonVi: false,
-            };
-            // Giảm số lượng ở đơn vị trực thuộc cũ
-            await prisma.donViTrucThuoc.update({
-              where: { id: oldDonViTrucThuocId },
-              data: { so_luong: { decrement: 1 } },
-            });
-          }
-        } else if (oldCoQuanDonViId) {
-          const oldCqDv = await prisma.coQuanDonVi.findUnique({
-            where: { id: oldCoQuanDonViId },
-            select: { id: true, ten_don_vi: true },
-          });
-          if (oldCqDv) {
-            oldUnitInfo = { id: oldCqDv.id, ten_don_vi: oldCqDv.ten_don_vi, isCoQuanDonVi: true };
-            // Giảm số lượng ở cơ quan đơn vị cũ
-            await prisma.coQuanDonVi.update({
-              where: { id: oldCoQuanDonViId },
-              data: { so_luong: { decrement: 1 } },
-            });
-          }
-        }
-      }
-
-      // Xác định đơn vị mới (ưu tiên đơn vị trực thuộc nếu có)
-      const newPrimaryUnitId = newDonViTrucThuocId || newCoQuanDonViId;
-      if (newPrimaryUnitId) {
-        if (newDonViTrucThuocId) {
-          const newDvtt = await prisma.donViTrucThuoc.findUnique({
-            where: { id: newDonViTrucThuocId },
-            select: { id: true, ten_don_vi: true },
-          });
-          if (newDvtt) {
-            newUnitInfo = {
-              id: newDvtt.id,
-              ten_don_vi: newDvtt.ten_don_vi,
-              isCoQuanDonVi: false,
-            };
-            // Tăng số lượng ở đơn vị trực thuộc mới
-            await prisma.donViTrucThuoc.update({
-              where: { id: newDonViTrucThuocId },
-              data: { so_luong: { increment: 1 } },
-            });
-          }
-        } else if (newCoQuanDonViId) {
-          const newCqDv = await prisma.coQuanDonVi.findUnique({
-            where: { id: newCoQuanDonViId },
-            select: { id: true, ten_don_vi: true },
-          });
-          if (newCqDv) {
-            newUnitInfo = { id: newCqDv.id, ten_don_vi: newCqDv.ten_don_vi, isCoQuanDonVi: true };
-            // Tăng số lượng ở cơ quan đơn vị mới
-            await prisma.coQuanDonVi.update({
-              where: { id: newCoQuanDonViId },
-              data: { so_luong: { increment: 1 } },
-            });
-          }
-        }
-      }
-
-      // Lưu thông tin chuyển đơn vị để trả về và gửi notification
-      if (oldUnitInfo || newUnitInfo) {
-        unitTransferInfo = {
-          oldUnit: oldUnitInfo,
-          newUnit: newUnitInfo,
-        };
+    // Gửi thông báo nếu có chuyển đơn vị (ngoài transaction)
+    if (unitTransferInfo && adminUsername) {
+      try {
+        await notificationHelper.notifyOnPersonnelTransfer(
+          updatedPersonnel,
+          unitTransferInfo.oldUnit,
+          unitTransferInfo.newUnit,
+          adminUsername
+        );
+      } catch (notifError) {
+        // Không throw error để không ảnh hưởng đến việc update personnel
       }
     }
 
@@ -759,17 +789,17 @@ class PersonnelService {
     });
 
     if (!personnel) {
-      throw new Error('Quân nhân không tồn tại');
+      throw new NotFoundError('Quân nhân');
     }
 
     // Chỉ ADMIN và SUPER_ADMIN mới được xóa quân nhân
     if (userRole !== ROLES.ADMIN && userRole !== ROLES.SUPER_ADMIN) {
-      throw new Error('Chỉ Admin mới có quyền xóa quân nhân');
+      throw new ForbiddenError('Chỉ Admin mới có quyền xóa quân nhân');
     }
 
     // Không cho phép tự xóa chính mình
     if (userQuanNhanId === id) {
-      throw new Error('Không thể xóa chính mình');
+      throw new ValidationError('Không thể xóa chính mình');
     }
 
     // Lưu lại đơn vị để cập nhật số lượng sau khi xóa
@@ -868,11 +898,9 @@ class PersonnelService {
             });
           }
         } catch (error) {
-          console.error(`Lỗi khi cập nhật số lượng quân nhân cho đơn vị ID: ${unitId}`, error);
           throw new Error(`Không thể cập nhật số lượng quân nhân của đơn vị: ${error.message}`);
         }
       } else {
-        console.warn(`Quân nhân ID: ${id} không có đơn vị`);
       }
     });
 
@@ -1029,7 +1057,7 @@ class PersonnelService {
     const worksheet = workbook.worksheets[0];
 
     if (!worksheet) {
-      throw new Error('File Excel không hợp lệ');
+      throw new ValidationError('File Excel không hợp lệ');
     }
 
     // Đọc header map
@@ -1045,7 +1073,7 @@ class PersonnelService {
     const requiredHeaders = ['cccd', 'họ tên', 'mã đơn vị', 'tên chức vụ'];
     for (const h of requiredHeaders) {
       if (!headerMap[h]) {
-        throw new Error(`Thiếu cột bắt buộc: ${h}`);
+        throw new ValidationError(`Thiếu cột bắt buộc: ${h}`);
       }
     }
 
@@ -1286,6 +1314,10 @@ class PersonnelService {
         updated.push(updatedPersonnel.id);
       }
     }
+
+    console.log(
+      `[Import quân nhân] Hoàn tất: ${created.length} tạo mới, ${updated.length} cập nhật, ${errors.length} lỗi`
+    );
 
     return {
       createdCount: created.length,

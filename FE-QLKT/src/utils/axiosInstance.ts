@@ -2,7 +2,7 @@
  * Axios instance với auto-refresh token interceptor
  * Token được lưu trong httpOnly cookie (không cần manual handling)
  */
-import axios from 'axios';
+import axios, { AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
 import { BASE_URL } from '@/configs';
 
 // Tạo axios instance
@@ -17,7 +17,7 @@ const axiosInstance = axios.create({
 
 // Request interceptor để fallback localStorage
 axiosInstance.interceptors.request.use(
-  config => {
+  (config: InternalAxiosRequestConfig) => {
     // Fallback: Nếu cookies không có, gửi token từ localStorage
     if (!document.cookie.includes('accessToken') && localStorage.getItem('accessToken')) {
       config.headers.Authorization = `Bearer ${localStorage.getItem('accessToken')}`;
@@ -29,9 +29,10 @@ axiosInstance.interceptors.request.use(
 
 // Response interceptor: Tự động refresh token khi 401
 let isRefreshing = false;
-let failedQueue = [];
+let failedQueue: Array<{ resolve: (value: unknown) => void; reject: (reason?: unknown) => void }> =
+  [];
 
-const processQueue = (error, token = null) => {
+const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue.forEach(prom => {
     if (error) {
       prom.reject(error);
@@ -46,7 +47,7 @@ const processQueue = (error, token = null) => {
 axiosInstance.interceptors.response.use(
   response => response,
   async error => {
-    const originalRequest = error.config;
+    const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
 
     // Xử lý lỗi 429 (Rate Limited)
     if (error.response?.status === 429) {
@@ -59,8 +60,14 @@ axiosInstance.interceptors.response.use(
     const isLoginRequest =
       originalRequest?.url?.includes('/api/auth/login') ||
       originalRequest?.url?.includes('/auth/login');
+    const isDevZoneRequest = originalRequest?.url?.includes('/api/dev-zone');
 
-    if (error.response?.status === 401 && !originalRequest._retry && !isLoginRequest) {
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !isLoginRequest &&
+      !isDevZoneRequest
+    ) {
       if (isRefreshing) {
         // Nếu đang refresh, đợi trong queue
         return new Promise((resolve, reject) => {
@@ -69,7 +76,10 @@ axiosInstance.interceptors.response.use(
           .then(token => {
             // Cập nhật token cho request này nếu cần
             if (token && !document.cookie.includes('accessToken')) {
-              originalRequest.headers.Authorization = `Bearer ${token}`;
+              originalRequest.headers = {
+                ...originalRequest.headers,
+                Authorization: `Bearer ${token}`,
+              };
             }
             return axiosInstance(originalRequest);
           })
@@ -103,18 +113,17 @@ axiosInstance.interceptors.response.use(
           {
             withCredentials: true,
             timeout: 10000,
-            _retry: true, // Đánh dấu để không retry request này
           }
         );
 
         // Lưu token mới vào localStorage
-        let newAccessToken = null;
+        let newAccessToken: string | null = null;
 
         if (refreshResponse.data?.data?.accessToken) {
           newAccessToken = refreshResponse.data.data.accessToken;
           const newRefresh = refreshResponse.data.data.refreshToken;
 
-          localStorage.setItem('accessToken', newAccessToken);
+          localStorage.setItem('accessToken', newAccessToken!);
 
           // Cập nhật refresh token mới (token rotation)
           if (newRefresh) {
@@ -125,7 +134,7 @@ axiosInstance.interceptors.response.use(
           newAccessToken = refreshResponse.data.accessToken;
           const newRefresh = refreshResponse.data.refreshToken;
 
-          localStorage.setItem('accessToken', newAccessToken);
+          localStorage.setItem('accessToken', newAccessToken!);
 
           if (newRefresh) {
             localStorage.setItem('refreshToken', newRefresh);
@@ -146,12 +155,14 @@ axiosInstance.interceptors.response.use(
 
         // Cập nhật token cho request hiện tại
         if (newAccessToken && !document.cookie.includes('accessToken')) {
-          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+          originalRequest.headers = {
+            ...originalRequest.headers,
+            Authorization: `Bearer ${newAccessToken}`,
+          };
         }
 
         return axiosInstance(originalRequest);
       } catch (refreshError) {
-        console.error('Refresh token failed:', refreshError);
         processQueue(refreshError, null);
         isRefreshing = false;
 
@@ -161,6 +172,22 @@ axiosInstance.interceptors.response.use(
         }
 
         return Promise.reject(refreshError);
+      }
+    }
+
+    // Hiển thị thông báo lỗi toàn cục cho lỗi server (5xx) và validation (400)
+    const status = error.response?.status;
+    if (status && status !== 401 && status !== 429) {
+      const errorMsg =
+        error.response?.data?.message ||
+        error.response?.data?.errors?.join(', ') ||
+        'Đã xảy ra lỗi. Vui lòng thử lại.';
+
+      // Dispatch custom event để MainLayout hiển thị thông báo
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('apiError', { detail: { message: errorMsg, status } })
+        );
       }
     }
 

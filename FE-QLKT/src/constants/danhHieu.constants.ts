@@ -3,9 +3,7 @@
  * Đây là nguồn dữ liệu duy nhất (Single Source of Truth) cho tất cả mapping danh hiệu
  */
 
-// =====================================================
 // DANH HIỆU CODES (để sử dụng trong code logic)
-// =====================================================
 
 /**
  * Mã các danh hiệu cá nhân hằng năm
@@ -60,9 +58,7 @@ export const THANH_TICH_KHOA_HOC = {
   SKKH: 'SKKH', // Sáng kiến khoa học
 } as const;
 
-// =====================================================
 // MAPPING DANH HIỆU -> TÊN TIẾNG VIỆT
-// =====================================================
 
 /**
  * Mapping đầy đủ mã danh hiệu sang tên tiếng Việt
@@ -99,9 +95,7 @@ export const DANH_HIEU_MAP: Record<string, string> = {
   SKKH: 'Sáng kiến khoa học',
 };
 
-// =====================================================
 // MAPPING LOẠI ĐỀ XUẤT -> TÊN TIẾNG VIỆT
-// =====================================================
 
 /**
  * Mapping mã loại đề xuất sang tên tiếng Việt
@@ -139,9 +133,7 @@ export const DANH_HIEU_OPTIONS = {
   CONG_HIEN: ['HCBVTQ_HANG_BA', 'HCBVTQ_HANG_NHI', 'HCBVTQ_HANG_NHAT'],
 } as const;
 
-// =====================================================
 // HELPER FUNCTIONS
-// =====================================================
 
 /**
  * Lấy tên tiếng Việt của danh hiệu
@@ -173,11 +165,61 @@ export function getAwardTypeName(awardType: string | null | undefined): string {
   return AWARD_TYPE_MAP[awardType] || awardType;
 }
 
-/**
- * Xác định loại khen thưởng dựa trên mã danh hiệu
- * @param danhHieu - Mã danh hiệu
- * @returns Loại khen thưởng
- */
+// Constants cho Awards Tabs (ExportModal, awards page)
+
+/** Label tiếng Việt cho từng tab khen thưởng */
+export const AWARD_TAB_LABELS: Record<string, string> = {
+  annual: 'Cá nhân hằng năm',
+  unit: 'Đơn vị hằng năm',
+  hccsvv: 'Huy chương Chiến sĩ Vẻ vang',
+  contribution: 'Huân chương Bảo vệ Tổ quốc',
+  commemoration: 'Kỷ niệm chương VSNXD QĐNDVN',
+  militaryFlag: 'Huy chương quân kỳ Quyết thắng',
+  scientific: 'Thành tích khoa học',
+};
+
+/** Danh hiệu hợp lệ cho filter theo từng tab */
+export const AWARD_TAB_DANH_HIEU: Record<string, string[]> = {
+  annual: ['CSTDCS', 'CSTT', 'BKBQP', 'CSTDTQ'],
+  unit: ['ĐVQT', 'ĐVTT', 'BKBQP', 'BKTTCP'],
+  hccsvv: ['HCCSVV_HANG_NHAT', 'HCCSVV_HANG_NHI', 'HCCSVV_HANG_BA'],
+  contribution: ['HCBVTQ_HANG_NHAT', 'HCBVTQ_HANG_NHI', 'HCBVTQ_HANG_BA'],
+};
+
+/** Tên file khi xuất Excel theo tab */
+export const AWARD_TAB_FILENAME: Record<string, string> = {
+  annual: 'ca_nhan_hang_nam',
+  unit: 'don_vi_hang_nam',
+  hccsvv: 'hccsvv',
+  contribution: 'hcbvtq_cong_hien',
+  commemoration: 'knc_vsnxd',
+  militaryFlag: 'hc_quan_ky_quyet_thang',
+  scientific: 'thanh_tich_khoa_hoc',
+};
+
+/** Tab cá nhân (có bảng chọn quân nhân khi xuất) */
+export const INDIVIDUAL_AWARD_TABS = [
+  'annual',
+  'hccsvv',
+  'contribution',
+  'commemoration',
+  'militaryFlag',
+  'scientific',
+];
+
+/** Map awardType (bulk create) → allow key (dev zone setting) */
+export const AWARD_TYPE_TO_ALLOW: Record<string, string> = {
+  CA_NHAN_HANG_NAM: 'allow_annual',
+  DON_VI_HANG_NAM: 'allow_unit',
+  NIEN_HAN: 'allow_hccsvv',
+  HC_QKQT: 'allow_militaryFlag',
+  KNC_VSNXD_QDNDVN: 'allow_commemoration',
+  CONG_HIEN: 'allow_contribution',
+  NCKH: 'allow_scientific',
+};
+
+// HELPER FUNCTIONS
+
 export function getLoaiKhenThuongByDanhHieu(danhHieu: string | null | undefined): string {
   if (!danhHieu) return 'Chưa xác định';
   if (danhHieu.startsWith('HCBVTQ')) return 'Huân chương Bảo vệ Tổ quốc';

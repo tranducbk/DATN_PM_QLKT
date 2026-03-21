@@ -1,5 +1,6 @@
-const proposalService = require('../services/proposal.service');
-const notificationHelper = require('../helpers/notificationHelper');
+const proposalService = require('../services/proposal');
+const { prisma } = require('../models');
+const notificationHelper = require('../helpers/notification');
 const { ROLES } = require('../constants/roles');
 
 class ProposalController {
@@ -52,10 +53,10 @@ class ProposalController {
 
       return res.status(200).send(buffer);
     } catch (error) {
-      console.error('Export template error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Xuất file mẫu thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -136,9 +137,7 @@ class ProposalController {
       // Gửi thông báo cho tất cả ADMIN
       try {
         await notificationHelper.notifyAdminsOnProposalSubmission(result.proposal, req.user);
-      } catch (notifError) {
-        console.error('Failed to send notifications:', notifError);
-      }
+      } catch (notifError) {}
 
       return res.status(201).json({
         success: true,
@@ -146,10 +145,10 @@ class ProposalController {
         data: result.proposal,
       });
     } catch (error) {
-      console.error('Submit proposal error:', error);
-      return res.status(400).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Nộp đề xuất khen thưởng thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -172,10 +171,10 @@ class ProposalController {
         data: result,
       });
     } catch (error) {
-      console.error('Get proposals error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy danh sách đề xuất thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -206,13 +205,10 @@ class ProposalController {
         data: result,
       });
     } catch (error) {
-      console.error('Get proposal by id error:', error);
-      const isNotFound = error.message === 'Không tìm thấy đề xuất';
-      const isUnauthorized = error.message === 'Bạn không có quyền xem đề xuất này';
-      const statusCode = isNotFound ? 404 : isUnauthorized ? 403 : 500;
+      const statusCode = error.statusCode || 500;
       return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy chi tiết đề xuất thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -277,9 +273,7 @@ class ProposalController {
       // Gửi thông báo cho người gửi đề xuất
       try {
         await notificationHelper.notifyManagerOnProposalApproval(result.proposal, req.user);
-      } catch (notifError) {
-        console.error('Failed to send notifications:', notifError);
-      }
+      } catch (notifError) {}
 
       // Gửi thông báo cho user nhận khen thưởng (nếu có)
       try {
@@ -290,9 +284,7 @@ class ProposalController {
             req.user.username
           );
         }
-      } catch (notifError) {
-        console.error('Failed to send notifications to award recipients:', notifError);
-      }
+      } catch (notifError) {}
 
       return res.status(200).json({
         success: true,
@@ -303,10 +295,10 @@ class ProposalController {
         },
       });
     } catch (error) {
-      console.error('Approve proposal error:', error);
-      return res.status(400).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Phê duyệt đề xuất thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -320,15 +312,23 @@ class ProposalController {
       // Decode filename để xử lý ký tự đặc biệt (tiếng Việt)
       const filename = decodeURIComponent(req.params.filename);
 
+      // Prevent path traversal
+      if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+        return res.status(400).json({
+          success: false,
+          message: 'Tên file không hợp lệ',
+        });
+      }
+
       const result = await proposalService.getPdfFile(filename);
 
       // Trả về file
       return res.sendFile(result.filePath);
     } catch (error) {
-      console.error('Get PDF file error:', error);
-      return res.status(404).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Không tìm thấy file PDF',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -370,9 +370,7 @@ class ProposalController {
           req.user,
           rejectReason
         );
-      } catch (notifError) {
-        console.error('Failed to send notifications:', notifError);
-      }
+      } catch (notifError) {}
 
       return res.status(200).json({
         success: true,
@@ -383,10 +381,10 @@ class ProposalController {
         },
       });
     } catch (error) {
-      console.error('Reject proposal error:', error);
-      return res.status(400).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Từ chối đề xuất thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -417,10 +415,10 @@ class ProposalController {
 
       return res.status(200).send(buffer);
     } catch (error) {
-      console.error('Download proposal Excel error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Tải file Excel thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -460,10 +458,10 @@ class ProposalController {
         data: result,
       });
     } catch (error) {
-      console.error('Get all awards error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy danh sách khen thưởng thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -485,10 +483,10 @@ class ProposalController {
 
       return res.status(200).send(buffer);
     } catch (error) {
-      console.error('Get awards template error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Tải file mẫu thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -522,9 +520,7 @@ class ProposalController {
             );
           }
         }
-      } catch (notifError) {
-        console.error('Failed to send notifications:', notifError);
-      }
+      } catch (notifError) {}
 
       return res.status(200).json({
         success: true,
@@ -532,10 +528,10 @@ class ProposalController {
         data: result.result,
       });
     } catch (error) {
-      console.error('Import awards error:', error);
-      return res.status(400).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Import khen thưởng thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -578,10 +574,10 @@ class ProposalController {
 
       return res.status(200).send(buffer);
     } catch (error) {
-      console.error('Export all awards Excel error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Xuất file Excel thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -609,7 +605,6 @@ class ProposalController {
 
       // Ghi log hệ thống
       try {
-        const { prisma } = require('../models');
         const ipAddress = req.ip || req.connection.remoteAddress || req.socket.remoteAddress;
         const userAgent = req.get('User-Agent');
 
@@ -631,7 +626,6 @@ class ProposalController {
           },
         });
       } catch (logError) {
-        console.error('[deleteProposal] Lỗi khi ghi system log:', logError);
         // Không throw error, tiếp tục trả về response
       }
 
@@ -641,10 +635,10 @@ class ProposalController {
         data: result.proposal,
       });
     } catch (error) {
-      console.error('Delete proposal error:', error);
-      return res.status(400).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Xóa đề xuất thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -663,10 +657,10 @@ class ProposalController {
         data: statistics,
       });
     } catch (error) {
-      console.error('Get awards statistics error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy thống kê khen thưởng thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -698,10 +692,10 @@ class ProposalController {
         data: result,
       });
     } catch (error) {
-      console.error('Check duplicate award error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lỗi khi kiểm tra đề xuất trùng',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -733,17 +727,15 @@ class ProposalController {
         data: result,
       });
     } catch (error) {
-      console.error('Check duplicate unit award error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lỗi khi kiểm tra đề xuất trùng',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
 
-  // ============================================
   // HCCSVV - Huy chương Chiến sĩ VẺ VANG
-  // ============================================
 
   /**
    * GET /api/hccsvv/template
@@ -762,10 +754,10 @@ class ProposalController {
 
       return res.status(200).send(buffer);
     } catch (error) {
-      console.error('Get HCCSVV template error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Tải file mẫu thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -791,10 +783,10 @@ class ProposalController {
         data: result,
       });
     } catch (error) {
-      console.error('Import HCCSVV error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Import thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -833,10 +825,10 @@ class ProposalController {
         data: result,
       });
     } catch (error) {
-      console.error('Get all HCCSVV error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy danh sách thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -878,10 +870,10 @@ class ProposalController {
 
       return res.status(200).send(buffer);
     } catch (error) {
-      console.error('Export HCCSVV Excel error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Xuất file Excel thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -900,17 +892,15 @@ class ProposalController {
         data: statistics,
       });
     } catch (error) {
-      console.error('Get HCCSVV statistics error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy thống kê thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
 
-  // ============================================
   // CONTRIBUTION AWARDS - HUÂN CHƯƠNG BẢO VỆ TỔ QUỐC (CỐNG HIẾN)
-  // ============================================
 
   async getContributionAwardsTemplate(req, res) {
     try {
@@ -925,10 +915,10 @@ class ProposalController {
 
       return res.status(200).send(buffer);
     } catch (error) {
-      console.error('Get contribution awards template error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Tải file mẫu thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -950,10 +940,10 @@ class ProposalController {
         data: result,
       });
     } catch (error) {
-      console.error('Import contribution awards error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Import thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -988,10 +978,10 @@ class ProposalController {
         data: result,
       });
     } catch (error) {
-      console.error('Get all contribution awards error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy danh sách thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -1029,10 +1019,10 @@ class ProposalController {
 
       return res.status(200).send(buffer);
     } catch (error) {
-      console.error('Export contribution awards Excel error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Xuất file Excel thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -1047,17 +1037,15 @@ class ProposalController {
         data: statistics,
       });
     } catch (error) {
-      console.error('Get contribution awards statistics error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy thống kê thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
 
-  // ============================================
   // COMMEMORATIVE MEDALS - KỶ NIỆM CHƯƠNG VSNXD QĐNDVN
-  // ============================================
 
   async getCommemorativeMedalsTemplate(req, res) {
     try {
@@ -1072,10 +1060,10 @@ class ProposalController {
 
       return res.status(200).send(buffer);
     } catch (error) {
-      console.error('Get commemorative medals template error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Tải file mẫu thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -1097,10 +1085,10 @@ class ProposalController {
         data: result,
       });
     } catch (error) {
-      console.error('Import commemorative medals error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Import thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -1134,10 +1122,10 @@ class ProposalController {
         data: result,
       });
     } catch (error) {
-      console.error('Get all commemorative medals error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy danh sách thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -1174,10 +1162,10 @@ class ProposalController {
 
       return res.status(200).send(buffer);
     } catch (error) {
-      console.error('Export commemorative medals Excel error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Xuất file Excel thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -1192,17 +1180,15 @@ class ProposalController {
         data: statistics,
       });
     } catch (error) {
-      console.error('Get commemorative medals statistics error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy thống kê thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
 
-  // ============================================
   // MILITARY FLAG - Huy chương quân kỳ QUYẾT THẮNG
-  // ============================================
 
   async getMilitaryFlagTemplate(req, res) {
     try {
@@ -1217,10 +1203,10 @@ class ProposalController {
 
       return res.status(200).send(buffer);
     } catch (error) {
-      console.error('Get military flag template error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Tải file mẫu thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -1242,10 +1228,10 @@ class ProposalController {
         data: result,
       });
     } catch (error) {
-      console.error('Import military flag error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Import thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -1279,10 +1265,10 @@ class ProposalController {
         data: result,
       });
     } catch (error) {
-      console.error('Get all military flag error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy danh sách thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -1319,10 +1305,10 @@ class ProposalController {
 
       return res.status(200).send(buffer);
     } catch (error) {
-      console.error('Export military flag Excel error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Xuất file Excel thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -1337,10 +1323,10 @@ class ProposalController {
         data: statistics,
       });
     } catch (error) {
-      console.error('Get military flag statistics error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy thống kê thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }

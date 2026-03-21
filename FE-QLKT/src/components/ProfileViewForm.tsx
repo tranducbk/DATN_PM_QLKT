@@ -2,15 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  Card,
-  Spin,
-  Alert,
-  message,
-  ConfigProvider,
-  Tag,
-  Breadcrumb,
-} from 'antd';
+import { Card, Spin, Alert, message, ConfigProvider, Tag, Breadcrumb } from 'antd';
 import {
   UserOutlined,
   IdcardOutlined,
@@ -89,7 +81,7 @@ export default function ProfileViewForm({
         setPersonnelData(response.data);
       }
     } catch (error: any) {
-      console.error('Load personnel error:', error);
+      // Error handled by UI
       const errorMessage =
         error?.response?.data?.message ||
         error?.response?.data?.error ||
@@ -110,9 +102,7 @@ export default function ProfileViewForm({
   }
 
   return (
-    <ConfigProvider
-      theme={getAntdThemeConfig(isDark)}
-    >
+    <ConfigProvider theme={getAntdThemeConfig(isDark)}>
       <div className="p-6 max-w-7xl mx-auto">
         {/* Breadcrumb */}
         <Breadcrumb className="mb-6">
@@ -142,9 +132,7 @@ export default function ProfileViewForm({
               <div className="overflow-x-auto">
                 <table
                   className={`min-w-full rounded-lg border ${
-                    isDark
-                      ? 'border-gray-700 bg-gray-900/60'
-                      : 'border-gray-200 bg-white'
+                    isDark ? 'border-gray-700 bg-gray-900/60' : 'border-gray-200 bg-white'
                   }`}
                 >
                   <tbody>
@@ -197,9 +185,7 @@ export default function ProfileViewForm({
               <div className="overflow-x-auto">
                 <table
                   className={`min-w-full rounded-lg border ${
-                    isDark
-                      ? 'border-gray-700 bg-gray-900/60'
-                      : 'border-gray-200 bg-white'
+                    isDark ? 'border-gray-700 bg-gray-900/60' : 'border-gray-200 bg-white'
                   }`}
                 >
                   <tbody>
@@ -246,9 +232,7 @@ export default function ProfileViewForm({
               <div className="overflow-x-auto">
                 <table
                   className={`min-w-full rounded-lg border ${
-                    isDark
-                      ? 'border-gray-700 bg-gray-900/60'
-                      : 'border-gray-200 bg-white'
+                    isDark ? 'border-gray-700 bg-gray-900/60' : 'border-gray-200 bg-white'
                   }`}
                 >
                   <tbody>
@@ -305,9 +289,7 @@ export default function ProfileViewForm({
                 <div className="overflow-x-auto">
                   <table
                     className={`min-w-full rounded-lg border ${
-                      isDark
-                        ? 'border-gray-700 bg-gray-900/60'
-                        : 'border-gray-200 bg-white'
+                      isDark ? 'border-gray-700 bg-gray-900/60' : 'border-gray-200 bg-white'
                     }`}
                   >
                     <tbody>

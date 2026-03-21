@@ -19,10 +19,10 @@ class PositionController {
         data: result,
       });
     } catch (error) {
-      console.error('Get positions error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy danh sách chức vụ thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -56,10 +56,10 @@ class PositionController {
         data: result,
       });
     } catch (error) {
-      console.error('Create position error:', error);
-      return res.status(400).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Tạo chức vụ thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -85,10 +85,10 @@ class PositionController {
         data: result,
       });
     } catch (error) {
-      console.error('Update position error:', error);
-      return res.status(400).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Cập nhật chức vụ thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }
@@ -114,10 +114,10 @@ class PositionController {
         },
       });
     } catch (error) {
-      console.error('Delete position error:', error);
-      return res.status(400).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Xóa chức vụ thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }

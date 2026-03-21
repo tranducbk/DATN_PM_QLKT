@@ -40,6 +40,7 @@ import { useState, useEffect } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { useTheme } from '@/components/theme-provider';
+import { useAuth } from '@/contexts/AuthContext';
 import '@/lib/chart-config';
 import { PieChart } from '@/components/charts';
 
@@ -47,6 +48,7 @@ const { Title, Text, Paragraph } = Typography;
 
 export default function UserDashboard() {
   const { theme } = useTheme();
+  const { user } = useAuth();
   const [displayName, setDisplayName] = useState('Quân nhân');
   const [personnelInfo, setPersonnelInfo] = useState<any>(null);
   const [annualProfile, setAnnualProfile] = useState<any>(null);
@@ -62,8 +64,6 @@ export default function UserDashboard() {
         setLoading(true);
         setError('');
 
-        // Lấy thông tin user từ localStorage
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
         if (user) {
           const name = (user.ho_ten || '').trim();
           const username = (user.username || '').trim();
@@ -106,7 +106,7 @@ export default function UserDashboard() {
           setAnnualRewards(rewardsRes.data || []);
         }
       } catch (err: any) {
-        console.error('Error fetching profiles:', err);
+        // Error handled by UI
         setError(err.message || 'Không thể tải hồ sơ. Vui lòng thử lại.');
       } finally {
         setLoading(false);

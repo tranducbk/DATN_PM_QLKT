@@ -1,5 +1,7 @@
 const militaryFlagService = require('../services/militaryFlag.service');
+const { prisma } = require('../models');
 const { ROLES } = require('../constants/roles');
+const { writeSystemLog } = require('../helpers/systemLogHelper');
 
 class MilitaryFlagController {
   /**
@@ -8,8 +10,19 @@ class MilitaryFlagController {
    */
   async getTemplate(req, res) {
     try {
-      const userRole = req.user?.role || 'MANAGER';
-      const buffer = await militaryFlagService.exportTemplate(userRole);
+      const userRole = req.user?.role ?? 'MANAGER';
+
+      // Parse personnel_ids from query string (comma-separated)
+      let personnelIds = [];
+      if (req.query.personnel_ids) {
+        personnelIds = req.query.personnel_ids
+          .split(',')
+          .map(id => id.trim())
+          .filter(id => id.length > 0);
+      }
+
+      const workbook = await militaryFlagService.exportTemplate(personnelIds, userRole);
+      const buffer = await workbook.xlsx.writeBuffer();
 
       const fileName = `mau_import_hcqkqt_${new Date().toISOString().slice(0, 10)}.xlsx`;
       res.setHeader(
@@ -20,17 +33,72 @@ class MilitaryFlagController {
 
       return res.status(200).send(buffer);
     } catch (error) {
-      console.error('Get military flag template error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode ?? 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Tải file mẫu thất bại',
+        message: error.message ?? 'Lỗi hệ thống',
       });
     }
   }
 
   /**
+   * POST /api/military-flag/import/preview
+   * Preview import — parse + validate file Excel, trả về valid/errors
+   */
+  async previewImport(req, res) {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ success: false, message: 'Vui lòng upload file Excel' });
+      }
+      const result = await militaryFlagService.previewImport(req.file.buffer);
+
+      await writeSystemLog({
+        userId: req.user?.id,
+        userRole: req.user?.role,
+        action: 'IMPORT_PREVIEW',
+        resource: 'military-flag',
+        description: `Tải lên file ${req.file?.originalname || 'Excel'} để review huân chương quân kỳ quyết thắng: ${result.total || result.valid?.length || 0} dòng, ${result.errors?.length || 0} lỗi`,
+        payload: { filename: req.file?.originalname, total: result.total, errors: result.errors?.length || 0 },
+      });
+
+      return res.json({ success: true, data: result });
+    } catch (error) {
+      const statusCode = error.statusCode ?? 500;
+      return res.status(statusCode).json({ success: false, message: error.message });
+    }
+  }
+
+  /**
+   * POST /api/military-flag/import/confirm
+   * Confirm import — lưu dữ liệu đã validate vào DB
+   */
+  async confirmImport(req, res) {
+    try {
+      const { items } = req.body;
+      if (!items || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ success: false, message: 'Không có dữ liệu để import' });
+      }
+      const result = await militaryFlagService.confirmImport(items, req.user.id);
+
+      await writeSystemLog({
+        userId: req.user?.id,
+        userRole: req.user?.role,
+        action: 'IMPORT',
+        resource: 'military-flag',
+        description: `Import huân chương quân kỳ quyết thắng thành công: ${result.imported || items.length} bản ghi`,
+        payload: { imported: result.imported || items.length },
+      });
+
+      return res.json({ success: true, data: result });
+    } catch (error) {
+      const statusCode = error.statusCode ?? 500;
+      return res.status(statusCode).json({ success: false, message: error.message });
+    }
+  }
+
+  /**
    * POST /api/military-flag/import
-   * Import Huy chương quân kỳ Quyết thắng từ file Excel
+   * Import Huy chương quân kỳ Quyết thắng từ file Excel (legacy)
    */
   async importFromExcel(req, res) {
     try {
@@ -49,10 +117,10 @@ class MilitaryFlagController {
         data: result,
       });
     } catch (error) {
-      console.error('Import military flag error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode ?? 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Import thất bại',
+        message: error.message ?? 'Lỗi hệ thống',
       });
     }
   }
@@ -80,7 +148,6 @@ class MilitaryFlagController {
             message: 'Không tìm thấy thông tin quân nhân',
           });
         }
-        const { prisma } = require('../models');
         const managerPersonnel = await prisma.quanNhan.findUnique({
           where: { id: userQuanNhanId },
           select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true },
@@ -107,10 +174,10 @@ class MilitaryFlagController {
         data: result,
       });
     } catch (error) {
-      console.error('Get all military flag error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode ?? 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy danh sách thất bại',
+        message: error.message ?? 'Lỗi hệ thống',
       });
     }
   }
@@ -137,7 +204,7 @@ class MilitaryFlagController {
             message: 'Không tìm thấy thông tin đơn vị',
           });
         }
-        filters.don_vi_id = user.QuanNhan.co_quan_don_vi_id || user.QuanNhan.don_vi_truc_thuoc_id;
+        filters.don_vi_id = user.QuanNhan.co_quan_don_vi_id ?? user.QuanNhan.don_vi_truc_thuoc_id;
       }
 
       const buffer = await militaryFlagService.exportToExcel(filters);
@@ -151,10 +218,10 @@ class MilitaryFlagController {
 
       return res.status(200).send(buffer);
     } catch (error) {
-      console.error('Export military flag Excel error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode ?? 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Xuất file Excel thất bại',
+        message: error.message ?? 'Lỗi hệ thống',
       });
     }
   }
@@ -173,10 +240,10 @@ class MilitaryFlagController {
         data: statistics,
       });
     } catch (error) {
-      console.error('Get military flag statistics error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode ?? 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy thống kê thất bại',
+        message: error.message ?? 'Lỗi hệ thống',
       });
     }
   }
@@ -209,7 +276,7 @@ class MilitaryFlagController {
             message: 'Không tìm thấy thông tin đơn vị',
           });
         }
-        const managerUnitId = user.QuanNhan.co_quan_don_vi_id || user.QuanNhan.don_vi_truc_thuoc_id;
+        const managerUnitId = user.QuanNhan.co_quan_don_vi_id ?? user.QuanNhan.don_vi_truc_thuoc_id;
 
         // Lấy thông tin personnel để kiểm tra đơn vị
         const personnel = await militaryFlagService.getPersonnelById(personnel_id);
@@ -220,7 +287,7 @@ class MilitaryFlagController {
           });
         }
 
-        const personnelUnitId = personnel.co_quan_don_vi_id || personnel.don_vi_truc_thuoc_id;
+        const personnelUnitId = personnel.co_quan_don_vi_id ?? personnel.don_vi_truc_thuoc_id;
         if (personnelUnitId !== managerUnitId) {
           return res.status(403).json({
             success: false,
@@ -240,10 +307,10 @@ class MilitaryFlagController {
         },
       });
     } catch (error) {
-      console.error('Get military flag by personnel id error:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode ?? 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Lấy dữ liệu thất bại',
+        message: error.message ?? 'Lỗi hệ thống',
       });
     }
   }
@@ -255,7 +322,7 @@ class MilitaryFlagController {
   async deleteAward(req, res) {
     try {
       const { id } = req.params;
-      const adminUsername = req.user?.username || 'Admin';
+      const adminUsername = req.user?.username ?? 'Admin';
       const result = await militaryFlagService.deleteAward(id, adminUsername);
 
       return res.status(200).json({
@@ -263,10 +330,10 @@ class MilitaryFlagController {
         message: result.message,
       });
     } catch (error) {
-      console.error('Delete military flag award error:', error);
-      return res.status(400).json({
+      const statusCode = error.statusCode ?? 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Xóa khen thưởng thất bại',
+        message: error.message ?? 'Lỗi hệ thống',
       });
     }
   }

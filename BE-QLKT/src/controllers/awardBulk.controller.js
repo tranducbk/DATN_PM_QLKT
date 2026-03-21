@@ -1,4 +1,6 @@
 const awardBulkService = require('../services/awardBulk.service');
+const { writeSystemLog } = require('../helpers/systemLogHelper');
+const { getLoaiDeXuatName } = require('../constants/danhHieu.constants');
 
 class AwardBulkController {
   /**
@@ -103,16 +105,27 @@ class AwardBulkController {
         adminId,
       });
 
+      // Ghi system log
+      const typeName = getLoaiDeXuatName(type);
+      await writeSystemLog({
+        userId: req.user?.id,
+        userRole: req.user?.role,
+        action: 'BULK_CREATE',
+        resource: 'awards',
+        description: `Thêm đồng loạt ${typeName} năm ${nam}: ${result.data?.importedCount || 0} thành công, ${result.data?.errorCount || 0} lỗi`,
+        payload: { type, nam: parseInt(nam), importedCount: result.data?.importedCount, errorCount: result.data?.errorCount },
+      });
+
       return res.status(200).json({
         success: true,
         message: result.message,
         data: result.data,
       });
     } catch (error) {
-      console.error('Bulk create awards error:', error);
-      return res.status(400).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Thêm khen thưởng đồng loạt thất bại',
+        message: error.message || 'Lỗi hệ thống',
       });
     }
   }

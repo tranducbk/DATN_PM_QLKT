@@ -216,7 +216,7 @@ export default function CreateProposalPage() {
       const personnelData = responses.filter(r => r.data.success).map(r => r.data.data);
       setPersonnelDetails(personnelData);
     } catch (error) {
-      console.error('Error fetching personnel details:', error);
+      // Error handled by UI
     }
   };
 
@@ -232,10 +232,10 @@ export default function CreateProposalPage() {
         const selectedUnits = unitsData.filter((unit: any) => selectedUnitIds.includes(unit.id));
         setUnitDetails(selectedUnits);
       } else {
-        console.error('Failed to fetch units:', unitsRes.message);
+        // Failed to fetch units
       }
     } catch (error) {
-      console.error('Error fetching unit details:', error);
+      // Error handled by UI
     }
   };
 
@@ -305,7 +305,7 @@ export default function CreateProposalPage() {
           return;
         }
       } catch (error: any) {
-        console.error('Error validating gender:', error);
+        // Error handled by UI
         antMessage.error('Lỗi khi kiểm tra thông tin quân nhân');
         return;
       }
@@ -328,7 +328,7 @@ export default function CreateProposalPage() {
           return;
         }
       } catch (error: any) {
-        console.error('Error validating ngay_nhap_ngu:', error);
+        // Error handled by UI
         antMessage.error('Lỗi khi kiểm tra thông tin quân nhân');
         return;
       }
@@ -382,7 +382,7 @@ export default function CreateProposalPage() {
           return;
         }
       } catch (error: any) {
-        console.error('Error validating HC_QKQT:', error);
+        // Error handled by UI
         antMessage.error('Lỗi khi kiểm tra thông tin quân nhân');
         return;
       }
@@ -453,7 +453,7 @@ export default function CreateProposalPage() {
             return;
           }
         } catch (error: any) {
-          console.error('Error validating gender:', error);
+          // Error handled by UI
           antMessage.error('Lỗi khi kiểm tra thông tin quân nhân');
           setLoading(false);
           return;
@@ -480,7 +480,7 @@ export default function CreateProposalPage() {
             return;
           }
         } catch (error: any) {
-          console.error('Error validating ngay_nhap_ngu:', error);
+          // Error handled by UI
           antMessage.error('Lỗi khi kiểm tra thông tin quân nhân');
           setLoading(false);
           return;
@@ -557,7 +557,7 @@ export default function CreateProposalPage() {
             return;
           }
         } catch (error: any) {
-          console.error('Error validating HC_QKQT:', error);
+          // Error handled by UI
           antMessage.error('Lỗi khi kiểm tra thông tin quân nhân');
           setLoading(false);
           return;

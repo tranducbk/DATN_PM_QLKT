@@ -115,7 +115,7 @@ export async function downloadDecisionFile(soQuyetDinh: string): Promise<void> {
       message.error('Không thể mở cửa sổ mới. Vui lòng cho phép popup.');
     }
   } catch (error: any) {
-    console.error('Error previewing decision file:', error);
+    // Error handled by UI message
 
     // Xử lý lỗi từ blob response (nếu backend trả về JSON error trong blob)
     if (error?.response?.data instanceof Blob) {

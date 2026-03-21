@@ -213,7 +213,7 @@ export default function ManagerProposalDetailPage() {
       }
     } catch (error: any) {
       message.error('Không tìm thấy đề xuất hoặc bạn không có quyền truy cập');
-      console.error('Fetch proposal detail error:', error);
+      // Error handled by UI message
       router.replace('/manager/proposals');
     } finally {
       setLoading(false);
@@ -243,7 +243,7 @@ export default function ManagerProposalDetailPage() {
 
       setPositionHistoriesMap(historiesMap);
     } catch (error) {
-      console.error('Error fetching position histories:', error);
+      // Error handled by UI
     }
   };
 
@@ -304,7 +304,7 @@ export default function ManagerProposalDetailPage() {
       message.success('Tải file thành công');
     } catch (error: any) {
       message.error(error.message || 'Lỗi khi tải file');
-      console.error('Download error:', error);
+      // Error handled by UI message
     } finally {
       setDownloading(false);
     }
@@ -533,9 +533,7 @@ export default function ManagerProposalDetailPage() {
                   <div className={styles.fileContent}>
                     <div className={styles.fileHeader}>
                       <FilePdfOutlined
-                        className={
-                          isDark ? styles.fileIconDark : styles.fileIconLight
-                        }
+                        className={isDark ? styles.fileIconDark : styles.fileIconLight}
                       />
                       <Text
                         strong
@@ -563,9 +561,7 @@ export default function ManagerProposalDetailPage() {
                     </div>
                     <Text
                       type="secondary"
-                      className={`text-xs ${
-                        isDark ? styles.fileInfoDark : styles.fileInfoLight
-                      }`}
+                      className={`text-xs ${isDark ? styles.fileInfoDark : styles.fileInfoLight}`}
                     >
                       Kích thước: {(file.size / 1024).toFixed(2)} KB • Ngày tải lên:{' '}
                       {format(new Date(file.uploadedAt), 'dd/MM/yyyy HH:mm')}

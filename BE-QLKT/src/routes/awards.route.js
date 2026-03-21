@@ -4,7 +4,7 @@ const proposalController = require('../controllers/proposal.controller');
 const awardBulkController = require('../controllers/awardBulk.controller');
 const { verifyToken, checkRole, requireAdmin } = require('../middlewares/auth');
 const { auditLog } = require('../middlewares/auditLog');
-const { getLogDescription, getResourceId } = require('../helpers/auditLogHelper');
+const { getLogDescription, getResourceId } = require('../helpers/auditLog');
 const { ROLES } = require('../constants/roles');
 
 // Cấu hình multer cho file upload
@@ -24,9 +24,7 @@ const upload = multer({
   },
 });
 
-// ============================================
 // ROUTES - QUẢN LÝ KHEN THƯỞNG
-// ============================================
 
 /**
  * @route   GET /api/awards/template
@@ -58,7 +56,12 @@ router.post(
  * @desc    Lấy danh sách tất cả khen thưởng (Admin: tất cả, Manager: đơn vị mình)
  * @access  ADMIN, MANAGER
  */
-router.get('/', verifyToken, checkRole([ROLES.ADMIN, ROLES.MANAGER]), proposalController.getAllAwards);
+router.get(
+  '/',
+  verifyToken,
+  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
+  proposalController.getAllAwards
+);
 
 /**
  * @route   GET /api/awards/export
@@ -151,7 +154,6 @@ router.post(
           attached_files_count: req.files?.attached_files?.length || 0,
         };
       } catch (error) {
-        console.error('Error creating bulk awards payload:', error);
         return null;
       }
     },

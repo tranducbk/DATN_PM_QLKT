@@ -147,7 +147,7 @@ export default function Step3SetTitlesCaNhanHangNam({
         }
       }
     } catch (error) {
-      console.error('Error fetching personnel details:', error);
+      // Error handled by UI
     } finally {
       setLoading(false);
     }
@@ -177,7 +177,7 @@ export default function Step3SetTitlesCaNhanHangNam({
       hideMessage();
       message.success('Tính toán hồ sơ hoàn tất!');
     } catch (error) {
-      console.error('Error prefetching annual profiles:', error);
+      // Error handled by UI
       hideMessage();
       message.error('Có lỗi khi tính toán hồ sơ');
     } finally {
@@ -306,7 +306,7 @@ export default function Step3SetTitlesCaNhanHangNam({
             return; // Không cho phép chọn
           }
         } catch (error: any) {
-          console.error('Error checking duplicate award:', error);
+          // Error handled by UI
           // Không block nếu lỗi API, chỉ log
         }
       }
@@ -513,8 +513,12 @@ export default function Step3SetTitlesCaNhanHangNam({
             <Text type={allTitlesSet ? 'success' : 'warning'}>
               Đã thêm danh hiệu:{' '}
               <strong>
-                {titleData.filter(d => selectedPersonnelIds.includes(d.personnel_id)).length}/
-                {personnel.length}
+                {
+                  titleData.filter(
+                    d => d.personnel_id && selectedPersonnelIds.includes(d.personnel_id)
+                  ).length
+                }
+                /{personnel.length}
               </strong>
               {allTitlesSet && ' ✓'}
             </Text>

@@ -2,34 +2,24 @@
 
 import { Modal, Descriptions, Typography, Spin, Tag, Divider } from 'antd';
 import { HistoryOutlined } from '@ant-design/icons';
-import dayjs from 'dayjs';
 
 const { Text, Title } = Typography;
 
-interface Personnel {
-  id: string;
-  ho_ten: string;
-  ngay_sinh?: string | null;
-}
+const HCCSVV_ROWS = [
+  { label: 'Hạng Ba', statusKey: 'hccsvv_hang_ba_status', danhHieu: 'HCCSVV_HANG_BA' },
+  { label: 'Hạng Nhì', statusKey: 'hccsvv_hang_nhi_status', danhHieu: 'HCCSVV_HANG_NHI' },
+  { label: 'Hạng Nhất', statusKey: 'hccsvv_hang_nhat_status', danhHieu: 'HCCSVV_HANG_NHAT' },
+] as const;
 
-interface ServiceProfile {
-  hccsvv_hang_ba_status?: 'CHUA_DU' | 'DU_DIEU_KIEN' | 'DA_NHAN';
-  hccsvv_hang_ba_ngay?: string | null;
-  hccsvv_hang_nhi_status?: 'CHUA_DU' | 'DU_DIEU_KIEN' | 'DA_NHAN';
-  hccsvv_hang_nhi_ngay?: string | null;
-  hccsvv_hang_nhat_status?: 'CHUA_DU' | 'DU_DIEU_KIEN' | 'DA_NHAN';
-  hccsvv_hang_nhat_ngay?: string | null;
-  hcbvtq_total_months?: number;
-  hcbvtq_hang_ba_status?: 'CHUA_DU' | 'DU_DIEU_KIEN' | 'DA_NHAN';
-  hcbvtq_hang_nhi_status?: 'CHUA_DU' | 'DU_DIEU_KIEN' | 'DA_NHAN';
-  hcbvtq_hang_nhat_status?: 'CHUA_DU' | 'DU_DIEU_KIEN' | 'DA_NHAN';
-  goi_y?: string;
-}
+const STATUS_CONFIG: Record<string, { color?: string; text: string }> = {
+  DA_NHAN: { color: 'green', text: 'Đã nhận' },
+  DU_DIEU_KIEN: { color: 'orange', text: 'Đủ điều kiện' },
+};
 
 interface ServiceHistoryModalProps {
   visible: boolean;
-  personnel: Personnel | null;
-  serviceProfile: ServiceProfile | null;
+  personnel: { id: string; ho_ten: string } | null;
+  serviceProfile: Record<string, any> | null;
   loading: boolean;
   onClose: () => void;
 }
@@ -41,33 +31,7 @@ export default function ServiceHistoryModal({
   loading,
   onClose,
 }: ServiceHistoryModalProps) {
-  const formatDate = (date: string | null | undefined) => {
-    if (!date) return '-';
-    return dayjs(date).format('DD/MM/YYYY');
-  };
-
-  const getStatusTag = (status: string | undefined) => {
-    if (status === 'DA_NHAN') {
-      return <Tag color="green">Đã nhận</Tag>;
-    } else if (status === 'DU_DIEU_KIEN') {
-      return <Tag color="orange">Đủ điều kiện</Tag>;
-    } else {
-      return <Tag>Chưa đủ điều kiện</Tag>;
-    }
-  };
-
-  const formatMonths = (months: number | undefined) => {
-    if (!months || months === 0) return '0 tháng';
-    const years = Math.floor(months / 12);
-    const remainingMonths = months % 12;
-    if (years > 0 && remainingMonths > 0) {
-      return `${years} năm ${remainingMonths} tháng`;
-    } else if (years > 0) {
-      return `${years} năm`;
-    } else {
-      return `${remainingMonths} tháng`;
-    }
-  };
+  const namNhan = serviceProfile?.hccsvv_nam_nhan || {};
 
   return (
     <Modal
@@ -86,41 +50,24 @@ export default function ServiceHistoryModal({
       <Spin spinning={loading}>
         {serviceProfile ? (
           <div>
-            {/* Huy chương Chiến sĩ Vẻ vang */}
             <Title level={5} style={{ marginTop: 0 }}>
               Huy chương Chiến sĩ Vẻ vang (HCCSVV)
             </Title>
             <Descriptions bordered column={1} size="small" style={{ marginBottom: 24 }}>
-              <Descriptions.Item label="Hạng Ba">
-                <div>
-                  {getStatusTag(serviceProfile.hccsvv_hang_ba_status)}
-                  {serviceProfile.hccsvv_hang_ba_ngay && (
-                    <Text type="secondary" style={{ marginLeft: 8 }}>
-                      (Ngày nhận: {formatDate(serviceProfile.hccsvv_hang_ba_ngay)})
-                    </Text>
-                  )}
-                </div>
-              </Descriptions.Item>
-              <Descriptions.Item label="Hạng Nhì">
-                <div>
-                  {getStatusTag(serviceProfile.hccsvv_hang_nhi_status)}
-                  {serviceProfile.hccsvv_hang_nhi_ngay && (
-                    <Text type="secondary" style={{ marginLeft: 8 }}>
-                      (Ngày nhận: {formatDate(serviceProfile.hccsvv_hang_nhi_ngay)})
-                    </Text>
-                  )}
-                </div>
-              </Descriptions.Item>
-              <Descriptions.Item label="Hạng Nhất">
-                <div>
-                  {getStatusTag(serviceProfile.hccsvv_hang_nhat_status)}
-                  {serviceProfile.hccsvv_hang_nhat_ngay && (
-                    <Text type="secondary" style={{ marginLeft: 8 }}>
-                      (Ngày nhận: {formatDate(serviceProfile.hccsvv_hang_nhat_ngay)})
-                    </Text>
-                  )}
-                </div>
-              </Descriptions.Item>
+              {HCCSVV_ROWS.map(({ label, statusKey, danhHieu }) => {
+                const status = serviceProfile[statusKey];
+                const config = STATUS_CONFIG[status] || { text: 'Chưa đủ điều kiện' };
+                return (
+                  <Descriptions.Item key={danhHieu} label={label}>
+                    <Tag color={config.color}>{config.text}</Tag>
+                    {status === 'DA_NHAN' && namNhan[danhHieu] && (
+                      <Text type="secondary" style={{ marginLeft: 8 }}>
+                        Năm {namNhan[danhHieu]}
+                      </Text>
+                    )}
+                  </Descriptions.Item>
+                );
+              })}
             </Descriptions>
 
             {serviceProfile.goi_y && (

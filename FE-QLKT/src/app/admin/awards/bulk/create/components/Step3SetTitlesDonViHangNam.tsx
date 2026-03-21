@@ -95,7 +95,7 @@ export default function Step3SetTitlesDonViHangNam({
         }
       }
     } catch (error) {
-      console.error('Error fetching unit details:', error);
+      // Error handled by UI
     } finally {
       setLoading(false);
     }
@@ -124,7 +124,7 @@ export default function Step3SetTitlesDonViHangNam({
       hideMessage();
       message.success('Tính toán hồ sơ hoàn tất!');
     } catch (error) {
-      console.error('Error fetching unit annual profiles:', error);
+      // Error handled by UI
       hideMessage();
       message.error('Có lỗi khi tính toán hồ sơ');
     }
@@ -246,7 +246,7 @@ export default function Step3SetTitlesDonViHangNam({
             return; // Không cho phép chọn
           }
         } catch (error: any) {
-          console.error('Error checking duplicate unit award:', error);
+          // Error handled by UI
           // Không block nếu lỗi API, chỉ log
         }
       }
@@ -286,7 +286,7 @@ export default function Step3SetTitlesDonViHangNam({
         setUnitAnnualAwards([]);
       }
     } catch (error: any) {
-      console.error('Error loading unit history:', error);
+      // Error handled by UI
       setUnitAnnualAwards([]);
     } finally {
       setLoadingModal(false);

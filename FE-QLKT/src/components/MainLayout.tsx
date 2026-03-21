@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback, ReactNode } from 'react';
-import { useSocket } from '@/hooks/useSocket';
+import { useState, useEffect, useCallback, useRef, ReactNode } from 'react';
+import { useSocket, SocketConnectionStatus } from '@/hooks/useSocket';
 import {
   Layout,
   Menu,
@@ -14,12 +14,13 @@ import {
   App,
   theme as antdTheme,
   Spin,
+  Modal,
+  Empty,
 } from 'antd';
 import {
   DashboardOutlined,
   TeamOutlined,
   FileTextOutlined,
-  SettingOutlined,
   LogoutOutlined,
   MenuOutlined,
   CloseOutlined,
@@ -70,6 +71,60 @@ function NotificationToast({ notification }: { notification: any }) {
   return null;
 }
 
+/**
+ * Component hiển thị toast khi trạng thái kết nối socket thay đổi.
+ * Phải đặt bên trong <App> để dùng được App.useApp().
+ */
+/**
+ * Component lắng nghe lỗi API toàn cục và hiển thị thông báo.
+ * Phải đặt bên trong <App> để dùng được App.useApp().
+ */
+function ApiErrorHandler() {
+  const { message } = App.useApp();
+
+  useEffect(() => {
+    const handler = (e: CustomEvent<{ message: string; status: number }>) => {
+      const { status: statusCode } = e.detail;
+      if (statusCode >= 500) {
+        message.error(e.detail.message || 'Lỗi máy chủ. Vui lòng thử lại sau.');
+      } else if (statusCode === 403) {
+        message.warning('Bạn không có quyền thực hiện thao tác này.');
+      } else if (statusCode === 400) {
+        message.warning(e.detail.message || 'Dữ liệu không hợp lệ.');
+      }
+    };
+
+    window.addEventListener('apiError', handler as EventListener);
+    return () => window.removeEventListener('apiError', handler as EventListener);
+  }, [message]);
+
+  return null;
+}
+
+function ConnectionStatusToast({ status }: { status: SocketConnectionStatus }) {
+  const { message } = App.useApp();
+  const prevStatusRef = useRef<SocketConnectionStatus>(status);
+
+  useEffect(() => {
+    const prevStatus = prevStatusRef.current;
+    prevStatusRef.current = status;
+
+    // Chỉ hiển thị toast khi trạng thái thay đổi (không hiển thị lần đầu)
+    if (prevStatus === status) return;
+
+    if (status === 'disconnected' && prevStatus === 'connected') {
+      message.warning('Mất kết nối đến máy chủ. Đang thử kết nối lại...');
+    } else if (status === 'connected' && prevStatus !== 'connected') {
+      // Chỉ hiển thị khi reconnect (không phải lần kết nối đầu tiên)
+      if (prevStatus === 'disconnected' || prevStatus === 'connecting') {
+        message.success('Đã kết nối lại thành công!');
+      }
+    }
+  }, [status, message]);
+
+  return null;
+}
+
 export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
@@ -110,7 +165,27 @@ export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps
     setLatestNotification(notification);
   }, []);
 
-  useSocket(accessToken, handleNewNotification);
+  // Xử lý khi tài khoản đăng nhập ở nơi khác
+  const handleForceLogout = useCallback(
+    (data: { message: string }) => {
+      Modal.warning({
+        title: 'Phiên đăng nhập đã kết thúc',
+        content: data.message || 'Tài khoản của bạn đã được đăng nhập ở nơi khác.',
+        okText: 'Đăng nhập lại',
+        onOk: () => {
+          authLogout();
+        },
+      });
+    },
+    [authLogout]
+  );
+
+  const { connectionStatus } = useSocket(
+    accessToken,
+    handleNewNotification,
+    undefined,
+    handleForceLogout
+  );
 
   useEffect(() => {
     // Kiểm tra kích thước màn hình
@@ -135,7 +210,7 @@ export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps
         setNotificationCount(response.data.count || 0);
       }
     } catch (error) {
-      console.error('Failed to load notification count:', error);
+      // Error handled by UI
     }
   };
 
@@ -151,7 +226,7 @@ export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps
         setNotifications(list);
       }
     } catch (error) {
-      console.error('Failed to load notifications:', error);
+      // Error handled by UI
     } finally {
       setNotificationLoading(false);
     }
@@ -176,7 +251,7 @@ export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps
         router.push('/admin/proposals/review');
       }
     } catch (error) {
-      console.error('Failed to mark notification as read:', error);
+      // Error handled by UI
     }
   };
 
@@ -187,7 +262,17 @@ export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps
       loadNotifications();
       loadNotificationCount();
     } catch (error) {
-      console.error('Failed to mark all as read:', error);
+      // Error handled by UI
+    }
+  };
+
+  const handleDeleteAllNotifications = async () => {
+    try {
+      await apiClient.deleteAllNotifications();
+      setNotifications([]);
+      setNotificationCount(0);
+    } catch {
+      // Error handled by UI
     }
   };
 
@@ -430,9 +515,11 @@ export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps
     if (pathname.startsWith('/manager/profile/edit')) {
       return 'profile-edit';
     }
-    // Xử lý /manager/personnel/[id] trước để ưu tiên (vì nó là sub-route của personnel)
-    if (pathname.match(/^\/manager\/personnel\/[^/]+$/)) {
-      return 'profile';
+    // Xử lý /manager/personnel/[id] — phân biệt hồ sơ của tôi vs quân nhân đơn vị
+    const managerPersonnelMatch = pathname.match(/^\/manager\/personnel\/([^/]+)/);
+    if (managerPersonnelMatch) {
+      const viewingId = managerPersonnelMatch[1];
+      return viewingId === String(personnelId) ? 'profile' : 'personnel';
     }
     if (pathname.startsWith('/manager/personnel')) {
       return 'personnel';
@@ -544,6 +631,9 @@ export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps
         items={getMenuItems()}
         className="flex-1"
         selectedKeys={[getSelectedKey()]}
+        onClick={() => {
+          if (isMobile) setMobileDrawerOpen(false);
+        }}
         style={{
           borderRight: 'none',
         }}
@@ -553,6 +643,7 @@ export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps
 
   return (
     <ConfigProvider
+      renderEmpty={() => <Empty description="Không có dữ liệu" />}
       theme={{
         algorithm: theme === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
         token: {
@@ -584,7 +675,9 @@ export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps
       }}
     >
       <App>
+        <ApiErrorHandler />
         <NotificationToast notification={latestNotification} />
+        <ConnectionStatusToast status={connectionStatus} />
         <Layout className="min-h-screen">
           {/* Desktop Sidebar */}
           {!isMobile && (
@@ -693,15 +786,15 @@ export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps
                                   <h3 className="text-base font-bold text-gray-900 dark:text-white">
                                     Thông báo
                                   </h3>
-                                  {notifications.some(n => !n.is_read) && (
+                                  {notifications.length > 0 && (
                                     <button
                                       onClick={e => {
                                         e.stopPropagation();
-                                        handleMarkAllAsRead();
+                                        handleDeleteAllNotifications();
                                       }}
-                                      className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors px-3 py-1.5 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/20 active:bg-blue-100 dark:active:bg-blue-900/30"
+                                      className="text-sm font-medium text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 transition-colors px-3 py-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 active:bg-red-100 dark:active:bg-red-900/30"
                                     >
-                                      Đọc tất cả
+                                      Xoá tất cả
                                     </button>
                                   )}
                                 </div>
@@ -771,6 +864,27 @@ export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps
                                 </div>
                               ),
                             })),
+                            ...(notifications.some(n => !n.is_read)
+                              ? [
+                                  { type: 'divider' as const },
+                                  {
+                                    key: 'notification-footer',
+                                    label: (
+                                      <div className="text-center py-2">
+                                        <button
+                                          onClick={e => {
+                                            e.stopPropagation();
+                                            handleMarkAllAsRead();
+                                          }}
+                                          className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors px-4 py-1.5 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                                        >
+                                          Đọc tất cả
+                                        </button>
+                                      </div>
+                                    ),
+                                  },
+                                ]
+                              : []),
                           ],
                   }}
                   placement="bottomRight"

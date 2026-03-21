@@ -3,7 +3,7 @@ const multer = require('multer');
 const contributionAwardController = require('../controllers/contributionAward.controller');
 const { verifyToken, checkRole, requireManager, requireAdmin } = require('../middlewares/auth');
 const { auditLog } = require('../middlewares/auditLog');
-const { getLogDescription, getResourceId } = require('../helpers/auditLogHelper');
+const { getLogDescription, getResourceId } = require('../helpers/auditLog');
 const { ROLES } = require('../constants/roles');
 
 // Cấu hình multer cho file upload
@@ -23,28 +23,38 @@ const upload = multer({
   },
 });
 
-// ============================================
 // ROUTES - QUẢN LÝ HUÂN CHƯƠNG BẢO VỆ TỔ QUỐC (CỐNG HIẾN)
-// ============================================
 
 /**
  * @route   GET /api/contribution-awards/template
- * @desc    Tải file mẫu Excel để import Huân chương Bảo vệ Tổ quốc
- * @access  ADMIN
+ * @desc    Tải file mẫu Excel để import Huân chương Bảo vệ Tổ quốc (hỗ trợ ?personnel_ids=id1,id2)
+ * @access  ADMIN, MANAGER
  */
 router.get('/template', verifyToken, requireManager, contributionAwardController.getTemplate);
 
 /**
- * @route   POST /api/contribution-awards/import
- * @desc    Import Huân chương Bảo vệ Tổ quốc từ file Excel
+ * @route   POST /api/contribution-awards/import/preview
+ * @desc    Preview import HCBVTQ — chỉ validate, không ghi DB
  * @access  ADMIN, MANAGER
  */
 router.post(
-  '/import',
+  '/import/preview',
   verifyToken,
   checkRole([ROLES.ADMIN, ROLES.MANAGER]),
   upload.single('file'),
-  contributionAwardController.importFromExcel
+  contributionAwardController.previewImport
+);
+
+/**
+ * @route   POST /api/contribution-awards/import/confirm
+ * @desc    Confirm import HCBVTQ — lưu dữ liệu đã validate vào DB
+ * @access  ADMIN, MANAGER
+ */
+router.post(
+  '/import/confirm',
+  verifyToken,
+  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
+  contributionAwardController.confirmImport
 );
 
 /**
@@ -52,7 +62,12 @@ router.post(
  * @desc    Lấy danh sách Huân chương Bảo vệ Tổ quốc (Admin: tất cả, Manager: đơn vị mình)
  * @access  ADMIN, MANAGER
  */
-router.get('/', verifyToken, checkRole([ROLES.ADMIN, ROLES.MANAGER]), contributionAwardController.getAll);
+router.get(
+  '/',
+  verifyToken,
+  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
+  contributionAwardController.getAll
+);
 
 /**
  * @route   GET /api/contribution-awards/export

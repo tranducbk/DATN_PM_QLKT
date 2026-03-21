@@ -193,7 +193,7 @@ export async function previewFile(filePath: string, customFilename?: string): Pr
     }
   } catch (error) {
     message.error('Lỗi khi mở file');
-    console.error('Preview error:', error);
+    // Error handled by UI message
   }
 }
 
@@ -220,7 +220,7 @@ export async function previewDecisionFile(soQuyetDinh: string): Promise<void> {
     // Mở viewer với toolbar
     openPdfWithViewer(blobUrl, filename);
   } catch (error: any) {
-    console.error('Error previewing decision file:', error);
+    // Error handled by UI message
 
     if (error?.response?.data instanceof Blob) {
       try {
@@ -267,6 +267,6 @@ export async function previewFileWithApi(apiPath: string, filename: string): Pro
     }
   } catch (error) {
     message.error('Lỗi khi mở file');
-    console.error('Preview error:', error);
+    // Error handled by UI message
   }
 }

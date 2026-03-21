@@ -3,7 +3,13 @@ import { z } from 'zod';
 // Account schemas
 export const accountFormSchema = z.object({
   username: z.string().min(3, 'Tên đăng nhập phải có ít nhất 3 ký tự'),
-  password: z.string().min(6, 'Mật khẩu phải có ít nhất 6 ký tự').optional(),
+  password: z
+    .string()
+    .min(8, 'Mật khẩu phải có ít nhất 8 ký tự')
+    .regex(/[A-Z]/, 'Mật khẩu phải chứa ít nhất 1 chữ hoa')
+    .regex(/[a-z]/, 'Mật khẩu phải chứa ít nhất 1 chữ thường')
+    .regex(/[0-9]/, 'Mật khẩu phải chứa ít nhất 1 chữ số')
+    .optional(),
   role: z.enum(['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'USER']),
   personnel_id: z.string().optional(),
   quan_nhan_id: z.number().optional(),
@@ -15,8 +21,13 @@ export const accountFormSchema = z.object({
 export const accountCreateSchema = z
   .object({
     username: z.string().min(3, 'Tên đăng nhập phải có ít nhất 3 ký tự'),
-    password: z.string().min(6, 'Mật khẩu phải có ít nhất 6 ký tự'),
-    confirmPassword: z.string().min(6, 'Mật khẩu xác nhận phải có ít nhất 6 ký tự'),
+    password: z
+      .string()
+      .min(8, 'Mật khẩu phải có ít nhất 8 ký tự')
+      .regex(/[A-Z]/, 'Mật khẩu phải chứa ít nhất 1 chữ hoa')
+      .regex(/[a-z]/, 'Mật khẩu phải chứa ít nhất 1 chữ thường')
+      .regex(/[0-9]/, 'Mật khẩu phải chứa ít nhất 1 chữ số'),
+    confirmPassword: z.string().min(1, 'Mật khẩu xác nhận là bắt buộc'),
     role: z.enum(['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'USER']),
     co_quan_don_vi_id: z.string().optional(), // Cơ quan đơn vị (UUID)
     don_vi_truc_thuoc_id: z.string().optional(), // Đơn vị trực thuộc (UUID)

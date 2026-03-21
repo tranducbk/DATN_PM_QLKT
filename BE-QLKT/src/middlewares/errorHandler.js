@@ -66,7 +66,6 @@ const errorHandler = (err, req, res, next) => {
 
   // Log error (chỉ log server errors, không log client errors)
   if (statusCode >= 500) {
-    console.error(`[ERROR] ${req.method} ${req.path}:`, err.stack || err.message);
   }
 
   return res.status(statusCode).json({

@@ -75,7 +75,7 @@ export default function ManagerUnitsPage() {
         setUnits([]);
       }
     } catch (error) {
-      console.error('Error fetching units:', error);
+      // Error handled by UI message
       message.error('Không thể tải danh sách đơn vị');
       setUnits([]);
     } finally {
@@ -102,7 +102,7 @@ export default function ManagerUnitsPage() {
         setAllAwards([]);
       }
     } catch (error) {
-      console.error('Error fetching all awards:', error);
+      // Error handled by UI message
       message.error('Không thể tải danh sách khen thưởng');
       setAllAwards([]);
     } finally {
@@ -138,7 +138,7 @@ export default function ManagerUnitsPage() {
       message.destroy('preview');
       await previewFileWithApi(`/${filePath}`, filename);
     } catch (error: any) {
-      console.error('Error opening decision file:', error);
+      // Error handled by UI message
       const errorMessage =
         error?.response?.data?.message || error?.message || 'Lỗi khi mở file quyết định';
       message.error({ content: errorMessage, key: 'preview' });

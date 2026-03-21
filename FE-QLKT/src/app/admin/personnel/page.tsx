@@ -14,7 +14,7 @@ import {
   message,
   ConfigProvider,
   theme as antdTheme,
-  Spin,
+  Skeleton,
 } from 'antd';
 import { useTheme } from '@/components/theme-provider';
 import {
@@ -332,8 +332,9 @@ export default function PersonnelPage() {
 
   if (loading && personnel.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Spin size="large" />
+      <div className="p-6">
+        <Skeleton active paragraph={{ rows: 2 }} className="mb-6" />
+        <Skeleton active paragraph={{ rows: 10 }} />
       </div>
     );
   }
