@@ -938,7 +938,7 @@ export default function AdminAwardsPage() {
         </Card>
 
         {/* Awards Table */}
-        <Card title={`Danh sách khen thưởng (${awards.length})`}>
+        <Card title={`Danh sách khen thưởng (${filteredAwards.length})`}>
           <Spin spinning={loading} tip="Đang tải...">
             {!loading && awards.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '48px 0', color: '#8c8c8c' }}>
