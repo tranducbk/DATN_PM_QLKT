@@ -106,7 +106,7 @@ export default function UserChangePasswordPage() {
             >
               <Alert
                 message="Lưu ý bảo mật"
-                description="Mật khẩu mới phải có ít nhất 6 ký tự. Khuyến nghị sử dụng mật khẩu mạnh với chữ hoa, chữ thường, số và ký tự đặc biệt."
+                description="Mật khẩu mới phải có ít nhất 8 ký tự. Khuyến nghị sử dụng mật khẩu mạnh với chữ hoa, chữ thường, số và ký tự đặc biệt."
                 type="info"
                 showIcon
                 icon={<InfoCircleOutlined />}
@@ -148,7 +148,7 @@ export default function UserChangePasswordPage() {
                   }
                   rules={[
                     { required: true, message: 'Vui lòng nhập mật khẩu mới' },
-                    { min: 6, message: 'Mật khẩu phải có ít nhất 6 ký tự' },
+                    { min: 8, message: 'Mật khẩu phải có ít nhất 8 ký tự' },
                   ]}
                 >
                   <Input.Password

@@ -196,18 +196,8 @@ class AuthService {
     // Mã hóa mật khẩu mới
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // Validate mật khẩu mới
     if (newPassword.length < 8) {
       throw new ValidationError('Mật khẩu mới phải có ít nhất 8 ký tự');
-    }
-    if (!/[A-Z]/.test(newPassword)) {
-      throw new ValidationError('Mật khẩu mới phải chứa ít nhất 1 chữ hoa');
-    }
-    if (!/[a-z]/.test(newPassword)) {
-      throw new ValidationError('Mật khẩu mới phải chứa ít nhất 1 chữ thường');
-    }
-    if (!/[0-9]/.test(newPassword)) {
-      throw new ValidationError('Mật khẩu mới phải chứa ít nhất 1 chữ số');
     }
 
     // Cập nhật mật khẩu và thu hồi refresh token (buộc đăng nhập lại)

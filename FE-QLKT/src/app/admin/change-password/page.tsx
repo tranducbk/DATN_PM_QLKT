@@ -97,7 +97,7 @@ export default function AdminChangePasswordPage() {
             <Card className="shadow-lg" style={{ marginBottom: '24px' }}>
               <Alert
                 message="Lưu ý bảo mật"
-                description="Mật khẩu mới phải có ít nhất 6 ký tự. Không chia sẻ mật khẩu với người khác."
+                description="Mật khẩu mới phải có ít nhất 8 ký tự. Không chia sẻ mật khẩu với người khác."
                 type="info"
                 showIcon
                 style={{ marginBottom: '24px' }}
@@ -127,7 +127,7 @@ export default function AdminChangePasswordPage() {
                   label="Mật khẩu mới"
                   rules={[
                     { required: true, message: 'Vui lòng nhập mật khẩu mới' },
-                    { min: 6, message: 'Mật khẩu phải có ít nhất 6 ký tự' },
+                    { min: 8, message: 'Mật khẩu phải có ít nhất 8 ký tự' },
                   ]}
                 >
                   <Input.Password
