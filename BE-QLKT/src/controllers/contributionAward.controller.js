@@ -90,7 +90,7 @@ class ContributionAwardController {
         userRole: req.user?.role,
         action: 'IMPORT',
         resource: 'contribution-awards',
-        description: `Import huân chương bảo vệ tổ quốc thành công: ${result.imported || items.length} bản ghi`,
+        description: `Nhập dữ liệu huân chương bảo vệ tổ quốc thành công: ${result.imported || items.length} bản ghi`,
         payload: { imported: result.imported || items.length },
       });
 

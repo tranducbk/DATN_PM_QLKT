@@ -246,7 +246,7 @@ class PersonnelController {
         userRole: req.user?.role,
         action: 'IMPORT',
         resource: 'personnel',
-        description: `Import quân nhân: ${result.createdCount} tạo mới, ${result.updatedCount} cập nhật, ${result.errors?.length || 0} lỗi`,
+        description: `Nhập dữ liệu quân nhân: ${result.createdCount} tạo mới, ${result.updatedCount} cập nhật, ${result.errors?.length || 0} lỗi`,
         payload: { created: result.createdCount, updated: result.updatedCount, errorCount: result.errors?.length || 0 },
       });
 

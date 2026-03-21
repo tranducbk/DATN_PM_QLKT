@@ -85,7 +85,7 @@ class MilitaryFlagController {
         userRole: req.user?.role,
         action: 'IMPORT',
         resource: 'military-flag',
-        description: `Import huân chương quân kỳ quyết thắng thành công: ${result.imported || items.length} bản ghi`,
+        description: `Nhập dữ liệu huân chương quân kỳ quyết thắng thành công: ${result.imported || items.length} bản ghi`,
         payload: { imported: result.imported || items.length },
       });
 

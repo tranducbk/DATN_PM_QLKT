@@ -320,7 +320,7 @@ class ScientificAchievementController {
         userRole: req.user?.role,
         action: 'IMPORT',
         resource: 'scientific-achievements',
-        description: `Import thành tích khoa học thành công: ${result.imported || items.length} bản ghi`,
+        description: `Nhập dữ liệu thành tích khoa học thành công: ${result.imported || items.length} bản ghi`,
         payload: { imported: result.imported || items.length },
       });
 

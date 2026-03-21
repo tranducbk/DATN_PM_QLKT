@@ -235,7 +235,7 @@ exports.confirmImport = async (req, res) => {
       userRole: req.user?.role,
       action: 'IMPORT',
       resource: 'unit-annual-awards',
-      description: `Import khen thưởng đơn vị hằng năm thành công: ${result.imported || items.length} bản ghi`,
+      description: `Nhập dữ liệu khen thưởng đơn vị hằng năm thành công: ${result.imported || items.length} bản ghi`,
       payload: { imported: result.imported || items.length },
     });
 

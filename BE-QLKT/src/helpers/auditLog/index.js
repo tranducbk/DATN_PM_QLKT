@@ -47,7 +47,7 @@ const createLogDescription = {
 // Mapping tiếng Việt cho fallback
 const ACTION_VI = {
   CREATE: 'Tạo', UPDATE: 'Cập nhật', DELETE: 'Xóa',
-  IMPORT: 'Import', IMPORT_PREVIEW: 'Tải lên review', EXPORT: 'Xuất', BULK_CREATE: 'Thêm đồng loạt',
+  IMPORT: 'Nhập dữ liệu', IMPORT_PREVIEW: 'Tải lên xem trước', EXPORT: 'Xuất', BULK_CREATE: 'Thêm đồng loạt',
   APPROVE: 'Phê duyệt', REJECT: 'Từ chối', RECALCULATE: 'Tính toán lại',
   LOGIN: 'Đăng nhập', LOGOUT: 'Đăng xuất',
   RESET_PASSWORD: 'Đặt lại mật khẩu', CHANGE_PASSWORD: 'Đổi mật khẩu',

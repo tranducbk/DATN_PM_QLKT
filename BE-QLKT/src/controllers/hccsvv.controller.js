@@ -85,7 +85,7 @@ class HCCSVVController {
         userRole: req.user?.role,
         action: 'IMPORT',
         resource: 'hccsvv',
-        description: `Import huy chương chiến sĩ vẻ vang thành công: ${result.imported || items.length} bản ghi`,
+        description: `Nhập dữ liệu huy chương chiến sĩ vẻ vang thành công: ${result.imported || items.length} bản ghi`,
         payload: { imported: result.imported || items.length },
       });
 

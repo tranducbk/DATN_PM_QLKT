@@ -411,7 +411,7 @@ class AnnualRewardController {
         userRole: req.user?.role,
         action: 'IMPORT',
         resource: 'annual-rewards',
-        description: `Import danh hiệu cá nhân hằng năm thành công: ${result.imported || items.length} bản ghi`,
+        description: `Nhập dữ liệu danh hiệu cá nhân hằng năm thành công: ${result.imported || items.length} bản ghi`,
         payload: { imported: result.imported || items.length },
       });
 
@@ -439,7 +439,7 @@ class AnnualRewardController {
         userRole: req.user?.role,
         action: 'IMPORT',
         resource: 'annual-rewards',
-        description: `Import danh hiệu cá nhân hằng năm: ${result.imported}/${result.total} thành công, ${result.errors?.length || 0} lỗi`,
+        description: `Nhập dữ liệu danh hiệu cá nhân hằng năm: ${result.imported}/${result.total} thành công, ${result.errors?.length || 0} lỗi`,
         payload: { imported: result.imported, total: result.total, errorCount: result.errors?.length || 0 },
       });
 
