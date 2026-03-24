@@ -22,6 +22,7 @@ import { apiClient } from '@/lib/api-client';
 import axiosInstance from '@/utils/axiosInstance';
 import { previewFileWithApi } from '@/utils/filePreview';
 import { renderAnnualAwards, COLUMN_STYLES, DANH_HIEU_MAP } from '@/utils/awardsHelpers';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 const { Title, Text } = Typography;
 
@@ -137,10 +138,10 @@ export default function ManagerUnitsPage() {
 
       message.destroy('preview');
       await previewFileWithApi(`/${filePath}`, filename);
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Error handled by UI message
       const errorMessage =
-        error?.response?.data?.message || error?.message || 'Lỗi khi mở file quyết định';
+        getApiErrorMessage(error) || 'Lỗi khi mở file quyết định';
       message.error({ content: errorMessage, key: 'preview' });
     }
   };

@@ -20,6 +20,7 @@ import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { useTheme } from '@/components/theme-provider';
 import { apiClient } from '@/lib/api-client';
+import { getApiErrorMessage } from '@/lib/apiError';
 import dayjs from 'dayjs';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
 
@@ -124,10 +125,12 @@ export default function ManagerPersonnelEditPage() {
             chuc_vu_id: personnel.chuc_vu_id || personnel.ChucVu?.id,
           });
         } else {
-          message.error(personnelRes.message || 'Không thể lấy thông tin quân nhân');
+          message.error(
+            (personnelRes as { message?: string }).message || 'Không thể lấy thông tin quân nhân'
+          );
         }
-      } catch (error: any) {
-        message.error(error?.message || 'Lỗi khi tải dữ liệu');
+      } catch (error: unknown) {
+        message.error(getApiErrorMessage(error, 'Lỗi khi tải dữ liệu'));
       } finally {
         setLoadingData(false);
       }
@@ -223,10 +226,12 @@ export default function ManagerPersonnelEditPage() {
         message.success('Cập nhật quân nhân thành công');
         router.push(`/manager/personnel/${personnelId}`);
       } else {
-        message.error(response.message || 'Lỗi khi cập nhật quân nhân');
+        message.error(
+          (response as { message?: string }).message || 'Lỗi khi cập nhật quân nhân'
+        );
       }
-    } catch (error: any) {
-      message.error(error?.message || 'Lỗi khi cập nhật quân nhân');
+    } catch (error: unknown) {
+      message.error(getApiErrorMessage(error, 'Lỗi khi cập nhật quân nhân'));
     } finally {
       setLoading(false);
     }

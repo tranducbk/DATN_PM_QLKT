@@ -280,7 +280,7 @@ export default function Step3SetTitlesCongHien({
       } else {
         setPositionHistory([]);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Error handled by UI
       message.error('Không thể tải lịch sử chức vụ');
       setPositionHistory([]);

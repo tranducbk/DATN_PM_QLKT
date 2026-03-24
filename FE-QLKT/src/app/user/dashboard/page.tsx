@@ -18,6 +18,8 @@ import {
   ConfigProvider,
   theme as antdTheme,
 } from 'antd';
+import { getApiErrorMessage } from '@/lib/apiError';
+
 import {
   FileTextOutlined,
   LockOutlined,
@@ -105,9 +107,9 @@ export default function UserDashboard() {
         if (rewardsRes.success) {
           setAnnualRewards(rewardsRes.data || []);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         // Error handled by UI
-        setError(err.message || 'Không thể tải hồ sơ. Vui lòng thử lại.');
+        setError(getApiErrorMessage(err, 'Không thể tải hồ sơ. Vui lòng thử lại.'));
       } finally {
         setLoading(false);
       }

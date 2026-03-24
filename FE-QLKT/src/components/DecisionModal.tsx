@@ -14,6 +14,8 @@ import {
   AutoComplete,
   Spin,
 } from 'antd';
+import { getApiErrorMessage } from '@/lib/apiError';
+
 import { UploadOutlined, SaveOutlined, FileTextOutlined } from '@ant-design/icons';
 import type { UploadFile } from 'antd/es/upload/interface';
 import dayjs from 'dayjs';
@@ -149,7 +151,7 @@ export default function DecisionModal({
 
         message.info('Đã chọn quyết định. Hãy kiểm tra thông tin quyết định khen thưởng.');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       message.error('Lỗi khi tải thông tin quyết định');
     } finally {
       setLoading(false);
@@ -247,11 +249,16 @@ export default function DecisionModal({
 
       onSuccess(decisionData, isNewDecision);
       onClose();
-    } catch (error: any) {
-      if (error.errorFields) {
+    } catch (error: unknown) {
+      if (
+        error &&
+        typeof error === 'object' &&
+        'errorFields' in error &&
+        Array.isArray((error as { errorFields?: unknown }).errorFields)
+      ) {
         message.error('Vui lòng điền đầy đủ thông tin bắt buộc');
       } else {
-        message.error(error.message || 'Lỗi khi xử lý quyết định');
+        message.error(getApiErrorMessage(error, 'Lỗi khi xử lý quyết định'));
       }
     } finally {
       setLoading(false);

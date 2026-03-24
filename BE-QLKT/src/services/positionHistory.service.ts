@@ -1,0 +1,420 @@
+import { prisma } from '../models';
+import moment from 'moment';
+
+interface CreatePositionHistoryData {
+  personnel_id: string;
+  chuc_vu_id: string;
+  ngay_bat_dau: string | Date;
+  ngay_ket_thuc?: string | Date | null;
+  he_so_chuc_vu?: number;
+}
+
+interface UpdatePositionHistoryData {
+  chuc_vu_id?: string;
+  ngay_bat_dau?: string | Date;
+  ngay_ket_thuc?: string | Date | null;
+  he_so_chuc_vu?: number;
+}
+
+interface OverlapWarning {
+  message: string;
+  suggestedEndDate: string;
+  nextPositionStartDate: string;
+}
+
+class PositionHistoryService {
+  isOverlapping(
+    start1: moment.Moment | Date | string,
+    end1: moment.Moment | Date | string | null,
+    start2: moment.Moment | Date | string,
+    end2: moment.Moment | Date | string | null
+  ): boolean {
+    const mStart1 = moment(start1);
+    const mStart2 = moment(start2);
+    const mEnd1 = end1 ? moment(end1) : null;
+    const mEnd2 = end2 ? moment(end2) : null;
+
+    if (!mEnd1 && !mEnd2) {
+      return true;
+    }
+
+    if (!mEnd1) {
+      if (!mEnd2) {
+        return true;
+      }
+      return mStart2.isSameOrAfter(mStart1);
+    }
+
+    if (!mEnd2) {
+      return mStart2.isSameOrBefore(mEnd1);
+    }
+
+    return mStart1.isBefore(mEnd2) && mStart2.isBefore(mEnd1);
+  }
+
+  async getPositionHistory(personnelId: string) {
+    if (!personnelId) {
+      throw new Error('personnel_id là bắt buộc');
+    }
+
+    const personnel = await prisma.quanNhan.findUnique({
+      where: { id: personnelId },
+    });
+
+    if (!personnel) {
+      throw new Error('Quân nhân không tồn tại');
+    }
+
+    const history = await prisma.lichSuChucVu.findMany({
+      where: { quan_nhan_id: personnelId },
+      include: {
+        ChucVu: {
+          include: {
+            CoQuanDonVi: true,
+            DonViTrucThuoc: {
+              include: {
+                CoQuanDonVi: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { ngay_bat_dau: 'desc' },
+    });
+
+    const today = new Date();
+    const updatedHistory = history.map(item => {
+      if (!item.ngay_ket_thuc) {
+        const ngayBatDau = new Date(item.ngay_bat_dau);
+        let months = (today.getFullYear() - ngayBatDau.getFullYear()) * 12;
+        months += today.getMonth() - ngayBatDau.getMonth();
+        if (today.getDate() < ngayBatDau.getDate()) {
+          months--;
+        }
+        const soThang = Math.max(0, months);
+
+        return {
+          ...item,
+          so_thang: soThang,
+        };
+      }
+      return item;
+    });
+
+    return updatedHistory;
+  }
+
+  async createPositionHistory(data: CreatePositionHistoryData) {
+    if (!data) {
+      throw new Error('Dữ liệu không hợp lệ');
+    }
+
+    const { personnel_id, chuc_vu_id, ngay_bat_dau, ngay_ket_thuc, he_so_chuc_vu } = data;
+
+    if (!personnel_id) {
+      throw new Error('ID quân nhân là bắt buộc');
+    }
+
+    if (!chuc_vu_id) {
+      throw new Error('ID chức vụ là bắt buộc');
+    }
+
+    if (!ngay_bat_dau) {
+      throw new Error('Ngày bắt đầu là bắt buộc');
+    }
+
+    if (ngay_ket_thuc) {
+      const dateBatDau = moment(ngay_bat_dau);
+      const dateKetThuc = moment(ngay_ket_thuc);
+
+      if (dateBatDau.isAfter(dateKetThuc) || dateBatDau.isSame(dateKetThuc)) {
+        throw new Error('Ngày bắt đầu phải trước ngày kết thúc');
+      }
+    }
+
+    const personnel = await prisma.quanNhan.findUnique({
+      where: { id: personnel_id },
+    });
+
+    if (!personnel) {
+      throw new Error('Quân nhân không tồn tại');
+    }
+
+    const position = await prisma.chucVu.findUnique({
+      where: { id: chuc_vu_id },
+      select: { he_so_chuc_vu: true },
+    });
+
+    if (!position) {
+      throw new Error('Chức vụ không tồn tại');
+    }
+
+    const existingHistory = await prisma.lichSuChucVu.findMany({
+      where: { quan_nhan_id: personnel_id },
+      select: {
+        id: true,
+        ngay_bat_dau: true,
+        ngay_ket_thuc: true,
+      },
+    });
+
+    const hasUnfinishedPosition = existingHistory.some(h => !h.ngay_ket_thuc);
+    if (hasUnfinishedPosition && !ngay_ket_thuc) {
+      const unfinishedPosition = existingHistory.find(h => !h.ngay_ket_thuc)!;
+      const unfinishedStart = moment(unfinishedPosition.ngay_bat_dau).format('DD/MM/YYYY');
+      throw new Error(
+        `Đã có chức vụ chưa kết thúc (bắt đầu từ ${unfinishedStart}). Vui lòng kết thúc chức vụ hiện tại trước khi tạo chức vụ mới chưa kết thúc.`
+      );
+    }
+
+    const ngayBatDauMoment = moment(ngay_bat_dau);
+    const ngayKetThucMoment = ngay_ket_thuc ? moment(ngay_ket_thuc) : null;
+
+    for (const existing of existingHistory) {
+      const existingStart = moment(existing.ngay_bat_dau);
+      const existingEnd = existing.ngay_ket_thuc ? moment(existing.ngay_ket_thuc) : null;
+
+      if (this.isOverlapping(existingStart, existingEnd, ngayBatDauMoment, ngayKetThucMoment)) {
+        const existingEndStr = existingEnd ? existingEnd.format('DD/MM/YYYY') : 'hiện tại';
+        const newEndStr = ngayKetThucMoment
+          ? ngayKetThucMoment.format('DD/MM/YYYY')
+          : 'chưa kết thúc';
+        throw new Error(
+          `Khoảng thời gian đảm nhiệm chức vụ trùng lặp với chức vụ khác (${existingStart.format(
+            'DD/MM/YYYY'
+          )} - ${existingEndStr}). Vui lòng chọn khoảng thời gian không trùng lặp.`
+        );
+      }
+    }
+
+    const finalHeSoChucVu =
+      he_so_chuc_vu !== undefined ? he_so_chuc_vu : Number(position.he_so_chuc_vu) || 0;
+
+    const ngayBatDauDate = new Date(ngay_bat_dau);
+    let soThang: number | null = null;
+    if (ngay_ket_thuc) {
+      const ngayKetThucDate = new Date(ngay_ket_thuc);
+      let months = (ngayKetThucDate.getFullYear() - ngayBatDauDate.getFullYear()) * 12;
+      months += ngayKetThucDate.getMonth() - ngayBatDauDate.getMonth();
+      if (ngayKetThucDate.getDate() < ngayBatDauDate.getDate()) {
+        months--;
+      }
+      soThang = Math.max(0, months);
+    }
+
+    const newHistory = await prisma.lichSuChucVu.create({
+      data: {
+        quan_nhan_id: personnel_id,
+        chuc_vu_id,
+        he_so_chuc_vu: finalHeSoChucVu,
+        ngay_bat_dau: ngayBatDauDate,
+        ngay_ket_thuc: ngay_ket_thuc ? new Date(ngay_ket_thuc) : null,
+        so_thang: soThang,
+      },
+      include: {
+        QuanNhan: {
+          select: {
+            ho_ten: true,
+          },
+        },
+        ChucVu: {
+          include: {
+            CoQuanDonVi: true,
+            DonViTrucThuoc: {
+              include: {
+                CoQuanDonVi: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return newHistory;
+  }
+
+  async updatePositionHistory(id: string, data: UpdatePositionHistoryData) {
+    if (!id) {
+      throw new Error('ID lịch sử chức vụ là bắt buộc');
+    }
+
+    const { chuc_vu_id, ngay_bat_dau, ngay_ket_thuc, he_so_chuc_vu } = data || {};
+
+    const history = await prisma.lichSuChucVu.findUnique({
+      where: { id },
+    });
+
+    if (!history) {
+      throw new Error('Lịch sử chức vụ không tồn tại');
+    }
+
+    const isCurrentPosition = !history.ngay_ket_thuc;
+    if (isCurrentPosition && chuc_vu_id && chuc_vu_id !== history.chuc_vu_id) {
+      throw new Error(
+        'Không được phép sửa chức vụ đảm nhận của chức vụ hiện tại. Chức vụ hiện tại chỉ có thể được sửa ở mục "Cập nhật thông tin cá nhân".'
+      );
+    }
+
+    let heSoChucVu = he_so_chuc_vu !== undefined ? he_so_chuc_vu : history.he_so_chuc_vu;
+    if (chuc_vu_id && he_so_chuc_vu === undefined && !isCurrentPosition) {
+      const position = await prisma.chucVu.findUnique({
+        where: { id: chuc_vu_id },
+        select: { he_so_chuc_vu: true },
+      });
+
+      if (!position) {
+        throw new Error('Chức vụ không tồn tại');
+      }
+      heSoChucVu = Number(position.he_so_chuc_vu) || 0;
+    }
+
+    const ngayBatDauFinal = ngay_bat_dau ? new Date(ngay_bat_dau) : history.ngay_bat_dau;
+
+    const isRemovingEndDate = ngay_ket_thuc === null || ngay_ket_thuc === undefined;
+
+    const ngayKetThucFinal: Date | null =
+      ngay_ket_thuc !== undefined
+        ? ngay_ket_thuc
+          ? new Date(ngay_ket_thuc)
+          : null
+        : history.ngay_ket_thuc;
+
+    if (ngayBatDauFinal && ngayKetThucFinal) {
+      const dateBatDau = moment(ngayBatDauFinal);
+      const dateKetThuc = moment(ngayKetThucFinal);
+
+      if (dateBatDau.isAfter(dateKetThuc) || dateBatDau.isSame(dateKetThuc)) {
+        throw new Error('Ngày bắt đầu phải trước ngày kết thúc');
+      }
+    }
+
+    const existingHistory = await prisma.lichSuChucVu.findMany({
+      where: {
+        quan_nhan_id: history.quan_nhan_id,
+        id: { not: id },
+      },
+      select: {
+        id: true,
+        ngay_bat_dau: true,
+        ngay_ket_thuc: true,
+      },
+    });
+
+    const wasFinished = history.ngay_ket_thuc !== null;
+    let warning: OverlapWarning | null = null;
+
+    if (isRemovingEndDate && wasFinished) {
+      const ngayBatDauMomentLocal = moment(ngayBatDauFinal);
+
+      const laterPositions = existingHistory
+        .filter(h => {
+          const hStart = moment(h.ngay_bat_dau);
+          return hStart.isAfter(ngayBatDauMomentLocal);
+        })
+        .sort((a, b) => moment(a.ngay_bat_dau).diff(moment(b.ngay_bat_dau)));
+
+      if (laterPositions.length > 0) {
+        const nextPosition = laterPositions[0];
+        const nextStartDate = moment(nextPosition.ngay_bat_dau);
+
+        const suggestedEndDate = nextStartDate.clone().subtract(1, 'day');
+
+        warning = {
+          message: `Có chức vụ khác bắt đầu từ ${nextStartDate.format(
+            'DD/MM/YYYY'
+          )}. Bạn có muốn đặt ngày kết thúc là ${suggestedEndDate.format('DD/MM/YYYY')} không?`,
+          suggestedEndDate: suggestedEndDate.format('YYYY-MM-DD'),
+          nextPositionStartDate: nextStartDate.format('YYYY-MM-DD'),
+        };
+      }
+    }
+
+    const ngayBatDauMoment = moment(ngayBatDauFinal);
+    const ngayKetThucMoment = ngayKetThucFinal ? moment(ngayKetThucFinal) : null;
+
+    for (const existing of existingHistory) {
+      const existingStart = moment(existing.ngay_bat_dau);
+      const existingEnd = existing.ngay_ket_thuc ? moment(existing.ngay_ket_thuc) : null;
+
+      if (this.isOverlapping(existingStart, existingEnd, ngayBatDauMoment, ngayKetThucMoment)) {
+        const existingEndStr = existingEnd ? existingEnd.format('DD/MM/YYYY') : 'hiện tại';
+        const newEndStr = ngayKetThucMoment
+          ? ngayKetThucMoment.format('DD/MM/YYYY')
+          : 'chưa kết thúc';
+        throw new Error(
+          `Khoảng thời gian đảm nhiệm chức vụ trùng lặp với chức vụ khác (${existingStart.format(
+            'DD/MM/YYYY'
+          )} - ${existingEndStr}). Vui lòng chọn khoảng thời gian không trùng lặp.`
+        );
+      }
+    }
+
+    let soThang = history.so_thang;
+    if (ngayBatDauFinal && ngayKetThucFinal) {
+      let months = (ngayKetThucFinal.getFullYear() - ngayBatDauFinal.getFullYear()) * 12;
+      months += ngayKetThucFinal.getMonth() - ngayBatDauFinal.getMonth();
+      if (ngayKetThucFinal.getDate() < ngayBatDauFinal.getDate()) {
+        months--;
+      }
+      soThang = Math.max(0, months);
+    } else if (!ngayKetThucFinal) {
+      soThang = null;
+    }
+
+    const updateData: Record<string, unknown> = {
+      he_so_chuc_vu: heSoChucVu,
+      ngay_bat_dau: ngayBatDauFinal,
+      ngay_ket_thuc: ngayKetThucFinal,
+      so_thang: soThang,
+    };
+
+    if (!isCurrentPosition && chuc_vu_id) {
+      updateData.chuc_vu_id = chuc_vu_id;
+    }
+
+    const updatedHistory = await prisma.lichSuChucVu.update({
+      where: { id },
+      data: updateData,
+      include: {
+        QuanNhan: {
+          select: {
+            ho_ten: true,
+          },
+        },
+        ChucVu: {
+          include: {
+            CoQuanDonVi: true,
+            DonViTrucThuoc: {
+              include: {
+                CoQuanDonVi: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return {
+      data: updatedHistory,
+      warning: warning,
+    };
+  }
+
+  async deletePositionHistory(id: string) {
+    const history = await prisma.lichSuChucVu.findUnique({
+      where: { id },
+    });
+
+    if (!history) {
+      throw new Error('Lịch sử chức vụ không tồn tại');
+    }
+
+    await prisma.lichSuChucVu.delete({
+      where: { id },
+    });
+
+    return { message: 'Xóa lịch sử chức vụ thành công', quan_nhan_id: history.quan_nhan_id };
+  }
+}
+
+export default new PositionHistoryService();

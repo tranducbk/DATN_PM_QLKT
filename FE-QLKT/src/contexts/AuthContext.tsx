@@ -1,8 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
-
-type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'USER';
+import type { UserRole } from '@/lib/types';
 
 interface AuthUser {
   id: string;

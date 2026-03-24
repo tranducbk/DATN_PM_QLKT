@@ -20,6 +20,8 @@ import {
   Form,
   Upload,
 } from 'antd';
+import { getApiErrorMessage } from '@/lib/apiError';
+
 import {
   HomeOutlined,
   PlusOutlined,
@@ -112,7 +114,7 @@ export default function AdminDecisionsPage() {
         // Backend trả về: { success: true, data: [...], pagination: {...} }
         // apiClient.getDecisions() đã parse và trả về: { success: true, data: [...], pagination: {...} }
         const decisions = Array.isArray(response.data) ? response.data : [];
-        const paginationData = (response as any).pagination;
+        const paginationData = response.pagination;
 
         setDecisions(decisions);
         setPagination({
@@ -123,7 +125,7 @@ export default function AdminDecisionsPage() {
         // API returned unsuccessful response
         message.error(response.message || 'Lỗi khi tải danh sách quyết định');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Error handled by UI message
       message.error('Lỗi khi tải danh sách quyết định');
     } finally {
@@ -141,8 +143,8 @@ export default function AdminDecisionsPage() {
       } else {
         message.error(response.message || 'Lỗi khi xóa quyết định');
       }
-    } catch (error: any) {
-      message.error(error.message || 'Lỗi khi xóa quyết định');
+    } catch (error: unknown) {
+      message.error(getApiErrorMessage(error, 'Lỗi khi xóa quyết định'));
     }
   };
 

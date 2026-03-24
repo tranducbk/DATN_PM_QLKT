@@ -18,6 +18,7 @@ import { apiClient } from '@/lib/api-client';
 import { formatDate } from '@/lib/utils';
 import { useTheme } from '@/components/theme-provider';
 import { getAntdThemeConfig } from '@/lib/antd-theme';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 // Helper function để hiển thị tên quyền
 const getRoleName = (role: string) => {
@@ -80,13 +81,10 @@ export default function ProfileViewForm({
       if (response.success && response.data) {
         setPersonnelData(response.data);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Error handled by UI
       const errorMessage =
-        error?.response?.data?.message ||
-        error?.response?.data?.error ||
-        error?.message ||
-        'Không thể tải thông tin cá nhân';
+        getApiErrorMessage(error, 'Không thể tải thông tin cá nhân');
       message.error(errorMessage);
     } finally {
       setLoading(false);

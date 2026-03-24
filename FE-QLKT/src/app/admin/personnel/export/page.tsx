@@ -3,6 +3,8 @@
 
 import { useState } from 'react';
 import { Card, Button, Typography, Space, Alert, Breadcrumb, message } from 'antd';
+import { getApiErrorMessage } from '@/lib/apiError';
+
 import {
   DownloadOutlined,
   FileExcelOutlined,
@@ -35,8 +37,8 @@ export default function PersonnelExportPage() {
       window.URL.revokeObjectURL(url);
 
       message.success('Xuất dữ liệu quân nhân thành công');
-    } catch (error: any) {
-      message.error(error.message || 'Có lỗi xảy ra khi xuất dữ liệu');
+    } catch (error: unknown) {
+      message.error(getApiErrorMessage(error, 'Có lỗi xảy ra khi xuất dữ liệu'));
     } finally {
       setLoading(false);
     }
@@ -58,8 +60,8 @@ export default function PersonnelExportPage() {
       window.URL.revokeObjectURL(url);
 
       message.success('Tải file mẫu thành công');
-    } catch (error: any) {
-      message.error(error.message || 'Có lỗi xảy ra khi tải file mẫu');
+    } catch (error: unknown) {
+      message.error(getApiErrorMessage(error, 'Có lỗi xảy ra khi tải file mẫu'));
     } finally {
       setLoading(false);
     }

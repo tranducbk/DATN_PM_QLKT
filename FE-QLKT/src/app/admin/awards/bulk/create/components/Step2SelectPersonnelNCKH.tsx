@@ -5,6 +5,7 @@ import { Table, Input, Select, Space, Alert, Typography, InputNumber, Divider } 
 import { SearchOutlined, TeamOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import axiosInstance from '@/utils/axiosInstance';
+import { getApiErrorMessage } from '@/lib/apiError';
 import { formatDate } from '@/lib/utils';
 import { apiClient } from '@/lib/api-client';
 import ExcelImportSection from './ExcelImportSection';
@@ -88,7 +89,7 @@ export default function Step2SelectPersonnelNCKH({
         const personnelData = response.data.data?.personnel || response.data.data || [];
         setPersonnel(personnelData);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Error handled by UI
     } finally {
       setLoading(false);
@@ -323,8 +324,8 @@ export default function Step2SelectPersonnelNCKH({
                 );
               }
             }
-          } catch (error: any) {
-            reject(new Error(`Lỗi kiểm tra trùng lặp: ${error.message}`));
+          } catch (error: unknown) {
+            reject(new Error(`Lỗi kiểm tra trùng lặp: ${getApiErrorMessage(error)}`));
             return;
           }
 
@@ -335,8 +336,8 @@ export default function Step2SelectPersonnelNCKH({
             selectedPersonnelIds: uniquePersonnelIds,
             titleData,
           });
-        } catch (error: any) {
-          reject(new Error(`Lỗi xử lý file Excel: ${error.message}`));
+        } catch (error: unknown) {
+          reject(new Error(`Lỗi xử lý file Excel: ${getApiErrorMessage(error)}`));
         }
       };
 

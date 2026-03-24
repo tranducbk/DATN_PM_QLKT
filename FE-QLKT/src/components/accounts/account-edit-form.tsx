@@ -29,6 +29,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 type AccountEditValues = z.infer<typeof accountEditSchema>;
 
@@ -62,12 +63,9 @@ export function AccountEditForm({ accountId }: AccountEditFormProps) {
         form.reset({
           role: accountData.role,
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         const errorMessage =
-          error?.response?.data?.message ||
-          error?.response?.data?.error ||
-          error?.message ||
-          'Không thể tải thông tin tài khoản';
+          getApiErrorMessage(error, 'Không thể tải thông tin tài khoản');
 
         toast({
           title: 'Lỗi',
@@ -120,12 +118,9 @@ export function AccountEditForm({ accountId }: AccountEditFormProps) {
           variant: 'destructive',
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMessage =
-        error?.response?.data?.message ||
-        error?.response?.data?.error ||
-        error?.message ||
-        'Có lỗi xảy ra khi cập nhật tài khoản';
+        getApiErrorMessage(error, 'Có lỗi xảy ra khi cập nhật tài khoản');
 
       toast({
         title: 'Lỗi',
@@ -154,12 +149,9 @@ export function AccountEditForm({ accountId }: AccountEditFormProps) {
           variant: 'destructive',
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMessage =
-        error?.response?.data?.message ||
-        error?.response?.data?.error ||
-        error?.message ||
-        'Có lỗi xảy ra khi đặt lại mật khẩu';
+        getApiErrorMessage(error, 'Có lỗi xảy ra khi đặt lại mật khẩu');
 
       toast({
         title: 'Lỗi',

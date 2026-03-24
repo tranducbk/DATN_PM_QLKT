@@ -1,0 +1,16 @@
+export const PORT: number | string = process.env.PORT || 4000;
+export const DATABASE_URL: string | undefined = process.env.DATABASE_URL;
+export const PG_HOST: string = process.env.PG_HOST || 'localhost';
+export const PG_PORT: number = parseInt(process.env.PG_PORT || '5432', 10);
+export const PG_DATABASE: string = process.env.PG_DATABASE || 'QLHV';
+export const PG_USER: string | undefined = process.env.PG_USER;
+export const PG_PASSWORD: string = process.env.PG_PASSWORD || '';
+export const JWT_SECRET: string | undefined = process.env.JWT_SECRET;
+export const JWT_REFRESH_SECRET: string | undefined = process.env.JWT_REFRESH_SECRET;
+export const EMAIL_SERVICE: string | undefined = process.env.EMAIL_SERVICE;
+export const EMAIL_USER: string | undefined = process.env.EMAIL_USER;
+export const EMAIL_PASS: string | undefined = process.env.EMAIL_PASS;
+export const SMTP_HOST: string | undefined = process.env.SMTP_HOST;
+export const SMTP_PORT: string | undefined = process.env.SMTP_PORT;
+export const SMTP_SECURE: string | undefined = process.env.SMTP_SECURE;
+export const CLIENT_URL: string = process.env.CLIENT_URL || 'http://localhost:3000';

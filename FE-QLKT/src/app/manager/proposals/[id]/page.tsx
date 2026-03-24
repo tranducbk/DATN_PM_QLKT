@@ -15,6 +15,8 @@ import {
   Table,
   ConfigProvider,
 } from 'antd';
+import { getApiErrorMessage } from '@/lib/apiError';
+
 import {
   HomeOutlined,
   ArrowLeftOutlined,
@@ -211,7 +213,7 @@ export default function ManagerProposalDetailPage() {
         message.error(response.message || 'Không thể tải chi tiết đề xuất');
         router.replace('/manager/proposals');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       message.error('Không tìm thấy đề xuất hoặc bạn không có quyền truy cập');
       // Error handled by UI message
       router.replace('/manager/proposals');
@@ -302,8 +304,8 @@ export default function ManagerProposalDetailPage() {
       window.URL.revokeObjectURL(url);
 
       message.success('Tải file thành công');
-    } catch (error: any) {
-      message.error(error.message || 'Lỗi khi tải file');
+    } catch (error: unknown) {
+      message.error(getApiErrorMessage(error, 'Lỗi khi tải file'));
       // Error handled by UI message
     } finally {
       setDownloading(false);

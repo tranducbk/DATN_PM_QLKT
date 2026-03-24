@@ -1,4 +1,5 @@
 import axiosInstance from '@/utils/axiosInstance';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 type ApiResponse<T = any> = { success: boolean; data?: T; message?: string };
 
@@ -17,8 +18,8 @@ export async function getProposalTemplate(
       responseType: 'blob',
     });
     return res.data;
-  } catch (e: any) {
-    throw new Error(e?.response?.data?.message || e.message);
+  } catch (e: unknown) {
+    throw new Error(getApiErrorMessage(e));
   }
 }
 
@@ -30,8 +31,8 @@ export async function submitProposal(formData: FormData): Promise<ApiResponse> {
       },
     });
     return { success: true, data: res.data?.data || res.data, message: res.data?.message };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -42,8 +43,8 @@ export async function getProposals(params?: {
   try {
     const res = await axiosInstance.get('/api/proposals', { params });
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -51,8 +52,8 @@ export async function getProposalById(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get(`/api/proposals/${id}`);
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -62,8 +63,8 @@ export async function approveProposal(id: string, formData: FormData): Promise<A
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     return { success: true, data: res.data?.data || res.data, message: res.data?.message };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -71,8 +72,8 @@ export async function rejectProposal(id: string, ghi_chu: string): Promise<ApiRe
   try {
     const res = await axiosInstance.post(`/api/proposals/${id}/reject`, { ghi_chu });
     return { success: true, data: res.data?.data || res.data, message: res.data?.message };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -82,8 +83,8 @@ export async function downloadProposalExcel(id: string): Promise<Blob> {
       responseType: 'blob',
     });
     return res.data;
-  } catch (e: any) {
-    throw new Error(e?.response?.data?.message || e.message);
+  } catch (e: unknown) {
+    throw new Error(getApiErrorMessage(e));
   }
 }
 
@@ -91,7 +92,7 @@ export async function deleteProposal(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete(`/api/proposals/${id}`);
     return { success: true, data: res.data?.data || res.data, message: res.data?.message };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }

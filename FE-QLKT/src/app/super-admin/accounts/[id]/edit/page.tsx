@@ -15,6 +15,8 @@ import {
   Breadcrumb,
   Spin,
 } from 'antd';
+import { getApiErrorMessage } from '@/lib/apiError';
+
 import { SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
@@ -52,8 +54,8 @@ export default function AccountEditPage() {
       } else {
         message.error(response.message || 'Lỗi khi lấy thông tin tài khoản');
       }
-    } catch (error: any) {
-      message.error(error.message || 'Lỗi khi lấy thông tin tài khoản');
+    } catch (error: unknown) {
+      message.error(getApiErrorMessage(error, 'Lỗi khi lấy thông tin tài khoản'));
     } finally {
       setFetchLoading(false);
     }
@@ -79,8 +81,8 @@ export default function AccountEditPage() {
       } else {
         message.error(response.message || 'Cập nhật tài khoản thất bại');
       }
-    } catch (error: any) {
-      message.error(error.message || 'Lỗi khi cập nhật tài khoản');
+    } catch (error: unknown) {
+      message.error(getApiErrorMessage(error, 'Lỗi khi cập nhật tài khoản'));
     } finally {
       setLoading(false);
     }

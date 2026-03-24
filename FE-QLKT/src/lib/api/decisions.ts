@@ -1,6 +1,13 @@
 import axiosInstance from '@/utils/axiosInstance';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 type ApiResponse<T = any> = { success: boolean; data?: T; message?: string };
+
+export type DecisionsPagination = {
+  total?: number;
+  page?: number;
+  limit?: number;
+};
 
 export async function getDecisions(params?: {
   nam?: number;
@@ -8,7 +15,7 @@ export async function getDecisions(params?: {
   search?: string;
   page?: number;
   limit?: number;
-}): Promise<ApiResponse & { pagination?: any }> {
+}): Promise<ApiResponse & { pagination?: DecisionsPagination }> {
   try {
     const res = await axiosInstance.get('/api/decisions', { params });
     // Backend trả về: { success: true, data: [...], pagination: {...} }
@@ -17,8 +24,8 @@ export async function getDecisions(params?: {
       data: res.data?.data || res.data,
       pagination: res.data?.pagination,
     };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -28,8 +35,8 @@ export async function autocompleteDecisions(query: string, limit = 10): Promise<
       params: { q: query, limit },
     });
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -37,8 +44,8 @@ export async function getDecisionBySoQuyetDinh(soQuyetDinh: string): Promise<Api
   try {
     const res = await axiosInstance.get(`/api/decisions/by-number/${soQuyetDinh}`);
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -46,8 +53,8 @@ export async function getDecisionById(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get(`/api/decisions/${id}`);
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -57,8 +64,8 @@ export async function createDecision(formData: FormData): Promise<ApiResponse> {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     return { success: true, data: res.data?.data || res.data, message: res.data?.message };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -68,8 +75,8 @@ export async function updateDecision(id: string, formData: FormData): Promise<Ap
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     return { success: true, data: res.data?.data || res.data, message: res.data?.message };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -77,8 +84,8 @@ export async function deleteDecision(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete(`/api/decisions/${id}`);
     return { success: true, data: res.data?.data || res.data, message: res.data?.message };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -93,8 +100,8 @@ export async function getDecisionFilePath(soQuyetDinh: string): Promise<ApiRespo
       `/api/decisions/file-path/${encodeURIComponent(soQuyetDinh)}`
     );
     return { success: res.data?.success, data: res.data?.data, message: res.data?.message };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -122,7 +129,7 @@ export async function getDecisionFilePaths(soQuyetDinhs: string[]): Promise<ApiR
   try {
     const res = await axiosInstance.post('/api/decisions/file-paths', { soQuyetDinhs });
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }

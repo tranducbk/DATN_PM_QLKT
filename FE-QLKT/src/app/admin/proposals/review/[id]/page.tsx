@@ -21,6 +21,8 @@ import {
   theme as antdTheme,
   Popconfirm,
 } from 'antd';
+import { getApiErrorMessage } from '@/lib/apiError';
+
 import {
   HomeOutlined,
   CheckCircleOutlined,
@@ -264,8 +266,8 @@ export default function ProposalDetailPage() {
       } else {
         setMessageAlert({ type: 'error', text: res.message || 'Không tải được đề xuất' });
       }
-    } catch (error: any) {
-      setMessageAlert({ type: 'error', text: error.message || 'Lỗi khi tải đề xuất' });
+    } catch (error: unknown) {
+      setMessageAlert({ type: 'error', text: getApiErrorMessage(error, 'Lỗi khi tải đề xuất') });
     } finally {
       setLoading(false);
     }
@@ -382,8 +384,8 @@ export default function ProposalDetailPage() {
       } else {
         setMessageAlert({ type: 'error', text: response.message || 'Lỗi khi từ chối đề xuất' });
       }
-    } catch (error: any) {
-      setMessageAlert({ type: 'error', text: error.message || 'Lỗi khi từ chối đề xuất' });
+    } catch (error: unknown) {
+      setMessageAlert({ type: 'error', text: getApiErrorMessage(error, 'Lỗi khi từ chối đề xuất') });
     } finally {
       setRejecting(false);
     }
@@ -404,8 +406,8 @@ export default function ProposalDetailPage() {
       } else {
         setMessageAlert({ type: 'error', text: response.message || 'Lỗi khi xóa đề xuất' });
       }
-    } catch (error: any) {
-      setMessageAlert({ type: 'error', text: error.message || 'Lỗi khi xóa đề xuất' });
+    } catch (error: unknown) {
+      setMessageAlert({ type: 'error', text: getApiErrorMessage(error, 'Lỗi khi xóa đề xuất') });
     } finally {
       setDeleting(false);
     }
@@ -584,8 +586,8 @@ export default function ProposalDetailPage() {
               text: response.message || 'Lỗi khi phê duyệt đề xuất',
             });
           }
-        } catch (error: any) {
-          setMessageAlert({ type: 'error', text: error.message || 'Lỗi khi phê duyệt đề xuất' });
+        } catch (error: unknown) {
+          setMessageAlert({ type: 'error', text: getApiErrorMessage(error, 'Lỗi khi phê duyệt đề xuất') });
         } finally {
           setApproving(false);
         }

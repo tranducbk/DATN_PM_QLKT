@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { message } from 'antd';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 interface FetchState<T> {
   data: T | null;
@@ -45,9 +46,9 @@ interface UseFetchOptions {
  * const { data, loading, refetch } = useFetch(() => apiClient.getPersonnel());
  * ```
  */
-export function useFetch<T = any>(
+export function useFetch<T = unknown>(
   fetcher: () => Promise<{ success: boolean; data?: T; message?: string }>,
-  deps: any[] = [],
+  deps: unknown[] = [],
   options: UseFetchOptions = {}
 ) {
   const { showError = true, errorMessage, immediate = true } = options;
@@ -69,8 +70,8 @@ export function useFetch<T = any>(
         setState({ data: null, loading: false, error: errMsg });
         if (showError) message.error(errMsg);
       }
-    } catch (err: any) {
-      const errMsg = err?.message || errorMessage || 'Lỗi hệ thống';
+    } catch (err: unknown) {
+      const errMsg = getApiErrorMessage(err, errorMessage || 'Lỗi hệ thống');
       setState({ data: null, loading: false, error: errMsg });
       if (showError) message.error(errMsg);
     }
@@ -100,7 +101,7 @@ export function useFetch<T = any>(
  * );
  * ```
  */
-export function useMutation<TInput = any, TOutput = any>(
+export function useMutation<TInput = unknown, TOutput = unknown>(
   mutator: (input: TInput) => Promise<{ success: boolean; data?: TOutput; message?: string }>,
   options: {
     successMessage?: string;
@@ -129,8 +130,8 @@ export function useMutation<TInput = any, TOutput = any>(
           options.onError?.(errMsg);
           return res;
         }
-      } catch (err: any) {
-        const errMsg = err?.message || options.errorMessage || 'Lỗi hệ thống';
+      } catch (err: unknown) {
+        const errMsg = getApiErrorMessage(err, options.errorMessage || 'Lỗi hệ thống');
         setError(errMsg);
         message.error(errMsg);
         options.onError?.(errMsg);

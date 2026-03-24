@@ -1,6 +1,7 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import dayjs from 'dayjs';
+import type { DateInput, DatePoint } from './types';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -13,7 +14,7 @@ export function cn(...inputs: ClassValue[]) {
  * @param endDate - Ngày kết thúc (string hoặc Date), mặc định là ngày hiện tại
  * @returns Chuỗi mô tả thời gian (VD: "2 năm 6 tháng", "3 tháng", "15 ngày")
  */
-export function calculateDuration(startDate: string | Date, endDate?: string | Date): string {
+export function calculateDuration(startDate: DatePoint, endDate?: DatePoint): string {
   const start = new Date(startDate);
   const end = endDate ? new Date(endDate) : new Date();
 
@@ -54,7 +55,7 @@ export function calculateDuration(startDate: string | Date, endDate?: string | D
  * @param date - Ngày cần format (string, Date, hoặc null/undefined)
  * @returns Chuỗi ngày tháng đã format hoặc '-' nếu null/undefined
  */
-export function formatDate(date: string | Date | null | undefined): string {
+export function formatDate(date: DateInput): string {
   if (!date) return '-';
   return dayjs(date).format('DD/MM/YYYY');
 }
@@ -64,7 +65,7 @@ export function formatDate(date: string | Date | null | undefined): string {
  * @param date - Ngày cần format (string, Date, hoặc null/undefined)
  * @returns Chuỗi ngày tháng giờ đã format hoặc '-' nếu null/undefined
  */
-export function formatDateTime(date: string | Date | null | undefined): string {
+export function formatDateTime(date: DateInput): string {
   if (!date) return '-';
   return dayjs(date).format('DD/MM/YYYY HH:mm');
 }
@@ -74,7 +75,7 @@ export function formatDateTime(date: string | Date | null | undefined): string {
  * @param date - Ngày cần format (string, Date, hoặc null/undefined)
  * @returns Chuỗi ngày tháng giờ phút giây đã format hoặc '-' nếu null/undefined
  */
-export function formatDateTimeFull(date: string | Date | null | undefined): string {
+export function formatDateTimeFull(date: DateInput): string {
   if (!date) return '-';
   return dayjs(date).format('DD/MM/YYYY HH:mm:ss');
 }

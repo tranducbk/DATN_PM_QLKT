@@ -16,6 +16,8 @@ import {
   ConfigProvider,
   theme as antdTheme,
 } from 'antd';
+import { getApiErrorMessage } from '@/lib/apiError';
+
 import {
   PlusOutlined,
   EditOutlined,
@@ -84,8 +86,8 @@ export default function AccountsListPage() {
       } else {
         message.error(response.message || 'Không thể tải danh sách tài khoản');
       }
-    } catch (error: any) {
-      message.error(error.message || 'Không thể tải danh sách tài khoản');
+    } catch (error: unknown) {
+      message.error(getApiErrorMessage(error, 'Không thể tải danh sách tài khoản'));
     } finally {
       setLoading(false);
       setTableLoading(false);
@@ -113,8 +115,8 @@ export default function AccountsListPage() {
           message.error(response.message || 'Không thể xóa tài khoản');
         }
       }
-    } catch (error: any) {
-      message.error(error.message || 'Không thể xóa');
+    } catch (error: unknown) {
+      message.error(getApiErrorMessage(error, 'Không thể xóa'));
     }
   };
 

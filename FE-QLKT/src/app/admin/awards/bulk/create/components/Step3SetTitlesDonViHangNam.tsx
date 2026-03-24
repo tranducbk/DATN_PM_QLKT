@@ -245,7 +245,7 @@ export default function Step3SetTitlesDonViHangNam({
             );
             return; // Không cho phép chọn
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           // Error handled by UI
           // Không block nếu lỗi API, chỉ log
         }
@@ -285,7 +285,7 @@ export default function Step3SetTitlesDonViHangNam({
       } else {
         setUnitAnnualAwards([]);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Error handled by UI
       setUnitAnnualAwards([]);
     } finally {

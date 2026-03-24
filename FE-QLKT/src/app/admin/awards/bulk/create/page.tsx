@@ -17,6 +17,8 @@ import {
   Table,
   Input,
 } from 'antd';
+import { getApiErrorMessage } from '@/lib/apiError';
+
 import {
   DownloadOutlined,
   HomeOutlined,
@@ -44,6 +46,7 @@ import Step2SelectPersonnelNCKH from './components/Step2SelectPersonnelNCKH';
 import Step2SelectUnits from './components/Step2SelectUnits';
 import Step3SetTitles from './components/Step3SetTitles';
 import DecisionModal from '@/components/DecisionModal';
+import type { DateInput } from '@/lib/types';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -60,8 +63,8 @@ interface Personnel {
   id: string;
   ho_ten: string;
   cccd: string;
-  ngay_nhap_ngu?: string | Date | null;
-  ngay_xuat_ngu?: string | Date | null;
+  ngay_nhap_ngu?: DateInput;
+  ngay_xuat_ngu?: DateInput;
   ChucVu?: {
     id: string;
     ten_chuc_vu: string;
@@ -371,8 +374,8 @@ export default function BulkAddAwardsPage() {
       } else {
         throw new Error(result.message || 'Thêm khen thưởng thất bại');
       }
-    } catch (error: any) {
-      antMessage.error(error.message || 'Lỗi khi thêm khen thưởng');
+    } catch (error: unknown) {
+      antMessage.error(getApiErrorMessage(error, 'Lỗi khi thêm khen thưởng'));
     } finally {
       setLoading(false);
     }
@@ -522,7 +525,7 @@ export default function BulkAddAwardsPage() {
           <Step3SetTitles
             selectedPersonnelIds={selectedPersonnelIds}
             selectedUnitIds={selectedUnitIds}
-            proposalType={awardType as any}
+            proposalType={awardType}
             titleData={titleData}
             onTitleDataChange={setTitleData}
             onPersonnelChange={setSelectedPersonnelIds}

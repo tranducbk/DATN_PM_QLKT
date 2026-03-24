@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-
-type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'USER';
+import type { UserRole } from '@/lib/types';
 
 /**
  * Redirect map cho từng role

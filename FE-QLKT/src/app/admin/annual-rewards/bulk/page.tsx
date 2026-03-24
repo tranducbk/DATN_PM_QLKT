@@ -18,6 +18,7 @@ import {
   Upload,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import type { DateInput } from '@/lib/types';
 import type { UploadFile } from 'antd/es/upload/interface';
 import {
   ArrowLeftOutlined,
@@ -123,7 +124,7 @@ export default function BulkAddAnnualRewardsPage() {
       if (unitsRes.success) {
         setUnits(unitsRes.data || []);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       message.error('Không thể tải dữ liệu');
       // Error handled by UI message
     } finally {
@@ -132,7 +133,7 @@ export default function BulkAddAnnualRewardsPage() {
   };
 
   // Format date helper
-  const formatDate = (date: string | Date | null | undefined) => {
+  const formatDate = (date: DateInput) => {
     if (!date) return null;
     const d = typeof date === 'string' ? new Date(date) : date;
     return d.toISOString().split('T')[0];
@@ -210,7 +211,7 @@ export default function BulkAddAnnualRewardsPage() {
       } else {
         message.error(checkResult.message || 'Có lỗi khi kiểm tra khen thưởng');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       message.error('Có lỗi xảy ra khi kiểm tra khen thưởng');
     } finally {
       setLoading(false);

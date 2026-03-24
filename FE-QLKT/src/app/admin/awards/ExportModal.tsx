@@ -77,7 +77,7 @@ export default function ExportModal({ open, onCancel, activeTab }: ExportModalPr
     const fetchPersonnel = async () => {
       try {
         setLoadingPersonnel(true);
-        const res = await apiClient.getPersonnel({ unit_id: donViId as any, limit: 1000 });
+        const res = await apiClient.getPersonnel({ unit_id: donViId, limit: 1000 });
         if (res.success) {
           const list = res.data?.rows ?? res.data ?? [];
           setPersonnelList(Array.isArray(list) ? list : []);

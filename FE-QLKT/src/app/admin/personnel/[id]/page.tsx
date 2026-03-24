@@ -17,6 +17,8 @@ import {
   Divider,
   Spin,
 } from 'antd';
+import { getApiErrorMessage } from '@/lib/apiError';
+
 import {
   ArrowLeftOutlined,
   EditOutlined,
@@ -92,8 +94,8 @@ export default function PersonnelDetailPage() {
         if (commRes.success) {
           setCommemorationMedals(commRes.data);
         }
-      } catch (error: any) {
-        message.error(error.message || 'Lỗi khi lấy thông tin');
+      } catch (error: unknown) {
+        message.error(getApiErrorMessage(error, 'Lỗi khi lấy thông tin'));
       } finally {
         setLoading(false);
       }

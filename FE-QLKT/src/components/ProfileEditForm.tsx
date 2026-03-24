@@ -36,6 +36,7 @@ import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
 import { useTheme } from '@/components/theme-provider';
 import { formatDate } from '@/lib/utils';
 import { getAntdThemeConfig } from '@/lib/antd-theme';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 // Helper function để hiển thị tên quyền
 const getRoleName = (role: string) => {
@@ -281,13 +282,10 @@ export default function ProfileEditForm({
           role: getRoleName(response.data.TaiKhoan?.role || 'USER'),
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Error handled by UI
       const errorMessage =
-        error?.response?.data?.message ||
-        error?.response?.data?.error ||
-        error?.message ||
-        'Không thể tải thông tin cá nhân';
+        getApiErrorMessage(error, 'Không thể tải thông tin cá nhân');
       message.error(errorMessage);
     } finally {
       setLoading(false);
@@ -358,13 +356,10 @@ export default function ProfileEditForm({
       } else {
         message.error(response.message || 'Cập nhật thất bại');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Error handled by UI
       const errorMessage =
-        error?.response?.data?.message ||
-        error?.response?.data?.error ||
-        error?.message ||
-        'Đã xảy ra lỗi khi cập nhật';
+        getApiErrorMessage(error, 'Đã xảy ra lỗi khi cập nhật');
       message.error(errorMessage);
     } finally {
       setSaving(false);

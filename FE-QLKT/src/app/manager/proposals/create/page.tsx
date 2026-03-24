@@ -21,6 +21,8 @@ import {
   Row,
   Col,
 } from 'antd';
+import { getApiErrorMessage } from '@/lib/apiError';
+
 import {
   UploadOutlined,
   DownloadOutlined,
@@ -38,6 +40,7 @@ import {
 import Link from 'next/link';
 import type { UploadFile } from 'antd/es/upload/interface';
 import type { ColumnsType } from 'antd/es/table';
+import type { DateInput } from '@/lib/types';
 import { apiClient } from '@/lib/api-client';
 import axiosInstance from '@/utils/axiosInstance';
 import { getDanhHieuName } from '@/constants/danhHieu.constants';
@@ -66,8 +69,8 @@ interface Personnel {
   id: string;
   ho_ten: string;
   cccd: string;
-  ngay_nhap_ngu?: string | Date | null;
-  ngay_xuat_ngu?: string | Date | null;
+  ngay_nhap_ngu?: DateInput;
+  ngay_xuat_ngu?: DateInput;
   ChucVu?: {
     id: string;
     ten_chuc_vu: string;
@@ -304,7 +307,7 @@ export default function CreateProposalPage() {
           );
           return;
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         // Error handled by UI
         antMessage.error('Lỗi khi kiểm tra thông tin quân nhân');
         return;
@@ -327,7 +330,7 @@ export default function CreateProposalPage() {
           );
           return;
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         // Error handled by UI
         antMessage.error('Lỗi khi kiểm tra thông tin quân nhân');
         return;
@@ -381,7 +384,7 @@ export default function CreateProposalPage() {
           );
           return;
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         // Error handled by UI
         antMessage.error('Lỗi khi kiểm tra thông tin quân nhân');
         return;
@@ -452,7 +455,7 @@ export default function CreateProposalPage() {
             setLoading(false);
             return;
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           // Error handled by UI
           antMessage.error('Lỗi khi kiểm tra thông tin quân nhân');
           setLoading(false);
@@ -479,7 +482,7 @@ export default function CreateProposalPage() {
             setLoading(false);
             return;
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           // Error handled by UI
           antMessage.error('Lỗi khi kiểm tra thông tin quân nhân');
           setLoading(false);
@@ -556,7 +559,7 @@ export default function CreateProposalPage() {
             setLoading(false);
             return;
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           // Error handled by UI
           antMessage.error('Lỗi khi kiểm tra thông tin quân nhân');
           setLoading(false);
@@ -618,8 +621,8 @@ export default function CreateProposalPage() {
       setTimeout(() => {
         router.push('/manager/proposals');
       }, 1000);
-    } catch (error: any) {
-      antMessage.error(error.message || 'Lỗi khi gửi đề xuất');
+    } catch (error: unknown) {
+      antMessage.error(getApiErrorMessage(error, 'Lỗi khi gửi đề xuất'));
     } finally {
       setLoading(false);
     }
@@ -934,8 +937,8 @@ export default function CreateProposalPage() {
           ) {
             // Hàm tính tổng số tháng
             const calculateTotalMonths = (
-              ngayNhapNgu: string | Date | null | undefined,
-              ngayXuatNgu: string | Date | null | undefined
+              ngayNhapNgu: DateInput,
+              ngayXuatNgu: DateInput
             ) => {
               if (!ngayNhapNgu) return null;
 

@@ -7,6 +7,7 @@ import type { ColumnsType } from 'antd/es/table';
 import axiosInstance from '@/utils/axiosInstance';
 import { format } from 'date-fns';
 import { formatDate } from '@/lib/utils';
+import type { DateInput } from '@/lib/types';
 
 const { Text } = Typography;
 
@@ -19,8 +20,8 @@ interface Personnel {
   chuc_vu_id: string;
   cap_bac?: string;
   ngay_sinh?: string | null;
-  ngay_nhap_ngu?: string | Date | null;
-  ngay_xuat_ngu?: string | Date | null;
+  ngay_nhap_ngu?: DateInput;
+  ngay_xuat_ngu?: DateInput;
   CoQuanDonVi?: {
     id: string;
     ten_don_vi: string;
@@ -85,7 +86,7 @@ export default function Step2SelectPersonnel({
         const personnelData = response.data.data?.personnel || response.data.data || [];
         setPersonnel(personnelData);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Error handled by UI
     } finally {
       setLoading(false);
@@ -199,8 +200,8 @@ export default function Step2SelectPersonnel({
   if (proposalType === 'NIEN_HAN') {
     // Hàm tính tổng số tháng từ ngày nhập ngũ đến hiện tại (hoặc ngày xuất ngũ)
     const calculateTotalMonths = (
-      ngayNhapNgu: string | Date | null | undefined,
-      ngayXuatNgu: string | Date | null | undefined
+      ngayNhapNgu: DateInput,
+      ngayXuatNgu: DateInput
     ) => {
       if (!ngayNhapNgu) return null;
 

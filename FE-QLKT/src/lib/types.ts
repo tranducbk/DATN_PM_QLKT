@@ -1,10 +1,26 @@
 // Types for QLKT API
+
+/** Một nguồn cho Zod `z.enum(...)` và type `UserRole` */
+export const USER_ROLE_VALUES = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'USER'] as const;
+
+/** Vai trò tài khoản — khớp BE / JWT */
+export type UserRole = (typeof USER_ROLE_VALUES)[number];
+
+/**
+ * Giá trị ngày từ API (ISO string), `Date`, hoặc thiếu — dùng chung cho form/format
+ * (tránh lặp `string | Date | null | undefined` khắp component)
+ */
+export type DateInput = string | Date | null | undefined;
+
+/** Điểm thời gian bắt buộc (không null) — ví dụ `calculateDuration` */
+export type DatePoint = string | Date;
+
 export interface Account {
   id: string;
   username: string;
   personnel_id: string;
   personnel_name: string;
-  role: 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'USER';
+  role: UserRole;
   created_at: string;
 }
 

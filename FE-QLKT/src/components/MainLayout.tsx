@@ -17,6 +17,8 @@ import {
   Modal,
   Empty,
 } from 'antd';
+import type { MenuProps } from 'antd';
+import type { MenuInfo } from 'rc-menu/lib/interface';
 import {
   DashboardOutlined,
   TeamOutlined,
@@ -42,20 +44,27 @@ import Link from 'next/link';
 import { useTheme } from './theme-provider';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api-client';
+import type { NotificationItem } from '@/lib/api/notifications';
 import { formatDate } from '@/lib/utils';
+import type { UserRole } from '@/lib/types';
 
 const { Header, Sider, Content, Footer } = Layout;
 
 interface MainLayoutProps {
   children: ReactNode;
-  role?: 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'USER';
+  role?: UserRole;
 }
 
 /**
  * Component hiển thị toast khi có thông báo mới qua socket.
  * Phải đặt bên trong <App> để dùng được App.useApp().
  */
-function NotificationToast({ notification }: { notification: any }) {
+type SocketNotificationPayload = {
+  title?: string;
+  message?: string;
+};
+
+function NotificationToast({ notification }: { notification: SocketNotificationPayload | null }) {
   const { notification: antNotification } = App.useApp();
 
   useEffect(() => {
@@ -130,15 +139,17 @@ export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [notificationLoading, setNotificationLoading] = useState(false);
-  const [latestNotification, setLatestNotification] = useState<any>(null);
+  const [latestNotification, setLatestNotification] = useState<SocketNotificationPayload | null>(
+    null
+  );
   const router = useRouter();
   const pathname = usePathname();
   const { theme, toggle } = useTheme();
   const { user, logout: authLogout } = useAuth();
 
-  const actualRole = (user?.role ?? role) as 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'USER';
+  const actualRole = (user?.role ?? role) as UserRole;
   const userName = user?.username || 'User';
   const personnelId = user?.quan_nhan_id ?? null;
   const [accessToken, setAccessToken] = useState<string | null>(() => {
@@ -161,8 +172,12 @@ export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps
   // Nhận thông báo real-time qua Socket.IO
   const handleNewNotification = useCallback((notification: unknown) => {
     setNotificationCount(prev => prev + 1);
-    setNotifications(prev => [notification as any, ...prev]);
-    setLatestNotification(notification);
+    const row: NotificationItem =
+      notification && typeof notification === 'object'
+        ? (notification as NotificationItem)
+        : { message: String(notification), created_at: new Date().toISOString() };
+    setNotifications(prev => [row, ...prev]);
+    setLatestNotification(row as SocketNotificationPayload);
   }, []);
 
   // Xử lý khi tài khoản đăng nhập ở nơi khác
@@ -222,7 +237,7 @@ export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps
         limit: 1000,
       });
       if (response.success && response.data) {
-        const list = response.data.notifications || [];
+        const list = (response.data.notifications || []) as NotificationItem[];
         setNotifications(list);
       }
     } catch (error) {
@@ -232,7 +247,7 @@ export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps
     }
   };
 
-  const handleMarkAsRead = async (id: number, isRead: boolean, link?: string) => {
+  const handleMarkAsRead = async (id: number, isRead: boolean, link?: string | null) => {
     try {
       // Only mark as read if not already read
       if (!isRead) {
@@ -276,7 +291,10 @@ export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps
     }
   };
 
-  const formatNotificationTime = (dateString: string) => {
+  const formatNotificationTime = (dateString: string | undefined | null) => {
+    if (dateString == null || dateString === '') {
+      return '';
+    }
     const date = new Date(dateString);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
@@ -557,7 +575,7 @@ export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps
     return 'dashboard';
   };
 
-  const userMenuItems = [
+  const userMenuItems: MenuProps['items'] = [
     {
       key: 'change-password',
       label: 'Đổi mật khẩu',
@@ -580,7 +598,7 @@ export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps
           <Switch checked={theme === 'dark'} onChange={toggle} size="small" />
         </div>
       ),
-      onClick: (e: any) => {
+      onClick: (e: MenuInfo) => {
         e.domEvent.stopPropagation();
       },
     },
@@ -814,7 +832,9 @@ export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps
                                       : 'bg-blue-50 dark:bg-gray-700/80 hover:bg-blue-100 dark:hover:bg-gray-600 border-l-4 border-blue-500 dark:border-blue-400 shadow-sm'
                                   }`}
                                   onClick={() => {
-                                    handleMarkAsRead(notif.id, notif.is_read, notif.link);
+                                    if (notif.id != null) {
+                                      handleMarkAsRead(notif.id, Boolean(notif.is_read), notif.link);
+                                    }
                                   }}
                                 >
                                   <div className="flex items-start gap-3">
@@ -910,7 +930,7 @@ export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps
 
                 {/* User Dropdown */}
                 <Dropdown
-                  menu={{ items: userMenuItems as any }}
+                  menu={{ items: userMenuItems }}
                   placement="bottomRight"
                   trigger={['click']}
                 >

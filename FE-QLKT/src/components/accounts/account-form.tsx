@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { accountFormSchema } from '@/lib/schemas';
+import type { CreateAccountBody } from '@/lib/api/accounts';
 import { apiClient } from '@/lib/api-client';
 import { useToast } from '@/hooks/use-toast';
 import { Check, ChevronsUpDown } from 'lucide-react';
@@ -93,7 +94,24 @@ export function AccountForm({ account, personnel = [], onSuccess, onClose }: Acc
           description: 'Cập nhật tài khoản thành công',
         });
       } else {
-        await apiClient.createAccount(values as any);
+        if (!values.password) {
+          toast({
+            title: 'Lỗi',
+            description: 'Vui lòng nhập mật khẩu khi tạo tài khoản',
+            variant: 'destructive',
+          });
+          return;
+        }
+        const body: CreateAccountBody = {
+          username: values.username,
+          password: values.password,
+          role: values.role,
+          personnel_id: values.personnel_id || undefined,
+          co_quan_don_vi_id: values.co_quan_don_vi_id,
+          don_vi_truc_thuoc_id: values.don_vi_truc_thuoc_id,
+          chuc_vu_id: values.chuc_vu_id,
+        };
+        await apiClient.createAccount(body);
         toast({
           title: 'Thành công',
           description: 'Tạo tài khoản thành công',

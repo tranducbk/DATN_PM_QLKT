@@ -1,4 +1,7 @@
 import { z } from 'zod';
+import { USER_ROLE_VALUES } from './types';
+
+const userRoleEnum = z.enum(USER_ROLE_VALUES);
 
 // Account schemas
 export const accountFormSchema = z.object({
@@ -10,7 +13,7 @@ export const accountFormSchema = z.object({
     .regex(/[a-z]/, 'Mật khẩu phải chứa ít nhất 1 chữ thường')
     .regex(/[0-9]/, 'Mật khẩu phải chứa ít nhất 1 chữ số')
     .optional(),
-  role: z.enum(['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'USER']),
+  role: userRoleEnum,
   personnel_id: z.string().optional(),
   quan_nhan_id: z.number().optional(),
   co_quan_don_vi_id: z.string().optional(),
@@ -28,7 +31,7 @@ export const accountCreateSchema = z
       .regex(/[a-z]/, 'Mật khẩu phải chứa ít nhất 1 chữ thường')
       .regex(/[0-9]/, 'Mật khẩu phải chứa ít nhất 1 chữ số'),
     confirmPassword: z.string().min(1, 'Mật khẩu xác nhận là bắt buộc'),
-    role: z.enum(['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'USER']),
+    role: userRoleEnum,
     co_quan_don_vi_id: z.string().optional(), // Cơ quan đơn vị (UUID)
     don_vi_truc_thuoc_id: z.string().optional(), // Đơn vị trực thuộc (UUID)
     chuc_vu_id: z.string().optional(), // Chức vụ (UUID)
@@ -63,7 +66,7 @@ export const accountCreateSchema = z
   );
 
 export const accountEditSchema = z.object({
-  role: z.enum(['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'USER']),
+  role: userRoleEnum,
   quan_nhan_id: z.number().optional(),
 });
 

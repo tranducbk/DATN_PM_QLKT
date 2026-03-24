@@ -15,6 +15,8 @@ import {
   theme as antdTheme,
   Spin,
 } from 'antd';
+import { getApiErrorMessage } from '@/lib/apiError';
+
 import { useTheme } from '@/components/theme-provider';
 import {
   SyncOutlined,
@@ -157,8 +159,8 @@ export default function ManagerPersonnelPage() {
       } else {
         message.error(res.message || 'Có lỗi xảy ra khi cập nhật');
       }
-    } catch (error: any) {
-      message.error(error.message || 'Có lỗi xảy ra khi cập nhật');
+    } catch (error: unknown) {
+      message.error(getApiErrorMessage(error, 'Có lỗi xảy ra khi cập nhật'));
     }
   };
 

@@ -15,6 +15,8 @@ import {
   Tabs,
   Popconfirm,
 } from 'antd';
+import { getApiErrorMessage } from '@/lib/apiError';
+
 import type { TableColumnsType } from 'antd';
 import { DownloadOutlined, FilterOutlined, HomeOutlined, DeleteOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/api-client';
@@ -32,7 +34,8 @@ import { formatDate } from '@/lib/utils';
 
 const { Title, Paragraph, Text } = Typography;
 
-interface Award {
+/** Một dòng bảng khen thưởng — có thể là cấu trúc lồng (adhoc, scientific, …) */
+interface AwardCore {
   id: number;
   cccd: string;
   ho_ten: string;
@@ -56,9 +59,21 @@ interface Award {
   ten_de_tai?: string | null;
 }
 
+/** Dòng hiển thị/ghép filter — gồm cả bản ghi adhoc / scientific có quan hệ lồng */
+type AwardTableRow = AwardCore & {
+  doi_tuong?: string;
+  loai?: string;
+  QuanNhan?: { ho_ten?: string };
+  CoQuanDonVi?: { ten_don_vi?: string };
+  DonViTrucThuoc?: { ten_don_vi?: string };
+  hinh_thuc_khen_thuong?: string;
+};
+
+type Award = AwardCore;
+
 export default function AdminAwardsPage() {
   const [activeTab, setActiveTab] = useState('annual');
-  const [awards, setAwards] = useState<Award[]>([]);
+  const [awards, setAwards] = useState<AwardTableRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [filters, setFilters] = useState({
@@ -189,9 +204,9 @@ export default function AdminAwardsPage() {
       } else {
         message.error(result.message || 'Xóa khen thưởng thất bại');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Error handled by UI message
-      message.error(error.message || 'Có lỗi xảy ra khi xóa khen thưởng');
+      message.error(getApiErrorMessage(error, 'Có lỗi xảy ra khi xóa khen thưởng'));
     } finally {
       setDeletingId(null);
     }
@@ -240,7 +255,7 @@ export default function AdminAwardsPage() {
     const topicFilter = debouncedFilters.de_tai.trim().toLowerCase();
     const doiTuongFilter = debouncedFilters.doi_tuong.trim();
 
-    return awards.filter((record: any) => {
+    return awards.filter((record: AwardTableRow) => {
       if (yearFilter && String(record.nam) !== yearFilter) return false;
 
       // Name / unit search
@@ -280,13 +295,13 @@ export default function AdminAwardsPage() {
       if (danhHieuFilter) {
         if (['annual', 'unit', 'hccsvv', 'contribution'].includes(activeTab)) {
           if (activeTab === 'annual') {
-            const nhanBKBQP = (record as any)?.nhan_bkbqp;
-            const nhanCSTDTQ = (record as any)?.nhan_cstdtq;
-            const nhanBKTTCP = (record as any)?.nhan_bkttcp;
+            const nhanBKBQP = record.nhan_bkbqp;
+            const nhanCSTDTQ = record.nhan_cstdtq;
+            const nhanBKTTCP = record.nhan_bkttcp;
 
-            const hasBKBQPFlag = nhanBKBQP === true || nhanBKBQP === 'true' || nhanBKBQP === 1;
-            const hasCSTDTQFlag = nhanCSTDTQ === true || nhanCSTDTQ === 'true' || nhanCSTDTQ === 1;
-            const hasBKTTCPFlag = nhanBKTTCP === true || nhanBKTTCP === 'true' || nhanBKTTCP === 1;
+            const hasBKBQPFlag = Boolean(nhanBKBQP);
+            const hasCSTDTQFlag = Boolean(nhanCSTDTQ);
+            const hasBKTTCPFlag = Boolean(nhanBKTTCP);
 
             const isBKBQP = danhHieuFilter === 'BKBQP' && hasBKBQPFlag;
             const isCSTDTQ = danhHieuFilter === 'CSTDTQ' && hasCSTDTQFlag;
@@ -311,7 +326,7 @@ export default function AdminAwardsPage() {
     });
   }, [awards, debouncedFilters, activeTab]);
 
-  const columns: TableColumnsType<Award> = [
+  const columns: TableColumnsType<AwardTableRow> = [
     {
       title: 'STT',
       key: 'index',

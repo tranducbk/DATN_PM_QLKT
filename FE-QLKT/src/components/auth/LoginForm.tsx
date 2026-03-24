@@ -5,6 +5,7 @@ import { Form, Input, Button, Alert } from 'antd';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
+import { getApiErrorMessage } from '@/lib/apiError';
 import { useAuth } from '@/contexts/AuthContext';
 import Image from 'next/image';
 import './login-form.css';
@@ -55,11 +56,9 @@ export function LoginForm() {
         setLoading(false);
         return;
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       const errorMessage =
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
-        err?.message ||
+        getApiErrorMessage(err) ||
         'Đăng nhập thất bại. Vui lòng kiểm tra lại tài khoản và mật khẩu.';
       setError(errorMessage);
       setLoading(false);

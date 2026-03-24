@@ -26,7 +26,9 @@ import {
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import Link from 'next/link';
+import { isAxiosError } from 'axios';
 import axiosInstance from '@/utils/axiosInstance';
+import { getApiErrorMessage } from '@/lib/apiError';
 import dayjs from 'dayjs';
 import ProposalDetailModal from './components/ProposalDetailModal';
 import RejectModal from './components/RejectModal';
@@ -98,7 +100,7 @@ export default function AdminProposalsPage() {
       if (response.data.success) {
         setProposals(response.data.data || []);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Error handled by UI message
       message.error('Lỗi khi tải danh sách đề xuất');
     } finally {
@@ -434,7 +436,11 @@ export default function AdminProposalsPage() {
         {/* Tabs */}
         <Tabs
           activeKey={activeTab}
-          onChange={key => setActiveTab(key as any)}
+          onChange={key => {
+            if (key === 'PENDING' || key === 'APPROVED' || key === 'REJECTED') {
+              setActiveTab(key);
+            }
+          }}
           items={tabItems}
           style={{ marginBottom: 16 }}
         />
@@ -550,15 +556,14 @@ export default function AdminProposalsPage() {
             setSelectedRowKeys([]);
             setSelectedDecision(null);
             fetchProposals();
-          } catch (error: any) {
-            // Error handled by UI message
-            if (error.response?.status === 404) {
+          } catch (error: unknown) {
+            if (isAxiosError(error) && error.response?.status === 404) {
               message.warning(
                 'API endpoint chưa được tạo. Quyết định đã được lưu nhưng chưa gắn vào đề xuất.'
               );
             } else {
               message.error(
-                error.response?.data?.message || 'Lỗi khi upload quyết định cho đề xuất'
+                getApiErrorMessage(error, 'Lỗi khi upload quyết định cho đề xuất')
               );
             }
           }

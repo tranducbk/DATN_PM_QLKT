@@ -193,7 +193,7 @@ export default function UserProfilePage() {
         if (commRes.success) {
           setCommemorationMedals(commRes.data);
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         // Error handled by UI message
         message.error('Không thể tải dữ liệu hồ sơ');
       } finally {

@@ -1,4 +1,5 @@
 import axiosInstance from '@/utils/axiosInstance';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 type ApiResponse<T = any> = { success: boolean; data?: T; message?: string };
 
@@ -11,8 +12,8 @@ export async function getAnnualProfile(personnelId: string, year?: number): Prom
 
     const res = await axiosInstance.get(url);
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -22,8 +23,8 @@ export async function getTenureProfile(personnelId: string): Promise<ApiResponse
     const url = `/api/profiles/tenure/${personnelId}`;
     const res = await axiosInstance.get(url);
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -33,8 +34,8 @@ export async function getContributionProfile(personnelId: string): Promise<ApiRe
     const url = `/api/profiles/contribution/${personnelId}`;
     const res = await axiosInstance.get(url);
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -50,8 +51,8 @@ export async function recalculateProfile(personnelId: string, year?: number): Pr
       : `/api/profiles/recalculate/${personnelId}`;
     const res = await axiosInstance.post(url);
     return { success: true, data: res.data?.data || res.data, message: res.data?.message };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -59,8 +60,8 @@ export async function recalculateAllProfiles(): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.post('/api/profiles/recalculate-all');
     return { success: true, data: res.data?.data || res.data, message: res.data?.message };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -68,19 +69,19 @@ export async function getAllServiceProfiles(): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get('/api/profiles/service');
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
 export async function updateServiceProfile(
   personnelId: string,
-  updates: any
+  updates: Record<string, unknown>
 ): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.put(`/api/profiles/service/${personnelId}`, updates);
     return { success: true, data: res.data?.data || res.data, message: res.data?.message };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }

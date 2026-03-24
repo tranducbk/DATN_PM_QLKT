@@ -24,6 +24,7 @@ import {
 import { personnelFormSchema } from '@/lib/schemas';
 import { apiClient } from '@/lib/api-client';
 import { useToast } from '@/hooks/use-toast';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 type PersonnelFormValues = z.infer<typeof personnelFormSchema>;
 
@@ -96,12 +97,9 @@ export function PersonnelForm({
           });
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMessage =
-        error?.response?.data?.message ||
-        error?.response?.data?.error ||
-        error?.message ||
-        'Có lỗi xảy ra';
+        getApiErrorMessage(error, 'Có lỗi xảy ra');
 
       toast({
         title: 'Lỗi',

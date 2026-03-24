@@ -247,7 +247,7 @@ export default function BulkRewardDetailsPage() {
       } else {
         message.error(result.message || 'Có lỗi xảy ra');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       message.error('Có lỗi xảy ra khi thêm danh hiệu');
     } finally {
       setLoading(false);

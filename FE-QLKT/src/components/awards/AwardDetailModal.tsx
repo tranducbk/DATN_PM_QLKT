@@ -14,7 +14,7 @@ import { formatDate, formatDateTime } from '@/lib/utils';
 
 const { Text, Title } = Typography;
 
-type AwardType =
+export type AwardType =
   | 'annual'
   | 'unit'
   | 'hccsvv'

@@ -6,6 +6,7 @@ import { EditOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import axiosInstance from '@/utils/axiosInstance';
 import { formatDate } from '@/lib/utils';
+import type { DateInput } from '@/lib/types';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
 
 const { Text } = Typography;
@@ -16,8 +17,8 @@ interface Personnel {
   cccd: string;
   ngay_sinh?: string | null;
   gioi_tinh?: string | null;
-  ngay_nhap_ngu?: string | Date | null;
-  ngay_xuat_ngu?: string | Date | null;
+  ngay_nhap_ngu?: DateInput;
+  ngay_xuat_ngu?: DateInput;
   ChucVu?: {
     id: string;
     ten_chuc_vu: string;
@@ -108,8 +109,8 @@ export default function Step3SetTitlesKNCVSNXD({
   };
 
   const calculateTotalMonths = (
-    ngayNhapNgu: string | Date | null | undefined,
-    ngayXuatNgu: string | Date | null | undefined
+    ngayNhapNgu: DateInput,
+    ngayXuatNgu: DateInput
   ) => {
     if (!ngayNhapNgu) return null;
 

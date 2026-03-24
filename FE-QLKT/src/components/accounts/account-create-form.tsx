@@ -28,6 +28,7 @@ import { apiClient } from '@/lib/api-client';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { message } from 'antd';
 import { useAuth } from '@/contexts/AuthContext';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 type AccountCreateValues = z.infer<typeof accountCreateSchema>;
 
@@ -243,13 +244,10 @@ export function AccountCreateForm() {
         // Error handled by UI message below
         message.error(response.message || 'Có lỗi xảy ra khi tạo tài khoản');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Hiển thị lỗi nếu có exception
       const errorMessage =
-        error?.response?.data?.message ||
-        error?.response?.data?.error ||
-        error?.message ||
-        'Có lỗi xảy ra khi tạo tài khoản';
+        getApiErrorMessage(error, 'Có lỗi xảy ra khi tạo tài khoản');
 
       message.error(errorMessage);
     } finally {

@@ -153,7 +153,7 @@ export default function Step3SetTitlesNCKH({
       } else {
         setAnnualProfile(null);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Error handled by UI
       setAnnualProfile(null);
     } finally {
@@ -173,7 +173,7 @@ export default function Step3SetTitlesNCKH({
       } else {
         setScientificAchievements([]);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Error handled by UI
       setScientificAchievements([]);
     } finally {

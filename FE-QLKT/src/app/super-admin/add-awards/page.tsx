@@ -17,6 +17,8 @@ import {
   Table,
   Input,
 } from 'antd';
+import { getApiErrorMessage } from '@/lib/apiError';
+
 import {
   HomeOutlined,
   TrophyOutlined,
@@ -35,6 +37,7 @@ import { getDanhHieuName } from '@/constants/danhHieu.constants';
 import Step2SelectPersonnelNienHan from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelNienHan';
 import Step3SetTitlesNienHan from '@/app/admin/awards/bulk/create/components/Step3SetTitlesNienHan';
 import DecisionModal from '@/components/DecisionModal';
+import type { DateInput } from '@/lib/types';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -42,8 +45,8 @@ interface Personnel {
   id: string;
   ho_ten: string;
   cccd: string;
-  ngay_nhap_ngu?: string | Date | null;
-  ngay_xuat_ngu?: string | Date | null;
+  ngay_nhap_ngu?: DateInput;
+  ngay_xuat_ngu?: DateInput;
   ChucVu?: {
     id: string;
     ten_chuc_vu: string;
@@ -236,8 +239,8 @@ export default function SuperAdminAddAwardsPage() {
       } else {
         throw new Error(result.message || 'Thêm khen thưởng thất bại');
       }
-    } catch (error: any) {
-      antMessage.error(error.message || 'Lỗi khi thêm khen thưởng');
+    } catch (error: unknown) {
+      antMessage.error(getApiErrorMessage(error, 'Lỗi khi thêm khen thưởng'));
     } finally {
       setLoading(false);
     }

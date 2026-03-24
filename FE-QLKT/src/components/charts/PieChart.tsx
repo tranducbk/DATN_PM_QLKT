@@ -1,6 +1,7 @@
 'use client';
 
 import { Pie } from 'react-chartjs-2';
+import type { ChartOptions } from 'chart.js';
 import { Card } from 'antd';
 import { useTheme } from '@/components/theme-provider';
 
@@ -44,7 +45,7 @@ export function PieChart({
     ],
   };
 
-  const options = {
+  const options: ChartOptions<'pie'> = {
     responsive: true,
     maintainAspectRatio: false,
     animation: {
@@ -75,9 +76,6 @@ export function PieChart({
             size: 12,
           },
         },
-        animation: {
-          animate: true,
-        },
       },
       title: {
         display: true,
@@ -93,9 +91,6 @@ export function PieChart({
       },
       tooltip: {
         enabled: true,
-        animation: {
-          animate: true,
-        },
       },
     },
   };
@@ -103,7 +98,7 @@ export function PieChart({
   return (
     <Card>
       <div style={{ height: `${height}px` }}>
-        <Pie data={chartData} options={options as any} />
+        <Pie data={chartData} options={options} />
       </div>
     </Card>
   );

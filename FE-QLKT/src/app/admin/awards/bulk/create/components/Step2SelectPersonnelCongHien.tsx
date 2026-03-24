@@ -15,6 +15,7 @@ import {
 import { SearchOutlined, TeamOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import axiosInstance from '@/utils/axiosInstance';
+import { getApiErrorMessage } from '@/lib/apiError';
 import { formatDate } from '@/lib/utils';
 import { apiClient } from '@/lib/api-client';
 import ExcelImportSection from './ExcelImportSection';
@@ -122,7 +123,7 @@ export default function Step2SelectPersonnelCongHien({
         const personnelData = response.data.data?.personnel || response.data.data || [];
         setPersonnel(personnelData);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Error handled by UI
     } finally {
       setLoading(false);
@@ -189,7 +190,7 @@ export default function Step2SelectPersonnelCongHien({
       if (response.data.success) {
         setIneligiblePersonnel(response.data.data.ineligiblePersonnel || []);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Error handled by UI
       message.error('Không thể kiểm tra tính đủ điều kiện nhận khen thưởng');
     } finally {
@@ -600,8 +601,8 @@ export default function Step2SelectPersonnelCongHien({
                 );
               }
             }
-          } catch (error: any) {
-            reject(new Error(`Lỗi kiểm tra trùng lặp: ${error.message}`));
+          } catch (error: unknown) {
+            reject(new Error(`Lỗi kiểm tra trùng lặp: ${getApiErrorMessage(error)}`));
             return;
           }
 
@@ -612,8 +613,8 @@ export default function Step2SelectPersonnelCongHien({
             selectedPersonnelIds: uniquePersonnelIds,
             titleData,
           });
-        } catch (error: any) {
-          reject(new Error(`Lỗi xử lý file Excel: ${error.message}`));
+        } catch (error: unknown) {
+          reject(new Error(`Lỗi xử lý file Excel: ${getApiErrorMessage(error)}`));
         }
       };
 

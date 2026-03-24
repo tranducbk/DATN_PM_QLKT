@@ -34,6 +34,7 @@ import {
   InfoCircleOutlined,
 } from '@ant-design/icons';
 import { apiClient } from '@/lib/api-client';
+import { getApiErrorMessage } from '@/lib/apiError';
 import { calculateDuration, formatDate } from '@/lib/utils';
 import { useTheme } from '@/components/theme-provider';
 import dayjs from 'dayjs';
@@ -183,10 +184,11 @@ export default function PositionHistoryPage() {
 
       if (res.success) {
         // Xử lý warning nếu có
-        if ((res as any).warning) {
+        const positionWarning = res.warning;
+        if (positionWarning) {
           Modal.confirm({
             title: 'Cảnh báo',
-            content: (res as any).warning.message,
+            content: positionWarning.message,
             okText: 'Đồng ý',
             cancelText: 'Không',
             onOk: async () => {
@@ -194,7 +196,7 @@ export default function PositionHistoryPage() {
                 setSubmitting(true);
                 const newPayload = {
                   ...payload,
-                  ngay_ket_thuc: (res as any).warning.suggestedEndDate,
+                  ngay_ket_thuc: positionWarning.suggestedEndDate,
                 };
                 const updateRes = await apiClient.updatePositionHistory(
                   editingHistory.id,
@@ -208,8 +210,8 @@ export default function PositionHistoryPage() {
                   message.error(updateRes.message || 'Có lỗi xảy ra');
                   // Không đóng modal khi có lỗi
                 }
-              } catch (error: any) {
-                message.error(error?.response?.data?.message || error?.message || 'Có lỗi xảy ra');
+              } catch (error: unknown) {
+                message.error(getApiErrorMessage(error) || 'Có lỗi xảy ra');
                 // Không đóng modal khi có lỗi
               } finally {
                 setSubmitting(false);
@@ -236,9 +238,9 @@ export default function PositionHistoryPage() {
         message.error(res.message || 'Có lỗi xảy ra');
         // Không gọi handleCloseDialog() - modal vẫn mở
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Có lỗi - hiển thị lỗi chi tiết và không đóng modal
-      const errorMessage = error?.response?.data?.message || error?.message || 'Có lỗi xảy ra';
+      const errorMessage = getApiErrorMessage(error) || 'Có lỗi xảy ra';
       message.error(errorMessage);
       // Không gọi handleCloseDialog() - modal vẫn mở
     } finally {

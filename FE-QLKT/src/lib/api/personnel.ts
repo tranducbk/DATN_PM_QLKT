@@ -1,18 +1,29 @@
 import axiosInstance from '@/utils/axiosInstance';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 type ApiResponse<T = any> = { success: boolean; data?: T; message?: string };
+
+/** Phản hồi cập nhật/tạo lịch sử chức vụ — backend có thể kèm cảnh báo ngày kết thúc */
+export type PositionHistoryWarning = {
+  message: string;
+  suggestedEndDate?: string | null;
+};
+
+export type PositionHistoryMutationResponse = ApiResponse & {
+  warning?: PositionHistoryWarning;
+};
 
 export async function getPersonnel(params?: {
   page?: number;
   limit?: number;
   search?: string;
-  unit_id?: number;
+  unit_id?: string;
 }): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get('/api/personnel', { params });
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -20,26 +31,26 @@ export async function getPersonnelById(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get(`/api/personnel/${id}`);
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
-export async function createPersonnel(body: any): Promise<ApiResponse> {
+export async function createPersonnel(body: Record<string, unknown>): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.post('/api/personnel', body);
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
-export async function updatePersonnel(id: string, body: any): Promise<ApiResponse> {
+export async function updatePersonnel(id: string, body: Record<string, unknown>): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.put(`/api/personnel/${id}`, body);
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -47,8 +58,8 @@ export async function deletePersonnel(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete(`/api/personnel/${id}`);
     return { success: true, data: res.data?.data || res.data, message: res.data?.message };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -58,26 +69,40 @@ export async function getPositionHistory(personnelId: string): Promise<ApiRespon
     let url = `/api/personnel/${personnelId}/position-history`;
     const res = await axiosInstance.get(url);
     return { success: true, data: res.data?.data?.history || res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
-export async function createPositionHistory(personnelId: string, body: any): Promise<ApiResponse> {
+export async function createPositionHistory(
+  personnelId: string,
+  body: Record<string, unknown>
+): Promise<PositionHistoryMutationResponse> {
   try {
     const res = await axiosInstance.post(`/api/personnel/${personnelId}/position-history`, body);
-    return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+    return {
+      success: true,
+      data: res.data?.data || res.data,
+      warning: res.data?.warning,
+    };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
-export async function updatePositionHistory(id: string, body: any): Promise<ApiResponse> {
+export async function updatePositionHistory(
+  id: string,
+  body: Record<string, unknown>
+): Promise<PositionHistoryMutationResponse> {
   try {
     const res = await axiosInstance.put(`/api/position-history/${id}`, body);
-    return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+    return {
+      success: true,
+      data: res.data?.data || res.data,
+      warning: res.data?.warning,
+    };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -85,8 +110,8 @@ export async function deletePositionHistory(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete(`/api/position-history/${id}`);
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -97,8 +122,8 @@ export async function exportPersonnel(): Promise<Blob> {
       responseType: 'blob',
     });
     return res.data;
-  } catch (e: any) {
-    throw new Error(e?.response?.data?.message || e.message);
+  } catch (e: unknown) {
+    throw new Error(getApiErrorMessage(e));
   }
 }
 
@@ -108,8 +133,8 @@ export async function exportPersonnelSample(): Promise<Blob> {
       responseType: 'blob',
     });
     return res.data;
-  } catch (e: any) {
-    throw new Error(e?.response?.data?.message || e.message);
+  } catch (e: unknown) {
+    throw new Error(getApiErrorMessage(e));
   }
 }
 
@@ -123,7 +148,7 @@ export async function importPersonnel(file: File): Promise<ApiResponse> {
       },
     });
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }

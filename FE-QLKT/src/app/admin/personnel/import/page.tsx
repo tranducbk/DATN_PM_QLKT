@@ -14,6 +14,8 @@ import {
   Row,
   Col,
 } from 'antd';
+import { getApiErrorMessage } from '@/lib/apiError';
+
 import {
   UploadOutlined,
   FileExcelOutlined,
@@ -68,8 +70,8 @@ export default function PersonnelImportPage() {
       } else {
         message.error(result.message || 'Có lỗi xảy ra khi import dữ liệu');
       }
-    } catch (error: any) {
-      message.error(error.message || 'Có lỗi xảy ra khi import dữ liệu');
+    } catch (error: unknown) {
+      message.error(getApiErrorMessage(error, 'Có lỗi xảy ra khi import dữ liệu'));
     } finally {
       setLoading(false);
     }
@@ -90,8 +92,8 @@ export default function PersonnelImportPage() {
       window.URL.revokeObjectURL(url);
 
       message.success('Tải file mẫu thành công');
-    } catch (error: any) {
-      message.error(error.message || 'Có lỗi xảy ra khi tải file mẫu');
+    } catch (error: unknown) {
+      message.error(getApiErrorMessage(error, 'Có lỗi xảy ra khi tải file mẫu'));
     } finally {
       setLoading(false);
     }

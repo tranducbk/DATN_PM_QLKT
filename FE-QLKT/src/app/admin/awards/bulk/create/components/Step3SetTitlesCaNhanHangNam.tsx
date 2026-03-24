@@ -305,7 +305,7 @@ export default function Step3SetTitlesCaNhanHangNam({
             );
             return; // Không cho phép chọn
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           // Error handled by UI
           // Không block nếu lỗi API, chỉ log
         }

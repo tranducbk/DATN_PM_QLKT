@@ -20,6 +20,8 @@ import {
   Row,
   Col,
 } from 'antd';
+import { getApiErrorMessage } from '@/lib/apiError';
+
 import {
   HomeOutlined,
   EyeOutlined,
@@ -91,7 +93,7 @@ export default function ManagerProposalsPage() {
       } else {
         message.error(response.message || 'Không thể tải danh sách đề xuất');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       message.error('Lỗi khi tải danh sách đề xuất');
       // Error handled by UI message
     } finally {
@@ -115,8 +117,8 @@ export default function ManagerProposalsPage() {
       window.URL.revokeObjectURL(url);
 
       message.success('Tải file thành công');
-    } catch (error: any) {
-      message.error(error.message || 'Lỗi khi tải file');
+    } catch (error: unknown) {
+      message.error(getApiErrorMessage(error, 'Lỗi khi tải file'));
       // Error handled by UI message
     } finally {
       setDownloadingId(null);
@@ -135,8 +137,8 @@ export default function ManagerProposalsPage() {
       } else {
         message.error(response.message || 'Lỗi khi xóa đề xuất');
       }
-    } catch (error: any) {
-      message.error(error.message || 'Lỗi khi xóa đề xuất');
+    } catch (error: unknown) {
+      message.error(getApiErrorMessage(error, 'Lỗi khi xóa đề xuất'));
       // Error handled by UI message
     } finally {
       setDeletingId(null);

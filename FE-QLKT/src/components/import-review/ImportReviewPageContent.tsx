@@ -26,6 +26,7 @@ import {
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { DANH_HIEU_MAP } from '@/constants/danhHieu.constants';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 const { Title, Text } = Typography;
 
@@ -161,10 +162,8 @@ export default function ImportReviewPageContent({ config }: { config: ImportRevi
       } else {
         message.error(result?.message ?? 'Import thất bại. Vui lòng thử lại.');
       }
-    } catch (error: any) {
-      const errMsg =
-        error?.response?.data?.message ?? error?.message ?? 'Import thất bại. Vui lòng thử lại.';
-      message.error(errMsg);
+    } catch (error: unknown) {
+      message.error(getApiErrorMessage(error, 'Import thất bại. Vui lòng thử lại.'));
     } finally {
       setConfirming(false);
     }

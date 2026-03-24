@@ -5,6 +5,7 @@ import { Table, Input, Select, Space, Alert, Typography, InputNumber, Divider } 
 import { SearchOutlined, TeamOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import axiosInstance from '@/utils/axiosInstance';
+import { getApiErrorMessage } from '@/lib/apiError';
 import { formatDate } from '@/lib/utils';
 import ExcelImportSection from './ExcelImportSection';
 import * as XLSX from 'xlsx';
@@ -89,7 +90,7 @@ export default function Step2SelectPersonnelCaNhanHangNam({
         const personnelData = response.data.data?.personnel || response.data.data || [];
         setPersonnel(personnelData);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Error handled by UI
     } finally {
       setLoading(false);
@@ -219,8 +220,8 @@ export default function Step2SelectPersonnelCaNhanHangNam({
             selectedPersonnelIds: uniquePersonnelIds,
             titleData,
           });
-        } catch (error: any) {
-          reject(new Error(`Lỗi xử lý file Excel: ${error.message}`));
+        } catch (error: unknown) {
+          reject(new Error(`Lỗi xử lý file Excel: ${getApiErrorMessage(error)}`));
         }
       };
 

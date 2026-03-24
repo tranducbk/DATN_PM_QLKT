@@ -870,7 +870,9 @@
     border-color: #374151 !important;
     border-radius: 8px !important;
     overflow: hidden !important;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.1),
+      0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
   }
 
   /* Fix white corners - target all container elements */
@@ -2206,7 +2208,9 @@ button[class*='bg-primary']:hover:not(:disabled) {
   background-color: white !important;
   border: 1px solid #e5e7eb !important;
   border-radius: 8px !important;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
   margin-top: -35px !important;
 }
 
@@ -2305,10 +2309,6 @@ button[class*='bg-primary']:hover:not(:disabled) {
   --tw-border-opacity: 1 !important;
 }
 
-.notification-dropdown .ant-dropdown-menu-item:hover {
-  /* Remove background override to allow notification item backgrounds to show */
-}
-
 /* Notification dropdown for dark mode - Force dark colors */
 .dark .notification-dropdown .ant-dropdown-menu,
 .dark .notification-dropdown .ant-dropdown-menu.ant-dropdown-menu-light,
@@ -2319,7 +2319,9 @@ button[class*='bg-primary']:hover:not(:disabled) {
   background: #1f2937 !important;
   border: 1px solid #374151 !important;
   border-color: #374151 !important;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2) !important;
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.3),
+    0 4px 6px -2px rgba(0, 0, 0, 0.2) !important;
   color: #f3f4f6 !important;
 }
 
@@ -2337,10 +2339,6 @@ button[class*='bg-primary']:hover:not(:disabled) {
 }
 
 /* Force dark mode colors for notification items - Override ALL light mode classes with high specificity */
-.dark .notification-dropdown .ant-dropdown-menu-item div {
-  /* Override bg-blue-50 in dark mode */
-}
-
 .dark .notification-dropdown .ant-dropdown-menu-item div.bg-blue-50,
 .dark
   .notification-dropdown

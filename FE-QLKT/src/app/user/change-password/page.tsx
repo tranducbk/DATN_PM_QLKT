@@ -15,6 +15,8 @@ import {
   theme as antdTheme,
   Divider,
 } from 'antd';
+import { getApiErrorMessage } from '@/lib/apiError';
+
 import {
   LockOutlined,
   SafetyOutlined,
@@ -52,9 +54,9 @@ export default function UserChangePasswordPage() {
       } else {
         message.error(result.message || 'Đổi mật khẩu thất bại');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Error handled by UI message
-      message.error(error.message || 'Có lỗi xảy ra khi đổi mật khẩu');
+      message.error(getApiErrorMessage(error, 'Có lỗi xảy ra khi đổi mật khẩu'));
     } finally {
       setLoading(false);
     }

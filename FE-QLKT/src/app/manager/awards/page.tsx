@@ -15,6 +15,8 @@ import {
   message,
   Tabs,
 } from 'antd';
+import { getApiErrorMessage } from '@/lib/apiError';
+
 import type { TableColumnsType } from 'antd';
 import { FilterOutlined, HomeOutlined, DownloadOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/api-client';
@@ -26,7 +28,7 @@ import {
   getLoaiKhenThuong,
 } from '@/utils/awardsHelpers';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
-import AwardDetailModal from '@/components/awards/AwardDetailModal';
+import AwardDetailModal, { type AwardType } from '@/components/awards/AwardDetailModal';
 import { formatDate } from '@/lib/utils';
 
 const { Title, Paragraph, Text } = Typography;
@@ -56,7 +58,7 @@ interface Award {
 }
 
 export default function AdminAwardsPage() {
-  const [activeTab, setActiveTab] = useState('annual');
+  const [activeTab, setActiveTab] = useState<AwardType>('annual');
   const [awards, setAwards] = useState<Award[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
@@ -320,13 +322,13 @@ export default function AdminAwardsPage() {
         });
         message.error(result.message || 'Import thất bại');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Error handled by UI message
       setImportResult({
         type: 'error',
-        message: error.message || 'Có lỗi xảy ra khi import file',
+        message: getApiErrorMessage(error, 'Có lỗi xảy ra khi import file'),
       });
-      message.error(error.message || 'Có lỗi xảy ra khi import file');
+      message.error(getApiErrorMessage(error, 'Có lỗi xảy ra khi import file'));
     } finally {
       setImporting(false);
       // Reset file input
@@ -703,12 +705,12 @@ export default function AdminAwardsPage() {
         open={detailModalVisible}
         onClose={handleCloseDetail}
         award={selectedAward}
-        awardType={activeTab as any}
+        awardType={activeTab}
       />
 
       <Tabs
         activeKey={activeTab}
-        onChange={setActiveTab}
+        onChange={key => setActiveTab(key as AwardType)}
         size="large"
         items={[
           {

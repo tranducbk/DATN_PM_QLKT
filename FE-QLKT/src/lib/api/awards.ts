@@ -1,4 +1,5 @@
 import axiosInstance from '@/utils/axiosInstance';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 type ApiResponse<T = any> = { success: boolean; data?: T; message?: string };
 
@@ -12,8 +13,8 @@ export async function getAnnualRewards(params?: {
   try {
     const res = await axiosInstance.get('/api/annual-rewards', { params });
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -21,14 +22,14 @@ export async function getAnnualRewardsByPersonnel(personnelId: string): Promise<
   try {
     const res = await axiosInstance.get(`/api/personnel/${personnelId}/annual-rewards`);
     return { success: true, data: res.data?.data?.rewards || res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
 export async function getAnnualRewardsTemplate(personnelIds?: number[]): Promise<Blob> {
   try {
-    const params: any = {};
+    const params: Record<string, string> = {};
     if (personnelIds && personnelIds.length > 0) {
       params.personnel_ids = personnelIds.join(',');
     }
@@ -37,8 +38,8 @@ export async function getAnnualRewardsTemplate(personnelIds?: number[]): Promise
       responseType: 'blob',
     });
     return res.data;
-  } catch (e: any) {
-    throw new Error(e?.response?.data?.message || e.message);
+  } catch (e: unknown) {
+    throw new Error(getApiErrorMessage(e));
   }
 }
 
@@ -52,8 +53,8 @@ export async function importAnnualRewards(file: File): Promise<ApiResponse> {
       },
     });
     return { success: true, data: res.data?.data || res.data, message: res.data?.message };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -67,26 +68,29 @@ export async function exportAnnualRewards(params?: {
       responseType: 'blob',
     });
     return res.data;
-  } catch (e: any) {
-    throw new Error(e?.response?.data?.message || e.message);
+  } catch (e: unknown) {
+    throw new Error(getApiErrorMessage(e));
   }
 }
 
-export async function createAnnualReward(personnelId: string, body: any): Promise<ApiResponse> {
+export async function createAnnualReward(
+  personnelId: string,
+  body: Record<string, unknown>
+): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.post(`/api/personnel/${personnelId}/annual-rewards`, body);
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
-export async function updateAnnualReward(id: string, body: any): Promise<ApiResponse> {
+export async function updateAnnualReward(id: string, body: Record<string, unknown>): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.put(`/api/annual-rewards/${id}`, body);
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -94,8 +98,8 @@ export async function deleteAnnualReward(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete(`/api/annual-rewards/${id}`);
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -107,8 +111,8 @@ export async function checkAnnualRewards(body: {
   try {
     const res = await axiosInstance.post('/api/annual-rewards/check', body);
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -159,7 +163,7 @@ export async function bulkCreateAnnualRewards(body: {
     }
 
     // Nếu không có file, gửi dưới dạng JSON
-    const jsonBody: any = {
+    const jsonBody: Record<string, unknown> = {
       personnel_ids: body.personnel_ids,
       nam: body.nam,
       danh_hieu: body.danh_hieu,
@@ -174,8 +178,8 @@ export async function bulkCreateAnnualRewards(body: {
 
     const res = await axiosInstance.post('/api/annual-rewards/bulk', jsonBody);
     return { success: true, data: res.data?.data || res.data, message: res.data?.message };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -186,8 +190,8 @@ export async function getPersonnelScientificAchievements(
   try {
     const res = await axiosInstance.get(`/api/personnel/${personnelId}/scientific-achievements`);
     return { success: true, data: res.data?.data?.achievements || res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -200,14 +204,14 @@ export async function getScientificAchievements(params?: {
   try {
     const res = await axiosInstance.get('/api/scientific-achievements', { params });
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
 export async function createScientificAchievement(
   personnelId: string,
-  body: any
+  body: Record<string, unknown>
 ): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.post(
@@ -215,17 +219,20 @@ export async function createScientificAchievement(
       body
     );
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
-export async function updateScientificAchievement(id: string, body: any): Promise<ApiResponse> {
+export async function updateScientificAchievement(
+  id: string,
+  body: Record<string, unknown>
+): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.put(`/api/scientific-achievements/${id}`, body);
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -233,8 +240,8 @@ export async function deleteScientificAchievement(id: string): Promise<ApiRespon
   try {
     const res = await axiosInstance.delete(`/api/scientific-achievements/${id}`);
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -248,8 +255,8 @@ export async function exportScientificAchievements(params?: {
       responseType: 'blob',
     });
     return res.data;
-  } catch (e: any) {
-    throw new Error(e?.response?.data?.message || e.message);
+  } catch (e: unknown) {
+    throw new Error(getApiErrorMessage(e));
   }
 }
 
@@ -259,8 +266,8 @@ export async function getScientificAchievementsTemplate(): Promise<Blob> {
       responseType: 'blob',
     });
     return res.data;
-  } catch (e: any) {
-    throw new Error(e?.response?.data?.message || e.message);
+  } catch (e: unknown) {
+    throw new Error(getApiErrorMessage(e));
   }
 }
 
@@ -274,8 +281,8 @@ export async function importScientificAchievements(file: File): Promise<ApiRespo
       },
     });
     return { success: true, data: res.data?.data || res.data, message: res.data?.message };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -290,8 +297,8 @@ export async function getAwards(params?: {
   try {
     const res = await axiosInstance.get('/api/awards', { params });
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -301,8 +308,8 @@ export async function getAwardsTemplate(): Promise<Blob> {
       responseType: 'blob',
     });
     return res.data;
-  } catch (e: any) {
-    throw new Error(e?.response?.data?.message || e.message);
+  } catch (e: unknown) {
+    throw new Error(getApiErrorMessage(e));
   }
 }
 
@@ -316,8 +323,8 @@ export async function importAwards(file: File): Promise<ApiResponse> {
       },
     });
     return { success: true, data: res.data?.data || res.data, message: res.data?.message };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -332,8 +339,8 @@ export async function exportAwards(params?: {
       responseType: 'blob',
     });
     return res.data;
-  } catch (e: any) {
-    throw new Error(e?.response?.data?.message || e.message);
+  } catch (e: unknown) {
+    throw new Error(getApiErrorMessage(e));
   }
 }
 
@@ -344,8 +351,8 @@ export async function getHCCSVVTemplate(): Promise<Blob> {
       responseType: 'blob',
     });
     return res.data;
-  } catch (e: any) {
-    throw new Error(e?.response?.data?.message || e.message);
+  } catch (e: unknown) {
+    throw new Error(getApiErrorMessage(e));
   }
 }
 
@@ -359,8 +366,8 @@ export async function importHCCSVV(file: File): Promise<ApiResponse> {
       },
     });
     return { success: true, data: res.data?.data || res.data, message: res.data?.message };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -374,8 +381,8 @@ export async function getHCCSVV(params?: {
   try {
     const res = await axiosInstance.get('/api/hccsvv', { params });
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -390,8 +397,8 @@ export async function exportHCCSVV(params?: {
       responseType: 'blob',
     });
     return res.data;
-  } catch (e: any) {
-    throw new Error(e?.response?.data?.message || e.message);
+  } catch (e: unknown) {
+    throw new Error(getApiErrorMessage(e));
   }
 }
 
@@ -402,8 +409,8 @@ export async function getHCCSVVStatistics(params?: {
   try {
     const res = await axiosInstance.get('/api/hccsvv/statistics', { params });
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -411,8 +418,8 @@ export async function deleteHCCSVV(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete(`/api/hccsvv/${id}`);
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -428,8 +435,8 @@ export async function createHCCSVVDirect(body: {
   try {
     const res = await axiosInstance.post('/api/hccsvv', body);
     return { success: true, data: res.data?.data || res.data, message: res.data?.message };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -440,8 +447,8 @@ export async function getContributionAwardsTemplate(): Promise<Blob> {
       responseType: 'blob',
     });
     return res.data;
-  } catch (e: any) {
-    throw new Error(e?.response?.data?.message || e.message);
+  } catch (e: unknown) {
+    throw new Error(getApiErrorMessage(e));
   }
 }
 
@@ -455,8 +462,8 @@ export async function importContributionAwards(file: File): Promise<ApiResponse>
       },
     });
     return { success: true, data: res.data?.data || res.data, message: res.data?.message };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -470,8 +477,8 @@ export async function getContributionAwards(params?: {
   try {
     const res = await axiosInstance.get('/api/contribution-awards', { params });
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -486,8 +493,8 @@ export async function exportContributionAwards(params?: {
       responseType: 'blob',
     });
     return res.data;
-  } catch (e: any) {
-    throw new Error(e?.response?.data?.message || e.message);
+  } catch (e: unknown) {
+    throw new Error(getApiErrorMessage(e));
   }
 }
 
@@ -498,8 +505,8 @@ export async function getContributionAwardsStatistics(params?: {
   try {
     const res = await axiosInstance.get('/api/contribution-awards/statistics', { params });
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -507,8 +514,8 @@ export async function deleteContributionAward(id: string): Promise<ApiResponse> 
   try {
     const res = await axiosInstance.delete(`/api/contribution-awards/${id}`);
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -519,8 +526,8 @@ export async function getCommemorationMedalsTemplate(): Promise<Blob> {
       responseType: 'blob',
     });
     return res.data;
-  } catch (e: any) {
-    throw new Error(e?.response?.data?.message || e.message);
+  } catch (e: unknown) {
+    throw new Error(getApiErrorMessage(e));
   }
 }
 
@@ -534,8 +541,8 @@ export async function importCommemorationMedals(file: File): Promise<ApiResponse
       },
     });
     return { success: true, data: res.data?.data || res.data, message: res.data?.message };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -548,8 +555,8 @@ export async function getCommemorationMedals(params?: {
   try {
     const res = await axiosInstance.get('/api/commemorative-medals', { params });
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -563,8 +570,8 @@ export async function exportCommemorationMedals(params?: {
       responseType: 'blob',
     });
     return res.data;
-  } catch (e: any) {
-    throw new Error(e?.response?.data?.message || e.message);
+  } catch (e: unknown) {
+    throw new Error(getApiErrorMessage(e));
   }
 }
 
@@ -575,8 +582,8 @@ export async function getCommemorationMedalsStatistics(params?: {
   try {
     const res = await axiosInstance.get('/api/commemorative-medals/statistics', { params });
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -584,8 +591,8 @@ export async function deleteCommemorationMedal(id: string): Promise<ApiResponse>
   try {
     const res = await axiosInstance.delete(`/api/commemorative-medals/${id}`);
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -596,8 +603,8 @@ export async function getMilitaryFlagTemplate(): Promise<Blob> {
       responseType: 'blob',
     });
     return res.data;
-  } catch (e: any) {
-    throw new Error(e?.response?.data?.message || e.message);
+  } catch (e: unknown) {
+    throw new Error(getApiErrorMessage(e));
   }
 }
 
@@ -611,8 +618,8 @@ export async function importMilitaryFlag(file: File): Promise<ApiResponse> {
       },
     });
     return { success: true, data: res.data?.data || res.data, message: res.data?.message };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -625,8 +632,8 @@ export async function getMilitaryFlag(params?: {
   try {
     const res = await axiosInstance.get('/api/military-flag', { params });
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -640,8 +647,8 @@ export async function exportMilitaryFlag(params?: {
       responseType: 'blob',
     });
     return res.data;
-  } catch (e: any) {
-    throw new Error(e?.response?.data?.message || e.message);
+  } catch (e: unknown) {
+    throw new Error(getApiErrorMessage(e));
   }
 }
 
@@ -652,8 +659,8 @@ export async function getMilitaryFlagStatistics(params?: {
   try {
     const res = await axiosInstance.get('/api/military-flag/statistics', { params });
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -661,8 +668,8 @@ export async function deleteMilitaryFlag(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete(`/api/military-flag/${id}`);
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -670,8 +677,8 @@ export async function getMilitaryFlagByPersonnel(personnelId: string): Promise<A
   try {
     const res = await axiosInstance.get(`/api/military-flag/personnel/${personnelId}`);
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -679,8 +686,8 @@ export async function getCommemorationMedalsByPersonnel(personnelId: string): Pr
   try {
     const res = await axiosInstance.get(`/api/commemorative-medals/personnel/${personnelId}`);
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -694,8 +701,8 @@ export async function getUnitAnnualAwards(params?: {
   try {
     const res = await axiosInstance.get('/api/awards/units/annual', { params });
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -704,15 +711,15 @@ export async function getUnitAnnualAwardsByUnit(
   year?: number
 ): Promise<ApiResponse> {
   try {
-    const params: any = { don_vi_id: donViId, limit: 1000 };
+    const params: Record<string, string | number> = { don_vi_id: donViId, limit: 1000 };
     if (year) params.year = year;
     const res = await axiosInstance.get('/api/awards/units/annual/history', { params });
     return {
       success: true,
       data: res.data?.data || res.data || [],
     };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -722,8 +729,8 @@ export async function getUnitAnnualAwardsTemplate(): Promise<Blob> {
       responseType: 'blob',
     });
     return res.data;
-  } catch (e: any) {
-    throw new Error(e?.response?.data?.message || e.message);
+  } catch (e: unknown) {
+    throw new Error(getApiErrorMessage(e));
   }
 }
 
@@ -737,8 +744,8 @@ export async function importUnitAnnualAwards(file: File): Promise<ApiResponse> {
       },
     });
     return { success: true, data: res.data?.data || res.data, message: res.data?.message };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -752,8 +759,8 @@ export async function exportUnitAnnualAwards(params?: {
       responseType: 'blob',
     });
     return res.data;
-  } catch (e: any) {
-    throw new Error(e?.response?.data?.message || e.message);
+  } catch (e: unknown) {
+    throw new Error(getApiErrorMessage(e));
   }
 }
 
@@ -761,8 +768,8 @@ export async function deleteUnitAnnualAward(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete(`/api/awards/units/annual/${id}`);
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -774,8 +781,8 @@ export async function getUnitAnnualProfile(donViId: string, year?: number): Prom
 
     const res = await axiosInstance.get(url);
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -791,8 +798,8 @@ export async function getAdhocAwards(params?: {
   try {
     const res = await axiosInstance.get('/api/adhoc-awards', { params });
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -800,8 +807,8 @@ export async function getAdhocAwardById(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get(`/api/adhoc-awards/${id}`);
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -811,8 +818,8 @@ export async function createAdhocAward(formData: FormData): Promise<ApiResponse>
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     return { success: true, data: res.data?.data || res.data, message: res.data?.message };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -822,8 +829,8 @@ export async function updateAdhocAward(id: string, formData: FormData): Promise<
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     return { success: true, data: res.data?.data || res.data, message: res.data?.message };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -831,8 +838,8 @@ export async function deleteAdhocAward(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete(`/api/adhoc-awards/${id}`);
     return { success: true, data: res.data?.data || res.data, message: res.data?.message };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -840,8 +847,8 @@ export async function getAdhocAwardsByPersonnel(personnelId: string): Promise<Ap
   try {
     const res = await axiosInstance.get(`/api/adhoc-awards/personnel/${personnelId}`);
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -854,13 +861,13 @@ export async function getAdhocAwardsByUnit(
       params: { unitType },
     });
     return { success: true, data: res.data?.data || res.data };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
 // Annual Rewards Import Preview & Confirm
-export async function previewAnnualRewardsImport(file: File): Promise<any> {
+export async function previewAnnualRewardsImport(file: File): Promise<unknown> {
   const formData = new FormData();
   formData.append('file', file);
   const res = await axiosInstance.post('/api/annual-rewards/import/preview', formData, {
@@ -869,13 +876,15 @@ export async function previewAnnualRewardsImport(file: File): Promise<any> {
   return res.data;
 }
 
-export async function confirmAnnualRewardsImport(items: any[]): Promise<any> {
+export async function confirmAnnualRewardsImport(
+  items: Record<string, unknown>[]
+): Promise<unknown> {
   const res = await axiosInstance.post('/api/annual-rewards/import/confirm', { items });
   return res.data;
 }
 
 // Unit Annual Awards Import Preview & Confirm
-export async function previewUnitAnnualAwardsImport(file: File): Promise<any> {
+export async function previewUnitAnnualAwardsImport(file: File): Promise<unknown> {
   const formData = new FormData();
   formData.append('file', file);
   const res = await axiosInstance.post('/api/awards/units/annual/import/preview', formData, {
@@ -884,13 +893,15 @@ export async function previewUnitAnnualAwardsImport(file: File): Promise<any> {
   return res.data;
 }
 
-export async function confirmUnitAnnualAwardsImport(items: any[]): Promise<any> {
+export async function confirmUnitAnnualAwardsImport(
+  items: Record<string, unknown>[]
+): Promise<unknown> {
   const res = await axiosInstance.post('/api/awards/units/annual/import/confirm', { items });
   return res.data;
 }
 
 // HCCSVV Import Preview & Confirm
-export async function previewHCCSVVImport(file: File): Promise<any> {
+export async function previewHCCSVVImport(file: File): Promise<unknown> {
   const formData = new FormData();
   formData.append('file', file);
   const res = await axiosInstance.post('/api/hccsvv/import/preview', formData, {
@@ -898,13 +909,13 @@ export async function previewHCCSVVImport(file: File): Promise<any> {
   });
   return res.data;
 }
-export async function confirmHCCSVVImport(items: any[]): Promise<any> {
+export async function confirmHCCSVVImport(items: Record<string, unknown>[]): Promise<unknown> {
   const res = await axiosInstance.post('/api/hccsvv/import/confirm', { items });
   return res.data;
 }
 
 // HC QKQT (Military Flag) Import Preview & Confirm
-export async function previewMilitaryFlagImport(file: File): Promise<any> {
+export async function previewMilitaryFlagImport(file: File): Promise<unknown> {
   const formData = new FormData();
   formData.append('file', file);
   const res = await axiosInstance.post('/api/military-flag/import/preview', formData, {
@@ -912,13 +923,13 @@ export async function previewMilitaryFlagImport(file: File): Promise<any> {
   });
   return res.data;
 }
-export async function confirmMilitaryFlagImport(items: any[]): Promise<any> {
+export async function confirmMilitaryFlagImport(items: Record<string, unknown>[]): Promise<unknown> {
   const res = await axiosInstance.post('/api/military-flag/import/confirm', { items });
   return res.data;
 }
 
 // HCBVTQ (Contribution Awards) Import Preview & Confirm
-export async function previewContributionAwardsImport(file: File): Promise<any> {
+export async function previewContributionAwardsImport(file: File): Promise<unknown> {
   const formData = new FormData();
   formData.append('file', file);
   const res = await axiosInstance.post('/api/contribution-awards/import/preview', formData, {
@@ -926,13 +937,15 @@ export async function previewContributionAwardsImport(file: File): Promise<any> 
   });
   return res.data;
 }
-export async function confirmContributionAwardsImport(items: any[]): Promise<any> {
+export async function confirmContributionAwardsImport(
+  items: Record<string, unknown>[]
+): Promise<unknown> {
   const res = await axiosInstance.post('/api/contribution-awards/import/confirm', { items });
   return res.data;
 }
 
 // KNC VSNXD (Commemorative Medals) Import Preview & Confirm
-export async function previewCommemorationMedalsImport(file: File): Promise<any> {
+export async function previewCommemorationMedalsImport(file: File): Promise<unknown> {
   const formData = new FormData();
   formData.append('file', file);
   const res = await axiosInstance.post('/api/commemorative-medals/import/preview', formData, {
@@ -940,13 +953,15 @@ export async function previewCommemorationMedalsImport(file: File): Promise<any>
   });
   return res.data;
 }
-export async function confirmCommemorationMedalsImport(items: any[]): Promise<any> {
+export async function confirmCommemorationMedalsImport(
+  items: Record<string, unknown>[]
+): Promise<unknown> {
   const res = await axiosInstance.post('/api/commemorative-medals/import/confirm', { items });
   return res.data;
 }
 
 // Scientific Achievements (NCKH) Import Preview & Confirm
-export async function previewScientificAchievementsImport(file: File): Promise<any> {
+export async function previewScientificAchievementsImport(file: File): Promise<unknown> {
   const formData = new FormData();
   formData.append('file', file);
   const res = await axiosInstance.post('/api/scientific-achievements/import/preview', formData, {
@@ -954,7 +969,9 @@ export async function previewScientificAchievementsImport(file: File): Promise<a
   });
   return res.data;
 }
-export async function confirmScientificAchievementsImport(items: any[]): Promise<any> {
+export async function confirmScientificAchievementsImport(
+  items: Record<string, unknown>[]
+): Promise<unknown> {
   const res = await axiosInstance.post('/api/scientific-achievements/import/confirm', { items });
   return res.data;
 }
@@ -968,7 +985,7 @@ export async function bulkCreateAwards(formData: FormData): Promise<ApiResponse>
       },
     });
     return { success: true, data: res.data?.data || res.data, message: res.data?.message };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }

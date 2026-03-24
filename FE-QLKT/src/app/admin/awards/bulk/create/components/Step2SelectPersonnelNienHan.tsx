@@ -15,7 +15,9 @@ import {
 import { SearchOutlined, TeamOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import axiosInstance from '@/utils/axiosInstance';
+import { getApiErrorMessage } from '@/lib/apiError';
 import { formatDate } from '@/lib/utils';
+import type { DateInput } from '@/lib/types';
 import { apiClient } from '@/lib/api-client';
 import ExcelImportSection from './ExcelImportSection';
 import * as XLSX from 'xlsx';
@@ -32,8 +34,8 @@ interface Personnel {
   co_quan_don_vi_id: string;
   don_vi_truc_thuoc_id: string;
   chuc_vu_id: string;
-  ngay_nhap_ngu?: string | Date | null;
-  ngay_xuat_ngu?: string | Date | null;
+  ngay_nhap_ngu?: DateInput;
+  ngay_xuat_ngu?: DateInput;
   CoQuanDonVi?: {
     id: string;
     ten_don_vi: string;
@@ -110,7 +112,7 @@ export default function Step2SelectPersonnelNienHan({
           await fetchServiceProfiles(personnelData);
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Error handled by UI
     } finally {
       setLoading(false);
@@ -174,8 +176,8 @@ export default function Step2SelectPersonnelNienHan({
   });
 
   const calculateTotalMonths = (
-    ngayNhapNgu: string | Date | null | undefined,
-    ngayXuatNgu: string | Date | null | undefined
+    ngayNhapNgu: DateInput,
+    ngayXuatNgu: DateInput
   ) => {
     if (!ngayNhapNgu) return null;
 
@@ -707,8 +709,8 @@ export default function Step2SelectPersonnelNienHan({
                 );
               }
             }
-          } catch (error: any) {
-            reject(new Error(`Lỗi kiểm tra trùng lặp: ${error.message}`));
+          } catch (error: unknown) {
+            reject(new Error(`Lỗi kiểm tra trùng lặp: ${getApiErrorMessage(error)}`));
             return;
           }
 
@@ -719,8 +721,8 @@ export default function Step2SelectPersonnelNienHan({
             selectedPersonnelIds: uniquePersonnelIds,
             titleData,
           });
-        } catch (error: any) {
-          reject(new Error(`Lỗi xử lý file Excel: ${error.message}`));
+        } catch (error: unknown) {
+          reject(new Error(`Lỗi xử lý file Excel: ${getApiErrorMessage(error)}`));
         }
       };
 

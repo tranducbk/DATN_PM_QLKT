@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Modal, Form, Input, message, Alert } from 'antd';
 import { CloseCircleOutlined } from '@ant-design/icons';
 import axiosInstance from '@/utils/axiosInstance';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 const { TextArea } = Input;
 
@@ -45,8 +46,8 @@ export default function RejectModal({ visible, proposal, onClose, onSuccess }: R
       } else {
         throw new Error(response.data.message || 'Từ chối thất bại');
       }
-    } catch (error: any) {
-      message.error(error.message || 'Lỗi khi từ chối đề xuất');
+    } catch (error: unknown) {
+      message.error(getApiErrorMessage(error, 'Lỗi khi từ chối đề xuất'));
     } finally {
       setLoading(false);
     }

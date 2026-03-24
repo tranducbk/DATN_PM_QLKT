@@ -17,6 +17,8 @@ import {
   Alert,
   Spin,
 } from 'antd';
+import { getApiErrorMessage } from '@/lib/apiError';
+
 import { ArrowLeftOutlined, EditOutlined, ReloadOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -49,8 +51,8 @@ export default function AccountDetailPage() {
       } else {
         message.error(response.message || 'Lỗi khi lấy thông tin tài khoản');
       }
-    } catch (error: any) {
-      message.error(error.message || 'Lỗi khi lấy thông tin tài khoản');
+    } catch (error: unknown) {
+      message.error(getApiErrorMessage(error, 'Lỗi khi lấy thông tin tài khoản'));
     } finally {
       setLoading(false);
     }
@@ -65,8 +67,8 @@ export default function AccountDetailPage() {
       } else {
         message.error(res.message || 'Đặt lại mật khẩu thất bại');
       }
-    } catch (e: any) {
-      message.error(e.message || 'Đặt lại mật khẩu thất bại');
+    } catch (e: unknown) {
+      message.error(getApiErrorMessage(e, 'Đặt lại mật khẩu thất bại'));
     } finally {
       setResetting(false);
     }

@@ -6,6 +6,7 @@ import { DownloadOutlined, UploadOutlined, CloudUploadOutlined } from '@ant-desi
 
 import { useRouter } from 'next/navigation';
 import axiosInstance from '@/utils/axiosInstance';
+import { getApiErrorMessage } from '@/lib/apiError';
 import { useDevZoneFeature } from '@/contexts/DevZoneContext';
 
 interface ExcelImportSectionProps {
@@ -75,9 +76,8 @@ export default function ExcelImportSection({
       window.URL.revokeObjectURL(url);
 
       message.success('Tải file mẫu thành công');
-    } catch (error: any) {
-      const errorMsg = error.response?.data?.message || error.message || 'Tải file mẫu thất bại';
-      message.error(errorMsg);
+    } catch (error: unknown) {
+      message.error(getApiErrorMessage(error, 'Tải file mẫu thất bại'));
     }
   };
 
@@ -105,10 +105,8 @@ export default function ExcelImportSection({
         message.success('Đã phân tích file Excel. Đang chuyển đến trang xem trước...');
         router.push(reviewPath);
         return true;
-      } catch (error: any) {
-        const errorMsg =
-          error.response?.data?.message || error.message || 'Phân tích file thất bại';
-        message.error(errorMsg);
+      } catch (error: unknown) {
+        message.error(getApiErrorMessage(error, 'Phân tích file thất bại'));
         return false;
       } finally {
         setUploading(false);
@@ -146,9 +144,8 @@ export default function ExcelImportSection({
 
 
         return true;
-      } catch (error: any) {
-        const errorMsg = error.message || 'Xử lý file thất bại';
-        message.error(errorMsg);
+      } catch (error: unknown) {
+        message.error(getApiErrorMessage(error, 'Xử lý file thất bại'));
         return false;
       } finally {
         setUploading(false);
@@ -194,9 +191,8 @@ export default function ExcelImportSection({
   
           return true;
         }
-      } catch (error: any) {
-        const errorMsg = error.response?.data?.message || 'Import thất bại';
-        message.error(errorMsg);
+      } catch (error: unknown) {
+        message.error(getApiErrorMessage(error, 'Import thất bại'));
         return false;
       } finally {
         setUploading(false);

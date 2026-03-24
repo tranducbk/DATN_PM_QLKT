@@ -13,6 +13,8 @@ import {
   InputNumber,
   Divider,
 } from 'antd';
+import { getApiErrorMessage } from '@/lib/apiError';
+
 import { SearchOutlined, TeamOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/api-client';
@@ -114,9 +116,9 @@ export default function Step2SelectUnits({
         message.error(response.message || 'Không thể tải danh sách đơn vị');
         setUnits([]);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Error handled by UI message
-      message.error('Lỗi khi tải danh sách đơn vị: ' + (error.message || 'Unknown error'));
+      message.error('Lỗi khi tải danh sách đơn vị: ' + getApiErrorMessage(error, 'Unknown error'));
       setUnits([]);
     } finally {
       setLoading(false);
@@ -286,8 +288,8 @@ export default function Step2SelectUnits({
                 );
               }
             }
-          } catch (error: any) {
-            reject(new Error(`Lỗi kiểm tra trùng lặp: ${error.message}`));
+          } catch (error: unknown) {
+            reject(new Error(`Lỗi kiểm tra trùng lặp: ${getApiErrorMessage(error)}`));
             return;
           }
 
@@ -298,8 +300,8 @@ export default function Step2SelectUnits({
             selectedUnitIds: uniqueUnitIds,
             titleData,
           });
-        } catch (error: any) {
-          reject(new Error(`Lỗi xử lý file Excel: ${error.message}`));
+        } catch (error: unknown) {
+          reject(new Error(`Lỗi xử lý file Excel: ${getApiErrorMessage(error)}`));
         }
       };
 

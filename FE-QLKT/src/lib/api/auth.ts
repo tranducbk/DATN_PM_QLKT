@@ -1,4 +1,5 @@
 import axiosInstance from '@/utils/axiosInstance';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 type ApiResponse<T = any> = { success: boolean; data?: T; message?: string };
 
@@ -13,10 +14,10 @@ export async function login(username: string, password: string): Promise<ApiResp
       data: res.data?.data || res.data,
       message: res.data?.message,
     };
-  } catch (e: any) {
+  } catch (e: unknown) {
     return {
       success: false,
-      message: e?.response?.data?.message || e?.response?.data?.error || e.message,
+      message: getApiErrorMessage(e),
     };
   }
 }
@@ -31,7 +32,7 @@ export async function changePassword(
       newPassword,
     });
     return { success: true, data: res.data?.data || res.data, message: res.data?.message };
-  } catch (e: any) {
-    return { success: false, message: e?.response?.data?.message || e.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
   }
 }

@@ -18,6 +18,8 @@ import {
   Tag,
   Divider,
 } from 'antd';
+import { getApiErrorMessage } from '@/lib/apiError';
+
 import { CheckCircleOutlined, UploadOutlined, SaveOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import axiosInstance from '@/utils/axiosInstance';
@@ -180,8 +182,8 @@ export default function ApproveModal({ visible, proposal, onClose, onSuccess }: 
       } else {
         throw new Error(response.data.message || 'Phê duyệt thất bại');
       }
-    } catch (error: any) {
-      message.error(error.message || 'Lỗi khi phê duyệt đề xuất');
+    } catch (error: unknown) {
+      message.error(getApiErrorMessage(error, 'Lỗi khi phê duyệt đề xuất'));
     } finally {
       setLoading(false);
     }

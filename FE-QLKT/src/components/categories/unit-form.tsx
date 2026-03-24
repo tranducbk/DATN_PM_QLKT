@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Form, Input, Button, Space, message, Select, Typography } from 'antd';
 import { apiClient } from '@/lib/api-client';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 const { Text } = Typography;
 
@@ -84,12 +85,9 @@ export function UnitForm({ unit, units = [], onSuccess, onClose }: UnitFormProps
       } else {
         message.error(res.message || 'Có lỗi xảy ra');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMessage =
-        error?.response?.data?.message ||
-        error?.response?.data?.error ||
-        error?.message ||
-        'Có lỗi xảy ra';
+        getApiErrorMessage(error, 'Có lỗi xảy ra');
       message.error(errorMessage);
     } finally {
       setLoading(false);

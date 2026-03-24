@@ -1,0 +1,569 @@
+import {
+  prisma,
+  NOTIFICATION_TYPES,
+  RESOURCE_TYPES,
+  ROLES,
+  emitNotificationToUser,
+  DANH_HIEU_MAP,
+  getDanhHieuName,
+  getDisplayName,
+} from './helpers';
+import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
+
+interface AchievementInfo {
+  id: string;
+  quan_nhan_id: string;
+  loai: string;
+  nam?: number | string | null;
+}
+
+interface AwardInfo {
+  danh_hieu?: string | null;
+  loai?: string | null;
+  nam?: number | string | null;
+}
+
+interface PersonnelInfo {
+  id: string;
+  ho_ten?: string | null;
+  co_quan_don_vi_id?: string | null;
+  don_vi_truc_thuoc_id?: string | null;
+}
+
+interface ProposalAwardData {
+  id: string;
+  data_danh_hieu?: unknown;
+  data_thanh_tich?: unknown;
+  data_nien_han?: unknown;
+  data_cong_hien?: unknown;
+  [key: string]: unknown;
+}
+
+interface NotificationInput {
+  nguoi_nhan_id: string;
+  recipient_role: string;
+  type: string;
+  title: string;
+  message: string;
+  resource: string;
+  tai_nguyen_id: string;
+  link: string | null;
+  [key: string]: unknown;
+}
+
+interface TitleDataItem {
+  personnel_id?: string;
+  don_vi_id?: string;
+  danh_hieu?: string;
+  loai?: string;
+  nam?: number | string;
+}
+
+async function notifyManagersOnAwardAdded(
+  donViId: string,
+  donViName: string,
+  year: number | string,
+  awardType: string,
+  adminUsername: string
+): Promise<number> {
+  try {
+    const managers = await prisma.taiKhoan.findMany({
+      where: {
+        role: 'MANAGER',
+        QuanNhan: {
+          co_quan_don_vi_id: donViId,
+        },
+      },
+      select: {
+        id: true,
+        role: true,
+      },
+    });
+
+    if (managers.length === 0) {
+      return 0;
+    }
+
+    const adminDisplayName = await getDisplayName(adminUsername);
+
+    const notifications = managers.map(manager => ({
+      nguoi_nhan_id: manager.id,
+      recipient_role: manager.role,
+      type: NOTIFICATION_TYPES.AWARD_ADDED,
+      title: 'Khen thưởng mới đã được thêm',
+      message: `${adminDisplayName} đã thêm danh sách khen thưởng ${awardType} năm ${year} cho đơn vị ${donViName}`,
+      resource: RESOURCE_TYPES.AWARDS,
+      tai_nguyen_id: donViId,
+      link: `/manager/awards?don_vi_id=${donViId}&nam=${year}`,
+    }));
+
+    await prisma.thongBao.createMany({
+      data: notifications,
+    });
+    notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
+
+    return notifications.length;
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function notifyUserOnAchievementApproved(
+  achievement: AchievementInfo,
+  approverUsername: string
+): Promise<{ nguoi_nhan_id: string | null } | null> {
+  try {
+    const account = await prisma.taiKhoan.findFirst({
+      where: {
+        quan_nhan_id: achievement.quan_nhan_id,
+      },
+      select: {
+        id: true,
+        role: true,
+      },
+    });
+
+    if (!account) {
+      return null;
+    }
+
+    const approverDisplayName = await getDisplayName(approverUsername);
+
+    const loaiMap: Record<string, string> = {
+      DTKH: 'Đề tài khoa học',
+      SKKH: 'Sáng kiến khoa học',
+      NCKH: 'Nghiên cứu khoa học',
+    };
+    const loaiName = loaiMap[achievement.loai] || achievement.loai || 'Thành tích khoa học';
+
+    const notification = await prisma.thongBao.create({
+      data: {
+        nguoi_nhan_id: account.id,
+        recipient_role: account.role,
+        type: NOTIFICATION_TYPES.ACHIEVEMENT_APPROVED,
+        title: 'Thành tích khoa học đã được phê duyệt',
+        message: `${loaiName} năm ${achievement.nam || 'không xác định'} của bạn đã được ${approverDisplayName} phê duyệt`,
+        resource: RESOURCE_TYPES.ACHIEVEMENTS,
+        tai_nguyen_id: achievement.id,
+        link: `/user/profile`,
+      },
+    });
+
+    if (notification.nguoi_nhan_id) {
+      emitNotificationToUser(notification.nguoi_nhan_id, notification);
+    }
+    return notification;
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function notifyOnAwardDeleted(
+  award: AwardInfo,
+  personnel: PersonnelInfo,
+  awardType: string,
+  adminUsername: string
+): Promise<number> {
+  try {
+    const notifications: NotificationInput[] = [];
+    const adminDisplayName = await getDisplayName(adminUsername);
+
+    const awardTypeNameMap: Record<string, string> = {
+      HCCSVV: 'Huy chương Chiến sĩ vẻ vang',
+      HCBVTQ: 'Huân chương Bảo vệ Tổ quốc',
+      KNC_VSNXD: 'Kỷ niệm chương VSNXD QĐNDVN',
+      HCQKQT: 'Huy chương Quân kỳ Quyết thắng',
+      CA_NHAN_HANG_NAM: 'Danh hiệu hằng năm',
+      NCKH: 'Thành tích khoa học',
+    };
+    const awardTypeName = awardTypeNameMap[awardType] || awardType;
+
+    const rawDanhHieu = award.danh_hieu || award.loai || '';
+    const danhHieu = getDanhHieuName(rawDanhHieu);
+    const nam = award.nam || '';
+
+    const donViId = personnel.co_quan_don_vi_id || personnel.don_vi_truc_thuoc_id;
+    if (donViId) {
+      const managers = await prisma.taiKhoan.findMany({
+        where: {
+          role: 'MANAGER',
+          QuanNhan: {
+            OR: [{ co_quan_don_vi_id: donViId }, { don_vi_truc_thuoc_id: donViId }],
+          },
+        },
+        select: {
+          id: true,
+          role: true,
+        },
+      });
+
+      managers.forEach(manager => {
+        notifications.push({
+          nguoi_nhan_id: manager.id,
+          recipient_role: manager.role,
+          type: NOTIFICATION_TYPES.AWARD_DELETED,
+          title: 'Khen thưởng đã bị xóa',
+          message: `${adminDisplayName} đã xóa ${awardTypeName}${danhHieu ? ` (${danhHieu})` : ''}${
+            nam ? ` năm ${nam}` : ''
+          } của quân nhân ${personnel.ho_ten || 'Chưa xác định'}`,
+          resource: RESOURCE_TYPES.AWARDS,
+          tai_nguyen_id: personnel.id,
+          link: `/manager/personnel/${personnel.id}`,
+        });
+      });
+    }
+
+    const personnelAccount = await prisma.taiKhoan.findFirst({
+      where: {
+        quan_nhan_id: personnel.id,
+      },
+      select: {
+        id: true,
+        role: true,
+      },
+    });
+
+    if (personnelAccount) {
+      notifications.push({
+        nguoi_nhan_id: personnelAccount.id,
+        recipient_role: personnelAccount.role,
+        type: NOTIFICATION_TYPES.AWARD_DELETED,
+        title: 'Khen thưởng của bạn đã bị xóa',
+        message: `${awardTypeName}${danhHieu ? ` (${danhHieu})` : ''}${
+          nam ? ` năm ${nam}` : ''
+        } của bạn đã bị ${adminDisplayName} xóa khỏi hệ thống`,
+        resource: RESOURCE_TYPES.AWARDS,
+        tai_nguyen_id: personnel.id,
+        link: `/user/profile`,
+      });
+    }
+
+    if (notifications.length > 0) {
+      await prisma.thongBao.createMany({
+        data: notifications,
+      });
+      notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
+    }
+
+    return notifications.length;
+  } catch (error) {
+    return 0;
+  }
+}
+
+async function notifyUsersOnAwardApproved(
+  personnelIds: string[],
+  proposal: ProposalAwardData,
+  approverUsername: string
+): Promise<number> {
+  try {
+    if (!personnelIds || personnelIds.length === 0) {
+      return 0;
+    }
+
+    const notifications: NotificationInput[] = [];
+    const approverDisplayName = await getDisplayName(approverUsername);
+
+    const accounts = await prisma.taiKhoan.findMany({
+      where: {
+        quan_nhan_id: {
+          in: personnelIds,
+        },
+      },
+      select: {
+        id: true,
+        role: true,
+        quan_nhan_id: true,
+      },
+    });
+
+    const toArray = (v: unknown): Record<string, unknown>[] => (Array.isArray(v) ? v : []);
+    const danhHieuData = toArray(proposal.data_danh_hieu);
+    const thanhTichData = toArray(proposal.data_thanh_tich);
+    const nienHanData = toArray(proposal.data_nien_han);
+    const congHienData = toArray(proposal.data_cong_hien);
+
+    for (const account of accounts) {
+      const userAwards: string[] = [];
+
+      const userDanhHieu = danhHieuData.filter(
+        (item: Record<string, unknown>) => item.personnel_id === account.quan_nhan_id
+      );
+      userDanhHieu.forEach((item: Record<string, unknown>) => {
+        const dh = item.danh_hieu as string | undefined;
+        if (dh && DANH_HIEU_MAP[dh]) {
+          userAwards.push(`${DANH_HIEU_MAP[dh]}${item.nam ? ` (năm ${item.nam})` : ''}`);
+        }
+        if (item.nhan_bkbqp) {
+          userAwards.push(`${DANH_HIEU_MAP['BKBQP']}${item.nam ? ` (năm ${item.nam})` : ''}`);
+        }
+        if (item.nhan_cstdtq) {
+          userAwards.push(`${DANH_HIEU_MAP['CSTDTQ']}${item.nam ? ` (năm ${item.nam})` : ''}`);
+        }
+      });
+
+      const userNienHan = nienHanData.filter(
+        (item: Record<string, unknown>) => item.personnel_id === account.quan_nhan_id
+      );
+      userNienHan.forEach((item: Record<string, unknown>) => {
+        const dh = item.danh_hieu as string | undefined;
+        if (dh && DANH_HIEU_MAP[dh]) {
+          userAwards.push(`${DANH_HIEU_MAP[dh]}${item.nam ? ` (năm ${item.nam})` : ''}`);
+        }
+      });
+
+      const userCongHien = congHienData.filter(
+        (item: Record<string, unknown>) => item.personnel_id === account.quan_nhan_id
+      );
+      userCongHien.forEach((item: Record<string, unknown>) => {
+        const dh = item.danh_hieu as string | undefined;
+        if (dh && DANH_HIEU_MAP[dh]) {
+          userAwards.push(`${DANH_HIEU_MAP[dh]}${item.nam ? ` (năm ${item.nam})` : ''}`);
+        }
+      });
+
+      const userThanhTich = thanhTichData.filter(
+        (item: Record<string, unknown>) => item.personnel_id === account.quan_nhan_id
+      );
+      userThanhTich.forEach((item: Record<string, unknown>) => {
+        const loai = item.loai as string | undefined;
+        if (loai && DANH_HIEU_MAP[loai]) {
+          userAwards.push(`${DANH_HIEU_MAP[loai]}${item.nam ? ` (năm ${item.nam})` : ''}`);
+        }
+      });
+
+      let message = '';
+      if (userAwards.length > 0) {
+        message = `Khen thưởng của bạn đã được ${approverDisplayName} thêm vào hệ thống: ${userAwards.join(
+          ', '
+        )}.`;
+      } else {
+        message = `Khen thưởng của bạn đã được ${approverDisplayName} thêm vào hệ thống.`;
+      }
+
+      notifications.push({
+        nguoi_nhan_id: account.id,
+        recipient_role: account.role,
+        type: NOTIFICATION_TYPES.AWARD_ADDED,
+        title: 'Bạn đã nhận khen thưởng',
+        message: message,
+        resource: RESOURCE_TYPES.PROPOSALS,
+        tai_nguyen_id: proposal.id,
+        link: `/user/dashboard`,
+      });
+    }
+
+    if (notifications.length > 0) {
+      await prisma.thongBao.createMany({
+        data: notifications,
+      });
+      notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
+    }
+
+    return notifications.length;
+  } catch (error) {
+    return 0;
+  }
+}
+
+async function notifyOnBulkAwardAdded(
+  personnelIds: string[],
+  unitIds: string[],
+  awardType: string,
+  nam: number | string,
+  titleData: TitleDataItem[],
+  adminUsername: string
+): Promise<number> {
+  try {
+    const notifications: NotificationInput[] = [];
+    const adminDisplayName = await getDisplayName(adminUsername);
+
+    const bulkAwardTypeMap: Record<string, string> = {
+      CA_NHAN_HANG_NAM: 'Danh hiệu hằng năm',
+      DON_VI_HANG_NAM: 'Danh hiệu đơn vị hằng năm',
+      NCKH: 'Thành tích khoa học',
+      NIEN_HAN: 'Huy chương Chiến sĩ vẻ vang',
+      HC_QKQT: 'Huy chương Quân kỳ Quyết thắng',
+      KNC_VSNXD_QDNDVN: 'Kỷ niệm chương VSNXD QĐNDVN',
+      CONG_HIEN: 'Huân chương Bảo vệ Tổ quốc',
+    };
+    const awardTypeName = bulkAwardTypeMap[awardType] || awardType;
+
+    if (personnelIds && personnelIds.length > 0) {
+      const accounts = await prisma.taiKhoan.findMany({
+        where: {
+          quan_nhan_id: {
+            in: personnelIds,
+          },
+        },
+        include: {
+          QuanNhan: {
+            select: {
+              id: true,
+              ho_ten: true,
+              co_quan_don_vi_id: true,
+              don_vi_truc_thuoc_id: true,
+            },
+          },
+        },
+      });
+
+      for (const account of accounts) {
+        const personnel = account.QuanNhan;
+        if (!personnel) continue;
+
+        const userAwards: string[] = [];
+        const userTitleData = titleData.filter(
+          (item: TitleDataItem) => item.personnel_id === personnel.id
+        );
+
+        userTitleData.forEach((item: TitleDataItem) => {
+          if (awardType === PROPOSAL_TYPES.CA_NHAN_HANG_NAM && item.danh_hieu) {
+            userAwards.push(`${getDanhHieuName(item.danh_hieu)}${nam ? ` (năm ${nam})` : ''}`);
+          } else if (awardType === PROPOSAL_TYPES.NCKH && item.loai) {
+            userAwards.push(`${getDanhHieuName(item.loai)}${nam ? ` (năm ${nam})` : ''}`);
+          } else if (awardType === PROPOSAL_TYPES.NIEN_HAN && item.danh_hieu) {
+            userAwards.push(`${getDanhHieuName(item.danh_hieu)}${nam ? ` (năm ${nam})` : ''}`);
+          } else if (awardType === PROPOSAL_TYPES.CONG_HIEN && item.danh_hieu) {
+            userAwards.push(`${getDanhHieuName(item.danh_hieu)}${nam ? ` (năm ${nam})` : ''}`);
+          } else if (awardType === PROPOSAL_TYPES.HC_QKQT) {
+            userAwards.push(`${getDanhHieuName('HC_QKQT')}${nam ? ` (năm ${nam})` : ''}`);
+          } else if (awardType === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN) {
+            userAwards.push(`${getDanhHieuName('KNC_VSNXD_QDNDVN')}${nam ? ` (năm ${nam})` : ''}`);
+          }
+        });
+
+        let message = '';
+        if (userAwards.length > 0) {
+          message = `${adminDisplayName} đã thêm khen thưởng cho bạn: ${userAwards.join(', ')}.`;
+        } else {
+          message = `${adminDisplayName} đã thêm ${awardTypeName}${
+            nam ? ` năm ${nam}` : ''
+          } cho bạn.`;
+        }
+
+        notifications.push({
+          nguoi_nhan_id: account.id,
+          recipient_role: account.role,
+          type: NOTIFICATION_TYPES.AWARD_ADDED,
+          title: 'Bạn đã nhận khen thưởng',
+          message: message,
+          resource: RESOURCE_TYPES.AWARDS,
+          tai_nguyen_id: personnel.id,
+          link: `/user/dashboard`,
+        });
+
+        const donViId = personnel.co_quan_don_vi_id || personnel.don_vi_truc_thuoc_id;
+        if (donViId) {
+          const managers = await prisma.taiKhoan.findMany({
+            where: {
+              role: 'MANAGER',
+              QuanNhan: {
+                OR: [{ co_quan_don_vi_id: donViId }, { don_vi_truc_thuoc_id: donViId }].filter(
+                  Boolean
+                ),
+              },
+            },
+            select: {
+              id: true,
+              role: true,
+            },
+          });
+
+          managers.forEach(manager => {
+            const existingNotif = notifications.find(
+              (n: NotificationInput) =>
+                n.nguoi_nhan_id === manager.id && n.recipient_role === ROLES.MANAGER
+            );
+            if (!existingNotif) {
+              notifications.push({
+                nguoi_nhan_id: manager.id,
+                recipient_role: manager.role,
+                type: NOTIFICATION_TYPES.AWARD_ADDED,
+                title: 'Khen thưởng mới đã được thêm',
+                message: `${adminDisplayName} đã thêm ${awardTypeName}${
+                  nam ? ` năm ${nam}` : ''
+                } cho quân nhân trong đơn vị của bạn`,
+                resource: RESOURCE_TYPES.AWARDS,
+                tai_nguyen_id: donViId,
+                link: `/manager/awards?nam=${nam}`,
+              });
+            }
+          });
+        }
+      }
+    }
+
+    if (unitIds && unitIds.length > 0 && awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
+      for (const unitId of unitIds) {
+        let donVi: { id: string; ten_don_vi: string; co_quan_don_vi_id?: string | null } | null =
+          await prisma.donViTrucThuoc.findUnique({
+            where: { id: unitId },
+            select: { id: true, ten_don_vi: true, co_quan_don_vi_id: true },
+          });
+
+        if (!donVi) {
+          donVi = await prisma.coQuanDonVi.findUnique({
+            where: { id: unitId },
+            select: { id: true, ten_don_vi: true },
+          });
+        }
+
+        if (!donVi) continue;
+
+        const managers = await prisma.taiKhoan.findMany({
+          where: {
+            role: 'MANAGER',
+            QuanNhan: {
+              OR: [
+                { co_quan_don_vi_id: donVi.co_quan_don_vi_id || donVi.id },
+                { don_vi_truc_thuoc_id: donVi.id },
+              ].filter(Boolean),
+            },
+          },
+          select: {
+            id: true,
+            role: true,
+          },
+        });
+
+        const unitTitleData = titleData.find((item: TitleDataItem) => item.don_vi_id === unitId);
+        const danhHieu = unitTitleData?.danh_hieu ? getDanhHieuName(unitTitleData.danh_hieu) : '';
+
+        managers.forEach(manager => {
+          notifications.push({
+            nguoi_nhan_id: manager.id,
+            recipient_role: manager.role,
+            type: NOTIFICATION_TYPES.AWARD_ADDED,
+            title: 'Đơn vị của bạn đã nhận khen thưởng',
+            message: `${adminDisplayName} đã thêm ${danhHieu || awardTypeName}${
+              nam ? ` năm ${nam}` : ''
+            } cho đơn vị ${donVi.ten_don_vi}`,
+            resource: RESOURCE_TYPES.AWARDS,
+            tai_nguyen_id: unitId,
+            link: `/manager/awards?don_vi_id=${unitId}&nam=${nam}`,
+          });
+        });
+      }
+    }
+
+    if (notifications.length > 0) {
+      await prisma.thongBao.createMany({
+        data: notifications,
+      });
+      notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
+    }
+
+    return notifications.length;
+  } catch (error) {
+    return 0;
+  }
+}
+
+export {
+  notifyManagersOnAwardAdded,
+  notifyUserOnAchievementApproved,
+  notifyOnAwardDeleted,
+  notifyUsersOnAwardApproved,
+  notifyOnBulkAwardAdded,
+};

@@ -1,5 +1,6 @@
 import { message } from 'antd';
 import { apiClient } from '@/lib/api-client';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 /**
  * Helper function để xem trước file quyết định từ số quyết định
@@ -114,13 +115,14 @@ export async function downloadDecisionFile(soQuyetDinh: string): Promise<void> {
     } else {
       message.error('Không thể mở cửa sổ mới. Vui lòng cho phép popup.');
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Error handled by UI message
+    const ax = error as { response?: { data?: unknown } };
 
     // Xử lý lỗi từ blob response (nếu backend trả về JSON error trong blob)
-    if (error?.response?.data instanceof Blob) {
+    if (ax.response?.data instanceof Blob) {
       try {
-        const text = await error.response.data.text();
+        const text = await (ax.response.data as Blob).text();
         const errorData = JSON.parse(text);
         message.error({
           content: errorData.message || 'Lỗi khi mở file quyết định',
@@ -130,8 +132,7 @@ export async function downloadDecisionFile(soQuyetDinh: string): Promise<void> {
         message.error({ content: 'Lỗi khi mở file quyết định', key: 'preview' });
       }
     } else {
-      const errorMessage =
-        error?.response?.data?.message || error?.message || 'Lỗi khi mở file quyết định';
+      const errorMessage = getApiErrorMessage(error, 'Lỗi khi mở file quyết định');
       message.error({ content: errorMessage, key: 'preview' });
     }
   }

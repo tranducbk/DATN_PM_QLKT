@@ -26,7 +26,9 @@ import {
   CloseCircleOutlined,
 } from '@ant-design/icons';
 import Image from 'next/image';
+import { isAxiosError } from 'axios';
 import axiosInstance from '@/utils/axiosInstance';
+import { getApiErrorMessage } from '@/lib/apiError';
 import {
   DEV_ZONE_API,
   DEV_SESSION_KEY,
@@ -88,10 +90,11 @@ interface DevStatus {
       message?: string;
     } | null;
   };
+  /** Cờ cố định + các `allow_*` động từ backend */
   features: {
     import_enabled: boolean;
     template_enabled: boolean;
-  };
+  } & Record<string, boolean | undefined>;
 }
 
 function saveSession(pwd: string) {
@@ -161,8 +164,8 @@ export default function DevZonePage() {
           setCustomCron(schedule);
         }
       }
-    } catch (err: any) {
-      if (err.response?.status === 401) {
+    } catch (err: unknown) {
+      if (isAxiosError(err) && err.response?.status === 401) {
         setAuthenticated(false);
         setDevPassword('');
         clearSession();
@@ -212,8 +215,8 @@ export default function DevZonePage() {
         );
         fetchStatus(devPassword);
       }
-    } catch (err: any) {
-      message.error(err.response?.data?.message || 'Lỗi khi chạy cron job');
+    } catch (err: unknown) {
+      message.error(getApiErrorMessage(err, 'Lỗi khi chạy cron job'));
     } finally {
       setTriggerLoading(false);
     }
@@ -237,14 +240,14 @@ export default function DevZonePage() {
       if (res.data.success) {
         fetchStatus(devPassword);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Revert nếu lỗi
       if (typeof enabled === 'boolean' && prevEnabled !== undefined) {
         setStatus(prev =>
           prev ? { ...prev, cron: { ...prev.cron, enabled: prevEnabled } } : prev
         );
       }
-      message.error(err.response?.data?.message || 'Cập nhật thất bại');
+      message.error(getApiErrorMessage(err, 'Cập nhật thất bại'));
     }
   };
 
@@ -565,7 +568,7 @@ export default function DevZonePage() {
                       icon={<CloudUploadOutlined />}
                       title={label}
                       description={description}
-                      checked={(status?.features as any)?.[`allow_${key}`]}
+                      checked={Boolean(status?.features?.[`allow_${key}`])}
                       onChange={v => handleToggleFeature(`allow_${key}`, v)}
                     />
                   ))}
@@ -589,7 +592,7 @@ export default function DevZonePage() {
                       icon={<ThunderboltOutlined />}
                       title={label}
                       description={description}
-                      checked={(status?.features as any)?.[`allow_${key}`]}
+                      checked={Boolean(status?.features?.[`allow_${key}`])}
                       onChange={v => handleToggleFeature(`allow_${key}`, v)}
                     />
                   ))}
