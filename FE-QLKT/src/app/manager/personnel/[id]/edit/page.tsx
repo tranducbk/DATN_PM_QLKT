@@ -475,24 +475,16 @@ export default function ManagerPersonnelEditPage() {
                   <Form.Item
                     name="chuc_vu_id"
                     label="Chức vụ"
+                    tooltip={isManagerPersonnel ? 'Chỉ Admin mới có thể thay đổi chức vụ' : undefined}
                     rules={[{ required: true, message: 'Vui lòng chọn chức vụ' }]}
                   >
                     <Select
                       size="large"
-                      placeholder={
-                        loadingData
-                          ? 'Đang tải...'
-                          : filteredPositions.length === 0
-                            ? isManagerPersonnel
-                              ? 'Vui lòng chọn cơ quan đơn vị trước'
-                              : 'Vui lòng chọn đơn vị trực thuộc trước'
-                            : 'Chọn chức vụ'
-                      }
-                      disabled={loading}
+                      placeholder="Chọn chức vụ"
+                      disabled={loading || isManagerPersonnel}
                       showSearch
                       optionFilterProp="children"
                       onChange={value => {
-                        // Update currentPositionId khi user chọn chức vụ mới
                         setCurrentPositionId(value);
                       }}
                     >

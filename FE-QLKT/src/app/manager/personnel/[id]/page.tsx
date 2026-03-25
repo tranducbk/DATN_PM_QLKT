@@ -37,6 +37,7 @@ import { apiClient } from '@/lib/api-client';
 import { formatDate } from '@/lib/utils';
 import styles from './personnel-detail.module.css';
 import { ROLES, getRoleInfo } from '@/constants/roles.constants';
+import { useAuth } from '@/contexts/AuthContext';
 
 const { Title, Text } = Typography;
 
@@ -47,6 +48,7 @@ export default function ManagerPersonnelDetailPage() {
   const router = useRouter();
   const personnelId = params?.id as string;
   const activeTab = searchParams?.get('tab') || '1';
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [personnel, setPersonnel] = useState<any>(null);
   const [serviceProfile, setServiceProfile] = useState<any>(null);
@@ -895,11 +897,13 @@ export default function ManagerPersonnelDetailPage() {
               <Link href="/manager/personnel">
                 <Button icon={<ArrowLeftOutlined />}>Quay lại</Button>
               </Link>
-              <Link href={`/manager/personnel/${personnelId}/edit`}>
-                <Button type="primary" icon={<EditOutlined />}>
-                  Chỉnh sửa
-                </Button>
-              </Link>
+              {user?.quan_nhan_id !== personnelId && (
+                <Link href={`/manager/personnel/${personnelId}/edit`}>
+                  <Button type="primary" icon={<EditOutlined />}>
+                    Chỉnh sửa
+                  </Button>
+                </Link>
+              )}
             </Space>
           </div>
         </Card>
