@@ -36,6 +36,7 @@ import { getAntdThemeConfig } from '@/lib/antd-theme';
 import { apiClient } from '@/lib/api-client';
 import { formatDate } from '@/lib/utils';
 import styles from './personnel-detail.module.css';
+import { ROLES, getRoleInfo } from '@/constants/roles.constants';
 
 const { Title, Text } = Typography;
 
@@ -116,20 +117,6 @@ export default function ManagerPersonnelDetailPage() {
     return <Tag color={s.color}>{s.label}</Tag>;
   };
 
-  const getAccountRoleLabel = (role?: string) => {
-    switch (role) {
-      case 'SUPER_ADMIN':
-        return { label: 'Super Admin', color: 'purple' };
-      case 'ADMIN':
-        return { label: 'Admin', color: 'red' };
-      case 'MANAGER':
-        return { label: 'Quản lý', color: 'blue' };
-      case 'USER':
-        return { label: 'Người dùng', color: 'green' };
-      default:
-        return { label: role || '-', color: 'default' };
-    }
-  };
 
   const calculateYearsOfService = (ngayNhapNgu: string) => {
     if (!ngayNhapNgu) return 0;
@@ -288,8 +275,8 @@ export default function ManagerPersonnelDetailPage() {
                   {
                     label: 'Vai trò',
                     value: (
-                      <Tag color={getAccountRoleLabel(personnel.TaiKhoan.role).color}>
-                        {getAccountRoleLabel(personnel.TaiKhoan.role).label}
+                      <Tag color={getRoleInfo(personnel.TaiKhoan.role).color}>
+                        {getRoleInfo(personnel.TaiKhoan.role).label}
                       </Tag>
                     ),
                   },

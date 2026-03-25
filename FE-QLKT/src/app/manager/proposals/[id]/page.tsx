@@ -36,6 +36,7 @@ import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { previewFileWithApi } from '@/utils/filePreview';
 import { useTheme } from '@/components/theme-provider';
 import { getAntdTableThemeConfig } from '@/lib/antd-theme';
+import { PROPOSAL_STATUS } from '@/constants/proposal.constants';
 import styles from './proposal-detail.module.css';
 
 const { Title, Text } = Typography;
@@ -132,7 +133,7 @@ interface ProposalDetail {
     username: string;
     ho_ten: string;
   };
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  status: string;
   data_danh_hieu: DanhHieuItem[];
   data_thanh_tich: ThanhTichItem[];
   data_nien_han?: DanhHieuItem[];
@@ -408,7 +409,7 @@ export default function ManagerProposalDetailPage() {
         </div>
 
         {/* Status Alert */}
-        {proposal.status === 'REJECTED' && proposal.ghi_chu && (
+        {proposal.status === PROPOSAL_STATUS.REJECTED && proposal.ghi_chu && (
           <Alert
             message="Đề xuất bị từ chối"
             description={
@@ -429,7 +430,7 @@ export default function ManagerProposalDetailPage() {
           />
         )}
 
-        {proposal.status === 'APPROVED' && (
+        {proposal.status === PROPOSAL_STATUS.APPROVED && (
           <Alert
             message="Đề xuất đã được phê duyệt"
             description={
@@ -443,7 +444,7 @@ export default function ManagerProposalDetailPage() {
           />
         )}
 
-        {proposal.status === 'PENDING' && (
+        {proposal.status === PROPOSAL_STATUS.PENDING && (
           <Alert
             message="Đề xuất đang chờ duyệt"
             description="Đề xuất của bạn đang chờ Admin xem xét và phê duyệt."
@@ -701,7 +702,7 @@ export default function ManagerProposalDetailPage() {
                   align: 'center',
                   render: text => <Text>{text || '-'}</Text>,
                 },
-                ...(proposal.status === 'APPROVED'
+                ...(proposal.status === PROPOSAL_STATUS.APPROVED
                   ? [
                       {
                         title: 'Số quyết định',
@@ -906,7 +907,7 @@ export default function ManagerProposalDetailPage() {
                     );
                   },
                 },
-                ...(proposal.status === 'APPROVED'
+                ...(proposal.status === PROPOSAL_STATUS.APPROVED
                   ? [
                       {
                         title: 'Số quyết định',
@@ -1133,7 +1134,7 @@ export default function ManagerProposalDetailPage() {
                       },
                     ]
                   : []),
-                ...(proposal.status === 'APPROVED'
+                ...(proposal.status === PROPOSAL_STATUS.APPROVED
                   ? [
                       {
                         title: 'Số quyết định',
@@ -1317,7 +1318,7 @@ export default function ManagerProposalDetailPage() {
                     );
                   },
                 },
-                ...(proposal.status === 'APPROVED'
+                ...(proposal.status === PROPOSAL_STATUS.APPROVED
                   ? [
                       {
                         title: 'Số quyết định',
@@ -1361,7 +1362,7 @@ export default function ManagerProposalDetailPage() {
           </Card>
         ) : null}
 
-        {proposal.status === 'REJECTED' && (
+        {proposal.status === PROPOSAL_STATUS.REJECTED && (
           <Card className="shadow-sm bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200">
             <Space direction="vertical" size="middle" style={{ width: '100%' }}>
               <Title level={4} className="!mb-0">
@@ -1373,7 +1374,7 @@ export default function ManagerProposalDetailPage() {
         )}
 
         {/* Action Buttons */}
-        {proposal.status === 'REJECTED' && (
+        {proposal.status === PROPOSAL_STATUS.REJECTED && (
           <Card className="shadow-sm bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200">
             <Space direction="vertical" size="middle" style={{ width: '100%' }}>
               <Title level={4} className="!mb-0">

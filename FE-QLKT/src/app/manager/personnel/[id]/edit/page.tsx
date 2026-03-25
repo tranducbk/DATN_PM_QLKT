@@ -23,6 +23,7 @@ import { apiClient } from '@/lib/api-client';
 import { getApiErrorMessage } from '@/lib/apiError';
 import dayjs from 'dayjs';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
+import { ROLES } from '@/constants/roles.constants';
 
 const { Title } = Typography;
 
@@ -142,7 +143,7 @@ export default function ManagerPersonnelEditPage() {
   }, [personnelId, form]);
 
   // Kiểm tra xem có phải đang edit personnel có role MANAGER không
-  const isManagerPersonnel = useMemo(() => personnelRole === 'MANAGER', [personnelRole]);
+  const isManagerPersonnel = useMemo(() => personnelRole === ROLES.MANAGER, [personnelRole]);
 
   // Filter chức vụ dựa trên đơn vị đã chọn
   const filteredPositions = useMemo(() => {

@@ -34,6 +34,7 @@ import {
 import { format } from 'date-fns';
 import { apiClient } from '@/lib/api-client';
 import { message } from 'antd';
+import { PROPOSAL_STATUS, PROPOSAL_TYPES } from '@/constants/proposal.constants';
 
 const { Title, Paragraph } = Typography;
 
@@ -114,9 +115,9 @@ export default function ProposalReviewPage() {
       // Filter theo tab
       const statusMatch =
         activeTab === 'all' ||
-        (activeTab === 'pending' && p.status === 'PENDING') ||
-        (activeTab === 'approved' && p.status === 'APPROVED') ||
-        (activeTab === 'rejected' && p.status === 'REJECTED');
+        (activeTab === 'pending' && p.status === PROPOSAL_STATUS.PENDING) ||
+        (activeTab === 'approved' && p.status === PROPOSAL_STATUS.APPROVED) ||
+        (activeTab === 'rejected' && p.status === PROPOSAL_STATUS.REJECTED);
 
       if (!statusMatch) return false;
 
@@ -156,10 +157,10 @@ export default function ProposalReviewPage() {
   };
 
   const getStatusBadge = (status: string) => {
-    if (status === 'PENDING') {
+    if (status === PROPOSAL_STATUS.PENDING) {
       return <Badge color="gold" text="Chờ duyệt" />;
     }
-    if (status === 'APPROVED') {
+    if (status === PROPOSAL_STATUS.APPROVED) {
       return <Badge color="green" text="Đã duyệt" />;
     }
     return <Badge color="red" text="Từ chối" />;
@@ -236,15 +237,15 @@ export default function ProposalReviewPage() {
       render: (_: any, record: Proposal) => {
         let count = 0;
         switch (record.loai_de_xuat) {
-          case 'NCKH':
+          case PROPOSAL_TYPES.NCKH:
             count = record.so_thanh_tich ?? 0;
             break;
-          case 'NIEN_HAN':
-          case 'HC_QKQT':
-          case 'KNC_VSNXD_QDNDVN':
+          case PROPOSAL_TYPES.NIEN_HAN:
+          case PROPOSAL_TYPES.HC_QKQT:
+          case PROPOSAL_TYPES.KNC_VSNXD_QDNDVN:
             count = record.so_nien_han ?? 0;
             break;
-          case 'CONG_HIEN':
+          case PROPOSAL_TYPES.CONG_HIEN:
             count = record.so_cong_hien ?? 0;
             break;
           default:
@@ -280,7 +281,7 @@ export default function ProposalReviewPage() {
               icon={<EyeOutlined />}
               onClick={() => router.push(`/admin/proposals/review/${record.id}`)}
             >
-              {record.status === 'PENDING' ? 'Xem và Duyệt' : 'Xem Chi Tiết'}
+              {record.status === PROPOSAL_STATUS.PENDING ? 'Xem và Duyệt' : 'Xem Chi Tiết'}
             </Button>
             <Popconfirm
               title="Xóa đề xuất"
@@ -325,7 +326,7 @@ export default function ProposalReviewPage() {
         label: (
           <span>
             <ClockCircleOutlined style={{ marginRight: 8 }} />
-            Chờ duyệt ({statusCounts.PENDING || 0})
+            Chờ duyệt ({statusCounts[PROPOSAL_STATUS.PENDING] || 0})
           </span>
         ),
       },
@@ -334,7 +335,7 @@ export default function ProposalReviewPage() {
         label: (
           <span>
             <CheckCircleOutlined style={{ marginRight: 8 }} />
-            Đã duyệt ({statusCounts.APPROVED || 0})
+            Đã duyệt ({statusCounts[PROPOSAL_STATUS.APPROVED] || 0})
           </span>
         ),
       },
@@ -343,7 +344,7 @@ export default function ProposalReviewPage() {
         label: (
           <span>
             <WarningOutlined style={{ marginRight: 8 }} />
-            Đã từ chối ({statusCounts.REJECTED || 0})
+            Đã từ chối ({statusCounts[PROPOSAL_STATUS.REJECTED] || 0})
           </span>
         ),
       },

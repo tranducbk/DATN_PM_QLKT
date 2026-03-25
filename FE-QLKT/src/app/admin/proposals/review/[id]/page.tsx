@@ -44,6 +44,7 @@ import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { previewFileWithApi } from '@/utils/filePreview';
 import { useTheme } from '@/components/theme-provider';
 import { getDanhHieuName } from '@/constants/danhHieu.constants';
+import { PROPOSAL_STATUS } from '@/constants/proposal.constants';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -842,7 +843,7 @@ export default function ProposalDetailPage() {
             value={record.nam}
             type="number"
             onSave={val => updateDanhHieu(index, 'nam', parseInt(val))}
-            editable={proposal.status === 'PENDING'}
+            editable={proposal.status === PROPOSAL_STATUS.PENDING}
           />
         </div>
       ),
@@ -1004,7 +1005,7 @@ export default function ProposalDetailPage() {
             value={record.nam}
             type="number"
             onSave={val => updateDanhHieu(index, 'nam', parseInt(val))}
-            editable={proposal.status === 'PENDING'}
+            editable={proposal.status === PROPOSAL_STATUS.PENDING}
           />
         </div>
       ),
@@ -1295,7 +1296,7 @@ export default function ProposalDetailPage() {
               <Title level={2}>Chi Tiết Đề Xuất</Title>
               <Paragraph>Xem và chỉnh sửa trước khi phê duyệt</Paragraph>
             </div>
-            {proposal.status === 'APPROVED' ? (
+            {proposal.status === PROPOSAL_STATUS.APPROVED ? (
               <Tag color="success" style={{ fontSize: 14, padding: '4px 12px' }}>
                 Đã phê duyệt
               </Tag>
@@ -1359,9 +1360,9 @@ export default function ProposalDetailPage() {
                 Trạng thái
               </Text>
               <div style={{ fontWeight: 500 }}>
-                {proposal.status === 'PENDING' ? (
+                {proposal.status === PROPOSAL_STATUS.PENDING ? (
                   <Tag color="warning">Đang chờ duyệt</Tag>
-                ) : proposal.status === 'APPROVED' ? (
+                ) : proposal.status === PROPOSAL_STATUS.APPROVED ? (
                   <Tag color="success">Đã phê duyệt</Tag>
                 ) : (
                   <Tag color="error">Từ chối</Tag>
@@ -1382,7 +1383,7 @@ export default function ProposalDetailPage() {
                 {format(new Date(proposal.createdAt), 'dd/MM/yyyy HH:mm')}
               </div>
             </div>
-            {proposal.status === 'APPROVED' && proposal.ngay_duyet && (
+            {proposal.status === PROPOSAL_STATUS.APPROVED && proposal.ngay_duyet && (
               <>
                 <div>
                   <Text type="secondary" style={{ fontSize: '14px' }}>
@@ -1493,7 +1494,7 @@ export default function ProposalDetailPage() {
           <Card
             title="Thành Tích Khoa Học"
             extra={
-              proposal.status === 'PENDING' && (
+              proposal.status === PROPOSAL_STATUS.PENDING && (
                 <Button
                   type="primary"
                   icon={<FileTextOutlined />}
@@ -1515,7 +1516,7 @@ export default function ProposalDetailPage() {
               />
             ) : (
               <Table
-                rowSelection={proposal.status === 'PENDING' ? thanhTichRowSelection : undefined}
+                rowSelection={proposal.status === PROPOSAL_STATUS.PENDING ? thanhTichRowSelection : undefined}
                 columns={thanhTichColumns}
                 dataSource={editedThanhTich}
                 rowKey={(_, index) => index ?? 0}
@@ -1537,7 +1538,7 @@ export default function ProposalDetailPage() {
                   : 'Kỷ Niệm Chương Vì Sự Nghiệp XD QĐNDVN'
             }
             extra={
-              proposal.status === 'PENDING' && (
+              proposal.status === PROPOSAL_STATUS.PENDING && (
                 <Button
                   type="primary"
                   icon={<FileTextOutlined />}
@@ -1559,7 +1560,7 @@ export default function ProposalDetailPage() {
               />
             ) : (
               <Table
-                rowSelection={proposal.status === 'PENDING' ? rowSelection : undefined}
+                rowSelection={proposal.status === PROPOSAL_STATUS.PENDING ? rowSelection : undefined}
                 columns={caNhanHangNamColumns}
                 dataSource={editedNienHan}
                 rowKey={(_, index) => index ?? 0}
@@ -1573,7 +1574,7 @@ export default function ProposalDetailPage() {
           <Card
             title="Danh Sách Huân chương Bảo vệ Tổ quốc"
             extra={
-              proposal.status === 'PENDING' && (
+              proposal.status === PROPOSAL_STATUS.PENDING && (
                 <Button
                   type="primary"
                   icon={<FileTextOutlined />}
@@ -1595,7 +1596,7 @@ export default function ProposalDetailPage() {
               />
             ) : (
               <Table
-                rowSelection={proposal.status === 'PENDING' ? rowSelection : undefined}
+                rowSelection={proposal.status === PROPOSAL_STATUS.PENDING ? rowSelection : undefined}
                 columns={caNhanHangNamColumns}
                 dataSource={editedCongHien}
                 rowKey={(_, index) => index ?? 0}
@@ -1613,7 +1614,7 @@ export default function ProposalDetailPage() {
                 : 'Danh Hiệu Hằng Năm'
             }
             extra={
-              proposal.status === 'PENDING' && (
+              proposal.status === PROPOSAL_STATUS.PENDING && (
                 <Button
                   type="primary"
                   icon={<FileTextOutlined />}
@@ -1636,7 +1637,7 @@ export default function ProposalDetailPage() {
               />
             ) : (
               <Table
-                rowSelection={proposal.status === 'PENDING' ? rowSelection : undefined}
+                rowSelection={proposal.status === PROPOSAL_STATUS.PENDING ? rowSelection : undefined}
                 columns={
                   proposal.loai_de_xuat === 'DON_VI_HANG_NAM'
                     ? donViHangNamColumns
@@ -1681,7 +1682,7 @@ export default function ProposalDetailPage() {
               Xóa đề xuất
             </Button>
           </Popconfirm>
-          {proposal.status === 'PENDING' && (
+          {proposal.status === PROPOSAL_STATUS.PENDING && (
             <div style={{ display: 'flex', gap: '12px' }}>
               <Button
                 danger

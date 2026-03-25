@@ -8,6 +8,7 @@ import { formatDate } from '@/lib/utils';
 import { apiClient } from '@/lib/api-client';
 import ScientificAchievementHistoryModal from './ScientificAchievementHistoryModal';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
+import { PROPOSAL_STATUS, PROPOSAL_STATUS_LABELS, PROPOSAL_STATUS_COLORS } from '@/constants/proposal.constants';
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -477,9 +478,9 @@ export default function Step3SetTitlesNCKH({
                             key: 'status',
                             width: 120,
                             align: 'center',
-                            render: status => {
-                              const color = status === 'APPROVED' ? 'green' : 'orange';
-                              const text = status === 'APPROVED' ? 'Đã duyệt' : 'Chờ duyệt';
+                            render: (status: string) => {
+                              const color = PROPOSAL_STATUS_COLORS[status] || 'orange';
+                              const text = PROPOSAL_STATUS_LABELS[status] || status;
                               return <Tag color={color}>{text}</Tag>;
                             },
                           },

@@ -28,29 +28,10 @@ import {
 import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
 import { useTheme } from '@/components/theme-provider';
+import { ROLES, getRoleInfo } from '@/constants/roles.constants';
 
 const { Title } = Typography;
 
-// Helper functions for role display
-const getRoleColor = (role: string) => {
-  const colors: Record<string, string> = {
-    SUPER_ADMIN: 'red',
-    ADMIN: 'orange',
-    MANAGER: 'blue',
-    USER: 'green',
-  };
-  return colors[role] || 'default';
-};
-
-const getRoleText = (role: string) => {
-  const texts: Record<string, string> = {
-    SUPER_ADMIN: 'Super Admin',
-    ADMIN: 'Admin',
-    MANAGER: 'Quản lý',
-    USER: 'Người dùng',
-  };
-  return texts[role] || role;
-};
 
 export default function AccountsListPage() {
   const { theme } = useTheme();
@@ -166,7 +147,7 @@ export default function AccountsListPage() {
       key: 'role',
       width: 120,
       align: 'center' as const,
-      render: (role: string) => <Tag color={getRoleColor(role)}>{getRoleText(role)}</Tag>,
+      render: (role: string) => <Tag color={getRoleInfo(role).color}>{getRoleInfo(role).label}</Tag>,
     },
     {
       title: 'Quân nhân',
@@ -311,9 +292,9 @@ export default function AccountsListPage() {
                 onChange={handleRoleFilterChange}
                 style={{ width: 200 }}
                 options={[
-                  { value: 'ADMIN', label: 'Admin' },
-                  { value: 'MANAGER', label: 'Quản lý' },
-                  { value: 'USER', label: 'Người dùng' },
+                  { value: ROLES.ADMIN, label: 'Admin' },
+                  { value: ROLES.MANAGER, label: 'Quản lý' },
+                  { value: ROLES.USER, label: 'Người dùng' },
                 ]}
               />
               <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>

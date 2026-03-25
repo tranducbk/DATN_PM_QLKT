@@ -39,6 +39,7 @@ export async function submitProposal(formData: FormData): Promise<ApiResponse> {
 export async function getProposals(params?: {
   page?: number;
   limit?: number;
+  status?: string;
 }): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get('/api/proposals', { params });
@@ -100,10 +101,10 @@ export async function uploadDecision(id: string, formData: FormData): Promise<Ap
 }
 
 export async function checkDuplicate(params: {
-  loai_de_xuat: string;
-  nam?: number;
-  personnel_ids?: string[];
-  danh_hieu?: string;
+  personnel_id: string;
+  nam: number;
+  danh_hieu: string;
+  proposal_type: string;
 }): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get('/api/proposals/check-duplicate', { params });
@@ -114,10 +115,10 @@ export async function checkDuplicate(params: {
 }
 
 export async function checkDuplicateUnit(params: {
-  loai_de_xuat: string;
-  nam?: number;
-  unit_ids?: string[];
-  danh_hieu?: string;
+  don_vi_id: string;
+  nam: number;
+  danh_hieu: string;
+  proposal_type: string;
 }): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get('/api/proposals/check-duplicate-unit', { params });

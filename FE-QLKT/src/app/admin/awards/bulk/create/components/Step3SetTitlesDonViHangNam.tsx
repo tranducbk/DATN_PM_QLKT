@@ -6,6 +6,7 @@ import { EditOutlined, HistoryOutlined, ReloadOutlined } from '@ant-design/icons
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/api-client';
 import UnitAnnualAwardHistoryModal from './UnitAnnualAwardHistoryModal';
+import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 
 const { Text } = Typography;
 
@@ -216,7 +217,7 @@ export default function Step3SetTitlesDonViHangNam({
               don_vi_id: id,
               nam: nam,
               danh_hieu: value === 'ĐVQT' ? 'ĐVTT' : 'ĐVQT',
-              proposal_type: 'DON_VI_HANG_NAM',
+              proposal_type: PROPOSAL_TYPES.DON_VI_HANG_NAM,
             });
             if (response.success && response.data.exists) {
               message.error(
@@ -231,7 +232,7 @@ export default function Step3SetTitlesDonViHangNam({
             don_vi_id: id,
             nam: nam,
             danh_hieu: value,
-            proposal_type: 'DON_VI_HANG_NAM',
+            proposal_type: PROPOSAL_TYPES.DON_VI_HANG_NAM,
           });
 
           if (response.success && response.data.exists) {

@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { TrophyOutlined } from '@ant-design/icons';
 import { useAuth } from '@/contexts/AuthContext';
+import { ROLES } from '@/constants/roles.constants';
 
 export default function HomePage() {
   const router = useRouter();
@@ -19,16 +20,16 @@ export default function HomePage() {
     }
 
     switch (user.role) {
-      case 'SUPER_ADMIN':
+      case ROLES.SUPER_ADMIN:
         router.push('/super-admin/dashboard');
         break;
-      case 'ADMIN':
+      case ROLES.ADMIN:
         router.push('/admin/dashboard');
         break;
-      case 'MANAGER':
+      case ROLES.MANAGER:
         router.push('/manager/dashboard');
         break;
-      case 'USER':
+      case ROLES.USER:
         router.push('/user/dashboard');
         break;
       default:

@@ -20,6 +20,7 @@ import { apiClient } from '@/lib/api-client';
 import PersonnelRewardHistoryModal from './PersonnelRewardHistoryModal';
 import { formatDate } from '@/lib/utils';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
+import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 
 const { Text } = Typography;
 
@@ -275,7 +276,7 @@ export default function Step3SetTitlesCaNhanHangNam({
             personnel_id: id,
             nam: nam,
             danh_hieu: value,
-            proposal_type: 'CA_NHAN_HANG_NAM',
+            proposal_type: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
           });
 
           if (value === 'CSTDCS' || value === 'CSTT') {
@@ -284,7 +285,7 @@ export default function Step3SetTitlesCaNhanHangNam({
               personnel_id: id,
               nam: nam,
               danh_hieu: value === 'CSTDCS' ? 'CSTT' : 'CSTDCS',
-              proposal_type: 'CA_NHAN_HANG_NAM',
+              proposal_type: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
             });
             if (response.success && response.data.exists) {
               message.error(

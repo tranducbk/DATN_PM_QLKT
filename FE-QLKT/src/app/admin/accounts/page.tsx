@@ -26,6 +26,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTheme } from '@/components/theme-provider';
 import { apiClient } from '@/lib/api-client';
+import { ROLES } from '@/constants/roles.constants';
 
 const { Title } = Typography;
 const { confirm } = Modal;
@@ -119,10 +120,10 @@ export default function AdminAccountsPage() {
 
   const getRoleTag = (role: string) => {
     const roleConfig: Record<string, { color: string; label: string }> = {
-      SUPER_ADMIN: { color: 'purple', label: 'Super Admin' },
-      ADMIN: { color: 'red', label: 'Admin' },
-      MANAGER: { color: 'blue', label: 'Quản lý' },
-      USER: { color: 'green', label: 'Người dùng' },
+      [ROLES.SUPER_ADMIN]: { color: 'purple', label: 'Super Admin' },
+      [ROLES.ADMIN]: { color: 'red', label: 'Admin' },
+      [ROLES.MANAGER]: { color: 'blue', label: 'Quản lý' },
+      [ROLES.USER]: { color: 'green', label: 'Người dùng' },
     };
     const config = roleConfig[role] || { color: 'default', label: role };
     return <Tag color={config.color}>{config.label}</Tag>;
@@ -196,7 +197,7 @@ export default function AdminAccountsPage() {
       align: 'center' as const,
       render: (_: any, record: any) => {
         // Admin không thể xóa/sửa SUPER_ADMIN hoặc ADMIN khác
-        const canModify = record.role !== 'SUPER_ADMIN' && record.role !== 'ADMIN';
+        const canModify = record.role !== ROLES.SUPER_ADMIN && record.role !== ROLES.ADMIN;
 
         return (
           <Space>

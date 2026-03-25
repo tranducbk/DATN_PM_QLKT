@@ -34,6 +34,7 @@ import { calculateDuration, formatDate } from '@/lib/utils';
 import { useTheme } from '@/components/theme-provider';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { useAuth } from '@/contexts/AuthContext';
+import { PROPOSAL_STATUS } from '@/constants/proposal.constants';
 
 const { Title, Text } = Typography;
 
@@ -384,7 +385,7 @@ export default function UserProfilePage() {
       width: 120,
       align: 'center' as const,
       render: (text: string) => {
-        if (text === 'APPROVED') {
+        if (text === PROPOSAL_STATUS.APPROVED) {
           return <span style={{ color: '#52c41a' }}>Đã duyệt</span>;
         }
         return <span style={{ color: '#faad14' }}>Chờ duyệt</span>;

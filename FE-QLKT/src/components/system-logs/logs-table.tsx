@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
+import { getRoleInfo } from '@/constants/roles.constants';
 import {
   Table,
   TableBody,
@@ -109,25 +110,6 @@ function getActionColor(action: string): string {
   return 'bg-gray-100/50 text-gray-900 dark:bg-gray-800/60 dark:text-gray-50 border-gray-300 dark:border-gray-600';
 }
 
-function getRoleTagColor(role: string): string {
-  const colorMap: Record<string, string> = {
-    SUPER_ADMIN: 'red',
-    ADMIN: 'orange',
-    MANAGER: 'blue',
-    USER: 'green',
-  };
-  return colorMap[role] || 'default';
-}
-
-function getRoleText(role: string): string {
-  const textMap: Record<string, string> = {
-    SUPER_ADMIN: 'Super Admin',
-    ADMIN: 'Admin',
-    MANAGER: 'Quản lý',
-    USER: 'Người dùng',
-  };
-  return textMap[role] || role;
-}
 
 export function LogsTable({ logs, loading, selectedRowKeys, onSelectionChange }: LogsTableProps) {
   const selectable = !!onSelectionChange;
@@ -312,7 +294,7 @@ export function LogsTable({ logs, loading, selectedRowKeys, onSelectionChange }:
                 {log.actor_name || log.actor_id}
               </TableCell>
               <TableCell>
-                <Tag color={getRoleTagColor(log.actor_role)}>{getRoleText(log.actor_role)}</Tag>
+                <Tag color={getRoleInfo(log.actor_role).color}>{getRoleInfo(log.actor_role).label}</Tag>
               </TableCell>
               <TableCell className="text-sm font-medium text-gray-900 dark:text-gray-100">
                 {getActionLabel(log.action)}

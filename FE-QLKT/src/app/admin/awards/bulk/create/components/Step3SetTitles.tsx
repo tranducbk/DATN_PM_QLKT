@@ -7,6 +7,7 @@ import Step3SetTitlesDonViHangNam from './Step3SetTitlesDonViHangNam';
 import Step3SetTitlesNienHan from './Step3SetTitlesNienHan';
 import Step3SetTitlesCongHien from './Step3SetTitlesCongHien';
 import Step3SetTitlesNCKH from './Step3SetTitlesNCKH';
+import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 
 interface TitleData {
   personnel_id?: string;
@@ -40,7 +41,7 @@ export default function Step3SetTitles({
 }: Step3SetTitlesProps) {
   // Router component - gọi component tương ứng với từng loại đề xuất
   switch (proposalType) {
-    case 'HC_QKQT':
+    case PROPOSAL_TYPES.HC_QKQT:
       return (
         <Step3SetTitlesHCQKQT
           selectedPersonnelIds={selectedPersonnelIds}
@@ -50,7 +51,7 @@ export default function Step3SetTitles({
           nam={nam}
         />
       );
-    case 'KNC_VSNXD_QDNDVN':
+    case PROPOSAL_TYPES.KNC_VSNXD_QDNDVN:
       return (
         <Step3SetTitlesKNCVSNXD
           selectedPersonnelIds={selectedPersonnelIds}
@@ -60,7 +61,7 @@ export default function Step3SetTitles({
           nam={nam}
         />
       );
-    case 'CA_NHAN_HANG_NAM':
+    case PROPOSAL_TYPES.CA_NHAN_HANG_NAM:
       return (
         <Step3SetTitlesCaNhanHangNam
           selectedPersonnelIds={selectedPersonnelIds}
@@ -70,7 +71,7 @@ export default function Step3SetTitles({
           nam={nam}
         />
       );
-    case 'DON_VI_HANG_NAM':
+    case PROPOSAL_TYPES.DON_VI_HANG_NAM:
       return (
         <Step3SetTitlesDonViHangNam
           selectedUnitIds={selectedUnitIds || []}
@@ -80,7 +81,7 @@ export default function Step3SetTitles({
           nam={nam}
         />
       );
-    case 'NIEN_HAN':
+    case PROPOSAL_TYPES.NIEN_HAN:
       return (
         <Step3SetTitlesNienHan
           selectedPersonnelIds={selectedPersonnelIds}
@@ -90,7 +91,7 @@ export default function Step3SetTitles({
           nam={nam}
         />
       );
-    case 'CONG_HIEN':
+    case PROPOSAL_TYPES.CONG_HIEN:
       return (
         <Step3SetTitlesCongHien
           selectedPersonnelIds={selectedPersonnelIds}
@@ -100,7 +101,7 @@ export default function Step3SetTitles({
           nam={nam}
         />
       );
-    case 'NCKH':
+    case PROPOSAL_TYPES.NCKH:
       return (
         <Step3SetTitlesNCKH
           selectedPersonnelIds={selectedPersonnelIds}

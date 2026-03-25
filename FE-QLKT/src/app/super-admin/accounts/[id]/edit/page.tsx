@@ -22,6 +22,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
 import { useTheme } from '@/components/theme-provider';
+import { ROLES } from '@/constants/roles.constants';
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -162,10 +163,10 @@ export default function AccountEditPage() {
               rules={[{ required: true, message: 'Vui lòng chọn vai trò' }]}
             >
               <Select placeholder="Chọn vai trò">
-                <Option value="SUPER_ADMIN">Super Admin</Option>
-                <Option value="ADMIN">Admin</Option>
-                <Option value="MANAGER">Quản lý</Option>
-                <Option value="USER">Người dùng</Option>
+                <Option value={ROLES.SUPER_ADMIN}>Super Admin</Option>
+                <Option value={ROLES.ADMIN}>Admin</Option>
+                <Option value={ROLES.MANAGER}>Quản lý</Option>
+                <Option value={ROLES.USER}>Người dùng</Option>
               </Select>
             </Form.Item>
 

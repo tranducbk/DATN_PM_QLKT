@@ -36,6 +36,7 @@ import {
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
+import { PROPOSAL_STATUS, PROPOSAL_TYPES } from '@/constants/proposal.constants';
 
 const { Title, Text } = Typography;
 
@@ -53,7 +54,7 @@ interface Proposal {
   nam: number;
   don_vi: string;
   nguoi_de_xuat: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  status: string;
   so_danh_hieu: number;
   so_thanh_tich: number;
   so_nien_han: number;
@@ -173,9 +174,9 @@ export default function ManagerProposalsPage() {
       // Filter theo tab
       const statusMatch =
         activeTab === 'all' ||
-        (activeTab === 'pending' && p.status === 'PENDING') ||
-        (activeTab === 'approved' && p.status === 'APPROVED') ||
-        (activeTab === 'rejected' && p.status === 'REJECTED');
+        (activeTab === 'pending' && p.status === PROPOSAL_STATUS.PENDING) ||
+        (activeTab === 'approved' && p.status === PROPOSAL_STATUS.APPROVED) ||
+        (activeTab === 'rejected' && p.status === PROPOSAL_STATUS.REJECTED);
 
       if (!statusMatch) return false;
 
@@ -226,9 +227,9 @@ export default function ManagerProposalsPage() {
 
   const getStatusTag = (status: string) => {
     const statusConfig = {
-      PENDING: { color: 'gold', icon: <ClockCircleOutlined />, text: 'Chờ duyệt' },
-      APPROVED: { color: 'green', icon: <CheckCircleOutlined />, text: 'Đã duyệt' },
-      REJECTED: { color: 'red', icon: <CloseCircleOutlined />, text: 'Từ chối' },
+      [PROPOSAL_STATUS.PENDING]: { color: 'gold', icon: <ClockCircleOutlined />, text: 'Chờ duyệt' },
+      [PROPOSAL_STATUS.APPROVED]: { color: 'green', icon: <CheckCircleOutlined />, text: 'Đã duyệt' },
+      [PROPOSAL_STATUS.REJECTED]: { color: 'red', icon: <CloseCircleOutlined />, text: 'Từ chối' },
     };
 
     const config = statusConfig[status as keyof typeof statusConfig];
@@ -289,25 +290,25 @@ export default function ManagerProposalsPage() {
         let tooltip = '';
 
         switch (record.loai_de_xuat) {
-          case 'NCKH':
+          case PROPOSAL_TYPES.NCKH:
             count = record.so_thanh_tich ?? 0;
             tooltip = 'Số đề tài/sáng kiến khoa học';
             break;
-          case 'NIEN_HAN':
-          case 'HC_QKQT':
-          case 'KNC_VSNXD_QDNDVN':
+          case PROPOSAL_TYPES.NIEN_HAN:
+          case PROPOSAL_TYPES.HC_QKQT:
+          case PROPOSAL_TYPES.KNC_VSNXD_QDNDVN:
             count = record.so_nien_han ?? 0;
             tooltip = 'Số quân nhân đề xuất huy chương chiến sĩ vẻ vang';
             break;
-          case 'CONG_HIEN':
+          case PROPOSAL_TYPES.CONG_HIEN:
             count = record.so_cong_hien ?? 0;
             tooltip = 'Số quân nhân đề xuất huân chương bảo vệ tổ quốc';
             break;
-          case 'DON_VI_HANG_NAM':
+          case PROPOSAL_TYPES.DON_VI_HANG_NAM:
             count = record.so_danh_hieu ?? 0;
             tooltip = 'Số đơn vị đề xuất';
             break;
-          case 'CA_NHAN_HANG_NAM':
+          case PROPOSAL_TYPES.CA_NHAN_HANG_NAM:
           default:
             count = record.so_danh_hieu ?? 0;
             tooltip = 'Số quân nhân đề xuất';
@@ -336,7 +337,7 @@ export default function ManagerProposalsPage() {
       align: 'center' as const,
       render: (_: any, record: Proposal) => {
         // Hiển thị thời gian cập nhật khi đã duyệt hoặc từ chối
-        if ((record.status !== 'APPROVED' && record.status !== 'REJECTED') || !record.ngay_duyet) {
+        if ((record.status !== PROPOSAL_STATUS.APPROVED && record.status !== PROPOSAL_STATUS.REJECTED) || !record.ngay_duyet) {
           return <Text type="secondary">-</Text>;
         }
 
@@ -376,7 +377,7 @@ export default function ManagerProposalsPage() {
           >
             Chi tiết
           </Button>
-          {record.status === 'PENDING' && (
+          {record.status === PROPOSAL_STATUS.PENDING && (
             <Popconfirm
               title="Xóa đề xuất"
               description="Bạn có chắc chắn muốn xóa đề xuất này? Hành động này không thể hoàn tác."
@@ -423,7 +424,7 @@ export default function ManagerProposalsPage() {
         key: 'pending',
         label: (
           <span>
-            <ClockCircleOutlined /> Chờ duyệt ({statusCounts.PENDING || 0})
+            <ClockCircleOutlined /> Chờ duyệt ({statusCounts[PROPOSAL_STATUS.PENDING] || 0})
           </span>
         ),
       },
@@ -431,7 +432,7 @@ export default function ManagerProposalsPage() {
         key: 'approved',
         label: (
           <span>
-            <CheckCircleOutlined /> Đã duyệt ({statusCounts.APPROVED || 0})
+            <CheckCircleOutlined /> Đã duyệt ({statusCounts[PROPOSAL_STATUS.APPROVED] || 0})
           </span>
         ),
       },
@@ -439,7 +440,7 @@ export default function ManagerProposalsPage() {
         key: 'rejected',
         label: (
           <span>
-            <CloseCircleOutlined /> Từ chối ({statusCounts.REJECTED || 0})
+            <CloseCircleOutlined /> Từ chối ({statusCounts[PROPOSAL_STATUS.REJECTED] || 0})
           </span>
         ),
       },

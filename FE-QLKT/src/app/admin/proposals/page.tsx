@@ -30,6 +30,7 @@ import { isAxiosError } from 'axios';
 import { apiClient } from '@/lib/api-client';
 import { getApiErrorMessage } from '@/lib/apiError';
 import dayjs from 'dayjs';
+import { PROPOSAL_STATUS, PROPOSAL_TYPES } from '@/constants/proposal.constants';
 import ProposalDetailModal from './components/ProposalDetailModal';
 import RejectModal from './components/RejectModal';
 import ApproveModal from './components/ApproveModal';
@@ -41,10 +42,12 @@ interface Proposal {
   id: string;
   loai_de_xuat: string;
   nam: number;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  status: string;
   createdAt: string;
   ngay_duyet?: string;
   rejection_reason?: string;
+  nguoi_de_xuat?: string;
+  don_vi?: string;
   NguoiDeXuat?: {
     QuanNhan?: {
       ho_ten: string;
@@ -67,7 +70,7 @@ interface Proposal {
 export default function AdminProposalsPage() {
   const [loading, setLoading] = useState(false);
   const [proposals, setProposals] = useState<Proposal[]>([]);
-  const [activeTab, setActiveTab] = useState<'PENDING' | 'APPROVED' | 'REJECTED'>('PENDING');
+  const [activeTab, setActiveTab] = useState<string>(PROPOSAL_STATUS.PENDING);
   const [searchText, setSearchText] = useState('');
   const [yearFilter, setYearFilter] = useState<number | 'ALL'>('ALL');
   const [typeFilter, setTypeFilter] = useState<string>('ALL');
@@ -96,7 +99,9 @@ export default function AdminProposalsPage() {
       });
 
       if (response.success) {
-        setProposals(response.data || []);
+        const payload = response.data as { proposals?: Proposal[] } | Proposal[] | undefined;
+        const list = Array.isArray(payload) ? payload : payload?.proposals ?? [];
+        setProposals(list);
       }
     } catch (error: unknown) {
       // Error handled by UI message
@@ -116,12 +121,18 @@ export default function AdminProposalsPage() {
     NCKH: { label: 'ĐTKH/SKKH', color: 'green' },
   };
 
-  // Filter proposals
   const filteredProposals = proposals.filter(p => {
+    const searchLower = searchText.toLowerCase();
+    const proposerLabel = (
+      p.nguoi_de_xuat ||
+      p.NguoiDeXuat?.QuanNhan?.ho_ten ||
+      p.NguoiDeXuat?.username ||
+      ''
+    ).toLowerCase();
     const matchesSearch =
       searchText === '' ||
-      p.NguoiDeXuat?.QuanNhan?.ho_ten?.toLowerCase().includes(searchText.toLowerCase()) ||
-      p.NguoiDeXuat?.username.toLowerCase().includes(searchText.toLowerCase());
+      proposerLabel.includes(searchLower) ||
+      (p.NguoiDeXuat?.username?.toLowerCase().includes(searchLower) ?? false);
 
     const matchesYear = yearFilter === 'ALL' || p.nam === yearFilter;
     const matchesType = typeFilter === 'ALL' || p.loai_de_xuat === typeFilter;
@@ -180,7 +191,10 @@ export default function AdminProposalsPage() {
       width: 180,
       render: (_, record) => (
         <Text strong>
-          {record.NguoiDeXuat?.QuanNhan?.ho_ten || record.NguoiDeXuat?.username || '-'}
+          {record.nguoi_de_xuat ||
+            record.NguoiDeXuat?.QuanNhan?.ho_ten ||
+            record.NguoiDeXuat?.username ||
+            '-'}
         </Text>
       ),
     },
@@ -190,7 +204,10 @@ export default function AdminProposalsPage() {
       width: 160,
       render: (_, record) => (
         <Tag color="blue">
-          {record.DonViTrucThuoc?.ten_don_vi || record.CoQuanDonVi?.ten_don_vi || '-'}
+          {record.don_vi ||
+            record.DonViTrucThuoc?.ten_don_vi ||
+            record.CoQuanDonVi?.ten_don_vi ||
+            '-'}
         </Tag>
       ),
     },
@@ -209,15 +226,15 @@ export default function AdminProposalsPage() {
       render: (_, record) => {
         let count = 0;
         switch (record.loai_de_xuat) {
-          case 'NCKH':
+          case PROPOSAL_TYPES.NCKH:
             count = record.data_thanh_tich?.length || 0;
             break;
-          case 'NIEN_HAN':
-          case 'HC_QKQT':
-          case 'KNC_VSNXD_QDNDVN':
+          case PROPOSAL_TYPES.NIEN_HAN:
+          case PROPOSAL_TYPES.HC_QKQT:
+          case PROPOSAL_TYPES.KNC_VSNXD_QDNDVN:
             count = record.data_nien_han?.length || 0;
             break;
-          case 'CONG_HIEN':
+          case PROPOSAL_TYPES.CONG_HIEN:
             count = record.data_cong_hien?.length || 0;
             break;
           default:
@@ -242,9 +259,9 @@ export default function AdminProposalsPage() {
       align: 'center',
       render: (status: string) => {
         const statusConfig = {
-          PENDING: { icon: <ClockCircleOutlined />, color: 'warning', text: 'Đang chờ' },
-          APPROVED: { icon: <CheckCircleOutlined />, color: 'success', text: 'Đã duyệt' },
-          REJECTED: { icon: <CloseCircleOutlined />, color: 'error', text: 'Từ chối' },
+          [PROPOSAL_STATUS.PENDING]: { icon: <ClockCircleOutlined />, color: 'warning', text: 'Đang chờ' },
+          [PROPOSAL_STATUS.APPROVED]: { icon: <CheckCircleOutlined />, color: 'success', text: 'Đã duyệt' },
+          [PROPOSAL_STATUS.REJECTED]: { icon: <CloseCircleOutlined />, color: 'error', text: 'Từ chối' },
         };
         const config = statusConfig[status as keyof typeof statusConfig];
         return (
@@ -261,7 +278,7 @@ export default function AdminProposalsPage() {
       align: 'center',
       render: (_, record: Proposal) => {
         // Chỉ hiển thị số quyết định khi đã duyệt
-        if (record.status !== 'APPROVED') {
+        if (record.status !== PROPOSAL_STATUS.APPROVED) {
           return <Text type="secondary">-</Text>;
         }
 
@@ -292,7 +309,7 @@ export default function AdminProposalsPage() {
           >
             Xem
           </Button>
-          {record.status === 'PENDING' && (
+          {record.status === PROPOSAL_STATUS.PENDING && (
             <>
               <Button
                 type="link"
@@ -324,27 +341,27 @@ export default function AdminProposalsPage() {
 
   const tabItems = [
     {
-      key: 'PENDING',
+      key: PROPOSAL_STATUS.PENDING,
       label: (
         <span>
-          <ClockCircleOutlined /> Đang chờ ({proposals.filter(p => p.status === 'PENDING').length})
+          <ClockCircleOutlined /> Đang chờ ({proposals.filter(p => p.status === PROPOSAL_STATUS.PENDING).length})
         </span>
       ),
     },
     {
-      key: 'APPROVED',
+      key: PROPOSAL_STATUS.APPROVED,
       label: (
         <span>
           <CheckCircleOutlined /> Đã phê duyệt (
-          {proposals.filter(p => p.status === 'APPROVED').length})
+          {proposals.filter(p => p.status === PROPOSAL_STATUS.APPROVED).length})
         </span>
       ),
     },
     {
-      key: 'REJECTED',
+      key: PROPOSAL_STATUS.REJECTED,
       label: (
         <span>
-          <CloseCircleOutlined /> Từ chối ({proposals.filter(p => p.status === 'REJECTED').length})
+          <CloseCircleOutlined /> Từ chối ({proposals.filter(p => p.status === PROPOSAL_STATUS.REJECTED).length})
         </span>
       ),
     },
@@ -435,7 +452,7 @@ export default function AdminProposalsPage() {
         <Tabs
           activeKey={activeTab}
           onChange={key => {
-            if (key === 'PENDING' || key === 'APPROVED' || key === 'REJECTED') {
+            if (key === PROPOSAL_STATUS.PENDING || key === PROPOSAL_STATUS.APPROVED || key === PROPOSAL_STATUS.REJECTED) {
               setActiveTab(key);
             }
           }}
@@ -465,7 +482,7 @@ export default function AdminProposalsPage() {
             selectedRowKeys,
             onChange: setSelectedRowKeys,
             getCheckboxProps: record => ({
-              disabled: record.status !== 'APPROVED', // Chỉ cho phép chọn đề xuất đã được phê duyệt
+              disabled: record.status !== PROPOSAL_STATUS.APPROVED, // Chỉ cho phép chọn đề xuất đã được phê duyệt
             }),
           }}
           pagination={{

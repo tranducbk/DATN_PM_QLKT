@@ -36,6 +36,7 @@ import Link from 'next/link';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/api-client';
 import { getDanhHieuName } from '@/constants/danhHieu.constants';
+import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 import Step2SelectPersonnelCaNhanHangNam from './components/Step2SelectPersonnelCaNhanHangNam';
 import Step2SelectPersonnelNienHan from './components/Step2SelectPersonnelNienHan';
 import Step2SelectPersonnelHCQKQT from './components/Step2SelectPersonnelHCQKQT';
@@ -151,7 +152,7 @@ export default function BulkAddAwardsPage() {
 
   // Steps config - 6 bước (đã bỏ bước upload file)
   const getSteps = () => {
-    const step2Title = awardType === 'DON_VI_HANG_NAM' ? 'Chọn đơn vị' : 'Chọn quân nhân';
+    const step2Title = awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? 'Chọn đơn vị' : 'Chọn quân nhân';
     return [
       { title: 'Chọn loại', icon: <TrophyOutlined /> },
       { title: step2Title, icon: <TeamOutlined /> },
@@ -205,7 +206,7 @@ export default function BulkAddAwardsPage() {
   // Fetch personnel/unit details when reaching Step 4 (Review) - đã giảm từ step 5 xuống step 4
   useEffect(() => {
     if (currentStep === 3) {
-      if (awardType === 'DON_VI_HANG_NAM' && selectedUnitIds.length > 0) {
+      if (awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM && selectedUnitIds.length > 0) {
         fetchUnitDetails();
       } else if (selectedPersonnelIds.length > 0) {
         fetchPersonnelDetails();
@@ -243,20 +244,20 @@ export default function BulkAddAwardsPage() {
       case 0:
         return true;
       case 1:
-        if (awardType === 'DON_VI_HANG_NAM') {
+        if (awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
           return selectedUnitIds.length > 0;
         }
         return selectedPersonnelIds.length > 0;
       case 2:
         const expectedLength =
-          awardType === 'DON_VI_HANG_NAM' ? selectedUnitIds.length : selectedPersonnelIds.length;
+          awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? selectedUnitIds.length : selectedPersonnelIds.length;
         if (titleData.length !== expectedLength) return false;
 
-        if (awardType === 'NCKH') {
+        if (awardType === PROPOSAL_TYPES.NCKH) {
           return titleData.every(d => d.loai && d.mo_ta && d.cap_bac && d.chuc_vu);
         }
 
-        if (awardType === 'DON_VI_HANG_NAM') {
+        if (awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
           return titleData.every(d => d.danh_hieu);
         }
 
@@ -265,7 +266,7 @@ export default function BulkAddAwardsPage() {
         return true; // Review step
       case 4: {
         // Bắt buộc nhập số quyết định
-        const ids = awardType === 'DON_VI_HANG_NAM' ? selectedUnitIds : selectedPersonnelIds;
+        const ids = awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? selectedUnitIds : selectedPersonnelIds;
         return ids.every(id => decisionDataMap[id]?.so_quyet_dinh?.trim());
       }
       default:
@@ -281,7 +282,7 @@ export default function BulkAddAwardsPage() {
     } else {
       switch (currentStep) {
         case 1:
-          if (awardType === 'DON_VI_HANG_NAM') {
+          if (awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
             antMessage.warning('Vui lòng chọn ít nhất một đơn vị!');
           } else {
             antMessage.warning('Vui lòng chọn ít nhất một quân nhân!');
@@ -309,7 +310,7 @@ export default function BulkAddAwardsPage() {
   const handleSubmit = async () => {
     try {
       // Validate số quyết định
-      const ids = awardType === 'DON_VI_HANG_NAM' ? selectedUnitIds : selectedPersonnelIds;
+      const ids = awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? selectedUnitIds : selectedPersonnelIds;
       const missingDecision = ids.some(id => !decisionDataMap[id]?.so_quyet_dinh?.trim());
       if (missingDecision) {
         antMessage.error('Vui lòng nhập số quyết định cho tất cả trước khi thêm khen thưởng!');
@@ -333,7 +334,7 @@ export default function BulkAddAwardsPage() {
       formData.append('type', awardType);
       formData.append('nam', String(nam));
 
-      if (awardType === 'DON_VI_HANG_NAM') {
+      if (awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
         formData.append('selected_units', JSON.stringify(selectedUnitIds));
       } else {
         formData.append('selected_personnel', JSON.stringify(selectedPersonnelIds));
@@ -355,7 +356,7 @@ export default function BulkAddAwardsPage() {
 
         const message =
           importedCount > 0
-            ? `Đã thêm thành công ${importedCount} ${awardType === 'DON_VI_HANG_NAM' ? 'đơn vị' : 'quân nhân'}${
+            ? `Đã thêm thành công ${importedCount} ${awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? 'đơn vị' : 'quân nhân'}${
                 errorCount > 0 ? `, ${errorCount} lỗi` : ''
               }`
             : 'Thêm khen thưởng thành công!';
@@ -435,7 +436,7 @@ export default function BulkAddAwardsPage() {
         );
 
       case 1: // Step 2: Select Personnel/Units
-        if (awardType === 'DON_VI_HANG_NAM') {
+        if (awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
           return (
             <Step2SelectUnits
               selectedUnitIds={selectedUnitIds}
@@ -448,7 +449,7 @@ export default function BulkAddAwardsPage() {
           );
         }
         switch (awardType) {
-          case 'CA_NHAN_HANG_NAM':
+          case PROPOSAL_TYPES.CA_NHAN_HANG_NAM:
             return (
               <Step2SelectPersonnelCaNhanHangNam
                 selectedPersonnelIds={selectedPersonnelIds}
@@ -460,7 +461,7 @@ export default function BulkAddAwardsPage() {
                 onNextStep={() => setCurrentStep(prev => prev + 1)}
               />
             );
-          case 'NIEN_HAN':
+          case PROPOSAL_TYPES.NIEN_HAN:
             return (
               <Step2SelectPersonnelNienHan
                 selectedPersonnelIds={selectedPersonnelIds}
@@ -471,7 +472,7 @@ export default function BulkAddAwardsPage() {
                 onNextStep={() => setCurrentStep(prev => prev + 1)}
               />
             );
-          case 'HC_QKQT':
+          case PROPOSAL_TYPES.HC_QKQT:
             return (
               <Step2SelectPersonnelHCQKQT
                 selectedPersonnelIds={selectedPersonnelIds}
@@ -482,7 +483,7 @@ export default function BulkAddAwardsPage() {
                 onNextStep={() => setCurrentStep(prev => prev + 1)}
               />
             );
-          case 'KNC_VSNXD_QDNDVN':
+          case PROPOSAL_TYPES.KNC_VSNXD_QDNDVN:
             return (
               <Step2SelectPersonnelKNCVSNXD
                 selectedPersonnelIds={selectedPersonnelIds}
@@ -493,7 +494,7 @@ export default function BulkAddAwardsPage() {
                 onNextStep={() => setCurrentStep(prev => prev + 1)}
               />
             );
-          case 'CONG_HIEN':
+          case PROPOSAL_TYPES.CONG_HIEN:
             return (
               <Step2SelectPersonnelCongHien
                 selectedPersonnelIds={selectedPersonnelIds}
@@ -504,7 +505,7 @@ export default function BulkAddAwardsPage() {
                 onNextStep={() => setCurrentStep(prev => prev + 1)}
               />
             );
-          case 'NCKH':
+          case PROPOSAL_TYPES.NCKH:
             return (
               <Step2SelectPersonnelNCKH
                 selectedPersonnelIds={selectedPersonnelIds}
@@ -537,7 +538,7 @@ export default function BulkAddAwardsPage() {
         // Merge personnel/unit details with title data
         let reviewTableData: any[] = [];
 
-        if (awardType === 'DON_VI_HANG_NAM') {
+        if (awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
           reviewTableData = unitDetails.map(unit => {
             const titleInfo = titleData.find(t => t.don_vi_id === unit.id);
             return {
@@ -560,7 +561,7 @@ export default function BulkAddAwardsPage() {
         // Build table columns (tương tự proposal)
         const reviewColumns: ColumnsType<any> = [];
 
-        if (awardType === 'DON_VI_HANG_NAM') {
+        if (awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
           reviewColumns.push(
             {
               title: 'STT',
@@ -644,7 +645,7 @@ export default function BulkAddAwardsPage() {
         }
 
         // Add title/achievement columns
-        if (awardType === 'NCKH') {
+        if (awardType === PROPOSAL_TYPES.NCKH) {
           reviewColumns.push(
             {
               title: 'Loại',
@@ -714,10 +715,10 @@ export default function BulkAddAwardsPage() {
                   <Text strong>{nam}</Text>
                 </Descriptions.Item>
                 <Descriptions.Item
-                  label={awardType === 'DON_VI_HANG_NAM' ? 'Số đơn vị' : 'Số quân nhân'}
+                  label={awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? 'Số đơn vị' : 'Số quân nhân'}
                 >
                   <Text strong>
-                    {awardType === 'DON_VI_HANG_NAM'
+                    {awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM
                       ? selectedUnitIds.length
                       : selectedPersonnelIds.length}
                   </Text>
@@ -727,7 +728,7 @@ export default function BulkAddAwardsPage() {
 
             <Card
               title={
-                awardType === 'DON_VI_HANG_NAM'
+                awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM
                   ? 'Danh sách đơn vị và danh hiệu'
                   : 'Danh sách quân nhân và danh hiệu'
               }
@@ -771,7 +772,7 @@ export default function BulkAddAwardsPage() {
         );
 
       case 4: // Step 5: Thêm số quyết định
-        const decisionTableData = awardType === 'DON_VI_HANG_NAM' ? unitDetails : personnelDetails;
+        const decisionTableData = awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? unitDetails : personnelDetails;
 
         const decisionColumns: ColumnsType<any> = [
           {
@@ -782,9 +783,9 @@ export default function BulkAddAwardsPage() {
             render: (_, __, index) => index + 1,
           },
           {
-            title: awardType === 'DON_VI_HANG_NAM' ? 'Tên đơn vị' : 'Họ và tên',
-            dataIndex: awardType === 'DON_VI_HANG_NAM' ? 'ten_don_vi' : 'ho_ten',
-            key: awardType === 'DON_VI_HANG_NAM' ? 'ten_don_vi' : 'ho_ten',
+            title: awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? 'Tên đơn vị' : 'Họ và tên',
+            dataIndex: awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? 'ten_don_vi' : 'ho_ten',
+            key: awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? 'ten_don_vi' : 'ho_ten',
             width: 200,
             align: 'center',
             render: (text: string) => <Text strong>{text}</Text>,
@@ -849,7 +850,7 @@ export default function BulkAddAwardsPage() {
                   type="primary"
                   onClick={() => {
                     const allIds =
-                      awardType === 'DON_VI_HANG_NAM' ? selectedUnitIds : selectedPersonnelIds;
+                      awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? selectedUnitIds : selectedPersonnelIds;
                     setSelectedPersonnelForDecision(allIds);
                     setDecisionModalVisible(true);
                   }}
@@ -871,7 +872,7 @@ export default function BulkAddAwardsPage() {
         );
 
       case 5: // Step 6: Final review before submit
-        const finalTableData = awardType === 'DON_VI_HANG_NAM' ? unitDetails : personnelDetails;
+        const finalTableData = awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? unitDetails : personnelDetails;
 
         const finalColumns: ColumnsType<any> = [
           {
@@ -882,9 +883,9 @@ export default function BulkAddAwardsPage() {
             render: (_, __, index) => index + 1,
           },
           {
-            title: awardType === 'DON_VI_HANG_NAM' ? 'Tên đơn vị' : 'Họ và tên',
-            dataIndex: awardType === 'DON_VI_HANG_NAM' ? 'ten_don_vi' : 'ho_ten',
-            key: awardType === 'DON_VI_HANG_NAM' ? 'ten_don_vi' : 'ho_ten',
+            title: awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? 'Tên đơn vị' : 'Họ và tên',
+            dataIndex: awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? 'ten_don_vi' : 'ho_ten',
+            key: awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? 'ten_don_vi' : 'ho_ten',
             width: 200,
             align: 'center',
             render: (text: string) => <Text strong>{text}</Text>,
@@ -892,7 +893,7 @@ export default function BulkAddAwardsPage() {
         ];
 
         // Add columns based on award type
-        if (awardType === 'NCKH') {
+        if (awardType === PROPOSAL_TYPES.NCKH) {
           finalColumns.push(
             {
               title: 'Loại',

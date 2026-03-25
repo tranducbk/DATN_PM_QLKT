@@ -2,6 +2,7 @@
 
 import { Modal, Table, Tag, Typography, Spin } from 'antd';
 import { HistoryOutlined } from '@ant-design/icons';
+import { PROPOSAL_STATUS, PROPOSAL_STATUS_LABELS, PROPOSAL_STATUS_COLORS } from '@/constants/proposal.constants';
 import type { ColumnsType } from 'antd/es/table';
 
 const { Text } = Typography;
@@ -11,7 +12,7 @@ interface ScientificAchievement {
   nam: number;
   loai: 'DTKH' | 'SKKH';
   mo_ta: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  status: string;
 }
 
 const LOAI_MAP: Record<string, { text: string; color: string }> = {
@@ -20,9 +21,9 @@ const LOAI_MAP: Record<string, { text: string; color: string }> = {
 };
 
 const STATUS_MAP: Record<string, { text: string; color: string }> = {
-  PENDING: { text: 'Chờ duyệt', color: 'orange' },
-  APPROVED: { text: 'Đã duyệt', color: 'green' },
-  REJECTED: { text: 'Từ chối', color: 'red' },
+  [PROPOSAL_STATUS.PENDING]: { text: PROPOSAL_STATUS_LABELS[PROPOSAL_STATUS.PENDING], color: PROPOSAL_STATUS_COLORS[PROPOSAL_STATUS.PENDING] },
+  [PROPOSAL_STATUS.APPROVED]: { text: PROPOSAL_STATUS_LABELS[PROPOSAL_STATUS.APPROVED], color: PROPOSAL_STATUS_COLORS[PROPOSAL_STATUS.APPROVED] },
+  [PROPOSAL_STATUS.REJECTED]: { text: PROPOSAL_STATUS_LABELS[PROPOSAL_STATUS.REJECTED], color: PROPOSAL_STATUS_COLORS[PROPOSAL_STATUS.REJECTED] },
 };
 
 const columns: ColumnsType<ScientificAchievement> = [

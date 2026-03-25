@@ -24,6 +24,7 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import dayjs from 'dayjs';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
 import { useAuth } from '@/contexts/AuthContext';
+import { ROLES } from '@/constants/roles.constants';
 
 const { Title } = Typography;
 
@@ -148,7 +149,7 @@ export default function PersonnelEditPage() {
   }, [personnelId, form]);
 
   // Kiểm tra xem có phải đang edit personnel có role MANAGER không
-  const isManagerPersonnel = useMemo(() => personnelRole === 'MANAGER', [personnelRole]);
+  const isManagerPersonnel = useMemo(() => personnelRole === ROLES.MANAGER, [personnelRole]);
 
   // Filter chức vụ dựa trên đơn vị đã chọn
   const filteredPositions = useMemo(() => {
@@ -216,7 +217,7 @@ export default function PersonnelEditPage() {
         chuc_vu_id: values.chuc_vu_id,
       };
 
-      if (currentUserRole !== 'MANAGER') {
+      if (currentUserRole !== ROLES.MANAGER) {
         // Xác định đơn vị: hoặc là cơ quan đơn vị hoặc là đơn vị trực thuộc
         if (isManagerPersonnel) {
           // Nếu personnel có role MANAGER, chỉ lưu cơ quan đơn vị
@@ -444,7 +445,7 @@ export default function PersonnelEditPage() {
                   Phân công công tác
                 </Title>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {currentUserRole === 'MANAGER' ? (
+                  {currentUserRole === ROLES.MANAGER ? (
                     <Form.Item label="Đơn vị" tooltip="Chỉ Admin mới có thể thay đổi đơn vị">
                       <Input value={currentUnitName} disabled placeholder="Đơn vị" />
                     </Form.Item>

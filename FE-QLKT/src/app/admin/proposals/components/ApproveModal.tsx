@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Modal,
   Form,
@@ -20,7 +20,7 @@ import {
 } from 'antd';
 import { getApiErrorMessage } from '@/lib/apiError';
 
-import { CheckCircleOutlined, UploadOutlined, SaveOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/api-client';
 import dayjs from 'dayjs';
@@ -49,6 +49,17 @@ interface ApproveModalProps {
   onSuccess: () => void;
 }
 
+const FIELD_BY_LOAI: Record<string, { soQuyetDinh: string; pdf: string }> = {
+  CA_NHAN_HANG_NAM: { soQuyetDinh: 'so_quyet_dinh_ca_nhan_hang_nam', pdf: 'file_pdf_ca_nhan_hang_nam' },
+  DON_VI_HANG_NAM: { soQuyetDinh: 'so_quyet_dinh_don_vi_hang_nam', pdf: 'file_pdf_don_vi_hang_nam' },
+  NIEN_HAN: { soQuyetDinh: 'so_quyet_dinh_nien_han', pdf: 'file_pdf_nien_han' },
+  HC_QKQT: { soQuyetDinh: 'so_quyet_dinh_nien_han', pdf: 'file_pdf_nien_han' },
+  KNC_VSNXD_QDNDVN: { soQuyetDinh: 'so_quyet_dinh_nien_han', pdf: 'file_pdf_nien_han' },
+  CONG_HIEN: { soQuyetDinh: 'so_quyet_dinh_cong_hien', pdf: 'file_pdf_cong_hien' },
+  DOT_XUAT: { soQuyetDinh: 'so_quyet_dinh_dot_xuat', pdf: 'file_pdf_dot_xuat' },
+  NCKH: { soQuyetDinh: 'so_quyet_dinh_nckh', pdf: 'file_pdf_nckh' },
+};
+
 interface DecisionFormData {
   so_quyet_dinh: string;
   nam: number;
@@ -70,26 +81,20 @@ export default function ApproveModal({ visible, proposal, onClose, onSuccess }: 
   // File upload
   const [fileList, setFileList] = useState<any[]>([]);
 
-  // Group title data by danh_hieu
-  const titleData = proposal.title_data || proposal.data_danh_hieu || [];
+  const groupedList = useMemo(() => {
+    const titleData = proposal.title_data || proposal.data_danh_hieu || [];
+    const grouped = titleData.reduce((acc: any, item: any) => {
+      const key = item.danh_hieu || `${item.loai}_${item.mo_ta?.substring(0, 20)}`;
+      if (!acc[key]) {
+        acc[key] = { danh_hieu: item.danh_hieu || item.loai, count: 0, items: [] };
+      }
+      acc[key].count++;
+      acc[key].items.push(item);
+      return acc;
+    }, {});
+    return Object.values(grouped);
+  }, [proposal.title_data, proposal.data_danh_hieu]);
 
-  const groupedData = titleData.reduce((acc: any, item: any) => {
-    const key = item.danh_hieu || `${item.loai}_${item.mo_ta?.substring(0, 20)}`;
-    if (!acc[key]) {
-      acc[key] = {
-        danh_hieu: item.danh_hieu || item.loai,
-        count: 0,
-        items: [],
-      };
-    }
-    acc[key].count++;
-    acc[key].items.push(item);
-    return acc;
-  }, {});
-
-  const groupedList = Object.values(groupedData);
-
-  // Search decisions
   const handleSearchDecision = async (searchText: string) => {
     if (!searchText || searchText.trim().length === 0) {
       setDecisionOptions([]);
@@ -118,7 +123,6 @@ export default function ApproveModal({ visible, proposal, onClose, onSuccess }: 
     }
   };
 
-  // Handle decision select
   const handleDecisionSelect = (value: string, option: any) => {
     if (option.data) {
       setSelectedDecision(option.data);
@@ -132,41 +136,56 @@ export default function ApproveModal({ visible, proposal, onClose, onSuccess }: 
     }
   };
 
-  // Handle submit
+  // Handle submit — BE yêu cầu multipart: JSON data_* + đúng field so_quyet_dinh_* theo loại
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
       setLoading(true);
 
-      // Create or update decision first (if needed)
-      let decisionId = selectedDecision?.id;
-
-      if (!decisionId) {
-        // Create new decision
-        const decisionData = {
-          so_quyet_dinh: values.so_quyet_dinh,
-          nam: values.nam,
-          ngay_ky: values.ngay_ky.format('YYYY-MM-DD'),
-          nguoi_ky: values.nguoi_ky,
-          loai_khen_thuong: proposal.loai_de_xuat,
-          ghi_chu: values.ghi_chu || null,
-        };
-
-        const decisionResponse = await apiClient.createDecision(decisionData);
-        if (decisionResponse.success) {
-          decisionId = decisionResponse.data.id;
-        } else {
-          throw new Error('Không thể tạo quyết định');
+      if (!selectedDecision) {
+        const decisionFd = new FormData();
+        decisionFd.append('so_quyet_dinh', values.so_quyet_dinh);
+        decisionFd.append('nam', String(values.nam));
+        decisionFd.append('ngay_ky', values.ngay_ky.format('YYYY-MM-DD'));
+        decisionFd.append('nguoi_ky', values.nguoi_ky);
+        decisionFd.append('loai_khen_thuong', proposal.loai_de_xuat);
+        if (values.ghi_chu) {
+          decisionFd.append('ghi_chu', String(values.ghi_chu));
+        }
+        const decisionResponse = await apiClient.createDecision(decisionFd);
+        if (!decisionResponse.success) {
+          throw new Error(decisionResponse.message || 'Không thể tạo quyết định');
         }
       }
 
-      // Approve proposal
-      const approveData = {
-        decision_id: decisionId,
-        ghi_chu: values.ghi_chu || null,
-      };
+      const detailRes = await apiClient.getProposalById(proposal.id);
+      if (!detailRes.success || !detailRes.data) {
+        throw new Error(detailRes.message || 'Không tải được chi tiết đề xuất');
+      }
+      const full = detailRes.data as Record<string, unknown>;
 
-      const response = await apiClient.approveProposal(proposal.id, approveData);
+      const fields = FIELD_BY_LOAI[proposal.loai_de_xuat];
+      if (!fields) {
+        message.error('Loại đề xuất chưa được hỗ trợ phê duyệt qua form này');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('data_danh_hieu', JSON.stringify(full.data_danh_hieu ?? []));
+      formData.append('data_thanh_tich', JSON.stringify(full.data_thanh_tich ?? []));
+      formData.append('data_nien_han', JSON.stringify(full.data_nien_han ?? []));
+      formData.append('data_cong_hien', JSON.stringify(full.data_cong_hien ?? []));
+      formData.append(fields.soQuyetDinh, values.so_quyet_dinh);
+      if (values.ghi_chu) {
+        formData.append('ghi_chu', String(values.ghi_chu));
+      }
+
+      const rawFile = fileList[0]?.originFileObj;
+      if (rawFile instanceof File) {
+        formData.append(fields.pdf, rawFile);
+      }
+
+      const response = await apiClient.approveProposal(proposal.id, formData);
 
       if (response.success) {
         message.success('Đã phê duyệt đề xuất thành công!');

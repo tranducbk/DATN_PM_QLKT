@@ -18,6 +18,7 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import { formatDate } from '@/lib/utils';
 import { apiClient } from '@/lib/api-client';
 import ExcelImportSection from './ExcelImportSection';
+import { PROPOSAL_STATUS } from '@/constants/proposal.constants';
 import * as XLSX from 'xlsx';
 
 const { Text } = Typography;
@@ -288,8 +289,8 @@ export default function Step2SelectPersonnelCongHien({
 
     // Kiểm tra đã nhận hoặc đang chờ duyệt
     if (ineligible) {
-      if (ineligible.status === 'PENDING') return 1; // Đang chờ duyệt
-      if (ineligible.status === 'APPROVED') return 2; // Đã nhận
+      if (ineligible.status === PROPOSAL_STATUS.PENDING) return 1; // Đang chờ duyệt
+      if (ineligible.status === PROPOSAL_STATUS.APPROVED) return 2; // Đã nhận
     }
 
     // Kiểm tra giới tính
@@ -420,13 +421,13 @@ export default function Step2SelectPersonnelCongHien({
         const ineligible = ineligiblePersonnel.find(i => i.personnelId === record.id);
 
         if (ineligible) {
-          if (ineligible.status === 'APPROVED') {
+          if (ineligible.status === PROPOSAL_STATUS.APPROVED) {
             return (
               <Text type="danger" strong>
                 Đã nhận ({ineligible.awardYear})
               </Text>
             );
-          } else if (ineligible.status === 'PENDING') {
+          } else if (ineligible.status === PROPOSAL_STATUS.PENDING) {
             return (
               <Text type="warning" strong>
                 Đang chờ duyệt
@@ -689,9 +690,9 @@ export default function Step2SelectPersonnelCongHien({
         title = 'Quân nhân này chưa cập nhật giới tính. Vui lòng cập nhật trước khi đề xuất.';
       } else if (ineligible) {
         disabled = true;
-        if (ineligible.status === 'APPROVED') {
+        if (ineligible.status === PROPOSAL_STATUS.APPROVED) {
           title = `Quân nhân đã nhận danh hiệu huân chương bảo vệ tổ quốc năm ${ineligible.awardYear}`;
-        } else if (ineligible.status === 'PENDING') {
+        } else if (ineligible.status === PROPOSAL_STATUS.PENDING) {
           title = 'Quân nhân đang có đề xuất huân chương bảo vệ tổ quốc chờ duyệt';
         }
       } else if (notEligible) {
@@ -717,11 +718,11 @@ export default function Step2SelectPersonnelCongHien({
 
         const ineligible = ineligiblePersonnel.find(i => i.personnelId === record.id);
         if (ineligible) {
-          if (ineligible.status === 'APPROVED') {
+          if (ineligible.status === PROPOSAL_STATUS.APPROVED) {
             message.warning(
               `Quân nhân ${record.ho_ten} đã nhận danh hiệu huân chương bảo vệ tổ quốc năm ${ineligible.awardYear}`
             );
-          } else if (ineligible.status === 'PENDING') {
+          } else if (ineligible.status === PROPOSAL_STATUS.PENDING) {
             message.warning(
               `Quân nhân ${record.ho_ten} đang có đề xuất huân chương bảo vệ tổ quốc chờ duyệt`
             );

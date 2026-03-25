@@ -3,15 +3,16 @@
 import MainLayout from '@/components/MainLayout';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { DevZoneProvider } from '@/contexts/DevZoneContext';
+import { ROLES } from '@/constants/roles.constants';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { isChecking } = useAuthGuard('ADMIN');
+  const { isChecking } = useAuthGuard(ROLES.ADMIN);
 
   if (isChecking) return null;
 
   return (
     <DevZoneProvider>
-      <MainLayout role="ADMIN">{children}</MainLayout>
+      <MainLayout role={ROLES.ADMIN}>{children}</MainLayout>
     </DevZoneProvider>
   );
 }

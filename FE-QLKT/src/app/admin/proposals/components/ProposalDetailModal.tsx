@@ -9,6 +9,7 @@ import {
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
+import { PROPOSAL_STATUS } from '@/constants/proposal.constants';
 
 const { Text, Title } = Typography;
 
@@ -16,7 +17,7 @@ interface Proposal {
   id: string;
   loai_de_xuat: string;
   nam: number;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  status: string;
   createdAt: string;
   ngay_duyet?: string;
   rejection_reason?: string;
@@ -70,9 +71,9 @@ export default function ProposalDetailModal({
   };
 
   const statusConfig = {
-    PENDING: { color: 'warning', text: 'Đang chờ phê duyệt' },
-    APPROVED: { color: 'success', text: 'Đã phê duyệt' },
-    REJECTED: { color: 'error', text: 'Đã từ chối' },
+    [PROPOSAL_STATUS.PENDING]: { color: 'warning', text: 'Đang chờ phê duyệt' },
+    [PROPOSAL_STATUS.APPROVED]: { color: 'success', text: 'Đã phê duyệt' },
+    [PROPOSAL_STATUS.REJECTED]: { color: 'error', text: 'Đã từ chối' },
   };
 
   // Get title data
@@ -178,7 +179,7 @@ export default function ProposalDetailModal({
       onCancel={onClose}
       width={1000}
       footer={
-        proposal.status === 'PENDING'
+        proposal.status === PROPOSAL_STATUS.PENDING
           ? [
               <Button key="close" onClick={onClose}>
                 Đóng
@@ -245,7 +246,7 @@ export default function ProposalDetailModal({
         )}
 
         {/* Rejection reason */}
-        {proposal.status === 'REJECTED' && proposal.rejection_reason && (
+        {proposal.status === PROPOSAL_STATUS.REJECTED && proposal.rejection_reason && (
           <div style={{ marginTop: 16 }}>
             <Text strong type="danger">
               Lý do từ chối:
@@ -265,7 +266,7 @@ export default function ProposalDetailModal({
         )}
 
         {/* Approval info */}
-        {proposal.status === 'APPROVED' && (
+        {proposal.status === PROPOSAL_STATUS.APPROVED && (
           <div style={{ marginTop: 16 }}>
             <Descriptions bordered column={2} size="small">
               <Descriptions.Item label="Người phê duyệt">

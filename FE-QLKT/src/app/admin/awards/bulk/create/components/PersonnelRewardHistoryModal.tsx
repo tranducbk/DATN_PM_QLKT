@@ -5,6 +5,7 @@ import { HistoryOutlined, DownloadOutlined, FileTextOutlined } from '@ant-design
 import type { ColumnsType } from 'antd/es/table';
 import { previewFileWithApi } from '@/utils/filePreview';
 import { formatDate } from '@/lib/utils';
+import { PROPOSAL_STATUS, PROPOSAL_STATUS_LABELS, PROPOSAL_STATUS_COLORS } from '@/constants/proposal.constants';
 
 const { Text } = Typography;
 
@@ -280,9 +281,9 @@ export default function PersonnelRewardHistoryModal({
       key: 'status',
       width: 120,
       align: 'center',
-      render: status => {
-        const color = status === 'APPROVED' ? 'green' : 'orange';
-        const text = status === 'APPROVED' ? 'Đã duyệt' : 'Chờ duyệt';
+      render: (status: string) => {
+        const color = PROPOSAL_STATUS_COLORS[status] || 'orange';
+        const text = PROPOSAL_STATUS_LABELS[status] || status;
         return <Tag color={color}>{text}</Tag>;
       },
     },

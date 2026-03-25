@@ -25,6 +25,7 @@ import { useParams } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { useTheme } from '@/components/theme-provider';
+import { ROLES, getRoleInfo } from '@/constants/roles.constants';
 
 const { Title } = Typography;
 
@@ -90,25 +91,6 @@ export default function AccountDetailPage() {
     });
   };
 
-  const getRoleColor = (role: string) => {
-    const colors: any = {
-      SUPER_ADMIN: 'red',
-      ADMIN: 'orange',
-      MANAGER: 'blue',
-      USER: 'green',
-    };
-    return colors[role] || 'default';
-  };
-
-  const getRoleText = (role: string) => {
-    const texts: any = {
-      SUPER_ADMIN: 'Super Admin',
-      ADMIN: 'Admin',
-      MANAGER: 'Quản lý',
-      USER: 'Người dùng',
-    };
-    return texts[role] || role;
-  };
 
   if (loading) {
     return (
@@ -179,7 +161,7 @@ export default function AccountDetailPage() {
             <Descriptions.Item label="ID">{account.id}</Descriptions.Item>
             <Descriptions.Item label="Tên đăng nhập">{account.username}</Descriptions.Item>
             <Descriptions.Item label="Vai trò">
-              <Tag color={getRoleColor(account.role)}>{getRoleText(account.role)}</Tag>
+              <Tag color={getRoleInfo(account.role).color}>{getRoleInfo(account.role).label}</Tag>
             </Descriptions.Item>
             <Descriptions.Item label="Ngày tạo">
               {formatDateTime(account.createdAt)}
@@ -282,7 +264,7 @@ export default function AccountDetailPage() {
         )}
 
         {/* No Personnel Warning */}
-        {!account.QuanNhan && account.role !== 'SUPER_ADMIN' && (
+        {!account.QuanNhan && account.role !== ROLES.SUPER_ADMIN && (
           <Alert
             type="warning"
             showIcon
