@@ -37,6 +37,7 @@ export default function ManagerPersonnelEditPage() {
   const [loadingData, setLoadingData] = useState(true);
   const [positions, setPositions] = useState([]);
   const [currentUnitName, setCurrentUnitName] = useState<string>('');
+  const [currentPositionName, setCurrentPositionName] = useState<string>('');
   const [personnelRole, setPersonnelRole] = useState<string>(''); // Role của personnel đang edit
   const [selectedCoQuanDonViId, setSelectedCoQuanDonViId] = useState<string | undefined>(undefined);
   const [selectedDonViTrucThuocId, setSelectedDonViTrucThuocId] = useState<string | undefined>(
@@ -93,6 +94,7 @@ export default function ManagerPersonnelEditPage() {
           // Lưu chức vụ hiện tại
           const positionId = personnel.chuc_vu_id || personnel.ChucVu?.id;
           setCurrentPositionId(positionId);
+          setCurrentPositionName(personnel.ChucVu?.ten_chuc_vu || '');
 
           // Set form values sau khi đã set state
           form.setFieldsValue({
@@ -472,29 +474,34 @@ export default function ManagerPersonnelEditPage() {
                     </Select>
                   </Form.Item>
 
-                  <Form.Item
-                    name="chuc_vu_id"
-                    label="Chức vụ"
-                    tooltip={isManagerPersonnel ? 'Chỉ Admin mới có thể thay đổi chức vụ' : undefined}
-                    rules={[{ required: true, message: 'Vui lòng chọn chức vụ' }]}
-                  >
-                    <Select
-                      size="large"
-                      placeholder="Chọn chức vụ"
-                      disabled={loading || isManagerPersonnel}
-                      showSearch
-                      optionFilterProp="children"
-                      onChange={value => {
-                        setCurrentPositionId(value);
-                      }}
+                  {isManagerPersonnel ? (
+                    <Form.Item label="Chức vụ" tooltip="Chỉ Admin mới có thể thay đổi chức vụ">
+                      <Input size="large" value={currentPositionName} disabled placeholder="Chức vụ" />
+                    </Form.Item>
+                  ) : (
+                    <Form.Item
+                      name="chuc_vu_id"
+                      label="Chức vụ"
+                      rules={[{ required: true, message: 'Vui lòng chọn chức vụ' }]}
                     >
-                      {filteredPositions.map((pos: any) => (
-                        <Select.Option key={pos.id} value={pos.id}>
-                          {pos.ten_chuc_vu}
-                        </Select.Option>
-                      ))}
-                    </Select>
-                  </Form.Item>
+                      <Select
+                        size="large"
+                        placeholder="Chọn chức vụ"
+                        disabled={loading}
+                        showSearch
+                        optionFilterProp="children"
+                        onChange={value => {
+                          setCurrentPositionId(value);
+                        }}
+                      >
+                        {filteredPositions.map((pos: any) => (
+                          <Select.Option key={pos.id} value={pos.id}>
+                            {pos.ten_chuc_vu}
+                          </Select.Option>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                  )}
                 </div>
 
                 <div className="flex justify-end gap-2 mt-6 pt-4 border-t">
