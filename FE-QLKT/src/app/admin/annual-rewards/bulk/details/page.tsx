@@ -145,7 +145,7 @@ export default function BulkRewardDetailsPage() {
       if (res.success) {
         setPositions(res.data || []);
       }
-    } catch (error) {
+    } catch {
       // Error handled by UI
     }
   };
@@ -241,12 +241,12 @@ export default function BulkRewardDetailsPage() {
         file_dinh_kem: file,
       });
 
-      if (result.success) {
-        message.success(result.message || 'Thêm danh hiệu thành công');
-        router.push('/admin/annual-rewards/bulk');
-      } else {
+      if (!result.success) {
         message.error(result.message || 'Có lỗi xảy ra');
+        return;
       }
+      message.success(result.message || 'Thêm danh hiệu thành công');
+      router.push('/admin/annual-rewards/bulk');
     } catch (error: unknown) {
       message.error('Có lỗi xảy ra khi thêm danh hiệu');
     } finally {

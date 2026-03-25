@@ -107,16 +107,7 @@ export default function BulkAddAnnualRewardsPage() {
       ]);
 
       if (personnelRes.success) {
-        // Handle different response formats
-        let data = [];
-        if (Array.isArray(personnelRes.data)) {
-          data = personnelRes.data;
-        } else if (personnelRes.data?.personnel && Array.isArray(personnelRes.data.personnel)) {
-          data = personnelRes.data.personnel;
-        } else if (personnelRes.data?.data && Array.isArray(personnelRes.data.data)) {
-          data = personnelRes.data.data;
-        }
-
+        const data = personnelRes.data?.personnel ?? personnelRes.data ?? [];
         setPersonnelList(data);
         setFilteredPersonnel(data);
       }
@@ -124,9 +115,8 @@ export default function BulkAddAnnualRewardsPage() {
       if (unitsRes.success) {
         setUnits(unitsRes.data || []);
       }
-    } catch (error: unknown) {
+    } catch {
       message.error('Không thể tải dữ liệu');
-      // Error handled by UI message
     } finally {
       setLoading(false);
     }

@@ -545,13 +545,13 @@ export default function AdhocAwardsPage() {
 
       const result = await apiClient.updateAdhocAward(editingAward.id, formData);
 
-      if (result.success) {
-        message.success('Cập nhật khen thưởng đột xuất thành công');
-        handleCloseEditModal();
-        fetchAwards();
-      } else {
+      if (!result.success) {
         message.error(result.message || 'Cập nhật thất bại');
+        return;
       }
+      message.success('Cập nhật khen thưởng đột xuất thành công');
+      handleCloseEditModal();
+      fetchAwards();
     } catch {
       message.error('Cập nhật thất bại');
     } finally {
@@ -563,12 +563,12 @@ export default function AdhocAwardsPage() {
   const handleDelete = async (id: string) => {
     try {
       const result = await apiClient.deleteAdhocAward(id);
-      if (result.success) {
-        message.success('Xóa khen thưởng đột xuất thành công');
-        fetchAwards();
-      } else {
+      if (!result.success) {
         message.error(result.message || 'Xóa thất bại');
+        return;
       }
+      message.success('Xóa khen thưởng đột xuất thành công');
+      fetchAwards();
     } catch {
       message.error('Xóa thất bại');
     }

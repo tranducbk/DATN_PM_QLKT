@@ -66,23 +66,16 @@ export function PersonnelForm({
   async function onSubmit(values: PersonnelFormValues) {
     try {
       setLoading(true);
-      if (personnel?.id) {
-        const result = await apiClient.updatePersonnel(personnel.id, values);
-        if (result.success) {
-          message.success('Cập nhật quân nhân thành công');
-          onSuccess?.(values);
-        } else {
-          message.error(result.message || 'Có lỗi xảy ra khi cập nhật quân nhân');
-        }
-      } else {
-        const result = await apiClient.createPersonnel(values);
-        if (result.success) {
-          message.success('Tạo quân nhân thành công');
-          onSuccess?.(values);
-        } else {
-          message.error(result.message || 'Có lỗi xảy ra khi tạo quân nhân');
-        }
+      const result = personnel?.id
+        ? await apiClient.updatePersonnel(personnel.id, values)
+        : await apiClient.createPersonnel(values);
+
+      if (!result.success) {
+        message.error(result.message || `Có lỗi xảy ra khi ${personnel?.id ? 'cập nhật' : 'tạo'} quân nhân`);
+        return;
       }
+      message.success(`${personnel?.id ? 'Cập nhật' : 'Tạo'} quân nhân thành công`);
+      onSuccess?.(values);
     } catch (error: unknown) {
       const errorMessage =
         getApiErrorMessage(error, 'Có lỗi xảy ra');

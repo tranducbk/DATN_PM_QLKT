@@ -70,21 +70,19 @@ export function UnitForm({ unit, units = [], onSuccess, onClose }: UnitFormProps
         res = await apiClient.createUnit(payload);
       }
 
-      if (res.success) {
-        message.success(
-          unit?.id
-            ? unit.co_quan_don_vi_id
-              ? 'Cập nhật đơn vị trực thuộc thành công'
-              : 'Cập nhật cơ quan đơn vị thành công'
-            : unit?.co_quan_don_vi_id
-              ? 'Tạo đơn vị trực thuộc thành công'
-              : 'Tạo cơ quan đơn vị thành công'
-        );
-        onSuccess?.();
-        onClose?.();
-      } else {
+      if (!res.success) {
         message.error(res.message || 'Có lỗi xảy ra');
+        return;
       }
+      const isDVTT = unit?.co_quan_don_vi_id;
+      const isEdit = !!unit?.id;
+      message.success(
+        isEdit
+          ? isDVTT ? 'Cập nhật đơn vị trực thuộc thành công' : 'Cập nhật cơ quan đơn vị thành công'
+          : isDVTT ? 'Tạo đơn vị trực thuộc thành công' : 'Tạo cơ quan đơn vị thành công'
+      );
+      onSuccess?.();
+      onClose?.();
     } catch (error: unknown) {
       const errorMessage =
         getApiErrorMessage(error, 'Có lỗi xảy ra');

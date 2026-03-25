@@ -226,7 +226,7 @@ export default function BulkAddAwardsPage() {
         const selectedUnits = unitsData.filter((unit: any) => selectedUnitIds.includes(unit.id));
         setUnitDetails(selectedUnits);
       }
-    } catch (error) {
+    } catch {
       // Error handled by UI
     }
   };
@@ -342,31 +342,30 @@ export default function BulkAddAwardsPage() {
       // Gọi API bulk create với validation đầy đủ
       const result = await apiClient.bulkCreateAwards(formData);
 
-      if (result.success) {
-        const data = result.data || {};
-        const importedCount = data.importedCount || 0;
-        const errorCount = data.errorCount || 0;
-
-        const message =
-          importedCount > 0
-            ? `Đã thêm thành công ${importedCount} ${awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? 'đơn vị' : 'quân nhân'}${
-                errorCount > 0 ? `, ${errorCount} lỗi` : ''
-              }`
-            : 'Thêm khen thưởng thành công!';
-
-        if (errorCount > 0 && data.errors) {
-          antMessage.warning(message);
-        } else {
-          antMessage.success(message);
-        }
-
-        // Reset và quay về trang awards
-        setTimeout(() => {
-          router.push('/admin/awards');
-        }, 1000);
-      } else {
+      if (!result.success) {
         throw new Error(result.message || 'Thêm khen thưởng thất bại');
       }
+
+      const data = result.data || {};
+      const importedCount = data.importedCount || 0;
+      const errorCount = data.errorCount || 0;
+
+      const msg =
+        importedCount > 0
+          ? `Đã thêm thành công ${importedCount} ${awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? 'đơn vị' : 'quân nhân'}${
+              errorCount > 0 ? `, ${errorCount} lỗi` : ''
+            }`
+          : 'Thêm khen thưởng thành công!';
+
+      if (errorCount > 0 && data.errors) {
+        antMessage.warning(msg);
+      } else {
+        antMessage.success(msg);
+      }
+
+      setTimeout(() => {
+        router.push('/admin/awards');
+      }, 1000);
     } catch (error: unknown) {
       antMessage.error(getApiErrorMessage(error, 'Lỗi khi thêm khen thưởng'));
     } finally {

@@ -64,12 +64,12 @@ export default function PersonnelImportPage() {
       setLoading(true);
       const result = await apiClient.importPersonnel(selectedFile);
 
-      if (result.success) {
-        setImportResult(result.data);
-        message.success('Import dữ liệu quân nhân thành công');
-      } else {
+      if (!result.success) {
         message.error(result.message || 'Có lỗi xảy ra khi import dữ liệu');
+        return;
       }
+      setImportResult(result.data);
+      message.success('Import dữ liệu quân nhân thành công');
     } catch (error: unknown) {
       message.error(getApiErrorMessage(error, 'Có lỗi xảy ra khi import dữ liệu'));
     } finally {

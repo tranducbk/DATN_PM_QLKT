@@ -138,23 +138,12 @@ export default function AdminAwardsPage() {
           result = await apiClient.getAnnualRewards(params);
       }
 
-      if (result.success) {
-        const responseData = result.data;
-        // Handle different response structures
-        if (Array.isArray(responseData)) {
-          setAwards(responseData);
-        } else if (responseData?.awards && Array.isArray(responseData.awards)) {
-          setAwards(responseData.awards);
-        } else if (responseData?.data && Array.isArray(responseData.data)) {
-          setAwards(responseData.data);
-        } else if (responseData?.items && Array.isArray(responseData.items)) {
-          setAwards(responseData.items);
-        } else {
-          setAwards([]);
-        }
+      if (!result.success) {
+        message.error(result.message || 'Không thể tải danh sách khen thưởng');
+        return;
       }
-    } catch (error) {
-      // Error handled by UI message
+      setAwards(result.data?.awards ?? result.data ?? []);
+    } catch {
       message.error('Không thể tải danh sách khen thưởng');
     } finally {
       setLoading(false);
@@ -198,12 +187,12 @@ export default function AdminAwardsPage() {
           return;
       }
 
-      if (result.success) {
-        message.success('Xóa khen thưởng thành công');
-        await fetchAwards();
-      } else {
+      if (!result.success) {
         message.error(result.message || 'Xóa khen thưởng thất bại');
+        return;
       }
+      message.success('Xóa khen thưởng thành công');
+      await fetchAwards();
     } catch (error: unknown) {
       // Error handled by UI message
       message.error(getApiErrorMessage(error, 'Có lỗi xảy ra khi xóa khen thưởng'));

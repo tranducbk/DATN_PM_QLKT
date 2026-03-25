@@ -51,15 +51,15 @@ export function ChangePasswordView({ dashboardHref }: ChangePasswordViewProps) {
       setLoading(true);
       const result = await apiClient.changePassword(values.oldPassword, values.newPassword);
 
-      if (result.success) {
-        message.success('Đổi mật khẩu thành công. Đang chuyển về trang đăng nhập...');
-        setTimeout(() => {
-          logout();
-          window.location.href = '/login';
-        }, 1500);
-      } else {
+      if (!result.success) {
         message.error(result.message || 'Đổi mật khẩu thất bại');
+        return;
       }
+      message.success('Đổi mật khẩu thành công. Đang chuyển về trang đăng nhập...');
+      setTimeout(() => {
+        logout();
+        window.location.href = '/login';
+      }, 1500);
     } catch (error: unknown) {
       message.error(getApiErrorMessage(error, 'Có lỗi xảy ra khi đổi mật khẩu'));
     } finally {

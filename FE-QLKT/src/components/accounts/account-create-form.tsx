@@ -57,15 +57,11 @@ export function AccountCreateForm() {
       ]);
 
       if (unitsRes.success) {
-        // Backend trả về mảng phẳng gồm cả cơ quan đơn vị và đơn vị trực thuộc
         const unitsData = unitsRes.data || [];
-
-        // Phân loại đơn vị
         const coQuanDonVi: any[] = [];
         const donViTrucThuoc: any[] = [];
 
         unitsData.forEach((unit: any) => {
-          // Nếu có co_quan_don_vi_id thì là đơn vị trực thuộc
           if (unit.co_quan_don_vi_id || unit.CoQuanDonVi) {
             donViTrucThuoc.push({
               id: unit.id,
@@ -75,7 +71,6 @@ export function AccountCreateForm() {
               CoQuanDonVi: unit.CoQuanDonVi || null,
             });
           } else {
-            // Không có co_quan_don_vi_id thì là cơ quan đơn vị
             coQuanDonVi.push({
               id: unit.id,
               ten_don_vi: unit.ten_don_vi,
@@ -91,7 +86,7 @@ export function AccountCreateForm() {
       if (positionsRes.success) {
         setPositions(positionsRes.data || []);
       }
-    } catch (error) {
+    } catch {
       // Error handled by UI
     }
   };
