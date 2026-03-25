@@ -159,6 +159,11 @@ export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps
     return null;
   });
 
+  // Reset scroll khi chuyển trang
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
   // Cập nhật token khi user thay đổi (login/logout)
   useEffect(() => {
     if (user) {
