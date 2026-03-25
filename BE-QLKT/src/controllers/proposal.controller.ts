@@ -7,6 +7,7 @@ import { PROPOSAL_TYPES, type ProposalType } from '../constants/proposalTypes.co
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { setFileSendHeaders } from '../helpers/fileResponseHeaders';
 
 /** Lọc đơn vị cho Manager — `QuanNhan` có `co_quan_don_vi_id` / `don_vi_truc_thuoc_id` (schema) */
 function managerUnitFilterId(qn: {
@@ -207,6 +208,7 @@ class ProposalController {
       return ResponseHelper.badRequest(res, 'Tên file không hợp lệ');
     }
     const result = await proposalService.getPdfFile(filename);
+    setFileSendHeaders(res, result.filename, 'inline');
     return res.sendFile(result.filePath);
   });
 

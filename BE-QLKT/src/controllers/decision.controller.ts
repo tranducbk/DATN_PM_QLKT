@@ -1,9 +1,9 @@
-import path from 'path';
 import { Request, Response } from 'express';
 import decisionService from '../services/decision.service';
 import { parsePagination, normalizeParam } from '../helpers/paginationHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
+import { setFileSendHeaders } from '../helpers/fileResponseHeaders';
 
 class DecisionController {
   getAllDecisions = catchAsync(async (req: Request, res: Response) => {
@@ -178,16 +178,7 @@ class DecisionController {
       return ResponseHelper.notFound(res, result.error ?? 'Không tìm thấy file quyết định');
     }
 
-    const filename = result.filename;
-    const ext = path.extname(filename).toLowerCase();
-    let contentType = 'application/octet-stream';
-    if (ext === '.pdf') contentType = 'application/pdf';
-    else if (ext === '.doc') contentType = 'application/msword';
-    else if (ext === '.docx')
-      contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-
-    res.setHeader('Content-Type', contentType);
-    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
+    setFileSendHeaders(res, result.filename, 'attachment');
     return res.sendFile(result.filePath);
   });
 }
