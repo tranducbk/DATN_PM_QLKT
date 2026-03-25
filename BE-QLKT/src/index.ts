@@ -4,6 +4,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import 'dotenv/config';
 import { PORT } from './configs';
+import { allowCorsOrigin } from './configs/cors';
 import { prisma } from './models';
 import { errorHandler, notFoundHandler } from './middlewares/errorHandler';
 import { initSocket } from './utils/socketService';
@@ -19,20 +20,9 @@ if (missingEnv.length > 0) {
 const app = express();
 const httpServer = createServer(app);
 
-// Cấu hình CORS
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
-  : ['http://localhost:3000', 'http://localhost:3001'];
-
+// CORS: cùng `ALLOWED_ORIGINS` với Socket.IO (`configs/cors.ts`)
 const corsOptions: cors.CorsOptions = {
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: allowCorsOrigin,
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],

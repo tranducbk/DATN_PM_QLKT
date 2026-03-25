@@ -9,6 +9,7 @@ import { Server, Socket } from 'socket.io';
 import { Server as HttpServer } from 'http';
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from '../configs';
+import { allowCorsOrigin } from '../configs/cors';
 
 interface DecodedToken {
   id: string;
@@ -23,7 +24,7 @@ let io: Server | null = null;
 function initSocket(httpServer: HttpServer): Server {
   io = new Server(httpServer, {
     cors: {
-      origin: ['http://localhost:3000', 'http://localhost:3001'],
+      origin: allowCorsOrigin,
       credentials: true,
     },
     pingTimeout: 60000,
@@ -47,8 +48,6 @@ function initSocket(httpServer: HttpServer): Server {
   io.on('connection', (socket: Socket) => {
     const authenticatedSocket = socket as Socket & { user: DecodedToken };
     authenticatedSocket.join(`user_${authenticatedSocket.user.id}`);
-
-    socket.on('disconnect', () => {});
   });
 
   return io;
