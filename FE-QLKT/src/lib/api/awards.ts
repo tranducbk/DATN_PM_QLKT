@@ -21,7 +21,7 @@ export async function getAnnualRewards(params?: {
 export async function getAnnualRewardsByPersonnel(personnelId: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get(`/api/personnel/${personnelId}/annual-rewards`);
-    return { success: true, data: res.data?.data?.rewards || res.data?.data || res.data };
+    return { success: true, data: res.data?.data };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
@@ -189,7 +189,7 @@ export async function getPersonnelScientificAchievements(
 ): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get(`/api/personnel/${personnelId}/scientific-achievements`);
-    return { success: true, data: res.data?.data?.achievements || res.data?.data || res.data };
+    return { success: true, data: res.data?.data };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }

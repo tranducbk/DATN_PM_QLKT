@@ -20,6 +20,7 @@ import { UploadOutlined, SaveOutlined, FileTextOutlined } from '@ant-design/icon
 import type { UploadFile } from 'antd/es/upload/interface';
 import dayjs from 'dayjs';
 import { apiClient } from '@/lib/api-client';
+import { LOAI_KHEN_THUONG_OPTIONS } from '@/constants/danhHieu.constants';
 
 interface Decision {
   id?: string;
@@ -265,16 +266,6 @@ export default function DecisionModal({
     }
   };
 
-  const loaiKhenThuongOptions = [
-    { label: 'Cá nhân Hằng năm', value: 'CA_NHAN_HANG_NAM' },
-    { label: 'Đơn vị Hằng năm', value: 'DON_VI_HANG_NAM' },
-    { label: 'Huy chương Chiến sĩ vẻ vang', value: 'NIEN_HAN' },
-    { label: 'Huy chương Quân kỳ Quyết thắng', value: 'HC_QKQT' },
-    { label: 'Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN', value: 'KNC_VSNXD_QDNDVN' },
-    { label: 'Huân chương Bảo vệ Tổ quốc', value: 'CONG_HIEN' },
-    { label: 'Đột xuất', value: 'DOT_XUAT' },
-    { label: 'Thành tích Khoa học', value: 'NCKH' },
-  ];
 
   return (
     <Modal
@@ -410,7 +401,7 @@ export default function DecisionModal({
         <Form.Item name="loai_khen_thuong" label="Loại khen thưởng">
           <Select
             placeholder="Chọn loại khen thưởng"
-            options={loaiKhenThuongOptions}
+            options={LOAI_KHEN_THUONG_OPTIONS}
             popupMatchSelectWidth={false}
             styles={{ popup: { root: { minWidth: 'max-content' } } }}
             size="large"

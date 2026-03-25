@@ -4,8 +4,6 @@ import { prisma } from '../models';
 import { JWT_SECRET, JWT_REFRESH_SECRET } from '../configs';
 import { AppError, NotFoundError, ValidationError } from '../middlewares/errorHandler';
 import { emitToUser } from '../utils/socketService';
-import type { TaiKhoan } from '../generated/prisma';
-
 interface LoginResult {
   accessToken: string;
   refreshToken: string;
@@ -34,6 +32,22 @@ interface JwtPayload {
 }
 
 class AuthService {
+  private generateAccessToken(account: { id: string; username: string; role: string; quan_nhan_id: string | null }): string {
+    return jwt.sign(
+      { id: account.id, username: account.username, role: account.role, quan_nhan_id: account.quan_nhan_id },
+      JWT_SECRET,
+      { expiresIn: '15m' }
+    );
+  }
+
+  private generateRefreshToken(account: { id: string; username: string }): string {
+    return jwt.sign(
+      { id: account.id, username: account.username },
+      JWT_REFRESH_SECRET,
+      { expiresIn: '1d' }
+    );
+  }
+
   async login(username: string, password: string): Promise<LoginResult> {
     const account = await prisma.taiKhoan.findUnique({
       where: { username },
@@ -61,25 +75,8 @@ class AuthService {
       throw new AppError('Tên đăng nhập hoặc mật khẩu không đúng', 401);
     }
 
-    const accessToken = jwt.sign(
-      {
-        id: account.id,
-        username: account.username,
-        role: account.role,
-        quan_nhan_id: account.quan_nhan_id,
-      },
-      JWT_SECRET,
-      { expiresIn: '15m' }
-    );
-
-    const refreshToken = jwt.sign(
-      {
-        id: account.id,
-        username: account.username,
-      },
-      JWT_REFRESH_SECRET,
-      { expiresIn: '1d' }
-    );
+    const accessToken = this.generateAccessToken(account);
+    const refreshToken = this.generateRefreshToken(account);
 
     emitToUser(account.id, 'force_logout', {
       message: 'Tài khoản của bạn đã được đăng nhập ở nơi khác.',
@@ -128,25 +125,8 @@ class AuthService {
         throw new AppError('Refresh token không hợp lệ', 401);
       }
 
-      const newAccessToken = jwt.sign(
-        {
-          id: account.id,
-          username: account.username,
-          role: account.role,
-          quan_nhan_id: account.quan_nhan_id,
-        },
-        JWT_SECRET,
-        { expiresIn: '15m' }
-      );
-
-      const newRefreshToken = jwt.sign(
-        {
-          id: account.id,
-          username: account.username,
-        },
-        JWT_REFRESH_SECRET,
-        { expiresIn: '1d' }
-      );
+      const newAccessToken = this.generateAccessToken(account);
+      const newRefreshToken = this.generateRefreshToken(account);
 
       await prisma.taiKhoan.update({
         where: { id: account.id },
@@ -199,11 +179,11 @@ class AuthService {
       throw new AppError('Mật khẩu hiện tại không chính xác', 401);
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-
     if (newPassword.length < 8) {
       throw new ValidationError('Mật khẩu mới phải có ít nhất 8 ký tự');
     }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     await prisma.taiKhoan.update({
       where: { id: userId },

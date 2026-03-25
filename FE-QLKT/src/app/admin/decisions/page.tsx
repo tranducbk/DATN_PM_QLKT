@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Card,
   Table,
@@ -16,12 +16,8 @@ import {
   Popconfirm,
   Modal,
   Descriptions,
-  DatePicker,
-  Form,
-  Upload,
 } from 'antd';
 import { getApiErrorMessage } from '@/lib/apiError';
-
 import {
   HomeOutlined,
   PlusOutlined,
@@ -32,14 +28,14 @@ import {
   FileTextOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
 import { previewFile } from '@/utils/filePreview';
+import { formatDate, formatDateTime } from '@/lib/utils';
+import { LOAI_KHEN_THUONG_OPTIONS, getLoaiDeXuatName } from '@/constants/danhHieu.constants';
 import dayjs from 'dayjs';
 import DecisionModal from '@/components/DecisionModal';
 
 const { Title, Text } = Typography;
-const { RangePicker } = DatePicker;
 
 interface Decision {
   id: string;
@@ -54,19 +50,17 @@ interface Decision {
   updatedAt: string;
 }
 
-const loaiKhenThuongOptions = [
-  { label: 'Cá nhân Hằng năm', value: 'CA_NHAN_HANG_NAM' },
-  { label: 'Đơn vị Hằng năm', value: 'DON_VI_HANG_NAM' },
-  { label: 'Huy chương Chiến sĩ vẻ vang', value: 'NIEN_HAN' },
-  { label: 'Huân chương Bảo vệ Tổ quốc', value: 'CONG_HIEN' },
-  { label: 'Đột xuất', value: 'DOT_XUAT' },
-  { label: 'ĐTKH/SKKH', value: 'NCKH' },
-];
+interface DecisionQueryParams {
+  page: number;
+  limit: number;
+  nam?: number;
+  loai_khen_thuong?: string;
+  search?: string;
+}
 
 export default function AdminDecisionsPage() {
   const { message } = App.useApp();
   const [loading, setLoading] = useState(false);
-  const [tableLoading, setTableLoading] = useState(false);
   const [decisions, setDecisions] = useState<Decision[]>([]);
   const [pagination, setPagination] = useState({
     current: 1,
@@ -74,63 +68,60 @@ export default function AdminDecisionsPage() {
     total: 0,
   });
   const [searchText, setSearchText] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [yearFilter, setYearFilter] = useState<number | null>(null);
   const [typeFilter, setTypeFilter] = useState<string>('ALL');
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedDecision, setSelectedDecision] = useState<Decision | null>(null);
   const [decisionModalVisible, setDecisionModalVisible] = useState(false);
   const [editingDecision, setEditingDecision] = useState<Decision | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    debounceRef.current = setTimeout(() => {
+      setDebouncedSearch(searchText);
+    }, 400);
+    return () => clearTimeout(debounceRef.current);
+  }, [searchText]);
 
   useEffect(() => {
     fetchDecisions();
-  }, [pagination.current, pagination.pageSize, yearFilter, typeFilter, searchText]);
+  }, [pagination.current, pagination.pageSize, yearFilter, typeFilter, debouncedSearch]);
 
-  const fetchDecisions = async (customPagination?: { current: number; pageSize: number }) => {
+  const fetchDecisions = async () => {
     try {
-      // Chỉ set loading ban đầu, khi chuyển trang thì dùng tableLoading
-      const paginationToUse = customPagination || pagination;
-      if (decisions.length === 0 || paginationToUse.current === 1) {
-        setLoading(true);
-      } else {
-        setTableLoading(true);
-      }
-      const params: any = {
-        page: paginationToUse.current,
-        limit: paginationToUse.pageSize,
+      setLoading(true);
+      const params: DecisionQueryParams = {
+        page: pagination.current,
+        limit: pagination.pageSize,
       };
-      if (yearFilter !== null && yearFilter !== undefined) {
+      if (yearFilter != null) {
         params.nam = yearFilter;
       }
       if (typeFilter !== 'ALL') {
         params.loai_khen_thuong = typeFilter;
       }
-      if (searchText) {
-        params.search = searchText;
+      if (debouncedSearch) {
+        params.search = debouncedSearch;
       }
 
       const response = await apiClient.getDecisions(params);
 
       if (response.success) {
-        // Backend trả về: { success: true, data: [...], pagination: {...} }
-        // apiClient.getDecisions() đã parse và trả về: { success: true, data: [...], pagination: {...} }
-        const decisions = Array.isArray(response.data) ? response.data : [];
-        const paginationData = response.pagination;
-
-        setDecisions(decisions);
-        setPagination({
-          ...paginationToUse,
-          total: paginationData?.total || decisions.length,
-        });
+        // getDecisions chuẩn hóa BE `{ data: { items, pagination } }` → `data` là mảng `items`
+        const rows = Array.isArray(response.data) ? response.data : [];
+        setDecisions(rows as Decision[]);
+        setPagination(prev => ({
+          ...prev,
+          total: response.pagination?.total ?? rows.length,
+        }));
       } else {
-        // API returned unsuccessful response
         message.error(response.message || 'Lỗi khi tải danh sách quyết định');
       }
-    } catch (error: unknown) {
-      // Error handled by UI message
+    } catch {
       message.error('Lỗi khi tải danh sách quyết định');
     } finally {
       setLoading(false);
-      setTableLoading(false);
     }
   };
 
@@ -163,18 +154,10 @@ export default function AdminDecisionsPage() {
     setDecisionModalVisible(true);
   };
 
-  const handleModalSuccess = async () => {
+  const handleModalSuccess = () => {
     setDecisionModalVisible(false);
     setEditingDecision(null);
-    // Reset về trang 1 và gọi API với pagination mới
-    const newPagination = { ...pagination, current: 1 };
-    setPagination(newPagination);
-    // Gọi fetchDecisions với pagination mới để đảm bảo API được gọi với page=1
-    await fetchDecisions(newPagination);
-  };
-
-  const handlePreviewFile = (filePath: string) => {
-    previewFile(filePath);
+    setPagination(prev => ({ ...prev, current: 1 }));
   };
 
   const columns: ColumnsType<Decision> = [
@@ -183,7 +166,7 @@ export default function AdminDecisionsPage() {
       key: 'stt',
       width: 65,
       align: 'center',
-      render: (_: any, __: any, index: number) =>
+      render: (_: unknown, __: Decision, index: number) =>
         (pagination.current - 1) * pagination.pageSize + index + 1,
     },
     {
@@ -207,7 +190,7 @@ export default function AdminDecisionsPage() {
       key: 'ngay_ky',
       width: 120,
       align: 'center',
-      render: (date: string) => dayjs(date).format('DD/MM/YYYY'),
+      render: (date: string) => formatDate(date),
     },
     {
       title: 'Người ký',
@@ -224,8 +207,7 @@ export default function AdminDecisionsPage() {
       align: 'center',
       render: (type: string | null) => {
         if (!type) return '-';
-        const option = loaiKhenThuongOptions.find(opt => opt.value === type);
-        return <Text>{option?.label || type}</Text>;
+        return <Text>{getLoaiDeXuatName(type)}</Text>;
       },
     },
     {
@@ -249,7 +231,7 @@ export default function AdminDecisionsPage() {
       width: 200,
       fixed: 'right',
       align: 'center',
-      render: (_: any, record: Decision) => (
+      render: (_: unknown, record: Decision) => (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
           <Space size="small" wrap style={{ justifyContent: 'center', width: '100%' }}>
             <Button
@@ -293,7 +275,7 @@ export default function AdminDecisionsPage() {
               <Button
                 type="link"
                 icon={<FileTextOutlined />}
-                onClick={() => handlePreviewFile(record.file_path!)}
+                onClick={() => previewFile(record.file_path!)}
                 size="small"
                 style={{ padding: '0 4px', minWidth: '60px' }}
               >
@@ -360,7 +342,7 @@ export default function AdminDecisionsPage() {
             allowClear
           >
             <Select.Option value="ALL">Tất cả loại</Select.Option>
-            {loaiKhenThuongOptions.map(option => (
+            {LOAI_KHEN_THUONG_OPTIONS.map(option => (
               <Select.Option key={option.value} value={option.value}>
                 {option.label}
               </Select.Option>
@@ -373,7 +355,7 @@ export default function AdminDecisionsPage() {
           columns={columns}
           dataSource={decisions}
           rowKey="id"
-          loading={loading || tableLoading}
+          loading={loading}
           pagination={{
             current: pagination.current,
             pageSize: pagination.pageSize,
@@ -382,16 +364,14 @@ export default function AdminDecisionsPage() {
             showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} quyết định`,
             pageSizeOptions: ['10', '20', '50', '100'],
             onChange: (page, pageSize) => {
-              setTableLoading(true);
-              setPagination({
-                ...pagination,
+              setPagination(prev => ({
+                ...prev,
                 current: page,
-                pageSize: pageSize || pagination.pageSize,
-              });
+                pageSize: pageSize || prev.pageSize,
+              }));
             },
-            onShowSizeChange: (current, size) => {
-              setTableLoading(true);
-              setPagination({ ...pagination, current: 1, pageSize: size });
+            onShowSizeChange: (_current, size) => {
+              setPagination(prev => ({ ...prev, current: 1, pageSize: size }));
             },
           }}
           bordered
@@ -410,16 +390,18 @@ export default function AdminDecisionsPage() {
           <Button key="close" onClick={() => setDetailModalVisible(false)}>
             Đóng
           </Button>,
-          selectedDecision?.file_path && (
-            <Button
-              key="preview"
-              type="primary"
-              icon={<EyeOutlined />}
-              onClick={() => handlePreviewFile(selectedDecision!.file_path!)}
-            >
-              Xem file PDF
-            </Button>
-          ),
+          ...(selectedDecision?.file_path
+            ? [
+                <Button
+                  key="preview"
+                  type="primary"
+                  icon={<EyeOutlined />}
+                  onClick={() => previewFile(selectedDecision.file_path!)}
+                >
+                  Xem file PDF
+                </Button>,
+              ]
+            : []),
         ]}
         width={700}
         centered
@@ -433,16 +415,12 @@ export default function AdminDecisionsPage() {
             </Descriptions.Item>
             <Descriptions.Item label="Năm">{selectedDecision.nam}</Descriptions.Item>
             <Descriptions.Item label="Ngày ký">
-              {dayjs(selectedDecision.ngay_ky).format('DD/MM/YYYY')}
+              {formatDate(selectedDecision.ngay_ky)}
             </Descriptions.Item>
             <Descriptions.Item label="Người ký">{selectedDecision.nguoi_ky}</Descriptions.Item>
             <Descriptions.Item label="Loại khen thưởng">
               {selectedDecision.loai_khen_thuong ? (
-                <Tag color="blue">
-                  {loaiKhenThuongOptions.find(
-                    opt => opt.value === selectedDecision.loai_khen_thuong
-                  )?.label || selectedDecision.loai_khen_thuong}
-                </Tag>
+                <Tag color="blue">{getLoaiDeXuatName(selectedDecision.loai_khen_thuong)}</Tag>
               ) : (
                 '-'
               )}
@@ -453,7 +431,7 @@ export default function AdminDecisionsPage() {
                 <Button
                   type="link"
                   icon={<FileTextOutlined />}
-                  onClick={() => handlePreviewFile(selectedDecision!.file_path!)}
+                  onClick={() => previewFile(selectedDecision!.file_path!)}
                 >
                   {selectedDecision.file_path.split('/').pop()}
                 </Button>
@@ -462,10 +440,10 @@ export default function AdminDecisionsPage() {
               )}
             </Descriptions.Item>
             <Descriptions.Item label="Ngày tạo">
-              {dayjs(selectedDecision.createdAt).format('DD/MM/YYYY HH:mm')}
+              {formatDateTime(selectedDecision.createdAt)}
             </Descriptions.Item>
             <Descriptions.Item label="Ngày cập nhật">
-              {dayjs(selectedDecision.updatedAt).format('DD/MM/YYYY HH:mm')}
+              {formatDateTime(selectedDecision.updatedAt)}
             </Descriptions.Item>
           </Descriptions>
         )}

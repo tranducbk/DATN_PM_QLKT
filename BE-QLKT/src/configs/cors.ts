@@ -1,11 +1,9 @@
-/**
- * Danh sách origin FE (HTTP CORS + Socket.IO) — một nguồn, tránh lệch khi deploy.
- * `.env`: ALLOWED_ORIGINS=https://a.com,https://b.com
- */
+const allowedOrigins: string[] = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+  : ['http://localhost:3000', 'http://localhost:3001'];
+
 export function getAllowedOrigins(): string[] {
-  return process.env.ALLOWED_ORIGINS
-    ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
-    : ['http://localhost:3000', 'http://localhost:3001'];
+  return allowedOrigins;
 }
 
 /** Callback dùng chung cho `cors` (Express) và `Server` (Socket.IO). */

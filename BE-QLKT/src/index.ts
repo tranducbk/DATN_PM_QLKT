@@ -40,7 +40,6 @@ const corsOptions: cors.CorsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
 
 // Trust proxy for production deployment (Render.com, Heroku, etc.)
 app.set('trust proxy', 1);

@@ -7,6 +7,7 @@ export type DecisionsPagination = {
   total?: number;
   page?: number;
   limit?: number;
+  totalPages?: number;
 };
 
 export async function getDecisions(params?: {
@@ -18,10 +19,9 @@ export async function getDecisions(params?: {
 }): Promise<ApiResponse & { pagination?: DecisionsPagination }> {
   try {
     const res = await axiosInstance.get('/api/decisions', { params });
-    // Backend trả về: { success: true, data: [...], pagination: {...} }
     return {
       success: true,
-      data: res.data?.data || res.data,
+      data: res.data?.data || [],
       pagination: res.data?.pagination,
     };
   } catch (e: unknown) {

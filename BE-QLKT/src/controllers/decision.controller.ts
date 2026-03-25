@@ -16,8 +16,11 @@ class DecisionController {
     if (search) filters.search = search;
 
     const result = await decisionService.getAllDecisions(filters, page, limit);
-    return ResponseHelper.success(res, {
-      data: { items: result.decisions, pagination: result.pagination },
+    return ResponseHelper.paginated(res, {
+      data: result.decisions,
+      total: result.pagination.total,
+      page,
+      limit,
       message: 'Lấy danh sách quyết định thành công',
     });
   });

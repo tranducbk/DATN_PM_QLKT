@@ -51,68 +51,6 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction): Pro
   }
 };
 
-const requireSuperAdmin = (req: Request, res: Response, next: NextFunction): void => {
-  if (!req.user) {
-    res.status(401).json({
-      success: false,
-      message: 'Vui lòng đăng nhập trước.',
-    });
-    return;
-  }
-
-  if (req.user.role !== ROLES.SUPER_ADMIN) {
-    res.status(403).json({
-      success: false,
-      message: 'Chỉ SUPER_ADMIN mới có quyền thực hiện thao tác này.',
-    });
-    return;
-  }
-
-  next();
-};
-
-const requireAdmin = (req: Request, res: Response, next: NextFunction): void => {
-  if (!req.user) {
-    res.status(401).json({
-      success: false,
-      message: 'Vui lòng đăng nhập trước.',
-    });
-    return;
-  }
-
-  const allowedRoles: string[] = [ROLES.SUPER_ADMIN, ROLES.ADMIN];
-  if (!allowedRoles.includes(req.user.role)) {
-    res.status(403).json({
-      success: false,
-      message: 'Chỉ ADMIN trở lên mới có quyền thực hiện thao tác này.',
-    });
-    return;
-  }
-
-  next();
-};
-
-const requireManager = (req: Request, res: Response, next: NextFunction): void => {
-  if (!req.user) {
-    res.status(401).json({
-      success: false,
-      message: 'Vui lòng đăng nhập trước.',
-    });
-    return;
-  }
-
-  const allowedRoles: string[] = [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER];
-  if (!allowedRoles.includes(req.user.role)) {
-    res.status(403).json({
-      success: false,
-      message: 'Chỉ MANAGER trở lên mới có quyền thực hiện thao tác này.',
-    });
-    return;
-  }
-
-  next();
-};
-
 const requireAuth = verifyToken;
 
 const checkRole = (allowedRoles: string[]) => {
@@ -136,5 +74,9 @@ const checkRole = (allowedRoles: string[]) => {
     next();
   };
 };
+
+const requireSuperAdmin = checkRole([ROLES.SUPER_ADMIN]);
+const requireAdmin = checkRole([ROLES.SUPER_ADMIN, ROLES.ADMIN]);
+const requireManager = checkRole([ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER]);
 
 export { verifyToken, requireAuth, requireSuperAdmin, requireAdmin, requireManager, checkRole };

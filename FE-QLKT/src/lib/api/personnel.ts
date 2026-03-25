@@ -66,9 +66,8 @@ export async function deletePersonnel(id: string): Promise<ApiResponse> {
 // Position History
 export async function getPositionHistory(personnelId: string): Promise<ApiResponse> {
   try {
-    let url = `/api/personnel/${personnelId}/position-history`;
-    const res = await axiosInstance.get(url);
-    return { success: true, data: res.data?.data?.history || res.data?.data || res.data };
+    const res = await axiosInstance.get(`/api/personnel/${personnelId}/position-history`);
+    return { success: true, data: res.data?.data };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
