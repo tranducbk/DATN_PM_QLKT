@@ -42,7 +42,6 @@ import type { UploadFile } from 'antd/es/upload/interface';
 import type { ColumnsType } from 'antd/es/table';
 import type { DateInput } from '@/lib/types';
 import { apiClient } from '@/lib/api-client';
-import axiosInstance from '@/utils/axiosInstance';
 import { getDanhHieuName } from '@/constants/danhHieu.constants';
 // Shared components - reuse từ admin (DRY principle, tránh duplicate ~2000 dòng code)
 import Step2SelectPersonnelCaNhanHangNam from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelCaNhanHangNam';
@@ -214,9 +213,9 @@ export default function CreateProposalPage() {
 
   const fetchPersonnelDetails = async () => {
     try {
-      const promises = selectedPersonnelIds.map(id => axiosInstance.get(`/api/personnel/${id}`));
+      const promises = selectedPersonnelIds.map(id => apiClient.getPersonnelById(id));
       const responses = await Promise.all(promises);
-      const personnelData = responses.filter(r => r.data.success).map(r => r.data.data);
+      const personnelData = responses.filter(r => r.success).map(r => r.data);
       setPersonnelDetails(personnelData);
     } catch (error) {
       // Error handled by UI
@@ -283,9 +282,9 @@ export default function CreateProposalPage() {
       selectedPersonnelIds.length > 0
     ) {
       try {
-        const promises = selectedPersonnelIds.map(id => axiosInstance.get(`/api/personnel/${id}`));
+        const promises = selectedPersonnelIds.map(id => apiClient.getPersonnelById(id));
         const responses = await Promise.all(promises);
-        const personnelData = responses.filter(r => r.data.success).map(r => r.data.data);
+        const personnelData = responses.filter(r => r.success).map(r => r.data);
 
         const missingGender = personnelData.filter(
           p => !p.gioi_tinh || (p.gioi_tinh !== 'NAM' && p.gioi_tinh !== 'NU')
@@ -317,9 +316,9 @@ export default function CreateProposalPage() {
     // Validation cho NIEN_HAN: Kiểm tra ngày nhập ngũ khi chuyển từ Step 2 sang Step 3
     if (currentStep === 1 && proposalType === 'NIEN_HAN' && selectedPersonnelIds.length > 0) {
       try {
-        const promises = selectedPersonnelIds.map(id => axiosInstance.get(`/api/personnel/${id}`));
+        const promises = selectedPersonnelIds.map(id => apiClient.getPersonnelById(id));
         const responses = await Promise.all(promises);
-        const personnelData = responses.filter(r => r.data.success).map(r => r.data.data);
+        const personnelData = responses.filter(r => r.success).map(r => r.data);
 
         const missingNgayNhapNgu = personnelData.filter(p => !p.ngay_nhap_ngu);
 
@@ -340,9 +339,9 @@ export default function CreateProposalPage() {
     // Validation cho HC_QKQT: Kiểm tra >= 25 năm phục vụ khi chuyển từ Step 2 sang Step 3
     if (currentStep === 1 && proposalType === 'HC_QKQT' && selectedPersonnelIds.length > 0) {
       try {
-        const promises = selectedPersonnelIds.map(id => axiosInstance.get(`/api/personnel/${id}`));
+        const promises = selectedPersonnelIds.map(id => apiClient.getPersonnelById(id));
         const responses = await Promise.all(promises);
-        const personnelData = responses.filter(r => r.data.success).map(r => r.data.data);
+        const personnelData = responses.filter(r => r.success).map(r => r.data);
 
         const ineligiblePersonnel: Array<{ ho_ten: string; reason: string }> = [];
 
@@ -429,10 +428,10 @@ export default function CreateProposalPage() {
       if (proposalType === 'KNC_VSNXD_QDNDVN' && selectedPersonnelIds.length > 0) {
         try {
           const promises = selectedPersonnelIds.map(id =>
-            axiosInstance.get(`/api/personnel/${id}`)
+            apiClient.getPersonnelById(id)
           );
           const responses = await Promise.all(promises);
-          const personnelData = responses.filter(r => r.data.success).map(r => r.data.data);
+          const personnelData = responses.filter(r => r.success).map(r => r.data);
 
           const missingGender = personnelData.filter(
             p => !p.gioi_tinh || (p.gioi_tinh !== 'NAM' && p.gioi_tinh !== 'NU')
@@ -467,10 +466,10 @@ export default function CreateProposalPage() {
       if (proposalType === 'NIEN_HAN' && selectedPersonnelIds.length > 0) {
         try {
           const promises = selectedPersonnelIds.map(id =>
-            axiosInstance.get(`/api/personnel/${id}`)
+            apiClient.getPersonnelById(id)
           );
           const responses = await Promise.all(promises);
-          const personnelData = responses.filter(r => r.data.success).map(r => r.data.data);
+          const personnelData = responses.filter(r => r.success).map(r => r.data);
 
           const missingNgayNhapNgu = personnelData.filter(p => !p.ngay_nhap_ngu);
 
@@ -513,10 +512,10 @@ export default function CreateProposalPage() {
       if (proposalType === 'HC_QKQT' && selectedPersonnelIds.length > 0) {
         try {
           const promises = selectedPersonnelIds.map(id =>
-            axiosInstance.get(`/api/personnel/${id}`)
+            apiClient.getPersonnelById(id)
           );
           const responses = await Promise.all(promises);
-          const personnelData = responses.filter(r => r.data.success).map(r => r.data.data);
+          const personnelData = responses.filter(r => r.success).map(r => r.data);
 
           const ineligiblePersonnel: Array<{ ho_ten: string; reason: string }> = [];
 

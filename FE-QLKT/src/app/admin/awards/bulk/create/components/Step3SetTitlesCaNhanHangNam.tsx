@@ -16,7 +16,6 @@ import {
 } from 'antd';
 import { EditOutlined, HistoryOutlined, EyeOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import axiosInstance from '@/utils/axiosInstance';
 import { apiClient } from '@/lib/api-client';
 import PersonnelRewardHistoryModal from './PersonnelRewardHistoryModal';
 import { formatDate } from '@/lib/utils';
@@ -116,9 +115,9 @@ export default function Step3SetTitlesCaNhanHangNam({
   const fetchPersonnelDetails = async () => {
     try {
       setLoading(true);
-      const promises = selectedPersonnelIds.map(id => axiosInstance.get(`/api/personnel/${id}`));
+      const promises = selectedPersonnelIds.map(id => apiClient.getPersonnelById(id));
       const responses = await Promise.all(promises);
-      const personnelData = responses.filter(r => r.data.success).map(r => r.data.data);
+      const personnelData = responses.filter(r => r.success).map(r => r.data);
       setPersonnel(personnelData);
 
       // Initialize title data if empty
@@ -272,36 +271,32 @@ export default function Step3SetTitlesCaNhanHangNam({
       const personnelDetail = personnel.find(p => p.id === id);
       if (personnelDetail) {
         try {
-          const response = await axiosInstance.get('/api/proposals/check-duplicate', {
-            params: {
-              personnel_id: id,
-              nam: nam,
-              danh_hieu: value,
-              proposal_type: 'CA_NHAN_HANG_NAM',
-            },
+          const response = await apiClient.checkDuplicate({
+            personnel_id: id,
+            nam: nam,
+            danh_hieu: value,
+            proposal_type: 'CA_NHAN_HANG_NAM',
           });
 
           if (value === 'CSTDCS' || value === 'CSTT') {
             // Kiểm tra thêm cho CSTDCS/CSTT
-            const response = await axiosInstance.get('/api/proposals/check-duplicate', {
-              params: {
-                personnel_id: id,
-                nam: nam,
-                danh_hieu: value === 'CSTDCS' ? 'CSTT' : 'CSTDCS',
-                proposal_type: 'CA_NHAN_HANG_NAM',
-              },
+            const response = await apiClient.checkDuplicate({
+              personnel_id: id,
+              nam: nam,
+              danh_hieu: value === 'CSTDCS' ? 'CSTT' : 'CSTDCS',
+              proposal_type: 'CA_NHAN_HANG_NAM',
             });
-            if (response.data.success && response.data.data.exists) {
+            if (response.success && response.data.exists) {
               message.error(
-                `${personnelDetail.ho_ten}: ${response.data.data.message}. Không thể đề xuất danh hiệu này.`
+                `${personnelDetail.ho_ten}: ${response.data.message}. Không thể đề xuất danh hiệu này.`
               );
               return; // Không cho phép chọn
             }
           }
 
-          if (response.data.success && response.data.data.exists) {
+          if (response.success && response.data.exists) {
             message.error(
-              `${personnelDetail.ho_ten}: ${response.data.data.message}. Không thể đề xuất danh hiệu này.`
+              `${personnelDetail.ho_ten}: ${response.data.message}. Không thể đề xuất danh hiệu này.`
             );
             return; // Không cho phép chọn
           }

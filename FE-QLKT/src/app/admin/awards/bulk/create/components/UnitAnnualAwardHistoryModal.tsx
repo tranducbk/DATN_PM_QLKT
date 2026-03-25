@@ -4,7 +4,7 @@ import { Modal, Table, Tag, Typography, Spin, Descriptions } from 'antd';
 import { HistoryOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
-import axiosInstance from '@/utils/axiosInstance';
+import { apiClient } from '@/lib/api-client';
 import { previewFileWithApi } from '@/utils/filePreview';
 import { message } from 'antd';
 import { getApiErrorMessage } from '@/lib/apiError';
@@ -50,16 +50,14 @@ export default function UnitAnnualAwardHistoryModal({
       message.loading({ content: 'Đang tải file...', key: 'preview' });
 
       // Luôn query từ DB để lấy file path mới nhất
-      const response = await axiosInstance.get(
-        `/api/decisions/file-path/${encodeURIComponent(soQuyetDinh)}`
-      );
+      const response = await apiClient.getDecisionFilePath(soQuyetDinh);
 
-      if (!response.data?.success || !response.data?.data?.file_path) {
+      if (!response.success || !response.data?.file_path) {
         message.warning({ content: 'Không tìm thấy file quyết định', key: 'preview' });
         return;
       }
 
-      const filePath = response.data.data.file_path;
+      const filePath = response.data.file_path;
       const filename = filePath.split('/').pop() || `${soQuyetDinh}.pdf`;
 
       message.destroy('preview');

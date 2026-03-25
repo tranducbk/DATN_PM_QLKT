@@ -15,7 +15,6 @@ import {
 } from 'antd';
 import { SearchOutlined, TrophyOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import axiosInstance from '@/utils/axiosInstance';
 import { formatDate } from '@/lib/utils';
 import type { DateInput } from '@/lib/types';
 import { apiClient } from '@/lib/api-client';
@@ -108,11 +107,11 @@ export default function Step2SelectPersonnelHCQKQT({
       await Promise.all(
         personnel.map(async p => {
           try {
-            const response = await axiosInstance.get(`/api/annual-rewards/check-hcqkqt/${p.id}`);
-            if (response.data.success) {
-              receivedMap[p.id] = response.data.data.alreadyReceived;
-              if (response.data.data.alreadyReceived && response.data.data.reason) {
-                reasonMap[p.id] = response.data.data.reason;
+            const response = await apiClient.checkHCQKQT(p.id);
+            if (response.success) {
+              receivedMap[p.id] = response.data.alreadyReceived;
+              if (response.data.alreadyReceived && response.data.reason) {
+                reasonMap[p.id] = response.data.reason;
               }
             }
           } catch (error) {
@@ -134,21 +133,19 @@ export default function Step2SelectPersonnelHCQKQT({
   const fetchPersonnel = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get('/api/personnel', {
-        params: {
-          page: 1,
-          limit: 1000,
-        },
+      const response = await apiClient.getPersonnel({
+        page: 1,
+        limit: 1000,
       });
 
-      if (response.data.success) {
-        const personnelData = response.data.data?.personnel || [];
+      if (response.success) {
+        const personnelData = response.data?.personnel || [];
         setPersonnel(personnelData);
         if (personnelData.length === 0) {
           message.warning('Không có quân nhân nào trong đơn vị của bạn.');
         }
       } else {
-        message.error(response.data.message || 'Không thể lấy danh sách quân nhân');
+        message.error(response.message || 'Không thể lấy danh sách quân nhân');
       }
     } catch (error: unknown) {
       // Error handled by UI
@@ -543,20 +540,18 @@ export default function Step2SelectPersonnelHCQKQT({
           // Kiểm tra trùng lặp trước khi resolve
           try {
             for (const item of titleData) {
-              const checkResponse = await axiosInstance.get('/api/proposals/check-duplicate', {
-                params: {
+              const checkResponse = await apiClient.checkDuplicate({
                   personnel_id: item.personnel_id,
                   nam: item.nam,
                   danh_hieu: item.danh_hieu,
                   proposal_type: 'HC_QKQT',
-                },
               });
 
-              if (checkResponse.data.data.success === false) {
-                throw new Error(checkResponse.data.data.message || 'Có lỗi khi kiểm tra trùng lặp');
+              if (checkResponse.data.success === false) {
+                throw new Error(checkResponse.data.message || 'Có lỗi khi kiểm tra trùng lặp');
               }
 
-              if (checkResponse.data.data.exists === true) {
+              if (checkResponse.data.exists === true) {
                 throw new Error(
                   'Dữ liệu import có trùng lặp với đề xuất đã tồn tại. Vui lòng kiểm tra lại.'
                 );

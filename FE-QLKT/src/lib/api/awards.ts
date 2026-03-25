@@ -58,6 +58,33 @@ export async function importAnnualRewards(file: File): Promise<ApiResponse> {
   }
 }
 
+export async function checkHCQKQT(personnelId: string): Promise<ApiResponse> {
+  try {
+    const res = await axiosInstance.get(`/api/annual-rewards/check-hcqkqt/${personnelId}`);
+    return { success: true, data: res.data?.data || res.data };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
+  }
+}
+
+export async function checkKNCVSNXD(personnelId: string): Promise<ApiResponse> {
+  try {
+    const res = await axiosInstance.get(`/api/annual-rewards/check-knc-vsnxd/${personnelId}`);
+    return { success: true, data: res.data?.data || res.data };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
+  }
+}
+
+export async function checkContributionEligibility(personnelIds: string[]): Promise<ApiResponse> {
+  try {
+    const res = await axiosInstance.post('/api/personnel/check-contribution-eligibility', { personnel_ids: personnelIds });
+    return { success: true, data: res.data?.data || res.data };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
+  }
+}
+
 export async function exportAnnualRewards(params?: {
   nam?: number;
   danh_hieu?: string;

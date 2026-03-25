@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Table, Input, Select, Space, Alert, Typography, InputNumber, Divider } from 'antd';
 import { SearchOutlined, TeamOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import axiosInstance from '@/utils/axiosInstance';
+import { apiClient } from '@/lib/api-client';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { formatDate } from '@/lib/utils';
 import ExcelImportSection from './ExcelImportSection';
@@ -79,15 +79,13 @@ export default function Step2SelectPersonnelCaNhanHangNam({
   const fetchPersonnel = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get('/api/personnel', {
-        params: {
-          page: 1,
-          limit: 1000,
-        },
+      const response = await apiClient.getPersonnel({
+        page: 1,
+        limit: 1000,
       });
 
-      if (response.data.success) {
-        const personnelData = response.data.data?.personnel || response.data.data || [];
+      if (response.success) {
+        const personnelData = response.data?.personnel || response.data || [];
         setPersonnel(personnelData);
       }
     } catch (error: unknown) {

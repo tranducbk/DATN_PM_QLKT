@@ -88,6 +88,45 @@ export async function downloadProposalExcel(id: string): Promise<Blob> {
   }
 }
 
+export async function uploadDecision(id: string, formData: FormData): Promise<ApiResponse> {
+  try {
+    const res = await axiosInstance.post(`/api/proposals/${id}/upload-decision`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return { success: true, data: res.data?.data || res.data, message: res.data?.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
+  }
+}
+
+export async function checkDuplicate(params: {
+  loai_de_xuat: string;
+  nam?: number;
+  personnel_ids?: string[];
+  danh_hieu?: string;
+}): Promise<ApiResponse> {
+  try {
+    const res = await axiosInstance.get('/api/proposals/check-duplicate', { params });
+    return { success: true, data: res.data?.data || res.data };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
+  }
+}
+
+export async function checkDuplicateUnit(params: {
+  loai_de_xuat: string;
+  nam?: number;
+  unit_ids?: string[];
+  danh_hieu?: string;
+}): Promise<ApiResponse> {
+  try {
+    const res = await axiosInstance.get('/api/proposals/check-duplicate-unit', { params });
+    return { success: true, data: res.data?.data || res.data };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
+  }
+}
+
 export async function deleteProposal(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete(`/api/proposals/${id}`);

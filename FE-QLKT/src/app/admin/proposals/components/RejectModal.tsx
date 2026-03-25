@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Modal, Form, Input, message, Alert } from 'antd';
 import { CloseCircleOutlined } from '@ant-design/icons';
-import axiosInstance from '@/utils/axiosInstance';
+import { apiClient } from '@/lib/api-client';
 import { getApiErrorMessage } from '@/lib/apiError';
 
 const { TextArea } = Input;
@@ -35,16 +35,14 @@ export default function RejectModal({ visible, proposal, onClose, onSuccess }: R
       const values = await form.validateFields();
       setLoading(true);
 
-      const response = await axiosInstance.post(`/api/proposals/${proposal.id}/reject`, {
-        rejection_reason: values.rejection_reason,
-      });
+      const response = await apiClient.rejectProposal(proposal.id, values.rejection_reason);
 
-      if (response.data.success) {
+      if (response.success) {
         message.success('Đã từ chối đề xuất thành công!');
         form.resetFields();
         onSuccess();
       } else {
-        throw new Error(response.data.message || 'Từ chối thất bại');
+        throw new Error(response.message || 'Từ chối thất bại');
       }
     } catch (error: unknown) {
       message.error(getApiErrorMessage(error, 'Lỗi khi từ chối đề xuất'));

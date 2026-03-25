@@ -147,6 +147,11 @@ export const apiClient = {
   previewScientificAchievementsImport: awardsApi.previewScientificAchievementsImport,
   confirmScientificAchievementsImport: awardsApi.confirmScientificAchievementsImport,
 
+  // Awards (checks)
+  checkHCQKQT: awardsApi.checkHCQKQT,
+  checkKNCVSNXD: awardsApi.checkKNCVSNXD,
+  checkContributionEligibility: awardsApi.checkContributionEligibility,
+
   // Proposals
   getProposalTemplate: proposalsApi.getProposalTemplate,
   submitProposal: proposalsApi.submitProposal,
@@ -156,6 +161,9 @@ export const apiClient = {
   rejectProposal: proposalsApi.rejectProposal,
   downloadProposalExcel: proposalsApi.downloadProposalExcel,
   deleteProposal: proposalsApi.deleteProposal,
+  uploadDecision: proposalsApi.uploadDecision,
+  checkDuplicate: proposalsApi.checkDuplicate,
+  checkDuplicateUnit: proposalsApi.checkDuplicateUnit,
 
   // Notifications
   getNotifications: notificationsApi.getNotifications,

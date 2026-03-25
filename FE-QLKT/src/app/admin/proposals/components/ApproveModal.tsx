@@ -22,7 +22,7 @@ import { getApiErrorMessage } from '@/lib/apiError';
 
 import { CheckCircleOutlined, UploadOutlined, SaveOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import axiosInstance from '@/utils/axiosInstance';
+import { apiClient } from '@/lib/api-client';
 import dayjs from 'dayjs';
 
 const { Text } = Typography;
@@ -98,12 +98,10 @@ export default function ApproveModal({ visible, proposal, onClose, onSuccess }: 
 
     try {
       setSearchingDecision(true);
-      const response = await axiosInstance.get('/api/decisions/autocomplete', {
-        params: { q: searchText.trim(), limit: 10 },
-      });
+      const response = await apiClient.autocompleteDecisions(searchText.trim(), 10);
 
-      if (response.data.success) {
-        const options = response.data.data.map((d: any) => ({
+      if (response.success) {
+        const options = response.data.map((d: any) => ({
           value: d.so_quyet_dinh,
           label: `${d.so_quyet_dinh} (${d.nam} - ${d.nguoi_ky})`,
           data: d,
@@ -154,9 +152,9 @@ export default function ApproveModal({ visible, proposal, onClose, onSuccess }: 
           ghi_chu: values.ghi_chu || null,
         };
 
-        const decisionResponse = await axiosInstance.post('/api/decisions', decisionData);
-        if (decisionResponse.data.success) {
-          decisionId = decisionResponse.data.data.id;
+        const decisionResponse = await apiClient.createDecision(decisionData);
+        if (decisionResponse.success) {
+          decisionId = decisionResponse.data.id;
         } else {
           throw new Error('Không thể tạo quyết định');
         }
@@ -168,19 +166,16 @@ export default function ApproveModal({ visible, proposal, onClose, onSuccess }: 
         ghi_chu: values.ghi_chu || null,
       };
 
-      const response = await axiosInstance.post(
-        `/api/proposals/${proposal.id}/approve`,
-        approveData
-      );
+      const response = await apiClient.approveProposal(proposal.id, approveData);
 
-      if (response.data.success) {
+      if (response.success) {
         message.success('Đã phê duyệt đề xuất thành công!');
         form.resetFields();
         setCurrentStep(0);
         setSelectedDecision(null);
         onSuccess();
       } else {
-        throw new Error(response.data.message || 'Phê duyệt thất bại');
+        throw new Error(response.message || 'Phê duyệt thất bại');
       }
     } catch (error: unknown) {
       message.error(getApiErrorMessage(error, 'Lỗi khi phê duyệt đề xuất'));

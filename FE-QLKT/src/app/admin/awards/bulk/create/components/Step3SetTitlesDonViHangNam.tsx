@@ -6,7 +6,6 @@ import { EditOutlined, HistoryOutlined, ReloadOutlined } from '@ant-design/icons
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/api-client';
 import UnitAnnualAwardHistoryModal from './UnitAnnualAwardHistoryModal';
-import axiosInstance from '@/utils/axiosInstance';
 
 const { Text } = Typography;
 
@@ -213,35 +212,31 @@ export default function Step3SetTitlesDonViHangNam({
         try {
           if (value === 'ĐVQT' || value === 'ĐVTT') {
             // Kiểm tra thêm cho ĐVQT/ĐVTT
-            const response = await axiosInstance.get('/api/proposals/check-duplicate-unit', {
-              params: {
-                don_vi_id: id,
-                nam: nam,
-                danh_hieu: value === 'ĐVQT' ? 'ĐVTT' : 'ĐVQT',
-                proposal_type: 'DON_VI_HANG_NAM',
-              },
+            const response = await apiClient.checkDuplicateUnit({
+              don_vi_id: id,
+              nam: nam,
+              danh_hieu: value === 'ĐVQT' ? 'ĐVTT' : 'ĐVQT',
+              proposal_type: 'DON_VI_HANG_NAM',
             });
-            if (response.data.success && response.data.data.exists) {
+            if (response.success && response.data.exists) {
               message.error(
-                `${unitDetail.ten_don_vi}: ${response.data.data.message}. Không thể đề xuất danh hiệu này.`
+                `${unitDetail.ten_don_vi}: ${response.data.message}. Không thể đề xuất danh hiệu này.`
               );
               return; // Không cho phép chọn
             }
           }
 
           // Kiểm tra cho danh hiệu chính
-          const response = await axiosInstance.get('/api/proposals/check-duplicate-unit', {
-            params: {
-              don_vi_id: id,
-              nam: nam,
-              danh_hieu: value,
-              proposal_type: 'DON_VI_HANG_NAM',
-            },
+          const response = await apiClient.checkDuplicateUnit({
+            don_vi_id: id,
+            nam: nam,
+            danh_hieu: value,
+            proposal_type: 'DON_VI_HANG_NAM',
           });
 
-          if (response.data.success && response.data.data.exists) {
+          if (response.success && response.data.exists) {
             message.error(
-              `${unitDetail.ten_don_vi}: ${response.data.data.message}. Không thể đề xuất danh hiệu này.`
+              `${unitDetail.ten_don_vi}: ${response.data.message}. Không thể đề xuất danh hiệu này.`
             );
             return; // Không cho phép chọn
           }

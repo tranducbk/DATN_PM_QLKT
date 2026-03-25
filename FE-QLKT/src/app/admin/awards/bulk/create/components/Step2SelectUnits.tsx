@@ -20,7 +20,6 @@ import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/api-client';
 import ExcelImportSection from './ExcelImportSection';
 import * as XLSX from 'xlsx';
-import axiosInstance from '@/utils/axiosInstance';
 
 const { Text } = Typography;
 
@@ -269,20 +268,18 @@ export default function Step2SelectUnits({
           // Kiểm tra trùng lặp trước khi resolve
           try {
             for (const item of titleData) {
-              const checkResponse = await axiosInstance.get('/api/proposals/check-duplicate-unit', {
-                params: {
+              const checkResponse = await apiClient.checkDuplicateUnit({
                   don_vi_id: item.don_vi_id,
                   nam: item.nam,
                   danh_hieu: item.danh_hieu,
                   proposal_type: 'DON_VI_HANG_NAM',
-                },
               });
 
-              if (checkResponse.data.data.success === false) {
-                throw new Error(checkResponse.data.data.message || 'Có lỗi khi kiểm tra trùng lặp');
+              if (checkResponse.data.success === false) {
+                throw new Error(checkResponse.data.message || 'Có lỗi khi kiểm tra trùng lặp');
               }
 
-              if (checkResponse.data.data.exists === true) {
+              if (checkResponse.data.exists === true) {
                 throw new Error(
                   'Dữ liệu import có trùng lặp với đề xuất đã tồn tại. Vui lòng kiểm tra lại.'
                 );

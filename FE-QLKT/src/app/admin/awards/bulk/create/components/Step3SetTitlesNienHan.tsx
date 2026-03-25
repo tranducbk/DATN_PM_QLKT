@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { Table, Select, Alert, Typography, Space, message, Button, Input } from 'antd';
 import { EditOutlined, HistoryOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import axiosInstance from '@/utils/axiosInstance';
 import { apiClient } from '@/lib/api-client';
 import ServiceHistoryModal from './ServiceHistoryModal';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
@@ -80,9 +79,9 @@ export default function Step3SetTitlesNienHan({
   const fetchPersonnelDetails = async () => {
     try {
       setLoading(true);
-      const promises = selectedPersonnelIds.map(id => axiosInstance.get(`/api/personnel/${id}`));
+      const promises = selectedPersonnelIds.map(id => apiClient.getPersonnelById(id));
       const responses = await Promise.all(promises);
-      const personnelData = responses.filter(r => r.data.success).map(r => r.data.data);
+      const personnelData = responses.filter(r => r.success).map(r => r.data);
       setPersonnel(personnelData);
 
       // Fetch service profiles

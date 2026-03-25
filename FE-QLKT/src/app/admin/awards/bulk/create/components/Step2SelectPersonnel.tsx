@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Table, Input, Select, Space, Alert, Typography, Tag, InputNumber } from 'antd';
 import { SearchOutlined, TeamOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import axiosInstance from '@/utils/axiosInstance';
+import { apiClient } from '@/lib/api-client';
 import { format } from 'date-fns';
 import { formatDate } from '@/lib/utils';
 import type { DateInput } from '@/lib/types';
@@ -72,18 +72,16 @@ export default function Step2SelectPersonnel({
     try {
       setLoading(true);
       // Gọi API lấy danh sách personnel thuộc đơn vị của manager
-      const response = await axiosInstance.get('/api/personnel', {
-        params: {
-          // Manager chỉ lấy personnel trong đơn vị của mình
-          // Backend sẽ tự filter dựa trên token
-          page: 1,
-          limit: 1000, // Lấy tất cả
-        },
+      const response = await apiClient.getPersonnel({
+        // Manager chỉ lấy personnel trong đơn vị của mình
+        // Backend sẽ tự filter dựa trên token
+        page: 1,
+        limit: 1000, // Lấy tất cả
       });
 
-      if (response.data.success) {
+      if (response.success) {
         // Backend trả về { success: true, data: { personnel: [], pagination: {} } }
-        const personnelData = response.data.data?.personnel || response.data.data || [];
+        const personnelData = response.data?.personnel || response.data || [];
         setPersonnel(personnelData);
       }
     } catch (error: unknown) {

@@ -27,7 +27,7 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import Link from 'next/link';
 import { isAxiosError } from 'axios';
-import axiosInstance from '@/utils/axiosInstance';
+import { apiClient } from '@/lib/api-client';
 import { getApiErrorMessage } from '@/lib/apiError';
 import dayjs from 'dayjs';
 import ProposalDetailModal from './components/ProposalDetailModal';
@@ -89,16 +89,14 @@ export default function AdminProposalsPage() {
   const fetchProposals = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get('/api/proposals', {
-        params: {
-          status: activeTab,
-          page: 1,
-          limit: 100,
-        },
+      const response = await apiClient.getProposals({
+        status: activeTab,
+        page: 1,
+        limit: 100,
       });
 
-      if (response.data.success) {
-        setProposals(response.data.data || []);
+      if (response.success) {
+        setProposals(response.data || []);
       }
     } catch (error: unknown) {
       // Error handled by UI message
@@ -541,11 +539,7 @@ export default function AdminProposalsPage() {
 
               // Gọi API upload quyết định cho đề xuất đã được phê duyệt
               // Lưu ý: Cần tạo endpoint backend /api/proposals/:id/upload-decision
-              await axiosInstance.post(`/api/proposals/${proposal.id}/upload-decision`, formData, {
-                headers: {
-                  'Content-Type': 'multipart/form-data',
-                },
-              });
+              await apiClient.uploadDecision(proposal.id, formData);
             });
 
             await Promise.all(uploadPromises);

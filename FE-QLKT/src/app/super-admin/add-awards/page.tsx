@@ -32,7 +32,6 @@ import {
 import Link from 'next/link';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/api-client';
-import axiosInstance from '@/utils/axiosInstance';
 import { getDanhHieuName } from '@/constants/danhHieu.constants';
 import Step2SelectPersonnelNienHan from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelNienHan';
 import Step3SetTitlesNienHan from '@/app/admin/awards/bulk/create/components/Step3SetTitlesNienHan';
@@ -115,9 +114,9 @@ export default function SuperAdminAddAwardsPage() {
 
   const fetchPersonnelDetails = async () => {
     try {
-      const promises = selectedPersonnelIds.map(id => axiosInstance.get(`/api/personnel/${id}`));
+      const promises = selectedPersonnelIds.map(id => apiClient.getPersonnelById(id));
       const responses = await Promise.all(promises);
-      const personnelData = responses.filter(r => r.data.success).map(r => r.data.data);
+      const personnelData = responses.filter(r => r.success).map(r => r.data);
       setPersonnelDetails(personnelData);
     } catch (error) {
       // Error handled by UI

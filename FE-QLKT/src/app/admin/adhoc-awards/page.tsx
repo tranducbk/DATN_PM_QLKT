@@ -47,7 +47,6 @@ import type { TableColumnsType, UploadFile } from 'antd';
 import { apiClient } from '@/lib/api-client';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { previewFileWithApi } from '@/utils/filePreview';
-import axiosInstance from '@/utils/axiosInstance';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;

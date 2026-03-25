@@ -14,7 +14,6 @@ import {
 } from 'antd';
 import { SearchOutlined, TeamOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import axiosInstance from '@/utils/axiosInstance';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { formatDate } from '@/lib/utils';
 import { apiClient } from '@/lib/api-client';
@@ -112,15 +111,13 @@ export default function Step2SelectPersonnelCongHien({
   const fetchPersonnel = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get('/api/personnel', {
-        params: {
-          page: 1,
-          limit: 1000,
-        },
+      const response = await apiClient.getPersonnel({
+        page: 1,
+        limit: 1000,
       });
 
-      if (response.data.success) {
-        const personnelData = response.data.data?.personnel || response.data.data || [];
+      if (response.success) {
+        const personnelData = response.data?.personnel || response.data || [];
         setPersonnel(personnelData);
       }
     } catch (error: unknown) {
@@ -183,12 +180,10 @@ export default function Step2SelectPersonnelCongHien({
   const checkContributionEligibility = async (personnelIds: string[]) => {
     try {
       setCheckingEligibility(true);
-      const response = await axiosInstance.post('/api/personnel/check-contribution-eligibility', {
-        personnelIds,
-      });
+      const response = await apiClient.checkContributionEligibility(personnelIds);
 
-      if (response.data.success) {
-        setIneligiblePersonnel(response.data.data.ineligiblePersonnel || []);
+      if (response.success) {
+        setIneligiblePersonnel(response.data.ineligiblePersonnel || []);
       }
     } catch (error: unknown) {
       // Error handled by UI
@@ -582,20 +577,18 @@ export default function Step2SelectPersonnelCongHien({
           // Kiểm tra trùng lặp trước khi resolve
           try {
             for (const item of titleData) {
-              const checkResponse = await axiosInstance.get('/api/proposals/check-duplicate', {
-                params: {
+              const checkResponse = await apiClient.checkDuplicate({
                   personnel_id: item.personnel_id,
                   nam: item.nam,
                   danh_hieu: item.danh_hieu,
                   proposal_type: 'CONG_HIEN',
-                },
               });
 
-              if (checkResponse.data.data.success === false) {
-                throw new Error(checkResponse.data.data.message || 'Có lỗi khi kiểm tra trùng lặp');
+              if (checkResponse.data.success === false) {
+                throw new Error(checkResponse.data.message || 'Có lỗi khi kiểm tra trùng lặp');
               }
 
-              if (checkResponse.data.data.exists === true) {
+              if (checkResponse.data.exists === true) {
                 throw new Error(
                   'Dữ liệu import có trùng lặp với đề xuất đã tồn tại. Vui lòng kiểm tra lại.'
                 );
