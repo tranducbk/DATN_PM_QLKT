@@ -4,10 +4,7 @@ import { Modal, Table, Tag, Typography, Spin, Descriptions } from 'antd';
 import { HistoryOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
-import { apiClient } from '@/lib/api-client';
-import { previewFileWithApi } from '@/utils/filePreview';
-import { message } from 'antd';
-import { getApiErrorMessage } from '@/lib/apiError';
+import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 
 const { Text } = Typography;
 
@@ -46,28 +43,7 @@ export default function UnitAnnualAwardHistoryModal({
   onClose,
 }: UnitAnnualAwardHistoryModalProps) {
   const handleOpenDecisionFile = async (soQuyetDinh: string) => {
-    try {
-      message.loading({ content: 'Đang tải file...', key: 'preview' });
-
-      // Luôn query từ DB để lấy file path mới nhất
-      const response = await apiClient.getDecisionFilePath(soQuyetDinh);
-
-      if (!response.success || !response.data?.file_path) {
-        message.warning({ content: 'Không tìm thấy file quyết định', key: 'preview' });
-        return;
-      }
-
-      const filePath = response.data.file_path;
-      const filename = filePath.split('/').pop() || `${soQuyetDinh}.pdf`;
-
-      message.destroy('preview');
-      await previewFileWithApi(`/${filePath}`, filename);
-    } catch (error: unknown) {
-      // Error handled by UI message
-      const errorMessage =
-        getApiErrorMessage(error) || 'Lỗi khi mở file quyết định';
-      message.error({ content: errorMessage, key: 'preview' });
-    }
+    await downloadDecisionFile(soQuyetDinh);
   };
 
   const columns: ColumnsType<UnitAnnualAward> = [

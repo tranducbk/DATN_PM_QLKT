@@ -58,11 +58,11 @@ export default function AccountsListPage() {
       const response = await apiClient.getAccounts(params);
 
       if (response.success) {
-        setAccounts(response.data?.accounts || response.data?.data || []);
+        setAccounts(response.data?.accounts ?? []);
         setPagination({
           current: page,
           pageSize,
-          total: response.data?.pagination?.total || response.data?.total || 0,
+          total: response.data?.pagination?.total ?? 0,
         });
       } else {
         message.error(response.message || 'Không thể tải danh sách tài khoản');

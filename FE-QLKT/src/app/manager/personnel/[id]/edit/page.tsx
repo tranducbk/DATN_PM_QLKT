@@ -35,8 +35,6 @@ export default function ManagerPersonnelEditPage() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
-  const [coQuanDonViList, setCoQuanDonViList] = useState<any[]>([]);
-  const [donViTrucThuocList, setDonViTrucThuocList] = useState<any[]>([]);
   const [positions, setPositions] = useState([]);
   const [currentUnitName, setCurrentUnitName] = useState<string>('');
   const [personnelRole, setPersonnelRole] = useState<string>(''); // Role của personnel đang edit
@@ -55,20 +53,12 @@ export default function ManagerPersonnelEditPage() {
     const fetchData = async () => {
       try {
         setLoadingData(true);
-        const [personnelRes, coQuanRes, donViTrucThuocRes, positionsRes] = await Promise.all([
+        const [personnelRes, positionsRes] = await Promise.all([
           apiClient.getPersonnelById(personnelId),
-          apiClient.getUnits(), // Cơ quan đơn vị
-          apiClient.getSubUnits(), // Đơn vị trực thuộc
           apiClient.getPositions(),
         ]);
 
-        // Lưu riêng 2 danh sách positions TRƯỚC
-        const coQuanList = (coQuanRes?.data || []).filter((unit: any) => !unit.co_quan_don_vi_id);
-        const donViList = donViTrucThuocRes?.data || [];
         const allPositions = positionsRes?.data || [];
-
-        setCoQuanDonViList(coQuanList);
-        setDonViTrucThuocList(donViList);
         setPositions(allPositions);
 
         if (personnelRes.success) {

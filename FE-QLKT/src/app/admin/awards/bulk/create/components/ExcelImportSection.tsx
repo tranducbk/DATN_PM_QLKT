@@ -99,7 +99,7 @@ export default function ExcelImportSection({
           },
         });
 
-        const data = response.data?.data || response.data;
+        const data = response.data?.data;
         sessionStorage.setItem(sessionStorageKey, JSON.stringify(data));
 
         message.success('Đã phân tích file Excel. Đang chuyển đến trang xem trước...');

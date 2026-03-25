@@ -108,9 +108,7 @@ export default function ManagerAdhocAwardsPage() {
     try {
       setLoading(true);
       const res = await apiClient.getAdhocAwards();
-      const awardsData = Array.isArray(res?.data)
-        ? res.data
-        : res?.data?.data || res?.data?.items || [];
+      const awardsData = res.data?.items ?? [];
       setAwards(awardsData);
     } catch (err) {
       // Error handled by UI message

@@ -82,7 +82,7 @@ export default function Step2SelectPersonnel({
 
       if (response.success) {
         // Backend trả về { success: true, data: { personnel: [], pagination: {} } }
-        const personnelData = response.data?.personnel || response.data || [];
+        const personnelData = response.data?.personnel ?? [];
         setPersonnel(personnelData);
       }
     } catch (error: unknown) {

@@ -21,7 +21,7 @@ export async function getDecisions(params?: {
     const res = await axiosInstance.get('/api/decisions', { params });
     return {
       success: true,
-      data: res.data?.data || [],
+      data: res.data?.data ?? [],
       pagination: res.data?.pagination,
     };
   } catch (e: unknown) {
@@ -34,7 +34,7 @@ export async function autocompleteDecisions(query: string, limit = 10): Promise<
     const res = await axiosInstance.get('/api/decisions/autocomplete', {
       params: { q: query, limit },
     });
-    return { success: true, data: res.data?.data || res.data };
+    return { success: true, data: res.data?.data };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
@@ -43,7 +43,7 @@ export async function autocompleteDecisions(query: string, limit = 10): Promise<
 export async function getDecisionBySoQuyetDinh(soQuyetDinh: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get(`/api/decisions/by-number/${soQuyetDinh}`);
-    return { success: true, data: res.data?.data || res.data };
+    return { success: true, data: res.data?.data };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
@@ -52,7 +52,7 @@ export async function getDecisionBySoQuyetDinh(soQuyetDinh: string): Promise<Api
 export async function getDecisionById(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get(`/api/decisions/${id}`);
-    return { success: true, data: res.data?.data || res.data };
+    return { success: true, data: res.data?.data };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
@@ -63,7 +63,7 @@ export async function createDecision(formData: FormData): Promise<ApiResponse> {
     const res = await axiosInstance.post('/api/decisions', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
-    return { success: true, data: res.data?.data || res.data, message: res.data?.message };
+    return { success: true, data: res.data?.data, message: res.data?.message };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
@@ -74,7 +74,7 @@ export async function updateDecision(id: string, formData: FormData): Promise<Ap
     const res = await axiosInstance.put(`/api/decisions/${id}`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
-    return { success: true, data: res.data?.data || res.data, message: res.data?.message };
+    return { success: true, data: res.data?.data, message: res.data?.message };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
@@ -83,7 +83,7 @@ export async function updateDecision(id: string, formData: FormData): Promise<Ap
 export async function deleteDecision(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete(`/api/decisions/${id}`);
-    return { success: true, data: res.data?.data || res.data, message: res.data?.message };
+    return { success: true, data: res.data?.data, message: res.data?.message };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
@@ -128,7 +128,7 @@ export async function downloadDecisionFile(soQuyetDinh: string): Promise<Blob> {
 export async function getDecisionFilePaths(soQuyetDinhs: string[]): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.post('/api/decisions/file-paths', { soQuyetDinhs });
-    return { success: true, data: res.data?.data || res.data };
+    return { success: true, data: res.data?.data };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }

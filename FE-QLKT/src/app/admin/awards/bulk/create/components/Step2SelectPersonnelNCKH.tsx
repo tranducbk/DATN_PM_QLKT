@@ -83,7 +83,7 @@ export default function Step2SelectPersonnelNCKH({
       });
 
       if (response.success) {
-        const personnelData = response.data?.personnel || response.data || [];
+        const personnelData = response.data?.personnel ?? [];
         setPersonnel(personnelData);
       }
     } catch (error: unknown) {

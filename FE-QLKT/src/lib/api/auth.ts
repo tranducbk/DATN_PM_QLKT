@@ -11,7 +11,7 @@ export async function login(username: string, password: string): Promise<ApiResp
     });
     return {
       success: true,
-      data: res.data?.data || res.data,
+      data: res.data?.data,
       message: res.data?.message,
     };
   } catch (e: unknown) {
@@ -31,7 +31,7 @@ export async function changePassword(
       oldPassword,
       newPassword,
     });
-    return { success: true, data: res.data?.data || res.data, message: res.data?.message };
+    return { success: true, data: res.data?.data, message: res.data?.message };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }

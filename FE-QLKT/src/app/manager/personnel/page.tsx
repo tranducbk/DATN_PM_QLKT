@@ -53,7 +53,7 @@ export default function ManagerPersonnelPage() {
     limit: 10,
     total: 0,
   });
-  const [managerUnitId, setManagerUnitId] = useState<number | null>(null);
+  const [managerUnitId, setManagerUnitId] = useState<string | null>(null);
 
   // Lấy thông tin đơn vị của manager từ auth context
   useEffect(() => {
@@ -65,20 +65,21 @@ export default function ManagerPersonnelPage() {
       apiClient
         .getPersonnelById(user.quan_nhan_id)
         .then(res => {
-          if (res.success && res.data?.don_vi_id) {
-            setManagerUnitId(res.data.don_vi_id);
+          const donViId = res.data?.co_quan_don_vi_id || res.data?.don_vi_truc_thuoc_id;
+          if (res.success && donViId) {
+            setManagerUnitId(donViId);
           } else {
             message.error('Không thể xác định đơn vị quản lý.');
-            setLoading(false); // Đảm bảo không bị loading mãi
+            setLoading(false);
           }
         })
         .catch(() => {
           message.error('Không thể tải thông tin đơn vị.');
-          setLoading(false); // Đảm bảo không bị loading mãi
+          setLoading(false);
         });
     } else {
       message.error('Không tìm thấy thông tin quản lý. Vui lòng đăng nhập lại.');
-      setLoading(false); // Đảm bảo không bị loading mãi
+      setLoading(false);
     }
   }, []);
 

@@ -310,7 +310,7 @@ class CommemorativeMedalService {
       const referenceDate = new Date(nam, 11, 31); // cuối năm được xét
       const serviceYears =
         (referenceDate.getTime() - ngayNhapNgu.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
-      const isFemale = personnel.gioi_tinh === 'Nữ';
+      const isFemale = personnel.gioi_tinh === 'NU';
       const requiredYears = isFemale ? 20 : 25;
 
       if (serviceYears < requiredYears) {
@@ -341,7 +341,7 @@ class CommemorativeMedalService {
         so_quyet_dinh,
         ghi_chu,
         service_years: Math.floor(serviceYears),
-        gioi_tinh: personnel.gioi_tinh ?? 'Nam',
+        gioi_tinh: personnel.gioi_tinh ?? 'NAM',
         history,
       });
     }

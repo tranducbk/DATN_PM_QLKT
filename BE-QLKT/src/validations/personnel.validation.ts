@@ -13,9 +13,9 @@ export const createPersonnel: Joi.ObjectSchema = Joi.object({
 
 export const updatePersonnel: Joi.ObjectSchema = Joi.object({
   ho_ten: Joi.string().trim().max(100).optional(),
-  gioi_tinh: Joi.string().valid('Nam', 'Nữ').optional(),
+  gioi_tinh: Joi.string().valid('NAM', 'NU').optional(),
   ngay_sinh: Joi.date().optional(),
-  cccd: Joi.string().trim().length(12).pattern(/^\d+$/).optional(),
+  cccd: Joi.string().trim().length(12).pattern(/^\d+$/).optional().allow(null, ''),
   cap_bac: Joi.string().trim().optional(),
   ngay_nhap_ngu: Joi.date().optional().allow(null),
   ngay_xuat_ngu: Joi.date().optional().allow(null),

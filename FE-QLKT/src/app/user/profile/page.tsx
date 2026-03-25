@@ -929,7 +929,7 @@ export default function UserProfilePage() {
                   <Col xs={24} md={8}>
                     <Card size="small">
                       <Statistic
-                        title="BK thủ tướng chính phủ"
+                        title="BK Thủ tướng Chính phủ"
                         value={0}
                         valueStyle={{ fontSize: '14px' }}
                         valueRender={() => (

@@ -778,15 +778,24 @@ class ProfileService {
       newProfile.hccsvv_hang_nhat_status = ELIGIBILITY_STATUS.CHUA_DU;
 
       // update status huân chương từ khen thưởng hccsvv
+      // Lưu năm nhận thực tế để hiển thị trên FE
+      const hccsvvNamNhan: Record<string, number | null> = {
+        HCCSVV_HANG_BA: null,
+        HCCSVV_HANG_NHI: null,
+        HCCSVV_HANG_NHAT: null,
+      };
       for (const kt of khenthuonghccsvv) {
         if (kt.danh_hieu === 'HCCSVV_HANG_BA') {
           newProfile.hccsvv_hang_ba_status = ELIGIBILITY_STATUS.DA_NHAN;
+          hccsvvNamNhan.HCCSVV_HANG_BA = kt.nam;
         }
         if (kt.danh_hieu === 'HCCSVV_HANG_NHI') {
           newProfile.hccsvv_hang_nhi_status = ELIGIBILITY_STATUS.DA_NHAN;
+          hccsvvNamNhan.HCCSVV_HANG_NHI = kt.nam;
         }
         if (kt.danh_hieu === 'HCCSVV_HANG_NHAT') {
           newProfile.hccsvv_hang_nhat_status = ELIGIBILITY_STATUS.DA_NHAN;
+          hccsvvNamNhan.HCCSVV_HANG_NHAT = kt.nam;
         }
       }
 
@@ -798,6 +807,10 @@ class ProfileService {
         newProfile.hccsvv_hang_ba_status || ELIGIBILITY_STATUS.CHUA_DU,
         'Ba'
       );
+      // Khi đã nhận, lưu năm nhận thực tế từ DB thay vì ngày dự kiến
+      if (hccsvvBa.status === ELIGIBILITY_STATUS.DA_NHAN && hccsvvNamNhan.HCCSVV_HANG_BA) {
+        hccsvvBa.ngay = new Date(hccsvvNamNhan.HCCSVV_HANG_BA, 0, 1);
+      }
 
       // Chỉ xét Hạng Nhì nếu ĐÃ NHẬN Hạng Ba (DA_NHAN)
       let hccsvvNhi;
@@ -808,6 +821,9 @@ class ProfileService {
           newProfile.hccsvv_hang_nhi_status || ELIGIBILITY_STATUS.CHUA_DU,
           'Nhì'
         );
+        if (hccsvvNhi.status === ELIGIBILITY_STATUS.DA_NHAN && hccsvvNamNhan.HCCSVV_HANG_NHI) {
+          hccsvvNhi.ngay = new Date(hccsvvNamNhan.HCCSVV_HANG_NHI, 0, 1);
+        }
       } else {
         hccsvvNhi = {
           status: ELIGIBILITY_STATUS.CHUA_DU,
@@ -825,6 +841,9 @@ class ProfileService {
           newProfile.hccsvv_hang_nhat_status || ELIGIBILITY_STATUS.CHUA_DU,
           'Nhất'
         );
+        if (hccsvvNhat.status === ELIGIBILITY_STATUS.DA_NHAN && hccsvvNamNhan.HCCSVV_HANG_NHAT) {
+          hccsvvNhat.ngay = new Date(hccsvvNamNhan.HCCSVV_HANG_NHAT, 0, 1);
+        }
       } else {
         hccsvvNhat = {
           status: ELIGIBILITY_STATUS.CHUA_DU,

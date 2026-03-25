@@ -9,7 +9,7 @@ interface AuthUser {
   role: UserRole;
   quan_nhan_id?: string;
   ho_ten?: string;
-  don_vi_id?: number;
+  don_vi_id?: string;
 }
 
 interface AuthContextType {
@@ -74,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             role,
             quan_nhan_id: quanNhanId || undefined,
             ho_ten: hoTen || undefined,
-            don_vi_id: donViId ? Number(donViId) : undefined,
+            don_vi_id: donViId || undefined,
           });
         }
       } catch {

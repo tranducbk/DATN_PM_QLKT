@@ -251,9 +251,7 @@ export default function AdhocAwardsPage() {
     try {
       setLoading(true);
       const res = await apiClient.getAdhocAwards();
-      const awardsData = Array.isArray(res?.data)
-        ? res.data
-        : res?.data?.data || res?.data?.items || [];
+      const awardsData = res.data?.items ?? [];
       setAwards(awardsData);
     } catch (err) {
       // Error handled by UI message
@@ -270,16 +268,9 @@ export default function AdhocAwardsPage() {
         apiClient.getUnits(),
       ]);
 
-      const personnelData = Array.isArray(personnelRes?.data)
-        ? personnelRes.data
-        : personnelRes?.data?.items ||
-          personnelRes?.data?.personnel ||
-          personnelRes?.data?.data ||
-          [];
+      const personnelData = personnelRes.data?.personnel ?? [];
 
-      const allUnitsData = Array.isArray(allUnitsRes?.data)
-        ? allUnitsRes.data
-        : allUnitsRes?.data?.items || allUnitsRes?.data?.data || [];
+      const allUnitsData = Array.isArray(allUnitsRes.data) ? allUnitsRes.data : [];
 
       const coQuanDonVi = allUnitsData.filter((u: Unit) => !u.co_quan_don_vi_id);
       const donViTrucThuoc = allUnitsData.filter((u: Unit) => u.co_quan_don_vi_id);

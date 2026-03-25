@@ -140,7 +140,7 @@ export default function Step2SelectPersonnelKNCVSNXD({
       });
 
       if (response.success) {
-        const personnelData = response.data?.personnel || response.data || [];
+        const personnelData = response.data?.personnel ?? [];
         setPersonnel(personnelData);
         if (personnelData.length === 0) {
           message.warning('Không có quân nhân nào trong đơn vị của bạn.');

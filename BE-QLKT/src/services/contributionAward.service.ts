@@ -393,7 +393,7 @@ class ContributionAwardService {
       const months0_8 = getTotalMonths('0.8');
       const months0_9_1_0 = getTotalMonths('0.9-1.0');
 
-      const isFemale = personnel.gioi_tinh === 'Nữ';
+      const isFemale = personnel.gioi_tinh === 'NU';
       const baseMonths = isFemale ? 80 : 120; // 10 năm nam, ~6.7 năm nữ
 
       let eligible = false;

@@ -101,7 +101,7 @@ export default function Step2SelectPersonnelNienHan({
       });
 
       if (response.success) {
-        const personnelData = response.data?.personnel || response.data || [];
+        const personnelData = response.data?.personnel ?? [];
         setPersonnel(personnelData);
 
         // Fetch service profiles để biết quân nhân đã nhận hạng nào

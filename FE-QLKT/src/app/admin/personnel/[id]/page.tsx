@@ -117,7 +117,6 @@ export default function PersonnelDetailPage() {
     return <Tag color={s.color}>{s.label}</Tag>;
   };
 
-
   const calculateYearsOfService = (ngayNhapNgu: string) => {
     if (!ngayNhapNgu) return 0;
     const now = new Date();
@@ -327,7 +326,9 @@ export default function PersonnelDetailPage() {
                       />
                       {serviceProfile.hccsvv_hang_ba_ngay && (
                         <Text type="secondary" className="text-xs">
-                          {formatDate(serviceProfile.hccsvv_hang_ba_ngay)}
+                          {serviceProfile.hccsvv_hang_ba_status === 'DA_NHAN'
+                            ? `Năm ${new Date(serviceProfile.hccsvv_hang_ba_ngay).getFullYear()}`
+                            : formatDate(serviceProfile.hccsvv_hang_ba_ngay)}
                         </Text>
                       )}
                     </Card>
@@ -342,7 +343,9 @@ export default function PersonnelDetailPage() {
                       />
                       {serviceProfile.hccsvv_hang_nhi_ngay && (
                         <Text type="secondary" className="text-xs">
-                          {formatDate(serviceProfile.hccsvv_hang_nhi_ngay)}
+                          {serviceProfile.hccsvv_hang_nhi_status === 'DA_NHAN'
+                            ? `Năm ${new Date(serviceProfile.hccsvv_hang_nhi_ngay).getFullYear()}`
+                            : formatDate(serviceProfile.hccsvv_hang_nhi_ngay)}
                         </Text>
                       )}
                     </Card>
@@ -357,7 +360,9 @@ export default function PersonnelDetailPage() {
                       />
                       {serviceProfile.hccsvv_hang_nhat_ngay && (
                         <Text type="secondary" className="text-xs">
-                          {formatDate(serviceProfile.hccsvv_hang_nhat_ngay)}
+                          {serviceProfile.hccsvv_hang_nhat_status === 'DA_NHAN'
+                            ? `Năm ${new Date(serviceProfile.hccsvv_hang_nhat_ngay).getFullYear()}`
+                            : formatDate(serviceProfile.hccsvv_hang_nhat_ngay)}
                         </Text>
                       )}
                     </Card>
@@ -540,11 +545,8 @@ export default function PersonnelDetailPage() {
                           }
                         }}
                       />
-                      {commemorationMedals &&
-                        commemorationMedals.hasReceived &&
-                        commemorationMedals.data &&
-                        commemorationMedals.data.length > 0 &&
-                        commemorationMedals.data[0].ngay_cap && (
+                      {commemorationMedals?.hasReceived &&
+                        commemorationMedals.data?.[0]?.ngay_cap && (
                           <Text type="secondary" className="text-xs">
                             {formatDate(commemorationMedals.data[0].ngay_cap)}
                           </Text>
@@ -647,7 +649,7 @@ export default function PersonnelDetailPage() {
                   <Col xs={24} md={8}>
                     <Card size="small">
                       <Statistic
-                        title="BK thủ tướng chính phủ"
+                        title="BK Thủ tướng Chính phủ"
                         value={0}
                         valueStyle={{ fontSize: '14px' }}
                         valueRender={() => (
