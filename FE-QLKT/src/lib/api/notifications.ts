@@ -3,13 +3,8 @@ import { getApiErrorMessage } from '@/lib/apiError';
 
 type ApiResponse<T = any> = { success: boolean; data?: T; message?: string };
 
-/**
- * Một bản ghi thông báo (bảng `notifications` / model ThongBao).
- * Trên BE: `id` là `Int` (autoincrement) → JSON là **number**, không phải string cuid.
- */
 export type NotificationItem = {
-  /** Prisma `ThongBao.id` là Int → luôn là number khi có (API / socket đầy đủ) */
-  id?: number;
+  id?: string;
   title?: string;
   message?: string;
   is_read?: boolean;
@@ -41,7 +36,7 @@ export async function getUnreadNotificationCount(): Promise<ApiResponse> {
   }
 }
 
-export async function markNotificationAsRead(id: number): Promise<ApiResponse> {
+export async function markNotificationAsRead(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.patch(`/api/notifications/${id}/read`);
     return { success: true, data: res.data?.data };
@@ -59,7 +54,7 @@ export async function markAllNotificationsAsRead(): Promise<ApiResponse> {
   }
 }
 
-export async function deleteNotification(id: number): Promise<ApiResponse> {
+export async function deleteNotification(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete(`/api/notifications/${id}`);
     return { success: true, data: res.data?.data };

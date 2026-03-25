@@ -50,25 +50,18 @@ class NotificationController {
 
   markAsRead = catchAsync(async (req: Request, res: Response) => {
     const id = normalizeParam(req.params.id);
-    const currentUser = req.user!;
-    const notificationId = id ? parseInt(id, 10) : NaN;
-    if (isNaN(notificationId)) {
-      return ResponseHelper.badRequest(res, 'ID thông báo không hợp lệ');
-    }
+    if (!id) return ResponseHelper.badRequest(res, 'ID thông báo không hợp lệ');
+
     const notification = await prisma.thongBao.findFirst({
-      where: { id: notificationId, nguoi_nhan_id: currentUser.id },
+      where: { id, nguoi_nhan_id: req.user!.id },
     });
-    if (!notification) {
-      return ResponseHelper.notFound(res, 'Không tìm thấy thông báo');
-    }
-    const updatedNotification = await prisma.thongBao.update({
-      where: { id: notificationId },
+    if (!notification) return ResponseHelper.notFound(res, 'Không tìm thấy thông báo');
+
+    const updated = await prisma.thongBao.update({
+      where: { id },
       data: { is_read: true, read_at: new Date() },
     });
-    return ResponseHelper.success(res, {
-      message: 'Đánh dấu đã đọc thành công',
-      data: updatedNotification,
-    });
+    return ResponseHelper.success(res, { message: 'Đánh dấu đã đọc thành công', data: updated });
   });
 
   markAllAsRead = catchAsync(async (req: Request, res: Response) => {
@@ -85,18 +78,14 @@ class NotificationController {
 
   deleteNotification = catchAsync(async (req: Request, res: Response) => {
     const id = normalizeParam(req.params.id);
-    const currentUser = req.user!;
-    const notificationId = id ? parseInt(id, 10) : NaN;
-    if (isNaN(notificationId)) {
-      return ResponseHelper.badRequest(res, 'ID thông báo không hợp lệ');
-    }
+    if (!id) return ResponseHelper.badRequest(res, 'ID thông báo không hợp lệ');
+
     const notification = await prisma.thongBao.findFirst({
-      where: { id: notificationId, nguoi_nhan_id: currentUser.id },
+      where: { id, nguoi_nhan_id: req.user!.id },
     });
-    if (!notification) {
-      return ResponseHelper.notFound(res, 'Không tìm thấy thông báo');
-    }
-    await prisma.thongBao.delete({ where: { id: notificationId } });
+    if (!notification) return ResponseHelper.notFound(res, 'Không tìm thấy thông báo');
+
+    await prisma.thongBao.delete({ where: { id } });
     return ResponseHelper.success(res, { message: 'Xóa thông báo thành công' });
   });
 
