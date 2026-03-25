@@ -63,21 +63,13 @@ export default function ManagerUnitsPage() {
     try {
       setLoading(true);
       const result = await apiClient.getMyUnits();
-      if (result.success) {
-        const data = result.data;
-        if (Array.isArray(data)) {
-          setUnits(data);
-        } else {
-          setUnits([]);
-        }
-      } else {
+      if (!result.success) {
         message.error(result.message || 'Không thể tải danh sách đơn vị');
-        setUnits([]);
+        return;
       }
-    } catch (error) {
-      // Error handled by UI message
+      setUnits(Array.isArray(result.data) ? result.data : []);
+    } catch {
       message.error('Không thể tải danh sách đơn vị');
-      setUnits([]);
     } finally {
       setLoading(false);
     }
@@ -87,24 +79,13 @@ export default function ManagerUnitsPage() {
     try {
       setAwardsLoading(true);
       const result = await apiClient.getUnitAnnualAwards({ limit: 1000 });
-
-      if (result.success) {
-        const data = result.data.items;
-        if (Array.isArray(data)) {
-          setAllAwards(data);
-        } else if (data && Array.isArray(data.awards)) {
-          setAllAwards(data.awards);
-        } else {
-          setAllAwards([]);
-        }
-      } else {
+      if (!result.success) {
         message.error(result.message || 'Không thể tải danh sách khen thưởng');
-        setAllAwards([]);
+        return;
       }
-    } catch (error) {
-      // Error handled by UI message
+      setAllAwards(result.data?.awards ?? []);
+    } catch {
       message.error('Không thể tải danh sách khen thưởng');
-      setAllAwards([]);
     } finally {
       setAwardsLoading(false);
     }
