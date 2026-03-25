@@ -37,6 +37,7 @@ import { App } from 'antd';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
+import { ROLES, roleSelectOptions } from '@/constants/roles.constants';
 
 type AccountFormValues = z.infer<typeof accountFormSchema>;
 
@@ -59,29 +60,25 @@ export function AccountForm({ account, personnel = [], onSuccess, onClose }: Acc
     defaultValues: {
       username: account?.username || '',
       password: '',
-      role: account?.role || 'USER',
+      role: account?.role || ROLES.USER,
       personnel_id: account?.personnel_id || '',
     },
   });
 
   // Lấy danh sách role có thể tạo/chỉnh sửa dựa trên role hiện tại
   const getAvailableRoles = () => {
-    if (currentUserRole === 'SUPER_ADMIN') {
-      return [
-        { value: 'SUPER_ADMIN', label: 'Super Admin' },
-        { value: 'ADMIN', label: 'Admin' },
-        { value: 'MANAGER', label: 'Quản lý' },
-        { value: 'USER', label: 'Người dùng' },
-      ];
-    } else if (currentUserRole === 'ADMIN') {
-      // ADMIN chỉ được tạo/chỉnh sửa MANAGER và USER
-      return [
-        { value: 'MANAGER', label: 'Quản lý' },
-        { value: 'USER', label: 'Người dùng' },
-      ];
+    if (currentUserRole === ROLES.SUPER_ADMIN) {
+      return roleSelectOptions([
+        ROLES.SUPER_ADMIN,
+        ROLES.ADMIN,
+        ROLES.MANAGER,
+        ROLES.USER,
+      ]);
     }
-    // Mặc định chỉ có USER
-    return [{ value: 'USER', label: 'Người dùng' }];
+    if (currentUserRole === ROLES.ADMIN) {
+      return roleSelectOptions([ROLES.MANAGER, ROLES.USER]);
+    }
+    return roleSelectOptions([ROLES.USER]);
   };
 
   async function onSubmit(values: AccountFormValues) {

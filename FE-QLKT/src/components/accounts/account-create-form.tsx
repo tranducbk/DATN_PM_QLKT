@@ -28,6 +28,7 @@ import { apiClient } from '@/lib/api-client';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { message } from 'antd';
 import { useAuth } from '@/contexts/AuthContext';
+import { ROLES, roleSelectOptions } from '@/constants/roles.constants';
 import { getApiErrorMessage } from '@/lib/apiError';
 
 type AccountCreateValues = z.infer<typeof accountCreateSchema>;
@@ -101,7 +102,7 @@ export function AccountCreateForm() {
       username: '',
       password: '',
       confirmPassword: '',
-      role: 'USER',
+      role: ROLES.USER,
     },
   });
 
@@ -112,16 +113,16 @@ export function AccountCreateForm() {
 
   // Filter đơn vị trực thuộc theo cơ quan đơn vị đã chọn
   const filteredDonViTrucThuoc =
-    selectedRole === 'USER' && selectedCoQuanDonViId
+    selectedRole === ROLES.USER && selectedCoQuanDonViId
       ? donViTrucThuocList.filter(dv => dv.co_quan_don_vi_id === selectedCoQuanDonViId)
       : [];
 
   // Lọc chức vụ theo đơn vị được chọn
   const filteredPositions = (() => {
-    if (selectedRole === 'MANAGER' && selectedCoQuanDonViId) {
+    if (selectedRole === ROLES.MANAGER && selectedCoQuanDonViId) {
       // MANAGER: Lọc chức vụ thuộc Cơ quan đơn vị (không bao gồm chức vụ của đơn vị trực thuộc)
       return positions.filter(p => p.co_quan_don_vi_id === selectedCoQuanDonViId);
-    } else if (selectedRole === 'USER' && selectedDonViTrucThuocId) {
+    } else if (selectedRole === ROLES.USER && selectedDonViTrucThuocId) {
       // USER: Lọc chức vụ thuộc Đơn vị trực thuộc
       return positions.filter(p => p.don_vi_truc_thuoc_id === selectedDonViTrucThuocId);
     }
@@ -132,7 +133,7 @@ export function AccountCreateForm() {
   useEffect(() => {
     if (selectedCoQuanDonViId !== undefined) {
       form.setValue('chuc_vu_id', undefined);
-      if (selectedRole === 'USER') {
+      if (selectedRole === ROLES.USER) {
         form.setValue('don_vi_truc_thuoc_id', undefined);
       }
     }
@@ -140,41 +141,37 @@ export function AccountCreateForm() {
 
   // Reset chức vụ khi đổi đơn vị trực thuộc (USER)
   useEffect(() => {
-    if (selectedRole === 'USER' && selectedDonViTrucThuocId !== undefined) {
+    if (selectedRole === ROLES.USER && selectedDonViTrucThuocId !== undefined) {
       form.setValue('chuc_vu_id', undefined);
     }
   }, [selectedDonViTrucThuocId, selectedRole, form]);
 
   // Lấy danh sách role có thể tạo dựa trên role hiện tại
   const getAvailableRoles = () => {
-    if (currentUserRole === 'SUPER_ADMIN') {
-      return [
-        { value: 'SUPER_ADMIN', label: 'Super Admin' },
-        { value: 'ADMIN', label: 'Admin' },
-        { value: 'MANAGER', label: 'Quản lý' },
-        { value: 'USER', label: 'Người dùng' },
-      ];
-    } else if (currentUserRole === 'ADMIN') {
-      // ADMIN chỉ được tạo MANAGER và USER
-      return [
-        { value: 'MANAGER', label: 'Quản lý' },
-        { value: 'USER', label: 'Người dùng' },
-      ];
+    if (currentUserRole === ROLES.SUPER_ADMIN) {
+      return roleSelectOptions([
+        ROLES.SUPER_ADMIN,
+        ROLES.ADMIN,
+        ROLES.MANAGER,
+        ROLES.USER,
+      ]);
     }
-    // Mặc định chỉ có USER
-    return [{ value: 'USER', label: 'Người dùng' }];
+    if (currentUserRole === ROLES.ADMIN) {
+      return roleSelectOptions([ROLES.MANAGER, ROLES.USER]);
+    }
+    return roleSelectOptions([ROLES.USER]);
   };
 
   // Kiểm tra xem có thể submit form không
   const canSubmit = () => {
-    if (selectedRole === 'MANAGER') {
+    if (selectedRole === ROLES.MANAGER) {
       // MANAGER: Cần có co_quan_don_vi_id và chuc_vu_id
       return (
         coQuanDonViList.length > 0 &&
         selectedCoQuanDonViId !== undefined &&
         filteredPositions.length > 0
       );
-    } else if (selectedRole === 'USER') {
+    } else if (selectedRole === ROLES.USER) {
       // USER: Cần có co_quan_don_vi_id, don_vi_truc_thuoc_id và chuc_vu_id
       return (
         coQuanDonViList.length > 0 &&
@@ -190,7 +187,7 @@ export function AccountCreateForm() {
 
   // Tooltip cho button submit
   const getSubmitButtonTooltip = () => {
-    if (selectedRole === 'MANAGER') {
+    if (selectedRole === ROLES.MANAGER) {
       if (coQuanDonViList.length === 0) {
         return 'Không có cơ quan đơn vị nào. Vui lòng tạo cơ quan đơn vị trước.';
       }
@@ -200,7 +197,7 @@ export function AccountCreateForm() {
       if (filteredPositions.length === 0) {
         return 'Cơ quan đơn vị này chưa có chức vụ nào. Vui lòng tạo chức vụ trước.';
       }
-    } else if (selectedRole === 'USER') {
+    } else if (selectedRole === ROLES.USER) {
       if (coQuanDonViList.length === 0) {
         return 'Không có cơ quan đơn vị nào. Vui lòng tạo cơ quan đơn vị trước.';
       }
@@ -232,9 +229,9 @@ export function AccountCreateForm() {
       if (response.success) {
         message.success('Tạo tài khoản thành công');
         // Redirect về đúng trang dựa trên role hiện tại
-        if (currentUserRole === 'SUPER_ADMIN') {
+        if (currentUserRole === ROLES.SUPER_ADMIN) {
           router.push('/super-admin/accounts');
-        } else if (currentRole === 'ADMIN') {
+        } else if (currentRole === ROLES.ADMIN) {
           router.push('/admin/accounts');
         } else {
           router.push('/super-admin/accounts'); // Fallback
@@ -300,7 +297,7 @@ export function AccountCreateForm() {
                 <FormControl>
                   <Input placeholder="Nhập tên đăng nhập" {...field} disabled={loading} />
                 </FormControl>
-                {(selectedRole === 'MANAGER' || selectedRole === 'USER') && (
+                {(selectedRole === ROLES.MANAGER || selectedRole === ROLES.USER) && (
                   <p className="text-sm text-muted-foreground">
                     Khuyến nghị: Sử dụng số CCCD của quân nhân làm tên đăng nhập
                   </p>
@@ -335,7 +332,7 @@ export function AccountCreateForm() {
                     </button>
                   </div>
                 </FormControl>
-                {(selectedRole === 'MANAGER' || selectedRole === 'USER') && (
+                {(selectedRole === ROLES.MANAGER || selectedRole === ROLES.USER) && (
                   <p className="text-sm text-muted-foreground">
                     Mật khẩu tạm thời này sẽ được yêu cầu thay đổi khi đăng nhập lần đầu
                   </p>
@@ -381,7 +378,7 @@ export function AccountCreateForm() {
         </div>
 
         {/* Unit and Position - For MANAGER and USER */}
-        {(selectedRole === 'MANAGER' || selectedRole === 'USER') && (
+        {(selectedRole === ROLES.MANAGER || selectedRole === ROLES.USER) && (
           <div className="space-y-4 border-t pt-4">
             <h3 className="text-lg font-semibold">Thông tin đơn vị và chức vụ</h3>
 
@@ -427,7 +424,7 @@ export function AccountCreateForm() {
             />
 
             {/* Đơn vị trực thuộc - Chỉ cho USER */}
-            {selectedRole === 'USER' && (
+            {selectedRole === ROLES.USER && (
               <FormField
                 control={form.control}
                 name="don_vi_truc_thuoc_id"
@@ -480,8 +477,8 @@ export function AccountCreateForm() {
               name="chuc_vu_id"
               render={({ field }) => {
                 const canSelectPosition =
-                  (selectedRole === 'MANAGER' && selectedCoQuanDonViId) ||
-                  (selectedRole === 'USER' && selectedDonViTrucThuocId);
+                  (selectedRole === ROLES.MANAGER && selectedCoQuanDonViId) ||
+                  (selectedRole === ROLES.USER && selectedDonViTrucThuocId);
 
                 return (
                   <FormItem>
@@ -496,7 +493,7 @@ export function AccountCreateForm() {
                           <SelectValue
                             placeholder={
                               !canSelectPosition
-                                ? selectedRole === 'MANAGER'
+                                ? selectedRole === ROLES.MANAGER
                                   ? 'Vui lòng chọn cơ quan đơn vị trước'
                                   : 'Vui lòng chọn đơn vị trực thuộc trước'
                                 : filteredPositions.length === 0

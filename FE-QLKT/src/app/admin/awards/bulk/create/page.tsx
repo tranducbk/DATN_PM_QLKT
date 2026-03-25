@@ -36,7 +36,7 @@ import Link from 'next/link';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/api-client';
 import { getDanhHieuName } from '@/constants/danhHieu.constants';
-import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
+import { PROPOSAL_TYPES, type ProposalType } from '@/constants/proposal.constants';
 import Step2SelectPersonnelCaNhanHangNam from './components/Step2SelectPersonnelCaNhanHangNam';
 import Step2SelectPersonnelNienHan from './components/Step2SelectPersonnelNienHan';
 import Step2SelectPersonnelHCQKQT from './components/Step2SelectPersonnelHCQKQT';
@@ -50,14 +50,7 @@ import type { DateInput } from '@/lib/types';
 
 const { Title, Paragraph, Text } = Typography;
 
-type AwardType =
-  | 'CA_NHAN_HANG_NAM'
-  | 'DON_VI_HANG_NAM'
-  | 'NIEN_HAN'
-  | 'HC_QKQT'
-  | 'KNC_VSNXD_QDNDVN'
-  | 'CONG_HIEN'
-  | 'NCKH';
+type AwardType = Exclude<ProposalType, typeof PROPOSAL_TYPES.DOT_XUAT>;
 
 interface Personnel {
   id: string;
@@ -84,7 +77,7 @@ export default function BulkAddAwardsPage() {
   const [loading, setLoading] = useState(false);
 
   // Step 1: Award Type
-  const [awardType, setAwardType] = useState<AwardType>('CA_NHAN_HANG_NAM');
+  const [awardType, setAwardType] = useState<AwardType>(PROPOSAL_TYPES.CA_NHAN_HANG_NAM);
 
   // Step 2: Select Personnel/Units
   const [nam, setNam] = useState(new Date().getFullYear());
@@ -113,37 +106,37 @@ export default function BulkAddAwardsPage() {
     AwardType,
     { icon: React.ReactNode; label: string; description: string }
   > = {
-    CA_NHAN_HANG_NAM: {
+    [PROPOSAL_TYPES.CA_NHAN_HANG_NAM]: {
       icon: <TrophyOutlined />,
       label: 'Cá nhân Hằng năm',
       description: 'Danh hiệu CSTT-CS, CSTĐ-CS, BK-BQP, CSTĐ-TQ',
     },
-    DON_VI_HANG_NAM: {
+    [PROPOSAL_TYPES.DON_VI_HANG_NAM]: {
       icon: <TeamOutlined />,
       label: 'Đơn vị Hằng năm',
       description: 'ĐVTT, ĐVQT, BK-BQP, BK-TTCP',
     },
-    NIEN_HAN: {
+    [PROPOSAL_TYPES.NIEN_HAN]: {
       icon: <ClockCircleOutlined />,
       label: 'Huy chương Chiến sĩ vẻ vang',
       description: 'Huy chương Chiến sĩ vẻ vang 3 hạng',
     },
-    HC_QKQT: {
+    [PROPOSAL_TYPES.HC_QKQT]: {
       icon: <TrophyOutlined />,
       label: 'Huy chương Quân kỳ quyết thắng',
       description: 'HC Quân kỳ quyết thắng',
     },
-    KNC_VSNXD_QDNDVN: {
+    [PROPOSAL_TYPES.KNC_VSNXD_QDNDVN]: {
       icon: <TrophyOutlined />,
       label: 'Kỷ niệm chương VSNXD QĐNDVN',
       description: 'Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN',
     },
-    CONG_HIEN: {
+    [PROPOSAL_TYPES.CONG_HIEN]: {
       icon: <HeartOutlined />,
       label: 'Huân chương Bảo vệ Tổ quốc',
       description: 'Huân chương Bảo vệ Tổ quốc 3 hạng',
     },
-    NCKH: {
+    [PROPOSAL_TYPES.NCKH]: {
       icon: <ExperimentOutlined />,
       label: 'Nghiên cứu khoa học',
       description: 'Đề tài khoa học / Sáng kiến khoa học',
@@ -905,8 +898,8 @@ export default function BulkAddAwardsPage() {
                 const titleInfo = titleData.find(t => String(t.personnel_id) === String(record.id));
                 const loai = titleInfo?.loai;
                 return (
-                  <Tag color={loai === 'NCKH' ? 'blue' : 'green'}>
-                    {loai === 'NCKH' ? 'Đề tài khoa học' : 'Sáng kiến khoa học'}
+                  <Tag color={loai === PROPOSAL_TYPES.NCKH ? 'blue' : 'green'}>
+                    {loai === PROPOSAL_TYPES.NCKH ? 'Đề tài khoa học' : 'Sáng kiến khoa học'}
                   </Tag>
                 );
               },

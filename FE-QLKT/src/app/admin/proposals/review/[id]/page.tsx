@@ -44,7 +44,7 @@ import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { previewFileWithApi } from '@/utils/filePreview';
 import { useTheme } from '@/components/theme-provider';
 import { getDanhHieuName } from '@/constants/danhHieu.constants';
-import { PROPOSAL_STATUS } from '@/constants/proposal.constants';
+import { PROPOSAL_STATUS, PROPOSAL_TYPES } from '@/constants/proposal.constants';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -261,7 +261,7 @@ export default function ProposalDetailPage() {
         }
 
         // Nếu là đề xuất cống hiến, fetch lịch sử chức vụ cho tất cả quân nhân
-        if (res.data.loai_de_xuat === 'CONG_HIEN' && parsedCongHien.length > 0) {
+        if (res.data.loai_de_xuat === PROPOSAL_TYPES.CONG_HIEN && parsedCongHien.length > 0) {
           await fetchPositionHistories(parsedCongHien);
         }
       } else {
@@ -422,7 +422,7 @@ export default function ProposalDetailPage() {
     // Kiểm tra danh hiệu hằng năm (CA_NHAN_HANG_NAM, DON_VI_HANG_NAM)
     if (editedDanhHieu.length > 0) {
       editedDanhHieu.forEach((item, index) => {
-        if (proposal.loai_de_xuat === 'DON_VI_HANG_NAM') {
+        if (proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
           // Với đề xuất đơn vị hằng năm, kiểm tra so_quyet_dinh
           if (!item.so_quyet_dinh || item.so_quyet_dinh.trim() === '') {
             missingDecisions.push(`Đơn vị ${index + 1}: ${item.ten_don_vi || 'N/A'}`);
@@ -542,17 +542,17 @@ export default function ProposalDetailPage() {
             let successMessage = 'Đã phê duyệt đề xuất thành công. ';
             const loaiDeXuat = proposal?.loai_de_xuat;
 
-            if (loaiDeXuat === 'NIEN_HAN') {
+            if (loaiDeXuat === PROPOSAL_TYPES.NIEN_HAN) {
               successMessage += `Đã thêm ${importedNienHan}/${totalNienHan} Huy chương Chiến sĩ vẻ vang thành công.`;
-            } else if (loaiDeXuat === 'HC_QKQT') {
+            } else if (loaiDeXuat === PROPOSAL_TYPES.HC_QKQT) {
               successMessage += `Đã thêm ${importedNienHan}/${totalNienHan} Huy chương Quân kỳ Quyết thắng thành công.`;
-            } else if (loaiDeXuat === 'KNC_VSNXD_QDNDVN') {
+            } else if (loaiDeXuat === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN) {
               successMessage += `Đã thêm ${importedNienHan}/${totalNienHan} Kỷ niệm chương VSNXD QĐNDVN thành công.`;
-            } else if (loaiDeXuat === 'CONG_HIEN') {
+            } else if (loaiDeXuat === PROPOSAL_TYPES.CONG_HIEN) {
               successMessage += `Đã thêm ${importedDanhHieu}/${totalDanhHieu} Huân chương Bảo vệ Tổ quốc thành công.`;
-            } else if (loaiDeXuat === 'NCKH') {
+            } else if (loaiDeXuat === PROPOSAL_TYPES.NCKH) {
               successMessage += `Đã thêm ${importedThanhTich}/${totalThanhTich} thành tích nghiên cứu khoa học thành công.`;
-            } else if (loaiDeXuat === 'DON_VI_HANG_NAM') {
+            } else if (loaiDeXuat === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
               successMessage += `Đã thêm ${importedDanhHieu}/${totalDanhHieu} khen thưởng đơn vị thành công.`;
             } else {
               // CA_NHAN_HANG_NAM hoặc các loại khác
@@ -610,7 +610,7 @@ export default function ProposalDetailPage() {
         const soQuyetDinh = decision.so_quyet_dinh || '';
 
         // Kiểm tra nếu là quyết định BKBQP hoặc CSTDTQ (chỉ áp dụng cho CA_NHAN_HANG_NAM)
-        if (loaiDeXuat === 'CA_NHAN_HANG_NAM') {
+        if (loaiDeXuat === PROPOSAL_TYPES.CA_NHAN_HANG_NAM) {
           const isBKBQP =
             loaiKhenThuong.includes('BKBQP') ||
             soQuyetDinh.toLowerCase().includes('bkbqp') ||
@@ -665,13 +665,13 @@ export default function ProposalDetailPage() {
 
       // Cập nhật state tương ứng với loại đề xuất
       if (
-        loaiDeXuat === 'NIEN_HAN' ||
-        loaiDeXuat === 'HC_QKQT' ||
-        loaiDeXuat === 'KNC_VSNXD_QDNDVN'
+        loaiDeXuat === PROPOSAL_TYPES.NIEN_HAN ||
+        loaiDeXuat === PROPOSAL_TYPES.HC_QKQT ||
+        loaiDeXuat === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN
       ) {
         const updatedNienHan = editedNienHan.map(applyDecision);
         setEditedNienHan(updatedNienHan);
-      } else if (loaiDeXuat === 'CONG_HIEN') {
+      } else if (loaiDeXuat === PROPOSAL_TYPES.CONG_HIEN) {
         const updatedCongHien = editedCongHien.map(applyDecision);
         setEditedCongHien(updatedCongHien);
       } else {
@@ -683,7 +683,7 @@ export default function ProposalDetailPage() {
       setSelectedRowKeys([]);
       message.success(
         `Đã áp dụng số quyết định cho ${count} ${
-          loaiDeXuat === 'DON_VI_HANG_NAM' ? 'đơn vị' : 'người'
+          loaiDeXuat === PROPOSAL_TYPES.DON_VI_HANG_NAM ? 'đơn vị' : 'người'
         }`
       );
     } else {
@@ -864,7 +864,7 @@ export default function ProposalDetailPage() {
         );
       },
     },
-    ...(proposal?.loai_de_xuat === 'CONG_HIEN'
+    ...(proposal?.loai_de_xuat === PROPOSAL_TYPES.CONG_HIEN
       ? [
           {
             title: 'Tổng thời gian (0.7)',
@@ -1327,21 +1327,21 @@ export default function ProposalDetailPage() {
               </Text>
               <div style={{ fontWeight: 500, marginTop: '4px' }}>
                 <Tag color="blue">
-                  {proposal.loai_de_xuat === 'CA_NHAN_HANG_NAM'
+                  {proposal.loai_de_xuat === PROPOSAL_TYPES.CA_NHAN_HANG_NAM
                     ? 'Cá nhân Hằng năm'
-                    : proposal.loai_de_xuat === 'DON_VI_HANG_NAM'
+                    : proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM
                       ? 'Đơn vị Hằng năm'
-                      : proposal.loai_de_xuat === 'NIEN_HAN'
+                      : proposal.loai_de_xuat === PROPOSAL_TYPES.NIEN_HAN
                         ? 'Huy chương Chiến sĩ vẻ vang'
-                        : proposal.loai_de_xuat === 'HC_QKQT'
+                        : proposal.loai_de_xuat === PROPOSAL_TYPES.HC_QKQT
                           ? 'Huy chương Quân kỳ Quyết thắng'
-                          : proposal.loai_de_xuat === 'KNC_VSNXD_QDNDVN'
+                          : proposal.loai_de_xuat === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN
                             ? 'Kỷ niệm chương VSNXD QĐNDVN'
-                            : proposal.loai_de_xuat === 'CONG_HIEN'
+                            : proposal.loai_de_xuat === PROPOSAL_TYPES.CONG_HIEN
                               ? 'Huân chương Bảo vệ Tổ quốc'
-                              : proposal.loai_de_xuat === 'NCKH'
+                              : proposal.loai_de_xuat === PROPOSAL_TYPES.NCKH
                                 ? 'Nghiên cứu khoa học'
-                                : proposal.loai_de_xuat === 'DOT_XUAT'
+                                : proposal.loai_de_xuat === PROPOSAL_TYPES.DOT_XUAT
                                   ? 'Đột xuất'
                                   : proposal.loai_de_xuat}
                 </Tag>
@@ -1489,7 +1489,7 @@ export default function ProposalDetailPage() {
         </Card>
 
         {/* Hiển thị theo loại đề xuất - không chia tab */}
-        {proposal.loai_de_xuat === 'NCKH' ? (
+        {proposal.loai_de_xuat === PROPOSAL_TYPES.NCKH ? (
           // Component cho đề xuất NCKH (ĐTKH/SKKH) - chỉ hiển thị Thành Tích
           <Card
             title="Thành Tích Khoa Học"
@@ -1525,15 +1525,15 @@ export default function ProposalDetailPage() {
               />
             )}
           </Card>
-        ) : proposal.loai_de_xuat === 'NIEN_HAN' ||
-          proposal.loai_de_xuat === 'HC_QKQT' ||
-          proposal.loai_de_xuat === 'KNC_VSNXD_QDNDVN' ? (
+        ) : proposal.loai_de_xuat === PROPOSAL_TYPES.NIEN_HAN ||
+          proposal.loai_de_xuat === PROPOSAL_TYPES.HC_QKQT ||
+          proposal.loai_de_xuat === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN ? (
           // Component cho đề xuất NIEN_HAN - hiển thị từ editedNienHan
           <Card
             title={
-              proposal.loai_de_xuat === 'NIEN_HAN'
+              proposal.loai_de_xuat === PROPOSAL_TYPES.NIEN_HAN
                 ? 'Danh Sách Huy chương Chiến sĩ vẻ vang'
-                : proposal.loai_de_xuat === 'HC_QKQT'
+                : proposal.loai_de_xuat === PROPOSAL_TYPES.HC_QKQT
                   ? 'Huy chương quân kỳ Quyết Thắng'
                   : 'Kỷ Niệm Chương Vì Sự Nghiệp XD QĐNDVN'
             }
@@ -1569,7 +1569,7 @@ export default function ProposalDetailPage() {
               />
             )}
           </Card>
-        ) : proposal.loai_de_xuat === 'CONG_HIEN' ? (
+        ) : proposal.loai_de_xuat === PROPOSAL_TYPES.CONG_HIEN ? (
           // Component cho đề xuất CỐNG HIẾN - hiển thị từ editedCongHien
           <Card
             title="Danh Sách Huân chương Bảo vệ Tổ quốc"
@@ -1609,7 +1609,7 @@ export default function ProposalDetailPage() {
           // Component cho đề xuất có danh hiệu - chỉ hiển thị Danh Hiệu
           <Card
             title={
-              proposal.loai_de_xuat === 'DON_VI_HANG_NAM'
+              proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM
                 ? 'Danh Hiệu Đơn Vị Hằng Năm'
                 : 'Danh Hiệu Hằng Năm'
             }
@@ -1625,7 +1625,7 @@ export default function ProposalDetailPage() {
                   disabled={selectedRowKeys.length === 0}
                 >
                   Thêm số quyết định ({selectedRowKeys.length}{' '}
-                  {proposal.loai_de_xuat === 'DON_VI_HANG_NAM' ? 'đơn vị' : 'người'})
+                  {proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM ? 'đơn vị' : 'người'})
                 </Button>
               )
             }
@@ -1639,9 +1639,9 @@ export default function ProposalDetailPage() {
               <Table
                 rowSelection={proposal.status === PROPOSAL_STATUS.PENDING ? rowSelection : undefined}
                 columns={
-                  proposal.loai_de_xuat === 'DON_VI_HANG_NAM'
+                  proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM
                     ? donViHangNamColumns
-                    : proposal.loai_de_xuat === 'CA_NHAN_HANG_NAM'
+                    : proposal.loai_de_xuat === PROPOSAL_TYPES.CA_NHAN_HANG_NAM
                       ? caNhanHangNamColumns
                       : caNhanHangNamColumns
                 }

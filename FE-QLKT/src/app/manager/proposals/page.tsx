@@ -36,21 +36,17 @@ import {
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
-import { PROPOSAL_STATUS, PROPOSAL_TYPES } from '@/constants/proposal.constants';
+import {
+  PROPOSAL_STATUS,
+  PROPOSAL_TYPES,
+  type ProposalType,
+} from '@/constants/proposal.constants';
 
 const { Title, Text } = Typography;
 
 interface Proposal {
   id: number;
-  loai_de_xuat:
-    | 'CA_NHAN_HANG_NAM'
-    | 'DON_VI_HANG_NAM'
-    | 'NIEN_HAN'
-    | 'HC_QKQT'
-    | 'KNC_VSNXD_QDNDVN'
-    | 'CONG_HIEN'
-    | 'DOT_XUAT'
-    | 'NCKH';
+  loai_de_xuat: ProposalType;
   nam: number;
   don_vi: string;
   nguoi_de_xuat: string;

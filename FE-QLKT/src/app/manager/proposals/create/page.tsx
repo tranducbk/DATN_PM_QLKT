@@ -43,7 +43,7 @@ import type { ColumnsType } from 'antd/es/table';
 import type { DateInput } from '@/lib/types';
 import { apiClient } from '@/lib/api-client';
 import { getDanhHieuName } from '@/constants/danhHieu.constants';
-import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
+import { PROPOSAL_TYPES, type ProposalType } from '@/constants/proposal.constants';
 // Shared components - reuse từ admin (DRY principle, tránh duplicate ~2000 dòng code)
 import Step2SelectPersonnelCaNhanHangNam from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelCaNhanHangNam';
 import Step2SelectPersonnelNienHan from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelNienHan';
@@ -55,15 +55,6 @@ import Step2SelectUnits from '@/app/admin/awards/bulk/create/components/Step2Sel
 import Step3SetTitles from '@/app/admin/awards/bulk/create/components/Step3SetTitles';
 
 const { Title, Paragraph, Text } = Typography;
-
-type ProposalType =
-  | 'CA_NHAN_HANG_NAM'
-  | 'DON_VI_HANG_NAM'
-  | 'NIEN_HAN'
-  | 'HC_QKQT'
-  | 'KNC_VSNXD_QDNDVN'
-  | 'CONG_HIEN'
-  | 'NCKH';
 
 interface Personnel {
   id: string;
@@ -90,7 +81,7 @@ export default function CreateProposalPage() {
   const [loading, setLoading] = useState(false);
 
   // Step 1: Proposal Type
-  const [proposalType, setProposalType] = useState<ProposalType>('CA_NHAN_HANG_NAM');
+  const [proposalType, setProposalType] = useState<ProposalType>(PROPOSAL_TYPES.CA_NHAN_HANG_NAM);
 
   // Step 2: Select Personnel/Units
   const [nam, setNam] = useState(new Date().getFullYear());
@@ -111,41 +102,40 @@ export default function CreateProposalPage() {
   const [proposalNote, setProposalNote] = useState<string>('');
 
   // Proposal type config
-  const proposalTypeConfig: Record<
-    ProposalType,
-    { icon: React.ReactNode; label: string; description: string }
+  const proposalTypeConfig: Partial<
+    Record<ProposalType, { icon: React.ReactNode; label: string; description: string }>
   > = {
-    CA_NHAN_HANG_NAM: {
+    [PROPOSAL_TYPES.CA_NHAN_HANG_NAM]: {
       icon: <TrophyOutlined />,
       label: 'Cá nhân Hằng năm',
       description: 'Danh hiệu CSTT-CS, CSTĐ-CS, BK-BQP, CSTĐ-TQ',
     },
-    DON_VI_HANG_NAM: {
+    [PROPOSAL_TYPES.DON_VI_HANG_NAM]: {
       icon: <TeamOutlined />,
       label: 'Đơn vị Hằng năm',
       description: 'ĐVTT, ĐVQT, BK-BQP, BK-TTCP',
     },
-    NIEN_HAN: {
+    [PROPOSAL_TYPES.NIEN_HAN]: {
       icon: <ClockCircleOutlined />,
       label: 'Huy chương Chiến sĩ vẻ vang',
       description: 'Huy chương Chiến sĩ vẻ vang 3 hạng',
     },
-    HC_QKQT: {
+    [PROPOSAL_TYPES.HC_QKQT]: {
       icon: <TrophyOutlined />,
       label: 'Huy chương Quân kỳ quyết thắng',
       description: 'HC Quân kỳ quyết thắng',
     },
-    KNC_VSNXD_QDNDVN: {
+    [PROPOSAL_TYPES.KNC_VSNXD_QDNDVN]: {
       icon: <TrophyOutlined />,
       label: 'Kỷ niệm chương VSNXD QĐNDVN',
       description: 'Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN',
     },
-    CONG_HIEN: {
+    [PROPOSAL_TYPES.CONG_HIEN]: {
       icon: <HeartOutlined />,
       label: 'Huân chương Bảo vệ Tổ quốc',
       description: 'Huân chương Bảo vệ Tổ quốc 3 hạng',
     },
-    NCKH: {
+    [PROPOSAL_TYPES.NCKH]: {
       icon: <ExperimentOutlined />,
       label: 'Nghiên cứu khoa học',
       description: 'Đề tài khoa học / Sáng kiến khoa học',
@@ -607,7 +597,7 @@ export default function CreateProposalPage() {
 
       // Reset form
       setCurrentStep(0);
-      setProposalType('CA_NHAN_HANG_NAM');
+      setProposalType(PROPOSAL_TYPES.CA_NHAN_HANG_NAM);
       setNam(new Date().getFullYear()); // Reset về năm hiện tại
       setSelectedPersonnelIds([]);
       setSelectedUnitIds([]);
@@ -1071,6 +1061,8 @@ export default function CreateProposalPage() {
           });
         }
 
+        const proposalTypeSummary = proposalTypeConfig[proposalType];
+
         return (
           <div>
             <Alert
@@ -1084,9 +1076,9 @@ export default function CreateProposalPage() {
             <Card title="Tóm tắt đề xuất" style={{ marginBottom: 16 }}>
               <Descriptions bordered column={2}>
                 <Descriptions.Item label="Loại khen thưởng" span={2}>
-                  <Tag icon={proposalTypeConfig[proposalType].icon}>
-                    {proposalTypeConfig[proposalType].label}
-                  </Tag>
+                  {proposalTypeSummary ? (
+                    <Tag icon={proposalTypeSummary.icon}>{proposalTypeSummary.label}</Tag>
+                  ) : null}
                 </Descriptions.Item>
                 <Descriptions.Item label="Năm đề xuất">
                   <Text strong>{nam}</Text>

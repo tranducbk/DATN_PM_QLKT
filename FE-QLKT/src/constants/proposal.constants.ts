@@ -34,3 +34,14 @@ export const PROPOSAL_TYPES = {
 } as const;
 
 export type ProposalType = (typeof PROPOSAL_TYPES)[keyof typeof PROPOSAL_TYPES];
+
+export const PROPOSAL_TYPE_LABELS: Record<string, string> = {
+  CA_NHAN_HANG_NAM: 'Cá nhân Hằng năm',
+  DON_VI_HANG_NAM: 'Đơn vị Hằng năm',
+  NIEN_HAN: 'Huy chương Chiến sĩ vẻ vang',
+  CONG_HIEN: 'Huân chương Bảo vệ Tổ quốc',
+  DOT_XUAT: 'Đột xuất',
+  NCKH: 'ĐTKH/SKKH',
+  HC_QKQT: 'Huy chương Quân kỳ quyết thắng',
+  KNC_VSNXD_QDNDVN: 'Kỷ niệm chương VSNXD QĐNDVN',
+};

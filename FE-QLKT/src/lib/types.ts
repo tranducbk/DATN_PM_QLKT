@@ -1,7 +1,13 @@
 // Types for QLKT API
 
-/** Một nguồn cho Zod `z.enum(...)` và type `UserRole` */
-export const USER_ROLE_VALUES = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'USER'] as const;
+import { ROLES } from '@/constants/roles.constants';
+
+export const USER_ROLE_VALUES = [
+  ROLES.SUPER_ADMIN,
+  ROLES.ADMIN,
+  ROLES.MANAGER,
+  ROLES.USER,
+] as const;
 
 /** Vai trò tài khoản — khớp BE / JWT */
 export type UserRole = (typeof USER_ROLE_VALUES)[number];

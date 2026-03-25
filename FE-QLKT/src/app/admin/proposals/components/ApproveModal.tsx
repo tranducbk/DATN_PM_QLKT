@@ -24,6 +24,7 @@ import { CheckCircleOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/api-client';
 import dayjs from 'dayjs';
+import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -50,14 +51,23 @@ interface ApproveModalProps {
 }
 
 const FIELD_BY_LOAI: Record<string, { soQuyetDinh: string; pdf: string }> = {
-  CA_NHAN_HANG_NAM: { soQuyetDinh: 'so_quyet_dinh_ca_nhan_hang_nam', pdf: 'file_pdf_ca_nhan_hang_nam' },
-  DON_VI_HANG_NAM: { soQuyetDinh: 'so_quyet_dinh_don_vi_hang_nam', pdf: 'file_pdf_don_vi_hang_nam' },
-  NIEN_HAN: { soQuyetDinh: 'so_quyet_dinh_nien_han', pdf: 'file_pdf_nien_han' },
-  HC_QKQT: { soQuyetDinh: 'so_quyet_dinh_nien_han', pdf: 'file_pdf_nien_han' },
-  KNC_VSNXD_QDNDVN: { soQuyetDinh: 'so_quyet_dinh_nien_han', pdf: 'file_pdf_nien_han' },
-  CONG_HIEN: { soQuyetDinh: 'so_quyet_dinh_cong_hien', pdf: 'file_pdf_cong_hien' },
-  DOT_XUAT: { soQuyetDinh: 'so_quyet_dinh_dot_xuat', pdf: 'file_pdf_dot_xuat' },
-  NCKH: { soQuyetDinh: 'so_quyet_dinh_nckh', pdf: 'file_pdf_nckh' },
+  [PROPOSAL_TYPES.CA_NHAN_HANG_NAM]: {
+    soQuyetDinh: 'so_quyet_dinh_ca_nhan_hang_nam',
+    pdf: 'file_pdf_ca_nhan_hang_nam',
+  },
+  [PROPOSAL_TYPES.DON_VI_HANG_NAM]: {
+    soQuyetDinh: 'so_quyet_dinh_don_vi_hang_nam',
+    pdf: 'file_pdf_don_vi_hang_nam',
+  },
+  [PROPOSAL_TYPES.NIEN_HAN]: { soQuyetDinh: 'so_quyet_dinh_nien_han', pdf: 'file_pdf_nien_han' },
+  [PROPOSAL_TYPES.HC_QKQT]: { soQuyetDinh: 'so_quyet_dinh_nien_han', pdf: 'file_pdf_nien_han' },
+  [PROPOSAL_TYPES.KNC_VSNXD_QDNDVN]: {
+    soQuyetDinh: 'so_quyet_dinh_nien_han',
+    pdf: 'file_pdf_nien_han',
+  },
+  [PROPOSAL_TYPES.CONG_HIEN]: { soQuyetDinh: 'so_quyet_dinh_cong_hien', pdf: 'file_pdf_cong_hien' },
+  [PROPOSAL_TYPES.DOT_XUAT]: { soQuyetDinh: 'so_quyet_dinh_dot_xuat', pdf: 'file_pdf_dot_xuat' },
+  [PROPOSAL_TYPES.NCKH]: { soQuyetDinh: 'so_quyet_dinh_nckh', pdf: 'file_pdf_nckh' },
 };
 
 interface DecisionFormData {

@@ -47,6 +47,7 @@ import { apiClient } from '@/lib/api-client';
 import type { NotificationItem } from '@/lib/api/notifications';
 import { formatDate } from '@/lib/utils';
 import type { UserRole } from '@/lib/types';
+import { ROLES, getRoleInfo } from '@/constants/roles.constants';
 
 const { Header, Sider, Content, Footer } = Layout;
 
@@ -134,7 +135,7 @@ function ConnectionStatusToast({ status }: { status: SocketConnectionStatus }) {
   return null;
 }
 
-export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps) {
+export default function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -265,9 +266,9 @@ export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps
       // Navigate to the link if provided
       if (link) {
         router.push(link);
-      } else if (actualRole === 'MANAGER') {
+      } else if (actualRole === ROLES.MANAGER) {
         router.push('/manager/proposals');
-      } else if (actualRole === 'ADMIN') {
+      } else if (actualRole === ROLES.ADMIN) {
         router.push('/admin/proposals/review');
       }
     } catch (error) {
@@ -321,7 +322,7 @@ export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps
 
   // Menu items dựa trên vai trò
   const getMenuItems = () => {
-    const roleSlug = actualRole === 'SUPER_ADMIN' ? 'super-admin' : actualRole.toLowerCase();
+    const roleSlug = actualRole === ROLES.SUPER_ADMIN ? 'super-admin' : actualRole.toLowerCase();
     const baseItems = [
       {
         key: 'dashboard',
@@ -330,7 +331,7 @@ export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps
       },
     ];
 
-    if (actualRole === 'SUPER_ADMIN') {
+    if (actualRole === ROLES.SUPER_ADMIN) {
       return [
         ...baseItems,
         {
@@ -351,7 +352,7 @@ export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps
       ];
     }
 
-    if (actualRole === 'ADMIN') {
+    if (actualRole === ROLES.ADMIN) {
       return [
         ...baseItems,
         {
@@ -402,7 +403,7 @@ export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps
       ];
     }
 
-    if (actualRole === 'MANAGER') {
+    if (actualRole === ROLES.MANAGER) {
       return [
         ...baseItems,
         {
@@ -452,7 +453,7 @@ export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps
       ];
     }
 
-    if (actualRole === 'USER') {
+    if (actualRole === ROLES.USER) {
       return [
         ...baseItems,
         {
@@ -473,11 +474,11 @@ export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps
 
   const getChangePasswordPath = () => {
     switch (actualRole) {
-      case 'SUPER_ADMIN':
+      case ROLES.SUPER_ADMIN:
         return '/super-admin/change-password';
-      case 'ADMIN':
+      case ROLES.ADMIN:
         return '/admin/change-password';
-      case 'MANAGER':
+      case ROLES.MANAGER:
         return '/manager/change-password';
       default:
         return '/user/change-password';
@@ -641,10 +642,7 @@ export default function MainLayout({ children, role = 'ADMIN' }: MainLayoutProps
               theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
             }`}
           >
-            {actualRole === 'SUPER_ADMIN' && 'Super Adminstrator'}
-            {actualRole === 'ADMIN' && 'Quản trị viên'}
-            {actualRole === 'MANAGER' && 'Quản lý'}
-            {actualRole === 'USER' && 'Người dùng'}
+            {getRoleInfo(actualRole).label}
           </p>
         )}
       </div>

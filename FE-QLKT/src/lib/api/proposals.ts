@@ -1,16 +1,11 @@
 import axiosInstance from '@/utils/axiosInstance';
 import { getApiErrorMessage } from '@/lib/apiError';
+import { PROPOSAL_TYPES, type ProposalType } from '@/constants/proposal.constants';
 
 type ApiResponse<T = any> = { success: boolean; data?: T; message?: string };
 
 export async function getProposalTemplate(
-  type:
-    | 'CA_NHAN_HANG_NAM'
-    | 'DON_VI_HANG_NAM'
-    | 'NIEN_HAN'
-    | 'CONG_HIEN'
-    | 'DOT_XUAT'
-    | 'NCKH' = 'CA_NHAN_HANG_NAM'
+  type: ProposalType = PROPOSAL_TYPES.CA_NHAN_HANG_NAM
 ): Promise<Blob> {
   try {
     const res = await axiosInstance.get('/api/proposals/template', {

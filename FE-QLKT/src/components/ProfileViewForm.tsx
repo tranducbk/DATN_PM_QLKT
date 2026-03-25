@@ -19,17 +19,7 @@ import { formatDate } from '@/lib/utils';
 import { useTheme } from '@/components/theme-provider';
 import { getAntdThemeConfig } from '@/lib/antd-theme';
 import { getApiErrorMessage } from '@/lib/apiError';
-
-// Helper function để hiển thị tên quyền
-const getRoleName = (role: string) => {
-  const roleMap: Record<string, string> = {
-    SUPER_ADMIN: 'Quản trị viên hệ thống',
-    ADMIN: 'Quản trị viên',
-    MANAGER: 'Quản lý',
-    USER: 'Người dùng',
-  };
-  return roleMap[role] || role;
-};
+import { getRoleInfo } from '@/constants/roles.constants';
 
 interface ProfileViewFormProps {
   personnelId?: string; // Optional: nếu không có thì lấy từ token
@@ -296,20 +286,8 @@ export default function ProfileViewForm({
                         {
                           label: 'Vai trò',
                           value: (
-                            <Tag
-                              color={
-                                personnelData.TaiKhoan.role === 'SUPER_ADMIN'
-                                  ? 'purple'
-                                  : personnelData.TaiKhoan.role === 'ADMIN'
-                                    ? 'red'
-                                    : personnelData.TaiKhoan.role === 'MANAGER'
-                                      ? 'blue'
-                                      : personnelData.TaiKhoan.role === 'USER'
-                                        ? 'green'
-                                        : 'default'
-                              }
-                            >
-                              {getRoleName(personnelData.TaiKhoan.role)}
+                            <Tag color={getRoleInfo(personnelData.TaiKhoan.role).color}>
+                              {getRoleInfo(personnelData.TaiKhoan.role).label}
                             </Tag>
                           ),
                         },

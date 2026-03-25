@@ -30,6 +30,7 @@ import { Loader2, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
 import { getApiErrorMessage } from '@/lib/apiError';
+import { ROLES, roleSelectOptions } from '@/constants/roles.constants';
 
 type AccountEditValues = z.infer<typeof accountEditSchema>;
 
@@ -50,7 +51,7 @@ export function AccountEditForm({ accountId }: AccountEditFormProps) {
   const form = useForm<AccountEditValues>({
     resolver: zodResolver(accountEditSchema),
     defaultValues: {
-      role: 'USER',
+      role: ROLES.USER,
     },
   });
 
@@ -78,22 +79,18 @@ export function AccountEditForm({ accountId }: AccountEditFormProps) {
 
   // Lấy danh sách role có thể chỉnh sửa dựa trên role hiện tại
   const getAvailableRoles = () => {
-    if (currentUserRole === 'SUPER_ADMIN') {
-      return [
-        { value: 'SUPER_ADMIN', label: 'Super Admin' },
-        { value: 'ADMIN', label: 'Admin' },
-        { value: 'MANAGER', label: 'Quản lý' },
-        { value: 'USER', label: 'Người dùng' },
-      ];
-    } else if (currentUserRole === 'ADMIN') {
-      // ADMIN chỉ được chỉnh sửa MANAGER và USER
-      return [
-        { value: 'MANAGER', label: 'Quản lý' },
-        { value: 'USER', label: 'Người dùng' },
-      ];
+    if (currentUserRole === ROLES.SUPER_ADMIN) {
+      return roleSelectOptions([
+        ROLES.SUPER_ADMIN,
+        ROLES.ADMIN,
+        ROLES.MANAGER,
+        ROLES.USER,
+      ]);
     }
-    // Mặc định chỉ có USER
-    return [{ value: 'USER', label: 'Người dùng' }];
+    if (currentUserRole === ROLES.ADMIN) {
+      return roleSelectOptions([ROLES.MANAGER, ROLES.USER]);
+    }
+    return roleSelectOptions([ROLES.USER]);
   };
 
   async function onSubmit(values: AccountEditValues) {

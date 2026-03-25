@@ -37,17 +37,7 @@ import { useTheme } from '@/components/theme-provider';
 import { formatDate } from '@/lib/utils';
 import { getAntdThemeConfig } from '@/lib/antd-theme';
 import { getApiErrorMessage } from '@/lib/apiError';
-
-// Helper function để hiển thị tên quyền
-const getRoleName = (role: string) => {
-  const roleMap: Record<string, string> = {
-    SUPER_ADMIN: 'Quản trị viên hệ thống',
-    ADMIN: 'Quản trị viên',
-    MANAGER: 'Quản lý',
-    USER: 'Người dùng',
-  };
-  return roleMap[role] || role;
-};
+import { ROLES, getRoleInfo } from '@/constants/roles.constants';
 
 // Helper function để parse địa chỉ từ string sang array
 const parseAddressToArray = (addressString: string | null): string[] | undefined => {
@@ -279,7 +269,7 @@ export default function ProfileEditForm({
           co_quan_don_vi: response.data.CoQuanDonVi?.ten_don_vi || 'Chưa có thông tin',
           don_vi_truc_thuoc: response.data.DonViTrucThuoc?.ten_don_vi || 'Chưa có thông tin',
           chuc_vu: response.data.ChucVu?.ten_chuc_vu || 'Chưa có thông tin',
-          role: getRoleName(response.data.TaiKhoan?.role || 'USER'),
+          role: getRoleInfo(response.data.TaiKhoan?.role || ROLES.USER).label,
         });
       }
     } catch (error: unknown) {
@@ -564,20 +554,8 @@ export default function ProfileEditForm({
                           {
                             label: 'Vai trò',
                             value: (
-                              <Tag
-                                color={
-                                  personnelData.TaiKhoan.role === 'SUPER_ADMIN'
-                                    ? 'purple'
-                                    : personnelData.TaiKhoan.role === 'ADMIN'
-                                      ? 'red'
-                                      : personnelData.TaiKhoan.role === 'MANAGER'
-                                        ? 'blue'
-                                        : personnelData.TaiKhoan.role === 'USER'
-                                          ? 'green'
-                                          : 'default'
-                                }
-                              >
-                                {getRoleName(personnelData.TaiKhoan.role)}
+                              <Tag color={getRoleInfo(personnelData.TaiKhoan.role).color}>
+                                {getRoleInfo(personnelData.TaiKhoan.role).label}
                               </Tag>
                             ),
                           },

@@ -33,6 +33,7 @@ import {
   PieChart,
   RoleDistributionChart,
 } from '@/components/charts';
+import { PROPOSAL_STATUS_LABELS, PROPOSAL_TYPE_LABELS } from '@/constants/proposal.constants';
 
 const { Title, Text } = Typography;
 
@@ -377,14 +378,7 @@ export default function ManagerDashboard() {
               <Col xs={24} lg={8}>
                 <PieChart
                   data={chartData.proposalsByStatus.map((item: any) => ({
-                    label: (() => {
-                      const statusMap: Record<string, string> = {
-                        PENDING: 'Đang chờ phê duyệt',
-                        APPROVED: 'Đã phê duyệt',
-                        REJECTED: 'Đã từ chối',
-                      };
-                      return statusMap[item.status] || item.status;
-                    })(),
+                    label: PROPOSAL_STATUS_LABELS[item.status] || item.status,
                     value: item.count,
                   }))}
                   title="Đề xuất theo trạng thái"
@@ -403,19 +397,7 @@ export default function ManagerDashboard() {
                   }))}
                   title="Đề xuất theo loại"
                   maxLabelLength={15}
-                  labelMapper={(label: string) => {
-                    const proposalTypeMap: Record<string, string> = {
-                      CA_NHAN_HANG_NAM: 'Cá nhân Hằng năm',
-                      DON_VI_HANG_NAM: 'Đơn vị Hằng năm',
-                      NIEN_HAN: 'Huy chương Chiến sĩ vẻ vang',
-                      CONG_HIEN: 'Huân chương Bảo vệ Tổ quốc',
-                      DOT_XUAT: 'Đột xuất',
-                      NCKH: 'ĐTKH/SKKH',
-                      HC_QKQT: 'Huy chương Quân kỳ',
-                      KNC_VSNXD_QDNDVN: 'Kỷ niệm chương',
-                    };
-                    return proposalTypeMap[label] || label;
-                  }}
+                  labelMapper={(label: string) => PROPOSAL_TYPE_LABELS[label] || label}
                 />
               </Col>
             </Row>

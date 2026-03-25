@@ -24,6 +24,10 @@ export const ROLE_COLORS: Record<string, string> = {
   USER: 'green',
 };
 
+export function roleSelectOptions(roles: Role[]): { value: Role; label: string }[] {
+  return roles.map(value => ({ value, label: ROLE_LABELS[value] ?? value }));
+}
+
 /** Lấy label + color cho vai trò (thay thế getRoleText/getAccountRoleLabel rải rác) */
 export function getRoleInfo(role?: string): { label: string; color: string } {
   if (!role) return { label: 'Không xác định', color: 'default' };

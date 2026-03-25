@@ -27,6 +27,7 @@ import { apiClient } from '@/lib/api-client';
 import { formatDateTime } from '@/lib/utils';
 import '@/lib/chart-config';
 import { ActionBarChart, ActivityLineChart, PieChart } from '@/components/charts';
+import { PROPOSAL_STATUS_LABELS, PROPOSAL_TYPE_LABELS } from '@/constants/proposal.constants';
 
 const { Title } = Typography;
 
@@ -240,19 +241,7 @@ export default function AdminDashboard() {
               <Col xs={24} lg={8}>
                 <PieChart
                   data={chartData.proposalsByType.map((item: any) => ({
-                    label: (() => {
-                      const proposalTypeMap: Record<string, string> = {
-                        CA_NHAN_HANG_NAM: 'Cá nhân Hằng năm',
-                        DON_VI_HANG_NAM: 'Đơn vị Hằng năm',
-                        NIEN_HAN: 'Huy chương Chiến sĩ vẻ vang',
-                        CONG_HIEN: 'Huân chương Bảo vệ Tổ quốc',
-                        DOT_XUAT: 'Đột xuất',
-                        NCKH: 'ĐTKH/SKKH',
-                        HC_QKQT: 'Huy chương Quân kỳ',
-                        KNC_VSNXD_QDNDVN: 'Kỷ niệm chương',
-                      };
-                      return proposalTypeMap[item.type] || item.type;
-                    })(),
+                    label: PROPOSAL_TYPE_LABELS[item.type] || item.type,
                     value: item.count,
                   }))}
                   title="Đề xuất theo loại (7 ngày gần nhất)"
@@ -265,14 +254,7 @@ export default function AdminDashboard() {
                     count: item.count,
                   }))}
                   title="Đề xuất theo trạng thái"
-                  labelMapper={(label: string) => {
-                    const statusMap: Record<string, string> = {
-                      PENDING: 'Đang chờ phê duyệt',
-                      APPROVED: 'Đã phê duyệt',
-                      REJECTED: 'Đã từ chối',
-                    };
-                    return statusMap[label] || label;
-                  }}
+                  labelMapper={(label: string) => PROPOSAL_STATUS_LABELS[label] || label}
                 />
               </Col>
             </Row>
@@ -297,19 +279,7 @@ export default function AdminDashboard() {
                   }))}
                   title="Đề xuất theo loại (7 ngày gần nhất)"
                   maxLabelLength={20}
-                  labelMapper={(label: string) => {
-                    const proposalTypeMap: Record<string, string> = {
-                      CA_NHAN_HANG_NAM: 'Cá nhân Hằng năm',
-                      DON_VI_HANG_NAM: 'Đơn vị Hằng năm',
-                      NIEN_HAN: 'Huy chương Chiến sĩ vẻ vang',
-                      CONG_HIEN: 'Huân chương Bảo vệ Tổ quốc',
-                      DOT_XUAT: 'Đột xuất',
-                      NCKH: 'ĐTKH/SKKH',
-                      HC_QKQT: 'Huy chương Quân kỳ quyết thắng',
-                      KNC_VSNXD_QDNDVN: 'Kỷ niệm chương VSNXD QĐNDVN',
-                    };
-                    return proposalTypeMap[label] || label;
-                  }}
+                  labelMapper={(label: string) => PROPOSAL_TYPE_LABELS[label] || label}
                 />
               </Col>
             </Row>

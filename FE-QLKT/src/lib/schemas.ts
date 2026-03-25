@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ROLES } from '@/constants/roles.constants';
 import { USER_ROLE_VALUES } from './types';
 
 const userRoleEnum = z.enum(USER_ROLE_VALUES);
@@ -42,7 +43,7 @@ export const accountCreateSchema = z
   })
   .refine(
     data => {
-      if (data.role === 'MANAGER') {
+      if (data.role === ROLES.MANAGER) {
         return !!data.co_quan_don_vi_id && !!data.chuc_vu_id && !data.don_vi_truc_thuoc_id;
       }
       return true;
@@ -54,7 +55,7 @@ export const accountCreateSchema = z
   )
   .refine(
     data => {
-      if (data.role === 'USER') {
+      if (data.role === ROLES.USER) {
         return !!data.co_quan_don_vi_id && !!data.don_vi_truc_thuoc_id && !!data.chuc_vu_id;
       }
       return true;

@@ -36,7 +36,11 @@ import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { previewFileWithApi } from '@/utils/filePreview';
 import { useTheme } from '@/components/theme-provider';
 import { getAntdTableThemeConfig } from '@/lib/antd-theme';
-import { PROPOSAL_STATUS } from '@/constants/proposal.constants';
+import {
+  PROPOSAL_STATUS,
+  PROPOSAL_TYPES,
+  type ProposalType,
+} from '@/constants/proposal.constants';
 import styles from './proposal-detail.module.css';
 
 const { Title, Text } = Typography;
@@ -113,15 +117,7 @@ interface AttachedFile {
 
 interface ProposalDetail {
   id: number;
-  loai_de_xuat:
-    | 'CA_NHAN_HANG_NAM'
-    | 'DON_VI_HANG_NAM'
-    | 'NIEN_HAN'
-    | 'CONG_HIEN'
-    | 'DOT_XUAT'
-    | 'NCKH'
-    | 'HC_QKQT'
-    | 'KNC_VSNXD_QDNDVN';
+  loai_de_xuat: ProposalType;
   nam: number;
   don_vi: {
     id: number;
@@ -206,7 +202,7 @@ export default function ManagerProposalDetailPage() {
 
         if (personnelData.length > 0) {
           // Fetch lịch sử chức vụ cho tất cả quân nhân để hiển thị thời gian (chỉ cho CONG_HIEN)
-          if (response.data.loai_de_xuat === 'CONG_HIEN') {
+          if (response.data.loai_de_xuat === PROPOSAL_TYPES.CONG_HIEN) {
             await fetchPositionHistories(personnelData);
           }
         }
@@ -480,13 +476,13 @@ export default function ManagerProposalDetailPage() {
               {format(new Date(proposal.createdAt), 'dd/MM/yyyy HH:mm')}
             </Descriptions.Item>
             <Descriptions.Item label="Số lượng" span={2}>
-              {proposal.loai_de_xuat === 'NCKH' ? (
+              {proposal.loai_de_xuat === PROPOSAL_TYPES.NCKH ? (
                 <Tag color="magenta">{proposal.data_thanh_tich?.length || 0} đề tài/sáng kiến</Tag>
-              ) : proposal.loai_de_xuat === 'NIEN_HAN' ||
-                proposal.loai_de_xuat === 'HC_QKQT' ||
-                proposal.loai_de_xuat === 'KNC_VSNXD_QDNDVN' ? (
+              ) : proposal.loai_de_xuat === PROPOSAL_TYPES.NIEN_HAN ||
+                proposal.loai_de_xuat === PROPOSAL_TYPES.HC_QKQT ||
+                proposal.loai_de_xuat === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN ? (
                 <Tag color="blue">{proposal.data_nien_han?.length || 0} quân nhân</Tag>
-              ) : proposal.loai_de_xuat === 'CONG_HIEN' ? (
+              ) : proposal.loai_de_xuat === PROPOSAL_TYPES.CONG_HIEN ? (
                 <Tag color="purple">{proposal.data_cong_hien?.length || 0} quân nhân</Tag>
               ) : (
                 <Tag color="blue">{proposal.data_danh_hieu?.length || 0} quân nhân</Tag>
@@ -592,7 +588,7 @@ export default function ManagerProposalDetailPage() {
         </Card>
 
         {/* Data Tables - Hiển thị theo loại đề xuất */}
-        {proposal.loai_de_xuat === 'NCKH' ? (
+        {proposal.loai_de_xuat === PROPOSAL_TYPES.NCKH ? (
           // Component cho đề xuất NCKH (ĐTKH/SKKH)
           <Card
             className="shadow-sm"
@@ -738,7 +734,7 @@ export default function ManagerProposalDetailPage() {
               ]}
             />
           </Card>
-        ) : proposal.loai_de_xuat === 'CONG_HIEN' &&
+        ) : proposal.loai_de_xuat === PROPOSAL_TYPES.CONG_HIEN &&
           proposal.data_cong_hien &&
           proposal.data_cong_hien.length > 0 ? (
           // Component cho đề xuất cống hiến
@@ -968,13 +964,13 @@ export default function ManagerProposalDetailPage() {
                   render: (_, __, index) => index + 1,
                 },
                 {
-                  title: proposal.loai_de_xuat === 'DON_VI_HANG_NAM' ? 'Tên đơn vị' : 'Họ và tên',
-                  dataIndex: proposal.loai_de_xuat === 'DON_VI_HANG_NAM' ? 'ten_don_vi' : 'ho_ten',
-                  key: proposal.loai_de_xuat === 'DON_VI_HANG_NAM' ? 'ten_don_vi' : 'ho_ten',
+                  title: proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM ? 'Tên đơn vị' : 'Họ và tên',
+                  dataIndex: proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM ? 'ten_don_vi' : 'ho_ten',
+                  key: proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM ? 'ten_don_vi' : 'ho_ten',
                   width: 250,
                   align: 'center',
                   render: (text: string, record: any) => {
-                    if (proposal.loai_de_xuat === 'DON_VI_HANG_NAM') {
+                    if (proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
                       // For units, show unit name
                       return (
                         <div
@@ -1016,13 +1012,13 @@ export default function ManagerProposalDetailPage() {
                 },
                 {
                   title:
-                    proposal.loai_de_xuat === 'DON_VI_HANG_NAM' ? 'Mã đơn vị' : 'Cấp bậc / Chức vụ',
+                    proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM ? 'Mã đơn vị' : 'Cấp bậc / Chức vụ',
                   key:
-                    proposal.loai_de_xuat === 'DON_VI_HANG_NAM' ? 'ma_don_vi' : 'cap_bac_chuc_vu',
+                    proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM ? 'ma_don_vi' : 'cap_bac_chuc_vu',
                   width: 180,
                   align: 'center',
                   render: (_: any, record: any) => {
-                    if (proposal.loai_de_xuat === 'DON_VI_HANG_NAM') {
+                    if (proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
                       // For units, show unit code
                       return (
                         <Text strong style={{ whiteSpace: 'nowrap' }}>
@@ -1106,7 +1102,7 @@ export default function ManagerProposalDetailPage() {
                   },
                 },
                 // Chỉ hiển thị các cột thời gian cho đề xuất cống hiến
-                ...(proposal.loai_de_xuat === 'CONG_HIEN'
+                ...(proposal.loai_de_xuat === PROPOSAL_TYPES.CONG_HIEN
                   ? [
                       {
                         title: 'Tổng thời gian (0.7)',

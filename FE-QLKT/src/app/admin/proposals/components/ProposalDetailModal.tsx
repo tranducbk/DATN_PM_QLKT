@@ -9,7 +9,7 @@ import {
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
-import { PROPOSAL_STATUS } from '@/constants/proposal.constants';
+import { PROPOSAL_STATUS, PROPOSAL_TYPES } from '@/constants/proposal.constants';
 
 const { Text, Title } = Typography;
 
@@ -70,10 +70,14 @@ export default function ProposalDetailModal({
     NCKH: 'ĐTKH/SKKH',
   };
 
-  const statusConfig = {
+  const statusConfig: Record<string, { color: string; text: string }> = {
     [PROPOSAL_STATUS.PENDING]: { color: 'warning', text: 'Đang chờ phê duyệt' },
     [PROPOSAL_STATUS.APPROVED]: { color: 'success', text: 'Đã phê duyệt' },
     [PROPOSAL_STATUS.REJECTED]: { color: 'error', text: 'Đã từ chối' },
+  };
+  const statusDisplay = statusConfig[proposal.status] ?? {
+    color: 'default',
+    text: proposal.status || '-',
   };
 
   // Get title data
@@ -139,7 +143,7 @@ export default function ProposalDetailModal({
   ];
 
   // Add appropriate columns based on proposal type
-  if (proposal.loai_de_xuat === 'NCKH') {
+  if (proposal.loai_de_xuat === PROPOSAL_TYPES.NCKH) {
     columns.push(
       {
         title: 'Loại',
@@ -227,9 +231,7 @@ export default function ProposalDetailModal({
             {dayjs(proposal.createdAt).format('DD/MM/YYYY HH:mm')}
           </Descriptions.Item>
           <Descriptions.Item label="Trạng thái">
-            <Tag color={statusConfig[proposal.status].color}>
-              {statusConfig[proposal.status].text}
-            </Tag>
+            <Tag color={statusDisplay.color}>{statusDisplay.text}</Tag>
           </Descriptions.Item>
         </Descriptions>
 
@@ -288,8 +290,8 @@ export default function ProposalDetailModal({
               Danh sách quân nhân và danh hiệu
             </Title>
             {titleData.length > 0 &&
-              (proposal.loai_de_xuat === 'CA_NHAN_HANG_NAM' ||
-                proposal.loai_de_xuat === 'DON_VI_HANG_NAM') &&
+              (proposal.loai_de_xuat === PROPOSAL_TYPES.CA_NHAN_HANG_NAM ||
+                proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM) &&
               (() => {
                 // Chỉ tính cho CSTT, CSTDCS, ĐVTT, ĐVQT
                 const allowedTitles = ['CSTT', 'CSTDCS', 'ĐVTT', 'ĐVQT'];

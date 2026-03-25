@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { useAuth } from '@/contexts/AuthContext';
+import { ROLES } from '@/constants/roles.constants';
 import Image from 'next/image';
 import './login-form.css';
 
@@ -40,13 +41,13 @@ export function LoginForm() {
           don_vi_id: user.don_vi_id || undefined,
         });
 
-        if (role === 'SUPER_ADMIN') {
+        if (role === ROLES.SUPER_ADMIN) {
           router.push('/super-admin/dashboard');
-        } else if (role === 'ADMIN') {
+        } else if (role === ROLES.ADMIN) {
           router.push('/admin/dashboard');
-        } else if (role === 'MANAGER') {
+        } else if (role === ROLES.MANAGER) {
           router.push('/manager/dashboard');
-        } else if (role === 'USER') {
+        } else if (role === ROLES.USER) {
           router.push('/user/dashboard');
         }
       } else {

@@ -8,6 +8,7 @@ import { apiClient } from '@/lib/api-client';
 import { format } from 'date-fns';
 import { formatDate } from '@/lib/utils';
 import type { DateInput } from '@/lib/types';
+import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 
 const { Text } = Typography;
 
@@ -195,7 +196,7 @@ export default function Step2SelectPersonnel({
   ];
 
   // Thêm cột ngày nhập ngũ, xuất ngũ và tổng tháng cho đề xuất niên hạn
-  if (proposalType === 'NIEN_HAN') {
+  if (proposalType === PROPOSAL_TYPES.NIEN_HAN) {
     // Hàm tính tổng số tháng từ ngày nhập ngũ đến hiện tại (hoặc ngày xuất ngũ)
     const calculateTotalMonths = (
       ngayNhapNgu: DateInput,
@@ -419,7 +420,7 @@ export default function Step2SelectPersonnel({
           showTotal: total => `Tổng số ${total} quân nhân`,
         }}
         bordered
-        scroll={{ x: proposalType === 'NIEN_HAN' ? 1650 : 1200 }}
+        scroll={{ x: proposalType === PROPOSAL_TYPES.NIEN_HAN ? 1650 : 1200 }}
         locale={{
           emptyText: 'Không có dữ liệu quân nhân',
         }}
