@@ -64,6 +64,7 @@ interface Step2SelectPersonnelNienHanProps {
   onTitleDataChange?: (titleData: any[]) => void;
   onNextStep?: () => void;
   bypassEligibility?: boolean;
+  isManager?: boolean;
 }
 
 export default function Step2SelectPersonnelNienHan({
@@ -74,6 +75,7 @@ export default function Step2SelectPersonnelNienHan({
   onTitleDataChange,
   onNextStep,
   bypassEligibility = false,
+  isManager = false,
 }: Step2SelectPersonnelNienHanProps) {
   const [loading, setLoading] = useState(false);
   const [checkingProfiles, setCheckingProfiles] = useState(false);
@@ -892,23 +894,27 @@ export default function Step2SelectPersonnelNienHan({
       />
 
       {/* Upload Excel Section */}
-      <ExcelImportSection
-        awardType="NIEN_HAN"
-        templateEndpoint="/api/hccsvv/template"
-        importEndpoint="/api/hccsvv/import"
-        templateFileName="mau_import_hccsvv"
-        onImportSuccess={handleImportSuccess}
-        selectedCount={selectedPersonnelIds.length}
-        selectedPersonnelIds={selectedPersonnelIds}
-        entityLabel="quân nhân"
-        localProcessing={true}
-        onLocalProcess={handleLocalExcelProcess}
-        previewEndpoint="/api/hccsvv/import/preview"
-        reviewPath="/admin/awards/bulk/import-review-hccsvv"
-        sessionStorageKey="importPreviewDataHCCSVV"
-      />
+      {!isManager && (
+        <>
+          <ExcelImportSection
+            awardType="NIEN_HAN"
+            templateEndpoint="/api/hccsvv/template"
+            importEndpoint="/api/hccsvv/import"
+            templateFileName="mau_import_hccsvv"
+            onImportSuccess={handleImportSuccess}
+            selectedCount={selectedPersonnelIds.length}
+            selectedPersonnelIds={selectedPersonnelIds}
+            entityLabel="quân nhân"
+            localProcessing={true}
+            onLocalProcess={handleLocalExcelProcess}
+            previewEndpoint="/api/hccsvv/import/preview"
+            reviewPath="/admin/awards/bulk/import-review-hccsvv"
+            sessionStorageKey="importPreviewDataHCCSVV"
+          />
 
-      <Divider>Hoặc chọn thủ công</Divider>
+          <Divider>Hoặc chọn thủ công</Divider>
+        </>
+      )}
 
       <Space style={{ marginBottom: 16 }} size="middle">
         <div>

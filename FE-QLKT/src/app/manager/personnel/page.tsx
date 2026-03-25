@@ -14,6 +14,7 @@ import {
   ConfigProvider,
   theme as antdTheme,
   Spin,
+  Pagination,
 } from 'antd';
 import { getApiErrorMessage } from '@/lib/apiError';
 
@@ -544,48 +545,23 @@ export default function ManagerPersonnelPage() {
 
         {/* Pagination */}
         {pagination.total > 0 && (
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: '16px',
-            }}
-          >
-            <Text type="secondary">
-              Hiển thị {(pagination.page - 1) * pagination.limit + 1} -{' '}
-              {Math.min(pagination.page * pagination.limit, pagination.total)} trong tổng số{' '}
-              {pagination.total} quân nhân
-            </Text>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Select
-                value={pagination.limit.toString()}
-                onChange={v => handleLimitChange(parseInt(v))}
-                style={{ width: 80 }}
-              >
-                <Option value="10">10</Option>
-                <Option value="20">20</Option>
-                <Option value="50">50</Option>
-              </Select>
-              <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                <Button
-                  onClick={() => handlePageChange(pagination.page - 1)}
-                  disabled={pagination.page <= 1}
-                >
-                  Trước
-                </Button>
-                <span style={{ padding: '0 12px', fontSize: '14px' }}>
-                  {pagination.page} / {Math.ceil(pagination.total / pagination.limit)}
-                </span>
-                <Button
-                  onClick={() => handlePageChange(pagination.page + 1)}
-                  disabled={pagination.page >= Math.ceil(pagination.total / pagination.limit)}
-                >
-                  Sau
-                </Button>
-              </div>
-            </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
+            <Pagination
+              current={pagination.page}
+              pageSize={pagination.limit}
+              total={pagination.total}
+              showSizeChanger
+              showQuickJumper
+              showTotal={(total, range) => `${range[0]}-${range[1]} của ${total} quân nhân`}
+              pageSizeOptions={['10', '20', '50']}
+              onChange={(page, pageSize) => {
+                if (pageSize !== pagination.limit) {
+                  handleLimitChange(pageSize);
+                } else {
+                  handlePageChange(page);
+                }
+              }}
+            />
           </div>
         )}
 

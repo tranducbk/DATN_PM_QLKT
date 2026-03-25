@@ -20,9 +20,11 @@ async function writeSystemLog({
   payload = null,
 }: WriteSystemLogParams): Promise<void> {
   try {
+    // userId 'SYSTEM' hoặc undefined thì set null (không có FK)
+    const actorId = userId && userId !== 'SYSTEM' ? userId : null;
     await prisma.systemLog.create({
       data: {
-        nguoi_thuc_hien_id: userId || 'SYSTEM',
+        nguoi_thuc_hien_id: actorId,
         actor_role: userRole || 'SYSTEM',
         action,
         resource,
@@ -32,7 +34,7 @@ async function writeSystemLog({
       },
     });
   } catch {
-    // Khong throw - log loi khong duoc anh huong nghiep vu
+    // Không throw để không ảnh hưởng nghiệp vụ
   }
 }
 

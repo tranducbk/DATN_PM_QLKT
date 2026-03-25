@@ -160,7 +160,7 @@ class PersonnelController {
   });
 
   checkContributionEligibility = catchAsync(async (req: Request, res: Response) => {
-    const { personnelIds } = req.body;
+    const { personnel_ids: personnelIds } = req.body;
     if (!personnelIds || !Array.isArray(personnelIds)) {
       return ResponseHelper.badRequest(res, 'Danh sách quân nhân không hợp lệ');
     }

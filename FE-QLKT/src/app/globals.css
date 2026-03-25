@@ -1584,7 +1584,7 @@
 
 /* Login form item errors */
 .ant-form-item-explain-error {
-  @apply text-red-400;
+  @apply text-red-400 pt-2;
 }
 
 /* Shadcn/UI Form Components - Better Visibility */

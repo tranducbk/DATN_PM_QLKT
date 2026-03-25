@@ -24,8 +24,82 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import dayjs from 'dayjs';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
 import { ROLES } from '@/constants/roles.constants';
+import VietnamAddressCascader from '@/components/VietnamAddressCascader';
 
 const { Title } = Typography;
+
+// Parse "Xã A, huyện B, tỉnh C" → [tỉnh C, huyện B, Xã A] cho Cascader
+const parseAddressToArray = (addressString: string | null): string[] | undefined => {
+  if (!addressString) return undefined;
+  const parts = addressString.split(',').map(part => part.trim());
+  if (parts.length !== 3) return undefined;
+  const [ward, district, province] = parts;
+  return [province, district, ward];
+};
+
+// [tỉnh C, huyện B, Xã A] → "Xã A, huyện B, tỉnh C"
+const formatAddressToString = (addressArray: string[]): string => {
+  if (!addressArray || addressArray.length !== 3) return '';
+  const [province, district, ward] = addressArray;
+  return `${ward}, ${district}, ${province}`;
+};
+
+// Format địa chỉ string: viết hoa tên riêng, giữ từ hành chính thường (trừ đầu câu)
+const formatAddressInput = (input: string): string => {
+  if (!input || !input.trim()) return input;
+
+  const singleAdminWords = ['tỉnh', 'tp', 'tp.', 'huyện', 'quận', 'xã', 'phường', 'tt', 'tt.'];
+  const doubleAdminWords = ['thành phố', 'thị xã', 'thị trấn'];
+
+  const parts = input.split(',').map(part => part.trim());
+
+  const formattedParts = parts.map((part, partIndex) => {
+    const words = part.split(/\s+/).filter(w => w.length > 0);
+    if (words.length === 0) return '';
+
+    const firstWord = words[0].toLowerCase();
+    const secondWord = words[1]?.toLowerCase();
+
+    let adminLength = 0;
+    let formattedAdmin = '';
+
+    if (secondWord && doubleAdminWords.includes(`${firstWord} ${secondWord}`)) {
+      adminLength = 2;
+      if (partIndex === 0) {
+        const formattedFirst = firstWord.charAt(0).toUpperCase() + firstWord.slice(1);
+        formattedAdmin = `${formattedFirst} ${secondWord}`;
+      } else {
+        formattedAdmin = `${firstWord} ${secondWord}`;
+      }
+    } else if (singleAdminWords.includes(firstWord)) {
+      adminLength = 1;
+      if (partIndex === 0) {
+        formattedAdmin = firstWord.charAt(0).toUpperCase() + firstWord.slice(1);
+      } else {
+        formattedAdmin = firstWord;
+      }
+    }
+
+    const capitalizeWord = (word: string) => {
+      if (word.length === 0) return word;
+      const idx = word.search(
+        /[a-zA-ZàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđĐ]/i
+      );
+      if (idx === -1) return word;
+      return word.substring(0, idx) + word[idx].toUpperCase() + word.substring(idx + 1).toLowerCase();
+    };
+
+    if (adminLength > 0) {
+      const placeNameWords = words.slice(adminLength);
+      const formattedPlaceName = placeNameWords.map(capitalizeWord).join(' ');
+      return `${formattedAdmin} ${formattedPlaceName}`;
+    }
+
+    return words.map(capitalizeWord).join(' ');
+  });
+
+  return formattedParts.join(', ');
+};
 
 export default function ManagerPersonnelEditPage() {
   const { theme } = useTheme();
@@ -106,7 +180,7 @@ export default function ManagerPersonnelEditPage() {
             ngay_nhap_ngu: personnel.ngay_nhap_ngu ? dayjs(personnel.ngay_nhap_ngu) : undefined,
             ngay_xuat_ngu: personnel.ngay_xuat_ngu ? dayjs(personnel.ngay_xuat_ngu) : undefined,
             que_quan_2_cap: personnel.que_quan_2_cap || '',
-            que_quan_3_cap: personnel.que_quan_3_cap || '',
+            que_quan_3_cap: parseAddressToArray(personnel.que_quan_3_cap),
             tru_quan: personnel.tru_quan || '',
             cho_o_hien_nay: personnel.cho_o_hien_nay || '',
             ngay_vao_dang: personnel.ngay_vao_dang ? dayjs(personnel.ngay_vao_dang) : undefined,
@@ -178,6 +252,16 @@ export default function ManagerPersonnelEditPage() {
     isManagerPersonnel,
   ]);
 
+  const handleAddressBlur = (fieldName: string) => {
+    const currentValue = form.getFieldValue(fieldName);
+    if (currentValue && typeof currentValue === 'string') {
+      const formatted = formatAddressInput(currentValue);
+      if (formatted !== currentValue) {
+        form.setFieldValue(fieldName, formatted);
+      }
+    }
+  };
+
   const onFinish = async (values: any) => {
     try {
       setLoading(true);
@@ -198,7 +282,7 @@ export default function ManagerPersonnelEditPage() {
         ngay_nhap_ngu: values.ngay_nhap_ngu ? values.ngay_nhap_ngu.format('YYYY-MM-DD') : null,
         ngay_xuat_ngu: values.ngay_xuat_ngu ? values.ngay_xuat_ngu.format('YYYY-MM-DD') : null,
         que_quan_2_cap: values.que_quan_2_cap || null,
-        que_quan_3_cap: values.que_quan_3_cap || null,
+        que_quan_3_cap: values.que_quan_3_cap ? formatAddressToString(values.que_quan_3_cap) : null,
         tru_quan: values.tru_quan || null,
         cho_o_hien_nay: values.cho_o_hien_nay || null,
         ngay_vao_dang: values.ngay_vao_dang ? values.ngay_vao_dang.format('YYYY-MM-DD') : null,
@@ -355,35 +439,50 @@ export default function ManagerPersonnelEditPage() {
                   Thông tin địa chỉ
                 </Title>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  <Form.Item name="que_quan_2_cap" label="Quê quán (2 cấp)">
+                  <Form.Item
+                    name="que_quan_2_cap"
+                    label="Quê quán (2 cấp)"
+                    tooltip="Nhập địa chỉ, hệ thống sẽ tự động định dạng"
+                  >
                     <Input
                       size="large"
-                      placeholder="VD: Xã Hoà An, tỉnh Ninh Bình"
+                      placeholder="VD: xã hoà an, tỉnh ninh bình"
                       disabled={loading}
+                      onBlur={() => handleAddressBlur('que_quan_2_cap')}
                     />
                   </Form.Item>
 
                   <Form.Item name="que_quan_3_cap" label="Quê quán (3 cấp)">
-                    <Input
+                    <VietnamAddressCascader
+                      placeholder="Chọn Tỉnh/Thành phố, Quận/Huyện, Xã/Phường"
                       size="large"
-                      placeholder="VD: Xã An Hoà, huyện Yên Bình, tỉnh Nam Định"
                       disabled={loading}
                     />
                   </Form.Item>
 
-                  <Form.Item name="tru_quan" label="Trú quán">
+                  <Form.Item
+                    name="tru_quan"
+                    label="Trú quán"
+                    tooltip="Nhập địa chỉ, hệ thống sẽ tự động định dạng"
+                  >
                     <Input
                       size="large"
-                      placeholder="VD: Xã Hoà An, tỉnh Ninh Bình"
+                      placeholder="VD: xã hoà an, tỉnh ninh bình"
                       disabled={loading}
+                      onBlur={() => handleAddressBlur('tru_quan')}
                     />
                   </Form.Item>
 
-                  <Form.Item name="cho_o_hien_nay" label="Chỗ ở hiện nay">
+                  <Form.Item
+                    name="cho_o_hien_nay"
+                    label="Chỗ ở hiện nay"
+                    tooltip="Nhập địa chỉ, hệ thống sẽ tự động định dạng"
+                  >
                     <Input
                       size="large"
-                      placeholder="VD: Xã Hoà An, tỉnh Ninh Bình"
+                      placeholder="VD: xã hoà an, tỉnh ninh bình"
                       disabled={loading}
+                      onBlur={() => handleAddressBlur('cho_o_hien_nay')}
                     />
                   </Form.Item>
                 </div>

@@ -14,6 +14,7 @@ export const ROLE_LABELS: Record<string, string> = {
   ADMIN: 'Phòng Chính trị',
   MANAGER: 'Chỉ huy đơn vị',
   USER: 'Người dùng',
+  SYSTEM: 'Hệ thống',
 };
 
 /** Màu tag Ant Design cho vai trò */
@@ -22,6 +23,7 @@ export const ROLE_COLORS: Record<string, string> = {
   ADMIN: 'red',
   MANAGER: 'blue',
   USER: 'green',
+  SYSTEM: 'volcano',
 };
 
 export function roleSelectOptions(roles: Role[]): { value: Role; label: string }[] {

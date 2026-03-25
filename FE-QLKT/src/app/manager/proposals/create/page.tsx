@@ -681,6 +681,7 @@ export default function CreateProposalPage() {
               nam={nam}
               onNamChange={setNam}
               onTitleDataChange={setTitleData}
+              isManager
               onNextStep={() => setCurrentStep(prev => prev + 1)}
             />
           );
@@ -697,6 +698,7 @@ export default function CreateProposalPage() {
                 titleData={titleData}
                 onTitleDataChange={setTitleData}
                 onNextStep={() => setCurrentStep(prev => prev + 1)}
+                isManager
               />
             );
           case PROPOSAL_TYPES.NIEN_HAN:
@@ -708,6 +710,7 @@ export default function CreateProposalPage() {
                 onNamChange={setNam}
                 onTitleDataChange={setTitleData}
                 onNextStep={() => setCurrentStep(prev => prev + 1)}
+                isManager
               />
             );
           case PROPOSAL_TYPES.HC_QKQT:
@@ -719,6 +722,7 @@ export default function CreateProposalPage() {
                 onNamChange={setNam}
                 onTitleDataChange={setTitleData}
                 onNextStep={() => setCurrentStep(prev => prev + 1)}
+                isManager
               />
             );
           case PROPOSAL_TYPES.KNC_VSNXD_QDNDVN:
@@ -730,6 +734,7 @@ export default function CreateProposalPage() {
                 onNamChange={setNam}
                 onTitleDataChange={setTitleData}
                 onNextStep={() => setCurrentStep(prev => prev + 1)}
+                isManager
               />
             );
           case PROPOSAL_TYPES.CONG_HIEN:
@@ -741,6 +746,7 @@ export default function CreateProposalPage() {
                 onNamChange={setNam}
                 onTitleDataChange={setTitleData}
                 onNextStep={() => setCurrentStep(prev => prev + 1)}
+                isManager
               />
             );
           case PROPOSAL_TYPES.NCKH:
@@ -752,6 +758,7 @@ export default function CreateProposalPage() {
                 onNamChange={setNam}
                 onTitleDataChange={setTitleData}
                 onNextStep={() => setCurrentStep(prev => prev + 1)}
+                isManager
               />
             );
           default:

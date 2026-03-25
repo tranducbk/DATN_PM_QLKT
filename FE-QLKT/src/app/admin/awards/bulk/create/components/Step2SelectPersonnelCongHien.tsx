@@ -61,6 +61,7 @@ interface Step2SelectPersonnelCongHienProps {
   onNamChange: (nam: number) => void;
   onTitleDataChange?: (titleData: any[]) => void;
   onNextStep?: () => void;
+  isManager?: boolean;
 }
 
 interface IneligiblePersonnel {
@@ -80,6 +81,7 @@ export default function Step2SelectPersonnelCongHien({
   onNamChange,
   onTitleDataChange,
   onNextStep,
+  isManager = false,
 }: Step2SelectPersonnelCongHienProps) {
   const [loading, setLoading] = useState(false);
   const [checkingEligibility, setCheckingEligibility] = useState(false);
@@ -761,23 +763,27 @@ export default function Step2SelectPersonnelCongHien({
       />
 
       {/* Upload Excel Section */}
-      <ExcelImportSection
-        awardType="CONG_HIEN"
-        templateEndpoint="/api/contribution-awards/template"
-        importEndpoint="/api/contribution-awards/import"
-        templateFileName="mau_import_hcbvtq"
-        onImportSuccess={handleImportSuccess}
-        selectedCount={selectedPersonnelIds.length}
-        selectedPersonnelIds={selectedPersonnelIds}
-        entityLabel="quân nhân"
-        localProcessing={true}
-        onLocalProcess={handleLocalExcelProcess}
-        previewEndpoint="/api/contribution-awards/import/preview"
-        reviewPath="/admin/awards/bulk/import-review-hcbvtq"
-        sessionStorageKey="importPreviewDataHCBVTQ"
-      />
+      {!isManager && (
+        <>
+          <ExcelImportSection
+            awardType="CONG_HIEN"
+            templateEndpoint="/api/contribution-awards/template"
+            importEndpoint="/api/contribution-awards/import"
+            templateFileName="mau_import_hcbvtq"
+            onImportSuccess={handleImportSuccess}
+            selectedCount={selectedPersonnelIds.length}
+            selectedPersonnelIds={selectedPersonnelIds}
+            entityLabel="quân nhân"
+            localProcessing={true}
+            onLocalProcess={handleLocalExcelProcess}
+            previewEndpoint="/api/contribution-awards/import/preview"
+            reviewPath="/admin/awards/bulk/import-review-hcbvtq"
+            sessionStorageKey="importPreviewDataHCBVTQ"
+          />
 
-      <Divider>Hoặc chọn thủ công</Divider>
+          <Divider>Hoặc chọn thủ công</Divider>
+        </>
+      )}
 
       <Space style={{ marginBottom: 16 }} size="middle">
         <div>

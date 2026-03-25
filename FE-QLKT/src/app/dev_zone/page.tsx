@@ -542,7 +542,7 @@ export default function DevZonePage() {
                       }
                       description={
                         status.cron.lastResult.status === 'success'
-                          ? `Thành công: ${status.cron.lastResult.success}, Lỗi: ${status.cron.lastResult.errors}`
+                          ? `Thành công: ${status.cron.lastResult.success ?? 0}, Lỗi: ${status.cron.lastResult.errors ?? 0}`
                           : status.cron.lastResult.message
                       }
                       showIcon={false}

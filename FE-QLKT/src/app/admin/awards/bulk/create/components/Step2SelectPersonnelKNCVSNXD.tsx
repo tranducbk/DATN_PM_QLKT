@@ -64,6 +64,7 @@ interface Step2SelectPersonnelKNCVSNXDProps {
   onNamChange: (nam: number) => void;
   onTitleDataChange?: (titleData: any[]) => void;
   onNextStep?: () => void;
+  isManager?: boolean;
 }
 
 export default function Step2SelectPersonnelKNCVSNXD({
@@ -73,6 +74,7 @@ export default function Step2SelectPersonnelKNCVSNXD({
   onNamChange,
   onTitleDataChange,
   onNextStep,
+  isManager = false,
 }: Step2SelectPersonnelKNCVSNXDProps) {
   const [loading, setLoading] = useState(false);
   const [personnel, setPersonnel] = useState<Personnel[]>([]);
@@ -698,23 +700,27 @@ export default function Step2SelectPersonnelKNCVSNXD({
       />
 
       {/* Upload Excel Section */}
-      <ExcelImportSection
-        awardType="KNC_VSNXD_QDNDVN"
-        templateEndpoint="/api/commemorative-medals/template"
-        importEndpoint="/api/commemorative-medals/import"
-        templateFileName="mau_import_knc_vsnxd"
-        onImportSuccess={handleImportSuccess}
-        selectedCount={selectedPersonnelIds.length}
-        selectedPersonnelIds={selectedPersonnelIds}
-        entityLabel="quân nhân"
-        localProcessing={true}
-        onLocalProcess={handleLocalExcelProcess}
-        previewEndpoint="/api/commemorative-medals/import/preview"
-        reviewPath="/admin/awards/bulk/import-review-kncvsnxd"
-        sessionStorageKey="importPreviewDataKNCVSNXD"
-      />
+      {!isManager && (
+        <>
+          <ExcelImportSection
+            awardType="KNC_VSNXD_QDNDVN"
+            templateEndpoint="/api/commemorative-medals/template"
+            importEndpoint="/api/commemorative-medals/import"
+            templateFileName="mau_import_knc_vsnxd"
+            onImportSuccess={handleImportSuccess}
+            selectedCount={selectedPersonnelIds.length}
+            selectedPersonnelIds={selectedPersonnelIds}
+            entityLabel="quân nhân"
+            localProcessing={true}
+            onLocalProcess={handleLocalExcelProcess}
+            previewEndpoint="/api/commemorative-medals/import/preview"
+            reviewPath="/admin/awards/bulk/import-review-kncvsnxd"
+            sessionStorageKey="importPreviewDataKNCVSNXD"
+          />
 
-      <Divider>Hoặc chọn thủ công</Divider>
+          <Divider>Hoặc chọn thủ công</Divider>
+        </>
+      )}
 
       <Space style={{ marginBottom: 16 }} size="middle">
         <div>

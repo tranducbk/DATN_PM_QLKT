@@ -398,7 +398,7 @@ model HoSoHangNam {
 // 11. Bảng Nhật ký hệ thống
 model SystemLog {
   id                String   @id @default(cuid()) @db.VarChar(30)
-  nguoi_thuc_hien_id String   @db.VarChar(30) // ID của người thực hiện hành động
+  nguoi_thuc_hien_id String?  @db.VarChar(30) // ID của người thực hiện hành động (null cho SYSTEM)
   actor_role        String   @db.VarChar(20) // SUPER_ADMIN, ADMIN, MANAGER, USER
   action            String   @db.VarChar(50) // CREATE, UPDATE, DELETE, LOGIN, LOGOUT, etc.
   resource          String   @db.VarChar(50) // accounts, personnel, positions, etc.
@@ -410,7 +410,7 @@ model SystemLog {
   created_at        DateTime @default(now()) @db.Timestamptz(6)
 
   // Relations
-  NguoiThucHien TaiKhoan   @relation("NguoiThucHien", fields: [nguoi_thuc_hien_id], references: [id], onDelete: Cascade)
+  NguoiThucHien TaiKhoan?  @relation("NguoiThucHien", fields: [nguoi_thuc_hien_id], references: [id], onDelete: SetNull)
   ThongBao      ThongBao[] @relation("NhatKyHeThong") // Thông báo được tạo từ log này
 
   @@index([actor_role, created_at])

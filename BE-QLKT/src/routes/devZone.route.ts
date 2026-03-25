@@ -23,7 +23,7 @@ interface CronResult {
   status: 'success' | 'error';
   time: string | null;
   success?: number;
-  errors?: Array<{ id: string; error: string }>;
+  errors?: number;
   message?: string;
 }
 
@@ -38,7 +38,7 @@ const runCronJob = async () => {
       status: 'success',
       time: lastCronRun,
       success: result.success,
-      errors: result.errors,
+      errors: result.errors?.length || 0,
     };
     await setSetting('cron_last_result', JSON.stringify(lastCronResult));
 
@@ -47,10 +47,10 @@ const runCronJob = async () => {
       userRole: 'SYSTEM',
       action: AUDIT_ACTIONS.RECALCULATE,
       resource: 'profiles',
-      description: `Cron job tính toán hồ sơ: ${result.success} thành công, ${result.errors?.length || 0} lỗi`,
+      description: `Cron job tính toán hồ sơ: ${result.success} thành công, ${result.errors || 0} lỗi`,
       payload: {
         success: result.success,
-        errors: result.errors?.length || 0,
+        errors: result.errors || 0,
         schedule: await getSetting('cron_schedule', '0 1 1 * *'),
       },
     });
@@ -169,8 +169,8 @@ router.post('/cron/trigger', verifyDevPassword, async (_req: Request, res: Respo
       userRole: 'SYSTEM',
       action: AUDIT_ACTIONS.RECALCULATE,
       resource: 'profiles',
-      description: `Tính toán lại hồ sơ: ${result.success} thành công, ${result.errors?.length || 0} lỗi (trigger thủ công)`,
-      payload: { success: result.success, errors: result.errors?.length || 0 },
+      description: `Tính toán lại hồ sơ: ${result.success} thành công, ${result.errors || 0} lỗi (trigger thủ công)`,
+      payload: { success: result.success, errors: result.errors || 0 },
     });
 
     res.json({ success: true, message: 'Cron job đã chạy xong', data: result });

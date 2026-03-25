@@ -42,6 +42,7 @@ interface Step2SelectUnitsProps {
   onNamChange: (nam: number) => void;
   onTitleDataChange?: (titleData: any[]) => void;
   onNextStep?: () => void;
+  isManager?: boolean;
 }
 
 export default function Step2SelectUnits({
@@ -51,6 +52,7 @@ export default function Step2SelectUnits({
   onNamChange,
   onTitleDataChange,
   onNextStep,
+  isManager = false,
 }: Step2SelectUnitsProps) {
   const [loading, setLoading] = useState(false);
   const [units, setUnits] = useState<Unit[]>([]);
@@ -71,7 +73,7 @@ export default function Step2SelectUnits({
   const fetchUnits = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.getUnits();
+      const response = isManager ? await apiClient.getMyUnits() : await apiClient.getUnits();
 
       if (response.success && response.data) {
         const unitsData = Array.isArray(response.data) ? response.data : [];
@@ -360,24 +362,27 @@ export default function Step2SelectUnits({
         style={{ marginBottom: 24 }}
       />
 
-      {/* Upload Excel Section */}
-      <ExcelImportSection
-        awardType="DON_VI_HANG_NAM"
-        templateEndpoint="/api/awards/units/annual/template"
-        importEndpoint="/api/awards/units/annual/import"
-        templateFileName="mau_import_don_vi_hang_nam"
-        onImportSuccess={handleImportSuccess}
-        selectedCount={selectedUnitIds.length}
-        selectedPersonnelIds={selectedUnitIds}
-        entityLabel="đơn vị"
-        localProcessing={true}
-        onLocalProcess={handleLocalExcelProcess}
-        previewEndpoint="/api/awards/units/annual/import/preview"
-        reviewPath="/admin/awards/bulk/import-review-unit"
-        sessionStorageKey="importPreviewDataUnit"
-      />
-
-      <Divider>Hoặc chọn thủ công</Divider>
+      {/* Upload Excel Section - chỉ hiện cho admin */}
+      {!isManager && (
+        <>
+          <ExcelImportSection
+            awardType="DON_VI_HANG_NAM"
+            templateEndpoint="/api/awards/units/annual/template"
+            importEndpoint="/api/awards/units/annual/import"
+            templateFileName="mau_import_don_vi_hang_nam"
+            onImportSuccess={handleImportSuccess}
+            selectedCount={selectedUnitIds.length}
+            selectedPersonnelIds={selectedUnitIds}
+            entityLabel="đơn vị"
+            localProcessing={true}
+            onLocalProcess={handleLocalExcelProcess}
+            previewEndpoint="/api/awards/units/annual/import/preview"
+            reviewPath="/admin/awards/bulk/import-review-unit"
+            sessionStorageKey="importPreviewDataUnit"
+          />
+          <Divider>Hoặc chọn thủ công</Divider>
+        </>
+      )}
 
       {/* Filters */}
       <Space style={{ marginBottom: 16 }} size="middle">

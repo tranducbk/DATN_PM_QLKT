@@ -50,6 +50,7 @@ interface Step2SelectPersonnelCaNhanHangNamProps {
   titleData?: any[];
   onTitleDataChange?: (data: any[]) => void;
   onNextStep?: () => void;
+  isManager?: boolean;
 }
 
 export default function Step2SelectPersonnelCaNhanHangNam({
@@ -60,6 +61,7 @@ export default function Step2SelectPersonnelCaNhanHangNam({
   titleData,
   onTitleDataChange,
   onNextStep,
+  isManager = false,
 }: Step2SelectPersonnelCaNhanHangNamProps) {
   const [loading, setLoading] = useState(false);
   const [personnel, setPersonnel] = useState<Personnel[]>([]);
@@ -377,23 +379,27 @@ export default function Step2SelectPersonnelCaNhanHangNam({
   return (
     <div>
       {/* Upload Excel Section */}
-      <ExcelImportSection
-        awardType="CA_NHAN_HANG_NAM"
-        templateEndpoint="/api/annual-rewards/template"
-        importEndpoint="/api/annual-rewards/import"
-        templateFileName="mau_import_ca_nhan_hang_nam"
-        onImportSuccess={handleImportSuccess}
-        selectedCount={selectedPersonnelIds.length}
-        selectedPersonnelIds={selectedPersonnelIds}
-        entityLabel="quân nhân"
-        localProcessing={true}
-        onLocalProcess={handleLocalExcelProcess}
-        previewEndpoint="/api/annual-rewards/import/preview"
-        reviewPath="/admin/awards/bulk/import-review"
-        sessionStorageKey="importPreviewData"
-      />
+      {!isManager && (
+        <>
+          <ExcelImportSection
+            awardType="CA_NHAN_HANG_NAM"
+            templateEndpoint="/api/annual-rewards/template"
+            importEndpoint="/api/annual-rewards/import"
+            templateFileName="mau_import_ca_nhan_hang_nam"
+            onImportSuccess={handleImportSuccess}
+            selectedCount={selectedPersonnelIds.length}
+            selectedPersonnelIds={selectedPersonnelIds}
+            entityLabel="quân nhân"
+            localProcessing={true}
+            onLocalProcess={handleLocalExcelProcess}
+            previewEndpoint="/api/annual-rewards/import/preview"
+            reviewPath="/admin/awards/bulk/import-review"
+            sessionStorageKey="importPreviewData"
+          />
 
-      <Divider>Hoặc chọn thủ công</Divider>
+          <Divider>Hoặc chọn thủ công</Divider>
+        </>
+      )}
 
       <Space style={{ marginBottom: 16 }} size="middle">
         <div>

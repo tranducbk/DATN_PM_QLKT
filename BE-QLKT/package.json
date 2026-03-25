@@ -13,7 +13,6 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\""
   },
-  "author": "NH1321",
   "license": "ISC",
   "dependencies": {
     "@prisma/client": "^6.17.1",

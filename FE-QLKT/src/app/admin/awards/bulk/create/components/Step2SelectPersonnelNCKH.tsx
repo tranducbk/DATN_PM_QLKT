@@ -49,6 +49,7 @@ interface Step2SelectPersonnelNCKHProps {
   onNamChange: (nam: number) => void;
   onTitleDataChange?: (titleData: any[]) => void;
   onNextStep?: () => void;
+  isManager?: boolean;
 }
 
 export default function Step2SelectPersonnelNCKH({
@@ -58,6 +59,7 @@ export default function Step2SelectPersonnelNCKH({
   onNamChange,
   onTitleDataChange,
   onNextStep,
+  isManager = false,
 }: Step2SelectPersonnelNCKHProps) {
   const [loading, setLoading] = useState(false);
   const [personnel, setPersonnel] = useState<Personnel[]>([]);
@@ -412,23 +414,27 @@ export default function Step2SelectPersonnelNCKH({
       />
 
       {/* Upload Excel Section */}
-      <ExcelImportSection
-        awardType="NCKH"
-        templateEndpoint="/api/scientific-achievements/template"
-        importEndpoint="/api/scientific-achievements/import"
-        templateFileName="mau_import_thanh_tich_khoa_hoc"
-        onImportSuccess={handleImportSuccess}
-        selectedCount={selectedPersonnelIds.length}
-        selectedPersonnelIds={selectedPersonnelIds}
-        entityLabel="quân nhân"
-        localProcessing={true}
-        onLocalProcess={handleLocalExcelProcess}
-        previewEndpoint="/api/scientific-achievements/import/preview"
-        reviewPath="/admin/awards/bulk/import-review-nckh"
-        sessionStorageKey="importPreviewDataNCKH"
-      />
+      {!isManager && (
+        <>
+          <ExcelImportSection
+            awardType="NCKH"
+            templateEndpoint="/api/scientific-achievements/template"
+            importEndpoint="/api/scientific-achievements/import"
+            templateFileName="mau_import_thanh_tich_khoa_hoc"
+            onImportSuccess={handleImportSuccess}
+            selectedCount={selectedPersonnelIds.length}
+            selectedPersonnelIds={selectedPersonnelIds}
+            entityLabel="quân nhân"
+            localProcessing={true}
+            onLocalProcess={handleLocalExcelProcess}
+            previewEndpoint="/api/scientific-achievements/import/preview"
+            reviewPath="/admin/awards/bulk/import-review-nckh"
+            sessionStorageKey="importPreviewDataNCKH"
+          />
 
-      <Divider>Hoặc chọn thủ công</Divider>
+          <Divider>Hoặc chọn thủ công</Divider>
+        </>
+      )}
 
       <Space style={{ marginBottom: 16 }} size="middle">
         <div>

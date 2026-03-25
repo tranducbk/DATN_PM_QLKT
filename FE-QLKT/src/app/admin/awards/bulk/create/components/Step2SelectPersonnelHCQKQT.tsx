@@ -63,6 +63,7 @@ interface Step2SelectPersonnelHCQKQTProps {
   onNamChange: (nam: number) => void;
   onTitleDataChange?: (titleData: any[]) => void;
   onNextStep?: () => void;
+  isManager?: boolean;
 }
 
 export default function Step2SelectPersonnelHCQKQT({
@@ -72,6 +73,7 @@ export default function Step2SelectPersonnelHCQKQT({
   onNamChange,
   onTitleDataChange,
   onNextStep,
+  isManager = false,
 }: Step2SelectPersonnelHCQKQTProps) {
   const [loading, setLoading] = useState(false);
   const [personnel, setPersonnel] = useState<Personnel[]>([]);
@@ -680,23 +682,27 @@ export default function Step2SelectPersonnelHCQKQT({
       />
 
       {/* Upload Excel Section */}
-      <ExcelImportSection
-        awardType="HC_QKQT"
-        templateEndpoint="/api/military-flag/template"
-        importEndpoint="/api/military-flag/import"
-        templateFileName="mau_import_hcqkqt"
-        onImportSuccess={handleImportSuccess}
-        selectedCount={selectedPersonnelIds.length}
-        selectedPersonnelIds={selectedPersonnelIds}
-        entityLabel="quân nhân"
-        localProcessing={true}
-        onLocalProcess={handleLocalExcelProcess}
-        previewEndpoint="/api/military-flag/import/preview"
-        reviewPath="/admin/awards/bulk/import-review-hcqkqt"
-        sessionStorageKey="importPreviewDataHCQKQT"
-      />
+      {!isManager && (
+        <>
+          <ExcelImportSection
+            awardType="HC_QKQT"
+            templateEndpoint="/api/military-flag/template"
+            importEndpoint="/api/military-flag/import"
+            templateFileName="mau_import_hcqkqt"
+            onImportSuccess={handleImportSuccess}
+            selectedCount={selectedPersonnelIds.length}
+            selectedPersonnelIds={selectedPersonnelIds}
+            entityLabel="quân nhân"
+            localProcessing={true}
+            onLocalProcess={handleLocalExcelProcess}
+            previewEndpoint="/api/military-flag/import/preview"
+            reviewPath="/admin/awards/bulk/import-review-hcqkqt"
+            sessionStorageKey="importPreviewDataHCQKQT"
+          />
 
-      <Divider>Hoặc chọn thủ công</Divider>
+          <Divider>Hoặc chọn thủ công</Divider>
+        </>
+      )}
 
       <Space style={{ marginBottom: 16 }} size="middle">
         <div>

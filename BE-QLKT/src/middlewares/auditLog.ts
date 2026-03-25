@@ -2,15 +2,9 @@ import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../models';
 import type { AuditLogOptions } from '../types/api';
 
-const SENSITIVE_FIELDS: string[] = [
-  'password',
-  'password_hash',
-  'refreshToken',
-  'cccd',
-  'oldPassword',
-  'newPassword',
-  'confirmPassword',
-];
+const SENSITIVE_FIELDS = ['password', 'password_hash', 'refreshToken', 'cccd', 'oldPassword', 'newPassword', 'confirmPassword'];
+
+const DISPLAY_NAME_FIELDS = ['username', 'ho_ten', 'ten_don_vi', 'ten_chuc_vu'];
 
 const redactSensitiveFields = (obj: unknown): unknown => {
   if (!obj || typeof obj !== 'object') return obj;
@@ -29,26 +23,34 @@ const redactSensitiveFields = (obj: unknown): unknown => {
   return redacted;
 };
 
+const parseResponse = (responseData: unknown): Record<string, unknown> | null => {
+  try {
+    return typeof responseData === 'string' ? JSON.parse(responseData) as Record<string, unknown> : responseData as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+};
+
+const isSuccessResponse = (responseData: unknown): boolean => {
+  const parsed = parseResponse(responseData);
+  return parsed?.success === true;
+};
+
+const getDisplayName = (data: Record<string, string | undefined>): string =>
+  DISPLAY_NAME_FIELDS.map(f => data?.[f]).find(Boolean) || 'N/A';
+
 const auditLog = (options: AuditLogOptions = { action: '', resource: '' }) => {
-  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const originalSend = res.send;
-    let responseData: unknown = null;
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const originalJson = res.json;
 
-    res.send = function (this: Response, data: unknown) {
-      responseData = data;
-      return originalSend.call(this, data);
-    } as Response['send'];
+    res.json = function (this: Response, data: unknown) {
+      // Restore original để tránh gọi lại
+      res.json = originalJson;
 
-    try {
-      await next();
-    } catch (error) {
-      throw error;
-    } finally {
-      if (res.statusCode >= 200 && res.statusCode < 300) {
-        try {
-          const user = req.user;
-          if (!user) return;
-
+      // Ghi log async, không block response
+      if (isSuccessResponse(data)) {
+        const user = req.user;
+        if (user) {
           const {
             action,
             resource,
@@ -57,104 +59,59 @@ const auditLog = (options: AuditLogOptions = { action: '', resource: '' }) => {
             getPayload = () => null,
           } = options;
 
-          const resourceId = getResourceId(req, res, responseData);
-          const descriptionPromise = getDescription(req, res, responseData);
-          const description =
-            descriptionPromise instanceof Promise ? await descriptionPromise : descriptionPromise;
-          const rawPayload = getPayload(req, res, responseData);
-          const payload = redactSensitiveFields(rawPayload);
+          Promise.resolve(getDescription(req, res, data))
+            .then(async description => {
+              const resourceId = getResourceId(req, res, data);
+              const payload = redactSensitiveFields(getPayload(req, res, data));
 
-          const ipAddress = req.ip || req.socket.remoteAddress;
-          const userAgent = req.get('User-Agent');
-
-          await prisma.systemLog.create({
-            data: {
-              nguoi_thuc_hien_id: user.id,
-              actor_role: user.role,
-              action,
-              resource,
-              tai_nguyen_id: resourceId ?? undefined,
-              description,
-              payload: payload ? JSON.stringify(payload) : undefined,
-              ip_address: ipAddress,
-              user_agent: userAgent,
-            },
-          });
-        } catch (_logError) {
-          // Không throw error để không ảnh hưởng đến response chính
+              await prisma.systemLog.create({
+                data: {
+                  nguoi_thuc_hien_id: user.id,
+                  actor_role: user.role,
+                  action,
+                  resource,
+                  tai_nguyen_id: resourceId ?? undefined,
+                  description,
+                  payload: payload ? JSON.stringify(payload) : undefined,
+                  ip_address: req.ip || req.socket.remoteAddress,
+                  user_agent: req.get('User-Agent'),
+                },
+              });
+            })
+            .catch(() => {
+              // Không throw để không ảnh hưởng response chính
+            });
         }
       }
-    }
+
+      return originalJson.call(this, data);
+    } as Response['json'];
+
+    next();
   };
 };
 
-interface DescriptionHelpers {
-  create: (resource: string, data: Record<string, string | undefined>) => string;
-  update: (resource: string, data: Record<string, string | undefined>) => string;
-  delete: (resource: string, data: Record<string, string | undefined>) => string;
-  login: (data?: unknown) => string;
-  logout: (data?: unknown) => string;
-  resetPassword: (data?: Record<string, string | undefined>) => string;
-}
-
-const createDescription: DescriptionHelpers = {
-  create: (resource, data) =>
-    `Tạo mới ${resource}: ${
-      data?.username ||
-      data?.ho_ten ||
-      data?.ten_don_vi ||
-      data?.ten_chuc_vu ||
-      data?.ten_nhom_cong_hien ||
-      'N/A'
-    }`,
-  update: (resource, data) =>
-    `Cập nhật ${resource}: ${
-      data?.username ||
-      data?.ho_ten ||
-      data?.ten_don_vi ||
-      data?.ten_chuc_vu ||
-      data?.ten_nhom_cong_hien ||
-      'N/A'
-    }`,
-  delete: (resource, data) =>
-    `Xóa ${resource}: ${
-      data?.username ||
-      data?.ho_ten ||
-      data?.ten_don_vi ||
-      data?.ten_chuc_vu ||
-      data?.ten_nhom_cong_hien ||
-      'N/A'
-    }`,
-  login: () => `Đăng nhập hệ thống`,
-  logout: () => `Đăng xuất khỏi hệ thống`,
-  resetPassword: data => `Đặt lại mật khẩu cho tài khoản: ${data?.username || 'N/A'}`,
+const createDescription = {
+  create: (resource: string, data: Record<string, string | undefined>) =>
+    `Tạo mới ${resource}: ${getDisplayName(data)}`,
+  update: (resource: string, data: Record<string, string | undefined>) =>
+    `Cập nhật ${resource}: ${getDisplayName(data)}`,
+  delete: (resource: string, data: Record<string, string | undefined>) =>
+    `Xóa ${resource}: ${getDisplayName(data)}`,
+  login: () => 'Đăng nhập hệ thống',
+  logout: () => 'Đăng xuất khỏi hệ thống',
+  resetPassword: (data?: Record<string, string | undefined>) =>
+    `Đặt lại mật khẩu cho tài khoản: ${data?.username || 'N/A'}`,
 };
 
-interface ResourceIdHelpers {
-  fromParams: (paramName: string) => (req: Request) => string | null;
-  fromResponse: (
-    key?: string
-  ) => (req: Request, res: Response, responseData: unknown) => string | null;
-}
-
-const getResourceId: ResourceIdHelpers = {
+const getResourceId = {
   fromParams: (paramName: string) => (req: Request) => {
     const value = req.params?.[paramName];
-    if (Array.isArray(value)) return value[0] || null;
-    return value || null;
+    return Array.isArray(value) ? value[0] || null : value || null;
   },
-  fromResponse: (_key?: string) => (_req: Request, _res: Response, responseData: unknown) => {
-    try {
-      const data =
-        typeof responseData === 'string'
-          ? (JSON.parse(responseData) as Record<string, unknown>)
-          : (responseData as Record<string, unknown>);
-      return (
-        ((data?.data as Record<string, unknown>)?.id as string) || (data?.id as string) || null
-      );
-    } catch {
-      return null;
-    }
+  fromResponse: () => (_req: Request, _res: Response, responseData: unknown) => {
+    const data = parseResponse(responseData);
+    return (data?.data as Record<string, unknown>)?.id as string || (data?.id as string) || null;
   },
 };
 

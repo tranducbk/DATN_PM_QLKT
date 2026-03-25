@@ -102,10 +102,8 @@ export default function SystemLogsPageContent({ basePath }: SystemLogsPageConten
         const actorName =
           l?.NguoiThucHien?.QuanNhan?.ho_ten ||
           l?.NguoiThucHien?.username ||
-          l?.Actor?.QuanNhan?.ho_ten ||
-          l?.Actor?.username ||
           l?.actor_name ||
-          l?.actor_id ||
+          (l?.actor_role === 'SYSTEM' ? 'Hệ thống' : '') ||
           '';
         return {
           ...l,
