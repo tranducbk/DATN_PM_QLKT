@@ -2,13 +2,56 @@
 
 import { useState, useEffect } from 'react';
 import { Table, Select, Alert, Typography, Space, Tag, Button, message } from 'antd';
-import { EditOutlined, HistoryOutlined, ReloadOutlined } from '@ant-design/icons';
+import { EditOutlined, HistoryOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/api-client';
 import UnitAnnualAwardHistoryModal from './UnitAnnualAwardHistoryModal';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
+import {
+  DANH_HIEU_CA_NHAN_HANG_NAM,
+  DANH_HIEU_DON_VI_HANG_NAM,
+  DANH_HIEU_MAP,
+  DANH_HIEU_OPTIONS,
+} from '@/constants/danhHieu.constants';
 
 const { Text } = Typography;
+
+/** Nhóm ĐVQT/ĐVTT — không trộn với BKBQP/BKTTCP trong một đề xuất */
+const UNIT_TITLE_DV = [
+  DANH_HIEU_DON_VI_HANG_NAM.DVQT,
+  DANH_HIEU_DON_VI_HANG_NAM.DVTT,
+] as const;
+
+/** Nhóm BKBQP/BKTTCP (mã dùng chung với bảng mã cá nhân) */
+const UNIT_TITLE_BK = [
+  DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP,
+  DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP,
+] as const;
+
+const UNIT_TITLE_DV_SET = new Set<string>(UNIT_TITLE_DV);
+const UNIT_TITLE_BK_SET = new Set<string>(UNIT_TITLE_BK);
+
+const isUnitDvTitle = (code: string) => UNIT_TITLE_DV_SET.has(code);
+const isUnitBkTitle = (code: string) => UNIT_TITLE_BK_SET.has(code);
+
+const SELECTED_DANH_HIEU_MIX = {
+  DON_VI: 'donvi',
+  BK_PAIR: 'bkbqp_bkttcp',
+} as const;
+
+type SelectedDanhHieuMixType =
+  (typeof SELECTED_DANH_HIEU_MIX)[keyof typeof SELECTED_DANH_HIEU_MIX] | null;
+
+const MIX_DV_BK_WARNING =
+  'Không thể đề xuất ĐVQT/ĐVTT cùng với BKBQP/BKTTCP trong một đề xuất. ' +
+  'Vui lòng tạo đề xuất riêng cho loại danh hiệu này.';
+
+const BASE_DON_VI_HANG_NAM_SELECT_OPTIONS = (DANH_HIEU_OPTIONS.DON_VI_HANG_NAM as readonly string[]).map(
+  value => ({
+    label: DANH_HIEU_MAP[value] ?? value,
+    value,
+  })
+);
 
 interface Unit {
   id: string;
@@ -130,46 +173,45 @@ export default function Step3SetTitlesDonViHangNam({
     }
   };
 
-  const getSelectedDanhHieuType = () => {
-    const selectedDanhHieus = titleData.map(item => item.danh_hieu).filter(Boolean);
+  const getSelectedDanhHieuType = (): SelectedDanhHieuMixType => {
+    const selectedDanhHieus = titleData.map(item => item.danh_hieu).filter(Boolean) as string[];
     if (selectedDanhHieus.length === 0) return null;
 
-    const hasDonVi = selectedDanhHieus.some(dh => dh === 'ĐVQT' || dh === 'ĐVTT');
-    const hasBk = selectedDanhHieus.some(dh => dh === 'BKBQP' || dh === 'BKTTCP');
+    const hasDonVi = selectedDanhHieus.some(isUnitDvTitle);
+    const hasBk = selectedDanhHieus.some(isUnitBkTitle);
 
-    if (hasDonVi) return 'donvi';
-    if (hasBk) return 'bkbqp_bkttcp';
+    if (hasDonVi) return SELECTED_DANH_HIEU_MIX.DON_VI;
+    if (hasBk) return SELECTED_DANH_HIEU_MIX.BK_PAIR;
     return null;
   };
 
   const getDanhHieuOptions = (id: string) => {
     const selectedType = getSelectedDanhHieuType();
-    let allOptions = [
-      { label: 'Đơn vị Quyết thắng', value: 'ĐVQT' },
-      { label: 'Đơn vị Tiên tiến', value: 'ĐVTT' },
-      { label: 'Bằng khen của Bộ trưởng Bộ Quốc phòng', value: 'BKBQP' },
-      { label: 'Bằng khen Thủ tướng Chính phủ', value: 'BKTTCP' },
-    ];
+    let allOptions = [...BASE_DON_VI_HANG_NAM_SELECT_OPTIONS];
 
     // Use prefetched annual profile for this unit to determine eligibility
     const profile = allUnitAnnualAwards[id];
     if (profile) {
       // profile.du_dieu_kien_bk_tong_cuc -> eligible for BKBQP (3 years)
       if (profile.du_dieu_kien_bk_tong_cuc === false) {
-        allOptions = allOptions.filter(opt => opt.value !== 'BKBQP');
+        allOptions = allOptions.filter(
+          opt => opt.value !== DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP
+        );
       }
       // profile.du_dieu_kien_bk_thu_tuong -> eligible for BKTTCP (5 years)
       if (profile.du_dieu_kien_bk_thu_tuong === false) {
-        allOptions = allOptions.filter(opt => opt.value !== 'BKTTCP');
+        allOptions = allOptions.filter(
+          opt => opt.value !== DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP
+        );
       }
     }
 
-    if (selectedType === 'donvi') {
-      return allOptions.filter(opt => opt.value === 'ĐVQT' || opt.value === 'ĐVTT');
+    if (selectedType === SELECTED_DANH_HIEU_MIX.DON_VI) {
+      return allOptions.filter(opt => isUnitDvTitle(opt.value));
     }
 
-    if (selectedType === 'bkbqp_bkttcp') {
-      return allOptions.filter(opt => opt.value === 'BKBQP' || opt.value === 'BKTTCP');
+    if (selectedType === SELECTED_DANH_HIEU_MIX.BK_PAIR) {
+      return allOptions.filter(opt => isUnitBkTitle(opt.value));
     }
 
     return allOptions;
@@ -179,28 +221,21 @@ export default function Step3SetTitlesDonViHangNam({
     // Validation: Kiểm tra nếu đang chọn danh hiệu và đã có danh hiệu khác loại
     if (field === 'danh_hieu' && value) {
       const selectedType = getSelectedDanhHieuType();
-      const isDonVi = value === 'ĐVQT' || value === 'ĐVTT';
-      const isBk = value === 'BKBQP' || value === 'BKTTCP';
+      const valueStr = String(value);
+      const pickingDv = isUnitDvTitle(valueStr);
+      const pickingBk = isUnitBkTitle(valueStr);
 
       // Kiểm tra xem có mix ĐVQT/ĐVTT với BKBQP/BKTTCP không
-      if (selectedType === 'donvi' && isBk) {
-        // Đã có ĐVQT/ĐVTT, không cho phép thêm BKBQP/BKTTCP
+      if (selectedType === SELECTED_DANH_HIEU_MIX.DON_VI && pickingBk) {
         const currentData = titleData.find(d => d.don_vi_id === id);
         if (!currentData || !currentData.danh_hieu) {
-          message.warning(
-            'Không thể đề xuất ĐVQT/ĐVTT cùng với BKBQP/BKTTCP trong một đề xuất. ' +
-              'Vui lòng tạo đề xuất riêng cho loại danh hiệu này.'
-          );
+          message.warning(MIX_DV_BK_WARNING);
           return;
         }
-      } else if (selectedType === 'bkbqp_bkttcp' && isDonVi) {
-        // Đã có BKBQP/BKTTCP, không cho phép thêm ĐVQT/ĐVTT
+      } else if (selectedType === SELECTED_DANH_HIEU_MIX.BK_PAIR && pickingDv) {
         const currentData = titleData.find(d => d.don_vi_id === id);
         if (!currentData || !currentData.danh_hieu) {
-          message.warning(
-            'Không thể đề xuất ĐVQT/ĐVTT cùng với BKBQP/BKTTCP trong một đề xuất. ' +
-              'Vui lòng tạo đề xuất riêng cho loại danh hiệu này.'
-          );
+          message.warning(MIX_DV_BK_WARNING);
           return;
         }
       }
@@ -211,12 +246,15 @@ export default function Step3SetTitlesDonViHangNam({
       const unitDetail = units.find(u => u.id === id);
       if (unitDetail) {
         try {
-          if (value === 'ĐVQT' || value === 'ĐVTT') {
-            // Kiểm tra thêm cho ĐVQT/ĐVTT
+          if (isUnitDvTitle(value)) {
+            const otherDvTitle =
+              value === DANH_HIEU_DON_VI_HANG_NAM.DVQT
+                ? DANH_HIEU_DON_VI_HANG_NAM.DVTT
+                : DANH_HIEU_DON_VI_HANG_NAM.DVQT;
             const response = await apiClient.checkDuplicateUnit({
               don_vi_id: id,
               nam: nam,
-              danh_hieu: value === 'ĐVQT' ? 'ĐVTT' : 'ĐVQT',
+              danh_hieu: otherDvTitle,
               proposal_type: PROPOSAL_TYPES.DON_VI_HANG_NAM,
             });
             if (response.success && response.data.exists) {
@@ -270,20 +308,21 @@ export default function Step3SetTitlesDonViHangNam({
 
   const handleViewUnitHistory = async (record: Unit) => {
     setSelectedUnit(record);
-    setLoadingModal(true);
     setUnitAnnualAwardHistoryModalVisible(true);
 
+    const cached = allUnitAnnualAwards[record.id];
+    if (cached) {
+      setUnitAnnualAwards(cached);
+      setLoadingModal(false);
+      return;
+    }
+
+    setLoadingModal(true);
     try {
-      // Sử dụng dữ liệu đã fetch từ allUnitAnnualAwards (getUnitAnnualProfile)
-      const profile = allUnitAnnualAwards[record.id];
-      if (profile) {
-        setUnitAnnualAwards(profile);
-      } else {
-        setUnitAnnualAwards([]);
-      }
-    } catch (error: unknown) {
-      // Error handled by UI
-      setUnitAnnualAwards([]);
+      const res = await apiClient.getUnitAnnualProfile(record.id, nam);
+      setUnitAnnualAwards(res.success && res.data ? res.data : null);
+    } catch {
+      setUnitAnnualAwards(null);
     } finally {
       setLoadingModal(false);
     }
