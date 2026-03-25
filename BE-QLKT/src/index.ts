@@ -2,7 +2,6 @@ import { createServer } from 'http';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import cookieParser from 'cookie-parser';
 import 'dotenv/config';
 import { PORT } from './configs';
 import { prisma } from './models';
@@ -63,8 +62,6 @@ app.use(
 );
 
 app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use(cookieParser());
 
 // Test Prisma connection
 async function testDatabaseConnection() {
