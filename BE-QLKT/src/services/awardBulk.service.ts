@@ -1,5 +1,5 @@
 import { prisma } from '../models';
-import proposalService from './proposal';
+import { checkDuplicateAward, checkDuplicateUnitAward } from '../helpers/awardValidation';
 import annualRewardService from './annualReward.service';
 import unitAnnualAwardService from './unitAnnualAward.service';
 import scientificAchievementService from './scientificAchievement.service';
@@ -87,7 +87,7 @@ class AwardBulkService {
     const duplicateChecks = titleData
       .filter(item => item.personnel_id && item.danh_hieu)
       .map(async item => {
-        const checkResult = await proposalService.checkDuplicateAward(
+        const checkResult = await checkDuplicateAward(
           item.personnel_id,
           nam,
           item.danh_hieu,
@@ -120,7 +120,7 @@ class AwardBulkService {
 
     for (const item of titleData) {
       if (item.don_vi_id && item.danh_hieu) {
-        const checkResult = await proposalService.checkDuplicateUnitAward(
+        const checkResult = await checkDuplicateUnitAward(
           item.don_vi_id,
           nam,
           item.danh_hieu,

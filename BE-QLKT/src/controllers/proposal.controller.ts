@@ -1,5 +1,9 @@
 import { Request, Response } from 'express';
 import proposalService from '../services/proposal';
+import hccsvvService from '../services/hccsvv.service';
+import contributionAwardService from '../services/contributionAward.service';
+import commemorativeMedalService from '../services/commemorativeMedal.service';
+import militaryFlagService from '../services/militaryFlag.service';
 import { prisma } from '../models';
 import * as notificationHelper from '../helpers/notification';
 import { ROLES } from '../constants/roles';
@@ -409,7 +413,7 @@ class ProposalController {
   });
 
   getHCCSVVTemplate = catchAsync(async (req: Request, res: Response) => {
-    const buffer = await proposalService.exportHCCSVVTemplate();
+    const buffer = await hccsvvService.exportTemplate();
     res.setHeader(
       'Content-Type',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -427,7 +431,7 @@ class ProposalController {
     }
     return ResponseHelper.success(res, {
       message: 'Import Huy chương Chiến sĩ Vẻ vang thành công',
-      data: await proposalService.importHCCSVV(req.file.buffer, req.user!.id),
+      data: await hccsvvService.importFromExcel(req.file.buffer, req.user!.id),
     });
   });
 
@@ -446,7 +450,7 @@ class ProposalController {
     }
     return ResponseHelper.success(res, {
       message: 'Lấy danh sách HCCSVV thành công',
-      data: await proposalService.getAllHCCSVV(
+      data: await hccsvvService.getAll(
         filters,
         page as string | number,
         limit as string | number
@@ -467,7 +471,7 @@ class ProposalController {
       }
       filters.don_vi_id = managerUnitFilterId(user.QuanNhan);
     }
-    const buffer = await proposalService.exportHCCSVVExcel(filters);
+    const buffer = await hccsvvService.exportToExcel(filters);
     res.setHeader(
       'Content-Type',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -482,12 +486,12 @@ class ProposalController {
   getHCCSVVStatistics = catchAsync(async (req: Request, res: Response) => {
     return ResponseHelper.success(res, {
       message: 'Lấy thống kê HCCSVV thành công',
-      data: await proposalService.getHCCSVVStatistics(),
+      data: await hccsvvService.getStatistics(),
     });
   });
 
   getContributionAwardsTemplate = catchAsync(async (req: Request, res: Response) => {
-    const buffer = await proposalService.exportContributionAwardsTemplate();
+    const buffer = await contributionAwardService.exportTemplate();
     res.setHeader(
       'Content-Type',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -505,7 +509,10 @@ class ProposalController {
     }
     return ResponseHelper.success(res, {
       message: 'Import Huân chương Bảo vệ Tổ quốc thành công',
-      data: await proposalService.importContributionAwards(req.file.buffer, req.user!.id),
+      data: await (async () => {
+        const preview = await contributionAwardService.previewImport(req.file!.buffer);
+        return contributionAwardService.confirmImport(preview.valid, req.user!.id);
+      })(),
     });
   });
 
@@ -524,7 +531,7 @@ class ProposalController {
     }
     return ResponseHelper.success(res, {
       message: 'Lấy danh sách HCBVTQ thành công',
-      data: await proposalService.getAllContributionAwards(
+      data: await contributionAwardService.getAll(
         filters,
         page as string | number,
         limit as string | number
@@ -545,7 +552,7 @@ class ProposalController {
       }
       filters.don_vi_id = managerUnitFilterId(user.QuanNhan);
     }
-    const buffer = await proposalService.exportContributionAwardsExcel(filters);
+    const buffer = await contributionAwardService.exportToExcel(filters);
     res.setHeader(
       'Content-Type',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -560,12 +567,12 @@ class ProposalController {
   getContributionAwardsStatistics = catchAsync(async (req: Request, res: Response) => {
     return ResponseHelper.success(res, {
       message: 'Lấy thống kê HCBVTQ thành công',
-      data: await proposalService.getContributionAwardsStatistics(),
+      data: await contributionAwardService.getStatistics(),
     });
   });
 
   getCommemorativeMedalsTemplate = catchAsync(async (req: Request, res: Response) => {
-    const buffer = await proposalService.exportCommemorativeMedalsTemplate();
+    const buffer = await commemorativeMedalService.exportTemplate();
     res.setHeader(
       'Content-Type',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -583,7 +590,7 @@ class ProposalController {
     }
     return ResponseHelper.success(res, {
       message: 'Import Kỷ niệm chương thành công',
-      data: await proposalService.importCommemorativeMedals(req.file.buffer, req.user!.id),
+      data: await commemorativeMedalService.importFromExcel(req.file.buffer, req.user!.id),
     });
   });
 
@@ -601,7 +608,7 @@ class ProposalController {
     }
     return ResponseHelper.success(res, {
       message: 'Lấy danh sách Kỷ niệm chương thành công',
-      data: await proposalService.getAllCommemorativeMedals(
+      data: await commemorativeMedalService.getAll(
         filters,
         page as string | number,
         limit as string | number
@@ -621,7 +628,7 @@ class ProposalController {
       }
       filters.don_vi_id = managerUnitFilterId(user.QuanNhan);
     }
-    const buffer = await proposalService.exportCommemorativeMedalsExcel(filters);
+    const buffer = await commemorativeMedalService.exportToExcel(filters);
     res.setHeader(
       'Content-Type',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -636,12 +643,12 @@ class ProposalController {
   getCommemorativeMedalsStatistics = catchAsync(async (req: Request, res: Response) => {
     return ResponseHelper.success(res, {
       message: 'Lấy thống kê Kỷ niệm chương thành công',
-      data: await proposalService.getCommemorativeMedalsStatistics(),
+      data: await commemorativeMedalService.getStatistics(),
     });
   });
 
   getMilitaryFlagTemplate = catchAsync(async (req: Request, res: Response) => {
-    const buffer = await proposalService.exportMilitaryFlagTemplate();
+    const buffer = await militaryFlagService.exportTemplate();
     res.setHeader(
       'Content-Type',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -659,7 +666,7 @@ class ProposalController {
     }
     return ResponseHelper.success(res, {
       message: 'Import Huy chương quân kỳ Quyết thắng thành công',
-      data: await proposalService.importMilitaryFlag(req.file.buffer, req.user!.id),
+      data: await militaryFlagService.importFromExcel(req.file.buffer, req.user!.id),
     });
   });
 
@@ -677,7 +684,7 @@ class ProposalController {
     }
     return ResponseHelper.success(res, {
       message: 'Lấy danh sách HCQKQT thành công',
-      data: await proposalService.getAllMilitaryFlag(
+      data: await militaryFlagService.getAll(
         filters,
         page as string | number,
         limit as string | number
@@ -697,7 +704,7 @@ class ProposalController {
       }
       filters.don_vi_id = managerUnitFilterId(user.QuanNhan);
     }
-    const buffer = await proposalService.exportMilitaryFlagExcel(filters);
+    const buffer = await militaryFlagService.exportToExcel(filters);
     res.setHeader(
       'Content-Type',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -712,7 +719,7 @@ class ProposalController {
   getMilitaryFlagStatistics = catchAsync(async (req: Request, res: Response) => {
     return ResponseHelper.success(res, {
       message: 'Lấy thống kê HCQKQT thành công',
-      data: await proposalService.getMilitaryFlagStatistics(),
+      data: await militaryFlagService.getStatistics(),
     });
   });
 }

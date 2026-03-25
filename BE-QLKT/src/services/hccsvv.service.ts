@@ -1,6 +1,6 @@
 import { prisma } from '../models';
 import ExcelJS from 'exceljs';
-import proposalService from './proposal';
+import { checkDuplicateAward } from '../helpers/awardValidation';
 import profileService from './profile.service';
 import * as notificationHelper from '../helpers/notification';
 import { getDanhHieuName } from '../constants/danhHieu.constants';
@@ -565,7 +565,7 @@ class HCCSVVService {
 
         // Check for duplicate awards in proposals
         try {
-          const duplicateCheck = await proposalService.checkDuplicateAward(
+          const duplicateCheck = await checkDuplicateAward(
             personnel.id,
             nam,
             danh_hieu,

@@ -1,7 +1,7 @@
 import { prisma } from '../models';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import ExcelJS from 'exceljs';
-import proposalService from './proposal';
+import { checkDuplicateAward } from '../helpers/awardValidation';
 import * as notificationHelper from '../helpers/notification';
 import { ROLES } from '../constants/roles';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
@@ -488,7 +488,7 @@ class MilitaryFlagService {
         if (!personnel) continue;
 
         try {
-          const duplicateCheck = await proposalService.checkDuplicateAward(
+          const duplicateCheck = await checkDuplicateAward(
             personnel.id,
             nam,
             'HC_QKQT',

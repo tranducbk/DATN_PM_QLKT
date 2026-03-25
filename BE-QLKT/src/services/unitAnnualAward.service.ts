@@ -1,7 +1,7 @@
 import type { Prisma } from '../generated/prisma';
 import { prisma } from '../models';
 import ExcelJS from 'exceljs';
-import proposalService from './proposal';
+import { checkDuplicateUnitAward } from '../helpers/awardValidation';
 import { getDanhHieuName } from '../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { ROLES } from '../constants/roles';
@@ -1351,7 +1351,7 @@ class UnitAnnualAwardService {
 
           // Check for duplicate unit awards in proposals
           try {
-            const duplicateCheck = await proposalService.checkDuplicateUnitAward(
+            const duplicateCheck = await checkDuplicateUnitAward(
               donViTrucThuoc.id,
               nam,
               danhHieu,
@@ -1410,7 +1410,7 @@ class UnitAnnualAwardService {
 
           // Check for duplicate unit awards in proposals
           try {
-            const duplicateCheck = await proposalService.checkDuplicateUnitAward(
+            const duplicateCheck = await checkDuplicateUnitAward(
               donVi.id,
               nam,
               danhHieu,

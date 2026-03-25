@@ -1,6 +1,6 @@
 import { prisma } from '../models';
 import ExcelJS from 'exceljs';
-import proposalService from './proposal';
+import { checkDuplicateAward } from '../helpers/awardValidation';
 import profileService from './profile.service';
 import * as notificationHelper from '../helpers/notification';
 import { getDanhHieuName } from '../constants/danhHieu.constants';

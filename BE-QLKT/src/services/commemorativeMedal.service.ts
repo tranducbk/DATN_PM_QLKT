@@ -1,6 +1,6 @@
 import { prisma } from '../models';
 import ExcelJS from 'exceljs';
-import proposalService from './proposal';
+import { checkDuplicateAward } from '../helpers/awardValidation';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import * as notificationHelper from '../helpers/notification';
 import { ROLES } from '../constants/roles';
@@ -484,7 +484,7 @@ class CommemorativeMedalService {
 
         // Check for duplicate awards in proposals
         try {
-          const duplicateCheck = await proposalService.checkDuplicateAward(
+          const duplicateCheck = await checkDuplicateAward(
             personnel.id,
             nam,
             'KNC_VSNXD_QDNDVN',
