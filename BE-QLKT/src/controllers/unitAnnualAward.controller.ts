@@ -8,7 +8,7 @@ import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 class UnitAnnualAwardController {
   list = catchAsync(async (req: Request, res: Response) => {
     const { page, limit, year, nam, don_vi_id, danh_hieu } = req.query;
-    const data = await service.list({
+    const result = await service.list({
       page: Number(page) || 1,
       limit: Number(limit) || 10,
       year: (year || nam) as string | undefined,
@@ -17,7 +17,12 @@ class UnitAnnualAwardController {
       userRole: req.user?.role,
       userQuanNhanId: req.user?.quan_nhan_id,
     });
-    return ResponseHelper.success(res, { data });
+    return ResponseHelper.paginated(res, {
+      data: result.data,
+      total: result.pagination.total,
+      page: result.pagination.page,
+      limit: result.pagination.limit,
+    });
   });
 
   getById = catchAsync(async (req: Request, res: Response) => {

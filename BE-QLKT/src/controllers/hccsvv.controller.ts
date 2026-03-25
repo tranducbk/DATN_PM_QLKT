@@ -109,9 +109,12 @@ class HCCSVVController {
       page as string | number,
       limit as string | number
     );
-    return ResponseHelper.success(res, {
+    return ResponseHelper.paginated(res, {
+      data: result.data,
+      total: result.pagination.total,
+      page: result.pagination.page,
+      limit: result.pagination.limit,
       message: 'Lấy danh sách HCCSVV thành công',
-      data: result,
     });
   });
 

@@ -81,8 +81,8 @@ export default function AdminContributionAwardsPage() {
       const mappedAwards: ContributionAward[] = [];
 
       // Lấy dữ liệu từ API Contribution Awards (HCBVTQ) và filter theo personnelId
-      if (contributionRes.success && contributionRes.data?.data) {
-        contributionRes.data.data.forEach((award: any) => {
+      if (contributionRes.success && contributionRes.data) {
+        contributionRes.data.forEach((award: any) => {
           // Kiểm tra cả quan_nhan_id trực tiếp và QuanNhan.id
           const awardPersonnelId = award.quan_nhan_id || award.QuanNhan?.id;
           if (awardPersonnelId === personnelId) {

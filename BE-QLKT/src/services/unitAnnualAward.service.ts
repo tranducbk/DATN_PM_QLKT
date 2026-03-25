@@ -309,7 +309,7 @@ class UnitAnnualAwardService {
         }
       } else {
         return {
-          awards: [],
+          data: [],
           pagination: { total: 0, page: Number(page), limit: Number(limit), totalPages: 0 },
         };
       }
@@ -331,7 +331,7 @@ class UnitAnnualAwardService {
     ]);
 
     return {
-      awards,
+      data: awards,
       pagination: {
         total,
         page: Number(page),

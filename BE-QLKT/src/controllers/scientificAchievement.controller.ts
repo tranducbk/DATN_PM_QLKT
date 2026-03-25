@@ -68,17 +68,12 @@ class ScientificAchievementController {
       }),
       prisma.thanhTichKhoaHoc.count({ where }),
     ]);
-    return ResponseHelper.success(res, {
+    return ResponseHelper.paginated(res, {
+      data: achievements,
+      total,
+      page: pageNum,
+      limit: limitNum,
       message: 'Lấy danh sách thành tích khoa học thành công',
-      data: {
-        items: achievements,
-        pagination: {
-          total,
-          page: pageNum,
-          limit: limitNum,
-          totalPages: Math.ceil(total / limitNum),
-        },
-      },
     });
   });
 

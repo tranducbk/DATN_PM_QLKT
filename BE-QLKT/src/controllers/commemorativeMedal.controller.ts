@@ -100,8 +100,11 @@ class CommemorativeMedalController {
       page as string | number,
       limit as string | number
     );
-    return ResponseHelper.success(res, {
-      data: result,
+    return ResponseHelper.paginated(res, {
+      data: result.data,
+      total: result.pagination.total,
+      page: result.pagination.page,
+      limit: result.pagination.limit,
       message: 'Lấy danh sách Kỷ niệm chương thành công',
     });
   });

@@ -82,7 +82,7 @@ export default function ManagerUnitsPage() {
         message.error(result.message || 'Không thể tải danh sách khen thưởng');
         return;
       }
-      setAllAwards(result.data?.awards ?? []);
+      setAllAwards(result.data ?? []);
     } catch {
       message.error('Không thể tải danh sách khen thưởng');
     } finally {

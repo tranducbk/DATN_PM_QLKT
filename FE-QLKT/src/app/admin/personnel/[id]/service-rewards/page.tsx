@@ -81,8 +81,8 @@ export default function AdminServiceRewardsPage() {
       const mappedRewards: ServiceReward[] = [];
 
       // Lấy dữ liệu từ API HCCSVV và filter theo personnelId
-      if (hccsvvRes.success && hccsvvRes.data?.data) {
-        hccsvvRes.data.data.forEach((award: any) => {
+      if (hccsvvRes.success && hccsvvRes.data) {
+        hccsvvRes.data.forEach((award: any) => {
           if (award.quan_nhan_id === personnelId || award.QuanNhan?.id === personnelId) {
             const danhHieu = award.danh_hieu || '';
             let rank = '';

@@ -140,7 +140,7 @@ export default function AdminAwardsPage() {
         message.error(result.message || 'Không thể tải danh sách khen thưởng');
         return;
       }
-      setAwards(result.data?.awards ?? result.data ?? []);
+      setAwards(result.data ?? []);
     } catch {
       message.error('Không thể tải danh sách khen thưởng');
     } finally {

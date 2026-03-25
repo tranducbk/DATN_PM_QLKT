@@ -316,10 +316,9 @@ export default function ProfileEditForm({
           : null,
         so_the_dang_vien: values.so_the_dang_vien || null,
         so_dien_thoai: values.so_dien_thoai || null,
-        co_quan_don_vi_id: personnelData.CoQuanDonVi?.id || personnelData.co_quan_don_vi_id,
-        don_vi_truc_thuoc_id:
-          personnelData.DonViTrucThuoc?.id || personnelData.don_vi_truc_thuoc_id,
-        chuc_vu_id: personnelData.ChucVu?.id || personnelData.chuc_vu_id,
+        ...(personnelData.co_quan_don_vi_id && { co_quan_don_vi_id: personnelData.co_quan_don_vi_id }),
+        ...(personnelData.don_vi_truc_thuoc_id && { don_vi_truc_thuoc_id: personnelData.don_vi_truc_thuoc_id }),
+        ...(personnelData.chuc_vu_id && { chuc_vu_id: personnelData.chuc_vu_id }),
       };
 
       // Gọi API update
