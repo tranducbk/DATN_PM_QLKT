@@ -38,7 +38,9 @@ import { useTheme } from '@/components/theme-provider';
 import { getAntdTableThemeConfig } from '@/lib/antd-theme';
 import {
   PROPOSAL_STATUS,
+  PROPOSAL_STATUS_LABELS,
   PROPOSAL_TYPES,
+  getProposalTypeLabel,
   type ProposalType,
 } from '@/constants/proposal.constants';
 import styles from './proposal-detail.module.css';
@@ -309,40 +311,33 @@ export default function ManagerProposalDetailPage() {
     }
   };
 
-  const getProposalTypeLabel = (type: string) => {
-    const typeConfig: Record<string, string> = {
-      CA_NHAN_HANG_NAM: 'Cá nhân Hằng năm',
-      DON_VI_HANG_NAM: 'Đơn vị Hằng năm',
-      NIEN_HAN: 'Huy chương Chiến sĩ vẻ vang',
-      CONG_HIEN: 'Huân chương Bảo vệ Tổ quốc',
-      DOT_XUAT: 'Đột xuất',
-      NCKH: 'ĐTKH/SKKH',
-      HC_QKQT: 'Huy chương quân kỳ Quyết thắng',
-      KNC_VSNXD_QDNDVN: 'Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN',
-    };
-    return typeConfig[type] || type;
-  };
-
   const getStatusTag = (status: string) => {
-    const statusConfig = {
-      PENDING: {
+    const statusConfig: Record<
+      string,
+      { color: string; icon: React.ReactNode; text: string }
+    > = {
+      [PROPOSAL_STATUS.PENDING]: {
         color: 'gold',
         icon: <ClockCircleOutlined />,
-        text: 'Chờ duyệt',
+        text: PROPOSAL_STATUS_LABELS[PROPOSAL_STATUS.PENDING],
       },
-      APPROVED: {
+      [PROPOSAL_STATUS.APPROVED]: {
         color: 'green',
         icon: <CheckCircleOutlined />,
-        text: 'Đã duyệt',
+        text: PROPOSAL_STATUS_LABELS[PROPOSAL_STATUS.APPROVED],
       },
-      REJECTED: {
+      [PROPOSAL_STATUS.REJECTED]: {
         color: 'red',
         icon: <CloseCircleOutlined />,
-        text: 'Từ chối',
+        text: PROPOSAL_STATUS_LABELS[PROPOSAL_STATUS.REJECTED],
       },
     };
 
-    const config = statusConfig[status as keyof typeof statusConfig];
+    const config = statusConfig[status] ?? {
+      color: 'default',
+      icon: undefined,
+      text: status,
+    };
     return (
       <Tag color={config.color} icon={config.icon} style={{ fontSize: 14, padding: '4px 12px' }}>
         {config.text}

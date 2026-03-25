@@ -3,6 +3,7 @@
 import { Doughnut } from 'react-chartjs-2';
 import { Card } from 'antd';
 import { useTheme } from '@/components/theme-provider';
+import { ROLE_LABELS } from '@/constants/roles.constants';
 
 interface RoleDistributionChartProps {
   data: Array<{ role: string; count: number }>;
@@ -14,16 +15,11 @@ export function RoleDistributionChart({ data, height = 250 }: RoleDistributionCh
   const isDark = theme === 'dark';
   const textColor = isDark ? '#e5e7eb' : '#374151';
 
-  const roleMap: Record<string, string> = {
-    SUPER_ADMIN: 'Super Admin',
-    ADMIN: 'Admin',
-    MANAGER: 'Quản lý',
-    USER: 'Người dùng',
-  };
-
   const chartData = {
     labels:
-      data.length > 0 ? data.map(item => roleMap[item.role] || item.role) : ['Chưa có dữ liệu'],
+      data.length > 0
+        ? data.map(item => ROLE_LABELS[item.role] || item.role)
+        : ['Chưa có dữ liệu'],
     datasets: [
       {
         label: 'Số lượng',

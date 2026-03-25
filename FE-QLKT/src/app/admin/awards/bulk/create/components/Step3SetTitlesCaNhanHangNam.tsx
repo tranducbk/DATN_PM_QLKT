@@ -20,9 +20,23 @@ import { apiClient } from '@/lib/api-client';
 import PersonnelRewardHistoryModal from './PersonnelRewardHistoryModal';
 import { formatDate } from '@/lib/utils';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
-import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
+import {
+  PROPOSAL_STATUS_COLORS,
+  getProposalStatusLabel,
+  PROPOSAL_TYPES,
+} from '@/constants/proposal.constants';
 
 const { Text } = Typography;
+
+const CSTDCS_DANH_HIEU_LABELS: Record<string, string> = {
+  CSTDCS: 'Chiến sĩ thi đua cơ sở',
+  CSTT: 'Chiến sĩ thi đua',
+};
+
+const NCKH_LOAI_LABELS: Record<string, string> = {
+  NCKH: 'Đề tài khoa học',
+  SKKH: 'Sáng kiến khoa học',
+};
 
 interface Personnel {
   id: string;
@@ -608,13 +622,7 @@ export default function Step3SetTitlesCaNhanHangNam({
                             key: 'danh_hieu',
                             width: 150,
                             align: 'center',
-                            render: text => {
-                              const map: Record<string, string> = {
-                                CSTDCS: 'Chiến sĩ thi đua cơ sở',
-                                CSTT: 'Chiến sĩ thi đua',
-                              };
-                              return map[text] || text;
-                            },
+                            render: text => CSTDCS_DANH_HIEU_LABELS[text as string] || text,
                           },
                           {
                             title: 'Nhận BKBQP',
@@ -704,13 +712,7 @@ export default function Step3SetTitlesCaNhanHangNam({
                             key: 'loai',
                             width: 150,
                             align: 'center',
-                            render: text => {
-                              const map: Record<string, string> = {
-                                NCKH: 'Đề tài khoa học',
-                                SKKH: 'Sáng kiến khoa học',
-                              };
-                              return map[text] || text;
-                            },
+                            render: text => NCKH_LOAI_LABELS[text as string] || text,
                           },
                           {
                             title: 'Mô tả',
@@ -724,11 +726,11 @@ export default function Step3SetTitlesCaNhanHangNam({
                             key: 'status',
                             width: 120,
                             align: 'center',
-                            render: status => {
-                              const color = status === 'APPROVED' ? 'green' : 'orange';
-                              const text = status === 'APPROVED' ? 'Đã duyệt' : 'Chờ duyệt';
-                              return <Tag color={color}>{text}</Tag>;
-                            },
+                            render: (status: string) => (
+                              <Tag color={PROPOSAL_STATUS_COLORS[status] || 'default'}>
+                                {getProposalStatusLabel(status)}
+                              </Tag>
+                            ),
                           },
                           {
                             title: 'Số QĐ',

@@ -11,6 +11,11 @@ import {
 } from '@ant-design/icons';
 import { DANH_HIEU_MAP } from '@/utils/awardsHelpers';
 import { formatDate, formatDateTime } from '@/lib/utils';
+import {
+  PROPOSAL_STATUS,
+  PROPOSAL_STATUS_LABELS,
+  PROPOSAL_STATUS_COLORS,
+} from '@/constants/proposal.constants';
 
 const { Text, Title } = Typography;
 
@@ -474,8 +479,16 @@ export default function AwardDetailModal({
                   {award.mo_ta || '-'}
                 </Descriptions.Item>
                 <Descriptions.Item label="Trạng thái">
-                  <Tag color={award.status === 'APPROVED' ? 'success' : 'warning'}>
-                    {award.status === 'APPROVED' ? 'Đã duyệt' : 'Chờ duyệt'}
+                  <Tag
+                    color={
+                      award.status === PROPOSAL_STATUS.APPROVED
+                        ? PROPOSAL_STATUS_COLORS[PROPOSAL_STATUS.APPROVED]
+                        : PROPOSAL_STATUS_COLORS[PROPOSAL_STATUS.PENDING]
+                    }
+                  >
+                    {award.status === PROPOSAL_STATUS.APPROVED
+                      ? PROPOSAL_STATUS_LABELS[PROPOSAL_STATUS.APPROVED]
+                      : PROPOSAL_STATUS_LABELS[PROPOSAL_STATUS.PENDING]}
                   </Tag>
                 </Descriptions.Item>
                 {renderDecisionInfo()}

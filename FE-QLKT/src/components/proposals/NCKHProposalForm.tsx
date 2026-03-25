@@ -23,6 +23,11 @@ import {
   SaveOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import {
+  PROPOSAL_STATUS,
+  PROPOSAL_STATUS_COLORS,
+  getProposalStatusLabel,
+} from '@/constants/proposal.constants';
 
 interface NCKHRecord {
   key: string;
@@ -31,7 +36,7 @@ interface NCKHRecord {
   nam: number;
   loai: 'DTKH' | 'SKKH';
   mo_ta: string;
-  status: 'APPROVED' | 'PENDING';
+  status: typeof PROPOSAL_STATUS.APPROVED | typeof PROPOSAL_STATUS.PENDING;
 }
 
 interface NCKHProposalFormProps {
@@ -88,7 +93,7 @@ export default function NCKHProposalForm({
     form.setFieldsValue({
       nam: new Date().getFullYear(),
       loai: 'DTKH',
-      status: 'APPROVED',
+      status: PROPOSAL_STATUS.APPROVED,
     });
     setIsModalOpen(true);
   };
@@ -159,8 +164,14 @@ export default function NCKHProposalForm({
       width: 120,
       align: 'center',
       render: (status: string) => (
-        <Tag color={status === 'APPROVED' ? 'success' : 'warning'}>
-          {status === 'APPROVED' ? 'Đã duyệt' : 'Chờ duyệt'}
+        <Tag
+          color={
+            status === PROPOSAL_STATUS.APPROVED
+              ? PROPOSAL_STATUS_COLORS[PROPOSAL_STATUS.APPROVED]
+              : PROPOSAL_STATUS_COLORS[PROPOSAL_STATUS.PENDING]
+          }
+        >
+          {getProposalStatusLabel(status)}
         </Tag>
       ),
     },
@@ -319,8 +330,12 @@ export default function NCKHProposalForm({
             rules={[{ required: true, message: 'Vui lòng chọn trạng thái!' }]}
           >
             <Select placeholder="Chọn trạng thái" size="large">
-              <Select.Option value="APPROVED">Đã duyệt</Select.Option>
-              <Select.Option value="PENDING">Chờ duyệt</Select.Option>
+              <Select.Option value={PROPOSAL_STATUS.APPROVED}>
+                {getProposalStatusLabel(PROPOSAL_STATUS.APPROVED)}
+              </Select.Option>
+              <Select.Option value={PROPOSAL_STATUS.PENDING}>
+                {getProposalStatusLabel(PROPOSAL_STATUS.PENDING)}
+              </Select.Option>
             </Select>
           </Form.Item>
         </Form>

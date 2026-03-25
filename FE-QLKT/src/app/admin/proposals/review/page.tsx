@@ -34,7 +34,14 @@ import {
 import { format } from 'date-fns';
 import { apiClient } from '@/lib/api-client';
 import { message } from 'antd';
-import { PROPOSAL_STATUS, PROPOSAL_TYPES } from '@/constants/proposal.constants';
+import {
+  PROPOSAL_STATUS,
+  PROPOSAL_STATUS_LABELS,
+  PROPOSAL_TYPES,
+  getProposalTypeLabel,
+  getProposalStatusLabel,
+  PROPOSAL_STATUS_BADGE_COLORS,
+} from '@/constants/proposal.constants';
 
 const { Title, Paragraph } = Typography;
 
@@ -156,29 +163,12 @@ export default function ProposalReviewPage() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    if (status === PROPOSAL_STATUS.PENDING) {
-      return <Badge color="gold" text="Chờ duyệt" />;
-    }
-    if (status === PROPOSAL_STATUS.APPROVED) {
-      return <Badge color="green" text="Đã duyệt" />;
-    }
-    return <Badge color="red" text="Từ chối" />;
-  };
-
-  const getProposalTypeName = (loaiDeXuat?: string) => {
-    const typeMap: Record<string, string> = {
-      CA_NHAN_HANG_NAM: 'Cá nhân hằng năm',
-      DON_VI_HANG_NAM: 'Đơn vị hằng năm',
-      NIEN_HAN: 'Huy chương Chiến sĩ vẻ vang',
-      HC_QKQT: 'Huy chương Quân kỳ Quyết thắng',
-      KNC_VSNXD_QDNDVN: 'Kỷ niệm chương VSNXD QĐNDVN',
-      CONG_HIEN: 'Huân chương Bảo vệ Tổ quốc',
-      NCKH: 'Nghiên cứu khoa học',
-      DOT_XUAT: 'Đột xuất',
-    };
-    return loaiDeXuat ? typeMap[loaiDeXuat] || loaiDeXuat : '-';
-  };
+  const getStatusBadge = (status: string) => (
+    <Badge
+      color={PROPOSAL_STATUS_BADGE_COLORS[status] || 'default'}
+      text={getProposalStatusLabel(status)}
+    />
+  );
 
   const columns = [
     {
@@ -210,7 +200,7 @@ export default function ProposalReviewPage() {
       key: 'loai_de_xuat',
       align: 'center' as const,
       render: (loaiDeXuat: string) => (
-        <div style={{ textAlign: 'center' }}>{getProposalTypeName(loaiDeXuat)}</div>
+        <div style={{ textAlign: 'center' }}>{getProposalTypeLabel(loaiDeXuat)}</div>
       ),
     },
     {
@@ -326,7 +316,8 @@ export default function ProposalReviewPage() {
         label: (
           <span>
             <ClockCircleOutlined style={{ marginRight: 8 }} />
-            Chờ duyệt ({statusCounts[PROPOSAL_STATUS.PENDING] || 0})
+            {PROPOSAL_STATUS_LABELS[PROPOSAL_STATUS.PENDING]} (
+            {statusCounts[PROPOSAL_STATUS.PENDING] || 0})
           </span>
         ),
       },
@@ -335,7 +326,8 @@ export default function ProposalReviewPage() {
         label: (
           <span>
             <CheckCircleOutlined style={{ marginRight: 8 }} />
-            Đã duyệt ({statusCounts[PROPOSAL_STATUS.APPROVED] || 0})
+            {PROPOSAL_STATUS_LABELS[PROPOSAL_STATUS.APPROVED]} (
+            {statusCounts[PROPOSAL_STATUS.APPROVED] || 0})
           </span>
         ),
       },
@@ -448,7 +440,7 @@ export default function ProposalReviewPage() {
                         <Select.Option value="">Tất cả các loại đề xuất</Select.Option>
                         {availableTypes.map(type => (
                           <Select.Option key={type} value={type}>
-                            {getProposalTypeName(type)}
+                            {getProposalTypeLabel(type)}
                           </Select.Option>
                         ))}
                       </Select>

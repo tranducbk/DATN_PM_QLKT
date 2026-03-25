@@ -9,7 +9,7 @@ import {
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
-import { PROPOSAL_STATUS, PROPOSAL_TYPES } from '@/constants/proposal.constants';
+import { PROPOSAL_STATUS, PROPOSAL_TYPES, PROPOSAL_TYPE_LABELS } from '@/constants/proposal.constants';
 
 const { Text, Title } = Typography;
 
@@ -61,15 +61,6 @@ export default function ProposalDetailModal({
   onReject,
   onApprove,
 }: ProposalDetailModalProps) {
-  const proposalTypeLabels: Record<string, string> = {
-    CA_NHAN_HANG_NAM: 'Cá nhân Hằng năm',
-    DON_VI_HANG_NAM: 'Đơn vị Hằng năm',
-    NIEN_HAN: 'Huy chương Chiến sĩ vẻ vang',
-    CONG_HIEN: 'Huân chương Bảo vệ Tổ quốc',
-    DOT_XUAT: 'Đột xuất',
-    NCKH: 'ĐTKH/SKKH',
-  };
-
   const statusConfig: Record<string, { color: string; text: string }> = {
     [PROPOSAL_STATUS.PENDING]: { color: 'warning', text: 'Đang chờ phê duyệt' },
     [PROPOSAL_STATUS.APPROVED]: { color: 'success', text: 'Đã phê duyệt' },
@@ -211,7 +202,9 @@ export default function ProposalDetailModal({
         {/* Basic Info */}
         <Descriptions bordered column={2} size="small">
           <Descriptions.Item label="Loại khen thưởng" span={2}>
-            <Tag color="blue">{proposalTypeLabels[proposal.loai_de_xuat]}</Tag>
+            <Tag color="blue">
+              {PROPOSAL_TYPE_LABELS[proposal.loai_de_xuat] ?? proposal.loai_de_xuat}
+            </Tag>
           </Descriptions.Item>
           <Descriptions.Item label="Người đề xuất">
             <Text strong>

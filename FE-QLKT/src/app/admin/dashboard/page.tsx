@@ -28,6 +28,7 @@ import { formatDateTime } from '@/lib/utils';
 import '@/lib/chart-config';
 import { ActionBarChart, ActivityLineChart, PieChart } from '@/components/charts';
 import { PROPOSAL_STATUS_LABELS, PROPOSAL_TYPE_LABELS } from '@/constants/proposal.constants';
+import { ROLE_LABELS } from '@/constants/roles.constants';
 
 const { Title } = Typography;
 
@@ -59,13 +60,7 @@ export default function AdminDashboard() {
           const name = (user.ho_ten || '').trim();
           const username = (user.username || '').trim();
           const role = (user.role || '').toUpperCase();
-          const roleDisplayMap: Record<string, string> = {
-            SUPER_ADMIN: 'Super Admin',
-            ADMIN: 'Quản trị viên',
-            MANAGER: 'Trưởng phòng',
-            USER: 'Người dùng',
-          };
-          setDisplayName(name || username || roleDisplayMap[role] || 'Admin');
+          setDisplayName(name || username || ROLE_LABELS[role] || 'Admin');
         }
 
         const statisticsRes = await apiClient.getAdminDashboardStatistics();

@@ -38,7 +38,11 @@ import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
 import {
   PROPOSAL_STATUS,
+  PROPOSAL_STATUS_LABELS,
   PROPOSAL_TYPES,
+  PROPOSAL_TYPE_LABELS,
+  PROPOSAL_TYPE_TAG_COLORS_MANAGER,
+  getProposalTypeLabel,
   type ProposalType,
 } from '@/constants/proposal.constants';
 
@@ -192,43 +196,38 @@ export default function ManagerProposalsPage() {
   };
 
   const getProposalTypeTag = (type: string) => {
-    const typeConfig = {
-      CA_NHAN_HANG_NAM: { color: 'blue', text: 'Cá nhân hằng năm' },
-      DON_VI_HANG_NAM: { color: 'purple', text: 'Đơn vị hằng năm' },
-      NIEN_HAN: { color: 'cyan', text: 'Huy chương Chiến sĩ vẻ vang' },
-      HC_QKQT: { color: 'gold', text: 'HC Quân kỳ quyết thắng' },
-      KNC_VSNXD_QDNDVN: { color: 'lime', text: 'KNC VSNXD QĐNDVN' },
-      CONG_HIEN: { color: 'geekblue', text: 'Huân chương Bảo vệ Tổ quốc' },
-      DOT_XUAT: { color: 'orange', text: 'Đột xuất' },
-      NCKH: { color: 'magenta', text: 'Nghiên cứu khoa học' },
-    };
-
-    const config = typeConfig[type as keyof typeof typeConfig];
-    return config ? <Tag color={config.color}>{config.text}</Tag> : <Tag>{type}</Tag>;
-  };
-
-  const getProposalTypeName = (type: string) => {
-    const typeConfig = {
-      CA_NHAN_HANG_NAM: 'Cá nhân hằng năm',
-      DON_VI_HANG_NAM: 'Đơn vị hằng năm',
-      NIEN_HAN: 'Huy chương Chiến sĩ vẻ vang',
-      HC_QKQT: 'HC Quân kỳ quyết thắng',
-      KNC_VSNXD_QDNDVN: 'KNC VSNXD QĐNDVN',
-      CONG_HIEN: 'Huân chương Bảo vệ Tổ quốc',
-      DOT_XUAT: 'Đột xuất',
-      NCKH: 'Nghiên cứu khoa học',
-    };
-    return typeConfig[type as keyof typeof typeConfig] || type;
+    const text = PROPOSAL_TYPE_LABELS[type] || type;
+    const color = PROPOSAL_TYPE_TAG_COLORS_MANAGER[type] || 'default';
+    return <Tag color={color}>{text}</Tag>;
   };
 
   const getStatusTag = (status: string) => {
-    const statusConfig = {
-      [PROPOSAL_STATUS.PENDING]: { color: 'gold', icon: <ClockCircleOutlined />, text: 'Chờ duyệt' },
-      [PROPOSAL_STATUS.APPROVED]: { color: 'green', icon: <CheckCircleOutlined />, text: 'Đã duyệt' },
-      [PROPOSAL_STATUS.REJECTED]: { color: 'red', icon: <CloseCircleOutlined />, text: 'Từ chối' },
+    const statusConfig: Record<
+      string,
+      { color: string; icon: React.ReactNode; text: string }
+    > = {
+      [PROPOSAL_STATUS.PENDING]: {
+        color: 'gold',
+        icon: <ClockCircleOutlined />,
+        text: PROPOSAL_STATUS_LABELS[PROPOSAL_STATUS.PENDING],
+      },
+      [PROPOSAL_STATUS.APPROVED]: {
+        color: 'green',
+        icon: <CheckCircleOutlined />,
+        text: PROPOSAL_STATUS_LABELS[PROPOSAL_STATUS.APPROVED],
+      },
+      [PROPOSAL_STATUS.REJECTED]: {
+        color: 'red',
+        icon: <CloseCircleOutlined />,
+        text: PROPOSAL_STATUS_LABELS[PROPOSAL_STATUS.REJECTED],
+      },
     };
 
-    const config = statusConfig[status as keyof typeof statusConfig];
+    const config = statusConfig[status] ?? {
+      color: 'default',
+      icon: undefined,
+      text: status,
+    };
     return (
       <Tag color={config.color} icon={config.icon}>
         {config.text}
@@ -420,7 +419,8 @@ export default function ManagerProposalsPage() {
         key: 'pending',
         label: (
           <span>
-            <ClockCircleOutlined /> Chờ duyệt ({statusCounts[PROPOSAL_STATUS.PENDING] || 0})
+            <ClockCircleOutlined /> {PROPOSAL_STATUS_LABELS[PROPOSAL_STATUS.PENDING]} (
+            {statusCounts[PROPOSAL_STATUS.PENDING] || 0})
           </span>
         ),
       },
@@ -428,7 +428,8 @@ export default function ManagerProposalsPage() {
         key: 'approved',
         label: (
           <span>
-            <CheckCircleOutlined /> Đã duyệt ({statusCounts[PROPOSAL_STATUS.APPROVED] || 0})
+            <CheckCircleOutlined /> {PROPOSAL_STATUS_LABELS[PROPOSAL_STATUS.APPROVED]} (
+            {statusCounts[PROPOSAL_STATUS.APPROVED] || 0})
           </span>
         ),
       },
@@ -436,7 +437,8 @@ export default function ManagerProposalsPage() {
         key: 'rejected',
         label: (
           <span>
-            <CloseCircleOutlined /> Từ chối ({statusCounts[PROPOSAL_STATUS.REJECTED] || 0})
+            <CloseCircleOutlined /> {PROPOSAL_STATUS_LABELS[PROPOSAL_STATUS.REJECTED]} (
+            {statusCounts[PROPOSAL_STATUS.REJECTED] || 0})
           </span>
         ),
       },
@@ -541,7 +543,7 @@ export default function ManagerProposalsPage() {
                   <Select.Option value="">Tất cả các loại đề xuất</Select.Option>
                   {availableTypes.map(type => (
                     <Select.Option key={type} value={type}>
-                      {getProposalTypeName(type)}
+                      {getProposalTypeLabel(type)}
                     </Select.Option>
                   ))}
                 </Select>

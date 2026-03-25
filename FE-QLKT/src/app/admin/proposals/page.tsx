@@ -30,7 +30,12 @@ import { isAxiosError } from 'axios';
 import { apiClient } from '@/lib/api-client';
 import { getApiErrorMessage } from '@/lib/apiError';
 import dayjs from 'dayjs';
-import { PROPOSAL_STATUS, PROPOSAL_TYPES } from '@/constants/proposal.constants';
+import {
+  PROPOSAL_STATUS,
+  PROPOSAL_TYPES,
+  PROPOSAL_TYPE_ADMIN_TAG,
+  PROPOSAL_STATUS_ADMIN,
+} from '@/constants/proposal.constants';
 import ProposalDetailModal from './components/ProposalDetailModal';
 import RejectModal from './components/RejectModal';
 import ApproveModal from './components/ApproveModal';
@@ -111,16 +116,6 @@ export default function AdminProposalsPage() {
     }
   };
 
-  // Proposal type labels
-  const proposalTypeLabels: Record<string, { label: string; color: string }> = {
-    CA_NHAN_HANG_NAM: { label: 'Cá nhân HN', color: 'blue' },
-    DON_VI_HANG_NAM: { label: 'Đơn vị HN', color: 'cyan' },
-    NIEN_HAN: { label: 'Huy chương Chiến sĩ vẻ vang', color: 'purple' },
-    CONG_HIEN: { label: 'Huân chương Bảo vệ Tổ quốc', color: 'magenta' },
-    DOT_XUAT: { label: 'Đột xuất', color: 'orange' },
-    NCKH: { label: 'ĐTKH/SKKH', color: 'green' },
-  };
-
   const filteredProposals = proposals.filter(p => {
     const searchLower = searchText.toLowerCase();
     const proposerLabel = (
@@ -181,7 +176,7 @@ export default function AdminProposalsPage() {
       key: 'loai_de_xuat',
       width: 140,
       render: (type: string) => {
-        const config = proposalTypeLabels[type] || { label: type, color: 'default' };
+        const config = PROPOSAL_TYPE_ADMIN_TAG[type] ?? { label: type, color: 'default' };
         return <Tag color={config.color}>{config.label}</Tag>;
       },
     },
@@ -258,15 +253,18 @@ export default function AdminProposalsPage() {
       width: 120,
       align: 'center',
       render: (status: string) => {
-        const statusConfig = {
-          [PROPOSAL_STATUS.PENDING]: { icon: <ClockCircleOutlined />, color: 'warning', text: 'Đang chờ' },
-          [PROPOSAL_STATUS.APPROVED]: { icon: <CheckCircleOutlined />, color: 'success', text: 'Đã duyệt' },
-          [PROPOSAL_STATUS.REJECTED]: { icon: <CloseCircleOutlined />, color: 'error', text: 'Từ chối' },
-        };
-        const config = statusConfig[status as keyof typeof statusConfig];
+        const cfg = PROPOSAL_STATUS_ADMIN[status] ?? { tableTagText: status, tagColor: 'default' };
+        const icon =
+          status === PROPOSAL_STATUS.PENDING ? (
+            <ClockCircleOutlined />
+          ) : status === PROPOSAL_STATUS.APPROVED ? (
+            <CheckCircleOutlined />
+          ) : status === PROPOSAL_STATUS.REJECTED ? (
+            <CloseCircleOutlined />
+          ) : undefined;
         return (
-          <Tag icon={config.icon} color={config.color}>
-            {config.text}
+          <Tag icon={icon} color={cfg.tagColor}>
+            {cfg.tableTagText}
           </Tag>
         );
       },
@@ -344,7 +342,9 @@ export default function AdminProposalsPage() {
       key: PROPOSAL_STATUS.PENDING,
       label: (
         <span>
-          <ClockCircleOutlined /> Đang chờ ({proposals.filter(p => p.status === PROPOSAL_STATUS.PENDING).length})
+          <ClockCircleOutlined />{' '}
+          {PROPOSAL_STATUS_ADMIN[PROPOSAL_STATUS.PENDING].tabLabel} (
+          {proposals.filter(p => p.status === PROPOSAL_STATUS.PENDING).length})
         </span>
       ),
     },
@@ -352,7 +352,8 @@ export default function AdminProposalsPage() {
       key: PROPOSAL_STATUS.APPROVED,
       label: (
         <span>
-          <CheckCircleOutlined /> Đã phê duyệt (
+          <CheckCircleOutlined />{' '}
+          {PROPOSAL_STATUS_ADMIN[PROPOSAL_STATUS.APPROVED].tabLabel} (
           {proposals.filter(p => p.status === PROPOSAL_STATUS.APPROVED).length})
         </span>
       ),
@@ -361,7 +362,9 @@ export default function AdminProposalsPage() {
       key: PROPOSAL_STATUS.REJECTED,
       label: (
         <span>
-          <CloseCircleOutlined /> Từ chối ({proposals.filter(p => p.status === PROPOSAL_STATUS.REJECTED).length})
+          <CloseCircleOutlined />{' '}
+          {PROPOSAL_STATUS_ADMIN[PROPOSAL_STATUS.REJECTED].tabLabel} (
+          {proposals.filter(p => p.status === PROPOSAL_STATUS.REJECTED).length})
         </span>
       ),
     },
@@ -440,7 +443,7 @@ export default function AdminProposalsPage() {
             placeholder="Lọc theo loại"
           >
             <Select.Option value="ALL">Tất cả loại</Select.Option>
-            {Object.entries(proposalTypeLabels).map(([key, config]) => (
+            {Object.entries(PROPOSAL_TYPE_ADMIN_TAG).map(([key, config]) => (
               <Select.Option key={key} value={key}>
                 {config.label}
               </Select.Option>

@@ -34,7 +34,7 @@ import { calculateDuration, formatDate } from '@/lib/utils';
 import { useTheme } from '@/components/theme-provider';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { useAuth } from '@/contexts/AuthContext';
-import { PROPOSAL_STATUS } from '@/constants/proposal.constants';
+import { PROPOSAL_STATUS, getProposalStatusLabel } from '@/constants/proposal.constants';
 
 const { Title, Text } = Typography;
 
@@ -385,10 +385,14 @@ export default function UserProfilePage() {
       width: 120,
       align: 'center' as const,
       render: (text: string) => {
+        const label = getProposalStatusLabel(text);
         if (text === PROPOSAL_STATUS.APPROVED) {
-          return <span style={{ color: '#52c41a' }}>Đã duyệt</span>;
+          return <span style={{ color: '#52c41a' }}>{label}</span>;
         }
-        return <span style={{ color: '#faad14' }}>Chờ duyệt</span>;
+        if (text === PROPOSAL_STATUS.REJECTED) {
+          return <span style={{ color: '#ff4d4f' }}>{label}</span>;
+        }
+        return <span style={{ color: '#faad14' }}>{label}</span>;
       },
     },
   ];

@@ -27,6 +27,7 @@ import { apiClient } from '@/lib/api-client';
 import { useTheme } from '@/components/theme-provider';
 import { useAuth } from '@/contexts/AuthContext';
 import { getActionLabel } from '@/components/system-logs/constants';
+import { ROLE_LABELS } from '@/constants/roles.constants';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -86,13 +87,7 @@ export default function SuperAdminDashboard() {
           const name = (user.ho_ten || '').trim();
           const username = (user.username || '').trim();
           const role = (user.role || '').toUpperCase();
-          const roleDisplayMap: Record<string, string> = {
-            SUPER_ADMIN: 'Super Admin',
-            ADMIN: 'Quản trị viên',
-            MANAGER: 'Trưởng phòng',
-            USER: 'Người dùng',
-          };
-          setDisplayName(name || username || roleDisplayMap[role] || 'Super Admin');
+          setDisplayName(name || username || ROLE_LABELS[role] || 'Super Admin');
         }
         const [accountsRes, personnelRes, logsRes, statisticsRes] = await Promise.all([
           apiClient.getAccounts({ page: 1, limit: 1 }),
@@ -208,15 +203,9 @@ export default function SuperAdminDashboard() {
   const roleChartData = {
     labels:
       chartData.roleDistribution.length > 0
-        ? chartData.roleDistribution.map((item: any) => {
-            const roleMap: Record<string, string> = {
-              SUPER_ADMIN: 'Quản trị viên cấp cao',
-              ADMIN: 'Quản trị viên',
-              MANAGER: 'Chỉ huy đơn vị',
-              USER: 'Người dùng',
-            };
-            return roleMap[item.role] || item.role;
-          })
+        ? chartData.roleDistribution.map(
+            (item: any) => ROLE_LABELS[item.role] || item.role
+          )
         : ['Chưa có dữ liệu'],
     datasets: [
       {

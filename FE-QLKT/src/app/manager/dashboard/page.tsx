@@ -34,6 +34,7 @@ import {
   RoleDistributionChart,
 } from '@/components/charts';
 import { PROPOSAL_STATUS_LABELS, PROPOSAL_TYPE_LABELS } from '@/constants/proposal.constants';
+import { ROLE_LABELS } from '@/constants/roles.constants';
 
 const { Title, Text } = Typography;
 
@@ -69,13 +70,7 @@ export default function ManagerDashboard() {
           const name = (user.ho_ten || '').trim();
           const username = (user.username || '').trim();
           const role = (user.role || '').toUpperCase();
-          const roleDisplayMap: Record<string, string> = {
-            SUPER_ADMIN: 'Super Admin',
-            ADMIN: 'Quản trị viên',
-            MANAGER: 'Trưởng phòng',
-            USER: 'Người dùng',
-          };
-          const roleFallback = roleDisplayMap[role] || 'Trưởng phòng';
+          const roleFallback = ROLE_LABELS[role] || 'Trưởng phòng';
           setDisplayName(name || username || roleFallback);
         }
         let unitId = null;
