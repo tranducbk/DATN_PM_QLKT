@@ -25,7 +25,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { accountEditSchema } from '@/lib/schemas';
 import { apiClient } from '@/lib/api-client';
-import { useToast } from '@/hooks/use-toast';
+import { App } from 'antd';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
@@ -43,7 +43,7 @@ export function AccountEditForm({ accountId }: AccountEditFormProps) {
   const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
   const [account, setAccount] = useState<any>(null);
   const router = useRouter();
-  const { toast } = useToast();
+  const { message } = App.useApp();
   const { user } = useAuth();
   const currentUserRole = user?.role || '';
 
@@ -67,18 +67,14 @@ export function AccountEditForm({ accountId }: AccountEditFormProps) {
         const errorMessage =
           getApiErrorMessage(error, 'Không thể tải thông tin tài khoản');
 
-        toast({
-          title: 'Lỗi',
-          description: errorMessage,
-          variant: 'destructive',
-        });
+        message.error(errorMessage);
       } finally {
         setLoadingData(false);
       }
     };
 
     fetchAccount();
-  }, [accountId, toast, form]);
+  }, [accountId, message, form]);
 
   // Lấy danh sách role có thể chỉnh sửa dựa trên role hiện tại
   const getAvailableRoles = () => {
@@ -106,27 +102,16 @@ export function AccountEditForm({ accountId }: AccountEditFormProps) {
       const response = await apiClient.updateAccount(accountId, values);
 
       if (response.success) {
-        toast({
-          title: 'Thành công',
-          description: 'Cập nhật tài khoản thành công',
-        });
+        message.success('Cập nhật tài khoản thành công');
         router.push('/accounts');
       } else {
-        toast({
-          title: 'Lỗi',
-          description: response.message || 'Có lỗi xảy ra khi cập nhật tài khoản',
-          variant: 'destructive',
-        });
+        message.error(response.message || 'Có lỗi xảy ra khi cập nhật tài khoản');
       }
     } catch (error: unknown) {
       const errorMessage =
         getApiErrorMessage(error, 'Có lỗi xảy ra khi cập nhật tài khoản');
 
-      toast({
-        title: 'Lỗi',
-        description: errorMessage,
-        variant: 'destructive',
-      });
+      message.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -138,26 +123,15 @@ export function AccountEditForm({ accountId }: AccountEditFormProps) {
       const response = await apiClient.resetAccountPassword(accountId);
 
       if (response.success) {
-        toast({
-          title: 'Thành công',
-          description: 'Đặt lại mật khẩu thành công',
-        });
+        message.success('Đặt lại mật khẩu thành công');
       } else {
-        toast({
-          title: 'Lỗi',
-          description: response.message || 'Có lỗi xảy ra khi đặt lại mật khẩu',
-          variant: 'destructive',
-        });
+        message.error(response.message || 'Có lỗi xảy ra khi đặt lại mật khẩu');
       }
     } catch (error: unknown) {
       const errorMessage =
         getApiErrorMessage(error, 'Có lỗi xảy ra khi đặt lại mật khẩu');
 
-      toast({
-        title: 'Lỗi',
-        description: errorMessage,
-        variant: 'destructive',
-      });
+      message.error(errorMessage);
     } finally {
       setResetPasswordLoading(false);
     }

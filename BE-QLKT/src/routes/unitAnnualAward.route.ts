@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import path from 'path';
 import fs from 'fs';
-import * as ctrl from '../controllers/unitAnnualAward.controller';
+import unitAnnualAwardController from '../controllers/unitAnnualAward.controller';
 import {
   verifyToken,
   requireManager,
@@ -25,14 +25,14 @@ const router = Router();
  * @desc    Lấy danh sách khen thưởng đơn vị hằng năm (Admin: tất cả, Manager: đơn vị mình, User: đơn vị mình)
  * @access  ADMIN, MANAGER, USER
  */
-router.get('/', verifyToken, requireAuth, ctrl.list);
+router.get('/', verifyToken, requireAuth, unitAnnualAwardController.list);
 
 /**
  * @route   GET /api/awards/units/annual/template
  * @desc    Tải file mẫu Excel để import khen thưởng đơn vị hằng năm
  * @access  ADMIN
  */
-router.get('/template', verifyToken, requireManager, ctrl.getTemplate);
+router.get('/template', verifyToken, requireManager, unitAnnualAwardController.getTemplate);
 
 /**
  * @route   POST /api/awards/units/annual/import/preview
@@ -44,7 +44,7 @@ router.post(
   verifyToken,
   checkRole([ROLES.ADMIN, ROLES.MANAGER]),
   upload.single('file'),
-  ctrl.previewImport
+  unitAnnualAwardController.previewImport
 );
 
 /**
@@ -62,7 +62,7 @@ router.post(
     getDescription: getLogDescription('unit-annual-awards', 'IMPORT'),
     getResourceId: () => null,
   }),
-  ctrl.confirmImport
+  unitAnnualAwardController.confirmImport
 );
 
 /**
@@ -81,7 +81,7 @@ router.post(
     getDescription: getLogDescription('unit-annual-awards', 'IMPORT'),
     getResourceId: () => null,
   }),
-  ctrl.importFromExcel
+  unitAnnualAwardController.importFromExcel
 );
 
 /**
@@ -89,35 +89,35 @@ router.post(
  * @desc    Xuất danh sách khen thưởng đơn vị hằng năm ra Excel
  * @access  ADMIN, MANAGER
  */
-router.get('/export', verifyToken, checkRole([ROLES.ADMIN, ROLES.MANAGER]), ctrl.exportToExcel);
+router.get('/export', verifyToken, checkRole([ROLES.ADMIN, ROLES.MANAGER]), unitAnnualAwardController.exportToExcel);
 
 /**
  * @route   GET /api/awards/units/annual/statistics
  * @desc    Thống kê khen thưởng đơn vị hằng năm
  * @access  ADMIN, MANAGER
  */
-router.get('/statistics', verifyToken, checkRole([ROLES.ADMIN, ROLES.MANAGER]), ctrl.getStatistics);
+router.get('/statistics', verifyToken, checkRole([ROLES.ADMIN, ROLES.MANAGER]), unitAnnualAwardController.getStatistics);
 
 /**
  * @route   GET /api/awards/units/annual/history
  * @desc    Lấy toàn bộ lịch sử khen thưởng của 1 đơn vị (mảng)
  * @access  ADMIN, MANAGER, USER
  */
-router.get('/history', verifyToken, requireAuth, ctrl.getUnitAnnualAwards);
+router.get('/history', verifyToken, requireAuth, unitAnnualAwardController.getUnitAnnualAwards);
 
 /**
  * @route   GET /api/awards/units/annual/profile/:don_vi_id
  * @desc    Lấy hồ sơ gợi ý hằng năm của đơn vị (tính toán tổng hợp)
  * @access  ADMIN, MANAGER, USER
  */
-router.get('/profile/:don_vi_id', verifyToken, requireAuth, ctrl.getUnitAnnualProfile);
+router.get('/profile/:don_vi_id', verifyToken, requireAuth, unitAnnualAwardController.getUnitAnnualProfile);
 
 /**
  * @route   GET /api/awards/units/annual/:id
  * @desc    Lấy chi tiết khen thưởng đơn vị hằng năm theo ID
  * @access  ADMIN, MANAGER, USER
  */
-router.get('/:id', verifyToken, requireAuth, ctrl.getById);
+router.get('/:id', verifyToken, requireAuth, unitAnnualAwardController.getById);
 
 /**
  * @route   POST /api/awards/units/annual
@@ -134,7 +134,7 @@ router.post(
     getDescription: getLogDescription('unit-annual-awards', 'CREATE'),
     getResourceId: getResourceId.fromResponse(),
   }),
-  ctrl.upsert
+  unitAnnualAwardController.upsert
 );
 
 /**
@@ -152,7 +152,7 @@ router.put(
     getDescription: getLogDescription('unit-annual-awards', 'UPDATE'),
     getResourceId: getResourceId.fromParams('id'),
   }),
-  ctrl.upsert
+  unitAnnualAwardController.upsert
 );
 
 /**
@@ -170,7 +170,7 @@ router.delete(
     getDescription: getLogDescription('unit-annual-awards', 'DELETE'),
     getResourceId: getResourceId.fromParams('id'),
   }),
-  ctrl.remove
+  unitAnnualAwardController.remove
 );
 
 /**
@@ -188,7 +188,7 @@ router.post(
     getDescription: getLogDescription('unit-annual-awards', 'PROPOSE'),
     getResourceId: () => null,
   }),
-  ctrl.propose
+  unitAnnualAwardController.propose
 );
 
 /**
@@ -206,7 +206,7 @@ router.post(
     getDescription: getLogDescription('unit-annual-awards', 'APPROVE'),
     getResourceId: getResourceId.fromParams('id'),
   }),
-  ctrl.approve
+  unitAnnualAwardController.approve
 );
 
 /**
@@ -224,7 +224,7 @@ router.post(
     getDescription: getLogDescription('unit-annual-awards', 'REJECT'),
     getResourceId: getResourceId.fromParams('id'),
   }),
-  ctrl.reject
+  unitAnnualAwardController.reject
 );
 
 /**
@@ -242,7 +242,7 @@ router.post(
     getDescription: getLogDescription('unit-annual-awards', 'RECALCULATE'),
     getResourceId: () => null,
   }),
-  ctrl.recalculate
+  unitAnnualAwardController.recalculate
 );
 
 /**

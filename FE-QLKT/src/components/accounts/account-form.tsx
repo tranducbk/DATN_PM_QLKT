@@ -33,7 +33,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { accountFormSchema } from '@/lib/schemas';
 import type { CreateAccountBody } from '@/lib/api/accounts';
 import { apiClient } from '@/lib/api-client';
-import { useToast } from '@/hooks/use-toast';
+import { App } from 'antd';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -50,7 +50,7 @@ interface AccountFormProps {
 export function AccountForm({ account, personnel = [], onSuccess, onClose }: AccountFormProps) {
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
-  const { toast } = useToast();
+  const { message } = App.useApp();
   const { user } = useAuth();
   const currentUserRole = user?.role || '';
 
@@ -89,17 +89,10 @@ export function AccountForm({ account, personnel = [], onSuccess, onClose }: Acc
       setLoading(true);
       if (account?.id) {
         await apiClient.updateAccount(account.id, values);
-        toast({
-          title: 'Thành công',
-          description: 'Cập nhật tài khoản thành công',
-        });
+        message.success('Cập nhật tài khoản thành công');
       } else {
         if (!values.password) {
-          toast({
-            title: 'Lỗi',
-            description: 'Vui lòng nhập mật khẩu khi tạo tài khoản',
-            variant: 'destructive',
-          });
+          message.error('Vui lòng nhập mật khẩu khi tạo tài khoản');
           return;
         }
         const body: CreateAccountBody = {
@@ -112,19 +105,12 @@ export function AccountForm({ account, personnel = [], onSuccess, onClose }: Acc
           chuc_vu_id: values.chuc_vu_id,
         };
         await apiClient.createAccount(body);
-        toast({
-          title: 'Thành công',
-          description: 'Tạo tài khoản thành công',
-        });
+        message.success('Tạo tài khoản thành công');
       }
       onSuccess?.();
       onClose?.();
     } catch (error) {
-      toast({
-        title: 'Lỗi',
-        description: 'Có lỗi xảy ra',
-        variant: 'destructive',
-      });
+      message.error('Có lỗi xảy ra');
     } finally {
       setLoading(false);
     }

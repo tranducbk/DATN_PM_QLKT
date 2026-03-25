@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/select';
 import { personnelFormSchema } from '@/lib/schemas';
 import { apiClient } from '@/lib/api-client';
-import { useToast } from '@/hooks/use-toast';
+import { App } from 'antd';
 import { getApiErrorMessage } from '@/lib/apiError';
 
 type PersonnelFormValues = z.infer<typeof personnelFormSchema>;
@@ -48,7 +48,7 @@ export function PersonnelForm({
   readOnly = false,
 }: PersonnelFormProps) {
   const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
+  const { message } = App.useApp();
 
   const form = useForm<PersonnelFormValues>({
     resolver: zodResolver(personnelFormSchema),
@@ -69,43 +69,25 @@ export function PersonnelForm({
       if (personnel?.id) {
         const result = await apiClient.updatePersonnel(personnel.id, values);
         if (result.success) {
-          toast({
-            title: 'Thành công',
-            description: 'Cập nhật quân nhân thành công',
-          });
+          message.success('Cập nhật quân nhân thành công');
           onSuccess?.(values);
         } else {
-          toast({
-            title: 'Lỗi',
-            description: result.message || 'Có lỗi xảy ra khi cập nhật quân nhân',
-            variant: 'destructive',
-          });
+          message.error(result.message || 'Có lỗi xảy ra khi cập nhật quân nhân');
         }
       } else {
         const result = await apiClient.createPersonnel(values);
         if (result.success) {
-          toast({
-            title: 'Thành công',
-            description: 'Tạo quân nhân thành công',
-          });
+          message.success('Tạo quân nhân thành công');
           onSuccess?.(values);
         } else {
-          toast({
-            title: 'Lỗi',
-            description: result.message || 'Có lỗi xảy ra khi tạo quân nhân',
-            variant: 'destructive',
-          });
+          message.error(result.message || 'Có lỗi xảy ra khi tạo quân nhân');
         }
       }
     } catch (error: unknown) {
       const errorMessage =
         getApiErrorMessage(error, 'Có lỗi xảy ra');
 
-      toast({
-        title: 'Lỗi',
-        description: errorMessage,
-        variant: 'destructive',
-      });
+      message.error(errorMessage);
     } finally {
       setLoading(false);
     }

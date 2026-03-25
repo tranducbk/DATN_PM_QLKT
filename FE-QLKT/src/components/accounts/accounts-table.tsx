@@ -18,7 +18,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { MoreHorizontal, Trash2 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
-import { useToast } from '@/hooks/use-toast';
+import { App } from 'antd';
 import { formatDate } from '@/lib/utils';
 import {
   AlertDialog,
@@ -39,25 +39,18 @@ interface AccountsTableProps {
 export function AccountsTable({ accounts, onEdit, onRefresh }: AccountsTableProps) {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
+  const { message } = App.useApp();
 
   const handleDelete = async () => {
     if (!deleteId) return;
     try {
       setLoading(true);
       await apiClient.deleteAccount(deleteId);
-      toast({
-        title: 'Thành công',
-        description: 'Xóa tài khoản thành công',
-      });
+      message.success('Xóa tài khoản thành công');
       onRefresh?.();
       setDeleteId(null);
     } catch (error) {
-      toast({
-        title: 'Lỗi',
-        description: 'Có lỗi xảy ra khi xóa',
-        variant: 'destructive',
-      });
+      message.error('Có lỗi xảy ra khi xóa');
     } finally {
       setLoading(false);
     }
