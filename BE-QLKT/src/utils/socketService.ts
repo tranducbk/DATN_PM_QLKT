@@ -8,6 +8,7 @@
 import { Server, Socket } from 'socket.io';
 import { Server as HttpServer } from 'http';
 import jwt from 'jsonwebtoken';
+import { JWT_SECRET } from '../configs';
 
 interface DecodedToken {
   id: string;
@@ -35,7 +36,7 @@ function initSocket(httpServer: HttpServer): Server {
       return next(new Error('Không tìm thấy token'));
     }
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as DecodedToken;
+      const decoded = jwt.verify(token, JWT_SECRET) as DecodedToken;
       (socket as Socket & { user: DecodedToken }).user = decoded;
       next();
     } catch {

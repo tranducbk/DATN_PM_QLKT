@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { ROLES } from '../constants/roles';
 import { prisma } from '../models';
 import { JwtUser } from '../types/express';
+import { JWT_SECRET } from '../configs';
 
 const verifyToken = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   const authHeader = (req.headers.authorization || req.headers.Authorization) as string | undefined;
@@ -18,7 +19,7 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction): Pro
   const token = authHeader.substring(7);
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as JwtUser;
+    const decoded = jwt.verify(token, JWT_SECRET) as JwtUser;
 
     const account = await prisma.taiKhoan.findUnique({
       where: { id: decoded.id },

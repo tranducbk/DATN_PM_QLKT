@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../models';
+import { JWT_SECRET, JWT_REFRESH_SECRET } from '../configs';
 import { AppError, NotFoundError, ValidationError } from '../middlewares/errorHandler';
 import { emitToUser } from '../utils/socketService';
 import type { TaiKhoan } from '../generated/prisma';
@@ -67,7 +68,7 @@ class AuthService {
         role: account.role,
         quan_nhan_id: account.quan_nhan_id,
       },
-      process.env.JWT_SECRET!,
+      JWT_SECRET,
       { expiresIn: '15m' }
     );
 
@@ -76,7 +77,7 @@ class AuthService {
         id: account.id,
         username: account.username,
       },
-      process.env.JWT_REFRESH_SECRET!,
+      JWT_REFRESH_SECRET,
       { expiresIn: '1d' }
     );
 
@@ -117,7 +118,7 @@ class AuthService {
         throw new AppError('Refresh token không được cung cấp', 401);
       }
 
-      const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET!) as JwtPayload;
+      const decoded = jwt.verify(refreshToken, JWT_REFRESH_SECRET) as JwtPayload;
 
       const account = await prisma.taiKhoan.findUnique({
         where: { id: decoded.id },
@@ -134,7 +135,7 @@ class AuthService {
           role: account.role,
           quan_nhan_id: account.quan_nhan_id,
         },
-        process.env.JWT_SECRET!,
+        JWT_SECRET,
         { expiresIn: '15m' }
       );
 
@@ -143,7 +144,7 @@ class AuthService {
           id: account.id,
           username: account.username,
         },
-        process.env.JWT_REFRESH_SECRET!,
+        JWT_REFRESH_SECRET,
         { expiresIn: '1d' }
       );
 
