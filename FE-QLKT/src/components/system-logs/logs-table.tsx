@@ -239,7 +239,7 @@ export function LogsTable({ logs, loading, selectedRowKeys, onSelectionChange }:
               </div>
             </TableHead>
             <TableHead
-              className="w-[100px] font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="w-[140px] font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               onClick={() => handleSort('role')}
             >
               <div className="flex items-center gap-2">
@@ -249,7 +249,7 @@ export function LogsTable({ logs, loading, selectedRowKeys, onSelectionChange }:
               </div>
             </TableHead>
             <TableHead
-              className="w-[120px] font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="w-[160px] font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               onClick={() => handleSort('action')}
             >
               <div className="flex items-center gap-2">
