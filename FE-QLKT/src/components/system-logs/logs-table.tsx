@@ -110,7 +110,6 @@ function getActionColor(action: string): string {
   return 'bg-gray-100/50 text-gray-900 dark:bg-gray-800/60 dark:text-gray-50 border-gray-300 dark:border-gray-600';
 }
 
-
 export function LogsTable({ logs, loading, selectedRowKeys, onSelectionChange }: LogsTableProps) {
   const selectable = !!onSelectionChange;
   const [sortField, setSortField] = useState<SortField>(null);
@@ -203,7 +202,7 @@ export function LogsTable({ logs, loading, selectedRowKeys, onSelectionChange }:
 
   return (
     <div className="overflow-x-auto">
-      <Table className="table-fixed w-full">
+      <Table className="w-full">
         <TableHeader className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
           <TableRow className="bg-gray-50 dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 border-0">
             {selectable && (
@@ -229,7 +228,7 @@ export function LogsTable({ logs, loading, selectedRowKeys, onSelectionChange }:
               </div>
             </TableHead>
             <TableHead
-              className="w-[140px] font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="w-[160px] font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               onClick={() => handleSort('actor')}
             >
               <div className="flex items-center gap-2">
@@ -291,10 +290,14 @@ export function LogsTable({ logs, loading, selectedRowKeys, onSelectionChange }:
                 {format(new Date(log.created_at), 'HH:mm:ss dd/MM/yyyy', { locale: vi })}
               </TableCell>
               <TableCell className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                {log.actor_name || log.actor_id}
+                <div className="whitespace-normal break-words max-w-[160px]">
+                  {log.actor_name || log.actor_id}
+                </div>
               </TableCell>
               <TableCell>
-                <Tag color={getRoleInfo(log.actor_role).color}>{getRoleInfo(log.actor_role).label}</Tag>
+                <Tag color={getRoleInfo(log.actor_role).color}>
+                  {getRoleInfo(log.actor_role).label}
+                </Tag>
               </TableCell>
               <TableCell className="text-sm font-medium text-gray-900 dark:text-gray-100">
                 {getActionLabel(log.action)}
