@@ -1,6 +1,7 @@
 import { createServer } from 'http';
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import 'dotenv/config';
 import { PORT } from './configs';
@@ -54,6 +55,12 @@ app.options('*', cors(corsOptions));
 
 // Trust proxy for production deployment (Render.com, Heroku, etc.)
 app.set('trust proxy', 1);
+
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
