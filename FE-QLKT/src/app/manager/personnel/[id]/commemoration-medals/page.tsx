@@ -22,6 +22,7 @@ import { LeftOutlined, HomeOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/api-client';
 import { useTheme } from '@/components/theme-provider';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
+import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 
 const { Title, Paragraph } = Typography;
 
@@ -74,11 +75,11 @@ export default function ManagerCommemorationMedalsPage() {
               chuc_vu: medal.chuc_vu,
               so_quyet_dinh: medal.so_quyet_dinh,
               ghi_chu: medal.ghi_chu,
-              status: 'DA_NHAN',
+              status: ELIGIBILITY_STATUS.DA_NHAN,
             });
           });
         }
-        setMedals(mappedMedals.filter(m => m.status === 'DA_NHAN'));
+        setMedals(mappedMedals.filter(m => m.status === ELIGIBILITY_STATUS.DA_NHAN));
       }
     } catch (error) {
       message.error('Không thể tải dữ liệu');

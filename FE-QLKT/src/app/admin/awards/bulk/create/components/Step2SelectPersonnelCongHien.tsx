@@ -18,6 +18,7 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import { formatDate } from '@/lib/utils';
 import { apiClient } from '@/lib/api-client';
 import ExcelImportSection from './ExcelImportSection';
+import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 import { PROPOSAL_STATUS } from '@/constants/proposal.constants';
 import * as XLSX from 'xlsx';
 
@@ -237,11 +238,11 @@ export default function Step2SelectPersonnelCongHien({
     if (!profile) return false;
 
     if (rank === 'HANG_NHAT') {
-      return profile.hcbvtq_hang_nhat_status === 'DU_DIEU_KIEN';
+      return profile.hcbvtq_hang_nhat_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN;
     } else if (rank === 'HANG_NHI') {
-      return profile.hcbvtq_hang_nhi_status === 'DU_DIEU_KIEN';
+      return profile.hcbvtq_hang_nhi_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN;
     } else if (rank === 'HANG_BA') {
-      return profile.hcbvtq_hang_ba_status === 'DU_DIEU_KIEN';
+      return profile.hcbvtq_hang_ba_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN;
     }
 
     return false;

@@ -7,6 +7,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/api-client';
 import ServiceHistoryModal from './ServiceHistoryModal';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
+import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 import { formatDate } from '@/lib/utils';
 import type { DateInput } from '@/lib/types';
 
@@ -223,13 +224,13 @@ export default function Step3SetTitlesNienHan({
     record: Personnel,
     serviceProfile: any
   ): string | undefined => {
-    if (serviceProfile?.hccsvv_hang_nhat_status === 'DU_DIEU_KIEN') {
+    if (serviceProfile?.hccsvv_hang_nhat_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN) {
       return 'HCCSVV_HANG_NHAT';
     }
-    if (serviceProfile?.hccsvv_hang_nhi_status === 'DU_DIEU_KIEN') {
+    if (serviceProfile?.hccsvv_hang_nhi_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN) {
       return 'HCCSVV_HANG_NHI';
     }
-    if (serviceProfile?.hccsvv_hang_ba_status === 'DU_DIEU_KIEN') {
+    if (serviceProfile?.hccsvv_hang_ba_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN) {
       return 'HCCSVV_HANG_BA';
     }
     return undefined;

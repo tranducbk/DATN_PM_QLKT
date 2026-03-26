@@ -31,6 +31,7 @@ import { apiClient } from '@/lib/api-client';
 import { formatDate } from '@/lib/utils';
 import { useTheme } from '@/components/theme-provider';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
+import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 
 const { Title, Paragraph } = Typography;
 
@@ -101,7 +102,7 @@ export default function ManagerServiceRewardsPage() {
               ghi_chu: award.ghi_chu,
               danh_hieu: award.danh_hieu,
               rank: rank,
-              status: 'DA_NHAN',
+              status: ELIGIBILITY_STATUS.DA_NHAN,
             });
           }
         });

@@ -35,6 +35,7 @@ import { useTheme } from '@/components/theme-provider';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { useAuth } from '@/contexts/AuthContext';
 import { PROPOSAL_STATUS, getProposalStatusLabel } from '@/constants/proposal.constants';
+import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 
 const { Title, Text } = Typography;
 
@@ -738,7 +739,7 @@ export default function UserProfilePage() {
                         valueRender={() => {
                           const hasReceived = militaryFlag && militaryFlag.hasReceived;
                           if (hasReceived) {
-                            return getStatusTag('DA_NHAN');
+                            return getStatusTag(ELIGIBILITY_STATUS.DA_NHAN);
                           } else {
                             const yearsRequired = 25;
                             const yearsOfService = calculateYearsOfService(
@@ -793,7 +794,7 @@ export default function UserProfilePage() {
                           const hasReceived =
                             commemorationMedals && commemorationMedals.hasReceived;
                           if (hasReceived) {
-                            return getStatusTag('DA_NHAN');
+                            return getStatusTag(ELIGIBILITY_STATUS.DA_NHAN);
                           } else {
                             const yearsRequired = personnelInfo.gioi_tinh === 'NAM' ? 25 : 20;
                             const yearsOfService = calculateYearsOfService(

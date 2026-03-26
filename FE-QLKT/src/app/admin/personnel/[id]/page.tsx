@@ -37,6 +37,7 @@ import { apiClient } from '@/lib/api-client';
 import { formatDate } from '@/lib/utils';
 import styles from './personnel-detail.module.css';
 import { ROLES, getRoleInfo } from '@/constants/roles.constants';
+import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 
 const { Title, Text } = Typography;
 
@@ -326,7 +327,7 @@ export default function PersonnelDetailPage() {
                       />
                       {serviceProfile.hccsvv_hang_ba_ngay && (
                         <Text type="secondary" className="text-xs">
-                          {serviceProfile.hccsvv_hang_ba_status === 'DA_NHAN'
+                          {serviceProfile.hccsvv_hang_ba_status === ELIGIBILITY_STATUS.DA_NHAN
                             ? `Năm ${new Date(serviceProfile.hccsvv_hang_ba_ngay).getFullYear()}`
                             : formatDate(serviceProfile.hccsvv_hang_ba_ngay)}
                         </Text>
@@ -343,7 +344,7 @@ export default function PersonnelDetailPage() {
                       />
                       {serviceProfile.hccsvv_hang_nhi_ngay && (
                         <Text type="secondary" className="text-xs">
-                          {serviceProfile.hccsvv_hang_nhi_status === 'DA_NHAN'
+                          {serviceProfile.hccsvv_hang_nhi_status === ELIGIBILITY_STATUS.DA_NHAN
                             ? `Năm ${new Date(serviceProfile.hccsvv_hang_nhi_ngay).getFullYear()}`
                             : formatDate(serviceProfile.hccsvv_hang_nhi_ngay)}
                         </Text>
@@ -360,7 +361,7 @@ export default function PersonnelDetailPage() {
                       />
                       {serviceProfile.hccsvv_hang_nhat_ngay && (
                         <Text type="secondary" className="text-xs">
-                          {serviceProfile.hccsvv_hang_nhat_status === 'DA_NHAN'
+                          {serviceProfile.hccsvv_hang_nhat_status === ELIGIBILITY_STATUS.DA_NHAN
                             ? `Năm ${new Date(serviceProfile.hccsvv_hang_nhat_ngay).getFullYear()}`
                             : formatDate(serviceProfile.hccsvv_hang_nhat_ngay)}
                         </Text>
@@ -470,7 +471,7 @@ export default function PersonnelDetailPage() {
                         valueRender={() => {
                           const hasReceived = militaryFlag && militaryFlag.hasReceived;
                           if (hasReceived) {
-                            return getStatusTag('DA_NHAN');
+                            return getStatusTag(ELIGIBILITY_STATUS.DA_NHAN);
                           } else {
                             const yearsRequired = 25;
                             const yearsOfService = calculateYearsOfService(personnel.ngay_nhap_ngu);
@@ -523,7 +524,7 @@ export default function PersonnelDetailPage() {
                           const hasReceived =
                             commemorationMedals && commemorationMedals.hasReceived;
                           if (hasReceived) {
-                            return getStatusTag('DA_NHAN');
+                            return getStatusTag(ELIGIBILITY_STATUS.DA_NHAN);
                           } else {
                             const yearsRequired = personnel.gioi_tinh === 'NAM' ? 25 : 20;
                             const yearsOfService = calculateYearsOfService(personnel.ngay_nhap_ngu);

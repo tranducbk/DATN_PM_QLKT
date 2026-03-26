@@ -45,6 +45,7 @@ import { useTheme } from '@/components/theme-provider';
 import { useAuth } from '@/contexts/AuthContext';
 import '@/lib/chart-config';
 import { PieChart } from '@/components/charts';
+import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -149,8 +150,8 @@ export default function UserDashboard() {
 
   // Calculate progress for medals
   const getProgressData = (status: string, current: number, target: number) => {
-    if (status === 'DA_NHAN') return { percent: 100, color: '#52c41a' };
-    if (status === 'DU_DIEU_KIEN') return { percent: 100, color: '#1890ff' };
+    if (status === ELIGIBILITY_STATUS.DA_NHAN) return { percent: 100, color: '#52c41a' };
+    if (status === ELIGIBILITY_STATUS.DU_DIEU_KIEN) return { percent: 100, color: '#1890ff' };
     const percent = Math.min((current / target) * 100, 100);
     return { percent, color: '#faad14' };
   };
@@ -751,16 +752,16 @@ export default function UserDashboard() {
                         <Text strong>Hạng Ba (120 tháng)</Text>
                         <Badge
                           status={
-                            serviceProfile.hccsvv_hang_ba_status === 'DA_NHAN'
+                            serviceProfile.hccsvv_hang_ba_status === ELIGIBILITY_STATUS.DA_NHAN
                               ? 'success'
-                              : serviceProfile.hccsvv_hang_ba_status === 'DU_DIEU_KIEN'
+                              : serviceProfile.hccsvv_hang_ba_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN
                                 ? 'processing'
                                 : 'default'
                           }
                           text={
-                            serviceProfile.hccsvv_hang_ba_status === 'DA_NHAN'
+                            serviceProfile.hccsvv_hang_ba_status === ELIGIBILITY_STATUS.DA_NHAN
                               ? 'Đã nhận'
-                              : serviceProfile.hccsvv_hang_ba_status === 'DU_DIEU_KIEN'
+                              : serviceProfile.hccsvv_hang_ba_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN
                                 ? 'Đủ điều kiện'
                                 : 'Chưa đủ'
                           }
@@ -782,16 +783,16 @@ export default function UserDashboard() {
                         <Text strong>Hạng Nhì (180 tháng)</Text>
                         <Badge
                           status={
-                            serviceProfile.hccsvv_hang_nhi_status === 'DA_NHAN'
+                            serviceProfile.hccsvv_hang_nhi_status === ELIGIBILITY_STATUS.DA_NHAN
                               ? 'success'
-                              : serviceProfile.hccsvv_hang_nhi_status === 'DU_DIEU_KIEN'
+                              : serviceProfile.hccsvv_hang_nhi_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN
                                 ? 'processing'
                                 : 'default'
                           }
                           text={
-                            serviceProfile.hccsvv_hang_nhi_status === 'DA_NHAN'
+                            serviceProfile.hccsvv_hang_nhi_status === ELIGIBILITY_STATUS.DA_NHAN
                               ? 'Đã nhận'
-                              : serviceProfile.hccsvv_hang_nhi_status === 'DU_DIEU_KIEN'
+                              : serviceProfile.hccsvv_hang_nhi_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN
                                 ? 'Đủ điều kiện'
                                 : 'Chưa đủ'
                           }
@@ -813,16 +814,16 @@ export default function UserDashboard() {
                         <Text strong>Hạng Nhất (240 tháng)</Text>
                         <Badge
                           status={
-                            serviceProfile.hccsvv_hang_nhat_status === 'DA_NHAN'
+                            serviceProfile.hccsvv_hang_nhat_status === ELIGIBILITY_STATUS.DA_NHAN
                               ? 'success'
-                              : serviceProfile.hccsvv_hang_nhat_status === 'DU_DIEU_KIEN'
+                              : serviceProfile.hccsvv_hang_nhat_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN
                                 ? 'processing'
                                 : 'default'
                           }
                           text={
-                            serviceProfile.hccsvv_hang_nhat_status === 'DA_NHAN'
+                            serviceProfile.hccsvv_hang_nhat_status === ELIGIBILITY_STATUS.DA_NHAN
                               ? 'Đã nhận'
-                              : serviceProfile.hccsvv_hang_nhat_status === 'DU_DIEU_KIEN'
+                              : serviceProfile.hccsvv_hang_nhat_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN
                                 ? 'Đủ điều kiện'
                                 : 'Chưa đủ'
                           }
@@ -907,16 +908,16 @@ export default function UserDashboard() {
                               <Text strong>Hạng Ba ({targetMonths} tháng)</Text>
                               <Badge
                                 status={
-                                  contributionProfile.hcbvtq_hang_ba_status === 'DA_NHAN'
+                                  contributionProfile.hcbvtq_hang_ba_status === ELIGIBILITY_STATUS.DA_NHAN
                                     ? 'success'
-                                    : contributionProfile.hcbvtq_hang_ba_status === 'DU_DIEU_KIEN'
+                                    : contributionProfile.hcbvtq_hang_ba_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN
                                       ? 'processing'
                                       : 'default'
                                 }
                                 text={
-                                  contributionProfile.hcbvtq_hang_ba_status === 'DA_NHAN'
+                                  contributionProfile.hcbvtq_hang_ba_status === ELIGIBILITY_STATUS.DA_NHAN
                                     ? 'Đã nhận'
-                                    : contributionProfile.hcbvtq_hang_ba_status === 'DU_DIEU_KIEN'
+                                    : contributionProfile.hcbvtq_hang_ba_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN
                                       ? 'Đủ điều kiện'
                                       : 'Chưa đủ'
                                 }
@@ -941,16 +942,16 @@ export default function UserDashboard() {
                               <Text strong>Hạng Nhì ({targetMonths} tháng)</Text>
                               <Badge
                                 status={
-                                  contributionProfile.hcbvtq_hang_nhi_status === 'DA_NHAN'
+                                  contributionProfile.hcbvtq_hang_nhi_status === ELIGIBILITY_STATUS.DA_NHAN
                                     ? 'success'
-                                    : contributionProfile.hcbvtq_hang_nhi_status === 'DU_DIEU_KIEN'
+                                    : contributionProfile.hcbvtq_hang_nhi_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN
                                       ? 'processing'
                                       : 'default'
                                 }
                                 text={
-                                  contributionProfile.hcbvtq_hang_nhi_status === 'DA_NHAN'
+                                  contributionProfile.hcbvtq_hang_nhi_status === ELIGIBILITY_STATUS.DA_NHAN
                                     ? 'Đã nhận'
-                                    : contributionProfile.hcbvtq_hang_nhi_status === 'DU_DIEU_KIEN'
+                                    : contributionProfile.hcbvtq_hang_nhi_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN
                                       ? 'Đủ điều kiện'
                                       : 'Chưa đủ'
                                 }
@@ -975,16 +976,16 @@ export default function UserDashboard() {
                               <Text strong>Hạng Nhất ({targetMonths} tháng)</Text>
                               <Badge
                                 status={
-                                  contributionProfile.hcbvtq_hang_nhat_status === 'DA_NHAN'
+                                  contributionProfile.hcbvtq_hang_nhat_status === ELIGIBILITY_STATUS.DA_NHAN
                                     ? 'success'
-                                    : contributionProfile.hcbvtq_hang_nhat_status === 'DU_DIEU_KIEN'
+                                    : contributionProfile.hcbvtq_hang_nhat_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN
                                       ? 'processing'
                                       : 'default'
                                 }
                                 text={
-                                  contributionProfile.hcbvtq_hang_nhat_status === 'DA_NHAN'
+                                  contributionProfile.hcbvtq_hang_nhat_status === ELIGIBILITY_STATUS.DA_NHAN
                                     ? 'Đã nhận'
-                                    : contributionProfile.hcbvtq_hang_nhat_status === 'DU_DIEU_KIEN'
+                                    : contributionProfile.hcbvtq_hang_nhat_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN
                                       ? 'Đủ điều kiện'
                                       : 'Chưa đủ'
                                 }

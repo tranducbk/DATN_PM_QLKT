@@ -3,6 +3,8 @@
 import { Modal, Descriptions, Typography, Spin, Tag, Divider } from 'antd';
 import { HistoryOutlined } from '@ant-design/icons';
 
+import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
+
 const { Text, Title } = Typography;
 
 const HCCSVV_ROWS = [
@@ -60,7 +62,7 @@ export default function ServiceHistoryModal({
                 return (
                   <Descriptions.Item key={danhHieu} label={label}>
                     <Tag color={config.color}>{config.text}</Tag>
-                    {status === 'DA_NHAN' && namNhan[danhHieu] && (
+                    {status === ELIGIBILITY_STATUS.DA_NHAN && namNhan[danhHieu] && (
                       <Text type="secondary" style={{ marginLeft: 8 }}>
                         Năm {namNhan[danhHieu]}
                       </Text>

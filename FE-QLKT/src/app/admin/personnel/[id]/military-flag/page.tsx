@@ -31,6 +31,7 @@ import { apiClient } from '@/lib/api-client';
 import { formatDate } from '@/lib/utils';
 import { useTheme } from '@/components/theme-provider';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
+import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 
 const { Title, Paragraph } = Typography;
 
@@ -91,7 +92,7 @@ export default function AdminMilitaryFlagPage() {
               so_quyet_dinh: item.so_quyet_dinh,
               ghi_chu: item.ghi_chu,
               ngay_nhan: item.createdAt,
-              status: 'DA_NHAN',
+              status: ELIGIBILITY_STATUS.DA_NHAN,
             });
           });
         }

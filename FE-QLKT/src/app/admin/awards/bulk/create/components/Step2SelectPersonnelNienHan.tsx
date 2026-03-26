@@ -18,6 +18,7 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import { formatDate } from '@/lib/utils';
 import type { DateInput } from '@/lib/types';
 import { apiClient } from '@/lib/api-client';
+import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 import ExcelImportSection from './ExcelImportSection';
 import * as XLSX from 'xlsx';
 
@@ -281,9 +282,9 @@ export default function Step2SelectPersonnelNienHan({
     if (!eligibility) return false;
 
     const serviceProfile = serviceProfilesMap[record.id];
-    const hasHangBa = serviceProfile?.hccsvv_hang_ba_status === 'DA_NHAN';
-    const hasHangNhi = serviceProfile?.hccsvv_hang_nhi_status === 'DA_NHAN';
-    const hasHangNhat = serviceProfile?.hccsvv_hang_nhat_status === 'DA_NHAN';
+    const hasHangBa = serviceProfile?.hccsvv_hang_ba_status === ELIGIBILITY_STATUS.DA_NHAN;
+    const hasHangNhi = serviceProfile?.hccsvv_hang_nhi_status === ELIGIBILITY_STATUS.DA_NHAN;
+    const hasHangNhat = serviceProfile?.hccsvv_hang_nhat_status === ELIGIBILITY_STATUS.DA_NHAN;
 
     // Nếu chưa nhận Hạng Ba, chỉ có thể đề xuất nếu đủ 10 năm
     if (!hasHangBa) {
@@ -304,7 +305,7 @@ export default function Step2SelectPersonnelNienHan({
     return false;
   };
 
-  // Hàm lấy priority sắp xếp: 0=đủ điều kiện, 1=đang chờ duyệt, 2=đã nhận đủ, 3=không đủ điều kiện
+  // Priority: 0=đủ điều kiện đề xuất hạng tiếp, 2=đã nhận Hạng Nhất, 3=không đủ điều kiện
   const getSortPriority = (record: Personnel): number => {
     // Kiểm tra giới tính
     const missingGender =
@@ -315,16 +316,10 @@ export default function Step2SelectPersonnelNienHan({
     if (!record.ngay_nhap_ngu) return 3;
 
     const serviceProfile = serviceProfilesMap[record.id];
-    const hasHangNhat = serviceProfile?.hccsvv_hang_nhat_status === 'DA_NHAN';
+    const hasHangNhat = serviceProfile?.hccsvv_hang_nhat_status === ELIGIBILITY_STATUS.DA_NHAN;
 
     // Đã nhận đủ tất cả hạng
     if (hasHangNhat) return 2;
-
-    // Kiểm tra có đang chờ duyệt không (PENDING status)
-    const pendingBa = serviceProfile?.hccsvv_hang_ba_status === 'DANG_CHO_DUYET';
-    const pendingNhi = serviceProfile?.hccsvv_hang_nhi_status === 'DANG_CHO_DUYET';
-    const pendingNhat = serviceProfile?.hccsvv_hang_nhat_status === 'DANG_CHO_DUYET';
-    if (pendingBa || pendingNhi || pendingNhat) return 1;
 
     // Kiểm tra đủ điều kiện đề xuất hạng tiếp theo
     if (canProposeNextRank(record)) return 0;
@@ -332,7 +327,7 @@ export default function Step2SelectPersonnelNienHan({
     return 3; // Không đủ điều kiện
   };
 
-  // Sắp xếp: đủ điều kiện → đang chờ duyệt → đã nhận đủ → không đủ điều kiện
+  // Sắp xếp: đủ điều kiện → đã nhận đủ → không đủ điều kiện
   const sortedPersonnel = [...filteredPersonnel].sort((a, b) => {
     return getSortPriority(a) - getSortPriority(b);
   });
@@ -474,9 +469,9 @@ export default function Step2SelectPersonnelNienHan({
         if (!eligibility) return <Text type="secondary">-</Text>;
 
         const serviceProfile = serviceProfilesMap[record.id];
-        const hasHangBa = serviceProfile?.hccsvv_hang_ba_status === 'DA_NHAN';
-        const hasHangNhi = serviceProfile?.hccsvv_hang_nhi_status === 'DA_NHAN';
-        const hasHangNhat = serviceProfile?.hccsvv_hang_nhat_status === 'DA_NHAN';
+        const hasHangBa = serviceProfile?.hccsvv_hang_ba_status === ELIGIBILITY_STATUS.DA_NHAN;
+        const hasHangNhi = serviceProfile?.hccsvv_hang_nhi_status === ELIGIBILITY_STATUS.DA_NHAN;
+        const hasHangNhat = serviceProfile?.hccsvv_hang_nhat_status === ELIGIBILITY_STATUS.DA_NHAN;
 
         const { hangBa, hangNhi, hangNhat } = eligibility;
 
@@ -798,9 +793,9 @@ export default function Step2SelectPersonnelNienHan({
       } else if (!canPropose) {
         const eligibility = checkHCCSVVEligibility(record);
         const serviceProfile = serviceProfilesMap[record.id];
-        const hasHangBa = serviceProfile?.hccsvv_hang_ba_status === 'DA_NHAN';
-        const hasHangNhi = serviceProfile?.hccsvv_hang_nhi_status === 'DA_NHAN';
-        const hasHangNhat = serviceProfile?.hccsvv_hang_nhat_status === 'DA_NHAN';
+        const hasHangBa = serviceProfile?.hccsvv_hang_ba_status === ELIGIBILITY_STATUS.DA_NHAN;
+        const hasHangNhi = serviceProfile?.hccsvv_hang_nhi_status === ELIGIBILITY_STATUS.DA_NHAN;
+        const hasHangNhat = serviceProfile?.hccsvv_hang_nhat_status === ELIGIBILITY_STATUS.DA_NHAN;
 
         if (!hasHangBa && eligibility && !eligibility.hangBa.eligible) {
           title = `Chưa đủ 10 năm để đề xuất Hạng Ba. Còn ${eligibility.hangBa.yearsNeeded} năm.`;
@@ -846,9 +841,9 @@ export default function Step2SelectPersonnelNienHan({
           }
           const eligibility = checkHCCSVVEligibility(record);
           const serviceProfile = serviceProfilesMap[record.id];
-          const hasHangBa = serviceProfile?.hccsvv_hang_ba_status === 'DA_NHAN';
-          const hasHangNhi = serviceProfile?.hccsvv_hang_nhi_status === 'DA_NHAN';
-          const hasHangNhat = serviceProfile?.hccsvv_hang_nhat_status === 'DA_NHAN';
+          const hasHangBa = serviceProfile?.hccsvv_hang_ba_status === ELIGIBILITY_STATUS.DA_NHAN;
+          const hasHangNhi = serviceProfile?.hccsvv_hang_nhi_status === ELIGIBILITY_STATUS.DA_NHAN;
+          const hasHangNhat = serviceProfile?.hccsvv_hang_nhat_status === ELIGIBILITY_STATUS.DA_NHAN;
 
           if (!hasHangBa && eligibility && !eligibility.hangBa.eligible) {
             message.warning(
@@ -1054,9 +1049,9 @@ export default function Step2SelectPersonnelNienHan({
           if (!canProposeNextRank(record)) {
             const eligibility = checkHCCSVVEligibility(record);
             const serviceProfile = serviceProfilesMap[record.id];
-            const hasHangBa = serviceProfile?.hccsvv_hang_ba_status === 'DA_NHAN';
-            const hasHangNhi = serviceProfile?.hccsvv_hang_nhi_status === 'DA_NHAN';
-            const hasHangNhat = serviceProfile?.hccsvv_hang_nhat_status === 'DA_NHAN';
+            const hasHangBa = serviceProfile?.hccsvv_hang_ba_status === ELIGIBILITY_STATUS.DA_NHAN;
+            const hasHangNhi = serviceProfile?.hccsvv_hang_nhi_status === ELIGIBILITY_STATUS.DA_NHAN;
+            const hasHangNhat = serviceProfile?.hccsvv_hang_nhat_status === ELIGIBILITY_STATUS.DA_NHAN;
 
             // Nếu chưa nhận Hạng Ba và chưa đủ 10 năm
             if (!hasHangBa && eligibility && !eligibility.hangBa.eligible) {
