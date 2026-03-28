@@ -137,9 +137,23 @@ class DashboardController {
 
     const last30Days = buildDateStats(getLastNDays(30), countByDate(newAccounts));
 
+    const [totalAccounts, totalPersonnel, totalUnits, totalLogs] = await Promise.all([
+      prisma.taiKhoan.count(),
+      prisma.quanNhan.count(),
+      prisma.coQuanDonVi.count().then(async coQuan => {
+        const donVi = await prisma.donViTrucThuoc.count();
+        return coQuan + donVi;
+      }),
+      prisma.systemLog.count(),
+    ]);
+
     return ResponseHelper.success(res, {
       message: 'Lấy thống kê thành công',
       data: {
+        totalAccounts,
+        totalPersonnel,
+        totalUnits,
+        totalLogs,
         roleDistribution: roleDistribution.map(item => ({
           role: item.role,
           count: item._count.id,

@@ -419,11 +419,6 @@ export default function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutP
           label: <Link href="/manager/adhoc-awards">Khen thưởng đột xuất</Link>,
         },
         {
-          key: 'system-logs',
-          icon: <HistoryOutlined />,
-          label: <Link href="/manager/system-logs">Nhật ký hệ thống</Link>,
-        },
-        {
           key: 'profile',
           icon: <SolutionOutlined />,
           label: (
@@ -436,6 +431,11 @@ export default function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutP
           key: 'profile-edit',
           icon: <UserOutlined />,
           label: <Link href="/manager/profile/edit">Thông tin cá nhân</Link>,
+        },
+        {
+          key: 'system-logs',
+          icon: <HistoryOutlined />,
+          label: <Link href="/manager/system-logs">Nhật ký hệ thống</Link>,
         },
       ];
     }

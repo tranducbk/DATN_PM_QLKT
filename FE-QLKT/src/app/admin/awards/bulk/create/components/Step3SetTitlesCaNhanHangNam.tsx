@@ -13,6 +13,7 @@ import {
   Tabs,
   Tag,
   Input,
+  Empty,
 } from 'antd';
 import { EditOutlined, HistoryOutlined, EyeOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
@@ -557,7 +558,7 @@ export default function Step3SetTitlesCaNhanHangNam({
         }}
         bordered
         locale={{
-          emptyText: 'Không có dữ liệu',
+          emptyText: <Empty description="Không có dữ liệu" />,
         }}
       />
 

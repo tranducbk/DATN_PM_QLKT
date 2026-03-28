@@ -1,6 +1,6 @@
 'use client';
 
-import { Modal, Descriptions, Tag, Table, Button, Space, Typography, Divider } from 'antd';
+import { Modal, Descriptions, Tag, Table, Button, Space, Typography, Divider, Empty } from 'antd';
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
@@ -332,7 +332,7 @@ export default function ProposalDetailModal({
             bordered
             scroll={{ x: 800 }}
             locale={{
-              emptyText: 'Không có dữ liệu',
+              emptyText: <Empty description="Không có dữ liệu" />,
             }}
           />
         </div>

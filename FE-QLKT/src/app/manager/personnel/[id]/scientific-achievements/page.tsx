@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Card, Button, Table, Modal, Space, Typography, Breadcrumb, message, Spin } from 'antd';
+import { Card, Button, Table, Modal, Space, Typography, Breadcrumb, message, Spin, Empty } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { LeftOutlined, HomeOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/apiClient';
@@ -165,7 +165,7 @@ export default function ManagerScientificAchievementsPage() {
             Thành tích khoa học
           </Title>
           {personnel && (
-            <Paragraph style={{ fontSize: 14, color: '#666', marginBottom: 0 }}>
+            <Paragraph type="secondary" style={{ fontSize: 14, marginBottom: 0 }}>
               Quân nhân: {personnel.ho_ten}
             </Paragraph>
           )}
@@ -177,7 +177,7 @@ export default function ManagerScientificAchievementsPage() {
         <Card>
           <div style={{ textAlign: 'center', padding: '40px 0' }}>
             <Spin size="large" />
-            <div style={{ marginTop: 16, color: '#666' }}>Đang tải dữ liệu...</div>
+            <div style={{ marginTop: 16 }}>Đang tải dữ liệu...</div>
           </div>
         </Card>
       ) : (
@@ -188,7 +188,7 @@ export default function ManagerScientificAchievementsPage() {
             rowKey="id"
             pagination={false}
             locale={{
-              emptyText: 'Chưa có dữ liệu thành tích khoa học',
+              emptyText: <Empty description="Chưa có dữ liệu thành tích khoa học" />,
             }}
           />
         </Card>

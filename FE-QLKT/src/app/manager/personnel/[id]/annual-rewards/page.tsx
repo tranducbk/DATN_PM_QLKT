@@ -16,6 +16,7 @@ import {
   ConfigProvider,
   theme as antdTheme,
   Tag,
+  Empty,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { LeftOutlined, HomeOutlined } from '@ant-design/icons';
@@ -219,7 +220,7 @@ export default function ManagerAnnualRewardsPage() {
                   {record.so_quyet_dinh}
                 </a>
               ) : (
-                <span style={{ color: '#999', fontWeight: 400 }}>Chưa có</span>
+                <span style={{ fontWeight: 400 }}>Chưa có</span>
               )}
             </div>
           );
@@ -245,7 +246,7 @@ export default function ManagerAnnualRewardsPage() {
                   {record.so_quyet_dinh_bkbqp}
                 </a>
               ) : (
-                <span style={{ color: '#999', fontWeight: 400 }}>Chưa có</span>
+                <span style={{ fontWeight: 400 }}>Chưa có</span>
               )}
             </div>
           );
@@ -272,7 +273,7 @@ export default function ManagerAnnualRewardsPage() {
                   {record.so_quyet_dinh_cstdtq}
                 </a>
               ) : (
-                <span style={{ color: '#999', fontWeight: 400 }}>Chưa có</span>
+                <span style={{ fontWeight: 400 }}>Chưa có</span>
               )}
             </div>
           );
@@ -299,7 +300,7 @@ export default function ManagerAnnualRewardsPage() {
                   {record.so_quyet_dinh_bkttcp}
                 </a>
               ) : (
-                <span style={{ color: '#999', fontWeight: 400 }}>Chưa có</span>
+                <span style={{ fontWeight: 400 }}>Chưa có</span>
               )}
             </div>
           );
@@ -358,7 +359,7 @@ export default function ManagerAnnualRewardsPage() {
               Khen thưởng hàng năm
             </Title>
             {personnel && (
-              <Paragraph style={{ fontSize: 14, color: '#666', marginBottom: 0 }}>
+              <Paragraph type="secondary" style={{ fontSize: 14, marginBottom: 0 }}>
                 Quân nhân: {personnel.ho_ten}
               </Paragraph>
             )}
@@ -370,7 +371,7 @@ export default function ManagerAnnualRewardsPage() {
           <Card>
             <div style={{ textAlign: 'center', padding: '40px 0' }}>
               <Spin size="large" />
-              <div style={{ marginTop: 16, color: '#666' }}>Đang tải dữ liệu...</div>
+              <div style={{ marginTop: 16 }}>Đang tải dữ liệu...</div>
             </div>
           </Card>
         ) : (
@@ -382,7 +383,7 @@ export default function ManagerAnnualRewardsPage() {
               pagination={false}
               scroll={{ x: 950 }}
               locale={{
-                emptyText: 'Chưa có dữ liệu khen thưởng',
+                emptyText: <Empty description="Chưa có dữ liệu khen thưởng hằng năm" />,
               }}
             />
           </Card>

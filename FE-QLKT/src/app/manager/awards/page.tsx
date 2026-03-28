@@ -14,6 +14,7 @@ import {
   Spin,
   message,
   Tabs,
+  Empty,
 } from 'antd';
 import { getApiErrorMessage } from '@/lib/apiError';
 
@@ -649,11 +650,6 @@ export default function AdminAwardsPage() {
             Danh sách khen thưởng tất cả các đơn vị
           </Paragraph>
         </div>
-        {activeTab === 'annual' && (
-          <Button icon={<DownloadOutlined />} onClick={handleDownloadTemplate} size="large">
-            Tải file mẫu
-          </Button>
-        )}
       </div>
 
       {/* Award Detail Modal */}
@@ -899,9 +895,10 @@ export default function AdminAwardsPage() {
         <Card title={`Danh sách khen thưởng (${filteredAwards.length})`}>
           <Spin spinning={loading} tip="Đang tải...">
             {!loading && awards.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '48px 0', color: '#8c8c8c' }}>
-                <p>Chưa có dữ liệu khen thưởng</p>
-              </div>
+              <Empty
+                description="Chưa có dữ liệu khen thưởng"
+                style={{ padding: '48px 0' }}
+              />
             ) : (
               <Table
                 columns={columns.filter(col => {

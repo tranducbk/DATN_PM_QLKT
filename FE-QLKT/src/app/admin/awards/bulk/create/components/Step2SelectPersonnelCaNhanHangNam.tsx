@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Table, Input, Select, Space, Alert, Typography, InputNumber, Divider } from 'antd';
+import { Table, Input, Select, Space, Alert, Typography, InputNumber, Divider, Empty } from 'antd';
 import { SearchOutlined, TeamOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
@@ -500,7 +500,7 @@ export default function Step2SelectPersonnelCaNhanHangNam({
         }}
         bordered
         locale={{
-          emptyText: 'Không có dữ liệu quân nhân',
+          emptyText: <Empty description="Không có dữ liệu quân nhân" />,
         }}
       />
     </div>

@@ -436,7 +436,6 @@ export default function BulkRewardDetailsPage() {
                   setDecisionModalVisible(true);
                 }}
                 style={{
-                  color: '#999',
                   fontWeight: 400,
                   fontStyle: 'italic',
                   opacity: record.isEligible ? 0.6 : 0.4,

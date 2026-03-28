@@ -132,7 +132,7 @@ export default function PersonnelImportPage() {
         <Title level={2} style={{ marginTop: 8, marginBottom: 8 }}>
           Import dữ liệu Quân nhân
         </Title>
-        <Paragraph style={{ fontSize: 14, color: '#666', marginBottom: 0 }}>
+        <Paragraph type="secondary" style={{ fontSize: 14, marginBottom: 0 }}>
           Import dữ liệu quân nhân từ file Excel
         </Paragraph>
       </div>
@@ -158,7 +158,7 @@ export default function PersonnelImportPage() {
                 <p className="ant-upload-text" style={{ fontSize: 16, fontWeight: 500 }}>
                   Chọn file Excel
                 </p>
-                <p className="ant-upload-hint" style={{ color: '#666' }}>
+                <p className="ant-upload-hint">
                   Kéo thả file hoặc click để chọn
                 </p>
               </Dragger>

@@ -16,6 +16,7 @@ import {
   Tag,
   Table,
   Input,
+  Empty,
 } from 'antd';
 import { getApiErrorMessage } from '@/lib/apiError';
 
@@ -403,7 +404,7 @@ export default function SuperAdminAddAwardsPage() {
                 size="small"
                 bordered
                 scroll={{ x: 800 }}
-                locale={{ emptyText: 'Không có dữ liệu' }}
+                locale={{ emptyText: <Empty description="Không có dữ liệu" /> }}
               />
             </Card>
 

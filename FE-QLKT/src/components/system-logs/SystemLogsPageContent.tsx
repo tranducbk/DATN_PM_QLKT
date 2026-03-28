@@ -251,7 +251,7 @@ export default function SystemLogsPageContent({ basePath }: SystemLogsPageConten
               key={label}
               hoverable
               style={{ borderRadius: '10px', boxShadow: cardShadow, transition: 'all 0.3s ease' }}
-              bodyStyle={{ padding: '20px' }}
+              styles={{ body: { padding: '20px' } }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                 <div

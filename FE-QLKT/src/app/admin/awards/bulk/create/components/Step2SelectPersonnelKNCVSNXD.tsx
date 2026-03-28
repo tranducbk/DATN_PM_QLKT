@@ -12,6 +12,7 @@ import {
   message,
   Tag,
   Divider,
+  Empty,
 } from 'antd';
 import { SearchOutlined, TrophyOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
@@ -850,7 +851,7 @@ export default function Step2SelectPersonnelKNCVSNXD({
         }}
         bordered
         locale={{
-          emptyText: 'Không có dữ liệu quân nhân',
+          emptyText: <Empty description="Không có dữ liệu quân nhân" />,
         }}
       />
     </div>

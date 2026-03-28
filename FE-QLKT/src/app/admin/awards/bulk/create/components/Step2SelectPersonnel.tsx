@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Table, Input, Select, Space, Alert, Typography, Tag, InputNumber } from 'antd';
+import { Table, Input, Select, Space, Alert, Typography, Tag, InputNumber, Empty } from 'antd';
 import { SearchOutlined, TeamOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
@@ -422,7 +422,7 @@ export default function Step2SelectPersonnel({
         bordered
         scroll={{ x: proposalType === PROPOSAL_TYPES.NIEN_HAN ? 1650 : 1200 }}
         locale={{
-          emptyText: 'Không có dữ liệu quân nhân',
+          emptyText: <Empty description="Không có dữ liệu quân nhân" />,
         }}
       />
     </div>

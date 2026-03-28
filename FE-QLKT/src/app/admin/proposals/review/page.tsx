@@ -374,7 +374,7 @@ export default function ProposalReviewPage() {
                       : 'Đề xuất đã bị từ chối'
               }
               extra={
-                <Paragraph style={{ margin: 0, color: '#666' }}>
+                <Paragraph type="secondary" style={{ margin: 0 }}>
                   {activeTab === 'all'
                     ? 'Danh sách tất cả các đề xuất'
                     : activeTab === 'pending'
@@ -386,7 +386,7 @@ export default function ProposalReviewPage() {
               }
             >
               {/* Filter Section */}
-              <Card size="small" style={{ marginBottom: 16 }} bodyStyle={{ padding: '16px' }}>
+              <Card size="small" style={{ marginBottom: 16 }} styles={{ body: { padding: '16px' } }}>
                 <Row gutter={[16, 16]} align="bottom">
                   <Col xs={24} sm={12} md={6}>
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -395,7 +395,6 @@ export default function ProposalReviewPage() {
                           display: 'block',
                           marginBottom: 4,
                           fontSize: 12,
-                          color: '#666',
                         }}
                       >
                         <FilterOutlined /> Năm
@@ -424,7 +423,6 @@ export default function ProposalReviewPage() {
                           display: 'block',
                           marginBottom: 4,
                           fontSize: 12,
-                          color: '#666',
                         }}
                       >
                         <FilterOutlined /> Loại đề xuất
@@ -473,25 +471,20 @@ export default function ProposalReviewPage() {
               {loading ? (
                 <div style={{ textAlign: 'center', padding: '48px 0' }}>
                   <Spin indicator={<LoadingOutlined style={{ fontSize: 32 }} spin />} />
-                  <div style={{ marginTop: '12px', color: '#666' }}>Đang tải...</div>
+                  <div style={{ marginTop: '12px' }}><Typography.Text type="secondary">Đang tải...</Typography.Text></div>
                 </div>
               ) : filteredProposals.length === 0 ? (
                 <Empty
-                  image={<WarningOutlined style={{ fontSize: 48, color: '#d9d9d9' }} />}
                   description={
-                    <div>
-                      <div style={{ fontWeight: 500 }}>Không có đề xuất nào</div>
-                      <div style={{ fontSize: '14px', marginTop: '4px' }}>
-                        {activeTab === 'all'
-                          ? 'Chưa có đề xuất nào'
-                          : activeTab === 'pending'
-                            ? 'Chưa có đề xuất chờ phê duyệt'
-                            : activeTab === 'approved'
-                              ? 'Chưa có đề xuất nào được phê duyệt'
-                              : 'Chưa có đề xuất nào bị từ chối'}
-                      </div>
-                    </div>
+                    activeTab === 'all'
+                      ? 'Chưa có đề xuất nào'
+                      : activeTab === 'pending'
+                        ? 'Chưa có đề xuất chờ phê duyệt'
+                        : activeTab === 'approved'
+                          ? 'Chưa có đề xuất nào được phê duyệt'
+                          : 'Chưa có đề xuất nào bị từ chối'
                   }
+                  style={{ padding: '48px 0' }}
                 />
               ) : (
                 <Table

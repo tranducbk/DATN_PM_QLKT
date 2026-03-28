@@ -14,6 +14,7 @@ import {
   Popconfirm,
   Tag,
   Alert,
+  Empty,
 } from 'antd';
 import {
   PlusOutlined,
@@ -234,7 +235,7 @@ export default function NCKHProposalForm({
         bordered
         scroll={{ x: 1200 }}
         locale={{
-          emptyText: 'Chưa có dữ liệu. Nhấn "Thêm thành tích ĐTKH/SKKH" để bắt đầu.',
+          emptyText: <Empty description='Chưa có dữ liệu. Nhấn "Thêm thành tích ĐTKH/SKKH" để bắt đầu.' />,
         }}
       />
 

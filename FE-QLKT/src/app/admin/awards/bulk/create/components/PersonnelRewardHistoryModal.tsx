@@ -307,11 +307,11 @@ export default function PersonnelRewardHistoryModal({
       loading={loading}
       centered
       style={{ top: 20 }}
-      bodyStyle={{
+      styles={{ body: {
         maxHeight: 'calc(100vh - 200px)',
         overflowY: 'auto',
         padding: '24px',
-      }}
+      } }}
       className="personnel-reward-history-modal"
     >
       {loading ? (

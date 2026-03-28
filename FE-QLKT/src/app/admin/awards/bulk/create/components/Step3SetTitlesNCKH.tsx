@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Table, Select, Input, Alert, Typography, Space, Button, Modal, Tabs, Tag } from 'antd';
+import { Table, Select, Input, Alert, Typography, Space, Button, Modal, Tabs, Tag, Empty } from 'antd';
 import { EditOutlined, HistoryOutlined, EyeOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { formatDate } from '@/lib/utils';
@@ -395,7 +395,7 @@ export default function Step3SetTitlesNCKH({
         }}
         bordered
         locale={{
-          emptyText: 'Không có dữ liệu',
+          emptyText: <Empty description="Không có dữ liệu" />,
         }}
       />
 

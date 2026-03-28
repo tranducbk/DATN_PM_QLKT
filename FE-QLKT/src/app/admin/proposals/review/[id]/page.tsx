@@ -503,7 +503,7 @@ export default function ProposalDetailPage() {
       content: (
         <div>
           <p>Bạn có chắc chắn muốn phê duyệt đề xuất này? Dữ liệu sẽ được import vào hệ thống.</p>
-          <p style={{ marginTop: 12, color: '#666' }}>
+          <p style={{ marginTop: 12 }}>
             Tất cả các mục đã có số quyết định. Sau khi phê duyệt, dữ liệu sẽ được import vào hệ
             thống.
           </p>
@@ -748,7 +748,7 @@ export default function ProposalDetailPage() {
       >
         <Space>
           <Spin indicator={<LoadingOutlined style={{ fontSize: 32 }} spin />} />
-          <span style={{ color: '#666' }}>Đang tải...</span>
+          <span>Đang tải...</span>
         </Space>
       </div>
     );
@@ -908,7 +908,6 @@ export default function ProposalDetailPage() {
             <div style={{ textAlign: 'center' }}>
               <span
                 style={{
-                  color: '#999',
                   fontWeight: 400,
                   fontStyle: 'italic',
                   opacity: 0.6,
@@ -921,7 +920,7 @@ export default function ProposalDetailPage() {
         }
         return (
           <div style={{ textAlign: 'center' }}>
-            <a
+            <
               onClick={e => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -1051,7 +1050,6 @@ export default function ProposalDetailPage() {
             <div style={{ textAlign: 'center' }}>
               <span
                 style={{
-                  color: '#999',
                   fontWeight: 400,
                   fontStyle: 'italic',
                   opacity: 0.6,
@@ -1137,7 +1135,7 @@ export default function ProposalDetailPage() {
         if (!capBac && !chucVu) {
           return (
             <div style={{ textAlign: 'center' }}>
-              <span style={{ fontStyle: 'italic', opacity: 0.6, color: '#999' }}>
+              <span style={{ fontStyle: 'italic', opacity: 0.6 }}>
                 Chưa có dữ liệu
               </span>
             </div>
@@ -1221,7 +1219,7 @@ export default function ProposalDetailPage() {
         if (!soQuyetDinh || (typeof soQuyetDinh === 'string' && soQuyetDinh.trim() === '')) {
           return (
             <div style={{ textAlign: 'center' }}>
-              <span style={{ color: '#999', fontWeight: 400, fontStyle: 'italic', opacity: 0.6 }}>
+              <span style={{ fontWeight: 400, fontStyle: 'italic', opacity: 0.6 }}>
                 Chưa có số quyết định
               </span>
             </div>

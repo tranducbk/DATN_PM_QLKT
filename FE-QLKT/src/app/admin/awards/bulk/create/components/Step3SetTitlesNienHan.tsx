@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Table, Select, Alert, Typography, Space, message, Button, Input } from 'antd';
+import { Table, Select, Alert, Typography, Space, message, Button, Input, Empty } from 'antd';
 import { EditOutlined, HistoryOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
@@ -520,7 +520,7 @@ export default function Step3SetTitlesNienHan({
         }}
         bordered
         locale={{
-          emptyText: 'Không có dữ liệu',
+          emptyText: <Empty description="Không có dữ liệu" />,
         }}
       />
 

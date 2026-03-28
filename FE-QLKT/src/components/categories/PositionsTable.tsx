@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Table, Button, Space, Tag, Popconfirm, message } from 'antd';
+import { Table, Button, Space, Tag, Popconfirm, message, Empty } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/apiClient';
@@ -127,7 +127,7 @@ export function PositionsTable({ positions, onEdit, onRefresh }: PositionsTableP
         showTotal: total => `Tổng số ${total} chức vụ`,
       }}
       locale={{
-        emptyText: 'Không có dữ liệu',
+        emptyText: <Empty description="Không có dữ liệu" />,
       }}
     />
   );

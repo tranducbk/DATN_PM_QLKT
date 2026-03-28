@@ -13,6 +13,7 @@ import {
   Input,
   Select,
   message,
+  Empty,
 } from 'antd';
 import {
   EyeOutlined,
@@ -496,7 +497,7 @@ export default function AdminProposalsPage() {
           bordered
           scroll={{ x: 1400 }}
           locale={{
-            emptyText: 'Không có đề xuất nào',
+            emptyText: <Empty description="Không có đề xuất nào" />,
           }}
         />
       </Card>

@@ -16,6 +16,7 @@ import {
   ConfigProvider,
   theme as antdTheme,
   Tag,
+  Empty,
 } from 'antd';
 import type { TableColumnsType } from 'antd';
 import { LeftOutlined, HomeOutlined } from '@ant-design/icons';
@@ -159,7 +160,7 @@ export default function ManagerMilitaryFlagPage() {
       align: 'center',
       render: (soQuyetDinh: string) => {
         if (!soQuyetDinh || soQuyetDinh.trim() === '') {
-          return <span style={{ color: '#999' }}>Chưa có</span>;
+          return <span>Chưa có</span>;
         }
         return (
           <a
@@ -244,7 +245,7 @@ export default function ManagerMilitaryFlagPage() {
               Huy chương quân kỳ Quyết thắng
             </Title>
             {personnel && (
-              <Paragraph style={{ fontSize: 14, color: '#666', marginBottom: 0 }}>
+              <Paragraph type="secondary" style={{ fontSize: 14, marginBottom: 0 }}>
                 Quân nhân: {personnel.ho_ten}
               </Paragraph>
             )}
@@ -256,7 +257,7 @@ export default function ManagerMilitaryFlagPage() {
           <Card>
             <div style={{ textAlign: 'center', padding: '40px 0' }}>
               <Spin size="large" />
-              <div style={{ marginTop: 16, color: '#666' }}>Đang tải dữ liệu...</div>
+              <div style={{ marginTop: 16 }}>Đang tải dữ liệu...</div>
             </div>
           </Card>
         ) : (
@@ -269,7 +270,7 @@ export default function ManagerMilitaryFlagPage() {
               scroll={{ x: 'max-content' }}
               size="small"
               locale={{
-                emptyText: 'Chưa có dữ liệu Huy chương quân kỳ Quyết thắng',
+                emptyText: <Empty description="Chưa có dữ liệu Huy chương Quân kỳ Quyết thắng" />,
               }}
             />
           </Card>
@@ -289,7 +290,7 @@ export default function ManagerMilitaryFlagPage() {
           okButtonProps={{ danger: true }}
         >
           <Paragraph>
-            Bạn có chắc chắn muốn xóa Huy chương quân kỳ Quyết thắng này? Hành động này không thể
+            Bạn có chắc chắn muốn xóa Huy chương Quân kỳ Quyết thắng này? Hành động này không thể
             hoàn tác.
           </Paragraph>
         </Modal>

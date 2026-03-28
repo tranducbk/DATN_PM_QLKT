@@ -23,6 +23,7 @@ import {
   Row,
   Col,
   Statistic,
+  Empty,
 } from 'antd';
 import type { TableColumnsType } from 'antd';
 import {
@@ -419,7 +420,7 @@ export default function PositionHistoryPage() {
               Lịch sử chức vụ
             </Title>
             {personnel && (
-              <Paragraph style={{ fontSize: 14, color: '#666', marginBottom: 0 }}>
+              <Paragraph type="secondary" style={{ fontSize: 14, marginBottom: 0 }}>
                 Quân nhân: {personnel.ho_ten}
               </Paragraph>
             )}
@@ -467,7 +468,7 @@ export default function PositionHistoryPage() {
           <Card>
             <div style={{ textAlign: 'center', padding: '40px 0' }}>
               <Spin size="large" />
-              <div style={{ marginTop: 16, color: '#666' }}>Đang tải dữ liệu...</div>
+              <div style={{ marginTop: 16 }}>Đang tải dữ liệu...</div>
             </div>
           </Card>
         ) : (
@@ -478,7 +479,7 @@ export default function PositionHistoryPage() {
               rowKey="id"
               pagination={false}
               locale={{
-                emptyText: 'Chưa có dữ liệu lịch sử chức vụ',
+                emptyText: <Empty description="Chưa có dữ liệu lịch sử chức vụ" />,
               }}
             />
           </Card>

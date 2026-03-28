@@ -689,13 +689,13 @@ export default function PersonnelDetailPage() {
                 <Card
                   hoverable
                   className="text-center h-full"
-                  bodyStyle={{
+                  styles={{ body: {
                     padding: '24px',
                     minHeight: '120px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                  }}
+                  } }}
                 >
                   <div className="flex flex-col items-center gap-2">
                     <HistoryOutlined style={{ fontSize: '32px' }} />
@@ -711,13 +711,13 @@ export default function PersonnelDetailPage() {
                 <Card
                   hoverable
                   className="text-center h-full"
-                  bodyStyle={{
+                  styles={{ body: {
                     padding: '24px',
                     minHeight: '120px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                  }}
+                  } }}
                 >
                   <div className="flex flex-col items-center gap-2">
                     <TrophyOutlined style={{ fontSize: '32px' }} />
@@ -733,13 +733,13 @@ export default function PersonnelDetailPage() {
                 <Card
                   hoverable
                   className="text-center h-full"
-                  bodyStyle={{
+                  styles={{ body: {
                     padding: '24px',
                     minHeight: '120px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                  }}
+                  } }}
                 >
                   <div className="flex flex-col items-center gap-2">
                     <ExperimentOutlined style={{ fontSize: '32px' }} />
@@ -757,13 +757,13 @@ export default function PersonnelDetailPage() {
                 <Card
                   hoverable
                   className="text-center h-full"
-                  bodyStyle={{
+                  styles={{ body: {
                     padding: '24px',
                     minHeight: '120px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                  }}
+                  } }}
                 >
                   <div className="flex flex-col items-center gap-2">
                     <SafetyOutlined style={{ fontSize: '32px' }} />
@@ -779,18 +779,18 @@ export default function PersonnelDetailPage() {
                 <Card
                   hoverable
                   className="text-center h-full"
-                  bodyStyle={{
+                  styles={{ body: {
                     padding: '24px',
                     minHeight: '120px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                  }}
+                  } }}
                 >
                   <div className="flex flex-col items-center gap-2">
                     <TrophyOutlined style={{ fontSize: '32px' }} />
                     <Text strong style={{ fontSize: '16px' }}>
-                      Huy chương QKQT
+                      Huy chương Quân kỳ Quyết thắng
                     </Text>
                   </div>
                 </Card>
@@ -801,13 +801,13 @@ export default function PersonnelDetailPage() {
                 <Card
                   hoverable
                   className="text-center h-full"
-                  bodyStyle={{
+                  styles={{ body: {
                     padding: '24px',
                     minHeight: '120px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                  }}
+                  } }}
                 >
                   <div className="flex flex-col items-center gap-2">
                     <TrophyOutlined style={{ fontSize: '32px' }} />
@@ -823,13 +823,13 @@ export default function PersonnelDetailPage() {
                 <Card
                   hoverable
                   className="text-center h-full"
-                  bodyStyle={{
+                  styles={{ body: {
                     padding: '24px',
                     minHeight: '120px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                  }}
+                  } }}
                 >
                   <div className="flex flex-col items-center gap-2">
                     <TrophyOutlined style={{ fontSize: '32px' }} />

@@ -17,6 +17,7 @@ import {
   ConfigProvider,
   theme as antdTheme,
   Tag,
+  Empty,
 } from 'antd';
 import type { TableColumnsType } from 'antd';
 import {
@@ -164,7 +165,7 @@ export default function AdminCommemorativeMedalsPage() {
       align: 'center',
       render: (soQuyetDinh: string, record: CommemorationMedal) => {
         if (!soQuyetDinh || soQuyetDinh.trim() === '') {
-          return <span style={{ color: '#999' }}>Chưa có</span>;
+          return <span>Chưa có</span>;
         }
         return (
           <a
@@ -249,7 +250,7 @@ export default function AdminCommemorativeMedalsPage() {
               Kỷ niệm chương VSNXD QĐNDVN
             </Title>
             {personnel && (
-              <Paragraph style={{ fontSize: 14, color: '#666', marginBottom: 0 }}>
+              <Paragraph type="secondary" style={{ fontSize: 14, marginBottom: 0 }}>
                 Quân nhân: {personnel.ho_ten}
               </Paragraph>
             )}
@@ -261,7 +262,7 @@ export default function AdminCommemorativeMedalsPage() {
           <Card>
             <div style={{ textAlign: 'center', padding: '40px 0' }}>
               <Spin size="large" />
-              <div style={{ marginTop: 16, color: '#666' }}>Đang tải dữ liệu...</div>
+              <div style={{ marginTop: 16 }}>Đang tải dữ liệu...</div>
             </div>
           </Card>
         ) : (
@@ -274,7 +275,7 @@ export default function AdminCommemorativeMedalsPage() {
               scroll={{ x: 'max-content' }}
               size="small"
               locale={{
-                emptyText: 'Chưa có dữ liệu kỷ niệm chương',
+                emptyText: <Empty description="Chưa có dữ liệu Kỷ niệm chương VSNXD QĐNDVN" />,
               }}
             />
           </Card>

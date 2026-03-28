@@ -16,6 +16,7 @@ import {
   Popconfirm,
   Modal,
   Descriptions,
+  Empty,
 } from 'antd';
 import { getApiErrorMessage } from '@/lib/apiError';
 import {
@@ -376,7 +377,7 @@ export default function AdminDecisionsPage() {
           }}
           bordered
           locale={{
-            emptyText: 'Không có quyết định nào',
+            emptyText: <Empty description="Chưa có quyết định nào" />,
           }}
         />
       </Card>

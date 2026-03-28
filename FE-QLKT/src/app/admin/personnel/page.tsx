@@ -15,6 +15,7 @@ import {
   ConfigProvider,
   theme as antdTheme,
   Skeleton,
+  Empty,
 } from 'antd';
 import { useTheme } from '@/components/ThemeProvider';
 import {
@@ -658,7 +659,7 @@ export default function PersonnelPage() {
             }}
             scroll={{ x: 1000 }}
             locale={{
-              emptyText: 'Không có dữ liệu',
+              emptyText: <Empty description="Không có dữ liệu" />,
             }}
           />
         </Card>

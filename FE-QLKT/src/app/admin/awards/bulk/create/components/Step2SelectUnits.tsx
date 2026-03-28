@@ -12,6 +12,7 @@ import {
   message,
   InputNumber,
   Divider,
+  Empty,
 } from 'antd';
 import { getApiErrorMessage } from '@/lib/apiError';
 
@@ -479,7 +480,7 @@ export default function Step2SelectUnits({
         }}
         bordered
         locale={{
-          emptyText: 'Không có dữ liệu đơn vị',
+          emptyText: <Empty description="Không có dữ liệu đơn vị" />,
         }}
       />
     </div>

@@ -352,7 +352,7 @@ export default function AdminDashboard() {
                         theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
                       }`}
                     >
-                      Quản trị viên (Admin)
+                      Phòng Chính trị
                     </p>
                   </div>
                   <div

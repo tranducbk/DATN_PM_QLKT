@@ -20,6 +20,7 @@ import {
   Input,
   Row,
   Col,
+  Empty,
 } from 'antd';
 import { getApiErrorMessage } from '@/lib/apiError';
 
@@ -1235,7 +1236,7 @@ export default function CreateProposalPage() {
                         : 1000,
                 }}
                 locale={{
-                  emptyText: 'Không có dữ liệu',
+                  emptyText: <Empty description="Không có dữ liệu" />,
                 }}
               />
             </Card>

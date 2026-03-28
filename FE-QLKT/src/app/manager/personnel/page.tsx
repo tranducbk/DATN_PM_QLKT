@@ -335,7 +335,7 @@ export default function ManagerPersonnelPage() {
               boxShadow: cardShadow,
               transition: 'all 0.3s ease',
             }}
-            bodyStyle={{ padding: '20px' }}
+            styles={{ body: { padding: '20px' } }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               <div
@@ -391,7 +391,7 @@ export default function ManagerPersonnelPage() {
               boxShadow: cardShadow,
               transition: 'all 0.3s ease',
             }}
-            bodyStyle={{ padding: '20px' }}
+            styles={{ body: { padding: '20px' } }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               <div
@@ -440,7 +440,7 @@ export default function ManagerPersonnelPage() {
               boxShadow: cardShadow,
               transition: 'all 0.3s ease',
             }}
-            bodyStyle={{ padding: '20px' }}
+            styles={{ body: { padding: '20px' } }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               <div

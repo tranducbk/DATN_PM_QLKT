@@ -92,7 +92,7 @@ export default function PersonnelExportPage() {
         <Title level={2} style={{ marginTop: 8, marginBottom: 8 }}>
           Xuất dữ liệu Quân nhân
         </Title>
-        <Paragraph style={{ fontSize: 14, color: '#666', marginBottom: 0 }}>
+        <Paragraph type="secondary" style={{ fontSize: 14, marginBottom: 0 }}>
           Xuất toàn bộ dữ liệu quân nhân ra file Excel
         </Paragraph>
       </div>

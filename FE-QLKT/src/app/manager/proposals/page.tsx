@@ -489,7 +489,7 @@ export default function ManagerProposalsPage() {
         <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
 
         {/* Filter Section */}
-        <Card size="small" style={{ marginBottom: 16 }} bodyStyle={{ padding: '16px' }}>
+        <Card size="small" style={{ marginBottom: 16 }} styles={{ body: { padding: '16px' } }}>
           <Row gutter={[16, 16]} align="bottom">
             <Col xs={24} sm={12} md={6}>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -498,7 +498,6 @@ export default function ManagerProposalsPage() {
                     display: 'block',
                     marginBottom: 4,
                     fontSize: 12,
-                    color: '#666',
                   }}
                 >
                   <FilterOutlined /> Năm
@@ -527,7 +526,6 @@ export default function ManagerProposalsPage() {
                     display: 'block',
                     marginBottom: 4,
                     fontSize: 12,
-                    color: '#666',
                   }}
                 >
                   <FilterOutlined /> Loại đề xuất

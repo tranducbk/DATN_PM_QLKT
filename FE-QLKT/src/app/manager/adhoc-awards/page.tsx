@@ -378,7 +378,7 @@ export default function ManagerAdhocAwardsPage() {
         <Card size="small" style={{ marginBottom: 16 }}>
           <Row gutter={[16, 16]} align="middle">
             <Col xs={24} sm={12} md={6}>
-              <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: '#666' }}>
+              <label style={{ display: 'block', marginBottom: 4, fontSize: 12 }}>
                 <FilterOutlined /> Năm
               </label>
               <Select
@@ -403,7 +403,7 @@ export default function ManagerAdhocAwardsPage() {
               </Select>
             </Col>
             <Col xs={24} sm={12} md={6}>
-              <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: '#666' }}>
+              <label style={{ display: 'block', marginBottom: 4, fontSize: 12 }}>
                 <FilterOutlined /> Đối tượng
               </label>
               <Select
@@ -419,7 +419,7 @@ export default function ManagerAdhocAwardsPage() {
               </Select>
             </Col>
             <Col xs={24} sm={16} md={8}>
-              <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: '#666' }}>
+              <label style={{ display: 'block', marginBottom: 4, fontSize: 12 }}>
                 <SearchOutlined /> Tìm kiếm
               </label>
               <Input

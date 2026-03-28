@@ -75,16 +75,6 @@ export default function ManagerDashboard() {
           const roleFallback = ROLE_LABELS[role] || 'Trưởng phòng';
           setDisplayName(name || username || roleFallback);
         }
-        let unitId = null;
-
-        if (user && user.quan_nhan_id) {
-          const personnelDetailRes = await apiClient.getPersonnelById(user.quan_nhan_id);
-          if (personnelDetailRes.success && personnelDetailRes.data?.don_vi_id) {
-            unitId = personnelDetailRes.data.don_vi_id;
-          }
-        }
-
-        // Fetch actual data from API - chỉ lấy dữ liệu đơn vị của manager
         const statisticsRes = await apiClient.getManagerDashboardStatistics();
 
         if (statisticsRes.success && statisticsRes.data) {
@@ -198,7 +188,13 @@ export default function ManagerDashboard() {
         {/* Breadcrumb */}
         <Breadcrumb
           items={[
-            { title: <Link href="/manager/dashboard"><HomeOutlined /></Link> },
+            {
+              title: (
+                <Link href="/manager/dashboard">
+                  <HomeOutlined />
+                </Link>
+              ),
+            },
             { title: 'Tổng quan' },
           ]}
         />
@@ -294,7 +290,7 @@ export default function ManagerDashboard() {
                       boxShadow: cardShadow,
                       transition: 'all 0.3s ease',
                     }}
-                    bodyStyle={{ padding: '20px' }}
+                    styles={{ body: { padding: '20px' } }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                       <div
@@ -516,7 +512,7 @@ export default function ManagerDashboard() {
                         theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
                       }`}
                     >
-                      Quản lý (Manager)
+                      Chỉ huy đơn vị
                     </p>
                   </div>
                   <div

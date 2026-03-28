@@ -12,7 +12,6 @@ import {
   Spin,
 } from 'antd';
 import {
-  DashboardOutlined,
   UserOutlined,
   SafetyOutlined,
   SettingOutlined,
@@ -89,30 +88,23 @@ export default function SuperAdminDashboard() {
           const role = (user.role || '').toUpperCase();
           setDisplayName(name || username || ROLE_LABELS[role] || 'Super Admin');
         }
-        const [accountsRes, personnelRes, logsRes, statisticsRes] = await Promise.all([
-          apiClient.getAccounts({ page: 1, limit: 1 }),
-          apiClient.getPersonnel({ page: 1, limit: 1 }),
-          apiClient.getSystemLogs({ page: 1, limit: 1 }),
-          apiClient.getDashboardStatistics(),
-        ]);
-
-        setStats({
-          totalAccounts: accountsRes?.data?.pagination?.total || 0,
-          totalPersonnel: personnelRes?.data?.pagination?.total || 0,
-          totalUnits: 0,
-          totalLogs: logsRes?.data?.pagination?.total || 0,
-          recentActivity: 0,
-        });
+        const statisticsRes = await apiClient.getDashboardStatistics();
 
         if (statisticsRes.success && statisticsRes.data) {
-          setChartData({
-            roleDistribution: statisticsRes.data.roleDistribution || [],
-            dailyActivity: statisticsRes.data.dailyActivity || [],
-            logsByAction: statisticsRes.data.logsByAction || [],
-            newAccountsByDate: statisticsRes.data.newAccountsByDate || [],
+          const data = statisticsRes.data;
+          setStats({
+            totalAccounts: data.totalAccounts || 0,
+            totalPersonnel: data.totalPersonnel || 0,
+            totalUnits: data.totalUnits || 0,
+            totalLogs: data.totalLogs || 0,
+            recentActivity: 0,
           });
-        } else {
-          // Statistics API returned unsuccessful response
+          setChartData({
+            roleDistribution: data.roleDistribution || [],
+            dailyActivity: data.dailyActivity || [],
+            logsByAction: data.logsByAction || [],
+            newAccountsByDate: data.newAccountsByDate || [],
+          });
         }
       } catch (error) {
         // Error handled by UI
@@ -521,18 +513,13 @@ export default function SuperAdminDashboard() {
         </Breadcrumb>
 
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-          <div style={{ padding: '8px', backgroundColor: '#e0f2fe', borderRadius: '8px' }}>
-            <DashboardOutlined style={{ fontSize: '24px', color: '#0284c7' }} />
-          </div>
-          <div>
-            <Title level={1} style={{ margin: 0 }}>
-              Xin chào, Quản trị viên cấp cao
-            </Title>
-            <Text type="secondary" style={{ display: 'block', marginTop: '4px' }}>
-              Bảng điều khiển hệ thống
-            </Text>
-          </div>
+        <div style={{ marginBottom: '24px' }}>
+          <Title level={1} style={{ margin: 0 }}>
+            Xin chào, Quản trị viên cấp cao
+          </Title>
+          <Text type="secondary" style={{ display: 'block', marginTop: '4px' }}>
+            Bảng điều khiển hệ thống
+          </Text>
         </div>
 
         {/* Stats Cards */}

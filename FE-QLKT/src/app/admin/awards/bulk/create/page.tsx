@@ -16,6 +16,7 @@ import {
   Tag,
   Table,
   Input,
+  Empty,
 } from 'antd';
 import { getApiErrorMessage } from '@/lib/apiError';
 
@@ -734,7 +735,7 @@ export default function BulkAddAwardsPage() {
                 bordered
                 scroll={{ x: 1000 }}
                 locale={{
-                  emptyText: 'Không có dữ liệu',
+                  emptyText: <Empty description="Không có dữ liệu" />,
                 }}
               />
             </Card>

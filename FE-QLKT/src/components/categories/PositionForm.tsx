@@ -131,7 +131,7 @@ export function PositionForm({ position, units = [], onSuccess, onClose }: Posit
                 <Text type="secondary">
                   <strong>{units[0].ten_don_vi}</strong> ({units[0].ma_don_vi})
                   {units[0].co_quan_don_vi && (
-                    <span style={{ marginLeft: 8, color: '#999' }}>
+                    <span style={{ marginLeft: 8 }}>
                       • Trực thuộc: {units[0].co_quan_don_vi.ten_don_vi}
                     </span>
                   )}

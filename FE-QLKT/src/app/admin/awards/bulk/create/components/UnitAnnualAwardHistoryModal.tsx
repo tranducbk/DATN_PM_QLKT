@@ -130,7 +130,7 @@ export default function UnitAnnualAwardHistoryModal({
                     {d.label}
                   </a>
                 ) : (
-                  <span style={{ color: '#999' }}>{d.label}</span>
+                  <span>{d.label}</span>
                 )}
               </div>
             ))}

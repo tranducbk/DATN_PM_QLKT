@@ -204,7 +204,7 @@ export default function UserDashboard() {
               overflow: 'hidden',
               border: 'none',
             }}
-            bodyStyle={{ padding: 0 }}
+            styles={{ body: { padding: 0 } }}
           >
             <div
               style={{
@@ -283,7 +283,7 @@ export default function UserDashboard() {
                     : '0 1px 4px rgba(0, 0, 0, 0.06)',
                 transition: 'all 0.3s ease',
               }}
-              bodyStyle={{ padding: '20px' }}
+              styles={{ body: { padding: '20px' } }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                 <div
@@ -345,7 +345,7 @@ export default function UserDashboard() {
                     : '0 1px 4px rgba(0, 0, 0, 0.06)',
                 transition: 'all 0.3s ease',
               }}
-              bodyStyle={{ padding: '20px' }}
+              styles={{ body: { padding: '20px' } }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                 <div
@@ -409,7 +409,7 @@ export default function UserDashboard() {
                     : '0 1px 4px rgba(0, 0, 0, 0.06)',
                 transition: 'all 0.3s ease',
               }}
-              bodyStyle={{ padding: '20px' }}
+              styles={{ body: { padding: '20px' } }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                 <div
@@ -481,7 +481,7 @@ export default function UserDashboard() {
                     : '0 1px 4px rgba(0, 0, 0, 0.06)',
                 transition: 'all 0.3s ease',
               }}
-              bodyStyle={{ padding: '20px' }}
+              styles={{ body: { padding: '20px' } }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                 <div

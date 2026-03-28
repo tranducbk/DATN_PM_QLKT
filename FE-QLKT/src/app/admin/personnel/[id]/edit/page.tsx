@@ -415,7 +415,7 @@ export default function PersonnelEditPage() {
                   <Form.Item
                     name="ngay_sinh"
                     label="Ngày sinh"
-                    rules={[{ required: true, message: 'Vui lòng chọn ngày sinh' }]}
+                    rules={[{ required: false }]}
                   >
                     <DatePicker
                       placeholder="Chọn ngày sinh"

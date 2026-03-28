@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Table, Button, Space, Popconfirm, message } from 'antd';
+import { Table, Button, Space, Popconfirm, message, Empty } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
@@ -164,7 +164,7 @@ export function UnitsTable({
         showTotal: total => `Tổng số ${total} đơn vị`,
       }}
       locale={{
-        emptyText: 'Không có dữ liệu',
+        emptyText: <Empty description="Không có dữ liệu" />,
       }}
     />
   );

@@ -34,12 +34,14 @@ export function ActivityLineChart({
 }: ActivityLineChartProps) {
   const { textColor, gridColor } = useChartTheme();
 
+  const hasData = data.length > 0 && data.some(item => item.count > 0);
+
   const chartData = {
-    labels: data.length > 0 ? data.map(item => formatChartLabel(item.date)) : [],
+    labels: data.length > 0 ? data.map(item => formatChartLabel(item.date)) : ['Chưa có dữ liệu'],
     datasets: [
       {
         label: label,
-        data: data.length > 0 ? data.map(item => item.count) : [],
+        data: data.length > 0 ? data.map(item => item.count) : [0],
         borderColor: color,
         backgroundColor: color.replace('1)', '0.1)'),
         fill: true,
