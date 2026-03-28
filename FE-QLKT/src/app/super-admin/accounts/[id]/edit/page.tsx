@@ -17,7 +17,7 @@ import {
 } from 'antd';
 import { getApiErrorMessage } from '@/lib/apiError';
 
-import { SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons';
+import { SaveOutlined, ArrowLeftOutlined, HomeOutlined } from '@ant-design/icons';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { apiClient } from '@/lib/apiClient';
@@ -106,7 +106,7 @@ export default function AccountEditPage() {
       <div className="space-y-4 p-6">
         <Breadcrumb
           items={[
-            { title: <Link href="/super-admin/dashboard">Dashboard</Link> },
+            { title: <Link href="/super-admin/dashboard"><HomeOutlined /></Link> },
             { title: <Link href="/super-admin/accounts">Tài khoản</Link> },
             { title: <Link href={`/super-admin/accounts/${accountId}`}>Chi tiết</Link> },
             { title: 'Chỉnh sửa' },
@@ -124,7 +124,7 @@ export default function AccountEditPage() {
         </div>
 
         <Card>
-          <Form form={form} layout="vertical" onFinish={handleSubmit} autoComplete="off">
+          <Form form={form} layout="vertical" onFinish={handleSubmit} autoComplete="off" size="large">
             <Form.Item name="username" label="Tên đăng nhập">
               <Input disabled placeholder="Tên đăng nhập (không thể thay đổi)" />
             </Form.Item>

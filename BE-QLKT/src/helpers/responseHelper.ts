@@ -18,6 +18,7 @@ interface PaginatedOptions {
   page: number | string;
   limit: number | string;
   message?: string;
+  stats?: Record<string, unknown>;
 }
 
 const ResponseHelper = {
@@ -64,7 +65,7 @@ const ResponseHelper = {
 
   paginated(
     res: Response,
-    { data, total, page, limit, message = 'Lấy dữ liệu thành công' }: PaginatedOptions
+    { data, total, page, limit, message = 'Lấy dữ liệu thành công', stats }: PaginatedOptions
   ): Response {
     return res.status(200).json({
       success: true,
@@ -76,6 +77,7 @@ const ResponseHelper = {
         limit: parseInt(String(limit)),
         totalPages: Math.ceil(total / Number(limit)),
       },
+      ...(stats && { stats }),
     });
   },
 };

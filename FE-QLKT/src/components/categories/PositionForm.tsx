@@ -104,7 +104,7 @@ export function PositionForm({ position, units = [], onSuccess, onClose }: Posit
   }
 
   return (
-    <Form form={form} layout="vertical" onFinish={onSubmit} autoComplete="off">
+    <Form form={form} layout="vertical" onFinish={onSubmit} autoComplete="off" size="large">
       <Form.Item
         label="Tên Chức vụ"
         name="ten_chuc_vu"

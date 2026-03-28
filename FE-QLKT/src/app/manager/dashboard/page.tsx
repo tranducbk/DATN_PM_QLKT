@@ -20,6 +20,7 @@ import {
   PlusOutlined,
   DashboardOutlined,
   CheckCircleOutlined,
+  HomeOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { useTheme } from '@/components/ThemeProvider';
@@ -197,7 +198,7 @@ export default function ManagerDashboard() {
         {/* Breadcrumb */}
         <Breadcrumb
           items={[
-            { title: <Link href="/manager/dashboard">Dashboard</Link> },
+            { title: <Link href="/manager/dashboard"><HomeOutlined /></Link> },
             { title: 'Tổng quan' },
           ]}
         />

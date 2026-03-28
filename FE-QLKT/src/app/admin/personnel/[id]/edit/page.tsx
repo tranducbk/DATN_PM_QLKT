@@ -15,7 +15,7 @@ import {
   theme as antdTheme,
   Spin,
 } from 'antd';
-import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, SaveOutlined, HomeOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { useTheme } from '@/components/ThemeProvider';
@@ -343,7 +343,7 @@ export default function PersonnelEditPage() {
         {/* Breadcrumb */}
         <Breadcrumb
           items={[
-            { title: <Link href="/admin/dashboard">Dashboard</Link> },
+            { title: <Link href="/admin/dashboard"><HomeOutlined /></Link> },
             { title: <Link href="/admin/personnel">Quân nhân</Link> },
             { title: <Link href={`/admin/personnel/${personnelId}`}>{personnel?.ho_ten}</Link> },
             { title: 'Chỉnh sửa' },
@@ -374,6 +374,7 @@ export default function PersonnelEditPage() {
                 onFinish={onFinish}
                 autoComplete="off"
                 requiredMark="optional"
+                size="large"
               >
                 {/* Thông tin cơ bản */}
                 <Title level={5} className="!mb-4 !mt-0 border-b pb-2">
@@ -405,7 +406,7 @@ export default function PersonnelEditPage() {
                     label="Giới tính"
                     rules={[{ required: true, message: 'Vui lòng chọn giới tính' }]}
                   >
-                    <Select placeholder="Chọn giới tính" disabled={loading} size="large">
+                    <Select placeholder="Chọn giới tính" disabled={loading}>
                       <Select.Option value="NAM">Nam</Select.Option>
                       <Select.Option value="NU">Nữ</Select.Option>
                     </Select>
@@ -425,7 +426,7 @@ export default function PersonnelEditPage() {
                   </Form.Item>
 
                   <Form.Item name="cap_bac" label="Cấp bậc" required={false}>
-                    <Select placeholder="Chọn cấp bậc" disabled={loading} size="large" allowClear>
+                    <Select placeholder="Chọn cấp bậc" disabled={loading} allowClear>
                       {MILITARY_RANKS.map(rank => (
                         <Select.Option key={rank} value={rank}>
                           {rank}
@@ -629,16 +630,6 @@ export default function PersonnelEditPage() {
                       )}
                     </>
                   )}
-
-                  <Form.Item name="cap_bac" label="Cấp bậc" required={false}>
-                    <Select placeholder="Chọn cấp bậc" disabled={loading} size="large" allowClear>
-                      {MILITARY_RANKS.map(rank => (
-                        <Select.Option key={rank} value={rank}>
-                          {rank}
-                        </Select.Option>
-                      ))}
-                    </Select>
-                  </Form.Item>
 
                   <Form.Item
                     name="chuc_vu_id"

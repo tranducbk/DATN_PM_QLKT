@@ -95,7 +95,7 @@ class SystemLogsController {
       };
     }
 
-    const [logs, total] = await Promise.all([
+    const [logs, total, createCount, deleteCount, updateCount] = await Promise.all([
       prisma.systemLog.findMany({
         skip: (pageNum - 1) * limitNum,
         take: limitNum,
@@ -113,6 +113,9 @@ class SystemLogsController {
         orderBy: { created_at: 'desc' },
       }),
       prisma.systemLog.count({ where }),
+      prisma.systemLog.count({ where: { ...where, action: { contains: 'CREATE' } } }),
+      prisma.systemLog.count({ where: { ...where, action: { contains: 'DELETE' } } }),
+      prisma.systemLog.count({ where: { ...where, action: { contains: 'UPDATE' } } }),
     ]);
 
     return ResponseHelper.paginated(res, {
@@ -121,6 +124,7 @@ class SystemLogsController {
       page: pageNum,
       limit: limitNum,
       message: 'Lấy nhật ký hệ thống thành công',
+      stats: { create: createCount, delete: deleteCount, update: updateCount },
     });
   });
 

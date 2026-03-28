@@ -258,7 +258,7 @@ export default function NCKHProposalForm({
           </Button>,
         ]}
       >
-        <Form form={form} layout="vertical" style={{ marginTop: 20 }}>
+        <Form form={form} layout="vertical" style={{ marginTop: 20 }} size="large">
           <Form.Item
             label="Họ và tên quân nhân"
             name="personnel_name"

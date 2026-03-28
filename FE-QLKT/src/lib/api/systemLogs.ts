@@ -3,10 +3,10 @@ import { getApiErrorMessage } from '@/lib/apiError';
 
 type ApiResponse<T = any> = { success: boolean; data?: T; message?: string };
 
-export async function getSystemLogs(params?: Record<string, unknown>): Promise<ApiResponse> {
+export async function getSystemLogs(params?: Record<string, unknown>): Promise<any> {
   try {
     const res = await axiosInstance.get('/api/system-logs', { params });
-    return { success: true, data: res.data?.data };
+    return { success: true, data: res.data?.data, pagination: res.data?.pagination, stats: res.data?.stats };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }

@@ -19,7 +19,7 @@ import {
 } from 'antd';
 import { getApiErrorMessage } from '@/lib/apiError';
 
-import { ArrowLeftOutlined, EditOutlined, ReloadOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, EditOutlined, ReloadOutlined, HomeOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { apiClient } from '@/lib/apiClient';
@@ -121,7 +121,7 @@ export default function AccountDetailPage() {
         {/* Breadcrumb */}
         <Breadcrumb
           items={[
-            { title: <Link href="/super-admin/dashboard">Dashboard</Link> },
+            { title: <Link href="/super-admin/dashboard"><HomeOutlined /></Link> },
             { title: <Link href="/super-admin/accounts">Tài khoản</Link> },
             { title: `#${account.id}` },
           ]}

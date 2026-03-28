@@ -16,7 +16,7 @@ export const updatePersonnel: Joi.ObjectSchema = Joi.object({
   gioi_tinh: Joi.string().valid('NAM', 'NU').optional(),
   ngay_sinh: Joi.date().optional(),
   cccd: Joi.string().trim().length(12).pattern(/^\d+$/).optional().allow(null, ''),
-  cap_bac: Joi.string().trim().optional(),
+  cap_bac: Joi.string().trim().optional().allow(null, ''),
   ngay_nhap_ngu: Joi.date().optional().allow(null),
   ngay_xuat_ngu: Joi.date().optional().allow(null),
   que_quan_2_cap: Joi.string().trim().optional().allow(null, ''),
@@ -32,7 +32,7 @@ export const updatePersonnel: Joi.ObjectSchema = Joi.object({
   don_vi_id: Joi.string().trim().optional(),
   chuc_vu_id: Joi.string().trim().optional(),
   co_quan_don_vi_id: Joi.string().trim().optional(),
-  don_vi_truc_thuoc_id: Joi.string().trim().optional(),
+  don_vi_truc_thuoc_id: Joi.string().trim().optional().allow(null, ''),
 });
 
 export const listQuery: Joi.ObjectSchema = Joi.object({

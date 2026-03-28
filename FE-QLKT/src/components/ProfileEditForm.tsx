@@ -623,7 +623,7 @@ export default function ProfileEditForm({
             />
           )}
 
-          <Form form={form} layout="vertical" onFinish={handleSubmit}>
+          <Form form={form} layout="vertical" onFinish={handleSubmit} size="large">
             {/* Thông tin cơ bản */}
             <Divider orientation="left">
               <span className="text-lg font-semibold flex items-center gap-2">

@@ -553,7 +553,7 @@ export default function BulkRewardDetailsPage() {
 
       {/* Form */}
       <Card title="Thông tin chung" className="shadow-sm">
-        <Form form={form} layout="vertical">
+        <Form form={form} layout="vertical" size="large">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <Form.Item name="nam" label="Năm">
               <Input disabled />

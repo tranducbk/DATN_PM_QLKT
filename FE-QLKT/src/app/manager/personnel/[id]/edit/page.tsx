@@ -15,7 +15,7 @@ import {
   theme as antdTheme,
   Spin,
 } from 'antd';
-import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, SaveOutlined, HomeOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { useTheme } from '@/components/ThemeProvider';
@@ -324,7 +324,7 @@ export default function ManagerPersonnelEditPage() {
         {/* Breadcrumb */}
         <Breadcrumb
           items={[
-            { title: <Link href="/manager/dashboard">Dashboard</Link> },
+            { title: <Link href="/manager/dashboard"><HomeOutlined /></Link> },
             { title: <Link href="/manager/personnel">Quân nhân</Link> },
             { title: <Link href={`/manager/personnel/${personnelId}`}>#{personnelId}</Link> },
             { title: 'Chỉnh sửa' },

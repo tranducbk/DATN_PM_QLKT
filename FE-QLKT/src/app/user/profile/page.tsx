@@ -27,6 +27,7 @@ import {
   CrownOutlined,
   FireOutlined,
   FileTextOutlined,
+  HomeOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { apiClient } from '@/lib/apiClient';
@@ -1565,7 +1566,7 @@ export default function UserProfilePage() {
         {/* Breadcrumb */}
         <Breadcrumb
           items={[
-            { title: <Link href="/user/dashboard">Dashboard</Link> },
+            { title: <Link href="/user/dashboard"><HomeOutlined /></Link> },
             { title: 'Hồ sơ của tôi' },
           ]}
         />

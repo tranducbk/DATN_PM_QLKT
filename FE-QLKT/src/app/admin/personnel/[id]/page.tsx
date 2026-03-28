@@ -28,6 +28,7 @@ import {
   ExperimentOutlined,
   HistoryOutlined,
   SafetyOutlined,
+  HomeOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
@@ -851,7 +852,7 @@ export default function PersonnelDetailPage() {
         {/* Breadcrumb */}
         <Breadcrumb
           items={[
-            { title: <Link href="/admin/dashboard">Dashboard</Link> },
+            { title: <Link href="/admin/dashboard"><HomeOutlined /></Link> },
             { title: <Link href="/admin/personnel">Quân nhân</Link> },
             { title: personnel.ho_ten },
           ]}

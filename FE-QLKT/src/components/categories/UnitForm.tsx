@@ -99,7 +99,7 @@ export function UnitForm({ unit, units = [], onSuccess, onClose }: UnitFormProps
   const isDonViTrucThuoc = !!unit?.co_quan_don_vi_id;
 
   return (
-    <Form form={form} layout="vertical" onFinish={onSubmit} autoComplete="off">
+    <Form form={form} layout="vertical" onFinish={onSubmit} autoComplete="off" size="large">
       <Form.Item
         label={isDonViTrucThuoc ? 'Mã Đơn vị trực thuộc' : 'Mã Cơ quan đơn vị'}
         name="ma_don_vi"

@@ -24,6 +24,7 @@ import {
   DeleteOutlined,
   ReloadOutlined,
   SearchOutlined,
+  HomeOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { apiClient } from '@/lib/apiClient';
@@ -259,7 +260,7 @@ export default function AccountsListPage() {
       <div className="space-y-4 p-6">
         <Breadcrumb
           items={[
-            { title: <Link href="/super-admin/dashboard">Dashboard</Link> },
+            { title: <Link href="/super-admin/dashboard"><HomeOutlined /></Link> },
             { title: 'Tài khoản' },
           ]}
         />

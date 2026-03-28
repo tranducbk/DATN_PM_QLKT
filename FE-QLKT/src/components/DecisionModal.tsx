@@ -326,7 +326,7 @@ export default function DecisionModal({
         ),
       ]}
     >
-      <Form form={form} layout="vertical" onValuesChange={handleFormChange}>
+      <Form form={form} layout="vertical" onValuesChange={handleFormChange} size="large">
         <Form.Item
           name="so_quyet_dinh"
           label="Số quyết định"

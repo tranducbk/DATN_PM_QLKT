@@ -280,7 +280,7 @@ export default function ApproveModal({ visible, proposal, onClose, onSuccess }: 
           style={{ marginBottom: 16 }}
         />
 
-        <Form form={form} layout="vertical">
+        <Form form={form} layout="vertical" size="large">
           <Form.Item
             label="Số quyết định"
             name="so_quyet_dinh"

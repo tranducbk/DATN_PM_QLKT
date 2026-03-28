@@ -308,7 +308,7 @@ export default function BulkAddAnnualRewardsPage() {
 
       {/* Form */}
       <Card title="Thông tin danh hiệu" className="shadow-sm">
-        <Form form={form} layout="vertical">
+        <Form form={form} layout="vertical" size="large">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Form.Item
               name="nam"

@@ -86,7 +86,7 @@ export default function RejectModal({ visible, proposal, onClose, onSuccess }: R
         {proposal.NguoiDeXuat?.QuanNhan?.ho_ten || proposal.NguoiDeXuat?.username || '-'}
       </div>
 
-      <Form form={form} layout="vertical">
+      <Form form={form} layout="vertical" size="large">
         <Form.Item
           label="Lý do từ chối"
           name="rejection_reason"

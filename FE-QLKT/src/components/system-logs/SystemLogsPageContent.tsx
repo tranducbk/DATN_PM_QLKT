@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Card,
   Breadcrumb,
@@ -13,7 +13,7 @@ import {
   Button,
   Popconfirm,
 } from 'antd';
-import { FileTextOutlined, FundOutlined, HomeOutlined, DeleteOutlined } from '@ant-design/icons';
+import { FileTextOutlined, FundOutlined, HomeOutlined, DeleteOutlined, ReloadOutlined } from '@ant-design/icons';
 import { LogsFilter, LogsFilterValues } from '@/components/system-logs/LogsFilter';
 import { LogsTable, LogEntry } from '@/components/system-logs/LogsTable';
 import { apiClient } from '@/lib/apiClient';
@@ -88,14 +88,22 @@ export default function SystemLogsPageContent({ basePath }: SystemLogsPageConten
           ((data as Record<string, unknown>)?.results as RawLogEntry[]) ||
           [];
 
-      const paginationInfo = (data as Record<string, unknown>)?.pagination as
-        | PaginationData
-        | undefined;
+      const resObj = res as Record<string, unknown>;
+      const paginationInfo = resObj?.pagination as PaginationData | undefined;
       if (paginationInfo) {
         setPagination(prev => ({
           ...prev,
           total: paginationInfo.total || 0,
         }));
+      }
+
+      const statsInfo = resObj?.stats as { create?: number; delete?: number; update?: number } | undefined;
+      if (statsInfo) {
+        setStats({
+          create: statsInfo.create || 0,
+          del: statsInfo.delete || 0,
+          update: statsInfo.update || 0,
+        });
       }
 
       const normalized: LogEntry[] = list.map(l => {
@@ -135,17 +143,7 @@ export default function SystemLogsPageContent({ basePath }: SystemLogsPageConten
     fetchLogs();
   }, [fetchLogs]);
 
-  const stats = useMemo(() => {
-    let create = 0,
-      del = 0,
-      update = 0;
-    for (const l of logs) {
-      if (l.action?.includes('CREATE')) create++;
-      else if (l.action?.includes('DELETE')) del++;
-      else if (l.action?.includes('UPDATE')) update++;
-    }
-    return { create, del, update };
-  }, [logs]);
+  const [stats, setStats] = useState({ create: 0, del: 0, update: 0 });
 
   const handleDeleteSelected = async () => {
     if (selectedRowKeys.length === 0) return;
@@ -321,6 +319,14 @@ export default function SystemLogsPageContent({ basePath }: SystemLogsPageConten
                 Tất cả hoạt động và thay đổi trong hệ thống
               </Text>
             </div>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={fetchLogs}
+                loading={tableLoading}
+              >
+                Làm mới
+              </Button>
             {allowDeleteLogs && (
               <Popconfirm
                 title="Xoá nhật ký đã chọn?"
@@ -341,6 +347,7 @@ export default function SystemLogsPageContent({ basePath }: SystemLogsPageConten
                 </Button>
               </Popconfirm>
             )}
+            </div>
           </div>
           <div style={{ padding: 0 }}>
             <LogsTable

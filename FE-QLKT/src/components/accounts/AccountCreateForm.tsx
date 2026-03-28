@@ -144,12 +144,7 @@ export function AccountCreateForm() {
   // Lấy danh sách role có thể tạo dựa trên role hiện tại
   const getAvailableRoles = () => {
     if (currentUserRole === ROLES.SUPER_ADMIN) {
-      return roleSelectOptions([
-        ROLES.SUPER_ADMIN,
-        ROLES.ADMIN,
-        ROLES.MANAGER,
-        ROLES.USER,
-      ]);
+      return roleSelectOptions([ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER, ROLES.USER]);
     }
     if (currentUserRole === ROLES.ADMIN) {
       return roleSelectOptions([ROLES.MANAGER, ROLES.USER]);
@@ -226,20 +221,16 @@ export function AccountCreateForm() {
         // Redirect về đúng trang dựa trên role hiện tại
         if (currentUserRole === ROLES.SUPER_ADMIN) {
           router.push('/super-admin/accounts');
-        } else if (currentRole === ROLES.ADMIN) {
+        } else if (currentUserRole === ROLES.ADMIN) {
           router.push('/admin/accounts');
         } else {
-          router.push('/super-admin/accounts'); // Fallback
+          router.push('/super-admin/accounts');
         }
       } else {
-        // Hiển thị lỗi từ backend
-        // Error handled by UI message below
         message.error(response.message || 'Có lỗi xảy ra khi tạo tài khoản');
       }
     } catch (error: unknown) {
-      // Hiển thị lỗi nếu có exception
-      const errorMessage =
-        getApiErrorMessage(error, 'Có lỗi xảy ra khi tạo tài khoản');
+      const errorMessage = getApiErrorMessage(error, 'Có lỗi xảy ra khi tạo tài khoản');
 
       message.error(errorMessage);
     } finally {

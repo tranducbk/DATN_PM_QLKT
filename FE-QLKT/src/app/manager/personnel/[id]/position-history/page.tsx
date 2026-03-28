@@ -493,7 +493,7 @@ export default function PositionHistoryPage() {
           width={600}
           centered
         >
-          <Form form={form} onFinish={onSubmit} layout="vertical" style={{ marginTop: 24 }}>
+          <Form form={form} onFinish={onSubmit} layout="vertical" style={{ marginTop: 24 }} size="large">
             {isCurrentPosition && (
               <div
                 style={{
@@ -552,9 +552,10 @@ export default function PositionHistoryPage() {
                     unitName = coQuanName ? `${donViName} (${coQuanName})` : donViName;
                   }
 
+                  const heSo = pos.he_so_chuc_vu ? ` (HS: ${pos.he_so_chuc_vu})` : '';
                   const displayText = unitName
-                    ? `${pos.ten_chuc_vu} - ${unitName}`
-                    : pos.ten_chuc_vu;
+                    ? `${pos.ten_chuc_vu} - ${unitName}${heSo}`
+                    : `${pos.ten_chuc_vu}${heSo}`;
 
                   return (
                     <Select.Option key={pos.id} value={pos.id.toString()}>
