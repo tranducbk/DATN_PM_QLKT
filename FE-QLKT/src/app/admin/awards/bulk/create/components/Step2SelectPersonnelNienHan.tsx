@@ -908,7 +908,6 @@ export default function Step2SelectPersonnelNienHan({
             sessionStorageKey="importPreviewDataHCCSVV"
           />
 
-          <Divider>Hoặc chọn thủ công</Divider>
         </>
       )}
 

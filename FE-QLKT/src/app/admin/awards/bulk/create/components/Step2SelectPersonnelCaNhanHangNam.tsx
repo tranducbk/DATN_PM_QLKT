@@ -397,7 +397,6 @@ export default function Step2SelectPersonnelCaNhanHangNam({
             sessionStorageKey="importPreviewData"
           />
 
-          <Divider>Hoặc chọn thủ công</Divider>
         </>
       )}
 

@@ -432,7 +432,6 @@ export default function Step2SelectPersonnelNCKH({
             sessionStorageKey="importPreviewDataNCKH"
           />
 
-          <Divider>Hoặc chọn thủ công</Divider>
         </>
       )}
 

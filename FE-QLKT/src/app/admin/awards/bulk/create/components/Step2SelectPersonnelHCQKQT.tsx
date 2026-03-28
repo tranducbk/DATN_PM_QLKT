@@ -701,7 +701,6 @@ export default function Step2SelectPersonnelHCQKQT({
             sessionStorageKey="importPreviewDataHCQKQT"
           />
 
-          <Divider>Hoặc chọn thủ công</Divider>
         </>
       )}
 

@@ -381,7 +381,6 @@ export default function Step2SelectUnits({
             reviewPath="/admin/awards/bulk/import-review-unit"
             sessionStorageKey="importPreviewDataUnit"
           />
-          <Divider>Hoặc chọn thủ công</Divider>
         </>
       )}
 

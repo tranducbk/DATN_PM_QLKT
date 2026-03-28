@@ -719,7 +719,6 @@ export default function Step2SelectPersonnelKNCVSNXD({
             sessionStorageKey="importPreviewDataKNCVSNXD"
           />
 
-          <Divider>Hoặc chọn thủ công</Divider>
         </>
       )}
 

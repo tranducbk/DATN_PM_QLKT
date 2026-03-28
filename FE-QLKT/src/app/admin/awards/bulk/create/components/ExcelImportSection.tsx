@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Button, Upload, message, Space, Alert, theme } from 'antd';
+import { Button, Upload, message, Space, Alert, theme, Divider } from 'antd';
 import { DownloadOutlined, UploadOutlined, CloudUploadOutlined } from '@ant-design/icons';
 
 import { useRouter } from 'next/navigation';
@@ -203,6 +203,7 @@ export default function ExcelImportSection({
   if (!allowImport) return null;
 
   return (
+    <>
     <div
       style={{
         marginBottom: 24,
@@ -260,12 +261,14 @@ export default function ExcelImportSection({
 
         {importSuccess && importedCount > 0 && (
           <Alert
-            message={`Đã Đã thêm thành công ${importedCount} ${entityLabel} từ file Excel`}
+            message={`Đã thêm thành công ${importedCount} ${entityLabel} từ file Excel`}
             type="success"
             showIcon
           />
         )}
       </Space>
     </div>
+    <Divider>Hoặc chọn thủ công</Divider>
+    </>
   );
 }

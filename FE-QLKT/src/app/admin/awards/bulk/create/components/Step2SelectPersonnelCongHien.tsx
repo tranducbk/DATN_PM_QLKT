@@ -783,7 +783,6 @@ export default function Step2SelectPersonnelCongHien({
             sessionStorageKey="importPreviewDataHCBVTQ"
           />
 
-          <Divider>Hoặc chọn thủ công</Divider>
         </>
       )}
 
