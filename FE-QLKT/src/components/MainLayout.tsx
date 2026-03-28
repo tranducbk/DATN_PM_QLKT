@@ -116,21 +116,8 @@ function ConnectionStatusToast({ status }: { status: SocketConnectionStatus }) {
   const prevStatusRef = useRef<SocketConnectionStatus>(status);
 
   useEffect(() => {
-    const prevStatus = prevStatusRef.current;
     prevStatusRef.current = status;
-
-    // Chỉ hiển thị toast khi trạng thái thay đổi (không hiển thị lần đầu)
-    if (prevStatus === status) return;
-
-    if (status === 'disconnected' && prevStatus === 'connected') {
-      message.warning('Mất kết nối đến máy chủ. Đang thử kết nối lại...');
-    } else if (status === 'connected' && prevStatus !== 'connected') {
-      // Chỉ hiển thị khi reconnect (không phải lần kết nối đầu tiên)
-      if (prevStatus === 'disconnected' || prevStatus === 'connecting') {
-        message.success('Đã kết nối lại thành công!');
-      }
-    }
-  }, [status, message]);
+  }, [status]);
 
   return null;
 }
