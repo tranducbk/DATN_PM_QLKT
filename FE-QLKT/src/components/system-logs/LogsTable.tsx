@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Tag } from 'antd';
+import { Tag, Empty } from 'antd';
 import { getActionLabel, ACTION_LABELS } from './constants';
 import {
   Loader2,
@@ -188,14 +188,8 @@ export function LogsTable({ logs, loading, selectedRowKeys, onSelectionChange }:
 
   if (!logs || logs.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16">
-        <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-full mb-4">
-          <FileText className="h-10 w-10 text-gray-400 dark:text-gray-500" />
-        </div>
-        <p className="text-gray-600 dark:text-gray-400 text-lg font-medium">Không có nhật ký nào</p>
-        <p className="text-gray-500 dark:text-gray-500 text-sm mt-1">
-          Hệ thống chưa ghi nhận hoạt động nào
-        </p>
+      <div className="flex items-center justify-center py-16">
+        <Empty description="Không có nhật ký nào" />
       </div>
     );
   }
