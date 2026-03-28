@@ -31,9 +31,9 @@ import {
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
-import { useTheme } from '@/components/theme-provider';
-import { getAntdThemeConfig } from '@/lib/antd-theme';
-import { apiClient } from '@/lib/api-client';
+import { useTheme } from '@/components/ThemeProvider';
+import { getAntdThemeConfig } from '@/lib/antdTheme';
+import { apiClient } from '@/lib/apiClient';
 import { formatDate } from '@/lib/utils';
 import styles from './personnel-detail.module.css';
 import { ROLES, getRoleInfo } from '@/constants/roles.constants';

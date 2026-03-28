@@ -5,7 +5,7 @@ import { auditLog, createDescription, getResourceId } from '../middlewares/audit
 import { getLogDescription } from '../helpers/auditLog';
 import { validate } from '../middlewares/validate';
 import { decisionValidation } from '../validations';
-import { decisionUpload as upload } from '../configs/multer.config';
+import { decisionUpload as upload } from '../configs/multer';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 
 const router = Router();

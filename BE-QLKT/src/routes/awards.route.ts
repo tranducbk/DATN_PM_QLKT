@@ -4,8 +4,8 @@ import awardBulkController from '../controllers/awardBulk.controller';
 import { verifyToken, checkRole, requireAdmin } from '../middlewares/auth';
 import { auditLog } from '../middlewares/auditLog';
 import { getLogDescription, getResourceId } from '../helpers/auditLog';
-import { ROLES } from '../constants/roles';
-import { excelUpload as upload, bulkUpload } from '../configs/multer.config';
+import { ROLES } from '../constants/roles.constants';
+import { excelUpload as upload, bulkUpload } from '../configs/multer';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 
 const router = Router();
@@ -86,7 +86,7 @@ router.post(
     resource: 'awards',
     getDescription: getLogDescription('awards', 'BULK'),
     getResourceId: () => null, // Bulk operation không có single resource ID
-    getPayload: (req: Request, _res: Response, responseData: unknown) => {
+    getPayload: (req: Request, res: Response, responseData: unknown) => {
       try {
         const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
         const result = (data as Record<string, unknown>)?.data || data || {};

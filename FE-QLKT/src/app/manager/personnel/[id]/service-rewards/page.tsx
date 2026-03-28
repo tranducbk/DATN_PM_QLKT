@@ -27,9 +27,9 @@ import {
   TrophyOutlined,
   SafetyOutlined,
 } from '@ant-design/icons';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import { formatDate } from '@/lib/utils';
-import { useTheme } from '@/components/theme-provider';
+import { useTheme } from '@/components/ThemeProvider';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import contributionAwardService from '../services/contributionAward.service';
-import { ROLES } from '../constants/roles';
+import { ROLES } from '../constants/roles.constants';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';

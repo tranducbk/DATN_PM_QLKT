@@ -35,7 +35,7 @@ import {
 } from '@ant-design/icons';
 import { format } from 'date-fns';
 import Link from 'next/link';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import {
   PROPOSAL_STATUS,
   PROPOSAL_STATUS_LABELS,

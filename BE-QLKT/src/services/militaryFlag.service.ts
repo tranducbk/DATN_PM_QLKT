@@ -3,7 +3,7 @@ import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import ExcelJS from 'exceljs';
 import { checkDuplicateAward } from '../helpers/awardValidation';
 import * as notificationHelper from '../helpers/notification';
-import { ROLES } from '../constants/roles';
+import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { ValidationError } from '../middlewares/errorHandler';
 import { parseHeaderMap, getHeaderCol } from '../helpers/excelHelper';

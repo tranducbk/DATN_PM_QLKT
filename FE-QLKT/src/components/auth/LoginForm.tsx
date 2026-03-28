@@ -4,12 +4,12 @@ import { useState } from 'react';
 import { Form, Input, Button, Alert } from 'antd';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { useAuth } from '@/contexts/AuthContext';
 import { ROLES } from '@/constants/roles.constants';
 import Image from 'next/image';
-import './login-form.css';
+import './LoginForm.css';
 
 export function LoginForm() {
   const [form] = Form.useForm();

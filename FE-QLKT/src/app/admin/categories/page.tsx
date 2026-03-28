@@ -16,12 +16,12 @@ import {
   Spin,
 } from 'antd';
 import { PlusOutlined, HomeOutlined } from '@ant-design/icons';
-import { UnitForm } from '@/components/categories/unit-form';
-import { UnitsTable } from '@/components/categories/units-table';
-import { PositionForm } from '@/components/categories/position-form';
-import { PositionsTable } from '@/components/categories/positions-table';
-import { apiClient } from '@/lib/api-client';
-import { useTheme } from '@/components/theme-provider';
+import { UnitForm } from '@/components/categories/UnitForm';
+import { UnitsTable } from '@/components/categories/UnitsTable';
+import { PositionForm } from '@/components/categories/PositionForm';
+import { PositionsTable } from '@/components/categories/PositionsTable';
+import { apiClient } from '@/lib/apiClient';
+import { useTheme } from '@/components/ThemeProvider';
 import Link from 'next/link';
 
 const { Title, Text } = Typography;

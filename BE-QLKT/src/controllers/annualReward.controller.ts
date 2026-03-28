@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import annualRewardService from '../services/annualReward.service';
 import profileService from '../services/profile.service';
 import { prisma } from '../models';
-import { ROLES } from '../constants/roles';
+import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { parsePagination, normalizeParam } from '../helpers/paginationHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
@@ -12,8 +12,7 @@ import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import {
   parsePersonnelIdsFromQuery,
-  getManagerUnitFilter,
-  getSubordinateUnitIds,
+  buildManagerQuanNhanFilter,
 } from '../helpers/controllerHelpers';
 
 class AnnualRewardController {
@@ -39,23 +38,9 @@ class AnnualRewardController {
       quanNhanFilter.ho_ten = { contains: ho_ten, mode: 'insensitive' };
     }
 
-    const managerUnit = await getManagerUnitFilter(req);
-    if (managerUnit) {
-      if (managerUnit.co_quan_don_vi_id) {
-        const donViTrucThuocIdList = await getSubordinateUnitIds(managerUnit.co_quan_don_vi_id);
-        where.QuanNhan = {
-          ...quanNhanFilter,
-          OR: [
-            { co_quan_don_vi_id: managerUnit.co_quan_don_vi_id },
-            { don_vi_truc_thuoc_id: { in: donViTrucThuocIdList } },
-          ],
-        };
-      } else if (managerUnit.don_vi_truc_thuoc_id) {
-        where.QuanNhan = {
-          ...quanNhanFilter,
-          don_vi_truc_thuoc_id: managerUnit.don_vi_truc_thuoc_id,
-        };
-      }
+    const managerQuanNhanWhere = await buildManagerQuanNhanFilter(req, quanNhanFilter);
+    if (managerQuanNhanWhere) {
+      where.QuanNhan = managerQuanNhanWhere;
     } else if (Object.keys(quanNhanFilter).length > 0) {
       where.QuanNhan = quanNhanFilter;
     }

@@ -33,10 +33,10 @@ import {
   HomeOutlined,
   InfoCircleOutlined,
 } from '@ant-design/icons';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { calculateDuration, formatDate } from '@/lib/utils';
-import { useTheme } from '@/components/theme-provider';
+import { useTheme } from '@/components/ThemeProvider';
 import dayjs from 'dayjs';
 
 const { Title, Paragraph, Text } = Typography;

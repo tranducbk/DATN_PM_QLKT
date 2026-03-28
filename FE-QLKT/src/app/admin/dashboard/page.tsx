@@ -21,11 +21,11 @@ import {
   ApartmentOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
-import { useTheme } from '@/components/theme-provider';
+import { useTheme } from '@/components/ThemeProvider';
 import { useAuth } from '@/contexts/AuthContext';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import { formatDateTime } from '@/lib/utils';
-import '@/lib/chart-config';
+import '@/lib/chartConfig';
 import { ActionBarChart, ActivityLineChart, PieChart } from '@/components/charts';
 import { PROPOSAL_STATUS_LABELS, PROPOSAL_TYPE_LABELS } from '@/constants/proposal.constants';
 import { ROLE_LABELS } from '@/constants/roles.constants';

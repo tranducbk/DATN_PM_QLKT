@@ -13,7 +13,7 @@ import {
   LeftOutlined,
   HomeOutlined,
 } from '@ant-design/icons';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import Link from 'next/link';
 
 const { Title, Paragraph, Text } = Typography;

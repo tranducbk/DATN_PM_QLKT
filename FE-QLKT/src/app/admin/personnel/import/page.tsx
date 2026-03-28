@@ -26,7 +26,7 @@ import {
   DownloadOutlined,
   DeleteOutlined,
 } from '@ant-design/icons';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import Link from 'next/link';
 import type { UploadProps } from 'antd';
 

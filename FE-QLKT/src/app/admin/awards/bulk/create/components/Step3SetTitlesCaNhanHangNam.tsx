@@ -16,7 +16,7 @@ import {
 } from 'antd';
 import { EditOutlined, HistoryOutlined, EyeOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import PersonnelRewardHistoryModal from './PersonnelRewardHistoryModal';
 import { formatDate } from '@/lib/utils';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';

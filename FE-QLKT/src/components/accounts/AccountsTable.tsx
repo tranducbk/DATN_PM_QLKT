@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { MoreHorizontal, Trash2 } from 'lucide-react';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import { App } from 'antd';
 import { formatDate } from '@/lib/utils';
 import {

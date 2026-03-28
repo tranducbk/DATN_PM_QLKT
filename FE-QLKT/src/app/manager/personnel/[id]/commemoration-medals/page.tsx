@@ -19,8 +19,8 @@ import {
 } from 'antd';
 import type { TableColumnsType } from 'antd';
 import { LeftOutlined, HomeOutlined } from '@ant-design/icons';
-import { apiClient } from '@/lib/api-client';
-import { useTheme } from '@/components/theme-provider';
+import { apiClient } from '@/lib/apiClient';
+import { useTheme } from '@/components/ThemeProvider';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 

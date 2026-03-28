@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../models';
-import { ROLES } from '../constants/roles';
+import { ROLES } from '../constants/roles.constants';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';

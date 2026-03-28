@@ -24,8 +24,8 @@ import {
   InfoCircleOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
-import { apiClient } from '@/lib/api-client';
-import { useTheme } from '@/components/theme-provider';
+import { apiClient } from '@/lib/apiClient';
+import { useTheme } from '@/components/ThemeProvider';
 import { useAuth } from '@/contexts/AuthContext';
 import { PasswordStrengthIndicator } from '@/components/PasswordStrengthIndicator';
 

@@ -123,7 +123,7 @@ async function getFeatures() {
   return features;
 }
 
-router.get('/features', async (_req: Request, res: Response) => {
+router.get('/features', async (req: Request, res: Response) => {
   res.json({ success: true, data: await getFeatures() });
 });
 
@@ -135,7 +135,7 @@ router.post('/auth', (req: Request, res: Response) => {
   return res.status(401).json({ success: false, message: 'Mật khẩu không đúng' });
 });
 
-router.get('/status', verifyDevPassword, async (_req: Request, res: Response) => {
+router.get('/status', verifyDevPassword, async (req: Request, res: Response) => {
   const cronEnabled = (await getSetting('cron_enabled', 'true')) === 'true';
   const cronSchedule = await getSetting('cron_schedule', '0 1 1 * *');
   const storedLastRun = await getSetting('cron_last_run', null);
@@ -160,7 +160,7 @@ router.get('/status', verifyDevPassword, async (_req: Request, res: Response) =>
   });
 });
 
-router.post('/cron/trigger', verifyDevPassword, async (_req: Request, res: Response) => {
+router.post('/cron/trigger', verifyDevPassword, async (req: Request, res: Response) => {
   try {
     const result = await runCronJob();
 

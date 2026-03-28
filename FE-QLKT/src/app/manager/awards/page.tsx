@@ -19,7 +19,7 @@ import { getApiErrorMessage } from '@/lib/apiError';
 
 import type { TableColumnsType } from 'antd';
 import { FilterOutlined, HomeOutlined, DownloadOutlined } from '@ant-design/icons';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import {
   DANH_HIEU_MAP,
   COLUMN_STYLES,
@@ -56,6 +56,64 @@ interface Award {
   mo_ta?: string;
   ten_de_tai?: string;
 }
+
+const AWARD_TYPE_CONFIG: Record<string, {
+  fetch: (params: any) => Promise<any>;
+  export: (params: any) => Promise<Blob>;
+  exportFilename: string;
+  template: () => Promise<Blob>;
+  templateFilename: string;
+  import: (file: File) => Promise<any>;
+}> = {
+  annual: {
+    fetch: apiClient.getAnnualRewards,
+    export: apiClient.exportAnnualRewards,
+    exportFilename: 'ca_nhan_hang_nam',
+    template: apiClient.getAnnualRewardsTemplate,
+    templateFilename: 'mau_import_ca_nhan_hang_nam',
+    import: apiClient.importAnnualRewards,
+  },
+  hccsvv: {
+    fetch: apiClient.getHCCSVV,
+    export: apiClient.exportHCCSVV,
+    exportFilename: 'hccsvv',
+    template: apiClient.getHCCSVVTemplate,
+    templateFilename: 'mau_import_hccsvv',
+    import: apiClient.importHCCSVV,
+  },
+  contribution: {
+    fetch: apiClient.getContributionAwards,
+    export: apiClient.exportContributionAwards,
+    exportFilename: 'hcbvtq_cong_hien',
+    template: apiClient.getContributionAwardsTemplate,
+    templateFilename: 'mau_import_hcbvtq_cong_hien',
+    import: apiClient.importContributionAwards,
+  },
+  commemoration: {
+    fetch: apiClient.getCommemorationMedals,
+    export: apiClient.exportCommemorationMedals,
+    exportFilename: 'knc_vsnxd',
+    template: apiClient.getCommemorationMedalsTemplate,
+    templateFilename: 'mau_import_knc_vsnxd',
+    import: apiClient.importCommemorationMedals,
+  },
+  militaryFlag: {
+    fetch: apiClient.getMilitaryFlag,
+    export: apiClient.exportMilitaryFlag,
+    exportFilename: 'hc_quan_ky_quyet_thang',
+    template: apiClient.getMilitaryFlagTemplate,
+    templateFilename: 'mau_import_hc_quan_ky_quyet_thang',
+    import: apiClient.importMilitaryFlag,
+  },
+  scientific: {
+    fetch: apiClient.getScientificAchievements,
+    export: apiClient.exportScientificAchievements,
+    exportFilename: 'thanh_tich_khoa_hoc',
+    template: apiClient.getScientificAchievementsTemplate,
+    templateFilename: 'mau_import_thanh_tich_khoa_hoc',
+    import: apiClient.importScientificAchievements,
+  },
+};
 
 export default function AdminAwardsPage() {
   const [activeTab, setActiveTab] = useState<AwardType>('annual');
@@ -112,29 +170,8 @@ export default function AdminAwardsPage() {
       setLoading(true);
       const params: any = { limit: 1000 };
 
-      let result;
-      switch (activeTab) {
-        case 'annual':
-          result = await apiClient.getAnnualRewards(params);
-          break;
-        case 'hccsvv':
-          result = await apiClient.getHCCSVV(params);
-          break;
-        case 'contribution':
-          result = await apiClient.getContributionAwards(params);
-          break;
-        case 'commemoration':
-          result = await apiClient.getCommemorationMedals(params);
-          break;
-        case 'militaryFlag':
-          result = await apiClient.getMilitaryFlag(params);
-          break;
-        case 'scientific':
-          result = await apiClient.getScientificAchievements(params);
-          break;
-        default:
-          result = await apiClient.getAnnualRewards(params);
-      }
+      const config = AWARD_TYPE_CONFIG[activeTab];
+      const result = await (config ?? AWARD_TYPE_CONFIG.annual).fetch(params);
 
       if (!result.success) {
         message.error(result.message || 'Không thể tải danh sách khen thưởng');
@@ -156,37 +193,11 @@ export default function AdminAwardsPage() {
       if (debouncedFilters.ho_ten) params.ho_ten = debouncedFilters.ho_ten;
       if (debouncedFilters.danh_hieu) params.danh_hieu = debouncedFilters.danh_hieu;
 
-      let blob;
-      let filename = `danh_sach_khen_thuong`;
-
-      switch (activeTab) {
-        case 'annual':
-          blob = await apiClient.exportAnnualRewards(params);
-          filename = `ca_nhan_hang_nam`;
-          break;
-        case 'hccsvv':
-          blob = await apiClient.exportHCCSVV(params);
-          filename = `hccsvv`;
-          break;
-        case 'contribution':
-          blob = await apiClient.exportContributionAwards(params);
-          filename = `hcbvtq_cong_hien`;
-          break;
-        case 'commemoration':
-          blob = await apiClient.exportCommemorationMedals(params);
-          filename = `knc_vsnxd`;
-          break;
-        case 'militaryFlag':
-          blob = await apiClient.exportMilitaryFlag(params);
-          filename = `hc_quan_ky_quyet_thang`;
-          break;
-        case 'scientific':
-          blob = await apiClient.exportScientificAchievements(params);
-          filename = `thanh_tich_khoa_hoc`;
-          break;
-        default:
-          blob = await apiClient.exportAwards(params);
-      }
+      const config = AWARD_TYPE_CONFIG[activeTab];
+      const blob = config
+        ? await config.export(params)
+        : await apiClient.exportAwards(params);
+      const filename = config?.exportFilename ?? 'danh_sach_khen_thuong';
 
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -212,37 +223,11 @@ export default function AdminAwardsPage() {
   const handleDownloadTemplate = async () => {
     try {
       setDownloadingTemplate(true);
-      let blob;
-      let filename = `mau_import_khen_thuong`;
-
-      switch (activeTab) {
-        case 'annual':
-          blob = await apiClient.getAnnualRewardsTemplate();
-          filename = `mau_import_ca_nhan_hang_nam`;
-          break;
-        case 'scientific':
-          blob = await apiClient.getScientificAchievementsTemplate();
-          filename = `mau_import_thanh_tich_khoa_hoc`;
-          break;
-        case 'hccsvv':
-          blob = await apiClient.getHCCSVVTemplate();
-          filename = `mau_import_hccsvv`;
-          break;
-        case 'contribution':
-          blob = await apiClient.getContributionAwardsTemplate();
-          filename = `mau_import_hcbvtq_cong_hien`;
-          break;
-        case 'commemoration':
-          blob = await apiClient.getCommemorationMedalsTemplate();
-          filename = `mau_import_knc_vsnxd`;
-          break;
-        case 'militaryFlag':
-          blob = await apiClient.getMilitaryFlagTemplate();
-          filename = `mau_import_hc_quan_ky_quyet_thang`;
-          break;
-        default:
-          blob = await apiClient.getAwardsTemplate();
-      }
+      const config = AWARD_TYPE_CONFIG[activeTab];
+      const blob = config
+        ? await config.template()
+        : await apiClient.getAwardsTemplate();
+      const filename = config?.templateFilename ?? 'mau_import_khen_thuong';
 
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -269,30 +254,12 @@ export default function AdminAwardsPage() {
       setImporting(true);
       setImportResult(null);
 
-      let result;
-      switch (activeTab) {
-        case 'annual':
-          result = await apiClient.importAnnualRewards(file);
-          break;
-        case 'scientific':
-          result = await apiClient.importScientificAchievements(file);
-          break;
-        case 'hccsvv':
-          result = await apiClient.importHCCSVV(file);
-          break;
-        case 'contribution':
-          result = await apiClient.importContributionAwards(file);
-          break;
-        case 'commemoration':
-          result = await apiClient.importCommemorationMedals(file);
-          break;
-        case 'militaryFlag':
-          result = await apiClient.importMilitaryFlag(file);
-          break;
-        default:
-          message.error('Chức năng import chưa được hỗ trợ cho loại khen thưởng này');
-          return;
+      const config = AWARD_TYPE_CONFIG[activeTab];
+      if (!config) {
+        message.error('Chức năng import chưa được hỗ trợ cho loại khen thưởng này');
+        return;
       }
+      const result = await config.import(file);
 
       if (result.success) {
         const { imported, total, errors } = result.data;

@@ -4,7 +4,7 @@ import { checkDuplicateAward } from '../helpers/awardValidation';
 import profileService from './profile.service';
 import * as notificationHelper from '../helpers/notification';
 import { getDanhHieuName } from '../constants/danhHieu.constants';
-import { ROLES } from '../constants/roles';
+import { ROLES } from '../constants/roles.constants';
 import { ValidationError } from '../middlewares/errorHandler';
 import { parseHeaderMap, getHeaderCol } from '../helpers/excelHelper';
 

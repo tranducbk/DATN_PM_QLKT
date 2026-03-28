@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { personnelFormSchema } from '@/lib/schemas';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import { App } from 'antd';
 import { getApiErrorMessage } from '@/lib/apiError';
 

@@ -28,7 +28,7 @@ import {
   FileTextOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import { previewFile } from '@/utils/filePreview';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { LOAI_KHEN_THUONG_OPTIONS, getLoaiDeXuatName } from '@/constants/danhHieu.constants';

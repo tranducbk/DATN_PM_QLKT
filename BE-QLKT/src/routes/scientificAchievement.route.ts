@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import scientificAchievementController from '../controllers/scientificAchievement.controller';
 import { verifyToken, requireManager, requireAuth } from '../middlewares/auth';
-import { excelUpload as upload } from '../configs/multer.config';
+import { excelUpload as upload } from '../configs/multer';
 import { validate } from '../middlewares/validate';
 import { scientificAchievementValidation } from '../validations';
 

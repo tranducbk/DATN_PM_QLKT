@@ -104,9 +104,9 @@ export function isSampleRow(text: string | null): boolean {
   return SAMPLE_ROW_KEYWORDS.some(keyword => lowerText.includes(keyword));
 }
 
-export function logSheetInfo(_sheet: Worksheet, _sheetName: string): void {}
+export function logSheetInfo(sheet: Worksheet, sheetName: string): void {}
 
-export function parseDanhHieuRow(row: Row, _rowNumber: number): ParsedDanhHieu | null {
+export function parseDanhHieuRow(row: Row, rowNumber: number): ParsedDanhHieu | null {
   const cccdCell = row.getCell(CELL_INDICES.CCCD);
   const hoTenCell = row.getCell(CELL_INDICES.HO_TEN);
   const namCell = row.getCell(CELL_INDICES.NAM);
@@ -151,7 +151,7 @@ export function parseDanhHieuRow(row: Row, _rowNumber: number): ParsedDanhHieu |
   };
 }
 
-export function parseThanhTichRow(row: Row, _rowNumber: number): ParsedThanhTich | null {
+export function parseThanhTichRow(row: Row, rowNumber: number): ParsedThanhTich | null {
   const cccdCell = row.getCell(CELL_INDICES.CCCD);
   const hoTenCell = row.getCell(CELL_INDICES.HO_TEN);
   const namCell = row.getCell(CELL_INDICES.NAM);

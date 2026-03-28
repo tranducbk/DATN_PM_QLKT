@@ -1,5 +1,5 @@
 import { prisma } from '../../models';
-import { ROLES } from '../../constants/roles';
+import { ROLES } from '../../constants/roles.constants';
 import { PROPOSAL_TYPES, type ProposalType } from '../../constants/proposalTypes.constants';
 import { NotFoundError, ForbiddenError, ValidationError } from '../../middlewares/errorHandler';
 import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';

@@ -39,10 +39,10 @@ import {
 import { EditableCell } from '@/components/EditableCell';
 import DecisionModal from '@/components/DecisionModal';
 import { format } from 'date-fns';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { previewFileWithApi } from '@/utils/filePreview';
-import { useTheme } from '@/components/theme-provider';
+import { useTheme } from '@/components/ThemeProvider';
 import { getDanhHieuName } from '@/constants/danhHieu.constants';
 import { PROPOSAL_STATUS, PROPOSAL_TYPES } from '@/constants/proposal.constants';
 

@@ -2,7 +2,7 @@
 
 import { Doughnut } from 'react-chartjs-2';
 import { Card } from 'antd';
-import { useTheme } from '@/components/theme-provider';
+import { useTheme } from '@/components/ThemeProvider';
 import { ROLE_LABELS } from '@/constants/roles.constants';
 
 interface RoleDistributionChartProps {

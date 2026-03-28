@@ -3,7 +3,7 @@
 import { Pie } from 'react-chartjs-2';
 import type { ChartOptions } from 'chart.js';
 import { Card } from 'antd';
-import { useTheme } from '@/components/theme-provider';
+import { useTheme } from '@/components/ThemeProvider';
 
 interface PieChartProps {
   data: Array<{ label: string; value: number }>;

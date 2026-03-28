@@ -11,11 +11,11 @@ import {
 } from '../middlewares/auth';
 import { auditLog } from '../middlewares/auditLog';
 import { getLogDescription, getResourceId } from '../helpers/auditLog';
-import { ROLES } from '../constants/roles';
+import { ROLES } from '../constants/roles.constants';
 import {
   excelUpload as upload,
   decisionUploadDir as uploadDir,
-} from '../configs/multer.config';
+} from '../configs/multer';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 
 const router = Router();

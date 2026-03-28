@@ -24,7 +24,7 @@ import {
   HomeOutlined,
   FilePdfOutlined,
 } from '@ant-design/icons';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 
 const { Title, Paragraph } = Typography;

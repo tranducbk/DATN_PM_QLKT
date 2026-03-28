@@ -4,11 +4,12 @@ import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import ExcelJS from 'exceljs';
 import bcrypt from 'bcrypt';
 import { parseCCCD } from '../helpers/cccdHelper';
-import { ROLES } from '../constants/roles';
+import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { NotFoundError, ValidationError, ForbiddenError } from '../middlewares/errorHandler';
 import profileService from './profile.service';
 import * as notificationHelper from '../helpers/notification';
+import { buildUnitWhereFilter } from '../helpers/controllerHelpers';
 
 class PersonnelService {
   parseCCCD(value) {
@@ -42,45 +43,16 @@ class PersonnelService {
         select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true },
       });
 
-      if (manager && manager.co_quan_don_vi_id) {
-        // Lấy tất cả đơn vị trực thuộc của cơ quan đơn vị này
-        const donViTrucThuocList = await prisma.donViTrucThuoc.findMany({
-          where: { co_quan_don_vi_id: manager.co_quan_don_vi_id },
-          select: { id: true },
-        });
-
-        const donViTrucThuocIds = donViTrucThuocList.map(dv => dv.id);
-
-        // Filter: quân nhân thuộc cơ quan đơn vị HOẶC thuộc đơn vị trực thuộc của cơ quan đơn vị đó
-        andConditions.push({
-          OR: [
-            { co_quan_don_vi_id: manager.co_quan_don_vi_id },
-            ...(donViTrucThuocIds.length > 0
-              ? [{ don_vi_truc_thuoc_id: { in: donViTrucThuocIds } }]
-              : []),
-          ],
-        });
+      if (manager) {
+        const unitFilter = await buildUnitWhereFilter(manager);
+        if (unitFilter) andConditions.push(unitFilter);
       }
     }
 
     // Filter theo unit_id nếu có (lọc theo cơ quan đơn vị hoặc đơn vị trực thuộc)
     if (unit_id) {
-      // Lấy tất cả đơn vị trực thuộc của cơ quan đơn vị được filter
-      const donViTrucThuocList = await prisma.donViTrucThuoc.findMany({
-        where: { co_quan_don_vi_id: unit_id },
-        select: { id: true },
-      });
-      const donViTrucThuocIds = donViTrucThuocList.map(dv => dv.id);
-
-      // Quân nhân thuộc cơ quan đơn vị này HOẶC thuộc đơn vị trực thuộc của nó
-      andConditions.push({
-        OR: [
-          { co_quan_don_vi_id: unit_id },
-          ...(donViTrucThuocIds.length > 0
-            ? [{ don_vi_truc_thuoc_id: { in: donViTrucThuocIds } }]
-            : []),
-        ],
-      });
+      const unitFilter = await buildUnitWhereFilter({ co_quan_don_vi_id: unit_id });
+      if (unitFilter) andConditions.push(unitFilter);
     }
 
     // Filter theo search (tìm theo họ tên hoặc CCCD)

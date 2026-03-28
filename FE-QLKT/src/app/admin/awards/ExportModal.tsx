@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Modal, Select, InputNumber, Space, Typography, Table, message } from 'antd';
 import { DownloadOutlined } from '@ant-design/icons';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import { DANH_HIEU_MAP } from '@/utils/awardsHelpers';
 import {
   AWARD_TAB_LABELS,

@@ -5,7 +5,7 @@ import { Table, Select, Input, Alert, Typography, Space, Button, Modal, Tabs, Ta
 import { EditOutlined, HistoryOutlined, EyeOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { formatDate } from '@/lib/utils';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import ScientificAchievementHistoryModal from './ScientificAchievementHistoryModal';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
 import { PROPOSAL_STATUS, PROPOSAL_STATUS_LABELS, PROPOSAL_STATUS_COLORS } from '@/constants/proposal.constants';

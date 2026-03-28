@@ -9,10 +9,10 @@ import {
   Button,
   Alert,
 } from 'antd';
-import { AccountCreateForm } from '@/components/accounts/account-create-form';
+import { AccountCreateForm } from '@/components/accounts/AccountCreateForm';
 import Link from 'next/link';
 import { ArrowLeftOutlined } from '@ant-design/icons';
-import { useTheme } from '@/components/theme-provider';
+import { useTheme } from '@/components/ThemeProvider';
 
 const { Title } = Typography;
 

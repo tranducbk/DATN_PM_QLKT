@@ -2,7 +2,7 @@ import { prisma } from '../models';
 import ExcelJS from 'exceljs';
 import profileService from './profile.service';
 import * as notificationHelper from '../helpers/notification';
-import { ROLES } from '../constants/roles';
+import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 
@@ -323,7 +323,7 @@ class ScientificAchievementService {
     return workbook;
   }
 
-  async generateTemplate(personnelIds: string[] = [], _userRole: string = ROLES.MANAGER) {
+  async generateTemplate(personnelIds: string[] = [], userRole: string = ROLES.MANAGER) {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('NCKH');
 
@@ -647,7 +647,7 @@ class ScientificAchievementService {
     return { total, valid, errors };
   }
 
-  async confirmImport(validItems: ConfirmImportItem[], _adminId: string) {
+  async confirmImport(validItems: ConfirmImportItem[], adminId: string) {
     return await prisma.$transaction(
       async tx => {
         const results = [];

@@ -30,12 +30,12 @@ import {
   EditOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import VietnamAddressCascader from './VietnamAddressCascader';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
-import { useTheme } from '@/components/theme-provider';
+import { useTheme } from '@/components/ThemeProvider';
 import { formatDate } from '@/lib/utils';
-import { getAntdThemeConfig } from '@/lib/antd-theme';
+import { getAntdThemeConfig } from '@/lib/antdTheme';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { ROLES, getRoleInfo } from '@/constants/roles.constants';
 

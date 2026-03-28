@@ -18,7 +18,7 @@ import {
 } from 'antd';
 import { getApiErrorMessage } from '@/lib/apiError';
 
-import { useTheme } from '@/components/theme-provider';
+import { useTheme } from '@/components/ThemeProvider';
 import {
   SyncOutlined,
   HomeOutlined,
@@ -27,9 +27,9 @@ import {
   SafetyCertificateOutlined,
   EyeOutlined,
 } from '@ant-design/icons';
-import { PersonnelTable } from '@/components/personnel/personnel-table';
-import { PersonnelForm } from '@/components/personnel/personnel-form';
-import { apiClient } from '@/lib/api-client';
+import { PersonnelTable } from '@/components/personnel/PersonnelTable';
+import { PersonnelForm } from '@/components/personnel/PersonnelForm';
+import { apiClient } from '@/lib/apiClient';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';

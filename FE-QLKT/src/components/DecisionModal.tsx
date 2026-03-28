@@ -19,7 +19,7 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import { UploadOutlined, SaveOutlined, FileTextOutlined } from '@ant-design/icons';
 import type { UploadFile } from 'antd/es/upload/interface';
 import dayjs from 'dayjs';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import { LOAI_KHEN_THUONG_OPTIONS } from '@/constants/danhHieu.constants';
 
 interface Decision {

@@ -41,9 +41,9 @@ import {
 } from '@ant-design/icons';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { useTheme } from './theme-provider';
+import { useTheme } from './ThemeProvider';
 import { useAuth } from '@/contexts/AuthContext';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import type { NotificationItem } from '@/lib/api/notifications';
 import { formatDate } from '@/lib/utils';
 import type { UserRole } from '@/lib/types';

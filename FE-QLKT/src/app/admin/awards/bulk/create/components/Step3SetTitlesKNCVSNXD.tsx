@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Table, Alert, Typography, Space, message, Button, Select, Input } from 'antd';
 import { EditOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import { formatDate } from '@/lib/utils';
 import type { DateInput } from '@/lib/types';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';

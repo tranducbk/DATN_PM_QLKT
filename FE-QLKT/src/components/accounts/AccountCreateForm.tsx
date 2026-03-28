@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { accountCreateSchema } from '@/lib/schemas';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { message } from 'antd';
 import { useAuth } from '@/contexts/AuthContext';

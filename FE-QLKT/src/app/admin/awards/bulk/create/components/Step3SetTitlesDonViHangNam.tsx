@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Table, Select, Alert, Typography, Space, Tag, Button, message } from 'antd';
 import { EditOutlined, HistoryOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import UnitAnnualAwardHistoryModal from './UnitAnnualAwardHistoryModal';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 import {

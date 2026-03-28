@@ -92,7 +92,7 @@ const getResourceId = {
     },
   fromResponse:
     () =>
-    (_req: Request, _res: Response, responseData: unknown): string | null => {
+    (req: Request, res: Response, responseData: unknown): string | null => {
       try {
         const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
         if (data && typeof data === 'object') {

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Modal, Form, Input, message, Alert } from 'antd';
 import { CloseCircleOutlined } from '@ant-design/icons';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import { getApiErrorMessage } from '@/lib/apiError';
 
 const { TextArea } = Input;

@@ -5,7 +5,7 @@ import { Table, Select, Alert, Typography, Space, message, Button, Input } from 
 import { EditOutlined, HistoryOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { formatDate } from '@/lib/utils';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import PositionHistoryModal from './PositionHistoryModal';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';

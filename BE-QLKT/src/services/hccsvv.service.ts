@@ -5,7 +5,7 @@ import profileService from './profile.service';
 import * as notificationHelper from '../helpers/notification';
 import { getDanhHieuName } from '../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
-import { ROLES } from '../constants/roles';
+import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { parseHeaderMap, getHeaderCol } from '../helpers/excelHelper';
 import { ValidationError } from '../middlewares/errorHandler';

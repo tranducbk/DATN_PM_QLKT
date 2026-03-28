@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Table, Select, Alert, Typography, Space, message, Button, Input } from 'antd';
 import { EditOutlined, HistoryOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import ServiceHistoryModal from './ServiceHistoryModal';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';

@@ -22,9 +22,9 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import { ArrowLeftOutlined, EditOutlined, ReloadOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import { formatDate, formatDateTime } from '@/lib/utils';
-import { useTheme } from '@/components/theme-provider';
+import { useTheme } from '@/components/ThemeProvider';
 import { ROLES, getRoleInfo } from '@/constants/roles.constants';
 
 const { Title } = Typography;

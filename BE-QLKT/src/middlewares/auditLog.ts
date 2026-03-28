@@ -109,7 +109,7 @@ const getResourceId = {
     const value = req.params?.[paramName];
     return Array.isArray(value) ? value[0] || null : value || null;
   },
-  fromResponse: () => (_req: Request, _res: Response, responseData: unknown) => {
+  fromResponse: () => (req: Request, res: Response, responseData: unknown) => {
     const data = parseResponse(responseData);
     return (data?.data as Record<string, unknown>)?.id as string || (data?.id as string) || null;
   },

@@ -14,10 +14,10 @@ import {
   Popconfirm,
 } from 'antd';
 import { FileTextOutlined, FundOutlined, HomeOutlined, DeleteOutlined } from '@ant-design/icons';
-import { LogsFilter, LogsFilterValues } from '@/components/system-logs/logs-filter';
-import { LogsTable, LogEntry } from '@/components/system-logs/logs-table';
-import { apiClient } from '@/lib/api-client';
-import { useTheme } from '@/components/theme-provider';
+import { LogsFilter, LogsFilterValues } from '@/components/system-logs/LogsFilter';
+import { LogsTable, LogEntry } from '@/components/system-logs/LogsTable';
+import { apiClient } from '@/lib/apiClient';
+import { useTheme } from '@/components/ThemeProvider';
 import { useDevZone } from '@/contexts/DevZoneContext';
 import Link from 'next/link';
 

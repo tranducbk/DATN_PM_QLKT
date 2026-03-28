@@ -3,9 +3,9 @@ import proposalController from '../controllers/proposal.controller';
 import { verifyToken, checkRole } from '../middlewares/auth';
 import { auditLog } from '../middlewares/auditLog';
 import { getLogDescription, getResourceId } from '../helpers/auditLog';
-import { ROLES } from '../constants/roles';
-import { writeLimiter } from '../configs/rateLimiter.config';
-import { documentUpload as upload } from '../configs/multer.config';
+import { ROLES } from '../constants/roles.constants';
+import { writeLimiter } from '../configs/rateLimiter';
+import { documentUpload as upload } from '../configs/multer';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 
 const router = Router();

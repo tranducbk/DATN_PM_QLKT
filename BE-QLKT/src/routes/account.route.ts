@@ -3,7 +3,7 @@ import accountController from '../controllers/account.controller';
 import { verifyToken, requireSuperAdmin, requireAdmin } from '../middlewares/auth';
 import { auditLog, createDescription, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
-import { writeLimiter } from '../configs/rateLimiter.config';
+import { writeLimiter } from '../configs/rateLimiter';
 import { validate } from '../middlewares/validate';
 import { accountValidation } from '../validations';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';

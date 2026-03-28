@@ -11,12 +11,12 @@ import {
 } from '../middlewares/auth';
 import { auditLog } from '../middlewares/auditLog';
 import { getLogDescription, getResourceId } from '../helpers/auditLog';
-import { ROLES } from '../constants/roles';
+import { ROLES } from '../constants/roles.constants';
 import {
   excelUpload as upload,
   pdfDecisionUpload as pdfUpload,
   decisionUploadDir as uploadDir,
-} from '../configs/multer.config';
+} from '../configs/multer';
 import { validate } from '../middlewares/validate';
 import { annualRewardValidation } from '../validations';
 import { normalizeParam } from '../helpers/paginationHelper';

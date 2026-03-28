@@ -9,7 +9,7 @@ import * as notificationsApi from './notifications';
 import * as dashboardApi from './dashboard';
 import * as profilesApi from './profiles';
 import * as decisionsApi from './decisions';
-import * as systemLogsApi from './system-logs';
+import * as systemLogsApi from './systemLogs';
 
 // Re-export individual modules for direct import
 export {

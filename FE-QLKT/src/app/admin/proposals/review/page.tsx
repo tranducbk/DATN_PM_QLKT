@@ -32,7 +32,7 @@ import {
   DeleteOutlined,
 } from '@ant-design/icons';
 import { format } from 'date-fns';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import { message } from 'antd';
 import {
   PROPOSAL_STATUS,

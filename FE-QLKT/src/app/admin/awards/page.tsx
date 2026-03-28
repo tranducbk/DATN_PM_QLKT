@@ -19,7 +19,7 @@ import { getApiErrorMessage } from '@/lib/apiError';
 
 import type { TableColumnsType } from 'antd';
 import { DownloadOutlined, FilterOutlined, HomeOutlined, DeleteOutlined } from '@ant-design/icons';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import {
   DANH_HIEU_MAP,
@@ -71,6 +71,19 @@ type AwardTableRow = AwardCore & {
 
 type Award = AwardCore;
 
+const AWARD_TYPE_CONFIG: Record<string, {
+  fetch: (params: any) => Promise<any>;
+  delete: (id: string) => Promise<any>;
+}> = {
+  annual: { fetch: apiClient.getAnnualRewards, delete: apiClient.deleteAnnualReward },
+  unit: { fetch: apiClient.getUnitAnnualAwards, delete: apiClient.deleteUnitAnnualAward },
+  hccsvv: { fetch: apiClient.getHCCSVV, delete: apiClient.deleteHCCSVV },
+  contribution: { fetch: apiClient.getContributionAwards, delete: apiClient.deleteContributionAward },
+  commemoration: { fetch: apiClient.getCommemorationMedals, delete: apiClient.deleteCommemorationMedal },
+  militaryFlag: { fetch: apiClient.getMilitaryFlag, delete: apiClient.deleteMilitaryFlag },
+  scientific: { fetch: apiClient.getScientificAchievements, delete: apiClient.deleteScientificAchievement },
+};
+
 export default function AdminAwardsPage() {
   const [activeTab, setActiveTab] = useState('annual');
   const [awards, setAwards] = useState<AwardTableRow[]>([]);
@@ -111,32 +124,8 @@ export default function AdminAwardsPage() {
       setLoading(true);
       const params: any = { limit: 1000 };
 
-      let result;
-      switch (activeTab) {
-        case 'annual':
-          result = await apiClient.getAnnualRewards(params);
-          break;
-        case 'unit':
-          result = await apiClient.getUnitAnnualAwards(params);
-          break;
-        case 'hccsvv':
-          result = await apiClient.getHCCSVV(params);
-          break;
-        case 'contribution':
-          result = await apiClient.getContributionAwards(params);
-          break;
-        case 'commemoration':
-          result = await apiClient.getCommemorationMedals(params);
-          break;
-        case 'militaryFlag':
-          result = await apiClient.getMilitaryFlag(params);
-          break;
-        case 'scientific':
-          result = await apiClient.getScientificAchievements(params);
-          break;
-        default:
-          result = await apiClient.getAnnualRewards(params);
-      }
+      const config = AWARD_TYPE_CONFIG[activeTab];
+      const result = await (config ?? AWARD_TYPE_CONFIG.annual).fetch(params);
 
       if (!result.success) {
         message.error(result.message || 'Không thể tải danh sách khen thưởng');
@@ -157,35 +146,12 @@ export default function AdminAwardsPage() {
   const handleDeleteAward = async (id: string) => {
     try {
       setDeletingId(id);
-      let result;
-
-      // Gọi API delete tương ứng với từng loại khen thưởng
-      switch (activeTab) {
-        case 'annual':
-          result = await apiClient.deleteAnnualReward(id);
-          break;
-        case 'unit':
-          result = await apiClient.deleteUnitAnnualAward(id);
-          break;
-        case 'hccsvv':
-          result = await apiClient.deleteHCCSVV(id);
-          break;
-        case 'contribution':
-          result = await apiClient.deleteContributionAward(id);
-          break;
-        case 'commemoration':
-          result = await apiClient.deleteCommemorationMedal(id);
-          break;
-        case 'militaryFlag':
-          result = await apiClient.deleteMilitaryFlag(id);
-          break;
-        case 'scientific':
-          result = await apiClient.deleteScientificAchievement(id);
-          break;
-        default:
-          message.error('Loại khen thưởng không được hỗ trợ xóa');
-          return;
+      const config = AWARD_TYPE_CONFIG[activeTab];
+      if (!config) {
+        message.error('Loại khen thưởng không được hỗ trợ xóa');
+        return;
       }
+      const result = await config.delete(id);
 
       if (!result.success) {
         message.error(result.message || 'Xóa khen thưởng thất bại');

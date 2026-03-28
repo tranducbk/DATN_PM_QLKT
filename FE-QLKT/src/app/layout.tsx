@@ -1,5 +1,5 @@
 import './globals.css';
-import { ThemeProvider } from '@/components/theme-provider';
+import { ThemeProvider } from '@/components/ThemeProvider';
 import AntdRegistry from '@/lib/AntdRegistry';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/contexts/AuthContext';

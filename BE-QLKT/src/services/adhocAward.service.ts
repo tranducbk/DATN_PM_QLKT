@@ -1,8 +1,8 @@
 import path from 'path';
 import fs from 'fs/promises';
 import { prisma } from '../models';
-import { NOTIFICATION_TYPES, RESOURCE_TYPES } from '../constants/notificationTypes';
-import { ROLES } from '../constants/roles';
+import { NOTIFICATION_TYPES, RESOURCE_TYPES } from '../constants/notificationTypes.constants';
+import { ROLES } from '../constants/roles.constants';
 import type { KhenThuongDotXuat, Prisma } from '../generated/prisma';
 
 interface UploadedFile {

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import accountService from '../services/account.service';
-import { ROLES, Role } from '../constants/roles';
+import { ROLES, Role } from '../constants/roles.constants';
 import { parsePagination, normalizeParam } from '../helpers/paginationHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';

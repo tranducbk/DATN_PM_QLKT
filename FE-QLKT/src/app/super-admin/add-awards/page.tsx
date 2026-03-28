@@ -31,7 +31,7 @@ import {
 } from '@ant-design/icons';
 import Link from 'next/link';
 import type { ColumnsType } from 'antd/es/table';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import { getDanhHieuName } from '@/constants/danhHieu.constants';
 import Step2SelectPersonnelNienHan from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelNienHan';
 import Step3SetTitlesNienHan from '@/app/admin/awards/bulk/create/components/Step3SetTitlesNienHan';

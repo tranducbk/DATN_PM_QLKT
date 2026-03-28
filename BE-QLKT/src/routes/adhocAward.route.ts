@@ -3,8 +3,8 @@ import adhocAwardController from '../controllers/adhocAward.controller';
 import { verifyToken, checkRole } from '../middlewares/auth';
 import { auditLog } from '../middlewares/auditLog';
 import { getLogDescription, getResourceId } from '../helpers/auditLog';
-import { ROLES } from '../constants/roles';
-import { adhocAwardUpload as upload } from '../configs/multer.config';
+import { ROLES } from '../constants/roles.constants';
+import { adhocAwardUpload as upload } from '../configs/multer';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 
 const router = Router();

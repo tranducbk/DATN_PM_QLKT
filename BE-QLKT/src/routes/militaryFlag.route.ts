@@ -3,8 +3,8 @@ import militaryFlagController from '../controllers/militaryFlag.controller';
 import { verifyToken, checkRole, requireManager, requireAdmin } from '../middlewares/auth';
 import { auditLog } from '../middlewares/auditLog';
 import { getLogDescription, getResourceId } from '../helpers/auditLog';
-import { ROLES } from '../constants/roles';
-import { excelUpload as upload } from '../configs/multer.config';
+import { ROLES } from '../constants/roles.constants';
+import { excelUpload as upload } from '../configs/multer';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 
 const router = Router();

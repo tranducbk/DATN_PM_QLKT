@@ -32,7 +32,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { accountFormSchema } from '@/lib/schemas';
 import type { CreateAccountBody } from '@/lib/api/accounts';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import { App } from 'antd';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';

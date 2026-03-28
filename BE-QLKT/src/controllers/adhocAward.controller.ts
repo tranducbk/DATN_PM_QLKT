@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import adhocAwardService from '../services/adhocAward.service';
-import { ROLES } from '../constants/roles';
+import { ROLES } from '../constants/roles.constants';
 import { parsePagination, normalizeParam } from '../helpers/paginationHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';

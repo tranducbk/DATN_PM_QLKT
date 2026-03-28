@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt';
 import { prisma } from '../models';
-import { ROLES } from '../constants/roles';
+import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import {
   AppError,

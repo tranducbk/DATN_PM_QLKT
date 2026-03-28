@@ -40,7 +40,7 @@ const errorHandler = (
   err: ErrorWithExtras,
   req: Request,
   res: Response,
-  _next: NextFunction
+  next: NextFunction
 ): void => {
   let statusCode = err.statusCode || 500;
   let message = err.message || 'Lỗi hệ thống';

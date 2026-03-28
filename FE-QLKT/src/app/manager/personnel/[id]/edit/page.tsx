@@ -18,8 +18,8 @@ import {
 import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
-import { useTheme } from '@/components/theme-provider';
-import { apiClient } from '@/lib/api-client';
+import { useTheme } from '@/components/ThemeProvider';
+import { apiClient } from '@/lib/apiClient';
 import { getApiErrorMessage } from '@/lib/apiError';
 import dayjs from 'dayjs';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';

@@ -24,8 +24,8 @@ import {
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useTheme } from '@/components/theme-provider';
-import { apiClient } from '@/lib/api-client';
+import { useTheme } from '@/components/ThemeProvider';
+import { apiClient } from '@/lib/apiClient';
 import { ROLES } from '@/constants/roles.constants';
 
 const { Title } = Typography;

@@ -17,7 +17,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { formatDate } from '@/lib/utils';
 import type { DateInput } from '@/lib/types';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 import ExcelImportSection from './ExcelImportSection';
 import * as XLSX from 'xlsx';

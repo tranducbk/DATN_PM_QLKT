@@ -16,7 +16,7 @@ import {
   theme as antdTheme,
   Skeleton,
 } from 'antd';
-import { useTheme } from '@/components/theme-provider';
+import { useTheme } from '@/components/ThemeProvider';
 import {
   PlusOutlined,
   HomeOutlined,
@@ -26,7 +26,7 @@ import {
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
 
 const { Title, Text } = Typography;

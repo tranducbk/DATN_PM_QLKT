@@ -26,8 +26,8 @@ import {
   SearchOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
-import { apiClient } from '@/lib/api-client';
-import { useTheme } from '@/components/theme-provider';
+import { apiClient } from '@/lib/apiClient';
+import { useTheme } from '@/components/ThemeProvider';
 import { ROLES, getRoleInfo } from '@/constants/roles.constants';
 
 const { Title } = Typography;

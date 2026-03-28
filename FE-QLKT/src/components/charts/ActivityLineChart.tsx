@@ -2,7 +2,7 @@
 
 import { Line } from 'react-chartjs-2';
 import { Card } from 'antd';
-import { useTheme } from '@/components/theme-provider';
+import { useTheme } from '@/components/ThemeProvider';
 
 interface ActivityLineChartProps {
   data: Array<{ date: string; count: number }>;

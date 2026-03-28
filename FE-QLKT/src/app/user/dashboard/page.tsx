@@ -39,11 +39,11 @@ import {
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import { formatDate, formatDateTime } from '@/lib/utils';
-import { useTheme } from '@/components/theme-provider';
+import { useTheme } from '@/components/ThemeProvider';
 import { useAuth } from '@/contexts/AuthContext';
-import '@/lib/chart-config';
+import '@/lib/chartConfig';
 import { PieChart } from '@/components/charts';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 

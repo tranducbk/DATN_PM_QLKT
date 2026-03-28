@@ -1,5 +1,5 @@
 import { message } from 'antd';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import { getApiErrorMessage } from '@/lib/apiError';
 
 /**

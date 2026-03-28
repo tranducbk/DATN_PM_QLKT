@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { ROLES } from '../constants/roles';
+import { ROLES } from '../constants/roles.constants';
 import { prisma } from '../models';
 import { JwtUser } from '../types/express';
 import { JWT_SECRET } from '../configs';

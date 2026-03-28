@@ -30,7 +30,7 @@ import {
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import { formatDate } from '@/lib/utils';
 
 const { Title, Text } = Typography;

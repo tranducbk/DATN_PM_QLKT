@@ -5,6 +5,75 @@ import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 
+/** Generate array of date strings for the last N days */
+function getLastNDays(n: number): string[] {
+  return Array.from({ length: n }, (_, i) => {
+    const date = new Date();
+    date.setDate(date.getDate() - (n - 1 - i));
+    return date.toISOString().split('T')[0];
+  });
+}
+
+/** Generate array of month strings (YYYY-MM) for the last N months */
+function getLastNMonths(n: number): string[] {
+  return Array.from({ length: n }, (_, i) => {
+    const date = new Date();
+    date.setMonth(date.getMonth() - (n - 1 - i));
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+  });
+}
+
+/** Build stats array from date strings and a count map */
+function buildDateStats(dates: string[], countMap: Record<string, number>): { date: string; count: number }[] {
+  return dates.map(date => ({ date, count: countMap[date] || 0 }));
+}
+
+/** Build stats array from month strings and a count map */
+function buildMonthStats(months: string[], countMap: Record<string, number>): { month: string; count: number }[] {
+  return months.map(month => ({ month, count: countMap[month] || 0 }));
+}
+
+/** Count records by date key (YYYY-MM-DD) */
+function countByDate(records: { created_at?: Date; createdAt?: Date }[]): Record<string, number> {
+  const countMap: Record<string, number> = {};
+  records.forEach(record => {
+    const dateValue = record.created_at || record.createdAt;
+    if (dateValue) {
+      const key = new Date(dateValue).toISOString().split('T')[0];
+      countMap[key] = (countMap[key] || 0) + 1;
+    }
+  });
+  return countMap;
+}
+
+/** Count records by month key (YYYY-MM) */
+function countByMonth(records: { createdAt: Date }[]): Record<string, number> {
+  const countMap: Record<string, number> = {};
+  records.forEach(record => {
+    const date = new Date(record.createdAt);
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    countMap[key] = (countMap[key] || 0) + 1;
+  });
+  return countMap;
+}
+
+/** Create a Date set to N days ago at midnight */
+function daysAgo(n: number): Date {
+  const date = new Date();
+  date.setDate(date.getDate() - n);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+/** Create a Date set to the 1st of N months ago at midnight */
+function monthsAgo(n: number): Date {
+  const date = new Date();
+  date.setMonth(date.getMonth() - n);
+  date.setDate(1);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
 /** groupBy theo quân hàm — Prisma overload bị sai khi `where` có `cap_bac: { not: null }` (runtime đúng). */
 async function groupQuanNhanByCapBac(
   where: Prisma.QuanNhanWhereInput
@@ -18,7 +87,7 @@ async function groupQuanNhanByCapBac(
 }
 
 class DashboardController {
-  getStatistics = catchAsync(async (_req: Request, res: Response) => {
+  getStatistics = catchAsync(async (req: Request, res: Response) => {
     const roleDistribution = await prisma.taiKhoan.groupBy({
       by: ['role'],
       _count: {
@@ -26,14 +95,10 @@ class DashboardController {
       },
     });
 
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    sevenDaysAgo.setHours(0, 0, 0, 0);
-
     const dailyActivity = await prisma.systemLog.findMany({
       where: {
         created_at: {
-          gte: sevenDaysAgo,
+          gte: daysAgo(7),
         },
       },
       select: {
@@ -41,22 +106,7 @@ class DashboardController {
       },
     });
 
-    const activityByDate: Record<string, number> = {};
-    dailyActivity.forEach((log: { created_at: Date }) => {
-      const date = new Date(log.created_at).toISOString().split('T')[0];
-      activityByDate[date] = (activityByDate[date] || 0) + 1;
-    });
-
-    const last7Days: { date: string; count: number }[] = [];
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
-      last7Days.push({
-        date: dateStr,
-        count: activityByDate[dateStr] || 0,
-      });
-    }
+    const last7Days = buildDateStats(getLastNDays(7), countByDate(dailyActivity));
 
     const logsByAction = await prisma.systemLog.groupBy({
       by: ['action'],
@@ -71,14 +121,10 @@ class DashboardController {
       take: 10,
     });
 
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    thirtyDaysAgo.setHours(0, 0, 0, 0);
-
     const newAccounts = await prisma.taiKhoan.findMany({
       where: {
         createdAt: {
-          gte: thirtyDaysAgo,
+          gte: daysAgo(30),
         },
       },
       select: {
@@ -89,22 +135,7 @@ class DashboardController {
       },
     });
 
-    const accountsByDate: Record<string, number> = {};
-    newAccounts.forEach((account: { createdAt: Date }) => {
-      const date = new Date(account.createdAt).toISOString().split('T')[0];
-      accountsByDate[date] = (accountsByDate[date] || 0) + 1;
-    });
-
-    const last30Days: { date: string; count: number }[] = [];
-    for (let i = 29; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
-      last30Days.push({
-        date: dateStr,
-        count: accountsByDate[dateStr] || 0,
-      });
-    }
+    const last30Days = buildDateStats(getLastNDays(30), countByDate(newAccounts));
 
     return ResponseHelper.success(res, {
       message: 'Lấy thống kê thành công',
@@ -123,7 +154,7 @@ class DashboardController {
     });
   });
 
-  getAdminStatistics = catchAsync(async (_req: Request, res: Response) => {
+  getAdminStatistics = catchAsync(async (req: Request, res: Response) => {
     const scientificAchievementsByType = await prisma.thanhTichKhoaHoc.groupBy({
       by: ['loai'],
       where: {
@@ -134,15 +165,11 @@ class DashboardController {
       },
     });
 
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    sevenDaysAgo.setHours(0, 0, 0, 0);
-
     const proposalsByType = await prisma.bangDeXuat.groupBy({
       by: ['loai_de_xuat'],
       where: {
         createdAt: {
-          gte: sevenDaysAgo,
+          gte: daysAgo(7),
         },
       },
       _count: {
@@ -157,15 +184,10 @@ class DashboardController {
       },
     });
 
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-    sixMonthsAgo.setDate(1);
-    sixMonthsAgo.setHours(0, 0, 0, 0);
-
     const scientificAchievements = await prisma.thanhTichKhoaHoc.findMany({
       where: {
         createdAt: {
-          gte: sixMonthsAgo,
+          gte: monthsAgo(6),
         },
         status: PROPOSAL_STATUS.APPROVED,
       },
@@ -174,23 +196,7 @@ class DashboardController {
       },
     });
 
-    const achievementsByMonth: Record<string, number> = {};
-    scientificAchievements.forEach((achievement: { createdAt: Date }) => {
-      const date = new Date(achievement.createdAt);
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      achievementsByMonth[monthKey] = (achievementsByMonth[monthKey] || 0) + 1;
-    });
-
-    const last6Months: { month: string; count: number }[] = [];
-    for (let i = 5; i >= 0; i--) {
-      const date = new Date();
-      date.setMonth(date.getMonth() - i);
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      last6Months.push({
-        month: monthKey,
-        count: achievementsByMonth[monthKey] || 0,
-      });
-    }
+    const last6Months = buildMonthStats(getLastNMonths(6), countByMonth(scientificAchievements));
 
     const totalPersonnel = await prisma.quanNhan.count();
     const totalUnits = await prisma.donViTrucThuoc.count();
@@ -344,10 +350,7 @@ class DashboardController {
       },
     });
 
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-    sixMonthsAgo.setDate(1);
-    sixMonthsAgo.setHours(0, 0, 0, 0);
+    const sixMonthsAgoDate = monthsAgo(6);
 
     const recentAwards =
       personnelIds.length > 0
@@ -355,7 +358,7 @@ class DashboardController {
             where: {
               quan_nhan_id: { in: personnelIds },
               createdAt: {
-                gte: sixMonthsAgo,
+                gte: sixMonthsAgoDate,
               },
             },
             select: {
@@ -364,23 +367,8 @@ class DashboardController {
           })
         : [];
 
-    const awardsByMonth: Record<string, number> = {};
-    recentAwards.forEach((award: { createdAt: Date }) => {
-      const date = new Date(award.createdAt);
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      awardsByMonth[monthKey] = (awardsByMonth[monthKey] || 0) + 1;
-    });
-
-    const last6Months: { month: string; count: number }[] = [];
-    for (let i = 5; i >= 0; i--) {
-      const date = new Date();
-      date.setMonth(date.getMonth() - i);
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      last6Months.push({
-        month: monthKey,
-        count: awardsByMonth[monthKey] || 0,
-      });
-    }
+    const monthKeys = getLastNMonths(6);
+    const last6MonthsAwards = buildMonthStats(monthKeys, countByMonth(recentAwards));
 
     let personnelByRank: { cap_bac: string | null; _count: { id: number } }[] = [];
     if (isCoQuanDonVi) {
@@ -420,7 +408,7 @@ class DashboardController {
             where: {
               quan_nhan_id: { in: personnelIds },
               createdAt: {
-                gte: sixMonthsAgo,
+                gte: sixMonthsAgoDate,
               },
               status: PROPOSAL_STATUS.APPROVED,
             },
@@ -430,23 +418,7 @@ class DashboardController {
           })
         : [];
 
-    const achievementsByMonth: Record<string, number> = {};
-    scientificAchievements.forEach((achievement: { createdAt: Date }) => {
-      const date = new Date(achievement.createdAt);
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      achievementsByMonth[monthKey] = (achievementsByMonth[monthKey] || 0) + 1;
-    });
-
-    const last6MonthsScientific: { month: string; count: number }[] = [];
-    for (let i = 5; i >= 0; i--) {
-      const date = new Date();
-      date.setMonth(date.getMonth() - i);
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      last6MonthsScientific.push({
-        month: monthKey,
-        count: achievementsByMonth[monthKey] || 0,
-      });
-    }
+    const last6MonthsScientific = buildMonthStats(monthKeys, countByMonth(scientificAchievements));
 
     let personnelWithPositions: { chuc_vu_id: string | null }[] = [];
     if (isCoQuanDonVi) {
@@ -530,7 +502,7 @@ class DashboardController {
           status: item.status,
           count: item._count.id,
         })),
-        awardsByMonth: last6Months,
+        awardsByMonth: last6MonthsAwards,
         personnelByRank: personnelByRank
           .filter(item => item.cap_bac)
           .map(item => ({

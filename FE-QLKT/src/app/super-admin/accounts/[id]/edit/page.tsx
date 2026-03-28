@@ -20,8 +20,8 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import { SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { apiClient } from '@/lib/api-client';
-import { useTheme } from '@/components/theme-provider';
+import { apiClient } from '@/lib/apiClient';
+import { useTheme } from '@/components/ThemeProvider';
 import { ROLES } from '@/constants/roles.constants';
 
 const { Title } = Typography;

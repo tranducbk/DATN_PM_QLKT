@@ -6,7 +6,7 @@ import { SearchOutlined, ClearOutlined, CalendarOutlined, FilterOutlined } from 
 import dayjs, { Dayjs } from 'dayjs';
 import 'dayjs/locale/vi';
 import type { SelectProps } from 'antd';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import { ROLE_LABELS, getActionLabel } from './constants';
 
 dayjs.locale('vi');

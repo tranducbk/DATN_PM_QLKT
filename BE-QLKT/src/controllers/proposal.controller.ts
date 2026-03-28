@@ -6,7 +6,7 @@ import commemorativeMedalService from '../services/commemorativeMedal.service';
 import militaryFlagService from '../services/militaryFlag.service';
 import { prisma } from '../models';
 import * as notificationHelper from '../helpers/notification';
-import { ROLES } from '../constants/roles';
+import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_TYPES, type ProposalType } from '../constants/proposalTypes.constants';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';

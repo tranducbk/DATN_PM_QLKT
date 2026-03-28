@@ -1,6 +1,6 @@
 import { Request } from 'express';
 import { prisma } from '../models';
-import { ROLES } from '../constants/roles';
+import { ROLES } from '../constants/roles.constants';
 
 /**
  * Parse personnel_ids từ query string (dùng chung cho các award controllers)
@@ -72,4 +72,57 @@ export async function buildManagerUnitWhere(req: Request): Promise<Record<string
   }
 
   return null;
+}
+
+/**
+ * Xây dựng Prisma where condition để lọc QuanNhan theo đơn vị.
+ * Dùng chung cho cả manager filter và unit_id filter.
+ *
+ * - Nếu unitId là cơ quan đơn vị: lọc quân nhân thuộc cơ quan đó HOẶC thuộc đơn vị trực thuộc của nó
+ * - Nếu unitId là đơn vị trực thuộc: lọc quân nhân thuộc đơn vị trực thuộc đó
+ *
+ * @param unit - Object chứa co_quan_don_vi_id hoặc don_vi_truc_thuoc_id
+ * @param extraFilter - Các điều kiện QuanNhan bổ sung (vd: lọc theo ho_ten)
+ * @returns Prisma where condition cho QuanNhan, hoặc null nếu không có unit
+ */
+export async function buildUnitWhereFilter(
+  unit: { co_quan_don_vi_id?: string | null; don_vi_truc_thuoc_id?: string | null },
+  extraFilter?: Record<string, unknown>
+): Promise<Record<string, unknown> | null> {
+  if (unit.co_quan_don_vi_id) {
+    const donViTrucThuocIds = await getSubordinateUnitIds(unit.co_quan_don_vi_id);
+    return {
+      ...extraFilter,
+      OR: [
+        { co_quan_don_vi_id: unit.co_quan_don_vi_id },
+        ...(donViTrucThuocIds.length > 0
+          ? [{ don_vi_truc_thuoc_id: { in: donViTrucThuocIds } }]
+          : []),
+      ],
+    };
+  }
+
+  if (unit.don_vi_truc_thuoc_id) {
+    return {
+      ...extraFilter,
+      don_vi_truc_thuoc_id: unit.don_vi_truc_thuoc_id,
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Tiện ích: lấy unit filter của Manager từ request và xây dựng Prisma QuanNhan where.
+ * Kết hợp getManagerUnitFilter + buildUnitWhereFilter.
+ *
+ * @returns Prisma where condition cho QuanNhan, hoặc null nếu không phải Manager
+ */
+export async function buildManagerQuanNhanFilter(
+  req: Request,
+  extraFilter?: Record<string, unknown>
+): Promise<Record<string, unknown> | null> {
+  const managerUnit = await getManagerUnitFilter(req);
+  if (!managerUnit) return null;
+  return buildUnitWhereFilter(managerUnit, extraFilter);
 }

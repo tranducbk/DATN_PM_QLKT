@@ -3,7 +3,7 @@
 
 import { Spin } from 'antd';
 import { Loader2 } from 'lucide-react';
-import { useTheme } from '@/components/theme-provider';
+import { useTheme } from '@/components/ThemeProvider';
 
 interface LoadingProps {
   message?: string;

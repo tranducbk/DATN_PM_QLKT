@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Table, Input, Select, Space, Alert, Typography, Tag, InputNumber } from 'antd';
 import { SearchOutlined, TeamOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import { format } from 'date-fns';
 import { formatDate } from '@/lib/utils';
 import type { DateInput } from '@/lib/types';

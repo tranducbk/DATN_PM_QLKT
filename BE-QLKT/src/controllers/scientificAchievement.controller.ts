@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import scientificAchievementService from '../services/scientificAchievement.service';
 import profileService from '../services/profile.service';
 import { prisma } from '../models';
-import { ROLES } from '../constants/roles';
+import { ROLES } from '../constants/roles.constants';
 import { parsePagination, normalizeParam } from '../helpers/paginationHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import ResponseHelper from '../helpers/responseHelper';

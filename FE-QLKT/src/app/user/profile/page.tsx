@@ -18,7 +18,7 @@ import {
   Divider,
   Empty,
 } from 'antd';
-import { getAntdThemeConfig } from '@/lib/antd-theme';
+import { getAntdThemeConfig } from '@/lib/antdTheme';
 import {
   TrophyOutlined,
   StarOutlined,
@@ -29,9 +29,9 @@ import {
   FileTextOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import { calculateDuration, formatDate } from '@/lib/utils';
-import { useTheme } from '@/components/theme-provider';
+import { useTheme } from '@/components/ThemeProvider';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { useAuth } from '@/contexts/AuthContext';
 import { PROPOSAL_STATUS, getProposalStatusLabel } from '@/constants/proposal.constants';

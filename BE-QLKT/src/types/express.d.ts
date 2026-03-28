@@ -1,4 +1,4 @@
-import type { Role } from '../constants/roles';
+import type { Role } from '../constants/roles.constants';
 
 export interface JwtUser {
   id: string;

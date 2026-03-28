@@ -3,8 +3,8 @@ import hccsvvController from '../controllers/hccsvv.controller';
 import { verifyToken, checkRole, requireManager, requireAdmin } from '../middlewares/auth';
 import { auditLog } from '../middlewares/auditLog';
 import { getLogDescription, getResourceId } from '../helpers/auditLog';
-import { ROLES } from '../constants/roles';
-import { excelUpload as upload } from '../configs/multer.config';
+import { ROLES } from '../constants/roles.constants';
+import { excelUpload as upload } from '../configs/multer';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 
 const router = Router();
@@ -93,7 +93,7 @@ router.post(
     action: AUDIT_ACTIONS.CREATE,
     resource: 'hccsvv',
     getDescription: getLogDescription('hccsvv', 'CREATE'),
-    getResourceId: (_req: Request, res: Response) => (res.locals.createdId as string) ?? null,
+    getResourceId: (req: Request, res: Response) => (res.locals.createdId as string) ?? null,
   }),
   hccsvvController.createDirect
 );

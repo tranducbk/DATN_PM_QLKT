@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Table, Button, Space, Tag, Popconfirm, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 
 interface PositionsTableProps {
   positions: any[];

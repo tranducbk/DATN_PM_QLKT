@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Form, Input, Button, Space, Select, Checkbox, message, Typography } from 'antd';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import { getApiErrorMessage } from '@/lib/apiError';
 
 const { Text } = Typography;

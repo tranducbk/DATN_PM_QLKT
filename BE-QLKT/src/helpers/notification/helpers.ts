@@ -1,6 +1,6 @@
 import { prisma } from '../../models';
-import { NOTIFICATION_TYPES, RESOURCE_TYPES } from '../../constants/notificationTypes';
-import { ROLES } from '../../constants/roles';
+import { NOTIFICATION_TYPES, RESOURCE_TYPES } from '../../constants/notificationTypes.constants';
+import { ROLES } from '../../constants/roles.constants';
 import { emitNotificationToUser } from '../../utils/socketService';
 import {
   DANH_HIEU_MAP,

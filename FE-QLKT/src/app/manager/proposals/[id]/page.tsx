@@ -31,11 +31,11 @@ import {
 } from '@ant-design/icons';
 import { format } from 'date-fns';
 import Link from 'next/link';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { previewFileWithApi } from '@/utils/filePreview';
-import { useTheme } from '@/components/theme-provider';
-import { getAntdTableThemeConfig } from '@/lib/antd-theme';
+import { useTheme } from '@/components/ThemeProvider';
+import { getAntdTableThemeConfig } from '@/lib/antdTheme';
 import {
   PROPOSAL_STATUS,
   PROPOSAL_STATUS_LABELS,

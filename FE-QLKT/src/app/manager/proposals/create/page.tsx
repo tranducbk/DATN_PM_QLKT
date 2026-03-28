@@ -41,7 +41,7 @@ import Link from 'next/link';
 import type { UploadFile } from 'antd/es/upload/interface';
 import type { ColumnsType } from 'antd/es/table';
 import type { DateInput } from '@/lib/types';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import { getDanhHieuName } from '@/constants/danhHieu.constants';
 import { PROPOSAL_TYPES, type ProposalType } from '@/constants/proposal.constants';
 // Shared components - reuse từ admin (DRY principle, tránh duplicate ~2000 dòng code)

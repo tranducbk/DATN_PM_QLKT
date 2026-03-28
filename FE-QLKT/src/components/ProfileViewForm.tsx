@@ -14,10 +14,10 @@ import {
   HomeOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import { formatDate } from '@/lib/utils';
-import { useTheme } from '@/components/theme-provider';
-import { getAntdThemeConfig } from '@/lib/antd-theme';
+import { useTheme } from '@/components/ThemeProvider';
+import { getAntdThemeConfig } from '@/lib/antdTheme';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { getRoleInfo } from '@/constants/roles.constants';
 

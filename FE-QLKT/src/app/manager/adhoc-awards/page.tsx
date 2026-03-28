@@ -33,7 +33,7 @@ import {
   DownloadOutlined,
 } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { previewFileWithApi } from '@/utils/filePreview';
 

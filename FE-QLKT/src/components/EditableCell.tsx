@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Input, Checkbox, Select } from 'antd';
-import { useTheme } from '@/components/theme-provider';
+import { useTheme } from '@/components/ThemeProvider';
 
 interface EditableCellProps {
   value: any;

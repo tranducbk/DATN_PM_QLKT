@@ -14,10 +14,10 @@ import {
   theme as antdTheme,
   Spin,
 } from 'antd';
-import { useTheme } from '@/components/theme-provider';
-import { PositionForm } from '@/components/categories/position-form';
-import { PositionsTable } from '@/components/categories/positions-table';
-import { apiClient } from '@/lib/api-client';
+import { useTheme } from '@/components/ThemeProvider';
+import { PositionForm } from '@/components/categories/PositionForm';
+import { PositionsTable } from '@/components/categories/PositionsTable';
+import { apiClient } from '@/lib/apiClient';
 import {
   PlusOutlined,
   HomeOutlined,

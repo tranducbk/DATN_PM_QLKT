@@ -15,10 +15,10 @@ import {
   Input,
   Select,
 } from 'antd';
-import { useTheme } from '@/components/theme-provider';
+import { useTheme } from '@/components/ThemeProvider';
 import { HomeOutlined, FilterOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import { renderAnnualAwards, COLUMN_STYLES, DANH_HIEU_MAP } from '@/utils/awardsHelpers';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 

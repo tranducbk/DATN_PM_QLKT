@@ -3,7 +3,7 @@ import authController from '../controllers/auth.controller';
 import { verifyToken } from '../middlewares/auth';
 import { auditLog } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
-import { authLimiter } from '../configs/rateLimiter.config';
+import { authLimiter } from '../configs/rateLimiter';
 import { validate } from '../middlewares/validate';
 import { authValidation } from '../validations';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';

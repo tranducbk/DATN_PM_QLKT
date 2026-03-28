@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../models';
-import { ROLES } from '../constants/roles';
+import { ROLES } from '../constants/roles.constants';
 import { UnitFilter } from '../types/express';
 
 interface UnitInfo {

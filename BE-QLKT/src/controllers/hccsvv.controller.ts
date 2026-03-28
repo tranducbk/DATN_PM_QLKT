@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import hccsvvService from '../services/hccsvv.service';
 import { prisma } from '../models';
-import { ROLES } from '../constants/roles';
+import { ROLES } from '../constants/roles.constants';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';

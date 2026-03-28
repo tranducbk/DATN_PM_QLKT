@@ -22,7 +22,7 @@ import { getApiErrorMessage } from '@/lib/apiError';
 
 import { CheckCircleOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '@/lib/apiClient';
 import dayjs from 'dayjs';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 
