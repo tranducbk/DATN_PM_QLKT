@@ -86,19 +86,19 @@
 
 /* Tô màu dòng quân nhân đã đủ Hạng Ba nhưng chưa đủ Hạng Nhì/Nhất */
 .ant-table-tbody > tr.row-partial-eligible-hccsvv > td {
-  background-color: #f6ffed !important;
+  background-color: #fffbe6 !important;
 }
 
 .dark .ant-table-tbody > tr.row-partial-eligible-hccsvv > td {
-  background-color: #1f3d1f !important;
+  background-color: #3d3d1f !important;
 }
 
 .ant-table-tbody > tr.row-partial-eligible-hccsvv:hover > td {
-  background-color: #d9f7be !important;
+  background-color: #fff7d1 !important;
 }
 
 .dark .ant-table-tbody > tr.row-partial-eligible-hccsvv:hover > td {
-  background-color: #2a4a2a !important;
+  background-color: #4a4a2a !important;
 }
 
 :root {
