@@ -3,6 +3,7 @@ import hccsvvService from '../services/hccsvv.service';
 import { prisma } from '../models';
 import { ROLES } from '../constants/roles.constants';
 import { writeSystemLog } from '../helpers/systemLogHelper';
+import { parsePersonnelIdsFromQuery } from '../helpers/controllerHelpers';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
@@ -10,13 +11,7 @@ import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 class HCCSVVController {
   getTemplate = catchAsync(async (req: Request, res: Response) => {
     const userRole = req.user?.role ?? 'MANAGER';
-    let personnelIds: string[] = [];
-    if (req.query.personnel_ids) {
-      personnelIds = (req.query.personnel_ids as string)
-        .split(',')
-        .map((id: string) => id.trim())
-        .filter(Boolean);
-    }
+    const personnelIds = parsePersonnelIdsFromQuery(req.query);
     const workbook = await hccsvvService.exportTemplate(personnelIds, userRole);
     const buffer = await workbook.xlsx.writeBuffer();
     const fileName = `mau_import_hccsvv_${new Date().toISOString().slice(0, 10)}.xlsx`;
@@ -38,9 +33,9 @@ class HCCSVVController {
       userRole: req.user?.role,
       action: AUDIT_ACTIONS.IMPORT_PREVIEW,
       resource: 'hccsvv',
-      description: `Tải lên file ${req.file?.originalname || 'Excel'} để review huy chương chiến sĩ vẻ vang: ${result.total || result.valid?.length || 0} dòng, ${result.errors?.length || 0} lỗi`,
+      description: `Tải lên file "${req.file?.originalname ? Buffer.from(req.file.originalname, 'latin1').toString('utf8') : 'Excel'}" để review huy chương chiến sĩ vẻ vang: ${result.valid?.length || 0} hợp lệ, ${result.errors?.length || 0} lỗi`,
       payload: {
-        filename: req.file?.originalname,
+        filename: req.file?.originalname ? Buffer.from(req.file.originalname, 'latin1').toString('utf8') : undefined,
         total: result.total,
         errors: result.errors?.length || 0,
       },

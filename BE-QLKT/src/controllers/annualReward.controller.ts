@@ -256,9 +256,9 @@ class AnnualRewardController {
       userRole: req.user?.role,
       action: AUDIT_ACTIONS.IMPORT_PREVIEW,
       resource: 'annual-rewards',
-      description: `Tải lên file ${req.file.originalname ?? 'Excel'} để review danh hiệu cá nhân hằng năm: ${result.total ?? result.valid?.length ?? 0} dòng, ${result.errors?.length ?? 0} lỗi`,
+      description: `Tải lên file "${Buffer.from(req.file.originalname, 'latin1').toString('utf8')}" để review danh hiệu cá nhân hằng năm: ${result.valid?.length ?? 0} hợp lệ, ${result.errors?.length ?? 0} lỗi`,
       payload: {
-        filename: req.file.originalname,
+        filename: Buffer.from(req.file.originalname, 'latin1').toString('utf8'),
         total: result.total,
         errors: result.errors?.length ?? 0,
       },
@@ -291,18 +291,6 @@ class AnnualRewardController {
       );
     }
     const result = await annualRewardService.importFromExcelBuffer(req.file.buffer);
-    await writeSystemLog({
-      userId: req.user?.id,
-      userRole: req.user?.role,
-      action: AUDIT_ACTIONS.IMPORT,
-      resource: 'annual-rewards',
-      description: `Nhập dữ liệu danh hiệu cá nhân hằng năm: ${result.imported}/${result.total} thành công, ${result.errors?.length ?? 0} lỗi`,
-      payload: {
-        imported: result.imported,
-        total: result.total,
-        errorCount: result.errors?.length ?? 0,
-      },
-    });
     return ResponseHelper.success(res, {
       data: result,
       message: 'Import danh hiệu hằng năm hoàn tất',
@@ -380,8 +368,15 @@ class AnnualRewardController {
   getTemplate = catchAsync(async (req: Request, res: Response) => {
     const userRole = req.user!.role;
     const personnelIds = parsePersonnelIdsFromQuery(req.query);
+    const repeatMap: Record<string, number> = {};
+    if (req.query.repeat_map) {
+      try {
+        const parsed = JSON.parse(req.query.repeat_map as string);
+        Object.assign(repeatMap, parsed);
+      } catch { /* ignore */ }
+    }
 
-    const workbook = await annualRewardService.exportTemplate(personnelIds, userRole);
+    const workbook = await annualRewardService.exportTemplate(personnelIds, userRole, repeatMap);
     const buffer = await workbook.xlsx.writeBuffer();
 
     res.setHeader(
@@ -406,11 +401,9 @@ class AnnualRewardController {
       don_vi_id: don_vi_id ?? undefined,
     };
 
-    if (personnel_ids) {
-      filters.personnel_ids = (personnel_ids as string)
-        .split(',')
-        .map((id: string) => id.trim())
-        .filter(Boolean);
+    const parsedPersonnelIds = parsePersonnelIdsFromQuery(req.query);
+    if (parsedPersonnelIds.length > 0) {
+      filters.personnel_ids = parsedPersonnelIds;
     }
 
     if (role === ROLES.MANAGER && userUnitId) {

@@ -32,9 +32,9 @@ class MilitaryFlagController {
       userRole: req.user?.role,
       action: AUDIT_ACTIONS.IMPORT_PREVIEW,
       resource: 'military-flag',
-      description: `Tải lên file ${req.file.originalname ?? 'Excel'} để review huân chương quân kỳ quyết thắng: ${result.total ?? result.valid?.length ?? 0} dòng, ${result.errors?.length ?? 0} lỗi`,
+      description: `Tải lên file "${Buffer.from(req.file.originalname, 'latin1').toString('utf8')}" để review Huy chương Quân kỳ Quyết thắng: ${result.valid?.length ?? 0} hợp lệ, ${result.errors?.length ?? 0} lỗi`,
       payload: {
-        filename: req.file.originalname,
+        filename: Buffer.from(req.file.originalname, 'latin1').toString('utf8'),
         total: result.total,
         errors: result.errors?.length ?? 0,
       },
@@ -65,7 +65,7 @@ class MilitaryFlagController {
     const result = await militaryFlagService.importFromExcel(req.file.buffer, req.user!.id);
     return ResponseHelper.success(res, {
       data: result,
-      message: 'Import Huy chương quân kỳ Quyết thắng thành công',
+      message: 'Import Huy chương Quân kỳ Quyết thắng thành công',
     });
   });
 

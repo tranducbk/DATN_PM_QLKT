@@ -727,14 +727,14 @@ export default function UserProfilePage() {
               {/* HC Quân kỳ Quyết thắng */}
               <div className="mb-6">
                 <Text strong className="text-base">
-                  Huy chương quân kỳ Quyết thắng
+                  Huy chương Quân kỳ Quyết thắng
                 </Text>
                 <Divider className="my-3" />
                 <Row gutter={[16, 16]}>
                   <Col xs={24} md={24}>
                     <Card size="small" className="h-full">
                       <Statistic
-                        title="Huy chương quân kỳ Quyết thắng"
+                        title="Huy chương Quân kỳ Quyết thắng"
                         value={0}
                         valueStyle={{ fontSize: '14px' }}
                         valueRender={() => {
@@ -1566,7 +1566,13 @@ export default function UserProfilePage() {
         {/* Breadcrumb */}
         <Breadcrumb
           items={[
-            { title: <Link href="/user/dashboard"><HomeOutlined /></Link> },
+            {
+              title: (
+                <Link href="/user/dashboard">
+                  <HomeOutlined />
+                </Link>
+              ),
+            },
             { title: 'Hồ sơ của tôi' },
           ]}
         />

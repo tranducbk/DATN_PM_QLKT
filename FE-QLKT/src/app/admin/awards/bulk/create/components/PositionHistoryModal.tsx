@@ -1,11 +1,9 @@
 'use client';
 
-import { Modal, Table, Tag, Typography, Spin } from 'antd';
+import { Modal, Table, Tag, Spin, Empty } from 'antd';
 import { HistoryOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
-
-const { Text } = Typography;
 
 interface Personnel {
   id: string;
@@ -17,16 +15,10 @@ interface PositionHistory {
   chuc_vu?: {
     ten_chuc_vu: string;
     he_so_chuc_vu: number;
-    NhomCongHien?: {
-      ten_nhom: string;
-    };
   };
   ChucVu?: {
     ten_chuc_vu: string;
     he_so_chuc_vu: number;
-    NhomCongHien?: {
-      ten_nhom: string;
-    };
   };
   ngay_bat_dau: string;
   ngay_ket_thuc?: string;
@@ -80,16 +72,6 @@ export default function PositionHistoryModal({
       render: (record: PositionHistory) => {
         const chucVu = record.chuc_vu || record.ChucVu;
         return chucVu?.ten_chuc_vu || '-';
-      },
-    },
-    {
-      title: 'Nhóm cống hiến',
-      key: 'nhom_cong_hien',
-      width: 150,
-      render: (record: PositionHistory) => {
-        const chucVu = record.chuc_vu || record.ChucVu;
-        const nhomCongHien = chucVu?.NhomCongHien;
-        return nhomCongHien?.ten_nhom || '-';
       },
     },
     {
@@ -178,7 +160,7 @@ export default function PositionHistoryModal({
             size="small"
           />
         ) : (
-          <Text type="secondary">Chưa có dữ liệu lịch sử chức vụ</Text>
+          <Empty description="Chưa có dữ liệu lịch sử chức vụ" style={{ padding: '24px 0' }} />
         )}
       </Spin>
     </Modal>

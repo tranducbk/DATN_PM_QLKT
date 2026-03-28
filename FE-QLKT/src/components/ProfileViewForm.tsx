@@ -125,7 +125,6 @@ export default function ProfileViewForm({
                 >
                   <tbody>
                     {[
-                      { label: 'ID', value: personnelData.id },
                       { label: 'Họ và tên', value: personnelData.ho_ten || '-' },
                       {
                         label: 'Giới tính',

@@ -11,7 +11,7 @@ const router = Router();
 
 /**
  * @route   GET /api/military-flag/template
- * @desc    Tải file mẫu Excel để import Huy chương quân kỳ Quyết thắng
+ * @desc    Tải file mẫu Excel để import Huy chương Quân kỳ Quyết thắng
  * @access  ADMIN
  */
 router.get('/template', verifyToken, requireManager, militaryFlagController.getTemplate);
@@ -38,7 +38,7 @@ router.post('/import/confirm', verifyToken, requireAdmin, militaryFlagController
 
 /**
  * @route   POST /api/military-flag/import
- * @desc    Import Huy chương quân kỳ Quyết thắng từ file Excel (legacy)
+ * @desc    Import Huy chương Quân kỳ Quyết thắng từ file Excel (legacy)
  * @access  ADMIN, MANAGER
  */
 router.post(
@@ -51,7 +51,7 @@ router.post(
 
 /**
  * @route   GET /api/military-flag
- * @desc    Lấy danh sách Huy chương quân kỳ Quyết thắng (Admin: tất cả, Manager: đơn vị mình)
+ * @desc    Lấy danh sách Huy chương Quân kỳ Quyết thắng (Admin: tất cả, Manager: đơn vị mình)
  * @access  ADMIN, MANAGER
  */
 router.get(
@@ -63,7 +63,7 @@ router.get(
 
 /**
  * @route   GET /api/military-flag/export
- * @desc    Xuất file Excel Huy chương quân kỳ Quyết thắng (Admin: tất cả, Manager: đơn vị mình)
+ * @desc    Xuất file Excel Huy chương Quân kỳ Quyết thắng (Admin: tất cả, Manager: đơn vị mình)
  * @access  ADMIN, MANAGER
  */
 router.get(
@@ -75,7 +75,7 @@ router.get(
 
 /**
  * @route   GET /api/military-flag/statistics
- * @desc    Thống kê Huy chương quân kỳ Quyết thắng
+ * @desc    Thống kê Huy chương Quân kỳ Quyết thắng
  * @access  ADMIN, MANAGER
  */
 router.get(
@@ -87,7 +87,7 @@ router.get(
 
 /**
  * @route   GET /api/military-flag/personnel/:personnel_id
- * @desc    Lấy Huy chương quân kỳ Quyết thắng theo personnel_id
+ * @desc    Lấy Huy chương Quân kỳ Quyết thắng theo personnel_id
  * @access  ADMIN, MANAGER, USER
  */
 router.get(

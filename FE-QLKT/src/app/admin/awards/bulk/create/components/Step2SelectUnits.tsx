@@ -374,6 +374,7 @@ export default function Step2SelectUnits({
             onImportSuccess={handleImportSuccess}
             selectedCount={selectedUnitIds.length}
             selectedPersonnelIds={selectedUnitIds}
+            selectedNames={selectedUnitIds.map(id => units.find(u => u.id === id)?.ten_don_vi || '')}
             entityLabel="đơn vị"
             localProcessing={true}
             onLocalProcess={handleLocalExcelProcess}

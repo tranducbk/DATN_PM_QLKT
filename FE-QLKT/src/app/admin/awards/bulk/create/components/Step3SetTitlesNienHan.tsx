@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Table, Select, Alert, Typography, Space, message, Button, Input, Empty } from 'antd';
+import { Table, Select, Alert, Typography, Space, Tag, message, Button, Input, Empty } from 'antd';
 import { EditOutlined, HistoryOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
@@ -480,23 +480,23 @@ export default function Step3SetTitlesNienHan({
         style={{ marginBottom: 24 }}
       />
 
-      <Space direction="vertical" style={{ marginBottom: 16, width: '100%' }} size="small">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <Text type="secondary">
-              Tổng số quân nhân: <strong>{personnel.length}</strong>
-            </Text>
-            <br />
-            <Text type={allTitlesSet ? 'success' : 'warning'}>
-              Đã thêm danh hiệu:{' '}
-              <strong>
-                {titleData.filter(d => d.danh_hieu).length}/{personnel.length}
-              </strong>
-              {allTitlesSet && ' ✓'}
-            </Text>
-          </div>
-        </div>
-      </Space>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <Space size="middle" align="center">
+          <Tag color="red" style={{ fontSize: 14, padding: '4px 12px', margin: 0 }}>
+            Năm {nam}
+          </Tag>
+          <Text type="secondary">
+            Tổng số quân nhân: <strong>{personnel.length}</strong>
+          </Text>
+        </Space>
+        <Text type={allTitlesSet ? 'success' : 'warning'}>
+          Đã thêm danh hiệu:{' '}
+          <strong>
+            {titleData.filter(d => d.danh_hieu).length}/{personnel.length}
+          </strong>
+          {allTitlesSet && ' ✓'}
+        </Text>
+      </div>
 
       <Table<Personnel>
         columns={columns}

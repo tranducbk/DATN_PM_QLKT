@@ -1,6 +1,6 @@
 'use client';
 
-import { Modal, Descriptions, Typography, Spin, Tag, Divider } from 'antd';
+import { Modal, Descriptions, Typography, Spin, Tag, Divider, Empty } from 'antd';
 import { HistoryOutlined } from '@ant-design/icons';
 
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
@@ -84,7 +84,7 @@ export default function ServiceHistoryModal({
             )}
           </div>
         ) : (
-          <Text type="secondary">Chưa có dữ liệu lịch sử huy chương chiến sĩ vẻ vang</Text>
+          <Empty description="Chưa có dữ liệu lịch sử huy chương chiến sĩ vẻ vang" style={{ padding: '24px 0' }} />
         )}
       </Spin>
     </Modal>

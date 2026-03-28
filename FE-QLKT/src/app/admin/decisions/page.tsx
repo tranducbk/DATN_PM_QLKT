@@ -158,7 +158,7 @@ export default function AdminDecisionsPage() {
   const handleModalSuccess = () => {
     setDecisionModalVisible(false);
     setEditingDecision(null);
-    setPagination(prev => ({ ...prev, current: 1 }));
+    fetchDecisions();
   };
 
   const columns: ColumnsType<Decision> = [

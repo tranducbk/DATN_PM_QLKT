@@ -140,6 +140,25 @@ class HCCSVVService {
       }
     }
 
+    // Conditional formatting: nền vàng khi ô có giá trị
+    const maxDataRow = Math.max(personnelIds.length + 1, 50);
+    const editableColumns = ['G', 'H'];
+    editableColumns.forEach(col => {
+      worksheet.addConditionalFormatting({
+        ref: `${col}2:${col}${maxDataRow}`,
+        rules: [
+          {
+            type: 'expression',
+            formulae: [`LEN(TRIM(${col}2))>0`],
+            style: {
+              fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFCC' } },
+            },
+            priority: 1,
+          },
+        ],
+      });
+    });
+
     return workbook;
   }
 

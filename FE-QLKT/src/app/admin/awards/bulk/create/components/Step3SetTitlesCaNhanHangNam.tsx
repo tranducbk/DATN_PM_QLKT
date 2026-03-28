@@ -119,41 +119,46 @@ export default function Step3SetTitlesCaNhanHangNam({
   const [loadingProfiles, setLoadingProfiles] = useState(false);
 
   useEffect(() => {
-    if (selectedPersonnelIds.length > 0) {
-      fetchPersonnelDetails();
-      fetchAnnualProfiles();
-    } else {
+    if (selectedPersonnelIds.length === 0) {
       setPersonnel([]);
       onTitleDataChange([]);
+      return;
     }
+    fetchData();
   }, [selectedPersonnelIds]);
 
-  const fetchPersonnelDetails = async () => {
+  const fetchData = async () => {
+    const hideMessage = message.loading('Đang tải dữ liệu và tính toán hồ sơ...', 0);
     try {
       setLoading(true);
-      const promises = selectedPersonnelIds.map(id => apiClient.getPersonnelById(id));
-      const responses = await Promise.all(promises);
-      const personnelData = responses.filter(r => r.success).map(r => r.data);
+      setLoadingProfiles(true);
+
+      const [personnelResponses, profileResults] = await Promise.all([
+        Promise.all(selectedPersonnelIds.map(id => apiClient.getPersonnelById(id))),
+        Promise.all(
+          selectedPersonnelIds.map(id =>
+            apiClient.getAnnualProfile(id, nam)
+              .then(res => ({ id, res }))
+              .catch(() => ({ id, res: null }))
+          )
+        ),
+      ]);
+
+      // Xử lý thông tin quân nhân
+      const personnelData = personnelResponses.filter(r => r.success).map(r => r.data);
       setPersonnel(personnelData);
 
-      // Initialize title data if empty
       if (titleData.length === 0) {
-        const initialData = personnelData.map((p: Personnel) => ({
+        onTitleDataChange(personnelData.map((p: Personnel) => ({
           personnel_id: p.id,
           cap_bac: p.cap_bac || '',
           chuc_vu: p.ChucVu?.ten_chuc_vu || '',
-        }));
-        onTitleDataChange(initialData);
+        })));
       } else {
-        // Cập nhật cap_bac và chuc_vu nếu chưa có
         const updatedData = titleData.map(item => {
           const p = personnelData.find((pd: Personnel) => pd.id === item.personnel_id);
           if (p && (!item.cap_bac || !item.chuc_vu)) {
-            return {
-              ...item,
-              cap_bac: item.cap_bac || p.cap_bac || '',
-              chuc_vu: item.chuc_vu || p.ChucVu?.ten_chuc_vu || '',
-            };
+            return { ...item, cap_bac: item.cap_bac || p.cap_bac || '', chuc_vu: item.chuc_vu || p.ChucVu?.ten_chuc_vu || '' };
           }
           return item;
         });
@@ -161,41 +166,22 @@ export default function Step3SetTitlesCaNhanHangNam({
           onTitleDataChange(updatedData);
         }
       }
-    } catch (error) {
-      // Error handled by UI
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const fetchAnnualProfiles = async () => {
-    if (!selectedPersonnelIds || selectedPersonnelIds.length === 0) return;
-    const hideMessage = message.loading('Đang tính toán lại hồ sơ hằng năm...', 0);
-    try {
-      setLoadingProfiles(true);
-      const promises = selectedPersonnelIds.map(id =>
-        apiClient
-          .getAnnualProfile(id, nam)
-          .then(res => ({ id, res }))
-          .catch(err => ({ id, res: null }))
-      );
-      const results = await Promise.all(promises);
+      // Xử lý hồ sơ hằng năm
       const map: Record<string, any> = {};
-      results.forEach((r: any) => {
-        if (r && r.res && r.res.success && r.res.data) {
-          map[r.id] = r.res.data;
-        } else {
-          map[r.id] = null;
-        }
+      profileResults.forEach((r: any) => {
+        if (r?.res?.success && r.res.data) map[r.id] = r.res.data;
+        else map[r.id] = null;
       });
       setAnnualProfiles(prev => ({ ...prev, ...map }));
+
       hideMessage();
-      message.success('Tính toán hồ sơ hoàn tất!');
-    } catch (error) {
-      // Error handled by UI
+      message.success('Tải dữ liệu và tính toán hồ sơ hoàn tất!');
+    } catch {
       hideMessage();
-      message.error('Có lỗi khi tính toán hồ sơ');
+      message.error('Có lỗi khi tải dữ liệu');
     } finally {
+      setLoading(false);
       setLoadingProfiles(false);
     }
   };
@@ -513,29 +499,28 @@ export default function Step3SetTitlesCaNhanHangNam({
         style={{ marginBottom: 24 }}
       />
 
-      <Space direction="vertical" style={{ marginBottom: 16, width: '100%' }} size="small">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <Text type="secondary">
-              Tổng số quân nhân: <strong>{personnel.length}</strong>
-            </Text>
-          </div>
-          <div>
-            <Text type={allTitlesSet ? 'success' : 'warning'}>
-              Đã thêm danh hiệu:{' '}
-              <strong>
-                {
-                  titleData.filter(
-                    d => d.personnel_id && selectedPersonnelIds.includes(d.personnel_id)
-                  ).length
-                }
-                /{personnel.length}
-              </strong>
-              {allTitlesSet && ' ✓'}
-            </Text>
-          </div>
-        </div>
-      </Space>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <Space size="middle" align="center">
+          <Tag color="red" style={{ fontSize: 14, padding: '4px 12px', margin: 0 }}>
+            Năm {nam}
+          </Tag>
+          <Text type="secondary">
+            Tổng số quân nhân: <strong>{personnel.length}</strong>
+          </Text>
+        </Space>
+        <Text type={allTitlesSet ? 'success' : 'warning'}>
+          Đã thêm danh hiệu:{' '}
+          <strong>
+            {
+              titleData.filter(
+                d => d.danh_hieu && d.personnel_id && selectedPersonnelIds.includes(d.personnel_id)
+              ).length
+            }
+            /{personnel.length}
+          </strong>
+          {allTitlesSet && ' ✓'}
+        </Text>
+      </div>
       <Table<Personnel>
         columns={columns}
         dataSource={personnel}

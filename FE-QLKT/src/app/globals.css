@@ -101,6 +101,23 @@
   background-color: #4a4a2a !important;
 }
 
+/* Fix nested table hover trong dark mode */
+.dark .ant-table-expanded-row > td {
+  background-color: #111827 !important;
+}
+
+.dark .ant-table-expanded-row .ant-table-tbody > tr:hover > td {
+  background-color: #1f2937 !important;
+}
+
+.dark .ant-table-expanded-row .ant-table-tbody > tr > td {
+  background-color: #111827 !important;
+}
+
+.dark .ant-table-expanded-row .ant-table-thead > tr > th {
+  background-color: #1a2332 !important;
+}
+
 :root {
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);

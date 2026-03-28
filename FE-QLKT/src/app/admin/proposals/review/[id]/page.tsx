@@ -35,6 +35,7 @@ import {
   FileTextOutlined,
   DownloadOutlined,
   DeleteOutlined,
+  EyeOutlined,
 } from '@ant-design/icons';
 import { EditableCell } from '@/components/EditableCell';
 import DecisionModal from '@/components/DecisionModal';
@@ -920,7 +921,7 @@ export default function ProposalDetailPage() {
         }
         return (
           <div style={{ textAlign: 'center' }}>
-            <
+            <a
               onClick={e => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -1466,9 +1467,8 @@ export default function ProposalDetailPage() {
                     )}
                   </div>
                   <Button
-                    type="link"
-                    icon={<FileTextOutlined />}
-                    style={{ padding: '0 8px', borderRadius: '6px' }}
+                    type="primary"
+                    icon={<EyeOutlined />}
                     onClick={() => {
                       const filename = file.filename;
                       const displayName =

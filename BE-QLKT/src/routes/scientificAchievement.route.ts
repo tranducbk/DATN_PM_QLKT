@@ -9,7 +9,7 @@ const router = Router();
 
 router.get('/', verifyToken, requireAuth, scientificAchievementController.getAchievements);
 router.get('/export', verifyToken, requireAuth, scientificAchievementController.exportToExcel);
-router.get('/template', verifyToken, requireAuth, scientificAchievementController.downloadTemplate);
+router.get('/template', verifyToken, requireAuth, scientificAchievementController.getTemplate);
 router.post(
   '/import/preview',
   verifyToken,

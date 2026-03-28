@@ -94,10 +94,10 @@ export default function ExportModal({ open, onCancel, activeTab }: ExportModalPr
     setSelectedPersonnelIds([]);
   }, [donViId, open, activeTab]);
 
-  const hasDanhHieuFilter = ['annual', 'unit', 'hccsvv', 'contribution'].includes(activeTab);
-  const hasUnitFilter = activeTab !== 'unit'; // Tab đơn vị không cần filter đơn vị
+  const hasDanhHieuFilter = ['CNHN', 'DVHN', 'HCCSVV', 'HCBVTQ'].includes(activeTab);
+  const hasUnitFilter = activeTab !== 'DVHN'; // Tab đơn vị không cần filter đơn vị
   const isIndividualTab = INDIVIDUAL_AWARD_TABS.includes(activeTab);
-  const isUnitTab = activeTab === 'unit';
+  const isUnitTab = activeTab === 'DVHN';
 
   const handleExport = async () => {
     // Validate khoảng năm
@@ -140,25 +140,25 @@ export default function ExportModal({ open, onCancel, activeTab }: ExportModalPr
       let blob: Blob;
 
       switch (activeTab) {
-        case 'annual':
+        case 'CNHN':
           blob = await apiClient.exportAnnualRewards(params);
           break;
-        case 'unit':
+        case 'DVHN':
           blob = await apiClient.exportUnitAnnualAwards(params);
           break;
-        case 'hccsvv':
+        case 'HCCSVV':
           blob = await apiClient.exportHCCSVV(params);
           break;
-        case 'contribution':
+        case 'HCBVTQ':
           blob = await apiClient.exportContributionAwards(params);
           break;
-        case 'commemoration':
+        case 'KNC_VSNXD_QDNDVN':
           blob = await apiClient.exportCommemorationMedals(params);
           break;
-        case 'militaryFlag':
+        case 'HCQKQT':
           blob = await apiClient.exportMilitaryFlag(params);
           break;
-        case 'scientific':
+        case 'NCKH':
           blob = await apiClient.exportScientificAchievements(params);
           break;
         default:
@@ -377,7 +377,7 @@ export default function ExportModal({ open, onCancel, activeTab }: ExportModalPr
         )}
 
         {/* Loại thành tích khoa học */}
-        {activeTab === 'scientific' && (
+        {activeTab === 'NCKH' && (
           <div>
             <Text strong style={{ display: 'block', marginBottom: 8 }}>
               Loại thành tích

@@ -19,16 +19,16 @@ router.get('/my-units', verifyToken, requireManager, unitController.getMyUnits);
 /**
  * @route   GET /api/units
  * @desc    Lấy tất cả cơ quan đơn vị và đơn vị trực thuộc (?hierarchy=true để lấy theo cấu trúc cây)
- * @access  Private - ADMIN and above
+ * @access  Private - MANAGER and above
  */
-router.get('/', verifyToken, requireAdmin, unitController.getAllUnits);
+router.get('/', verifyToken, requireManager, unitController.getAllUnits);
 
 /**
  * @route   GET /api/units/:id
  * @desc    Lấy chi tiết cơ quan đơn vị hoặc đơn vị trực thuộc với cấu trúc cây
- * @access  Private - ADMIN and above
+ * @access  Private - MANAGER and above
  */
-router.get('/:id', verifyToken, requireAdmin, unitController.getUnitById);
+router.get('/:id', verifyToken, requireManager, unitController.getUnitById);
 
 /**
  * @route   POST /api/units

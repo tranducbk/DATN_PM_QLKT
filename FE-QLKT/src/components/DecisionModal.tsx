@@ -13,10 +13,11 @@ import {
   Space,
   AutoComplete,
   Spin,
+  Tag,
 } from 'antd';
 import { getApiErrorMessage } from '@/lib/apiError';
 
-import { UploadOutlined, SaveOutlined, FileTextOutlined } from '@ant-design/icons';
+import { UploadOutlined, SaveOutlined, FileTextOutlined, DeleteOutlined } from '@ant-design/icons';
 import type { UploadFile } from 'antd/es/upload/interface';
 import dayjs from 'dayjs';
 import { apiClient } from '@/lib/apiClient';
@@ -139,6 +140,7 @@ export default function DecisionModal({
       if (response.success && response.data) {
         const decision = response.data;
         setSelectedDecision(decision);
+        setFileList([]);
 
         // Auto-fill form
         form.setFieldsValue({
@@ -269,14 +271,7 @@ export default function DecisionModal({
 
   return (
     <Modal
-      title={
-        <Space>
-          <FileTextOutlined />
-          <span>
-            {initialDecision ? 'Sửa Quyết định Khen thưởng' : 'Thêm Số Quyết định Khen thưởng'}
-          </span>
-        </Space>
-      }
+      title={initialDecision ? 'Sửa Quyết định Khen thưởng' : 'Thêm Số Quyết định Khen thưởng'}
       open={visible}
       onCancel={onClose}
       width={700}
@@ -294,7 +289,6 @@ export default function DecisionModal({
             type="primary"
             onClick={() => handleSubmit(true)}
             loading={loading}
-            icon={<SaveOutlined />}
           >
             Lưu thay đổi
           </Button>
@@ -306,7 +300,6 @@ export default function DecisionModal({
             type="primary"
             onClick={() => handleSubmit(false)}
             loading={loading}
-            icon={<SaveOutlined />}
           >
             Thêm quyết định
           </Button>
@@ -318,7 +311,6 @@ export default function DecisionModal({
             type="primary"
             onClick={() => handleSubmit(true)}
             loading={loading}
-            icon={<SaveOutlined />}
             style={{ background: '#52c41a', borderColor: '#52c41a' }}
           >
             Thêm mới và Lưu
@@ -418,37 +410,71 @@ export default function DecisionModal({
         </Form.Item>
 
         <Form.Item label="File quyết định">
-          <Upload.Dragger
-            fileList={fileList}
-            onChange={({ fileList }) => setFileList(fileList)}
-            beforeUpload={() => false}
-            accept=".pdf"
-            maxCount={1}
-            style={{ width: '100%' }}
-            disabled={!!selectedDecision}
-          >
-            <p className="ant-upload-drag-icon">
-              <UploadOutlined
-                style={{
-                  fontSize: 48,
-                  color: selectedDecision ? '#d9d9d9' : '#1890ff',
-                }}
-              />
-            </p>
-            <p className="ant-upload-text">
-              {selectedDecision?.file_path
-                ? 'File quyết định đã có sẵn. Click nút X để chọn lại quyết định khác.'
-                : initialDecision?.file_path
-                  ? 'File quyết định đã có sẵn. Có thể upload file mới để thay thế.'
-                  : 'Kéo thả file vào đây hoặc click để chọn file'}
-            </p>
-            <p className="ant-upload-hint">Chỉ chấp nhận file PDF</p>
-          </Upload.Dragger>
-          {(selectedDecision?.file_path || initialDecision?.file_path) && !fileList.length && (
-            <div style={{ marginTop: 8, color: '#52c41a', textAlign: 'center' }}>
-              ✓ Đã có file:{' '}
-              {(selectedDecision?.file_path || initialDecision?.file_path)?.split('/').pop()}
+          {fileList.length > 0 ? (
+            <div
+              style={{
+                padding: '12px 16px',
+                borderRadius: 8,
+                border: '1px solid #1890ff',
+                background: 'rgba(24, 144, 255, 0.06)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+              }}
+            >
+              <FileTextOutlined style={{ fontSize: 24, color: '#1890ff' }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 500 }}>{fileList[0].name}</div>
+                <div style={{ fontSize: 12, opacity: 0.7 }}>
+                  {fileList[0].size ? `${(fileList[0].size / 1024).toFixed(1)} KB` : 'File PDF'}
+                </div>
+              </div>
+              <Button
+                type="text"
+                danger
+                icon={<DeleteOutlined />}
+                onClick={() => setFileList([])}
+                size="small"
+              >
+                Xoá
+              </Button>
             </div>
+          ) : (selectedDecision?.file_path || initialDecision?.file_path) ? (
+            <div
+              style={{
+                padding: '12px 16px',
+                borderRadius: 8,
+                border: '1px solid #b7eb8f',
+                background: 'rgba(82, 196, 26, 0.06)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+              }}
+            >
+              <FileTextOutlined style={{ fontSize: 24, color: '#52c41a' }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 500 }}>
+                  {(selectedDecision?.file_path || initialDecision?.file_path)?.split('/').pop()}
+                </div>
+                <div style={{ fontSize: 12, opacity: 0.7 }}>File PDF đã được tải lên</div>
+              </div>
+              <Tag color="success">Đã có file</Tag>
+            </div>
+          ) : (
+            <Upload.Dragger
+              fileList={fileList}
+              onChange={({ fileList }) => setFileList(fileList)}
+              beforeUpload={() => false}
+              accept=".pdf"
+              maxCount={1}
+              disabled={!!selectedDecision}
+            >
+              <p className="ant-upload-drag-icon">
+                <UploadOutlined style={{ fontSize: 48, color: '#1890ff' }} />
+              </p>
+              <p className="ant-upload-text">Kéo thả file vào đây hoặc click để chọn file</p>
+              <p className="ant-upload-hint">Chỉ chấp nhận file PDF</p>
+            </Upload.Dragger>
           )}
         </Form.Item>
       </Form>

@@ -8,6 +8,7 @@ import { writeSystemLog } from '../helpers/systemLogHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { parsePersonnelIdsFromQuery, buildManagerQuanNhanFilter } from '../helpers/controllerHelpers';
 
 class ScientificAchievementController {
   getAchievements = catchAsync(async (req: Request, res: Response) => {
@@ -25,34 +26,9 @@ class ScientificAchievementController {
     if (loai) where.loai = loai;
     const quanNhanFilter: Record<string, unknown> = {};
     if (ho_ten) quanNhanFilter.ho_ten = { contains: ho_ten, mode: 'insensitive' };
-    const userRole = req.user?.role;
-    const userQuanNhanId = req.user?.quan_nhan_id;
-    if (userRole === ROLES.MANAGER && userQuanNhanId) {
-      const managerPersonnel = await prisma.quanNhan.findUnique({
-        where: { id: userQuanNhanId },
-        select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true },
-      });
-      if (managerPersonnel) {
-        if (managerPersonnel.co_quan_don_vi_id) {
-          const donViTrucThuocIds = await prisma.donViTrucThuoc.findMany({
-            where: { co_quan_don_vi_id: managerPersonnel.co_quan_don_vi_id },
-            select: { id: true },
-          });
-          const donViTrucThuocIdList = donViTrucThuocIds.map((d: { id: string }) => d.id);
-          where.QuanNhan = {
-            ...quanNhanFilter,
-            OR: [
-              { co_quan_don_vi_id: managerPersonnel.co_quan_don_vi_id },
-              { don_vi_truc_thuoc_id: { in: donViTrucThuocIdList } },
-            ],
-          };
-        } else if (managerPersonnel.don_vi_truc_thuoc_id) {
-          where.QuanNhan = {
-            ...quanNhanFilter,
-            don_vi_truc_thuoc_id: managerPersonnel.don_vi_truc_thuoc_id,
-          };
-        }
-      }
+    const managerQuanNhanWhere = await buildManagerQuanNhanFilter(req, quanNhanFilter);
+    if (managerQuanNhanWhere) {
+      where.QuanNhan = managerQuanNhanWhere;
     } else if (Object.keys(quanNhanFilter).length > 0) {
       where.QuanNhan = quanNhanFilter;
     }
@@ -155,15 +131,9 @@ class ScientificAchievementController {
     return res.send(buffer);
   });
 
-  downloadTemplate = catchAsync(async (req: Request, res: Response) => {
+  getTemplate = catchAsync(async (req: Request, res: Response) => {
     const userRole = req.user?.role ?? 'MANAGER';
-    let personnelIds: string[] = [];
-    if (req.query.personnel_ids) {
-      personnelIds = (req.query.personnel_ids as string)
-        .split(',')
-        .map((id: string) => id.trim())
-        .filter((id: string) => id.length > 0);
-    }
+    const personnelIds = parsePersonnelIdsFromQuery(req.query);
     const workbook = await scientificAchievementService.generateTemplate(personnelIds, userRole);
     res.setHeader(
       'Content-Type',
@@ -187,9 +157,9 @@ class ScientificAchievementController {
       userRole: req.user?.role,
       action: AUDIT_ACTIONS.IMPORT_PREVIEW,
       resource: 'scientific-achievements',
-      description: `Tải lên file ${req.file?.originalname || 'Excel'} để review thành tích khoa học: ${result.total || result.valid?.length || 0} dòng, ${result.errors?.length || 0} lỗi`,
+      description: `Tải lên file "${req.file?.originalname ? Buffer.from(req.file.originalname, 'latin1').toString('utf8') : 'Excel'}" để review thành tích khoa học: ${result.valid?.length || 0} hợp lệ, ${result.errors?.length || 0} lỗi`,
       payload: {
-        filename: req.file?.originalname,
+        filename: req.file?.originalname ? Buffer.from(req.file.originalname, 'latin1').toString('utf8') : undefined,
         total: result.total,
         errors: result.errors?.length || 0,
       },

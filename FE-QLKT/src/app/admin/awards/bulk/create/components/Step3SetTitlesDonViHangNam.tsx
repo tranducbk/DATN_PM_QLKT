@@ -442,23 +442,23 @@ export default function Step3SetTitlesDonViHangNam({
         style={{ marginBottom: 24 }}
       />
 
-      <Space direction="vertical" style={{ marginBottom: 16, width: '100%' }} size="small">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <Text type="secondary">
-              Tổng số đơn vị: <strong>{units.length}</strong>
-            </Text>
-            <br />
-            <Text type={allTitlesSet ? 'success' : 'warning'}>
-              Đã thêm danh hiệu:{' '}
-              <strong>
-                {titleData.filter(d => d.danh_hieu).length}/{units.length}
-              </strong>
-              {allTitlesSet && ' ✓'}
-            </Text>
-          </div>
-        </div>
-      </Space>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <Space size="middle" align="center">
+          <Tag color="red" style={{ fontSize: 14, padding: '4px 12px', margin: 0 }}>
+            Năm {nam}
+          </Tag>
+          <Text type="secondary">
+            Tổng số đơn vị: <strong>{units.length}</strong>
+          </Text>
+        </Space>
+        <Text type={allTitlesSet ? 'success' : 'warning'}>
+          Đã thêm danh hiệu:{' '}
+          <strong>
+            {titleData.filter(d => d.danh_hieu).length}/{units.length}
+          </strong>
+          {allTitlesSet && ' ✓'}
+        </Text>
+      </div>
 
       <Table<Unit>
         columns={columns}

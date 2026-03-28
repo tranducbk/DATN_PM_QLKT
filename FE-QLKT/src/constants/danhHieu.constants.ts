@@ -118,9 +118,10 @@ export const LOAI_DE_XUAT_MAP: Record<string, string> = {
 };
 
 /** Options cho dropdown loại khen thưởng (dùng chung cho decisions page, modal, v.v.) */
-export const LOAI_KHEN_THUONG_OPTIONS = Object.entries(LOAI_DE_XUAT_MAP).map(
-  ([value, label]) => ({ label, value })
-);
+export const LOAI_KHEN_THUONG_OPTIONS = Object.entries(LOAI_DE_XUAT_MAP).map(([value, label]) => ({
+  label,
+  value,
+}));
 
 /**
  * Mapping mã loại khen thưởng (award_type) sang tên tiếng Việt
@@ -178,44 +179,54 @@ export function getAwardTypeName(awardType: string | null | undefined): string {
 
 // Constants cho Awards Tabs (ExportModal, awards page)
 
+/** Các loại tab khen thưởng */
+export type AwardType =
+  | 'CNHN'
+  | 'DVHN'
+  | 'HCCSVV'
+  | 'HCBVTQ'
+  | 'KNC_VSNXD_QDNDVN'
+  | 'HCQKQT'
+  | 'NCKH';
+
 /** Label tiếng Việt cho từng tab khen thưởng */
-export const AWARD_TAB_LABELS: Record<string, string> = {
-  annual: 'Cá nhân hằng năm',
-  unit: 'Đơn vị hằng năm',
-  hccsvv: 'Huy chương Chiến sĩ Vẻ vang',
-  contribution: 'Huân chương Bảo vệ Tổ quốc',
-  commemoration: 'Kỷ niệm chương VSNXD QĐNDVN',
-  militaryFlag: 'Huy chương quân kỳ Quyết thắng',
-  scientific: 'Thành tích khoa học',
+export const AWARD_TAB_LABELS: Record<AwardType, string> = {
+  CNHN: 'Cá nhân hằng năm',
+  DVHN: 'Đơn vị hằng năm',
+  HCCSVV: 'Huy chương Chiến sĩ Vẻ vang',
+  HCBVTQ: 'Huân chương Bảo vệ Tổ quốc',
+  KNC_VSNXD_QDNDVN: 'Kỷ niệm chương VSNXD QĐNDVN',
+  HCQKQT: 'Huy chương Quân kỳ Quyết thắng',
+  NCKH: 'Thành tích khoa học',
 };
 
 /** Danh hiệu hợp lệ cho filter theo từng tab */
 export const AWARD_TAB_DANH_HIEU: Record<string, string[]> = {
-  annual: ['CSTDCS', 'CSTT', 'BKBQP', 'CSTDTQ'],
-  unit: ['ĐVQT', 'ĐVTT', 'BKBQP', 'BKTTCP'],
-  hccsvv: ['HCCSVV_HANG_NHAT', 'HCCSVV_HANG_NHI', 'HCCSVV_HANG_BA'],
-  contribution: ['HCBVTQ_HANG_NHAT', 'HCBVTQ_HANG_NHI', 'HCBVTQ_HANG_BA'],
+  CNHN: ['CSTDCS', 'CSTT', 'BKBQP', 'CSTDTQ'],
+  DVHN: ['ĐVQT', 'ĐVTT', 'BKBQP', 'BKTTCP'],
+  HCCSVV: ['HCCSVV_HANG_NHAT', 'HCCSVV_HANG_NHI', 'HCCSVV_HANG_BA'],
+  HCBVTQ: ['HCBVTQ_HANG_NHAT', 'HCBVTQ_HANG_NHI', 'HCBVTQ_HANG_BA'],
 };
 
 /** Tên file khi xuất Excel theo tab */
 export const AWARD_TAB_FILENAME: Record<string, string> = {
-  annual: 'ca_nhan_hang_nam',
-  unit: 'don_vi_hang_nam',
-  hccsvv: 'hccsvv',
-  contribution: 'hcbvtq_cong_hien',
-  commemoration: 'knc_vsnxd',
-  militaryFlag: 'hc_quan_ky_quyet_thang',
-  scientific: 'thanh_tich_khoa_hoc',
+  CNHN: 'ca_nhan_hang_nam',
+  DVHN: 'don_vi_hang_nam',
+  HCCSVV: 'hccsvv',
+  HCBVTQ: 'hcbvtq_cong_hien',
+  KNC_VSNXD_QDNDVN: 'knc_vsnxd',
+  HCQKQT: 'hc_quan_ky_quyet_thang',
+  NCKH: 'thanh_tich_khoa_hoc',
 };
 
 /** Tab cá nhân (có bảng chọn quân nhân khi xuất) */
 export const INDIVIDUAL_AWARD_TABS = [
-  'annual',
-  'hccsvv',
-  'contribution',
-  'commemoration',
-  'militaryFlag',
-  'scientific',
+  'CNHN',
+  'HCCSVV',
+  'HCBVTQ',
+  'KNC_VSNXD_QDNDVN',
+  'HCQKQT',
+  'NCKH',
 ];
 
 /** Map awardType (bulk create) → allow key (dev zone setting) */
@@ -238,6 +249,6 @@ export function getLoaiKhenThuongByDanhHieu(danhHieu: string | null | undefined)
   if (['CSTDCS', 'CSTT', 'BKBQP', 'CSTDTQ', 'BKTTCP'].includes(danhHieu)) return 'Cá nhân Hằng năm';
   if (['ĐVQT', 'ĐVTT'].includes(danhHieu)) return 'Đơn vị Hằng năm';
   if (danhHieu === 'HC_QKQT') return 'Huy chương Quân kỳ Quyết thắng';
-  if (danhHieu === 'KNC_VSNXD_QDNDVN') return 'Kỷ niệm chương';
+  if (danhHieu === 'KNC_VSNXD_QDNDVN') return 'Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN';
   return 'Đột xuất';
 }

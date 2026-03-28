@@ -31,7 +31,7 @@ export const AWARD_TYPE_OPTIONS = [
   },
   {
     key: 'commemoration',
-    label: 'Kỷ niệm chương',
+    label: 'Kỷ niệm chương VSNXD QĐNDVN',
     description: 'Import, file mẫu, thêm đồng loạt',
   },
   {

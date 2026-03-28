@@ -173,8 +173,19 @@ const asRecord = (value: unknown): Record<string, unknown> | null => {
   return null;
 };
 
+/** Decode filename từ multer (latin1 → utf8) để hiện đúng tiếng Việt */
+const getFileName = (req: { file?: { originalname?: string } }): string => {
+  if (!req.file?.originalname) return FALLBACK.NO_FILE;
+  try {
+    return Buffer.from(req.file.originalname, 'latin1').toString('utf8');
+  } catch {
+    return req.file.originalname;
+  }
+};
+
 export {
   FALLBACK,
+  getFileName,
   ROLE_NAMES,
   ACHIEVEMENT_TYPE_NAMES,
   parseResponseData,

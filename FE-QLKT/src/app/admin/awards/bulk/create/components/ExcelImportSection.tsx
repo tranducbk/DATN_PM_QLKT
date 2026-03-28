@@ -1,8 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Button, Upload, message, Space, Alert, theme, Divider } from 'antd';
+import { Button, Upload, message, Space, Alert, theme, Divider, Modal, InputNumber, List, Typography } from 'antd';
 import { DownloadOutlined, UploadOutlined, CloudUploadOutlined } from '@ant-design/icons';
+
+const { Text } = Typography;
 
 import { useRouter } from 'next/navigation';
 import axiosInstance from '@/utils/axiosInstance';
@@ -16,7 +18,8 @@ interface ExcelImportSectionProps {
   templateFileName: string;
   onImportSuccess?: (result: any) => void;
   selectedCount?: number;
-  selectedPersonnelIds?: (string | number)[];
+  selectedPersonnelIds?: string[];
+  selectedNames?: string[];
   entityLabel?: string;
   localProcessing?: boolean;
   onLocalProcess?: (file: File) => Promise<any>;
@@ -33,6 +36,7 @@ export default function ExcelImportSection({
   onImportSuccess,
   selectedCount = 0,
   selectedPersonnelIds = [],
+  selectedNames = [],
   entityLabel = 'bản ghi',
   localProcessing = false,
   onLocalProcess,
@@ -45,13 +49,20 @@ export default function ExcelImportSection({
   const [uploading, setUploading] = useState(false);
   const [importSuccess, setImportSuccess] = useState(false);
   const [importedCount, setImportedCount] = useState(0);
+  const [templateModalVisible, setTemplateModalVisible] = useState(false);
+  const [repeatMap, setRepeatMap] = useState<Record<string, number>>({});
   const { token } = theme.useToken();
 
   const handleDownloadTemplate = async () => {
+    setTemplateModalVisible(false);
     try {
       const params: Record<string, string> = {};
       if (selectedPersonnelIds.length > 0) {
         params.personnel_ids = selectedPersonnelIds.join(',');
+      }
+      const hasCustomRepeat = Object.values(repeatMap).some(v => v > 1);
+      if (hasCustomRepeat) {
+        params.repeat_map = JSON.stringify(repeatMap);
       }
       const response = await axiosInstance.get(templateEndpoint, {
         responseType: 'blob',
@@ -222,13 +233,20 @@ export default function ExcelImportSection({
             </strong>
             <br />
             <span style={{ color: token.colorTextSecondary }}>
-              Tải file mẫu, điền thông tin và upload để tự động điền dữ liệu
+              {selectedPersonnelIds.length === 0
+                ? `Chọn ít nhất 1 ${entityLabel} từ danh sách bên dưới trước, sau đó tải file mẫu để điền thông tin`
+                : `Tải file mẫu (${selectedPersonnelIds.length} ${entityLabel} đã chọn), điền thông tin và upload để tự động điền dữ liệu`}
             </span>
           </div>
         </div>
 
         <Space size="middle">
-          <Button icon={<DownloadOutlined />} onClick={handleDownloadTemplate} size="large">
+          <Button
+            icon={<DownloadOutlined />}
+            onClick={() => { setRepeatMap({}); setTemplateModalVisible(true); }}
+            size="large"
+            disabled={selectedPersonnelIds.length === 0}
+          >
             Tải file mẫu Excel
             {selectedPersonnelIds.length > 0
               ? ` (${selectedPersonnelIds.length} ${entityLabel})`
@@ -269,6 +287,46 @@ export default function ExcelImportSection({
       </Space>
     </div>
     <Divider>Hoặc chọn thủ công</Divider>
+
+    <Modal
+      title="Tải file mẫu Excel"
+      open={templateModalVisible}
+      onCancel={() => setTemplateModalVisible(false)}
+      onOk={handleDownloadTemplate}
+      okText="Tải file mẫu"
+      cancelText="Huỷ"
+      centered
+      width={500}
+    >
+      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+        <Text type="secondary">Nhập số dòng cho mỗi {entityLabel} trong file Excel. Mặc định là 1.</Text>
+        <List
+          size="small"
+          bordered
+          style={{ maxHeight: 400, overflow: 'auto' }}
+          dataSource={selectedPersonnelIds.map((id, i) => ({
+            id: String(id),
+            name: selectedNames[i] || `${entityLabel} ${i + 1}`,
+          }))}
+          renderItem={(item, index) => (
+            <List.Item style={{ padding: '8px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text>{index + 1}. {item.name}</Text>
+              <InputNumber
+                min={1}
+                max={20}
+                value={repeatMap[item.id] || 1}
+                onChange={val => setRepeatMap(prev => ({ ...prev, [item.id]: val || 1 }))}
+                size="small"
+                style={{ width: 60 }}
+              />
+            </List.Item>
+          )}
+        />
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          Tổng số dòng: {selectedPersonnelIds.reduce((sum, id) => sum + (repeatMap[String(id)] || 1), 0)}
+        </Text>
+      </Space>
+    </Modal>
     </>
   );
 }

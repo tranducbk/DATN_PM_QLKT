@@ -12,7 +12,6 @@ import {
   Breadcrumb,
   Space,
   message,
-  Tag,
   Tooltip,
   Empty,
   Popconfirm,
@@ -40,9 +39,9 @@ import {
   PROPOSAL_STATUS,
   PROPOSAL_STATUS_LABELS,
   PROPOSAL_TYPES,
-  PROPOSAL_TYPE_LABELS,
-  PROPOSAL_TYPE_TAG_COLORS_MANAGER,
+  PROPOSAL_STATUS_BADGE_COLORS,
   getProposalTypeLabel,
+  getProposalStatusLabel,
   type ProposalType,
 } from '@/constants/proposal.constants';
 
@@ -195,45 +194,12 @@ export default function ManagerProposalsPage() {
     setTypeFilter('');
   };
 
-  const getProposalTypeTag = (type: string) => {
-    const text = PROPOSAL_TYPE_LABELS[type] || type;
-    const color = PROPOSAL_TYPE_TAG_COLORS_MANAGER[type] || 'default';
-    return <Tag color={color}>{text}</Tag>;
-  };
-
-  const getStatusTag = (status: string) => {
-    const statusConfig: Record<
-      string,
-      { color: string; icon: React.ReactNode; text: string }
-    > = {
-      [PROPOSAL_STATUS.PENDING]: {
-        color: 'gold',
-        icon: <ClockCircleOutlined />,
-        text: PROPOSAL_STATUS_LABELS[PROPOSAL_STATUS.PENDING],
-      },
-      [PROPOSAL_STATUS.APPROVED]: {
-        color: 'green',
-        icon: <CheckCircleOutlined />,
-        text: PROPOSAL_STATUS_LABELS[PROPOSAL_STATUS.APPROVED],
-      },
-      [PROPOSAL_STATUS.REJECTED]: {
-        color: 'red',
-        icon: <CloseCircleOutlined />,
-        text: PROPOSAL_STATUS_LABELS[PROPOSAL_STATUS.REJECTED],
-      },
-    };
-
-    const config = statusConfig[status] ?? {
-      color: 'default',
-      icon: undefined,
-      text: status,
-    };
-    return (
-      <Tag color={config.color} icon={config.icon}>
-        {config.text}
-      </Tag>
-    );
-  };
+  const getStatusBadge = (status: string) => (
+    <Badge
+      color={PROPOSAL_STATUS_BADGE_COLORS[status] || 'default'}
+      text={getProposalStatusLabel(status)}
+    />
+  );
 
   const columns = [
     {
@@ -265,7 +231,7 @@ export default function ManagerProposalsPage() {
       key: 'loai_de_xuat',
       width: 180,
       align: 'center' as const,
-      render: (type: string) => getProposalTypeTag(type),
+      render: (type: string) => getProposalTypeLabel(type),
     },
     {
       title: 'Năm',
@@ -323,7 +289,7 @@ export default function ManagerProposalsPage() {
       key: 'status',
       width: 130,
       align: 'center' as const,
-      render: (status: string) => getStatusTag(status),
+      render: (status: string) => getStatusBadge(status),
     },
     {
       title: 'Thời gian cập nhật',

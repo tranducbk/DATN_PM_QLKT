@@ -123,18 +123,6 @@ class PersonnelController {
       );
     }
     const result = await personnelService.importFromExcelBuffer(req.file.buffer);
-    await writeSystemLog({
-      userId: req.user?.id,
-      userRole: req.user?.role,
-      action: AUDIT_ACTIONS.IMPORT,
-      resource: 'personnel',
-      description: `Nhập dữ liệu quân nhân: ${result.createdCount} tạo mới, ${result.updatedCount} cập nhật, ${result.errors?.length ?? 0} lỗi`,
-      payload: {
-        created: result.createdCount,
-        updated: result.updatedCount,
-        errorCount: result.errors?.length ?? 0,
-      },
-    });
     return ResponseHelper.success(res, { data: result, message: 'Import quân nhân hoàn tất' });
   });
 

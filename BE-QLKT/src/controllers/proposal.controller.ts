@@ -467,11 +467,7 @@ class ProposalController {
     }
     return ResponseHelper.success(res, {
       message: 'Lấy danh sách HCCSVV thành công',
-      data: await hccsvvService.getAll(
-        filters,
-        page as string | number,
-        limit as string | number
-      ),
+      data: await hccsvvService.getAll(filters, page as string | number, limit as string | number),
     });
   });
 
@@ -682,7 +678,7 @@ class ProposalController {
       return ResponseHelper.badRequest(res, 'Vui lòng gửi file Excel');
     }
     return ResponseHelper.success(res, {
-      message: 'Import Huy chương quân kỳ Quyết thắng thành công',
+      message: 'Import Huy chương Quân kỳ Quyết thắng thành công',
       data: await militaryFlagService.importFromExcel(req.file.buffer, req.user!.id),
     });
   });

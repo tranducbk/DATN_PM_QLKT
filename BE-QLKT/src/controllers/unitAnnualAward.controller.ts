@@ -142,9 +142,9 @@ class UnitAnnualAwardController {
       userRole: req.user?.role,
       action: AUDIT_ACTIONS.IMPORT_PREVIEW,
       resource: 'unit-annual-awards',
-      description: `Tải lên file ${req.file?.originalname || 'Excel'} để review khen thưởng đơn vị hằng năm: ${result.total || result.valid?.length || 0} dòng, ${result.errors?.length || 0} lỗi`,
+      description: `Tải lên file "${req.file?.originalname ? Buffer.from(req.file.originalname, 'latin1').toString('utf8') : 'Excel'}" để review khen thưởng đơn vị hằng năm: ${result.valid?.length || 0} hợp lệ, ${result.errors?.length || 0} lỗi`,
       payload: {
-        filename: req.file?.originalname,
+        filename: req.file?.originalname ? Buffer.from(req.file.originalname, 'latin1').toString('utf8') : undefined,
         total: result.total,
         errors: result.errors?.length || 0,
       },
@@ -158,14 +158,6 @@ class UnitAnnualAwardController {
       return ResponseHelper.badRequest(res, 'Không có dữ liệu để import');
     }
     const result = await service.confirmImport(items, req.user!.id);
-    await writeSystemLog({
-      userId: req.user?.id,
-      userRole: req.user?.role,
-      action: AUDIT_ACTIONS.IMPORT,
-      resource: 'unit-annual-awards',
-      description: `Nhập dữ liệu khen thưởng đơn vị hằng năm thành công: ${result.imported || items.length} bản ghi`,
-      payload: { imported: result.imported || items.length },
-    });
     return ResponseHelper.success(res, { data: result });
   });
 

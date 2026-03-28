@@ -775,6 +775,7 @@ export default function Step2SelectPersonnelCongHien({
             onImportSuccess={handleImportSuccess}
             selectedCount={selectedPersonnelIds.length}
             selectedPersonnelIds={selectedPersonnelIds}
+            selectedNames={selectedPersonnelIds.map(id => personnel.find(p => p.id === id)?.ho_ten || '')}
             entityLabel="quân nhân"
             localProcessing={true}
             onLocalProcess={handleLocalExcelProcess}

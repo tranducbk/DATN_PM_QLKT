@@ -13,6 +13,7 @@ import {
   withPrisma,
   formatDateRange,
   asRecord,
+  getFileName,
 } from './constants';
 import type { ChucVuWithUnit } from './constants';
 
@@ -128,7 +129,7 @@ const personnel: Record<
     return `Xóa quân nhân (không xác định được thông tin)`;
   },
   IMPORT: (req: Request, res: Response, responseData: unknown): string => {
-    const fileName = req.file?.originalname || FALLBACK.NO_FILE;
+    const fileName = getFileName(req);
     let successCount = 0;
     let failCount = 0;
 

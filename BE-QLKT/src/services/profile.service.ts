@@ -418,51 +418,6 @@ class ProfileService {
    */
 
   /**
-   * Tính tổng tháng cống hiến từ lịch sử chức vụ
-   * @param {Array} lichSuChucVu - Danh sách lịch sử chức vụ
-   * @returns {number} Tổng tháng cống hiến (đã nhân hệ số)
-   */
-  calculateContributionMonths(lichSuChucVu) {
-    let totalMonths = 0;
-    const today = new Date();
-
-    // Mapping nhóm cống hiến sang hệ số
-    const hesoMap = {
-      'Nhóm 5': 1.0,
-      'Nhóm 6': 1.2,
-      'Nhóm 7': 1.5,
-      // Thêm các nhóm khác nếu có
-    };
-
-    for (const ls of lichSuChucVu) {
-      if (ls.ChucVu?.NhomCongHien) {
-        const ngayBatDau = new Date(ls.ngay_bat_dau);
-        const ngayKetThuc = ls.ngay_ket_thuc ? new Date(ls.ngay_ket_thuc) : today;
-
-        // Tính số tháng thực tế theo lịch (chính xác)
-        let months = (ngayKetThuc.getFullYear() - ngayBatDau.getFullYear()) * 12;
-        months += ngayKetThuc.getMonth() - ngayBatDau.getMonth();
-
-        // Nếu ngày kết thúc < ngày bắt đầu trong tháng thì trừ 1 tháng
-        if (ngayKetThuc.getDate() < ngayBatDau.getDate()) {
-          months--;
-        }
-
-        const monthsWorked = Math.max(0, months); // Đảm bảo không âm
-
-        // Lấy hệ số từ tên nhóm cống hiến
-        const tenNhom = ls.ChucVu.NhomCongHien.ten_nhom;
-        const heso = hesoMap[tenNhom] || 1.0;
-
-        // Tính tháng cống hiến = tháng làm việc * hệ số
-        totalMonths += Math.floor(monthsWorked * heso);
-      }
-    }
-
-    return totalMonths;
-  }
-
-  /**
    * ==============================================
    * HÀM TÍNH TOÁN CHÍNH
    * ==============================================

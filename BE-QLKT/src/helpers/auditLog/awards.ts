@@ -1,7 +1,7 @@
 import type { Prisma } from '../../generated/prisma';
 import { prisma } from '../../models';
 import { Request, Response } from 'express';
-import { FALLBACK, parseResponseData, asRecord, queryPersonnelName, getUnitNameFromUnitId } from './constants';
+import { FALLBACK, parseResponseData, asRecord, queryPersonnelName, getUnitNameFromUnitId, getFileName } from './constants';
 import { getDanhHieuName } from '../../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 
@@ -210,7 +210,7 @@ const annualRewards: Record<
     return description;
   },
   IMPORT: (req: Request, res: Response, responseData: unknown): string => {
-    const fileName = req.file?.originalname || FALLBACK.NO_FILE;
+    const fileName = getFileName(req);
     let successCount = 0;
     let failCount = 0;
 
@@ -681,7 +681,7 @@ function buildAwardTypeHelpers(resource: string): Record<
     },
 
     IMPORT: (req: Request, _res: Response, responseData: unknown): string => {
-      const fileName = req.file?.originalname || FALLBACK.NO_FILE;
+      const fileName = getFileName(req);
       let successCount = 0;
       let failCount = 0;
 
@@ -732,7 +732,7 @@ const unitAnnualAwards: Record<
   (req: Request, res: Response, responseData: unknown) => string | Promise<string>
 > = {
   IMPORT: (req: Request, _res: Response, responseData: unknown): string => {
-    const fileName = req.file?.originalname || FALLBACK.NO_FILE;
+    const fileName = getFileName(req);
     let successCount = 0;
     let failCount = 0;
 

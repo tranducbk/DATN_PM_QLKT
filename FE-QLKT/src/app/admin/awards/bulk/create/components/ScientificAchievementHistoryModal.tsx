@@ -1,11 +1,13 @@
 'use client';
 
-import { Modal, Table, Tag, Typography, Spin } from 'antd';
+import { Modal, Table, Tag, Spin, Empty } from 'antd';
 import { HistoryOutlined } from '@ant-design/icons';
-import { PROPOSAL_STATUS, PROPOSAL_STATUS_LABELS, PROPOSAL_STATUS_COLORS } from '@/constants/proposal.constants';
+import {
+  PROPOSAL_STATUS,
+  PROPOSAL_STATUS_LABELS,
+  PROPOSAL_STATUS_COLORS,
+} from '@/constants/proposal.constants';
 import type { ColumnsType } from 'antd/es/table';
-
-const { Text } = Typography;
 
 interface ScientificAchievement {
   id: string;
@@ -21,9 +23,18 @@ const LOAI_MAP: Record<string, { text: string; color: string }> = {
 };
 
 const STATUS_MAP: Record<string, { text: string; color: string }> = {
-  [PROPOSAL_STATUS.PENDING]: { text: PROPOSAL_STATUS_LABELS[PROPOSAL_STATUS.PENDING], color: PROPOSAL_STATUS_COLORS[PROPOSAL_STATUS.PENDING] },
-  [PROPOSAL_STATUS.APPROVED]: { text: PROPOSAL_STATUS_LABELS[PROPOSAL_STATUS.APPROVED], color: PROPOSAL_STATUS_COLORS[PROPOSAL_STATUS.APPROVED] },
-  [PROPOSAL_STATUS.REJECTED]: { text: PROPOSAL_STATUS_LABELS[PROPOSAL_STATUS.REJECTED], color: PROPOSAL_STATUS_COLORS[PROPOSAL_STATUS.REJECTED] },
+  [PROPOSAL_STATUS.PENDING]: {
+    text: PROPOSAL_STATUS_LABELS[PROPOSAL_STATUS.PENDING],
+    color: PROPOSAL_STATUS_COLORS[PROPOSAL_STATUS.PENDING],
+  },
+  [PROPOSAL_STATUS.APPROVED]: {
+    text: PROPOSAL_STATUS_LABELS[PROPOSAL_STATUS.APPROVED],
+    color: PROPOSAL_STATUS_COLORS[PROPOSAL_STATUS.APPROVED],
+  },
+  [PROPOSAL_STATUS.REJECTED]: {
+    text: PROPOSAL_STATUS_LABELS[PROPOSAL_STATUS.REJECTED],
+    color: PROPOSAL_STATUS_COLORS[PROPOSAL_STATUS.REJECTED],
+  },
 };
 
 const columns: ColumnsType<ScientificAchievement> = [
@@ -84,7 +95,7 @@ export default function ScientificAchievementHistoryModal({
       title={
         <span>
           <HistoryOutlined style={{ marginRight: 8 }} />
-          Lịch sử thành tích khoa học - {personnel?.ho_ten}
+          Lịch sử thành tích nghiên cứu khoa học - {personnel?.ho_ten}
         </span>
       }
       open={visible}
@@ -103,7 +114,10 @@ export default function ScientificAchievementHistoryModal({
             size="small"
           />
         ) : (
-          <Text type="secondary">Chưa có dữ liệu lịch sử thành tích khoa học</Text>
+          <Empty
+            description="Chưa có dữ liệu lịch sử thành tích nghiên cứu khoa học"
+            style={{ padding: '24px 0' }}
+          />
         )}
       </Spin>
     </Modal>

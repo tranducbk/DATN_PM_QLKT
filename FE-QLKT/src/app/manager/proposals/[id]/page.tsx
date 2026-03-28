@@ -312,10 +312,7 @@ export default function ManagerProposalDetailPage() {
   };
 
   const getStatusTag = (status: string) => {
-    const statusConfig: Record<
-      string,
-      { color: string; icon: React.ReactNode; text: string }
-    > = {
+    const statusConfig: Record<string, { color: string; icon: React.ReactNode; text: string }> = {
       [PROPOSAL_STATUS.PENDING]: {
         color: 'gold',
         icon: <ClockCircleOutlined />,
@@ -837,7 +834,7 @@ export default function ManagerProposalDetailPage() {
                       HCBVTQ_HANG_BA: 'Huân chương Bảo vệ Tổ quốc - Hạng Ba',
                       HCBVTQ_HANG_NHI: 'Huân chương Bảo vệ Tổ quốc - Hạng Nhì',
                       HCBVTQ_HANG_NHAT: 'Huân chương Bảo vệ Tổ quốc - Hạng Nhất',
-                      HC_QKQT: 'Huy chương quân kỳ Quyết thắng',
+                      HC_QKQT: 'Huy chương Quân kỳ Quyết thắng',
                       KNC_VSNXD_QDNDVN: 'Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN',
                     };
                     return text ? (
@@ -959,9 +956,18 @@ export default function ManagerProposalDetailPage() {
                   render: (_, __, index) => index + 1,
                 },
                 {
-                  title: proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM ? 'Tên đơn vị' : 'Họ và tên',
-                  dataIndex: proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM ? 'ten_don_vi' : 'ho_ten',
-                  key: proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM ? 'ten_don_vi' : 'ho_ten',
+                  title:
+                    proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM
+                      ? 'Tên đơn vị'
+                      : 'Họ và tên',
+                  dataIndex:
+                    proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM
+                      ? 'ten_don_vi'
+                      : 'ho_ten',
+                  key:
+                    proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM
+                      ? 'ten_don_vi'
+                      : 'ho_ten',
                   width: 250,
                   align: 'center',
                   render: (text: string, record: any) => {
@@ -1007,9 +1013,13 @@ export default function ManagerProposalDetailPage() {
                 },
                 {
                   title:
-                    proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM ? 'Mã đơn vị' : 'Cấp bậc / Chức vụ',
+                    proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM
+                      ? 'Mã đơn vị'
+                      : 'Cấp bậc / Chức vụ',
                   key:
-                    proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM ? 'ma_don_vi' : 'cap_bac_chuc_vu',
+                    proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM
+                      ? 'ma_don_vi'
+                      : 'cap_bac_chuc_vu',
                   width: 180,
                   align: 'center',
                   render: (_: any, record: any) => {
@@ -1086,7 +1096,7 @@ export default function ManagerProposalDetailPage() {
                       HCBVTQ_HANG_BA: 'Huân chương Bảo vệ Tổ quốc - Hạng Ba',
                       HCBVTQ_HANG_NHI: 'Huân chương Bảo vệ Tổ quốc - Hạng Nhì',
                       HCBVTQ_HANG_NHAT: 'Huân chương Bảo vệ Tổ quốc - Hạng Nhất',
-                      HC_QKQT: 'Huy chương quân kỳ Quyết thắng',
+                      HC_QKQT: 'Huy chương Quân kỳ Quyết thắng',
                       KNC_VSNXD_QDNDVN: 'Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN',
                     };
                     return text ? (
@@ -1273,7 +1283,7 @@ export default function ManagerProposalDetailPage() {
                       HCBVTQ_HANG_BA: 'Huân chương Bảo vệ Tổ quốc - Hạng Ba',
                       HCBVTQ_HANG_NHI: 'Huân chương Bảo vệ Tổ quốc - Hạng Nhì',
                       HCBVTQ_HANG_NHAT: 'Huân chương Bảo vệ Tổ quốc - Hạng Nhất',
-                      HC_QKQT: 'Huy chương quân kỳ Quyết thắng',
+                      HC_QKQT: 'Huy chương Quân kỳ Quyết thắng',
                       KNC_VSNXD_QDNDVN: 'Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN',
                     };
                     return text ? (

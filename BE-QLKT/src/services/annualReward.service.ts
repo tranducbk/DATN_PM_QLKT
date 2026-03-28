@@ -1157,7 +1157,8 @@ class AnnualRewardService {
 
   async exportTemplate(
     personnelIds: string[] = [],
-    userRole: string = 'MANAGER'
+    userRole: string = 'MANAGER',
+    repeatMap: Record<string, number> = {}
   ): Promise<ExcelJS.Workbook> {
     const personnelList =
       personnelIds.length > 0
@@ -1194,44 +1195,43 @@ class AnnualRewardService {
 
     worksheet.columns = columns;
 
+    const thinBorder: Partial<ExcelJS.Borders> = {
+      top: { style: 'thin' }, bottom: { style: 'thin' },
+      left: { style: 'thin' }, right: { style: 'thin' },
+    };
+    const yellowFill: ExcelJS.FillPattern = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFCC' } };
+    const redFill: ExcelJS.FillPattern = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFCCCC' } };
+
     const headerRow = worksheet.getRow(1);
     headerRow.font = { bold: true };
     headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD3D3D3' } };
+    headerRow.eachCell(cell => { cell.border = thinBorder; });
 
-    personnelList.forEach((person, index) => {
-      const rowData = {
-        stt: index + 1,
-        id: person.id,
-        ho_ten: person.ho_ten || '',
-        cap_bac: person.cap_bac || '',
-        chuc_vu: person.ChucVu ? person.ChucVu.ten_chuc_vu : '',
-      };
-      worksheet.addRow(rowData);
+    let stt = 0;
+    personnelList.forEach(person => {
+      const rowCount = repeatMap[person.id] || 1;
+      for (let r = 0; r < rowCount; r++) {
+        stt++;
+        worksheet.addRow({
+          stt,
+          id: person.id,
+          ho_ten: person.ho_ten || '',
+          cap_bac: person.cap_bac || '',
+          chuc_vu: person.ChucVu ? person.ChucVu.ten_chuc_vu : '',
+        });
+      }
     });
 
     const readonlyColIndices = [1, 2, 3];
-    const yellowFill: ExcelJS.FillPattern = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFFFFFCC' },
-    };
-    const redFill: ExcelJS.FillPattern = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFFFCCCC' },
-    };
     const bkColIndices = [10, 11, 12];
+    const totalDataRows = personnelList.reduce((sum, p) => sum + (repeatMap[p.id] || 1), 0);
+    const totalRows = Math.max(totalDataRows + 1, 2);
 
-    for (let rowNum = 1; rowNum <= Math.max(personnelList.length + 1, 2); rowNum++) {
+    for (let rowNum = 2; rowNum <= totalRows; rowNum++) {
       const row = worksheet.getRow(rowNum);
-      if (rowNum >= 2) {
-        readonlyColIndices.forEach(colIdx => {
-          row.getCell(colIdx).fill = yellowFill;
-        });
-      }
-      bkColIndices.forEach(colIdx => {
-        row.getCell(colIdx).fill = redFill;
-      });
+      row.eachCell({ includeEmpty: true }, cell => { cell.border = thinBorder; });
+      readonlyColIndices.forEach(col => { row.getCell(col).fill = yellowFill; });
+      bkColIndices.forEach(col => { row.getCell(col).fill = redFill; });
     }
 
     const capBacOptions =
@@ -1293,6 +1293,25 @@ class AnnualRewardService {
         });
       }
     }
+
+    // Conditional formatting: nền vàng khi ô danh hiệu hoặc số QĐ có giá trị
+    const maxDataRow = Math.max(personnelList.length + 1, 50);
+    const editableColumns = ['G', 'H']; // Danh hiệu, Số quyết định
+    editableColumns.forEach(col => {
+      worksheet.addConditionalFormatting({
+        ref: `${col}2:${col}${maxDataRow}`,
+        rules: [
+          {
+            type: 'expression',
+            formulae: [`LEN(TRIM(${col}2))>0`],
+            style: {
+              fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFCC' } },
+            },
+            priority: 1,
+          },
+        ],
+      });
+    });
 
     return workbook;
   }

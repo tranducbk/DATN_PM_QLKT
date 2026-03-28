@@ -1,7 +1,5 @@
 import { Request, Response } from 'express';
 import awardBulkService from '../services/awardBulk.service';
-import { writeSystemLog } from '../helpers/systemLogHelper';
-import { getLoaiDeXuatName } from '../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
@@ -11,14 +9,14 @@ class AwardBulkController {
     const { type, nam, selected_personnel, selected_units, title_data, ghi_chu } = req.body;
     const adminId = req.user!.id;
 
-    let parsedSelectedPersonnel = selected_personnel;
-    let parsedSelectedUnits = selected_units;
-    let parsedTitleData = title_data;
+    let parsedSelectedPersonnel: Record<string, unknown>[] = selected_personnel;
+    let parsedSelectedUnits: Record<string, unknown>[] = selected_units;
+    let parsedTitleData: Record<string, unknown>[] = title_data;
 
     if (typeof selected_personnel === 'string') {
       try {
         parsedSelectedPersonnel = JSON.parse(selected_personnel);
-      } catch (e) {
+      } catch (_) {
         return ResponseHelper.badRequest(
           res,
           'selected_personnel phải là mảng hoặc chuỗi JSON hợp lệ'
@@ -29,7 +27,7 @@ class AwardBulkController {
     if (typeof selected_units === 'string') {
       try {
         parsedSelectedUnits = JSON.parse(selected_units);
-      } catch (e) {
+      } catch (_) {
         return ResponseHelper.badRequest(res, 'selected_units phải là mảng hoặc chuỗi JSON hợp lệ');
       }
     }
@@ -37,7 +35,7 @@ class AwardBulkController {
     if (typeof title_data === 'string') {
       try {
         parsedTitleData = JSON.parse(title_data);
-      } catch (e) {
+      } catch (_) {
         return ResponseHelper.badRequest(res, 'title_data phải là mảng hoặc chuỗi JSON hợp lệ');
       }
     }
@@ -80,21 +78,6 @@ class AwardBulkController {
       ghiChu: ghi_chu || null,
       attachedFiles,
       adminId,
-    });
-
-    const typeName = getLoaiDeXuatName(type);
-    await writeSystemLog({
-      userId: req.user?.id,
-      userRole: req.user?.role,
-      action: 'BULK_CREATE',
-      resource: 'awards',
-      description: `Thêm đồng loạt ${typeName} năm ${nam}: ${result.data?.importedCount || 0} thành công, ${result.data?.errorCount || 0} lỗi`,
-      payload: {
-        type,
-        nam: parseInt(nam),
-        importedCount: result.data?.importedCount,
-        errorCount: result.data?.errorCount,
-      },
     });
 
     return ResponseHelper.success(res, { message: result.message, data: result.data });

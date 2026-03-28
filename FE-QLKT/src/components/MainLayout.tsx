@@ -240,7 +240,7 @@ export default function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutP
     }
   };
 
-  const handleMarkAsRead = async (id: number, isRead: boolean, link?: string | null) => {
+  const handleMarkAsRead = async (id: string, isRead: boolean, link?: string | null) => {
     try {
       // Only mark as read if not already read
       if (!isRead) {
@@ -812,58 +812,62 @@ export default function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutP
                               type: 'divider' as const,
                             },
                             // Notification items
-                            ...notifications.map(notif => ({
-                              key: `notification-${notif.id}`,
+                            ...notifications.map(notification => ({
+                              key: `notification-${notification.id}`,
                               label: (
                                 <div
                                   className={`max-w-xs cursor-pointer p-4 rounded-lg transition-all duration-200 mx-2 mb-2 ${
-                                    notif.is_read
+                                    notification.is_read
                                       ? 'bg-gray-50 dark:bg-gray-700/60 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-600'
                                       : 'bg-blue-50 dark:bg-gray-700/80 hover:bg-blue-100 dark:hover:bg-gray-600 border-l-4 border-blue-500 dark:border-blue-400 shadow-sm'
                                   }`}
                                   onClick={() => {
-                                    if (notif.id != null) {
-                                      handleMarkAsRead(notif.id, Boolean(notif.is_read), notif.link);
+                                    if (notification.id != null) {
+                                      handleMarkAsRead(
+                                        notification.id,
+                                        Boolean(notification.is_read),
+                                        notification.link
+                                      );
                                     }
                                   }}
                                 >
                                   <div className="flex items-start gap-3">
-                                    {!notif.is_read && (
+                                    {!notification.is_read && (
                                       <div className="w-2.5 h-2.5 bg-blue-500 dark:bg-blue-300 rounded-full mt-1.5 flex-shrink-0 animate-pulse"></div>
                                     )}
-                                    {notif.is_read && (
+                                    {notification.is_read && (
                                       <div className="w-2.5 h-2.5 mt-1.5 flex-shrink-0"></div>
                                     )}
                                     <div className="flex-1 min-w-0">
                                       <p
                                         className={`font-semibold text-sm mb-2 leading-snug ${
-                                          notif.is_read
+                                          notification.is_read
                                             ? 'text-gray-700 dark:text-gray-300'
                                             : 'text-gray-900 dark:text-white'
                                         }`}
                                       >
-                                        {notif.title}
+                                        {notification.title}
                                       </p>
                                       <p
                                         className={`text-sm mt-1.5 leading-relaxed ${
-                                          notif.is_read
+                                          notification.is_read
                                             ? 'text-gray-600 dark:text-gray-400'
                                             : 'text-gray-800 dark:text-gray-200'
                                         }`}
                                       >
-                                        {notif.message}
+                                        {notification.message}
                                       </p>
                                       <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-200 dark:border-gray-700">
                                         <p
                                           className={`text-xs flex items-center gap-1.5 ${
-                                            notif.is_read
+                                            notification.is_read
                                               ? 'text-gray-400 dark:text-gray-500'
                                               : 'text-gray-500 dark:text-gray-400'
                                           }`}
                                         >
-                                          <span>{formatNotificationTime(notif.created_at)}</span>
+                                          <span>{formatNotificationTime(notification.created_at)}</span>
                                         </p>
-                                        {notif.is_read && (
+                                        {notification.is_read && (
                                           <span className="text-[10px] font-medium text-gray-400 dark:text-gray-400 px-2 py-0.5 bg-gray-100 dark:bg-gray-600 rounded">
                                             Đã đọc
                                           </span>
@@ -967,7 +971,7 @@ export default function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutP
                   : 'bg-white border-t-2 border-blue-200'
               }`}
             >
-              <p className="font-medium">© 2025 Học viện Khoa học Quân sự. All rights reserved.</p>
+              <p className="font-medium">© 2026 Học viện Khoa học Quân sự. All rights reserved.</p>
               <p className="text-xs mt-1 text-gray-500 dark:text-gray-400">
                 Hệ thống Quản lý Khen thưởng
               </p>

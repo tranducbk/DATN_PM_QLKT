@@ -32,9 +32,9 @@ class ContributionAwardController {
       userRole: req.user?.role,
       action: AUDIT_ACTIONS.IMPORT_PREVIEW,
       resource: 'contribution-awards',
-      description: `Tải lên file ${req.file.originalname ?? 'Excel'} để review huân chương bảo vệ tổ quốc: ${result.total ?? result.valid?.length ?? 0} dòng, ${result.errors?.length ?? 0} lỗi`,
+      description: `Tải lên file "${Buffer.from(req.file.originalname, 'latin1').toString('utf8')}" để review Huân chương Bảo vệ Tổ quốc: ${result.valid?.length ?? 0} hợp lệ, ${result.errors?.length ?? 0} lỗi`,
       payload: {
-        filename: req.file.originalname,
+        filename: Buffer.from(req.file.originalname, 'latin1').toString('utf8'),
         total: result.total,
         errors: result.errors?.length ?? 0,
       },

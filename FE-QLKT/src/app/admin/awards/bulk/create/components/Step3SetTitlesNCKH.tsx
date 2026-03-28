@@ -360,10 +360,15 @@ export default function Step3SetTitlesNCKH({
         style={{ marginBottom: 24 }}
       />
 
-      <Space direction="vertical" style={{ marginBottom: 16, width: '100%' }} size="small">
-        <Text type="secondary">
-          Tổng số quân nhân: <strong>{personnel.length}</strong>
-        </Text>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <Space size="middle" align="center">
+          <Tag color="red" style={{ fontSize: 14, padding: '4px 12px', margin: 0 }}>
+            Năm {nam}
+          </Tag>
+          <Text type="secondary">
+            Tổng số quân nhân: <strong>{personnel.length}</strong>
+          </Text>
+        </Space>
         <Text type={allTitlesSet ? 'success' : 'warning'}>
           Đã set thông tin:{' '}
           <strong>
@@ -371,7 +376,7 @@ export default function Step3SetTitlesNCKH({
           </strong>
           {allTitlesSet && ' ✓'}
         </Text>
-      </Space>
+      </div>
 
       <Table<Personnel>
         columns={columns}

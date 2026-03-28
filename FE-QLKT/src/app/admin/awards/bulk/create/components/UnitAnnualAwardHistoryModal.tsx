@@ -1,6 +1,6 @@
 'use client';
 
-import { Modal, Table, Tag, Typography, Spin, Descriptions } from 'antd';
+import { Modal, Table, Tag, Typography, Spin, Descriptions, Empty } from 'antd';
 import { HistoryOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
@@ -199,7 +199,7 @@ export default function UnitAnnualAwardHistoryModal({
             </div>
           </div>
         ) : (
-          <Text type="secondary">Chưa có dữ liệu lịch sử khen thưởng đơn vị</Text>
+          <Empty description="Chưa có dữ liệu lịch sử khen thưởng đơn vị" style={{ padding: '24px 0' }} />
         )}
       </Spin>
     </Modal>

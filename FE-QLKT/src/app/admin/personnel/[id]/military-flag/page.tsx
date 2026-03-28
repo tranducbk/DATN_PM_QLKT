@@ -86,7 +86,7 @@ export default function AdminMilitaryFlagPage() {
             mappedFlags.push({
               id: item.id,
               type: 'HCQKQT',
-              name: 'Huy chương quân kỳ Quyết thắng',
+              name: 'Huy chương Quân kỳ Quyết thắng',
               nam: item.nam,
               cap_bac: item.cap_bac,
               chuc_vu: item.chuc_vu,
@@ -125,7 +125,7 @@ export default function AdminMilitaryFlagPage() {
     if (!deleteId) return;
     try {
       // Note: This would need actual API endpoint
-      message.success('Xóa Huy chương quân kỳ Quyết thắng thành công');
+      message.success('Xóa Huy chương Quân kỳ Quyết thắng thành công');
       setDeleteModalOpen(false);
       setDeleteId(null);
       loadData();
@@ -233,7 +233,7 @@ export default function AdminMilitaryFlagPage() {
           <Breadcrumb.Item>
             <Link href={`/admin/personnel/${personnelId}`}>{personnel?.ho_ten}</Link>
           </Breadcrumb.Item>
-          <Breadcrumb.Item>Huy chương quân kỳ Quyết thắng</Breadcrumb.Item>
+          <Breadcrumb.Item>Huy chương Quân kỳ Quyết thắng</Breadcrumb.Item>
         </Breadcrumb>
 
         {/* Header */}
@@ -254,7 +254,7 @@ export default function AdminMilitaryFlagPage() {
               </Link>
             </Space>
             <Title level={2} style={{ marginTop: 8, marginBottom: 8 }}>
-              Huy chương quân kỳ Quyết thắng
+              Huy chương Quân kỳ Quyết thắng
             </Title>
             {personnel && (
               <Paragraph type="secondary" style={{ fontSize: 14, marginBottom: 0 }}>
@@ -302,7 +302,7 @@ export default function AdminMilitaryFlagPage() {
           okButtonProps={{ danger: true }}
         >
           <Paragraph>
-            Bạn có chắc chắn muốn xóa Huy chương quân kỳ Quyết thắng này? Hành động này không thể
+            Bạn có chắc chắn muốn xóa Huy chương Quân kỳ Quyết thắng này? Hành động này không thể
             hoàn tác.
           </Paragraph>
         </Modal>

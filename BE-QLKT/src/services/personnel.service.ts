@@ -819,7 +819,7 @@ class PersonnelService {
         where: { quan_nhan_id: id },
       });
 
-      // 6. Xóa Huy chương quân kỳ Quyết thắng (HuanChuongQuanKyQuyetThang)
+      // 6. Xóa Huy chương Quân kỳ Quyết thắng (HuanChuongQuanKyQuyetThang)
       await tx.huanChuongQuanKyQuyetThang.deleteMany({
         where: { quan_nhan_id: id },
       });

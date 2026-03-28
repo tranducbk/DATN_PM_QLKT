@@ -14,6 +14,7 @@ import {
   message,
   Tabs,
   Popconfirm,
+  Empty,
 } from 'antd';
 import { getApiErrorMessage } from '@/lib/apiError';
 
@@ -71,21 +72,30 @@ type AwardTableRow = AwardCore & {
 
 type Award = AwardCore;
 
-const AWARD_TYPE_CONFIG: Record<string, {
-  fetch: (params: any) => Promise<any>;
-  delete: (id: string) => Promise<any>;
-}> = {
-  annual: { fetch: apiClient.getAnnualRewards, delete: apiClient.deleteAnnualReward },
-  unit: { fetch: apiClient.getUnitAnnualAwards, delete: apiClient.deleteUnitAnnualAward },
-  hccsvv: { fetch: apiClient.getHCCSVV, delete: apiClient.deleteHCCSVV },
-  contribution: { fetch: apiClient.getContributionAwards, delete: apiClient.deleteContributionAward },
-  commemoration: { fetch: apiClient.getCommemorationMedals, delete: apiClient.deleteCommemorationMedal },
-  militaryFlag: { fetch: apiClient.getMilitaryFlag, delete: apiClient.deleteMilitaryFlag },
-  scientific: { fetch: apiClient.getScientificAchievements, delete: apiClient.deleteScientificAchievement },
+const AWARD_TYPE_CONFIG: Record<
+  string,
+  {
+    fetch: (params: any) => Promise<any>;
+    delete: (id: string) => Promise<any>;
+  }
+> = {
+  CNHN: { fetch: apiClient.getAnnualRewards, delete: apiClient.deleteAnnualReward },
+  DVHN: { fetch: apiClient.getUnitAnnualAwards, delete: apiClient.deleteUnitAnnualAward },
+  HCCSVV: { fetch: apiClient.getHCCSVV, delete: apiClient.deleteHCCSVV },
+  HCBVTQ: { fetch: apiClient.getContributionAwards, delete: apiClient.deleteContributionAward },
+  KNC_VSNXD_QDNDVN: {
+    fetch: apiClient.getCommemorationMedals,
+    delete: apiClient.deleteCommemorationMedal,
+  },
+  HCQKQT: { fetch: apiClient.getMilitaryFlag, delete: apiClient.deleteMilitaryFlag },
+  NCKH: {
+    fetch: apiClient.getScientificAchievements,
+    delete: apiClient.deleteScientificAchievement,
+  },
 };
 
 export default function AdminAwardsPage() {
-  const [activeTab, setActiveTab] = useState('annual');
+  const [activeTab, setActiveTab] = useState('CNHN');
   const [awards, setAwards] = useState<AwardTableRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [exportModalOpen, setExportModalOpen] = useState(false);
@@ -125,7 +135,7 @@ export default function AdminAwardsPage() {
       const params: any = { limit: 1000 };
 
       const config = AWARD_TYPE_CONFIG[activeTab];
-      const result = await (config ?? AWARD_TYPE_CONFIG.annual).fetch(params);
+      const result = await (config ?? AWARD_TYPE_CONFIG.CNHN).fetch(params);
 
       if (!result.success) {
         message.error(result.message || 'Không thể tải danh sách khen thưởng');
@@ -214,7 +224,7 @@ export default function AdminAwardsPage() {
       if (yearFilter && String(record.nam) !== yearFilter) return false;
 
       // Name / unit search
-      if (activeTab === 'unit') {
+      if (activeTab === 'DVHN') {
         if (nameFilter) {
           const unit = getUnitName(record).toLowerCase();
           if (!unit.includes(nameFilter)) return false;
@@ -248,8 +258,8 @@ export default function AdminAwardsPage() {
 
       // Danh hiệu filters
       if (danhHieuFilter) {
-        if (['annual', 'unit', 'hccsvv', 'contribution'].includes(activeTab)) {
-          if (activeTab === 'annual') {
+        if (['CNHN', 'DVHN', 'HCCSVV', 'HCBVTQ'].includes(activeTab)) {
+          if (activeTab === 'CNHN') {
             const nhanBKBQP = record.nhan_bkbqp;
             const nhanCSTDTQ = record.nhan_cstdtq;
             const nhanBKTTCP = record.nhan_bkttcp;
@@ -272,7 +282,7 @@ export default function AdminAwardsPage() {
       }
 
       // Scientific topic filter
-      if (activeTab === 'scientific' && topicFilter) {
+      if (activeTab === 'NCKH' && topicFilter) {
         const topic = record.mo_ta?.toLowerCase() || record.ten_de_tai?.toLowerCase() || '';
         if (!topic.includes(topicFilter)) return false;
       }
@@ -290,7 +300,7 @@ export default function AdminAwardsPage() {
       render: (_, __, index) => index + 1,
     },
     {
-      title: activeTab === 'unit' ? 'Tên đơn vị' : 'Họ tên',
+      title: activeTab === 'DVHN' ? 'Tên đơn vị' : 'Họ tên',
       dataIndex: 'ho_ten',
       key: 'ho_ten',
       width: 200,
@@ -298,12 +308,12 @@ export default function AdminAwardsPage() {
       render: (text: string, record: any) => {
         // Handle nested QuanNhan structure for scientific, military flag, contribution, annual, hccsvv, and commemoration awards
         const hasNestedQuanNhan =
-          activeTab === 'scientific' ||
-          activeTab === 'militaryFlag' ||
-          activeTab === 'contribution' ||
-          activeTab === 'annual' ||
-          activeTab === 'hccsvv' ||
-          activeTab === 'commemoration';
+          activeTab === 'NCKH' ||
+          activeTab === 'HCQKQT' ||
+          activeTab === 'HCBVTQ' ||
+          activeTab === 'CNHN' ||
+          activeTab === 'HCCSVV' ||
+          activeTab === 'KNC_VSNXD_QDNDVN';
         const hoTen = hasNestedQuanNhan ? record.QuanNhan?.ho_ten : text;
         const unitInfo: string[] = [];
         let parentUnit: string | null = null;
@@ -333,17 +343,17 @@ export default function AdminAwardsPage() {
         }
 
         const unitInfoText = unitInfo.length > 0 ? unitInfo.join(', ') : record.don_vi || '';
-        const displayName = activeTab === 'unit' ? unitInfoText : hoTen || '-';
+        const displayName = activeTab === 'DVHN' ? unitInfoText : hoTen || '-';
 
         return (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <Text strong>{displayName}</Text>
-            {activeTab === 'unit' && parentUnit && (
+            {activeTab === 'DVHN' && parentUnit && (
               <Text type="secondary" style={{ fontSize: '12px', marginTop: '4px' }}>
                 Thuộc: {parentUnit}
               </Text>
             )}
-            {activeTab !== 'unit' && unitInfoText && (
+            {activeTab !== 'DVHN' && unitInfoText && (
               <Text type="secondary" style={{ fontSize: '12px', marginTop: '4px' }}>
                 {unitInfoText}
               </Text>
@@ -360,12 +370,12 @@ export default function AdminAwardsPage() {
       render: (_: any, record: any) => {
         // Get date from nested QuanNhan or direct field
         const hasNestedQuanNhan =
-          activeTab === 'scientific' ||
-          activeTab === 'militaryFlag' ||
-          activeTab === 'contribution' ||
-          activeTab === 'annual' ||
-          activeTab === 'hccsvv' ||
-          activeTab === 'commemoration';
+          activeTab === 'NCKH' ||
+          activeTab === 'HCQKQT' ||
+          activeTab === 'HCBVTQ' ||
+          activeTab === 'CNHN' ||
+          activeTab === 'HCCSVV' ||
+          activeTab === 'KNC_VSNXD_QDNDVN';
 
         const ngaySinh = hasNestedQuanNhan ? record.QuanNhan?.ngay_sinh : record.ngay_sinh;
 
@@ -403,27 +413,23 @@ export default function AdminAwardsPage() {
       render: text => <Text strong>{text}</Text>,
     },
     {
-      title: activeTab === 'scientific' ? 'Loại thành tích' : 'Loại khen thưởng',
+      title: activeTab === 'NCKH' ? 'Loại thành tích' : 'Loại khen thưởng',
       key: 'loai_khen_thuong',
       width: 140,
       align: 'center',
       render: (_: any, record: any) => {
-        if (activeTab === 'scientific') {
+        if (activeTab === 'NCKH') {
           const loaiMap: Record<string, string> = {
             DTKH: 'Đề tài khoa học',
             SKKH: 'Sáng kiến khoa học',
           };
           return <Text>{loaiMap[record.loai] || record.loai || '-'}</Text>;
         }
-        if (
-          activeTab === 'militaryFlag' ||
-          activeTab === 'hccsvv' ||
-          activeTab === 'commemoration'
-        ) {
+        if (activeTab === 'HCQKQT' || activeTab === 'HCCSVV' || activeTab === 'KNC_VSNXD_QDNDVN') {
           const thanhTich = record.thoi_gian?.display || '-';
           return <Text>{thanhTich}</Text>;
         }
-        if (activeTab === 'contribution') {
+        if (activeTab === 'HCBVTQ') {
           const thoiGian =
             [
               record.thoi_gian_nhom_0_7?.display,
@@ -439,18 +445,18 @@ export default function AdminAwardsPage() {
     },
     {
       title:
-        activeTab === 'scientific'
+        activeTab === 'NCKH'
           ? 'Mô tả'
-          : activeTab === 'militaryFlag' || activeTab === 'commemoration'
+          : activeTab === 'HCQKQT' || activeTab === 'KNC_VSNXD_QDNDVN'
             ? 'Số quyết định / Ghi chú'
             : 'Danh hiệu',
-      dataIndex: activeTab === 'scientific' ? 'mo_ta' : 'danh_hieu',
-      key: activeTab === 'scientific' ? 'mo_ta' : 'danh_hieu',
+      dataIndex: activeTab === 'NCKH' ? 'mo_ta' : 'danh_hieu',
+      key: activeTab === 'NCKH' ? 'mo_ta' : 'danh_hieu',
       width: 220,
       align: 'center',
       render: (text: string | null, record: any) => {
         // Scientific achievements
-        if (activeTab === 'scientific') {
+        if (activeTab === 'NCKH') {
           return (
             <div style={COLUMN_STYLES.container}>
               <Text>{text || '-'}</Text>
@@ -465,7 +471,7 @@ export default function AdminAwardsPage() {
         }
 
         // Commemoration medals
-        if (activeTab === 'commemoration') {
+        if (activeTab === 'KNC_VSNXD_QDNDVN') {
           const hasData = record.so_quyet_dinh || record.ghi_chu;
           return (
             <div style={COLUMN_STYLES.container}>
@@ -481,7 +487,7 @@ export default function AdminAwardsPage() {
         }
 
         // Military flag
-        if (activeTab === 'militaryFlag') {
+        if (activeTab === 'HCQKQT') {
           return (
             <div style={COLUMN_STYLES.container}>
               {renderDecision(record.so_quyet_dinh, handleDownloadDecision)}
@@ -496,7 +502,7 @@ export default function AdminAwardsPage() {
         }
 
         // Contribution awards
-        if (activeTab === 'contribution') {
+        if (activeTab === 'HCBVTQ') {
           const fullName = text ? DANH_HIEU_MAP[text] || text : '-';
           return (
             <div style={COLUMN_STYLES.container}>
@@ -512,7 +518,7 @@ export default function AdminAwardsPage() {
         }
 
         // HCCSVV awards
-        if (activeTab === 'hccsvv') {
+        if (activeTab === 'HCCSVV') {
           const fullName = text ? DANH_HIEU_MAP[text] || text : '-';
           return (
             <div style={COLUMN_STYLES.container}>
@@ -606,37 +612,37 @@ export default function AdminAwardsPage() {
         size="large"
         items={[
           {
-            key: 'annual',
+            key: 'CNHN',
             label: 'Cá nhân hằng năm',
             children: renderAwardContent(),
           },
           {
-            key: 'unit',
+            key: 'DVHN',
             label: 'Đơn vị hằng năm',
             children: renderAwardContent(),
           },
           {
-            key: 'hccsvv',
+            key: 'HCCSVV',
             label: 'Huy chương Chiến sĩ Vẻ vang',
             children: renderAwardContent(),
           },
           {
-            key: 'contribution',
+            key: 'HCBVTQ',
             label: 'Huân chương Bảo vệ Tổ quốc',
             children: renderAwardContent(),
           },
           {
-            key: 'commemoration',
+            key: 'KNC_VSNXD_QDNDVN',
             label: 'Kỷ niệm chương VSNXD QĐNDVN',
             children: renderAwardContent(),
           },
           {
-            key: 'militaryFlag',
-            label: 'Huy chương quân kỳ Quyết thắng',
+            key: 'HCQKQT',
+            label: 'Huy chương Quân kỳ Quyết thắng',
             children: renderAwardContent(),
           },
           {
-            key: 'scientific',
+            key: 'NCKH',
             label: 'Thành tích khoa học',
             children: renderAwardContent(),
           },
@@ -692,7 +698,7 @@ export default function AdminAwardsPage() {
                 ]}
               />
             </div>
-            {activeTab !== 'unit' && activeTab !== 'adhoc' && (
+            {activeTab !== 'DVHN' && activeTab !== 'adhoc' && (
               <div
                 style={{
                   flex: '1 1 200px',
@@ -752,10 +758,10 @@ export default function AdminAwardsPage() {
                 </div>
               </>
             )}
-            {(activeTab === 'annual' ||
-              activeTab === 'hccsvv' ||
-              activeTab === 'contribution' ||
-              activeTab === 'unit') && (
+            {(activeTab === 'CNHN' ||
+              activeTab === 'HCCSVV' ||
+              activeTab === 'HCBVTQ' ||
+              activeTab === 'DVHN') && (
               <div
                 style={{
                   flex: '1 1 250px',
@@ -773,9 +779,9 @@ export default function AdminAwardsPage() {
                   optionFilterProp="label"
                   style={{ width: '100%' }}
                   placeholder={
-                    activeTab === 'unit'
+                    activeTab === 'DVHN'
                       ? 'Chọn danh hiệu đơn vị'
-                      : activeTab === 'annual'
+                      : activeTab === 'CNHN'
                         ? 'Chọn danh hiệu cá nhân'
                         : 'Chọn danh hiệu'
                   }
@@ -786,7 +792,7 @@ export default function AdminAwardsPage() {
                 />
               </div>
             )}
-            {activeTab === 'scientific' && (
+            {activeTab === 'NCKH' && (
               <div
                 style={{
                   flex: '1 1 200px',
@@ -826,21 +832,19 @@ export default function AdminAwardsPage() {
         <Card title={`Danh sách khen thưởng (${filteredAwards.length})`}>
           <Spin spinning={loading} tip="Đang tải...">
             {!loading && awards.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '48px 0', color: '#8c8c8c' }}>
-                <p>Chưa có dữ liệu khen thưởng</p>
-              </div>
+              <Empty description="Chưa có dữ liệu khen thưởng" style={{ padding: '48px 0' }} />
             ) : (
               <Table
                 columns={columns.filter(col => {
                   // Filter out 'ngay_sinh' and 'cap_bac_chuc_vu' columns for unit tab
                   if (
-                    activeTab === 'unit' &&
+                    activeTab === 'DVHN' &&
                     (col.key === 'ngay_sinh' || col.key === 'cap_bac_chuc_vu')
                   ) {
                     return false;
                   }
                   // Keep 'loai_khen_thuong' only for scientific tab
-                  if (col.key === 'loai_khen_thuong' && activeTab !== 'scientific') {
+                  if (col.key === 'loai_khen_thuong' && activeTab !== 'NCKH') {
                     return false;
                   }
                   return true;
