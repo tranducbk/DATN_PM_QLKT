@@ -276,7 +276,9 @@ const adhocAwards: Record<
             tenDonVi = unit?.ten_don_vi || '';
           }
         }
-      } catch (error) {}
+      } catch (error) {
+        console.error('[AuditLog] Failed to fetch adhoc award entity info:', error);
+      }
     }
 
     let description = `Tạo khen thưởng đột xuất ${type}: ${awardForm}`;

@@ -224,7 +224,9 @@ class ScientificAchievementService {
     if (wasApproved) {
       try {
         await profileService.recalculateAnnualProfile(personnelId);
-      } catch {}
+      } catch (error) {
+        console.error('[Profile] Failed to recalculate annual profile after achievement deletion:', error);
+      }
     }
 
     try {
@@ -234,7 +236,9 @@ class ScientificAchievementService {
         PROPOSAL_TYPES.NCKH,
         adminUsername
       );
-    } catch {}
+    } catch (error) {
+      console.error('[Notification] Failed to notify on scientific achievement deletion:', error);
+    }
 
     return {
       message: 'Xóa thành tích thành công',

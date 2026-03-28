@@ -171,7 +171,7 @@ async function notifyOnAwardDeleted(
     const awardTypeNameMap: Record<string, string> = {
       HCCSVV: 'Huy chương Chiến sĩ vẻ vang',
       HCBVTQ: 'Huân chương Bảo vệ Tổ quốc',
-      KNC_VSNXD: 'Kỷ niệm chương VSNXD QĐNDVN',
+      KNC_VSNXD_QDNDVN: 'Kỷ niệm chương VSNXD QĐNDVN',
       HCQKQT: 'Huy chương Quân kỳ Quyết thắng',
       CA_NHAN_HANG_NAM: 'Danh hiệu hằng năm',
       NCKH: 'Thành tích khoa học',

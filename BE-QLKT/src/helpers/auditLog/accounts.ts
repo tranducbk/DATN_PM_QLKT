@@ -141,7 +141,9 @@ const accounts: Record<
           const displayName = account.QuanNhan?.ho_ten || account.username;
           return `Đặt lại mật khẩu cho tài khoản: ${displayName} (${account.username})`;
         }
-      } catch (error) {}
+      } catch (error) {
+        console.error('[AuditLog] Failed to fetch account info for password reset log:', error);
+      }
     }
 
     const username = req.body?.username || FALLBACK.UNKNOWN;

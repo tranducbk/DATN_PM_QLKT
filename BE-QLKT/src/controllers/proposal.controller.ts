@@ -117,7 +117,9 @@ class ProposalController {
     );
     try {
       await notificationHelper.notifyAdminsOnProposalSubmission(result.proposal, req.user);
-    } catch (notifError) {}
+    } catch (notifError) {
+      console.error('[Notification] Failed to notify admins on proposal submission:', notifError);
+    }
     return ResponseHelper.created(res, { message: result.message, data: result.proposal });
   });
 
@@ -150,12 +152,17 @@ class ProposalController {
   approveProposal = catchAsync(async (req: Request, res: Response) => {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     const adminId = req.user!.id;
-    const editedData = {
-      data_danh_hieu: JSON.parse(req.body.data_danh_hieu || '[]'),
-      data_thanh_tich: JSON.parse(req.body.data_thanh_tich || '[]'),
-      data_nien_han: JSON.parse(req.body.data_nien_han || '[]'),
-      data_cong_hien: JSON.parse(req.body.data_cong_hien || '[]'),
-    };
+    let editedData;
+    try {
+      editedData = {
+        data_danh_hieu: JSON.parse(req.body.data_danh_hieu || '[]'),
+        data_thanh_tich: JSON.parse(req.body.data_thanh_tich || '[]'),
+        data_nien_han: JSON.parse(req.body.data_nien_han || '[]'),
+        data_cong_hien: JSON.parse(req.body.data_cong_hien || '[]'),
+      };
+    } catch {
+      return ResponseHelper.badRequest(res, 'Du lieu khong hop le');
+    }
     const decisions = {
       so_quyet_dinh_ca_nhan_hang_nam: req.body.so_quyet_dinh_ca_nhan_hang_nam,
       so_quyet_dinh_don_vi_hang_nam: req.body.so_quyet_dinh_don_vi_hang_nam,
@@ -186,7 +193,9 @@ class ProposalController {
     );
     try {
       await notificationHelper.notifyManagerOnProposalApproval(result.proposal, req.user);
-    } catch (notifError) {}
+    } catch (notifError) {
+      console.error('[Notification] Failed to notify manager on proposal approval:', notifError);
+    }
     try {
       if (result.affectedPersonnelIds?.length > 0) {
         await notificationHelper.notifyUsersOnAwardApproved(
@@ -195,7 +204,9 @@ class ProposalController {
           req.user!.username
         );
       }
-    } catch (notifError) {}
+    } catch (notifError) {
+      console.error('[Notification] Failed to notify users on award approved:', notifError);
+    }
     return ResponseHelper.success(res, {
       message: result.message,
       data: { ...result.result, proposal: result.proposal },
@@ -233,7 +244,9 @@ class ProposalController {
         req.user,
         rejectReason
       );
-    } catch (notifError) {}
+    } catch (notifError) {
+      console.error('[Notification] Failed to notify manager on proposal rejection:', notifError);
+    }
     return ResponseHelper.success(res, {
       message: result.message,
       data: { ...result.result, proposal: result.proposal },
@@ -312,7 +325,9 @@ class ProposalController {
           );
         }
       }
-    } catch (notifError) {}
+    } catch (notifError) {
+      console.error('[Notification] Failed to notify managers on award import:', notifError);
+    }
     return ResponseHelper.success(res, { message: result.message, data: result.result });
   });
 
@@ -365,7 +380,9 @@ class ProposalController {
           user_agent: req.get('User-Agent'),
         },
       });
-    } catch (logError) {}
+    } catch (logError) {
+      console.error('[AuditLog] Failed to log proposal deletion:', logError);
+    }
     return ResponseHelper.success(res, { message: result.message, data: result.proposal });
   });
 

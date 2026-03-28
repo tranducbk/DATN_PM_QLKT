@@ -2,7 +2,7 @@
 
 import { Bar } from 'react-chartjs-2';
 import { Card } from 'antd';
-import { useTheme } from '@/components/ThemeProvider';
+import { useChartTheme, chartTitlePlugin } from './useChartTheme';
 
 interface ActionBarChartProps {
   data: Array<{ action: string; count: number }>;
@@ -10,6 +10,7 @@ interface ActionBarChartProps {
   height?: number;
   maxLabelLength?: number;
   labelMapper?: (label: string) => string;
+  color?: string;
 }
 
 export function ActionBarChart({
@@ -18,41 +19,32 @@ export function ActionBarChart({
   height = 250,
   maxLabelLength = 20,
   labelMapper,
+  color = 'rgba(147, 51, 234, 1)',
 }: ActionBarChartProps) {
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
-  const textColor = isDark ? '#e5e7eb' : '#374151';
-  const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+  const { textColor, gridColor } = useChartTheme();
+
+  const filteredData = data.filter(item => item.action && item.action !== 'Chưa xác định');
 
   const chartData = {
     labels:
-      data.length > 0
-        ? data
-            .filter(item => item.action && item.action !== 'Chưa xác định')
-            .map(item => {
-              let action = item.action || '';
-              if (labelMapper) {
-                action = labelMapper(action);
-              }
-              if (action.length > maxLabelLength) {
-                return action.substring(0, maxLabelLength) + '...';
-              }
-              return action;
-            })
+      filteredData.length > 0
+        ? filteredData.map(item => {
+            let action = labelMapper ? labelMapper(item.action) : item.action;
+            if (action.length > maxLabelLength) {
+              return action.substring(0, maxLabelLength) + '...';
+            }
+            return action;
+          })
         : ['Chưa có dữ liệu'],
     datasets: [
       {
         label: 'Số lượng',
-        data:
-          data.length > 0
-            ? data
-                .filter(item => item.action && item.action !== 'Chưa xác định')
-                .map(item => item.count)
-            : [0],
-        backgroundColor: 'rgba(147, 51, 234, 0.8)',
-        borderColor: 'rgba(147, 51, 234, 1)',
+        data: filteredData.length > 0 ? filteredData.map(item => item.count) : [0],
+        backgroundColor: color.replace('1)', '0.8)'),
+        borderColor: color,
         borderWidth: 2,
         borderRadius: 4,
+        maxBarThickness: 60,
       },
     ],
   };
@@ -64,18 +56,7 @@ export function ActionBarChart({
       legend: {
         display: false,
       },
-      title: {
-        display: true,
-        text: title,
-        color: textColor,
-        font: {
-          size: 16,
-          weight: 'bold' as const,
-        },
-        padding: {
-          bottom: 10,
-        },
-      },
+      title: chartTitlePlugin(title, textColor),
     },
     scales: {
       y: {

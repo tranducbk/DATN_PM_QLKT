@@ -2,7 +2,7 @@
 
 import { Doughnut } from 'react-chartjs-2';
 import { Card } from 'antd';
-import { useTheme } from '@/components/ThemeProvider';
+import { useChartTheme, chartTitlePlugin } from './useChartTheme';
 import { ROLE_LABELS } from '@/constants/roles.constants';
 
 interface RoleDistributionChartProps {
@@ -11,9 +11,7 @@ interface RoleDistributionChartProps {
 }
 
 export function RoleDistributionChart({ data, height = 250 }: RoleDistributionChartProps) {
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
-  const textColor = isDark ? '#e5e7eb' : '#374151';
+  const { textColor } = useChartTheme();
 
   const chartData = {
     labels:
@@ -55,18 +53,7 @@ export function RoleDistributionChart({ data, height = 250 }: RoleDistributionCh
           },
         },
       },
-      title: {
-        display: true,
-        text: 'Phân bố vai trò',
-        color: textColor,
-        font: {
-          size: 16,
-          weight: 'bold' as const,
-        },
-        padding: {
-          bottom: 10,
-        },
-      },
+      title: chartTitlePlugin('Phân bố vai trò', textColor),
     },
   };
 

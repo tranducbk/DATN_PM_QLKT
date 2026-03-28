@@ -29,6 +29,7 @@ import '@/lib/chartConfig';
 import { ActionBarChart, ActivityLineChart, PieChart } from '@/components/charts';
 import { PROPOSAL_STATUS_LABELS, PROPOSAL_TYPE_LABELS } from '@/constants/proposal.constants';
 import { ROLE_LABELS } from '@/constants/roles.constants';
+import { THANH_TICH_KHOA_HOC_SHORT_LABELS } from '@/constants/danhHieu.constants';
 
 const { Title } = Typography;
 
@@ -192,24 +193,26 @@ export default function AdminDashboard() {
                 <Link key={index} href={stat.link}>
                   <Card className="shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1 overflow-hidden">
                     <div className="flex items-center justify-between p-1">
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <p
-                          className={`text-sm mb-2 font-medium uppercase tracking-wide ${
+                          className={`text-sm font-medium uppercase tracking-wide ${
                             theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
                           }`}
                         >
                           {stat.title}
                         </p>
                         <p
-                          className={`text-4xl font-bold mb-1 ${
+                          className={`text-4xl font-bold mt-2 ${
                             theme === 'dark' ? 'text-gray-100' : 'text-gray-900'
                           }`}
                         >
                           {stat.value.toLocaleString()}
                         </p>
                       </div>
-                      <div className={`p-4 rounded-2xl ${stat.bgColor} shadow-inner`}>
-                        <Icon className={`h-8 w-8 ${stat.iconColor}`} />
+                      <div
+                        className={`w-14 h-14 rounded-2xl ${stat.bgColor} shadow-inner flex-shrink-0 flex items-center justify-center`}
+                      >
+                        <Icon className={stat.iconColor} style={{ fontSize: '28px' }} />
                       </div>
                     </div>
                   </Card>
@@ -226,7 +229,7 @@ export default function AdminDashboard() {
               <Col xs={24} lg={8}>
                 <PieChart
                   data={chartData.scientificAchievementsByType.map((item: any) => ({
-                    label: item.type === 'DTKH' ? 'ĐTKH' : 'SKKH',
+                    label: THANH_TICH_KHOA_HOC_SHORT_LABELS[item.type] || item.type,
                     value: item.count,
                   }))}
                   title="Thành tích khoa học theo loại"
@@ -250,6 +253,7 @@ export default function AdminDashboard() {
                   }))}
                   title="Đề xuất theo trạng thái"
                   labelMapper={(label: string) => PROPOSAL_STATUS_LABELS[label] || label}
+                  color="rgba(249, 115, 22, 1)"
                 />
               </Col>
             </Row>
@@ -275,6 +279,7 @@ export default function AdminDashboard() {
                   title="Đề xuất theo loại (7 ngày gần nhất)"
                   maxLabelLength={20}
                   labelMapper={(label: string) => PROPOSAL_TYPE_LABELS[label] || label}
+                  color="rgba(59, 130, 246, 1)"
                 />
               </Col>
             </Row>

@@ -106,7 +106,9 @@ const proposals: Record<
               CoQuanDonVi: true,
             },
           });
-        } catch (dbError) {}
+        } catch (dbError) {
+          console.error('[AuditLog] Failed to fetch proposal for approval log:', dbError);
+        }
       }
 
       if (!proposal) {
@@ -197,7 +199,9 @@ const proposals: Record<
 
         return description;
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error('[AuditLog] Failed to build approval description:', e);
+    }
     return `Phê duyệt đề xuất: ${proposalId}`;
   },
   REJECT: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
@@ -222,7 +226,9 @@ const proposals: Record<
             },
           },
         });
-      } catch (error) {}
+      } catch (error) {
+        console.error('[AuditLog] Failed to fetch proposal for rejection log:', error);
+      }
     }
 
     if (proposal) {
@@ -300,7 +306,9 @@ const proposals: Record<
             },
           },
         });
-      } catch (error) {}
+      } catch (error) {
+        console.error('[AuditLog] Failed to fetch proposal for deletion log:', error);
+      }
     }
 
     if (proposal) {

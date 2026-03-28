@@ -734,12 +734,16 @@ class ContributionAwardService {
     // Tự động cập nhật lại hồ sơ cống hiến (giống như khi thêm mới)
     try {
       await profileService.recalculateContributionProfile(personnelId);
-    } catch (recalcError) {}
+    } catch (recalcError) {
+      console.error('[Profile] Failed to recalculate contribution profile after HCBVTQ deletion:', recalcError);
+    }
 
     // Gửi thông báo cho Manager và quân nhân
     try {
       await notificationHelper.notifyOnAwardDeleted(award, personnel, 'HCBVTQ', adminUsername);
-    } catch (notifyError) {}
+    } catch (notifyError) {
+      console.error('[Notification] Failed to notify on HCBVTQ award deletion:', notifyError);
+    }
 
     return {
       message: 'Xóa khen thưởng HCBVTQ thành công',

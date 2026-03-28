@@ -58,6 +58,12 @@ export const THANH_TICH_KHOA_HOC = {
   SKKH: 'SKKH', // Sáng kiến khoa học
 } as const;
 
+/** Tên viết tắt tiếng Việt cho thành tích khoa học (dùng cho chart labels) */
+export const THANH_TICH_KHOA_HOC_SHORT_LABELS: Record<string, string> = {
+  DTKH: 'ĐTKH',
+  SKKH: 'SKKH',
+};
+
 // MAPPING DANH HIỆU -> TÊN TIẾNG VIỆT
 
 /**

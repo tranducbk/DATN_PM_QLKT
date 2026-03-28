@@ -96,7 +96,9 @@ async function seedDefaults() {
 
 seedDefaults()
   .then(() => updateCronTask())
-  .catch(() => {});
+  .catch((error) => {
+    console.error('[DevZone] Failed to seed defaults or initialize cron:', error);
+  });
 
 const verifyDevPassword = (req: Request, res: Response, next: NextFunction) => {
   const bodyPwd =

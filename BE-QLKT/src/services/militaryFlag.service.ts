@@ -749,7 +749,9 @@ class MilitaryFlagService {
 
     try {
       await notificationHelper.notifyOnAwardDeleted(award, personnel, 'HCQKQT', adminUsername);
-    } catch {}
+    } catch (error) {
+      console.error('[Notification] Failed to notify on HCQKQT award deletion:', error);
+    }
 
     return {
       message: 'Xóa khen thưởng HCQKQT thành công',

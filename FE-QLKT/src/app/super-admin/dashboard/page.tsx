@@ -354,10 +354,11 @@ export default function SuperAdminDashboard() {
           chartData.logsByAction.length > 0
             ? chartData.logsByAction.map((item: any) => item.count)
             : [0],
-        backgroundColor: 'rgba(147, 51, 234, 0.8)',
-        borderColor: 'rgba(147, 51, 234, 1)',
+        backgroundColor: 'rgba(59, 130, 246, 0.8)',
+        borderColor: 'rgba(59, 130, 246, 1)',
         borderWidth: 2,
         borderRadius: 4,
+        maxBarThickness: 60,
       },
     ],
   };

@@ -3,7 +3,7 @@
 import { Pie } from 'react-chartjs-2';
 import type { ChartOptions } from 'chart.js';
 import { Card } from 'antd';
-import { useTheme } from '@/components/ThemeProvider';
+import { useChartTheme, chartTitlePlugin } from './useChartTheme';
 
 interface PieChartProps {
   data: Array<{ label: string; value: number }>;
@@ -25,19 +25,16 @@ export function PieChart({
     'rgba(236, 72, 153, 0.8)',
   ],
 }: PieChartProps) {
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
-  const textColor = isDark ? '#e5e7eb' : '#374151';
+  const { textColor } = useChartTheme();
+
+  const filteredData = data.filter(item => item.value > 0);
 
   const chartData = {
-    labels:
-      data.length > 0
-        ? data.filter(item => item.value > 0).map(item => item.label)
-        : ['Chưa có dữ liệu'],
+    labels: filteredData.length > 0 ? filteredData.map(item => item.label) : ['Chưa có dữ liệu'],
     datasets: [
       {
         label: 'Số lượng',
-        data: data.length > 0 ? data.filter(item => item.value > 0).map(item => item.value) : [0],
+        data: filteredData.length > 0 ? filteredData.map(item => item.value) : [0],
         backgroundColor: colors.slice(0, data.length),
         borderColor: colors.slice(0, data.length).map(c => c.replace('0.8', '1')),
         borderWidth: 2,
@@ -77,18 +74,7 @@ export function PieChart({
           },
         },
       },
-      title: {
-        display: true,
-        text: title,
-        color: textColor,
-        font: {
-          size: 16,
-          weight: 'bold' as const,
-        },
-        padding: {
-          bottom: 10,
-        },
-      },
+      title: chartTitlePlugin(title, textColor),
       tooltip: {
         enabled: true,
       },

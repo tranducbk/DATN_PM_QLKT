@@ -226,7 +226,7 @@ export function AccountEditForm({ accountId }: AccountEditFormProps) {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground mb-4">
-            Đặt lại mật khẩu sẽ gửi mật khẩu tạm thời cho người dùng qua email.
+            Đặt lại mật khẩu về mặc định: <strong>Hvkhqs@123</strong>
           </p>
           <Button
             variant="destructive"

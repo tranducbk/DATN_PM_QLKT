@@ -1550,7 +1550,9 @@ async function approveProposal(
                 }
               }
             }
-          } catch (error) {}
+          } catch (error) {
+            console.error('[Proposal] Failed to update decision file path during approval:', error);
+          }
         }
 
         // If any errors were collected during imports, throw to trigger transaction rollback

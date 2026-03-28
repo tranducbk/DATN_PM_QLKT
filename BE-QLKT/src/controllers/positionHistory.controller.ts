@@ -14,7 +14,9 @@ class PositionHistoryController {
     if (recalculate === 'true') {
       try {
         await profileService.recalculateContributionProfile(personnel_id as string);
-      } catch (recalcError) {}
+      } catch (recalcError) {
+        console.error('[Profile] Failed to recalculate contribution profile:', recalcError);
+      }
     }
     const result = await positionHistoryService.getPositionHistory(personnel_id as string);
     return ResponseHelper.success(res, {
@@ -40,7 +42,9 @@ class PositionHistoryController {
     });
     try {
       await profileService.recalculateAnnualProfile(personnel_id);
-    } catch (recalcError) {}
+    } catch (recalcError) {
+      console.error('[Profile] Failed to recalculate annual profile after position create:', recalcError);
+    }
     return ResponseHelper.created(res, {
       message: 'Thêm lịch sử chức vụ thành công',
       data: result,
@@ -61,7 +65,9 @@ class PositionHistoryController {
     try {
       const personnelId = result.data?.quan_nhan_id;
       if (personnelId) await profileService.recalculateAnnualProfile(personnelId);
-    } catch (recalcError) {}
+    } catch (recalcError) {
+      console.error('[Profile] Failed to recalculate annual profile after position update:', recalcError);
+    }
     const response: Record<string, unknown> = {
       success: true,
       message: 'Cập nhật lịch sử chức vụ thành công',
@@ -80,7 +86,9 @@ class PositionHistoryController {
     if (result.quan_nhan_id) {
       try {
         await profileService.recalculateAnnualProfile(result.quan_nhan_id);
-      } catch (recalcError) {}
+      } catch (recalcError) {
+        console.error('[Profile] Failed to recalculate annual profile after position delete:', recalcError);
+      }
     }
     return ResponseHelper.success(res, { message: result.message, data: { id } });
   });

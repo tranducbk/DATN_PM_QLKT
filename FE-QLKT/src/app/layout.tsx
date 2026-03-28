@@ -6,7 +6,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'QLKT - Quản lý Khen thưởng',
+  title: 'Quản lý Khen thưởng',
   description: 'Hệ thống quản lý khen thưởng',
   icons: {
     icon: '/logo-msa.png',

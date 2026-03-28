@@ -801,8 +801,10 @@ class CommemorativeMedalService {
 
     // Gửi thông báo cho Manager và quân nhân
     try {
-      await notificationHelper.notifyOnAwardDeleted(award, personnel, 'KNC_VSNXD', adminUsername);
-    } catch (notifyError) {}
+      await notificationHelper.notifyOnAwardDeleted(award, personnel, 'KNC_VSNXD_QDNDVN', adminUsername);
+    } catch (notifyError) {
+      console.error('[Notification] Failed to notify on KNC_VSNXD_QDNDVN award deletion:', notifyError);
+    }
 
     return {
       message: 'Xóa khen thưởng KNC VSNXD thành công',

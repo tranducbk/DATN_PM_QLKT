@@ -94,7 +94,9 @@ class ScientificAchievementController {
     });
     try {
       await profileService.recalculateAnnualProfile(personnel_id);
-    } catch (recalcError) {}
+    } catch (recalcError) {
+      console.error('[Profile] Failed to recalculate annual profile after achievement create:', recalcError);
+    }
     return ResponseHelper.created(res, { message: 'Thêm thành tích thành công', data: result });
   });
 
@@ -115,7 +117,9 @@ class ScientificAchievementController {
     });
     try {
       await profileService.recalculateAnnualProfile(result.quan_nhan_id);
-    } catch (recalcError) {}
+    } catch (recalcError) {
+      console.error('[Profile] Failed to recalculate annual profile after achievement update:', recalcError);
+    }
     return ResponseHelper.success(res, { message: 'Cập nhật thành tích thành công', data: result });
   });
 

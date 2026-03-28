@@ -79,7 +79,7 @@ export default function AccountDetailPage() {
     Modal.confirm({
       centered: true,
       title: 'Đặt lại mật khẩu?',
-      content: 'Mật khẩu sẽ đặt về mặc định (123456). Tiếp tục?',
+      content: 'Mật khẩu sẽ đặt về mặc định (Hvkhqs@123). Tiếp tục?',
       okText: 'Xác nhận',
       cancelText: 'Hủy',
       onOk: handleResetPassword,

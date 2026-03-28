@@ -37,7 +37,7 @@ import { apiClient } from '@/lib/apiClient';
 import { formatDate } from '@/lib/utils';
 import styles from './personnel-detail.module.css';
 import { ROLES, getRoleInfo } from '@/constants/roles.constants';
-import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
+import { ELIGIBILITY_STATUS, ELIGIBILITY_STATUS_MAP } from '@/constants/eligibilityStatus.constants';
 
 const { Title, Text } = Typography;
 
@@ -109,12 +109,7 @@ export default function PersonnelDetailPage() {
   }, [personnelId]);
 
   const getStatusTag = (status: string) => {
-    const statusMap: Record<string, { label: string; color: string }> = {
-      DA_NHAN: { label: 'Đã nhận', color: 'green' },
-      DU_DIEU_KIEN: { label: 'Đủ điều kiện', color: 'orange' },
-      CHUA_DU: { label: 'Chưa đủ', color: 'default' },
-    };
-    const s = statusMap[status] || statusMap.CHUA_DU;
+    const s = ELIGIBILITY_STATUS_MAP[status] || ELIGIBILITY_STATUS_MAP[ELIGIBILITY_STATUS.CHUA_DU];
     return <Tag color={s.color}>{s.label}</Tag>;
   };
 

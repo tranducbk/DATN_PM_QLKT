@@ -99,7 +99,7 @@ export default function AdminAccountsPage() {
   const handleResetPassword = (account: any) => {
     confirm({
       title: 'Xác nhận reset mật khẩu',
-      content: `Reset mật khẩu tài khoản "${account.username}" về "123456"?`,
+      content: `Reset mật khẩu tài khoản "${account.username}" về "Hvkhqs@123"?`,
       okText: 'Reset',
       cancelText: 'Hủy',
       centered: true,

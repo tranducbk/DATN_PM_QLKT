@@ -876,7 +876,9 @@ class HCCSVVService {
     // Recalculate tenure profile
     try {
       await profileService.recalculateTenureProfile(quan_nhan_id);
-    } catch (recalcError) {}
+    } catch (recalcError) {
+      console.error('[Profile] Failed to recalculate tenure profile after HCCSVV create:', recalcError);
+    }
 
     return createdRecord;
   }
@@ -910,12 +912,16 @@ class HCCSVVService {
     // Tự động cập nhật lại hồ sơ niên hạn (giống như khi thêm mới)
     try {
       await profileService.recalculateTenureProfile(personnelId);
-    } catch (recalcError) {}
+    } catch (recalcError) {
+      console.error('[Profile] Failed to recalculate tenure profile after HCCSVV deletion:', recalcError);
+    }
 
     // Gửi thông báo cho Manager và quân nhân
     try {
       await notificationHelper.notifyOnAwardDeleted(award, personnel, 'HCCSVV', adminUsername);
-    } catch (notifyError) {}
+    } catch (notifyError) {
+      console.error('[Notification] Failed to notify on HCCSVV award deletion:', notifyError);
+    }
 
     return {
       message: 'Xóa khen thưởng HCCSVV thành công',

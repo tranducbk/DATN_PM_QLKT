@@ -234,7 +234,7 @@ class PersonnelService {
     }
 
     // Hash password trước transaction (CPU-intensive, không cần trong transaction)
-    const defaultPassword = process.env.DEFAULT_PASSWORD || '123456'; // Mật khẩu mặc định
+    const defaultPassword = process.env.DEFAULT_PASSWORD || 'Hvkhqs@123'; // Mật khẩu mặc định
     const hashedPassword = await bcrypt.hash(defaultPassword, 10);
 
     // Sử dụng transaction để đảm bảo tính toàn vẹn dữ liệu

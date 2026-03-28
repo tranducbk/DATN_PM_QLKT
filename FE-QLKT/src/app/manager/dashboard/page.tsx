@@ -35,6 +35,7 @@ import {
 } from '@/components/charts';
 import { PROPOSAL_STATUS_LABELS, PROPOSAL_TYPE_LABELS } from '@/constants/proposal.constants';
 import { ROLE_LABELS } from '@/constants/roles.constants';
+import { DANH_HIEU_MAP, THANH_TICH_KHOA_HOC_SHORT_LABELS } from '@/constants/danhHieu.constants';
 
 const { Title, Text } = Typography;
 
@@ -353,18 +354,7 @@ export default function ManagerDashboard() {
               <Col xs={24} lg={8}>
                 <PieChart
                   data={chartData.awardsByType.map((item: any) => ({
-                    label: (() => {
-                      const awardTypeMap: Record<string, string> = {
-                        CSTDCS: 'Chiến sĩ thi đua cơ sở',
-                        CSTT: 'Chiến sĩ tiên tiến',
-                        BKBQP: 'Bằng khen Bộ Quốc phòng',
-                        CSTDTQ: 'Chiến sĩ thi đua toàn quân',
-                        HCCSVV_HANG_BA: 'HCCSVV Hạng Ba',
-                        HCCSVV_HANG_NHI: 'HCCSVV Hạng Nhì',
-                        HCCSVV_HANG_NHAT: 'HCCSVV Hạng Nhất',
-                      };
-                      return awardTypeMap[item.type] || item.type;
-                    })(),
+                    label: DANH_HIEU_MAP[item.type] || item.type,
                     value: item.count,
                   }))}
                   title="Khen thưởng theo loại"
@@ -393,6 +383,7 @@ export default function ManagerDashboard() {
                   title="Đề xuất theo loại"
                   maxLabelLength={15}
                   labelMapper={(label: string) => PROPOSAL_TYPE_LABELS[label] || label}
+                  color="rgba(59, 130, 246, 1)"
                 />
               </Col>
             </Row>
@@ -401,7 +392,7 @@ export default function ManagerDashboard() {
               <Col xs={24} lg={8}>
                 <PieChart
                   data={chartData.scientificAchievementsByType.map((item: any) => ({
-                    label: item.type === 'DTKH' ? 'ĐTKH' : 'SKKH',
+                    label: THANH_TICH_KHOA_HOC_SHORT_LABELS[item.type] || item.type,
                     value: item.count,
                   }))}
                   title="Thành tích khoa học theo loại"
@@ -441,6 +432,7 @@ export default function ManagerDashboard() {
                   }))}
                   title="Quân nhân theo cấp bậc"
                   maxLabelLength={15}
+                  color="rgba(234, 179, 8, 1)"
                 />
               </Col>
               <Col xs={24} lg={12}>
@@ -451,6 +443,7 @@ export default function ManagerDashboard() {
                   }))}
                   title="Quân nhân theo chức vụ"
                   maxLabelLength={20}
+                  color="rgba(239, 68, 68, 1)"
                 />
               </Col>
             </Row>
