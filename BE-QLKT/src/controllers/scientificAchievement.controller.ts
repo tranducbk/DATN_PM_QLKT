@@ -80,7 +80,7 @@ class ScientificAchievementController {
   createAchievement = catchAsync(async (req: Request, res: Response) => {
     const { personnel_id, nam, loai, mo_ta, cap_bac, chuc_vu, ghi_chu, status } = req.body;
     if (!personnel_id || !nam || !loai || !mo_ta) {
-      return ResponseHelper.badRequest(res, 'Vui lòng nhập đầy đủ: personnel_id, nam, loai, mo_ta');
+      return ResponseHelper.badRequest(res, 'Vui lòng nhập đầy đủ: quân nhân, năm, loại và mô tả');
     }
     const result = await scientificAchievementService.createAchievement({
       personnel_id,

@@ -19,7 +19,11 @@ export function PositionForm({ position, units = [], onSuccess, onClose }: Posit
   const [form] = Form.useForm();
 
   // Xác định xem đơn vị có phải là đơn vị trực thuộc không
-  const isDonViTrucThuoc = units.length === 1 && !!units[0].co_quan_don_vi_id;
+  // Check từ units (tạo mới) hoặc từ position.DonViTrucThuoc / position.don_vi_truc_thuoc_id (sửa)
+  const isDonViTrucThuoc =
+    (units.length === 1 && !!units[0].co_quan_don_vi_id) ||
+    !!position?.DonViTrucThuoc ||
+    !!position?.don_vi_truc_thuoc_id;
 
   useEffect(() => {
     if (position) {
@@ -92,8 +96,7 @@ export function PositionForm({ position, units = [], onSuccess, onClose }: Posit
         message.error(res.message || 'Có lỗi xảy ra');
       }
     } catch (error: unknown) {
-      const errorMessage =
-        getApiErrorMessage(error, 'Có lỗi xảy ra');
+      const errorMessage = getApiErrorMessage(error, 'Có lỗi xảy ra');
       message.error(errorMessage);
     } finally {
       setLoading(false);
@@ -157,8 +160,12 @@ export function PositionForm({ position, units = [], onSuccess, onClose }: Posit
         </>
       )}
 
-      <Form.Item label="Hệ số chức vụ" name="he_so_chuc_vu">
-        <Input type="number" placeholder="Nhập hệ số chức vụ (VD: 2.5)" step="0.01" min="0" />
+      <Form.Item
+        label="Hệ số chức vụ"
+        name="he_so_chuc_vu"
+        extra="Mặc định là 0 nếu để trống"
+      >
+        <Input type="number" placeholder="Nhập hệ số chức vụ (VD: 1.0)" step="0.01" min="0" />
       </Form.Item>
 
       {/* Chỉ hiển thị checkbox "Là Chỉ huy?" cho CƠ QUAN ĐƠN VỊ */}

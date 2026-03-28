@@ -85,14 +85,14 @@ const proposals: Record<
     return description;
   },
   APPROVE: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
-    const proposalId = normalizeParam(req.params?.id) ?? 'Chưa có dữ liệu';
+    const proposalId = normalizeParam(req.params?.id) ?? FALLBACK.UNKNOWN;
     try {
       const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
       const result = data?.data?.result || data?.result || {};
 
       let proposal = data?.data?.proposal || data?.proposal;
 
-      if (!proposal && proposalId && proposalId !== 'Chưa có dữ liệu') {
+      if (!proposal && proposalId && proposalId !== FALLBACK.UNKNOWN) {
         try {
           proposal = await prisma.bangDeXuat.findUnique({
             where: { id: proposalId },
@@ -117,19 +117,19 @@ const proposals: Record<
 
       if (
         proposal &&
-        (proposal.loai_de_xuat || proposal.type || proposalId !== 'Chưa có dữ liệu')
+        (proposal.loai_de_xuat || proposal.type || proposalId !== FALLBACK.UNKNOWN)
       ) {
         const loaiDeXuat = proposal.loai_de_xuat || proposal.type;
         const typeName = getLoaiDeXuatName(loaiDeXuat);
 
         const nam = proposal.nam || result.nam || '';
 
-        let nguoiDeXuat = 'Chưa có dữ liệu';
+        let nguoiDeXuat = FALLBACK.UNKNOWN;
         if (proposal.NguoiDeXuat) {
           nguoiDeXuat =
             proposal.NguoiDeXuat.QuanNhan?.ho_ten ||
             proposal.NguoiDeXuat.username ||
-            'Chưa có dữ liệu';
+            FALLBACK.UNKNOWN;
         } else if (result.nguoi_de_xuat) {
           nguoiDeXuat = result.nguoi_de_xuat;
         }
@@ -189,7 +189,7 @@ const proposals: Record<
           description += ` năm ${nam}`;
         }
 
-        if (nguoiDeXuat && nguoiDeXuat !== 'Chưa có dữ liệu') {
+        if (nguoiDeXuat && nguoiDeXuat !== FALLBACK.UNKNOWN) {
           description += ` do ${nguoiDeXuat} đề xuất`;
         }
 

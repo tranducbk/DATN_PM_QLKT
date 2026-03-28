@@ -39,7 +39,7 @@ class PersonnelController {
     if (!cccd || !unit_id || !position_id) {
       return ResponseHelper.badRequest(
         res,
-        'Vui lòng nhập đầy đủ thông tin: cccd, unit_id, position_id'
+        'Vui lòng nhập đầy đủ thông tin: CCCD, đơn vị và chức vụ'
       );
     }
     const result = await personnelService.createPersonnel({ cccd, unit_id, position_id, role });

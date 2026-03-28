@@ -88,7 +88,7 @@ class AnnualRewardController {
     if (!personnel_id || !nam || !danh_hieu) {
       return ResponseHelper.badRequest(
         res,
-        'Vui lòng nhập đầy đủ thông tin: personnel_id, nam, danh_hieu'
+        'Vui lòng nhập đầy đủ thông tin: quân nhân, năm và danh hiệu'
       );
     }
 
@@ -206,7 +206,7 @@ class AnnualRewardController {
       try {
         parsedPersonnelIds = JSON.parse(personnel_ids);
       } catch {
-        return ResponseHelper.badRequest(res, 'personnel_ids phải là mảng hoặc chuỗi JSON hợp lệ');
+        return ResponseHelper.badRequest(res, 'Danh sách quân nhân không hợp lệ');
       }
     }
 
@@ -215,10 +215,10 @@ class AnnualRewardController {
       !Array.isArray(parsedPersonnelIds) ||
       parsedPersonnelIds.length === 0
     ) {
-      return ResponseHelper.badRequest(res, 'Vui lòng chọn ít nhất một quân nhân (personnel_ids)');
+      return ResponseHelper.badRequest(res, 'Vui lòng chọn ít nhất một quân nhân');
     }
     if (!nam || !danh_hieu) {
-      return ResponseHelper.badRequest(res, 'Vui lòng nhập đầy đủ thông tin: nam, danh_hieu');
+      return ResponseHelper.badRequest(res, 'Vui lòng nhập đầy đủ thông tin: năm và danh hiệu');
     }
 
     let parsedPersonnelRewardsData = personnel_rewards_data;

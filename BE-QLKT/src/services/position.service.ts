@@ -148,16 +148,29 @@ class PositionService {
 
     const isDonViTrucThuoc = !!position.don_vi_truc_thuoc_id;
 
+    const newTenChucVu = ten_chuc_vu || position.ten_chuc_vu;
+    const newIsManager = isDonViTrucThuoc
+      ? false
+      : is_manager !== undefined
+        ? is_manager
+        : position.is_manager;
+    const newHeSoChucVu = he_so_chuc_vu !== undefined ? he_so_chuc_vu : position.he_so_chuc_vu;
+
+    // Kiểm tra có thay đổi thực sự không
+    if (
+      newTenChucVu === position.ten_chuc_vu &&
+      newIsManager === position.is_manager &&
+      Number(newHeSoChucVu) === Number(position.he_so_chuc_vu)
+    ) {
+      throw new Error('Không có thay đổi nào để cập nhật');
+    }
+
     const updatedPosition = await prisma.chucVu.update({
       where: { id },
       data: {
-        ten_chuc_vu: ten_chuc_vu || position.ten_chuc_vu,
-        is_manager: isDonViTrucThuoc
-          ? false
-          : is_manager !== undefined
-            ? is_manager
-            : position.is_manager,
-        he_so_chuc_vu: he_so_chuc_vu !== undefined ? he_so_chuc_vu : position.he_so_chuc_vu,
+        ten_chuc_vu: newTenChucVu,
+        is_manager: newIsManager,
+        he_so_chuc_vu: newHeSoChucVu,
       },
       include: {
         CoQuanDonVi: true,

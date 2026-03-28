@@ -27,17 +27,18 @@ export const accountCreateSchema = z
     username: z.string().min(3, 'Tên đăng nhập phải có ít nhất 3 ký tự'),
     password: z
       .string()
-      .min(8, 'Mật khẩu phải có ít nhất 8 ký tự')
-      .regex(/[A-Z]/, 'Mật khẩu phải chứa ít nhất 1 chữ hoa')
-      .regex(/[a-z]/, 'Mật khẩu phải chứa ít nhất 1 chữ thường')
-      .regex(/[0-9]/, 'Mật khẩu phải chứa ít nhất 1 chữ số'),
-    confirmPassword: z.string().min(1, 'Mật khẩu xác nhận là bắt buộc'),
+      .optional()
+      .refine(
+        val => !val || (val.length >= 8 && /[A-Z]/.test(val) && /[a-z]/.test(val) && /[0-9]/.test(val)),
+        'Mật khẩu phải có ít nhất 8 ký tự, gồm chữ hoa, chữ thường và số'
+      ),
+    confirmPassword: z.string().optional(),
     role: userRoleEnum,
     co_quan_don_vi_id: z.string().optional(), // Cơ quan đơn vị (UUID)
     don_vi_truc_thuoc_id: z.string().optional(), // Đơn vị trực thuộc (UUID)
     chuc_vu_id: z.string().optional(), // Chức vụ (UUID)
   })
-  .refine(data => data.password === data.confirmPassword, {
+  .refine(data => !data.password || data.password === data.confirmPassword, {
     message: 'Mật khẩu xác nhận không khớp',
     path: ['confirmPassword'],
   })
@@ -49,7 +50,8 @@ export const accountCreateSchema = z
       return true;
     },
     {
-      message: 'Tài khoản MANAGER cần Cơ quan đơn vị và Chức vụ (không chọn Đơn vị trực thuộc)',
+      message:
+        'Tài khoản Chỉ huy đơn vị cần Cơ quan đơn vị và Chức vụ (không chọn Đơn vị trực thuộc)',
       path: ['co_quan_don_vi_id'],
     }
   )

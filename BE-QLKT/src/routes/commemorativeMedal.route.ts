@@ -97,7 +97,7 @@ router.get(
 
 /**
  * @route   GET /api/commemorative-medals/personnel/:personnel_id
- * @desc    Lấy Kỷ niệm chương theo personnel_id
+ * @desc    Lấy Kỷ niệm chương VSNXD QĐNDVN theo personnel_id
  * @access  ADMIN, MANAGER, USER
  */
 router.get(

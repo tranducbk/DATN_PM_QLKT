@@ -11,63 +11,49 @@ import {
 } from './constants';
 import type { ChucVuWithUnit } from './constants';
 
+const buildUnitDescription = (
+  action: string,
+  unit: Record<string, unknown> | null,
+  body: Record<string, unknown> | null
+): string => {
+  const tenDonVi = (unit?.ten_don_vi as string) || (body?.ten_don_vi as string) || '';
+  const maDonVi = (unit?.ma_don_vi as string) || (body?.ma_don_vi as string) || '';
+  const coQuanDonVi = unit?.CoQuanDonVi as Record<string, unknown> | null | undefined;
+  const isSubUnit = !!(unit?.co_quan_don_vi_id || body?.co_quan_don_vi_id);
+  const tenCoQuanDonVi = (coQuanDonVi?.ten_don_vi as string) || '';
+
+  if (!tenDonVi) {
+    return `${action} đơn vị: ${FALLBACK.UNKNOWN}`;
+  }
+
+  const loaiDonVi = isSubUnit ? 'đơn vị trực thuộc' : 'cơ quan đơn vị';
+  let description = `${action} ${loaiDonVi}: ${tenDonVi}`;
+
+  if (maDonVi) {
+    description += `\n- Mã đơn vị: ${maDonVi}`;
+  }
+  if (tenCoQuanDonVi && isSubUnit) {
+    description += `\n- Thuộc cơ quan: ${tenCoQuanDonVi}`;
+  }
+
+  return description;
+};
+
 const units: Record<string, (req: Request, res: Response, responseData: unknown) => string> = {
   CREATE: (req: Request, res: Response, responseData: unknown): string => {
-    try {
-      const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
-      const unit = data?.data || data;
-      if (unit?.ten_don_vi) {
-        return `Tạo đơn vị trực thuộc: ${unit.ten_don_vi}`;
-      }
-      if (unit?.ten_co_quan_don_vi) {
-        return `Tạo cơ quan đơn vị: ${unit.ten_co_quan_don_vi}`;
-      }
-    } catch (e) {
-      // Ignore parse error
-    }
-    if (req.body?.ten_don_vi) {
-      return `Tạo đơn vị trực thuộc: ${req.body.ten_don_vi}`;
-    }
-    if (req.body?.ten_co_quan_don_vi) {
-      return `Tạo cơ quan đơn vị: ${req.body.ten_co_quan_don_vi}`;
-    }
-    return `Tạo đơn vị: ${req.body?.ten_don_vi || req.body?.ten_co_quan_don_vi || FALLBACK.UNKNOWN}`;
+    const parsedData = parseResponseData(responseData);
+    const unit = asRecord(parsedData?.data) || parsedData;
+    return buildUnitDescription('Tạo', unit, req.body);
   },
   UPDATE: (req: Request, res: Response, responseData: unknown): string => {
-    try {
-      const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
-      const unit = data?.data || data;
-      if (unit?.ten_don_vi) {
-        return `Cập nhật đơn vị trực thuộc: ${unit.ten_don_vi}`;
-      }
-      if (unit?.ten_co_quan_don_vi) {
-        return `Cập nhật cơ quan đơn vị: ${unit.ten_co_quan_don_vi}`;
-      }
-    } catch (e) {
-      // Ignore parse error
-    }
-    if (req.body?.ten_don_vi) {
-      return `Cập nhật đơn vị trực thuộc: ${req.body.ten_don_vi}`;
-    }
-    if (req.body?.ten_co_quan_don_vi) {
-      return `Cập nhật cơ quan đơn vị: ${req.body.ten_co_quan_don_vi}`;
-    }
-    return `Cập nhật đơn vị: ${req.body?.ten_don_vi || req.body?.ten_co_quan_don_vi || FALLBACK.UNKNOWN}`;
+    const parsedData = parseResponseData(responseData);
+    const unit = asRecord(parsedData?.data) || parsedData;
+    return buildUnitDescription('Cập nhật', unit, req.body);
   },
   DELETE: (req: Request, res: Response, responseData: unknown): string => {
-    try {
-      const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
-      const unit = data?.data || data;
-      if (unit?.ten_don_vi) {
-        return `Xóa đơn vị trực thuộc: ${unit.ten_don_vi}`;
-      }
-      if (unit?.ten_co_quan_don_vi) {
-        return `Xóa cơ quan đơn vị: ${unit.ten_co_quan_don_vi}`;
-      }
-    } catch (e) {
-      // Ignore parse error
-    }
-    return `Xóa đơn vị (không xác định được thông tin)`;
+    const parsedData = parseResponseData(responseData);
+    const unit = asRecord(parsedData?.data) || parsedData;
+    return buildUnitDescription('Xóa', unit, req.body);
   },
 };
 

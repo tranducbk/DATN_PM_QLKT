@@ -9,7 +9,7 @@ class PositionHistoryController {
   getPositionHistory = catchAsync(async (req: Request, res: Response) => {
     const { personnel_id, recalculate } = req.query;
     if (!personnel_id) {
-      return ResponseHelper.badRequest(res, 'Tham số personnel_id là bắt buộc');
+      return ResponseHelper.badRequest(res, 'Thiếu thông tin quân nhân');
     }
     if (recalculate === 'true') {
       try {
@@ -31,7 +31,7 @@ class PositionHistoryController {
     if (!personnel_id || !chuc_vu_id || !ngay_bat_dau) {
       return ResponseHelper.badRequest(
         res,
-        'Vui lòng nhập đầy đủ: personnel_id, chuc_vu_id, ngay_bat_dau'
+        'Vui lòng nhập đầy đủ: quân nhân, chức vụ và ngày bắt đầu'
       );
     }
     const result = await positionHistoryService.createPositionHistory({

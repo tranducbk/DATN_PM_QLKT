@@ -7,6 +7,7 @@ import {
   ACHIEVEMENT_TYPE_NAMES,
   parseResponseData,
   getUnitNameFromChucVu,
+  getUnitNameFromUnitId,
   queryPersonnelName,
   queryPositionInfo,
   withPrisma,
@@ -23,22 +24,61 @@ const personnel: Record<
   string,
   (req: Request, res: Response, responseData: unknown) => string | Promise<string>
 > = {
-  CREATE: (req: Request, res: Response, responseData: unknown): string => {
+  CREATE: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
     const cccd = req.body?.cccd || '';
+    const chucVuId = req.body?.chuc_vu_id || null;
+    const coQuanDonViId = req.body?.co_quan_don_vi_id || null;
+    const donViTrucThuocId = req.body?.don_vi_truc_thuoc_id || null;
 
     let hoTen = req.body?.ho_ten || '';
-    try {
-      const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
-      hoTen = data?.data?.ho_ten || data?.data?.QuanNhan?.ho_ten || hoTen;
-    } catch (e) {
-      // Ignore
+    let tenChucVu = '';
+    let tenDonVi = '';
+
+    const parsedData = parseResponseData(responseData);
+    const result = asRecord(parsedData?.data) || parsedData;
+
+    if (result) {
+      hoTen = (result.ho_ten as string) || hoTen;
+
+      const chucVu = asRecord(result.ChucVu) as ChucVuWithUnit | null;
+      if (chucVu) {
+        tenChucVu = (chucVu.ten_chuc_vu as string) || '';
+        tenDonVi = getUnitNameFromChucVu(chucVu);
+      }
+    }
+
+    if ((!tenChucVu && chucVuId) || (!tenDonVi && (coQuanDonViId || donViTrucThuocId))) {
+      await withPrisma(async prisma => {
+        if (!tenChucVu && chucVuId) {
+          const positionInfo = await queryPositionInfo(chucVuId, prisma);
+          tenChucVu = positionInfo.tenChucVu;
+          if (!tenDonVi) {
+            tenDonVi = positionInfo.tenDonVi;
+          }
+        }
+        if (!tenDonVi) {
+          const unitId = donViTrucThuocId || coQuanDonViId;
+          if (unitId) {
+            tenDonVi = await getUnitNameFromUnitId(unitId, prisma);
+          }
+        }
+      });
     }
 
     if (!hoTen || hoTen === cccd) {
       return `Tạo quân nhân mới với CCCD: ${cccd || FALLBACK.UNKNOWN}`;
     }
 
-    return `Tạo quân nhân: ${hoTen}${cccd ? ` (CCCD: ${cccd})` : ''}`;
+    let description = `Tạo quân nhân: ${hoTen}${cccd ? ` (CCCD: ${cccd})` : ''}`;
+
+    if (tenDonVi) {
+      description += `\n- Đơn vị: ${tenDonVi}`;
+    }
+    if (tenChucVu) {
+      description += `\n- Chức vụ: ${tenChucVu}`;
+    }
+
+    return description;
   },
   UPDATE: (req: Request, res: Response, responseData: unknown): string => {
     try {
@@ -109,8 +149,37 @@ const personnel: Record<
 
     return `Import quân nhân từ file: ${fileName}`;
   },
-  EXPORT: (req: Request, res: Response, responseData: unknown): string => {
-    return `Xuất dữ liệu quân nhân ra Excel`;
+  EXPORT: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
+    const filters: string[] = [];
+
+    const search = req.query?.search || req.query?.keyword || req.query?.q;
+    if (search) {
+      filters.push(`Tìm kiếm: "${search}"`);
+    }
+
+    const unitId = (req.query?.co_quan_don_vi_id || req.query?.unitId) as string | undefined;
+    if (unitId) {
+      const unitName = await withPrisma(async (p) => getUnitNameFromUnitId(unitId, p));
+      filters.push(`Đơn vị: ${unitName || '(có lọc)'}`);
+    }
+
+    const subUnitId = (req.query?.don_vi_truc_thuoc_id || req.query?.subUnitId) as string | undefined;
+    if (subUnitId) {
+      const subUnitName = await withPrisma(async (p) => getUnitNameFromUnitId(subUnitId, p));
+      filters.push(`Đơn vị trực thuộc: ${subUnitName || '(có lọc)'}`);
+    }
+
+    const status = req.query?.trang_thai || req.query?.status;
+    if (status) {
+      filters.push(`Trạng thái: ${status}`);
+    }
+
+    let description = 'Xuất dữ liệu quân nhân ra Excel';
+    if (filters.length > 0) {
+      description += ` (Lọc: ${filters.join(', ')})`;
+    }
+
+    return description;
   },
 };
 

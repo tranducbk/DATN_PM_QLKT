@@ -398,7 +398,7 @@ class ProposalController {
     if (!personnel_id || !nam || !danh_hieu || !proposal_type) {
       return ResponseHelper.badRequest(
         res,
-        'Thiếu thông tin: personnel_id, nam, danh_hieu, proposal_type'
+        'Thiếu thông tin: quân nhân, năm, danh hiệu và loại đề xuất'
       );
     }
     return ResponseHelper.success(res, {
@@ -416,7 +416,7 @@ class ProposalController {
     if (!don_vi_id || !nam || !danh_hieu || !proposal_type) {
       return ResponseHelper.badRequest(
         res,
-        'Thiếu thông tin: don_vi_id, nam, danh_hieu, proposal_type'
+        'Thiếu thông tin: đơn vị, năm, danh hiệu và loại đề xuất'
       );
     }
     return ResponseHelper.success(res, {

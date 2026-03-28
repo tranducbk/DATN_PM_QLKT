@@ -161,7 +161,7 @@ class MilitaryFlagController {
     const result = await militaryFlagService.getByPersonnelId(personnel_id);
     return ResponseHelper.success(res, {
       data: { hasReceived: result.length > 0, items: result },
-      message: 'Lấy HCQKQT theo personnel_id thành công',
+      message: 'Lấy Huân chương Quân kỳ Quyết thắng theo quân nhân thành công',
     });
   });
 

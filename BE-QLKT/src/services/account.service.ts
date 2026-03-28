@@ -304,10 +304,16 @@ class AccountService {
 
       const chucVu = await prisma.chucVu.findUnique({
         where: { id: chuc_vu_id },
-        select: { he_so_chuc_vu: true },
+        select: { he_so_chuc_vu: true, is_manager: true },
       });
       if (!chucVu) {
         throw new NotFoundError('Chức vụ');
+      }
+
+      if (role === ROLES.MANAGER && !chucVu.is_manager) {
+        throw new ValidationError(
+          'Tài khoản MANAGER phải có chức vụ là Chỉ huy. Vui lòng chọn chức vụ có quyền chỉ huy.'
+        );
       }
 
       personnelDataForCreate = {
@@ -324,9 +330,12 @@ class AccountService {
       heSoChucVu = Number(chucVu?.he_so_chuc_vu) || 0;
     }
 
-    this.validatePassword(password);
+    const finalPassword = password || process.env.DEFAULT_PASSWORD || 'Hvkhqs@123';
+    if (password) {
+      this.validatePassword(password);
+    }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(finalPassword, 10);
 
     const newAccount = await prisma.$transaction(async tx => {
       if (personnelDataForCreate) {

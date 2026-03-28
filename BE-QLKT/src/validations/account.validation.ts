@@ -6,7 +6,7 @@ export const createAccount: Joi.ObjectSchema = Joi.object({
     'string.max': 'Tên đăng nhập không được quá 50 ký tự',
     'any.required': 'Tên đăng nhập là bắt buộc',
   }),
-  password: Joi.string().min(8).optional(),
+  password: Joi.string().allow('').min(8).optional(),
   role: Joi.string().valid('SUPER_ADMIN', 'ADMIN', 'MANAGER', 'USER').required().messages({
     'any.only': 'Vai trò không hợp lệ',
     'any.required': 'Vai trò là bắt buộc',

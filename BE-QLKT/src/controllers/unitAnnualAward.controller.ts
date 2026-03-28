@@ -104,7 +104,7 @@ class UnitAnnualAwardController {
   getUnitAnnualAwards = catchAsync(async (req: Request, res: Response) => {
     const { don_vi_id } = req.query;
     if (!don_vi_id) {
-      return ResponseHelper.badRequest(res, 'Tham số don_vi_id là bắt buộc');
+      return ResponseHelper.badRequest(res, 'Thiếu thông tin đơn vị');
     }
     const result = await service.getUnitAnnualAwards(
       don_vi_id as string,
@@ -122,7 +122,7 @@ class UnitAnnualAwardController {
     const { year } = req.query;
     const yearNumber = year ? parseInt(year as string, 10) : null;
     if (!don_vi_id) {
-      return ResponseHelper.badRequest(res, 'Tham số don_vi_id là bắt buộc');
+      return ResponseHelper.badRequest(res, 'Thiếu thông tin đơn vị');
     }
     if (yearNumber) await service.recalculateAnnualUnit(don_vi_id, yearNumber);
     const result = await service.getAnnualUnit(don_vi_id, yearNumber || new Date().getFullYear());

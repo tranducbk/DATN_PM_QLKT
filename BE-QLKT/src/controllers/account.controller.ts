@@ -58,10 +58,10 @@ class AccountController {
     } = req.body;
     const userRole = req.user?.role;
 
-    if (!username || !password || !role) {
+    if (!username || !role) {
       return ResponseHelper.badRequest(
         res,
-        'Vui lòng nhập đầy đủ thông tin: username, password, role'
+        'Vui lòng nhập đầy đủ thông tin: tên đăng nhập và vai trò'
       );
     }
 
@@ -166,7 +166,7 @@ class AccountController {
   resetPassword = catchAsync(async (req: Request, res: Response) => {
     const { account_id } = req.body;
     if (!account_id) {
-      return ResponseHelper.badRequest(res, 'Vui lòng cung cấp account_id');
+      return ResponseHelper.badRequest(res, 'Vui lòng cung cấp thông tin tài khoản');
     }
     const result = await accountService.resetPassword(account_id);
     return ResponseHelper.success(res, { message: result.message });

@@ -2,7 +2,16 @@ import { Request, Response } from 'express';
 import { auth } from './auth';
 import { accounts } from './accounts';
 import { personnel, positionHistory, scientificAchievements } from './personnel';
-import { annualRewards, adhocAwards, awards } from './awards';
+import {
+  annualRewards,
+  adhocAwards,
+  awards,
+  hccsvv,
+  commemorativeMedals,
+  militaryFlag,
+  contributionAwards,
+  unitAnnualAwards,
+} from './awards';
 import { units, positions } from './units';
 import { proposals } from './proposals';
 import { decisions } from './decisions';
@@ -26,6 +35,11 @@ const createLogDescription: Record<string, Record<string, LogDescriptionFn>> = {
   auth,
   'adhoc-awards': adhocAwards,
   awards,
+  hccsvv,
+  'commemorative-medals': commemorativeMedals,
+  'military-flag': militaryFlag,
+  'contribution-awards': contributionAwards,
+  'unit-annual-awards': unitAnnualAwards,
 };
 
 const ACTION_VI: Record<string, string> = {

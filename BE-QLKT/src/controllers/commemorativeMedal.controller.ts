@@ -169,7 +169,7 @@ class CommemorativeMedalController {
     const result = await commemorativeMedalService.getByPersonnelId(personnel_id);
     return ResponseHelper.success(res, {
       data: { hasReceived: result.length > 0, items: result },
-      message: 'Lấy Kỷ niệm chương theo personnel_id thành công',
+      message: 'Lấy Kỷ niệm chương VSNXD QĐNDVN theo quân nhân thành công',
     });
   });
 

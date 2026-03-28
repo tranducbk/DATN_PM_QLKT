@@ -363,45 +363,15 @@ export default function UnitDetailPage() {
           centered
           destroyOnClose
           title={
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div
-                style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '8px',
-                  background:
-                    dialogType === 'unit'
-                      ? 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%)'
-                      : 'linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                {dialogType === 'unit' ? (
-                  editingItem?.id ? (
-                    <EditOutlined style={{ fontSize: '18px', color: '#fff' }} />
-                  ) : (
-                    <PlusOutlined style={{ fontSize: '18px', color: '#fff' }} />
-                  )
-                ) : editingItem?.id ? (
-                  <EditOutlined style={{ fontSize: '18px', color: '#fff' }} />
-                ) : (
-                  <PlusOutlined style={{ fontSize: '18px', color: '#fff' }} />
-                )}
-              </div>
-              <span style={{ fontSize: '18px', fontWeight: 600 }}>
-                {dialogType === 'unit'
-                  ? editingItem?.id
-                    ? editingItem.co_quan_don_vi_id
-                      ? 'Chỉnh sửa Đơn vị trực thuộc'
-                      : 'Chỉnh sửa Cơ quan đơn vị'
-                    : 'Thêm Đơn vị trực thuộc'
-                  : editingItem?.id
-                    ? 'Chỉnh sửa Chức vụ'
-                    : 'Thêm Chức vụ mới'}
-              </span>
-            </div>
+            dialogType === 'unit'
+              ? editingItem?.id
+                ? editingItem.co_quan_don_vi_id
+                  ? 'Chỉnh sửa Đơn vị trực thuộc'
+                  : 'Chỉnh sửa Cơ quan đơn vị'
+                : 'Thêm Đơn vị trực thuộc'
+              : editingItem?.id
+                ? 'Chỉnh sửa Chức vụ'
+                : 'Thêm Chức vụ mới'
           }
           styles={{
             header: {

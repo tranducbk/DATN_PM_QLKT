@@ -7,10 +7,10 @@ const auth: Record<string, (req: Request, res: Response, responseData: unknown) 
     return `Đăng nhập hệ thống: ${username}`;
   },
   LOGOUT: (req: Request, res: Response, responseData: unknown): string => {
-    return `Đăng xuất khỏi hệ thống`;
+    return `Đăng xuất khỏi hệ thống: ${req.user?.username || 'N/A'}`;
   },
   CHANGE_PASSWORD: (req: Request, res: Response, responseData: unknown): string => {
-    return `Đổi mật khẩu tài khoản`;
+    return `Đổi mật khẩu tài khoản: ${req.user?.username || 'N/A'}`;
   },
 };
 

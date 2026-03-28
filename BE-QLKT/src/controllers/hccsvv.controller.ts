@@ -157,7 +157,7 @@ class HCCSVVController {
     if (!quan_nhan_id || !danh_hieu || !nam) {
       return ResponseHelper.badRequest(
         res,
-        'Thiếu thông tin bắt buộc: quan_nhan_id, danh_hieu, nam'
+        'Thiếu thông tin bắt buộc: quân nhân, danh hiệu và năm'
       );
     }
     const result = await hccsvvService.createDirect(

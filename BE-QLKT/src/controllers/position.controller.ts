@@ -21,7 +21,7 @@ class PositionController {
   createPosition = catchAsync(async (req: Request, res: Response) => {
     const { unit_id, ten_chuc_vu, is_manager, he_so_chuc_vu } = req.body;
     if (!unit_id || !ten_chuc_vu) {
-      return ResponseHelper.badRequest(res, 'Vui lòng nhập đầy đủ thông tin: unit_id, ten_chuc_vu');
+      return ResponseHelper.badRequest(res, 'Vui lòng nhập đầy đủ thông tin: đơn vị và tên chức vụ');
     }
     const result = await positionService.createPosition({
       unit_id,

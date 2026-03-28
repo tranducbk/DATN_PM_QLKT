@@ -307,7 +307,7 @@ export function AccountCreateForm() {
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Mật khẩu *</FormLabel>
+                <FormLabel>Mật khẩu</FormLabel>
                 <FormControl>
                   <div className="relative">
                     <Input
@@ -327,11 +327,9 @@ export function AccountCreateForm() {
                     </button>
                   </div>
                 </FormControl>
-                {(selectedRole === ROLES.MANAGER || selectedRole === ROLES.USER) && (
-                  <p className="text-sm text-muted-foreground">
-                    Mật khẩu tạm thời này sẽ được yêu cầu thay đổi khi đăng nhập lần đầu
-                  </p>
-                )}
+                <p className="text-sm text-muted-foreground">
+                  Để trống sẽ sử dụng mật khẩu mặc định của hệ thống
+                </p>
                 <FormMessage />
               </FormItem>
             )}
@@ -342,7 +340,7 @@ export function AccountCreateForm() {
             name="confirmPassword"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Xác nhận mật khẩu *</FormLabel>
+                <FormLabel>Xác nhận mật khẩu</FormLabel>
                 <FormControl>
                   <div className="relative">
                     <Input

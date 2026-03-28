@@ -166,7 +166,9 @@ export function UnitForm({ unit, units = [], onSuccess, onClose }: UnitFormProps
         <Form.Item label="Cơ quan đơn vị">
           <Text type="secondary">
             Đơn vị trực thuộc của:{' '}
-            <strong>{units.length > 0 ? units[0].ten_don_vi : 'Đang tải...'}</strong>
+            <strong>
+              {units.find(u => u.id === unit.co_quan_don_vi_id)?.ten_don_vi || 'Đang tải...'}
+            </strong>
           </Text>
         </Form.Item>
       )}
@@ -177,7 +179,7 @@ export function UnitForm({ unit, units = [], onSuccess, onClose }: UnitFormProps
             Hủy
           </Button>
           <Button type="primary" htmlType="submit" loading={loading}>
-            {unit ? 'Cập nhật' : 'Tạo mới'}
+            {unit?.id ? 'Cập nhật' : 'Tạo mới'}
           </Button>
         </Space>
       </Form.Item>

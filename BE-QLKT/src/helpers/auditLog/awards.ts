@@ -1,7 +1,7 @@
 import type { Prisma } from '../../generated/prisma';
 import { prisma } from '../../models';
 import { Request, Response } from 'express';
-import { FALLBACK, parseResponseData, asRecord } from './constants';
+import { FALLBACK, parseResponseData, asRecord, queryPersonnelName, getUnitNameFromUnitId } from './constants';
 import { getDanhHieuName } from '../../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 
@@ -57,11 +57,16 @@ const annualRewards: Record<
       // Ignore parse error
     }
 
+    const xepLoai = req.body?.xep_loai || '';
     const danhHieuDisplay = danhHieuName || FALLBACK.UNKNOWN;
     const namDisplay = nam || FALLBACK.UNKNOWN;
-    return `Tạo danh hiệu hằng năm: ${danhHieuDisplay}${
+    let description = `Tạo danh hiệu hằng năm: ${danhHieuDisplay}${
       hoTen ? ` cho quân nhân ${hoTen}` : ''
     } - Năm ${namDisplay}`;
+    if (xepLoai) {
+      description += `\n- Xếp loại: ${xepLoai}`;
+    }
+    return description;
   },
   UPDATE: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
     const danhHieu = req.body?.danh_hieu || '';
@@ -87,11 +92,16 @@ const annualRewards: Record<
       // Ignore parse error
     }
 
+    const xepLoai = req.body?.xep_loai || '';
     const danhHieuDisplay = danhHieuName || FALLBACK.UNKNOWN;
     const namDisplay = nam || FALLBACK.UNKNOWN;
-    return `Cập nhật danh hiệu hằng năm: ${danhHieuDisplay}${
+    let description = `Cập nhật danh hiệu hằng năm: ${danhHieuDisplay}${
       hoTen ? ` cho quân nhân ${hoTen}` : ''
     } - Năm ${namDisplay}`;
+    if (xepLoai) {
+      description += `\n- Xếp loại: ${xepLoai}`;
+    }
+    return description;
   },
   DELETE: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
     const rewardId = routeParamId(req.params?.id);
@@ -560,4 +570,427 @@ const awards: Record<
   },
 };
 
-export { annualRewards, adhocAwards, awards };
+/** ─── Shared award‐type description builders ─── */
+
+const AWARD_TYPE_NAMES: Record<string, string> = {
+  hccsvv: 'Huy chương Chiến sĩ vẻ vang',
+  'commemorative-medals': 'Kỷ niệm chương VSNXD QĐNDVN',
+  'military-flag': 'Huy chương Quân kỳ Quyết thắng',
+  'contribution-awards': 'Huân chương Bảo vệ Tổ quốc',
+};
+
+/** Prisma model accessor keyed by resource slug */
+const AWARD_PRISMA_MODEL: Record<
+  string,
+  {
+    findUnique: (args: {
+      where: { id: string };
+      include: { QuanNhan: { select: { ho_ten: true } } };
+    }) => Promise<{ quan_nhan_id: string; nam: number; danh_hieu?: string; QuanNhan?: { ho_ten: string } | null } | null>;
+  }
+> = {
+  hccsvv: prisma.khenThuongHCCSVV as any,
+  'commemorative-medals': prisma.kyNiemChuongVSNXDQDNDVN as any,
+  'military-flag': prisma.huanChuongQuanKyQuyetThang as any,
+  'contribution-awards': prisma.khenThuongCongHien as any,
+};
+
+function buildAwardTypeHelpers(resource: string): Record<
+  string,
+  (req: Request, res: Response, responseData: unknown) => string | Promise<string>
+> {
+  const typeName = AWARD_TYPE_NAMES[resource] || resource;
+  const model = AWARD_PRISMA_MODEL[resource];
+
+  return {
+    CREATE: async (req: Request, _res: Response, responseData: unknown): Promise<string> => {
+      const nam = req.body?.nam || '';
+      const personnelId = req.body?.quan_nhan_id || null;
+      const danhHieu = req.body?.danh_hieu || '';
+
+      let hoTen = '';
+
+      // Try response data first
+      try {
+        const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
+        const record = data?.data || data;
+        if (record?.QuanNhan?.ho_ten) {
+          hoTen = record.QuanNhan.ho_ten;
+        }
+      } catch {
+        // Ignore parse error
+      }
+
+      // Fall back to DB query
+      if (!hoTen && personnelId) {
+        hoTen = await queryPersonnelName(personnelId, prisma);
+      }
+
+      const danhHieuDisplay = danhHieu ? getDanhHieuName(danhHieu) : '';
+      let description = `Tạo ${typeName}`;
+      if (danhHieuDisplay) {
+        description += `: ${danhHieuDisplay}`;
+      }
+      if (hoTen) {
+        description += ` cho quân nhân ${hoTen}`;
+      }
+      if (nam) {
+        description += ` - Năm ${nam}`;
+      }
+      return description;
+    },
+
+    DELETE: async (req: Request, _res: Response, responseData: unknown): Promise<string> => {
+      const awardId = routeParamId(req.params?.id);
+
+      let hoTen = '';
+      let nam = '';
+      let danhHieu = '';
+
+      // Response from delete endpoints is just { message }, so query DB
+      if (awardId && model) {
+        try {
+          const record = await model.findUnique({
+            where: { id: awardId },
+            include: { QuanNhan: { select: { ho_ten: true } } },
+          });
+          if (record) {
+            hoTen = record.QuanNhan?.ho_ten || '';
+            nam = String(record.nam ?? '');
+            danhHieu = (record as any).danh_hieu || '';
+          }
+        } catch {
+          // Ignore error — record may already be deleted
+        }
+      }
+
+      const danhHieuDisplay = danhHieu ? getDanhHieuName(danhHieu) : '';
+      if (hoTen) {
+        let description = `Xóa ${typeName}`;
+        if (danhHieuDisplay) {
+          description += `: ${danhHieuDisplay}`;
+        }
+        description += ` của quân nhân ${hoTen}`;
+        if (nam) {
+          description += ` (năm ${nam})`;
+        }
+        return description;
+      }
+
+      return `Xóa ${typeName} (không xác định được thông tin)`;
+    },
+
+    IMPORT: (req: Request, _res: Response, responseData: unknown): string => {
+      const fileName = req.file?.originalname || FALLBACK.NO_FILE;
+      let successCount = 0;
+      let failCount = 0;
+
+      try {
+        const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
+        const result = data?.data || data;
+        successCount = result?.success || result?.successCount || result?.total || 0;
+        failCount = result?.failed || result?.failCount || 0;
+
+        if (successCount > 0 || failCount > 0) {
+          return `Import ${typeName} từ file: ${fileName} (${successCount} thành công${
+            failCount > 0 ? `, ${failCount} thất bại` : ''
+          })`;
+        }
+      } catch {
+        // Ignore parse error
+      }
+
+      return `Import ${typeName} từ file: ${fileName}`;
+    },
+  };
+}
+
+const hccsvv = buildAwardTypeHelpers('hccsvv');
+const commemorativeMedals = buildAwardTypeHelpers('commemorative-medals');
+const militaryFlag = buildAwardTypeHelpers('military-flag');
+const contributionAwards = buildAwardTypeHelpers('contribution-awards');
+
+/** ── Danh hiệu đơn vị hằng năm ── */
+
+const UNIT_AWARD_LABEL = 'danh hiệu đơn vị hằng năm';
+
+/** Extract unit name from response data that includes CoQuanDonVi / DonViTrucThuoc */
+const getUnitNameFromResponse = (responseData: unknown): string => {
+  try {
+    const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
+    const record = data?.data || data;
+    if (record?.CoQuanDonVi?.ten_don_vi) return record.CoQuanDonVi.ten_don_vi;
+    if (record?.DonViTrucThuoc?.ten_don_vi) return record.DonViTrucThuoc.ten_don_vi;
+  } catch {
+    // Ignore
+  }
+  return '';
+};
+
+const unitAnnualAwards: Record<
+  string,
+  (req: Request, res: Response, responseData: unknown) => string | Promise<string>
+> = {
+  IMPORT: (req: Request, _res: Response, responseData: unknown): string => {
+    const fileName = req.file?.originalname || FALLBACK.NO_FILE;
+    let successCount = 0;
+    let failCount = 0;
+
+    try {
+      const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
+      const result = data?.data || data;
+      successCount = result?.imported || result?.success || result?.successCount || result?.total || 0;
+      failCount = result?.failed || result?.failCount || 0;
+    } catch {
+      // Ignore
+    }
+
+    if (successCount > 0 || failCount > 0) {
+      return `Import ${UNIT_AWARD_LABEL} từ file: ${fileName} (${successCount} thành công${
+        failCount > 0 ? `, ${failCount} thất bại` : ''
+      })`;
+    }
+
+    return `Import ${UNIT_AWARD_LABEL} từ file: ${fileName}`;
+  },
+
+  CREATE: async (req: Request, _res: Response, responseData: unknown): Promise<string> => {
+    const danhHieu = req.body?.danh_hieu || '';
+    const nam = req.body?.nam || '';
+    const danhHieuName = getDanhHieuName(danhHieu);
+
+    let tenDonVi = getUnitNameFromResponse(responseData);
+    if (!tenDonVi && req.body?.don_vi_id) {
+      tenDonVi = (await getUnitNameFromUnitId(req.body.don_vi_id, prisma)) || '';
+    }
+
+    const danhHieuDisplay = danhHieuName || FALLBACK.UNKNOWN;
+    const namDisplay = nam || FALLBACK.UNKNOWN;
+
+    return `Tạo ${UNIT_AWARD_LABEL}: ${danhHieuDisplay}${
+      tenDonVi ? ` cho đơn vị ${tenDonVi}` : ''
+    } - Năm ${namDisplay}`;
+  },
+
+  UPDATE: async (req: Request, _res: Response, responseData: unknown): Promise<string> => {
+    const danhHieu = req.body?.danh_hieu || '';
+    const nam = req.body?.nam || '';
+    const danhHieuName = getDanhHieuName(danhHieu);
+
+    let tenDonVi = getUnitNameFromResponse(responseData);
+    if (!tenDonVi && req.body?.don_vi_id) {
+      tenDonVi = (await getUnitNameFromUnitId(req.body.don_vi_id, prisma)) || '';
+    }
+
+    const danhHieuDisplay = danhHieuName || FALLBACK.UNKNOWN;
+    const namDisplay = nam || FALLBACK.UNKNOWN;
+
+    return `Cập nhật ${UNIT_AWARD_LABEL}: ${danhHieuDisplay}${
+      tenDonVi ? ` cho đơn vị ${tenDonVi}` : ''
+    } - Năm ${namDisplay}`;
+  },
+
+  DELETE: async (req: Request, _res: Response, responseData: unknown): Promise<string> => {
+    const rewardId = routeParamId(req.params?.id);
+    let tenDonVi = '';
+    let danhHieu = '';
+    let nam = '';
+
+    try {
+      const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
+      const record = data?.data || data;
+      if (record?.CoQuanDonVi?.ten_don_vi) tenDonVi = record.CoQuanDonVi.ten_don_vi;
+      else if (record?.DonViTrucThuoc?.ten_don_vi) tenDonVi = record.DonViTrucThuoc.ten_don_vi;
+      if (record?.danh_hieu) danhHieu = record.danh_hieu;
+      if (record?.nam) nam = String(record.nam);
+    } catch {
+      // Ignore
+    }
+
+    if ((!tenDonVi || !danhHieu) && rewardId) {
+      try {
+        const record = await prisma.danhHieuDonViHangNam.findUnique({
+          where: { id: rewardId },
+          include: {
+            CoQuanDonVi: { select: { ten_don_vi: true } },
+            DonViTrucThuoc: { select: { ten_don_vi: true } },
+          },
+        });
+        if (record) {
+          tenDonVi = tenDonVi || record.CoQuanDonVi?.ten_don_vi || record.DonViTrucThuoc?.ten_don_vi || '';
+          danhHieu = danhHieu || record.danh_hieu || '';
+          nam = nam || String(record.nam ?? '');
+        }
+      } catch {
+        // Ignore
+      }
+    }
+
+    const danhHieuName = getDanhHieuName(danhHieu);
+
+    if (tenDonVi && danhHieu) {
+      return `Xóa ${UNIT_AWARD_LABEL}: ${danhHieuName} của đơn vị ${tenDonVi}${
+        nam ? ` (năm ${nam})` : ''
+      }`;
+    }
+
+    return `Xóa ${UNIT_AWARD_LABEL} (không xác định được thông tin)`;
+  },
+
+  PROPOSE: async (req: Request, _res: Response, responseData: unknown): Promise<string> => {
+    const danhHieu = req.body?.danh_hieu || '';
+    const nam = req.body?.nam || '';
+    const danhHieuName = getDanhHieuName(danhHieu);
+
+    let tenDonVi = getUnitNameFromResponse(responseData);
+    if (!tenDonVi && req.body?.don_vi_id) {
+      tenDonVi = (await getUnitNameFromUnitId(req.body.don_vi_id, prisma)) || '';
+    }
+
+    const danhHieuDisplay = danhHieuName || FALLBACK.UNKNOWN;
+    const namDisplay = nam || FALLBACK.UNKNOWN;
+
+    return `Đề xuất ${UNIT_AWARD_LABEL}: ${danhHieuDisplay}${
+      tenDonVi ? ` cho đơn vị ${tenDonVi}` : ''
+    } - Năm ${namDisplay}`;
+  },
+
+  APPROVE: async (req: Request, _res: Response, responseData: unknown): Promise<string> => {
+    let tenDonVi = getUnitNameFromResponse(responseData);
+    let danhHieu = '';
+    let nam = '';
+
+    try {
+      const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
+      const record = data?.data || data;
+      danhHieu = record?.danh_hieu || '';
+      nam = record?.nam ? String(record.nam) : '';
+    } catch {
+      // Ignore
+    }
+
+    if (!tenDonVi || !danhHieu) {
+      const rewardId = routeParamId(req.params?.id);
+      if (rewardId) {
+        try {
+          const record = await prisma.danhHieuDonViHangNam.findUnique({
+            where: { id: rewardId },
+            include: {
+              CoQuanDonVi: { select: { ten_don_vi: true } },
+              DonViTrucThuoc: { select: { ten_don_vi: true } },
+            },
+          });
+          if (record) {
+            tenDonVi = tenDonVi || record.CoQuanDonVi?.ten_don_vi || record.DonViTrucThuoc?.ten_don_vi || '';
+            danhHieu = danhHieu || record.danh_hieu || '';
+            nam = nam || String(record.nam ?? '');
+          }
+        } catch {
+          // Ignore
+        }
+      }
+    }
+
+    const danhHieuName = getDanhHieuName(danhHieu);
+    const danhHieuDisplay = danhHieuName || FALLBACK.UNKNOWN;
+    const namDisplay = nam || FALLBACK.UNKNOWN;
+
+    return `Phê duyệt ${UNIT_AWARD_LABEL}: ${danhHieuDisplay}${
+      tenDonVi ? ` cho đơn vị ${tenDonVi}` : ''
+    } - Năm ${namDisplay}`;
+  },
+
+  REJECT: async (req: Request, _res: Response, responseData: unknown): Promise<string> => {
+    let tenDonVi = getUnitNameFromResponse(responseData);
+    let danhHieu = '';
+    let nam = '';
+    const lyDo = req.body?.ghi_chu || '';
+
+    try {
+      const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
+      const record = data?.data || data;
+      danhHieu = record?.danh_hieu || '';
+      nam = record?.nam ? String(record.nam) : '';
+    } catch {
+      // Ignore
+    }
+
+    if (!tenDonVi || !danhHieu) {
+      const rewardId = routeParamId(req.params?.id);
+      if (rewardId) {
+        try {
+          const record = await prisma.danhHieuDonViHangNam.findUnique({
+            where: { id: rewardId },
+            include: {
+              CoQuanDonVi: { select: { ten_don_vi: true } },
+              DonViTrucThuoc: { select: { ten_don_vi: true } },
+            },
+          });
+          if (record) {
+            tenDonVi = tenDonVi || record.CoQuanDonVi?.ten_don_vi || record.DonViTrucThuoc?.ten_don_vi || '';
+            danhHieu = danhHieu || record.danh_hieu || '';
+            nam = nam || String(record.nam ?? '');
+          }
+        } catch {
+          // Ignore
+        }
+      }
+    }
+
+    const danhHieuName = getDanhHieuName(danhHieu);
+    const danhHieuDisplay = danhHieuName || FALLBACK.UNKNOWN;
+    const namDisplay = nam || FALLBACK.UNKNOWN;
+
+    let description = `Từ chối ${UNIT_AWARD_LABEL}: ${danhHieuDisplay}${
+      tenDonVi ? ` cho đơn vị ${tenDonVi}` : ''
+    } - Năm ${namDisplay}`;
+
+    if (lyDo) {
+      description += `\n- Lý do: ${lyDo}`;
+    }
+
+    return description;
+  },
+
+  RECALCULATE: async (req: Request, _res: Response, responseData: unknown): Promise<string> => {
+    const donViId = req.body?.don_vi_id || '';
+    const nam = req.body?.nam || '';
+
+    let updatedCount = 0;
+    try {
+      const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
+      const result = data?.data || data;
+      updatedCount = result?.updated || 0;
+    } catch {
+      // Ignore
+    }
+
+    let tenDonVi = '';
+    if (donViId) {
+      tenDonVi = (await getUnitNameFromUnitId(donViId, prisma)) || '';
+    }
+
+    if (tenDonVi && nam) {
+      return `Tính toán lại ${UNIT_AWARD_LABEL} cho đơn vị ${tenDonVi} - Năm ${nam} (${updatedCount} bản ghi)`;
+    }
+    if (tenDonVi) {
+      return `Tính toán lại ${UNIT_AWARD_LABEL} cho đơn vị ${tenDonVi} (${updatedCount} bản ghi)`;
+    }
+    if (nam) {
+      return `Tính toán lại ${UNIT_AWARD_LABEL} năm ${nam} (${updatedCount} bản ghi)`;
+    }
+
+    return `Tính toán lại toàn bộ ${UNIT_AWARD_LABEL} (${updatedCount} bản ghi)`;
+  },
+};
+
+export {
+  annualRewards,
+  adhocAwards,
+  awards,
+  hccsvv,
+  commemorativeMedals,
+  militaryFlag,
+  contributionAwards,
+  unitAnnualAwards,
+};
