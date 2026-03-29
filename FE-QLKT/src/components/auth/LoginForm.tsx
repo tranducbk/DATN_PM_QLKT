@@ -75,42 +75,29 @@ export function LoginForm() {
         <div className="bg-orb bg-orb-1"></div>
         <div className="bg-orb bg-orb-2"></div>
         <div className="bg-orb bg-orb-3"></div>
-        <div className="bg-grid"></div>
       </div>
 
       {/* Header */}
-      <header className="login-header">
-        <nav className="login-nav">
-          <Link href="/" className="logo-link">
-            <div className="logo-glow"></div>
+      <header className="login-header-bar">
+        <div className="login-header-inner">
+          <Link href="/" className="login-header-logo">
             <Image
               src="/logo-msa.png"
-              alt="Logo"
-              width={48}
-              height={48}
-              className="logo-img"
+              alt="Logo Học viện Khoa học Quân sự"
+              width={44}
+              height={44}
+              className="rounded-xl"
               priority
             />
-            <div className="logo-text">
-              <span className="logo-title">HỌC VIỆN KHOA HỌC QUÂN SỰ</span>
+            <div className="login-header-logo-text">
+              <span className="login-header-title">HỌC VIỆN KHOA HỌC QUÂN SỰ</span>
+              <span className="login-header-sub">Bộ Quốc phòng</span>
             </div>
           </Link>
-
-          <div className="nav-links">
-            <Link href="/#features" className="nav-link">
-              Tính năng
-            </Link>
-            <Link href="/#stats" className="nav-link">
-              Thống kê
-            </Link>
-            <Link href="/#contact" className="nav-link">
-              Liên hệ
-            </Link>
-            <Link href="/" className="nav-btn">
-              Trang chủ
-            </Link>
-          </div>
-        </nav>
+          <Link href="/" className="login-header-btn">
+            Trang chủ
+          </Link>
+        </div>
       </header>
 
       {/* Login Card */}
@@ -212,6 +199,12 @@ export function LoginForm() {
               />
             </Form.Item>
 
+            <div className="forgot-link-wrap">
+              <Link href="/forgot-password" className="forgot-password-link">
+                Quên mật khẩu?
+              </Link>
+            </div>
+
             <Form.Item className="mb-0">
               <Button
                 type="primary"
@@ -228,7 +221,7 @@ export function LoginForm() {
 
           {/* Footer */}
           <div className="card-footer">
-            <p className="footer-text">© 2025 Học viện Khoa học Quân sự</p>
+            <p className="footer-text">© 2026 Học viện Khoa học Quân sự</p>
           </div>
         </div>
       </div>

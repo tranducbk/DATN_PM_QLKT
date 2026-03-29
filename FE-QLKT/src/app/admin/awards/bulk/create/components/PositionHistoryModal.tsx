@@ -34,7 +34,7 @@ interface PositionHistoryModalProps {
   onClose: () => void;
 }
 
-export default function PositionHistoryModal({
+export function PositionHistoryModal({
   visible,
   personnel,
   positionHistory,

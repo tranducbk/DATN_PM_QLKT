@@ -38,8 +38,8 @@ import {
   EyeOutlined,
 } from '@ant-design/icons';
 import { EditableCell } from '@/components/EditableCell';
-import DecisionModal from '@/components/DecisionModal';
-import { format } from 'date-fns';
+import { DecisionModal } from '@/components/DecisionModal';
+import { formatDateTime } from '@/lib/utils';
 import { apiClient } from '@/lib/apiClient';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { previewFileWithApi } from '@/utils/filePreview';
@@ -1379,7 +1379,7 @@ export default function ProposalDetailPage() {
                 Ngày gửi
               </Text>
               <div style={{ fontWeight: 500 }}>
-                {format(new Date(proposal.createdAt), 'dd/MM/yyyy HH:mm')}
+                {formatDateTime(proposal.createdAt)}
               </div>
             </div>
             {proposal.status === PROPOSAL_STATUS.APPROVED && proposal.ngay_duyet && (
@@ -1397,7 +1397,7 @@ export default function ProposalDetailPage() {
                     Ngày phê duyệt
                   </Text>
                   <div style={{ fontWeight: 500 }}>
-                    {format(new Date(proposal.ngay_duyet), 'dd/MM/yyyy HH:mm')}
+                    {formatDateTime(proposal.ngay_duyet)}
                   </div>
                 </div>
               </>

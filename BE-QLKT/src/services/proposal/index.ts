@@ -65,8 +65,8 @@ class ProposalService {
   async getProposals(
     userId: string,
     userRole: string,
-    page: string | number,
-    limit: string | number
+    page: number,
+    limit: number
   ) {
     return core.getProposals(userId, userRole, page, limit);
   }
@@ -118,12 +118,10 @@ class ProposalService {
 
   async getAllAwards(
     filters: Record<string, unknown>,
-    page: string | number,
-    limit: string | number
+    page: number,
+    limit: number
   ) {
-    const pageNum = typeof page === 'number' ? page : parseInt(String(page), 10);
-    const limitNum = typeof limit === 'number' ? limit : parseInt(String(limit), 10);
-    return awards.getAllAwards(filters, pageNum, limitNum);
+    return awards.getAllAwards(filters, page, limit);
   }
 
   async exportAllAwardsExcel(filters: Record<string, unknown>) {

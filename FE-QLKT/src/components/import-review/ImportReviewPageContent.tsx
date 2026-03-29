@@ -107,7 +107,84 @@ export function makeErrorColumn(): ColumnsType<PreviewItem>[number] {
   };
 }
 
-export default function ImportReviewPageContent({ config }: { config: ImportReviewConfig }) {
+export function makeSTTColumn(width = 60): ColumnsType<PreviewItem>[number] {
+  return {
+    title: 'STT',
+    width,
+    align: 'center' as const,
+    render: (_: any, __: any, index: number) => index + 1,
+  };
+}
+
+export function makeRowNumberColumn(): ColumnsType<PreviewItem>[number] {
+  return {
+    title: 'Dòng',
+    dataIndex: 'row',
+    width: 60,
+    align: 'center' as const,
+    render: (val: number) => val ?? '--',
+  };
+}
+
+export function makeHoTenColumn(width = 180, withRender = false): ColumnsType<PreviewItem>[number] {
+  const col = {
+    title: 'Họ tên',
+    dataIndex: 'ho_ten',
+    width,
+    ellipsis: true,
+  };
+  return withRender ? { ...col, render: renderText } : col;
+}
+
+export function makeNamColumn(width = 80, withRender = false): ColumnsType<PreviewItem>[number] {
+  const col = {
+    title: 'Năm',
+    dataIndex: 'nam',
+    width,
+    align: 'center' as const,
+  };
+  return withRender ? { ...col, render: (val: number) => val ?? '--' } : col;
+}
+
+export function makeSoQDColumn(width = 140): ColumnsType<PreviewItem>[number] {
+  return {
+    title: 'Số QĐ',
+    dataIndex: 'so_quyet_dinh',
+    width,
+    ellipsis: true,
+    render: renderText,
+  };
+}
+
+export function makeGhiChuColumn(width = 150): ColumnsType<PreviewItem>[number] {
+  return {
+    title: 'Ghi chú',
+    dataIndex: 'ghi_chu',
+    width,
+    ellipsis: true,
+    render: renderText,
+  };
+}
+
+export function makeCapBacColumn(): ColumnsType<PreviewItem>[number] {
+  return {
+    title: 'Cấp bậc',
+    dataIndex: 'cap_bac',
+    width: 120,
+    ellipsis: true,
+  };
+}
+
+export function makeChucVuColumn(): ColumnsType<PreviewItem>[number] {
+  return {
+    title: 'Chức vụ',
+    dataIndex: 'chuc_vu',
+    width: 150,
+    ellipsis: true,
+  };
+}
+
+export function ImportReviewPageContent({ config }: { config: ImportReviewConfig }) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [confirming, setConfirming] = useState(false);

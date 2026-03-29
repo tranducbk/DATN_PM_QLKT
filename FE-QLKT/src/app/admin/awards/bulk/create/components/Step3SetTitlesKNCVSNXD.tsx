@@ -50,7 +50,7 @@ interface Step3SetTitlesKNCVSNXDProps {
   nam: number;
 }
 
-export default function Step3SetTitlesKNCVSNXD({
+export function Step3SetTitlesKNCVSNXD({
   selectedPersonnelIds,
   onPersonnelChange,
   titleData,

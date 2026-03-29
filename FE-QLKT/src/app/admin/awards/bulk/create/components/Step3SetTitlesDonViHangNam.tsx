@@ -5,7 +5,7 @@ import { Table, Select, Alert, Typography, Space, Tag, Button, message, Empty } 
 import { EditOutlined, HistoryOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
-import UnitAnnualAwardHistoryModal from './UnitAnnualAwardHistoryModal';
+import { UnitAnnualAwardHistoryModal } from './UnitAnnualAwardHistoryModal';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 import {
   DANH_HIEU_CA_NHAN_HANG_NAM,
@@ -79,7 +79,7 @@ interface Step3SetTitlesDonViHangNamProps {
   nam: number;
 }
 
-export default function Step3SetTitlesDonViHangNam({
+export function Step3SetTitlesDonViHangNam({
   selectedUnitIds,
   onUnitChange,
   titleData,

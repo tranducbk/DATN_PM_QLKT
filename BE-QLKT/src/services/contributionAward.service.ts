@@ -1,12 +1,15 @@
 import { prisma } from '../models';
 import ExcelJS from 'exceljs';
+import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHelper';
 import { checkDuplicateAward } from '../helpers/awardValidation';
 import profileService from './profile.service';
 import * as notificationHelper from '../helpers/notification';
 import { getDanhHieuName } from '../constants/danhHieu.constants';
 import { ROLES } from '../constants/roles.constants';
-import { ValidationError } from '../middlewares/errorHandler';
+import { ValidationError, NotFoundError } from '../middlewares/errorHandler';
 import { parseHeaderMap, getHeaderCol } from '../helpers/excelHelper';
+import { writeSystemLog } from '../helpers/systemLogHelper';
+import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
 
 /** Rank order for HCBVTQ — higher index = higher rank */
 const HCBVTQ_RANK_ORDER = {
@@ -21,29 +24,8 @@ class ContributionAwardService {
    * @param {string[]} personnelIds - Pre-fill with selected personnel
    * @param {string} userRole
    */
-  async exportTemplate(personnelIds: string[] = [], userRole: string = ROLES.MANAGER) {
-    // Query personnel by IDs
-    const personnelList =
-      personnelIds.length > 0
-        ? await prisma.quanNhan.findMany({
-            where: { id: { in: personnelIds } },
-            include: { ChucVu: true },
-          })
-        : [];
-
-    // Query danh sách số quyết định hiện có để tạo dropdown
-    const existingDecisions = await prisma.fileQuyetDinh.findMany({
-      select: { so_quyet_dinh: true },
-      orderBy: { nam: 'desc' },
-      take: 200,
-    });
-    const decisionNumbers = existingDecisions.map(d => d.so_quyet_dinh).filter(Boolean);
-
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('HCBVTQ');
-
-    // Định nghĩa các cột
-    const columns = [
+  async exportTemplate(personnelIds: string[] = []) {
+    const columns: TemplateColumn[] = [
       { header: 'STT', key: 'stt', width: 6 },
       { header: 'ID', key: 'id', width: 10 },
       { header: 'Họ và tên', key: 'ho_ten', width: 25 },
@@ -55,134 +37,22 @@ class ContributionAwardService {
       { header: 'Ghi chú', key: 'ghi_chu', width: 25 },
     ];
 
-    worksheet.columns = columns;
-
-    // Style cho header row
-    const headerRow = worksheet.getRow(1);
-    headerRow.font = { bold: true };
-    headerRow.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFD3D3D3' },
-    };
-
-    // Pre-fill rows with personnel data
-    personnelList.forEach((person, index) => {
-      worksheet.addRow({
-        stt: index + 1,
-        id: person.id,
-        ho_ten: person.ho_ten ?? '',
-        cap_bac: person.cap_bac ?? '',
-        chuc_vu: person.ChucVu ? person.ChucVu.ten_chuc_vu : '',
-      });
+    return buildTemplate({
+      sheetName: 'HCBVTQ',
+      columns,
+      personnelIds,
+      danhHieuOptions: '"HCBVTQ_HANG_BA,HCBVTQ_HANG_NHI,HCBVTQ_HANG_NHAT"',
+      editableColumnLetters: ['G', 'H'],
     });
-
-    // Light yellow background for readonly columns (STT, ID, Họ và tên)
-    const readonlyColIndices = [1, 2, 3];
-    const yellowFill = {
-      type: 'pattern' as const,
-      pattern: 'solid' as const,
-      fgColor: { argb: 'FFFFFFCC' },
-    };
-
-    for (let rowNum = 2; rowNum <= Math.max(personnelList.length + 1, 2); rowNum++) {
-      const row = worksheet.getRow(rowNum);
-      readonlyColIndices.forEach(colIdx => {
-        row.getCell(colIdx).fill = yellowFill;
-      });
-    }
-
-    // Data validation for Cấp bậc column (col 4) — dropdown
-    const capBacOptions =
-      'Binh nhì,Binh nhất,Hạ sĩ,Trung sĩ,Thượng sĩ,Thiếu úy,Trung úy,Thượng úy,Đại úy,Thiếu tá,Trung tá,Thượng tá,Đại tá,Thiếu tướng,Trung tướng,Thượng tướng,Đại tướng';
-    const capBacSheet = workbook.addWorksheet('_CapBac', { state: 'veryHidden' });
-    capBacOptions.split(',').forEach((cb, idx) => {
-      capBacSheet.getCell(`A${idx + 1}`).value = cb;
-    });
-    const capBacCount = capBacOptions.split(',').length;
-    const maxRows = Math.max(personnelList.length + 1, 50);
-    for (let rowNum = 2; rowNum <= maxRows; rowNum++) {
-      worksheet.getRow(rowNum).getCell(4).dataValidation = {
-        type: 'list',
-        allowBlank: true,
-        formulae: [`_CapBac!$A$1:$A$${capBacCount}`],
-      };
-    }
-
-    // Data validation for Danh hiệu column (col 7) — dropdown
-    const danhHieuColNumber = 7;
-    for (let rowNum = 2; rowNum <= maxRows; rowNum++) {
-      worksheet.getRow(rowNum).getCell(danhHieuColNumber).dataValidation = {
-        type: 'list',
-        allowBlank: true,
-        formulae: ['"HCBVTQ_HANG_BA,HCBVTQ_HANG_NHI,HCBVTQ_HANG_NHAT"'],
-      };
-    }
-
-    // Data validation cho cột số quyết định — dropdown từ DB
-    if (decisionNumbers.length > 0) {
-      const soQdColNumber = columns.findIndex(c => c.key === 'so_quyet_dinh') + 1;
-      const decisionListStr = decisionNumbers.join(',');
-
-      if (decisionListStr.length <= 250) {
-        for (let rowNum = 2; rowNum <= maxRows; rowNum++) {
-          worksheet.getRow(rowNum).getCell(soQdColNumber).dataValidation = {
-            type: 'list',
-            allowBlank: true,
-            formulae: [`"${decisionListStr}"`],
-          };
-        }
-      } else {
-        const refSheet = workbook.addWorksheet('_QuyetDinh', { state: 'veryHidden' });
-        decisionNumbers.forEach((sqd, idx) => {
-          refSheet.getCell(`A${idx + 1}`).value = sqd;
-        });
-        for (let rowNum = 2; rowNum <= maxRows; rowNum++) {
-          worksheet.getRow(rowNum).getCell(soQdColNumber).dataValidation = {
-            type: 'list',
-            allowBlank: true,
-            formulae: [`_QuyetDinh!$A$1:$A$${decisionNumbers.length}`],
-          };
-        }
-      }
-    }
-
-    // Conditional formatting: nền vàng khi ô có giá trị
-    const maxDataRow = Math.max(personnelIds.length + 1, 50);
-    const editableColumns = ['G', 'H'];
-    editableColumns.forEach(col => {
-      worksheet.addConditionalFormatting({
-        ref: `${col}2:${col}${maxDataRow}`,
-        rules: [
-          {
-            type: 'expression',
-            formulae: [`LEN(TRIM(${col}2))>0`],
-            style: {
-              fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFCC' } },
-            },
-            priority: 1,
-          },
-        ],
-      });
-    });
-
-    return workbook;
   }
 
   /**
    * Preview import HCBVTQ từ Excel (chỉ validate, không ghi DB)
    * Trả về danh sách valid items kèm lịch sử, và danh sách lỗi
    */
-  async previewImport(buffer) {
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(buffer);
-    const worksheet = workbook.getWorksheet('HCBVTQ');
-
-    if (!worksheet) {
-      throw new ValidationError(
-        'Không tìm thấy sheet "HCBVTQ" trong file Excel. Vui lòng dùng đúng file mẫu.'
-      );
-    }
+  async previewImport(buffer: Buffer) {
+    const workbook = await loadWorkbook(buffer);
+    const worksheet = getAndValidateWorksheet(workbook, { sheetName: 'HCBVTQ' });
 
     // Header map
     const headerMap = parseHeaderMap(worksheet);
@@ -209,10 +79,50 @@ class ContributionAwardService {
     const seenInFile = new Set();
     const currentYear = new Date().getFullYear();
 
-    // Query danh sách số quyết định hợp lệ trên hệ thống
-    const existingDecisions = await prisma.fileQuyetDinh.findMany({
-      select: { so_quyet_dinh: true },
-    });
+    // --- First pass: collect all personnel IDs from worksheet ---
+    const allPersonnelIds = new Set<string>();
+    for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
+      const row = worksheet.getRow(rowNumber);
+      const idValue = idCol ? row.getCell(idCol).value : null;
+      if (idValue) {
+        const pid = String(idValue).trim();
+        if (pid) allPersonnelIds.add(pid);
+      }
+    }
+
+    // --- Batch queries: personnel, existing awards, position histories, decisions ---
+    const [personnelList, existingAwardsList, allPositionHistories, existingDecisions] =
+      await Promise.all([
+        allPersonnelIds.size > 0
+          ? prisma.quanNhan.findMany({
+              where: { id: { in: [...allPersonnelIds] } },
+              select: { id: true, ho_ten: true, gioi_tinh: true, cap_bac: true },
+            })
+          : Promise.resolve([]),
+        allPersonnelIds.size > 0
+          ? prisma.khenThuongCongHien.findMany({
+              where: { quan_nhan_id: { in: [...allPersonnelIds] } },
+            })
+          : Promise.resolve([]),
+        allPersonnelIds.size > 0
+          ? prisma.lichSuChucVu.findMany({
+              where: { quan_nhan_id: { in: [...allPersonnelIds] } },
+              include: { ChucVu: { select: { he_so_chuc_vu: true } } },
+            })
+          : Promise.resolve([]),
+        prisma.fileQuyetDinh.findMany({
+          select: { so_quyet_dinh: true },
+        }),
+      ]);
+
+    const personnelMap = new Map(personnelList.map(p => [p.id, p]));
+    const existingAwardsMap = new Map(existingAwardsList.map(a => [a.quan_nhan_id, a]));
+    const positionHistoriesMap = new Map<string, typeof allPositionHistories>();
+    for (const h of allPositionHistories) {
+      const list = positionHistoriesMap.get(h.quan_nhan_id) ?? [];
+      list.push(h);
+      positionHistoriesMap.set(h.quan_nhan_id, list);
+    }
     const validDecisionNumbers = new Set(existingDecisions.map(d => d.so_quyet_dinh));
 
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
@@ -273,10 +183,7 @@ class ContributionAwardService {
         });
         continue;
       }
-      const personnel = await prisma.quanNhan.findUnique({
-        where: { id: personnelId },
-        select: { id: true, ho_ten: true, gioi_tinh: true, cap_bac: true },
-      });
+      const personnel = personnelMap.get(personnelId);
       if (!personnel) {
         errors.push({
           row: rowNumber,
@@ -355,9 +262,7 @@ class ContributionAwardService {
       seenInFile.add(personnelId);
 
       // Check duplicate in DB — if person already has HCBVTQ, only allow higher rank
-      const existingAward = await prisma.khenThuongCongHien.findUnique({
-        where: { quan_nhan_id: personnelId },
-      });
+      const existingAward = existingAwardsMap.get(personnelId);
 
       let action = 'create';
       if (existingAward) {
@@ -377,10 +282,7 @@ class ContributionAwardService {
       }
 
       // Check thời gian giữ chức vụ theo nhóm hệ số
-      const positionHistories = await prisma.lichSuChucVu.findMany({
-        where: { quan_nhan_id: personnelId },
-        include: { ChucVu: { select: { he_so_chuc_vu: true } } },
-      });
+      const positionHistories = positionHistoriesMap.get(personnelId) ?? [];
 
       const today = new Date();
       const getTotalMonths = group => {
@@ -469,7 +371,7 @@ class ContributionAwardService {
    * Confirm import: lưu dữ liệu đã validate vào DB
    * Upsert on quan_nhan_id — if existing, only update if new rank is higher
    */
-  async confirmImport(validItems, adminId) {
+  async confirmImport(validItems: any[], adminId: string) {
     return await prisma.$transaction(
       async tx => {
         const results = [];
@@ -521,11 +423,9 @@ class ContributionAwardService {
    */
   async getAll(
     filters: Record<string, unknown> = {},
-    page: string | number = 1,
-    limit: string | number = 50
+    page: number = 1,
+    limit: number = 50
   ) {
-    const pageNum = parseInt(String(page), 10);
-    const limitNum = parseInt(String(limit), 10);
     const where: Record<string, unknown> = {};
 
     // Filter theo họ tên
@@ -587,8 +487,8 @@ class ContributionAwardService {
             },
           },
         },
-        skip: (pageNum - 1) * limitNum,
-        take: limitNum,
+        skip: (page - 1) * limit,
+        take: limit,
         orderBy: { nam: 'desc' },
       }),
       prisma.khenThuongCongHien.count({ where }),
@@ -597,10 +497,10 @@ class ContributionAwardService {
     return {
       data,
       pagination: {
-        page: pageNum,
-        limit: limitNum,
+        page: page,
+        limit: limit,
         total,
-        totalPages: Math.ceil(total / limitNum),
+        totalPages: Math.ceil(total / limit),
       },
     };
   }
@@ -608,7 +508,7 @@ class ContributionAwardService {
   /**
    * Export Contribution Awards to Excel
    */
-  async exportToExcel(filters = {}) {
+  async exportToExcel(filters: Record<string, any> = {}) {
     const { data } = await this.getAll(filters, 1, 10000);
 
     const workbook = new ExcelJS.Workbook();
@@ -710,7 +610,7 @@ class ContributionAwardService {
   /**
    * Get user with unit info (helper method)
    */
-  async getUserWithUnit(userId) {
+  async getUserWithUnit(userId: string) {
     return await prisma.taiKhoan.findUnique({
       where: { id: userId },
       include: {
@@ -730,7 +630,7 @@ class ContributionAwardService {
    * @param {string} adminUsername - Username của admin thực hiện xóa
    * @returns {Promise<Object>}
    */
-  async deleteAward(id, adminUsername = 'Admin') {
+  async deleteAward(id: string, adminUsername: string = 'Admin') {
     const award = await prisma.khenThuongCongHien.findUnique({
       where: { id },
       include: {
@@ -739,7 +639,7 @@ class ContributionAwardService {
     });
 
     if (!award) {
-      throw new Error('Bản ghi khen thưởng không tồn tại');
+      throw new NotFoundError('Bản ghi khen thưởng');
     }
 
     const personnelId = award.quan_nhan_id;
@@ -754,14 +654,24 @@ class ContributionAwardService {
     try {
       await profileService.recalculateContributionProfile(personnelId);
     } catch (recalcError) {
-      console.error('[Profile] Failed to recalculate contribution profile after HCBVTQ deletion:', recalcError);
+      writeSystemLog({
+        action: 'ERROR',
+        resource: 'contribution-awards',
+        resourceId: id,
+        description: `Lỗi tính lại hồ sơ cống hiến sau khi xóa HCBVTQ: ${recalcError}`,
+      });
     }
 
     // Gửi thông báo cho Manager và quân nhân
     try {
       await notificationHelper.notifyOnAwardDeleted(award, personnel, 'HCBVTQ', adminUsername);
     } catch (notifyError) {
-      console.error('[Notification] Failed to notify on HCBVTQ award deletion:', notifyError);
+      writeSystemLog({
+        action: 'ERROR',
+        resource: 'contribution-awards',
+        resourceId: id,
+        description: `Lỗi gửi thông báo xóa khen thưởng HCBVTQ: ${notifyError}`,
+      });
     }
 
     return {

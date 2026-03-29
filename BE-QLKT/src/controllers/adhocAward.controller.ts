@@ -181,7 +181,7 @@ class AdhocAwardController {
 
     if (
       personnelId !== userPersonnelId &&
-      !['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(userRole)
+      !([ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER] as string[]).includes(userRole)
     ) {
       return ResponseHelper.forbidden(res, 'Bạn chỉ có thể xem khen thưởng của chính mình.');
     }

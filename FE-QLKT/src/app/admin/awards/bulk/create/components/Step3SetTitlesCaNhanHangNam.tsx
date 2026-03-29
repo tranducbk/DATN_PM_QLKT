@@ -18,7 +18,7 @@ import {
 import { EditOutlined, HistoryOutlined, EyeOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
-import PersonnelRewardHistoryModal from './PersonnelRewardHistoryModal';
+import { PersonnelRewardHistoryModal } from './PersonnelRewardHistoryModal';
 import { formatDate } from '@/lib/utils';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
 import {
@@ -101,7 +101,7 @@ interface Step3SetTitlesCaNhanHangNamProps {
   nam: number;
 }
 
-export default function Step3SetTitlesCaNhanHangNam({
+export function Step3SetTitlesCaNhanHangNam({
   selectedPersonnelIds,
   onPersonnelChange,
   titleData,

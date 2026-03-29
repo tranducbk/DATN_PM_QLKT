@@ -27,10 +27,10 @@ import {
   COLUMN_STYLES,
   renderDecision,
   renderAnnualAwards,
-  getLoaiKhenThuong,
 } from '@/utils/awardsHelpers';
-import { AWARD_TAB_DANH_HIEU } from '@/constants/danhHieu.constants';
-import ExportModal from './ExportModal';
+import { AWARD_TAB_DANH_HIEU, type AwardType } from '@/constants/danhHieu.constants';
+
+import { ExportModal } from './ExportModal';
 import { formatDate } from '@/lib/utils';
 
 const { Title, Paragraph, Text } = Typography;
@@ -70,8 +70,6 @@ type AwardTableRow = AwardCore & {
   hinh_thuc_khen_thuong?: string;
 };
 
-type Award = AwardCore;
-
 const AWARD_TYPE_CONFIG: Record<
   string,
   {
@@ -95,7 +93,7 @@ const AWARD_TYPE_CONFIG: Record<
 };
 
 export default function AdminAwardsPage() {
-  const [activeTab, setActiveTab] = useState('CNHN');
+  const [activeTab, setActiveTab] = useState<AwardType>('CNHN');
   const [awards, setAwards] = useState<AwardTableRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [exportModalOpen, setExportModalOpen] = useState(false);
@@ -229,7 +227,7 @@ export default function AdminAwardsPage() {
           const unit = getUnitName(record).toLowerCase();
           if (!unit.includes(nameFilter)) return false;
         }
-      } else if (activeTab === 'adhoc') {
+      } else if (activeTab === 'KTDX') {
         // Adhoc: tìm kiếm theo tên cá nhân, tên đơn vị, hoặc hình thức khen thưởng
         if (nameFilter) {
           const doiTuong = record.doi_tuong || record.loai;
@@ -418,29 +416,12 @@ export default function AdminAwardsPage() {
       width: 140,
       align: 'center',
       render: (_: any, record: any) => {
-        if (activeTab === 'NCKH') {
-          const loaiMap: Record<string, string> = {
-            DTKH: 'Đề tài khoa học',
-            SKKH: 'Sáng kiến khoa học',
-          };
-          return <Text>{loaiMap[record.loai] || record.loai || '-'}</Text>;
-        }
-        if (activeTab === 'HCQKQT' || activeTab === 'HCCSVV' || activeTab === 'KNC_VSNXD_QDNDVN') {
-          const thanhTich = record.thoi_gian?.display || '-';
-          return <Text>{thanhTich}</Text>;
-        }
-        if (activeTab === 'HCBVTQ') {
-          const thoiGian =
-            [
-              record.thoi_gian_nhom_0_7?.display,
-              record.thoi_gian_nhom_0_8?.display,
-              record.thoi_gian_nhom_0_9_1_0?.display,
-            ]
-              .filter(t => t && t !== '-')
-              .join(' + ') || '-';
-          return <Text>{thoiGian}</Text>;
-        }
-        return <Text>{getLoaiKhenThuong(record.danh_hieu)}</Text>;
+        // Column chỉ hiển thị cho tab NCKH (xem filter ở dưới)
+        const loaiMap: Record<string, string> = {
+          DTKH: 'Đề tài khoa học',
+          SKKH: 'Sáng kiến khoa học',
+        };
+        return <Text>{loaiMap[record.loai] || record.loai || '-'}</Text>;
       },
     },
     {
@@ -549,7 +530,7 @@ export default function AdminAwardsPage() {
           <Popconfirm
             title="Xóa khen thưởng"
             description="Bạn có chắc chắn muốn xóa khen thưởng này? Thao tác này không thể hoàn tác. Lưu ý: Đề xuất khen thưởng sẽ không bị xóa."
-            onConfirm={() => handleDeleteAward(record.id)}
+            onConfirm={() => handleDeleteAward(String(record.id))}
             okText="Xóa"
             cancelText="Hủy"
             okButtonProps={{ danger: true }}
@@ -558,7 +539,7 @@ export default function AdminAwardsPage() {
               type="text"
               danger
               icon={<DeleteOutlined />}
-              loading={deletingId === record.id}
+              loading={deletingId === String(record.id)}
               size="small"
             >
               Xóa
@@ -608,7 +589,7 @@ export default function AdminAwardsPage() {
 
       <Tabs
         activeKey={activeTab}
-        onChange={setActiveTab}
+        onChange={(key) => setActiveTab(key as AwardType)}
         size="large"
         items={[
           {
@@ -698,7 +679,7 @@ export default function AdminAwardsPage() {
                 ]}
               />
             </div>
-            {activeTab !== 'DVHN' && activeTab !== 'adhoc' && (
+            {activeTab !== 'DVHN' && activeTab !== 'KTDX' && (
               <div
                 style={{
                   flex: '1 1 200px',
@@ -719,7 +700,7 @@ export default function AdminAwardsPage() {
                 />
               </div>
             )}
-            {activeTab === 'adhoc' && (
+            {activeTab === 'KTDX' && (
               <>
                 <div
                   style={{

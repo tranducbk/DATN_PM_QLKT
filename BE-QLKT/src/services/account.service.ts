@@ -623,7 +623,7 @@ class AccountService {
               });
             }
           } catch (error: unknown) {
-            throw new Error(
+            throw new AppError(
               `Không thể cập nhật số lượng quân nhân của đơn vị: ${error instanceof Error ? error.message : String(error)}`
             );
           }

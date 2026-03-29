@@ -80,7 +80,7 @@ export interface SubmitAttachedFile {
 async function submitProposal(
   titleData: SubmitTitleDataItem[],
   attachedFiles: SubmitAttachedFile[] | null,
-  _soQuyetDinh: string | null,
+  soQuyetDinh: string | null,
   userId: string,
   type: ProposalType = PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
   nam: number,

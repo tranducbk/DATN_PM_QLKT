@@ -4,12 +4,14 @@ import { useState, useEffect } from 'react';
 import { Modal, Select, InputNumber, Space, Typography, Table, message } from 'antd';
 import { DownloadOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/apiClient';
+import { getApiErrorMessage } from '@/lib/apiError';
 import { DANH_HIEU_MAP } from '@/utils/awardsHelpers';
 import {
   AWARD_TAB_LABELS,
   AWARD_TAB_DANH_HIEU,
   AWARD_TAB_FILENAME,
   INDIVIDUAL_AWARD_TABS,
+  type AwardType,
 } from '@/constants/danhHieu.constants';
 
 const { Text } = Typography;
@@ -17,10 +19,10 @@ const { Text } = Typography;
 interface ExportModalProps {
   open: boolean;
   onCancel: () => void;
-  activeTab: string;
+  activeTab: AwardType;
 }
 
-export default function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
+export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
   const currentYear = new Date().getFullYear();
   const [tuNam, setTuNam] = useState<number | null>(null);
   const [denNam, setDenNam] = useState<number | null>(null);
@@ -56,8 +58,8 @@ export default function ExportModal({ open, onCancel, activeTab }: ExportModalPr
         if (res.success) {
           setUnits(res.data ?? []);
         }
-      } catch {
-        // Bỏ qua lỗi load đơn vị
+      } catch (error: unknown) {
+        message.error(getApiErrorMessage(error, 'Không thể tải danh sách đơn vị'));
       }
     };
     loadUnits();
@@ -161,6 +163,7 @@ export default function ExportModal({ open, onCancel, activeTab }: ExportModalPr
         case 'NCKH':
           blob = await apiClient.exportScientificAchievements(params);
           break;
+        case 'KTDX':
         default:
           blob = await apiClient.exportAwards(params);
       }
@@ -187,8 +190,8 @@ export default function ExportModal({ open, onCancel, activeTab }: ExportModalPr
 
       message.success('Xuất file thành công');
       onCancel();
-    } catch {
-      message.error('Xuất file thất bại');
+    } catch (error: unknown) {
+      message.error(getApiErrorMessage(error, 'Xuất file thất bại'));
     } finally {
       setExporting(false);
     }

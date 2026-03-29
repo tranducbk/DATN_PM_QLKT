@@ -4,13 +4,14 @@ import hccsvvService from '../services/hccsvv.service';
 import contributionAwardService from '../services/contributionAward.service';
 import commemorativeMedalService from '../services/commemorativeMedal.service';
 import militaryFlagService from '../services/militaryFlag.service';
-import { prisma } from '../models';
 import * as notificationHelper from '../helpers/notification';
 import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_TYPES, type ProposalType } from '../constants/proposalTypes.constants';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
+import { writeSystemLog } from '../helpers/systemLogHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { parsePagination } from '../helpers/paginationHelper';
 import { setFileSendHeaders } from '../helpers/fileResponseHeaders';
 
 /** Lọc đơn vị cho Manager — `QuanNhan` có `co_quan_don_vi_id` / `don_vi_truc_thuoc_id` (schema) */
@@ -118,18 +119,25 @@ class ProposalController {
     try {
       await notificationHelper.notifyAdminsOnProposalSubmission(result.proposal, req.user);
     } catch (notifError) {
-      console.error('[Notification] Failed to notify admins on proposal submission:', notifError);
+      await writeSystemLog({
+        userId: req.user?.id,
+        userRole: req.user?.role,
+        action: 'ERROR',
+        resource: 'proposals',
+        description: 'Lỗi gửi thông báo cho Admin khi nộp đề xuất',
+        payload: { error: String(notifError) },
+      });
     }
     return ResponseHelper.created(res, { message: result.message, data: result.proposal });
   });
 
   getProposals = catchAsync(async (req: Request, res: Response) => {
-    const { page = 1, limit = 10 } = req.query;
+    const { page, limit } = parsePagination(req.query);
     const result = await proposalService.getProposals(
       req.user!.id,
       req.user!.role,
-      page as string | number,
-      limit as string | number
+      page,
+      limit
     );
     return ResponseHelper.success(res, {
       message: 'Lấy danh sách đề xuất thành công',
@@ -194,7 +202,14 @@ class ProposalController {
     try {
       await notificationHelper.notifyManagerOnProposalApproval(result.proposal, req.user);
     } catch (notifError) {
-      console.error('[Notification] Failed to notify manager on proposal approval:', notifError);
+      await writeSystemLog({
+        userId: req.user?.id,
+        userRole: req.user?.role,
+        action: 'ERROR',
+        resource: 'proposals',
+        description: 'Lỗi gửi thông báo cho Manager khi duyệt đề xuất',
+        payload: { error: String(notifError) },
+      });
     }
     try {
       if (result.affectedPersonnelIds?.length > 0) {
@@ -205,7 +220,14 @@ class ProposalController {
         );
       }
     } catch (notifError) {
-      console.error('[Notification] Failed to notify users on award approved:', notifError);
+      await writeSystemLog({
+        userId: req.user?.id,
+        userRole: req.user?.role,
+        action: 'ERROR',
+        resource: 'proposals',
+        description: 'Lỗi gửi thông báo cho quân nhân khi duyệt khen thưởng',
+        payload: { error: String(notifError) },
+      });
     }
     return ResponseHelper.success(res, {
       message: result.message,
@@ -245,7 +267,14 @@ class ProposalController {
         rejectReason
       );
     } catch (notifError) {
-      console.error('[Notification] Failed to notify manager on proposal rejection:', notifError);
+      await writeSystemLog({
+        userId: req.user?.id,
+        userRole: req.user?.role,
+        action: 'ERROR',
+        resource: 'proposals',
+        description: 'Lỗi gửi thông báo cho Manager khi từ chối đề xuất',
+        payload: { error: String(notifError) },
+      });
     }
     return ResponseHelper.success(res, {
       message: result.message,
@@ -271,7 +300,8 @@ class ProposalController {
   });
 
   getAllAwards = catchAsync(async (req: Request, res: Response) => {
-    const { don_vi_id, nam, danh_hieu, page = 1, limit = 50 } = req.query;
+    const { don_vi_id, nam, danh_hieu } = req.query;
+    const { page, limit } = parsePagination(req.query);
     const filters: Record<string, unknown> = {};
     if (don_vi_id) filters.don_vi_id = don_vi_id;
     if (nam) filters.nam = nam;
@@ -284,11 +314,7 @@ class ProposalController {
       const uid = managerUnitFilterId(user.QuanNhan);
       if (uid) filters.don_vi_id = uid;
     }
-    const result = await proposalService.getAllAwards(
-      filters,
-      page as string | number,
-      limit as string | number
-    );
+    const result = await proposalService.getAllAwards(filters, page, limit);
     return ResponseHelper.success(res, {
       message: 'Lấy danh sách khen thưởng thành công',
       data: result,
@@ -326,7 +352,14 @@ class ProposalController {
         }
       }
     } catch (notifError) {
-      console.error('[Notification] Failed to notify managers on award import:', notifError);
+      await writeSystemLog({
+        userId: req.user?.id,
+        userRole: req.user?.role,
+        action: 'ERROR',
+        resource: 'proposals',
+        description: 'Lỗi gửi thông báo cho Manager khi import khen thưởng',
+        payload: { error: String(notifError) },
+      });
     }
     return ResponseHelper.success(res, { message: result.message, data: result.result });
   });
@@ -362,27 +395,19 @@ class ProposalController {
       return ResponseHelper.badRequest(res, 'ID đề xuất không hợp lệ');
     }
     const result = await proposalService.deleteProposal(id, req.user!.id, req.user!.role);
-    try {
-      await prisma.systemLog.create({
-        data: {
-          nguoi_thuc_hien_id: req.user!.id,
-          actor_role: req.user!.role,
-          action: AUDIT_ACTIONS.DELETE,
-          resource: 'proposals',
-          tai_nguyen_id: id,
-          description: `Xóa đề xuất khen thưởng ID ${id} - Đơn vị: ${(result.proposal as { don_vi?: string }).don_vi}`,
-          payload: {
-            proposal_id: id,
-            don_vi: (result.proposal as { don_vi?: string }).don_vi,
-            status: result.proposal.status,
-          },
-          ip_address: req.ip || req.socket.remoteAddress,
-          user_agent: req.get('User-Agent'),
-        },
-      });
-    } catch (logError) {
-      console.error('[AuditLog] Failed to log proposal deletion:', logError);
-    }
+    await writeSystemLog({
+      userId: req.user!.id,
+      userRole: req.user!.role,
+      action: AUDIT_ACTIONS.DELETE,
+      resource: 'proposals',
+      resourceId: id,
+      description: `Xóa đề xuất khen thưởng ID ${id} - Đơn vị: ${(result.proposal as { don_vi?: string }).don_vi}`,
+      payload: {
+        proposal_id: id,
+        don_vi: (result.proposal as { don_vi?: string }).don_vi,
+        status: result.proposal.status,
+      },
+    });
     return ResponseHelper.success(res, { message: result.message, data: result.proposal });
   });
 
@@ -453,7 +478,8 @@ class ProposalController {
   });
 
   getAllHCCSVV = catchAsync(async (req: Request, res: Response) => {
-    const { don_vi_id, nam, danh_hieu, page = 1, limit = 50 } = req.query;
+    const { don_vi_id, nam, danh_hieu } = req.query;
+    const { page, limit } = parsePagination(req.query);
     const filters: Record<string, unknown> = {};
     if (don_vi_id) filters.don_vi_id = don_vi_id;
     if (nam) filters.nam = nam;
@@ -467,7 +493,7 @@ class ProposalController {
     }
     return ResponseHelper.success(res, {
       message: 'Lấy danh sách HCCSVV thành công',
-      data: await hccsvvService.getAll(filters, page as string | number, limit as string | number),
+      data: await hccsvvService.getAll(filters, page, limit),
     });
   });
 
@@ -530,7 +556,8 @@ class ProposalController {
   });
 
   getAllContributionAwards = catchAsync(async (req: Request, res: Response) => {
-    const { don_vi_id, nam, danh_hieu, page = 1, limit = 50 } = req.query;
+    const { don_vi_id, nam, danh_hieu } = req.query;
+    const { page, limit } = parsePagination(req.query);
     const filters: Record<string, unknown> = {};
     if (don_vi_id) filters.don_vi_id = don_vi_id;
     if (nam) filters.nam = nam;
@@ -544,11 +571,7 @@ class ProposalController {
     }
     return ResponseHelper.success(res, {
       message: 'Lấy danh sách HCBVTQ thành công',
-      data: await contributionAwardService.getAll(
-        filters,
-        page as string | number,
-        limit as string | number
-      ),
+      data: await contributionAwardService.getAll(filters, page, limit),
     });
   });
 
@@ -608,7 +631,8 @@ class ProposalController {
   });
 
   getAllCommemorativeMedals = catchAsync(async (req: Request, res: Response) => {
-    const { don_vi_id, nam, page = 1, limit = 50 } = req.query;
+    const { don_vi_id, nam } = req.query;
+    const { page, limit } = parsePagination(req.query);
     const filters: Record<string, unknown> = {};
     if (don_vi_id) filters.don_vi_id = don_vi_id;
     if (nam) filters.nam = nam;
@@ -621,11 +645,7 @@ class ProposalController {
     }
     return ResponseHelper.success(res, {
       message: 'Lấy danh sách Kỷ niệm chương thành công',
-      data: await commemorativeMedalService.getAll(
-        filters,
-        page as string | number,
-        limit as string | number
-      ),
+      data: await commemorativeMedalService.getAll(filters, page, limit),
     });
   });
 
@@ -684,7 +704,8 @@ class ProposalController {
   });
 
   getAllMilitaryFlag = catchAsync(async (req: Request, res: Response) => {
-    const { don_vi_id, nam, page = 1, limit = 50 } = req.query;
+    const { don_vi_id, nam } = req.query;
+    const { page, limit } = parsePagination(req.query);
     const filters: Record<string, unknown> = {};
     if (don_vi_id) filters.don_vi_id = don_vi_id;
     if (nam) filters.nam = nam;
@@ -697,11 +718,7 @@ class ProposalController {
     }
     return ResponseHelper.success(res, {
       message: 'Lấy danh sách HCQKQT thành công',
-      data: await militaryFlagService.getAll(
-        filters,
-        page as string | number,
-        limit as string | number
-      ),
+      data: await militaryFlagService.getAll(filters, page, limit),
     });
   });
 

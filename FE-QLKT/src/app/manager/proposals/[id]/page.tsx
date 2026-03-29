@@ -29,7 +29,7 @@ import {
   TrophyOutlined,
   BookOutlined,
 } from '@ant-design/icons';
-import { format } from 'date-fns';
+import { formatDateTime } from '@/lib/utils';
 import Link from 'next/link';
 import { apiClient } from '@/lib/apiClient';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
@@ -465,7 +465,7 @@ export default function ManagerProposalDetailPage() {
               {proposal.nguoi_de_xuat.ho_ten || proposal.nguoi_de_xuat.username}
             </Descriptions.Item>
             <Descriptions.Item label="Ngày gửi">
-              {format(new Date(proposal.createdAt), 'dd/MM/yyyy HH:mm')}
+              {formatDateTime(proposal.createdAt)}
             </Descriptions.Item>
             <Descriptions.Item label="Số lượng" span={2}>
               {proposal.loai_de_xuat === PROPOSAL_TYPES.NCKH ? (
@@ -555,7 +555,7 @@ export default function ManagerProposalDetailPage() {
                       className={`text-xs ${isDark ? styles.fileInfoDark : styles.fileInfoLight}`}
                     >
                       Kích thước: {(file.size / 1024).toFixed(2)} KB • Ngày tải lên:{' '}
-                      {format(new Date(file.uploadedAt), 'dd/MM/yyyy HH:mm')}
+                      {formatDateTime(file.uploadedAt)}
                     </Text>
                   </div>
                   <Button

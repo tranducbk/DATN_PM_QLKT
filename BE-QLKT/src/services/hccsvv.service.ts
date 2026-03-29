@@ -1,5 +1,6 @@
 import { prisma } from '../models';
 import ExcelJS from 'exceljs';
+import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHelper';
 import { checkDuplicateAward } from '../helpers/awardValidation';
 import profileService from './profile.service';
 import * as notificationHelper from '../helpers/notification';
@@ -8,35 +9,16 @@ import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { parseHeaderMap, getHeaderCol } from '../helpers/excelHelper';
-import { ValidationError } from '../middlewares/errorHandler';
+import { writeSystemLog } from '../helpers/systemLogHelper';
+import { ValidationError, NotFoundError, AppError } from '../middlewares/errorHandler';
+import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
 
 class HCCSVVService {
   /**
    * Export template Excel for HCCSVV import
    */
-  async exportTemplate(personnelIds: string[] = [], userRole: string = ROLES.MANAGER) {
-    // Query personnel by IDs
-    const personnelList =
-      personnelIds.length > 0
-        ? await prisma.quanNhan.findMany({
-            where: { id: { in: personnelIds } },
-            include: { ChucVu: true },
-          })
-        : [];
-
-    // Query danh sách số quyết định hiện có để tạo dropdown
-    const existingDecisions = await prisma.fileQuyetDinh.findMany({
-      select: { so_quyet_dinh: true },
-      orderBy: { nam: 'desc' },
-      take: 200,
-    });
-    const decisionNumbers = existingDecisions.map(d => d.so_quyet_dinh).filter(Boolean);
-
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('HCCSVV');
-
-    // Define columns
-    const columns = [
+  async exportTemplate(personnelIds: string[] = []) {
+    const columns: TemplateColumn[] = [
       { header: 'STT', key: 'stt', width: 6 },
       { header: 'ID', key: 'id', width: 10 },
       { header: 'Họ và tên', key: 'ho_ten', width: 25 },
@@ -48,131 +30,23 @@ class HCCSVVService {
       { header: 'Ghi chú', key: 'ghi_chu', width: 25 },
     ];
 
-    worksheet.columns = columns;
-
-    // Style header row
-    const headerRow = worksheet.getRow(1);
-    headerRow.font = { bold: true };
-    headerRow.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFD3D3D3' },
-    };
-
-    // Pre-fill rows with personnel data
-    personnelList.forEach((person, index) => {
-      worksheet.addRow({
-        stt: index + 1,
-        id: person.id,
-        ho_ten: person.ho_ten ?? '',
-        cap_bac: person.cap_bac ?? '',
-        chuc_vu: person.ChucVu ? person.ChucVu.ten_chuc_vu : '',
-      });
+    return buildTemplate({
+      sheetName: 'HCCSVV',
+      columns,
+      personnelIds,
+      danhHieuOptions: '"HCCSVV_HANG_BA,HCCSVV_HANG_NHI,HCCSVV_HANG_NHAT"',
+      editableColumnLetters: ['G', 'H'],
     });
-
-    // Yellow readonly background for STT, ID, Họ và tên
-    const readonlyColIndices = [1, 2, 3];
-    const yellowFill = {
-      type: 'pattern' as const,
-      pattern: 'solid' as const,
-      fgColor: { argb: 'FFFFFFCC' },
-    };
-
-    for (let rowNum = 2; rowNum <= Math.max(personnelList.length + 1, 2); rowNum++) {
-      const row = worksheet.getRow(rowNum);
-      readonlyColIndices.forEach(colIdx => {
-        row.getCell(colIdx).fill = yellowFill;
-      });
-    }
-
-    // Data validation for Cấp bậc column (col 4) — dropdown
-    const capBacOptions =
-      'Binh nhì,Binh nhất,Hạ sĩ,Trung sĩ,Thượng sĩ,Thiếu úy,Trung úy,Thượng úy,Đại úy,Thiếu tá,Trung tá,Thượng tá,Đại tá,Thiếu tướng,Trung tướng,Thượng tướng,Đại tướng';
-    const capBacSheet = workbook.addWorksheet('_CapBac', { state: 'veryHidden' });
-    capBacOptions.split(',').forEach((cb, idx) => {
-      capBacSheet.getCell(`A${idx + 1}`).value = cb;
-    });
-    const capBacCount = capBacOptions.split(',').length;
-    const maxRows = Math.max(personnelList.length + 1, 50);
-    for (let rowNum = 2; rowNum <= maxRows; rowNum++) {
-      worksheet.getRow(rowNum).getCell(4).dataValidation = {
-        type: 'list',
-        allowBlank: true,
-        formulae: [`_CapBac!$A$1:$A$${capBacCount}`],
-      };
-    }
-
-    // Data validation for Danh hiệu column (col 7)
-    const danhHieuColNumber = 7;
-    for (let rowNum = 2; rowNum <= maxRows; rowNum++) {
-      worksheet.getRow(rowNum).getCell(danhHieuColNumber).dataValidation = {
-        type: 'list',
-        allowBlank: true,
-        formulae: ['"HCCSVV_HANG_BA,HCCSVV_HANG_NHI,HCCSVV_HANG_NHAT"'],
-      };
-    }
-
-    // Data validation cho cột số quyết định — dropdown từ DB
-    if (decisionNumbers.length > 0) {
-      const soQdColNumber = columns.findIndex(c => c.key === 'so_quyet_dinh') + 1;
-      const decisionListStr = decisionNumbers.join(',');
-
-      if (decisionListStr.length <= 250) {
-        for (let rowNum = 2; rowNum <= maxRows; rowNum++) {
-          worksheet.getRow(rowNum).getCell(soQdColNumber).dataValidation = {
-            type: 'list',
-            allowBlank: true,
-            formulae: [`"${decisionListStr}"`],
-          };
-        }
-      } else {
-        const refSheet = workbook.addWorksheet('_QuyetDinh', { state: 'veryHidden' });
-        decisionNumbers.forEach((sqd, idx) => {
-          refSheet.getCell(`A${idx + 1}`).value = sqd;
-        });
-        for (let rowNum = 2; rowNum <= maxRows; rowNum++) {
-          worksheet.getRow(rowNum).getCell(soQdColNumber).dataValidation = {
-            type: 'list',
-            allowBlank: true,
-            formulae: [`_QuyetDinh!$A$1:$A$${decisionNumbers.length}`],
-          };
-        }
-      }
-    }
-
-    // Conditional formatting: nền vàng khi ô có giá trị
-    const maxDataRow = Math.max(personnelIds.length + 1, 50);
-    const editableColumns = ['G', 'H'];
-    editableColumns.forEach(col => {
-      worksheet.addConditionalFormatting({
-        ref: `${col}2:${col}${maxDataRow}`,
-        rules: [
-          {
-            type: 'expression',
-            formulae: [`LEN(TRIM(${col}2))>0`],
-            style: {
-              fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFCC' } },
-            },
-            priority: 1,
-          },
-        ],
-      });
-    });
-
-    return workbook;
   }
 
   /**
    * Preview import: validate Excel data without saving to DB
    */
-  async previewImport(buffer) {
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(buffer);
-    const worksheet = workbook.worksheets[0];
-
-    if (!worksheet) {
-      throw new ValidationError('File Excel không hợp lệ');
-    }
+  async previewImport(buffer: Buffer) {
+    const workbook = await loadWorkbook(buffer);
+    const worksheet = getAndValidateWorksheet(workbook, {
+      excludeSheetNames: ['_CapBac', '_QuyetDinh'],
+    });
 
     // Verify sheet name is not for other award types
     if (worksheet.name === 'Danh hiệu hằng năm') {
@@ -223,6 +97,43 @@ class HCCSVVService {
       HCCSVV_HANG_NHAT: 'HCCSVV_HANG_NHI',
     };
 
+    // --- First pass: collect all personnel IDs from valid rows ---
+    const allPersonnelIds = new Set<string>();
+    for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
+      const row = worksheet.getRow(rowNumber);
+      const idValue = idCol ? row.getCell(idCol).value : null;
+      if (idValue) {
+        const id = String(idValue).trim();
+        if (id) allPersonnelIds.add(id);
+      }
+    }
+
+    // --- Batch queries ---
+    const [personnelList, existingHCCSVVRecords] = await Promise.all([
+      prisma.quanNhan.findMany({
+        where: { id: { in: [...allPersonnelIds] } },
+      }),
+      prisma.khenThuongHCCSVV.findMany({
+        where: { quan_nhan_id: { in: [...allPersonnelIds] } },
+        select: { quan_nhan_id: true, danh_hieu: true, nam: true, so_quyet_dinh: true },
+      }),
+    ]);
+
+    // Build lookup Maps
+    const personnelMap = new Map(personnelList.map(p => [p.id, p]));
+    // Map<personnelId_danhHieu, record> for duplicate checking
+    const hccsvvByKey = new Map(
+      existingHCCSVVRecords.map(r => [`${r.quan_nhan_id}_${r.danh_hieu}`, r])
+    );
+    // Map<personnelId, records[]> for history
+    const hccsvvByPersonnel = new Map<string, typeof existingHCCSVVRecords>();
+    for (const r of existingHCCSVVRecords) {
+      const list = hccsvvByPersonnel.get(r.quan_nhan_id) || [];
+      list.push(r);
+      hccsvvByPersonnel.set(r.quan_nhan_id, list);
+    }
+
+    // --- Second pass: validate rows using Maps ---
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
       const row = worksheet.getRow(rowNumber);
       const idValue = idCol ? row.getCell(idCol).value : null;
@@ -280,7 +191,7 @@ class HCCSVVService {
         });
         continue;
       }
-      const personnel = await prisma.quanNhan.findUnique({ where: { id: personnelId } });
+      const personnel = personnelMap.get(personnelId);
       if (!personnel) {
         errors.push({
           row: rowNumber,
@@ -359,15 +270,8 @@ class HCCSVVService {
       }
       seenInFile.add(fileKey);
 
-      // Check duplicate in DB
-      const existingRecord = await prisma.khenThuongHCCSVV.findUnique({
-        where: {
-          quan_nhan_id_danh_hieu: {
-            quan_nhan_id: personnelId,
-            danh_hieu,
-          },
-        },
-      });
+      // Check duplicate in DB (using pre-fetched Map)
+      const existingRecord = hccsvvByKey.get(`${personnelId}_${danh_hieu}`);
       if (existingRecord) {
         errors.push({
           row: rowNumber,
@@ -382,15 +286,8 @@ class HCCSVVService {
       // Check HCCSVV hierarchy: must have prerequisite before higher rank
       const prerequisite = hierarchyPrerequisite[danh_hieu];
       if (prerequisite) {
-        // Check if prerequisite exists in DB
-        const hasPrerequisiteInDb = await prisma.khenThuongHCCSVV.findUnique({
-          where: {
-            quan_nhan_id_danh_hieu: {
-              quan_nhan_id: personnelId,
-              danh_hieu: prerequisite,
-            },
-          },
-        });
+        // Check if prerequisite exists in DB (using pre-fetched Map)
+        const hasPrerequisiteInDb = hccsvvByKey.has(`${personnelId}_${prerequisite}`);
         // Also check if prerequisite is in current valid items (being imported in same batch)
         const hasPrerequisiteInFile = valid.some(
           v => v.personnel_id === personnelId && v.danh_hieu === prerequisite
@@ -407,13 +304,12 @@ class HCCSVVService {
         }
       }
 
-      // Query existing HCCSVV history (last 5 records)
-      const history = await prisma.khenThuongHCCSVV.findMany({
-        where: { quan_nhan_id: personnelId },
-        orderBy: { nam: 'desc' },
-        take: 5,
-        select: { nam: true, danh_hieu: true, so_quyet_dinh: true },
-      });
+      // Build history from pre-fetched data (last 5 records sorted by nam desc)
+      const allRecords = hccsvvByPersonnel.get(personnelId) || [];
+      const history = [...allRecords]
+        .sort((a, b) => b.nam - a.nam)
+        .slice(0, 5)
+        .map(r => ({ nam: r.nam, danh_hieu: r.danh_hieu, so_quyet_dinh: r.so_quyet_dinh }));
 
       valid.push({
         row: rowNumber,
@@ -435,7 +331,7 @@ class HCCSVVService {
   /**
    * Confirm import: lưu dữ liệu đã validate vào DB
    */
-  async confirmImport(validItems, adminId) {
+  async confirmImport(validItems: any[], adminId: string) {
     return await prisma.$transaction(
       async tx => {
         const results = [];
@@ -475,13 +371,12 @@ class HCCSVVService {
   /**
    * Import HCCSVV from Excel
    */
-  async importFromExcel(excelBuffer, adminId) {
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(excelBuffer);
+  async importFromExcel(excelBuffer: Buffer, adminId: string) {
+    const workbook = await loadWorkbook(excelBuffer);
     const worksheet = workbook.getWorksheet('HCCSVV');
 
     if (!worksheet) {
-      throw new Error('Không tìm thấy sheet "HCCSVV" trong file Excel');
+      throw new ValidationError('Không tìm thấy sheet "HCCSVV" trong file Excel');
     }
 
     const results = {
@@ -500,6 +395,22 @@ class HCCSVVService {
         rows.push({ row, rowNumber });
       }
     });
+
+    // Batch query: collect all unique ho_ten values, then query once
+    const allHoTen = new Set<string>();
+    for (const { row } of rows) {
+      const ho_ten = row.getCell(1).value?.toString().trim();
+      if (ho_ten) allHoTen.add(ho_ten);
+    }
+    const allPersonnel = allHoTen.size > 0
+      ? await prisma.quanNhan.findMany({ where: { ho_ten: { in: [...allHoTen] } } })
+      : [];
+    const personnelByName = new Map<string, typeof allPersonnel>();
+    for (const p of allPersonnel) {
+      const list = personnelByName.get(p.ho_ten) ?? [];
+      list.push(p);
+      personnelByName.set(p.ho_ten, list);
+    }
 
     for (const { row, rowNumber } of rows) {
       try {
@@ -528,8 +439,8 @@ class HCCSVVService {
           continue;
         }
 
-        // Tìm quân nhân theo tên
-        const personnelList = await prisma.quanNhan.findMany({ where: { ho_ten } });
+        // Tìm quân nhân theo tên (from pre-fetched batch)
+        const personnelList = personnelByName.get(ho_ten) ?? [];
         if (personnelList.length === 0) {
           results.errors.push(`Dòng ${rowNumber}: Không tìm thấy quân nhân với tên ${ho_ten}`);
           results.failed++;
@@ -661,11 +572,9 @@ class HCCSVVService {
    */
   async getAll(
     filters: Record<string, unknown> = {},
-    page: string | number = 1,
-    limit: string | number = 50
+    page: number = 1,
+    limit: number = 50
   ) {
-    const pageNum = parseInt(String(page), 10);
-    const limitNum = parseInt(String(limit), 10);
     const where: Record<string, unknown> = {};
 
     // Filter theo họ tên
@@ -726,8 +635,8 @@ class HCCSVVService {
             },
           },
         },
-        skip: (pageNum - 1) * limitNum,
-        take: limitNum,
+        skip: (page - 1) * limit,
+        take: limit,
         orderBy: { nam: 'desc' },
       }),
       prisma.khenThuongHCCSVV.count({ where }),
@@ -736,10 +645,10 @@ class HCCSVVService {
     return {
       data,
       pagination: {
-        page: pageNum,
-        limit: limitNum,
+        page: page,
+        limit: limit,
         total,
-        totalPages: Math.ceil(total / limitNum),
+        totalPages: Math.ceil(total / limit),
       },
     };
   }
@@ -747,7 +656,7 @@ class HCCSVVService {
   /**
    * Export HCCSVV to Excel
    */
-  async exportToExcel(filters = {}) {
+  async exportToExcel(filters: Record<string, any> = {}) {
     const { data } = await this.getAll(filters, 1, 10000);
 
     const workbook = new ExcelJS.Workbook();
@@ -816,7 +725,7 @@ class HCCSVVService {
   /**
    * Get user with unit info (helper method)
    */
-  async getUserWithUnit(userId) {
+  async getUserWithUnit(userId: string) {
     return await prisma.taiKhoan.findUnique({
       where: { id: userId },
       include: {
@@ -843,7 +752,7 @@ class HCCSVVService {
     // Validate danh_hieu
     const validDanhHieu = ['HCCSVV_HANG_BA', 'HCCSVV_HANG_NHI', 'HCCSVV_HANG_NHAT'];
     if (!validDanhHieu.includes(danh_hieu)) {
-      throw new Error(`Danh hiệu không hợp lệ. Chỉ chấp nhận: ${validDanhHieu.join(', ')}`);
+      throw new ValidationError(`Danh hiệu không hợp lệ. Chỉ chấp nhận: ${validDanhHieu.join(', ')}`);
     }
 
     // Check if personnel exists
@@ -852,7 +761,7 @@ class HCCSVVService {
     });
 
     if (!personnel) {
-      throw new Error('Không tìm thấy quân nhân');
+      throw new NotFoundError('Quân nhân');
     }
 
     // Check if already exists (unique constraint: quan_nhan_id + danh_hieu)
@@ -866,7 +775,7 @@ class HCCSVVService {
     });
 
     if (existing) {
-      throw new Error(`Quân nhân ${personnel.ho_ten} đã có ${getDanhHieuName(danh_hieu)}`);
+      throw new AppError(`Quân nhân ${personnel.ho_ten} đã có ${getDanhHieuName(danh_hieu)}`, 409);
     }
 
     // Create the award
@@ -896,7 +805,11 @@ class HCCSVVService {
     try {
       await profileService.recalculateTenureProfile(quan_nhan_id);
     } catch (recalcError) {
-      console.error('[Profile] Failed to recalculate tenure profile after HCCSVV create:', recalcError);
+      writeSystemLog({
+        action: 'ERROR',
+        resource: 'hccsvv',
+        description: `Lỗi tính lại hồ sơ niên hạn sau khi thêm HCCSVV: ${recalcError}`,
+      });
     }
 
     return createdRecord;
@@ -908,7 +821,7 @@ class HCCSVVService {
    * @param {string} adminUsername - Username của admin thực hiện xóa
    * @returns {Promise<Object>}
    */
-  async deleteAward(id, adminUsername = 'Admin') {
+  async deleteAward(id: string, adminUsername: string = 'Admin') {
     const award = await prisma.khenThuongHCCSVV.findUnique({
       where: { id },
       include: {
@@ -917,7 +830,7 @@ class HCCSVVService {
     });
 
     if (!award) {
-      throw new Error('Bản ghi khen thưởng không tồn tại');
+      throw new NotFoundError('Bản ghi khen thưởng');
     }
 
     const personnelId = award.quan_nhan_id;
@@ -932,14 +845,24 @@ class HCCSVVService {
     try {
       await profileService.recalculateTenureProfile(personnelId);
     } catch (recalcError) {
-      console.error('[Profile] Failed to recalculate tenure profile after HCCSVV deletion:', recalcError);
+      writeSystemLog({
+        action: 'ERROR',
+        resource: 'hccsvv',
+        resourceId: id,
+        description: `Lỗi tính lại hồ sơ niên hạn sau khi xóa HCCSVV: ${recalcError}`,
+      });
     }
 
     // Gửi thông báo cho Manager và quân nhân
     try {
       await notificationHelper.notifyOnAwardDeleted(award, personnel, 'HCCSVV', adminUsername);
     } catch (notifyError) {
-      console.error('[Notification] Failed to notify on HCCSVV award deletion:', notifyError);
+      writeSystemLog({
+        action: 'ERROR',
+        resource: 'hccsvv',
+        resourceId: id,
+        description: `Lỗi gửi thông báo xóa khen thưởng HCCSVV: ${notifyError}`,
+      });
     }
 
     return {

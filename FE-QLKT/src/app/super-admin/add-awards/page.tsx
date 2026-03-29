@@ -34,9 +34,9 @@ import Link from 'next/link';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
 import { getDanhHieuName } from '@/constants/danhHieu.constants';
-import Step2SelectPersonnelNienHan from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelNienHan';
-import Step3SetTitlesNienHan from '@/app/admin/awards/bulk/create/components/Step3SetTitlesNienHan';
-import DecisionModal from '@/components/DecisionModal';
+import { Step2SelectPersonnelNienHan } from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelNienHan';
+import { Step3SetTitlesNienHan } from '@/app/admin/awards/bulk/create/components/Step3SetTitlesNienHan';
+import { DecisionModal } from '@/components/DecisionModal';
 import type { DateInput } from '@/lib/types';
 
 const { Title, Paragraph, Text } = Typography;

@@ -8,6 +8,10 @@ module.exports = {
   darkMode: ['class', 'class'],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['var(--font-be-vietnam)', 'var(--font-inter)', 'system-ui', 'sans-serif'],
+        heading: ['var(--font-be-vietnam)', 'var(--font-inter)', 'sans-serif'],
+      },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
         'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
@@ -92,6 +96,7 @@ module.exports = {
       '3xl': '1.953rem',
       '4xl': '2.441rem',
       '5xl': '3.052rem',
+      '6xl': '3.75rem',
     },
   },
   plugins: [require('@tailwindcss/forms'), require('tailwindcss-animate')],

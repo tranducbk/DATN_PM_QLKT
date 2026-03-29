@@ -15,16 +15,14 @@ import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
  */
 async function getAllAwards(
   filters: Record<string, unknown> = {},
-  page: string | number = 1,
-  limit: string | number = 50
+  page: number = 1,
+  limit: number = 50
 ) {
   try {
     const don_vi_id = filters.don_vi_id as string | undefined;
     const nam = filters.nam;
     const danh_hieu = filters.danh_hieu as string | undefined;
-    const pageNum = Number(page);
-    const limitNum = Number(limit);
-    const skip = (pageNum - 1) * limitNum;
+    const skip = (page - 1) * limit;
 
     const where: Record<string, unknown> = {};
     if (nam) where.nam = parseInt(String(nam), 10);
@@ -47,7 +45,7 @@ async function getAllAwards(
           },
         },
         skip,
-        take: limitNum,
+        take: limit,
         orderBy: [{ nam: 'desc' }, { QuanNhan: { ho_ten: 'asc' } }],
       }),
       prisma.danhHieuHangNam.count({ where }),
@@ -74,7 +72,6 @@ async function getAllAwards(
             id: true,
             loai: true,
             mo_ta: true,
-            status: true,
           },
         });
         return {
@@ -101,9 +98,9 @@ async function getAllAwards(
       awards: awardsWithNCKH,
       pagination: {
         total,
-        page: pageNum,
-        limit: limitNum,
-        totalPages: Math.ceil(total / limitNum),
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
     };
   } catch (error) {
@@ -332,9 +329,7 @@ async function importAwards(excelBuffer, adminId) {
             DanhHieuHangNam: {
               orderBy: { nam: 'asc' },
             },
-            ThanhTichKhoaHoc: {
-              where: { status: PROPOSAL_STATUS.APPROVED },
-            },
+            ThanhTichKhoaHoc: true,
           },
         });
 
@@ -524,11 +519,7 @@ async function getAwardsStatistics() {
     const hcVSNXDCount = await prisma.kyNiemChuongVSNXDQDNDVN.count();
 
     // 4. Thống kê ThanhTichKhoaHoc (ĐTKH/SKKH)
-    const thanhTichKhoaHocCount = await prisma.thanhTichKhoaHoc.count({
-      where: {
-        status: PROPOSAL_STATUS.APPROVED,
-      },
-    });
+    const thanhTichKhoaHocCount = await prisma.thanhTichKhoaHoc.count();
 
     // 5. Thống kê DanhHieuDonViHangNam (Đơn vị Hằng năm)
     const donViHangNamCount = await prisma.danhHieuDonViHangNam.count({

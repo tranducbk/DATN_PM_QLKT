@@ -82,6 +82,58 @@ PM QLKT/
 - **UI text**: All user-facing text in Vietnamese
 - **Date formatting**: Always use `formatDate()`, `formatDateTime()` from `lib/utils.ts`
 
+## JSDoc Standards
+
+Exported functions phải có JSDoc chuẩn:
+```typescript
+/**
+ * Brief description (1 dòng).
+ * @param paramName - Mô tả param
+ * @returns Mô tả return value
+ * @throws ErrorClass - Khi nào throw (nếu có)
+ */
+```
+
+- Exported functions: **bắt buộc** `@param` + `@returns`
+- Private/internal functions: 1 dòng mô tả là đủ
+- Interfaces/Types: 1 dòng mô tả, chỉ doc field nếu non-obvious
+- **Không** comment giải thích WHAT code làm — code phải tự giải thích qua naming
+- **Chỉ** comment WHY (hidden constraints, workarounds, business rules)
+- **Không** dùng section dividers (`// ─── ... ───`, `// -----------`)
+
+## Code Quality Standards
+
+### Module splitting
+- **1 helper file = 1 responsibility** (vd: `excelImportHelper` = import, `excelTemplateHelper` = template)
+- File > 500 dòng → xem xét tách
+- Service > 800 dòng → tách logic phức tạp vào helper riêng
+- Nếu 3+ services có logic giống nhau → extract vào shared helper
+- FE: API file > 500 dòng → tách theo domain (`api/awards.ts`, `api/personnel.ts`)
+
+### DRY (Don't Repeat Yourself)
+- Magic numbers → extract vào `constants/` (vd: `MAX_EXCEL_ROWS`, `MIN_TEMPLATE_ROWS`)
+- Logic lặp 2+ lần → extract function
+- Joi schemas giống nhau → tạo base schema rồi extend
+- FE columns giống nhau → dùng factory functions với optional params
+
+### Performance
+- Independent DB queries → `Promise.all()` thay vì sequential `await`
+- N+1 queries → batch query trước loop (`findMany({ where: { in: [...] } })` + `Map`)
+- Không query trong loop — collect IDs trước, query 1 lần
+- Excel: dùng `loadWorkbook()` + `getAndValidateWorksheet()` từ helpers
+
+### Security
+- Validate `req.body` bằng Joi trước khi pass vào service
+- Filter composition: dùng `AND` khi combine multiple where conditions, không overwrite
+- `stripUnknown: true` trong Joi để bỏ fields thừa
+
+### Khi thêm feature mới (Excel import/export)
+1. Define columns trong service, gọi `buildTemplate(config)` — không viết inline
+2. Preview import: dùng `loadWorkbook()` + `getAndValidateWorksheet()` + `batchQueryPersonnel()`
+3. Confirm import: dùng `runConfirmTransaction()` + Joi validation trên route
+4. Constants: thêm vào `excel.constants.ts`, không hardcode
+5. FE: dùng `createPreviewImport(url)` / `createConfirmImport(url)` factory
+
 ## Do NOT
 
 - Use default exports for React components
@@ -90,3 +142,6 @@ PM QLKT/
 - Use `console.log` in production code — use system log (`writeSystemLog`)
 - Create new files for one-time utilities — add to existing helper files
 - Mix Vietnamese and English in the same identifier
+- Use `as never` type assertions — use proper type casts
+- Write redundant aliases (`const pageNum = page`) — use original variable
+- Copy-paste logic across services — extract to shared helper first

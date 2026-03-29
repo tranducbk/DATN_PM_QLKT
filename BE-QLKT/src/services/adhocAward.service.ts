@@ -3,6 +3,7 @@ import fs from 'fs/promises';
 import { prisma } from '../models';
 import { NOTIFICATION_TYPES, RESOURCE_TYPES } from '../constants/notificationTypes.constants';
 import { ROLES } from '../constants/roles.constants';
+import { ForbiddenError, NotFoundError } from '../middlewares/errorHandler';
 import type { KhenThuongDotXuat, Prisma } from '../generated/prisma';
 
 interface UploadedFile {
@@ -99,7 +100,7 @@ class AdhocAwardService {
       });
 
       if (!admin || admin.role !== ROLES.ADMIN) {
-        throw new Error('Chỉ Admin mới có quyền tạo khen thưởng đột xuất');
+        throw new ForbiddenError('Chỉ Admin mới có quyền tạo khen thưởng đột xuất');
       }
 
       if (type === 'CA_NHAN') {
@@ -108,7 +109,7 @@ class AdhocAwardService {
         });
 
         if (!personnel) {
-          throw new Error('Quân nhân không tồn tại');
+          throw new NotFoundError('Quân nhân');
         }
       }
 
@@ -119,7 +120,7 @@ class AdhocAwardService {
           });
 
           if (!unit) {
-            throw new Error('Cơ quan đơn vị không tồn tại');
+            throw new NotFoundError('Cơ quan đơn vị');
           }
         } else if (unitType === 'DON_VI_TRUC_THUOC') {
           const unit = await prisma.donViTrucThuoc.findUnique({
@@ -127,7 +128,7 @@ class AdhocAwardService {
           });
 
           if (!unit) {
-            throw new Error('Đơn vị trực thuộc không tồn tại');
+            throw new NotFoundError('Đơn vị trực thuộc');
           }
         }
       }
@@ -203,7 +204,7 @@ class AdhocAwardService {
       });
 
       try {
-        await this._notifyOnAdhocAwardCreated(adhocAward, admin.username);
+        await this.notifyOnAdhocAwardCreated(adhocAward, admin.username);
       } catch {
         // Không throw error để không ảnh hưởng đến việc tạo khen thưởng
       }
@@ -214,7 +215,7 @@ class AdhocAwardService {
     }
   }
 
-  async _notifyOnAdhocAwardCreated(
+  async notifyOnAdhocAwardCreated(
     adhocAward: Record<string, unknown>,
     adminUsername: string
   ): Promise<number> {
@@ -509,7 +510,7 @@ class AdhocAwardService {
       });
 
       if (!adhocAward) {
-        throw new Error('Khen thưởng đột xuất không tồn tại');
+        throw new NotFoundError('Khen thưởng đột xuất');
       }
 
       return adhocAward;
@@ -536,7 +537,7 @@ class AdhocAwardService {
       });
 
       if (!admin || admin.role !== ROLES.ADMIN) {
-        throw new Error('Chỉ Admin mới có quyền cập nhật khen thưởng đột xuất');
+        throw new ForbiddenError('Chỉ Admin mới có quyền cập nhật khen thưởng đột xuất');
       }
 
       const existing = await prisma.khenThuongDotXuat.findUnique({
@@ -544,7 +545,7 @@ class AdhocAwardService {
       });
 
       if (!existing) {
-        throw new Error('Khen thưởng đột xuất không tồn tại');
+        throw new NotFoundError('Khen thưởng đột xuất');
       }
 
       let existingAttachedFiles: AttachedFileInfo[] = parseAttachedFiles(existing.files_dinh_kem);
@@ -627,7 +628,7 @@ class AdhocAwardService {
       });
 
       try {
-        await this._notifyOnAdhocAwardUpdated(updated, admin.username);
+        await this.notifyOnAdhocAwardUpdated(updated, admin.username);
       } catch {
         // Không throw error
       }
@@ -638,7 +639,7 @@ class AdhocAwardService {
     }
   }
 
-  async _notifyOnAdhocAwardUpdated(
+  async notifyOnAdhocAwardUpdated(
     adhocAward: Record<string, unknown>,
     adminUsername: string
   ): Promise<number> {
@@ -787,7 +788,7 @@ class AdhocAwardService {
       });
 
       if (!adhocAward) {
-        throw new Error('Khen thưởng đột xuất không tồn tại');
+        throw new NotFoundError('Khen thưởng đột xuất');
       }
 
       const awardInfo = { ...adhocAward };
@@ -809,7 +810,7 @@ class AdhocAwardService {
       });
 
       try {
-        await this._notifyOnAdhocAwardDeleted(awardInfo, admin?.username || 'Admin');
+        await this.notifyOnAdhocAwardDeleted(awardInfo, admin?.username || 'Admin');
       } catch {
         // ignore
       }
@@ -820,7 +821,7 @@ class AdhocAwardService {
     }
   }
 
-  async _notifyOnAdhocAwardDeleted(
+  async notifyOnAdhocAwardDeleted(
     adhocAward: Record<string, unknown>,
     adminUsername: string
   ): Promise<number> {
@@ -951,7 +952,7 @@ class AdhocAwardService {
       });
 
       if (!personnel) {
-        throw new Error('Quân nhân không tồn tại');
+        throw new NotFoundError('Quân nhân');
       }
 
       const adhocAwards = await prisma.khenThuongDotXuat.findMany({
@@ -993,7 +994,7 @@ class AdhocAwardService {
         });
 
         if (!unit) {
-          throw new Error('Cơ quan đơn vị không tồn tại');
+          throw new NotFoundError('Cơ quan đơn vị');
         }
       } else if (unitType === 'DON_VI_TRUC_THUOC') {
         where.don_vi_truc_thuoc_id = unitId;
@@ -1003,7 +1004,7 @@ class AdhocAwardService {
         });
 
         if (!unit) {
-          throw new Error('Đơn vị trực thuộc không tồn tại');
+          throw new NotFoundError('Đơn vị trực thuộc');
         }
       }
 

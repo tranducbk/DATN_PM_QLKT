@@ -83,7 +83,7 @@ interface ScientificAchievementHistoryModalProps {
   onClose: () => void;
 }
 
-export default function ScientificAchievementHistoryModal({
+export function ScientificAchievementHistoryModal({
   visible,
   personnel,
   achievements,

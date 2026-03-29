@@ -46,14 +46,14 @@ import { apiClient } from '@/lib/apiClient';
 import { getDanhHieuName } from '@/constants/danhHieu.constants';
 import { PROPOSAL_TYPES, type ProposalType } from '@/constants/proposal.constants';
 // Shared components - reuse từ admin (DRY principle, tránh duplicate ~2000 dòng code)
-import Step2SelectPersonnelCaNhanHangNam from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelCaNhanHangNam';
-import Step2SelectPersonnelNienHan from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelNienHan';
-import Step2SelectPersonnelHCQKQT from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelHCQKQT';
-import Step2SelectPersonnelKNCVSNXD from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelKNCVSNXD';
-import Step2SelectPersonnelCongHien from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelCongHien';
-import Step2SelectPersonnelNCKH from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelNCKH';
-import Step2SelectUnits from '@/app/admin/awards/bulk/create/components/Step2SelectUnits';
-import Step3SetTitles from '@/app/admin/awards/bulk/create/components/Step3SetTitles';
+import { Step2SelectPersonnelCaNhanHangNam } from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelCaNhanHangNam';
+import { Step2SelectPersonnelNienHan } from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelNienHan';
+import { Step2SelectPersonnelHCQKQT } from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelHCQKQT';
+import { Step2SelectPersonnelKNCVSNXD } from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelKNCVSNXD';
+import { Step2SelectPersonnelCongHien } from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelCongHien';
+import { Step2SelectPersonnelNCKH } from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelNCKH';
+import { Step2SelectUnits } from '@/app/admin/awards/bulk/create/components/Step2SelectUnits';
+import { Step3SetTitles } from '@/app/admin/awards/bulk/create/components/Step3SetTitles';
 
 const { Title, Paragraph, Text } = Typography;
 

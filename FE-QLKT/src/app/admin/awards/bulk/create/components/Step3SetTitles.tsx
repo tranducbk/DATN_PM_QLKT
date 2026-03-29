@@ -1,12 +1,12 @@
 'use client';
 
-import Step3SetTitlesHCQKQT from './Step3SetTitlesHCQKQT';
-import Step3SetTitlesKNCVSNXD from './Step3SetTitlesKNCVSNXD';
-import Step3SetTitlesCaNhanHangNam from './Step3SetTitlesCaNhanHangNam';
-import Step3SetTitlesDonViHangNam from './Step3SetTitlesDonViHangNam';
-import Step3SetTitlesNienHan from './Step3SetTitlesNienHan';
-import Step3SetTitlesCongHien from './Step3SetTitlesCongHien';
-import Step3SetTitlesNCKH from './Step3SetTitlesNCKH';
+import { Step3SetTitlesHCQKQT } from './Step3SetTitlesHCQKQT';
+import { Step3SetTitlesKNCVSNXD } from './Step3SetTitlesKNCVSNXD';
+import { Step3SetTitlesCaNhanHangNam } from './Step3SetTitlesCaNhanHangNam';
+import { Step3SetTitlesDonViHangNam } from './Step3SetTitlesDonViHangNam';
+import { Step3SetTitlesNienHan } from './Step3SetTitlesNienHan';
+import { Step3SetTitlesCongHien } from './Step3SetTitlesCongHien';
+import { Step3SetTitlesNCKH } from './Step3SetTitlesNCKH';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 
 interface TitleData {
@@ -29,7 +29,7 @@ interface Step3SetTitlesProps {
   nam: number;
 }
 
-export default function Step3SetTitles({
+export function Step3SetTitles({
   selectedPersonnelIds,
   selectedUnitIds = [],
   proposalType,

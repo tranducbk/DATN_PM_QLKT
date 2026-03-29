@@ -1,6 +1,6 @@
 'use client';
 
-import MainLayout from '@/components/MainLayout';
+import { MainLayout } from '@/components/MainLayout';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { ROLES } from '@/constants/roles.constants';
 

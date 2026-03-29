@@ -44,7 +44,7 @@ router.post(
     action: AUDIT_ACTIONS.CREATE,
     resource: 'units',
     getDescription: getLogDescription('units', 'CREATE'),
-    getResourceId: getResourceId.fromResponse('id'),
+    getResourceId: getResourceId.fromResponse(),
   }),
   unitController.createUnit
 );

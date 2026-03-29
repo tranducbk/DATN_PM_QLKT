@@ -37,7 +37,7 @@ interface VietnamAddressCascaderProps {
   disabled?: boolean;
 }
 
-export default function VietnamAddressCascader({
+export function VietnamAddressCascader({
   value,
   onChange,
   placeholder = 'Chọn Tỉnh/Thành phố, Quận/Huyện, Xã/Phường',

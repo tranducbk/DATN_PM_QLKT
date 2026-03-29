@@ -45,7 +45,7 @@ interface NCKHProposalFormProps {
   initialData?: NCKHRecord[];
 }
 
-export default function NCKHProposalForm({
+export function NCKHProposalForm({
   onDataChange,
   initialData = [],
 }: NCKHProposalFormProps) {

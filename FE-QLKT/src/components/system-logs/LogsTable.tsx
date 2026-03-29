@@ -22,8 +22,7 @@ import {
   ArrowUp,
   ArrowDown,
 } from 'lucide-react';
-import { format } from 'date-fns';
-import { vi } from 'date-fns/locale';
+import { formatDateTimeFull } from '@/lib/utils';
 
 export interface LogEntry {
   id: string;
@@ -135,14 +134,14 @@ export function LogsTable({ logs, loading, selectedRowKeys, onSelectionChange }:
     if (!sortField || !sortOrder) return logs;
 
     const sorted = [...logs].sort((a, b) => {
-      let aValue: string | number = '';
-      let bValue: string | number = '';
+      let aValue = '';
+      let bValue = '';
 
       switch (sortField) {
-        case 'time':
-          aValue = new Date(a.created_at).getTime();
-          bValue = new Date(b.created_at).getTime();
-          break;
+        case 'time': {
+          const diff = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          return sortOrder === 'asc' ? diff : -diff;
+        }
         case 'actor':
           aValue = (a.actor_name || a.actor_id || '').toLowerCase();
           bValue = (b.actor_name || b.actor_id || '').toLowerCase();
@@ -281,7 +280,7 @@ export function LogsTable({ logs, loading, selectedRowKeys, onSelectionChange }:
                 </TableCell>
               )}
               <TableCell className="text-sm text-gray-900 dark:text-gray-100 font-medium whitespace-nowrap">
-                {format(new Date(log.created_at), 'HH:mm:ss dd/MM/yyyy', { locale: vi })}
+                {formatDateTimeFull(log.created_at)}
               </TableCell>
               <TableCell className="text-sm font-medium text-gray-900 dark:text-gray-100">
                 <div className="whitespace-normal break-words max-w-[160px]">

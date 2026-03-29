@@ -6,7 +6,7 @@ import { EditOutlined, HistoryOutlined, ReloadOutlined } from '@ant-design/icons
 import type { ColumnsType } from 'antd/es/table';
 import { formatDate } from '@/lib/utils';
 import { apiClient } from '@/lib/apiClient';
-import PositionHistoryModal from './PositionHistoryModal';
+import { PositionHistoryModal } from './PositionHistoryModal';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 
@@ -52,7 +52,7 @@ interface Step3SetTitlesCongHienProps {
   nam: number;
 }
 
-export default function Step3SetTitlesCongHien({
+export function Step3SetTitlesCongHien({
   selectedPersonnelIds,
   onPersonnelChange,
   titleData,

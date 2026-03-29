@@ -1,6 +1,7 @@
 import { prisma } from '../models';
 import { emitNotificationToUser } from '../utils/socketService';
 import type { ThongBao, Prisma } from '../generated/prisma';
+import { NotFoundError } from '../middlewares/errorHandler';
 
 interface CreateNotificationData {
   recipient_id: string | null;
@@ -134,7 +135,7 @@ class NotificationService {
     return count;
   }
 
-  async markAsRead(notificationId: number, userId: string): Promise<ThongBao> {
+  async markAsRead(notificationId: string, userId: string): Promise<ThongBao> {
     const notification = await prisma.thongBao.findFirst({
       where: {
         id: notificationId,
@@ -143,7 +144,7 @@ class NotificationService {
     });
 
     if (!notification) {
-      throw new Error('Không tìm thấy thông báo');
+      throw new NotFoundError('Thông báo');
     }
 
     const updated = await prisma.thongBao.update({
@@ -172,7 +173,7 @@ class NotificationService {
     return result;
   }
 
-  async deleteNotification(notificationId: number, userId: string): Promise<{ message: string }> {
+  async deleteNotification(notificationId: string, userId: string): Promise<{ message: string }> {
     const notification = await prisma.thongBao.findFirst({
       where: {
         id: notificationId,
@@ -181,7 +182,7 @@ class NotificationService {
     });
 
     if (!notification) {
-      throw new Error('Không tìm thấy thông báo');
+      throw new NotFoundError('Thông báo');
     }
 
     await prisma.thongBao.delete({

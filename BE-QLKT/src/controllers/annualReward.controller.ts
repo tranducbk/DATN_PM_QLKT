@@ -110,7 +110,14 @@ class AnnualRewardController {
     try {
       await profileService.recalculateAnnualProfile(personnel_id);
     } catch (recalcError) {
-      console.warn('Recalculate annual profile failed:', recalcError);
+      await writeSystemLog({
+        userId: req.user?.id,
+        userRole: req.user?.role,
+        action: 'ERROR',
+        resource: 'annual-rewards',
+        description: 'Lỗi tính lại hồ sơ hằng năm sau khi thêm danh hiệu',
+        payload: { error: String(recalcError), personnel_id },
+      });
     }
 
     return ResponseHelper.created(res, { data: result, message: 'Thêm danh hiệu thành công' });
@@ -151,7 +158,14 @@ class AnnualRewardController {
     try {
       await profileService.recalculateAnnualProfile(result.quan_nhan_id);
     } catch (recalcError) {
-      console.warn('Recalculate annual profile failed:', recalcError);
+      await writeSystemLog({
+        userId: req.user?.id,
+        userRole: req.user?.role,
+        action: 'ERROR',
+        resource: 'annual-rewards',
+        description: 'Lỗi tính lại hồ sơ hằng năm sau khi cập nhật danh hiệu',
+        payload: { error: String(recalcError), personnel_id: result.quan_nhan_id },
+      });
     }
 
     return ResponseHelper.success(res, { data: result, message: 'Cập nhật danh hiệu thành công' });
@@ -366,7 +380,6 @@ class AnnualRewardController {
   });
 
   getTemplate = catchAsync(async (req: Request, res: Response) => {
-    const userRole = req.user!.role;
     const personnelIds = parsePersonnelIdsFromQuery(req.query);
     const repeatMap: Record<string, number> = {};
     if (req.query.repeat_map) {
@@ -376,7 +389,7 @@ class AnnualRewardController {
       } catch { /* ignore */ }
     }
 
-    const workbook = await annualRewardService.exportTemplate(personnelIds, userRole, repeatMap);
+    const workbook = await annualRewardService.exportTemplate(personnelIds, repeatMap);
     const buffer = await workbook.xlsx.writeBuffer();
 
     res.setHeader(

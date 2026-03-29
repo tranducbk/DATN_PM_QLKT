@@ -5,7 +5,6 @@ import { Table, Input, Select, Space, Alert, Typography, Tag, InputNumber, Empty
 import { SearchOutlined, TeamOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
-import { format } from 'date-fns';
 import { formatDate } from '@/lib/utils';
 import type { DateInput } from '@/lib/types';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
@@ -52,7 +51,7 @@ interface Step2SelectPersonnelProps {
   proposalType?: string; // Để biết khi nào cần hiển thị ngày nhập ngũ/xuất ngũ
 }
 
-export default function Step2SelectPersonnel({
+export function Step2SelectPersonnel({
   selectedPersonnelIds,
   onPersonnelChange,
   nam,
@@ -271,7 +270,7 @@ export default function Step2SelectPersonnel({
               typeof record.ngay_nhap_ngu === 'string'
                 ? new Date(record.ngay_nhap_ngu)
                 : record.ngay_nhap_ngu;
-            return format(date, 'dd/MM/yyyy');
+            return formatDate(date);
           } catch {
             return <Text type="secondary">-</Text>;
           }
@@ -289,7 +288,7 @@ export default function Step2SelectPersonnel({
               typeof record.ngay_xuat_ngu === 'string'
                 ? new Date(record.ngay_xuat_ngu)
                 : record.ngay_xuat_ngu;
-            return format(date, 'dd/MM/yyyy');
+            return formatDate(date);
           } catch {
             return <Text type="secondary">-</Text>;
           }

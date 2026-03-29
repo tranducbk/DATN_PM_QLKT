@@ -19,7 +19,7 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import { SearchOutlined, TeamOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
-import ExcelImportSection from './ExcelImportSection';
+import { ExcelImportSection } from './ExcelImportSection';
 import * as XLSX from 'xlsx';
 
 const { Text } = Typography;
@@ -46,7 +46,7 @@ interface Step2SelectUnitsProps {
   isManager?: boolean;
 }
 
-export default function Step2SelectUnits({
+export function Step2SelectUnits({
   selectedUnitIds,
   onUnitChange,
   nam,
@@ -368,17 +368,16 @@ export default function Step2SelectUnits({
         <>
           <ExcelImportSection
             awardType="DON_VI_HANG_NAM"
-            templateEndpoint="/api/awards/units/annual/template"
-            importEndpoint="/api/awards/units/annual/import"
+            downloadTemplate={apiClient.getUnitAnnualAwardsTemplate}
+            importFile={apiClient.importUnitAnnualAwards}
             templateFileName="mau_import_don_vi_hang_nam"
             onImportSuccess={handleImportSuccess}
-            selectedCount={selectedUnitIds.length}
             selectedPersonnelIds={selectedUnitIds}
             selectedNames={selectedUnitIds.map(id => units.find(u => u.id === id)?.ten_don_vi || '')}
             entityLabel="đơn vị"
             localProcessing={true}
             onLocalProcess={handleLocalExcelProcess}
-            previewEndpoint="/api/awards/units/annual/import/preview"
+            previewImport={apiClient.previewUnitAnnualAwardsImport}
             reviewPath="/admin/awards/bulk/import-review-unit"
             sessionStorageKey="importPreviewDataUnit"
           />

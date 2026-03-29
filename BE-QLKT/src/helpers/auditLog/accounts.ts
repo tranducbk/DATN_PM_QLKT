@@ -4,6 +4,7 @@ import { Request, Response } from 'express';
 import { normalizeParam } from '../paginationHelper';
 import { FALLBACK, ROLE_NAMES } from './constants';
 
+
 type TaiKhoanHoTenSelect = Prisma.TaiKhoanGetPayload<{
   select: { username: true; QuanNhan: { select: { ho_ten: true } } };
 }>;
@@ -141,9 +142,7 @@ const accounts: Record<
           const displayName = account.QuanNhan?.ho_ten || account.username;
           return `Đặt lại mật khẩu cho tài khoản: ${displayName} (${account.username})`;
         }
-      } catch (error) {
-        console.error('[AuditLog] Failed to fetch account info for password reset log:', error);
-      }
+      } catch {}
     }
 
     const username = req.body?.username || FALLBACK.UNKNOWN;

@@ -5,6 +5,7 @@ import { writeSystemLog } from '../helpers/systemLogHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 import { parsePersonnelIdsFromQuery, getManagerUnitFilter } from '../helpers/controllerHelpers';
+import { parsePagination } from '../helpers/paginationHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 
 class MilitaryFlagController {
@@ -12,7 +13,7 @@ class MilitaryFlagController {
     const userRole = req.user?.role ?? ROLES.MANAGER;
     const personnelIds = parsePersonnelIdsFromQuery(req.query);
 
-    const workbook = await militaryFlagService.exportTemplate(personnelIds, userRole);
+    const workbook = await militaryFlagService.exportTemplate(personnelIds);
     const buffer = await workbook.xlsx.writeBuffer();
     const fileName = `mau_import_hcqkqt_${new Date().toISOString().slice(0, 10)}.xlsx`;
     res.setHeader(
@@ -71,7 +72,8 @@ class MilitaryFlagController {
 
   getAll = catchAsync(async (req: Request, res: Response) => {
     const userRole = req.user!.role;
-    const { don_vi_id, nam, ho_ten, page = 1, limit = 50 } = req.query;
+    const { don_vi_id, nam, ho_ten } = req.query;
+    const { page, limit } = parsePagination(req.query);
 
     const filters: Record<string, unknown> = {};
     if (don_vi_id) filters.don_vi_id = don_vi_id;
@@ -87,11 +89,7 @@ class MilitaryFlagController {
       if (managerUnit.isCoQuanDonVi) filters.include_sub_units = true;
     }
 
-    const result = await militaryFlagService.getAll(
-      filters,
-      page as string | number,
-      limit as string | number
-    );
+    const result = await militaryFlagService.getAll(filters, page, limit);
     return ResponseHelper.paginated(res, {
       data: result.data,
       total: result.pagination.total,

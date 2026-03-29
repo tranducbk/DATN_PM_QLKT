@@ -5,11 +5,12 @@ import { FALLBACK } from './constants';
 import { getLoaiDeXuatName } from '../../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 
+
 /** Loose shape for proposal data from JSON or Prisma */
 interface ParsedProposal {
   loai_de_xuat?: string;
   type?: string;
-  nam?: string | number;
+  nam?: number;
   NguoiDeXuat?: {
     QuanNhan?: { ho_ten?: string };
     username?: string;
@@ -106,9 +107,7 @@ const proposals: Record<
               CoQuanDonVi: true,
             },
           });
-        } catch (dbError) {
-          console.error('[AuditLog] Failed to fetch proposal for approval log:', dbError);
-        }
+        } catch {}
       }
 
       if (!proposal) {
@@ -199,9 +198,7 @@ const proposals: Record<
 
         return description;
       }
-    } catch (e) {
-      console.error('[AuditLog] Failed to build approval description:', e);
-    }
+    } catch {}
     return `Phê duyệt đề xuất: ${proposalId}`;
   },
   REJECT: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
@@ -226,9 +223,7 @@ const proposals: Record<
             },
           },
         });
-      } catch (error) {
-        console.error('[AuditLog] Failed to fetch proposal for rejection log:', error);
-      }
+      } catch {}
     }
 
     if (proposal) {
@@ -306,9 +301,7 @@ const proposals: Record<
             },
           },
         });
-      } catch (error) {
-        console.error('[AuditLog] Failed to fetch proposal for deletion log:', error);
-      }
+      } catch {}
     }
 
     if (proposal) {

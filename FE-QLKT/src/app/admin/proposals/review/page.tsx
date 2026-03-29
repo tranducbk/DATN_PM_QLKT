@@ -31,8 +31,8 @@ import {
   FilterOutlined,
   DeleteOutlined,
 } from '@ant-design/icons';
-import { format } from 'date-fns';
 import { apiClient } from '@/lib/apiClient';
+import { formatDateTime } from '@/lib/utils';
 import { message } from 'antd';
 import {
   PROPOSAL_STATUS,
@@ -209,7 +209,7 @@ export default function ProposalReviewPage() {
       key: 'createdAt',
       align: 'center' as const,
       render: (date: string) => (
-        <div style={{ textAlign: 'center' }}>{format(new Date(date), 'dd/MM/yyyy HH:mm')}</div>
+        <div style={{ textAlign: 'center' }}>{formatDateTime(date)}</div>
       ),
     },
     {
@@ -217,7 +217,7 @@ export default function ProposalReviewPage() {
       dataIndex: 'nam',
       key: 'nam',
       align: 'center' as const,
-      render: (text: string | number) => <div style={{ textAlign: 'center' }}>{text}</div>,
+      render: (text: number) => <div style={{ textAlign: 'center' }}>{text}</div>,
     },
     {
       title: 'Số lượng',

@@ -69,7 +69,7 @@ async function notifyManagersOnAwardAdded(
   try {
     const managers = await prisma.taiKhoan.findMany({
       where: {
-        role: 'MANAGER',
+        role: ROLES.MANAGER,
         QuanNhan: {
           co_quan_don_vi_id: donViId,
         },
@@ -186,7 +186,7 @@ async function notifyOnAwardDeleted(
     if (donViId) {
       const managers = await prisma.taiKhoan.findMany({
         where: {
-          role: 'MANAGER',
+          role: ROLES.MANAGER,
           QuanNhan: {
             OR: [{ co_quan_don_vi_id: donViId }, { don_vi_truc_thuoc_id: donViId }],
           },
@@ -457,7 +457,7 @@ async function notifyOnBulkAwardAdded(
         if (donViId) {
           const managers = await prisma.taiKhoan.findMany({
             where: {
-              role: 'MANAGER',
+              role: ROLES.MANAGER,
               QuanNhan: {
                 OR: [{ co_quan_don_vi_id: donViId }, { don_vi_truc_thuoc_id: donViId }].filter(
                   Boolean
@@ -513,7 +513,7 @@ async function notifyOnBulkAwardAdded(
 
         const managers = await prisma.taiKhoan.findMany({
           where: {
-            role: 'MANAGER',
+            role: ROLES.MANAGER,
             QuanNhan: {
               OR: [
                 { co_quan_don_vi_id: donVi.co_quan_don_vi_id || donVi.id },

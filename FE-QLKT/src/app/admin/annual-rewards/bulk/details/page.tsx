@@ -33,7 +33,7 @@ import { apiClient } from '@/lib/apiClient';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { DANH_HIEU_MAP } from '@/utils/awardsHelpers';
-import DecisionModal from '@/components/DecisionModal';
+import { DecisionModal } from '@/components/DecisionModal';
 import { formatDate } from '@/lib/utils';
 
 const { Title, Text } = Typography;

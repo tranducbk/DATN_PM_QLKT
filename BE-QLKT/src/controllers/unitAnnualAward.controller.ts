@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import service from '../services/unitAnnualAward.service';
+import { ROLES } from '../constants/roles.constants';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
@@ -26,7 +27,7 @@ class UnitAnnualAwardController {
   });
 
   getById = catchAsync(async (req: Request, res: Response) => {
-    const data = await service.getById(req.params.id, req.user?.role, req.user?.quan_nhan_id);
+    const data = await service.getById(String(req.params.id), req.user?.role, req.user?.quan_nhan_id);
     if (!data) {
       return ResponseHelper.notFound(res, 'Không tìm thấy bản ghi hoặc không có quyền xem');
     }
@@ -81,7 +82,7 @@ class UnitAnnualAwardController {
   });
 
   reject = catchAsync(async (req: Request, res: Response) => {
-    const data = await service.reject(req.params.id, {
+    const data = await service.reject(String(req.params.id), {
       ghi_chu: req.body?.ghi_chu,
       nguoi_duyet_id: req.user?.id || req.body?.nguoi_duyet_id,
     });
@@ -97,7 +98,7 @@ class UnitAnnualAwardController {
   });
 
   remove = catchAsync(async (req: Request, res: Response) => {
-    await service.remove(req.params.id);
+    await service.remove(String(req.params.id));
     return ResponseHelper.success(res, { data: true, message: 'Đã xóa bản ghi' });
   });
 
@@ -158,11 +159,19 @@ class UnitAnnualAwardController {
       return ResponseHelper.badRequest(res, 'Không có dữ liệu để import');
     }
     const result = await service.confirmImport(items, req.user!.id);
-    return ResponseHelper.success(res, { data: result });
+    await writeSystemLog({
+      userId: req.user?.id,
+      userRole: req.user?.role,
+      action: AUDIT_ACTIONS.IMPORT,
+      resource: 'unit-annual-awards',
+      description: `Nhập dữ liệu khen thưởng đơn vị hằng năm thành công: ${result.imported ?? items.length} bản ghi`,
+      payload: { imported: result.imported ?? items.length },
+    });
+    return ResponseHelper.success(res, { data: result, message: 'Thao tác thành công' });
   });
 
   getTemplate = catchAsync(async (req: Request, res: Response) => {
-    const userRole = req.user?.role || 'MANAGER';
+    const userRole = req.user?.role || ROLES.MANAGER;
     const rawIds = (req.query.unit_ids ?? req.query.personnel_ids ?? '') as string;
     let unitIds: string[] = [];
     if (rawIds) {

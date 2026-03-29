@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use client';
 
 import { useState } from 'react';
@@ -24,7 +23,6 @@ import {
   LeftOutlined,
   HomeOutlined,
   DownloadOutlined,
-  DeleteOutlined,
 } from '@ant-design/icons';
 import { apiClient } from '@/lib/apiClient';
 import Link from 'next/link';
@@ -33,12 +31,28 @@ import type { UploadProps } from 'antd';
 const { Title, Paragraph, Text } = Typography;
 const { Dragger } = Upload;
 
+interface ImportResultError {
+  row: number;
+  message: string;
+}
+
+interface ImportResult {
+  created: number;
+  updated: number;
+  errors: ImportResultError[];
+}
+
 export default function PersonnelImportPage() {
   const [loading, setLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [importResult, setImportResult] = useState<any>(null);
+  const [importResult, setImportResult] = useState<ImportResult | null>(null);
 
   const handleFileSelect = (file: File) => {
+    if (file.size > 10 * 1024 * 1024) {
+      message.error('File quá lớn. Tối đa 10MB.');
+      return false;
+    }
+
     if (
       file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
       file.name.endsWith('.xlsx')
@@ -314,7 +328,7 @@ export default function PersonnelImportPage() {
                   gap: 8,
                 }}
               >
-                {importResult.errors.map((error: any, index: number) => (
+                {importResult.errors.map((error: ImportResultError, index: number) => (
                   <Alert
                     key={index}
                     message={`Dòng ${error.row}: ${error.message}`}

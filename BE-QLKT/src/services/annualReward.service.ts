@@ -1,15 +1,17 @@
 import { prisma } from '../models';
 import ExcelJS from 'exceljs';
+import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHelper';
 import { checkDuplicateAward } from '../helpers/awardValidation';
 import profileService from './profile.service';
 import * as notificationHelper from '../helpers/notification';
 import { formatDanhHieuList, getDanhHieuName } from '../constants/danhHieu.constants';
-import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { NotFoundError, ValidationError } from '../middlewares/errorHandler';
+import { writeSystemLog } from '../helpers/systemLogHelper';
 import { parseHeaderMap, getHeaderCol, parseBooleanValue } from '../helpers/excelHelper';
 import type { DanhHieuHangNam, QuanNhan, Prisma } from '../generated/prisma';
+import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
 
 interface CreateAnnualRewardData {
   personnel_id: string;
@@ -332,15 +334,10 @@ class AnnualRewardService {
   }
 
   async importFromExcelBuffer(buffer: Buffer): Promise<ImportResult> {
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(buffer as never);
-    const worksheet = workbook.worksheets[0];
-
-    if (!worksheet) {
-      throw new ValidationError(
-        'Không đọc được file Excel (file trống hoặc không đúng định dạng .xlsx).'
-      );
-    }
+    const workbook = await loadWorkbook(buffer);
+    const worksheet = getAndValidateWorksheet(workbook, {
+      excludeSheetNames: ['_CapBac', '_QuyetDinh'],
+    });
 
     const headerMap = parseHeaderMap(worksheet);
 
@@ -388,6 +385,21 @@ class AnnualRewardService {
     const seenInFile = new Set<string>();
     const currentYear = new Date().getFullYear();
 
+    // Batch query: collect all unique personnel IDs, then query once
+    const allPersonnelIds = new Set<string>();
+    for (let r = 2; r <= worksheet.rowCount; r++) {
+      const row = worksheet.getRow(r);
+      const idValue = idCol ? row.getCell(idCol).value : null;
+      if (idValue) {
+        const id = String(idValue).trim();
+        if (id) allPersonnelIds.add(id);
+      }
+    }
+    const allPersonnelList = allPersonnelIds.size > 0
+      ? await prisma.quanNhan.findMany({ where: { id: { in: [...allPersonnelIds] } } })
+      : [];
+    const personnelById = new Map(allPersonnelList.map(p => [p.id, p]));
+
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
       const row = worksheet.getRow(rowNumber);
       const idValue = idCol ? row.getCell(idCol).value : null;
@@ -419,7 +431,7 @@ class AnnualRewardService {
         errors.push(`Dòng ${rowNumber}: Mã quân nhân không hợp lệ.`);
         continue;
       }
-      const personnel = await prisma.quanNhan.findUnique({ where: { id: personnelId } });
+      const personnel = personnelById.get(personnelId);
       if (!personnel) {
         errors.push(`Dòng ${rowNumber}: Không tìm thấy quân nhân (mã: ${personnelId}).`);
         continue;
@@ -560,7 +572,7 @@ class AnnualRewardService {
       }
 
       return { created: txCreated, updated: txUpdated };
-    });
+    }, { timeout: 30000 });
 
     for (const personnelId of selectedPersonnelIds) {
       try {
@@ -571,12 +583,12 @@ class AnnualRewardService {
     }
 
     const imported = created.length + updated.length;
-    console.log(
-      `[Import danh hiệu] Hoàn tất: ${imported}/${total} thành công, ${errors.length} lỗi`
-    );
-    if (errors.length > 0) {
-      console.log(`[Import danh hiệu] Lỗi:`, errors.slice(0, 10).join(' | '));
-    }
+    writeSystemLog({
+      action: 'IMPORT',
+      resource: 'annual-rewards',
+      description: `[Import danh hiệu] Hoàn tất: ${imported}/${total} thành công, ${errors.length} lỗi`,
+      payload: errors.length > 0 ? { errors: errors.slice(0, 10) } : null,
+    });
 
     return {
       imported,
@@ -588,15 +600,10 @@ class AnnualRewardService {
   }
 
   async previewImport(buffer: Buffer): Promise<PreviewResult> {
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(buffer as never);
-    const worksheet = workbook.worksheets[0];
-
-    if (!worksheet) {
-      throw new ValidationError(
-        'Không đọc được file Excel (file trống hoặc không đúng định dạng .xlsx).'
-      );
-    }
+    const workbook = await loadWorkbook(buffer);
+    const worksheet = getAndValidateWorksheet(workbook, {
+      excludeSheetNames: ['_CapBac', '_QuyetDinh'],
+    });
 
     const headerMap = parseHeaderMap(worksheet);
 
@@ -636,6 +643,51 @@ class AnnualRewardService {
     });
     const validDecisionNumbers = new Set(existingDecisions.map(d => d.so_quyet_dinh));
 
+    // --- First pass: collect all personnel IDs from valid rows ---
+    const allPersonnelIds = new Set<string>();
+    for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
+      const row = worksheet.getRow(rowNumber);
+      const idValue = idCol ? row.getCell(idCol).value : null;
+      if (idValue) {
+        const id = String(idValue).trim();
+        if (id) allPersonnelIds.add(id);
+      }
+    }
+
+    // --- Batch queries ---
+    const [personnelList, existingAnnualRewards] = await Promise.all([
+      prisma.quanNhan.findMany({
+        where: { id: { in: [...allPersonnelIds] } },
+      }),
+      prisma.danhHieuHangNam.findMany({
+        where: { quan_nhan_id: { in: [...allPersonnelIds] } },
+        select: {
+          quan_nhan_id: true,
+          nam: true,
+          danh_hieu: true,
+          nhan_bkbqp: true,
+          nhan_cstdtq: true,
+          nhan_bkttcp: true,
+          so_quyet_dinh: true,
+        },
+      }),
+    ]);
+
+    // Build lookup Maps
+    const personnelMap = new Map(personnelList.map(p => [p.id, p]));
+    // Map<personnelId_nam, record> for duplicate checking
+    const rewardByKey = new Map(
+      existingAnnualRewards.map(r => [`${r.quan_nhan_id}_${r.nam}`, r])
+    );
+    // Map<personnelId, records[]> for history
+    const rewardsByPersonnel = new Map<string, typeof existingAnnualRewards>();
+    for (const r of existingAnnualRewards) {
+      const list = rewardsByPersonnel.get(r.quan_nhan_id) || [];
+      list.push(r);
+      rewardsByPersonnel.set(r.quan_nhan_id, list);
+    }
+
+    // --- Second pass: validate rows using Maps ---
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
       const row = worksheet.getRow(rowNumber);
       const idValue = idCol ? row.getCell(idCol).value : null;
@@ -726,7 +778,7 @@ class AnnualRewardService {
         });
         continue;
       }
-      const personnel = await prisma.quanNhan.findUnique({ where: { id: personnelId } });
+      const personnel = personnelMap.get(personnelId);
       if (!personnel) {
         errors.push({
           row: rowNumber,
@@ -801,9 +853,8 @@ class AnnualRewardService {
       }
       seenInFile.add(fileKey);
 
-      const existingReward = await prisma.danhHieuHangNam.findFirst({
-        where: { quan_nhan_id: personnel.id, nam },
-      });
+      // Check duplicate in DB (using pre-fetched Map)
+      const existingReward = rewardByKey.get(`${personnel.id}_${nam}`);
       if (existingReward && existingReward.danh_hieu) {
         errors.push({
           row: rowNumber,
@@ -815,19 +866,19 @@ class AnnualRewardService {
         continue;
       }
 
-      const history = await prisma.danhHieuHangNam.findMany({
-        where: { quan_nhan_id: personnel.id },
-        orderBy: { nam: 'desc' },
-        take: 5,
-        select: {
-          nam: true,
-          danh_hieu: true,
-          nhan_bkbqp: true,
-          nhan_cstdtq: true,
-          nhan_bkttcp: true,
-          so_quyet_dinh: true,
-        },
-      });
+      // Build history from pre-fetched data (last 5 records sorted by nam desc)
+      const allRecords = rewardsByPersonnel.get(personnel.id) || [];
+      const history = [...allRecords]
+        .sort((a, b) => b.nam - a.nam)
+        .slice(0, 5)
+        .map(r => ({
+          nam: r.nam,
+          danh_hieu: r.danh_hieu,
+          nhan_bkbqp: r.nhan_bkbqp,
+          nhan_cstdtq: r.nhan_cstdtq,
+          nhan_bkttcp: r.nhan_bkttcp,
+          so_quyet_dinh: r.so_quyet_dinh,
+        }));
 
       valid.push({
         row: rowNumber,
@@ -1139,9 +1190,11 @@ class AnnualRewardService {
       }
     }
 
-    console.log(
-      `[Bulk tạo danh hiệu] ${danh_hieu} năm ${nam}: ${created.length} thành công, ${skipped.length} bỏ qua, ${errors.length} lỗi`
-    );
+    writeSystemLog({
+      action: 'BULK_CREATE',
+      resource: 'annual-rewards',
+      description: `[Bulk tạo danh hiệu] ${danh_hieu} năm ${nam}: ${created.length} thành công, ${skipped.length} bỏ qua, ${errors.length} lỗi`,
+    });
 
     return {
       success: created.length,
@@ -1157,28 +1210,9 @@ class AnnualRewardService {
 
   async exportTemplate(
     personnelIds: string[] = [],
-    userRole: string = 'MANAGER',
     repeatMap: Record<string, number> = {}
   ): Promise<ExcelJS.Workbook> {
-    const personnelList =
-      personnelIds.length > 0
-        ? await prisma.quanNhan.findMany({
-            where: { id: { in: personnelIds } },
-            include: { ChucVu: true },
-          })
-        : [];
-
-    const existingDecisions = await prisma.fileQuyetDinh.findMany({
-      select: { so_quyet_dinh: true },
-      orderBy: { nam: 'desc' },
-      take: 200,
-    });
-    const decisionNumbers = existingDecisions.map(d => d.so_quyet_dinh).filter(Boolean);
-
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Danh hiệu hằng năm');
-
-    const columns = [
+    const columns: TemplateColumn[] = [
       { header: 'STT', key: 'stt', width: 6 },
       { header: 'ID', key: 'id', width: 10 },
       { header: 'Họ và tên', key: 'ho_ten', width: 25 },
@@ -1193,125 +1227,28 @@ class AnnualRewardService {
       { header: 'BKTTCP (không điền)', key: 'nhan_bkttcp', width: 18 },
     ];
 
-    worksheet.columns = columns;
+    const workbook = await buildTemplate({
+      sheetName: 'Danh hiệu hằng năm',
+      columns,
+      personnelIds,
+      repeatMap,
+      danhHieuOptions: '"CSTT,CSTDCS"',
+      redColumns: [10, 11, 12],
+      editableColumnLetters: ['G', 'H'],
+    });
 
+    // Add thin borders (specific to annual reward template)
+    const worksheet = workbook.getWorksheet('Danh hiệu hằng năm')!;
     const thinBorder: Partial<ExcelJS.Borders> = {
       top: { style: 'thin' }, bottom: { style: 'thin' },
       left: { style: 'thin' }, right: { style: 'thin' },
     };
-    const yellowFill: ExcelJS.FillPattern = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFCC' } };
-    const redFill: ExcelJS.FillPattern = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFCCCC' } };
-
-    const headerRow = worksheet.getRow(1);
-    headerRow.font = { bold: true };
-    headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD3D3D3' } };
-    headerRow.eachCell(cell => { cell.border = thinBorder; });
-
-    let stt = 0;
-    personnelList.forEach(person => {
-      const rowCount = repeatMap[person.id] || 1;
-      for (let r = 0; r < rowCount; r++) {
-        stt++;
-        worksheet.addRow({
-          stt,
-          id: person.id,
-          ho_ten: person.ho_ten || '',
-          cap_bac: person.cap_bac || '',
-          chuc_vu: person.ChucVu ? person.ChucVu.ten_chuc_vu : '',
-        });
-      }
-    });
-
-    const readonlyColIndices = [1, 2, 3];
-    const bkColIndices = [10, 11, 12];
-    const totalDataRows = personnelList.reduce((sum, p) => sum + (repeatMap[p.id] || 1), 0);
-    const totalRows = Math.max(totalDataRows + 1, 2);
-
-    for (let rowNum = 2; rowNum <= totalRows; rowNum++) {
-      const row = worksheet.getRow(rowNum);
-      row.eachCell({ includeEmpty: true }, cell => { cell.border = thinBorder; });
-      readonlyColIndices.forEach(col => { row.getCell(col).fill = yellowFill; });
-      bkColIndices.forEach(col => { row.getCell(col).fill = redFill; });
-    }
-
-    const capBacOptions =
-      'Binh nhì,Binh nhất,Hạ sĩ,Trung sĩ,Thượng sĩ,Thiếu úy,Trung úy,Thượng úy,Đại úy,Thiếu tá,Trung tá,Thượng tá,Đại tá,Thiếu tướng,Trung tướng,Thượng tướng,Đại tướng';
-    const capBacSheet = workbook.addWorksheet('_CapBac', { state: 'veryHidden' });
-    capBacOptions.split(',').forEach((cb, idx) => {
-      capBacSheet.getCell(`A${idx + 1}`).value = cb;
-    });
-    const capBacCount = capBacOptions.split(',').length;
-    for (let rowNum = 2; rowNum <= Math.max(personnelList.length + 1, 50); rowNum++) {
-      worksheet.getRow(rowNum).getCell(4).dataValidation = {
-        type: 'list',
-        allowBlank: true,
-        formulae: [`_CapBac!$A$1:$A$${capBacCount}`],
-      };
-    }
-
-    const danhHieuColNumber = 7;
-    worksheet.getColumn(danhHieuColNumber).eachCell({ includeEmpty: true }, (cell, rowNumber) => {
-      if (rowNumber > 1) {
-        cell.dataValidation = { type: 'list', allowBlank: true, formulae: ['"CSTT,CSTDCS"'] };
-      }
-    });
-
-    if (decisionNumbers.length > 0) {
-      const soQdKeys = ['so_quyet_dinh'];
-      const decisionListStr = decisionNumbers.join(',');
-      const maxRows = Math.max(personnelList.length + 1, 50);
-
-      if (decisionListStr.length <= 250) {
-        soQdKeys.forEach(key => {
-          const colNumber = columns.findIndex(c => c.key === key) + 1;
-          if (colNumber > 0) {
-            for (let rowNum = 2; rowNum <= maxRows; rowNum++) {
-              worksheet.getRow(rowNum).getCell(colNumber).dataValidation = {
-                type: 'list',
-                allowBlank: true,
-                formulae: [`"${decisionListStr}"`],
-              };
-            }
-          }
-        });
-      } else {
-        const refSheet = workbook.addWorksheet('_QuyetDinh', { state: 'veryHidden' });
-        decisionNumbers.forEach((sqd, idx) => {
-          refSheet.getCell(`A${idx + 1}`).value = sqd;
-        });
-        soQdKeys.forEach(key => {
-          const colNumber = columns.findIndex(c => c.key === key) + 1;
-          if (colNumber > 0) {
-            for (let rowNum = 2; rowNum <= maxRows; rowNum++) {
-              worksheet.getRow(rowNum).getCell(colNumber).dataValidation = {
-                type: 'list',
-                allowBlank: true,
-                formulae: [`_QuyetDinh!$A$1:$A$${decisionNumbers.length}`],
-              };
-            }
-          }
-        });
-      }
-    }
-
-    // Conditional formatting: nền vàng khi ô danh hiệu hoặc số QĐ có giá trị
-    const maxDataRow = Math.max(personnelList.length + 1, 50);
-    const editableColumns = ['G', 'H']; // Danh hiệu, Số quyết định
-    editableColumns.forEach(col => {
-      worksheet.addConditionalFormatting({
-        ref: `${col}2:${col}${maxDataRow}`,
-        rules: [
-          {
-            type: 'expression',
-            formulae: [`LEN(TRIM(${col}2))>0`],
-            style: {
-              fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFCC' } },
-            },
-            priority: 1,
-          },
-        ],
+    const lastRow = worksheet.lastRow?.number ?? 1;
+    for (let rowNum = 1; rowNum <= lastRow; rowNum++) {
+      worksheet.getRow(rowNum).eachCell({ includeEmpty: true }, cell => {
+        cell.border = thinBorder;
       });
-    });
+    }
 
     return workbook;
   }

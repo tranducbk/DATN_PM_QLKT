@@ -1,6 +1,7 @@
 import { prisma } from '../../models';
 import { formatDate } from '../datetimeHelper';
 import { PrismaClient } from '../../generated/prisma';
+import { ROLES } from '../../constants/roles.constants';
 
 const FALLBACK = {
   UNKNOWN: 'Chưa xác định',
@@ -11,10 +12,10 @@ const FALLBACK = {
 } as const;
 
 const ROLE_NAMES: Record<string, string> = {
-  USER: 'Người dùng',
-  MANAGER: 'Quản lý',
-  ADMIN: 'Quản trị viên',
-  SUPER_ADMIN: 'Quản trị viên cấp cao',
+  [ROLES.USER]: 'Người dùng',
+  [ROLES.MANAGER]: 'Quản lý',
+  [ROLES.ADMIN]: 'Quản trị viên',
+  [ROLES.SUPER_ADMIN]: 'Quản trị viên cấp cao',
 };
 
 const ACHIEVEMENT_TYPE_NAMES: Record<string, string> = {

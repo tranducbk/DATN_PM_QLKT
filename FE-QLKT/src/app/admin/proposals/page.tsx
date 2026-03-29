@@ -37,10 +37,10 @@ import {
   PROPOSAL_TYPE_ADMIN_TAG,
   PROPOSAL_STATUS_ADMIN,
 } from '@/constants/proposal.constants';
-import ProposalDetailModal from './components/ProposalDetailModal';
-import RejectModal from './components/RejectModal';
-import ApproveModal from './components/ApproveModal';
-import DecisionModal from '@/components/DecisionModal';
+import { ProposalDetailModal } from './components/ProposalDetailModal';
+import { RejectModal } from './components/RejectModal';
+import { ApproveModal } from './components/ApproveModal';
+import { DecisionModal } from '@/components/DecisionModal';
 
 const { Title, Text } = Typography;
 

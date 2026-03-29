@@ -1,14 +1,13 @@
 import { prisma } from '../models';
 import ExcelJS from 'exceljs';
+import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHelper';
 import profileService from './profile.service';
 import * as notificationHelper from '../helpers/notification';
 import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
-import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
-
-/** Trạng thái lưu trên bảng thành tích KH (không dùng REJECTED) */
-type ScientificAchievementStatus = typeof PROPOSAL_STATUS.PENDING | typeof PROPOSAL_STATUS.APPROVED;
-import { ValidationError } from '../middlewares/errorHandler';
+import { writeSystemLog } from '../helpers/systemLogHelper';
+import { NotFoundError, ValidationError } from '../middlewares/errorHandler';
+import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
 import { parseHeaderMap, getHeaderCol } from '../helpers/excelHelper';
 
 interface CreateAchievementData {
@@ -20,7 +19,6 @@ interface CreateAchievementData {
   chuc_vu?: string | null;
   so_quyet_dinh?: string | null;
   ghi_chu?: string | null;
-  status?: ScientificAchievementStatus;
 }
 
 interface UpdateAchievementData {
@@ -30,7 +28,6 @@ interface UpdateAchievementData {
   cap_bac?: string;
   chuc_vu?: string;
   ghi_chu?: string;
-  status?: ScientificAchievementStatus;
 }
 
 interface ExportFilters {
@@ -63,7 +60,6 @@ interface PreviewValidItem {
     loai: string;
     mo_ta: string;
     so_quyet_dinh: string | null;
-    status: string;
   }[];
 }
 
@@ -81,7 +77,7 @@ interface ConfirmImportItem {
 class ScientificAchievementService {
   async getAchievements(personnelId: string) {
     if (!personnelId) {
-      throw new Error('personnel_id là bắt buộc');
+      throw new ValidationError('personnel_id là bắt buộc');
     }
 
     const personnel = await prisma.quanNhan.findUnique({
@@ -89,7 +85,7 @@ class ScientificAchievementService {
     });
 
     if (!personnel) {
-      throw new Error('Quân nhân không tồn tại');
+      throw new NotFoundError('Quân nhân');
     }
 
     const achievements = await prisma.thanhTichKhoaHoc.findMany({
@@ -101,77 +97,58 @@ class ScientificAchievementService {
   }
 
   async createAchievement(data: CreateAchievementData) {
-    const { personnel_id, nam, loai, mo_ta, cap_bac, chuc_vu, so_quyet_dinh, ghi_chu, status } =
-      data;
+    const { personnel_id, nam, loai, mo_ta, cap_bac, chuc_vu, so_quyet_dinh, ghi_chu } = data;
 
     const personnel = await prisma.quanNhan.findUnique({
       where: { id: personnel_id },
     });
 
     if (!personnel) {
-      throw new Error('Quân nhân không tồn tại');
+      throw new NotFoundError('Quân nhân');
     }
 
     const validLoai = ['DTKH', 'SKKH'];
     if (!validLoai.includes(loai)) {
-      throw new Error('Loại thành tích không hợp lệ. Loại hợp lệ: ' + validLoai.join(', '));
+      throw new ValidationError('Loại thành tích không hợp lệ. Loại hợp lệ: ' + validLoai.join(', '));
     }
-
-    const validStatus = [PROPOSAL_STATUS.APPROVED, PROPOSAL_STATUS.PENDING];
-    if (status && !validStatus.includes(status)) {
-      throw new Error('Trạng thái không hợp lệ. Trạng thái hợp lệ: ' + validStatus.join(', '));
-    }
-
-    const createData = {
-      quan_nhan_id: personnel_id,
-      nam,
-      loai,
-      mo_ta,
-      cap_bac: cap_bac || null,
-      chuc_vu: chuc_vu || null,
-      so_quyet_dinh: so_quyet_dinh || null,
-      ghi_chu: ghi_chu || null,
-      status: status || PROPOSAL_STATUS.PENDING,
-    };
 
     const newAchievement = await prisma.thanhTichKhoaHoc.create({
-      data: createData,
+      data: {
+        quan_nhan_id: personnel_id,
+        nam,
+        loai,
+        mo_ta,
+        cap_bac: cap_bac || null,
+        chuc_vu: chuc_vu || null,
+        so_quyet_dinh: so_quyet_dinh || null,
+        ghi_chu: ghi_chu || null,
+      },
     });
 
-    const finalStatus = status || PROPOSAL_STATUS.PENDING;
-    if (finalStatus === PROPOSAL_STATUS.APPROVED) {
-      try {
-        await profileService.recalculateAnnualProfile(personnel_id);
-      } catch {
-        // Không throw error, chỉ log để không ảnh hưởng đến việc tạo thành tích
-      }
+    try {
+      await profileService.recalculateAnnualProfile(personnel_id);
+    } catch {
+      // Không throw error, chỉ log để không ảnh hưởng đến việc tạo thành tích
     }
 
     return newAchievement;
   }
 
   async updateAchievement(id: string, data: UpdateAchievementData) {
-    const { nam, loai, mo_ta, cap_bac, chuc_vu, ghi_chu, status } = data;
+    const { nam, loai, mo_ta, cap_bac, chuc_vu, ghi_chu } = data;
 
     const achievement = await prisma.thanhTichKhoaHoc.findUnique({
       where: { id },
     });
 
     if (!achievement) {
-      throw new Error('Thành tích không tồn tại');
+      throw new NotFoundError('Thành tích');
     }
 
     if (loai) {
       const validLoai = ['DTKH', 'SKKH'];
       if (!validLoai.includes(loai)) {
-        throw new Error('Loại thành tích không hợp lệ');
-      }
-    }
-
-    if (status) {
-      const validStatus = [PROPOSAL_STATUS.APPROVED, PROPOSAL_STATUS.PENDING];
-      if (!validStatus.includes(status)) {
-        throw new Error('Trạng thái không hợp lệ');
+        throw new ValidationError('Loại thành tích không hợp lệ');
       }
     }
 
@@ -182,20 +159,16 @@ class ScientificAchievementService {
     if (cap_bac !== undefined) updateData.cap_bac = cap_bac;
     if (chuc_vu !== undefined) updateData.chuc_vu = chuc_vu;
     if (ghi_chu !== undefined) updateData.ghi_chu = ghi_chu;
-    if (status !== undefined) updateData.status = status;
 
     const updatedAchievement = await prisma.thanhTichKhoaHoc.update({
       where: { id },
       data: updateData,
     });
 
-    const finalStatus = status || achievement.status;
-    if (finalStatus === PROPOSAL_STATUS.APPROVED) {
-      try {
-        await profileService.recalculateAnnualProfile(achievement.quan_nhan_id);
-      } catch {
-        // Không throw error, chỉ log để không ảnh hưởng đến việc cập nhật thành tích
-      }
+    try {
+      await profileService.recalculateAnnualProfile(achievement.quan_nhan_id);
+    } catch {
+      // Không throw error, chỉ log để không ảnh hưởng đến việc cập nhật thành tích
     }
 
     return updatedAchievement;
@@ -210,23 +183,20 @@ class ScientificAchievementService {
     });
 
     if (!achievement) {
-      throw new Error('Thành tích không tồn tại');
+      throw new NotFoundError('Thành tích');
     }
 
     const personnelId = achievement.quan_nhan_id;
     const personnel = achievement.QuanNhan;
-    const wasApproved = achievement.status === PROPOSAL_STATUS.APPROVED;
 
     await prisma.thanhTichKhoaHoc.delete({
       where: { id },
     });
 
-    if (wasApproved) {
-      try {
-        await profileService.recalculateAnnualProfile(personnelId);
-      } catch (error) {
-        console.error('[Profile] Failed to recalculate annual profile after achievement deletion:', error);
-      }
+    try {
+      await profileService.recalculateAnnualProfile(personnelId);
+    } catch (error) {
+      writeSystemLog({ action: 'ERROR', resource: 'scientific-achievements', description: `Lỗi tính lại hồ sơ hằng năm sau khi xóa thành tích NCKH: ${error}` });
     }
 
     try {
@@ -237,7 +207,7 @@ class ScientificAchievementService {
         adminUsername
       );
     } catch (error) {
-      console.error('[Notification] Failed to notify on scientific achievement deletion:', error);
+      writeSystemLog({ action: 'ERROR', resource: 'scientific-achievements', description: `Lỗi gửi thông báo xóa thành tích NCKH: ${error}` });
     }
 
     return {
@@ -287,7 +257,6 @@ class ScientificAchievementService {
       { header: 'Loại', key: 'loai', width: 15 },
       { header: 'Mô tả', key: 'mo_ta', width: 40 },
       { header: 'Số quyết định', key: 'so_quyet_dinh', width: 20 },
-      { header: 'Trạng thái', key: 'status', width: 15 },
       { header: 'Ghi chú', key: 'ghi_chu', width: 30 },
     ];
 
@@ -301,12 +270,6 @@ class ScientificAchievementService {
     achievements.forEach((achievement, index) => {
       const quanNhan = achievement.QuanNhan;
       const donVi = quanNhan?.DonViTrucThuoc?.ten_don_vi ?? quanNhan?.CoQuanDonVi?.ten_don_vi ?? '';
-      const statusText =
-        achievement.status === PROPOSAL_STATUS.APPROVED
-          ? 'Đã duyệt'
-          : achievement.status === PROPOSAL_STATUS.PENDING
-            ? 'Chờ duyệt'
-            : (achievement.status ?? '');
 
       worksheet.addRow({
         stt: index + 1,
@@ -319,7 +282,6 @@ class ScientificAchievementService {
         loai: achievement.loai ?? '',
         mo_ta: achievement.mo_ta ?? '',
         so_quyet_dinh: achievement.so_quyet_dinh ?? '',
-        status: statusText,
         ghi_chu: achievement.ghi_chu ?? '',
       });
     });
@@ -327,141 +289,30 @@ class ScientificAchievementService {
     return workbook;
   }
 
-  async generateTemplate(personnelIds: string[] = [], userRole: string = ROLES.MANAGER) {
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('NCKH');
-
-    const personnelList =
-      personnelIds.length > 0
-        ? await prisma.quanNhan.findMany({
-            where: { id: { in: personnelIds } },
-            include: { ChucVu: true },
-          })
-        : [];
-
-    const existingDecisions = await prisma.fileQuyetDinh.findMany({
-      select: { so_quyet_dinh: true },
-      orderBy: { nam: 'desc' },
-      take: 200,
-    });
-    const decisionNumbers = existingDecisions.map(d => d.so_quyet_dinh).filter(Boolean);
-
-    const columns = [
+  async generateTemplate(personnelIds: string[] = []) {
+    const columns: TemplateColumn[] = [
       { header: 'STT', key: 'stt', width: 6 },
       { header: 'ID', key: 'id', width: 10 },
       { header: 'Họ và tên', key: 'ho_ten', width: 25 },
       { header: 'Cấp bậc', key: 'cap_bac', width: 15 },
       { header: 'Chức vụ', key: 'chuc_vu', width: 20 },
       { header: 'Năm (*)', key: 'nam', width: 10 },
-      { header: 'Loại (*)', key: 'loai', width: 15 },
+      { header: 'Loại (*)', key: 'loai', width: 15, validationFormulae: '"DTKH,SKKH"' },
       { header: 'Mô tả (*)', key: 'mo_ta', width: 40 },
       { header: 'Số quyết định', key: 'so_quyet_dinh', width: 20 },
       { header: 'Ghi chú', key: 'ghi_chu', width: 25 },
     ];
 
-    worksheet.columns = columns;
-
-    const headerRow = worksheet.getRow(1);
-    headerRow.font = { bold: true };
-    headerRow.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFD3D3D3' },
-    };
-
-    personnelList.forEach((person, index) => {
-      const rowData = {
-        stt: index + 1,
-        id: person.id,
-        ho_ten: person.ho_ten ?? '',
-        cap_bac: person.cap_bac ?? '',
-        chuc_vu: person.ChucVu ? person.ChucVu.ten_chuc_vu : '',
-      };
-      worksheet.addRow(rowData);
+    return buildTemplate({
+      sheetName: 'NCKH',
+      columns,
+      personnelIds,
     });
-
-    const readonlyColIndices = [1, 2, 3];
-    const yellowFill: ExcelJS.Fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFFFFFCC' },
-    };
-
-    for (let rowNum = 2; rowNum <= Math.max(personnelList.length + 1, 2); rowNum++) {
-      const row = worksheet.getRow(rowNum);
-      readonlyColIndices.forEach(colIdx => {
-        row.getCell(colIdx).fill = yellowFill;
-      });
-    }
-
-    const capBacOptions =
-      'Binh nhì,Binh nhất,Hạ sĩ,Trung sĩ,Thượng sĩ,Thiếu úy,Trung úy,Thượng úy,Đại úy,Thiếu tá,Trung tá,Thượng tá,Đại tá,Thiếu tướng,Trung tướng,Thượng tướng,Đại tướng';
-    const capBacSheet = workbook.addWorksheet('_CapBac', { state: 'veryHidden' });
-    capBacOptions.split(',').forEach((cb, idx) => {
-      capBacSheet.getCell(`A${idx + 1}`).value = cb;
-    });
-    const capBacCount = capBacOptions.split(',').length;
-    const maxRows = Math.max(personnelList.length + 1, 50);
-    for (let rowNum = 2; rowNum <= maxRows; rowNum++) {
-      worksheet.getRow(rowNum).getCell(4).dataValidation = {
-        type: 'list',
-        allowBlank: true,
-        formulae: [`_CapBac!$A$1:$A$${capBacCount}`],
-      };
-    }
-
-    for (let rowNum = 2; rowNum <= maxRows; rowNum++) {
-      worksheet.getRow(rowNum).getCell(7).dataValidation = {
-        type: 'list',
-        allowBlank: true,
-        formulae: ['"DTKH,SKKH"'],
-      };
-    }
-
-    if (decisionNumbers.length > 0) {
-      const soQdColNumber = columns.findIndex(c => c.key === 'so_quyet_dinh') + 1;
-      const decisionListStr = decisionNumbers.join(',');
-
-      if (decisionListStr.length <= 250) {
-        for (let rowNum = 2; rowNum <= maxRows; rowNum++) {
-          worksheet.getRow(rowNum).getCell(soQdColNumber).dataValidation = {
-            type: 'list',
-            allowBlank: true,
-            formulae: [`"${decisionListStr}"`],
-          };
-        }
-      } else {
-        const refSheet = workbook.addWorksheet('_QuyetDinh', { state: 'veryHidden' });
-        decisionNumbers.forEach((sqd, idx) => {
-          refSheet.getCell(`A${idx + 1}`).value = sqd;
-        });
-        for (let rowNum = 2; rowNum <= maxRows; rowNum++) {
-          worksheet.getRow(rowNum).getCell(soQdColNumber).dataValidation = {
-            type: 'list',
-            allowBlank: true,
-            formulae: [`_QuyetDinh!$A$1:$A$${decisionNumbers.length}`],
-          };
-        }
-      }
-    }
-
-    return workbook;
   }
 
   async previewImport(buffer: Buffer) {
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(buffer as never);
-    const worksheet = workbook.worksheets[0];
-
-    if (!worksheet) {
-      throw new ValidationError('File Excel không hợp lệ');
-    }
-
-    if (worksheet.name !== 'NCKH') {
-      throw new ValidationError(
-        `File Excel không đúng loại. Sheet "${worksheet.name}" không phải "NCKH".`
-      );
-    }
+    const workbook = await loadWorkbook(buffer);
+    const worksheet = getAndValidateWorksheet(workbook, { sheetName: 'NCKH' });
 
     const headerMap = parseHeaderMap(worksheet);
 
@@ -490,11 +341,52 @@ class ScientificAchievementService {
     const seenInFile = new Set<string>();
     const currentYear = new Date().getFullYear();
 
-    const existingDecisions = await prisma.fileQuyetDinh.findMany({
-      select: { so_quyet_dinh: true },
-    });
+    // --- First pass: collect all personnel IDs from worksheet ---
+    const allPersonnelIds = new Set<string>();
+    for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
+      const row = worksheet.getRow(rowNumber);
+      const idValue = idCol ? row.getCell(idCol).value : null;
+      if (idValue) {
+        const pid = String(idValue).trim();
+        if (pid) allPersonnelIds.add(pid);
+      }
+    }
+
+    // --- Batch queries: personnel, existing achievements, decisions ---
+    const [personnelList, existingAchievementsList, existingDecisions] = await Promise.all([
+      allPersonnelIds.size > 0
+        ? prisma.quanNhan.findMany({
+            where: { id: { in: [...allPersonnelIds] } },
+            select: { id: true, ho_ten: true, cap_bac: true },
+          })
+        : Promise.resolve([]),
+      allPersonnelIds.size > 0
+        ? prisma.thanhTichKhoaHoc.findMany({
+            where: { quan_nhan_id: { in: [...allPersonnelIds] } },
+            select: { quan_nhan_id: true, nam: true, loai: true, mo_ta: true, so_quyet_dinh: true },
+          })
+        : Promise.resolve([]),
+      prisma.fileQuyetDinh.findMany({
+        select: { so_quyet_dinh: true },
+      }),
+    ]);
+
+    // Build lookup Maps
+    const personnelMap = new Map(personnelList.map(p => [p.id, p]));
+    // Map<personnelId, records[]> for history
+    const achievementsByPersonnel = new Map<string, typeof existingAchievementsList>();
+    for (const a of existingAchievementsList) {
+      const list = achievementsByPersonnel.get(a.quan_nhan_id) || [];
+      list.push(a);
+      achievementsByPersonnel.set(a.quan_nhan_id, list);
+    }
+    // Set<key> for duplicate-in-DB check
+    const existingAchievementKeys = new Set(
+      existingAchievementsList.map(a => `${a.quan_nhan_id}_${a.nam}_${a.loai}_${a.mo_ta}`)
+    );
     const validDecisionNumbers = new Set(existingDecisions.map(d => d.so_quyet_dinh));
 
+    // --- Second pass: validate rows using Maps ---
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
       const row = worksheet.getRow(rowNumber);
       const idValue = idCol ? row.getCell(idCol).value : null;
@@ -551,7 +443,7 @@ class ScientificAchievementService {
         });
         continue;
       }
-      const personnel = await prisma.quanNhan.findUnique({ where: { id: personnelId } });
+      const personnel = personnelMap.get(personnelId);
       if (!personnel) {
         errors.push({
           row: rowNumber,
@@ -626,12 +518,29 @@ class ScientificAchievementService {
       }
       seenInFile.add(fileKey);
 
-      const history = await prisma.thanhTichKhoaHoc.findMany({
-        where: { quan_nhan_id: personnel.id },
-        orderBy: { nam: 'desc' },
-        take: 5,
-        select: { nam: true, loai: true, mo_ta: true, so_quyet_dinh: true, status: true },
-      });
+      // Check duplicate in DB
+      if (existingAchievementKeys.has(fileKey)) {
+        errors.push({
+          row: rowNumber,
+          ho_ten,
+          nam,
+          loai,
+          message: 'Thành tích khoa học đã tồn tại',
+        });
+        continue;
+      }
+
+      // Build history from pre-fetched data (last 5 records sorted by nam desc)
+      const allRecords = achievementsByPersonnel.get(personnel.id) || [];
+      const history = [...allRecords]
+        .sort((a, b) => b.nam - a.nam)
+        .slice(0, 5)
+        .map(r => ({
+          nam: r.nam,
+          loai: r.loai,
+          mo_ta: r.mo_ta,
+          so_quyet_dinh: r.so_quyet_dinh,
+        }));
 
       valid.push({
         row: rowNumber,
@@ -666,7 +575,6 @@ class ScientificAchievementService {
               chuc_vu: item.chuc_vu ?? null,
               so_quyet_dinh: item.so_quyet_dinh ?? null,
               ghi_chu: item.ghi_chu ?? null,
-              status: PROPOSAL_STATUS.APPROVED,
             },
           });
           results.push(result);

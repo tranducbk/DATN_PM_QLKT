@@ -6,3 +6,4 @@ export * as unitValidation from './unit.validation';
 export * as positionValidation from './position.validation';
 export * as decisionValidation from './decision.validation';
 export * as scientificAchievementValidation from './scientificAchievement.validation';
+export * as excelImportValidation from './excelImport.validation';

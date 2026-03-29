@@ -18,7 +18,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { formatDate } from '@/lib/utils';
 import { apiClient } from '@/lib/apiClient';
-import ExcelImportSection from './ExcelImportSection';
+import { ExcelImportSection } from './ExcelImportSection';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 import { PROPOSAL_STATUS } from '@/constants/proposal.constants';
 import * as XLSX from 'xlsx';
@@ -76,7 +76,7 @@ interface IneligiblePersonnel {
   proposalYear?: number;
 }
 
-export default function Step2SelectPersonnelCongHien({
+export function Step2SelectPersonnelCongHien({
   selectedPersonnelIds,
   onPersonnelChange,
   nam,
@@ -769,17 +769,16 @@ export default function Step2SelectPersonnelCongHien({
         <>
           <ExcelImportSection
             awardType="CONG_HIEN"
-            templateEndpoint="/api/contribution-awards/template"
-            importEndpoint="/api/contribution-awards/import"
+            downloadTemplate={apiClient.getContributionAwardsTemplate}
+            importFile={apiClient.importContributionAwards}
             templateFileName="mau_import_hcbvtq"
             onImportSuccess={handleImportSuccess}
-            selectedCount={selectedPersonnelIds.length}
             selectedPersonnelIds={selectedPersonnelIds}
             selectedNames={selectedPersonnelIds.map(id => personnel.find(p => p.id === id)?.ho_ten || '')}
             entityLabel="quân nhân"
             localProcessing={true}
             onLocalProcess={handleLocalExcelProcess}
-            previewEndpoint="/api/contribution-awards/import/preview"
+            previewImport={apiClient.previewContributionAwardsImport}
             reviewPath="/admin/awards/bulk/import-review-hcbvtq"
             sessionStorageKey="importPreviewDataHCBVTQ"
           />

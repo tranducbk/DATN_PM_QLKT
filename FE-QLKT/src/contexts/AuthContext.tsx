@@ -61,7 +61,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!isTokenValid(token) && !isTokenValid(refreshToken)) {
           localStorage.clear();
           setUser(null);
-          if (window.location.pathname !== '/login') {
+          const publicPaths = ['/login', '/dev_zone'];
+          if (!publicPaths.includes(window.location.pathname)) {
             window.location.href = '/login';
           }
           return;

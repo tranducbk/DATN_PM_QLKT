@@ -26,7 +26,7 @@ interface RejectModalProps {
   onSuccess: () => void;
 }
 
-export default function RejectModal({ visible, proposal, onClose, onSuccess }: RejectModalProps) {
+export function RejectModal({ visible, proposal, onClose, onSuccess }: RejectModalProps) {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
 

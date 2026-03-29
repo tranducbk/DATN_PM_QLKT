@@ -4,6 +4,7 @@ import profileService from '../services/profile.service';
 import { normalizeParam } from '../helpers/paginationHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
+import { writeSystemLog } from '../helpers/systemLogHelper';
 
 class PositionHistoryController {
   getPositionHistory = catchAsync(async (req: Request, res: Response) => {
@@ -15,7 +16,7 @@ class PositionHistoryController {
       try {
         await profileService.recalculateContributionProfile(personnel_id as string);
       } catch (recalcError) {
-        console.error('[Profile] Failed to recalculate contribution profile:', recalcError);
+        writeSystemLog({ action: 'ERROR', resource: 'profiles', description: `Lỗi tính lại hồ sơ cống hiến: ${recalcError}` });
       }
     }
     const result = await positionHistoryService.getPositionHistory(personnel_id as string);
@@ -43,7 +44,7 @@ class PositionHistoryController {
     try {
       await profileService.recalculateAnnualProfile(personnel_id);
     } catch (recalcError) {
-      console.error('[Profile] Failed to recalculate annual profile after position create:', recalcError);
+      writeSystemLog({ action: 'ERROR', resource: 'profiles', description: `Lỗi tính lại hồ sơ hằng năm sau khi thêm chức vụ: ${recalcError}` });
     }
     return ResponseHelper.created(res, {
       message: 'Thêm lịch sử chức vụ thành công',
@@ -66,7 +67,7 @@ class PositionHistoryController {
       const personnelId = result.data?.quan_nhan_id;
       if (personnelId) await profileService.recalculateAnnualProfile(personnelId);
     } catch (recalcError) {
-      console.error('[Profile] Failed to recalculate annual profile after position update:', recalcError);
+      writeSystemLog({ action: 'ERROR', resource: 'profiles', description: `Lỗi tính lại hồ sơ hằng năm sau khi cập nhật chức vụ: ${recalcError}` });
     }
     const response: Record<string, unknown> = {
       success: true,
@@ -87,7 +88,7 @@ class PositionHistoryController {
       try {
         await profileService.recalculateAnnualProfile(result.quan_nhan_id);
       } catch (recalcError) {
-        console.error('[Profile] Failed to recalculate annual profile after position delete:', recalcError);
+        writeSystemLog({ action: 'ERROR', resource: 'profiles', description: `Lỗi tính lại hồ sơ hằng năm sau khi xóa chức vụ: ${recalcError}` });
       }
     }
     return ResponseHelper.success(res, { message: result.message, data: { id } });

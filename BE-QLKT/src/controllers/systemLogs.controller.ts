@@ -4,13 +4,14 @@ import { ROLES } from '../constants/roles.constants';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { isFeatureEnabled } from '../helpers/settingsHelper';
 
 class SystemLogsController {
   // Roles mỗi cấp được xem (bao gồm SYSTEM cho ADMIN+)
   private static readonly VISIBLE_ROLES: Record<string, string[]> = {
-    MANAGER: ['USER', 'MANAGER'],
-    ADMIN: ['USER', 'MANAGER', 'ADMIN', 'SYSTEM'],
-    SUPER_ADMIN: ['USER', 'MANAGER', 'ADMIN', 'SUPER_ADMIN', 'SYSTEM'],
+    [ROLES.MANAGER]: [ROLES.USER, ROLES.MANAGER],
+    [ROLES.ADMIN]: [ROLES.USER, ROLES.MANAGER, ROLES.ADMIN, 'SYSTEM'],
+    [ROLES.SUPER_ADMIN]: [ROLES.USER, ROLES.MANAGER, ROLES.ADMIN, ROLES.SUPER_ADMIN, 'SYSTEM'],
   };
 
   /** Lấy danh sách account IDs trong đơn vị của manager */
@@ -84,9 +85,19 @@ class SystemLogsController {
       where.nguoi_thuc_hien_id = { in: accountIds };
     }
 
+    // Ẩn log lỗi nếu chưa bật allow_view_errors cho role hiện tại
+    const roleKey = currentUser.role.toLowerCase();
+    const canViewErrors = await isFeatureEnabled(`allow_view_errors_${roleKey}`);
+    if (!canViewErrors) {
+      where.action = action && action !== 'ERROR'
+        ? action  // user wants a specific non-ERROR action
+        : { not: 'ERROR' };  // either no filter or tried to filter ERROR — block it
+    } else if (action) {
+      where.action = action;
+    }
+
     // Các filter chung
     if (search) where.description = { contains: search, mode: 'insensitive' };
-    if (action) where.action = action;
     if (resource) where.resource = resource;
     if (startDate || endDate) {
       where.created_at = {

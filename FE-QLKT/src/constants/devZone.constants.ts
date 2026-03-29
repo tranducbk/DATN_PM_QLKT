@@ -5,7 +5,7 @@
 export const DEV_ZONE_API = '/api/dev-zone';
 
 export const DEV_SESSION_KEY = 'dev_zone_session';
-export const DEV_SESSION_DURATION = 5 * 60 * 1000; // 5 phút
+export const DEV_SESSION_DURATION = 15 * 60 * 1000; // 15 phút
 
 /** Preset lịch chạy cron job */
 export const CRON_PRESETS = [
@@ -52,6 +52,21 @@ export const SYSTEM_FEATURE_OPTIONS = [
     key: 'delete_logs',
     label: 'Xoá nhật ký hệ thống',
     description: 'Cho phép ADMIN, SUPER_ADMIN xoá nhật ký hệ thống',
+  },
+  {
+    key: 'view_errors_super_admin',
+    label: 'Xem lỗi hệ thống — Super Admin',
+    description: 'Cho phép SUPER_ADMIN xem log lỗi trong nhật ký hệ thống',
+  },
+  {
+    key: 'view_errors_admin',
+    label: 'Xem lỗi hệ thống — Admin',
+    description: 'Cho phép ADMIN xem log lỗi trong nhật ký hệ thống',
+  },
+  {
+    key: 'view_errors_manager',
+    label: 'Xem lỗi hệ thống — Manager',
+    description: 'Cho phép MANAGER xem log lỗi trong nhật ký hệ thống',
   },
 ] as const;
 

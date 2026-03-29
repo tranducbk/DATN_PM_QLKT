@@ -18,6 +18,7 @@ import {
   decisionUploadDir as uploadDir,
 } from '../configs/multer';
 import { validate } from '../middlewares/validate';
+import { excelImportValidation } from '../validations';
 import { annualRewardValidation } from '../validations';
 import { normalizeParam } from '../helpers/paginationHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
@@ -109,7 +110,13 @@ router.post(
 );
 
 // Confirm import danh hiệu hằng năm (lưu dữ liệu đã validate vào DB)
-router.post('/import/confirm', verifyToken, requireAdmin, annualRewardController.confirmImport);
+router.post(
+  '/import/confirm',
+  verifyToken,
+  requireAdmin,
+  validate(excelImportValidation.confirmImportAnnualReward),
+  annualRewardController.confirmImport
+);
 
 // Import danh hiệu hằng năm từ Excel
 router.post(

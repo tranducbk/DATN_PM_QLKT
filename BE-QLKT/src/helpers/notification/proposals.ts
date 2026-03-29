@@ -2,6 +2,7 @@ import {
   prisma,
   NOTIFICATION_TYPES,
   RESOURCE_TYPES,
+  ROLES,
   emitNotificationToUser,
   formatProposalType,
   getDisplayName,
@@ -21,7 +22,7 @@ async function notifyAdminsOnProposalSubmission(
   try {
     const admins = await prisma.taiKhoan.findMany({
       where: {
-        role: 'ADMIN',
+        role: ROLES.ADMIN,
       },
       select: {
         id: true,
@@ -67,7 +68,7 @@ async function notifyManagerOnProposalApproval(
     const notification = await prisma.thongBao.create({
       data: {
         nguoi_nhan_id: proposal.nguoi_de_xuat_id,
-        recipient_role: 'MANAGER',
+        recipient_role: ROLES.MANAGER,
         type: NOTIFICATION_TYPES.PROPOSAL_APPROVED,
         title: 'Đề xuất đã được phê duyệt',
         message: `${proposalTypeName} của bạn đã được ${approverDisplayName} phê duyệt`,
@@ -98,7 +99,7 @@ async function notifyManagerOnProposalRejection(
     const notification = await prisma.thongBao.create({
       data: {
         nguoi_nhan_id: proposal.nguoi_de_xuat_id,
-        recipient_role: 'MANAGER',
+        recipient_role: ROLES.MANAGER,
         type: NOTIFICATION_TYPES.PROPOSAL_REJECTED,
         title: 'Đề xuất bị từ chối',
         message: `${proposalTypeName} của bạn đã bị ${rejectorDisplayName} từ chối. Lý do: ${reason || 'Không có lý do cụ thể'}`,

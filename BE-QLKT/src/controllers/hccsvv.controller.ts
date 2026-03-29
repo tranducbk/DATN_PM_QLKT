@@ -6,13 +6,14 @@ import { writeSystemLog } from '../helpers/systemLogHelper';
 import { parsePersonnelIdsFromQuery } from '../helpers/controllerHelpers';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
+import { parsePagination } from '../helpers/paginationHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 
 class HCCSVVController {
   getTemplate = catchAsync(async (req: Request, res: Response) => {
-    const userRole = req.user?.role ?? 'MANAGER';
+    const userRole = req.user?.role ?? ROLES.MANAGER;
     const personnelIds = parsePersonnelIdsFromQuery(req.query);
-    const workbook = await hccsvvService.exportTemplate(personnelIds, userRole);
+    const workbook = await hccsvvService.exportTemplate(personnelIds);
     const buffer = await workbook.xlsx.writeBuffer();
     const fileName = `mau_import_hccsvv_${new Date().toISOString().slice(0, 10)}.xlsx`;
     res.setHeader(
@@ -72,9 +73,9 @@ class HCCSVVController {
   });
 
   getAll = catchAsync(async (req: Request, res: Response) => {
-    const userId = req.user!.id;
     const userRole = req.user!.role;
-    const { don_vi_id, nam, danh_hieu, ho_ten, page = 1, limit = 50 } = req.query;
+    const { don_vi_id, nam, danh_hieu, ho_ten } = req.query;
+    const { page, limit } = parsePagination(req.query);
     const filters: Record<string, unknown> = {};
     if (don_vi_id) filters.don_vi_id = don_vi_id;
     if (nam) filters.nam = nam;
@@ -99,11 +100,7 @@ class HCCSVVController {
         filters.don_vi_id = managerPersonnel.don_vi_truc_thuoc_id;
       }
     }
-    const result = await hccsvvService.getAll(
-      filters,
-      page as string | number,
-      limit as string | number
-    );
+    const result = await hccsvvService.getAll(filters, page, limit);
     return ResponseHelper.paginated(res, {
       data: result.data,
       total: result.pagination.total,
@@ -169,7 +166,7 @@ class HCCSVVController {
   deleteAward = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.params;
     const adminUsername = req.user?.username ?? 'Admin';
-    const result = await hccsvvService.deleteAward(id, adminUsername);
+    const result = await hccsvvService.deleteAward(String(id), adminUsername);
     return ResponseHelper.success(res, { message: result.message });
   });
 }

@@ -93,7 +93,7 @@ router.post(
     action: AUDIT_ACTIONS.CREATE,
     resource: 'decisions',
     getDescription: getLogDescription('decisions', 'CREATE'),
-    getResourceId: getResourceId.fromResponse('id'),
+    getResourceId: getResourceId.fromResponse(),
   }),
   decisionController.createDecision
 );

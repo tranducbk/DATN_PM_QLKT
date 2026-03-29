@@ -3,7 +3,7 @@ import scientificAchievementController from '../controllers/scientificAchievemen
 import { verifyToken, requireManager, requireAuth } from '../middlewares/auth';
 import { excelUpload as upload } from '../configs/multer';
 import { validate } from '../middlewares/validate';
-import { scientificAchievementValidation } from '../validations';
+import { scientificAchievementValidation, excelImportValidation } from '../validations';
 
 const router = Router();
 
@@ -21,6 +21,7 @@ router.post(
   '/import/confirm',
   verifyToken,
   requireManager,
+  validate(excelImportValidation.confirmImportScientificAchievement),
   scientificAchievementController.confirmImport
 );
 router.post(

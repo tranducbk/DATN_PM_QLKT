@@ -38,14 +38,11 @@ async function getUserWithUnit(userId: string) {
 async function getProposals(
   userId: string,
   userRole: string,
-  page: string | number = 1,
-  limit: string | number = 10
+  page: number = 1,
+  limit: number = 10
 ) {
   try {
-    const pageNum = typeof page === 'string' ? parseInt(page) : page;
-    const limitNum = typeof limit === 'string' ? parseInt(limit) : limit;
-    const skip = (pageNum - 1) * limitNum;
-    const take = limitNum;
+    const skip = (page - 1) * limit;
 
     // Xây dựng điều kiện where
     let whereCondition: Record<string, any> = {};
@@ -82,7 +79,7 @@ async function getProposals(
       prisma.bangDeXuat.findMany({
         where: whereCondition,
         skip,
-        take,
+        take: limit,
         include: {
           CoQuanDonVi: true,
           DonViTrucThuoc: {
@@ -125,9 +122,9 @@ async function getProposals(
       })),
       pagination: {
         total,
-        page: pageNum,
-        limit: limitNum,
-        totalPages: Math.ceil(total / take),
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
     };
   } catch (error) {

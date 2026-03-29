@@ -30,7 +30,7 @@ router.post(
     action: AUDIT_ACTIONS.CREATE,
     resource: 'positions',
     getDescription: getLogDescription('positions', 'CREATE'),
-    getResourceId: getResourceId.fromResponse('id'),
+    getResourceId: getResourceId.fromResponse(),
   }),
   positionController.createPosition
 );

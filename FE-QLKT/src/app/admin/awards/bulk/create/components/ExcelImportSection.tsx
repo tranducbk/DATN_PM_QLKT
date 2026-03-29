@@ -7,40 +7,37 @@ import { DownloadOutlined, UploadOutlined, CloudUploadOutlined } from '@ant-desi
 const { Text } = Typography;
 
 import { useRouter } from 'next/navigation';
-import axiosInstance from '@/utils/axiosInstance';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { useDevZoneFeature } from '@/contexts/DevZoneContext';
 
 interface ExcelImportSectionProps {
   awardType: string;
-  templateEndpoint: string;
-  importEndpoint: string;
+  downloadTemplate: (params: Record<string, string>) => Promise<Blob>;
+  importFile: (file: File) => Promise<any>;
   templateFileName: string;
   onImportSuccess?: (result: any) => void;
-  selectedCount?: number;
   selectedPersonnelIds?: string[];
   selectedNames?: string[];
   entityLabel?: string;
   localProcessing?: boolean;
   onLocalProcess?: (file: File) => Promise<any>;
-  previewEndpoint?: string;
+  previewImport?: (file: File) => Promise<any>;
   reviewPath?: string;
   sessionStorageKey?: string;
 }
 
-export default function ExcelImportSection({
+export function ExcelImportSection({
   awardType,
-  templateEndpoint,
-  importEndpoint,
+  downloadTemplate,
+  importFile,
   templateFileName,
   onImportSuccess,
-  selectedCount = 0,
   selectedPersonnelIds = [],
   selectedNames = [],
   entityLabel = 'bản ghi',
   localProcessing = false,
   onLocalProcess,
-  previewEndpoint,
+  previewImport,
   reviewPath = '/admin/awards/bulk/import-review',
   sessionStorageKey = 'importPreviewData',
 }: ExcelImportSectionProps) {
@@ -64,17 +61,14 @@ export default function ExcelImportSection({
       if (hasCustomRepeat) {
         params.repeat_map = JSON.stringify(repeatMap);
       }
-      const response = await axiosInstance.get(templateEndpoint, {
-        responseType: 'blob',
-        params,
-      });
+      const blob = await downloadTemplate(params);
 
       // Check if response is actually a blob
-      if (!(response.data instanceof Blob)) {
+      if (!(blob instanceof Blob)) {
         throw new Error('Response is not a valid file');
       }
 
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const url = window.URL.createObjectURL(new Blob([blob]));
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute(
@@ -98,20 +92,21 @@ export default function ExcelImportSection({
     setImportedCount(0);
 
     // Preview mode: upload to preview endpoint and navigate to review page
-    if (previewEndpoint) {
-      const formData = new FormData();
-      formData.append('file', file);
-
+    if (previewImport) {
       try {
         setUploading(true);
-        const response = await axiosInstance.post(previewEndpoint, formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
+        const response = await previewImport(file);
 
-        const data = response.data?.data;
-        sessionStorage.setItem(sessionStorageKey, JSON.stringify(data));
+        const data = response?.data;
+        try {
+          sessionStorage.setItem(sessionStorageKey, JSON.stringify(data));
+        } catch (storageError) {
+          if (storageError instanceof DOMException && storageError.name === 'QuotaExceededError') {
+            message.error('Dữ liệu xem trước quá lớn. Vui lòng giảm số lượng dòng trong file Excel.');
+            return false;
+          }
+          throw storageError;
+        }
 
         message.success('Đã phân tích file Excel. Đang chuyển đến trang xem trước...');
         router.push(reviewPath);
@@ -163,19 +158,12 @@ export default function ExcelImportSection({
       }
     } else {
       // Xử lý server như cũ
-      const formData = new FormData();
-      formData.append('file', file);
-
       try {
         setUploading(true);
-        const response = await axiosInstance.post(importEndpoint, formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
+        const response = await importFile(file);
 
-        if (response.data.success) {
-          const result = response.data.data;
+        if (response.success) {
+          const result = response.data;
           message.success(`Đã thêm thành công ${result.imported}/${result.total} ${entityLabel}`);
 
           // Hiển thị lỗi nếu có (tối đa 5 lỗi đầu tiên)
@@ -202,6 +190,9 @@ export default function ExcelImportSection({
   
           return true;
         }
+
+        message.error(response.message || 'Import thất bại');
+        return false;
       } catch (error: unknown) {
         message.error(getApiErrorMessage(error, 'Import thất bại'));
         return false;
@@ -256,6 +247,11 @@ export default function ExcelImportSection({
           <Upload
             showUploadList={false}
             beforeUpload={file => {
+              if (file.size > 10 * 1024 * 1024) {
+                message.error('File quá lớn. Tối đa 10MB.');
+                return false;
+              }
+
               const isExcel =
                 file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
                 file.type === 'application/vnd.ms-excel';

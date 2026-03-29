@@ -3,126 +3,63 @@
 import { useMemo } from 'react';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
-import ImportReviewPageContent, {
+import { DANH_HIEU_COLORS } from '@/constants/danhHieu.constants';
+import {
+  ImportReviewPageContent,
   type PreviewItem,
   type ImportReviewConfig,
   getDanhHieuTag,
-  renderText,
   makeErrorColumn,
+  makeSTTColumn,
+  makeRowNumberColumn,
+  makeHoTenColumn,
+  makeNamColumn,
+  makeCapBacColumn,
+  makeChucVuColumn,
+  makeSoQDColumn,
+  makeGhiChuColumn,
 } from '@/components/import-review/ImportReviewPageContent';
-
-const DANH_HIEU_COLORS: Record<string, string> = {
-  HCBVTQ_HANG_BA: 'green',
-  HCBVTQ_HANG_NHI: 'blue',
-  HCBVTQ_HANG_NHAT: 'gold',
-};
 
 export default function ImportReviewHCBVTQPage() {
   const validColumns: ColumnsType<PreviewItem> = useMemo(
     () => [
-      {
-        title: 'STT',
-        width: 60,
-        align: 'center' as const,
-        render: (_: any, __: any, index: number) => index + 1,
-      },
-      { title: 'Họ tên', dataIndex: 'ho_ten', width: 180, ellipsis: true },
-      {
-        title: 'Cấp bậc',
-        dataIndex: 'cap_bac',
-        width: 120,
-        ellipsis: true,
-      },
-      {
-        title: 'Chức vụ',
-        dataIndex: 'chuc_vu',
-        width: 150,
-        ellipsis: true,
-      },
-      {
-        title: 'Năm',
-        dataIndex: 'nam',
-        width: 80,
-        align: 'center' as const,
-      },
+      makeSTTColumn(),
+      makeHoTenColumn(),
+      makeCapBacColumn(),
+      makeChucVuColumn(),
+      makeNamColumn(),
       {
         title: 'Danh hiệu',
         dataIndex: 'danh_hieu',
         width: 200,
         render: (val: string) => getDanhHieuTag(val, DANH_HIEU_COLORS),
       },
-      {
-        title: 'Số QĐ',
-        dataIndex: 'so_quyet_dinh',
-        width: 140,
-        ellipsis: true,
-        render: renderText,
-      },
-      {
-        title: 'Ghi chú',
-        dataIndex: 'ghi_chu',
-        width: 150,
-        ellipsis: true,
-        render: renderText,
-      },
+      makeSoQDColumn(),
+      makeGhiChuColumn(),
     ],
     []
   );
 
   const historyColumns: ColumnsType<Record<string, any>> = useMemo(
     () => [
-      {
-        title: 'Năm',
-        dataIndex: 'nam',
-        width: 80,
-        align: 'center' as const,
-      },
+      makeNamColumn(),
       {
         title: 'Danh hiệu',
         dataIndex: 'danh_hieu',
         width: 200,
         render: (val: string) => getDanhHieuTag(val, DANH_HIEU_COLORS),
       },
-      {
-        title: 'Số QĐ',
-        dataIndex: 'so_quyet_dinh',
-        width: 120,
-        ellipsis: true,
-        render: renderText,
-      },
+      makeSoQDColumn(120),
     ],
     []
   );
 
   const invalidColumns: ColumnsType<PreviewItem> = useMemo(
     () => [
-      {
-        title: 'STT',
-        width: 50,
-        align: 'center' as const,
-        render: (_: any, __: any, index: number) => index + 1,
-      },
-      {
-        title: 'Dòng',
-        dataIndex: 'row',
-        width: 60,
-        align: 'center' as const,
-        render: (val: number) => val ?? '--',
-      },
-      {
-        title: 'Họ tên',
-        dataIndex: 'ho_ten',
-        width: 150,
-        ellipsis: true,
-        render: renderText,
-      },
-      {
-        title: 'Năm',
-        dataIndex: 'nam',
-        width: 60,
-        align: 'center' as const,
-        render: (val: number) => val ?? '--',
-      },
+      makeSTTColumn(50),
+      makeRowNumberColumn(),
+      makeHoTenColumn(150, true),
+      makeNamColumn(60, true),
       {
         title: 'Danh hiệu',
         dataIndex: 'danh_hieu',

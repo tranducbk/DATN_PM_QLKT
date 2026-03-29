@@ -27,7 +27,7 @@ router.post(
     action: AUDIT_ACTIONS.CREATE,
     resource: 'units',
     getDescription: (req: Request) => createDescription.create('don vi', req.body),
-    getResourceId: getResourceId.fromResponse('id'),
+    getResourceId: getResourceId.fromResponse(),
   }),
   unitController.createUnit
 );
@@ -89,7 +89,7 @@ router.post(
     action: AUDIT_ACTIONS.CREATE,
     resource: 'positions',
     getDescription: (req: Request) => createDescription.create('chuc vu', req.body),
-    getResourceId: getResourceId.fromResponse('id'),
+    getResourceId: getResourceId.fromResponse(),
   }),
   positionController.createPosition
 );

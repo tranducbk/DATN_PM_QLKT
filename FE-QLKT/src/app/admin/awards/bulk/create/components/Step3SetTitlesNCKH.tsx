@@ -6,7 +6,7 @@ import { EditOutlined, HistoryOutlined, EyeOutlined, ReloadOutlined } from '@ant
 import type { ColumnsType } from 'antd/es/table';
 import { formatDate } from '@/lib/utils';
 import { apiClient } from '@/lib/apiClient';
-import ScientificAchievementHistoryModal from './ScientificAchievementHistoryModal';
+import { ScientificAchievementHistoryModal } from './ScientificAchievementHistoryModal';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
 import { PROPOSAL_STATUS, PROPOSAL_STATUS_LABELS, PROPOSAL_STATUS_COLORS } from '@/constants/proposal.constants';
 
@@ -59,7 +59,7 @@ interface Step3SetTitlesNCKHProps {
   nam: number;
 }
 
-export default function Step3SetTitlesNCKH({
+export function Step3SetTitlesNCKH({
   selectedPersonnelIds,
   onPersonnelChange,
   titleData,

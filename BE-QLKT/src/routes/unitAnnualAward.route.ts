@@ -17,6 +17,8 @@ import {
   decisionUploadDir as uploadDir,
 } from '../configs/multer';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { validate } from '../middlewares/validate';
+import { excelImportValidation } from '../validations';
 
 const router = Router();
 
@@ -56,6 +58,7 @@ router.post(
   '/import/confirm',
   verifyToken,
   checkRole([ROLES.ADMIN, ROLES.MANAGER]),
+  validate(excelImportValidation.confirmImportUnitAnnualAward),
   auditLog({
     action: AUDIT_ACTIONS.IMPORT,
     resource: 'unit-annual-awards',

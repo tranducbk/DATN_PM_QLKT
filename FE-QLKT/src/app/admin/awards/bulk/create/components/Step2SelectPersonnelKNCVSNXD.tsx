@@ -20,7 +20,7 @@ import { formatDate } from '@/lib/utils';
 import type { DateInput } from '@/lib/types';
 import { apiClient } from '@/lib/apiClient';
 import { getApiErrorMessage } from '@/lib/apiError';
-import ExcelImportSection from './ExcelImportSection';
+import { ExcelImportSection } from './ExcelImportSection';
 import * as XLSX from 'xlsx';
 
 const { Text } = Typography;
@@ -68,7 +68,7 @@ interface Step2SelectPersonnelKNCVSNXDProps {
   isManager?: boolean;
 }
 
-export default function Step2SelectPersonnelKNCVSNXD({
+export function Step2SelectPersonnelKNCVSNXD({
   selectedPersonnelIds,
   onPersonnelChange,
   nam,
@@ -705,17 +705,16 @@ export default function Step2SelectPersonnelKNCVSNXD({
         <>
           <ExcelImportSection
             awardType="KNC_VSNXD_QDNDVN"
-            templateEndpoint="/api/commemorative-medals/template"
-            importEndpoint="/api/commemorative-medals/import"
+            downloadTemplate={apiClient.getCommemorationMedalsTemplate}
+            importFile={apiClient.importCommemorationMedals}
             templateFileName="mau_import_knc_vsnxd"
             onImportSuccess={handleImportSuccess}
-            selectedCount={selectedPersonnelIds.length}
             selectedPersonnelIds={selectedPersonnelIds}
             selectedNames={selectedPersonnelIds.map(id => personnel.find(p => p.id === id)?.ho_ten || '')}
             entityLabel="quân nhân"
             localProcessing={true}
             onLocalProcess={handleLocalExcelProcess}
-            previewEndpoint="/api/commemorative-medals/import/preview"
+            previewImport={apiClient.previewCommemorationMedalsImport}
             reviewPath="/admin/awards/bulk/import-review-kncvsnxd"
             sessionStorageKey="importPreviewDataKNCVSNXD"
           />

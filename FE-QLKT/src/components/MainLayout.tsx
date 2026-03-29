@@ -122,10 +122,11 @@ function ConnectionStatusToast({ status }: { status: SocketConnectionStatus }) {
   return null;
 }
 
-export default function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
+export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [notificationLoading, setNotificationLoading] = useState(false);
@@ -303,8 +304,9 @@ export default function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutP
   };
 
   const handleLogout = () => {
+    setIsLoggingOut(true);
     authLogout();
-    router.push('/login');
+    window.location.href = '/login';
   };
 
   // Menu items dựa trên vai trò
@@ -683,6 +685,14 @@ export default function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutP
       }}
     >
       <App>
+        {isLoggingOut && (
+          <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-white/80 dark:bg-gray-900/90 backdrop-blur-sm transition-opacity duration-300">
+            <Spin size="large" />
+            <p className="mt-4 text-base font-medium text-gray-600 dark:text-gray-300">
+              Đang đăng xuất...
+            </p>
+          </div>
+        )}
         <ApiErrorHandler />
         <NotificationToast notification={latestNotification} />
         <ConnectionStatusToast status={connectionStatus} />

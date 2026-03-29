@@ -31,7 +31,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { apiClient } from '@/lib/apiClient';
-import VietnamAddressCascader from './VietnamAddressCascader';
+import { VietnamAddressCascader } from './VietnamAddressCascader';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
 import { useTheme } from '@/components/ThemeProvider';
 import { formatDate } from '@/lib/utils';
@@ -180,7 +180,7 @@ interface ProfileEditFormProps {
   onSuccess?: () => void; // Callback khi cập nhật thành công
 }
 
-export default function ProfileEditForm({
+export function ProfileEditForm({
   personnelId: externalPersonnelId,
   onSuccess,
 }: ProfileEditFormProps = {}) {
@@ -225,8 +225,15 @@ export default function ProfileEditForm({
         }
 
         // Decode JWT để lấy quan_nhan_id
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        const { quan_nhan_id } = payload;
+        let quan_nhan_id: string | undefined;
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          quan_nhan_id = payload.quan_nhan_id;
+        } catch {
+          message.error('Token không hợp lệ, vui lòng đăng nhập lại');
+          router.push('/login');
+          return;
+        }
 
         if (!quan_nhan_id) {
           message.error('Không tìm thấy thông tin quân nhân');

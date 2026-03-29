@@ -10,6 +10,7 @@ import { NotFoundError, ValidationError } from '../../middlewares/errorHandler';
 import { sanitizeFilename } from './helpers';
 import { checkDuplicateAward } from './validation';
 import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
+import { writeSystemLog } from '../../helpers/systemLogHelper';
 
 /** Chuẩn hoá cột `Json?` (`data_*` trên `bang_de_xuat`) — cấu trúc phần tử không cố định (JSON nghiệp vụ) */
 function asJsonObjectArray(value: unknown): any[] {
@@ -1354,7 +1355,6 @@ async function approveProposal(
                 nam: parseInt(item.nam, 10),
                 loai: item.loai,
                 mo_ta: item.mo_ta.trim(),
-                status: PROPOSAL_STATUS.APPROVED,
                 chuc_vu: item.chuc_vu || null,
                 cap_bac: item.cap_bac || null,
                 ghi_chu: item.ghi_chu || null,
@@ -1551,7 +1551,7 @@ async function approveProposal(
               }
             }
           } catch (error) {
-            console.error('[Proposal] Failed to update decision file path during approval:', error);
+            writeSystemLog({ action: 'ERROR', resource: 'proposals', description: `Lỗi cập nhật file quyết định khi duyệt đề xuất: ${error}` });
           }
         }
 

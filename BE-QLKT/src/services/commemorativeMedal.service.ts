@@ -1,41 +1,23 @@
 import { prisma } from '../models';
 import ExcelJS from 'exceljs';
+import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHelper';
 import { checkDuplicateAward } from '../helpers/awardValidation';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import * as notificationHelper from '../helpers/notification';
 import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
-import { ValidationError } from '../middlewares/errorHandler';
+import { ValidationError, NotFoundError } from '../middlewares/errorHandler';
 import { parseHeaderMap, getHeaderCol } from '../helpers/excelHelper';
+import { writeSystemLog } from '../helpers/systemLogHelper';
+import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
 
 class CommemorativeMedalService {
   /**
    * Export template Excel for Commemorative Medal (KNC VSNXD) import
    * Pre-filled with selected personnel
    */
-  async exportTemplate(personnelIds: string[] = [], userRole: string = ROLES.MANAGER) {
-    // Query personnel by IDs
-    const personnelList =
-      personnelIds.length > 0
-        ? await prisma.quanNhan.findMany({
-            where: { id: { in: personnelIds } },
-            include: { ChucVu: true },
-          })
-        : [];
-
-    // Query danh sách số quyết định hiện có để tạo dropdown
-    const existingDecisions = await prisma.fileQuyetDinh.findMany({
-      select: { so_quyet_dinh: true },
-      orderBy: { nam: 'desc' },
-      take: 200,
-    });
-    const decisionNumbers = existingDecisions.map(d => d.so_quyet_dinh).filter(Boolean);
-
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('KNC VSNXD');
-
-    // Định nghĩa các cột — KNC chỉ có 1 loại, không cần cột danh_hieu
-    const columns = [
+  async exportTemplate(personnelIds: string[] = []) {
+    const columns: TemplateColumn[] = [
       { header: 'STT', key: 'stt', width: 6 },
       { header: 'ID', key: 'id', width: 10 },
       { header: 'Họ và tên', key: 'ho_ten', width: 25 },
@@ -46,126 +28,21 @@ class CommemorativeMedalService {
       { header: 'Ghi chú', key: 'ghi_chu', width: 25 },
     ];
 
-    worksheet.columns = columns;
-
-    // Style cho header row: bold + gray background
-    const headerRow = worksheet.getRow(1);
-    headerRow.font = { bold: true };
-    headerRow.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFD3D3D3' },
-    };
-
-    // Pre-fill rows with personnel data
-    personnelList.forEach((person, index) => {
-      const rowData = {
-        stt: index + 1,
-        id: person.id,
-        ho_ten: person.ho_ten ?? '',
-        cap_bac: person.cap_bac ?? '',
-        chuc_vu: person.ChucVu ? person.ChucVu.ten_chuc_vu : '',
-      };
-      worksheet.addRow(rowData);
+    return buildTemplate({
+      sheetName: 'KNC VSNXD',
+      columns,
+      personnelIds,
+      editableColumnLetters: ['G'],
     });
-
-    // Light yellow background for readonly columns (STT, ID, Họ và tên)
-    const readonlyColIndices = [1, 2, 3];
-    const yellowFill: ExcelJS.Fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFFFFFCC' },
-    };
-
-    for (let rowNum = 2; rowNum <= Math.max(personnelList.length + 1, 2); rowNum++) {
-      const row = worksheet.getRow(rowNum);
-      readonlyColIndices.forEach(colIdx => {
-        row.getCell(colIdx).fill = yellowFill;
-      });
-    }
-
-    // Data validation for Cấp bậc column (col 4) — dropdown
-    const capBacOptions =
-      'Binh nhì,Binh nhất,Hạ sĩ,Trung sĩ,Thượng sĩ,Thiếu úy,Trung úy,Thượng úy,Đại úy,Thiếu tá,Trung tá,Thượng tá,Đại tá,Thiếu tướng,Trung tướng,Thượng tướng,Đại tướng';
-    const capBacSheet = workbook.addWorksheet('_CapBac', { state: 'veryHidden' });
-    capBacOptions.split(',').forEach((cb, idx) => {
-      capBacSheet.getCell(`A${idx + 1}`).value = cb;
-    });
-    const capBacCount = capBacOptions.split(',').length;
-    const maxRows = Math.max(personnelList.length + 1, 50);
-    for (let rowNum = 2; rowNum <= maxRows; rowNum++) {
-      worksheet.getRow(rowNum).getCell(4).dataValidation = {
-        type: 'list',
-        allowBlank: true,
-        formulae: [`_CapBac!$A$1:$A$${capBacCount}`],
-      };
-    }
-
-    // Data validation cho cột số quyết định — dropdown từ DB
-    if (decisionNumbers.length > 0) {
-      const soQdColNumber = columns.findIndex(c => c.key === 'so_quyet_dinh') + 1;
-      const decisionListStr = decisionNumbers.join(',');
-
-      if (decisionListStr.length <= 250) {
-        for (let rowNum = 2; rowNum <= maxRows; rowNum++) {
-          worksheet.getRow(rowNum).getCell(soQdColNumber).dataValidation = {
-            type: 'list',
-            allowBlank: true,
-            formulae: [`"${decisionListStr}"`],
-          };
-        }
-      } else {
-        const refSheet = workbook.addWorksheet('_QuyetDinh', { state: 'veryHidden' });
-        decisionNumbers.forEach((sqd, idx) => {
-          refSheet.getCell(`A${idx + 1}`).value = sqd;
-        });
-        for (let rowNum = 2; rowNum <= maxRows; rowNum++) {
-          worksheet.getRow(rowNum).getCell(soQdColNumber).dataValidation = {
-            type: 'list',
-            allowBlank: true,
-            formulae: [`_QuyetDinh!$A$1:$A$${decisionNumbers.length}`],
-          };
-        }
-      }
-    }
-
-    // Conditional formatting: nền vàng khi ô có giá trị
-    const maxDataRow = Math.max(personnelIds.length + 1, 50);
-    const editableColumns = ['G'];
-    editableColumns.forEach(col => {
-      worksheet.addConditionalFormatting({
-        ref: `${col}2:${col}${maxDataRow}`,
-        rules: [
-          {
-            type: 'expression',
-            formulae: [`LEN(TRIM(${col}2))>0`],
-            style: {
-              fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFCC' } },
-            },
-            priority: 1,
-          },
-        ],
-      });
-    });
-
-    return workbook;
   }
 
   /**
    * Preview import KNC VSNXD từ Excel (chỉ validate, không ghi DB)
    * Trả về danh sách valid items kèm lịch sử, và danh sách lỗi
    */
-  async previewImport(buffer) {
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(buffer);
-
-    // Verify sheet name
-    const worksheet = workbook.getWorksheet('KNC VSNXD');
-    if (!worksheet) {
-      throw new ValidationError(
-        'Không tìm thấy sheet "KNC VSNXD" trong file Excel. Vui lòng sử dụng đúng file mẫu.'
-      );
-    }
+  async previewImport(buffer: Buffer) {
+    const workbook = await loadWorkbook(buffer);
+    const worksheet = getAndValidateWorksheet(workbook, { sheetName: 'KNC VSNXD' });
 
     // Header map
     const headerMap = parseHeaderMap(worksheet);
@@ -190,10 +67,37 @@ class CommemorativeMedalService {
     const seenInFile = new Set();
     const currentYear = new Date().getFullYear();
 
-    // Query danh sách số quyết định hợp lệ trên hệ thống
-    const existingDecisions = await prisma.fileQuyetDinh.findMany({
-      select: { so_quyet_dinh: true },
-    });
+    // --- First pass: collect all personnel IDs from worksheet ---
+    const allPersonnelIds = new Set<string>();
+    for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
+      const row = worksheet.getRow(rowNumber);
+      const idValue = idCol ? row.getCell(idCol).value : null;
+      if (idValue) {
+        const pid = String(idValue).trim();
+        if (pid) allPersonnelIds.add(pid);
+      }
+    }
+
+    // --- Batch queries: personnel, existing KNC, decisions ---
+    const [personnelList, existingKncList, existingDecisions] = await Promise.all([
+      allPersonnelIds.size > 0
+        ? prisma.quanNhan.findMany({
+            where: { id: { in: [...allPersonnelIds] } },
+            select: { id: true, ho_ten: true, gioi_tinh: true, ngay_nhap_ngu: true, cap_bac: true },
+          })
+        : Promise.resolve([]),
+      allPersonnelIds.size > 0
+        ? prisma.kyNiemChuongVSNXDQDNDVN.findMany({
+            where: { quan_nhan_id: { in: [...allPersonnelIds] } },
+          })
+        : Promise.resolve([]),
+      prisma.fileQuyetDinh.findMany({
+        select: { so_quyet_dinh: true },
+      }),
+    ]);
+
+    const personnelMap = new Map(personnelList.map(p => [p.id, p]));
+    const existingKncMap = new Map(existingKncList.map(k => [k.quan_nhan_id, k]));
     const validDecisionNumbers = new Set(existingDecisions.map(d => d.so_quyet_dinh));
 
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
@@ -238,10 +142,7 @@ class CommemorativeMedalService {
         });
         continue;
       }
-      const personnel = await prisma.quanNhan.findUnique({
-        where: { id: personnelId },
-        select: { id: true, ho_ten: true, gioi_tinh: true, ngay_nhap_ngu: true, cap_bac: true },
-      });
+      const personnel = personnelMap.get(personnelId);
       if (!personnel) {
         errors.push({
           row: rowNumber,
@@ -301,9 +202,7 @@ class CommemorativeMedalService {
       seenInFile.add(personnel.id);
 
       // Check duplicate in DB — quân nhân đã có KNC
-      const existingKnc = await prisma.kyNiemChuongVSNXDQDNDVN.findUnique({
-        where: { quan_nhan_id: personnel.id },
-      });
+      const existingKnc = existingKncMap.get(personnel.id);
       if (existingKnc) {
         errors.push({
           row: rowNumber,
@@ -342,13 +241,11 @@ class CommemorativeMedalService {
         continue;
       }
 
-      // Query existing award history
-      const history = await prisma.kyNiemChuongVSNXDQDNDVN.findMany({
-        where: { quan_nhan_id: personnel.id },
-        orderBy: { nam: 'desc' },
-        take: 5,
-        select: { nam: true, so_quyet_dinh: true, ghi_chu: true },
-      });
+      // History from batched data — existingKnc is already checked as null here,
+      // so history is always empty (person has no KNC yet). Keep the structure for consistency.
+      const history = existingKnc
+        ? [{ nam: existingKnc.nam, so_quyet_dinh: existingKnc.so_quyet_dinh, ghi_chu: existingKnc.ghi_chu }]
+        : [];
 
       valid.push({
         row: rowNumber,
@@ -371,7 +268,7 @@ class CommemorativeMedalService {
   /**
    * Confirm import: lưu dữ liệu đã validate vào DB
    */
-  async confirmImport(validItems, adminId) {
+  async confirmImport(validItems: any[], adminId: string) {
     return await prisma.$transaction(
       async tx => {
         const results = [];
@@ -405,13 +302,12 @@ class CommemorativeMedalService {
   /**
    * Import Commemorative Medals from Excel (legacy — direct import without preview)
    */
-  async importFromExcel(excelBuffer, adminId) {
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(excelBuffer);
+  async importFromExcel(excelBuffer: Buffer, adminId: string) {
+    const workbook = await loadWorkbook(excelBuffer);
     const worksheet = workbook.getWorksheet('KNC VSNXD') ?? workbook.getWorksheet('KNC_VSNXD');
 
     if (!worksheet) {
-      throw new Error('Không tìm thấy sheet "KNC VSNXD" trong file Excel');
+      throw new ValidationError('Không tìm thấy sheet "KNC VSNXD" trong file Excel');
     }
 
     const results = {
@@ -431,6 +327,22 @@ class CommemorativeMedalService {
       }
     });
 
+    // Batch query: collect all unique ho_ten values, then query once
+    const allHoTen = new Set<string>();
+    for (const { row } of rows) {
+      const ho_ten = row.getCell(1).value?.toString().trim();
+      if (ho_ten) allHoTen.add(ho_ten);
+    }
+    const allPersonnel = allHoTen.size > 0
+      ? await prisma.quanNhan.findMany({ where: { ho_ten: { in: [...allHoTen] } } })
+      : [];
+    const personnelByName = new Map<string, typeof allPersonnel>();
+    for (const p of allPersonnel) {
+      const list = personnelByName.get(p.ho_ten) ?? [];
+      list.push(p);
+      personnelByName.set(p.ho_ten, list);
+    }
+
     for (const { row, rowNumber } of rows) {
       try {
         const ho_ten = row.getCell(1).value?.toString().trim();
@@ -447,8 +359,8 @@ class CommemorativeMedalService {
           continue;
         }
 
-        // Tìm quân nhân theo tên
-        const personnelList = await prisma.quanNhan.findMany({ where: { ho_ten } });
+        // Tìm quân nhân theo tên (from pre-fetched batch)
+        const personnelList = personnelByName.get(ho_ten) ?? [];
         if (personnelList.length === 0) {
           results.errors.push(`Dòng ${rowNumber}: Không tìm thấy quân nhân với tên ${ho_ten}`);
           results.failed++;
@@ -570,11 +482,9 @@ class CommemorativeMedalService {
    */
   async getAll(
     filters: Record<string, unknown> = {},
-    page: string | number = 1,
-    limit: string | number = 50
+    page: number = 1,
+    limit: number = 50
   ) {
-    const pageNum = parseInt(String(page), 10);
-    const limitNum = parseInt(String(limit), 10);
     const where: Record<string, unknown> = {};
 
     // Filter theo họ tên
@@ -631,8 +541,8 @@ class CommemorativeMedalService {
             },
           },
         },
-        skip: (pageNum - 1) * limitNum,
-        take: limitNum,
+        skip: (page - 1) * limit,
+        take: limit,
         orderBy: { nam: 'desc' },
       }),
       prisma.kyNiemChuongVSNXDQDNDVN.count({ where }),
@@ -641,10 +551,10 @@ class CommemorativeMedalService {
     return {
       data,
       pagination: {
-        page: pageNum,
-        limit: limitNum,
+        page: page,
+        limit: limit,
         total,
-        totalPages: Math.ceil(total / limitNum),
+        totalPages: Math.ceil(total / limit),
       },
     };
   }
@@ -652,7 +562,7 @@ class CommemorativeMedalService {
   /**
    * Export Commemorative Medals to Excel
    */
-  async exportToExcel(filters = {}) {
+  async exportToExcel(filters: Record<string, any> = {}) {
     const { data } = await this.getAll(filters, 1, 10000);
 
     const workbook = new ExcelJS.Workbook();
@@ -740,7 +650,7 @@ class CommemorativeMedalService {
   /**
    * Get user with unit info (helper method)
    */
-  async getUserWithUnit(userId) {
+  async getUserWithUnit(userId: string) {
     return await prisma.taiKhoan.findUnique({
       where: { id: userId },
       include: {
@@ -757,7 +667,7 @@ class CommemorativeMedalService {
   /**
    * Get Commemorative Medal by personnel ID
    */
-  async getByPersonnelId(personnelId) {
+  async getByPersonnelId(personnelId: string) {
     const result = await prisma.kyNiemChuongVSNXDQDNDVN.findUnique({
       where: { quan_nhan_id: personnelId },
       include: {
@@ -779,7 +689,7 @@ class CommemorativeMedalService {
   /**
    * Get personnel by ID (helper method)
    */
-  async getPersonnelById(personnelId) {
+  async getPersonnelById(personnelId: string) {
     return await prisma.quanNhan.findUnique({
       where: { id: personnelId },
       select: {
@@ -795,7 +705,7 @@ class CommemorativeMedalService {
    * @param {string} adminUsername - Username của admin thực hiện xóa
    * @returns {Promise<Object>}
    */
-  async deleteAward(id, adminUsername = 'Admin') {
+  async deleteAward(id: string, adminUsername: string = 'Admin') {
     const award = await prisma.kyNiemChuongVSNXDQDNDVN.findUnique({
       where: { id },
       include: {
@@ -804,7 +714,7 @@ class CommemorativeMedalService {
     });
 
     if (!award) {
-      throw new Error('Bản ghi khen thưởng không tồn tại');
+      throw new NotFoundError('Bản ghi khen thưởng');
     }
 
     const personnelId = award.quan_nhan_id;
@@ -822,7 +732,12 @@ class CommemorativeMedalService {
     try {
       await notificationHelper.notifyOnAwardDeleted(award, personnel, 'KNC_VSNXD_QDNDVN', adminUsername);
     } catch (notifyError) {
-      console.error('[Notification] Failed to notify on KNC_VSNXD_QDNDVN award deletion:', notifyError);
+      writeSystemLog({
+        action: 'ERROR',
+        resource: 'commemorative-medals',
+        resourceId: id,
+        description: `Lỗi gửi thông báo xóa khen thưởng KNC VSNXD: ${notifyError}`,
+      });
     }
 
     return {

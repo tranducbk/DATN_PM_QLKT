@@ -78,7 +78,7 @@ interface DecisionFormData {
   ghi_chu?: string;
 }
 
-export default function ApproveModal({ visible, proposal, onClose, onSuccess }: ApproveModalProps) {
+export function ApproveModal({ visible, proposal, onClose, onSuccess }: ApproveModalProps) {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);

@@ -26,7 +26,7 @@ interface ServiceHistoryModalProps {
   onClose: () => void;
 }
 
-export default function ServiceHistoryModal({
+export function ServiceHistoryModal({
   visible,
   personnel,
   serviceProfile,

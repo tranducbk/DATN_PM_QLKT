@@ -2,15 +2,12 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Card,
   Button,
   Input,
   Switch,
   Space,
-  Typography,
   message,
   Select,
-  Divider,
   Alert,
   Spin,
   ConfigProvider,
@@ -24,6 +21,8 @@ import {
   ReloadOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
+  DeleteOutlined,
+  ToolOutlined,
 } from '@ant-design/icons';
 import Image from 'next/image';
 import { isAxiosError } from 'axios';
@@ -36,10 +35,8 @@ import {
   CRON_PRESETS,
   AWARD_TYPE_OPTIONS,
   SYSTEM_FEATURE_OPTIONS,
-  DEFAULT_CRON_SCHEDULE,
 } from '@/constants/devZone.constants';
-
-const { Title, Text, Paragraph } = Typography;
+import './dev-zone.css';
 
 function FeatureRow({
   icon,
@@ -54,21 +51,17 @@ function FeatureRow({
   checked?: boolean;
   onChange: (v: boolean) => void;
 }) {
-  const isChecked = checked ?? false;
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      <Space>
-        {icon}
+    <div className="dz-feature-row">
+      <div className="dz-feature-info">
+        <span className="dz-feature-icon">{icon}</span>
         <div>
-          <Text strong>{title}</Text>
-          <br />
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            {description}
-          </Text>
+          <div className="dz-feature-label">{title}</div>
+          <div className="dz-feature-desc">{description}</div>
         </div>
-      </Space>
+      </div>
       <Switch
-        checked={isChecked}
+        checked={checked ?? false}
         onChange={onChange}
         checkedChildren="BẬT"
         unCheckedChildren="TẮT"
@@ -90,7 +83,6 @@ interface DevStatus {
       message?: string;
     } | null;
   };
-  /** Cờ cố định + các `allow_*` động từ backend */
   features: {
     import_enabled: boolean;
     template_enabled: boolean;
@@ -100,7 +92,7 @@ interface DevStatus {
 function saveSession(pwd: string) {
   sessionStorage.setItem(
     DEV_SESSION_KEY,
-    JSON.stringify({ pwd, expires: Date.now() + DEV_SESSION_DURATION })
+    JSON.stringify({ t: btoa(encodeURIComponent(pwd)), e: Date.now() + DEV_SESSION_DURATION }),
   );
 }
 
@@ -108,13 +100,14 @@ function loadSession(): string | null {
   try {
     const raw = sessionStorage.getItem(DEV_SESSION_KEY);
     if (!raw) return null;
-    const { pwd, expires } = JSON.parse(raw);
-    if (Date.now() > expires) {
+    const { t, e } = JSON.parse(raw);
+    if (Date.now() > e) {
       sessionStorage.removeItem(DEV_SESSION_KEY);
       return null;
     }
-    return pwd;
+    return decodeURIComponent(atob(t));
   } catch {
+    sessionStorage.removeItem(DEV_SESSION_KEY);
     return null;
   }
 }
@@ -136,7 +129,6 @@ export default function DevZonePage() {
   const [cronPreset, setCronPreset] = useState('');
   const [customCron, setCustomCron] = useState('');
 
-  // Khôi phục session khi mở lại trang (trong 5 phút)
   useEffect(() => {
     const saved = loadSession();
     if (saved) {
@@ -154,7 +146,6 @@ export default function DevZonePage() {
       });
       if (res.data.success) {
         setStatus(res.data.data);
-        // Sync cron preset
         const schedule = res.data.data.cron.schedule;
         const preset = CRON_PRESETS.find(p => p.value === schedule);
         if (preset) {
@@ -205,13 +196,11 @@ export default function DevZonePage() {
       const res = await axiosInstance.post(
         DEV_ZONE_API + '/cron/trigger',
         {},
-        {
-          headers: { 'x-dev-password': devPassword },
-        }
+        { headers: { 'x-dev-password': devPassword } },
       );
       if (res.data.success) {
         message.success(
-          `Hoàn tất! Thành công: ${res.data.data.success}, Lỗi: ${res.data.data.errors}`
+          `Hoàn tất! Thành công: ${res.data.data.success}, Lỗi: ${res.data.data.errors}`,
         );
         fetchStatus(devPassword);
       }
@@ -223,7 +212,6 @@ export default function DevZonePage() {
   };
 
   const handleUpdateCron = async (enabled?: boolean, schedule?: string) => {
-    // Optimistic update cho toggle bật/tắt
     const prevEnabled = status?.cron.enabled;
     if (typeof enabled === 'boolean') {
       setStatus(prev => (prev ? { ...prev, cron: { ...prev.cron, enabled } } : prev));
@@ -241,10 +229,9 @@ export default function DevZonePage() {
         fetchStatus(devPassword);
       }
     } catch (err: unknown) {
-      // Revert nếu lỗi
       if (typeof enabled === 'boolean' && prevEnabled !== undefined) {
         setStatus(prev =>
-          prev ? { ...prev, cron: { ...prev.cron, enabled: prevEnabled } } : prev
+          prev ? { ...prev, cron: { ...prev.cron, enabled: prevEnabled } } : prev,
         );
       }
       message.error(getApiErrorMessage(err, 'Cập nhật thất bại'));
@@ -252,33 +239,19 @@ export default function DevZonePage() {
   };
 
   const handleToggleFeature = async (key: string, value: boolean) => {
-    // Optimistic update — chuyển Switch ngay lập tức
     setStatus(prev =>
-      prev
-        ? {
-            ...prev,
-            features: { ...prev.features, [key]: value },
-          }
-        : prev
+      prev ? { ...prev, features: { ...prev.features, [key]: value } } : prev,
     );
 
     try {
       await axiosInstance.put(
         DEV_ZONE_API + '/features',
         { [key]: value },
-        {
-          headers: { 'x-dev-password': devPassword },
-        }
+        { headers: { 'x-dev-password': devPassword } },
       );
     } catch {
-      // Revert nếu lỗi
       setStatus(prev =>
-        prev
-          ? {
-              ...prev,
-              features: { ...prev.features, [key]: !value },
-            }
-          : prev
+        prev ? { ...prev, features: { ...prev.features, [key]: !value } } : prev,
       );
       message.error('Cập nhật thất bại');
     }
@@ -287,111 +260,53 @@ export default function DevZonePage() {
   // Login screen
   if (!authenticated) {
     return (
-      <div
-        style={{
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: 'radial-gradient(ellipse at 50% 0%, #1a2940 0%, #0a1628 60%, #050d1a 100%)',
-          position: 'relative',
-          overflow: 'hidden',
-        }}
-      >
-        {/* Background decoration */}
-        <div
-          style={{
-            position: 'absolute',
-            top: '20%',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: 500,
-            height: 500,
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 70%)',
-            pointerEvents: 'none',
-          }}
-        />
+      <div className="dz-page">
+        <div className="dz-bg">
+          <div className="dz-orb dz-orb-1"></div>
+          <div className="dz-orb dz-orb-2"></div>
+        </div>
 
-        <Card
-          style={{
-            width: 400,
-            textAlign: 'center',
-            borderRadius: 20,
-            border: '1px solid rgba(255,255,255,0.08)',
-            background: 'rgba(255,255,255,0.95)',
-            backdropFilter: 'blur(20px)',
-            boxShadow: '0 25px 80px rgba(0,0,0,0.4), 0 0 40px rgba(59,130,246,0.1)',
-          }}
-          styles={{ body: { padding: '48px 36px 40px' } }}
-        >
-          <div
-            style={{
-              width: 100,
-              height: 100,
-              margin: '0 auto 20px',
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #f0f4ff 0%, #dbeafe 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 4px 20px rgba(59,130,246,0.15)',
-            }}
-          >
-            <Image
-              src="/logo-msa.png"
-              alt="MSA"
-              width={70}
-              height={70}
-              style={{ objectFit: 'contain' }}
+        <div className="dz-auth">
+          <div className="dz-auth-card">
+            <div className="dz-auth-logo">
+              <Image src="/logo-msa.png" alt="MSA" width={52} height={52} style={{ objectFit: 'contain' }} />
+            </div>
+            <h1 className="dz-auth-title">Developer Zone</h1>
+            <p className="dz-auth-sub">Khu vực quản trị hệ thống QLKT</p>
+
+            <Input.Password
+              prefix={<LockOutlined />}
+              placeholder="Nhập mật khẩu truy cập"
+              size="large"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              onPressEnter={handleAuth}
+              className="dz-auth-input"
             />
+
+            <Button
+              type="primary"
+              size="large"
+              block
+              loading={authLoading}
+              onClick={handleAuth}
+              className="dz-auth-btn"
+            >
+              Truy cập
+            </Button>
           </div>
-
-          <Title level={3} style={{ marginBottom: 4, letterSpacing: 1 }}>
-            Developer Zone
-          </Title>
-          <Paragraph type="secondary" style={{ marginBottom: 28, fontSize: 14 }}>
-            Khu vực quản trị hệ thống QLKT
-          </Paragraph>
-
-          <Input.Password
-            prefix={<LockOutlined style={{ color: '#9ca3af' }} />}
-            placeholder="Nhập mật khẩu truy cập"
-            size="large"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            onPressEnter={handleAuth}
-            style={{
-              marginBottom: 20,
-              borderRadius: 10,
-              height: 48,
-            }}
-          />
-
-          <Button
-            type="primary"
-            size="large"
-            block
-            loading={authLoading}
-            onClick={handleAuth}
-            style={{
-              height: 48,
-              borderRadius: 10,
-              fontWeight: 600,
-              fontSize: 16,
-              background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-              border: 'none',
-              boxShadow: '0 4px 15px rgba(59,130,246,0.4)',
-            }}
-          >
-            Truy cập
-          </Button>
-        </Card>
+        </div>
       </div>
     );
   }
 
-  // Main dashboard — dùng Ant Design ConfigProvider dark theme
+  const showSaveBtn =
+    status &&
+    cronPreset &&
+    ((cronPreset !== 'custom' && cronPreset !== status.cron.schedule) ||
+      (cronPreset === 'custom' && customCron && customCron !== status.cron.schedule));
+
+  // Dashboard
   return (
     <ConfigProvider
       theme={{
@@ -403,218 +318,210 @@ export default function DevZonePage() {
         },
       }}
     >
-      <div
-        style={{
-          minHeight: '100vh',
-          background: 'radial-gradient(ellipse at 50% 0%, #1a2940 0%, #0a1628 60%, #050d1a 100%)',
-          padding: '32px 16px',
-        }}
-      >
-        <div style={{ maxWidth: 720, margin: '0 auto' }}>
+      <div className="dz-page">
+        <div className="dz-bg">
+          <div className="dz-orb dz-orb-1"></div>
+          <div className="dz-orb dz-orb-2"></div>
+        </div>
+
+        <div className="dz-dashboard">
           {/* Header */}
-          <div style={{ textAlign: 'center', marginBottom: 40 }}>
-            <div style={{ display: 'inline-block', marginBottom: 12 }}>
-              <Image src="/logo-msa.png" alt="MSA" width={56} height={56} />
+          <div className="dz-header">
+            <div className="dz-header-logo">
+              <Image src="/logo-msa.png" alt="MSA" width={48} height={48} />
             </div>
-            <Title level={3} style={{ color: '#f1f5f9', margin: '0 0 4px', letterSpacing: 1 }}>
-              Developer Zone
-            </Title>
-            <Text style={{ color: '#64748b', fontSize: 13 }}>Quản trị hệ thống QLKT</Text>
+            <h1 className="dz-header-title">Developer Zone</h1>
+            <p className="dz-header-sub">Quản trị hệ thống QLKT</p>
           </div>
 
           <Spin spinning={loading && !status}>
-            <Space direction="vertical" size={20} style={{ width: '100%' }}>
-              {/* Cron Job Control */}
-              <Card
-                title={
-                  <Space>
-                    <ClockCircleOutlined />
-                    <span>Cron Job — Tính toán hồ sơ</span>
-                  </Space>
-                }
-                extra={
+            {/* Cron Job */}
+            <div className="dz-card">
+              <div className="dz-card-title">
+                <ClockCircleOutlined />
+                <span>Cron Job — Tính toán hồ sơ</span>
+                <div style={{ marginLeft: 'auto' }}>
                   <Button
                     icon={<ReloadOutlined />}
                     size="small"
+                    type="text"
+                    className="dz-refresh-btn"
                     onClick={() => fetchStatus(devPassword)}
-                  >
-                    Làm mới
-                  </Button>
-                }
-                style={{ borderRadius: 16 }}
-              >
-                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                  {/* Toggle */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
+                  />
+                </div>
+              </div>
+
+              {/* Toggle */}
+              <div className="dz-feature-row">
+                <span className="dz-feature-label">Bật/Tắt tự động</span>
+                <Switch
+                  checked={status?.cron.enabled ?? true}
+                  onChange={v => handleUpdateCron(v)}
+                  checkedChildren="BẬT"
+                  unCheckedChildren="TẮT"
+                />
+              </div>
+
+              <div className="dz-divider" />
+
+              {/* Schedule */}
+              <div>
+                <div className="dz-schedule-label">Lịch chạy</div>
+                <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                  <Select
+                    style={{ width: '100%' }}
+                    value={cronPreset}
+                    onChange={v => {
+                      setCronPreset(v);
+                      if (v === 'custom') {
+                        setCustomCron(status?.cron.schedule || '');
+                      }
                     }}
-                  >
-                    <Text strong>Bật/Tắt tự động</Text>
-                    <Switch
-                      checked={status?.cron.enabled ?? true}
-                      onChange={v => handleUpdateCron(v)}
-                      checkedChildren="BẬT"
-                      unCheckedChildren="TẮT"
-                    />
-                  </div>
-
-                  <Divider style={{ margin: '8px 0', borderColor: 'rgba(255,255,255,0.08)' }} />
-
-                  {/* Schedule */}
-                  <div>
-                    <Text strong style={{ display: 'block', marginBottom: 8, color: '#e2e8f0' }}>
-                      Lịch chạy
-                    </Text>
-                    <Space direction="vertical" size={8} style={{ width: '100%' }}>
-                      <Select
-                        style={{ width: '100%' }}
-                        value={cronPreset}
-                        onChange={v => {
-                          setCronPreset(v);
-                          if (v === 'custom') {
-                            setCustomCron(status?.cron.schedule || '');
-                          }
-                        }}
-                        options={CRON_PRESETS.map(p => ({ value: p.value, label: p.label }))}
-                      />
-                      {cronPreset === 'custom' && (
-                        <Input
-                          placeholder="Cron expression (ví dụ: */5 * * * *)"
-                          value={customCron}
-                          onChange={e => setCustomCron(e.target.value)}
-                        />
-                      )}
-                      {/* Hiện nút Lưu chỉ khi đã load xong VÀ user thay đổi giá trị */}
-                      {status &&
-                        cronPreset &&
-                        ((cronPreset !== 'custom' && cronPreset !== status.cron.schedule) ||
-                          (cronPreset === 'custom' &&
-                            customCron &&
-                            customCron !== status.cron.schedule)) && (
-                          <Button
-                            type="primary"
-                            block
-                            onClick={() => {
-                              const schedule = cronPreset === 'custom' ? customCron : cronPreset;
-                              handleUpdateCron(undefined, schedule);
-                            }}
-                          >
-                            Lưu lịch chạy
-                          </Button>
-                        )}
-                    </Space>
-                  </div>
-
-                  <Divider style={{ margin: '8px 0', borderColor: 'rgba(255,255,255,0.08)' }} />
-
-                  {/* Trigger */}
-                  <Button
-                    type="primary"
-                    icon={<ThunderboltOutlined />}
-                    loading={triggerLoading}
-                    onClick={handleTriggerCron}
-                    block
-                    size="large"
-                    style={{ background: '#d97706' }}
-                  >
-                    {triggerLoading ? 'Đang chạy...' : 'Chạy ngay bây giờ'}
-                  </Button>
-
-                  {/* Last run result */}
-                  {status?.cron.lastResult && (
-                    <Alert
-                      type={status.cron.lastResult.status === 'success' ? 'success' : 'error'}
-                      message={
-                        <Space>
-                          {status.cron.lastResult.status === 'success' ? (
-                            <CheckCircleOutlined />
-                          ) : (
-                            <CloseCircleOutlined />
-                          )}
-                          Lần chạy gần nhất:{' '}
-                          {status.cron.lastRun
-                            ? new Date(status.cron.lastRun).toLocaleString('vi-VN')
-                            : 'Chưa chạy'}
-                        </Space>
-                      }
-                      description={
-                        status.cron.lastResult.status === 'success'
-                          ? `Thành công: ${status.cron.lastResult.success ?? 0}, Lỗi: ${status.cron.lastResult.errors ?? 0}`
-                          : status.cron.lastResult.message
-                      }
-                      showIcon={false}
+                    options={CRON_PRESETS.map(p => ({ value: p.value, label: p.label }))}
+                  />
+                  {cronPreset === 'custom' && (
+                    <Input
+                      placeholder="Cron expression (ví dụ: */5 * * * *)"
+                      value={customCron}
+                      onChange={e => setCustomCron(e.target.value)}
                     />
                   )}
+                  {showSaveBtn && (
+                    <Button
+                      type="primary"
+                      block
+                      className="dz-save-btn"
+                      onClick={() => {
+                        const schedule = cronPreset === 'custom' ? customCron : cronPreset;
+                        handleUpdateCron(undefined, schedule);
+                      }}
+                    >
+                      Lưu lịch chạy
+                    </Button>
+                  )}
                 </Space>
-              </Card>
+              </div>
 
-              {/* Feature Toggles */}
-              <Card
-                title={
-                  <Space>
-                    <CloudUploadOutlined />
-                    <span>Bật/Tắt tính năng</span>
-                  </Space>
-                }
-                style={{ borderRadius: 16 }}
+              <div className="dz-divider" />
+
+              {/* Trigger */}
+              <Button
+                type="primary"
+                icon={<ThunderboltOutlined />}
+                loading={triggerLoading}
+                onClick={handleTriggerCron}
+                block
+                className="dz-trigger-btn"
               >
-                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                  {AWARD_TYPE_OPTIONS.map(({ key, label, description }) => (
-                    <FeatureRow
-                      key={key}
-                      icon={<CloudUploadOutlined />}
-                      title={label}
-                      description={description}
-                      checked={Boolean(status?.features?.[`allow_${key}`])}
-                      onChange={v => handleToggleFeature(`allow_${key}`, v)}
-                    />
-                  ))}
-                </Space>
-              </Card>
+                {triggerLoading ? 'Đang chạy...' : 'Chạy ngay bây giờ'}
+              </Button>
 
-              {/* System Feature Toggles */}
-              <Card
-                title={
-                  <Space>
-                    <ThunderboltOutlined />
-                    <span>Tính năng hệ thống</span>
-                  </Space>
-                }
-                style={{ borderRadius: 16 }}
-              >
-                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                  {SYSTEM_FEATURE_OPTIONS.map(({ key, label, description }) => (
-                    <FeatureRow
-                      key={key}
-                      icon={<ThunderboltOutlined />}
-                      title={label}
-                      description={description}
-                      checked={Boolean(status?.features?.[`allow_${key}`])}
-                      onChange={v => handleToggleFeature(`allow_${key}`, v)}
-                    />
-                  ))}
-                </Space>
-              </Card>
+              {/* Last run result */}
+              {status?.cron.lastResult && (
+                <div style={{ marginTop: 12 }}>
+                  <Alert
+                    type={status.cron.lastResult.status === 'success' ? 'success' : 'error'}
+                    message={
+                      <Space>
+                        {status.cron.lastResult.status === 'success' ? (
+                          <CheckCircleOutlined />
+                        ) : (
+                          <CloseCircleOutlined />
+                        )}
+                        Lần chạy gần nhất:{' '}
+                        {status.cron.lastRun
+                          ? new Date(status.cron.lastRun).toLocaleString('vi-VN')
+                          : 'Chưa chạy'}
+                      </Space>
+                    }
+                    description={
+                      status.cron.lastResult.status === 'success'
+                        ? `Thành công: ${status.cron.lastResult.success ?? 0}, Lỗi: ${status.cron.lastResult.errors ?? 0}`
+                        : status.cron.lastResult.message
+                    }
+                    showIcon={false}
+                  />
+                </div>
+              )}
+            </div>
 
-              {/* Logout */}
-              <div style={{ textAlign: 'center', paddingTop: 8, paddingBottom: 32 }}>
+            {/* Feature Toggles */}
+            <div className="dz-card">
+              <div className="dz-card-title">
+                <CloudUploadOutlined />
+                <span>Bật/Tắt tính năng</span>
+              </div>
+              {AWARD_TYPE_OPTIONS.map(({ key, label, description }) => (
+                <FeatureRow
+                  key={key}
+                  icon={<CloudUploadOutlined />}
+                  title={label}
+                  description={description}
+                  checked={Boolean(status?.features?.[`allow_${key}`])}
+                  onChange={v => handleToggleFeature(`allow_${key}`, v)}
+                />
+              ))}
+            </div>
+
+            {/* System Feature Toggles */}
+            <div className="dz-card">
+              <div className="dz-card-title">
+                <ThunderboltOutlined />
+                <span>Tính năng hệ thống</span>
+              </div>
+              {SYSTEM_FEATURE_OPTIONS.map(({ key, label, description }) => (
+                <FeatureRow
+                  key={key}
+                  icon={<ThunderboltOutlined />}
+                  title={label}
+                  description={description}
+                  checked={Boolean(status?.features?.[`allow_${key}`])}
+                  onChange={v => handleToggleFeature(`allow_${key}`, v)}
+                />
+              ))}
+            </div>
+
+            {/* Tiện ích */}
+            <div className="dz-card">
+              <div className="dz-card-title">
+                <ToolOutlined />
+                <span>Tiện ích</span>
+              </div>
+              <div className="dz-util-row">
+                <div className="dz-util-info">
+                  <DeleteOutlined className="dz-feature-icon" />
+                  <div>
+                    <div className="dz-feature-label">Xoá localStorage</div>
+                    <div className="dz-feature-desc">Xoá toàn bộ dữ liệu lưu trữ cục bộ trên trình duyệt</div>
+                  </div>
+                </div>
                 <Button
-                  type="text"
+                  className="dz-delete-btn"
                   onClick={() => {
-                    setAuthenticated(false);
-                    setDevPassword('');
-                    setStatus(null);
-                    clearSession();
+                    localStorage.clear();
+                    message.success('Đã xoá toàn bộ localStorage');
                   }}
-                  style={{ color: '#94a3b8' }}
                 >
-                  Đăng xuất Dev Zone
+                  Xoá
                 </Button>
               </div>
-            </Space>
+            </div>
+
+            {/* Logout */}
+            <div className="dz-logout">
+              <Button
+                type="text"
+                className="dz-logout-btn"
+                onClick={() => {
+                  setAuthenticated(false);
+                  setDevPassword('');
+                  setStatus(null);
+                  clearSession();
+                          }}
+              >
+                Đăng xuất Dev Zone
+              </Button>
+            </div>
           </Spin>
         </div>
       </div>

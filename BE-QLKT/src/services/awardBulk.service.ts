@@ -7,6 +7,8 @@ import * as notificationHelper from '../helpers/notification';
 import { getLoaiDeXuatName } from '../constants/danhHieu.constants';
 import { PROPOSAL_TYPES, type ProposalType } from '../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
+import { AppError, NotFoundError, ValidationError } from '../middlewares/errorHandler';
+import { writeSystemLog } from '../helpers/systemLogHelper';
 import type { QuanNhan } from '../generated/prisma';
 
 interface ServiceYears {
@@ -241,8 +243,9 @@ class AwardBulkService {
       }
 
       if (duplicateErrors.length > 0) {
-        throw new Error(
-          `Phát hiện khen thưởng trùng (cùng năm và cùng danh hiệu):\n${duplicateErrors.join('\n')}`
+        throw new AppError(
+          `Phát hiện khen thưởng trùng (cùng năm và cùng danh hiệu):\n${duplicateErrors.join('\n')}`,
+          409
         );
       }
 
@@ -296,7 +299,7 @@ class AwardBulkService {
       }
 
       if (errors.length > 0) {
-        throw new Error(`Phát hiện lỗi validation:\n${errors.join('\n')}`);
+        throw new ValidationError(`Phát hiện lỗi validation:\n${errors.join('\n')}`);
       }
 
       if (type === PROPOSAL_TYPES.CA_NHAN_HANG_NAM) {
@@ -348,7 +351,6 @@ class AwardBulkService {
               chuc_vu: item.chuc_vu || null,
               so_quyet_dinh: item.so_quyet_dinh || null,
               ghi_chu: ghiChu || null,
-              status: PROPOSAL_STATUS.APPROVED,
             });
             importedCount++;
             affectedPersonnelIds.add(item.personnel_id);
@@ -366,7 +368,7 @@ class AwardBulkService {
             });
 
             if (!quanNhan) {
-              throw new Error(`Không tìm thấy quân nhân với ID: ${item.personnel_id}`);
+              throw new NotFoundError(`Quân nhân (ID: ${item.personnel_id})`);
             }
 
             const thoiGian = this.calculateThoiGian(quanNhan);
@@ -408,7 +410,7 @@ class AwardBulkService {
           }
         }
         if (errors.length > 0) {
-          throw new Error(`Phát hiện lỗi validation:\n${errors.join('\n')}`);
+          throw new ValidationError(`Phát hiện lỗi validation:\n${errors.join('\n')}`);
         }
 
         await prisma.$transaction(async tx => {
@@ -418,7 +420,7 @@ class AwardBulkService {
             });
 
             if (!quanNhan) {
-              throw new Error(`Không tìm thấy quân nhân với ID: ${item.personnel_id}`);
+              throw new NotFoundError(`Quân nhân (ID: ${item.personnel_id})`);
             }
 
             const thoiGian = this.calculateThoiGian(quanNhan);
@@ -462,7 +464,7 @@ class AwardBulkService {
             });
 
             if (!quanNhan) {
-              throw new Error(`Không tìm thấy quân nhân với ID: ${item.personnel_id}`);
+              throw new NotFoundError(`Quân nhân (ID: ${item.personnel_id})`);
             }
 
             const thoiGian = this.calculateThoiGian(quanNhan);
@@ -504,7 +506,7 @@ class AwardBulkService {
           }
         }
         if (errors.length > 0) {
-          throw new Error(`Phát hiện lỗi validation:\n${errors.join('\n')}`);
+          throw new ValidationError(`Phát hiện lỗi validation:\n${errors.join('\n')}`);
         }
 
         const baseRequiredMonths = 10 * 12;
@@ -684,7 +686,7 @@ class AwardBulkService {
         }
 
         if (eligibleTitleData.length === 0 && errors.length > 0) {
-          throw new Error(`Phát hiện lỗi validation:\n${errors.join('\n')}`);
+          throw new ValidationError(`Phát hiện lỗi validation:\n${errors.join('\n')}`);
         }
 
         await prisma.$transaction(async tx => {
@@ -721,13 +723,13 @@ class AwardBulkService {
           }
         });
       } else {
-        throw new Error(
+        throw new ValidationError(
           `Loại khen thưởng "${type}" chưa được hỗ trợ trong chức năng thêm đồng loạt.`
         );
       }
 
       if (errors.length > 0 && importedCount === 0) {
-        throw new Error(`Thêm khen thưởng thất bại:\n${errors.join('\n')}`);
+        throw new AppError(`Thêm khen thưởng thất bại:\n${errors.join('\n')}`, 500);
       }
 
       try {
@@ -751,9 +753,11 @@ class AwardBulkService {
       }
 
       const typeName = getLoaiDeXuatName(type);
-      console.log(
-        `[Bulk khen thưởng] ${typeName} năm ${nam}: ${importedCount} thành công, ${errors.length} lỗi`
-      );
+      writeSystemLog({
+        action: 'IMPORT',
+        resource: 'awards',
+        description: `[Bulk khen thưởng] ${typeName} năm ${nam}: ${importedCount} thành công, ${errors.length} lỗi`,
+      });
 
       return {
         message:

@@ -6,6 +6,8 @@ import { getLogDescription, getResourceId } from '../helpers/auditLog';
 import { ROLES } from '../constants/roles.constants';
 import { excelUpload as upload } from '../configs/multer';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { validate } from '../middlewares/validate';
+import { excelImportValidation } from '../validations';
 
 const router = Router();
 
@@ -34,7 +36,13 @@ router.post(
  * @desc    Confirm import HC QKQT — lưu dữ liệu đã validate vào DB
  * @access  ADMIN
  */
-router.post('/import/confirm', verifyToken, requireAdmin, militaryFlagController.confirmImport);
+router.post(
+  '/import/confirm',
+  verifyToken,
+  requireAdmin,
+  validate(excelImportValidation.confirmImportMilitaryFlag),
+  militaryFlagController.confirmImport
+);
 
 /**
  * @route   POST /api/military-flag/import

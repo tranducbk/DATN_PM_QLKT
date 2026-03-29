@@ -1,5 +1,6 @@
 import { prisma } from '../models';
 import type { Prisma } from '../generated/prisma';
+import { NotFoundError, AppError, ValidationError } from '../middlewares/errorHandler';
 
 class PositionService {
   async getPositions(unitId?: string, includeChildren: boolean = false) {
@@ -10,7 +11,7 @@ class PositionService {
       ]);
 
       if (!coQuanDonVi && !donViTrucThuoc) {
-        throw new Error('Đơn vị không tồn tại');
+        throw new NotFoundError('Đơn vị');
       }
 
       const unitIds: string[] = [unitId];
@@ -87,7 +88,7 @@ class PositionService {
     ]);
 
     if (!coQuanDonVi && !donViTrucThuoc) {
-      throw new Error('Đơn vị không tồn tại');
+      throw new NotFoundError('Đơn vị');
     }
 
     const isCoQuanDonVi = !!coQuanDonVi;
@@ -105,7 +106,7 @@ class PositionService {
     });
 
     if (existingPosition) {
-      throw new Error('Tên chức vụ đã tồn tại trong đơn vị này');
+      throw new AppError('Tên chức vụ đã tồn tại trong đơn vị này', 409);
     }
 
     const createData: Prisma.ChucVuUncheckedCreateInput = {
@@ -143,7 +144,7 @@ class PositionService {
     });
 
     if (!position) {
-      throw new Error('Chức vụ không tồn tại');
+      throw new NotFoundError('Chức vụ');
     }
 
     const isDonViTrucThuoc = !!position.don_vi_truc_thuoc_id;
@@ -162,7 +163,7 @@ class PositionService {
       newIsManager === position.is_manager &&
       Number(newHeSoChucVu) === Number(position.he_so_chuc_vu)
     ) {
-      throw new Error('Không có thay đổi nào để cập nhật');
+      throw new ValidationError('Không có thay đổi nào để cập nhật');
     }
 
     const updatedPosition = await prisma.chucVu.update({
@@ -199,7 +200,7 @@ class PositionService {
     });
 
     if (!position) {
-      throw new Error('Chức vụ không tồn tại');
+      throw new NotFoundError('Chức vụ');
     }
 
     const personnelCount = await prisma.quanNhan.count({
@@ -207,8 +208,9 @@ class PositionService {
     });
 
     if (personnelCount > 0) {
-      throw new Error(
-        `Không thể xóa chức vụ vì còn ${personnelCount} quân nhân đang giữ chức vụ này`
+      throw new AppError(
+        `Không thể xóa chức vụ vì còn ${personnelCount} quân nhân đang giữ chức vụ này`,
+        409
       );
     }
 

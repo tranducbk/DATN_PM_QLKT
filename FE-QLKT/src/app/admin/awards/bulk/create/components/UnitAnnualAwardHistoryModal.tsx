@@ -35,7 +35,7 @@ interface UnitAnnualAwardHistoryModalProps {
   onClose: () => void;
 }
 
-export default function UnitAnnualAwardHistoryModal({
+export function UnitAnnualAwardHistoryModal({
   visible,
   unit,
   annualAwards,

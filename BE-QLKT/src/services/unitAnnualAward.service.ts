@@ -1,12 +1,14 @@
 import type { Prisma } from '../generated/prisma';
 import { prisma } from '../models';
 import ExcelJS from 'exceljs';
+import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHelper';
 import { checkDuplicateUnitAward } from '../helpers/awardValidation';
 import { getDanhHieuName } from '../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { parseHeaderMap, getHeaderCol, parseBooleanValue } from '../helpers/excelHelper';
+import { NotFoundError, ValidationError, ForbiddenError } from '../middlewares/errorHandler';
 
 class UnitAnnualAwardService {
   /**
@@ -159,7 +161,7 @@ class UnitAnnualAwardService {
     const donViTrucThuoc = await prisma.donViTrucThuoc.findUnique({ where: { id: unitId } });
 
     if (!coQuanDonVi && !donViTrucThuoc) {
-      throw new Error('Không tìm thấy đơn vị');
+      throw new NotFoundError('Đơn vị');
     }
 
     const isCoQuanDonVi = !!coQuanDonVi;
@@ -255,7 +257,7 @@ class UnitAnnualAwardService {
   }
 
   /** Admin từ chối danh hiệu */
-  async reject(id, { ghi_chu, nguoi_duyet_id }) {
+  async reject(id: string, { ghi_chu, nguoi_duyet_id }: { ghi_chu: string; nguoi_duyet_id: string }) {
     const rejectedDanhHieu = await prisma.danhHieuDonViHangNam.update({
       where: { id: String(id) },
       data: {
@@ -290,6 +292,7 @@ class UnitAnnualAwardService {
     where.status = status != null && status !== '' ? status : PROPOSAL_STATUS.APPROVED;
 
     // Phân quyền: USER và MANAGER chỉ xem được đơn vị của mình
+    let allowedUnitIds: string[] | null = null;
     if ((userRole === ROLES.USER || userRole === ROLES.MANAGER) && userQuanNhanId) {
       const user = await prisma.quanNhan.findUnique({
         where: { id: userQuanNhanId },
@@ -298,13 +301,17 @@ class UnitAnnualAwardService {
 
       if (user) {
         if (userRole === ROLES.MANAGER && user.co_quan_don_vi_id) {
+          const subUnitIds = await this.getSubUnits(user.co_quan_don_vi_id);
+          allowedUnitIds = [user.co_quan_don_vi_id, ...subUnitIds];
           where.OR = [
             { co_quan_don_vi_id: user.co_quan_don_vi_id },
-            { don_vi_truc_thuoc_id: { in: await this.getSubUnits(user.co_quan_don_vi_id) } },
+            { don_vi_truc_thuoc_id: { in: subUnitIds } },
           ];
         } else if (userRole === ROLES.MANAGER && user.don_vi_truc_thuoc_id) {
+          allowedUnitIds = [user.don_vi_truc_thuoc_id];
           where.don_vi_truc_thuoc_id = user.don_vi_truc_thuoc_id;
         } else if (userRole === ROLES.USER && user.don_vi_truc_thuoc_id) {
+          allowedUnitIds = [user.don_vi_truc_thuoc_id];
           where.don_vi_truc_thuoc_id = user.don_vi_truc_thuoc_id;
         }
       } else {
@@ -316,7 +323,12 @@ class UnitAnnualAwardService {
     }
 
     if (donViId) {
-      where.OR = [{ co_quan_don_vi_id: donViId }, { don_vi_truc_thuoc_id: donViId }];
+      // Nếu có unit-scoping (MANAGER/USER), chỉ cho phép filter trong phạm vi đơn vị được phép
+      if (allowedUnitIds && !allowedUnitIds.includes(donViId)) {
+        // donViId không thuộc quyền quản lý -> giữ nguyên scoping, bỏ qua filter
+      } else {
+        where.OR = [{ co_quan_don_vi_id: donViId }, { don_vi_truc_thuoc_id: donViId }];
+      }
     }
 
     const [total, awards] = await Promise.all([
@@ -349,7 +361,7 @@ class UnitAnnualAwardService {
     return subUnits.map(u => u.id);
   }
 
-  async getById(id, userRole, userQuanNhanId) {
+  async getById(id: string, userRole: string, userQuanNhanId: string) {
     const record = await prisma.danhHieuDonViHangNam.findUnique({
       where: { id: String(id) },
       include: { CoQuanDonVi: true, DonViTrucThuoc: true },
@@ -425,7 +437,7 @@ class UnitAnnualAwardService {
     ]);
 
     if (!coQuanDonVi && !donViTrucThuoc) {
-      throw new Error('Không tìm thấy đơn vị');
+      throw new NotFoundError('Đơn vị');
     }
 
     const isCoQuanDonVi = !!coQuanDonVi;
@@ -513,14 +525,14 @@ class UnitAnnualAwardService {
     }
   }
 
-  async remove(id) {
+  async remove(id: string) {
     // Xóa DanhHieuDonViHangNam
     const danhHieu = await prisma.danhHieuDonViHangNam.findUnique({
       where: { id: String(id) },
     });
 
     if (!danhHieu) {
-      throw new Error('Không tìm thấy bản ghi');
+      throw new NotFoundError('Danh hiệu đơn vị hằng năm');
     }
 
     await prisma.danhHieuDonViHangNam.delete({ where: { id: String(id) } });
@@ -542,7 +554,7 @@ class UnitAnnualAwardService {
       (await prisma.donViTrucThuoc.findUnique({ where: { id: donViId } }));
 
     if (!donVi) {
-      throw new Error('Đơn vị không tồn tại');
+      throw new NotFoundError('Đơn vị');
     }
 
     const isCoQuanDonVi = !('co_quan_don_vi_id' in donVi);
@@ -596,7 +608,7 @@ class UnitAnnualAwardService {
         (await prisma.donViTrucThuoc.findUnique({ where: { id: donViId } }));
 
       if (!donVi) {
-        throw new Error('Đơn vị không tồn tại');
+        throw new NotFoundError('Đơn vị');
       }
 
       const isCoQuanDonVi = !('co_quan_don_vi_id' in donVi);
@@ -665,15 +677,15 @@ class UnitAnnualAwardService {
   /**
    * Lấy lịch sử khen thưởng hằng năm cho 1 đơn vị (danh sách DanhHieuDonViHangNam)
    */
-  async getUnitAnnualAwards(donViId, userRole = 'ADMIN', userQuanNhanId = null) {
-    if (!donViId) throw new Error('don_vi_id là bắt buộc');
+  async getUnitAnnualAwards(donViId: string, userRole: string = ROLES.ADMIN, userQuanNhanId: string | null = null) {
+    if (!donViId) throw new ValidationError('don_vi_id là bắt buộc');
 
     // Kiểm tra đơn vị tồn tại
     const donVi =
       (await prisma.coQuanDonVi.findUnique({ where: { id: donViId } })) ||
       (await prisma.donViTrucThuoc.findUnique({ where: { id: donViId } }));
 
-    if (!donVi) throw new Error('Đơn vị không tồn tại');
+    if (!donVi) throw new NotFoundError('Đơn vị');
 
     // Phân quyền
     if (userRole === ROLES.ADMIN || userRole === ROLES.SUPER_ADMIN) {
@@ -684,7 +696,7 @@ class UnitAnnualAwardService {
         select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true },
       });
 
-      if (!user) throw new Error('Không tìm thấy thông tin người dùng');
+      if (!user) throw new NotFoundError('Thông tin người dùng');
 
       if (userRole === ROLES.MANAGER) {
         // Manager được xem tất cả đơn vị thuộc cùng co_quan_don_vi_id
@@ -693,16 +705,16 @@ class UnitAnnualAwardService {
             ? donVi.co_quan_don_vi_id
             : donVi.id;
         if (!user.co_quan_don_vi_id || user.co_quan_don_vi_id !== targetCoQuanId) {
-          throw new Error('Không có quyền xem lịch sử khen thưởng của đơn vị này');
+          throw new ForbiddenError('Không có quyền xem lịch sử khen thưởng của đơn vị này');
         }
       } else if (userRole === ROLES.USER) {
         // User chỉ được xem đơn vị trực thuộc của chính họ
         if (!user.don_vi_truc_thuoc_id || user.don_vi_truc_thuoc_id !== donViId) {
-          throw new Error('Không có quyền xem lịch sử khen thưởng của đơn vị này');
+          throw new ForbiddenError('Không có quyền xem lịch sử khen thưởng của đơn vị này');
         }
       }
     } else {
-      throw new Error('Không có quyền truy cập');
+      throw new ForbiddenError('Không có quyền truy cập');
     }
 
     // Trả về danh sách danh hiệu và thống kê
@@ -723,14 +735,11 @@ class UnitAnnualAwardService {
   /**
    * Preview import: parse + validate Excel, trả về danh sách hợp lệ / lỗi — KHÔNG lưu DB
    */
-  async previewImport(buffer) {
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(buffer);
-    const worksheet = workbook.worksheets[0];
-
-    if (!worksheet) {
-      throw new Error('File Excel không hợp lệ');
-    }
+  async previewImport(buffer: Buffer) {
+    const workbook = await loadWorkbook(buffer);
+    const worksheet = getAndValidateWorksheet(workbook, {
+      excludeSheetNames: ['_CapBac', '_QuyetDinh'],
+    });
 
     // Header map
     const headerMap = parseHeaderMap(worksheet);
@@ -751,14 +760,14 @@ class UnitAnnualAwardService {
     const bkttcpCol = getHeaderCol(headerMap, ['bkttcp', 'nhan_bkttcp', 'bkttcp_khong_dien']);
 
     if (!maDonViCol || !namCol || !danhHieuCol) {
-      throw new Error(
+      throw new ValidationError(
         `Thiếu cột bắt buộc: Mã đơn vị, Năm, Danh hiệu. Tìm thấy headers: ${Object.keys(headerMap).join(', ')}`
       );
     }
 
     // Verify đúng loại file bằng tên sheet
     if (worksheet.name === 'Danh hiệu hằng năm') {
-      throw new Error(
+      throw new ValidationError(
         'File Excel không đúng loại. Đây là file khen thưởng cá nhân, không phải đơn vị hằng năm.'
       );
     }
@@ -776,6 +785,63 @@ class UnitAnnualAwardService {
     });
     const validDecisionNumbers = new Set(existingDecisions.map(d => d.so_quyet_dinh));
 
+    // --- First pass: collect all ma_don_vi from valid rows ---
+    const allMaDonVi = new Set<string>();
+    for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
+      const row = worksheet.getRow(rowNumber);
+      const maDonViVal = maDonViCol ? String(row.getCell(maDonViCol).value || '').trim() : '';
+      if (maDonViVal) allMaDonVi.add(maDonViVal);
+    }
+
+    // --- Batch queries for units ---
+    const [coQuanDonViList, donViTrucThuocList] = await Promise.all([
+      prisma.coQuanDonVi.findMany({
+        where: { ma_don_vi: { in: [...allMaDonVi] } },
+      }),
+      prisma.donViTrucThuoc.findMany({
+        where: { ma_don_vi: { in: [...allMaDonVi] } },
+      }),
+    ]);
+
+    // Build lookup Maps by ma_don_vi
+    const coQuanDonViMap = new Map(coQuanDonViList.map(u => [u.ma_don_vi, u]));
+    const donViTrucThuocMap = new Map(donViTrucThuocList.map(u => [u.ma_don_vi, u]));
+
+    // Collect all unit IDs for batch querying awards
+    const allUnitIds = new Set<string>();
+    for (const u of coQuanDonViList) allUnitIds.add(u.id);
+    for (const u of donViTrucThuocList) allUnitIds.add(u.id);
+
+    // Batch query existing unit awards for duplicate checking and history
+    const existingUnitAwards = await prisma.danhHieuDonViHangNam.findMany({
+      where: {
+        OR: [
+          { co_quan_don_vi_id: { in: [...allUnitIds] } },
+          { don_vi_truc_thuoc_id: { in: [...allUnitIds] } },
+        ],
+      },
+      select: {
+        co_quan_don_vi_id: true,
+        don_vi_truc_thuoc_id: true,
+        nam: true,
+        danh_hieu: true,
+        nhan_bkbqp: true,
+        nhan_bkttcp: true,
+        so_quyet_dinh: true,
+      },
+    });
+
+    // Map<unitId, records[]> for history and duplicate checking
+    const awardsByUnit = new Map<string, typeof existingUnitAwards>();
+    for (const r of existingUnitAwards) {
+      const unitId = r.co_quan_don_vi_id || r.don_vi_truc_thuoc_id;
+      if (!unitId) continue;
+      const list = awardsByUnit.get(unitId) || [];
+      list.push(r);
+      awardsByUnit.set(unitId, list);
+    }
+
+    // --- Second pass: validate rows using Maps ---
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
       const row = worksheet.getRow(rowNumber);
       const idValue = idCol ? row.getCell(idCol).value : null;
@@ -912,24 +978,21 @@ class UnitAnnualAwardService {
         continue;
       }
 
-      // Find unit by ma_don_vi
-      let donVi = await prisma.coQuanDonVi.findFirst({ where: { ma_don_vi: maDonVi } });
-      let isCoQuanDonVi = !!donVi;
-      let donViTrucThuoc = null;
+      // Find unit by ma_don_vi (using pre-fetched Maps)
+      const donVi = coQuanDonViMap.get(maDonVi);
+      const isCoQuanDonVi = !!donVi;
+      const donViTrucThuoc = donVi ? null : donViTrucThuocMap.get(maDonVi);
 
-      if (!donVi) {
-        donViTrucThuoc = await prisma.donViTrucThuoc.findFirst({ where: { ma_don_vi: maDonVi } });
-        if (!donViTrucThuoc) {
-          errors.push({
-            row: rowNumber,
-            ten_don_vi: tenDonVi,
-            ma_don_vi: maDonVi,
-            nam,
-            danh_hieu: danhHieu,
-            message: `Không tìm thấy đơn vị với mã ${maDonVi}`,
-          });
-          continue;
-        }
+      if (!donVi && !donViTrucThuoc) {
+        errors.push({
+          row: rowNumber,
+          ten_don_vi: tenDonVi,
+          ma_don_vi: maDonVi,
+          nam,
+          danh_hieu: danhHieu,
+          message: `Không tìm thấy đơn vị với mã ${maDonVi}`,
+        });
+        continue;
       }
 
       const unitId = isCoQuanDonVi ? donVi.id : donViTrucThuoc.id;
@@ -950,13 +1013,9 @@ class UnitAnnualAwardService {
       }
       seenInFile.add(fileKey);
 
-      // Check duplicate in DB
-      const existingAward = await prisma.danhHieuDonViHangNam.findFirst({
-        where: {
-          OR: [{ co_quan_don_vi_id: unitId }, { don_vi_truc_thuoc_id: unitId }],
-          nam,
-        },
-      });
+      // Check duplicate in DB (using pre-fetched data)
+      const unitAwards = awardsByUnit.get(unitId) || [];
+      const existingAward = unitAwards.find(a => a.nam === nam);
       if (existingAward && existingAward.danh_hieu) {
         errors.push({
           row: rowNumber,
@@ -970,6 +1029,8 @@ class UnitAnnualAwardService {
       }
 
       // Check chain eligibility for BKTTCP
+      // NOTE: Left as per-row query because checkUnitAwardEligibility depends on
+      // per-row computed values (unitId, nam) and has complex internal logic
       if (danhHieu === 'BKTTCP') {
         const eligibility = await this.checkUnitAwardEligibility(unitId, nam, 'BKTTCP');
         if (!eligibility.eligible) {
@@ -985,21 +1046,17 @@ class UnitAnnualAwardService {
         }
       }
 
-      // Query history: last 5 records
-      const history = await prisma.danhHieuDonViHangNam.findMany({
-        where: {
-          OR: [{ co_quan_don_vi_id: unitId }, { don_vi_truc_thuoc_id: unitId }],
-        },
-        orderBy: { nam: 'desc' },
-        take: 5,
-        select: {
-          nam: true,
-          danh_hieu: true,
-          nhan_bkbqp: true,
-          nhan_bkttcp: true,
-          so_quyet_dinh: true,
-        },
-      });
+      // Build history from pre-fetched data (last 5 records sorted by nam desc)
+      const history = [...unitAwards]
+        .sort((a, b) => b.nam - a.nam)
+        .slice(0, 5)
+        .map(r => ({
+          nam: r.nam,
+          danh_hieu: r.danh_hieu,
+          nhan_bkbqp: r.nhan_bkbqp,
+          nhan_bkttcp: r.nhan_bkttcp,
+          so_quyet_dinh: r.so_quyet_dinh,
+        }));
 
       valid.push({
         row: rowNumber,
@@ -1021,7 +1078,7 @@ class UnitAnnualAwardService {
   /**
    * Confirm import: lưu dữ liệu đã validate vào DB
    */
-  async confirmImport(validItems, adminId) {
+  async confirmImport(validItems: any[], adminId: string) {
     return await prisma.$transaction(
       async tx => {
         const results = [];
@@ -1105,7 +1162,7 @@ class UnitAnnualAwardService {
     const readonlyFill = {
       type: 'pattern' as const,
       pattern: 'solid' as const,
-      fgColor: { argb: 'FFFFFF00' },
+      fgColor: { argb: 'FFFFFFCC' },
     };
     for (let col = 1; col <= 4; col++) {
       headerRowObj.getCell(col).fill = readonlyFill;
@@ -1144,6 +1201,16 @@ class UnitAnnualAwardService {
           allowBlank: true,
           formulae: [`"${formulaStr}"`],
         };
+      } else {
+        const refSheet = workbook.addWorksheet('_QuyetDinh', { state: 'veryHidden' });
+        decisionList.forEach((sqd, idx) => {
+          refSheet.getCell(`A${idx + 1}`).value = sqd;
+        });
+        soQdValidation = {
+          type: 'list' as const,
+          allowBlank: true,
+          formulae: [`_QuyetDinh!$A$1:$A$${decisionList.length}`],
+        };
       }
     }
 
@@ -1158,8 +1225,8 @@ class UnitAnnualAwardService {
       });
 
       const unitMap = new Map();
-      coQuanDonVis.forEach(u => unitMap.set(u.id, { ...u, _type: 'cqDv' }));
-      donViTrucThuocs.forEach(u => unitMap.set(u.id, { ...u, _type: 'dvtt' }));
+      coQuanDonVis.forEach(u => unitMap.set(u.id, { ...u, unitType: 'cqDv' }));
+      donViTrucThuocs.forEach(u => unitMap.set(u.id, { ...u, unitType: 'dvtt' }));
 
       let stt = 1;
       for (const uid of unitIds) {
@@ -1197,7 +1264,7 @@ class UnitAnnualAwardService {
         id: '',
         ma_don_vi: 'DV001',
         ten_don_vi: 'Đơn vị mẫu',
-        nam: 2024,
+        nam: new Date().getFullYear(),
         danh_hieu: 'ĐVQT',
         so_quyet_dinh: '',
         ghi_chu: '',
@@ -1208,8 +1275,9 @@ class UnitAnnualAwardService {
       sampleRow.getCell(10).fill = redFill;
     }
 
-    // Apply data validations to data rows (rows 2 to 1000)
-    for (let r = 2; r <= 1000; r++) {
+    // Apply data validations to data rows
+    const maxRows = Math.max(unitIds.length + 1, 50);
+    for (let r = 2; r <= maxRows; r++) {
       worksheet.getCell(`F${r}`).dataValidation = danhHieuValidation;
       if (soQdValidation) {
         worksheet.getCell(`G${r}`).dataValidation = soQdValidation;
@@ -1241,9 +1309,8 @@ class UnitAnnualAwardService {
   /**
    * Import khen thưởng đơn vị từ Excel
    */
-  async importFromExcel(buffer, adminId) {
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(buffer);
+  async importFromExcel(buffer: Buffer, adminId: string) {
+    const workbook = await loadWorkbook(buffer);
 
     // Try to find worksheet by name first, fallback to first worksheet
     let worksheet = workbook.getWorksheet('Khen thưởng đơn vị');
@@ -1252,7 +1319,7 @@ class UnitAnnualAwardService {
     }
 
     if (!worksheet) {
-      throw new Error('File Excel không hợp lệ hoặc không tìm thấy sheet dữ liệu');
+      throw new ValidationError('File Excel không hợp lệ hoặc không tìm thấy sheet dữ liệu');
     }
 
     // Header map
@@ -1277,7 +1344,7 @@ class UnitAnnualAwardService {
     ]);
 
     if (!maDonViCol || !namCol || !danhHieuCol) {
-      throw new Error(
+      throw new ValidationError(
         `Thiếu cột bắt buộc: Mã đơn vị, Năm, Danh hiệu. Tìm thấy headers: ${Object.keys(
           headerMap
         ).join(', ')}`
@@ -1288,7 +1355,7 @@ class UnitAnnualAwardService {
     const hoTenCheck = getHeaderCol(headerMap, ['ho_va_ten', 'ho_ten', 'hoten', 'hovaten']);
     const capBacCheck = getHeaderCol(headerMap, ['cap_bac', 'capbac']);
     if (hoTenCheck || capBacCheck) {
-      throw new Error(
+      throw new ValidationError(
         'File Excel không đúng loại. Đây là file khen thưởng cá nhân, không phải đơn vị hằng năm.'
       );
     }
@@ -1492,7 +1559,7 @@ class UnitAnnualAwardService {
   /**
    * Xuất danh sách khen thưởng đơn vị ra Excel
    */
-  async exportToExcel(filters = {}, userRole, userQuanNhanId) {
+  async exportToExcel(filters: Record<string, any> = {}, userRole: string, userQuanNhanId: string) {
     const { nam, danh_hieu } = filters as Record<string, any>;
 
     const where: Record<string, any> = { status: PROPOSAL_STATUS.APPROVED };
@@ -1570,7 +1637,7 @@ class UnitAnnualAwardService {
   /**
    * Thống kê khen thưởng đơn vị
    */
-  async getStatistics(filters = {}, userRole, userQuanNhanId) {
+  async getStatistics(filters: Record<string, any> = {}, userRole: string, userQuanNhanId: string) {
     const { nam } = filters as Record<string, any>;
 
     const where: Record<string, any> = { status: PROPOSAL_STATUS.APPROVED };

@@ -45,7 +45,7 @@ router.post(
     action: AUDIT_ACTIONS.CREATE,
     resource: 'accounts',
     getDescription: getLogDescription('accounts', 'CREATE'),
-    getResourceId: getResourceId.fromResponse('id'),
+    getResourceId: getResourceId.fromResponse(),
   }),
   accountController.createAccount
 );

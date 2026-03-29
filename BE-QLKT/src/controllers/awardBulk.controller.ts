@@ -9,14 +9,14 @@ class AwardBulkController {
     const { type, nam, selected_personnel, selected_units, title_data, ghi_chu } = req.body;
     const adminId = req.user!.id;
 
-    let parsedSelectedPersonnel: Record<string, unknown>[] = selected_personnel;
-    let parsedSelectedUnits: Record<string, unknown>[] = selected_units;
-    let parsedTitleData: Record<string, unknown>[] = title_data;
+    let parsedSelectedPersonnel = selected_personnel;
+    let parsedSelectedUnits = selected_units;
+    let parsedTitleData = title_data;
 
     if (typeof selected_personnel === 'string') {
       try {
         parsedSelectedPersonnel = JSON.parse(selected_personnel);
-      } catch (_) {
+      } catch {
         return ResponseHelper.badRequest(
           res,
           'selected_personnel phải là mảng hoặc chuỗi JSON hợp lệ'
@@ -27,7 +27,7 @@ class AwardBulkController {
     if (typeof selected_units === 'string') {
       try {
         parsedSelectedUnits = JSON.parse(selected_units);
-      } catch (_) {
+      } catch {
         return ResponseHelper.badRequest(res, 'selected_units phải là mảng hoặc chuỗi JSON hợp lệ');
       }
     }
@@ -35,7 +35,7 @@ class AwardBulkController {
     if (typeof title_data === 'string') {
       try {
         parsedTitleData = JSON.parse(title_data);
-      } catch (_) {
+      } catch {
         return ResponseHelper.badRequest(res, 'title_data phải là mảng hoặc chuỗi JSON hợp lệ');
       }
     }

@@ -54,7 +54,7 @@ class ScientificAchievementController {
   });
 
   createAchievement = catchAsync(async (req: Request, res: Response) => {
-    const { personnel_id, nam, loai, mo_ta, cap_bac, chuc_vu, ghi_chu, status } = req.body;
+    const { personnel_id, nam, loai, mo_ta, cap_bac, chuc_vu, ghi_chu } = req.body;
     if (!personnel_id || !nam || !loai || !mo_ta) {
       return ResponseHelper.badRequest(res, 'Vui lòng nhập đầy đủ: quân nhân, năm, loại và mô tả');
     }
@@ -66,12 +66,18 @@ class ScientificAchievementController {
       cap_bac,
       chuc_vu,
       ghi_chu,
-      status,
     });
     try {
       await profileService.recalculateAnnualProfile(personnel_id);
     } catch (recalcError) {
-      console.error('[Profile] Failed to recalculate annual profile after achievement create:', recalcError);
+      await writeSystemLog({
+        userId: req.user?.id,
+        userRole: req.user?.role,
+        action: 'ERROR',
+        resource: 'scientific-achievements',
+        description: 'Lỗi tính lại hồ sơ hằng năm sau khi thêm thành tích NCKH',
+        payload: { error: String(recalcError), personnel_id },
+      });
     }
     return ResponseHelper.created(res, { message: 'Thêm thành tích thành công', data: result });
   });
@@ -81,7 +87,7 @@ class ScientificAchievementController {
     if (!id) {
       return ResponseHelper.badRequest(res, 'Thiếu id');
     }
-    const { nam, loai, mo_ta, cap_bac, chuc_vu, ghi_chu, status } = req.body;
+    const { nam, loai, mo_ta, cap_bac, chuc_vu, ghi_chu } = req.body;
     const result = await scientificAchievementService.updateAchievement(id, {
       nam,
       loai,
@@ -89,12 +95,18 @@ class ScientificAchievementController {
       cap_bac,
       chuc_vu,
       ghi_chu,
-      status,
     });
     try {
       await profileService.recalculateAnnualProfile(result.quan_nhan_id);
     } catch (recalcError) {
-      console.error('[Profile] Failed to recalculate annual profile after achievement update:', recalcError);
+      await writeSystemLog({
+        userId: req.user?.id,
+        userRole: req.user?.role,
+        action: 'ERROR',
+        resource: 'scientific-achievements',
+        description: 'Lỗi tính lại hồ sơ hằng năm sau khi cập nhật thành tích NCKH',
+        payload: { error: String(recalcError), personnel_id: result.quan_nhan_id },
+      });
     }
     return ResponseHelper.success(res, { message: 'Cập nhật thành tích thành công', data: result });
   });
@@ -132,9 +144,9 @@ class ScientificAchievementController {
   });
 
   getTemplate = catchAsync(async (req: Request, res: Response) => {
-    const userRole = req.user?.role ?? 'MANAGER';
+    const userRole = req.user?.role ?? ROLES.MANAGER;
     const personnelIds = parsePersonnelIdsFromQuery(req.query);
-    const workbook = await scientificAchievementService.generateTemplate(personnelIds, userRole);
+    const workbook = await scientificAchievementService.generateTemplate(personnelIds);
     res.setHeader(
       'Content-Type',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'

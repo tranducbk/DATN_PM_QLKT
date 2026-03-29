@@ -3,7 +3,6 @@ import { getApiErrorMessage } from '@/lib/apiError';
 
 type ApiResponse<T = any> = { success: boolean; data?: T; message?: string };
 
-// Annual Rewards
 export async function getAnnualRewards(params?: {
   page?: number;
   limit?: number;
@@ -27,12 +26,8 @@ export async function getAnnualRewardsByPersonnel(personnelId: string): Promise<
   }
 }
 
-export async function getAnnualRewardsTemplate(personnelIds?: number[]): Promise<Blob> {
+export async function getAnnualRewardsTemplate(params?: Record<string, string>): Promise<Blob> {
   try {
-    const params: Record<string, string> = {};
-    if (personnelIds && personnelIds.length > 0) {
-      params.personnel_ids = personnelIds.join(',');
-    }
     const res = await axiosInstance.get('/api/annual-rewards/template', {
       params,
       responseType: 'blob',
@@ -165,7 +160,6 @@ export async function bulkCreateAnnualRewards(body: {
   file_dinh_kem?: File;
 }): Promise<ApiResponse> {
   try {
-    // Nếu có file, gửi dưới dạng FormData
     if (body.file_dinh_kem) {
       const formData = new FormData();
       formData.append('personnel_ids', JSON.stringify(body.personnel_ids));
@@ -194,7 +188,6 @@ export async function bulkCreateAnnualRewards(body: {
       return { success: true, data: res.data?.data, message: res.data?.message };
     }
 
-    // Nếu không có file, gửi dưới dạng JSON
     const jsonBody: Record<string, unknown> = {
       personnel_ids: body.personnel_ids,
       nam: body.nam,
@@ -215,7 +208,6 @@ export async function bulkCreateAnnualRewards(body: {
   }
 }
 
-// Scientific Achievements
 export async function getPersonnelScientificAchievements(
   personnelId: string
 ): Promise<ApiResponse> {
@@ -292,9 +284,10 @@ export async function exportScientificAchievements(params?: {
   }
 }
 
-export async function getScientificAchievementsTemplate(): Promise<Blob> {
+export async function getScientificAchievementsTemplate(params?: Record<string, string>): Promise<Blob> {
   try {
     const res = await axiosInstance.get('/api/scientific-achievements/template', {
+      params,
       responseType: 'blob',
     });
     return res.data;
@@ -318,7 +311,6 @@ export async function importScientificAchievements(file: File): Promise<ApiRespo
   }
 }
 
-// Awards Management (general)
 export async function getAwards(params?: {
   don_vi_id?: number;
   nam?: number;
@@ -376,10 +368,10 @@ export async function exportAwards(params?: {
   }
 }
 
-// HCCSVV (Huy chuong Chien si Ve vang)
-export async function getHCCSVVTemplate(): Promise<Blob> {
+export async function getHCCSVVTemplate(params?: Record<string, string>): Promise<Blob> {
   try {
     const res = await axiosInstance.get('/api/hccsvv/template', {
+      params,
       responseType: 'blob',
     });
     return res.data;
@@ -472,10 +464,10 @@ export async function createHCCSVVDirect(body: {
   }
 }
 
-// Contribution Awards (Huan chuong Bao ve To quoc)
-export async function getContributionAwardsTemplate(): Promise<Blob> {
+export async function getContributionAwardsTemplate(params?: Record<string, string>): Promise<Blob> {
   try {
     const res = await axiosInstance.get('/api/contribution-awards/template', {
+      params,
       responseType: 'blob',
     });
     return res.data;
@@ -551,10 +543,10 @@ export async function deleteContributionAward(id: string): Promise<ApiResponse> 
   }
 }
 
-// Commemorative Medals (Ky niem chuong Vi su nghiep xay dung QDNDVN)
-export async function getCommemorationMedalsTemplate(): Promise<Blob> {
+export async function getCommemorationMedalsTemplate(params?: Record<string, string>): Promise<Blob> {
   try {
     const res = await axiosInstance.get('/api/commemorative-medals/template', {
+      params,
       responseType: 'blob',
     });
     return res.data;
@@ -628,10 +620,10 @@ export async function deleteCommemorationMedal(id: string): Promise<ApiResponse>
   }
 }
 
-// Military Flag (Huy chuong quan ky Quyet thang)
-export async function getMilitaryFlagTemplate(): Promise<Blob> {
+export async function getMilitaryFlagTemplate(params?: Record<string, string>): Promise<Blob> {
   try {
     const res = await axiosInstance.get('/api/military-flag/template', {
+      params,
       responseType: 'blob',
     });
     return res.data;
@@ -723,7 +715,6 @@ export async function getCommemorationMedalsByPersonnel(personnelId: string): Pr
   }
 }
 
-// Unit Annual Awards
 export async function getUnitAnnualAwards(params?: {
   page?: number;
   limit?: number;
@@ -755,9 +746,10 @@ export async function getUnitAnnualAwardsByUnit(
   }
 }
 
-export async function getUnitAnnualAwardsTemplate(): Promise<Blob> {
+export async function getUnitAnnualAwardsTemplate(params?: Record<string, string>): Promise<Blob> {
   try {
     const res = await axiosInstance.get('/api/awards/units/annual/template', {
+      params,
       responseType: 'blob',
     });
     return res.data;
@@ -818,7 +810,6 @@ export async function getUnitAnnualProfile(donViId: string, year?: number): Prom
   }
 }
 
-// Ad-hoc Awards (Khen thuong dot xuat)
 export async function getAdhocAwards(params?: {
   type?: 'CA_NHAN' | 'TAP_THE';
   year?: number;
@@ -898,119 +889,46 @@ export async function getAdhocAwardsByUnit(
   }
 }
 
-// Annual Rewards Import Preview & Confirm
-export async function previewAnnualRewardsImport(file: File): Promise<unknown> {
-  const formData = new FormData();
-  formData.append('file', file);
-  const res = await axiosInstance.post('/api/annual-rewards/import/preview', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
-  return res.data;
+/** Create a preview-import function for a given endpoint. */
+function createPreviewImport(url: string) {
+  return async (file: File): Promise<unknown> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await axiosInstance.post(url, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return res.data;
+  };
 }
 
-export async function confirmAnnualRewardsImport(
-  items: Record<string, unknown>[]
-): Promise<unknown> {
-  const res = await axiosInstance.post('/api/annual-rewards/import/confirm', { items });
-  return res.data;
+/** Create a confirm-import function for a given endpoint. */
+function createConfirmImport(url: string) {
+  return async (items: unknown[]): Promise<unknown> => {
+    const res = await axiosInstance.post(url, { items });
+    return res.data;
+  };
 }
 
-// Unit Annual Awards Import Preview & Confirm
-export async function previewUnitAnnualAwardsImport(file: File): Promise<unknown> {
-  const formData = new FormData();
-  formData.append('file', file);
-  const res = await axiosInstance.post('/api/awards/units/annual/import/preview', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
-  return res.data;
-}
+export const previewAnnualRewardsImport = createPreviewImport('/api/annual-rewards/import/preview');
+export const confirmAnnualRewardsImport = createConfirmImport('/api/annual-rewards/import/confirm');
 
-export async function confirmUnitAnnualAwardsImport(
-  items: Record<string, unknown>[]
-): Promise<unknown> {
-  const res = await axiosInstance.post('/api/awards/units/annual/import/confirm', { items });
-  return res.data;
-}
+export const previewUnitAnnualAwardsImport = createPreviewImport('/api/awards/units/annual/import/preview');
+export const confirmUnitAnnualAwardsImport = createConfirmImport('/api/awards/units/annual/import/confirm');
 
-// HCCSVV Import Preview & Confirm
-export async function previewHCCSVVImport(file: File): Promise<unknown> {
-  const formData = new FormData();
-  formData.append('file', file);
-  const res = await axiosInstance.post('/api/hccsvv/import/preview', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
-  return res.data;
-}
-export async function confirmHCCSVVImport(items: Record<string, unknown>[]): Promise<unknown> {
-  const res = await axiosInstance.post('/api/hccsvv/import/confirm', { items });
-  return res.data;
-}
+export const previewHCCSVVImport = createPreviewImport('/api/hccsvv/import/preview');
+export const confirmHCCSVVImport = createConfirmImport('/api/hccsvv/import/confirm');
 
-// HC QKQT (Military Flag) Import Preview & Confirm
-export async function previewMilitaryFlagImport(file: File): Promise<unknown> {
-  const formData = new FormData();
-  formData.append('file', file);
-  const res = await axiosInstance.post('/api/military-flag/import/preview', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
-  return res.data;
-}
-export async function confirmMilitaryFlagImport(
-  items: Record<string, unknown>[]
-): Promise<unknown> {
-  const res = await axiosInstance.post('/api/military-flag/import/confirm', { items });
-  return res.data;
-}
+export const previewMilitaryFlagImport = createPreviewImport('/api/military-flag/import/preview');
+export const confirmMilitaryFlagImport = createConfirmImport('/api/military-flag/import/confirm');
 
-// HCBVTQ (Contribution Awards) Import Preview & Confirm
-export async function previewContributionAwardsImport(file: File): Promise<unknown> {
-  const formData = new FormData();
-  formData.append('file', file);
-  const res = await axiosInstance.post('/api/contribution-awards/import/preview', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
-  return res.data;
-}
-export async function confirmContributionAwardsImport(
-  items: Record<string, unknown>[]
-): Promise<unknown> {
-  const res = await axiosInstance.post('/api/contribution-awards/import/confirm', { items });
-  return res.data;
-}
+export const previewContributionAwardsImport = createPreviewImport('/api/contribution-awards/import/preview');
+export const confirmContributionAwardsImport = createConfirmImport('/api/contribution-awards/import/confirm');
 
-// KNC VSNXD (Commemorative Medals) Import Preview & Confirm
-export async function previewCommemorationMedalsImport(file: File): Promise<unknown> {
-  const formData = new FormData();
-  formData.append('file', file);
-  const res = await axiosInstance.post('/api/commemorative-medals/import/preview', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
-  return res.data;
-}
-export async function confirmCommemorationMedalsImport(
-  items: Record<string, unknown>[]
-): Promise<unknown> {
-  const res = await axiosInstance.post('/api/commemorative-medals/import/confirm', { items });
-  return res.data;
-}
+export const previewCommemorationMedalsImport = createPreviewImport('/api/commemorative-medals/import/preview');
+export const confirmCommemorationMedalsImport = createConfirmImport('/api/commemorative-medals/import/confirm');
 
-// Scientific Achievements (NCKH) Import Preview & Confirm
-export async function previewScientificAchievementsImport(file: File): Promise<unknown> {
-  const formData = new FormData();
-  formData.append('file', file);
-  const res = await axiosInstance.post('/api/scientific-achievements/import/preview', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
-  return res.data;
-}
-export async function confirmScientificAchievementsImport(
-  items: Record<string, unknown>[]
-): Promise<unknown> {
-  const res = await axiosInstance.post('/api/scientific-achievements/import/confirm', { items });
-  return res.data;
-}
-
-// Bulk Create Awards (with full validation)
+export const previewScientificAchievementsImport = createPreviewImport('/api/scientific-achievements/import/preview');
+export const confirmScientificAchievementsImport = createConfirmImport('/api/scientific-achievements/import/confirm');
 export async function bulkCreateAwards(formData: FormData): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.post('/api/awards/bulk', formData, {

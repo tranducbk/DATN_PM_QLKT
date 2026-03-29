@@ -1,5 +1,6 @@
 import { prisma } from '../models';
 import moment from 'moment';
+import { AppError, NotFoundError, ValidationError } from '../middlewares/errorHandler';
 
 interface CreatePositionHistoryData {
   personnel_id: string;
@@ -54,7 +55,7 @@ class PositionHistoryService {
 
   async getPositionHistory(personnelId: string) {
     if (!personnelId) {
-      throw new Error('personnel_id là bắt buộc');
+      throw new ValidationError('personnel_id là bắt buộc');
     }
 
     const personnel = await prisma.quanNhan.findUnique({
@@ -62,7 +63,7 @@ class PositionHistoryService {
     });
 
     if (!personnel) {
-      throw new Error('Quân nhân không tồn tại');
+      throw new NotFoundError('Quân nhân');
     }
 
     const history = await prisma.lichSuChucVu.findMany({
@@ -106,21 +107,21 @@ class PositionHistoryService {
 
   async createPositionHistory(data: CreatePositionHistoryData) {
     if (!data) {
-      throw new Error('Dữ liệu không hợp lệ');
+      throw new ValidationError('Dữ liệu không hợp lệ');
     }
 
     const { personnel_id, chuc_vu_id, ngay_bat_dau, ngay_ket_thuc, he_so_chuc_vu } = data;
 
     if (!personnel_id) {
-      throw new Error('ID quân nhân là bắt buộc');
+      throw new ValidationError('ID quân nhân là bắt buộc');
     }
 
     if (!chuc_vu_id) {
-      throw new Error('ID chức vụ là bắt buộc');
+      throw new ValidationError('ID chức vụ là bắt buộc');
     }
 
     if (!ngay_bat_dau) {
-      throw new Error('Ngày bắt đầu là bắt buộc');
+      throw new ValidationError('Ngày bắt đầu là bắt buộc');
     }
 
     if (ngay_ket_thuc) {
@@ -128,7 +129,7 @@ class PositionHistoryService {
       const dateKetThuc = moment(ngay_ket_thuc);
 
       if (dateBatDau.isAfter(dateKetThuc) || dateBatDau.isSame(dateKetThuc)) {
-        throw new Error('Ngày bắt đầu phải trước ngày kết thúc');
+        throw new ValidationError('Ngày bắt đầu phải trước ngày kết thúc');
       }
     }
 
@@ -137,7 +138,7 @@ class PositionHistoryService {
     });
 
     if (!personnel) {
-      throw new Error('Quân nhân không tồn tại');
+      throw new NotFoundError('Quân nhân');
     }
 
     const position = await prisma.chucVu.findUnique({
@@ -146,7 +147,7 @@ class PositionHistoryService {
     });
 
     if (!position) {
-      throw new Error('Chức vụ không tồn tại');
+      throw new NotFoundError('Chức vụ');
     }
 
     const existingHistory = await prisma.lichSuChucVu.findMany({
@@ -162,8 +163,9 @@ class PositionHistoryService {
     if (hasUnfinishedPosition && !ngay_ket_thuc) {
       const unfinishedPosition = existingHistory.find(h => !h.ngay_ket_thuc)!;
       const unfinishedStart = moment(unfinishedPosition.ngay_bat_dau).format('DD/MM/YYYY');
-      throw new Error(
-        `Đã có chức vụ chưa kết thúc (bắt đầu từ ${unfinishedStart}). Vui lòng kết thúc chức vụ hiện tại trước khi tạo chức vụ mới chưa kết thúc.`
+      throw new AppError(
+        `Đã có chức vụ chưa kết thúc (bắt đầu từ ${unfinishedStart}). Vui lòng kết thúc chức vụ hiện tại trước khi tạo chức vụ mới chưa kết thúc.`,
+        409
       );
     }
 
@@ -179,10 +181,11 @@ class PositionHistoryService {
         const newEndStr = ngayKetThucMoment
           ? ngayKetThucMoment.format('DD/MM/YYYY')
           : 'chưa kết thúc';
-        throw new Error(
+        throw new AppError(
           `Khoảng thời gian đảm nhiệm chức vụ trùng lặp với chức vụ khác (${existingStart.format(
             'DD/MM/YYYY'
-          )} - ${existingEndStr}). Vui lòng chọn khoảng thời gian không trùng lặp.`
+          )} - ${existingEndStr}). Vui lòng chọn khoảng thời gian không trùng lặp.`,
+          409
         );
       }
     }
@@ -235,7 +238,7 @@ class PositionHistoryService {
 
   async updatePositionHistory(id: string, data: UpdatePositionHistoryData) {
     if (!id) {
-      throw new Error('ID lịch sử chức vụ là bắt buộc');
+      throw new ValidationError('ID lịch sử chức vụ là bắt buộc');
     }
 
     const { chuc_vu_id, ngay_bat_dau, ngay_ket_thuc, he_so_chuc_vu } = data || {};
@@ -245,12 +248,12 @@ class PositionHistoryService {
     });
 
     if (!history) {
-      throw new Error('Lịch sử chức vụ không tồn tại');
+      throw new NotFoundError('Lịch sử chức vụ');
     }
 
     const isCurrentPosition = !history.ngay_ket_thuc;
     if (isCurrentPosition && chuc_vu_id && chuc_vu_id !== history.chuc_vu_id) {
-      throw new Error(
+      throw new ValidationError(
         'Không được phép sửa chức vụ đảm nhận của chức vụ hiện tại. Chức vụ hiện tại chỉ có thể được sửa ở mục "Cập nhật thông tin cá nhân".'
       );
     }
@@ -263,7 +266,7 @@ class PositionHistoryService {
       });
 
       if (!position) {
-        throw new Error('Chức vụ không tồn tại');
+        throw new NotFoundError('Chức vụ');
       }
       heSoChucVu = Number(position.he_so_chuc_vu) || 0;
     }
@@ -284,7 +287,7 @@ class PositionHistoryService {
       const dateKetThuc = moment(ngayKetThucFinal);
 
       if (dateBatDau.isAfter(dateKetThuc) || dateBatDau.isSame(dateKetThuc)) {
-        throw new Error('Ngày bắt đầu phải trước ngày kết thúc');
+        throw new ValidationError('Ngày bắt đầu phải trước ngày kết thúc');
       }
     }
 
@@ -341,10 +344,11 @@ class PositionHistoryService {
         const newEndStr = ngayKetThucMoment
           ? ngayKetThucMoment.format('DD/MM/YYYY')
           : 'chưa kết thúc';
-        throw new Error(
+        throw new AppError(
           `Khoảng thời gian đảm nhiệm chức vụ trùng lặp với chức vụ khác (${existingStart.format(
             'DD/MM/YYYY'
-          )} - ${existingEndStr}). Vui lòng chọn khoảng thời gian không trùng lặp.`
+          )} - ${existingEndStr}). Vui lòng chọn khoảng thời gian không trùng lặp.`,
+          409
         );
       }
     }
@@ -406,7 +410,7 @@ class PositionHistoryService {
     });
 
     if (!history) {
-      throw new Error('Lịch sử chức vụ không tồn tại');
+      throw new NotFoundError('Lịch sử chức vụ');
     }
 
     await prisma.lichSuChucVu.delete({

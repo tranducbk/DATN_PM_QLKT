@@ -3,6 +3,8 @@ import { prisma } from '../models';
 import { ELIGIBILITY_STATUS } from '../constants/eligibilityStatus.constants';
 import positionHistoryService from './positionHistory.service';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
+import { writeSystemLog } from '../helpers/systemLogHelper';
+import { NotFoundError } from '../middlewares/errorHandler';
 
 class ProfileService {
   /**
@@ -14,7 +16,7 @@ class ProfileService {
     });
 
     if (!personnel) {
-      throw new Error('Quân nhân không tồn tại');
+      throw new NotFoundError('Quân nhân');
     }
 
     let profile = await prisma.hoSoHangNam.findUnique({
@@ -108,7 +110,7 @@ class ProfileService {
     });
 
     if (!personnel) {
-      throw new Error('Quân nhân không tồn tại');
+      throw new NotFoundError('Quân nhân');
     }
 
     let profile = await prisma.hoSoCongHien.findUnique({
@@ -449,14 +451,14 @@ class ProfileService {
             orderBy: { nam: 'asc' },
           },
           ThanhTichKhoaHoc: {
-            where: { status: PROPOSAL_STATUS.APPROVED, nam: { lte: year } },
+            where: { nam: { lte: year } },
             orderBy: { nam: 'asc' },
           },
         },
       });
 
       if (!personnel) {
-        throw new Error('Quân nhân không tồn tại');
+        throw new NotFoundError('Quân nhân');
       }
 
       const danhHieuList = personnel.DanhHieuHangNam || [];
@@ -495,7 +497,6 @@ class ProfileService {
           nam: tt.nam,
           loai: tt.loai,
           mo_ta: tt.mo_ta,
-          status: tt.status,
           so_quyet_dinh: tt.so_quyet_dinh || null,
           // file_quyet_dinh: tt.file_quyet_dinh || null,
         }))
@@ -625,7 +626,7 @@ class ProfileService {
           orderBy: { nam: 'asc' },
         },
         ThanhTichKhoaHoc: {
-          where: { status: PROPOSAL_STATUS.APPROVED, nam: { lte: year } },
+          where: { nam: { lte: year } },
           orderBy: { nam: 'asc' },
         },
       },
@@ -714,7 +715,7 @@ class ProfileService {
       });
 
       if (!personnel) {
-        throw new Error('Quân nhân không tồn tại');
+        throw new NotFoundError('Quân nhân');
       }
 
       // Lấy hồ sơ niên hạn hiện tại
@@ -918,7 +919,7 @@ class ProfileService {
       });
 
       if (!personnel) {
-        throw new Error('Quân nhân không tồn tại');
+        throw new NotFoundError('Quân nhân');
       }
 
       // Lấy hồ sơ cống hiến hiện tại
@@ -1072,7 +1073,11 @@ class ProfileService {
       select: { id: true, ho_ten: true },
     });
 
-    console.log(`[Recalculate] Bắt đầu tính toán cho ${allPersonnel.length} quân nhân`);
+    writeSystemLog({
+      action: 'RECALCULATE',
+      resource: 'profiles',
+      description: `[Recalculate] Bắt đầu tính toán cho ${allPersonnel.length} quân nhân`,
+    });
 
     let successCount = 0;
     const errors = [];
@@ -1087,13 +1092,21 @@ class ProfileService {
           hoTen: personnel.ho_ten,
           error: error.message,
         });
-        console.error(
-          `[Recalculate] Lỗi: ${personnel.ho_ten} (${personnel.id}) — ${error.message}`
-        );
+        writeSystemLog({
+          action: 'ERROR',
+          resource: 'profiles',
+          resourceId: personnel.id,
+          description: `[Recalculate] Lỗi: ${personnel.ho_ten} (${personnel.id}) — ${error.message}`,
+        });
       }
     }
 
-    console.log(`[Recalculate] Hoàn tất: ${successCount} thành công, ${errors.length} lỗi`);
+    writeSystemLog({
+      action: 'RECALCULATE',
+      resource: 'profiles',
+      description: `[Recalculate] Hoàn tất: ${successCount} thành công, ${errors.length} lỗi`,
+      payload: errors.length > 0 ? { errors } : null,
+    });
 
     return {
       message: `Tính toán hoàn tất. Thành công: ${successCount}, Lỗi: ${errors.length}`,
@@ -1137,7 +1150,7 @@ class ProfileService {
     });
 
     if (!profile) {
-      throw new Error('Hồ sơ Huy chương Chiến sĩ vẻ vang không tồn tại');
+      throw new NotFoundError('Hồ sơ Huy chương Chiến sĩ vẻ vang');
     }
 
     // Validate và cập nhật

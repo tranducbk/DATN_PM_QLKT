@@ -5,6 +5,7 @@ import { writeSystemLog } from '../helpers/systemLogHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 import { parsePersonnelIdsFromQuery, getManagerUnitFilter } from '../helpers/controllerHelpers';
+import { parsePagination } from '../helpers/paginationHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 
 class CommemorativeMedalController {
@@ -12,7 +13,7 @@ class CommemorativeMedalController {
     const userRole = req.user?.role ?? ROLES.MANAGER;
     const personnelIds = parsePersonnelIdsFromQuery(req.query);
 
-    const workbook = await commemorativeMedalService.exportTemplate(personnelIds, userRole);
+    const workbook = await commemorativeMedalService.exportTemplate(personnelIds);
     const buffer = await workbook.xlsx.writeBuffer();
 
     const fileName = `mau_import_knc_vsnxd_${new Date().toISOString().slice(0, 10)}.xlsx`;
@@ -79,7 +80,8 @@ class CommemorativeMedalController {
 
   getAll = catchAsync(async (req: Request, res: Response) => {
     const userRole = req.user!.role;
-    const { don_vi_id, nam, ho_ten, page = 1, limit = 50 } = req.query;
+    const { don_vi_id, nam, ho_ten } = req.query;
+    const { page, limit } = parsePagination(req.query);
 
     const filters: Record<string, unknown> = {};
     if (don_vi_id) filters.don_vi_id = don_vi_id;
@@ -95,11 +97,7 @@ class CommemorativeMedalController {
       if (managerUnit.isCoQuanDonVi) filters.include_sub_units = true;
     }
 
-    const result = await commemorativeMedalService.getAll(
-      filters,
-      page as string | number,
-      limit as string | number
-    );
+    const result = await commemorativeMedalService.getAll(filters, page, limit);
     return ResponseHelper.paginated(res, {
       data: result.data,
       total: result.pagination.total,
@@ -157,7 +155,7 @@ class CommemorativeMedalController {
       if (!user?.QuanNhan) return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
 
       const managerUnitId = user.QuanNhan.co_quan_don_vi_id ?? user.QuanNhan.don_vi_truc_thuoc_id;
-      const personnel = await commemorativeMedalService.getPersonnelById(personnel_id);
+      const personnel = await commemorativeMedalService.getPersonnelById(String(personnel_id));
       if (!personnel) return ResponseHelper.notFound(res, 'Không tìm thấy thông tin quân nhân');
 
       const personnelUnitId = personnel.co_quan_don_vi_id ?? personnel.don_vi_truc_thuoc_id;
@@ -166,7 +164,7 @@ class CommemorativeMedalController {
       }
     }
 
-    const result = await commemorativeMedalService.getByPersonnelId(personnel_id);
+    const result = await commemorativeMedalService.getByPersonnelId(String(personnel_id));
     return ResponseHelper.success(res, {
       data: { hasReceived: result.length > 0, items: result },
       message: 'Lấy Kỷ niệm chương VSNXD QĐNDVN theo quân nhân thành công',
@@ -176,7 +174,7 @@ class CommemorativeMedalController {
   deleteAward = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.params;
     const adminUsername = req.user?.username ?? 'Admin';
-    const result = await commemorativeMedalService.deleteAward(id, adminUsername);
+    const result = await commemorativeMedalService.deleteAward(String(id), adminUsername);
     return ResponseHelper.success(res, { message: result.message });
   });
 }

@@ -25,7 +25,7 @@ import dayjs from 'dayjs';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
 import { useAuth } from '@/contexts/AuthContext';
 import { ROLES } from '@/constants/roles.constants';
-import VietnamAddressCascader from '@/components/VietnamAddressCascader';
+import { VietnamAddressCascader } from '@/components/VietnamAddressCascader';
 
 const { Title } = Typography;
 

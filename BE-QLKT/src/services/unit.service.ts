@@ -1,4 +1,5 @@
 import { prisma } from '../models';
+import { AppError, NotFoundError, ValidationError } from '../middlewares/errorHandler';
 
 interface CreateUnitData {
   ma_don_vi: string;
@@ -82,7 +83,7 @@ class UnitService {
     });
 
     if (!manager) {
-      throw new Error('Không tìm thấy thông tin quân nhân');
+      throw new NotFoundError('Thông tin quân nhân');
     }
 
     const units: Record<string, unknown>[] = [];
@@ -149,7 +150,7 @@ class UnitService {
     ]);
 
     if (existingCoQuanDonVi || existingDonViTrucThuoc) {
-      throw new Error('Mã đơn vị đã tồn tại');
+      throw new AppError('Mã đơn vị đã tồn tại', 409);
     }
 
     if (co_quan_don_vi_id) {
@@ -158,7 +159,7 @@ class UnitService {
       });
 
       if (!parentUnit) {
-        throw new Error('Cơ quan đơn vị không tồn tại');
+        throw new NotFoundError('Cơ quan đơn vị');
       }
 
       const newUnit = await prisma.donViTrucThuoc.create({
@@ -205,7 +206,7 @@ class UnitService {
     ]);
 
     if (!coQuanDonVi && !donViTrucThuoc) {
-      throw new Error('Cơ quan đơn vị hoặc đơn vị trực thuộc không tồn tại');
+      throw new NotFoundError('Cơ quan đơn vị hoặc đơn vị trực thuộc');
     }
 
     if (donViTrucThuoc) {
@@ -225,7 +226,7 @@ class UnitService {
           }),
         ]);
         if (existingDonVi || existingCoQuan) {
-          throw new Error('Mã đơn vị đã tồn tại');
+          throw new AppError('Mã đơn vị đã tồn tại', 409);
         }
         updateData.ma_don_vi = ma_don_vi;
       }
@@ -236,7 +237,7 @@ class UnitService {
         });
 
         if (!parentUnit) {
-          throw new Error('Cơ quan đơn vị không tồn tại');
+          throw new NotFoundError('Cơ quan đơn vị');
         }
 
         updateData.co_quan_don_vi_id = co_quan_don_vi_id;
@@ -269,7 +270,7 @@ class UnitService {
           }),
         ]);
         if (existingCoQuan || existingDonVi) {
-          throw new Error('Mã đơn vị đã tồn tại');
+          throw new AppError('Mã đơn vị đã tồn tại', 409);
         }
         updateData.ma_don_vi = ma_don_vi;
       }
@@ -322,12 +323,12 @@ class UnitService {
     ]);
 
     if (!coQuanDonVi && !donViTrucThuoc) {
-      throw new Error('Cơ quan đơn vị hoặc đơn vị trực thuộc không tồn tại');
+      throw new NotFoundError('Cơ quan đơn vị hoặc đơn vị trực thuộc');
     }
 
     if (coQuanDonVi) {
       if (coQuanDonVi.DonViTrucThuoc && coQuanDonVi.DonViTrucThuoc.length > 0) {
-        throw new Error(
+        throw new ValidationError(
           `Không thể xóa cơ quan đơn vị vì còn ${coQuanDonVi.DonViTrucThuoc.length} đơn vị trực thuộc`
         );
       }
@@ -337,7 +338,7 @@ class UnitService {
       });
 
       if (personnelCount > 0) {
-        throw new Error(`Không thể xóa cơ quan đơn vị vì còn ${personnelCount} quân nhân`);
+        throw new ValidationError(`Không thể xóa cơ quan đơn vị vì còn ${personnelCount} quân nhân`);
       }
 
       const positionCount = await prisma.chucVu.count({
@@ -345,7 +346,7 @@ class UnitService {
       });
 
       if (positionCount > 0) {
-        throw new Error(`Không thể xóa cơ quan đơn vị vì còn ${positionCount} chức vụ`);
+        throw new ValidationError(`Không thể xóa cơ quan đơn vị vì còn ${positionCount} chức vụ`);
       }
 
       await prisma.coQuanDonVi.delete({
@@ -357,7 +358,7 @@ class UnitService {
       });
 
       if (personnelCount > 0) {
-        throw new Error(`Không thể xóa đơn vị trực thuộc vì còn ${personnelCount} quân nhân`);
+        throw new ValidationError(`Không thể xóa đơn vị trực thuộc vì còn ${personnelCount} quân nhân`);
       }
 
       const positionCount = await prisma.chucVu.count({
@@ -365,7 +366,7 @@ class UnitService {
       });
 
       if (positionCount > 0) {
-        throw new Error(`Không thể xóa đơn vị trực thuộc vì còn ${positionCount} chức vụ`);
+        throw new ValidationError(`Không thể xóa đơn vị trực thuộc vì còn ${positionCount} chức vụ`);
       }
 
       await prisma.donViTrucThuoc.delete({
@@ -435,7 +436,7 @@ class UnitService {
     ]);
 
     if (!coQuanDonVi && !donViTrucThuoc) {
-      throw new Error('Cơ quan đơn vị hoặc đơn vị trực thuộc không tồn tại');
+      throw new NotFoundError('Cơ quan đơn vị hoặc đơn vị trực thuộc');
     }
 
     return coQuanDonVi || donViTrucThuoc;

@@ -2,14 +2,16 @@ import type { Prisma } from '../generated/prisma';
 import { prisma } from '../models';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import ExcelJS from 'exceljs';
+import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHelper';
 import bcrypt from 'bcrypt';
 import { parseCCCD } from '../helpers/cccdHelper';
 import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
-import { NotFoundError, ValidationError, ForbiddenError } from '../middlewares/errorHandler';
+import { NotFoundError, ValidationError, ForbiddenError, AppError } from '../middlewares/errorHandler';
 import profileService from './profile.service';
 import * as notificationHelper from '../helpers/notification';
 import { buildUnitWhereFilter } from '../helpers/controllerHelpers';
+import { writeSystemLog } from '../helpers/systemLogHelper';
 
 class PersonnelService {
   parseCCCD(value) {
@@ -882,7 +884,7 @@ class PersonnelService {
             });
           }
         } catch (error) {
-          throw new Error(`Không thể cập nhật số lượng quân nhân của đơn vị: ${error.message}`);
+          throw new AppError(`Không thể cập nhật số lượng quân nhân của đơn vị: ${error.message}`, 500);
         }
       } else {
       }
@@ -1036,13 +1038,8 @@ class PersonnelService {
    * Hỗ trợ các cột: CCCD, Họ tên, Ngày sinh, Ngày nhập ngũ, Mã đơn vị, Tên chức vụ
    */
   async importFromExcelBuffer(buffer) {
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(buffer);
-    const worksheet = workbook.worksheets[0];
-
-    if (!worksheet) {
-      throw new ValidationError('File Excel không hợp lệ');
-    }
+    const workbook = await loadWorkbook(buffer);
+    const worksheet = getAndValidateWorksheet(workbook);
 
     // Đọc header map
     const headerRow = worksheet.getRow(1);
@@ -1299,9 +1296,11 @@ class PersonnelService {
       }
     }
 
-    console.log(
-      `[Import quân nhân] Hoàn tất: ${created.length} tạo mới, ${updated.length} cập nhật, ${errors.length} lỗi`
-    );
+    writeSystemLog({
+      action: 'IMPORT',
+      resource: 'personnel',
+      description: `[Import quân nhân] Hoàn tất: ${created.length} tạo mới, ${updated.length} cập nhật, ${errors.length} lỗi`,
+    });
 
     return {
       createdCount: created.length,

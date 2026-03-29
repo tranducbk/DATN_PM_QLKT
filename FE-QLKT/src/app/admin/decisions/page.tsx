@@ -34,7 +34,7 @@ import { previewFile } from '@/utils/filePreview';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { LOAI_KHEN_THUONG_OPTIONS, getLoaiDeXuatName } from '@/constants/danhHieu.constants';
 import dayjs from 'dayjs';
-import DecisionModal from '@/components/DecisionModal';
+import { DecisionModal } from '@/components/DecisionModal';
 
 const { Title, Text } = Typography;
 

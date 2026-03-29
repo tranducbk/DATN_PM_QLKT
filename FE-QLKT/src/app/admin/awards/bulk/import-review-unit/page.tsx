@@ -1,33 +1,28 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
-import ImportReviewPageContent, {
+import { DANH_HIEU_COLORS } from '@/constants/danhHieu.constants';
+import {
+  ImportReviewPageContent,
   type PreviewItem,
   type ImportReviewConfig,
+  getDanhHieuTag,
   renderText,
   BooleanIcon,
   makeErrorColumn,
+  makeSTTColumn,
+  makeRowNumberColumn,
+  makeNamColumn,
+  makeSoQDColumn,
+  makeGhiChuColumn,
 } from '@/components/import-review/ImportReviewPageContent';
-
-function getDanhHieuTagUnit(danhHieu: string | undefined) {
-  if (!danhHieu) return <Tag>--</Tag>;
-  if (danhHieu === 'ĐVQT') return <Tag color="green">Đơn vị Quyết thắng</Tag>;
-  if (danhHieu === 'ĐVTT') return <Tag color="blue">Đơn vị Tiên tiến</Tag>;
-  return <Tag>{danhHieu}</Tag>;
-}
 
 export default function ImportReviewUnitPage() {
   const validColumns: ColumnsType<PreviewItem> = useMemo(
     () => [
-      {
-        title: 'STT',
-        width: 60,
-        align: 'center' as const,
-        render: (_: any, __: any, index: number) => index + 1,
-      },
+      makeSTTColumn(),
       {
         title: 'Mã đơn vị',
         dataIndex: 'ma_don_vi',
@@ -42,49 +37,27 @@ export default function ImportReviewUnitPage() {
         ellipsis: true,
         render: renderText,
       },
-      {
-        title: 'Năm',
-        dataIndex: 'nam',
-        width: 80,
-        align: 'center' as const,
-      },
+      makeNamColumn(),
       {
         title: 'Danh hiệu',
         dataIndex: 'danh_hieu',
         width: 200,
-        render: (val: string) => getDanhHieuTagUnit(val),
+        render: (val: string) => getDanhHieuTag(val, DANH_HIEU_COLORS),
       },
-      {
-        title: 'Số QĐ',
-        dataIndex: 'so_quyet_dinh',
-        width: 140,
-        ellipsis: true,
-        render: renderText,
-      },
-      {
-        title: 'Ghi chú',
-        dataIndex: 'ghi_chu',
-        width: 150,
-        ellipsis: true,
-        render: renderText,
-      },
+      makeSoQDColumn(),
+      makeGhiChuColumn(),
     ],
     []
   );
 
   const historyColumns: ColumnsType<Record<string, any>> = useMemo(
     () => [
-      {
-        title: 'Năm',
-        dataIndex: 'nam',
-        width: 80,
-        align: 'center' as const,
-      },
+      makeNamColumn(),
       {
         title: 'Danh hiệu',
         dataIndex: 'danh_hieu',
         width: 200,
-        render: (val: string) => getDanhHieuTagUnit(val),
+        render: (val: string) => getDanhHieuTag(val, DANH_HIEU_COLORS),
       },
       {
         title: 'BKBQP',
@@ -100,32 +73,15 @@ export default function ImportReviewUnitPage() {
         align: 'center' as const,
         render: (val: boolean) => <BooleanIcon value={val} />,
       },
-      {
-        title: 'Số QĐ',
-        dataIndex: 'so_quyet_dinh',
-        width: 120,
-        ellipsis: true,
-        render: renderText,
-      },
+      makeSoQDColumn(120),
     ],
     []
   );
 
   const invalidColumns: ColumnsType<PreviewItem> = useMemo(
     () => [
-      {
-        title: 'STT',
-        width: 50,
-        align: 'center' as const,
-        render: (_: any, __: any, index: number) => index + 1,
-      },
-      {
-        title: 'Dòng',
-        dataIndex: 'row',
-        width: 60,
-        align: 'center' as const,
-        render: (val: number) => val ?? '--',
-      },
+      makeSTTColumn(50),
+      makeRowNumberColumn(),
       {
         title: 'Tên đơn vị',
         dataIndex: 'ten_don_vi',
@@ -133,18 +89,12 @@ export default function ImportReviewUnitPage() {
         ellipsis: true,
         render: renderText,
       },
-      {
-        title: 'Năm',
-        dataIndex: 'nam',
-        width: 60,
-        align: 'center' as const,
-        render: (val: number) => val ?? '--',
-      },
+      makeNamColumn(60, true),
       {
         title: 'Danh hiệu',
         dataIndex: 'danh_hieu',
         width: 130,
-        render: (val: string) => (val ? getDanhHieuTagUnit(val) : '--'),
+        render: (val: string) => (val ? getDanhHieuTag(val, DANH_HIEU_COLORS) : '--'),
       },
       makeErrorColumn(),
     ],

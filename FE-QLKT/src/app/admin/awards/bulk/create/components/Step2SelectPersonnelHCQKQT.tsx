@@ -20,7 +20,7 @@ import { formatDate } from '@/lib/utils';
 import type { DateInput } from '@/lib/types';
 import { apiClient } from '@/lib/apiClient';
 import { getApiErrorMessage } from '@/lib/apiError';
-import ExcelImportSection from './ExcelImportSection';
+import { ExcelImportSection } from './ExcelImportSection';
 import * as XLSX from 'xlsx';
 
 const { Text } = Typography;
@@ -67,7 +67,7 @@ interface Step2SelectPersonnelHCQKQTProps {
   isManager?: boolean;
 }
 
-export default function Step2SelectPersonnelHCQKQT({
+export function Step2SelectPersonnelHCQKQT({
   selectedPersonnelIds,
   onPersonnelChange,
   nam,
@@ -687,17 +687,16 @@ export default function Step2SelectPersonnelHCQKQT({
         <>
           <ExcelImportSection
             awardType="HC_QKQT"
-            templateEndpoint="/api/military-flag/template"
-            importEndpoint="/api/military-flag/import"
+            downloadTemplate={apiClient.getMilitaryFlagTemplate}
+            importFile={apiClient.importMilitaryFlag}
             templateFileName="mau_import_hcqkqt"
             onImportSuccess={handleImportSuccess}
-            selectedCount={selectedPersonnelIds.length}
             selectedPersonnelIds={selectedPersonnelIds}
             selectedNames={selectedPersonnelIds.map(id => personnel.find(p => p.id === id)?.ho_ten || '')}
             entityLabel="quân nhân"
             localProcessing={true}
             onLocalProcess={handleLocalExcelProcess}
-            previewEndpoint="/api/military-flag/import/preview"
+            previewImport={apiClient.previewMilitaryFlagImport}
             reviewPath="/admin/awards/bulk/import-review-hcqkqt"
             sessionStorageKey="importPreviewDataHCQKQT"
           />

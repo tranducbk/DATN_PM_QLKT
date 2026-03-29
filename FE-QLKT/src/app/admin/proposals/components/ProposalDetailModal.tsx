@@ -54,7 +54,7 @@ interface ProposalDetailModalProps {
   onApprove?: () => void;
 }
 
-export default function ProposalDetailModal({
+export function ProposalDetailModal({
   visible,
   proposal,
   onClose,

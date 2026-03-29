@@ -37,7 +37,7 @@ const decisions: Record<string, (req: Request, res: Response, responseData: unkn
 
     const resolvedSoQD = (decision?.so_quyet_dinh as string) || soQuyetDinh;
     const resolvedLoai = loaiQuyetDinh || (decision?.loai_quyet_dinh as string) || '';
-    const resolvedNam = nam || (decision?.nam as string | number) || '';
+    const resolvedNam = nam || (decision?.nam as number) || '';
     const loaiName = getLoaiName(resolvedLoai);
 
     let description = `Cập nhật quyết định: ${resolvedSoQD}`;

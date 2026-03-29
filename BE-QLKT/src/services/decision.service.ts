@@ -1,10 +1,11 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { prisma } from '../models';
+import { AppError, NotFoundError, ValidationError } from '../middlewares/errorHandler';
 import type { FileQuyetDinh, Prisma } from '../generated/prisma';
 
 interface DecisionFilters {
-  nam?: string | number;
+  nam?: number;
   loai_khen_thuong?: string;
   search?: string;
 }
@@ -35,7 +36,7 @@ interface FileDownloadResult {
 
 interface CreateDecisionData {
   so_quyet_dinh: string;
-  nam: number | string;
+  nam: number;
   ngay_ky: string | Date;
   nguoi_ky: string;
   file_path?: string | null;
@@ -45,7 +46,7 @@ interface CreateDecisionData {
 
 interface UpdateDecisionData {
   so_quyet_dinh?: string;
-  nam?: number | string;
+  nam?: number;
   ngay_ky?: string | Date;
   nguoi_ky?: string;
   file_path?: string | null;
@@ -118,7 +119,7 @@ class DecisionService {
     });
 
     if (!decision) {
-      throw new Error('Quyết định không tồn tại');
+      throw new NotFoundError('Quyết định');
     }
 
     return decision;
@@ -312,11 +313,11 @@ class DecisionService {
     });
 
     if (existingDecision) {
-      throw new Error('Số quyết định đã tồn tại');
+      throw new AppError('Số quyết định đã tồn tại', 409);
     }
 
     if (!so_quyet_dinh || !nam || !ngay_ky || !nguoi_ky) {
-      throw new Error('Thiếu thông tin bắt buộc: số quyết định, năm, ngày ký, người ký');
+      throw new ValidationError('Thiếu thông tin bắt buộc: số quyết định, năm, ngày ký, người ký');
     }
 
     const newDecision = await prisma.fileQuyetDinh.create({
@@ -340,7 +341,7 @@ class DecisionService {
     });
 
     if (!existingDecision) {
-      throw new Error('Quyết định không tồn tại');
+      throw new NotFoundError('Quyết định');
     }
 
     const { so_quyet_dinh, nam, ngay_ky, nguoi_ky, file_path, loai_khen_thuong, ghi_chu } = data;
@@ -351,7 +352,7 @@ class DecisionService {
       });
 
       if (duplicateDecision) {
-        throw new Error('Số quyết định đã tồn tại');
+        throw new AppError('Số quyết định đã tồn tại', 409);
       }
     }
 
@@ -378,7 +379,7 @@ class DecisionService {
     });
 
     if (!existingDecision) {
-      throw new Error('Quyết định không tồn tại');
+      throw new NotFoundError('Quyết định');
     }
 
     const soQuyetDinh = existingDecision.so_quyet_dinh;
@@ -394,7 +395,7 @@ class DecisionService {
 
     const isInUse = danhHieu || congHien || hccsvv || dotXuat || huanChuong || kyNiem || thanhTich;
     if (isInUse) {
-      throw new Error(
+      throw new ValidationError(
         `Không thể xóa quyết định "${soQuyetDinh}" vì đang được sử dụng trong dữ liệu khen thưởng.`
       );
     }

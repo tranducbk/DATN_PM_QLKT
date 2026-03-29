@@ -5,6 +5,7 @@ import { FALLBACK, parseResponseData, asRecord, queryPersonnelName, getUnitNameF
 import { getDanhHieuName } from '../../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 
+
 /** Chuẩn hóa req.params / query id (Express có thể là string | string[]) */
 function routeParamId(v: string | string[] | undefined | null): string | null {
   if (v == null) return null;
@@ -286,9 +287,7 @@ const adhocAwards: Record<
             tenDonVi = unit?.ten_don_vi || '';
           }
         }
-      } catch (error) {
-        console.error('[AuditLog] Failed to fetch adhoc award entity info:', error);
-      }
+      } catch {}
     }
 
     let description = `Tạo khen thưởng đột xuất ${type}: ${awardForm}`;
@@ -603,7 +602,7 @@ function buildAwardTypeHelpers(resource: string): Record<
   const model = AWARD_PRISMA_MODEL[resource];
 
   return {
-    CREATE: async (req: Request, _res: Response, responseData: unknown): Promise<string> => {
+    CREATE: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
       const nam = req.body?.nam || '';
       const personnelId = req.body?.quan_nhan_id || null;
       const danhHieu = req.body?.danh_hieu || '';
@@ -640,7 +639,7 @@ function buildAwardTypeHelpers(resource: string): Record<
       return description;
     },
 
-    DELETE: async (req: Request, _res: Response, responseData: unknown): Promise<string> => {
+    DELETE: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
       const awardId = routeParamId(req.params?.id);
 
       let hoTen = '';
@@ -680,7 +679,7 @@ function buildAwardTypeHelpers(resource: string): Record<
       return `Xóa ${typeName} (không xác định được thông tin)`;
     },
 
-    IMPORT: (req: Request, _res: Response, responseData: unknown): string => {
+    IMPORT: (req: Request, res: Response, responseData: unknown): string => {
       const fileName = getFileName(req);
       let successCount = 0;
       let failCount = 0;
@@ -731,7 +730,7 @@ const unitAnnualAwards: Record<
   string,
   (req: Request, res: Response, responseData: unknown) => string | Promise<string>
 > = {
-  IMPORT: (req: Request, _res: Response, responseData: unknown): string => {
+  IMPORT: (req: Request, res: Response, responseData: unknown): string => {
     const fileName = getFileName(req);
     let successCount = 0;
     let failCount = 0;
@@ -754,7 +753,7 @@ const unitAnnualAwards: Record<
     return `Import ${UNIT_AWARD_LABEL} từ file: ${fileName}`;
   },
 
-  CREATE: async (req: Request, _res: Response, responseData: unknown): Promise<string> => {
+  CREATE: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
     const danhHieu = req.body?.danh_hieu || '';
     const nam = req.body?.nam || '';
     const danhHieuName = getDanhHieuName(danhHieu);
@@ -772,7 +771,7 @@ const unitAnnualAwards: Record<
     } - Năm ${namDisplay}`;
   },
 
-  UPDATE: async (req: Request, _res: Response, responseData: unknown): Promise<string> => {
+  UPDATE: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
     const danhHieu = req.body?.danh_hieu || '';
     const nam = req.body?.nam || '';
     const danhHieuName = getDanhHieuName(danhHieu);
@@ -790,7 +789,7 @@ const unitAnnualAwards: Record<
     } - Năm ${namDisplay}`;
   },
 
-  DELETE: async (req: Request, _res: Response, responseData: unknown): Promise<string> => {
+  DELETE: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
     const rewardId = routeParamId(req.params?.id);
     let tenDonVi = '';
     let danhHieu = '';
@@ -837,7 +836,7 @@ const unitAnnualAwards: Record<
     return `Xóa ${UNIT_AWARD_LABEL} (không xác định được thông tin)`;
   },
 
-  PROPOSE: async (req: Request, _res: Response, responseData: unknown): Promise<string> => {
+  PROPOSE: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
     const danhHieu = req.body?.danh_hieu || '';
     const nam = req.body?.nam || '';
     const danhHieuName = getDanhHieuName(danhHieu);
@@ -855,7 +854,7 @@ const unitAnnualAwards: Record<
     } - Năm ${namDisplay}`;
   },
 
-  APPROVE: async (req: Request, _res: Response, responseData: unknown): Promise<string> => {
+  APPROVE: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
     let tenDonVi = getUnitNameFromResponse(responseData);
     let danhHieu = '';
     let nam = '';
@@ -900,7 +899,7 @@ const unitAnnualAwards: Record<
     } - Năm ${namDisplay}`;
   },
 
-  REJECT: async (req: Request, _res: Response, responseData: unknown): Promise<string> => {
+  REJECT: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
     let tenDonVi = getUnitNameFromResponse(responseData);
     let danhHieu = '';
     let nam = '';
@@ -952,7 +951,7 @@ const unitAnnualAwards: Record<
     return description;
   },
 
-  RECALCULATE: async (req: Request, _res: Response, responseData: unknown): Promise<string> => {
+  RECALCULATE: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
     const donViId = req.body?.don_vi_id || '';
     const nam = req.body?.nam || '';
 

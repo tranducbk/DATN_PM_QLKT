@@ -7,7 +7,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { formatDate } from '@/lib/utils';
-import ExcelImportSection from './ExcelImportSection';
+import { ExcelImportSection } from './ExcelImportSection';
 import * as XLSX from 'xlsx';
 
 const { Text } = Typography;
@@ -53,7 +53,7 @@ interface Step2SelectPersonnelCaNhanHangNamProps {
   isManager?: boolean;
 }
 
-export default function Step2SelectPersonnelCaNhanHangNam({
+export function Step2SelectPersonnelCaNhanHangNam({
   selectedPersonnelIds,
   onPersonnelChange,
   nam,
@@ -383,17 +383,16 @@ export default function Step2SelectPersonnelCaNhanHangNam({
         <>
           <ExcelImportSection
             awardType="CA_NHAN_HANG_NAM"
-            templateEndpoint="/api/annual-rewards/template"
-            importEndpoint="/api/annual-rewards/import"
+            downloadTemplate={apiClient.getAnnualRewardsTemplate}
+            importFile={apiClient.importAnnualRewards}
             templateFileName="mau_import_ca_nhan_hang_nam"
             onImportSuccess={handleImportSuccess}
-            selectedCount={selectedPersonnelIds.length}
             selectedPersonnelIds={selectedPersonnelIds}
             selectedNames={selectedPersonnelIds.map(id => personnel.find(p => p.id === id)?.ho_ten || '')}
             entityLabel="quân nhân"
             localProcessing={true}
             onLocalProcess={handleLocalExcelProcess}
-            previewEndpoint="/api/annual-rewards/import/preview"
+            previewImport={apiClient.previewAnnualRewardsImport}
             reviewPath="/admin/awards/bulk/import-review"
             sessionStorageKey="importPreviewData"
           />

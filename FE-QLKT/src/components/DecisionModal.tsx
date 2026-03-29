@@ -10,14 +10,13 @@ import {
   Button,
   Select,
   App,
-  Space,
   AutoComplete,
   Spin,
   Tag,
 } from 'antd';
 import { getApiErrorMessage } from '@/lib/apiError';
 
-import { UploadOutlined, SaveOutlined, FileTextOutlined, DeleteOutlined } from '@ant-design/icons';
+import { UploadOutlined, FileTextOutlined, DeleteOutlined } from '@ant-design/icons';
 import type { UploadFile } from 'antd/es/upload/interface';
 import dayjs from 'dayjs';
 import { apiClient } from '@/lib/apiClient';
@@ -51,7 +50,7 @@ interface DecisionModalProps {
   }; // For edit mode
 }
 
-export default function DecisionModal({
+export function DecisionModal({
   visible,
   onClose,
   onSuccess,
@@ -65,7 +64,6 @@ export default function DecisionModal({
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [autocompleteOptions, setAutocompleteOptions] = useState<{ value: string }[]>([]);
   const [selectedDecision, setSelectedDecision] = useState<Decision | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -79,7 +77,6 @@ export default function DecisionModal({
           loai_khen_thuong: initialDecision.loai_khen_thuong,
           ghi_chu: initialDecision.ghi_chu,
         });
-        setIsEditing(true);
         if (initialDecision.file_path) {
           setFileList([
             {
@@ -94,7 +91,6 @@ export default function DecisionModal({
         form.resetFields();
         setFileList([]);
         setSelectedDecision(null);
-        setIsEditing(false);
         if (loaiKhenThuong) {
           form.setFieldsValue({ loai_khen_thuong: loaiKhenThuong });
         }
@@ -170,14 +166,6 @@ export default function DecisionModal({
     }
     setFileList([]);
     setAutocompleteOptions([]);
-  };
-
-  // Watch form changes to detect editing - disabled when decision is selected
-  const handleFormChange = () => {
-    // Không cho phép chỉnh sửa khi đã chọn quyết định
-    if (selectedDecision) {
-      setIsEditing(false);
-    }
   };
 
   // Submit form
@@ -318,7 +306,7 @@ export default function DecisionModal({
         ),
       ]}
     >
-      <Form form={form} layout="vertical" onValuesChange={handleFormChange} size="large">
+      <Form form={form} layout="vertical" size="large">
         <Form.Item
           name="so_quyet_dinh"
           label="Số quyết định"

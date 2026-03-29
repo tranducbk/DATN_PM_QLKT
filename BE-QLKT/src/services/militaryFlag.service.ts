@@ -1,13 +1,16 @@
 import { prisma } from '../models';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import ExcelJS from 'exceljs';
+import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHelper';
 import { checkDuplicateAward } from '../helpers/awardValidation';
 import * as notificationHelper from '../helpers/notification';
 import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
-import { ValidationError } from '../middlewares/errorHandler';
+import { ValidationError, NotFoundError } from '../middlewares/errorHandler';
 import { parseHeaderMap, getHeaderCol } from '../helpers/excelHelper';
+import { writeSystemLog } from '../helpers/systemLogHelper';
 import type { QuanNhan } from '../generated/prisma';
+import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
 
 interface PreviewError {
   row: number;
@@ -44,7 +47,7 @@ interface MilitaryFlagFilters {
   ho_ten?: string;
   don_vi_id?: string;
   include_sub_units?: boolean;
-  nam?: string | number;
+  nam?: number;
 }
 
 interface ImportResults {
@@ -59,19 +62,8 @@ interface ImportResults {
 
 class MilitaryFlagService {
   async previewImport(buffer: Buffer) {
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(buffer as never);
-    const worksheet = workbook.worksheets[0];
-
-    if (!worksheet) {
-      throw new ValidationError('File Excel không hợp lệ');
-    }
-
-    if (worksheet.name !== 'HC QKQT') {
-      throw new ValidationError(
-        `Sai loại file. Sheet phải có tên "HC QKQT", tìm thấy "${worksheet.name}"`
-      );
-    }
+    const workbook = await loadWorkbook(buffer);
+    const worksheet = getAndValidateWorksheet(workbook, { sheetName: 'HC QKQT' });
 
     const headerMap = parseHeaderMap(worksheet);
 
@@ -95,9 +87,37 @@ class MilitaryFlagService {
     const seenInFile = new Set<string>();
     const currentYear = new Date().getFullYear();
 
-    const existingDecisions = await prisma.fileQuyetDinh.findMany({
-      select: { so_quyet_dinh: true },
-    });
+    // --- First pass: collect all personnel IDs from worksheet ---
+    const allPersonnelIds = new Set<string>();
+    for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
+      const row = worksheet.getRow(rowNumber);
+      const idValue = idCol ? row.getCell(idCol).value : null;
+      if (idValue) {
+        const pid = String(idValue).trim();
+        if (pid) allPersonnelIds.add(pid);
+      }
+    }
+
+    // --- Batch queries: personnel, existing awards, decisions ---
+    const [personnelList, existingAwardsList, existingDecisions] = await Promise.all([
+      allPersonnelIds.size > 0
+        ? prisma.quanNhan.findMany({
+            where: { id: { in: [...allPersonnelIds] } },
+            select: { id: true, ho_ten: true, cap_bac: true, ngay_nhap_ngu: true },
+          })
+        : Promise.resolve([]),
+      allPersonnelIds.size > 0
+        ? prisma.huanChuongQuanKyQuyetThang.findMany({
+            where: { quan_nhan_id: { in: [...allPersonnelIds] } },
+          })
+        : Promise.resolve([]),
+      prisma.fileQuyetDinh.findMany({
+        select: { so_quyet_dinh: true },
+      }),
+    ]);
+
+    const personnelMap = new Map(personnelList.map(p => [p.id, p]));
+    const existingAwardsMap = new Map(existingAwardsList.map(a => [a.quan_nhan_id, a]));
     const validDecisionNumbers = new Set(existingDecisions.map(d => d.so_quyet_dinh));
 
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
@@ -139,10 +159,7 @@ class MilitaryFlagService {
         });
         continue;
       }
-      const personnel = await prisma.quanNhan.findUnique({
-        where: { id: personnelId },
-        select: { id: true, ho_ten: true, cap_bac: true, ngay_nhap_ngu: true },
-      });
+      const personnel = personnelMap.get(personnelId);
       if (!personnel) {
         errors.push({
           row: rowNumber,
@@ -198,9 +215,7 @@ class MilitaryFlagService {
       }
       seenInFile.add(personnelId);
 
-      const existingAward = await prisma.huanChuongQuanKyQuyetThang.findUnique({
-        where: { quan_nhan_id: personnelId },
-      });
+      const existingAward = existingAwardsMap.get(personnelId);
       if (existingAward) {
         errors.push({
           row: rowNumber,
@@ -225,12 +240,11 @@ class MilitaryFlagService {
         }
       }
 
-      const history = await prisma.huanChuongQuanKyQuyetThang.findMany({
-        where: { quan_nhan_id: personnelId },
-        orderBy: { nam: 'desc' },
-        take: 5,
-        select: { nam: true, so_quyet_dinh: true },
-      });
+      // History from batched data — existingAward is already checked as null/undefined here,
+      // so history is always empty (person has no HC QKQT yet). Keep the structure for consistency.
+      const history = existingAward
+        ? [{ nam: existingAward.nam, so_quyet_dinh: existingAward.so_quyet_dinh }]
+        : [];
 
       valid.push({
         row: rowNumber,
@@ -279,26 +293,8 @@ class MilitaryFlagService {
     );
   }
 
-  async exportTemplate(personnelIds: string[] = [], userRole: string = ROLES.MANAGER) {
-    const personnelList =
-      personnelIds.length > 0
-        ? await prisma.quanNhan.findMany({
-            where: { id: { in: personnelIds } },
-            include: { ChucVu: true },
-          })
-        : [];
-
-    const existingDecisions = await prisma.fileQuyetDinh.findMany({
-      select: { so_quyet_dinh: true },
-      orderBy: { nam: 'desc' },
-      take: 200,
-    });
-    const decisionNumbers = existingDecisions.map(d => d.so_quyet_dinh).filter(Boolean);
-
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('HC QKQT');
-
-    const columns = [
+  async exportTemplate(personnelIds: string[] = []) {
+    const columns: TemplateColumn[] = [
       { header: 'STT', key: 'stt', width: 6 },
       { header: 'ID', key: 'id', width: 10 },
       { header: 'Họ và tên', key: 'ho_ten', width: 25 },
@@ -309,113 +305,20 @@ class MilitaryFlagService {
       { header: 'Ghi chú', key: 'ghi_chu', width: 25 },
     ];
 
-    worksheet.columns = columns;
-
-    const headerRow = worksheet.getRow(1);
-    headerRow.font = { bold: true };
-    headerRow.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFD3D3D3' },
-    };
-
-    personnelList.forEach((person, index) => {
-      const rowData = {
-        stt: index + 1,
-        id: person.id,
-        ho_ten: person.ho_ten ?? '',
-        cap_bac: person.cap_bac ?? '',
-        chuc_vu: person.ChucVu ? person.ChucVu.ten_chuc_vu : '',
-      };
-      worksheet.addRow(rowData);
+    return buildTemplate({
+      sheetName: 'HC QKQT',
+      columns,
+      personnelIds,
+      editableColumnLetters: ['G'],
     });
-
-    const readonlyColIndices = [1, 2, 3];
-    const yellowFill: ExcelJS.Fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFFFFFCC' },
-    };
-
-    for (let rowNum = 2; rowNum <= Math.max(personnelList.length + 1, 2); rowNum++) {
-      const row = worksheet.getRow(rowNum);
-      readonlyColIndices.forEach(colIdx => {
-        row.getCell(colIdx).fill = yellowFill;
-      });
-    }
-
-    const capBacOptions =
-      'Binh nhì,Binh nhất,Hạ sĩ,Trung sĩ,Thượng sĩ,Thiếu úy,Trung úy,Thượng úy,Đại úy,Thiếu tá,Trung tá,Thượng tá,Đại tá,Thiếu tướng,Trung tướng,Thượng tướng,Đại tướng';
-    const capBacSheet = workbook.addWorksheet('_CapBac', { state: 'veryHidden' });
-    capBacOptions.split(',').forEach((cb, idx) => {
-      capBacSheet.getCell(`A${idx + 1}`).value = cb;
-    });
-    const capBacCount = capBacOptions.split(',').length;
-    const maxRows = Math.max(personnelList.length + 1, 50);
-    for (let rowNum = 2; rowNum <= maxRows; rowNum++) {
-      worksheet.getRow(rowNum).getCell(4).dataValidation = {
-        type: 'list',
-        allowBlank: true,
-        formulae: [`_CapBac!$A$1:$A$${capBacCount}`],
-      };
-    }
-
-    if (decisionNumbers.length > 0) {
-      const soQdColNumber = columns.findIndex(c => c.key === 'so_quyet_dinh') + 1;
-      const decisionListStr = decisionNumbers.join(',');
-
-      if (decisionListStr.length <= 250) {
-        for (let rowNum = 2; rowNum <= maxRows; rowNum++) {
-          worksheet.getRow(rowNum).getCell(soQdColNumber).dataValidation = {
-            type: 'list',
-            allowBlank: true,
-            formulae: [`"${decisionListStr}"`],
-          };
-        }
-      } else {
-        const refSheet = workbook.addWorksheet('_QuyetDinh', { state: 'veryHidden' });
-        decisionNumbers.forEach((sqd, idx) => {
-          refSheet.getCell(`A${idx + 1}`).value = sqd;
-        });
-        for (let rowNum = 2; rowNum <= maxRows; rowNum++) {
-          worksheet.getRow(rowNum).getCell(soQdColNumber).dataValidation = {
-            type: 'list',
-            allowBlank: true,
-            formulae: [`_QuyetDinh!$A$1:$A$${decisionNumbers.length}`],
-          };
-        }
-      }
-    }
-
-    // Conditional formatting: nền vàng khi ô có giá trị
-    const maxDataRow = Math.max(personnelIds.length + 1, 50);
-    const editableColumns = ['G'];
-    editableColumns.forEach(col => {
-      worksheet.addConditionalFormatting({
-        ref: `${col}2:${col}${maxDataRow}`,
-        rules: [
-          {
-            type: 'expression',
-            formulae: [`LEN(TRIM(${col}2))>0`],
-            style: {
-              fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFCC' } },
-            },
-            priority: 1,
-          },
-        ],
-      });
-    });
-
-    return workbook;
   }
 
   async importFromExcel(excelBuffer: Buffer, adminId: string) {
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(excelBuffer as never);
+    const workbook = await loadWorkbook(excelBuffer);
     const worksheet = workbook.getWorksheet('HCQKQT');
 
     if (!worksheet) {
-      throw new Error('Không tìm thấy sheet "HCQKQT" trong file Excel');
+      throw new ValidationError('Không tìm thấy sheet "HCQKQT" trong file Excel');
     }
 
     const results: ImportResults = {
@@ -435,6 +338,22 @@ class MilitaryFlagService {
       }
     });
 
+    // Batch query: collect all unique ho_ten values, then query once
+    const allHoTen = new Set<string>();
+    for (const { row } of rows) {
+      const ho_ten = row.getCell(1).value?.toString().trim();
+      if (ho_ten) allHoTen.add(ho_ten);
+    }
+    const allPersonnel = allHoTen.size > 0
+      ? await prisma.quanNhan.findMany({ where: { ho_ten: { in: [...allHoTen] } } })
+      : [];
+    const personnelByName = new Map<string, typeof allPersonnel>();
+    for (const p of allPersonnel) {
+      const list = personnelByName.get(p.ho_ten) ?? [];
+      list.push(p);
+      personnelByName.set(p.ho_ten, list);
+    }
+
     for (const { row, rowNumber } of rows) {
       try {
         const ho_ten = row.getCell(1).value?.toString().trim();
@@ -451,7 +370,8 @@ class MilitaryFlagService {
           continue;
         }
 
-        const personnelList = await prisma.quanNhan.findMany({ where: { ho_ten } });
+        // Tìm quân nhân theo tên (from pre-fetched batch)
+        const personnelList = personnelByName.get(ho_ten) ?? [];
         if (personnelList.length === 0) {
           results.errors.push(`Dòng ${rowNumber}: Không tìm thấy quân nhân với tên ${ho_ten}`);
           results.failed++;
@@ -570,11 +490,9 @@ class MilitaryFlagService {
 
   async getAll(
     filters: MilitaryFlagFilters = {},
-    page: string | number = 1,
-    limit: string | number = 50
+    page: number = 1,
+    limit: number = 50
   ) {
-    const pageNum = parseInt(String(page));
-    const limitNum = parseInt(String(limit));
     const where: Record<string, unknown> = {};
 
     const quanNhanFilter: Record<string, unknown> = {};
@@ -628,8 +546,8 @@ class MilitaryFlagService {
             },
           },
         },
-        skip: (pageNum - 1) * limitNum,
-        take: limitNum,
+        skip: (page - 1) * limit,
+        take: limit,
         orderBy: { nam: 'desc' },
       }),
       prisma.huanChuongQuanKyQuyetThang.count({ where }),
@@ -638,10 +556,10 @@ class MilitaryFlagService {
     return {
       data,
       pagination: {
-        page: pageNum,
-        limit: limitNum,
+        page: page,
+        limit: limit,
         total,
-        totalPages: Math.ceil(total / limitNum),
+        totalPages: Math.ceil(total / limit),
       },
     };
   }
@@ -756,7 +674,7 @@ class MilitaryFlagService {
     });
 
     if (!award) {
-      throw new Error('Bản ghi khen thưởng không tồn tại');
+      throw new NotFoundError('Bản ghi khen thưởng');
     }
 
     const personnelId = award.quan_nhan_id;
@@ -769,7 +687,12 @@ class MilitaryFlagService {
     try {
       await notificationHelper.notifyOnAwardDeleted(award, personnel, 'HCQKQT', adminUsername);
     } catch (error) {
-      console.error('[Notification] Failed to notify on HCQKQT award deletion:', error);
+      writeSystemLog({
+        action: 'ERROR',
+        resource: 'military-flag',
+        resourceId: id,
+        description: `Lỗi gửi thông báo xóa khen thưởng HCQKQT: ${error}`,
+      });
     }
 
     return {

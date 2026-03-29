@@ -49,7 +49,7 @@ interface Step3SetTitlesHCQKQTProps {
   nam: number;
 }
 
-export default function Step3SetTitlesHCQKQT({
+export function Step3SetTitlesHCQKQT({
   selectedPersonnelIds,
   onPersonnelChange,
   titleData,

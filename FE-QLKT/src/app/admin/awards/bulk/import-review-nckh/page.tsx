@@ -4,53 +4,38 @@ import { useMemo } from 'react';
 import { Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
-import ImportReviewPageContent, {
+import { DANH_HIEU_COLORS, THANH_TICH_KHOA_HOC_SHORT_LABELS } from '@/constants/danhHieu.constants';
+import {
+  ImportReviewPageContent,
   type PreviewItem,
   type ImportReviewConfig,
   renderText,
   makeErrorColumn,
+  makeSTTColumn,
+  makeRowNumberColumn,
+  makeHoTenColumn,
+  makeNamColumn,
+  makeCapBacColumn,
+  makeChucVuColumn,
+  makeSoQDColumn,
+  makeGhiChuColumn,
 } from '@/components/import-review/ImportReviewPageContent';
 
 function getLoaiTag(loai: string | undefined) {
   if (!loai) return <Tag>--</Tag>;
-  let color = 'default';
-  if (loai === 'DTKH') color = 'blue';
-  else if (loai === 'SKKH') color = 'green';
-  const labelMap: Record<string, string> = {
-    DTKH: 'DTKH',
-    SKKH: 'SKKH',
-  };
-  return <Tag color={color}>{labelMap[loai] ?? loai}</Tag>;
+  const color = DANH_HIEU_COLORS[loai] ?? 'default';
+  const label = THANH_TICH_KHOA_HOC_SHORT_LABELS[loai] ?? loai;
+  return <Tag color={color}>{label}</Tag>;
 }
 
 export default function ImportReviewNCKHPage() {
   const validColumns: ColumnsType<PreviewItem> = useMemo(
     () => [
-      {
-        title: 'STT',
-        width: 60,
-        align: 'center' as const,
-        render: (_: any, __: any, index: number) => index + 1,
-      },
-      { title: 'Họ tên', dataIndex: 'ho_ten', width: 180, ellipsis: true },
-      {
-        title: 'Cấp bậc',
-        dataIndex: 'cap_bac',
-        width: 120,
-        ellipsis: true,
-      },
-      {
-        title: 'Chức vụ',
-        dataIndex: 'chuc_vu',
-        width: 150,
-        ellipsis: true,
-      },
-      {
-        title: 'Năm',
-        dataIndex: 'nam',
-        width: 80,
-        align: 'center' as const,
-      },
+      makeSTTColumn(),
+      makeHoTenColumn(),
+      makeCapBacColumn(),
+      makeChucVuColumn(),
+      makeNamColumn(),
       {
         title: 'Loại',
         dataIndex: 'loai',
@@ -64,32 +49,15 @@ export default function ImportReviewNCKHPage() {
         ellipsis: true,
         render: renderText,
       },
-      {
-        title: 'Số QĐ',
-        dataIndex: 'so_quyet_dinh',
-        width: 140,
-        ellipsis: true,
-        render: renderText,
-      },
-      {
-        title: 'Ghi chú',
-        dataIndex: 'ghi_chu',
-        width: 150,
-        ellipsis: true,
-        render: renderText,
-      },
+      makeSoQDColumn(),
+      makeGhiChuColumn(),
     ],
     []
   );
 
   const historyColumns: ColumnsType<Record<string, any>> = useMemo(
     () => [
-      {
-        title: 'Năm',
-        dataIndex: 'nam',
-        width: 80,
-        align: 'center' as const,
-      },
+      makeNamColumn(),
       {
         title: 'Loại',
         dataIndex: 'loai',
@@ -103,46 +71,17 @@ export default function ImportReviewNCKHPage() {
         ellipsis: true,
         render: renderText,
       },
-      {
-        title: 'Số QĐ',
-        dataIndex: 'so_quyet_dinh',
-        width: 120,
-        ellipsis: true,
-        render: renderText,
-      },
+      makeSoQDColumn(120),
     ],
     []
   );
 
   const invalidColumns: ColumnsType<PreviewItem> = useMemo(
     () => [
-      {
-        title: 'STT',
-        width: 50,
-        align: 'center' as const,
-        render: (_: any, __: any, index: number) => index + 1,
-      },
-      {
-        title: 'Dòng',
-        dataIndex: 'row',
-        width: 60,
-        align: 'center' as const,
-        render: (val: number) => val ?? '--',
-      },
-      {
-        title: 'Họ tên',
-        dataIndex: 'ho_ten',
-        width: 150,
-        ellipsis: true,
-        render: renderText,
-      },
-      {
-        title: 'Năm',
-        dataIndex: 'nam',
-        width: 60,
-        align: 'center' as const,
-        render: (val: number) => val ?? '--',
-      },
+      makeSTTColumn(50),
+      makeRowNumberColumn(),
+      makeHoTenColumn(150, true),
+      makeNamColumn(60, true),
       {
         title: 'Loại',
         dataIndex: 'loai',

@@ -50,7 +50,7 @@ interface SystemLogsPageContentProps {
   basePath: string; // e.g. '/admin' or '/super-admin'
 }
 
-export default function SystemLogsPageContent({ basePath }: SystemLogsPageContentProps) {
+export function SystemLogsPageContent({ basePath }: SystemLogsPageContentProps) {
   const { theme } = useTheme();
   const { features } = useDevZone();
   const allowDeleteLogs = features.allow_delete_logs ?? false;

@@ -33,7 +33,7 @@ async function notifyManagerOnPersonnelAdded(
   try {
     const managers = await prisma.taiKhoan.findMany({
       where: {
-        role: 'MANAGER',
+        role: ROLES.MANAGER,
         QuanNhan: {
           co_quan_don_vi_id: personnel.don_vi_id,
         },
@@ -111,7 +111,7 @@ async function notifyOnPersonnelTransfer(
     if (isSameCoQuanDonVi) {
       const managers = await prisma.taiKhoan.findMany({
         where: {
-          role: 'MANAGER',
+          role: ROLES.MANAGER,
           QuanNhan: {
             co_quan_don_vi_id: oldCoQuanDonViId,
           },
@@ -138,7 +138,7 @@ async function notifyOnPersonnelTransfer(
       if (newCoQuanDonViId) {
         const newUnitManagers = await prisma.taiKhoan.findMany({
           where: {
-            role: 'MANAGER',
+            role: ROLES.MANAGER,
             QuanNhan: {
               co_quan_don_vi_id: newCoQuanDonViId,
             },
@@ -166,7 +166,7 @@ async function notifyOnPersonnelTransfer(
       if (oldCoQuanDonViId) {
         const oldUnitManagers = await prisma.taiKhoan.findMany({
           where: {
-            role: 'MANAGER',
+            role: ROLES.MANAGER,
             QuanNhan: {
               co_quan_don_vi_id: oldCoQuanDonViId,
             },

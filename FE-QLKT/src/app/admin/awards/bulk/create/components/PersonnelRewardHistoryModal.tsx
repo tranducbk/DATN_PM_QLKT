@@ -38,7 +38,7 @@ interface PersonnelRewardHistoryModalProps {
   onClose: () => void;
 }
 
-export default function PersonnelRewardHistoryModal({
+export function PersonnelRewardHistoryModal({
   visible,
   personnel,
   annualProfile,

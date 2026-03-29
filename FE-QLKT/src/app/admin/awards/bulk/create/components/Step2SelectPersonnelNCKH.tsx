@@ -7,7 +7,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { formatDate } from '@/lib/utils';
 import { apiClient } from '@/lib/apiClient';
-import ExcelImportSection from './ExcelImportSection';
+import { ExcelImportSection } from './ExcelImportSection';
 import * as XLSX from 'xlsx';
 
 const { Text } = Typography;
@@ -52,7 +52,7 @@ interface Step2SelectPersonnelNCKHProps {
   isManager?: boolean;
 }
 
-export default function Step2SelectPersonnelNCKH({
+export function Step2SelectPersonnelNCKH({
   selectedPersonnelIds,
   onPersonnelChange,
   nam,
@@ -418,17 +418,16 @@ export default function Step2SelectPersonnelNCKH({
         <>
           <ExcelImportSection
             awardType="NCKH"
-            templateEndpoint="/api/scientific-achievements/template"
-            importEndpoint="/api/scientific-achievements/import"
+            downloadTemplate={apiClient.getScientificAchievementsTemplate}
+            importFile={apiClient.importScientificAchievements}
             templateFileName="mau_import_thanh_tich_khoa_hoc"
             onImportSuccess={handleImportSuccess}
-            selectedCount={selectedPersonnelIds.length}
             selectedPersonnelIds={selectedPersonnelIds}
             selectedNames={selectedPersonnelIds.map(id => personnel.find(p => p.id === id)?.ho_ten || '')}
             entityLabel="quân nhân"
             localProcessing={true}
             onLocalProcess={handleLocalExcelProcess}
-            previewEndpoint="/api/scientific-achievements/import/preview"
+            previewImport={apiClient.previewScientificAchievementsImport}
             reviewPath="/admin/awards/bulk/import-review-nckh"
             sessionStorageKey="importPreviewDataNCKH"
           />

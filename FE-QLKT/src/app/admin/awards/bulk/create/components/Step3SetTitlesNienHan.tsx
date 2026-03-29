@@ -5,7 +5,7 @@ import { Table, Select, Alert, Typography, Space, Tag, message, Button, Input, E
 import { EditOutlined, HistoryOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
-import ServiceHistoryModal from './ServiceHistoryModal';
+import { ServiceHistoryModal } from './ServiceHistoryModal';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 import { formatDate } from '@/lib/utils';
@@ -52,7 +52,7 @@ interface Step3SetTitlesNienHanProps {
   bypassEligibility?: boolean;
 }
 
-export default function Step3SetTitlesNienHan({
+export function Step3SetTitlesNienHan({
   selectedPersonnelIds,
   onPersonnelChange,
   titleData,

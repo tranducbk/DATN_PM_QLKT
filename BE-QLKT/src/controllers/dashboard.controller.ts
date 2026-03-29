@@ -171,9 +171,6 @@ class DashboardController {
   getAdminStatistics = catchAsync(async (req: Request, res: Response) => {
     const scientificAchievementsByType = await prisma.thanhTichKhoaHoc.groupBy({
       by: ['loai'],
-      where: {
-        status: PROPOSAL_STATUS.APPROVED,
-      },
       _count: {
         id: true,
       },
@@ -203,7 +200,6 @@ class DashboardController {
         createdAt: {
           gte: monthsAgo(6),
         },
-        status: PROPOSAL_STATUS.APPROVED,
       },
       select: {
         createdAt: true,
@@ -424,7 +420,6 @@ class DashboardController {
               createdAt: {
                 gte: sixMonthsAgoDate,
               },
-              status: PROPOSAL_STATUS.APPROVED,
             },
             select: {
               createdAt: true,
@@ -493,7 +488,6 @@ class DashboardController {
             by: ['loai'],
             where: {
               quan_nhan_id: { in: personnelIds },
-              status: PROPOSAL_STATUS.APPROVED,
             },
             _count: {
               id: true,

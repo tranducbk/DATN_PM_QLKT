@@ -20,7 +20,7 @@ import { formatDate } from '@/lib/utils';
 import type { DateInput } from '@/lib/types';
 import { apiClient } from '@/lib/apiClient';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
-import ExcelImportSection from './ExcelImportSection';
+import { ExcelImportSection } from './ExcelImportSection';
 import * as XLSX from 'xlsx';
 
 const { Text } = Typography;
@@ -69,7 +69,7 @@ interface Step2SelectPersonnelNienHanProps {
   isManager?: boolean;
 }
 
-export default function Step2SelectPersonnelNienHan({
+export function Step2SelectPersonnelNienHan({
   selectedPersonnelIds,
   onPersonnelChange,
   nam,
@@ -894,17 +894,16 @@ export default function Step2SelectPersonnelNienHan({
         <>
           <ExcelImportSection
             awardType="NIEN_HAN"
-            templateEndpoint="/api/hccsvv/template"
-            importEndpoint="/api/hccsvv/import"
+            downloadTemplate={apiClient.getHCCSVVTemplate}
+            importFile={apiClient.importHCCSVV}
             templateFileName="mau_import_hccsvv"
             onImportSuccess={handleImportSuccess}
-            selectedCount={selectedPersonnelIds.length}
             selectedPersonnelIds={selectedPersonnelIds}
             selectedNames={selectedPersonnelIds.map(id => personnel.find(p => p.id === id)?.ho_ten || '')}
             entityLabel="quân nhân"
             localProcessing={true}
             onLocalProcess={handleLocalExcelProcess}
-            previewEndpoint="/api/hccsvv/import/preview"
+            previewImport={apiClient.previewHCCSVVImport}
             reviewPath="/admin/awards/bulk/import-review-hccsvv"
             sessionStorageKey="importPreviewDataHCCSVV"
           />

@@ -2,17 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, Spin, Alert, message, ConfigProvider, Tag, Breadcrumb } from 'antd';
-import {
-  UserOutlined,
-  IdcardOutlined,
-  CalendarOutlined,
-  EnvironmentOutlined,
-  PhoneOutlined,
-  TeamOutlined,
-  BankOutlined,
-  HomeOutlined,
-} from '@ant-design/icons';
+import { Card, Spin, message, ConfigProvider, Tag, Breadcrumb } from 'antd';
+import { UserOutlined, HomeOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { apiClient } from '@/lib/apiClient';
 import { formatDate } from '@/lib/utils';
@@ -25,7 +16,7 @@ interface ProfileViewFormProps {
   personnelId?: string; // Optional: nếu không có thì lấy từ token
 }
 
-export default function ProfileViewForm({
+export function ProfileViewForm({
   personnelId: externalPersonnelId,
 }: ProfileViewFormProps = {}) {
   const router = useRouter();
@@ -54,8 +45,15 @@ export default function ProfileViewForm({
         }
 
         // Decode JWT để lấy quan_nhan_id
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        const { quan_nhan_id } = payload;
+        let quan_nhan_id: string | undefined;
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          quan_nhan_id = payload.quan_nhan_id;
+        } catch {
+          message.error('Token không hợp lệ, vui lòng đăng nhập lại');
+          router.push('/login');
+          return;
+        }
 
         if (!quan_nhan_id) {
           message.error('Không tìm thấy thông tin quân nhân');
