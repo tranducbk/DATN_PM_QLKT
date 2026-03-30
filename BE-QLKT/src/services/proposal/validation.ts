@@ -37,7 +37,7 @@ export async function checkDuplicateAward(
         where: {
           loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
           nam,
-          status: status ? status : { not: PROPOSAL_STATUS.REJECTED },
+          status: status ? status : PROPOSAL_STATUS.PENDING,
           ...(excludeProposalId ? { id: { not: excludeProposalId } } : {}),
         },
       });
@@ -213,7 +213,7 @@ export async function checkDuplicateUnitAward(
         where: {
           loai_de_xuat: PROPOSAL_TYPES.DON_VI_HANG_NAM,
           nam,
-          status: { not: PROPOSAL_STATUS.REJECTED },
+          status: PROPOSAL_STATUS.PENDING,
         },
       });
 

@@ -7,7 +7,7 @@ import * as notificationHelper from '../helpers/notification';
 import { getDanhHieuName } from '../constants/danhHieu.constants';
 import { ROLES } from '../constants/roles.constants';
 import { ValidationError, NotFoundError } from '../middlewares/errorHandler';
-import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo } from '../helpers/excelHelper';
+import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys } from '../helpers/excelHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
@@ -125,14 +125,11 @@ class ContributionAwardService {
     }
     const validDecisionNumbers = new Set(existingDecisions.map(d => d.so_quyet_dinh));
 
-    // Build pending personnel IDs Set from proposals
-    const pendingPersonnelIds = new Set<string>();
-    for (const p of pendingProposals) {
-      const data = (p.data_cong_hien as Array<Record<string, unknown>>) || [];
-      for (const item of data) {
-        if (item.personnel_id) pendingPersonnelIds.add(item.personnel_id as string);
-      }
-    }
+    const pendingPersonnelIds = buildPendingKeys(
+      pendingProposals as Array<Record<string, unknown>>,
+      'data_cong_hien',
+      (item) => item.personnel_id ? String(item.personnel_id) : null
+    );
 
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
       const row = worksheet.getRow(rowNumber);
@@ -391,17 +388,24 @@ class ContributionAwardService {
    * HCBVTQ is one-time-per-lifetime — block if person already has any record
    */
   async confirmImport(validItems: any[], adminId: string) {
-    // Check pending proposals before importing
-    const pendingProposals = await prisma.bangDeXuat.findMany({
-      where: { loai_de_xuat: PROPOSAL_TYPES.CONG_HIEN, status: PROPOSAL_STATUS.PENDING },
-    });
-    const pendingPersonnelIds = new Set<string>();
-    for (const p of pendingProposals) {
-      const data = (p.data_cong_hien as Array<Record<string, unknown>>) || [];
-      for (const item of data) {
-        if (item.personnel_id) pendingPersonnelIds.add(item.personnel_id as string);
-      }
-    }
+    const personnelIds = [...new Set(validItems.map(item => item.personnel_id))];
+
+    // Parallel: check pending proposals + existing records
+    const [pendingProposals, existingRecords] = await Promise.all([
+      prisma.bangDeXuat.findMany({
+        where: { loai_de_xuat: PROPOSAL_TYPES.CONG_HIEN, status: PROPOSAL_STATUS.PENDING },
+      }),
+      prisma.khenThuongCongHien.findMany({
+        where: { quan_nhan_id: { in: personnelIds } },
+        select: { quan_nhan_id: true, danh_hieu: true },
+      }),
+    ]);
+
+    const pendingPersonnelIds = buildPendingKeys(
+      pendingProposals as Array<Record<string, unknown>>,
+      'data_cong_hien',
+      (item) => item.personnel_id ? String(item.personnel_id) : null
+    );
     const pendingConflicts: string[] = [];
     for (const item of validItems) {
       if (pendingPersonnelIds.has(item.personnel_id)) {
@@ -411,13 +415,6 @@ class ContributionAwardService {
     if (pendingConflicts.length > 0) {
       throw new ValidationError(pendingConflicts.join('; '));
     }
-
-    // Check existing records to prevent silent overwrites
-    const personnelIds = [...new Set(validItems.map(item => item.personnel_id))];
-    const existingRecords = await prisma.khenThuongCongHien.findMany({
-      where: { quan_nhan_id: { in: personnelIds } },
-      select: { quan_nhan_id: true, danh_hieu: true },
-    });
     const existingMap = new Map(existingRecords.map(r => [r.quan_nhan_id, r]));
 
     const conflicts: string[] = [];

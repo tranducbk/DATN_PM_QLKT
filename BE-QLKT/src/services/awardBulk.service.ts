@@ -1,15 +1,17 @@
 import { prisma } from '../models';
-import { checkDuplicateAward, checkDuplicateUnitAward } from '../helpers/awardValidation';
 import annualRewardService from './annualReward.service';
 import unitAnnualAwardService from './unitAnnualAward.service';
 import scientificAchievementService from './scientificAchievement.service';
 import * as notificationHelper from '../helpers/notification';
-import { getLoaiDeXuatName } from '../constants/danhHieu.constants';
+import { getDanhHieuName, getLoaiDeXuatName, DANH_HIEU_DON_VI_HANG_NAM, DANH_HIEU_CA_NHAN_HANG_NAM } from '../constants/danhHieu.constants';
 import { PROPOSAL_TYPES, type ProposalType } from '../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { AppError, NotFoundError, ValidationError } from '../middlewares/errorHandler';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import type { QuanNhan } from '../generated/prisma';
+
+const UNIT_DV_TITLES = new Set<string>([DANH_HIEU_DON_VI_HANG_NAM.DVQT, DANH_HIEU_DON_VI_HANG_NAM.DVTT]);
+const UNIT_BK_TITLES = new Set<string>([DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP, DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP]);
 
 interface ServiceYears {
   years: number;
@@ -70,48 +72,78 @@ class AwardBulkService {
     const duplicateErrors: string[] = [];
     if (!titleData || titleData.length === 0) return duplicateErrors;
 
-    const personnelIds = titleData
-      .map(item => item.personnel_id)
-      .filter(Boolean)
-      .filter((id, index, self) => self.indexOf(id) === index);
+    const items = titleData.filter(item => item.personnel_id && item.danh_hieu);
+    const personnelIds = [...new Set(items.map(item => item.personnel_id))];
+    if (personnelIds.length === 0) return duplicateErrors;
 
-    const personnelMap: Record<string, string> = {};
-    if (personnelIds.length > 0) {
-      const personnelList = await prisma.quanNhan.findMany({
+    // Batch query: personnel names + award table + pending proposals
+    const checkStatus = type === PROPOSAL_TYPES.CONG_HIEN ? PROPOSAL_STATUS.PENDING : PROPOSAL_STATUS.APPROVED;
+    const [personnelList, pendingProposals, ...awardResults] = await Promise.all([
+      prisma.quanNhan.findMany({
         where: { id: { in: personnelIds } },
         select: { id: true, ho_ten: true },
-      });
-      personnelList.forEach(p => {
-        personnelMap[p.id] = p.ho_ten;
-      });
+      }),
+      prisma.bangDeXuat.findMany({
+        where: { loai_de_xuat: type, nam, status: checkStatus },
+      }),
+      // Award table query per type
+      ...(type === PROPOSAL_TYPES.CA_NHAN_HANG_NAM
+        ? [prisma.danhHieuHangNam.findMany({ where: { quan_nhan_id: { in: personnelIds }, nam }, select: { quan_nhan_id: true, danh_hieu: true } })]
+        : type === PROPOSAL_TYPES.NIEN_HAN
+          ? [prisma.khenThuongHCCSVV.findMany({ where: { quan_nhan_id: { in: personnelIds } }, select: { quan_nhan_id: true, danh_hieu: true } })]
+          : type === PROPOSAL_TYPES.HC_QKQT
+            ? [prisma.huanChuongQuanKyQuyetThang.findMany({ where: { quan_nhan_id: { in: personnelIds } }, select: { quan_nhan_id: true } })]
+            : type === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN
+              ? [prisma.kyNiemChuongVSNXDQDNDVN.findMany({ where: { quan_nhan_id: { in: personnelIds } }, select: { quan_nhan_id: true } })]
+              : type === PROPOSAL_TYPES.CONG_HIEN
+                ? [prisma.khenThuongCongHien.findMany({ where: { quan_nhan_id: { in: personnelIds } }, select: { quan_nhan_id: true, danh_hieu: true } })]
+                : [Promise.resolve([])]),
+    ]);
+
+    const personnelMap = new Map(personnelList.map(p => [p.id, p.ho_ten]));
+    const existingAwards = awardResults[0] as Array<Record<string, unknown>>;
+    const existingSet = new Set(existingAwards.map(a => `${a.quan_nhan_id}_${a.danh_hieu || ''}`));
+    const existingByPersonnel = new Set(existingAwards.map(a => a.quan_nhan_id as string));
+
+    // Build pending keys from proposals
+    const dataField = type === PROPOSAL_TYPES.CA_NHAN_HANG_NAM ? 'data_danh_hieu'
+      : type === PROPOSAL_TYPES.CONG_HIEN ? 'data_cong_hien' : 'data_nien_han';
+    const pendingKeys = new Set<string>();
+    for (const p of pendingProposals) {
+      const data = ((p as Record<string, unknown>)[dataField] as Array<Record<string, unknown>>) || [];
+      for (const d of data) {
+        if (d.personnel_id) pendingKeys.add(`${d.personnel_id}_${d.danh_hieu || ''}`);
+      }
     }
 
-    const duplicateChecks = titleData
-      .filter(item => item.personnel_id && item.danh_hieu)
-      .map(async item => {
-        const checkResult = await checkDuplicateAward(
-          item.personnel_id,
-          nam,
-          item.danh_hieu,
-          type,
-          type === PROPOSAL_TYPES.CONG_HIEN ? null : PROPOSAL_STATUS.APPROVED
-        );
-        if (checkResult.exists) {
-          return {
-            personnelId: item.personnel_id,
-            hoTen: personnelMap[item.personnel_id] || item.personnel_id,
-            message: checkResult.message,
-          };
-        }
-        return null;
-      });
+    for (const item of items) {
+      const hoTen = personnelMap.get(item.personnel_id) || item.personnel_id;
+      const key = `${item.personnel_id}_${item.danh_hieu}`;
 
-    const results = await Promise.all(duplicateChecks);
-    results.forEach(result => {
-      if (result) {
-        duplicateErrors.push(`${result.hoTen}: ${result.message}`);
+      // Check actual award table
+      if (type === PROPOSAL_TYPES.CA_NHAN_HANG_NAM) {
+        if (existingSet.has(key)) {
+          duplicateErrors.push(`${hoTen}: ${getDanhHieuName(item.danh_hieu)} năm ${nam} đã có trên hệ thống`);
+          continue;
+        }
+      } else if (type === PROPOSAL_TYPES.NIEN_HAN) {
+        if (existingSet.has(key)) {
+          duplicateErrors.push(`${hoTen}: đã có ${getDanhHieuName(item.danh_hieu)} trên hệ thống`);
+          continue;
+        }
+      } else {
+        // One-time awards: HC_QKQT, KNC, CONG_HIEN — check by personnelId only
+        if (existingByPersonnel.has(item.personnel_id)) {
+          duplicateErrors.push(`${hoTen}: đã có khen thưởng trên hệ thống`);
+          continue;
+        }
       }
-    });
+
+      // Check pending proposals
+      if (pendingKeys.has(key) || pendingKeys.has(`${item.personnel_id}_`)) {
+        duplicateErrors.push(`${hoTen}: đang có đề xuất chờ duyệt`);
+      }
+    }
 
     return duplicateErrors;
   }
@@ -120,16 +152,83 @@ class AwardBulkService {
     const duplicateErrors: string[] = [];
     if (!titleData || titleData.length === 0) return duplicateErrors;
 
-    for (const item of titleData) {
-      if (item.don_vi_id && item.danh_hieu) {
-        const checkResult = await checkDuplicateUnitAward(
-          item.don_vi_id,
-          nam,
-          item.danh_hieu,
-          PROPOSAL_TYPES.DON_VI_HANG_NAM
-        );
-        if (checkResult.exists) {
-          duplicateErrors.push(`Đơn vị ${item.don_vi_id}: ${checkResult.message}`);
+    const items = titleData.filter(item => item.don_vi_id && item.danh_hieu);
+    const unitIds = [...new Set(items.map(item => item.don_vi_id!))];
+    if (unitIds.length === 0) return duplicateErrors;
+
+    // Batch query: existing awards + pending proposals
+    const [existingAwards, pendingProposals] = await Promise.all([
+      prisma.danhHieuDonViHangNam.findMany({
+        where: {
+          OR: [
+            { co_quan_don_vi_id: { in: unitIds }, nam },
+            { don_vi_truc_thuoc_id: { in: unitIds }, nam },
+          ],
+        },
+        select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true, danh_hieu: true, nhan_bkbqp: true, nhan_bkttcp: true },
+      }),
+      prisma.bangDeXuat.findMany({
+        where: { loai_de_xuat: PROPOSAL_TYPES.DON_VI_HANG_NAM, nam, status: PROPOSAL_STATUS.PENDING },
+      }),
+    ]);
+
+    // Build award map: unitId -> award
+    const awardMap = new Map<string, typeof existingAwards[number]>();
+    for (const a of existingAwards) {
+      if (a.co_quan_don_vi_id) awardMap.set(a.co_quan_don_vi_id, a);
+      if (a.don_vi_truc_thuoc_id) awardMap.set(a.don_vi_truc_thuoc_id, a);
+    }
+
+    // Build pending keys: "unitId_danhHieu"
+    const pendingKeys = new Set<string>();
+    for (const p of pendingProposals) {
+      const data = ((p as Record<string, unknown>).data_danh_hieu as Array<Record<string, unknown>>) || [];
+      for (const d of data) {
+        if (d.don_vi_id && d.danh_hieu) pendingKeys.add(`${d.don_vi_id}_${d.danh_hieu}`);
+      }
+    }
+
+    for (const item of items) {
+      const donViId = item.don_vi_id!;
+      const danhHieu = item.danh_hieu;
+
+      // Check pending proposal
+      if (pendingKeys.has(`${donViId}_${danhHieu}`)) {
+        duplicateErrors.push(`Đơn vị đã có đề xuất ${getDanhHieuName(danhHieu)} cho năm ${nam}`);
+        continue;
+      }
+
+      // Check existing award in DB
+      const existing = awardMap.get(donViId);
+      if (existing) {
+        const isDv = UNIT_DV_TITLES.has(danhHieu);
+        const isBk = UNIT_BK_TITLES.has(danhHieu);
+
+        if (isDv && existing.danh_hieu) {
+          duplicateErrors.push(
+            existing.danh_hieu === danhHieu
+              ? `Đơn vị đã có danh hiệu ${getDanhHieuName(danhHieu)} năm ${nam}`
+              : `Đơn vị đã có ${getDanhHieuName(existing.danh_hieu)} năm ${nam}, không thể thêm ${getDanhHieuName(danhHieu)}`
+          );
+          continue;
+        }
+        if (isBk) {
+          if (danhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP && existing.nhan_bkbqp) {
+            duplicateErrors.push(`Đơn vị đã có ${getDanhHieuName(danhHieu)} năm ${nam}`);
+            continue;
+          }
+          if (danhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP && existing.nhan_bkttcp) {
+            duplicateErrors.push(`Đơn vị đã có ${getDanhHieuName(danhHieu)} năm ${nam}`);
+            continue;
+          }
+        }
+        if (isDv && (existing.nhan_bkbqp || existing.nhan_bkttcp)) {
+          duplicateErrors.push(`Đơn vị đã có BK năm ${nam}, không thể thêm ${getDanhHieuName(danhHieu)}`);
+          continue;
+        }
+        if (isBk && existing.danh_hieu && UNIT_DV_TITLES.has(existing.danh_hieu)) {
+          duplicateErrors.push(`Đơn vị đã có ${getDanhHieuName(existing.danh_hieu)} năm ${nam}, không thể thêm ${getDanhHieuName(danhHieu)}`);
+          continue;
         }
       }
     }

@@ -9,7 +9,7 @@ import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { NotFoundError, ValidationError } from '../middlewares/errorHandler';
 import { writeSystemLog } from '../helpers/systemLogHelper';
-import { parseHeaderMap, getHeaderCol, parseBooleanValue, resolvePersonnelInfo } from '../helpers/excelHelper';
+import { parseHeaderMap, getHeaderCol, parseBooleanValue, resolvePersonnelInfo, buildPendingKeys } from '../helpers/excelHelper';
 import type { DanhHieuHangNam, QuanNhan, Prisma } from '../generated/prisma';
 import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
 
@@ -654,8 +654,9 @@ class AnnualRewardService {
     });
     const validDecisionNumbers = new Set(existingDecisions.map(d => d.so_quyet_dinh));
 
-    // --- First pass: collect all personnel IDs from valid rows ---
+    // --- First pass: collect all personnel IDs and years from valid rows ---
     const allPersonnelIds = new Set<string>();
+    const allYears = new Set<number>();
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
       const row = worksheet.getRow(rowNumber);
       const idValue = idCol ? row.getCell(idCol).value : null;
@@ -663,10 +664,15 @@ class AnnualRewardService {
         const id = String(idValue).trim();
         if (id) allPersonnelIds.add(id);
       }
+      const namVal = namCol ? row.getCell(namCol).value : null;
+      if (namVal) {
+        const parsed = parseInt(String(namVal), 10);
+        if (!isNaN(parsed)) allYears.add(parsed);
+      }
     }
 
     // --- Batch queries ---
-    const [personnelList, existingAnnualRewards] = await Promise.all([
+    const [personnelList, existingAnnualRewards, pendingProposals] = await Promise.all([
       prisma.quanNhan.findMany({
         where: { id: { in: [...allPersonnelIds] } },
         include: { ChucVu: { select: { ten_chuc_vu: true } } },
@@ -683,7 +689,16 @@ class AnnualRewardService {
           so_quyet_dinh: true,
         },
       }),
+      prisma.bangDeXuat.findMany({
+        where: { loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM, status: PROPOSAL_STATUS.PENDING, nam: { in: [...allYears] } },
+      }),
     ]);
+
+    const pendingKeys = buildPendingKeys(
+      pendingProposals as Array<Record<string, unknown>>,
+      'data_danh_hieu',
+      (item, proposal) => item.personnel_id ? `${item.personnel_id}_${proposal.nam}` : null
+    );
 
     // Build lookup Maps
     const personnelMap = new Map(personnelList.map(p => [p.id, p]));
@@ -878,6 +893,17 @@ class AnnualRewardService {
         continue;
       }
 
+      if (pendingKeys.has(`${personnel.id}_${nam}`)) {
+        errors.push({
+          row: rowNumber,
+          ho_ten,
+          nam,
+          danh_hieu,
+          message: `Quân nhân đang có đề xuất khen thưởng năm ${nam} chờ duyệt`,
+        });
+        continue;
+      }
+
       // Build history from pre-fetched data (last 5 records sorted by nam desc)
       const allRecords = rewardsByPersonnel.get(personnel.id) || [];
       const history = [...allRecords]
@@ -925,38 +951,37 @@ class AnnualRewardService {
   }
 
   async confirmImport(validItems: ConfirmImportItem[]): Promise<{ imported: number }> {
-    // Check pending proposals before importing
-    const pendingProposals = await prisma.bangDeXuat.findMany({
-      where: { loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM, status: PROPOSAL_STATUS.PENDING },
-    });
-    const pendingPersonnelIds = new Set<string>();
-    for (const p of pendingProposals) {
-      const data = (p.data_danh_hieu as Array<Record<string, unknown>>) || [];
-      for (const item of data) {
-        if (item.personnel_id) pendingPersonnelIds.add(item.personnel_id as string);
-      }
-    }
+    const personnelIds = [...new Set(validItems.map(item => item.personnel_id))];
+    const uniqueYears = [...new Set(validItems.map(item => item.nam))];
+
+    // Parallel: check pending proposals + existing records
+    const [pendingProposals, existingRecords] = await Promise.all([
+      prisma.bangDeXuat.findMany({
+        where: { loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM, status: PROPOSAL_STATUS.PENDING, nam: { in: uniqueYears } },
+      }),
+      prisma.danhHieuHangNam.findMany({
+        where: {
+          quan_nhan_id: { in: personnelIds },
+          nam: { in: uniqueYears },
+        },
+        select: { quan_nhan_id: true, nam: true, danh_hieu: true },
+      }),
+    ]);
+
+    const pendingKeys = buildPendingKeys(
+      pendingProposals as Array<Record<string, unknown>>,
+      'data_danh_hieu',
+      (item, proposal) => item.personnel_id ? `${item.personnel_id}_${proposal.nam}` : null
+    );
     const pendingConflicts: string[] = [];
     for (const item of validItems) {
-      if (pendingPersonnelIds.has(item.personnel_id)) {
+      if (pendingKeys.has(`${item.personnel_id}_${item.nam}`)) {
         pendingConflicts.push(`${item.ho_ten} năm ${item.nam}: đang có đề xuất chờ duyệt`);
       }
     }
     if (pendingConflicts.length > 0) {
       throw new ValidationError(pendingConflicts.join('; '));
     }
-
-    // Batch check existing records to prevent silent overwrites
-    const personnelIds = [...new Set(validItems.map(item => item.personnel_id))];
-    const years = [...new Set(validItems.map(item => item.nam))];
-
-    const existingRecords = await prisma.danhHieuHangNam.findMany({
-      where: {
-        quan_nhan_id: { in: personnelIds },
-        nam: { in: years },
-      },
-      select: { quan_nhan_id: true, nam: true, danh_hieu: true },
-    });
     const existingMap = new Map(
       existingRecords.map(r => [`${r.quan_nhan_id}|${r.nam}`, r])
     );

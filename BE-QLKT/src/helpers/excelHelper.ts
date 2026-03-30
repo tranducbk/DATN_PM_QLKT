@@ -79,4 +79,27 @@ function resolvePersonnelInfo(
   return { hoTen, capBac, chucVu, missingFields };
 }
 
-export { removeVietnameseAccents, parseHeaderMap, getHeaderCol, parseBooleanValue, resolvePersonnelInfo };
+/**
+ * Build Set các key từ proposals PENDING để check trùng nhanh O(1).
+ * @param proposals - Danh sách đề xuất PENDING từ bangDeXuat
+ * @param dataField - Tên trường JSON chứa data (e.g. 'data_danh_hieu', 'data_nien_han')
+ * @param keyBuilder - Hàm tạo key từ mỗi item trong JSON array và proposal
+ * @returns Set các key để check `.has()`
+ */
+function buildPendingKeys(
+  proposals: Array<Record<string, unknown>>,
+  dataField: string,
+  keyBuilder: (item: Record<string, unknown>, proposal: Record<string, unknown>) => string | null
+): Set<string> {
+  const keys = new Set<string>();
+  for (const proposal of proposals) {
+    const data = (proposal[dataField] as Array<Record<string, unknown>>) || [];
+    for (const item of data) {
+      const key = keyBuilder(item, proposal);
+      if (key) keys.add(key);
+    }
+  }
+  return keys;
+}
+
+export { removeVietnameseAccents, parseHeaderMap, getHeaderCol, parseBooleanValue, resolvePersonnelInfo, buildPendingKeys };

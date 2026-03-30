@@ -7,7 +7,7 @@ import * as notificationHelper from '../helpers/notification';
 import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { ValidationError, NotFoundError } from '../middlewares/errorHandler';
-import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo } from '../helpers/excelHelper';
+import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys } from '../helpers/excelHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import type { QuanNhan } from '../generated/prisma';
 import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
@@ -123,13 +123,11 @@ class MilitaryFlagService {
       }),
     ]);
 
-    const pendingPersonnelIds = new Set<string>();
-    for (const proposal of pendingProposals) {
-      const data = (proposal.data_nien_han as Array<Record<string, unknown>>) || [];
-      for (const item of data) {
-        if (item.personnel_id) pendingPersonnelIds.add(item.personnel_id as string);
-      }
-    }
+    const pendingPersonnelIds = buildPendingKeys(
+      pendingProposals as Array<Record<string, unknown>>,
+      'data_nien_han',
+      (item) => item.personnel_id ? String(item.personnel_id) : null
+    );
 
     const personnelMap = new Map(personnelList.map(p => [p.id, p]));
     const existingAwardsMap = new Map(existingAwardsList.map(a => [a.quan_nhan_id, a]));
@@ -305,17 +303,22 @@ class MilitaryFlagService {
   async confirmImport(validItems: ConfirmImportItem[], adminId: string) {
     const personnelIds = [...new Set(validItems.map(item => item.personnel_id))];
 
-    // Check pending proposals before proceeding
-    const pendingProposals = await prisma.bangDeXuat.findMany({
-      where: { loai_de_xuat: PROPOSAL_TYPES.HC_QKQT, status: PROPOSAL_STATUS.PENDING },
-    });
-    const pendingPersonnelIds = new Set<string>();
-    for (const p of pendingProposals) {
-      const data = (p.data_nien_han as Array<Record<string, unknown>>) || [];
-      for (const item of data) {
-        if (item.personnel_id) pendingPersonnelIds.add(item.personnel_id as string);
-      }
-    }
+    // Parallel: check pending proposals + existing records
+    const [pendingProposals, existingRecords] = await Promise.all([
+      prisma.bangDeXuat.findMany({
+        where: { loai_de_xuat: PROPOSAL_TYPES.HC_QKQT, status: PROPOSAL_STATUS.PENDING },
+      }),
+      prisma.huanChuongQuanKyQuyetThang.findMany({
+        where: { quan_nhan_id: { in: personnelIds } },
+        select: { quan_nhan_id: true, nam: true },
+      }),
+    ]);
+
+    const pendingPersonnelIds = buildPendingKeys(
+      pendingProposals as Array<Record<string, unknown>>,
+      'data_nien_han',
+      (item) => item.personnel_id ? String(item.personnel_id) : null
+    );
     const pendingConflicts: string[] = [];
     for (const item of validItems) {
       if (pendingPersonnelIds.has(item.personnel_id)) {
@@ -325,12 +328,6 @@ class MilitaryFlagService {
     if (pendingConflicts.length > 0) {
       throw new ValidationError(pendingConflicts.join('; '));
     }
-
-    // Check existing records to prevent silent overwrites
-    const existingRecords = await prisma.huanChuongQuanKyQuyetThang.findMany({
-      where: { quan_nhan_id: { in: personnelIds } },
-      select: { quan_nhan_id: true, nam: true },
-    });
     const existingSet = new Set(existingRecords.map(r => r.quan_nhan_id));
 
     const conflicts: string[] = [];

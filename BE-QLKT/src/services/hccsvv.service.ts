@@ -8,7 +8,7 @@ import { getDanhHieuName } from '../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
-import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo } from '../helpers/excelHelper';
+import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys } from '../helpers/excelHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { ValidationError, NotFoundError, AppError } from '../middlewares/errorHandler';
 import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
@@ -128,13 +128,11 @@ class HCCSVVService {
       }),
     ]);
 
-    const pendingPersonnelIds = new Set<string>();
-    for (const proposal of pendingProposals) {
-      const data = (proposal.data_nien_han as Array<Record<string, unknown>>) || [];
-      for (const item of data) {
-        if (item.personnel_id) pendingPersonnelIds.add(item.personnel_id as string);
-      }
-    }
+    const pendingKeys = buildPendingKeys(
+      pendingProposals as Array<Record<string, unknown>>,
+      'data_nien_han',
+      (item) => item.personnel_id && item.danh_hieu ? `${item.personnel_id}_${item.danh_hieu}` : null
+    );
 
     // Build lookup Maps
     const personnelMap = new Map(personnelList.map(p => [p.id, p]));
@@ -301,13 +299,13 @@ class HCCSVVService {
       }
 
       // Check pending proposal
-      if (pendingPersonnelIds.has(personnelId)) {
+      if (pendingKeys.has(`${personnelId}_${danh_hieu}`)) {
         errors.push({
           row: rowNumber,
           ho_ten,
           nam,
           danh_hieu,
-          message: 'Quân nhân đang có đề xuất HCCSVV chờ duyệt',
+          message: `Quân nhân đang có đề xuất ${getDanhHieuName(danh_hieu)} chờ duyệt`,
         });
         continue;
       }
@@ -385,31 +383,31 @@ class HCCSVVService {
 
     const personnelIds = [...new Set(validItems.map(item => item.personnel_id))];
 
-    // Check pending proposals before proceeding
-    const pendingProposals = await prisma.bangDeXuat.findMany({
-      where: { loai_de_xuat: PROPOSAL_TYPES.NIEN_HAN, status: PROPOSAL_STATUS.PENDING },
-    });
-    const pendingPersonnelIds = new Set<string>();
-    for (const p of pendingProposals) {
-      const data = (p.data_nien_han as Array<Record<string, unknown>>) || [];
-      for (const item of data) {
-        if (item.personnel_id) pendingPersonnelIds.add(item.personnel_id as string);
-      }
-    }
+    // Parallel: check pending proposals + existing records
+    const [pendingProposals, existingRecords] = await Promise.all([
+      prisma.bangDeXuat.findMany({
+        where: { loai_de_xuat: PROPOSAL_TYPES.NIEN_HAN, status: PROPOSAL_STATUS.PENDING },
+      }),
+      prisma.khenThuongHCCSVV.findMany({
+        where: { quan_nhan_id: { in: personnelIds } },
+        select: { quan_nhan_id: true, danh_hieu: true },
+      }),
+    ]);
+
+    const pendingKeys = buildPendingKeys(
+      pendingProposals as Array<Record<string, unknown>>,
+      'data_nien_han',
+      (item) => item.personnel_id && item.danh_hieu ? `${item.personnel_id}_${item.danh_hieu}` : null
+    );
     const pendingConflicts: string[] = [];
     for (const item of validItems) {
-      if (pendingPersonnelIds.has(item.personnel_id)) {
-        pendingConflicts.push(`${item.ho_ten}: đang có đề xuất HCCSVV chờ duyệt`);
+      if (pendingKeys.has(`${item.personnel_id}_${item.danh_hieu}`)) {
+        pendingConflicts.push(`${item.ho_ten}: đang có đề xuất ${getDanhHieuName(item.danh_hieu)} chờ duyệt`);
       }
     }
     if (pendingConflicts.length > 0) {
       throw new ValidationError(pendingConflicts.join('; '));
     }
-
-    const existingRecords = await prisma.khenThuongHCCSVV.findMany({
-      where: { quan_nhan_id: { in: personnelIds } },
-      select: { quan_nhan_id: true, danh_hieu: true },
-    });
     // Build map: personnelId -> highest existing rank
     const highestRankMap = new Map<string, { danh_hieu: string; rank: number }>();
     for (const r of existingRecords) {
