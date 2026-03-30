@@ -3,15 +3,12 @@ import annualRewardService from './annualReward.service';
 import unitAnnualAwardService from './unitAnnualAward.service';
 import scientificAchievementService from './scientificAchievement.service';
 import * as notificationHelper from '../helpers/notification';
-import { getDanhHieuName, getLoaiDeXuatName, DANH_HIEU_DON_VI_HANG_NAM, DANH_HIEU_CA_NHAN_HANG_NAM } from '../constants/danhHieu.constants';
+import { getDanhHieuName, getLoaiDeXuatName, DANH_HIEU_DON_VI_HANG_NAM, DANH_HIEU_CA_NHAN_HANG_NAM, UNIT_DV_TITLES, UNIT_BK_TITLES } from '../constants/danhHieu.constants';
 import { PROPOSAL_TYPES, type ProposalType } from '../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { AppError, NotFoundError, ValidationError } from '../middlewares/errorHandler';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import type { QuanNhan } from '../generated/prisma';
-
-const UNIT_DV_TITLES = new Set<string>([DANH_HIEU_DON_VI_HANG_NAM.DVQT, DANH_HIEU_DON_VI_HANG_NAM.DVTT]);
-const UNIT_BK_TITLES = new Set<string>([DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP, DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP]);
 
 interface ServiceYears {
   years: number;
@@ -68,6 +65,31 @@ class AwardBulkService {
     };
   }
 
+  /** Query award table by proposal type. */
+  private getAwardTableQuery(type: string, personnelIds: string[], nam: number) {
+    switch (type) {
+      case PROPOSAL_TYPES.CA_NHAN_HANG_NAM:
+        return prisma.danhHieuHangNam.findMany({ where: { quan_nhan_id: { in: personnelIds }, nam }, select: { quan_nhan_id: true, danh_hieu: true } });
+      case PROPOSAL_TYPES.NIEN_HAN:
+        return prisma.khenThuongHCCSVV.findMany({ where: { quan_nhan_id: { in: personnelIds } }, select: { quan_nhan_id: true, danh_hieu: true } });
+      case PROPOSAL_TYPES.HC_QKQT:
+        return prisma.huanChuongQuanKyQuyetThang.findMany({ where: { quan_nhan_id: { in: personnelIds } }, select: { quan_nhan_id: true } });
+      case PROPOSAL_TYPES.KNC_VSNXD_QDNDVN:
+        return prisma.kyNiemChuongVSNXDQDNDVN.findMany({ where: { quan_nhan_id: { in: personnelIds } }, select: { quan_nhan_id: true } });
+      case PROPOSAL_TYPES.CONG_HIEN:
+        return prisma.khenThuongCongHien.findMany({ where: { quan_nhan_id: { in: personnelIds } }, select: { quan_nhan_id: true, danh_hieu: true } });
+      default:
+        return Promise.resolve([]);
+    }
+  }
+
+  /** Get the proposal data field name for duplicate checking. */
+  private getProposalDataField(type: string): string {
+    if (type === PROPOSAL_TYPES.CA_NHAN_HANG_NAM || type === PROPOSAL_TYPES.DON_VI_HANG_NAM) return 'data_danh_hieu';
+    if (type === PROPOSAL_TYPES.CONG_HIEN) return 'data_cong_hien';
+    return 'data_nien_han';
+  }
+
   async checkDuplicateAwards(type: string, nam: number, titleData: TitleDataItem[]) {
     const duplicateErrors: string[] = [];
     if (!titleData || titleData.length === 0) return duplicateErrors;
@@ -77,44 +99,38 @@ class AwardBulkService {
     if (personnelIds.length === 0) return duplicateErrors;
 
     // Batch query: personnel names + award table + pending proposals
-    const checkStatus = type === PROPOSAL_TYPES.CONG_HIEN ? PROPOSAL_STATUS.PENDING : PROPOSAL_STATUS.APPROVED;
-    const [personnelList, pendingProposals, ...awardResults] = await Promise.all([
+    // Just query PENDING proposals — APPROVED awards are already in the award table
+    const [personnelList, pendingProposals, existingAwardsRaw] = await Promise.all([
       prisma.quanNhan.findMany({
         where: { id: { in: personnelIds } },
         select: { id: true, ho_ten: true },
       }),
       prisma.bangDeXuat.findMany({
-        where: { loai_de_xuat: type, nam, status: checkStatus },
+        where: { loai_de_xuat: type, nam, status: PROPOSAL_STATUS.PENDING },
       }),
-      // Award table query per type
-      ...(type === PROPOSAL_TYPES.CA_NHAN_HANG_NAM
-        ? [prisma.danhHieuHangNam.findMany({ where: { quan_nhan_id: { in: personnelIds }, nam }, select: { quan_nhan_id: true, danh_hieu: true } })]
-        : type === PROPOSAL_TYPES.NIEN_HAN
-          ? [prisma.khenThuongHCCSVV.findMany({ where: { quan_nhan_id: { in: personnelIds } }, select: { quan_nhan_id: true, danh_hieu: true } })]
-          : type === PROPOSAL_TYPES.HC_QKQT
-            ? [prisma.huanChuongQuanKyQuyetThang.findMany({ where: { quan_nhan_id: { in: personnelIds } }, select: { quan_nhan_id: true } })]
-            : type === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN
-              ? [prisma.kyNiemChuongVSNXDQDNDVN.findMany({ where: { quan_nhan_id: { in: personnelIds } }, select: { quan_nhan_id: true } })]
-              : type === PROPOSAL_TYPES.CONG_HIEN
-                ? [prisma.khenThuongCongHien.findMany({ where: { quan_nhan_id: { in: personnelIds } }, select: { quan_nhan_id: true, danh_hieu: true } })]
-                : [Promise.resolve([])]),
+      this.getAwardTableQuery(type, personnelIds, nam),
     ]);
 
     const personnelMap = new Map(personnelList.map(p => [p.id, p.ho_ten]));
-    const existingAwards = awardResults[0] as Array<Record<string, unknown>>;
+    const existingAwards = existingAwardsRaw as Array<Record<string, unknown>>;
     const existingSet = new Set(existingAwards.map(a => `${a.quan_nhan_id}_${a.danh_hieu || ''}`));
     const existingByPersonnel = new Set(existingAwards.map(a => a.quan_nhan_id as string));
 
     // Build pending keys from proposals
-    const dataField = type === PROPOSAL_TYPES.CA_NHAN_HANG_NAM ? 'data_danh_hieu'
-      : type === PROPOSAL_TYPES.CONG_HIEN ? 'data_cong_hien' : 'data_nien_han';
+    const dataField = this.getProposalDataField(type);
     const pendingKeys = new Set<string>();
+    const pendingByPersonnel = new Set<string>();
     for (const p of pendingProposals) {
       const data = ((p as Record<string, unknown>)[dataField] as Array<Record<string, unknown>>) || [];
       for (const d of data) {
-        if (d.personnel_id) pendingKeys.add(`${d.personnel_id}_${d.danh_hieu || ''}`);
+        if (d.personnel_id) {
+          pendingKeys.add(`${d.personnel_id}_${d.danh_hieu || ''}`);
+          pendingByPersonnel.add(String(d.personnel_id));
+        }
       }
     }
+
+    const isOneTime = type === PROPOSAL_TYPES.HC_QKQT || type === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN || type === PROPOSAL_TYPES.CONG_HIEN;
 
     for (const item of items) {
       const hoTen = personnelMap.get(item.personnel_id) || item.personnel_id;
@@ -132,15 +148,17 @@ class AwardBulkService {
           continue;
         }
       } else {
-        // One-time awards: HC_QKQT, KNC, CONG_HIEN — check by personnelId only
         if (existingByPersonnel.has(item.personnel_id)) {
-          duplicateErrors.push(`${hoTen}: đã có khen thưởng trên hệ thống`);
+          const label = type === PROPOSAL_TYPES.HC_QKQT ? 'Huy chương Quân kỳ quyết thắng'
+            : type === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN ? 'Kỷ niệm chương VSNXD QĐNDVN'
+            : getDanhHieuName(item.danh_hieu);
+          duplicateErrors.push(`${hoTen}: đã có ${label} trên hệ thống`);
           continue;
         }
       }
 
       // Check pending proposals
-      if (pendingKeys.has(key) || pendingKeys.has(`${item.personnel_id}_`)) {
+      if (isOneTime ? pendingByPersonnel.has(item.personnel_id) : pendingKeys.has(key)) {
         duplicateErrors.push(`${hoTen}: đang có đề xuất chờ duyệt`);
       }
     }

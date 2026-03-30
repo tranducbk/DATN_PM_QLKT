@@ -3,7 +3,7 @@ import { prisma } from '../models';
 import ExcelJS from 'exceljs';
 import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHelper';
 import { checkDuplicateUnitAward } from '../helpers/awardValidation';
-import { getDanhHieuName, DANH_HIEU_DON_VI_HANG_NAM, DANH_HIEU_CA_NHAN_HANG_NAM } from '../constants/danhHieu.constants';
+import { getDanhHieuName, DANH_HIEU_CA_NHAN_HANG_NAM, UNIT_DV_TITLES, UNIT_BK_TITLES } from '../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
@@ -1101,9 +1101,6 @@ class UnitAnnualAwardService {
     // Batch query để check trùng danh hiệu thay vì query từng item
     const uniqueUnitIds = [...new Set(validItems.map(item => item.unit_id))];
     const uniqueYears = [...new Set(validItems.map(item => item.nam))];
-
-    const UNIT_DV_TITLES = new Set<string>([DANH_HIEU_DON_VI_HANG_NAM.DVQT, DANH_HIEU_DON_VI_HANG_NAM.DVTT]);
-    const UNIT_BK_TITLES = new Set<string>([DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP, DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP]);
 
     const [existingAwards, existingProposals] = await Promise.all([
       prisma.danhHieuDonViHangNam.findMany({

@@ -1,9 +1,5 @@
 import { prisma } from '../../models';
-import { getDanhHieuName, DANH_HIEU_DON_VI_HANG_NAM, DANH_HIEU_CA_NHAN_HANG_NAM } from '../../constants/danhHieu.constants';
-
-const UNIT_DV_TITLES = new Set<string>([DANH_HIEU_DON_VI_HANG_NAM.DVQT, DANH_HIEU_DON_VI_HANG_NAM.DVTT]);
-// BKBQP/BKTTCP dùng chung cho cả cá nhân và đơn vị
-const UNIT_BK_TITLES = new Set<string>([DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP, DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP]);
+import { getDanhHieuName, DANH_HIEU_CA_NHAN_HANG_NAM, UNIT_DV_TITLES, UNIT_BK_TITLES } from '../../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
 import type { Prisma } from '../../generated/prisma';

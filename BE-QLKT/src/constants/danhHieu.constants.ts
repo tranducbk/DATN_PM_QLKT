@@ -141,6 +141,9 @@ export function getLoaiDeXuatName(loaiDeXuat: string | null | undefined): string
 /**
  * Lấy tên tiếng Việt của loại khen thưởng
  */
+export const UNIT_DV_TITLES = new Set<string>([DANH_HIEU_DON_VI_HANG_NAM.DVQT, DANH_HIEU_DON_VI_HANG_NAM.DVTT]);
+export const UNIT_BK_TITLES = new Set<string>([DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP, DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP]);
+
 export function getAwardTypeName(awardType: string | null | undefined): string {
   if (!awardType) return 'Chưa xác định';
   return AWARD_TYPE_MAP[awardType] || awardType;
