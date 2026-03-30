@@ -16,7 +16,7 @@ class CommemorativeMedalService {
    * Export template Excel for Commemorative Medal (KNC VSNXD) import
    * Pre-filled with selected personnel
    */
-  async exportTemplate(personnelIds: string[] = []) {
+  async exportTemplate(personnelIds: string[] = [], repeatMap: Record<string, number> = {}) {
     const columns: TemplateColumn[] = [
       { header: 'STT', key: 'stt', width: 6 },
       { header: 'ID', key: 'id', width: 10 },
@@ -29,9 +29,10 @@ class CommemorativeMedalService {
     ];
 
     return buildTemplate({
-      sheetName: 'KNC VSNXD',
+      sheetName: 'KNC VSNXD QDNDVN',
       columns,
       personnelIds,
+      repeatMap,
       editableColumnLetters: ['G'],
     });
   }
@@ -304,10 +305,10 @@ class CommemorativeMedalService {
    */
   async importFromExcel(excelBuffer: Buffer, adminId: string) {
     const workbook = await loadWorkbook(excelBuffer);
-    const worksheet = workbook.getWorksheet('KNC VSNXD') ?? workbook.getWorksheet('KNC_VSNXD');
+    const worksheet = workbook.getWorksheet('KNC VSNXD QDNDVN');
 
     if (!worksheet) {
-      throw new ValidationError('Không tìm thấy sheet "KNC VSNXD" trong file Excel');
+      throw new ValidationError('Không tìm thấy sheet "KNC VSNXD QDNDVN" trong file Excel');
     }
 
     const results = {
@@ -566,7 +567,7 @@ class CommemorativeMedalService {
     const { data } = await this.getAll(filters, 1, 10000);
 
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('KNC VSNXD');
+    const worksheet = workbook.addWorksheet('KNC VSNXD QDNDVN');
 
     worksheet.columns = [
       { header: 'STT', key: 'stt', width: 5 },

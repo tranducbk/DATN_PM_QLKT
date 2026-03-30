@@ -16,7 +16,7 @@ const router = Router();
  * @desc    Tải file mẫu Excel để import Huy chương Quân kỳ Quyết thắng
  * @access  ADMIN
  */
-router.get('/template', verifyToken, requireManager, militaryFlagController.getTemplate);
+router.get('/template', verifyToken, requireAdmin, militaryFlagController.getTemplate);
 
 /**
  * @route   POST /api/military-flag/import/preview

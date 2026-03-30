@@ -615,7 +615,7 @@ class ProposalController {
     );
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="mau_import_knc_vsnxd_${new Date().toISOString().slice(0, 10)}.xlsx"`
+      `attachment; filename="mau_import_knc_vsnxd_qdndvn_${new Date().toISOString().slice(0, 10)}.xlsx"`
     );
     return res.status(200).send(buffer);
   });

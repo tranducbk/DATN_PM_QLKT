@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import contributionAwardController from '../controllers/contributionAward.controller';
-import { verifyToken, checkRole, requireManager, requireAdmin } from '../middlewares/auth';
+import { verifyToken, checkRole, requireAdmin } from '../middlewares/auth';
 import { auditLog } from '../middlewares/auditLog';
 import { getLogDescription, getResourceId } from '../helpers/auditLog';
 import { ROLES } from '../constants/roles.constants';
@@ -14,19 +14,19 @@ const router = Router();
 /**
  * @route   GET /api/contribution-awards/template
  * @desc    Tải file mẫu Excel để import Huân chương Bảo vệ Tổ quốc (hỗ trợ ?personnel_ids=id1,id2)
- * @access  ADMIN, MANAGER
+ * @access  ADMIN
  */
-router.get('/template', verifyToken, requireManager, contributionAwardController.getTemplate);
+router.get('/template', verifyToken, requireAdmin, contributionAwardController.getTemplate);
 
 /**
  * @route   POST /api/contribution-awards/import/preview
  * @desc    Preview import HCBVTQ — chỉ validate, không ghi DB
- * @access  ADMIN, MANAGER
+ * @access  ADMIN
  */
 router.post(
   '/import/preview',
   verifyToken,
-  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
+  requireAdmin,
   upload.single('file'),
   contributionAwardController.previewImport
 );
@@ -34,12 +34,12 @@ router.post(
 /**
  * @route   POST /api/contribution-awards/import/confirm
  * @desc    Confirm import HCBVTQ — lưu dữ liệu đã validate vào DB
- * @access  ADMIN, MANAGER
+ * @access  ADMIN
  */
 router.post(
   '/import/confirm',
   verifyToken,
-  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
+  requireAdmin,
   validate(excelImportValidation.confirmImportContributionAward),
   contributionAwardController.confirmImport
 );

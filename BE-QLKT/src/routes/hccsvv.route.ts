@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import hccsvvController from '../controllers/hccsvv.controller';
-import { verifyToken, checkRole, requireManager, requireAdmin } from '../middlewares/auth';
+import { verifyToken, checkRole, requireAdmin } from '../middlewares/auth';
 import { auditLog } from '../middlewares/auditLog';
 import { getLogDescription, getResourceId } from '../helpers/auditLog';
 import { ROLES } from '../constants/roles.constants';
@@ -16,7 +16,7 @@ const router = Router();
  * @desc    Tải file mẫu Excel để import Huy chương Chiến sĩ Vẻ vang
  * @access  ADMIN
  */
-router.get('/template', verifyToken, requireManager, hccsvvController.getTemplate);
+router.get('/template', verifyToken, requireAdmin, hccsvvController.getTemplate);
 
 /**
  * @route   POST /api/hccsvv/import/preview

@@ -293,7 +293,7 @@ class MilitaryFlagService {
     );
   }
 
-  async exportTemplate(personnelIds: string[] = []) {
+  async exportTemplate(personnelIds: string[] = [], repeatMap: Record<string, number> = {}) {
     const columns: TemplateColumn[] = [
       { header: 'STT', key: 'stt', width: 6 },
       { header: 'ID', key: 'id', width: 10 },
@@ -309,6 +309,7 @@ class MilitaryFlagService {
       sheetName: 'HC QKQT',
       columns,
       personnelIds,
+      repeatMap,
       editableColumnLetters: ['G'],
     });
   }

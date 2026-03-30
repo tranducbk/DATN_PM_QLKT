@@ -24,7 +24,7 @@ class ContributionAwardService {
    * @param {string[]} personnelIds - Pre-fill with selected personnel
    * @param {string} userRole
    */
-  async exportTemplate(personnelIds: string[] = []) {
+  async exportTemplate(personnelIds: string[] = [], repeatMap: Record<string, number> = {}) {
     const columns: TemplateColumn[] = [
       { header: 'STT', key: 'stt', width: 6 },
       { header: 'ID', key: 'id', width: 10 },
@@ -41,6 +41,7 @@ class ContributionAwardService {
       sheetName: 'HCBVTQ',
       columns,
       personnelIds,
+      repeatMap,
       danhHieuOptions: '"HCBVTQ_HANG_BA,HCBVTQ_HANG_NHI,HCBVTQ_HANG_NHAT"',
       editableColumnLetters: ['G', 'H'],
     });

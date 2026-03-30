@@ -95,9 +95,9 @@ const AWARD_TYPE_CONFIG: Record<
   KNC_VSNXD_QDNDVN: {
     fetch: apiClient.getCommemorationMedals,
     export: apiClient.exportCommemorationMedals,
-    exportFilename: 'knc_vsnxd',
+    exportFilename: 'knc_vsnxd_qdndvn',
     template: apiClient.getCommemorationMedalsTemplate,
-    templateFilename: 'mau_import_knc_vsnxd',
+    templateFilename: 'mau_import_knc_vsnxd_qdndvn',
     import: apiClient.importCommemorationMedals,
   },
   HCQKQT: {

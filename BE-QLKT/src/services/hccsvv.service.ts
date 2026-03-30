@@ -17,7 +17,7 @@ class HCCSVVService {
   /**
    * Export template Excel for HCCSVV import
    */
-  async exportTemplate(personnelIds: string[] = []) {
+  async exportTemplate(personnelIds: string[] = [], repeatMap: Record<string, number> = {}) {
     const columns: TemplateColumn[] = [
       { header: 'STT', key: 'stt', width: 6 },
       { header: 'ID', key: 'id', width: 10 },
@@ -34,6 +34,7 @@ class HCCSVVService {
       sheetName: 'HCCSVV',
       columns,
       personnelIds,
+      repeatMap,
       danhHieuOptions: '"HCCSVV_HANG_BA,HCCSVV_HANG_NHI,HCCSVV_HANG_NHAT"',
       editableColumnLetters: ['G', 'H'],
     });

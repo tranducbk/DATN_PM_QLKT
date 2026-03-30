@@ -14,14 +14,9 @@ const router = Router();
 /**
  * @route   GET /api/commemorative-medals/template
  * @desc    Tải file mẫu Excel để import Kỷ niệm chương
- * @access  ADMIN, MANAGER
+ * @access  ADMIN
  */
-router.get(
-  '/template',
-  verifyToken,
-  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
-  commemorativeMedalController.getTemplate
-);
+router.get('/template', verifyToken, requireAdmin, commemorativeMedalController.getTemplate);
 
 /**
  * @route   POST /api/commemorative-medals/import/preview

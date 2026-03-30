@@ -10,10 +10,15 @@ import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 
 class MilitaryFlagController {
   getTemplate = catchAsync(async (req: Request, res: Response) => {
-    const userRole = req.user?.role ?? ROLES.MANAGER;
     const personnelIds = parsePersonnelIdsFromQuery(req.query);
+    const repeatMap: Record<string, number> = {};
+    if (req.query.repeat_map) {
+      try {
+        Object.assign(repeatMap, JSON.parse(req.query.repeat_map as string));
+      } catch { /* ignore */ }
+    }
 
-    const workbook = await militaryFlagService.exportTemplate(personnelIds);
+    const workbook = await militaryFlagService.exportTemplate(personnelIds, repeatMap);
     const buffer = await workbook.xlsx.writeBuffer();
     const fileName = `mau_import_hcqkqt_${new Date().toISOString().slice(0, 10)}.xlsx`;
     res.setHeader(
@@ -29,8 +34,8 @@ class MilitaryFlagController {
 
     const result = await militaryFlagService.previewImport(req.file.buffer);
     await writeSystemLog({
-      userId: req.user?.id,
-      userRole: req.user?.role,
+      userId: req.user!.id,
+      userRole: req.user!.role,
       action: AUDIT_ACTIONS.IMPORT_PREVIEW,
       resource: 'military-flag',
       description: `Tải lên file "${Buffer.from(req.file.originalname, 'latin1').toString('utf8')}" để review Huy chương Quân kỳ Quyết thắng: ${result.valid?.length ?? 0} hợp lệ, ${result.errors?.length ?? 0} lỗi`,
@@ -45,13 +50,10 @@ class MilitaryFlagController {
 
   confirmImport = catchAsync(async (req: Request, res: Response) => {
     const { items } = req.body;
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return ResponseHelper.badRequest(res, 'Không có dữ liệu để import');
-    }
     const result = await militaryFlagService.confirmImport(items, req.user!.id);
     await writeSystemLog({
-      userId: req.user?.id,
-      userRole: req.user?.role,
+      userId: req.user!.id,
+      userRole: req.user!.role,
       action: AUDIT_ACTIONS.IMPORT,
       resource: 'military-flag',
       description: `Nhập dữ liệu huân chương quân kỳ quyết thắng thành công: ${result.imported ?? items.length} bản ghi`,
@@ -100,18 +102,19 @@ class MilitaryFlagController {
   });
 
   exportToExcel = catchAsync(async (req: Request, res: Response) => {
-    const userId = req.user!.id;
-    const userRole = req.user!.role;
     const { don_vi_id, nam } = req.query;
 
     const filters: Record<string, unknown> = {};
     if (don_vi_id) filters.don_vi_id = don_vi_id;
     if (nam) filters.nam = nam;
 
-    if (userRole === ROLES.MANAGER) {
-      const user = await militaryFlagService.getUserWithUnit(userId);
-      if (!user?.QuanNhan) return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
-      filters.don_vi_id = user.QuanNhan.co_quan_don_vi_id ?? user.QuanNhan.don_vi_truc_thuoc_id;
+    const managerUnit = await getManagerUnitFilter(req);
+    if (managerUnit === null && req.user!.role === ROLES.MANAGER) {
+      return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
+    }
+    if (managerUnit) {
+      filters.don_vi_id = managerUnit.don_vi_id;
+      if (managerUnit.isCoQuanDonVi) filters.include_sub_units = true;
     }
 
     const buffer = await militaryFlagService.exportToExcel(filters);
@@ -165,7 +168,7 @@ class MilitaryFlagController {
 
   deleteAward = catchAsync(async (req: Request, res: Response) => {
     const id = req.params.id as string;
-    const adminUsername = req.user?.username ?? 'Admin';
+    const adminUsername = req.user!.username ?? 'Admin';
     const result = await militaryFlagService.deleteAward(id, adminUsername);
     return ResponseHelper.success(res, { message: result.message });
   });

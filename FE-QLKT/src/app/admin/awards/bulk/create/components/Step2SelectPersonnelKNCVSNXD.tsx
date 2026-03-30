@@ -707,7 +707,7 @@ export function Step2SelectPersonnelKNCVSNXD({
             awardType="KNC_VSNXD_QDNDVN"
             downloadTemplate={apiClient.getCommemorationMedalsTemplate}
             importFile={apiClient.importCommemorationMedals}
-            templateFileName="mau_import_knc_vsnxd"
+            templateFileName="mau_import_knc_vsnxd_qdndvn"
             onImportSuccess={handleImportSuccess}
             selectedPersonnelIds={selectedPersonnelIds}
             selectedNames={selectedPersonnelIds.map(id => personnel.find(p => p.id === id)?.ho_ten || '')}

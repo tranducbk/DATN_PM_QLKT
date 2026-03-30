@@ -289,7 +289,7 @@ class ScientificAchievementService {
     return workbook;
   }
 
-  async generateTemplate(personnelIds: string[] = []) {
+  async generateTemplate(personnelIds: string[] = [], repeatMap: Record<string, number> = {}) {
     const columns: TemplateColumn[] = [
       { header: 'STT', key: 'stt', width: 6 },
       { header: 'ID', key: 'id', width: 10 },
@@ -307,6 +307,7 @@ class ScientificAchievementService {
       sheetName: 'NCKH',
       columns,
       personnelIds,
+      repeatMap,
     });
   }
 

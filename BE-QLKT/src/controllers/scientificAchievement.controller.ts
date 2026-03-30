@@ -144,9 +144,14 @@ class ScientificAchievementController {
   });
 
   getTemplate = catchAsync(async (req: Request, res: Response) => {
-    const userRole = req.user?.role ?? ROLES.MANAGER;
     const personnelIds = parsePersonnelIdsFromQuery(req.query);
-    const workbook = await scientificAchievementService.generateTemplate(personnelIds);
+    const repeatMap: Record<string, number> = {};
+    if (req.query.repeat_map) {
+      try {
+        Object.assign(repeatMap, JSON.parse(req.query.repeat_map as string));
+      } catch { /* ignore */ }
+    }
+    const workbook = await scientificAchievementService.generateTemplate(personnelIds, repeatMap);
     res.setHeader(
       'Content-Type',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
