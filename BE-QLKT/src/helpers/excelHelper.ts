@@ -57,4 +57,26 @@ function parseBooleanValue(value: CellValue | null | undefined): boolean {
   return ['có', 'co', 'true', '1', 'x'].includes(strVal);
 }
 
-export { removeVietnameseAccents, parseHeaderMap, getHeaderCol, parseBooleanValue };
+/**
+ * Resolve thông tin quân nhân từ file Excel và DB, kiểm tra thiếu thông tin.
+ * @param row - Dữ liệu từ dòng Excel (ho_ten, cap_bac, chuc_vu)
+ * @param personnel - Dữ liệu quân nhân từ DB
+ * @returns Object chứa resolved values và danh sách field thiếu
+ */
+function resolvePersonnelInfo(
+  row: { ho_ten?: string | null; cap_bac?: string | null; chuc_vu?: string | null },
+  personnel: { ho_ten: string; cap_bac?: string | null; ChucVu?: { ten_chuc_vu: string } | null }
+): { hoTen: string | null; capBac: string | null; chucVu: string | null; missingFields: string[] } {
+  const hoTen = row.ho_ten || personnel.ho_ten;
+  const capBac = row.cap_bac || personnel.cap_bac || null;
+  const chucVu = row.chuc_vu || personnel.ChucVu?.ten_chuc_vu || null;
+
+  const missingFields: string[] = [];
+  if (!hoTen) missingFields.push('Họ tên');
+  if (!capBac) missingFields.push('Cấp bậc');
+  if (!chucVu) missingFields.push('Chức vụ');
+
+  return { hoTen, capBac, chucVu, missingFields };
+}
+
+export { removeVietnameseAccents, parseHeaderMap, getHeaderCol, parseBooleanValue, resolvePersonnelInfo };

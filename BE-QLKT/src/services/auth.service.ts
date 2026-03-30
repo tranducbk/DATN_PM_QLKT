@@ -36,7 +36,7 @@ class AuthService {
     return jwt.sign(
       { id: account.id, username: account.username, role: account.role, quan_nhan_id: account.quan_nhan_id },
       JWT_SECRET,
-      { expiresIn: '15m' }
+      { expiresIn: '30m' }
     );
   }
 
@@ -44,7 +44,7 @@ class AuthService {
     return jwt.sign(
       { id: account.id, username: account.username },
       JWT_REFRESH_SECRET,
-      { expiresIn: '1d' }
+      { expiresIn: '7d' }
     );
   }
 

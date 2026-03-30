@@ -9,6 +9,7 @@ import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { parsePersonnelIdsFromQuery, buildManagerQuanNhanFilter } from '../helpers/controllerHelpers';
+import { notifyOnImport } from '../helpers/notification';
 
 class ScientificAchievementController {
   getAchievements = catchAsync(async (req: Request, res: Response) => {
@@ -199,6 +200,8 @@ class ScientificAchievementController {
       description: `Nhập dữ liệu thành tích khoa học thành công: ${result.imported || items.length} bản ghi`,
       payload: { imported: result.imported || items.length },
     });
+    const personnelIds = items.map((i: { personnel_id: string }) => i.personnel_id);
+    notifyOnImport(req.user!.id, 'scientific-achievements', result.imported || items.length, personnelIds).catch(() => {});
     return ResponseHelper.success(res, { message: 'Thao tác thành công', data: result });
   });
 }

@@ -7,7 +7,7 @@ import * as notificationHelper from '../helpers/notification';
 import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { ValidationError, NotFoundError } from '../middlewares/errorHandler';
-import { parseHeaderMap, getHeaderCol } from '../helpers/excelHelper';
+import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo } from '../helpers/excelHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import type { QuanNhan } from '../generated/prisma';
 import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
@@ -36,6 +36,7 @@ interface PreviewValidItem {
 
 interface ConfirmImportItem {
   personnel_id: string;
+  ho_ten: string;
   nam: number;
   cap_bac?: string | null;
   chuc_vu?: string | null;
@@ -98,12 +99,12 @@ class MilitaryFlagService {
       }
     }
 
-    // --- Batch queries: personnel, existing awards, decisions ---
-    const [personnelList, existingAwardsList, existingDecisions] = await Promise.all([
+    // --- Batch queries: personnel, existing awards, decisions, pending proposals ---
+    const [personnelList, existingAwardsList, existingDecisions, pendingProposals] = await Promise.all([
       allPersonnelIds.size > 0
         ? prisma.quanNhan.findMany({
             where: { id: { in: [...allPersonnelIds] } },
-            select: { id: true, ho_ten: true, cap_bac: true, ngay_nhap_ngu: true },
+            select: { id: true, ho_ten: true, cap_bac: true, ngay_nhap_ngu: true, ChucVu: { select: { ten_chuc_vu: true } } },
           })
         : Promise.resolve([]),
       allPersonnelIds.size > 0
@@ -114,7 +115,21 @@ class MilitaryFlagService {
       prisma.fileQuyetDinh.findMany({
         select: { so_quyet_dinh: true },
       }),
+      prisma.bangDeXuat.findMany({
+        where: {
+          loai_de_xuat: PROPOSAL_TYPES.HC_QKQT,
+          status: PROPOSAL_STATUS.PENDING,
+        },
+      }),
     ]);
+
+    const pendingPersonnelIds = new Set<string>();
+    for (const proposal of pendingProposals) {
+      const data = (proposal.data_nien_han as Array<Record<string, unknown>>) || [];
+      for (const item of data) {
+        if (item.personnel_id) pendingPersonnelIds.add(item.personnel_id as string);
+      }
+    }
 
     const personnelMap = new Map(personnelList.map(p => [p.id, p]));
     const existingAwardsMap = new Map(existingAwardsList.map(a => [a.quan_nhan_id, a]));
@@ -226,6 +241,17 @@ class MilitaryFlagService {
         continue;
       }
 
+      // Check pending proposal
+      if (pendingPersonnelIds.has(personnelId)) {
+        errors.push({
+          row: rowNumber,
+          ho_ten,
+          nam,
+          message: 'Quân nhân đang có đề xuất HC Quân kỳ quyết thắng chờ duyệt',
+        });
+        continue;
+      }
+
       if (personnel.ngay_nhap_ngu) {
         const nhapNguDate = new Date(personnel.ngay_nhap_ngu);
         const yearsServed = nam - nhapNguDate.getFullYear();
@@ -246,12 +272,26 @@ class MilitaryFlagService {
         ? [{ nam: existingAward.nam, so_quyet_dinh: existingAward.so_quyet_dinh }]
         : [];
 
+      const { hoTen, capBac, chucVu, missingFields: missingInfoFields } = resolvePersonnelInfo(
+        { ho_ten, cap_bac, chuc_vu },
+        personnel
+      );
+      if (missingInfoFields.length > 0) {
+        errors.push({
+          row: rowNumber,
+          ho_ten: hoTen,
+          nam,
+          message: `Thiếu ${missingInfoFields.join(', ')} (cả trong file và hệ thống)`,
+        });
+        continue;
+      }
+
       valid.push({
         row: rowNumber,
         personnel_id: personnelId,
-        ho_ten: ho_ten ?? personnel.ho_ten,
-        cap_bac,
-        chuc_vu,
+        ho_ten: hoTen,
+        cap_bac: capBac,
+        chuc_vu: chucVu,
         nam,
         so_quyet_dinh,
         ghi_chu,
@@ -263,6 +303,48 @@ class MilitaryFlagService {
   }
 
   async confirmImport(validItems: ConfirmImportItem[], adminId: string) {
+    const personnelIds = [...new Set(validItems.map(item => item.personnel_id))];
+
+    // Check pending proposals before proceeding
+    const pendingProposals = await prisma.bangDeXuat.findMany({
+      where: { loai_de_xuat: PROPOSAL_TYPES.HC_QKQT, status: PROPOSAL_STATUS.PENDING },
+    });
+    const pendingPersonnelIds = new Set<string>();
+    for (const p of pendingProposals) {
+      const data = (p.data_nien_han as Array<Record<string, unknown>>) || [];
+      for (const item of data) {
+        if (item.personnel_id) pendingPersonnelIds.add(item.personnel_id as string);
+      }
+    }
+    const pendingConflicts: string[] = [];
+    for (const item of validItems) {
+      if (pendingPersonnelIds.has(item.personnel_id)) {
+        pendingConflicts.push(`${item.ho_ten}: đang có đề xuất HC Quân kỳ quyết thắng chờ duyệt`);
+      }
+    }
+    if (pendingConflicts.length > 0) {
+      throw new ValidationError(pendingConflicts.join('; '));
+    }
+
+    // Check existing records to prevent silent overwrites
+    const existingRecords = await prisma.huanChuongQuanKyQuyetThang.findMany({
+      where: { quan_nhan_id: { in: personnelIds } },
+      select: { quan_nhan_id: true, nam: true },
+    });
+    const existingSet = new Set(existingRecords.map(r => r.quan_nhan_id));
+
+    const conflicts: string[] = [];
+    for (const item of validItems) {
+      if (existingSet.has(item.personnel_id)) {
+        conflicts.push(
+          `${item.ho_ten}: đã có Huy chương Quân kỳ quyết thắng trên hệ thống`
+        );
+      }
+    }
+    if (conflicts.length > 0) {
+      throw new ValidationError(conflicts.join('; '));
+    }
+
     return await prisma.$transaction(
       async tx => {
         const results = [];
@@ -310,6 +392,7 @@ class MilitaryFlagService {
       columns,
       personnelIds,
       repeatMap,
+      loaiKhenThuong: PROPOSAL_TYPES.HC_QKQT,
       editableColumnLetters: ['G'],
     });
   }

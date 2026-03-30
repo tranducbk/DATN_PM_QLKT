@@ -8,7 +8,7 @@ import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { NotFoundError, ValidationError } from '../middlewares/errorHandler';
 import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
-import { parseHeaderMap, getHeaderCol } from '../helpers/excelHelper';
+import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo } from '../helpers/excelHelper';
 
 interface CreateAchievementData {
   personnel_id: string;
@@ -308,6 +308,7 @@ class ScientificAchievementService {
       columns,
       personnelIds,
       repeatMap,
+      loaiKhenThuong: PROPOSAL_TYPES.NCKH,
     });
   }
 
@@ -358,7 +359,7 @@ class ScientificAchievementService {
       allPersonnelIds.size > 0
         ? prisma.quanNhan.findMany({
             where: { id: { in: [...allPersonnelIds] } },
-            select: { id: true, ho_ten: true, cap_bac: true },
+            select: { id: true, ho_ten: true, cap_bac: true, ChucVu: { select: { ten_chuc_vu: true } } },
           })
         : Promise.resolve([]),
       allPersonnelIds.size > 0
@@ -543,12 +544,26 @@ class ScientificAchievementService {
           so_quyet_dinh: r.so_quyet_dinh,
         }));
 
+      const { hoTen, capBac, chucVu, missingFields: missingInfoFields } = resolvePersonnelInfo(
+        { ho_ten, cap_bac, chuc_vu },
+        personnel
+      );
+      if (missingInfoFields.length > 0) {
+        errors.push({
+          row: rowNumber,
+          ho_ten: hoTen,
+          nam,
+          message: `Thiếu ${missingInfoFields.join(', ')} (cả trong file và hệ thống)`,
+        });
+        continue;
+      }
+
       valid.push({
         row: rowNumber,
         personnel_id: personnel.id,
-        ho_ten: ho_ten ?? personnel.ho_ten,
-        cap_bac,
-        chuc_vu,
+        ho_ten: hoTen,
+        cap_bac: capBac,
+        chuc_vu: chucVu,
         nam,
         loai,
         mo_ta,

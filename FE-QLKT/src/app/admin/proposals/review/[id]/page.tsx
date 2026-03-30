@@ -1745,7 +1745,7 @@ export default function ProposalDetailPage() {
           visible={decisionModalVisible}
           onClose={() => setDecisionModalVisible(false)}
           onSuccess={handleDecisionSuccess}
-          loaiKhenThuong="CA_NHAN_HANG_NAM"
+          loaiKhenThuong={proposal?.loai_de_xuat}
         />
       </div>
     </ConfigProvider>

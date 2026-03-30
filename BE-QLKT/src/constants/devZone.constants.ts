@@ -13,6 +13,7 @@ export const SETTING_DEFAULTS = {
   allow_commemoration: 'false',
   allow_militaryFlag: 'false',
   allow_scientific: 'false',
+  allow_notify_import: 'false',
   allow_delete_logs: 'false',
   allow_view_errors_super_admin: 'false',
   allow_view_errors_admin: 'false',
@@ -35,6 +36,6 @@ export const AWARD_TYPES = [
 export type AwardType = (typeof AWARD_TYPES)[number];
 
 /** Tính năng hệ thống (không phải award type) */
-export const SYSTEM_FEATURES = ['delete_logs', 'view_errors_super_admin', 'view_errors_admin', 'view_errors_manager'] as const;
+export const SYSTEM_FEATURES = ['notify_import', 'delete_logs', 'view_errors_super_admin', 'view_errors_admin', 'view_errors_manager'] as const;
 
 export type SystemFeature = (typeof SYSTEM_FEATURES)[number];

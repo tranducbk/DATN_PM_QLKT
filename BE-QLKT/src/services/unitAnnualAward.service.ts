@@ -3,7 +3,7 @@ import { prisma } from '../models';
 import ExcelJS from 'exceljs';
 import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHelper';
 import { checkDuplicateUnitAward } from '../helpers/awardValidation';
-import { getDanhHieuName } from '../constants/danhHieu.constants';
+import { getDanhHieuName, DANH_HIEU_DON_VI_HANG_NAM, DANH_HIEU_CA_NHAN_HANG_NAM } from '../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
@@ -438,6 +438,25 @@ class UnitAnnualAwardService {
 
     if (!coQuanDonVi && !donViTrucThuoc) {
       throw new NotFoundError('Đơn vị');
+    }
+
+    // Check trùng danh hiệu ĐVQT/ĐVTT
+    if (danh_hieu) {
+      const existing = await prisma.danhHieuDonViHangNam.findFirst({
+        where: {
+          OR: [
+            { co_quan_don_vi_id: unitId, nam: year },
+            { don_vi_truc_thuoc_id: unitId, nam: year },
+          ],
+        },
+        select: { danh_hieu: true },
+      });
+
+      if (existing?.danh_hieu && existing.danh_hieu !== danh_hieu) {
+        throw new ValidationError(
+          `Đơn vị đã có danh hiệu ${getDanhHieuName(existing.danh_hieu)} năm ${year}, không thể thêm ${getDanhHieuName(danh_hieu)}`
+        );
+      }
     }
 
     const isCoQuanDonVi = !!coQuanDonVi;
@@ -1079,6 +1098,96 @@ class UnitAnnualAwardService {
    * Confirm import: lưu dữ liệu đã validate vào DB
    */
   async confirmImport(validItems: any[], adminId: string) {
+    // Batch query để check trùng danh hiệu thay vì query từng item
+    const uniqueUnitIds = [...new Set(validItems.map(item => item.unit_id))];
+    const uniqueYears = [...new Set(validItems.map(item => item.nam))];
+
+    const UNIT_DV_TITLES = new Set<string>([DANH_HIEU_DON_VI_HANG_NAM.DVQT, DANH_HIEU_DON_VI_HANG_NAM.DVTT]);
+    const UNIT_BK_TITLES = new Set<string>([DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP, DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP]);
+
+    const [existingAwards, existingProposals] = await Promise.all([
+      prisma.danhHieuDonViHangNam.findMany({
+        where: {
+          OR: [
+            { co_quan_don_vi_id: { in: uniqueUnitIds }, nam: { in: uniqueYears } },
+            { don_vi_truc_thuoc_id: { in: uniqueUnitIds }, nam: { in: uniqueYears } },
+          ],
+        },
+        select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true, nam: true, danh_hieu: true, nhan_bkbqp: true, nhan_bkttcp: true },
+      }),
+      prisma.bangDeXuat.findMany({
+        where: {
+          loai_de_xuat: PROPOSAL_TYPES.DON_VI_HANG_NAM,
+          nam: { in: uniqueYears },
+          status: { not: PROPOSAL_STATUS.REJECTED },
+        },
+      }),
+    ]);
+
+    // Build lookup map: "unitId|nam" -> award record
+    const awardMap = new Map<string, typeof existingAwards[number]>();
+    for (const award of existingAwards) {
+      const unitId = award.co_quan_don_vi_id || award.don_vi_truc_thuoc_id;
+      if (unitId) awardMap.set(`${unitId}|${award.nam}`, award);
+    }
+
+    const duplicateErrors: string[] = [];
+    for (const item of validItems) {
+      const { unit_id: donViId, nam, danh_hieu: danhHieu } = item;
+
+      // Check đề xuất đã tồn tại trong proposals
+      const existingProposal = existingProposals.find(p => {
+        const dataDanhHieu = (p.data_danh_hieu as Prisma.JsonArray) || [];
+        return (dataDanhHieu as Array<Record<string, unknown>>).some(
+          d => d.don_vi_id === donViId && d.danh_hieu === danhHieu
+        );
+      });
+      if (existingProposal) {
+        duplicateErrors.push(`Đơn vị đã có đề xuất danh hiệu ${getDanhHieuName(danhHieu)} cho năm ${nam}`);
+        continue;
+      }
+
+      // Check bản ghi đã tồn tại trong DB
+      const existingAward = awardMap.get(`${donViId}|${nam}`);
+      if (existingAward) {
+        const isDv = UNIT_DV_TITLES.has(danhHieu);
+        const isBk = UNIT_BK_TITLES.has(danhHieu);
+
+        if (isDv && existingAward.danh_hieu) {
+          if (existingAward.danh_hieu === danhHieu) {
+            duplicateErrors.push(`Đơn vị đã có danh hiệu ${getDanhHieuName(danhHieu)} năm ${nam} trên hệ thống`);
+            continue;
+          }
+          duplicateErrors.push(`Đơn vị đã có danh hiệu ${getDanhHieuName(existingAward.danh_hieu)} năm ${nam}, không thể thêm ${getDanhHieuName(danhHieu)}`);
+          continue;
+        }
+
+        if (isBk) {
+          if (danhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP && existingAward.nhan_bkbqp) {
+            duplicateErrors.push(`Đơn vị đã có ${getDanhHieuName(danhHieu)} năm ${nam} trên hệ thống`);
+            continue;
+          }
+          if (danhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP && existingAward.nhan_bkttcp) {
+            duplicateErrors.push(`Đơn vị đã có ${getDanhHieuName(danhHieu)} năm ${nam} trên hệ thống`);
+            continue;
+          }
+        }
+
+        if (isDv && (existingAward.nhan_bkbqp || existingAward.nhan_bkttcp)) {
+          const existingBk = existingAward.nhan_bkbqp ? 'BKBQP' : 'BKTTCP';
+          duplicateErrors.push(`Đơn vị đã có ${getDanhHieuName(existingBk)} năm ${nam}, không thể thêm ${getDanhHieuName(danhHieu)}`);
+          continue;
+        }
+        if (isBk && existingAward.danh_hieu && UNIT_DV_TITLES.has(existingAward.danh_hieu)) {
+          duplicateErrors.push(`Đơn vị đã có danh hiệu ${getDanhHieuName(existingAward.danh_hieu)} năm ${nam}, không thể thêm ${getDanhHieuName(danhHieu)}`);
+          continue;
+        }
+      }
+    }
+    if (duplicateErrors.length > 0) {
+      throw new ValidationError(duplicateErrors.join('; '));
+    }
+
     return await prisma.$transaction(
       async tx => {
         const results = [];
@@ -1129,7 +1238,7 @@ class UnitAnnualAwardService {
     );
   }
 
-  async exportTemplate(unitIds: string[] = [], userRole: string = ROLES.MANAGER) {
+  async exportTemplate(unitIds: string[] = [], userRole: string = ROLES.MANAGER, repeatMap: Record<string, number> = {}) {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Khen thưởng đơn vị');
 
@@ -1188,7 +1297,9 @@ class UnitAnnualAwardService {
 
     // Add dropdown for Số quyết định from DB (column 7)
     const existingDecisions = await prisma.fileQuyetDinh.findMany({
+      where: { loai_khen_thuong: PROPOSAL_TYPES.DON_VI_HANG_NAM },
       select: { so_quyet_dinh: true },
+      orderBy: { nam: 'desc' },
     });
     const decisionList = existingDecisions.map(d => d.so_quyet_dinh).filter(Boolean);
     let soQdValidation = null;
@@ -1233,29 +1344,32 @@ class UnitAnnualAwardService {
         const unit = unitMap.get(uid);
         if (!unit) continue;
 
-        const dataRow = worksheet.addRow({
-          stt,
-          id: unit.id,
-          ma_don_vi: unit.ma_don_vi || '',
-          ten_don_vi: unit.ten_don_vi || '',
-          nam: '',
-          danh_hieu: '',
-          so_quyet_dinh: '',
-          ghi_chu: '',
-          bkbqp: '',
-          bkttcp: '',
-        });
+        const rowCount = repeatMap[uid] || 1;
+        for (let r = 0; r < rowCount; r++) {
+          const dataRow = worksheet.addRow({
+            stt,
+            id: unit.id,
+            ma_don_vi: unit.ma_don_vi || '',
+            ten_don_vi: unit.ten_don_vi || '',
+            nam: '',
+            danh_hieu: '',
+            so_quyet_dinh: '',
+            ghi_chu: '',
+            bkbqp: '',
+            bkttcp: '',
+          });
 
-        // Readonly yellow background for STT, ID, Mã đơn vị, Tên đơn vị
-        for (let col = 1; col <= 4; col++) {
-          dataRow.getCell(col).fill = readonlyFill;
+          // Readonly yellow background for STT, ID, Mã đơn vị, Tên đơn vị
+          for (let col = 1; col <= 4; col++) {
+            dataRow.getCell(col).fill = readonlyFill;
+          }
+
+          // Red background for BKBQP, BKTTCP
+          dataRow.getCell(9).fill = redFill;
+          dataRow.getCell(10).fill = redFill;
+
+          stt++;
         }
-
-        // Red background for BKBQP, BKTTCP
-        dataRow.getCell(9).fill = redFill;
-        dataRow.getCell(10).fill = redFill;
-
-        stt++;
       }
     } else {
       // Add sample row
@@ -1276,7 +1390,8 @@ class UnitAnnualAwardService {
     }
 
     // Apply data validations to data rows
-    const maxRows = Math.max(unitIds.length + 1, 50);
+    const totalPrefillRows = unitIds.reduce((sum, uid) => sum + (repeatMap[uid] || 1), 0);
+    const maxRows = Math.max(totalPrefillRows + 1, 50);
     for (let r = 2; r <= maxRows; r++) {
       worksheet.getCell(`F${r}`).dataValidation = danhHieuValidation;
       if (soQdValidation) {
@@ -1285,7 +1400,7 @@ class UnitAnnualAwardService {
     }
 
     // Conditional formatting: nền vàng khi ô có giá trị
-    const maxDataRow = Math.max(unitIds.length + 1, 50);
+    const maxDataRow = Math.max(totalPrefillRows + 1, 50);
     const editableColumns = ['F', 'G'];
     editableColumns.forEach(col => {
       worksheet.addConditionalFormatting({

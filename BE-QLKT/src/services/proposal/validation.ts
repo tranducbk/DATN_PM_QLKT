@@ -1,5 +1,9 @@
 import { prisma } from '../../models';
-import { getDanhHieuName } from '../../constants/danhHieu.constants';
+import { getDanhHieuName, DANH_HIEU_DON_VI_HANG_NAM, DANH_HIEU_CA_NHAN_HANG_NAM } from '../../constants/danhHieu.constants';
+
+const UNIT_DV_TITLES = new Set<string>([DANH_HIEU_DON_VI_HANG_NAM.DVQT, DANH_HIEU_DON_VI_HANG_NAM.DVTT]);
+// BKBQP/BKTTCP dùng chung cho cả cá nhân và đơn vị
+const UNIT_BK_TITLES = new Set<string>([DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP, DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP]);
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
 import type { Prisma } from '../../generated/prisma';
@@ -18,12 +22,21 @@ export async function checkDuplicateAward(
   status: string | null = null,
   excludeProposalId: string | null = null
 ): Promise<DuplicateCheckResult> {
-  try {
     if (proposalType === PROPOSAL_TYPES.CA_NHAN_HANG_NAM) {
+      const actualAward = await prisma.danhHieuHangNam.findFirst({
+        where: { quan_nhan_id: personnelId, nam, danh_hieu: danhHieu },
+      });
+      if (actualAward) {
+        return {
+          exists: true,
+          message: `Quân nhân đã có danh hiệu ${getDanhHieuName(danhHieu)} năm ${nam} trên hệ thống`,
+        };
+      }
+
       const proposals = await prisma.bangDeXuat.findMany({
         where: {
           loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
-          nam: parseInt(String(nam)),
+          nam,
           status: status ? status : { not: PROPOSAL_STATUS.REJECTED },
           ...(excludeProposalId ? { id: { not: excludeProposalId } } : {}),
         },
@@ -62,7 +75,7 @@ export async function checkDuplicateAward(
       const pendingProposals = await prisma.bangDeXuat.findMany({
         where: {
           loai_de_xuat: PROPOSAL_TYPES.NIEN_HAN,
-          nam: parseInt(String(nam)),
+          nam,
           status: PROPOSAL_STATUS.PENDING,
           ...(excludeProposalId ? { id: { not: excludeProposalId } } : {}),
         },
@@ -95,7 +108,7 @@ export async function checkDuplicateAward(
       const pendingProposals = await prisma.bangDeXuat.findMany({
         where: {
           loai_de_xuat: PROPOSAL_TYPES.HC_QKQT,
-          nam: parseInt(String(nam)),
+          nam,
           status: PROPOSAL_STATUS.PENDING,
           ...(excludeProposalId ? { id: { not: excludeProposalId } } : {}),
         },
@@ -128,7 +141,7 @@ export async function checkDuplicateAward(
       const pendingProposals = await prisma.bangDeXuat.findMany({
         where: {
           loai_de_xuat: PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
-          nam: parseInt(String(nam)),
+          nam,
           status: PROPOSAL_STATUS.PENDING,
           ...(excludeProposalId ? { id: { not: excludeProposalId } } : {}),
         },
@@ -161,7 +174,7 @@ export async function checkDuplicateAward(
       const pendingProposals = await prisma.bangDeXuat.findMany({
         where: {
           loai_de_xuat: PROPOSAL_TYPES.CONG_HIEN,
-          nam: parseInt(String(nam)),
+          nam,
           status: PROPOSAL_STATUS.PENDING,
           ...(excludeProposalId ? { id: { not: excludeProposalId } } : {}),
         },
@@ -187,9 +200,6 @@ export async function checkDuplicateAward(
     }
 
     return { exists: false };
-  } catch (error) {
-    throw error;
-  }
 }
 
 export async function checkDuplicateUnitAward(
@@ -198,16 +208,18 @@ export async function checkDuplicateUnitAward(
   danhHieu: string,
   proposalType: string
 ): Promise<DuplicateCheckResult> {
-  try {
     if (proposalType === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
       const proposals = await prisma.bangDeXuat.findMany({
         where: {
           loai_de_xuat: PROPOSAL_TYPES.DON_VI_HANG_NAM,
-          nam: parseInt(String(nam)),
+          nam,
           status: { not: PROPOSAL_STATUS.REJECTED },
         },
       });
 
+      // Proposal JSON data_danh_hieu stores don_vi_id which maps to either co_quan_don_vi_id
+      // or don_vi_truc_thuoc_id depending on the unit type. The don_vi_id field is set consistently
+      // during proposal creation, so matching on it here is sufficient.
       const existing = proposals.find(p => {
         const dataDanhHieu = (p.data_danh_hieu as Prisma.JsonArray) || [];
         return (dataDanhHieu as Array<Record<string, unknown>>).some(
@@ -222,10 +234,68 @@ export async function checkDuplicateUnitAward(
           status: existing.status,
         };
       }
+
+      // Check bản ghi đã tồn tại trong DB
+      const existingAward = await prisma.danhHieuDonViHangNam.findFirst({
+        where: {
+          OR: [
+            { co_quan_don_vi_id: donViId, nam },
+            { don_vi_truc_thuoc_id: donViId, nam },
+          ],
+        },
+        select: { danh_hieu: true, nhan_bkbqp: true, nhan_bkttcp: true },
+      });
+
+      if (existingAward) {
+        const isDv = UNIT_DV_TITLES.has(danhHieu);
+        const isBk = UNIT_BK_TITLES.has(danhHieu);
+
+        // Check ĐVQT/ĐVTT
+        if (isDv && existingAward.danh_hieu) {
+          if (existingAward.danh_hieu === danhHieu) {
+            return {
+              exists: true,
+              message: `Đơn vị đã có danh hiệu ${getDanhHieuName(danhHieu)} năm ${nam} trên hệ thống`,
+            };
+          }
+          return {
+            exists: true,
+            message: `Đơn vị đã có danh hiệu ${getDanhHieuName(existingAward.danh_hieu)} năm ${nam}, không thể thêm ${getDanhHieuName(danhHieu)}`,
+          };
+        }
+
+        // Check BKBQP/BKTTCP
+        if (isBk) {
+          if (danhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP && existingAward.nhan_bkbqp) {
+            return {
+              exists: true,
+              message: `Đơn vị đã có ${getDanhHieuName(danhHieu)} năm ${nam} trên hệ thống`,
+            };
+          }
+          if (danhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP && existingAward.nhan_bkttcp) {
+            return {
+              exists: true,
+              message: `Đơn vị đã có ${getDanhHieuName(danhHieu)} năm ${nam} trên hệ thống`,
+            };
+          }
+        }
+
+        // Không mix ĐVQT/ĐVTT với BKBQP/BKTTCP
+        if (isDv && (existingAward.nhan_bkbqp || existingAward.nhan_bkttcp)) {
+          const existingBk = existingAward.nhan_bkbqp ? 'BKBQP' : 'BKTTCP';
+          return {
+            exists: true,
+            message: `Đơn vị đã có ${getDanhHieuName(existingBk)} năm ${nam}, không thể thêm ${getDanhHieuName(danhHieu)}`,
+          };
+        }
+        if (isBk && existingAward.danh_hieu && UNIT_DV_TITLES.has(existingAward.danh_hieu)) {
+          return {
+            exists: true,
+            message: `Đơn vị đã có danh hiệu ${getDanhHieuName(existingAward.danh_hieu)} năm ${nam}, không thể thêm ${getDanhHieuName(danhHieu)}`,
+          };
+        }
+      }
     }
 
     return { exists: false };
-  } catch (error) {
-    throw error;
-  }
 }

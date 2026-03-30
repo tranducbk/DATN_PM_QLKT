@@ -113,7 +113,11 @@ export function ApproveModal({ visible, proposal, onClose, onSuccess }: ApproveM
 
     try {
       setSearchingDecision(true);
-      const response = await apiClient.autocompleteDecisions(searchText.trim(), 10);
+      const response = await apiClient.autocompleteDecisions(
+        searchText.trim(),
+        10,
+        proposal.loai_de_xuat
+      );
 
       if (response.success) {
         const options = response.data.map((d: any) => ({

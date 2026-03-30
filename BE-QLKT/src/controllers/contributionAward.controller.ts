@@ -7,6 +7,7 @@ import catchAsync from '../helpers/catchAsync';
 import { parsePersonnelIdsFromQuery, getManagerUnitFilter } from '../helpers/controllerHelpers';
 import { parsePagination } from '../helpers/paginationHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { notifyOnImport } from '../helpers/notification';
 
 class ContributionAwardController {
   getTemplate = catchAsync(async (req: Request, res: Response) => {
@@ -59,6 +60,8 @@ class ContributionAwardController {
       description: `Nhập dữ liệu huân chương bảo vệ tổ quốc thành công: ${result.imported ?? items.length} bản ghi`,
       payload: { imported: result.imported ?? items.length },
     });
+    const personnelIds = items.map((i: { personnel_id: string }) => i.personnel_id);
+    notifyOnImport(req.user!.id, 'contribution-awards', result.imported ?? items.length, personnelIds).catch(() => {});
     return ResponseHelper.success(res, { data: result, message: 'Thao tác thành công' });
   });
 

@@ -204,13 +204,14 @@ export default function ProposalReviewPage() {
       ),
     },
     {
-      title: 'Ngày gửi',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
+      title: 'Thời gian cập nhật',
+      key: 'ngay_duyet',
       align: 'center' as const,
-      render: (date: string) => (
-        <div style={{ textAlign: 'center' }}>{formatDateTime(date)}</div>
-      ),
+      render: (_: any, record: Proposal) => {
+        const dateValue = record.ngay_duyet || record.createdAt;
+        if (!dateValue) return '-';
+        return <div style={{ textAlign: 'center' }}>{formatDateTime(dateValue)}</div>;
+      },
     },
     {
       title: 'Năm',

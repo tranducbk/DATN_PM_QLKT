@@ -49,6 +49,11 @@ export const AWARD_TYPE_OPTIONS = [
 /** Tính năng hệ thống (không phải award type) */
 export const SYSTEM_FEATURE_OPTIONS = [
   {
+    key: 'notify_import',
+    label: 'Thông báo khi import khen thưởng',
+    description: 'Gửi thông báo cho chỉ huy đơn vị khi import/thêm khen thưởng cho đơn vị đó',
+  },
+  {
     key: 'delete_logs',
     label: 'Xoá nhật ký hệ thống',
     description: 'Cho phép ADMIN, SUPER_ADMIN xoá nhật ký hệ thống',

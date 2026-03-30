@@ -7,7 +7,7 @@ import * as notificationHelper from '../helpers/notification';
 import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { ValidationError, NotFoundError } from '../middlewares/errorHandler';
-import { parseHeaderMap, getHeaderCol } from '../helpers/excelHelper';
+import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo } from '../helpers/excelHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
 
@@ -33,6 +33,7 @@ class CommemorativeMedalService {
       columns,
       personnelIds,
       repeatMap,
+      loaiKhenThuong: PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
       editableColumnLetters: ['G'],
     });
   }
@@ -43,7 +44,7 @@ class CommemorativeMedalService {
    */
   async previewImport(buffer: Buffer) {
     const workbook = await loadWorkbook(buffer);
-    const worksheet = getAndValidateWorksheet(workbook, { sheetName: 'KNC VSNXD' });
+    const worksheet = getAndValidateWorksheet(workbook, { sheetName: 'KNC VSNXD QDNDVN' });
 
     // Header map
     const headerMap = parseHeaderMap(worksheet);
@@ -79,12 +80,12 @@ class CommemorativeMedalService {
       }
     }
 
-    // --- Batch queries: personnel, existing KNC, decisions ---
-    const [personnelList, existingKncList, existingDecisions] = await Promise.all([
+    // --- Batch queries: personnel, existing KNC, decisions, pending proposals ---
+    const [personnelList, existingKncList, existingDecisions, pendingProposals] = await Promise.all([
       allPersonnelIds.size > 0
         ? prisma.quanNhan.findMany({
             where: { id: { in: [...allPersonnelIds] } },
-            select: { id: true, ho_ten: true, gioi_tinh: true, ngay_nhap_ngu: true, cap_bac: true },
+            select: { id: true, ho_ten: true, gioi_tinh: true, ngay_nhap_ngu: true, cap_bac: true, ChucVu: { select: { ten_chuc_vu: true } } },
           })
         : Promise.resolve([]),
       allPersonnelIds.size > 0
@@ -95,7 +96,21 @@ class CommemorativeMedalService {
       prisma.fileQuyetDinh.findMany({
         select: { so_quyet_dinh: true },
       }),
+      prisma.bangDeXuat.findMany({
+        where: {
+          loai_de_xuat: PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
+          status: PROPOSAL_STATUS.PENDING,
+        },
+      }),
     ]);
+
+    const pendingPersonnelIds = new Set<string>();
+    for (const proposal of pendingProposals) {
+      const data = (proposal.data_nien_han as Array<Record<string, unknown>>) || [];
+      for (const item of data) {
+        if (item.personnel_id) pendingPersonnelIds.add(item.personnel_id as string);
+      }
+    }
 
     const personnelMap = new Map(personnelList.map(p => [p.id, p]));
     const existingKncMap = new Map(existingKncList.map(k => [k.quan_nhan_id, k]));
@@ -214,6 +229,17 @@ class CommemorativeMedalService {
         continue;
       }
 
+      // Check pending proposal
+      if (pendingPersonnelIds.has(personnelId)) {
+        errors.push({
+          row: rowNumber,
+          ho_ten,
+          nam,
+          message: 'Quân nhân đang có đề xuất Kỷ niệm chương chờ duyệt',
+        });
+        continue;
+      }
+
       // Check eligibility: gioi_tinh + ngay_nhap_ngu
       if (!personnel.ngay_nhap_ngu) {
         errors.push({
@@ -245,15 +271,35 @@ class CommemorativeMedalService {
       // History from batched data — existingKnc is already checked as null here,
       // so history is always empty (person has no KNC yet). Keep the structure for consistency.
       const history = existingKnc
-        ? [{ nam: existingKnc.nam, so_quyet_dinh: existingKnc.so_quyet_dinh, ghi_chu: existingKnc.ghi_chu }]
+        ? [
+            {
+              nam: existingKnc.nam,
+              so_quyet_dinh: existingKnc.so_quyet_dinh,
+              ghi_chu: existingKnc.ghi_chu,
+            },
+          ]
         : [];
+
+      const { hoTen, capBac, chucVu, missingFields: missingInfoFields } = resolvePersonnelInfo(
+        { ho_ten, cap_bac, chuc_vu },
+        personnel
+      );
+      if (missingInfoFields.length > 0) {
+        errors.push({
+          row: rowNumber,
+          ho_ten: hoTen,
+          nam,
+          message: `Thiếu ${missingInfoFields.join(', ')} (cả trong file và hệ thống)`,
+        });
+        continue;
+      }
 
       valid.push({
         row: rowNumber,
         personnel_id: personnel.id,
-        ho_ten: ho_ten ?? personnel.ho_ten,
-        cap_bac: cap_bac ?? personnel.cap_bac ?? null,
-        chuc_vu,
+        ho_ten: hoTen,
+        cap_bac: capBac,
+        chuc_vu: chucVu,
         nam,
         so_quyet_dinh,
         ghi_chu,
@@ -270,6 +316,48 @@ class CommemorativeMedalService {
    * Confirm import: lưu dữ liệu đã validate vào DB
    */
   async confirmImport(validItems: any[], adminId: string) {
+    const personnelIds = [...new Set(validItems.map(item => item.personnel_id))];
+
+    // Check pending proposals before proceeding
+    const pendingProposals = await prisma.bangDeXuat.findMany({
+      where: { loai_de_xuat: PROPOSAL_TYPES.KNC_VSNXD_QDNDVN, status: PROPOSAL_STATUS.PENDING },
+    });
+    const pendingPersonnelIds = new Set<string>();
+    for (const p of pendingProposals) {
+      const data = (p.data_nien_han as Array<Record<string, unknown>>) || [];
+      for (const item of data) {
+        if (item.personnel_id) pendingPersonnelIds.add(item.personnel_id as string);
+      }
+    }
+    const pendingConflicts: string[] = [];
+    for (const item of validItems) {
+      if (pendingPersonnelIds.has(item.personnel_id)) {
+        pendingConflicts.push(`${item.ho_ten}: đang có đề xuất Kỷ niệm chương chờ duyệt`);
+      }
+    }
+    if (pendingConflicts.length > 0) {
+      throw new ValidationError(pendingConflicts.join('; '));
+    }
+
+    // Check existing records to prevent silent overwrites
+    const existingRecords = await prisma.kyNiemChuongVSNXDQDNDVN.findMany({
+      where: { quan_nhan_id: { in: personnelIds } },
+      select: { quan_nhan_id: true, nam: true },
+    });
+    const existingSet = new Set(existingRecords.map(r => r.quan_nhan_id));
+
+    const conflicts: string[] = [];
+    for (const item of validItems) {
+      if (existingSet.has(item.personnel_id)) {
+        conflicts.push(
+          `${item.ho_ten}: đã có Kỷ niệm chương VSNXD QĐNDVN trên hệ thống`
+        );
+      }
+    }
+    if (conflicts.length > 0) {
+      throw new ValidationError(conflicts.join('; '));
+    }
+
     return await prisma.$transaction(
       async tx => {
         const results = [];
@@ -334,9 +422,10 @@ class CommemorativeMedalService {
       const ho_ten = row.getCell(1).value?.toString().trim();
       if (ho_ten) allHoTen.add(ho_ten);
     }
-    const allPersonnel = allHoTen.size > 0
-      ? await prisma.quanNhan.findMany({ where: { ho_ten: { in: [...allHoTen] } } })
-      : [];
+    const allPersonnel =
+      allHoTen.size > 0
+        ? await prisma.quanNhan.findMany({ where: { ho_ten: { in: [...allHoTen] } } })
+        : [];
     const personnelByName = new Map<string, typeof allPersonnel>();
     for (const p of allPersonnel) {
       const list = personnelByName.get(p.ho_ten) ?? [];
@@ -481,11 +570,7 @@ class CommemorativeMedalService {
   /**
    * Get all Commemorative Medals with filters and pagination
    */
-  async getAll(
-    filters: Record<string, unknown> = {},
-    page: number = 1,
-    limit: number = 50
-  ) {
+  async getAll(filters: Record<string, unknown> = {}, page: number = 1, limit: number = 50) {
     const where: Record<string, unknown> = {};
 
     // Filter theo họ tên
@@ -731,7 +816,12 @@ class CommemorativeMedalService {
 
     // Gửi thông báo cho Manager và quân nhân
     try {
-      await notificationHelper.notifyOnAwardDeleted(award, personnel, 'KNC_VSNXD_QDNDVN', adminUsername);
+      await notificationHelper.notifyOnAwardDeleted(
+        award,
+        personnel,
+        'KNC_VSNXD_QDNDVN',
+        adminUsername
+      );
     } catch (notifyError) {
       writeSystemLog({
         action: 'ERROR',

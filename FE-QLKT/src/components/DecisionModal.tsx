@@ -107,7 +107,7 @@ export function DecisionModal({
 
     try {
       setSearching(true);
-      const response = await apiClient.autocompleteDecisions(value.trim(), 10);
+      const response = await apiClient.autocompleteDecisions(value.trim(), 10, loaiKhenThuong);
       if (response.success && response.data) {
         setAutocompleteOptions(
           response.data.map((item: any) => ({

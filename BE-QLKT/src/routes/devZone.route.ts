@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { prisma } from '../models';
 import profileService from '../services/profile.service';
+import unitAnnualAwardService from '../services/unitAnnualAward.service';
 import cron from 'node-cron';
 import type { ScheduledTask } from 'node-cron';
 import { SETTING_DEFAULTS, AWARD_TYPES, SYSTEM_FEATURES } from '../constants/devZone.constants';
@@ -33,12 +34,17 @@ const runCronJob = async () => {
   lastCronRun = new Date().toISOString();
   await setSetting('cron_last_run', lastCronRun);
   try {
-    const result = await profileService.recalculateAll();
+    const [personnelResult, unitRecalculated] = await Promise.all([
+      profileService.recalculateAll(),
+      unitAnnualAwardService.recalculate({ don_vi_id: undefined, nam: undefined }),
+    ]);
+    const totalSuccess = (personnelResult.success || 0) + unitRecalculated;
+    const totalErrors = personnelResult.errors?.length || 0;
     lastCronResult = {
       status: 'success',
       time: lastCronRun,
-      success: result.success,
-      errors: result.errors?.length || 0,
+      success: totalSuccess,
+      errors: totalErrors,
     };
     await setSetting('cron_last_result', JSON.stringify(lastCronResult));
 
@@ -47,10 +53,11 @@ const runCronJob = async () => {
       userRole: 'SYSTEM',
       action: AUDIT_ACTIONS.RECALCULATE,
       resource: 'profiles',
-      description: `Cron job tính toán hồ sơ: ${result.success} thành công, ${result.errors || 0} lỗi`,
+      description: `Cron job tính toán hồ sơ: cá nhân ${personnelResult.success} thành công (${totalErrors} lỗi), đơn vị ${unitRecalculated} bản ghi`,
       payload: {
-        success: result.success,
-        errors: result.errors || 0,
+        personnelSuccess: personnelResult.success,
+        personnelErrors: totalErrors,
+        unitRecalculated,
         schedule: await getSetting('cron_schedule', '0 1 1 * *'),
       },
     });

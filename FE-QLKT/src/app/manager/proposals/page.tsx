@@ -20,6 +20,7 @@ import {
   Col,
 } from 'antd';
 import { getApiErrorMessage } from '@/lib/apiError';
+import { formatDateTime } from '@/lib/utils';
 
 import {
   HomeOutlined,
@@ -296,19 +297,10 @@ export default function ManagerProposalsPage() {
       width: 180,
       align: 'center' as const,
       render: (_: any, record: Proposal) => {
-        // Hiển thị thời gian cập nhật khi đã duyệt hoặc từ chối
-        if ((record.status !== PROPOSAL_STATUS.APPROVED && record.status !== PROPOSAL_STATUS.REJECTED) || !record.ngay_duyet) {
-          return <Text type="secondary">-</Text>;
-        }
+        const dateValue = record.ngay_duyet || record.createdAt;
+        if (!dateValue) return <Text type="secondary">-</Text>;
 
-        // Format: giờ đứng trước ngày (HH:mm dd/MM/yyyy)
-        const date = new Date(record.ngay_duyet);
-        const hours = String(date.getHours()).padStart(2, '0');
-        const minutes = String(date.getMinutes()).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const year = date.getFullYear();
-        return `${hours}:${minutes} ${day}/${month}/${year}`;
+        return formatDateTime(dateValue);
       },
     },
     {

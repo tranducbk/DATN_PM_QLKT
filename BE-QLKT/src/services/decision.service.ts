@@ -94,18 +94,25 @@ class DecisionService {
     };
   }
 
-  async autocomplete(query: string, limit: number = 10): Promise<FileQuyetDinh[]> {
+  async autocomplete(
+    query: string,
+    limit: number = 10,
+    loaiKhenThuong?: string
+  ): Promise<FileQuyetDinh[]> {
     if (!query || query.trim() === '') {
       return [];
     }
 
-    const decisions = await prisma.fileQuyetDinh.findMany({
-      where: {
-        so_quyet_dinh: {
-          contains: query.trim(),
-          mode: 'insensitive',
-        },
+    const where: Record<string, unknown> = {
+      so_quyet_dinh: {
+        contains: query.trim(),
+        mode: 'insensitive',
       },
+    };
+    if (loaiKhenThuong) where.loai_khen_thuong = loaiKhenThuong;
+
+    const decisions = await prisma.fileQuyetDinh.findMany({
+      where,
       orderBy: [{ nam: 'desc' }, { ngay_ky: 'desc' }],
       take: limit,
     });

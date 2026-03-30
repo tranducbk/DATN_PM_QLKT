@@ -10,6 +10,7 @@ import {
   notifyOnAwardDeleted,
   notifyUsersOnAwardApproved,
   notifyOnBulkAwardAdded,
+  notifyOnImport,
 } from './awards';
 import { notifyManagerOnPersonnelAdded, notifyOnPersonnelTransfer } from './personnel';
 
@@ -24,6 +25,7 @@ export {
   notifyOnAwardDeleted,
   notifyUsersOnAwardApproved,
   notifyOnBulkAwardAdded,
+  notifyOnImport,
   notifyManagerOnPersonnelAdded,
   notifyOnPersonnelTransfer,
 };

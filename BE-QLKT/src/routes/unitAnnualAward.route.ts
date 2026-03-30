@@ -59,12 +59,6 @@ router.post(
   verifyToken,
   checkRole([ROLES.ADMIN, ROLES.MANAGER]),
   validate(excelImportValidation.confirmImportUnitAnnualAward),
-  auditLog({
-    action: AUDIT_ACTIONS.IMPORT,
-    resource: 'unit-annual-awards',
-    getDescription: getLogDescription('unit-annual-awards', 'IMPORT'),
-    getResourceId: () => null,
-  }),
   unitAnnualAwardController.confirmImport
 );
 

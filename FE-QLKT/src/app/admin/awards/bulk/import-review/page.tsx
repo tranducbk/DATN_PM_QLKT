@@ -85,7 +85,8 @@ export default function ImportReviewPage() {
       {
         title: 'Danh hiệu',
         dataIndex: 'danh_hieu',
-        width: 130,
+        width: 180,
+        ellipsis: true,
         render: (val: string) => (val ? getDanhHieuTag(val, DANH_HIEU_COLORS) : '--'),
       },
       makeErrorColumn(),

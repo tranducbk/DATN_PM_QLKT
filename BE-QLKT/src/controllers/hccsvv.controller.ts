@@ -7,6 +7,7 @@ import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 import { parsePagination } from '../helpers/paginationHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { notifyOnImport } from '../helpers/notification';
 
 class HCCSVVController {
   getTemplate = catchAsync(async (req: Request, res: Response) => {
@@ -59,6 +60,8 @@ class HCCSVVController {
       description: `Nhập dữ liệu huy chương chiến sĩ vẻ vang thành công: ${result.imported || items.length} bản ghi`,
       payload: { imported: result.imported || items.length },
     });
+    const personnelIds = items.map((i: { personnel_id: string }) => i.personnel_id);
+    notifyOnImport(req.user!.id, 'hccsvv', result.imported || items.length, personnelIds).catch(() => {});
     return ResponseHelper.success(res, { message: 'Thao tác thành công', data: result });
   });
 

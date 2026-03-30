@@ -8,7 +8,7 @@ import { getDanhHieuName } from '../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
-import { parseHeaderMap, getHeaderCol } from '../helpers/excelHelper';
+import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo } from '../helpers/excelHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { ValidationError, NotFoundError, AppError } from '../middlewares/errorHandler';
 import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
@@ -35,6 +35,7 @@ class HCCSVVService {
       columns,
       personnelIds,
       repeatMap,
+      loaiKhenThuong: PROPOSAL_TYPES.NIEN_HAN,
       danhHieuOptions: '"HCCSVV_HANG_BA,HCCSVV_HANG_NHI,HCCSVV_HANG_NHAT"',
       editableColumnLetters: ['G', 'H'],
     });
@@ -110,15 +111,30 @@ class HCCSVVService {
     }
 
     // --- Batch queries ---
-    const [personnelList, existingHCCSVVRecords] = await Promise.all([
+    const [personnelList, existingHCCSVVRecords, pendingProposals] = await Promise.all([
       prisma.quanNhan.findMany({
         where: { id: { in: [...allPersonnelIds] } },
+        include: { ChucVu: { select: { ten_chuc_vu: true } } },
       }),
       prisma.khenThuongHCCSVV.findMany({
         where: { quan_nhan_id: { in: [...allPersonnelIds] } },
         select: { quan_nhan_id: true, danh_hieu: true, nam: true, so_quyet_dinh: true },
       }),
+      prisma.bangDeXuat.findMany({
+        where: {
+          loai_de_xuat: PROPOSAL_TYPES.NIEN_HAN,
+          status: PROPOSAL_STATUS.PENDING,
+        },
+      }),
     ]);
+
+    const pendingPersonnelIds = new Set<string>();
+    for (const proposal of pendingProposals) {
+      const data = (proposal.data_nien_han as Array<Record<string, unknown>>) || [];
+      for (const item of data) {
+        if (item.personnel_id) pendingPersonnelIds.add(item.personnel_id as string);
+      }
+    }
 
     // Build lookup Maps
     const personnelMap = new Map(personnelList.map(p => [p.id, p]));
@@ -284,6 +300,18 @@ class HCCSVVService {
         continue;
       }
 
+      // Check pending proposal
+      if (pendingPersonnelIds.has(personnelId)) {
+        errors.push({
+          row: rowNumber,
+          ho_ten,
+          nam,
+          danh_hieu,
+          message: 'Quân nhân đang có đề xuất HCCSVV chờ duyệt',
+        });
+        continue;
+      }
+
       // Check HCCSVV hierarchy: must have prerequisite before higher rank
       const prerequisite = hierarchyPrerequisite[danh_hieu];
       if (prerequisite) {
@@ -312,12 +340,27 @@ class HCCSVVService {
         .slice(0, 5)
         .map(r => ({ nam: r.nam, danh_hieu: r.danh_hieu, so_quyet_dinh: r.so_quyet_dinh }));
 
+      const { hoTen, capBac, chucVu, missingFields: missingInfoFields } = resolvePersonnelInfo(
+        { ho_ten, cap_bac, chuc_vu },
+        personnel
+      );
+      if (missingInfoFields.length > 0) {
+        errors.push({
+          row: rowNumber,
+          ho_ten: hoTen,
+          nam,
+          danh_hieu,
+          message: `Thiếu ${missingInfoFields.join(', ')} (cả trong file và hệ thống)`,
+        });
+        continue;
+      }
+
       valid.push({
         row: rowNumber,
         personnel_id: personnelId,
-        ho_ten: ho_ten ?? personnel.ho_ten,
-        cap_bac,
-        chuc_vu,
+        ho_ten: hoTen,
+        cap_bac: capBac,
+        chuc_vu: chucVu,
         nam,
         danh_hieu,
         so_quyet_dinh,
@@ -333,6 +376,66 @@ class HCCSVVService {
    * Confirm import: lưu dữ liệu đã validate vào DB
    */
   async confirmImport(validItems: any[], adminId: string) {
+    // Check rank downgrades - block importing lower rank when higher exists
+    const HCCSVV_RANK: Record<string, number> = {
+      HCCSVV_HANG_BA: 1,
+      HCCSVV_HANG_NHI: 2,
+      HCCSVV_HANG_NHAT: 3,
+    };
+
+    const personnelIds = [...new Set(validItems.map(item => item.personnel_id))];
+
+    // Check pending proposals before proceeding
+    const pendingProposals = await prisma.bangDeXuat.findMany({
+      where: { loai_de_xuat: PROPOSAL_TYPES.NIEN_HAN, status: PROPOSAL_STATUS.PENDING },
+    });
+    const pendingPersonnelIds = new Set<string>();
+    for (const p of pendingProposals) {
+      const data = (p.data_nien_han as Array<Record<string, unknown>>) || [];
+      for (const item of data) {
+        if (item.personnel_id) pendingPersonnelIds.add(item.personnel_id as string);
+      }
+    }
+    const pendingConflicts: string[] = [];
+    for (const item of validItems) {
+      if (pendingPersonnelIds.has(item.personnel_id)) {
+        pendingConflicts.push(`${item.ho_ten}: đang có đề xuất HCCSVV chờ duyệt`);
+      }
+    }
+    if (pendingConflicts.length > 0) {
+      throw new ValidationError(pendingConflicts.join('; '));
+    }
+
+    const existingRecords = await prisma.khenThuongHCCSVV.findMany({
+      where: { quan_nhan_id: { in: personnelIds } },
+      select: { quan_nhan_id: true, danh_hieu: true },
+    });
+    // Build map: personnelId -> highest existing rank
+    const highestRankMap = new Map<string, { danh_hieu: string; rank: number }>();
+    for (const r of existingRecords) {
+      const rank = HCCSVV_RANK[r.danh_hieu] || 0;
+      const current = highestRankMap.get(r.quan_nhan_id);
+      if (!current || rank > current.rank) {
+        highestRankMap.set(r.quan_nhan_id, { danh_hieu: r.danh_hieu, rank });
+      }
+    }
+
+    const conflicts: string[] = [];
+    for (const item of validItems) {
+      const highest = highestRankMap.get(item.personnel_id);
+      if (highest) {
+        const importRank = HCCSVV_RANK[item.danh_hieu] || 0;
+        if (importRank <= highest.rank && item.danh_hieu !== highest.danh_hieu) {
+          conflicts.push(
+            `${item.ho_ten}: đã có ${getDanhHieuName(highest.danh_hieu)}, không thể import ${getDanhHieuName(item.danh_hieu)} (hạng thấp hơn)`
+          );
+        }
+      }
+    }
+    if (conflicts.length > 0) {
+      throw new ValidationError(conflicts.join('; '));
+    }
+
     return await prisma.$transaction(
       async tx => {
         const results = [];

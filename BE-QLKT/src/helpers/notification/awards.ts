@@ -5,10 +5,12 @@ import {
   ROLES,
   emitNotificationToUser,
   DANH_HIEU_MAP,
+  LOAI_DE_XUAT_MAP,
   getDanhHieuName,
   getDisplayName,
 } from './helpers';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
+import { isFeatureEnabled } from '../settingsHelper';
 
 interface AchievementInfo {
   id: string;
@@ -560,10 +562,144 @@ async function notifyOnBulkAwardAdded(
   }
 }
 
+const RESOURCE_TO_PROPOSAL_TYPE: Record<string, string> = {
+  'annual-rewards': PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
+  'unit-annual-awards': PROPOSAL_TYPES.DON_VI_HANG_NAM,
+  hccsvv: PROPOSAL_TYPES.NIEN_HAN,
+  'commemorative-medals': PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
+  'contribution-awards': PROPOSAL_TYPES.CONG_HIEN,
+  'military-flag': PROPOSAL_TYPES.HC_QKQT,
+  'scientific-achievements': PROPOSAL_TYPES.NCKH,
+};
+
+/**
+ * Gửi thông báo cho chỉ huy đơn vị khi import khen thưởng (nếu feature bật).
+ * @param adminId - ID tài khoản admin thực hiện import
+ * @param awardResource - Resource key (vd: 'annual-rewards', 'hccsvv')
+ * @param importedCount - Số bản ghi đã import
+ * @param personnelIds - Danh sách personnel_id (cho khen thưởng cá nhân)
+ * @param unitIds - Danh sách unit_id (cho khen thưởng đơn vị)
+ */
+async function notifyOnImport(
+  adminId: string,
+  awardResource: string,
+  importedCount: number,
+  personnelIds: string[] = [],
+  unitIds: string[] = []
+): Promise<number> {
+  try {
+    const enabled = await isFeatureEnabled('allow_notify_import');
+    if (!enabled) return 0;
+
+    const admin = await prisma.taiKhoan.findUnique({
+      where: { id: adminId },
+      select: { username: true },
+    });
+    if (!admin) return 0;
+
+    const adminDisplayName = await getDisplayName(admin.username);
+    const proposalType = RESOURCE_TO_PROPOSAL_TYPE[awardResource];
+    const awardLabel = proposalType ? LOAI_DE_XUAT_MAP[proposalType] : awardResource;
+
+    // Collect affected unit IDs
+    const affectedUnitIds = new Set<string>();
+
+    if (personnelIds.length > 0) {
+      const personnel = await prisma.quanNhan.findMany({
+        where: { id: { in: personnelIds } },
+        select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true },
+      });
+      for (const p of personnel) {
+        if (p.co_quan_don_vi_id) affectedUnitIds.add(p.co_quan_don_vi_id);
+        if (p.don_vi_truc_thuoc_id) affectedUnitIds.add(p.don_vi_truc_thuoc_id);
+      }
+    }
+
+    for (const uid of unitIds) {
+      affectedUnitIds.add(uid);
+    }
+
+    if (affectedUnitIds.size === 0) return 0;
+
+    // Find managers of affected units
+    const managers = await prisma.taiKhoan.findMany({
+      where: {
+        role: ROLES.MANAGER,
+        QuanNhan: {
+          OR: [
+            { co_quan_don_vi_id: { in: [...affectedUnitIds] } },
+            { don_vi_truc_thuoc_id: { in: [...affectedUnitIds] } },
+          ],
+        },
+      },
+      select: { id: true, role: true },
+    });
+
+    const notifications: {
+      nguoi_nhan_id: string;
+      recipient_role: string;
+      type: string;
+      title: string;
+      message: string;
+      resource: string;
+      tai_nguyen_id: string | null;
+      link: string | null;
+    }[] = [];
+
+    // Notify managers
+    if (managers.length > 0) {
+      const uniqueManagers = [...new Map(managers.map(m => [m.id, m])).values()];
+      for (const manager of uniqueManagers) {
+        notifications.push({
+          nguoi_nhan_id: manager.id,
+          recipient_role: manager.role,
+          type: NOTIFICATION_TYPES.AWARD_ADDED,
+          title: 'Khen thưởng mới được import',
+          message: `${adminDisplayName} đã import ${importedCount} bản ghi ${awardLabel} cho đơn vị của bạn`,
+          resource: RESOURCE_TYPES.AWARDS,
+          tai_nguyen_id: null,
+          link: `/manager/awards`,
+        });
+      }
+    }
+
+    // Notify personnel (chỉ khen thưởng cá nhân)
+    if (personnelIds.length > 0) {
+      const personnelAccounts = await prisma.taiKhoan.findMany({
+        where: { quan_nhan_id: { in: personnelIds } },
+        select: { id: true, role: true },
+      });
+
+      for (const account of personnelAccounts) {
+        notifications.push({
+          nguoi_nhan_id: account.id,
+          recipient_role: account.role,
+          type: NOTIFICATION_TYPES.AWARD_ADDED,
+          title: 'Bạn đã nhận khen thưởng',
+          message: `${adminDisplayName} đã thêm ${awardLabel} cho bạn qua import dữ liệu`,
+          resource: RESOURCE_TYPES.AWARDS,
+          tai_nguyen_id: null,
+          link: `/user/profile`,
+        });
+      }
+    }
+
+    if (notifications.length === 0) return 0;
+
+    await prisma.thongBao.createMany({ data: notifications });
+    notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
+
+    return notifications.length;
+  } catch {
+    return 0;
+  }
+}
+
 export {
   notifyManagersOnAwardAdded,
   notifyUserOnAchievementApproved,
   notifyOnAwardDeleted,
   notifyUsersOnAwardApproved,
   notifyOnBulkAwardAdded,
+  notifyOnImport,
 };

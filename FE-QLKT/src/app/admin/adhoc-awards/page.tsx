@@ -45,6 +45,7 @@ import {
 } from '@ant-design/icons';
 import type { TableColumnsType, UploadFile } from 'antd';
 import { apiClient } from '@/lib/apiClient';
+import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { previewFileWithApi } from '@/utils/filePreview';
 
@@ -298,7 +299,11 @@ export default function AdhocAwardsPage() {
 
     try {
       setSearchingDecision(true);
-      const response = await apiClient.autocompleteDecisions(value.trim(), 10);
+      const response = await apiClient.autocompleteDecisions(
+        value.trim(),
+        10,
+        PROPOSAL_TYPES.DOT_XUAT
+      );
       if (response.success && response.data) {
         setDecisionOptions(
           response.data.map((item: any) => ({

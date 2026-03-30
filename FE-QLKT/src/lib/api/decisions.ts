@@ -29,10 +29,14 @@ export async function getDecisions(params?: {
   }
 }
 
-export async function autocompleteDecisions(query: string, limit = 10): Promise<ApiResponse> {
+export async function autocompleteDecisions(
+  query: string,
+  limit = 10,
+  loaiKhenThuong?: string
+): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get('/api/decisions/autocomplete', {
-      params: { q: query, limit },
+      params: { q: query, limit, loai_khen_thuong: loaiKhenThuong },
     });
     return { success: true, data: res.data?.data };
   } catch (e: unknown) {

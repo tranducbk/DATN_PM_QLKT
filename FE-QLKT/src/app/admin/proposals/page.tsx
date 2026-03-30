@@ -31,6 +31,7 @@ import { isAxiosError } from 'axios';
 import { apiClient } from '@/lib/apiClient';
 import { getApiErrorMessage } from '@/lib/apiError';
 import dayjs from 'dayjs';
+import { formatDateTime } from '@/lib/utils';
 import {
   PROPOSAL_STATUS,
   PROPOSAL_TYPES,
@@ -241,11 +242,14 @@ export default function AdminProposalsPage() {
       },
     },
     {
-      title: 'Ngày tạo',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      width: 120,
-      render: (date: string) => dayjs(date).format('DD/MM/YYYY'),
+      title: 'Thời gian cập nhật',
+      key: 'ngay_duyet',
+      width: 160,
+      render: (_: any, record: Proposal) => {
+        const dateValue = record.ngay_duyet || record.createdAt;
+        if (!dateValue) return '-';
+        return formatDateTime(dateValue);
+      },
     },
     {
       title: 'Trạng thái',

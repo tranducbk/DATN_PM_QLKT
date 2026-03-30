@@ -26,10 +26,14 @@ class DecisionController {
   });
 
   autocomplete = catchAsync(async (req: Request, res: Response) => {
-    const { q, limit = 10 } = req.query;
+    const { q, limit = 10, loai_khen_thuong } = req.query;
     if (!q) return ResponseHelper.badRequest(res, 'Vui lòng nhập từ khóa tìm kiếm (q)');
 
-    const decisions = await decisionService.autocomplete(q as string, parseInt(limit as string));
+    const decisions = await decisionService.autocomplete(
+      q as string,
+      parseInt(limit as string),
+      loai_khen_thuong as string | undefined
+    );
     return ResponseHelper.success(res, {
       data: decisions,
       message: 'Tìm kiếm quyết định thành công',

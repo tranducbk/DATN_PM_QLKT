@@ -9,7 +9,7 @@ import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { NotFoundError, ValidationError } from '../middlewares/errorHandler';
 import { writeSystemLog } from '../helpers/systemLogHelper';
-import { parseHeaderMap, getHeaderCol, parseBooleanValue } from '../helpers/excelHelper';
+import { parseHeaderMap, getHeaderCol, parseBooleanValue, resolvePersonnelInfo } from '../helpers/excelHelper';
 import type { DanhHieuHangNam, QuanNhan, Prisma } from '../generated/prisma';
 import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
 
@@ -79,6 +79,7 @@ interface PreviewResult {
 
 interface ConfirmImportItem {
   personnel_id: string;
+  ho_ten: string;
   nam: number;
   danh_hieu: string;
   cap_bac?: string | null;
@@ -395,9 +396,10 @@ class AnnualRewardService {
         if (id) allPersonnelIds.add(id);
       }
     }
-    const allPersonnelList = allPersonnelIds.size > 0
-      ? await prisma.quanNhan.findMany({ where: { id: { in: [...allPersonnelIds] } } })
-      : [];
+    const allPersonnelList = await prisma.quanNhan.findMany({
+      where: { id: { in: [...allPersonnelIds] } },
+      include: { ChucVu: { select: { ten_chuc_vu: true } } },
+    });
     const personnelById = new Map(allPersonnelList.map(p => [p.id, p]));
 
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
@@ -486,14 +488,23 @@ class AnnualRewardService {
         }
       }
 
+      const { hoTen, capBac, chucVu, missingFields: missingInfoFields } = resolvePersonnelInfo(
+        { ho_ten, cap_bac, chuc_vu },
+        personnel
+      );
+      if (missingInfoFields.length > 0) {
+        errors.push(`Dòng ${rowNumber}: Thiếu ${missingInfoFields.join(', ')} (cả trong file và hệ thống)`);
+        continue;
+      }
+
       rowsToProcess.push({
         personnel,
         nam,
         danh_hieu,
-        cap_bac,
-        chuc_vu,
+        cap_bac: capBac,
+        chuc_vu: chucVu,
         ghi_chu,
-        ho_ten,
+        ho_ten: hoTen,
         nhan_bkbqp,
         nhan_cstdtq,
         nhan_bkttcp,
@@ -658,6 +669,7 @@ class AnnualRewardService {
     const [personnelList, existingAnnualRewards] = await Promise.all([
       prisma.quanNhan.findMany({
         where: { id: { in: [...allPersonnelIds] } },
+        include: { ChucVu: { select: { ten_chuc_vu: true } } },
       }),
       prisma.danhHieuHangNam.findMany({
         where: { quan_nhan_id: { in: [...allPersonnelIds] } },
@@ -880,12 +892,27 @@ class AnnualRewardService {
           so_quyet_dinh: r.so_quyet_dinh,
         }));
 
+      const { hoTen, capBac, chucVu, missingFields: missingInfoFields } = resolvePersonnelInfo(
+        { ho_ten, cap_bac, chuc_vu },
+        personnel
+      );
+      if (missingInfoFields.length > 0) {
+        errors.push({
+          row: rowNumber,
+          ho_ten: hoTen,
+          nam,
+          danh_hieu,
+          message: `Thiếu ${missingInfoFields.join(', ')} (cả trong file và hệ thống)`,
+        });
+        continue;
+      }
+
       valid.push({
         row: rowNumber,
         personnel_id: personnel.id,
-        ho_ten: ho_ten ?? personnel.ho_ten,
-        cap_bac,
-        chuc_vu,
+        ho_ten: hoTen,
+        cap_bac: capBac,
+        chuc_vu: chucVu,
         nam,
         danh_hieu,
         so_quyet_dinh,
@@ -898,6 +925,55 @@ class AnnualRewardService {
   }
 
   async confirmImport(validItems: ConfirmImportItem[]): Promise<{ imported: number }> {
+    // Check pending proposals before importing
+    const pendingProposals = await prisma.bangDeXuat.findMany({
+      where: { loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM, status: PROPOSAL_STATUS.PENDING },
+    });
+    const pendingPersonnelIds = new Set<string>();
+    for (const p of pendingProposals) {
+      const data = (p.data_danh_hieu as Array<Record<string, unknown>>) || [];
+      for (const item of data) {
+        if (item.personnel_id) pendingPersonnelIds.add(item.personnel_id as string);
+      }
+    }
+    const pendingConflicts: string[] = [];
+    for (const item of validItems) {
+      if (pendingPersonnelIds.has(item.personnel_id)) {
+        pendingConflicts.push(`${item.ho_ten} năm ${item.nam}: đang có đề xuất chờ duyệt`);
+      }
+    }
+    if (pendingConflicts.length > 0) {
+      throw new ValidationError(pendingConflicts.join('; '));
+    }
+
+    // Batch check existing records to prevent silent overwrites
+    const personnelIds = [...new Set(validItems.map(item => item.personnel_id))];
+    const years = [...new Set(validItems.map(item => item.nam))];
+
+    const existingRecords = await prisma.danhHieuHangNam.findMany({
+      where: {
+        quan_nhan_id: { in: personnelIds },
+        nam: { in: years },
+      },
+      select: { quan_nhan_id: true, nam: true, danh_hieu: true },
+    });
+    const existingMap = new Map(
+      existingRecords.map(r => [`${r.quan_nhan_id}|${r.nam}`, r])
+    );
+
+    const conflicts: string[] = [];
+    for (const item of validItems) {
+      const existing = existingMap.get(`${item.personnel_id}|${item.nam}`);
+      if (existing && existing.danh_hieu !== item.danh_hieu) {
+        conflicts.push(
+          `${item.ho_ten} năm ${item.nam}: đã có ${getDanhHieuName(existing.danh_hieu)}, không thể ghi đè bằng ${getDanhHieuName(item.danh_hieu)}`
+        );
+      }
+    }
+    if (conflicts.length > 0) {
+      throw new ValidationError(conflicts.join('; '));
+    }
+
     return await prisma.$transaction(
       async tx => {
         const results: DanhHieuHangNam[] = [];
@@ -1232,6 +1308,7 @@ class AnnualRewardService {
       columns,
       personnelIds,
       repeatMap,
+      loaiKhenThuong: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       danhHieuOptions: '"CSTT,CSTDCS"',
       redColumns: [10, 11, 12],
       editableColumnLetters: ['G', 'H'],

@@ -7,16 +7,11 @@ import * as notificationHelper from '../helpers/notification';
 import { getDanhHieuName } from '../constants/danhHieu.constants';
 import { ROLES } from '../constants/roles.constants';
 import { ValidationError, NotFoundError } from '../middlewares/errorHandler';
-import { parseHeaderMap, getHeaderCol } from '../helpers/excelHelper';
+import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo } from '../helpers/excelHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
-
-/** Rank order for HCBVTQ — higher index = higher rank */
-const HCBVTQ_RANK_ORDER = {
-  HCBVTQ_HANG_BA: 1,
-  HCBVTQ_HANG_NHI: 2,
-  HCBVTQ_HANG_NHAT: 3,
-};
+import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
+import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 
 class ContributionAwardService {
   /**
@@ -42,6 +37,7 @@ class ContributionAwardService {
       columns,
       personnelIds,
       repeatMap,
+      loaiKhenThuong: PROPOSAL_TYPES.CONG_HIEN,
       danhHieuOptions: '"HCBVTQ_HANG_BA,HCBVTQ_HANG_NHI,HCBVTQ_HANG_NHAT"',
       editableColumnLetters: ['G', 'H'],
     });
@@ -92,12 +88,12 @@ class ContributionAwardService {
     }
 
     // --- Batch queries: personnel, existing awards, position histories, decisions ---
-    const [personnelList, existingAwardsList, allPositionHistories, existingDecisions] =
+    const [personnelList, existingAwardsList, allPositionHistories, existingDecisions, pendingProposals] =
       await Promise.all([
         allPersonnelIds.size > 0
           ? prisma.quanNhan.findMany({
               where: { id: { in: [...allPersonnelIds] } },
-              select: { id: true, ho_ten: true, gioi_tinh: true, cap_bac: true },
+              select: { id: true, ho_ten: true, gioi_tinh: true, cap_bac: true, ChucVu: { select: { ten_chuc_vu: true } } },
             })
           : Promise.resolve([]),
         allPersonnelIds.size > 0
@@ -114,6 +110,9 @@ class ContributionAwardService {
         prisma.fileQuyetDinh.findMany({
           select: { so_quyet_dinh: true },
         }),
+        prisma.bangDeXuat.findMany({
+          where: { loai_de_xuat: PROPOSAL_TYPES.CONG_HIEN, status: PROPOSAL_STATUS.PENDING },
+        }),
       ]);
 
     const personnelMap = new Map(personnelList.map(p => [p.id, p]));
@@ -125,6 +124,15 @@ class ContributionAwardService {
       positionHistoriesMap.set(h.quan_nhan_id, list);
     }
     const validDecisionNumbers = new Set(existingDecisions.map(d => d.so_quyet_dinh));
+
+    // Build pending personnel IDs Set from proposals
+    const pendingPersonnelIds = new Set<string>();
+    for (const p of pendingProposals) {
+      const data = (p.data_cong_hien as Array<Record<string, unknown>>) || [];
+      for (const item of data) {
+        if (item.personnel_id) pendingPersonnelIds.add(item.personnel_id as string);
+      }
+    }
 
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
       const row = worksheet.getRow(rowNumber);
@@ -262,24 +270,29 @@ class ContributionAwardService {
       }
       seenInFile.add(personnelId);
 
-      // Check duplicate in DB — if person already has HCBVTQ, only allow higher rank
-      const existingAward = existingAwardsMap.get(personnelId);
+      // Check pending proposal
+      if (pendingPersonnelIds.has(personnelId)) {
+        errors.push({
+          row: rowNumber,
+          ho_ten,
+          nam,
+          danh_hieu,
+          message: 'Quân nhân đang có đề xuất HC Bảo vệ Tổ quốc chờ duyệt',
+        });
+        continue;
+      }
 
-      let action = 'create';
+      // Check duplicate in DB — HC BVTQ chỉ nhận 1 lần trong đời
+      const existingAward = existingAwardsMap.get(personnelId);
       if (existingAward) {
-        const existingRank = HCBVTQ_RANK_ORDER[existingAward.danh_hieu] ?? 0;
-        const newRank = HCBVTQ_RANK_ORDER[danh_hieu] ?? 0;
-        if (newRank <= existingRank) {
-          errors.push({
-            row: rowNumber,
-            ho_ten,
-            nam,
-            danh_hieu,
-            message: `Đã có ${getDanhHieuName(existingAward.danh_hieu)} — chỉ được nâng hạng cao hơn`,
-          });
-          continue;
-        }
-        action = 'upgrade';
+        errors.push({
+          row: rowNumber,
+          ho_ten,
+          nam,
+          danh_hieu,
+          message: `Đã có ${getDanhHieuName(existingAward.danh_hieu)} trên hệ thống`,
+        });
+        continue;
       }
 
       // Check thời gian giữ chức vụ theo nhóm hệ số
@@ -339,28 +352,33 @@ class ContributionAwardService {
         continue;
       }
 
-      // Query existing award history
-      const history = existingAward
-        ? [
-            {
-              nam: existingAward.nam,
-              danh_hieu: existingAward.danh_hieu,
-              so_quyet_dinh: existingAward.so_quyet_dinh,
-            },
-          ]
-        : [];
+      const history: { nam: number; danh_hieu: string; so_quyet_dinh: string | null }[] = [];
+
+      const { hoTen, capBac, chucVu, missingFields: missingInfoFields } = resolvePersonnelInfo(
+        { ho_ten, cap_bac, chuc_vu },
+        personnel
+      );
+      if (missingInfoFields.length > 0) {
+        errors.push({
+          row: rowNumber,
+          ho_ten: hoTen,
+          nam,
+          danh_hieu,
+          message: `Thiếu ${missingInfoFields.join(', ')} (cả trong file và hệ thống)`,
+        });
+        continue;
+      }
 
       valid.push({
         row: rowNumber,
         personnel_id: personnelId,
-        ho_ten: ho_ten ?? personnel.ho_ten,
-        cap_bac,
-        chuc_vu,
+        ho_ten: hoTen,
+        cap_bac: capBac,
+        chuc_vu: chucVu,
         nam,
         danh_hieu,
         so_quyet_dinh,
         ghi_chu,
-        action,
         history,
       });
     }
@@ -370,38 +388,57 @@ class ContributionAwardService {
 
   /**
    * Confirm import: lưu dữ liệu đã validate vào DB
-   * Upsert on quan_nhan_id — if existing, only update if new rank is higher
+   * HCBVTQ is one-time-per-lifetime — block if person already has any record
    */
   async confirmImport(validItems: any[], adminId: string) {
+    // Check pending proposals before importing
+    const pendingProposals = await prisma.bangDeXuat.findMany({
+      where: { loai_de_xuat: PROPOSAL_TYPES.CONG_HIEN, status: PROPOSAL_STATUS.PENDING },
+    });
+    const pendingPersonnelIds = new Set<string>();
+    for (const p of pendingProposals) {
+      const data = (p.data_cong_hien as Array<Record<string, unknown>>) || [];
+      for (const item of data) {
+        if (item.personnel_id) pendingPersonnelIds.add(item.personnel_id as string);
+      }
+    }
+    const pendingConflicts: string[] = [];
+    for (const item of validItems) {
+      if (pendingPersonnelIds.has(item.personnel_id)) {
+        pendingConflicts.push(`${item.ho_ten}: đang có đề xuất HC Bảo vệ Tổ quốc chờ duyệt`);
+      }
+    }
+    if (pendingConflicts.length > 0) {
+      throw new ValidationError(pendingConflicts.join('; '));
+    }
+
+    // Check existing records to prevent silent overwrites
+    const personnelIds = [...new Set(validItems.map(item => item.personnel_id))];
+    const existingRecords = await prisma.khenThuongCongHien.findMany({
+      where: { quan_nhan_id: { in: personnelIds } },
+      select: { quan_nhan_id: true, danh_hieu: true },
+    });
+    const existingMap = new Map(existingRecords.map(r => [r.quan_nhan_id, r]));
+
+    const conflicts: string[] = [];
+    for (const item of validItems) {
+      const existing = existingMap.get(item.personnel_id);
+      if (existing) {
+        conflicts.push(
+          `${item.ho_ten}: đã có ${getDanhHieuName(existing.danh_hieu)} trên hệ thống`
+        );
+      }
+    }
+    if (conflicts.length > 0) {
+      throw new ValidationError(conflicts.join('; '));
+    }
+
     return await prisma.$transaction(
       async tx => {
         const results = [];
         for (const item of validItems) {
-          // Re-check rank to prevent stale data
-          const existing = await tx.khenThuongCongHien.findUnique({
-            where: { quan_nhan_id: item.personnel_id },
-          });
-
-          if (existing) {
-            const existingRank = HCBVTQ_RANK_ORDER[existing.danh_hieu] ?? 0;
-            const newRank = HCBVTQ_RANK_ORDER[item.danh_hieu] ?? 0;
-            if (newRank <= existingRank) {
-              // Skip — rank not higher, should not happen if preview was correct
-              continue;
-            }
-          }
-
-          const result = await tx.khenThuongCongHien.upsert({
-            where: { quan_nhan_id: item.personnel_id },
-            update: {
-              danh_hieu: item.danh_hieu,
-              nam: item.nam,
-              cap_bac: item.cap_bac ?? null,
-              chuc_vu: item.chuc_vu ?? null,
-              so_quyet_dinh: item.so_quyet_dinh ?? null,
-              ghi_chu: item.ghi_chu ?? null,
-            },
-            create: {
+          const result = await tx.khenThuongCongHien.create({
+            data: {
               quan_nhan_id: item.personnel_id,
               danh_hieu: item.danh_hieu,
               nam: item.nam,

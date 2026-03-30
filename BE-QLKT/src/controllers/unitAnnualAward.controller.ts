@@ -5,6 +5,7 @@ import { writeSystemLog } from '../helpers/systemLogHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { notifyOnImport } from '../helpers/notification';
 
 class UnitAnnualAwardController {
   list = catchAsync(async (req: Request, res: Response) => {
@@ -167,11 +168,13 @@ class UnitAnnualAwardController {
       description: `Nhập dữ liệu khen thưởng đơn vị hằng năm thành công: ${result.imported ?? items.length} bản ghi`,
       payload: { imported: result.imported ?? items.length },
     });
+    const unitIds = items.map((i: { unit_id: string }) => i.unit_id);
+    notifyOnImport(req.user!.id, 'unit-annual-awards', result.imported ?? items.length, [], unitIds).catch(() => {});
     return ResponseHelper.success(res, { data: result, message: 'Thao tác thành công' });
   });
 
   getTemplate = catchAsync(async (req: Request, res: Response) => {
-    const userRole = req.user?.role || ROLES.MANAGER;
+    const userRole = req.user!.role;
     const rawIds = (req.query.unit_ids ?? req.query.personnel_ids ?? '') as string;
     let unitIds: string[] = [];
     if (rawIds) {
@@ -180,7 +183,13 @@ class UnitAnnualAwardController {
         .map((id: string) => id.trim())
         .filter((id: string) => id.length > 0);
     }
-    const workbook = await service.exportTemplate(unitIds, userRole);
+    const repeatMap: Record<string, number> = {};
+    if (req.query.repeat_map) {
+      try {
+        Object.assign(repeatMap, JSON.parse(req.query.repeat_map as string));
+      } catch { /* ignore */ }
+    }
+    const workbook = await service.exportTemplate(unitIds, userRole, repeatMap);
     res.setHeader(
       'Content-Type',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'

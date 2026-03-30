@@ -10,6 +10,7 @@ import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
+import { notifyOnImport } from '../helpers/notification';
 import {
   parsePersonnelIdsFromQuery,
   buildManagerQuanNhanFilter,
@@ -294,6 +295,8 @@ class AnnualRewardController {
       description: `Nhập dữ liệu danh hiệu cá nhân hằng năm thành công: ${result.imported ?? items.length} bản ghi`,
       payload: { imported: result.imported ?? items.length },
     });
+    const personnelIds = items.map((i: { personnel_id: string }) => i.personnel_id);
+    notifyOnImport(req.user!.id, 'annual-rewards', result.imported ?? items.length, personnelIds).catch(() => {});
     return ResponseHelper.success(res, { data: result, message: 'Thao tác thành công' });
   });
 

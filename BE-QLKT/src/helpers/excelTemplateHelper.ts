@@ -31,6 +31,7 @@ export interface TemplateConfig {
   columns: TemplateColumn[];
   personnelIds?: string[];
   repeatMap?: Record<string, number>;
+  loaiKhenThuong?: string;
   danhHieuOptions?: string;
   includeCapBac?: boolean;
   includeDecision?: boolean;
@@ -69,8 +70,15 @@ export async function queryPersonnelForTemplate(personnelIds: string[]) {
  * @param take - Số lượng tối đa (default MAX_DECISION_DROPDOWN)
  * @returns Mảng số quyết định, sắp xếp theo năm giảm dần
  */
-export async function queryDecisionsForTemplate(take = MAX_DECISION_DROPDOWN) {
+export async function queryDecisionsForTemplate(
+  loaiKhenThuong?: string,
+  take = MAX_DECISION_DROPDOWN
+) {
+  const where: Record<string, unknown> = {};
+  if (loaiKhenThuong) where.loai_khen_thuong = loaiKhenThuong;
+
   const existingDecisions = await prisma.fileQuyetDinh.findMany({
+    where,
     select: { so_quyet_dinh: true },
     orderBy: { nam: 'desc' },
     take,
@@ -293,6 +301,7 @@ export async function buildTemplate(config: TemplateConfig): Promise<ExcelJS.Wor
     columns,
     personnelIds = [],
     repeatMap,
+    loaiKhenThuong,
     danhHieuOptions,
     includeCapBac = true,
     includeDecision = true,
@@ -316,7 +325,7 @@ export async function buildTemplate(config: TemplateConfig): Promise<ExcelJS.Wor
 
   const [personnelList, decisionNumbers] = await Promise.all([
     queryPersonnelForTemplate(personnelIds),
-    includeDecision ? queryDecisionsForTemplate() : Promise.resolve([]),
+    includeDecision ? queryDecisionsForTemplate(loaiKhenThuong) : Promise.resolve([]),
   ]);
 
   let totalDataRows = 0;
