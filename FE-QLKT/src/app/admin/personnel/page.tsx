@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -17,6 +16,7 @@ import {
   Skeleton,
   Empty,
 } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import { useTheme } from '@/components/ThemeProvider';
 import {
   PlusOutlined,
@@ -29,16 +29,38 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/apiClient';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
-import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/lib/constants/pagination.constants';
+import { DEFAULT_PAGE_SIZE, DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
+import type {
+  AdminCoQuanDonViRow,
+  AdminDonViTrucThuocRow,
+  PersonnelApiRow,
+  PersonnelListItem,
+  ManagerPositionRow,
+  UnitApiRow,
+  UnitRelationLike,
+} from '@/lib/types/personnelList';
+import type { DefaultOptionType } from 'antd/es/select';
 
 const { Title, Text } = Typography;
 
+function filterSelectByLabelAndValue(input: string, option?: DefaultOptionType) {
+  const label = String(option?.label ?? option?.children ?? '');
+  const value = String(option?.value ?? '');
+  const q = input.toLowerCase();
+  return label.toLowerCase().includes(q) || value.toLowerCase().includes(q);
+}
+
+function filterSelectByLabel(input: string, option?: DefaultOptionType) {
+  const label = String(option?.label ?? option?.children ?? '');
+  return label.toLowerCase().includes(input.toLowerCase());
+}
+
 export default function PersonnelPage() {
   const { theme } = useTheme();
-  const [personnel, setPersonnel] = useState([]);
+  const [personnel, setPersonnel] = useState<PersonnelListItem[]>([]);
   const [units, setUnits] = useState<{
-    coQuanDonVi: any[];
-    donViTrucThuocMap: Record<string, any[]>;
+    coQuanDonVi: AdminCoQuanDonViRow[];
+    donViTrucThuocMap: Record<string, AdminDonViTrucThuocRow[]>;
   }>({ coQuanDonVi: [], donViTrucThuocMap: {} });
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -47,7 +69,7 @@ export default function PersonnelPage() {
   const [selectedChucVu, setSelectedChucVu] = useState<string | 'ALL'>('ALL');
   const [chucVuSearchValue, setChucVuSearchValue] = useState<string>('');
   const [selectedCapBac, setSelectedCapBac] = useState<string | 'ALL'>('ALL');
-  const [positions, setPositions] = useState<any[]>([]);
+  const [positions, setPositions] = useState<ManagerPositionRow[]>([]);
   const [tableLoading, setTableLoading] = useState(false);
   const [pagination, setPagination] = useState({
     current: 1,
@@ -64,24 +86,42 @@ export default function PersonnelPage() {
     try {
       setTableLoading(true);
 
+      const settled = await Promise.allSettled([
+        apiClient.getPersonnel({
+          page: 1,
+          limit: 10000, // Lấy tất cả để paginate ở client
+        }),
+        apiClient.getUnits(),
+        apiClient.getPositions(),
+      ]);
+
+      const personnelRes =
+        settled[0].status === 'fulfilled'
+          ? settled[0].value
+          : ({ success: false as const, message: 'Không thể tải danh sách quân nhân' } as const);
+      const unitsRes =
+        settled[1].status === 'fulfilled'
+          ? settled[1].value
+          : ({ success: false as const } as const);
+      const positionsRes =
+        settled[2].status === 'fulfilled'
+          ? settled[2].value
+          : ({ success: false as const } as const);
+
       // 1. Lấy tất cả danh sách quân nhân (không pagination) để paginate ở client-side
-      const personnelRes = await apiClient.getPersonnel({
-        page: 1,
-        limit: 10000, // Lấy tất cả để paginate ở client
-      });
       if (personnelRes.success) {
-        const personnelData = (personnelRes.data?.personnel || []).map(p => {
-          const coQuanDonViRelation =
-            p.CoQuanDonVi ||
+        const personnelData = (personnelRes.data?.personnel || []).map((p: PersonnelApiRow) => {
+          const coQuanDonViRelation = (p.CoQuanDonVi ||
             p.DonViTrucThuoc?.CoQuanDonVi ||
             p.DonVi?.CoQuanDonVi ||
-            (typeof p.co_quan_don_vi === 'object' ? p.co_quan_don_vi : null) ||
-            null;
+            (typeof p.co_quan_don_vi === 'object' && p.co_quan_don_vi ? p.co_quan_don_vi : null) ||
+            null) as UnitRelationLike | null;
 
-          const donViTrucThuocRelation =
-            p.DonViTrucThuoc ||
+          const donViTrucThuocRelation = (p.DonViTrucThuoc ||
             (p.DonVi && (p.DonVi.co_quan_don_vi_id || p.DonVi.CoQuanDonVi) ? p.DonVi : null) ||
-            (typeof p.don_vi_truc_thuoc === 'object' ? p.don_vi_truc_thuoc : null);
+            (typeof p.don_vi_truc_thuoc === 'object' && p.don_vi_truc_thuoc
+              ? p.don_vi_truc_thuoc
+              : null)) as UnitRelationLike | null;
 
           const coQuanTen = coQuanDonViRelation?.ten_don_vi || coQuanDonViRelation?.ten || null;
           const donViTen =
@@ -89,7 +129,8 @@ export default function PersonnelPage() {
 
           let donViDisplay = '-';
           if (donViTrucThuocRelation?.ten_don_vi || donViTrucThuocRelation?.ten) {
-            const tenDonVi = donViTrucThuocRelation.ten_don_vi || donViTrucThuocRelation.ten;
+            const tenDonVi =
+              donViTrucThuocRelation.ten_don_vi || donViTrucThuocRelation.ten || '';
             donViDisplay = coQuanTen ? `${tenDonVi} (${coQuanTen})` : tenDonVi;
           } else if (coQuanTen) {
             donViDisplay = coQuanTen;
@@ -117,7 +158,7 @@ export default function PersonnelPage() {
             don_vi_truc_thuoc_id: resolvedDonViTrucThuocId,
             DonViTrucThuoc: donViTrucThuocRelation,
             CoQuanDonVi: coQuanDonViRelation,
-          };
+          } as PersonnelListItem;
         });
 
         setPersonnel(personnelData);
@@ -132,58 +173,49 @@ export default function PersonnelPage() {
         message.error(personnelRes.message || 'Không thể tải danh sách quân nhân');
       }
 
-      // 2. Lấy danh sách đơn vị (không chặn khi lỗi)
-      try {
-        const unitsRes = await apiClient.getUnits();
-        if (unitsRes.success) {
-          const unitsData = unitsRes.data || [];
-          const coQuanDonViList: any[] = [];
-          const donViTrucThuocMap: Record<string, any[]> = {};
+      // 2. Danh sách đơn vị (song song với trên; lỗi thì để rỗng)
+      if (unitsRes.success) {
+        const unitsData = (unitsRes.data || []) as UnitApiRow[];
+        const coQuanDonViList: AdminCoQuanDonViRow[] = [];
+        const donViTrucThuocMap: Record<string, AdminDonViTrucThuocRow[]> = {};
 
-          unitsData.forEach((unit: any) => {
-            if (unit.co_quan_don_vi_id || unit.CoQuanDonVi) {
-              const parentId = unit.co_quan_don_vi_id || unit.CoQuanDonVi?.id;
-              if (!donViTrucThuocMap[parentId]) {
-                donViTrucThuocMap[parentId] = [];
-              }
-              donViTrucThuocMap[parentId].push({
-                id: unit.id,
-                ten_don_vi: unit.ten_don_vi,
-                ma_don_vi: unit.ma_don_vi || '',
-                type: 'don_vi_truc_thuoc',
-              });
+        unitsData.forEach(unit => {
+          if (unit.co_quan_don_vi_id || unit.CoQuanDonVi) {
+            const parentId = String(unit.co_quan_don_vi_id || unit.CoQuanDonVi?.id || '');
+            if (!parentId) return;
+            if (!donViTrucThuocMap[parentId]) {
+              donViTrucThuocMap[parentId] = [];
             }
-          });
+            donViTrucThuocMap[parentId].push({
+              id: unit.id,
+              ten_don_vi: unit.ten_don_vi,
+              ma_don_vi: unit.ma_don_vi || '',
+              type: 'don_vi_truc_thuoc',
+            });
+          }
+        });
 
-          unitsData.forEach((unit: any) => {
-            if (!unit.co_quan_don_vi_id && !unit.CoQuanDonVi) {
-              coQuanDonViList.push({
-                id: unit.id,
-                ten_don_vi: unit.ten_don_vi,
-                ma_don_vi: unit.ma_don_vi || '',
-                type: 'co_quan_don_vi',
-                donViTrucThuoc: donViTrucThuocMap[unit.id] || [],
-              });
-            }
-          });
+        unitsData.forEach(unit => {
+          if (!unit.co_quan_don_vi_id && !unit.CoQuanDonVi) {
+            coQuanDonViList.push({
+              id: unit.id,
+              ten_don_vi: unit.ten_don_vi,
+              ma_don_vi: unit.ma_don_vi || '',
+              type: 'co_quan_don_vi',
+              donViTrucThuoc: donViTrucThuocMap[unit.id] || [],
+            });
+          }
+        });
 
-          setUnits({ coQuanDonVi: coQuanDonViList, donViTrucThuocMap });
-        } else {
-          setUnits({ coQuanDonVi: [], donViTrucThuocMap: {} });
-        }
-      } catch (unitsError) {
+        setUnits({ coQuanDonVi: coQuanDonViList, donViTrucThuocMap });
+      } else {
         setUnits({ coQuanDonVi: [], donViTrucThuocMap: {} });
       }
 
-      // 3. Lấy danh sách chức vụ
-      try {
-        const positionsRes = await apiClient.getPositions();
-        if (positionsRes.success) {
-          setPositions(positionsRes.data || []);
-        } else {
-          setPositions([]);
-        }
-      } catch (positionsError) {
+      // 3. Danh sách chức vụ
+      if (positionsRes.success) {
+        setPositions((positionsRes.data || []) as ManagerPositionRow[]);
+      } else {
         setPositions([]);
       }
     } catch (error) {
@@ -256,13 +288,13 @@ export default function PersonnelPage() {
       ? units.donViTrucThuocMap[selectedCoQuanDonVi] || []
       : [];
 
-  const columns = [
+  const columns: ColumnsType<PersonnelListItem> = [
     {
       title: 'STT',
       key: 'index',
       width: 60,
-      align: 'center',
-      render: (_: any, __: any, index: number) =>
+      align: 'center' as const,
+      render: (_: unknown, __: unknown, index: number) =>
         (pagination.current - 1) * pagination.pageSize + index + 1,
     },
     {
@@ -277,7 +309,7 @@ export default function PersonnelPage() {
       key: 'co_quan_don_vi',
       width: 180,
       ellipsis: true,
-      render: (_: any, record: any) => {
+      render: (_: unknown, record: PersonnelListItem) => {
         const coQuanDonVi =
           record.CoQuanDonVi?.ten_don_vi || record.DonViTrucThuoc?.CoQuanDonVi?.ten_don_vi;
         return coQuanDonVi || '-';
@@ -288,7 +320,7 @@ export default function PersonnelPage() {
       key: 'don_vi_truc_thuoc',
       width: 180,
       ellipsis: true,
-      render: (_: any, record: any) => {
+      render: (_: unknown, record: PersonnelListItem) => {
         const donViTrucThuoc = record.DonViTrucThuoc?.ten_don_vi;
         return donViTrucThuoc || '-';
       },
@@ -297,9 +329,9 @@ export default function PersonnelPage() {
       title: 'Cấp bậc',
       key: 'cap_bac',
       width: 120,
-      align: 'center',
+      align: 'center' as const,
       ellipsis: true,
-      render: (_: any, record: any) => {
+      render: (_: unknown, record: PersonnelListItem) => {
         const capBac = record.cap_bac;
         return capBac || '-';
       },
@@ -309,7 +341,7 @@ export default function PersonnelPage() {
       key: 'chuc_vu',
       width: 180,
       ellipsis: true,
-      render: (_: any, record: any) => {
+      render: (_: unknown, record: PersonnelListItem) => {
         const chucVu = record.chuc_vu_name;
         return chucVu || '-';
       },
@@ -318,8 +350,8 @@ export default function PersonnelPage() {
       title: 'Hành động',
       key: 'action',
       width: 100,
-      align: 'center',
-      render: (_, record) => (
+      align: 'center' as const,
+      render: (_: unknown, record: PersonnelListItem) => (
         <Button
           type="primary"
           icon={<EyeOutlined />}
@@ -439,22 +471,14 @@ export default function PersonnelPage() {
                 showSearch
                 placeholder="Chọn hoặc tìm kiếm cơ quan đơn vị..."
                 optionFilterProp="label"
-                filterOption={(input, option: any) => {
-                  const label = String(option?.label || option?.children || '');
-                  const value = String(option?.value || '');
-                  const searchText = input.toLowerCase();
-                  return (
-                    label.toLowerCase().includes(searchText) ||
-                    value.toLowerCase().includes(searchText)
-                  );
-                }}
+                filterOption={filterSelectByLabelAndValue}
                 suffixIcon={<FilterOutlined />}
                 allowClear
               >
                 <Select.Option value="ALL" label="Tất cả cơ quan đơn vị">
                   Tất cả cơ quan đơn vị ({units.coQuanDonVi.length})
                 </Select.Option>
-                {units.coQuanDonVi.map((coQuanDonVi: any) => {
+                {units.coQuanDonVi.map((coQuanDonVi: AdminCoQuanDonViRow) => {
                   const label = coQuanDonVi.ma_don_vi
                     ? `${coQuanDonVi.ten_don_vi} (${coQuanDonVi.ma_don_vi})`
                     : coQuanDonVi.ten_don_vi;
@@ -495,15 +519,7 @@ export default function PersonnelPage() {
                     : 'Chọn cơ quan đơn vị trước'
                 }
                 optionFilterProp="label"
-                filterOption={(input, option: any) => {
-                  const label = String(option?.label || option?.children || '');
-                  const value = String(option?.value || '');
-                  const searchText = input.toLowerCase();
-                  return (
-                    label.toLowerCase().includes(searchText) ||
-                    value.toLowerCase().includes(searchText)
-                  );
-                }}
+                filterOption={filterSelectByLabelAndValue}
                 suffixIcon={<FilterOutlined />}
                 allowClear
                 disabled={!selectedCoQuanDonVi || selectedCoQuanDonVi === 'ALL'}
@@ -513,7 +529,7 @@ export default function PersonnelPage() {
                     Tất cả đơn vị trực thuộc ({availableDonViTrucThuoc.length})
                   </Select.Option>
                 )}
-                {availableDonViTrucThuoc.map((donVi: any) => {
+                {availableDonViTrucThuoc.map((donVi: AdminDonViTrucThuocRow) => {
                   const label = donVi.ma_don_vi
                     ? `${donVi.ten_don_vi} (${donVi.ma_don_vi})`
                     : donVi.ten_don_vi;
@@ -542,11 +558,7 @@ export default function PersonnelPage() {
                 showSearch
                 placeholder="Lọc theo Cấp bậc"
                 optionFilterProp="label"
-                filterOption={(input, option: any) => {
-                  const label = String(option?.label || option?.children || '');
-                  const searchText = input.toLowerCase();
-                  return label.toLowerCase().includes(searchText);
-                }}
+                filterOption={filterSelectByLabel}
                 suffixIcon={<FilterOutlined />}
                 allowClear
               >
@@ -581,17 +593,13 @@ export default function PersonnelPage() {
                 showSearch
                 placeholder="Lọc theo Chức vụ"
                 optionFilterProp="label"
-                filterOption={(input, option: any) => {
-                  const label = String(option?.label || option?.children || '');
-                  const searchText = input.toLowerCase();
-                  return label.toLowerCase().includes(searchText);
-                }}
+                filterOption={filterSelectByLabel}
                 suffixIcon={<FilterOutlined />}
                 allowClear
               >
                 {(() => {
                   // Filter positions dựa trên frontend
-                  const filteredPositions = positions.filter(pos => {
+                  const filteredPositions = positions.filter((pos: ManagerPositionRow) => {
                     // Nếu không chọn cơ quan đơn vị, hiển thị tất cả
                     if (!selectedCoQuanDonVi || selectedCoQuanDonVi === 'ALL') return true;
 
@@ -635,12 +643,11 @@ export default function PersonnelPage() {
             rowKey="id"
             loading={loading}
             pagination={{
+              ...DEFAULT_ANTD_TABLE_PAGINATION,
               current: pagination.current,
               pageSize: pagination.pageSize,
               total: filteredPersonnel.length, // Dùng filteredPersonnel.length thay vì total từ API
-              showSizeChanger: true,
               showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} quân nhân`,
-              pageSizeOptions: PAGE_SIZE_OPTIONS,
               onChange: (page, pageSize) => {
                 // Client-side pagination - không cần gọi API, không cần loading
                 setPagination(prev => ({

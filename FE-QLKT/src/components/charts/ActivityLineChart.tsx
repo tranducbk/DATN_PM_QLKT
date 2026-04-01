@@ -1,5 +1,6 @@
 'use client';
 
+import '@/lib/chartConfig';
 import { Line } from 'react-chartjs-2';
 import { Card } from 'antd';
 import { useChartTheme, chartTitlePlugin } from './useChartTheme';

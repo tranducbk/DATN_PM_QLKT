@@ -1,5 +1,6 @@
 'use client';
 
+import '@/lib/chartConfig';
 import { Pie } from 'react-chartjs-2';
 import type { ChartOptions } from 'chart.js';
 import { Card } from 'antd';

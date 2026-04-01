@@ -27,7 +27,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { DANH_HIEU_MAP } from '@/constants/danhHieu.constants';
 import { getApiErrorMessage } from '@/lib/apiError';
-import { DEFAULT_PAGE_SIZE } from '@/lib/constants/pagination.constants';
+import { DEFAULT_PAGE_SIZE, DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
 
 const { Title, Text } = Typography;
 
@@ -393,10 +393,9 @@ export function ImportReviewPageContent({ config }: { config: ImportReviewConfig
               rowExpandable: record => !!(record.history && record.history.length > 0),
             }}
             pagination={
-              validCount > 20
+              validCount > DEFAULT_PAGE_SIZE
                 ? {
-                    pageSize: 20,
-                    showSizeChanger: true,
+                    ...DEFAULT_ANTD_TABLE_PAGINATION,
                     showTotal: total => `Tổng ${total} bản ghi`,
                   }
                 : false
@@ -426,7 +425,7 @@ export function ImportReviewPageContent({ config }: { config: ImportReviewConfig
             pagination={
               invalidCount > 10
                 ? {
-                    pageSize: DEFAULT_PAGE_SIZE,
+                    ...DEFAULT_ANTD_TABLE_PAGINATION,
                     showTotal: total => `Tổng ${total} lỗi`,
                   }
                 : false

@@ -58,7 +58,10 @@ export default function ManagerContributionAwardsPage() {
   async function loadData() {
     try {
       setLoading(true);
-      const personnelRes = await apiClient.getPersonnelById(personnelId);
+      const [personnelRes, contributionRes] = await Promise.all([
+        apiClient.getPersonnelById(personnelId),
+        apiClient.getContributionAwards({ limit: 1000 }),
+      ]);
 
       if (!personnelRes.success || !personnelRes.data) {
         message.error('Không tìm thấy thông tin quân nhân');
@@ -68,7 +71,6 @@ export default function ManagerContributionAwardsPage() {
       setPersonnel(personnelRes.data);
 
       // Lấy dữ liệu từ API Contribution Awards (HCBVTQ) - lấy tất cả và filter theo personnelId
-      const contributionRes = await apiClient.getContributionAwards({ limit: 1000 });
 
       const mappedAwards: ContributionAward[] = [];
 

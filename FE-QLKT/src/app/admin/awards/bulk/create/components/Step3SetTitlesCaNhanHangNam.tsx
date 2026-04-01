@@ -19,7 +19,7 @@ import { EditOutlined, HistoryOutlined, EyeOutlined, ReloadOutlined } from '@ant
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
 import { PersonnelRewardHistoryModal } from './PersonnelRewardHistoryModal';
-import { DEFAULT_PAGE_SIZE } from '@/lib/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
 import { formatDate } from '@/lib/utils';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
 import {
@@ -539,8 +539,7 @@ export function Step3SetTitlesCaNhanHangNam({
         }}
         loading={loading}
         pagination={{
-          pageSize: DEFAULT_PAGE_SIZE,
-          showSizeChanger: true,
+          ...DEFAULT_ANTD_TABLE_PAGINATION,
         }}
         bordered
         locale={{

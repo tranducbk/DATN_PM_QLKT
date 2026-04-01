@@ -127,11 +127,7 @@ export default function BulkRewardDetailsPage() {
       setPersonnelData(initialData);
       form.setFieldsValue({ nam, danh_hieu: danhHieu });
 
-      // Load danh sách chức vụ
-      loadPositions();
-
-      // Load thông tin quân nhân
-      loadPersonnelInfo(personnelIds);
+      loadInitialData(personnelIds);
     } catch (error) {
       // Error handled by UI message
       message.error('Dữ liệu không hợp lệ');
@@ -139,46 +135,59 @@ export default function BulkRewardDetailsPage() {
     }
   }, [searchParams, router, form]);
 
-  const loadPositions = async () => {
-    try {
-      const res = await apiClient.getPositions();
-      if (res.success) {
-        setPositions(res.data || []);
-      }
-    } catch {
-      // Error handled by UI
-    }
-  };
-
-  const loadPersonnelInfo = async (personnelIds: string[]) => {
+  /** Chức vụ + từng quân nhân — một Promise.all (song song hoàn toàn). */
+  const loadInitialData = async (personnelIds: string[]) => {
     try {
       setLoading(true);
-      const personnelInfoPromises = personnelIds.map(async id => {
-        const res = await apiClient.getPersonnelById(id);
-        if (res.success && res.data) {
-          return {
-            personnel_id: id,
-            ho_ten: res.data.ho_ten,
-            ngay_sinh: res.data.ngay_sinh,
-            cccd: res.data.cccd,
-            cap_bac: res.data.cap_bac || '',
-            chuc_vu: res.data.ChucVu?.ten_chuc_vu || '',
-            cap_bac_edit: res.data.cap_bac || '', // Mặc định là cấp bậc hiện tại
-            chuc_vu_edit: res.data.ChucVu?.ten_chuc_vu || '', // Mặc định là chức vụ hiện tại
-            CoQuanDonVi: res.data.CoQuanDonVi,
-            DonViTrucThuoc: res.data.DonViTrucThuoc,
-          };
-        }
-        return null;
-      });
+      const results = await Promise.all([
+        apiClient.getPositions(),
+        ...personnelIds.map(id => apiClient.getPersonnelById(id)),
+      ]);
 
-      const personnelInfo = (await Promise.all(personnelInfoPromises)).filter(Boolean);
+      const positionsRes = results[0];
+      const personnelResponses = results.slice(1);
+
+      if (positionsRes.success) {
+        setPositions(positionsRes.data || []);
+      }
+
+      const personnelInfo = personnelIds
+        .map((id, i) => {
+          const res = personnelResponses[i];
+          if (res.success && res.data) {
+            const d = res.data;
+            return {
+              personnel_id: id,
+              ho_ten: d.ho_ten,
+              ngay_sinh: d.ngay_sinh,
+              cccd: d.cccd,
+              cap_bac: d.cap_bac || '',
+              chuc_vu: d.ChucVu?.ten_chuc_vu || '',
+              cap_bac_edit: d.cap_bac || '',
+              chuc_vu_edit: d.ChucVu?.ten_chuc_vu || '',
+              CoQuanDonVi: d.CoQuanDonVi,
+              DonViTrucThuoc: d.DonViTrucThuoc,
+            };
+          }
+          return null;
+        })
+        .filter(Boolean) as {
+        personnel_id: string;
+        ho_ten?: string;
+        ngay_sinh?: string;
+        cccd?: string;
+        cap_bac?: string;
+        chuc_vu?: string;
+        cap_bac_edit?: string;
+        chuc_vu_edit?: string;
+        CoQuanDonVi?: PersonnelRewardData['CoQuanDonVi'];
+        DonViTrucThuoc?: PersonnelRewardData['DonViTrucThuoc'];
+      }[];
 
       setPersonnelData(prev =>
         prev.map(item => {
-          const info = personnelInfo.find(p => p?.personnel_id === item.personnel_id);
+          const info = personnelInfo.find(p => p.personnel_id === item.personnel_id);
           if (info) {
-            // Set initial values cho form
             form.setFieldsValue({
               [`personnel_${item.personnel_id}_cap_bac`]: info.cap_bac_edit,
               [`personnel_${item.personnel_id}_chuc_vu`]: info.chuc_vu_edit,
@@ -188,8 +197,7 @@ export default function BulkRewardDetailsPage() {
           return item;
         })
       );
-    } catch (error) {
-      // Error handled by UI message
+    } catch {
       message.error('Không thể tải thông tin quân nhân');
     } finally {
       setLoading(false);

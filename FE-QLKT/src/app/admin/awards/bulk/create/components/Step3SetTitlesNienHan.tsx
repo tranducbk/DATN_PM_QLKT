@@ -8,7 +8,7 @@ import { apiClient } from '@/lib/apiClient';
 import { ServiceHistoryModal } from './ServiceHistoryModal';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
-import { DEFAULT_PAGE_SIZE } from '@/lib/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
 import { formatDate } from '@/lib/utils';
 import type { DateInput } from '@/lib/types';
 
@@ -516,8 +516,7 @@ export function Step3SetTitlesNienHan({
         }}
         loading={loading}
         pagination={{
-          pageSize: DEFAULT_PAGE_SIZE,
-          showSizeChanger: true,
+          ...DEFAULT_ANTD_TABLE_PAGINATION,
         }}
         bordered
         locale={{

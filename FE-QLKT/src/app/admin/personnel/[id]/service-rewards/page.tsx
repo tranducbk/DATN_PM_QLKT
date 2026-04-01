@@ -68,7 +68,10 @@ export default function AdminServiceRewardsPage() {
   async function loadData() {
     try {
       setLoading(true);
-      const personnelRes = await apiClient.getPersonnelById(personnelId);
+      const [personnelRes, hccsvvRes] = await Promise.all([
+        apiClient.getPersonnelById(personnelId),
+        apiClient.getHCCSVV({ limit: 1000 }),
+      ]);
 
       if (!personnelRes.success || !personnelRes.data) {
         message.error('Không tìm thấy thông tin quân nhân');
@@ -78,7 +81,6 @@ export default function AdminServiceRewardsPage() {
       setPersonnel(personnelRes.data);
 
       // Lấy dữ liệu từ API HCCSVV (Huy chương chiến sĩ vẻ vang) - lấy tất cả và filter theo personnelId
-      const hccsvvRes = await apiClient.getHCCSVV({ limit: 1000 });
 
       const mappedRewards: ServiceReward[] = [];
 

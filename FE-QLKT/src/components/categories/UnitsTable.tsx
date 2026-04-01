@@ -6,7 +6,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/apiClient';
-import { DEFAULT_PAGE_SIZE } from '@/lib/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
 import { calcUnitTotal } from '@/lib/utils';
 
 interface UnitsTableProps {
@@ -160,8 +160,7 @@ export function UnitsTable({
       rowKey="id"
       loading={loading}
       pagination={{
-        pageSize: DEFAULT_PAGE_SIZE,
-        showSizeChanger: true,
+        ...DEFAULT_ANTD_TABLE_PAGINATION,
         showTotal: total => `Tổng số ${total} đơn vị`,
       }}
       locale={{

@@ -36,6 +36,7 @@ import type { TableColumnsType } from 'antd';
 import { apiClient } from '@/lib/apiClient';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { previewFileWithApi } from '@/utils/filePreview';
+import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
 
 const { Title, Text } = Typography;
 
@@ -463,7 +464,7 @@ export default function ManagerAdhocAwardsPage() {
           loading={loading}
           scroll={{ x: 'max-content' }}
           pagination={{
-            showSizeChanger: true,
+            ...DEFAULT_ANTD_TABLE_PAGINATION,
             showTotal: total => `Tổng ${total} bản ghi`,
           }}
           onRow={record => ({

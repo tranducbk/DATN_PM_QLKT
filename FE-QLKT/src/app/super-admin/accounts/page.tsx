@@ -16,8 +16,9 @@ import {
   ConfigProvider,
   theme as antdTheme,
 } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import { getApiErrorMessage } from '@/lib/apiError';
-import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/lib/constants/pagination.constants';
+import { DEFAULT_PAGE_SIZE, DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
 
 import {
   PlusOutlined,
@@ -34,12 +35,23 @@ import { ROLES, getRoleInfo } from '@/constants/roles.constants';
 
 const { Title } = Typography;
 
+interface SuperAdminAccountRow {
+  id: string;
+  username: string;
+  role: string;
+  quan_nhan_id?: string | null;
+  ho_ten?: string;
+  don_vi?: string;
+  cap_bac?: string;
+  chuc_vu?: string;
+  createdAt: string;
+}
 
 export default function AccountsListPage() {
   const { theme } = useTheme();
   const [loading, setLoading] = useState(false);
   const [tableLoading, setTableLoading] = useState(false);
-  const [accounts, setAccounts] = useState([]);
+  const [accounts, setAccounts] = useState<SuperAdminAccountRow[]>([]);
   const [pagination, setPagination] = useState({ current: 1, pageSize: DEFAULT_PAGE_SIZE, total: 0 });
   const [searchText, setSearchText] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -53,14 +65,17 @@ export default function AccountsListPage() {
       setTableLoading(true);
     }
     try {
-      const params: any = { page, limit: pageSize };
+      const params: { page: number; limit: number; search?: string; role?: string } = {
+        page,
+        limit: pageSize,
+      };
       if (search) params.search = search;
       if (role) params.role = role;
 
       const response = await apiClient.getAccounts(params);
 
       if (response.success) {
-        setAccounts(response.data?.accounts ?? []);
+        setAccounts((response.data?.accounts ?? []) as SuperAdminAccountRow[]);
         setPagination({
           current: page,
           pageSize,
@@ -77,7 +92,7 @@ export default function AccountsListPage() {
     }
   };
 
-  const handleDelete = async (record: any) => {
+  const handleDelete = async (record: SuperAdminAccountRow) => {
     try {
       // Nếu tài khoản có liên kết quân nhân, xóa quân nhân (cascade delete tất cả)
       // Nếu không có quân nhân, chỉ xóa tài khoản
@@ -109,9 +124,14 @@ export default function AccountsListPage() {
     fetchAccounts(1, pagination.pageSize, newSearch, roleFilter);
   };
 
-  const handleTableChange = (pag: any) => {
+  const handleTableChange = (pag: { current?: number; pageSize?: number }) => {
     setTableLoading(true);
-    fetchAccounts(pag.current, pag.pageSize, debouncedSearch, roleFilter);
+    fetchAccounts(
+      pag.current ?? 1,
+      pag.pageSize ?? pagination.pageSize,
+      debouncedSearch,
+      roleFilter
+    );
   };
 
   const handleRoleFilterChange = (value: string | undefined) => {
@@ -125,14 +145,14 @@ export default function AccountsListPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const columns = [
+  const columns: ColumnsType<SuperAdminAccountRow> = [
     {
       title: 'STT',
       key: 'stt',
       width: 60,
-      fixed: 'left' as const,
-      align: 'center' as const,
-      render: (_: any, __: any, index: number) =>
+      fixed: 'left',
+      align: 'center',
+      render: (_value, _record, index) =>
         (pagination.current - 1) * pagination.pageSize + index + 1,
     },
     {
@@ -156,7 +176,7 @@ export default function AccountsListPage() {
       key: 'quan_nhan',
       width: 150,
       align: 'center' as const,
-      render: (_: any, record: any) => {
+      render: (_value, record) => {
         if (record.quan_nhan_id) {
           return <Link href={`/super-admin/accounts/${record.id}`}>{record.ho_ten}</Link>;
         }
@@ -169,14 +189,14 @@ export default function AccountsListPage() {
       width: 150,
       align: 'center' as const,
       ellipsis: true,
-      render: (_: any, record: any) => record.don_vi || <span className="text-gray-400">-</span>,
+      render: (_value, record) => record.don_vi || <span className="text-gray-400">-</span>,
     },
     {
       title: 'Cấp bậc / Chức vụ',
       key: 'cap_bac_chuc_vu',
       width: 180,
       align: 'center' as const,
-      render: (_: any, record: any) => {
+      render: (_value, record) => {
         const capBac = record.cap_bac;
         const chucVu = record.chuc_vu;
         if (!capBac && !chucVu) {
@@ -225,7 +245,7 @@ export default function AccountsListPage() {
       width: 200,
       fixed: 'right' as const,
       align: 'center' as const,
-      render: (_: any, record: any) => (
+      render: (_value, record) => (
         <Space size="small" wrap>
           <Link href={`/super-admin/accounts/${record.id}`}>
             <Button size="small">Chi tiết</Button>
@@ -324,10 +344,9 @@ export default function AccountsListPage() {
             rowKey="id"
             loading={loading || tableLoading}
             pagination={{
+              ...DEFAULT_ANTD_TABLE_PAGINATION,
               ...pagination,
               showTotal: total => `Tổng ${total} tài khoản`,
-              showSizeChanger: true,
-              pageSizeOptions: PAGE_SIZE_OPTIONS,
             }}
             onChange={handleTableChange}
             scroll={{ x: 'max-content' }}

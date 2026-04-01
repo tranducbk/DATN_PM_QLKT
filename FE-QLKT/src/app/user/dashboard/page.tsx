@@ -38,20 +38,31 @@ import {
   ExperimentOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useState, useEffect } from 'react';
 import { apiClient } from '@/lib/apiClient';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { useTheme } from '@/components/ThemeProvider';
 import { useAuth } from '@/contexts/AuthContext';
-import '@/lib/chartConfig';
-import { PieChart } from '@/components/charts';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 
 const { Title, Text, Paragraph } = Typography;
 
+const UserDashboardPieChart = dynamic(
+  () => import('@/components/charts/PieChart').then(mod => ({ default: mod.PieChart })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-[280px] items-center justify-center">
+        <Spin size="large" />
+      </div>
+    ),
+  }
+);
+
 export default function UserDashboard() {
   const { theme } = useTheme();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const [displayName, setDisplayName] = useState('Quân nhân');
   const [personnelInfo, setPersonnelInfo] = useState<any>(null);
   const [annualProfile, setAnnualProfile] = useState<any>(null);
@@ -62,6 +73,10 @@ export default function UserDashboard() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    if (authLoading) {
+      return;
+    }
+
     const fetchProfiles = async () => {
       try {
         setLoading(true);
@@ -78,38 +93,33 @@ export default function UserDashboard() {
           return;
         }
 
-        // Lấy thông tin cá nhân
-        const personnelRes = await apiClient.getPersonnelById(user.quan_nhan_id);
+        const currentYear = new Date().getFullYear();
+        const personnelId = user.quan_nhan_id;
+
+        const [personnelRes, annualRes, serviceRes, contributionRes, rewardsRes] = await Promise.all([
+          apiClient.getPersonnelById(personnelId),
+          apiClient.getAnnualProfile(personnelId, currentYear),
+          apiClient.getServiceProfile(personnelId),
+          apiClient.getContributionProfile(personnelId),
+          apiClient.getAnnualRewardsByPersonnel(personnelId),
+        ]);
+
         if (personnelRes.success) {
           setPersonnelInfo(personnelRes.data);
         }
-
-        const current_year = new Date().getFullYear();
-
-        // Lấy hồ sơ hằng năm
-        const annualRes = await apiClient.getAnnualProfile(user.quan_nhan_id, current_year);
         if (annualRes.success) {
           setAnnualProfile(annualRes.data);
         }
-
-        // Lấy hồ sơ niên hạn
-        const serviceRes = await apiClient.getServiceProfile(user.quan_nhan_id);
         if (serviceRes.success) {
           setServiceProfile(serviceRes.data);
         }
-
-        const contributionRes = await apiClient.getContributionProfile(user.quan_nhan_id);
         if (contributionRes.success) {
           setContributionProfile(contributionRes.data);
         }
-
-        // Lấy danh sách danh hiệu đã nhận
-        const rewardsRes = await apiClient.getAnnualRewardsByPersonnel(user.quan_nhan_id);
         if (rewardsRes.success) {
           setAnnualRewards(rewardsRes.data || []);
         }
       } catch (err: unknown) {
-        // Error handled by UI
         setError(getApiErrorMessage(err, 'Không thể tải hồ sơ. Vui lòng thử lại.'));
       } finally {
         setLoading(false);
@@ -117,7 +127,7 @@ export default function UserDashboard() {
     };
 
     fetchProfiles();
-  }, []);
+  }, [authLoading, user]);
 
   // Calculate service years
   const calculateServiceYears = () => {
@@ -685,7 +695,7 @@ export default function UserDashboard() {
 
                       return (
                         <div>
-                          <PieChart
+                          <UserDashboardPieChart
                             data={chartData}
                             title="Tổng các danh hiệu đã nhận"
                             height={280}

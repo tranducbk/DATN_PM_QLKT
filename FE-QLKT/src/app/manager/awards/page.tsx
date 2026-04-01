@@ -30,6 +30,7 @@ import {
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { formatDate } from '@/lib/utils';
 import type { AwardType } from '@/constants/danhHieu.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -767,8 +768,7 @@ export default function AdminAwardsPage() {
                 dataSource={filteredAwards}
                 rowKey="id"
                 pagination={{
-                  pageSize: 20,
-                  showSizeChanger: true,
+                  ...DEFAULT_ANTD_TABLE_PAGINATION,
                   showTotal: total => `Tổng ${total} bản ghi`,
                 }}
                 bordered

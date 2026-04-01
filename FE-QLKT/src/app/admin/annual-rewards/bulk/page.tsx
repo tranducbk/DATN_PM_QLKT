@@ -31,11 +31,24 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/apiClient';
-import { DEFAULT_PAGE_SIZE } from '@/lib/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
 import { formatDate } from '@/lib/utils';
 
 const { Title, Text } = Typography;
 const { Search } = Input;
+
+/** Một dòng kết quả checkAnnualRewards. */
+interface AnnualRewardCheckResultRow {
+  personnel_id: string;
+  has_reward: boolean;
+  has_proposal: boolean;
+}
+
+/** Đơn vị trong filter (getUnits). */
+interface BulkUnitOptionRow {
+  id: string;
+  ten_don_vi: string;
+}
 
 interface Personnel {
   id: number;
@@ -68,7 +81,7 @@ export default function BulkAddAnnualRewardsPage() {
     form.setFieldsValue({ nam: currentYear });
   }, [form]);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
-  const [units, setUnits] = useState<any[]>([]);
+  const [units, setUnits] = useState<BulkUnitOptionRow[]>([]);
   const [searchText, setSearchText] = useState('');
   const [filterUnitId, setFilterUnitId] = useState<number | undefined>();
   const [fileList, setFileList] = useState<UploadFile[]>([]);
@@ -114,7 +127,7 @@ export default function BulkAddAnnualRewardsPage() {
       }
 
       if (unitsRes.success) {
-        setUnits(unitsRes.data || []);
+        setUnits((unitsRes.data || []) as BulkUnitOptionRow[]);
       }
     } catch {
       message.error('Không thể tải dữ liệu');
@@ -175,8 +188,8 @@ export default function BulkAddAnnualRewardsPage() {
       if (checkResult.success && checkResult.data) {
         // Lọc ra các quân nhân có thể thêm (không có khen thưởng và không có đề xuất)
         const eligible = checkResult.data.results
-          .filter((r: any) => !r.has_reward && !r.has_proposal)
-          .map((r: any) => r.personnel_id);
+          .filter((r: AnnualRewardCheckResultRow) => !r.has_reward && !r.has_proposal)
+          .map((r: AnnualRewardCheckResultRow) => r.personnel_id);
 
         if (eligible.length === 0) {
           message.warning(
@@ -215,7 +228,7 @@ export default function BulkAddAnnualRewardsPage() {
       key: 'stt',
       width: 60,
       align: 'center',
-      render: (_: any, __: any, index: number) => index + 1,
+      render: (_value, _record, index) => index + 1,
     },
     {
       title: 'Họ tên',
@@ -234,7 +247,7 @@ export default function BulkAddAnnualRewardsPage() {
       title: 'Cơ quan đơn vị',
       key: 'co_quan_don_vi',
       width: 200,
-      render: (_: any, record: Personnel) => {
+      render: (_value, record) => {
         if (record.DonViTrucThuoc?.CoQuanDonVi) {
           return record.DonViTrucThuoc.CoQuanDonVi.ten_don_vi;
         }
@@ -245,7 +258,7 @@ export default function BulkAddAnnualRewardsPage() {
       title: 'Đơn vị trực thuộc',
       key: 'don_vi_truc_thuoc',
       width: 200,
-      render: (_: any, record: Personnel) => {
+      render: (_value, record) => {
         return record.DonViTrucThuoc?.ten_don_vi || '-';
       },
     },
@@ -253,7 +266,7 @@ export default function BulkAddAnnualRewardsPage() {
       title: 'Cấp bậc / Chức vụ',
       key: 'cap_bac_chuc_vu',
       width: 200,
-      render: (_: any, record: Personnel) => {
+      render: (_value, record) => {
         const capBac = record.cap_bac;
         const chucVu = record.ChucVu?.ten_chuc_vu;
         return (
@@ -443,9 +456,8 @@ export default function BulkAddAnnualRewardsPage() {
           rowKey={record => record?.id || `key-${Math.random()}`}
           loading={loading}
           pagination={{
-            pageSize: DEFAULT_PAGE_SIZE,
+            ...DEFAULT_ANTD_TABLE_PAGINATION,
             showTotal: total => `Tổng ${total} quân nhân`,
-            showSizeChanger: true,
           }}
           scroll={{ x: 800 }}
         />

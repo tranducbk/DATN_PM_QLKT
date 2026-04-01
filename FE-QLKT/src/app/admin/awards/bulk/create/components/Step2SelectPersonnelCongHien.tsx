@@ -18,6 +18,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { formatDate } from '@/lib/utils';
 import { apiClient } from '@/lib/apiClient';
+import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
 import { ExcelImportSection } from './ExcelImportSection';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 import { PROPOSAL_STATUS } from '@/constants/proposal.constants';
@@ -958,8 +959,7 @@ export function Step2SelectPersonnelCongHien({
           return '';
         }}
         pagination={{
-          pageSize: 20,
-          showSizeChanger: true,
+          ...DEFAULT_ANTD_TABLE_PAGINATION,
           showTotal: total => `Tổng số ${total} quân nhân`,
         }}
         bordered

@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use client';
 
 import { Spin } from 'antd';

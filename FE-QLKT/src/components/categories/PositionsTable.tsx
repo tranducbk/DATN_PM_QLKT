@@ -5,7 +5,7 @@ import { Table, Button, Space, Tag, Popconfirm, message, Empty } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/apiClient';
-import { DEFAULT_PAGE_SIZE } from '@/lib/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
 
 interface PositionsTableProps {
   positions: any[];
@@ -123,8 +123,7 @@ export function PositionsTable({ positions, onEdit, onRefresh }: PositionsTableP
       rowKey="id"
       loading={loading}
       pagination={{
-        pageSize: DEFAULT_PAGE_SIZE,
-        showSizeChanger: true,
+        ...DEFAULT_ANTD_TABLE_PAGINATION,
         showTotal: total => `Tổng số ${total} chức vụ`,
       }}
       locale={{

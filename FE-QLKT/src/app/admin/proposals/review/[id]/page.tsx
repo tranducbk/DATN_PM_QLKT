@@ -257,13 +257,15 @@ export default function ProposalDetailPage() {
                 ? parsedCongHien
                 : [];
 
+        const detailTasks: Promise<void>[] = [];
         if (personnelData.length > 0) {
-          await fetchPersonnelDetails(personnelData);
+          detailTasks.push(fetchPersonnelDetails(personnelData));
         }
-
-        // Nếu là đề xuất cống hiến, fetch lịch sử chức vụ cho tất cả quân nhân
         if (res.data.loai_de_xuat === PROPOSAL_TYPES.CONG_HIEN && parsedCongHien.length > 0) {
-          await fetchPositionHistories(parsedCongHien);
+          detailTasks.push(fetchPositionHistories(parsedCongHien));
+        }
+        if (detailTasks.length > 0) {
+          await Promise.all(detailTasks);
         }
       } else {
         setMessageAlert({ type: 'error', text: res.message || 'Không tải được đề xuất' });

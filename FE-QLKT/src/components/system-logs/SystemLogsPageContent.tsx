@@ -17,7 +17,7 @@ import { FileTextOutlined, FundOutlined, HomeOutlined, DeleteOutlined, ReloadOut
 import { LogsFilter, LogsFilterValues } from '@/components/system-logs/LogsFilter';
 import { LogsTable, LogEntry } from '@/components/system-logs/LogsTable';
 import { apiClient } from '@/lib/apiClient';
-import { PAGE_SIZE_OPTIONS } from '@/lib/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
 import { useTheme } from '@/components/ThemeProvider';
 import { useDevZone } from '@/contexts/DevZoneContext';
 import Link from 'next/link';
@@ -62,7 +62,7 @@ export function SystemLogsPageContent({ basePath }: SystemLogsPageContentProps) 
   const [deleting, setDeleting] = useState(false);
   const [pagination, setPagination] = useState({
     current: 1,
-    pageSize: 20,
+    pageSize: DEFAULT_ANTD_TABLE_PAGINATION.pageSize,
     total: 0,
   });
   const [filters, setFilters] = useState<LogsFilterValues>({
@@ -373,7 +373,7 @@ export function SystemLogsPageContent({ basePath }: SystemLogsPageContentProps) 
                   showSizeChanger
                   showQuickJumper
                   showTotal={(total, range) => `${range[0]}-${range[1]} của ${total} nhật ký`}
-                  pageSizeOptions={PAGE_SIZE_OPTIONS}
+                  pageSizeOptions={DEFAULT_ANTD_TABLE_PAGINATION.pageSizeOptions}
                   onChange={(page, pageSize) => {
                     setTableLoading(true);
                     setPagination(prev => ({

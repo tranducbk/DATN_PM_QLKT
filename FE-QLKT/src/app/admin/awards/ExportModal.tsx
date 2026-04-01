@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Modal, Select, InputNumber, Space, Typography, Table, message } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import { DownloadOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/apiClient';
 import { getApiErrorMessage } from '@/lib/apiError';
@@ -13,8 +14,25 @@ import {
   INDIVIDUAL_AWARD_TABS,
   type AwardType,
 } from '@/constants/danhHieu.constants';
+import { MODAL_TABLE_PREVIEW_PAGE_SIZE } from '@/lib/constants/pagination.constants';
 
 const { Text } = Typography;
+
+/** Dòng preview quân nhân trong modal xuất (getPersonnel theo đơn vị). */
+interface ExportPersonnelPreviewRow {
+  id: string;
+  ho_ten?: string | null;
+  cap_bac?: string | null;
+  chuc_vu_name?: string | null;
+  ChucVu?: { ten_chuc_vu?: string | null };
+}
+
+/** Dòng đơn vị trong bảng chọn (trùng state `units`). */
+interface ExportUnitPreviewRow {
+  id: string;
+  ten_don_vi: string;
+  ma_don_vi?: string;
+}
 
 interface ExportModalProps {
   open: boolean;
@@ -31,7 +49,7 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
   const [units, setUnits] = useState<{ id: string; ten_don_vi: string; ma_don_vi?: string }[]>([]);
   const [exporting, setExporting] = useState(false);
 
-  const [personnelList, setPersonnelList] = useState<any[]>([]);
+  const [personnelList, setPersonnelList] = useState<ExportPersonnelPreviewRow[]>([]);
   const [selectedPersonnelIds, setSelectedPersonnelIds] = useState<string[]>([]);
   const [selectedUnitIds, setSelectedUnitIds] = useState<string[]>([]);
   const [loadingPersonnel, setLoadingPersonnel] = useState(false);
@@ -82,7 +100,9 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
         const res = await apiClient.getPersonnel({ unit_id: donViId, limit: 1000 });
         if (res.success) {
           const list = res.data?.rows ?? res.data ?? [];
-          setPersonnelList(Array.isArray(list) ? list : []);
+          setPersonnelList(
+            Array.isArray(list) ? (list as ExportPersonnelPreviewRow[]) : []
+          );
         } else {
           setPersonnelList([]);
         }
@@ -200,13 +220,13 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
   const danhHieuList = AWARD_TAB_DANH_HIEU[activeTab] ?? [];
 
   // Personnel table columns
-  const personnelColumns = [
+  const personnelColumns: ColumnsType<ExportPersonnelPreviewRow> = [
     {
       title: 'STT',
       key: 'stt',
       width: 60,
-      align: 'center' as const,
-      render: (_: any, __: any, index: number) => index + 1,
+      align: 'center',
+      render: (_value, _record, index) => index + 1,
     },
     {
       title: 'Họ tên',
@@ -219,32 +239,32 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
       key: 'cap_bac',
       width: 120,
       ellipsis: true,
-      render: (_: any, record: any) => record.cap_bac ?? '-',
+      render: (_value, record) => record.cap_bac ?? '-',
     },
     {
       title: 'Chức vụ',
       key: 'chuc_vu',
       width: 150,
       ellipsis: true,
-      render: (_: any, record: any) => record.ChucVu?.ten_chuc_vu ?? record.chuc_vu_name ?? '-',
+      render: (_value, record) =>
+        record.ChucVu?.ten_chuc_vu ?? record.chuc_vu_name ?? '-',
     },
   ];
 
-  // Unit table columns
-  const unitColumns = [
+  const unitColumns: ColumnsType<ExportUnitPreviewRow> = [
     {
       title: 'STT',
       key: 'stt',
       width: 60,
-      align: 'center' as const,
-      render: (_: any, __: any, index: number) => index + 1,
+      align: 'center',
+      render: (_value, _record, index) => index + 1,
     },
     {
       title: 'Mã đơn vị',
       dataIndex: 'ma_don_vi',
       key: 'ma_don_vi',
       width: 120,
-      render: (val: any) => val ?? '-',
+      render: (val: string | undefined) => val ?? '-',
     },
     {
       title: 'Tên đơn vị',
@@ -349,7 +369,7 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
               rowKey="id"
               columns={unitColumns}
               dataSource={units}
-              pagination={{ pageSize: 5, size: 'small' }}
+              pagination={{ pageSize: MODAL_TABLE_PREVIEW_PAGE_SIZE, size: 'small' }}
               rowSelection={{
                 selectedRowKeys: selectedUnitIds,
                 onChange: keys => setSelectedUnitIds(keys as string[]),

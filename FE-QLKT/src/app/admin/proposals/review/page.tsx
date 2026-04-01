@@ -18,6 +18,7 @@ import {
   Col,
   Popconfirm,
 } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import { getApiErrorMessage } from '@/lib/apiError';
 
 import {
@@ -32,7 +33,7 @@ import {
   DeleteOutlined,
 } from '@ant-design/icons';
 import { apiClient } from '@/lib/apiClient';
-import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/lib/constants/pagination.constants';
+import { DEFAULT_PAGE_SIZE, DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
 import { formatDateTime } from '@/lib/utils';
 import { message } from 'antd';
 import {
@@ -171,13 +172,13 @@ export default function ProposalReviewPage() {
     />
   );
 
-  const columns = [
+  const columns: ColumnsType<Proposal> = [
     {
       title: 'STT',
       key: 'stt',
       width: 60,
-      align: 'center' as const,
-      render: (_: any, __: any, index: number) => (
+      align: 'center',
+      render: (_value, _record, index) => (
         <div style={{ textAlign: 'center' }}>{index + 1}</div>
       ),
     },
@@ -208,7 +209,7 @@ export default function ProposalReviewPage() {
       title: 'Thời gian cập nhật',
       key: 'ngay_duyet',
       align: 'center' as const,
-      render: (_: any, record: Proposal) => {
+      render: (_value, record) => {
         const dateValue = record.ngay_duyet || record.createdAt;
         if (!dateValue) return '-';
         return <div style={{ textAlign: 'center' }}>{formatDateTime(dateValue)}</div>;
@@ -226,7 +227,7 @@ export default function ProposalReviewPage() {
       key: 'so_luong',
       align: 'center' as const,
       width: 100,
-      render: (_: any, record: Proposal) => {
+      render: (_value, record) => {
         let count = 0;
         switch (record.loai_de_xuat) {
           case PROPOSAL_TYPES.NCKH:
@@ -265,7 +266,7 @@ export default function ProposalReviewPage() {
       key: 'action',
       align: 'center' as const,
       width: 200,
-      render: (_: any, record: Proposal) => (
+      render: (_value, record) => (
         <div style={{ textAlign: 'center' }}>
           <Space>
             <Button
@@ -494,11 +495,10 @@ export default function ProposalReviewPage() {
                   dataSource={filteredProposals}
                   rowKey="id"
                   pagination={{
-                    pageSize: pageSize,
+                    ...DEFAULT_ANTD_TABLE_PAGINATION,
+                    pageSize,
                     showTotal: total => `Tổng ${total} đề xuất`,
-                    showSizeChanger: true,
-                    pageSizeOptions: PAGE_SIZE_OPTIONS,
-                    onShowSizeChange: (current, size) => {
+                    onShowSizeChange: (_current, size) => {
                       setPageSize(size);
                     },
                   }}

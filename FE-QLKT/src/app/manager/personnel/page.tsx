@@ -1,7 +1,6 @@
-// @ts-nocheck
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   Button,
   Breadcrumb,
@@ -17,7 +16,7 @@ import {
   Pagination,
 } from 'antd';
 import { getApiErrorMessage } from '@/lib/apiError';
-import { PAGE_SIZE_OPTIONS } from '@/lib/constants/pagination.constants';
+import { DEFAULT_PAGE_SIZE, DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
 import { useTheme } from '@/components/ThemeProvider';
 import {
   SyncOutlined,
@@ -30,9 +29,14 @@ import {
 import { PersonnelTable } from '@/components/personnel/PersonnelTable';
 import { PersonnelForm } from '@/components/personnel/PersonnelForm';
 import { apiClient } from '@/lib/apiClient';
+import { personnelFormSchema } from '@/lib/schemas';
+import type { z } from 'zod';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
+import type { ManagerPositionRow, PersonnelListItem, UnitOptionRow } from '@/lib/types/personnelList';
+
+type PersonnelFormValues = z.infer<typeof personnelFormSchema>;
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -40,18 +44,18 @@ const { Option } = Select;
 export default function ManagerPersonnelPage() {
   const { theme } = useTheme();
   const { user } = useAuth();
-  const [personnel, setPersonnel] = useState([]);
-  const [units, setUnits] = useState([]);
-  const [positions, setPositions] = useState([]);
+  const [personnel, setPersonnel] = useState<PersonnelListItem[]>([]);
+  const [units, setUnits] = useState<UnitOptionRow[]>([]);
+  const [positions, setPositions] = useState<ManagerPositionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [viewingPersonnel, setViewingPersonnel] = useState<any>(null);
+  const [viewingPersonnel, setViewingPersonnel] = useState<PersonnelListItem | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPosition, setSelectedPosition] = useState('');
   const [selectedCapBac, setSelectedCapBac] = useState('');
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 10,
+    limit: DEFAULT_PAGE_SIZE,
     total: 0,
   });
   const [managerUnitId, setManagerUnitId] = useState<string | null>(null);
@@ -99,7 +103,7 @@ export default function ManagerPersonnelPage() {
           page: pagination.page,
           limit: pagination.limit,
           search: searchTerm,
-          unit_id: managerUnitId,
+          unit_id: managerUnitId ?? undefined,
         }),
         apiClient.getPositions(),
         apiClient.getMyUnits(),
@@ -107,7 +111,7 @@ export default function ManagerPersonnelPage() {
 
       if (personnelRes.success) {
         const data = personnelRes.data;
-        setPersonnel(data?.personnel || data || []);
+        setPersonnel((data?.personnel || data || []) as PersonnelListItem[]);
         setPagination(prev => ({
           ...prev,
           total: data?.pagination?.total || data?.total || 0,
@@ -115,11 +119,11 @@ export default function ManagerPersonnelPage() {
       }
 
       if (positionsRes.success) {
-        setPositions(positionsRes.data || []);
+        setPositions((positionsRes.data || []) as ManagerPositionRow[]);
       }
 
       if (unitsRes.success) {
-        setUnits(unitsRes.data || []);
+        setUnits((unitsRes.data || []) as UnitOptionRow[]);
       }
     } catch (error) {
       message.error('Không thể tải dữ liệu quân nhân.');
@@ -141,7 +145,7 @@ export default function ManagerPersonnelPage() {
     setPagination(prev => ({ ...prev, limit, page: 1 }));
   }, []);
 
-  const handleOpenDialog = (p?: any) => {
+  const handleOpenDialog = (p?: PersonnelListItem) => {
     setViewingPersonnel(p || null);
     setDialogOpen(true);
   };
@@ -151,9 +155,9 @@ export default function ManagerPersonnelPage() {
     setViewingPersonnel(null);
   };
 
-  const handleUpdatePersonnel = async (id: string, data: any) => {
+  const handleUpdatePersonnel = async (id: string, data: PersonnelFormValues) => {
     try {
-      const res = await apiClient.updatePersonnel(id, data);
+      const res = await apiClient.updatePersonnel(id, { ...data });
       if (res.success) {
         message.success('Cập nhật thông tin quân nhân thành công');
         loadData();
@@ -176,9 +180,9 @@ export default function ManagerPersonnelPage() {
   // 1. Chức vụ đang được sử dụng bởi quân nhân (có trong usedPositionIds)
   // 2. Và thuộc về đơn vị của manager
   // Sử dụng Map với ID làm key để loại bỏ trùng lặp theo ID
-  const filteredPositionsMapById = new Map();
+  const filteredPositionsMapById = new Map<string, ManagerPositionRow>();
   // Sử dụng Map với tên làm key để loại bỏ trùng lặp theo tên
-  const filteredPositionsMapByName = new Map();
+  const filteredPositionsMapByName = new Map<string, ManagerPositionRow>();
 
   positions.forEach(pos => {
     if (!managerUnitId) return;
@@ -231,7 +235,7 @@ export default function ManagerPersonnelPage() {
     .filter(p => {
       const matchesSearch =
         !searchTerm || (p.ho_ten && p.ho_ten.toLowerCase().includes(searchTerm.toLowerCase()));
-      const matchesPosition = !selectedPosition || p.chuc_vu_id === parseInt(selectedPosition);
+      const matchesPosition = !selectedPosition || p.chuc_vu_id === selectedPosition;
       const matchesCapBac = !selectedCapBac || p.cap_bac === selectedCapBac;
       return matchesSearch && matchesPosition && matchesCapBac;
     })
@@ -249,12 +253,21 @@ export default function ManagerPersonnelPage() {
 
   const totalPersonnel = pagination.total;
 
-  const totalSubUnits = units.filter((u: any) => {
+  const totalSubUnits = units.filter(u => {
     if (u.id === managerUnitId) {
       return false;
     }
     return !!(u.co_quan_don_vi_id || u.CoQuanDonVi);
   }).length;
+
+  const coQuanDonViList = useMemo(
+    () => units.filter(u => !u.co_quan_don_vi_id && !u.CoQuanDonVi),
+    [units]
+  );
+  const donViTrucThuocList = useMemo(
+    () => units.filter(u => !!(u.co_quan_don_vi_id || u.CoQuanDonVi)),
+    [units]
+  );
 
   const uniquePositionIds = new Set(
     personnel.map(p => p.chuc_vu_id).filter(id => id !== null && id !== undefined)
@@ -535,6 +548,7 @@ export default function ManagerPersonnelPage() {
           <Card style={{ padding: 0, marginBottom: '24px' }}>
             <PersonnelTable
               personnel={filteredPersonnel}
+              sttOffset={(pagination.page - 1) * pagination.limit}
               onEdit={handleOpenDialog}
               onRefresh={loadData}
               readOnly={false}
@@ -553,7 +567,7 @@ export default function ManagerPersonnelPage() {
               showSizeChanger
               showQuickJumper
               showTotal={(total, range) => `${range[0]}-${range[1]} của ${total} quân nhân`}
-              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              pageSizeOptions={DEFAULT_ANTD_TABLE_PAGINATION.pageSizeOptions}
               onChange={(page, pageSize) => {
                 if (pageSize !== pagination.limit) {
                   handleLimitChange(pageSize);
@@ -582,9 +596,10 @@ export default function ManagerPersonnelPage() {
           {viewingPersonnel && (
             <PersonnelForm
               personnel={viewingPersonnel}
-              units={units}
+              coQuanDonViList={coQuanDonViList}
+              donViTrucThuocList={donViTrucThuocList}
               positions={positions}
-              onSuccess={data => handleUpdatePersonnel(viewingPersonnel.id, data)}
+              onSuccess={data => handleUpdatePersonnel(String(viewingPersonnel.id), data)}
               onClose={handleCloseDialog}
               readOnly={false}
             />

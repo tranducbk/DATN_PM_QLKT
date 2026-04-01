@@ -19,7 +19,7 @@ import { useTheme } from '@/components/ThemeProvider';
 import { HomeOutlined, FilterOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
 import { apiClient } from '@/lib/apiClient';
-import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/lib/constants/pagination.constants';
+import { DEFAULT_PAGE_SIZE, DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
 import { renderAnnualAwards, COLUMN_STYLES, DANH_HIEU_MAP } from '@/utils/awardsHelpers';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 
@@ -36,12 +36,28 @@ interface Unit {
   };
 }
 
+/** Dòng khen thưởng đơn vị hằng năm (getUnitAnnualAwards). */
+interface UnitAnnualAwardRow {
+  id: string;
+  nam?: number;
+  danh_hieu?: string | null;
+  ghi_chu?: string | null;
+  so_quyet_dinh?: string | null;
+  nhan_bkbqp?: boolean;
+  nhan_bkttcp?: boolean;
+  DonViTrucThuoc?: {
+    ten_don_vi?: string | null;
+    CoQuanDonVi?: { ten_don_vi?: string | null };
+  };
+  CoQuanDonVi?: { ten_don_vi?: string | null };
+}
+
 export default function ManagerUnitsPage() {
   const { theme } = useTheme();
   const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
-  const [allAwards, setAllAwards] = useState<any[]>([]);
+  const [allAwards, setAllAwards] = useState<UnitAnnualAwardRow[]>([]);
   const [awardsLoading, setAwardsLoading] = useState(false);
   const [unitSearch, setUnitSearch] = useState('');
   const [debouncedUnitSearch, setDebouncedUnitSearch] = useState('');
@@ -83,7 +99,7 @@ export default function ManagerUnitsPage() {
         message.error(result.message || 'Không thể tải danh sách khen thưởng');
         return;
       }
-      setAllAwards(result.data ?? []);
+      setAllAwards((result.data ?? []) as UnitAnnualAwardRow[]);
     } catch {
       message.error('Không thể tải danh sách khen thưởng');
     } finally {
@@ -261,12 +277,11 @@ export default function ManagerUnitsPage() {
             dataSource={filteredUnits}
             rowKey="id"
             pagination={{
+              ...DEFAULT_ANTD_TABLE_PAGINATION,
               pageSize: unitsPageSize,
-              showSizeChanger: true,
               showQuickJumper: true,
               showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} đơn vị`,
-              pageSizeOptions: PAGE_SIZE_OPTIONS,
-              onShowSizeChange: (current, size) => {
+              onShowSizeChange: (_current, size) => {
                 setUnitsPageSize(size);
               },
             }}
@@ -396,86 +411,87 @@ export default function ManagerUnitsPage() {
           {awardsLoading ? (
             <Spin size="large" />
           ) : (
-            <Table
-              columns={[
-                {
-                  title: 'STT',
-                  key: 'stt',
-                  width: 60,
-                  align: 'center',
-                  render: (_: any, __: any, index: number) => index + 1,
-                },
-                {
-                  title: 'Năm',
-                  dataIndex: 'nam',
-                  key: 'nam',
-                  width: 80,
-                  align: 'center',
-                },
-                {
-                  title: 'Tên đơn vị',
-                  key: 'ten_don_vi',
-                  width: 200,
-                  align: 'center',
-                  render: (_: any, record: any) => {
-                    const unitName =
-                      record?.DonViTrucThuoc?.ten_don_vi ?? record?.CoQuanDonVi?.ten_don_vi ?? '';
-                    const parentName = record?.DonViTrucThuoc?.CoQuanDonVi?.ten_don_vi;
-                    if (parentName) {
-                      return (
-                        <div style={{ textAlign: 'center' }}>
-                          <div>{unitName}</div>
-                          <Text type="secondary" style={{ fontSize: 12 }}>
-                            Thuộc: {parentName}
+            <Table<UnitAnnualAwardRow>
+              columns={
+                [
+                  {
+                    title: 'STT',
+                    key: 'stt',
+                    width: 60,
+                    align: 'center',
+                    render: (_value, _record, index) => index + 1,
+                  },
+                  {
+                    title: 'Năm',
+                    dataIndex: 'nam',
+                    key: 'nam',
+                    width: 80,
+                    align: 'center',
+                  },
+                  {
+                    title: 'Tên đơn vị',
+                    key: 'ten_don_vi',
+                    width: 200,
+                    align: 'center',
+                    render: (_value, record) => {
+                      const unitName =
+                        record?.DonViTrucThuoc?.ten_don_vi ?? record?.CoQuanDonVi?.ten_don_vi ?? '';
+                      const parentName = record?.DonViTrucThuoc?.CoQuanDonVi?.ten_don_vi;
+                      if (parentName) {
+                        return (
+                          <div style={{ textAlign: 'center' }}>
+                            <div>{unitName}</div>
+                            <Text type="secondary" style={{ fontSize: 12 }}>
+                              Thuộc: {parentName}
+                            </Text>
+                          </div>
+                        );
+                      }
+                      return unitName;
+                    },
+                  },
+                  {
+                    title: 'Danh hiệu',
+                    dataIndex: 'danh_hieu',
+                    key: 'danh_hieu',
+                    width: 320,
+                    align: 'center',
+                    render: (text: string | null, record) => {
+                      return renderAnnualAwards(text, record, {
+                        onDownload: handleOpenDecisionFile,
+                      });
+                    },
+                  },
+                  {
+                    title: 'Ghi chú',
+                    key: 'ghi_chu',
+                    width: 200,
+                    align: 'center',
+                    render: (_value, record) => {
+                      if (record.ghi_chu) {
+                        return (
+                          <Text type="secondary" style={COLUMN_STYLES.noteText}>
+                            {record.ghi_chu}
                           </Text>
-                        </div>
-                      );
-                    }
-                    return unitName;
-                  },
-                },
-                {
-                  title: 'Danh hiệu',
-                  dataIndex: 'danh_hieu',
-                  key: 'danh_hieu',
-                  width: 320,
-                  align: 'center',
-                  render: (text: string | null, record: any) => {
-                    return renderAnnualAwards(text, record, {
-                      onDownload: handleOpenDecisionFile,
-                    });
-                  },
-                },
-                {
-                  title: 'Ghi chú',
-                  key: 'ghi_chu',
-                  width: 200,
-                  align: 'center',
-                  render: (_: any, record: any) => {
-                    if (record.ghi_chu) {
+                        );
+                      }
                       return (
-                        <Text type="secondary" style={COLUMN_STYLES.noteText}>
-                          {record.ghi_chu}
+                        <Text type="secondary" style={{ fontStyle: 'italic', opacity: 0.6 }}>
+                          Không có ghi chú
                         </Text>
                       );
-                    }
-                    return (
-                      <Text type="secondary" style={{ fontStyle: 'italic', opacity: 0.6 }}>
-                        Không có ghi chú
-                      </Text>
-                    );
+                    },
                   },
-                },
-              ]}
+                ] satisfies TableColumnsType<UnitAnnualAwardRow>
+              }
               dataSource={filteredAwards}
               rowKey="id"
               pagination={{
+                ...DEFAULT_ANTD_TABLE_PAGINATION,
                 pageSize: awardsPageSize,
-                showSizeChanger: true,
                 showQuickJumper: true,
                 showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} khen thưởng`,
-                pageSizeOptions: PAGE_SIZE_OPTIONS,
-                onShowSizeChange: (current, size) => {
+                onShowSizeChange: (_current, size) => {
                   setAwardsPageSize(size);
                 },
               }}

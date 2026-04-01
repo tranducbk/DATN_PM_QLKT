@@ -5,6 +5,7 @@ import { Table, Input, Select, Space, Alert, Typography, Tag, InputNumber, Empty
 import { SearchOutlined, TeamOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
+import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
 import { formatDate } from '@/lib/utils';
 import type { DateInput } from '@/lib/types';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
@@ -414,8 +415,7 @@ export function Step2SelectPersonnel({
         rowSelection={rowSelection}
         loading={loading}
         pagination={{
-          pageSize: 20,
-          showSizeChanger: true,
+          ...DEFAULT_ANTD_TABLE_PAGINATION,
           showTotal: total => `Tổng số ${total} quân nhân`,
         }}
         bordered

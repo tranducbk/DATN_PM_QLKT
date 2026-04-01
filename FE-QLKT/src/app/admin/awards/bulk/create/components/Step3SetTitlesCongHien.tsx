@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Table, Select, Alert, Typography, Space, Tag, message, Button, Input, Empty } from 'antd';
 import { EditOutlined, HistoryOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { DEFAULT_PAGE_SIZE } from '@/lib/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
 import { formatDate } from '@/lib/utils';
 import { apiClient } from '@/lib/apiClient';
 import { PositionHistoryModal } from './PositionHistoryModal';
@@ -494,8 +494,7 @@ export function Step3SetTitlesCongHien({
         }}
         loading={loading}
         pagination={{
-          pageSize: DEFAULT_PAGE_SIZE,
-          showSizeChanger: true,
+          ...DEFAULT_ANTD_TABLE_PAGINATION,
         }}
         bordered
         locale={{

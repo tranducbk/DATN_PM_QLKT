@@ -42,6 +42,7 @@ import { ProposalDetailModal } from './components/ProposalDetailModal';
 import { RejectModal } from './components/RejectModal';
 import { ApproveModal } from './components/ApproveModal';
 import { DecisionModal } from '@/components/DecisionModal';
+import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
 
 const { Title, Text } = Typography;
 
@@ -245,7 +246,7 @@ export default function AdminProposalsPage() {
       title: 'Thời gian cập nhật',
       key: 'ngay_duyet',
       width: 160,
-      render: (_: any, record: Proposal) => {
+      render: (_value, record: Proposal) => {
         const dateValue = record.ngay_duyet || record.createdAt;
         if (!dateValue) return '-';
         return formatDateTime(dateValue);
@@ -494,8 +495,7 @@ export default function AdminProposalsPage() {
             }),
           }}
           pagination={{
-            pageSize: 20,
-            showSizeChanger: true,
+            ...DEFAULT_ANTD_TABLE_PAGINATION,
             showTotal: total => `Tổng số ${total} đề xuất`,
           }}
           bordered

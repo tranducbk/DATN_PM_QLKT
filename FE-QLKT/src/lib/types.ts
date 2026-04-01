@@ -1,4 +1,7 @@
-// Types for QLKT API
+/**
+ * Type dùng chung (auth, dashboard, form đơn giản).
+ * Danh sách quân nhân chi tiết (normalize API, bảng admin/manager) — dùng `@/lib/types/personnelList`.
+ */
 
 import { ROLES } from '@/constants/roles.constants';
 
@@ -21,6 +24,7 @@ export type DateInput = string | Date | null | undefined;
 /** Điểm thời gian bắt buộc (không null) — ví dụ `calculateDuration` */
 export type DatePoint = string | Date;
 
+/** Tài khoản trong danh sách / layout — khớp payload tóm tắt từ API. */
 export interface Account {
   id: string;
   username: string;
@@ -30,6 +34,10 @@ export interface Account {
   created_at: string;
 }
 
+/**
+ * Quân nhân dạng “flat” (một `don_vi_id`) — legacy / màn hình cũ.
+ * Model đầy đủ cơ quan + đơn vị trực thuộc — xem `PersonnelListItem` trong `personnelList.ts`.
+ */
 export interface Personnel {
   id: string;
   cccd: string;
@@ -41,6 +49,7 @@ export interface Personnel {
   ngay_nhap_ngu: string;
 }
 
+/** Đơn vị tóm tắt (mã, tên, quân số) — không trùng `UnitApiRow` / cây admin. */
 export interface Unit {
   id: string;
   ma_don_vi: string;
@@ -48,6 +57,10 @@ export interface Unit {
   quan_so: number;
 }
 
+/**
+ * Chức vụ gắn một `don_vi_id` (mô hình đơn giản).
+ * Phân cấp cơ quan / trực thuộc — xem `ManagerPositionRow` trong `personnelList.ts`.
+ */
 export interface Position {
   id: string;
   ten_chuc_vu: string;

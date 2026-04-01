@@ -19,8 +19,9 @@ import {
   Row,
   Col,
 } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import { getApiErrorMessage } from '@/lib/apiError';
-import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/lib/constants/pagination.constants';
+import { DEFAULT_PAGE_SIZE, DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
 import { formatDateTime } from '@/lib/utils';
 
 import {
@@ -202,13 +203,13 @@ export default function ManagerProposalsPage() {
     />
   );
 
-  const columns = [
+  const columns: ColumnsType<Proposal> = [
     {
       title: 'STT',
       key: 'stt',
       width: 60,
-      align: 'center' as const,
-      render: (_: any, __: any, index: number) => <Text strong>{index + 1}</Text>,
+      align: 'center',
+      render: (_value, _record, index) => <Text strong>{index + 1}</Text>,
     },
     {
       title: 'Ngày gửi',
@@ -247,7 +248,7 @@ export default function ManagerProposalsPage() {
       key: 'so_luong',
       align: 'center' as const,
       width: 120,
-      render: (_: any, record: Proposal) => {
+      render: (_value, record) => {
         let count = 0;
         let tooltip = '';
 
@@ -297,7 +298,7 @@ export default function ManagerProposalsPage() {
       key: 'ngay_duyet',
       width: 180,
       align: 'center' as const,
-      render: (_: any, record: Proposal) => {
+      render: (_value, record) => {
         const dateValue = record.ngay_duyet || record.createdAt;
         if (!dateValue) return <Text type="secondary">-</Text>;
 
@@ -309,7 +310,7 @@ export default function ManagerProposalsPage() {
       key: 'action',
       align: 'center' as const,
       width: 260,
-      render: (_: any, record: Proposal) => (
+      render: (_value, record) => (
         <Space>
           {/* Tạm thời ẩn chức năng tải file Excel */}
           {/* <Tooltip title="Tải file Excel">
@@ -535,11 +536,10 @@ export default function ManagerProposalsPage() {
           rowKey="id"
           loading={loading}
           pagination={{
-            pageSize: pageSize,
+            ...DEFAULT_ANTD_TABLE_PAGINATION,
+            pageSize,
             showTotal: total => `Tổng ${total} đề xuất`,
-            showSizeChanger: true,
-            pageSizeOptions: PAGE_SIZE_OPTIONS,
-            onShowSizeChange: (current, size) => {
+            onShowSizeChange: (_current, size) => {
               setPageSize(size);
             },
           }}

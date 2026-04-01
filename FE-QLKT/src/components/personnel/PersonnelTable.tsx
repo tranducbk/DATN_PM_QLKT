@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use client';
 
 import {
@@ -14,16 +13,34 @@ import { Eye } from 'lucide-react';
 import Link from 'next/link';
 import { formatDate } from '@/lib/utils';
 
+/** Dữ liệu một dòng quân nhân cho bảng (tối thiểu các field đang render). */
+export interface PersonnelTableRow {
+  id: string;
+  ho_ten?: string | null;
+  ngay_sinh?: string | null;
+  cap_bac?: string | null;
+  ChucVu?: { ten_chuc_vu?: string | null };
+  ten_chuc_vu?: string | null;
+  CoQuanDonVi?: { ten_don_vi?: string | null };
+  DonViTrucThuoc?: {
+    ten_don_vi?: string | null;
+    CoQuanDonVi?: { ten_don_vi?: string | null };
+  };
+}
+
 interface PersonnelTableProps {
-  personnel: any[];
-  onEdit?: (p: any) => void;
+  personnel: PersonnelTableRow[];
+  /** Offset STT khi phân trang server (vd: (page - 1) * pageSize). Mặc định 0. */
+  sttOffset?: number;
+  onEdit?: (p: PersonnelTableRow) => void;
   onRefresh?: () => void;
   readOnly?: boolean;
-  viewLinkPrefix?: string; // '/admin/personnel' hoặc '/manager/personnel'
+  viewLinkPrefix?: string;
 }
 
 export function PersonnelTable({
   personnel,
+  sttOffset = 0,
   onEdit,
   onRefresh,
   readOnly = false,
@@ -62,7 +79,7 @@ export function PersonnelTable({
 
                 return (
                   <TableRow key={p.id}>
-                    <TableCell className="font-medium text-center">{index + 1}</TableCell>
+                    <TableCell className="font-medium text-center">{sttOffset + index + 1}</TableCell>
                     <TableCell className="text-center">
                       <div className="flex flex-col">
                         <span className="font-medium">{p.ho_ten}</span>

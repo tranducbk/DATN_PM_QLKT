@@ -10,9 +10,27 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { PROPOSAL_STATUS, PROPOSAL_TYPES, PROPOSAL_TYPE_LABELS } from '@/constants/proposal.constants';
-import { DEFAULT_PAGE_SIZE } from '@/lib/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
 
 const { Text, Title } = Typography;
+
+/**
+ * Một dòng trong `title_data` / `data_danh_hieu` (đề xuất khen thưởng).
+ * Danh sách admin có thể chỉ có `so_quyet_dinh` — field khác đều optional.
+ */
+interface ProposalTitleDataRow {
+  personnel_id?: string;
+  ho_ten?: string;
+  cap_bac?: string;
+  chuc_vu?: string;
+  ChucVu?: { ten_chuc_vu?: string };
+  danh_hieu?: string;
+  loai?: string;
+  mo_ta?: string;
+  so_quyet_dinh?: string | null;
+  co_quan_don_vi?: { ten_co_quan_don_vi?: string };
+  don_vi_truc_thuoc?: { ten_don_vi?: string };
+}
 
 interface Proposal {
   id: string;
@@ -42,8 +60,8 @@ interface Proposal {
     };
     username: string;
   };
-  data_danh_hieu?: any[];
-  title_data?: any[];
+  data_danh_hieu?: ProposalTitleDataRow[];
+  title_data?: ProposalTitleDataRow[];
   selected_personnel?: string[];
 }
 
@@ -73,17 +91,18 @@ export function ProposalDetailModal({
   };
 
   // Get title data
-  const titleData = proposal.title_data || proposal.data_danh_hieu || [];
+  const titleData: ProposalTitleDataRow[] =
+    proposal.title_data || proposal.data_danh_hieu || [];
   const personnelCount = proposal.selected_personnel?.length || titleData.length || 0;
 
   // Columns for title data table
-  const columns: ColumnsType<any> = [
+  const columns: ColumnsType<ProposalTitleDataRow> = [
     {
       title: 'STT',
       key: 'index',
       width: 60,
       align: 'center',
-      render: (_, __, index) => index + 1,
+      render: (_value, _record, index) => index + 1,
     },
     {
       title: 'Họ và tên',
@@ -91,7 +110,7 @@ export function ProposalDetailModal({
       key: 'ho_ten',
       width: 250,
       align: 'center',
-      render: (text: string, record: any) => {
+      render: (text: string | undefined, record) => {
         const coQuanDonVi = record.co_quan_don_vi?.ten_co_quan_don_vi;
         const donViTrucThuoc = record.don_vi_truc_thuoc?.ten_don_vi;
         const parts = [];
@@ -116,8 +135,7 @@ export function ProposalDetailModal({
       key: 'cap_bac_chuc_vu',
       width: 200,
       align: 'center',
-      render: (_: any, record: any) => {
-        // Lấy thông tin từ record nếu có
+      render: (_value, record) => {
         const capBac = record.cap_bac;
         const chucVu = record.ChucVu?.ten_chuc_vu || record.chuc_vu;
         return (
@@ -291,7 +309,7 @@ export function ProposalDetailModal({
                 const allowedTitles = ['CSTT', 'CSTDCS', 'ĐVTT', 'ĐVQT'];
                 const titleCounts: Record<string, number> = {};
 
-                titleData.forEach((item: any) => {
+                titleData.forEach(item => {
                   const title = item.danh_hieu;
                   if (title && allowedTitles.includes(title)) {
                     titleCounts[title] = (titleCounts[title] || 0) + 1;
@@ -326,7 +344,7 @@ export function ProposalDetailModal({
             dataSource={titleData}
             rowKey={(record, index) => record.personnel_id || String(index)}
             pagination={{
-              pageSize: DEFAULT_PAGE_SIZE,
+              ...DEFAULT_ANTD_TABLE_PAGINATION,
               showSizeChanger: false,
             }}
             size="small"

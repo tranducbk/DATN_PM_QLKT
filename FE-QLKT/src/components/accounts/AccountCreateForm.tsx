@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -30,16 +29,30 @@ import { message } from 'antd';
 import { useAuth } from '@/contexts/AuthContext';
 import { ROLES, roleSelectOptions } from '@/constants/roles.constants';
 import { getApiErrorMessage } from '@/lib/apiError';
+import type { ManagerPositionRow, UnitApiRow } from '@/lib/types/personnelList';
 
 type AccountCreateValues = z.infer<typeof accountCreateSchema>;
+
+/** Cơ quan đơn vị (không có `co_quan_don_vi_id`) — form tạo tài khoản. */
+interface AccountCoQuanDonViOption {
+  id: string;
+  ten_don_vi: string;
+  ma_don_vi: string;
+}
+
+/** Đơn vị trực thuộc — có `co_quan_don_vi_id` để lọc theo cơ quan. */
+interface AccountDonViTrucThuocOption extends AccountCoQuanDonViOption {
+  co_quan_don_vi_id?: string | null;
+  CoQuanDonVi?: UnitApiRow['CoQuanDonVi'] | null;
+}
 
 export function AccountCreateForm() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [coQuanDonViList, setCoQuanDonViList] = useState<any[]>([]); // Danh sách Cơ quan đơn vị
-  const [donViTrucThuocList, setDonViTrucThuocList] = useState<any[]>([]); // Danh sách Đơn vị trực thuộc (tất cả)
-  const [positions, setPositions] = useState<any[]>([]);
+  const [coQuanDonViList, setCoQuanDonViList] = useState<AccountCoQuanDonViOption[]>([]);
+  const [donViTrucThuocList, setDonViTrucThuocList] = useState<AccountDonViTrucThuocOption[]>([]);
+  const [positions, setPositions] = useState<ManagerPositionRow[]>([]);
   const router = useRouter();
   const { user } = useAuth();
   const currentUserRole = user?.role || '';
@@ -57,16 +70,16 @@ export function AccountCreateForm() {
       ]);
 
       if (unitsRes.success) {
-        const unitsData = unitsRes.data || [];
-        const coQuanDonVi: any[] = [];
-        const donViTrucThuoc: any[] = [];
+        const unitsData = (unitsRes.data || []) as UnitApiRow[];
+        const coQuanDonVi: AccountCoQuanDonViOption[] = [];
+        const donViTrucThuoc: AccountDonViTrucThuocOption[] = [];
 
-        unitsData.forEach((unit: any) => {
+        unitsData.forEach((unit: UnitApiRow) => {
           if (unit.co_quan_don_vi_id || unit.CoQuanDonVi) {
             donViTrucThuoc.push({
               id: unit.id,
               ten_don_vi: unit.ten_don_vi,
-              ma_don_vi: unit.ma_don_vi,
+              ma_don_vi: unit.ma_don_vi ?? '',
               co_quan_don_vi_id: unit.co_quan_don_vi_id,
               CoQuanDonVi: unit.CoQuanDonVi || null,
             });
@@ -74,7 +87,7 @@ export function AccountCreateForm() {
             coQuanDonVi.push({
               id: unit.id,
               ten_don_vi: unit.ten_don_vi,
-              ma_don_vi: unit.ma_don_vi,
+              ma_don_vi: unit.ma_don_vi ?? '',
             });
           }
         });
@@ -84,7 +97,7 @@ export function AccountCreateForm() {
       }
 
       if (positionsRes.success) {
-        setPositions(positionsRes.data || []);
+        setPositions((positionsRes.data || []) as ManagerPositionRow[]);
       }
     } catch {
       // Error handled by UI
@@ -212,7 +225,8 @@ export function AccountCreateForm() {
       setLoading(true);
 
       // Loại bỏ confirmPassword trước khi gửi lên server
-      const { confirmPassword, ...submitData } = values;
+      const { confirmPassword, ...rest } = values;
+      const submitData = { ...rest, password: rest.password ?? '' };
 
       const response = await apiClient.createAccount(submitData);
 

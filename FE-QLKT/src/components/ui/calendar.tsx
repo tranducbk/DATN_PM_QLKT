@@ -1,12 +1,16 @@
-// @ts-nocheck
 'use client';
 
 import * as React from 'react';
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
-import { DayPicker, getDefaultClassNames } from 'react-day-picker';
+import { DayPicker, getDefaultClassNames, type DayButtonProps } from 'react-day-picker';
+import type { VariantProps } from 'class-variance-authority';
 
 import { cn } from '@/lib/utils';
 import { Button, buttonVariants } from '@/components/ui/button';
+
+type CalendarProps = React.ComponentProps<typeof DayPicker> & {
+  buttonVariant?: VariantProps<typeof buttonVariants>['variant'];
+};
 
 function Calendar({
   className,
@@ -17,7 +21,7 @@ function Calendar({
   formatters,
   components,
   ...props
-}) {
+}: CalendarProps) {
   const defaultClassNames = getDefaultClassNames();
 
   return (
@@ -135,10 +139,10 @@ function Calendar({
   );
 }
 
-function CalendarDayButton({ className, day, modifiers, ...props }) {
+function CalendarDayButton({ className, day, modifiers, ...props }: DayButtonProps) {
   const defaultClassNames = getDefaultClassNames();
 
-  const ref = React.useRef(null);
+  const ref = React.useRef<HTMLButtonElement | null>(null);
   React.useEffect(() => {
     if (modifiers.focused) ref.current?.focus();
   }, [modifiers.focused]);

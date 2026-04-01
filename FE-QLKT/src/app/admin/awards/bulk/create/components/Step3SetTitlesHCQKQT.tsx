@@ -5,7 +5,7 @@ import { Table, Alert, Typography, Space, Tag, message, Button, Select, Input, E
 import { EditOutlined, EyeOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
-import { DEFAULT_PAGE_SIZE } from '@/lib/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
 import { formatDate } from '@/lib/utils';
 import type { DateInput } from '@/lib/types';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
@@ -343,8 +343,7 @@ export function Step3SetTitlesHCQKQT({
         }}
         loading={loading}
         pagination={{
-          pageSize: DEFAULT_PAGE_SIZE,
-          showSizeChanger: true,
+          ...DEFAULT_ANTD_TABLE_PAGINATION,
         }}
         bordered
         locale={{

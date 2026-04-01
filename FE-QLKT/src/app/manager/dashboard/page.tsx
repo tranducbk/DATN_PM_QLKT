@@ -11,6 +11,7 @@ import {
   Row,
   Col,
   Skeleton,
+  Spin,
 } from 'antd';
 import {
   TeamOutlined,
@@ -23,26 +24,39 @@ import {
   HomeOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useTheme } from '@/components/ThemeProvider';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/apiClient';
 import { formatDateTime } from '@/lib/utils';
-import '@/lib/chartConfig';
-import {
-  ActionBarChart,
-  ActivityLineChart,
-  PieChart,
-  RoleDistributionChart,
-} from '@/components/charts';
 import { PROPOSAL_STATUS_LABELS, PROPOSAL_TYPE_LABELS } from '@/constants/proposal.constants';
 import { ROLE_LABELS } from '@/constants/roles.constants';
 import { DANH_HIEU_MAP, THANH_TICH_KHOA_HOC_SHORT_LABELS } from '@/constants/danhHieu.constants';
 
 const { Title, Text } = Typography;
 
+const chartLoading = () => (
+  <div className="flex min-h-[220px] items-center justify-center py-6">
+    <Spin size="large" />
+  </div>
+);
+
+const ActionBarChart = dynamic(
+  () => import('@/components/charts/ActionBarChart').then(m => ({ default: m.ActionBarChart })),
+  { ssr: false, loading: chartLoading }
+);
+const ActivityLineChart = dynamic(
+  () => import('@/components/charts/ActivityLineChart').then(m => ({ default: m.ActivityLineChart })),
+  { ssr: false, loading: chartLoading }
+);
+const PieChart = dynamic(
+  () => import('@/components/charts/PieChart').then(m => ({ default: m.PieChart })),
+  { ssr: false, loading: chartLoading }
+);
+
 export default function ManagerDashboard() {
   const { theme } = useTheme();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [displayName, setDisplayName] = useState('Trưởng phòng');
   const [stats, setStats] = useState({
@@ -63,6 +77,10 @@ export default function ManagerDashboard() {
   });
 
   useEffect(() => {
+    if (authLoading) {
+      return;
+    }
+
     const fetchStats = async () => {
       try {
         setLoading(true);
@@ -129,7 +147,7 @@ export default function ManagerDashboard() {
     };
 
     fetchStats();
-  }, [user]);
+  }, [authLoading, user]);
 
   const statCards = [
     {

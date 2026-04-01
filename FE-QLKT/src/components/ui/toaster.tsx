@@ -1,7 +1,6 @@
-// @ts-nocheck
 'use client';
 
-import { useToast } from '@/hooks/useToast';
+import { useToast, type ToasterToast } from '@/hooks/useToast';
 import {
   Toast,
   ToastClose,
@@ -16,7 +15,7 @@ export function Toaster() {
 
   return (
     <ToastProvider>
-      {toasts.map(function ({ id, title, description, action, ...props }) {
+      {toasts.map(function ({ id, title, description, action, ...props }: ToasterToast) {
         return (
           <Toast key={id} {...props}>
             <div className="grid gap-1">

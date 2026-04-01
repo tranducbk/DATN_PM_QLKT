@@ -19,6 +19,7 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import { formatDate } from '@/lib/utils';
 import type { DateInput } from '@/lib/types';
 import { apiClient } from '@/lib/apiClient';
+import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 import { ExcelImportSection } from './ExcelImportSection';
 import * as XLSX from 'xlsx';
@@ -1074,8 +1075,7 @@ export function Step2SelectPersonnelNienHan({
           return '';
         }}
         pagination={{
-          pageSize: 20,
-          showSizeChanger: true,
+          ...DEFAULT_ANTD_TABLE_PAGINATION,
           showTotal: total => `Tổng số ${total} quân nhân`,
         }}
         bordered

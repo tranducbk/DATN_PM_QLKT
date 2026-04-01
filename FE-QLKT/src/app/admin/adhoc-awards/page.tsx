@@ -45,7 +45,7 @@ import {
 } from '@ant-design/icons';
 import type { TableColumnsType, UploadFile } from 'antd';
 import { apiClient } from '@/lib/apiClient';
-import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/lib/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { previewFileWithApi } from '@/utils/filePreview';
@@ -109,6 +109,13 @@ interface Unit {
   ten_don_vi: string;
   ma_don_vi?: string;
   co_quan_don_vi_id?: string;
+}
+
+/** Một dòng từ autocomplete quyết định. */
+interface DecisionAutocompleteRow {
+  so_quyet_dinh: string;
+  nguoi_ky: string;
+  ngay_ky: string;
 }
 
 interface PersonnelAwardInfo {
@@ -307,7 +314,7 @@ export default function AdhocAwardsPage() {
       );
       if (response.success && response.data) {
         setDecisionOptions(
-          response.data.map((item: any) => ({
+          (response.data as DecisionAutocompleteRow[]).map(item => ({
             value: item.so_quyet_dinh,
             label: `${item.so_quyet_dinh} - ${item.nguoi_ky} (${dayjs(item.ngay_ky).format('DD/MM/YYYY')})`,
           }))
@@ -1040,12 +1047,14 @@ export default function AdhocAwardsPage() {
                   title: 'Chức vụ',
                   key: 'chuc_vu',
                   width: 150,
-                  render: (_: any, record: Personnel) => record.ChucVu?.ten_chuc_vu || '-',
+                  render: (_value, record: Personnel) => record.ChucVu?.ten_chuc_vu || '-',
                 },
               ]}
               dataSource={filteredPersonnel}
               rowKey="id"
-              pagination={{ pageSize: DEFAULT_PAGE_SIZE, showSizeChanger: true }}
+              pagination={{
+                ...DEFAULT_ANTD_TABLE_PAGINATION,
+              }}
               scroll={{ y: 300 }}
               size="small"
             />
@@ -1157,7 +1166,7 @@ export default function AdhocAwardsPage() {
                   title: 'Loại',
                   key: 'loai',
                   width: 150,
-                  render: (_: any, record: Unit) => {
+                  render: (_value, record: Unit) => {
                     const isCoQuan = units.find(u => u.id === record.id);
                     return (
                       <Tag color={isCoQuan ? 'blue' : 'green'}>
@@ -1169,7 +1178,9 @@ export default function AdhocAwardsPage() {
               ]}
               dataSource={filteredUnits}
               rowKey="id"
-              pagination={{ pageSize: DEFAULT_PAGE_SIZE, showSizeChanger: true }}
+              pagination={{
+                ...DEFAULT_ANTD_TABLE_PAGINATION,
+              }}
               scroll={{ y: 300 }}
               size="small"
             />
@@ -1410,8 +1421,7 @@ export default function AdhocAwardsPage() {
                     {
                       title: 'Cấp bậc',
                       key: 'cap_bac',
-                      render: (_, record: any) => {
-                        // Lấy cấp bậc từ personnelAwardInfo (đã chỉnh sửa) nếu có
+                      render: (_value, record: Personnel) => {
                         const awardInfo = createFormData.personnelAwardInfo.find(
                           info => info.personnelId === record.id
                         );
@@ -1421,8 +1431,7 @@ export default function AdhocAwardsPage() {
                     {
                       title: 'Chức vụ',
                       key: 'chuc_vu',
-                      render: (_, record: any) => {
-                        // Lấy chức vụ từ personnelAwardInfo (đã chỉnh sửa) nếu có
+                      render: (_value, record: Personnel) => {
                         const awardInfo = createFormData.personnelAwardInfo.find(
                           info => info.personnelId === record.id
                         );
@@ -1432,7 +1441,7 @@ export default function AdhocAwardsPage() {
                   ]}
                   dataSource={createFormData.personnelIds
                     .map(id => personnel.find(p => p.id === id))
-                    .filter(Boolean)}
+                    .filter((p): p is Personnel => p != null)}
                   rowKey="id"
                   pagination={false}
                   size="small"
@@ -1445,7 +1454,7 @@ export default function AdhocAwardsPage() {
                     {
                       title: 'Loại',
                       key: 'loai',
-                      render: (_: any, record: Unit | undefined) => {
+                      render: (_value, record: Unit | undefined) => {
                         const isCoQuan = units.find(u => u.id === record?.id);
                         return (
                           <Tag color={isCoQuan ? 'blue' : 'green'}>
@@ -1621,10 +1630,8 @@ export default function AdhocAwardsPage() {
           loading={loading}
           scroll={{ x: 'max-content' }}
           pagination={{
-            pageSize: DEFAULT_PAGE_SIZE,
-            showSizeChanger: true,
+            ...DEFAULT_ANTD_TABLE_PAGINATION,
             showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} bản ghi`,
-            pageSizeOptions: PAGE_SIZE_OPTIONS,
           }}
           onRow={record => ({
             onClick: () => handleOpenDetailModal(record),

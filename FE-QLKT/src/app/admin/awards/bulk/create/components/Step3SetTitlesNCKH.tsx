@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Table, Select, Input, Alert, Typography, Space, Button, Modal, Tabs, Tag, Empty } from 'antd';
 import { EditOutlined, HistoryOutlined, EyeOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { DEFAULT_PAGE_SIZE } from '@/lib/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
 import { formatDate } from '@/lib/utils';
 import { apiClient } from '@/lib/apiClient';
 import { ScientificAchievementHistoryModal } from './ScientificAchievementHistoryModal';
@@ -396,8 +396,7 @@ export function Step3SetTitlesNCKH({
         }}
         loading={loading}
         pagination={{
-          pageSize: DEFAULT_PAGE_SIZE,
-          showSizeChanger: true,
+          ...DEFAULT_ANTD_TABLE_PAGINATION,
         }}
         bordered
         locale={{

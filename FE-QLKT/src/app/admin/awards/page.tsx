@@ -31,7 +31,7 @@ import {
 import { AWARD_TAB_DANH_HIEU, type AwardType } from '@/constants/danhHieu.constants';
 
 import { ExportModal } from './ExportModal';
-import { PAGE_SIZE_OPTIONS } from '@/lib/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
 import { formatDate } from '@/lib/utils';
 
 const { Title, Paragraph, Text } = Typography;
@@ -834,10 +834,8 @@ export default function AdminAwardsPage() {
                 dataSource={filteredAwards}
                 rowKey="id"
                 pagination={{
-                  pageSize: 20,
-                  showSizeChanger: true,
+                  ...DEFAULT_ANTD_TABLE_PAGINATION,
                   showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} bản ghi`,
-                  pageSizeOptions: PAGE_SIZE_OPTIONS,
                 }}
                 bordered
               />
