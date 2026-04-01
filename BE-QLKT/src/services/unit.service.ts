@@ -15,7 +15,7 @@ interface UpdateUnitData {
 
 class UnitService {
   async getAllUnits(options: { hierarchy?: boolean; page?: number; limit?: number } = {}) {
-    const { hierarchy = false, page = 1, limit = 100 } = options;
+    const { hierarchy = false, page = 1, limit = 20 } = options;
 
     if (hierarchy) {
       const include = {

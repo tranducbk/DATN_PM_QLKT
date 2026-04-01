@@ -8,8 +8,7 @@ class UnitController {
   getAllUnits = catchAsync(async (req: Request, res: Response) => {
     const hierarchy = req.query.hierarchy === 'true';
     const { page, limit } = parsePagination(req.query);
-    const result = await unitService.getAllUnits({ hierarchy, page, limit });
-    const { items, total } = result as { items: unknown[]; total: number };
+    const { items, total } = await unitService.getAllUnits({ hierarchy, page, limit });
     return ResponseHelper.paginated(res, {
       data: items,
       total,
