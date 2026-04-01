@@ -4,10 +4,10 @@ import { getApiErrorMessage } from '@/lib/apiError';
 type ApiResponse<T = any> = { success: boolean; data?: T; message?: string };
 
 // Units
-export async function getUnits(params?: { hierarchy?: boolean }): Promise<ApiResponse> {
+export async function getUnits(params?: { hierarchy?: boolean; page?: number; limit?: number }): Promise<ApiResponse & { pagination?: { total: number; page: number; limit: number; totalPages: number } }> {
   try {
     const res = await axiosInstance.get('/api/units', { params });
-    return { success: true, data: res.data?.data };
+    return { success: true, data: res.data?.data, pagination: res.data?.pagination };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }

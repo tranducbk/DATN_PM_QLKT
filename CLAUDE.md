@@ -71,7 +71,10 @@ PM QLKT/
 - **Layered**: Route → Middleware → Controller → Service → Prisma
 - **Middleware chain**: `verifyToken → requireRole → validate(schema) → auditLog(options) → controller.method`
 - **Async errors**: Wrap controllers with `catchAsync()` helper
-- **Responses**: Always use `ResponseHelper.success()`, `.created()`, `.badRequest()`, `.notFound()`, etc.
+- **Responses**: Always use `ResponseHelper.success()`, `.created()`, `.paginated()`, `.badRequest()`, `.notFound()`, etc.
+- **List APIs**: Luôn dùng `ResponseHelper.paginated()` để trả `data` + `pagination.total` — kể cả khi chưa phân trang thật (default limit cao)
+- **Unit priority**: Khi xác định đơn vị của quân nhân, luôn ưu tiên `don_vi_truc_thuoc_id || co_quan_don_vi_id` (DVTT trước, CQDV sau — vì CQDV có thể là đơn vị cha)
+- **Unit count (`so_luong`)**: Khi thay đổi đơn vị quân nhân, dùng `if/else` (chỉ increment/decrement 1 đơn vị), không dùng 2 `if` riêng biệt (tránh đếm dư)
 - **Validation**: Joi schemas in `validations/` directory
 - **Error classes**: `AppError`, `NotFoundError`, `ForbiddenError`
 

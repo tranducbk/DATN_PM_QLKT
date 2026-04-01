@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { prisma } from '../models';
 import profileService from '../services/profile.service';
 import unitAnnualAwardService from '../services/unitAnnualAward.service';
+import unitService from '../services/unit.service';
 import cron from 'node-cron';
 import type { ScheduledTask } from 'node-cron';
 import { SETTING_DEFAULTS, AWARD_TYPES, SYSTEM_FEATURES } from '../constants/devZone.constants';
@@ -34,9 +35,10 @@ const runCronJob = async () => {
   lastCronRun = new Date().toISOString();
   await setSetting('cron_last_run', lastCronRun);
   try {
-    const [personnelResult, unitRecalculated] = await Promise.all([
+    const [personnelResult, unitRecalculated, unitCountUpdated] = await Promise.all([
       profileService.recalculateAll(),
       unitAnnualAwardService.recalculate({ don_vi_id: undefined, nam: undefined }),
+      unitService.recalculatePersonnelCount(),
     ]);
     const totalSuccess = (personnelResult.success || 0) + unitRecalculated;
     const totalErrors = personnelResult.errors?.length || 0;
@@ -53,11 +55,12 @@ const runCronJob = async () => {
       userRole: 'SYSTEM',
       action: AUDIT_ACTIONS.RECALCULATE,
       resource: 'profiles',
-      description: `Cron job tính toán hồ sơ: cá nhân ${personnelResult.success} thành công (${totalErrors} lỗi), đơn vị ${unitRecalculated} bản ghi`,
+      description: `Cron job tính toán hồ sơ: cá nhân ${personnelResult.success} thành công (${totalErrors} lỗi), đơn vị ${unitRecalculated} bản ghi, quân số ${unitCountUpdated} đơn vị cập nhật`,
       payload: {
         personnelSuccess: personnelResult.success,
         personnelErrors: totalErrors,
         unitRecalculated,
+        unitCountUpdated,
         schedule: await getSetting('cron_schedule', '0 1 1 * *'),
       },
     });
@@ -213,6 +216,30 @@ router.put('/cron/schedule', verifyDevPassword, async (req: Request, res: Respon
     message: `Cron job ${cronEnabled ? 'đã bật' : 'đã tắt'}. Lịch: ${cronSchedule}`,
     data: { enabled: cronEnabled, schedule: cronSchedule },
   });
+});
+
+router.post('/recalculate-unit-count', verifyDevPassword, async (req: Request, res: Response) => {
+  try {
+    const updated = await unitService.recalculatePersonnelCount();
+
+    await writeSystemLog({
+      userId: 'SYSTEM',
+      userRole: 'SYSTEM',
+      action: AUDIT_ACTIONS.RECALCULATE,
+      resource: 'units',
+      description: `Tính lại quân số đơn vị: ${updated} đơn vị đã cập nhật`,
+      payload: { updated },
+    });
+
+    res.json({
+      success: true,
+      message: `Đã cập nhật quân số cho ${updated} đơn vị`,
+      data: { updated },
+    });
+  } catch (error: unknown) {
+    const errMessage = error instanceof Error ? error.message : String(error);
+    res.status(500).json({ success: false, message: errMessage });
+  }
 });
 
 router.put('/features', verifyDevPassword, async (req: Request, res: Response) => {

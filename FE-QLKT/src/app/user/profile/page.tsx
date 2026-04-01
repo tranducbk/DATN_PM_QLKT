@@ -31,6 +31,7 @@ import {
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { apiClient } from '@/lib/apiClient';
+import { DEFAULT_PAGE_SIZE } from '@/lib/constants/pagination.constants';
 import { calculateDuration, formatDate } from '@/lib/utils';
 import { useTheme } from '@/components/ThemeProvider';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
@@ -1460,7 +1461,7 @@ export default function UserProfilePage() {
             columns={scientificColumns}
             rowKey="id"
             pagination={{
-              pageSize: 10,
+              pageSize: DEFAULT_PAGE_SIZE,
               showTotal: total => `Tổng ${total} bản ghi`,
               showSizeChanger: true,
             }}
@@ -1497,7 +1498,7 @@ export default function UserProfilePage() {
             columns={positionHistoryColumns}
             rowKey="id"
             pagination={{
-              pageSize: 10,
+              pageSize: DEFAULT_PAGE_SIZE,
               showTotal: total => `Tổng ${total} bản ghi`,
               showSizeChanger: true,
             }}
@@ -1534,7 +1535,7 @@ export default function UserProfilePage() {
             columns={adhocColumns}
             rowKey="id"
             pagination={{
-              pageSize: 10,
+              pageSize: DEFAULT_PAGE_SIZE,
               showTotal: total => `Tổng ${total} bản ghi`,
               showSizeChanger: true,
             }}

@@ -6,6 +6,8 @@ import type { ColumnsType } from 'antd/es/table';
 import { EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/apiClient';
+import { DEFAULT_PAGE_SIZE } from '@/lib/constants/pagination.constants';
+import { calcUnitTotal } from '@/lib/utils';
 
 interface UnitsTableProps {
   units: any[];
@@ -62,11 +64,10 @@ export function UnitsTable({
     },
     {
       title: 'Quân số',
-      dataIndex: 'so_luong',
       key: 'so_luong',
       width: 100,
       align: 'center',
-      render: val => val ?? 0,
+      render: (_, record) => calcUnitTotal(record),
     },
   ];
 
@@ -159,7 +160,7 @@ export function UnitsTable({
       rowKey="id"
       loading={loading}
       pagination={{
-        pageSize: 10,
+        pageSize: DEFAULT_PAGE_SIZE,
         showSizeChanger: true,
         showTotal: total => `Tổng số ${total} đơn vị`,
       }}

@@ -288,20 +288,12 @@ class PersonnelService {
       if (isCoQuanDonVi) {
         await tx.coQuanDonVi.update({
           where: { id: unit_id },
-          data: {
-            so_luong: {
-              increment: 1,
-            },
-          },
+          data: { so_luong: { increment: 1 } },
         });
       } else {
         await tx.donViTrucThuoc.update({
           where: { id: unit_id },
-          data: {
-            so_luong: {
-              increment: 1,
-            },
-          },
+          data: { so_luong: { increment: 1 } },
         });
       }
 
@@ -788,9 +780,9 @@ class PersonnelService {
       throw new ValidationError('Không thể xóa chính mình');
     }
 
-    // Lưu lại đơn vị để cập nhật số lượng sau khi xóa
-    const unitId = personnel.co_quan_don_vi_id || personnel.don_vi_truc_thuoc_id;
-    const isCoQuanDonVi = !!personnel.co_quan_don_vi_id;
+    // Lưu lại đơn vị để cập nhật số lượng sau khi xóa (ưu tiên DVTT vì CQDV có thể là đơn vị cha)
+    const unitId = personnel.don_vi_truc_thuoc_id || personnel.co_quan_don_vi_id;
+    const isCoQuanDonVi = !personnel.don_vi_truc_thuoc_id && !!personnel.co_quan_don_vi_id;
 
     // Sử dụng transaction để đảm bảo tính toàn vẹn dữ liệu
     await prisma.$transaction(async tx => {
@@ -867,20 +859,12 @@ class PersonnelService {
           if (isCoQuanDonVi) {
             await tx.coQuanDonVi.update({
               where: { id: unitId },
-              data: {
-                so_luong: {
-                  decrement: 1,
-                },
-              },
+              data: { so_luong: { decrement: 1 } },
             });
           } else {
             await tx.donViTrucThuoc.update({
               where: { id: unitId },
-              data: {
-                so_luong: {
-                  decrement: 1,
-                },
-              },
+              data: { so_luong: { decrement: 1 } },
             });
           }
         } catch (error) {
@@ -1185,10 +1169,10 @@ class PersonnelService {
 
         created.push(newPersonnel.id);
       } else {
-        // Kiểm tra nếu đổi đơn vị
-        const oldUnitId = existing.co_quan_don_vi_id || existing.don_vi_truc_thuoc_id;
+        // Kiểm tra nếu đổi đơn vị (ưu tiên DVTT vì CQDV có thể là đơn vị cha)
+        const oldUnitId = existing.don_vi_truc_thuoc_id || existing.co_quan_don_vi_id;
         const newUnitId = unit.id;
-        const oldIsCoQuanDonVi = !!existing.co_quan_don_vi_id;
+        const oldIsCoQuanDonVi = !existing.don_vi_truc_thuoc_id && !!existing.co_quan_don_vi_id;
 
         const updateData: Prisma.QuanNhanUncheckedUpdateInput = {
           ho_ten,

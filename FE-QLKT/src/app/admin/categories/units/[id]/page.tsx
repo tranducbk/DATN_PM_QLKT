@@ -21,6 +21,7 @@ import { UnitsTable } from '@/components/categories/UnitsTable';
 import { PositionForm } from '@/components/categories/PositionForm';
 import { PositionsTable } from '@/components/categories/PositionsTable';
 import { apiClient } from '@/lib/apiClient';
+import { calcUnitTotal } from '@/lib/utils';
 import { useTheme } from '@/components/ThemeProvider';
 import Link from 'next/link';
 
@@ -239,7 +240,7 @@ export default function UnitDetailPage() {
                       {unit.ten_don_vi}
                     </Descriptions.Item>
                     <Descriptions.Item label="Số lượng quân nhân" span={1}>
-                      {unit.so_luong || 0}
+                      {calcUnitTotal(unit)}
                     </Descriptions.Item>
                     {/* Chỉ hiển thị "Cơ quan đơn vị" nếu đơn vị là đơn vị trực thuộc (có co_quan_don_vi_id) */}
                     {isDonViTrucThuoc && (

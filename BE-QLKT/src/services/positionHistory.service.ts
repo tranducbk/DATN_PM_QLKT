@@ -43,7 +43,8 @@ class PositionHistoryService {
       if (!mEnd2) {
         return true;
       }
-      return mStart2.isSameOrAfter(mStart1);
+      // [start1, ∞) vs [start2, end2]: trùng khi end2 >= start1
+      return mEnd2.isSameOrAfter(mStart1);
     }
 
     if (!mEnd2) {

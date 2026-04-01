@@ -19,6 +19,7 @@ import { useTheme } from '@/components/ThemeProvider';
 import { HomeOutlined, FilterOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
 import { apiClient } from '@/lib/apiClient';
+import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/lib/constants/pagination.constants';
 import { renderAnnualAwards, COLUMN_STYLES, DANH_HIEU_MAP } from '@/utils/awardsHelpers';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 
@@ -50,8 +51,8 @@ export default function ManagerUnitsPage() {
     danh_hieu: '',
   });
   const [debouncedFilters, setDebouncedFilters] = useState(filters);
-  const [awardsPageSize, setAwardsPageSize] = useState(10);
-  const [unitsPageSize, setUnitsPageSize] = useState(10);
+  const [awardsPageSize, setAwardsPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [unitsPageSize, setUnitsPageSize] = useState(DEFAULT_PAGE_SIZE);
 
   useEffect(() => {
     fetchUnits();
@@ -264,7 +265,7 @@ export default function ManagerUnitsPage() {
               showSizeChanger: true,
               showQuickJumper: true,
               showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} đơn vị`,
-              pageSizeOptions: ['10', '20', '50', '100'],
+              pageSizeOptions: PAGE_SIZE_OPTIONS,
               onShowSizeChange: (current, size) => {
                 setUnitsPageSize(size);
               },
@@ -473,7 +474,7 @@ export default function ManagerUnitsPage() {
                 showSizeChanger: true,
                 showQuickJumper: true,
                 showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} khen thưởng`,
-                pageSizeOptions: ['10', '20', '50', '100'],
+                pageSizeOptions: PAGE_SIZE_OPTIONS,
                 onShowSizeChange: (current, size) => {
                   setAwardsPageSize(size);
                 },

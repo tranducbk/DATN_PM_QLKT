@@ -14,45 +14,37 @@ interface UpdateUnitData {
 }
 
 class UnitService {
-  async getAllUnits(includeHierarchy = false) {
-    if (includeHierarchy) {
-      const coQuanDonVi = await prisma.coQuanDonVi.findMany({
-        include: {
-          DonViTrucThuoc: {
-            include: {
-              ChucVu: true,
-            },
-          },
-          ChucVu: true,
-        },
-        orderBy: {
-          ma_don_vi: 'asc',
-        },
-      });
+  async getAllUnits(options: { hierarchy?: boolean; page?: number; limit?: number } = {}) {
+    const { hierarchy = false, page = 1, limit = 100 } = options;
 
-      return coQuanDonVi;
-    } else {
-      const [coQuanDonVi, donViTrucThuoc] = await Promise.all([
+    if (hierarchy) {
+      const include = {
+        DonViTrucThuoc: { include: { ChucVu: true } },
+        ChucVu: true,
+      };
+      const orderBy = { ma_don_vi: 'asc' as const };
+
+      const [items, total] = await Promise.all([
         prisma.coQuanDonVi.findMany({
-          include: {
-            ChucVu: true,
-          },
-          orderBy: {
-            ma_don_vi: 'asc',
-          },
+          include,
+          orderBy,
+          skip: (page - 1) * limit,
+          take: limit,
         }),
-        prisma.donViTrucThuoc.findMany({
-          include: {
-            CoQuanDonVi: true,
-            ChucVu: true,
-          },
-          orderBy: {
-            ma_don_vi: 'asc',
-          },
-        }),
+        prisma.coQuanDonVi.count(),
       ]);
-
-      return [...coQuanDonVi, ...donViTrucThuoc];
+      return { items, total };
+    } else {
+      const [items, total] = await Promise.all([
+        prisma.donViTrucThuoc.findMany({
+          include: { CoQuanDonVi: true, ChucVu: true },
+          orderBy: { ma_don_vi: 'asc' },
+          skip: (page - 1) * limit,
+          take: limit,
+        }),
+        prisma.donViTrucThuoc.count(),
+      ]);
+      return { items, total };
     }
   }
 
@@ -440,6 +432,49 @@ class UnitService {
     }
 
     return coQuanDonVi || donViTrucThuoc;
+  }
+
+  /**
+   * Tính lại so_luong cho tất cả đơn vị dựa trên số quân nhân thực tế.
+   * @returns Số đơn vị đã được cập nhật
+   */
+  async recalculatePersonnelCount() {
+    const [coQuanDonViList, donViTrucThuocList, cqdvCounts, dvttCounts] = await Promise.all([
+      prisma.coQuanDonVi.findMany({ select: { id: true, so_luong: true } }),
+      prisma.donViTrucThuoc.findMany({ select: { id: true, so_luong: true } }),
+      prisma.quanNhan.groupBy({
+        by: ['co_quan_don_vi_id'],
+        where: { co_quan_don_vi_id: { not: null }, don_vi_truc_thuoc_id: null },
+        _count: true,
+      }),
+      prisma.quanNhan.groupBy({
+        by: ['don_vi_truc_thuoc_id'],
+        where: { don_vi_truc_thuoc_id: { not: null } },
+        _count: true,
+      }),
+    ]);
+
+    const cqdvCountMap = new Map(cqdvCounts.map(c => [c.co_quan_don_vi_id!, c._count]));
+    const dvttCountMap = new Map(dvttCounts.map(c => [c.don_vi_truc_thuoc_id!, c._count]));
+
+    const cqdvToUpdate = coQuanDonViList.filter(u => u.so_luong !== (cqdvCountMap.get(u.id) ?? 0));
+    const dvttToUpdate = donViTrucThuocList.filter(u => u.so_luong !== (dvttCountMap.get(u.id) ?? 0));
+    const updated = cqdvToUpdate.length + dvttToUpdate.length;
+
+    if (updated > 0) {
+      await Promise.all([
+        ...cqdvToUpdate.map(u => prisma.coQuanDonVi.update({
+          where: { id: u.id },
+          data: { so_luong: cqdvCountMap.get(u.id) ?? 0 },
+        })),
+        ...dvttToUpdate.map(u => prisma.donViTrucThuoc.update({
+          where: { id: u.id },
+          data: { so_luong: dvttCountMap.get(u.id) ?? 0 },
+        })),
+      ]);
+    }
+
+    return updated;
   }
 }
 

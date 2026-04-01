@@ -17,6 +17,7 @@ import { FileTextOutlined, FundOutlined, HomeOutlined, DeleteOutlined, ReloadOut
 import { LogsFilter, LogsFilterValues } from '@/components/system-logs/LogsFilter';
 import { LogsTable, LogEntry } from '@/components/system-logs/LogsTable';
 import { apiClient } from '@/lib/apiClient';
+import { PAGE_SIZE_OPTIONS } from '@/lib/constants/pagination.constants';
 import { useTheme } from '@/components/ThemeProvider';
 import { useDevZone } from '@/contexts/DevZoneContext';
 import Link from 'next/link';
@@ -372,7 +373,7 @@ export function SystemLogsPageContent({ basePath }: SystemLogsPageContentProps) 
                   showSizeChanger
                   showQuickJumper
                   showTotal={(total, range) => `${range[0]}-${range[1]} của ${total} nhật ký`}
-                  pageSizeOptions={['10', '20', '50', '100']}
+                  pageSizeOptions={PAGE_SIZE_OPTIONS}
                   onChange={(page, pageSize) => {
                     setTableLoading(true);
                     setPagination(prev => ({

@@ -27,6 +27,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { DANH_HIEU_MAP } from '@/constants/danhHieu.constants';
 import { getApiErrorMessage } from '@/lib/apiError';
+import { DEFAULT_PAGE_SIZE } from '@/lib/constants/pagination.constants';
 
 const { Title, Text } = Typography;
 
@@ -425,7 +426,7 @@ export function ImportReviewPageContent({ config }: { config: ImportReviewConfig
             pagination={
               invalidCount > 10
                 ? {
-                    pageSize: 10,
+                    pageSize: DEFAULT_PAGE_SIZE,
                     showTotal: total => `Tổng ${total} lỗi`,
                   }
                 : false

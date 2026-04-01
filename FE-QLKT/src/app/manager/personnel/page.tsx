@@ -17,7 +17,7 @@ import {
   Pagination,
 } from 'antd';
 import { getApiErrorMessage } from '@/lib/apiError';
-
+import { PAGE_SIZE_OPTIONS } from '@/lib/constants/pagination.constants';
 import { useTheme } from '@/components/ThemeProvider';
 import {
   SyncOutlined,
@@ -553,7 +553,7 @@ export default function ManagerPersonnelPage() {
               showSizeChanger
               showQuickJumper
               showTotal={(total, range) => `${range[0]}-${range[1]} của ${total} quân nhân`}
-              pageSizeOptions={['10', '20', '50']}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
               onChange={(page, pageSize) => {
                 if (pageSize !== pagination.limit) {
                   handleLimitChange(pageSize);

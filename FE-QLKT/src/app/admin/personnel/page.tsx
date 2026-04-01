@@ -29,6 +29,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/apiClient';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
+import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/lib/constants/pagination.constants';
 
 const { Title, Text } = Typography;
 
@@ -50,7 +51,7 @@ export default function PersonnelPage() {
   const [tableLoading, setTableLoading] = useState(false);
   const [pagination, setPagination] = useState({
     current: 1,
-    pageSize: 10,
+    pageSize: DEFAULT_PAGE_SIZE,
     total: 0,
   });
   const router = useRouter();
@@ -639,7 +640,7 @@ export default function PersonnelPage() {
               total: filteredPersonnel.length, // Dùng filteredPersonnel.length thay vì total từ API
               showSizeChanger: true,
               showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} quân nhân`,
-              pageSizeOptions: ['10', '20', '50', '100'],
+              pageSizeOptions: PAGE_SIZE_OPTIONS,
               onChange: (page, pageSize) => {
                 // Client-side pagination - không cần gọi API, không cần loading
                 setPagination(prev => ({

@@ -31,6 +31,7 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
 import { previewFile } from '@/utils/filePreview';
+import { PAGE_SIZE_OPTIONS } from '@/lib/constants/pagination.constants';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { LOAI_KHEN_THUONG_OPTIONS, getLoaiDeXuatName } from '@/constants/danhHieu.constants';
 import dayjs from 'dayjs';
@@ -363,7 +364,7 @@ export default function AdminDecisionsPage() {
             total: pagination.total,
             showSizeChanger: true,
             showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} quyết định`,
-            pageSizeOptions: ['10', '20', '50', '100'],
+            pageSizeOptions: PAGE_SIZE_OPTIONS,
             onChange: (page, pageSize) => {
               setPagination(prev => ({
                 ...prev,

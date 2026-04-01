@@ -1,16 +1,21 @@
 import { Request, Response } from 'express';
 import unitService from '../services/unit.service';
-import { normalizeParam } from '../helpers/paginationHelper';
+import { normalizeParam, parsePagination } from '../helpers/paginationHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 
 class UnitController {
   getAllUnits = catchAsync(async (req: Request, res: Response) => {
-    const includeHierarchy = req.query.hierarchy === 'true';
-    const result = await unitService.getAllUnits(includeHierarchy);
-    return ResponseHelper.success(res, {
-      message: 'Lấy danh sách cơ quan đơn vị và đơn vị trực thuộc thành công',
-      data: result,
+    const hierarchy = req.query.hierarchy === 'true';
+    const { page, limit } = parsePagination(req.query);
+    const result = await unitService.getAllUnits({ hierarchy, page, limit });
+    const { items, total } = result as { items: unknown[]; total: number };
+    return ResponseHelper.paginated(res, {
+      data: items,
+      total,
+      page,
+      limit,
+      message: 'Lấy danh sách đơn vị thành công',
     });
   });
 

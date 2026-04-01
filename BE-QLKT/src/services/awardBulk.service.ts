@@ -3,11 +3,10 @@ import annualRewardService from './annualReward.service';
 import unitAnnualAwardService from './unitAnnualAward.service';
 import scientificAchievementService from './scientificAchievement.service';
 import * as notificationHelper from '../helpers/notification';
-import { getDanhHieuName, getLoaiDeXuatName, DANH_HIEU_DON_VI_HANG_NAM, DANH_HIEU_CA_NHAN_HANG_NAM, UNIT_DV_TITLES, UNIT_BK_TITLES } from '../constants/danhHieu.constants';
+import { getDanhHieuName, DANH_HIEU_CA_NHAN_HANG_NAM, UNIT_DV_TITLES, UNIT_BK_TITLES } from '../constants/danhHieu.constants';
 import { PROPOSAL_TYPES, type ProposalType } from '../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { AppError, NotFoundError, ValidationError } from '../middlewares/errorHandler';
-import { writeSystemLog } from '../helpers/systemLogHelper';
 import type { QuanNhan } from '../generated/prisma';
 
 interface ServiceYears {
@@ -868,13 +867,6 @@ class AwardBulkService {
       } catch {
         // Không throw error để không ảnh hưởng đến quá trình thêm khen thưởng
       }
-
-      const typeName = getLoaiDeXuatName(type);
-      writeSystemLog({
-        action: 'IMPORT',
-        resource: 'awards',
-        description: `[Bulk khen thưởng] ${typeName} năm ${nam}: ${importedCount} thành công, ${errors.length} lỗi`,
-      });
 
       return {
         message:

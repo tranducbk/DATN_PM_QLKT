@@ -45,6 +45,7 @@ import {
 } from '@ant-design/icons';
 import type { TableColumnsType, UploadFile } from 'antd';
 import { apiClient } from '@/lib/apiClient';
+import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/lib/constants/pagination.constants';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { previewFileWithApi } from '@/utils/filePreview';
@@ -1044,7 +1045,7 @@ export default function AdhocAwardsPage() {
               ]}
               dataSource={filteredPersonnel}
               rowKey="id"
-              pagination={{ pageSize: 10, showSizeChanger: true }}
+              pagination={{ pageSize: DEFAULT_PAGE_SIZE, showSizeChanger: true }}
               scroll={{ y: 300 }}
               size="small"
             />
@@ -1168,7 +1169,7 @@ export default function AdhocAwardsPage() {
               ]}
               dataSource={filteredUnits}
               rowKey="id"
-              pagination={{ pageSize: 10, showSizeChanger: true }}
+              pagination={{ pageSize: DEFAULT_PAGE_SIZE, showSizeChanger: true }}
               scroll={{ y: 300 }}
               size="small"
             />
@@ -1620,10 +1621,10 @@ export default function AdhocAwardsPage() {
           loading={loading}
           scroll={{ x: 'max-content' }}
           pagination={{
-            pageSize: 10,
+            pageSize: DEFAULT_PAGE_SIZE,
             showSizeChanger: true,
             showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} bản ghi`,
-            pageSizeOptions: ['10', '20', '50', '100'],
+            pageSizeOptions: PAGE_SIZE_OPTIONS,
           }}
           onRow={record => ({
             onClick: () => handleOpenDetailModal(record),

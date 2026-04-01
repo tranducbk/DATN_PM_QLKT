@@ -31,6 +31,7 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/apiClient';
+import { DEFAULT_PAGE_SIZE } from '@/lib/constants/pagination.constants';
 import { formatDate } from '@/lib/utils';
 
 const { Title, Text } = Typography;
@@ -442,7 +443,7 @@ export default function BulkAddAnnualRewardsPage() {
           rowKey={record => record?.id || `key-${Math.random()}`}
           loading={loading}
           pagination={{
-            pageSize: 10,
+            pageSize: DEFAULT_PAGE_SIZE,
             showTotal: total => `Tổng ${total} quân nhân`,
             showSizeChanger: true,
           }}

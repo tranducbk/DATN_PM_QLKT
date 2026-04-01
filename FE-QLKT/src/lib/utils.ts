@@ -79,3 +79,10 @@ export function formatDateTimeFull(date: DateInput): string {
   if (!date) return '-';
   return dayjs(date).format('DD/MM/YYYY HH:mm:ss');
 }
+
+/** Tính tổng quân số đơn vị (bao gồm các DVTT con). */
+export function calcUnitTotal(unit: { so_luong?: number; DonViTrucThuoc?: { so_luong?: number }[] }): number {
+  const own = unit.so_luong ?? 0;
+  const children = (unit.DonViTrucThuoc ?? []).reduce((sum, sub) => sum + (sub.so_luong ?? 0), 0);
+  return own + children;
+}

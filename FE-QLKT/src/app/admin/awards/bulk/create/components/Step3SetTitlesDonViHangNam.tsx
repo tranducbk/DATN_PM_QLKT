@@ -5,6 +5,7 @@ import { Table, Select, Alert, Typography, Space, Tag, Button, message, Empty } 
 import { EditOutlined, HistoryOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
+import { DEFAULT_PAGE_SIZE } from '@/lib/constants/pagination.constants';
 import { UnitAnnualAwardHistoryModal } from './UnitAnnualAwardHistoryModal';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 import {
@@ -477,7 +478,7 @@ export function Step3SetTitlesDonViHangNam({
         }}
         loading={loading}
         pagination={{
-          pageSize: 10,
+          pageSize: DEFAULT_PAGE_SIZE,
           showSizeChanger: true,
         }}
         bordered

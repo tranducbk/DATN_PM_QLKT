@@ -32,6 +32,7 @@ import {
   DeleteOutlined,
 } from '@ant-design/icons';
 import { apiClient } from '@/lib/apiClient';
+import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/lib/constants/pagination.constants';
 import { formatDateTime } from '@/lib/utils';
 import { message } from 'antd';
 import {
@@ -69,7 +70,7 @@ export default function ProposalReviewPage() {
   const [activeTab, setActiveTab] = useState('all');
   const [yearFilter, setYearFilter] = useState<number | ''>('');
   const [typeFilter, setTypeFilter] = useState<string>('');
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
   useEffect(() => {
@@ -496,7 +497,7 @@ export default function ProposalReviewPage() {
                     pageSize: pageSize,
                     showTotal: total => `Tổng ${total} đề xuất`,
                     showSizeChanger: true,
-                    pageSizeOptions: ['10', '20', '50', '100'],
+                    pageSizeOptions: PAGE_SIZE_OPTIONS,
                     onShowSizeChange: (current, size) => {
                       setPageSize(size);
                     },

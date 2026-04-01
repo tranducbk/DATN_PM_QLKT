@@ -128,6 +128,7 @@ export default function DevZonePage() {
 
   const [cronPreset, setCronPreset] = useState('');
   const [customCron, setCustomCron] = useState('');
+  const [recalcLoading, setRecalcLoading] = useState(false);
 
   useEffect(() => {
     const saved = loadSession();
@@ -208,6 +209,24 @@ export default function DevZonePage() {
       message.error(getApiErrorMessage(err, 'Lỗi khi chạy cron job'));
     } finally {
       setTriggerLoading(false);
+    }
+  };
+
+  const handleRecalculateUnitCount = async () => {
+    try {
+      setRecalcLoading(true);
+      const res = await axiosInstance.post(
+        DEV_ZONE_API + '/recalculate-unit-count',
+        {},
+        { headers: { 'x-dev-password': devPassword } },
+      );
+      if (res.data.success) {
+        message.success(`Đã cập nhật quân số cho ${res.data.data.updated} đơn vị`);
+      }
+    } catch (err: unknown) {
+      message.error(getApiErrorMessage(err, 'Lỗi khi tính lại quân số'));
+    } finally {
+      setRecalcLoading(false);
     }
   };
 
@@ -479,6 +498,31 @@ export default function DevZonePage() {
                   onChange={v => handleToggleFeature(`allow_${key}`, v)}
                 />
               ))}
+            </div>
+
+            {/* Tính toán lại */}
+            <div className="dz-card">
+              <div className="dz-card-title">
+                <ReloadOutlined />
+                <span>Tính toán lại</span>
+              </div>
+              <div className="dz-util-row">
+                <div className="dz-util-info">
+                  <ReloadOutlined className="dz-feature-icon" />
+                  <div>
+                    <div className="dz-feature-label">Quân số đơn vị</div>
+                    <div className="dz-feature-desc">Đồng bộ lại số lượng quân nhân từng đơn vị từ dữ liệu thực tế</div>
+                  </div>
+                </div>
+                <Button
+                  type="primary"
+                  icon={<ReloadOutlined />}
+                  loading={recalcLoading}
+                  onClick={handleRecalculateUnitCount}
+                >
+                  {recalcLoading ? 'Đang tính...' : 'Tính lại'}
+                </Button>
+              </div>
             </div>
 
             {/* Tiện ích */}

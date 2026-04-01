@@ -10,6 +10,7 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { PROPOSAL_STATUS, PROPOSAL_TYPES, PROPOSAL_TYPE_LABELS } from '@/constants/proposal.constants';
+import { DEFAULT_PAGE_SIZE } from '@/lib/constants/pagination.constants';
 
 const { Text, Title } = Typography;
 
@@ -325,7 +326,7 @@ export function ProposalDetailModal({
             dataSource={titleData}
             rowKey={(record, index) => record.personnel_id || String(index)}
             pagination={{
-              pageSize: 10,
+              pageSize: DEFAULT_PAGE_SIZE,
               showSizeChanger: false,
             }}
             size="small"

@@ -363,16 +363,15 @@ class AccountService {
           },
         });
 
-        if (co_quan_don_vi_id) {
-          await tx.coQuanDonVi.update({
-            where: { id: co_quan_don_vi_id },
-            data: { so_luong: { increment: 1 } },
-          });
-        }
-
+        // Ưu tiên DVTT — chỉ increment CQDV khi không có DVTT (tránh đếm dư)
         if (don_vi_truc_thuoc_id) {
           await tx.donViTrucThuoc.update({
             where: { id: don_vi_truc_thuoc_id },
+            data: { so_luong: { increment: 1 } },
+          });
+        } else if (co_quan_don_vi_id) {
+          await tx.coQuanDonVi.update({
+            where: { id: co_quan_don_vi_id },
             data: { so_luong: { increment: 1 } },
           });
         }
@@ -511,8 +510,9 @@ class AccountService {
 
     if (account.QuanNhan) {
       const personnelId = account.QuanNhan.id;
-      const unitId = account.QuanNhan.co_quan_don_vi_id || account.QuanNhan.don_vi_truc_thuoc_id;
-      const isCoQuanDonVi = !!account.QuanNhan.co_quan_don_vi_id;
+      // Ưu tiên DVTT vì CQDV có thể là đơn vị cha
+      const unitId = account.QuanNhan.don_vi_truc_thuoc_id || account.QuanNhan.co_quan_don_vi_id;
+      const isCoQuanDonVi = !account.QuanNhan.don_vi_truc_thuoc_id && !!account.QuanNhan.co_quan_don_vi_id;
 
       const proposals = await prisma.bangDeXuat.findMany({
         where: {
@@ -606,20 +606,12 @@ class AccountService {
             if (isCoQuanDonVi) {
               await tx.coQuanDonVi.update({
                 where: { id: unitId },
-                data: {
-                  so_luong: {
-                    decrement: 1,
-                  },
-                },
+                data: { so_luong: { decrement: 1 } },
               });
             } else {
               await tx.donViTrucThuoc.update({
                 where: { id: unitId },
-                data: {
-                  so_luong: {
-                    decrement: 1,
-                  },
-                },
+                data: { so_luong: { decrement: 1 } },
               });
             }
           } catch (error: unknown) {

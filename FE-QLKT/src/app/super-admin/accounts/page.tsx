@@ -17,6 +17,7 @@ import {
   theme as antdTheme,
 } from 'antd';
 import { getApiErrorMessage } from '@/lib/apiError';
+import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/lib/constants/pagination.constants';
 
 import {
   PlusOutlined,
@@ -39,12 +40,12 @@ export default function AccountsListPage() {
   const [loading, setLoading] = useState(false);
   const [tableLoading, setTableLoading] = useState(false);
   const [accounts, setAccounts] = useState([]);
-  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
+  const [pagination, setPagination] = useState({ current: 1, pageSize: DEFAULT_PAGE_SIZE, total: 0 });
   const [searchText, setSearchText] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string | undefined>(undefined);
 
-  const fetchAccounts = async (page = 1, pageSize = 10, search = '', role?: string) => {
+  const fetchAccounts = async (page = 1, pageSize = DEFAULT_PAGE_SIZE, search = '', role?: string) => {
     // Chỉ set loading ban đầu, khi chuyển trang thì dùng tableLoading
     if (accounts.length === 0 || page === 1) {
       setLoading(true);
@@ -326,7 +327,7 @@ export default function AccountsListPage() {
               ...pagination,
               showTotal: total => `Tổng ${total} tài khoản`,
               showSizeChanger: true,
-              pageSizeOptions: ['10', '20', '50'],
+              pageSizeOptions: PAGE_SIZE_OPTIONS,
             }}
             onChange={handleTableChange}
             scroll={{ x: 'max-content' }}
