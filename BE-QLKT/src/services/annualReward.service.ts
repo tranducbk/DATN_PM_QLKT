@@ -1328,7 +1328,7 @@ class AnnualRewardService {
       { header: 'BKTTCP (không điền)', key: 'nhan_bkttcp', width: 18 },
     ];
 
-    const workbook = await buildTemplate({
+    return buildTemplate({
       sheetName: 'Danh hiệu hằng năm',
       columns,
       personnelIds,
@@ -1338,21 +1338,6 @@ class AnnualRewardService {
       redColumns: [10, 11, 12],
       editableColumnLetters: ['G', 'H'],
     });
-
-    // Add thin borders (specific to annual reward template)
-    const worksheet = workbook.getWorksheet('Danh hiệu hằng năm')!;
-    const thinBorder: Partial<ExcelJS.Borders> = {
-      top: { style: 'thin' }, bottom: { style: 'thin' },
-      left: { style: 'thin' }, right: { style: 'thin' },
-    };
-    const lastRow = worksheet.lastRow?.number ?? 1;
-    for (let rowNum = 1; rowNum <= lastRow; rowNum++) {
-      worksheet.getRow(rowNum).eachCell({ includeEmpty: true }, cell => {
-        cell.border = thinBorder;
-      });
-    }
-
-    return workbook;
   }
 
   async exportToExcel(filters: ExportFilters = {}): Promise<ExcelJS.Workbook> {

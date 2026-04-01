@@ -2,6 +2,7 @@ import { prisma } from '../../models';
 import ExcelJS from 'exceljs';
 import profileService from '../profile.service';
 import { ValidationError } from '../../middlewares/errorHandler';
+import { applyThinBordersToGrid } from '../../helpers/excelTemplateHelper';
 import { parseCCCD, calculateContinuousCSTDCS } from './helpers';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
@@ -245,6 +246,9 @@ async function exportAwardsTemplate() {
       nhan_bkttcp: 'X',
       so_quyet_dinh_bkttcp: '456/QĐ-BQP',
     });
+
+    const colCount = sheet.columns?.length ?? 9;
+    applyThinBordersToGrid(sheet, 2, colCount);
 
     return await workbook.xlsx.writeBuffer();
   } catch (error) {

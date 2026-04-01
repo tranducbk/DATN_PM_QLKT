@@ -153,6 +153,33 @@ const RED_FILL: ExcelJS.FillPattern = {
   fgColor: { argb: 'FFFFCCCC' },
 };
 
+/** Viền mỏng bốn cạnh — đồng bộ mẫu import giữa các loại khen thưởng. */
+export const THIN_BORDER_ALL_SIDES: Partial<ExcelJS.Borders> = {
+  top: { style: 'thin' },
+  bottom: { style: 'thin' },
+  left: { style: 'thin' },
+  right: { style: 'thin' },
+};
+
+/**
+ * Kẻ viền mỏng cho lưới ô (hàng 1..maxRows, cột 1..columnCount).
+ * @param worksheet - Sheet cần style
+ * @param maxRows - Số hàng cuối (gồm header)
+ * @param columnCount - Số cột
+ */
+export function applyThinBordersToGrid(
+  worksheet: ExcelJS.Worksheet,
+  maxRows: number,
+  columnCount: number
+): void {
+  for (let rowNum = 1; rowNum <= maxRows; rowNum++) {
+    const row = worksheet.getRow(rowNum);
+    for (let col = 1; col <= columnCount; col++) {
+      row.getCell(col).border = THIN_BORDER_ALL_SIDES;
+    }
+  }
+}
+
 /**
  * Áp dụng bold font + gray fill cho header row (row 1).
  * @param worksheet - Worksheet cần style
@@ -403,6 +430,8 @@ export async function buildTemplate(config: TemplateConfig): Promise<ExcelJS.Wor
   if (editableColumnLetters.length > 0) {
     applyConditionalFormatting(worksheet, editableColumnLetters, maxRows);
   }
+
+  applyThinBordersToGrid(worksheet, maxRows, columns.length);
 
   return workbook;
 }

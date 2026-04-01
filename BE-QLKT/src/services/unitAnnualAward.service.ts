@@ -9,6 +9,7 @@ import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { parseHeaderMap, getHeaderCol, parseBooleanValue } from '../helpers/excelHelper';
 import { NotFoundError, ValidationError, ForbiddenError } from '../middlewares/errorHandler';
+import { applyThinBordersToGrid } from '../helpers/excelTemplateHelper';
 
 class UnitAnnualAwardService {
   /**
@@ -1397,11 +1398,10 @@ class UnitAnnualAwardService {
     }
 
     // Conditional formatting: nền vàng khi ô có giá trị
-    const maxDataRow = Math.max(totalPrefillRows + 1, 50);
     const editableColumns = ['F', 'G'];
     editableColumns.forEach(col => {
       worksheet.addConditionalFormatting({
-        ref: `${col}2:${col}${maxDataRow}`,
+        ref: `${col}2:${col}${maxRows}`,
         rules: [
           {
             type: 'expression',
@@ -1414,6 +1414,8 @@ class UnitAnnualAwardService {
         ],
       });
     });
+
+    applyThinBordersToGrid(worksheet, maxRows, columns.length);
 
     return workbook;
   }
