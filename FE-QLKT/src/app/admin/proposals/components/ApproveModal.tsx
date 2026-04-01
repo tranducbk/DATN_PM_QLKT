@@ -130,7 +130,6 @@ export function ApproveModal({ visible, proposal, onClose, onSuccess }: ApproveM
         setDecisionOptions([]);
       }
     } catch (error) {
-      // Error handled by UI
       setDecisionOptions([]);
     } finally {
       setSearchingDecision(false);

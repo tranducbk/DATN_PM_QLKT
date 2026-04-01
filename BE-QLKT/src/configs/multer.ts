@@ -3,8 +3,6 @@ import { Request } from 'express';
 import path from 'path';
 import fs from 'fs';
 
-// --- Helpers ---
-
 /** Creates a reusable fileFilter that checks against a list of allowed MIME types. */
 function createFileFilter(allowedMimes: string[], errorMessage: string) {
   return (req: Request, file: Express.Multer.File, cb: FileFilterCallback): void => {
@@ -27,8 +25,6 @@ function createDestination(dir: string) {
   };
 }
 
-// --- Constants ---
-
 const MB = 1024 * 1024;
 
 const MIME = {
@@ -46,8 +42,6 @@ const decisionUploadDir = path.join(__dirname, '..', '..', 'uploads', 'decisions
 if (!fs.existsSync(decisionUploadDir)) {
   fs.mkdirSync(decisionUploadDir, { recursive: true });
 }
-
-// --- Multer instances ---
 
 /**
  * Shared multer configuration for Excel-only file uploads.

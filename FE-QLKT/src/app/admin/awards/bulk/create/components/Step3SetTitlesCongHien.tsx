@@ -163,7 +163,6 @@ export function Step3SetTitlesCongHien({
         }
       }
     } catch (error) {
-      // Error handled by UI
     } finally {
       setLoading(false);
     }
@@ -190,7 +189,6 @@ export function Step3SetTitlesCongHien({
 
       setPositionHistoriesMap(historiesMap);
     } catch (error) {
-      // Error handled by UI
     }
   };
 
@@ -282,7 +280,6 @@ export function Step3SetTitlesCongHien({
         setPositionHistory([]);
       }
     } catch (error: unknown) {
-      // Error handled by UI
       message.error('Không thể tải lịch sử chức vụ');
       setPositionHistory([]);
     } finally {

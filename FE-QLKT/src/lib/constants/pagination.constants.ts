@@ -14,6 +14,7 @@ export const DEFAULT_ANTD_TABLE_PAGINATION = {
   pageSize: DEFAULT_PAGE_SIZE,
   showSizeChanger: true,
   pageSizeOptions: PAGE_SIZE_OPTIONS,
+  showLessItems: true,
 };
 
 /** Bảng chọn trong modal (export, v.v.) — ít dòng để dễ quét. */

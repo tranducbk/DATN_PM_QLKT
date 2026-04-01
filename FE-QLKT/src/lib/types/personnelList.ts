@@ -1,7 +1,4 @@
-/**
- * Dòng quân nhân trên trang danh sách (admin normalize + manager API).
- * Khác `Personnel` trong `@/lib/types`: file này mô tả API thực tế (cơ quan / ĐV trực thuộc, optional).
- */
+/** Dòng danh sách quân nhân (admin normalize / manager API). Khác `Personnel` ở `@/lib/types` (flat). */
 
 export interface PersonnelListItem {
   id: string;

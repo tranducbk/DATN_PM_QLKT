@@ -299,7 +299,6 @@ export default function ProposalDetailPage() {
 
       setPersonnelDetails(detailsMap);
     } catch (error) {
-      // Error handled by UI
     }
   };
 
@@ -326,7 +325,6 @@ export default function ProposalDetailPage() {
 
       setPositionHistoriesMap(historiesMap);
     } catch (error) {
-      // Error handled by UI
     }
   };
 

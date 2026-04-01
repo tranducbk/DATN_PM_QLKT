@@ -97,7 +97,6 @@ export default function ManagerProposalsPage() {
       }
     } catch (error: unknown) {
       message.error('Lỗi khi tải danh sách đề xuất');
-      // Error handled by UI message
     } finally {
       setLoading(false);
     }
@@ -121,7 +120,6 @@ export default function ManagerProposalsPage() {
       message.success('Tải file thành công');
     } catch (error: unknown) {
       message.error(getApiErrorMessage(error, 'Lỗi khi tải file'));
-      // Error handled by UI message
     } finally {
       setDownloadingId(null);
     }
@@ -141,7 +139,6 @@ export default function ManagerProposalsPage() {
       }
     } catch (error: unknown) {
       message.error(getApiErrorMessage(error, 'Lỗi khi xóa đề xuất'));
-      // Error handled by UI message
     } finally {
       setDeletingId(null);
     }

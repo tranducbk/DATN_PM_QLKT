@@ -111,7 +111,6 @@ export default function AdminContributionAwardsPage() {
           }
         });
       } else if (!contributionRes.success) {
-        // Error handled by UI
       }
 
       setAwards(mappedAwards);

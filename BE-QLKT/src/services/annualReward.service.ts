@@ -654,7 +654,6 @@ class AnnualRewardService {
     });
     const validDecisionNumbers = new Set(existingDecisions.map(d => d.so_quyet_dinh));
 
-    // --- First pass: collect all personnel IDs and years from valid rows ---
     const allPersonnelIds = new Set<string>();
     const allYears = new Set<number>();
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
@@ -671,7 +670,6 @@ class AnnualRewardService {
       }
     }
 
-    // --- Batch queries ---
     const [personnelList, existingAnnualRewards, pendingProposals] = await Promise.all([
       prisma.quanNhan.findMany({
         where: { id: { in: [...allPersonnelIds] } },
@@ -714,7 +712,6 @@ class AnnualRewardService {
       rewardsByPersonnel.set(r.quan_nhan_id, list);
     }
 
-    // --- Second pass: validate rows using Maps ---
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
       const row = worksheet.getRow(rowNumber);
       const idValue = idCol ? row.getCell(idCol).value : null;

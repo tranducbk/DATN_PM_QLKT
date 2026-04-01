@@ -120,7 +120,6 @@ export default function SuperAdminAddAwardsPage() {
       const personnelData = responses.filter(r => r.success).map(r => r.data);
       setPersonnelDetails(personnelData);
     } catch (error) {
-      // Error handled by UI
     }
   };
 

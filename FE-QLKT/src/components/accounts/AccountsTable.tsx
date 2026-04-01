@@ -58,7 +58,7 @@ export function AccountsTable({ accounts, onEdit, onRefresh }: AccountsTableProp
 
   return (
     <>
-      <div className="border rounded-lg overflow-hidden">
+      <div className="min-w-0 max-w-full border rounded-lg">
         <Table>
           <TableHeader>
             <TableRow>

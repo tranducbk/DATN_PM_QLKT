@@ -215,7 +215,6 @@ export default function BulkAddAwardsPage() {
       const personnelData = responses.filter(r => r.success).map(r => r.data);
       setPersonnelDetails(personnelData);
     } catch (error) {
-      // Error handled by UI
     }
   };
 
@@ -228,7 +227,6 @@ export default function BulkAddAwardsPage() {
         setUnitDetails(selectedUnits);
       }
     } catch {
-      // Error handled by UI
     }
   };
 

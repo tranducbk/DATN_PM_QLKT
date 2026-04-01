@@ -14,10 +14,7 @@ import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.consta
 
 const { Text, Title } = Typography;
 
-/**
- * Một dòng trong `title_data` / `data_danh_hieu` (đề xuất khen thưởng).
- * Danh sách admin có thể chỉ có `so_quyet_dinh` — field khác đều optional.
- */
+/** Dòng `title_data` / `data_danh_hieu`; API có thể chỉ có `so_quyet_dinh`. */
 interface ProposalTitleDataRow {
   personnel_id?: string;
   ho_ten?: string;

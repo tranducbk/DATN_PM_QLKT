@@ -48,7 +48,7 @@ export function PersonnelTable({
 }: PersonnelTableProps) {
   return (
     <>
-      <div className="overflow-hidden">
+      <div className="min-w-0 max-w-full">
         <Table>
           <TableHeader>
             <TableRow>

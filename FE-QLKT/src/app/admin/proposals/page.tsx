@@ -112,7 +112,6 @@ export default function AdminProposalsPage() {
         setProposals(list);
       }
     } catch (error: unknown) {
-      // Error handled by UI message
       message.error('Lỗi khi tải danh sách đề xuất');
     } finally {
       setLoading(false);

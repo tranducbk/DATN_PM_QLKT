@@ -129,7 +129,6 @@ export default function BulkRewardDetailsPage() {
 
       loadInitialData(personnelIds);
     } catch (error) {
-      // Error handled by UI message
       message.error('Dữ liệu không hợp lệ');
       router.push('/admin/annual-rewards/bulk');
     }

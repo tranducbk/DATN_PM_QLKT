@@ -76,7 +76,6 @@ class ContributionAwardService {
     const seenInFile = new Set();
     const currentYear = new Date().getFullYear();
 
-    // --- First pass: collect all personnel IDs from worksheet ---
     const allPersonnelIds = new Set<string>();
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
       const row = worksheet.getRow(rowNumber);
@@ -87,7 +86,6 @@ class ContributionAwardService {
       }
     }
 
-    // --- Batch queries: personnel, existing awards, position histories, decisions ---
     const [personnelList, existingAwardsList, allPositionHistories, existingDecisions, pendingProposals] =
       await Promise.all([
         allPersonnelIds.size > 0

@@ -194,7 +194,6 @@ export async function previewFile(filePath: string, customFilename?: string): Pr
     }
   } catch (error) {
     message.error('Lỗi khi mở file');
-    // Error handled by UI message
   }
 }
 
@@ -221,7 +220,6 @@ export async function previewDecisionFile(soQuyetDinh: string): Promise<void> {
     // Mở viewer với toolbar
     openPdfWithViewer(blobUrl, filename);
   } catch (error: unknown) {
-    // Error handled by UI message
     const ax = error as { response?: { data?: unknown } };
 
     if (ax.response?.data instanceof Blob) {
@@ -268,6 +266,5 @@ export async function previewFileWithApi(apiPath: string, filename: string): Pro
     }
   } catch (error) {
     message.error('Lỗi khi mở file');
-    // Error handled by UI message
   }
 }

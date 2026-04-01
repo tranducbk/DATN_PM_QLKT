@@ -127,7 +127,6 @@ export function Step2SelectPersonnelCongHien({
         setPersonnel(personnelData);
       }
     } catch (error: unknown) {
-      // Error handled by UI
     } finally {
       setLoading(false);
     }
@@ -156,7 +155,6 @@ export function Step2SelectPersonnelCongHien({
 
       setPositionHistoriesMap(historiesMap);
     } catch (error) {
-      // Error handled by UI
     }
   };
 
@@ -179,7 +177,6 @@ export function Step2SelectPersonnelCongHien({
 
       setContributionProfiles(profilesMap);
     } catch (error) {
-      // Error handled by UI
     }
   };
 
@@ -192,7 +189,6 @@ export function Step2SelectPersonnelCongHien({
         setIneligiblePersonnel(response.data.ineligiblePersonnel || []);
       }
     } catch (error: unknown) {
-      // Error handled by UI
       message.error('Không thể kiểm tra tính đủ điều kiện nhận khen thưởng');
     } finally {
       setCheckingEligibility(false);

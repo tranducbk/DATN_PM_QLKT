@@ -92,7 +92,6 @@ export function Step2SelectPersonnelCaNhanHangNam({
         setPersonnel(personnelData);
       }
     } catch (error: unknown) {
-      // Error handled by UI
     } finally {
       setLoading(false);
     }

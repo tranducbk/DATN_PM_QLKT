@@ -343,7 +343,6 @@ class ScientificAchievementService {
     const seenInFile = new Set<string>();
     const currentYear = new Date().getFullYear();
 
-    // --- First pass: collect all personnel IDs from worksheet ---
     const allPersonnelIds = new Set<string>();
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
       const row = worksheet.getRow(rowNumber);
@@ -354,7 +353,6 @@ class ScientificAchievementService {
       }
     }
 
-    // --- Batch queries: personnel, existing achievements, decisions ---
     const [personnelList, existingAchievementsList, existingDecisions] = await Promise.all([
       allPersonnelIds.size > 0
         ? prisma.quanNhan.findMany({
@@ -388,7 +386,6 @@ class ScientificAchievementService {
     );
     const validDecisionNumbers = new Set(existingDecisions.map(d => d.so_quyet_dinh));
 
-    // --- Second pass: validate rows using Maps ---
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
       const row = worksheet.getRow(rowNumber);
       const idValue = idCol ? row.getCell(idCol).value : null;

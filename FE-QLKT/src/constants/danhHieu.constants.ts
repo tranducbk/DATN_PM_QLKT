@@ -167,7 +167,6 @@ export const AWARD_TAB_FILENAME: Record<string, string> = {
   KTDX: 'khen_thuong_dot_xuat',
 };
 
-/** Màu sắc Tag cho import-review pages */
 export const DANH_HIEU_COLORS: Record<string, string> = {
   CSTT: 'green',
   CSTDCS: 'blue',

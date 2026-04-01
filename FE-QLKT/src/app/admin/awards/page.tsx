@@ -169,7 +169,6 @@ export default function AdminAwardsPage() {
       message.success('Xóa khen thưởng thành công');
       await fetchAwards();
     } catch (error: unknown) {
-      // Error handled by UI message
       message.error(getApiErrorMessage(error, 'Có lỗi xảy ra khi xóa khen thưởng'));
     } finally {
       setDeletingId(null);

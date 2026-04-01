@@ -2256,16 +2256,16 @@ button[class*='bg-primary']:hover:not(:disabled) {
   @apply text-gray-400;
 }
 
-/* Ant Design Tabs Content Holder - Scroll support cho nội dung dài */
 .ant-tabs-content-holder {
-  overflow-x: hidden !important;
+  min-width: 0;
+  overflow-x: auto !important;
 }
 
-/* Bỏ scroll của tab pane, để page scroll thay vì tab pane */
 .ant-tabs-tabpane {
   max-height: none !important;
   overflow-y: visible !important;
-  overflow-x: hidden !important;
+  overflow-x: auto !important;
+  min-width: 0;
 }
 
 /* Action Buttons - luôn hiển thị */
@@ -2882,8 +2882,11 @@ body.ant-modal-open {
   overflow: hidden !important;
 }
 
-/* Ensure modal body scrolls independently */
 .ant-modal-body {
   overflow-y: auto !important;
-  overflow-x: hidden !important;
+  overflow-x: auto !important;
+}
+
+.ant-table-wrapper {
+  max-width: 100%;
 }

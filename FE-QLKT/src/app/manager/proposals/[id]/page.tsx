@@ -159,7 +159,7 @@ export default function ManagerProposalDetailPage() {
     if (proposalId) {
       fetchProposalDetail();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ refetch khi proposalId đổi
   }, [proposalId]);
 
   const fetchProposalDetail = async () => {
@@ -214,7 +214,6 @@ export default function ManagerProposalDetailPage() {
       }
     } catch (error: unknown) {
       message.error('Không tìm thấy đề xuất hoặc bạn không có quyền truy cập');
-      // Error handled by UI message
       router.replace('/manager/proposals');
     } finally {
       setLoading(false);
@@ -244,7 +243,6 @@ export default function ManagerProposalDetailPage() {
 
       setPositionHistoriesMap(historiesMap);
     } catch (error) {
-      // Error handled by UI
     }
   };
 
@@ -305,7 +303,6 @@ export default function ManagerProposalDetailPage() {
       message.success('Tải file thành công');
     } catch (error: unknown) {
       message.error(getApiErrorMessage(error, 'Lỗi khi tải file'));
-      // Error handled by UI message
     } finally {
       setDownloading(false);
     }

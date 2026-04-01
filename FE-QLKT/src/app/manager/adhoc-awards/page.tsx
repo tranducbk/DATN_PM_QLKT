@@ -112,7 +112,6 @@ export default function ManagerAdhocAwardsPage() {
       const awardsData = res.data?.items ?? [];
       setAwards(awardsData);
     } catch (err) {
-      // Error handled by UI message
       message.error('Không tải được danh sách khen thưởng đột xuất');
     } finally {
       setLoading(false);

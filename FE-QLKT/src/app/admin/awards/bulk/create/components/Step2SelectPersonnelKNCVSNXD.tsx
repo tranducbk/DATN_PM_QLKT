@@ -129,7 +129,6 @@ export function Step2SelectPersonnelKNCVSNXD({
       setAlreadyReceivedMap(receivedMap);
       setReceivedReasonMap(reasonMap);
     } catch (error) {
-      // Error handled by UI
     } finally {
       setCheckingReceived(false);
     }
@@ -153,7 +152,6 @@ export function Step2SelectPersonnelKNCVSNXD({
         message.error(response.message || 'Không thể lấy danh sách quân nhân');
       }
     } catch (error: unknown) {
-      // Error handled by UI
       message.error(
         getApiErrorMessage(error) || 'Lỗi khi tải danh sách quân nhân'
       );

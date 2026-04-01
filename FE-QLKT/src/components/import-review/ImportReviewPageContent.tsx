@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Card,
   Table,
@@ -56,6 +56,7 @@ export interface PreviewItem {
   message?: string;
   error?: string;
   errors?: string[];
+  __key?: number;
   [key: string]: any;
 }
 
@@ -194,19 +195,28 @@ export function ImportReviewPageContent({ config }: { config: ImportReviewConfig
     invalid: PreviewItem[];
   } | null>(null);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+  const [validPagination, setValidPagination] = useState({
+    current: 1,
+    pageSize: DEFAULT_PAGE_SIZE,
+  });
+  const [invalidPagination, setInvalidPagination] = useState({
+    current: 1,
+    pageSize: DEFAULT_PAGE_SIZE,
+  });
 
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem(config.sessionStorageKey);
       if (raw) {
         const data = JSON.parse(raw);
-        const valid: PreviewItem[] = data.valid ?? [];
-        const invalid: PreviewItem[] = data.errors ?? [];
+        const validRaw: PreviewItem[] = data.valid ?? [];
+        const invalidRaw: PreviewItem[] = data.errors ?? [];
+        const valid = validRaw.map((item, i) => ({ ...item, __key: i }));
+        const invalid = invalidRaw.map((item, i) => ({ ...item, __key: i }));
         setPreviewData({ valid, invalid });
-        setSelectedRowKeys(valid.map((_: PreviewItem, i: number) => i));
+        setSelectedRowKeys(valid.map(v => v.__key as React.Key));
       }
     } catch {
-      // ignore parse errors
     } finally {
       setLoading(false);
     }
@@ -221,13 +231,48 @@ export function ImportReviewPageContent({ config }: { config: ImportReviewConfig
   const noHistoryLabel = config.noHistoryLabel ?? 'Chưa có lịch sử khen thưởng.';
   const breadcrumbLastItem = config.breadcrumbLastItem ?? 'Xem trước Import';
 
+  const validColumnsPaginated = useMemo(() => {
+    return config.validColumns.map(col => {
+      const c = col as ColumnsType<PreviewItem>[number];
+      if (c.title === 'STT') {
+        return {
+          ...c,
+          render: (_: unknown, __: PreviewItem, index: number) =>
+            (validPagination.current - 1) * validPagination.pageSize + index + 1,
+        };
+      }
+      return col;
+    });
+  }, [config.validColumns, validPagination.current, validPagination.pageSize]);
+
+  const invalidColumnsPaginated = useMemo(() => {
+    return config.invalidColumns.map(col => {
+      const c = col as ColumnsType<PreviewItem>[number];
+      if (c.title === 'STT') {
+        return {
+          ...c,
+          render: (_: unknown, __: PreviewItem, index: number) =>
+            (invalidPagination.current - 1) * invalidPagination.pageSize + index + 1,
+        };
+      }
+      return col;
+    });
+  }, [config.invalidColumns, invalidPagination.current, invalidPagination.pageSize]);
+
   const handleConfirm = async () => {
     if (!previewData || selectedRowKeys.length === 0) {
       message.warning('Vui lòng chọn ít nhất một bản ghi để import.');
       return;
     }
 
-    const selectedItems = selectedRowKeys.map(key => previewData.valid[key as number]);
+    const selectedItems = selectedRowKeys
+      .map(key => previewData.valid.find(r => r.__key === key))
+      .filter((r): r is PreviewItem => r != null)
+      .map(item => {
+        const rest = { ...item };
+        delete rest.__key;
+        return rest;
+      });
 
     try {
       setConfirming(true);
@@ -357,8 +402,8 @@ export function ImportReviewPageContent({ config }: { config: ImportReviewConfig
           styles={{ header: { borderBottom: '2px solid #b7eb8f' } }}
         >
           <Table
-            rowKey={(_record, index) => index as number}
-            columns={config.validColumns}
+            rowKey="__key"
+            columns={validColumnsPaginated}
             dataSource={previewData.valid}
             rowSelection={{
               selectedRowKeys,
@@ -396,7 +441,19 @@ export function ImportReviewPageContent({ config }: { config: ImportReviewConfig
               validCount > DEFAULT_PAGE_SIZE
                 ? {
                     ...DEFAULT_ANTD_TABLE_PAGINATION,
+                    current: validPagination.current,
+                    pageSize: validPagination.pageSize,
+                    total: validCount,
                     showTotal: total => `Tổng ${total} bản ghi`,
+                    onChange: (page, pageSize) => {
+                      setValidPagination({
+                        current: page,
+                        pageSize: pageSize ?? DEFAULT_PAGE_SIZE,
+                      });
+                    },
+                    onShowSizeChange: (_page, size) => {
+                      setValidPagination({ current: 1, pageSize: size });
+                    },
                   }
                 : false
             }
@@ -419,14 +476,26 @@ export function ImportReviewPageContent({ config }: { config: ImportReviewConfig
           styles={{ header: { borderBottom: '2px solid #ffa39e' } }}
         >
           <Table
-            rowKey={(_record, index) => `invalid-${index}`}
-            columns={config.invalidColumns}
+            rowKey="__key"
+            columns={invalidColumnsPaginated}
             dataSource={previewData.invalid}
             pagination={
-              invalidCount > 10
+              invalidCount > DEFAULT_PAGE_SIZE
                 ? {
                     ...DEFAULT_ANTD_TABLE_PAGINATION,
+                    current: invalidPagination.current,
+                    pageSize: invalidPagination.pageSize,
+                    total: invalidCount,
                     showTotal: total => `Tổng ${total} lỗi`,
+                    onChange: (page, pageSize) => {
+                      setInvalidPagination({
+                        current: page,
+                        pageSize: pageSize ?? DEFAULT_PAGE_SIZE,
+                      });
+                    },
+                    onShowSizeChange: (_page, size) => {
+                      setInvalidPagination({ current: 1, pageSize: size });
+                    },
                   }
                 : false
             }

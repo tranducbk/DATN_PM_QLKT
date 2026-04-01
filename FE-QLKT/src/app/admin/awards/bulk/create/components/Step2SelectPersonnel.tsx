@@ -86,7 +86,6 @@ export function Step2SelectPersonnel({
         setPersonnel(personnelData);
       }
     } catch (error: unknown) {
-      // Error handled by UI
     } finally {
       setLoading(false);
     }

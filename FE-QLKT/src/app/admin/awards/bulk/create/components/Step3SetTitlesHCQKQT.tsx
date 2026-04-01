@@ -102,7 +102,6 @@ export function Step3SetTitlesHCQKQT({
         }
       }
     } catch (error) {
-      // Error handled by UI
     } finally {
       setLoading(false);
     }

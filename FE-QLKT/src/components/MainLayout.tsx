@@ -16,6 +16,7 @@ import {
   Spin,
   Modal,
   Empty,
+  message,
 } from 'antd';
 import type { MenuProps } from 'antd';
 import type { MenuInfo } from 'rc-menu/lib/interface';
@@ -48,6 +49,7 @@ import type { NotificationItem } from '@/lib/api/notifications';
 import { formatDate } from '@/lib/utils';
 import type { UserRole } from '@/lib/types';
 import { ROLES, getRoleInfo } from '@/constants/roles.constants';
+import { getApiErrorMessage, logError } from '@/lib/apiError';
 
 const { Header, Sider, Content, Footer } = Layout;
 
@@ -218,8 +220,8 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
       if (response.success && response.data) {
         setNotificationCount(response.data.count || 0);
       }
-    } catch (error) {
-      // Error handled by UI
+    } catch (error: unknown) {
+      logError(error, 'Tải số thông báo chưa đọc');
     }
   };
 
@@ -234,8 +236,8 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
         const list = (response.data.notifications || []) as NotificationItem[];
         setNotifications(list);
       }
-    } catch (error) {
-      // Error handled by UI
+    } catch (error: unknown) {
+      logError(error, 'Tải danh sách thông báo');
     } finally {
       setNotificationLoading(false);
     }
@@ -259,8 +261,8 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
       } else if (actualRole === ROLES.ADMIN) {
         router.push('/admin/proposals/review');
       }
-    } catch (error) {
-      // Error handled by UI
+    } catch (error: unknown) {
+      message.error(getApiErrorMessage(error, 'Không thể cập nhật trạng thái thông báo'));
     }
   };
 
@@ -270,8 +272,8 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
       // Reload notifications and count
       loadNotifications();
       loadNotificationCount();
-    } catch (error) {
-      // Error handled by UI
+    } catch (error: unknown) {
+      message.error(getApiErrorMessage(error, 'Không thể đánh dấu đã đọc'));
     }
   };
 
@@ -280,8 +282,8 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
       await apiClient.deleteAllNotifications();
       setNotifications([]);
       setNotificationCount(0);
-    } catch {
-      // Error handled by UI
+    } catch (error: unknown) {
+      message.error(getApiErrorMessage(error, 'Không thể xóa thông báo'));
     }
   };
 
@@ -733,7 +735,10 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
             </Drawer>
           )}
 
-          <Layout style={{ marginLeft: isMobile ? 0 : collapsed ? 80 : 250 }}>
+          <Layout
+            className="min-w-0 flex-1"
+            style={{ marginLeft: isMobile ? 0 : collapsed ? 80 : 250 }}
+          >
             {/* Header */}
             <Header
               className={`shadow-sm px-4 flex items-center justify-between ${
@@ -968,7 +973,7 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
             <Content
               className={`${
                 theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'
-              } min-h-[calc(100vh-64px-70px)]`}
+              } min-h-[calc(100vh-64px-70px)] min-w-0 max-w-full`}
             >
               {children}
             </Content>

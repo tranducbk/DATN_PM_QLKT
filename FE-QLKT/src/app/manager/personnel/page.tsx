@@ -566,6 +566,7 @@ export default function ManagerPersonnelPage() {
               total={pagination.total}
               showSizeChanger
               showQuickJumper
+              showLessItems
               showTotal={(total, range) => `${range[0]}-${range[1]} của ${total} quân nhân`}
               pageSizeOptions={DEFAULT_ANTD_TABLE_PAGINATION.pageSizeOptions}
               onChange={(page, pageSize) => {

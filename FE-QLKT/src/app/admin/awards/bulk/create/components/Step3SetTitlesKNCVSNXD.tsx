@@ -103,7 +103,6 @@ export function Step3SetTitlesKNCVSNXD({
         }
       }
     } catch (error) {
-      // Error handled by UI
     } finally {
       setLoading(false);
     }

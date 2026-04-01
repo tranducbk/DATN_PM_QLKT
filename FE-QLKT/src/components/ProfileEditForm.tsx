@@ -280,7 +280,6 @@ export function ProfileEditForm({
         });
       }
     } catch (error: unknown) {
-      // Error handled by UI
       const errorMessage =
         getApiErrorMessage(error, 'Không thể tải thông tin cá nhân');
       message.error(errorMessage);
@@ -353,7 +352,6 @@ export function ProfileEditForm({
         message.error(response.message || 'Cập nhật thất bại');
       }
     } catch (error: unknown) {
-      // Error handled by UI
       const errorMessage =
         getApiErrorMessage(error, 'Đã xảy ra lỗi khi cập nhật');
       message.error(errorMessage);

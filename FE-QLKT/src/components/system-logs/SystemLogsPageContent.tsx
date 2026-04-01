@@ -372,6 +372,7 @@ export function SystemLogsPageContent({ basePath }: SystemLogsPageContentProps) 
                   total={pagination.total}
                   showSizeChanger
                   showQuickJumper
+                  showLessItems
                   showTotal={(total, range) => `${range[0]}-${range[1]} của ${total} nhật ký`}
                   pageSizeOptions={DEFAULT_ANTD_TABLE_PAGINATION.pageSizeOptions}
                   onChange={(page, pageSize) => {

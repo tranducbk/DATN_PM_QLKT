@@ -121,7 +121,6 @@ export function DecisionModal({
         setAutocompleteOptions([]);
       }
     } catch (error) {
-      // Error handled by UI
       setAutocompleteOptions([]);
     } finally {
       setSearching(false);

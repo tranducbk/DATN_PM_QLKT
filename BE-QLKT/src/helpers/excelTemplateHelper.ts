@@ -67,6 +67,7 @@ export async function queryPersonnelForTemplate(personnelIds: string[]) {
 
 /**
  * Truy vấn danh sách số quyết định cho dropdown trong template.
+ * @param loaiKhenThuong - Lọc theo loại khen thưởng (optional)
  * @param take - Số lượng tối đa (default MAX_DECISION_DROPDOWN)
  * @returns Mảng số quyết định, sắp xếp theo năm giảm dần
  */
@@ -122,7 +123,6 @@ export function createDecisionValidation(
     };
   }
 
-  // Fallback: create hidden sheet
   const refSheet = workbook.addWorksheet('_QuyetDinh', { state: 'veryHidden' });
   decisionList.forEach((sqd, idx) => {
     refSheet.getCell(`A${idx + 1}`).value = sqd;

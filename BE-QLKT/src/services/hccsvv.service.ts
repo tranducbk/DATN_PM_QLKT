@@ -99,7 +99,6 @@ class HCCSVVService {
       HCCSVV_HANG_NHAT: 'HCCSVV_HANG_NHI',
     };
 
-    // --- First pass: collect all personnel IDs from valid rows ---
     const allPersonnelIds = new Set<string>();
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
       const row = worksheet.getRow(rowNumber);
@@ -110,7 +109,6 @@ class HCCSVVService {
       }
     }
 
-    // --- Batch queries ---
     const [personnelList, existingHCCSVVRecords, pendingProposals] = await Promise.all([
       prisma.quanNhan.findMany({
         where: { id: { in: [...allPersonnelIds] } },
@@ -148,7 +146,6 @@ class HCCSVVService {
       hccsvvByPersonnel.set(r.quan_nhan_id, list);
     }
 
-    // --- Second pass: validate rows using Maps ---
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
       const row = worksheet.getRow(rowNumber);
       const idValue = idCol ? row.getCell(idCol).value : null;

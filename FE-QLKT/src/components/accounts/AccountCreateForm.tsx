@@ -33,14 +33,14 @@ import type { ManagerPositionRow, UnitApiRow } from '@/lib/types/personnelList';
 
 type AccountCreateValues = z.infer<typeof accountCreateSchema>;
 
-/** Cơ quan đơn vị (không có `co_quan_don_vi_id`) — form tạo tài khoản. */
+/** CQ đơn vị (form tạo tài khoản). */
 interface AccountCoQuanDonViOption {
   id: string;
   ten_don_vi: string;
   ma_don_vi: string;
 }
 
-/** Đơn vị trực thuộc — có `co_quan_don_vi_id` để lọc theo cơ quan. */
+/** Đơn vị trực thuộc (lọc theo CQ). */
 interface AccountDonViTrucThuocOption extends AccountCoQuanDonViOption {
   co_quan_don_vi_id?: string | null;
   CoQuanDonVi?: UnitApiRow['CoQuanDonVi'] | null;
@@ -58,7 +58,6 @@ export function AccountCreateForm() {
   const currentUserRole = user?.role || '';
 
   useEffect(() => {
-    // Lấy danh sách đơn vị và chức vụ
     fetchUnitsAndPositions();
   }, []);
 
@@ -100,7 +99,6 @@ export function AccountCreateForm() {
         setPositions((positionsRes.data || []) as ManagerPositionRow[]);
       }
     } catch {
-      // Error handled by UI
     }
   };
 

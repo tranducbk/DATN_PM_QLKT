@@ -139,7 +139,6 @@ export function Step3SetTitlesDonViHangNam({
         }
       }
     } catch (error) {
-      // Error handled by UI
     } finally {
       setLoading(false);
     }
@@ -168,7 +167,6 @@ export function Step3SetTitlesDonViHangNam({
       hideMessage();
       message.success('Tính toán hồ sơ hoàn tất!');
     } catch (error) {
-      // Error handled by UI
       hideMessage();
       message.error('Có lỗi khi tính toán hồ sơ');
     }
@@ -281,7 +279,6 @@ export function Step3SetTitlesDonViHangNam({
             return; // Không cho phép chọn
           }
         } catch (error: unknown) {
-          // Error handled by UI
           // Không block nếu lỗi API, chỉ log
         }
       }

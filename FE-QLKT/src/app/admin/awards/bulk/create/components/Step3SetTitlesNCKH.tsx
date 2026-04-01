@@ -120,7 +120,6 @@ export function Step3SetTitlesNCKH({
         }
       }
     } catch (error) {
-      // Error handled by UI
     } finally {
       setLoading(false);
     }
@@ -155,7 +154,6 @@ export function Step3SetTitlesNCKH({
         setAnnualProfile(null);
       }
     } catch (error: unknown) {
-      // Error handled by UI
       setAnnualProfile(null);
     } finally {
       setLoadingModal(false);
@@ -175,7 +173,6 @@ export function Step3SetTitlesNCKH({
         setScientificAchievements([]);
       }
     } catch (error: unknown) {
-      // Error handled by UI
       setScientificAchievements([]);
     } finally {
       setLoadingModal(false);

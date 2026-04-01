@@ -18,7 +18,7 @@ import { MODAL_TABLE_PREVIEW_PAGE_SIZE } from '@/lib/constants/pagination.consta
 
 const { Text } = Typography;
 
-/** Dòng preview quân nhân trong modal xuất (getPersonnel theo đơn vị). */
+/** Preview quân nhân (getPersonnel theo đơn vị). */
 interface ExportPersonnelPreviewRow {
   id: string;
   ho_ten?: string | null;
@@ -27,7 +27,7 @@ interface ExportPersonnelPreviewRow {
   ChucVu?: { ten_chuc_vu?: string | null };
 }
 
-/** Dòng đơn vị trong bảng chọn (trùng state `units`). */
+/** Đơn vị trong bảng chọn (cùng state `units`). */
 interface ExportUnitPreviewRow {
   id: string;
   ten_don_vi: string;
@@ -348,7 +348,7 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
               columns={personnelColumns}
               dataSource={personnelList}
               loading={loadingPersonnel}
-              pagination={{ pageSize: 5, size: 'small' }}
+              pagination={{ pageSize: 5, size: 'small', showLessItems: true }}
               rowSelection={{
                 selectedRowKeys: selectedPersonnelIds,
                 onChange: keys => setSelectedPersonnelIds(keys as string[]),
@@ -369,7 +369,11 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
               rowKey="id"
               columns={unitColumns}
               dataSource={units}
-              pagination={{ pageSize: MODAL_TABLE_PREVIEW_PAGE_SIZE, size: 'small' }}
+              pagination={{
+                pageSize: MODAL_TABLE_PREVIEW_PAGE_SIZE,
+                size: 'small',
+                showLessItems: true,
+              }}
               rowSelection={{
                 selectedRowKeys: selectedUnitIds,
                 onChange: keys => setSelectedUnitIds(keys as string[]),

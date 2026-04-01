@@ -209,8 +209,8 @@ export default function CreateProposalPage() {
       const responses = await Promise.all(promises);
       const personnelData = responses.filter(r => r.success).map(r => r.data);
       setPersonnelDetails(personnelData);
-    } catch (error) {
-      // Error handled by UI
+    } catch (error: unknown) {
+      antMessage.error(getApiErrorMessage(error, 'Không tải được thông tin quân nhân'));
     }
   };
 
@@ -229,7 +229,6 @@ export default function CreateProposalPage() {
         // Failed to fetch units
       }
     } catch (error) {
-      // Error handled by UI
     }
   };
 
@@ -299,7 +298,6 @@ export default function CreateProposalPage() {
           return;
         }
       } catch (error: unknown) {
-        // Error handled by UI
         antMessage.error('Lỗi khi kiểm tra thông tin quân nhân');
         return;
       }
@@ -322,7 +320,6 @@ export default function CreateProposalPage() {
           return;
         }
       } catch (error: unknown) {
-        // Error handled by UI
         antMessage.error('Lỗi khi kiểm tra thông tin quân nhân');
         return;
       }
@@ -376,7 +373,6 @@ export default function CreateProposalPage() {
           return;
         }
       } catch (error: unknown) {
-        // Error handled by UI
         antMessage.error('Lỗi khi kiểm tra thông tin quân nhân');
         return;
       }
@@ -447,7 +443,6 @@ export default function CreateProposalPage() {
             return;
           }
         } catch (error: unknown) {
-          // Error handled by UI
           antMessage.error('Lỗi khi kiểm tra thông tin quân nhân');
           setLoading(false);
           return;
@@ -474,7 +469,6 @@ export default function CreateProposalPage() {
             return;
           }
         } catch (error: unknown) {
-          // Error handled by UI
           antMessage.error('Lỗi khi kiểm tra thông tin quân nhân');
           setLoading(false);
           return;
@@ -551,7 +545,6 @@ export default function CreateProposalPage() {
             return;
           }
         } catch (error: unknown) {
-          // Error handled by UI
           antMessage.error('Lỗi khi kiểm tra thông tin quân nhân');
           setLoading(false);
           return;

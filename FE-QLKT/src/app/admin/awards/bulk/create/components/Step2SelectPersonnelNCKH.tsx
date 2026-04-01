@@ -90,7 +90,6 @@ export function Step2SelectPersonnelNCKH({
         setPersonnel(personnelData);
       }
     } catch (error: unknown) {
-      // Error handled by UI
     } finally {
       setLoading(false);
     }

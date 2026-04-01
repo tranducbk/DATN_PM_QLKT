@@ -70,7 +70,6 @@ export function ProfileViewForm({
         setPersonnelData(response.data);
       }
     } catch (error: unknown) {
-      // Error handled by UI
       const errorMessage =
         getApiErrorMessage(error, 'Không thể tải thông tin cá nhân');
       message.error(errorMessage);

@@ -35,6 +35,7 @@ import { ROLES, getRoleInfo } from '@/constants/roles.constants';
 
 const { Title } = Typography;
 
+/** Dòng bảng tài khoản (API getAccounts). */
 interface SuperAdminAccountRow {
   id: string;
   username: string;
@@ -139,10 +140,9 @@ export default function AccountsListPage() {
     fetchAccounts(1, pagination.pageSize, debouncedSearch, value);
   };
 
-  // Initial load
   useEffect(() => {
     fetchAccounts(1, 10);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ mount
   }, []);
 
   const columns: ColumnsType<SuperAdminAccountRow> = [

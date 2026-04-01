@@ -805,7 +805,6 @@ class UnitAnnualAwardService {
     });
     const validDecisionNumbers = new Set(existingDecisions.map(d => d.so_quyet_dinh));
 
-    // --- First pass: collect all ma_don_vi from valid rows ---
     const allMaDonVi = new Set<string>();
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
       const row = worksheet.getRow(rowNumber);
@@ -813,7 +812,6 @@ class UnitAnnualAwardService {
       if (maDonViVal) allMaDonVi.add(maDonViVal);
     }
 
-    // --- Batch queries for units ---
     const [coQuanDonViList, donViTrucThuocList] = await Promise.all([
       prisma.coQuanDonVi.findMany({
         where: { ma_don_vi: { in: [...allMaDonVi] } },
@@ -861,7 +859,6 @@ class UnitAnnualAwardService {
       awardsByUnit.set(unitId, list);
     }
 
-    // --- Second pass: validate rows using Maps ---
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
       const row = worksheet.getRow(rowNumber);
       const idValue = idCol ? row.getCell(idCol).value : null;

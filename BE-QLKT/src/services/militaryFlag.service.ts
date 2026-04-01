@@ -88,7 +88,6 @@ class MilitaryFlagService {
     const seenInFile = new Set<string>();
     const currentYear = new Date().getFullYear();
 
-    // --- First pass: collect all personnel IDs from worksheet ---
     const allPersonnelIds = new Set<string>();
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
       const row = worksheet.getRow(rowNumber);
@@ -99,7 +98,6 @@ class MilitaryFlagService {
       }
     }
 
-    // --- Batch queries: personnel, existing awards, decisions, pending proposals ---
     const [personnelList, existingAwardsList, existingDecisions, pendingProposals] = await Promise.all([
       allPersonnelIds.size > 0
         ? prisma.quanNhan.findMany({

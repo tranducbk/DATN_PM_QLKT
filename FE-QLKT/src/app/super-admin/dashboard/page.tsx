@@ -9,6 +9,7 @@ import {
   ConfigProvider,
   theme as antdTheme,
   Spin,
+  message,
 } from 'antd';
 import {
   UserOutlined,
@@ -21,6 +22,7 @@ import {
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { apiClient } from '@/lib/apiClient';
+import { getApiErrorMessage } from '@/lib/apiError';
 import { useTheme } from '@/components/ThemeProvider';
 import { useAuth } from '@/contexts/AuthContext';
 import { ROLE_LABELS } from '@/constants/roles.constants';
@@ -92,8 +94,8 @@ export default function SuperAdminDashboard() {
             newAccountsByDate: data.newAccountsByDate || [],
           });
         }
-      } catch (error) {
-        // Error handled by UI
+      } catch (error: unknown) {
+        message.error(getApiErrorMessage(error, 'Không tải được dữ liệu dashboard'));
       } finally {
         setLoading(false);
       }

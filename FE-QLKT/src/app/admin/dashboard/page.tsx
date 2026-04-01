@@ -13,6 +13,7 @@ import {
   Col,
   Skeleton,
   Spin,
+  message,
 } from 'antd';
 import {
   TeamOutlined,
@@ -27,6 +28,7 @@ import dynamic from 'next/dynamic';
 import { useTheme } from '@/components/ThemeProvider';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/apiClient';
+import { getApiErrorMessage } from '@/lib/apiError';
 import { formatDateTime } from '@/lib/utils';
 import { PROPOSAL_STATUS_LABELS, PROPOSAL_TYPE_LABELS } from '@/constants/proposal.constants';
 import { ROLE_LABELS } from '@/constants/roles.constants';
@@ -105,8 +107,8 @@ export default function AdminDashboard() {
             scientificAchievementsByMonth: statisticsRes.data.scientificAchievementsByMonth || [],
           });
         }
-      } catch (error) {
-        // Error handled by UI
+      } catch (error: unknown) {
+        message.error(getApiErrorMessage(error, 'Không tải được dữ liệu dashboard'));
       } finally {
         setLoading(false);
       }

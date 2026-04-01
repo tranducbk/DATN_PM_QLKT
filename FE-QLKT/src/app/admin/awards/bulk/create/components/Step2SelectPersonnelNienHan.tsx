@@ -115,7 +115,6 @@ export function Step2SelectPersonnelNienHan({
         }
       }
     } catch (error: unknown) {
-      // Error handled by UI
     } finally {
       setLoading(false);
     }
@@ -145,7 +144,6 @@ export function Step2SelectPersonnelNienHan({
 
       setServiceProfilesMap(profilesMap);
     } catch (error) {
-      // Error handled by UI
     } finally {
       setCheckingProfiles(false);
     }

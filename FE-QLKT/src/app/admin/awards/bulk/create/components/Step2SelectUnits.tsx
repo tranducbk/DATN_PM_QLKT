@@ -120,7 +120,6 @@ export function Step2SelectUnits({
         setUnits([]);
       }
     } catch (error: unknown) {
-      // Error handled by UI message
       message.error('Lỗi khi tải danh sách đơn vị: ' + getApiErrorMessage(error, 'Unknown error'));
       setUnits([]);
     } finally {

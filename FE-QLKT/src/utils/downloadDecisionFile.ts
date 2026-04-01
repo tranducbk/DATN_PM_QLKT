@@ -116,7 +116,6 @@ export async function downloadDecisionFile(soQuyetDinh: string): Promise<void> {
       message.error('Không thể mở cửa sổ mới. Vui lòng cho phép popup.');
     }
   } catch (error: unknown) {
-    // Error handled by UI message
     const ax = error as { response?: { data?: unknown } };
 
     // Xử lý lỗi từ blob response (nếu backend trả về JSON error trong blob)

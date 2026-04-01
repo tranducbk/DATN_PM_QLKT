@@ -37,14 +37,14 @@ import { formatDate } from '@/lib/utils';
 const { Title, Text } = Typography;
 const { Search } = Input;
 
-/** Một dòng kết quả checkAnnualRewards. */
+/** Một dòng kết quả `checkAnnualRewards`. */
 interface AnnualRewardCheckResultRow {
   personnel_id: string;
   has_reward: boolean;
   has_proposal: boolean;
 }
 
-/** Đơn vị trong filter (getUnits). */
+/** Option filter đơn vị (getUnits). */
 interface BulkUnitOptionRow {
   id: string;
   ten_don_vi: string;

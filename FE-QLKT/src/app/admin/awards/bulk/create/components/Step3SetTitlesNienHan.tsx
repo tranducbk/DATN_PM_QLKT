@@ -133,7 +133,6 @@ export function Step3SetTitlesNienHan({
         }
       }
     } catch (error) {
-      // Error handled by UI
     } finally {
       setLoading(false);
     }
@@ -265,7 +264,6 @@ export function Step3SetTitlesNienHan({
         setServiceProfile(null);
       }
     } catch (error: unknown) {
-      // Error handled by UI message
       message.error('Không thể tải lịch sử niên hạn');
       setServiceProfile(null);
     } finally {

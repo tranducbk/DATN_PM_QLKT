@@ -35,7 +35,7 @@ const PositionForm = dynamic(
   { ssr: false, loading: () => <Spin /> }
 );
 
-/** Dòng đơn vị từ API getUnits (hierarchy). */
+/** Đơn vị từ getUnits (hierarchy). */
 interface CategoryUnitRow {
   id: string;
   ten_don_vi: string;
@@ -43,7 +43,7 @@ interface CategoryUnitRow {
   co_quan_don_vi_id?: string | null;
 }
 
-/** Dòng chức vụ từ API getPositions — lọc theo cơ quan. */
+/** Chức vụ từ getPositions (lọc theo cơ quan). */
 interface CategoryPositionRow {
   id: string;
   ten_chuc_vu?: string;
@@ -80,7 +80,6 @@ export default function CategoriesPage() {
       setUnits((unitsRes.data || []) as CategoryUnitRow[]);
       setPositions((positionsRes.data || []) as CategoryPositionRow[]);
     } catch (error) {
-      // Error handled by UI message
       message.error('Không thể tải dữ liệu');
     } finally {
       setLoading(false);
