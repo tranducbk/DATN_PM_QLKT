@@ -188,7 +188,7 @@ export function ProposalDetailModal({
       }
       open={visible}
       onCancel={onClose}
-      width={1000}
+      width="min(1000px, calc(100vw - 32px))"
       footer={
         proposal.status === PROPOSAL_STATUS.PENDING
           ? [

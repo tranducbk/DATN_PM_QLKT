@@ -181,7 +181,7 @@ class MilitaryFlagService {
         continue;
       }
 
-      const nam = parseInt(String(namVal));
+      const nam = parseInt(String(namVal), 10);
       if (!Number.isInteger(nam)) {
         errors.push({
           row: rowNumber,
@@ -437,7 +437,7 @@ class MilitaryFlagService {
       try {
         const ho_ten = row.getCell(1).value?.toString().trim();
         const ngay_sinh_raw = row.getCell(2).value;
-        const nam = parseInt(String(row.getCell(3).value));
+        const nam = parseInt(String(row.getCell(3).value), 10);
         const cap_bac = row.getCell(4).value?.toString() ?? null;
         const chuc_vu = row.getCell(5).value?.toString() ?? null;
         const ghi_chu = row.getCell(6).value?.toString() ?? null;
@@ -607,7 +607,7 @@ class MilitaryFlagService {
     }
 
     if (filters.nam) {
-      where.nam = parseInt(String(filters.nam));
+      where.nam = parseInt(String(filters.nam), 10);
     }
 
     const [data, total] = await Promise.all([

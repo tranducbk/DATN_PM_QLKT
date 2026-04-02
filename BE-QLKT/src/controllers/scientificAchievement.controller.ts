@@ -8,7 +8,7 @@ import { writeSystemLog } from '../helpers/systemLogHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
-import { parsePersonnelIdsFromQuery, buildManagerQuanNhanFilter } from '../helpers/controllerHelpers';
+import { parsePersonnelIdsFromQuery, buildManagerQuanNhanFilter, getAdminUsername } from '../helpers/controllerHelpers';
 import { notifyOnImport } from '../helpers/notification';
 
 class ScientificAchievementController {
@@ -117,7 +117,7 @@ class ScientificAchievementController {
     if (!id) {
       return ResponseHelper.badRequest(res, 'Thiếu id');
     }
-    const adminUsername = req.user?.username || 'Admin';
+    const adminUsername = getAdminUsername(req);
     const result = await scientificAchievementService.deleteAchievement(id, adminUsername);
     return ResponseHelper.success(res, { message: result.message });
   });

@@ -1,7 +1,6 @@
 import axiosInstance from '@/utils/axiosInstance';
 import { getApiErrorMessage } from '@/lib/apiError';
-
-type ApiResponse<T = any> = { success: boolean; data?: T; message?: string };
+import type { ApiResponse } from '@/lib/types';
 
 export async function login(username: string, password: string): Promise<ApiResponse> {
   try {

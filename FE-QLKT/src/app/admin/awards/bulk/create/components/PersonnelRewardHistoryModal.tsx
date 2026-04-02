@@ -303,7 +303,7 @@ export function PersonnelRewardHistoryModal({
           Đóng
         </Button>,
       ]}
-      width={1200}
+      width="min(1200px, calc(100vw - 32px))"
       loading={loading}
       centered
       style={{ top: 20 }}

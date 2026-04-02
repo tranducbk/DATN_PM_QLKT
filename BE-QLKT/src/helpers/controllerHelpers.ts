@@ -3,6 +3,15 @@ import { prisma } from '../models';
 import { ROLES } from '../constants/roles.constants';
 
 /**
+ * Lấy username của admin từ request, fallback về 'Admin' nếu không có.
+ * @param req - Express request
+ * @returns username string
+ */
+export function getAdminUsername(req: Request): string {
+  return req.user?.username ?? 'Admin';
+}
+
+/**
  * Parse personnel_ids từ query string (dùng chung cho các award controllers)
  */
 export function parsePersonnelIdsFromQuery(query: Request['query']): string[] {

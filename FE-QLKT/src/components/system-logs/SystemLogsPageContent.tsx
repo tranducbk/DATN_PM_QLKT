@@ -70,6 +70,7 @@ export function SystemLogsPageContent({ basePath }: SystemLogsPageContentProps) 
     startDate: undefined,
     endDate: undefined,
   });
+  const [stats, setStats] = useState({ create: 0, del: 0, update: 0 });
 
   const fetchLogs = useCallback(async () => {
     try {
@@ -120,7 +121,7 @@ export function SystemLogsPageContent({ basePath }: SystemLogsPageContentProps) 
           action: l?.action?.toUpperCase() || l?.action || '',
           actor_name: actorName,
           actor_role: l?.actor_role || '',
-          details: l?.description || l?.details || '',
+          details: l?.details || l?.description || '',
           description: l?.description || l?.details || '',
           created_at: l?.created_at ?? l?.createdAt ?? l?.time ?? l?.timestamp ?? '',
         };
@@ -143,8 +144,6 @@ export function SystemLogsPageContent({ basePath }: SystemLogsPageContentProps) 
   useEffect(() => {
     fetchLogs();
   }, [fetchLogs]);
-
-  const [stats, setStats] = useState({ create: 0, del: 0, update: 0 });
 
   const handleDeleteSelected = async () => {
     if (selectedRowKeys.length === 0) return;

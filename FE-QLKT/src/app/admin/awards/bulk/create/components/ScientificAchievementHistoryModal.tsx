@@ -101,7 +101,7 @@ export function ScientificAchievementHistoryModal({
       open={visible}
       onCancel={onClose}
       footer={null}
-      width={900}
+      width="min(900px, calc(100vw - 32px))"
       centered
     >
       <Spin spinning={loading}>

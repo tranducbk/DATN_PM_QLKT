@@ -10,6 +10,20 @@ import {
 } from '../middlewares/errorHandler';
 import type { Prisma } from '../generated/prisma';
 
+const ACCOUNT_QUAN_NHAN_INCLUDE = {
+  QuanNhan: {
+    include: {
+      CoQuanDonVi: true,
+      DonViTrucThuoc: {
+        include: {
+          CoQuanDonVi: true,
+        },
+      },
+      ChucVu: true,
+    },
+  },
+} as const;
+
 interface CreateAccountData {
   personnel_id?: string | null;
   username: string;
@@ -91,19 +105,7 @@ class AccountService {
         skip,
         take: limitNum,
         where: whereClause,
-        include: {
-          QuanNhan: {
-            include: {
-              CoQuanDonVi: true,
-              DonViTrucThuoc: {
-                include: {
-                  CoQuanDonVi: true,
-                },
-              },
-              ChucVu: true,
-            },
-          },
-        },
+        include: ACCOUNT_QUAN_NHAN_INCLUDE,
         orderBy: {
           createdAt: 'desc',
         },
@@ -141,19 +143,7 @@ class AccountService {
   async getAccountById(id: string): Promise<Record<string, unknown>> {
     const account = await prisma.taiKhoan.findUnique({
       where: { id },
-      include: {
-        QuanNhan: {
-          include: {
-            CoQuanDonVi: true,
-            DonViTrucThuoc: {
-              include: {
-                CoQuanDonVi: true,
-              },
-            },
-            ChucVu: true,
-          },
-        },
-      },
+      include: ACCOUNT_QUAN_NHAN_INCLUDE,
     });
 
     if (!account) {
@@ -384,19 +374,7 @@ class AccountService {
           password_hash: hashedPassword,
           role,
         },
-        include: {
-          QuanNhan: {
-            include: {
-              CoQuanDonVi: true,
-              DonViTrucThuoc: {
-                include: {
-                  CoQuanDonVi: true,
-                },
-              },
-              ChucVu: true,
-            },
-          },
-        },
+        include: ACCOUNT_QUAN_NHAN_INCLUDE,
       });
     });
 
@@ -439,19 +417,7 @@ class AccountService {
     const updatedAccount = await prisma.taiKhoan.update({
       where: { id },
       data: updateData,
-      include: {
-        QuanNhan: {
-          include: {
-            CoQuanDonVi: true,
-            DonViTrucThuoc: {
-              include: {
-                CoQuanDonVi: true,
-              },
-            },
-            ChucVu: true,
-          },
-        },
-      },
+      include: ACCOUNT_QUAN_NHAN_INCLUDE,
     });
 
     return {

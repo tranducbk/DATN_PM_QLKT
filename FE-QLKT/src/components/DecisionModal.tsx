@@ -261,7 +261,7 @@ export function DecisionModal({
       title={initialDecision ? 'Sửa Quyết định Khen thưởng' : 'Thêm Số Quyết định Khen thưởng'}
       open={visible}
       onCancel={onClose}
-      width={700}
+      width="min(700px, calc(100vw - 32px))"
       centered
       style={{ borderRadius: 8 }}
       styles={{ body: { borderRadius: 8 } }}

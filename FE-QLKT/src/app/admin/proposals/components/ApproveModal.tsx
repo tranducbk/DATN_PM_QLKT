@@ -364,7 +364,7 @@ export function ApproveModal({ visible, proposal, onClose, onSuccess }: ApproveM
       }
       open={visible}
       onCancel={handleCancel}
-      width={800}
+      width="min(800px, calc(100vw - 32px))"
       footer={
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <Button onClick={handleCancel}>Hủy</Button>

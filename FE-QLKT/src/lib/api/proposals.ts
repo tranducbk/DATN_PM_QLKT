@@ -1,8 +1,7 @@
 import axiosInstance from '@/utils/axiosInstance';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { PROPOSAL_TYPES, type ProposalType } from '@/constants/proposal.constants';
-
-type ApiResponse<T = any> = { success: boolean; data?: T; message?: string };
+import type { ApiResponse } from '@/lib/types';
 
 export async function getProposalTemplate(
   type: ProposalType = PROPOSAL_TYPES.CA_NHAN_HANG_NAM

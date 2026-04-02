@@ -1,7 +1,6 @@
 import axiosInstance from '@/utils/axiosInstance';
 import { getApiErrorMessage } from '@/lib/apiError';
-
-type ApiResponse<T = any> = { success: boolean; data?: T; message?: string };
+import type { ApiResponse } from '@/lib/types';
 
 /** Phản hồi cập nhật/tạo lịch sử chức vụ — backend có thể kèm cảnh báo ngày kết thúc */
 export type PositionHistoryWarning = {

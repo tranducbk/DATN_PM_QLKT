@@ -283,7 +283,7 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
       okText={exporting ? 'Đang xuất...' : 'Xuất file'}
       okButtonProps={{ loading: exporting, icon: <DownloadOutlined /> }}
       cancelText="Hủy"
-      width={700}
+      width="min(700px, calc(100vw - 32px))"
       centered
       destroyOnClose
     >
@@ -348,7 +348,11 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
               columns={personnelColumns}
               dataSource={personnelList}
               loading={loadingPersonnel}
-              pagination={{ pageSize: 5, size: 'small', showLessItems: true }}
+              pagination={{
+                pageSize: MODAL_TABLE_PREVIEW_PAGE_SIZE,
+                size: 'small',
+                showLessItems: true,
+              }}
               rowSelection={{
                 selectedRowKeys: selectedPersonnelIds,
                 onChange: keys => setSelectedPersonnelIds(keys as string[]),

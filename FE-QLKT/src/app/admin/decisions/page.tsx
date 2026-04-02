@@ -358,6 +358,7 @@ export default function AdminDecisionsPage() {
           dataSource={decisions}
           rowKey="id"
           loading={loading}
+          scroll={{ x: 'max-content' }}
           pagination={{
             ...DEFAULT_ANTD_TABLE_PAGINATION,
             current: pagination.current,

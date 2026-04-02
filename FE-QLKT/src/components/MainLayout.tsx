@@ -49,7 +49,7 @@ import type { NotificationItem } from '@/lib/api/notifications';
 import { formatDate } from '@/lib/utils';
 import type { UserRole } from '@/lib/types';
 import { ROLES, getRoleInfo } from '@/constants/roles.constants';
-import { getApiErrorMessage, logError } from '@/lib/apiError';
+import { getApiErrorMessage, logApiError } from '@/lib/apiError';
 
 const { Header, Sider, Content, Footer } = Layout;
 
@@ -221,7 +221,7 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
         setNotificationCount(response.data.count || 0);
       }
     } catch (error: unknown) {
-      logError(error, 'Tải số thông báo chưa đọc');
+      logApiError(error, 'Tải số thông báo chưa đọc');
     }
   };
 
@@ -237,7 +237,7 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
         setNotifications(list);
       }
     } catch (error: unknown) {
-      logError(error, 'Tải danh sách thông báo');
+      logApiError(error, 'Tải danh sách thông báo');
     } finally {
       setNotificationLoading(false);
     }
@@ -880,7 +880,9 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
                                               : 'text-gray-500 dark:text-gray-400'
                                           }`}
                                         >
-                                          <span>{formatNotificationTime(notification.created_at)}</span>
+                                          <span>
+                                            {formatNotificationTime(notification.created_at)}
+                                          </span>
                                         </p>
                                         {notification.is_read && (
                                           <span className="text-[10px] font-medium text-gray-400 dark:text-gray-400 px-2 py-0.5 bg-gray-100 dark:bg-gray-600 rounded">

@@ -153,7 +153,7 @@ export function UnitAnnualAwardHistoryModal({
       open={visible}
       onCancel={onClose}
       footer={null}
-      width={1000}
+      width="min(1000px, calc(100vw - 32px))"
       centered
     >
       <Spin spinning={loading}>

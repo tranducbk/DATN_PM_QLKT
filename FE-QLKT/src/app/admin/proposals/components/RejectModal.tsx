@@ -71,7 +71,7 @@ export function RejectModal({ visible, proposal, onClose, onSuccess }: RejectMod
       okText="Xác nhận từ chối"
       cancelText="Hủy"
       okButtonProps={{ danger: true }}
-      width={600}
+      width="min(600px, calc(100vw - 32px))"
     >
       <Alert
         message="Cảnh báo"

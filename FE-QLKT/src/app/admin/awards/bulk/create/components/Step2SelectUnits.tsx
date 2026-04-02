@@ -385,7 +385,7 @@ export function Step2SelectUnits({
       )}
 
       {/* Filters */}
-      <Space style={{ marginBottom: 16 }} size="middle">
+      <Space style={{ marginBottom: 16 }} size="middle" wrap>
         <div>
           <Text strong>Năm đề xuất: </Text>
           <InputNumber

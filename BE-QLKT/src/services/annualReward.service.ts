@@ -439,7 +439,7 @@ class AnnualRewardService {
         continue;
       }
 
-      const nam = parseInt(String(namVal));
+      const nam = parseInt(String(namVal), 10);
       if (!Number.isInteger(nam)) {
         errors.push(`Dòng ${rowNumber}: Giá trị năm không hợp lệ`);
         continue;
@@ -814,7 +814,7 @@ class AnnualRewardService {
         continue;
       }
 
-      const nam = parseInt(String(namVal));
+      const nam = parseInt(String(namVal), 10);
       if (!Number.isInteger(nam)) {
         errors.push({
           row: rowNumber,
@@ -1057,7 +1057,7 @@ class AnnualRewardService {
       const existingReward = await prisma.danhHieuHangNam.findFirst({
         where: {
           quan_nhan_id: personnelIdStr,
-          nam: parseInt(String(nam)),
+          nam: parseInt(String(nam), 10),
         },
       });
 
@@ -1076,7 +1076,7 @@ class AnnualRewardService {
       const proposals = await prisma.bangDeXuat.findMany({
         where: {
           loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
-          nam: parseInt(String(nam)),
+          nam: parseInt(String(nam), 10),
           status: {
             in: [PROPOSAL_STATUS.PENDING, PROPOSAL_STATUS.APPROVED],
           },
@@ -1196,7 +1196,7 @@ class AnnualRewardService {
         try {
           const duplicateResult = await checkDuplicateAward(
             personnelIdStr,
-            parseInt(String(nam)),
+            parseInt(String(nam), 10),
             danh_hieu,
             PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
             PROPOSAL_STATUS.APPROVED
@@ -1212,7 +1212,7 @@ class AnnualRewardService {
         const existingReward = await tx.danhHieuHangNam.findFirst({
           where: {
             quan_nhan_id: personnelIdStr,
-            nam: parseInt(String(nam)),
+            nam: parseInt(String(nam), 10),
           },
         });
 
@@ -1261,7 +1261,7 @@ class AnnualRewardService {
           rewardRecord = await tx.danhHieuHangNam.create({
             data: {
               quan_nhan_id: personnelIdStr,
-              nam: parseInt(String(nam)),
+              nam: parseInt(String(nam), 10),
               danh_hieu: finalDanhHieu,
               cap_bac: individualCapBac || null,
               chuc_vu: individualChucVu || null,

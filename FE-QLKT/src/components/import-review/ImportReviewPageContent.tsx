@@ -26,7 +26,7 @@ import {
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { DANH_HIEU_MAP } from '@/constants/danhHieu.constants';
-import { getApiErrorMessage } from '@/lib/apiError';
+import { getApiErrorMessage, logApiError } from '@/lib/apiError';
 import { DEFAULT_PAGE_SIZE, DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
 
 const { Title, Text } = Typography;
@@ -111,6 +111,7 @@ export function makeErrorColumn(): ColumnsType<PreviewItem>[number] {
 
 export function makeSTTColumn(width = 60): ColumnsType<PreviewItem>[number] {
   return {
+    key: 'stt',
     title: 'STT',
     width,
     align: 'center' as const,
@@ -216,7 +217,8 @@ export function ImportReviewPageContent({ config }: { config: ImportReviewConfig
         setPreviewData({ valid, invalid });
         setSelectedRowKeys(valid.map(v => v.__key as React.Key));
       }
-    } catch {
+    } catch (error: unknown) {
+      logApiError(error, 'đọc dữ liệu xem trước import');
     } finally {
       setLoading(false);
     }
@@ -234,7 +236,7 @@ export function ImportReviewPageContent({ config }: { config: ImportReviewConfig
   const validColumnsPaginated = useMemo(() => {
     return config.validColumns.map(col => {
       const c = col as ColumnsType<PreviewItem>[number];
-      if (c.title === 'STT') {
+      if (c.key === 'stt') {
         return {
           ...c,
           render: (_: unknown, __: PreviewItem, index: number) =>
@@ -248,7 +250,7 @@ export function ImportReviewPageContent({ config }: { config: ImportReviewConfig
   const invalidColumnsPaginated = useMemo(() => {
     return config.invalidColumns.map(col => {
       const c = col as ColumnsType<PreviewItem>[number];
-      if (c.title === 'STT') {
+      if (c.key === 'stt') {
         return {
           ...c,
           render: (_: unknown, __: PreviewItem, index: number) =>

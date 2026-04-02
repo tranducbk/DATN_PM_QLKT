@@ -14,6 +14,7 @@ import { notifyOnImport } from '../helpers/notification';
 import {
   parsePersonnelIdsFromQuery,
   buildManagerQuanNhanFilter,
+  getAdminUsername,
 } from '../helpers/controllerHelpers';
 
 class AnnualRewardController {
@@ -176,7 +177,7 @@ class AnnualRewardController {
     const id = normalizeParam(req.params.id);
     if (!id) return ResponseHelper.badRequest(res, 'Thiếu id');
 
-    const adminUsername = req.user?.username ?? 'Admin';
+    const adminUsername = getAdminUsername(req);
     const result = await annualRewardService.deleteAnnualReward(id, adminUsername);
     return ResponseHelper.success(res, { message: result.message });
   });
@@ -403,7 +404,7 @@ class AnnualRewardController {
       'Content-Disposition',
       `attachment; filename="mau_import_ca_nhan_hang_nam_${new Date().toISOString().slice(0, 10)}.xlsx"`
     );
-    return res.send(buffer);
+    return res.status(200).send(buffer);
   });
 
   exportToExcel = catchAsync(async (req: Request, res: Response) => {
@@ -437,7 +438,7 @@ class AnnualRewardController {
     );
 
     const buffer = await workbook.xlsx.writeBuffer();
-    return res.send(buffer);
+    return res.status(200).send(buffer);
   });
 
   getStatistics = catchAsync(async (req: Request, res: Response) => {

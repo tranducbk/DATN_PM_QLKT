@@ -40,7 +40,7 @@ export function ChangePasswordView({ dashboardHref }: ChangePasswordViewProps) {
   const { logout } = useAuth();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const [newPassword, setNewPassword] = useState('');
+  const watchedPassword = Form.useWatch('newPassword', form);
 
   const handleChangePassword = async (values: {
     oldPassword: string;
@@ -164,12 +164,11 @@ export function ChangePasswordView({ dashboardHref }: ChangePasswordViewProps) {
                     size="large"
                     disabled={loading}
                     style={{ borderRadius: '8px' }}
-                    onChange={e => setNewPassword(e.target.value)}
                   />
                 </Form.Item>
-                {newPassword && (
+                {watchedPassword && (
                   <div style={{ marginTop: '-16px', marginBottom: '16px' }}>
-                    <PasswordStrengthIndicator password={newPassword} />
+                    <PasswordStrengthIndicator password={watchedPassword} />
                   </div>
                 )}
 
@@ -210,7 +209,6 @@ export function ChangePasswordView({ dashboardHref }: ChangePasswordViewProps) {
                     <Button
                       onClick={() => {
                         form.resetFields();
-                        setNewPassword('');
                       }}
                       disabled={loading}
                       size="large"

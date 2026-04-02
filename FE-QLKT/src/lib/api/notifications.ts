@@ -1,7 +1,6 @@
 import axiosInstance from '@/utils/axiosInstance';
 import { getApiErrorMessage } from '@/lib/apiError';
-
-type ApiResponse<T = any> = { success: boolean; data?: T; message?: string };
+import type { ApiResponse } from '@/lib/types';
 
 export type NotificationItem = {
   id?: string;
@@ -18,7 +17,7 @@ export async function getNotifications(params?: {
   limit?: number;
   isRead?: boolean;
   type?: string;
-}): Promise<ApiResponse> {
+}): Promise<ApiResponse<{ notifications: NotificationItem[]; total?: number; unread_count?: number }>> {
   try {
     const res = await axiosInstance.get('/api/notifications', { params });
     return { success: true, data: res.data?.data };
@@ -27,7 +26,7 @@ export async function getNotifications(params?: {
   }
 }
 
-export async function getUnreadNotificationCount(): Promise<ApiResponse> {
+export async function getUnreadNotificationCount(): Promise<ApiResponse<{ count: number }>> {
   try {
     const res = await axiosInstance.get('/api/notifications/unread-count');
     return { success: true, data: res.data?.data };

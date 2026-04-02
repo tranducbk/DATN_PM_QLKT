@@ -435,7 +435,7 @@ export function Step2SelectPersonnelNCKH({
         </>
       )}
 
-      <Space style={{ marginBottom: 16 }} size="middle">
+      <Space style={{ marginBottom: 16 }} size="middle" wrap>
         <div>
           <Text strong>Năm đề xuất: </Text>
           <InputNumber

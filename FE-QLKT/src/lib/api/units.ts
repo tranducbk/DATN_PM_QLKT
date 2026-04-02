@@ -1,7 +1,6 @@
 import axiosInstance from '@/utils/axiosInstance';
 import { getApiErrorMessage } from '@/lib/apiError';
-
-type ApiResponse<T = any> = { success: boolean; data?: T; message?: string };
+import type { ApiResponse } from '@/lib/types';
 
 // Units
 export async function getUnits(params?: { hierarchy?: boolean; page?: number; limit?: number }): Promise<ApiResponse & { pagination?: { total: number; page: number; limit: number; totalPages: number } }> {

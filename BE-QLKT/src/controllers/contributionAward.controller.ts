@@ -4,7 +4,7 @@ import { ROLES } from '../constants/roles.constants';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
-import { parsePersonnelIdsFromQuery, getManagerUnitFilter } from '../helpers/controllerHelpers';
+import { parsePersonnelIdsFromQuery, getManagerUnitFilter, getAdminUsername } from '../helpers/controllerHelpers';
 import { parsePagination } from '../helpers/paginationHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { notifyOnImport } from '../helpers/notification';
@@ -132,7 +132,7 @@ class ContributionAwardController {
 
   deleteAward = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.params;
-    const adminUsername = req.user!.username ?? 'Admin';
+    const adminUsername = getAdminUsername(req);
     const result = await contributionAwardService.deleteAward(String(id), adminUsername);
     return ResponseHelper.success(res, { message: result.message });
   });

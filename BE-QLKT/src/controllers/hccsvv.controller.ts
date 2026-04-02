@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import hccsvvService from '../services/hccsvv.service';
 import { ROLES } from '../constants/roles.constants';
 import { writeSystemLog } from '../helpers/systemLogHelper';
-import { parsePersonnelIdsFromQuery, getManagerUnitFilter } from '../helpers/controllerHelpers';
+import { parsePersonnelIdsFromQuery, getManagerUnitFilter, getAdminUsername } from '../helpers/controllerHelpers';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 import { parsePagination } from '../helpers/paginationHelper';
@@ -139,7 +139,7 @@ class HCCSVVController {
 
   createDirect = catchAsync(async (req: Request, res: Response) => {
     const { quan_nhan_id, danh_hieu, nam, cap_bac, chuc_vu, so_quyet_dinh, ghi_chu } = req.body;
-    const adminUsername = req.user!.username ?? 'SuperAdmin';
+    const adminUsername = getAdminUsername(req);
     if (!quan_nhan_id || !danh_hieu || !nam) {
       return ResponseHelper.badRequest(
         res,
@@ -159,7 +159,7 @@ class HCCSVVController {
 
   deleteAward = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.params;
-    const adminUsername = req.user!.username ?? 'Admin';
+    const adminUsername = getAdminUsername(req);
     const result = await hccsvvService.deleteAward(String(id), adminUsername);
     return ResponseHelper.success(res, { message: result.message });
   });
