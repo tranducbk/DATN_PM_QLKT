@@ -1,7 +1,7 @@
 'use client';
 
 import { Step3SetTitlesHCQKQT } from './Step3SetTitlesHCQKQT';
-import { Step3SetTitlesKNCVSNXD } from './Step3SetTitlesKNCVSNXD';
+import { Step3SetTitlesKNCVSNXDQDNDVN } from './Step3SetTitlesKNCVSNXDQDNDVN';
 import { Step3SetTitlesCaNhanHangNam } from './Step3SetTitlesCaNhanHangNam';
 import { Step3SetTitlesDonViHangNam } from './Step3SetTitlesDonViHangNam';
 import { Step3SetTitlesNienHan } from './Step3SetTitlesNienHan';
@@ -53,7 +53,7 @@ export function Step3SetTitles({
       );
     case PROPOSAL_TYPES.KNC_VSNXD_QDNDVN:
       return (
-        <Step3SetTitlesKNCVSNXD
+        <Step3SetTitlesKNCVSNXDQDNDVN
           selectedPersonnelIds={selectedPersonnelIds}
           onPersonnelChange={onPersonnelChange}
           titleData={titleData}

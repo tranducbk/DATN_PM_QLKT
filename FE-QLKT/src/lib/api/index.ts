@@ -149,7 +149,7 @@ export const apiClient = {
 
   // Awards (checks)
   checkHCQKQT: awardsApi.checkHCQKQT,
-  checkKNCVSNXD: awardsApi.checkKNCVSNXD,
+  checkKNCVSNXDQDNDVN: awardsApi.checkKNCVSNXDQDNDVN,
   checkContributionEligibility: awardsApi.checkContributionEligibility,
 
   // Proposals

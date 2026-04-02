@@ -299,6 +299,7 @@ export default function ProposalDetailPage() {
 
       setPersonnelDetails(detailsMap);
     } catch (error) {
+      console.error('Lỗi tải thông tin quân nhân trong đề xuất', error);
     }
   };
 
@@ -325,6 +326,7 @@ export default function ProposalDetailPage() {
 
       setPositionHistoriesMap(historiesMap);
     } catch (error) {
+      console.error('Lỗi tải lịch sử chức vụ trong đề xuất', error);
     }
   };
 

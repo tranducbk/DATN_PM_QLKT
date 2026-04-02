@@ -86,6 +86,7 @@ export function Step2SelectPersonnel({
         setPersonnel(personnelData);
       }
     } catch (error: unknown) {
+      console.error('Lỗi tải danh sách quân nhân', error);
     } finally {
       setLoading(false);
     }

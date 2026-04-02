@@ -18,7 +18,7 @@ import {
   makeGhiChuColumn,
 } from '@/components/import-review/ImportReviewPageContent';
 
-export default function ImportReviewKNCVSNXDPage() {
+export default function ImportReviewKNCVSNXDQDNDVNPage() {
   const validColumns: ColumnsType<PreviewItem> = useMemo(
     () => [
       makeSTTColumn(),
@@ -49,7 +49,7 @@ export default function ImportReviewKNCVSNXDPage() {
   );
 
   const config: ImportReviewConfig = {
-    sessionStorageKey: 'importPreviewDataKNCVSNXD',
+    sessionStorageKey: 'importPreviewDataKNCVSNXDQDNDVN',
     title: 'Xem trước dữ liệu Import - Kỷ niệm chương VSNXD QĐNDVN',
     confirmImport: apiClient.confirmCommemorationMedalsImport,
     successMessage: count => `Import thành công ${count} bản ghi Kỷ niệm chương VSNXD QĐNDVN.`,

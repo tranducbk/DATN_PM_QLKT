@@ -61,7 +61,7 @@ export async function checkHCQKQT(personnelId: string): Promise<ApiResponse> {
   }
 }
 
-export async function checkKNCVSNXD(personnelId: string): Promise<ApiResponse> {
+export async function checkKNCVSNXDQDNDVN(personnelId: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get(`/api/annual-rewards/check-knc-vsnxd/${personnelId}`);
     return { success: true, data: res.data?.data };

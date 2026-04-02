@@ -128,6 +128,7 @@ export function Step2SelectPersonnelHCQKQT({
       setAlreadyReceivedMap(receivedMap);
       setReceivedReasonMap(reasonMap);
     } catch (error) {
+      console.error('Lỗi kiểm tra điều kiện HCQKQT', error);
     } finally {
       setCheckingReceived(false);
     }

@@ -139,6 +139,7 @@ export function Step3SetTitlesDonViHangNam({
         }
       }
     } catch (error) {
+      console.error('Lỗi tải dữ liệu danh hiệu đơn vị', error);
     } finally {
       setLoading(false);
     }

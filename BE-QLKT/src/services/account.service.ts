@@ -472,133 +472,131 @@ class AccountService {
       throw new ForbiddenError('Không thể xóa tài khoản SUPER_ADMIN');
     }
 
+    if (!account.QuanNhan) {
+      await prisma.taiKhoan.delete({ where: { id } });
+      return { message: 'Xóa tài khoản thành công' };
+    }
+
     let deletedProposals = 0;
 
-    if (account.QuanNhan) {
-      const personnelId = account.QuanNhan.id;
-      // Ưu tiên DVTT vì CQDV có thể là đơn vị cha
-      const unitId = account.QuanNhan.don_vi_truc_thuoc_id || account.QuanNhan.co_quan_don_vi_id;
-      const isCoQuanDonVi = !account.QuanNhan.don_vi_truc_thuoc_id && !!account.QuanNhan.co_quan_don_vi_id;
+    const personnelId = account.QuanNhan.id;
+    // Ưu tiên DVTT vì CQDV có thể là đơn vị cha
+    const unitId = account.QuanNhan.don_vi_truc_thuoc_id || account.QuanNhan.co_quan_don_vi_id;
+    const isCoQuanDonVi =
+      !account.QuanNhan.don_vi_truc_thuoc_id && !!account.QuanNhan.co_quan_don_vi_id;
 
-      const proposals = await prisma.bangDeXuat.findMany({
-        where: {
-          OR: [
-            {
-              data_danh_hieu: {
-                path: ['$[*].personnel_id'],
-                array_contains: personnelId,
-              },
+    const proposals = await prisma.bangDeXuat.findMany({
+      where: {
+        OR: [
+          {
+            data_danh_hieu: {
+              path: ['$[*].personnel_id'],
+              array_contains: personnelId,
             },
-            {
-              data_nien_han: {
-                path: ['$[*].personnel_id'],
-                array_contains: personnelId,
-              },
+          },
+          {
+            data_nien_han: {
+              path: ['$[*].personnel_id'],
+              array_contains: personnelId,
             },
-          ],
-        },
-      });
+          },
+        ],
+      },
+    });
 
-      const pendingProposals = proposals.filter(p => p.status === PROPOSAL_STATUS.PENDING);
+    const pendingProposals = proposals.filter(p => p.status === PROPOSAL_STATUS.PENDING);
 
-      if (pendingProposals.length > 0 && !forceDelete) {
-        throw new ValidationError(
-          `Không thể xóa tài khoản này vì quân nhân đang có ${pendingProposals.length} đề xuất chờ duyệt. ` +
-            `Hãy xử lý các đề xuất trước hoặc sử dụng force delete.`
-        );
+    if (pendingProposals.length > 0 && !forceDelete) {
+      throw new ValidationError(
+        `Không thể xóa tài khoản này vì quân nhân đang có ${pendingProposals.length} đề xuất chờ duyệt. ` +
+          `Hãy xử lý các đề xuất trước hoặc sử dụng force delete.`
+      );
+    }
+
+    await prisma.$transaction(async tx => {
+      for (const proposal of proposals) {
+        let updated = false;
+
+        if (proposal.data_danh_hieu && Array.isArray(proposal.data_danh_hieu)) {
+          const filtered = (proposal.data_danh_hieu as Record<string, unknown>[]).filter(
+            item => item.personnel_id !== personnelId
+          );
+          if (filtered.length !== (proposal.data_danh_hieu as unknown[]).length) {
+            (proposal as Record<string, unknown>).data_danh_hieu = filtered;
+            updated = true;
+          }
+        }
+
+        if (proposal.data_nien_han && Array.isArray(proposal.data_nien_han)) {
+          const filtered = (proposal.data_nien_han as Record<string, unknown>[]).filter(
+            item => item.personnel_id !== personnelId
+          );
+          if (filtered.length !== (proposal.data_nien_han as unknown[]).length) {
+            (proposal as Record<string, unknown>).data_nien_han = filtered;
+            updated = true;
+          }
+        }
+
+        if (updated) {
+          const dataDanhHieu = proposal.data_danh_hieu as unknown[] | null;
+          const dataNienHan = proposal.data_nien_han as unknown[] | null;
+          const dataThanhTich = proposal.data_thanh_tich as unknown[] | null;
+
+          const isEmpty =
+            (!dataDanhHieu || dataDanhHieu.length === 0) &&
+            (!dataNienHan || dataNienHan.length === 0) &&
+            (!dataThanhTich || dataThanhTich.length === 0);
+
+          if (isEmpty) {
+            await tx.bangDeXuat.delete({
+              where: { id: proposal.id },
+            });
+            deletedProposals++;
+          } else {
+            await tx.bangDeXuat.update({
+              where: { id: proposal.id },
+              data: {
+                data_danh_hieu: (dataDanhHieu as Prisma.InputJsonValue) || [],
+                data_nien_han: (dataNienHan as Prisma.InputJsonValue) || [],
+              },
+            });
+          }
+        }
       }
 
-      await prisma.$transaction(async tx => {
-        for (const proposal of proposals) {
-          let updated = false;
-
-          if (proposal.data_danh_hieu && Array.isArray(proposal.data_danh_hieu)) {
-            const filtered = (proposal.data_danh_hieu as Record<string, unknown>[]).filter(
-              item => item.personnel_id !== personnelId
-            );
-            if (filtered.length !== (proposal.data_danh_hieu as unknown[]).length) {
-              (proposal as Record<string, unknown>).data_danh_hieu = filtered;
-              updated = true;
-            }
-          }
-
-          if (proposal.data_nien_han && Array.isArray(proposal.data_nien_han)) {
-            const filtered = (proposal.data_nien_han as Record<string, unknown>[]).filter(
-              item => item.personnel_id !== personnelId
-            );
-            if (filtered.length !== (proposal.data_nien_han as unknown[]).length) {
-              (proposal as Record<string, unknown>).data_nien_han = filtered;
-              updated = true;
-            }
-          }
-
-          if (updated) {
-            const dataDanhHieu = proposal.data_danh_hieu as unknown[] | null;
-            const dataNienHan = proposal.data_nien_han as unknown[] | null;
-            const dataThanhTich = proposal.data_thanh_tich as unknown[] | null;
-
-            const isEmpty =
-              (!dataDanhHieu || dataDanhHieu.length === 0) &&
-              (!dataNienHan || dataNienHan.length === 0) &&
-              (!dataThanhTich || dataThanhTich.length === 0);
-
-            if (isEmpty) {
-              await tx.bangDeXuat.delete({
-                where: { id: proposal.id },
-              });
-              deletedProposals++;
-            } else {
-              await tx.bangDeXuat.update({
-                where: { id: proposal.id },
-                data: {
-                  data_danh_hieu: (dataDanhHieu as Prisma.InputJsonValue) || [],
-                  data_nien_han: (dataNienHan as Prisma.InputJsonValue) || [],
-                },
-              });
-            }
-          }
-        }
-
-        await tx.taiKhoan.delete({
-          where: { id },
-        });
-
-        await tx.quanNhan.delete({
-          where: { id: personnelId },
-        });
-
-        if (unitId) {
-          try {
-            if (isCoQuanDonVi) {
-              await tx.coQuanDonVi.update({
-                where: { id: unitId },
-                data: { so_luong: { decrement: 1 } },
-              });
-            } else {
-              await tx.donViTrucThuoc.update({
-                where: { id: unitId },
-                data: { so_luong: { decrement: 1 } },
-              });
-            }
-          } catch (error: unknown) {
-            throw new AppError(
-              `Không thể cập nhật số lượng quân nhân của đơn vị: ${error instanceof Error ? error.message : String(error)}`
-            );
-          }
-        }
-      });
-
-      return {
-        message: 'Xóa tài khoản và toàn bộ dữ liệu liên quan thành công',
-        deletedProposals,
-      };
-    } else {
-      await prisma.taiKhoan.delete({
+      await tx.taiKhoan.delete({
         where: { id },
       });
 
-      return { message: 'Xóa tài khoản thành công' };
-    }
+      await tx.quanNhan.delete({
+        where: { id: personnelId },
+      });
+
+      if (unitId) {
+        try {
+          if (isCoQuanDonVi) {
+            await tx.coQuanDonVi.update({
+              where: { id: unitId },
+              data: { so_luong: { decrement: 1 } },
+            });
+          } else {
+            await tx.donViTrucThuoc.update({
+              where: { id: unitId },
+              data: { so_luong: { decrement: 1 } },
+            });
+          }
+        } catch (error: unknown) {
+          throw new AppError(
+            `Không thể cập nhật số lượng quân nhân của đơn vị: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    });
+
+    return {
+      message: 'Xóa tài khoản và toàn bộ dữ liệu liên quan thành công',
+      deletedProposals,
+    };
   }
 
   validatePassword(password: string): void {

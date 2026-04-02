@@ -500,11 +500,11 @@ class UnitAnnualAwardService {
    */
   async recalculate({ don_vi_id, nam }) {
     if (don_vi_id && nam) {
-      // Recalculate cho một đơn vị và một năm cụ thể
       await this.recalculateAnnualUnit(don_vi_id, Number(nam));
       return 1;
-    } else if (don_vi_id) {
-      // Recalculate tất cả các năm của một đơn vị
+    }
+
+    if (don_vi_id) {
       const records = await prisma.hoSoDonViHangNam.findMany({
         where: {
           OR: [{ co_quan_don_vi_id: don_vi_id }, { don_vi_truc_thuoc_id: don_vi_id }],
@@ -518,31 +518,31 @@ class UnitAnnualAwardService {
       }
 
       return records.length;
-    } else {
-      // Recalculate tất cả đơn vị và tất cả năm
-      const records = await prisma.hoSoDonViHangNam.findMany({
-        select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true, nam: true },
-      });
-
-      const uniqueUnits = new Map();
-      for (const r of records) {
-        const unitId = r.co_quan_don_vi_id || r.don_vi_truc_thuoc_id;
-        if (!uniqueUnits.has(unitId)) {
-          uniqueUnits.set(unitId, new Set());
-        }
-        uniqueUnits.get(unitId).add(r.nam);
-      }
-
-      let count = 0;
-      for (const [unitId, years] of uniqueUnits) {
-        for (const year of years) {
-          await this.recalculateAnnualUnit(unitId, year);
-          count++;
-        }
-      }
-
-      return count;
     }
+
+    // Recalculate tất cả đơn vị và tất cả năm
+    const records = await prisma.hoSoDonViHangNam.findMany({
+      select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true, nam: true },
+    });
+
+    const uniqueUnits = new Map();
+    for (const r of records) {
+      const unitId = r.co_quan_don_vi_id || r.don_vi_truc_thuoc_id;
+      if (!uniqueUnits.has(unitId)) {
+        uniqueUnits.set(unitId, new Set());
+      }
+      uniqueUnits.get(unitId).add(r.nam);
+    }
+
+    let count = 0;
+    for (const [unitId, years] of uniqueUnits) {
+      for (const year of years) {
+        await this.recalculateAnnualUnit(unitId, year);
+        count++;
+      }
+    }
+
+    return count;
   }
 
   async remove(id: string) {

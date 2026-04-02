@@ -49,7 +49,7 @@ import { PROPOSAL_TYPES, type ProposalType } from '@/constants/proposal.constant
 import { Step2SelectPersonnelCaNhanHangNam } from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelCaNhanHangNam';
 import { Step2SelectPersonnelNienHan } from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelNienHan';
 import { Step2SelectPersonnelHCQKQT } from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelHCQKQT';
-import { Step2SelectPersonnelKNCVSNXD } from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelKNCVSNXD';
+import { Step2SelectPersonnelKNCVSNXDQDNDVN } from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelKNCVSNXDQDNDVN';
 import { Step2SelectPersonnelCongHien } from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelCongHien';
 import { Step2SelectPersonnelNCKH } from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelNCKH';
 import { Step2SelectUnits } from '@/app/admin/awards/bulk/create/components/Step2SelectUnits';
@@ -216,19 +216,14 @@ export default function CreateProposalPage() {
 
   const fetchUnitDetails = async () => {
     try {
-      // Gọi API để lấy đơn vị của Manager
       const unitsRes = await apiClient.getMyUnits();
-
       if (unitsRes.success) {
         const unitsData = unitsRes.data || [];
-
-        // Lọc các đơn vị đã chọn
         const selectedUnits = unitsData.filter((unit: any) => selectedUnitIds.includes(unit.id));
         setUnitDetails(selectedUnits);
-      } else {
-        // Failed to fetch units
       }
     } catch (error) {
+      console.error('Lỗi tải thông tin đơn vị đề xuất', error);
     }
   };
 
@@ -721,7 +716,7 @@ export default function CreateProposalPage() {
             );
           case PROPOSAL_TYPES.KNC_VSNXD_QDNDVN:
             return (
-              <Step2SelectPersonnelKNCVSNXD
+              <Step2SelectPersonnelKNCVSNXDQDNDVN
                 selectedPersonnelIds={selectedPersonnelIds}
                 onPersonnelChange={setSelectedPersonnelIds}
                 nam={nam}

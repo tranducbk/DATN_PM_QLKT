@@ -90,6 +90,7 @@ export function Step2SelectPersonnelNCKH({
         setPersonnel(personnelData);
       }
     } catch (error: unknown) {
+      console.error('Lỗi tải danh sách quân nhân NCKH', error);
     } finally {
       setLoading(false);
     }

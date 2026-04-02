@@ -163,6 +163,7 @@ export function Step3SetTitlesCongHien({
         }
       }
     } catch (error) {
+      console.error('Lỗi tải dữ liệu danh hiệu cống hiến', error);
     } finally {
       setLoading(false);
     }
@@ -189,6 +190,7 @@ export function Step3SetTitlesCongHien({
 
       setPositionHistoriesMap(historiesMap);
     } catch (error) {
+      console.error('Lỗi tải lịch sử chức vụ cống hiến', error);
     }
   };
 

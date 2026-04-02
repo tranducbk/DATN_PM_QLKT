@@ -92,6 +92,7 @@ export function Step2SelectPersonnelCaNhanHangNam({
         setPersonnel(personnelData);
       }
     } catch (error: unknown) {
+      console.error('Lỗi tải danh sách quân nhân cá nhân hằng năm', error);
     } finally {
       setLoading(false);
     }

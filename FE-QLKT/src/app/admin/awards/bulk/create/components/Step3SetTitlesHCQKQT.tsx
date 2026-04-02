@@ -102,6 +102,7 @@ export function Step3SetTitlesHCQKQT({
         }
       }
     } catch (error) {
+      console.error('Lỗi tải dữ liệu danh hiệu HCQKQT', error);
     } finally {
       setLoading(false);
     }

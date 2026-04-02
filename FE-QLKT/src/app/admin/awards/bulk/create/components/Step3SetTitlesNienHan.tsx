@@ -133,6 +133,7 @@ export function Step3SetTitlesNienHan({
         }
       }
     } catch (error) {
+      console.error('Lỗi tải dữ liệu danh hiệu niên hạn', error);
     } finally {
       setLoading(false);
     }

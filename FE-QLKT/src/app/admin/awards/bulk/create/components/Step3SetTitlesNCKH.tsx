@@ -120,6 +120,7 @@ export function Step3SetTitlesNCKH({
         }
       }
     } catch (error) {
+      console.error('Lỗi tải dữ liệu thành tích khoa học', error);
     } finally {
       setLoading(false);
     }

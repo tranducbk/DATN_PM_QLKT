@@ -59,7 +59,7 @@ interface Personnel {
   };
 }
 
-interface Step2SelectPersonnelKNCVSNXDProps {
+interface Step2SelectPersonnelKNCVSNXDQDNDVNProps {
   selectedPersonnelIds: string[];
   onPersonnelChange: (ids: string[]) => void;
   nam: number;
@@ -69,7 +69,7 @@ interface Step2SelectPersonnelKNCVSNXDProps {
   isManager?: boolean;
 }
 
-export function Step2SelectPersonnelKNCVSNXD({
+export function Step2SelectPersonnelKNCVSNXDQDNDVN({
   selectedPersonnelIds,
   onPersonnelChange,
   nam,
@@ -77,7 +77,7 @@ export function Step2SelectPersonnelKNCVSNXD({
   onTitleDataChange,
   onNextStep,
   isManager = false,
-}: Step2SelectPersonnelKNCVSNXDProps) {
+}: Step2SelectPersonnelKNCVSNXDQDNDVNProps) {
   const [loading, setLoading] = useState(false);
   const [personnel, setPersonnel] = useState<Personnel[]>([]);
   const [searchText, setSearchText] = useState('');
@@ -112,7 +112,7 @@ export function Step2SelectPersonnelKNCVSNXD({
       await Promise.all(
         personnel.map(async p => {
           try {
-            const response = await apiClient.checkKNCVSNXD(p.id);
+            const response = await apiClient.checkKNCVSNXDQDNDVN(p.id);
             if (response.success) {
               receivedMap[p.id] = response.data.alreadyReceived;
               if (response.data.alreadyReceived && response.data.reason) {
@@ -129,6 +129,7 @@ export function Step2SelectPersonnelKNCVSNXD({
       setAlreadyReceivedMap(receivedMap);
       setReceivedReasonMap(reasonMap);
     } catch (error) {
+      console.error('Lỗi kiểm tra điều kiện KNC VSNXD QDNDVN', error);
     } finally {
       setCheckingReceived(false);
     }
@@ -234,7 +235,7 @@ export function Step2SelectPersonnelKNCVSNXD({
   };
 
   // Kiểm tra quân nhân có đủ điều kiện đề xuất KNC_VSNXD_QDNDVN không
-  const checkEligibleForKNCVSNXD = (record: Personnel): { eligible: boolean; reason?: string } => {
+  const checkEligibleForKNCVSNXDQDNDVN = (record: Personnel): { eligible: boolean; reason?: string } => {
     // Kiểm tra đã nhận chưa
     if (alreadyReceivedMap[record.id]) {
       return { eligible: false, reason: 'Đã nhận' };
@@ -279,7 +280,7 @@ export function Step2SelectPersonnelKNCVSNXD({
       return 2; // Đã nhận
     }
 
-    const eligibility = checkEligibleForKNCVSNXD(record);
+    const eligibility = checkEligibleForKNCVSNXDQDNDVN(record);
     if (eligibility.eligible) return 0; // Đủ điều kiện
 
     return 3; // Không đủ điều kiện
@@ -432,7 +433,7 @@ export function Step2SelectPersonnelKNCVSNXD({
           );
         }
 
-        const eligibility = checkEligibleForKNCVSNXD(record);
+        const eligibility = checkEligibleForKNCVSNXDQDNDVN(record);
         if (eligibility.eligible) {
           return (
             <Text type="success" strong>
@@ -656,7 +657,7 @@ export function Step2SelectPersonnelKNCVSNXD({
         };
       }
 
-      const eligibility = checkEligibleForKNCVSNXD(record);
+      const eligibility = checkEligibleForKNCVSNXDQDNDVN(record);
       const isDisabled = !eligibility.eligible;
 
       return {
@@ -666,7 +667,7 @@ export function Step2SelectPersonnelKNCVSNXD({
     },
     onSelect: (record: Personnel, selected: boolean) => {
       if (selected) {
-        const eligibility = checkEligibleForKNCVSNXD(record);
+        const eligibility = checkEligibleForKNCVSNXDQDNDVN(record);
         if (!eligibility.eligible) {
           message.warning(
             `Quân nhân ${record.ho_ten} không đủ điều kiện: ${
@@ -714,8 +715,8 @@ export function Step2SelectPersonnelKNCVSNXD({
             localProcessing={true}
             onLocalProcess={handleLocalExcelProcess}
             previewImport={apiClient.previewCommemorationMedalsImport}
-            reviewPath="/admin/awards/bulk/import-review-kncvsnxd"
-            sessionStorageKey="importPreviewDataKNCVSNXD"
+            reviewPath="/admin/awards/bulk/import-review-kncvsnxdqdndvn"
+            sessionStorageKey="importPreviewDataKNCVSNXDQDNDVN"
           />
 
         </>
@@ -810,7 +811,7 @@ export function Step2SelectPersonnelKNCVSNXD({
       {/* Cảnh báo về quân nhân không đủ điều kiện */}
       {(() => {
         const ineligiblePersonnel = filteredPersonnel.filter(
-          p => !checkEligibleForKNCVSNXD(p).eligible
+          p => !checkEligibleForKNCVSNXDQDNDVN(p).eligible
         );
         const ineligibleCount = ineligiblePersonnel.length;
 
@@ -836,7 +837,7 @@ export function Step2SelectPersonnelKNCVSNXD({
         loading={loading || checkingReceived}
         rowClassName={record => {
           // Tô màu dòng quân nhân không đủ điều kiện
-          const eligibility = checkEligibleForKNCVSNXD(record);
+          const eligibility = checkEligibleForKNCVSNXDQDNDVN(record);
           if (!eligibility.eligible) {
             return 'row-ineligible';
           }

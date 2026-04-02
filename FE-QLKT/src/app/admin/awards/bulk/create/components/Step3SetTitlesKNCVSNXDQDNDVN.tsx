@@ -43,7 +43,7 @@ interface TitleData {
   chuc_vu?: string;
 }
 
-interface Step3SetTitlesKNCVSNXDProps {
+interface Step3SetTitlesKNCVSNXDQDNDVNProps {
   selectedPersonnelIds: string[];
   onPersonnelChange: (ids: string[]) => void;
   titleData: TitleData[];
@@ -51,13 +51,13 @@ interface Step3SetTitlesKNCVSNXDProps {
   nam: number;
 }
 
-export function Step3SetTitlesKNCVSNXD({
+export function Step3SetTitlesKNCVSNXDQDNDVN({
   selectedPersonnelIds,
   onPersonnelChange,
   titleData,
   onTitleDataChange,
   nam,
-}: Step3SetTitlesKNCVSNXDProps) {
+}: Step3SetTitlesKNCVSNXDQDNDVNProps) {
   const [loading, setLoading] = useState(false);
   const [personnel, setPersonnel] = useState<Personnel[]>([]);
 
@@ -103,6 +103,7 @@ export function Step3SetTitlesKNCVSNXD({
         }
       }
     } catch (error) {
+      console.error('Lỗi tải dữ liệu danh hiệu KNCVSNXDQDNDVN', error);
     } finally {
       setLoading(false);
     }

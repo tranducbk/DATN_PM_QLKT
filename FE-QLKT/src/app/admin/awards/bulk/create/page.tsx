@@ -41,7 +41,7 @@ import { PROPOSAL_TYPES, type ProposalType } from '@/constants/proposal.constant
 import { Step2SelectPersonnelCaNhanHangNam } from './components/Step2SelectPersonnelCaNhanHangNam';
 import { Step2SelectPersonnelNienHan } from './components/Step2SelectPersonnelNienHan';
 import { Step2SelectPersonnelHCQKQT } from './components/Step2SelectPersonnelHCQKQT';
-import { Step2SelectPersonnelKNCVSNXD } from './components/Step2SelectPersonnelKNCVSNXD';
+import { Step2SelectPersonnelKNCVSNXDQDNDVN } from './components/Step2SelectPersonnelKNCVSNXDQDNDVN';
 import { Step2SelectPersonnelCongHien } from './components/Step2SelectPersonnelCongHien';
 import { Step2SelectPersonnelNCKH } from './components/Step2SelectPersonnelNCKH';
 import { Step2SelectUnits } from './components/Step2SelectUnits';
@@ -215,6 +215,7 @@ export default function BulkAddAwardsPage() {
       const personnelData = responses.filter(r => r.success).map(r => r.data);
       setPersonnelDetails(personnelData);
     } catch (error) {
+      console.error('Lỗi tải thông tin quân nhân/đơn vị để review import', error);
     }
   };
 
@@ -476,7 +477,7 @@ export default function BulkAddAwardsPage() {
             );
           case PROPOSAL_TYPES.KNC_VSNXD_QDNDVN:
             return (
-              <Step2SelectPersonnelKNCVSNXD
+              <Step2SelectPersonnelKNCVSNXDQDNDVN
                 selectedPersonnelIds={selectedPersonnelIds}
                 onPersonnelChange={setSelectedPersonnelIds}
                 nam={nam}

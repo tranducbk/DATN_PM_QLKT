@@ -529,7 +529,6 @@ class PersonnelService {
         updateData.don_vi_truc_thuoc_id = null;
       }
     } else if (unit_id && unit_id !== currentUnitId) {
-      // Legacy: xử lý unit_id (tự động phát hiện loại đơn vị)
       const [coQuanDonVi, donViTrucThuoc] = await Promise.all([
         prisma.coQuanDonVi.findUnique({ where: { id: unit_id } }),
         prisma.donViTrucThuoc.findUnique({
@@ -870,7 +869,6 @@ class PersonnelService {
         } catch (error) {
           throw new AppError(`Không thể cập nhật số lượng quân nhân của đơn vị: ${error.message}`, 500);
         }
-      } else {
       }
     });
 
@@ -882,7 +880,8 @@ class PersonnelService {
   }
 
   /**
-   * Xuất toàn bộ dữ liệu ra Excel (sẽ implement sau)
+   * Xuất toàn bộ dữ liệu quân nhân ra file Excel.
+   * @returns Buffer Excel
    */
   async exportPersonnel() {
     const personnel = await prisma.quanNhan.findMany({
