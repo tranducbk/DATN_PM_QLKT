@@ -2,6 +2,11 @@
 
 import { useEffect, useState } from 'react';
 
+/**
+ * Tracks whether viewport width is at or below the given breakpoint.
+ * @param breakpoint - Maximum width in pixels considered mobile
+ * @returns `true` when current viewport matches mobile breakpoint
+ */
 export function useMobile(breakpoint = 768) {
   const [isMobile, setIsMobile] = useState(false);
 
@@ -16,5 +21,5 @@ export function useMobile(breakpoint = 768) {
   return isMobile;
 }
 
-// Alias theo mã mẫu: useIsMobile
+// Alias kept for compatibility with existing imports.
 export const useIsMobile = useMobile;

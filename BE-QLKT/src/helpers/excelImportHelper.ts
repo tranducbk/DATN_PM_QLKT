@@ -6,13 +6,13 @@ import { MAX_EXCEL_ROWS, IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.c
 
 type CellValue = string | number | null | undefined;
 
-/** Kết quả preview một dòng Excel khi import. */
+/** Preview result for a single imported Excel row. */
 export interface PreviewItem {
   row_number: number;
   errors: string[];
 }
 
-/** Kết quả tổng hợp preview import: valid, invalid, summary. */
+/** Aggregate preview result containing valid/invalid rows and summary. */
 export interface PreviewResult<T> {
   valid: T[];
   invalid: T[];
@@ -23,7 +23,7 @@ export interface PreviewResult<T> {
   };
 }
 
-/** Thông tin quân nhân tối thiểu dùng cho import validation. */
+/** Minimal personnel fields used during import validation. */
 export interface PersonnelInfo {
   id: string;
   ho_ten: string;
@@ -46,11 +46,11 @@ async function loadWorkbook(buffer: Buffer): Promise<ExcelJS.Workbook> {
 }
 
 /**
- * Lấy worksheet từ workbook, validate tồn tại và không vượt MAX_EXCEL_ROWS.
- * @param workbook - ExcelJS workbook đã load
- * @param options - sheetName cụ thể hoặc excludeSheetNames để auto-pick
- * @returns Worksheet hợp lệ
- * @throws ValidationError - Khi sheet không tồn tại, rỗng, hoặc quá lớn
+ * Gets a worksheet and validates existence and maximum row count.
+ * @param workbook - Parsed ExcelJS workbook
+ * @param options - Explicit `sheetName` or exclusion list for auto-pick
+ * @returns Valid worksheet instance
+ * @throws ValidationError - When worksheet is missing, empty, or too large
  */
 function getAndValidateWorksheet(
   workbook: ExcelJS.Workbook,
@@ -90,10 +90,10 @@ function getAndValidateWorksheet(
 }
 
 /**
- * Trích xuất chuỗi đã trim từ ô Excel.
- * @param row - Dòng Excel
- * @param col - Số thứ tự cột (1-based)
- * @returns Chuỗi đã trim, hoặc chuỗi rỗng nếu null/undefined
+ * Extracts a trimmed string value from an Excel cell.
+ * @param row - Excel row
+ * @param col - 1-based column index
+ * @returns Trimmed string, or empty string for nullish values
  */
 function getCellString(row: ExcelJS.Row, col: number): string {
   const value = row.getCell(col).value;
@@ -102,10 +102,10 @@ function getCellString(row: ExcelJS.Row, col: number): string {
 }
 
 /**
- * Trích xuất số từ ô Excel.
- * @param row - Dòng Excel
- * @param col - Số thứ tự cột (1-based)
- * @returns Số hữu hạn, hoặc null nếu không parse được
+ * Extracts a numeric value from an Excel cell.
+ * @param row - Excel row
+ * @param col - 1-based column index
+ * @returns Finite number, or null when parsing fails
  */
 function getCellNumber(row: ExcelJS.Row, col: number): number | null {
   const value = row.getCell(col).value;
@@ -115,9 +115,9 @@ function getCellNumber(row: ExcelJS.Row, col: number): number | null {
 }
 
 /**
- * Validate giá trị năm: parse integer, kiểm tra range 1900..currentYear.
- * @param value - Giá trị từ ô Excel
- * @returns Object chứa valid, year đã parse, và error message nếu có
+ * Validates year values against integer and range constraints.
+ * @param value - Raw value from Excel cell
+ * @returns Validation result with parsed year and optional error
  */
 function validateYear(value: CellValue): { valid: boolean; year: number | null; error?: string } {
   const currentYear = new Date().getFullYear();
@@ -144,9 +144,9 @@ function validateYear(value: CellValue): { valid: boolean; year: number | null; 
 }
 
 /**
- * Kiểm tra các trường bắt buộc có giá trị (non-null, non-empty).
- * @param fields - Danh sách { name, value } cần kiểm tra
- * @returns Thông báo lỗi liệt kê trường thiếu, hoặc null nếu đủ
+ * Validates required fields for non-null and non-empty values.
+ * @param fields - Field descriptors with name and value
+ * @returns Error message for missing fields, or null when valid
  */
 function validateRequired(fields: { name: string; value: CellValue }[]): string | null {
   const missing: string[] = [];
@@ -168,8 +168,8 @@ function validateRequired(fields: { name: string; value: CellValue }[]): string 
 }
 
 /**
- * Truy vấn hàng loạt quân nhân theo danh sách ID.
- * @param personnelIds - Danh sách ID quân nhân
+ * Queries personnel records in batch by ID list.
+ * @param personnelIds - Personnel ID list
  * @returns Map keyed by personnel ID
  */
 async function batchQueryPersonnel(personnelIds: string[]): Promise<Map<string, PersonnelInfo>> {
@@ -205,10 +205,10 @@ async function batchQueryDecisions(): Promise<Set<string>> {
 }
 
 /**
- * Kiểm tra số quyết định có tồn tại trong hệ thống.
- * @param soQuyetDinh - Số quyết định cần kiểm tra
- * @param validDecisions - Set số quyết định hợp lệ
- * @returns Thông báo lỗi nếu không tồn tại, hoặc null nếu hợp lệ
+ * Validates whether a decision number exists in the system.
+ * @param soQuyetDinh - Decision number to validate
+ * @param validDecisions - Set of valid decision numbers
+ * @returns Error message when missing, otherwise null
  */
 function validateDecisionNumber(soQuyetDinh: string, validDecisions: Set<string>): string | null {
   if (!validDecisions.has(soQuyetDinh)) {
@@ -220,11 +220,11 @@ function validateDecisionNumber(soQuyetDinh: string, validDecisions: Set<string>
 type TransactionClient = Prisma.TransactionClient;
 
 /**
- * Chạy batch upsert/create trong Prisma transaction.
- * @param items - Danh sách items đã validate
- * @param upsertFn - Hàm thực hiện DB write cho mỗi item
- * @param timeout - Transaction timeout in ms (default IMPORT_TRANSACTION_TIMEOUT)
- * @returns `{ imported: number }` số lượng items đã persist
+ * Runs batched create/upsert writes inside a Prisma transaction.
+ * @param items - Validated items to persist
+ * @param upsertFn - Database write callback for each item
+ * @param timeout - Transaction timeout in milliseconds
+ * @returns Imported item count payload
  */
 async function runConfirmTransaction<T>(
   items: T[],

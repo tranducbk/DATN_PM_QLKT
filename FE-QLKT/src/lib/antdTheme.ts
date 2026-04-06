@@ -3,6 +3,11 @@ import type { ThemeConfig } from 'antd';
 
 export const ANTD_FONT_FAMILY = 'var(--font-roboto), system-ui, sans-serif';
 
+/**
+ * Builds Ant Design global theme config for light/dark mode.
+ * @param isDark - Whether dark mode is enabled
+ * @returns Ant Design theme configuration
+ */
 export function getAntdThemeConfig(isDark: boolean): ThemeConfig {
   return {
     algorithm: isDark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
@@ -12,6 +17,11 @@ export function getAntdThemeConfig(isDark: boolean): ThemeConfig {
   };
 }
 
+/**
+ * Builds Ant Design table-focused theme overrides for light/dark mode.
+ * @param isDark - Whether dark mode is enabled
+ * @returns Ant Design theme configuration with table overrides
+ */
 export function getAntdTableThemeConfig(isDark: boolean): ThemeConfig {
   return {
     algorithm: isDark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,

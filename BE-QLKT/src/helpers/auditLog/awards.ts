@@ -564,6 +564,7 @@ const awards: Record<
 
       return description;
     } catch (error) {
+      console.error('[auditLog] awardBulk CREATE description error:', error);
       return 'Thêm khen thưởng đồng loạt';
     }
   },

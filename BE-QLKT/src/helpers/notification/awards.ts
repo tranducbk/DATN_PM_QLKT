@@ -249,6 +249,7 @@ async function notifyOnAwardDeleted(
 
     return notifications.length;
   } catch (error) {
+    console.error('[notification] notifyOnAwardDeleted error:', error);
     return 0;
   }
 }
@@ -364,6 +365,7 @@ async function notifyUsersOnAwardApproved(
 
     return notifications.length;
   } catch (error) {
+    console.error('[notification] notifyUsersOnAwardApproved error:', error);
     return 0;
   }
 }
@@ -558,6 +560,7 @@ async function notifyOnBulkAwardAdded(
 
     return notifications.length;
   } catch (error) {
+    console.error('[notification] notifyOnBulkAwardAdded error:', error);
     return 0;
   }
 }

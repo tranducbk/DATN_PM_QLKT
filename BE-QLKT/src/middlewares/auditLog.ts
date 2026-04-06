@@ -40,15 +40,20 @@ const isSuccessResponse = (responseData: unknown): boolean => {
 const getDisplayName = (data: Record<string, string | undefined>): string =>
   DISPLAY_NAME_FIELDS.map(f => data?.[f]).find(Boolean) || 'N/A';
 
+/**
+ * Creates middleware to capture audit logs for successful responses.
+ * @param options - Audit metadata and payload resolvers
+ * @returns Express middleware that writes audit logs asynchronously
+ */
 const auditLog = (options: AuditLogOptions = { action: '', resource: '' }) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     const originalJson = res.json;
 
     res.json = function (this: Response, data: unknown) {
-      // Restore original để tránh gọi lại
+      // Restore the original method to prevent recursive calls.
       res.json = originalJson;
 
-      // Ghi log async, không block response
+      // Write logs asynchronously without blocking the main response.
       if (isSuccessResponse(data)) {
         const user = req.user;
         if (user) {
@@ -80,7 +85,7 @@ const auditLog = (options: AuditLogOptions = { action: '', resource: '' }) => {
               });
             })
             .catch(() => {
-              // Không throw để không ảnh hưởng response chính
+              // Swallow logging errors to keep response behavior unchanged.
             });
         }
       }

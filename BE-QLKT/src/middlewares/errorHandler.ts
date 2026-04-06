@@ -1,5 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 
+/**
+ * Base application error with HTTP status support.
+ */
 class AppError extends Error {
   statusCode: number;
   isOperational: boolean;
@@ -12,18 +15,27 @@ class AppError extends Error {
   }
 }
 
+/**
+ * Error thrown when a resource is not found.
+ */
 class NotFoundError extends AppError {
   constructor(resource: string = 'Tài nguyên') {
     super(`${resource} không tồn tại`, 404);
   }
 }
 
+/**
+ * Error thrown for forbidden operations.
+ */
 class ForbiddenError extends AppError {
   constructor(message: string = 'Không có quyền thực hiện hành động này') {
     super(message, 403);
   }
 }
 
+/**
+ * Error thrown for invalid input payloads.
+ */
 class ValidationError extends AppError {
   constructor(message: string = 'Dữ liệu không hợp lệ') {
     super(message, 400);
@@ -36,6 +48,14 @@ interface ErrorWithExtras extends Error {
   isOperational?: boolean;
 }
 
+/**
+ * Global Express error handler.
+ * @param err - Error object or error-like payload
+ * @param req - Express request
+ * @param res - Express response
+ * @param next - Express next function
+ * @returns Nothing
+ */
 const errorHandler = (
   err: ErrorWithExtras,
   req: Request,
@@ -66,7 +86,7 @@ const errorHandler = (
     message = 'Token đã hết hạn';
   }
 
-  // Log error (chỉ log server errors, không log client errors)
+  // Log errors only for server-side failures.
   if (statusCode >= 500) {
     // intentionally left for future logging
   }

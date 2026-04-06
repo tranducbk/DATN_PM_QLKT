@@ -3,44 +3,49 @@ import { twMerge } from 'tailwind-merge';
 import dayjs from 'dayjs';
 import type { DateInput, DatePoint } from './types';
 
+/**
+ * Merges class names with Tailwind conflict resolution.
+ * @param inputs - Class name values
+ * @returns Merged class string
+ */
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
 /**
- * Tính khoảng thời gian giữa 2 ngày theo tháng lịch (chính xác)
- * Sử dụng cùng logic với backend để đồng nhất
- * @param startDate - Ngày bắt đầu (string hoặc Date)
- * @param endDate - Ngày kết thúc (string hoặc Date), mặc định là ngày hiện tại
- * @returns Chuỗi mô tả thời gian (VD: "2 năm 6 tháng", "3 tháng", "15 ngày")
+ * Calculates duration between two dates using calendar-month logic.
+ * Uses the same approach as backend for consistency.
+ * @param startDate - Start date (string or Date)
+ * @param endDate - End date (string or Date), defaults to current date
+ * @returns Human-readable duration (e.g. "2 years 6 months", "3 months", "15 days")
  */
 export function calculateDuration(startDate: DatePoint, endDate?: DatePoint): string {
   const start = new Date(startDate);
   const end = endDate ? new Date(endDate) : new Date();
 
-  // Tính số tháng thực tế theo lịch (giống backend)
+  // Calculate actual calendar-month difference (same as backend).
   let months = (end.getFullYear() - start.getFullYear()) * 12;
   months += end.getMonth() - start.getMonth();
 
-  // Nếu ngày kết thúc < ngày bắt đầu trong tháng thì trừ 1 tháng
+  // If day-of-month at end is smaller than start day, subtract one month.
   if (end.getDate() < start.getDate()) {
     months--;
   }
 
-  // Đảm bảo không âm
+  // Ensure non-negative result.
   months = Math.max(0, months);
 
   const years = Math.floor(months / 12);
   const remainingMonths = months % 12;
 
-  // Nếu dưới 1 tháng, hiển thị số ngày
+  // For periods under one month, display day count.
   if (months === 0) {
     const diffTime = Math.abs(end.getTime() - start.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return `${diffDays} ngày`;
   }
 
-  // Hiển thị năm và tháng
+  // Display years and months.
   if (years > 0 && remainingMonths > 0) {
     return `${years} năm ${remainingMonths} tháng`;
   } else if (years > 0) {
@@ -51,9 +56,9 @@ export function calculateDuration(startDate: DatePoint, endDate?: DatePoint): st
 }
 
 /**
- * Format ngày tháng với số 0 đứng trước (VD: 03/05/2010)
- * @param date - Ngày cần format (string, Date, hoặc null/undefined)
- * @returns Chuỗi ngày tháng đã format hoặc '-' nếu null/undefined
+ * Formats date as `DD/MM/YYYY`.
+ * @param date - Input date (string, Date, or nullish)
+ * @returns Formatted date string or `-` for nullish values
  */
 export function formatDate(date: DateInput): string {
   if (!date) return '-';
@@ -61,9 +66,9 @@ export function formatDate(date: DateInput): string {
 }
 
 /**
- * Format ngày tháng và giờ với số 0 đứng trước (VD: 03/05/2010 14:30)
- * @param date - Ngày cần format (string, Date, hoặc null/undefined)
- * @returns Chuỗi ngày tháng giờ đã format hoặc '-' nếu null/undefined
+ * Formats date-time as `DD/MM/YYYY HH:mm`.
+ * @param date - Input date (string, Date, or nullish)
+ * @returns Formatted date-time string or `-` for nullish values
  */
 export function formatDateTime(date: DateInput): string {
   if (!date) return '-';
@@ -71,16 +76,20 @@ export function formatDateTime(date: DateInput): string {
 }
 
 /**
- * Format ngày tháng và giờ phút giây với số 0 đứng trước (VD: 03/05/2010 14:30:45)
- * @param date - Ngày cần format (string, Date, hoặc null/undefined)
- * @returns Chuỗi ngày tháng giờ phút giây đã format hoặc '-' nếu null/undefined
+ * Formats date-time as `DD/MM/YYYY HH:mm:ss`.
+ * @param date - Input date (string, Date, or nullish)
+ * @returns Formatted timestamp string or `-` for nullish values
  */
 export function formatDateTimeFull(date: DateInput): string {
   if (!date) return '-';
   return dayjs(date).format('DD/MM/YYYY HH:mm:ss');
 }
 
-/** Tính tổng quân số đơn vị (bao gồm các DVTT con). */
+/**
+ * Calculates total personnel count for a unit including subordinate units.
+ * @param unit - Unit record with own and subordinate counts
+ * @returns Total personnel count
+ */
 export function calcUnitTotal(unit: { so_luong?: number; DonViTrucThuoc?: { so_luong?: number }[] }): number {
   const own = unit.so_luong ?? 0;
   const children = (unit.DonViTrucThuoc ?? []).reduce((sum, sub) => sum + (sub.so_luong ?? 0), 0);

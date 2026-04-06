@@ -3,6 +3,12 @@ import Joi from 'joi';
 
 type ValidationSource = 'body' | 'query' | 'params';
 
+/**
+ * Creates Joi-based validation middleware for request payloads.
+ * @param schema - Joi object schema
+ * @param source - Request source to validate (`body`, `query`, or `params`)
+ * @returns Express request handler
+ */
 const validate = (schema: Joi.ObjectSchema, source: ValidationSource = 'body'): RequestHandler => {
   return (req: Request, res: Response, next: NextFunction): void => {
     const { error, value } = schema.validate(req[source], {

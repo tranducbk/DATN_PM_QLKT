@@ -9,6 +9,10 @@ export type DecisionsPagination = {
   totalPages?: number;
 };
 
+/**
+ * getDecisions API wrapper.
+ * @returns API response payload
+ */
 export async function getDecisions(params?: {
   nam?: number;
   loai_khen_thuong?: string;
@@ -28,6 +32,10 @@ export async function getDecisions(params?: {
   }
 }
 
+/**
+ * autocompleteDecisions API wrapper.
+ * @returns API response payload
+ */
 export async function autocompleteDecisions(
   query: string,
   limit = 10,
@@ -43,6 +51,10 @@ export async function autocompleteDecisions(
   }
 }
 
+/**
+ * getDecisionBySoQuyetDinh API wrapper.
+ * @returns API response payload
+ */
 export async function getDecisionBySoQuyetDinh(soQuyetDinh: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get(`/api/decisions/by-number/${soQuyetDinh}`);
@@ -52,6 +64,10 @@ export async function getDecisionBySoQuyetDinh(soQuyetDinh: string): Promise<Api
   }
 }
 
+/**
+ * getDecisionById API wrapper.
+ * @returns API response payload
+ */
 export async function getDecisionById(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get(`/api/decisions/${id}`);
@@ -61,6 +77,10 @@ export async function getDecisionById(id: string): Promise<ApiResponse> {
   }
 }
 
+/**
+ * createDecision API wrapper.
+ * @returns API response payload
+ */
 export async function createDecision(formData: FormData): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.post('/api/decisions', formData, {
@@ -72,6 +92,10 @@ export async function createDecision(formData: FormData): Promise<ApiResponse> {
   }
 }
 
+/**
+ * updateDecision API wrapper.
+ * @returns API response payload
+ */
 export async function updateDecision(id: string, formData: FormData): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.put(`/api/decisions/${id}`, formData, {
@@ -83,6 +107,10 @@ export async function updateDecision(id: string, formData: FormData): Promise<Ap
   }
 }
 
+/**
+ * deleteDecision API wrapper.
+ * @returns API response payload
+ */
 export async function deleteDecision(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete(`/api/decisions/${id}`);
@@ -93,9 +121,9 @@ export async function deleteDecision(id: string): Promise<ApiResponse> {
 }
 
 /**
- * Lấy file path từ số quyết định
- * @param soQuyetDinh - Số quyết định
- * @returns { success: boolean, data: { file_path: string, decision: object } }
+ * Gets a decision file path by decision number.
+ * @param soQuyetDinh - Decision number
+ * @returns API response containing file path and decision metadata
  */
 export async function getDecisionFilePath(soQuyetDinh: string): Promise<ApiResponse> {
   try {
@@ -109,9 +137,10 @@ export async function getDecisionFilePath(soQuyetDinh: string): Promise<ApiRespo
 }
 
 /**
- * Tải file quyết định theo số quyết định
- * Backend tự động query DB để lấy file path và trả về file để download
- * @param soQuyetDinh - Số quyết định
+ * Downloads decision file by decision number.
+ * Backend resolves the file path and returns binary content.
+ * @param soQuyetDinh - Decision number
+ * @returns File blob from API response
  */
 export async function downloadDecisionFile(soQuyetDinh: string): Promise<Blob> {
   const res = await axiosInstance.get(
@@ -124,9 +153,9 @@ export async function downloadDecisionFile(soQuyetDinh: string): Promise<Blob> {
 }
 
 /**
- * Lấy file paths từ nhiều số quyết định
- * @param soQuyetDinhs - Mảng các số quyết định
- * @returns { success: boolean, data: { [soQD]: { success, file_path, decision, error } } }
+ * Gets decision file paths for multiple decision numbers.
+ * @param soQuyetDinhs - Decision number list
+ * @returns API response keyed by decision number
  */
 export async function getDecisionFilePaths(soQuyetDinhs: string[]): Promise<ApiResponse> {
   try {

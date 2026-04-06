@@ -135,6 +135,11 @@ function dispatch(action: Action) {
 
 export type Toast = Omit<ToasterToast, 'id'>;
 
+/**
+ * Enqueues a toast notification and returns toast controls.
+ * @param props - Toast content and display options
+ * @returns Toast controller with `id`, `dismiss`, and `update`
+ */
 function toast({ ...props }: Toast) {
   const id = genId();
 
@@ -164,6 +169,10 @@ function toast({ ...props }: Toast) {
   };
 }
 
+/**
+ * Subscribes component state to the global toast store.
+ * @returns Current toast state with helper methods
+ */
 function useToast() {
   const [state, setState] = React.useState<State>(memoryState);
 

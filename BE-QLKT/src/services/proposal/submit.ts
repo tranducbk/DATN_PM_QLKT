@@ -629,7 +629,7 @@ async function submitProposal(
                 thoi_gian_nhom_0_9_1_0: formatTime(months0_9_1_0),
               };
             } catch (error) {
-              // Nếu có lỗi khi fetch lịch sử, vẫn trả về dữ liệu cơ bản
+              console.error('[proposal/submit] fetch position history error:', error);
               return baseData;
             }
           }
@@ -912,6 +912,7 @@ async function submitProposal(
 
           positionHistoriesMap[personnelId] = updatedHistories;
         } catch (error) {
+          console.error(`[proposal/submit] positionHistoriesMap build error for ${personnelId}:`, error);
           positionHistoriesMap[personnelId] = [];
         }
       }

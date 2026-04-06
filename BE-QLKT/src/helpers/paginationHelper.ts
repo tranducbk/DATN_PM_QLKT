@@ -2,7 +2,7 @@ const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
 
-/** Giá trị query Express (string | mảng | ParsedQs) — chỉ chuẩn hóa khi là string/mảng string */
+/** Express query value shape used for pagination parsing. */
 interface PaginationQuery {
   page?: string | string[] | undefined;
   limit?: string | string[] | undefined;
@@ -20,6 +20,11 @@ interface PaginationResult {
   limit: number;
 }
 
+/**
+ * Parses pagination values from request query.
+ * @param query - Query object containing `page` and `limit`
+ * @returns Normalized page and limit values
+ */
 function parsePagination(query: PaginationQuery | Record<string, unknown>): PaginationResult {
   let page =
     parseInt(normalizeQueryString((query as Record<string, unknown>).page), 10) || DEFAULT_PAGE;
@@ -33,7 +38,11 @@ function parsePagination(query: PaginationQuery | Record<string, unknown>): Pagi
   return { page, limit };
 }
 
-/** req.params.id có thể là string | string[] */
+/**
+ * Normalizes a route param value to a single string.
+ * @param p - Route param value
+ * @returns First string value or undefined
+ */
 function normalizeParam(p: string | string[] | undefined): string | undefined {
   if (p == null) return undefined;
   return Array.isArray(p) ? p[0] : p;

@@ -10,6 +10,11 @@ interface WriteSystemLogParams {
   payload?: Record<string, unknown> | null;
 }
 
+/**
+ * Writes a system log entry without interrupting main business flow.
+ * @param params - System log payload
+ * @returns Promise resolved after best-effort write
+ */
 async function writeSystemLog({
   userId,
   userRole,
@@ -20,7 +25,7 @@ async function writeSystemLog({
   payload = null,
 }: WriteSystemLogParams): Promise<void> {
   try {
-    // userId 'SYSTEM' hoặc undefined thì set null (không có FK)
+    // Use null actor ID for system-level logs without a foreign key.
     const actorId = userId && userId !== 'SYSTEM' ? userId : null;
     await prisma.systemLog.create({
       data: {
@@ -34,7 +39,7 @@ async function writeSystemLog({
       },
     });
   } catch {
-    // Không throw để không ảnh hưởng nghiệp vụ
+    // Swallow errors to avoid impacting core business logic.
   }
 }
 

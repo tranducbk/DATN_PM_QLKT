@@ -2,7 +2,7 @@ import axiosInstance from '@/utils/axiosInstance';
 import { getApiErrorMessage } from '@/lib/apiError';
 import type { ApiResponse } from '@/lib/types';
 
-/** Phản hồi cập nhật/tạo lịch sử chức vụ — backend có thể kèm cảnh báo ngày kết thúc */
+/** Position-history mutation response with optional backend warning metadata. */
 export type PositionHistoryWarning = {
   message: string;
   suggestedEndDate?: string | null;
@@ -12,6 +12,10 @@ export type PositionHistoryMutationResponse = ApiResponse & {
   warning?: PositionHistoryWarning;
 };
 
+/**
+ * getPersonnel API wrapper.
+ * @returns API response payload
+ */
 export async function getPersonnel(params?: {
   page?: number;
   limit?: number;
@@ -26,6 +30,10 @@ export async function getPersonnel(params?: {
   }
 }
 
+/**
+ * getPersonnelById API wrapper.
+ * @returns API response payload
+ */
 export async function getPersonnelById(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get(`/api/personnel/${id}`);
@@ -35,6 +43,10 @@ export async function getPersonnelById(id: string): Promise<ApiResponse> {
   }
 }
 
+/**
+ * createPersonnel API wrapper.
+ * @returns API response payload
+ */
 export async function createPersonnel(body: Record<string, unknown>): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.post('/api/personnel', body);
@@ -44,6 +56,10 @@ export async function createPersonnel(body: Record<string, unknown>): Promise<Ap
   }
 }
 
+/**
+ * updatePersonnel API wrapper.
+ * @returns API response payload
+ */
 export async function updatePersonnel(id: string, body: Record<string, unknown>): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.put(`/api/personnel/${id}`, body);
@@ -53,6 +69,10 @@ export async function updatePersonnel(id: string, body: Record<string, unknown>)
   }
 }
 
+/**
+ * deletePersonnel API wrapper.
+ * @returns API response payload
+ */
 export async function deletePersonnel(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete(`/api/personnel/${id}`);
@@ -63,6 +83,10 @@ export async function deletePersonnel(id: string): Promise<ApiResponse> {
 }
 
 // Position History
+/**
+ * getPositionHistory API wrapper.
+ * @returns API response payload
+ */
 export async function getPositionHistory(personnelId: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get(`/api/personnel/${personnelId}/position-history`);
@@ -72,6 +96,10 @@ export async function getPositionHistory(personnelId: string): Promise<ApiRespon
   }
 }
 
+/**
+ * createPositionHistory API wrapper.
+ * @returns API response payload
+ */
 export async function createPositionHistory(
   personnelId: string,
   body: Record<string, unknown>
@@ -88,6 +116,10 @@ export async function createPositionHistory(
   }
 }
 
+/**
+ * updatePositionHistory API wrapper.
+ * @returns API response payload
+ */
 export async function updatePositionHistory(
   id: string,
   body: Record<string, unknown>
@@ -104,6 +136,10 @@ export async function updatePositionHistory(
   }
 }
 
+/**
+ * deletePositionHistory API wrapper.
+ * @returns API response payload
+ */
 export async function deletePositionHistory(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete(`/api/position-history/${id}`);
@@ -114,6 +150,10 @@ export async function deletePositionHistory(id: string): Promise<ApiResponse> {
 }
 
 // Personnel Export/Import
+/**
+ * exportPersonnel API wrapper.
+ * @returns API response payload
+ */
 export async function exportPersonnel(): Promise<Blob> {
   try {
     const res = await axiosInstance.get('/api/personnel/export', {
@@ -125,6 +165,10 @@ export async function exportPersonnel(): Promise<Blob> {
   }
 }
 
+/**
+ * exportPersonnelSample API wrapper.
+ * @returns API response payload
+ */
 export async function exportPersonnelSample(): Promise<Blob> {
   try {
     const res = await axiosInstance.get('/api/personnel/export-sample', {
@@ -136,6 +180,10 @@ export async function exportPersonnelSample(): Promise<Blob> {
   }
 }
 
+/**
+ * importPersonnel API wrapper.
+ * @returns API response payload
+ */
 export async function importPersonnel(file: File): Promise<ApiResponse> {
   try {
     const formData = new FormData();

@@ -7,7 +7,7 @@ import {
   EXCEL_INLINE_VALIDATION_MAX_LENGTH,
 } from '../constants/excel.constants';
 
-/** Cấu hình một cột trong template Excel. */
+/** Excel template column configuration. */
 export interface TemplateColumn {
   header: string;
   key: string;
@@ -16,7 +16,7 @@ export interface TemplateColumn {
   validationFormulae?: string;
 }
 
-/** Mapping vị trí cột (1-based) cho thông tin quân nhân trong template. */
+/** 1-based column mapping for personnel fields in the template. */
 export interface PersonnelColumnMapping {
   stt: number;
   id: number;
@@ -25,7 +25,7 @@ export interface PersonnelColumnMapping {
   chucVu: number;
 }
 
-/** Cấu hình đầy đủ để tạo một template Excel. */
+/** Full configuration used to build an Excel template. */
 export interface TemplateConfig {
   sheetName: string;
   columns: TemplateColumn[];
@@ -45,7 +45,7 @@ export interface TemplateConfig {
   ) => Promise<number>;
 }
 
-/** Kết quả tạo validation cho dropdown quyết định. */
+/** Validation payload for decision number dropdown. */
 interface DecisionValidationResult {
   type: 'list';
   allowBlank: boolean;
@@ -53,9 +53,9 @@ interface DecisionValidationResult {
 }
 
 /**
- * Truy vấn danh sách quân nhân kèm chức vụ để điền vào template.
- * @param personnelIds - Danh sách ID quân nhân
- * @returns Danh sách quân nhân kèm ChucVu
+ * Queries personnel records with positions for template prefill.
+ * @param personnelIds - Personnel ID list
+ * @returns Personnel records including `ChucVu`
  */
 export async function queryPersonnelForTemplate(personnelIds: string[]) {
   if (personnelIds.length === 0) return [];
@@ -66,10 +66,10 @@ export async function queryPersonnelForTemplate(personnelIds: string[]) {
 }
 
 /**
- * Truy vấn danh sách số quyết định cho dropdown trong template.
- * @param loaiKhenThuong - Lọc theo loại khen thưởng (optional)
- * @param take - Số lượng tối đa (default MAX_DECISION_DROPDOWN)
- * @returns Mảng số quyết định, sắp xếp theo năm giảm dần
+ * Queries decision numbers for template dropdown fields.
+ * @param loaiKhenThuong - Optional award type filter
+ * @param take - Maximum number of records to fetch
+ * @returns Decision number list sorted by year descending
  */
 export async function queryDecisionsForTemplate(
   loaiKhenThuong?: string,
@@ -88,9 +88,9 @@ export async function queryDecisionsForTemplate(
 }
 
 /**
- * Tạo hidden sheet `_CapBac` chứa danh sách cấp bậc cho dropdown.
+ * Creates a hidden `_CapBac` sheet for rank dropdown validation.
  * @param workbook - ExcelJS workbook
- * @returns Formula string để dùng trong data validation
+ * @returns Formula range string for data validation
  */
 export function createCapBacHiddenSheet(workbook: ExcelJS.Workbook): string {
   const items = CAP_BAC_OPTIONS_STRING.split(',');
@@ -102,10 +102,11 @@ export function createCapBacHiddenSheet(workbook: ExcelJS.Workbook): string {
 }
 
 /**
- * Tạo validation config cho dropdown số quyết định. Dùng hidden sheet khi inline list vượt 250 ký tự.
+ * Builds decision-number dropdown validation.
+ * Uses a hidden sheet when inline list length exceeds Excel limits.
  * @param workbook - ExcelJS workbook
- * @param decisionList - Danh sách số quyết định
- * @returns Validation config, hoặc null nếu danh sách rỗng
+ * @param decisionList - Decision number list
+ * @returns Validation config, or null when list is empty
  */
 export function createDecisionValidation(
   workbook: ExcelJS.Workbook,
@@ -153,7 +154,7 @@ const RED_FILL: ExcelJS.FillPattern = {
   fgColor: { argb: 'FFFFCCCC' },
 };
 
-/** Viền mỏng bốn cạnh — đồng bộ mẫu import giữa các loại khen thưởng. */
+/** Thin border on all sides for consistent import templates. */
 export const THIN_BORDER_ALL_SIDES: Partial<ExcelJS.Borders> = {
   top: { style: 'thin' },
   bottom: { style: 'thin' },
@@ -162,10 +163,10 @@ export const THIN_BORDER_ALL_SIDES: Partial<ExcelJS.Borders> = {
 };
 
 /**
- * Kẻ viền mỏng cho lưới ô (hàng 1..maxRows, cột 1..columnCount).
- * @param worksheet - Sheet cần style
- * @param maxRows - Số hàng cuối (gồm header)
- * @param columnCount - Số cột
+ * Applies thin borders to a worksheet grid.
+ * @param worksheet - Target worksheet
+ * @param maxRows - Last row index (including header)
+ * @param columnCount - Total column count
  */
 export function applyThinBordersToGrid(
   worksheet: ExcelJS.Worksheet,
@@ -181,8 +182,8 @@ export function applyThinBordersToGrid(
 }
 
 /**
- * Áp dụng bold font + gray fill cho header row (row 1).
- * @param worksheet - Worksheet cần style
+ * Applies bold font and gray fill to header row.
+ * @param worksheet - Target worksheet
  */
 export function styleHeaderRow(worksheet: ExcelJS.Worksheet): void {
   const headerRow = worksheet.getRow(1);
@@ -191,10 +192,10 @@ export function styleHeaderRow(worksheet: ExcelJS.Worksheet): void {
 }
 
 /**
- * Áp dụng yellow fill cho các cột readonly (rows 2..maxRows).
- * @param worksheet - Worksheet cần style
- * @param columns - Chỉ số cột 1-based
- * @param maxRows - Dòng cuối cùng (inclusive)
+ * Applies yellow fill for readonly columns.
+ * @param worksheet - Target worksheet
+ * @param columns - 1-based column indices
+ * @param maxRows - Last row index (inclusive)
  */
 export function applyReadonlyFill(
   worksheet: ExcelJS.Worksheet,
@@ -210,10 +211,10 @@ export function applyReadonlyFill(
 }
 
 /**
- * Áp dụng fill pattern cho các cột chỉ định (rows 2..maxRows).
- * @param worksheet - Worksheet cần style
- * @param columns - Chỉ số cột 1-based
- * @param maxRows - Dòng cuối cùng (inclusive)
+ * Applies a fill pattern to selected columns.
+ * @param worksheet - Target worksheet
+ * @param columns - 1-based column indices
+ * @param maxRows - Last row index (inclusive)
  * @param fill - ExcelJS fill pattern
  */
 export function applyColumnFill(
@@ -231,10 +232,10 @@ export function applyColumnFill(
 }
 
 /**
- * Áp dụng conditional formatting: highlight ô có giá trị bằng yellow fill.
- * @param worksheet - Worksheet cần format
- * @param editableColumns - Ký tự cột (e.g. ['G', 'H'])
- * @param maxRows - Dòng cuối cùng (inclusive)
+ * Applies conditional formatting to highlight non-empty editable cells.
+ * @param worksheet - Target worksheet
+ * @param editableColumns - Column letters (e.g. ['G', 'H'])
+ * @param maxRows - Last row index (inclusive)
  */
 export function applyConditionalFormatting(
   worksheet: ExcelJS.Worksheet,
@@ -266,11 +267,11 @@ interface PersonnelWithPosition {
 }
 
 /**
- * Điền STT, ID, họ tên, cấp bậc, chức vụ cho mỗi quân nhân vào template.
- * @param worksheet - Worksheet cần điền dữ liệu
- * @param personnelList - Danh sách quân nhân kèm chức vụ
- * @param options - Column mapping và repeatMap (lặp dòng cho mỗi người)
- * @returns Tổng số dòng dữ liệu đã thêm
+ * Prefills personnel rows (index, id, name, rank, position) into template.
+ * @param worksheet - Target worksheet
+ * @param personnelList - Personnel records with position data
+ * @param options - Optional column mapping and per-person repeat configuration
+ * @returns Total number of inserted data rows
  */
 export function prefillPersonnelRows(
   worksheet: ExcelJS.Worksheet,
@@ -298,7 +299,7 @@ export function prefillPersonnelRows(
       stt++;
       const rowValues: Record<string, any> = {};
 
-      // Build row using worksheet column keys by position
+      // Build row using worksheet column keys by position.
       const cols = worksheet.columns as ExcelJS.Column[];
       if (cols[mapping.stt - 1]) rowValues[cols[mapping.stt - 1].key as string] = stt;
       if (cols[mapping.id - 1]) rowValues[cols[mapping.id - 1].key as string] = person.id;
@@ -318,9 +319,9 @@ export function prefillPersonnelRows(
 }
 
 /**
- * Tạo Excel template workbook hoàn chỉnh từ config.
- * @param config - Cấu hình template (columns, dropdowns, styling, prefill data)
- * @returns ExcelJS workbook sẵn sàng export
+ * Builds a complete Excel template workbook from config.
+ * @param config - Template configuration (columns, dropdowns, style, prefill)
+ * @returns ExcelJS workbook ready for export
  */
 export async function buildTemplate(config: TemplateConfig): Promise<ExcelJS.Workbook> {
   const {

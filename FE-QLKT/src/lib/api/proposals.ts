@@ -3,6 +3,10 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import { PROPOSAL_TYPES, type ProposalType } from '@/constants/proposal.constants';
 import type { ApiResponse } from '@/lib/types';
 
+/**
+ * getProposalTemplate API wrapper.
+ * @returns API response payload
+ */
 export async function getProposalTemplate(
   type: ProposalType = PROPOSAL_TYPES.CA_NHAN_HANG_NAM
 ): Promise<Blob> {
@@ -17,6 +21,10 @@ export async function getProposalTemplate(
   }
 }
 
+/**
+ * submitProposal API wrapper.
+ * @returns API response payload
+ */
 export async function submitProposal(formData: FormData): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.post('/api/proposals', formData, {
@@ -30,6 +38,10 @@ export async function submitProposal(formData: FormData): Promise<ApiResponse> {
   }
 }
 
+/**
+ * getProposals API wrapper.
+ * @returns API response payload
+ */
 export async function getProposals(params?: {
   page?: number;
   limit?: number;
@@ -43,6 +55,10 @@ export async function getProposals(params?: {
   }
 }
 
+/**
+ * getProposalById API wrapper.
+ * @returns API response payload
+ */
 export async function getProposalById(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get(`/api/proposals/${id}`);
@@ -52,6 +68,10 @@ export async function getProposalById(id: string): Promise<ApiResponse> {
   }
 }
 
+/**
+ * approveProposal API wrapper.
+ * @returns API response payload
+ */
 export async function approveProposal(id: string, formData: FormData): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.post(`/api/proposals/${id}/approve`, formData, {
@@ -63,6 +83,10 @@ export async function approveProposal(id: string, formData: FormData): Promise<A
   }
 }
 
+/**
+ * rejectProposal API wrapper.
+ * @returns API response payload
+ */
 export async function rejectProposal(id: string, ghi_chu: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.post(`/api/proposals/${id}/reject`, { ghi_chu });
@@ -72,6 +96,10 @@ export async function rejectProposal(id: string, ghi_chu: string): Promise<ApiRe
   }
 }
 
+/**
+ * downloadProposalExcel API wrapper.
+ * @returns API response payload
+ */
 export async function downloadProposalExcel(id: string): Promise<Blob> {
   try {
     const res = await axiosInstance.get(`/api/proposals/${id}/download-excel`, {
@@ -83,6 +111,10 @@ export async function downloadProposalExcel(id: string): Promise<Blob> {
   }
 }
 
+/**
+ * uploadDecision API wrapper.
+ * @returns API response payload
+ */
 export async function uploadDecision(id: string, formData: FormData): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.post(`/api/proposals/${id}/upload-decision`, formData, {
@@ -94,6 +126,10 @@ export async function uploadDecision(id: string, formData: FormData): Promise<Ap
   }
 }
 
+/**
+ * checkDuplicate API wrapper.
+ * @returns API response payload
+ */
 export async function checkDuplicate(params: {
   personnel_id: string;
   nam: number;
@@ -108,6 +144,10 @@ export async function checkDuplicate(params: {
   }
 }
 
+/**
+ * checkDuplicateUnit API wrapper.
+ * @returns API response payload
+ */
 export async function checkDuplicateUnit(params: {
   don_vi_id: string;
   nam: number;
@@ -122,6 +162,10 @@ export async function checkDuplicateUnit(params: {
   }
 }
 
+/**
+ * deleteProposal API wrapper.
+ * @returns API response payload
+ */
 export async function deleteProposal(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete(`/api/proposals/${id}`);

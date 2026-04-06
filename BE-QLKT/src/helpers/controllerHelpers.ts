@@ -3,16 +3,18 @@ import { prisma } from '../models';
 import { ROLES } from '../constants/roles.constants';
 
 /**
- * Lấy username của admin từ request, fallback về 'Admin' nếu không có.
+ * Gets the admin username from the request.
  * @param req - Express request
- * @returns username string
+ * @returns Admin username, or `Admin` as fallback
  */
 export function getAdminUsername(req: Request): string {
   return req.user?.username ?? 'Admin';
 }
 
 /**
- * Parse personnel_ids từ query string (dùng chung cho các award controllers)
+ * Parses `personnel_ids` from query string values.
+ * @param query - Express request query object
+ * @returns Normalized personnel ID list
  */
 export function parsePersonnelIdsFromQuery(query: Request['query']): string[] {
   const raw = query.personnel_ids;
@@ -24,8 +26,9 @@ export function parsePersonnelIdsFromQuery(query: Request['query']): string[] {
 }
 
 /**
- * Lấy thông tin đơn vị của Manager từ quân nhân ID.
- * Trả về unit filter hoặc null nếu không phải Manager / không tìm thấy.
+ * Gets the current manager's unit context from the request user.
+ * @param req - Express request
+ * @returns Manager unit filter metadata, or null when unavailable
  */
 export async function getManagerUnitFilter(req: Request) {
   const userRole = req.user?.role;
@@ -49,7 +52,9 @@ export async function getManagerUnitFilter(req: Request) {
 }
 
 /**
- * Lấy danh sách ID đơn vị trực thuộc của 1 cơ quan đơn vị
+ * Gets subordinate unit IDs for a parent unit.
+ * @param coQuanDonViId - Parent unit ID
+ * @returns List of subordinate unit IDs
  */
 export async function getSubordinateUnitIds(coQuanDonViId: string): Promise<string[]> {
   const list = await prisma.donViTrucThuoc.findMany({
@@ -60,8 +65,9 @@ export async function getSubordinateUnitIds(coQuanDonViId: string): Promise<stri
 }
 
 /**
- * Xây dựng filter cho Manager dựa trên đơn vị.
- * Trả về object để dùng làm Prisma where condition.
+ * Builds manager unit filter payload from request context.
+ * @param req - Express request
+ * @returns Manager unit filter object, or null when not applicable
  */
 export async function buildManagerUnitWhere(req: Request): Promise<Record<string, unknown> | null> {
   const unit = await getManagerUnitFilter(req);
@@ -84,15 +90,15 @@ export async function buildManagerUnitWhere(req: Request): Promise<Record<string
 }
 
 /**
- * Xây dựng Prisma where condition để lọc QuanNhan theo đơn vị.
- * Dùng chung cho cả manager filter và unit_id filter.
+ * Builds a Prisma `where` condition for personnel filtering by unit.
+ * Reused by both manager-based filtering and explicit `unit_id` filtering.
  *
- * - Nếu unitId là cơ quan đơn vị: lọc quân nhân thuộc cơ quan đó HOẶC thuộc đơn vị trực thuộc của nó
- * - Nếu unitId là đơn vị trực thuộc: lọc quân nhân thuộc đơn vị trực thuộc đó
+ * - If the unit is a parent unit, includes personnel in the parent or its subordinate units.
+ * - If the unit is a subordinate unit, filters directly by that subordinate unit.
  *
- * @param unit - Object chứa co_quan_don_vi_id hoặc don_vi_truc_thuoc_id
- * @param extraFilter - Các điều kiện QuanNhan bổ sung (vd: lọc theo ho_ten)
- * @returns Prisma where condition cho QuanNhan, hoặc null nếu không có unit
+ * @param unit - Unit payload containing `co_quan_don_vi_id` or `don_vi_truc_thuoc_id`
+ * @param extraFilter - Optional additional personnel filters
+ * @returns Prisma `where` condition for personnel, or null when no unit is available
  */
 export async function buildUnitWhereFilter(
   unit: { co_quan_don_vi_id?: string | null; don_vi_truc_thuoc_id?: string | null },
@@ -122,10 +128,12 @@ export async function buildUnitWhereFilter(
 }
 
 /**
- * Tiện ích: lấy unit filter của Manager từ request và xây dựng Prisma QuanNhan where.
- * Kết hợp getManagerUnitFilter + buildUnitWhereFilter.
+ * Helper that builds manager-scoped personnel filter directly from request context.
+ * Combines `getManagerUnitFilter` and `buildUnitWhereFilter`.
  *
- * @returns Prisma where condition cho QuanNhan, hoặc null nếu không phải Manager
+ * @param req - Express request
+ * @param extraFilter - Optional additional personnel filters
+ * @returns Prisma `where` condition for personnel, or null when request user is not a manager
  */
 export async function buildManagerQuanNhanFilter(
   req: Request,

@@ -354,6 +354,7 @@ async function approveProposal(
 
           positionHistoriesMap[personnelId] = updatedHistories;
         } catch (error) {
+          console.error(`[proposal/approve] positionHistoriesMap build error for ${personnelId}:`, error);
           positionHistoriesMap[personnelId] = [];
         }
       }
@@ -535,6 +536,7 @@ async function approveProposal(
         });
         return decision?.file_path || null;
       } catch (error) {
+        console.error('[proposal/approve] getFilePathFromDB error:', error);
         return null;
       }
     };
@@ -1614,6 +1616,7 @@ async function approveProposal(
 
           recalculateSuccess++;
         } catch (recalcError) {
+          console.error(`[proposal/approve] recalculateAnnualUnit error for unit ${donViId}:`, recalcError);
           recalculateErrors++;
         }
       }
@@ -1640,6 +1643,7 @@ async function approveProposal(
 
           recalculateSuccess++;
         } catch (recalcError) {
+          console.error(`[proposal/approve] recalculateProfile error for personnel ${personnelId}:`, recalcError);
           recalculateErrors++;
         }
       }

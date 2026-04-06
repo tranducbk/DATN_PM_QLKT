@@ -229,6 +229,7 @@ async function notifyOnPersonnelTransfer(
 
     return notifications.length;
   } catch (error) {
+    console.error('[notification] notifyOnPersonnelTransfer error:', error);
     return 0;
   }
 }

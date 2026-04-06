@@ -1,6 +1,11 @@
 import { prisma } from '../models';
 import { FileQuyetDinh } from '../generated/prisma';
 
+/**
+ * Gets the stored file path for a decision number.
+ * @param soQuyetDinh - Decision number
+ * @returns File path when found, otherwise null
+ */
 async function getDecisionFilePath(soQuyetDinh: string | null | undefined): Promise<string | null> {
   if (!soQuyetDinh || soQuyetDinh.trim() === '') {
     return null;
@@ -14,10 +19,16 @@ async function getDecisionFilePath(soQuyetDinh: string | null | undefined): Prom
 
     return decision?.file_path || null;
   } catch (error) {
+    console.error('[decisionFileHelper] getDecisionFilePath error:', error);
     return null;
   }
 }
 
+/**
+ * Gets decision metadata by decision number.
+ * @param soQuyetDinh - Decision number
+ * @returns Decision record when found, otherwise null
+ */
 async function getDecisionInfo(
   soQuyetDinh: string | null | undefined
 ): Promise<FileQuyetDinh | null> {
@@ -32,6 +43,7 @@ async function getDecisionInfo(
 
     return decision;
   } catch (error) {
+    console.error('[decisionFileHelper] getDecisionInfo error:', error);
     return null;
   }
 }

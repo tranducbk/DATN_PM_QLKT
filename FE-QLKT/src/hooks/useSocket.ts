@@ -1,10 +1,19 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { io } from 'socket.io-client';
 import type { Socket } from 'socket.io-client';
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:4000';
 
 export type SocketConnectionStatus = 'connecting' | 'connected' | 'disconnected';
 
+/**
+ * Manages Socket.IO connection with auto-reconnect and token synchronization.
+ * @param token - JWT access token; pass `null` to skip connection
+ * @param onNotification - Callback for new notifications from server
+ * @param onConnectionChange - Callback when connection status changes
+ * @param onForceLogout - Callback when server triggers forced logout
+ * @returns `socketRef` for socket instance access and current `connectionStatus`
+ */
 export function useSocket(
   token: string | null,
   onNotification: (notification: unknown) => void,
@@ -33,59 +42,51 @@ export function useSocket(
   useEffect(() => {
     if (!token) return;
 
-    let socket: Socket;
-    let cancelled = false;
+    const socket = io(SOCKET_URL, {
+      auth: { token },
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      reconnectionAttempts: 10,
+    });
 
     updateStatus('connecting');
 
-    import('socket.io-client').then(({ io }) => {
-      if (cancelled) return;
+    socket.on('connect', () => updateStatus('connected'));
+    socket.on('disconnect', () => updateStatus('disconnected'));
+    socket.on('reconnect_attempt', () => updateStatus('connecting'));
+    socket.on('reconnect', () => updateStatus('connected'));
+    socket.on('reconnect_failed', () => updateStatus('disconnected'));
 
-      socket = io(SOCKET_URL, {
-        auth: { token },
-        transports: ['websocket', 'polling'],
-        reconnection: true,
-        reconnectionDelay: 1000,
-        reconnectionDelayMax: 5000,
-        reconnectionAttempts: 10,
-      });
-
-      socket.on('connect', () => updateStatus('connected'));
-      socket.on('disconnect', () => updateStatus('disconnected'));
-      socket.on('reconnect_attempt', () => updateStatus('connecting'));
-      socket.on('reconnect', () => updateStatus('connected'));
-      socket.on('reconnect_failed', () => updateStatus('disconnected'));
-
-      socket.on('connect_error', () => {
-        const freshToken = localStorage.getItem('accessToken');
-        if (freshToken && freshToken !== (socket.auth as Record<string, string>)?.token) {
-          (socket.auth as Record<string, string>).token = freshToken;
-        }
-      });
-
-      socket.on('new_notification', n => onNotificationRef.current(n));
-      socket.on('force_logout', (data: { message: string }) => onForceLogoutRef.current?.(data));
-
-      const handleTokenRefreshed = (e: Event) => {
-        const newToken = (e as CustomEvent).detail?.accessToken;
-        if (newToken && socket) {
-          (socket.auth as Record<string, string>).token = newToken;
-          if (!socket.connected) socket.connect();
-        }
-      };
-      window.addEventListener('tokenRefreshed', handleTokenRefreshed);
-      tokenRefreshHandlerRef.current = handleTokenRefreshed;
-
-      socketRef.current = socket;
+    socket.on('connect_error', () => {
+      const freshToken = localStorage.getItem('accessToken');
+      if (freshToken && freshToken !== (socket.auth as Record<string, string>)?.token) {
+        (socket.auth as Record<string, string>).token = freshToken;
+      }
     });
 
+    socket.on('new_notification', n => onNotificationRef.current(n));
+    socket.on('force_logout', (data: { message: string }) => onForceLogoutRef.current?.(data));
+
+    const handleTokenRefreshed = (e: Event) => {
+      const newToken = (e as CustomEvent).detail?.accessToken;
+      if (newToken && socket) {
+        (socket.auth as Record<string, string>).token = newToken;
+        if (!socket.connected) socket.connect();
+      }
+    };
+    window.addEventListener('tokenRefreshed', handleTokenRefreshed);
+    tokenRefreshHandlerRef.current = handleTokenRefreshed;
+
+    socketRef.current = socket;
+
     return () => {
-      cancelled = true;
       if (tokenRefreshHandlerRef.current) {
         window.removeEventListener('tokenRefreshed', tokenRefreshHandlerRef.current);
         tokenRefreshHandlerRef.current = null;
       }
-      if (socket) socket.disconnect();
+      socket.disconnect();
       socketRef.current = null;
       updateStatus('disconnected');
     };

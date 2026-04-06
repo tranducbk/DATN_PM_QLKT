@@ -2,11 +2,13 @@ import { message } from 'antd';
 import { getApiErrorMessage } from '@/lib/apiError';
 import axiosInstance from './axiosInstance';
 
-// Các extension có thể xem trước trong trình duyệt
+// File extensions that can be previewed directly in browser.
 const PREVIEWABLE_EXTENSIONS = ['pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'];
 
 /**
- * Kiểm tra file có thể xem trước được không
+ * Checks whether a file extension supports in-browser preview.
+ * @param filename - File name
+ * @returns `true` when file is previewable
  */
 function isPreviewable(filename: string): boolean {
   const ext = filename.split('.').pop()?.toLowerCase() || '';
@@ -14,7 +16,9 @@ function isPreviewable(filename: string): boolean {
 }
 
 /**
- * Kiểm tra file có phải PDF không
+ * Checks whether a file is a PDF.
+ * @param filename - File name
+ * @returns `true` when extension is `pdf`
  */
 function isPdf(filename: string): boolean {
   const ext = filename.split('.').pop()?.toLowerCase() || '';
@@ -22,7 +26,9 @@ function isPdf(filename: string): boolean {
 }
 
 /**
- * Lấy MIME type từ extension
+ * Resolves MIME type from file extension.
+ * @param filename - File name
+ * @returns MIME type string
  */
 function getMimeType(filename: string): string {
   const ext = filename.split('.').pop()?.toLowerCase() || '';
@@ -43,7 +49,10 @@ function getMimeType(filename: string): string {
 }
 
 /**
- * Tải file về với tên đúng
+ * Downloads blob data using the provided file name.
+ * @param blob - File content
+ * @param filename - Downloaded file name
+ * @returns Nothing
  */
 function downloadBlob(blob: Blob, filename: string): void {
   const url = window.URL.createObjectURL(blob);
@@ -57,7 +66,10 @@ function downloadBlob(blob: Blob, filename: string): void {
 }
 
 /**
- * Mở PDF viewer với toolbar hiển thị tên file
+ * Opens a custom PDF viewer window with file toolbar.
+ * @param blobUrl - Object URL of PDF blob
+ * @param filename - Display file name
+ * @returns Nothing
  */
 function openPdfWithViewer(blobUrl: string, filename: string): void {
   const newWindow = window.open('', '_blank');
@@ -157,16 +169,16 @@ function openPdfWithViewer(blobUrl: string, filename: string): void {
 }
 
 /**
- * Mở file trong tab mới hoặc tải về tùy loại file
- * - PDF: Mở viewer với toolbar hiển thị tên file
- * - Image: Mở trực tiếp
- * - DOC/DOCX/khác: Tải về với tên file đúng
+ * Previews a file in browser or downloads it based on file type.
+ * @param filePath - File path or URL
+ * @param customFilename - Optional file name override
+ * @returns Promise resolved when action finishes
  */
 export async function previewFile(filePath: string, customFilename?: string): Promise<void> {
   try {
     const filename = customFilename || filePath.split('/').pop() || 'document';
 
-    // Xử lý đường dẫn API
+    // Normalize file path to API route when needed.
     let apiPath = filePath;
     if (!filePath.startsWith('/api/')) {
       const fileOnly = filePath.split('/').pop();
@@ -182,13 +194,13 @@ export async function previewFile(filePath: string, customFilename?: string): Pr
     const blobUrl = window.URL.createObjectURL(blob);
 
     if (isPdf(filename)) {
-      // PDF -> mở viewer với toolbar
+      // PDF -> open custom viewer with toolbar.
       openPdfWithViewer(blobUrl, filename);
     } else if (isPreviewable(filename)) {
-      // Image -> mở trực tiếp
+      // Image -> open directly in a new tab.
       window.open(blobUrl, '_blank');
     } else {
-      // Không xem trước được -> tải về với tên đúng
+      // Unsupported preview type -> force download.
       downloadBlob(blob, filename);
       message.success(`Đã tải file: ${filename}`);
     }
@@ -198,7 +210,9 @@ export async function previewFile(filePath: string, customFilename?: string): Pr
 }
 
 /**
- * Mở xem trước file quyết định từ số quyết định
+ * Previews a decision file by decision number.
+ * @param soQuyetDinh - Decision number
+ * @returns Promise resolved when preview action finishes
  */
 export async function previewDecisionFile(soQuyetDinh: string): Promise<void> {
   try {
@@ -217,7 +231,7 @@ export async function previewDecisionFile(soQuyetDinh: string): Promise<void> {
 
     message.destroy('preview');
 
-    // Mở viewer với toolbar
+    // Open PDF viewer with toolbar.
     openPdfWithViewer(blobUrl, filename);
   } catch (error: unknown) {
     const ax = error as { response?: { data?: unknown } };
@@ -241,7 +255,10 @@ export async function previewDecisionFile(soQuyetDinh: string): Promise<void> {
 }
 
 /**
- * Mở xem trước hoặc tải file đính kèm với API path tùy chỉnh
+ * Previews or downloads file content from a custom API endpoint.
+ * @param apiPath - API endpoint path
+ * @param filename - Expected file name
+ * @returns Promise resolved when action finishes
  */
 export async function previewFileWithApi(apiPath: string, filename: string): Promise<void> {
   try {
@@ -254,13 +271,13 @@ export async function previewFileWithApi(apiPath: string, filename: string): Pro
     const blobUrl = window.URL.createObjectURL(blob);
 
     if (isPdf(filename)) {
-      // PDF -> mở viewer với toolbar
+      // PDF -> open custom viewer with toolbar.
       openPdfWithViewer(blobUrl, filename);
     } else if (isPreviewable(filename)) {
-      // Image -> mở trực tiếp
+      // Image -> open directly in a new tab.
       window.open(blobUrl, '_blank');
     } else {
-      // Không xem trước được -> tải về với tên đúng
+      // Unsupported preview type -> force download.
       downloadBlob(blob, filename);
       message.success(`Đã tải file: ${filename}`);
     }

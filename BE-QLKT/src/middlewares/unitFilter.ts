@@ -62,6 +62,13 @@ const getPersonnelInUnit = async (unitInfo: UnitInfo): Promise<Array<{ id: strin
   });
 };
 
+/**
+ * Attaches manager unit filter information to the request context.
+ * @param req - Express request
+ * @param res - Express response
+ * @param next - Express next function
+ * @returns Promise resolved when middleware completes
+ */
 const attachUnitFilter = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const userRole = req.user?.role;

@@ -136,6 +136,7 @@ const withPrisma = async <T>(callback: (prisma: PrismaClient) => Promise<T>): Pr
   try {
     return await callback(prisma);
   } catch (error) {
+    console.error('[auditLog] withPrisma error:', error);
     return null;
   }
 };

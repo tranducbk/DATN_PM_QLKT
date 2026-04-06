@@ -1,7 +1,11 @@
 import path from 'path';
 import type { Response } from 'express';
 
-/** MIME cho file đính kèm quyết định / đề xuất (PDF, Word). */
+/**
+ * Resolves MIME type based on filename extension.
+ * @param filename - Original file name
+ * @returns MIME type used for response headers
+ */
 export function contentTypeFromFilename(filename: string): string {
   const ext = path.extname(filename).toLowerCase();
   if (ext === '.pdf') return 'application/pdf';
@@ -11,7 +15,13 @@ export function contentTypeFromFilename(filename: string): string {
   return 'application/octet-stream';
 }
 
-/** Gắn header trước `res.sendFile`. */
+/**
+ * Sets response headers before sending file content.
+ * @param res - Express response instance
+ * @param filename - Original file name
+ * @param disposition - Content disposition mode
+ * @returns Nothing
+ */
 export function setFileSendHeaders(
   res: Response,
   filename: string,

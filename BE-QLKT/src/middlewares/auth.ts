@@ -5,6 +5,13 @@ import { prisma } from '../models';
 import { JwtUser } from '../types/express';
 import { JWT_SECRET } from '../configs';
 
+/**
+ * Verifies JWT access token and attaches decoded user to request.
+ * @param req - Express request
+ * @param res - Express response
+ * @param next - Express next function
+ * @returns Promise resolved when auth check finishes
+ */
 const verifyToken = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   const authHeader = (req.headers.authorization || req.headers.Authorization) as string | undefined;
 
@@ -53,6 +60,11 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction): Pro
 
 const requireAuth = verifyToken;
 
+/**
+ * Creates role-based authorization middleware.
+ * @param allowedRoles - Roles allowed to access the endpoint
+ * @returns Express middleware enforcing role checks
+ */
 const checkRole = (allowedRoles: string[]) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {
@@ -75,8 +87,11 @@ const checkRole = (allowedRoles: string[]) => {
   };
 };
 
+/** Middleware allowing only SUPER_ADMIN role. */
 const requireSuperAdmin = checkRole([ROLES.SUPER_ADMIN]);
+/** Middleware allowing SUPER_ADMIN and ADMIN roles. */
 const requireAdmin = checkRole([ROLES.SUPER_ADMIN, ROLES.ADMIN]);
+/** Middleware allowing SUPER_ADMIN, ADMIN, and MANAGER roles. */
 const requireManager = checkRole([ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER]);
 
 export { verifyToken, requireAuth, requireSuperAdmin, requireAdmin, requireManager, checkRole };

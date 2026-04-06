@@ -12,6 +12,10 @@ export type NotificationItem = {
   type?: string;
 };
 
+/**
+ * getNotifications API wrapper.
+ * @returns API response payload
+ */
 export async function getNotifications(params?: {
   page?: number;
   limit?: number;
@@ -26,6 +30,10 @@ export async function getNotifications(params?: {
   }
 }
 
+/**
+ * getUnreadNotificationCount API wrapper.
+ * @returns API response payload
+ */
 export async function getUnreadNotificationCount(): Promise<ApiResponse<{ count: number }>> {
   try {
     const res = await axiosInstance.get('/api/notifications/unread-count');
@@ -35,6 +43,10 @@ export async function getUnreadNotificationCount(): Promise<ApiResponse<{ count:
   }
 }
 
+/**
+ * markNotificationAsRead API wrapper.
+ * @returns API response payload
+ */
 export async function markNotificationAsRead(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.patch(`/api/notifications/${id}/read`);
@@ -44,6 +56,10 @@ export async function markNotificationAsRead(id: string): Promise<ApiResponse> {
   }
 }
 
+/**
+ * markAllNotificationsAsRead API wrapper.
+ * @returns API response payload
+ */
 export async function markAllNotificationsAsRead(): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.patch('/api/notifications/read-all');
@@ -53,6 +69,10 @@ export async function markAllNotificationsAsRead(): Promise<ApiResponse> {
   }
 }
 
+/**
+ * deleteNotification API wrapper.
+ * @returns API response payload
+ */
 export async function deleteNotification(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete(`/api/notifications/${id}`);
@@ -62,6 +82,10 @@ export async function deleteNotification(id: string): Promise<ApiResponse> {
   }
 }
 
+/**
+ * deleteAllNotifications API wrapper.
+ * @returns API response payload
+ */
 export async function deleteAllNotifications(): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete('/api/notifications/all');

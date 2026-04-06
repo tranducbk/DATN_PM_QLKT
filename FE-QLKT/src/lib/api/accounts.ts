@@ -2,6 +2,10 @@ import axiosInstance from '@/utils/axiosInstance';
 import { getApiErrorMessage } from '@/lib/apiError';
 import type { ApiResponse } from '@/lib/types';
 
+/**
+ * getAccounts API wrapper.
+ * @returns API response payload
+ */
 export async function getAccounts(params: {
   page?: number;
   limit?: number;
@@ -15,6 +19,10 @@ export async function getAccounts(params: {
   }
 }
 
+/**
+ * getAccountById API wrapper.
+ * @returns API response payload
+ */
 export async function getAccountById(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get(`/api/accounts/${id}`);
@@ -24,6 +32,10 @@ export async function getAccountById(id: string): Promise<ApiResponse> {
   }
 }
 
+/**
+ * updateAccount API wrapper.
+ * @returns API response payload
+ */
 export async function updateAccount(id: string, body: Record<string, unknown>): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.put(`/api/accounts/${id}`, body);
@@ -33,7 +45,7 @@ export async function updateAccount(id: string, body: Record<string, unknown>): 
   }
 }
 
-/** Payload tạo tài khoản — trùng field backend `/api/accounts` */
+/** Account creation payload aligned with backend `/api/accounts` fields. */
 export type CreateAccountBody = {
   username: string;
   password: string;
@@ -44,6 +56,10 @@ export type CreateAccountBody = {
   personnel_id?: string;
 };
 
+/**
+ * createAccount API wrapper.
+ * @returns API response payload
+ */
 export async function createAccount(body: CreateAccountBody): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.post('/api/accounts', body);
@@ -53,6 +69,10 @@ export async function createAccount(body: CreateAccountBody): Promise<ApiRespons
   }
 }
 
+/**
+ * deleteAccount API wrapper.
+ * @returns API response payload
+ */
 export async function deleteAccount(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete(`/api/accounts/${id}`);
@@ -62,6 +82,10 @@ export async function deleteAccount(id: string): Promise<ApiResponse> {
   }
 }
 
+/**
+ * resetAccountPassword API wrapper.
+ * @returns API response payload
+ */
 export async function resetAccountPassword(accountId: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.post('/api/accounts/reset-password', {
