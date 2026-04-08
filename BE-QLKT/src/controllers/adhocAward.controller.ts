@@ -5,6 +5,7 @@ import { parsePagination, normalizeParam } from '../helpers/paginationHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 import { getManagerUnitFilter, getSubordinateUnitIds } from '../helpers/controllerHelper';
+import { ADHOC_TYPE } from '../constants/adhocType.constants';
 
 class AdhocAwardController {
   createAdhocAward = catchAsync(async (req: Request, res: Response) => {
@@ -23,18 +24,18 @@ class AdhocAwardController {
       decisionFilePath,
     } = req.body;
 
-    if (!['CA_NHAN', 'TAP_THE'].includes(type)) {
+    if (!Object.values(ADHOC_TYPE).includes(type)) {
       return ResponseHelper.badRequest(
         res,
         'Loại khen thưởng không hợp lệ. Chỉ chấp nhận: CA_NHAN, TAP_THE'
       );
     }
 
-    if (type === 'CA_NHAN' && !personnelId) {
+    if (type === ADHOC_TYPE.CA_NHAN && !personnelId) {
       return ResponseHelper.badRequest(res, 'Thiếu thông tin quân nhân (personnelId)');
     }
 
-    if (type === 'TAP_THE' && (!unitId || !unitType)) {
+    if (type === ADHOC_TYPE.TAP_THE && (!unitId || !unitType)) {
       return ResponseHelper.badRequest(res, 'Thiếu thông tin đơn vị (unitId và unitType)');
     }
 

@@ -3,6 +3,7 @@ import fs from 'fs/promises';
 import { prisma } from '../models';
 import { NOTIFICATION_TYPES, RESOURCE_TYPES } from '../constants/notificationTypes.constants';
 import { ROLES } from '../constants/roles.constants';
+import { ADHOC_TYPE } from '../constants/adhocType.constants';
 import { ForbiddenError, NotFoundError } from '../middlewares/errorHandler';
 import type { KhenThuongDotXuat, Prisma } from '../generated/prisma';
 
@@ -103,7 +104,7 @@ class AdhocAwardService {
         throw new ForbiddenError('Chỉ Admin mới có quyền tạo khen thưởng đột xuất');
       }
 
-      if (type === 'CA_NHAN') {
+      if (type === ADHOC_TYPE.CA_NHAN) {
         const personnel = await prisma.quanNhan.findUnique({
           where: { id: personnelId },
         });
@@ -113,7 +114,7 @@ class AdhocAwardService {
         }
       }
 
-      if (type === 'TAP_THE') {
+      if (type === ADHOC_TYPE.TAP_THE) {
         if (unitType === 'CO_QUAN_DON_VI') {
           const unit = await prisma.coQuanDonVi.findUnique({
             where: { id: unitId },
@@ -171,9 +172,9 @@ class AdhocAwardService {
         data: {
           loai: 'KHEN_THUONG_DOT_XUAT',
           doi_tuong: type,
-          ...(type === 'CA_NHAN' && personnelId && { quan_nhan_id: personnelId }),
-          ...(type === 'TAP_THE' && unitType === 'CO_QUAN_DON_VI' && { co_quan_don_vi_id: unitId }),
-          ...(type === 'TAP_THE' &&
+          ...(type === ADHOC_TYPE.CA_NHAN && personnelId && { quan_nhan_id: personnelId }),
+          ...(type === ADHOC_TYPE.TAP_THE && unitType === 'CO_QUAN_DON_VI' && { co_quan_don_vi_id: unitId }),
+          ...(type === ADHOC_TYPE.TAP_THE &&
             unitType === 'DON_VI_TRUC_THUOC' && { don_vi_truc_thuoc_id: unitId }),
           hinh_thuc_khen_thuong: awardForm,
           nam: year,
@@ -221,7 +222,7 @@ class AdhocAwardService {
   ): Promise<number> {
     const notifications: NotificationData[] = [];
 
-    if (adhocAward.doi_tuong === 'CA_NHAN' && adhocAward.QuanNhan) {
+    if (adhocAward.doi_tuong === ADHOC_TYPE.CA_NHAN && adhocAward.QuanNhan) {
       const personnel = adhocAward.QuanNhan as Record<string, unknown>;
       const awardName = adhocAward.hinh_thuc_khen_thuong as string;
       const year = adhocAward.nam as number;
@@ -273,7 +274,7 @@ class AdhocAwardService {
           link: `/user/profile`,
         });
       }
-    } else if (adhocAward.doi_tuong === 'TAP_THE') {
+    } else if (adhocAward.doi_tuong === ADHOC_TYPE.TAP_THE) {
       const awardName = adhocAward.hinh_thuc_khen_thuong as string;
       const year = adhocAward.nam as number;
       let unitName = '';
@@ -387,7 +388,7 @@ class AdhocAwardService {
         const unitFilter: Record<string, unknown>[] = [];
 
         unitFilter.push({
-          doi_tuong: 'CA_NHAN',
+          doi_tuong: ADHOC_TYPE.CA_NHAN,
           QuanNhan: {
             ...(ho_ten && { ho_ten: { contains: ho_ten, mode: 'insensitive' } }),
             OR: [
@@ -400,7 +401,7 @@ class AdhocAwardService {
         });
 
         unitFilter.push({
-          doi_tuong: 'TAP_THE',
+          doi_tuong: ADHOC_TYPE.TAP_THE,
           OR: [
             { co_quan_don_vi_id: managerCoQuanId },
             ...(managerDonViTrucThuocIds && managerDonViTrucThuocIds.length > 0
@@ -423,7 +424,7 @@ class AdhocAwardService {
         const unitFilter: Record<string, unknown>[] = [];
 
         unitFilter.push({
-          doi_tuong: 'CA_NHAN',
+          doi_tuong: ADHOC_TYPE.CA_NHAN,
           QuanNhan: {
             ...(ho_ten && { ho_ten: { contains: ho_ten, mode: 'insensitive' } }),
             don_vi_truc_thuoc_id: managerDonViTrucThuocId,
@@ -431,7 +432,7 @@ class AdhocAwardService {
         });
 
         unitFilter.push({
-          doi_tuong: 'TAP_THE',
+          doi_tuong: ADHOC_TYPE.TAP_THE,
           don_vi_truc_thuoc_id: managerDonViTrucThuocId,
         });
 
@@ -647,7 +648,7 @@ class AdhocAwardService {
     const awardName = adhocAward.hinh_thuc_khen_thuong as string;
     const year = adhocAward.nam as number;
 
-    if (adhocAward.doi_tuong === 'CA_NHAN' && adhocAward.QuanNhan) {
+    if (adhocAward.doi_tuong === ADHOC_TYPE.CA_NHAN && adhocAward.QuanNhan) {
       const personnel = adhocAward.QuanNhan as Record<string, unknown>;
 
       const donViId =
@@ -697,7 +698,7 @@ class AdhocAwardService {
           link: `/user/profile`,
         });
       }
-    } else if (adhocAward.doi_tuong === 'TAP_THE') {
+    } else if (adhocAward.doi_tuong === ADHOC_TYPE.TAP_THE) {
       let unitName = '';
 
       if (adhocAward.CoQuanDonVi) {
@@ -829,7 +830,7 @@ class AdhocAwardService {
     const awardName = adhocAward.hinh_thuc_khen_thuong as string;
     const year = adhocAward.nam as number;
 
-    if (adhocAward.doi_tuong === 'CA_NHAN' && adhocAward.QuanNhan) {
+    if (adhocAward.doi_tuong === ADHOC_TYPE.CA_NHAN && adhocAward.QuanNhan) {
       const personnel = adhocAward.QuanNhan as Record<string, unknown>;
 
       const donViId =
@@ -879,7 +880,7 @@ class AdhocAwardService {
           link: `/user/profile`,
         });
       }
-    } else if (adhocAward.doi_tuong === 'TAP_THE') {
+    } else if (adhocAward.doi_tuong === ADHOC_TYPE.TAP_THE) {
       let unitName = '';
 
       if (adhocAward.CoQuanDonVi) {
@@ -957,7 +958,7 @@ class AdhocAwardService {
 
       const adhocAwards = await prisma.khenThuongDotXuat.findMany({
         where: {
-          doi_tuong: 'CA_NHAN',
+          doi_tuong: ADHOC_TYPE.CA_NHAN,
           quan_nhan_id: personnelId,
         },
         orderBy: {
@@ -983,7 +984,7 @@ class AdhocAwardService {
   async getAdhocAwardsByUnit(unitId: string, unitType: string): Promise<KhenThuongDotXuat[]> {
     try {
       const where: Prisma.KhenThuongDotXuatWhereInput = {
-        doi_tuong: 'TAP_THE',
+        doi_tuong: ADHOC_TYPE.TAP_THE,
       };
 
       if (unitType === 'CO_QUAN_DON_VI') {

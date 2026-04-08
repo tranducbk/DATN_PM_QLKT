@@ -3,6 +3,7 @@ import profileService from '../services/profile.service';
 import unitAnnualAwardService from '../services/unitAnnualAward.service';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
+import { ADHOC_TYPE } from '../constants/adhocType.constants';
 
 class ProfileController {
   getAnnualProfile = catchAsync(async (req: Request, res: Response) => {
@@ -84,7 +85,7 @@ class ProfileController {
           personnel_id: item.personnel_id,
           nam: item.nam,
           danh_hieu: item.danh_hieu,
-          type: 'CA_NHAN',
+          type: ADHOC_TYPE.CA_NHAN,
           ...result,
         });
       }

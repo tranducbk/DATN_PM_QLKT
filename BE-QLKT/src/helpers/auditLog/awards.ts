@@ -3,6 +3,7 @@ import { prisma } from '../../models';
 import { Request, Response } from 'express';
 import { FALLBACK, parseResponseData, asRecord, queryPersonnelName, getUnitNameFromUnitId, getFileName } from './constants';
 import { getDanhHieuName } from '../../constants/danhHieu.constants';
+import { ADHOC_TYPE } from '../../constants/adhocType.constants';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 
 
@@ -239,7 +240,7 @@ const adhocAwards: Record<
   (req: Request, res: Response, responseData: unknown) => Promise<string>
 > = {
   CREATE: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
-    const type = req.body?.type === 'CA_NHAN' ? 'cá nhân' : 'tập thể';
+    const type = req.body?.type === ADHOC_TYPE.CA_NHAN ? 'cá nhân' : 'tập thể';
     const awardForm = req.body?.awardForm || FALLBACK.UNKNOWN;
     const year = req.body?.year || '';
     const personnelId = req.body?.personnelId || null;
