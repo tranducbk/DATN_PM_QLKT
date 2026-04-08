@@ -31,7 +31,7 @@ import {
 import { AWARD_TAB_DANH_HIEU, type AwardType } from '@/constants/danhHieu.constants';
 
 import { ExportModal } from './ExportModal';
-import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/lib/constants/pagination.constants';
 import { formatDate } from '@/lib/utils';
 
 const { Title, Paragraph, Text } = Typography;
@@ -103,7 +103,7 @@ export default function AdminAwardsPage() {
     ho_ten: '',
     danh_hieu: '',
     de_tai: '',
-    doi_tuong: '', // Cho adhoc: CA_NHAN, TAP_THE hoặc '' (tất cả)
+    doi_tuong: '', // Adhoc filter: CA_NHAN, TAP_THE, or '' (all)
   });
   const [debouncedFilters, setDebouncedFilters] = useState(filters);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -112,7 +112,6 @@ export default function AdminAwardsPage() {
     fetchAwards();
   }, [activeTab]);
 
-  // Reset bộ lọc khi đổi tab để không dùng chung giữa các loại
   useEffect(() => {
     setFilters({
       nam: '',
@@ -131,7 +130,7 @@ export default function AdminAwardsPage() {
   const fetchAwards = async () => {
     try {
       setLoading(true);
-      const params: any = { limit: 1000 };
+      const params: any = { limit: FETCH_ALL_LIMIT };
 
       const config = AWARD_TYPE_CONFIG[activeTab];
       const result = await (config ?? AWARD_TYPE_CONFIG.CNHN).fetch(params);
@@ -200,7 +199,6 @@ export default function AdminAwardsPage() {
     ];
   }, [activeTab]);
 
-  // Lấy danh sách các năm có trong dữ liệu
   const availableYears = useMemo(() => {
     const years = new Set<number>();
     awards.forEach(award => {
@@ -208,7 +206,7 @@ export default function AdminAwardsPage() {
         years.add(award.nam);
       }
     });
-    return Array.from(years).sort((a, b) => b - a); // Sắp xếp giảm dần
+    return Array.from(years).sort((a, b) => b - a); // descending
   }, [awards]);
 
   const filteredAwards = useMemo(() => {
@@ -228,7 +226,6 @@ export default function AdminAwardsPage() {
           if (!unit.includes(nameFilter)) return false;
         }
       } else if (activeTab === 'KTDX') {
-        // Adhoc: tìm kiếm theo tên cá nhân, tên đơn vị, hoặc hình thức khen thưởng
         if (nameFilter) {
           const doiTuong = record.doi_tuong || record.loai;
           let searchText = '';
@@ -237,12 +234,10 @@ export default function AdminAwardsPage() {
           } else {
             searchText = record.CoQuanDonVi?.ten_don_vi || record.DonViTrucThuoc?.ten_don_vi || '';
           }
-          // Thêm hình thức khen thưởng vào tìm kiếm
           const hinhThuc = record.hinh_thuc_khen_thuong || '';
           const combined = `${searchText} ${hinhThuc}`.toLowerCase();
           if (!combined.includes(nameFilter)) return false;
         }
-        // Filter theo đối tượng (CA_NHAN / TAP_THE)
         if (doiTuongFilter) {
           const doiTuong = record.doi_tuong || record.loai;
           if (doiTuong !== doiTuongFilter) return false;
@@ -254,7 +249,6 @@ export default function AdminAwardsPage() {
         }
       }
 
-      // Danh hiệu filters
       if (danhHieuFilter) {
         if (['CNHN', 'DVHN', 'HCCSVV', 'HCBVTQ'].includes(activeTab)) {
           if (activeTab === 'CNHN') {
@@ -386,7 +380,6 @@ export default function AdminAwardsPage() {
       width: 150,
       align: 'center',
       render: (_: any, record: any) => {
-        // Lấy trực tiếp từ record (dữ liệu đã lưu trong bảng)
         const capBac = record.cap_bac;
         const chucVu = record.chuc_vu;
 
@@ -416,7 +409,7 @@ export default function AdminAwardsPage() {
       width: 140,
       align: 'center',
       render: (_: any, record: any) => {
-        // Column chỉ hiển thị cho tab NCKH (xem filter ở dưới)
+        // Only visible on the NCKH tab (filtered below)
         const loaiMap: Record<string, string> = {
           DTKH: 'Đề tài khoa học',
           SKKH: 'Sáng kiến khoa học',
@@ -525,7 +518,6 @@ export default function AdminAwardsPage() {
       align: 'center',
       fixed: 'right',
       render: (_: any, record: any) => {
-        // Hiển thị nút xóa cho tất cả các loại khen thưởng
         return (
           <Popconfirm
             title="Xóa khen thưởng"

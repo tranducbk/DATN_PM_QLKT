@@ -30,7 +30,7 @@ import {
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { formatDate } from '@/lib/utils';
 import type { AwardType } from '@/constants/danhHieu.constants';
-import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/lib/constants/pagination.constants';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -143,7 +143,6 @@ export default function AdminAwardsPage() {
     fetchAwards();
   }, [activeTab]);
 
-  // Reset bộ lọc khi đổi tab để không giữ giá trị tab khác
   useEffect(() => {
     setFilters({
       nam: '',
@@ -161,7 +160,7 @@ export default function AdminAwardsPage() {
   const fetchAwards = async () => {
     try {
       setLoading(true);
-      const params: any = { limit: 1000 };
+      const params: any = { limit: FETCH_ALL_LIMIT };
 
       const config = AWARD_TYPE_CONFIG[activeTab];
       const result = await (config ?? AWARD_TYPE_CONFIG.CNHN).fetch(params);
@@ -199,7 +198,6 @@ export default function AdminAwardsPage() {
     ];
   }, [activeTab]);
 
-  // Lấy danh sách các năm có trong dữ liệu
   const availableYears = useMemo(() => {
     const years = new Set<number>();
     awards.forEach(award => {
@@ -207,7 +205,7 @@ export default function AdminAwardsPage() {
         years.add(award.nam);
       }
     });
-    return Array.from(years).sort((a, b) => b - a); // Sắp xếp giảm dần
+    return Array.from(years).sort((a, b) => b - a); // descending
   }, [awards]);
 
   const filteredAwards = useMemo(() => {
@@ -225,7 +223,6 @@ export default function AdminAwardsPage() {
         if (!name.includes(nameFilter)) return false;
       }
 
-      // Danh hiệu filters
       if (danhHieuFilter) {
         if (['CNHN', 'HCCSVV', 'HCBVTQ'].includes(activeTab)) {
           if (activeTab === 'CNHN') {
@@ -345,7 +342,6 @@ export default function AdminAwardsPage() {
       width: 150,
       align: 'center',
       render: (_: any, record: any) => {
-        // Lấy trực tiếp từ record (dữ liệu đã lưu trong bảng)
         const capBac = record.cap_bac;
         const chucVu = record.chuc_vu;
 
@@ -422,7 +418,7 @@ export default function AdminAwardsPage() {
           );
         }
 
-        // Commemoration medals (KNC_VSNXD_QDNDVN) - Nếu có bản ghi thì mặc định là KNC
+        // Commemoration medals — if record exists, default title is KNC
         if (activeTab === 'KNC_VSNXD_QDNDVN') {
           const danhHieu =
             DANH_HIEU_MAP['KNC_VSNXD_QDNDVN'] || 'Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN';
@@ -439,7 +435,7 @@ export default function AdminAwardsPage() {
           );
         }
 
-        // Military flag - Nếu có bản ghi thì mặc định là HC_QKQT
+        // Military flag — if record exists, default title is HC_QKQT
         if (activeTab === 'HCQKQT') {
           const danhHieu = DANH_HIEU_MAP['HC_QKQT'] || 'Huy chương Quân kỳ Quyết thắng';
           return (
@@ -772,6 +768,7 @@ export default function AdminAwardsPage() {
                   showTotal: total => `Tổng ${total} bản ghi`,
                 }}
                 bordered
+                scroll={{ x: 'max-content' }}
               />
             )}
           </Spin>

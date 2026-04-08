@@ -249,7 +249,7 @@ async function notifyOnAwardDeleted(
 
     return notifications.length;
   } catch (error) {
-    console.error('[notification] notifyOnAwardDeleted error:', error);
+    console.error('NotificationAwards.notifyOnAwardDeleted failed', { error });
     return 0;
   }
 }
@@ -365,7 +365,7 @@ async function notifyUsersOnAwardApproved(
 
     return notifications.length;
   } catch (error) {
-    console.error('[notification] notifyUsersOnAwardApproved error:', error);
+    console.error('NotificationAwards.notifyUsersOnAwardApproved failed', { error });
     return 0;
   }
 }
@@ -560,7 +560,7 @@ async function notifyOnBulkAwardAdded(
 
     return notifications.length;
   } catch (error) {
-    console.error('[notification] notifyOnBulkAwardAdded error:', error);
+    console.error('NotificationAwards.notifyOnBulkAwardAdded failed', { error });
     return 0;
   }
 }
@@ -666,7 +666,7 @@ async function notifyOnImport(
       }
     }
 
-    // Notify personnel (chỉ khen thưởng cá nhân)
+    // Notify personnel accounts for individual awards only.
     if (personnelIds.length > 0) {
       const personnelAccounts = await prisma.taiKhoan.findMany({
         where: { quan_nhan_id: { in: personnelIds } },

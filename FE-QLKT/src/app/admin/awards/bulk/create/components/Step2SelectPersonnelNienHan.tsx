@@ -19,7 +19,7 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import { formatDate } from '@/lib/utils';
 import type { DateInput } from '@/lib/types';
 import { apiClient } from '@/lib/apiClient';
-import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/lib/constants/pagination.constants';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 import { ExcelImportSection } from './ExcelImportSection';
 import * as XLSX from 'xlsx';
@@ -92,7 +92,6 @@ export function Step2SelectPersonnelNienHan({
     fetchPersonnel();
   }, []);
 
-  // Đồng bộ localNam với nam từ props
   useEffect(() => {
     setLocalNam(nam);
   }, [nam]);
@@ -102,14 +101,13 @@ export function Step2SelectPersonnelNienHan({
       setLoading(true);
       const response = await apiClient.getPersonnel({
         page: 1,
-        limit: 1000,
+        limit: FETCH_ALL_LIMIT,
       });
 
       if (response.success) {
         const personnelData = response.data?.personnel ?? [];
         setPersonnel(personnelData);
 
-        // Fetch service profiles để biết quân nhân đã nhận hạng nào
         if (personnelData.length > 0) {
           await fetchServiceProfiles(personnelData);
         }
@@ -126,7 +124,6 @@ export function Step2SelectPersonnelNienHan({
       setCheckingProfiles(true);
       const profilesMap: Record<string, any> = {};
 
-      // Fetch tenure profile cho mỗi quân nhân
       await Promise.all(
         personnelList.map(async p => {
           if (p.id) {
@@ -224,7 +221,7 @@ export function Step2SelectPersonnelNienHan({
     }
   };
 
-  // Kiểm tra điều kiện thời gian cho HCCSVV
+  /** Checks whether service time meets HCCSVV eligibility thresholds. */
   const checkHCCSVVEligibility = (record: Personnel) => {
     if (!record.ngay_nhap_ngu) return null;
 
@@ -237,7 +234,6 @@ export function Step2SelectPersonnelNienHan({
         ? new Date(record.ngay_nhap_ngu)
         : record.ngay_nhap_ngu;
 
-    // Tính ngày đủ điều kiện cho từng hạng
     const eligibilityDateBa = new Date(startDate);
     eligibilityDateBa.setFullYear(eligibilityDateBa.getFullYear() + 10);
     const eligibilityYearBa = eligibilityDateBa.getFullYear();
@@ -271,9 +267,8 @@ export function Step2SelectPersonnelNienHan({
     };
   };
 
-  // Kiểm tra quân nhân có thể đề xuất hạng tiếp theo không
+  /** Returns true if the personnel is eligible to be proposed for the next HCCSVV rank. */
   const canProposeNextRank = (record: Personnel) => {
-    // Kiểm tra giới tính
     if (!record.gioi_tinh || (record.gioi_tinh !== 'NAM' && record.gioi_tinh !== 'NU')) {
       return false;
     }
@@ -288,48 +283,44 @@ export function Step2SelectPersonnelNienHan({
     const hasHangNhi = serviceProfile?.hccsvv_hang_nhi_status === ELIGIBILITY_STATUS.DA_NHAN;
     const hasHangNhat = serviceProfile?.hccsvv_hang_nhat_status === ELIGIBILITY_STATUS.DA_NHAN;
 
-    // Nếu chưa nhận Hạng Ba, chỉ có thể đề xuất nếu đủ 10 năm
+    // Not yet received Rank 3: requires >= 10 years
     if (!hasHangBa) {
       return eligibility.hangBa.eligible;
     }
 
-    // Nếu đã nhận Hạng Ba nhưng chưa nhận Hạng Nhì, chỉ có thể đề xuất nếu đủ 15 năm
+    // Received Rank 3 but not yet Rank 2: requires >= 15 years
     if (hasHangBa && !hasHangNhi) {
       return eligibility.hangNhi.eligible;
     }
 
-    // Nếu đã nhận Hạng Nhì nhưng chưa nhận Hạng Nhất, chỉ có thể đề xuất nếu đủ 20 năm
+    // Received Rank 2 but not yet Rank 1: requires >= 20 years
     if (hasHangNhi && !hasHangNhat) {
       return eligibility.hangNhat.eligible;
     }
 
-    // Nếu đã nhận tất cả hạng, không thể đề xuất nữa
+    // Already received all ranks — no further proposal possible
     return false;
   };
 
-  // Priority: 0=đủ điều kiện đề xuất hạng tiếp, 2=đã nhận Hạng Nhất, 3=không đủ điều kiện
+  // Sort priority: 0=eligible for next rank, 2=received all ranks, 3=ineligible
   const getSortPriority = (record: Personnel): number => {
-    // Kiểm tra giới tính
     const missingGender =
       !record.gioi_tinh || (record.gioi_tinh !== 'NAM' && record.gioi_tinh !== 'NU');
     if (missingGender) return 3;
 
-    // Kiểm tra ngày nhập ngũ
     if (!record.ngay_nhap_ngu) return 3;
 
     const serviceProfile = serviceProfilesMap[record.id];
     const hasHangNhat = serviceProfile?.hccsvv_hang_nhat_status === ELIGIBILITY_STATUS.DA_NHAN;
 
-    // Đã nhận đủ tất cả hạng
     if (hasHangNhat) return 2;
 
-    // Kiểm tra đủ điều kiện đề xuất hạng tiếp theo
     if (canProposeNextRank(record)) return 0;
 
-    return 3; // Không đủ điều kiện
+    return 3; // ineligible
   };
 
-  // Sắp xếp: đủ điều kiện → đã nhận đủ → không đủ điều kiện
+  // Sort: eligible → all ranks received → ineligible
   const sortedPersonnel = [...filteredPersonnel].sort((a, b) => {
     return getSortPriority(a) - getSortPriority(b);
   });
@@ -477,7 +468,7 @@ export function Step2SelectPersonnelNienHan({
 
         const { hangBa, hangNhi, hangNhat } = eligibility;
 
-        // Chưa đủ 10 năm
+        // < 10 years — not yet eligible for Rank 3
         if (!hangBa.eligible) {
           return (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
@@ -491,7 +482,7 @@ export function Step2SelectPersonnelNienHan({
           );
         }
 
-        // Đủ 10 năm nhưng chưa nhận Hạng Ba → chỉ được đề xuất Hạng Ba
+        // >= 10 years, no Rank 3 yet — eligible to propose Rank 3
         if (hangBa.eligible && !hasHangBa) {
           return (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
@@ -505,7 +496,7 @@ export function Step2SelectPersonnelNienHan({
           );
         }
 
-        // Đã nhận Hạng Ba, đủ 15 năm nhưng chưa nhận Hạng Nhì → có thể đề xuất Hạng Nhì
+        // Rank 3 received, >= 15 years, no Rank 2 yet — eligible to propose Rank 2
         if (hasHangBa && hangNhi.eligible && !hasHangNhi) {
           return (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
@@ -519,7 +510,7 @@ export function Step2SelectPersonnelNienHan({
           );
         }
 
-        // Đã nhận Hạng Ba, chưa đủ 15 năm
+        // Rank 3 received but < 15 years — not yet eligible for Rank 2
         if (hasHangBa && !hangNhi.eligible) {
           return (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
@@ -533,7 +524,7 @@ export function Step2SelectPersonnelNienHan({
           );
         }
 
-        // Đã nhận Hạng Nhì, đủ 20 năm nhưng chưa nhận Hạng Nhất → có thể đề xuất Hạng Nhất
+        // Rank 2 received, >= 20 years, no Rank 1 yet — eligible to propose Rank 1
         if (hasHangNhi && hangNhat.eligible && !hasHangNhat) {
           return (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
@@ -547,7 +538,7 @@ export function Step2SelectPersonnelNienHan({
           );
         }
 
-        // Đã nhận Hạng Nhì, chưa đủ 20 năm
+        // Rank 2 received but < 20 years — not yet eligible for Rank 1
         if (hasHangNhi && !hangNhat.eligible) {
           return (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
@@ -561,7 +552,7 @@ export function Step2SelectPersonnelNienHan({
           );
         }
 
-        // Đã nhận tất cả hạng
+        // All ranks received
         if (hasHangNhat) {
           return (
             <Text type="success" strong>
@@ -584,26 +575,23 @@ export function Step2SelectPersonnelNienHan({
           const data = new Uint8Array(e.target?.result as ArrayBuffer);
           const workbook = XLSX.read(data, { type: 'array' });
 
-          // Lấy sheet đầu tiên
           const sheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[sheetName];
 
-          // Chuyển đổi sang JSON
           const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
           if (jsonData.length < 2) {
             throw new Error('File Excel không có dữ liệu hoặc thiếu header');
           }
 
-          // Bỏ qua header row
-          const dataRows = jsonData.slice(1);
+          const dataRows = jsonData.slice(1); // skip header row
 
           const titleData: any[] = [];
           const errors: string[] = [];
           const processedPersonnelIds: string[] = [];
 
           dataRows.forEach((row: any, index: number) => {
-            const rowNumber = index + 2; // +2 vì bỏ header và index từ 0
+            const rowNumber = index + 2; // +2: skip header + 0-based index
 
             // Validate required fields
             const hoTen = row[0]?.toString().trim();
@@ -628,35 +616,21 @@ export function Step2SelectPersonnelNienHan({
               return;
             }
 
-            // Validate năm
             const namInt = parseInt(nam);
 
-            // Tìm personnel ID dựa trên họ tên và ngày sinh (ngày sinh optional)
+            // Match by name + DOB (DOB optional — used to disambiguate duplicate names)
             let matchingPersonnel;
             if (ngaySinh) {
-              // Nếu có ngày sinh, so sánh cả tên và ngày sinh
               matchingPersonnel = personnel.find(p => {
-                const personnelName = p.ho_ten.toLowerCase().trim();
-                const excelName = hoTen.toLowerCase().trim();
-
-                // So sánh tên chính xác
-                const nameMatch = personnelName === excelName;
-
-                // So sánh ngày sinh
+                const nameMatch =
+                  p.ho_ten.toLowerCase().trim() === hoTen.toLowerCase().trim();
                 const personnelBirth = p.ngay_sinh ? formatDate(p.ngay_sinh) : '';
-                const excelBirth = ngaySinh;
-
-                return nameMatch && personnelBirth === excelBirth;
+                return nameMatch && personnelBirth === ngaySinh;
               });
             } else {
-              // Nếu không có ngày sinh, chỉ so sánh tên và lấy kết quả đầu tiên
-              matchingPersonnel = personnel.find(p => {
-                const personnelName = p.ho_ten.toLowerCase().trim();
-                const excelName = hoTen.toLowerCase().trim();
-
-                // So sánh tên chính xác
-                return personnelName === excelName;
-              });
+              matchingPersonnel = personnel.find(
+                p => p.ho_ten.toLowerCase().trim() === hoTen.toLowerCase().trim()
+              );
             }
 
             if (!matchingPersonnel) {
@@ -667,7 +641,6 @@ export function Step2SelectPersonnelNienHan({
               return;
             }
 
-            // Thêm vào danh sách
             processedPersonnelIds.push(matchingPersonnel.id);
 
             titleData.push({
@@ -676,14 +649,14 @@ export function Step2SelectPersonnelNienHan({
               nam: namInt,
               cap_bac: capBac,
               chuc_vu: chucVu,
-              ghi_chu: '', // Không có ghi chú trong Excel
+              ghi_chu: '',
             });
           });
 
           // Remove duplicates from personnel IDs
           const uniquePersonnelIds = Array.from(new Set(processedPersonnelIds));
 
-          // Kiểm tra trùng lặp trước khi resolve
+          // Reject early if any row duplicates an existing proposal
           try {
             for (const item of titleData) {
               const checkResponse = await apiClient.checkDuplicate({
@@ -729,7 +702,6 @@ export function Step2SelectPersonnelNienHan({
   };
 
   const handleImportSuccess = async (result: any) => {
-    // Cập nhật danh sách quân nhân đã chọn
     if (result.selectedPersonnelIds && result.selectedPersonnelIds.length > 0) {
       onPersonnelChange(result.selectedPersonnelIds);
 
@@ -742,7 +714,7 @@ export function Step2SelectPersonnelNienHan({
               award.personnel_id ??
               award.co_quan_don_vi_id ??
               award.don_vi_truc_thuoc_id ??
-              '' // fallback nếu tất cả đều null/undefined
+              '' // fallback if all ID fields are null/undefined
           ),
           danh_hieu: award.danh_hieu,
           nam: award.nam,
@@ -760,10 +732,10 @@ export function Step2SelectPersonnelNienHan({
       }
     }
 
-    // Chuyển sang bước 3 (Review) để xem trước dữ liệu trước khi xác nhận
+    // Advance to Step 3 (Review) so the user can verify before confirming
     if (onNextStep) {
       setTimeout(() => {
-        onNextStep(); // Chuyển sang bước 3 — dừng lại ở đây để review
+        onNextStep();
       }, 500);
     }
   };
@@ -835,7 +807,7 @@ export function Step2SelectPersonnelNienHan({
         }
         if (!canProposeNextRank(record)) {
           if (bypassEligibility) {
-            // Cho phép chọn nhưng hiện cảnh báo
+            // Allow selection but show warning
             message.warning(
               `Cảnh báo: Quân nhân ${record.ho_ten} chưa đủ điều kiện niên hạn. Vẫn cho phép thêm khen thưởng quá khứ.`
             );
@@ -918,7 +890,7 @@ export function Step2SelectPersonnelNienHan({
           <InputNumber
             value={localNam}
             onChange={value => {
-              // Cho phép null/undefined để người dùng có thể xóa và nhập lại
+              // Allow null so the user can clear and retype without validation errors
               if (value === null || value === undefined) {
                 setLocalNam(null);
                 return;
@@ -926,15 +898,13 @@ export function Step2SelectPersonnelNienHan({
 
               const intValue = Math.floor(Number(value));
 
-              // Nếu giá trị hợp lệ, cập nhật local state
               if (!isNaN(intValue)) {
-                // Cho phép nhập bất kỳ số nào trong quá trình nhập (kể cả < 1900)
-                // Chỉ giới hạn khi blur
+                // Allow any value while typing; clamp only on blur
                 setLocalNam(intValue);
               }
             }}
             onBlur={e => {
-              // Khi blur, đảm bảo giá trị trong khoảng hợp lệ và cập nhật lên parent
+              // Clamp to valid range and propagate to parent on blur
               const currentValue = localNam;
               if (currentValue === null || currentValue === undefined || currentValue < 1900) {
                 const finalValue = 1900;
@@ -945,7 +915,6 @@ export function Step2SelectPersonnelNienHan({
                 setLocalNam(finalValue);
                 onNamChange(finalValue);
               } else {
-                // Giá trị hợp lệ, cập nhật lên parent
                 onNamChange(currentValue);
               }
             }}
@@ -1034,19 +1003,19 @@ export function Step2SelectPersonnelNienHan({
         rowSelection={rowSelection}
         loading={loading || checkingProfiles}
         rowClassName={record => {
-          // Tô màu dòng quân nhân chưa có giới tính
+          // Highlight rows missing gender
           const missingGender =
             !record.gioi_tinh || (record.gioi_tinh !== 'NAM' && record.gioi_tinh !== 'NU');
           if (missingGender) {
             return 'row-missing-gender';
           }
 
-          // Tô màu dòng quân nhân chưa có ngày nhập ngũ
+          // Highlight rows missing enlistment date
           if (!record.ngay_nhap_ngu) {
             return 'row-missing-ngay-nhap-ngu';
           }
 
-          // Chỉ tô màu nếu chưa đủ điều kiện cho hạng tiếp theo
+          // Only highlight if not yet eligible for next rank
           if (!canProposeNextRank(record)) {
             const eligibility = checkHCCSVVEligibility(record);
             const serviceProfile = serviceProfilesMap[record.id];
@@ -1054,19 +1023,19 @@ export function Step2SelectPersonnelNienHan({
             const hasHangNhi = serviceProfile?.hccsvv_hang_nhi_status === ELIGIBILITY_STATUS.DA_NHAN;
             const hasHangNhat = serviceProfile?.hccsvv_hang_nhat_status === ELIGIBILITY_STATUS.DA_NHAN;
 
-            // Nếu chưa nhận Hạng Ba và chưa đủ 10 năm
+            // Rank 3 not received and < 10 years
             if (!hasHangBa && eligibility && !eligibility.hangBa.eligible) {
               return 'row-not-eligible-hccsvv';
             }
-            // Nếu đã nhận Hạng Ba nhưng chưa nhận Hạng Nhì và chưa đủ 15 năm
+            // Rank 3 received but Rank 2 not yet and < 15 years
             if (hasHangBa && !hasHangNhi && eligibility && !eligibility.hangNhi.eligible) {
               return 'row-partial-eligible-hccsvv';
             }
-            // Nếu đã nhận Hạng Nhì nhưng chưa nhận Hạng Nhất và chưa đủ 20 năm
+            // Rank 2 received but Rank 1 not yet and < 20 years
             if (hasHangNhi && !hasHangNhat && eligibility && !eligibility.hangNhat.eligible) {
               return 'row-partial-eligible-hccsvv';
             }
-            // Nếu đã nhận tất cả hạng
+            // All ranks received
             if (hasHangNhat) {
               return 'row-not-eligible-hccsvv';
             }

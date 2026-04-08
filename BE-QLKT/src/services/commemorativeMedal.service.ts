@@ -10,6 +10,21 @@ import { ValidationError, NotFoundError } from '../middlewares/errorHandler';
 import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys } from '../helpers/excelHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
+import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
+
+interface CommemorativeMedalValidItem {
+  row: number;
+  personnel_id: string;
+  ho_ten: string | null;
+  cap_bac: string | null;
+  chuc_vu: string | null;
+  nam: number;
+  so_quyet_dinh: string;
+  ghi_chu: string | null;
+  service_years: number;
+  gioi_tinh: string;
+  history: Array<{ nam: number; so_quyet_dinh: string | null }>;
+}
 
 class CommemorativeMedalService {
   /**
@@ -124,12 +139,10 @@ class CommemorativeMedalService {
         : null;
       const ghi_chu = ghiChuCol ? String(row.getCell(ghiChuCol).value ?? '').trim() : null;
 
-      // Skip empty rows
       if (!idValue && !namVal) continue;
 
       total++;
 
-      // Validate required fields
       const missingFields = [];
       if (!idValue) missingFields.push('ID');
       if (!namVal) missingFields.push('Năm');
@@ -143,7 +156,6 @@ class CommemorativeMedalService {
         continue;
       }
 
-      // Validate personnel ID
       const personnelId = String(idValue).trim();
       if (!personnelId) {
         errors.push({
@@ -165,7 +177,6 @@ class CommemorativeMedalService {
         continue;
       }
 
-      // Validate year
       const nam = parseInt(String(namVal), 10);
       if (!Number.isInteger(nam)) {
         errors.push({
@@ -186,7 +197,7 @@ class CommemorativeMedalService {
         continue;
       }
 
-      // Validate số quyết định — bắt buộc + phải có trên hệ thống
+      // Decision number must exist in the system (not just non-empty)
       if (!so_quyet_dinh) {
         errors.push({ row: rowNumber, ho_ten, nam, message: 'Thiếu số quyết định' });
         continue;
@@ -201,7 +212,7 @@ class CommemorativeMedalService {
         continue;
       }
 
-      // Check duplicate in file — one-per-person
+      // KNC is a one-time award — reject if same person appears twice in file
       if (seenInFile.has(personnel.id)) {
         errors.push({
           row: rowNumber,
@@ -213,7 +224,7 @@ class CommemorativeMedalService {
       }
       seenInFile.add(personnel.id);
 
-      // Check duplicate in DB — quân nhân đã có KNC
+      // KNC already awarded — lifetime limit reached
       const existingKnc = existingKncMap.get(personnel.id);
       if (existingKnc) {
         errors.push({
@@ -225,7 +236,6 @@ class CommemorativeMedalService {
         continue;
       }
 
-      // Check pending proposal
       if (pendingPersonnelIds.has(personnelId)) {
         errors.push({
           row: rowNumber,
@@ -236,7 +246,7 @@ class CommemorativeMedalService {
         continue;
       }
 
-      // Check eligibility: gioi_tinh + ngay_nhap_ngu
+      // Eligibility depends on gender and service start date
       if (!personnel.ngay_nhap_ngu) {
         errors.push({
           row: rowNumber,
@@ -248,7 +258,7 @@ class CommemorativeMedalService {
       }
 
       const ngayNhapNgu = new Date(personnel.ngay_nhap_ngu);
-      const referenceDate = new Date(nam, 11, 31); // cuối năm được xét
+      const referenceDate = new Date(nam, 11, 31); // Dec 31 of the award year — eligibility reference date
       const serviceYears =
         (referenceDate.getTime() - ngayNhapNgu.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
       const isFemale = personnel.gioi_tinh === 'NU';
@@ -311,7 +321,7 @@ class CommemorativeMedalService {
   /**
    * Confirm import: lưu dữ liệu đã validate vào DB
    */
-  async confirmImport(validItems: any[], adminId: string) {
+  async confirmImport(validItems: CommemorativeMedalValidItem[], adminId: string) {
     const personnelIds = [...new Set(validItems.map(item => item.personnel_id))];
 
     // Parallel: check pending proposals + existing records
@@ -379,7 +389,7 @@ class CommemorativeMedalService {
         }
         return { imported: results.length };
       },
-      { timeout: 30000 }
+      { timeout: IMPORT_TRANSACTION_TIMEOUT }
     );
   }
 
@@ -444,7 +454,6 @@ class CommemorativeMedalService {
           continue;
         }
 
-        // Tìm quân nhân theo tên (from pre-fetched batch)
         const personnelList = personnelByName.get(ho_ten) ?? [];
         if (personnelList.length === 0) {
           results.errors.push(`Dòng ${rowNumber}: Không tìm thấy quân nhân với tên ${ho_ten}`);
@@ -498,7 +507,6 @@ class CommemorativeMedalService {
           }
         }
 
-        // Check for duplicate awards in proposals
         try {
           const duplicateCheck = await checkDuplicateAward(
             personnel.id,
@@ -514,11 +522,11 @@ class CommemorativeMedalService {
             results.failed++;
             continue;
           }
-        } catch (checkError) {
-          // Continue processing but log the error
+        } catch (e) {
+          console.error('commemorativeMedal confirmImport check failed:', e);
         }
 
-        // Upsert (mỗi quân nhân chỉ có 1 bản ghi)
+        // Upsert because each person has exactly one KNC record
         const upsertedRecord = await prisma.kyNiemChuongVSNXDQDNDVN.upsert({
           where: { quan_nhan_id: personnel.id },
           create: {
@@ -568,7 +576,6 @@ class CommemorativeMedalService {
   async getAll(filters: Record<string, unknown> = {}, page: number = 1, limit: number = 50) {
     const where: Record<string, unknown> = {};
 
-    // Filter theo họ tên
     const quanNhanFilter: Record<string, unknown> = {};
     if (filters.ho_ten) {
       quanNhanFilter.ho_ten = { contains: filters.ho_ten, mode: 'insensitive' };
@@ -576,7 +583,7 @@ class CommemorativeMedalService {
 
     if (filters.don_vi_id) {
       if (filters.include_sub_units) {
-        // Nếu có flag include_sub_units, lấy tất cả đơn vị trực thuộc của cơ quan đơn vị
+        // include_sub_units: expand filter to all DVTT under the parent unit
         const donViTrucThuocIds = await prisma.donViTrucThuoc.findMany({
           where: { co_quan_don_vi_id: filters.don_vi_id },
           select: { id: true },
@@ -599,7 +606,6 @@ class CommemorativeMedalService {
         };
       }
     } else if (Object.keys(quanNhanFilter).length > 0) {
-      // Nếu không có filter don_vi_id nhưng có filter ho_ten
       where.QuanNhan = quanNhanFilter;
     }
 
@@ -669,7 +675,7 @@ class CommemorativeMedalService {
       fgColor: { argb: 'FFD3D3D3' },
     };
 
-    // Helper function để convert thoi_gian từ object {years, months} sang số tháng
+    // Convert {years, months} object to total months
     const convertThoiGian = thoiGian => {
       if (!thoiGian) return '';
       if (typeof thoiGian === 'object') {
@@ -801,15 +807,13 @@ class CommemorativeMedalService {
     const personnelId = award.quan_nhan_id;
     const personnel = award.QuanNhan;
 
-    // Xóa bản ghi (không xóa đề xuất - proposal)
+    // Delete award only, proposals are kept for audit trail
     await prisma.kyNiemChuongVSNXDQDNDVN.delete({
       where: { id },
     });
 
-    // KNC VSNXD không ảnh hưởng đến hồ sơ hằng năm, niên hạn hay cống hiến
-    // Không cần recalculate
+    // KNC VSNXD does not affect annual/tenure/contribution profiles
 
-    // Gửi thông báo cho Manager và quân nhân
     try {
       await notificationHelper.notifyOnAwardDeleted(
         award,

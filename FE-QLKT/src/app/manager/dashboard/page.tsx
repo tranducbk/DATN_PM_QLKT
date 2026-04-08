@@ -85,7 +85,6 @@ export default function ManagerDashboard() {
       try {
         setLoading(true);
 
-        // Lấy thông tin đơn vị của manager từ AuthContext
         if (user) {
           const name = (user.ho_ten || '').trim();
           const username = (user.username || '').trim();
@@ -96,10 +95,8 @@ export default function ManagerDashboard() {
         const statisticsRes = await apiClient.getManagerDashboardStatistics();
 
         if (statisticsRes.success && statisticsRes.data) {
-          // Tính toán thống kê
           const totalPersonnel = statisticsRes.data.totalPersonnel || 0;
 
-          // Đếm số lượng CSTDCS và NCKH
           const totalCSTDCS =
             statisticsRes.data.awardsByType.find(
               (a: { type: string; count: number }) => a.type === 'CSTDCS'
@@ -134,7 +131,6 @@ export default function ManagerDashboard() {
         }
       } catch (error) {
         // Error handled by fallback values
-        // Giữ giá trị mặc định nếu có lỗi
         setStats({
           totalPersonnel: 0,
           totalCSTDCS: 0,

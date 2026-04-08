@@ -231,7 +231,6 @@ export async function checkDuplicateUnitAward(
         };
       }
 
-      // Check bản ghi đã tồn tại trong DB
       const existingAward = await prisma.danhHieuDonViHangNam.findFirst({
         where: {
           OR: [
@@ -276,7 +275,7 @@ export async function checkDuplicateUnitAward(
           }
         }
 
-        // Không mix ĐVQT/ĐVTT với BKBQP/BKTTCP
+        // ĐVQT/ĐVTT and BKBQP/BKTTCP cannot be mixed in the same proposal
         if (isDv && (existingAward.nhan_bkbqp || existingAward.nhan_bkttcp)) {
           const existingBk = existingAward.nhan_bkbqp ? 'BKBQP' : 'BKTTCP';
           return {

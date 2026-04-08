@@ -3,16 +3,16 @@
  */
 
 export const DANH_HIEU_CA_NHAN_HANG_NAM = {
-  CSTDCS: 'CSTDCS', // Chiến sĩ thi đua Cơ sở
-  CSTT: 'CSTT', // Chiến sĩ tiên tiến
-  BKBQP: 'BKBQP', // Bằng khen của Bộ trưởng Bộ Quốc phòng
-  CSTDTQ: 'CSTDTQ', // Chiến sĩ thi đua Toàn quân
-  BKTTCP: 'BKTTCP', // Bằng khen của Thủ tướng Chính phủ
+  CSTDCS: 'CSTDCS',
+  CSTT: 'CSTT',
+  BKBQP: 'BKBQP',
+  CSTDTQ: 'CSTDTQ',
+  BKTTCP: 'BKTTCP',
 } as const;
 
 export const DANH_HIEU_DON_VI_HANG_NAM = {
-  DVQT: 'ĐVQT', // Đơn vị Quyết thắng
-  DVTT: 'ĐVTT', // Đơn vị Tiên tiến
+  DVQT: 'ĐVQT',
+  DVTT: 'ĐVTT',
 } as const;
 
 export const DANH_HIEU_HCCSVV = {
@@ -28,13 +28,13 @@ export const DANH_HIEU_HCBVTQ = {
 } as const;
 
 export const DANH_HIEU_DAC_BIET = {
-  HC_QKQT: 'HC_QKQT', // Huy chương Quân kỳ Quyết thắng
-  KNC_VSNXD_QDNDVN: 'KNC_VSNXD_QDNDVN', // Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN
+  HC_QKQT: 'HC_QKQT',
+  KNC_VSNXD_QDNDVN: 'KNC_VSNXD_QDNDVN',
 } as const;
 
 export const THANH_TICH_KHOA_HOC = {
-  DTKH: 'DTKH', // Đề tài khoa học
-  SKKH: 'SKKH', // Sáng kiến khoa học
+  DTKH: 'DTKH',
+  SKKH: 'SKKH',
 } as const;
 
 /** Tên viết tắt tiếng Việt cho thành tích khoa học (dùng cho chart labels) */

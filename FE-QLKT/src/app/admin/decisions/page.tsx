@@ -110,7 +110,7 @@ export default function AdminDecisionsPage() {
       const response = await apiClient.getDecisions(params);
 
       if (response.success) {
-        // getDecisions chuẩn hóa BE `{ data: { items, pagination } }` → `data` là mảng `items`
+        // getDecisions normalizes BE response: `{ data: { items, pagination } }` → `data` is the `items` array
         const rows = Array.isArray(response.data) ? response.data : [];
         setDecisions(rows as Decision[]);
         setPagination(prev => ({

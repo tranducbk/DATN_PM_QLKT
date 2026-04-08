@@ -9,6 +9,7 @@ import { writeSystemLog } from '../helpers/systemLogHelper';
 import { NotFoundError, ValidationError } from '../middlewares/errorHandler';
 import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
 import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo } from '../helpers/excelHelper';
+import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
 
 interface CreateAchievementData {
   personnel_id: string;
@@ -127,8 +128,8 @@ class ScientificAchievementService {
 
     try {
       await profileService.recalculateAnnualProfile(personnel_id);
-    } catch {
-      // Không throw error, chỉ log để không ảnh hưởng đến việc tạo thành tích
+    } catch (e) {
+      console.error('recalculateAnnualProfile failed:', e);
     }
 
     return newAchievement;
@@ -167,8 +168,8 @@ class ScientificAchievementService {
 
     try {
       await profileService.recalculateAnnualProfile(achievement.quan_nhan_id);
-    } catch {
-      // Không throw error, chỉ log để không ảnh hưởng đến việc cập nhật thành tích
+    } catch (e) {
+      console.error('recalculateAnnualProfile failed:', e);
     }
 
     return updatedAchievement;
@@ -371,7 +372,6 @@ class ScientificAchievementService {
       }),
     ]);
 
-    // Build lookup Maps
     const personnelMap = new Map(personnelList.map(p => [p.id, p]));
     // Map<personnelId, records[]> for history
     const achievementsByPersonnel = new Map<string, typeof existingAchievementsList>();
@@ -517,7 +517,6 @@ class ScientificAchievementService {
       }
       seenInFile.add(fileKey);
 
-      // Check duplicate in DB
       if (existingAchievementKeys.has(fileKey)) {
         errors.push({
           row: rowNumber,
@@ -529,7 +528,6 @@ class ScientificAchievementService {
         continue;
       }
 
-      // Build history from pre-fetched data (last 5 records sorted by nam desc)
       const allRecords = achievementsByPersonnel.get(personnel.id) || [];
       const history = [...allRecords]
         .sort((a, b) => b.nam - a.nam)
@@ -594,7 +592,7 @@ class ScientificAchievementService {
         }
         return { imported: results.length };
       },
-      { timeout: 30000 }
+      { timeout: IMPORT_TRANSACTION_TIMEOUT }
     );
   }
 }

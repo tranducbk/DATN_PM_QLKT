@@ -109,7 +109,7 @@ export function Step3SetTitlesDonViHangNam({
   const fetchUnitDetails = async () => {
     try {
       setLoading(true);
-      // Admin cần lấy tất cả đơn vị, không chỉ my-units
+      // Admin must fetch all units, not just their own
       const unitsRes = await apiClient.getUnits();
 
       if (unitsRes.success) {
@@ -218,14 +218,12 @@ export function Step3SetTitlesDonViHangNam({
   };
 
   const updateTitle = async (id: string, field: string, value: any) => {
-    // Validation: Kiểm tra nếu đang chọn danh hiệu và đã có danh hiệu khác loại
     if (field === 'danh_hieu' && value) {
       const selectedType = getSelectedDanhHieuType();
       const valueStr = String(value);
       const pickingDv = isUnitDvTitle(valueStr);
       const pickingBk = isUnitBkTitle(valueStr);
 
-      // Kiểm tra xem có mix ĐVQT/ĐVTT với BKBQP/BKTTCP không
       if (selectedType === SELECTED_DANH_HIEU_MIX.DON_VI && pickingBk) {
         const currentData = titleData.find(d => d.don_vi_id === id);
         if (!currentData || !currentData.danh_hieu) {
@@ -241,7 +239,6 @@ export function Step3SetTitlesDonViHangNam({
       }
     }
 
-    // Kiểm tra đề xuất trùng: cùng năm và cùng danh hiệu
     if (field === 'danh_hieu' && value) {
       const unitDetail = units.find(u => u.id === id);
       if (unitDetail) {
@@ -261,11 +258,10 @@ export function Step3SetTitlesDonViHangNam({
               message.error(
                 `${unitDetail.ten_don_vi}: ${response.data.message}. Không thể đề xuất danh hiệu này.`
               );
-              return; // Không cho phép chọn
+              return;
             }
           }
 
-          // Kiểm tra cho danh hiệu chính
           const response = await apiClient.checkDuplicateUnit({
             don_vi_id: id,
             nam: nam,
@@ -277,10 +273,10 @@ export function Step3SetTitlesDonViHangNam({
             message.error(
               `${unitDetail.ten_don_vi}: ${response.data.message}. Không thể đề xuất danh hiệu này.`
             );
-            return; // Không cho phép chọn
+            return;
           }
         } catch (error: unknown) {
-          // Không block nếu lỗi API, chỉ log
+          // Don't block on API error — just log
         }
       }
     }
@@ -467,7 +463,7 @@ export function Step3SetTitlesDonViHangNam({
           selectedRowKeys: selectedUnitIds,
           onChange: (selectedRowKeys: React.Key[]) => {
             onUnitChange(selectedRowKeys as string[]);
-            // Xóa dữ liệu danh hiệu của các đơn vị bị bỏ chọn
+            // Remove title data for deselected units
             const newTitleData = titleData.filter(d =>
               (selectedRowKeys as string[]).includes(d.don_vi_id || '')
             );
@@ -479,6 +475,7 @@ export function Step3SetTitlesDonViHangNam({
           ...DEFAULT_ANTD_TABLE_PAGINATION,
         }}
         bordered
+        scroll={{ x: 'max-content' }}
         locale={{
           emptyText: <Empty description="Không có dữ liệu" />,
         }}

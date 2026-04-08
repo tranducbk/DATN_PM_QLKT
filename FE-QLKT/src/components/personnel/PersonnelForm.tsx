@@ -140,7 +140,6 @@ export function PersonnelForm({
               <Select
                 onValueChange={value => {
                   field.onChange(value);
-                  // Clear don_vi_truc_thuoc_id khi chọn cơ quan đơn vị
                   form.setValue('don_vi_truc_thuoc_id', '');
                 }}
                 value={field.value}
@@ -173,7 +172,6 @@ export function PersonnelForm({
               <Select
                 onValueChange={value => {
                   field.onChange(value);
-                  // Clear co_quan_don_vi_id khi chọn đơn vị trực thuộc
                   form.setValue('co_quan_don_vi_id', '');
                 }}
                 value={field.value}

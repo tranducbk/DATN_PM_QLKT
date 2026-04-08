@@ -14,7 +14,6 @@ import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
  */
 async function exportTemplate(userId, type = 'HANG_NAM') {
   try {
-    // Lấy thông tin user và đơn vị
     const user = await prisma.taiKhoan.findUnique({
       where: { id: userId },
       include: {
@@ -37,7 +36,6 @@ async function exportTemplate(userId, type = 'HANG_NAM') {
 
     const donViId = user.QuanNhan.co_quan_don_vi_id || user.QuanNhan.don_vi_truc_thuoc_id;
 
-    // Lấy danh sách quân nhân thuộc đơn vị
     const quanNhanList = await prisma.quanNhan.findMany({
       where: {
         OR: [{ co_quan_don_vi_id: donViId }, { don_vi_truc_thuoc_id: donViId }],
@@ -54,7 +52,6 @@ async function exportTemplate(userId, type = 'HANG_NAM') {
       orderBy: { ho_ten: 'asc' },
     });
 
-    // Tạo workbook mới
     const workbook = new ExcelJS.Workbook();
 
     if (
@@ -67,10 +64,8 @@ async function exportTemplate(userId, type = 'HANG_NAM') {
 
     // TEMPLATE CHO ĐỀ XUẤT HẰNG NĂM
 
-    // TAB 1: QuanNhan (Danh sách tham khảo)
     const sheetQuanNhan = workbook.addWorksheet('QuanNhan');
 
-    // Header row với style
     sheetQuanNhan.columns = [
       { header: 'CCCD', key: 'cccd', width: 15 },
       { header: 'Họ và Tên', key: 'ho_ten', width: 30 },
@@ -78,7 +73,6 @@ async function exportTemplate(userId, type = 'HANG_NAM') {
       { header: 'Tên Chức Vụ', key: 'ten_chuc_vu', width: 25 },
     ];
 
-    // Style cho header
     sheetQuanNhan.getRow(1).font = { bold: true };
     sheetQuanNhan.getRow(1).fill = {
       type: 'pattern',
@@ -90,10 +84,9 @@ async function exportTemplate(userId, type = 'HANG_NAM') {
       vertical: 'middle',
     };
 
-    // Format cột CCCD thành Text (để giữ số 0 đầu tiên)
+    // Format CCCD as Text to preserve leading zeros
     sheetQuanNhan.getColumn(1).numFmt = '@';
 
-    // Thêm dữ liệu quân nhân
     quanNhanList.forEach(qn => {
       sheetQuanNhan.addRow({
         cccd: qn.cccd,
@@ -103,7 +96,6 @@ async function exportTemplate(userId, type = 'HANG_NAM') {
       });
     });
 
-    // TAB 2: DanhHieuHangNam (Đề xuất danh hiệu)
     const sheetDanhHieu = workbook.addWorksheet('DanhHieuHangNam');
 
     sheetDanhHieu.columns = [
@@ -118,7 +110,6 @@ async function exportTemplate(userId, type = 'HANG_NAM') {
       { header: 'Số QĐ CSTDTQ', key: 'so_quyet_dinh_cstdtq', width: 20 },
     ];
 
-    // Style cho header
     sheetDanhHieu.getRow(1).font = {
       bold: true,
       color: { argb: 'FFFFFFFF' },
@@ -133,10 +124,9 @@ async function exportTemplate(userId, type = 'HANG_NAM') {
       vertical: 'middle',
     };
 
-    // Format cột CCCD thành Text (để giữ số 0 đầu tiên)
+    // Format CCCD as Text to preserve leading zeros
     sheetDanhHieu.getColumn(1).numFmt = '@';
 
-    // Thêm 1 hàng mẫu
     sheetDanhHieu.addRow({
       cccd: 'Ví dụ: 001234567890',
       ho_ten: 'Nguyễn Văn A',
@@ -149,7 +139,6 @@ async function exportTemplate(userId, type = 'HANG_NAM') {
       so_quyet_dinh_cstdtq: '',
     });
 
-    // TAB 3: ThanhTichKhoaHoc (Đề xuất thành tích)
     const sheetThanhTich = workbook.addWorksheet('ThanhTichKhoaHoc');
 
     sheetThanhTich.columns = [
@@ -161,7 +150,6 @@ async function exportTemplate(userId, type = 'HANG_NAM') {
       { header: 'Trạng thái (APPROVED/PENDING)', key: 'status', width: 25 },
     ];
 
-    // Style cho header
     sheetThanhTich.getRow(1).font = {
       bold: true,
       color: { argb: 'FFFFFFFF' },
@@ -176,10 +164,9 @@ async function exportTemplate(userId, type = 'HANG_NAM') {
       vertical: 'middle',
     };
 
-    // Format cột CCCD thành Text (để giữ số 0 đầu tiên)
+    // Format CCCD as Text to preserve leading zeros
     sheetThanhTich.getColumn(1).numFmt = '@';
 
-    // Thêm 1 hàng mẫu
     sheetThanhTich.addRow({
       cccd: 'Ví dụ: 001234567890',
       ho_ten: 'Nguyễn Văn A',
@@ -189,10 +176,9 @@ async function exportTemplate(userId, type = 'HANG_NAM') {
       status: PROPOSAL_STATUS.APPROVED,
     });
 
-    // Thêm data validation cho cột Loại (D) - từ row 2 trở đi
+    // Data validation for Loại column (D) starting from row 2
     sheetThanhTich.getColumn(4).eachCell({ includeEmpty: true }, (cell, rowNumber) => {
       if (rowNumber > 1) {
-        // Skip header
         cell.dataValidation = {
           type: 'list',
           allowBlank: false,
@@ -205,10 +191,9 @@ async function exportTemplate(userId, type = 'HANG_NAM') {
       }
     });
 
-    // Thêm data validation cho cột Trạng thái (F) - từ row 2 trở đi
+    // Data validation for Trạng thái column (F) starting from row 2
     sheetThanhTich.getColumn(6).eachCell({ includeEmpty: true }, (cell, rowNumber) => {
       if (rowNumber > 1) {
-        // Skip header
         cell.dataValidation = {
           type: 'list',
           allowBlank: false,
@@ -221,7 +206,6 @@ async function exportTemplate(userId, type = 'HANG_NAM') {
       }
     });
 
-    // Xuất file ra buffer
     const buffer = await workbook.xlsx.writeBuffer();
     return buffer;
   } catch (error) {
@@ -236,7 +220,6 @@ async function exportTemplate(userId, type = 'HANG_NAM') {
  * @returns {Promise<Buffer>} - Buffer của file Excel
  */
 async function exportTemplateNienHan(workbook, quanNhanList) {
-  // TAB 1: QuanNhan (Danh sách tham khảo)
   const sheetQuanNhan = workbook.addWorksheet('QuanNhan');
 
   sheetQuanNhan.columns = [
@@ -269,7 +252,6 @@ async function exportTemplateNienHan(workbook, quanNhanList) {
     });
   });
 
-  // TAB 2: NienHan (Đề xuất khen thưởng niên hạn)
   const sheetNienHan = workbook.addWorksheet('NienHan');
 
   sheetNienHan.columns = [
@@ -295,7 +277,6 @@ async function exportTemplateNienHan(workbook, quanNhanList) {
   };
   sheetNienHan.getColumn(1).numFmt = '@';
 
-  // Thêm 1 hàng mẫu
   sheetNienHan.addRow({
     cccd: 'Ví dụ: 001234567890',
     ho_ten: 'Nguyễn Văn A',
@@ -318,7 +299,7 @@ async function exportTemplateNienHan(workbook, quanNhanList) {
  */
 async function getPdfFile(filename) {
   try {
-    // Thử tìm file trong storage/proposals (file đính kèm đề xuất)
+    // Try storage/proposals first (proposal attachments)
     const storagePath = path.join(__dirname, '../../../storage/proposals');
     let filePath = path.join(storagePath, filename);
 
@@ -329,7 +310,7 @@ async function getPdfFile(filename) {
         filename,
       };
     } catch {
-      // Nếu không tìm thấy, thử tìm trong uploads/decisions (file quyết định)
+      // Fall back to uploads/decisions when file not found at primary path
       const decisionsPath = path.join(__dirname, '../../../uploads/decisions');
       filePath = path.join(decisionsPath, filename);
 
@@ -376,7 +357,6 @@ async function downloadProposalExcel(proposalId) {
 
     const workbook = new ExcelJS.Workbook();
 
-    // Tab 1: Danh hiệu
     const sheetDanhHieu = workbook.addWorksheet('DanhHieuHangNam');
     sheetDanhHieu.columns = [
       { header: 'CCCD', key: 'cccd', width: 15 },
@@ -391,7 +371,6 @@ async function downloadProposalExcel(proposalId) {
       { header: 'Số QĐ BKTTCP', key: 'so_quyet_dinh_bkttcp', width: 20 },
     ];
 
-    // Style header
     sheetDanhHieu.getRow(1).font = {
       bold: true,
       color: { argb: 'FFFFFFFF' },
@@ -402,7 +381,7 @@ async function downloadProposalExcel(proposalId) {
       fgColor: { argb: 'FF70AD47' },
     };
 
-    // Format cột CCCD thành Text
+    // Format CCCD as Text to preserve leading zeros
     sheetDanhHieu.getColumn(1).numFmt = '@';
 
     const danhHieuData = Array.isArray(proposal.data_danh_hieu)
@@ -423,7 +402,6 @@ async function downloadProposalExcel(proposalId) {
       });
     });
 
-    // Tab 2: Thành tích
     const sheetThanhTich = workbook.addWorksheet('ThanhTichKhoaHoc');
     sheetThanhTich.columns = [
       { header: 'CCCD', key: 'cccd', width: 15 },
@@ -444,7 +422,7 @@ async function downloadProposalExcel(proposalId) {
       fgColor: { argb: 'FFED7D31' },
     };
 
-    // Format cột CCCD thành Text
+    // Format CCCD as Text to preserve leading zeros
     sheetThanhTich.getColumn(1).numFmt = '@';
 
     const thanhTichData = Array.isArray(proposal.data_thanh_tich)

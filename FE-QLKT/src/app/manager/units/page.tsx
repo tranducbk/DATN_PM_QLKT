@@ -19,7 +19,7 @@ import { useTheme } from '@/components/ThemeProvider';
 import { HomeOutlined, FilterOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
 import { apiClient } from '@/lib/apiClient';
-import { DEFAULT_PAGE_SIZE, DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
+import { DEFAULT_PAGE_SIZE, DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/lib/constants/pagination.constants';
 import { renderAnnualAwards, COLUMN_STYLES, DANH_HIEU_MAP } from '@/utils/awardsHelpers';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 
@@ -94,7 +94,7 @@ export default function ManagerUnitsPage() {
   const fetchAllAwards = async () => {
     try {
       setAwardsLoading(true);
-      const result = await apiClient.getUnitAnnualAwards({ limit: 1000 });
+      const result = await apiClient.getUnitAnnualAwards({ limit: FETCH_ALL_LIMIT });
       if (!result.success) {
         message.error(result.message || 'Không thể tải danh sách khen thưởng');
         return;
@@ -147,7 +147,6 @@ export default function ManagerUnitsPage() {
     },
   ];
 
-  // Lấy danh sách các năm có trong dữ liệu
   const availableYears = useMemo(() => {
     const years = new Set<number>();
     allAwards.forEach(award => {
@@ -155,10 +154,9 @@ export default function ManagerUnitsPage() {
         years.add(award.nam);
       }
     });
-    return Array.from(years).sort((a, b) => b - a); // Sắp xếp giảm dần
+    return Array.from(years).sort((a, b) => b - a); // descending
   }, [allAwards]);
 
-  // Danh sách danh hiệu cho đơn vị
   const danhHieuOptions = useMemo(() => {
     return [
       { value: '', label: 'Tất cả danh hiệu' },
@@ -186,7 +184,7 @@ export default function ManagerUnitsPage() {
       }
 
       if (danhHieuFilter) {
-        // BKBQP và BKTTCP là trường boolean, ĐVQT và ĐVTT là danh_hieu
+        // BKBQP and BKTTCP are boolean fields; ĐVQT and ĐVTT use the danh_hieu string
         const isBKBQP = danhHieuFilter === 'BKBQP' && record.nhan_bkbqp === true;
         const isBKTTCP = danhHieuFilter === 'BKTTCP' && record.nhan_bkttcp === true;
 

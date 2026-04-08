@@ -22,12 +22,10 @@ export default function SuperAdminDashboardCharts({
   chartData,
   theme,
 }: SuperAdminDashboardChartsProps) {
-  // Chart options với dark mode support
   const isDark = theme === 'dark';
   const textColor = isDark ? '#e5e7eb' : '#374151';
   const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
 
-  // Doughnut chart - Phân bố vai trò
   const roleChartData = {
     labels:
       chartData.roleDistribution.length > 0
@@ -86,7 +84,6 @@ export default function SuperAdminDashboardCharts({
     },
   };
 
-  // Line chart - Hoạt động hệ thống theo ngày
   const activityChartData = {
     labels:
       chartData.dailyActivity.length > 0
@@ -161,14 +158,11 @@ export default function SuperAdminDashboardCharts({
     },
   };
 
-  // Bar chart - Logs theo hành động
-  // Mapping action sang tiếng Việt
 
   const logsChartData = {
     labels:
       chartData.logsByAction.length > 0
         ? chartData.logsByAction.map((item: any) => {
-            // Map action sang tiếng Việt
             const label = getActionLabel(item.action?.toUpperCase() || '');
             return label.length > 20 ? label.substring(0, 20) + '...' : label;
           })
@@ -251,7 +245,6 @@ export default function SuperAdminDashboardCharts({
     },
   };
 
-  // Area chart - Tài khoản mới theo thời gian
   const accountsChartData = {
     labels:
       chartData.newAccountsByDate.length > 0

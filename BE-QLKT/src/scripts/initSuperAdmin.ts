@@ -15,7 +15,6 @@ async function initializeSuperAdmin() {
   try {
     console.log('🚀 Bắt đầu khởi tạo SUPER_ADMIN...\n');
 
-    // Kiểm tra xem đã có super admin chưa
     const existingSuperAdmin = await prisma.taiKhoan.findFirst({
       where: { role: 'SUPER_ADMIN' },
     });
@@ -28,7 +27,6 @@ async function initializeSuperAdmin() {
       process.exit(1);
     }
 
-    // Kiểm tra username "superadmin" đã tồn tại chưa
     const existingUser = await prisma.taiKhoan.findFirst({
       where: { username: 'superadmin' },
     });
@@ -39,11 +37,14 @@ async function initializeSuperAdmin() {
       process.exit(1);
     }
 
-    // Hash password - Mật khẩu mặc định lấy từ env
-    const defaultPassword = process.env.DEFAULT_PASSWORD || 'Hvkhqs@123';
+    const defaultPassword = process.env.DEFAULT_PASSWORD;
+    if (!defaultPassword) {
+      console.error('❌ Chưa set biến môi trường DEFAULT_PASSWORD');
+      process.exit(1);
+    }
     const hashedPassword = await bcrypt.hash(defaultPassword, 10);
 
-    // Tạo tài khoản SUPER_ADMIN (không cần liên kết với quân nhân)
+    // No quan_nhan link needed for SUPER_ADMIN
     const superAdmin = await prisma.taiKhoan.create({
       data: {
         username: 'superadmin',
@@ -71,5 +72,4 @@ async function initializeSuperAdmin() {
   }
 }
 
-// Chạy script
 initializeSuperAdmin();

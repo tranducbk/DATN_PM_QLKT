@@ -11,6 +11,7 @@ import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys } 
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import type { QuanNhan } from '../generated/prisma';
 import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
+import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
 
 interface PreviewError {
   row: number;
@@ -237,7 +238,6 @@ class MilitaryFlagService {
         continue;
       }
 
-      // Check pending proposal
       if (pendingPersonnelIds.has(personnelId)) {
         errors.push({
           row: rowNumber,
@@ -366,7 +366,7 @@ class MilitaryFlagService {
         }
         return { imported: results.length };
       },
-      { timeout: 30000 }
+      { timeout: IMPORT_TRANSACTION_TIMEOUT }
     );
   }
 
@@ -449,7 +449,6 @@ class MilitaryFlagService {
           continue;
         }
 
-        // Tìm quân nhân theo tên (from pre-fetched batch)
         const personnelList = personnelByName.get(ho_ten) ?? [];
         if (personnelList.length === 0) {
           results.errors.push(`Dòng ${rowNumber}: Không tìm thấy quân nhân với tên ${ho_ten}`);
@@ -520,8 +519,8 @@ class MilitaryFlagService {
             results.failed++;
             continue;
           }
-        } catch {
-          // Continue processing but log the error
+        } catch (e) {
+          console.error('militaryFlag confirmImport check failed:', e);
         }
 
         const upsertedRecord = await prisma.huanChuongQuanKyQuyetThang.upsert({

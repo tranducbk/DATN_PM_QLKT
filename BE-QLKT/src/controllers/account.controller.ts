@@ -19,7 +19,7 @@ class AccountController {
       if (role && !ADMIN_MANAGED_ROLES.includes(role as Role)) {
         return ResponseHelper.forbidden(res, 'ADMIN chỉ có thể quản lý tài khoản MANAGER và USER');
       }
-      roleFilter = (role as string) || 'MANAGER,USER';
+      roleFilter = (role as string) || ADMIN_MANAGED_ROLES.join(',');
     }
 
     const excludeSuperAdmin = userRole === ROLES.SUPER_ADMIN;

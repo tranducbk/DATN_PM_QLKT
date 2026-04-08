@@ -65,7 +65,6 @@ export function AccountForm({ account, personnel = [], onSuccess, onClose }: Acc
     },
   });
 
-  // Lấy danh sách role có thể tạo/chỉnh sửa dựa trên role hiện tại
   const getAvailableRoles = () => {
     if (currentUserRole === ROLES.SUPER_ADMIN) {
       return roleSelectOptions([

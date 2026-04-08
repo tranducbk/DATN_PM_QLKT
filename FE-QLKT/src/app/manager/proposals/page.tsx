@@ -132,7 +132,6 @@ export default function ManagerProposalsPage() {
 
       if (response.success) {
         message.success(response.message || 'Đã xóa đề xuất thành công');
-        // Refresh danh sách
         await fetchProposals();
       } else {
         message.error(response.message || 'Lỗi khi xóa đề xuất');
@@ -144,7 +143,6 @@ export default function ManagerProposalsPage() {
     }
   };
 
-  // Lấy danh sách các năm có trong dữ liệu
   const availableYears = useMemo(() => {
     const years = new Set<number>();
     proposals.forEach(proposal => {
@@ -152,10 +150,9 @@ export default function ManagerProposalsPage() {
         years.add(proposal.nam);
       }
     });
-    return Array.from(years).sort((a, b) => b - a); // Sắp xếp giảm dần
+    return Array.from(years).sort((a, b) => b - a);
   }, [proposals]);
 
-  // Lấy danh sách các loại đề xuất có trong dữ liệu
   const availableTypes = useMemo(() => {
     const types = new Set<string>();
     proposals.forEach(proposal => {
@@ -166,7 +163,6 @@ export default function ManagerProposalsPage() {
     return Array.from(types);
   }, [proposals]);
 
-  // Tối ưu filteredProposals với useMemo
   const filteredProposals = useMemo(() => {
     return proposals.filter(p => {
       // Filter theo tab
@@ -178,10 +174,8 @@ export default function ManagerProposalsPage() {
 
       if (!statusMatch) return false;
 
-      // Filter theo năm
       if (yearFilter !== '' && p.nam !== yearFilter) return false;
 
-      // Filter theo loại đề xuất
       if (typeFilter !== '' && p.loai_de_xuat !== typeFilter) return false;
 
       return true;
@@ -352,7 +346,6 @@ export default function ManagerProposalsPage() {
     },
   ];
 
-  // Tối ưu tabItems với useMemo để tránh tính toán lại số lượng mỗi lần render
   const tabItems = useMemo(() => {
     const statusCounts = proposals.reduce(
       (acc, p) => {

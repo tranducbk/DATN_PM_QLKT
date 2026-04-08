@@ -302,7 +302,6 @@ export function ProposalDetailModal({
               (proposal.loai_de_xuat === PROPOSAL_TYPES.CA_NHAN_HANG_NAM ||
                 proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM) &&
               (() => {
-                // Chỉ tính cho CSTT, CSTDCS, ĐVTT, ĐVQT
                 const allowedTitles = ['CSTT', 'CSTDCS', 'ĐVTT', 'ĐVQT'];
                 const titleCounts: Record<string, number> = {};
 

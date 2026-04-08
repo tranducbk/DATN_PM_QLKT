@@ -1,3 +1,8 @@
+/**
+ * Formats a date value to `DD-MM-YYYY`.
+ * @param dateStr - Date object or date string
+ * @returns Formatted date string, or empty string when invalid
+ */
 const formatDate = (dateStr: Date | string | null | undefined): string => {
   if (!dateStr) return '';
   try {

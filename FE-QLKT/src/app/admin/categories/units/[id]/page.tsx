@@ -71,7 +71,6 @@ export default function UnitDetailPage() {
   const handleOpenDialog = (type: 'unit' | 'position', item?: any) => {
     setDialogType(type);
     if (type === 'unit' && !item) {
-      // Tạo đơn vị trực thuộc mới
       setEditingItem({ co_quan_don_vi_id: unitId });
     } else {
       setEditingItem(item || null);
@@ -107,7 +106,6 @@ export default function UnitDetailPage() {
     return null;
   }
 
-  // Xử lý dữ liệu từ 2 bảng khác nhau
   const childUnits = unit.DonViTrucThuoc || [];
   const currentUnitFallback = {
     id: unit.id,
@@ -142,7 +140,6 @@ export default function UnitDetailPage() {
   });
 
   const positions = [...currentUnitPositions, ...childUnitPositions];
-  // Kiểm tra xem đơn vị có phải là đơn vị trực thuộc không (có co_quan_don_vi_id)
   const isDonViTrucThuoc = !!unit.co_quan_don_vi_id;
 
   return (
@@ -187,11 +184,11 @@ export default function UnitDetailPage() {
             <Button
               icon={<ArrowLeftOutlined />}
               onClick={() => {
-                // Nếu là đơn vị trực thuộc, quay lại trang chi tiết cơ quan đơn vị cha
+                // Sub-unit: navigate back to parent unit detail page
                 if (isDonViTrucThuoc && unit.CoQuanDonVi?.id) {
                   router.push(`/admin/categories/units/${unit.CoQuanDonVi.id}`);
                 } else {
-                  // Nếu là cơ quan đơn vị, quay lại danh sách
+                  // Parent unit: navigate back to categories list
                   router.push('/admin/categories');
                 }
               }}
@@ -265,8 +262,7 @@ export default function UnitDetailPage() {
                 </Card>
               ),
             },
-            // Chỉ hiển thị tab "Đơn vị trực thuộc" nếu đơn vị hiện tại là cơ quan đơn vị (không có co_quan_don_vi_id)
-            // Đơn vị trực thuộc không thể có đơn vị con
+            // Sub-unit tab is only shown for parent units (co_quan_don_vi) — sub-units cannot have children
             ...(!isDonViTrucThuoc
               ? [
                   {
@@ -388,7 +384,7 @@ export default function UnitDetailPage() {
           {dialogType === 'unit' && (
             <UnitForm
               unit={editingItem}
-              units={units} // Truyền danh sách tất cả đơn vị để chọn parent
+              units={units}
               onSuccess={handleSuccess}
               onClose={handleCloseDialog}
             />
@@ -397,7 +393,7 @@ export default function UnitDetailPage() {
           {dialogType === 'position' && (
             <PositionForm
               position={editingItem}
-              units={[unit]} // Chỉ cho phép tạo chức vụ cho đơn vị hiện tại
+              units={[unit]}
               onSuccess={handleSuccess}
               onClose={handleCloseDialog}
             />

@@ -45,7 +45,7 @@ import type { DateInput } from '@/lib/types';
 import { apiClient } from '@/lib/apiClient';
 import { getDanhHieuName } from '@/constants/danhHieu.constants';
 import { PROPOSAL_TYPES, type ProposalType } from '@/constants/proposal.constants';
-// Shared components - reuse từ admin (DRY principle, tránh duplicate ~2000 dòng code)
+// Shared components — reuse from admin to avoid duplicating ~2000 lines
 import { Step2SelectPersonnelCaNhanHangNam } from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelCaNhanHangNam';
 import { Step2SelectPersonnelNienHan } from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelNienHan';
 import { Step2SelectPersonnelHCQKQT } from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelHCQKQT';
@@ -93,7 +93,7 @@ export default function CreateProposalPage() {
   const [titleData, setTitleData] = useState<any[]>([]);
 
   // Step 4: Upload Files
-  const [attachedFiles, setAttachedFiles] = useState<UploadFile[]>([]); // File đính kèm (optional)
+  const [attachedFiles, setAttachedFiles] = useState<UploadFile[]>([]);
 
   // Step 5: Personnel/Unit details for review
   const [personnelDetails, setPersonnelDetails] = useState<Personnel[]>([]);
@@ -156,18 +156,16 @@ export default function CreateProposalPage() {
   };
   const steps = getSteps();
 
-  // Chỉ set năm hiện tại lần đầu khi component mount (nếu chưa có giá trị)
   useEffect(() => {
+    // Only initialise year on first mount
     if (!nam) {
       const currentYear = new Date().getFullYear();
       setNam(currentYear);
     }
   }, []);
 
-  // Reset state khi quay lại bước 1 (chọn loại đề xuất)
   useEffect(() => {
     if (currentStep === 0) {
-      // Reset tất cả state liên quan đến quân nhân/đơn vị đã chọn
       setSelectedPersonnelIds([]);
       setSelectedUnitIds([]);
       setTitleData([]);
@@ -178,9 +176,7 @@ export default function CreateProposalPage() {
     }
   }, [currentStep]);
 
-  // Reset state khi thay đổi loại đề xuất
   useEffect(() => {
-    // Reset tất cả state khi thay đổi loại đề xuất
     setSelectedPersonnelIds([]);
     setSelectedUnitIds([]);
     setTitleData([]);
@@ -188,7 +184,6 @@ export default function CreateProposalPage() {
     setPersonnelDetails([]);
     setUnitDetails([]);
     setProposalNote('');
-    // Reset về năm hiện tại khi đổi loại đề xuất
     setNam(new Date().getFullYear());
   }, [proposalType]);
 
@@ -243,7 +238,6 @@ export default function CreateProposalPage() {
         if (titleData.length !== expectedLength) return false;
 
         if (proposalType === PROPOSAL_TYPES.NCKH) {
-          // Kiểm tra loại, mô tả, cấp bậc và chức vụ
           return titleData.every(d => d.loai && d.mo_ta && d.cap_bac && d.chuc_vu);
         }
 
@@ -261,7 +255,7 @@ export default function CreateProposalPage() {
 
   // Handle next step
   const handleNext = async () => {
-    // Validation đặc biệt cho KNC_VSNXD_QDNDVN: Kiểm tra giới tính và ngày nhập ngũ khi chuyển từ Step 2 sang Step 3
+    // KNC_VSNXD_QDNDVN: validate gender and enlistment date before advancing to Step 3
     if (
       currentStep === 1 &&
       proposalType === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN &&
@@ -298,7 +292,7 @@ export default function CreateProposalPage() {
       }
     }
 
-    // Validation cho NIEN_HAN: Kiểm tra ngày nhập ngũ khi chuyển từ Step 2 sang Step 3
+    // NIEN_HAN: validate enlistment date before advancing to Step 3
     if (currentStep === 1 && proposalType === PROPOSAL_TYPES.NIEN_HAN && selectedPersonnelIds.length > 0) {
       try {
         const promises = selectedPersonnelIds.map(id => apiClient.getPersonnelById(id));
@@ -320,7 +314,7 @@ export default function CreateProposalPage() {
       }
     }
 
-    // Validation cho HC_QKQT: Kiểm tra >= 25 năm phục vụ khi chuyển từ Step 2 sang Step 3
+    // HC_QKQT: validate >= 25 years of service before advancing to Step 3
     if (currentStep === 1 && proposalType === PROPOSAL_TYPES.HC_QKQT && selectedPersonnelIds.length > 0) {
       try {
         const promises = selectedPersonnelIds.map(id => apiClient.getPersonnelById(id));
@@ -338,7 +332,6 @@ export default function CreateProposalPage() {
             continue;
           }
 
-          // Tính số năm phục vụ
           const ngayNhapNgu = new Date(p.ngay_nhap_ngu);
           const ngayKetThuc = p.ngay_xuat_ngu ? new Date(p.ngay_xuat_ngu) : new Date();
 
@@ -351,7 +344,7 @@ export default function CreateProposalPage() {
 
           const years = Math.floor(months / 12);
 
-          // Yêu cầu: >= 25 năm (không phân biệt nam nữ)
+          // Requirement: >= 25 years of service (gender-neutral)
           if (years < 25) {
             ineligiblePersonnel.push({
               ho_ten: p.ho_ten,
@@ -407,7 +400,7 @@ export default function CreateProposalPage() {
     try {
       setLoading(true);
 
-      // Validation cho KNC_VSNXD_QDNDVN: Kiểm tra giới tính và ngày nhập ngũ
+      // KNC_VSNXD_QDNDVN: validate gender and enlistment date
       if (proposalType === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN && selectedPersonnelIds.length > 0) {
         try {
           const promises = selectedPersonnelIds.map(id =>
@@ -444,7 +437,7 @@ export default function CreateProposalPage() {
         }
       }
 
-      // Validation cho NIEN_HAN: Kiểm tra ngày nhập ngũ
+      // NIEN_HAN: validate enlistment date
       if (proposalType === PROPOSAL_TYPES.NIEN_HAN && selectedPersonnelIds.length > 0) {
         try {
           const promises = selectedPersonnelIds.map(id =>
@@ -470,8 +463,7 @@ export default function CreateProposalPage() {
         }
       }
 
-      // Validation cho cấp bậc và chức vụ bắt buộc (cho tất cả loại trừ DON_VI_HANG_NAM)
-      // Cấp bậc/chức vụ đã được nhập ở bước 3 (Set Titles), kiểm tra trong titleData
+      // Rank/position entered in Step 3 are required for all types except DON_VI_HANG_NAM
       if (proposalType !== PROPOSAL_TYPES.DON_VI_HANG_NAM && selectedPersonnelIds.length > 0) {
         const missingInfo = titleData.filter(item => !item.cap_bac || !item.chuc_vu);
         if (missingInfo.length > 0) {
@@ -489,7 +481,7 @@ export default function CreateProposalPage() {
         }
       }
 
-      // Validation cho HC_QKQT: Kiểm tra >= 25 năm phục vụ
+      // HC_QKQT: validate >= 25 years of service
       if (proposalType === PROPOSAL_TYPES.HC_QKQT && selectedPersonnelIds.length > 0) {
         try {
           const promises = selectedPersonnelIds.map(id =>
@@ -509,7 +501,6 @@ export default function CreateProposalPage() {
               continue;
             }
 
-            // Tính số năm phục vụ
             const ngayNhapNgu = new Date(p.ngay_nhap_ngu);
             const ngayKetThuc = p.ngay_xuat_ngu ? new Date(p.ngay_xuat_ngu) : new Date();
 
@@ -522,7 +513,7 @@ export default function CreateProposalPage() {
 
             const years = Math.floor(months / 12);
 
-            // Yêu cầu: >= 25 năm (không phân biệt nam nữ)
+            // Requirement: >= 25 years of service (gender-neutral)
             if (years < 25) {
               ineligiblePersonnel.push({
                 ho_ten: p.ho_ten,
@@ -546,7 +537,6 @@ export default function CreateProposalPage() {
         }
       }
 
-      // Tạo FormData
       const formData = new FormData();
       formData.append('type', proposalType);
       formData.append('nam', String(nam));
@@ -557,17 +547,13 @@ export default function CreateProposalPage() {
         formData.append('selected_personnel', JSON.stringify(selectedPersonnelIds));
       }
 
-      // titleData đã có cap_bac và chuc_vu từ bước 3 (Set Titles)
-      // Gửi đúng dữ liệu đã sửa ở bước 3, KHÔNG fallback về personnel (giống khen thưởng đột xuất)
-      // Cấp bậc/chức vụ từ personnel chỉ để điền sẵn ở bước 3, không dùng khi submit
+      // Rank/position from Step 3 are submitted as-is; personnel data was only used to pre-fill
       formData.append('title_data', JSON.stringify(titleData));
 
-      // Gửi ghi chú nếu có
       if (proposalNote.trim()) {
         formData.append('ghi_chu', proposalNote.trim());
       }
 
-      // Upload các file đính kèm (optional, multiple)
       if (attachedFiles.length > 0) {
         attachedFiles.forEach(file => {
           if (file.originFileObj) {
@@ -587,7 +573,7 @@ export default function CreateProposalPage() {
       // Reset form
       setCurrentStep(0);
       setProposalType(PROPOSAL_TYPES.CA_NHAN_HANG_NAM);
-      setNam(new Date().getFullYear()); // Reset về năm hiện tại
+      setNam(new Date().getFullYear());
       setSelectedPersonnelIds([]);
       setSelectedUnitIds([]);
       setTitleData([]);
@@ -596,7 +582,6 @@ export default function CreateProposalPage() {
       setUnitDetails([]);
       setProposalNote('');
 
-      // Chuyển về trang danh sách đề xuất sau 1 giây
       setTimeout(() => {
         router.push('/manager/proposals');
       }, 1000);
@@ -675,7 +660,6 @@ export default function CreateProposalPage() {
             />
           );
         }
-        // Render component riêng cho từng loại đề xuất
         switch (proposalType) {
           case PROPOSAL_TYPES.CA_NHAN_HANG_NAM:
             return (
@@ -812,15 +796,11 @@ export default function CreateProposalPage() {
             };
           });
         } else {
-          // Merge titleData vào reviewTableData
-          // titleData đã có cap_bac và chuc_vu từ bước 3 (đã được sửa hoặc điền sẵn)
-          // Ưu tiên dữ liệu từ titleData, không fallback về personnel details
           reviewTableData = personnelDetails.map(p => {
             const titleInfo = titleData.find(t => String(t.personnel_id) === String(p.id));
             return {
               ...p,
               ...titleInfo,
-              // Đảm bảo cap_bac và chuc_vu từ titleData được ưu tiên (giống khen thưởng đột xuất)
               cap_bac: titleInfo?.cap_bac || '',
               chuc_vu: titleInfo?.chuc_vu || '',
             };
@@ -896,9 +876,7 @@ export default function CreateProposalPage() {
               width: 200,
               align: 'center',
               render: (_, record: any) => {
-                // Hiển thị cấp bậc/chức vụ từ titleData (đã được sửa ở bước 3)
-                // KHÔNG fallback về personnel details (giống khen thưởng đột xuất)
-                // Cấp bậc/chức vụ từ personnel chỉ để điền sẵn ở bước 3, không dùng ở bước 5
+                // Rank/position from Step 3 — no fallback to current personnel data
                 const capBac = record.cap_bac;
                 const chucVu = record.chuc_vu;
                 return (
@@ -915,13 +893,11 @@ export default function CreateProposalPage() {
             }
           );
 
-          // Thêm cột Tổng tháng cho đề xuất Niên hạn
           if (
             proposalType === PROPOSAL_TYPES.NIEN_HAN ||
             proposalType === PROPOSAL_TYPES.HC_QKQT ||
             proposalType === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN
           ) {
-            // Hàm tính tổng số tháng
             const calculateTotalMonths = (
               ngayNhapNgu: DateInput,
               ngayXuatNgu: DateInput
@@ -983,7 +959,6 @@ export default function CreateProposalPage() {
                 const result = calculateTotalMonths(record.ngay_nhap_ngu, record.ngay_xuat_ngu);
                 if (!result) return <Text type="secondary">-</Text>;
 
-                // Hiển thị năm ở trên, tháng nhỏ bên dưới
                 if (result.years > 0 && result.months > 0) {
                   return (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -1043,7 +1018,6 @@ export default function CreateProposalPage() {
             width: 250,
             align: 'center',
             render: (_, record) => {
-              // Lấy danh_hieu trực tiếp từ titleData để đảm bảo chính xác
               const titleInfo = titleData.find(
                 t =>
                   String(t.personnel_id) === String(record.id) ||
@@ -1160,7 +1134,6 @@ export default function CreateProposalPage() {
                   {(proposalType === PROPOSAL_TYPES.CA_NHAN_HANG_NAM || proposalType === PROPOSAL_TYPES.DON_VI_HANG_NAM) &&
                     reviewTableData.length > 0 &&
                     (() => {
-                      // Chỉ tính cho CSTT, CSTDCS, DVTT, DVQT
                       const allowedTitles = ['CSTT', 'CSTDCS', 'ĐVTT', 'ĐVQT'];
                       const titleCounts: Record<string, number> = {};
 
@@ -1282,10 +1255,8 @@ export default function CreateProposalPage() {
             icon={<ArrowLeftOutlined />}
             onClick={() => {
               if (currentStep === 0) {
-                // Nếu đang ở bước chọn loại đề xuất, quay về trang danh sách
                 router.push('/manager/proposals');
               } else {
-                // Nếu đang ở bước khác, quay lại bước chọn loại đề xuất
                 setCurrentStep(0);
               }
             }}

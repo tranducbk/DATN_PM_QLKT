@@ -229,7 +229,7 @@ async function notifyOnPersonnelTransfer(
 
     return notifications.length;
   } catch (error) {
-    console.error('[notification] notifyOnPersonnelTransfer error:', error);
+    console.error('NotificationPersonnel.notifyOnPersonnelTransfer failed', { error });
     return 0;
   }
 }

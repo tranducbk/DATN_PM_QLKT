@@ -45,7 +45,7 @@ import {
 } from '@ant-design/icons';
 import type { TableColumnsType, UploadFile } from 'antd';
 import { apiClient } from '@/lib/apiClient';
-import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/lib/constants/pagination.constants';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { previewFileWithApi } from '@/utils/filePreview';
@@ -120,8 +120,8 @@ interface DecisionAutocompleteRow {
 
 interface PersonnelAwardInfo {
   personnelId: string;
-  rank: string; // Cấp bậc tại thời điểm khen thưởng
-  position: string; // Chức vụ tại thời điểm khen thưởng
+  rank: string; // Rank at the time of award
+  position: string; // Position at the time of award
 }
 
 interface CreateFormData {
@@ -129,14 +129,14 @@ interface CreateFormData {
   year: number;
   awardForm: string;
   personnelIds: string[];
-  personnelAwardInfo: PersonnelAwardInfo[]; // Thông tin cấp bậc/chức vụ cho từng quân nhân
+  personnelAwardInfo: PersonnelAwardInfo[];
   unitIds: string[];
   note: string;
   decisionNumber: string;
   decisionYear: number;
   signer: string;
   signDate: string;
-  decisionFilePath?: string | null; // File path từ số quyết định đã chọn
+  decisionFilePath?: string | null;
   currentStep: number;
 }
 
@@ -186,7 +186,6 @@ const INITIAL_TABLE_FILTERS: TableFilters = {
   type: 'ALL',
 };
 
-// Danh sách cấp bậc từ Binh nhì đến Đại tướng
 const RANK_OPTIONS = [
   { value: 'Binh nhì', label: 'Binh nhì' },
   { value: 'Binh nhất', label: 'Binh nhất' },
@@ -272,7 +271,7 @@ export default function AdhocAwardsPage() {
   const fetchPersonnelAndUnits = useCallback(async () => {
     try {
       const [personnelRes, allUnitsRes] = await Promise.all([
-        apiClient.getPersonnel({ limit: 9999 }),
+        apiClient.getPersonnel({ limit: FETCH_ALL_LIMIT }),
         apiClient.getUnits(),
       ]);
 
@@ -399,7 +398,7 @@ export default function AdhocAwardsPage() {
       return;
     }
 
-    // Validate cấp bậc và chức vụ bắt buộc cho CA_NHAN
+    // Rank and position are required for CA_NHAN awards
     if (type === 'CA_NHAN') {
       const missingInfo = createFormData.personnelAwardInfo.filter(
         info => !info.rank || !info.position
@@ -426,7 +425,6 @@ export default function AdhocAwardsPage() {
 
         if (type === 'CA_NHAN') {
           formData.append('personnelId', targetId);
-          // Lấy thông tin cấp bậc và chức vụ từ personnelAwardInfo (bắt buộc)
           const awardInfo = createFormData.personnelAwardInfo.find(
             info => info.personnelId === targetId
           );
@@ -442,7 +440,6 @@ export default function AdhocAwardsPage() {
         if (note) formData.append('note', note);
         if (decisionNumber) formData.append('decisionNumber', decisionNumber);
 
-        // Append attached files (file đính kèm)
         createAttachedFileList.forEach(file => {
           if (file.originFileObj) {
             formData.append('attachedFiles', file.originFileObj);
@@ -527,13 +524,12 @@ export default function AdhocAwardsPage() {
       const formData = new FormData();
       formData.append('awardForm', awardForm);
       formData.append('year', year.toString());
-      // Gửi rank và position (cho phép rỗng để xóa giá trị cũ)
+      // Allow empty string to clear existing rank/position
       formData.append('rank', rank);
       formData.append('position', position);
       if (note) formData.append('note', note);
       if (decisionNumber) formData.append('decisionNumber', decisionNumber);
 
-      // Add new attached files (file đính kèm)
       editAttachedFileList.forEach(file => {
         if (file.originFileObj) {
           formData.append('attachedFiles', file.originFileObj);
@@ -718,7 +714,7 @@ export default function AdhocAwardsPage() {
       align: 'center',
       render: (_, record) => {
         if (record.doi_tuong === 'CA_NHAN' && record.QuanNhan) {
-          // Hiển thị cấp bậc/chức vụ từ DB (record.cap_bac, record.chuc_vu) nếu có, không hiện đơn vị
+          // Use stored rank/position from the award record, not from the current personnel profile
           const capBac = record.cap_bac || record.QuanNhan.cap_bac;
           const chucVu = record.chuc_vu || record.QuanNhan.ChucVu?.ten_chuc_vu;
           const subInfo = [capBac, chucVu].filter(Boolean).join(' - ');
@@ -992,13 +988,12 @@ export default function AdhocAwardsPage() {
                 selectedRowKeys: createFormData.personnelIds,
                 onChange: (selectedRowKeys, selectedRows) => {
                   const newPersonnelIds = selectedRowKeys as string[];
-                  // Cập nhật personnelAwardInfo: giữ lại info cũ nếu có, điền sẵn từ thông tin quân nhân nếu mới
+                  // Preserve existing award info; pre-fill from personnel data for newly added rows
                   const newAwardInfo = newPersonnelIds.map(id => {
                     const existing = createFormData.personnelAwardInfo.find(
                       info => info.personnelId === id
                     );
                     if (existing) return existing;
-                    // Điền sẵn cấp bậc/chức vụ từ thông tin quân nhân để admin có thể chỉnh sửa hoặc xóa
                     const person =
                       selectedRows.find((r: Personnel) => r.id === id) ||
                       personnel.find(p => p.id === id);
@@ -1498,7 +1493,7 @@ export default function AdhocAwardsPage() {
           message.error('Vui lòng chọn ít nhất một đơn vị');
           return false;
         }
-        // Validate cấp bậc và chức vụ bắt buộc cho CA_NHAN
+        // Rank and position are required for CA_NHAN awards
         if (type === 'CA_NHAN') {
           const missingInfo = createFormData.personnelAwardInfo.filter(
             info => !info.rank || !info.position

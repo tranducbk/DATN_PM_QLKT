@@ -4,7 +4,6 @@ import { parsePagination } from '../helpers/paginationHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
-import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 
 class PersonnelController {
   getPersonnel = catchAsync(async (req: Request, res: Response) => {
@@ -12,12 +11,18 @@ class PersonnelController {
     const { search, unit_id } = req.query;
     const userRole = req.user!.role;
     const userQuanNhanId = req.user!.quan_nhan_id;
-    const result = await personnelService.getPersonnel(page, limit, userRole, userQuanNhanId, {
-      search,
-      unit_id,
-    });
-    return ResponseHelper.success(res, {
-      data: result,
+    const { personnel, pagination } = await personnelService.getPersonnel(
+      page,
+      limit,
+      userRole,
+      userQuanNhanId,
+      { search, unit_id }
+    );
+    return ResponseHelper.paginated(res, {
+      data: personnel,
+      total: pagination.total,
+      page: pagination.page,
+      limit: pagination.limit,
       message: 'Lấy danh sách quân nhân thành công',
     });
   });
@@ -50,7 +55,10 @@ class PersonnelController {
   });
 
   updatePersonnel = catchAsync(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const { id: personnelId } = req.params;
+    if (Array.isArray(personnelId)) {
+      return ResponseHelper.badRequest(res, 'ID quân nhân không hợp lệ');
+    }
     const {
       unit_id,
       position_id,
@@ -78,7 +86,7 @@ class PersonnelController {
     const userQuanNhanId = req.user!.quan_nhan_id;
 
     const result = await personnelService.updatePersonnel(
-      id,
+      personnelId,
       {
         co_quan_don_vi_id: co_quan_don_vi_id || don_vi_id || unit_id,
         don_vi_truc_thuoc_id,

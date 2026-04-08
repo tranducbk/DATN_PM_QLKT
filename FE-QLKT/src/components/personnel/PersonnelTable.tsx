@@ -70,11 +70,9 @@ export function PersonnelTable({
               </TableRow>
             ) : (
               personnel.map((p, index) => {
-                // Lấy tên cơ quan đơn vị
                 const coQuanDonViName =
                   p.DonViTrucThuoc?.CoQuanDonVi?.ten_don_vi || p.CoQuanDonVi?.ten_don_vi || '-';
 
-                // Lấy tên đơn vị trực thuộc
                 const donViTrucThuocName = p.DonViTrucThuoc?.ten_don_vi || '-';
 
                 return (

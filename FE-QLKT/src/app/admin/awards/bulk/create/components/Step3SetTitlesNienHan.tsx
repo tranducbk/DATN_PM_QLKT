@@ -116,7 +116,6 @@ export function Step3SetTitlesNienHan({
         }));
         onTitleDataChange(initialData);
       } else {
-        // Cập nhật cap_bac và chuc_vu nếu chưa có
         const updatedData = titleData.map(item => {
           const p = personnelData.find((pd: Personnel) => pd.id === item.personnel_id);
           if (p && (!item.cap_bac || !item.chuc_vu)) {
@@ -186,7 +185,7 @@ export function Step3SetTitlesNienHan({
     }
   };
 
-  // Kiểm tra điều kiện thời gian cho HCCSVV
+  /** Checks whether service time meets HCCSVV eligibility thresholds. */
   const checkHCCSVVEligibilityForPersonnel = (record: Personnel) => {
     if (!record.ngay_nhap_ngu) return null;
 
@@ -199,7 +198,6 @@ export function Step3SetTitlesNienHan({
         ? new Date(record.ngay_nhap_ngu)
         : record.ngay_nhap_ngu;
 
-    // Tính ngày đủ điều kiện cho từng hạng
     const eligibilityDateBa = new Date(startDate);
     eligibilityDateBa.setFullYear(eligibilityDateBa.getFullYear() + 10);
     const eligibilityYearBa = eligibilityDateBa.getFullYear();
@@ -506,7 +504,7 @@ export function Step3SetTitlesNienHan({
           selectedRowKeys: selectedPersonnelIds,
           onChange: (selectedRowKeys: React.Key[]) => {
             onPersonnelChange(selectedRowKeys as string[]);
-            // Xóa dữ liệu danh hiệu của các quân nhân bị bỏ chọn
+            // Remove title data for deselected personnel
             const newTitleData = titleData.filter(d =>
               (selectedRowKeys as string[]).includes(d.personnel_id || '')
             );
@@ -518,6 +516,7 @@ export function Step3SetTitlesNienHan({
           ...DEFAULT_ANTD_TABLE_PAGINATION,
         }}
         bordered
+        scroll={{ x: 'max-content' }}
         locale={{
           emptyText: <Empty description="Không có dữ liệu" />,
         }}

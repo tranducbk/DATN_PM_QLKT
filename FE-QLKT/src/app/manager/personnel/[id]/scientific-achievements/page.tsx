@@ -187,6 +187,7 @@ export default function ManagerScientificAchievementsPage() {
             dataSource={achievements}
             rowKey="id"
             pagination={false}
+            scroll={{ x: 'max-content' }}
             locale={{
               emptyText: <Empty description="Chưa có dữ liệu thành tích khoa học" />,
             }}

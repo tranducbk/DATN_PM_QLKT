@@ -64,7 +64,7 @@ export function AccountCreateForm() {
   const fetchUnitsAndPositions = async () => {
     try {
       const [unitsRes, positionsRes] = await Promise.all([
-        apiClient.getUnits(), // Lấy tất cả đơn vị (cả cơ quan đơn vị và đơn vị trực thuộc)
+        apiClient.getUnits(),
         apiClient.getPositions(),
       ]);
 
@@ -112,30 +112,26 @@ export function AccountCreateForm() {
     },
   });
 
-  // Watch các fields để filter và validate
   const selectedRole = form.watch('role');
   const selectedCoQuanDonViId = form.watch('co_quan_don_vi_id');
   const selectedDonViTrucThuocId = form.watch('don_vi_truc_thuoc_id');
 
-  // Filter đơn vị trực thuộc theo cơ quan đơn vị đã chọn
   const filteredDonViTrucThuoc =
     selectedRole === ROLES.USER && selectedCoQuanDonViId
       ? donViTrucThuocList.filter(dv => dv.co_quan_don_vi_id === selectedCoQuanDonViId)
       : [];
 
-  // Lọc chức vụ theo đơn vị được chọn
   const filteredPositions = (() => {
     if (selectedRole === ROLES.MANAGER && selectedCoQuanDonViId) {
-      // MANAGER: Lọc chức vụ thuộc Cơ quan đơn vị (không bao gồm chức vụ của đơn vị trực thuộc)
+      // MANAGER: positions belonging to co_quan_don_vi only
       return positions.filter(p => p.co_quan_don_vi_id === selectedCoQuanDonViId);
     } else if (selectedRole === ROLES.USER && selectedDonViTrucThuocId) {
-      // USER: Lọc chức vụ thuộc Đơn vị trực thuộc
+      // USER: positions belonging to don_vi_truc_thuoc
       return positions.filter(p => p.don_vi_truc_thuoc_id === selectedDonViTrucThuocId);
     }
     return [];
   })();
 
-  // Reset chức vụ và đơn vị trực thuộc khi đổi cơ quan đơn vị
   useEffect(() => {
     if (selectedCoQuanDonViId !== undefined) {
       form.setValue('chuc_vu_id', undefined);
@@ -145,14 +141,12 @@ export function AccountCreateForm() {
     }
   }, [selectedCoQuanDonViId, selectedRole, form]);
 
-  // Reset chức vụ khi đổi đơn vị trực thuộc (USER)
   useEffect(() => {
     if (selectedRole === ROLES.USER && selectedDonViTrucThuocId !== undefined) {
       form.setValue('chuc_vu_id', undefined);
     }
   }, [selectedDonViTrucThuocId, selectedRole, form]);
 
-  // Lấy danh sách role có thể tạo dựa trên role hiện tại
   const getAvailableRoles = () => {
     if (currentUserRole === ROLES.SUPER_ADMIN) {
       return roleSelectOptions([ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER, ROLES.USER]);
@@ -163,17 +157,14 @@ export function AccountCreateForm() {
     return roleSelectOptions([ROLES.USER]);
   };
 
-  // Kiểm tra xem có thể submit form không
   const canSubmit = () => {
     if (selectedRole === ROLES.MANAGER) {
-      // MANAGER: Cần có co_quan_don_vi_id và chuc_vu_id
       return (
         coQuanDonViList.length > 0 &&
         selectedCoQuanDonViId !== undefined &&
         filteredPositions.length > 0
       );
     } else if (selectedRole === ROLES.USER) {
-      // USER: Cần có co_quan_don_vi_id, don_vi_truc_thuoc_id và chuc_vu_id
       return (
         coQuanDonViList.length > 0 &&
         selectedCoQuanDonViId !== undefined &&
@@ -182,7 +173,6 @@ export function AccountCreateForm() {
         filteredPositions.length > 0
       );
     }
-    // SUPER_ADMIN và ADMIN không cần đơn vị
     return true;
   };
 
@@ -222,7 +212,6 @@ export function AccountCreateForm() {
     try {
       setLoading(true);
 
-      // Loại bỏ confirmPassword trước khi gửi lên server
       const { confirmPassword, ...rest } = values;
       const submitData = { ...rest, password: rest.password ?? '' };
 
@@ -230,7 +219,6 @@ export function AccountCreateForm() {
 
       if (response.success) {
         message.success('Tạo tài khoản thành công');
-        // Redirect về đúng trang dựa trên role hiện tại
         if (currentUserRole === ROLES.SUPER_ADMIN) {
           router.push('/super-admin/accounts');
         } else if (currentUserRole === ROLES.ADMIN) {

@@ -39,7 +39,7 @@ router.use('/api/accounts', accountRoute);
 router.use('/api/units', unitRoute);
 router.use('/api/positions', positionRoute);
 
-// 3.0.1 Sub-units (Đơn vị trực thuộc)
+// Sub-units
 router.get('/api/sub-units', verifyToken, requireAdmin, unitController.getAllSubUnits);
 
 // 3.1 Categories (alias routes for frontend compatibility)
@@ -54,13 +54,13 @@ router.use('/api/annual-rewards', annualRewardRoute);
 router.use('/api/scientific-achievements', scientificAchievementRoute);
 router.use('/api/position-history', positionHistoryRoute);
 
-// 5.1. Proposal Management (Workflow: Đề xuất & Phê duyệt)
+// Proposal Management
 router.use('/api/proposals', proposalRoute);
 
-// 5.1.1. Decision Management (Quản lý quyết định khen thưởng)
+// Decision Management
 router.use('/api/decisions', decisionRoute);
 
-// 5.2. Unit Annual Awards (Khen thưởng đơn vị hằng năm) - Must come before /api/awards
+// Unit Annual Awards — must come before /api/awards
 router.use('/api/awards/units/annual', unitAnnualAwardRoute);
 
 // 5.3. Specialized Award Types
@@ -69,10 +69,10 @@ router.use('/api/contribution-awards', contributionAwardRoute);
 router.use('/api/commemorative-medals', commemorativeMedalRoute);
 router.use('/api/military-flag', militaryFlagRoute);
 
-// 5.4. Awards Management (Quản lý khen thưởng tổng hợp)
+// Awards Management
 router.use('/api/awards', awardsRoute);
 
-// 5.5. Ad-hoc Awards Management (Khen thưởng đột xuất - ADMIN only)
+// Ad-hoc Awards (ADMIN only)
 router.use('/api/adhoc-awards', adhocAwardRoute);
 
 // 6. Profile & Calculation (Output)

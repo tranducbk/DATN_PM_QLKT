@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const hoTen = localStorage.getItem('ho_ten');
         const donViId = localStorage.getItem('don_vi_id');
 
-        // Cả access token và refresh token đều hết hạn → buộc đăng nhập lại
+        // Both tokens expired — force re-login
         if (!isTokenValid(token) && !isTokenValid(refreshToken)) {
           localStorage.clear();
           setUser(null);

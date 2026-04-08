@@ -16,10 +16,10 @@ interface Personnel {
 }
 
 interface AnnualProfile {
-  tong_cstdcs?: number; // Số lượng (Int)
-  tong_nckh?: number; // Số lượng (Int)
-  tong_cstdcs_json?: any[]; // Chi tiết danh hiệu dạng JSON
-  tong_nckh_json?: any[]; // Chi tiết NCKH dạng JSON
+  tong_cstdcs?: number;
+  tong_nckh?: number;
+  tong_cstdcs_json?: any[];
+  tong_nckh_json?: any[];
   cstdcs_lien_tuc?: number;
   nckh_lien_tuc?: number;
   bkbqp_lien_tuc?: number;
@@ -45,7 +45,7 @@ export function PersonnelRewardHistoryModal({
   loading,
   onClose,
 }: PersonnelRewardHistoryModalProps) {
-  // Đọc dữ liệu từ các trường JSON (nếu có), nếu không thì fallback về trường cũ để tương thích
+  // Fall back to legacy scalar fields if JSON detail fields are absent (backward compatibility)
   const tongCstdcs =
     annualProfile?.tong_cstdcs_json && Array.isArray(annualProfile.tong_cstdcs_json)
       ? annualProfile.tong_cstdcs_json
@@ -61,7 +61,6 @@ export function PersonnelRewardHistoryModal({
 
   const hasData = tongCstdcs.length > 0 || tongNckh.length > 0;
 
-  // Hàm xem file quyết định
   const handlePreviewFile = async (filePath: string, soQuyetDinh: string) => {
     if (!filePath) {
       message.warning('Không có file quyết định');
@@ -106,17 +105,17 @@ export function PersonnelRewardHistoryModal({
       width: 200,
       align: 'center',
       render: (_, record) => {
-        // Số quyết định cho CSTDCS thông thường
+        // Decision number for standard CSTDCS
         const soQDCSTDCS = record.so_quyet_dinh;
         const fileCSTDCS = record.file_quyet_dinh;
-        // Số quyết định cho BKBQP hoặc CSTDTQ
+        // Decision number for BKBQP or CSTDTQ
         const soQDBKBQP = record.so_quyet_dinh_bkbqp;
         const soQDCSTDTQ = record.so_quyet_dinh_cstdtq;
         const fileBKBQP = record.file_quyet_dinh_bkbqp;
         const fileCSTDTQ = record.file_quyet_dinh_cstdtq;
 
         const items = [];
-        const danhHieu = record.danh_hieu; // Lấy danh hiệu từ record
+        const danhHieu = record.danh_hieu;
 
         if (soQDCSTDCS && danhHieu) {
           items.push(
@@ -379,6 +378,7 @@ export function PersonnelRewardHistoryModal({
                         columns={cstdcsColumns}
                         className="reward-history-table"
                         bordered
+                        scroll={{ x: 'max-content' }}
                       />
                     ) : (
                       <Text type="secondary">Chưa có danh hiệu</Text>
@@ -400,6 +400,7 @@ export function PersonnelRewardHistoryModal({
                         columns={nckhColumns}
                         className="reward-history-table"
                         bordered
+                        scroll={{ x: 'max-content' }}
                       />
                     ) : (
                       <Text type="secondary">Chưa có thành tích NCKH/SKKH</Text>

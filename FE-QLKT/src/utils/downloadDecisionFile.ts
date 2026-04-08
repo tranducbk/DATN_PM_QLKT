@@ -11,16 +11,13 @@ export async function downloadDecisionFile(soQuyetDinh: string): Promise<void> {
   try {
     message.loading({ content: 'Đang tải file...', key: 'preview' });
 
-    // Gọi API download - backend tự động query DB để lấy file path
     const blob = await apiClient.downloadDecisionFile(soQuyetDinh);
     const filename = `${soQuyetDinh}.pdf`;
 
-    // Tạo blob URL
     const blobUrl = window.URL.createObjectURL(blob);
 
     message.destroy('preview');
 
-    // Tạo cửa sổ mới với viewer HTML
     const newWindow = window.open('', '_blank');
     if (newWindow) {
       newWindow.document.write(`
@@ -118,7 +115,7 @@ export async function downloadDecisionFile(soQuyetDinh: string): Promise<void> {
   } catch (error: unknown) {
     const ax = error as { response?: { data?: unknown } };
 
-    // Xử lý lỗi từ blob response (nếu backend trả về JSON error trong blob)
+    // Handle JSON error response embedded in a blob
     if (ax.response?.data instanceof Blob) {
       try {
         const text = await (ax.response.data as Blob).text();

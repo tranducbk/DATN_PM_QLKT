@@ -96,7 +96,7 @@ const personnel: Record<
 
       return `Cập nhật thông tin quân nhân: ${hoTen}`;
     } catch (e) {
-      console.error('[auditLog] personnel UPDATE description error:', e);
+      console.error('AuditLogPersonnel.buildUpdateDescription failed', { error: e });
       const hoTen = req.body?.ho_ten || FALLBACK.NO_NAME;
       return `Cập nhật thông tin quân nhân: ${hoTen}`;
     }

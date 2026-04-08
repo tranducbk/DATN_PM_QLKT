@@ -67,7 +67,6 @@ export function Step2SelectUnits({
     fetchUnits();
   }, []);
 
-  // Đồng bộ localNam với nam từ props
   useEffect(() => {
     setLocalNam(nam);
   }, [nam]);
@@ -83,7 +82,6 @@ export function Step2SelectUnits({
         const formattedUnits: Unit[] = [];
 
         unitsData.forEach((unit: any) => {
-          // Nếu có co_quan_don_vi_id hoặc CoQuanDonVi thì là đơn vị trực thuộc
           if (unit.co_quan_don_vi_id || unit.CoQuanDonVi) {
             formattedUnits.push({
               id: unit.id,
@@ -93,7 +91,6 @@ export function Step2SelectUnits({
               CoQuanDonVi: unit.CoQuanDonVi || null,
             });
           } else {
-            // Không có co_quan_don_vi_id thì là cơ quan đơn vị
             formattedUnits.push({
               id: unit.id,
               ten_don_vi: unit.ten_don_vi,
@@ -103,7 +100,7 @@ export function Step2SelectUnits({
           }
         });
 
-        // Sắp xếp: Cơ quan đơn vị trước, sau đó là đơn vị trực thuộc
+        // Sort: parent units first, then sub-units
         formattedUnits.sort((a, b) => {
           if (a.type === 'CO_QUAN_DON_VI' && b.type === 'DON_VI_TRUC_THUOC') return -1;
           if (a.type === 'DON_VI_TRUC_THUOC' && b.type === 'CO_QUAN_DON_VI') return 1;
@@ -190,28 +187,25 @@ export function Step2SelectUnits({
           const data = new Uint8Array(e.target?.result as ArrayBuffer);
           const workbook = XLSX.read(data, { type: 'array' });
 
-          // Lấy sheet đầu tiên
           const sheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[sheetName];
 
-          // Chuyển đổi sang JSON
           const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
           if (jsonData.length < 2) {
             throw new Error('File Excel không có dữ liệu hoặc thiếu header');
           }
 
-          // Bỏ qua header row
-          const dataRows = jsonData.slice(1);
+          const dataRows = jsonData.slice(1); // skip header row
 
           const titleData: any[] = [];
           const errors: string[] = [];
           const processedUnitIds: string[] = [];
 
           dataRows.forEach((row: any, index: number) => {
-            const rowNumber = index + 2; // +2 vì bỏ header và index từ 0
+            const rowNumber = index + 2; // +2: skip header + 0-based index
 
-            // Validate required fields - cho đơn vị có thể khác
+            // Validate required fields
             const maDonVi = row[0]?.toString().trim();
             const tenDonVi = row[1]?.toString().trim();
             const nam = row[2]?.toString().trim();
@@ -232,20 +226,16 @@ export function Step2SelectUnits({
               return;
             }
 
-            // Validate năm
             const namInt = parseInt(nam);
 
-            // Tìm unit ID dựa trên tên đơn vị
             const matchingUnit = units.find(u => {
               const unitCode = u.ma_don_vi.toLowerCase().trim();
               const unitName = u.ten_don_vi.toLowerCase().trim();
               const excelName = tenDonVi.toLowerCase().trim();
               if (maDonVi) {
-                // So sánh cả mã đơn vị nếu có
                 return unitCode === maDonVi.toLowerCase() && unitName === excelName;
               }
 
-              // So sánh tên chính xác
               return unitName === excelName;
             });
 
@@ -254,7 +244,6 @@ export function Step2SelectUnits({
               return;
             }
 
-            // Thêm vào danh sách
             processedUnitIds.push(matchingUnit.id);
 
             titleData.push({
@@ -268,7 +257,7 @@ export function Step2SelectUnits({
           // Remove duplicates from unit IDs
           const uniqueUnitIds = Array.from(new Set(processedUnitIds));
 
-          // Kiểm tra trùng lặp trước khi resolve
+          // Reject early if any row duplicates an existing proposal
           try {
             for (const item of titleData) {
               const checkResponse = await apiClient.checkDuplicateUnit({
@@ -314,7 +303,6 @@ export function Step2SelectUnits({
   };
 
   const handleImportSuccess = async (result: any) => {
-    // Cập nhật danh sách đơn vị đã chọn
     if (result.selectedUnitIds && result.selectedUnitIds.length > 0) {
       onUnitChange(result.selectedUnitIds);
     }
@@ -327,10 +315,10 @@ export function Step2SelectUnits({
       onNamChange(result.titleData[0].nam);
     }
 
-    // Chuyển sang bước 3 (Review) để xem trước dữ liệu trước khi xác nhận
+    // Advance to Step 3 (Review) so the user can verify before confirming
     if (onNextStep) {
       setTimeout(() => {
-        onNextStep(); // Chuyển sang bước 3 — dừng lại ở đây để review
+        onNextStep();
       }, 500);
     }
   };
@@ -391,7 +379,7 @@ export function Step2SelectUnits({
           <InputNumber
             value={localNam}
             onChange={value => {
-              // Cho phép null/undefined để người dùng có thể xóa và nhập lại
+              // Allow null so the user can clear and retype without validation errors
               if (value === null || value === undefined) {
                 setLocalNam(null);
                 return;
@@ -399,15 +387,13 @@ export function Step2SelectUnits({
 
               const intValue = Math.floor(Number(value));
 
-              // Nếu giá trị hợp lệ, cập nhật local state
               if (!isNaN(intValue)) {
-                // Cho phép nhập bất kỳ số nào trong quá trình nhập (kể cả < 1900)
-                // Chỉ giới hạn khi blur
+                // Allow any value while typing; clamp only on blur
                 setLocalNam(intValue);
               }
             }}
             onBlur={e => {
-              // Khi blur, đảm bảo giá trị trong khoảng hợp lệ và cập nhật lên parent
+              // Clamp to valid range and propagate to parent on blur
               const currentValue = localNam;
               if (currentValue === null || currentValue === undefined || currentValue < 1900) {
                 const finalValue = 1900;
@@ -418,7 +404,6 @@ export function Step2SelectUnits({
                 setLocalNam(finalValue);
                 onNamChange(finalValue);
               } else {
-                // Giá trị hợp lệ, cập nhật lên parent
                 onNamChange(currentValue);
               }
             }}

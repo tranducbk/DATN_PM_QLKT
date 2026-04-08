@@ -85,7 +85,7 @@ router.post(
     action: AUDIT_ACTIONS.BULK,
     resource: 'awards',
     getDescription: getLogDescription('awards', 'BULK'),
-    getResourceId: () => null, // Bulk operation không có single resource ID
+    getResourceId: () => null,
     getPayload: (req: Request, res: Response, responseData: unknown) => {
       try {
         const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
@@ -98,7 +98,6 @@ router.post(
         let selectedUnits = req.body?.selected_units || [];
         let titleData = req.body?.title_data || [];
 
-        // Parse JSON strings nếu cần
         if (typeof selectedPersonnel === 'string') {
           try {
             selectedPersonnel = JSON.parse(selectedPersonnel);

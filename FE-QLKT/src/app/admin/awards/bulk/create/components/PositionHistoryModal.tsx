@@ -158,6 +158,7 @@ export function PositionHistoryModal({
             rowKey="id"
             pagination={false}
             size="small"
+            scroll={{ x: 'max-content' }}
           />
         ) : (
           <Empty description="Chưa có dữ liệu lịch sử chức vụ" style={{ padding: '24px 0' }} />

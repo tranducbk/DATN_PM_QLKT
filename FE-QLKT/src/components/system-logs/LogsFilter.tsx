@@ -67,7 +67,7 @@ export function LogsFilter({ onFilterChange }: LogsFilterProps) {
       search ? 300 : 0
     );
     return () => clearTimeout(timeout);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- bỏ onFilterChange (ổn định từ parent)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- onFilterChange is stable from parent
   }, [search, startDate, endDate, actorRole, action]);
 
   const handleReset = () => {

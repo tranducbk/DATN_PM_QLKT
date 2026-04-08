@@ -7,7 +7,7 @@ import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { isFeatureEnabled } from '../helpers/settingsHelper';
 
 class SystemLogsController {
-  // Roles mỗi cấp được xem (bao gồm SYSTEM cho ADMIN+)
+  // Roles visible at each level (SYSTEM events visible to ADMIN and above)
   private static readonly VISIBLE_ROLES: Record<string, string[]> = {
     [ROLES.MANAGER]: [ROLES.USER, ROLES.MANAGER],
     [ROLES.ADMIN]: [ROLES.USER, ROLES.MANAGER, ROLES.ADMIN, 'SYSTEM'],
@@ -79,13 +79,13 @@ class SystemLogsController {
       where.actor_role = { in: visibleRoles };
     }
 
-    // Manager chỉ xem log của đơn vị mình
+    // Manager can only view logs for their own unit
     if (currentUser.role === ROLES.MANAGER && currentUser.quan_nhan_id) {
       const accountIds = await this.getManagerAccountIds(currentUser.quan_nhan_id);
       where.nguoi_thuc_hien_id = { in: accountIds };
     }
 
-    // Ẩn log lỗi nếu chưa bật allow_view_errors cho role hiện tại
+    // Hide error logs unless allow_view_errors is enabled for this role
     const roleKey = currentUser.role.toLowerCase();
     const canViewErrors = await isFeatureEnabled(`allow_view_errors_${roleKey}`);
     if (!canViewErrors) {
@@ -96,7 +96,6 @@ class SystemLogsController {
       where.action = action;
     }
 
-    // Các filter chung
     if (search) where.description = { contains: search, mode: 'insensitive' };
     if (resource) where.resource = resource;
     if (startDate || endDate) {

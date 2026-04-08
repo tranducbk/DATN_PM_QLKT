@@ -8,7 +8,7 @@ import { sanitizeFilename } from './helpers';
 import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
 import type { Prisma } from '../../generated/prisma';
 
-/** Kết quả `findMany` quân nhân khi gửi đề xuất — khớp `select` trong `submitProposal` */
+/** Personnel row shape returned by `findMany` in `submitProposal`. */
 type SubmitPersonnelRow = Prisma.QuanNhanGetPayload<{
   select: {
     id: true;
@@ -48,14 +48,15 @@ type LichSuChucVuForCongHien = Prisma.LichSuChucVuGetPayload<{
 }>;
 
 /**
- * Lưu đề xuất khen thưởng với nhiều file đính kèm
- * @param {Array} titleData - Dữ liệu danh hiệu/thành tích từ frontend
- * @param {Array} attachedFiles - Array các file đính kèm (multer file objects)
- * @param {string} soQuyetDinh - Số quyết định gốc
- * @param {string} userId - ID của tài khoản Manager
- * @param {string} type - Loại đề xuất
- * @param {number} nam - Năm đề xuất
- * @returns {Promise<Object>} - Kết quả lưu đề xuất
+ * Creates a reward proposal with optional attachments.
+ * @param titleData - Proposal title/achievement payload from the frontend
+ * @param attachedFiles - Uploaded attachment files (if any)
+ * @param soQuyetDinh - Original decision number
+ * @param userId - Manager account id
+ * @param type - Proposal type
+ * @param nam - Proposal year
+ * @param ghiChu - Optional note
+ * @returns Created proposal with related entities
  */
 export interface SubmitTitleDataItem {
   personnel_id: string;
@@ -87,7 +88,6 @@ async function submitProposal(
   ghiChu: string | null = null
 ) {
   try {
-    // Lấy thông tin user và đơn vị
     const user = await prisma.taiKhoan.findUnique({
       where: { id: userId },
       include: {
@@ -110,7 +110,7 @@ async function submitProposal(
 
     const donViId = user.QuanNhan.co_quan_don_vi_id || user.QuanNhan.don_vi_truc_thuoc_id;
 
-    // LƯU NHIỀU FILE ĐÍNH KÈM VÀO SERVER
+    // Save attachment files to local storage.
     const filesInfo: {
       filename: string;
       originalName: string;
@@ -119,47 +119,38 @@ async function submitProposal(
     }[] = [];
 
     if (attachedFiles && attachedFiles.length > 0) {
-      // Đường dẫn lưu file
       const storagePath = path.join(__dirname, '../../../storage/proposals');
       await fs.mkdir(storagePath, { recursive: true });
 
-      // Loop qua từng file và lưu
       for (const file of attachedFiles) {
         if (file && file.buffer) {
-          // Xử lý tên file gốc (có thể có ký tự đặc biệt, Unicode)
           let originalName = file.originalname || 'file';
-          // Xử lý encoding nếu cần (từ latin1 sang utf8)
           try {
             if (Buffer.isBuffer(originalName)) {
               originalName = originalName.toString('utf8');
             } else if (typeof originalName === 'string') {
-              // Đảm bảo string là UTF-8
               originalName = Buffer.from(originalName, 'latin1').toString('utf8');
             }
           } catch (e) {
-            // Nếu lỗi encoding, dùng tên mặc định
             originalName = 'file';
           }
 
-          // Sanitize tên file gốc để tránh lỗi
           const sanitizedOriginalName = sanitizeFilename(originalName);
 
-          // Tạo tên file unique: timestamp_uuid_sanitizedname
+          // Use timestamp + short uuid to avoid filename collisions.
           const timestamp = Date.now();
           const uniqueId = uuidv4().slice(0, 8);
           const fileExtension = path.extname(sanitizedOriginalName);
           const baseFilename = path.basename(sanitizedOriginalName, fileExtension);
           const savedFilename = `${timestamp}_${uniqueId}_${baseFilename}${fileExtension}`;
 
-          // Lưu file
           const filePath = path.join(storagePath, savedFilename);
           await fs.writeFile(filePath, file.buffer);
 
-          // Thêm thông tin file vào array
-          // Lưu originalName gốc (có thể có Unicode) để hiển thị cho user
+          // Keep original name for UI display.
           filesInfo.push({
             filename: savedFilename,
-            originalName: originalName, // Tên file gốc (có thể có Unicode)
+            originalName: originalName,
             size: file.size,
             uploadedAt: new Date().toISOString(),
           });
@@ -167,13 +158,11 @@ async function submitProposal(
       }
     }
 
-    // XỬ LÝ DỮ LIỆU TỪ FRONTEND
     if (!titleData || !Array.isArray(titleData)) {
       throw new ValidationError('Dữ liệu đề xuất không hợp lệ');
     }
 
-    // Fetch thông tin quân nhân để lấy họ tên, đơn vị (chỉ cho đề xuất cá nhân)
-    // Với DON_VI_HANG_NAM, titleData sẽ có don_vi_id thay vì personnel_id
+    // For DON_VI_HANG_NAM, input items use `don_vi_id` instead of `personnel_id`.
     let personnelList: SubmitPersonnelRow[] = [];
     if (type !== PROPOSAL_TYPES.DON_VI_HANG_NAM) {
       const personnelIds = titleData
@@ -181,7 +170,7 @@ async function submitProposal(
         .filter(id => id !== undefined && id !== null); // Filter out undefined/null
 
       if (personnelIds.length > 0) {
-        // Đối với NIEN_HAN, HC_QKQT, KNC_VSNXD_QDNDVN cần thêm ngay_nhap_ngu và ngay_xuat_ngu để tính thoi_gian
+        // These proposal types need service-time fields for validation.
         const needsTimeTypes: ProposalType[] = [
           PROPOSAL_TYPES.NIEN_HAN,
           PROPOSAL_TYPES.HC_QKQT,
@@ -238,19 +227,17 @@ async function submitProposal(
       }
     }
 
-    // Tạo map để lookup nhanh và đảm bảo load đầy đủ thông tin đơn vị
+    // Build lookup map and backfill missing unit relations when needed.
     const personnelMap: Record<string, SubmitPersonnelRow> = {};
     const missingDonViIds = new Set<string>();
 
     personnelList.forEach(p => {
-      // Nếu có don_vi_truc_thuoc_id nhưng DonViTrucThuoc chưa được load, cần fetch lại
       if (p.don_vi_truc_thuoc_id && !p.DonViTrucThuoc) {
         missingDonViIds.add(p.don_vi_truc_thuoc_id);
       }
       personnelMap[p.id] = p;
     });
 
-    // Fetch lại các đơn vị trực thuộc bị thiếu
     if (missingDonViIds.size > 0) {
       const missingDonVis = await prisma.donViTrucThuoc.findMany({
         where: {
@@ -274,7 +261,6 @@ async function submitProposal(
         donViMap[dv.id] = dv;
       });
 
-      // Cập nhật lại personnelMap với thông tin đơn vị đã fetch
       Object.keys(personnelMap).forEach(personnelId => {
         const personnel = personnelMap[personnelId];
         if (personnel.don_vi_truc_thuoc_id && !personnel.DonViTrucThuoc) {
@@ -283,14 +269,14 @@ async function submitProposal(
       });
     }
 
-    // Format titleData theo type và enrich với thông tin quân nhân/đơn vị
+    // Normalize payload by proposal type and enrich with relation data.
     let dataDanhHieu: any[] | null = null;
     let dataThanhTich: any[] | null = null;
     let dataNienHan: any[] | null = null;
     let dataCongHien: any[] | null = null;
 
     if (type === PROPOSAL_TYPES.NCKH) {
-      // NCKH: titleData = [{ personnel_id, loai: 'NCKH'|'SKKH', mo_ta, cap_bac, chuc_vu }]
+      // NCKH payload shape.
       dataThanhTich = titleData.map(item => {
         const personnel = personnelMap[item.personnel_id];
         return {
@@ -328,7 +314,7 @@ async function submitProposal(
         };
       });
     } else if (type === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
-      // DON_VI_HANG_NAM: titleData = [{ don_vi_id, don_vi_type, danh_hieu }]
+      // DON_VI_HANG_NAM payload shape.
       dataDanhHieu = await Promise.all(
         titleData.map(async item => {
           let donViInfo = null;
@@ -381,15 +367,15 @@ async function submitProposal(
         })
       );
     } else if (type === PROPOSAL_TYPES.CA_NHAN_HANG_NAM) {
-      // Standard: titleData = [{ personnel_id, danh_hieu }]
+      // Standard annual personal-title payload.
       dataDanhHieu = titleData.map(item => {
         const personnel = personnelMap[item.personnel_id];
 
-        // Xác định đơn vị của quân nhân
+        // Resolve personnel unit data.
         const personnelCoQuanDonVi = personnel?.CoQuanDonVi;
         const personnelDonViTrucThuoc = personnel?.DonViTrucThuoc;
 
-        // Luôn lưu cả hai nếu có dữ liệu
+        // Keep both relations when available.
         let coQuanDonVi = null;
         let donViTrucThuoc = null;
 
@@ -435,11 +421,11 @@ async function submitProposal(
       type === PROPOSAL_TYPES.HC_QKQT ||
       type === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN
     ) {
-      // NIEN_HAN, HC_QKQT, KNC_VSNXD_QDNDVN: titleData = [{ personnel_id, danh_hieu }]
+      // NIEN_HAN / HC_QKQT / KNC_VSNXD_QDNDVN payload shape.
       dataNienHan = titleData.map(item => {
         const personnel = personnelMap[item.personnel_id];
 
-        // Tính thời gian từ ngày nhập ngũ
+        // Compute service duration from enlistment date.
         let thoiGian = null;
         if (personnel?.ngay_nhap_ngu) {
           const ngayNhapNgu = new Date(personnel.ngay_nhap_ngu);
@@ -478,7 +464,7 @@ async function submitProposal(
           danh_hieu: item.danh_hieu,
           so_quyet_dinh: item.so_quyet_dinh || null,
           file_quyet_dinh: item.file_quyet_dinh || null,
-          thoi_gian: thoiGian, // Lưu mốc thời gian vào JSON
+          thoi_gian: thoiGian,
           cap_bac: item.cap_bac || null,
           chuc_vu: item.chuc_vu || null,
           co_quan_don_vi: personnel?.CoQuanDonVi
@@ -505,7 +491,7 @@ async function submitProposal(
         };
       });
     } else if (type === PROPOSAL_TYPES.CONG_HIEN) {
-      // CONG_HIEN: titleData = [{ personnel_id, danh_hieu }]
+      // CONG_HIEN payload shape.
       dataCongHien = await Promise.all(
         titleData.map(async item => {
           const personnel = personnelMap[item.personnel_id];
@@ -539,7 +525,7 @@ async function submitProposal(
               : null,
           };
 
-          // Nếu là CONG_HIEN, thêm thông tin thời gian 3 nhóm
+          // Add grouped duration fields for CONG_HIEN checks.
           if (type === PROPOSAL_TYPES.CONG_HIEN && item.personnel_id) {
             try {
               const histories = await prisma.lichSuChucVu.findMany({
@@ -552,7 +538,7 @@ async function submitProposal(
                 },
               });
 
-              // Tính số tháng cho chức vụ hiện tại (chưa có ngày kết thúc)
+              // Compute active months for current position records.
               const today = new Date();
               const updatedHistories = histories.map(history => {
                 if (history.so_thang === null || history.so_thang === undefined) {
@@ -572,7 +558,7 @@ async function submitProposal(
                 return history;
               });
 
-              // Hàm tính tổng tháng theo nhóm hệ số
+              // Aggregate months by coefficient group.
               const getTotalMonthsByGroup = (group: string) => {
                 let totalMonths = 0;
                 updatedHistories.forEach(history => {
@@ -598,12 +584,12 @@ async function submitProposal(
                 return totalMonths;
               };
 
-              // Tính thời gian cho 3 nhóm
+              // Compute duration for all three groups.
               const months0_7 = getTotalMonthsByGroup('0.7');
               const months0_8 = getTotalMonthsByGroup('0.8');
               const months0_9_1_0 = getTotalMonthsByGroup('0.9-1.0');
 
-              // Format thời gian (năm và tháng)
+              // Format duration to readable years/months.
               const formatTime = (totalMonths: number) => {
                 const years = Math.floor(totalMonths / 12);
                 const remainingMonths = totalMonths % 12;
@@ -629,7 +615,7 @@ async function submitProposal(
                 thoi_gian_nhom_0_9_1_0: formatTime(months0_9_1_0),
               };
             } catch (error) {
-              console.error('[proposal/submit] fetch position history error:', error);
+              console.error('ProposalSubmit.fetchPositionHistory failed', { personnelId: item.personnel_id, error });
               return baseData;
             }
           }
@@ -639,7 +625,7 @@ async function submitProposal(
       );
     }
 
-    // VALIDATION: Đảm bảo không mix CSTDCS/CSTT với BKBQP/CSTDTQ
+    // Validation: prevent mixing CSTDCS/CSTT with BKBQP/CSTDTQ.
     if (type === PROPOSAL_TYPES.CA_NHAN_HANG_NAM && dataDanhHieu && dataDanhHieu.length > 0) {
       const hasChinh = dataDanhHieu.some(
         item => item.danh_hieu === 'CSTDCS' || item.danh_hieu === 'CSTT'
@@ -655,7 +641,7 @@ async function submitProposal(
       }
     }
 
-    // VALIDATION cho NIEN_HAN: Chỉ cho phép các hạng HCCSVV
+    // Validation for NIEN_HAN: only HCCSVV ranks are allowed.
     if (type === PROPOSAL_TYPES.NIEN_HAN && dataNienHan && dataNienHan.length > 0) {
       const danhHieus = dataNienHan.map(item => item.danh_hieu).filter(Boolean);
 
@@ -671,7 +657,7 @@ async function submitProposal(
       }
     }
 
-    // VALIDATION cho HC_QKQT: Chỉ cho phép danh hiệu HC_QKQT
+    // Validation for HC_QKQT: only HC_QKQT is allowed.
     if (type === PROPOSAL_TYPES.HC_QKQT && dataNienHan && dataNienHan.length > 0) {
       const danhHieus = dataNienHan.map(item => item.danh_hieu).filter(Boolean);
 
@@ -684,7 +670,7 @@ async function submitProposal(
         );
       }
 
-      // Kiểm tra điều kiện thời gian: >= 25 năm từ ngày nhập ngũ (không phân biệt nam nữ)
+      // Validation: require at least 25 years of service.
       const personnelIds = dataNienHan.map(item => item.personnel_id).filter(Boolean);
       const ineligiblePersonnel: { id: string; ho_ten: string; reason: string }[] = [];
 
@@ -758,7 +744,7 @@ async function submitProposal(
       }
     }
 
-    // VALIDATION cho KNC_VSNXD_QDNDVN
+    // Validation for KNC_VSNXD_QDNDVN.
     if (type === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN && dataNienHan && dataNienHan.length > 0) {
       const danhHieus = dataNienHan.map(item => item.danh_hieu).filter(Boolean);
 
@@ -771,7 +757,7 @@ async function submitProposal(
         );
       }
 
-      // Kiểm tra điều kiện thời gian: nữ >=20 năm, nam >=25 năm từ ngày nhập ngũ
+      // Validation: female >=20 years, male >=25 years of service.
       const personnelIds = dataNienHan.map(item => item.personnel_id).filter(Boolean);
       const ineligiblePersonnel: { id: string; ho_ten: string; reason: string }[] = [];
 
@@ -858,10 +844,10 @@ async function submitProposal(
       }
     }
 
-    // VALIDATION cho CONG_HIEN: Kiểm tra điều kiện 10 năm trở lên
+    // Validation for CONG_HIEN: minimum 10-year requirement by grouped history.
     if (type === PROPOSAL_TYPES.CONG_HIEN && dataDanhHieu && dataDanhHieu.length > 0) {
-      const baseRequiredMonths = 10 * 12; // 10 năm = 120 tháng (cho nam)
-      const femaleRequiredMonths = Math.round(baseRequiredMonths * (2 / 3)); // Nữ: 80 tháng (làm tròn)
+      const baseRequiredMonths = 10 * 12;
+      const femaleRequiredMonths = Math.round(baseRequiredMonths * (2 / 3));
 
       const personnelIds = dataDanhHieu.map(item => item.personnel_id).filter(Boolean);
       const positionHistoriesMap: Record<string, LichSuChucVuForCongHien[]> = {};
@@ -912,7 +898,7 @@ async function submitProposal(
 
           positionHistoriesMap[personnelId] = updatedHistories;
         } catch (error) {
-          console.error(`[proposal/submit] positionHistoriesMap build error for ${personnelId}:`, error);
+          console.error('ProposalSubmit.buildPositionHistories failed', { personnelId, error });
           positionHistoriesMap[personnelId] = [];
         }
       }
@@ -1028,7 +1014,7 @@ async function submitProposal(
       }
     }
 
-    // LƯU VÀO CSDL
+    // Persist proposal after validation.
     const isCoQuanDonVi = !!user.QuanNhan.co_quan_don_vi_id;
     const proposalData: Prisma.BangDeXuatUncheckedCreateInput = {
       nguoi_de_xuat_id: userId,

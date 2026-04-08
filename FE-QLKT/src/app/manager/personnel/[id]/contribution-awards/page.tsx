@@ -24,6 +24,7 @@ import { apiClient } from '@/lib/apiClient';
 import { useTheme } from '@/components/ThemeProvider';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
+import { FETCH_ALL_LIMIT } from '@/lib/constants/pagination.constants';
 
 const { Title, Paragraph } = Typography;
 
@@ -60,7 +61,7 @@ export default function ManagerContributionAwardsPage() {
       setLoading(true);
       const [personnelRes, contributionRes] = await Promise.all([
         apiClient.getPersonnelById(personnelId),
-        apiClient.getContributionAwards({ limit: 1000 }),
+        apiClient.getContributionAwards({ limit: FETCH_ALL_LIMIT }),
       ]);
 
       if (!personnelRes.success || !personnelRes.data) {
@@ -70,14 +71,10 @@ export default function ManagerContributionAwardsPage() {
 
       setPersonnel(personnelRes.data);
 
-      // Lấy dữ liệu từ API Contribution Awards (HCBVTQ) - lấy tất cả và filter theo personnelId
-
       const mappedAwards: ContributionAward[] = [];
 
-      // Lấy dữ liệu từ API Contribution Awards (HCBVTQ) và filter theo personnelId
       if (contributionRes.success && contributionRes.data) {
         contributionRes.data.forEach((award: any) => {
-          // Kiểm tra cả quan_nhan_id trực tiếp và QuanNhan.id
           const awardPersonnelId = award.quan_nhan_id || award.QuanNhan?.id;
           if (awardPersonnelId === personnelId) {
             const danhHieu = award.danh_hieu || '';

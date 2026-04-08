@@ -39,20 +39,13 @@ import { getAntdThemeConfig } from '@/lib/antdTheme';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { ROLES, getRoleInfo } from '@/constants/roles.constants';
 
-// Helper function để parse địa chỉ từ string sang array
 const parseAddressToArray = (addressString: string | null): string[] | undefined => {
   if (!addressString) return undefined;
 
-  // Parse format: "Xã An Hoà, huyện Yên Bình, tỉnh Nam Định"
-  // hoặc "Phường Hoà An, quận Ba Đình, Thành phố Hà Nội"
   const parts = addressString.split(',').map(part => part.trim());
 
   if (parts.length !== 3) return undefined;
 
-  // Trong JSON, Name có đầy đủ prefix, ví dụ:
-  // - Province: "Thành phố Hà Nội", "Tỉnh Ninh Bình"
-  // - District: "Quận Ba Đình", "Huyện Yên Bình"
-  // - Ward: "Phường Phúc Xá", "Xã An Hoà"
   const ward = parts[0];
   const district = parts[1];
   const province = parts[2];
@@ -60,7 +53,6 @@ const parseAddressToArray = (addressString: string | null): string[] | undefined
   return [province, district, ward];
 };
 
-// Helper function để convert array sang string
 const formatAddressToString = (addressArray: string[]): string => {
   if (!addressArray || addressArray.length !== 3) return '';
 
@@ -68,20 +60,13 @@ const formatAddressToString = (addressArray: string[]): string => {
   return `${ward}, ${district}, ${province}`;
 };
 
-// Helper function để format địa chỉ 2 cấp
-// Cấu trúc: [từ hành chính] + [tên địa danh]
 // Examples:
-// - "phường lào cai, tỉnh lào cai" → "phường Lào Cai, tỉnh Lào Cai"
-// - "xã hoà an, tỉnh ninh bình" → "xã Hoà An, tỉnh Ninh Bình"
-// - "xã an hoà, huyện yên bình, tỉnh nam định" → "xã An Hoà, huyện Yên Bình, tỉnh Nam Định"
 const formatAddressInput = (input: string): string => {
   if (!input || !input.trim()) return input;
 
-  // Danh sách các từ hành chính (giữ viết thường)
   const singleAdminWords = ['tỉnh', 'tp', 'tp.', 'huyện', 'quận', 'xã', 'phường', 'tt', 'tt.'];
   const doubleAdminWords = ['thành phố', 'thị xã', 'thị trấn'];
 
-  // Tách thành các phần bởi dấu phẩy
   const parts = input.split(',').map(part => part.trim());
 
   const formattedParts = parts.map((part, partIndex) => {
@@ -91,13 +76,11 @@ const formatAddressInput = (input: string): string => {
     const firstWord = words[0].toLowerCase();
     const secondWord = words[1]?.toLowerCase();
 
-    let adminLength = 0; // Số từ là từ hành chính
+    let adminLength = 0;
     let formattedAdmin = '';
 
-    // Kiểm tra từ hành chính 2 chữ (thành phố, thị xã, thị trấn)
     if (secondWord && doubleAdminWords.includes(`${firstWord} ${secondWord}`)) {
       adminLength = 2;
-      // Chỉ viết hoa chữ đầu của từ hành chính đầu tiên trong phần đầu tiên
       if (partIndex === 0) {
         const formattedFirst = firstWord.charAt(0).toUpperCase() + firstWord.slice(1);
         formattedAdmin = `${formattedFirst} ${secondWord}`;
@@ -105,10 +88,8 @@ const formatAddressInput = (input: string): string => {
         formattedAdmin = `${firstWord} ${secondWord}`;
       }
     }
-    // Kiểm tra từ hành chính 1 chữ (tỉnh, huyện, quận, xã, phường)
     else if (singleAdminWords.includes(firstWord)) {
       adminLength = 1;
-      // Chỉ viết hoa chữ đầu của từ hành chính đầu tiên trong phần đầu tiên
       if (partIndex === 0) {
         formattedAdmin = firstWord.charAt(0).toUpperCase() + firstWord.slice(1);
       } else {
@@ -116,16 +97,12 @@ const formatAddressInput = (input: string): string => {
       }
     }
 
-    // Nếu có từ hành chính
     if (adminLength > 0) {
-      // Lấy phần còn lại là tên địa danh
       const placeNameWords = words.slice(adminLength);
 
-      // Viết hoa chữ đầu mỗi từ của địa danh (giữ nguyên các ký tự đặc biệt như dấu)
       const formattedPlaceName = placeNameWords
         .map(word => {
           if (word.length === 0) return word;
-          // Tìm ký tự đầu tiên là chữ cái (bỏ qua dấu)
           const firstLetterIndex = word.search(
             /[a-zA-ZàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđĐ]/i
           );
@@ -140,11 +117,9 @@ const formatAddressInput = (input: string): string => {
       return `${formattedAdmin} ${formattedPlaceName}`;
     }
 
-    // Nếu không có từ hành chính, viết hoa chữ đầu mỗi từ
     return words
       .map(word => {
         if (word.length === 0) return word;
-        // Tìm ký tự đầu tiên là chữ cái (bỏ qua dấu)
         const firstLetterIndex = word.search(
           /[a-zA-ZàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđĐ]/i
         );
@@ -159,7 +134,6 @@ const formatAddressInput = (input: string): string => {
 
   let result = formattedParts.join(', ');
 
-  // Viết hoa chữ đầu tiên của toàn bộ chuỗi
   if (result.length > 0) {
     const firstLetterIndex = result.search(
       /[a-zA-ZàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđĐ]/i
@@ -176,8 +150,8 @@ const formatAddressInput = (input: string): string => {
 };
 
 interface ProfileEditFormProps {
-  personnelId?: string; // Optional: nếu không có thì lấy từ token
-  onSuccess?: () => void; // Callback khi cập nhật thành công
+  personnelId?: string;
+  onSuccess?: () => void;
 }
 
 export function ProfileEditForm({
@@ -193,7 +167,6 @@ export function ProfileEditForm({
   const [showTempCCCDWarning, setShowTempCCCDWarning] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
-  // Handler để format địa chỉ khi người dùng rời khỏi input
   const handleAddressBlur = (fieldName: string) => {
     const currentValue = form.getFieldValue(fieldName);
     if (currentValue && typeof currentValue === 'string') {
@@ -212,11 +185,10 @@ export function ProfileEditForm({
     try {
       setLoading(true);
 
-      // Nếu có externalPersonnelId thì dùng nó, không thì lấy từ token
+      // Use externalPersonnelId if provided; otherwise decode from JWT token
       let targetPersonnelId = externalPersonnelId;
 
       if (!targetPersonnelId) {
-        // Lấy thông tin user từ token
         const token = localStorage.getItem('accessToken');
         if (!token) {
           message.error('Vui lòng đăng nhập lại');
@@ -224,7 +196,6 @@ export function ProfileEditForm({
           return;
         }
 
-        // Decode JWT để lấy quan_nhan_id
         let quan_nhan_id: string | undefined;
         try {
           const payload = JSON.parse(atob(token.split('.')[1]));
@@ -243,13 +214,11 @@ export function ProfileEditForm({
         targetPersonnelId = String(quan_nhan_id);
       }
 
-      // Lấy thông tin personnel
       const response = await apiClient.getPersonnelById(targetPersonnelId);
 
       if (response.success && response.data) {
         setPersonnelData(response.data);
 
-        // Kiểm tra CCCD tạm thời
         if (response.data.cccd?.startsWith('TEMP-')) {
           setShowTempCCCDWarning(true);
         }
@@ -297,7 +266,6 @@ export function ProfileEditForm({
         return;
       }
 
-      // Chuẩn bị dữ liệu
       const payload = {
         ho_ten: values.ho_ten,
         gioi_tinh: values.gioi_tinh,
@@ -327,13 +295,11 @@ export function ProfileEditForm({
         ...(personnelData.chuc_vu_id && { chuc_vu_id: personnelData.chuc_vu_id }),
       };
 
-      // Gọi API update
       const response = await apiClient.updatePersonnel(String(personnelData.id), payload);
 
       if (response.success) {
         message.success('Cập nhật thông tin thành công!');
 
-        // Ẩn cảnh báo CCCD tạm nếu đã cập nhật
         if (!values.cccd?.startsWith('TEMP-')) {
           setShowTempCCCDWarning(false);
         }
@@ -341,10 +307,8 @@ export function ProfileEditForm({
         // Reload data
         await loadPersonnelData();
 
-        // Chuyển về chế độ xem thông tin sau khi cập nhật
         setIsEditing(false);
 
-        // Gọi callback nếu có
         if (onSuccess) {
           onSuccess();
         }
@@ -655,12 +619,12 @@ export function ProfileEditForm({
                 rules={[
                   {
                     validator: (_, value) => {
-                      if (!value) return Promise.resolve(); // Cho phép để trống
+                      if (!value) return Promise.resolve();
                       if (/^[0-9]{9,12}$/.test(value)) {
                         return Promise.resolve();
                       }
                       if (value.startsWith('TEMP-')) {
-                        return Promise.resolve(); // Cho phép CCCD tạm thời
+                        return Promise.resolve();
                       }
                       return Promise.reject(new Error('CCCD phải là số từ 9-12 chữ số!'));
                     },

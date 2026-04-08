@@ -163,6 +163,7 @@ export function UnitsTable({
         ...DEFAULT_ANTD_TABLE_PAGINATION,
         showTotal: total => `Tổng số ${total} đơn vị`,
       }}
+      scroll={{ x: 'max-content' }}
       locale={{
         emptyText: <Empty description="Không có dữ liệu" />,
       }}

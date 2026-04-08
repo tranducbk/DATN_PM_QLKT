@@ -12,6 +12,7 @@ import { writeSystemLog } from '../helpers/systemLogHelper';
 import { parseHeaderMap, getHeaderCol, parseBooleanValue, resolvePersonnelInfo, buildPendingKeys } from '../helpers/excelHelper';
 import type { DanhHieuHangNam, QuanNhan, Prisma } from '../generated/prisma';
 import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
+import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
 
 interface CreateAnnualRewardData {
   personnel_id: string;
@@ -209,8 +210,8 @@ class AnnualRewardService {
 
     try {
       await profileService.recalculateAnnualProfile(personnel_id);
-    } catch {
-      // Không throw error
+    } catch (e) {
+      console.error('recalculateAnnualProfile failed:', e);
     }
 
     return newReward;
@@ -270,8 +271,8 @@ class AnnualRewardService {
 
     try {
       await profileService.recalculateAnnualProfile(reward.quan_nhan_id);
-    } catch {
-      // Không throw error
+    } catch (e) {
+      console.error('recalculateAnnualProfile failed:', e);
     }
 
     return updatedReward;
@@ -311,8 +312,8 @@ class AnnualRewardService {
 
     try {
       await profileService.recalculateAnnualProfile(personnelId);
-    } catch {
-      // Không throw error
+    } catch (e) {
+      console.error('recalculateAnnualProfile failed:', e);
     }
 
     try {
@@ -322,8 +323,8 @@ class AnnualRewardService {
         PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
         adminUsername
       );
-    } catch {
-      // Không throw error
+    } catch (e) {
+      console.error('notifyOnAwardDeleted failed:', e);
     }
 
     return {
@@ -483,8 +484,8 @@ class AnnualRewardService {
             );
             continue;
           }
-        } catch {
-          // Bỏ qua lỗi check duplicate
+        } catch (e) {
+          console.error('annualReward duplicate check failed:', e);
         }
       }
 
@@ -583,13 +584,13 @@ class AnnualRewardService {
       }
 
       return { created: txCreated, updated: txUpdated };
-    }, { timeout: 30000 });
+    }, { timeout: IMPORT_TRANSACTION_TIMEOUT });
 
     for (const personnelId of selectedPersonnelIds) {
       try {
         await profileService.recalculateAnnualProfile(personnelId);
-      } catch {
-        // Không throw error
+      } catch (e) {
+        console.error('recalculateAnnualProfile failed:', e);
       }
     }
 
@@ -1028,7 +1029,7 @@ class AnnualRewardService {
         }
         return { imported: results.length };
       },
-      { timeout: 30000 }
+      { timeout: IMPORT_TRANSACTION_TIMEOUT }
     );
   }
 
@@ -1205,8 +1206,8 @@ class AnnualRewardService {
             errors.push({ personnelId, error: duplicateResult.message });
             continue;
           }
-        } catch {
-          // Log but don't block
+        } catch (e) {
+          console.error('annualReward duplicate check failed:', e);
         }
 
         const existingReward = await tx.danhHieuHangNam.findFirst({
@@ -1283,8 +1284,8 @@ class AnnualRewardService {
     for (const rewardRecord of created) {
       try {
         await profileService.recalculateAnnualProfile(rewardRecord.quan_nhan_id);
-      } catch {
-        // Không throw error
+      } catch (e) {
+        console.error('recalculateAnnualProfile failed:', e);
       }
     }
 

@@ -10,8 +10,22 @@ import { ValidationError, NotFoundError } from '../middlewares/errorHandler';
 import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys } from '../helpers/excelHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
+import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
+
+interface ContributionAwardValidItem {
+  row: number;
+  personnel_id: string;
+  ho_ten: string | null;
+  cap_bac: string | null;
+  chuc_vu: string | null;
+  nam: number;
+  danh_hieu: string;
+  so_quyet_dinh: string;
+  ghi_chu: string | null;
+  history: Array<{ nam: number; danh_hieu: string; so_quyet_dinh: string | null }>;
+}
 
 class ContributionAwardService {
   /**
@@ -144,7 +158,6 @@ class ContributionAwardService {
 
       if (!idValue && !namVal && !danh_hieu_raw) continue;
 
-      // Dòng có ID nhưng không có danh hiệu → bỏ qua, báo lý do
       if (idValue && !danh_hieu_raw) {
         const skipName = hoTenCol ? String(row.getCell(hoTenCol).value ?? '').trim() : '';
         errors.push({
@@ -159,7 +172,6 @@ class ContributionAwardService {
 
       total++;
 
-      // Validate required fields
       const missingFields = [];
       if (!idValue) missingFields.push('ID');
       if (!namVal) missingFields.push('Năm');
@@ -175,7 +187,6 @@ class ContributionAwardService {
         continue;
       }
 
-      // Validate personnel ID
       const personnelId = String(idValue).trim();
       if (!personnelId) {
         errors.push({
@@ -199,7 +210,6 @@ class ContributionAwardService {
         continue;
       }
 
-      // Validate year
       const nam = parseInt(String(namVal), 10);
       if (!Number.isInteger(nam)) {
         errors.push({
@@ -222,7 +232,6 @@ class ContributionAwardService {
         continue;
       }
 
-      // Validate danh_hieu
       const danhHieuUpper = danh_hieu_raw.toUpperCase();
       if (!validDanhHieu.includes(danhHieuUpper)) {
         errors.push({
@@ -236,7 +245,7 @@ class ContributionAwardService {
       }
       const danh_hieu = danhHieuUpper;
 
-      // Validate số quyết định — bắt buộc + phải có trên hệ thống
+      // Decision number must exist in the system (not just non-empty)
       if (!so_quyet_dinh) {
         errors.push({ row: rowNumber, ho_ten, nam, danh_hieu, message: 'Thiếu số quyết định' });
         continue;
@@ -252,7 +261,7 @@ class ContributionAwardService {
         continue;
       }
 
-      // Check duplicate in file — HCBVTQ unique on quan_nhan_id (one per person)
+      // HC BVTQ is a one-time lifetime award — reject if same person appears twice
       if (seenInFile.has(personnelId)) {
         errors.push({
           row: rowNumber,
@@ -265,7 +274,6 @@ class ContributionAwardService {
       }
       seenInFile.add(personnelId);
 
-      // Check pending proposal
       if (pendingPersonnelIds.has(personnelId)) {
         errors.push({
           row: rowNumber,
@@ -277,7 +285,7 @@ class ContributionAwardService {
         continue;
       }
 
-      // Check duplicate in DB — HC BVTQ chỉ nhận 1 lần trong đời
+      // HC BVTQ can only be awarded once per lifetime
       const existingAward = existingAwardsMap.get(personnelId);
       if (existingAward) {
         errors.push({
@@ -290,7 +298,7 @@ class ContributionAwardService {
         continue;
       }
 
-      // Check thời gian giữ chức vụ theo nhóm hệ số
+      // Eligibility: minimum position tenure per salary-band group
       const positionHistories = positionHistoriesMap.get(personnelId) ?? [];
 
       const today = new Date();
@@ -324,7 +332,8 @@ class ContributionAwardService {
       const months0_9_1_0 = getTotalMonths('0.9-1.0');
 
       const isFemale = personnel.gioi_tinh === 'NU';
-      const baseMonths = isFemale ? 80 : 120; // 10 năm nam, ~6.7 năm nữ
+      // 120 months (10 yrs) for male, 80 months (~6.7 yrs) for female
+      const baseMonths = isFemale ? 80 : 120;
 
       let eligible = false;
       if (danh_hieu === 'HCBVTQ_HANG_NHAT') {
@@ -385,7 +394,7 @@ class ContributionAwardService {
    * Confirm import: lưu dữ liệu đã validate vào DB
    * HCBVTQ is one-time-per-lifetime — block if person already has any record
    */
-  async confirmImport(validItems: any[], adminId: string) {
+  async confirmImport(validItems: ContributionAwardValidItem[], adminId: string) {
     const personnelIds = [...new Set(validItems.map(item => item.personnel_id))];
 
     // Parallel: check pending proposals + existing records
@@ -447,7 +456,7 @@ class ContributionAwardService {
         }
         return { imported: results.length };
       },
-      { timeout: 30000 }
+      { timeout: IMPORT_TRANSACTION_TIMEOUT }
     );
   }
 
@@ -461,7 +470,6 @@ class ContributionAwardService {
   ) {
     const where: Record<string, unknown> = {};
 
-    // Filter theo họ tên
     const quanNhanFilter: Record<string, unknown> = {};
     if (filters.ho_ten) {
       quanNhanFilter.ho_ten = { contains: filters.ho_ten, mode: 'insensitive' };
@@ -469,7 +477,7 @@ class ContributionAwardService {
 
     if (filters.don_vi_id) {
       if (filters.include_sub_units) {
-        // Nếu có flag include_sub_units, lấy tất cả đơn vị trực thuộc của cơ quan đơn vị
+        // include_sub_units: expand filter to all DVTT under the parent unit
         const donViTrucThuocIds = await prisma.donViTrucThuoc.findMany({
           where: { co_quan_don_vi_id: filters.don_vi_id },
           select: { id: true },
@@ -492,7 +500,6 @@ class ContributionAwardService {
         };
       }
     } else if (Object.keys(quanNhanFilter).length > 0) {
-      // Nếu không có filter don_vi_id nhưng có filter ho_ten
       where.QuanNhan = quanNhanFilter;
     }
 
@@ -571,7 +578,7 @@ class ContributionAwardService {
       fgColor: { argb: 'FFD3D3D3' },
     };
 
-    // Helper function để convert thoi_gian từ object {years, months} sang số tháng
+    // Convert {years, months} object to total months
     const convertThoiGian = thoiGian => {
       if (!thoiGian) return '';
       if (typeof thoiGian === 'object') {
@@ -678,12 +685,11 @@ class ContributionAwardService {
     const personnelId = award.quan_nhan_id;
     const personnel = award.QuanNhan;
 
-    // Xóa bản ghi (không xóa đề xuất - proposal)
+    // Delete award only, proposals are kept for audit trail
     await prisma.khenThuongCongHien.delete({
       where: { id },
     });
 
-    // Tự động cập nhật lại hồ sơ cống hiến (giống như khi thêm mới)
     try {
       await profileService.recalculateContributionProfile(personnelId);
     } catch (recalcError) {
@@ -695,7 +701,6 @@ class ContributionAwardService {
       });
     }
 
-    // Gửi thông báo cho Manager và quân nhân
     try {
       await notificationHelper.notifyOnAwardDeleted(award, personnel, 'HCBVTQ', adminUsername);
     } catch (notifyError) {

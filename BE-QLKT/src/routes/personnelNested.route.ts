@@ -47,7 +47,7 @@ router.post(
     getResourceId: getResourceId.fromResponse(),
   }),
   (req: Request, res: Response, next: NextFunction) => {
-    // Add personnel_id from URL params to body (CUID string, không phải number)
+    // Add personnel_id from URL params to body (CUID, not a number)
     req.body.personnel_id = req.params.personnelId;
     annualRewardController.createAnnualReward(req, res, next);
   }
@@ -85,7 +85,7 @@ router.post(
     getResourceId: getResourceId.fromResponse(),
   }),
   (req: Request, res: Response, next: NextFunction) => {
-    // Add personnel_id from URL params to body (CUID string, không phải number)
+    // Add personnel_id from URL params to body (CUID, not a number)
     req.body.personnel_id = req.params.personnelId;
     positionHistoryController.createPositionHistory(req, res, next);
   }
@@ -153,7 +153,7 @@ router.post(
   verifyToken,
   requireManager,
   (req: Request, res: Response, next: NextFunction) => {
-    // Add personnel_id from URL params to body (CUID string, không phải number)
+    // Add personnel_id from URL params to body (CUID, not a number)
     req.body.personnel_id = req.params.personnelId;
     scientificAchievementController.createAchievement(req, res, next);
   }

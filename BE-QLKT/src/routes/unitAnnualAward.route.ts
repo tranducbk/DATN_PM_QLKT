@@ -253,7 +253,7 @@ router.get(
   requireAdmin,
   (req: Request, res: Response) => {
     try {
-      const filename = String(req.params.filename ?? '');
+      const filename = path.basename(String(req.params.filename ?? ''));
       const filePath = path.join(uploadDir, filename);
 
       if (!fs.existsSync(filePath)) {

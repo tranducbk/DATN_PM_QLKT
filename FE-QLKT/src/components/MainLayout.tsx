@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { useSocket, SocketConnectionStatus } from '@/hooks/useSocket';
+import { useMobile } from '@/hooks/useMobile';
 import {
   Layout,
   Menu,
@@ -44,10 +45,11 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useTheme } from './ThemeProvider';
 import { useAuth } from '@/contexts/AuthContext';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/api';
 import type { NotificationItem } from '@/lib/api/notifications';
 import { formatDate } from '@/lib/utils';
 import type { UserRole } from '@/lib/types';
+import { FETCH_ALL_LIMIT } from '@/lib/constants/pagination.constants';
 import { ROLES, getRoleInfo } from '@/constants/roles.constants';
 import { getApiErrorMessage, logApiError } from '@/lib/apiError';
 
@@ -58,15 +60,15 @@ interface MainLayoutProps {
   role?: UserRole;
 }
 
-/**
- * Component hiển thị toast khi có thông báo mới qua socket.
- * Phải đặt bên trong <App> để dùng được App.useApp().
- */
 type SocketNotificationPayload = {
   title?: string;
   message?: string;
 };
 
+/**
+ * Component hiển thị toast khi có thông báo mới qua socket.
+ * Phải đặt bên trong <App> để dùng được App.useApp().
+ */
 function NotificationToast({ notification }: { notification: SocketNotificationPayload | null }) {
   const { notification: antNotification } = App.useApp();
 
@@ -83,10 +85,6 @@ function NotificationToast({ notification }: { notification: SocketNotificationP
   return null;
 }
 
-/**
- * Component hiển thị toast khi trạng thái kết nối socket thay đổi.
- * Phải đặt bên trong <App> để dùng được App.useApp().
- */
 /**
  * Component lắng nghe lỗi API toàn cục và hiển thị thông báo.
  * Phải đặt bên trong <App> để dùng được App.useApp().
@@ -113,21 +111,48 @@ function ApiErrorHandler() {
   return null;
 }
 
+/**
+ * Component hiển thị toast khi trạng thái kết nối socket thay đổi.
+ * Phải đặt bên trong <App> để dùng được App.useApp().
+ */
 function ConnectionStatusToast({ status }: { status: SocketConnectionStatus }) {
   const { message } = App.useApp();
-  const prevStatusRef = useRef<SocketConnectionStatus>(status);
+  const prevStatusRef = useRef<SocketConnectionStatus | null>(null);
 
   useEffect(() => {
+    const prev = prevStatusRef.current;
     prevStatusRef.current = status;
-  }, [status]);
+    if (prev === null) return; // skip initial mount
+    if (status === 'disconnected' && prev !== 'disconnected') {
+      message.warning('Mất kết nối máy chủ. Đang thử kết nối lại...');
+    } else if (status === 'connected' && prev !== 'connected') {
+      message.success('Đã kết nối lại máy chủ.');
+    }
+  }, [status, message]);
 
   return null;
+}
+
+function formatNotificationTime(dateString: string | undefined | null): string {
+  if (dateString == null || dateString === '') return '';
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return 'Vừa xong';
+  if (diffMins < 60) return `${diffMins} phút trước`;
+  if (diffHours < 24) return `${diffHours} giờ trước`;
+  if (diffDays < 7) return `${diffDays} ngày trước`;
+  return formatDate(date);
 }
 
 export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const isMobile = useMobile(1024);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -150,12 +175,10 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
     return null;
   });
 
-  // Reset scroll khi chuyển trang
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [pathname]);
 
-  // Cập nhật token khi user thay đổi (login/logout)
   useEffect(() => {
     if (user) {
       const token = localStorage.getItem('accessToken');
@@ -165,7 +188,6 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
     }
   }, [user]);
 
-  // Nhận thông báo real-time qua Socket.IO
   const handleNewNotification = useCallback((notification: unknown) => {
     setNotificationCount(prev => prev + 1);
     const row: NotificationItem =
@@ -176,7 +198,6 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
     setLatestNotification(row as SocketNotificationPayload);
   }, []);
 
-  // Xử lý khi tài khoản đăng nhập ở nơi khác
   const handleForceLogout = useCallback(
     (data: { message: string }) => {
       Modal.warning({
@@ -198,23 +219,7 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
     handleForceLogout
   );
 
-  useEffect(() => {
-    // Kiểm tra kích thước màn hình
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 1024);
-    };
-
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  useEffect(() => {
-    // Lấy số lượng thông báo chưa đọc
-    loadNotificationCount();
-  }, []);
-
-  const loadNotificationCount = async () => {
+  const loadNotificationCount = useCallback(async () => {
     try {
       const response = await apiClient.getUnreadNotificationCount();
       if (response.success && response.data) {
@@ -223,14 +228,18 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
     } catch (error: unknown) {
       logApiError(error, 'Tải số thông báo chưa đọc');
     }
-  };
+  }, []);
 
-  const loadNotifications = async () => {
+  useEffect(() => {
+    loadNotificationCount();
+  }, [loadNotificationCount]);
+
+  const loadNotifications = useCallback(async () => {
     try {
       setNotificationLoading(true);
       const response = await apiClient.getNotifications({
         page: 1,
-        limit: 1000,
+        limit: FETCH_ALL_LIMIT,
       });
       if (response.success && response.data) {
         const list = (response.data.notifications || []) as NotificationItem[];
@@ -241,19 +250,16 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
     } finally {
       setNotificationLoading(false);
     }
-  };
+  }, []);
 
   const handleMarkAsRead = async (id: string, isRead: boolean, link?: string | null) => {
     try {
-      // Only mark as read if not already read
       if (!isRead) {
         await apiClient.markNotificationAsRead(id);
-        // Reload notifications and count
         loadNotifications();
         loadNotificationCount();
       }
 
-      // Navigate to the link if provided
       if (link) {
         router.push(link);
       } else if (actualRole === ROLES.MANAGER) {
@@ -269,7 +275,6 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
   const handleMarkAllAsRead = async () => {
     try {
       await apiClient.markAllNotificationsAsRead();
-      // Reload notifications and count
       loadNotifications();
       loadNotificationCount();
     } catch (error: unknown) {
@@ -287,31 +292,12 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
     }
   };
 
-  const formatNotificationTime = (dateString: string | undefined | null) => {
-    if (dateString == null || dateString === '') {
-      return '';
-    }
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) return 'Vừa xong';
-    if (diffMins < 60) return `${diffMins} phút trước`;
-    if (diffHours < 24) return `${diffHours} giờ trước`;
-    if (diffDays < 7) return `${diffDays} ngày trước`;
-    return formatDate(date);
-  };
-
   const handleLogout = () => {
     setIsLoggingOut(true);
     authLogout();
     window.location.href = '/login';
   };
 
-  // Menu items dựa trên vai trò
   const getMenuItems = () => {
     const roleSlug = actualRole === ROLES.SUPER_ADMIN ? 'super-admin' : actualRole.toLowerCase();
     const baseItems = [
@@ -476,11 +462,10 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
     }
   };
 
-  // Xác định menu key nào nên active dựa vào pathname
   const getSelectedKey = () => {
     if (!pathname) return 'dashboard';
 
-    // Xử lý route awards/bulk trước để ưu tiên (vì nó là sub-route của awards)
+    // Check awards/bulk before awards (sub-route takes priority)
     if (pathname.startsWith('/admin/awards/bulk')) {
       return 'bulk-awards';
     }
@@ -512,7 +497,6 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
       return 'dashboard';
     }
 
-    // Xử lý cho SUPER_ADMIN
     if (pathname.startsWith('/super-admin/accounts')) {
       return 'accounts';
     }
@@ -526,11 +510,10 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
       return 'dashboard';
     }
 
-    // Xử lý cho MANAGER
     if (pathname.startsWith('/manager/profile/edit')) {
       return 'profile-edit';
     }
-    // Xử lý /manager/personnel/[id] — phân biệt hồ sơ của tôi vs quân nhân đơn vị
+    // /manager/personnel/[id] — own profile vs unit personnel
     const managerPersonnelMatch = pathname.match(/^\/manager\/personnel\/([^/]+)/);
     if (managerPersonnelMatch) {
       const viewingId = managerPersonnelMatch[1];
@@ -558,7 +541,6 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
       return 'dashboard';
     }
 
-    // Xử lý cho USER
     if (pathname.startsWith('/user/profile/edit')) {
       return 'profile-edit';
     }
@@ -611,7 +593,7 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
     },
   ];
 
-  const siderContent = (collapsed: boolean) => (
+  const siderContent = () => (
     <div className="h-full flex flex-col">
       <div
         className={`p-5 text-center border-b-2 transition-all ${
@@ -699,13 +681,11 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
         <NotificationToast notification={latestNotification} />
         <ConnectionStatusToast status={connectionStatus} />
         <Layout className="min-h-screen">
-          {/* Desktop Sidebar */}
           {!isMobile && (
             <Sider
               collapsible
               collapsed={collapsed}
               onCollapse={setCollapsed}
-              breakpoint="lg"
               collapsedWidth={80}
               width={250}
               className={theme === 'dark' ? 'bg-gray-800' : 'bg-white'}
@@ -718,28 +698,24 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
                 bottom: 0,
               }}
             >
-              {siderContent(collapsed)}
+              {siderContent()}
             </Sider>
           )}
 
-          {/* Mobile Drawer */}
-          {isMobile && (
-            <Drawer
-              title="Menu"
-              placement="left"
-              onClose={() => setMobileDrawerOpen(false)}
-              open={mobileDrawerOpen}
-              styles={{ body: { padding: 0 } }}
-            >
-              {siderContent(false)}
-            </Drawer>
-          )}
+          <Drawer
+            title="Menu"
+            placement="left"
+            onClose={() => setMobileDrawerOpen(false)}
+            open={isMobile && mobileDrawerOpen}
+            styles={{ body: { padding: 0 } }}
+          >
+            {siderContent()}
+          </Drawer>
 
           <Layout
             className="min-w-0 flex-1"
-            style={{ marginLeft: isMobile ? 0 : collapsed ? 80 : 250 }}
+            style={{ marginLeft: isMobile ? 0 : collapsed ? 80 : 250, transition: 'margin-left 0.2s ease' }}
           >
-            {/* Header */}
             <Header
               className={`shadow-sm px-4 flex items-center justify-between ${
                 theme === 'dark' ? 'bg-gray-800 border-b border-gray-700' : 'bg-white'
@@ -766,7 +742,6 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
               </div>
 
               <div className="flex items-center gap-4">
-                {/* Notification Bell */}
                 <Dropdown
                   menu={{
                     items: notificationLoading
@@ -774,7 +749,7 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
                           {
                             key: 'loading',
                             label: (
-                              <div className="text-center py-12 px-6 min-w-[320px] max-w-[420px] text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg">
+                              <div className="text-center py-12 px-6 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg">
                                 <Spin size="large" className="mb-3" />
                                 <div className="text-sm font-medium">Đang tải thông báo...</div>
                               </div>
@@ -786,7 +761,7 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
                             {
                               key: 'empty',
                               label: (
-                                <div className="text-center py-12 px-6 min-w-[320px] max-w-[420px]">
+                                <div className="text-center py-12 px-6">
                                   <div className="flex flex-col items-center justify-center">
                                     <BellOutlined className="text-4xl text-gray-300 dark:text-gray-600 mb-4" />
                                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
@@ -801,7 +776,6 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
                             },
                           ]
                         : [
-                            // Header với nút "Đọc tất cả"
                             {
                               key: 'notification-header',
                               label: (
@@ -826,7 +800,6 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
                             {
                               type: 'divider' as const,
                             },
-                            // Notification items
                             ...notifications.map(notification => ({
                               key: `notification-${notification.id}`,
                               label: (
@@ -926,7 +899,7 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
                       loadNotificationCount();
                     }
                   }}
-                  overlayStyle={{ maxWidth: '420px', marginTop: '-35px' }}
+                  overlayStyle={{ width: isMobile ? 'calc(100vw - 16px)' : '420px', marginTop: '-35px' }}
                   overlayClassName="notification-dropdown"
                 >
                   <div className="relative cursor-pointer group inline-block p-2 -m-2 rounded-lg">
@@ -939,7 +912,6 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
                   </div>
                 </Dropdown>
 
-                {/* User Dropdown */}
                 <Dropdown
                   menu={{ items: userMenuItems }}
                   placement="bottomRight"
@@ -960,7 +932,7 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
                       {userName.charAt(0).toUpperCase()}
                     </Avatar>
                     <span
-                      className={`text-sm font-semibold ${
+                      className={`hidden sm:block text-sm font-semibold ${
                         theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
                       }`}
                     >
@@ -971,7 +943,6 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
               </div>
             </Header>
 
-            {/* Content */}
             <Content
               className={`${
                 theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'
@@ -980,7 +951,6 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
               {children}
             </Content>
 
-            {/* Footer */}
             <Footer
               className={`text-center py-6 ${
                 theme === 'dark'

@@ -33,6 +33,7 @@ import { formatDate } from '@/lib/utils';
 import { useTheme } from '@/components/ThemeProvider';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
+import { FETCH_ALL_LIMIT } from '@/lib/constants/pagination.constants';
 
 const { Title, Paragraph } = Typography;
 
@@ -70,7 +71,7 @@ export default function ManagerServiceRewardsPage() {
       setLoading(true);
       const [personnelRes, hccsvvRes] = await Promise.all([
         apiClient.getPersonnelById(personnelId),
-        apiClient.getHCCSVV({ limit: 1000 }),
+        apiClient.getHCCSVV({ limit: FETCH_ALL_LIMIT }),
       ]);
 
       if (!personnelRes.success || !personnelRes.data) {
@@ -80,11 +81,8 @@ export default function ManagerServiceRewardsPage() {
 
       setPersonnel(personnelRes.data);
 
-      // Lấy dữ liệu từ API HCCSVV (Huy chương chiến sĩ vẻ vang) - lấy tất cả và filter theo personnelId
-
       const mappedRewards: ServiceReward[] = [];
 
-      // Lấy dữ liệu từ API HCCSVV và filter theo personnelId
       if (hccsvvRes.success && hccsvvRes.data) {
         hccsvvRes.data.forEach((award: any) => {
           if (award.quan_nhan_id === personnelId || award.QuanNhan?.id === personnelId) {

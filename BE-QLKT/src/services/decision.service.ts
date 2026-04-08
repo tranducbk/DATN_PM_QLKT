@@ -37,7 +37,7 @@ interface FileDownloadResult {
 interface CreateDecisionData {
   so_quyet_dinh: string;
   nam: number;
-  ngay_ky: string | Date;
+  ngay_ky: Date;
   nguoi_ky: string;
   file_path?: string | null;
   loai_khen_thuong?: string | null;
@@ -47,7 +47,7 @@ interface CreateDecisionData {
 interface UpdateDecisionData {
   so_quyet_dinh?: string;
   nam?: number;
-  ngay_ky?: string | Date;
+  ngay_ky?: Date;
   nguoi_ky?: string;
   file_path?: string | null;
   loai_khen_thuong?: string | null;

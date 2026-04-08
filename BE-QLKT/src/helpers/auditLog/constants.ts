@@ -136,7 +136,7 @@ const withPrisma = async <T>(callback: (prisma: PrismaClient) => Promise<T>): Pr
   try {
     return await callback(prisma);
   } catch (error) {
-    console.error('[auditLog] withPrisma error:', error);
+    console.error('AuditLog.withPrisma failed', { error });
     return null;
   }
 };
@@ -175,7 +175,7 @@ const asRecord = (value: unknown): Record<string, unknown> | null => {
   return null;
 };
 
-/** Decode filename từ multer (latin1 → utf8) để hiện đúng tiếng Việt */
+/** Decodes multer filename from latin1 to utf8 for proper Vietnamese display. */
 const getFileName = (req: { file?: { originalname?: string } }): string => {
   if (!req.file?.originalname) return FALLBACK.NO_FILE;
   try {

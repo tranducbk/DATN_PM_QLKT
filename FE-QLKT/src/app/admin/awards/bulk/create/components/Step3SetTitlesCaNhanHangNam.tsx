@@ -145,7 +145,6 @@ export function Step3SetTitlesCaNhanHangNam({
         ),
       ]);
 
-      // Xử lý thông tin quân nhân
       const personnelData = personnelResponses.filter(r => r.success).map(r => r.data);
       setPersonnel(personnelData);
 
@@ -168,7 +167,6 @@ export function Step3SetTitlesCaNhanHangNam({
         }
       }
 
-      // Xử lý hồ sơ hằng năm
       const map: Record<string, any> = {};
       profileResults.forEach((r: any) => {
         if (r?.res?.success && r.res.data) map[r.id] = r.res.data;
@@ -187,13 +185,11 @@ export function Step3SetTitlesCaNhanHangNam({
     }
   };
 
-  // Xác định loại danh hiệu đã được chọn trong đề xuất
   const getSelectedDanhHieuType = () => {
     const selectedDanhHieus = titleData.map(item => item.danh_hieu).filter(Boolean);
 
     if (selectedDanhHieus.length === 0) return null;
 
-    // Kiểm tra xem có CSTDCS/CSTT không
     const hasChinh = selectedDanhHieus.some(dh => dh === 'CSTDCS' || dh === 'CSTT');
     const hasBKBQP = selectedDanhHieus.some(dh => dh === 'BKBQP');
     const hasCSTDTQ = selectedDanhHieus.some(dh => dh === 'CSTDTQ');
@@ -201,7 +197,7 @@ export function Step3SetTitlesCaNhanHangNam({
     if (hasChinh) {
       return 'chinh'; // CSTDCS/CSTT
     } else if (hasBKBQP || hasCSTDTQ) {
-      return 'bkbqp_cstdtq'; // BKBQP và CSTDTQ có thể cùng nhau
+      return 'bkbqp_cstdtq'; // BKBQP and CSTDTQ can be awarded together
     }
     return null;
   };
@@ -227,8 +223,6 @@ export function Step3SetTitlesCaNhanHangNam({
       }
     }
 
-    // Nếu đã chọn CSTDCS/CSTT, chỉ hiển thị CSTDCS/CSTT
-    // Nếu đã chọn BKBQP/CSTDTQ, có thể chọn cả BKBQP và CSTDTQ
     if (selectedType === 'chinh') {
       return allOptions.filter(opt => opt.value === 'CSTDCS' || opt.value === 'CSTT');
     } else if (selectedType === 'bkbqp_cstdtq') {
@@ -239,15 +233,12 @@ export function Step3SetTitlesCaNhanHangNam({
   };
 
   const updateTitle = async (id: string, field: string, value: any) => {
-    // Validation: Kiểm tra nếu đang chọn danh hiệu và đã có danh hiệu khác loại
     if (field === 'danh_hieu' && value) {
       const selectedType = getSelectedDanhHieuType();
       const isChinh = value === 'CSTDCS' || value === 'CSTT';
       const isBKBQP_CSTDTQ = value === 'BKBQP' || value === 'CSTDTQ';
 
-      // Kiểm tra xem có mix CSTDCS/CSTT với BKBQP/CSTDTQ không
       if (selectedType === 'chinh' && isBKBQP_CSTDTQ) {
-        // Đã có CSTDCS/CSTT, không cho phép thêm BKBQP/CSTDTQ
         const currentData = titleData.find(d => d.personnel_id === id);
         if (!currentData || !currentData.danh_hieu) {
           message.warning(
@@ -257,7 +248,6 @@ export function Step3SetTitlesCaNhanHangNam({
           return;
         }
       } else if (selectedType === 'bkbqp_cstdtq' && isChinh) {
-        // Đã có BKBQP/CSTDTQ, không cho phép thêm CSTDCS/CSTT
         const currentData = titleData.find(d => d.personnel_id === id);
         if (!currentData || !currentData.danh_hieu) {
           message.warning(
@@ -269,7 +259,6 @@ export function Step3SetTitlesCaNhanHangNam({
       }
     }
 
-    // Kiểm tra đề xuất trùng: cùng năm và cùng danh hiệu
     if (field === 'danh_hieu' && value) {
       const personnelDetail = personnel.find(p => p.id === id);
       if (personnelDetail) {
@@ -282,7 +271,6 @@ export function Step3SetTitlesCaNhanHangNam({
           });
 
           if (value === 'CSTDCS' || value === 'CSTT') {
-            // Kiểm tra thêm cho CSTDCS/CSTT
             const response = await apiClient.checkDuplicate({
               personnel_id: id,
               nam: nam,
@@ -293,7 +281,7 @@ export function Step3SetTitlesCaNhanHangNam({
               message.error(
                 `${personnelDetail.ho_ten}: ${response.data.message}. Không thể đề xuất danh hiệu này.`
               );
-              return; // Không cho phép chọn
+              return;
             }
           }
 
@@ -301,10 +289,10 @@ export function Step3SetTitlesCaNhanHangNam({
             message.error(
               `${personnelDetail.ho_ten}: ${response.data.message}. Không thể đề xuất danh hiệu này.`
             );
-            return; // Không cho phép chọn
+            return;
           }
         } catch (error: unknown) {
-          // Không block nếu lỗi API, chỉ log
+          // Don't block on API error — just log
         }
       }
     }
@@ -529,7 +517,7 @@ export function Step3SetTitlesCaNhanHangNam({
           selectedRowKeys: selectedPersonnelIds,
           onChange: (selectedRowKeys: React.Key[]) => {
             onPersonnelChange(selectedRowKeys as string[]);
-            // Xóa dữ liệu danh hiệu của các quân nhân bị bỏ chọn
+            // Remove title data for deselected personnel
             const newTitleData = titleData.filter(d =>
               (selectedRowKeys as string[]).includes(d.personnel_id || '')
             );
@@ -541,6 +529,7 @@ export function Step3SetTitlesCaNhanHangNam({
           ...DEFAULT_ANTD_TABLE_PAGINATION,
         }}
         bordered
+        scroll={{ x: 'max-content' }}
         locale={{
           emptyText: <Empty description="Không có dữ liệu" />,
         }}
@@ -593,6 +582,7 @@ export function Step3SetTitlesCaNhanHangNam({
                         rowKey={(record, index) => `${record.nam}-${index}`}
                         pagination={false}
                         size="small"
+                        scroll={{ x: 'max-content' }}
                         columns={[
                           {
                             title: 'Năm',
@@ -683,6 +673,7 @@ export function Step3SetTitlesCaNhanHangNam({
                         rowKey={(record, index) => `${record.nam}-${index}`}
                         pagination={false}
                         size="small"
+                        scroll={{ x: 'max-content' }}
                         columns={[
                           {
                             title: 'Năm',

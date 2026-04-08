@@ -13,7 +13,7 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import { getRoleInfo } from '@/constants/roles.constants';
 
 interface ProfileViewFormProps {
-  personnelId?: string; // Optional: nếu không có thì lấy từ token
+  personnelId?: string;
 }
 
 export function ProfileViewForm({
@@ -32,11 +32,10 @@ export function ProfileViewForm({
     try {
       setLoading(true);
 
-      // Nếu có externalPersonnelId thì dùng nó, không thì lấy từ token
+      // Use externalPersonnelId if provided; otherwise decode from JWT token
       let targetPersonnelId = externalPersonnelId;
 
       if (!targetPersonnelId) {
-        // Lấy thông tin user từ token
         const token = localStorage.getItem('accessToken');
         if (!token) {
           message.error('Vui lòng đăng nhập lại');
@@ -44,7 +43,6 @@ export function ProfileViewForm({
           return;
         }
 
-        // Decode JWT để lấy quan_nhan_id
         let quan_nhan_id: string | undefined;
         try {
           const payload = JSON.parse(atob(token.split('.')[1]));
@@ -63,7 +61,6 @@ export function ProfileViewForm({
         targetPersonnelId = String(quan_nhan_id);
       }
 
-      // Lấy thông tin personnel
       const response = await apiClient.getPersonnelById(targetPersonnelId);
 
       if (response.success && response.data) {

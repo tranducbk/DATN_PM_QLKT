@@ -6,7 +6,7 @@ import { getDanhHieuName } from '../../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 
 
-/** Chuẩn hóa req.params / query id (Express có thể là string | string[]) */
+/** Normalizes route/query ID values (Express can pass string or string[]). */
 function routeParamId(v: string | string[] | undefined | null): string | null {
   if (v == null) return null;
   return Array.isArray(v) ? (v[0] ?? null) : v;
@@ -564,13 +564,11 @@ const awards: Record<
 
       return description;
     } catch (error) {
-      console.error('[auditLog] awardBulk CREATE description error:', error);
+      console.error('AuditLogAwards.buildCreateBulkDescription failed', { error });
       return 'Thêm khen thưởng đồng loạt';
     }
   },
 };
-
-/** ─── Shared award‐type description builders ─── */
 
 const AWARD_TYPE_NAMES: Record<string, string> = {
   hccsvv: 'Huy chương Chiến sĩ vẻ vang',
@@ -579,20 +577,19 @@ const AWARD_TYPE_NAMES: Record<string, string> = {
   'contribution-awards': 'Huân chương Bảo vệ Tổ quốc',
 };
 
+type AwardModelAccessor = {
+  findUnique: (args: {
+    where: { id: string };
+    include: { QuanNhan: { select: { ho_ten: true } } };
+  }) => Promise<{ quan_nhan_id: string; nam: number; danh_hieu?: string; QuanNhan?: { ho_ten: string } | null } | null>;
+};
+
 /** Prisma model accessor keyed by resource slug */
-const AWARD_PRISMA_MODEL: Record<
-  string,
-  {
-    findUnique: (args: {
-      where: { id: string };
-      include: { QuanNhan: { select: { ho_ten: true } } };
-    }) => Promise<{ quan_nhan_id: string; nam: number; danh_hieu?: string; QuanNhan?: { ho_ten: string } | null } | null>;
-  }
-> = {
-  hccsvv: prisma.khenThuongHCCSVV as any,
-  'commemorative-medals': prisma.kyNiemChuongVSNXDQDNDVN as any,
-  'military-flag': prisma.huanChuongQuanKyQuyetThang as any,
-  'contribution-awards': prisma.khenThuongCongHien as any,
+const AWARD_PRISMA_MODEL: Record<string, AwardModelAccessor> = {
+  hccsvv: prisma.khenThuongHCCSVV as unknown as AwardModelAccessor,
+  'commemorative-medals': prisma.kyNiemChuongVSNXDQDNDVN as unknown as AwardModelAccessor,
+  'military-flag': prisma.huanChuongQuanKyQuyetThang as unknown as AwardModelAccessor,
+  'contribution-awards': prisma.khenThuongCongHien as unknown as AwardModelAccessor,
 };
 
 function buildAwardTypeHelpers(resource: string): Record<
@@ -657,7 +654,7 @@ function buildAwardTypeHelpers(resource: string): Record<
           if (record) {
             hoTen = record.QuanNhan?.ho_ten || '';
             nam = String(record.nam ?? '');
-            danhHieu = (record as any).danh_hieu || '';
+            danhHieu = record.danh_hieu || '';
           }
         } catch {
           // Ignore error — record may already be deleted
@@ -709,8 +706,6 @@ const hccsvv = buildAwardTypeHelpers('hccsvv');
 const commemorativeMedals = buildAwardTypeHelpers('commemorative-medals');
 const militaryFlag = buildAwardTypeHelpers('military-flag');
 const contributionAwards = buildAwardTypeHelpers('contribution-awards');
-
-/** ── Danh hiệu đơn vị hằng năm ── */
 
 const UNIT_AWARD_LABEL = 'danh hiệu đơn vị hằng năm';
 

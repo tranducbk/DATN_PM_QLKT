@@ -280,12 +280,10 @@ export default function AdminProposalsPage() {
       width: 180,
       align: 'center',
       render: (_, record: Proposal) => {
-        // Chỉ hiển thị số quyết định khi đã duyệt
         if (record.status !== PROPOSAL_STATUS.APPROVED) {
           return <Text type="secondary">-</Text>;
         }
 
-        // Lấy số quyết định từ data_danh_hieu hoặc data_thanh_tich đầu tiên
         let soQuyetDinh: string | null = null;
         if (record.data_danh_hieu && record.data_danh_hieu.length > 0) {
           soQuyetDinh = record.data_danh_hieu[0]?.so_quyet_dinh || null;
@@ -490,7 +488,7 @@ export default function AdminProposalsPage() {
             selectedRowKeys,
             onChange: setSelectedRowKeys,
             getCheckboxProps: record => ({
-              disabled: record.status !== PROPOSAL_STATUS.APPROVED, // Chỉ cho phép chọn đề xuất đã được phê duyệt
+              disabled: record.status !== PROPOSAL_STATUS.APPROVED, // Only approved proposals can be selected
             }),
           }}
           pagination={{
@@ -546,23 +544,19 @@ export default function AdminProposalsPage() {
         onSuccess={async (decision, isNewDecision) => {
           setSelectedDecision(decision);
 
-          // Upload quyết định cho các đề xuất đã chọn
           const selectedProposals = filteredProposals.filter(p => selectedRowKeys.includes(p.id));
 
           try {
             const uploadPromises = selectedProposals.map(async proposal => {
               const formData = new FormData();
 
-              // Thêm số quyết định
               formData.append('so_quyet_dinh', decision.so_quyet_dinh);
 
-              // Thêm ghi chú nếu có
               if (decision.ghi_chu) {
                 formData.append('ghi_chu', decision.ghi_chu);
               }
 
-              // Gọi API upload quyết định cho đề xuất đã được phê duyệt
-              // Lưu ý: Cần tạo endpoint backend /api/proposals/:id/upload-decision
+
               await apiClient.uploadDecision(proposal.id, formData);
             });
 

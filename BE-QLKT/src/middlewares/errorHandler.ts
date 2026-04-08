@@ -86,9 +86,8 @@ const errorHandler = (
     message = 'Token đã hết hạn';
   }
 
-  // Log errors only for server-side failures.
   if (statusCode >= 500) {
-    // intentionally left for future logging
+    console.error(`[500] ${req.method} ${req.path} - ${err.message}`, err.stack);
   }
 
   res.status(statusCode).json({

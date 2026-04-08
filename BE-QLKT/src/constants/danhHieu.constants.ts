@@ -61,32 +61,26 @@ export const THANH_TICH_KHOA_HOC = {
  * Đây là nguồn dữ liệu duy nhất cho việc hiển thị tên danh hiệu
  */
 export const DANH_HIEU_MAP: Record<string, string> = {
-  // Danh hiệu cá nhân hằng năm
   CSTDCS: 'Chiến sĩ thi đua Cơ sở',
   CSTT: 'Chiến sĩ tiên tiến',
   BKBQP: 'Bằng khen của Bộ trưởng Bộ Quốc phòng',
   CSTDTQ: 'Chiến sĩ thi đua Toàn quân',
   BKTTCP: 'Bằng khen của Thủ tướng Chính phủ',
 
-  // Danh hiệu đơn vị hằng năm
   ĐVQT: 'Đơn vị Quyết thắng',
   ĐVTT: 'Đơn vị Tiên tiến',
 
-  // Huy chương Chiến sĩ Vẻ vang (Niên hạn)
   HCCSVV_HANG_BA: 'Huy chương Chiến sĩ Vẻ vang Hạng Ba',
   HCCSVV_HANG_NHI: 'Huy chương Chiến sĩ Vẻ vang Hạng Nhì',
   HCCSVV_HANG_NHAT: 'Huy chương Chiến sĩ Vẻ vang Hạng Nhất',
 
-  // Huân chương Bảo vệ Tổ quốc (Cống hiến)
   HCBVTQ_HANG_BA: 'Huân chương Bảo vệ Tổ quốc Hạng Ba',
   HCBVTQ_HANG_NHI: 'Huân chương Bảo vệ Tổ quốc Hạng Nhì',
   HCBVTQ_HANG_NHAT: 'Huân chương Bảo vệ Tổ quốc Hạng Nhất',
 
-  // Huy chương và Kỷ niệm chương đặc biệt
   HC_QKQT: 'Huy chương Quân kỳ Quyết thắng',
   KNC_VSNXD_QDNDVN: 'Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN',
 
-  // Thành tích khoa học
   DTKH: 'Đề tài khoa học',
   SKKH: 'Sáng kiến khoa học',
 };

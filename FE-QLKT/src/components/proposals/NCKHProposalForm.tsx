@@ -54,7 +54,6 @@ export function NCKHProposalForm({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<NCKHRecord | null>(null);
 
-  // Thêm hoặc sửa record
   const handleSave = () => {
     form.validateFields().then(values => {
       const newRecord: NCKHRecord = {
@@ -77,7 +76,6 @@ export function NCKHProposalForm({
     });
   };
 
-  // Xóa record
   const handleDelete = (key: string) => {
     const newData = dataSource.filter(item => item.key !== key);
     setDataSource(newData);
@@ -85,7 +83,6 @@ export function NCKHProposalForm({
     message.success('Xóa thành công!');
   };
 
-  // Mở modal thêm mới
   const handleAdd = () => {
     setEditingRecord(null);
     form.resetFields();
@@ -97,14 +94,12 @@ export function NCKHProposalForm({
     setIsModalOpen(true);
   };
 
-  // Mở modal chỉnh sửa
   const handleEdit = (record: NCKHRecord) => {
     setEditingRecord(record);
     form.setFieldsValue(record);
     setIsModalOpen(true);
   };
 
-  // Đóng modal
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingRecord(null);

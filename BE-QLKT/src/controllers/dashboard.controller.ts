@@ -78,7 +78,7 @@ function monthsAgo(n: number): Date {
 async function groupQuanNhanByCapBac(
   where: Prisma.QuanNhanWhereInput
 ): Promise<{ cap_bac: string | null; _count: { id: number } }[]> {
-  // @ts-expect-error Prisma groupBy generic overload không khớp với filter cap_bac (ghi chú JSDoc phía trên)
+  // @ts-expect-error Prisma groupBy overload does not match the cap_bac filter
   return prisma.quanNhan.groupBy({
     by: ['cap_bac'],
     where,

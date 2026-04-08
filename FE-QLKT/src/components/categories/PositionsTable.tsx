@@ -70,9 +70,9 @@ export function PositionsTable({ positions, onEdit, onRefresh }: PositionsTableP
       key: 'is_manager',
       width: 120,
       render: (isManager, record) => {
-        // Chỉ hiển thị cột này cho chức vụ của cơ quan đơn vị (không có DonViTrucThuoc)
+        // Hide this column for sub-unit positions (DonViTrucThuoc)
         if (record.DonViTrucThuoc) {
-          return null; // Ẩn cột này cho đơn vị trực thuộc
+          return null;
         }
         return isManager ? <Tag color="green">Có</Tag> : <Tag>Không</Tag>;
       },
@@ -126,6 +126,7 @@ export function PositionsTable({ positions, onEdit, onRefresh }: PositionsTableP
         ...DEFAULT_ANTD_TABLE_PAGINATION,
         showTotal: total => `Tổng số ${total} chức vụ`,
       }}
+      scroll={{ x: 'max-content' }}
       locale={{
         emptyText: <Empty description="Không có dữ liệu" />,
       }}

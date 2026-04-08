@@ -104,6 +104,19 @@ Exported functions phải có JSDoc chuẩn:
 - **Chỉ** comment WHY (hidden constraints, workarounds, business rules)
 - **Không** dùng section dividers (`// ─── ... ───`, `// -----------`)
 
+## Inline Comment Rules (STRICT)
+
+- **Language: English only** — no Vietnamese, no mixed Vietnamese/English
+- **WHY not WHAT**: Delete any comment that just restates what the next line does
+  - ❌ `// Check if personnel exists` before `const p = await prisma.quanNhan.findUnique(...)`
+  - ❌ `// Validate year` before `if (nam < 2000 || nam > 2100)`
+  - ❌ `// Delete record` before `await prisma.x.delete(...)`
+  - ✅ `// DVTT takes priority — increment CQDV only when no DVTT (avoid double-counting)`
+  - ✅ `// Skip initial mount — only fire on subsequent status changes`
+  - ✅ `// HC BVTQ is a one-time lifetime award, no duplicates allowed`
+- **Section headings** like `// BƯỚC 1:`, `// BƯỚC 2:` are banned — extract into functions instead
+- **Short**: ≤ 80 chars; if it needs more, the code needs to be renamed/refactored instead
+
 ## Code Quality Standards
 
 ### Module splitting

@@ -5,7 +5,7 @@ import { Table, Input, Select, Space, Alert, Typography, InputNumber, Divider, E
 import { SearchOutlined, TeamOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
-import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/lib/constants/pagination.constants';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { formatDate } from '@/lib/utils';
 import { ExcelImportSection } from './ExcelImportSection';
@@ -74,7 +74,6 @@ export function Step2SelectPersonnelCaNhanHangNam({
     fetchPersonnel();
   }, []);
 
-  // Đồng bộ localNam với nam từ props
   useEffect(() => {
     setLocalNam(nam);
   }, [nam]);
@@ -84,7 +83,7 @@ export function Step2SelectPersonnelCaNhanHangNam({
       setLoading(true);
       const response = await apiClient.getPersonnel({
         page: 1,
-        limit: 1000,
+        limit: FETCH_ALL_LIMIT,
       });
 
       if (response.success) {
@@ -120,8 +119,8 @@ export function Step2SelectPersonnelCaNhanHangNam({
           const errors: string[] = [];
           const processedPersonnelIds: string[] = [];
 
-          // Cột theo template: STT(0), ID(1), Họ tên(2), Cấp bậc(3), Chức vụ(4), Năm(5), Danh hiệu(6),
-          // BKBQP(7), CSTDTQ(8), BKTTCP(9), Số QĐ danh hiệu(10), Số QĐ BKBQP(11), Số QĐ CSTDTQ(12), Số QĐ BKTTCP(13), Ghi chú(14)
+          // Column order from template: STT(0), ID(1), Name(2), Rank(3), Position(4), Year(5), Title(6),
+          // BKBQP(7), CSTDTQ(8), BKTTCP(9), Decision no. title(10), Decision no. BKBQP(11), Decision no. CSTDTQ(12), Decision no. BKTTCP(13), Note(14)
           const seenKeys = new Set<string>();
 
           dataRows.forEach((row: any, index: number) => {
@@ -140,8 +139,7 @@ export function Step2SelectPersonnelCaNhanHangNam({
             const soQdBkttcp = row[13]?.toString().trim() || '';
             const ghiChu = row[14]?.toString().trim() || '';
 
-            // Bỏ qua dòng trống hoặc dòng ghi chú
-            if (!personnelId && !nam && !danhHieu) return;
+            if (!personnelId && !nam && !danhHieu) return; // skip blank/comment rows
 
             if (!personnelId) {
               errors.push(`Dòng ${rowNumber}: Thiếu ID quân nhân`);
@@ -172,7 +170,6 @@ export function Step2SelectPersonnelCaNhanHangNam({
               return;
             }
 
-            // Kiểm tra quân nhân có trong danh sách đã load không
             const matchingPersonnel = personnel.find((p: any) => p.id === personnelId);
             if (!matchingPersonnel) {
               errors.push(
@@ -181,7 +178,7 @@ export function Step2SelectPersonnelCaNhanHangNam({
               return;
             }
 
-            // Kiểm tra trùng trong cùng file (cùng người cùng năm cùng danh hiệu)
+            // Reject duplicate rows within the same file (same person + year + title)
             const key = `${personnelId}_${namInt}_${danhHieu}`;
             if (seenKeys.has(key)) {
               errors.push(
@@ -235,7 +232,6 @@ export function Step2SelectPersonnelCaNhanHangNam({
   };
 
   const handleImportSuccess = (result: any) => {
-    // Cập nhật danh sách quân nhân đã chọn và dữ liệu danh hiệu
     if (result.selectedPersonnelIds && result.selectedPersonnelIds.length > 0) {
       onPersonnelChange(result.selectedPersonnelIds);
     }
@@ -249,7 +245,7 @@ export function Step2SelectPersonnelCaNhanHangNam({
             award.personnel_id ??
             award.co_quan_don_vi_id ??
             award.don_vi_truc_thuoc_id ??
-            '' // fallback nếu tất cả đều null/undefined
+            '' // fallback if all ID fields are null/undefined
         ),
         danh_hieu: award.danh_hieu,
         nam: award.nam,
@@ -266,10 +262,10 @@ export function Step2SelectPersonnelCaNhanHangNam({
       }
     }
 
-    // Chuyển sang bước 3 (Review) để xem trước dữ liệu trước khi xác nhận
+    // Advance to Step 3 (Review) so the user can verify before confirming
     if (onNextStep) {
       setTimeout(() => {
-        onNextStep(); // Chuyển sang bước 3 — dừng lại ở đây để review
+        onNextStep();
       }, 500);
     }
   };
@@ -407,7 +403,7 @@ export function Step2SelectPersonnelCaNhanHangNam({
           <InputNumber
             value={localNam}
             onChange={value => {
-              // Cho phép null/undefined để người dùng có thể xóa và nhập lại
+              // Allow null so the user can clear and retype without validation errors
               if (value === null || value === undefined) {
                 setLocalNam(null);
                 return;
@@ -415,15 +411,13 @@ export function Step2SelectPersonnelCaNhanHangNam({
 
               const intValue = Math.floor(Number(value));
 
-              // Nếu giá trị hợp lệ, cập nhật local state
               if (!isNaN(intValue)) {
-                // Cho phép nhập bất kỳ số nào trong quá trình nhập (kể cả < 1900)
-                // Chỉ giới hạn khi blur
+                // Allow any value while typing; clamp only on blur
                 setLocalNam(intValue);
               }
             }}
             onBlur={e => {
-              // Khi blur, đảm bảo giá trị trong khoảng hợp lệ và cập nhật lên parent
+              // Clamp to valid range and propagate to parent on blur
               const currentValue = localNam;
               if (currentValue === null || currentValue === undefined || currentValue < 1900) {
                 const finalValue = 1900;
@@ -434,7 +428,6 @@ export function Step2SelectPersonnelCaNhanHangNam({
                 setLocalNam(finalValue);
                 onNamChange(finalValue);
               } else {
-                // Giá trị hợp lệ, cập nhật lên parent
                 onNamChange(currentValue);
               }
             }}
@@ -498,6 +491,7 @@ export function Step2SelectPersonnelCaNhanHangNam({
           showTotal: total => `Tổng số ${total} quân nhân`,
         }}
         bordered
+        scroll={{ x: 'max-content' }}
         locale={{
           emptyText: <Empty description="Không có dữ liệu quân nhân" />,
         }}

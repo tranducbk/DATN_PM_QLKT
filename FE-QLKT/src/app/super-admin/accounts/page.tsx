@@ -59,7 +59,6 @@ export default function AccountsListPage() {
   const [roleFilter, setRoleFilter] = useState<string | undefined>(undefined);
 
   const fetchAccounts = async (page = 1, pageSize = DEFAULT_PAGE_SIZE, search = '', role?: string) => {
-    // Chỉ set loading ban đầu, khi chuyển trang thì dùng tableLoading
     if (accounts.length === 0 || page === 1) {
       setLoading(true);
     } else {
@@ -95,8 +94,7 @@ export default function AccountsListPage() {
 
   const handleDelete = async (record: SuperAdminAccountRow) => {
     try {
-      // Nếu tài khoản có liên kết quân nhân, xóa quân nhân (cascade delete tất cả)
-      // Nếu không có quân nhân, chỉ xóa tài khoản
+      // Deleting personnel cascades all related data; deleting an account-only row is safe
       if (record.quan_nhan_id) {
         const response = await apiClient.deletePersonnel(record.quan_nhan_id);
         if (response.success) {
@@ -142,7 +140,7 @@ export default function AccountsListPage() {
 
   useEffect(() => {
     fetchAccounts(1, 10);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only run on mount
   }, []);
 
   const columns: ColumnsType<SuperAdminAccountRow> = [

@@ -85,7 +85,6 @@ export default function SuperAdminAddAwardsPage() {
   const [decisionModalVisible, setDecisionModalVisible] = useState(false);
   const [selectedPersonnelForDecision, setSelectedPersonnelForDecision] = useState<string[]>([]);
 
-  // Steps config - 6 bước (giống admin, nhưng chỉ có 1 option HCCSVV)
   const steps = [
     { title: 'Chọn loại', icon: <TrophyOutlined /> },
     { title: 'Chọn quân nhân', icon: <TeamOutlined /> },
@@ -95,7 +94,6 @@ export default function SuperAdminAddAwardsPage() {
     { title: 'Thêm khen thưởng', icon: <CheckCircleOutlined /> },
   ];
 
-  // Reset state khi quay lại bước chọn loại
   useEffect(() => {
     if (currentStep === 0) {
       setSelectedPersonnelIds([]);
@@ -128,7 +126,7 @@ export default function SuperAdminAddAwardsPage() {
   const canProceedToNextStep = () => {
     switch (currentStep) {
       case 0:
-        return true; // Chọn loại - chỉ có HCCSVV
+        return true;
       case 1:
         return selectedPersonnelIds.length > 0;
       case 2: {
@@ -139,7 +137,7 @@ export default function SuperAdminAddAwardsPage() {
       case 3:
         return true; // Review step
       case 4: {
-        // Bắt buộc nhập số quyết định cho tất cả quân nhân
+        // All personnel must have a decision number before submitting
         return selectedPersonnelIds.every(id => decisionDataMap[id]?.so_quyet_dinh?.trim());
       }
       default:
@@ -179,7 +177,6 @@ export default function SuperAdminAddAwardsPage() {
   // Handle submit
   const handleSubmit = async () => {
     try {
-      // Validate số quyết định
       const missingDecision = selectedPersonnelIds.some(
         id => !decisionDataMap[id]?.so_quyet_dinh?.trim()
       );
@@ -192,7 +189,6 @@ export default function SuperAdminAddAwardsPage() {
 
       setLoading(true);
 
-      // Merge decision data vào titleData
       const titleDataWithDecisions = titleData.map(item => {
         const personnelId = item.personnel_id;
         const decisionInfo = decisionDataMap[personnelId];
@@ -202,7 +198,6 @@ export default function SuperAdminAddAwardsPage() {
         };
       });
 
-      // Tạo FormData
       const formData = new FormData();
       formData.append('type', 'NIEN_HAN');
       formData.append('nam', String(nam));
@@ -249,7 +244,7 @@ export default function SuperAdminAddAwardsPage() {
   // Render step content
   const renderStepContent = () => {
     switch (currentStep) {
-      case 0: // Step 1: Chọn loại khen thưởng (chỉ có HCCSVV)
+      case 0:
         return (
           <div>
             <Alert

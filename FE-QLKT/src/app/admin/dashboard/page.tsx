@@ -82,7 +82,7 @@ export default function AdminDashboard() {
       try {
         setLoading(true);
 
-        // Lấy tên hiển thị từ AuthContext (ưu tiên họ tên, rồi username, rồi vai trò)
+        // Priority: full name > username > role label
         if (user) {
           const name = (user.ho_ten || '').trim();
           const username = (user.username || '').trim();

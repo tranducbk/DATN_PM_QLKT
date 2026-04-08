@@ -149,7 +149,7 @@ export function ApproveModal({ visible, proposal, onClose, onSuccess }: ApproveM
     }
   };
 
-  // Handle submit — BE yêu cầu multipart: JSON data_* + đúng field so_quyet_dinh_* theo loại
+  // BE expects multipart: JSON data_* fields + the correct so_quyet_dinh_* field for each award type
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();

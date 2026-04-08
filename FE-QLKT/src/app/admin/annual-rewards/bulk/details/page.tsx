@@ -46,11 +46,11 @@ interface PersonnelRewardData {
   cap_bac?: string;
   chuc_vu?: string;
   so_quyet_dinh?: string;
-  cap_bac_edit?: string; // Cấp bậc tại thời điểm đề nghị (có thể chỉnh sửa)
-  chuc_vu_edit?: string; // Chức vụ tại thời điểm đề nghị (có thể chỉnh sửa)
-  isEligible?: boolean; // Có thể thêm khen thưởng không
-  has_reward?: boolean; // Đã có khen thưởng
-  has_proposal?: boolean; // Đang có đề xuất
+  cap_bac_edit?: string; // Rank at the time of nomination (editable)
+  chuc_vu_edit?: string; // Position at the time of nomination (editable)
+  isEligible?: boolean; // Whether a reward can be added
+  has_reward?: boolean; // Already has a reward
+  has_proposal?: boolean; // Has a pending proposal
   CoQuanDonVi?: { id: string; ten_don_vi: string };
   DonViTrucThuoc?: {
     id: string;
@@ -75,7 +75,6 @@ export default function BulkRewardDetailsPage() {
   const [editingPersonnelId, setEditingPersonnelId] = useState<string | null>(null);
 
   useEffect(() => {
-    // Lấy dữ liệu từ query params
     const personnelIdsParam = searchParams?.get('personnel_ids');
     const eligibleIdsParam = searchParams?.get('eligible_ids');
     const namParam = searchParams?.get('nam');
@@ -92,7 +91,7 @@ export default function BulkRewardDetailsPage() {
       const personnelIds = JSON.parse(decodeURIComponent(personnelIdsParam));
       const eligibleIds = eligibleIdsParam
         ? JSON.parse(decodeURIComponent(eligibleIdsParam))
-        : personnelIds; // Fallback: nếu không có eligible_ids thì dùng tất cả
+        : personnelIds; // Fallback: if no eligible_ids, treat all as eligible
 
       const nam = parseInt(namParam);
       const danhHieu = danhHieuParam;
@@ -103,10 +102,10 @@ export default function BulkRewardDetailsPage() {
         setCheckResults(checkResultsData);
       }
 
-      // Lưu danh sách eligible để dùng khi submit
+      // Keep eligible list for submit step
       setEligiblePersonnelIds(eligibleIds);
 
-      // Khởi tạo dữ liệu cho TẤT CẢ quân nhân đã chọn (không chỉ eligible)
+      // Init data for ALL selected personnel, not just eligible ones
       const initialData: PersonnelRewardData[] = personnelIds.map((id: string) => {
         const result = checkResultsData?.results?.find((r: any) => r.personnel_id === id);
         const isEligible = eligibleIds.includes(id);
@@ -118,7 +117,7 @@ export default function BulkRewardDetailsPage() {
           chuc_vu: '',
           cap_bac_edit: '',
           chuc_vu_edit: '',
-          isEligible, // Đánh dấu quân nhân có thể thêm khen thưởng
+          isEligible,
           has_reward: result?.has_reward || false,
           has_proposal: result?.has_proposal || false,
         };
@@ -210,7 +209,7 @@ export default function BulkRewardDetailsPage() {
       const formValues = form.getFieldsValue();
       const file = fileList.length > 0 ? (fileList[0].originFileObj as File) : undefined;
 
-      // Chỉ gửi các quân nhân eligible (có thể thêm khen thưởng)
+      // Submit only eligible personnel
       const eligiblePersonnel = personnelData.filter(p => p.isEligible);
 
       if (eligiblePersonnel.length === 0) {
@@ -218,7 +217,7 @@ export default function BulkRewardDetailsPage() {
         return;
       }
 
-      // Chỉ lấy các quân nhân có số quyết định (đã được set từ modal)
+      // Only include personnel with a decision number (set in the modal)
       const personnelWithDecision = eligiblePersonnel.filter(
         p => p.so_quyet_dinh && p.so_quyet_dinh.trim() !== ''
       );
@@ -228,7 +227,6 @@ export default function BulkRewardDetailsPage() {
         return;
       }
 
-      // Tạo mảng personnel_rewards_data với thông tin riêng cho từng quân nhân
       const personnelRewardsData = personnelWithDecision.map(p => ({
         personnel_id: p.personnel_id,
         so_quyet_dinh: p.so_quyet_dinh || '',
@@ -236,7 +234,6 @@ export default function BulkRewardDetailsPage() {
         chuc_vu: p.chuc_vu_edit || '',
       }));
 
-      // Gửi chỉ các quân nhân có số quyết định
       const personnelIds = personnelWithDecision.map(p => p.personnel_id);
 
       const result = await apiClient.bulkCreateAnnualRewards({
@@ -271,18 +268,16 @@ export default function BulkRewardDetailsPage() {
     );
   };
 
-  // Row selection cho checkbox
   const rowSelection = {
     selectedRowKeys,
     onChange: (newSelectedRowKeys: React.Key[]) => {
       setSelectedRowKeys(newSelectedRowKeys);
     },
     getCheckboxProps: (record: PersonnelRewardData) => ({
-      disabled: !record.isEligible, // Disable checkbox cho quân nhân không eligible
+      disabled: !record.isEligible, // Ineligible personnel cannot be selected
     }),
   };
 
-  // Xử lý khi chọn quyết định từ modal
   const handleDecisionSuccess = (decision: any) => {
     if (selectedRowKeys.length === 0 && !editingPersonnelId) {
       message.warning('Vui lòng chọn ít nhất một quân nhân');
@@ -294,7 +289,6 @@ export default function BulkRewardDetailsPage() {
       ? [editingPersonnelId]
       : (selectedRowKeys as string[]);
 
-    // Áp dụng số quyết định cho các quân nhân đã chọn
     setPersonnelData(prev =>
       prev.map(item => {
         if (personnelIdsToUpdate.includes(item.personnel_id)) {
@@ -304,7 +298,7 @@ export default function BulkRewardDetailsPage() {
       })
     );
 
-    // Tự động chọn các quân nhân đã có số quyết định
+    // Auto-select personnel that now have a decision number
     setSelectedRowKeys(prev => {
       const combined = [...prev, ...personnelIdsToUpdate];
       const uniqueKeys = Array.from(new Set(combined));
@@ -463,13 +457,11 @@ export default function BulkRewardDetailsPage() {
                 e.preventDefault();
                 e.stopPropagation();
 
-                // Nếu click vào số quyết định, có thể mở modal để thay đổi hoặc tải file
-                // Ở đây cho phép click để thay đổi (hoặc có thể thêm menu để chọn)
                 if (e.ctrlKey || e.metaKey) {
-                  // Ctrl/Cmd + Click để tải file
+                  // Ctrl/Cmd + Click to download file
                   await downloadDecisionFile(soQuyetDinh);
                 } else {
-                  // Click thường để thay đổi số quyết định
+                  // Regular click to change decision number
                   if (!record.isEligible) {
                     message.warning('Quân nhân này không thể thêm khen thưởng');
                     return;

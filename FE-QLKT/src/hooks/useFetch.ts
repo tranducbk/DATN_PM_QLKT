@@ -75,14 +75,14 @@ export function useFetch<T = unknown>(
       setState({ data: null, loading: false, error: errMsg });
       if (showError) message.error(errMsg);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ đổi khi deps thay đổi
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-run only when deps change
   }, deps);
 
   useEffect(() => {
     if (immediate) {
       execute();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ khi execute đổi
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when execute changes
   }, [execute]);
 
   return {
@@ -140,7 +140,7 @@ export function useMutation<TInput = unknown, TOutput = unknown>(
         setLoading(false);
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ mutator
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mutator only
     [mutator]
   );
 

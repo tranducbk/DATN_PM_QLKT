@@ -18,7 +18,10 @@ import type { ColumnsType } from 'antd/es/table';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { formatDate } from '@/lib/utils';
 import { apiClient } from '@/lib/apiClient';
-import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
+import {
+  DEFAULT_ANTD_TABLE_PAGINATION,
+  FETCH_ALL_LIMIT,
+} from '@/lib/constants/pagination.constants';
 import { ExcelImportSection } from './ExcelImportSection';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 import { PROPOSAL_STATUS } from '@/constants/proposal.constants';
@@ -101,7 +104,6 @@ export function Step2SelectPersonnelCongHien({
   }, []);
 
   useEffect(() => {
-    // Fetch lịch sử chức vụ cho tất cả quân nhân khi personnel thay đổi
     if (personnel.length > 0) {
       fetchPositionHistories(personnel);
       fetchContributionProfiles(personnel.map(p => p.id));
@@ -109,7 +111,6 @@ export function Step2SelectPersonnelCongHien({
     }
   }, [personnel.length]);
 
-  // Đồng bộ localNam với nam từ props
   useEffect(() => {
     setLocalNam(nam);
   }, [nam]);
@@ -119,7 +120,7 @@ export function Step2SelectPersonnelCongHien({
       setLoading(true);
       const response = await apiClient.getPersonnel({
         page: 1,
-        limit: 1000,
+        limit: FETCH_ALL_LIMIT,
       });
 
       if (response.success) {
@@ -137,7 +138,6 @@ export function Step2SelectPersonnelCongHien({
     try {
       const historiesMap: Record<string, any[]> = {};
 
-      // Fetch lịch sử chức vụ cho mỗi quân nhân
       await Promise.all(
         personnelList.map(async p => {
           if (p.id) {
@@ -198,7 +198,7 @@ export function Step2SelectPersonnelCongHien({
     }
   };
 
-  // Tính tổng thời gian (theo tháng) cho một nhóm hệ số từ API data
+  /** Computes total service months for a coefficient group from API data. */
   const getTotalMonthsByGroup = (personnelId: string, group: '0.7' | '0.8' | '0.9-1.0'): number => {
     const profile = contributionProfiles[personnelId];
     if (!profile) return 0;
@@ -230,7 +230,7 @@ export function Step2SelectPersonnelCongHien({
     }
   };
 
-  // Kiểm tra quân nhân có đủ điều kiện cho hạng huân chương bảo vệ tổ quốc không từ API data
+  /** Checks whether a personnel meets the service-time requirement for a given HCBVTQ rank. */
   const checkEligibleForRank = (
     personnelId: string,
     rank: 'HANG_NHAT' | 'HANG_NHI' | 'HANG_BA'
@@ -249,7 +249,7 @@ export function Step2SelectPersonnelCongHien({
     return false;
   };
 
-  // Lấy huân chương cao nhất mà quân nhân đủ điều kiện từ API data
+  /** Returns the highest HCBVTQ rank the personnel qualifies for. */
   const getHighestEligibleAward = (personnelId: string): string | null => {
     if (checkEligibleForRank(personnelId, 'HANG_NHAT')) {
       return 'HCBVTQ_HANG_NHAT';
@@ -287,29 +287,26 @@ export function Step2SelectPersonnelCongHien({
     return matchesSearch && matchesUnit;
   });
 
-  // Hàm lấy priority sắp xếp: 0=đủ điều kiện, 1=đang chờ duyệt, 2=đã nhận, 3=không đủ điều kiện
+  // Sort priority: 0=eligible, 1=pending, 2=already received, 3=ineligible
   const getSortPriority = (record: Personnel): number => {
     const ineligible = ineligiblePersonnel.find(i => i.personnelId === record.id);
 
-    // Kiểm tra đã nhận hoặc đang chờ duyệt
     if (ineligible) {
-      if (ineligible.status === PROPOSAL_STATUS.PENDING) return 1; // Đang chờ duyệt
-      if (ineligible.status === PROPOSAL_STATUS.APPROVED) return 2; // Đã nhận
+      if (ineligible.status === PROPOSAL_STATUS.PENDING) return 1; // pending approval
+      if (ineligible.status === PROPOSAL_STATUS.APPROVED) return 2; // already received
     }
 
-    // Kiểm tra giới tính
     const missingGender =
       !record.gioi_tinh || (record.gioi_tinh !== 'NAM' && record.gioi_tinh !== 'NU');
     if (missingGender) return 3;
 
-    // Kiểm tra đủ điều kiện
     const highestAward = getHighestEligibleAward(record.id);
-    if (highestAward) return 0; // Đủ điều kiện
+    if (highestAward) return 0; // eligible
 
-    return 3; // Không đủ điều kiện
+    return 3; // ineligible
   };
 
-  // Sắp xếp: đủ điều kiện → đang chờ duyệt → đã nhận → không đủ điều kiện
+  // Sort: eligible → pending → already received → ineligible
   const sortedPersonnel = [...filteredPersonnel].sort((a, b) => {
     return getSortPriority(a) - getSortPriority(b);
   });
@@ -440,7 +437,6 @@ export function Step2SelectPersonnelCongHien({
           }
         }
 
-        // Kiểm tra giới tính
         const missingGender =
           !record.gioi_tinh || (record.gioi_tinh !== 'NAM' && record.gioi_tinh !== 'NU');
         if (missingGender) {
@@ -451,7 +447,7 @@ export function Step2SelectPersonnelCongHien({
           );
         }
 
-        // Lấy huân chương cao nhất đủ điều kiện
+        // Highest award the personnel currently qualifies for
         const highestAward = getHighestEligibleAward(record.id);
         if (highestAward) {
           const awardLabels: Record<string, string> = {
@@ -480,26 +476,23 @@ export function Step2SelectPersonnelCongHien({
           const data = new Uint8Array(e.target?.result as ArrayBuffer);
           const workbook = XLSX.read(data, { type: 'array' });
 
-          // Lấy sheet đầu tiên
           const sheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[sheetName];
 
-          // Chuyển đổi sang JSON
           const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
           if (jsonData.length < 2) {
             throw new Error('File Excel không có dữ liệu hoặc thiếu header');
           }
 
-          // Bỏ qua header row
-          const dataRows = jsonData.slice(1);
+          const dataRows = jsonData.slice(1); // skip header row
 
           const titleData: any[] = [];
           const errors: string[] = [];
           const processedPersonnelIds: string[] = [];
 
           dataRows.forEach((row: any, index: number) => {
-            const rowNumber = index + 2; // +2 vì bỏ header và index từ 0
+            const rowNumber = index + 2; // +2: skip header + 0-based index
 
             // Validate required fields
             const hoTen = row[0]?.toString().trim();
@@ -524,35 +517,20 @@ export function Step2SelectPersonnelCongHien({
               return;
             }
 
-            // Validate năm
             const namInt = parseInt(nam);
 
-            // Tìm personnel ID dựa trên họ tên và ngày sinh (ngày sinh optional)
+            // Match by name + DOB (DOB optional — used to disambiguate duplicate names)
             let matchingPersonnel;
             if (ngaySinh) {
-              // Nếu có ngày sinh, so sánh cả tên và ngày sinh
               matchingPersonnel = personnel.find(p => {
-                const personnelName = p.ho_ten.toLowerCase().trim();
-                const excelName = hoTen.toLowerCase().trim();
-
-                // So sánh tên chính xác
-                const nameMatch = personnelName === excelName;
-
-                // So sánh ngày sinh
+                const nameMatch = p.ho_ten.toLowerCase().trim() === hoTen.toLowerCase().trim();
                 const personnelBirth = p.ngay_sinh ? formatDate(p.ngay_sinh) : '';
-                const excelBirth = ngaySinh;
-
-                return nameMatch && personnelBirth === excelBirth;
+                return nameMatch && personnelBirth === ngaySinh;
               });
             } else {
-              // Nếu không có ngày sinh, chỉ so sánh tên và lấy kết quả đầu tiên
-              matchingPersonnel = personnel.find(p => {
-                const personnelName = p.ho_ten.toLowerCase().trim();
-                const excelName = hoTen.toLowerCase().trim();
-
-                // So sánh tên chính xác
-                return personnelName === excelName;
-              });
+              matchingPersonnel = personnel.find(
+                p => p.ho_ten.toLowerCase().trim() === hoTen.toLowerCase().trim()
+              );
             }
 
             if (!matchingPersonnel) {
@@ -563,7 +541,6 @@ export function Step2SelectPersonnelCongHien({
               return;
             }
 
-            // Thêm vào danh sách
             processedPersonnelIds.push(matchingPersonnel.id);
 
             titleData.push({
@@ -572,21 +549,21 @@ export function Step2SelectPersonnelCongHien({
               nam: namInt,
               cap_bac: capBac,
               chuc_vu: chucVu,
-              ghi_chu: '', // Không có ghi chú trong Excel
+              ghi_chu: '',
             });
           });
 
           // Remove duplicates from personnel IDs
           const uniquePersonnelIds = Array.from(new Set(processedPersonnelIds));
 
-          // Kiểm tra trùng lặp trước khi resolve
+          // Reject early if any row duplicates an existing proposal
           try {
             for (const item of titleData) {
               const checkResponse = await apiClient.checkDuplicate({
-                  personnel_id: item.personnel_id,
-                  nam: item.nam,
-                  danh_hieu: item.danh_hieu,
-                  proposal_type: 'CONG_HIEN',
+                personnel_id: item.personnel_id,
+                nam: item.nam,
+                danh_hieu: item.danh_hieu,
+                proposal_type: 'CONG_HIEN',
               });
 
               if (checkResponse.data.success === false) {
@@ -625,7 +602,6 @@ export function Step2SelectPersonnelCongHien({
   };
 
   const handleImportSuccess = async (result: any) => {
-    // Cập nhật danh sách quân nhân đã chọn
     if (result.selectedPersonnelIds && result.selectedPersonnelIds.length > 0) {
       onPersonnelChange(result.selectedPersonnelIds);
 
@@ -638,7 +614,7 @@ export function Step2SelectPersonnelCongHien({
               award.personnel_id ??
               award.co_quan_don_vi_id ??
               award.don_vi_truc_thuoc_id ??
-              '' // fallback nếu tất cả đều null/undefined
+              '' // fallback if all ID fields are null/undefined
           ),
           danh_hieu: award.danh_hieu,
           nam: award.nam,
@@ -656,10 +632,10 @@ export function Step2SelectPersonnelCongHien({
       }
     }
 
-    // Chuyển sang bước 3 (Review) để xem trước dữ liệu trước khi xác nhận
+    // Advance to Step 3 (Review) so the user can verify before confirming
     if (onNextStep) {
       setTimeout(() => {
-        onNextStep(); // Chuyển sang bước 3 — dừng lại ở đây để review
+        onNextStep();
       }, 500);
     }
   };
@@ -774,7 +750,9 @@ export function Step2SelectPersonnelCongHien({
             templateFileName="mau_import_hcbvtq"
             onImportSuccess={handleImportSuccess}
             selectedPersonnelIds={selectedPersonnelIds}
-            selectedNames={selectedPersonnelIds.map(id => personnel.find(p => p.id === id)?.ho_ten || '')}
+            selectedNames={selectedPersonnelIds.map(
+              id => personnel.find(p => p.id === id)?.ho_ten || ''
+            )}
             entityLabel="quân nhân"
             localProcessing={true}
             onLocalProcess={handleLocalExcelProcess}
@@ -782,7 +760,6 @@ export function Step2SelectPersonnelCongHien({
             reviewPath="/admin/awards/bulk/import-review-hcbvtq"
             sessionStorageKey="importPreviewDataHCBVTQ"
           />
-
         </>
       )}
 
@@ -792,7 +769,7 @@ export function Step2SelectPersonnelCongHien({
           <InputNumber
             value={localNam}
             onChange={value => {
-              // Cho phép null/undefined để người dùng có thể xóa và nhập lại
+              // Allow null so the user can clear and retype without validation errors
               if (value === null || value === undefined) {
                 setLocalNam(null);
                 return;
@@ -800,15 +777,13 @@ export function Step2SelectPersonnelCongHien({
 
               const intValue = Math.floor(Number(value));
 
-              // Nếu giá trị hợp lệ, cập nhật local state
               if (!isNaN(intValue)) {
-                // Cho phép nhập bất kỳ số nào trong quá trình nhập (kể cả < 1900)
-                // Chỉ giới hạn khi blur
+                // Allow any value while typing; clamp only on blur
                 setLocalNam(intValue);
               }
             }}
             onBlur={e => {
-              // Khi blur, đảm bảo giá trị trong khoảng hợp lệ và cập nhật lên parent
+              // Clamp to valid range and propagate to parent on blur
               const currentValue = localNam;
               if (currentValue === null || currentValue === undefined || currentValue < 1900) {
                 const finalValue = 1900;
@@ -819,7 +794,6 @@ export function Step2SelectPersonnelCongHien({
                 setLocalNam(finalValue);
                 onNamChange(finalValue);
               } else {
-                // Giá trị hợp lệ, cập nhật lên parent
                 onNamChange(currentValue);
               }
             }}
@@ -940,7 +914,7 @@ export function Step2SelectPersonnelCongHien({
         rowSelection={rowSelection}
         loading={loading || checkingEligibility}
         rowClassName={record => {
-          // Tô màu dòng quân nhân chưa có giới tính hoặc không đủ điều kiện
+          // Highlight rows missing gender or ineligible for award
           const missingGender =
             !record.gioi_tinh || (record.gioi_tinh !== 'NAM' && record.gioi_tinh !== 'NU');
           const ineligible = ineligiblePersonnel.some(i => i.personnelId === record.id);

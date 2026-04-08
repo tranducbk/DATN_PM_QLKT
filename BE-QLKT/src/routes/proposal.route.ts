@@ -33,7 +33,7 @@ router.post(
   checkRole([ROLES.MANAGER, ROLES.ADMIN]),
   writeLimiter,
   upload.fields([
-    { name: 'attached_files' }, // Không giới hạn số lượng file
+    { name: 'attached_files' }, // No file count limit
   ]),
   auditLog({
     action: AUDIT_ACTIONS.CREATE,
@@ -103,7 +103,6 @@ router.post(
   checkRole([ROLES.ADMIN]),
   writeLimiter,
   upload.fields([
-    // File PDF cho từng loại đề xuất
     { name: 'file_pdf_ca_nhan_hang_nam', maxCount: 1 }, // CA_NHAN_HANG_NAM
     { name: 'file_pdf_don_vi_hang_nam', maxCount: 1 }, // DON_VI_HANG_NAM
     { name: 'file_pdf_nien_han', maxCount: 1 }, // NIEN_HAN

@@ -37,7 +37,7 @@ interface DecisionModalProps {
   visible: boolean;
   onClose: () => void;
   onSuccess: (decision: Decision, isNewDecision?: boolean) => void;
-  loaiKhenThuong?: string; // Pre-fill loại khen thưởng
+  loaiKhenThuong?: string;
   initialDecision?: {
     id?: string; // Decision ID for edit mode
     so_quyet_dinh: string;
@@ -269,7 +269,6 @@ export function DecisionModal({
         <Button key="cancel" onClick={onClose}>
           Hủy
         </Button>,
-        // Edit mode: cho phép lưu thay đổi
         initialDecision && (
           <Button
             key="save"
@@ -280,7 +279,6 @@ export function DecisionModal({
             Lưu thay đổi
           </Button>
         ),
-        // Chỉ hiển thị nút "Thêm quyết định" khi đã chọn quyết định từ autocomplete và không phải edit mode
         selectedDecision && !initialDecision && (
           <Button
             key="use"
@@ -291,7 +289,6 @@ export function DecisionModal({
             Thêm quyết định
           </Button>
         ),
-        // Chỉ cho phép tạo mới khi chưa chọn quyết định nào và không phải edit mode
         !selectedDecision && !initialDecision && (
           <Button
             key="create"
@@ -331,7 +328,7 @@ export function DecisionModal({
             notFoundContent={searching ? <Spin size="small" /> : null}
             style={{ width: '100%' }}
             allowClear
-            disabled={!!selectedDecision || !!initialDecision} // Không cho phép chỉnh sửa khi đã chọn quyết định
+            disabled={!!selectedDecision || !!initialDecision}
           >
             <Input
               size="large"

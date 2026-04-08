@@ -42,8 +42,8 @@ interface BulkCreateAwardsParams {
 
 class AwardBulkService {
   calculateServiceYears(
-    ngayNhapNgu: Date | string,
-    ngayXuatNgu: Date | string | null = null
+    ngayNhapNgu: Date,
+    ngayXuatNgu: Date | null = null
   ): ServiceYears | null {
     if (!ngayNhapNgu) return null;
 
@@ -115,7 +115,6 @@ class AwardBulkService {
     const existingSet = new Set(existingAwards.map(a => `${a.quan_nhan_id}_${a.danh_hieu || ''}`));
     const existingByPersonnel = new Set(existingAwards.map(a => a.quan_nhan_id as string));
 
-    // Build pending keys from proposals
     const dataField = this.getProposalDataField(type);
     const pendingKeys = new Set<string>();
     const pendingByPersonnel = new Set<string>();
@@ -135,8 +134,7 @@ class AwardBulkService {
       const hoTen = personnelMap.get(item.personnel_id) || item.personnel_id;
       const key = `${item.personnel_id}_${item.danh_hieu}`;
 
-      // Check actual award table
-      if (type === PROPOSAL_TYPES.CA_NHAN_HANG_NAM) {
+        if (type === PROPOSAL_TYPES.CA_NHAN_HANG_NAM) {
         if (existingSet.has(key)) {
           duplicateErrors.push(`${hoTen}: ${getDanhHieuName(item.danh_hieu)} năm ${nam} đã có trên hệ thống`);
           continue;
@@ -156,7 +154,6 @@ class AwardBulkService {
         }
       }
 
-      // Check pending proposals
       if (isOneTime ? pendingByPersonnel.has(item.personnel_id) : pendingKeys.has(key)) {
         duplicateErrors.push(`${hoTen}: đang có đề xuất chờ duyệt`);
       }
@@ -189,14 +186,12 @@ class AwardBulkService {
       }),
     ]);
 
-    // Build award map: unitId -> award
     const awardMap = new Map<string, typeof existingAwards[number]>();
     for (const a of existingAwards) {
       if (a.co_quan_don_vi_id) awardMap.set(a.co_quan_don_vi_id, a);
       if (a.don_vi_truc_thuoc_id) awardMap.set(a.don_vi_truc_thuoc_id, a);
     }
 
-    // Build pending keys: "unitId_danhHieu"
     const pendingKeys = new Set<string>();
     for (const p of pendingProposals) {
       const data = ((p as Record<string, unknown>).data_danh_hieu as Array<Record<string, unknown>>) || [];
@@ -209,13 +204,11 @@ class AwardBulkService {
       const donViId = item.don_vi_id!;
       const danhHieu = item.danh_hieu;
 
-      // Check pending proposal
       if (pendingKeys.has(`${donViId}_${danhHieu}`)) {
         duplicateErrors.push(`Đơn vị đã có đề xuất ${getDanhHieuName(danhHieu)} cho năm ${nam}`);
         continue;
       }
 
-      // Check existing award in DB
       const existing = awardMap.get(donViId);
       if (existing) {
         const isDv = UNIT_DV_TITLES.has(danhHieu);
@@ -864,8 +857,8 @@ class AwardBulkService {
             admin.username
           );
         }
-      } catch {
-        // Không throw error để không ảnh hưởng đến quá trình thêm khen thưởng
+      } catch (e) {
+        console.error('awardBulk notification failed:', e);
       }
 
       return {

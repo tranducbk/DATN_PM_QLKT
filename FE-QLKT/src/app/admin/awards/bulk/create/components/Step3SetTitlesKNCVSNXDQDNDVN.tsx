@@ -88,7 +88,7 @@ export function Step3SetTitlesKNCVSNXDQDNDVN({
         }));
         onTitleDataChange(initialData);
       } else {
-        // Nếu đã có titleData, cập nhật danh_hieu và cap_bac/chuc_vu nếu chưa có
+        // Merge into existing titleData without overwriting already-set values
         const updatedData = titleData.map(item => {
           const p = personnelData.find((pd: Personnel) => pd.id === item.personnel_id);
           return {
@@ -346,7 +346,7 @@ export function Step3SetTitlesKNCVSNXDQDNDVN({
           selectedRowKeys: selectedPersonnelIds,
           onChange: (selectedRowKeys: React.Key[]) => {
             onPersonnelChange(selectedRowKeys as string[]);
-            // Xóa dữ liệu danh hiệu của các quân nhân bị bỏ chọn
+            // Remove title data for deselected personnel
             const newTitleData = titleData.filter(d =>
               (selectedRowKeys as string[]).includes(d.personnel_id || '')
             );
@@ -358,6 +358,7 @@ export function Step3SetTitlesKNCVSNXDQDNDVN({
           ...DEFAULT_ANTD_TABLE_PAGINATION,
         }}
         bordered
+        scroll={{ x: 'max-content' }}
         locale={{
           emptyText: <Empty description="Không có dữ liệu" />,
         }}

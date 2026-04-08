@@ -23,7 +23,6 @@ export function EditableCell({
   const [isEditing, setIsEditing] = useState(false);
   const [currentValue, setCurrentValue] = useState(value);
 
-  // Sync currentValue với value prop khi value thay đổi
   useEffect(() => {
     setCurrentValue(value);
   }, [value]);

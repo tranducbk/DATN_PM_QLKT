@@ -95,7 +95,7 @@ export default function BulkAddAwardsPage() {
   // Step 5: Note
   const [note, setNote] = useState<string>('');
 
-  // Step 6: Decision data (so_quyet_dinh cho từng quân nhân/đơn vị)
+  // Step 6: Decision data (so_quyet_dinh per personnel/unit)
   const [decisionDataMap, setDecisionDataMap] = useState<
     Record<string, { so_quyet_dinh: string; decision?: any }>
   >({});
@@ -144,7 +144,7 @@ export default function BulkAddAwardsPage() {
     },
   };
 
-  // Steps config - 6 bước (đã bỏ bước upload file)
+  // 6-step wizard (file upload step removed)
   const getSteps = () => {
     const step2Title = awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? 'Chọn đơn vị' : 'Chọn quân nhân';
     return [
@@ -158,13 +158,10 @@ export default function BulkAddAwardsPage() {
   };
   const steps = getSteps();
 
-  // Kiểm tra loại khen thưởng nào có thể lưu ghi chú
-  // Tất cả các loại hiện tại đều hỗ trợ ghi chú trong schema và service
-  // Nếu có loại nào không lưu được ghi chú, thêm vào danh sách này
+  // All current award types support ghi_chu in the schema; add exclusions here if that changes
   const awardTypesWithoutNote: AwardType[] = [];
   const canShowNote = !awardTypesWithoutNote.includes(awardType);
 
-  // Chỉ set năm hiện tại lần đầu khi component mount
   useEffect(() => {
     if (!nam) {
       const currentYear = new Date().getFullYear();
@@ -172,7 +169,6 @@ export default function BulkAddAwardsPage() {
     }
   }, []);
 
-  // Reset state khi quay lại bước 1
   useEffect(() => {
     if (currentStep === 0) {
       setSelectedPersonnelIds([]);
@@ -185,7 +181,6 @@ export default function BulkAddAwardsPage() {
     }
   }, [currentStep]);
 
-  // Reset state khi thay đổi loại khen thưởng
   useEffect(() => {
     setSelectedPersonnelIds([]);
     setSelectedUnitIds([]);
@@ -197,7 +192,7 @@ export default function BulkAddAwardsPage() {
     setNam(new Date().getFullYear());
   }, [awardType]);
 
-  // Fetch personnel/unit details when reaching Step 4 (Review) - đã giảm từ step 5 xuống step 4
+  // Fetch personnel/unit details when reaching Step 4 (Review)
   useEffect(() => {
     if (currentStep === 3) {
       if (awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM && selectedUnitIds.length > 0) {
@@ -258,7 +253,6 @@ export default function BulkAddAwardsPage() {
       case 3:
         return true; // Review step
       case 4: {
-        // Bắt buộc nhập số quyết định
         const ids = awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? selectedUnitIds : selectedPersonnelIds;
         return ids.every(id => decisionDataMap[id]?.so_quyet_dinh?.trim());
       }
@@ -269,7 +263,6 @@ export default function BulkAddAwardsPage() {
 
   // Handle next step
   const handleNext = async () => {
-    // Validation tương tự proposal (copy từ proposal create)
     if (canProceedToNextStep()) {
       setCurrentStep(currentStep + 1);
     } else {
@@ -299,10 +292,8 @@ export default function BulkAddAwardsPage() {
     setCurrentStep(currentStep - 1);
   };
 
-  // Handle submit - Thêm khen thưởng/thành tích
   const handleSubmit = async () => {
     try {
-      // Validate số quyết định
       const ids = awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? selectedUnitIds : selectedPersonnelIds;
       const missingDecision = ids.some(id => !decisionDataMap[id]?.so_quyet_dinh?.trim());
       if (missingDecision) {
@@ -312,7 +303,6 @@ export default function BulkAddAwardsPage() {
 
       setLoading(true);
 
-      // Merge decision data vào titleData
       const titleDataWithDecisions = titleData.map(item => {
         const personnelId = item.personnel_id || item.don_vi_id;
         const decisionInfo = decisionDataMap[personnelId];
@@ -322,7 +312,6 @@ export default function BulkAddAwardsPage() {
         };
       });
 
-      // Tạo FormData để gửi lên server
       const formData = new FormData();
       formData.append('type', awardType);
       formData.append('nam', String(nam));
@@ -339,7 +328,6 @@ export default function BulkAddAwardsPage() {
         formData.append('ghi_chu', note.trim());
       }
 
-      // Gọi API bulk create với validation đầy đủ
       const result = await apiClient.bulkCreateAwards(formData);
 
       if (!result.success) {
@@ -526,7 +514,7 @@ export default function BulkAddAwardsPage() {
           />
         );
 
-      case 3: // Step 4: Review (không có nút gửi đề xuất)
+      case 3: // Step 4: Review
         // Merge personnel/unit details with title data
         let reviewTableData: any[] = [];
 
@@ -550,7 +538,7 @@ export default function BulkAddAwardsPage() {
           });
         }
 
-        // Build table columns (tương tự proposal)
+        // Build table columns
         const reviewColumns: ColumnsType<any> = [];
 
         if (awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
@@ -763,7 +751,7 @@ export default function BulkAddAwardsPage() {
           </div>
         );
 
-      case 4: // Step 5: Thêm số quyết định
+      case 4: // Step 5: Add decision number
         const decisionTableData = awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? unitDetails : personnelDetails;
 
         const decisionColumns: ColumnsType<any> = [
@@ -980,7 +968,7 @@ export default function BulkAddAwardsPage() {
 
   // Handle decision modal success
   const handleDecisionSuccess = (decision: any, isNewDecision: boolean = false) => {
-    // Áp dụng số quyết định cho tất cả quân nhân/đơn vị đã chọn
+    // Apply decision number to all selected personnel/units
     const newMap = { ...decisionDataMap };
     selectedPersonnelForDecision.forEach(id => {
       newMap[id] = {

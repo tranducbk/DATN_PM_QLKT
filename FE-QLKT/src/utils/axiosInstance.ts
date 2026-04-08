@@ -8,7 +8,7 @@ const axiosInstance = axios.create({
   timeout: 30000,
 });
 
-// Gắn token từ localStorage nếu không có cookie
+// Attach token from localStorage if no cookie is present
 axiosInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     if (!document.cookie.includes('accessToken') && localStorage.getItem('accessToken')) {
@@ -71,7 +71,7 @@ axiosInstance.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // 401 từ API thường → cố refresh token
+    // 401 on a regular API call — attempt token refresh
     if (status === 401 && !originalRequest._retry && !isAuthRequest && !isDevZoneRequest) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
@@ -137,7 +137,7 @@ axiosInstance.interceptors.response.use(
       }
     }
 
-    // Hiển thị lỗi toàn cục (trừ 401 và 429)
+    // Show global error for all statuses except 401 (handled above) and 429
     if (status && status !== 401 && status !== 429) {
       const errorMsg =
         error.response?.data?.message ||

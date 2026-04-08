@@ -12,19 +12,19 @@ import { checkDuplicateAward } from './validation';
 import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
 import { writeSystemLog } from '../../helpers/systemLogHelper';
 
-/** Chuẩn hoá cột `Json?` (`data_*` trên `bang_de_xuat`) — cấu trúc phần tử không cố định (JSON nghiệp vụ) */
+/** Normalizes `Json?` columns (`data_*` on `bang_de_xuat`) into an array of objects. */
 function asJsonObjectArray(value: unknown): any[] {
   return Array.isArray(value) ? value : [];
 }
 
 /** `bang_de_xuat.id` — VarChar(30), cuid */
 type ProposalId = BangDeXuat['id'];
-/** `tai_khoan.id` — VarChar(30), cuid (người duyệt / admin) */
+/** `tai_khoan.id` — VarChar(30), cuid (approver/admin). */
 type AdminAccountId = TaiKhoan['id'];
 
 /**
- * Payload chỉnh sửa — trùng tên cột Json? trên `bang_de_xuat` (xem `schema.prisma` model `BangDeXuat`).
- * Kiểu phần tử không khai báo trong DB (JSON tự do); nghiệp vụ dùng object/array.
+ * Edited payload mapped to `BangDeXuat` JSON columns (`data_*`).
+ * Elements are business JSON objects and are not strictly typed at DB level.
  */
 export type EditedProposalPayload = {
   data_danh_hieu?: any[] | null;
@@ -34,10 +34,10 @@ export type EditedProposalPayload = {
 };
 
 /**
- * Phê duyệt đề xuất và import vào CSDL chính
- * @param proposalId — PK `bang_de_xuat.id`
- * @param editedData — JSON arrays theo schema `BangDeXuat`
- * @param adminId — PK `tai_khoan.id` (tài khoản phê duyệt)
+ * Approves a proposal and imports its data into the main tables.
+ * @param proposalId - `bang_de_xuat.id`
+ * @param editedData - Edited JSON arrays for `BangDeXuat.data_*`
+ * @param adminId - Approver account id (`tai_khoan.id`)
  */
 async function approveProposal(
   proposalId: ProposalId,
@@ -48,7 +48,6 @@ async function approveProposal(
   ghiChu: string | null = null
 ) {
   try {
-    // Lấy thông tin đề xuất
     const proposal = await prisma.bangDeXuat.findUnique({
       where: { id: proposalId },
       include: {
@@ -79,18 +78,18 @@ async function approveProposal(
       throw new ValidationError('Đề xuất này đã được phê duyệt trước đó');
     }
 
-    // Dữ liệu để import (ưu tiên dữ liệu đã chỉnh sửa; gộp với JSON đã lưu trong DB)
+    // Import source: prefer edited payload, fall back to stored JSON.
     const danhHieuData = asJsonObjectArray(editedData.data_danh_hieu ?? proposal.data_danh_hieu);
     const thanhTichData = asJsonObjectArray(editedData.data_thanh_tich ?? proposal.data_thanh_tich);
     const nienHanData = asJsonObjectArray(editedData.data_nien_han ?? proposal.data_nien_han);
     const congHienData = asJsonObjectArray(editedData.data_cong_hien ?? proposal.data_cong_hien);
 
-    // VALIDATION: Kiểm tra đề xuất trùng (cùng năm và cùng danh hiệu)
+    // Duplicate validation (same year + same award/title).
     const duplicateErrors = [];
     const proposalYear = proposal.nam;
     const proposalType = proposal.loai_de_xuat;
 
-    // Kiểm tra danh hiệu hằng năm (CA_NHAN_HANG_NAM)
+    // Annual personal titles (CA_NHAN_HANG_NAM).
     if (
       proposalType === PROPOSAL_TYPES.CA_NHAN_HANG_NAM &&
       danhHieuData &&
@@ -119,7 +118,7 @@ async function approveProposal(
       }
     }
 
-    // Kiểm tra niên hạn (NIEN_HAN, HC_QKQT, KNC_VSNXD_QDNDVN)
+    // Tenure-based awards (NIEN_HAN / HC_QKQT / KNC_VSNXD_QDNDVN).
     if (
       (proposalType === PROPOSAL_TYPES.NIEN_HAN ||
         proposalType === PROPOSAL_TYPES.HC_QKQT ||
@@ -151,7 +150,7 @@ async function approveProposal(
       }
     }
 
-    // Kiểm tra cống hiến (CONG_HIEN)
+    // Contribution awards (CONG_HIEN).
     if (proposalType === PROPOSAL_TYPES.CONG_HIEN && nienHanData && nienHanData.length > 0) {
       for (const item of nienHanData) {
         if (item.personnel_id && item.danh_hieu) {
@@ -176,16 +175,15 @@ async function approveProposal(
       }
     }
 
-    // Nếu có lỗi trùng, throw error
+    // If any duplicates were found, stop early.
     if (duplicateErrors.length > 0) {
       throw new ValidationError(
         `Phát hiện đề xuất trùng (cùng năm và cùng danh hiệu):\n${duplicateErrors.join('\n')}`
       );
     }
 
-    // RE-VALIDATE: Kiểm tra lại điều kiện trước khi phê duyệt
-
-    // HC_QKQT: Kiểm tra >= 25 năm phục vụ
+    // Re-validate eligibility rules before approving.
+    // HC_QKQT: requires >= 25 years of service.
     if (proposalType === PROPOSAL_TYPES.HC_QKQT && nienHanData && nienHanData.length > 0) {
       const personnelIds = nienHanData.map(item => item.personnel_id).filter(Boolean);
 
@@ -236,7 +234,7 @@ async function approveProposal(
       }
     }
 
-    // KNC_VSNXD_QDNDVN: Kiểm tra nữ >= 20 năm, nam >= 25 năm phục vụ
+    // KNC_VSNXD_QDNDVN: female >= 20 years, male >= 25 years.
     if (proposalType === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN && nienHanData && nienHanData.length > 0) {
       const personnelIds = nienHanData.map(item => item.personnel_id).filter(Boolean);
 
@@ -299,10 +297,11 @@ async function approveProposal(
       }
     }
 
-    // CONG_HIEN: Kiểm tra điều kiện thời gian cống hiến (10 năm trở lên theo nhóm hệ số chức vụ)
+    // CONG_HIEN: requires minimum contribution time (by position coefficient group).
     if (proposalType === PROPOSAL_TYPES.CONG_HIEN && congHienData && congHienData.length > 0) {
-      const baseRequiredMonths = 10 * 12; // 10 năm = 120 tháng (cho nam)
-      const femaleRequiredMonths = Math.round(baseRequiredMonths * (2 / 3)); // Nữ: 80 tháng
+      const baseRequiredMonths = 10 * 12; // 120 months (10 yrs) for male
+      // 2/3 of male requirement = 80 months for female
+      const femaleRequiredMonths = Math.round(baseRequiredMonths * (2 / 3));
 
       const personnelIds = congHienData.map(item => item.personnel_id).filter(Boolean);
       const positionHistoriesMap = {};
@@ -354,7 +353,7 @@ async function approveProposal(
 
           positionHistoriesMap[personnelId] = updatedHistories;
         } catch (error) {
-          console.error(`[proposal/approve] positionHistoriesMap build error for ${personnelId}:`, error);
+          console.error('ProposalApprove.buildPositionHistories failed', { personnelId, error });
           positionHistoriesMap[personnelId] = [];
         }
       }
@@ -472,7 +471,7 @@ async function approveProposal(
       }
     }
 
-    // Nếu có lỗi re-validate, throw error
+    // Stop if eligibility re-check failed.
     if (duplicateErrors.length > 0) {
       throw new ValidationError(
         `Kiểm tra lại điều kiện trước khi phê duyệt thất bại:\n${duplicateErrors.join('\n')}`
@@ -483,17 +482,16 @@ async function approveProposal(
     let importedThanhTich = 0;
     let importedNienHan = 0;
     const errors = [];
-    const affectedPersonnelIds = new Set(); // Track quân nhân bị ảnh hưởng
+    const affectedPersonnelIds = new Set(); // Track affected personnel ids.
 
-    // LƯU FILE PDF VÀO UPLOADS
+    // Save decision PDFs to uploads (if provided).
     const uploadsDir = path.join(__dirname, '..', '..', '..', 'uploads', 'decisions');
     await fs.mkdir(uploadsDir, { recursive: true });
 
     const pdfPaths: Record<string, string | undefined> = {};
 
-    // Hàm helper để tạo tên file unique, sanitize và thêm số thứ tự nếu trùng
+    // Generates a unique filename (sanitized) and appends a counter when needed.
     const getUniqueFilename = async originalName => {
-      // Xử lý encoding nếu cần
       let processedName = originalName || 'file';
       try {
         if (Buffer.isBuffer(processedName)) {
@@ -505,14 +503,12 @@ async function approveProposal(
         processedName = 'file';
       }
 
-      // Sanitize tên file để tránh lỗi filesystem
       const sanitized = sanitizeFilename(processedName);
       const ext = path.extname(sanitized);
       const baseName = path.basename(sanitized, ext);
       let filename = sanitized;
       let counter = 1;
 
-      // Kiểm tra nếu file đã tồn tại, thêm số thứ tự
       while (
         await fs
           .access(path.join(uploadsDir, filename))
@@ -526,7 +522,7 @@ async function approveProposal(
       return filename;
     };
 
-    // Hàm helper để lấy file_path từ DB nếu quyết định đã tồn tại
+    // Returns existing file_path for a decision number (if any).
     const getFilePathFromDB = async (soQuyetDinh: string | null | undefined) => {
       if (!soQuyetDinh) return null;
       try {
@@ -536,12 +532,12 @@ async function approveProposal(
         });
         return decision?.file_path || null;
       } catch (error) {
-        console.error('[proposal/approve] getFilePathFromDB error:', error);
+        console.error('ProposalApprove.getFilePathFromDB failed', { soQuyetDinh, error });
         return null;
       }
     };
 
-    // Map các key trong pdfFiles với số quyết định tương ứng
+    // Maps uploaded PDF keys to their decision numbers.
     const pdfFileToDecisionMap = {
       file_pdf_ca_nhan_hang_nam: decisions.so_quyet_dinh_ca_nhan_hang_nam,
       file_pdf_don_vi_hang_nam: decisions.so_quyet_dinh_don_vi_hang_nam,
@@ -551,7 +547,7 @@ async function approveProposal(
       file_pdf_nckh: decisions.so_quyet_dinh_nckh,
     };
 
-    // Lưu file PDF cho từng loại danh hiệu và thành tích
+    // Save PDFs for each category.
     for (const [key, file] of Object.entries(pdfFiles)) {
       if (file && file.buffer) {
         const soQuyetDinh = pdfFileToDecisionMap[key];
@@ -569,7 +565,7 @@ async function approveProposal(
       }
     }
 
-    // Lưu file PDF cho thành tích NCKH/SKKH nếu có
+    // Save PDF for scientific achievement (if provided).
     if (pdfFiles.file_pdf_nckh && pdfFiles.file_pdf_nckh.buffer) {
       const soQuyetDinh = decisions.so_quyet_dinh_nckh;
       const existingFilePath = await getFilePathFromDB(soQuyetDinh);
@@ -584,7 +580,7 @@ async function approveProposal(
       }
     }
 
-    // TẠO MAPPING DANH HIỆU -> QUYẾT ĐỊNH
+    // Decision mapping (award/title -> decision metadata).
     const decisionMapping = {
       CSTT: {
         so_quyet_dinh: decisions.so_quyet_dinh_cstt,
@@ -642,7 +638,7 @@ async function approveProposal(
     // TRANSACTION: Wrap all database writes in a transaction
     await prisma.$transaction(
       async tx => {
-        // IMPORT DANH HIỆU ĐƠN VỊ HẰNG NĂM
+        // Unit annual titles import.
         if (proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
           for (const item of danhHieuData) {
             try {
@@ -759,7 +755,7 @@ async function approveProposal(
             }
           }
         } else if (proposal.loai_de_xuat === PROPOSAL_TYPES.CONG_HIEN) {
-          // Với đề xuất cống hiến, import vào bảng KhenThuongCongHien
+          // Contribution proposals import into KhenThuongCongHien.
           for (const item of congHienData) {
             try {
               if (!item.personnel_id) {
@@ -853,7 +849,7 @@ async function approveProposal(
             }
           }
         } else {
-          // XỬ LÝ CÁC LOẠI ĐỀ XUẤT KHÁC (CA_NHAN_HANG_NAM, DOT_XUAT)
+          // Other proposal types (CA_NHAN_HANG_NAM, DOT_XUAT).
           for (const item of danhHieuData) {
             try {
               if (!item.personnel_id) {
@@ -999,7 +995,7 @@ async function approveProposal(
           }
         }
 
-        // IMPORT NIÊN HẠN (chỉ các hạng HCCSVV)
+        // Tenure import (HCCSVV ranks only).
         if (
           proposal.loai_de_xuat === PROPOSAL_TYPES.NIEN_HAN &&
           nienHanData &&
@@ -1038,7 +1034,7 @@ async function approveProposal(
 
                 const namLuu = proposal.nam;
 
-                // Tính thời gian từ ngày nhập ngũ
+                // Compute service time from enlistment date.
                 let thoiGian = null;
                 if (quanNhan.ngay_nhap_ngu) {
                   const ngayNhapNgu = new Date(quanNhan.ngay_nhap_ngu);
@@ -1108,7 +1104,7 @@ async function approveProposal(
           }
         }
 
-        // IMPORT HC_QKQT (Huy chương Quân kỳ quyết thắng)
+        // HC_QKQT import.
         if (
           proposal.loai_de_xuat === PROPOSAL_TYPES.HC_QKQT &&
           nienHanData &&
@@ -1139,7 +1135,7 @@ async function approveProposal(
 
               const namLuu = proposal.nam;
 
-              // Tính thời gian từ ngày nhập ngũ
+              // Compute service time from enlistment date.
               let thoiGian = null;
               if (quanNhan.ngay_nhap_ngu) {
                 const ngayNhapNgu = new Date(quanNhan.ngay_nhap_ngu);
@@ -1212,7 +1208,7 @@ async function approveProposal(
           }
         }
 
-        // IMPORT KNC_VSNXD_QDNDVN
+        // KNC_VSNXD_QDNDVN import.
         if (
           proposal.loai_de_xuat === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN &&
           nienHanData &&
@@ -1315,7 +1311,7 @@ async function approveProposal(
           }
         }
 
-        // IMPORT THÀNH TÍCH KHOA HỌC
+        // Scientific achievements import.
         for (const item of thanhTichData) {
           try {
             if (!item.personnel_id) {
@@ -1375,7 +1371,7 @@ async function approveProposal(
           }
         }
 
-        // ĐỒNG BỘ QUYẾT ĐỊNH VÀO BẢNG QUYETDINH KHENTHUONG
+        // Sync decision metadata into FileQuyetDinh.
         const decisionsToSync = new Set<string>();
 
         for (const item of danhHieuData) {
@@ -1553,7 +1549,12 @@ async function approveProposal(
               }
             }
           } catch (error) {
-            writeSystemLog({ action: 'ERROR', resource: 'proposals', description: `Lỗi cập nhật file quyết định khi duyệt đề xuất: ${error}` });
+            writeSystemLog({
+              action: 'ERROR',
+              resource: 'proposals',
+              description: 'ProposalApprove.syncDecisionFiles failed',
+              payload: { proposalId, soQuyetDinh, error },
+            });
           }
         }
 
@@ -1569,10 +1570,7 @@ async function approveProposal(
       { timeout: 60000 }
     ); // End of transaction
 
-    // KIỂM TRA LỖI TRƯỚC KHI CẬP NHẬT TRẠNG THÁI
-    // (errors are thrown inside the transaction, so if we reach here, there are no errors)
-
-    // CẬP NHẬT TRẠNG THÁI ĐỀ XUẤT
+    // Update proposal status (imports succeeded if we got here).
     const updateData: Record<string, any> = {
       status: PROPOSAL_STATUS.APPROVED,
       nguoi_duyet_id: adminId,
@@ -1584,7 +1582,7 @@ async function approveProposal(
       ...(ghiChu ? { ghi_chu: ghiChu } : {}),
     };
 
-    // Atomic update: chỉ cập nhật nếu status vẫn là PENDING (tránh race condition)
+    // Atomic update: only approve when current status is still PENDING.
     const updateResult = await prisma.bangDeXuat.updateMany({
       where: { id: proposalId, status: PROPOSAL_STATUS.PENDING },
       data: updateData,
@@ -1596,7 +1594,7 @@ async function approveProposal(
       );
     }
 
-    // TÍNH TOÁN LẠI HỒ SƠ CHO CÁC QUÂN NHÂN/ĐƠN VỊ BỊ ẢNH HƯỞNG
+    // Recalculate profiles impacted by this approval.
     let recalculateSuccess = 0;
     let recalculateErrors = 0;
 
@@ -1616,7 +1614,7 @@ async function approveProposal(
 
           recalculateSuccess++;
         } catch (recalcError) {
-          console.error(`[proposal/approve] recalculateAnnualUnit error for unit ${donViId}:`, recalcError);
+          console.error('ProposalApprove.recalculateAnnualUnit failed', { donViId, error: recalcError });
           recalculateErrors++;
         }
       }
@@ -1627,9 +1625,6 @@ async function approveProposal(
           : proposal.loai_de_xuat === PROPOSAL_TYPES.CONG_HIEN
             ? 'hồ sơ cống hiến (HCBVTQ)'
             : 'hồ sơ hằng năm';
-
-      if (affectedPersonnelIds.size === 0) {
-      }
 
       for (const personnelId of affectedPersonnelIds) {
         try {
@@ -1643,7 +1638,7 @@ async function approveProposal(
 
           recalculateSuccess++;
         } catch (recalcError) {
-          console.error(`[proposal/approve] recalculateProfile error for personnel ${personnelId}:`, recalcError);
+          console.error('ProposalApprove.recalculateProfile failed', { personnelId, error: recalcError });
           recalculateErrors++;
         }
       }
@@ -1673,9 +1668,10 @@ async function approveProposal(
 }
 
 /**
- * Từ chối đề xuất với lý do
- * @param proposalId — PK `bang_de_xuat.id`
- * @param adminId — PK `tai_khoan.id`
+ * Rejects a proposal with a reason.
+ * @param proposalId - `bang_de_xuat.id`
+ * @param lyDo - Rejection reason
+ * @param adminId - Admin account id (`tai_khoan.id`)
  */
 async function rejectProposal(proposalId: ProposalId, lyDo: string, adminId: AdminAccountId) {
   try {
@@ -1706,7 +1702,7 @@ async function rejectProposal(proposalId: ProposalId, lyDo: string, adminId: Adm
       throw new ValidationError('Đề xuất này đã bị từ chối trước đó');
     }
 
-    // Atomic update: chỉ reject nếu status vẫn là PENDING (tránh race condition)
+    // Atomic update: only reject when current status is still PENDING.
     const updateResult = await prisma.bangDeXuat.updateMany({
       where: { id: proposalId, status: PROPOSAL_STATUS.PENDING },
       data: {

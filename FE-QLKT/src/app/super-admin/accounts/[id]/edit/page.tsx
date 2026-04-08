@@ -69,7 +69,7 @@ export default function AccountEditPage() {
         role: values.role,
       };
 
-      // Chỉ gửi password nếu có thay đổi
+      // Only include password when it has been changed
       if (values.password) {
         updateData.password = values.password;
       }

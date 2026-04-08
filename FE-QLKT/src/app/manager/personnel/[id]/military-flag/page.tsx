@@ -69,7 +69,6 @@ export default function ManagerMilitaryFlagPage() {
         // Map service profile data to flags array
         const mappedFlags: MilitaryFlag[] = [];
 
-        // HC Quân kỳ Quyết thắng
         if (serviceRes.data && serviceRes.data.hasReceived && serviceRes.data.data) {
           serviceRes.data.data.forEach((item: any) => {
             mappedFlags.push({

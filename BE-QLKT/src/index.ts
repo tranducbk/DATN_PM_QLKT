@@ -20,7 +20,7 @@ if (missingEnv.length > 0) {
 const app = express();
 const httpServer = createServer(app);
 
-// CORS: cùng `ALLOWED_ORIGINS` với Socket.IO (`configs/cors.ts`)
+// CORS: shares ALLOWED_ORIGINS with Socket.IO (configs/cors.ts)
 const corsOptions: cors.CorsOptions = {
   origin: allowCorsOrigin,
   credentials: true,
@@ -65,11 +65,11 @@ async function testDatabaseConnection() {
 
 testDatabaseConnection();
 
-// Cron job được quản lý bởi devZone.route.ts (đọc lịch từ DB bảng system_settings)
+// Cron schedule managed by devZone.route.ts (reads from system_settings table)
 
 app.use(routes);
 
-// Global Error Handling (phải đặt SAU tất cả routes)
+// Global error handler — must be registered after all routes
 app.use(notFoundHandler);
 app.use(errorHandler);
 

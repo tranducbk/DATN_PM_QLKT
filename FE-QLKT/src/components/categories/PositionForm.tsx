@@ -18,8 +18,6 @@ export function PositionForm({ position, units = [], onSuccess, onClose }: Posit
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
 
-  // Xác định xem đơn vị có phải là đơn vị trực thuộc không
-  // Check từ units (tạo mới) hoặc từ position.DonViTrucThuoc / position.don_vi_truc_thuoc_id (sửa)
   const isDonViTrucThuoc =
     (units.length === 1 && !!units[0].co_quan_don_vi_id) ||
     !!position?.DonViTrucThuoc ||
@@ -30,15 +28,12 @@ export function PositionForm({ position, units = [], onSuccess, onClose }: Posit
       form.setFieldsValue({
         don_vi_id: position.don_vi_id?.toString() || undefined,
         ten_chuc_vu: position.ten_chuc_vu || '',
-        // Nếu là đơn vị trực thuộc thì luôn set is_manager = false
         is_manager: isDonViTrucThuoc ? false : position.is_manager || false,
         he_so_chuc_vu: position.he_so_chuc_vu || undefined,
       });
     } else if (units.length === 1) {
-      // Nếu chỉ có 1 đơn vị (đang tạo từ trang chi tiết), tự động set don_vi_id
       form.setFieldsValue({
         don_vi_id: units[0].id?.toString(),
-        // Đơn vị trực thuộc mặc định is_manager = false
         is_manager: false,
       });
     }
@@ -48,7 +43,7 @@ export function PositionForm({ position, units = [], onSuccess, onClose }: Posit
     try {
       setLoading(true);
 
-      // Validate don_vi_id when creating new position (chỉ khi có nhiều đơn vị để chọn)
+      // Validate don_vi_id when creating a new position (only when multiple units are available)
       if (!position?.id && units.length > 1 && !values.don_vi_id) {
         message.error('Vui lòng chọn đơn vị');
         return;
@@ -57,7 +52,7 @@ export function PositionForm({ position, units = [], onSuccess, onClose }: Posit
       // Prepare payload
       const payload: any = {
         ten_chuc_vu: values.ten_chuc_vu,
-        // Nếu là đơn vị trực thuộc thì luôn is_manager = false, không có chỉ huy
+        // Sub-units have no commander — is_manager is always false
         is_manager: isDonViTrucThuoc ? false : values.is_manager || false,
       };
 
@@ -70,13 +65,11 @@ export function PositionForm({ position, units = [], onSuccess, onClose }: Posit
         payload.he_so_chuc_vu = parseFloat(values.he_so_chuc_vu);
       }
 
-      // Add unit_id only when creating (giữ nguyên string UUID)
+      // Include unit_id only on create — string UUID, not parsed
       if (!position?.id) {
-        // Nếu chỉ có 1 đơn vị (tạo từ trang chi tiết), dùng đơn vị đó
         if (units.length === 1) {
           payload.unit_id = units[0].id.toString();
         } else if (values.don_vi_id) {
-          // Nếu có nhiều đơn vị, dùng giá trị từ form
           payload.unit_id = values.don_vi_id.toString();
         }
       }

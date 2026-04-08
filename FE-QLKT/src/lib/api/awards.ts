@@ -1,6 +1,7 @@
 import axiosInstance from '@/utils/axiosInstance';
 import { getApiErrorMessage } from '@/lib/apiError';
 import type { ApiResponse } from '@/lib/types';
+import { FETCH_ALL_LIMIT } from '@/lib/constants/pagination.constants';
 
 /**
  * getAnnualRewards API wrapper.
@@ -949,7 +950,7 @@ export async function getUnitAnnualAwardsByUnit(
   year?: number
 ): Promise<ApiResponse> {
   try {
-    const params: Record<string, string | number> = { don_vi_id: donViId, limit: 1000 };
+    const params: Record<string, string | number> = { don_vi_id: donViId, limit: FETCH_ALL_LIMIT };
     if (year) params.year = year;
     const res = await axiosInstance.get('/api/awards/units/annual/history', { params });
     return {

@@ -200,7 +200,6 @@ export default function ProposalDetailPage() {
       const res = await apiClient.getProposalById(String(id));
 
       if (res.success && res.data) {
-        // Parse files_attached nếu cần
         const filesAttached = res.data.files_attached;
         const parsedFilesAttached = Array.isArray(filesAttached)
           ? filesAttached
@@ -246,8 +245,7 @@ export default function ProposalDetailPage() {
         setEditedNienHan(parsedNienHan);
         setEditedCongHien(parsedCongHien);
 
-        // Fetch thông tin personnel để lấy chức vụ hiện tại
-        // Với các loại đề xuất khác nhau, dữ liệu có thể nằm ở các field khác nhau
+
         const personnelData =
           parsedDanhHieu.length > 0
             ? parsedDanhHieu
@@ -281,7 +279,6 @@ export default function ProposalDetailPage() {
     try {
       const detailsMap: Record<string, any> = {};
 
-      // Fetch thông tin personnel cho mỗi quân nhân
       await Promise.all(
         danhHieuItems.map(async item => {
           if (item.personnel_id) {
@@ -307,7 +304,6 @@ export default function ProposalDetailPage() {
     try {
       const historiesMap: Record<string, any[]> = {};
 
-      // Fetch lịch sử chức vụ cho mỗi quân nhân
       await Promise.all(
         danhHieuItems.map(async item => {
           if (item.personnel_id) {
@@ -330,7 +326,6 @@ export default function ProposalDetailPage() {
     }
   };
 
-  // Tính tổng thời gian đảm nhiệm chức vụ theo nhóm hệ số cho một quân nhân
   const calculateTotalTimeByGroup = (personnelId: string, group: '0.7' | '0.8' | '0.9-1.0') => {
     const histories = positionHistoriesMap[personnelId] || [];
     let totalMonths = 0;
@@ -419,19 +414,15 @@ export default function ProposalDetailPage() {
 
   const handleApprove = async () => {
     if (!proposal) return;
-    // Kiểm tra tất cả danh hiệu/thành tích đã có số quyết định chưa
     let missingDecisions: string[] = [];
 
-    // Kiểm tra danh hiệu hằng năm (CA_NHAN_HANG_NAM, DON_VI_HANG_NAM)
     if (editedDanhHieu.length > 0) {
       editedDanhHieu.forEach((item, index) => {
         if (proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
-          // Với đề xuất đơn vị hằng năm, kiểm tra so_quyet_dinh
           if (!item.so_quyet_dinh || item.so_quyet_dinh.trim() === '') {
             missingDecisions.push(`Đơn vị ${index + 1}: ${item.ten_don_vi || 'N/A'}`);
           }
         } else {
-          // Với đề xuất cá nhân, kiểm tra so_quyet_dinh (bắt buộc)
           if (!item.so_quyet_dinh || item.so_quyet_dinh.trim() === '') {
             missingDecisions.push(`Quân nhân ${index + 1}: ${item.ho_ten || 'N/A'}`);
           }
@@ -439,7 +430,6 @@ export default function ProposalDetailPage() {
       });
     }
 
-    // Kiểm tra thành tích khoa học (NCKH)
     if (editedThanhTich.length > 0) {
       editedThanhTich.forEach((item, index) => {
         if (!item.so_quyet_dinh || item.so_quyet_dinh.trim() === '') {
@@ -448,7 +438,6 @@ export default function ProposalDetailPage() {
       });
     }
 
-    // Kiểm tra niên hạn (NIEN_HAN, HC_QKQT, KNC_VSNXD_QDNDVN)
     if (editedNienHan.length > 0) {
       editedNienHan.forEach((item, index) => {
         if (!item.so_quyet_dinh || item.so_quyet_dinh.trim() === '') {
@@ -459,7 +448,6 @@ export default function ProposalDetailPage() {
       });
     }
 
-    // Kiểm tra huân chương bảo vệ tổ quốc (CONG_HIEN)
     if (editedCongHien.length > 0) {
       editedCongHien.forEach((item, index) => {
         if (!item.so_quyet_dinh || item.so_quyet_dinh.trim() === '') {
@@ -468,7 +456,6 @@ export default function ProposalDetailPage() {
       });
     }
 
-    // Nếu thiếu số quyết định, hiển thị cảnh báo
     if (missingDecisions.length > 0) {
       Modal.warning({
         title: 'Thiếu số quyết định',
@@ -541,7 +528,6 @@ export default function ProposalDetailPage() {
             const importedNienHan = importedData.imported_nien_han || 0;
             const totalNienHan = importedData.total_nien_han || 0;
 
-            // Tạo thông báo dựa trên loại đề xuất
             let successMessage = 'Đã phê duyệt đề xuất thành công. ';
             const loaiDeXuat = proposal?.loai_de_xuat;
 
@@ -558,7 +544,6 @@ export default function ProposalDetailPage() {
             } else if (loaiDeXuat === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
               successMessage += `Đã thêm ${importedDanhHieu}/${totalDanhHieu} khen thưởng đơn vị thành công.`;
             } else {
-              // CA_NHAN_HANG_NAM hoặc các loại khác
               if (importedDanhHieu > 0 && importedThanhTich > 0) {
                 successMessage += `Đã thêm ${importedDanhHieu}/${totalDanhHieu} danh hiệu và ${importedThanhTich}/${totalThanhTich} thành tích nghiên cứu khoa học thành công.`;
               } else if (importedDanhHieu > 0) {
@@ -568,10 +553,8 @@ export default function ProposalDetailPage() {
               }
             }
 
-            // Hiển thị thông báo thành công hoặc cảnh báo
             if (importedData.errors && importedData.errors.length > 0) {
               message.warning(`${successMessage} Có ${importedData.errors.length} lỗi xảy ra.`, 5);
-              // Hiển thị errors chi tiết
               setMessageAlert({
                 type: 'error',
                 text: `Có ${importedData.errors.length} lỗi khi thêm dữ liệu:\n${importedData.errors
@@ -601,18 +584,15 @@ export default function ProposalDetailPage() {
 
   const handleDecisionSuccess = (decision: any) => {
     if (decisionModalType === 'danh_hieu') {
-      // Xác định loại đề xuất để cập nhật đúng state
       const loaiDeXuat = proposal?.loai_de_xuat;
 
-      // Hàm helper để áp dụng quyết định cho một item
       const applyDecision = (item: any, index: number) => {
         if (!selectedRowKeys.includes(index)) return item;
 
-        // Xác định loại quyết định dựa trên loai_khen_thuong hoặc số quyết định
         const loaiKhenThuong = decision.loai_khen_thuong || '';
         const soQuyetDinh = decision.so_quyet_dinh || '';
 
-        // Kiểm tra nếu là quyết định BKBQP hoặc CSTDTQ (chỉ áp dụng cho CA_NHAN_HANG_NAM)
+        // BKBQP/CSTDTQ decisions only apply to CA_NHAN_HANG_NAM proposals
         if (loaiDeXuat === PROPOSAL_TYPES.CA_NHAN_HANG_NAM) {
           const isBKBQP =
             loaiKhenThuong.includes('BKBQP') ||
@@ -627,7 +607,6 @@ export default function ProposalDetailPage() {
             soQuyetDinh.toLowerCase().includes('bkttcp') ||
             soQuyetDinh.toLowerCase().includes('bằng khen toàn quân phổ thông');
 
-          // Nếu là quyết định BKBQP hoặc CSTDTQ, lưu vào trường tương ứng
           if (isBKBQP) {
             return {
               ...item,
@@ -658,7 +637,6 @@ export default function ProposalDetailPage() {
           }
         }
 
-        // Quyết định thông thường - áp dụng cho tất cả loại
         return {
           ...item,
           so_quyet_dinh: decision.so_quyet_dinh,
@@ -666,7 +644,6 @@ export default function ProposalDetailPage() {
         };
       };
 
-      // Cập nhật state tương ứng với loại đề xuất
       if (
         loaiDeXuat === PROPOSAL_TYPES.NIEN_HAN ||
         loaiDeXuat === PROPOSAL_TYPES.HC_QKQT ||
@@ -732,7 +709,6 @@ export default function ProposalDetailPage() {
     setEditedCongHien(newData);
   };
 
-  // Hàm để tải file quyết định - backend tự động query DB để lấy file path
   const handleOpenDecisionFile = async (soQuyetDinh: string) => {
     await downloadDecisionFile(soQuyetDinh);
   };
@@ -772,7 +748,6 @@ export default function ProposalDetailPage() {
 
   // COLUMNS CHO TỪNG LOẠI ĐỀ XUẤT
 
-  // Columns cho CA_NHAN_HANG_NAM (Cá nhân Hằng năm)
   const caNhanHangNamColumns = [
     {
       title: 'STT',
@@ -813,11 +788,9 @@ export default function ProposalDetailPage() {
       width: 180,
       align: 'center' as const,
       render: (_: any, record: DanhHieuItem) => {
-        // Chỉ hiển thị nếu có dữ liệu trong dataJSON
         const capBac = record.cap_bac;
         const chucVu = record.chuc_vu;
 
-        // Nếu không có cả cấp bậc và chức vụ, để trống
         if (!capBac && !chucVu) {
           return <span>-</span>;
         }
@@ -858,7 +831,6 @@ export default function ProposalDetailPage() {
       width: 250,
       align: 'center' as const,
       render: (_: any, record: DanhHieuItem, index: number) => {
-        // Sử dụng hàm helper để map mã danh hiệu sang tên đầy đủ
         const fullName = getDanhHieuName(record.danh_hieu || '');
         return (
           <div style={{ textAlign: 'center' }}>
@@ -902,7 +874,7 @@ export default function ProposalDetailPage() {
       width: 180,
       align: 'center' as const,
       render: (_: any, record: DanhHieuItem, index: number) => {
-        // Kiểm tra cả so_quyet_dinh và các trường cũ để tương thích với dữ liệu cũ
+        // Check both so_quyet_dinh and legacy fields for backward compatibility
         const soQuyetDinh =
           record.so_quyet_dinh || record.so_quyet_dinh_bkbqp || record.so_quyet_dinh_cstdtq;
 
@@ -944,7 +916,6 @@ export default function ProposalDetailPage() {
     },
   ];
 
-  // Columns cho đề xuất đơn vị hằng năm
   const donViHangNamColumns = [
     {
       title: 'STT',
@@ -1019,7 +990,6 @@ export default function ProposalDetailPage() {
       width: 200,
       align: 'center' as const,
       render: (_: any, record: DanhHieuItem, index: number) => {
-        // Map mã danh hiệu sang tên đầy đủ để hiển thị
         const danhHieuMap: Record<string, string> = {
           ĐVQT: 'Đơn vị Quyết thắng',
           ĐVTT: 'Đơn vị Tiên tiến',
@@ -1029,7 +999,6 @@ export default function ProposalDetailPage() {
 
         const fullName = danhHieuMap[record.danh_hieu || ''] || record.danh_hieu || '-';
 
-        // Luôn hiển thị tên đầy đủ, không cho phép chỉnh sửa danh hiệu
         return (
           <div style={{ textAlign: 'center' }}>
             <Text>{fullName || '-'}</Text>
@@ -1044,7 +1013,7 @@ export default function ProposalDetailPage() {
       width: 180,
       align: 'center' as const,
       render: (_: any, record: DanhHieuItem, index: number) => {
-        // Kiểm tra cả so_quyet_dinh và các trường cũ để tương thích với dữ liệu cũ
+        // Check both so_quyet_dinh and legacy fields for backward compatibility
         const soQuyetDinh =
           record.so_quyet_dinh || record.so_quyet_dinh_bkbqp || record.so_quyet_dinh_cstdtq;
 
@@ -1129,12 +1098,10 @@ export default function ProposalDetailPage() {
       width: 180,
       align: 'center' as const,
       render: (_: any, record: ThanhTichItem) => {
-        // Hiển thị cấp bậc/chức vụ từ DB đề xuất (đã được lưu khi tạo đề xuất)
-        // Dữ liệu này được lưu từ bước 3 (Set Titles) khi manager nhập cấp bậc/chức vụ
+        // Rank/position stored at proposal creation time (Step 3), not current personnel data
         const capBac = record.cap_bac;
         const chucVu = record.chuc_vu;
 
-        // Nếu không có cả cấp bậc và chức vụ, để trống
         if (!capBac && !chucVu) {
           return (
             <div style={{ textAlign: 'center' }}>
@@ -1490,7 +1457,6 @@ export default function ProposalDetailPage() {
 
         {/* Hiển thị theo loại đề xuất - không chia tab */}
         {proposal.loai_de_xuat === PROPOSAL_TYPES.NCKH ? (
-          // Component cho đề xuất NCKH (ĐTKH/SKKH) - chỉ hiển thị Thành Tích
           <Card
             title="Thành Tích Khoa Học"
             extra={
@@ -1528,7 +1494,6 @@ export default function ProposalDetailPage() {
         ) : proposal.loai_de_xuat === PROPOSAL_TYPES.NIEN_HAN ||
           proposal.loai_de_xuat === PROPOSAL_TYPES.HC_QKQT ||
           proposal.loai_de_xuat === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN ? (
-          // Component cho đề xuất NIEN_HAN - hiển thị từ editedNienHan
           <Card
             title={
               proposal.loai_de_xuat === PROPOSAL_TYPES.NIEN_HAN
@@ -1570,7 +1535,6 @@ export default function ProposalDetailPage() {
             )}
           </Card>
         ) : proposal.loai_de_xuat === PROPOSAL_TYPES.CONG_HIEN ? (
-          // Component cho đề xuất CỐNG HIẾN - hiển thị từ editedCongHien
           <Card
             title="Danh Sách Huân chương Bảo vệ Tổ quốc"
             extra={
@@ -1606,7 +1570,6 @@ export default function ProposalDetailPage() {
             )}
           </Card>
         ) : editedDanhHieu.length > 0 ? (
-          // Component cho đề xuất có danh hiệu - chỉ hiển thị Danh Hiệu
           <Card
             title={
               proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM

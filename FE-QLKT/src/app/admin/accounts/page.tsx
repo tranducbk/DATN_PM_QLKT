@@ -71,8 +71,7 @@ export default function AdminAccountsPage() {
       centered: true,
       onOk: async () => {
         try {
-          // Nếu tài khoản có liên kết quân nhân, xóa quân nhân (cascade delete tất cả)
-          // Nếu không có quân nhân, chỉ xóa tài khoản
+          // Deleting personnel cascades all related data; deleting an account-only row is safe
           if (account.quan_nhan_id) {
             const response = await apiClient.deletePersonnel(account.quan_nhan_id);
             if (response.success) {
@@ -197,7 +196,7 @@ export default function AdminAccountsPage() {
       key: 'actions',
       align: 'center' as const,
       render: (_: any, record: any) => {
-        // Admin không thể xóa/sửa SUPER_ADMIN hoặc ADMIN khác
+        // Admin cannot modify SUPER_ADMIN or other ADMIN accounts
         const canModify = record.role !== ROLES.SUPER_ADMIN && record.role !== ROLES.ADMIN;
 
         return (

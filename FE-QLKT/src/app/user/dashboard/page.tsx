@@ -637,7 +637,6 @@ export default function UserDashboard() {
 
                     {/* Biểu đồ tổng các danh hiệu đã nhận */}
                     {(() => {
-                      // Tính toán số lượng từng loại danh hiệu
                       const danhHieuCounts: Record<string, number> = {
                         CSTDCS: 0,
                         CSTT: 0,
@@ -652,7 +651,6 @@ export default function UserDashboard() {
                         }
                       });
 
-                      // Tính tổng NCKH
                       const tongNCKH = Array.isArray(annualProfile?.tong_nckh)
                         ? annualProfile.tong_nckh.length
                         : annualProfile?.tong_nckh || 0;
@@ -896,11 +894,10 @@ export default function UserDashboard() {
                     </Divider>
 
                     {(() => {
-                      // Tính target tháng theo giới tính: Nam 120 tháng, Nữ 80 tháng (2/3)
+                      // Target months by gender: male 120, female 80 (2/3 of male)
                       const isFemale = personnelInfo?.gioi_tinh === 'NU';
                       const targetMonths = isFemale ? 80 : 120;
 
-                      // Tính tổng tháng theo từng hạng
                       const hangBaMonths =
                         (contributionProfile.months_07 || 0) +
                         (contributionProfile.months_08 || 0) +

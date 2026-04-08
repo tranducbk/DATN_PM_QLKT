@@ -31,7 +31,7 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/apiClient';
-import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/lib/constants/pagination.constants';
 import { formatDate } from '@/lib/utils';
 
 const { Title, Text } = Typography;
@@ -75,7 +75,6 @@ export default function BulkAddAnnualRewardsPage() {
   const [personnelList, setPersonnelList] = useState<Personnel[]>([]);
   const [filteredPersonnel, setFilteredPersonnel] = useState<Personnel[]>([]);
 
-  // Set năm hiện tại làm giá trị mặc định
   useEffect(() => {
     const currentYear = new Date().getFullYear();
     form.setFieldsValue({ nam: currentYear });
@@ -116,7 +115,7 @@ export default function BulkAddAnnualRewardsPage() {
     try {
       setLoading(true);
       const [personnelRes, unitsRes] = await Promise.all([
-        apiClient.getPersonnel({ limit: 1000 }),
+        apiClient.getPersonnel({ limit: FETCH_ALL_LIMIT }),
         apiClient.getUnits(),
       ]);
 
@@ -159,18 +158,10 @@ export default function BulkAddAnnualRewardsPage() {
     try {
       setLoading(true);
 
-      // Kiểm tra khen thưởng/đề xuất
-      // Lọc bỏ null/undefined (giữ nguyên string IDs vì Prisma dùng String cho ID)
-
+      // Filter out null/undefined — keep string IDs as-is (Prisma uses String for IDs)
       const validPersonnelIds = selectedRowKeys
-        .filter(k => {
-          const isValid = k !== null && k !== undefined && k !== '' && typeof k === 'string';
-          return isValid;
-        })
-        .map(k => {
-          // Giữ nguyên string ID, không convert sang number
-          return k;
-        });
+        .filter(k => k !== null && k !== undefined && k !== '' && typeof k === 'string')
+        .map(k => k);
 
       if (validPersonnelIds.length === 0) {
         message.warning('Vui lòng chọn ít nhất một quân nhân hợp lệ');
@@ -186,7 +177,7 @@ export default function BulkAddAnnualRewardsPage() {
       const checkResult = await apiClient.checkAnnualRewards(requestData);
 
       if (checkResult.success && checkResult.data) {
-        // Lọc ra các quân nhân có thể thêm (không có khen thưởng và không có đề xuất)
+        // Only personnel without existing reward or pending proposal are eligible
         const eligible = checkResult.data.results
           .filter((r: AnnualRewardCheckResultRow) => !r.has_reward && !r.has_proposal)
           .map((r: AnnualRewardCheckResultRow) => r.personnel_id);
@@ -198,11 +189,10 @@ export default function BulkAddAnnualRewardsPage() {
           return;
         }
 
-        // Gửi tất cả quân nhân đã chọn (không chỉ eligible) để hiển thị đầy đủ
-        // Trong page details sẽ chỉ thêm khen thưởng cho những người eligible
+        // Pass all selected personnel (not just eligible) so the details page can show full context
+        // Awards are only added for eligible ones in the details step
         const allSelectedIds = validPersonnelIds;
 
-        // Chuyển sang page nhập thông tin chi tiết
         const params = new URLSearchParams({
           personnel_ids: encodeURIComponent(JSON.stringify(allSelectedIds)),
           eligible_ids: encodeURIComponent(JSON.stringify(eligible)),
@@ -286,7 +276,6 @@ export default function BulkAddAnnualRewardsPage() {
   const rowSelection = {
     selectedRowKeys,
     onChange: (newSelectedRowKeys: React.Key[]) => {
-      // Lọc bỏ null/undefined trước khi set
       const validKeys = newSelectedRowKeys.filter(k => k !== null && k !== undefined && k !== '');
       setSelectedRowKeys(validKeys);
     },

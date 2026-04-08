@@ -27,7 +27,6 @@ const router = Router();
 
 router.get('/', verifyToken, requireAuth, annualRewardController.getAnnualRewards);
 
-// Kiểm tra quân nhân đã nhận HC QKQT chưa
 router.get(
   '/check-hcqkqt/:personnelId',
   verifyToken,
@@ -35,7 +34,6 @@ router.get(
   annualRewardController.checkAlreadyReceivedHCQKQT
 );
 
-// Kiểm tra quân nhân đã nhận KNC VSNXD chưa
 router.get(
   '/check-knc-vsnxd/:personnelId',
   verifyToken,
@@ -82,10 +80,8 @@ router.delete(
   annualRewardController.deleteAnnualReward
 );
 
-// Kiểm tra quân nhân đã có khen thưởng hoặc đề xuất cho năm đó chưa
 router.post('/check', verifyToken, requireAdmin, annualRewardController.checkAnnualRewards);
 
-// Thêm danh hiệu đồng loạt cho nhiều quân nhân (có thể kèm file đính kèm)
 router.post(
   '/bulk',
   verifyToken,
@@ -95,12 +91,11 @@ router.post(
     action: AUDIT_ACTIONS.BULK,
     resource: 'annual-rewards',
     getDescription: getLogDescription('annual-rewards', 'BULK'),
-    getResourceId: () => null, // Bulk operation không có single resource ID
+    getResourceId: () => null,
   }),
   annualRewardController.bulkCreateAnnualRewards
 );
 
-// Preview import danh hiệu hằng năm từ Excel (chỉ validate, không ghi DB)
 router.post(
   '/import/preview',
   verifyToken,
@@ -109,7 +104,6 @@ router.post(
   annualRewardController.previewImport
 );
 
-// Confirm import danh hiệu hằng năm (lưu dữ liệu đã validate vào DB)
 router.post(
   '/import/confirm',
   verifyToken,
@@ -118,7 +112,6 @@ router.post(
   annualRewardController.confirmImport
 );
 
-// Import danh hiệu hằng năm từ Excel
 router.post(
   '/import',
   verifyToken,
@@ -128,15 +121,13 @@ router.post(
     action: AUDIT_ACTIONS.IMPORT,
     resource: 'annual-rewards',
     getDescription: getLogDescription('annual-rewards', 'IMPORT'),
-    getResourceId: () => null, // Import operation không có single resource ID
+    getResourceId: () => null,
   }),
   annualRewardController.importAnnualRewards
 );
 
-// Tải file mẫu Excel
 router.get('/template', verifyToken, requireManager, annualRewardController.getTemplate);
 
-// Xuất danh sách ra Excel
 router.get(
   '/export',
   verifyToken,
@@ -144,7 +135,6 @@ router.get(
   annualRewardController.exportToExcel
 );
 
-// Thống kê khen thưởng cá nhân hằng năm
 router.get(
   '/statistics',
   verifyToken,
@@ -152,16 +142,16 @@ router.get(
   annualRewardController.getStatistics
 );
 
-// Serve file PDF quyết định
 router.get('/decision-files/:filename', verifyToken, (req: Request, res: Response) => {
   try {
-    const filename = normalizeParam(req.params.filename);
-    if (!filename) {
+    const raw = normalizeParam(req.params.filename);
+    if (!raw) {
       return res.status(400).json({
         success: false,
         message: 'Thiếu tên file',
       });
     }
+    const filename = path.basename(raw);
     const filePath = path.join(uploadDir, filename);
 
     if (!fs.existsSync(filePath)) {

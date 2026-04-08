@@ -19,3 +19,6 @@ export const DEFAULT_ANTD_TABLE_PAGINATION = {
 
 /** Bảng chọn trong modal (export, v.v.) — ít dòng để dễ quét. */
 export const MODAL_TABLE_PREVIEW_PAGE_SIZE = 5;
+
+/** Fetch all records in a single request (no true pagination needed). */
+export const FETCH_ALL_LIMIT = 1000;

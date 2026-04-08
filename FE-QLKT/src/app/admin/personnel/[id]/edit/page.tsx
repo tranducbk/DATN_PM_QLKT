@@ -115,12 +115,12 @@ export default function PersonnelEditPage() {
   const { user } = useAuth();
   const currentUserRole = user?.role || '';
   const [currentUnitName, setCurrentUnitName] = useState<string>('');
-  const [personnelRole, setPersonnelRole] = useState<string>(''); // Role của personnel đang edit
+  const [personnelRole, setPersonnelRole] = useState<string>('');
   const [selectedCoQuanDonViId, setSelectedCoQuanDonViId] = useState<string | undefined>(undefined);
   const [selectedDonViTrucThuocId, setSelectedDonViTrucThuocId] = useState<string | undefined>(
     undefined
   );
-  const [currentPositionId, setCurrentPositionId] = useState<string | undefined>(undefined); // Chức vụ hiện tại để luôn hiển thị
+  const [currentPositionId, setCurrentPositionId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -128,12 +128,11 @@ export default function PersonnelEditPage() {
         setLoadingData(true);
         const [personnelRes, coQuanRes, donViTrucThuocRes, positionsRes] = await Promise.all([
           apiClient.getPersonnelById(personnelId),
-          apiClient.getUnits(), // Cơ quan đơn vị
-          apiClient.getSubUnits(), // Đơn vị trực thuộc
+          apiClient.getUnits(),
+          apiClient.getSubUnits(),
           apiClient.getPositions(),
         ]);
 
-        // Lưu riêng 2 danh sách positions TRƯỚC
         const coQuanList = (coQuanRes?.data || []).filter((unit: any) => !unit.co_quan_don_vi_id);
         const donViList = donViTrucThuocRes?.data || [];
         const allPositions = positionsRes?.data || [];
@@ -146,24 +145,19 @@ export default function PersonnelEditPage() {
           const personnel = personnelRes.data;
           setPersonnel(personnel);
 
-          // Lấy role của personnel từ account liên kết
           const role = personnel.TaiKhoan?.role || personnel.Account?.role || '';
           setPersonnelRole(role);
 
-          // Xác định đơn vị hiện tại
-          // Ưu tiên đơn vị trực thuộc trước (cho USER), sau đó mới đến cơ quan đơn vị (cho MANAGER)
+          // Prefer don_vi_truc_thuoc (USER role); fall back to co_quan_don_vi (MANAGER role)
           let currentUnit = '';
           let coQuanId = '';
           let donViTrucThuocId = '';
 
           if (personnel.don_vi_truc_thuoc_id) {
-            // Personnel thuộc đơn vị trực thuộc (USER)
             currentUnit = personnel.DonViTrucThuoc?.ten_don_vi || '';
-            // Lấy cơ quan đơn vị của đơn vị trực thuộc
             coQuanId = personnel.DonViTrucThuoc?.co_quan_don_vi_id || '';
             donViTrucThuocId = personnel.don_vi_truc_thuoc_id;
           } else if (personnel.co_quan_don_vi_id) {
-            // Personnel thuộc cơ quan đơn vị (MANAGER)
             currentUnit = personnel.CoQuanDonVi?.ten_don_vi || '';
             coQuanId = personnel.co_quan_don_vi_id;
           }
@@ -172,11 +166,9 @@ export default function PersonnelEditPage() {
           setSelectedCoQuanDonViId(coQuanId);
           setSelectedDonViTrucThuocId(donViTrucThuocId);
 
-          // Lưu chức vụ hiện tại
           const positionId = personnel.chuc_vu_id || personnel.ChucVu?.id;
           setCurrentPositionId(positionId);
 
-          // Set form values sau khi đã set state
           form.setFieldsValue({
             ho_ten: personnel.ho_ten,
             cccd: personnel.cccd,
@@ -219,12 +211,9 @@ export default function PersonnelEditPage() {
     }
   }, [personnelId, form]);
 
-  // Kiểm tra xem có phải đang edit personnel có role MANAGER không
   const isManagerPersonnel = useMemo(() => personnelRole === ROLES.MANAGER, [personnelRole]);
 
-  // Filter chức vụ dựa trên đơn vị đã chọn
   const filteredPositions = useMemo(() => {
-    // Nếu đang load data ban đầu, hiện tất cả positions để Select có thể hiển thị đúng
     if (loadingData) {
       return positions;
     }
@@ -232,12 +221,10 @@ export default function PersonnelEditPage() {
     let filtered: any[] = [];
 
     if (isManagerPersonnel) {
-      // MANAGER: Chỉ hiện chức vụ của cơ quan đơn vị
       if (selectedCoQuanDonViId) {
         filtered = positions.filter((p: any) => p.co_quan_don_vi_id === selectedCoQuanDonViId);
       }
     } else {
-      // USER: Chỉ hiện chức vụ của đơn vị trực thuộc
       if (selectedDonViTrucThuocId) {
         filtered = positions.filter(
           (p: any) => p.don_vi_truc_thuoc_id === selectedDonViTrucThuocId
@@ -245,7 +232,7 @@ export default function PersonnelEditPage() {
       }
     }
 
-    // Luôn bao gồm chức vụ hiện tại nếu nó không có trong danh sách đã filter
+    // Always include the currently assigned position even if it no longer matches the filter
     if (currentPositionId && !filtered.find((p: any) => p.id === currentPositionId)) {
       const currentPosition = positions.find((p: any) => p.id === currentPositionId);
       if (currentPosition) {
@@ -299,18 +286,13 @@ export default function PersonnelEditPage() {
       };
 
       if (currentUserRole !== ROLES.MANAGER) {
-        // Xác định đơn vị: hoặc là cơ quan đơn vị hoặc là đơn vị trực thuộc
         if (isManagerPersonnel) {
-          // Nếu personnel có role MANAGER, chỉ lưu cơ quan đơn vị
           formattedValues.co_quan_don_vi_id = values.co_quan_don_vi_id;
           formattedValues.don_vi_truc_thuoc_id = null;
         } else if (values.don_vi_truc_thuoc_id) {
-          // Nếu chọn đơn vị trực thuộc, gửi cả co_quan_don_vi_id và don_vi_truc_thuoc_id
-          // BE sẽ tự động lấy co_quan_don_vi_id từ đơn vị cha của don_vi_truc_thuoc_id
           formattedValues.don_vi_truc_thuoc_id = values.don_vi_truc_thuoc_id;
           formattedValues.co_quan_don_vi_id = values.co_quan_don_vi_id;
         } else if (values.co_quan_don_vi_id) {
-          // Nếu chỉ chọn cơ quan đơn vị
           formattedValues.co_quan_don_vi_id = values.co_quan_don_vi_id;
           formattedValues.don_vi_truc_thuoc_id = null;
         }
@@ -576,8 +558,7 @@ export default function PersonnelEditPage() {
                           onChange={value => {
                             setSelectedCoQuanDonViId(value);
                             setSelectedDonViTrucThuocId(undefined);
-                            setCurrentPositionId(undefined); // Clear chức vụ hiện tại khi đổi đơn vị
-                            // Reset đơn vị trực thuộc và chức vụ khi đổi cơ quan đơn vị
+                            setCurrentPositionId(undefined); // Clear position when unit changes
                             form.setFieldsValue({
                               don_vi_truc_thuoc_id: undefined,
                               chuc_vu_id: undefined,
@@ -611,8 +592,7 @@ export default function PersonnelEditPage() {
                             optionFilterProp="children"
                             onChange={value => {
                               setSelectedDonViTrucThuocId(value);
-                              setCurrentPositionId(undefined); // Clear chức vụ hiện tại khi đổi đơn vị
-                              // Reset chức vụ khi đổi đơn vị trực thuộc
+                              setCurrentPositionId(undefined); // Clear position when sub-unit changes
                               form.setFieldsValue({ chuc_vu_id: undefined });
                             }}
                           >
@@ -650,7 +630,6 @@ export default function PersonnelEditPage() {
                       showSearch
                       optionFilterProp="children"
                       onChange={value => {
-                        // Update currentPositionId khi user chọn chức vụ mới
                         setCurrentPositionId(value);
                       }}
                     >

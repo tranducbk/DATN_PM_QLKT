@@ -14,7 +14,7 @@ import {
   INDIVIDUAL_AWARD_TABS,
   type AwardType,
 } from '@/constants/danhHieu.constants';
-import { MODAL_TABLE_PREVIEW_PAGE_SIZE } from '@/lib/constants/pagination.constants';
+import { MODAL_TABLE_PREVIEW_PAGE_SIZE, FETCH_ALL_LIMIT } from '@/lib/constants/pagination.constants';
 
 const { Text } = Typography;
 
@@ -54,7 +54,6 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
   const [selectedUnitIds, setSelectedUnitIds] = useState<string[]>([]);
   const [loadingPersonnel, setLoadingPersonnel] = useState(false);
 
-  // Reset form khi đổi tab hoặc mở modal
   useEffect(() => {
     if (open) {
       setTuNam(null);
@@ -67,7 +66,6 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
     }
   }, [open, activeTab]);
 
-  // Load danh sách đơn vị
   useEffect(() => {
     if (!open) return;
     const loadUnits = async () => {
@@ -83,7 +81,6 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
     loadUnits();
   }, [open]);
 
-  // Fetch personnel khi donViId thay đổi (chỉ cho tab cá nhân)
   useEffect(() => {
     if (!open || !INDIVIDUAL_AWARD_TABS.includes(activeTab)) {
       setPersonnelList([]);
@@ -97,7 +94,7 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
     const fetchPersonnel = async () => {
       try {
         setLoadingPersonnel(true);
-        const res = await apiClient.getPersonnel({ unit_id: donViId, limit: 1000 });
+        const res = await apiClient.getPersonnel({ unit_id: donViId, limit: FETCH_ALL_LIMIT });
         if (res.success) {
           const list = res.data?.rows ?? res.data ?? [];
           setPersonnelList(
@@ -117,12 +114,11 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
   }, [donViId, open, activeTab]);
 
   const hasDanhHieuFilter = ['CNHN', 'DVHN', 'HCCSVV', 'HCBVTQ'].includes(activeTab);
-  const hasUnitFilter = activeTab !== 'DVHN'; // Tab đơn vị không cần filter đơn vị
+  const hasUnitFilter = activeTab !== 'DVHN'; // DVHN tab exports all units — no unit filter needed
   const isIndividualTab = INDIVIDUAL_AWARD_TABS.includes(activeTab);
   const isUnitTab = activeTab === 'DVHN';
 
   const handleExport = async () => {
-    // Validate khoảng năm
     if (tuNam && denNam && tuNam > denNam) {
       message.error('Năm bắt đầu phải nhỏ hơn hoặc bằng năm kết thúc');
       return;
@@ -134,7 +130,7 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
 
       if (tuNam) params.tu_nam = tuNam;
       if (denNam) params.den_nam = denNam;
-      // Nếu chỉ chọn 1 năm, gửi param nam đơn lẻ cho API cũ
+      // Single-year selection uses the legacy `nam` param for backward compatibility
       if (tuNam && denNam && tuNam === denNam) {
         params.nam = tuNam;
         delete params.tu_nam;

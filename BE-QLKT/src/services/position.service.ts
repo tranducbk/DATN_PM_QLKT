@@ -157,7 +157,6 @@ class PositionService {
         : position.is_manager;
     const newHeSoChucVu = he_so_chuc_vu !== undefined ? he_so_chuc_vu : position.he_so_chuc_vu;
 
-    // Kiểm tra có thay đổi thực sự không
     if (
       newTenChucVu === position.ten_chuc_vu &&
       newIsManager === position.is_manager &&

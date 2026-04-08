@@ -32,7 +32,7 @@ router.post(
  * @desc    Lấy access token mới khi hết hạn
  * @access  Public
  */
-router.post('/refresh', validate(authValidation.refreshToken), authController.refresh);
+router.post('/refresh', authLimiter, validate(authValidation.refreshToken), authController.refresh);
 
 /**
  * @route   POST /api/auth/logout

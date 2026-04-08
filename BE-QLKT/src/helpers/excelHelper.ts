@@ -1,6 +1,6 @@
 import { Worksheet, CellValue } from 'exceljs';
 
-/** Bỏ dấu tiếng Việt để normalize header thành key ASCII. */
+/** Removes Vietnamese accents and returns ASCII text. */
 function removeVietnameseAccents(str: string): string {
   return str
     .normalize('NFD')
@@ -10,9 +10,9 @@ function removeVietnameseAccents(str: string): string {
 }
 
 /**
- * Parse header row (row 1) thành map: normalized key -> column number (1-based).
- * @param worksheet - Worksheet cần parse
- * @returns Map từ header key đến số cột
+ * Parses row 1 headers into a normalized key -> column number map.
+ * @param worksheet - Worksheet to parse
+ * @returns Header key to 1-based column number map
  */
 function parseHeaderMap(worksheet: Worksheet): Record<string, number> {
   const headerRow = worksheet.getRow(1);
@@ -34,10 +34,10 @@ function parseHeaderMap(worksheet: Worksheet): Record<string, number> {
 }
 
 /**
- * Tìm column number cho header theo danh sách tên biến thể.
- * @param headerMap - Map từ parseHeaderMap
- * @param variations - Các tên header có thể (e.g. ['ho_ten', 'hoten'])
- * @returns Column number (1-based), hoặc null nếu không tìm thấy
+ * Finds a header column by trying multiple key variations.
+ * @param headerMap - Header map from `parseHeaderMap`
+ * @param variations - Candidate header keys (e.g. ['ho_ten', 'hoten'])
+ * @returns 1-based column number, or null when not found
  */
 function getHeaderCol(headerMap: Record<string, number>, variations: string[]): number | null {
   for (const v of variations) {
@@ -47,9 +47,9 @@ function getHeaderCol(headerMap: Record<string, number>, variations: string[]): 
 }
 
 /**
- * Parse giá trị ô Excel thành boolean ('có', 'true', '1', 'x' -> true).
- * @param value - Giá trị từ ô Excel
- * @returns true nếu giá trị biểu thị "có/đúng"
+ * Parses an Excel cell value to boolean.
+ * @param value - Raw Excel cell value
+ * @returns True when value represents an affirmative flag
  */
 function parseBooleanValue(value: CellValue | null | undefined): boolean {
   if (value === null || value === undefined) return false;
@@ -58,10 +58,10 @@ function parseBooleanValue(value: CellValue | null | undefined): boolean {
 }
 
 /**
- * Resolve thông tin quân nhân từ file Excel và DB, kiểm tra thiếu thông tin.
- * @param row - Dữ liệu từ dòng Excel (ho_ten, cap_bac, chuc_vu)
- * @param personnel - Dữ liệu quân nhân từ DB
- * @returns Object chứa resolved values và danh sách field thiếu
+ * Resolves personnel display data from Excel row and DB fallback.
+ * @param row - Excel row values (`ho_ten`, `cap_bac`, `chuc_vu`)
+ * @param personnel - Personnel record from database
+ * @returns Resolved values and missing field names
  */
 function resolvePersonnelInfo(
   row: { ho_ten?: string | null; cap_bac?: string | null; chuc_vu?: string | null },
@@ -80,11 +80,11 @@ function resolvePersonnelInfo(
 }
 
 /**
- * Build Set các key từ proposals PENDING để check trùng nhanh O(1).
- * @param proposals - Danh sách đề xuất PENDING từ bangDeXuat
- * @param dataField - Tên trường JSON chứa data (e.g. 'data_danh_hieu', 'data_nien_han')
- * @param keyBuilder - Hàm tạo key từ mỗi item trong JSON array và proposal
- * @returns Set các key để check `.has()`
+ * Builds a key set from pending proposals for fast duplicate checks.
+ * @param proposals - Pending proposals from `bangDeXuat`
+ * @param dataField - JSON data field name (e.g. `data_danh_hieu`, `data_nien_han`)
+ * @param keyBuilder - Callback to build a key from each proposal item
+ * @returns Set of keys for O(1) lookup
  */
 function buildPendingKeys(
   proposals: Array<Record<string, unknown>>,

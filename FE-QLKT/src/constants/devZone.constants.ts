@@ -5,7 +5,7 @@
 export const DEV_ZONE_API = '/api/dev-zone';
 
 export const DEV_SESSION_KEY = 'dev_zone_session';
-export const DEV_SESSION_DURATION = 15 * 60 * 1000; // 15 phút
+export const DEV_SESSION_DURATION = 15 * 60 * 1000; // 15 minutes
 
 /** Preset lịch chạy cron job */
 export const CRON_PRESETS = [

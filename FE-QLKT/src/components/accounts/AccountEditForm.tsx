@@ -77,7 +77,6 @@ export function AccountEditForm({ accountId }: AccountEditFormProps) {
     fetchAccount();
   }, [accountId, message, form]);
 
-  // Lấy danh sách role có thể chỉnh sửa dựa trên role hiện tại
   const getAvailableRoles = () => {
     if (currentUserRole === ROLES.SUPER_ADMIN) {
       return roleSelectOptions([

@@ -205,8 +205,8 @@ class AdhocAwardService {
 
       try {
         await this.notifyOnAdhocAwardCreated(adhocAward, admin.username);
-      } catch {
-        // Không throw error để không ảnh hưởng đến việc tạo khen thưởng
+      } catch (e) {
+        console.error('notifyOnAdhocAwardCreated failed:', e);
       }
 
       return adhocAward;
@@ -629,8 +629,8 @@ class AdhocAwardService {
 
       try {
         await this.notifyOnAdhocAwardUpdated(updated, admin.username);
-      } catch {
-        // Không throw error
+      } catch (e) {
+        console.error('notifyOnAdhocAwardUpdated failed:', e);
       }
 
       return updated;

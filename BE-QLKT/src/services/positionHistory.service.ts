@@ -43,7 +43,7 @@ class PositionHistoryService {
       if (!mEnd2) {
         return true;
       }
-      // [start1, ∞) vs [start2, end2]: trùng khi end2 >= start1
+      // [start1, ∞) vs [start2, end2]: overlap when end2 >= start1
       return mEnd2.isSameOrAfter(mStart1);
     }
 

@@ -19,7 +19,6 @@ export const COLUMN_STYLES: {
   noteText: { fontSize: '11px', fontStyle: 'italic' },
 };
 
-// Helper: Render quyết định (có thể click để tải file)
 export const renderDecision = (
   soQuyetDinh: string | null | undefined,
   onDownload?: (soQuyetDinh: string) => void
@@ -42,7 +41,6 @@ export const renderDecision = (
     )
   ) : null;
 
-// Helper: Render danh hiệu item
 export const renderAwardItem = (
   key: string,
   title: string,
@@ -60,7 +58,6 @@ export interface RenderAnnualAwardsOptions {
   onDownload?: (soQuyetDinh: string) => void;
 }
 
-// Helper: Render danh hiệu hằng năm và các bằng khen
 export const renderAnnualAwards = (
   text: string | null,
   record: any,
@@ -69,13 +66,11 @@ export const renderAnnualAwards = (
   const items = [];
   const onDownload = options?.onDownload;
 
-  // Danh hiệu hằng năm
   if (text) {
     const fullName = DANH_HIEU_MAP[text] || text;
     items.push(renderAwardItem('danh_hieu', fullName, record.so_quyet_dinh, true, onDownload));
   }
 
-  // Các bằng khen bổ sung
   const additionalAwards = [
     {
       key: 'bkbqp',
@@ -103,7 +98,6 @@ export const renderAnnualAwards = (
     }
   });
 
-  // Ghi chú (in nghiêng)
   if (record.ghi_chu) {
     items.push(
       <Text key="ghi_chu" type="secondary" style={COLUMN_STYLES.noteText}>
@@ -117,7 +111,6 @@ export const renderAnnualAwards = (
   return <div style={COLUMN_STYLES.container}>{items}</div>;
 };
 
-// Determine loại khen thưởng based on danh_hieu
 // Re-export from constants for backward compatibility
 export const getLoaiKhenThuong = (danhHieu: string | null): string => {
   if (!danhHieu) return '-';

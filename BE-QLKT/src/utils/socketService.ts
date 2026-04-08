@@ -1,8 +1,8 @@
 /**
- * Socket Service - Quản lý kết nối Socket.IO
+ * Socket service for Socket.IO connections.
  *
- * Mỗi user sau khi xác thực sẽ join vào room riêng theo user ID.
- * Khi có thông báo mới, BE emit vào đúng room để FE nhận ngay lập tức.
+ * Each authenticated user joins a private room by user ID.
+ * Backend emits events to that room for real-time updates.
  */
 
 import { Server, Socket } from 'socket.io';
@@ -19,7 +19,9 @@ interface DecodedToken {
 let io: Server | null = null;
 
 /**
- * Khởi tạo Socket.IO với HTTP server
+ * Initialize Socket.IO with the HTTP server.
+ * @param httpServer - Express HTTP server instance
+ * @returns Configured Socket.IO server instance
  */
 function initSocket(httpServer: HttpServer): Server {
   io = new Server(httpServer, {
@@ -54,9 +56,10 @@ function initSocket(httpServer: HttpServer): Server {
 }
 
 /**
- * Gửi thông báo real-time đến một user cụ thể
- * @param userId - ID của người nhận
- * @param notification - Dữ liệu thông báo
+ * Emit a notification to a specific user room.
+ * @param userId - Target user ID
+ * @param notification - Notification payload
+ * @returns No return value
  */
 function emitNotificationToUser(userId: string, notification: Record<string, unknown>): void {
   if (!io) return;
@@ -64,7 +67,11 @@ function emitNotificationToUser(userId: string, notification: Record<string, unk
 }
 
 /**
- * Gửi một event bất kỳ đến một user cụ thể
+ * Emit any event to a specific user room.
+ * @param userId - Target user ID
+ * @param event - Socket.IO event name
+ * @param data - Event payload
+ * @returns No return value
  */
 function emitToUser(userId: string, event: string, data: unknown): void {
   if (!io) return;

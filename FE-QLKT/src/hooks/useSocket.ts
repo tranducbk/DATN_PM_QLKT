@@ -60,9 +60,9 @@ export function useSocket(
     socket.on('reconnect_failed', () => updateStatus('disconnected'));
 
     socket.on('connect_error', () => {
-      const freshToken = localStorage.getItem('accessToken');
-      if (freshToken && freshToken !== (socket.auth as Record<string, string>)?.token) {
-        (socket.auth as Record<string, string>).token = freshToken;
+      const latestToken = localStorage.getItem('accessToken');
+      if (latestToken && latestToken !== (socket.auth as Record<string, string>)?.token) {
+        (socket.auth as Record<string, string>).token = latestToken;
       }
     });
 

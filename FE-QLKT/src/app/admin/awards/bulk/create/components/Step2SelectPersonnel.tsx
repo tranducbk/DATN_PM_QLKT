@@ -5,7 +5,7 @@ import { Table, Input, Select, Space, Alert, Typography, Tag, InputNumber, Empty
 import { SearchOutlined, TeamOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
-import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/lib/constants/pagination.constants';
 import { formatDate } from '@/lib/utils';
 import type { DateInput } from '@/lib/types';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
@@ -49,7 +49,7 @@ interface Step2SelectPersonnelProps {
   onPersonnelChange: (ids: string[]) => void;
   nam: number;
   onNamChange: (nam: number) => void;
-  proposalType?: string; // Để biết khi nào cần hiển thị ngày nhập ngũ/xuất ngũ
+  proposalType?: string; // Determines whether to show enlistment/discharge date columns
 }
 
 export function Step2SelectPersonnel({
@@ -72,16 +72,12 @@ export function Step2SelectPersonnel({
   const fetchPersonnel = async () => {
     try {
       setLoading(true);
-      // Gọi API lấy danh sách personnel thuộc đơn vị của manager
       const response = await apiClient.getPersonnel({
-        // Manager chỉ lấy personnel trong đơn vị của mình
-        // Backend sẽ tự filter dựa trên token
         page: 1,
-        limit: 1000, // Lấy tất cả
+        limit: FETCH_ALL_LIMIT,
       });
 
       if (response.success) {
-        // Backend trả về { success: true, data: { personnel: [], pagination: {} } }
         const personnelData = response.data?.personnel ?? [];
         setPersonnel(personnelData);
       }
@@ -137,19 +133,16 @@ export function Step2SelectPersonnel({
       width: 200,
       align: 'center',
       render: (text: string, record) => {
-        // Hiển thị thêm Cơ quan đơn vị / Đơn vị trực thuộc ngay dưới họ tên
         const coQuan = record.DonViTrucThuoc?.CoQuanDonVi || record.CoQuanDonVi;
         const donViTrucThuoc = record.DonViTrucThuoc;
 
         let donViDisplay: string | null = null;
 
         if (donViTrucThuoc?.ten_don_vi) {
-          // Ưu tiên đơn vị trực thuộc, kèm theo cơ quan nếu có
           donViDisplay = coQuan?.ten_don_vi
             ? `${donViTrucThuoc.ten_don_vi} (${coQuan.ten_don_vi})`
             : donViTrucThuoc.ten_don_vi;
         } else if (coQuan?.ten_don_vi) {
-          // Chỉ có cơ quan đơn vị
           donViDisplay = coQuan.ten_don_vi;
         }
 
@@ -195,9 +188,7 @@ export function Step2SelectPersonnel({
     },
   ];
 
-  // Thêm cột ngày nhập ngũ, xuất ngũ và tổng tháng cho đề xuất niên hạn
   if (proposalType === PROPOSAL_TYPES.NIEN_HAN) {
-    // Hàm tính tổng số tháng từ ngày nhập ngũ đến hiện tại (hoặc ngày xuất ngũ)
     const calculateTotalMonths = (
       ngayNhapNgu: DateInput,
       ngayXuatNgu: DateInput
@@ -210,22 +201,18 @@ export function Step2SelectPersonnel({
           ? typeof ngayXuatNgu === 'string'
             ? new Date(ngayXuatNgu)
             : ngayXuatNgu
-          : new Date(); // Nếu chưa xuất ngũ thì tính đến hiện tại
+          : new Date(); // Use current date if still serving
 
-        // Đảm bảo startDate và endDate hợp lệ
         if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
           return null;
         }
 
-        // Tính số năm và tháng chính xác
         let years = endDate.getFullYear() - startDate.getFullYear();
         let months = endDate.getMonth() - startDate.getMonth();
         let days = endDate.getDate() - startDate.getDate();
 
-        // Điều chỉnh nếu ngày cuối nhỏ hơn ngày đầu
         if (days < 0) {
           months -= 1;
-          // Lấy số ngày của tháng trước đó
           const lastDayOfPrevMonth = new Date(
             endDate.getFullYear(),
             endDate.getMonth(),
@@ -234,20 +221,16 @@ export function Step2SelectPersonnel({
           days += lastDayOfPrevMonth;
         }
 
-        // Điều chỉnh nếu tháng cuối nhỏ hơn tháng đầu
         if (months < 0) {
           years -= 1;
           months += 12;
         }
 
-        // Tính tổng số tháng (làm tròn xuống)
         const totalMonths = years * 12 + months;
 
-        // Tính số năm và tháng còn lại để hiển thị
         const totalYears = Math.floor(totalMonths / 12);
         const remainingMonths = totalMonths % 12;
 
-        // Trả về object với years và months riêng biệt
         return {
           years: totalYears,
           months: remainingMonths,
@@ -304,7 +287,6 @@ export function Step2SelectPersonnel({
           const result = calculateTotalMonths(record.ngay_nhap_ngu, record.ngay_xuat_ngu);
           if (!result) return <Text type="secondary">-</Text>;
 
-          // Hiển thị năm ở trên, tháng nhỏ bên dưới
           if (result.years > 0 && result.months > 0) {
             return (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>

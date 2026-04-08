@@ -60,13 +60,11 @@ export default function ManagerPersonnelPage() {
   });
   const [managerUnitId, setManagerUnitId] = useState<string | null>(null);
 
-  // Lấy thông tin đơn vị của manager từ auth context
   useEffect(() => {
-    // Ưu tiên lấy don_vi_id trực tiếp từ user info
+    // Prefer don_vi_id from user info; fall back to API call for legacy accounts
     if (user?.don_vi_id) {
       setManagerUnitId(user.don_vi_id);
     } else if (user?.quan_nhan_id) {
-      // Fallback: Gọi API nếu chưa có don_vi_id (cho tài khoản đăng nhập cũ)
       apiClient
         .getPersonnelById(user.quan_nhan_id)
         .then(res => {
@@ -88,7 +86,6 @@ export default function ManagerPersonnelPage() {
     }
   }, []);
 
-  // Load dữ liệu khi có managerUnitId
   useEffect(() => {
     if (managerUnitId !== null) {
       loadData();
@@ -170,39 +167,29 @@ export default function ManagerPersonnelPage() {
     }
   };
 
-  // Filter positions: Chỉ hiển thị các chức vụ đang được sử dụng bởi quân nhân trong đơn vị
-  // Lấy danh sách chức vụ ID từ quân nhân thực tế
+  // Only show positions actually used by personnel in this unit
   const usedPositionIds = new Set(
     personnel.map(p => p.chuc_vu_id).filter(id => id !== null && id !== undefined)
   );
 
-  // Lọc các chức vụ từ positions dựa trên:
-  // 1. Chức vụ đang được sử dụng bởi quân nhân (có trong usedPositionIds)
-  // 2. Và thuộc về đơn vị của manager
-  // Sử dụng Map với ID làm key để loại bỏ trùng lặp theo ID
+  // Deduplicate by ID and by name
   const filteredPositionsMapById = new Map<string, ManagerPositionRow>();
-  // Sử dụng Map với tên làm key để loại bỏ trùng lặp theo tên
   const filteredPositionsMapByName = new Map<string, ManagerPositionRow>();
 
   positions.forEach(pos => {
     if (!managerUnitId) return;
 
-    // Chỉ thêm nếu chức vụ đang được sử dụng
     if (!usedPositionIds.has(pos.id)) {
       return;
     }
 
     let shouldInclude = false;
 
-    // 1. Chức vụ thuộc trực tiếp cơ quan đơn vị (co_quan_don_vi_id = managerUnitId)
     if (pos.co_quan_don_vi_id === managerUnitId) {
       shouldInclude = true;
     }
 
-    // 2. Chức vụ thuộc đơn vị trực thuộc của cơ quan đơn vị
-    // Sử dụng DonViTrucThuoc relation có sẵn trong position
     if (!shouldInclude && pos.don_vi_truc_thuoc_id && pos.DonViTrucThuoc) {
-      // Kiểm tra co_quan_don_vi_id từ DonViTrucThuoc relation
       const coQuanIdFromRelation =
         pos.DonViTrucThuoc.co_quan_don_vi_id || pos.DonViTrucThuoc.CoQuanDonVi?.id;
       if (coQuanIdFromRelation === managerUnitId) {
@@ -210,16 +197,10 @@ export default function ManagerPersonnelPage() {
       }
     }
 
-    // Chỉ thêm vào Map nếu:
-    // - Thuộc đơn vị của manager
-    // - Chưa có trong Map theo ID (loại bỏ trùng lặp theo ID)
-    // - Chưa có trong Map theo tên (loại bỏ trùng lặp theo tên)
     if (shouldInclude) {
       const positionName = pos.ten_chuc_vu?.trim() || '';
 
-      // Kiểm tra trùng lặp theo ID
       if (!filteredPositionsMapById.has(pos.id)) {
-        // Kiểm tra trùng lặp theo tên
         if (!filteredPositionsMapByName.has(positionName)) {
           filteredPositionsMapById.set(pos.id, pos);
           filteredPositionsMapByName.set(positionName, pos);
@@ -228,7 +209,6 @@ export default function ManagerPersonnelPage() {
     }
   });
 
-  // Chuyển Map thành mảng để sử dụng (chỉ lấy từ Map theo ID để đảm bảo không trùng)
   const filteredPositions = Array.from(filteredPositionsMapById.values());
 
   const filteredPersonnel = personnel
@@ -240,14 +220,13 @@ export default function ManagerPersonnelPage() {
       return matchesSearch && matchesPosition && matchesCapBac;
     })
     .sort((a, b) => {
-      // Những người không có đơn vị trực thuộc (chỉ huy) lên đầu
+      // Commanders (no sub-unit) sort first
       const aIsManager = !a.don_vi_truc_thuoc_id;
       const bIsManager = !b.don_vi_truc_thuoc_id;
 
       if (aIsManager && !bIsManager) return -1;
       if (!aIsManager && bIsManager) return 1;
 
-      // Nếu cùng loại thì giữ nguyên thứ tự
       return 0;
     });
 

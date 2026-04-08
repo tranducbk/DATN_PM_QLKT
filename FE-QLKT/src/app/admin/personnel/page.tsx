@@ -80,7 +80,7 @@ export default function PersonnelPage() {
 
   useEffect(() => {
     loadData();
-  }, []); // Chỉ load một lần khi mount, không load lại khi pagination thay đổi
+  }, []);
 
   async function loadData() {
     try {
@@ -89,7 +89,7 @@ export default function PersonnelPage() {
       const settled = await Promise.allSettled([
         apiClient.getPersonnel({
           page: 1,
-          limit: 10000, // Lấy tất cả để paginate ở client
+          limit: 10000, // Fetch all for client-side pagination
         }),
         apiClient.getUnits(),
         apiClient.getPositions(),
@@ -108,7 +108,6 @@ export default function PersonnelPage() {
           ? settled[2].value
           : ({ success: false as const } as const);
 
-      // 1. Lấy tất cả danh sách quân nhân (không pagination) để paginate ở client-side
       if (personnelRes.success) {
         const personnelData = (personnelRes.data?.personnel || []).map((p: PersonnelApiRow) => {
           const coQuanDonViRelation = (p.CoQuanDonVi ||
@@ -163,7 +162,6 @@ export default function PersonnelPage() {
 
         setPersonnel(personnelData);
 
-        // Cập nhật pagination total từ API (tổng số records)
         const total = personnelRes.data?.pagination?.total || personnelData.length;
         setPagination(prev => ({
           ...prev,
@@ -173,7 +171,6 @@ export default function PersonnelPage() {
         message.error(personnelRes.message || 'Không thể tải danh sách quân nhân');
       }
 
-      // 2. Danh sách đơn vị (song song với trên; lỗi thì để rỗng)
       if (unitsRes.success) {
         const unitsData = (unitsRes.data || []) as UnitApiRow[];
         const coQuanDonViList: AdminCoQuanDonViRow[] = [];
@@ -212,7 +209,6 @@ export default function PersonnelPage() {
         setUnits({ coQuanDonVi: [], donViTrucThuocMap: {} });
       }
 
-      // 3. Danh sách chức vụ
       if (positionsRes.success) {
         setPositions((positionsRes.data || []) as ManagerPositionRow[]);
       } else {
@@ -231,18 +227,14 @@ export default function PersonnelPage() {
       const matchesSearch =
         p.ho_ten?.toLowerCase().includes(searchTerm.toLowerCase()) || p.cccd?.includes(searchTerm);
 
-      // Filter theo cơ quan đơn vị
       let matchesCoQuanDonVi = true;
       if (selectedCoQuanDonVi && selectedCoQuanDonVi !== 'ALL') {
-        // Nếu quân nhân thuộc cơ quan đơn vị trực tiếp
         if (p.co_quan_don_vi_id === selectedCoQuanDonVi) {
           matchesCoQuanDonVi = true;
         }
-        // Nếu quân nhân thuộc đơn vị trực thuộc, check cơ quan đơn vị cha
         else if (p.DonViTrucThuoc?.CoQuanDonVi?.id === selectedCoQuanDonVi) {
           matchesCoQuanDonVi = true;
         }
-        // Nếu có co_quan_don_vi_id từ relation
         else if (p.DonViTrucThuoc?.co_quan_don_vi_id === selectedCoQuanDonVi) {
           matchesCoQuanDonVi = true;
         } else {
@@ -250,7 +242,6 @@ export default function PersonnelPage() {
         }
       }
 
-      // Filter theo đơn vị trực thuộc
       const matchesDonViTrucThuoc =
         !selectedDonViTrucThuoc ||
         selectedDonViTrucThuoc === 'ALL' ||
@@ -271,18 +262,16 @@ export default function PersonnelPage() {
       );
     })
     .sort((a, b) => {
-      // Những người không có đơn vị trực thuộc (chỉ huy) lên đầu
+      // Personnel without a sub-unit (commanders) are sorted first
       const aIsManager = !a.don_vi_truc_thuoc_id;
       const bIsManager = !b.don_vi_truc_thuoc_id;
 
       if (aIsManager && !bIsManager) return -1;
       if (!aIsManager && bIsManager) return 1;
 
-      // Nếu cùng loại thì giữ nguyên thứ tự
       return 0;
     });
 
-  // Lấy danh sách đơn vị trực thuộc để hiển thị (filter theo cơ quan đơn vị đã chọn hoặc tất cả)
   const availableDonViTrucThuoc =
     selectedCoQuanDonVi && selectedCoQuanDonVi !== 'ALL'
       ? units.donViTrucThuocMap[selectedCoQuanDonVi] || []
@@ -457,13 +446,13 @@ export default function PersonnelPage() {
                   const newValue = value || 'ALL';
                   setSelectedCoQuanDonVi(newValue);
                   setSelectedDonViTrucThuoc(newValue !== 'ALL' ? 'ALL' : null);
-                  setSelectedChucVu('ALL'); // Reset chức vụ
-                  setChucVuSearchValue(''); // Clear search value khi đổi cơ quan đơn vị
+                  setSelectedChucVu('ALL');
+                  setChucVuSearchValue('');
                 }}
                 onClear={() => {
                   setSelectedCoQuanDonVi('ALL');
                   setSelectedDonViTrucThuoc(null);
-                  setSelectedChucVu('ALL'); // Reset chức vụ
+                  setSelectedChucVu('ALL');
                   setChucVuSearchValue(''); // Clear search value
                 }}
                 style={{ width: '100%' }}
@@ -502,12 +491,12 @@ export default function PersonnelPage() {
                 }
                 onChange={value => {
                   setSelectedDonViTrucThuoc(value || 'ALL');
-                  setSelectedChucVu('ALL'); // Reset chức vụ
-                  setChucVuSearchValue(''); // Clear search value khi đổi đơn vị trực thuộc
+                  setSelectedChucVu('ALL');
+                  setChucVuSearchValue('');
                 }}
                 onClear={() => {
                   setSelectedDonViTrucThuoc('ALL');
-                  setSelectedChucVu('ALL'); // Reset chức vụ
+                  setSelectedChucVu('ALL');
                   setChucVuSearchValue(''); // Clear search value
                 }}
                 style={{ width: '100%' }}
@@ -598,21 +587,15 @@ export default function PersonnelPage() {
                 allowClear
               >
                 {(() => {
-                  // Filter positions dựa trên frontend
                   const filteredPositions = positions.filter((pos: ManagerPositionRow) => {
-                    // Nếu không chọn cơ quan đơn vị, hiển thị tất cả
                     if (!selectedCoQuanDonVi || selectedCoQuanDonVi === 'ALL') return true;
 
-                    // Nếu chọn đơn vị trực thuộc cụ thể, chỉ hiển thị chức vụ của đơn vị đó
                     if (selectedDonViTrucThuoc && selectedDonViTrucThuoc !== 'ALL') {
                       return pos.don_vi_truc_thuoc_id === selectedDonViTrucThuoc;
                     }
 
-                    // Nếu chỉ chọn cơ quan đơn vị, hiển thị:
-                    // 1. Chức vụ có co_quan_don_vi_id = selectedCoQuanDonVi
                     if (pos.co_quan_don_vi_id === selectedCoQuanDonVi) return true;
 
-                    // 2. Chức vụ của đơn vị trực thuộc thuộc cơ quan đơn vị đó
                     const donViTrucThuocList = units.donViTrucThuocMap[selectedCoQuanDonVi] || [];
                     return donViTrucThuocList.some(unit => unit.id === pos.don_vi_truc_thuoc_id);
                   });
@@ -646,10 +629,9 @@ export default function PersonnelPage() {
               ...DEFAULT_ANTD_TABLE_PAGINATION,
               current: pagination.current,
               pageSize: pagination.pageSize,
-              total: filteredPersonnel.length, // Dùng filteredPersonnel.length thay vì total từ API
+              total: filteredPersonnel.length,
               showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} quân nhân`,
               onChange: (page, pageSize) => {
-                // Client-side pagination - không cần gọi API, không cần loading
                 setPagination(prev => ({
                   ...prev,
                   current: page,
@@ -657,7 +639,6 @@ export default function PersonnelPage() {
                 }));
               },
               onShowSizeChange: (current, size) => {
-                // Client-side pagination - không cần gọi API, không cần loading
                 setPagination(prev => ({
                   ...prev,
                   current: 1,

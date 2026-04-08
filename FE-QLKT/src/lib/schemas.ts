@@ -34,9 +34,9 @@ export const accountCreateSchema = z
       ),
     confirmPassword: z.string().optional(),
     role: userRoleEnum,
-    co_quan_don_vi_id: z.string().optional(), // Cơ quan đơn vị (UUID)
-    don_vi_truc_thuoc_id: z.string().optional(), // Đơn vị trực thuộc (UUID)
-    chuc_vu_id: z.string().optional(), // Chức vụ (UUID)
+    co_quan_don_vi_id: z.string().optional(),
+    don_vi_truc_thuoc_id: z.string().optional(),
+    chuc_vu_id: z.string().optional(),
   })
   .refine(data => !data.password || data.password === data.confirmPassword, {
     message: 'Mật khẩu xác nhận không khớp',
@@ -97,7 +97,7 @@ export const unitFormSchema = z.object({
 
 // Position schemas
 export const positionFormSchema = z.object({
-  don_vi_id: z.string().optional(), // Optional vì khi edit không cần
+  don_vi_id: z.string().optional(),
   ten_chuc_vu: z.string().min(1, 'Tên chức vụ là bắt buộc'),
   is_manager: z.boolean().default(false),
   he_so_chuc_vu: z.number().optional(),

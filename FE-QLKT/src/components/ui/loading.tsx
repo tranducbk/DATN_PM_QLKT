@@ -51,7 +51,6 @@ export function Loading({
   return <div className="flex items-center justify-center py-12">{content}</div>;
 }
 
-// Component sử dụng Ant Design Spin (tùy chọn)
 export function LoadingSpin({
   message = 'Đang tải...',
   fullScreen = false,
@@ -83,7 +82,6 @@ export function LoadingSpin({
   return <div className="flex items-center justify-center py-12">{spin}</div>;
 }
 
-// Component inline nhỏ cho các phần tử nhỏ
 export function LoadingInline({
   message,
   size = 'small',

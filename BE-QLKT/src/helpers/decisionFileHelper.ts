@@ -19,7 +19,7 @@ async function getDecisionFilePath(soQuyetDinh: string | null | undefined): Prom
 
     return decision?.file_path || null;
   } catch (error) {
-    console.error('[decisionFileHelper] getDecisionFilePath error:', error);
+    console.error('DecisionFileHelper.getDecisionFilePath failed', { soQuyetDinh, error });
     return null;
   }
 }
@@ -43,7 +43,7 @@ async function getDecisionInfo(
 
     return decision;
   } catch (error) {
-    console.error('[decisionFileHelper] getDecisionInfo error:', error);
+    console.error('DecisionFileHelper.getDecisionInfo failed', { soQuyetDinh, error });
     return null;
   }
 }

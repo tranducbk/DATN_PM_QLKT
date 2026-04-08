@@ -9,7 +9,7 @@ const { Text } = Typography;
 
 interface UnitFormProps {
   unit?: any;
-  units?: any[]; // Danh sách đơn vị để chọn làm đơn vị cha
+  units?: any[];
   onSuccess?: () => void;
   onClose?: () => void;
 }
@@ -20,7 +20,6 @@ export function UnitForm({ unit, units = [], onSuccess, onClose }: UnitFormProps
 
   useEffect(() => {
     if (unit) {
-      // Nếu unit có id thì đang sửa, nếu không có id nhưng có co_quan_don_vi_id thì đang tạo đơn vị trực thuộc
       if (unit.id) {
         form.setFieldsValue({
           ma_don_vi: unit.ma_don_vi || '',
@@ -28,17 +27,14 @@ export function UnitForm({ unit, units = [], onSuccess, onClose }: UnitFormProps
           co_quan_don_vi_id: unit.co_quan_don_vi_id ? unit.co_quan_don_vi_id.toString() : undefined,
         });
       } else if (unit.co_quan_don_vi_id) {
-        // Đang tạo đơn vị trực thuộc, reset form và set co_quan_don_vi_id
         form.resetFields();
         form.setFieldsValue({
           co_quan_don_vi_id: unit.co_quan_don_vi_id.toString(),
         });
       } else {
-        // Tạo mới cơ quan đơn vị (không có co_quan_don_vi_id)
         form.resetFields();
       }
     } else {
-      // Không có unit, reset form
       form.resetFields();
     }
   }, [unit, form]);
@@ -52,14 +48,11 @@ export function UnitForm({ unit, units = [], onSuccess, onClose }: UnitFormProps
         ten_don_vi: values.ten_don_vi,
       };
 
-      // Thêm co_quan_don_vi_id nếu có
       if (values.co_quan_don_vi_id) {
-        payload.co_quan_don_vi_id = values.co_quan_don_vi_id.toString(); // Giữ nguyên string vì có thể là UUID
+        payload.co_quan_don_vi_id = values.co_quan_don_vi_id.toString();
       } else if (unit?.co_quan_don_vi_id && !unit?.id) {
-        // Nếu đang tạo đơn vị trực thuộc (có co_quan_don_vi_id nhưng chưa có id)
         payload.co_quan_don_vi_id = unit.co_quan_don_vi_id.toString();
       } else if (unit?.id && !values.co_quan_don_vi_id) {
-        // Nếu đang sửa và không chọn co_quan_don_vi_id, set null
         payload.co_quan_don_vi_id = null;
       }
 
@@ -92,10 +85,9 @@ export function UnitForm({ unit, units = [], onSuccess, onClose }: UnitFormProps
     }
   }
 
-  // Lọc bỏ đơn vị hiện tại khỏi danh sách đơn vị cha (tránh vòng lặp)
+  // Exclude the current unit from the parent list to prevent circular references
   const availableParentUnits = units.filter(u => u.id !== unit?.id);
 
-  // Xác định loại đơn vị: nếu có co_quan_don_vi_id thì là đơn vị trực thuộc, ngược lại là cơ quan đơn vị
   const isDonViTrucThuoc = !!unit?.co_quan_don_vi_id;
 
   return (

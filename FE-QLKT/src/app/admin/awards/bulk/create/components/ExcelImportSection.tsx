@@ -120,14 +120,13 @@ export function ExcelImportSection({
     }
 
     if (localProcessing && onLocalProcess) {
-      // Xử lý local
       try {
         setUploading(true);
         const result = await onLocalProcess(file);
 
         message.success(`Đã thêm thành công ${result.imported}/${result.total} ${entityLabel}`);
 
-        // Hiển thị lỗi nếu có (tối đa 5 lỗi đầu tiên)
+        // Show at most 5 errors to avoid overwhelming the user
         if (result.errors && result.errors.length > 0) {
           const displayErrors = result.errors.slice(0, 5);
           displayErrors.forEach((error: string) => {
@@ -139,11 +138,9 @@ export function ExcelImportSection({
           }
         }
 
-        // Set success state
         setImportSuccess(true);
         setImportedCount(result.imported);
 
-        // Callback với result
         if (onImportSuccess) {
           onImportSuccess(result);
         }
@@ -157,7 +154,6 @@ export function ExcelImportSection({
         setUploading(false);
       }
     } else {
-      // Xử lý server như cũ
       try {
         setUploading(true);
         const response = await importFile(file);
@@ -166,7 +162,7 @@ export function ExcelImportSection({
           const result = response.data;
           message.success(`Đã thêm thành công ${result.imported}/${result.total} ${entityLabel}`);
 
-          // Hiển thị lỗi nếu có (tối đa 5 lỗi đầu tiên)
+          // Show at most 5 errors to avoid overwhelming the user
           if (result.errors && result.errors.length > 0) {
             const displayErrors = result.errors.slice(0, 5);
             displayErrors.forEach((error: string) => {
@@ -178,11 +174,9 @@ export function ExcelImportSection({
             }
           }
 
-          // Set success state
           setImportSuccess(true);
           setImportedCount(result.imported);
 
-          // Callback với result
           if (onImportSuccess) {
             onImportSuccess(result);
           }

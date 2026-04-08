@@ -133,7 +133,6 @@ export default function UserProfilePage() {
         setPersonnelId(user.quan_nhan_id);
         const currentYear = new Date().getFullYear();
 
-        // Lấy dữ liệu song song
         const [
           personnelRes,
           annualRes,
@@ -207,7 +206,6 @@ export default function UserProfilePage() {
     fetchData();
   }, []);
 
-  // Columns cho bảng danh hiệu hằng năm
   const annualRewardsColumns = [
     {
       title: 'STT',
@@ -235,7 +233,6 @@ export default function UserProfilePage() {
 
         const decisions: ReactNode[] = [];
 
-        // Bằng khen BQP
         if (record.so_quyet_dinh_bkbqp && record.so_quyet_dinh_bkbqp.trim() !== '') {
           decisions.push(
             <div key="bkbqp" style={{ marginTop: '8px', fontSize: '13px', textAlign: 'center' }}>
@@ -258,7 +255,6 @@ export default function UserProfilePage() {
           );
         }
 
-        // CSTĐ Toàn quân
         if (record.so_quyet_dinh_cstdtq && record.so_quyet_dinh_cstdtq.trim() !== '') {
           decisions.push(
             <div key="cstdtq" style={{ marginTop: '8px', fontSize: '13px', textAlign: 'center' }}>
@@ -281,7 +277,6 @@ export default function UserProfilePage() {
           );
         }
 
-        // Bằng khen Thủ tướng Chính phủ
         if (record.so_quyet_dinh_bkttcp && record.so_quyet_dinh_bkttcp.trim() !== '') {
           decisions.push(
             <div key="bkttcp" style={{ marginTop: '8px', fontSize: '13px', textAlign: 'center' }}>
@@ -314,7 +309,6 @@ export default function UserProfilePage() {
     },
   ];
 
-  // Columns cho bảng thành tích khoa học
   const scientificColumns = [
     {
       title: 'STT',
@@ -399,7 +393,6 @@ export default function UserProfilePage() {
     },
   ];
 
-  // Columns cho bảng lịch sử chức vụ
   const positionHistoryColumns = [
     {
       title: 'STT',
@@ -453,7 +446,6 @@ export default function UserProfilePage() {
     },
   ];
 
-  // Columns cho bảng khen thưởng đột xuất
   const adhocColumns = [
     {
       title: 'STT',
@@ -518,7 +510,6 @@ export default function UserProfilePage() {
       render: (text: string, record: any) => {
         if (!text || text.trim() === '') return '-';
 
-        // Luôn cho phép bấm để truy vấn DB và tải file
         return (
           <a
             onClick={e => {
@@ -1170,7 +1161,6 @@ export default function UserProfilePage() {
                           {rewards.flatMap((reward: any) => {
                             const items: ReactNode[] = [];
 
-                            // Danh hiệu chính (CSTDCS, CSTT)
                             if (reward.danh_hieu) {
                               const danhHieuConfig = {
                                 CSTDCS: {
@@ -1258,8 +1248,7 @@ export default function UserProfilePage() {
                               );
                             }
 
-                            // Bằng khen BQP
-                            if (
+                                                if (
                               reward.nhan_bkbqp &&
                               reward.so_quyet_dinh_bkbqp &&
                               reward.so_quyet_dinh_bkbqp.trim() !== ''
@@ -1317,8 +1306,7 @@ export default function UserProfilePage() {
                               );
                             }
 
-                            // CSTĐ Toàn quân
-                            if (
+                                                if (
                               reward.nhan_cstdtq &&
                               reward.so_quyet_dinh_cstdtq &&
                               reward.so_quyet_dinh_cstdtq.trim() !== ''
@@ -1376,8 +1364,7 @@ export default function UserProfilePage() {
                               );
                             }
 
-                            // Bằng khen Thủ tướng Chính phủ
-                            if (
+                                                if (
                               reward.nhan_bkttcp &&
                               reward.so_quyet_dinh_bkttcp &&
                               reward.so_quyet_dinh_bkttcp.trim() !== ''

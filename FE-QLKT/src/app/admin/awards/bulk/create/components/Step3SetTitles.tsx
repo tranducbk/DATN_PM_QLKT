@@ -39,7 +39,7 @@ export function Step3SetTitles({
   onUnitChange = () => {},
   nam,
 }: Step3SetTitlesProps) {
-  // Router component - gọi component tương ứng với từng loại đề xuất
+  // Dispatch to the appropriate Step3 sub-component based on proposal type
   switch (proposalType) {
     case PROPOSAL_TYPES.HC_QKQT:
       return (

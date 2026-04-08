@@ -87,7 +87,6 @@ export default function PositionHistoryPage() {
           const chucVu = h.ChucVu || {};
           let unitInfo = '';
 
-          // Nếu có đơn vị trực thuộc
           if (chucVu.DonViTrucThuoc) {
             const donViName = chucVu.DonViTrucThuoc.ten_don_vi || '';
             const coQuanName = chucVu.DonViTrucThuoc.CoQuanDonVi?.ten_don_vi || '';
@@ -98,9 +97,7 @@ export default function PositionHistoryPage() {
             } else if (coQuanName) {
               unitInfo = coQuanName;
             }
-          }
-          // Nếu chỉ có cơ quan đơn vị
-          else if (chucVu.CoQuanDonVi) {
+          } else if (chucVu.CoQuanDonVi) {
             unitInfo = chucVu.CoQuanDonVi.ten_don_vi || '';
           }
 
@@ -139,7 +136,7 @@ export default function PositionHistoryPage() {
     setDialogOpen(true);
   };
 
-  // Kiểm tra xem chức vụ hiện tại có phải là chức vụ hiện tại (chưa kết thúc) không
+  // Current position = open-ended (no end date); only dates are editable
   const isCurrentPosition = editingHistory && !editingHistory.ngay_ket_thuc;
 
   const handleCloseDialog = () => {
@@ -156,21 +153,19 @@ export default function PositionHistoryPage() {
         ngay_bat_dau: values.ngay_bat_dau
           ? dayjs(values.ngay_bat_dau).format('YYYY-MM-DD')
           : undefined,
-        // Nếu ngày kết thúc bị xóa (null), gửi null để backend biết là đang xóa
-        // Nếu không có (undefined), không gửi field này (giữ nguyên giá trị cũ)
+        // null = explicitly cleared; undefined = not changed (omit from payload)
         ngay_ket_thuc:
           values.ngay_ket_thuc === null
             ? null
             : values.ngay_ket_thuc
               ? dayjs(values.ngay_ket_thuc).format('YYYY-MM-DD')
               : undefined,
-        he_so_chuc_vu: values.he_so_chuc_vu || undefined, // Gửi hệ số chức vụ nếu có
+        he_so_chuc_vu: values.he_so_chuc_vu || undefined,
       };
 
-      // Chỉ gửi chuc_vu_id nếu không phải là chức vụ hiện tại
-      // Chức vụ hiện tại chỉ được sửa thời gian, không được sửa chức vụ đảm nhận
+      // Current position: only dates are editable, not the position itself
       if (!isCurrentPosition) {
-        payload.chuc_vu_id = values.chuc_vu_id; // UUID string, không cần parseInt
+        payload.chuc_vu_id = values.chuc_vu_id;
       }
 
       const res = editingHistory
@@ -178,7 +173,6 @@ export default function PositionHistoryPage() {
         : await apiClient.createPositionHistory(personnelId, payload);
 
       if (res.success) {
-        // Xử lý warning nếu có
         const positionWarning = res.warning;
         if (positionWarning) {
           Modal.confirm({
@@ -203,17 +197,14 @@ export default function PositionHistoryPage() {
                   loadData();
                 } else {
                   message.error(updateRes.message || 'Có lỗi xảy ra');
-                  // Không đóng modal khi có lỗi
                 }
               } catch (error: unknown) {
                 message.error(getApiErrorMessage(error) || 'Có lỗi xảy ra');
-                // Không đóng modal khi có lỗi
               } finally {
                 setSubmitting(false);
               }
             },
             onCancel: () => {
-              // Người dùng không đồng ý, giữ nguyên (đã cập nhật thành chưa kết thúc)
               message.success(
                 editingHistory ? 'Cập nhật lịch sử thành công' : 'Thêm lịch sử thành công'
               );
@@ -229,21 +220,16 @@ export default function PositionHistoryPage() {
           loadData();
         }
       } else {
-        // Có lỗi - hiển thị lỗi và không đóng modal
         message.error(res.message || 'Có lỗi xảy ra');
-        // Không gọi handleCloseDialog() - modal vẫn mở
       }
     } catch (error: unknown) {
-      // Có lỗi - hiển thị lỗi chi tiết và không đóng modal
       const errorMessage = getApiErrorMessage(error) || 'Có lỗi xảy ra';
       message.error(errorMessage);
-      // Không gọi handleCloseDialog() - modal vẫn mở
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Tính tổng thời gian đảm nhiệm chức vụ theo nhóm hệ số
   const calculateTotalTimeByGroup = (group: '0.7' | '0.8' | '0.9-1.0') => {
     let totalMonths = 0;
 
@@ -478,6 +464,7 @@ export default function PositionHistoryPage() {
               dataSource={histories}
               rowKey="id"
               pagination={false}
+              scroll={{ x: 'max-content' }}
               locale={{
                 emptyText: <Empty description="Chưa có dữ liệu lịch sử chức vụ" />,
               }}
@@ -529,7 +516,6 @@ export default function PositionHistoryPage() {
                   return label.toLowerCase().includes(input.toLowerCase());
                 }}
                 onChange={value => {
-                  // Khi chọn chức vụ, lấy hệ số chức vụ và lưu vào form
                   const selectedPosition = positions.find(
                     (pos: any) => pos.id.toString() === value
                   );
@@ -541,13 +527,10 @@ export default function PositionHistoryPage() {
                 }}
               >
                 {positions.map((pos: any) => {
-                  // Lấy thông tin đơn vị từ relations (backend đã include)
                   let unitName = '';
                   if (pos.CoQuanDonVi) {
-                    // Chức vụ thuộc cơ quan đơn vị
                     unitName = pos.CoQuanDonVi.ten_don_vi;
                   } else if (pos.DonViTrucThuoc) {
-                    // Chức vụ thuộc đơn vị trực thuộc
                     const donViName = pos.DonViTrucThuoc.ten_don_vi;
                     const coQuanName = pos.DonViTrucThuoc.CoQuanDonVi?.ten_don_vi;
                     unitName = coQuanName ? `${donViName} (${coQuanName})` : donViName;
@@ -587,7 +570,6 @@ export default function PositionHistoryPage() {
                       const dateBatDau = dayjs(value);
                       const dateKetThuc = dayjs(ngayKetThuc);
 
-                      // So sánh ngày bắt đầu phải trước ngày kết thúc
                       if (dateBatDau.isAfter(dateKetThuc) || dateBatDau.isSame(dateKetThuc)) {
                         return Promise.reject(new Error('Ngày bắt đầu phải trước ngày kết thúc'));
                       }
@@ -615,7 +597,6 @@ export default function PositionHistoryPage() {
                       const dateBatDau = dayjs(ngayBatDau);
                       const dateKetThuc = dayjs(value);
 
-                      // So sánh ngày kết thúc phải sau ngày bắt đầu
                       if (dateKetThuc.isBefore(dateBatDau) || dateKetThuc.isSame(dateBatDau)) {
                         return Promise.reject(new Error('Ngày kết thúc phải sau ngày bắt đầu'));
                       }

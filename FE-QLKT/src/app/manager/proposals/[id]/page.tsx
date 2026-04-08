@@ -56,7 +56,7 @@ interface DanhHieuItem {
   chuc_vu?: string | null;
   so_quyet_dinh?: string | null;
   file_quyet_dinh?: string | null;
-  // Các trường cũ (tương thích với dữ liệu cũ, không dùng nữa)
+  // Legacy scalar fields (kept for backward compatibility)
   nhan_bkbqp?: boolean;
   so_quyet_dinh_bkbqp?: string | null;
   file_quyet_dinh_bkbqp?: string | null;
@@ -159,7 +159,7 @@ export default function ManagerProposalDetailPage() {
     if (proposalId) {
       fetchProposalDetail();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ refetch khi proposalId đổi
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only refetch when proposalId changes
   }, [proposalId]);
 
   const fetchProposalDetail = async () => {
@@ -171,8 +171,6 @@ export default function ManagerProposalDetailPage() {
       if (response.success) {
         setProposal(response.data);
 
-        // Fetch thông tin personnel để lấy chức vụ hiện tại
-        // Xử lý cho cả data_danh_hieu và data_nien_han
         let personnelData: any[] = [];
 
         if (response.data.data_danh_hieu) {
@@ -203,7 +201,7 @@ export default function ManagerProposalDetailPage() {
         }
 
         if (personnelData.length > 0) {
-          // Fetch lịch sử chức vụ cho tất cả quân nhân để hiển thị thời gian (chỉ cho CONG_HIEN)
+          // Position history is only needed for CONG_HIEN proposals
           if (response.data.loai_de_xuat === PROPOSAL_TYPES.CONG_HIEN) {
             await fetchPositionHistories(personnelData);
           }
@@ -224,7 +222,6 @@ export default function ManagerProposalDetailPage() {
     try {
       const historiesMap: Record<string, any[]> = {};
 
-      // Fetch lịch sử chức vụ cho mỗi quân nhân
       await Promise.all(
         danhHieuItems.map(async item => {
           if (item.personnel_id) {
@@ -247,7 +244,6 @@ export default function ManagerProposalDetailPage() {
     }
   };
 
-  // Tính tổng thời gian đảm nhiệm chức vụ theo nhóm hệ số cho một quân nhân
   const calculateTotalTimeByGroup = (personnelId: string, group: '0.7' | '0.8' | '0.9-1.0') => {
     const histories = positionHistoriesMap[personnelId] || [];
     let totalMonths = 0;
@@ -532,9 +528,7 @@ export default function ManagerProposalDetailPage() {
                       >
                         {(() => {
                           try {
-                            // Thử decode nếu là URI encoded, nếu không thì hiển thị trực tiếp
                             if (file.originalName && typeof file.originalName === 'string') {
-                              // Kiểm tra xem có phải URI encoded không
                               if (file.originalName.includes('%')) {
                                 return decodeURIComponent(file.originalName);
                               }
@@ -542,7 +536,6 @@ export default function ManagerProposalDetailPage() {
                             }
                             return file.originalName || '-';
                           } catch (e) {
-                            // Nếu decode lỗi, hiển thị tên file gốc
                             return file.originalName || '-';
                           }
                         })()}
@@ -579,7 +572,6 @@ export default function ManagerProposalDetailPage() {
 
         {/* Data Tables - Hiển thị theo loại đề xuất */}
         {proposal.loai_de_xuat === PROPOSAL_TYPES.NCKH ? (
-          // Component cho đề xuất NCKH (ĐTKH/SKKH)
           <Card
             className="shadow-sm"
             title={
@@ -635,11 +627,10 @@ export default function ManagerProposalDetailPage() {
                   width: 180,
                   align: 'center',
                   render: (_: any, record: any) => {
-                    // Chỉ lấy từ dataJSON, không lấy từ personnelDetails
+                    // Rank/position stored at proposal creation time (Step 3), not current personnel data
                     const capBac = record.cap_bac;
                     const chucVu = record.chuc_vu;
 
-                    // Nếu không có cả cấp bậc và chức vụ, để trống
                     if (!capBac && !chucVu) {
                       return <span>-</span>;
                     }
@@ -727,7 +718,6 @@ export default function ManagerProposalDetailPage() {
         ) : proposal.loai_de_xuat === PROPOSAL_TYPES.CONG_HIEN &&
           proposal.data_cong_hien &&
           proposal.data_cong_hien.length > 0 ? (
-          // Component cho đề xuất cống hiến
           <Card
             className="shadow-sm"
             title={
@@ -784,11 +774,10 @@ export default function ManagerProposalDetailPage() {
                   width: 180,
                   align: 'center',
                   render: (_: any, record: any) => {
-                    // Chỉ lấy từ dataJSON, không lấy từ personnelDetails
+                    // Rank/position stored at proposal creation time (Step 3), not current personnel data
                     const capBac = record.cap_bac;
                     const chucVu = record.chuc_vu;
 
-                    // Nếu không có cả cấp bậc và chức vụ, để trống
                     if (!capBac && !chucVu) {
                       return <span>-</span>;
                     }
@@ -930,7 +919,6 @@ export default function ManagerProposalDetailPage() {
             />
           </Card>
         ) : proposal.data_danh_hieu && proposal.data_danh_hieu.length > 0 ? (
-          // Component cho đề xuất có danh hiệu (CA_NHAN_HANG_NAM, DON_VI_HANG_NAM, NIEN_HAN, DOT_XUAT)
           <Card
             className="shadow-sm"
             title={
@@ -1077,20 +1065,16 @@ export default function ManagerProposalDetailPage() {
                   align: 'center',
                   render: (text: string) => {
                     const danhHieuMap: Record<string, string> = {
-                      // Cá nhân Hằng năm
                       CSTDCS: 'Chiến sĩ thi đua cơ sở',
                       CSTT: 'Chiến sĩ tiên tiến',
                       BKBQP: 'Bằng khen của Bộ trưởng Bộ Quốc phòng',
                       CSTDTQ: 'Chiến sĩ thi đua toàn quân',
-                      // Đơn vị Hằng năm
                       ĐVQT: 'Đơn vị Quyết thắng',
                       ĐVTT: 'Đơn vị Tiên tiến',
                       BKTTCP: 'Bằng khen Thủ tướng Chính phủ',
-                      // Niên hạn
                       HCCSVV_HANG_BA: 'Huy chương Chiến sĩ Vẻ vang - Hạng Ba',
                       HCCSVV_HANG_NHI: 'Huy chương Chiến sĩ Vẻ vang - Hạng Nhì',
                       HCCSVV_HANG_NHAT: 'Huy chương Chiến sĩ Vẻ vang - Hạng Nhất',
-                      // Cống hiến
                       HCBVTQ_HANG_BA: 'Huân chương Bảo vệ Tổ quốc - Hạng Ba',
                       HCBVTQ_HANG_NHI: 'Huân chương Bảo vệ Tổ quốc - Hạng Nhì',
                       HCBVTQ_HANG_NHAT: 'Huân chương Bảo vệ Tổ quốc - Hạng Nhất',
@@ -1104,7 +1088,7 @@ export default function ManagerProposalDetailPage() {
                     );
                   },
                 },
-                // Chỉ hiển thị các cột thời gian cho đề xuất cống hiến
+                // Time columns only apply to CONG_HIEN proposals
                 ...(proposal.loai_de_xuat === PROPOSAL_TYPES.CONG_HIEN
                   ? [
                       {
@@ -1176,7 +1160,6 @@ export default function ManagerProposalDetailPage() {
             />
           </Card>
         ) : proposal.data_nien_han && proposal.data_nien_han.length > 0 ? (
-          // Component cho đề xuất niên hạn
           <Card
             className="shadow-sm"
             title={
@@ -1233,11 +1216,10 @@ export default function ManagerProposalDetailPage() {
                   width: 180,
                   align: 'center',
                   render: (_: any, record: any) => {
-                    // Chỉ lấy từ dataJSON, không lấy từ personnelDetails
+                    // Rank/position stored at proposal creation time (Step 3), not current personnel data
                     const capBac = record.cap_bac;
                     const chucVu = record.chuc_vu;
 
-                    // Nếu không có cả cấp bậc và chức vụ, để trống
                     if (!capBac && !chucVu) {
                       return <span>-</span>;
                     }

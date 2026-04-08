@@ -25,7 +25,6 @@ export default function PersonnelExportPage() {
       setLoading(true);
       const blob = await apiClient.exportPersonnel();
 
-      // Tạo URL tạm thời và download
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -48,7 +47,6 @@ export default function PersonnelExportPage() {
       setLoading(true);
       const blob = await apiClient.exportPersonnelSample();
 
-      // Tạo URL tạm thời và download
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;

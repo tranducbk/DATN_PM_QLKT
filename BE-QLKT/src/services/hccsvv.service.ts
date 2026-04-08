@@ -12,6 +12,20 @@ import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys } 
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { ValidationError, NotFoundError, AppError } from '../middlewares/errorHandler';
 import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
+import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
+
+interface HccsvvValidItem {
+  row: number;
+  personnel_id: string;
+  ho_ten: string | null;
+  cap_bac: string | null;
+  chuc_vu: string | null;
+  nam: number;
+  danh_hieu: string;
+  so_quyet_dinh: string;
+  ghi_chu: string | null;
+  history: Array<{ nam: number; danh_hieu: string; so_quyet_dinh: string | null }>;
+}
 
 class HCCSVVService {
   /**
@@ -87,7 +101,6 @@ class HCCSVVService {
     const seenInFile = new Set();
     const currentYear = new Date().getFullYear();
 
-    // Query danh sách số quyết định hợp lệ trên hệ thống
     const existingDecisions = await prisma.fileQuyetDinh.findMany({
       select: { so_quyet_dinh: true },
     });
@@ -132,7 +145,6 @@ class HCCSVVService {
       (item) => item.personnel_id && item.danh_hieu ? `${item.personnel_id}_${item.danh_hieu}` : null
     );
 
-    // Build lookup Maps
     const personnelMap = new Map(personnelList.map(p => [p.id, p]));
     // Map<personnelId_danhHieu, record> for duplicate checking
     const hccsvvByKey = new Map(
@@ -161,7 +173,6 @@ class HCCSVVService {
 
       if (!idValue && !namVal && !danh_hieu_raw) continue;
 
-      // Dòng có ID nhưng không có danh hiệu -> bỏ qua
       if (idValue && !danh_hieu_raw) {
         errors.push({
           row: rowNumber,
@@ -175,7 +186,6 @@ class HCCSVVService {
 
       total++;
 
-      // Validate required fields
       const missingFields = [];
       if (!idValue) missingFields.push('ID');
       if (!namVal) missingFields.push('Năm');
@@ -191,7 +201,6 @@ class HCCSVVService {
         continue;
       }
 
-      // Validate personnel ID
       const personnelId = String(idValue).trim();
       if (!personnelId) {
         errors.push({
@@ -215,7 +224,6 @@ class HCCSVVService {
         continue;
       }
 
-      // Validate year
       const nam = parseInt(String(namVal), 10);
       if (!Number.isInteger(nam)) {
         errors.push({
@@ -238,7 +246,6 @@ class HCCSVVService {
         continue;
       }
 
-      // Validate danh_hieu
       const danhHieuUpper = danh_hieu_raw.toUpperCase();
       if (!validDanhHieu.includes(danhHieuUpper)) {
         errors.push({
@@ -252,7 +259,7 @@ class HCCSVVService {
       }
       const danh_hieu = danhHieuUpper;
 
-      // Validate số quyết định — bắt buộc + phải có trên hệ thống
+      // Decision number must exist in the system (not just non-empty)
       if (!so_quyet_dinh) {
         errors.push({ row: rowNumber, ho_ten, nam, danh_hieu, message: 'Thiếu số quyết định' });
         continue;
@@ -268,7 +275,6 @@ class HCCSVVService {
         continue;
       }
 
-      // Check duplicate in file
       const fileKey = `${personnelId}_${danh_hieu}`;
       if (seenInFile.has(fileKey)) {
         errors.push({
@@ -282,7 +288,6 @@ class HCCSVVService {
       }
       seenInFile.add(fileKey);
 
-      // Check duplicate in DB (using pre-fetched Map)
       const existingRecord = hccsvvByKey.get(`${personnelId}_${danh_hieu}`);
       if (existingRecord) {
         errors.push({
@@ -295,7 +300,6 @@ class HCCSVVService {
         continue;
       }
 
-      // Check pending proposal
       if (pendingKeys.has(`${personnelId}_${danh_hieu}`)) {
         errors.push({
           row: rowNumber,
@@ -310,7 +314,6 @@ class HCCSVVService {
       // Check HCCSVV hierarchy: must have prerequisite before higher rank
       const prerequisite = hierarchyPrerequisite[danh_hieu];
       if (prerequisite) {
-        // Check if prerequisite exists in DB (using pre-fetched Map)
         const hasPrerequisiteInDb = hccsvvByKey.has(`${personnelId}_${prerequisite}`);
         // Also check if prerequisite is in current valid items (being imported in same batch)
         const hasPrerequisiteInFile = valid.some(
@@ -328,7 +331,6 @@ class HCCSVVService {
         }
       }
 
-      // Build history from pre-fetched data (last 5 records sorted by nam desc)
       const allRecords = hccsvvByPersonnel.get(personnelId) || [];
       const history = [...allRecords]
         .sort((a, b) => b.nam - a.nam)
@@ -370,7 +372,7 @@ class HCCSVVService {
   /**
    * Confirm import: lưu dữ liệu đã validate vào DB
    */
-  async confirmImport(validItems: any[], adminId: string) {
+  async confirmImport(validItems: HccsvvValidItem[], adminId: string) {
     // Check rank downgrades - block importing lower rank when higher exists
     const HCCSVV_RANK: Record<string, number> = {
       HCCSVV_HANG_BA: 1,
@@ -405,7 +407,6 @@ class HCCSVVService {
     if (pendingConflicts.length > 0) {
       throw new ValidationError(pendingConflicts.join('; '));
     }
-    // Build map: personnelId -> highest existing rank
     const highestRankMap = new Map<string, { danh_hieu: string; rank: number }>();
     for (const r of existingRecords) {
       const rank = HCCSVV_RANK[r.danh_hieu] || 0;
@@ -463,7 +464,7 @@ class HCCSVVService {
         }
         return { imported: results.length };
       },
-      { timeout: 30000 }
+      { timeout: IMPORT_TRANSACTION_TIMEOUT }
     );
   }
 
@@ -528,7 +529,6 @@ class HCCSVVService {
           continue;
         }
 
-        // Validate danh_hieu
         const validDanhHieu = ['HCCSVV_HANG_BA', 'HCCSVV_HANG_NHI', 'HCCSVV_HANG_NHAT'];
         if (!validDanhHieu.includes(danh_hieu)) {
           results.errors.push(
@@ -538,7 +538,6 @@ class HCCSVVService {
           continue;
         }
 
-        // Tìm quân nhân theo tên (from pre-fetched batch)
         const personnelList = personnelByName.get(ho_ten) ?? [];
         if (personnelList.length === 0) {
           results.errors.push(`Dòng ${rowNumber}: Không tìm thấy quân nhân với tên ${ho_ten}`);
@@ -592,7 +591,6 @@ class HCCSVVService {
           }
         }
 
-        // Check for duplicate awards in proposals
         try {
           const duplicateCheck = await checkDuplicateAward(
             personnel.id,
@@ -608,11 +606,10 @@ class HCCSVVService {
             results.failed++;
             continue;
           }
-        } catch (checkError) {
-          // Continue processing but log the error
+        } catch (e) {
+          console.error('hccsvv confirmImport check failed:', e);
         }
 
-        // Check if already exists
         const existing = await prisma.khenThuongHCCSVV.findUnique({
           where: {
             quan_nhan_id_danh_hieu: {
@@ -676,7 +673,6 @@ class HCCSVVService {
   ) {
     const where: Record<string, unknown> = {};
 
-    // Filter theo họ tên
     const quanNhanFilter: Record<string, unknown> = {};
     if (filters.ho_ten) {
       quanNhanFilter.ho_ten = { contains: filters.ho_ten, mode: 'insensitive' };
@@ -684,7 +680,7 @@ class HCCSVVService {
 
     if (filters.don_vi_id) {
       if (filters.include_sub_units) {
-        // Nếu có flag include_sub_units, lấy tất cả đơn vị trực thuộc của cơ quan đơn vị
+        // include_sub_units: expand filter to all DVTT under the parent unit
         const donViTrucThuocIds = await prisma.donViTrucThuoc.findMany({
           where: { co_quan_don_vi_id: filters.don_vi_id },
           select: { id: true },
@@ -707,7 +703,6 @@ class HCCSVVService {
         };
       }
     } else if (Object.keys(quanNhanFilter).length > 0) {
-      // Nếu không có filter don_vi_id nhưng có filter ho_ten
       where.QuanNhan = quanNhanFilter;
     }
 
@@ -848,7 +843,6 @@ class HCCSVVService {
   async createDirect(data, adminUsername = 'SuperAdmin') {
     const { quan_nhan_id, danh_hieu, nam, cap_bac, chuc_vu, so_quyet_dinh, ghi_chu } = data;
 
-    // Validate danh_hieu
     const validDanhHieu = ['HCCSVV_HANG_BA', 'HCCSVV_HANG_NHI', 'HCCSVV_HANG_NHAT'];
     if (!validDanhHieu.includes(danh_hieu)) {
       throw new ValidationError(`Danh hiệu không hợp lệ. Chỉ chấp nhận: ${validDanhHieu.join(', ')}`);
@@ -935,12 +929,11 @@ class HCCSVVService {
     const personnelId = award.quan_nhan_id;
     const personnel = award.QuanNhan;
 
-    // Xóa bản ghi (không xóa đề xuất - proposal)
+    // Delete award only, proposals are kept for audit trail
     await prisma.khenThuongHCCSVV.delete({
       where: { id },
     });
 
-    // Tự động cập nhật lại hồ sơ niên hạn (giống như khi thêm mới)
     try {
       await profileService.recalculateTenureProfile(personnelId);
     } catch (recalcError) {
@@ -952,7 +945,6 @@ class HCCSVVService {
       });
     }
 
-    // Gửi thông báo cho Manager và quân nhân
     try {
       await notificationHelper.notifyOnAwardDeleted(award, personnel, 'HCCSVV', adminUsername);
     } catch (notifyError) {

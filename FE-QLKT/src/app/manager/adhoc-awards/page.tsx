@@ -154,7 +154,6 @@ export default function ManagerAdhocAwardsPage() {
     return years;
   }, [awards]);
 
-  // Debounce tìm kiếm 1s
   useEffect(() => {
     const handler = setTimeout(() => {
       setTableFilters(prev => ({ ...prev, searchText: searchDraft }));
@@ -247,7 +246,7 @@ export default function ManagerAdhocAwardsPage() {
       align: 'center',
       render: (_, record) => {
         if (record.doi_tuong === 'CA_NHAN' && record.QuanNhan) {
-          // Hiển thị cấp bậc/chức vụ từ DB (record.cap_bac, record.chuc_vu) nếu có
+          // Use stored rank/position from the award record, not current personnel data
           const capBac = record.cap_bac || record.QuanNhan.cap_bac;
           const chucVu = record.chuc_vu || record.QuanNhan.ChucVu?.ten_chuc_vu;
           const subInfo = [capBac, chucVu].filter(Boolean).join(' - ');

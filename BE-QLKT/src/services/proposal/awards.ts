@@ -52,7 +52,6 @@ async function getAllAwards(
       prisma.danhHieuHangNam.count({ where }),
     ]);
 
-    // Lọc theo đơn vị nếu có
     let filteredAwards = awards;
     if (don_vi_id) {
       filteredAwards = awards.filter(
@@ -60,10 +59,8 @@ async function getAllAwards(
       );
     }
 
-    // Lấy thông tin NCKH cho từng quân nhân trong năm đó
     const awardsWithNCKH = await Promise.all(
       filteredAwards.map(async a => {
-        // Lấy NCKH của quân nhân trong năm này
         const thanhTichList = await prisma.thanhTichKhoaHoc.findMany({
           where: {
             quan_nhan_id: a.QuanNhan.id,
@@ -165,7 +162,6 @@ async function exportAllAwardsExcel(filters: Record<string, unknown> = {}) {
       { header: 'Số QĐ CSTĐTQ', key: 'so_qd_cstdtq', width: 20 },
     ];
 
-    // Style header
     sheet.getRow(1).font = { bold: true };
     sheet.getRow(1).fill = {
       type: 'pattern' as const,
@@ -174,8 +170,8 @@ async function exportAllAwardsExcel(filters: Record<string, unknown> = {}) {
     };
     sheet.getRow(1).alignment = { horizontal: 'center', vertical: 'middle' };
 
-    // Format cột CCCD thành Text
-    sheet.getColumn(2).numFmt = '@'; // CCCD là cột thứ 2 (STT là cột 1)
+    // Format CCCD as Text to preserve leading zeros
+    sheet.getColumn(2).numFmt = '@';
 
     filteredAwards.forEach((award, index) => {
       sheet.addRow({
@@ -222,7 +218,6 @@ async function exportAwardsTemplate() {
       { header: 'Số QĐ BKTTCP', key: 'so_quyet_dinh_bkttcp', width: 20 },
     ];
 
-    // Style header
     sheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
     sheet.getRow(1).fill = {
       type: 'pattern',
@@ -231,10 +226,9 @@ async function exportAwardsTemplate() {
     };
     sheet.getRow(1).alignment = { horizontal: 'center', vertical: 'middle' };
 
-    // Format cột CCCD thành Text (để giữ số 0 đầu tiên)
+    // Format CCCD as Text to preserve leading zeros
     sheet.getColumn(1).numFmt = '@';
 
-    // Thêm 1 row mẫu
     sheet.addRow({
       cccd: '001234567890',
       nam: 2024,
@@ -273,9 +267,8 @@ async function importAwards(excelBuffer, adminId) {
 
     const awards = [];
     const errors = [];
-    const importedUnitsMap = new Map(); // Track các đơn vị đã import
+    const importedUnitsMap = new Map();
 
-    // Đọc từ row 2 (bỏ qua header)
     sheet.eachRow((row, rowNumber) => {
       if (rowNumber === 1) return; // Skip header
 
@@ -289,7 +282,6 @@ async function importAwards(excelBuffer, adminId) {
       const nhan_bkttcp = row.getCell(8).value?.toString().toUpperCase() === 'X';
       const so_quyet_dinh_bkttcp = row.getCell(9).value?.toString().trim() || null;
 
-      // Validate
       if (!cccd || !nam) {
         errors.push(`Row ${rowNumber}: CCCD và Năm là bắt buộc`);
         return;
@@ -312,15 +304,13 @@ async function importAwards(excelBuffer, adminId) {
       throw new ValidationError(`Lỗi validate dữ liệu: ${errors.join(', ')}`);
     }
 
-    // Import vào database với validation
     let imported = 0;
     const importErrors = [];
     const importWarnings = [];
-    const affectedPersonnelIds = new Set(); // Track quân nhân bị ảnh hưởng
+    const affectedPersonnelIds = new Set();
 
     for (const award of awards) {
       try {
-        // Tìm quân nhân theo CCCD
         const quanNhan = await prisma.quanNhan.findUnique({
           where: { cccd: award.cccd },
           include: {
@@ -346,7 +336,7 @@ async function importAwards(excelBuffer, adminId) {
         const cstdcsLienTuc = calculateContinuousCSTDCS(quanNhan.DanhHieuHangNam, award.nam);
         const nckhCount = quanNhan.ThanhTichKhoaHoc.length;
 
-        // Kiểm tra BKBQP
+        // BKBQP requires at least 2 consecutive years before
         if (award.nhan_bkbqp && cstdcsLienTuc < 2) {
           importWarnings.push(
             `CCCD ${
@@ -357,7 +347,7 @@ async function importAwards(excelBuffer, adminId) {
           );
         }
 
-        // Kiểm tra CSTDTQ
+        // CSTDTQ requires BKBQP chain first
         if (award.nhan_cstdtq) {
           if (cstdcsLienTuc < 3) {
             importWarnings.push(
@@ -390,7 +380,6 @@ async function importAwards(excelBuffer, adminId) {
           }
         }
 
-        // Upsert vào bảng DanhHieuHangNam
         await prisma.danhHieuHangNam.upsert({
           where: {
             quan_nhan_id_nam: {
@@ -420,7 +409,6 @@ async function importAwards(excelBuffer, adminId) {
           },
         });
 
-        // Track đơn vị đã import để gửi thông báo
         const primaryUnitId = quanNhan.co_quan_don_vi_id || quanNhan.don_vi_truc_thuoc_id;
         const unitKey = `${primaryUnitId}_${award.nam}`;
         if (!importedUnitsMap.has(unitKey)) {
@@ -433,7 +421,7 @@ async function importAwards(excelBuffer, adminId) {
         }
 
         imported++;
-        affectedPersonnelIds.add(quanNhan.id); // Track personnel bị ảnh hưởng
+        affectedPersonnelIds.add(quanNhan.id);
       } catch (error) {
         importErrors.push(`CCCD ${award.cccd}: ${error.message}`);
       }
@@ -447,8 +435,9 @@ async function importAwards(excelBuffer, adminId) {
       try {
         await profileService.recalculateAnnualProfile(personnelId);
         recalculateSuccess++;
-      } catch (recalcError) {
+      } catch (e) {
         recalculateErrors++;
+        console.error(`recalculateAnnualProfile failed for personnelId=${personnelId}:`, e);
       }
     }
 
@@ -457,7 +446,7 @@ async function importAwards(excelBuffer, adminId) {
         importWarnings.length > 0
           ? `Đã thêm thành công thành công ${imported} bản ghi nhưng có ${importWarnings.length} cảnh báo về điều kiện khen thưởng.`
           : 'Đã thêm khen thưởng thành công',
-      importedUnits: Array.from(importedUnitsMap.values()), // Danh sách đơn vị để gửi thông báo
+      importedUnits: Array.from(importedUnitsMap.values()),
       result: {
         total: awards.length,
         imported,
@@ -479,7 +468,6 @@ async function importAwards(excelBuffer, adminId) {
  */
 async function getAwardsStatistics() {
   try {
-    // 1. Thống kê từ FileQuyetDinh (quyết định đã được lưu)
     const decisionsByType = await prisma.fileQuyetDinh.groupBy({
       by: ['loai_khen_thuong'],
       where: {
@@ -492,7 +480,6 @@ async function getAwardsStatistics() {
       },
     });
 
-    // 2. Thống kê từ BangDeXuat (đề xuất)
     const proposalsByType = await prisma.bangDeXuat.groupBy({
       by: ['loai_de_xuat'],
       _count: {
@@ -500,7 +487,6 @@ async function getAwardsStatistics() {
       },
     });
 
-    // 3. Thống kê DanhHieuHangNam (Cá nhân Hằng năm) - không bao gồm cống hiến
     const danhHieuHangNamCount = await prisma.danhHieuHangNam.count({
       where: {
         danh_hieu: {
@@ -510,22 +496,16 @@ async function getAwardsStatistics() {
       },
     });
 
-    // 3b. Thống kê KhenThuongCongHien (Cống hiến)
     const congHienCount = await prisma.khenThuongCongHien.count();
 
-    // 3c. Thống kê KhenThuongHCCSVV (HCCSVV các hạng)
     const hccsvvCount = await prisma.khenThuongHCCSVV.count();
 
-    // 3d. Thống kê HuanChuongQuanKyQuyetThang (HC_QKQT)
     const hcQuanCongCount = await prisma.huanChuongQuanKyQuyetThang.count();
 
-    // 3e. Thống kê KyNiemChuongVSNXDQDNDVN (KNC_VSNXD_QDNDVN)
     const hcVSNXDCount = await prisma.kyNiemChuongVSNXDQDNDVN.count();
 
-    // 4. Thống kê ThanhTichKhoaHoc (ĐTKH/SKKH)
     const thanhTichKhoaHocCount = await prisma.thanhTichKhoaHoc.count();
 
-    // 5. Thống kê DanhHieuDonViHangNam (Đơn vị Hằng năm)
     const donViHangNamCount = await prisma.danhHieuDonViHangNam.count({
       where: {
         danh_hieu: {
@@ -534,19 +514,16 @@ async function getAwardsStatistics() {
       },
     });
 
-    // Tạo map từ decisions
     const decisionsMap = {};
     decisionsByType.forEach(item => {
       decisionsMap[item.loai_khen_thuong] = item._count.id;
     });
 
-    // Tạo map từ proposals
     const proposalsMap = {};
     proposalsByType.forEach(item => {
       proposalsMap[item.loai_de_xuat] = item._count.id;
     });
 
-    // Tổng hợp thống kê
     const statistics = {
       CA_NHAN_HANG_NAM: {
         quyet_dinh: decisionsMap[PROPOSAL_TYPES.CA_NHAN_HANG_NAM] || 0,

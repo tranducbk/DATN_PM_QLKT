@@ -48,7 +48,7 @@ async function getDisplayName(username: string): Promise<string> {
 
     return username;
   } catch (error) {
-    console.error('[notification] getDisplayName error:', error);
+    console.error('NotificationHelper.getDisplayName failed', { username, error });
     return username;
   }
 }

@@ -72,9 +72,8 @@ export default function CategoriesPage() {
   async function loadData() {
     try {
       setLoading(true);
-      // Gọi API với hierarchy=true để chỉ lấy các "Cơ quan đơn vị" cấp cao nhất
       const [unitsRes, positionsRes] = await Promise.all([
-        apiClient.getUnits({ hierarchy: true }), // Chỉ lấy cơ quan đơn vị cấp cao nhất
+        apiClient.getUnits({ hierarchy: true }), // Only top-level parent units
         apiClient.getPositions(),
       ]);
       setUnits((unitsRes.data || []) as CategoryUnitRow[]);
@@ -91,9 +90,8 @@ export default function CategoriesPage() {
     item?: CategoryUnitRow | CategoryPositionRow | null
   ) => {
     setDialogType(type);
-    // Khi tạo mới đơn vị ở trang categories, không set co_quan_don_vi_id (chỉ tạo cơ quan đơn vị)
     if (type === 'unit' && !item) {
-      setEditingItem(null); // Tạo cơ quan đơn vị mới (không có co_quan_don_vi_id)
+      setEditingItem(null); // Creating a top-level unit — no co_quan_don_vi_id
     } else {
       setEditingItem(item || null);
     }
@@ -110,11 +108,11 @@ export default function CategoriesPage() {
       ? positions
       : positions.filter(p => {
           const unitIdStr = selectedUnit.toString();
-          // Nếu chức vụ trực thuộc cơ quan đơn vị (qua relation object)
+          // Position belongs directly to the parent unit (via relation object)
           if (p.CoQuanDonVi?.id?.toString() === unitIdStr) return true;
-          // Nếu chức vụ của đơn vị trực thuộc thuộc cơ quan đơn vị đó (qua relation object)
+          // Position belongs to a sub-unit of this parent unit (via relation object)
           if (p.DonViTrucThuoc?.CoQuanDonVi?.id?.toString() === unitIdStr) return true;
-          // Fallback: kiểm tra co_quan_don_vi_id trực tiếp
+          // Fallback: check co_quan_don_vi_id directly
           if (p.co_quan_don_vi_id?.toString() === unitIdStr) return true;
           return false;
         });

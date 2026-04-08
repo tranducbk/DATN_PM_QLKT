@@ -9,10 +9,14 @@ import { SETTING_DEFAULTS, AWARD_TYPES, SYSTEM_FEATURES } from '../constants/dev
 import { getSetting, setSetting, getSettings } from '../helpers/settingsHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { authLimiter } from '../configs/rateLimiter';
 
 const router = Router();
 
-const DEV_PASSWORD = process.env.DEV_ZONE_PASSWORD || 'admin_msa_!@#';
+const DEV_PASSWORD = process.env.DEV_ZONE_PASSWORD;
+if (!DEV_PASSWORD) {
+  console.warn('[DevZone] DEV_ZONE_PASSWORD env var is not set — devZone routes are disabled');
+}
 
 const ALL_FEATURE_KEYS = [
   ...AWARD_TYPES.map((t: string) => `allow_${t}`),
@@ -111,6 +115,9 @@ seedDefaults()
   });
 
 const verifyDevPassword = (req: Request, res: Response, next: NextFunction) => {
+  if (!DEV_PASSWORD) {
+    return res.status(503).json({ success: false, message: 'DevZone không khả dụng' });
+  }
   const bodyPwd =
     req.body &&
     typeof req.body === 'object' &&
@@ -139,7 +146,10 @@ router.get('/features', async (req: Request, res: Response) => {
   res.json({ success: true, data: await getFeatures() });
 });
 
-router.post('/auth', (req: Request, res: Response) => {
+router.post('/auth', authLimiter, (req: Request, res: Response) => {
+  if (!DEV_PASSWORD) {
+    return res.status(503).json({ success: false, message: 'DevZone không khả dụng' });
+  }
   const { password } = req.body;
   if (password === DEV_PASSWORD) {
     return res.json({ success: true });

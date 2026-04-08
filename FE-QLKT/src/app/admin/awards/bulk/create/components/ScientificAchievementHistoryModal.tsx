@@ -112,6 +112,7 @@ export function ScientificAchievementHistoryModal({
             rowKey="id"
             pagination={false}
             size="small"
+            scroll={{ x: 'max-content' }}
           />
         ) : (
           <Empty

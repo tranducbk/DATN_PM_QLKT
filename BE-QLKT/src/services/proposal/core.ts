@@ -44,11 +44,10 @@ async function getProposals(
   try {
     const skip = (page - 1) * limit;
 
-    // Xây dựng điều kiện where
     let whereCondition: Record<string, any> = {};
 
     if (userRole === ROLES.MANAGER) {
-      // Manager chỉ xem đề xuất của đơn vị mình
+      // Manager can only view proposals from their own unit
       const user = await prisma.taiKhoan.findUnique({
         where: { id: userId },
         include: {
@@ -72,9 +71,7 @@ async function getProposals(
         whereCondition.don_vi_truc_thuoc_id = donViId;
       }
     }
-    // ADMIN xem tất cả
 
-    // Lấy danh sách và tổng số
     const [proposals, total] = await Promise.all([
       prisma.bangDeXuat.findMany({
         where: whereCondition,
@@ -176,7 +173,6 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
       throw new NotFoundError('Đề xuất');
     }
 
-    // Kiểm tra quyền truy cập
     if (userRole === ROLES.MANAGER) {
       const user = await prisma.taiKhoan.findUnique({
         where: { id: userId },
@@ -200,7 +196,7 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
       }
     }
 
-    // Đảm bảo data_danh_hieu, data_thanh_tich và data_nien_han luôn là array
+    // Ensure these are always arrays even if stored as null
     let dataDanhHieu = (
       Array.isArray(proposal.data_danh_hieu)
         ? proposal.data_danh_hieu
@@ -233,13 +229,10 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
           : []
     ) as Record<string, any>[];
 
-    // Enrich thông tin quân nhân/đơn vị nếu thiếu (dữ liệu cũ)
-    // Xử lý riêng cho DON_VI_HANG_NAM (khen thưởng tập thể)
+    // Enrich stale records with latest personnel/unit data
     if (proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
-      // Enrich dataDanhHieu cho khen thưởng tập thể
       dataDanhHieu = await Promise.all(
         dataDanhHieu.map(async item => {
-          // Nếu đã có đầy đủ thông tin, không cần enrich
           if (item.ten_don_vi && item.ma_don_vi) {
             return {
               ...item,
@@ -247,7 +240,6 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
             };
           }
 
-          // Enrich thông tin đơn vị nếu thiếu
           let donViInfo = null;
           let coQuanDonViCha = null;
 
@@ -292,7 +284,6 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
         })
       );
     } else {
-      // Xử lý cho các loại khen thưởng cá nhân
       const allPersonnelIds = [
         ...dataDanhHieu.map(d => d.personnel_id).filter(Boolean),
         ...dataThanhTich.map(d => d.personnel_id).filter(Boolean),
@@ -300,11 +291,10 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
         ...dataCongHien.map(d => d.personnel_id).filter(Boolean),
       ];
 
-      // Khởi tạo personnelMap trước để tránh lỗi undefined
+      // Init map before the loop to avoid undefined reference
       const personnelMap = {};
 
       if (allPersonnelIds.length > 0) {
-        // Fetch thông tin quân nhân và đơn vị
         const personnelList = await prisma.quanNhan.findMany({
           where: {
             id: {
@@ -394,20 +384,16 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
       }
     }
 
-    // Nếu proposal đã được approve, enrich với thông tin file PDF từ database
-    // Xử lý cho dataDanhHieu (CA_NHAN_HANG_NAM, DOT_XUAT)
-    // CONG_HIEN sẽ được xử lý riêng ở phần data_cong_hien
+    // Enrich with PDF path only after approval — not available before
+    // CONG_HIEN is handled separately via data_cong_hien
     if (
       proposal.status === PROPOSAL_STATUS.APPROVED &&
       dataDanhHieu.length > 0 &&
       proposal.loai_de_xuat !== PROPOSAL_TYPES.CONG_HIEN
     ) {
       if (proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
-        // Với khen thưởng tập thể, file PDF đã được lưu trong data đề xuất khi approve
-        // Không cần enrich từ database khác vì không có bảng riêng cho khen thưởng tập thể
-        // File PDF đã được lưu trong item.file_quyet_dinh khi approve
+        // Unit award PDF is stored in the proposal data at approval time
       } else {
-        // Lấy danh hiệu từ database dựa trên personnel_id (cho khen thưởng cá nhân)
         const personnelIds = dataDanhHieu.map(d => d.personnel_id).filter(Boolean);
         if (personnelIds.length > 0) {
           const danhHieuFromDB = await prisma.danhHieuHangNam.findMany({
@@ -431,7 +417,6 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
             danhHieuMap[personnelId].push(dh);
           });
 
-          // Enrich dataDanhHieu với file PDF và số quyết định
           dataDanhHieu = dataDanhHieu.map(item => {
             const dbRecords = danhHieuMap[item.personnel_id] || [];
             const matchingRecord = dbRecords.find(
@@ -452,7 +437,6 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
       }
     }
 
-    // Nếu proposal đã được approve, enrich với thông tin file PDF từ database cho dataNienHan
     if (proposal.status === PROPOSAL_STATUS.APPROVED && dataNienHan.length > 0) {
       const nienHanTypes: ProposalType[] = [
         PROPOSAL_TYPES.NIEN_HAN,
@@ -462,7 +446,6 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
       if (nienHanTypes.includes(proposal.loai_de_xuat as ProposalType)) {
         const personnelIds = dataNienHan.map(d => d.personnel_id).filter(Boolean);
         if (personnelIds.length > 0) {
-          // Lấy dữ liệu từ bảng KhenThuongHCCSVV, HuanChuongQuanKyQuyetThang, KyNiemChuongVSNXDQDNDVN
           if (proposal.loai_de_xuat === PROPOSAL_TYPES.NIEN_HAN) {
             const hccsvvFromDB = await prisma.khenThuongHCCSVV.findMany({
               where: {
@@ -477,8 +460,7 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
               hccsvvMap[key] = dh;
             });
 
-            // Enrich dataNienHan với file PDF và số quyết định
-            dataNienHan = dataNienHan.map(item => {
+              dataNienHan = dataNienHan.map(item => {
               const key = `${item.personnel_id}_${item.danh_hieu}`;
               const dbRecord = hccsvvMap[key];
               if (dbRecord) {
@@ -504,8 +486,7 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
               hcqkqtMap[dh.quan_nhan_id] = dh;
             });
 
-            // Enrich dataNienHan với file PDF và số quyết định
-            dataNienHan = dataNienHan.map(item => {
+              dataNienHan = dataNienHan.map(item => {
               const dbRecord = hcqkqtMap[item.personnel_id];
               if (dbRecord) {
                 return {
@@ -530,8 +511,7 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
               kncMap[dh.quan_nhan_id] = dh;
             });
 
-            // Enrich dataNienHan với file PDF và số quyết định
-            dataNienHan = dataNienHan.map(item => {
+              dataNienHan = dataNienHan.map(item => {
               const dbRecord = kncMap[item.personnel_id];
               if (dbRecord) {
                 return {
@@ -548,7 +528,6 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
       }
     }
 
-    // Nếu proposal đã được approve, enrich với thông tin file PDF từ database cho dataCongHien
     if (
       proposal.loai_de_xuat === PROPOSAL_TYPES.CONG_HIEN &&
       proposal.status === PROPOSAL_STATUS.APPROVED &&
@@ -567,7 +546,6 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
           congHienMap[dh.quan_nhan_id] = dh;
         });
 
-        // Enrich dataCongHien với file PDF và số quyết định
         dataCongHien = dataCongHien.map(item => {
           const dbRecord = congHienMap[item.personnel_id];
           if (dbRecord) {
@@ -654,21 +632,20 @@ async function deleteProposal(proposalId, userId, userRole) {
       throw new NotFoundError('Đề xuất');
     }
 
-    // Kiểm tra quyền: Manager chỉ có thể xóa đề xuất của chính mình
+    // Manager can only delete their own proposals
     if (userRole === ROLES.MANAGER) {
       if (proposal.nguoi_de_xuat_id !== userId) {
         throw new ForbiddenError('Bạn chỉ có thể xóa đề xuất của chính mình');
       }
-      // Manager chỉ có thể xóa đề xuất chưa được duyệt
+      // Manager can only delete pending proposals
       if (proposal.status !== PROPOSAL_STATUS.PENDING) {
         throw new ValidationError('Chỉ có thể xóa đề xuất đang chờ duyệt (PENDING)');
       }
     }
-    // ADMIN có thể xóa bất kỳ đề xuất nào
 
-    // File PDF đã được lưu trong files_attached, không cần xóa riêng
+    // PDFs are in files_attached — no separate deletion needed
 
-    // Atomic delete: chỉ xoá nếu status vẫn là PENDING (tránh race condition)
+    // Atomic delete guarded by status=PENDING to prevent race condition
     const deleteResult = await prisma.bangDeXuat.deleteMany({
       where: { id: proposalId, status: PROPOSAL_STATUS.PENDING },
     });

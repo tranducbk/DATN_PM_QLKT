@@ -89,7 +89,6 @@ export function Step3SetTitlesCongHien({
       // Trigger recalculate cho contribution profiles
       const profilesMap: Record<string, any> = {};
 
-      // Gọi getContributionProfile để lấy dữ liệu
       await Promise.all(
         personnelData.map(async p => {
           if (p.id) {
@@ -132,7 +131,6 @@ export function Step3SetTitlesCongHien({
         });
         onTitleDataChange(initialData);
       } else {
-        // Cập nhật cap_bac, chuc_vu và thoi_gian nếu chưa có
         const updatedData = titleData.map(item => {
           const p = personnelData.find((pd: Personnel) => pd.id === item.personnel_id);
           const profile = profilesMap[item.personnel_id || ''];
@@ -194,7 +192,7 @@ export function Step3SetTitlesCongHien({
     }
   };
 
-  // Tính tổng thời gian (theo tháng) cho một nhóm hệ số từ API data
+  /** Computes total service months for a coefficient group from API data. */
   const calculateTotalTimeByGroup = (personnelId: string, group: '0.7' | '0.8' | '0.9-1.0') => {
     let totalMonths = 0;
     if (group === '0.7') totalMonths = contributionProfiles[personnelId]?.months_07 || 0;
@@ -214,7 +212,7 @@ export function Step3SetTitlesCongHien({
     }
   };
 
-  // Kiểm tra quân nhân có đủ điều kiện cho hạng huân chương bảo vệ tổ quốc không từ API data
+  /** Checks whether a personnel meets the service-time requirement for a given HCBVTQ rank. */
   const checkEligibleForRank = (
     profile: any,
     rank: 'HANG_NHAT' | 'HANG_NHI' | 'HANG_BA'
@@ -231,7 +229,7 @@ export function Step3SetTitlesCongHien({
     return false;
   };
 
-  // Lấy huân chương cao nhất mà quân nhân đủ điều kiện từ API data
+  /** Returns the highest HCBVTQ rank the personnel qualifies for. */
   const getHighestEligibleAward = (profile: any): string | undefined => {
     if (checkEligibleForRank(profile, 'HANG_NHAT')) {
       return 'HCBVTQ_HANG_NHAT';
@@ -252,7 +250,7 @@ export function Step3SetTitlesCongHien({
   };
 
   const updateTitle = async (id: string, field: string, value: any) => {
-    // Không cần validation nữa vì đã tự động set danh_hieu cao nhất
+    // danh_hieu is auto-set to the highest eligible rank — no manual validation needed
 
     const newData = [...titleData];
     const index = newData.findIndex(d => d.personnel_id === id);
@@ -484,7 +482,7 @@ export function Step3SetTitlesCongHien({
           selectedRowKeys: selectedPersonnelIds,
           onChange: (selectedRowKeys: React.Key[]) => {
             onPersonnelChange(selectedRowKeys as string[]);
-            // Xóa dữ liệu danh hiệu của các quân nhân bị bỏ chọn
+            // Remove title data for deselected personnel
             const newTitleData = titleData.filter(d =>
               (selectedRowKeys as string[]).includes(d.personnel_id || '')
             );
@@ -496,6 +494,7 @@ export function Step3SetTitlesCongHien({
           ...DEFAULT_ANTD_TABLE_PAGINATION,
         }}
         bordered
+        scroll={{ x: 'max-content' }}
         locale={{
           emptyText: <Empty description="Không có dữ liệu" />,
         }}

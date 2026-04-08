@@ -320,7 +320,10 @@ class AccountService {
       heSoChucVu = Number(chucVu?.he_so_chuc_vu) || 0;
     }
 
-    const finalPassword = password || process.env.DEFAULT_PASSWORD || 'Hvkhqs@123';
+    const finalPassword = password || process.env.DEFAULT_PASSWORD;
+    if (!finalPassword) {
+      throw new ValidationError('Mật khẩu mặc định chưa được cấu hình (DEFAULT_PASSWORD)');
+    }
     if (password) {
       this.validatePassword(password);
     }
@@ -353,7 +356,7 @@ class AccountService {
           },
         });
 
-        // Ưu tiên DVTT — chỉ increment CQDV khi không có DVTT (tránh đếm dư)
+        // DVTT takes priority — only increment CQDV when no DVTT (avoid double-counting)
         if (don_vi_truc_thuoc_id) {
           await tx.donViTrucThuoc.update({
             where: { id: don_vi_truc_thuoc_id },
@@ -442,7 +445,10 @@ class AccountService {
       throw new NotFoundError('Tài khoản');
     }
 
-    const defaultPassword = process.env.DEFAULT_PASSWORD || 'Hvkhqs@123';
+    const defaultPassword = process.env.DEFAULT_PASSWORD;
+    if (!defaultPassword) {
+      throw new ValidationError('Mật khẩu mặc định chưa được cấu hình (DEFAULT_PASSWORD)');
+    }
     const hashedPassword = await bcrypt.hash(defaultPassword, 10);
 
     await prisma.taiKhoan.update({
@@ -480,7 +486,7 @@ class AccountService {
     let deletedProposals = 0;
 
     const personnelId = account.QuanNhan.id;
-    // Ưu tiên DVTT vì CQDV có thể là đơn vị cha
+    // DVTT takes priority — CQDV may be the parent unit
     const unitId = account.QuanNhan.don_vi_truc_thuoc_id || account.QuanNhan.co_quan_don_vi_id;
     const isCoQuanDonVi =
       !account.QuanNhan.don_vi_truc_thuoc_id && !!account.QuanNhan.co_quan_don_vi_id;
