@@ -15,7 +15,7 @@ import {
 } from '../middlewares/errorHandler';
 import profileService from './profile.service';
 import * as notificationHelper from '../helpers/notification';
-import { buildUnitWhereFilter } from '../helpers/controllerHelpers';
+import { buildUnitWhereFilter } from '../helpers/controllerHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 
 type DateInput = Date | null;

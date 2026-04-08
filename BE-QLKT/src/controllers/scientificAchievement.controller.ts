@@ -1,14 +1,13 @@
 import { Request, Response } from 'express';
 import scientificAchievementService from '../services/scientificAchievement.service';
 import profileService from '../services/profile.service';
-import { prisma } from '../models';
 import { ROLES } from '../constants/roles.constants';
 import { parsePagination, normalizeParam } from '../helpers/paginationHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
-import { parsePersonnelIdsFromQuery, buildManagerQuanNhanFilter, getAdminUsername } from '../helpers/controllerHelpers';
+import { parsePersonnelIdsFromQuery, buildManagerQuanNhanFilter, getAdminUsername } from '../helpers/controllerHelper';
 import { notifyOnImport } from '../helpers/notification';
 
 class ScientificAchievementController {
@@ -28,23 +27,16 @@ class ScientificAchievementController {
     const quanNhanFilter: Record<string, unknown> = {};
     if (ho_ten) quanNhanFilter.ho_ten = { contains: ho_ten, mode: 'insensitive' };
     const managerQuanNhanWhere = await buildManagerQuanNhanFilter(req, quanNhanFilter);
-    if (managerQuanNhanWhere) {
-      where.QuanNhan = managerQuanNhanWhere;
-    } else if (Object.keys(quanNhanFilter).length > 0) {
-      where.QuanNhan = quanNhanFilter;
-    }
-    const [achievements, total] = await Promise.all([
-      prisma.thanhTichKhoaHoc.findMany({
-        where,
-        include: {
-          QuanNhan: { include: { CoQuanDonVi: true, DonViTrucThuoc: true, ChucVu: true } },
-        },
-        orderBy: [{ nam: 'desc' }, { createdAt: 'desc' }],
-        skip: (pageNum - 1) * limitNum,
-        take: limitNum,
-      }),
-      prisma.thanhTichKhoaHoc.count({ where }),
-    ]);
+    const quanNhanWhere = managerQuanNhanWhere ?? (Object.keys(quanNhanFilter).length > 0 ? quanNhanFilter : null);
+
+    const { achievements, total } = await scientificAchievementService.getAchievementsList({
+      page: pageNum,
+      limit: limitNum,
+      nam: nam as string,
+      loai: loai as string,
+      quanNhanWhere,
+    });
+
     return ResponseHelper.paginated(res, {
       data: achievements,
       total,

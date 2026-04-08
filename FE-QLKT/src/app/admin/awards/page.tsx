@@ -27,7 +27,7 @@ import {
   COLUMN_STYLES,
   renderDecision,
   renderAnnualAwards,
-} from '@/utils/awardsHelpers';
+} from '@/utils/awardsHelper';
 import { AWARD_TAB_DANH_HIEU, type AwardType } from '@/constants/danhHieu.constants';
 
 import { ExportModal } from './ExportModal';

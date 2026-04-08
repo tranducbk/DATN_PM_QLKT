@@ -1,21 +1,18 @@
 import { Request, Response } from 'express';
 import annualRewardService from '../services/annualReward.service';
 import profileService from '../services/profile.service';
-import { prisma } from '../models';
 import { ROLES } from '../constants/roles.constants';
-import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { parsePagination, normalizeParam } from '../helpers/paginationHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
-import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { notifyOnImport } from '../helpers/notification';
 import {
   parsePersonnelIdsFromQuery,
   buildManagerQuanNhanFilter,
   getAdminUsername,
-} from '../helpers/controllerHelpers';
+} from '../helpers/controllerHelper';
 
 class AnnualRewardController {
   getAnnualRewards = catchAsync(async (req: Request, res: Response) => {
@@ -41,26 +38,15 @@ class AnnualRewardController {
     }
 
     const managerQuanNhanWhere = await buildManagerQuanNhanFilter(req, quanNhanFilter);
-    if (managerQuanNhanWhere) {
-      where.QuanNhan = managerQuanNhanWhere;
-    } else if (Object.keys(quanNhanFilter).length > 0) {
-      where.QuanNhan = quanNhanFilter;
-    }
+    const quanNhanWhere = managerQuanNhanWhere ?? (Object.keys(quanNhanFilter).length > 0 ? quanNhanFilter : null);
 
-    const [awards, total] = await Promise.all([
-      prisma.danhHieuHangNam.findMany({
-        where,
-        include: {
-          QuanNhan: {
-            include: { CoQuanDonVi: true, DonViTrucThuoc: true, ChucVu: true },
-          },
-        },
-        orderBy: [{ nam: 'desc' }, { createdAt: 'desc' }],
-        skip: (pageNum - 1) * limitNum,
-        take: limitNum,
-      }),
-      prisma.danhHieuHangNam.count({ where }),
-    ]);
+    const { awards, total } = await annualRewardService.getAnnualRewardsList({
+      page: pageNum,
+      limit: limitNum,
+      nam: nam as string,
+      danh_hieu: danh_hieu as string,
+      quanNhanWhere,
+    });
 
     return ResponseHelper.paginated(res, {
       data: awards,
@@ -318,69 +304,15 @@ class AnnualRewardController {
   checkAlreadyReceivedHCQKQT = catchAsync(async (req: Request, res: Response) => {
     const personnelId = normalizeParam(req.params.personnelId);
     if (!personnelId) return ResponseHelper.badRequest(res, 'Thiếu personnelId');
-
-    const existingAward = await prisma.huanChuongQuanKyQuyetThang.findUnique({
-      where: { quan_nhan_id: personnelId },
-    });
-    if (existingAward) {
-      return ResponseHelper.success(res, {
-        data: { alreadyReceived: true, reason: 'Đã nhận', award: existingAward },
-        message: 'Kiểm tra HCQKQT thành công',
-      });
-    }
-
-    const pendingProposal = await prisma.bangDeXuat.findFirst({
-      where: {
-        loai_de_xuat: PROPOSAL_TYPES.HC_QKQT,
-        status: PROPOSAL_STATUS.PENDING,
-        data_nien_han: { array_contains: [{ personnel_id: personnelId }] },
-      },
-    });
-    if (pendingProposal) {
-      return ResponseHelper.success(res, {
-        data: { alreadyReceived: true, reason: 'Đang chờ duyệt', proposal: pendingProposal },
-        message: 'Kiểm tra HCQKQT thành công',
-      });
-    }
-
-    return ResponseHelper.success(res, {
-      data: { alreadyReceived: false, reason: null },
-      message: 'Kiểm tra HCQKQT thành công',
-    });
+    const data = await annualRewardService.checkAlreadyReceivedHCQKQT(personnelId);
+    return ResponseHelper.success(res, { data, message: 'Kiểm tra HCQKQT thành công' });
   });
 
-  checkAlreadyReceivedKNCVSNXD = catchAsync(async (req: Request, res: Response) => {
+  checkAlreadyReceivedKNCVSNXDQDNDVN = catchAsync(async (req: Request, res: Response) => {
     const personnelId = normalizeParam(req.params.personnelId);
     if (!personnelId) return ResponseHelper.badRequest(res, 'Thiếu personnelId');
-
-    const existingAward = await prisma.kyNiemChuongVSNXDQDNDVN.findUnique({
-      where: { quan_nhan_id: personnelId },
-    });
-    if (existingAward) {
-      return ResponseHelper.success(res, {
-        data: { alreadyReceived: true, reason: 'Đã nhận', award: existingAward },
-        message: 'Kiểm tra KNC VSNXD thành công',
-      });
-    }
-
-    const pendingProposal = await prisma.bangDeXuat.findFirst({
-      where: {
-        loai_de_xuat: PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
-        status: PROPOSAL_STATUS.PENDING,
-        data_nien_han: { array_contains: [{ personnel_id: personnelId }] },
-      },
-    });
-    if (pendingProposal) {
-      return ResponseHelper.success(res, {
-        data: { alreadyReceived: true, reason: 'Đang chờ duyệt', proposal: pendingProposal },
-        message: 'Kiểm tra KNC VSNXD thành công',
-      });
-    }
-
-    return ResponseHelper.success(res, {
-      data: { alreadyReceived: false, reason: null },
-      message: 'Kiểm tra KNC VSNXD thành công',
-    });
+    const data = await annualRewardService.checkAlreadyReceivedKNCVSNXDQDNDVN(personnelId);
+    return ResponseHelper.success(res, { data, message: 'Kiểm tra KNC VSNXD QDNDVN thành công' });
   });
 
   getTemplate = catchAsync(async (req: Request, res: Response) => {

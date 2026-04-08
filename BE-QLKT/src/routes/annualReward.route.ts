@@ -38,7 +38,7 @@ router.get(
   '/check-knc-vsnxd/:personnelId',
   verifyToken,
   requireAuth,
-  annualRewardController.checkAlreadyReceivedKNCVSNXD
+  annualRewardController.checkAlreadyReceivedKNCVSNXDQDNDVN
 );
 
 router.post(

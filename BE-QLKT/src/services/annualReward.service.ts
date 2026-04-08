@@ -1479,6 +1479,84 @@ class AnnualRewardService {
       byNam: Object.values(byNam).sort((a, b) => b.nam - a.nam),
     };
   }
+
+  /**
+   * Checks if a personnel has already received or has a pending HC_QKQT award.
+   * @param personnelId - Personnel ID
+   * @returns Check result with alreadyReceived flag and reason
+   */
+  async checkAlreadyReceivedHCQKQT(personnelId: string) {
+    const existingAward = await prisma.huanChuongQuanKyQuyetThang.findUnique({
+      where: { quan_nhan_id: personnelId },
+    });
+    if (existingAward) return { alreadyReceived: true, reason: 'Đã nhận', award: existingAward };
+
+    const pendingProposal = await prisma.bangDeXuat.findFirst({
+      where: {
+        loai_de_xuat: PROPOSAL_TYPES.HC_QKQT,
+        status: PROPOSAL_STATUS.PENDING,
+        data_nien_han: { array_contains: [{ personnel_id: personnelId }] },
+      },
+    });
+    if (pendingProposal) return { alreadyReceived: true, reason: 'Đang chờ duyệt', proposal: pendingProposal };
+
+    return { alreadyReceived: false, reason: null };
+  }
+
+  /**
+   * Checks if a personnel has already received or has a pending KNC_VSNXD_QDNDVN award.
+   * @param personnelId - Personnel ID
+   * @returns Check result with alreadyReceived flag and reason
+   */
+  async checkAlreadyReceivedKNCVSNXDQDNDVN(personnelId: string) {
+    const existingAward = await prisma.kyNiemChuongVSNXDQDNDVN.findUnique({
+      where: { quan_nhan_id: personnelId },
+    });
+    if (existingAward) return { alreadyReceived: true, reason: 'Đã nhận', award: existingAward };
+
+    const pendingProposal = await prisma.bangDeXuat.findFirst({
+      where: {
+        loai_de_xuat: PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
+        status: PROPOSAL_STATUS.PENDING,
+        data_nien_han: { array_contains: [{ personnel_id: personnelId }] },
+      },
+    });
+    if (pendingProposal) return { alreadyReceived: true, reason: 'Đang chờ duyệt', proposal: pendingProposal };
+
+    return { alreadyReceived: false, reason: null };
+  }
+
+  /**
+   * Returns paginated list of annual awards with optional filters.
+   * @param params - Filter and pagination params
+   * @returns Awards list and total count
+   */
+  async getAnnualRewardsList(params: {
+    page: number;
+    limit: number;
+    nam?: string;
+    danh_hieu?: string;
+    quanNhanWhere?: Record<string, unknown> | null;
+  }) {
+    const { page, limit, nam, danh_hieu, quanNhanWhere } = params;
+    const where: Record<string, unknown> = {};
+    if (nam) where.nam = parseInt(nam);
+    if (danh_hieu) where.danh_hieu = danh_hieu;
+    if (quanNhanWhere) where.QuanNhan = quanNhanWhere;
+
+    const [awards, total] = await Promise.all([
+      prisma.danhHieuHangNam.findMany({
+        where,
+        include: { QuanNhan: { include: { CoQuanDonVi: true, DonViTrucThuoc: true, ChucVu: true } } },
+        orderBy: [{ nam: 'desc' }, { createdAt: 'desc' }],
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.danhHieuHangNam.count({ where }),
+    ]);
+
+    return { awards, total };
+  }
 }
 
 export default new AnnualRewardService();

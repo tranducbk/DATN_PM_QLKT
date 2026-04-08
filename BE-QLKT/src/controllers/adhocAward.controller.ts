@@ -4,7 +4,7 @@ import { ROLES } from '../constants/roles.constants';
 import { parsePagination, normalizeParam } from '../helpers/paginationHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
-import { getManagerUnitFilter, getSubordinateUnitIds } from '../helpers/controllerHelpers';
+import { getManagerUnitFilter, getSubordinateUnitIds } from '../helpers/controllerHelper';
 
 class AdhocAwardController {
   createAdhocAward = catchAsync(async (req: Request, res: Response) => {

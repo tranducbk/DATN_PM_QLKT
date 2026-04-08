@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { prisma } from '../models';
+import notificationService from '../services/notification.service';
 import { parsePagination, normalizeParam } from '../helpers/paginationHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
@@ -10,38 +10,24 @@ class NotificationController {
     const { isRead, type } = req.query;
     const currentUser = req.user!;
 
-    const skip = (page - 1) * limit;
-    const where: Record<string, unknown> = { nguoi_nhan_id: currentUser.id };
-    if (isRead !== undefined) where.is_read = isRead === 'true';
-    if (type) where.type = type;
-
-    const [notifications, total] = await Promise.all([
-      prisma.thongBao.findMany({
-        skip,
-        take: limit,
-        where,
-        include: {
-          NhatKyHeThong: { select: { action: true, resource: true, description: true } },
-        },
-        orderBy: { created_at: 'desc' },
-      }),
-      prisma.thongBao.count({ where }),
-    ]);
+    const result = await notificationService.getNotificationsByUserId(currentUser.id, {
+      page,
+      limit,
+      isRead: isRead !== undefined ? isRead === 'true' : undefined,
+      type: type as string,
+    });
 
     return ResponseHelper.success(res, {
       message: 'Lấy danh sách thông báo thành công',
       data: {
-        notifications,
-        pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
+        notifications: result.notifications,
+        pagination: { total: result.total, page, limit, totalPages: result.totalPages },
       },
     });
   });
 
   getUnreadCount = catchAsync(async (req: Request, res: Response) => {
-    const currentUser = req.user!;
-    const count = await prisma.thongBao.count({
-      where: { nguoi_nhan_id: currentUser.id, is_read: false },
-    });
+    const count = await notificationService.getUnreadCount(req.user!.id);
     return ResponseHelper.success(res, {
       message: 'Lấy số lượng thông báo chưa đọc thành công',
       data: { count },
@@ -51,25 +37,12 @@ class NotificationController {
   markAsRead = catchAsync(async (req: Request, res: Response) => {
     const id = normalizeParam(req.params.id);
     if (!id) return ResponseHelper.badRequest(res, 'ID thông báo không hợp lệ');
-
-    const notification = await prisma.thongBao.findFirst({
-      where: { id, nguoi_nhan_id: req.user!.id },
-    });
-    if (!notification) return ResponseHelper.notFound(res, 'Không tìm thấy thông báo');
-
-    const updated = await prisma.thongBao.update({
-      where: { id },
-      data: { is_read: true, read_at: new Date() },
-    });
+    const updated = await notificationService.markAsRead(id, req.user!.id);
     return ResponseHelper.success(res, { message: 'Đánh dấu đã đọc thành công', data: updated });
   });
 
   markAllAsRead = catchAsync(async (req: Request, res: Response) => {
-    const currentUser = req.user!;
-    const result = await prisma.thongBao.updateMany({
-      where: { nguoi_nhan_id: currentUser.id, is_read: false },
-      data: { is_read: true, read_at: new Date() },
-    });
+    const result = await notificationService.markAllAsRead(req.user!.id);
     return ResponseHelper.success(res, {
       message: 'Đánh dấu tất cả đã đọc thành công',
       data: { count: result.count },
@@ -79,21 +52,13 @@ class NotificationController {
   deleteNotification = catchAsync(async (req: Request, res: Response) => {
     const id = normalizeParam(req.params.id);
     if (!id) return ResponseHelper.badRequest(res, 'ID thông báo không hợp lệ');
-
-    const notification = await prisma.thongBao.findFirst({
-      where: { id, nguoi_nhan_id: req.user!.id },
-    });
-    if (!notification) return ResponseHelper.notFound(res, 'Không tìm thấy thông báo');
-
-    await prisma.thongBao.delete({ where: { id } });
+    await notificationService.deleteNotification(id, req.user!.id);
     return ResponseHelper.success(res, { message: 'Xóa thông báo thành công' });
   });
 
   deleteAllNotifications = catchAsync(async (req: Request, res: Response) => {
-    const result = await prisma.thongBao.deleteMany({
-      where: { nguoi_nhan_id: req.user!.id },
-    });
-    return ResponseHelper.success(res, { message: `Đã xóa ${result.count} thông báo` });
+    const result = await notificationService.deleteAllNotifications(req.user!.id);
+    return ResponseHelper.success(res, { message: result.message });
   });
 }
 

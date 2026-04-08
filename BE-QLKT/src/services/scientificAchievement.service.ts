@@ -595,6 +595,38 @@ class ScientificAchievementService {
       { timeout: IMPORT_TRANSACTION_TIMEOUT }
     );
   }
+
+  /**
+   * Returns paginated list of scientific achievements with optional filters.
+   * @param params - Filter and pagination params
+   * @returns Achievements list and total count
+   */
+  async getAchievementsList(params: {
+    page: number;
+    limit: number;
+    nam?: string;
+    loai?: string;
+    quanNhanWhere?: Record<string, unknown> | null;
+  }) {
+    const { page, limit, nam, loai, quanNhanWhere } = params;
+    const where: Record<string, unknown> = {};
+    if (nam) where.nam = parseInt(nam);
+    if (loai) where.loai = loai;
+    if (quanNhanWhere) where.QuanNhan = quanNhanWhere;
+
+    const [achievements, total] = await Promise.all([
+      prisma.thanhTichKhoaHoc.findMany({
+        where,
+        include: { QuanNhan: { include: { CoQuanDonVi: true, DonViTrucThuoc: true, ChucVu: true } } },
+        orderBy: [{ nam: 'desc' }, { createdAt: 'desc' }],
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.thanhTichKhoaHoc.count({ where }),
+    ]);
+
+    return { achievements, total };
+  }
 }
 
 export default new ScientificAchievementService();

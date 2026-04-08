@@ -26,7 +26,7 @@ import {
   renderDecision,
   renderAnnualAwards,
   getLoaiKhenThuong,
-} from '@/utils/awardsHelpers';
+} from '@/utils/awardsHelper';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { formatDate } from '@/lib/utils';
 import type { AwardType } from '@/constants/danhHieu.constants';
