@@ -23,6 +23,9 @@ yarn-error.log*
 uploads/
 storage/
 
+# Build output
+dist/
+
 # Generated files
 src/generated/
 node_modules/.prisma/

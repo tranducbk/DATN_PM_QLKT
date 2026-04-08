@@ -3,7 +3,6 @@
 import { ROLES } from '@/constants/roles.constants';
 
 /** Cấu trúc trả về chung của tất cả hàm trong `lib/api/*`. */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type ApiResponse<T = any> = { success: boolean; data?: T; message?: string };
 
 export const USER_ROLE_VALUES = [
