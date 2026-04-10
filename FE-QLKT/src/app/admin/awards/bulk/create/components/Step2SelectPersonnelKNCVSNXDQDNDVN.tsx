@@ -22,6 +22,7 @@ import { apiClient } from '@/lib/apiClient';
 import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/lib/constants/pagination.constants';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { ExcelImportSection } from './ExcelImportSection';
+import { DANH_HIEU_MAP } from '@/constants/danhHieu.constants';
 import * as XLSX from 'xlsx';
 
 const { Text } = Typography;
@@ -657,7 +658,7 @@ export function Step2SelectPersonnelKNCVSNXDQDNDVN({
   return (
     <div>
       <Alert
-        message="Bước 2: Chọn quân nhân - Kỷ niệm chương VSNXD QĐNDVN"
+        message={`Bước 2: Chọn quân nhân — ${DANH_HIEU_MAP['KNC_VSNXD_QDNDVN']}`}
         description={
           <div>
             <p>1. Nhập năm đề xuất khen thưởng</p>

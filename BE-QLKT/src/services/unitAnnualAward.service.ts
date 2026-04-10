@@ -3,7 +3,7 @@ import { prisma } from '../models';
 import ExcelJS from 'exceljs';
 import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHelper';
 import { checkDuplicateUnitAward } from '../helpers/awardValidation';
-import { getDanhHieuName, DANH_HIEU_CA_NHAN_HANG_NAM, UNIT_DV_TITLES, UNIT_BK_TITLES } from '../constants/danhHieu.constants';
+import { getDanhHieuName, DANH_HIEU_CA_NHAN_HANG_NAM, DANH_HIEU_DON_VI_HANG_NAM, UNIT_DV_TITLES, UNIT_BK_TITLES } from '../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
@@ -101,7 +101,7 @@ class UnitAnnualAwardService {
       },
     });
 
-    // Store only ĐVQT and ĐVTT in JSON; BKBQP and BKTTCP are separate boolean flags
+    // JSON payload keeps DVQT/ĐVTT in `danh_hieu`; BKBQP/BKTTCP ride on boolean columns instead.
     const validRecords = records.filter(
       r => r.danh_hieu && (r.danh_hieu === 'ĐVQT' || r.danh_hieu === 'ĐVTT')
     );
@@ -783,7 +783,7 @@ class UnitAnnualAwardService {
       );
     }
 
-    const validDanhHieu = ['ĐVQT', 'ĐVTT'];
+    const validDanhHieu = Object.values(DANH_HIEU_DON_VI_HANG_NAM) as string[];
     const errors = [];
     const valid = [];
     let total = 0;
@@ -1479,9 +1479,9 @@ class UnitAnnualAwardService {
           throw new ValidationError(`Giá trị năm không hợp lệ: ${namVal}`);
         }
 
-        if (!['ĐVQT', 'ĐVTT', 'BKTTCP'].includes(danhHieu)) {
+        if (!(Object.values(DANH_HIEU_DON_VI_HANG_NAM) as string[]).includes(danhHieu)) {
           throw new ValidationError(
-            `Danh hiệu không hợp lệ: ${danhHieu}. Danh hiệu hợp lệ: ĐVQT, ĐVTT, BKTTCP`
+            `Danh hiệu không hợp lệ: ${danhHieu}. Danh hiệu hợp lệ: ${Object.values(DANH_HIEU_DON_VI_HANG_NAM).join(', ')}`
           );
         }
 

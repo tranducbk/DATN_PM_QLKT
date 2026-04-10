@@ -16,7 +16,7 @@ class ContributionAwardController {
     if (req.query.repeat_map) {
       try {
         Object.assign(repeatMap, JSON.parse(req.query.repeat_map as string));
-      } catch { /* ignore */ }
+      } catch (e) { console.error('Invalid repeat_map JSON:', e); }
     }
 
     const workbook = await contributionAwardService.exportTemplate(personnelIds, repeatMap);
@@ -61,7 +61,7 @@ class ContributionAwardController {
       payload: { imported: result.imported ?? items.length },
     });
     const personnelIds = items.map((i: { personnel_id: string }) => i.personnel_id);
-    notifyOnImport(req.user!.id, 'contribution-awards', result.imported ?? items.length, personnelIds).catch(() => {});
+    notifyOnImport(req.user!.id, 'contribution-awards', result.imported ?? items.length, personnelIds).catch((e) => { console.error('[contribution-awards] notifyOnImport failed:', e); });
     return ResponseHelper.success(res, { data: result, message: 'Thao tác thành công' });
   });
 

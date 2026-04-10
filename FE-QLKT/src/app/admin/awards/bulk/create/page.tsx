@@ -36,7 +36,7 @@ import {
 import Link from 'next/link';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
-import { getDanhHieuName } from '@/constants/danhHieu.constants';
+import { getDanhHieuName, DANH_HIEU_MAP } from '@/constants/danhHieu.constants';
 import { PROPOSAL_TYPES, type ProposalType } from '@/constants/proposal.constants';
 import { Step2SelectPersonnelCaNhanHangNam } from './components/Step2SelectPersonnelCaNhanHangNam';
 import { Step2SelectPersonnelNienHan } from './components/Step2SelectPersonnelNienHan';
@@ -129,8 +129,8 @@ export default function BulkAddAwardsPage() {
     },
     [PROPOSAL_TYPES.KNC_VSNXD_QDNDVN]: {
       icon: <TrophyOutlined />,
-      label: 'Kỷ niệm chương VSNXD QĐNDVN',
-      description: 'Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN',
+      label: DANH_HIEU_MAP['KNC_VSNXD_QDNDVN'],
+      description: DANH_HIEU_MAP['KNC_VSNXD_QDNDVN'],
     },
     [PROPOSAL_TYPES.CONG_HIEN]: {
       icon: <HeartOutlined />,

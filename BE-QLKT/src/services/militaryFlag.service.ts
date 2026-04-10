@@ -508,7 +508,7 @@ class MilitaryFlagService {
           const duplicateCheck = await checkDuplicateAward(
             personnel.id,
             nam,
-            'HC_QKQT',
+            PROPOSAL_TYPES.HC_QKQT,
             PROPOSAL_TYPES.HC_QKQT,
             PROPOSAL_STATUS.APPROVED
           );
@@ -549,7 +549,7 @@ class MilitaryFlagService {
         results.titleData.push({
           personnelId: personnel.id,
           quan_nhan_id: personnel.id,
-          danh_hieu: 'HC_QKQT',
+          danh_hieu: PROPOSAL_TYPES.HC_QKQT,
           nam: upsertedRecord.nam,
           cap_bac: upsertedRecord.cap_bac,
           chuc_vu: upsertedRecord.chuc_vu,

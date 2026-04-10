@@ -1,11 +1,10 @@
+import type { ProposalType } from './proposalTypes.constants';
+
 /**
  * Constants cho các loại danh hiệu khen thưởng
  * Đây là nguồn dữ liệu duy nhất (Single Source of Truth) cho tất cả mapping danh hiệu
  */
 
-/**
- * Mã các danh hiệu cá nhân hằng năm
- */
 export const DANH_HIEU_CA_NHAN_HANG_NAM = {
   CSTDCS: 'CSTDCS',
   CSTT: 'CSTT',
@@ -14,52 +13,36 @@ export const DANH_HIEU_CA_NHAN_HANG_NAM = {
   BKTTCP: 'BKTTCP',
 } as const;
 
-/**
- * Mã các danh hiệu đơn vị hằng năm
- */
+/** Title codes used on unit annual (`ĐVQT`, `ĐVTT`, `BKTTCP`). */
 export const DANH_HIEU_DON_VI_HANG_NAM = {
   DVQT: 'ĐVQT',
   DVTT: 'ĐVTT',
+  BKTTCP: 'BKTTCP',
 } as const;
 
-/**
- * Mã Huy chương Chiến sĩ Vẻ vang (Niên hạn)
- */
 export const DANH_HIEU_HCCSVV = {
   HANG_BA: 'HCCSVV_HANG_BA',
   HANG_NHI: 'HCCSVV_HANG_NHI',
   HANG_NHAT: 'HCCSVV_HANG_NHAT',
 } as const;
 
-/**
- * Mã Huân chương Bảo vệ Tổ quốc (Cống hiến)
- */
 export const DANH_HIEU_HCBVTQ = {
   HANG_BA: 'HCBVTQ_HANG_BA',
   HANG_NHI: 'HCBVTQ_HANG_NHI',
   HANG_NHAT: 'HCBVTQ_HANG_NHAT',
 } as const;
 
-/**
- * Mã các danh hiệu đặc biệt
- */
-export const DANH_HIEU_DAC_BIET = {
+export const DANH_HIEU_CA_NHAN_KHAC = {
   HC_QKQT: 'HC_QKQT',
   KNC_VSNXD_QDNDVN: 'KNC_VSNXD_QDNDVN',
 } as const;
 
-/**
- * Mã các loại thành tích khoa học
- */
-export const THANH_TICH_KHOA_HOC = {
+export const DANH_HIEU_NCKH = {
   DTKH: 'DTKH',
   SKKH: 'SKKH',
 } as const;
 
-/**
- * Mapping đầy đủ mã danh hiệu sang tên tiếng Việt
- * Đây là nguồn dữ liệu duy nhất cho việc hiển thị tên danh hiệu
- */
+// Must stay in sync with all DANH_HIEU_* objects above — add entry here when adding a new code.
 export const DANH_HIEU_MAP: Record<string, string> = {
   CSTDCS: 'Chiến sĩ thi đua Cơ sở',
   CSTT: 'Chiến sĩ tiên tiến',
@@ -85,10 +68,8 @@ export const DANH_HIEU_MAP: Record<string, string> = {
   SKKH: 'Sáng kiến khoa học',
 };
 
-/**
- * Mapping mã loại đề xuất sang tên tiếng Việt
- */
-export const LOAI_DE_XUAT_MAP: Record<string, string> = {
+// Compiler enforces that all ProposalType keys are covered — missing key = type error.
+export const LOAI_DE_XUAT_MAP: Record<ProposalType, string> = {
   CA_NHAN_HANG_NAM: 'Cá nhân Hằng năm',
   DON_VI_HANG_NAM: 'Đơn vị Hằng năm',
   NIEN_HAN: 'Huy chương Chiến sĩ vẻ vang',
@@ -100,41 +81,35 @@ export const LOAI_DE_XUAT_MAP: Record<string, string> = {
 };
 
 /**
- * Mapping mã loại khen thưởng (award_type) sang tên tiếng Việt
- */
-export const AWARD_TYPE_MAP: Record<string, string> = {
-  ANNUAL_PERSONAL: 'Cá nhân Hằng năm',
-  ANNUAL_UNIT: 'Đơn vị Hằng năm',
-  CONTRIBUTION: 'Huân chương Bảo vệ Tổ quốc',
-  TENURE: 'Huy chương Chiến sĩ vẻ vang',
-  ADHOC: 'Đột xuất',
-  SCIENTIFIC: 'Thành tích khoa học',
-};
-
-/**
- * Lấy tên tiếng Việt của danh hiệu
+ * Human-readable `danh_hieu` via `DANH_HIEU_MAP`; unknown codes pass through unchanged.
+ * @param danhHieu - Raw code from persistence or UI
+ * @returns Vietnamese label, UX placeholder when empty, or unmapped code
  */
 export function getDanhHieuName(danhHieu: string | null | undefined): string {
   if (!danhHieu) return 'Chưa có dữ liệu';
   return DANH_HIEU_MAP[danhHieu] || danhHieu;
 }
 
-/** Danh sách mã + tên cho thông báo lỗi (vd. nhập sai danh hiệu). */
+/**
+ * Builds `Tên (CODE), …` copy for validation errors and import feedback.
+ * @param codes - Codes cited in the message
+ * @returns Single-line comma-separated list
+ */
 export function formatDanhHieuList(codes: readonly string[]): string {
   return codes.map(c => `${getDanhHieuName(c)} (${c})`).join(', ');
 }
 
 /**
- * Lấy tên tiếng Việt của loại đề xuất
+ * Label for `loai_de_xuat` (`LOAI_DE_XUAT_MAP`); absent values yield the UI undetermined string.
+ * @param loaiDeXuat - Key into `LOAI_DE_XUAT_MAP` (proposal category)
+ * @returns Display string or literal fallback
  */
 export function getLoaiDeXuatName(loaiDeXuat: string | null | undefined): string {
   if (!loaiDeXuat) return 'Chưa xác định';
-  return LOAI_DE_XUAT_MAP[loaiDeXuat] || loaiDeXuat;
+  return LOAI_DE_XUAT_MAP[loaiDeXuat as ProposalType] || loaiDeXuat;
 }
 
-/**
- * Lấy tên tiếng Việt của loại khen thưởng
- */
+/** CSTDCS + CSTT — base-tier titles used in unit-level eligibility checks. */
 export const DANH_HIEU_CA_NHAN_CO_BAN: readonly string[] = [
   DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS,
   DANH_HIEU_CA_NHAN_HANG_NAM.CSTT,
@@ -142,24 +117,5 @@ export const DANH_HIEU_CA_NHAN_CO_BAN: readonly string[] = [
 
 export const DANH_HIEU_CA_NHAN_TAT_CA: readonly string[] = Object.values(DANH_HIEU_CA_NHAN_HANG_NAM);
 
-export const UNIT_DV_TITLES = new Set<string>([DANH_HIEU_DON_VI_HANG_NAM.DVQT, DANH_HIEU_DON_VI_HANG_NAM.DVTT]);
+export const UNIT_DV_TITLES = new Set<string>(Object.values(DANH_HIEU_DON_VI_HANG_NAM));
 export const UNIT_BK_TITLES = new Set<string>([DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP, DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP]);
-
-export function getAwardTypeName(awardType: string | null | undefined): string {
-  if (!awardType) return 'Chưa xác định';
-  return AWARD_TYPE_MAP[awardType] || awardType;
-}
-
-/**
- * Xác định loại khen thưởng dựa trên mã danh hiệu
- */
-export function getLoaiKhenThuongByDanhHieu(danhHieu: string | null | undefined): string {
-  if (!danhHieu) return 'Chưa xác định';
-  if (danhHieu.startsWith('HCBVTQ')) return 'Huân chương Bảo vệ Tổ quốc';
-  if (danhHieu.startsWith('HCCSVV')) return 'Huy chương Chiến sĩ vẻ vang';
-  if (['CSTDCS', 'CSTT', 'BKBQP', 'CSTDTQ', 'BKTTCP'].includes(danhHieu)) return 'Cá nhân Hằng năm';
-  if (['ĐVQT', 'ĐVTT'].includes(danhHieu)) return 'Đơn vị Hằng năm';
-  if (danhHieu === 'HC_QKQT') return 'Huy chương Quân kỳ Quyết thắng';
-  if (danhHieu === 'KNC_VSNXD_QDNDVN') return 'Kỷ niệm chương';
-  return 'Đột xuất';
-}

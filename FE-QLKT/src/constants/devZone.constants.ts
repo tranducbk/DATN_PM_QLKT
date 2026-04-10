@@ -2,6 +2,8 @@
  * Constants cho Dev Zone
  */
 
+import { DANH_HIEU_MAP } from './danhHieu.constants';
+
 export const DEV_ZONE_API = '/api/dev-zone';
 
 export const DEV_SESSION_KEY = 'dev_zone_session';
@@ -31,7 +33,7 @@ export const AWARD_TYPE_OPTIONS = [
   },
   {
     key: 'commemoration',
-    label: 'Kỷ niệm chương VSNXD QĐNDVN',
+    label: DANH_HIEU_MAP['KNC_VSNXD_QDNDVN'],
     description: 'Import, file mẫu, thêm đồng loạt',
   },
   {

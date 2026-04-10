@@ -1,4 +1,6 @@
 import { PROPOSAL_TYPES, type ProposalType } from '../../constants/proposalTypes.constants';
+import { calculateServiceMonths } from '../../helpers/serviceYearsHelper';
+import { DANH_HIEU_HCCSVV, DANH_HIEU_HCBVTQ } from '../../constants/danhHieu.constants';
 import { prisma } from '../../models';
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -7,6 +9,7 @@ import { NotFoundError, ValidationError } from '../../middlewares/errorHandler';
 import { sanitizeFilename } from './helpers';
 import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
 import type { Prisma } from '../../generated/prisma';
+import { GENDER } from '../../constants/gender.constants';
 
 /** Personnel row shape returned by `findMany` in `submitProposal`. */
 type SubmitPersonnelRow = Prisma.QuanNhanGetPayload<{
@@ -433,13 +436,7 @@ async function submitProposal(
             ? new Date(personnel.ngay_xuat_ngu)
             : new Date();
 
-          let months = (ngayKetThuc.getFullYear() - ngayNhapNgu.getFullYear()) * 12;
-          months += ngayKetThuc.getMonth() - ngayNhapNgu.getMonth();
-          if (ngayKetThuc.getDate() < ngayNhapNgu.getDate()) {
-            months--;
-          }
-          months = Math.max(0, months);
-
+          const months = calculateServiceMonths(ngayNhapNgu, ngayKetThuc);
           const years = Math.floor(months / 12);
           const remainingMonths = months % 12;
           thoiGian = {
@@ -539,19 +536,13 @@ async function submitProposal(
               });
 
               // Compute active months for current position records.
-              const today = new Date();
               const updatedHistories = histories.map(history => {
                 if (history.so_thang === null || history.so_thang === undefined) {
                   if (history.ngay_bat_dau && !history.ngay_ket_thuc) {
                     const ngayBatDau = new Date(history.ngay_bat_dau);
-                    let months = (today.getFullYear() - ngayBatDau.getFullYear()) * 12;
-                    months += today.getMonth() - ngayBatDau.getMonth();
-                    if (today.getDate() < ngayBatDau.getDate()) {
-                      months--;
-                    }
                     return {
                       ...history,
-                      so_thang: Math.max(0, months),
+                      so_thang: calculateServiceMonths(ngayBatDau),
                     };
                   }
                 }
@@ -645,7 +636,7 @@ async function submitProposal(
     if (type === PROPOSAL_TYPES.NIEN_HAN && dataNienHan && dataNienHan.length > 0) {
       const danhHieus = dataNienHan.map(item => item.danh_hieu).filter(Boolean);
 
-      const allowedDanhHieus = ['HCCSVV_HANG_BA', 'HCCSVV_HANG_NHI', 'HCCSVV_HANG_NHAT'];
+      const allowedDanhHieus = Object.values(DANH_HIEU_HCCSVV);
       const invalidDanhHieus = danhHieus.filter(dh => !allowedDanhHieus.includes(dh));
 
       if (invalidDanhHieus.length > 0) {
@@ -661,7 +652,7 @@ async function submitProposal(
     if (type === PROPOSAL_TYPES.HC_QKQT && dataNienHan && dataNienHan.length > 0) {
       const danhHieus = dataNienHan.map(item => item.danh_hieu).filter(Boolean);
 
-      const invalidDanhHieus = danhHieus.filter(dh => dh !== 'HC_QKQT');
+      const invalidDanhHieus = danhHieus.filter(dh => dh !== PROPOSAL_TYPES.HC_QKQT);
 
       if (invalidDanhHieus.length > 0) {
         throw new ValidationError(
@@ -709,13 +700,7 @@ async function submitProposal(
             ? new Date(quanNhan.ngay_xuat_ngu)
             : new Date();
 
-          let months = (ngayKetThuc.getFullYear() - ngayNhapNgu.getFullYear()) * 12;
-          months += ngayKetThuc.getMonth() - ngayNhapNgu.getMonth();
-          if (ngayKetThuc.getDate() < ngayNhapNgu.getDate()) {
-            months--;
-          }
-          months = Math.max(0, months);
-
+          const months = calculateServiceMonths(ngayNhapNgu, ngayKetThuc);
           const years = Math.floor(months / 12);
 
           const requiredYears = 25;
@@ -748,7 +733,7 @@ async function submitProposal(
     if (type === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN && dataNienHan && dataNienHan.length > 0) {
       const danhHieus = dataNienHan.map(item => item.danh_hieu).filter(Boolean);
 
-      const invalidDanhHieus = danhHieus.filter(dh => dh !== 'KNC_VSNXD_QDNDVN');
+      const invalidDanhHieus = danhHieus.filter(dh => dh !== PROPOSAL_TYPES.KNC_VSNXD_QDNDVN);
 
       if (invalidDanhHieus.length > 0) {
         throw new ValidationError(
@@ -785,7 +770,7 @@ async function submitProposal(
 
           if (
             !quanNhan.gioi_tinh ||
-            (quanNhan.gioi_tinh !== 'NAM' && quanNhan.gioi_tinh !== 'NU')
+            (quanNhan.gioi_tinh !== GENDER.MALE && quanNhan.gioi_tinh !== GENDER.FEMALE)
           ) {
             ineligiblePersonnel.push({
               id: personnelId,
@@ -809,16 +794,10 @@ async function submitProposal(
             ? new Date(quanNhan.ngay_xuat_ngu)
             : new Date();
 
-          let months = (ngayKetThuc.getFullYear() - ngayNhapNgu.getFullYear()) * 12;
-          months += ngayKetThuc.getMonth() - ngayNhapNgu.getMonth();
-          if (ngayKetThuc.getDate() < ngayNhapNgu.getDate()) {
-            months--;
-          }
-          months = Math.max(0, months);
-
+          const months = calculateServiceMonths(ngayNhapNgu, ngayKetThuc);
           const years = Math.floor(months / 12);
 
-          const requiredYears = quanNhan.gioi_tinh === 'NU' ? 20 : 25;
+          const requiredYears = quanNhan.gioi_tinh === GENDER.FEMALE ? 20 : 25;
 
           if (years < requiredYears) {
             ineligiblePersonnel.push({
@@ -853,43 +832,38 @@ async function submitProposal(
       const positionHistoriesMap: Record<string, LichSuChucVuForCongHien[]> = {};
       const personnelGenderMap: Record<string, string | null> = {};
 
+      const [quanNhanList, allHistories] = await Promise.all([
+        prisma.quanNhan.findMany({
+          where: { id: { in: personnelIds } },
+          select: { id: true, gioi_tinh: true },
+        }),
+        prisma.lichSuChucVu.findMany({
+          where: { quan_nhan_id: { in: personnelIds } },
+          select: { quan_nhan_id: true, he_so_chuc_vu: true, so_thang: true, ngay_bat_dau: true, ngay_ket_thuc: true },
+        }),
+      ]);
+      const quanNhanGenderMap = new Map(quanNhanList.map(qn => [qn.id, qn.gioi_tinh]));
+      const historiesByPersonnel = new Map<string, typeof allHistories>();
+      for (const h of allHistories) {
+        if (!historiesByPersonnel.has(h.quan_nhan_id)) historiesByPersonnel.set(h.quan_nhan_id, []);
+        historiesByPersonnel.get(h.quan_nhan_id)!.push(h);
+      }
+
       for (const personnelId of personnelIds) {
         try {
-          const quanNhan = await prisma.quanNhan.findUnique({
-            where: { id: personnelId },
-            select: {
-              id: true,
-              gioi_tinh: true,
-            },
-          });
-
-          if (quanNhan) {
-            personnelGenderMap[personnelId] = quanNhan.gioi_tinh;
+          const gioi_tinh = quanNhanGenderMap.get(personnelId) ?? null;
+          if (gioi_tinh !== null) {
+            personnelGenderMap[personnelId] = gioi_tinh;
           }
 
-          const histories = await prisma.lichSuChucVu.findMany({
-            where: { quan_nhan_id: personnelId },
-            select: {
-              he_so_chuc_vu: true,
-              so_thang: true,
-              ngay_bat_dau: true,
-              ngay_ket_thuc: true,
-            },
-          });
-
-          const today = new Date();
+          const histories = historiesByPersonnel.get(personnelId) ?? [];
           const updatedHistories = histories.map(item => {
             if (item.so_thang === null || item.so_thang === undefined) {
               if (item.ngay_bat_dau && !item.ngay_ket_thuc) {
                 const ngayBatDau = new Date(item.ngay_bat_dau);
-                let months = (today.getFullYear() - ngayBatDau.getFullYear()) * 12;
-                months += today.getMonth() - ngayBatDau.getMonth();
-                if (today.getDate() < ngayBatDau.getDate()) {
-                  months--;
-                }
                 return {
                   ...item,
-                  so_thang: Math.max(0, months),
+                  so_thang: calculateServiceMonths(ngayBatDau),
                 };
               }
             }
@@ -929,7 +903,7 @@ async function submitProposal(
 
       const getRequiredMonths = (personnelId: string) => {
         const gioiTinh = personnelGenderMap[personnelId];
-        return gioiTinh === 'NU' ? femaleRequiredMonths : baseRequiredMonths;
+        return gioiTinh === GENDER.FEMALE ? femaleRequiredMonths : baseRequiredMonths;
       };
 
       const checkEligibleForRank = (personnelId: string, rank: string) => {
@@ -960,13 +934,13 @@ async function submitProposal(
         let eligible = false;
         let rankName = '';
 
-        if (item.danh_hieu === 'HCBVTQ_HANG_NHAT') {
+        if (item.danh_hieu === DANH_HIEU_HCBVTQ.HANG_NHAT) {
           eligible = checkEligibleForRank(item.personnel_id, 'HANG_NHAT');
           rankName = 'Hạng Nhất';
-        } else if (item.danh_hieu === 'HCBVTQ_HANG_NHI') {
+        } else if (item.danh_hieu === DANH_HIEU_HCBVTQ.HANG_NHI) {
           eligible = checkEligibleForRank(item.personnel_id, 'HANG_NHI');
           rankName = 'Hạng Nhì';
-        } else if (item.danh_hieu === 'HCBVTQ_HANG_BA') {
+        } else if (item.danh_hieu === DANH_HIEU_HCBVTQ.HANG_BA) {
           eligible = checkEligibleForRank(item.personnel_id, 'HANG_BA');
           rankName = 'Hạng Ba';
         }
@@ -977,11 +951,11 @@ async function submitProposal(
           const months0_7 = getTotalMonthsByGroup(item.personnel_id, '0.7');
 
           let totalMonths = 0;
-          if (item.danh_hieu === 'HCBVTQ_HANG_NHAT') {
+          if (item.danh_hieu === DANH_HIEU_HCBVTQ.HANG_NHAT) {
             totalMonths = months0_9_1_0;
-          } else if (item.danh_hieu === 'HCBVTQ_HANG_NHI') {
+          } else if (item.danh_hieu === DANH_HIEU_HCBVTQ.HANG_NHI) {
             totalMonths = months0_8 + months0_9_1_0;
-          } else if (item.danh_hieu === 'HCBVTQ_HANG_BA') {
+          } else if (item.danh_hieu === DANH_HIEU_HCBVTQ.HANG_BA) {
             totalMonths = months0_7 + months0_8 + months0_9_1_0;
           }
 
@@ -1003,7 +977,7 @@ async function submitProposal(
                 ? `${requiredYears} năm`
                 : `${requiredRemainingMonths} tháng`;
 
-          const genderText = gioiTinh === 'NU' ? ' (Nữ giảm 1/3 thời gian)' : '';
+          const genderText = gioiTinh === GENDER.FEMALE ? ' (Nữ giảm 1/3 thời gian)' : '';
 
           throw new ValidationError(
             `Quân nhân "${hoTen}" không đủ điều kiện đề xuất Huân chương Bảo vệ Tổ quốc ${rankName}. ` +

@@ -6,6 +6,7 @@ import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHel
 import bcrypt from 'bcrypt';
 import { parseCCCD } from '../helpers/cccdHelper';
 import { ROLES } from '../constants/roles.constants';
+import { GENDER } from '../constants/gender.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import {
   NotFoundError,
@@ -478,7 +479,7 @@ class PersonnelService {
 
     // Gender is required on update.
     if (gioi_tinh !== undefined) {
-      if (!gioi_tinh || (gioi_tinh !== 'NAM' && gioi_tinh !== 'NU')) {
+      if (!gioi_tinh || (gioi_tinh !== GENDER.MALE && gioi_tinh !== GENDER.FEMALE)) {
         throw new ValidationError('Giới tính là bắt buộc và phải là NAM hoặc NU');
       }
     } else if (!personnel.gioi_tinh) {

@@ -5,6 +5,7 @@ import { ValidationError } from '../../middlewares/errorHandler';
 import { applyThinBordersToGrid } from '../../helpers/excelTemplateHelper';
 import { parseCCCD, calculateContinuousCSTDCS } from './helpers';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
+import { DANH_HIEU_HCBVTQ } from '../../constants/danhHieu.constants';
 import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
 
 /**
@@ -332,11 +333,10 @@ async function importAwards(excelBuffer, adminId) {
           continue;
         }
 
-        // VALIDATION LOGIC NGHIỆP VỤ
+        // Soft validation: warn when import rows imply medals without prerequisite streaks / NCKH.
         const cstdcsLienTuc = calculateContinuousCSTDCS(quanNhan.DanhHieuHangNam, award.nam);
         const nckhCount = quanNhan.ThanhTichKhoaHoc.length;
 
-        // BKBQP requires at least 2 consecutive years before
         if (award.nhan_bkbqp && cstdcsLienTuc < 2) {
           importWarnings.push(
             `CCCD ${
@@ -347,7 +347,6 @@ async function importAwards(excelBuffer, adminId) {
           );
         }
 
-        // CSTDTQ requires BKBQP chain first
         if (award.nhan_cstdtq) {
           if (cstdcsLienTuc < 3) {
             importWarnings.push(
@@ -427,7 +426,7 @@ async function importAwards(excelBuffer, adminId) {
       }
     }
 
-    // TÍNH TOÁN LẠI HỒ SƠ HẰNG NĂM CHO CÁC QUÂN NHÂN BỊ ẢNH HƯỞNG
+    // Re-run annual eligibility for every personnel touched by the import.
     let recalculateSuccess = 0;
     let recalculateErrors = 0;
 
@@ -491,7 +490,7 @@ async function getAwardsStatistics() {
       where: {
         danh_hieu: {
           not: null,
-          notIn: ['HCBVTQ_HANG_BA', 'HCBVTQ_HANG_NHI', 'HCBVTQ_HANG_NHAT'],
+          notIn: Object.values(DANH_HIEU_HCBVTQ),
         },
       },
     });

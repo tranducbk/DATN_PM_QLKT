@@ -163,10 +163,11 @@ export const THIN_BORDER_ALL_SIDES: Partial<ExcelJS.Borders> = {
 };
 
 /**
- * Applies thin borders to a worksheet grid.
- * @param worksheet - Target worksheet
- * @param maxRows - Last row index (including header)
- * @param columnCount - Total column count
+ * Paints a uniform thin border on the rectangular range (row 1..maxRows, cols 1..columnCount).
+ * @param worksheet - Sheet to mutate in place
+ * @param maxRows - Inclusive last row (header is row 1)
+ * @param columnCount - Inclusive column count
+ * @returns void
  */
 export function applyThinBordersToGrid(
   worksheet: ExcelJS.Worksheet,
@@ -182,8 +183,9 @@ export function applyThinBordersToGrid(
 }
 
 /**
- * Applies bold font and gray fill to header row.
- * @param worksheet - Target worksheet
+ * Formats row 1 as the template header (bold + gray fill).
+ * @param worksheet - Sheet to mutate in place
+ * @returns void
  */
 export function styleHeaderRow(worksheet: ExcelJS.Worksheet): void {
   const headerRow = worksheet.getRow(1);
@@ -192,10 +194,11 @@ export function styleHeaderRow(worksheet: ExcelJS.Worksheet): void {
 }
 
 /**
- * Applies yellow fill for readonly columns.
- * @param worksheet - Target worksheet
- * @param columns - 1-based column indices
- * @param maxRows - Last row index (inclusive)
+ * Highlights locked import columns (yellow fill) from row 2 through `maxRows`.
+ * @param worksheet - Sheet to mutate in place
+ * @param columns - 1-based column indexes
+ * @param maxRows - Inclusive last data row
+ * @returns void
  */
 export function applyReadonlyFill(
   worksheet: ExcelJS.Worksheet,
@@ -211,11 +214,12 @@ export function applyReadonlyFill(
 }
 
 /**
- * Applies a fill pattern to selected columns.
- * @param worksheet - Target worksheet
- * @param columns - 1-based column indices
- * @param maxRows - Last row index (inclusive)
- * @param fill - ExcelJS fill pattern
+ * Fills arbitrary column ranges (row 2..maxRows) with a custom pattern (e.g. red for errors).
+ * @param worksheet - Sheet to mutate in place
+ * @param columns - 1-based column indexes
+ * @param maxRows - Inclusive last data row
+ * @param fill - `ExcelJS` fill definition
+ * @returns void
  */
 export function applyColumnFill(
   worksheet: ExcelJS.Worksheet,
@@ -232,10 +236,11 @@ export function applyColumnFill(
 }
 
 /**
- * Applies conditional formatting to highlight non-empty editable cells.
- * @param worksheet - Target worksheet
- * @param editableColumns - Column letters (e.g. ['G', 'H'])
- * @param maxRows - Last row index (inclusive)
+ * Adds per-column rules so non-blank cells in editable areas get a subtle highlight.
+ * @param worksheet - Sheet to mutate in place
+ * @param editableColumns - A1-style column letters (e.g. `G`, `H`)
+ * @param maxRows - Inclusive last row in the formatted range
+ * @returns void
  */
 export function applyConditionalFormatting(
   worksheet: ExcelJS.Worksheet,

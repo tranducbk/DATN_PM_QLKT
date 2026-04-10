@@ -1,4 +1,6 @@
 import Joi from 'joi';
+import { ROLES } from '../constants/roles.constants';
+import { GENDER } from '../constants/gender.constants';
 
 export const createPersonnel: Joi.ObjectSchema = Joi.object({
   cccd: Joi.string().trim().length(12).pattern(/^\d+$/).required().messages({
@@ -8,12 +10,12 @@ export const createPersonnel: Joi.ObjectSchema = Joi.object({
   }),
   unit_id: Joi.string().trim().optional(),
   position_id: Joi.string().trim().optional(),
-  role: Joi.string().valid('ADMIN', 'MANAGER', 'USER').optional(),
+  role: Joi.string().valid(ROLES.ADMIN, ROLES.MANAGER, ROLES.USER).optional(),
 });
 
 export const updatePersonnel: Joi.ObjectSchema = Joi.object({
   ho_ten: Joi.string().trim().max(100).optional(),
-  gioi_tinh: Joi.string().valid('NAM', 'NU').optional(),
+  gioi_tinh: Joi.string().valid(...Object.values(GENDER)).optional(),
   ngay_sinh: Joi.date().optional().allow(null),
   cccd: Joi.string().trim().length(12).pattern(/^\d+$/).optional().allow(null, ''),
   cap_bac: Joi.string().trim().optional().allow(null, ''),

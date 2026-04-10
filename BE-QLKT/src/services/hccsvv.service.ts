@@ -4,7 +4,7 @@ import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHel
 import { checkDuplicateAward } from '../helpers/awardValidation';
 import profileService from './profile.service';
 import * as notificationHelper from '../helpers/notification';
-import { getDanhHieuName } from '../constants/danhHieu.constants';
+import { getDanhHieuName, DANH_HIEU_HCCSVV } from '../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
@@ -94,7 +94,7 @@ class HCCSVVService {
       );
     }
 
-    const validDanhHieu = ['HCCSVV_HANG_BA', 'HCCSVV_HANG_NHI', 'HCCSVV_HANG_NHAT'];
+    const validDanhHieu: string[] = Object.values(DANH_HIEU_HCCSVV);
     const errors = [];
     const valid = [];
     let total = 0;
@@ -106,10 +106,10 @@ class HCCSVVService {
     });
     const validDecisionNumbers = new Set(existingDecisions.map(d => d.so_quyet_dinh));
 
-    // HCCSVV hierarchy map: danh hiệu -> prerequisite
+    // Medal tier order: Nhì requires Ba received; Nhất requires Nhì.
     const hierarchyPrerequisite = {
-      HCCSVV_HANG_NHI: 'HCCSVV_HANG_BA',
-      HCCSVV_HANG_NHAT: 'HCCSVV_HANG_NHI',
+      [DANH_HIEU_HCCSVV.HANG_NHI]: DANH_HIEU_HCCSVV.HANG_BA,
+      [DANH_HIEU_HCCSVV.HANG_NHAT]: DANH_HIEU_HCCSVV.HANG_NHI,
     };
 
     const allPersonnelIds = new Set<string>();
@@ -375,9 +375,9 @@ class HCCSVVService {
   async confirmImport(validItems: HccsvvValidItem[], adminId: string) {
     // Check rank downgrades - block importing lower rank when higher exists
     const HCCSVV_RANK: Record<string, number> = {
-      HCCSVV_HANG_BA: 1,
-      HCCSVV_HANG_NHI: 2,
-      HCCSVV_HANG_NHAT: 3,
+      [DANH_HIEU_HCCSVV.HANG_BA]: 1,
+      [DANH_HIEU_HCCSVV.HANG_NHI]: 2,
+      [DANH_HIEU_HCCSVV.HANG_NHAT]: 3,
     };
 
     const personnelIds = [...new Set(validItems.map(item => item.personnel_id))];
@@ -529,7 +529,7 @@ class HCCSVVService {
           continue;
         }
 
-        const validDanhHieu = ['HCCSVV_HANG_BA', 'HCCSVV_HANG_NHI', 'HCCSVV_HANG_NHAT'];
+        const validDanhHieu = Object.values(DANH_HIEU_HCCSVV);
         if (!validDanhHieu.includes(danh_hieu)) {
           results.errors.push(
             `Dòng ${rowNumber}: Danh hiệu không hợp lệ. Chỉ chấp nhận: ${validDanhHieu.join(', ')}`
@@ -843,7 +843,7 @@ class HCCSVVService {
   async createDirect(data, adminUsername = 'SuperAdmin') {
     const { quan_nhan_id, danh_hieu, nam, cap_bac, chuc_vu, so_quyet_dinh, ghi_chu } = data;
 
-    const validDanhHieu = ['HCCSVV_HANG_BA', 'HCCSVV_HANG_NHI', 'HCCSVV_HANG_NHAT'];
+    const validDanhHieu = Object.values(DANH_HIEU_HCCSVV);
     if (!validDanhHieu.includes(danh_hieu)) {
       throw new ValidationError(`Danh hiệu không hợp lệ. Chỉ chấp nhận: ${validDanhHieu.join(', ')}`);
     }

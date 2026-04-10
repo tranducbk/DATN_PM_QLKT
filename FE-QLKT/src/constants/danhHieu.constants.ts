@@ -143,7 +143,7 @@ export const AWARD_TAB_LABELS: Record<AwardType, string> = {
   DVHN: 'Đơn vị hằng năm',
   HCCSVV: 'Huy chương Chiến sĩ Vẻ vang',
   HCBVTQ: 'Huân chương Bảo vệ Tổ quốc',
-  KNC_VSNXD_QDNDVN: 'Kỷ niệm chương VSNXD QĐNDVN',
+  KNC_VSNXD_QDNDVN: DANH_HIEU_MAP['KNC_VSNXD_QDNDVN'],
   HCQKQT: 'Huy chương Quân kỳ Quyết thắng',
   NCKH: 'Thành tích khoa học',
   KTDX: 'Khen thưởng đột xuất',
@@ -208,11 +208,11 @@ export const AWARD_TYPE_TO_ALLOW: Record<string, string> = {
 
 export function getLoaiKhenThuongByDanhHieu(danhHieu: string | null | undefined): string {
   if (!danhHieu) return 'Chưa xác định';
-  if (danhHieu.startsWith('HCBVTQ')) return 'Huân chương Bảo vệ Tổ quốc';
-  if (danhHieu.startsWith('HCCSVV')) return 'Huy chương Chiến sĩ vẻ vang';
-  if (['CSTDCS', 'CSTT', 'BKBQP', 'CSTDTQ', 'BKTTCP'].includes(danhHieu)) return 'Cá nhân Hằng năm';
-  if (['ĐVQT', 'ĐVTT'].includes(danhHieu)) return 'Đơn vị Hằng năm';
-  if (danhHieu === 'HC_QKQT') return 'Huy chương Quân kỳ Quyết thắng';
-  if (danhHieu === 'KNC_VSNXD_QDNDVN') return 'Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN';
-  return 'Đột xuất';
+  if (danhHieu.startsWith('HCBVTQ')) return LOAI_DE_XUAT_MAP.CONG_HIEN;
+  if (danhHieu.startsWith('HCCSVV')) return LOAI_DE_XUAT_MAP.NIEN_HAN;
+  if (['CSTDCS', 'CSTT', 'BKBQP', 'CSTDTQ', 'BKTTCP'].includes(danhHieu)) return LOAI_DE_XUAT_MAP.CA_NHAN_HANG_NAM;
+  if (['ĐVQT', 'ĐVTT'].includes(danhHieu)) return LOAI_DE_XUAT_MAP.DON_VI_HANG_NAM;
+  if (danhHieu === 'HC_QKQT') return LOAI_DE_XUAT_MAP.HC_QKQT;
+  if (danhHieu === 'KNC_VSNXD_QDNDVN') return LOAI_DE_XUAT_MAP.KNC_VSNXD_QDNDVN;
+  return LOAI_DE_XUAT_MAP.DOT_XUAT;
 }

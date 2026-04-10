@@ -173,7 +173,7 @@ async function notifyOnAwardDeleted(
     const awardTypeNameMap: Record<string, string> = {
       HCCSVV: 'Huy chương Chiến sĩ vẻ vang',
       HCBVTQ: 'Huân chương Bảo vệ Tổ quốc',
-      KNC_VSNXD_QDNDVN: 'Kỷ niệm chương VSNXD QĐNDVN',
+      KNC_VSNXD_QDNDVN: DANH_HIEU_MAP.KNC_VSNXD_QDNDVN,
       HCQKQT: 'Huy chương Quân kỳ Quyết thắng',
       CA_NHAN_HANG_NAM: 'Danh hiệu hằng năm',
       NCKH: 'Thành tích khoa học',
@@ -298,10 +298,10 @@ async function notifyUsersOnAwardApproved(
           userAwards.push(`${DANH_HIEU_MAP[dh]}${item.nam ? ` (năm ${item.nam})` : ''}`);
         }
         if (item.nhan_bkbqp) {
-          userAwards.push(`${DANH_HIEU_MAP['BKBQP']}${item.nam ? ` (năm ${item.nam})` : ''}`);
+          userAwards.push(`${DANH_HIEU_MAP.BKBQP}${item.nam ? ` (năm ${item.nam})` : ''}`);
         }
         if (item.nhan_cstdtq) {
-          userAwards.push(`${DANH_HIEU_MAP['CSTDTQ']}${item.nam ? ` (năm ${item.nam})` : ''}`);
+          userAwards.push(`${DANH_HIEU_MAP.CSTDTQ}${item.nam ? ` (năm ${item.nam})` : ''}`);
         }
       });
 
@@ -388,7 +388,7 @@ async function notifyOnBulkAwardAdded(
       NCKH: 'Thành tích khoa học',
       NIEN_HAN: 'Huy chương Chiến sĩ vẻ vang',
       HC_QKQT: 'Huy chương Quân kỳ Quyết thắng',
-      KNC_VSNXD_QDNDVN: 'Kỷ niệm chương VSNXD QĐNDVN',
+      KNC_VSNXD_QDNDVN: DANH_HIEU_MAP.KNC_VSNXD_QDNDVN,
       CONG_HIEN: 'Huân chương Bảo vệ Tổ quốc',
     };
     const awardTypeName = bulkAwardTypeMap[awardType] || awardType;
@@ -431,9 +431,9 @@ async function notifyOnBulkAwardAdded(
           } else if (awardType === PROPOSAL_TYPES.CONG_HIEN && item.danh_hieu) {
             userAwards.push(`${getDanhHieuName(item.danh_hieu)}${nam ? ` (năm ${nam})` : ''}`);
           } else if (awardType === PROPOSAL_TYPES.HC_QKQT) {
-            userAwards.push(`${getDanhHieuName('HC_QKQT')}${nam ? ` (năm ${nam})` : ''}`);
+            userAwards.push(`${getDanhHieuName(PROPOSAL_TYPES.HC_QKQT)}${nam ? ` (năm ${nam})` : ''}`);
           } else if (awardType === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN) {
-            userAwards.push(`${getDanhHieuName('KNC_VSNXD_QDNDVN')}${nam ? ` (năm ${nam})` : ''}`);
+            userAwards.push(`${getDanhHieuName(PROPOSAL_TYPES.KNC_VSNXD_QDNDVN)}${nam ? ` (năm ${nam})` : ''}`);
           }
         });
 

@@ -384,8 +384,7 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
       }
     }
 
-    // Enrich with PDF path only after approval — not available before
-    // CONG_HIEN is handled separately via data_cong_hien
+    // Approved proposals only: hydrate PDF paths from persisted awards (`data_cong_hien` has its own branch).
     if (
       proposal.status === PROPOSAL_STATUS.APPROVED &&
       dataDanhHieu.length > 0 &&

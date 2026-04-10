@@ -4,7 +4,7 @@ import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHel
 import { checkDuplicateAward } from '../helpers/awardValidation';
 import profileService from './profile.service';
 import * as notificationHelper from '../helpers/notification';
-import { getDanhHieuName } from '../constants/danhHieu.constants';
+import { getDanhHieuName, DANH_HIEU_HCBVTQ } from '../constants/danhHieu.constants';
 import { ROLES } from '../constants/roles.constants';
 import { ValidationError, NotFoundError } from '../middlewares/errorHandler';
 import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys } from '../helpers/excelHelper';
@@ -13,6 +13,7 @@ import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
 import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
+import { GENDER } from '../constants/gender.constants';
 
 interface ContributionAwardValidItem {
   row: number;
@@ -83,7 +84,7 @@ class ContributionAwardService {
       );
     }
 
-    const validDanhHieu = ['HCBVTQ_HANG_BA', 'HCBVTQ_HANG_NHI', 'HCBVTQ_HANG_NHAT'];
+    const validDanhHieu: string[] = Object.values(DANH_HIEU_HCBVTQ);
     const errors = [];
     const valid = [];
     let total = 0;
@@ -331,16 +332,16 @@ class ContributionAwardService {
       const months0_8 = getTotalMonths('0.8');
       const months0_9_1_0 = getTotalMonths('0.9-1.0');
 
-      const isFemale = personnel.gioi_tinh === 'NU';
+      const isFemale = personnel.gioi_tinh === GENDER.FEMALE;
       // 120 months (10 yrs) for male, 80 months (~6.7 yrs) for female
       const baseMonths = isFemale ? 80 : 120;
 
       let eligible = false;
-      if (danh_hieu === 'HCBVTQ_HANG_NHAT') {
+      if (danh_hieu === DANH_HIEU_HCBVTQ.HANG_NHAT) {
         eligible = months0_9_1_0 >= baseMonths;
-      } else if (danh_hieu === 'HCBVTQ_HANG_NHI') {
+      } else if (danh_hieu === DANH_HIEU_HCBVTQ.HANG_NHI) {
         eligible = months0_8 + months0_9_1_0 >= baseMonths;
-      } else if (danh_hieu === 'HCBVTQ_HANG_BA') {
+      } else if (danh_hieu === DANH_HIEU_HCBVTQ.HANG_BA) {
         eligible = months0_7 + months0_8 + months0_9_1_0 >= baseMonths;
       }
 

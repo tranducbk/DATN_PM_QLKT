@@ -428,6 +428,17 @@ const adhocAwards: Record<
   },
 };
 
+/** Bulk create body `type` → wording in audit description. */
+const BULK_AUDIT_TYPE: Record<string, string> = {
+  CA_NHAN_HANG_NAM: 'Danh hiệu cá nhân hằng năm',
+  DON_VI_HANG_NAM: 'Danh hiệu đơn vị hằng năm',
+  NCKH: 'Thành tích khoa học (ĐTKH/SKKH)',
+  NIEN_HAN: 'Huy chương Chiến sĩ vẻ vang',
+  HC_QKQT: 'Huy chương Quân kỳ Quyết thắng',
+  KNC_VSNXD_QDNDVN: 'Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN',
+  CONG_HIEN: 'Huân chương Bảo vệ Tổ quốc',
+};
+
 const awards: Record<
   string,
   (req: Request, res: Response, responseData: unknown) => Promise<string>
@@ -471,17 +482,7 @@ const awards: Record<
         }
       }
 
-      const bulkTypeNames: Record<string, string> = {
-        CA_NHAN_HANG_NAM: 'Danh hiệu cá nhân hằng năm',
-        DON_VI_HANG_NAM: 'Danh hiệu đơn vị hằng năm',
-        NCKH: 'Thành tích khoa học (ĐTKH/SKKH)',
-        NIEN_HAN: 'Huy chương Chiến sĩ vẻ vang',
-        HC_QKQT: 'Huy chương Quân kỳ Quyết thắng',
-        KNC_VSNXD_QDNDVN: 'Kỷ niệm chương VSNXD QĐNDVN',
-        CONG_HIEN: 'Huân chương Bảo vệ Tổ quốc',
-      };
-
-      const typeName = bulkTypeNames[type] || type || 'Khen thưởng';
+      const typeName = BULK_AUDIT_TYPE[type] || type || 'Khen thưởng';
 
       const importedCount = (result?.importedCount as number) || 0;
       const errorCount = (result?.errorCount as number) || 0;
@@ -573,7 +574,7 @@ const awards: Record<
 
 const AWARD_TYPE_NAMES: Record<string, string> = {
   hccsvv: 'Huy chương Chiến sĩ vẻ vang',
-  'commemorative-medals': 'Kỷ niệm chương VSNXD QĐNDVN',
+  'commemorative-medals': 'Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN',
   'military-flag': 'Huy chương Quân kỳ Quyết thắng',
   'contribution-awards': 'Huân chương Bảo vệ Tổ quốc',
 };

@@ -38,8 +38,8 @@ async function writeSystemLog({
         payload: payload ? JSON.stringify(payload) : undefined,
       },
     });
-  } catch {
-    // Swallow errors to avoid impacting core business logic.
+  } catch (e) {
+    console.error('writeSystemLog failed:', e);
   }
 }
 

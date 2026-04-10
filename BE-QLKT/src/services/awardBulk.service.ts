@@ -1,13 +1,23 @@
 import { prisma } from '../models';
+import { calculateServiceMonths } from '../helpers/serviceYearsHelper';
 import annualRewardService from './annualReward.service';
 import unitAnnualAwardService from './unitAnnualAward.service';
 import scientificAchievementService from './scientificAchievement.service';
 import * as notificationHelper from '../helpers/notification';
-import { getDanhHieuName, DANH_HIEU_CA_NHAN_HANG_NAM, UNIT_DV_TITLES, UNIT_BK_TITLES } from '../constants/danhHieu.constants';
+import {
+  getDanhHieuName,
+  DANH_HIEU_MAP,
+  DANH_HIEU_CA_NHAN_HANG_NAM,
+  UNIT_DV_TITLES,
+  UNIT_BK_TITLES,
+  DANH_HIEU_HCCSVV,
+  DANH_HIEU_HCBVTQ,
+} from '../constants/danhHieu.constants';
 import { PROPOSAL_TYPES, type ProposalType } from '../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { AppError, NotFoundError, ValidationError } from '../middlewares/errorHandler';
 import type { QuanNhan } from '../generated/prisma';
+import { GENDER } from '../constants/gender.constants';
 
 interface ServiceYears {
   years: number;
@@ -46,21 +56,11 @@ class AwardBulkService {
     ngayXuatNgu: Date | null = null
   ): ServiceYears | null {
     if (!ngayNhapNgu) return null;
-
-    const startDate = new Date(ngayNhapNgu);
-    const endDate = ngayXuatNgu ? new Date(ngayXuatNgu) : new Date();
-
-    let months = (endDate.getFullYear() - startDate.getFullYear()) * 12;
-    months += endDate.getMonth() - startDate.getMonth();
-    if (endDate.getDate() < startDate.getDate()) {
-      months--;
-    }
-    months = Math.max(0, months);
-
+    const totalMonths = calculateServiceMonths(ngayNhapNgu, ngayXuatNgu);
     return {
-      years: Math.floor(months / 12),
-      months: months % 12,
-      totalMonths: months,
+      years: Math.floor(totalMonths / 12),
+      months: totalMonths % 12,
+      totalMonths,
     };
   }
 
@@ -146,9 +146,12 @@ class AwardBulkService {
         }
       } else {
         if (existingByPersonnel.has(item.personnel_id)) {
-          const label = type === PROPOSAL_TYPES.HC_QKQT ? 'Huy chương Quân kỳ quyết thắng'
-            : type === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN ? 'Kỷ niệm chương VSNXD QĐNDVN'
-            : getDanhHieuName(item.danh_hieu);
+          const label =
+            type === PROPOSAL_TYPES.HC_QKQT
+              ? DANH_HIEU_MAP.HC_QKQT
+              : type === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN
+                ? DANH_HIEU_MAP.KNC_VSNXD_QDNDVN
+                : getDanhHieuName(item.danh_hieu);
           duplicateErrors.push(`${hoTen}: đã có ${label} trên hệ thống`);
           continue;
         }
@@ -284,7 +287,7 @@ class AwardBulkService {
       }
 
       if (type === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN) {
-        if (!quanNhan.gioi_tinh || (quanNhan.gioi_tinh !== 'NAM' && quanNhan.gioi_tinh !== 'NU')) {
+        if (!quanNhan.gioi_tinh || (quanNhan.gioi_tinh !== GENDER.MALE && quanNhan.gioi_tinh !== GENDER.FEMALE)) {
           errors.push(`Quân nhân "${quanNhan.ho_ten}" chưa cập nhật giới tính`);
         }
         if (!quanNhan.ngay_nhap_ngu) {
@@ -508,7 +511,7 @@ class AwardBulkService {
           }
         });
       } else if (type === PROPOSAL_TYPES.NIEN_HAN) {
-        const allowedDanhHieus = ['HCCSVV_HANG_BA', 'HCCSVV_HANG_NHI', 'HCCSVV_HANG_NHAT'];
+        const allowedDanhHieus: string[] = Object.values(DANH_HIEU_HCCSVV);
         for (const item of titleData) {
           if (!item.danh_hieu) {
             errors.push(`Huy chương CSVV thiếu danh_hieu cho quân nhân ${item.personnel_id}`);
@@ -604,7 +607,7 @@ class AwardBulkService {
           }
         });
       } else if (type === PROPOSAL_TYPES.CONG_HIEN) {
-        const allowedDanhHieus = ['HCBVTQ_HANG_BA', 'HCBVTQ_HANG_NHI', 'HCBVTQ_HANG_NHAT'];
+        const allowedDanhHieus: string[] = Object.values(DANH_HIEU_HCBVTQ);
         for (const item of titleData) {
           if (!item.danh_hieu) {
             errors.push(`HC BVTQ thiếu danh_hieu cho quân nhân ${item.personnel_id}`);
@@ -705,7 +708,7 @@ class AwardBulkService {
 
         const getRequiredMonths = (personnelId: string) => {
           const info = personnelGenderMap[personnelId];
-          return info && info.gioi_tinh === 'NU' ? femaleRequiredMonths : baseRequiredMonths;
+          return info && info.gioi_tinh === GENDER.FEMALE ? femaleRequiredMonths : baseRequiredMonths;
         };
 
         const checkEligibleForRank = (personnelId: string, rank: string) => {
@@ -739,13 +742,13 @@ class AwardBulkService {
           let eligible = false;
           let rankName = '';
 
-          if (item.danh_hieu === 'HCBVTQ_HANG_NHAT') {
+          if (item.danh_hieu === DANH_HIEU_HCBVTQ.HANG_NHAT) {
             eligible = checkEligibleForRank(item.personnel_id, 'HANG_NHAT');
             rankName = 'Hạng Nhất';
-          } else if (item.danh_hieu === 'HCBVTQ_HANG_NHI') {
+          } else if (item.danh_hieu === DANH_HIEU_HCBVTQ.HANG_NHI) {
             eligible = checkEligibleForRank(item.personnel_id, 'HANG_NHI');
             rankName = 'Hạng Nhì';
-          } else if (item.danh_hieu === 'HCBVTQ_HANG_BA') {
+          } else if (item.danh_hieu === DANH_HIEU_HCBVTQ.HANG_BA) {
             eligible = checkEligibleForRank(item.personnel_id, 'HANG_BA');
             rankName = 'Hạng Ba';
           }
@@ -756,11 +759,11 @@ class AwardBulkService {
             const months0_7 = getTotalMonthsByGroup(item.personnel_id, '0.7');
 
             let totalMonths = 0;
-            if (item.danh_hieu === 'HCBVTQ_HANG_NHAT') {
+            if (item.danh_hieu === DANH_HIEU_HCBVTQ.HANG_NHAT) {
               totalMonths = months0_9_1_0;
-            } else if (item.danh_hieu === 'HCBVTQ_HANG_NHI') {
+            } else if (item.danh_hieu === DANH_HIEU_HCBVTQ.HANG_NHI) {
               totalMonths = months0_8 + months0_9_1_0;
-            } else if (item.danh_hieu === 'HCBVTQ_HANG_BA') {
+            } else if (item.danh_hieu === DANH_HIEU_HCBVTQ.HANG_BA) {
               totalMonths = months0_7 + months0_8 + months0_9_1_0;
             }
 
@@ -782,7 +785,7 @@ class AwardBulkService {
                   ? `${requiredYears} nam`
                   : `${requiredRemainingMonths} thang`;
 
-            const genderText = gioiTinh === 'NU' ? ' (Nu giam 1/3 thoi gian)' : '';
+            const genderText = gioiTinh === GENDER.FEMALE ? ' (Nu giam 1/3 thoi gian)' : '';
 
             errors.push(
               `Quan nhan "${hoTen}" khong du dieu kien Huan chuong Bao ve To quoc ${rankName}. ` +

@@ -54,6 +54,11 @@ export interface ParsedThanhTich {
   status: string;
 }
 
+/**
+ * Strips path/hostile characters from an upload name while keeping the extension.
+ * @param filename - Client-provided `Content-Disposition` / path tail
+ * @returns Filesystem-safe basename + extension (falls back to `file`)
+ */
 export function sanitizeFilename(filename: string): string {
   if (!filename || typeof filename !== 'string') {
     return 'file';
@@ -79,14 +84,29 @@ export function sanitizeFilename(filename: string): string {
   return sanitized + ext;
 }
 
+/**
+ * Delegates to `cccdHelper` after stringifying the Excel cell payload.
+ * @param value - Raw `exceljs` cell value
+ * @returns Digits-only national ID string
+ */
 export function parseCCCD(value: CellValue): string {
   return parseCCCDHelper(String(value));
 }
 
+/**
+ * Trims printable cell text; treats blank cells as absent.
+ * @param cell - Optional cell handle
+ * @returns Trimmed string, or `null` when empty / missing
+ */
 export function parseCellToString(cell: { value?: CellValue } | undefined): string | null {
   return cell?.value ? String(cell.value).trim() : null;
 }
 
+/**
+ * Best-effort integer parse for year / numeric columns (`parseInt` semantics).
+ * @param cell - Optional cell handle
+ * @returns Integer or `null` when empty or non-numeric
+ */
 export function parseCellToInt(cell: { value?: CellValue } | undefined): number | null {
   const value = cell?.value ?? null;
   if (value === null || value === undefined) return null;
@@ -94,18 +114,40 @@ export function parseCellToInt(cell: { value?: CellValue } | undefined): number 
   return !isNaN(parsed) ? parsed : null;
 }
 
+/**
+ * Import convention: checkbox columns use literal `X` (case-insensitive).
+ * @param cell - Optional cell handle
+ * @returns `true` when the visible text is `X`
+ */
 export function isCellChecked(cell: { value?: CellValue } | undefined): boolean {
   return cell?.value ? String(cell.value).toUpperCase().trim() === 'X' : false;
 }
 
+/**
+ * Filters out vendor “example” rows (`ví dụ`, `example`, …) so they never enter validation.
+ * @param text - Typically `ho_ten` or `mo_ta` column text
+ * @returns `true` when the row should be skipped as a demo row
+ */
 export function isSampleRow(text: string | null): boolean {
   if (!text) return false;
   const lowerText = text.toLowerCase();
   return SAMPLE_ROW_KEYWORDS.some(keyword => lowerText.includes(keyword));
 }
 
+/**
+ * Hook point for future structured logging; currently a deliberate no-op to keep import noise down.
+ * @param sheet - Active worksheet instance
+ * @param sheetName - Canonical name from `SHEET_NAMES`
+ * @returns void
+ */
 export function logSheetInfo(sheet: Worksheet, sheetName: string): void {}
 
+/**
+ * One `DanhHieuHangNam` row: CCCD + year gate, optional CSTDCS/CSTT, certificate columns.
+ * @param row - `exceljs` row iterator payload
+ * @param rowNumber - 1-based index (reserved for diagnostics)
+ * @returns `ParsedDanhHieu`, or `null` when the row is blank, sample, or structurally invalid
+ */
 export function parseDanhHieuRow(row: Row, rowNumber: number): ParsedDanhHieu | null {
   const cccdCell = row.getCell(CELL_INDICES.CCCD);
   const hoTenCell = row.getCell(CELL_INDICES.HO_TEN);
@@ -151,6 +193,13 @@ export function parseDanhHieuRow(row: Row, rowNumber: number): ParsedDanhHieu | 
   };
 }
 
+/**
+ * One `ThanhTichKhoaHoc` row with strict enums for `loai` / `status`.
+ * @param row - `exceljs` row iterator payload
+ * @param rowNumber - 1-based index (reserved for diagnostics)
+ * @returns `ParsedThanhTich`, or `null` when mandatory cells are missing
+ * @throws ValidationError - `loai` ∉ `VALID_LOAI_THANH_TICH` or `status` ∉ `VALID_STATUS`
+ */
 export function parseThanhTichRow(row: Row, rowNumber: number): ParsedThanhTich | null {
   const cccdCell = row.getCell(CELL_INDICES.CCCD);
   const hoTenCell = row.getCell(CELL_INDICES.HO_TEN);
@@ -199,6 +248,11 @@ export function parseThanhTichRow(row: Row, rowNumber: number): ParsedThanhTich 
   };
 }
 
+/**
+ * Walks every data row after the header on the annual-title sheet.
+ * @param sheet - Parsed `DanhHieuHangNam` worksheet
+ * @returns All rows that survived `parseDanhHieuRow`
+ */
 export function parseDanhHieuSheet(sheet: Worksheet): ParsedDanhHieu[] {
   logSheetInfo(sheet, SHEET_NAMES.DANH_HIEU_HANG_NAM);
 
@@ -217,6 +271,11 @@ export function parseDanhHieuSheet(sheet: Worksheet): ParsedDanhHieu[] {
   return danhHieuData;
 }
 
+/**
+ * Walks every data row after the header on the scientific-achievement sheet.
+ * @param sheet - Parsed `ThanhTichKhoaHoc` worksheet
+ * @returns All rows that survived `parseThanhTichRow` (may throw on bad enums)
+ */
 export function parseThanhTichSheet(sheet: Worksheet): ParsedThanhTich[] {
   logSheetInfo(sheet, SHEET_NAMES.THANH_TICH_KHOA_HOC);
 
@@ -235,6 +294,12 @@ export function parseThanhTichSheet(sheet: Worksheet): ParsedThanhTich[] {
   return thanhTichData;
 }
 
+/**
+ * Walks descending years from `currentYear - 1` and counts an unbroken `CSTDCS` streak.
+ * @param danhHieuList - Prior awards (year + code); order is normalized inside
+ * @param currentYear - Proposal year anchor (`0` falls back to system year)
+ * @returns Streak length; `0` when the chain breaks or input is empty
+ */
 export function calculateContinuousCSTDCS(
   danhHieuList: Array<{ nam: number; danh_hieu: string | null }>,
   currentYear: number

@@ -62,8 +62,6 @@ async function exportTemplate(userId, type = 'HANG_NAM') {
       return await exportTemplateNienHan(workbook, quanNhanList);
     }
 
-    // TEMPLATE CHO ĐỀ XUẤT HẰNG NĂM
-
     const sheetQuanNhan = workbook.addWorksheet('QuanNhan');
 
     sheetQuanNhan.columns = [
@@ -176,7 +174,7 @@ async function exportTemplate(userId, type = 'HANG_NAM') {
       status: PROPOSAL_STATUS.APPROVED,
     });
 
-    // Data validation for Loại column (D) starting from row 2
+    // Column D: restrict `loai` to the approved science-achievement codes.
     sheetThanhTich.getColumn(4).eachCell({ includeEmpty: true }, (cell, rowNumber) => {
       if (rowNumber > 1) {
         cell.dataValidation = {
@@ -191,7 +189,7 @@ async function exportTemplate(userId, type = 'HANG_NAM') {
       }
     });
 
-    // Data validation for Trạng thái column (F) starting from row 2
+    // Column F: restrict import status to APPROVED / PENDING.
     sheetThanhTich.getColumn(6).eachCell({ includeEmpty: true }, (cell, rowNumber) => {
       if (rowNumber > 1) {
         cell.dataValidation = {

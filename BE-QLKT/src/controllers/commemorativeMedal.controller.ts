@@ -8,6 +8,7 @@ import { parsePersonnelIdsFromQuery, getManagerUnitFilter, getAdminUsername } fr
 import { parsePagination } from '../helpers/paginationHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { notifyOnImport } from '../helpers/notification';
+import { DANH_HIEU_MAP } from '../constants/danhHieu.constants';
 
 class CommemorativeMedalController {
   getTemplate = catchAsync(async (req: Request, res: Response) => {
@@ -16,7 +17,7 @@ class CommemorativeMedalController {
     if (req.query.repeat_map) {
       try {
         Object.assign(repeatMap, JSON.parse(req.query.repeat_map as string));
-      } catch { /* ignore */ }
+      } catch (e) { console.error('Invalid repeat_map JSON:', e); }
     }
 
     const workbook = await commemorativeMedalService.exportTemplate(personnelIds, repeatMap);
@@ -41,7 +42,7 @@ class CommemorativeMedalController {
       userRole: req.user!.role,
       action: AUDIT_ACTIONS.IMPORT_PREVIEW,
       resource: 'commemorative-medals',
-      description: `Tải lên file "${Buffer.from(req.file.originalname, 'latin1').toString('utf8')}" để review Kỷ niệm chương VSNXD QĐNDVN: ${result.valid?.length ?? 0} hợp lệ, ${result.errors?.length ?? 0} lỗi`,
+      description: `Tải lên file "${Buffer.from(req.file.originalname, 'latin1').toString('utf8')}" để review ${DANH_HIEU_MAP.KNC_VSNXD_QDNDVN}: ${result.valid?.length ?? 0} hợp lệ, ${result.errors?.length ?? 0} lỗi`,
       payload: {
         filename: Buffer.from(req.file.originalname, 'latin1').toString('utf8'),
         total: result.total,
@@ -68,7 +69,7 @@ class CommemorativeMedalController {
       payload: { imported: result.imported ?? items.length },
     });
     const personnelIds = items.map((i: { personnel_id: string }) => i.personnel_id);
-    notifyOnImport(req.user!.id, 'commemorative-medals', result.imported ?? items.length, personnelIds).catch(() => {});
+    notifyOnImport(req.user!.id, 'commemorative-medals', result.imported ?? items.length, personnelIds).catch((e) => { console.error('[commemorative-medals] notifyOnImport failed:', e); });
 
     return ResponseHelper.success(res, { data: result, message: 'Import dữ liệu thành công' });
   });
@@ -172,8 +173,8 @@ class CommemorativeMedalController {
 
     const result = await commemorativeMedalService.getByPersonnelId(String(personnel_id));
     return ResponseHelper.success(res, {
-      data: { hasReceived: result.length > 0, items: result },
-      message: 'Lấy Kỷ niệm chương VSNXD QĐNDVN theo quân nhân thành công',
+      data: { hasReceived: result.length > 0, data: result },
+      message: `Lấy ${DANH_HIEU_MAP.KNC_VSNXD_QDNDVN} theo quân nhân thành công`,
     });
   });
 

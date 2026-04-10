@@ -283,7 +283,7 @@ class AnnualRewardController {
       payload: { imported: result.imported ?? items.length },
     });
     const personnelIds = items.map((i: { personnel_id: string }) => i.personnel_id);
-    notifyOnImport(req.user!.id, 'annual-rewards', result.imported ?? items.length, personnelIds).catch(() => {});
+    notifyOnImport(req.user!.id, 'annual-rewards', result.imported ?? items.length, personnelIds).catch((e) => { console.error('[annual-rewards] notifyOnImport failed:', e); });
     return ResponseHelper.success(res, { data: result, message: 'Thao tác thành công' });
   });
 
@@ -322,7 +322,7 @@ class AnnualRewardController {
       try {
         const parsed = JSON.parse(req.query.repeat_map as string);
         Object.assign(repeatMap, parsed);
-      } catch { /* ignore */ }
+      } catch (e) { console.error('Invalid repeat_map JSON:', e); }
     }
 
     const workbook = await annualRewardService.exportTemplate(personnelIds, repeatMap);

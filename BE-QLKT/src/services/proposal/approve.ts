@@ -1,16 +1,26 @@
 import { prisma } from '../../models';
 import { promises as fs } from 'fs';
+import { calculateServiceMonths } from '../../helpers/serviceYearsHelper';
 import path from 'path';
 import type { BangDeXuat, TaiKhoan } from '../../generated/prisma';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 import profileService from '../profile.service';
 import unitAnnualAwardService from '../unitAnnualAward.service';
-import { getDanhHieuName } from '../../constants/danhHieu.constants';
+import {
+  getDanhHieuName,
+  DANH_HIEU_CA_NHAN_HANG_NAM,
+  DANH_HIEU_CA_NHAN_KHAC,
+  DANH_HIEU_DON_VI_HANG_NAM,
+  DANH_HIEU_HCCSVV,
+  DANH_HIEU_HCBVTQ,
+  DANH_HIEU_NCKH,
+} from '../../constants/danhHieu.constants';
 import { NotFoundError, ValidationError } from '../../middlewares/errorHandler';
 import { sanitizeFilename } from './helpers';
 import { checkDuplicateAward } from './validation';
 import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
 import { writeSystemLog } from '../../helpers/systemLogHelper';
+import { GENDER } from '../../constants/gender.constants';
 
 /** Normalizes `Json?` columns (`data_*` on `bang_de_xuat`) into an array of objects. */
 function asJsonObjectArray(value: unknown): any[] {
@@ -89,6 +99,19 @@ async function approveProposal(
     const proposalYear = proposal.nam;
     const proposalType = proposal.loai_de_xuat;
 
+    const allItemPersonnelIds = [
+      ...(danhHieuData ?? []).map((i: { personnel_id?: string }) => i.personnel_id),
+      ...(nienHanData ?? []).map((i: { personnel_id?: string }) => i.personnel_id),
+    ].filter((id): id is string => Boolean(id));
+
+    const personnelHoTenList = allItemPersonnelIds.length > 0
+      ? await prisma.quanNhan.findMany({
+          where: { id: { in: allItemPersonnelIds } },
+          select: { id: true, ho_ten: true },
+        })
+      : [];
+    const personnelHoTenMap = new Map(personnelHoTenList.map(p => [p.id, p.ho_ten]));
+
     // Annual personal titles (CA_NHAN_HANG_NAM).
     if (
       proposalType === PROPOSAL_TYPES.CA_NHAN_HANG_NAM &&
@@ -106,13 +129,8 @@ async function approveProposal(
             proposalId
           );
           if (checkResult.exists) {
-            const quanNhan = await prisma.quanNhan.findUnique({
-              where: { id: item.personnel_id },
-              select: { ho_ten: true },
-            });
-            duplicateErrors.push(
-              `${quanNhan?.ho_ten || item.personnel_id}: ${checkResult.message}`
-            );
+            const hoTen = personnelHoTenMap.get(item.personnel_id) || item.personnel_id;
+            duplicateErrors.push(`${hoTen}: ${checkResult.message}`);
           }
         }
       }
@@ -122,8 +140,7 @@ async function approveProposal(
     if (
       (proposalType === PROPOSAL_TYPES.NIEN_HAN ||
         proposalType === PROPOSAL_TYPES.HC_QKQT ||
-        proposalType === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN ||
-        proposalType === 'HCCSVV') &&
+        proposalType === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN) &&
       nienHanData &&
       nienHanData.length > 0
     ) {
@@ -138,13 +155,8 @@ async function approveProposal(
             proposalId
           );
           if (checkResult.exists) {
-            const quanNhan = await prisma.quanNhan.findUnique({
-              where: { id: item.personnel_id },
-              select: { ho_ten: true },
-            });
-            duplicateErrors.push(
-              `${quanNhan?.ho_ten || item.personnel_id}: ${checkResult.message}`
-            );
+            const hoTen = personnelHoTenMap.get(item.personnel_id) || item.personnel_id;
+            duplicateErrors.push(`${hoTen}: ${checkResult.message}`);
           }
         }
       }
@@ -163,13 +175,8 @@ async function approveProposal(
             proposalId
           );
           if (checkResult.exists) {
-            const quanNhan = await prisma.quanNhan.findUnique({
-              where: { id: item.personnel_id },
-              select: { ho_ten: true },
-            });
-            duplicateErrors.push(
-              `${quanNhan?.ho_ten || item.personnel_id}: ${checkResult.message}`
-            );
+            const hoTen = personnelHoTenMap.get(item.personnel_id) || item.personnel_id;
+            duplicateErrors.push(`${hoTen}: ${checkResult.message}`);
           }
         }
       }
@@ -187,49 +194,34 @@ async function approveProposal(
     if (proposalType === PROPOSAL_TYPES.HC_QKQT && nienHanData && nienHanData.length > 0) {
       const personnelIds = nienHanData.map(item => item.personnel_id).filter(Boolean);
 
+      const quanNhanList = await prisma.quanNhan.findMany({
+        where: { id: { in: personnelIds } },
+        select: { id: true, ho_ten: true, ngay_nhap_ngu: true, ngay_xuat_ngu: true },
+      });
+      const quanNhanMap = new Map(quanNhanList.map(qn => [qn.id, qn]));
+
       for (const personnelId of personnelIds) {
-        try {
-          const quanNhan = await prisma.quanNhan.findUnique({
-            where: { id: personnelId },
-            select: {
-              id: true,
-              ho_ten: true,
-              ngay_nhap_ngu: true,
-              ngay_xuat_ngu: true,
-            },
-          });
+        const quanNhan = quanNhanMap.get(personnelId);
+        if (!quanNhan) {
+          duplicateErrors.push(`${personnelId}: Không tìm thấy quân nhân`);
+          continue;
+        }
 
-          if (!quanNhan) {
-            duplicateErrors.push(`${personnelId}: Không tìm thấy quân nhân`);
-            continue;
-          }
+        if (!quanNhan.ngay_nhap_ngu) {
+          duplicateErrors.push(`${quanNhan.ho_ten}: Chưa có thông tin ngày nhập ngũ`);
+          continue;
+        }
 
-          if (!quanNhan.ngay_nhap_ngu) {
-            duplicateErrors.push(`${quanNhan.ho_ten}: Chưa có thông tin ngày nhập ngũ`);
-            continue;
-          }
+        const ngayNhapNgu = new Date(quanNhan.ngay_nhap_ngu);
+        const ngayKetThuc = quanNhan.ngay_xuat_ngu ? new Date(quanNhan.ngay_xuat_ngu) : new Date();
 
-          const ngayNhapNgu = new Date(quanNhan.ngay_nhap_ngu);
-          const ngayKetThuc = quanNhan.ngay_xuat_ngu
-            ? new Date(quanNhan.ngay_xuat_ngu)
-            : new Date();
+        const months = calculateServiceMonths(ngayNhapNgu, ngayKetThuc);
+        const years = Math.floor(months / 12);
 
-          let months = (ngayKetThuc.getFullYear() - ngayNhapNgu.getFullYear()) * 12;
-          months += ngayKetThuc.getMonth() - ngayNhapNgu.getMonth();
-          if (ngayKetThuc.getDate() < ngayNhapNgu.getDate()) {
-            months--;
-          }
-          months = Math.max(0, months);
-
-          const years = Math.floor(months / 12);
-
-          if (years < 25) {
-            duplicateErrors.push(
-              `${quanNhan.ho_ten}: Chưa đủ 25 năm phục vụ để nhận HC QKQT (hiện tại: ${years} năm)`
-            );
-          }
-        } catch (error) {
-          duplicateErrors.push(`${personnelId}: Lỗi kiểm tra điều kiện HC_QKQT: ${error.message}`);
+        if (years < 25) {
+          duplicateErrors.push(
+            `${quanNhan.ho_ten}: Chưa đủ 25 năm phục vụ để nhận HC QKQT (hiện tại: ${years} năm)`
+          );
         }
       }
     }
@@ -238,60 +230,48 @@ async function approveProposal(
     if (proposalType === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN && nienHanData && nienHanData.length > 0) {
       const personnelIds = nienHanData.map(item => item.personnel_id).filter(Boolean);
 
+      const quanNhanList = await prisma.quanNhan.findMany({
+        where: { id: { in: personnelIds } },
+        select: {
+          id: true,
+          ho_ten: true,
+          gioi_tinh: true,
+          ngay_nhap_ngu: true,
+          ngay_xuat_ngu: true,
+        },
+      });
+      const quanNhanMap = new Map(quanNhanList.map(qn => [qn.id, qn]));
+
       for (const personnelId of personnelIds) {
-        try {
-          const quanNhan = await prisma.quanNhan.findUnique({
-            where: { id: personnelId },
-            select: {
-              id: true,
-              ho_ten: true,
-              gioi_tinh: true,
-              ngay_nhap_ngu: true,
-              ngay_xuat_ngu: true,
-            },
-          });
+        const quanNhan = quanNhanMap.get(personnelId);
+        if (!quanNhan) {
+          duplicateErrors.push(`${personnelId}: Không tìm thấy quân nhân`);
+          continue;
+        }
 
-          if (!quanNhan) {
-            duplicateErrors.push(`${personnelId}: Không tìm thấy quân nhân`);
-            continue;
-          }
+        if (
+          !quanNhan.gioi_tinh ||
+          (quanNhan.gioi_tinh !== GENDER.MALE && quanNhan.gioi_tinh !== GENDER.FEMALE)
+        ) {
+          duplicateErrors.push(`${quanNhan.ho_ten}: Chưa cập nhật thông tin giới tính`);
+          continue;
+        }
 
-          if (
-            !quanNhan.gioi_tinh ||
-            (quanNhan.gioi_tinh !== 'NAM' && quanNhan.gioi_tinh !== 'NU')
-          ) {
-            duplicateErrors.push(`${quanNhan.ho_ten}: Chưa cập nhật thông tin giới tính`);
-            continue;
-          }
+        if (!quanNhan.ngay_nhap_ngu) {
+          duplicateErrors.push(`${quanNhan.ho_ten}: Chưa có thông tin ngày nhập ngũ`);
+          continue;
+        }
 
-          if (!quanNhan.ngay_nhap_ngu) {
-            duplicateErrors.push(`${quanNhan.ho_ten}: Chưa có thông tin ngày nhập ngũ`);
-            continue;
-          }
+        const ngayNhapNgu = new Date(quanNhan.ngay_nhap_ngu);
+        const ngayKetThuc = quanNhan.ngay_xuat_ngu ? new Date(quanNhan.ngay_xuat_ngu) : new Date();
 
-          const ngayNhapNgu = new Date(quanNhan.ngay_nhap_ngu);
-          const ngayKetThuc = quanNhan.ngay_xuat_ngu
-            ? new Date(quanNhan.ngay_xuat_ngu)
-            : new Date();
+        const months = calculateServiceMonths(ngayNhapNgu, ngayKetThuc);
+        const years = Math.floor(months / 12);
+        const requiredYears = quanNhan.gioi_tinh === GENDER.FEMALE ? 20 : 25;
 
-          let months = (ngayKetThuc.getFullYear() - ngayNhapNgu.getFullYear()) * 12;
-          months += ngayKetThuc.getMonth() - ngayNhapNgu.getMonth();
-          if (ngayKetThuc.getDate() < ngayNhapNgu.getDate()) {
-            months--;
-          }
-          months = Math.max(0, months);
-
-          const years = Math.floor(months / 12);
-          const requiredYears = quanNhan.gioi_tinh === 'NU' ? 20 : 25;
-
-          if (years < requiredYears) {
-            duplicateErrors.push(
-              `${quanNhan.ho_ten}: Chưa đủ ${requiredYears} năm phục vụ để nhận KNC VSNXD QĐNDVN (hiện tại: ${years} năm)`
-            );
-          }
-        } catch (error) {
+        if (years < requiredYears) {
           duplicateErrors.push(
-            `${personnelId}: Lỗi kiểm tra điều kiện KNC_VSNXD_QDNDVN: ${error.message}`
+            `${quanNhan.ho_ten}: Chưa đủ ${requiredYears} năm phục vụ để nhận KNC VSNXD QĐNDVN (hiện tại: ${years} năm)`
           );
         }
       }
@@ -307,44 +287,44 @@ async function approveProposal(
       const positionHistoriesMap = {};
       const personnelGenderMap = {};
 
+      const [quanNhanList, allHistories] = await Promise.all([
+        prisma.quanNhan.findMany({
+          where: { id: { in: personnelIds } },
+          select: { id: true, ho_ten: true, gioi_tinh: true },
+        }),
+        prisma.lichSuChucVu.findMany({
+          where: { quan_nhan_id: { in: personnelIds } },
+          select: {
+            quan_nhan_id: true,
+            he_so_chuc_vu: true,
+            so_thang: true,
+            ngay_bat_dau: true,
+            ngay_ket_thuc: true,
+          },
+        }),
+      ]);
+      const quanNhanMap = new Map(quanNhanList.map(qn => [qn.id, qn]));
+      const historiesByPersonnel = new Map<string, typeof allHistories>();
+      for (const h of allHistories) {
+        if (!historiesByPersonnel.has(h.quan_nhan_id)) historiesByPersonnel.set(h.quan_nhan_id, []);
+        historiesByPersonnel.get(h.quan_nhan_id)!.push(h);
+      }
+
       for (const personnelId of personnelIds) {
         try {
-          const quanNhan = await prisma.quanNhan.findUnique({
-            where: { id: personnelId },
-            select: {
-              id: true,
-              ho_ten: true,
-              gioi_tinh: true,
-            },
-          });
-
-          if (quanNhan) {
-            personnelGenderMap[personnelId] = quanNhan.gioi_tinh;
+          const qn = quanNhanMap.get(personnelId);
+          if (qn) {
+            personnelGenderMap[personnelId] = qn.gioi_tinh;
           }
 
-          const histories = await prisma.lichSuChucVu.findMany({
-            where: { quan_nhan_id: personnelId },
-            select: {
-              he_so_chuc_vu: true,
-              so_thang: true,
-              ngay_bat_dau: true,
-              ngay_ket_thuc: true,
-            },
-          });
-
-          const today = new Date();
+          const histories = historiesByPersonnel.get(personnelId) ?? [];
           const updatedHistories = histories.map(item => {
             if (item.so_thang === null || item.so_thang === undefined) {
               if (item.ngay_bat_dau && !item.ngay_ket_thuc) {
                 const ngayBatDau = new Date(item.ngay_bat_dau);
-                let months = (today.getFullYear() - ngayBatDau.getFullYear()) * 12;
-                months += today.getMonth() - ngayBatDau.getMonth();
-                if (today.getDate() < ngayBatDau.getDate()) {
-                  months--;
-                }
                 return {
                   ...item,
-                  so_thang: Math.max(0, months),
+                  so_thang: calculateServiceMonths(ngayBatDau),
                 };
               }
             }
@@ -384,7 +364,7 @@ async function approveProposal(
 
       const getRequiredMonths = personnelId => {
         const gioiTinh = personnelGenderMap[personnelId];
-        return gioiTinh === 'NU' ? femaleRequiredMonths : baseRequiredMonths;
+        return gioiTinh === GENDER.FEMALE ? femaleRequiredMonths : baseRequiredMonths;
       };
 
       const checkEligibleForRank = (personnelId, rank) => {
@@ -407,24 +387,20 @@ async function approveProposal(
       for (const item of congHienData) {
         if (!item.danh_hieu || !item.personnel_id) continue;
 
-        const quanNhan = await prisma.quanNhan.findUnique({
-          where: { id: item.personnel_id },
-          select: { ho_ten: true },
-        });
-        const hoTen = quanNhan?.ho_ten || item.personnel_id;
+        const hoTen = quanNhanMap.get(item.personnel_id)?.ho_ten || item.personnel_id;
         const gioiTinh = personnelGenderMap[item.personnel_id];
         const requiredMonths = getRequiredMonths(item.personnel_id);
 
         let eligible = false;
         let rankName = '';
 
-        if (item.danh_hieu === 'HCBVTQ_HANG_NHAT') {
+        if (item.danh_hieu === DANH_HIEU_HCBVTQ.HANG_NHAT) {
           eligible = checkEligibleForRank(item.personnel_id, 'HANG_NHAT');
           rankName = 'Hạng Nhất';
-        } else if (item.danh_hieu === 'HCBVTQ_HANG_NHI') {
+        } else if (item.danh_hieu === DANH_HIEU_HCBVTQ.HANG_NHI) {
           eligible = checkEligibleForRank(item.personnel_id, 'HANG_NHI');
           rankName = 'Hạng Nhì';
-        } else if (item.danh_hieu === 'HCBVTQ_HANG_BA') {
+        } else if (item.danh_hieu === DANH_HIEU_HCBVTQ.HANG_BA) {
           eligible = checkEligibleForRank(item.personnel_id, 'HANG_BA');
           rankName = 'Hạng Ba';
         }
@@ -435,11 +411,11 @@ async function approveProposal(
           const months0_7 = getTotalMonthsByGroup(item.personnel_id, '0.7');
 
           let totalMonths = 0;
-          if (item.danh_hieu === 'HCBVTQ_HANG_NHAT') {
+          if (item.danh_hieu === DANH_HIEU_HCBVTQ.HANG_NHAT) {
             totalMonths = months0_9_1_0;
-          } else if (item.danh_hieu === 'HCBVTQ_HANG_NHI') {
+          } else if (item.danh_hieu === DANH_HIEU_HCBVTQ.HANG_NHI) {
             totalMonths = months0_8 + months0_9_1_0;
-          } else if (item.danh_hieu === 'HCBVTQ_HANG_BA') {
+          } else if (item.danh_hieu === DANH_HIEU_HCBVTQ.HANG_BA) {
             totalMonths = months0_7 + months0_8 + months0_9_1_0;
           }
 
@@ -461,7 +437,7 @@ async function approveProposal(
                 ? `${requiredYears} năm`
                 : `${requiredRemainingMonths} tháng`;
 
-          const genderText = gioiTinh === 'NU' ? ' (Nữ giảm 1/3 thời gian)' : '';
+          const genderText = gioiTinh === GENDER.FEMALE ? ' (Nữ giảm 1/3 thời gian)' : '';
 
           duplicateErrors.push(
             `${hoTen}: Không đủ điều kiện Huân chương Bảo vệ Tổ quốc ${rankName}. ` +
@@ -582,54 +558,54 @@ async function approveProposal(
 
     // Decision mapping (award/title -> decision metadata).
     const decisionMapping = {
-      CSTT: {
+      [DANH_HIEU_CA_NHAN_HANG_NAM.CSTT]: {
         so_quyet_dinh: decisions.so_quyet_dinh_cstt,
         file_pdf: pdfPaths.file_pdf_cstt,
       },
-      CSTDCS: {
+      [DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS]: {
         so_quyet_dinh: decisions.so_quyet_dinh_cstdcs,
         file_pdf: pdfPaths.file_pdf_cstdcs,
       },
-      ĐVQT: {
+      [DANH_HIEU_DON_VI_HANG_NAM.DVQT]: {
         so_quyet_dinh: decisions.so_quyet_dinh_don_vi_hang_nam,
         file_pdf: pdfPaths.file_pdf_don_vi_hang_nam,
       },
-      ĐVTT: {
+      [DANH_HIEU_DON_VI_HANG_NAM.DVTT]: {
         so_quyet_dinh: decisions.so_quyet_dinh_don_vi_hang_nam,
         file_pdf: pdfPaths.file_pdf_don_vi_hang_nam,
       },
-      HCCSVV_HANG_BA: {
+      [DANH_HIEU_HCCSVV.HANG_BA]: {
         so_quyet_dinh: decisions.so_quyet_dinh_nien_han,
         file_pdf: pdfPaths.file_pdf_nien_han,
       },
-      HCCSVV_HANG_NHI: {
+      [DANH_HIEU_HCCSVV.HANG_NHI]: {
         so_quyet_dinh: decisions.so_quyet_dinh_nien_han,
         file_pdf: pdfPaths.file_pdf_nien_han,
       },
-      HCCSVV_HANG_NHAT: {
+      [DANH_HIEU_HCCSVV.HANG_NHAT]: {
         so_quyet_dinh: decisions.so_quyet_dinh_nien_han,
         file_pdf: pdfPaths.file_pdf_nien_han,
       },
-      HC_QKQT: {
-        so_quyet_dinh: decisions.so_quyet_dinh_hc_qkqt || decisions.so_quyet_dinh_nien_han,
-        file_pdf: pdfPaths.file_pdf_hc_qkqt || pdfPaths.file_pdf_nien_han,
+      [DANH_HIEU_CA_NHAN_KHAC.HC_QKQT]: {
+        so_quyet_dinh: decisions.so_quyet_dinh_nien_han,
+        file_pdf: pdfPaths.file_pdf_nien_han,
       },
-      KNC_VSNXD_QDNDVN: {
-        so_quyet_dinh: decisions.so_quyet_dinh_knc_vsnxd || decisions.so_quyet_dinh_nien_han,
-        file_pdf: pdfPaths.file_pdf_knc_vsnxd || pdfPaths.file_pdf_nien_han,
+      [DANH_HIEU_CA_NHAN_KHAC.KNC_VSNXD_QDNDVN]: {
+        so_quyet_dinh: decisions.so_quyet_dinh_nien_han,
+        file_pdf: pdfPaths.file_pdf_nien_han,
       },
     };
 
     const specialDecisionMapping = {
-      BKBQP: {
+      [DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP]: {
         so_quyet_dinh: decisions.so_quyet_dinh_bkbqp,
         file_pdf: pdfPaths.file_pdf_bkbqp,
       },
-      CSTDTQ: {
+      [DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ]: {
         so_quyet_dinh: decisions.so_quyet_dinh_cstdtq,
         file_pdf: pdfPaths.file_pdf_cstdtq,
       },
-      BKTTCP: {
+      [DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP]: {
         so_quyet_dinh: decisions.so_quyet_dinh_bkttcp,
         file_pdf: pdfPaths.file_pdf_bkttcp,
       },
@@ -695,16 +671,16 @@ async function approveProposal(
 
               const data: Record<string, any> = {};
 
-              if (item.danh_hieu === 'ĐVQT' || item.danh_hieu === 'ĐVTT') {
+              if (item.danh_hieu === DANH_HIEU_DON_VI_HANG_NAM.DVQT || item.danh_hieu === DANH_HIEU_DON_VI_HANG_NAM.DVTT) {
                 data.danh_hieu = item.danh_hieu;
                 data.so_quyet_dinh = soQuyetDinh;
               }
-              if (item.danh_hieu === 'BKBQP') {
+              if (item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP) {
                 data.nhan_bkbqp = nhanBKBQP;
                 data.so_quyet_dinh_bkbqp = soQuyetDinhBKBQP;
               }
 
-              if (item.danh_hieu === 'BKTTCP') {
+              if (item.danh_hieu === DANH_HIEU_DON_VI_HANG_NAM.BKTTCP) {
                 data.nhan_bkttcp = nhanBKTTCP;
                 data.so_quyet_dinh_bkttcp = soQuyetDinhBKTTCP;
               }
@@ -730,11 +706,11 @@ async function approveProposal(
                     }),
                     nam: namValue,
                     danh_hieu:
-                      item.danh_hieu === 'ĐVQT' || item.danh_hieu === 'ĐVTT'
+                      item.danh_hieu === DANH_HIEU_DON_VI_HANG_NAM.DVQT || item.danh_hieu === DANH_HIEU_DON_VI_HANG_NAM.DVTT
                         ? item.danh_hieu
                         : null,
                     so_quyet_dinh:
-                      item.danh_hieu === 'ĐVQT' || item.danh_hieu === 'ĐVTT' ? soQuyetDinh : null,
+                      item.danh_hieu === DANH_HIEU_DON_VI_HANG_NAM.DVQT || item.danh_hieu === DANH_HIEU_DON_VI_HANG_NAM.DVTT ? soQuyetDinh : null,
                     nhan_bkbqp: nhanBKBQP,
                     so_quyet_dinh_bkbqp: soQuyetDinhBKBQP,
                     nhan_bkttcp: nhanBKTTCP,
@@ -790,9 +766,9 @@ async function approveProposal(
 
               if (existingCongHien) {
                 const rankOrder = {
-                  HCBVTQ_HANG_BA: 1,
-                  HCBVTQ_HANG_NHI: 2,
-                  HCBVTQ_HANG_NHAT: 3,
+                  [DANH_HIEU_HCBVTQ.HANG_BA]: 1,
+                  [DANH_HIEU_HCBVTQ.HANG_NHI]: 2,
+                  [DANH_HIEU_HCBVTQ.HANG_NHAT]: 3,
                 };
 
                 const existingRank = rankOrder[existingCongHien.danh_hieu] || 0;
@@ -932,22 +908,22 @@ async function approveProposal(
               data.chuc_vu = item.chuc_vu || null;
               data.ghi_chu = item.ghi_chu || null;
 
-              if (item.danh_hieu === 'CSTT' || item.danh_hieu === 'CSTDCS') {
+              if (item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTT || item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS) {
                 data.danh_hieu = item.danh_hieu;
                 data.so_quyet_dinh = soQuyetDinhDanhHieu;
               }
 
-              if (item.danh_hieu === 'BKBQP') {
+              if (item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP) {
                 data.nhan_bkbqp = nhanBKBQP;
                 data.so_quyet_dinh_bkbqp = soQuyetDinhBKBQP;
               }
 
-              if (item.danh_hieu === 'CSTDTQ') {
+              if (item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ) {
                 data.nhan_cstdtq = nhanCSTDTQ;
                 data.so_quyet_dinh_cstdtq = soQuyetDinhCSTDTQ;
               }
 
-              if (item.danh_hieu === 'BKTTCP') {
+              if (item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP) {
                 data.nhan_bkttcp = nhanBKTTCP;
                 data.so_quyet_dinh_bkttcp = soQuyetDinhBKTTCP;
               }
@@ -969,11 +945,11 @@ async function approveProposal(
                   chuc_vu: item.chuc_vu || null,
                   ghi_chu: item.ghi_chu || null,
                   danh_hieu:
-                    item.danh_hieu === 'CSTT' || item.danh_hieu === 'CSTDCS'
+                    item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTT || item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS
                       ? item.danh_hieu
                       : null,
                   so_quyet_dinh:
-                    item.danh_hieu === 'CSTT' || item.danh_hieu === 'CSTDCS'
+                    item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTT || item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS
                       ? soQuyetDinhDanhHieu
                       : null,
                   nhan_bkbqp: nhanBKBQP,
@@ -1026,7 +1002,7 @@ async function approveProposal(
                 continue;
               }
 
-              const allowedDanhHieus = ['HCCSVV_HANG_BA', 'HCCSVV_HANG_NHI', 'HCCSVV_HANG_NHAT'];
+              const allowedDanhHieus = Object.values(DANH_HIEU_HCCSVV);
               if (allowedDanhHieus.includes(item.danh_hieu)) {
                 const danhHieuDecision = decisionMapping[item.danh_hieu] || {};
                 let soQuyetDinh = item.so_quyet_dinh || danhHieuDecision.so_quyet_dinh || null;
@@ -1126,7 +1102,7 @@ async function approveProposal(
                 continue;
               }
 
-              const danhHieuDecision = (decisionMapping[PROPOSAL_TYPES.HC_QKQT] || {}) as Record<
+              const danhHieuDecision = (decisionMapping[DANH_HIEU_CA_NHAN_KHAC.HC_QKQT] || {}) as Record<
                 string,
                 any
               >;
@@ -1230,7 +1206,7 @@ async function approveProposal(
                 continue;
               }
 
-              const danhHieuDecision = (decisionMapping[PROPOSAL_TYPES.KNC_VSNXD_QDNDVN] ||
+              const danhHieuDecision = (decisionMapping[DANH_HIEU_CA_NHAN_KHAC.KNC_VSNXD_QDNDVN] ||
                 {}) as Record<string, any>;
               let soQuyetDinh = item.so_quyet_dinh || danhHieuDecision.so_quyet_dinh || null;
               let filePdf = item.file_quyet_dinh || danhHieuDecision.file_pdf || null;
@@ -1333,7 +1309,7 @@ async function approveProposal(
               continue;
             }
 
-            if (!item.loai || !['DTKH', 'SKKH'].includes(item.loai)) {
+            if (!item.loai || !Object.values(DANH_HIEU_NCKH).includes(item.loai)) {
               errors.push(
                 `Thành tích có loại không hợp lệ cho quân nhân ${quanNhan.id}: ${item.loai}`
               );
@@ -1614,7 +1590,10 @@ async function approveProposal(
 
           recalculateSuccess++;
         } catch (recalcError) {
-          console.error('ProposalApprove.recalculateAnnualUnit failed', { donViId, error: recalcError });
+          console.error('ProposalApprove.recalculateAnnualUnit failed', {
+            donViId,
+            error: recalcError,
+          });
           recalculateErrors++;
         }
       }
@@ -1638,7 +1617,10 @@ async function approveProposal(
 
           recalculateSuccess++;
         } catch (recalcError) {
-          console.error('ProposalApprove.recalculateProfile failed', { personnelId, error: recalcError });
+          console.error('ProposalApprove.recalculateProfile failed', {
+            personnelId,
+            error: recalcError,
+          });
           recalculateErrors++;
         }
       }

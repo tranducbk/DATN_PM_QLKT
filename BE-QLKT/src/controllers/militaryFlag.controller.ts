@@ -16,7 +16,7 @@ class MilitaryFlagController {
     if (req.query.repeat_map) {
       try {
         Object.assign(repeatMap, JSON.parse(req.query.repeat_map as string));
-      } catch { /* ignore */ }
+      } catch (e) { console.error('Invalid repeat_map JSON:', e); }
     }
 
     const workbook = await militaryFlagService.exportTemplate(personnelIds, repeatMap);
@@ -61,7 +61,7 @@ class MilitaryFlagController {
       payload: { imported: result.imported ?? items.length },
     });
     const personnelIds = items.map((i: { personnel_id: string }) => i.personnel_id);
-    notifyOnImport(req.user!.id, 'military-flag', result.imported ?? items.length, personnelIds).catch(() => {});
+    notifyOnImport(req.user!.id, 'military-flag', result.imported ?? items.length, personnelIds).catch((e) => { console.error('[military-flag] notifyOnImport failed:', e); });
     return ResponseHelper.success(res, { data: result, message: 'Thao tác thành công' });
   });
 
@@ -164,7 +164,7 @@ class MilitaryFlagController {
 
     const result = await militaryFlagService.getByPersonnelId(personnel_id);
     return ResponseHelper.success(res, {
-      data: { hasReceived: result.length > 0, items: result },
+      data: { hasReceived: result.length > 0, data: result },
       message: 'Lấy Huân chương Quân kỳ Quyết thắng theo quân nhân thành công',
     });
   });

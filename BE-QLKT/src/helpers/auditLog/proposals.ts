@@ -107,7 +107,7 @@ const proposals: Record<
               CoQuanDonVi: true,
             },
           });
-        } catch {}
+        } catch (e) { console.error('auditLog/proposals fetch failed:', e); }
       }
 
       if (!proposal) {
@@ -198,7 +198,7 @@ const proposals: Record<
 
         return description;
       }
-    } catch {}
+    } catch (e) { console.error('auditLog/proposals fetch failed:', e); }
     return `Phê duyệt đề xuất: ${proposalId}`;
   },
   REJECT: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
@@ -223,7 +223,7 @@ const proposals: Record<
             },
           },
         });
-      } catch {}
+      } catch (e) { console.error('auditLog/proposals fetch failed:', e); }
     }
 
     if (proposal) {
@@ -301,7 +301,7 @@ const proposals: Record<
             },
           },
         });
-      } catch {}
+      } catch (e) { console.error('auditLog/proposals fetch failed:', e); }
     }
 
     if (proposal) {

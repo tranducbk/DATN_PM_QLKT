@@ -1,4 +1,5 @@
 import { prisma } from '../models';
+import { calculateServiceMonths } from '../helpers/serviceYearsHelper';
 import ExcelJS from 'exceljs';
 import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHelper';
 import { checkDuplicateAward } from '../helpers/awardValidation';
@@ -11,6 +12,8 @@ import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys } 
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
 import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
+import { DANH_HIEU_MAP } from '../constants/danhHieu.constants';
+import { GENDER } from '../constants/gender.constants';
 
 interface CommemorativeMedalValidItem {
   row: number;
@@ -231,7 +234,7 @@ class CommemorativeMedalService {
           row: rowNumber,
           ho_ten,
           nam,
-          message: `Quân nhân đã được tặng KNC VSNXD năm ${existingKnc.nam}`,
+          message: `Quân nhân đã được tặng ${DANH_HIEU_MAP.KNC_VSNXD_QDNDVN} (năm ${existingKnc.nam})`,
         });
         continue;
       }
@@ -241,7 +244,7 @@ class CommemorativeMedalService {
           row: rowNumber,
           ho_ten,
           nam,
-          message: 'Quân nhân đang có đề xuất Kỷ niệm chương chờ duyệt',
+          message: `Quân nhân đang có đề xuất ${DANH_HIEU_MAP.KNC_VSNXD_QDNDVN} chờ duyệt`,
         });
         continue;
       }
@@ -259,9 +262,9 @@ class CommemorativeMedalService {
 
       const ngayNhapNgu = new Date(personnel.ngay_nhap_ngu);
       const referenceDate = new Date(nam, 11, 31); // Dec 31 of the award year — eligibility reference date
-      const serviceYears =
-        (referenceDate.getTime() - ngayNhapNgu.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
-      const isFemale = personnel.gioi_tinh === 'NU';
+      const serviceMonths = calculateServiceMonths(ngayNhapNgu, referenceDate);
+      const serviceYears = serviceMonths / 12;
+      const isFemale = personnel.gioi_tinh === GENDER.FEMALE;
       const requiredYears = isFemale ? 20 : 25;
 
       if (serviceYears < requiredYears) {
@@ -310,7 +313,7 @@ class CommemorativeMedalService {
         so_quyet_dinh,
         ghi_chu,
         service_years: Math.floor(serviceYears),
-        gioi_tinh: personnel.gioi_tinh ?? 'NAM',
+        gioi_tinh: personnel.gioi_tinh ?? GENDER.MALE,
         history,
       });
     }
@@ -343,7 +346,9 @@ class CommemorativeMedalService {
     const pendingConflicts: string[] = [];
     for (const item of validItems) {
       if (pendingPersonnelIds.has(item.personnel_id)) {
-        pendingConflicts.push(`${item.ho_ten}: đang có đề xuất Kỷ niệm chương chờ duyệt`);
+        pendingConflicts.push(
+          `${item.ho_ten}: đang có đề xuất ${DANH_HIEU_MAP.KNC_VSNXD_QDNDVN} chờ duyệt`
+        );
       }
     }
     if (pendingConflicts.length > 0) {
@@ -354,9 +359,7 @@ class CommemorativeMedalService {
     const conflicts: string[] = [];
     for (const item of validItems) {
       if (existingSet.has(item.personnel_id)) {
-        conflicts.push(
-          `${item.ho_ten}: đã có Kỷ niệm chương VSNXD QĐNDVN trên hệ thống`
-        );
+        conflicts.push(`${item.ho_ten}: đã có ${DANH_HIEU_MAP.KNC_VSNXD_QDNDVN} trên hệ thống`);
       }
     }
     if (conflicts.length > 0) {
@@ -511,7 +514,7 @@ class CommemorativeMedalService {
           const duplicateCheck = await checkDuplicateAward(
             personnel.id,
             nam,
-            'KNC_VSNXD_QDNDVN',
+            PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
             PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
             PROPOSAL_STATUS.APPROVED
           );
@@ -553,7 +556,7 @@ class CommemorativeMedalService {
         results.titleData.push({
           personnelId: personnel.id,
           quan_nhan_id: personnel.id,
-          danh_hieu: 'KNC_VSNXD_QDNDVN',
+          danh_hieu: PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
           nam: upsertedRecord.nam,
           cap_bac: upsertedRecord.cap_bac,
           chuc_vu: upsertedRecord.chuc_vu,
@@ -818,7 +821,7 @@ class CommemorativeMedalService {
       await notificationHelper.notifyOnAwardDeleted(
         award,
         personnel,
-        'KNC_VSNXD_QDNDVN',
+        PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
         adminUsername
       );
     } catch (notifyError) {

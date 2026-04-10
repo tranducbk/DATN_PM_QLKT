@@ -606,7 +606,7 @@ export default function AdminAwardsPage() {
           },
           {
             key: 'KNC_VSNXD_QDNDVN',
-            label: 'Kỷ niệm chương VSNXD QĐNDVN',
+            label: DANH_HIEU_MAP['KNC_VSNXD_QDNDVN'],
             children: renderAwardContent(),
           },
           {

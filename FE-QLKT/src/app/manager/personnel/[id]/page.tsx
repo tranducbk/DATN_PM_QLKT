@@ -40,6 +40,7 @@ import styles from './personnel-detail.module.css';
 import { ROLES, getRoleInfo } from '@/constants/roles.constants';
 import { useAuth } from '@/contexts/AuthContext';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
+import { DANH_HIEU_MAP } from '@/constants/danhHieu.constants';
 
 const { Title, Text } = Typography;
 
@@ -842,7 +843,7 @@ export default function ManagerPersonnelDetailPage() {
                   <div className="flex flex-col items-center gap-2">
                     <TrophyOutlined style={{ fontSize: '32px' }} />
                     <Text strong style={{ fontSize: '16px' }}>
-                      Kỷ niệm chương VSNXD
+                      {DANH_HIEU_MAP['KNC_VSNXD_QDNDVN']}
                     </Text>
                   </div>
                 </Card>

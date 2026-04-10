@@ -142,7 +142,7 @@ class ScientificAchievementController {
     if (req.query.repeat_map) {
       try {
         Object.assign(repeatMap, JSON.parse(req.query.repeat_map as string));
-      } catch { /* ignore */ }
+      } catch (e) { console.error('Invalid repeat_map JSON:', e); }
     }
     const workbook = await scientificAchievementService.generateTemplate(personnelIds, repeatMap);
     res.setHeader(
@@ -193,7 +193,7 @@ class ScientificAchievementController {
       payload: { imported: result.imported || items.length },
     });
     const personnelIds = items.map((i: { personnel_id: string }) => i.personnel_id);
-    notifyOnImport(req.user!.id, 'scientific-achievements', result.imported || items.length, personnelIds).catch(() => {});
+    notifyOnImport(req.user!.id, 'scientific-achievements', result.imported || items.length, personnelIds).catch((e) => { console.error('[scientific-achievements] notifyOnImport failed:', e); });
     return ResponseHelper.success(res, { message: 'Thao tác thành công', data: result });
   });
 }

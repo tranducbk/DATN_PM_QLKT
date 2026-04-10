@@ -10,6 +10,16 @@ export interface DuplicateCheckResult {
   status?: string;
 }
 
+/**
+ * Cross-checks persisted awards vs in-flight `bang_de_xuat` rows for the same person/year/title.
+ * @param personnelId - `quan_nhan.id`
+ * @param nam - Fiscal or calendar year depending on proposal type
+ * @param danhHieu - Concrete `danh_hieu` / medal code under test
+ * @param proposalType - Branch selector (`PROPOSAL_TYPES.*`)
+ * @param status - When set, narrows pending lookups; defaults to pending-only paths inside
+ * @param excludeProposalId - Exclude current record during edit flows
+ * @returns `exists: true` with operator-facing `message` when a hard conflict is found
+ */
 export async function checkDuplicateAward(
   personnelId: string,
   nam: number,
@@ -198,6 +208,14 @@ export async function checkDuplicateAward(
     return { exists: false };
 }
 
+/**
+ * Unit annual flow: pending JSON collisions first, then reconciles against `danhHieuDonViHangNam`.
+ * @param donViId - Same key stored on proposal rows (`don_vi_id` in JSON payloads)
+ * @param nam - Award year under review
+ * @param danhHieu - ĐVQT/ĐVTT/BK… code being proposed
+ * @param proposalType - Must be `DON_VI_HANG_NAM` for the implemented branch
+ * @returns `exists: true` when another open proposal or stored unit award blocks the insert
+ */
 export async function checkDuplicateUnitAward(
   donViId: string,
   nam: number,
@@ -245,7 +263,6 @@ export async function checkDuplicateUnitAward(
         const isDv = UNIT_DV_TITLES.has(danhHieu);
         const isBk = UNIT_BK_TITLES.has(danhHieu);
 
-        // Check ĐVQT/ĐVTT
         if (isDv && existingAward.danh_hieu) {
           if (existingAward.danh_hieu === danhHieu) {
             return {
@@ -259,7 +276,6 @@ export async function checkDuplicateUnitAward(
           };
         }
 
-        // Check BKBQP/BKTTCP
         if (isBk) {
           if (danhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP && existingAward.nhan_bkbqp) {
             return {
@@ -275,7 +291,7 @@ export async function checkDuplicateUnitAward(
           }
         }
 
-        // ĐVQT/ĐVTT and BKBQP/BKTTCP cannot be mixed in the same proposal
+        // Unit DV title vs unit BK flags are mutually exclusive for a single year row.
         if (isDv && (existingAward.nhan_bkbqp || existingAward.nhan_bkttcp)) {
           const existingBk = existingAward.nhan_bkbqp ? 'BKBQP' : 'BKTTCP';
           return {

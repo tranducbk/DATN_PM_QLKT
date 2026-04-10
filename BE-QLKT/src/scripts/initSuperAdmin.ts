@@ -8,6 +8,7 @@
 import 'dotenv/config';
 import bcrypt from 'bcrypt';
 import { PrismaClient } from '../generated/prisma';
+import { ROLES } from '../constants/roles.constants';
 
 const prisma = new PrismaClient();
 
@@ -16,7 +17,7 @@ async function initializeSuperAdmin() {
     console.log('🚀 Bắt đầu khởi tạo SUPER_ADMIN...\n');
 
     const existingSuperAdmin = await prisma.taiKhoan.findFirst({
-      where: { role: 'SUPER_ADMIN' },
+      where: { role: ROLES.SUPER_ADMIN },
     });
 
     if (existingSuperAdmin) {
@@ -49,7 +50,7 @@ async function initializeSuperAdmin() {
       data: {
         username: 'superadmin',
         password_hash: hashedPassword,
-        role: 'SUPER_ADMIN',
+        role: ROLES.SUPER_ADMIN,
         quan_nhan_id: null,
       },
     });

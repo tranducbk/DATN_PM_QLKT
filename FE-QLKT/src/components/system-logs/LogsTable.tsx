@@ -23,6 +23,7 @@ import {
   ArrowDown,
 } from 'lucide-react';
 import { formatDateTimeFull } from '@/lib/utils';
+import { DANH_HIEU_MAP } from '@/constants/danhHieu.constants';
 
 export interface LogEntry {
   id: string;
@@ -64,8 +65,8 @@ const resourceLabels: Record<string, string> = {
   auth: 'Xác thực',
   'adhoc-awards': 'Khen thưởng đột xuất',
   adhoc_awards: 'Khen thưởng đột xuất',
-  'commemorative-medals': 'Kỷ niệm chương VSNXD QĐNDVN',
-  commemorative_medals: 'Kỷ niệm chương VSNXD QĐNDVN',
+  'commemorative-medals': DANH_HIEU_MAP['KNC_VSNXD_QDNDVN'],
+  commemorative_medals: DANH_HIEU_MAP['KNC_VSNXD_QDNDVN'],
   'contribution-awards': 'Huân chương Bảo vệ Tổ quốc',
   contribution_awards: 'Huân chương Bảo vệ Tổ quốc',
   'military-flag': 'Cờ thi đua',

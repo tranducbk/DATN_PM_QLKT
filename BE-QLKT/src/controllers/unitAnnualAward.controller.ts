@@ -168,7 +168,7 @@ class UnitAnnualAwardController {
       payload: { imported: result.imported ?? items.length },
     });
     const unitIds = items.map((i: { unit_id: string }) => i.unit_id);
-    notifyOnImport(req.user!.id, 'unit-annual-awards', result.imported ?? items.length, [], unitIds).catch(() => {});
+    notifyOnImport(req.user!.id, 'unit-annual-awards', result.imported ?? items.length, [], unitIds).catch((e) => { console.error('[unit-annual-awards] notifyOnImport failed:', e); });
     return ResponseHelper.success(res, { data: result, message: 'Thao tác thành công' });
   });
 
@@ -186,7 +186,7 @@ class UnitAnnualAwardController {
     if (req.query.repeat_map) {
       try {
         Object.assign(repeatMap, JSON.parse(req.query.repeat_map as string));
-      } catch { /* ignore */ }
+      } catch (e) { console.error('Invalid repeat_map JSON:', e); }
     }
     const workbook = await service.exportTemplate(unitIds, userRole, repeatMap);
     res.setHeader(

@@ -1,4 +1,5 @@
 import Joi from 'joi';
+import { ROLES } from '../constants/roles.constants';
 
 export const createAccount: Joi.ObjectSchema = Joi.object({
   username: Joi.string().trim().min(3).max(50).required().messages({
@@ -7,7 +8,7 @@ export const createAccount: Joi.ObjectSchema = Joi.object({
     'any.required': 'Tên đăng nhập là bắt buộc',
   }),
   password: Joi.string().allow('').min(8).optional(),
-  role: Joi.string().valid('SUPER_ADMIN', 'ADMIN', 'MANAGER', 'USER').required().messages({
+  role: Joi.string().valid(...Object.values(ROLES)).required().messages({
     'any.only': 'Vai trò không hợp lệ',
     'any.required': 'Vai trò là bắt buộc',
   }),
@@ -18,7 +19,7 @@ export const createAccount: Joi.ObjectSchema = Joi.object({
 });
 
 export const updateAccount: Joi.ObjectSchema = Joi.object({
-  role: Joi.string().valid('SUPER_ADMIN', 'ADMIN', 'MANAGER', 'USER').optional(),
+  role: Joi.string().valid(...Object.values(ROLES)).optional(),
   password: Joi.string().min(8).optional(),
 });
 
@@ -38,5 +39,5 @@ export const listQuery: Joi.ObjectSchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).default(20),
   search: Joi.string().trim().allow('').optional(),
-  role: Joi.string().valid('SUPER_ADMIN', 'ADMIN', 'MANAGER', 'USER').optional(),
+  role: Joi.string().valid(...Object.values(ROLES)).optional(),
 });

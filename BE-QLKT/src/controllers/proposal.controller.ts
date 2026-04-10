@@ -22,38 +22,20 @@ function managerUnitFilterId(qn: {
   return qn.co_quan_don_vi_id ?? qn.don_vi_truc_thuoc_id ?? undefined;
 }
 
+const ALL_PROPOSAL_TYPES = Object.values(PROPOSAL_TYPES);
+
 class ProposalController {
   exportTemplate = catchAsync(async (req: Request, res: Response) => {
     const userId = req.user!.id;
     const { type = PROPOSAL_TYPES.CA_NHAN_HANG_NAM } = req.query;
-    const validTypes = [
-      PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
-      PROPOSAL_TYPES.DON_VI_HANG_NAM,
-      PROPOSAL_TYPES.NIEN_HAN,
-      PROPOSAL_TYPES.HC_QKQT,
-      PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
-      PROPOSAL_TYPES.CONG_HIEN,
-      PROPOSAL_TYPES.DOT_XUAT,
-      PROPOSAL_TYPES.NCKH,
-    ];
-    if (!validTypes.includes(type as ProposalType)) {
+    if (!ALL_PROPOSAL_TYPES.includes(type as ProposalType)) {
       return ResponseHelper.badRequest(
         res,
-        'Loại đề xuất không hợp lệ. Chỉ chấp nhận: ' + validTypes.join(', ')
+        'Loại đề xuất không hợp lệ. Chỉ chấp nhận: ' + ALL_PROPOSAL_TYPES.join(', ')
       );
     }
     const buffer = await proposalService.exportTemplate(userId, type as string);
-    const typeNames: Record<string, string> = {
-      CA_NHAN_HANG_NAM: 'ca_nhan_hang_nam',
-      DON_VI_HANG_NAM: 'don_vi_hang_nam',
-      NIEN_HAN: 'nien_han',
-      HC_QKQT: 'hc_qkqt',
-      KNC_VSNXD_QDNDVN: 'knc_vsnxd_qdndvn',
-      CONG_HIEN: 'cong_hien',
-      DOT_XUAT: 'dot_xuat',
-      NCKH: 'nckh',
-    };
-    const typeName = typeNames[type as string] || 'default';
+    const typeName = (type as string).toLowerCase();
     const fileName = `mau_de_xuat_${typeName}_${new Date().toISOString().slice(0, 10)}.xlsx`;
     res.setHeader(
       'Content-Type',
@@ -74,20 +56,10 @@ class ProposalController {
       nam,
       ghi_chu,
     } = req.body;
-    const validTypes = [
-      PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
-      PROPOSAL_TYPES.DON_VI_HANG_NAM,
-      PROPOSAL_TYPES.NIEN_HAN,
-      PROPOSAL_TYPES.HC_QKQT,
-      PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
-      PROPOSAL_TYPES.CONG_HIEN,
-      PROPOSAL_TYPES.DOT_XUAT,
-      PROPOSAL_TYPES.NCKH,
-    ];
-    if (!validTypes.includes(type as ProposalType)) {
+    if (!ALL_PROPOSAL_TYPES.includes(type as ProposalType)) {
       return ResponseHelper.badRequest(
         res,
-        'Loại đề xuất không hợp lệ. Chỉ chấp nhận: ' + validTypes.join(', ')
+        'Loại đề xuất không hợp lệ. Chỉ chấp nhận: ' + ALL_PROPOSAL_TYPES.join(', ')
       );
     }
     if (userRole === ROLES.MANAGER && type === PROPOSAL_TYPES.DOT_XUAT) {
