@@ -135,6 +135,13 @@ export function getLoaiDeXuatName(loaiDeXuat: string | null | undefined): string
 /**
  * Lấy tên tiếng Việt của loại khen thưởng
  */
+export const DANH_HIEU_CA_NHAN_CO_BAN: readonly string[] = [
+  DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS,
+  DANH_HIEU_CA_NHAN_HANG_NAM.CSTT,
+];
+
+export const DANH_HIEU_CA_NHAN_TAT_CA: readonly string[] = Object.values(DANH_HIEU_CA_NHAN_HANG_NAM);
+
 export const UNIT_DV_TITLES = new Set<string>([DANH_HIEU_DON_VI_HANG_NAM.DVQT, DANH_HIEU_DON_VI_HANG_NAM.DVTT]);
 export const UNIT_BK_TITLES = new Set<string>([DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP, DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP]);
 

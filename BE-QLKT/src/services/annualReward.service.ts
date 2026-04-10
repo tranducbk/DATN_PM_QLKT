@@ -4,7 +4,7 @@ import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHel
 import { checkDuplicateAward } from '../helpers/awardValidation';
 import profileService from './profile.service';
 import * as notificationHelper from '../helpers/notification';
-import { formatDanhHieuList, getDanhHieuName } from '../constants/danhHieu.constants';
+import { formatDanhHieuList, getDanhHieuName, DANH_HIEU_CA_NHAN_CO_BAN, DANH_HIEU_CA_NHAN_TAT_CA } from '../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { NotFoundError, ValidationError } from '../middlewares/errorHandler';
@@ -173,7 +173,7 @@ class AnnualRewardService {
       throw new NotFoundError('Quân nhân');
     }
 
-    const validDanhHieu = ['CSTDCS', 'CSTT'];
+    const validDanhHieu = DANH_HIEU_CA_NHAN_CO_BAN;
     if (danh_hieu && !validDanhHieu.includes(danh_hieu)) {
       throw new ValidationError(
         `Danh hiệu không hợp lệ. Chỉ được chọn: ${formatDanhHieuList(validDanhHieu)}. Để trống nghĩa là không đạt danh hiệu.`
@@ -241,7 +241,7 @@ class AnnualRewardService {
     }
 
     if (danh_hieu) {
-      const validDanhHieu = ['CSTDCS', 'CSTT'];
+      const validDanhHieu = DANH_HIEU_CA_NHAN_CO_BAN;
       if (!validDanhHieu.includes(danh_hieu)) {
         throw new ValidationError(
           `Danh hiệu không hợp lệ. Chỉ được chọn: ${formatDanhHieuList(validDanhHieu)}. Để trống nghĩa là không đạt danh hiệu.`
@@ -366,7 +366,7 @@ class AnnualRewardService {
       );
     }
 
-    const validDanhHieu = ['CSTDCS', 'CSTT'];
+    const validDanhHieu = DANH_HIEU_CA_NHAN_CO_BAN;
     const errors: string[] = [];
     const selectedPersonnelIds: string[] = [];
     const titleData: Record<string, unknown>[] = [];
@@ -643,7 +643,7 @@ class AnnualRewardService {
       );
     }
 
-    const validDanhHieu = ['CSTDCS', 'CSTT'];
+    const validDanhHieu = DANH_HIEU_CA_NHAN_CO_BAN;
     const errors: PreviewError[] = [];
     const valid: PreviewValidItem[] = [];
     let total = 0;
@@ -1147,7 +1147,7 @@ class AnnualRewardService {
       chuc_vu,
     } = data;
 
-    const validDanhHieu = ['CSTDCS', 'CSTT', 'BKBQP', 'CSTDTQ', 'BKTTCP'];
+    const validDanhHieu = DANH_HIEU_CA_NHAN_TAT_CA;
     if (!validDanhHieu.includes(danh_hieu)) {
       throw new ValidationError(
         `Danh hiệu không hợp lệ. Chỉ được chọn: ${formatDanhHieuList(validDanhHieu)}.`

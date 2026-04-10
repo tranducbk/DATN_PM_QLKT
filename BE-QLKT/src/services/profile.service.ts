@@ -473,16 +473,12 @@ class ProfileService {
           nam: dh.nam,
           danh_hieu: dh.danh_hieu,
           so_quyet_dinh: dh.so_quyet_dinh || null,
-          // file_quyet_dinh: dh.file_quyet_dinh || null,
           nhan_bkbqp: dh.nhan_bkbqp || false,
           nhan_cstdtq: dh.nhan_cstdtq || false,
           nhan_bkttcp: dh.nhan_bkttcp || false,
           so_quyet_dinh_bkbqp: dh.so_quyet_dinh_bkbqp || null,
-          // file_quyet_dinh_bkbqp: dh.file_quyet_dinh_bkbqp || null,
           so_quyet_dinh_cstdtq: dh.so_quyet_dinh_cstdtq || null,
-          // file_quyet_dinh_cstdtq: dh.file_quyet_dinh_cstdtq || null,
           so_quyet_dinh_bkttcp: dh.so_quyet_dinh_bkttcp || null,
-          // file_quyet_dinh_bkttcp: dh.file_quyet_dinh_bkttcp || null,
         }))
         .sort((a, b) => a.nam - b.nam);
       const tong_cstdcs = tong_cstdcs_json.length;
@@ -492,7 +488,6 @@ class ProfileService {
           loai: tt.loai,
           mo_ta: tt.mo_ta,
           so_quyet_dinh: tt.so_quyet_dinh || null,
-          // file_quyet_dinh: tt.file_quyet_dinh || null,
         }))
         .sort((a, b) => a.nam - b.nam);
       const tong_nckh = tong_nckh_json.length;

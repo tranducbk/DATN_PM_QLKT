@@ -47,7 +47,6 @@ export default function AdminAccountsPage() {
       setLoading(true);
       const response = await apiClient.getAccounts({});
       if (response.success) {
-        // Backend returns { accounts: [], pagination: {} }
         setAccounts(response.data?.accounts || []);
       } else {
         message.error(response.message || 'Không thể tải danh sách tài khoản');

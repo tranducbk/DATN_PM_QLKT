@@ -1469,18 +1469,18 @@ class UnitAnnualAwardService {
 
       try {
         if (!maDonVi || !namVal || !danhHieu) {
-          throw new Error(
+          throw new ValidationError(
             `Thiếu thông tin bắt buộc: Mã đơn vị=${maDonVi}, Năm=${namVal}, Danh hiệu=${danhHieu}`
           );
         }
 
         const nam = parseInt(String(namVal), 10);
         if (!Number.isInteger(nam)) {
-          throw new Error(`Giá trị năm không hợp lệ: ${namVal}`);
+          throw new ValidationError(`Giá trị năm không hợp lệ: ${namVal}`);
         }
 
         if (!['ĐVQT', 'ĐVTT', 'BKTTCP'].includes(danhHieu)) {
-          throw new Error(
+          throw new ValidationError(
             `Danh hiệu không hợp lệ: ${danhHieu}. Danh hiệu hợp lệ: ĐVQT, ĐVTT, BKTTCP`
           );
         }
@@ -1499,7 +1499,7 @@ class UnitAnnualAwardService {
           });
 
           if (!donViTrucThuoc) {
-            throw new Error(`Không tìm thấy đơn vị với mã ${maDonVi}`);
+            throw new NotFoundError(`đơn vị với mã ${maDonVi}`);
           }
 
           if (checkDanhHieu) {
@@ -1508,7 +1508,7 @@ class UnitAnnualAwardService {
               nam,
               checkDanhHieu
             );
-            if (!eligibility.eligible) throw new Error(eligibility.reason);
+            if (!eligibility.eligible) throw new ValidationError(eligibility.reason);
           }
           if (checkBkbqp) {
             const eligibility = await this.checkUnitAwardEligibility(
@@ -1516,7 +1516,7 @@ class UnitAnnualAwardService {
               nam,
               'BKBQP'
             );
-            if (!eligibility.eligible) throw new Error(eligibility.reason);
+            if (!eligibility.eligible) throw new ValidationError(eligibility.reason);
           }
 
           try {
@@ -1527,7 +1527,7 @@ class UnitAnnualAwardService {
               PROPOSAL_TYPES.DON_VI_HANG_NAM
             );
             if (duplicateCheck.exists) {
-              throw new Error(duplicateCheck.message);
+              throw new ValidationError(duplicateCheck.message);
             }
           } catch (e) {
             if (e.message.includes('duplicate') || e.message.includes('đã có')) {
@@ -1569,11 +1569,11 @@ class UnitAnnualAwardService {
         } else {
           if (checkDanhHieu) {
             const eligibility = await this.checkUnitAwardEligibility(donVi.id, nam, checkDanhHieu);
-            if (!eligibility.eligible) throw new Error(eligibility.reason);
+            if (!eligibility.eligible) throw new ValidationError(eligibility.reason);
           }
           if (checkBkbqp) {
             const eligibility = await this.checkUnitAwardEligibility(donVi.id, nam, 'BKBQP');
-            if (!eligibility.eligible) throw new Error(eligibility.reason);
+            if (!eligibility.eligible) throw new ValidationError(eligibility.reason);
           }
 
           try {
@@ -1584,7 +1584,7 @@ class UnitAnnualAwardService {
               PROPOSAL_TYPES.DON_VI_HANG_NAM
             );
             if (duplicateCheck.exists) {
-              throw new Error(duplicateCheck.message);
+              throw new ValidationError(duplicateCheck.message);
             }
           } catch (e) {
             if (e.message.includes('duplicate')) {
