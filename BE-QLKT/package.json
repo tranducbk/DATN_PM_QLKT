@@ -5,10 +5,11 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc",
+    "build": "tsc && cp -r src/generated dist/generated",
     "typecheck": "tsc --noEmit",
     "start": "node dist/index.js",
     "serve": "npm run build && npx pm2 start ecosystem.config.js",
+    "restart": "npm run build && npx pm2 restart be-qlkt",
     "dev": "tsx watch src/index.ts",
     "init-super-admin": "tsx src/scripts/initSuperAdmin.ts",
     "format": "prettier --write \"src/**/*.ts\"",
