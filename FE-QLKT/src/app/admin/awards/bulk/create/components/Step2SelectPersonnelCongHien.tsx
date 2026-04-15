@@ -124,7 +124,7 @@ export function Step2SelectPersonnelCongHien({
       });
 
       if (response.success) {
-        const personnelData = response.data?.personnel ?? [];
+        const personnelData = response.data ?? [];
         setPersonnel(personnelData);
       }
     } catch (error: unknown) {

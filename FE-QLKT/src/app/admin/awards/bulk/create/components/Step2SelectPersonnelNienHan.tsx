@@ -105,7 +105,7 @@ export function Step2SelectPersonnelNienHan({
       });
 
       if (response.success) {
-        const personnelData = response.data?.personnel ?? [];
+        const personnelData = response.data ?? [];
         setPersonnel(personnelData);
 
         if (personnelData.length > 0) {

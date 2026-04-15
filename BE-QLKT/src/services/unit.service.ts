@@ -35,16 +35,20 @@ class UnitService {
       ]);
       return { items, total };
     } else {
-      const [items, total] = await Promise.all([
-        prisma.donViTrucThuoc.findMany({
-          include: { CoQuanDonVi: true, ChucVu: true },
+      const [cqdv, dvtt] = await Promise.all([
+        prisma.coQuanDonVi.findMany({
+          select: { id: true, ten_don_vi: true, ma_don_vi: true },
           orderBy: { ma_don_vi: 'asc' },
-          skip: (page - 1) * limit,
-          take: limit,
         }),
-        prisma.donViTrucThuoc.count(),
+        prisma.donViTrucThuoc.findMany({
+          include: { CoQuanDonVi: { select: { id: true, ten_don_vi: true, ma_don_vi: true } }, ChucVu: true },
+          orderBy: { ma_don_vi: 'asc' },
+        }),
       ]);
-      return { items, total };
+      const items = [...cqdv, ...dvtt].sort((a, b) =>
+        a.ma_don_vi.localeCompare(b.ma_don_vi)
+      );
+      return { items, total: items.length };
     }
   }
 

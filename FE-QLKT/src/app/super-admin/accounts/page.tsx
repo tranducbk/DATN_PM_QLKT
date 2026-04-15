@@ -75,11 +75,11 @@ export default function AccountsListPage() {
       const response = await apiClient.getAccounts(params);
 
       if (response.success) {
-        setAccounts((response.data?.accounts ?? []) as SuperAdminAccountRow[]);
+        setAccounts((response.data ?? []) as SuperAdminAccountRow[]);
         setPagination({
           current: page,
           pageSize,
-          total: response.data?.pagination?.total ?? 0,
+          total: response.pagination?.total ?? 0,
         });
       } else {
         message.error(response.message || 'Không thể tải danh sách tài khoản');

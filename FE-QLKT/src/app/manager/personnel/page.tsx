@@ -108,10 +108,11 @@ export default function ManagerPersonnelPage() {
 
       if (personnelRes.success) {
         const data = personnelRes.data;
-        setPersonnel((data?.personnel || data || []) as PersonnelListItem[]);
+        const personnelList = (data || []) as PersonnelListItem[];
+        setPersonnel(personnelList);
         setPagination(prev => ({
           ...prev,
-          total: data?.pagination?.total || data?.total || 0,
+          total: personnelList.length,
         }));
       }
 

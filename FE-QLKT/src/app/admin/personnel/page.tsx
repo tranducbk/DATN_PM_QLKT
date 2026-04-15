@@ -109,7 +109,7 @@ export default function PersonnelPage() {
           : ({ success: false as const } as const);
 
       if (personnelRes.success) {
-        const personnelData = (personnelRes.data?.personnel || []).map((p: PersonnelApiRow) => {
+        const personnelData = (personnelRes.data || []).map((p: PersonnelApiRow) => {
           const coQuanDonViRelation = (p.CoQuanDonVi ||
             p.DonViTrucThuoc?.CoQuanDonVi ||
             p.DonVi?.CoQuanDonVi ||
@@ -162,7 +162,7 @@ export default function PersonnelPage() {
 
         setPersonnel(personnelData);
 
-        const total = personnelRes.data?.pagination?.total || personnelData.length;
+        const total = personnelData.length;
         setPagination(prev => ({
           ...prev,
           total: total,

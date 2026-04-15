@@ -298,7 +298,7 @@ async function exportTemplateNienHan(workbook, quanNhanList) {
 async function getPdfFile(filename) {
   try {
     // Try storage/proposals first (proposal attachments)
-    const storagePath = path.join(__dirname, '../../../storage/proposals');
+    const storagePath = path.join(__dirname, '..', '..', '..', 'storage', 'proposals');
     let filePath = path.join(storagePath, filename);
 
     try {
@@ -309,7 +309,7 @@ async function getPdfFile(filename) {
       };
     } catch {
       // Fall back to uploads/decisions when file not found at primary path
-      const decisionsPath = path.join(__dirname, '../../../uploads/decisions');
+      const decisionsPath = path.join(__dirname, '..', '..', '..', 'uploads', 'decisions');
       filePath = path.join(decisionsPath, filename);
 
       try {

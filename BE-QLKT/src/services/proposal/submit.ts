@@ -122,7 +122,7 @@ async function submitProposal(
     }[] = [];
 
     if (attachedFiles && attachedFiles.length > 0) {
-      const storagePath = path.join(__dirname, '../../../storage/proposals');
+      const storagePath = path.join(__dirname, '..', '..', '..', 'storage', 'proposals');
       await fs.mkdir(storagePath, { recursive: true });
 
       for (const file of attachedFiles) {

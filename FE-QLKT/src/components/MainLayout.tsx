@@ -804,7 +804,7 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
                               key: `notification-${notification.id}`,
                               label: (
                                 <div
-                                  className={`max-w-xs cursor-pointer p-4 rounded-lg transition-all duration-200 mx-2 mb-2 ${
+                                  className={`cursor-pointer p-4 rounded-lg transition-all duration-200 mx-2 mb-2 ${
                                     notification.is_read
                                       ? 'bg-gray-50 dark:bg-gray-700/60 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-600'
                                       : 'bg-blue-50 dark:bg-gray-700/80 hover:bg-blue-100 dark:hover:bg-gray-600 border-l-4 border-blue-500 dark:border-blue-400 shadow-sm'
@@ -893,13 +893,14 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
                   }}
                   placement="bottomRight"
                   trigger={['click']}
+                  placement="bottomRight"
                   onOpenChange={open => {
                     if (open) {
                       loadNotifications();
                       loadNotificationCount();
                     }
                   }}
-                  overlayStyle={{ width: isMobile ? 'calc(100vw - 16px)' : '420px', marginTop: '-35px' }}
+                  overlayStyle={{ width: isMobile ? undefined : '420px', marginTop: '-35px' }}
                   overlayClassName="notification-dropdown"
                 >
                   <div className="relative cursor-pointer group inline-block p-2 -m-2 rounded-lg">

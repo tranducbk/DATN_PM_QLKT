@@ -64,7 +64,7 @@ export function AccountCreateForm() {
   const fetchUnitsAndPositions = async () => {
     try {
       const [unitsRes, positionsRes] = await Promise.all([
-        apiClient.getUnits(),
+        apiClient.getUnits({ hierarchy: true }),
         apiClient.getPositions(),
       ]);
 
@@ -74,21 +74,20 @@ export function AccountCreateForm() {
         const donViTrucThuoc: AccountDonViTrucThuocOption[] = [];
 
         unitsData.forEach((unit: UnitApiRow) => {
-          if (unit.co_quan_don_vi_id || unit.CoQuanDonVi) {
+          coQuanDonVi.push({
+            id: unit.id,
+            ten_don_vi: unit.ten_don_vi,
+            ma_don_vi: unit.ma_don_vi ?? '',
+          });
+          (unit.DonViTrucThuoc || []).forEach((dv: UnitApiRow) => {
             donViTrucThuoc.push({
-              id: unit.id,
-              ten_don_vi: unit.ten_don_vi,
-              ma_don_vi: unit.ma_don_vi ?? '',
-              co_quan_don_vi_id: unit.co_quan_don_vi_id,
-              CoQuanDonVi: unit.CoQuanDonVi || null,
+              id: dv.id,
+              ten_don_vi: dv.ten_don_vi,
+              ma_don_vi: dv.ma_don_vi ?? '',
+              co_quan_don_vi_id: unit.id,
+              CoQuanDonVi: { id: unit.id, ten_don_vi: unit.ten_don_vi },
             });
-          } else {
-            coQuanDonVi.push({
-              id: unit.id,
-              ten_don_vi: unit.ten_don_vi,
-              ma_don_vi: unit.ma_don_vi ?? '',
-            });
-          }
+          });
         });
 
         setCoQuanDonViList(coQuanDonVi);

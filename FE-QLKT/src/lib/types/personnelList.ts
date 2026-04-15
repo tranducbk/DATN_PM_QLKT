@@ -103,5 +103,6 @@ export interface UnitApiRow {
   ten_don_vi: string;
   ma_don_vi?: string;
   co_quan_don_vi_id?: string | null;
-  CoQuanDonVi?: { id?: string };
+  CoQuanDonVi?: { id?: string; ten_don_vi?: string };
+  DonViTrucThuoc?: UnitApiRow[];
 }

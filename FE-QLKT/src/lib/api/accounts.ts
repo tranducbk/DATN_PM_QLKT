@@ -10,10 +10,10 @@ export async function getAccounts(params: {
   page?: number;
   limit?: number;
   search?: string;
-}): Promise<ApiResponse> {
+}): Promise<ApiResponse & { pagination?: { total: number; page: number; limit: number; totalPages: number } }> {
   try {
     const res = await axiosInstance.get('/api/accounts', { params });
-    return { success: true, data: res.data?.data };
+    return { success: true, data: res.data?.data, pagination: res.data?.pagination };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }

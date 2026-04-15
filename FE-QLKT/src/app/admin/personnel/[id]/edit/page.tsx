@@ -12,13 +12,13 @@ import {
   message,
   Breadcrumb,
   ConfigProvider,
-  theme as antdTheme,
   Spin,
 } from 'antd';
 import { ArrowLeftOutlined, SaveOutlined, HomeOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { useTheme } from '@/components/ThemeProvider';
+import { getAntdThemeConfig } from '@/lib/antdTheme';
 import { apiClient } from '@/lib/apiClient';
 import { getApiErrorMessage } from '@/lib/apiError';
 import dayjs from 'dayjs';
@@ -316,11 +316,7 @@ export default function PersonnelEditPage() {
   };
 
   return (
-    <ConfigProvider
-      theme={{
-        algorithm: theme === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
-      }}
-    >
+    <ConfigProvider theme={getAntdThemeConfig(theme === 'dark')}>
       <div className="space-y-6 p-6">
         {/* Breadcrumb */}
         <Breadcrumb

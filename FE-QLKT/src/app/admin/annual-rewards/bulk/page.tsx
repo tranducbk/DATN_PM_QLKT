@@ -120,7 +120,7 @@ export default function BulkAddAnnualRewardsPage() {
       ]);
 
       if (personnelRes.success) {
-        const data = personnelRes.data?.personnel ?? personnelRes.data ?? [];
+        const data = personnelRes.data || [];
         setPersonnelList(data);
         setFilteredPersonnel(data);
       }

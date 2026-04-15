@@ -141,7 +141,7 @@ export function Step2SelectPersonnelHCQKQT({
       });
 
       if (response.success) {
-        const personnelData = response.data?.personnel || [];
+        const personnelData = response.data || [];
         setPersonnel(personnelData);
         if (personnelData.length === 0) {
           message.warning('Không có quân nhân nào trong đơn vị của bạn.');

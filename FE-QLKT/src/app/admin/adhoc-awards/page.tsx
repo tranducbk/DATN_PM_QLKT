@@ -259,7 +259,7 @@ export default function AdhocAwardsPage() {
     try {
       setLoading(true);
       const res = await apiClient.getAdhocAwards();
-      const awardsData = res.data?.items ?? [];
+      const awardsData = res.data ?? [];
       setAwards(awardsData);
     } catch (err) {
       message.error('Không tải được danh sách khen thưởng đột xuất');
@@ -275,7 +275,7 @@ export default function AdhocAwardsPage() {
         apiClient.getUnits(),
       ]);
 
-      const personnelData = personnelRes.data?.personnel ?? [];
+      const personnelData = personnelRes.data || [];
 
       const allUnitsData = Array.isArray(allUnitsRes.data) ? allUnitsRes.data : [];
 

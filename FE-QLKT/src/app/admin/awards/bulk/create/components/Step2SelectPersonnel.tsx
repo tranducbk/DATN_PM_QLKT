@@ -78,7 +78,7 @@ export function Step2SelectPersonnel({
       });
 
       if (response.success) {
-        const personnelData = response.data?.personnel ?? [];
+        const personnelData = response.data || [];
         setPersonnel(personnelData);
       }
     } catch (error: unknown) {

@@ -1743,14 +1743,15 @@ h3 {
 }
 
 /* Light Mode */
-input[type='text'],
-input[type='password'],
-input[type='email'],
-input[type='number'],
-textarea,
+input[type='text']:not(.ant-input),
+input[type='password']:not(.ant-input),
+input[type='email']:not(.ant-input),
+input[type='number']:not(.ant-input),
+textarea:not(.ant-input),
 .border-input {
-  @apply bg-white border-gray-300 text-gray-900 !important;
-  border-width: 1px !important;
+  @apply bg-white border-gray-300 text-gray-900;
+  border-width: 1px;
+  border-radius: 8px;
 }
 
 input:hover,
@@ -2333,6 +2334,14 @@ button[class*='bg-primary']:hover:not(:disabled) {
 .ant-dropdown.ant-dropdown-placement-bottomRight:has(.notification-dropdown),
 .ant-dropdown:has(.notification-dropdown) {
   margin-top: -30px !important;
+}
+
+@media (max-width: 1023px) {
+  .ant-dropdown:has(.notification-dropdown) {
+    left: 8px !important;
+    right: 8px !important;
+    width: auto !important;
+  }
 }
 
 .notification-dropdown .ant-dropdown-menu,

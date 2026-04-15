@@ -47,7 +47,7 @@ export default function AdminAccountsPage() {
       setLoading(true);
       const response = await apiClient.getAccounts({});
       if (response.success) {
-        setAccounts(response.data?.accounts || []);
+        setAccounts(response.data || []);
       } else {
         message.error(response.message || 'Không thể tải danh sách tài khoản');
       }

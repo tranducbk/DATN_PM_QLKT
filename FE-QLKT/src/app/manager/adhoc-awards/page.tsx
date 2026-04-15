@@ -109,7 +109,7 @@ export default function ManagerAdhocAwardsPage() {
     try {
       setLoading(true);
       const res = await apiClient.getAdhocAwards();
-      const awardsData = res.data?.items ?? [];
+      const awardsData = res.data ?? [];
       setAwards(awardsData);
     } catch (err) {
       message.error('Không tải được danh sách khen thưởng đột xuất');
