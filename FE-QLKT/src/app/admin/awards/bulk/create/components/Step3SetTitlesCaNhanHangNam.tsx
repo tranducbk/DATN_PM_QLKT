@@ -263,31 +263,29 @@ export function Step3SetTitlesCaNhanHangNam({
       const personnelDetail = personnel.find(p => p.id === id);
       if (personnelDetail) {
         try {
-          const response = await apiClient.checkDuplicate({
-            personnel_id: id,
-            nam: nam,
-            danh_hieu: value,
-            proposal_type: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
-          });
-
-          if (value === 'CSTDCS' || value === 'CSTT') {
-            const response = await apiClient.checkDuplicate({
+          const isMutuallyExclusive = value === 'CSTDCS' || value === 'CSTT';
+          const results = await Promise.all([
+            apiClient.checkDuplicate({
               personnel_id: id,
-              nam: nam,
-              danh_hieu: value === 'CSTDCS' ? 'CSTT' : 'CSTDCS',
+              nam,
+              danh_hieu: value,
               proposal_type: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
-            });
-            if (response.success && response.data.exists) {
-              message.error(
-                `${personnelDetail.ho_ten}: ${response.data.message}. Không thể đề xuất danh hiệu này.`
-              );
-              return;
-            }
-          }
-
-          if (response.success && response.data.exists) {
+            }),
+            ...(isMutuallyExclusive
+              ? [
+                  apiClient.checkDuplicate({
+                    personnel_id: id,
+                    nam,
+                    danh_hieu: value === 'CSTDCS' ? 'CSTT' : 'CSTDCS',
+                    proposal_type: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
+                  }),
+                ]
+              : []),
+          ]);
+          const conflict = results.find(r => r.success && r.data.exists);
+          if (conflict) {
             message.error(
-              `${personnelDetail.ho_ten}: ${response.data.message}. Không thể đề xuất danh hiệu này.`
+              `${personnelDetail.ho_ten}: ${conflict.data.message}. Không thể đề xuất danh hiệu này.`
             );
             return;
           }

@@ -556,38 +556,40 @@ export function Step2SelectPersonnelCongHien({
           // Remove duplicates from personnel IDs
           const uniquePersonnelIds = Array.from(new Set(processedPersonnelIds));
 
-          // Reject early if any row duplicates an existing proposal
           try {
-            for (const item of titleData) {
-              const checkResponse = await apiClient.checkDuplicate({
+            const batchResponse = await apiClient.checkDuplicateBatch(
+              titleData.map(item => ({
                 personnel_id: item.personnel_id,
                 nam: item.nam,
                 danh_hieu: item.danh_hieu,
                 proposal_type: 'CONG_HIEN',
-              });
-
-              if (checkResponse.data.success === false) {
-                throw new Error(checkResponse.data.message || 'Có lỗi khi kiểm tra trùng lặp');
+              }))
+            );
+            if (!batchResponse.success) throw new Error(batchResponse.message);
+            const duplicateIds = new Set<string>();
+            (batchResponse.data as any[]).forEach(result => {
+              if (result.exists) {
+                const hoTen = personnel.find(p => p.id === result.personnel_id)?.ho_ten || result.personnel_id;
+                errors.push(`${hoTen}: ${result.message}`);
+                duplicateIds.add(result.personnel_id);
               }
-
-              if (checkResponse.data.exists === true) {
-                throw new Error(
-                  'Dữ liệu import có trùng lặp với đề xuất đã tồn tại. Vui lòng kiểm tra lại.'
-                );
-              }
-            }
+            });
+            const filteredTitleData = duplicateIds.size > 0
+              ? titleData.filter(item => !duplicateIds.has(item.personnel_id))
+              : titleData;
+            const filteredPersonnelIds = duplicateIds.size > 0
+              ? uniquePersonnelIds.filter(id => !duplicateIds.has(id))
+              : uniquePersonnelIds;
+            resolve({
+              imported: filteredTitleData.length,
+              total: dataRows.length,
+              errors,
+              selectedPersonnelIds: filteredPersonnelIds,
+              titleData: filteredTitleData,
+            });
           } catch (error: unknown) {
             reject(new Error(`Lỗi kiểm tra trùng lặp: ${getApiErrorMessage(error)}`));
-            return;
           }
-
-          resolve({
-            imported: titleData.length,
-            total: dataRows.length,
-            errors,
-            selectedPersonnelIds: uniquePersonnelIds,
-            titleData,
-          });
         } catch (error: unknown) {
           reject(new Error(`Lỗi xử lý file Excel: ${getApiErrorMessage(error)}`));
         }

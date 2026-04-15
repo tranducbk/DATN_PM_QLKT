@@ -118,22 +118,30 @@ async function approveProposal(
       danhHieuData &&
       danhHieuData.length > 0
     ) {
-      for (const item of danhHieuData) {
-        if (item.personnel_id && item.danh_hieu) {
-          const checkResult = await checkDuplicateAward(
-            item.personnel_id,
-            proposalYear,
-            item.danh_hieu,
-            proposalType,
-            PROPOSAL_STATUS.APPROVED,
-            proposalId
-          );
-          if (checkResult.exists) {
-            const hoTen = personnelHoTenMap.get(item.personnel_id) || item.personnel_id;
-            duplicateErrors.push(`${hoTen}: ${checkResult.message}`);
-          }
-        }
-      }
+      const validItems = danhHieuData.filter(item => item.personnel_id && item.danh_hieu);
+      const errors = await Promise.all(
+        validItems.flatMap(item => {
+          const hoTen = personnelHoTenMap.get(item.personnel_id) || item.personnel_id;
+          const isMutuallyExclusive =
+            item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTT ||
+            item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS;
+          const opposite =
+            item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTT
+              ? DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS
+              : DANH_HIEU_CA_NHAN_HANG_NAM.CSTT;
+          return [
+            checkDuplicateAward(item.personnel_id, proposalYear, item.danh_hieu, proposalType, PROPOSAL_STATUS.APPROVED, proposalId)
+              .then(r => (r.exists ? `${hoTen}: ${r.message}` : null)),
+            ...(isMutuallyExclusive
+              ? [
+                  checkDuplicateAward(item.personnel_id, proposalYear, opposite, proposalType, PROPOSAL_STATUS.APPROVED, proposalId)
+                    .then(r => (r.exists ? `${hoTen}: ${r.message}` : null)),
+                ]
+              : []),
+          ];
+        })
+      );
+      errors.filter(Boolean).forEach(err => duplicateErrors.push(err));
     }
 
     // Tenure-based awards (NIEN_HAN / HC_QKQT / KNC_VSNXD_QDNDVN).
@@ -144,42 +152,26 @@ async function approveProposal(
       nienHanData &&
       nienHanData.length > 0
     ) {
-      for (const item of nienHanData) {
-        if (item.personnel_id && item.danh_hieu) {
-          const checkResult = await checkDuplicateAward(
-            item.personnel_id,
-            proposalYear,
-            item.danh_hieu,
-            proposalType,
-            PROPOSAL_STATUS.APPROVED,
-            proposalId
-          );
-          if (checkResult.exists) {
-            const hoTen = personnelHoTenMap.get(item.personnel_id) || item.personnel_id;
-            duplicateErrors.push(`${hoTen}: ${checkResult.message}`);
-          }
-        }
-      }
+      const validItems = nienHanData.filter(item => item.personnel_id && item.danh_hieu);
+      const errors = await Promise.all(
+        validItems.map(item =>
+          checkDuplicateAward(item.personnel_id, proposalYear, item.danh_hieu, proposalType, PROPOSAL_STATUS.APPROVED, proposalId)
+            .then(r => (r.exists ? `${personnelHoTenMap.get(item.personnel_id) || item.personnel_id}: ${r.message}` : null))
+        )
+      );
+      errors.filter(Boolean).forEach(err => duplicateErrors.push(err));
     }
 
     // Contribution awards (CONG_HIEN).
     if (proposalType === PROPOSAL_TYPES.CONG_HIEN && nienHanData && nienHanData.length > 0) {
-      for (const item of nienHanData) {
-        if (item.personnel_id && item.danh_hieu) {
-          const checkResult = await checkDuplicateAward(
-            item.personnel_id,
-            proposalYear,
-            item.danh_hieu,
-            proposalType,
-            null,
-            proposalId
-          );
-          if (checkResult.exists) {
-            const hoTen = personnelHoTenMap.get(item.personnel_id) || item.personnel_id;
-            duplicateErrors.push(`${hoTen}: ${checkResult.message}`);
-          }
-        }
-      }
+      const validItems = nienHanData.filter(item => item.personnel_id && item.danh_hieu);
+      const errors = await Promise.all(
+        validItems.map(item =>
+          checkDuplicateAward(item.personnel_id, proposalYear, item.danh_hieu, proposalType, null, proposalId)
+            .then(r => (r.exists ? `${personnelHoTenMap.get(item.personnel_id) || item.personnel_id}: ${r.message}` : null))
+        )
+      );
+      errors.filter(Boolean).forEach(err => duplicateErrors.push(err));
     }
 
     // If any duplicates were found, stop early.

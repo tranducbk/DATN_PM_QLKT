@@ -164,6 +164,8 @@ export const apiClient = {
   uploadDecision: proposalsApi.uploadDecision,
   checkDuplicate: proposalsApi.checkDuplicate,
   checkDuplicateUnit: proposalsApi.checkDuplicateUnit,
+  checkDuplicateBatch: proposalsApi.checkDuplicateBatch,
+  checkDuplicateUnitBatch: proposalsApi.checkDuplicateUnitBatch,
 
   // Notifications
   getNotifications: notificationsApi.getNotifications,

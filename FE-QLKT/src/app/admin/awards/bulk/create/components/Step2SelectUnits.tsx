@@ -257,38 +257,40 @@ export function Step2SelectUnits({
           // Remove duplicates from unit IDs
           const uniqueUnitIds = Array.from(new Set(processedUnitIds));
 
-          // Reject early if any row duplicates an existing proposal
           try {
-            for (const item of titleData) {
-              const checkResponse = await apiClient.checkDuplicateUnit({
-                  don_vi_id: item.don_vi_id,
-                  nam: item.nam,
-                  danh_hieu: item.danh_hieu,
-                  proposal_type: 'DON_VI_HANG_NAM',
-              });
-
-              if (checkResponse.data.success === false) {
-                throw new Error(checkResponse.data.message || 'Có lỗi khi kiểm tra trùng lặp');
+            const batchResponse = await apiClient.checkDuplicateUnitBatch(
+              titleData.map(item => ({
+                don_vi_id: item.don_vi_id,
+                nam: item.nam,
+                danh_hieu: item.danh_hieu,
+                proposal_type: 'DON_VI_HANG_NAM',
+              }))
+            );
+            if (!batchResponse.success) throw new Error(batchResponse.message);
+            const duplicateIds = new Set<string>();
+            (batchResponse.data as any[]).forEach(result => {
+              if (result.exists) {
+                const tenDonVi = units.find(u => u.id === result.don_vi_id)?.ten_don_vi || result.don_vi_id;
+                errors.push(`${tenDonVi}: ${result.message}`);
+                duplicateIds.add(result.don_vi_id);
               }
-
-              if (checkResponse.data.exists === true) {
-                throw new Error(
-                  'Dữ liệu import có trùng lặp với đề xuất đã tồn tại. Vui lòng kiểm tra lại.'
-                );
-              }
-            }
+            });
+            const filteredTitleData = duplicateIds.size > 0
+              ? titleData.filter(item => !duplicateIds.has(item.don_vi_id))
+              : titleData;
+            const filteredUnitIds = duplicateIds.size > 0
+              ? uniqueUnitIds.filter(id => !duplicateIds.has(id))
+              : uniqueUnitIds;
+            resolve({
+              imported: filteredTitleData.length,
+              total: dataRows.length,
+              errors,
+              selectedUnitIds: filteredUnitIds,
+              titleData: filteredTitleData,
+            });
           } catch (error: unknown) {
             reject(new Error(`Lỗi kiểm tra trùng lặp: ${getApiErrorMessage(error)}`));
-            return;
           }
-
-          resolve({
-            imported: titleData.length,
-            total: dataRows.length,
-            errors,
-            selectedUnitIds: uniqueUnitIds,
-            titleData,
-          });
         } catch (error: unknown) {
           reject(new Error(`Lỗi xử lý file Excel: ${getApiErrorMessage(error)}`));
         }

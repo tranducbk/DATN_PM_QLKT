@@ -243,35 +243,31 @@ export function Step3SetTitlesDonViHangNam({
       const unitDetail = units.find(u => u.id === id);
       if (unitDetail) {
         try {
-          if (isUnitDvTitle(value)) {
-            const otherDvTitle =
-              value === DANH_HIEU_DON_VI_HANG_NAM.DVQT
-                ? DANH_HIEU_DON_VI_HANG_NAM.DVTT
-                : DANH_HIEU_DON_VI_HANG_NAM.DVQT;
-            const response = await apiClient.checkDuplicateUnit({
+          const results = await Promise.all([
+            apiClient.checkDuplicateUnit({
               don_vi_id: id,
-              nam: nam,
-              danh_hieu: otherDvTitle,
+              nam,
+              danh_hieu: value,
               proposal_type: PROPOSAL_TYPES.DON_VI_HANG_NAM,
-            });
-            if (response.success && response.data.exists) {
-              message.error(
-                `${unitDetail.ten_don_vi}: ${response.data.message}. Không thể đề xuất danh hiệu này.`
-              );
-              return;
-            }
-          }
-
-          const response = await apiClient.checkDuplicateUnit({
-            don_vi_id: id,
-            nam: nam,
-            danh_hieu: value,
-            proposal_type: PROPOSAL_TYPES.DON_VI_HANG_NAM,
-          });
-
-          if (response.success && response.data.exists) {
+            }),
+            ...(isUnitDvTitle(value)
+              ? [
+                  apiClient.checkDuplicateUnit({
+                    don_vi_id: id,
+                    nam,
+                    danh_hieu:
+                      value === DANH_HIEU_DON_VI_HANG_NAM.DVQT
+                        ? DANH_HIEU_DON_VI_HANG_NAM.DVTT
+                        : DANH_HIEU_DON_VI_HANG_NAM.DVQT,
+                    proposal_type: PROPOSAL_TYPES.DON_VI_HANG_NAM,
+                  }),
+                ]
+              : []),
+          ]);
+          const conflict = results.find(r => r.success && r.data.exists);
+          if (conflict) {
             message.error(
-              `${unitDetail.ten_don_vi}: ${response.data.message}. Không thể đề xuất danh hiệu này.`
+              `${unitDetail.ten_don_vi}: ${conflict.data.message}. Không thể đề xuất danh hiệu này.`
             );
             return;
           }

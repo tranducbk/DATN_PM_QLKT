@@ -163,6 +163,38 @@ export async function checkDuplicateUnit(params: {
 }
 
 /**
+ * Batch-checks a list of personnel items for duplicate awards/proposals in a single request.
+ * @param items - Array of items to check
+ * @returns Array of `{ personnel_id, danh_hieu, exists, message }` in the same order as input
+ */
+export async function checkDuplicateBatch(
+  items: Array<{ personnel_id: string; nam: number; danh_hieu: string; proposal_type: string }>
+): Promise<ApiResponse> {
+  try {
+    const res = await axiosInstance.post('/api/proposals/check-duplicate-batch', { items });
+    return { success: true, data: res.data?.data };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
+  }
+}
+
+/**
+ * Batch-checks a list of unit items for duplicate awards/proposals in a single request.
+ * @param items - Array of items to check
+ * @returns Array of `{ don_vi_id, danh_hieu, exists, message }` in the same order as input
+ */
+export async function checkDuplicateUnitBatch(
+  items: Array<{ don_vi_id: string; nam: number; danh_hieu: string; proposal_type: string }>
+): Promise<ApiResponse> {
+  try {
+    const res = await axiosInstance.post('/api/proposals/check-duplicate-unit-batch', { items });
+    return { success: true, data: res.data?.data };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
+  }
+}
+
+/**
  * deleteProposal API wrapper.
  * @returns API response payload
  */

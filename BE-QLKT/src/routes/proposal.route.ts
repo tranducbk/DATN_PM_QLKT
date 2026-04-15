@@ -69,6 +69,30 @@ router.get(
 );
 
 /**
+ * @route   POST /api/proposals/check-duplicate-batch
+ * @desc    Kiểm tra hàng loạt quân nhân trùng đề xuất (dùng cho Excel import)
+ * @access  MANAGER, ADMIN
+ */
+router.post(
+  '/check-duplicate-batch',
+  verifyToken,
+  checkRole([ROLES.MANAGER, ROLES.ADMIN]),
+  proposalController.checkDuplicateBatch
+);
+
+/**
+ * @route   POST /api/proposals/check-duplicate-unit-batch
+ * @desc    Kiểm tra hàng loạt đơn vị trùng đề xuất (dùng cho Excel import)
+ * @access  MANAGER, ADMIN
+ */
+router.post(
+  '/check-duplicate-unit-batch',
+  verifyToken,
+  checkRole([ROLES.MANAGER, ROLES.ADMIN]),
+  proposalController.checkDuplicateUnitBatch
+);
+
+/**
  * @route   GET /api/proposals
  * @desc    Lấy danh sách đề xuất
  * @access  MANAGER, ADMIN

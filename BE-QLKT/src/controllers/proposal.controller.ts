@@ -426,6 +426,26 @@ class ProposalController {
     });
   });
 
+  checkDuplicateBatch = catchAsync(async (req: Request, res: Response) => {
+    const { items } = req.body;
+    if (!Array.isArray(items) || items.length === 0) {
+      return ResponseHelper.badRequest(res, 'Danh sách kiểm tra không hợp lệ');
+    }
+    return ResponseHelper.success(res, {
+      data: await proposalService.checkDuplicateBatch(items),
+    });
+  });
+
+  checkDuplicateUnitBatch = catchAsync(async (req: Request, res: Response) => {
+    const { items } = req.body;
+    if (!Array.isArray(items) || items.length === 0) {
+      return ResponseHelper.badRequest(res, 'Danh sách kiểm tra không hợp lệ');
+    }
+    return ResponseHelper.success(res, {
+      data: await proposalService.checkDuplicateUnitBatch(items),
+    });
+  });
+
   getHCCSVVTemplate = catchAsync(async (req: Request, res: Response) => {
     const buffer = await hccsvvService.exportTemplate();
     res.setHeader(

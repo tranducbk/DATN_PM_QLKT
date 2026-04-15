@@ -162,6 +162,48 @@ class ProposalService {
   ): Promise<DuplicateCheckResult> {
     return validation.checkDuplicateUnitAward(donViId, nam, danhHieu, proposalType);
   }
+
+  /**
+   * Batch-checks a list of personnel items for duplicate awards/proposals in parallel.
+   * @param items - Array of items to check
+   * @returns Array of results in the same order as input
+   */
+  async checkDuplicateBatch(
+    items: Array<{ personnel_id: string; nam: number; danh_hieu: string; proposal_type: string }>
+  ): Promise<Array<{ personnel_id: string; danh_hieu: string; exists: boolean; message?: string }>> {
+    return Promise.all(
+      items.map(async item => {
+        const result = await validation.checkDuplicateAward(
+          item.personnel_id,
+          item.nam,
+          item.danh_hieu,
+          item.proposal_type
+        );
+        return { personnel_id: item.personnel_id, danh_hieu: item.danh_hieu, exists: result.exists, message: result.message };
+      })
+    );
+  }
+
+  /**
+   * Batch-checks a list of unit items for duplicate awards/proposals in parallel.
+   * @param items - Array of items to check
+   * @returns Array of results in the same order as input
+   */
+  async checkDuplicateUnitBatch(
+    items: Array<{ don_vi_id: string; nam: number; danh_hieu: string; proposal_type: string }>
+  ): Promise<Array<{ don_vi_id: string; danh_hieu: string; exists: boolean; message?: string }>> {
+    return Promise.all(
+      items.map(async item => {
+        const result = await validation.checkDuplicateUnitAward(
+          item.don_vi_id,
+          item.nam,
+          item.danh_hieu,
+          item.proposal_type
+        );
+        return { don_vi_id: item.don_vi_id, danh_hieu: item.danh_hieu, exists: result.exists, message: result.message };
+      })
+    );
+  }
 }
 
 export default new ProposalService();
