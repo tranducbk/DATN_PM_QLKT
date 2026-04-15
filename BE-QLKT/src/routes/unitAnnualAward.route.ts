@@ -27,7 +27,7 @@ const router = Router();
  * @desc    Lấy danh sách khen thưởng đơn vị hằng năm (Admin: tất cả, Manager: đơn vị mình, User: đơn vị mình)
  * @access  ADMIN, MANAGER, USER
  */
-router.get('/', verifyToken, requireAuth, unitAnnualAwardController.list);
+router.get('/', verifyToken, requireManager, unitAnnualAwardController.list);
 
 /**
  * @route   GET /api/awards/units/annual/template
@@ -100,21 +100,21 @@ router.get('/statistics', verifyToken, checkRole([ROLES.ADMIN, ROLES.MANAGER]), 
  * @desc    Lấy toàn bộ lịch sử khen thưởng của 1 đơn vị (mảng)
  * @access  ADMIN, MANAGER, USER
  */
-router.get('/history', verifyToken, requireAuth, unitAnnualAwardController.getUnitAnnualAwards);
+router.get('/history', verifyToken, requireManager, unitAnnualAwardController.getUnitAnnualAwards);
 
 /**
  * @route   GET /api/awards/units/annual/profile/:don_vi_id
  * @desc    Lấy hồ sơ gợi ý hằng năm của đơn vị (tính toán tổng hợp)
  * @access  ADMIN, MANAGER, USER
  */
-router.get('/profile/:don_vi_id', verifyToken, requireAuth, unitAnnualAwardController.getUnitAnnualProfile);
+router.get('/profile/:don_vi_id', verifyToken, requireManager, unitAnnualAwardController.getUnitAnnualProfile);
 
 /**
  * @route   GET /api/awards/units/annual/:id
  * @desc    Lấy chi tiết khen thưởng đơn vị hằng năm theo ID
- * @access  ADMIN, MANAGER, USER
+ * @access  ADMIN, MANAGER
  */
-router.get('/:id', verifyToken, requireAuth, unitAnnualAwardController.getById);
+router.get('/:id', verifyToken, requireManager, unitAnnualAwardController.getById);
 
 /**
  * @route   POST /api/awards/units/annual

@@ -25,19 +25,19 @@ import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 
 const router = Router();
 
-router.get('/', verifyToken, requireAuth, annualRewardController.getAnnualRewards);
+router.get('/', verifyToken, requireManager, annualRewardController.getAnnualRewards);
 
 router.get(
   '/check-hcqkqt/:personnelId',
   verifyToken,
-  requireAuth,
+  requireManager,
   annualRewardController.checkAlreadyReceivedHCQKQT
 );
 
 router.get(
   '/check-knc-vsnxd/:personnelId',
   verifyToken,
-  requireAuth,
+  requireManager,
   annualRewardController.checkAlreadyReceivedKNCVSNXDQDNDVN
 );
 

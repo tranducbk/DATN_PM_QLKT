@@ -7,9 +7,9 @@ import { scientificAchievementValidation, excelImportValidation } from '../valid
 
 const router = Router();
 
-router.get('/', verifyToken, requireAuth, scientificAchievementController.getAchievements);
-router.get('/export', verifyToken, requireAuth, scientificAchievementController.exportToExcel);
-router.get('/template', verifyToken, requireAuth, scientificAchievementController.getTemplate);
+router.get('/', verifyToken, requireManager, scientificAchievementController.getAchievements);
+router.get('/export', verifyToken, requireManager, scientificAchievementController.exportToExcel);
+router.get('/template', verifyToken, requireManager, scientificAchievementController.getTemplate);
 router.post(
   '/import/preview',
   verifyToken,
@@ -34,10 +34,10 @@ router.post(
 router.put(
   '/:id',
   verifyToken,
-  requireAuth,
+  requireManager,
   validate(scientificAchievementValidation.updateAchievement),
   scientificAchievementController.updateAchievement
 );
-router.delete('/:id', verifyToken, requireAuth, scientificAchievementController.deleteAchievement);
+router.delete('/:id', verifyToken, requireManager, scientificAchievementController.deleteAchievement);
 
 export default router;
