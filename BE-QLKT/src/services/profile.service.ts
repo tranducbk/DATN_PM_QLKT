@@ -485,7 +485,7 @@ class ProfileService {
       const cstdtq_lien_tuc = this.calculateContinuousCSTDTQ(danhHieuList, year);
 
       du_dieu_kien_bkbqp =
-        cstdcs_lien_tuc % 2 === 0 && cstdcs_lien_tuc >= 1 && nckh_lien_tuc >= cstdcs_lien_tuc;
+        cstdcs_lien_tuc % 2 === 0 && cstdcs_lien_tuc >= 2 && nckh_lien_tuc >= cstdcs_lien_tuc;
       du_dieu_kien_cstdtq =
         cstdcs_lien_tuc % 3 === 0 &&
         bkbqp_lien_tuc >= 1 &&
@@ -615,7 +615,7 @@ class ProfileService {
 
     if (danhHieu === 'BKBQP') {
       const eligible =
-        cstdcs_lien_tuc % 2 === 0 && cstdcs_lien_tuc >= 1 && nckh_lien_tuc >= cstdcs_lien_tuc;
+        cstdcs_lien_tuc % 2 === 0 && cstdcs_lien_tuc >= 2 && nckh_lien_tuc >= cstdcs_lien_tuc;
       if (!eligible) {
         return {
           eligible: false,
