@@ -5,6 +5,7 @@ import { Table, Alert, Typography, Space, Tag, message, Button, Select, Input, E
 import { EditOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
+import { getApiErrorMessage } from '@/lib/apiError';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
 import { formatDate } from '@/lib/utils';
 import type { DateInput } from '@/lib/types';
@@ -103,7 +104,7 @@ export function Step3SetTitlesKNCVSNXDQDNDVN({
         }
       }
     } catch (error) {
-      console.error('Lỗi tải dữ liệu danh hiệu KNCVSNXDQDNDVN', error);
+      message.error(getApiErrorMessage(error));
     } finally {
       setLoading(false);
     }

@@ -126,7 +126,7 @@ export function Step2SelectPersonnelHCQKQT({
       setAlreadyReceivedMap(receivedMap);
       setReceivedReasonMap(reasonMap);
     } catch (error) {
-      console.error('Lỗi kiểm tra điều kiện HCQKQT', error);
+      message.error(getApiErrorMessage(error));
     } finally {
       setCheckingReceived(false);
     }
@@ -665,7 +665,6 @@ export function Step2SelectPersonnelHCQKQT({
           <ExcelImportSection
             awardType="HC_QKQT"
             downloadTemplate={apiClient.getMilitaryFlagTemplate}
-            importFile={apiClient.importMilitaryFlag}
             templateFileName="mau_import_hcqkqt"
             onImportSuccess={handleImportSuccess}
             selectedPersonnelIds={selectedPersonnelIds}

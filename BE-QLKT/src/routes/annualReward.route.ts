@@ -25,7 +25,13 @@ import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 
 const router = Router();
 
-router.get('/', verifyToken, requireManager, annualRewardController.getAnnualRewards);
+router.get(
+  '/',
+  verifyToken,
+  requireManager,
+  validate(annualRewardValidation.getAnnualRewardsQuery, 'query'),
+  annualRewardController.getAnnualRewards
+);
 
 router.get(
   '/check-hcqkqt/:personnelId',
@@ -80,13 +86,20 @@ router.delete(
   annualRewardController.deleteAnnualReward
 );
 
-router.post('/check', verifyToken, requireAdmin, annualRewardController.checkAnnualRewards);
+router.post(
+  '/check',
+  verifyToken,
+  requireAdmin,
+  validate(annualRewardValidation.checkAnnualRewards),
+  annualRewardController.checkAnnualRewards
+);
 
 router.post(
   '/bulk',
   verifyToken,
   requireAdmin,
   pdfUpload.single('file_dinh_kem'),
+  validate(annualRewardValidation.bulkCreate),
   auditLog({
     action: AUDIT_ACTIONS.BULK,
     resource: 'annual-rewards',
@@ -132,6 +145,7 @@ router.get(
   '/export',
   verifyToken,
   checkRole([ROLES.ADMIN, ROLES.MANAGER]),
+  validate(annualRewardValidation.exportAnnualRewardsQuery, 'query'),
   annualRewardController.exportToExcel
 );
 
@@ -139,6 +153,7 @@ router.get(
   '/statistics',
   verifyToken,
   checkRole([ROLES.ADMIN, ROLES.MANAGER]),
+  validate(annualRewardValidation.getAnnualRewardsStatisticsQuery, 'query'),
   annualRewardController.getStatistics
 );
 

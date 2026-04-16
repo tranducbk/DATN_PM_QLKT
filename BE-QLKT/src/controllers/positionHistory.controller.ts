@@ -8,18 +8,19 @@ import { writeSystemLog } from '../helpers/systemLogHelper';
 
 class PositionHistoryController {
   getPositionHistory = catchAsync(async (req: Request, res: Response) => {
-    const { personnel_id, recalculate } = req.query;
+    const query = req.query as { personnel_id?: string; recalculate?: string };
+    const { personnel_id, recalculate } = query;
     if (!personnel_id) {
       return ResponseHelper.badRequest(res, 'Thiếu thông tin quân nhân');
     }
     if (recalculate === 'true') {
       try {
-        await profileService.recalculateContributionProfile(personnel_id as string);
+        await profileService.recalculateContributionProfile(personnel_id);
       } catch (recalcError) {
         writeSystemLog({ action: 'ERROR', resource: 'profiles', description: `Lỗi tính lại hồ sơ cống hiến: ${recalcError}` });
       }
     }
-    const result = await positionHistoryService.getPositionHistory(personnel_id as string);
+    const result = await positionHistoryService.getPositionHistory(personnel_id);
     return ResponseHelper.success(res, {
       message: 'Lấy lịch sử chức vụ thành công',
       data: result,
@@ -27,8 +28,15 @@ class PositionHistoryController {
   });
 
   createPositionHistory = catchAsync(async (req: Request, res: Response) => {
-    const personnel_id = normalizeParam(req.params.personnelId) || req.body.personnel_id;
-    const { chuc_vu_id, ngay_bat_dau, ngay_ket_thuc } = req.body;
+    const params = req.params as { personnelId?: string };
+    const body = req.body as {
+      personnel_id?: string;
+      chuc_vu_id?: string;
+      ngay_bat_dau?: string;
+      ngay_ket_thuc?: string | null;
+    };
+    const personnel_id = normalizeParam(params.personnelId) || body.personnel_id;
+    const { chuc_vu_id, ngay_bat_dau, ngay_ket_thuc } = body;
     if (!personnel_id || !chuc_vu_id || !ngay_bat_dau) {
       return ResponseHelper.badRequest(
         res,
@@ -53,11 +61,13 @@ class PositionHistoryController {
   });
 
   updatePositionHistory = catchAsync(async (req: Request, res: Response) => {
-    const id = normalizeParam(req.params.id);
+    const params = req.params as { id?: string };
+    const body = req.body as { chuc_vu_id?: string; ngay_bat_dau?: string; ngay_ket_thuc?: string | null };
+    const id = normalizeParam(params.id);
     if (!id) {
       return ResponseHelper.badRequest(res, 'Thiếu id');
     }
-    const { chuc_vu_id, ngay_bat_dau, ngay_ket_thuc } = req.body;
+    const { chuc_vu_id, ngay_bat_dau, ngay_ket_thuc } = body;
     const result = await positionHistoryService.updatePositionHistory(id, {
       chuc_vu_id,
       ngay_bat_dau,
@@ -79,7 +89,8 @@ class PositionHistoryController {
   });
 
   deletePositionHistory = catchAsync(async (req: Request, res: Response) => {
-    const id = normalizeParam(req.params.id);
+    const params = req.params as { id?: string };
+    const id = normalizeParam(params.id);
     if (!id) {
       return ResponseHelper.badRequest(res, 'Thiếu id');
     }

@@ -103,14 +103,13 @@ All API responses follow `ApiResponse<T>`:
 { "success": true, "message": "...", "data": { ... } }
 ```
 
-Paginated responses follow `PaginatedData<T>`:
+Paginated responses (`ResponseHelper.paginated`): `data` là mảng trực tiếp, `pagination` ở top level:
 ```json
 {
   "success": true,
-  "data": {
-    "items": [...],
-    "pagination": { "total": 100, "page": 1, "limit": 10, "totalPages": 10 }
-  }
+  "message": "...",
+  "data": [...],
+  "pagination": { "total": 100, "page": 1, "limit": 10, "totalPages": 10 }
 }
 ```
 

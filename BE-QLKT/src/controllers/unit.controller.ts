@@ -6,9 +6,10 @@ import catchAsync from '../helpers/catchAsync';
 
 class UnitController {
   getAllUnits = catchAsync(async (req: Request, res: Response) => {
-    const hierarchy = req.query.hierarchy === 'true';
-    const { page, limit } = parsePagination(req.query);
-    const { items, total } = await unitService.getAllUnits({ hierarchy, page, limit });
+    const query = req.query as { hierarchy?: string };
+    const { hierarchy } = query;
+    const { page, limit } = parsePagination(query);
+    const { items, total } = await unitService.getAllUnits({ hierarchy: hierarchy === 'true', page, limit });
     return ResponseHelper.paginated(res, {
       data: items,
       total,
@@ -19,7 +20,8 @@ class UnitController {
   });
 
   createUnit = catchAsync(async (req: Request, res: Response) => {
-    const { ma_don_vi, ten_don_vi, co_quan_don_vi_id } = req.body;
+    const body = req.body as { ma_don_vi?: string; ten_don_vi?: string; co_quan_don_vi_id?: string | null };
+    const { ma_don_vi, ten_don_vi, co_quan_don_vi_id } = body;
     if (!ma_don_vi || !ten_don_vi) {
       return ResponseHelper.badRequest(
         res,
@@ -34,11 +36,13 @@ class UnitController {
   });
 
   updateUnit = catchAsync(async (req: Request, res: Response) => {
-    const id = normalizeParam(req.params.id);
+    const params = req.params as { id?: string };
+    const body = req.body as { ma_don_vi?: string; ten_don_vi?: string; co_quan_don_vi_id?: string | null };
+    const id = normalizeParam(params.id);
     if (!id) {
       return ResponseHelper.badRequest(res, 'Thiếu id đơn vị');
     }
-    const { ma_don_vi, ten_don_vi, co_quan_don_vi_id } = req.body;
+    const { ma_don_vi, ten_don_vi, co_quan_don_vi_id } = body;
     if (!ma_don_vi && !ten_don_vi && co_quan_don_vi_id === undefined) {
       return ResponseHelper.badRequest(res, 'Vui lòng cung cấp thông tin cần cập nhật');
     }
@@ -50,8 +54,9 @@ class UnitController {
   });
 
   getAllSubUnits = catchAsync(async (req: Request, res: Response) => {
-    const { co_quan_don_vi_id } = req.query;
-    const result = await unitService.getAllSubUnits(co_quan_don_vi_id as string | undefined);
+    const query = req.query as { co_quan_don_vi_id?: string };
+    const { co_quan_don_vi_id } = query;
+    const result = await unitService.getAllSubUnits(co_quan_don_vi_id);
     return ResponseHelper.success(res, {
       message: 'Lấy danh sách đơn vị trực thuộc thành công',
       data: result,
@@ -59,7 +64,8 @@ class UnitController {
   });
 
   getUnitById = catchAsync(async (req: Request, res: Response) => {
-    const id = normalizeParam(req.params.id);
+    const params = req.params as { id?: string };
+    const id = normalizeParam(params.id);
     if (!id) {
       return ResponseHelper.badRequest(res, 'Thiếu id đơn vị');
     }
@@ -71,7 +77,8 @@ class UnitController {
   });
 
   deleteUnit = catchAsync(async (req: Request, res: Response) => {
-    const id = normalizeParam(req.params.id);
+    const params = req.params as { id?: string };
+    const id = normalizeParam(params.id);
     if (!id) {
       return ResponseHelper.badRequest(res, 'Thiếu id đơn vị');
     }
@@ -80,7 +87,8 @@ class UnitController {
   });
 
   getMyUnits = catchAsync(async (req: Request, res: Response) => {
-    const userQuanNhanId = req.user!.quan_nhan_id;
+    const user = req.user!;
+    const userQuanNhanId = user.quan_nhan_id;
     if (!userQuanNhanId) {
       return ResponseHelper.badRequest(res, 'Không tìm thấy thông tin quân nhân của tài khoản');
     }

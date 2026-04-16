@@ -5,6 +5,7 @@ import { Table, Select, Alert, Typography, Space, Tag, message, Button, Input, E
 import { EditOutlined, HistoryOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
+import { getApiErrorMessage } from '@/lib/apiError';
 import { ServiceHistoryModal } from './ServiceHistoryModal';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
@@ -132,7 +133,7 @@ export function Step3SetTitlesNienHan({
         }
       }
     } catch (error) {
-      console.error('Lỗi tải dữ liệu danh hiệu niên hạn', error);
+      message.error(getApiErrorMessage(error));
     } finally {
       setLoading(false);
     }

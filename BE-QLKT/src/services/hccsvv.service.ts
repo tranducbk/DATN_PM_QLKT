@@ -1,7 +1,7 @@
 import { prisma } from '../models';
 import ExcelJS from 'exceljs';
 import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHelper';
-import { checkDuplicateAward } from '../helpers/awardValidation';
+
 import profileService from './profile.service';
 import * as notificationHelper from '../helpers/notification';
 import { getDanhHieuName, DANH_HIEU_HCCSVV } from '../constants/danhHieu.constants';
@@ -14,7 +14,7 @@ import { ValidationError, NotFoundError, AppError } from '../middlewares/errorHa
 import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
 import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
 
-interface HccsvvValidItem {
+export interface HccsvvValidItem {
   row: number;
   personnel_id: string;
   ho_ten: string | null;
@@ -496,11 +496,14 @@ class HCCSVVService {
       }
     });
 
-    // Batch query: collect all unique ho_ten values, then query once
+    // Batch query: collect all unique ho_ten + nam values, then query once
     const allHoTen = new Set<string>();
+    const allYears = new Set<number>();
     for (const { row } of rows) {
       const ho_ten = row.getCell(1).value?.toString().trim();
       if (ho_ten) allHoTen.add(ho_ten);
+      const namVal = parseInt(row.getCell(3).value);
+      if (!isNaN(namVal)) allYears.add(namVal);
     }
     const allPersonnel = allHoTen.size > 0
       ? await prisma.quanNhan.findMany({ where: { ho_ten: { in: [...allHoTen] } } })
@@ -510,6 +513,28 @@ class HCCSVVService {
       const list = personnelByName.get(p.ho_ten) ?? [];
       list.push(p);
       personnelByName.set(p.ho_ten, list);
+    }
+
+    const allPersonnelIds = allPersonnel.map(p => p.id);
+    const [hccsvvList, pendingProposals] = await Promise.all([
+      prisma.khenThuongHCCSVV.findMany({
+        where: { quan_nhan_id: { in: allPersonnelIds } },
+      }),
+      prisma.bangDeXuat.findMany({
+        where: {
+          loai_de_xuat: PROPOSAL_TYPES.NIEN_HAN,
+          nam: { in: [...allYears] },
+          status: PROPOSAL_STATUS.APPROVED,
+        },
+      }),
+    ]);
+    const existingHccsvvKeys = new Set(hccsvvList.map(h => `${h.quan_nhan_id}_${h.danh_hieu}`));
+    const proposalsByYear = new Map<number, typeof pendingProposals>();
+    for (const proposal of pendingProposals) {
+      if (proposal.nam == null) continue;
+      const list = proposalsByYear.get(proposal.nam) ?? [];
+      list.push(proposal);
+      proposalsByYear.set(proposal.nam, list);
     }
 
     for (const { row, rowNumber } of rows) {
@@ -591,37 +616,21 @@ class HCCSVVService {
           }
         }
 
-        try {
-          const duplicateCheck = await checkDuplicateAward(
-            personnel.id,
-            nam,
-            danh_hieu,
-            PROPOSAL_TYPES.NIEN_HAN,
-            PROPOSAL_STATUS.APPROVED
-          );
-          if (duplicateCheck.exists) {
-            results.errors.push(
-              `Dòng ${rowNumber}: ${duplicateCheck.message} (Quân nhân: ${ho_ten}, Năm: ${nam}, Danh hiệu: ${danh_hieu})`
-            );
-            results.failed++;
-            continue;
-          }
-        } catch (e) {
-          console.error('hccsvv confirmImport check failed:', e);
-        }
-
-        const existing = await prisma.khenThuongHCCSVV.findUnique({
-          where: {
-            quan_nhan_id_danh_hieu: {
-              quan_nhan_id: personnel.id,
-              danh_hieu: danh_hieu,
-            },
-          },
-        });
-
-        if (existing) {
+        if (existingHccsvvKeys.has(`${personnel.id}_${danh_hieu}`)) {
           results.errors.push(
             `Dòng ${rowNumber}: Quân nhân ${personnel.ho_ten} đã có ${getDanhHieuName(danh_hieu)}`
+          );
+          results.failed++;
+          continue;
+        }
+        const proposalsForYear = proposalsByYear.get(nam) ?? [];
+        const hasPendingProposal = proposalsForYear.some(p => {
+          const dataNienHan = (p.data_nien_han as Array<Record<string, unknown>>) ?? [];
+          return dataNienHan.some(item => item.personnel_id === personnel.id && item.danh_hieu === danh_hieu);
+        });
+        if (hasPendingProposal) {
+          results.errors.push(
+            `Dòng ${rowNumber}: Quân nhân đang có đề xuất ${getDanhHieuName(danh_hieu)} chờ duyệt (Quân nhân: ${ho_ten}, Năm: ${nam}, Danh hiệu: ${danh_hieu})`
           );
           results.failed++;
           continue;

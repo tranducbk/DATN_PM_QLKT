@@ -24,7 +24,7 @@ export async function getPersonnel(params?: {
 }): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get('/api/personnel', { params });
-    return { success: true, data: res.data?.data };
+    return { success: res.data?.success, data: res.data?.data, pagination: res.data?.pagination };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
@@ -37,7 +37,7 @@ export async function getPersonnel(params?: {
 export async function getPersonnelById(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get(`/api/personnel/${id}`);
-    return { success: true, data: res.data?.data };
+    return { success: res.data?.success, data: res.data?.data };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
@@ -50,7 +50,7 @@ export async function getPersonnelById(id: string): Promise<ApiResponse> {
 export async function createPersonnel(body: Record<string, unknown>): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.post('/api/personnel', body);
-    return { success: true, data: res.data?.data };
+    return { success: res.data?.success, data: res.data?.data };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
@@ -63,7 +63,7 @@ export async function createPersonnel(body: Record<string, unknown>): Promise<Ap
 export async function updatePersonnel(id: string, body: Record<string, unknown>): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.put(`/api/personnel/${id}`, body);
-    return { success: true, data: res.data?.data };
+    return { success: res.data?.success, data: res.data?.data };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
@@ -76,7 +76,7 @@ export async function updatePersonnel(id: string, body: Record<string, unknown>)
 export async function deletePersonnel(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete(`/api/personnel/${id}`);
-    return { success: true, data: res.data?.data, message: res.data?.message };
+    return { success: res.data?.success, data: res.data?.data, message: res.data?.message };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
@@ -90,7 +90,7 @@ export async function deletePersonnel(id: string): Promise<ApiResponse> {
 export async function getPositionHistory(personnelId: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get(`/api/personnel/${personnelId}/position-history`);
-    return { success: true, data: res.data?.data };
+    return { success: res.data?.success, data: res.data?.data };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
@@ -107,7 +107,7 @@ export async function createPositionHistory(
   try {
     const res = await axiosInstance.post(`/api/personnel/${personnelId}/position-history`, body);
     return {
-      success: true,
+      success: res.data?.success,
       data: res.data?.data,
       warning: res.data?.warning,
     };
@@ -127,7 +127,7 @@ export async function updatePositionHistory(
   try {
     const res = await axiosInstance.put(`/api/position-history/${id}`, body);
     return {
-      success: true,
+      success: res.data?.success,
       data: res.data?.data,
       warning: res.data?.warning,
     };
@@ -143,7 +143,7 @@ export async function updatePositionHistory(
 export async function deletePositionHistory(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete(`/api/position-history/${id}`);
-    return { success: true, data: res.data?.data };
+    return { success: res.data?.success, data: res.data?.data };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
@@ -193,7 +193,7 @@ export async function importPersonnel(file: File): Promise<ApiResponse> {
         'Content-Type': 'multipart/form-data',
       },
     });
-    return { success: true, data: res.data?.data };
+    return { success: res.data?.success, data: res.data?.data };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }

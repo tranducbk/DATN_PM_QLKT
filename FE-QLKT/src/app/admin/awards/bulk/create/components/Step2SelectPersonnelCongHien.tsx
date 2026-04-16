@@ -128,7 +128,7 @@ export function Step2SelectPersonnelCongHien({
         setPersonnel(personnelData);
       }
     } catch (error: unknown) {
-      console.error('Lỗi tải danh sách quân nhân cống hiến', error);
+      message.error(getApiErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -156,7 +156,7 @@ export function Step2SelectPersonnelCongHien({
 
       setPositionHistoriesMap(historiesMap);
     } catch (error) {
-      console.error('Lỗi tải lịch sử chức vụ cống hiến', error);
+      message.error(getApiErrorMessage(error));
     }
   };
 
@@ -179,7 +179,7 @@ export function Step2SelectPersonnelCongHien({
 
       setContributionProfiles(profilesMap);
     } catch (error) {
-      console.error('Lỗi tải hồ sơ cống hiến', error);
+      message.error(getApiErrorMessage(error));
     }
   };
 

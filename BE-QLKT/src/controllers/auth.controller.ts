@@ -5,7 +5,8 @@ import catchAsync from '../helpers/catchAsync';
 
 class AuthController {
   login = catchAsync(async (req: Request, res: Response) => {
-    const { username, password } = req.body;
+    const body = req.body as { username?: string; password?: string };
+    const { username, password } = body;
 
     if (!username || !password) {
       return ResponseHelper.badRequest(res, 'Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu');
@@ -16,7 +17,8 @@ class AuthController {
   });
 
   refresh = catchAsync(async (req: Request, res: Response) => {
-    const { refreshToken } = req.body;
+    const body = req.body as { refreshToken?: string };
+    const { refreshToken } = body;
 
     if (!refreshToken) {
       return ResponseHelper.badRequest(res, 'Refresh token không được cung cấp');
@@ -27,7 +29,8 @@ class AuthController {
   });
 
   logout = catchAsync(async (req: Request, res: Response) => {
-    const { refreshToken } = req.body;
+    const body = req.body as { refreshToken?: string };
+    const { refreshToken } = body;
 
     if (!refreshToken) {
       return ResponseHelper.badRequest(res, 'Refresh token không được cung cấp');
@@ -38,8 +41,10 @@ class AuthController {
   });
 
   changePassword = catchAsync(async (req: Request, res: Response) => {
-    const { oldPassword, newPassword } = req.body;
-    const userId = req.user!.id;
+    const user = req.user!;
+    const body = req.body as { oldPassword?: string; newPassword?: string };
+    const { oldPassword, newPassword } = body;
+    const userId = user.id;
 
     if (!oldPassword || !newPassword) {
       return ResponseHelper.badRequest(res, 'Vui lòng nhập đầy đủ mật khẩu cũ và mật khẩu mới');

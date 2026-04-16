@@ -1,6 +1,6 @@
 import { PROPOSAL_TYPES, type ProposalType } from '../../constants/proposalTypes.constants';
 import { calculateServiceMonths } from '../../helpers/serviceYearsHelper';
-import { DANH_HIEU_HCCSVV, DANH_HIEU_HCBVTQ } from '../../constants/danhHieu.constants';
+import { DANH_HIEU_HCCSVV, DANH_HIEU_HCBVTQ, DANH_HIEU_CA_NHAN_HANG_NAM, DANH_HIEU_CA_NHAN_CO_BAN } from '../../constants/danhHieu.constants';
 import { prisma } from '../../models';
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -364,8 +364,8 @@ async function submitProposal(
             co_quan_don_vi_cha: coQuanDonViCha,
             so_quyet_dinh: item.so_quyet_dinh || null,
             file_quyet_dinh: item.file_quyet_dinh || null,
-            nhan_bkbqp: item.danh_hieu === 'BKBQP' ? true : false,
-            nhan_bkttcp: item.danh_hieu === 'BKTTCP' ? true : false,
+            nhan_bkbqp: item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP ? true : false,
+            nhan_bkttcp: item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP ? true : false,
           };
         })
       );
@@ -414,9 +414,9 @@ async function submitProposal(
           chuc_vu: item.chuc_vu || null,
           co_quan_don_vi: coQuanDonVi,
           don_vi_truc_thuoc: donViTrucThuoc,
-          nhan_bkbqp: item.danh_hieu === 'BKBQP' ? true : false,
-          nhan_cstdtq: item.danh_hieu === 'CSTDTQ' ? true : false,
-          nhan_bkttcp: item.danh_hieu === 'BKTTCP' ? true : false,
+          nhan_bkbqp: item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP ? true : false,
+          nhan_cstdtq: item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ ? true : false,
+          nhan_bkttcp: item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP ? true : false,
         };
       });
     } else if (
@@ -619,10 +619,10 @@ async function submitProposal(
     // Validation: prevent mixing CSTDCS/CSTT with BKBQP/CSTDTQ.
     if (type === PROPOSAL_TYPES.CA_NHAN_HANG_NAM && dataDanhHieu && dataDanhHieu.length > 0) {
       const hasChinh = dataDanhHieu.some(
-        item => item.danh_hieu === 'CSTDCS' || item.danh_hieu === 'CSTT'
+        item => DANH_HIEU_CA_NHAN_CO_BAN.has(item.danh_hieu)
       );
-      const hasBKBQP = dataDanhHieu.some(item => item.danh_hieu === 'BKBQP');
-      const hasCSTDTQ = dataDanhHieu.some(item => item.danh_hieu === 'CSTDTQ');
+      const hasBKBQP = dataDanhHieu.some(item => item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP);
+      const hasCSTDTQ = dataDanhHieu.some(item => item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ);
 
       if (hasChinh && (hasBKBQP || hasCSTDTQ)) {
         throw new ValidationError(

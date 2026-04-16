@@ -1005,6 +1005,8 @@ class PersonnelService {
   /**
    * Imports personnel from an Excel buffer.
    * Supported columns: CCCD, name, birth date, enlistment date, unit code, position.
+   * @param buffer - Excel file buffer.
+   * @returns Import summary with created/updated counts and per-row errors.
    */
   async importFromExcelBuffer(buffer) {
     const workbook = await loadWorkbook(buffer);
@@ -1027,11 +1029,101 @@ class PersonnelService {
       }
     }
 
+    /** Normalize diverse cell value types to Date or null. */
+    const parseDate = val => {
+      if (!val) return null;
+      if (val instanceof Date) return val;
+      if (typeof val === 'object' && val?.result) return new Date(val.result);
+      const s = String(val).trim();
+      if (!s) return null;
+      const d = new Date(s);
+      return isNaN(d.getTime()) ? null : d;
+    };
+
+    // Pre-pass: collect unique unit codes and CCCDs from all data rows.
+    const allMaDonVi = new Set<string>();
+    const allCccds = new Set<string>();
+
+    for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
+      const row = worksheet.getRow(rowNumber);
+      const cccd = this.parseCCCD(row.getCell(headerMap['cccd']).value);
+      const maDonVi = String(row.getCell(headerMap['mã đơn vị']).value || '').trim();
+      if (cccd) allCccds.add(cccd);
+      if (maDonVi) allMaDonVi.add(maDonVi);
+    }
+
+    const maDonViList = [...allMaDonVi];
+    const cccdList = [...allCccds];
+
+    // Batch 1: fetch units and existing personnel in parallel.
+    const [coQuanDonViRows, donViTrucThuocRows, existingPersonnelRows] = await Promise.all([
+      prisma.coQuanDonVi.findMany({ where: { ma_don_vi: { in: maDonViList } } }),
+      prisma.donViTrucThuoc.findMany({ where: { ma_don_vi: { in: maDonViList } } }),
+      prisma.quanNhan.findMany({ where: { cccd: { in: cccdList } } }),
+    ]);
+
+    const coQuanDonViByCode = new Map(
+      coQuanDonViRows.map(u => [u.ma_don_vi, u] as const)
+    );
+    const donViTrucThuocByCode = new Map(
+      donViTrucThuocRows.map(u => [u.ma_don_vi, u] as const)
+    );
+    const existingPersonnelByCccd = new Map(
+      existingPersonnelRows.map(p => [p.cccd, p] as const)
+    );
+
+    // Collect all resolved unit IDs so positions can be batch-fetched per unit.
+    const allUnitIds = new Set<string>();
+    for (const maDonVi of maDonViList) {
+      const unit = coQuanDonViByCode.get(maDonVi) || donViTrucThuocByCode.get(maDonVi);
+      if (unit) allUnitIds.add(unit.id);
+    }
+
+    const existingPersonnelIds = existingPersonnelRows.map(p => p.id);
+
+    // Batch 2: fetch positions for all resolved units and open position histories for existing personnel.
+    const [chucVuRows, openHistoryRows] = await Promise.all([
+      prisma.chucVu.findMany({
+        where: {
+          OR: [
+            { co_quan_don_vi_id: { in: [...allUnitIds] } },
+            { don_vi_truc_thuoc_id: { in: [...allUnitIds] } },
+          ],
+        },
+      }),
+      prisma.lichSuChucVu.findMany({
+        where: {
+          quan_nhan_id: { in: existingPersonnelIds },
+          ngay_ket_thuc: null,
+        },
+      }),
+    ]);
+
+    // Composite key: `${unitId}_${ten_chuc_vu}` → position record.
+    const chucVuByUnitAndName = new Map(
+      chucVuRows.flatMap(cv => {
+        const keys: [string, typeof cv][] = [];
+        if (cv.co_quan_don_vi_id) keys.push([`${cv.co_quan_don_vi_id}_${cv.ten_chuc_vu}`, cv]);
+        if (cv.don_vi_truc_thuoc_id) keys.push([`${cv.don_vi_truc_thuoc_id}_${cv.ten_chuc_vu}`, cv]);
+        return keys;
+      })
+    );
+
+    // Position coefficient lookup by position id (populated from the same batch).
+    const chucVuById = new Map(chucVuRows.map(cv => [cv.id, cv] as const));
+
+    // Open histories grouped by personnel id.
+    const openHistoriesByPersonnelId = new Map<string, typeof openHistoryRows>();
+    for (const history of openHistoryRows) {
+      const list = openHistoriesByPersonnelId.get(history.quan_nhan_id) ?? [];
+      list.push(history);
+      openHistoriesByPersonnelId.set(history.quan_nhan_id, list);
+    }
+
     const created = [];
     const updated = [];
     const errors = [];
 
-    // Iterate data rows.
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
       const row = worksheet.getRow(rowNumber);
       const cccd = this.parseCCCD(row.getCell(headerMap['cccd']).value);
@@ -1051,28 +1143,16 @@ class PersonnelService {
         continue;
       }
 
-      // Find unit in either parent-unit or child-unit tables.
-      const [coQuanDonVi, donViTrucThuoc] = await Promise.all([
-        prisma.coQuanDonVi.findUnique({ where: { ma_don_vi } }),
-        prisma.donViTrucThuoc.findUnique({ where: { ma_don_vi } }),
-      ]);
-
+      // Resolve unit from pre-fetched maps (DVTT takes priority on read — CQDV is parent).
+      const coQuanDonVi = coQuanDonViByCode.get(ma_don_vi);
+      const donViTrucThuoc = donViTrucThuocByCode.get(ma_don_vi);
       const unit = coQuanDonVi || donViTrucThuoc;
       if (!unit) {
-        errors.push({
-          row: rowNumber,
-          error: `Không tìm thấy đơn vị với mã ${ma_don_vi}`,
-        });
+        errors.push({ row: rowNumber, error: `Không tìm thấy đơn vị với mã ${ma_don_vi}` });
         continue;
       }
 
-      // Find matching position in the resolved unit.
-      const position = await prisma.chucVu.findFirst({
-        where: {
-          ten_chuc_vu,
-          OR: [{ co_quan_don_vi_id: unit.id }, { don_vi_truc_thuoc_id: unit.id }],
-        },
-      });
+      const position = chucVuByUnitAndName.get(`${unit.id}_${ten_chuc_vu}`);
       if (!position) {
         errors.push({
           row: rowNumber,
@@ -1081,22 +1161,10 @@ class PersonnelService {
         continue;
       }
 
-      // Normalize date cells.
-      const parseDate = val => {
-        if (!val) return null;
-        if (val instanceof Date) return val;
-        if (typeof val === 'object' && val?.result) return new Date(val.result);
-        const s = String(val).trim();
-        if (!s) return null;
-        const d = new Date(s);
-        return isNaN(d.getTime()) ? null : d;
-      };
-
       const ngay_sinh = parseDate(ngay_sinhRaw);
       const ngay_nhap_ngu = parseDate(ngay_nhap_nguRaw);
 
-      // Create or update by CCCD.
-      const existing = await prisma.quanNhan.findUnique({ where: { cccd } });
+      const existing = existingPersonnelByCccd.get(cccd);
       const isCoQuanDonVi = !!coQuanDonVi;
 
       if (!existing) {
@@ -1116,11 +1184,8 @@ class PersonnelService {
           personnelData.don_vi_truc_thuoc_id = unit.id;
         }
 
-        const newPersonnel = await prisma.quanNhan.create({
-          data: personnelData,
-        });
+        const newPersonnel = await prisma.quanNhan.create({ data: personnelData });
 
-        // Increment unit personnel count.
         if (isCoQuanDonVi) {
           await prisma.coQuanDonVi.update({
             where: { id: unit.id },
@@ -1133,19 +1198,12 @@ class PersonnelService {
           });
         }
 
-        // Load position coefficient for history row.
-        const chucVuForHistory = await prisma.chucVu.findUnique({
-          where: { id: position.id },
-          select: { he_so_chuc_vu: true },
-        });
-
-        // Create initial `LichSuChucVu` row.
         const ngayBatDau = ngay_nhap_ngu || new Date();
         await prisma.lichSuChucVu.create({
           data: {
             quan_nhan_id: newPersonnel.id,
             chuc_vu_id: position.id,
-            he_so_chuc_vu: Number(chucVuForHistory?.he_so_chuc_vu ?? 0),
+            he_so_chuc_vu: Number(chucVuById.get(position.id)?.he_so_chuc_vu ?? 0),
             ngay_bat_dau: ngayBatDau,
             ngay_ket_thuc: null,
             so_thang: null,
@@ -1154,7 +1212,7 @@ class PersonnelService {
 
         created.push(newPersonnel.id);
       } else {
-        // Check unit transfer (child unit has priority).
+        // DVTT takes priority when determining the effective unit id.
         const oldUnitId = existing.don_vi_truc_thuoc_id || existing.co_quan_don_vi_id;
         const newUnitId = unit.id;
         const oldIsCoQuanDonVi = !existing.don_vi_truc_thuoc_id && !!existing.co_quan_don_vi_id;
@@ -1179,9 +1237,7 @@ class PersonnelService {
           data: updateData,
         });
 
-        // Update counts when unit changed.
         if (oldUnitId !== newUnitId) {
-          // Decrement old unit count.
           if (oldUnitId) {
             if (oldIsCoQuanDonVi) {
               await prisma.coQuanDonVi.update({
@@ -1196,7 +1252,6 @@ class PersonnelService {
             }
           }
 
-          // Increment new unit count.
           if (isCoQuanDonVi) {
             await prisma.coQuanDonVi.update({
               where: { id: newUnitId },
@@ -1210,18 +1265,11 @@ class PersonnelService {
           }
         }
 
-        // Update history when position changed.
         if (position.id !== existing.chuc_vu_id) {
           const today = new Date();
+          const openHistories = openHistoriesByPersonnelId.get(existing.id) ?? [];
 
-          const oldHistoriesImport = await prisma.lichSuChucVu.findMany({
-            where: {
-              quan_nhan_id: existing.id,
-              ngay_ket_thuc: null,
-            },
-          });
-
-          for (const oldHistory of oldHistoriesImport) {
+          for (const oldHistory of openHistories) {
             const ngayBatDauOld = new Date(oldHistory.ngay_bat_dau);
             let months = (today.getFullYear() - ngayBatDauOld.getFullYear()) * 12;
             months += today.getMonth() - ngayBatDauOld.getMonth();
@@ -1232,23 +1280,15 @@ class PersonnelService {
 
             await prisma.lichSuChucVu.update({
               where: { id: oldHistory.id },
-              data: {
-                ngay_ket_thuc: today,
-                so_thang: soThangOld,
-              },
+              data: { ngay_ket_thuc: today, so_thang: soThangOld },
             });
           }
-
-          const newChucVuForImport = await prisma.chucVu.findUnique({
-            where: { id: position.id },
-            select: { he_so_chuc_vu: true },
-          });
 
           await prisma.lichSuChucVu.create({
             data: {
               quan_nhan_id: existing.id,
               chuc_vu_id: position.id,
-              he_so_chuc_vu: Number(newChucVuForImport?.he_so_chuc_vu ?? 0),
+              he_so_chuc_vu: Number(chucVuById.get(position.id)?.he_so_chuc_vu ?? 0),
               ngay_bat_dau: today,
               ngay_ket_thuc: null,
               so_thang: null,

@@ -2,11 +2,13 @@ import { Router, Request, Response } from 'express';
 import proposalController from '../controllers/proposal.controller';
 import awardBulkController from '../controllers/awardBulk.controller';
 import { verifyToken, checkRole, requireAdmin } from '../middlewares/auth';
+import { validate } from '../middlewares/validate';
 import { auditLog } from '../middlewares/auditLog';
 import { getLogDescription, getResourceId } from '../helpers/auditLog';
 import { ROLES } from '../constants/roles.constants';
 import { excelUpload as upload, bulkUpload } from '../configs/multer';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { awardBulkValidation } from '../validations';
 
 const router = Router();
 
@@ -81,6 +83,7 @@ router.post(
   verifyToken,
   requireAdmin,
   bulkUpload.fields([{ name: 'attached_files', maxCount: 10 }]),
+  validate(awardBulkValidation.bulkCreateAwards),
   auditLog({
     action: AUDIT_ACTIONS.BULK,
     resource: 'awards',
@@ -91,41 +94,19 @@ router.post(
         const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
         const result = (data as Record<string, unknown>)?.data || data || {};
 
-        // Parse request body
+        // Validate middleware already coerces fields (e.g. JSON strings to arrays).
         const type = req.body?.type || '';
-        const nam = req.body?.nam || '';
-        let selectedPersonnel = req.body?.selected_personnel || [];
-        let selectedUnits = req.body?.selected_units || [];
-        let titleData = req.body?.title_data || [];
-
-        if (typeof selectedPersonnel === 'string') {
-          try {
-            selectedPersonnel = JSON.parse(selectedPersonnel);
-          } catch {
-            // Ignore
-          }
-        }
-        if (typeof selectedUnits === 'string') {
-          try {
-            selectedUnits = JSON.parse(selectedUnits);
-          } catch {
-            // Ignore
-          }
-        }
-        if (typeof titleData === 'string') {
-          try {
-            titleData = JSON.parse(titleData);
-          } catch {
-            // Ignore
-          }
-        }
+        const nam = req.body?.nam ?? null;
+        const selectedPersonnel = req.body?.selected_personnel || [];
+        const selectedUnits = req.body?.selected_units || [];
+        const titleData = req.body?.title_data || [];
 
         const resultObj = result as Record<string, unknown>;
         const files = req.files as Record<string, Express.Multer.File[]> | undefined;
 
         return {
           type,
-          nam: nam ? parseInt(nam) : null,
+          nam,
           selected_personnel_count: Array.isArray(selectedPersonnel) ? selectedPersonnel.length : 0,
           selected_units_count: Array.isArray(selectedUnits) ? selectedUnits.length : 0,
           title_data_count: Array.isArray(titleData) ? titleData.length : 0,

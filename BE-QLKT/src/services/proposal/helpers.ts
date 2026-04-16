@@ -2,6 +2,7 @@ import path from 'path';
 import { parseCCCD as parseCCCDHelper } from '../../helpers/cccdHelper';
 import { ValidationError } from '../../middlewares/errorHandler';
 import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
+import { DANH_HIEU_NCKH, DANH_HIEU_CA_NHAN_HANG_NAM } from '../../constants/danhHieu.constants';
 import type { Row, Worksheet, CellValue } from 'exceljs';
 
 export const SHEET_NAMES = {
@@ -28,7 +29,7 @@ export const CELL_INDICES = {
   STATUS: 6,
 } as const;
 
-export const VALID_LOAI_THANH_TICH = ['DTKH', 'SKKH'] as const;
+export const VALID_NCKH: readonly string[] = Object.values(DANH_HIEU_NCKH);
 export const VALID_STATUS = [PROPOSAL_STATUS.APPROVED, PROPOSAL_STATUS.PENDING] as const;
 export const SAMPLE_ROW_KEYWORDS = ['ví dụ', 'example'] as const;
 
@@ -176,8 +177,8 @@ export function parseDanhHieuRow(row: Row, rowNumber: number): ParsedDanhHieu | 
   const so_quyet_dinh_bkttcp = parseCellToString(row.getCell(CELL_INDICES.SO_QUYET_DINH_BKTTCP));
 
   let danh_hieu: string | null = null;
-  if (cstdcs_checked) danh_hieu = 'CSTDCS';
-  else if (cstt_checked) danh_hieu = 'CSTT';
+  if (cstdcs_checked) danh_hieu = DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS;
+  else if (cstt_checked) danh_hieu = DANH_HIEU_CA_NHAN_HANG_NAM.CSTT;
 
   return {
     cccd,
@@ -198,7 +199,7 @@ export function parseDanhHieuRow(row: Row, rowNumber: number): ParsedDanhHieu | 
  * @param row - `exceljs` row iterator payload
  * @param rowNumber - 1-based index (reserved for diagnostics)
  * @returns `ParsedThanhTich`, or `null` when mandatory cells are missing
- * @throws ValidationError - `loai` ∉ `VALID_LOAI_THANH_TICH` or `status` ∉ `VALID_STATUS`
+ * @throws ValidationError - `loai` ∉ `VALID_NCKH` or `status` ∉ `VALID_STATUS`
  */
 export function parseThanhTichRow(row: Row, rowNumber: number): ParsedThanhTich | null {
   const cccdCell = row.getCell(CELL_INDICES.CCCD);
@@ -224,9 +225,9 @@ export function parseThanhTichRow(row: Row, rowNumber: number): ParsedThanhTich 
     return null;
   }
 
-  if (!(VALID_LOAI_THANH_TICH as readonly string[]).includes(loai)) {
+  if (!(VALID_NCKH as readonly string[]).includes(loai)) {
     throw new ValidationError(
-      `Loại thành tích không hợp lệ: ${loai} (chỉ chấp nhận ${VALID_LOAI_THANH_TICH.join(
+      `Loại thành tích không hợp lệ: ${loai} (chỉ chấp nhận ${VALID_NCKH.join(
         ' hoặc '
       )})`
     );
@@ -314,7 +315,7 @@ export function calculateContinuousCSTDCS(
   let expectedYear = (currentYear || new Date().getFullYear()) - 1;
 
   for (const reward of sortedRewards) {
-    if (reward.danh_hieu === 'CSTDCS' && reward.nam === expectedYear) {
+    if (reward.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS && reward.nam === expectedYear) {
       count++;
       expectedYear--;
     } else if (reward.nam < expectedYear) {

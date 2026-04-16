@@ -11,11 +11,12 @@ import { notifyOnImport } from '../helpers/notification';
 
 class ContributionAwardController {
   getTemplate = catchAsync(async (req: Request, res: Response) => {
-    const personnelIds = parsePersonnelIdsFromQuery(req.query);
+    const query = req.query as { repeat_map?: string };
+    const personnelIds = parsePersonnelIdsFromQuery(query);
     const repeatMap: Record<string, number> = {};
-    if (req.query.repeat_map) {
+    if (query.repeat_map) {
       try {
-        Object.assign(repeatMap, JSON.parse(req.query.repeat_map as string));
+        Object.assign(repeatMap, JSON.parse(query.repeat_map));
       } catch (e) { console.error('Invalid repeat_map JSON:', e); }
     }
 
@@ -31,17 +32,19 @@ class ContributionAwardController {
   });
 
   previewImport = catchAsync(async (req: Request, res: Response) => {
-    if (!req.file) return ResponseHelper.badRequest(res, 'Vui lòng upload file Excel');
+    const user = req.user!;
+    const file = req.file;
+    if (!file) return ResponseHelper.badRequest(res, 'Vui lòng upload file Excel');
 
-    const result = await contributionAwardService.previewImport(req.file.buffer);
+    const result = await contributionAwardService.previewImport(file.buffer);
     await writeSystemLog({
-      userId: req.user!.id,
-      userRole: req.user!.role,
+      userId: user.id,
+      userRole: user.role,
       action: AUDIT_ACTIONS.IMPORT_PREVIEW,
       resource: 'contribution-awards',
-      description: `Tải lên file "${Buffer.from(req.file.originalname, 'latin1').toString('utf8')}" để review Huân chương Bảo vệ Tổ quốc: ${result.valid?.length ?? 0} hợp lệ, ${result.errors?.length ?? 0} lỗi`,
+      description: `Tải lên file "${Buffer.from(file.originalname, 'latin1').toString('utf8')}" để review Huân chương Bảo vệ Tổ quốc: ${result.valid?.length ?? 0} hợp lệ, ${result.errors?.length ?? 0} lỗi`,
       payload: {
-        filename: Buffer.from(req.file.originalname, 'latin1').toString('utf8'),
+        filename: Buffer.from(file.originalname, 'latin1').toString('utf8'),
         total: result.total,
         errors: result.errors?.length ?? 0,
       },
@@ -50,25 +53,29 @@ class ContributionAwardController {
   });
 
   confirmImport = catchAsync(async (req: Request, res: Response) => {
-    const { items } = req.body;
-    const result = await contributionAwardService.confirmImport(items, req.user!.id);
+    const user = req.user!;
+    const body = req.body as { items?: any[] };
+    const { items } = body;
+    const result = await contributionAwardService.confirmImport(items, user.id);
     await writeSystemLog({
-      userId: req.user!.id,
-      userRole: req.user!.role,
+      userId: user.id,
+      userRole: user.role,
       action: AUDIT_ACTIONS.IMPORT,
       resource: 'contribution-awards',
       description: `Nhập dữ liệu huân chương bảo vệ tổ quốc thành công: ${result.imported ?? items.length} bản ghi`,
       payload: { imported: result.imported ?? items.length },
     });
     const personnelIds = items.map((i: { personnel_id: string }) => i.personnel_id);
-    notifyOnImport(req.user!.id, 'contribution-awards', result.imported ?? items.length, personnelIds).catch((e) => { console.error('[contribution-awards] notifyOnImport failed:', e); });
+    notifyOnImport(user.id, 'contribution-awards', result.imported ?? items.length, personnelIds).catch((e) => { console.error('[contribution-awards] notifyOnImport failed:', e); });
     return ResponseHelper.success(res, { data: result, message: 'Thao tác thành công' });
   });
 
   getAll = catchAsync(async (req: Request, res: Response) => {
-    const userRole = req.user!.role;
-    const { don_vi_id, nam, danh_hieu, ho_ten } = req.query;
-    const { page, limit } = parsePagination(req.query);
+    const user = req.user!;
+    const query = req.query as { don_vi_id?: string; nam?: number; danh_hieu?: string; ho_ten?: string };
+    const { don_vi_id, nam, danh_hieu, ho_ten } = query;
+    const userRole = user.role;
+    const { page, limit } = parsePagination(query);
 
     const filters: Record<string, unknown> = {};
     if (don_vi_id) filters.don_vi_id = don_vi_id;
@@ -96,7 +103,9 @@ class ContributionAwardController {
   });
 
   exportToExcel = catchAsync(async (req: Request, res: Response) => {
-    const { don_vi_id, nam, danh_hieu } = req.query;
+    const user = req.user!;
+    const query = req.query as { don_vi_id?: string; nam?: number; danh_hieu?: string };
+    const { don_vi_id, nam, danh_hieu } = query;
 
     const filters: Record<string, unknown> = {};
     if (don_vi_id) filters.don_vi_id = don_vi_id;
@@ -104,7 +113,7 @@ class ContributionAwardController {
     if (danh_hieu) filters.danh_hieu = danh_hieu;
 
     const managerUnit = await getManagerUnitFilter(req);
-    if (managerUnit === null && req.user!.role === ROLES.MANAGER) {
+    if (managerUnit === null && user.role === ROLES.MANAGER) {
       return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
     }
     if (managerUnit) {
@@ -131,7 +140,8 @@ class ContributionAwardController {
   });
 
   deleteAward = catchAsync(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const params = req.params as { id?: string };
+    const { id } = params;
     const adminUsername = getAdminUsername(req);
     const result = await contributionAwardService.deleteAward(String(id), adminUsername);
     return ResponseHelper.success(res, { message: result.message });

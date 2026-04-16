@@ -7,9 +7,11 @@ import { ADHOC_TYPE } from '../constants/adhocType.constants';
 
 class ProfileController {
   getAnnualProfile = catchAsync(async (req: Request, res: Response) => {
-    const { personnel_id } = req.params;
-    const { year } = req.query;
-    const yearNumber = year ? parseInt(year as string, 10) : null;
+    const params = req.params as { personnel_id: string };
+    const query = req.query as { year?: number };
+    const { personnel_id } = params;
+    const { year } = query;
+    const yearNumber = year ?? null;
     if (yearNumber) await profileService.recalculateAnnualProfile(personnel_id, yearNumber);
     const result = await profileService.getAnnualProfile(personnel_id);
     return ResponseHelper.success(res, {
@@ -19,7 +21,8 @@ class ProfileController {
   });
 
   getTenureProfile = catchAsync(async (req: Request, res: Response) => {
-    const { personnel_id } = req.params;
+    const params = req.params as { personnel_id: string };
+    const { personnel_id } = params;
     await profileService.recalculateTenureProfile(personnel_id);
     const result = await profileService.getTenureProfile(personnel_id);
     return ResponseHelper.success(res, {
@@ -29,7 +32,8 @@ class ProfileController {
   });
 
   getContributionProfile = catchAsync(async (req: Request, res: Response) => {
-    const { personnel_id } = req.params;
+    const params = req.params as { personnel_id: string };
+    const { personnel_id } = params;
     await profileService.recalculateContributionProfile(personnel_id);
     const result = await profileService.getContributionProfile(personnel_id);
     return ResponseHelper.success(res, {
@@ -39,9 +43,11 @@ class ProfileController {
   });
 
   recalculateProfile = catchAsync(async (req: Request, res: Response) => {
-    const { personnel_id } = req.params;
-    const { year } = req.query;
-    const yearNumber = year ? parseInt(year as string, 10) : null;
+    const params = req.params as { personnel_id: string };
+    const query = req.query as { year?: number };
+    const { personnel_id } = params;
+    const { year } = query;
+    const yearNumber = year ?? null;
     const result = await profileService.recalculateAnnualProfile(personnel_id, yearNumber);
     return ResponseHelper.success(res, { message: result.message });
   });
@@ -55,7 +61,8 @@ class ProfileController {
   });
 
   checkEligibility = catchAsync(async (req: Request, res: Response) => {
-    const { items } = req.body;
+    const body = req.body as { items?: Array<Record<string, unknown>> };
+    const { items } = body;
     if (!items || !Array.isArray(items) || items.length === 0) {
       return ResponseHelper.badRequest(res, 'Thiếu danh sách cần kiểm tra');
     }
@@ -105,8 +112,10 @@ class ProfileController {
   });
 
   updateTenureProfile = catchAsync(async (req: Request, res: Response) => {
-    const { personnel_id } = req.params;
-    const updates = req.body;
+    const params = req.params as { personnel_id: string };
+    const body = req.body as { [key: string]: unknown };
+    const { personnel_id } = params;
+    const updates = body;
     const result = await profileService.updateTenureProfile(personnel_id, updates);
     return ResponseHelper.success(res, {
       message: 'Cập nhật hồ sơ Huy chương Chiến sĩ vẻ vang thành công',

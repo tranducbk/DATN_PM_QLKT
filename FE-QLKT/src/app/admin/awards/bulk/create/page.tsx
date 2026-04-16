@@ -210,7 +210,7 @@ export default function BulkAddAwardsPage() {
       const personnelData = responses.filter(r => r.success).map(r => r.data);
       setPersonnelDetails(personnelData);
     } catch (error) {
-      console.error('Lỗi tải thông tin quân nhân/đơn vị để review import', error);
+      antMessage.error(getApiErrorMessage(error));
     }
   };
 

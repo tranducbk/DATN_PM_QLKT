@@ -45,19 +45,6 @@ router.post(
 );
 
 /**
- * @route   POST /api/military-flag/import
- * @desc    Import Huy chương Quân kỳ Quyết thắng từ file Excel (legacy)
- * @access  ADMIN, MANAGER
- */
-router.post(
-  '/import',
-  verifyToken,
-  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
-  upload.single('file'),
-  militaryFlagController.importFromExcel
-);
-
-/**
  * @route   GET /api/military-flag
  * @desc    Lấy danh sách Huy chương Quân kỳ Quyết thắng (Admin: tất cả, Manager: đơn vị mình)
  * @access  ADMIN, MANAGER

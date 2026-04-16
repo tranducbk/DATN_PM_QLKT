@@ -5,6 +5,7 @@ import { Table, Select, Alert, Typography, Space, Tag, Button, message, Empty } 
 import { EditOutlined, HistoryOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
+import { getApiErrorMessage } from '@/lib/apiError';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
 import { UnitAnnualAwardHistoryModal } from './UnitAnnualAwardHistoryModal';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
@@ -139,7 +140,7 @@ export function Step3SetTitlesDonViHangNam({
         }
       }
     } catch (error) {
-      console.error('Lỗi tải dữ liệu danh hiệu đơn vị', error);
+      message.error(getApiErrorMessage(error));
     } finally {
       setLoading(false);
     }

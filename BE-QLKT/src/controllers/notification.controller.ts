@@ -6,15 +6,16 @@ import catchAsync from '../helpers/catchAsync';
 
 class NotificationController {
   getNotifications = catchAsync(async (req: Request, res: Response) => {
-    const { page, limit } = parsePagination(req.query);
-    const { isRead, type } = req.query;
+    const query = req.query as { isRead?: string; type?: string };
+    const { page, limit } = parsePagination(query);
     const currentUser = req.user!;
+    const { isRead, type } = query;
 
     const result = await notificationService.getNotificationsByUserId(currentUser.id, {
       page,
       limit,
       isRead: isRead !== undefined ? isRead === 'true' : undefined,
-      type: type as string,
+      type,
     });
 
     return ResponseHelper.success(res, {
@@ -27,7 +28,8 @@ class NotificationController {
   });
 
   getUnreadCount = catchAsync(async (req: Request, res: Response) => {
-    const count = await notificationService.getUnreadCount(req.user!.id);
+    const user = req.user!;
+    const count = await notificationService.getUnreadCount(user.id);
     return ResponseHelper.success(res, {
       message: 'Lấy số lượng thông báo chưa đọc thành công',
       data: { count },
@@ -35,14 +37,17 @@ class NotificationController {
   });
 
   markAsRead = catchAsync(async (req: Request, res: Response) => {
-    const id = normalizeParam(req.params.id);
+    const user = req.user!;
+    const params = req.params as { id?: string };
+    const id = normalizeParam(params.id);
     if (!id) return ResponseHelper.badRequest(res, 'ID thông báo không hợp lệ');
-    const updated = await notificationService.markAsRead(id, req.user!.id);
+    const updated = await notificationService.markAsRead(id, user.id);
     return ResponseHelper.success(res, { message: 'Đánh dấu đã đọc thành công', data: updated });
   });
 
   markAllAsRead = catchAsync(async (req: Request, res: Response) => {
-    const result = await notificationService.markAllAsRead(req.user!.id);
+    const user = req.user!;
+    const result = await notificationService.markAllAsRead(user.id);
     return ResponseHelper.success(res, {
       message: 'Đánh dấu tất cả đã đọc thành công',
       data: { count: result.count },
@@ -50,14 +55,17 @@ class NotificationController {
   });
 
   deleteNotification = catchAsync(async (req: Request, res: Response) => {
-    const id = normalizeParam(req.params.id);
+    const user = req.user!;
+    const params = req.params as { id?: string };
+    const id = normalizeParam(params.id);
     if (!id) return ResponseHelper.badRequest(res, 'ID thông báo không hợp lệ');
-    await notificationService.deleteNotification(id, req.user!.id);
+    await notificationService.deleteNotification(id, user.id);
     return ResponseHelper.success(res, { message: 'Xóa thông báo thành công' });
   });
 
   deleteAllNotifications = catchAsync(async (req: Request, res: Response) => {
-    const result = await notificationService.deleteAllNotifications(req.user!.id);
+    const user = req.user!;
+    const result = await notificationService.deleteAllNotifications(user.id);
     return ResponseHelper.success(res, { message: result.message });
   });
 }

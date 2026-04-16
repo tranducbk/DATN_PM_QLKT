@@ -4,12 +4,13 @@ import annualRewardService from './annualReward.service';
 import unitAnnualAwardService from './unitAnnualAward.service';
 import scientificAchievementService from './scientificAchievement.service';
 import * as notificationHelper from '../helpers/notification';
+import { writeSystemLog } from '../helpers/systemLogHelper';
 import {
   getDanhHieuName,
   DANH_HIEU_MAP,
   DANH_HIEU_CA_NHAN_HANG_NAM,
-  UNIT_DV_TITLES,
-  UNIT_BK_TITLES,
+  DANH_HIEU_DON_VI_CO_BAN,
+  DANH_HIEU_DON_VI_BANG_KHEN,
   DANH_HIEU_HCCSVV,
   DANH_HIEU_HCBVTQ,
 } from '../constants/danhHieu.constants';
@@ -18,6 +19,7 @@ import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { AppError, NotFoundError, ValidationError } from '../middlewares/errorHandler';
 import type { QuanNhan } from '../generated/prisma';
 import { GENDER } from '../constants/gender.constants';
+import { VALID_NCKH } from './proposal/helpers';
 
 interface ServiceYears {
   years: number;
@@ -25,7 +27,7 @@ interface ServiceYears {
   totalMonths: number;
 }
 
-interface TitleDataItem {
+export interface TitleDataItem {
   personnel_id: string;
   danh_hieu: string;
   cap_bac?: string | null;
@@ -214,8 +216,8 @@ class AwardBulkService {
 
       const existing = awardMap.get(donViId);
       if (existing) {
-        const isDv = UNIT_DV_TITLES.has(danhHieu);
-        const isBk = UNIT_BK_TITLES.has(danhHieu);
+        const isDv = DANH_HIEU_DON_VI_CO_BAN.has(danhHieu);
+        const isBk = DANH_HIEU_DON_VI_BANG_KHEN.has(danhHieu);
 
         if (isDv && existing.danh_hieu) {
           duplicateErrors.push(
@@ -239,7 +241,7 @@ class AwardBulkService {
           duplicateErrors.push(`Đơn vị đã có BK năm ${nam}, không thể thêm ${getDanhHieuName(danhHieu)}`);
           continue;
         }
-        if (isBk && existing.danh_hieu && UNIT_DV_TITLES.has(existing.danh_hieu)) {
+        if (isBk && existing.danh_hieu && DANH_HIEU_DON_VI_CO_BAN.has(existing.danh_hieu)) {
           duplicateErrors.push(`Đơn vị đã có ${getDanhHieuName(existing.danh_hieu)} năm ${nam}, không thể thêm ${getDanhHieuName(danhHieu)}`);
           continue;
         }
@@ -373,9 +375,10 @@ class AwardBulkService {
 
       if (type === PROPOSAL_TYPES.NCKH) {
         for (const item of titleData) {
-          if (!item.loai || !['DTKH', 'SKKH'].includes(item.loai)) {
+          const validLoai = VALID_NCKH as readonly string[];
+          if (!item.loai || !validLoai.includes(item.loai)) {
             errors.push(
-              `Thành tích khoa học phải có loại là "DTKH" hoặc "SKKH" (quân nhân: ${item.personnel_id})`
+              `Thành tích khoa học phải có loại hợp lệ: ${VALID_NCKH.join(', ')} (quân nhân: ${item.personnel_id})`
             );
           }
           if (!item.mo_ta || item.mo_ta.trim() === '') {
@@ -385,26 +388,22 @@ class AwardBulkService {
       }
 
       if (type === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
-        const validDanhHieus = ['ĐVQT', 'ĐVTT', 'BKBQP', 'BKTTCP'];
+        const allowedDanhHieu = [...DANH_HIEU_DON_VI_CO_BAN, ...DANH_HIEU_DON_VI_BANG_KHEN];
         for (const item of titleData) {
-          if (!item.danh_hieu || !validDanhHieus.includes(item.danh_hieu)) {
+          if (!item.danh_hieu || !allowedDanhHieu.includes(item.danh_hieu)) {
             errors.push(
-              `Danh hiệu đơn vị không hợp lệ: ${
-                item.danh_hieu
-              }. Chỉ chấp nhận: ${validDanhHieus.join(', ')}`
+              `Danh hiệu đơn vị không hợp lệ: ${item.danh_hieu}. Chỉ chấp nhận: ${allowedDanhHieu.join(', ')}`
             );
           }
         }
       }
 
       if (type === PROPOSAL_TYPES.CA_NHAN_HANG_NAM) {
-        const validDanhHieus = ['CSTDCS', 'CSTT', 'BKBQP', 'CSTDTQ', 'BKTTCP'];
+        const allowedDanhHieu = Object.values(DANH_HIEU_CA_NHAN_HANG_NAM) as string[];
         for (const item of titleData) {
-          if (!item.danh_hieu || !validDanhHieus.includes(item.danh_hieu)) {
+          if (!item.danh_hieu || !allowedDanhHieu.includes(item.danh_hieu)) {
             errors.push(
-              `Danh hiệu không hợp lệ: ${item.danh_hieu}. Chỉ chấp nhận: ${validDanhHieus.join(
-                ', '
-              )}`
+              `Danh hiệu không hợp lệ: ${item.danh_hieu}. Chỉ chấp nhận: ${allowedDanhHieu.join(', ')}`
             );
           }
         }
@@ -412,6 +411,18 @@ class AwardBulkService {
 
       if (errors.length > 0) {
         throw new ValidationError(`Phát hiện lỗi validation:\n${errors.join('\n')}`);
+      }
+
+      // Single batch for branches that only need basic personnel fields
+      const personnelMap = new Map<string, QuanNhan>();
+      if (
+        type === PROPOSAL_TYPES.HC_QKQT ||
+        type === PROPOSAL_TYPES.NIEN_HAN ||
+        type === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN
+      ) {
+        const personnelIds = titleData.map(item => item.personnel_id as string).filter(Boolean);
+        const personnel = await prisma.quanNhan.findMany({ where: { id: { in: personnelIds } } });
+        for (const p of personnel) personnelMap.set(p.id, p);
       }
 
       if (type === PROPOSAL_TYPES.CA_NHAN_HANG_NAM) {
@@ -475,9 +486,7 @@ class AwardBulkService {
       } else if (type === PROPOSAL_TYPES.HC_QKQT) {
         await prisma.$transaction(async tx => {
           for (const item of titleData) {
-            const quanNhan = await tx.quanNhan.findUnique({
-              where: { id: item.personnel_id },
-            });
+            const quanNhan = personnelMap.get(item.personnel_id);
 
             if (!quanNhan) {
               throw new NotFoundError(`Quân nhân (ID: ${item.personnel_id})`);
@@ -527,9 +536,7 @@ class AwardBulkService {
 
         await prisma.$transaction(async tx => {
           for (const item of titleData) {
-            const quanNhan = await tx.quanNhan.findUnique({
-              where: { id: item.personnel_id },
-            });
+            const quanNhan = personnelMap.get(item.personnel_id);
 
             if (!quanNhan) {
               throw new NotFoundError(`Quân nhân (ID: ${item.personnel_id})`);
@@ -571,9 +578,7 @@ class AwardBulkService {
       } else if (type === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN) {
         await prisma.$transaction(async tx => {
           for (const item of titleData) {
-            const quanNhan = await tx.quanNhan.findUnique({
-              where: { id: item.personnel_id },
-            });
+            const quanNhan = personnelMap.get(item.personnel_id);
 
             if (!quanNhan) {
               throw new NotFoundError(`Quân nhân (ID: ${item.personnel_id})`);
@@ -625,69 +630,52 @@ class AwardBulkService {
         const femaleRequiredMonths = Math.round(baseRequiredMonths * (2 / 3));
 
         const congHienPersonnelIds = titleData.map(item => item.personnel_id).filter(Boolean);
-        const positionHistoriesMap: Record<
-          string,
-          {
-            he_so_chuc_vu: number;
-            so_thang: number | null;
-            ngay_bat_dau: Date;
-            ngay_ket_thuc: Date | null;
-          }[]
-        > = {};
-        const personnelGenderMap: Record<string, { gioi_tinh: string | null; ho_ten: string }> = {};
 
-        for (const personnelId of congHienPersonnelIds) {
-          try {
-            const quanNhan = await prisma.quanNhan.findUnique({
-              where: { id: personnelId },
-              select: { id: true, ho_ten: true, gioi_tinh: true },
-            });
+        const [congHienPersonnel, allPositionHistories] = await Promise.all([
+          prisma.quanNhan.findMany({
+            where: { id: { in: congHienPersonnelIds } },
+            select: { id: true, ho_ten: true, gioi_tinh: true },
+          }),
+          prisma.lichSuChucVu.findMany({
+            where: { quan_nhan_id: { in: congHienPersonnelIds } },
+            select: {
+              quan_nhan_id: true,
+              he_so_chuc_vu: true,
+              so_thang: true,
+              ngay_bat_dau: true,
+              ngay_ket_thuc: true,
+            },
+          }),
+        ]);
 
-            if (quanNhan) {
-              personnelGenderMap[personnelId] = {
-                gioi_tinh: quanNhan.gioi_tinh,
-                ho_ten: quanNhan.ho_ten,
-              };
+        const personnelGenderMap = new Map<string, { gioi_tinh: string | null; ho_ten: string }>();
+        for (const p of congHienPersonnel) {
+          personnelGenderMap.set(p.id, { gioi_tinh: p.gioi_tinh, ho_ten: p.ho_ten });
+        }
+
+        type PositionEntry = { he_so_chuc_vu: number; so_thang: number | null; ngay_bat_dau: Date; ngay_ket_thuc: Date | null };
+        const positionHistoriesMap = new Map<string, PositionEntry[]>();
+        const today = new Date();
+        for (const h of allPositionHistories) {
+          let entry: PositionEntry;
+          if ((h.so_thang === null || h.so_thang === undefined) && h.ngay_bat_dau && !h.ngay_ket_thuc) {
+            const ngayBatDau = new Date(h.ngay_bat_dau);
+            let months = (today.getFullYear() - ngayBatDau.getFullYear()) * 12;
+            months += today.getMonth() - ngayBatDau.getMonth();
+            if (today.getDate() < ngayBatDau.getDate()) {
+              months--;
             }
-
-            const histories = await prisma.lichSuChucVu.findMany({
-              where: { quan_nhan_id: personnelId },
-              select: {
-                he_so_chuc_vu: true,
-                so_thang: true,
-                ngay_bat_dau: true,
-                ngay_ket_thuc: true,
-              },
-            });
-
-            const today = new Date();
-            const updatedHistories = histories.map(item => {
-              if (item.so_thang === null || item.so_thang === undefined) {
-                if (item.ngay_bat_dau && !item.ngay_ket_thuc) {
-                  const ngayBatDau = new Date(item.ngay_bat_dau);
-                  let months = (today.getFullYear() - ngayBatDau.getFullYear()) * 12;
-                  months += today.getMonth() - ngayBatDau.getMonth();
-                  if (today.getDate() < ngayBatDau.getDate()) {
-                    months--;
-                  }
-                  return {
-                    ...item,
-                    he_so_chuc_vu: Number(item.he_so_chuc_vu),
-                    so_thang: Math.max(0, months),
-                  };
-                }
-              }
-              return { ...item, he_so_chuc_vu: Number(item.he_so_chuc_vu) };
-            });
-
-            positionHistoriesMap[personnelId] = updatedHistories;
-          } catch {
-            positionHistoriesMap[personnelId] = [];
+            entry = { he_so_chuc_vu: Number(h.he_so_chuc_vu), so_thang: Math.max(0, months), ngay_bat_dau: h.ngay_bat_dau, ngay_ket_thuc: h.ngay_ket_thuc };
+          } else {
+            entry = { he_so_chuc_vu: Number(h.he_so_chuc_vu), so_thang: h.so_thang, ngay_bat_dau: h.ngay_bat_dau, ngay_ket_thuc: h.ngay_ket_thuc };
           }
+          const list = positionHistoriesMap.get(h.quan_nhan_id) ?? [];
+          list.push(entry);
+          positionHistoriesMap.set(h.quan_nhan_id, list);
         }
 
         const getTotalMonthsByGroup = (personnelId: string, group: string) => {
-          const histories = positionHistoriesMap[personnelId] || [];
+          const histories = positionHistoriesMap.get(personnelId) ?? [];
           let totalMonths = 0;
           histories.forEach(history => {
             const heSo = Number(history.he_so_chuc_vu) || 0;
@@ -707,7 +695,7 @@ class AwardBulkService {
         };
 
         const getRequiredMonths = (personnelId: string) => {
-          const info = personnelGenderMap[personnelId];
+          const info = personnelGenderMap.get(personnelId);
           return info && info.gioi_tinh === GENDER.FEMALE ? femaleRequiredMonths : baseRequiredMonths;
         };
 
@@ -734,7 +722,7 @@ class AwardBulkService {
             continue;
           }
 
-          const info = personnelGenderMap[item.personnel_id];
+          const info = personnelGenderMap.get(item.personnel_id);
           const hoTen = (info && info.ho_ten) || item.personnel_id;
           const gioiTinh = info && info.gioi_tinh;
           const requiredMonths = getRequiredMonths(item.personnel_id);
@@ -861,7 +849,11 @@ class AwardBulkService {
           );
         }
       } catch (e) {
-        console.error('awardBulk notification failed:', e);
+        writeSystemLog({
+          action: 'ERROR',
+          resource: 'award-bulk',
+          description: `Lỗi gửi thông báo thêm khen thưởng đồng loạt: ${e}`,
+        });
       }
 
       return {

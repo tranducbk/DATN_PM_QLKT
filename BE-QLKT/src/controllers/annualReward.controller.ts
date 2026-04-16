@@ -16,10 +16,18 @@ import {
 
 class AnnualRewardController {
   getAnnualRewards = catchAsync(async (req: Request, res: Response) => {
-    const { personnel_id, page, limit, nam, danh_hieu, ho_ten } = req.query;
+    const query = req.query as {
+      personnel_id?: string;
+      page?: number;
+      limit?: number;
+      nam?: number;
+      danh_hieu?: string;
+      ho_ten?: string;
+    };
+    const { personnel_id, page, limit, nam, danh_hieu, ho_ten } = query;
 
     if (personnel_id) {
-      const result = await annualRewardService.getAnnualRewards(personnel_id as string);
+      const result = await annualRewardService.getAnnualRewards(personnel_id);
       return ResponseHelper.success(res, {
         data: result,
         message: 'Lấy danh sách danh hiệu thành công',
@@ -27,10 +35,6 @@ class AnnualRewardController {
     }
 
     const { page: pageNum, limit: limitNum } = parsePagination({ page, limit });
-    const where: Record<string, unknown> = {};
-
-    if (nam) where.nam = parseInt(nam as string);
-    if (danh_hieu) where.danh_hieu = danh_hieu;
 
     const quanNhanFilter: Record<string, unknown> = {};
     if (ho_ten) {
@@ -43,8 +47,8 @@ class AnnualRewardController {
     const { awards, total } = await annualRewardService.getAnnualRewardsList({
       page: pageNum,
       limit: limitNum,
-      nam: nam as string,
-      danh_hieu: danh_hieu as string,
+      nam,
+      danh_hieu,
       quanNhanWhere,
     });
 
@@ -58,6 +62,21 @@ class AnnualRewardController {
   });
 
   createAnnualReward = catchAsync(async (req: Request, res: Response) => {
+    const user = req.user;
+    const body = req.body as {
+      personnel_id?: string;
+      nam?: number;
+      danh_hieu?: string;
+      cap_bac?: string;
+      chuc_vu?: string;
+      ghi_chu?: string;
+      nhan_bkbqp?: boolean;
+      so_quyet_dinh_bkbqp?: string;
+      nhan_cstdtq?: boolean;
+      so_quyet_dinh_cstdtq?: string;
+      nhan_bkttcp?: boolean;
+      so_quyet_dinh_bkttcp?: string;
+    };
     const {
       personnel_id,
       nam,
@@ -71,14 +90,7 @@ class AnnualRewardController {
       so_quyet_dinh_cstdtq,
       nhan_bkttcp,
       so_quyet_dinh_bkttcp,
-    } = req.body;
-
-    if (!personnel_id || !nam || !danh_hieu) {
-      return ResponseHelper.badRequest(
-        res,
-        'Vui lòng nhập đầy đủ thông tin: quân nhân, năm và danh hiệu'
-      );
-    }
+    } = body;
 
     const result = await annualRewardService.createAnnualReward({
       personnel_id,
@@ -99,8 +111,8 @@ class AnnualRewardController {
       await profileService.recalculateAnnualProfile(personnel_id);
     } catch (recalcError) {
       await writeSystemLog({
-        userId: req.user?.id,
-        userRole: req.user?.role,
+        userId: user?.id,
+        userRole: user?.role,
         action: 'ERROR',
         resource: 'annual-rewards',
         description: 'Lỗi tính lại hồ sơ hằng năm sau khi thêm danh hiệu',
@@ -112,7 +124,22 @@ class AnnualRewardController {
   });
 
   updateAnnualReward = catchAsync(async (req: Request, res: Response) => {
-    const id = normalizeParam(req.params.id);
+    const params = req.params as { id?: string };
+    const user = req.user;
+    const body = req.body as {
+      nam?: number;
+      danh_hieu?: string;
+      cap_bac?: string;
+      chuc_vu?: string;
+      ghi_chu?: string;
+      nhan_bkbqp?: boolean;
+      so_quyet_dinh_bkbqp?: string;
+      nhan_cstdtq?: boolean;
+      so_quyet_dinh_cstdtq?: string;
+      nhan_bkttcp?: boolean;
+      so_quyet_dinh_bkttcp?: string;
+    };
+    const id = normalizeParam(params.id);
     if (!id) return ResponseHelper.badRequest(res, 'Thiếu id');
 
     const {
@@ -127,7 +154,7 @@ class AnnualRewardController {
       so_quyet_dinh_cstdtq,
       nhan_bkttcp,
       so_quyet_dinh_bkttcp,
-    } = req.body;
+    } = body;
 
     const result = await annualRewardService.updateAnnualReward(id, {
       nam,
@@ -147,8 +174,8 @@ class AnnualRewardController {
       await profileService.recalculateAnnualProfile(result.quan_nhan_id);
     } catch (recalcError) {
       await writeSystemLog({
-        userId: req.user?.id,
-        userRole: req.user?.role,
+        userId: user?.id,
+        userRole: user?.role,
         action: 'ERROR',
         resource: 'annual-rewards',
         description: 'Lỗi tính lại hồ sơ hằng năm sau khi cập nhật danh hiệu',
@@ -160,7 +187,8 @@ class AnnualRewardController {
   });
 
   deleteAnnualReward = catchAsync(async (req: Request, res: Response) => {
-    const id = normalizeParam(req.params.id);
+    const params = req.params as { id?: string };
+    const id = normalizeParam(params.id);
     if (!id) return ResponseHelper.badRequest(res, 'Thiếu id');
 
     const adminUsername = getAdminUsername(req);
@@ -169,21 +197,8 @@ class AnnualRewardController {
   });
 
   checkAnnualRewards = catchAsync(async (req: Request, res: Response) => {
-    let { personnel_ids, nam, danh_hieu } = req.body;
-
-    if (personnel_ids && Array.isArray(personnel_ids)) {
-      personnel_ids = personnel_ids.filter(
-        (id: unknown) => id !== null && id !== undefined && id !== '' && typeof id === 'string'
-      );
-    }
-
-    if (!personnel_ids || !Array.isArray(personnel_ids) || personnel_ids.length === 0) {
-      return ResponseHelper.badRequest(res, 'Vui lòng cung cấp danh sách quân nhân hợp lệ');
-    }
-    if (!nam || !danh_hieu) {
-      return ResponseHelper.badRequest(res, 'Vui lòng cung cấp năm và danh hiệu');
-    }
-
+    const body = req.body as { personnel_ids?: string[]; nam?: number; danh_hieu?: string };
+    const { personnel_ids, nam, danh_hieu } = body;
     const result = await annualRewardService.checkAnnualRewards(personnel_ids, nam, danh_hieu);
     return ResponseHelper.success(res, {
       data: result,
@@ -192,6 +207,21 @@ class AnnualRewardController {
   });
 
   bulkCreateAnnualRewards = catchAsync(async (req: Request, res: Response) => {
+    const body = req.body as {
+      personnel_ids?: string[];
+      personnel_rewards_data?: Array<{
+        personnel_id: string;
+        so_quyet_dinh?: string;
+        cap_bac?: string;
+        chuc_vu?: string;
+      }>;
+      nam?: number;
+      danh_hieu?: string;
+      ghi_chu?: string;
+      so_quyet_dinh?: string;
+      cap_bac?: string;
+      chuc_vu?: string;
+    };
     const {
       personnel_ids,
       personnel_rewards_data,
@@ -201,40 +231,11 @@ class AnnualRewardController {
       so_quyet_dinh,
       cap_bac,
       chuc_vu,
-    } = req.body;
-
-    let parsedPersonnelIds = personnel_ids;
-    if (typeof personnel_ids === 'string') {
-      try {
-        parsedPersonnelIds = JSON.parse(personnel_ids);
-      } catch {
-        return ResponseHelper.badRequest(res, 'Danh sách quân nhân không hợp lệ');
-      }
-    }
-
-    if (
-      !parsedPersonnelIds ||
-      !Array.isArray(parsedPersonnelIds) ||
-      parsedPersonnelIds.length === 0
-    ) {
-      return ResponseHelper.badRequest(res, 'Vui lòng chọn ít nhất một quân nhân');
-    }
-    if (!nam || !danh_hieu) {
-      return ResponseHelper.badRequest(res, 'Vui lòng nhập đầy đủ thông tin: năm và danh hiệu');
-    }
-
-    let parsedPersonnelRewardsData = personnel_rewards_data;
-    if (typeof personnel_rewards_data === 'string') {
-      try {
-        parsedPersonnelRewardsData = JSON.parse(personnel_rewards_data);
-      } catch {
-        parsedPersonnelRewardsData = null;
-      }
-    }
+    } = body;
 
     const result = await annualRewardService.bulkCreateAnnualRewards({
-      personnel_ids: parsedPersonnelIds,
-      personnel_rewards_data: parsedPersonnelRewardsData,
+      personnel_ids,
+      personnel_rewards_data,
       nam,
       danh_hieu,
       ghi_chu,
@@ -250,17 +251,19 @@ class AnnualRewardController {
   });
 
   previewImport = catchAsync(async (req: Request, res: Response) => {
-    if (!req.file) return ResponseHelper.badRequest(res, 'Vui lòng upload file Excel');
+    const user = req.user!;
+    const file = req.file;
+    if (!file) return ResponseHelper.badRequest(res, 'Vui lòng upload file Excel');
 
-    const result = await annualRewardService.previewImport(req.file.buffer);
+    const result = await annualRewardService.previewImport(file.buffer);
     await writeSystemLog({
-      userId: req.user?.id,
-      userRole: req.user?.role,
+      userId: user.id,
+      userRole: user.role,
       action: AUDIT_ACTIONS.IMPORT_PREVIEW,
       resource: 'annual-rewards',
-      description: `Tải lên file "${Buffer.from(req.file.originalname, 'latin1').toString('utf8')}" để review danh hiệu cá nhân hằng năm: ${result.valid?.length ?? 0} hợp lệ, ${result.errors?.length ?? 0} lỗi`,
+      description: `Tải lên file "${Buffer.from(file.originalname, 'latin1').toString('utf8')}" để review danh hiệu cá nhân hằng năm: ${result.valid?.length ?? 0} hợp lệ, ${result.errors?.length ?? 0} lỗi`,
       payload: {
-        filename: Buffer.from(req.file.originalname, 'latin1').toString('utf8'),
+        filename: Buffer.from(file.originalname, 'latin1').toString('utf8'),
         total: result.total,
         errors: result.errors?.length ?? 0,
       },
@@ -269,32 +272,35 @@ class AnnualRewardController {
   });
 
   confirmImport = catchAsync(async (req: Request, res: Response) => {
-    const { items } = req.body;
+    const user = req.user!;
+    const body = req.body as { items?: any[] };
+    const { items } = body;
     if (!items || !Array.isArray(items) || items.length === 0) {
       return ResponseHelper.badRequest(res, 'Không có dữ liệu để import');
     }
     const result = await annualRewardService.confirmImport(items);
     await writeSystemLog({
-      userId: req.user?.id,
-      userRole: req.user?.role,
+      userId: user.id,
+      userRole: user.role,
       action: AUDIT_ACTIONS.IMPORT,
       resource: 'annual-rewards',
       description: `Nhập dữ liệu danh hiệu cá nhân hằng năm thành công: ${result.imported ?? items.length} bản ghi`,
       payload: { imported: result.imported ?? items.length },
     });
     const personnelIds = items.map((i: { personnel_id: string }) => i.personnel_id);
-    notifyOnImport(req.user!.id, 'annual-rewards', result.imported ?? items.length, personnelIds).catch((e) => { console.error('[annual-rewards] notifyOnImport failed:', e); });
+    notifyOnImport(user.id, 'annual-rewards', result.imported ?? items.length, personnelIds).catch((e) => { console.error('[annual-rewards] notifyOnImport failed:', e); });
     return ResponseHelper.success(res, { data: result, message: 'Thao tác thành công' });
   });
 
   importAnnualRewards = catchAsync(async (req: Request, res: Response) => {
-    if (!req.file?.buffer) {
+    const file = req.file;
+    if (!file?.buffer) {
       return ResponseHelper.badRequest(
         res,
         'Không tìm thấy file upload. Vui lòng gửi form-data field "file"'
       );
     }
-    const result = await annualRewardService.importFromExcelBuffer(req.file.buffer);
+    const result = await annualRewardService.importFromExcelBuffer(file.buffer);
     return ResponseHelper.success(res, {
       data: result,
       message: 'Import danh hiệu hằng năm hoàn tất',
@@ -302,25 +308,28 @@ class AnnualRewardController {
   });
 
   checkAlreadyReceivedHCQKQT = catchAsync(async (req: Request, res: Response) => {
-    const personnelId = normalizeParam(req.params.personnelId);
+    const params = req.params as { personnelId?: string };
+    const personnelId = normalizeParam(params.personnelId);
     if (!personnelId) return ResponseHelper.badRequest(res, 'Thiếu personnelId');
     const data = await annualRewardService.checkAlreadyReceivedHCQKQT(personnelId);
     return ResponseHelper.success(res, { data, message: 'Kiểm tra HCQKQT thành công' });
   });
 
   checkAlreadyReceivedKNCVSNXDQDNDVN = catchAsync(async (req: Request, res: Response) => {
-    const personnelId = normalizeParam(req.params.personnelId);
+    const params = req.params as { personnelId?: string };
+    const personnelId = normalizeParam(params.personnelId);
     if (!personnelId) return ResponseHelper.badRequest(res, 'Thiếu personnelId');
     const data = await annualRewardService.checkAlreadyReceivedKNCVSNXDQDNDVN(personnelId);
     return ResponseHelper.success(res, { data, message: 'Kiểm tra KNC VSNXD QDNDVN thành công' });
   });
 
   getTemplate = catchAsync(async (req: Request, res: Response) => {
-    const personnelIds = parsePersonnelIdsFromQuery(req.query);
+    const query = req.query as { repeat_map?: string };
+    const personnelIds = parsePersonnelIdsFromQuery(query);
     const repeatMap: Record<string, number> = {};
-    if (req.query.repeat_map) {
+    if (query.repeat_map) {
       try {
-        const parsed = JSON.parse(req.query.repeat_map as string);
+        const parsed = JSON.parse(query.repeat_map);
         Object.assign(repeatMap, parsed);
       } catch (e) { console.error('Invalid repeat_map JSON:', e); }
     }
@@ -340,17 +349,25 @@ class AnnualRewardController {
   });
 
   exportToExcel = catchAsync(async (req: Request, res: Response) => {
-    const { nam, danh_hieu, don_vi_id, personnel_ids } = req.query;
-    const role = req.user?.role;
-    const userUnitId = req.user?.co_quan_don_vi_id ?? req.user?.don_vi_truc_thuoc_id;
+    const rawQuery = req.query;
+    const query = rawQuery as {
+      nam?: number;
+      danh_hieu?: string;
+      don_vi_id?: string;
+      personnel_ids?: string;
+    };
+    const user = req.user;
+    const { nam, danh_hieu, don_vi_id } = query;
+    const role = user?.role;
+    const userUnitId = user?.co_quan_don_vi_id ?? user?.don_vi_truc_thuoc_id;
 
     const filters: Record<string, unknown> = {
-      nam: nam ? parseInt(nam as string) : undefined,
-      danh_hieu: danh_hieu ?? undefined,
-      don_vi_id: don_vi_id ?? undefined,
+      nam,
+      danh_hieu,
+      don_vi_id,
     };
 
-    const parsedPersonnelIds = parsePersonnelIdsFromQuery(req.query);
+    const parsedPersonnelIds = parsePersonnelIdsFromQuery(rawQuery);
     if (parsedPersonnelIds.length > 0) {
       filters.personnel_ids = parsedPersonnelIds;
     }
@@ -374,12 +391,14 @@ class AnnualRewardController {
   });
 
   getStatistics = catchAsync(async (req: Request, res: Response) => {
-    const { nam } = req.query;
-    const role = req.user?.role;
-    const userUnitId = req.user?.co_quan_don_vi_id ?? req.user?.don_vi_truc_thuoc_id;
+    const query = req.query as { nam?: number };
+    const user = req.user;
+    const { nam } = query;
+    const role = user?.role;
+    const userUnitId = user?.co_quan_don_vi_id ?? user?.don_vi_truc_thuoc_id;
 
     const filters: Record<string, unknown> = {
-      nam: nam ? parseInt(nam as string) : undefined,
+      nam,
     };
     if (role === ROLES.MANAGER && userUnitId) {
       filters.don_vi_id = userUnitId;

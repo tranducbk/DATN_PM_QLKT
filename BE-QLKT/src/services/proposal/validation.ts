@@ -1,5 +1,5 @@
 import { prisma } from '../../models';
-import { getDanhHieuName, DANH_HIEU_CA_NHAN_HANG_NAM, UNIT_DV_TITLES, UNIT_BK_TITLES } from '../../constants/danhHieu.constants';
+import { getDanhHieuName, DANH_HIEU_CA_NHAN_HANG_NAM, DANH_HIEU_DON_VI_CO_BAN, DANH_HIEU_DON_VI_BANG_KHEN } from '../../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
 import type { Prisma } from '../../generated/prisma';
@@ -260,8 +260,8 @@ export async function checkDuplicateUnitAward(
       });
 
       if (existingAward) {
-        const isDv = UNIT_DV_TITLES.has(danhHieu);
-        const isBk = UNIT_BK_TITLES.has(danhHieu);
+        const isDv = DANH_HIEU_DON_VI_CO_BAN.has(danhHieu);
+        const isBk = DANH_HIEU_DON_VI_BANG_KHEN.has(danhHieu);
 
         if (isDv && existingAward.danh_hieu) {
           if (existingAward.danh_hieu === danhHieu) {
@@ -293,13 +293,13 @@ export async function checkDuplicateUnitAward(
 
         // Unit DV title vs unit BK flags are mutually exclusive for a single year row.
         if (isDv && (existingAward.nhan_bkbqp || existingAward.nhan_bkttcp)) {
-          const existingBk = existingAward.nhan_bkbqp ? 'BKBQP' : 'BKTTCP';
+          const existingBk = existingAward.nhan_bkbqp ? DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP : DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP;
           return {
             exists: true,
             message: `Đơn vị đã có ${getDanhHieuName(existingBk)} năm ${nam}, không thể thêm ${getDanhHieuName(danhHieu)}`,
           };
         }
-        if (isBk && existingAward.danh_hieu && UNIT_DV_TITLES.has(existingAward.danh_hieu)) {
+        if (isBk && existingAward.danh_hieu && DANH_HIEU_DON_VI_CO_BAN.has(existingAward.danh_hieu)) {
           return {
             exists: true,
             message: `Đơn vị đã có danh hiệu ${getDanhHieuName(existingAward.danh_hieu)} năm ${nam}, không thể thêm ${getDanhHieuName(danhHieu)}`,

@@ -5,7 +5,7 @@ import { ValidationError } from '../../middlewares/errorHandler';
 import { applyThinBordersToGrid } from '../../helpers/excelTemplateHelper';
 import { parseCCCD, calculateContinuousCSTDCS } from './helpers';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
-import { DANH_HIEU_HCBVTQ } from '../../constants/danhHieu.constants';
+import { DANH_HIEU_HCBVTQ, DANH_HIEU_CA_NHAN_HANG_NAM } from '../../constants/danhHieu.constants';
 import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
 
 /**
@@ -233,7 +233,7 @@ async function exportAwardsTemplate() {
     sheet.addRow({
       cccd: '001234567890',
       nam: 2024,
-      danh_hieu: 'CSTDCS',
+      danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS,
       nhan_bkbqp: 'X',
       so_quyet_dinh_bkbqp: '123/QĐ-BQP',
       nhan_cstdtq: '',

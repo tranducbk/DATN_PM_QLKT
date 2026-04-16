@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Table, Input, Select, Space, Alert, Typography, InputNumber, Divider, Empty } from 'antd';
+import { Table, Input, Select, Space, Alert, Typography, InputNumber, Divider, Empty, message } from 'antd';
 import { SearchOutlined, TeamOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { getApiErrorMessage } from '@/lib/apiError';
@@ -89,7 +89,7 @@ export function Step2SelectPersonnelNCKH({
         setPersonnel(personnelData);
       }
     } catch (error: unknown) {
-      console.error('Lỗi tải danh sách quân nhân NCKH', error);
+      message.error(getApiErrorMessage(error));
     } finally {
       setLoading(false);
     }

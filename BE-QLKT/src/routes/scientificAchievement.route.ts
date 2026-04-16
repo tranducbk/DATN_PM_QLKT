@@ -7,8 +7,20 @@ import { scientificAchievementValidation, excelImportValidation } from '../valid
 
 const router = Router();
 
-router.get('/', verifyToken, requireManager, scientificAchievementController.getAchievements);
-router.get('/export', verifyToken, requireManager, scientificAchievementController.exportToExcel);
+router.get(
+  '/',
+  verifyToken,
+  requireManager,
+  validate(scientificAchievementValidation.getAchievementsQuery, 'query'),
+  scientificAchievementController.getAchievements
+);
+router.get(
+  '/export',
+  verifyToken,
+  requireManager,
+  validate(scientificAchievementValidation.exportAchievementsQuery, 'query'),
+  scientificAchievementController.exportToExcel
+);
 router.get('/template', verifyToken, requireManager, scientificAchievementController.getTemplate);
 router.post(
   '/import/preview',

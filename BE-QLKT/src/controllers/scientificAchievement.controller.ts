@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import scientificAchievementService from '../services/scientificAchievement.service';
+import scientificAchievementService, { ConfirmImportItem } from '../services/scientificAchievement.service';
 import profileService from '../services/profile.service';
 import { ROLES } from '../constants/roles.constants';
 import { parsePagination, normalizeParam } from '../helpers/paginationHelper';
@@ -12,18 +12,23 @@ import { notifyOnImport } from '../helpers/notification';
 
 class ScientificAchievementController {
   getAchievements = catchAsync(async (req: Request, res: Response) => {
-    const { personnel_id, page, limit, nam, loai, ho_ten } = req.query;
+    const query = req.query as {
+      personnel_id?: string;
+      page?: number;
+      limit?: number;
+      nam?: number;
+      loai?: string;
+      ho_ten?: string;
+    };
+    const { personnel_id, page, limit, nam, loai, ho_ten } = query;
     if (personnel_id) {
-      const result = await scientificAchievementService.getAchievements(personnel_id as string);
+      const result = await scientificAchievementService.getAchievements(personnel_id);
       return ResponseHelper.success(res, {
         message: 'Lấy danh sách thành tích khoa học thành công',
         data: result,
       });
     }
     const { page: pageNum, limit: limitNum } = parsePagination({ page, limit });
-    const where: Record<string, unknown> = {};
-    if (nam) where.nam = parseInt(nam as string);
-    if (loai) where.loai = loai;
     const quanNhanFilter: Record<string, unknown> = {};
     if (ho_ten) quanNhanFilter.ho_ten = { contains: ho_ten, mode: 'insensitive' };
     const managerQuanNhanWhere = await buildManagerQuanNhanFilter(req, quanNhanFilter);
@@ -32,8 +37,8 @@ class ScientificAchievementController {
     const { achievements, total } = await scientificAchievementService.getAchievementsList({
       page: pageNum,
       limit: limitNum,
-      nam: nam as string,
-      loai: loai as string,
+      nam: nam !== undefined ? String(nam) : undefined,
+      loai,
       quanNhanWhere,
     });
 
@@ -47,7 +52,17 @@ class ScientificAchievementController {
   });
 
   createAchievement = catchAsync(async (req: Request, res: Response) => {
-    const { personnel_id, nam, loai, mo_ta, cap_bac, chuc_vu, ghi_chu } = req.body;
+    const user = req.user;
+    const body = req.body as {
+      personnel_id?: string;
+      nam?: number;
+      loai?: string;
+      mo_ta?: string;
+      cap_bac?: string;
+      chuc_vu?: string;
+      ghi_chu?: string;
+    };
+    const { personnel_id, nam, loai, mo_ta, cap_bac, chuc_vu, ghi_chu } = body;
     if (!personnel_id || !nam || !loai || !mo_ta) {
       return ResponseHelper.badRequest(res, 'Vui lòng nhập đầy đủ: quân nhân, năm, loại và mô tả');
     }
@@ -64,8 +79,8 @@ class ScientificAchievementController {
       await profileService.recalculateAnnualProfile(personnel_id);
     } catch (recalcError) {
       await writeSystemLog({
-        userId: req.user?.id,
-        userRole: req.user?.role,
+        userId: user?.id,
+        userRole: user?.role,
         action: 'ERROR',
         resource: 'scientific-achievements',
         description: 'Lỗi tính lại hồ sơ hằng năm sau khi thêm thành tích NCKH',
@@ -76,11 +91,21 @@ class ScientificAchievementController {
   });
 
   updateAchievement = catchAsync(async (req: Request, res: Response) => {
-    const id = normalizeParam(req.params.id);
+    const user = req.user;
+    const params = req.params as { id?: string };
+    const id = normalizeParam(params.id);
     if (!id) {
       return ResponseHelper.badRequest(res, 'Thiếu id');
     }
-    const { nam, loai, mo_ta, cap_bac, chuc_vu, ghi_chu } = req.body;
+    const body = req.body as {
+      nam?: number;
+      loai?: string;
+      mo_ta?: string;
+      cap_bac?: string;
+      chuc_vu?: string;
+      ghi_chu?: string;
+    };
+    const { nam, loai, mo_ta, cap_bac, chuc_vu, ghi_chu } = body;
     const result = await scientificAchievementService.updateAchievement(id, {
       nam,
       loai,
@@ -93,8 +118,8 @@ class ScientificAchievementController {
       await profileService.recalculateAnnualProfile(result.quan_nhan_id);
     } catch (recalcError) {
       await writeSystemLog({
-        userId: req.user?.id,
-        userRole: req.user?.role,
+        userId: user?.id,
+        userRole: user?.role,
         action: 'ERROR',
         resource: 'scientific-achievements',
         description: 'Lỗi tính lại hồ sơ hằng năm sau khi cập nhật thành tích NCKH',
@@ -105,7 +130,8 @@ class ScientificAchievementController {
   });
 
   deleteAchievement = catchAsync(async (req: Request, res: Response) => {
-    const id = normalizeParam(req.params.id);
+    const params = req.params as { id?: string };
+    const id = normalizeParam(params.id);
     if (!id) {
       return ResponseHelper.badRequest(res, 'Thiếu id');
     }
@@ -115,12 +141,17 @@ class ScientificAchievementController {
   });
 
   exportToExcel = catchAsync(async (req: Request, res: Response) => {
-    const { nam, loai } = req.query;
-    const role = req.user?.role;
-    const userUnitId = req.user?.co_quan_don_vi_id ?? req.user?.don_vi_truc_thuoc_id;
+    const query = req.query as {
+      nam?: number;
+      loai?: string;
+    };
+    const user = req.user;
+    const { nam, loai } = query;
+    const role = user?.role;
+    const userUnitId = user?.co_quan_don_vi_id ?? user?.don_vi_truc_thuoc_id;
     const filters: Record<string, unknown> = {
-      nam: nam ? parseInt(nam as string) : undefined,
-      loai: loai || undefined,
+      nam,
+      loai,
     };
     if (role === ROLES.MANAGER && userUnitId) filters.don_vi_id = userUnitId;
     const workbook = await scientificAchievementService.exportToExcel(filters);
@@ -137,11 +168,12 @@ class ScientificAchievementController {
   });
 
   getTemplate = catchAsync(async (req: Request, res: Response) => {
-    const personnelIds = parsePersonnelIdsFromQuery(req.query);
+    const query = req.query as { repeat_map?: string };
+    const personnelIds = parsePersonnelIdsFromQuery(query);
     const repeatMap: Record<string, number> = {};
-    if (req.query.repeat_map) {
+    if (query.repeat_map) {
       try {
-        Object.assign(repeatMap, JSON.parse(req.query.repeat_map as string));
+        Object.assign(repeatMap, JSON.parse(query.repeat_map));
       } catch (e) { console.error('Invalid repeat_map JSON:', e); }
     }
     const workbook = await scientificAchievementService.generateTemplate(personnelIds, repeatMap);
@@ -158,18 +190,20 @@ class ScientificAchievementController {
   });
 
   previewImport = catchAsync(async (req: Request, res: Response) => {
-    if (!req.file) {
+    const user = req.user!;
+    const file = req.file;
+    if (!file) {
       return ResponseHelper.badRequest(res, 'Vui lòng upload file Excel');
     }
-    const result = await scientificAchievementService.previewImport(req.file.buffer);
+    const result = await scientificAchievementService.previewImport(file.buffer);
     await writeSystemLog({
-      userId: req.user?.id,
-      userRole: req.user?.role,
+      userId: user.id,
+      userRole: user.role,
       action: AUDIT_ACTIONS.IMPORT_PREVIEW,
       resource: 'scientific-achievements',
-      description: `Tải lên file "${req.file?.originalname ? Buffer.from(req.file.originalname, 'latin1').toString('utf8') : 'Excel'}" để review thành tích khoa học: ${result.valid?.length || 0} hợp lệ, ${result.errors?.length || 0} lỗi`,
+      description: `Tải lên file "${file.originalname ? Buffer.from(file.originalname, 'latin1').toString('utf8') : 'Excel'}" để review thành tích khoa học: ${result.valid?.length || 0} hợp lệ, ${result.errors?.length || 0} lỗi`,
       payload: {
-        filename: req.file?.originalname ? Buffer.from(req.file.originalname, 'latin1').toString('utf8') : undefined,
+        filename: file.originalname ? Buffer.from(file.originalname, 'latin1').toString('utf8') : undefined,
         total: result.total,
         errors: result.errors?.length || 0,
       },
@@ -178,22 +212,23 @@ class ScientificAchievementController {
   });
 
   confirmImport = catchAsync(async (req: Request, res: Response) => {
-    const { items } = req.body;
+    const user = req.user!;
+    const body = req.body as { items?: ConfirmImportItem[] };
+    const { items } = body;
     if (!items || !Array.isArray(items) || items.length === 0) {
       return ResponseHelper.badRequest(res, 'Không có dữ liệu để import');
     }
-    const adminId = req.user?.id;
-    const result = await scientificAchievementService.confirmImport(items, adminId);
+    const result = await scientificAchievementService.confirmImport(items, user.id);
     await writeSystemLog({
-      userId: req.user?.id,
-      userRole: req.user?.role,
+      userId: user.id,
+      userRole: user.role,
       action: AUDIT_ACTIONS.IMPORT,
       resource: 'scientific-achievements',
       description: `Nhập dữ liệu thành tích khoa học thành công: ${result.imported || items.length} bản ghi`,
       payload: { imported: result.imported || items.length },
     });
     const personnelIds = items.map((i: { personnel_id: string }) => i.personnel_id);
-    notifyOnImport(req.user!.id, 'scientific-achievements', result.imported || items.length, personnelIds).catch((e) => { console.error('[scientific-achievements] notifyOnImport failed:', e); });
+    notifyOnImport(user.id, 'scientific-achievements', result.imported || items.length, personnelIds).catch((e) => { console.error('[scientific-achievements] notifyOnImport failed:', e); });
     return ResponseHelper.success(res, { message: 'Thao tác thành công', data: result });
   });
 }

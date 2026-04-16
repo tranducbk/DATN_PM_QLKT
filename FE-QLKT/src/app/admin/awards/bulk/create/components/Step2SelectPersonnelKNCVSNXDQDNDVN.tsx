@@ -128,7 +128,7 @@ export function Step2SelectPersonnelKNCVSNXDQDNDVN({
       setAlreadyReceivedMap(receivedMap);
       setReceivedReasonMap(reasonMap);
     } catch (error) {
-      console.error('Lỗi kiểm tra điều kiện KNC VSNXD QDNDVN', error);
+      message.error(getApiErrorMessage(error));
     } finally {
       setCheckingReceived(false);
     }

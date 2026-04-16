@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Table, Alert, Typography, Space, Tag, Select, Input, Empty } from 'antd';
+import { Table, Alert, Typography, Space, Tag, Select, Input, Empty, message } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/api';
+import { getApiErrorMessage } from '@/lib/apiError';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
 import { formatDate } from '@/lib/utils';
 import type { DateInput } from '@/lib/types';
@@ -102,7 +103,7 @@ export function Step3SetTitlesHCQKQT({
         }
       }
     } catch (error) {
-      console.error('Lỗi tải dữ liệu danh hiệu HCQKQT', error);
+      message.error(getApiErrorMessage(error));
     } finally {
       setLoading(false);
     }

@@ -110,7 +110,6 @@ export const apiClient = {
   getCommemorationMedalsStatistics: awardsApi.getCommemorationMedalsStatistics,
   deleteCommemorationMedal: awardsApi.deleteCommemorationMedal,
   getMilitaryFlagTemplate: awardsApi.getMilitaryFlagTemplate,
-  importMilitaryFlag: awardsApi.importMilitaryFlag,
   getMilitaryFlag: awardsApi.getMilitaryFlag,
   exportMilitaryFlag: awardsApi.exportMilitaryFlag,
   getMilitaryFlagStatistics: awardsApi.getMilitaryFlagStatistics,

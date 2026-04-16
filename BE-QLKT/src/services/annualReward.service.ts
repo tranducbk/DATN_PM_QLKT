@@ -1,10 +1,10 @@
 import { prisma } from '../models';
 import ExcelJS from 'exceljs';
 import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHelper';
-import { checkDuplicateAward } from '../helpers/awardValidation';
+
 import profileService from './profile.service';
 import * as notificationHelper from '../helpers/notification';
-import { formatDanhHieuList, getDanhHieuName, DANH_HIEU_CA_NHAN_CO_BAN, DANH_HIEU_CA_NHAN_TAT_CA } from '../constants/danhHieu.constants';
+import { formatDanhHieuList, getDanhHieuName, DANH_HIEU_CA_NHAN_CO_BAN, DANH_HIEU_CA_NHAN_BANG_KHEN, DANH_HIEU_CA_NHAN_HANG_NAM } from '../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { NotFoundError, ValidationError } from '../middlewares/errorHandler';
@@ -174,9 +174,9 @@ class AnnualRewardService {
     }
 
     const validDanhHieu = DANH_HIEU_CA_NHAN_CO_BAN;
-    if (danh_hieu && !validDanhHieu.includes(danh_hieu)) {
+    if (danh_hieu && !validDanhHieu.has(danh_hieu)) {
       throw new ValidationError(
-        `Danh hiệu không hợp lệ. Chỉ được chọn: ${formatDanhHieuList(validDanhHieu)}. Để trống nghĩa là không đạt danh hiệu.`
+        `Danh hiệu không hợp lệ. Chỉ được chọn: ${formatDanhHieuList([...validDanhHieu])}. Để trống nghĩa là không đạt danh hiệu.`
       );
     }
 
@@ -211,7 +211,7 @@ class AnnualRewardService {
     try {
       await profileService.recalculateAnnualProfile(personnel_id);
     } catch (e) {
-      console.error('recalculateAnnualProfile failed:', e);
+      writeSystemLog({ action: 'ERROR', resource: 'annual-rewards', description: `Lỗi tính lại hồ sơ hằng năm: ${e}` });
     }
 
     return newReward;
@@ -242,9 +242,9 @@ class AnnualRewardService {
 
     if (danh_hieu) {
       const validDanhHieu = DANH_HIEU_CA_NHAN_CO_BAN;
-      if (!validDanhHieu.includes(danh_hieu)) {
+      if (!validDanhHieu.has(danh_hieu)) {
         throw new ValidationError(
-          `Danh hiệu không hợp lệ. Chỉ được chọn: ${formatDanhHieuList(validDanhHieu)}. Để trống nghĩa là không đạt danh hiệu.`
+          `Danh hiệu không hợp lệ. Chỉ được chọn: ${formatDanhHieuList([...validDanhHieu])}. Để trống nghĩa là không đạt danh hiệu.`
         );
       }
     }
@@ -272,7 +272,7 @@ class AnnualRewardService {
     try {
       await profileService.recalculateAnnualProfile(reward.quan_nhan_id);
     } catch (e) {
-      console.error('recalculateAnnualProfile failed:', e);
+      writeSystemLog({ action: 'ERROR', resource: 'annual-rewards', description: `Lỗi tính lại hồ sơ hằng năm: ${e}` });
     }
 
     return updatedReward;
@@ -313,7 +313,7 @@ class AnnualRewardService {
     try {
       await profileService.recalculateAnnualProfile(personnelId);
     } catch (e) {
-      console.error('recalculateAnnualProfile failed:', e);
+      writeSystemLog({ action: 'ERROR', resource: 'annual-rewards', description: `Lỗi tính lại hồ sơ hằng năm: ${e}` });
     }
 
     try {
@@ -324,7 +324,7 @@ class AnnualRewardService {
         adminUsername
       );
     } catch (e) {
-      console.error('notifyOnAwardDeleted failed:', e);
+      writeSystemLog({ action: 'ERROR', resource: 'annual-rewards', description: `Lỗi gửi thông báo xóa khen thưởng hằng năm: ${e}` });
     }
 
     return {
@@ -368,7 +368,7 @@ class AnnualRewardService {
 
     const validDanhHieu = DANH_HIEU_CA_NHAN_CO_BAN;
     const errors: string[] = [];
-    const selectedPersonnelIds: string[] = [];
+    const selectedPersonnelIdSet = new Set<string>();
     const titleData: Record<string, unknown>[] = [];
     let total = 0;
 
@@ -387,8 +387,9 @@ class AnnualRewardService {
     const seenInFile = new Set<string>();
     const currentYear = new Date().getFullYear();
 
-    // Batch query: collect all unique personnel IDs, then query once
+    // Batch query: collect all unique personnel IDs + nam values, then query once
     const allPersonnelIds = new Set<string>();
+    const allYears = new Set<number>();
     for (let r = 2; r <= worksheet.rowCount; r++) {
       const row = worksheet.getRow(r);
       const idValue = idCol ? row.getCell(idCol).value : null;
@@ -396,12 +397,40 @@ class AnnualRewardService {
         const id = String(idValue).trim();
         if (id) allPersonnelIds.add(id);
       }
+      const namVal = namCol ? parseInt(String(row.getCell(namCol).value), 10) : NaN;
+      if (!isNaN(namVal)) allYears.add(namVal);
     }
-    const allPersonnelList = await prisma.quanNhan.findMany({
-      where: { id: { in: [...allPersonnelIds] } },
-      include: { ChucVu: { select: { ten_chuc_vu: true } } },
-    });
-    const personnelById = new Map(allPersonnelList.map(p => [p.id, p]));
+    const [allPersonnel, existingDanhHieu, pendingProposals] = await Promise.all([
+      prisma.quanNhan.findMany({
+        where: { id: { in: [...allPersonnelIds] } },
+        include: { ChucVu: { select: { ten_chuc_vu: true } } },
+      }),
+      prisma.danhHieuHangNam.findMany({
+        where: { quan_nhan_id: { in: [...allPersonnelIds] } },
+      }),
+      prisma.bangDeXuat.findMany({
+        where: {
+          loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
+          nam: { in: [...allYears] },
+          status: PROPOSAL_STATUS.APPROVED,
+        },
+      }),
+    ]);
+    const personnelById = new Map(allPersonnel.map(p => [p.id, p] as const));
+    const existingAwardKeys = new Set(
+      existingDanhHieu.map(d => `${d.quan_nhan_id}_${d.nam}_${d.danh_hieu}`)
+    );
+    // Key "personnelId_nam" for existing record lookup in transaction
+    const existingRewardByKey = new Map(
+      existingDanhHieu.map(d => [`${d.quan_nhan_id}_${d.nam}`, d] as const)
+    );
+    const proposalsByYear = new Map<number, typeof pendingProposals>();
+    for (const proposal of pendingProposals) {
+      if (proposal.nam == null) continue;
+      const list = proposalsByYear.get(proposal.nam) ?? [];
+      list.push(proposal);
+      proposalsByYear.set(proposal.nam, list);
+    }
 
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
       const row = worksheet.getRow(rowNumber);
@@ -452,9 +481,9 @@ class AnnualRewardService {
       }
 
       const danhHieuUpper = danh_hieu_raw.toUpperCase();
-      if (!validDanhHieu.includes(danhHieuUpper)) {
+      if (!validDanhHieu.has(danhHieuUpper)) {
         errors.push(
-          `Dòng ${rowNumber}: Danh hiệu "${danh_hieu_raw}" không đúng. Chỉ được nhập: ${formatDanhHieuList(validDanhHieu)}`
+          `Dòng ${rowNumber}: Danh hiệu "${danh_hieu_raw}" không đúng. Chỉ được nhập: ${formatDanhHieuList([...validDanhHieu])}`
         );
         continue;
       }
@@ -470,22 +499,22 @@ class AnnualRewardService {
       seenInFile.add(fileKey);
 
       if (danh_hieu) {
-        try {
-          const duplicateCheck = await checkDuplicateAward(
-            personnel.id,
-            nam,
-            danh_hieu,
-            PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
-            PROPOSAL_STATUS.APPROVED
+        if (existingAwardKeys.has(`${personnel.id}_${nam}_${danh_hieu}`)) {
+          errors.push(
+            `Dòng ${rowNumber}: ${ho_ten} đã có ${getDanhHieuName(danh_hieu)} năm ${nam} (đã được duyệt trước đó)`
           );
-          if (duplicateCheck.exists) {
-            errors.push(
-              `Dòng ${rowNumber}: ${ho_ten} đã có ${getDanhHieuName(danh_hieu)} năm ${nam} (đã được duyệt trước đó)`
-            );
-            continue;
-          }
-        } catch (e) {
-          console.error('annualReward duplicate check failed:', e);
+          continue;
+        }
+        const proposalsForYear = proposalsByYear.get(nam) ?? [];
+        const hasPendingProposal = proposalsForYear.some(p => {
+          const dataDanhHieu = (p.data_danh_hieu as Array<Record<string, unknown>>) ?? [];
+          return dataDanhHieu.some(item => item.personnel_id === personnel.id && item.danh_hieu === danh_hieu);
+        });
+        if (hasPendingProposal) {
+          errors.push(
+            `Dòng ${rowNumber}: ${ho_ten} đã có ${getDanhHieuName(danh_hieu)} năm ${nam} (đã được duyệt trước đó)`
+          );
+          continue;
         }
       }
 
@@ -529,9 +558,7 @@ class AnnualRewardService {
           nhan_bkttcp,
         } = rowData;
 
-        const existing = await tx.danhHieuHangNam.findFirst({
-          where: { quan_nhan_id: personnel.id, nam },
-        });
+        const existing = existingRewardByKey.get(`${personnel.id}_${nam}`) ?? null;
 
         if (!existing) {
           const createdReward = await tx.danhHieuHangNam.create({
@@ -564,9 +591,7 @@ class AnnualRewardService {
           txUpdated.push(existing.id);
         }
 
-        if (!selectedPersonnelIds.includes(personnel.id)) {
-          selectedPersonnelIds.push(personnel.id);
-        }
+        selectedPersonnelIdSet.add(personnel.id);
 
         titleData.push({
           personnelId: personnel.id,
@@ -586,11 +611,13 @@ class AnnualRewardService {
       return { created: txCreated, updated: txUpdated };
     }, { timeout: IMPORT_TRANSACTION_TIMEOUT });
 
+    const selectedPersonnelIds = [...selectedPersonnelIdSet];
+
     for (const personnelId of selectedPersonnelIds) {
       try {
         await profileService.recalculateAnnualProfile(personnelId);
       } catch (e) {
-        console.error('recalculateAnnualProfile failed:', e);
+        writeSystemLog({ action: 'ERROR', resource: 'annual-rewards', description: `Lỗi tính lại hồ sơ hằng năm: ${e}` });
       }
     }
 
@@ -752,7 +779,7 @@ class AnnualRewardService {
           ho_ten,
           nam: namVal,
           danh_hieu: danh_hieu_raw,
-          message: `${getDanhHieuName('BKBQP')} không import qua Excel — vui lòng nhập trên màn hình.`,
+          message: `${getDanhHieuName(DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP)} không import qua Excel — vui lòng nhập trên màn hình.`,
         });
         continue;
       }
@@ -762,7 +789,7 @@ class AnnualRewardService {
           ho_ten,
           nam: namVal,
           danh_hieu: danh_hieu_raw,
-          message: `${getDanhHieuName('CSTDTQ')} không import qua Excel — vui lòng nhập trên màn hình.`,
+          message: `${getDanhHieuName(DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ)} không import qua Excel — vui lòng nhập trên màn hình.`,
         });
         continue;
       }
@@ -772,7 +799,7 @@ class AnnualRewardService {
           ho_ten,
           nam: namVal,
           danh_hieu: danh_hieu_raw,
-          message: `${getDanhHieuName('BKTTCP')} không import qua Excel — vui lòng nhập trên màn hình.`,
+          message: `${getDanhHieuName(DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP)} không import qua Excel — vui lòng nhập trên màn hình.`,
         });
         continue;
       }
@@ -838,13 +865,13 @@ class AnnualRewardService {
       }
 
       const danhHieuUpper = danh_hieu_raw.toUpperCase();
-      if (!validDanhHieu.includes(danhHieuUpper)) {
+      if (!validDanhHieu.has(danhHieuUpper)) {
         errors.push({
           row: rowNumber,
           ho_ten,
           nam,
           danh_hieu: danh_hieu_raw,
-          message: `Danh hiệu "${danh_hieu_raw}" không đúng. Chỉ được nhập: ${formatDanhHieuList(validDanhHieu)}`,
+          message: `Danh hiệu "${danh_hieu_raw}" không đúng. Chỉ được nhập: ${formatDanhHieuList([...validDanhHieu])}`,
         });
         continue;
       }
@@ -1035,17 +1062,37 @@ class AnnualRewardService {
 
   async checkAnnualRewards(
     personnelIds: string[],
-    nam: number | string,
+    nam: number,
     danhHieu: string
   ): Promise<{ results: CheckResult[]; summary: Record<string, number> }> {
+    const [existingRewards, proposals] = await Promise.all([
+      prisma.danhHieuHangNam.findMany({ where: { quan_nhan_id: { in: personnelIds }, nam } }),
+      prisma.bangDeXuat.findMany({
+        where: {
+          loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
+          nam,
+          status: { in: [PROPOSAL_STATUS.PENDING, PROPOSAL_STATUS.APPROVED] },
+        },
+        select: { id: true, nam: true, status: true, data_danh_hieu: true },
+      }),
+    ]);
+    const rewardByPersonnel = new Map(existingRewards.map(r => [r.quan_nhan_id, r] as const));
+    const proposalsByPersonnel = new Map<string, typeof proposals>();
+    for (const p of proposals) {
+      const data = (p.data_danh_hieu as Array<Record<string, unknown>>) ?? [];
+      for (const item of data) {
+        const pid = item.personnel_id as string;
+        if (!pid) continue;
+        const list = proposalsByPersonnel.get(pid) ?? [];
+        list.push(p);
+        proposalsByPersonnel.set(pid, list);
+      }
+    }
+
     const results: CheckResult[] = [];
 
     for (const personnelId of personnelIds) {
-      const personnelIdStr = String(personnelId);
-
-      if (!personnelIdStr) {
-        continue;
-      }
+      if (!personnelId) continue;
 
       const result: CheckResult = {
         personnel_id: personnelId,
@@ -1055,13 +1102,7 @@ class AnnualRewardService {
         proposal: null,
       };
 
-      const existingReward = await prisma.danhHieuHangNam.findFirst({
-        where: {
-          quan_nhan_id: personnelIdStr,
-          nam: parseInt(String(nam), 10),
-        },
-      });
-
+      const existingReward = rewardByPersonnel.get(personnelId) ?? null;
       if (existingReward) {
         result.has_reward = true;
         result.reward = {
@@ -1074,30 +1115,15 @@ class AnnualRewardService {
         };
       }
 
-      const proposals = await prisma.bangDeXuat.findMany({
-        where: {
-          loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
-          nam: parseInt(String(nam), 10),
-          status: {
-            in: [PROPOSAL_STATUS.PENDING, PROPOSAL_STATUS.APPROVED],
-          },
-        },
-        select: {
-          id: true,
-          nam: true,
-          status: true,
-          data_danh_hieu: true,
-        },
-      });
-
-      for (const proposal of proposals) {
+      const personnelProposals = proposalsByPersonnel.get(personnelId) ?? [];
+      for (const proposal of personnelProposals) {
         if (proposal.data_danh_hieu) {
           const dataList = Array.isArray(proposal.data_danh_hieu)
             ? (proposal.data_danh_hieu as Record<string, unknown>[])
             : [];
 
           const found = dataList.some(
-            item => String(item.personnel_id) === personnelIdStr && item.danh_hieu === danhHieu
+            item => String(item.personnel_id) === personnelId && item.danh_hieu === danhHieu
           );
 
           if (found) {
@@ -1147,10 +1173,10 @@ class AnnualRewardService {
       chuc_vu,
     } = data;
 
-    const validDanhHieu = DANH_HIEU_CA_NHAN_TAT_CA;
-    if (!validDanhHieu.includes(danh_hieu)) {
+    const allowedDanhHieu = Object.values(DANH_HIEU_CA_NHAN_HANG_NAM) as string[];
+    if (!allowedDanhHieu.includes(danh_hieu)) {
       throw new ValidationError(
-        `Danh hiệu không hợp lệ. Chỉ được chọn: ${formatDanhHieuList(validDanhHieu)}.`
+        `Danh hiệu không hợp lệ. Chỉ được chọn: ${formatDanhHieuList(allowedDanhHieu)}.`
       );
     }
 
@@ -1169,79 +1195,96 @@ class AnnualRewardService {
       });
     }
 
+    const personnelIds = personnel_ids.map(id => String(id)).filter(Boolean);
+    const namInt = nam;
+
+    const [allPersonnel, existingRewards, approvedProposals] = await Promise.all([
+      prisma.quanNhan.findMany({ where: { id: { in: personnelIds } } }),
+      prisma.danhHieuHangNam.findMany({
+        where: { quan_nhan_id: { in: personnelIds }, nam: namInt },
+      }),
+      prisma.bangDeXuat.findMany({
+        where: {
+          loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
+          nam: namInt,
+          status: PROPOSAL_STATUS.APPROVED,
+        },
+      }),
+    ]);
+
+    const personnelMap = new Map(allPersonnel.map(p => [p.id, p] as const));
+    const existingRewardMap = new Map(existingRewards.map(r => [r.quan_nhan_id, r] as const));
+    const existingAwardSet = new Set(
+      existingRewards.filter(r => r.danh_hieu === danh_hieu).map(r => r.quan_nhan_id)
+    );
+    const pendingProposalPersonnelSet = new Set<string>();
+    for (const proposal of approvedProposals) {
+      const dataDanhHieu = (proposal.data_danh_hieu as Array<Record<string, unknown>>) ?? [];
+      for (const item of dataDanhHieu) {
+        if (item.danh_hieu === danh_hieu && typeof item.personnel_id === 'string') {
+          pendingProposalPersonnelSet.add(item.personnel_id);
+        }
+      }
+    }
+
     const created = await prisma.$transaction(async tx => {
       const txCreated: DanhHieuHangNam[] = [];
 
-      for (const personnelId of personnel_ids) {
-        const personnelIdStr = String(personnelId);
-
-        if (!personnelIdStr) {
-          errors.push({ personnelId, error: 'ID quân nhân không hợp lệ' });
-          continue;
-        }
-
-        const personnelData = personnelDataMap[personnelIdStr] || {};
+      for (const personnelId of personnelIds) {
+        const personnelData = personnelDataMap[personnelId] || {};
         const individualSoQuyetDinh = personnelData.so_quyet_dinh || so_quyet_dinh;
         const individualCapBac = personnelData.cap_bac || cap_bac;
         const individualChucVu = personnelData.chuc_vu || chuc_vu;
 
-        const personnel = await tx.quanNhan.findUnique({
-          where: { id: personnelIdStr },
-        });
+        const personnel = personnelMap.get(personnelId);
 
         if (!personnel) {
           errors.push({ personnelId, error: 'Quân nhân không tồn tại' });
           continue;
         }
 
-        try {
-          const duplicateResult = await checkDuplicateAward(
-            personnelIdStr,
-            parseInt(String(nam), 10),
-            danh_hieu,
-            PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
-            PROPOSAL_STATUS.APPROVED
-          );
-          if (duplicateResult.exists) {
-            errors.push({ personnelId, error: duplicateResult.message });
-            continue;
-          }
-        } catch (e) {
-          console.error('annualReward duplicate check failed:', e);
+        if (existingAwardSet.has(personnelId)) {
+          errors.push({
+            personnelId,
+            error: `Quân nhân đã có danh hiệu ${getDanhHieuName(danh_hieu)} năm ${namInt} trên hệ thống`,
+          });
+          continue;
+        }
+        if (pendingProposalPersonnelSet.has(personnelId)) {
+          errors.push({
+            personnelId,
+            error: `Quân nhân đã có đề xuất danh hiệu ${getDanhHieuName(danh_hieu)} cho năm ${namInt}`,
+          });
+          continue;
         }
 
-        const existingReward = await tx.danhHieuHangNam.findFirst({
-          where: {
-            quan_nhan_id: personnelIdStr,
-            nam: parseInt(String(nam), 10),
-          },
-        });
+        const existingReward = existingRewardMap.get(personnelId) ?? null;
 
         let finalDanhHieu: string | null = null;
         let nhanBKBQP = false;
         let nhanCSTDTQ = false;
         let nhanBKTTCP = false;
 
-        if (danh_hieu === 'CSTDCS' || danh_hieu === 'CSTT') {
+        if (DANH_HIEU_CA_NHAN_CO_BAN.has(danh_hieu)) {
           finalDanhHieu = danh_hieu;
-        } else if (danh_hieu === 'BKBQP') {
+        } else if (danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP) {
           nhanBKBQP = true;
-        } else if (danh_hieu === 'CSTDTQ') {
+        } else if (danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ) {
           nhanCSTDTQ = true;
-        } else if (danh_hieu === 'BKTTCP') {
+        } else if (danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP) {
           nhanBKTTCP = true;
         }
 
         let rewardRecord: DanhHieuHangNam;
 
         if (existingReward) {
-          if (danh_hieu === 'BKBQP' || danh_hieu === 'CSTDTQ' || danh_hieu === 'BKTTCP') {
+          if (DANH_HIEU_CA_NHAN_BANG_KHEN.has(danh_hieu)) {
             const updateData: Prisma.DanhHieuHangNamUpdateInput = {};
-            if (danh_hieu === 'BKBQP') {
+            if (danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP) {
               updateData.nhan_bkbqp = true;
-            } else if (danh_hieu === 'CSTDTQ') {
+            } else if (danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ) {
               updateData.nhan_cstdtq = true;
-            } else if (danh_hieu === 'BKTTCP') {
+            } else if (danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP) {
               updateData.nhan_bkttcp = true;
             }
 
@@ -1261,8 +1304,8 @@ class AnnualRewardService {
         } else {
           rewardRecord = await tx.danhHieuHangNam.create({
             data: {
-              quan_nhan_id: personnelIdStr,
-              nam: parseInt(String(nam), 10),
+              quan_nhan_id: personnelId,
+              nam: namInt,
               danh_hieu: finalDanhHieu,
               cap_bac: individualCapBac || null,
               chuc_vu: individualChucVu || null,
@@ -1285,7 +1328,7 @@ class AnnualRewardService {
       try {
         await profileService.recalculateAnnualProfile(rewardRecord.quan_nhan_id);
       } catch (e) {
-        console.error('recalculateAnnualProfile failed:', e);
+        writeSystemLog({ action: 'ERROR', resource: 'annual-rewards', description: `Lỗi tính lại hồ sơ hằng năm: ${e}` });
       }
     }
 
@@ -1534,13 +1577,13 @@ class AnnualRewardService {
   async getAnnualRewardsList(params: {
     page: number;
     limit: number;
-    nam?: string;
+    nam?: number;
     danh_hieu?: string;
     quanNhanWhere?: Record<string, unknown> | null;
   }) {
     const { page, limit, nam, danh_hieu, quanNhanWhere } = params;
     const where: Record<string, unknown> = {};
-    if (nam) where.nam = parseInt(nam);
+    if (nam) where.nam = nam;
     if (danh_hieu) where.danh_hieu = danh_hieu;
     if (quanNhanWhere) where.QuanNhan = quanNhanWhere;
 

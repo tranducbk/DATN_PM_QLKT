@@ -240,7 +240,7 @@ export default function ManagerProposalDetailPage() {
 
       setPositionHistoriesMap(historiesMap);
     } catch (error) {
-      console.error('Lỗi tải lịch sử chức vụ', error);
+      message.error(getApiErrorMessage(error));
     }
   };
 

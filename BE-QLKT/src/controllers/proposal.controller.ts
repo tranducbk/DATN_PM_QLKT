@@ -22,12 +22,24 @@ function managerUnitFilterId(qn: {
   return qn.co_quan_don_vi_id ?? qn.don_vi_truc_thuoc_id ?? undefined;
 }
 
+function parseYearQuery(value: unknown): number | null {
+  const yearValue = Array.isArray(value) ? value[0] : value;
+  if (typeof yearValue !== 'string' && typeof yearValue !== 'number') {
+    return null;
+  }
+
+  const year = Number(yearValue);
+  return Number.isFinite(year) ? year : null;
+}
+
 const ALL_PROPOSAL_TYPES = Object.values(PROPOSAL_TYPES);
 
 class ProposalController {
   exportTemplate = catchAsync(async (req: Request, res: Response) => {
-    const userId = req.user!.id;
-    const { type = PROPOSAL_TYPES.CA_NHAN_HANG_NAM } = req.query;
+    const user = req.user!;
+    const query = req.query as { type?: ProposalType };
+    const userId = user.id;
+    const { type = PROPOSAL_TYPES.CA_NHAN_HANG_NAM } = query;
     if (!ALL_PROPOSAL_TYPES.includes(type as ProposalType)) {
       return ResponseHelper.badRequest(
         res,
@@ -46,8 +58,17 @@ class ProposalController {
   });
 
   submitProposal = catchAsync(async (req: Request, res: Response) => {
-    const userId = req.user!.id;
-    const userRole = req.user!.role;
+    const user = req.user!;
+    const body = req.body as {
+      so_quyet_dinh?: string;
+      type?: ProposalType;
+      title_data?: unknown;
+      selected_personnel?: string[];
+      nam?: number | string;
+      ghi_chu?: string;
+    };
+    const userId = user.id;
+    const userRole = user.role;
     const {
       so_quyet_dinh,
       type = PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
@@ -55,7 +76,7 @@ class ProposalController {
       selected_personnel,
       nam,
       ghi_chu,
-    } = req.body;
+    } = body;
     if (!ALL_PROPOSAL_TYPES.includes(type as ProposalType)) {
       return ResponseHelper.badRequest(
         res,
@@ -89,11 +110,11 @@ class ProposalController {
       ghi_chu
     );
     try {
-      await notificationHelper.notifyAdminsOnProposalSubmission(result.proposal, req.user);
+      await notificationHelper.notifyAdminsOnProposalSubmission(result.proposal, user);
     } catch (notifError) {
       await writeSystemLog({
-        userId: req.user?.id,
-        userRole: req.user?.role,
+        userId: user.id,
+        userRole: user.role,
         action: 'ERROR',
         resource: 'proposals',
         description: 'Lỗi gửi thông báo cho Admin khi nộp đề xuất',
@@ -104,10 +125,12 @@ class ProposalController {
   });
 
   getProposals = catchAsync(async (req: Request, res: Response) => {
-    const { page, limit } = parsePagination(req.query);
+    const user = req.user!;
+    const query = req.query as { page?: number; limit?: number };
+    const { page, limit } = parsePagination(query);
     const result = await proposalService.getProposals(
-      req.user!.id,
-      req.user!.role,
+      user.id,
+      user.role,
       page,
       limit
     );
@@ -118,11 +141,13 @@ class ProposalController {
   });
 
   getProposalById = catchAsync(async (req: Request, res: Response) => {
-    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const user = req.user!;
+    const params = req.params as { id?: string | string[] };
+    const id = Array.isArray(params.id) ? params.id[0] : params.id;
     if (!id) {
       return ResponseHelper.badRequest(res, 'ID đề xuất không hợp lệ');
     }
-    const result = await proposalService.getProposalById(String(id), req.user!.id, req.user!.role);
+    const result = await proposalService.getProposalById(String(id), user.id, user.role);
     return ResponseHelper.success(res, {
       message: 'Lấy chi tiết đề xuất thành công',
       data: result,
@@ -130,26 +155,41 @@ class ProposalController {
   });
 
   approveProposal = catchAsync(async (req: Request, res: Response) => {
-    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-    const adminId = req.user!.id;
+    const user = req.user!;
+    const params = req.params as { id?: string | string[] };
+    const body = req.body as {
+      data_danh_hieu?: string;
+      data_thanh_tich?: string;
+      data_nien_han?: string;
+      data_cong_hien?: string;
+      so_quyet_dinh_ca_nhan_hang_nam?: string;
+      so_quyet_dinh_don_vi_hang_nam?: string;
+      so_quyet_dinh_nien_han?: string;
+      so_quyet_dinh_cong_hien?: string;
+      so_quyet_dinh_dot_xuat?: string;
+      so_quyet_dinh_nckh?: string;
+      ghi_chu?: string;
+    };
+    const id = Array.isArray(params.id) ? params.id[0] : params.id;
+    const adminId = user.id;
     let editedData;
     try {
       editedData = {
-        data_danh_hieu: JSON.parse(req.body.data_danh_hieu || '[]'),
-        data_thanh_tich: JSON.parse(req.body.data_thanh_tich || '[]'),
-        data_nien_han: JSON.parse(req.body.data_nien_han || '[]'),
-        data_cong_hien: JSON.parse(req.body.data_cong_hien || '[]'),
+        data_danh_hieu: JSON.parse(body.data_danh_hieu || '[]'),
+        data_thanh_tich: JSON.parse(body.data_thanh_tich || '[]'),
+        data_nien_han: JSON.parse(body.data_nien_han || '[]'),
+        data_cong_hien: JSON.parse(body.data_cong_hien || '[]'),
       };
     } catch {
       return ResponseHelper.badRequest(res, 'Du lieu khong hop le');
     }
     const decisions = {
-      so_quyet_dinh_ca_nhan_hang_nam: req.body.so_quyet_dinh_ca_nhan_hang_nam,
-      so_quyet_dinh_don_vi_hang_nam: req.body.so_quyet_dinh_don_vi_hang_nam,
-      so_quyet_dinh_nien_han: req.body.so_quyet_dinh_nien_han,
-      so_quyet_dinh_cong_hien: req.body.so_quyet_dinh_cong_hien,
-      so_quyet_dinh_dot_xuat: req.body.so_quyet_dinh_dot_xuat,
-      so_quyet_dinh_nckh: req.body.so_quyet_dinh_nckh,
+      so_quyet_dinh_ca_nhan_hang_nam: body.so_quyet_dinh_ca_nhan_hang_nam,
+      so_quyet_dinh_don_vi_hang_nam: body.so_quyet_dinh_don_vi_hang_nam,
+      so_quyet_dinh_nien_han: body.so_quyet_dinh_nien_han,
+      so_quyet_dinh_cong_hien: body.so_quyet_dinh_cong_hien,
+      so_quyet_dinh_dot_xuat: body.so_quyet_dinh_dot_xuat,
+      so_quyet_dinh_nckh: body.so_quyet_dinh_nckh,
     };
     const files = req.files as Record<string, Express.Multer.File[]> | undefined;
     const pdfFiles = {
@@ -169,14 +209,14 @@ class ProposalController {
       adminId,
       decisions,
       pdfFiles,
-      req.body.ghi_chu || null
+      body.ghi_chu || null
     );
     try {
-      await notificationHelper.notifyManagerOnProposalApproval(result.proposal, req.user);
+      await notificationHelper.notifyManagerOnProposalApproval(result.proposal, user);
     } catch (notifError) {
       await writeSystemLog({
-        userId: req.user?.id,
-        userRole: req.user?.role,
+        userId: user.id,
+        userRole: user.role,
         action: 'ERROR',
         resource: 'proposals',
         description: 'Lỗi gửi thông báo cho Manager khi duyệt đề xuất',
@@ -188,13 +228,13 @@ class ProposalController {
         await notificationHelper.notifyUsersOnAwardApproved(
           result.affectedPersonnelIds as string[],
           result.proposal,
-          req.user!.username
+          user.username
         );
       }
     } catch (notifError) {
       await writeSystemLog({
-        userId: req.user?.id,
-        userRole: req.user?.role,
+        userId: user.id,
+        userRole: user.role,
         action: 'ERROR',
         resource: 'proposals',
         description: 'Lỗi gửi thông báo cho quân nhân khi duyệt khen thưởng',
@@ -208,10 +248,9 @@ class ProposalController {
   });
 
   getPdfFile = catchAsync(async (req: Request, res: Response) => {
+    const params = req.params as { filename?: string | string[] };
     const filename = decodeURIComponent(
-      Array.isArray(req.params.filename)
-        ? req.params.filename[0]
-        : String(req.params.filename ?? '')
+      Array.isArray(params.filename) ? params.filename[0] : String(params.filename ?? '')
     );
     if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
       return ResponseHelper.badRequest(res, 'Tên file không hợp lệ');
@@ -222,8 +261,11 @@ class ProposalController {
   });
 
   rejectProposal = catchAsync(async (req: Request, res: Response) => {
-    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-    const { ghi_chu, ly_do } = req.body;
+    const user = req.user!;
+    const params = req.params as { id?: string | string[] };
+    const body = req.body as { ghi_chu?: string; ly_do?: string };
+    const id = Array.isArray(params.id) ? params.id[0] : params.id;
+    const { ghi_chu, ly_do } = body;
     const rejectReason = ghi_chu || ly_do;
     if (!id) {
       return ResponseHelper.badRequest(res, 'ID đề xuất không hợp lệ');
@@ -231,17 +273,17 @@ class ProposalController {
     if (!rejectReason || rejectReason.trim() === '') {
       return ResponseHelper.badRequest(res, 'Vui lòng nhập lý do từ chối');
     }
-    const result = await proposalService.rejectProposal(String(id), rejectReason, req.user!.id);
+    const result = await proposalService.rejectProposal(String(id), rejectReason, user.id);
     try {
       await notificationHelper.notifyManagerOnProposalRejection(
         result.proposal,
-        req.user,
+        user,
         rejectReason
       );
     } catch (notifError) {
       await writeSystemLog({
-        userId: req.user?.id,
-        userRole: req.user?.role,
+        userId: user.id,
+        userRole: user.role,
         action: 'ERROR',
         resource: 'proposals',
         description: 'Lỗi gửi thông báo cho Manager khi từ chối đề xuất',
@@ -255,7 +297,8 @@ class ProposalController {
   });
 
   downloadProposalExcel = catchAsync(async (req: Request, res: Response) => {
-    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const params = req.params as { id?: string | string[] };
+    const id = Array.isArray(params.id) ? params.id[0] : params.id;
     if (!id) {
       return ResponseHelper.badRequest(res, 'ID đề xuất không hợp lệ');
     }
@@ -272,18 +315,20 @@ class ProposalController {
   });
 
   getAllAwards = catchAsync(async (req: Request, res: Response) => {
-    const { don_vi_id, nam, danh_hieu } = req.query;
-    const { page, limit } = parsePagination(req.query);
+    const user = req.user!;
+    const query = req.query as { don_vi_id?: string; nam?: number; danh_hieu?: string };
+    const { don_vi_id, nam, danh_hieu } = query;
+    const { page, limit } = parsePagination(query);
     const filters: Record<string, unknown> = {};
     if (don_vi_id) filters.don_vi_id = don_vi_id;
     if (nam) filters.nam = nam;
     if (danh_hieu) filters.danh_hieu = danh_hieu;
-    if (req.user!.role === ROLES.MANAGER) {
-      const user = await proposalService.getUserWithUnit(req.user!.id);
-      if (!user?.QuanNhan) {
+    if (user.role === ROLES.MANAGER) {
+      const userWithUnit = await proposalService.getUserWithUnit(user.id);
+      if (!userWithUnit?.QuanNhan) {
         return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
       }
-      const uid = managerUnitFilterId(user.QuanNhan);
+      const uid = managerUnitFilterId(userWithUnit.QuanNhan);
       if (uid) filters.don_vi_id = uid;
     }
     const result = await proposalService.getAllAwards(filters, page, limit);
@@ -307,10 +352,12 @@ class ProposalController {
   });
 
   importAwards = catchAsync(async (req: Request, res: Response) => {
-    if (!req.file) {
+    const user = req.user!;
+    const file = req.file;
+    if (!file) {
       return ResponseHelper.badRequest(res, 'Vui lòng gửi file Excel');
     }
-    const result = await proposalService.importAwards(req.file.buffer, req.user!.id);
+    const result = await proposalService.importAwards(file.buffer, user.id);
     try {
       if (result.importedUnits?.length > 0) {
         for (const u of result.importedUnits) {
@@ -319,14 +366,14 @@ class ProposalController {
             u.don_vi_name,
             u.nam,
             u.award_type,
-            req.user!.username
+            user.username
           );
         }
       }
     } catch (notifError) {
       await writeSystemLog({
-        userId: req.user?.id,
-        userRole: req.user?.role,
+        userId: user.id,
+        userRole: user.role,
         action: 'ERROR',
         resource: 'proposals',
         description: 'Lỗi gửi thông báo cho Manager khi import khen thưởng',
@@ -337,17 +384,19 @@ class ProposalController {
   });
 
   exportAllAwardsExcel = catchAsync(async (req: Request, res: Response) => {
-    const { don_vi_id, nam, danh_hieu } = req.query;
+    const user = req.user!;
+    const query = req.query as { don_vi_id?: string; nam?: number; danh_hieu?: string };
+    const { don_vi_id, nam, danh_hieu } = query;
     const filters: Record<string, unknown> = {};
     if (don_vi_id) filters.don_vi_id = don_vi_id;
     if (nam) filters.nam = nam;
     if (danh_hieu) filters.danh_hieu = danh_hieu;
-    if (req.user!.role === ROLES.MANAGER) {
-      const user = await proposalService.getUserWithUnit(req.user!.id);
-      if (!user?.QuanNhan) {
+    if (user.role === ROLES.MANAGER) {
+      const userWithUnit = await proposalService.getUserWithUnit(user.id);
+      if (!userWithUnit?.QuanNhan) {
         return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
       }
-      filters.don_vi_id = managerUnitFilterId(user.QuanNhan);
+      filters.don_vi_id = managerUnitFilterId(userWithUnit.QuanNhan);
     }
     const buffer = await proposalService.exportAllAwardsExcel(filters);
     res.setHeader(
@@ -362,14 +411,16 @@ class ProposalController {
   });
 
   deleteProposal = catchAsync(async (req: Request, res: Response) => {
-    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const user = req.user!;
+    const params = req.params as { id?: string | string[] };
+    const id = Array.isArray(params.id) ? params.id[0] : params.id;
     if (!id) {
       return ResponseHelper.badRequest(res, 'ID đề xuất không hợp lệ');
     }
-    const result = await proposalService.deleteProposal(id, req.user!.id, req.user!.role);
+    const result = await proposalService.deleteProposal(id, user.id, user.role);
     await writeSystemLog({
-      userId: req.user!.id,
-      userRole: req.user!.role,
+      userId: user.id,
+      userRole: user.role,
       action: AUDIT_ACTIONS.DELETE,
       resource: 'proposals',
       resourceId: id,
@@ -391,17 +442,27 @@ class ProposalController {
   });
 
   checkDuplicateAward = catchAsync(async (req: Request, res: Response) => {
-    const { personnel_id, nam, danh_hieu, proposal_type } = req.query;
+    const query = req.query as {
+      personnel_id?: string;
+      nam?: string | number | (string | number)[];
+      danh_hieu?: string;
+      proposal_type?: string;
+    };
+    const { personnel_id, nam, danh_hieu, proposal_type } = query;
     if (!personnel_id || !nam || !danh_hieu || !proposal_type) {
       return ResponseHelper.badRequest(
         res,
         'Thiếu thông tin: quân nhân, năm, danh hiệu và loại đề xuất'
       );
     }
+    const namNumber = parseYearQuery(nam);
+    if (namNumber === null) {
+      return ResponseHelper.badRequest(res, 'Năm không hợp lệ');
+    }
     return ResponseHelper.success(res, {
       data: await proposalService.checkDuplicateAward(
         personnel_id as string,
-        parseInt(nam as string),
+        namNumber,
         danh_hieu as string,
         proposal_type as string
       ),
@@ -409,17 +470,27 @@ class ProposalController {
   });
 
   checkDuplicateUnitAward = catchAsync(async (req: Request, res: Response) => {
-    const { don_vi_id, nam, danh_hieu, proposal_type } = req.query;
+    const query = req.query as {
+      don_vi_id?: string;
+      nam?: string | number | (string | number)[];
+      danh_hieu?: string;
+      proposal_type?: string;
+    };
+    const { don_vi_id, nam, danh_hieu, proposal_type } = query;
     if (!don_vi_id || !nam || !danh_hieu || !proposal_type) {
       return ResponseHelper.badRequest(
         res,
         'Thiếu thông tin: đơn vị, năm, danh hiệu và loại đề xuất'
       );
     }
+    const namNumber = parseYearQuery(nam);
+    if (namNumber === null) {
+      return ResponseHelper.badRequest(res, 'Năm không hợp lệ');
+    }
     return ResponseHelper.success(res, {
       data: await proposalService.checkDuplicateUnitAward(
         don_vi_id as string,
-        parseInt(nam as string),
+        namNumber,
         danh_hieu as string,
         proposal_type as string
       ),
@@ -427,7 +498,8 @@ class ProposalController {
   });
 
   checkDuplicateBatch = catchAsync(async (req: Request, res: Response) => {
-    const { items } = req.body;
+    const body = req.body as { items?: any[] };
+    const { items } = body;
     if (!Array.isArray(items) || items.length === 0) {
       return ResponseHelper.badRequest(res, 'Danh sách kiểm tra không hợp lệ');
     }
@@ -437,7 +509,8 @@ class ProposalController {
   });
 
   checkDuplicateUnitBatch = catchAsync(async (req: Request, res: Response) => {
-    const { items } = req.body;
+    const body = req.body as { items?: any[] };
+    const { items } = body;
     if (!Array.isArray(items) || items.length === 0) {
       return ResponseHelper.badRequest(res, 'Danh sách kiểm tra không hợp lệ');
     }
@@ -460,28 +533,32 @@ class ProposalController {
   });
 
   importHCCSVV = catchAsync(async (req: Request, res: Response) => {
-    if (!req.file) {
+    const user = req.user!;
+    const file = req.file;
+    if (!file) {
       return ResponseHelper.badRequest(res, 'Vui lòng gửi file Excel');
     }
     return ResponseHelper.success(res, {
       message: 'Import Huy chương Chiến sĩ Vẻ vang thành công',
-      data: await hccsvvService.importFromExcel(req.file.buffer, req.user!.id),
+      data: await hccsvvService.importFromExcel(file.buffer, user.id),
     });
   });
 
   getAllHCCSVV = catchAsync(async (req: Request, res: Response) => {
-    const { don_vi_id, nam, danh_hieu } = req.query;
-    const { page, limit } = parsePagination(req.query);
+    const user = req.user!;
+    const query = req.query as { don_vi_id?: string; nam?: number; danh_hieu?: string };
+    const { don_vi_id, nam, danh_hieu } = query;
+    const { page, limit } = parsePagination(query);
     const filters: Record<string, unknown> = {};
     if (don_vi_id) filters.don_vi_id = don_vi_id;
     if (nam) filters.nam = nam;
     if (danh_hieu) filters.danh_hieu = danh_hieu;
-    if (req.user!.role === ROLES.MANAGER) {
-      const user = await proposalService.getUserWithUnit(req.user!.id);
-      if (!user?.QuanNhan) {
+    if (user.role === ROLES.MANAGER) {
+      const userWithUnit = await proposalService.getUserWithUnit(user.id);
+      if (!userWithUnit?.QuanNhan) {
         return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
       }
-      filters.don_vi_id = managerUnitFilterId(user.QuanNhan);
+      filters.don_vi_id = managerUnitFilterId(userWithUnit.QuanNhan);
     }
     return ResponseHelper.success(res, {
       message: 'Lấy danh sách HCCSVV thành công',
@@ -490,17 +567,19 @@ class ProposalController {
   });
 
   exportHCCSVVExcel = catchAsync(async (req: Request, res: Response) => {
-    const { don_vi_id, nam, danh_hieu } = req.query;
+    const user = req.user!;
+    const query = req.query as { don_vi_id?: string; nam?: number; danh_hieu?: string };
+    const { don_vi_id, nam, danh_hieu } = query;
     const filters: Record<string, unknown> = {};
     if (don_vi_id) filters.don_vi_id = don_vi_id;
     if (nam) filters.nam = nam;
     if (danh_hieu) filters.danh_hieu = danh_hieu;
-    if (req.user!.role === ROLES.MANAGER) {
-      const user = await proposalService.getUserWithUnit(req.user!.id);
-      if (!user?.QuanNhan) {
+    if (user.role === ROLES.MANAGER) {
+      const userWithUnit = await proposalService.getUserWithUnit(user.id);
+      if (!userWithUnit?.QuanNhan) {
         return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
       }
-      filters.don_vi_id = managerUnitFilterId(user.QuanNhan);
+      filters.don_vi_id = managerUnitFilterId(userWithUnit.QuanNhan);
     }
     const buffer = await hccsvvService.exportToExcel(filters);
     res.setHeader(
@@ -535,31 +614,35 @@ class ProposalController {
   });
 
   importContributionAwards = catchAsync(async (req: Request, res: Response) => {
-    if (!req.file) {
+    const user = req.user!;
+    const file = req.file;
+    if (!file) {
       return ResponseHelper.badRequest(res, 'Vui lòng gửi file Excel');
     }
     return ResponseHelper.success(res, {
       message: 'Import Huân chương Bảo vệ Tổ quốc thành công',
       data: await (async () => {
-        const preview = await contributionAwardService.previewImport(req.file!.buffer);
-        return contributionAwardService.confirmImport(preview.valid, req.user!.id);
+        const preview = await contributionAwardService.previewImport(file.buffer);
+        return contributionAwardService.confirmImport(preview.valid, user.id);
       })(),
     });
   });
 
   getAllContributionAwards = catchAsync(async (req: Request, res: Response) => {
-    const { don_vi_id, nam, danh_hieu } = req.query;
-    const { page, limit } = parsePagination(req.query);
+    const user = req.user!;
+    const query = req.query as { don_vi_id?: string; nam?: number; danh_hieu?: string };
+    const { don_vi_id, nam, danh_hieu } = query;
+    const { page, limit } = parsePagination(query);
     const filters: Record<string, unknown> = {};
     if (don_vi_id) filters.don_vi_id = don_vi_id;
     if (nam) filters.nam = nam;
     if (danh_hieu) filters.danh_hieu = danh_hieu;
-    if (req.user!.role === ROLES.MANAGER) {
-      const user = await proposalService.getUserWithUnit(req.user!.id);
-      if (!user?.QuanNhan) {
+    if (user.role === ROLES.MANAGER) {
+      const userWithUnit = await proposalService.getUserWithUnit(user.id);
+      if (!userWithUnit?.QuanNhan) {
         return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
       }
-      filters.don_vi_id = managerUnitFilterId(user.QuanNhan);
+      filters.don_vi_id = managerUnitFilterId(userWithUnit.QuanNhan);
     }
     return ResponseHelper.success(res, {
       message: 'Lấy danh sách HCBVTQ thành công',
@@ -568,17 +651,19 @@ class ProposalController {
   });
 
   exportContributionAwardsExcel = catchAsync(async (req: Request, res: Response) => {
-    const { don_vi_id, nam, danh_hieu } = req.query;
+    const user = req.user!;
+    const query = req.query as { don_vi_id?: string; nam?: number; danh_hieu?: string };
+    const { don_vi_id, nam, danh_hieu } = query;
     const filters: Record<string, unknown> = {};
     if (don_vi_id) filters.don_vi_id = don_vi_id;
     if (nam) filters.nam = nam;
     if (danh_hieu) filters.danh_hieu = danh_hieu;
-    if (req.user!.role === ROLES.MANAGER) {
-      const user = await proposalService.getUserWithUnit(req.user!.id);
-      if (!user?.QuanNhan) {
+    if (user.role === ROLES.MANAGER) {
+      const userWithUnit = await proposalService.getUserWithUnit(user.id);
+      if (!userWithUnit?.QuanNhan) {
         return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
       }
-      filters.don_vi_id = managerUnitFilterId(user.QuanNhan);
+      filters.don_vi_id = managerUnitFilterId(userWithUnit.QuanNhan);
     }
     const buffer = await contributionAwardService.exportToExcel(filters);
     res.setHeader(
@@ -613,27 +698,31 @@ class ProposalController {
   });
 
   importCommemorativeMedals = catchAsync(async (req: Request, res: Response) => {
-    if (!req.file) {
+    const user = req.user!;
+    const file = req.file;
+    if (!file) {
       return ResponseHelper.badRequest(res, 'Vui lòng gửi file Excel');
     }
     return ResponseHelper.success(res, {
       message: 'Import Kỷ niệm chương thành công',
-      data: await commemorativeMedalService.importFromExcel(req.file.buffer, req.user!.id),
+      data: await commemorativeMedalService.importFromExcel(file.buffer, user.id),
     });
   });
 
   getAllCommemorativeMedals = catchAsync(async (req: Request, res: Response) => {
-    const { don_vi_id, nam } = req.query;
-    const { page, limit } = parsePagination(req.query);
+    const user = req.user!;
+    const query = req.query as { don_vi_id?: string; nam?: number };
+    const { don_vi_id, nam } = query;
+    const { page, limit } = parsePagination(query);
     const filters: Record<string, unknown> = {};
     if (don_vi_id) filters.don_vi_id = don_vi_id;
     if (nam) filters.nam = nam;
-    if (req.user!.role === ROLES.MANAGER) {
-      const user = await proposalService.getUserWithUnit(req.user!.id);
-      if (!user?.QuanNhan) {
+    if (user.role === ROLES.MANAGER) {
+      const userWithUnit = await proposalService.getUserWithUnit(user.id);
+      if (!userWithUnit?.QuanNhan) {
         return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
       }
-      filters.don_vi_id = managerUnitFilterId(user.QuanNhan);
+      filters.don_vi_id = managerUnitFilterId(userWithUnit.QuanNhan);
     }
     return ResponseHelper.success(res, {
       message: 'Lấy danh sách Kỷ niệm chương thành công',
@@ -642,16 +731,18 @@ class ProposalController {
   });
 
   exportCommemorativeMedalsExcel = catchAsync(async (req: Request, res: Response) => {
-    const { don_vi_id, nam } = req.query;
+    const user = req.user!;
+    const query = req.query as { don_vi_id?: string; nam?: number };
+    const { don_vi_id, nam } = query;
     const filters: Record<string, unknown> = {};
     if (don_vi_id) filters.don_vi_id = don_vi_id;
     if (nam) filters.nam = nam;
-    if (req.user!.role === ROLES.MANAGER) {
-      const user = await proposalService.getUserWithUnit(req.user!.id);
-      if (!user?.QuanNhan) {
+    if (user.role === ROLES.MANAGER) {
+      const userWithUnit = await proposalService.getUserWithUnit(user.id);
+      if (!userWithUnit?.QuanNhan) {
         return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
       }
-      filters.don_vi_id = managerUnitFilterId(user.QuanNhan);
+      filters.don_vi_id = managerUnitFilterId(userWithUnit.QuanNhan);
     }
     const buffer = await commemorativeMedalService.exportToExcel(filters);
     res.setHeader(
@@ -685,28 +776,20 @@ class ProposalController {
     return res.status(200).send(buffer);
   });
 
-  importMilitaryFlag = catchAsync(async (req: Request, res: Response) => {
-    if (!req.file) {
-      return ResponseHelper.badRequest(res, 'Vui lòng gửi file Excel');
-    }
-    return ResponseHelper.success(res, {
-      message: 'Import Huy chương Quân kỳ Quyết thắng thành công',
-      data: await militaryFlagService.importFromExcel(req.file.buffer, req.user!.id),
-    });
-  });
-
   getAllMilitaryFlag = catchAsync(async (req: Request, res: Response) => {
-    const { don_vi_id, nam } = req.query;
-    const { page, limit } = parsePagination(req.query);
+    const user = req.user!;
+    const query = req.query as { don_vi_id?: string; nam?: number };
+    const { don_vi_id, nam } = query;
+    const { page, limit } = parsePagination(query);
     const filters: Record<string, unknown> = {};
     if (don_vi_id) filters.don_vi_id = don_vi_id;
     if (nam) filters.nam = nam;
-    if (req.user!.role === ROLES.MANAGER) {
-      const user = await proposalService.getUserWithUnit(req.user!.id);
-      if (!user?.QuanNhan) {
+    if (user.role === ROLES.MANAGER) {
+      const userWithUnit = await proposalService.getUserWithUnit(user.id);
+      if (!userWithUnit?.QuanNhan) {
         return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
       }
-      filters.don_vi_id = managerUnitFilterId(user.QuanNhan);
+      filters.don_vi_id = managerUnitFilterId(userWithUnit.QuanNhan);
     }
     return ResponseHelper.success(res, {
       message: 'Lấy danh sách HCQKQT thành công',
@@ -715,16 +798,18 @@ class ProposalController {
   });
 
   exportMilitaryFlagExcel = catchAsync(async (req: Request, res: Response) => {
-    const { don_vi_id, nam } = req.query;
+    const user = req.user!;
+    const query = req.query as { don_vi_id?: string; nam?: number };
+    const { don_vi_id, nam } = query;
     const filters: Record<string, unknown> = {};
     if (don_vi_id) filters.don_vi_id = don_vi_id;
     if (nam) filters.nam = nam;
-    if (req.user!.role === ROLES.MANAGER) {
-      const user = await proposalService.getUserWithUnit(req.user!.id);
-      if (!user?.QuanNhan) {
+    if (user.role === ROLES.MANAGER) {
+      const userWithUnit = await proposalService.getUserWithUnit(user.id);
+      if (!userWithUnit?.QuanNhan) {
         return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
       }
-      filters.don_vi_id = managerUnitFilterId(user.QuanNhan);
+      filters.don_vi_id = managerUnitFilterId(userWithUnit.QuanNhan);
     }
     const buffer = await militaryFlagService.exportToExcel(filters);
     res.setHeader(

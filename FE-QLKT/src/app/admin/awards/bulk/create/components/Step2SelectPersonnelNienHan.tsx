@@ -113,7 +113,7 @@ export function Step2SelectPersonnelNienHan({
         }
       }
     } catch (error: unknown) {
-      console.error('Lỗi tải danh sách quân nhân niên hạn', error);
+      message.error(getApiErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -142,7 +142,7 @@ export function Step2SelectPersonnelNienHan({
 
       setServiceProfilesMap(profilesMap);
     } catch (error) {
-      console.error('Lỗi tải hồ sơ niên hạn', error);
+      message.error(getApiErrorMessage(error));
     } finally {
       setCheckingProfiles(false);
     }

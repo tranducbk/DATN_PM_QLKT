@@ -2,14 +2,11 @@ import { prisma } from '../models';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import ExcelJS from 'exceljs';
 import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHelper';
-import { checkDuplicateAward } from '../helpers/awardValidation';
 import * as notificationHelper from '../helpers/notification';
-import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { ValidationError, NotFoundError } from '../middlewares/errorHandler';
 import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys } from '../helpers/excelHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
-import type { QuanNhan } from '../generated/prisma';
 import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
 import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
 
@@ -35,7 +32,7 @@ interface PreviewValidItem {
   }[];
 }
 
-interface ConfirmImportItem {
+export interface ConfirmImportItem {
   personnel_id: string;
   ho_ten: string;
   nam: number;
@@ -50,16 +47,6 @@ interface MilitaryFlagFilters {
   don_vi_id?: string;
   include_sub_units?: boolean;
   nam?: number;
-}
-
-interface ImportResults {
-  success: number;
-  failed: number;
-  total: number;
-  imported: number;
-  errors: string[];
-  selectedPersonnelIds: string[];
-  titleData: Record<string, unknown>[];
 }
 
 class MilitaryFlagService {
@@ -125,7 +112,7 @@ class MilitaryFlagService {
     const pendingPersonnelIds = buildPendingKeys(
       pendingProposals as Array<Record<string, unknown>>,
       'data_nien_han',
-      (item) => item.personnel_id ? String(item.personnel_id) : null
+      (item) => item.personnel_id as string
     );
 
     const personnelMap = new Map(personnelList.map(p => [p.id, p]));
@@ -298,7 +285,7 @@ class MilitaryFlagService {
     return { total, valid, errors };
   }
 
-  async confirmImport(validItems: ConfirmImportItem[], adminId: string) {
+  async confirmImport(validItems: ConfirmImportItem[]) {
     const personnelIds = [...new Set(validItems.map(item => item.personnel_id))];
 
     // Parallel: check pending proposals + existing records
@@ -315,7 +302,7 @@ class MilitaryFlagService {
     const pendingPersonnelIds = buildPendingKeys(
       pendingProposals as Array<Record<string, unknown>>,
       'data_nien_han',
-      (item) => item.personnel_id ? String(item.personnel_id) : null
+      (item) => item.personnel_id as string
     );
     const pendingConflicts: string[] = [];
     for (const item of validItems) {
@@ -390,180 +377,6 @@ class MilitaryFlagService {
       loaiKhenThuong: PROPOSAL_TYPES.HC_QKQT,
       editableColumnLetters: ['G'],
     });
-  }
-
-  async importFromExcel(excelBuffer: Buffer, adminId: string) {
-    const workbook = await loadWorkbook(excelBuffer);
-    const worksheet = workbook.getWorksheet('HCQKQT');
-
-    if (!worksheet) {
-      throw new ValidationError('Không tìm thấy sheet "HCQKQT" trong file Excel');
-    }
-
-    const results: ImportResults = {
-      success: 0,
-      failed: 0,
-      total: 0,
-      imported: 0,
-      errors: [],
-      selectedPersonnelIds: [],
-      titleData: [],
-    };
-
-    const rows: { row: ExcelJS.Row; rowNumber: number }[] = [];
-    worksheet.eachRow((row, rowNumber) => {
-      if (rowNumber > 1) {
-        rows.push({ row, rowNumber });
-      }
-    });
-
-    // Batch query: collect all unique ho_ten values, then query once
-    const allHoTen = new Set<string>();
-    for (const { row } of rows) {
-      const ho_ten = row.getCell(1).value?.toString().trim();
-      if (ho_ten) allHoTen.add(ho_ten);
-    }
-    const allPersonnel = allHoTen.size > 0
-      ? await prisma.quanNhan.findMany({ where: { ho_ten: { in: [...allHoTen] } } })
-      : [];
-    const personnelByName = new Map<string, typeof allPersonnel>();
-    for (const p of allPersonnel) {
-      const list = personnelByName.get(p.ho_ten) ?? [];
-      list.push(p);
-      personnelByName.set(p.ho_ten, list);
-    }
-
-    for (const { row, rowNumber } of rows) {
-      try {
-        const ho_ten = row.getCell(1).value?.toString().trim();
-        const ngay_sinh_raw = row.getCell(2).value;
-        const nam = parseInt(String(row.getCell(3).value), 10);
-        const cap_bac = row.getCell(4).value?.toString() ?? null;
-        const chuc_vu = row.getCell(5).value?.toString() ?? null;
-        const ghi_chu = row.getCell(6).value?.toString() ?? null;
-        const so_quyet_dinh = row.getCell(7).value?.toString() ?? null;
-
-        if (!ho_ten || !nam) {
-          results.errors.push(`Dòng ${rowNumber}: Thiếu thông tin bắt buộc`);
-          results.failed++;
-          continue;
-        }
-
-        const personnelList = personnelByName.get(ho_ten) ?? [];
-        if (personnelList.length === 0) {
-          results.errors.push(`Dòng ${rowNumber}: Không tìm thấy quân nhân với tên ${ho_ten}`);
-          results.failed++;
-          continue;
-        }
-
-        let personnel: QuanNhan | undefined;
-        if (personnelList.length === 1) {
-          personnel = personnelList[0];
-        } else {
-          if (!ngay_sinh_raw) {
-            results.errors.push(
-              `Dòng ${rowNumber}: Có ${personnelList.length} người trùng tên "${ho_ten}". Vui lòng cung cấp ngày sinh`
-            );
-            results.failed++;
-            continue;
-          }
-
-          let ngay_sinh: Date;
-          if (ngay_sinh_raw instanceof Date) {
-            ngay_sinh = ngay_sinh_raw;
-          } else {
-            const dateStr = String(ngay_sinh_raw).trim();
-            const parts = dateStr.split('/');
-            if (parts.length === 3) {
-              ngay_sinh = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-            } else {
-              results.errors.push(`Dòng ${rowNumber}: Ngày sinh không đúng định dạng (DD/MM/YYYY)`);
-              results.failed++;
-              continue;
-            }
-          }
-
-          personnel = personnelList.find(p => {
-            if (!p.ngay_sinh) return false;
-            const pDate = new Date(p.ngay_sinh);
-            return (
-              pDate.getDate() === ngay_sinh.getDate() &&
-              pDate.getMonth() === ngay_sinh.getMonth() &&
-              pDate.getFullYear() === ngay_sinh.getFullYear()
-            );
-          });
-
-          if (!personnel) {
-            results.errors.push(
-              `Dòng ${rowNumber}: Không tìm thấy quân nhân tên "${ho_ten}" với ngày sinh đã cung cấp`
-            );
-            results.failed++;
-            continue;
-          }
-        }
-
-        if (!personnel) continue;
-
-        try {
-          const duplicateCheck = await checkDuplicateAward(
-            personnel.id,
-            nam,
-            PROPOSAL_TYPES.HC_QKQT,
-            PROPOSAL_TYPES.HC_QKQT,
-            PROPOSAL_STATUS.APPROVED
-          );
-          if (duplicateCheck.exists) {
-            results.errors.push(
-              `Dòng ${rowNumber}: ${duplicateCheck.message} (Quân nhân: ${ho_ten}, Năm: ${nam})`
-            );
-            results.failed++;
-            continue;
-          }
-        } catch (e) {
-          console.error('militaryFlag confirmImport check failed:', e);
-        }
-
-        const upsertedRecord = await prisma.huanChuongQuanKyQuyetThang.upsert({
-          where: { quan_nhan_id: personnel.id },
-          create: {
-            quan_nhan_id: personnel.id,
-            nam,
-            cap_bac: cap_bac ?? null,
-            chuc_vu: chuc_vu ?? null,
-            ghi_chu: ghi_chu ?? null,
-            so_quyet_dinh: so_quyet_dinh ?? null,
-          },
-          update: {
-            nam,
-            cap_bac: cap_bac ?? null,
-            chuc_vu: chuc_vu ?? null,
-            ghi_chu: ghi_chu ?? null,
-            so_quyet_dinh: so_quyet_dinh ?? null,
-          },
-        });
-
-        results.success++;
-        results.imported++;
-        results.total++;
-        results.selectedPersonnelIds.push(personnel.id);
-        results.titleData.push({
-          personnelId: personnel.id,
-          quan_nhan_id: personnel.id,
-          danh_hieu: PROPOSAL_TYPES.HC_QKQT,
-          nam: upsertedRecord.nam,
-          cap_bac: upsertedRecord.cap_bac,
-          chuc_vu: upsertedRecord.chuc_vu,
-          ghi_chu: upsertedRecord.ghi_chu,
-          so_quyet_dinh: upsertedRecord.so_quyet_dinh,
-        });
-      } catch (error) {
-        results.errors.push(`Dòng ${rowNumber}: ${(error as Error).message}`);
-        results.failed++;
-        results.total++;
-      }
-    }
-
-    return results;
   }
 
   async getAll(

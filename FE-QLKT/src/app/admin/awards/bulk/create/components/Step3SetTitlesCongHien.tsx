@@ -7,6 +7,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
 import { formatDate } from '@/lib/utils';
 import { apiClient } from '@/lib/apiClient';
+import { getApiErrorMessage } from '@/lib/apiError';
 import { PositionHistoryModal } from './PositionHistoryModal';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
@@ -161,7 +162,7 @@ export function Step3SetTitlesCongHien({
         }
       }
     } catch (error) {
-      console.error('Lỗi tải dữ liệu danh hiệu cống hiến', error);
+      message.error(getApiErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -188,7 +189,7 @@ export function Step3SetTitlesCongHien({
 
       setPositionHistoriesMap(historiesMap);
     } catch (error) {
-      console.error('Lỗi tải lịch sử chức vụ cống hiến', error);
+      message.error(getApiErrorMessage(error));
     }
   };
 

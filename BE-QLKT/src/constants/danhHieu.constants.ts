@@ -13,10 +13,10 @@ export const DANH_HIEU_CA_NHAN_HANG_NAM = {
   BKTTCP: 'BKTTCP',
 } as const;
 
-/** Title codes used on unit annual (`ĐVQT`, `ĐVTT`, `BKTTCP`). */
 export const DANH_HIEU_DON_VI_HANG_NAM = {
   DVQT: 'ĐVQT',
   DVTT: 'ĐVTT',
+  BKBQP: 'BKBQP',
   BKTTCP: 'BKTTCP',
 } as const;
 
@@ -46,12 +46,13 @@ export const DANH_HIEU_NCKH = {
 export const DANH_HIEU_MAP: Record<string, string> = {
   CSTDCS: 'Chiến sĩ thi đua Cơ sở',
   CSTT: 'Chiến sĩ tiên tiến',
-  BKBQP: 'Bằng khen của Bộ trưởng Bộ Quốc phòng',
   CSTDTQ: 'Chiến sĩ thi đua Toàn quân',
-  BKTTCP: 'Bằng khen của Thủ tướng Chính phủ',
 
   ĐVQT: 'Đơn vị Quyết thắng',
   ĐVTT: 'Đơn vị Tiên tiến',
+
+  BKBQP: 'Bằng khen của Bộ trưởng Bộ Quốc phòng',
+  BKTTCP: 'Bằng khen của Thủ tướng Chính phủ',
 
   HCCSVV_HANG_BA: 'Huy chương Chiến sĩ Vẻ vang Hạng Ba',
   HCCSVV_HANG_NHI: 'Huy chương Chiến sĩ Vẻ vang Hạng Nhì',
@@ -109,13 +110,25 @@ export function getLoaiDeXuatName(loaiDeXuat: string | null | undefined): string
   return LOAI_DE_XUAT_MAP[loaiDeXuat as ProposalType] || loaiDeXuat;
 }
 
-/** CSTDCS + CSTT — base-tier titles used in unit-level eligibility checks. */
-export const DANH_HIEU_CA_NHAN_CO_BAN: readonly string[] = [
+/** CSTDCS + CSTT — stored in `danh_hieu` column. */
+export const DANH_HIEU_CA_NHAN_CO_BAN = new Set<string>([
   DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS,
   DANH_HIEU_CA_NHAN_HANG_NAM.CSTT,
-];
+]);
+/** BKBQP + CSTDTQ + BKTTCP — stored as `nhan_bkbqp`/`nhan_cstdtq`/`nhan_bkttcp` flags, not in `danh_hieu`. */
+export const DANH_HIEU_CA_NHAN_BANG_KHEN = new Set<string>([
+  DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP,
+  DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ,
+  DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP,
+]);
 
-export const DANH_HIEU_CA_NHAN_TAT_CA: readonly string[] = Object.values(DANH_HIEU_CA_NHAN_HANG_NAM);
-
-export const UNIT_DV_TITLES = new Set<string>(Object.values(DANH_HIEU_DON_VI_HANG_NAM));
-export const UNIT_BK_TITLES = new Set<string>([DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP, DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP]);
+/** DVQT + DVTT — stored in `danh_hieu` column. */
+export const DANH_HIEU_DON_VI_CO_BAN = new Set<string>([
+  DANH_HIEU_DON_VI_HANG_NAM.DVQT,
+  DANH_HIEU_DON_VI_HANG_NAM.DVTT,
+]);
+/** BKBQP + BKTTCP — stored as `nhan_bkbqp`/`nhan_bkttcp` flags, not in `danh_hieu`. */
+export const DANH_HIEU_DON_VI_BANG_KHEN = new Set<string>([
+  DANH_HIEU_DON_VI_HANG_NAM.BKBQP,
+  DANH_HIEU_DON_VI_HANG_NAM.BKTTCP,
+]);

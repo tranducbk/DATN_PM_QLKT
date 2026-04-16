@@ -13,7 +13,7 @@ import { useDevZoneFeature } from '@/contexts/DevZoneContext';
 interface ExcelImportSectionProps {
   awardType: string;
   downloadTemplate: (params: Record<string, string>) => Promise<Blob>;
-  importFile: (file: File) => Promise<any>;
+  importFile?: (file: File) => Promise<any>;
   templateFileName: string;
   onImportSuccess?: (result: any) => void;
   selectedPersonnelIds?: string[];
@@ -156,6 +156,7 @@ export function ExcelImportSection({
     } else {
       try {
         setUploading(true);
+        if (!importFile) return false;
         const response = await importFile(file);
 
         if (response.success) {

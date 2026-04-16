@@ -10,9 +10,11 @@ const ADMIN_MANAGED_ROLES: Role[] = [ROLES.MANAGER, ROLES.USER];
 
 class AccountController {
   getAccounts = catchAsync(async (req: Request, res: Response) => {
-    const { page, limit } = parsePagination(req.query);
-    const { search = '', role } = req.query;
-    const userRole = req.user?.role;
+    const query = req.query as { search?: string; role?: string };
+    const user = req.user;
+    const { page, limit } = parsePagination(query);
+    const { search = '', role } = query;
+    const userRole = user?.role;
 
     let roleFilter = role as string | undefined;
     if (userRole === ROLES.ADMIN) {
@@ -38,7 +40,8 @@ class AccountController {
   });
 
   getAccountById = catchAsync(async (req: Request, res: Response) => {
-    const id = req.params.id as string;
+    const params = req.params as { id?: string };
+    const { id } = params;
     const result = await accountService.getAccountById(id);
     return ResponseHelper.success(res, {
       data: result,
@@ -47,6 +50,16 @@ class AccountController {
   });
 
   createAccount = catchAsync(async (req: Request, res: Response) => {
+    const user = req.user;
+    const body = req.body as {
+      personnel_id?: string;
+      username?: string;
+      password?: string;
+      role?: Role;
+      co_quan_don_vi_id?: string;
+      don_vi_truc_thuoc_id?: string;
+      chuc_vu_id?: string;
+    };
     const {
       personnel_id,
       username,
@@ -55,8 +68,8 @@ class AccountController {
       co_quan_don_vi_id,
       don_vi_truc_thuoc_id,
       chuc_vu_id,
-    } = req.body;
-    const userRole = req.user?.role;
+    } = body;
+    const userRole = user?.role;
 
     if (!username || !role) {
       return ResponseHelper.badRequest(
@@ -112,12 +125,16 @@ class AccountController {
   });
 
   updateAccount = catchAsync(async (req: Request, res: Response) => {
-    const id = normalizeParam(req.params.id);
+    const user = req.user;
+    const params = req.params as { id?: string };
+    const query = req.query as { force?: string };
+    const body = req.body as { role?: Role; password?: string };
+    const id = normalizeParam(params.id);
     if (!id) {
       return ResponseHelper.badRequest(res, 'Thiếu id tài khoản');
     }
-    const { role, password } = req.body;
-    const userRole = req.user?.role;
+    const { role, password } = body;
+    const userRole = user?.role;
 
     if (!role && !password) {
       return ResponseHelper.badRequest(res, 'Vui lòng cung cấp vai trò hoặc mật khẩu mới');
@@ -164,7 +181,8 @@ class AccountController {
   });
 
   resetPassword = catchAsync(async (req: Request, res: Response) => {
-    const { account_id } = req.body;
+    const body = req.body as { account_id?: string };
+    const { account_id } = body;
     if (!account_id) {
       return ResponseHelper.badRequest(res, 'Vui lòng cung cấp thông tin tài khoản');
     }
@@ -173,11 +191,13 @@ class AccountController {
   });
 
   deleteAccount = catchAsync(async (req: Request, res: Response) => {
-    const id = normalizeParam(req.params.id);
+    const params = req.params as { id?: string };
+    const query = req.query as { force?: string };
+    const id = normalizeParam(params.id);
     if (!id) {
       return ResponseHelper.badRequest(res, 'Thiếu id tài khoản');
     }
-    const forceDelete = req.query.force === 'true' || req.query.force === '1';
+    const forceDelete = query.force === 'true' || query.force === '1';
     const result = await accountService.deleteAccount(id, forceDelete);
     return ResponseHelper.success(res, { data: result, message: result.message });
   });

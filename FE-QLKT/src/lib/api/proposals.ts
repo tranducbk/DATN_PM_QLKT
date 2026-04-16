@@ -32,7 +32,7 @@ export async function submitProposal(formData: FormData): Promise<ApiResponse> {
         'Content-Type': 'multipart/form-data',
       },
     });
-    return { success: true, data: res.data?.data, message: res.data?.message };
+    return { success: res.data?.success, data: res.data?.data, message: res.data?.message };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
@@ -49,7 +49,7 @@ export async function getProposals(params?: {
 }): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get('/api/proposals', { params });
-    return { success: true, data: res.data?.data };
+    return { success: res.data?.success, data: res.data?.data, pagination: res.data?.pagination };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
@@ -62,7 +62,7 @@ export async function getProposals(params?: {
 export async function getProposalById(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get(`/api/proposals/${id}`);
-    return { success: true, data: res.data?.data };
+    return { success: res.data?.success, data: res.data?.data };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
@@ -77,7 +77,7 @@ export async function approveProposal(id: string, formData: FormData): Promise<A
     const res = await axiosInstance.post(`/api/proposals/${id}/approve`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
-    return { success: true, data: res.data?.data, message: res.data?.message };
+    return { success: res.data?.success, data: res.data?.data, message: res.data?.message };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
@@ -90,7 +90,7 @@ export async function approveProposal(id: string, formData: FormData): Promise<A
 export async function rejectProposal(id: string, ghi_chu: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.post(`/api/proposals/${id}/reject`, { ghi_chu });
-    return { success: true, data: res.data?.data, message: res.data?.message };
+    return { success: res.data?.success, data: res.data?.data, message: res.data?.message };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
@@ -120,7 +120,7 @@ export async function uploadDecision(id: string, formData: FormData): Promise<Ap
     const res = await axiosInstance.post(`/api/proposals/${id}/upload-decision`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
-    return { success: true, data: res.data?.data, message: res.data?.message };
+    return { success: res.data?.success, data: res.data?.data, message: res.data?.message };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
@@ -138,7 +138,7 @@ export async function checkDuplicate(params: {
 }): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get('/api/proposals/check-duplicate', { params });
-    return { success: true, data: res.data?.data };
+    return { success: res.data?.success, data: res.data?.data };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
@@ -156,7 +156,7 @@ export async function checkDuplicateUnit(params: {
 }): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get('/api/proposals/check-duplicate-unit', { params });
-    return { success: true, data: res.data?.data };
+    return { success: res.data?.success, data: res.data?.data };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
@@ -172,7 +172,7 @@ export async function checkDuplicateBatch(
 ): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.post('/api/proposals/check-duplicate-batch', { items });
-    return { success: true, data: res.data?.data };
+    return { success: res.data?.success, data: res.data?.data };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
@@ -188,7 +188,7 @@ export async function checkDuplicateUnitBatch(
 ): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.post('/api/proposals/check-duplicate-unit-batch', { items });
-    return { success: true, data: res.data?.data };
+    return { success: res.data?.success, data: res.data?.data };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
@@ -201,7 +201,7 @@ export async function checkDuplicateUnitBatch(
 export async function deleteProposal(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete(`/api/proposals/${id}`);
-    return { success: true, data: res.data?.data, message: res.data?.message };
+    return { success: res.data?.success, data: res.data?.data, message: res.data?.message };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }

@@ -15,8 +15,6 @@ import {
   Tabs,
   Empty,
 } from 'antd';
-import { getApiErrorMessage } from '@/lib/apiError';
-
 import type { TableColumnsType } from 'antd';
 import { FilterOutlined, HomeOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/apiClient';
@@ -64,58 +62,37 @@ const AWARD_TYPE_CONFIG: Record<
     fetch: (params: any) => Promise<any>;
     export: (params: any) => Promise<Blob>;
     exportFilename: string;
-    template: () => Promise<Blob>;
-    templateFilename: string;
-    import: (file: File) => Promise<any>;
   }
 > = {
   CNHN: {
     fetch: apiClient.getAnnualRewards,
     export: apiClient.exportAnnualRewards,
     exportFilename: 'ca_nhan_hang_nam',
-    template: apiClient.getAnnualRewardsTemplate,
-    templateFilename: 'mau_import_ca_nhan_hang_nam',
-    import: apiClient.importAnnualRewards,
   },
   HCCSVV: {
     fetch: apiClient.getHCCSVV,
     export: apiClient.exportHCCSVV,
     exportFilename: 'hccsvv',
-    template: apiClient.getHCCSVVTemplate,
-    templateFilename: 'mau_import_hccsvv',
-    import: apiClient.importHCCSVV,
   },
   HCBVTQ: {
     fetch: apiClient.getContributionAwards,
     export: apiClient.exportContributionAwards,
     exportFilename: 'hcbvtq_cong_hien',
-    template: apiClient.getContributionAwardsTemplate,
-    templateFilename: 'mau_import_hcbvtq_cong_hien',
-    import: apiClient.importContributionAwards,
   },
   KNC_VSNXD_QDNDVN: {
     fetch: apiClient.getCommemorationMedals,
     export: apiClient.exportCommemorationMedals,
     exportFilename: 'knc_vsnxd_qdndvn',
-    template: apiClient.getCommemorationMedalsTemplate,
-    templateFilename: 'mau_import_knc_vsnxd_qdndvn',
-    import: apiClient.importCommemorationMedals,
   },
   HCQKQT: {
     fetch: apiClient.getMilitaryFlag,
     export: apiClient.exportMilitaryFlag,
     exportFilename: 'hc_quan_ky_quyet_thang',
-    template: apiClient.getMilitaryFlagTemplate,
-    templateFilename: 'mau_import_hc_quan_ky_quyet_thang',
-    import: apiClient.importMilitaryFlag,
   },
   NCKH: {
     fetch: apiClient.getScientificAchievements,
     export: apiClient.exportScientificAchievements,
     exportFilename: 'thanh_tich_khoa_hoc',
-    template: apiClient.getScientificAchievementsTemplate,
-    templateFilename: 'mau_import_thanh_tich_khoa_hoc',
-    import: apiClient.importScientificAchievements,
   },
 };
 
@@ -136,8 +113,6 @@ export default function AdminAwardsPage() {
     HCCSVV: ['HCCSVV_HANG_NHAT', 'HCCSVV_HANG_NHI', 'HCCSVV_HANG_BA'],
     HCBVTQ: ['HCBVTQ_HANG_NHAT', 'HCBVTQ_HANG_NHI', 'HCBVTQ_HANG_BA'],
   };
-
-  // Detail modal state
 
   useEffect(() => {
     fetchAwards();
@@ -559,78 +534,6 @@ export default function AdminAwardsPage() {
   function renderAwardContent() {
     return (
       <>
-        {/* Import Section */}
-        {/* {(activeTab === 'CNHN' ||
-          activeTab === 'DVHN' ||
-          activeTab === 'NCKH' ||
-          activeTab === 'HCCSVV' ||
-          activeTab === 'HCBVTQ' ||
-          activeTab === 'KNC_VSNXD_QDNDVN' ||
-          activeTab === 'HCQKQT') && (
-          <Card
-            title={
-              <Space>
-                <UploadOutlined />
-                Import Khen Thưởng
-              </Space>
-            }
-            style={{ marginBottom: '24px' }}
-          >
-            <Space direction="vertical" style={{ width: '100%' }} size="large">
-              <Space wrap>
-                <Button
-                  icon={<FileExcelOutlined />}
-                  onClick={handleDownloadTemplate}
-                  loading={downloadingTemplate}
-                >
-                  {downloadingTemplate ? 'Đang tải...' : 'Tải File Mẫu Excel'}
-                </Button>
-                <Button
-                  type="primary"
-                  icon={<UploadOutlined />}
-                  onClick={handleUploadClick}
-                  loading={importing}
-                >
-                  {importing ? 'Đang import...' : 'Upload File Excel'}
-                </Button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".xlsx,.xls"
-                  onChange={handleFileChange}
-                  style={{ display: 'none' }}
-                />
-              </Space>
-
-              {importResult && (
-                <Alert
-                  type={importResult.type === 'success' ? 'success' : 'error'}
-                  message={<Text strong>{importResult.message}</Text>}
-                  description={
-                    importResult.details?.errors && importResult.details.errors.length > 0 ? (
-                      <div style={{ marginTop: '8px' }}>
-                        <Text strong>Lỗi chi tiết:</Text>
-                        <ul style={{ marginTop: '4px', marginBottom: 0 }}>
-                          {importResult.details.errors.slice(0, 5).map((err, idx) => (
-                            <li key={idx}>{err}</li>
-                          ))}
-                          {importResult.details.errors.length > 5 && (
-                            <li style={{ color: '#8c8c8c' }}>
-                              ... và {importResult.details.errors.length - 5} lỗi khác
-                            </li>
-                          )}
-                        </ul>
-                      </div>
-                    ) : null
-                  }
-                  closable
-                  onClose={() => setImportResult(null)}
-                />
-              )}
-            </Space>
-          </Card>
-        )} */}
-
         {/* Filters */}
         <Card
           title={

@@ -2,8 +2,11 @@
 
 import { ROLES } from '@/constants/roles.constants';
 
+/** Pagination metadata returned by list APIs. */
+export type PaginationMeta = { total: number; page?: number; limit?: number };
+
 /** Cấu trúc trả về chung của tất cả hàm trong `lib/api/*`. */
-export type ApiResponse<T = any> = { success: boolean; data?: T; message?: string };
+export type ApiResponse<T = any> = { success: boolean; data?: T; message?: string; pagination?: PaginationMeta };
 
 export const USER_ROLE_VALUES = [
   ROLES.SUPER_ADMIN,

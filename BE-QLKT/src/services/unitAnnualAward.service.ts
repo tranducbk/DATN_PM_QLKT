@@ -2,8 +2,8 @@ import type { Prisma } from '../generated/prisma';
 import { prisma } from '../models';
 import ExcelJS from 'exceljs';
 import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHelper';
-import { checkDuplicateUnitAward } from '../helpers/awardValidation';
-import { getDanhHieuName, DANH_HIEU_CA_NHAN_HANG_NAM, DANH_HIEU_DON_VI_HANG_NAM, UNIT_DV_TITLES, UNIT_BK_TITLES } from '../constants/danhHieu.constants';
+
+import { getDanhHieuName, DANH_HIEU_CA_NHAN_HANG_NAM, DANH_HIEU_DON_VI_HANG_NAM, DANH_HIEU_DON_VI_CO_BAN, DANH_HIEU_DON_VI_BANG_KHEN } from '../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
@@ -31,6 +31,61 @@ interface UnitAnnualAwardValidItem {
   }>;
 }
 
+/** Inline duplicate check using pre-fetched maps — replaces per-row checkDuplicateUnitAward calls. */
+function checkUnitDuplicate(
+  unitId: string,
+  nam: number,
+  danhHieu: string,
+  existingAwardByUnitYear: Map<string, { danh_hieu: string | null; nhan_bkbqp: boolean; nhan_bkttcp: boolean }>,
+  proposalsByYear: Map<number, Array<{ data_danh_hieu: any }>>,
+): void {
+  const proposalsForYear = proposalsByYear.get(nam) ?? [];
+  const hasPendingProposal = proposalsForYear.some(p => {
+    const data = (p.data_danh_hieu as Array<Record<string, unknown>>) ?? [];
+    return data.some(item => item.don_vi_id === unitId && item.danh_hieu === danhHieu);
+  });
+  if (hasPendingProposal) {
+    throw new ValidationError(`Đơn vị đã có đề xuất danh hiệu ${getDanhHieuName(danhHieu)} cho năm ${nam}`);
+  }
+
+  const existingAward = existingAwardByUnitYear.get(`${unitId}_${nam}`);
+  if (!existingAward) return;
+
+  const isDv = DANH_HIEU_DON_VI_CO_BAN.has(danhHieu);
+  const isBk = DANH_HIEU_DON_VI_BANG_KHEN.has(danhHieu);
+
+  if (isDv && existingAward.danh_hieu) {
+    if (existingAward.danh_hieu === danhHieu) {
+      throw new ValidationError(`Đơn vị đã có danh hiệu ${getDanhHieuName(danhHieu)} năm ${nam} trên hệ thống`);
+    }
+    throw new ValidationError(
+      `Đơn vị đã có danh hiệu ${getDanhHieuName(existingAward.danh_hieu)} năm ${nam}, không thể thêm ${getDanhHieuName(danhHieu)}`
+    );
+  }
+
+  if (isBk) {
+    if (danhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP && existingAward.nhan_bkbqp) {
+      throw new ValidationError(`Đơn vị đã có ${getDanhHieuName(danhHieu)} năm ${nam} trên hệ thống`);
+    }
+    if (danhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP && existingAward.nhan_bkttcp) {
+      throw new ValidationError(`Đơn vị đã có ${getDanhHieuName(danhHieu)} năm ${nam} trên hệ thống`);
+    }
+  }
+
+  if (isDv && (existingAward.nhan_bkbqp || existingAward.nhan_bkttcp)) {
+    const existingBk = existingAward.nhan_bkbqp ? DANH_HIEU_DON_VI_HANG_NAM.BKBQP : DANH_HIEU_DON_VI_HANG_NAM.BKTTCP;
+    throw new ValidationError(
+      `Đơn vị đã có ${getDanhHieuName(existingBk)} năm ${nam}, không thể thêm ${getDanhHieuName(danhHieu)}`
+    );
+  }
+
+  if (isBk && existingAward.danh_hieu && DANH_HIEU_DON_VI_CO_BAN.has(existingAward.danh_hieu)) {
+    throw new ValidationError(
+      `Đơn vị đã có danh hiệu ${getDanhHieuName(existingAward.danh_hieu)} năm ${nam}, không thể thêm ${getDanhHieuName(danhHieu)}`
+    );
+  }
+}
+
 class UnitAnnualAwardService {
   /**
    * Tính số năm liên tục được danh hiệu DVQT (Đơn vị Quyết thắng)
@@ -42,7 +97,7 @@ class UnitAnnualAwardService {
       where: {
         OR: [{ co_quan_don_vi_id: donViId }, { don_vi_truc_thuoc_id: donViId }],
         nam: { lte: year - 1 },
-        danh_hieu: 'ĐVQT',
+        danh_hieu: DANH_HIEU_DON_VI_HANG_NAM.DVQT,
       },
       orderBy: { nam: 'desc' },
       select: { nam: true, danh_hieu: true },
@@ -103,7 +158,7 @@ class UnitAnnualAwardService {
 
     // JSON payload keeps DVQT/ĐVTT in `danh_hieu`; BKBQP/BKTTCP ride on boolean columns instead.
     const validRecords = records.filter(
-      r => r.danh_hieu && (r.danh_hieu === 'ĐVQT' || r.danh_hieu === 'ĐVTT')
+      r => r.danh_hieu && DANH_HIEU_DON_VI_CO_BAN.has(r.danh_hieu)
     );
     return {
       total: validRecords.length,
@@ -138,14 +193,14 @@ class UnitAnnualAwardService {
    * @returns {Object} { eligible: boolean, reason: string }
    */
   async checkUnitAwardEligibility(donViId, year, danhHieu) {
-    if (!['BKBQP', 'BKTTCP'].includes(danhHieu)) {
+    if (!DANH_HIEU_DON_VI_BANG_KHEN.has(danhHieu)) {
       return { eligible: true, reason: '' };
     }
 
     const dvqtLienTuc = await this.calculateContinuousYears(donViId, year);
     const bkbqpLienTuc = await this.calculateBKBQPContinuous(donViId, year);
 
-    if (danhHieu === 'BKBQP') {
+    if (danhHieu === DANH_HIEU_DON_VI_HANG_NAM.BKBQP) {
       const eligible = dvqtLienTuc % 2 === 0 && dvqtLienTuc >= 1;
       if (!eligible) {
         return {
@@ -156,7 +211,7 @@ class UnitAnnualAwardService {
       return { eligible: true, reason: 'Đủ điều kiện BKBQP' };
     }
 
-    if (danhHieu === 'BKTTCP') {
+    if (danhHieu === DANH_HIEU_DON_VI_HANG_NAM.BKTTCP) {
       const eligible =
         dvqtLienTuc % 7 === 0 && bkbqpLienTuc % 3 === 0 && dvqtLienTuc >= 7 && bkbqpLienTuc >= 3;
       if (!eligible) {
@@ -1030,8 +1085,8 @@ class UnitAnnualAwardService {
       // Check chain eligibility for BKTTCP
       // NOTE: Left as per-row query because checkUnitAwardEligibility depends on
       // per-row computed values (unitId, nam) and has complex internal logic
-      if (danhHieu === 'BKTTCP') {
-        const eligibility = await this.checkUnitAwardEligibility(unitId, nam, 'BKTTCP');
+      if (danhHieu === DANH_HIEU_DON_VI_HANG_NAM.BKTTCP) {
+        const eligibility = await this.checkUnitAwardEligibility(unitId, nam, DANH_HIEU_DON_VI_HANG_NAM.BKTTCP);
         if (!eligibility.eligible) {
           errors.push({
             row: rowNumber,
@@ -1123,8 +1178,8 @@ class UnitAnnualAwardService {
 
       const existingAward = awardMap.get(`${donViId}|${nam}`);
       if (existingAward) {
-        const isDv = UNIT_DV_TITLES.has(danhHieu);
-        const isBk = UNIT_BK_TITLES.has(danhHieu);
+        const isDv = DANH_HIEU_DON_VI_CO_BAN.has(danhHieu);
+        const isBk = DANH_HIEU_DON_VI_BANG_KHEN.has(danhHieu);
 
         if (isDv && existingAward.danh_hieu) {
           if (existingAward.danh_hieu === danhHieu) {
@@ -1147,11 +1202,11 @@ class UnitAnnualAwardService {
         }
 
         if (isDv && (existingAward.nhan_bkbqp || existingAward.nhan_bkttcp)) {
-          const existingBk = existingAward.nhan_bkbqp ? 'BKBQP' : 'BKTTCP';
+          const existingBk = existingAward.nhan_bkbqp ? DANH_HIEU_DON_VI_HANG_NAM.BKBQP : DANH_HIEU_DON_VI_HANG_NAM.BKTTCP;
           duplicateErrors.push(`Đơn vị đã có ${getDanhHieuName(existingBk)} năm ${nam}, không thể thêm ${getDanhHieuName(danhHieu)}`);
           continue;
         }
-        if (isBk && existingAward.danh_hieu && UNIT_DV_TITLES.has(existingAward.danh_hieu)) {
+        if (isBk && existingAward.danh_hieu && DANH_HIEU_DON_VI_CO_BAN.has(existingAward.danh_hieu)) {
           duplicateErrors.push(`Đơn vị đã có danh hiệu ${getDanhHieuName(existingAward.danh_hieu)} năm ${nam}, không thể thêm ${getDanhHieuName(danhHieu)}`);
           continue;
         }
@@ -1348,7 +1403,7 @@ class UnitAnnualAwardService {
         ma_don_vi: 'DV001',
         ten_don_vi: 'Đơn vị mẫu',
         nam: new Date().getFullYear(),
-        danh_hieu: 'ĐVQT',
+        danh_hieu: DANH_HIEU_DON_VI_HANG_NAM.DVQT,
         so_quyet_dinh: '',
         ghi_chu: '',
         bkbqp: '',
@@ -1450,6 +1505,59 @@ class UnitAnnualAwardService {
     let total = 0;
     const selectedUnitIds = [];
 
+    // Pre-pass: collect all unit codes and years for batch queries
+    const allMaDonVi = new Set<string>();
+    const allYears = new Set<number>();
+    for (let i = 2; i <= worksheet.rowCount; i++) {
+      const row = worksheet.getRow(i);
+      const maDonVi = maDonViCol ? String(row.getCell(maDonViCol).value || '').trim() : '';
+      const namVal = namCol ? row.getCell(namCol).value : null;
+      if (maDonVi) allMaDonVi.add(maDonVi);
+      const parsedNam = parseInt(String(namVal), 10);
+      if (!isNaN(parsedNam)) allYears.add(parsedNam);
+    }
+
+    const [coQuanDonViList, donViTrucThuocList] = await Promise.all([
+      prisma.coQuanDonVi.findMany({ where: { ma_don_vi: { in: [...allMaDonVi] } } }),
+      prisma.donViTrucThuoc.findMany({ where: { ma_don_vi: { in: [...allMaDonVi] } } }),
+    ]);
+    const coQuanDonViByMa = new Map(coQuanDonViList.map(u => [u.ma_don_vi, u] as const));
+    const donViTrucThuocByMa = new Map(donViTrucThuocList.map(u => [u.ma_don_vi, u] as const));
+
+    const allCQDVIds = coQuanDonViList.map(u => u.id);
+    const allDVTTIds = donViTrucThuocList.map(u => u.id);
+    const [existingAwardList, pendingProposalList] = await Promise.all([
+      prisma.danhHieuDonViHangNam.findMany({
+        where: {
+          AND: [
+            { OR: [{ co_quan_don_vi_id: { in: allCQDVIds } }, { don_vi_truc_thuoc_id: { in: allDVTTIds } }] },
+            { nam: { in: [...allYears] } },
+          ],
+        },
+        select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true, nam: true, danh_hieu: true, nhan_bkbqp: true, nhan_bkttcp: true },
+      }),
+      prisma.bangDeXuat.findMany({
+        where: {
+          loai_de_xuat: PROPOSAL_TYPES.DON_VI_HANG_NAM,
+          nam: { in: [...allYears] },
+          status: PROPOSAL_STATUS.PENDING,
+        },
+      }),
+    ]);
+
+    const existingAwardByUnitYear = new Map<string, typeof existingAwardList[number]>();
+    for (const award of existingAwardList) {
+      if (award.co_quan_don_vi_id) existingAwardByUnitYear.set(`${award.co_quan_don_vi_id}_${award.nam}`, award);
+      if (award.don_vi_truc_thuoc_id) existingAwardByUnitYear.set(`${award.don_vi_truc_thuoc_id}_${award.nam}`, award);
+    }
+    const proposalsByYear = new Map<number, typeof pendingProposalList>();
+    for (const proposal of pendingProposalList) {
+      if (proposal.nam == null) continue;
+      const list = proposalsByYear.get(proposal.nam) ?? [];
+      list.push(proposal);
+      proposalsByYear.set(proposal.nam, list);
+    }
+
     for (let i = 2; i <= worksheet.rowCount; i++) {
       const row = worksheet.getRow(i);
       const maDonVi = maDonViCol ? String(row.getCell(maDonViCol).value || '').trim() : '';
@@ -1486,17 +1594,13 @@ class UnitAnnualAwardService {
         }
 
         // Verify award chain requirement
-        const checkDanhHieu = danhHieu === 'BKTTCP' ? 'BKTTCP' : null;
+        const checkDanhHieu = danhHieu === DANH_HIEU_DON_VI_HANG_NAM.BKTTCP ? DANH_HIEU_DON_VI_HANG_NAM.BKTTCP : null;
         const checkBkbqp = bkbqpRaw ? 'BKBQP' : null;
 
-        const donVi = await prisma.coQuanDonVi.findFirst({
-          where: { ma_don_vi: maDonVi },
-        });
+        const donVi = coQuanDonViByMa.get(maDonVi) ?? null;
 
         if (!donVi) {
-          const donViTrucThuoc = await prisma.donViTrucThuoc.findFirst({
-            where: { ma_don_vi: maDonVi },
-          });
+          const donViTrucThuoc = donViTrucThuocByMa.get(maDonVi) ?? null;
 
           if (!donViTrucThuoc) {
             throw new NotFoundError(`đơn vị với mã ${maDonVi}`);
@@ -1514,27 +1618,12 @@ class UnitAnnualAwardService {
             const eligibility = await this.checkUnitAwardEligibility(
               donViTrucThuoc.id,
               nam,
-              'BKBQP'
+              DANH_HIEU_DON_VI_HANG_NAM.BKBQP
             );
             if (!eligibility.eligible) throw new ValidationError(eligibility.reason);
           }
 
-          try {
-            const duplicateCheck = await checkDuplicateUnitAward(
-              donViTrucThuoc.id,
-              nam,
-              danhHieu,
-              PROPOSAL_TYPES.DON_VI_HANG_NAM
-            );
-            if (duplicateCheck.exists) {
-              throw new ValidationError(duplicateCheck.message);
-            }
-          } catch (e) {
-            if (e.message.includes('duplicate') || e.message.includes('đã có')) {
-              throw e;
-            }
-            console.error('unitAnnualAward confirmImport check failed:', e);
-          }
+          checkUnitDuplicate(donViTrucThuoc.id, nam, danhHieu, existingAwardByUnitYear, proposalsByYear);
 
           const award = await prisma.danhHieuDonViHangNam.upsert({
             where: {
@@ -1572,26 +1661,11 @@ class UnitAnnualAwardService {
             if (!eligibility.eligible) throw new ValidationError(eligibility.reason);
           }
           if (checkBkbqp) {
-            const eligibility = await this.checkUnitAwardEligibility(donVi.id, nam, 'BKBQP');
+            const eligibility = await this.checkUnitAwardEligibility(donVi.id, nam, DANH_HIEU_DON_VI_HANG_NAM.BKBQP);
             if (!eligibility.eligible) throw new ValidationError(eligibility.reason);
           }
 
-          try {
-            const duplicateCheck = await checkDuplicateUnitAward(
-              donVi.id,
-              nam,
-              danhHieu,
-              PROPOSAL_TYPES.DON_VI_HANG_NAM
-            );
-            if (duplicateCheck.exists) {
-              throw new ValidationError(duplicateCheck.message);
-            }
-          } catch (e) {
-            if (e.message.includes('duplicate')) {
-              throw e;
-            }
-            console.error('unitAnnualAward confirmImport check failed:', e);
-          }
+          checkUnitDuplicate(donVi.id, nam, danhHieu, existingAwardByUnitYear, proposalsByYear);
 
           const award = await prisma.danhHieuDonViHangNam.upsert({
             where: {
@@ -1641,7 +1715,7 @@ class UnitAnnualAwardService {
    * Xuất danh sách khen thưởng đơn vị ra Excel
    */
   async exportToExcel(filters: Record<string, any> = {}, userRole: string, userQuanNhanId: string) {
-    const { nam, danh_hieu } = filters as Record<string, any>;
+    const { nam, danh_hieu } = filters;
 
     const where: Record<string, any> = { status: PROPOSAL_STATUS.APPROVED };
     if (nam) where.nam = nam;
@@ -1718,7 +1792,7 @@ class UnitAnnualAwardService {
    * Thống kê khen thưởng đơn vị
    */
   async getStatistics(filters: Record<string, any> = {}, userRole: string, userQuanNhanId: string) {
-    const { nam } = filters as Record<string, any>;
+    const { nam } = filters;
 
     const where: Record<string, any> = { status: PROPOSAL_STATUS.APPROVED };
     if (nam) where.nam = nam;

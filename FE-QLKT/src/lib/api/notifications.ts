@@ -24,7 +24,7 @@ export async function getNotifications(params?: {
 }): Promise<ApiResponse<{ notifications: NotificationItem[]; total?: number; unread_count?: number }>> {
   try {
     const res = await axiosInstance.get('/api/notifications', { params });
-    return { success: true, data: res.data?.data };
+    return { success: res.data?.success, data: res.data?.data, pagination: res.data?.pagination };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
@@ -37,7 +37,7 @@ export async function getNotifications(params?: {
 export async function getUnreadNotificationCount(): Promise<ApiResponse<{ count: number }>> {
   try {
     const res = await axiosInstance.get('/api/notifications/unread-count');
-    return { success: true, data: res.data?.data };
+    return { success: res.data?.success, data: res.data?.data };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
@@ -50,7 +50,7 @@ export async function getUnreadNotificationCount(): Promise<ApiResponse<{ count:
 export async function markNotificationAsRead(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.patch(`/api/notifications/${id}/read`);
-    return { success: true, data: res.data?.data };
+    return { success: res.data?.success, data: res.data?.data };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
@@ -63,7 +63,7 @@ export async function markNotificationAsRead(id: string): Promise<ApiResponse> {
 export async function markAllNotificationsAsRead(): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.patch('/api/notifications/read-all');
-    return { success: true, data: res.data?.data };
+    return { success: res.data?.success, data: res.data?.data };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
@@ -76,7 +76,7 @@ export async function markAllNotificationsAsRead(): Promise<ApiResponse> {
 export async function deleteNotification(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete(`/api/notifications/${id}`);
-    return { success: true, data: res.data?.data };
+    return { success: res.data?.success, data: res.data?.data };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
@@ -89,7 +89,7 @@ export async function deleteNotification(id: string): Promise<ApiResponse> {
 export async function deleteAllNotifications(): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete('/api/notifications/all');
-    return { success: true, data: res.data?.data, message: res.data?.message };
+    return { success: res.data?.success, data: res.data?.data, message: res.data?.message };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }

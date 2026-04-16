@@ -118,7 +118,7 @@ export default function SuperAdminAddAwardsPage() {
       const personnelData = responses.filter(r => r.success).map(r => r.data);
       setPersonnelDetails(personnelData);
     } catch (error) {
-      console.error('Lỗi tải thông tin quân nhân', error);
+      antMessage.error(getApiErrorMessage(error));
     }
   };
 

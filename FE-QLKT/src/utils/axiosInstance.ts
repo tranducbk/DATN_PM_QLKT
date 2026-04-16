@@ -39,10 +39,9 @@ function extractTokens(data: Record<string, any>): {
   accessToken: string | null;
   refreshToken: string | null;
 } {
-  const nested = data?.data;
   return {
-    accessToken: nested?.accessToken || data?.accessToken || null,
-    refreshToken: nested?.refreshToken || data?.refreshToken || null,
+    accessToken: data?.data?.accessToken ?? null,
+    refreshToken: data?.data?.refreshToken ?? null,
   };
 }
 

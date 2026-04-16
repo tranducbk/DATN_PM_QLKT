@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import hccsvvService from '../services/hccsvv.service';
+import hccsvvService, { HccsvvValidItem } from '../services/hccsvv.service';
 import { ROLES } from '../constants/roles.constants';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { parsePersonnelIdsFromQuery, getManagerUnitFilter, getAdminUsername } from '../helpers/controllerHelper';
@@ -11,11 +11,12 @@ import { notifyOnImport } from '../helpers/notification';
 
 class HCCSVVController {
   getTemplate = catchAsync(async (req: Request, res: Response) => {
-    const personnelIds = parsePersonnelIdsFromQuery(req.query);
+    const query = req.query as { repeat_map?: string };
+    const personnelIds = parsePersonnelIdsFromQuery(query);
     const repeatMap: Record<string, number> = {};
-    if (req.query.repeat_map) {
+    if (query.repeat_map) {
       try {
-        Object.assign(repeatMap, JSON.parse(req.query.repeat_map as string));
+        Object.assign(repeatMap, JSON.parse(query.repeat_map));
       } catch (e) { console.error('Invalid repeat_map JSON:', e); }
     }
     const workbook = await hccsvvService.exportTemplate(personnelIds, repeatMap);
@@ -30,18 +31,20 @@ class HCCSVVController {
   });
 
   previewImport = catchAsync(async (req: Request, res: Response) => {
-    if (!req.file) {
+    const user = req.user!;
+    const file = req.file;
+    if (!file) {
       return ResponseHelper.badRequest(res, 'Vui lòng upload file Excel');
     }
-    const result = await hccsvvService.previewImport(req.file.buffer);
+    const result = await hccsvvService.previewImport(file.buffer);
     await writeSystemLog({
-      userId: req.user!.id,
-      userRole: req.user!.role,
+      userId: user.id,
+      userRole: user.role,
       action: AUDIT_ACTIONS.IMPORT_PREVIEW,
       resource: 'hccsvv',
-      description: `Tải lên file "${req.file?.originalname ? Buffer.from(req.file.originalname, 'latin1').toString('utf8') : 'Excel'}" để review huy chương chiến sĩ vẻ vang: ${result.valid?.length || 0} hợp lệ, ${result.errors?.length || 0} lỗi`,
+      description: `Tải lên file "${file.originalname ? Buffer.from(file.originalname, 'latin1').toString('utf8') : 'Excel'}" để review huy chương chiến sĩ vẻ vang: ${result.valid?.length || 0} hợp lệ, ${result.errors?.length || 0} lỗi`,
       payload: {
-        filename: req.file?.originalname ? Buffer.from(req.file.originalname, 'latin1').toString('utf8') : undefined,
+        filename: file.originalname ? Buffer.from(file.originalname, 'latin1').toString('utf8') : undefined,
         total: result.total,
         errors: result.errors?.length || 0,
       },
@@ -50,26 +53,30 @@ class HCCSVVController {
   });
 
   confirmImport = catchAsync(async (req: Request, res: Response) => {
-    const { items } = req.body;
-    const result = await hccsvvService.confirmImport(items, req.user!.id);
+    const user = req.user!;
+    const body = req.body as { items?: HccsvvValidItem[] };
+    const { items } = body;
+    const result = await hccsvvService.confirmImport(items, user.id);
     await writeSystemLog({
-      userId: req.user!.id,
-      userRole: req.user!.role,
+      userId: user.id,
+      userRole: user.role,
       action: AUDIT_ACTIONS.IMPORT,
       resource: 'hccsvv',
       description: `Nhập dữ liệu huy chương chiến sĩ vẻ vang thành công: ${result.imported || items.length} bản ghi`,
       payload: { imported: result.imported || items.length },
     });
     const personnelIds = items.map((i: { personnel_id: string }) => i.personnel_id);
-    notifyOnImport(req.user!.id, 'hccsvv', result.imported || items.length, personnelIds).catch((e) => { console.error('[hccsvv] notifyOnImport failed:', e); });
+    notifyOnImport(user.id, 'hccsvv', result.imported || items.length, personnelIds).catch((e) => { console.error('[hccsvv] notifyOnImport failed:', e); });
     return ResponseHelper.success(res, { message: 'Thao tác thành công', data: result });
   });
 
   importFromExcel = catchAsync(async (req: Request, res: Response) => {
-    if (!req.file) {
+    const user = req.user!;
+    const file = req.file;
+    if (!file) {
       return ResponseHelper.badRequest(res, 'Vui lòng gửi file Excel');
     }
-    const result = await hccsvvService.importFromExcel(req.file.buffer, req.user!.id);
+    const result = await hccsvvService.importFromExcel(file.buffer, user.id);
     return ResponseHelper.success(res, {
       message: 'Import Huy chương Chiến sĩ Vẻ vang thành công',
       data: result,
@@ -77,9 +84,11 @@ class HCCSVVController {
   });
 
   getAll = catchAsync(async (req: Request, res: Response) => {
-    const userRole = req.user!.role;
-    const { don_vi_id, nam, danh_hieu, ho_ten } = req.query;
-    const { page, limit } = parsePagination(req.query);
+    const query = req.query as { don_vi_id?: string; nam?: number; danh_hieu?: string; ho_ten?: string };
+    const user = req.user!;
+    const userRole = user.role;
+    const { don_vi_id, nam, danh_hieu, ho_ten } = query;
+    const { page, limit } = parsePagination(query);
     const filters: Record<string, unknown> = {};
     if (don_vi_id) filters.don_vi_id = don_vi_id;
     if (nam) filters.nam = nam;
@@ -105,14 +114,16 @@ class HCCSVVController {
   });
 
   exportToExcel = catchAsync(async (req: Request, res: Response) => {
-    const { don_vi_id, nam, danh_hieu } = req.query;
+    const query = req.query as { don_vi_id?: string; nam?: number; danh_hieu?: string };
+    const user = req.user!;
+    const { don_vi_id, nam, danh_hieu } = query;
     const filters: Record<string, unknown> = {};
     if (don_vi_id) filters.don_vi_id = don_vi_id;
     if (nam) filters.nam = nam;
     if (danh_hieu) filters.danh_hieu = danh_hieu;
 
     const managerUnit = await getManagerUnitFilter(req);
-    if (managerUnit === null && req.user!.role === ROLES.MANAGER) {
+    if (managerUnit === null && user.role === ROLES.MANAGER) {
       return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
     }
     if (managerUnit) {
@@ -138,7 +149,16 @@ class HCCSVVController {
   });
 
   createDirect = catchAsync(async (req: Request, res: Response) => {
-    const { quan_nhan_id, danh_hieu, nam, cap_bac, chuc_vu, so_quyet_dinh, ghi_chu } = req.body;
+    const body = req.body as {
+      quan_nhan_id?: string;
+      danh_hieu?: string;
+      nam?: number | string;
+      cap_bac?: string;
+      chuc_vu?: string;
+      so_quyet_dinh?: string;
+      ghi_chu?: string;
+    };
+    const { quan_nhan_id, danh_hieu, nam, cap_bac, chuc_vu, so_quyet_dinh, ghi_chu } = body;
     const adminUsername = getAdminUsername(req);
     if (!quan_nhan_id || !danh_hieu || !nam) {
       return ResponseHelper.badRequest(
@@ -146,8 +166,12 @@ class HCCSVVController {
         'Thiếu thông tin bắt buộc: quân nhân, danh hiệu và năm'
       );
     }
+    const yearNumber = typeof nam === 'number' ? nam : Number(nam);
+    if (!Number.isInteger(yearNumber) || yearNumber <= 0) {
+      return ResponseHelper.badRequest(res, 'Năm không hợp lệ');
+    }
     const result = await hccsvvService.createDirect(
-      { quan_nhan_id, danh_hieu, nam: parseInt(nam), cap_bac, chuc_vu, so_quyet_dinh, ghi_chu },
+      { quan_nhan_id, danh_hieu, nam: yearNumber, cap_bac, chuc_vu, so_quyet_dinh, ghi_chu },
       adminUsername
     );
     res.locals.createdId = result.id;
@@ -158,7 +182,8 @@ class HCCSVVController {
   });
 
   deleteAward = catchAsync(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const params = req.params as { id?: string };
+    const { id } = params;
     const adminUsername = getAdminUsername(req);
     const result = await hccsvvService.deleteAward(String(id), adminUsername);
     return ResponseHelper.success(res, { message: result.message });

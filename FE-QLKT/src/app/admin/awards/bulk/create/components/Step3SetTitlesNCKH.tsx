@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Table, Select, Input, Alert, Typography, Space, Button, Modal, Tabs, Tag, Empty } from 'antd';
+import { Table, Select, Input, Alert, Typography, Space, Button, Modal, Tabs, Tag, Empty, message } from 'antd';
 import { EditOutlined, HistoryOutlined, EyeOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
 import { formatDate } from '@/lib/utils';
 import { apiClient } from '@/lib/apiClient';
+import { getApiErrorMessage } from '@/lib/apiError';
 import { ScientificAchievementHistoryModal } from './ScientificAchievementHistoryModal';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
 import { PROPOSAL_STATUS, PROPOSAL_STATUS_LABELS, PROPOSAL_STATUS_COLORS } from '@/constants/proposal.constants';
@@ -120,7 +121,7 @@ export function Step3SetTitlesNCKH({
         }
       }
     } catch (error) {
-      console.error('Lỗi tải dữ liệu thành tích khoa học', error);
+      message.error(getApiErrorMessage(error));
     } finally {
       setLoading(false);
     }

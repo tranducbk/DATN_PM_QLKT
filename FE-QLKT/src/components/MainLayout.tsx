@@ -893,7 +893,6 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
                   }}
                   placement="bottomRight"
                   trigger={['click']}
-                  placement="bottomRight"
                   onOpenChange={open => {
                     if (open) {
                       loadNotifications();

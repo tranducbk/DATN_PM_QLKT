@@ -2,7 +2,7 @@ import { prisma } from '../models';
 import { calculateServiceMonths } from '../helpers/serviceYearsHelper';
 import ExcelJS from 'exceljs';
 import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHelper';
-import { checkDuplicateAward } from '../helpers/awardValidation';
+
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import * as notificationHelper from '../helpers/notification';
 import { ROLES } from '../constants/roles.constants';
@@ -15,7 +15,7 @@ import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
 import { DANH_HIEU_MAP } from '../constants/danhHieu.constants';
 import { GENDER } from '../constants/gender.constants';
 
-interface CommemorativeMedalValidItem {
+export interface CommemorativeMedalValidItem {
   row: number;
   personnel_id: string;
   ho_ten: string | null;
@@ -424,11 +424,14 @@ class CommemorativeMedalService {
       }
     });
 
-    // Batch query: collect all unique ho_ten values, then query once
+    // Batch query: collect all unique ho_ten + nam values, then query once
     const allHoTen = new Set<string>();
+    const allYears = new Set<number>();
     for (const { row } of rows) {
       const ho_ten = row.getCell(1).value?.toString().trim();
       if (ho_ten) allHoTen.add(ho_ten);
+      const namVal = parseInt(row.getCell(3).value);
+      if (!isNaN(namVal)) allYears.add(namVal);
     }
     const allPersonnel =
       allHoTen.size > 0
@@ -439,6 +442,28 @@ class CommemorativeMedalService {
       const list = personnelByName.get(p.ho_ten) ?? [];
       list.push(p);
       personnelByName.set(p.ho_ten, list);
+    }
+
+    const allPersonnelIds = allPersonnel.map(p => p.id);
+    const [kncList, pendingProposals] = await Promise.all([
+      prisma.kyNiemChuongVSNXDQDNDVN.findMany({
+        where: { quan_nhan_id: { in: allPersonnelIds } },
+      }),
+      prisma.bangDeXuat.findMany({
+        where: {
+          loai_de_xuat: PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
+          nam: { in: [...allYears] },
+          status: PROPOSAL_STATUS.APPROVED,
+        },
+      }),
+    ]);
+    const kncMap = new Map(kncList.map(k => [k.quan_nhan_id, k] as const));
+    const proposalsByYear = new Map<number, typeof pendingProposals>();
+    for (const proposal of pendingProposals) {
+      if (proposal.nam == null) continue;
+      const list = proposalsByYear.get(proposal.nam) ?? [];
+      list.push(proposal);
+      proposalsByYear.set(proposal.nam, list);
     }
 
     for (const { row, rowNumber } of rows) {
@@ -510,23 +535,25 @@ class CommemorativeMedalService {
           }
         }
 
-        try {
-          const duplicateCheck = await checkDuplicateAward(
-            personnel.id,
-            nam,
-            PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
-            PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
-            PROPOSAL_STATUS.APPROVED
+        const kncRecord = kncMap.get(personnel.id);
+        if (kncRecord) {
+          results.errors.push(
+            `Dòng ${rowNumber}: Quân nhân đã có Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN (năm ${kncRecord.nam || nam}) (Quân nhân: ${ho_ten}, Năm: ${nam})`
           );
-          if (duplicateCheck.exists) {
-            results.errors.push(
-              `Dòng ${rowNumber}: ${duplicateCheck.message} (Quân nhân: ${ho_ten}, Năm: ${nam})`
-            );
-            results.failed++;
-            continue;
-          }
-        } catch (e) {
-          console.error('commemorativeMedal confirmImport check failed:', e);
+          results.failed++;
+          continue;
+        }
+        const proposalsForYear = proposalsByYear.get(nam) ?? [];
+        const hasPendingProposal = proposalsForYear.some(p => {
+          const dataNienHan = (p.data_nien_han as Array<Record<string, unknown>>) ?? [];
+          return dataNienHan.some(item => item.personnel_id === personnel.id);
+        });
+        if (hasPendingProposal) {
+          results.errors.push(
+            `Dòng ${rowNumber}: Quân nhân đang có đề xuất Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN chờ duyệt (Quân nhân: ${ho_ten}, Năm: ${nam})`
+          );
+          results.failed++;
+          continue;
         }
 
         // Upsert because each person has exactly one KNC record

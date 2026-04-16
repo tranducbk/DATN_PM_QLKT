@@ -18,7 +18,7 @@ import {
 } from '../configs/multer';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { validate } from '../middlewares/validate';
-import { excelImportValidation } from '../validations';
+import { excelImportValidation, unitAnnualAwardValidation } from '../validations';
 
 const router = Router();
 
@@ -27,7 +27,13 @@ const router = Router();
  * @desc    Lấy danh sách khen thưởng đơn vị hằng năm (Admin: tất cả, Manager: đơn vị mình, User: đơn vị mình)
  * @access  ADMIN, MANAGER, USER
  */
-router.get('/', verifyToken, requireManager, unitAnnualAwardController.list);
+router.get(
+  '/',
+  verifyToken,
+  requireManager,
+  validate(unitAnnualAwardValidation.listUnitAnnualAwardsQuery, 'query'),
+  unitAnnualAwardController.list
+);
 
 /**
  * @route   GET /api/awards/units/annual/template
@@ -86,14 +92,26 @@ router.post(
  * @desc    Xuất danh sách khen thưởng đơn vị hằng năm ra Excel
  * @access  ADMIN, MANAGER
  */
-router.get('/export', verifyToken, checkRole([ROLES.ADMIN, ROLES.MANAGER]), unitAnnualAwardController.exportToExcel);
+router.get(
+  '/export',
+  verifyToken,
+  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
+  validate(unitAnnualAwardValidation.exportUnitAnnualAwardsQuery, 'query'),
+  unitAnnualAwardController.exportToExcel
+);
 
 /**
  * @route   GET /api/awards/units/annual/statistics
  * @desc    Thống kê khen thưởng đơn vị hằng năm
  * @access  ADMIN, MANAGER
  */
-router.get('/statistics', verifyToken, checkRole([ROLES.ADMIN, ROLES.MANAGER]), unitAnnualAwardController.getStatistics);
+router.get(
+  '/statistics',
+  verifyToken,
+  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
+  validate(unitAnnualAwardValidation.getUnitAnnualAwardsStatisticsQuery, 'query'),
+  unitAnnualAwardController.getStatistics
+);
 
 /**
  * @route   GET /api/awards/units/annual/history

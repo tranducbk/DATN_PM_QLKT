@@ -10,6 +10,7 @@ import { NotFoundError, ValidationError } from '../middlewares/errorHandler';
 import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
 import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo } from '../helpers/excelHelper';
 import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
+import { VALID_NCKH } from './proposal/helpers';
 
 interface CreateAchievementData {
   personnel_id: string;
@@ -64,7 +65,7 @@ interface PreviewValidItem {
   }[];
 }
 
-interface ConfirmImportItem {
+export interface ConfirmImportItem {
   personnel_id: string;
   nam: number;
   loai: string;
@@ -108,7 +109,7 @@ class ScientificAchievementService {
       throw new NotFoundError('Quân nhân');
     }
 
-    const validLoai = ['DTKH', 'SKKH'];
+    const validLoai = VALID_NCKH as readonly string[];
     if (!validLoai.includes(loai)) {
       throw new ValidationError('Loại thành tích không hợp lệ. Loại hợp lệ: ' + validLoai.join(', '));
     }
@@ -147,7 +148,7 @@ class ScientificAchievementService {
     }
 
     if (loai) {
-      const validLoai = ['DTKH', 'SKKH'];
+      const validLoai = VALID_NCKH as readonly string[];
       if (!validLoai.includes(loai)) {
         throw new ValidationError('Loại thành tích không hợp lệ');
       }
@@ -337,7 +338,7 @@ class ScientificAchievementService {
       );
     }
 
-    const validLoai = ['DTKH', 'SKKH'];
+    const validLoai = VALID_NCKH as readonly string[];
     const errors: PreviewError[] = [];
     const valid: PreviewValidItem[] = [];
     let total = 0;

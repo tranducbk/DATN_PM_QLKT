@@ -9,7 +9,21 @@ import { ADHOC_TYPE } from '../constants/adhocType.constants';
 
 class AdhocAwardController {
   createAdhocAward = catchAsync(async (req: Request, res: Response) => {
-    const adminId = req.user!.id;
+    const user = req.user!;
+    const adminId = user.id;
+    const body = req.body as {
+      type?: (typeof ADHOC_TYPE)[keyof typeof ADHOC_TYPE];
+      year?: unknown;
+      awardForm?: string;
+      personnelId?: string;
+      unitId?: string;
+      unitType?: string;
+      rank?: string;
+      position?: string;
+      note?: string;
+      decisionNumber?: string;
+      decisionFilePath?: string;
+    };
     const {
       type,
       year,
@@ -22,9 +36,9 @@ class AdhocAwardController {
       note,
       decisionNumber,
       decisionFilePath,
-    } = req.body;
+    } = body;
 
-    if (!Object.values(ADHOC_TYPE).includes(type)) {
+    if (!type || !Object.values(ADHOC_TYPE).includes(type)) {
       return ResponseHelper.badRequest(
         res,
         'Loại khen thưởng không hợp lệ. Chỉ chấp nhận: CA_NHAN, TAP_THE'
@@ -68,10 +82,20 @@ class AdhocAwardController {
   });
 
   getAdhocAwards = catchAsync(async (req: Request, res: Response) => {
-    const { type, year, personnelId, unitId, ho_ten, page, limit } = req.query;
+    const user = req.user;
+    const query = req.query as {
+      type?: string;
+      year?: string;
+      personnelId?: string;
+      unitId?: string;
+      ho_ten?: string;
+      page?: number;
+      limit?: number;
+    };
+    const { type, year, personnelId, unitId, ho_ten, page, limit } = query;
     const { page: pageNum, limit: limitNum } = parsePagination({ page, limit });
-    const userRole = req.user?.role;
-    const userQuanNhanId = req.user?.quan_nhan_id;
+    const userRole = user?.role;
+    const userQuanNhanId = user?.quan_nhan_id;
 
     const filterOptions: Record<string, unknown> = {
       type,
@@ -115,7 +139,8 @@ class AdhocAwardController {
   });
 
   getAdhocAwardById = catchAsync(async (req: Request, res: Response) => {
-    const id = normalizeParam(req.params.id);
+    const params = req.params as { id?: string };
+    const id = normalizeParam(params.id);
     if (!id) {
       return ResponseHelper.badRequest(res, 'Thiếu id');
     }
@@ -128,13 +153,23 @@ class AdhocAwardController {
   });
 
   updateAdhocAward = catchAsync(async (req: Request, res: Response) => {
-    const id = normalizeParam(req.params.id);
+    const params = req.params as { id?: string };
+    const user = req.user!;
+    const body = req.body as {
+      awardForm?: string;
+      year?: unknown;
+      rank?: string;
+      position?: string;
+      note?: string;
+      decisionNumber?: string;
+      removeAttachedFileIndexes?: string;
+    };
+    const id = normalizeParam(params.id);
     if (!id) {
       return ResponseHelper.badRequest(res, 'Thiếu id');
     }
-    const adminId = req.user!.id;
-    const { awardForm, year, rank, position, note, decisionNumber, removeAttachedFileIndexes } =
-      req.body;
+    const adminId = user.id;
+    const { awardForm, year, rank, position, note, decisionNumber, removeAttachedFileIndexes } = body;
 
     const files = req.files as Record<string, Express.Multer.File[]> | undefined;
     const attachedFiles = files?.attachedFiles || [];
@@ -161,11 +196,13 @@ class AdhocAwardController {
   });
 
   deleteAdhocAward = catchAsync(async (req: Request, res: Response) => {
-    const id = normalizeParam(req.params.id);
+    const params = req.params as { id?: string };
+    const user = req.user!;
+    const id = normalizeParam(params.id);
     if (!id) {
       return ResponseHelper.badRequest(res, 'Thiếu id');
     }
-    const adminId = req.user!.id;
+    const adminId = user.id;
 
     await adhocAwardService.deleteAdhocAward(id, adminId);
 
@@ -173,12 +210,14 @@ class AdhocAwardController {
   });
 
   getAdhocAwardsByPersonnel = catchAsync(async (req: Request, res: Response) => {
-    const personnelId = normalizeParam(req.params.personnelId);
+    const params = req.params as { personnelId?: string };
+    const user = req.user!;
+    const personnelId = normalizeParam(params.personnelId);
     if (!personnelId) {
       return ResponseHelper.badRequest(res, 'Thiếu personnelId');
     }
-    const userPersonnelId = req.user!.quan_nhan_id;
-    const userRole = req.user!.role;
+    const userPersonnelId = user.quan_nhan_id;
+    const userRole = user.role;
 
     if (
       personnelId !== userPersonnelId &&
@@ -196,11 +235,13 @@ class AdhocAwardController {
   });
 
   getAdhocAwardsByUnit = catchAsync(async (req: Request, res: Response) => {
-    const unitId = normalizeParam(req.params.unitId);
+    const params = req.params as { unitId?: string };
+    const query = req.query as { unitType?: string };
+    const unitId = normalizeParam(params.unitId);
     if (!unitId) {
       return ResponseHelper.badRequest(res, 'Thiếu unitId');
     }
-    const { unitType } = req.query;
+    const { unitType } = query;
 
     if (!unitType || !['CO_QUAN_DON_VI', 'DON_VI_TRUC_THUOC'].includes(unitType as string)) {
       return ResponseHelper.badRequest(res, 'Thiếu hoặc sai loại đơn vị (unitType)');

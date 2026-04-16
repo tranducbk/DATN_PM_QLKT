@@ -6,10 +6,11 @@ import catchAsync from '../helpers/catchAsync';
 
 class PositionController {
   getPositions = catchAsync(async (req: Request, res: Response) => {
-    const { unit_id, include_children } = req.query;
+    const query = req.query as { unit_id?: string; include_children?: string };
+    const { unit_id, include_children } = query;
     const includeChildren = include_children === 'true';
     const result = await positionService.getPositions(
-      unit_id as string | undefined,
+      unit_id,
       includeChildren
     );
     return ResponseHelper.success(res, {
@@ -19,7 +20,13 @@ class PositionController {
   });
 
   createPosition = catchAsync(async (req: Request, res: Response) => {
-    const { unit_id, ten_chuc_vu, is_manager, he_so_chuc_vu } = req.body;
+    const body = req.body as {
+      unit_id?: string;
+      ten_chuc_vu?: string;
+      is_manager?: boolean;
+      he_so_chuc_vu?: number;
+    };
+    const { unit_id, ten_chuc_vu, is_manager, he_so_chuc_vu } = body;
     if (!unit_id || !ten_chuc_vu) {
       return ResponseHelper.badRequest(res, 'Vui lòng nhập đầy đủ thông tin: đơn vị và tên chức vụ');
     }
@@ -33,11 +40,13 @@ class PositionController {
   });
 
   updatePosition = catchAsync(async (req: Request, res: Response) => {
-    const id = normalizeParam(req.params.id);
+    const params = req.params as { id?: string };
+    const body = req.body as { ten_chuc_vu?: string; is_manager?: boolean; he_so_chuc_vu?: number };
+    const id = normalizeParam(params.id);
     if (!id) {
       return ResponseHelper.badRequest(res, 'Thiếu id chức vụ');
     }
-    const { ten_chuc_vu, is_manager, he_so_chuc_vu } = req.body;
+    const { ten_chuc_vu, is_manager, he_so_chuc_vu } = body;
     const result = await positionService.updatePosition(id, {
       ten_chuc_vu,
       is_manager,
@@ -50,7 +59,8 @@ class PositionController {
   });
 
   deletePosition = catchAsync(async (req: Request, res: Response) => {
-    const id = normalizeParam(req.params.id);
+    const params = req.params as { id?: string };
+    const id = normalizeParam(params.id);
     if (!id) {
       return ResponseHelper.badRequest(res, 'Thiếu id chức vụ');
     }

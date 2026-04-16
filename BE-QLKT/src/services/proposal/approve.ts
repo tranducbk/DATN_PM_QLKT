@@ -672,7 +672,7 @@ async function approveProposal(
                 data.so_quyet_dinh_bkbqp = soQuyetDinhBKBQP;
               }
 
-              if (item.danh_hieu === DANH_HIEU_DON_VI_HANG_NAM.BKTTCP) {
+              if (item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP) {
                 data.nhan_bkttcp = nhanBKTTCP;
                 data.so_quyet_dinh_bkttcp = soQuyetDinhBKTTCP;
               }

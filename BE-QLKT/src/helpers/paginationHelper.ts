@@ -11,6 +11,7 @@ interface PaginationQuery {
 function normalizeQueryString(v: unknown): string {
   if (v == null) return '';
   if (typeof v === 'string') return v;
+  if (typeof v === 'number') return String(v);
   if (Array.isArray(v) && typeof v[0] === 'string') return v[0];
   return '';
 }

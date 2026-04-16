@@ -13,7 +13,7 @@ export async function login(username: string, password: string): Promise<ApiResp
       password,
     });
     return {
-      success: true,
+      success: res.data?.success,
       data: res.data?.data,
       message: res.data?.message,
     };
@@ -38,7 +38,7 @@ export async function changePassword(
       oldPassword,
       newPassword,
     });
-    return { success: true, data: res.data?.data, message: res.data?.message };
+    return { success: res.data?.success, data: res.data?.data, message: res.data?.message };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }

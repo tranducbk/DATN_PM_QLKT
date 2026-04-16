@@ -7,10 +7,12 @@ import catchAsync from '../helpers/catchAsync';
 
 class PersonnelController {
   getPersonnel = catchAsync(async (req: Request, res: Response) => {
-    const { page, limit } = parsePagination(req.query);
-    const { search, unit_id } = req.query;
-    const userRole = req.user!.role;
-    const userQuanNhanId = req.user!.quan_nhan_id;
+    const query = req.query as { search?: string; unit_id?: string };
+    const user = req.user!;
+    const { page, limit } = parsePagination(query);
+    const { search, unit_id } = query;
+    const userRole = user.role;
+    const userQuanNhanId = user.quan_nhan_id;
     const { personnel, pagination } = await personnelService.getPersonnel(
       page,
       limit,
@@ -28,10 +30,12 @@ class PersonnelController {
   });
 
   getPersonnelById = catchAsync(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const params = req.params as { id?: string };
+    const user = req.user!;
+    const { id } = params;
     if (!id) return ResponseHelper.badRequest(res, 'ID quân nhân không hợp lệ');
-    const userRole = req.user!.role;
-    const userQuanNhanId = req.user!.quan_nhan_id;
+    const userRole = user.role;
+    const userQuanNhanId = user.quan_nhan_id;
     const result = await personnelService.getPersonnelById(id, userRole, userQuanNhanId);
     return ResponseHelper.success(res, {
       data: result,
@@ -40,7 +44,13 @@ class PersonnelController {
   });
 
   createPersonnel = catchAsync(async (req: Request, res: Response) => {
-    const { cccd, unit_id, position_id, role } = req.body;
+    const body = req.body as {
+      cccd?: string;
+      unit_id?: string;
+      position_id?: string;
+      role?: string;
+    };
+    const { cccd, unit_id, position_id, role } = body;
     if (!cccd || !unit_id || !position_id) {
       return ResponseHelper.badRequest(
         res,
@@ -55,7 +65,32 @@ class PersonnelController {
   });
 
   updatePersonnel = catchAsync(async (req: Request, res: Response) => {
-    const { id: personnelId } = req.params;
+    const params = req.params as { id?: string };
+    const user = req.user!;
+    const body = req.body as {
+      unit_id?: string;
+      position_id?: string;
+      don_vi_id?: string;
+      chuc_vu_id?: string;
+      co_quan_don_vi_id?: string;
+      don_vi_truc_thuoc_id?: string;
+      ho_ten?: string;
+      gioi_tinh?: string;
+      ngay_sinh?: Date;
+      cccd?: string;
+      cap_bac?: string;
+      ngay_nhap_ngu?: Date;
+      ngay_xuat_ngu?: Date;
+      que_quan_2_cap?: string;
+      que_quan_3_cap?: string;
+      tru_quan?: string;
+      cho_o_hien_nay?: string;
+      ngay_vao_dang?: Date;
+      ngay_vao_dang_chinh_thuc?: Date;
+      so_the_dang_vien?: string;
+      so_dien_thoai?: string;
+    };
+    const personnelId = params.id;
     if (Array.isArray(personnelId)) {
       return ResponseHelper.badRequest(res, 'ID quân nhân không hợp lệ');
     }
@@ -81,9 +116,9 @@ class PersonnelController {
       ngay_vao_dang_chinh_thuc,
       so_the_dang_vien,
       so_dien_thoai,
-    } = req.body;
-    const userRole = req.user!.role;
-    const userQuanNhanId = req.user!.quan_nhan_id;
+    } = body;
+    const userRole = user.role;
+    const userQuanNhanId = user.quan_nhan_id;
 
     const result = await personnelService.updatePersonnel(
       personnelId,
@@ -109,28 +144,31 @@ class PersonnelController {
       },
       userRole,
       userQuanNhanId,
-      req.user!.username
+      user.username
     );
     return ResponseHelper.success(res, { data: result, message: 'Cập nhật quân nhân thành công' });
   });
 
   deletePersonnel = catchAsync(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const user = req.user!;
+    const params = req.params as { id?: string };
+    const { id } = params;
     if (!id) return ResponseHelper.badRequest(res, 'ID quân nhân không hợp lệ');
-    const userRole = req.user!.role;
-    const userQuanNhanId = req.user!.quan_nhan_id;
+    const userRole = user.role;
+    const userQuanNhanId = user.quan_nhan_id;
     const result = await personnelService.deletePersonnel(id, userRole, userQuanNhanId);
     return ResponseHelper.success(res, { data: result, message: 'Xóa quân nhân thành công' });
   });
 
   importPersonnel = catchAsync(async (req: Request, res: Response) => {
-    if (!req.file?.buffer) {
+    const file = req.file;
+    if (!file?.buffer) {
       return ResponseHelper.badRequest(
         res,
         'Không tìm thấy file upload. Vui lòng gửi form-data field "file"'
       );
     }
-    const result = await personnelService.importFromExcelBuffer(req.file.buffer);
+    const result = await personnelService.importFromExcelBuffer(file.buffer);
     return ResponseHelper.success(res, { data: result, message: 'Import quân nhân hoàn tất' });
   });
 
@@ -156,7 +194,8 @@ class PersonnelController {
   });
 
   checkContributionEligibility = catchAsync(async (req: Request, res: Response) => {
-    const { personnel_ids: personnelIds } = req.body;
+    const body = req.body as { personnel_ids?: string[] };
+    const { personnel_ids: personnelIds } = body;
     if (!personnelIds || !Array.isArray(personnelIds)) {
       return ResponseHelper.badRequest(res, 'Danh sách quân nhân không hợp lệ');
     }

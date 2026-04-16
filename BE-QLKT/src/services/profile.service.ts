@@ -5,7 +5,7 @@ import positionHistoryService from './positionHistory.service';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { NotFoundError } from '../middlewares/errorHandler';
-import { DANH_HIEU_HCCSVV, DANH_HIEU_HCBVTQ } from '../constants/danhHieu.constants';
+import { DANH_HIEU_HCCSVV, DANH_HIEU_HCBVTQ, DANH_HIEU_CA_NHAN_BANG_KHEN, DANH_HIEU_CA_NHAN_HANG_NAM, DANH_HIEU_CA_NHAN_CO_BAN } from '../constants/danhHieu.constants';
 import { GENDER } from '../constants/gender.constants';
 
 class ProfileService {
@@ -179,7 +179,7 @@ class ProfileService {
     let currentYear = year - 1;
     for (const reward of filteredRewards) {
       if (reward.nam !== currentYear) break;
-      if (reward.danh_hieu === 'CSTDCS') {
+      if (reward.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS) {
         count++;
         currentYear--;
       } else {
@@ -313,7 +313,7 @@ class ProfileService {
     }
 
     // Case 4: Not eligible for CSTDCS this year
-    if (latestReward.danh_hieu !== 'CSTDCS' && latestReward.danh_hieu !== null) {
+    if (latestReward.danh_hieu !== DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS && latestReward.danh_hieu !== null) {
       return {
         isSpecialCase: true,
         goiY: 'Chưa có CSTDCS liên tục. Cần đạt CSTDCS để bắt đầu tính điều kiện khen thưởng.',
@@ -448,7 +448,7 @@ class ProfileService {
       // Store as JSON: CSTDCS flags and years with BKBQP/CSTDTQ/BKTTCP
       const tong_cstdcs_json = danhHieuList
         .filter(
-          dh => dh.danh_hieu === 'CSTDCS' || dh.nhan_bkbqp || dh.nhan_cstdtq || dh.nhan_bkttcp
+          dh => dh.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS || dh.nhan_bkbqp || dh.nhan_cstdtq || dh.nhan_bkttcp
         )
         .map(dh => ({
           nam: dh.nam,
@@ -474,7 +474,7 @@ class ProfileService {
       const tong_nckh = tong_nckh_json.length;
 
       const cstdcs_lien_tuc = this.calculateContinuousCSTDCS(
-        danhHieuList.filter(dh => dh.danh_hieu === 'CSTDCS'),
+        danhHieuList.filter(dh => dh.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS),
         year
       );
 
@@ -580,7 +580,7 @@ class ProfileService {
    */
   async checkAwardEligibility(personnelId, year, danhHieu) {
     // Chain check applies only to BKBQP, CSTDTQ, BKTTCP
-    if (!['BKBQP', 'CSTDTQ', 'BKTTCP'].includes(danhHieu)) {
+    if (!DANH_HIEU_CA_NHAN_BANG_KHEN.has(danhHieu)) {
       return { eligible: true, reason: '' };
     }
 
@@ -606,14 +606,14 @@ class ProfileService {
     const thanhTichList = personnel.ThanhTichKhoaHoc;
 
     const cstdcs_lien_tuc = this.calculateContinuousCSTDCS(
-      danhHieuList.filter(dh => dh.danh_hieu === 'CSTDCS'),
+      danhHieuList.filter(dh => dh.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS),
       year
     );
     const nckh_lien_tuc = this.calculateContinuousNCKH(thanhTichList, year);
     const bkbqp_lien_tuc = this.calculateContinuousBKBQP(danhHieuList, year);
     const cstdtq_lien_tuc = this.calculateContinuousCSTDTQ(danhHieuList, year);
 
-    if (danhHieu === 'BKBQP') {
+    if (danhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP) {
       const eligible =
         cstdcs_lien_tuc % 2 === 0 && cstdcs_lien_tuc >= 2 && nckh_lien_tuc >= cstdcs_lien_tuc;
       if (!eligible) {
@@ -625,7 +625,7 @@ class ProfileService {
       return { eligible: true, reason: 'Đủ điều kiện BKBQP' };
     }
 
-    if (danhHieu === 'CSTDTQ') {
+    if (danhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ) {
       let eligible =
         cstdcs_lien_tuc % 3 === 0 &&
         bkbqp_lien_tuc >= 1 &&
@@ -648,7 +648,7 @@ class ProfileService {
       return { eligible: true, reason: 'Đủ điều kiện CSTDTQ' };
     }
 
-    if (danhHieu === 'BKTTCP') {
+    if (danhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP) {
       const eligible =
         cstdcs_lien_tuc % 7 === 0 &&
         bkbqp_lien_tuc % 3 === 0 &&

@@ -218,7 +218,7 @@ export default function CreateProposalPage() {
         setUnitDetails(selectedUnits);
       }
     } catch (error) {
-      console.error('Lỗi tải thông tin đơn vị đề xuất', error);
+      antMessage.error(getApiErrorMessage(error));
     }
   };
 

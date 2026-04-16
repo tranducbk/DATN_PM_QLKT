@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Table, Input, Select, Space, Alert, Typography, Tag, InputNumber, Empty } from 'antd';
+import { Table, Input, Select, Space, Alert, Typography, Tag, InputNumber, Empty, message } from 'antd';
 import { SearchOutlined, TeamOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
+import { getApiErrorMessage } from '@/lib/apiError';
 import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/lib/constants/pagination.constants';
 import { formatDate } from '@/lib/utils';
 import type { DateInput } from '@/lib/types';
@@ -82,7 +83,7 @@ export function Step2SelectPersonnel({
         setPersonnel(personnelData);
       }
     } catch (error: unknown) {
-      console.error('Lỗi tải danh sách quân nhân', error);
+      message.error(getApiErrorMessage(error));
     } finally {
       setLoading(false);
     }

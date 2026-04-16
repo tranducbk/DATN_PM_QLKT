@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Table, Input, Select, Space, Alert, Typography, InputNumber, Divider, Empty } from 'antd';
+import { Table, Input, Select, Space, Alert, Typography, InputNumber, Divider, Empty, message } from 'antd';
 import { SearchOutlined, TeamOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
@@ -91,7 +91,7 @@ export function Step2SelectPersonnelCaNhanHangNam({
         setPersonnel(personnelData);
       }
     } catch (error: unknown) {
-      console.error('Lỗi tải danh sách quân nhân cá nhân hằng năm', error);
+      message.error(getApiErrorMessage(error));
     } finally {
       setLoading(false);
     }

@@ -14,6 +14,7 @@ const validate = (schema: Joi.ObjectSchema, source: ValidationSource = 'body'): 
     const { error, value } = schema.validate(req[source], {
       abortEarly: false,
       stripUnknown: true,
+      convert: true,
     });
 
     if (error) {

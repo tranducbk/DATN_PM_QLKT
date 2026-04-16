@@ -5,10 +5,20 @@ import catchAsync from '../helpers/catchAsync';
 
 class SystemLogsController {
   getLogs = catchAsync(async (req: Request, res: Response) => {
-    const { page = 1, limit = 10, search, action, resource, startDate, endDate, actorRole } = req.query;
+    const query = req.query as {
+      page?: number;
+      limit?: number;
+      search?: string;
+      action?: string;
+      resource?: string;
+      startDate?: string;
+      endDate?: string;
+      actorRole?: string;
+    };
     const currentUser = req.user!;
-    const pageNum = parseInt(page as string);
-    const limitNum = parseInt(limit as string);
+    const { page = 1, limit = 10, search, action, resource, startDate, endDate, actorRole } = query;
+    const pageNum = Number(page);
+    const limitNum = Number(limit);
 
     const result = await systemLogsService.getLogs({
       page: pageNum,
@@ -49,7 +59,8 @@ class SystemLogsController {
   });
 
   deleteLogs = catchAsync(async (req: Request, res: Response) => {
-    const { ids } = req.body;
+    const body = req.body as { ids?: string[] };
+    const { ids } = body;
     if (!ids || !Array.isArray(ids) || ids.length === 0) {
       return ResponseHelper.badRequest(res, 'Danh sách ID không hợp lệ');
     }
@@ -58,7 +69,8 @@ class SystemLogsController {
   });
 
   deleteAllLogs = catchAsync(async (req: Request, res: Response) => {
-    const deleted = await systemLogsService.deleteAllLogs(req.user!.id, req.user!.role);
+    const user = req.user!;
+    const deleted = await systemLogsService.deleteAllLogs(user.id, user.role);
     return ResponseHelper.success(res, { message: `Đã xoá toàn bộ ${deleted} nhật ký`, data: { deleted } });
   });
 }
