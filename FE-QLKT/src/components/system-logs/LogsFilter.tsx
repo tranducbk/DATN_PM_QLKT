@@ -192,7 +192,7 @@ export function LogsFilter({ onFilterChange }: LogsFilterProps) {
                 placeholder="Chọn ngày"
                 format="DD/MM/YYYY"
                 value={startDate}
-                onChange={setStartDate}
+                onChange={date => setStartDate(date ? date.startOf('day') : null)}
                 disabledDate={current => !!endDate && current > endDate}
                 suffixIcon={<CalendarOutlined />}
                 size="large"
@@ -209,7 +209,7 @@ export function LogsFilter({ onFilterChange }: LogsFilterProps) {
                 placeholder="Chọn ngày"
                 format="DD/MM/YYYY"
                 value={endDate}
-                onChange={setEndDate}
+                onChange={date => setEndDate(date ? date.endOf('day') : null)}
                 disabledDate={current => !!startDate && current < startDate}
                 suffixIcon={<CalendarOutlined />}
                 size="large"
