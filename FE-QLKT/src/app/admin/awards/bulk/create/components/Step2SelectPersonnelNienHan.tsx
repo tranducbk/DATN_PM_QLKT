@@ -879,7 +879,7 @@ export function Step2SelectPersonnelNienHan({
             localProcessing={true}
             onLocalProcess={handleLocalExcelProcess}
             previewImport={apiClient.previewHCCSVVImport}
-            reviewPath="/admin/awards/bulk/import-review-hccsvv"
+            reviewPath="/admin/awards/bulk/import-review-tenure-medals"
             sessionStorageKey="importPreviewDataHCCSVV"
           />
 

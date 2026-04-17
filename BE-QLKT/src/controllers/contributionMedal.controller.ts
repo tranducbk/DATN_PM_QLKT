@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import contributionAwardService from '../services/contributionAward.service';
+import contributionAwardService from '../services/contributionMedal.service';
 import { ROLES } from '../constants/roles.constants';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import ResponseHelper from '../helpers/responseHelper';
@@ -9,9 +9,37 @@ import { parsePagination } from '../helpers/paginationHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { notifyOnImport } from '../helpers/notification';
 
+interface GetTemplateQuery {
+  repeat_map?: string;
+  [key: string]: string | string[] | undefined;
+}
+
+interface ConfirmImportBody {
+  items?: any[];
+}
+
+interface GetAllQuery {
+  don_vi_id?: string;
+  nam?: number;
+  danh_hieu?: string;
+  ho_ten?: string;
+  [key: string]: unknown;
+}
+
+interface ExportToExcelQuery {
+  don_vi_id?: string;
+  nam?: number;
+  danh_hieu?: string;
+  [key: string]: unknown;
+}
+
+interface IdParams {
+  id?: string;
+}
+
 class ContributionAwardController {
   getTemplate = catchAsync(async (req: Request, res: Response) => {
-    const query = req.query as { repeat_map?: string };
+    const query = req.query as GetTemplateQuery;
     const personnelIds = parsePersonnelIdsFromQuery(query);
     const repeatMap: Record<string, number> = {};
     if (query.repeat_map) {
@@ -41,7 +69,7 @@ class ContributionAwardController {
       userId: user.id,
       userRole: user.role,
       action: AUDIT_ACTIONS.IMPORT_PREVIEW,
-      resource: 'contribution-awards',
+      resource: 'contribution-medals',
       description: `Tải lên file "${Buffer.from(file.originalname, 'latin1').toString('utf8')}" để review Huân chương Bảo vệ Tổ quốc: ${result.valid?.length ?? 0} hợp lệ, ${result.errors?.length ?? 0} lỗi`,
       payload: {
         filename: Buffer.from(file.originalname, 'latin1').toString('utf8'),
@@ -54,25 +82,25 @@ class ContributionAwardController {
 
   confirmImport = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
-    const body = req.body as { items?: any[] };
+    const body = req.body as ConfirmImportBody;
     const { items } = body;
     const result = await contributionAwardService.confirmImport(items, user.id);
     await writeSystemLog({
       userId: user.id,
       userRole: user.role,
       action: AUDIT_ACTIONS.IMPORT,
-      resource: 'contribution-awards',
+      resource: 'contribution-medals',
       description: `Nhập dữ liệu huân chương bảo vệ tổ quốc thành công: ${result.imported ?? items.length} bản ghi`,
       payload: { imported: result.imported ?? items.length },
     });
     const personnelIds = items.map((i: { personnel_id: string }) => i.personnel_id);
-    notifyOnImport(user.id, 'contribution-awards', result.imported ?? items.length, personnelIds).catch((e) => { console.error('[contribution-awards] notifyOnImport failed:', e); });
+    notifyOnImport(user.id, 'contribution-medals', result.imported ?? items.length, personnelIds).catch((e) => { console.error('[contribution-awards] notifyOnImport failed:', e); });
     return ResponseHelper.success(res, { data: result, message: 'Thao tác thành công' });
   });
 
   getAll = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
-    const query = req.query as { don_vi_id?: string; nam?: number; danh_hieu?: string; ho_ten?: string };
+    const query = req.query as GetAllQuery;
     const { don_vi_id, nam, danh_hieu, ho_ten } = query;
     const userRole = user.role;
     const { page, limit } = parsePagination(query);
@@ -104,7 +132,7 @@ class ContributionAwardController {
 
   exportToExcel = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
-    const query = req.query as { don_vi_id?: string; nam?: number; danh_hieu?: string };
+    const query = req.query as ExportToExcelQuery;
     const { don_vi_id, nam, danh_hieu } = query;
 
     const filters: Record<string, unknown> = {};
@@ -140,7 +168,7 @@ class ContributionAwardController {
   });
 
   deleteAward = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as { id?: string };
+    const params = req.params as IdParams;
     const { id } = params;
     const adminUsername = getAdminUsername(req);
     const result = await contributionAwardService.deleteAward(String(id), adminUsername);

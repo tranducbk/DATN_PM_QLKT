@@ -673,7 +673,7 @@ export default function UserDashboard() {
                           value: danhHieuCounts.CSTDTQ,
                         },
                         {
-                          label: 'Thành tích khoa học',
+                          label: 'Thành tích NCKH',
                           value: tongNCKH,
                         },
                       ].filter(item => item.value > 0);
@@ -726,7 +726,7 @@ export default function UserDashboard() {
                 title={
                   <Space>
                     <SafetyOutlined className="text-purple-600" />
-                    <span className="font-semibold">Hồ sơ Huy chương Chiến sĩ vẻ vang</span>
+                    <span className="font-semibold">Hồ sơ khen thưởng niên hạn</span>
                   </Space>
                 }
                 className="shadow-md border-0 h-full"
@@ -865,7 +865,7 @@ export default function UserDashboard() {
                 title={
                   <Space>
                     <TrophyOutlined className="text-orange-600" />
-                    <span className="font-semibold">Hồ sơ Huân chương Bảo vệ Tổ quốc</span>
+                    <span className="font-semibold">Hồ sơ khen thưởng cống hiến</span>
                   </Space>
                 }
                 className="shadow-md border-0 h-full"

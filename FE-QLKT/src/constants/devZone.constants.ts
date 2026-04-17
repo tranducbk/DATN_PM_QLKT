@@ -2,7 +2,6 @@
  * Constants cho Dev Zone
  */
 
-import { DANH_HIEU_MAP } from './danhHieu.constants';
 
 export const DEV_ZONE_API = '/api/dev-zone';
 
@@ -23,17 +22,17 @@ export const CRON_PRESETS = [
 
 /** Danh sách loại khen thưởng cho toggle bật/tắt */
 export const AWARD_TYPE_OPTIONS = [
-  { key: 'annual', label: 'Cá nhân hằng năm', description: 'Import, file mẫu, thêm đồng loạt' },
-  { key: 'unit', label: 'Đơn vị hằng năm', description: 'Import, file mẫu, thêm đồng loạt' },
-  { key: 'hccsvv', label: 'HC Chiến sĩ Vẻ vang', description: 'Import, file mẫu, thêm đồng loạt' },
+  { key: 'annual', label: 'Khen thưởng cá nhân hằng năm', description: 'Import, file mẫu, thêm đồng loạt' },
+  { key: 'unit', label: 'Khen thưởng đơn vị hằng năm', description: 'Import, file mẫu, thêm đồng loạt' },
+  { key: 'hccsvv', label: 'Huy chương Chiến sĩ vẻ vang', description: 'Import, file mẫu, thêm đồng loạt' },
   {
     key: 'contribution',
-    label: 'HC Bảo vệ Tổ quốc',
+    label: 'Huân chương Bảo vệ Tổ quốc',
     description: 'Import, file mẫu, thêm đồng loạt',
   },
   {
     key: 'commemoration',
-    label: DANH_HIEU_MAP['KNC_VSNXD_QDNDVN'],
+    label: 'Kỷ niệm chương VSNXD QĐNDVN',
     description: 'Import, file mẫu, thêm đồng loạt',
   },
   {
@@ -43,7 +42,7 @@ export const AWARD_TYPE_OPTIONS = [
   },
   {
     key: 'scientific',
-    label: 'Thành tích khoa học',
+    label: 'Thành tích NCKH',
     description: 'Import, file mẫu, thêm đồng loạt',
   },
 ] as const;

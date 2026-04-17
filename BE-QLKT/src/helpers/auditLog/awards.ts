@@ -44,8 +44,8 @@ const annualRewards: Record<
           select: { ho_ten: true },
         });
         hoTen = personnel?.ho_ten || '';
-      } catch (error) {
-        // Ignore error
+      } catch {
+        // best-effort — audit description must not throw
       }
     }
 
@@ -55,8 +55,8 @@ const annualRewards: Record<
       if (reward?.QuanNhan?.ho_ten) {
         hoTen = reward.QuanNhan.ho_ten;
       }
-    } catch (e) {
-      // Ignore parse error
+    } catch {
+      // best-effort — audit description must not throw
     }
 
     const xepLoai = req.body?.xep_loai || '';
@@ -90,8 +90,8 @@ const annualRewards: Record<
         })) as DanhHieuHangNamWithHoTen | null;
         hoTen = rewardRecord?.QuanNhan?.ho_ten || '';
       }
-    } catch (e) {
-      // Ignore parse error
+    } catch {
+      // best-effort — audit description must not throw
     }
 
     const xepLoai = req.body?.xep_loai || '';
@@ -124,8 +124,8 @@ const annualRewards: Record<
       if (reward?.nam) {
         nam = reward.nam;
       }
-    } catch (e) {
-      // Ignore parse error
+    } catch {
+      // best-effort — audit description must not throw
     }
 
     if ((!hoTen || !danhHieu) && rewardId) {
@@ -139,8 +139,8 @@ const annualRewards: Record<
           danhHieu = rewardRecord.danh_hieu || danhHieu;
           nam = String(rewardRecord.nam ?? nam);
         }
-      } catch (error) {
-        // Ignore error
+      } catch {
+        // best-effort — audit description must not throw
       }
     }
 
@@ -168,8 +168,8 @@ const annualRewards: Record<
           ? JSON.parse(req.body.personnel_ids)
           : req.body?.personnel_ids;
       personnelCount = Array.isArray(personnelIds) ? personnelIds.length : 0;
-    } catch (e) {
-      // Ignore parse error
+    } catch {
+      // best-effort — audit description must not throw
     }
 
     try {
@@ -178,8 +178,8 @@ const annualRewards: Record<
       successCount = result?.success || result?.successCount || 0;
       skippedCount = result?.skipped || 0;
       errorCount = result?.errors || 0;
-    } catch (e) {
-      // Ignore parse error
+    } catch {
+      // best-effort — audit description must not throw
     }
 
     const danhHieuName = getDanhHieuName(danhHieu) || FALLBACK.UNKNOWN;
@@ -227,8 +227,8 @@ const annualRewards: Record<
           failCount > 0 ? `, ${failCount} thất bại` : ''
         })`;
       }
-    } catch (e) {
-      // Ignore parse error
+    } catch {
+      // best-effort — audit description must not throw
     }
 
     return `Import danh hiệu hằng năm từ file: ${fileName}`;
@@ -261,8 +261,8 @@ const adhocAwards: Record<
       } else if (award?.DonViTrucThuoc?.ten_don_vi) {
         tenDonVi = award.DonViTrucThuoc.ten_don_vi;
       }
-    } catch (e) {
-      // Ignore parse error
+    } catch {
+      // best-effort — audit description must not throw
     }
 
     if (!hoTen && !tenDonVi) {
@@ -326,8 +326,8 @@ const adhocAwards: Record<
       } else if (award?.DonViTrucThuoc?.ten_don_vi) {
         tenDonVi = award.DonViTrucThuoc.ten_don_vi;
       }
-    } catch (e) {
-      // Ignore parse error
+    } catch {
+      // best-effort — audit description must not throw
     }
 
     if (!hoTen && !tenDonVi && awardId) {
@@ -350,8 +350,8 @@ const adhocAwards: Record<
             tenDonVi = award.DonViTrucThuoc.ten_don_vi;
           }
         }
-      } catch (error) {
-        // Ignore error
+      } catch {
+        // best-effort — audit description must not throw
       }
     }
 
@@ -386,8 +386,8 @@ const adhocAwards: Record<
       } else if (award?.DonViTrucThuoc?.ten_don_vi) {
         tenDonVi = award.DonViTrucThuoc.ten_don_vi;
       }
-    } catch (e) {
-      // Ignore parse error
+    } catch {
+      // best-effort — audit description must not throw
     }
 
     if (!hoTen && !tenDonVi && awardId) {
@@ -411,8 +411,8 @@ const adhocAwards: Record<
             tenDonVi = award.DonViTrucThuoc.ten_don_vi;
           }
         }
-      } catch (error) {
-        // Ignore error
+      } catch {
+        // best-effort — audit description must not throw
       }
     }
 
@@ -461,24 +461,24 @@ const awards: Record<
       if (typeof selectedPersonnel === 'string') {
         try {
           parsedSelectedPersonnel = JSON.parse(selectedPersonnel);
-        } catch (e) {
-          // Ignore
+        } catch {
+          // best-effort — audit description must not throw
         }
       }
 
       if (typeof selectedUnits === 'string') {
         try {
           parsedSelectedUnits = JSON.parse(selectedUnits);
-        } catch (e) {
-          // Ignore
+        } catch {
+          // best-effort — audit description must not throw
         }
       }
 
       if (typeof titleData === 'string') {
         try {
           parsedTitleData = JSON.parse(titleData);
-        } catch (e) {
-          // Ignore
+        } catch {
+          // best-effort — audit description must not throw
         }
       }
 
@@ -565,18 +565,17 @@ const awards: Record<
       }
 
       return description;
-    } catch (error) {
-      console.error('AuditLogAwards.buildCreateBulkDescription failed', { error });
+    } catch {
       return 'Thêm khen thưởng đồng loạt';
     }
   },
 };
 
 const AWARD_TYPE_NAMES: Record<string, string> = {
-  hccsvv: 'Huy chương Chiến sĩ vẻ vang',
+  'tenure-medals': 'Huy chương Chiến sĩ vẻ vang',
   'commemorative-medals': 'Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN',
   'military-flag': 'Huy chương Quân kỳ Quyết thắng',
-  'contribution-awards': 'Huân chương Bảo vệ Tổ quốc',
+  'contribution-medals': 'Huân chương Bảo vệ Tổ quốc',
 };
 
 type AwardModelAccessor = {
@@ -588,10 +587,10 @@ type AwardModelAccessor = {
 
 /** Prisma model accessor keyed by resource slug */
 const AWARD_PRISMA_MODEL: Record<string, AwardModelAccessor> = {
-  hccsvv: prisma.khenThuongHCCSVV as unknown as AwardModelAccessor,
+  'tenure-medals': prisma.khenThuongHCCSVV as unknown as AwardModelAccessor,
   'commemorative-medals': prisma.kyNiemChuongVSNXDQDNDVN as unknown as AwardModelAccessor,
   'military-flag': prisma.huanChuongQuanKyQuyetThang as unknown as AwardModelAccessor,
-  'contribution-awards': prisma.khenThuongCongHien as unknown as AwardModelAccessor,
+  'contribution-medals': prisma.khenThuongCongHien as unknown as AwardModelAccessor,
 };
 
 function buildAwardTypeHelpers(resource: string): Record<
@@ -617,7 +616,7 @@ function buildAwardTypeHelpers(resource: string): Record<
           hoTen = record.QuanNhan.ho_ten;
         }
       } catch {
-        // Ignore parse error
+        // best-effort — audit description must not throw
       }
 
       // Fall back to DB query
@@ -696,7 +695,7 @@ function buildAwardTypeHelpers(resource: string): Record<
           })`;
         }
       } catch {
-        // Ignore parse error
+        // best-effort — audit description must not throw
       }
 
       return `Import ${typeName} từ file: ${fileName}`;
@@ -704,10 +703,10 @@ function buildAwardTypeHelpers(resource: string): Record<
   };
 }
 
-const hccsvv = buildAwardTypeHelpers('hccsvv');
+const tenureMedals = buildAwardTypeHelpers('tenure-medals');
 const commemorativeMedals = buildAwardTypeHelpers('commemorative-medals');
 const militaryFlag = buildAwardTypeHelpers('military-flag');
-const contributionAwards = buildAwardTypeHelpers('contribution-awards');
+const contributionMedals = buildAwardTypeHelpers('contribution-medals');
 
 const UNIT_AWARD_LABEL = 'danh hiệu đơn vị hằng năm';
 
@@ -719,7 +718,7 @@ const getUnitNameFromResponse = (responseData: unknown): string => {
     if (record?.CoQuanDonVi?.ten_don_vi) return record.CoQuanDonVi.ten_don_vi;
     if (record?.DonViTrucThuoc?.ten_don_vi) return record.DonViTrucThuoc.ten_don_vi;
   } catch {
-    // Ignore
+    // best-effort — audit description must not throw
   }
   return '';
 };
@@ -739,7 +738,7 @@ const unitAnnualAwards: Record<
       successCount = result?.imported || result?.success || result?.successCount || result?.total || 0;
       failCount = result?.failed || result?.failCount || 0;
     } catch {
-      // Ignore
+      // best-effort — audit description must not throw
     }
 
     if (successCount > 0 || failCount > 0) {
@@ -801,7 +800,7 @@ const unitAnnualAwards: Record<
       if (record?.danh_hieu) danhHieu = record.danh_hieu;
       if (record?.nam) nam = String(record.nam);
     } catch {
-      // Ignore
+      // best-effort — audit description must not throw
     }
 
     if ((!tenDonVi || !danhHieu) && rewardId) {
@@ -819,7 +818,7 @@ const unitAnnualAwards: Record<
           nam = nam || String(record.nam ?? '');
         }
       } catch {
-        // Ignore
+        // best-effort — audit description must not throw
       }
     }
 
@@ -863,7 +862,7 @@ const unitAnnualAwards: Record<
       danhHieu = record?.danh_hieu || '';
       nam = record?.nam ? String(record.nam) : '';
     } catch {
-      // Ignore
+      // best-effort — audit description must not throw
     }
 
     if (!tenDonVi || !danhHieu) {
@@ -883,7 +882,7 @@ const unitAnnualAwards: Record<
             nam = nam || String(record.nam ?? '');
           }
         } catch {
-          // Ignore
+          // best-effort — audit description must not throw
         }
       }
     }
@@ -909,7 +908,7 @@ const unitAnnualAwards: Record<
       danhHieu = record?.danh_hieu || '';
       nam = record?.nam ? String(record.nam) : '';
     } catch {
-      // Ignore
+      // best-effort — audit description must not throw
     }
 
     if (!tenDonVi || !danhHieu) {
@@ -929,7 +928,7 @@ const unitAnnualAwards: Record<
             nam = nam || String(record.nam ?? '');
           }
         } catch {
-          // Ignore
+          // best-effort — audit description must not throw
         }
       }
     }
@@ -959,7 +958,7 @@ const unitAnnualAwards: Record<
       const result = data?.data || data;
       updatedCount = result?.updated || 0;
     } catch {
-      // Ignore
+      // best-effort — audit description must not throw
     }
 
     let tenDonVi = '';
@@ -985,9 +984,9 @@ export {
   annualRewards,
   adhocAwards,
   awards,
-  hccsvv,
+  tenureMedals,
   commemorativeMedals,
   militaryFlag,
-  contributionAwards,
+  contributionMedals,
   unitAnnualAwards,
 };

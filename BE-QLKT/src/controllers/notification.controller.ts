@@ -4,9 +4,19 @@ import { parsePagination, normalizeParam } from '../helpers/paginationHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 
+interface GetNotificationsQuery {
+  isRead?: string;
+  type?: string;
+  [key: string]: unknown;
+}
+
+interface IdParams {
+  id?: string;
+}
+
 class NotificationController {
   getNotifications = catchAsync(async (req: Request, res: Response) => {
-    const query = req.query as { isRead?: string; type?: string };
+    const query = req.query as GetNotificationsQuery;
     const { page, limit } = parsePagination(query);
     const currentUser = req.user!;
     const { isRead, type } = query;
@@ -38,7 +48,7 @@ class NotificationController {
 
   markAsRead = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
-    const params = req.params as { id?: string };
+    const params = req.params as IdParams;
     const id = normalizeParam(params.id);
     if (!id) return ResponseHelper.badRequest(res, 'ID thông báo không hợp lệ');
     const updated = await notificationService.markAsRead(id, user.id);
@@ -56,7 +66,7 @@ class NotificationController {
 
   deleteNotification = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
-    const params = req.params as { id?: string };
+    const params = req.params as IdParams;
     const id = normalizeParam(params.id);
     if (!id) return ResponseHelper.badRequest(res, 'ID thông báo không hợp lệ');
     await notificationService.deleteNotification(id, user.id);

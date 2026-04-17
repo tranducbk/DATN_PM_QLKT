@@ -3,10 +3,6 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import type { ApiResponse } from '@/lib/types';
 import { FETCH_ALL_LIMIT } from '@/lib/constants/pagination.constants';
 
-/**
- * getAnnualRewards API wrapper.
- * @returns API response payload
- */
 export async function getAnnualRewards(params?: {
   page?: number;
   limit?: number;
@@ -21,10 +17,6 @@ export async function getAnnualRewards(params?: {
   }
 }
 
-/**
- * getAnnualRewardsByPersonnel API wrapper.
- * @returns API response payload
- */
 export async function getAnnualRewardsByPersonnel(personnelId: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get(`/api/personnel/${personnelId}/annual-rewards`);
@@ -34,10 +26,6 @@ export async function getAnnualRewardsByPersonnel(personnelId: string): Promise<
   }
 }
 
-/**
- * getAnnualRewardsTemplate API wrapper.
- * @returns API response payload
- */
 export async function getAnnualRewardsTemplate(params?: Record<string, string>): Promise<Blob> {
   try {
     const res = await axiosInstance.get('/api/annual-rewards/template', {
@@ -50,10 +38,6 @@ export async function getAnnualRewardsTemplate(params?: Record<string, string>):
   }
 }
 
-/**
- * importAnnualRewards API wrapper.
- * @returns API response payload
- */
 export async function importAnnualRewards(file: File): Promise<ApiResponse> {
   try {
     const formData = new FormData();
@@ -69,10 +53,6 @@ export async function importAnnualRewards(file: File): Promise<ApiResponse> {
   }
 }
 
-/**
- * checkHCQKQT API wrapper.
- * @returns API response payload
- */
 export async function checkHCQKQT(personnelId: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get(`/api/annual-rewards/check-hcqkqt/${personnelId}`);
@@ -82,10 +62,6 @@ export async function checkHCQKQT(personnelId: string): Promise<ApiResponse> {
   }
 }
 
-/**
- * checkKNCVSNXDQDNDVN API wrapper.
- * @returns API response payload
- */
 export async function checkKNCVSNXDQDNDVN(personnelId: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get(`/api/annual-rewards/check-knc-vsnxd/${personnelId}`);
@@ -95,10 +71,6 @@ export async function checkKNCVSNXDQDNDVN(personnelId: string): Promise<ApiRespo
   }
 }
 
-/**
- * checkContributionEligibility API wrapper.
- * @returns API response payload
- */
 export async function checkContributionEligibility(personnelIds: string[]): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.post('/api/personnel/check-contribution-eligibility', {
@@ -110,10 +82,6 @@ export async function checkContributionEligibility(personnelIds: string[]): Prom
   }
 }
 
-/**
- * exportAnnualRewards API wrapper.
- * @returns API response payload
- */
 export async function exportAnnualRewards(params?: {
   nam?: number;
   danh_hieu?: string;
@@ -129,10 +97,6 @@ export async function exportAnnualRewards(params?: {
   }
 }
 
-/**
- * createAnnualReward API wrapper.
- * @returns API response payload
- */
 export async function createAnnualReward(
   personnelId: string,
   body: Record<string, unknown>
@@ -145,10 +109,6 @@ export async function createAnnualReward(
   }
 }
 
-/**
- * updateAnnualReward API wrapper.
- * @returns API response payload
- */
 export async function updateAnnualReward(
   id: string,
   body: Record<string, unknown>
@@ -161,10 +121,6 @@ export async function updateAnnualReward(
   }
 }
 
-/**
- * deleteAnnualReward API wrapper.
- * @returns API response payload
- */
 export async function deleteAnnualReward(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete(`/api/annual-rewards/${id}`);
@@ -174,10 +130,6 @@ export async function deleteAnnualReward(id: string): Promise<ApiResponse> {
   }
 }
 
-/**
- * checkAnnualRewards API wrapper.
- * @returns API response payload
- */
 export async function checkAnnualRewards(body: {
   personnel_ids: string[] | number[];
   nam: number;
@@ -191,10 +143,6 @@ export async function checkAnnualRewards(body: {
   }
 }
 
-/**
- * bulkCreateAnnualRewards API wrapper.
- * @returns API response payload
- */
 export async function bulkCreateAnnualRewards(body: {
   personnel_ids: string[] | number[];
   personnel_rewards_data?: Array<{
@@ -260,10 +208,6 @@ export async function bulkCreateAnnualRewards(body: {
   }
 }
 
-/**
- * getPersonnelScientificAchievements API wrapper.
- * @returns API response payload
- */
 export async function getPersonnelScientificAchievements(
   personnelId: string
 ): Promise<ApiResponse> {
@@ -275,10 +219,6 @@ export async function getPersonnelScientificAchievements(
   }
 }
 
-/**
- * getScientificAchievements API wrapper.
- * @returns API response payload
- */
 export async function getScientificAchievements(params?: {
   page?: number;
   limit?: number;
@@ -293,10 +233,6 @@ export async function getScientificAchievements(params?: {
   }
 }
 
-/**
- * createScientificAchievement API wrapper.
- * @returns API response payload
- */
 export async function createScientificAchievement(
   personnelId: string,
   body: Record<string, unknown>
@@ -312,10 +248,6 @@ export async function createScientificAchievement(
   }
 }
 
-/**
- * updateScientificAchievement API wrapper.
- * @returns API response payload
- */
 export async function updateScientificAchievement(
   id: string,
   body: Record<string, unknown>
@@ -328,10 +260,6 @@ export async function updateScientificAchievement(
   }
 }
 
-/**
- * deleteScientificAchievement API wrapper.
- * @returns API response payload
- */
 export async function deleteScientificAchievement(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete(`/api/scientific-achievements/${id}`);
@@ -341,10 +269,6 @@ export async function deleteScientificAchievement(id: string): Promise<ApiRespon
   }
 }
 
-/**
- * exportScientificAchievements API wrapper.
- * @returns API response payload
- */
 export async function exportScientificAchievements(params?: {
   nam?: number;
   loai?: string;
@@ -360,10 +284,6 @@ export async function exportScientificAchievements(params?: {
   }
 }
 
-/**
- * getScientificAchievementsTemplate API wrapper.
- * @returns API response payload
- */
 export async function getScientificAchievementsTemplate(params?: Record<string, string>): Promise<Blob> {
   try {
     const res = await axiosInstance.get('/api/scientific-achievements/template', {
@@ -376,10 +296,6 @@ export async function getScientificAchievementsTemplate(params?: Record<string, 
   }
 }
 
-/**
- * importScientificAchievements API wrapper.
- * @returns API response payload
- */
 export async function importScientificAchievements(file: File): Promise<ApiResponse> {
   try {
     const formData = new FormData();
@@ -395,10 +311,6 @@ export async function importScientificAchievements(file: File): Promise<ApiRespo
   }
 }
 
-/**
- * getAwards API wrapper.
- * @returns API response payload
- */
 export async function getAwards(params?: {
   don_vi_id?: number;
   nam?: number;
@@ -414,10 +326,6 @@ export async function getAwards(params?: {
   }
 }
 
-/**
- * getAwardsTemplate API wrapper.
- * @returns API response payload
- */
 export async function getAwardsTemplate(): Promise<Blob> {
   try {
     const res = await axiosInstance.get('/api/awards/template', {
@@ -429,10 +337,6 @@ export async function getAwardsTemplate(): Promise<Blob> {
   }
 }
 
-/**
- * importAwards API wrapper.
- * @returns API response payload
- */
 export async function importAwards(file: File): Promise<ApiResponse> {
   try {
     const formData = new FormData();
@@ -448,10 +352,6 @@ export async function importAwards(file: File): Promise<ApiResponse> {
   }
 }
 
-/**
- * exportAwards API wrapper.
- * @returns API response payload
- */
 export async function exportAwards(params?: {
   don_vi_id?: number;
   nam?: number;
@@ -468,13 +368,9 @@ export async function exportAwards(params?: {
   }
 }
 
-/**
- * getHCCSVVTemplate API wrapper.
- * @returns API response payload
- */
 export async function getHCCSVVTemplate(params?: Record<string, string>): Promise<Blob> {
   try {
-    const res = await axiosInstance.get('/api/hccsvv/template', {
+    const res = await axiosInstance.get('/api/tenure-medals/template', {
       params,
       responseType: 'blob',
     });
@@ -484,15 +380,11 @@ export async function getHCCSVVTemplate(params?: Record<string, string>): Promis
   }
 }
 
-/**
- * importHCCSVV API wrapper.
- * @returns API response payload
- */
 export async function importHCCSVV(file: File): Promise<ApiResponse> {
   try {
     const formData = new FormData();
     formData.append('file', file);
-    const res = await axiosInstance.post('/api/hccsvv/import', formData, {
+    const res = await axiosInstance.post('/api/tenure-medals/import', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -503,10 +395,6 @@ export async function importHCCSVV(file: File): Promise<ApiResponse> {
   }
 }
 
-/**
- * getHCCSVV API wrapper.
- * @returns API response payload
- */
 export async function getHCCSVV(params?: {
   don_vi_id?: number;
   nam?: number;
@@ -515,24 +403,20 @@ export async function getHCCSVV(params?: {
   limit?: number;
 }): Promise<ApiResponse> {
   try {
-    const res = await axiosInstance.get('/api/hccsvv', { params });
+    const res = await axiosInstance.get('/api/tenure-medals', { params });
     return { success: res.data?.success, data: res.data?.data, pagination: res.data?.pagination };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
-/**
- * exportHCCSVV API wrapper.
- * @returns API response payload
- */
 export async function exportHCCSVV(params?: {
   don_vi_id?: number;
   nam?: number;
   danh_hieu?: string;
 }): Promise<Blob> {
   try {
-    const res = await axiosInstance.get('/api/hccsvv/export', {
+    const res = await axiosInstance.get('/api/tenure-medals/export', {
       params,
       responseType: 'blob',
     });
@@ -542,39 +426,27 @@ export async function exportHCCSVV(params?: {
   }
 }
 
-/**
- * getHCCSVVStatistics API wrapper.
- * @returns API response payload
- */
 export async function getHCCSVVStatistics(params?: {
   don_vi_id?: number;
   nam?: number;
 }): Promise<ApiResponse> {
   try {
-    const res = await axiosInstance.get('/api/hccsvv/statistics', { params });
+    const res = await axiosInstance.get('/api/tenure-medals/statistics', { params });
     return { success: res.data?.success, data: res.data?.data };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
-/**
- * deleteHCCSVV API wrapper.
- * @returns API response payload
- */
 export async function deleteHCCSVV(id: string): Promise<ApiResponse> {
   try {
-    const res = await axiosInstance.delete(`/api/hccsvv/${id}`);
+    const res = await axiosInstance.delete(`/api/tenure-medals/${id}`);
     return { success: res.data?.success, data: res.data?.data };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
-/**
- * createHCCSVVDirect API wrapper.
- * @returns API response payload
- */
 export async function createHCCSVVDirect(body: {
   quan_nhan_id: string;
   danh_hieu: string;
@@ -585,20 +457,16 @@ export async function createHCCSVVDirect(body: {
   ghi_chu?: string;
 }): Promise<ApiResponse> {
   try {
-    const res = await axiosInstance.post('/api/hccsvv', body);
+    const res = await axiosInstance.post('/api/tenure-medals', body);
     return { success: res.data?.success, data: res.data?.data, message: res.data?.message };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
-/**
- * getContributionAwardsTemplate API wrapper.
- * @returns API response payload
- */
 export async function getContributionAwardsTemplate(params?: Record<string, string>): Promise<Blob> {
   try {
-    const res = await axiosInstance.get('/api/contribution-awards/template', {
+    const res = await axiosInstance.get('/api/contribution-medals/template', {
       params,
       responseType: 'blob',
     });
@@ -608,15 +476,11 @@ export async function getContributionAwardsTemplate(params?: Record<string, stri
   }
 }
 
-/**
- * importContributionAwards API wrapper.
- * @returns API response payload
- */
 export async function importContributionAwards(file: File): Promise<ApiResponse> {
   try {
     const formData = new FormData();
     formData.append('file', file);
-    const res = await axiosInstance.post('/api/contribution-awards/import', formData, {
+    const res = await axiosInstance.post('/api/contribution-medals/import', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -627,10 +491,6 @@ export async function importContributionAwards(file: File): Promise<ApiResponse>
   }
 }
 
-/**
- * getContributionAwards API wrapper.
- * @returns API response payload
- */
 export async function getContributionAwards(params?: {
   don_vi_id?: number;
   nam?: number;
@@ -639,24 +499,20 @@ export async function getContributionAwards(params?: {
   limit?: number;
 }): Promise<ApiResponse> {
   try {
-    const res = await axiosInstance.get('/api/contribution-awards', { params });
+    const res = await axiosInstance.get('/api/contribution-medals', { params });
     return { success: res.data?.success, data: res.data?.data, pagination: res.data?.pagination };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
-/**
- * exportContributionAwards API wrapper.
- * @returns API response payload
- */
 export async function exportContributionAwards(params?: {
   don_vi_id?: number;
   nam?: number;
   danh_hieu?: string;
 }): Promise<Blob> {
   try {
-    const res = await axiosInstance.get('/api/contribution-awards/export', {
+    const res = await axiosInstance.get('/api/contribution-medals/export', {
       params,
       responseType: 'blob',
     });
@@ -666,39 +522,27 @@ export async function exportContributionAwards(params?: {
   }
 }
 
-/**
- * getContributionAwardsStatistics API wrapper.
- * @returns API response payload
- */
 export async function getContributionAwardsStatistics(params?: {
   don_vi_id?: number;
   nam?: number;
 }): Promise<ApiResponse> {
   try {
-    const res = await axiosInstance.get('/api/contribution-awards/statistics', { params });
+    const res = await axiosInstance.get('/api/contribution-medals/statistics', { params });
     return { success: res.data?.success, data: res.data?.data };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
-/**
- * deleteContributionAward API wrapper.
- * @returns API response payload
- */
 export async function deleteContributionAward(id: string): Promise<ApiResponse> {
   try {
-    const res = await axiosInstance.delete(`/api/contribution-awards/${id}`);
+    const res = await axiosInstance.delete(`/api/contribution-medals/${id}`);
     return { success: res.data?.success, data: res.data?.data };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
-/**
- * getCommemorationMedalsTemplate API wrapper.
- * @returns API response payload
- */
 export async function getCommemorationMedalsTemplate(params?: Record<string, string>): Promise<Blob> {
   try {
     const res = await axiosInstance.get('/api/commemorative-medals/template', {
@@ -711,10 +555,6 @@ export async function getCommemorationMedalsTemplate(params?: Record<string, str
   }
 }
 
-/**
- * importCommemorationMedals API wrapper.
- * @returns API response payload
- */
 export async function importCommemorationMedals(file: File): Promise<ApiResponse> {
   try {
     const formData = new FormData();
@@ -730,10 +570,6 @@ export async function importCommemorationMedals(file: File): Promise<ApiResponse
   }
 }
 
-/**
- * getCommemorationMedals API wrapper.
- * @returns API response payload
- */
 export async function getCommemorationMedals(params?: {
   don_vi_id?: number;
   nam?: number;
@@ -748,10 +584,6 @@ export async function getCommemorationMedals(params?: {
   }
 }
 
-/**
- * exportCommemorationMedals API wrapper.
- * @returns API response payload
- */
 export async function exportCommemorationMedals(params?: {
   don_vi_id?: number;
   nam?: number;
@@ -767,10 +599,6 @@ export async function exportCommemorationMedals(params?: {
   }
 }
 
-/**
- * getCommemorationMedalsStatistics API wrapper.
- * @returns API response payload
- */
 export async function getCommemorationMedalsStatistics(params?: {
   don_vi_id?: number;
   nam?: number;
@@ -783,10 +611,6 @@ export async function getCommemorationMedalsStatistics(params?: {
   }
 }
 
-/**
- * deleteCommemorationMedal API wrapper.
- * @returns API response payload
- */
 export async function deleteCommemorationMedal(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete(`/api/commemorative-medals/${id}`);
@@ -796,10 +620,6 @@ export async function deleteCommemorationMedal(id: string): Promise<ApiResponse>
   }
 }
 
-/**
- * getMilitaryFlagTemplate API wrapper.
- * @returns API response payload
- */
 export async function getMilitaryFlagTemplate(params?: Record<string, string>): Promise<Blob> {
   try {
     const res = await axiosInstance.get('/api/military-flag/template', {
@@ -812,10 +632,6 @@ export async function getMilitaryFlagTemplate(params?: Record<string, string>): 
   }
 }
 
-/**
- * getMilitaryFlag API wrapper.
- * @returns API response payload
- */
 export async function getMilitaryFlag(params?: {
   don_vi_id?: number;
   nam?: number;
@@ -830,10 +646,6 @@ export async function getMilitaryFlag(params?: {
   }
 }
 
-/**
- * exportMilitaryFlag API wrapper.
- * @returns API response payload
- */
 export async function exportMilitaryFlag(params?: {
   don_vi_id?: number;
   nam?: number;
@@ -849,10 +661,6 @@ export async function exportMilitaryFlag(params?: {
   }
 }
 
-/**
- * getMilitaryFlagStatistics API wrapper.
- * @returns API response payload
- */
 export async function getMilitaryFlagStatistics(params?: {
   don_vi_id?: number;
   nam?: number;
@@ -865,10 +673,6 @@ export async function getMilitaryFlagStatistics(params?: {
   }
 }
 
-/**
- * deleteMilitaryFlag API wrapper.
- * @returns API response payload
- */
 export async function deleteMilitaryFlag(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete(`/api/military-flag/${id}`);
@@ -878,10 +682,6 @@ export async function deleteMilitaryFlag(id: string): Promise<ApiResponse> {
   }
 }
 
-/**
- * getMilitaryFlagByPersonnel API wrapper.
- * @returns API response payload
- */
 export async function getMilitaryFlagByPersonnel(personnelId: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get(`/api/military-flag/personnel/${personnelId}`);
@@ -891,10 +691,6 @@ export async function getMilitaryFlagByPersonnel(personnelId: string): Promise<A
   }
 }
 
-/**
- * getCommemorationMedalsByPersonnel API wrapper.
- * @returns API response payload
- */
 export async function getCommemorationMedalsByPersonnel(personnelId: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get(`/api/commemorative-medals/personnel/${personnelId}`);
@@ -904,10 +700,6 @@ export async function getCommemorationMedalsByPersonnel(personnelId: string): Pr
   }
 }
 
-/**
- * getUnitAnnualAwards API wrapper.
- * @returns API response payload
- */
 export async function getUnitAnnualAwards(params?: {
   page?: number;
   limit?: number;
@@ -922,10 +714,6 @@ export async function getUnitAnnualAwards(params?: {
   }
 }
 
-/**
- * getUnitAnnualAwardsByUnit API wrapper.
- * @returns API response payload
- */
 export async function getUnitAnnualAwardsByUnit(
   donViId: string,
   year?: number
@@ -943,10 +731,6 @@ export async function getUnitAnnualAwardsByUnit(
   }
 }
 
-/**
- * getUnitAnnualAwardsTemplate API wrapper.
- * @returns API response payload
- */
 export async function getUnitAnnualAwardsTemplate(params?: Record<string, string>): Promise<Blob> {
   try {
     const res = await axiosInstance.get('/api/awards/units/annual/template', {
@@ -959,10 +743,6 @@ export async function getUnitAnnualAwardsTemplate(params?: Record<string, string
   }
 }
 
-/**
- * importUnitAnnualAwards API wrapper.
- * @returns API response payload
- */
 export async function importUnitAnnualAwards(file: File): Promise<ApiResponse> {
   try {
     const formData = new FormData();
@@ -978,10 +758,6 @@ export async function importUnitAnnualAwards(file: File): Promise<ApiResponse> {
   }
 }
 
-/**
- * exportUnitAnnualAwards API wrapper.
- * @returns API response payload
- */
 export async function exportUnitAnnualAwards(params?: {
   nam?: number;
   danh_hieu?: string;
@@ -997,10 +773,6 @@ export async function exportUnitAnnualAwards(params?: {
   }
 }
 
-/**
- * deleteUnitAnnualAward API wrapper.
- * @returns API response payload
- */
 export async function deleteUnitAnnualAward(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete(`/api/awards/units/annual/${id}`);
@@ -1010,10 +782,6 @@ export async function deleteUnitAnnualAward(id: string): Promise<ApiResponse> {
   }
 }
 
-/**
- * getUnitAnnualProfile API wrapper.
- * @returns API response payload
- */
 export async function getUnitAnnualProfile(donViId: string, year?: number): Promise<ApiResponse> {
   try {
     let url = year
@@ -1027,10 +795,6 @@ export async function getUnitAnnualProfile(donViId: string, year?: number): Prom
   }
 }
 
-/**
- * getAdhocAwards API wrapper.
- * @returns API response payload
- */
 export async function getAdhocAwards(params?: {
   type?: 'CA_NHAN' | 'TAP_THE';
   year?: number;
@@ -1047,10 +811,6 @@ export async function getAdhocAwards(params?: {
   }
 }
 
-/**
- * getAdhocAwardById API wrapper.
- * @returns API response payload
- */
 export async function getAdhocAwardById(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get(`/api/adhoc-awards/${id}`);
@@ -1060,10 +820,6 @@ export async function getAdhocAwardById(id: string): Promise<ApiResponse> {
   }
 }
 
-/**
- * createAdhocAward API wrapper.
- * @returns API response payload
- */
 export async function createAdhocAward(formData: FormData): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.post('/api/adhoc-awards', formData, {
@@ -1075,10 +831,6 @@ export async function createAdhocAward(formData: FormData): Promise<ApiResponse>
   }
 }
 
-/**
- * updateAdhocAward API wrapper.
- * @returns API response payload
- */
 export async function updateAdhocAward(id: string, formData: FormData): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.put(`/api/adhoc-awards/${id}`, formData, {
@@ -1090,10 +842,6 @@ export async function updateAdhocAward(id: string, formData: FormData): Promise<
   }
 }
 
-/**
- * deleteAdhocAward API wrapper.
- * @returns API response payload
- */
 export async function deleteAdhocAward(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete(`/api/adhoc-awards/${id}`);
@@ -1103,10 +851,6 @@ export async function deleteAdhocAward(id: string): Promise<ApiResponse> {
   }
 }
 
-/**
- * getAdhocAwardsByPersonnel API wrapper.
- * @returns API response payload
- */
 export async function getAdhocAwardsByPersonnel(personnelId: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get(`/api/adhoc-awards/personnel/${personnelId}`);
@@ -1116,10 +860,6 @@ export async function getAdhocAwardsByPersonnel(personnelId: string): Promise<Ap
   }
 }
 
-/**
- * getAdhocAwardsByUnit API wrapper.
- * @returns API response payload
- */
 export async function getAdhocAwardsByUnit(
   unitId: string,
   unitType: 'CO_QUAN_DON_VI' | 'DON_VI_TRUC_THUOC'
@@ -1160,24 +900,20 @@ export const confirmAnnualRewardsImport = createConfirmImport('/api/annual-rewar
 export const previewUnitAnnualAwardsImport = createPreviewImport('/api/awards/units/annual/import/preview');
 export const confirmUnitAnnualAwardsImport = createConfirmImport('/api/awards/units/annual/import/confirm');
 
-export const previewHCCSVVImport = createPreviewImport('/api/hccsvv/import/preview');
-export const confirmHCCSVVImport = createConfirmImport('/api/hccsvv/import/confirm');
+export const previewHCCSVVImport = createPreviewImport('/api/tenure-medals/import/preview');
+export const confirmHCCSVVImport = createConfirmImport('/api/tenure-medals/import/confirm');
 
 export const previewMilitaryFlagImport = createPreviewImport('/api/military-flag/import/preview');
 export const confirmMilitaryFlagImport = createConfirmImport('/api/military-flag/import/confirm');
 
-export const previewContributionAwardsImport = createPreviewImport('/api/contribution-awards/import/preview');
-export const confirmContributionAwardsImport = createConfirmImport('/api/contribution-awards/import/confirm');
+export const previewContributionAwardsImport = createPreviewImport('/api/contribution-medals/import/preview');
+export const confirmContributionAwardsImport = createConfirmImport('/api/contribution-medals/import/confirm');
 
 export const previewCommemorationMedalsImport = createPreviewImport('/api/commemorative-medals/import/preview');
 export const confirmCommemorationMedalsImport = createConfirmImport('/api/commemorative-medals/import/confirm');
 
 export const previewScientificAchievementsImport = createPreviewImport('/api/scientific-achievements/import/preview');
 export const confirmScientificAchievementsImport = createConfirmImport('/api/scientific-achievements/import/confirm');
-/**
- * bulkCreateAwards API wrapper.
- * @returns API response payload
- */
 export async function bulkCreateAwards(formData: FormData): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.post('/api/awards/bulk', formData, {

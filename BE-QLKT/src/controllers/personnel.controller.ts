@@ -5,9 +5,54 @@ import { writeSystemLog } from '../helpers/systemLogHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 
+interface GetPersonnelQuery {
+  search?: string;
+  unit_id?: string;
+  [key: string]: unknown;
+}
+
+interface IdParams {
+  id?: string;
+}
+
+interface CreatePersonnelBody {
+  cccd?: string;
+  unit_id?: string;
+  position_id?: string;
+  role?: string;
+}
+
+interface UpdatePersonnelBody {
+  unit_id?: string;
+  position_id?: string;
+  don_vi_id?: string;
+  chuc_vu_id?: string;
+  co_quan_don_vi_id?: string;
+  don_vi_truc_thuoc_id?: string;
+  ho_ten?: string;
+  gioi_tinh?: string;
+  ngay_sinh?: Date;
+  cccd?: string;
+  cap_bac?: string;
+  ngay_nhap_ngu?: Date;
+  ngay_xuat_ngu?: Date;
+  que_quan_2_cap?: string;
+  que_quan_3_cap?: string;
+  tru_quan?: string;
+  cho_o_hien_nay?: string;
+  ngay_vao_dang?: Date;
+  ngay_vao_dang_chinh_thuc?: Date;
+  so_the_dang_vien?: string;
+  so_dien_thoai?: string;
+}
+
+interface CheckContributionEligibilityBody {
+  personnel_ids?: string[];
+}
+
 class PersonnelController {
   getPersonnel = catchAsync(async (req: Request, res: Response) => {
-    const query = req.query as { search?: string; unit_id?: string };
+    const query = req.query as GetPersonnelQuery;
     const user = req.user!;
     const { page, limit } = parsePagination(query);
     const { search, unit_id } = query;
@@ -30,7 +75,7 @@ class PersonnelController {
   });
 
   getPersonnelById = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as { id?: string };
+    const params = req.params as IdParams;
     const user = req.user!;
     const { id } = params;
     if (!id) return ResponseHelper.badRequest(res, 'ID quân nhân không hợp lệ');
@@ -44,12 +89,7 @@ class PersonnelController {
   });
 
   createPersonnel = catchAsync(async (req: Request, res: Response) => {
-    const body = req.body as {
-      cccd?: string;
-      unit_id?: string;
-      position_id?: string;
-      role?: string;
-    };
+    const body = req.body as CreatePersonnelBody;
     const { cccd, unit_id, position_id, role } = body;
     if (!cccd || !unit_id || !position_id) {
       return ResponseHelper.badRequest(
@@ -65,31 +105,9 @@ class PersonnelController {
   });
 
   updatePersonnel = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as { id?: string };
+    const params = req.params as IdParams;
     const user = req.user!;
-    const body = req.body as {
-      unit_id?: string;
-      position_id?: string;
-      don_vi_id?: string;
-      chuc_vu_id?: string;
-      co_quan_don_vi_id?: string;
-      don_vi_truc_thuoc_id?: string;
-      ho_ten?: string;
-      gioi_tinh?: string;
-      ngay_sinh?: Date;
-      cccd?: string;
-      cap_bac?: string;
-      ngay_nhap_ngu?: Date;
-      ngay_xuat_ngu?: Date;
-      que_quan_2_cap?: string;
-      que_quan_3_cap?: string;
-      tru_quan?: string;
-      cho_o_hien_nay?: string;
-      ngay_vao_dang?: Date;
-      ngay_vao_dang_chinh_thuc?: Date;
-      so_the_dang_vien?: string;
-      so_dien_thoai?: string;
-    };
+    const body = req.body as UpdatePersonnelBody;
     const personnelId = params.id;
     if (Array.isArray(personnelId)) {
       return ResponseHelper.badRequest(res, 'ID quân nhân không hợp lệ');
@@ -151,7 +169,7 @@ class PersonnelController {
 
   deletePersonnel = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
-    const params = req.params as { id?: string };
+    const params = req.params as IdParams;
     const { id } = params;
     if (!id) return ResponseHelper.badRequest(res, 'ID quân nhân không hợp lệ');
     const userRole = user.role;
@@ -194,7 +212,7 @@ class PersonnelController {
   });
 
   checkContributionEligibility = catchAsync(async (req: Request, res: Response) => {
-    const body = req.body as { personnel_ids?: string[] };
+    const body = req.body as CheckContributionEligibilityBody;
     const { personnel_ids: personnelIds } = body;
     if (!personnelIds || !Array.isArray(personnelIds)) {
       return ResponseHelper.badRequest(res, 'Danh sách quân nhân không hợp lệ');

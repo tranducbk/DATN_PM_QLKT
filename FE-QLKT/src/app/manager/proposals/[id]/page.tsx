@@ -822,7 +822,7 @@ export default function ManagerProposalDetailPage() {
                       HCBVTQ_HANG_NHI: 'Huân chương Bảo vệ Tổ quốc - Hạng Nhì',
                       HCBVTQ_HANG_NHAT: 'Huân chương Bảo vệ Tổ quốc - Hạng Nhất',
                       HC_QKQT: 'Huy chương Quân kỳ Quyết thắng',
-                      KNC_VSNXD_QDNDVN: 'Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN',
+                      KNC_VSNXD_QDNDVN: 'Kỷ niệm chương VSNXD QĐNDVN',
                     };
                     return text ? (
                       <Text style={{ whiteSpace: 'nowrap' }}>{danhHieuMap[text] || text}</Text>
@@ -1079,7 +1079,7 @@ export default function ManagerProposalDetailPage() {
                       HCBVTQ_HANG_NHI: 'Huân chương Bảo vệ Tổ quốc - Hạng Nhì',
                       HCBVTQ_HANG_NHAT: 'Huân chương Bảo vệ Tổ quốc - Hạng Nhất',
                       HC_QKQT: 'Huy chương Quân kỳ Quyết thắng',
-                      KNC_VSNXD_QDNDVN: 'Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN',
+                      KNC_VSNXD_QDNDVN: 'Kỷ niệm chương VSNXD QĐNDVN',
                     };
                     return text ? (
                       <Text style={{ whiteSpace: 'nowrap' }}>{danhHieuMap[text] || text}</Text>
@@ -1264,7 +1264,7 @@ export default function ManagerProposalDetailPage() {
                       HCBVTQ_HANG_NHI: 'Huân chương Bảo vệ Tổ quốc - Hạng Nhì',
                       HCBVTQ_HANG_NHAT: 'Huân chương Bảo vệ Tổ quốc - Hạng Nhất',
                       HC_QKQT: 'Huy chương Quân kỳ Quyết thắng',
-                      KNC_VSNXD_QDNDVN: 'Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN',
+                      KNC_VSNXD_QDNDVN: 'Kỷ niệm chương VSNXD QĐNDVN',
                     };
                     return text ? (
                       <Text>{danhHieuMap[text] || text}</Text>

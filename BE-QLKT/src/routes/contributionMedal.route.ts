@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import contributionAwardController from '../controllers/contributionAward.controller';
+import contributionAwardController from '../controllers/contributionMedal.controller';
 import { verifyToken, checkRole, requireAdmin } from '../middlewares/auth';
 import { auditLog } from '../middlewares/auditLog';
 import { getLogDescription, getResourceId } from '../helpers/auditLog';
@@ -12,14 +12,14 @@ import { excelImportValidation } from '../validations';
 const router = Router();
 
 /**
- * @route   GET /api/contribution-awards/template
+ * @route   GET /api/contribution-medals/template
  * @desc    Download Excel template for Contribution Award (HCBVTQ) import (supports ?personnel_ids=id1,id2)
  * @access  ADMIN
  */
 router.get('/template', verifyToken, requireAdmin, contributionAwardController.getTemplate);
 
 /**
- * @route   POST /api/contribution-awards/import/preview
+ * @route   POST /api/contribution-medals/import/preview
  * @desc    Preview Contribution Award (HCBVTQ) import — validate only, no DB write
  * @access  ADMIN
  */
@@ -32,7 +32,7 @@ router.post(
 );
 
 /**
- * @route   POST /api/contribution-awards/import/confirm
+ * @route   POST /api/contribution-medals/import/confirm
  * @desc    Confirm Contribution Award (HCBVTQ) import — persist validated data to DB
  * @access  ADMIN
  */
@@ -45,7 +45,7 @@ router.post(
 );
 
 /**
- * @route   GET /api/contribution-awards
+ * @route   GET /api/contribution-medals
  * @desc    List Contribution Awards (HCBVTQ) (Admin: all units, Manager: own unit)
  * @access  ADMIN, MANAGER
  */
@@ -57,7 +57,7 @@ router.get(
 );
 
 /**
- * @route   GET /api/contribution-awards/export
+ * @route   GET /api/contribution-medals/export
  * @desc    Export Contribution Awards (HCBVTQ) to Excel (Admin: all units, Manager: own unit)
  * @access  ADMIN, MANAGER
  */
@@ -69,7 +69,7 @@ router.get(
 );
 
 /**
- * @route   GET /api/contribution-awards/statistics
+ * @route   GET /api/contribution-medals/statistics
  * @desc    Get Contribution Award (HCBVTQ) statistics by grade
  * @access  ADMIN, MANAGER
  */
@@ -81,7 +81,7 @@ router.get(
 );
 
 /**
- * @route   DELETE /api/contribution-awards/:id
+ * @route   DELETE /api/contribution-medals/:id
  * @desc    Delete a Contribution Award (HCBVTQ) record (does not delete the proposal)
  * @access  ADMIN
  */
@@ -91,8 +91,8 @@ router.delete(
   requireAdmin,
   auditLog({
     action: AUDIT_ACTIONS.DELETE,
-    resource: 'contribution-awards',
-    getDescription: getLogDescription('contribution-awards', 'DELETE'),
+    resource: 'contribution-medals',
+    getDescription: getLogDescription('contribution-medals', 'DELETE'),
     getResourceId: getResourceId.fromParams('id'),
   }),
   contributionAwardController.deleteAward

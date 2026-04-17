@@ -77,6 +77,11 @@ PM QLKT/
 - **Unit count (`so_luong`)**: Khi thay đổi đơn vị quân nhân, dùng `if/else` (chỉ increment/decrement 1 đơn vị), không dùng 2 `if` riêng biệt (tránh đếm dư)
 - **Validation**: Joi schemas in `validations/` directory
 - **Error classes**: `AppError`, `NotFoundError`, `ForbiddenError`
+- **Type declarations**: Khai báo `interface`/`type` ở đầu file (sau imports), không khai báo inline trong function body. Đặc biệt `req.body`, `req.query`, `req.params` phải được cast sang named interface/type — không dùng `req.body as { field?: string }` trực tiếp
+- **Fire-and-forget logs**: `writeSystemLog` trong catch block phải dùng `void writeSystemLog(...)` — không bỏ qua promise hoàn toàn
+- **Rename resource slug**: Khi đổi tên resource (vd: `hccsvv` → `tenure-medals`), phải cập nhật đồng bộ: tên biến, export name, import, audit log map, notification map, route path, FE API URL
+- **Audit log helpers**: Tên biến local phải match resource slug (vd: `const tenureMedals = buildAwardTypeHelpers('tenure-medals')` — không dùng tên cũ `hccsvv`)
+- **Best-effort catches**: Empty `catch` trong helper/description builder phải có comment `// best-effort — {tên hàm} must not throw`
 
 ### Frontend
 - **API client**: `apiClient` object in `lib/api/index.ts` — single entry point for all API calls
@@ -103,6 +108,8 @@ Exported functions phải có JSDoc chuẩn:
 - **Không** comment giải thích WHAT code làm — code phải tự giải thích qua naming
 - **Chỉ** comment WHY (hidden constraints, workarounds, business rules)
 - **Không** dùng section dividers (`// ─── ... ───`, `// -----------`)
+- **Không** viết JSDoc template rỗng như `/** getXxx API wrapper. @returns API response payload */` — chỉ viết khi có gì non-obvious cần giải thích
+- **Route JSDoc** (`@desc`, `@access`): luôn giữ tiếng Anh — không đổi sang tiếng Việt
 
 ## Inline Comment Rules (STRICT)
 
@@ -161,3 +168,7 @@ Exported functions phải có JSDoc chuẩn:
 - Use `as never` type assertions — use proper type casts
 - Write redundant aliases (`const pageNum = page`) — use original variable
 - Copy-paste logic across services — extract to shared helper first
+- Write generic JSDoc like `/** getXxx API wrapper. @returns API response payload */` — omit JSDoc if there's nothing meaningful to add
+- Change route `@desc` or `@access` comments to Vietnamese — keep them in English always
+- Use `catch (e)` or `catch (error)` when the variable is not used — use bare `catch` instead
+- Declare `interface`/`type` inline inside function bodies — always declare at the top of the file

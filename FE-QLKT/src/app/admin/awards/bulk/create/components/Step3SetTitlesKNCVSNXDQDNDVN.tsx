@@ -289,7 +289,7 @@ export function Step3SetTitlesKNCVSNXDQDNDVN({
       key: 'danh_hieu',
       width: 200,
       align: 'center',
-      render: () => <Text>Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN</Text>,
+      render: () => <Text>Kỷ niệm chương VSNXD QĐNDVN</Text>,
     },
   ];
 

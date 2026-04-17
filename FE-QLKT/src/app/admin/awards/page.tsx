@@ -586,17 +586,17 @@ export default function AdminAwardsPage() {
         items={[
           {
             key: 'CNHN',
-            label: 'Cá nhân hằng năm',
+            label: 'Khen thưởng cá nhân hằng năm',
             children: renderAwardContent(),
           },
           {
             key: 'DVHN',
-            label: 'Đơn vị hằng năm',
+            label: 'Khen thưởng đơn vị hằng năm',
             children: renderAwardContent(),
           },
           {
             key: 'HCCSVV',
-            label: 'Huy chương Chiến sĩ Vẻ vang',
+            label: 'Huy chương Chiến sĩ vẻ vang',
             children: renderAwardContent(),
           },
           {
@@ -606,7 +606,7 @@ export default function AdminAwardsPage() {
           },
           {
             key: 'KNC_VSNXD_QDNDVN',
-            label: DANH_HIEU_MAP['KNC_VSNXD_QDNDVN'],
+            label: 'Kỷ niệm chương VSNXD QĐNDVN',
             children: renderAwardContent(),
           },
           {
@@ -616,7 +616,7 @@ export default function AdminAwardsPage() {
           },
           {
             key: 'NCKH',
-            label: 'Thành tích khoa học',
+            label: 'Thành tích NCKH',
             children: renderAwardContent(),
           },
         ]}

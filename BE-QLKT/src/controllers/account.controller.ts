@@ -5,12 +5,45 @@ import { parsePagination, normalizeParam } from '../helpers/paginationHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 
+interface GetAccountsQuery {
+  search?: string;
+  role?: string;
+  [key: string]: unknown;
+}
+
+interface IdParams {
+  id?: string;
+}
+
+interface CreateAccountBody {
+  personnel_id?: string;
+  username?: string;
+  password?: string;
+  role?: Role;
+  co_quan_don_vi_id?: string;
+  don_vi_truc_thuoc_id?: string;
+  chuc_vu_id?: string;
+}
+
+interface UpdateAccountQuery {
+  force?: string;
+}
+
+interface UpdateAccountBody {
+  role?: Role;
+  password?: string;
+}
+
+interface ResetPasswordBody {
+  account_id?: string;
+}
+
 const ALL_ROLES = Object.values(ROLES);
 const ADMIN_MANAGED_ROLES: Role[] = [ROLES.MANAGER, ROLES.USER];
 
 class AccountController {
   getAccounts = catchAsync(async (req: Request, res: Response) => {
-    const query = req.query as { search?: string; role?: string };
+    const query = req.query as GetAccountsQuery;
     const user = req.user;
     const { page, limit } = parsePagination(query);
     const { search = '', role } = query;
@@ -40,7 +73,7 @@ class AccountController {
   });
 
   getAccountById = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as { id?: string };
+    const params = req.params as IdParams;
     const { id } = params;
     const result = await accountService.getAccountById(id);
     return ResponseHelper.success(res, {
@@ -51,15 +84,7 @@ class AccountController {
 
   createAccount = catchAsync(async (req: Request, res: Response) => {
     const user = req.user;
-    const body = req.body as {
-      personnel_id?: string;
-      username?: string;
-      password?: string;
-      role?: Role;
-      co_quan_don_vi_id?: string;
-      don_vi_truc_thuoc_id?: string;
-      chuc_vu_id?: string;
-    };
+    const body = req.body as CreateAccountBody;
     const {
       personnel_id,
       username,
@@ -126,9 +151,9 @@ class AccountController {
 
   updateAccount = catchAsync(async (req: Request, res: Response) => {
     const user = req.user;
-    const params = req.params as { id?: string };
-    const query = req.query as { force?: string };
-    const body = req.body as { role?: Role; password?: string };
+    const params = req.params as IdParams;
+    const query = req.query as UpdateAccountQuery;
+    const body = req.body as UpdateAccountBody;
     const id = normalizeParam(params.id);
     if (!id) {
       return ResponseHelper.badRequest(res, 'Thiếu id tài khoản');
@@ -181,7 +206,7 @@ class AccountController {
   });
 
   resetPassword = catchAsync(async (req: Request, res: Response) => {
-    const body = req.body as { account_id?: string };
+    const body = req.body as ResetPasswordBody;
     const { account_id } = body;
     if (!account_id) {
       return ResponseHelper.badRequest(res, 'Vui lòng cung cấp thông tin tài khoản');
@@ -191,8 +216,8 @@ class AccountController {
   });
 
   deleteAccount = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as { id?: string };
-    const query = req.query as { force?: string };
+    const params = req.params as IdParams;
+    const query = req.query as UpdateAccountQuery;
     const id = normalizeParam(params.id);
     if (!id) {
       return ResponseHelper.badRequest(res, 'Thiếu id tài khoản');

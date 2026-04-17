@@ -696,9 +696,9 @@ class ContributionAwardService {
     } catch (recalcError) {
       writeSystemLog({
         action: 'ERROR',
-        resource: 'contribution-awards',
+        resource: 'contribution-medals',
         resourceId: id,
-        description: `Lỗi tính lại hồ sơ cống hiến sau khi xóa HCBVTQ: ${recalcError}`,
+        description: `Lỗi tính lại hồ sơ khen thưởng cống hiến sau khi xóa HCBVTQ: ${recalcError}`,
       });
     }
 
@@ -707,7 +707,7 @@ class ContributionAwardService {
     } catch (notifyError) {
       writeSystemLog({
         action: 'ERROR',
-        resource: 'contribution-awards',
+        resource: 'contribution-medals',
         resourceId: id,
         description: `Lỗi gửi thông báo xóa khen thưởng HCBVTQ: ${notifyError}`,
       });

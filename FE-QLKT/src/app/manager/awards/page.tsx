@@ -396,7 +396,7 @@ export default function AdminAwardsPage() {
         // Commemoration medals — if record exists, default title is KNC
         if (activeTab === 'KNC_VSNXD_QDNDVN') {
           const danhHieu =
-            DANH_HIEU_MAP['KNC_VSNXD_QDNDVN'] || 'Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN';
+            DANH_HIEU_MAP['KNC_VSNXD_QDNDVN'] || 'Kỷ niệm chương VSNXD QĐNDVN';
           return (
             <div style={COLUMN_STYLES.container}>
               <Text strong>{danhHieu}</Text>
@@ -498,12 +498,12 @@ export default function AdminAwardsPage() {
         items={[
           {
             key: 'CNHN',
-            label: 'Cá nhân hằng năm',
+            label: 'Khen thưởng cá nhân hằng năm',
             children: renderAwardContent(),
           },
           {
             key: 'HCCSVV',
-            label: 'Huy chương Chiến sĩ Vẻ vang',
+            label: 'Huy chương Chiến sĩ vẻ vang',
             children: renderAwardContent(),
           },
           {
@@ -513,7 +513,7 @@ export default function AdminAwardsPage() {
           },
           {
             key: 'KNC_VSNXD_QDNDVN',
-            label: DANH_HIEU_MAP['KNC_VSNXD_QDNDVN'],
+            label: 'Kỷ niệm chương VSNXD QĐNDVN',
             children: renderAwardContent(),
           },
           {
@@ -523,7 +523,7 @@ export default function AdminAwardsPage() {
           },
           {
             key: 'NCKH',
-            label: 'Thành tích khoa học',
+            label: 'Thành tích NCKH',
             children: renderAwardContent(),
           },
         ]}

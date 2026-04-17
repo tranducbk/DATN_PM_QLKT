@@ -10,9 +10,39 @@ import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { notifyOnImport } from '../helpers/notification';
 import { DANH_HIEU_MAP } from '../constants/danhHieu.constants';
 
+interface GetTemplateQuery {
+  repeat_map?: string;
+  [key: string]: string | string[] | undefined;
+}
+
+interface ConfirmImportBody {
+  items?: CommemorativeMedalValidItem[];
+}
+
+interface GetAllQuery {
+  don_vi_id?: string;
+  nam?: number;
+  ho_ten?: string;
+  [key: string]: unknown;
+}
+
+interface ExportToExcelQuery {
+  don_vi_id?: string;
+  nam?: number;
+  [key: string]: unknown;
+}
+
+interface GetByPersonnelIdParams {
+  personnel_id?: string;
+}
+
+interface IdParams {
+  id?: string;
+}
+
 class CommemorativeMedalController {
   getTemplate = catchAsync(async (req: Request, res: Response) => {
-    const query = req.query as { repeat_map?: string };
+    const query = req.query as GetTemplateQuery;
     const personnelIds = parsePersonnelIdsFromQuery(query);
     const repeatMap: Record<string, number> = {};
     if (query.repeat_map) {
@@ -61,7 +91,7 @@ class CommemorativeMedalController {
 
   confirmImport = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
-    const body = req.body as { items?: CommemorativeMedalValidItem[] };
+    const body = req.body as ConfirmImportBody;
     const { items } = body;
     const result = await commemorativeMedalService.confirmImport(items, user.id);
 
@@ -92,7 +122,7 @@ class CommemorativeMedalController {
   });
 
   getAll = catchAsync(async (req: Request, res: Response) => {
-    const query = req.query as { don_vi_id?: string; nam?: number; ho_ten?: string };
+    const query = req.query as GetAllQuery;
     const user = req.user!;
     const { don_vi_id, nam, ho_ten } = query;
     const userRole = user.role;
@@ -123,7 +153,7 @@ class CommemorativeMedalController {
   });
 
   exportToExcel = catchAsync(async (req: Request, res: Response) => {
-    const query = req.query as { don_vi_id?: string; nam?: number };
+    const query = req.query as ExportToExcelQuery;
     const user = req.user!;
     const { don_vi_id, nam } = query;
 
@@ -160,7 +190,7 @@ class CommemorativeMedalController {
 
   getByPersonnelId = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
-    const params = req.params as { personnel_id?: string };
+    const params = req.params as GetByPersonnelIdParams;
     const { personnel_id } = params;
     const userId = user.id;
     const userRole = user.role;
@@ -192,7 +222,7 @@ class CommemorativeMedalController {
   });
 
   deleteAward = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as { id?: string };
+    const params = req.params as IdParams;
     const { id } = params;
     const adminUsername = getAdminUsername(req);
     const result = await commemorativeMedalService.deleteAward(String(id), adminUsername);

@@ -65,11 +65,12 @@ export async function getSubordinateUnitIds(coQuanDonViId: string): Promise<stri
 }
 
 /**
- * Builds manager unit filter payload from request context.
+ * Resolves the manager's unit context including subordinate unit IDs.
+ * Returns metadata for building service-level filters — not a Prisma `where` object.
  * @param req - Express request
- * @returns Manager unit filter object, or null when not applicable
+ * @returns Unit context with optional sub-unit list, or null when not applicable
  */
-export async function buildManagerUnitWhere(req: Request): Promise<Record<string, unknown> | null> {
+export async function getManagerUnitContext(req: Request): Promise<Record<string, unknown> | null> {
   const unit = await getManagerUnitFilter(req);
   if (!unit) return null;
 

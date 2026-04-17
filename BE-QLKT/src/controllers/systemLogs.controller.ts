@@ -3,18 +3,24 @@ import systemLogsService from '../services/systemLogs.service';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 
+interface GetLogsQuery {
+  page?: number;
+  limit?: number;
+  search?: string;
+  action?: string;
+  resource?: string;
+  startDate?: string;
+  endDate?: string;
+  actorRole?: string;
+}
+
+interface DeleteLogsBody {
+  ids?: string[];
+}
+
 class SystemLogsController {
   getLogs = catchAsync(async (req: Request, res: Response) => {
-    const query = req.query as {
-      page?: number;
-      limit?: number;
-      search?: string;
-      action?: string;
-      resource?: string;
-      startDate?: string;
-      endDate?: string;
-      actorRole?: string;
-    };
+    const query = req.query as GetLogsQuery;
     const currentUser = req.user!;
     const { page = 1, limit = 10, search, action, resource, startDate, endDate, actorRole } = query;
     const pageNum = Number(page);
@@ -59,7 +65,7 @@ class SystemLogsController {
   });
 
   deleteLogs = catchAsync(async (req: Request, res: Response) => {
-    const body = req.body as { ids?: string[] };
+    const body = req.body as DeleteLogsBody;
     const { ids } = body;
     if (!ids || !Array.isArray(ids) || ids.length === 0) {
       return ResponseHelper.badRequest(res, 'Danh sách ID không hợp lệ');

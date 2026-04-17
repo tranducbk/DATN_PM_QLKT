@@ -7,23 +7,61 @@ import catchAsync from '../helpers/catchAsync';
 import { getManagerUnitFilter, getSubordinateUnitIds } from '../helpers/controllerHelper';
 import { ADHOC_TYPE } from '../constants/adhocType.constants';
 
+interface CreateAdhocAwardBody {
+  type?: (typeof ADHOC_TYPE)[keyof typeof ADHOC_TYPE];
+  year?: unknown;
+  awardForm?: string;
+  personnelId?: string;
+  unitId?: string;
+  unitType?: string;
+  rank?: string;
+  position?: string;
+  note?: string;
+  decisionNumber?: string;
+  decisionFilePath?: string;
+}
+
+interface GetAdhocAwardsQuery {
+  type?: string;
+  year?: string;
+  personnelId?: string;
+  unitId?: string;
+  ho_ten?: string;
+  page?: number;
+  limit?: number;
+}
+
+interface IdParams {
+  id?: string;
+}
+
+interface UpdateAdhocAwardBody {
+  awardForm?: string;
+  year?: unknown;
+  rank?: string;
+  position?: string;
+  note?: string;
+  decisionNumber?: string;
+  removeAttachedFileIndexes?: string;
+}
+
+interface PersonnelIdParams {
+  personnelId?: string;
+}
+
+interface UnitIdParams {
+  unitId?: string;
+}
+
+interface GetAdhocAwardsByUnitQuery {
+  unitType?: string;
+}
+
 class AdhocAwardController {
   createAdhocAward = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
     const adminId = user.id;
-    const body = req.body as {
-      type?: (typeof ADHOC_TYPE)[keyof typeof ADHOC_TYPE];
-      year?: unknown;
-      awardForm?: string;
-      personnelId?: string;
-      unitId?: string;
-      unitType?: string;
-      rank?: string;
-      position?: string;
-      note?: string;
-      decisionNumber?: string;
-      decisionFilePath?: string;
-    };
+    const body = req.body as CreateAdhocAwardBody;
     const {
       type,
       year,
@@ -83,15 +121,7 @@ class AdhocAwardController {
 
   getAdhocAwards = catchAsync(async (req: Request, res: Response) => {
     const user = req.user;
-    const query = req.query as {
-      type?: string;
-      year?: string;
-      personnelId?: string;
-      unitId?: string;
-      ho_ten?: string;
-      page?: number;
-      limit?: number;
-    };
+    const query = req.query as GetAdhocAwardsQuery;
     const { type, year, personnelId, unitId, ho_ten, page, limit } = query;
     const { page: pageNum, limit: limitNum } = parsePagination({ page, limit });
     const userRole = user?.role;
@@ -139,7 +169,7 @@ class AdhocAwardController {
   });
 
   getAdhocAwardById = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as { id?: string };
+    const params = req.params as IdParams;
     const id = normalizeParam(params.id);
     if (!id) {
       return ResponseHelper.badRequest(res, 'Thiếu id');
@@ -153,17 +183,9 @@ class AdhocAwardController {
   });
 
   updateAdhocAward = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as { id?: string };
+    const params = req.params as IdParams;
     const user = req.user!;
-    const body = req.body as {
-      awardForm?: string;
-      year?: unknown;
-      rank?: string;
-      position?: string;
-      note?: string;
-      decisionNumber?: string;
-      removeAttachedFileIndexes?: string;
-    };
+    const body = req.body as UpdateAdhocAwardBody;
     const id = normalizeParam(params.id);
     if (!id) {
       return ResponseHelper.badRequest(res, 'Thiếu id');
@@ -196,7 +218,7 @@ class AdhocAwardController {
   });
 
   deleteAdhocAward = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as { id?: string };
+    const params = req.params as IdParams;
     const user = req.user!;
     const id = normalizeParam(params.id);
     if (!id) {
@@ -210,7 +232,7 @@ class AdhocAwardController {
   });
 
   getAdhocAwardsByPersonnel = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as { personnelId?: string };
+    const params = req.params as PersonnelIdParams;
     const user = req.user!;
     const personnelId = normalizeParam(params.personnelId);
     if (!personnelId) {
@@ -235,8 +257,8 @@ class AdhocAwardController {
   });
 
   getAdhocAwardsByUnit = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as { unitId?: string };
-    const query = req.query as { unitType?: string };
+    const params = req.params as UnitIdParams;
+    const query = req.query as GetAdhocAwardsByUnitQuery;
     const unitId = normalizeParam(params.unitId);
     if (!unitId) {
       return ResponseHelper.badRequest(res, 'Thiếu unitId');

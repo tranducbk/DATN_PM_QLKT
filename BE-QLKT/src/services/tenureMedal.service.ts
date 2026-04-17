@@ -909,7 +909,7 @@ class HCCSVVService {
     } catch (recalcError) {
       writeSystemLog({
         action: 'ERROR',
-        resource: 'hccsvv',
+        resource: 'tenure-medals',
         description: `Lỗi tính lại hồ sơ khen thưởng niên hạn sau khi thêm HCCSVV: ${recalcError}`,
       });
     }
@@ -948,7 +948,7 @@ class HCCSVVService {
     } catch (recalcError) {
       writeSystemLog({
         action: 'ERROR',
-        resource: 'hccsvv',
+        resource: 'tenure-medals',
         resourceId: id,
         description: `Lỗi tính lại hồ sơ khen thưởng niên hạn sau khi xóa HCCSVV: ${recalcError}`,
       });
@@ -959,7 +959,7 @@ class HCCSVVService {
     } catch (notifyError) {
       writeSystemLog({
         action: 'ERROR',
-        resource: 'hccsvv',
+        resource: 'tenure-medals',
         resourceId: id,
         description: `Lỗi gửi thông báo xóa khen thưởng HCCSVV: ${notifyError}`,
       });

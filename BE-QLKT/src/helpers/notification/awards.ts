@@ -568,9 +568,9 @@ async function notifyOnBulkAwardAdded(
 const RESOURCE_TO_PROPOSAL_TYPE: Record<string, string> = {
   'annual-rewards': PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
   'unit-annual-awards': PROPOSAL_TYPES.DON_VI_HANG_NAM,
-  hccsvv: PROPOSAL_TYPES.NIEN_HAN,
+  'tenure-medals': PROPOSAL_TYPES.NIEN_HAN,
   'commemorative-medals': PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
-  'contribution-awards': PROPOSAL_TYPES.CONG_HIEN,
+  'contribution-medals': PROPOSAL_TYPES.CONG_HIEN,
   'military-flag': PROPOSAL_TYPES.HC_QKQT,
   'scientific-achievements': PROPOSAL_TYPES.NCKH,
 };

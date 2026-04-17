@@ -6,10 +6,10 @@ import {
   annualRewards,
   adhocAwards,
   awards,
-  hccsvv,
+  tenureMedals,
   commemorativeMedals,
   militaryFlag,
-  contributionAwards,
+  contributionMedals,
   unitAnnualAwards,
 } from './awards';
 import { units, positions } from './units';
@@ -35,10 +35,10 @@ const createLogDescription: Record<string, Record<string, LogDescriptionFn>> = {
   auth,
   'adhoc-awards': adhocAwards,
   awards,
-  hccsvv,
+  'tenure-medals': tenureMedals,
   'commemorative-medals': commemorativeMedals,
   'military-flag': militaryFlag,
-  'contribution-awards': contributionAwards,
+  'contribution-medals': contributionMedals,
   'unit-annual-awards': unitAnnualAwards,
 };
 
@@ -72,9 +72,9 @@ const RESOURCE_VI: Record<string, string> = {
   'scientific-achievements': 'thành tích khoa học',
   'adhoc-awards': 'khen thưởng đột xuất',
   'commemorative-medals': 'kỷ niệm chương',
-  'contribution-awards': 'huân chương bảo vệ tổ quốc',
+  'contribution-medals': 'huân chương bảo vệ tổ quốc',
   'military-flag': 'huân chương quân kỳ quyết thắng',
-  hccsvv: 'huy chương chiến sĩ vẻ vang',
+  'tenure-medals': 'huy chương chiến sĩ vẻ vang',
   awards: 'khen thưởng',
 };
 

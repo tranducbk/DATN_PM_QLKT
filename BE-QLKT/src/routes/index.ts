@@ -18,8 +18,8 @@ import notificationRoute from './notification.route';
 import unitAnnualAwardRoute from './unitAnnualAward.route';
 import dashboardRoute from './dashboard.route';
 import adhocAwardRoute from './adhocAward.route';
-import hccsvvRoute from './hccsvv.route';
-import contributionAwardRoute from './contributionAward.route';
+import hccsvvRoute from './tenureMedal.route';
+import contributionAwardRoute from './contributionMedal.route';
 import commemorativeMedalRoute from './commemorativeMedal.route';
 import militaryFlagRoute from './militaryFlag.route';
 import unitController from '../controllers/unit.controller';
@@ -64,8 +64,8 @@ router.use('/api/decisions', decisionRoute);
 router.use('/api/awards/units/annual', unitAnnualAwardRoute);
 
 // 5.3. Specialized Award Types
-router.use('/api/hccsvv', hccsvvRoute);
-router.use('/api/contribution-awards', contributionAwardRoute);
+router.use('/api/tenure-medals', hccsvvRoute);
+router.use('/api/contribution-medals', contributionAwardRoute);
 router.use('/api/commemorative-medals', commemorativeMedalRoute);
 router.use('/api/military-flag', militaryFlagRoute);
 

@@ -4,9 +4,31 @@ import { normalizeParam } from '../helpers/paginationHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 
+interface GetPositionsQuery {
+  unit_id?: string;
+  include_children?: string;
+}
+
+interface CreatePositionBody {
+  unit_id?: string;
+  ten_chuc_vu?: string;
+  is_manager?: boolean;
+  he_so_chuc_vu?: number;
+}
+
+interface IdParams {
+  id?: string;
+}
+
+interface UpdatePositionBody {
+  ten_chuc_vu?: string;
+  is_manager?: boolean;
+  he_so_chuc_vu?: number;
+}
+
 class PositionController {
   getPositions = catchAsync(async (req: Request, res: Response) => {
-    const query = req.query as { unit_id?: string; include_children?: string };
+    const query = req.query as GetPositionsQuery;
     const { unit_id, include_children } = query;
     const includeChildren = include_children === 'true';
     const result = await positionService.getPositions(
@@ -20,12 +42,7 @@ class PositionController {
   });
 
   createPosition = catchAsync(async (req: Request, res: Response) => {
-    const body = req.body as {
-      unit_id?: string;
-      ten_chuc_vu?: string;
-      is_manager?: boolean;
-      he_so_chuc_vu?: number;
-    };
+    const body = req.body as CreatePositionBody;
     const { unit_id, ten_chuc_vu, is_manager, he_so_chuc_vu } = body;
     if (!unit_id || !ten_chuc_vu) {
       return ResponseHelper.badRequest(res, 'Vui lòng nhập đầy đủ thông tin: đơn vị và tên chức vụ');
@@ -40,8 +57,8 @@ class PositionController {
   });
 
   updatePosition = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as { id?: string };
-    const body = req.body as { ten_chuc_vu?: string; is_manager?: boolean; he_so_chuc_vu?: number };
+    const params = req.params as IdParams;
+    const body = req.body as UpdatePositionBody;
     const id = normalizeParam(params.id);
     if (!id) {
       return ResponseHelper.badRequest(res, 'Thiếu id chức vụ');
@@ -59,7 +76,7 @@ class PositionController {
   });
 
   deletePosition = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as { id?: string };
+    const params = req.params as IdParams;
     const id = normalizeParam(params.id);
     if (!id) {
       return ResponseHelper.badRequest(res, 'Thiếu id chức vụ');

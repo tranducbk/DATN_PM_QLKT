@@ -10,16 +10,55 @@ import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { parsePersonnelIdsFromQuery, buildManagerQuanNhanFilter, getAdminUsername } from '../helpers/controllerHelper';
 import { notifyOnImport } from '../helpers/notification';
 
+interface GetAchievementsQuery {
+  personnel_id?: string;
+  page?: number;
+  limit?: number;
+  nam?: number;
+  loai?: string;
+  ho_ten?: string;
+}
+
+interface CreateAchievementBody {
+  personnel_id?: string;
+  nam?: number;
+  loai?: string;
+  mo_ta?: string;
+  cap_bac?: string;
+  chuc_vu?: string;
+  ghi_chu?: string;
+}
+
+interface IdParams {
+  id?: string;
+}
+
+interface UpdateAchievementBody {
+  nam?: number;
+  loai?: string;
+  mo_ta?: string;
+  cap_bac?: string;
+  chuc_vu?: string;
+  ghi_chu?: string;
+}
+
+interface ExportToExcelQuery {
+  nam?: number;
+  loai?: string;
+}
+
+interface GetTemplateQuery {
+  repeat_map?: string;
+  [key: string]: string | string[] | undefined;
+}
+
+interface ConfirmImportBody {
+  items?: ConfirmImportItem[];
+}
+
 class ScientificAchievementController {
   getAchievements = catchAsync(async (req: Request, res: Response) => {
-    const query = req.query as {
-      personnel_id?: string;
-      page?: number;
-      limit?: number;
-      nam?: number;
-      loai?: string;
-      ho_ten?: string;
-    };
+    const query = req.query as GetAchievementsQuery;
     const { personnel_id, page, limit, nam, loai, ho_ten } = query;
     if (personnel_id) {
       const result = await scientificAchievementService.getAchievements(personnel_id);
@@ -53,15 +92,7 @@ class ScientificAchievementController {
 
   createAchievement = catchAsync(async (req: Request, res: Response) => {
     const user = req.user;
-    const body = req.body as {
-      personnel_id?: string;
-      nam?: number;
-      loai?: string;
-      mo_ta?: string;
-      cap_bac?: string;
-      chuc_vu?: string;
-      ghi_chu?: string;
-    };
+    const body = req.body as CreateAchievementBody;
     const { personnel_id, nam, loai, mo_ta, cap_bac, chuc_vu, ghi_chu } = body;
     if (!personnel_id || !nam || !loai || !mo_ta) {
       return ResponseHelper.badRequest(res, 'Vui lòng nhập đầy đủ: quân nhân, năm, loại và mô tả');
@@ -92,19 +123,12 @@ class ScientificAchievementController {
 
   updateAchievement = catchAsync(async (req: Request, res: Response) => {
     const user = req.user;
-    const params = req.params as { id?: string };
+    const params = req.params as IdParams;
     const id = normalizeParam(params.id);
     if (!id) {
       return ResponseHelper.badRequest(res, 'Thiếu id');
     }
-    const body = req.body as {
-      nam?: number;
-      loai?: string;
-      mo_ta?: string;
-      cap_bac?: string;
-      chuc_vu?: string;
-      ghi_chu?: string;
-    };
+    const body = req.body as UpdateAchievementBody;
     const { nam, loai, mo_ta, cap_bac, chuc_vu, ghi_chu } = body;
     const result = await scientificAchievementService.updateAchievement(id, {
       nam,
@@ -130,7 +154,7 @@ class ScientificAchievementController {
   });
 
   deleteAchievement = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as { id?: string };
+    const params = req.params as IdParams;
     const id = normalizeParam(params.id);
     if (!id) {
       return ResponseHelper.badRequest(res, 'Thiếu id');
@@ -141,10 +165,7 @@ class ScientificAchievementController {
   });
 
   exportToExcel = catchAsync(async (req: Request, res: Response) => {
-    const query = req.query as {
-      nam?: number;
-      loai?: string;
-    };
+    const query = req.query as ExportToExcelQuery;
     const user = req.user;
     const { nam, loai } = query;
     const role = user?.role;
@@ -168,7 +189,7 @@ class ScientificAchievementController {
   });
 
   getTemplate = catchAsync(async (req: Request, res: Response) => {
-    const query = req.query as { repeat_map?: string };
+    const query = req.query as GetTemplateQuery;
     const personnelIds = parsePersonnelIdsFromQuery(query);
     const repeatMap: Record<string, number> = {};
     if (query.repeat_map) {
@@ -213,7 +234,7 @@ class ScientificAchievementController {
 
   confirmImport = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
-    const body = req.body as { items?: ConfirmImportItem[] };
+    const body = req.body as ConfirmImportBody;
     const { items } = body;
     if (!items || !Array.isArray(items) || items.length === 0) {
       return ResponseHelper.badRequest(res, 'Không có dữ liệu để import');

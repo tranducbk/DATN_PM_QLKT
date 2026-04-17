@@ -45,7 +45,7 @@ import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { previewFileWithApi } from '@/utils/filePreview';
 import { useTheme } from '@/components/ThemeProvider';
 import { getDanhHieuName } from '@/constants/danhHieu.constants';
-import { PROPOSAL_STATUS, PROPOSAL_TYPES } from '@/constants/proposal.constants';
+import { PROPOSAL_STATUS, PROPOSAL_TYPES, getProposalTypeLabel } from '@/constants/proposal.constants';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -1295,23 +1295,7 @@ export default function ProposalDetailPage() {
               </Text>
               <div style={{ fontWeight: 500, marginTop: '4px' }}>
                 <Tag color="blue">
-                  {proposal.loai_de_xuat === PROPOSAL_TYPES.CA_NHAN_HANG_NAM
-                    ? 'Cá nhân Hằng năm'
-                    : proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM
-                      ? 'Đơn vị Hằng năm'
-                      : proposal.loai_de_xuat === PROPOSAL_TYPES.NIEN_HAN
-                        ? 'Huy chương Chiến sĩ vẻ vang'
-                        : proposal.loai_de_xuat === PROPOSAL_TYPES.HC_QKQT
-                          ? 'Huy chương Quân kỳ Quyết thắng'
-                          : proposal.loai_de_xuat === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN
-                            ? 'Kỷ niệm chương VSNXD QĐNDVN'
-                            : proposal.loai_de_xuat === PROPOSAL_TYPES.CONG_HIEN
-                              ? 'Huân chương Bảo vệ Tổ quốc'
-                              : proposal.loai_de_xuat === PROPOSAL_TYPES.NCKH
-                                ? 'Nghiên cứu khoa học'
-                                : proposal.loai_de_xuat === PROPOSAL_TYPES.DOT_XUAT
-                                  ? 'Đột xuất'
-                                  : proposal.loai_de_xuat}
+                  {getProposalTypeLabel(proposal.loai_de_xuat)}
                 </Tag>
               </div>
             </div>

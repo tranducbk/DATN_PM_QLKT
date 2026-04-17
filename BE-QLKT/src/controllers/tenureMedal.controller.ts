@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import hccsvvService, { HccsvvValidItem } from '../services/hccsvv.service';
+import hccsvvService, { HccsvvValidItem } from '../services/tenureMedal.service';
 import { ROLES } from '../constants/roles.constants';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { parsePersonnelIdsFromQuery, getManagerUnitFilter, getAdminUsername } from '../helpers/controllerHelper';
@@ -9,9 +9,47 @@ import { parsePagination } from '../helpers/paginationHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { notifyOnImport } from '../helpers/notification';
 
+interface GetTemplateQuery {
+  repeat_map?: string;
+  [key: string]: string | string[] | undefined;
+}
+
+interface ConfirmImportBody {
+  items?: HccsvvValidItem[];
+}
+
+interface GetAllQuery {
+  don_vi_id?: string;
+  nam?: number;
+  danh_hieu?: string;
+  ho_ten?: string;
+  [key: string]: unknown;
+}
+
+interface ExportToExcelQuery {
+  don_vi_id?: string;
+  nam?: number;
+  danh_hieu?: string;
+  [key: string]: unknown;
+}
+
+interface CreateDirectBody {
+  quan_nhan_id?: string;
+  danh_hieu?: string;
+  nam?: number | string;
+  cap_bac?: string;
+  chuc_vu?: string;
+  so_quyet_dinh?: string;
+  ghi_chu?: string;
+}
+
+interface IdParams {
+  id?: string;
+}
+
 class HCCSVVController {
   getTemplate = catchAsync(async (req: Request, res: Response) => {
-    const query = req.query as { repeat_map?: string };
+    const query = req.query as GetTemplateQuery;
     const personnelIds = parsePersonnelIdsFromQuery(query);
     const repeatMap: Record<string, number> = {};
     if (query.repeat_map) {
@@ -41,7 +79,7 @@ class HCCSVVController {
       userId: user.id,
       userRole: user.role,
       action: AUDIT_ACTIONS.IMPORT_PREVIEW,
-      resource: 'hccsvv',
+      resource: 'tenure-medals',
       description: `Tải lên file "${file.originalname ? Buffer.from(file.originalname, 'latin1').toString('utf8') : 'Excel'}" để review huy chương chiến sĩ vẻ vang: ${result.valid?.length || 0} hợp lệ, ${result.errors?.length || 0} lỗi`,
       payload: {
         filename: file.originalname ? Buffer.from(file.originalname, 'latin1').toString('utf8') : undefined,
@@ -54,19 +92,19 @@ class HCCSVVController {
 
   confirmImport = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
-    const body = req.body as { items?: HccsvvValidItem[] };
+    const body = req.body as ConfirmImportBody;
     const { items } = body;
     const result = await hccsvvService.confirmImport(items, user.id);
     await writeSystemLog({
       userId: user.id,
       userRole: user.role,
       action: AUDIT_ACTIONS.IMPORT,
-      resource: 'hccsvv',
+      resource: 'tenure-medals',
       description: `Nhập dữ liệu huy chương chiến sĩ vẻ vang thành công: ${result.imported || items.length} bản ghi`,
       payload: { imported: result.imported || items.length },
     });
     const personnelIds = items.map((i: { personnel_id: string }) => i.personnel_id);
-    notifyOnImport(user.id, 'hccsvv', result.imported || items.length, personnelIds).catch((e) => { console.error('[hccsvv] notifyOnImport failed:', e); });
+    notifyOnImport(user.id, 'tenure-medals', result.imported || items.length, personnelIds).catch((e) => { console.error('[hccsvv] notifyOnImport failed:', e); });
     return ResponseHelper.success(res, { message: 'Thao tác thành công', data: result });
   });
 
@@ -84,7 +122,7 @@ class HCCSVVController {
   });
 
   getAll = catchAsync(async (req: Request, res: Response) => {
-    const query = req.query as { don_vi_id?: string; nam?: number; danh_hieu?: string; ho_ten?: string };
+    const query = req.query as GetAllQuery;
     const user = req.user!;
     const userRole = user.role;
     const { don_vi_id, nam, danh_hieu, ho_ten } = query;
@@ -114,7 +152,7 @@ class HCCSVVController {
   });
 
   exportToExcel = catchAsync(async (req: Request, res: Response) => {
-    const query = req.query as { don_vi_id?: string; nam?: number; danh_hieu?: string };
+    const query = req.query as ExportToExcelQuery;
     const user = req.user!;
     const { don_vi_id, nam, danh_hieu } = query;
     const filters: Record<string, unknown> = {};
@@ -149,15 +187,7 @@ class HCCSVVController {
   });
 
   createDirect = catchAsync(async (req: Request, res: Response) => {
-    const body = req.body as {
-      quan_nhan_id?: string;
-      danh_hieu?: string;
-      nam?: number | string;
-      cap_bac?: string;
-      chuc_vu?: string;
-      so_quyet_dinh?: string;
-      ghi_chu?: string;
-    };
+    const body = req.body as CreateDirectBody;
     const { quan_nhan_id, danh_hieu, nam, cap_bac, chuc_vu, so_quyet_dinh, ghi_chu } = body;
     const adminUsername = getAdminUsername(req);
     if (!quan_nhan_id || !danh_hieu || !nam) {
@@ -182,7 +212,7 @@ class HCCSVVController {
   });
 
   deleteAward = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as { id?: string };
+    const params = req.params as IdParams;
     const { id } = params;
     const adminUsername = getAdminUsername(req);
     const result = await hccsvvService.deleteAward(String(id), adminUsername);

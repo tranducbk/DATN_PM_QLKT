@@ -43,7 +43,7 @@ import type { UploadFile } from 'antd/es/upload/interface';
 import type { ColumnsType } from 'antd/es/table';
 import type { DateInput } from '@/lib/types';
 import { apiClient } from '@/lib/apiClient';
-import { getDanhHieuName, DANH_HIEU_MAP } from '@/constants/danhHieu.constants';
+import { getDanhHieuName } from '@/constants/danhHieu.constants';
 import { PROPOSAL_TYPES, type ProposalType } from '@/constants/proposal.constants';
 // Shared components — reuse from admin to avoid duplicating ~2000 lines
 import { Step2SelectPersonnelCaNhanHangNam } from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelCaNhanHangNam';
@@ -108,37 +108,37 @@ export default function CreateProposalPage() {
   > = {
     [PROPOSAL_TYPES.CA_NHAN_HANG_NAM]: {
       icon: <TrophyOutlined />,
-      label: 'Cá nhân Hằng năm',
+      label: 'Khen thưởng cá nhân hằng năm',
       description: 'Danh hiệu CSTT-CS, CSTĐ-CS, BK-BQP, CSTĐ-TQ',
     },
     [PROPOSAL_TYPES.DON_VI_HANG_NAM]: {
       icon: <TeamOutlined />,
-      label: 'Đơn vị Hằng năm',
+      label: 'Khen thưởng đơn vị hằng năm',
       description: 'ĐVTT, ĐVQT, BK-BQP, BK-TTCP',
     },
     [PROPOSAL_TYPES.NIEN_HAN]: {
       icon: <ClockCircleOutlined />,
       label: 'Huy chương Chiến sĩ vẻ vang',
-      description: 'Huy chương Chiến sĩ vẻ vang 3 hạng',
+      description: 'HCCSVV 3 hạng (Hạng Ba, Nhì, Nhất)',
     },
     [PROPOSAL_TYPES.HC_QKQT]: {
       icon: <TrophyOutlined />,
-      label: 'Huy chương Quân kỳ quyết thắng',
-      description: 'HC Quân kỳ quyết thắng',
+      label: 'Huy chương Quân kỳ Quyết thắng',
+      description: 'Huy chương Quân kỳ Quyết thắng',
     },
     [PROPOSAL_TYPES.KNC_VSNXD_QDNDVN]: {
       icon: <TrophyOutlined />,
-      label: DANH_HIEU_MAP['KNC_VSNXD_QDNDVN'],
-      description: DANH_HIEU_MAP['KNC_VSNXD_QDNDVN'],
+      label: 'Kỷ niệm chương VSNXD QĐNDVN',
+      description: 'Kỷ niệm chương VSNXD QĐNDVN',
     },
     [PROPOSAL_TYPES.CONG_HIEN]: {
       icon: <HeartOutlined />,
       label: 'Huân chương Bảo vệ Tổ quốc',
-      description: 'Huân chương Bảo vệ Tổ quốc 3 hạng',
+      description: 'HCBVTQ 3 hạng (Hạng Ba, Nhì, Nhất)',
     },
     [PROPOSAL_TYPES.NCKH]: {
       icon: <ExperimentOutlined />,
-      label: 'Nghiên cứu khoa học',
+      label: 'Thành tích NCKH',
       description: 'Đề tài khoa học / Sáng kiến khoa học',
     },
   };

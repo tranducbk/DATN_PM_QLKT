@@ -3,9 +3,23 @@ import authService from '../services/auth.service';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 
+interface LoginBody {
+  username?: string;
+  password?: string;
+}
+
+interface RefreshTokenBody {
+  refreshToken?: string;
+}
+
+interface ChangePasswordBody {
+  oldPassword?: string;
+  newPassword?: string;
+}
+
 class AuthController {
   login = catchAsync(async (req: Request, res: Response) => {
-    const body = req.body as { username?: string; password?: string };
+    const body = req.body as LoginBody;
     const { username, password } = body;
 
     if (!username || !password) {
@@ -17,7 +31,7 @@ class AuthController {
   });
 
   refresh = catchAsync(async (req: Request, res: Response) => {
-    const body = req.body as { refreshToken?: string };
+    const body = req.body as RefreshTokenBody;
     const { refreshToken } = body;
 
     if (!refreshToken) {
@@ -29,7 +43,7 @@ class AuthController {
   });
 
   logout = catchAsync(async (req: Request, res: Response) => {
-    const body = req.body as { refreshToken?: string };
+    const body = req.body as RefreshTokenBody;
     const { refreshToken } = body;
 
     if (!refreshToken) {
@@ -42,7 +56,7 @@ class AuthController {
 
   changePassword = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
-    const body = req.body as { oldPassword?: string; newPassword?: string };
+    const body = req.body as ChangePasswordBody;
     const { oldPassword, newPassword } = body;
     const userId = user.id;
 

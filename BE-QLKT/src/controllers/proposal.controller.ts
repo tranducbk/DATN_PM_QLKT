@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import proposalService from '../services/proposal';
-import hccsvvService from '../services/hccsvv.service';
-import contributionAwardService from '../services/contributionAward.service';
+import hccsvvService from '../services/tenureMedal.service';
+import contributionAwardService from '../services/contributionMedal.service';
 import commemorativeMedalService from '../services/commemorativeMedal.service';
 import militaryFlagService from '../services/militaryFlag.service';
 import * as notificationHelper from '../helpers/notification';
@@ -14,12 +14,12 @@ import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { parsePagination } from '../helpers/paginationHelper';
 import { setFileSendHeaders } from '../helpers/fileResponseHeaders';
 
-/** Lọc đơn vị cho Manager — `QuanNhan` có `co_quan_don_vi_id` / `don_vi_truc_thuoc_id` (schema) */
+// DVTT takes priority over CQDV — CQDV is the parent unit, filtering by it would include all sub-units
 function managerUnitFilterId(qn: {
   co_quan_don_vi_id?: string | null;
   don_vi_truc_thuoc_id?: string | null;
 }): string | undefined {
-  return qn.co_quan_don_vi_id ?? qn.don_vi_truc_thuoc_id ?? undefined;
+  return qn.don_vi_truc_thuoc_id ?? qn.co_quan_don_vi_id ?? undefined;
 }
 
 function parseYearQuery(value: unknown): number | null {
@@ -34,10 +34,87 @@ function parseYearQuery(value: unknown): number | null {
 
 const ALL_PROPOSAL_TYPES = Object.values(PROPOSAL_TYPES);
 
+interface ExportTemplateQuery {
+  type?: ProposalType;
+}
+
+interface SubmitProposalBody {
+  so_quyet_dinh?: string;
+  type?: ProposalType;
+  title_data?: unknown;
+  selected_personnel?: string[];
+  nam?: number | string;
+  ghi_chu?: string;
+}
+
+interface GetProposalsQuery {
+  page?: number;
+  limit?: number;
+  [key: string]: unknown;
+}
+
+interface ProposalIdParams {
+  id?: string | string[];
+}
+
+interface ApproveProposalBody {
+  data_danh_hieu?: string;
+  data_thanh_tich?: string;
+  data_nien_han?: string;
+  data_cong_hien?: string;
+  so_quyet_dinh_ca_nhan_hang_nam?: string;
+  so_quyet_dinh_don_vi_hang_nam?: string;
+  so_quyet_dinh_nien_han?: string;
+  so_quyet_dinh_cong_hien?: string;
+  so_quyet_dinh_dot_xuat?: string;
+  so_quyet_dinh_nckh?: string;
+  ghi_chu?: string;
+}
+
+interface GetPdfFileParams {
+  filename?: string | string[];
+}
+
+interface RejectProposalBody {
+  ghi_chu?: string;
+  ly_do?: string;
+}
+
+interface AwardsFilterQuery {
+  don_vi_id?: string;
+  nam?: number;
+  danh_hieu?: string;
+  [key: string]: unknown;
+}
+
+interface UnitYearFilterQuery {
+  don_vi_id?: string;
+  nam?: number;
+  [key: string]: unknown;
+}
+
+interface CheckDuplicateAwardQuery {
+  personnel_id?: string;
+  nam?: string | number | (string | number)[];
+  danh_hieu?: string;
+  proposal_type?: string;
+}
+
+interface CheckDuplicateUnitAwardQuery {
+  don_vi_id?: string;
+  nam?: string | number | (string | number)[];
+  danh_hieu?: string;
+  proposal_type?: string;
+}
+
+interface CheckDuplicateBatchBody {
+  items?: any[];
+}
+
 class ProposalController {
   exportTemplate = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
-    const query = req.query as { type?: ProposalType };
+    const query = req.query as ExportTemplateQuery;
     const userId = user.id;
     const { type = PROPOSAL_TYPES.CA_NHAN_HANG_NAM } = query;
     if (!ALL_PROPOSAL_TYPES.includes(type as ProposalType)) {
@@ -59,14 +136,7 @@ class ProposalController {
 
   submitProposal = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
-    const body = req.body as {
-      so_quyet_dinh?: string;
-      type?: ProposalType;
-      title_data?: unknown;
-      selected_personnel?: string[];
-      nam?: number | string;
-      ghi_chu?: string;
-    };
+    const body = req.body as SubmitProposalBody;
     const userId = user.id;
     const userRole = user.role;
     const {
@@ -126,7 +196,7 @@ class ProposalController {
 
   getProposals = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
-    const query = req.query as { page?: number; limit?: number };
+    const query = req.query as GetProposalsQuery;
     const { page, limit } = parsePagination(query);
     const result = await proposalService.getProposals(
       user.id,
@@ -134,15 +204,18 @@ class ProposalController {
       page,
       limit
     );
-    return ResponseHelper.success(res, {
+    return ResponseHelper.paginated(res, {
       message: 'Lấy danh sách đề xuất thành công',
-      data: result,
+      data: result.proposals,
+      total: result.pagination.total,
+      page: result.pagination.page,
+      limit: result.pagination.limit,
     });
   });
 
   getProposalById = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
-    const params = req.params as { id?: string | string[] };
+    const params = req.params as ProposalIdParams;
     const id = Array.isArray(params.id) ? params.id[0] : params.id;
     if (!id) {
       return ResponseHelper.badRequest(res, 'ID đề xuất không hợp lệ');
@@ -156,20 +229,8 @@ class ProposalController {
 
   approveProposal = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
-    const params = req.params as { id?: string | string[] };
-    const body = req.body as {
-      data_danh_hieu?: string;
-      data_thanh_tich?: string;
-      data_nien_han?: string;
-      data_cong_hien?: string;
-      so_quyet_dinh_ca_nhan_hang_nam?: string;
-      so_quyet_dinh_don_vi_hang_nam?: string;
-      so_quyet_dinh_nien_han?: string;
-      so_quyet_dinh_cong_hien?: string;
-      so_quyet_dinh_dot_xuat?: string;
-      so_quyet_dinh_nckh?: string;
-      ghi_chu?: string;
-    };
+    const params = req.params as ProposalIdParams;
+    const body = req.body as ApproveProposalBody;
     const id = Array.isArray(params.id) ? params.id[0] : params.id;
     const adminId = user.id;
     let editedData;
@@ -181,7 +242,7 @@ class ProposalController {
         data_cong_hien: JSON.parse(body.data_cong_hien || '[]'),
       };
     } catch {
-      return ResponseHelper.badRequest(res, 'Du lieu khong hop le');
+      return ResponseHelper.badRequest(res, 'Dữ liệu không hợp lệ');
     }
     const decisions = {
       so_quyet_dinh_ca_nhan_hang_nam: body.so_quyet_dinh_ca_nhan_hang_nam,
@@ -248,7 +309,7 @@ class ProposalController {
   });
 
   getPdfFile = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as { filename?: string | string[] };
+    const params = req.params as GetPdfFileParams;
     const filename = decodeURIComponent(
       Array.isArray(params.filename) ? params.filename[0] : String(params.filename ?? '')
     );
@@ -262,8 +323,8 @@ class ProposalController {
 
   rejectProposal = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
-    const params = req.params as { id?: string | string[] };
-    const body = req.body as { ghi_chu?: string; ly_do?: string };
+    const params = req.params as ProposalIdParams;
+    const body = req.body as RejectProposalBody;
     const id = Array.isArray(params.id) ? params.id[0] : params.id;
     const { ghi_chu, ly_do } = body;
     const rejectReason = ghi_chu || ly_do;
@@ -297,7 +358,7 @@ class ProposalController {
   });
 
   downloadProposalExcel = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as { id?: string | string[] };
+    const params = req.params as ProposalIdParams;
     const id = Array.isArray(params.id) ? params.id[0] : params.id;
     if (!id) {
       return ResponseHelper.badRequest(res, 'ID đề xuất không hợp lệ');
@@ -316,7 +377,7 @@ class ProposalController {
 
   getAllAwards = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
-    const query = req.query as { don_vi_id?: string; nam?: number; danh_hieu?: string };
+    const query = req.query as AwardsFilterQuery;
     const { don_vi_id, nam, danh_hieu } = query;
     const { page, limit } = parsePagination(query);
     const filters: Record<string, unknown> = {};
@@ -385,7 +446,7 @@ class ProposalController {
 
   exportAllAwardsExcel = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
-    const query = req.query as { don_vi_id?: string; nam?: number; danh_hieu?: string };
+    const query = req.query as AwardsFilterQuery;
     const { don_vi_id, nam, danh_hieu } = query;
     const filters: Record<string, unknown> = {};
     if (don_vi_id) filters.don_vi_id = don_vi_id;
@@ -412,7 +473,7 @@ class ProposalController {
 
   deleteProposal = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
-    const params = req.params as { id?: string | string[] };
+    const params = req.params as ProposalIdParams;
     const id = Array.isArray(params.id) ? params.id[0] : params.id;
     if (!id) {
       return ResponseHelper.badRequest(res, 'ID đề xuất không hợp lệ');
@@ -442,12 +503,7 @@ class ProposalController {
   });
 
   checkDuplicateAward = catchAsync(async (req: Request, res: Response) => {
-    const query = req.query as {
-      personnel_id?: string;
-      nam?: string | number | (string | number)[];
-      danh_hieu?: string;
-      proposal_type?: string;
-    };
+    const query = req.query as CheckDuplicateAwardQuery;
     const { personnel_id, nam, danh_hieu, proposal_type } = query;
     if (!personnel_id || !nam || !danh_hieu || !proposal_type) {
       return ResponseHelper.badRequest(
@@ -470,12 +526,7 @@ class ProposalController {
   });
 
   checkDuplicateUnitAward = catchAsync(async (req: Request, res: Response) => {
-    const query = req.query as {
-      don_vi_id?: string;
-      nam?: string | number | (string | number)[];
-      danh_hieu?: string;
-      proposal_type?: string;
-    };
+    const query = req.query as CheckDuplicateUnitAwardQuery;
     const { don_vi_id, nam, danh_hieu, proposal_type } = query;
     if (!don_vi_id || !nam || !danh_hieu || !proposal_type) {
       return ResponseHelper.badRequest(
@@ -498,7 +549,7 @@ class ProposalController {
   });
 
   checkDuplicateBatch = catchAsync(async (req: Request, res: Response) => {
-    const body = req.body as { items?: any[] };
+    const body = req.body as CheckDuplicateBatchBody;
     const { items } = body;
     if (!Array.isArray(items) || items.length === 0) {
       return ResponseHelper.badRequest(res, 'Danh sách kiểm tra không hợp lệ');
@@ -509,7 +560,7 @@ class ProposalController {
   });
 
   checkDuplicateUnitBatch = catchAsync(async (req: Request, res: Response) => {
-    const body = req.body as { items?: any[] };
+    const body = req.body as CheckDuplicateBatchBody;
     const { items } = body;
     if (!Array.isArray(items) || items.length === 0) {
       return ResponseHelper.badRequest(res, 'Danh sách kiểm tra không hợp lệ');
@@ -546,7 +597,7 @@ class ProposalController {
 
   getAllHCCSVV = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
-    const query = req.query as { don_vi_id?: string; nam?: number; danh_hieu?: string };
+    const query = req.query as AwardsFilterQuery;
     const { don_vi_id, nam, danh_hieu } = query;
     const { page, limit } = parsePagination(query);
     const filters: Record<string, unknown> = {};
@@ -568,7 +619,7 @@ class ProposalController {
 
   exportHCCSVVExcel = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
-    const query = req.query as { don_vi_id?: string; nam?: number; danh_hieu?: string };
+    const query = req.query as AwardsFilterQuery;
     const { don_vi_id, nam, danh_hieu } = query;
     const filters: Record<string, unknown> = {};
     if (don_vi_id) filters.don_vi_id = don_vi_id;
@@ -630,7 +681,7 @@ class ProposalController {
 
   getAllContributionAwards = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
-    const query = req.query as { don_vi_id?: string; nam?: number; danh_hieu?: string };
+    const query = req.query as AwardsFilterQuery;
     const { don_vi_id, nam, danh_hieu } = query;
     const { page, limit } = parsePagination(query);
     const filters: Record<string, unknown> = {};
@@ -652,7 +703,7 @@ class ProposalController {
 
   exportContributionAwardsExcel = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
-    const query = req.query as { don_vi_id?: string; nam?: number; danh_hieu?: string };
+    const query = req.query as AwardsFilterQuery;
     const { don_vi_id, nam, danh_hieu } = query;
     const filters: Record<string, unknown> = {};
     if (don_vi_id) filters.don_vi_id = don_vi_id;
@@ -711,7 +762,7 @@ class ProposalController {
 
   getAllCommemorativeMedals = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
-    const query = req.query as { don_vi_id?: string; nam?: number };
+    const query = req.query as UnitYearFilterQuery;
     const { don_vi_id, nam } = query;
     const { page, limit } = parsePagination(query);
     const filters: Record<string, unknown> = {};
@@ -732,7 +783,7 @@ class ProposalController {
 
   exportCommemorativeMedalsExcel = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
-    const query = req.query as { don_vi_id?: string; nam?: number };
+    const query = req.query as UnitYearFilterQuery;
     const { don_vi_id, nam } = query;
     const filters: Record<string, unknown> = {};
     if (don_vi_id) filters.don_vi_id = don_vi_id;
@@ -778,7 +829,7 @@ class ProposalController {
 
   getAllMilitaryFlag = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
-    const query = req.query as { don_vi_id?: string; nam?: number };
+    const query = req.query as UnitYearFilterQuery;
     const { don_vi_id, nam } = query;
     const { page, limit } = parsePagination(query);
     const filters: Record<string, unknown> = {};
@@ -799,7 +850,7 @@ class ProposalController {
 
   exportMilitaryFlagExcel = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
-    const query = req.query as { don_vi_id?: string; nam?: number };
+    const query = req.query as UnitYearFilterQuery;
     const { don_vi_id, nam } = query;
     const filters: Record<string, unknown> = {};
     if (don_vi_id) filters.don_vi_id = don_vi_id;

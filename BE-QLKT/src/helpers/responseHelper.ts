@@ -4,6 +4,7 @@ interface SuccessOptions {
   data?: unknown;
   message?: string;
   statusCode?: number;
+  warning?: unknown;
 }
 
 interface ErrorOptions {
@@ -30,12 +31,13 @@ const ResponseHelper = {
    */
   success(
     res: Response,
-    { data = null, message = 'Thành công', statusCode = 200 }: SuccessOptions = {}
+    { data = null, message = 'Thành công', statusCode = 200, warning }: SuccessOptions = {}
   ): Response {
     return res.status(statusCode).json({
       success: true,
       message,
       ...(data !== null && { data }),
+      ...(warning && { warning }),
     });
   },
 

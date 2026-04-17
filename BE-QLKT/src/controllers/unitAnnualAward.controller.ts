@@ -6,16 +6,75 @@ import catchAsync from '../helpers/catchAsync';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { notifyOnImport } from '../helpers/notification';
 
+interface ListQuery {
+  page?: number;
+  limit?: number;
+  year?: number;
+  nam?: number;
+  don_vi_id?: string;
+  danh_hieu?: string;
+}
+
+interface IdParams {
+  id?: string;
+}
+
+interface ApproveBody {
+  so_quyet_dinh?: string;
+  file_quyet_dinh?: string;
+  nhan_bkbqp?: boolean;
+  so_quyet_dinh_bkbqp?: string;
+  file_quyet_dinh_bkbqp?: string;
+  nhan_bkttcp?: boolean;
+  so_quyet_dinh_bkttcp?: string;
+  file_quyet_dinh_bkttcp?: string;
+  nguoi_duyet_id?: string;
+}
+
+interface RejectBody {
+  ghi_chu?: string;
+  nguoi_duyet_id?: string;
+}
+
+interface RecalculateBody {
+  don_vi_id?: string;
+  nam?: number;
+}
+
+interface GetUnitAnnualAwardsQuery {
+  don_vi_id?: string;
+}
+
+interface GetUnitAnnualProfileParams {
+  don_vi_id?: string;
+}
+
+interface GetUnitAnnualProfileQuery {
+  year?: number;
+}
+
+interface ConfirmImportBody {
+  items?: any[];
+}
+
+interface GetTemplateQuery {
+  unit_ids?: string;
+  personnel_ids?: string;
+  repeat_map?: string;
+}
+
+interface ExportToExcelQuery {
+  nam?: number;
+  danh_hieu?: string;
+}
+
+interface GetStatisticsQuery {
+  nam?: number;
+}
+
 class UnitAnnualAwardController {
   list = catchAsync(async (req: Request, res: Response) => {
-    const query = req.query as {
-      page?: number;
-      limit?: number;
-      year?: number;
-      nam?: number;
-      don_vi_id?: string;
-      danh_hieu?: string;
-    };
+    const query = req.query as ListQuery;
     const user = req.user;
     const { page, limit, year, nam, don_vi_id, danh_hieu } = query;
     const result = await service.list({
@@ -36,7 +95,7 @@ class UnitAnnualAwardController {
   });
 
   getById = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as { id?: string };
+    const params = req.params as IdParams;
     const user = req.user;
     const data = await service.getById(String(params.id), user?.role, user?.quan_nhan_id);
     if (!data) {
@@ -80,19 +139,9 @@ class UnitAnnualAwardController {
   });
 
   approve = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as { id: string };
+    const params = req.params as IdParams;
     const user = req.user;
-    const body = req.body as {
-      so_quyet_dinh?: string;
-      file_quyet_dinh?: string;
-      nhan_bkbqp?: boolean;
-      so_quyet_dinh_bkbqp?: string;
-      file_quyet_dinh_bkbqp?: string;
-      nhan_bkttcp?: boolean;
-      so_quyet_dinh_bkttcp?: string;
-      file_quyet_dinh_bkttcp?: string;
-      nguoi_duyet_id?: string;
-    };
+    const body = req.body as ApproveBody;
     const data = await service.approve(params.id, {
       so_quyet_dinh: body.so_quyet_dinh,
       file_quyet_dinh: body.file_quyet_dinh,
@@ -108,9 +157,9 @@ class UnitAnnualAwardController {
   });
 
   reject = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as { id?: string };
+    const params = req.params as IdParams;
     const user = req.user;
-    const body = req.body as { ghi_chu?: string; nguoi_duyet_id?: string };
+    const body = req.body as RejectBody;
     const data = await service.reject(String(params.id), {
       ghi_chu: body.ghi_chu as string | undefined,
       nguoi_duyet_id: user?.id || (body.nguoi_duyet_id as string | undefined),
@@ -119,7 +168,7 @@ class UnitAnnualAwardController {
   });
 
   recalculate = catchAsync(async (req: Request, res: Response) => {
-    const body = req.body as { don_vi_id?: string; nam?: number };
+    const body = req.body as RecalculateBody;
     const count = await service.recalculate({
       don_vi_id: body.don_vi_id,
       nam: body.nam,
@@ -128,13 +177,13 @@ class UnitAnnualAwardController {
   });
 
   remove = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as { id?: string };
+    const params = req.params as IdParams;
     await service.remove(String(params.id));
     return ResponseHelper.success(res, { data: true, message: 'Đã xóa bản ghi' });
   });
 
   getUnitAnnualAwards = catchAsync(async (req: Request, res: Response) => {
-    const query = req.query as { don_vi_id?: string };
+    const query = req.query as GetUnitAnnualAwardsQuery;
     const user = req.user;
     const { don_vi_id } = query;
     if (!don_vi_id) {
@@ -152,8 +201,8 @@ class UnitAnnualAwardController {
   });
 
   getUnitAnnualProfile = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as { don_vi_id?: string };
-    const query = req.query as { year?: number };
+    const params = req.params as GetUnitAnnualProfileParams;
+    const query = req.query as GetUnitAnnualProfileQuery;
     const { don_vi_id } = params;
     const { year } = query;
     const yearNumber = year ?? null;
@@ -192,7 +241,7 @@ class UnitAnnualAwardController {
 
   confirmImport = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
-    const body = req.body as { items?: any[] };
+    const body = req.body as ConfirmImportBody;
     const { items } = body;
     if (!items || !Array.isArray(items) || items.length === 0) {
       return ResponseHelper.badRequest(res, 'Không có dữ liệu để import');
@@ -212,7 +261,7 @@ class UnitAnnualAwardController {
   });
 
   getTemplate = catchAsync(async (req: Request, res: Response) => {
-    const query = req.query as { unit_ids?: string; personnel_ids?: string; repeat_map?: string };
+    const query = req.query as GetTemplateQuery;
     const user = req.user!;
     const userRole = user.role;
     const rawIds = query.unit_ids ?? query.personnel_ids ?? '';
@@ -256,10 +305,7 @@ class UnitAnnualAwardController {
   });
 
   exportToExcel = catchAsync(async (req: Request, res: Response) => {
-    const query = req.query as {
-      nam?: number;
-      danh_hieu?: string;
-    };
+    const query = req.query as ExportToExcelQuery;
     const user = req.user;
     const { nam, danh_hieu } = query;
     const filters: Record<string, unknown> = {
@@ -280,9 +326,7 @@ class UnitAnnualAwardController {
   });
 
   getStatistics = catchAsync(async (req: Request, res: Response) => {
-    const query = req.query as {
-      nam?: number;
-    };
+    const query = req.query as GetStatisticsQuery;
     const user = req.user;
     const { nam } = query;
     const filters: Record<string, unknown> = { nam };

@@ -769,17 +769,17 @@ export default function UserProfilePage() {
                 </Row>
               </div>
 
-              {/* Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN */}
+              {/* Kỷ niệm chương VSNXD QĐNDVN */}
               <div>
                 <Text strong className="text-base">
-                  Kỷ niệm chương Vì sự nghiệp xây dựng Quân đội Nhân dân Việt Nam
+                  Kỷ niệm chương VSNXD QĐNDVN
                 </Text>
                 <Divider className="my-3" />
                 <Row gutter={[16, 16]}>
                   <Col xs={24} md={24}>
                     <Card size="small" className="h-full">
                       <Statistic
-                        title="Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN"
+                        title="Kỷ niệm chương VSNXD QĐNDVN"
                         value={0}
                         valueStyle={{ fontSize: '14px' }}
                         valueRender={() => {
@@ -1436,7 +1436,7 @@ export default function UserProfilePage() {
     },
     {
       key: '3',
-      label: 'Thành tích khoa học',
+      label: 'Thành tích NCKH',
       children: (
         <div className="space-y-4">
           <div className="mb-4">

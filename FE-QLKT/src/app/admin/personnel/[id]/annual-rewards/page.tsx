@@ -335,7 +335,7 @@ export default function AnnualRewardsPage() {
         <Breadcrumb.Item>
           <Link href={`/admin/personnel/${personnelId}`}>{personnel?.ho_ten}</Link>
         </Breadcrumb.Item>
-        <Breadcrumb.Item>Khen thưởng hàng năm</Breadcrumb.Item>
+        <Breadcrumb.Item>Khen thưởng hằng năm</Breadcrumb.Item>
       </Breadcrumb>
 
       {/* Header */}
@@ -356,7 +356,7 @@ export default function AnnualRewardsPage() {
             </Link>
           </Space>
           <Title level={2} style={{ marginTop: 8, marginBottom: 8 }}>
-            Khen thưởng hàng năm
+            Khen thưởng hằng năm
           </Title>
           {personnel && (
             <Paragraph type="secondary" style={{ fontSize: 14, marginBottom: 0 }}>

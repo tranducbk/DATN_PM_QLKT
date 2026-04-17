@@ -5,13 +5,53 @@ import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 import { setFileSendHeaders } from '../helpers/fileResponseHeaders';
 
+interface GetAllDecisionsQuery {
+  nam?: number;
+  loai_khen_thuong?: string;
+  search?: string;
+  [key: string]: unknown;
+}
+
+interface AutocompleteQuery {
+  q?: string;
+  limit?: number;
+  loai_khen_thuong?: string;
+}
+
+interface IdParams {
+  id?: string;
+}
+
+interface SoQuyetDinhParams {
+  soQuyetDinh?: string;
+}
+
+interface CreateDecisionBody {
+  so_quyet_dinh?: string;
+  nam?: number;
+  ngay_ky?: string;
+  nguoi_ky?: string;
+  loai_khen_thuong?: string;
+  ghi_chu?: string;
+}
+
+interface UpdateDecisionBody {
+  so_quyet_dinh?: string;
+  nam?: number;
+  ngay_ky?: string;
+  nguoi_ky?: string;
+  loai_khen_thuong?: string;
+  ghi_chu?: string;
+  file_path?: string | null;
+}
+
+interface GetFilePathsBody {
+  soQuyetDinhs?: string[];
+}
+
 class DecisionController {
   getAllDecisions = catchAsync(async (req: Request, res: Response) => {
-    const query = req.query as {
-      nam?: number;
-      loai_khen_thuong?: string;
-      search?: string;
-    };
+    const query = req.query as GetAllDecisionsQuery;
     const { page, limit } = parsePagination(query);
     const { nam, loai_khen_thuong, search } = query;
 
@@ -31,7 +71,7 @@ class DecisionController {
   });
 
   autocomplete = catchAsync(async (req: Request, res: Response) => {
-    const query = req.query as { q?: string; limit?: number; loai_khen_thuong?: string };
+    const query = req.query as AutocompleteQuery;
     const { q, limit = 10, loai_khen_thuong } = query;
     if (!q) return ResponseHelper.badRequest(res, 'Vui lòng nhập từ khóa tìm kiếm (q)');
 
@@ -47,7 +87,7 @@ class DecisionController {
   });
 
   getDecisionById = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as { id?: string };
+    const params = req.params as IdParams;
     const id = normalizeParam(params.id);
     if (!id) return ResponseHelper.badRequest(res, 'Thiếu id');
 
@@ -59,7 +99,7 @@ class DecisionController {
   });
 
   getDecisionBySoQuyetDinh = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as { soQuyetDinh?: string };
+    const params = req.params as SoQuyetDinhParams;
     const soQuyetDinh = normalizeParam(params.soQuyetDinh);
     if (!soQuyetDinh) return ResponseHelper.badRequest(res, 'Thiếu soQuyetDinh');
 
@@ -73,14 +113,7 @@ class DecisionController {
   });
 
   createDecision = catchAsync(async (req: Request, res: Response) => {
-    const body = req.body as {
-      so_quyet_dinh?: string;
-      nam?: number;
-      ngay_ky?: string;
-      nguoi_ky?: string;
-      loai_khen_thuong?: string;
-      ghi_chu?: string;
-    };
+    const body = req.body as CreateDecisionBody;
     const file = req.file;
     const { so_quyet_dinh, nam, ngay_ky, nguoi_ky, loai_khen_thuong, ghi_chu } = body;
     if (!so_quyet_dinh || !nam || !ngay_ky || !nguoi_ky) {
@@ -105,16 +138,8 @@ class DecisionController {
   });
 
   updateDecision = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as { id?: string };
-    const body = req.body as {
-      so_quyet_dinh?: string;
-      nam?: number;
-      ngay_ky?: string;
-      nguoi_ky?: string;
-      loai_khen_thuong?: string;
-      ghi_chu?: string;
-      file_path?: string | null;
-    };
+    const params = req.params as IdParams;
+    const body = req.body as UpdateDecisionBody;
     const file = req.file;
     const id = normalizeParam(params.id);
     if (!id) return ResponseHelper.badRequest(res, 'Thiếu id');
@@ -151,7 +176,7 @@ class DecisionController {
   });
 
   deleteDecision = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as { id?: string };
+    const params = req.params as IdParams;
     const id = normalizeParam(params.id);
     if (!id) return ResponseHelper.badRequest(res, 'Thiếu id');
 
@@ -173,7 +198,7 @@ class DecisionController {
   });
 
   getFilePath = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as { soQuyetDinh?: string };
+    const params = req.params as SoQuyetDinhParams;
     const raw = normalizeParam(params.soQuyetDinh);
     if (!raw) return ResponseHelper.badRequest(res, 'Thiếu soQuyetDinh');
 
@@ -190,7 +215,7 @@ class DecisionController {
   });
 
   getFilePaths = catchAsync(async (req: Request, res: Response) => {
-    const body = req.body as { soQuyetDinhs?: string[] };
+    const body = req.body as GetFilePathsBody;
     const { soQuyetDinhs } = body;
     if (!Array.isArray(soQuyetDinhs)) {
       return ResponseHelper.badRequest(res, 'soQuyetDinhs phải là một mảng');
@@ -200,7 +225,7 @@ class DecisionController {
   });
 
   downloadDecisionFile = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as { soQuyetDinh?: string };
+    const params = req.params as SoQuyetDinhParams;
     const raw = normalizeParam(params.soQuyetDinh);
     if (!raw) return ResponseHelper.badRequest(res, 'Thiếu soQuyetDinh');
 

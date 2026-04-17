@@ -9,9 +9,39 @@ import { parsePagination } from '../helpers/paginationHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { notifyOnImport } from '../helpers/notification';
 
+interface GetTemplateQuery {
+  repeat_map?: string;
+  [key: string]: string | string[] | undefined;
+}
+
+interface ConfirmImportBody {
+  items?: ConfirmImportItem[];
+}
+
+interface GetAllQuery {
+  don_vi_id?: string;
+  nam?: number;
+  ho_ten?: string;
+  [key: string]: unknown;
+}
+
+interface ExportToExcelQuery {
+  don_vi_id?: string;
+  nam?: number;
+  [key: string]: unknown;
+}
+
+interface GetByPersonnelIdParams {
+  personnel_id?: string;
+}
+
+interface IdParams {
+  id?: string;
+}
+
 class MilitaryFlagController {
   getTemplate = catchAsync(async (req: Request, res: Response) => {
-    const query = req.query as { repeat_map?: string };
+    const query = req.query as GetTemplateQuery;
     const personnelIds = parsePersonnelIdsFromQuery(query);
     const repeatMap: Record<string, number> = {};
     if (query.repeat_map) {
@@ -54,7 +84,7 @@ class MilitaryFlagController {
 
   confirmImport = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
-    const body = req.body as { items?: ConfirmImportItem[] };
+    const body = req.body as ConfirmImportBody;
     const { items } = body;
     const result = await militaryFlagService.confirmImport(items);
     await writeSystemLog({
@@ -71,7 +101,7 @@ class MilitaryFlagController {
   });
 
   getAll = catchAsync(async (req: Request, res: Response) => {
-    const query = req.query as { don_vi_id?: string; nam?: number; ho_ten?: string };
+    const query = req.query as GetAllQuery;
     const user = req.user!;
     const { don_vi_id, nam, ho_ten } = query;
     const userRole = user.role;
@@ -102,7 +132,7 @@ class MilitaryFlagController {
   });
 
   exportToExcel = catchAsync(async (req: Request, res: Response) => {
-    const query = req.query as { don_vi_id?: string; nam?: number };
+    const query = req.query as ExportToExcelQuery;
     const user = req.user!;
     const { don_vi_id, nam } = query;
 
@@ -138,7 +168,7 @@ class MilitaryFlagController {
   });
 
   getByPersonnelId = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as { personnel_id: string };
+    const params = req.params as GetByPersonnelIdParams;
     const user = req.user!;
     const { personnel_id } = params;
     const userId = user.id;
@@ -171,7 +201,7 @@ class MilitaryFlagController {
   });
 
   deleteAward = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as { id: string };
+    const params = req.params as IdParams;
     const { id } = params;
     const adminUsername = getAdminUsername(req);
     const result = await militaryFlagService.deleteAward(id, adminUsername);

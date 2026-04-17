@@ -507,17 +507,17 @@ export default function PersonnelDetailPage() {
                 </Row>
               </div>
 
-              {/* Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN */}
+              {/* Kỷ niệm chương VSNXD QĐNDVN */}
               <div>
                 <Text strong className="text-base">
-                  Kỷ niệm chương Vì sự nghiệp xây dựng Quân đội Nhân dân Việt Nam
+                  Kỷ niệm chương VSNXD QĐNDVN
                 </Text>
                 <Divider className="my-3" />
                 <Row gutter={[16, 16]}>
                   <Col xs={24} md={24}>
                     <Card size="small" className="h-full">
                       <Statistic
-                        title="Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN"
+                        title="Kỷ niệm chương VSNXD QĐNDVN"
                         value={0}
                         valueStyle={{ fontSize: '14px' }}
                         valueRender={() => {
@@ -754,7 +754,7 @@ export default function PersonnelDetailPage() {
                   <div className="flex flex-col items-center gap-2">
                     <ExperimentOutlined style={{ fontSize: '32px' }} />
                     <Text strong style={{ fontSize: '16px' }}>
-                      Thành tích khoa học
+                      Thành tích NCKH
                     </Text>
                   </div>
                 </Card>
@@ -763,7 +763,7 @@ export default function PersonnelDetailPage() {
           </Row>
           <Row gutter={[16, 16]}>
             <Col xs={24} md={6}>
-              <Link href={`/admin/personnel/${personnelId}/service-rewards`}>
+              <Link href={`/admin/personnel/${personnelId}/tenure-medals`}>
                 <Card
                   hoverable
                   className="text-center h-full"
@@ -835,7 +835,7 @@ export default function PersonnelDetailPage() {
               </Link>
             </Col>
             <Col xs={24} md={6}>
-              <Link href={`/admin/personnel/${personnelId}/contribution-awards`}>
+              <Link href={`/admin/personnel/${personnelId}/contribution-medals`}>
                 <Card
                   hoverable
                   className="text-center h-full"

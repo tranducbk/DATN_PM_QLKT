@@ -62,21 +62,21 @@ export const DANH_HIEU_MAP: Record<string, string> = {
   HCBVTQ_HANG_NHAT: 'Huân chương Bảo vệ Tổ quốc Hạng Nhất',
 
   HC_QKQT: 'Huy chương Quân kỳ Quyết thắng',
-  KNC_VSNXD_QDNDVN: 'Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN',
+  KNC_VSNXD_QDNDVN: 'Kỷ niệm chương VSNXD QĐNDVN',
 
   DTKH: 'Đề tài khoa học',
   SKKH: 'Sáng kiến khoa học',
 };
 
 export const LOAI_DE_XUAT_MAP: Record<string, string> = {
-  CA_NHAN_HANG_NAM: 'Cá nhân Hằng năm',
-  DON_VI_HANG_NAM: 'Đơn vị Hằng năm',
+  CA_NHAN_HANG_NAM: 'Khen thưởng cá nhân hằng năm',
+  DON_VI_HANG_NAM: 'Khen thưởng đơn vị hằng năm',
   NIEN_HAN: 'Huy chương Chiến sĩ vẻ vang',
   CONG_HIEN: 'Huân chương Bảo vệ Tổ quốc',
-  DOT_XUAT: 'Đột xuất',
+  DOT_XUAT: 'Khen thưởng đột xuất',
   HC_QKQT: 'Huy chương Quân kỳ Quyết thắng',
-  KNC_VSNXD_QDNDVN: 'Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN',
-  NCKH: 'Nghiên cứu khoa học',
+  KNC_VSNXD_QDNDVN: 'Kỷ niệm chương VSNXD QĐNDVN',
+  NCKH: 'Thành tích NCKH',
 };
 
 /** Options cho dropdown loại khen thưởng (dùng chung cho decisions page, modal, v.v.) */
@@ -86,12 +86,12 @@ export const LOAI_KHEN_THUONG_OPTIONS = Object.entries(LOAI_DE_XUAT_MAP).map(([v
 }));
 
 export const AWARD_TYPE_MAP: Record<string, string> = {
-  ANNUAL_PERSONAL: 'Cá nhân Hằng năm',
-  ANNUAL_UNIT: 'Đơn vị Hằng năm',
+  ANNUAL_PERSONAL: 'Khen thưởng cá nhân hằng năm',
+  ANNUAL_UNIT: 'Khen thưởng đơn vị hằng năm',
   CONTRIBUTION: 'Huân chương Bảo vệ Tổ quốc',
   TENURE: 'Huy chương Chiến sĩ vẻ vang',
-  ADHOC: 'Đột xuất',
-  SCIENTIFIC: 'Thành tích khoa học',
+  ADHOC: 'Khen thưởng đột xuất',
+  SCIENTIFIC: 'Thành tích NCKH',
 };
 
 export const DANH_HIEU_OPTIONS = {
@@ -139,13 +139,13 @@ export type AwardType =
   | 'KTDX';
 
 export const AWARD_TAB_LABELS: Record<AwardType, string> = {
-  CNHN: 'Cá nhân hằng năm',
-  DVHN: 'Đơn vị hằng năm',
-  HCCSVV: 'Huy chương Chiến sĩ Vẻ vang',
+  CNHN: 'Khen thưởng cá nhân hằng năm',
+  DVHN: 'Khen thưởng đơn vị hằng năm',
+  HCCSVV: 'Huy chương Chiến sĩ vẻ vang',
   HCBVTQ: 'Huân chương Bảo vệ Tổ quốc',
-  KNC_VSNXD_QDNDVN: DANH_HIEU_MAP['KNC_VSNXD_QDNDVN'],
+  KNC_VSNXD_QDNDVN: 'Kỷ niệm chương VSNXD QĐNDVN',
   HCQKQT: 'Huy chương Quân kỳ Quyết thắng',
-  NCKH: 'Thành tích khoa học',
+  NCKH: 'Thành tích NCKH',
   KTDX: 'Khen thưởng đột xuất',
 };
 

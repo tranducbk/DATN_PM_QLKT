@@ -49,7 +49,7 @@ router.post(
  * @route   POST /api/profiles/check-eligibility
  * @desc    Check consecutive award eligibility for one or more personnel
  *          Body: { items: [{ personnel_id, nam, danh_hieu }] }
- * @access  Private - MANAGER trở lên
+ * @access  Private - MANAGER and above
  */
 router.post('/check-eligibility', verifyToken, requireManager, profileController.checkEligibility);
 

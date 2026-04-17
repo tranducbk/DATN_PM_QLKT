@@ -406,7 +406,7 @@ export default function ManagerDashboard() {
                     label: THANH_TICH_KHOA_HOC_SHORT_LABELS[item.type] || item.type,
                     value: item.count,
                   }))}
-                  title="Thành tích khoa học theo loại"
+                  title="Thành tích NCKH theo loại"
                   colors={['rgba(59, 130, 246, 0.8)', 'rgba(34, 197, 94, 0.8)']}
                 />
               </Col>
@@ -427,7 +427,7 @@ export default function ManagerDashboard() {
                     date: item.month,
                     count: item.count,
                   }))}
-                  title="Thành tích khoa học (6 tháng gần nhất)"
+                  title="Thành tích NCKH (6 tháng gần nhất)"
                   label="Số lượng thành tích"
                   color="rgba(34, 197, 94, 1)"
                 />

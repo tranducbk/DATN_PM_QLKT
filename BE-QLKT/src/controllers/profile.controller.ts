@@ -5,10 +5,26 @@ import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 import { ADHOC_TYPE } from '../constants/adhocType.constants';
 
+interface PersonnelIdParams {
+  personnel_id?: string;
+}
+
+interface YearQuery {
+  year?: number;
+}
+
+interface CheckEligibilityBody {
+  items?: Array<Record<string, unknown>>;
+}
+
+interface UpdateTenureProfileBody {
+  [key: string]: unknown;
+}
+
 class ProfileController {
   getAnnualProfile = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as { personnel_id: string };
-    const query = req.query as { year?: number };
+    const params = req.params as PersonnelIdParams;
+    const query = req.query as YearQuery;
     const { personnel_id } = params;
     const { year } = query;
     const yearNumber = year ?? null;
@@ -21,7 +37,7 @@ class ProfileController {
   });
 
   getTenureProfile = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as { personnel_id: string };
+    const params = req.params as PersonnelIdParams;
     const { personnel_id } = params;
     await profileService.recalculateTenureProfile(personnel_id);
     const result = await profileService.getTenureProfile(personnel_id);
@@ -32,7 +48,7 @@ class ProfileController {
   });
 
   getContributionProfile = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as { personnel_id: string };
+    const params = req.params as PersonnelIdParams;
     const { personnel_id } = params;
     await profileService.recalculateContributionProfile(personnel_id);
     const result = await profileService.getContributionProfile(personnel_id);
@@ -43,8 +59,8 @@ class ProfileController {
   });
 
   recalculateProfile = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as { personnel_id: string };
-    const query = req.query as { year?: number };
+    const params = req.params as PersonnelIdParams;
+    const query = req.query as YearQuery;
     const { personnel_id } = params;
     const { year } = query;
     const yearNumber = year ?? null;
@@ -61,14 +77,14 @@ class ProfileController {
   });
 
   checkEligibility = catchAsync(async (req: Request, res: Response) => {
-    const body = req.body as { items?: Array<Record<string, unknown>> };
+    const body = req.body as CheckEligibilityBody;
     const { items } = body;
     if (!items || !Array.isArray(items) || items.length === 0) {
       return ResponseHelper.badRequest(res, 'Thiếu danh sách cần kiểm tra');
     }
     const results = [];
     for (const item of items) {
-      let result;
+      let result: Record<string, unknown>;
       if (item.type === 'DON_VI' && item.don_vi_id) {
         result = await unitAnnualAwardService.checkUnitAwardEligibility(
           item.don_vi_id,
@@ -112,8 +128,8 @@ class ProfileController {
   });
 
   updateTenureProfile = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as { personnel_id: string };
-    const body = req.body as { [key: string]: unknown };
+    const params = req.params as PersonnelIdParams;
+    const body = req.body as UpdateTenureProfileBody;
     const { personnel_id } = params;
     const updates = body;
     const result = await profileService.updateTenureProfile(personnel_id, updates);

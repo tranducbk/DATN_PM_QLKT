@@ -1,4 +1,3 @@
-import { DANH_HIEU_MAP } from './danhHieu.constants';
 
 /** Trạng thái đề xuất — khớp với BE PROPOSAL_STATUS */
 export const PROPOSAL_STATUS = {
@@ -50,14 +49,14 @@ export const PROPOSAL_TYPES = {
 export type ProposalType = (typeof PROPOSAL_TYPES)[keyof typeof PROPOSAL_TYPES];
 
 export const PROPOSAL_TYPE_LABELS: Record<string, string> = {
-  CA_NHAN_HANG_NAM: 'Cá nhân Hằng năm',
-  DON_VI_HANG_NAM: 'Đơn vị Hằng năm',
+  CA_NHAN_HANG_NAM: 'Khen thưởng cá nhân hằng năm',
+  DON_VI_HANG_NAM: 'Khen thưởng đơn vị hằng năm',
   NIEN_HAN: 'Huy chương Chiến sĩ vẻ vang',
   CONG_HIEN: 'Huân chương Bảo vệ Tổ quốc',
   DOT_XUAT: 'Khen thưởng đột xuất',
-  NCKH: 'Nghiên cứu khoa học',
-  HC_QKQT: 'Huy chương Quân kỳ quyết thắng',
-  KNC_VSNXD_QDNDVN: DANH_HIEU_MAP['KNC_VSNXD_QDNDVN'],
+  NCKH: 'Thành tích NCKH',
+  HC_QKQT: 'Huy chương Quân kỳ Quyết thắng',
+  KNC_VSNXD_QDNDVN: 'Kỷ niệm chương VSNXD QĐNDVN',
 };
 
 export function getProposalTypeLabel(type: string | undefined | null): string {
@@ -89,12 +88,12 @@ export const PROPOSAL_STATUS_ADMIN: Record<
 
 /** Admin — danh sách đề xuất: label rút gọn + màu Tag (cột + bộ lọc loại) */
 export const PROPOSAL_TYPE_ADMIN_TAG: Record<string, { label: string; color: string }> = {
-  [PROPOSAL_TYPES.CA_NHAN_HANG_NAM]: { label: 'Cá nhân hằng năm', color: 'blue' },
-  [PROPOSAL_TYPES.DON_VI_HANG_NAM]: { label: 'Đơn vị hằng năm', color: 'cyan' },
+  [PROPOSAL_TYPES.CA_NHAN_HANG_NAM]: { label: 'Khen thưởng cá nhân hằng năm', color: 'blue' },
+  [PROPOSAL_TYPES.DON_VI_HANG_NAM]: { label: 'Khen thưởng đơn vị hằng năm', color: 'cyan' },
   [PROPOSAL_TYPES.NIEN_HAN]: { label: 'Huy chương Chiến sĩ vẻ vang', color: 'purple' },
   [PROPOSAL_TYPES.CONG_HIEN]: { label: 'Huân chương Bảo vệ Tổ quốc', color: 'magenta' },
   [PROPOSAL_TYPES.DOT_XUAT]: { label: 'Khen thưởng đột xuất', color: 'orange' },
-  [PROPOSAL_TYPES.NCKH]: { label: 'Nghiên cứu khoa học', color: 'green' },
+  [PROPOSAL_TYPES.NCKH]: { label: 'Thành tích NCKH', color: 'green' },
   [PROPOSAL_TYPES.HC_QKQT]: { label: 'Huy chương Quân kỳ Quyết thắng', color: 'gold' },
-  [PROPOSAL_TYPES.KNC_VSNXD_QDNDVN]: { label: DANH_HIEU_MAP['KNC_VSNXD_QDNDVN'], color: 'lime' },
+  [PROPOSAL_TYPES.KNC_VSNXD_QDNDVN]: { label: 'Kỷ niệm chương VSNXD QĐNDVN', color: 'lime' },
 };

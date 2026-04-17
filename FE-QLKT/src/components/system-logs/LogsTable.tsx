@@ -23,7 +23,6 @@ import {
   ArrowDown,
 } from 'lucide-react';
 import { formatDateTimeFull } from '@/lib/utils';
-import { DANH_HIEU_MAP } from '@/constants/danhHieu.constants';
 
 export interface LogEntry {
   id: string;
@@ -48,35 +47,28 @@ interface LogsTableProps {
 type SortField = 'time' | 'actor' | 'role' | 'action' | null;
 type SortOrder = 'asc' | 'desc' | null;
 
-// Mapping cho resource labels
+// Mapping cho resource labels (kebab-case keys only — getResourceLabel normalizes _ → -)
 const resourceLabels: Record<string, string> = {
   accounts: 'Tài khoản',
   personnel: 'Quân nhân',
+  profiles: 'Hồ sơ quân nhân',
   units: 'Đơn vị',
   positions: 'Chức vụ',
   proposals: 'Đề xuất',
-  'annual-rewards': 'Danh hiệu hằng năm',
-  annual_rewards: 'Danh hiệu hằng năm',
-  'position-history': 'Lịch sử chức vụ',
-  position_history: 'Lịch sử chức vụ',
-  'scientific-achievements': 'Thành tích khoa học',
-  scientific_achievements: 'Thành tích khoa học',
   decisions: 'Quyết định',
+  awards: 'Khen thưởng',
+  'award-bulk': 'Khen thưởng hàng loạt',
   auth: 'Xác thực',
-  'adhoc-awards': 'Khen thưởng đột xuất',
-  adhoc_awards: 'Khen thưởng đột xuất',
-  'commemorative-medals': DANH_HIEU_MAP['KNC_VSNXD_QDNDVN'],
-  commemorative_medals: DANH_HIEU_MAP['KNC_VSNXD_QDNDVN'],
-  'contribution-awards': 'Huân chương Bảo vệ Tổ quốc',
-  contribution_awards: 'Huân chương Bảo vệ Tổ quốc',
-  'military-flag': 'Cờ thi đua',
-  military_flag: 'Cờ thi đua',
-  'service-rewards': 'Huy chương Chiến sĩ vẻ vang',
-  service_rewards: 'Huy chương Chiến sĩ vẻ vang',
+  'annual-rewards': 'Khen thưởng cá nhân hằng năm',
   'unit-annual-awards': 'Khen thưởng đơn vị hằng năm',
-  unit_annual_awards: 'Khen thưởng đơn vị hằng năm',
-  hccsvv: 'Huy chương Chiến sĩ Vẻ vang',
-  categories: 'Danh mục',
+  'adhoc-awards': 'Khen thưởng đột xuất',
+  'tenure-medals': 'Huy chương Chiến sĩ vẻ vang',
+  'contribution-medals': 'Huân chương Bảo vệ Tổ quốc',
+  'commemorative-medals': 'Kỷ niệm chương VSNXD QĐNDVN',
+  'military-flag': 'Huy chương Quân kỳ Quyết thắng',
+  'scientific-achievements': 'Thành tích NCKH',
+  'position-history': 'Lịch sử chức vụ',
+  'system-logs': 'Nhật ký hệ thống',
 };
 
 function getResourceLabel(resource: string): string {
