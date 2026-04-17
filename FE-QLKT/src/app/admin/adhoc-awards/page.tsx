@@ -337,7 +337,6 @@ export default function AdhocAwardsPage() {
           setEditFormData(prev => ({
             ...prev,
             decisionNumber: decision.so_quyet_dinh,
-            note: decision.ghi_chu || prev.note,
           }));
         } else {
           setCreateFormData(prev => ({
@@ -346,7 +345,6 @@ export default function AdhocAwardsPage() {
             decisionYear: decision.nam,
             signDate: dayjs(decision.ngay_ky).format('YYYY-MM-DD'),
             signer: decision.nguoi_ky,
-            note: decision.ghi_chu || prev.note,
           }));
         }
 
@@ -595,7 +593,7 @@ export default function AdhocAwardsPage() {
   };
 
   const handlePreviewFile = async (file: FileInfo) => {
-    await previewFileWithApi(`/api/adhoc-awards/uploads/${file.filename}`, file.originalName);
+    await previewFileWithApi(`/api/proposals/uploads/${file.filename}`, file.originalName);
   };
 
   // TABLE FILTER HANDLERS
@@ -871,6 +869,7 @@ export default function AdhocAwardsPage() {
                 Loại <span style={{ color: '#ff4d4f' }}>*</span>
               </Text>
               <Select
+                size="large"
                 style={{ width: '100%' }}
                 value={type}
                 onChange={value =>
@@ -893,6 +892,7 @@ export default function AdhocAwardsPage() {
                 Năm <span style={{ color: '#ff4d4f' }}>*</span>
               </Text>
               <InputNumber
+                size="large"
                 style={{ width: '100%' }}
                 value={createFormData.year}
                 onChange={value =>
@@ -908,11 +908,13 @@ export default function AdhocAwardsPage() {
                 Hình thức khen thưởng <span style={{ color: '#ff4d4f' }}>*</span>
               </Text>
               <Input
+                size="large"
                 value={createFormData.awardForm}
                 onChange={e => setCreateFormData({ ...createFormData, awardForm: e.target.value })}
                 placeholder='Ví dụ: "Giấy khen của HV", "Bằng khen của TC"'
               />
             </div>
+
           </Space>
         );
 
@@ -1328,15 +1330,6 @@ export default function AdhocAwardsPage() {
               />
             </div>
 
-            <div>
-              <Text style={{ display: 'block', marginBottom: 4 }}>Ghi chú</Text>
-              <TextArea
-                value={createFormData.note}
-                onChange={e => setCreateFormData({ ...createFormData, note: e.target.value })}
-                placeholder="Ghi chú bổ sung (không bắt buộc)"
-                rows={2}
-              />
-            </div>
           </Space>
         );
 
@@ -1362,13 +1355,19 @@ export default function AdhocAwardsPage() {
                 {createFormData.signer && (
                   <Descriptions.Item label="Người ký">{createFormData.signer}</Descriptions.Item>
                 )}
-                {createFormData.note && (
-                  <Descriptions.Item label="Ghi chú" span={2}>
-                    {createFormData.note}
-                  </Descriptions.Item>
-                )}
               </Descriptions>
             </Card>
+
+            <div>
+              <Text style={{ display: 'block', marginBottom: 8 }}>Ghi chú</Text>
+              <TextArea
+                size="large"
+                value={createFormData.note}
+                onChange={e => setCreateFormData({ ...createFormData, note: e.target.value })}
+                placeholder="Ghi chú bổ sung cho khen thưởng (không bắt buộc)"
+                rows={2}
+              />
+            </div>
 
             {createAttachedFileList.length > 0 && (
               <Card size="small" title={`File đính kèm (${createAttachedFileList.length} file)`}>
@@ -1506,6 +1505,12 @@ export default function AdhocAwardsPage() {
             message.error(`Vui lòng nhập đầy đủ cấp bậc và chức vụ cho: ${missingNames}`);
             return false;
           }
+        }
+        return true;
+      case 3:
+        if (!createFormData.decisionNumber?.trim()) {
+          message.error('Vui lòng nhập số quyết định');
+          return false;
         }
         return true;
       default:
@@ -1759,7 +1764,6 @@ export default function AdhocAwardsPage() {
                 value={editFormData.awardForm}
                 onChange={e => setEditFormData({ ...editFormData, awardForm: e.target.value })}
                 placeholder="Hình thức khen thưởng"
-                size="large"
               />
             </div>
 
@@ -1775,7 +1779,6 @@ export default function AdhocAwardsPage() {
                 }
                 min={2000}
                 max={2100}
-                size="large"
               />
             </div>
 
@@ -1785,7 +1788,6 @@ export default function AdhocAwardsPage() {
                 <div>
                   <Text style={{ display: 'block', marginBottom: 4 }}>Cấp bậc</Text>
                   <Select
-                    size="large"
                     placeholder="Chọn cấp bậc"
                     value={editFormData.rank || undefined}
                     onChange={value => setEditFormData({ ...editFormData, rank: value || '' })}
@@ -1799,7 +1801,6 @@ export default function AdhocAwardsPage() {
                 <div>
                   <Text style={{ display: 'block', marginBottom: 4 }}>Chức vụ</Text>
                   <Input
-                    size="large"
                     placeholder="Nhập chức vụ"
                     value={editFormData.position}
                     onChange={e => setEditFormData({ ...editFormData, position: e.target.value })}
@@ -1822,7 +1823,7 @@ export default function AdhocAwardsPage() {
                 notFoundContent={searchingDecision ? <Spin size="small" /> : null}
                 style={{ width: '100%' }}
               >
-                <Input size="large" />
+                <Input />
               </AutoComplete>
             </div>
 

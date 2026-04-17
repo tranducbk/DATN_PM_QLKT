@@ -13,6 +13,7 @@ export function getAntdThemeConfig(isDark: boolean): ThemeConfig {
     algorithm: isDark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
     token: {
       fontFamily: ANTD_FONT_FAMILY,
+      borderRadius: 8,
     },
   };
 }

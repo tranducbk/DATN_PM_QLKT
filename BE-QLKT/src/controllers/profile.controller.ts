@@ -10,7 +10,7 @@ interface PersonnelIdParams {
 }
 
 interface YearQuery {
-  year?: number;
+  year?: string;
 }
 
 interface CheckEligibilityBody {
@@ -27,7 +27,7 @@ class ProfileController {
     const query = req.query as YearQuery;
     const { personnel_id } = params;
     const { year } = query;
-    const yearNumber = year ?? null;
+    const yearNumber = year ? parseInt(year, 10) : null;
     if (yearNumber) await profileService.recalculateAnnualProfile(personnel_id, yearNumber);
     const result = await profileService.getAnnualProfile(personnel_id);
     return ResponseHelper.success(res, {
@@ -63,7 +63,7 @@ class ProfileController {
     const query = req.query as YearQuery;
     const { personnel_id } = params;
     const { year } = query;
-    const yearNumber = year ?? null;
+    const yearNumber = year ? parseInt(year, 10) : null;
     const result = await profileService.recalculateAnnualProfile(personnel_id, yearNumber);
     return ResponseHelper.success(res, { message: result.message });
   });

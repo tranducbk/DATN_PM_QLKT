@@ -5,6 +5,7 @@ import { NOTIFICATION_TYPES, RESOURCE_TYPES } from '../constants/notificationTyp
 import { ROLES } from '../constants/roles.constants';
 import { ADHOC_TYPE } from '../constants/adhocType.constants';
 import { ForbiddenError, NotFoundError } from '../middlewares/errorHandler';
+import { emitNotificationToUser } from '../utils/socketService';
 import type { KhenThuongDotXuat, Prisma } from '../generated/prisma';
 
 interface UploadedFile {
@@ -227,18 +228,16 @@ class AdhocAwardService {
       const awardName = adhocAward.hinh_thuc_khen_thuong as string;
       const year = adhocAward.nam as number;
 
-      const donViId =
-        (personnel.co_quan_don_vi_id as string) || (personnel.don_vi_truc_thuoc_id as string);
-      if (donViId) {
+      const cqdvId = personnel.co_quan_don_vi_id as string | null;
+      // Look up parent CQDV via DVTT if no direct CQDV link
+      const dvtt = personnel.DonViTrucThuoc as Record<string, unknown> | null;
+      const managerCqdvId = cqdvId || (dvtt?.co_quan_don_vi_id as string | null);
+
+      if (managerCqdvId) {
         const managers = await prisma.taiKhoan.findMany({
           where: {
             role: ROLES.MANAGER,
-            QuanNhan: {
-              OR: [
-                { co_quan_don_vi_id: personnel.co_quan_don_vi_id as string },
-                { don_vi_truc_thuoc_id: personnel.don_vi_truc_thuoc_id as string },
-              ].filter(Boolean),
-            },
+            QuanNhan: { co_quan_don_vi_id: managerCqdvId },
           },
           select: { id: true, role: true },
         });
@@ -252,7 +251,7 @@ class AdhocAwardService {
             message: `${adminUsername} đã thêm khen thưởng đột xuất "${awardName}" năm ${year} cho quân nhân ${personnel.ho_ten}`,
             resource: RESOURCE_TYPES.AWARDS,
             tai_nguyen_id: adhocAward.id as string,
-            link: `/manager/awards`,
+            link: `/manager/adhoc-awards`,
           });
         });
       }
@@ -299,7 +298,7 @@ class AdhocAwardService {
             message: `${adminUsername} đã thêm khen thưởng đột xuất "${awardName}" năm ${year} cho đơn vị ${unitName}`,
             resource: RESOURCE_TYPES.AWARDS,
             tai_nguyen_id: adhocAward.id as string,
-            link: `/manager/awards`,
+            link: `/manager/adhoc-awards`,
           });
         });
       } else if (adhocAward.DonViTrucThuoc) {
@@ -328,7 +327,7 @@ class AdhocAwardService {
               }`,
               resource: RESOURCE_TYPES.AWARDS,
               tai_nguyen_id: adhocAward.id as string,
-              link: `/manager/awards`,
+              link: `/manager/adhoc-awards`,
             });
           });
         }
@@ -337,6 +336,7 @@ class AdhocAwardService {
 
     if (notifications.length > 0) {
       await prisma.thongBao.createMany({ data: notifications });
+      notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n as unknown as Record<string, unknown>));
     }
 
     return notifications.length;
@@ -651,18 +651,15 @@ class AdhocAwardService {
     if (adhocAward.doi_tuong === ADHOC_TYPE.CA_NHAN && adhocAward.QuanNhan) {
       const personnel = adhocAward.QuanNhan as Record<string, unknown>;
 
-      const donViId =
-        (personnel.co_quan_don_vi_id as string) || (personnel.don_vi_truc_thuoc_id as string);
-      if (donViId) {
+      const cqdvId = personnel.co_quan_don_vi_id as string | null;
+      const dvtt = personnel.DonViTrucThuoc as Record<string, unknown> | null;
+      const managerCqdvId = cqdvId || (dvtt?.co_quan_don_vi_id as string | null);
+
+      if (managerCqdvId) {
         const managers = await prisma.taiKhoan.findMany({
           where: {
             role: ROLES.MANAGER,
-            QuanNhan: {
-              OR: [
-                { co_quan_don_vi_id: personnel.co_quan_don_vi_id as string },
-                { don_vi_truc_thuoc_id: personnel.don_vi_truc_thuoc_id as string },
-              ].filter(Boolean),
-            },
+            QuanNhan: { co_quan_don_vi_id: managerCqdvId },
           },
           select: { id: true, role: true },
         });
@@ -676,7 +673,7 @@ class AdhocAwardService {
             message: `${adminUsername} đã cập nhật khen thưởng đột xuất "${awardName}" năm ${year} của quân nhân ${personnel.ho_ten}`,
             resource: RESOURCE_TYPES.AWARDS,
             tai_nguyen_id: adhocAward.id as string,
-            link: `/manager/awards`,
+            link: `/manager/adhoc-awards`,
           });
         });
       }
@@ -721,7 +718,7 @@ class AdhocAwardService {
             message: `${adminUsername} đã cập nhật khen thưởng đột xuất "${awardName}" năm ${year} của đơn vị ${unitName}`,
             resource: RESOURCE_TYPES.AWARDS,
             tai_nguyen_id: adhocAward.id as string,
-            link: `/manager/awards`,
+            link: `/manager/adhoc-awards`,
           });
         });
       } else if (adhocAward.DonViTrucThuoc) {
@@ -750,7 +747,7 @@ class AdhocAwardService {
               }`,
               resource: RESOURCE_TYPES.AWARDS,
               tai_nguyen_id: adhocAward.id as string,
-              link: `/manager/awards`,
+              link: `/manager/adhoc-awards`,
             });
           });
         }
@@ -759,6 +756,7 @@ class AdhocAwardService {
 
     if (notifications.length > 0) {
       await prisma.thongBao.createMany({ data: notifications });
+      notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n as unknown as Record<string, unknown>));
     }
 
     return notifications.length;
@@ -833,18 +831,15 @@ class AdhocAwardService {
     if (adhocAward.doi_tuong === ADHOC_TYPE.CA_NHAN && adhocAward.QuanNhan) {
       const personnel = adhocAward.QuanNhan as Record<string, unknown>;
 
-      const donViId =
-        (personnel.co_quan_don_vi_id as string) || (personnel.don_vi_truc_thuoc_id as string);
-      if (donViId) {
+      const cqdvId = personnel.co_quan_don_vi_id as string | null;
+      const dvtt = personnel.DonViTrucThuoc as Record<string, unknown> | null;
+      const managerCqdvId = cqdvId || (dvtt?.co_quan_don_vi_id as string | null);
+
+      if (managerCqdvId) {
         const managers = await prisma.taiKhoan.findMany({
           where: {
             role: ROLES.MANAGER,
-            QuanNhan: {
-              OR: [
-                { co_quan_don_vi_id: personnel.co_quan_don_vi_id as string },
-                { don_vi_truc_thuoc_id: personnel.don_vi_truc_thuoc_id as string },
-              ].filter(Boolean),
-            },
+            QuanNhan: { co_quan_don_vi_id: managerCqdvId },
           },
           select: { id: true, role: true },
         });
@@ -858,7 +853,7 @@ class AdhocAwardService {
             message: `${adminUsername} đã xóa khen thưởng đột xuất "${awardName}" năm ${year} của quân nhân ${personnel.ho_ten}`,
             resource: RESOURCE_TYPES.AWARDS,
             tai_nguyen_id: personnel.id as string,
-            link: `/manager/awards`,
+            link: `/manager/adhoc-awards`,
           });
         });
       }
@@ -903,7 +898,7 @@ class AdhocAwardService {
             message: `${adminUsername} đã xóa khen thưởng đột xuất "${awardName}" năm ${year} của đơn vị ${unitName}`,
             resource: RESOURCE_TYPES.AWARDS,
             tai_nguyen_id: adhocAward.co_quan_don_vi_id as string,
-            link: `/manager/awards`,
+            link: `/manager/adhoc-awards`,
           });
         });
       } else if (adhocAward.DonViTrucThuoc) {
@@ -932,7 +927,7 @@ class AdhocAwardService {
               }`,
               resource: RESOURCE_TYPES.AWARDS,
               tai_nguyen_id: adhocAward.don_vi_truc_thuoc_id as string,
-              link: `/manager/awards`,
+              link: `/manager/adhoc-awards`,
             });
           });
         }
@@ -941,6 +936,7 @@ class AdhocAwardService {
 
     if (notifications.length > 0) {
       await prisma.thongBao.createMany({ data: notifications });
+      notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n as unknown as Record<string, unknown>));
     }
 
     return notifications.length;

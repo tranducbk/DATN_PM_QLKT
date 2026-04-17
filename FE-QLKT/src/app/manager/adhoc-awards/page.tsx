@@ -13,7 +13,6 @@ import {
   Modal,
   Select,
   Input,
-  Tooltip,
   Descriptions,
   Row,
   Col,
@@ -28,7 +27,6 @@ import {
   EyeOutlined,
   SearchOutlined,
   FilterOutlined,
-  ClearOutlined,
   FileOutlined,
   DownloadOutlined,
 } from '@ant-design/icons';
@@ -319,9 +317,7 @@ export default function ManagerAdhocAwardsPage() {
       render: (text: string) => (
         <div style={{ textAlign: 'center' }}>
           {text ? (
-            <Tooltip title={text}>
-              <Text style={{ fontSize: '13px' }}>{text}</Text>
-            </Tooltip>
+            <Text style={{ fontSize: '13px' }}>{text}</Text>
           ) : (
             <Text type="secondary" style={{ fontStyle: 'italic', opacity: 0.6 }}>
               Không có ghi chú
@@ -337,18 +333,16 @@ export default function ManagerAdhocAwardsPage() {
       align: 'center',
       render: (_, record) => (
         <div style={{ textAlign: 'center' }}>
-          <Tooltip title="Xem chi tiết">
-            <Button
-              type="text"
-              icon={<EyeOutlined />}
-              onClick={e => {
-                e.stopPropagation();
-                handleOpenDetailModal(record);
-              }}
-              size="small"
-              style={{ color: '#52c41a' }}
-            />
-          </Tooltip>
+          <Button
+            type="text"
+            icon={<EyeOutlined />}
+            onClick={e => {
+              e.stopPropagation();
+              handleOpenDetailModal(record);
+            }}
+            size="small"
+            style={{ color: '#52c41a' }}
+          />
         </div>
       ),
     },

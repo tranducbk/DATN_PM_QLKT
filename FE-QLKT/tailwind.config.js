@@ -99,5 +99,5 @@ module.exports = {
       '6xl': '3.75rem',
     },
   },
-  plugins: [require('@tailwindcss/forms'), require('tailwindcss-animate')],
+  plugins: [require('@tailwindcss/forms')({ strategy: 'class' }), require('tailwindcss-animate')],
 };

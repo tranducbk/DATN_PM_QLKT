@@ -159,11 +159,11 @@ class AdhocAwardController {
 
     const result = await adhocAwardService.getAdhocAwards(filterOptions);
 
-    return ResponseHelper.success(res, {
-      data: {
-        items: result.data,
-        pagination: result.pagination,
-      },
+    return ResponseHelper.paginated(res, {
+      data: result.data,
+      total: result.pagination.total,
+      page: result.pagination.page,
+      limit: result.pagination.limit,
       message: 'Lấy danh sách khen thưởng đột xuất thành công',
     });
   });
@@ -276,6 +276,7 @@ class AdhocAwardController {
       message: 'Lấy danh sách khen thưởng đột xuất của đơn vị thành công',
     });
   });
+
 }
 
 export default new AdhocAwardController();
