@@ -21,7 +21,10 @@ import {
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { getApiErrorMessage } from '@/lib/apiError';
-import { DEFAULT_PAGE_SIZE, DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
+import {
+  DEFAULT_PAGE_SIZE,
+  DEFAULT_ANTD_TABLE_PAGINATION,
+} from '@/lib/constants/pagination.constants';
 import { formatDateTime } from '@/lib/utils';
 
 import {
@@ -91,7 +94,7 @@ export default function ManagerProposalsPage() {
       const response = await apiClient.getProposals({ limit: 100 });
 
       if (response.success) {
-        setProposals(response.data?.proposals || []);
+        setProposals(response.data ?? []);
       } else {
         message.error(response.message || 'Không thể tải danh sách đề xuất');
       }
