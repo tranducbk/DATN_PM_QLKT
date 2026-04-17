@@ -215,32 +215,27 @@ async function getAwardsStatistics() {
       },
     });
 
-    const danhHieuHangNamCount = await prisma.danhHieuHangNam.count({
-      where: {
-        danh_hieu: {
-          not: null,
-          notIn: Object.values(DANH_HIEU_HCBVTQ),
-        },
-      },
-    });
-
-    const congHienCount = await prisma.khenThuongCongHien.count();
-
-    const hccsvvCount = await prisma.khenThuongHCCSVV.count();
-
-    const hcQuanCongCount = await prisma.huanChuongQuanKyQuyetThang.count();
-
-    const hcVSNXDCount = await prisma.kyNiemChuongVSNXDQDNDVN.count();
-
-    const thanhTichKhoaHocCount = await prisma.thanhTichKhoaHoc.count();
-
-    const donViHangNamCount = await prisma.danhHieuDonViHangNam.count({
-      where: {
-        danh_hieu: {
-          not: null,
-        },
-      },
-    });
+    const [
+      annualRewardCount,
+      contributionMedalCount,
+      tenureMedalCount,
+      militaryFlagCount,
+      commemorationMedalCount,
+      scientificAchievementCount,
+      unitAnnualRewardCount,
+    ] = await Promise.all([
+      prisma.danhHieuHangNam.count({
+        where: { danh_hieu: { not: null, notIn: Object.values(DANH_HIEU_HCBVTQ) } },
+      }),
+      prisma.khenThuongCongHien.count(),
+      prisma.khenThuongHCCSVV.count(),
+      prisma.huanChuongQuanKyQuyetThang.count(),
+      prisma.kyNiemChuongVSNXDQDNDVN.count(),
+      prisma.thanhTichKhoaHoc.count(),
+      prisma.danhHieuDonViHangNam.count({
+        where: { danh_hieu: { not: null } },
+      }),
+    ]);
 
     const decisionsMap = {};
     decisionsByType.forEach(item => {
@@ -256,32 +251,32 @@ async function getAwardsStatistics() {
       CA_NHAN_HANG_NAM: {
         quyet_dinh: decisionsMap[PROPOSAL_TYPES.CA_NHAN_HANG_NAM] || 0,
         de_xuat: proposalsMap[PROPOSAL_TYPES.CA_NHAN_HANG_NAM] || 0,
-        danh_hieu: danhHieuHangNamCount,
+        danh_hieu: annualRewardCount,
       },
       DON_VI_HANG_NAM: {
         quyet_dinh: decisionsMap[PROPOSAL_TYPES.DON_VI_HANG_NAM] || 0,
         de_xuat: proposalsMap[PROPOSAL_TYPES.DON_VI_HANG_NAM] || 0,
-        don_vi: donViHangNamCount,
+        don_vi: unitAnnualRewardCount,
       },
       NIEN_HAN: {
         quyet_dinh: decisionsMap[PROPOSAL_TYPES.NIEN_HAN] || 0,
         de_xuat: proposalsMap[PROPOSAL_TYPES.NIEN_HAN] || 0,
-        khen_thuong: hccsvvCount,
+        khen_thuong: tenureMedalCount,
       },
       HC_QKQT: {
         quyet_dinh: decisionsMap[PROPOSAL_TYPES.HC_QKQT] || 0,
         de_xuat: proposalsMap[PROPOSAL_TYPES.HC_QKQT] || 0,
-        khen_thuong: hcQuanCongCount,
+        khen_thuong: militaryFlagCount,
       },
       KNC_VSNXD_QDNDVN: {
         quyet_dinh: decisionsMap[PROPOSAL_TYPES.KNC_VSNXD_QDNDVN] || 0,
         de_xuat: proposalsMap[PROPOSAL_TYPES.KNC_VSNXD_QDNDVN] || 0,
-        khen_thuong: hcVSNXDCount,
+        khen_thuong: commemorationMedalCount,
       },
       CONG_HIEN: {
         quyet_dinh: decisionsMap[PROPOSAL_TYPES.CONG_HIEN] || 0,
         de_xuat: proposalsMap[PROPOSAL_TYPES.CONG_HIEN] || 0,
-        khen_thuong: congHienCount,
+        khen_thuong: contributionMedalCount,
       },
       DOT_XUAT: {
         quyet_dinh: decisionsMap[PROPOSAL_TYPES.DOT_XUAT] || 0,
@@ -290,7 +285,7 @@ async function getAwardsStatistics() {
       NCKH: {
         quyet_dinh: decisionsMap[PROPOSAL_TYPES.NCKH] || 0,
         de_xuat: proposalsMap[PROPOSAL_TYPES.NCKH] || 0,
-        thanh_tich: thanhTichKhoaHocCount,
+        thanh_tich: scientificAchievementCount,
       },
     };
 
