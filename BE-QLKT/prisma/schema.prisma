@@ -85,7 +85,7 @@ model QuanNhan {
   tru_quan                 String?   @db.VarChar(255) // Trú quán 2 cấp: Xã Hoà An, tỉnh Ninh Bình
   cho_o_hien_nay           String?   @db.VarChar(255) // Chỗ ở hiện nay 2 cấp: Xã Hoà An, tỉnh Ninh Bình
   co_quan_don_vi           Json? // JSON lưu thông tin cơ quan đơn vị
-  ngay_nhap_ngu            DateTime? @db.Date // Phục vụ cho tính thời gian cống hiến
+  ngay_nhap_ngu            DateTime? @db.Date // Phục vụ cho tính thời gian khen thưởng cống hiến
   ngay_xuat_ngu            DateTime? @db.Date // Phục vụ cho tính thời gian để nhận Kỷ niệm chương (20 năm nữ, 25 năm nam)
   ngay_vao_dang            DateTime? @db.Date // Ngày vào Đảng
   ngay_vao_dang_chinh_thuc DateTime? @db.Date // Ngày vào Đảng chính thức
@@ -139,7 +139,7 @@ model TaiKhoan {
   @@map("tai_khoan")
 }
 
-// 6. Bảng Lịch sử chức vụ (INPUT - để tính cống hiến)
+// 6. Bảng Lịch sử chức vụ (INPUT - để tính thời gian cống hiến)
 model LichSuChucVu {
   id            String    @id @default(cuid()) @db.VarChar(30)
   quan_nhan_id  String    @db.VarChar(30)
@@ -207,7 +207,7 @@ model DanhHieuHangNam {
 // 9. Bảng Khen thưởng Cống hiến (OUTPUT)
 model KhenThuongCongHien {
   id                     String   @id @default(cuid()) @db.VarChar(30)
-  quan_nhan_id           String   @unique @db.VarChar(30) // Mỗi quân nhân chỉ có 1 danh hiệu cống hiến
+  quan_nhan_id           String   @unique @db.VarChar(30) // Mỗi quân nhân chỉ có 1 danh hiệu khen thưởng cống hiến
   danh_hieu              String   @db.VarChar(20) // HCBVTQ_HANG_BA, HCBVTQ_HANG_NHI, HCBVTQ_HANG_NHAT
   nam                    Int // Năm được trao
   cap_bac                String?  @db.VarChar(50) // Cấp bậc tại thời điểm được đề xuất
@@ -319,7 +319,7 @@ model KhenThuongDotXuat {
   @@map("khen_thuong_dot_xuat")
 }
 
-// 14. Bảng Hồ sơ Niên hạn (OUTPUT - chỉ cho HCCSVV)
+// 14. Bảng Hồ sơ khen thưởng niên hạn (OUTPUT - chỉ cho HCCSVV)
 model HoSoNienHan {
   id           String @id @default(cuid()) @db.VarChar(30)
   quan_nhan_id String @unique @db.VarChar(30)
@@ -455,8 +455,8 @@ model BangDeXuat {
   status               String    @default("PENDING") @db.VarChar(20) // PENDING, APPROVED, REJECTED
   data_danh_hieu       Json? // Dữ liệu danh hiệu (JSON array) - cho HANG_NAM
   data_thanh_tich      Json? // Dữ liệu thành tích (JSON array) - cho HANG_NAM
-  data_nien_han        Json? // Dữ liệu niên hạn (JSON array) - cho NIEN_HAN
-  data_cong_hien       Json? // Dữ liệu cống hiến (JSON array) - cho CONG_HIEN
+  data_nien_han        Json? // Dữ liệu khen thưởng niên hạn (JSON array) - cho NIEN_HAN
+  data_cong_hien       Json? // Dữ liệu khen thưởng cống hiến (JSON array) - cho CONG_HIEN
   files_attached       Json?     // Array các file đính kèm: [{ filename, originalName, size, uploadedAt }]
   ghi_chu              String?   @db.Text // Ghi chú từ Manager hoặc Admin
   rejection_reason     String?   @db.Text // Lý do từ chối (nếu status = REJECTED)

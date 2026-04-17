@@ -811,7 +811,7 @@ export function Step2SelectPersonnelNienHan({
           if (bypassEligibility) {
             // Allow selection but show warning
             message.warning(
-              `Cảnh báo: Quân nhân ${record.ho_ten} chưa đủ điều kiện niên hạn. Vẫn cho phép thêm khen thưởng quá khứ.`
+              `Cảnh báo: Quân nhân ${record.ho_ten} chưa đủ điều kiện khen thưởng niên hạn. Vẫn cho phép thêm khen thưởng quá khứ.`
             );
             return true;
           }

@@ -13,14 +13,14 @@ const router = Router();
 
 /**
  * @route   GET /api/commemorative-medals/template
- * @desc    Tải file mẫu Excel để import Kỷ niệm chương
+ * @desc    Download Excel template for commemorative medal import
  * @access  ADMIN
  */
 router.get('/template', verifyToken, requireAdmin, commemorativeMedalController.getTemplate);
 
 /**
  * @route   POST /api/commemorative-medals/import/preview
- * @desc    Preview import KNC VSNXD từ file Excel (chỉ validate, không ghi DB)
+ * @desc    Preview commemorative medal (KNC VSNXD) import — validate only, no DB write
  * @access  ADMIN
  */
 router.post(
@@ -33,7 +33,7 @@ router.post(
 
 /**
  * @route   POST /api/commemorative-medals/import/confirm
- * @desc    Confirm import KNC VSNXD — lưu dữ liệu đã validate vào DB
+ * @desc    Confirm commemorative medal (KNC VSNXD) import — persist validated data to DB
  * @access  ADMIN
  */
 router.post(
@@ -46,7 +46,7 @@ router.post(
 
 /**
  * @route   POST /api/commemorative-medals/import
- * @desc    Import Kỷ niệm chương từ file Excel (legacy — direct import)
+ * @desc    Import commemorative medals from Excel (legacy direct import)
  * @access  ADMIN, MANAGER
  */
 router.post(
@@ -59,7 +59,7 @@ router.post(
 
 /**
  * @route   GET /api/commemorative-medals
- * @desc    Lấy danh sách Kỷ niệm chương (Admin: tất cả, Manager: đơn vị mình)
+ * @desc    List commemorative medals (Admin: all units, Manager: own unit)
  * @access  ADMIN, MANAGER
  */
 router.get(
@@ -71,7 +71,7 @@ router.get(
 
 /**
  * @route   GET /api/commemorative-medals/export
- * @desc    Xuất file Excel Kỷ niệm chương (Admin: tất cả, Manager: đơn vị mình)
+ * @desc    Export commemorative medals to Excel (Admin: all units, Manager: own unit)
  * @access  ADMIN, MANAGER
  */
 router.get(
@@ -83,7 +83,7 @@ router.get(
 
 /**
  * @route   GET /api/commemorative-medals/statistics
- * @desc    Thống kê Kỷ niệm chương
+ * @desc    Get commemorative medal statistics
  * @access  ADMIN, MANAGER
  */
 router.get(
@@ -95,7 +95,7 @@ router.get(
 
 /**
  * @route   GET /api/commemorative-medals/personnel/:personnel_id
- * @desc    Lấy Kỷ niệm chương VSNXD QĐNDVN theo personnel_id
+ * @desc    Get commemorative medals (VSNXD QĐNDVN) for a personnel
  * @access  ADMIN, MANAGER, USER
  */
 router.get(
@@ -107,7 +107,7 @@ router.get(
 
 /**
  * @route   DELETE /api/commemorative-medals/:id
- * @desc    Xóa khen thưởng KNC VSNXD (không xóa đề xuất)
+ * @desc    Delete a commemorative medal award (does not delete the proposal)
  * @access  ADMIN
  */
 router.delete(

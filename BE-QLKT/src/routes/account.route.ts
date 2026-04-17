@@ -12,7 +12,7 @@ const router = Router();
 
 /**
  * @route   GET /api/accounts
- * @desc    Lấy danh sách tài khoản (có phân trang)
+ * @desc    List all accounts with pagination
  * @access  Private - ADMIN and above
  */
 router.get(
@@ -25,14 +25,14 @@ router.get(
 
 /**
  * @route   GET /api/accounts/:id
- * @desc    Lấy chi tiết tài khoản
+ * @desc    Get account details by ID
  * @access  Private - ADMIN and above
  */
 router.get('/:id', verifyToken, requireAdmin, accountController.getAccountById);
 
 /**
  * @route   POST /api/accounts
- * @desc    Tạo tài khoản mới
+ * @desc    Create a new account
  * @access  Private - ADMIN and above
  */
 router.post(
@@ -52,7 +52,7 @@ router.post(
 
 /**
  * @route   PUT /api/accounts/:id
- * @desc    Cập nhật tài khoản (đổi vai trò)
+ * @desc    Update account role
  * @access  Private - ADMIN and above
  */
 router.put(
@@ -71,7 +71,7 @@ router.put(
 
 /**
  * @route   POST /api/accounts/reset-password
- * @desc    Đặt lại mật khẩu cho tài khoản
+ * @desc    Reset password for an account
  * @access  Private - ADMIN and above
  */
 router.post(
@@ -90,7 +90,7 @@ router.post(
 
 /**
  * @route   DELETE /api/accounts/:id
- * @desc    Xóa (vô hiệu hóa) tài khoản
+ * @desc    Deactivate an account
  * @access  Private - ADMIN and above
  */
 router.delete(

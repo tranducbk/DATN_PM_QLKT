@@ -12,7 +12,7 @@ const router = Router();
 
 /**
  * @route   POST /api/auth/login
- * @desc    Đăng nhập hệ thống
+ * @desc    Log in to the system
  * @access  Public
  */
 router.post(
@@ -29,14 +29,14 @@ router.post(
 
 /**
  * @route   POST /api/auth/refresh
- * @desc    Lấy access token mới khi hết hạn
+ * @desc    Refresh access token using a valid refresh token
  * @access  Public
  */
 router.post('/refresh', authLimiter, validate(authValidation.refreshToken), authController.refresh);
 
 /**
  * @route   POST /api/auth/logout
- * @desc    Đăng xuất (vô hiệu hóa refresh token)
+ * @desc    Log out and invalidate the refresh token
  * @access  Public
  */
 router.post(
@@ -51,8 +51,8 @@ router.post(
 
 /**
  * @route   POST /api/auth/change-password
- * @desc    Tự đổi mật khẩu (khi đã đăng nhập)
- * @access  Private (Yêu cầu đăng nhập)
+ * @desc    Change own password (requires authentication)
+ * @access  Private - All authenticated users
  */
 router.post(
   '/change-password',

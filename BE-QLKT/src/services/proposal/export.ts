@@ -212,7 +212,7 @@ async function exportTemplate(userId, type = 'HANG_NAM') {
 }
 
 /**
- * Xuất file mẫu Excel cho Đề xuất Niên hạn
+ * Xuất file mẫu Excel cho Đề xuất khen thưởng niên hạn
  * @param {ExcelJS.Workbook} workbook - Workbook
  * @param {Array} quanNhanList - Danh sách quân nhân
  * @returns {Promise<Buffer>} - Buffer của file Excel

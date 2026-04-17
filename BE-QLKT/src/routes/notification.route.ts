@@ -6,39 +6,44 @@ const router = Router();
 
 /**
  * @route   GET /api/notifications
- * @desc    Lấy danh sách thông báo của user hiện tại
+ * @desc    List notifications for the current user
  * @access  Private - All authenticated users
  */
 router.get('/', verifyToken, notificationController.getNotifications);
 
 /**
  * @route   GET /api/notifications/unread-count
- * @desc    Lấy số lượng thông báo chưa đọc
+ * @desc    Get unread notification count for the current user
  * @access  Private - All authenticated users
  */
 router.get('/unread-count', verifyToken, notificationController.getUnreadCount);
 
 /**
  * @route   PATCH /api/notifications/:id/read
- * @desc    Đánh dấu thông báo đã đọc
+ * @desc    Mark a notification as read
  * @access  Private - All authenticated users
  */
 router.patch('/:id/read', verifyToken, notificationController.markAsRead);
 
 /**
  * @route   PATCH /api/notifications/read-all
- * @desc    Đánh dấu tất cả thông báo đã đọc
+ * @desc    Mark all notifications as read
  * @access  Private - All authenticated users
  */
 router.patch('/read-all', verifyToken, notificationController.markAllAsRead);
 
 /**
  * @route   DELETE /api/notifications/:id
- * @desc    Xóa thông báo
+ * @desc    Delete all notifications for the current user
  * @access  Private - All authenticated users
  */
 router.delete('/all', verifyToken, notificationController.deleteAllNotifications);
 
+/**
+ * @route   DELETE /api/notifications/:id
+ * @desc    Delete a notification by ID
+ * @access  Private - All authenticated users
+ */
 router.delete('/:id', verifyToken, notificationController.deleteNotification);
 
 export default router;

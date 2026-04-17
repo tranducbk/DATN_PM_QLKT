@@ -1592,7 +1592,7 @@ async function approveProposal(
     } else {
       const recalculateType =
         proposal.loai_de_xuat === PROPOSAL_TYPES.NIEN_HAN
-          ? 'hồ sơ niên hạn (HCCSVV)'
+          ? 'hồ sơ khen thưởng niên hạn (HCCSVV)'
           : proposal.loai_de_xuat === PROPOSAL_TYPES.CONG_HIEN
             ? 'hồ sơ cống hiến (HCBVTQ)'
             : 'hồ sơ hằng năm';

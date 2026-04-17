@@ -35,6 +35,7 @@ interface CronResult {
 
 let lastCronResult: CronResult | null = null;
 
+/** Runs the scheduled recalculation job for all personnel profiles and unit awards. */
 const runCronJob = async () => {
   lastCronRun = new Date().toISOString();
   await setSetting('cron_last_run', lastCronRun);
@@ -82,6 +83,7 @@ const runCronJob = async () => {
   }
 };
 
+/** Updates the active cron task based on cron_enabled and cron_schedule settings. */
 const updateCronTask = async () => {
   if (cronTask) {
     cronTask.stop();
@@ -94,6 +96,7 @@ const updateCronTask = async () => {
   }
 };
 
+/** Seeds default system settings to DB if they do not already exist. */
 async function seedDefaults() {
   const existing = await prisma.systemSetting.findMany({
     where: { key: { in: Object.keys(SETTING_DEFAULTS) } },
@@ -114,6 +117,7 @@ seedDefaults()
     console.error('[DevZone] Failed to seed defaults or initialize cron:', error);
   });
 
+/** Middleware that authenticates DevZone requests via X-Dev-Password header or body.password. */
 const verifyDevPassword = (req: Request, res: Response, next: NextFunction) => {
   if (!DEV_PASSWORD) {
     return res.status(503).json({ success: false, message: 'DevZone không khả dụng' });
@@ -132,7 +136,7 @@ const verifyDevPassword = (req: Request, res: Response, next: NextFunction) => {
   next();
 };
 
-/** Build features object from batch query */
+/** Returns all feature flags as a key → boolean map from DB settings. */
 async function getFeatures() {
   const settingsMap = await getSettings(ALL_FEATURE_KEYS);
   const features: Record<string, boolean> = {};
@@ -142,10 +146,20 @@ async function getFeatures() {
   return features;
 }
 
+/**
+ * @route   GET /api/dev-zone/features
+ * @desc    Get all feature flags
+ * @access  Public
+ */
 router.get('/features', async (req: Request, res: Response) => {
   res.json({ success: true, data: await getFeatures() });
 });
 
+/**
+ * @route   POST /api/dev-zone/auth
+ * @desc    Authenticate with DevZone password
+ * @access  Public (rate limited)
+ */
 router.post('/auth', authLimiter, (req: Request, res: Response) => {
   if (!DEV_PASSWORD) {
     return res.status(503).json({ success: false, message: 'DevZone không khả dụng' });
@@ -157,6 +171,11 @@ router.post('/auth', authLimiter, (req: Request, res: Response) => {
   return res.status(401).json({ success: false, message: 'Mật khẩu không đúng' });
 });
 
+/**
+ * @route   GET /api/dev-zone/status
+ * @desc    Get cron job status, feature flags, and server info
+ * @access  Private - DevZone password required
+ */
 router.get('/status', verifyDevPassword, async (req: Request, res: Response) => {
   const cronEnabled = (await getSetting('cron_enabled', 'true')) === 'true';
   const cronSchedule = await getSetting('cron_schedule', '0 1 1 * *');
@@ -182,6 +201,11 @@ router.get('/status', verifyDevPassword, async (req: Request, res: Response) => 
   });
 });
 
+/**
+ * @route   POST /api/dev-zone/cron/trigger
+ * @desc    Manually trigger the cron recalculation job
+ * @access  Private - DevZone password required
+ */
 router.post('/cron/trigger', verifyDevPassword, async (req: Request, res: Response) => {
   try {
     const result = await runCronJob();
@@ -202,6 +226,11 @@ router.post('/cron/trigger', verifyDevPassword, async (req: Request, res: Respon
   }
 });
 
+/**
+ * @route   PUT /api/dev-zone/cron/schedule
+ * @desc    Update cron schedule or toggle cron enabled state
+ * @access  Private - DevZone password required
+ */
 router.put('/cron/schedule', verifyDevPassword, async (req: Request, res: Response) => {
   const { schedule, enabled } = req.body;
 
@@ -228,6 +257,11 @@ router.put('/cron/schedule', verifyDevPassword, async (req: Request, res: Respon
   });
 });
 
+/**
+ * @route   POST /api/dev-zone/recalculate-unit-count
+ * @desc    Recalculate personnel headcount for all units
+ * @access  Private - DevZone password required
+ */
 router.post('/recalculate-unit-count', verifyDevPassword, async (req: Request, res: Response) => {
   try {
     const updated = await unitService.recalculatePersonnelCount();
@@ -252,6 +286,11 @@ router.post('/recalculate-unit-count', verifyDevPassword, async (req: Request, r
   }
 });
 
+/**
+ * @route   PUT /api/dev-zone/features
+ * @desc    Update one or more feature flags
+ * @access  Private - DevZone password required
+ */
 router.put('/features', verifyDevPassword, async (req: Request, res: Response) => {
   const updates = req.body;
 

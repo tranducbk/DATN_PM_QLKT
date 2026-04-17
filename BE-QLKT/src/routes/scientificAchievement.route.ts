@@ -7,6 +7,11 @@ import { scientificAchievementValidation, excelImportValidation } from '../valid
 
 const router = Router();
 
+/**
+ * @route   GET /api/scientific-achievements
+ * @desc    List scientific achievements with filters and pagination
+ * @access  Private - ADMIN, MANAGER
+ */
 router.get(
   '/',
   verifyToken,
@@ -14,6 +19,12 @@ router.get(
   validate(scientificAchievementValidation.getAchievementsQuery, 'query'),
   scientificAchievementController.getAchievements
 );
+
+/**
+ * @route   GET /api/scientific-achievements/export
+ * @desc    Export scientific achievements to Excel
+ * @access  Private - ADMIN, MANAGER
+ */
 router.get(
   '/export',
   verifyToken,
@@ -21,7 +32,19 @@ router.get(
   validate(scientificAchievementValidation.exportAchievementsQuery, 'query'),
   scientificAchievementController.exportToExcel
 );
+
+/**
+ * @route   GET /api/scientific-achievements/template
+ * @desc    Download Excel template for scientific achievement import
+ * @access  Private - ADMIN, MANAGER
+ */
 router.get('/template', verifyToken, requireManager, scientificAchievementController.getTemplate);
+
+/**
+ * @route   POST /api/scientific-achievements/import/preview
+ * @desc    Preview scientific achievement import — validate only, no DB write
+ * @access  Private - ADMIN, MANAGER
+ */
 router.post(
   '/import/preview',
   verifyToken,
@@ -29,6 +52,12 @@ router.post(
   upload.single('file'),
   scientificAchievementController.previewImport
 );
+
+/**
+ * @route   POST /api/scientific-achievements/import/confirm
+ * @desc    Confirm scientific achievement import — persist validated data to DB
+ * @access  Private - ADMIN, MANAGER
+ */
 router.post(
   '/import/confirm',
   verifyToken,
@@ -36,6 +65,12 @@ router.post(
   validate(excelImportValidation.confirmImportScientificAchievement),
   scientificAchievementController.confirmImport
 );
+
+/**
+ * @route   POST /api/scientific-achievements
+ * @desc    Create a scientific achievement record
+ * @access  Private - ADMIN, MANAGER
+ */
 router.post(
   '/',
   verifyToken,
@@ -43,6 +78,12 @@ router.post(
   validate(scientificAchievementValidation.createAchievement),
   scientificAchievementController.createAchievement
 );
+
+/**
+ * @route   PUT /api/scientific-achievements/:id
+ * @desc    Update a scientific achievement record
+ * @access  Private - ADMIN, MANAGER
+ */
 router.put(
   '/:id',
   verifyToken,
@@ -50,6 +91,12 @@ router.put(
   validate(scientificAchievementValidation.updateAchievement),
   scientificAchievementController.updateAchievement
 );
+
+/**
+ * @route   DELETE /api/scientific-achievements/:id
+ * @desc    Delete a scientific achievement record
+ * @access  Private - ADMIN, MANAGER
+ */
 router.delete('/:id', verifyToken, requireManager, scientificAchievementController.deleteAchievement);
 
 export default router;

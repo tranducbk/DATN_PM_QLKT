@@ -24,7 +24,7 @@ const router = Router();
 
 /**
  * @route   GET /api/awards/units/annual
- * @desc    Lấy danh sách khen thưởng đơn vị hằng năm (Admin: tất cả, Manager: đơn vị mình, User: đơn vị mình)
+ * @desc    List unit annual awards (Admin: all units, Manager/User: own unit)
  * @access  ADMIN, MANAGER, USER
  */
 router.get(
@@ -37,14 +37,14 @@ router.get(
 
 /**
  * @route   GET /api/awards/units/annual/template
- * @desc    Tải file mẫu Excel để import khen thưởng đơn vị hằng năm
+ * @desc    Download Excel template for unit annual award import
  * @access  ADMIN
  */
 router.get('/template', verifyToken, requireManager, unitAnnualAwardController.getTemplate);
 
 /**
  * @route   POST /api/awards/units/annual/import/preview
- * @desc    Preview import khen thưởng đơn vị hằng năm từ file Excel (chỉ validate, không ghi DB)
+ * @desc    Preview unit annual award import — validate only, no DB write
  * @access  ADMIN, MANAGER
  */
 router.post(
@@ -57,7 +57,7 @@ router.post(
 
 /**
  * @route   POST /api/awards/units/annual/import/confirm
- * @desc    Confirm import khen thưởng đơn vị hằng năm (lưu dữ liệu đã validate vào DB)
+ * @desc    Confirm unit annual award import — persist validated data to DB
  * @access  ADMIN, MANAGER
  */
 router.post(
@@ -70,7 +70,7 @@ router.post(
 
 /**
  * @route   POST /api/awards/units/annual/import
- * @desc    Import khen thưởng đơn vị hằng năm từ file Excel
+ * @desc    Import unit annual awards from Excel (legacy direct import)
  * @access  ADMIN, MANAGER
  */
 router.post(
@@ -89,7 +89,7 @@ router.post(
 
 /**
  * @route   GET /api/awards/units/annual/export
- * @desc    Xuất danh sách khen thưởng đơn vị hằng năm ra Excel
+ * @desc    Export unit annual awards to Excel
  * @access  ADMIN, MANAGER
  */
 router.get(
@@ -102,7 +102,7 @@ router.get(
 
 /**
  * @route   GET /api/awards/units/annual/statistics
- * @desc    Thống kê khen thưởng đơn vị hằng năm
+ * @desc    Get unit annual award statistics
  * @access  ADMIN, MANAGER
  */
 router.get(
@@ -115,28 +115,28 @@ router.get(
 
 /**
  * @route   GET /api/awards/units/annual/history
- * @desc    Lấy toàn bộ lịch sử khen thưởng của 1 đơn vị (mảng)
+ * @desc    List all award history for a unit
  * @access  ADMIN, MANAGER, USER
  */
 router.get('/history', verifyToken, requireManager, unitAnnualAwardController.getUnitAnnualAwards);
 
 /**
  * @route   GET /api/awards/units/annual/profile/:don_vi_id
- * @desc    Lấy hồ sơ gợi ý hằng năm của đơn vị (tính toán tổng hợp)
+ * @desc    Get annual award profile for a unit (computed summary)
  * @access  ADMIN, MANAGER, USER
  */
 router.get('/profile/:don_vi_id', verifyToken, requireManager, unitAnnualAwardController.getUnitAnnualProfile);
 
 /**
  * @route   GET /api/awards/units/annual/:id
- * @desc    Lấy chi tiết khen thưởng đơn vị hằng năm theo ID
+ * @desc    Get unit annual award details by ID
  * @access  ADMIN, MANAGER
  */
 router.get('/:id', verifyToken, requireManager, unitAnnualAwardController.getById);
 
 /**
  * @route   POST /api/awards/units/annual
- * @desc    Tạo mới khen thưởng đơn vị hằng năm
+ * @desc    Create a unit annual award
  * @access  MANAGER
  */
 router.post(
@@ -154,7 +154,7 @@ router.post(
 
 /**
  * @route   PUT /api/awards/units/annual/:id
- * @desc    Cập nhật khen thưởng đơn vị hằng năm
+ * @desc    Update a unit annual award
  * @access  MANAGER
  */
 router.put(
@@ -172,7 +172,7 @@ router.put(
 
 /**
  * @route   DELETE /api/awards/units/annual/:id
- * @desc    Xoá khen thưởng đơn vị hằng năm
+ * @desc    Delete a unit annual award
  * @access  MANAGER
  */
 router.delete(
@@ -190,7 +190,7 @@ router.delete(
 
 /**
  * @route   POST /api/awards/units/annual/propose
- * @desc    Gửi đề xuất khen thưởng đơn vị hằng
+ * @desc    Submit a unit annual award proposal
  * @access  MANAGER
  */
 router.post(
@@ -208,7 +208,7 @@ router.post(
 
 /**
  * @route   POST /api/awards/units/annual/:id/approve
- * @desc    Duyệt đề xuất khen thưởng đơn vị hằng năm
+ * @desc    Approve a unit annual award proposal
  * @access  ADMIN
  */
 router.post(
@@ -225,8 +225,8 @@ router.post(
 );
 
 /**
- * @router   POST /api/awards/units/annual/:id/reject
- * @desc    Từ chối đề xuất khen thưởng đơn vị hằng năm
+ * @route   POST /api/awards/units/annual/:id/reject
+ * @desc    Reject a unit annual award proposal
  * @access  ADMIN
  */
 router.post(
@@ -244,7 +244,7 @@ router.post(
 
 /**
  * @route   POST /api/awards/units/annual/recalculate
- * @desc    Tính lại khen thưởng đơn vị hằng năm
+ * @desc    Recalculate unit annual awards
  * @access  MANAGER
  */
 router.post(
@@ -262,7 +262,7 @@ router.post(
 
 /**
  * @route   POST /api/awards/units/annual/decision-files/:id/upload
- * @desc    Tải lên file PDF quyết định khen thưởng cho khen thưởng đơn vị hằng năm
+ * @desc    Serve the decision PDF file for a unit annual award
  * @access  ADMIN
  */
 router.get(

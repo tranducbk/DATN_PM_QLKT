@@ -11,14 +11,14 @@ const router = Router();
 
 /**
  * @route   GET /api/positions?unit_id={id}
- * @desc    Lấy chức vụ (lọc theo đơn vị)
+ * @desc    List positions, optionally filtered by unit_id
  * @access  Private - ADMIN, MANAGER
  */
 router.get('/', verifyToken, requireManager, positionController.getPositions);
 
 /**
  * @route   POST /api/positions
- * @desc    Tạo chức vụ mới
+ * @desc    Create a new position
  * @access  Private - ADMIN and above
  */
 router.post(
@@ -37,7 +37,7 @@ router.post(
 
 /**
  * @route   PUT /api/positions/:id
- * @desc    Sửa chức vụ
+ * @desc    Update a position
  * @access  Private - ADMIN and above
  */
 router.put(
@@ -56,7 +56,7 @@ router.put(
 
 /**
  * @route   DELETE /api/positions/:id
- * @desc    Xóa chức vụ
+ * @desc    Delete a position
  * @access  Private - ADMIN and above
  */
 router.delete(

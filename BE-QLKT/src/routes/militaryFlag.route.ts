@@ -13,14 +13,14 @@ const router = Router();
 
 /**
  * @route   GET /api/military-flag/template
- * @desc    Tải file mẫu Excel để import Huy chương Quân kỳ Quyết thắng
+ * @desc    Download Excel template for Military Victory Flag (HC QKQT) import
  * @access  ADMIN
  */
 router.get('/template', verifyToken, requireAdmin, militaryFlagController.getTemplate);
 
 /**
  * @route   POST /api/military-flag/import/preview
- * @desc    Preview import HC QKQT — parse + validate file Excel
+ * @desc    Preview Military Victory Flag (HC QKQT) import — parse and validate Excel file
  * @access  ADMIN
  */
 router.post(
@@ -33,7 +33,7 @@ router.post(
 
 /**
  * @route   POST /api/military-flag/import/confirm
- * @desc    Confirm import HC QKQT — lưu dữ liệu đã validate vào DB
+ * @desc    Confirm Military Victory Flag (HC QKQT) import — persist validated data to DB
  * @access  ADMIN
  */
 router.post(
@@ -46,7 +46,7 @@ router.post(
 
 /**
  * @route   GET /api/military-flag
- * @desc    Lấy danh sách Huy chương Quân kỳ Quyết thắng (Admin: tất cả, Manager: đơn vị mình)
+ * @desc    List Military Victory Flags (HC QKQT) (Admin: all units, Manager: own unit)
  * @access  ADMIN, MANAGER
  */
 router.get(
@@ -58,7 +58,7 @@ router.get(
 
 /**
  * @route   GET /api/military-flag/export
- * @desc    Xuất file Excel Huy chương Quân kỳ Quyết thắng (Admin: tất cả, Manager: đơn vị mình)
+ * @desc    Export Military Victory Flags (HC QKQT) to Excel (Admin: all units, Manager: own unit)
  * @access  ADMIN, MANAGER
  */
 router.get(
@@ -70,7 +70,7 @@ router.get(
 
 /**
  * @route   GET /api/military-flag/statistics
- * @desc    Thống kê Huy chương Quân kỳ Quyết thắng
+ * @desc    Get Military Victory Flag (HC QKQT) statistics
  * @access  ADMIN, MANAGER
  */
 router.get(
@@ -82,7 +82,7 @@ router.get(
 
 /**
  * @route   GET /api/military-flag/personnel/:personnel_id
- * @desc    Lấy Huy chương Quân kỳ Quyết thắng theo personnel_id
+ * @desc    Get Military Victory Flags (HC QKQT) for a personnel
  * @access  ADMIN, MANAGER, USER
  */
 router.get(
@@ -94,7 +94,7 @@ router.get(
 
 /**
  * @route   DELETE /api/military-flag/:id
- * @desc    Xóa khen thưởng HCQKQT (không xóa đề xuất)
+ * @desc    Delete a Military Victory Flag award (does not delete the proposal)
  * @access  ADMIN
  */
 router.delete(

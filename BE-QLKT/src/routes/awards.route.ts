@@ -14,7 +14,7 @@ const router = Router();
 
 /**
  * @route   GET /api/awards/template
- * @desc    Tải file mẫu Excel để import khen thưởng
+ * @desc    Download Excel template for award import
  * @access  ADMIN
  */
 router.get(
@@ -26,7 +26,7 @@ router.get(
 
 /**
  * @route   POST /api/awards/import
- * @desc    Import khen thưởng từ file Excel
+ * @desc    Import awards from Excel
  * @access  ADMIN
  */
 router.post(
@@ -39,7 +39,7 @@ router.post(
 
 /**
  * @route   GET /api/awards
- * @desc    Lấy danh sách tất cả khen thưởng (Admin: tất cả, Manager: đơn vị mình)
+ * @desc    List all awards (Admin: all units, Manager: own unit)
  * @access  ADMIN, MANAGER
  */
 router.get(
@@ -51,7 +51,7 @@ router.get(
 
 /**
  * @route   GET /api/awards/export
- * @desc    Xuất file Excel tổng hợp khen thưởng (Admin: tất cả, Manager: đơn vị mình)
+ * @desc    Export consolidated awards to Excel (Admin: all units, Manager: own unit)
  * @access  ADMIN, MANAGER
  */
 router.get(
@@ -63,7 +63,7 @@ router.get(
 
 /**
  * @route   GET /api/awards/statistics
- * @desc    Thống kê khen thưởng theo loại
+ * @desc    Get award statistics by type
  * @access  ADMIN, MANAGER
  */
 router.get(
@@ -75,7 +75,7 @@ router.get(
 
 /**
  * @route   POST /api/awards/bulk
- * @desc    Thêm khen thưởng đồng loạt với validation đầy đủ
+ * @desc    Bulk create awards with full validation
  * @access  ADMIN
  */
 router.post(

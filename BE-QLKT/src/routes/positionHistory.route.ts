@@ -7,7 +7,18 @@ import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 
 const router = Router();
 
+/**
+ * @route   GET /api/position-history
+ * @desc    List position history entries (?personnel_id to filter)
+ * @access  Private - All authenticated users
+ */
 router.get('/', verifyToken, requireAuth, positionHistoryController.getPositionHistory);
+
+/**
+ * @route   POST /api/position-history
+ * @desc    Create a position history entry
+ * @access  Private - ADMIN, MANAGER
+ */
 router.post(
   '/',
   verifyToken,
@@ -20,6 +31,12 @@ router.post(
   }),
   positionHistoryController.createPositionHistory
 );
+
+/**
+ * @route   PUT /api/position-history/:id
+ * @desc    Update a position history entry
+ * @access  Private - ADMIN, MANAGER
+ */
 router.put(
   '/:id',
   verifyToken,
@@ -32,6 +49,12 @@ router.put(
   }),
   positionHistoryController.updatePositionHistory
 );
+
+/**
+ * @route   DELETE /api/position-history/:id
+ * @desc    Delete a position history entry
+ * @access  Private - ADMIN, MANAGER
+ */
 router.delete(
   '/:id',
   verifyToken,

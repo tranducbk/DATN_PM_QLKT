@@ -17,7 +17,7 @@ const router = Router({ mergeParams: true });
 
 /**
  * @route   GET /api/personnel/:personnelId/annual-rewards
- * @desc    Lấy danh sách danh hiệu hằng năm (alias)
+ * @desc    List annual reward titles for a personnel (alias route)
  * @access  Private - ADMIN, MANAGER, USER
  */
 router.get(
@@ -33,7 +33,7 @@ router.get(
 
 /**
  * @route   POST /api/personnel/:personnelId/annual-rewards
- * @desc    Thêm danh hiệu hằng năm (alias)
+ * @desc    Create an annual reward title for a personnel (alias route)
  * @access  Private - ADMIN, MANAGER
  */
 router.post(
@@ -55,7 +55,7 @@ router.post(
 
 /**
  * @route   GET /api/personnel/:personnelId/position-history
- * @desc    Lấy lịch sử chức vụ (alias)
+ * @desc    List position history for a personnel (alias route)
  * @access  Private - ADMIN, MANAGER, USER
  */
 router.get(
@@ -71,7 +71,7 @@ router.get(
 
 /**
  * @route   POST /api/personnel/:personnelId/position-history
- * @desc    Thêm lịch sử chức vụ (alias)
+ * @desc    Create a position history entry for a personnel (alias route)
  * @access  Private - ADMIN, MANAGER
  */
 router.post(
@@ -93,7 +93,7 @@ router.post(
 
 /**
  * @route   PUT /api/personnel/:personnelId/position-history/:id
- * @desc    Cập nhật lịch sử chức vụ (alias)
+ * @desc    Update a position history entry (alias route)
  * @access  Private - ADMIN, MANAGER
  */
 router.put(
@@ -111,7 +111,7 @@ router.put(
 
 /**
  * @route   DELETE /api/personnel/:personnelId/position-history/:id
- * @desc    Xóa lịch sử chức vụ (alias)
+ * @desc    Delete a position history entry (alias route)
  * @access  Private - ADMIN, MANAGER
  */
 router.delete(
@@ -129,7 +129,7 @@ router.delete(
 
 /**
  * @route   GET /api/personnel/:personnelId/scientific-achievements
- * @desc    Lấy danh sách thành tích khoa học (alias)
+ * @desc    List scientific achievements for a personnel (alias route)
  * @access  Private - ADMIN, MANAGER, USER
  */
 router.get(
@@ -145,7 +145,7 @@ router.get(
 
 /**
  * @route   POST /api/personnel/:personnelId/scientific-achievements
- * @desc    Thêm thành tích khoa học (alias)
+ * @desc    Create a scientific achievement for a personnel (alias route)
  * @access  Private - ADMIN, MANAGER
  */
 router.post(
@@ -161,7 +161,7 @@ router.post(
 
 /**
  * @route   GET /api/personnel/:personnelId/profile
- * @desc    Lấy hồ sơ hằng năm (alias)
+ * @desc    Get annual award profile for a personnel (alias route)
  * @access  Private - ADMIN, MANAGER, USER
  */
 router.get(

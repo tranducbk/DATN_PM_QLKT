@@ -9,14 +9,14 @@ const router = Router();
 
 /**
  * @route   GET /api/categories/units
- * @desc    Lấy tất cả đơn vị (alias for /api/units)
+ * @desc    List all units (alias for /api/units)
  * @access  Private - ADMIN and above
  */
 router.get('/units', verifyToken, requireAdmin, unitController.getAllUnits);
 
 /**
  * @route   POST /api/categories/units
- * @desc    Tạo đơn vị mới (alias for /api/units)
+ * @desc    Create a new unit (alias for /api/units)
  * @access  Private - ADMIN and above
  */
 router.post(
@@ -34,7 +34,7 @@ router.post(
 
 /**
  * @route   PUT /api/categories/units/:id
- * @desc    Sửa tên đơn vị (alias for /api/units/:id)
+ * @desc    Update a unit (alias for /api/units/:id)
  * @access  Private - ADMIN and above
  */
 router.put(
@@ -52,7 +52,7 @@ router.put(
 
 /**
  * @route   DELETE /api/categories/units/:id
- * @desc    Xóa đơn vị (alias for /api/units/:id)
+ * @desc    Delete a unit (alias for /api/units/:id)
  * @access  Private - ADMIN and above
  */
 router.delete(
@@ -71,14 +71,14 @@ router.delete(
 
 /**
  * @route   GET /api/categories/positions?unit_id={id}
- * @desc    Lấy chức vụ (alias for /api/positions)
+ * @desc    List positions (alias for /api/positions)
  * @access  Private - ADMIN, MANAGER
  */
 router.get('/positions', verifyToken, requireManager, positionController.getPositions);
 
 /**
  * @route   POST /api/categories/positions
- * @desc    Tạo chức vụ mới (alias for /api/positions)
+ * @desc    Create a new position (alias for /api/positions)
  * @access  Private - ADMIN and above
  */
 router.post(
@@ -96,7 +96,7 @@ router.post(
 
 /**
  * @route   PUT /api/categories/positions/:id
- * @desc    Sửa chức vụ (alias for /api/positions/:id)
+ * @desc    Update a position (alias for /api/positions/:id)
  * @access  Private - ADMIN and above
  */
 router.put(
@@ -114,7 +114,7 @@ router.put(
 
 /**
  * @route   DELETE /api/categories/positions/:id
- * @desc    Xóa chức vụ (alias for /api/positions/:id)
+ * @desc    Delete a position (alias for /api/positions/:id)
  * @access  Private - ADMIN and above
  */
 router.delete(

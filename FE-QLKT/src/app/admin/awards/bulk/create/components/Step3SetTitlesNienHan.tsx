@@ -264,7 +264,7 @@ export function Step3SetTitlesNienHan({
         setServiceProfile(null);
       }
     } catch (error: unknown) {
-      message.error('Không thể tải lịch sử niên hạn');
+      message.error('Không thể tải lịch sử khen thưởng niên hạn');
       setServiceProfile(null);
     } finally {
       setLoadingModal(false);

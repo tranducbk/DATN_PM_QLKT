@@ -7,28 +7,28 @@ const router = Router();
 
 /**
  * @route   GET /api/system-logs
- * @desc    Lấy danh sách nhật ký hệ thống (phân quyền theo cấp bậc)
+ * @desc    List system logs (filtered by caller's role level)
  * @access  Private - ADMIN+ only
  */
 router.get('/', verifyToken, requireManager, systemLogsController.getLogs);
 
 /**
  * @route   GET /api/system-logs/actions
- * @desc    Lấy danh sách các hành động có thể lọc
+ * @desc    List filterable action types
  * @access  Private - ADMIN+ only
  */
 router.get('/actions', verifyToken, requireManager, systemLogsController.getActions);
 
 /**
  * @route   GET /api/system-logs/resources
- * @desc    Lấy danh sách các tài nguyên có thể lọc
+ * @desc    List filterable resource types
  * @access  Private - ADMIN+ only
  */
 router.get('/resources', verifyToken, requireManager, systemLogsController.getResources);
 
 /**
  * @route   DELETE /api/system-logs
- * @desc    Xoá nhật ký theo danh sách ID (yêu cầu DevZone bật)
+ * @desc    Delete system logs by ID list (requires DevZone allow_delete_logs flag)
  * @access  Private - ADMIN+ only
  */
 router.delete(
@@ -41,7 +41,7 @@ router.delete(
 
 /**
  * @route   DELETE /api/system-logs/all
- * @desc    Xoá toàn bộ nhật ký (yêu cầu DevZone bật)
+ * @desc    Delete all system logs (requires DevZone allow_delete_logs flag)
  * @access  Private - ADMIN+ only
  */
 router.delete(

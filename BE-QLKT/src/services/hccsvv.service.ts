@@ -910,7 +910,7 @@ class HCCSVVService {
       writeSystemLog({
         action: 'ERROR',
         resource: 'hccsvv',
-        description: `Lỗi tính lại hồ sơ niên hạn sau khi thêm HCCSVV: ${recalcError}`,
+        description: `Lỗi tính lại hồ sơ khen thưởng niên hạn sau khi thêm HCCSVV: ${recalcError}`,
       });
     }
 
@@ -950,7 +950,7 @@ class HCCSVVService {
         action: 'ERROR',
         resource: 'hccsvv',
         resourceId: id,
-        description: `Lỗi tính lại hồ sơ niên hạn sau khi xóa HCCSVV: ${recalcError}`,
+        description: `Lỗi tính lại hồ sơ khen thưởng niên hạn sau khi xóa HCCSVV: ${recalcError}`,
       });
     }
 

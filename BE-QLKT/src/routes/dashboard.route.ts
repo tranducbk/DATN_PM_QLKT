@@ -6,21 +6,21 @@ const router = Router();
 
 /**
  * @route   GET /api/dashboard/statistics
- * @desc    Lấy dữ liệu thống kê cho dashboard Super Admin
+ * @desc    Get statistics for the Super Admin dashboard
  * @access  Private - SUPER_ADMIN only
  */
 router.get('/statistics', verifyToken, requireSuperAdmin, dashboardController.getStatistics);
 
 /**
  * @route   GET /api/dashboard/statistics/admin
- * @desc    Lấy dữ liệu thống kê cho dashboard Admin
+ * @desc    Get statistics for the Admin dashboard
  * @access  Private - ADMIN+ only
  */
 router.get('/statistics/admin', verifyToken, requireAdmin, dashboardController.getAdminStatistics);
 
 /**
  * @route   GET /api/dashboard/statistics/manager
- * @desc    Lấy dữ liệu thống kê cho dashboard Manager
+ * @desc    Get statistics for the Manager dashboard
  * @access  Private - MANAGER+ only
  */
 router.get(

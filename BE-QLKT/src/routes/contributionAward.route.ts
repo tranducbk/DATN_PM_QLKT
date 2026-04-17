@@ -13,14 +13,14 @@ const router = Router();
 
 /**
  * @route   GET /api/contribution-awards/template
- * @desc    Tải file mẫu Excel để import Huân chương Bảo vệ Tổ quốc (hỗ trợ ?personnel_ids=id1,id2)
+ * @desc    Download Excel template for Contribution Award (HCBVTQ) import (supports ?personnel_ids=id1,id2)
  * @access  ADMIN
  */
 router.get('/template', verifyToken, requireAdmin, contributionAwardController.getTemplate);
 
 /**
  * @route   POST /api/contribution-awards/import/preview
- * @desc    Preview import HCBVTQ — chỉ validate, không ghi DB
+ * @desc    Preview Contribution Award (HCBVTQ) import — validate only, no DB write
  * @access  ADMIN
  */
 router.post(
@@ -33,7 +33,7 @@ router.post(
 
 /**
  * @route   POST /api/contribution-awards/import/confirm
- * @desc    Confirm import HCBVTQ — lưu dữ liệu đã validate vào DB
+ * @desc    Confirm Contribution Award (HCBVTQ) import — persist validated data to DB
  * @access  ADMIN
  */
 router.post(
@@ -46,7 +46,7 @@ router.post(
 
 /**
  * @route   GET /api/contribution-awards
- * @desc    Lấy danh sách Huân chương Bảo vệ Tổ quốc (Admin: tất cả, Manager: đơn vị mình)
+ * @desc    List Contribution Awards (HCBVTQ) (Admin: all units, Manager: own unit)
  * @access  ADMIN, MANAGER
  */
 router.get(
@@ -58,7 +58,7 @@ router.get(
 
 /**
  * @route   GET /api/contribution-awards/export
- * @desc    Xuất file Excel Huân chương Bảo vệ Tổ quốc (Admin: tất cả, Manager: đơn vị mình)
+ * @desc    Export Contribution Awards (HCBVTQ) to Excel (Admin: all units, Manager: own unit)
  * @access  ADMIN, MANAGER
  */
 router.get(
@@ -70,7 +70,7 @@ router.get(
 
 /**
  * @route   GET /api/contribution-awards/statistics
- * @desc    Thống kê Huân chương Bảo vệ Tổ quốc theo hạng
+ * @desc    Get Contribution Award (HCBVTQ) statistics by grade
  * @access  ADMIN, MANAGER
  */
 router.get(
@@ -82,7 +82,7 @@ router.get(
 
 /**
  * @route   DELETE /api/contribution-awards/:id
- * @desc    Xóa khen thưởng HCBVTQ (không xóa đề xuất)
+ * @desc    Delete a Contribution Award (HCBVTQ) record (does not delete the proposal)
  * @access  ADMIN
  */
 router.delete(

@@ -12,7 +12,7 @@ const router = Router();
 
 /**
  * @route   GET /api/proposals/template
- * @desc    Xuất file mẫu Excel
+ * @desc    Download Excel template for proposals
  * @access  MANAGER, ADMIN
  */
 router.get(
@@ -24,7 +24,7 @@ router.get(
 
 /**
  * @route   POST /api/proposals
- * @desc    Nộp đề xuất khen thưởng với nhiều file đính kèm không giới hạn
+ * @desc    Submit an award proposal with attached files
  * @access  MANAGER, ADMIN
  */
 router.post(
@@ -46,7 +46,7 @@ router.post(
 
 /**
  * @route   GET /api/proposals/check-duplicate
- * @desc    Kiểm tra xem quân nhân đã có đề xuất cùng năm và cùng danh hiệu chưa
+ * @desc    Check if a personnel already has a proposal for the same year and award type
  * @access  MANAGER, ADMIN
  */
 router.get(
@@ -58,7 +58,7 @@ router.get(
 
 /**
  * @route   GET /api/proposals/check-duplicate-unit
- * @desc    Kiểm tra xem đơn vị đã có đề xuất cùng năm và cùng danh hiệu chưa
+ * @desc    Check if a unit already has a proposal for the same year and award type
  * @access  MANAGER, ADMIN
  */
 router.get(
@@ -70,7 +70,7 @@ router.get(
 
 /**
  * @route   POST /api/proposals/check-duplicate-batch
- * @desc    Kiểm tra hàng loạt quân nhân trùng đề xuất (dùng cho Excel import)
+ * @desc    Batch-check duplicate proposals for personnel (used in Excel import)
  * @access  MANAGER, ADMIN
  */
 router.post(
@@ -82,7 +82,7 @@ router.post(
 
 /**
  * @route   POST /api/proposals/check-duplicate-unit-batch
- * @desc    Kiểm tra hàng loạt đơn vị trùng đề xuất (dùng cho Excel import)
+ * @desc    Batch-check duplicate proposals for units (used in Excel import)
  * @access  MANAGER, ADMIN
  */
 router.post(
@@ -94,7 +94,7 @@ router.post(
 
 /**
  * @route   GET /api/proposals
- * @desc    Lấy danh sách đề xuất
+ * @desc    List proposals
  * @access  MANAGER, ADMIN
  */
 router.get(
@@ -106,7 +106,7 @@ router.get(
 
 /**
  * @route   GET /api/proposals/:id
- * @desc    Lấy chi tiết 1 đề xuất
+ * @desc    Get proposal details by ID
  * @access  MANAGER, ADMIN
  */
 router.get(
@@ -118,7 +118,7 @@ router.get(
 
 /**
  * @route   POST /api/proposals/:id/approve
- * @desc    Phê duyệt đề xuất và import vào CSDL
+ * @desc    Approve a proposal and import award data to DB
  * @access  ADMIN
  */
 router.post(
@@ -145,7 +145,7 @@ router.post(
 
 /**
  * @route   POST /api/proposals/:id/reject
- * @desc    Từ chối đề xuất với lý do
+ * @desc    Reject a proposal with a reason
  * @access  ADMIN
  */
 router.post(
@@ -163,7 +163,7 @@ router.post(
 
 /**
  * @route   GET /api/proposals/:id/download-excel
- * @desc    Tải file Excel của đề xuất
+ * @desc    Download the Excel file for a proposal
  * @access  MANAGER, ADMIN
  */
 router.get(
@@ -175,7 +175,7 @@ router.get(
 
 /**
  * @route   GET /api/proposals/uploads/:filename
- * @desc    Lấy file PDF đã upload
+ * @desc    Serve an uploaded PDF file
  * @access  MANAGER, ADMIN
  */
 router.get(
@@ -187,7 +187,7 @@ router.get(
 
 /**
  * @route   DELETE /api/proposals/:id
- * @desc    Xóa đề xuất (Manager chỉ có thể xóa đề xuất của chính mình, status = PENDING)
+ * @desc    Delete a proposal (Manager can only delete own PENDING proposals)
  * @access  MANAGER, ADMIN
  */
 router.delete(

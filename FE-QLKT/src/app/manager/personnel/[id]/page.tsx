@@ -300,12 +300,12 @@ export default function ManagerPersonnelDetailPage() {
       ),
       children: (
         <div className="space-y-6">
-          {/* Hồ sơ Niên hạn */}
+          {/* Hồ sơ khen thưởng niên hạn */}
           {serviceProfile && (
             <Card
               title={
                 <span className="flex items-center gap-2">
-                  <SafetyOutlined /> Hồ sơ Niên hạn
+                  <SafetyOutlined /> Hồ sơ khen thưởng niên hạn
                 </span>
               }
               size="small"

@@ -13,14 +13,14 @@ const router = Router();
 
 /**
  * @route   GET /api/hccsvv/template
- * @desc    Tải file mẫu Excel để import Huy chương Chiến sĩ Vẻ vang
+ * @desc    Download Excel template for Valiant Soldier Medal (HCCSVV) import
  * @access  ADMIN
  */
 router.get('/template', verifyToken, requireAdmin, hccsvvController.getTemplate);
 
 /**
  * @route   POST /api/hccsvv/import/preview
- * @desc    Preview import HCCSVV — chỉ validate, không ghi DB
+ * @desc    Preview HCCSVV import — validate only, no DB write
  * @access  ADMIN
  */
 router.post(
@@ -33,7 +33,7 @@ router.post(
 
 /**
  * @route   POST /api/hccsvv/import/confirm
- * @desc    Confirm import HCCSVV — lưu dữ liệu đã validate vào DB
+ * @desc    Confirm HCCSVV import — persist validated data to DB
  * @access  ADMIN
  */
 router.post(
@@ -46,7 +46,7 @@ router.post(
 
 /**
  * @route   POST /api/hccsvv/import
- * @desc    Import Huy chương Chiến sĩ Vẻ vang từ file Excel
+ * @desc    Import HCCSVV medals from Excel (legacy direct import)
  * @access  ADMIN, MANAGER
  */
 router.post(
@@ -59,14 +59,14 @@ router.post(
 
 /**
  * @route   GET /api/hccsvv
- * @desc    Lấy danh sách Huy chương Chiến sĩ Vẻ vang (Admin: tất cả, Manager: đơn vị mình)
+ * @desc    List HCCSVV medals (Admin: all units, Manager: own unit)
  * @access  ADMIN, MANAGER
  */
 router.get('/', verifyToken, checkRole([ROLES.ADMIN, ROLES.MANAGER]), hccsvvController.getAll);
 
 /**
  * @route   GET /api/hccsvv/export
- * @desc    Xuất file Excel Huy chương Chiến sĩ Vẻ vang (Admin: tất cả, Manager: đơn vị mình)
+ * @desc    Export HCCSVV medals to Excel (Admin: all units, Manager: own unit)
  * @access  ADMIN, MANAGER
  */
 router.get(
@@ -78,7 +78,7 @@ router.get(
 
 /**
  * @route   GET /api/hccsvv/statistics
- * @desc    Thống kê Huy chương Chiến sĩ Vẻ vang theo hạng
+ * @desc    Get HCCSVV medal statistics by grade
  * @access  ADMIN, MANAGER
  */
 router.get(
@@ -90,7 +90,7 @@ router.get(
 
 /**
  * @route   POST /api/hccsvv
- * @desc    Thêm khen thưởng HCCSVV trực tiếp (không cần tính điều kiện)
+ * @desc    Create an HCCSVV medal directly (bypasses eligibility check)
  * @access  SUPER_ADMIN
  */
 router.post(
@@ -108,7 +108,7 @@ router.post(
 
 /**
  * @route   DELETE /api/hccsvv/:id
- * @desc    Xóa khen thưởng HCCSVV (không xóa đề xuất)
+ * @desc    Delete an HCCSVV medal (does not delete the proposal)
  * @access  ADMIN
  */
 router.delete(

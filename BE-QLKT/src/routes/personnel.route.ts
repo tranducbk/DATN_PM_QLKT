@@ -12,7 +12,7 @@ const router = Router();
 
 /**
  * @route   GET /api/personnel
- * @desc    Lấy danh sách quân nhân (có phân trang)
+ * @desc    List personnel with pagination
  * @access  Private - ADMIN, MANAGER
  */
 router.get(
@@ -25,7 +25,7 @@ router.get(
 
 /**
  * @route   POST /api/personnel/check-contribution-eligibility
- * @desc    Kiểm tra tính đủ điều kiện nhận danh hiệu cống hiến
+ * @desc    Check personnel eligibility for Contribution Award
  * @access  Private - MANAGER
  */
 router.post(
@@ -37,14 +37,14 @@ router.post(
 
 /**
  * @route   GET /api/personnel/:id
- * @desc    Lấy chi tiết 1 quân nhân
- * @access  Private - ADMIN, MANAGER, USER (chỉ xem của mình)
+ * @desc    Get personnel details by ID
+ * @access  Private - ADMIN, MANAGER, USER (own record only)
  */
 router.get('/:id', verifyToken, requireAuth, personnelController.getPersonnelById);
 
 /**
  * @route   POST /api/personnel
- * @desc    Thêm quân nhân mới
+ * @desc    Create a new personnel record
  * @access  Private - ADMIN only
  */
 router.post(
@@ -63,8 +63,8 @@ router.post(
 
 /**
  * @route   PUT /api/personnel/:id
- * @desc    Cập nhật quân nhân (chuyển đơn vị, chức vụ)
- * @access  Private - ADMIN, MANAGER (cho đơn vị mình), USER (chỉ chính mình)
+ * @desc    Update a personnel record (unit transfer, position change)
+ * @access  Private - ADMIN, MANAGER (own unit), USER (own record only)
  */
 router.put(
   '/:id',
@@ -82,7 +82,7 @@ router.put(
 
 /**
  * @route   POST /api/personnel/import
- * @desc    Import hàng loạt từ Excel
+ * @desc    Bulk import personnel from Excel
  * @access  Private - ADMIN only
  */
 router.post(
@@ -100,7 +100,7 @@ router.post(
 
 /**
  * @route   GET /api/personnel/export
- * @desc    Xuất toàn bộ dữ liệu ra Excel
+ * @desc    Export all personnel data to Excel
  * @access  Private - ADMIN only
  */
 router.get(
@@ -117,15 +117,15 @@ router.get(
 
 /**
  * @route   GET /api/personnel/export-sample
- * @desc    Xuất file mẫu Excel để import
+ * @desc    Download Excel sample template for personnel import
  * @access  Private - ADMIN only
  */
 router.get('/export-sample', verifyToken, requireAdmin, personnelController.exportPersonnelSample);
 
 /**
  * @route   DELETE /api/personnel/:id
- * @desc    Xóa quân nhân và toàn bộ dữ liệu liên quan (cascade delete)
- *          Bao gồm: TaiKhoan, LichSuChucVu, ThanhTichKhoaHoc, DanhHieuHangNam,
+ * @desc    Delete a personnel record and all related data (cascade delete)
+ *          Includes: TaiKhoan, LichSuChucVu, ThanhTichKhoaHoc, DanhHieuHangNam,
  *          KhenThuongCongHien, HuanChuongQuanKyQuyetThang, KyNiemChuongVSNXDQDNDVN,
  *          KhenThuongHCCSVV, KhenThuongDotXuat, HoSoNienHan, HoSoCongHien, HoSoHangNam
  * @access  Private - ADMIN only

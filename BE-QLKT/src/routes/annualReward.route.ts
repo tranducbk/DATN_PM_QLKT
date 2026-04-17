@@ -25,6 +25,11 @@ import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 
 const router = Router();
 
+/**
+ * @route   GET /api/annual-rewards
+ * @desc    List annual reward titles with filters and pagination
+ * @access  Private - ADMIN, MANAGER
+ */
 router.get(
   '/',
   verifyToken,
@@ -33,6 +38,11 @@ router.get(
   annualRewardController.getAnnualRewards
 );
 
+/**
+ * @route   GET /api/annual-rewards/check-hcqkqt/:personnelId
+ * @desc    Check if a personnel has already received HC QKQT
+ * @access  Private - ADMIN, MANAGER
+ */
 router.get(
   '/check-hcqkqt/:personnelId',
   verifyToken,
@@ -40,6 +50,11 @@ router.get(
   annualRewardController.checkAlreadyReceivedHCQKQT
 );
 
+/**
+ * @route   GET /api/annual-rewards/check-knc-vsnxd/:personnelId
+ * @desc    Check if a personnel has already received KNC VSNXD QĐNDVN
+ * @access  Private - ADMIN, MANAGER
+ */
 router.get(
   '/check-knc-vsnxd/:personnelId',
   verifyToken,
@@ -47,6 +62,11 @@ router.get(
   annualRewardController.checkAlreadyReceivedKNCVSNXDQDNDVN
 );
 
+/**
+ * @route   POST /api/annual-rewards
+ * @desc    Create an annual reward title
+ * @access  Private - ADMIN, MANAGER
+ */
 router.post(
   '/',
   verifyToken,
@@ -60,6 +80,12 @@ router.post(
   }),
   annualRewardController.createAnnualReward
 );
+
+/**
+ * @route   PUT /api/annual-rewards/:id
+ * @desc    Update an annual reward title
+ * @access  Private - ADMIN and above
+ */
 router.put(
   '/:id',
   verifyToken,
@@ -73,6 +99,12 @@ router.put(
   }),
   annualRewardController.updateAnnualReward
 );
+
+/**
+ * @route   DELETE /api/annual-rewards/:id
+ * @desc    Delete an annual reward title
+ * @access  Private - ADMIN and above
+ */
 router.delete(
   '/:id',
   verifyToken,
@@ -86,6 +118,11 @@ router.delete(
   annualRewardController.deleteAnnualReward
 );
 
+/**
+ * @route   POST /api/annual-rewards/check
+ * @desc    Validate annual rewards before bulk operations
+ * @access  Private - ADMIN and above
+ */
 router.post(
   '/check',
   verifyToken,
@@ -94,6 +131,11 @@ router.post(
   annualRewardController.checkAnnualRewards
 );
 
+/**
+ * @route   POST /api/annual-rewards/bulk
+ * @desc    Bulk create annual reward titles
+ * @access  Private - ADMIN and above
+ */
 router.post(
   '/bulk',
   verifyToken,
@@ -109,6 +151,11 @@ router.post(
   annualRewardController.bulkCreateAnnualRewards
 );
 
+/**
+ * @route   POST /api/annual-rewards/import/preview
+ * @desc    Preview annual reward import from Excel — validate only, no DB write
+ * @access  Private - ADMIN and above
+ */
 router.post(
   '/import/preview',
   verifyToken,
@@ -117,6 +164,11 @@ router.post(
   annualRewardController.previewImport
 );
 
+/**
+ * @route   POST /api/annual-rewards/import/confirm
+ * @desc    Confirm annual reward import — persist validated data to DB
+ * @access  Private - ADMIN and above
+ */
 router.post(
   '/import/confirm',
   verifyToken,
@@ -125,6 +177,11 @@ router.post(
   annualRewardController.confirmImport
 );
 
+/**
+ * @route   POST /api/annual-rewards/import
+ * @desc    Import annual rewards from Excel (legacy direct import)
+ * @access  Private - ADMIN, MANAGER
+ */
 router.post(
   '/import',
   verifyToken,
@@ -139,8 +196,18 @@ router.post(
   annualRewardController.importAnnualRewards
 );
 
+/**
+ * @route   GET /api/annual-rewards/template
+ * @desc    Download Excel template for annual reward import
+ * @access  Private - ADMIN, MANAGER
+ */
 router.get('/template', verifyToken, requireManager, annualRewardController.getTemplate);
 
+/**
+ * @route   GET /api/annual-rewards/export
+ * @desc    Export annual rewards to Excel
+ * @access  Private - ADMIN, MANAGER
+ */
 router.get(
   '/export',
   verifyToken,
@@ -149,6 +216,11 @@ router.get(
   annualRewardController.exportToExcel
 );
 
+/**
+ * @route   GET /api/annual-rewards/statistics
+ * @desc    Get annual reward statistics
+ * @access  Private - ADMIN, MANAGER
+ */
 router.get(
   '/statistics',
   verifyToken,
@@ -157,6 +229,11 @@ router.get(
   annualRewardController.getStatistics
 );
 
+/**
+ * @route   GET /api/annual-rewards/decision-files/:filename
+ * @desc    Serve a decision PDF file for annual rewards
+ * @access  Private - All authenticated users
+ */
 router.get('/decision-files/:filename', verifyToken, (req: Request, res: Response) => {
   try {
     const raw = normalizeParam(req.params.filename);
