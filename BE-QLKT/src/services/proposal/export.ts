@@ -3,6 +3,7 @@ import { prisma } from '../../models';
 import ExcelJS from 'exceljs';
 import path from 'path';
 import { NotFoundError } from '../../middlewares/errorHandler';
+import { sanitizeRowData } from '../../helpers/excelHelper';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
 
@@ -86,12 +87,12 @@ async function exportTemplate(userId, type = 'HANG_NAM') {
     sheetQuanNhan.getColumn(1).numFmt = '@';
 
     quanNhanList.forEach(qn => {
-      sheetQuanNhan.addRow({
+      sheetQuanNhan.addRow(sanitizeRowData({
         cccd: qn.cccd,
         ho_ten: qn.ho_ten,
         ma_don_vi: (qn.DonViTrucThuoc || qn.CoQuanDonVi)?.ma_don_vi || '',
         ten_chuc_vu: qn.ChucVu.ten_chuc_vu,
-      });
+      }));
     });
 
     const sheetDanhHieu = workbook.addWorksheet('DanhHieuHangNam');
@@ -125,7 +126,7 @@ async function exportTemplate(userId, type = 'HANG_NAM') {
     // Format CCCD as Text to preserve leading zeros
     sheetDanhHieu.getColumn(1).numFmt = '@';
 
-    sheetDanhHieu.addRow({
+    sheetDanhHieu.addRow(sanitizeRowData({
       cccd: 'Ví dụ: 001234567890',
       ho_ten: 'Nguyễn Văn A',
       nam: 2024,
@@ -135,7 +136,7 @@ async function exportTemplate(userId, type = 'HANG_NAM') {
       so_quyet_dinh_bkbqp: '123/QĐ-BQP',
       cstdtq: '',
       so_quyet_dinh_cstdtq: '',
-    });
+    }));
 
     const sheetThanhTich = workbook.addWorksheet('ThanhTichKhoaHoc');
 
@@ -165,14 +166,14 @@ async function exportTemplate(userId, type = 'HANG_NAM') {
     // Format CCCD as Text to preserve leading zeros
     sheetThanhTich.getColumn(1).numFmt = '@';
 
-    sheetThanhTich.addRow({
+    sheetThanhTich.addRow(sanitizeRowData({
       cccd: 'Ví dụ: 001234567890',
       ho_ten: 'Nguyễn Văn A',
       nam: 2024,
       loai: 'NCKH',
       mo_ta: 'Nghiên cứu về trí tuệ nhân tạo trong quân sự',
       status: PROPOSAL_STATUS.APPROVED,
-    });
+    }));
 
     // Column D: restrict `loai` to the approved science-achievement codes.
     sheetThanhTich.getColumn(4).eachCell({ includeEmpty: true }, (cell, rowNumber) => {
@@ -241,13 +242,13 @@ async function exportTemplateNienHan(workbook, quanNhanList) {
   sheetQuanNhan.getColumn(1).numFmt = '@';
 
   quanNhanList.forEach(qn => {
-    sheetQuanNhan.addRow({
+    sheetQuanNhan.addRow(sanitizeRowData({
       cccd: qn.cccd,
       ho_ten: qn.ho_ten,
       ngay_nhap_ngu: qn.ngay_nhap_ngu ? new Date(qn.ngay_nhap_ngu).toLocaleDateString('vi-VN') : '',
       ma_don_vi: qn.DonVi.ma_don_vi,
       ten_chuc_vu: qn.ChucVu.ten_chuc_vu,
-    });
+    }));
   });
 
   const sheetNienHan = workbook.addWorksheet('NienHan');
@@ -275,7 +276,7 @@ async function exportTemplateNienHan(workbook, quanNhanList) {
   };
   sheetNienHan.getColumn(1).numFmt = '@';
 
-  sheetNienHan.addRow({
+  sheetNienHan.addRow(sanitizeRowData({
     cccd: 'Ví dụ: 001234567890',
     ho_ten: 'Nguyễn Văn A',
     hccsvv_hang_ba: 'X',
@@ -284,7 +285,7 @@ async function exportTemplateNienHan(workbook, quanNhanList) {
     hcbvtq_hang_ba: '',
     hcbvtq_hang_nhi: '',
     hcbvtq_hang_nhat: '',
-  });
+  }));
 
   const buffer = await workbook.xlsx.writeBuffer();
   return buffer;
@@ -386,7 +387,7 @@ async function downloadProposalExcel(proposalId) {
       ? (proposal.data_danh_hieu as Array<Record<string, unknown>>)
       : [];
     danhHieuData.forEach(item => {
-      sheetDanhHieu.addRow({
+      sheetDanhHieu.addRow(sanitizeRowData({
         cccd: item.cccd,
         ho_ten: item.ho_ten,
         nam: item.nam,
@@ -397,7 +398,7 @@ async function downloadProposalExcel(proposalId) {
         so_quyet_dinh_cstdtq: item.so_quyet_dinh_cstdtq || '',
         nhan_bkttcp: item.nhan_bkttcp ? 'X' : '',
         so_quyet_dinh_bkttcp: item.so_quyet_dinh_bkttcp || '',
-      });
+      }));
     });
 
     const sheetThanhTich = workbook.addWorksheet('ThanhTichKhoaHoc');
@@ -427,14 +428,14 @@ async function downloadProposalExcel(proposalId) {
       ? (proposal.data_thanh_tich as Array<Record<string, unknown>>)
       : [];
     thanhTichData.forEach(item => {
-      sheetThanhTich.addRow({
+      sheetThanhTich.addRow(sanitizeRowData({
         cccd: item.cccd,
         ho_ten: item.ho_ten,
         nam: item.nam,
         loai: item.loai,
         mo_ta: item.mo_ta,
         status: item.status,
-      });
+      }));
     });
 
     return await workbook.xlsx.writeBuffer();

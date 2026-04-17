@@ -5,7 +5,7 @@ import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHel
 import * as notificationHelper from '../helpers/notification';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { ValidationError, NotFoundError } from '../middlewares/errorHandler';
-import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys } from '../helpers/excelHelper';
+import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys, sanitizeRowData } from '../helpers/excelHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
 import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
@@ -481,7 +481,7 @@ class MilitaryFlagService {
     };
 
     data.forEach((item, index) => {
-      worksheet.addRow({
+      worksheet.addRow(sanitizeRowData({
         stt: index + 1,
         id: item.quan_nhan_id,
         ho_ten: item.QuanNhan?.ho_ten ?? '',
@@ -492,7 +492,7 @@ class MilitaryFlagService {
         ghi_chu: item.ghi_chu ?? '',
         don_vi:
           item.QuanNhan?.CoQuanDonVi?.ten_don_vi ?? item.QuanNhan?.DonViTrucThuoc?.ten_don_vi ?? '',
-      });
+      }));
     });
 
     return await workbook.xlsx.writeBuffer();

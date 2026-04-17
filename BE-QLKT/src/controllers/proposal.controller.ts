@@ -399,50 +399,6 @@ class ProposalController {
     });
   });
 
-  getAwardsTemplate = catchAsync(async (req: Request, res: Response) => {
-    const buffer = await proposalService.exportAwardsTemplate();
-    res.setHeader(
-      'Content-Type',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    );
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="mau_import_khen_thuong_${new Date().toISOString().slice(0, 10)}.xlsx"`
-    );
-    return res.status(200).send(buffer);
-  });
-
-  importAwards = catchAsync(async (req: Request, res: Response) => {
-    const user = req.user!;
-    const file = req.file;
-    if (!file) {
-      return ResponseHelper.badRequest(res, 'Vui lòng gửi file Excel');
-    }
-    const result = await proposalService.importAwards(file.buffer, user.id);
-    try {
-      if (result.importedUnits?.length > 0) {
-        for (const u of result.importedUnits) {
-          await notificationHelper.notifyManagersOnAwardAdded(
-            u.don_vi_id,
-            u.don_vi_name,
-            u.nam,
-            u.award_type,
-            user.username
-          );
-        }
-      }
-    } catch (notifError) {
-      await writeSystemLog({
-        userId: user.id,
-        userRole: user.role,
-        action: 'ERROR',
-        resource: 'proposals',
-        description: 'Lỗi gửi thông báo cho Manager khi import khen thưởng',
-        payload: { error: String(notifError) },
-      });
-    }
-    return ResponseHelper.success(res, { message: result.message, data: result.result });
-  });
 
   exportAllAwardsExcel = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;

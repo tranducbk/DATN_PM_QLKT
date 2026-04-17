@@ -75,18 +75,6 @@ export async function recalculateProfile(personnelId: string, year?: number): Pr
   }
 }
 
-/**
- * recalculateAllProfiles API wrapper.
- * @returns API response payload
- */
-export async function recalculateAllProfiles(): Promise<ApiResponse> {
-  try {
-    const res = await axiosInstance.post('/api/profiles/recalculate-all');
-    return { success: res.data?.success, data: res.data?.data, message: res.data?.message };
-  } catch (e: unknown) {
-    return { success: false, message: getApiErrorMessage(e) };
-  }
-}
 
 /**
  * getAllServiceProfiles API wrapper.

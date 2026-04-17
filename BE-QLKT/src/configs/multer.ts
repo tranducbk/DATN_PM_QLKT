@@ -129,11 +129,15 @@ export const adhocAwardUpload = multer({
 });
 
 /**
- * Bulk upload — memoryStorage with no file filter (for generic bulk operations with attachments).
+ * Bulk upload — memoryStorage for bulk operations with attachments (PDF, images, Word, Excel).
  */
 export const bulkUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * MB },
+  fileFilter: createFileFilter(
+    [MIME.PDF, MIME.JPEG, MIME.JPG, MIME.PNG, MIME.DOC, MIME.DOCX, MIME.XLS, MIME.XLSX],
+    'Chi chap nhan file PDF, anh (JPEG, PNG), Word, hoac Excel'
+  ),
 });
 
 /** The shared upload directory for decision files */

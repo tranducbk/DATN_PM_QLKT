@@ -7,7 +7,7 @@ import { getDanhHieuName, DANH_HIEU_CA_NHAN_HANG_NAM, DANH_HIEU_DON_VI_HANG_NAM,
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
-import { parseHeaderMap, getHeaderCol, parseBooleanValue } from '../helpers/excelHelper';
+import { parseHeaderMap, getHeaderCol, parseBooleanValue, sanitizeRowData } from '../helpers/excelHelper';
 import { NotFoundError, ValidationError, ForbiddenError } from '../middlewares/errorHandler';
 import { applyThinBordersToGrid } from '../helpers/excelTemplateHelper';
 import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
@@ -1370,7 +1370,7 @@ class UnitAnnualAwardService {
 
         const rowCount = repeatMap[uid] || 1;
         for (let r = 0; r < rowCount; r++) {
-          const dataRow = worksheet.addRow({
+          const dataRow = worksheet.addRow(sanitizeRowData({
             stt,
             id: unit.id,
             ma_don_vi: unit.ma_don_vi || '',
@@ -1381,7 +1381,7 @@ class UnitAnnualAwardService {
             ghi_chu: '',
             bkbqp: '',
             bkttcp: '',
-          });
+          }));
 
           // Readonly yellow background: STT, ID, unit code, unit name
           for (let col = 1; col <= 4; col++) {
@@ -1397,7 +1397,7 @@ class UnitAnnualAwardService {
       }
     } else {
       // Add sample row
-      const sampleRow = worksheet.addRow({
+      const sampleRow = worksheet.addRow(sanitizeRowData({
         stt: 1,
         id: '',
         ma_don_vi: 'DV001',
@@ -1408,7 +1408,7 @@ class UnitAnnualAwardService {
         ghi_chu: '',
         bkbqp: '',
         bkttcp: '',
-      });
+      }));
       sampleRow.getCell(9).fill = redFill;
       sampleRow.getCell(10).fill = redFill;
     }
@@ -1770,7 +1770,7 @@ class UnitAnnualAwardService {
 
     awards.forEach((award, index) => {
       const donVi = award.CoQuanDonVi || award.DonViTrucThuoc;
-      worksheet.addRow({
+      worksheet.addRow(sanitizeRowData({
         stt: index + 1,
         ma_don_vi: donVi?.ma_don_vi || '',
         ten_don_vi: donVi?.ten_don_vi || '',
@@ -1782,7 +1782,7 @@ class UnitAnnualAwardService {
         nhan_bkttcp: award.nhan_bkttcp ? 'Có' : '',
         so_quyet_dinh_bkttcp: award.so_quyet_dinh_bkttcp || '',
         ghi_chu: award.ghi_chu || '',
-      });
+      }));
     });
 
     return workbook;

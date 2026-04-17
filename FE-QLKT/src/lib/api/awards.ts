@@ -326,31 +326,6 @@ export async function getAwards(params?: {
   }
 }
 
-export async function getAwardsTemplate(): Promise<Blob> {
-  try {
-    const res = await axiosInstance.get('/api/awards/template', {
-      responseType: 'blob',
-    });
-    return res.data;
-  } catch (e: unknown) {
-    throw new Error(getApiErrorMessage(e));
-  }
-}
-
-export async function importAwards(file: File): Promise<ApiResponse> {
-  try {
-    const formData = new FormData();
-    formData.append('file', file);
-    const res = await axiosInstance.post('/api/awards/import', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return { success: res.data?.success, data: res.data?.data, message: res.data?.message };
-  } catch (e: unknown) {
-    return { success: false, message: getApiErrorMessage(e) };
-  }
-}
 
 export async function exportAwards(params?: {
   don_vi_id?: number;

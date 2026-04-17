@@ -127,12 +127,7 @@ class ProposalService {
   async exportAllAwardsExcel(filters: Record<string, unknown>) {
     return awards.exportAllAwardsExcel(filters);
   }
-  async exportAwardsTemplate() {
-    return awards.exportAwardsTemplate();
-  }
-  async importAwards(excelBuffer: Buffer, adminId: string) {
-    return awards.importAwards(excelBuffer, adminId);
-  }
+
   async getAwardsStatistics() {
     return awards.getAwardsStatistics();
   }

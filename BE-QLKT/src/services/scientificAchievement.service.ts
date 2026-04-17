@@ -8,7 +8,7 @@ import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { NotFoundError, ValidationError } from '../middlewares/errorHandler';
 import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
-import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo } from '../helpers/excelHelper';
+import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, sanitizeRowData } from '../helpers/excelHelper';
 import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
 import { VALID_NCKH } from './proposal/helpers';
 
@@ -273,7 +273,7 @@ class ScientificAchievementService {
       const quanNhan = achievement.QuanNhan;
       const donVi = quanNhan?.DonViTrucThuoc?.ten_don_vi ?? quanNhan?.CoQuanDonVi?.ten_don_vi ?? '';
 
-      worksheet.addRow({
+      worksheet.addRow(sanitizeRowData({
         stt: index + 1,
         id: quanNhan?.id ?? '',
         ho_ten: quanNhan?.ho_ten ?? '',
@@ -285,7 +285,7 @@ class ScientificAchievementService {
         mo_ta: achievement.mo_ta ?? '',
         so_quyet_dinh: achievement.so_quyet_dinh ?? '',
         ghi_chu: achievement.ghi_chu ?? '',
-      });
+      }));
     });
 
     return workbook;

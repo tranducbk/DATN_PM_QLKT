@@ -115,6 +115,7 @@ model QuanNhan {
   HoSoCongHien      HoSoCongHien?
   HoSoHangNam       HoSoHangNam?
 
+  @@index([co_quan_don_vi_id])
   @@map("quan_nhan")
 }
 
@@ -175,6 +176,7 @@ model ThanhTichKhoaHoc {
   // Relations
   QuanNhan QuanNhan @relation(fields: [quan_nhan_id], references: [id], onDelete: Cascade)
 
+  @@index([quan_nhan_id, nam])
   @@map("thanh_tich_khoa_hoc")
 }
 
@@ -471,6 +473,7 @@ model BangDeXuat {
   NguoiDeXuat    TaiKhoan        @relation("NguoiDeXuat", fields: [nguoi_de_xuat_id], references: [id], onDelete: Cascade)
   NguoiDuyet     TaiKhoan?       @relation("NguoiDuyet", fields: [nguoi_duyet_id], references: [id], onDelete: SetNull)
 
+  @@index([status, loai_de_xuat])
   @@map("bang_de_xuat")
 }
 

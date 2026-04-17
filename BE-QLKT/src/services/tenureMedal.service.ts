@@ -8,7 +8,7 @@ import { getDanhHieuName, DANH_HIEU_HCCSVV } from '../constants/danhHieu.constan
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
-import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys } from '../helpers/excelHelper';
+import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys, sanitizeRowData } from '../helpers/excelHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { ValidationError, NotFoundError, AppError } from '../middlewares/errorHandler';
 import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
@@ -785,7 +785,7 @@ class HCCSVVService {
     };
 
     data.forEach((item, index) => {
-      worksheet.addRow({
+      worksheet.addRow(sanitizeRowData({
         stt: index + 1,
         id: item.quan_nhan_id,
         ho_ten: item.QuanNhan?.ho_ten ?? '',
@@ -795,7 +795,7 @@ class HCCSVVService {
         danh_hieu: item.danh_hieu,
         so_quyet_dinh: item.so_quyet_dinh ?? '',
         ghi_chu: item.ghi_chu ?? '',
-      });
+      }));
     });
 
     return await workbook.xlsx.writeBuffer();

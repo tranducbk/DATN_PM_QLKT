@@ -1,12 +1,8 @@
 import { prisma } from '../../models';
 import ExcelJS from 'exceljs';
-import profileService from '../profile.service';
-import { ValidationError } from '../../middlewares/errorHandler';
-import { applyThinBordersToGrid } from '../../helpers/excelTemplateHelper';
-import { parseCCCD, calculateContinuousCSTDCS } from './helpers';
+import { sanitizeRowData } from '../../helpers/excelHelper';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
-import { DANH_HIEU_HCBVTQ, DANH_HIEU_CA_NHAN_HANG_NAM } from '../../constants/danhHieu.constants';
-import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
+import { DANH_HIEU_HCBVTQ } from '../../constants/danhHieu.constants';
 
 /**
  * Lấy tất cả danh hiệu hằng năm (để Admin quản lý)
@@ -175,7 +171,7 @@ async function exportAllAwardsExcel(filters: Record<string, unknown> = {}) {
     sheet.getColumn(2).numFmt = '@';
 
     filteredAwards.forEach((award, index) => {
-      sheet.addRow({
+      sheet.addRow(sanitizeRowData({
         stt: index + 1,
         cccd: award.QuanNhan.cccd,
         ho_ten: award.QuanNhan.ho_ten,
@@ -189,7 +185,7 @@ async function exportAllAwardsExcel(filters: Record<string, unknown> = {}) {
         so_qd_cstdtq: award.so_quyet_dinh_cstdtq || '',
         bkttcp: award.nhan_bkttcp ? 'X' : '',
         so_qd_bkttcp: award.so_quyet_dinh_bkttcp || '',
-      });
+      }));
     });
 
     return await workbook.xlsx.writeBuffer();
@@ -198,273 +194,6 @@ async function exportAllAwardsExcel(filters: Record<string, unknown> = {}) {
   }
 }
 
-/**
- * Xuất file mẫu Excel để import khen thưởng
- * @returns {Promise<Buffer>} - Buffer của file Excel mẫu
- */
-async function exportAwardsTemplate() {
-  try {
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet('KhenThuong');
-
-    sheet.columns = [
-      { header: 'CCCD (Bắt buộc)', key: 'cccd', width: 15 },
-      { header: 'Năm (Bắt buộc)', key: 'nam', width: 12 },
-      { header: 'Danh Hiệu (CSTDCS/CSTT)', key: 'danh_hieu', width: 20 },
-      { header: 'BKBQP (Đánh X)', key: 'nhan_bkbqp', width: 15 },
-      { header: 'Số QĐ BKBQP', key: 'so_quyet_dinh_bkbqp', width: 20 },
-      { header: 'CSTĐTQ (Đánh X)', key: 'nhan_cstdtq', width: 15 },
-      { header: 'Số QĐ CSTĐTQ', key: 'so_quyet_dinh_cstdtq', width: 20 },
-      { header: 'BKTTCP (Đánh X)', key: 'nhan_bkttcp', width: 15 },
-      { header: 'Số QĐ BKTTCP', key: 'so_quyet_dinh_bkttcp', width: 20 },
-    ];
-
-    sheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    sheet.getRow(1).fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FF70AD47' },
-    };
-    sheet.getRow(1).alignment = { horizontal: 'center', vertical: 'middle' };
-
-    // Format CCCD as Text to preserve leading zeros
-    sheet.getColumn(1).numFmt = '@';
-
-    sheet.addRow({
-      cccd: '001234567890',
-      nam: 2024,
-      danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS,
-      nhan_bkbqp: 'X',
-      so_quyet_dinh_bkbqp: '123/QĐ-BQP',
-      nhan_cstdtq: '',
-      so_quyet_dinh_cstdtq: '',
-      nhan_bkttcp: 'X',
-      so_quyet_dinh_bkttcp: '456/QĐ-BQP',
-    });
-
-    const colCount = sheet.columns?.length ?? 9;
-    applyThinBordersToGrid(sheet, 2, colCount);
-
-    return await workbook.xlsx.writeBuffer();
-  } catch (error) {
-    throw error;
-  }
-}
-
-/**
- * Import khen thưởng từ file Excel
- * @param {Buffer} excelBuffer - Buffer của file Excel
- * @returns {Promise<Object>} - Kết quả import
- */
-async function importAwards(excelBuffer, adminId) {
-  try {
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(excelBuffer);
-
-    const sheet = workbook.getWorksheet('KhenThuong');
-    if (!sheet) {
-      throw new ValidationError('Không tìm thấy sheet "KhenThuong" trong file Excel');
-    }
-
-    const awards = [];
-    const errors = [];
-    const importedUnitsMap = new Map();
-
-    sheet.eachRow((row, rowNumber) => {
-      if (rowNumber === 1) return; // Skip header
-
-      const cccd = parseCCCD(row.getCell(1).value);
-      const nam = parseInt(String(row.getCell(2).value), 10);
-      const danh_hieu = row.getCell(3).value?.toString().trim() || null;
-      const nhan_bkbqp = row.getCell(4).value?.toString().toUpperCase() === 'X';
-      const so_quyet_dinh_bkbqp = row.getCell(5).value?.toString().trim() || null;
-      const nhan_cstdtq = row.getCell(6).value?.toString().toUpperCase() === 'X';
-      const so_quyet_dinh_cstdtq = row.getCell(7).value?.toString().trim() || null;
-      const nhan_bkttcp = row.getCell(8).value?.toString().toUpperCase() === 'X';
-      const so_quyet_dinh_bkttcp = row.getCell(9).value?.toString().trim() || null;
-
-      if (!cccd || !nam) {
-        errors.push(`Row ${rowNumber}: CCCD và Năm là bắt buộc`);
-        return;
-      }
-
-      awards.push({
-        cccd,
-        nam,
-        danh_hieu,
-        nhan_bkbqp,
-        so_quyet_dinh_bkbqp,
-        nhan_cstdtq,
-        so_quyet_dinh_cstdtq,
-        nhan_bkttcp,
-        so_quyet_dinh_bkttcp,
-      });
-    });
-
-    if (errors.length > 0) {
-      throw new ValidationError(`Lỗi validate dữ liệu: ${errors.join(', ')}`);
-    }
-
-    let imported = 0;
-    const importErrors = [];
-    const importWarnings = [];
-    const affectedPersonnelIds = new Set();
-
-    for (const award of awards) {
-      try {
-        const quanNhan = await prisma.quanNhan.findUnique({
-          where: { cccd: award.cccd },
-          include: {
-            CoQuanDonVi: true,
-            DonViTrucThuoc: {
-              include: {
-                CoQuanDonVi: true,
-              },
-            },
-            DanhHieuHangNam: {
-              orderBy: { nam: 'asc' },
-            },
-            ThanhTichKhoaHoc: true,
-          },
-        });
-
-        if (!quanNhan) {
-          importErrors.push(`CCCD ${award.cccd}: Không tìm thấy quân nhân`);
-          continue;
-        }
-
-        // Soft validation: warn when import rows imply medals without prerequisite streaks / NCKH.
-        const cstdcsLienTuc = calculateContinuousCSTDCS(quanNhan.DanhHieuHangNam, award.nam);
-        const nckhCount = quanNhan.ThanhTichKhoaHoc.length;
-
-        if (award.nhan_bkbqp && cstdcsLienTuc < 2) {
-          importWarnings.push(
-            `CCCD ${
-              award.cccd
-            }: Đề xuất BKBQP nhưng chỉ có ${cstdcsLienTuc}/2 năm CSTDCS liên tục. Thiếu ${
-              2 - cstdcsLienTuc
-            } năm.`
-          );
-        }
-
-        if (award.nhan_cstdtq) {
-          if (cstdcsLienTuc < 3) {
-            importWarnings.push(
-              `CCCD ${
-                award.cccd
-              }: Đề xuất CSTDTQ nhưng chỉ có ${cstdcsLienTuc}/3 năm CSTDCS liên tục. Thiếu ${
-                3 - cstdcsLienTuc
-              } năm.`
-            );
-          } else if (nckhCount === 0) {
-            importWarnings.push(
-              `CCCD ${award.cccd}: Đề xuất CSTDTQ nhưng chưa có ĐTKH/SKKH được duyệt.`
-            );
-          }
-        }
-
-        if (award.nhan_bkttcp) {
-          if (cstdcsLienTuc < 7) {
-            importWarnings.push(
-              `CCCD ${
-                award.cccd
-              }: Đề xuất BKTTCP nhưng chỉ có ${cstdcsLienTuc}/7 năm CSTDCS liên tục. Thiếu ${
-                7 - cstdcsLienTuc
-              } năm.`
-            );
-          } else if (nckhCount === 0) {
-            importWarnings.push(
-              `CCCD ${award.cccd}: Đề xuất BKTTCP nhưng chưa có ĐTKH/SKKH được duyệt.`
-            );
-          }
-        }
-
-        await prisma.danhHieuHangNam.upsert({
-          where: {
-            quan_nhan_id_nam: {
-              quan_nhan_id: quanNhan.id,
-              nam: award.nam,
-            },
-          },
-          update: {
-            danh_hieu: award.danh_hieu,
-            nhan_bkbqp: award.nhan_bkbqp,
-            so_quyet_dinh_bkbqp: award.so_quyet_dinh_bkbqp,
-            nhan_cstdtq: award.nhan_cstdtq,
-            so_quyet_dinh_cstdtq: award.so_quyet_dinh_cstdtq,
-            nhan_bkttcp: award.nhan_bkttcp,
-            so_quyet_dinh_bkttcp: award.so_quyet_dinh_bkttcp,
-          },
-          create: {
-            quan_nhan_id: quanNhan.id,
-            nam: award.nam,
-            danh_hieu: award.danh_hieu,
-            nhan_bkbqp: award.nhan_bkbqp,
-            so_quyet_dinh_bkbqp: award.so_quyet_dinh_bkbqp,
-            nhan_cstdtq: award.nhan_cstdtq,
-            so_quyet_dinh_cstdtq: award.so_quyet_dinh_cstdtq,
-            nhan_bkttcp: award.nhan_bkttcp,
-            so_quyet_dinh_bkttcp: award.so_quyet_dinh_bkttcp,
-          },
-        });
-
-        const primaryUnitId = quanNhan.co_quan_don_vi_id || quanNhan.don_vi_truc_thuoc_id;
-        const unitKey = `${primaryUnitId}_${award.nam}`;
-        if (!importedUnitsMap.has(unitKey)) {
-          importedUnitsMap.set(unitKey, {
-            don_vi_id: primaryUnitId,
-            don_vi_name: (quanNhan.DonViTrucThuoc || quanNhan.CoQuanDonVi)?.ten_don_vi ?? '-',
-            nam: award.nam,
-            award_type: 'Danh hiệu',
-          });
-        }
-
-        imported++;
-        affectedPersonnelIds.add(quanNhan.id);
-      } catch (error) {
-        importErrors.push(`CCCD ${award.cccd}: ${error.message}`);
-      }
-    }
-
-    // Re-run annual eligibility for every personnel touched by the import.
-    let recalculateSuccess = 0;
-    let recalculateErrors = 0;
-
-    for (const personnelId of affectedPersonnelIds) {
-      try {
-        await profileService.recalculateAnnualProfile(personnelId);
-        recalculateSuccess++;
-      } catch (e) {
-        recalculateErrors++;
-        console.error(`recalculateAnnualProfile failed for personnelId=${personnelId}:`, e);
-      }
-    }
-
-    return {
-      message:
-        importWarnings.length > 0
-          ? `Đã thêm thành công thành công ${imported} bản ghi nhưng có ${importWarnings.length} cảnh báo về điều kiện khen thưởng.`
-          : 'Đã thêm khen thưởng thành công',
-      importedUnits: Array.from(importedUnitsMap.values()),
-      result: {
-        total: awards.length,
-        imported,
-        failed: awards.length - imported,
-        errors: importErrors.length > 0 ? importErrors : null,
-        warnings: importWarnings.length > 0 ? importWarnings : null,
-        recalculated_profiles: recalculateSuccess,
-        recalculate_errors: recalculateErrors,
-      },
-    };
-  } catch (error) {
-    throw error;
-  }
-}
-
-/**
- * Thống kê khen thưởng theo loại
- * @returns {Promise<Object>} - Thống kê theo từng loại khen thưởng
- */
 async function getAwardsStatistics() {
   try {
     const decisionsByType = await prisma.fileQuyetDinh.groupBy({
@@ -574,7 +303,5 @@ async function getAwardsStatistics() {
 export {
   getAllAwards,
   exportAllAwardsExcel,
-  exportAwardsTemplate,
-  importAwards,
   getAwardsStatistics,
 };

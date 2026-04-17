@@ -412,6 +412,53 @@ async function notifyOnBulkAwardAdded(
         },
       });
 
+      // Collect all unit IDs to fetch managers in one batch query.
+      const allDonViIds = new Set<string>();
+      for (const account of accounts) {
+        const personnel = account.QuanNhan;
+        if (!personnel) continue;
+        const donViId = personnel.co_quan_don_vi_id || personnel.don_vi_truc_thuoc_id;
+        if (donViId) allDonViIds.add(donViId);
+      }
+
+      const allManagers =
+        allDonViIds.size > 0
+          ? await prisma.taiKhoan.findMany({
+              where: {
+                role: ROLES.MANAGER,
+                QuanNhan: {
+                  OR: [
+                    { co_quan_don_vi_id: { in: [...allDonViIds] } },
+                    { don_vi_truc_thuoc_id: { in: [...allDonViIds] } },
+                  ],
+                },
+              },
+              select: {
+                id: true,
+                role: true,
+                QuanNhan: {
+                  select: {
+                    co_quan_don_vi_id: true,
+                    don_vi_truc_thuoc_id: true,
+                  },
+                },
+              },
+            })
+          : [];
+
+      // Build map: donViId -> manager accounts that manage that unit.
+      const managersByDonVi = new Map<string, typeof allManagers>();
+      for (const manager of allManagers) {
+        const ids = [
+          manager.QuanNhan?.co_quan_don_vi_id,
+          manager.QuanNhan?.don_vi_truc_thuoc_id,
+        ].filter((id): id is string => Boolean(id));
+        for (const id of ids) {
+          if (!managersByDonVi.has(id)) managersByDonVi.set(id, []);
+          managersByDonVi.get(id)!.push(manager);
+        }
+      }
+
       for (const account of accounts) {
         const personnel = account.QuanNhan;
         if (!personnel) continue;
@@ -459,21 +506,7 @@ async function notifyOnBulkAwardAdded(
 
         const donViId = personnel.co_quan_don_vi_id || personnel.don_vi_truc_thuoc_id;
         if (donViId) {
-          const managers = await prisma.taiKhoan.findMany({
-            where: {
-              role: ROLES.MANAGER,
-              QuanNhan: {
-                OR: [{ co_quan_don_vi_id: donViId }, { don_vi_truc_thuoc_id: donViId }].filter(
-                  Boolean
-                ),
-              },
-            },
-            select: {
-              id: true,
-              role: true,
-            },
-          });
-
+          const managers = managersByDonVi.get(donViId) ?? [];
           managers.forEach(manager => {
             const existingNotif = notifications.find(
               (n: NotificationInput) =>

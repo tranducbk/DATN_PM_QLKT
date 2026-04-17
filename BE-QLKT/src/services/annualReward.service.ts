@@ -9,7 +9,7 @@ import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { NotFoundError, ValidationError } from '../middlewares/errorHandler';
 import { writeSystemLog } from '../helpers/systemLogHelper';
-import { parseHeaderMap, getHeaderCol, parseBooleanValue, resolvePersonnelInfo, buildPendingKeys } from '../helpers/excelHelper';
+import { parseHeaderMap, getHeaderCol, parseBooleanValue, resolvePersonnelInfo, buildPendingKeys, sanitizeRowData } from '../helpers/excelHelper';
 import type { DanhHieuHangNam, QuanNhan, Prisma } from '../generated/prisma';
 import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
 import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
@@ -1390,8 +1390,13 @@ class AnnualRewardService {
     if (personnel_ids && personnel_ids.length > 0) {
       where.quan_nhan_id = { in: personnel_ids };
     }
+    if (don_vi_id) {
+      where.QuanNhan = {
+        OR: [{ co_quan_don_vi_id: don_vi_id }, { don_vi_truc_thuoc_id: don_vi_id }],
+      };
+    }
 
-    const awards = await prisma.danhHieuHangNam.findMany({
+    const filteredAwards = await prisma.danhHieuHangNam.findMany({
       where,
       include: {
         QuanNhan: {
@@ -1404,15 +1409,6 @@ class AnnualRewardService {
       orderBy: [{ nam: 'desc' }, { createdAt: 'desc' }],
       take: 10000,
     });
-
-    let filteredAwards = awards;
-    if (don_vi_id) {
-      filteredAwards = awards.filter(
-        award =>
-          award.QuanNhan?.co_quan_don_vi_id === don_vi_id ||
-          award.QuanNhan?.don_vi_truc_thuoc_id === don_vi_id
-      );
-    }
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Danh hiệu hằng năm');
@@ -1439,7 +1435,7 @@ class AnnualRewardService {
     worksheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD3D3D3' } };
 
     filteredAwards.forEach((award, index) => {
-      worksheet.addRow({
+      worksheet.addRow(sanitizeRowData({
         stt: index + 1,
         id: award.QuanNhan?.id ?? '',
         ho_ten: award.QuanNhan?.ho_ten ?? '',
@@ -1455,7 +1451,7 @@ class AnnualRewardService {
         so_quyet_dinh_cstdtq: award.so_quyet_dinh_cstdtq ?? '',
         nhan_bkttcp: award.nhan_bkttcp ? 'Có' : '',
         so_quyet_dinh_bkttcp: award.so_quyet_dinh_bkttcp ?? '',
-      });
+      }));
     });
 
     return workbook;

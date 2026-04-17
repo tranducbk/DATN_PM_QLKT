@@ -49,7 +49,12 @@ function initSocket(httpServer: HttpServer): Server {
 
   io.on('connection', (socket: Socket) => {
     const authenticatedSocket = socket as Socket & { user: DecodedToken };
-    authenticatedSocket.join(`user_${authenticatedSocket.user.id}`);
+    const userId = authenticatedSocket.user.id;
+    authenticatedSocket.join(`user_${userId}`);
+
+    socket.on('disconnect', () => {
+      authenticatedSocket.leave(`user_${userId}`);
+    });
   });
 
   return io;

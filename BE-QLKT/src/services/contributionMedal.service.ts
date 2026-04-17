@@ -7,7 +7,7 @@ import * as notificationHelper from '../helpers/notification';
 import { getDanhHieuName, DANH_HIEU_HCBVTQ } from '../constants/danhHieu.constants';
 import { ROLES } from '../constants/roles.constants';
 import { ValidationError, NotFoundError } from '../middlewares/errorHandler';
-import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys } from '../helpers/excelHelper';
+import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys, sanitizeRowData } from '../helpers/excelHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
 import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
@@ -602,7 +602,7 @@ class ContributionAwardService {
     };
 
     data.forEach((item, index) => {
-      worksheet.addRow({
+      worksheet.addRow(sanitizeRowData({
         stt: index + 1,
         id: item.QuanNhan?.id ?? '',
         cccd: item.QuanNhan?.cccd ?? '',
@@ -618,7 +618,7 @@ class ContributionAwardService {
         thoi_gian_nhom_0_9_1_0: convertThoiGian(item.thoi_gian_nhom_0_9_1_0),
         so_quyet_dinh: item.so_quyet_dinh ?? '',
         ghi_chu: item.ghi_chu ?? '',
-      });
+      }));
     });
 
     return await workbook.xlsx.writeBuffer();

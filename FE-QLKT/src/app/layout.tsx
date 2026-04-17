@@ -1,6 +1,5 @@
 import './globals.css';
 import { ThemeProvider } from '@/components/ThemeProvider';
-import AntdRegistry from '@/lib/AntdRegistry';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { Roboto } from 'next/font/google';
@@ -26,14 +25,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="vi" suppressHydrationWarning>
       <body className={`${roboto.variable} font-sans antialiased`}>
-        <AntdRegistry>
-          <AuthProvider>
-            <ThemeProvider>
-              {children}
-              <Toaster />
-            </ThemeProvider>
-          </AuthProvider>
-        </AntdRegistry>
+        <AuthProvider>
+          <ThemeProvider>
+            {children}
+            <Toaster />
+          </ThemeProvider>
+        </AuthProvider>
       </body>
     </html>
   );

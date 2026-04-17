@@ -18,6 +18,7 @@ import profileService from './profile.service';
 import * as notificationHelper from '../helpers/notification';
 import { buildUnitWhereFilter } from '../helpers/controllerHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
+import { sanitizeRowData } from '../helpers/excelHelper';
 
 type DateInput = Date | null;
 
@@ -909,7 +910,7 @@ class PersonnelService {
     worksheet.getColumn(1).numFmt = '@';
 
     personnel.forEach(p => {
-      worksheet.addRow({
+      worksheet.addRow(sanitizeRowData({
         cccd: p.cccd,
         ho_ten: p.ho_ten,
         ngay_sinh: p.ngay_sinh ? new Date(p.ngay_sinh).toISOString().slice(0, 10) : '',
@@ -919,7 +920,7 @@ class PersonnelService {
         ten_chuc_vu: p.ChucVu?.ten_chuc_vu || '',
         is_manager: p.ChucVu?.is_manager ? 'TRUE' : 'FALSE',
         he_so_chuc_vu: p.ChucVu?.he_so_chuc_vu || '',
-      });
+      }));
     });
 
     const buffer = await workbook.xlsx.writeBuffer();
@@ -978,7 +979,7 @@ class PersonnelService {
     ];
 
     sampleData.forEach(row => {
-      worksheet.addRow(row);
+      worksheet.addRow(sanitizeRowData(row));
     });
 
     // Usage notes.
@@ -1322,13 +1323,42 @@ class PersonnelService {
   async checkContributionEligibility(personnelIds) {
     const ineligiblePersonnel = [];
 
-    // Check each personnel id.
-    for (const personnelId of personnelIds) {
-      // 1) Existing approved contribution award.
-      const existingAward = await prisma.khenThuongCongHien.findUnique({
-        where: { quan_nhan_id: personnelId },
-      });
+    const [existingAwards, pendingProposals] = await Promise.all([
+      prisma.khenThuongCongHien.findMany({
+        where: { quan_nhan_id: { in: personnelIds } },
+      }),
+      prisma.bangDeXuat.findMany({
+        where: {
+          loai_de_xuat: PROPOSAL_TYPES.CONG_HIEN,
+          status: PROPOSAL_STATUS.PENDING,
+        },
+        select: {
+          id: true,
+          data_cong_hien: true,
+          nam: true,
+        },
+      }),
+    ]);
 
+    const awardByPersonnelId = new Map(existingAwards.map(a => [a.quan_nhan_id, a]));
+
+    // Build a map: personnelId -> first pending proposal that contains them.
+    const pendingByPersonnelId = new Map<string, { id: string; nam: number }>();
+    for (const proposal of pendingProposals) {
+      if (!proposal.data_cong_hien) continue;
+      const congHienList = Array.isArray(proposal.data_cong_hien)
+        ? (proposal.data_cong_hien as Array<Record<string, unknown>>)
+        : [];
+      for (const item of congHienList) {
+        const pid = item.personnel_id as string | undefined;
+        if (pid && !pendingByPersonnelId.has(pid)) {
+          pendingByPersonnelId.set(pid, { id: proposal.id, nam: proposal.nam });
+        }
+      }
+    }
+
+    for (const personnelId of personnelIds) {
+      const existingAward = awardByPersonnelId.get(personnelId);
       if (existingAward) {
         ineligiblePersonnel.push({
           personnelId,
@@ -1340,39 +1370,15 @@ class PersonnelService {
         continue;
       }
 
-      // 2) Pending CONG_HIEN proposals.
-      const pendingProposals = await prisma.bangDeXuat.findMany({
-        where: {
-          loai_de_xuat: PROPOSAL_TYPES.CONG_HIEN,
+      const pendingProposal = pendingByPersonnelId.get(personnelId);
+      if (pendingProposal) {
+        ineligiblePersonnel.push({
+          personnelId,
+          reason: 'Đang chờ duyệt đề xuất Huân chương Bảo vệ Tổ quốc',
           status: PROPOSAL_STATUS.PENDING,
-        },
-        select: {
-          id: true,
-          data_cong_hien: true,
-          nam: true,
-        },
-      });
-
-      // Check whether personnel appears in proposal payload.
-      for (const proposal of pendingProposals) {
-        if (proposal.data_cong_hien) {
-          const congHienList = Array.isArray(proposal.data_cong_hien)
-            ? (proposal.data_cong_hien as Array<Record<string, unknown>>)
-            : [];
-
-          const found = congHienList.some(item => item.personnel_id === personnelId);
-
-          if (found) {
-            ineligiblePersonnel.push({
-              personnelId,
-              reason: 'Đang chờ duyệt đề xuất Huân chương Bảo vệ Tổ quốc',
-              status: PROPOSAL_STATUS.PENDING,
-              proposalId: proposal.id,
-              proposalYear: proposal.nam,
-            });
-            break;
-          }
-        }
+          proposalId: pendingProposal.id,
+          proposalYear: pendingProposal.nam,
+        });
       }
     }
 

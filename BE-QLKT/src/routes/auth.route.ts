@@ -56,6 +56,7 @@ router.post(
  */
 router.post(
   '/change-password',
+  authLimiter,
   verifyToken,
   validate(authValidation.changePassword),
   auditLog({

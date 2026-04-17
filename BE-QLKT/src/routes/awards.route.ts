@@ -6,36 +6,12 @@ import { validate } from '../middlewares/validate';
 import { auditLog } from '../middlewares/auditLog';
 import { getLogDescription, getResourceId } from '../helpers/auditLog';
 import { ROLES } from '../constants/roles.constants';
-import { excelUpload as upload, bulkUpload } from '../configs/multer';
+import { bulkUpload } from '../configs/multer';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { awardBulkValidation } from '../validations';
 
 const router = Router();
 
-/**
- * @route   GET /api/awards/template
- * @desc    Download Excel template for award import
- * @access  ADMIN
- */
-router.get(
-  '/template',
-  verifyToken,
-  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
-  proposalController.getAwardsTemplate
-);
-
-/**
- * @route   POST /api/awards/import
- * @desc    Import awards from Excel
- * @access  ADMIN
- */
-router.post(
-  '/import',
-  verifyToken,
-  checkRole([ROLES.ADMIN]),
-  upload.single('file'),
-  proposalController.importAwards
-);
 
 /**
  * @route   GET /api/awards

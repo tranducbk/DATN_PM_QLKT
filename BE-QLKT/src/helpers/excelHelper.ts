@@ -102,4 +102,23 @@ function buildPendingKeys(
   return keys;
 }
 
-export { removeVietnameseAccents, parseHeaderMap, getHeaderCol, parseBooleanValue, resolvePersonnelInfo, buildPendingKeys };
+/**
+ * Escapes string values that start with formula-trigger characters (=, +, -, @, |, \t, \r).
+ * Prevents CSV/Excel formula injection when user data is written to spreadsheet cells.
+ * @param row - Row data object to sanitize
+ * @returns New object with all string values escaped
+ */
+function sanitizeRowData<T extends Record<string, unknown>>(row: T): T {
+  const result = {} as Record<string, unknown>;
+  for (const key of Object.keys(row)) {
+    const value = row[key];
+    if (typeof value === 'string' && /^[=+\-@|\t\r]/.test(value)) {
+      result[key] = `'${value}`;
+    } else {
+      result[key] = value;
+    }
+  }
+  return result as T;
+}
+
+export { removeVietnameseAccents, parseHeaderMap, getHeaderCol, parseBooleanValue, resolvePersonnelInfo, buildPendingKeys, sanitizeRowData };

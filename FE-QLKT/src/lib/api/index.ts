@@ -87,8 +87,6 @@ export const apiClient = {
   getScientificAchievementsTemplate: awardsApi.getScientificAchievementsTemplate,
   importScientificAchievements: awardsApi.importScientificAchievements,
   getAwards: awardsApi.getAwards,
-  getAwardsTemplate: awardsApi.getAwardsTemplate,
-  importAwards: awardsApi.importAwards,
   exportAwards: awardsApi.exportAwards,
   getHCCSVVTemplate: awardsApi.getHCCSVVTemplate,
   importHCCSVV: awardsApi.importHCCSVV,
@@ -180,7 +178,6 @@ export const apiClient = {
   getContributionProfile: profilesApi.getContributionProfile,
   getServiceProfile: profilesApi.getServiceProfile,
   recalculateProfile: profilesApi.recalculateProfile,
-  recalculateAllProfiles: profilesApi.recalculateAllProfiles,
   getAllServiceProfiles: profilesApi.getAllServiceProfiles,
   updateServiceProfile: profilesApi.updateServiceProfile,
 
