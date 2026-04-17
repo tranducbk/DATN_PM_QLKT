@@ -33,7 +33,10 @@ import {
   DeleteOutlined,
 } from '@ant-design/icons';
 import { apiClient } from '@/lib/apiClient';
-import { DEFAULT_PAGE_SIZE, DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
+import {
+  DEFAULT_PAGE_SIZE,
+  DEFAULT_ANTD_TABLE_PAGINATION,
+} from '@/lib/constants/pagination.constants';
 import { formatDateTime } from '@/lib/utils';
 import { message } from 'antd';
 import {
@@ -84,7 +87,7 @@ export default function ProposalReviewPage() {
       const response = await apiClient.getProposals({ page: 1, limit: 100 });
 
       if (response.success) {
-        setProposals(response.data?.proposals || []);
+        setProposals(response.data ?? []);
       } else {
         message.error(response.message || 'Không thể tải danh sách đề xuất');
       }
@@ -170,9 +173,7 @@ export default function ProposalReviewPage() {
       key: 'stt',
       width: 60,
       align: 'center',
-      render: (_value, _record, index) => (
-        <div style={{ textAlign: 'center' }}>{index + 1}</div>
-      ),
+      render: (_value, _record, index) => <div style={{ textAlign: 'center' }}>{index + 1}</div>,
     },
     {
       title: 'Đơn vị',
@@ -380,7 +381,11 @@ export default function ProposalReviewPage() {
               }
             >
               {/* Filter Section */}
-              <Card size="small" style={{ marginBottom: 16 }} styles={{ body: { padding: '16px' } }}>
+              <Card
+                size="small"
+                style={{ marginBottom: 16 }}
+                styles={{ body: { padding: '16px' } }}
+              >
                 <Row gutter={[16, 16]} align="bottom">
                   <Col xs={24} sm={12} md={6}>
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -465,7 +470,9 @@ export default function ProposalReviewPage() {
               {loading ? (
                 <div style={{ textAlign: 'center', padding: '48px 0' }}>
                   <Spin indicator={<LoadingOutlined style={{ fontSize: 32 }} spin />} />
-                  <div style={{ marginTop: '12px' }}><Typography.Text type="secondary">Đang tải...</Typography.Text></div>
+                  <div style={{ marginTop: '12px' }}>
+                    <Typography.Text type="secondary">Đang tải...</Typography.Text>
+                  </div>
                 </div>
               ) : filteredProposals.length === 0 ? (
                 <Empty
