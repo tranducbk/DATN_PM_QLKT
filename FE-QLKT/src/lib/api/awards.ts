@@ -851,7 +851,7 @@ export async function getAdhocAwardsByUnit(
 
 /** Create a preview-import function for a given endpoint. */
 function createPreviewImport(url: string) {
-  return async (file: File): Promise<unknown> => {
+  return async (file: File): Promise<ApiResponse> => {
     const formData = new FormData();
     formData.append('file', file);
     const res = await axiosInstance.post(url, formData, {
@@ -863,7 +863,7 @@ function createPreviewImport(url: string) {
 
 /** Create a confirm-import function for a given endpoint. */
 function createConfirmImport(url: string) {
-  return async (items: unknown[]): Promise<unknown> => {
+  return async (items: unknown[]): Promise<ApiResponse> => {
     const res = await axiosInstance.post(url, { items });
     return res.data;
   };

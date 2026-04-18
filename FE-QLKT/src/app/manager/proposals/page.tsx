@@ -33,7 +33,6 @@ import {
   ClockCircleOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
-  DownloadOutlined,
   PlusOutlined,
   DeleteOutlined,
   FilterOutlined,
@@ -53,7 +52,7 @@ import {
 const { Title, Text } = Typography;
 
 interface Proposal {
-  id: number;
+  id: string;
   loai_de_xuat: ProposalType;
   nam: number;
   don_vi: string;
@@ -78,8 +77,7 @@ export default function ManagerProposalsPage() {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
-  const [downloadingId, setDownloadingId] = useState<number | null>(null);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [yearFilter, setYearFilter] = useState<number | ''>('');
   const [typeFilter, setTypeFilter] = useState<string>('');
@@ -105,33 +103,10 @@ export default function ManagerProposalsPage() {
     }
   };
 
-  const handleDownloadExcel = async (proposalId: number) => {
-    try {
-      setDownloadingId(proposalId);
-      const blob = await apiClient.downloadProposalExcel(proposalId.toString());
-
-      // Create download link
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `de-xuat-${proposalId}-${new Date().toISOString().slice(0, 10)}.xlsx`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
-      message.success('Tải file thành công');
-    } catch (error: unknown) {
-      message.error(getApiErrorMessage(error, 'Lỗi khi tải file'));
-    } finally {
-      setDownloadingId(null);
-    }
-  };
-
-  const handleDeleteProposal = async (proposalId: number) => {
+  const handleDeleteProposal = async (proposalId: string) => {
     try {
       setDeletingId(proposalId);
-      const response = await apiClient.deleteProposal(proposalId.toString());
+      const response = await apiClient.deleteProposal(proposalId);
 
       if (response.success) {
         message.success(response.message || 'Đã xóa đề xuất thành công');
@@ -306,17 +281,6 @@ export default function ManagerProposalsPage() {
       width: 260,
       render: (_value, record) => (
         <Space>
-          {/* Tạm thời ẩn chức năng tải file Excel */}
-          {/* <Tooltip title="Tải file Excel">
-            <Button
-              icon={<DownloadOutlined />}
-              onClick={() => handleDownloadExcel(record.id)}
-              loading={downloadingId === record.id}
-              size="small"
-            >
-              Tải file
-            </Button>
-          </Tooltip> */}
           <Button
             type="primary"
             icon={<EyeOutlined />}

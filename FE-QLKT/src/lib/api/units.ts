@@ -100,7 +100,7 @@ export async function getSubUnits(params?: { co_quan_don_vi_id?: string }): Prom
  * @returns API response payload
  */
 export async function getPositions(params?: {
-  unit_id?: number;
+  unit_id?: string;
   include_children?: boolean;
 }): Promise<ApiResponse> {
   try {

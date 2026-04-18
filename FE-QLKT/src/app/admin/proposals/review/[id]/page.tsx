@@ -120,24 +120,41 @@ interface ThanhTichItem {
   } | null;
 }
 
+interface ReviewerAccount {
+  id: string;
+  username: string;
+  ho_ten?: string;
+}
+
+interface PositionHistoryEntry {
+  he_so_chuc_vu?: number;
+  so_thang?: number | null;
+}
+
+interface DecisionPayload {
+  loai_khen_thuong?: string;
+  so_quyet_dinh?: string;
+  file_path?: string | null;
+}
+
 interface ProposalDetail {
-  id: number;
+  id: string;
   loai_de_xuat: string;
   don_vi: {
-    id: number;
+    id: string;
     ma_don_vi: string;
     ten_don_vi: string;
   };
   nguoi_de_xuat: {
-    id: number;
+    id: string;
     username: string;
     ho_ten: string;
   };
   status: string;
   data_danh_hieu: DanhHieuItem[];
   data_thanh_tich: ThanhTichItem[];
-  data_nien_han: any[];
-  data_cong_hien: any[];
+  data_nien_han: DanhHieuItem[];
+  data_cong_hien: DanhHieuItem[];
   files_attached?: Array<{
     filename: string;
     originalName: string;
@@ -145,7 +162,7 @@ interface ProposalDetail {
     uploadedAt?: string;
   }>;
   ghi_chu: string | null;
-  nguoi_duyet: any;
+  nguoi_duyet: ReviewerAccount | null;
   ngay_duyet: string | null;
   createdAt: string;
   updatedAt: string;
@@ -160,11 +177,11 @@ export default function ProposalDetailPage() {
   const [proposal, setProposal] = useState<ProposalDetail | null>(null);
   const [editedDanhHieu, setEditedDanhHieu] = useState<DanhHieuItem[]>([]);
   const [editedThanhTich, setEditedThanhTich] = useState<ThanhTichItem[]>([]);
-  const [editedNienHan, setEditedNienHan] = useState<any[]>([]);
-  const [editedCongHien, setEditedCongHien] = useState<any[]>([]);
+  const [editedNienHan, setEditedNienHan] = useState<DanhHieuItem[]>([]);
+  const [editedCongHien, setEditedCongHien] = useState<DanhHieuItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [positionHistoriesMap, setPositionHistoriesMap] = useState<Record<string, any[]>>({});
-  const [personnelDetails, setPersonnelDetails] = useState<Record<string, any>>({});
+  const [positionHistoriesMap, setPositionHistoriesMap] = useState<Record<string, PositionHistoryEntry[]>>({});
+  const [personnelDetails, setPersonnelDetails] = useState<Record<string, unknown>>({});
   const [approving, setApproving] = useState(false);
   const [rejecting, setRejecting] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -277,7 +294,7 @@ export default function ProposalDetailPage() {
 
   const fetchPersonnelDetails = async (danhHieuItems: DanhHieuItem[]) => {
     try {
-      const detailsMap: Record<string, any> = {};
+      const detailsMap: Record<string, unknown> = {};
 
       await Promise.all(
         danhHieuItems.map(async item => {
@@ -302,7 +319,7 @@ export default function ProposalDetailPage() {
 
   const fetchPositionHistories = async (danhHieuItems: DanhHieuItem[]) => {
     try {
-      const historiesMap: Record<string, any[]> = {};
+      const historiesMap: Record<string, PositionHistoryEntry[]> = {};
 
       await Promise.all(
         danhHieuItems.map(async item => {
@@ -330,7 +347,7 @@ export default function ProposalDetailPage() {
     const histories = positionHistoriesMap[personnelId] || [];
     let totalMonths = 0;
 
-    histories.forEach((history: any) => {
+    histories.forEach((history: PositionHistoryEntry) => {
       const heSo = Number(history.he_so_chuc_vu) || 0;
       let belongsToGroup = false;
 
@@ -582,11 +599,11 @@ export default function ProposalDetailPage() {
     });
   };
 
-  const handleDecisionSuccess = (decision: any) => {
+  const handleDecisionSuccess = (decision: DecisionPayload) => {
     if (decisionModalType === 'danh_hieu') {
       const loaiDeXuat = proposal?.loai_de_xuat;
 
-      const applyDecision = (item: any, index: number) => {
+      const applyDecision = (item: DanhHieuItem, index: number) => {
         if (!selectedRowKeys.includes(index)) return item;
 
         const loaiKhenThuong = decision.loai_khen_thuong || '';
@@ -685,25 +702,25 @@ export default function ProposalDetailPage() {
     }
   };
 
-  const updateDanhHieu = (index: number, field: keyof DanhHieuItem, value: any) => {
+  const updateDanhHieu = (index: number, field: keyof DanhHieuItem, value: unknown) => {
     const newData = [...editedDanhHieu];
     newData[index] = { ...newData[index], [field]: value };
     setEditedDanhHieu(newData);
   };
 
-  const updateThanhTich = (index: number, field: keyof ThanhTichItem, value: any) => {
+  const updateThanhTich = (index: number, field: keyof ThanhTichItem, value: unknown) => {
     const newData = [...editedThanhTich];
     newData[index] = { ...newData[index], [field]: value };
     setEditedThanhTich(newData);
   };
 
-  const updateNienHan = (index: number, field: string, value: any) => {
+  const updateNienHan = (index: number, field: keyof DanhHieuItem, value: unknown) => {
     const newData = [...editedNienHan];
     newData[index] = { ...newData[index], [field]: value };
     setEditedNienHan(newData);
   };
 
-  const updateCongHien = (index: number, field: string, value: any) => {
+  const updateCongHien = (index: number, field: keyof DanhHieuItem, value: unknown) => {
     const newData = [...editedCongHien];
     newData[index] = { ...newData[index], [field]: value };
     setEditedCongHien(newData);
@@ -754,7 +771,7 @@ export default function ProposalDetailPage() {
       key: 'stt',
       width: 60,
       align: 'center' as const,
-      render: (_: any, __: any, index: number) => index + 1,
+      render: (_: unknown, __: unknown, index: number) => index + 1,
     },
     {
       title: 'Họ tên',
@@ -787,7 +804,7 @@ export default function ProposalDetailPage() {
       key: 'cap_bac_chuc_vu',
       width: 180,
       align: 'center' as const,
-      render: (_: any, record: DanhHieuItem) => {
+      render: (_: unknown, record: DanhHieuItem) => {
         const capBac = record.cap_bac;
         const chucVu = record.chuc_vu;
 
@@ -813,7 +830,7 @@ export default function ProposalDetailPage() {
       key: 'nam',
       width: 80,
       align: 'center' as const,
-      render: (_: any, record: DanhHieuItem, index: number) => (
+      render: (_: unknown, record: DanhHieuItem, index: number) => (
         <div style={{ textAlign: 'center' }}>
           <EditableCell
             value={record.nam}
@@ -830,7 +847,7 @@ export default function ProposalDetailPage() {
       key: 'danh_hieu',
       width: 250,
       align: 'center' as const,
-      render: (_: any, record: DanhHieuItem, index: number) => {
+      render: (_: unknown, record: DanhHieuItem, index: number) => {
         const fullName = getDanhHieuName(record.danh_hieu || '');
         return (
           <div style={{ textAlign: 'center' }}>
@@ -846,7 +863,7 @@ export default function ProposalDetailPage() {
             key: 'total_time_0_7',
             width: 150,
             align: 'center' as const,
-            render: (_: any, record: DanhHieuItem) =>
+            render: (_: unknown, record: DanhHieuItem) =>
               calculateTotalTimeByGroup(record.personnel_id ?? '', '0.7'),
           },
           {
@@ -854,7 +871,7 @@ export default function ProposalDetailPage() {
             key: 'total_time_0_8',
             width: 150,
             align: 'center' as const,
-            render: (_: any, record: DanhHieuItem) =>
+            render: (_: unknown, record: DanhHieuItem) =>
               calculateTotalTimeByGroup(record.personnel_id ?? '', '0.8'),
           },
           {
@@ -862,7 +879,7 @@ export default function ProposalDetailPage() {
             key: 'total_time_0_9_1_0',
             width: 150,
             align: 'center' as const,
-            render: (_: any, record: DanhHieuItem) =>
+            render: (_: unknown, record: DanhHieuItem) =>
               calculateTotalTimeByGroup(record.personnel_id ?? '', '0.9-1.0'),
           },
         ]
@@ -873,7 +890,7 @@ export default function ProposalDetailPage() {
       key: 'so_quyet_dinh',
       width: 180,
       align: 'center' as const,
-      render: (_: any, record: DanhHieuItem, index: number) => {
+      render: (_: unknown, record: DanhHieuItem, index: number) => {
         // Check both so_quyet_dinh and legacy fields for backward compatibility
         const soQuyetDinh =
           record.so_quyet_dinh || record.so_quyet_dinh_bkbqp || record.so_quyet_dinh_cstdtq;
@@ -922,14 +939,14 @@ export default function ProposalDetailPage() {
       key: 'stt',
       width: 60,
       align: 'center' as const,
-      render: (_: any, __: any, index: number) => index + 1,
+      render: (_: unknown, __: unknown, index: number) => index + 1,
     },
     {
       title: 'Loại đơn vị',
       key: 'loai_don_vi',
       width: 150,
       align: 'center' as const,
-      render: (_: any, record: DanhHieuItem) => {
+      render: (_: unknown, record: DanhHieuItem) => {
         const type =
           record.don_vi_type ||
           (record.co_quan_don_vi_cha ? 'DON_VI_TRUC_THUOC' : 'CO_QUAN_DON_VI');
@@ -972,7 +989,7 @@ export default function ProposalDetailPage() {
       key: 'nam',
       width: 80,
       align: 'center' as const,
-      render: (_: any, record: DanhHieuItem, index: number) => (
+      render: (_: unknown, record: DanhHieuItem, index: number) => (
         <div style={{ textAlign: 'center' }}>
           <EditableCell
             value={record.nam}
@@ -989,7 +1006,7 @@ export default function ProposalDetailPage() {
       key: 'danh_hieu',
       width: 200,
       align: 'center' as const,
-      render: (_: any, record: DanhHieuItem, index: number) => {
+      render: (_: unknown, record: DanhHieuItem, index: number) => {
         const danhHieuMap: Record<string, string> = {
           ĐVQT: 'Đơn vị Quyết thắng',
           ĐVTT: 'Đơn vị Tiên tiến',
@@ -1012,7 +1029,7 @@ export default function ProposalDetailPage() {
       key: 'so_quyet_dinh',
       width: 180,
       align: 'center' as const,
-      render: (_: any, record: DanhHieuItem, index: number) => {
+      render: (_: unknown, record: DanhHieuItem, index: number) => {
         // Check both so_quyet_dinh and legacy fields for backward compatibility
         const soQuyetDinh =
           record.so_quyet_dinh || record.so_quyet_dinh_bkbqp || record.so_quyet_dinh_cstdtq;
@@ -1062,7 +1079,7 @@ export default function ProposalDetailPage() {
       key: 'stt',
       width: 60,
       align: 'center' as const,
-      render: (_: any, __: any, index: number) => (
+      render: (_: unknown, __: unknown, index: number) => (
         <div style={{ textAlign: 'center' }}>{index + 1}</div>
       ),
     },
@@ -1097,7 +1114,7 @@ export default function ProposalDetailPage() {
       key: 'cap_bac_chuc_vu',
       width: 180,
       align: 'center' as const,
-      render: (_: any, record: ThanhTichItem) => {
+      render: (_: unknown, record: ThanhTichItem) => {
         // Rank/position stored at proposal creation time (Step 3), not current personnel data
         const capBac = record.cap_bac;
         const chucVu = record.chuc_vu;
@@ -1130,7 +1147,7 @@ export default function ProposalDetailPage() {
       key: 'nam',
       width: 80,
       align: 'center' as const,
-      render: (_: any, record: ThanhTichItem, index: number) => (
+      render: (_: unknown, record: ThanhTichItem, index: number) => (
         <div style={{ textAlign: 'center' }}>
           <EditableCell
             value={record.nam}
@@ -1147,7 +1164,7 @@ export default function ProposalDetailPage() {
       key: 'loai',
       width: 100,
       align: 'center' as const,
-      render: (_: any, record: ThanhTichItem, index: number) => (
+      render: (_: unknown, record: ThanhTichItem, index: number) => (
         <div style={{ textAlign: 'center' }}>
           <EditableCell
             value={record.loai}
@@ -1167,7 +1184,7 @@ export default function ProposalDetailPage() {
       dataIndex: 'mo_ta',
       key: 'mo_ta',
       align: 'center' as const,
-      render: (_: any, record: ThanhTichItem, index: number) => (
+      render: (_: unknown, record: ThanhTichItem, index: number) => (
         <div style={{ textAlign: 'center' }}>
           <EditableCell
             value={record.mo_ta}
@@ -1184,7 +1201,7 @@ export default function ProposalDetailPage() {
       key: 'so_quyet_dinh',
       width: 180,
       align: 'center' as const,
-      render: (_: any, record: ThanhTichItem, index: number) => {
+      render: (_: unknown, record: ThanhTichItem, index: number) => {
         const soQuyetDinh = record.so_quyet_dinh;
         if (!soQuyetDinh || (typeof soQuyetDinh === 'string' && soQuyetDinh.trim() === '')) {
           return (
@@ -1391,7 +1408,7 @@ export default function ProposalDetailPage() {
         <Card title="File đính kèm" style={{ marginBottom: '24px' }}>
           {proposal.files_attached && proposal.files_attached.length > 0 ? (
             <Space direction="vertical" style={{ width: '100%' }} size="small">
-              {proposal.files_attached.map((file: any, index: number) => (
+              {proposal.files_attached.map((file: { filename: string; originalName?: string; originalname?: string; size?: number }, index: number) => (
                 <div
                   key={index}
                   className="file-attachment-item"

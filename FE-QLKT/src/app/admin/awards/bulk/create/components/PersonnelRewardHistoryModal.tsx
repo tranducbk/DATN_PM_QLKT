@@ -70,7 +70,7 @@ export function PersonnelRewardHistoryModal({
     const filename = filePath.split('/').pop() || 'quyet-dinh.pdf';
     await previewFileWithApi(
       `/api/annual-rewards/decision-files/${filename}`,
-      `${soQuyetDinh || 'quyet-dinh'}.pdf`
+      `${soQuyetDinh}.pdf`
     );
   };
 

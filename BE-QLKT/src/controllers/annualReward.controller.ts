@@ -82,8 +82,19 @@ interface BulkCreateAnnualRewardsBody {
   chuc_vu?: string;
 }
 
+interface ConfirmImportItem {
+  personnel_id: string;
+  ho_ten: string;
+  nam: number;
+  danh_hieu: string;
+  cap_bac?: string | null;
+  chuc_vu?: string | null;
+  so_quyet_dinh?: string | null;
+  ghi_chu?: string | null;
+}
+
 interface ConfirmImportBody {
-  items?: any[];
+  items?: ConfirmImportItem[];
 }
 
 interface GetTemplateQuery {

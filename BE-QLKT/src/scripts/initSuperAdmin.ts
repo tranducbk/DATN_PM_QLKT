@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 /**
- * Script khởi tạo Super Admin cho hệ thống QLKT
- * Chạy: npm run init-super-admin
+ * Script to initialize Super Admin for the system
+ * Run: npm run init-super-admin
  */
 
 import 'dotenv/config';
@@ -14,17 +14,17 @@ const prisma = new PrismaClient();
 
 async function initializeSuperAdmin() {
   try {
-    console.log('🚀 Bắt đầu khởi tạo SUPER_ADMIN...\n');
+    console.log('🚀 Starting to initialize SUPER_ADMIN...\n');
 
     const existingSuperAdmin = await prisma.taiKhoan.findFirst({
       where: { role: ROLES.SUPER_ADMIN },
     });
 
     if (existingSuperAdmin) {
-      console.log('⚠️  Đã tồn tại tài khoản SUPER_ADMIN!');
+      console.log('⚠️  SUPER_ADMIN already exists!');
       console.log(`   - Username: ${existingSuperAdmin.username}`);
       console.log(`   - ID: ${existingSuperAdmin.id}`);
-      console.log('\nℹ️  Nếu muốn tạo lại, hãy xóa tài khoản này trước.\n');
+      console.log('\nℹ️  If you want to create again, please delete the account first.\n');
       process.exit(1);
     }
 
@@ -33,14 +33,14 @@ async function initializeSuperAdmin() {
     });
 
     if (existingUser) {
-      console.log("❌ Username 'superadmin' đã tồn tại!");
-      console.log('💡 Vui lòng xóa user này trước hoặc chọn username khác.\n');
+      console.log("❌ Username 'superadmin' already exists!");
+      console.log('💡 Please delete this user before or choose a different username.\n');
       process.exit(1);
     }
 
     const defaultPassword = process.env.DEFAULT_PASSWORD;
     if (!defaultPassword) {
-      console.error('❌ Chưa set biến môi trường DEFAULT_PASSWORD');
+      console.error('❌ DEFAULT_PASSWORD environment variable is not set');
       process.exit(1);
     }
     const hashedPassword = await bcrypt.hash(defaultPassword, 10);
@@ -55,17 +55,19 @@ async function initializeSuperAdmin() {
       },
     });
 
-    console.log('✅ Khởi tạo SUPER_ADMIN thành công!\n');
-    console.log('📋 Thông tin đăng nhập:');
+    console.log('✅ SUPER_ADMIN initialization successful!\n');
+    console.log('📋 Login information:');
     console.log(`   ├─ Username: ${superAdmin.username}`);
     console.log(`   ├─ Password: ${defaultPassword}`);
     console.log(`   ├─ Role: ${superAdmin.role}`);
     console.log(`   └─ ID: ${superAdmin.id}`);
-    console.log('\n⚠️  QUAN TRỌNG: Hãy đổi mật khẩu ngay sau khi đăng nhập lần đầu!\n');
+    console.log(
+      '\n⚠️  IMPORTANT: Please change your password immediately after logging in for the first time!\n'
+    );
 
     process.exit(0);
   } catch (error) {
-    console.error('❌ Lỗi khi khởi tạo SUPER_ADMIN:');
+    console.error('❌ Error initializing SUPER_ADMIN:');
     console.error(error);
     process.exit(1);
   } finally {

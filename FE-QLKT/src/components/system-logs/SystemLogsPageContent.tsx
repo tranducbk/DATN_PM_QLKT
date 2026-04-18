@@ -20,6 +20,7 @@ import { apiClient } from '@/lib/apiClient';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
 import { useTheme } from '@/components/ThemeProvider';
 import { useDevZone } from '@/contexts/DevZoneContext';
+import type { SystemLogStats } from '@/lib/api/systemLogs';
 import Link from 'next/link';
 
 const { Title, Text } = Typography;
@@ -81,17 +82,19 @@ export function SystemLogsPageContent({ basePath }: SystemLogsPageContentProps) 
         limit: pagination.pageSize,
       });
       // API response may nest data in various shapes; extract safely
-      const payload = (res as Record<string, unknown>)?.data ?? res;
-      const data = (payload as Record<string, unknown>)?.data || payload;
+      const payload = res.data ?? res;
+      const data =
+        payload && typeof payload === 'object' && 'data' in payload
+          ? (payload as { data?: unknown }).data
+          : payload;
       const list: RawLogEntry[] = Array.isArray(data)
         ? data
-        : ((data as Record<string, unknown>)?.logs as RawLogEntry[]) ||
-          ((data as Record<string, unknown>)?.items as RawLogEntry[]) ||
-          ((data as Record<string, unknown>)?.results as RawLogEntry[]) ||
+        : ((data as { logs?: RawLogEntry[] })?.logs as RawLogEntry[]) ||
+          ((data as { items?: RawLogEntry[] })?.items as RawLogEntry[]) ||
+          ((data as { results?: RawLogEntry[] })?.results as RawLogEntry[]) ||
           [];
 
-      const resObj = res as Record<string, unknown>;
-      const paginationInfo = resObj?.pagination as PaginationData | undefined;
+      const paginationInfo = res.pagination as PaginationData | undefined;
       if (paginationInfo) {
         setPagination(prev => ({
           ...prev,
@@ -99,7 +102,7 @@ export function SystemLogsPageContent({ basePath }: SystemLogsPageContentProps) 
         }));
       }
 
-      const statsInfo = resObj?.stats as { create?: number; delete?: number; update?: number } | undefined;
+      const statsInfo = res.stats as SystemLogStats | undefined;
       if (statsInfo) {
         setStats({
           create: statsInfo.create || 0,

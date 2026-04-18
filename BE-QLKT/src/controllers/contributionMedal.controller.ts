@@ -14,8 +14,21 @@ interface GetTemplateQuery {
   [key: string]: string | string[] | undefined;
 }
 
+interface ConfirmImportItem {
+  row: number;
+  personnel_id: string;
+  ho_ten: string | null;
+  nam: number;
+  danh_hieu: string;
+  so_quyet_dinh: string;
+  cap_bac: string | null;
+  chuc_vu: string | null;
+  ghi_chu: string | null;
+  history: Array<{ nam: number; danh_hieu: string; so_quyet_dinh: string | null }>;
+}
+
 interface ConfirmImportBody {
-  items?: any[];
+  items?: ConfirmImportItem[];
 }
 
 interface GetAllQuery {
@@ -84,6 +97,9 @@ class ContributionAwardController {
     const user = req.user!;
     const body = req.body as ConfirmImportBody;
     const { items } = body;
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return ResponseHelper.badRequest(res, 'Không có dữ liệu để import');
+    }
     const result = await contributionAwardService.confirmImport(items, user.id);
     await writeSystemLog({
       userId: user.id,

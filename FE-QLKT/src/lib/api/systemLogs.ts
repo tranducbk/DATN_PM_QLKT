@@ -2,11 +2,21 @@ import axiosInstance from '@/utils/axiosInstance';
 import { getApiErrorMessage } from '@/lib/apiError';
 import type { ApiResponse } from '@/lib/types';
 
+export type SystemLogStats = {
+  create?: number;
+  delete?: number;
+  update?: number;
+};
+
+export type SystemLogsResponse<T = unknown> = ApiResponse<T> & {
+  stats?: SystemLogStats;
+};
+
 /**
  * getSystemLogs API wrapper.
  * @returns API response payload
  */
-export async function getSystemLogs(params?: Record<string, unknown>): Promise<any> {
+export async function getSystemLogs(params?: Record<string, unknown>): Promise<SystemLogsResponse> {
   try {
     const res = await axiosInstance.get('/api/system-logs', { params });
     return { success: res.data?.success, data: res.data?.data, pagination: res.data?.pagination, stats: res.data?.stats };

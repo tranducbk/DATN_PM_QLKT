@@ -51,7 +51,7 @@ import {
 const { Title, Paragraph } = Typography;
 
 interface Proposal {
-  id: number;
+  id: string;
   don_vi: string;
   nguoi_de_xuat: string;
   status: string;
@@ -75,7 +75,7 @@ export default function ProposalReviewPage() {
   const [yearFilter, setYearFilter] = useState<number | ''>('');
   const [typeFilter, setTypeFilter] = useState<string>('');
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchProposals();
@@ -142,10 +142,10 @@ export default function ProposalReviewPage() {
     setTypeFilter('');
   };
 
-  const handleDeleteProposal = async (proposalId: number) => {
+  const handleDeleteProposal = async (proposalId: string) => {
     try {
       setDeletingId(proposalId);
-      const response = await apiClient.deleteProposal(proposalId.toString());
+      const response = await apiClient.deleteProposal(proposalId);
 
       if (response.success) {
         message.success(response.message || 'Đã xóa đề xuất thành công');

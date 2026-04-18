@@ -107,8 +107,26 @@ interface CheckDuplicateUnitAwardQuery {
   proposal_type?: string;
 }
 
-interface CheckDuplicateBatchBody {
-  items?: any[];
+interface CheckDuplicatePersonnelBatchItem {
+  personnel_id: string;
+  nam: number;
+  danh_hieu: string;
+  proposal_type: string;
+}
+
+interface CheckDuplicateUnitBatchItem {
+  don_vi_id: string;
+  nam: number;
+  danh_hieu: string;
+  proposal_type: string;
+}
+
+interface CheckDuplicatePersonnelBatchBody {
+  items?: CheckDuplicatePersonnelBatchItem[];
+}
+
+interface CheckDuplicateUnitBatchBody {
+  items?: CheckDuplicateUnitBatchItem[];
 }
 
 class ProposalController {
@@ -505,7 +523,7 @@ class ProposalController {
   });
 
   checkDuplicateBatch = catchAsync(async (req: Request, res: Response) => {
-    const body = req.body as CheckDuplicateBatchBody;
+    const body = req.body as CheckDuplicatePersonnelBatchBody;
     const { items } = body;
     if (!Array.isArray(items) || items.length === 0) {
       return ResponseHelper.badRequest(res, 'Danh sách kiểm tra không hợp lệ');
@@ -516,7 +534,7 @@ class ProposalController {
   });
 
   checkDuplicateUnitBatch = catchAsync(async (req: Request, res: Response) => {
-    const body = req.body as CheckDuplicateBatchBody;
+    const body = req.body as CheckDuplicateUnitBatchBody;
     const { items } = body;
     if (!Array.isArray(items) || items.length === 0) {
       return ResponseHelper.badRequest(res, 'Danh sách kiểm tra không hợp lệ');

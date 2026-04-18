@@ -44,7 +44,7 @@ const { Title, Paragraph, Text } = Typography;
 
 interface HistoryRecord {
   id: string;
-  chuc_vu_id: number;
+  chuc_vu_id: string;
   chuc_vu_name: string;
   ngay_bat_dau: string;
   ngay_ket_thuc?: string;

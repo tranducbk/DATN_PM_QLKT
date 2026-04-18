@@ -20,7 +20,6 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import {
   HomeOutlined,
   ArrowLeftOutlined,
-  DownloadOutlined,
   EyeOutlined,
   ClockCircleOutlined,
   CheckCircleOutlined,
@@ -36,6 +35,7 @@ import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { previewFileWithApi } from '@/utils/filePreview';
 import { useTheme } from '@/components/ThemeProvider';
 import { getAntdTableThemeConfig } from '@/lib/antdTheme';
+import { DANH_HIEU_MAP } from '@/constants/danhHieu.constants';
 import {
   PROPOSAL_STATUS,
   PROPOSAL_STATUS_LABELS,
@@ -65,6 +65,21 @@ interface DanhHieuItem {
   nhan_bkttcp?: boolean;
   so_quyet_dinh_bkttcp?: string | null;
   file_quyet_dinh_cstdtq?: string | null;
+  thoi_gian_nhom_0_7?: {
+    display?: string;
+    years?: number;
+    months?: number;
+  } | null;
+  thoi_gian_nhom_0_8?: {
+    display?: string;
+    years?: number;
+    months?: number;
+  } | null;
+  thoi_gian_nhom_0_9_1_0?: {
+    display?: string;
+    years?: number;
+    months?: number;
+  } | null;
   co_quan_don_vi?: {
     id: string;
     ten_co_quan_don_vi: string;
@@ -117,17 +132,35 @@ interface AttachedFile {
   uploadedAt: string;
 }
 
+interface ReviewerAccount {
+  id: string;
+  username: string;
+  ho_ten?: string;
+}
+
+interface PositionHistoryEntry {
+  he_so_chuc_vu?: number;
+  so_thang?: number | null;
+}
+
+interface DurationDisplay {
+  display?: string;
+  years?: number;
+  months?: number;
+}
+
+
 interface ProposalDetail {
-  id: number;
+  id: string;
   loai_de_xuat: ProposalType;
   nam: number;
   don_vi: {
-    id: number;
+    id: string;
     ma_don_vi: string;
     ten_don_vi: string;
   };
   nguoi_de_xuat: {
-    id: number;
+    id: string;
     username: string;
     ho_ten: string;
   };
@@ -137,7 +170,7 @@ interface ProposalDetail {
   data_nien_han?: DanhHieuItem[];
   data_cong_hien?: DanhHieuItem[];
   files_attached: AttachedFile[];
-  nguoi_duyet: any;
+  nguoi_duyet: ReviewerAccount | null;
   ngay_duyet: string | null;
   ghi_chu: string | null;
   rejection_reason: string | null;
@@ -152,8 +185,7 @@ export default function ManagerProposalDetailPage() {
   const proposalId = params?.id as string;
   const [proposal, setProposal] = useState<ProposalDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [downloading, setDownloading] = useState(false);
-  const [positionHistoriesMap, setPositionHistoriesMap] = useState<Record<string, any[]>>({});
+  const [positionHistoriesMap, setPositionHistoriesMap] = useState<Record<string, PositionHistoryEntry[]>>({});
 
   useEffect(() => {
     if (proposalId) {
@@ -171,7 +203,7 @@ export default function ManagerProposalDetailPage() {
       if (response.success) {
         setProposal(response.data);
 
-        let personnelData: any[] = [];
+        let personnelData: DanhHieuItem[] = [];
 
         if (response.data.data_danh_hieu) {
           const danhHieuData = Array.isArray(response.data.data_danh_hieu)
@@ -220,7 +252,7 @@ export default function ManagerProposalDetailPage() {
 
   const fetchPositionHistories = async (danhHieuItems: DanhHieuItem[]) => {
     try {
-      const historiesMap: Record<string, any[]> = {};
+      const historiesMap: Record<string, PositionHistoryEntry[]> = {};
 
       await Promise.all(
         danhHieuItems.map(async item => {
@@ -248,7 +280,7 @@ export default function ManagerProposalDetailPage() {
     const histories = positionHistoriesMap[personnelId] || [];
     let totalMonths = 0;
 
-    histories.forEach((history: any) => {
+    histories.forEach((history: PositionHistoryEntry) => {
       const heSo = Number(history.he_so_chuc_vu) || 0;
       let belongsToGroup = false;
 
@@ -280,29 +312,6 @@ export default function ManagerProposalDetailPage() {
 
   const handleOpenDecisionFile = async (soQuyetDinh: string) => {
     await downloadDecisionFile(soQuyetDinh);
-  };
-
-  const handleDownloadExcel = async () => {
-    try {
-      setDownloading(true);
-      const blob = await apiClient.downloadProposalExcel(proposalId.toString());
-
-      // Create download link
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `de-xuat-${proposalId}-${new Date().toISOString().slice(0, 10)}.xlsx`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
-      message.success('Tải file thành công');
-    } catch (error: unknown) {
-      message.error(getApiErrorMessage(error, 'Lỗi khi tải file'));
-    } finally {
-      setDownloading(false);
-    }
   };
 
   const getStatusTag = (status: string) => {
@@ -378,16 +387,6 @@ export default function ManagerProposalDetailPage() {
               Chi tiết đề xuất {getProposalTypeLabel(proposal.loai_de_xuat)}
             </Title>
           </div>
-          {/* Tạm thời ẩn chức năng tải file Excel */}
-          {/* <Button
-            type="primary"
-            icon={<DownloadOutlined />}
-            onClick={handleDownloadExcel}
-            loading={downloading}
-            size="large"
-          >
-            Tải file Excel
-          </Button> */}
         </div>
 
         {/* Status Alert */}
@@ -599,7 +598,7 @@ export default function ManagerProposalDetailPage() {
                   key: 'ho_ten',
                   width: 250,
                   align: 'center',
-                  render: (text: string, record: any) => {
+                  render: (text: string, record: ThanhTichItem) => {
                     const coQuanDonVi = record.co_quan_don_vi?.ten_co_quan_don_vi;
                     const donViTrucThuoc = record.don_vi_truc_thuoc?.ten_don_vi;
                     const parts = [];
@@ -626,7 +625,7 @@ export default function ManagerProposalDetailPage() {
                   key: 'cap_bac_chuc_vu',
                   width: 180,
                   align: 'center',
-                  render: (_: any, record: any) => {
+                  render: (_: unknown, record: ThanhTichItem) => {
                     // Rank/position stored at proposal creation time (Step 3), not current personnel data
                     const capBac = record.cap_bac;
                     const chucVu = record.chuc_vu;
@@ -746,7 +745,7 @@ export default function ManagerProposalDetailPage() {
                   key: 'ho_ten',
                   width: 250,
                   align: 'center',
-                  render: (text: string, record: any) => {
+                  render: (text: string, record: DanhHieuItem) => {
                     const coQuanDonVi = record.co_quan_don_vi?.ten_co_quan_don_vi;
                     const donViTrucThuoc = record.don_vi_truc_thuoc?.ten_don_vi;
                     const parts = [];
@@ -773,7 +772,7 @@ export default function ManagerProposalDetailPage() {
                   key: 'cap_bac_chuc_vu',
                   width: 180,
                   align: 'center',
-                  render: (_: any, record: any) => {
+                  render: (_: unknown, record: DanhHieuItem) => {
                     // Rank/position stored at proposal creation time (Step 3), not current personnel data
                     const capBac = record.cap_bac;
                     const chucVu = record.chuc_vu;
@@ -814,18 +813,8 @@ export default function ManagerProposalDetailPage() {
                   width: 280,
                   align: 'center',
                   render: (text: string) => {
-                    const danhHieuMap: Record<string, string> = {
-                      HCCSVV_HANG_BA: 'Huy chương Chiến sĩ Vẻ vang - Hạng Ba',
-                      HCCSVV_HANG_NHI: 'Huy chương Chiến sĩ Vẻ vang - Hạng Nhì',
-                      HCCSVV_HANG_NHAT: 'Huy chương Chiến sĩ Vẻ vang - Hạng Nhất',
-                      HCBVTQ_HANG_BA: 'Huân chương Bảo vệ Tổ quốc - Hạng Ba',
-                      HCBVTQ_HANG_NHI: 'Huân chương Bảo vệ Tổ quốc - Hạng Nhì',
-                      HCBVTQ_HANG_NHAT: 'Huân chương Bảo vệ Tổ quốc - Hạng Nhất',
-                      HC_QKQT: 'Huy chương Quân kỳ Quyết thắng',
-                      KNC_VSNXD_QDNDVN: 'Kỷ niệm chương VSNXD QĐNDVN',
-                    };
                     return text ? (
-                      <Text style={{ whiteSpace: 'nowrap' }}>{danhHieuMap[text] || text}</Text>
+                      <Text style={{ whiteSpace: 'nowrap' }}>{DANH_HIEU_MAP[text] || text}</Text>
                     ) : (
                       <Text type="secondary">-</Text>
                     );
@@ -836,7 +825,7 @@ export default function ManagerProposalDetailPage() {
                   key: 'total_time_0_7',
                   width: 150,
                   align: 'center' as const,
-                  render: (_: any, record: any) => {
+                  render: (_: unknown, record: DanhHieuItem) => {
                     const thoiGian = record.thoi_gian_nhom_0_7;
                     if (thoiGian && typeof thoiGian === 'object' && thoiGian.display) {
                       return <Text style={{ whiteSpace: 'nowrap' }}>{thoiGian.display}</Text>;
@@ -853,7 +842,7 @@ export default function ManagerProposalDetailPage() {
                   key: 'total_time_0_8',
                   width: 150,
                   align: 'center' as const,
-                  render: (_: any, record: any) => {
+                  render: (_: unknown, record: DanhHieuItem) => {
                     const thoiGian = record.thoi_gian_nhom_0_8;
                     if (thoiGian && typeof thoiGian === 'object' && thoiGian.display) {
                       return <Text style={{ whiteSpace: 'nowrap' }}>{thoiGian.display}</Text>;
@@ -870,7 +859,7 @@ export default function ManagerProposalDetailPage() {
                   key: 'total_time_0_9_1_0',
                   width: 150,
                   align: 'center' as const,
-                  render: (_: any, record: any) => {
+                  render: (_: unknown, record: DanhHieuItem) => {
                     const thoiGian = record.thoi_gian_nhom_0_9_1_0;
                     if (thoiGian && typeof thoiGian === 'object' && thoiGian.display) {
                       return <Text style={{ whiteSpace: 'nowrap' }}>{thoiGian.display}</Text>;
@@ -956,7 +945,7 @@ export default function ManagerProposalDetailPage() {
                       : 'ho_ten',
                   width: 250,
                   align: 'center',
-                  render: (text: string, record: any) => {
+                  render: (text: string, record: DanhHieuItem) => {
                     if (proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
                       // For units, show unit name
                       return (
@@ -1008,12 +997,13 @@ export default function ManagerProposalDetailPage() {
                       : 'cap_bac_chuc_vu',
                   width: 180,
                   align: 'center',
-                  render: (_: any, record: any) => {
+                  render: (_: unknown, record: DanhHieuItem) => {
                     if (proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
                       // For units, show unit code
+                      const unitRecord = record as DanhHieuItem & { ma_don_vi?: string };
                       return (
                         <Text strong style={{ whiteSpace: 'nowrap' }}>
-                          {record.ma_don_vi || '-'}
+                          {unitRecord.ma_don_vi || '-'}
                         </Text>
                       );
                     } else {
@@ -1064,25 +1054,8 @@ export default function ManagerProposalDetailPage() {
                   width: 280,
                   align: 'center',
                   render: (text: string) => {
-                    const danhHieuMap: Record<string, string> = {
-                      CSTDCS: 'Chiến sĩ thi đua cơ sở',
-                      CSTT: 'Chiến sĩ tiên tiến',
-                      BKBQP: 'Bằng khen của Bộ trưởng Bộ Quốc phòng',
-                      CSTDTQ: 'Chiến sĩ thi đua toàn quân',
-                      ĐVQT: 'Đơn vị Quyết thắng',
-                      ĐVTT: 'Đơn vị Tiên tiến',
-                      BKTTCP: 'Bằng khen Thủ tướng Chính phủ',
-                      HCCSVV_HANG_BA: 'Huy chương Chiến sĩ Vẻ vang - Hạng Ba',
-                      HCCSVV_HANG_NHI: 'Huy chương Chiến sĩ Vẻ vang - Hạng Nhì',
-                      HCCSVV_HANG_NHAT: 'Huy chương Chiến sĩ Vẻ vang - Hạng Nhất',
-                      HCBVTQ_HANG_BA: 'Huân chương Bảo vệ Tổ quốc - Hạng Ba',
-                      HCBVTQ_HANG_NHI: 'Huân chương Bảo vệ Tổ quốc - Hạng Nhì',
-                      HCBVTQ_HANG_NHAT: 'Huân chương Bảo vệ Tổ quốc - Hạng Nhất',
-                      HC_QKQT: 'Huy chương Quân kỳ Quyết thắng',
-                      KNC_VSNXD_QDNDVN: 'Kỷ niệm chương VSNXD QĐNDVN',
-                    };
                     return text ? (
-                      <Text style={{ whiteSpace: 'nowrap' }}>{danhHieuMap[text] || text}</Text>
+                      <Text style={{ whiteSpace: 'nowrap' }}>{DANH_HIEU_MAP[text] || text}</Text>
                     ) : (
                       <Text type="secondary">-</Text>
                     );
@@ -1096,7 +1069,7 @@ export default function ManagerProposalDetailPage() {
                         key: 'total_time_0_7',
                         width: 150,
                         align: 'center' as const,
-                        render: (_: any, record: DanhHieuItem) =>
+                        render: (_: unknown, record: DanhHieuItem) =>
                           calculateTotalTimeByGroup(record.personnel_id || '', '0.7'),
                       },
                       {
@@ -1104,7 +1077,7 @@ export default function ManagerProposalDetailPage() {
                         key: 'total_time_0_8',
                         width: 150,
                         align: 'center' as const,
-                        render: (_: any, record: DanhHieuItem) =>
+                        render: (_: unknown, record: DanhHieuItem) =>
                           calculateTotalTimeByGroup(record.personnel_id || '', '0.8'),
                       },
                       {
@@ -1112,7 +1085,7 @@ export default function ManagerProposalDetailPage() {
                         key: 'total_time_0_9_1_0',
                         width: 150,
                         align: 'center' as const,
-                        render: (_: any, record: DanhHieuItem) =>
+                        render: (_: unknown, record: DanhHieuItem) =>
                           calculateTotalTimeByGroup(record.personnel_id || '', '0.9-1.0'),
                       },
                     ]
@@ -1188,7 +1161,7 @@ export default function ManagerProposalDetailPage() {
                   key: 'ho_ten',
                   width: 250,
                   align: 'center',
-                  render: (text: string, record: any) => {
+                  render: (text: string, record: DanhHieuItem) => {
                     const coQuanDonVi = record.co_quan_don_vi?.ten_co_quan_don_vi;
                     const donViTrucThuoc = record.don_vi_truc_thuoc?.ten_don_vi;
                     const parts = [];
@@ -1215,7 +1188,7 @@ export default function ManagerProposalDetailPage() {
                   key: 'cap_bac_chuc_vu',
                   width: 180,
                   align: 'center',
-                  render: (_: any, record: any) => {
+                  render: (_: unknown, record: DanhHieuItem) => {
                     // Rank/position stored at proposal creation time (Step 3), not current personnel data
                     const capBac = record.cap_bac;
                     const chucVu = record.chuc_vu;
@@ -1256,18 +1229,8 @@ export default function ManagerProposalDetailPage() {
                   width: 180,
                   align: 'center',
                   render: (text: string) => {
-                    const danhHieuMap: Record<string, string> = {
-                      HCCSVV_HANG_BA: 'Huy chương Chiến sĩ Vẻ vang - Hạng Ba',
-                      HCCSVV_HANG_NHI: 'Huy chương Chiến sĩ Vẻ vang - Hạng Nhì',
-                      HCCSVV_HANG_NHAT: 'Huy chương Chiến sĩ Vẻ vang - Hạng Nhất',
-                      HCBVTQ_HANG_BA: 'Huân chương Bảo vệ Tổ quốc - Hạng Ba',
-                      HCBVTQ_HANG_NHI: 'Huân chương Bảo vệ Tổ quốc - Hạng Nhì',
-                      HCBVTQ_HANG_NHAT: 'Huân chương Bảo vệ Tổ quốc - Hạng Nhất',
-                      HC_QKQT: 'Huy chương Quân kỳ Quyết thắng',
-                      KNC_VSNXD_QDNDVN: 'Kỷ niệm chương VSNXD QĐNDVN',
-                    };
                     return text ? (
-                      <Text>{danhHieuMap[text] || text}</Text>
+                      <Text>{DANH_HIEU_MAP[text] || text}</Text>
                     ) : (
                       <Text type="secondary">-</Text>
                     );
@@ -1279,11 +1242,11 @@ export default function ManagerProposalDetailPage() {
                   key: 'thoi_gian',
                   width: 150,
                   align: 'center',
-                  render: (thoiGian: any) => {
+                  render: (thoiGian: unknown) => {
                     if (!thoiGian) return <Text type="secondary">-</Text>;
                     if (typeof thoiGian === 'string') {
                       try {
-                        const parsed = JSON.parse(thoiGian);
+                        const parsed = JSON.parse(thoiGian) as DurationDisplay;
                         return (
                           <Text style={{ whiteSpace: 'nowrap' }}>{parsed.display || '-'}</Text>
                         );
@@ -1291,12 +1254,16 @@ export default function ManagerProposalDetailPage() {
                         return <Text style={{ whiteSpace: 'nowrap' }}>{thoiGian}</Text>;
                       }
                     }
-                    return (
-                      <Text style={{ whiteSpace: 'nowrap' }}>
-                        {thoiGian.display ||
-                          `${thoiGian.years || 0} năm ${thoiGian.months || 0} tháng`}
-                      </Text>
-                    );
+                    if (typeof thoiGian === 'object') {
+                      const duration = thoiGian as DurationDisplay;
+                      return (
+                        <Text style={{ whiteSpace: 'nowrap' }}>
+                          {duration.display ||
+                            `${duration.years || 0} năm ${duration.months || 0} tháng`}
+                        </Text>
+                      );
+                    }
+                    return <Text style={{ whiteSpace: 'nowrap' }}>{String(thoiGian)}</Text>;
                   },
                 },
                 ...(proposal.status === PROPOSAL_STATUS.APPROVED

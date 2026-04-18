@@ -3,7 +3,7 @@
 import { ROLES } from '@/constants/roles.constants';
 
 /** Pagination metadata returned by list APIs. */
-export type PaginationMeta = { total: number; page?: number; limit?: number };
+export type PaginationMeta = { total: number; page?: number; limit?: number; totalPages?: number };
 
 /** Cấu trúc trả về chung của tất cả hàm trong `lib/api/*`. */
 export type ApiResponse<T = any> = { success: boolean; data?: T; message?: string; pagination?: PaginationMeta };

@@ -38,7 +38,7 @@ const { Title, Paragraph, Text } = Typography;
 
 /** Một dòng bảng khen thưởng — có thể là cấu trúc lồng (adhoc, scientific, …) */
 interface AwardCore {
-  id: number;
+  id: string;
   cccd: string;
   ho_ten: string;
   ngay_sinh?: string;

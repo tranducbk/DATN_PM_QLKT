@@ -33,7 +33,7 @@ import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/lib/constants/
 const { Title, Paragraph, Text } = Typography;
 
 interface Award {
-  id: number;
+  id: string;
   cccd: string;
   ho_ten: string;
   ngay_sinh?: string;

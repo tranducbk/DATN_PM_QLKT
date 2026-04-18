@@ -51,7 +51,7 @@ interface BulkUnitOptionRow {
 }
 
 interface Personnel {
-  id: number;
+  id: string;
   ho_ten: string;
   cccd: string;
   ngay_sinh?: string;
@@ -82,7 +82,7 @@ export default function BulkAddAnnualRewardsPage() {
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [units, setUnits] = useState<BulkUnitOptionRow[]>([]);
   const [searchText, setSearchText] = useState('');
-  const [filterUnitId, setFilterUnitId] = useState<number | undefined>();
+  const [filterUnitId, setFilterUnitId] = useState<string | undefined>();
   const [fileList, setFileList] = useState<UploadFile[]>([]);
 
   useEffect(() => {

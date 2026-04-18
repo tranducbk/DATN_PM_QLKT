@@ -53,8 +53,27 @@ interface GetUnitAnnualProfileQuery {
   year?: number;
 }
 
+interface ConfirmImportItem {
+  row: number;
+  unit_id: string;
+  ma_don_vi: string;
+  ten_don_vi: string;
+  nam: number;
+  danh_hieu: string;
+  so_quyet_dinh: string;
+  ghi_chu: string | null;
+  is_co_quan_don_vi: boolean;
+  history: Array<{
+    nam: number;
+    danh_hieu: string;
+    nhan_bkbqp: boolean;
+    nhan_bkttcp: boolean;
+    so_quyet_dinh: string | null;
+  }>;
+}
+
 interface ConfirmImportBody {
-  items?: any[];
+  items?: ConfirmImportItem[];
 }
 
 interface GetTemplateQuery {
