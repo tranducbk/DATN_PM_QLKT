@@ -23,6 +23,9 @@ yarn-error.log*
 uploads/
 storage/
 
+# Backups (keep folder via .gitkeep, ignore actual backup files)
+backups/*.sql
+
 # Build output
 dist/
 

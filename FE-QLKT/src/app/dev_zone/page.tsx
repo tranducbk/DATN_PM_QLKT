@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Button,
   Input,
+  InputNumber,
   Switch,
   Space,
   message,
@@ -23,6 +24,7 @@ import {
   CloseCircleOutlined,
   DeleteOutlined,
   ToolOutlined,
+  DatabaseOutlined,
 } from '@ant-design/icons';
 import Image from 'next/image';
 import { isAxiosError } from 'axios';
@@ -33,10 +35,13 @@ import {
   DEV_SESSION_KEY,
   DEV_SESSION_DURATION,
   CRON_PRESETS,
+  BACKUP_CRON_PRESETS,
   AWARD_TYPE_OPTIONS,
   SYSTEM_FEATURE_OPTIONS,
 } from '@/constants/devZone.constants';
 import './dev-zone.css';
+
+const DEFAULT_RETENTION_DAYS = 15;
 
 function FeatureRow({
   icon,
@@ -89,6 +94,14 @@ interface DevStatus {
   } & Record<string, boolean | undefined>;
 }
 
+interface BackupStatus {
+  enabled: boolean;
+  schedule: string;
+  retentionDays: number;
+  lastRun: string | null;
+  totalFiles: number;
+}
+
 function saveSession(pwd: string) {
   sessionStorage.setItem(
     DEV_SESSION_KEY,
@@ -130,6 +143,12 @@ export default function DevZonePage() {
   const [customCron, setCustomCron] = useState('');
   const [recalcLoading, setRecalcLoading] = useState(false);
 
+  const [backupStatus, setBackupStatus] = useState<BackupStatus | null>(null);
+  const [backupPreset, setBackupPreset] = useState('');
+  const [backupCustomCron, setBackupCustomCron] = useState('');
+  const [backupRetention, setBackupRetention] = useState<number>(15);
+  const [backupTriggerLoading, setBackupTriggerLoading] = useState(false);
+
   useEffect(() => {
     const saved = loadSession();
     if (saved) {
@@ -139,15 +158,38 @@ export default function DevZonePage() {
     }
   }, []);
 
-  const fetchStatus = useCallback(async (pwd: string) => {
+  const fetchBackupStatus = useCallback(async (pwd: string) => {
     try {
-      setLoading(true);
-      const res = await axiosInstance.get(DEV_ZONE_API + '/status', {
+      const res = await axiosInstance.get(DEV_ZONE_API + '/backup/status', {
         headers: { 'x-dev-password': pwd },
       });
       if (res.data.success) {
-        setStatus(res.data.data);
-        const schedule = res.data.data.cron.schedule;
+        const data: BackupStatus = res.data.data;
+        setBackupStatus(data);
+        setBackupRetention(data.retentionDays);
+        const preset = BACKUP_CRON_PRESETS.find(p => p.value === data.schedule);
+        if (preset) {
+          setBackupPreset(data.schedule);
+        } else {
+          setBackupPreset('custom');
+          setBackupCustomCron(data.schedule);
+        }
+      }
+    } catch {
+      // non-critical
+    }
+  }, []);
+
+  const fetchStatus = useCallback(async (pwd: string) => {
+    try {
+      setLoading(true);
+      const [statusRes] = await Promise.all([
+        axiosInstance.get(DEV_ZONE_API + '/status', { headers: { 'x-dev-password': pwd } }),
+        fetchBackupStatus(pwd),
+      ]);
+      if (statusRes.data.success) {
+        setStatus(statusRes.data.data);
+        const schedule = statusRes.data.data.cron.schedule;
         const preset = CRON_PRESETS.find(p => p.value === schedule);
         if (preset) {
           setCronPreset(schedule);
@@ -167,7 +209,7 @@ export default function DevZonePage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [fetchBackupStatus]);
 
   const handleAuth = async () => {
     if (!password.trim()) {
@@ -253,6 +295,47 @@ export default function DevZonePage() {
           prev ? { ...prev, cron: { ...prev.cron, enabled: prevEnabled } } : prev,
         );
       }
+      message.error(getApiErrorMessage(err, 'Cập nhật thất bại'));
+    }
+  };
+
+  const handleTriggerBackup = async () => {
+    try {
+      setBackupTriggerLoading(true);
+      const res = await axiosInstance.post(
+        DEV_ZONE_API + '/backup/trigger',
+        {},
+        { headers: { 'x-dev-password': devPassword } },
+      );
+      if (res.data.success) {
+        message.success(`Backup thành công: ${res.data.data.filename} (${res.data.data.sizeKB} KB)`);
+        fetchBackupStatus(devPassword);
+      }
+    } catch (err: unknown) {
+      message.error(getApiErrorMessage(err, 'Backup thất bại'));
+    } finally {
+      setBackupTriggerLoading(false);
+    }
+  };
+
+  const handleUpdateBackupSchedule = async (
+    enabled?: boolean,
+    schedule?: string,
+    retentionDays?: number,
+  ) => {
+    try {
+      const body: Record<string, unknown> = {};
+      if (typeof enabled === 'boolean') body.enabled = enabled;
+      if (schedule) body.schedule = schedule;
+      if (retentionDays !== undefined) body.retentionDays = retentionDays;
+
+      const res = await axiosInstance.put(DEV_ZONE_API + '/backup/schedule', body, {
+        headers: { 'x-dev-password': devPassword },
+      });
+      if (res.data.success) {
+        fetchBackupStatus(devPassword);
+      }
+    } catch (err: unknown) {
       message.error(getApiErrorMessage(err, 'Cập nhật thất bại'));
     }
   };
@@ -406,17 +489,34 @@ export default function DevZonePage() {
                     />
                   )}
                   {showSaveBtn && (
-                    <Button
-                      type="primary"
-                      block
-                      className="dz-save-btn"
-                      onClick={() => {
-                        const schedule = cronPreset === 'custom' ? customCron : cronPreset;
-                        handleUpdateCron(undefined, schedule);
-                      }}
-                    >
-                      Lưu lịch chạy
-                    </Button>
+                    <Space style={{ width: '100%' }} styles={{ item: { flex: 1 } }}>
+                      <Button
+                        block
+                        onClick={() => {
+                          const saved = status?.cron.schedule ?? '';
+                          const preset = CRON_PRESETS.find(p => p.value === saved);
+                          if (preset) {
+                            setCronPreset(saved);
+                          } else {
+                            setCronPreset('custom');
+                            setCustomCron(saved);
+                          }
+                        }}
+                      >
+                        Huỷ
+                      </Button>
+                      <Button
+                        type="primary"
+                        block
+                        className="dz-save-btn"
+                        onClick={() => {
+                          const schedule = cronPreset === 'custom' ? customCron : cronPreset;
+                          handleUpdateCron(undefined, schedule);
+                        }}
+                      >
+                        Lưu lịch chạy
+                      </Button>
+                    </Space>
                   )}
                 </Space>
               </div>
@@ -523,6 +623,142 @@ export default function DevZonePage() {
                   {recalcLoading ? 'Đang tính...' : 'Tính lại'}
                 </Button>
               </div>
+            </div>
+
+            {/* Backup */}
+            <div className="dz-card">
+              <div className="dz-card-title">
+                <DatabaseOutlined />
+                <span>Sao lưu dữ liệu</span>
+                <div style={{ marginLeft: 'auto', fontSize: 12, opacity: 0.6 }}>
+                  {backupStatus ? `${backupStatus.totalFiles} file` : ''}
+                </div>
+              </div>
+
+              <div className="dz-feature-row">
+                <span className="dz-feature-label">Tự động backup</span>
+                <Switch
+                  checked={backupStatus?.enabled ?? false}
+                  onChange={v => {
+                    setBackupStatus(prev => prev ? { ...prev, enabled: v } : prev);
+                    handleUpdateBackupSchedule(v);
+                  }}
+                  checkedChildren="BẬT"
+                  unCheckedChildren="TẮT"
+                />
+              </div>
+
+              <div className="dz-divider" />
+
+              <div>
+                <div className="dz-schedule-label">Lịch backup</div>
+                <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                  <Select
+                    style={{ width: '100%' }}
+                    value={backupPreset}
+                    onChange={v => {
+                      setBackupPreset(v);
+                      if (v === 'custom') setBackupCustomCron(backupStatus?.schedule || '');
+                    }}
+                    options={BACKUP_CRON_PRESETS.map(p => ({ value: p.value, label: p.label }))}
+                  />
+                  {backupPreset === 'custom' && (
+                    <Input
+                      placeholder="Cron expression (ví dụ: 0 3 * * *)"
+                      value={backupCustomCron}
+                      onChange={e => setBackupCustomCron(e.target.value)}
+                    />
+                  )}
+                  {backupPreset &&
+                    ((backupPreset !== 'custom' && backupPreset !== backupStatus?.schedule) ||
+                      (backupPreset === 'custom' && backupCustomCron && backupCustomCron !== backupStatus?.schedule)) && (
+                    <Space style={{ width: '100%' }} styles={{ item: { flex: 1 } }}>
+                      <Button
+                        block
+                        onClick={() => {
+                          const saved = backupStatus?.schedule ?? '';
+                          const preset = BACKUP_CRON_PRESETS.find(p => p.value === saved);
+                          if (preset) {
+                            setBackupPreset(saved);
+                          } else {
+                            setBackupPreset('custom');
+                            setBackupCustomCron(saved);
+                          }
+                        }}
+                      >
+                        Huỷ
+                      </Button>
+                      <Button
+                        type="primary"
+                        block
+                        className="dz-save-btn"
+                        onClick={() => {
+                          const schedule = backupPreset === 'custom' ? backupCustomCron : backupPreset;
+                          handleUpdateBackupSchedule(undefined, schedule);
+                        }}
+                      >
+                        Lưu lịch backup
+                      </Button>
+                    </Space>
+                  )}
+                </Space>
+              </div>
+
+              <div className="dz-divider" />
+
+              <div>
+                <div className="dz-schedule-label">Giữ backup trong (ngày)</div>
+                <Space size={8}>
+                  <InputNumber
+                    min={1}
+                    max={365}
+                    value={backupRetention}
+                    onChange={v => setBackupRetention(v ?? DEFAULT_RETENTION_DAYS)}
+                    style={{ width: 100 }}
+                  />
+                  {backupRetention !== backupStatus?.retentionDays && (
+                    <Space styles={{ item: { flex: 1 } }}>
+                      <Button
+                        block
+                        onClick={() => setBackupRetention(backupStatus?.retentionDays ?? DEFAULT_RETENTION_DAYS)}
+                      >
+                        Huỷ
+                      </Button>
+                      <Button
+                        type="primary"
+                        block
+                        className="dz-save-btn"
+                        onClick={() => handleUpdateBackupSchedule(undefined, undefined, backupRetention)}
+                      >
+                        Lưu
+                      </Button>
+                    </Space>
+                  )}
+                </Space>
+              </div>
+
+              <div className="dz-divider" />
+
+              <Button
+                type="primary"
+                icon={<DatabaseOutlined />}
+                loading={backupTriggerLoading}
+                onClick={handleTriggerBackup}
+                block
+                className="dz-trigger-btn"
+              >
+                {backupTriggerLoading ? 'Đang backup...' : 'Backup ngay'}
+              </Button>
+
+              {backupStatus?.lastRun && (
+                <div style={{ marginTop: 12 }}>
+                  <Alert
+                    type="info"
+                    message={`Lần backup gần nhất: ${new Date(backupStatus.lastRun).toLocaleString('vi-VN')}`}
+                    showIcon={false}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Tiện ích */}

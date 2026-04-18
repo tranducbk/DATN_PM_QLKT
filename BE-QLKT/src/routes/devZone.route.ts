@@ -3,6 +3,7 @@ import { prisma } from '../models';
 import profileService from '../services/profile.service';
 import unitAnnualAwardService from '../services/unitAnnualAward.service';
 import unitService from '../services/unit.service';
+import backupService from '../services/backup.service';
 import cron from 'node-cron';
 import type { ScheduledTask } from 'node-cron';
 import { SETTING_DEFAULTS, AWARD_TYPES, SYSTEM_FEATURES } from '../constants/devZone.constants';
@@ -24,6 +25,7 @@ const ALL_FEATURE_KEYS = [
 ];
 
 let cronTask: ScheduledTask | null = null;
+let backupCronTask: ScheduledTask | null = null;
 let lastCronRun: string | null = null;
 interface CronResult {
   status: 'success' | 'error';
@@ -96,6 +98,23 @@ const updateCronTask = async () => {
   }
 };
 
+/** Updates the backup cron task based on backup_enabled and backup_cron settings. */
+const updateBackupCronTask = async () => {
+  if (backupCronTask) {
+    backupCronTask.stop();
+    backupCronTask = null;
+  }
+  const enabled = (await getSetting('backup_enabled', 'false')) === 'true';
+  const schedule = await getSetting('backup_cron', '0 2 * * *');
+  if (enabled && cron.validate(schedule)) {
+    backupCronTask = cron.schedule(schedule, () => {
+      backupService
+        .createBackup({ triggeredBy: 'SYSTEM', userId: 'SYSTEM', type: 'scheduled' })
+        .catch(err => console.error('[BackupCron] Failed:', err));
+    });
+  }
+};
+
 /** Seeds default system settings to DB if they do not already exist. */
 async function seedDefaults() {
   const existing = await prisma.systemSetting.findMany({
@@ -112,8 +131,8 @@ async function seedDefaults() {
 }
 
 seedDefaults()
-  .then(() => updateCronTask())
-  .catch((error) => {
+  .then(() => Promise.all([updateCronTask(), updateBackupCronTask()]))
+  .catch(error => {
     console.error('[DevZone] Failed to seed defaults or initialize cron:', error);
   });
 
@@ -305,6 +324,112 @@ router.put('/features', verifyDevPassword, async (req: Request, res: Response) =
     message: 'Cập nhật tính năng thành công',
     data: await getFeatures(),
   });
+});
+
+/**
+ * @route   POST /api/dev-zone/backup/trigger
+ * @desc    Manually trigger a backup
+ * @access  Private - DevZone password required
+ */
+router.post('/backup/trigger', verifyDevPassword, async (req: Request, res: Response) => {
+  try {
+    const result = await backupService.createBackup({
+      triggeredBy: 'devzone',
+      userId: 'SYSTEM',
+      type: 'manual',
+    });
+    res.json({ success: true, message: 'Backup thành công', data: result });
+  } catch (error: unknown) {
+    const errMessage = error instanceof Error ? error.message : String(error);
+    res.status(500).json({ success: false, message: errMessage });
+  }
+});
+
+/**
+ * @route   GET /api/dev-zone/backup/status
+ * @desc    Get backup schedule config and recent backup list
+ * @access  Private - DevZone password required
+ */
+router.get('/backup/status', verifyDevPassword, async (req: Request, res: Response) => {
+  const [enabled, schedule, retentionDays, lastRun] = await Promise.all([
+    getSetting('backup_enabled', 'false'),
+    getSetting('backup_cron', '0 2 * * *'),
+    getSetting('backup_retention_days', '15'),
+    getSetting('backup_last_run', null),
+  ]);
+  const files = backupService.listBackups();
+  res.json({
+    success: true,
+    data: {
+      enabled: enabled === 'true',
+      schedule,
+      retentionDays: parseInt(retentionDays, 10),
+      lastRun,
+      recentBackups: files.slice(0, 5),
+      totalFiles: files.length,
+    },
+  });
+});
+
+/**
+ * @route   PUT /api/dev-zone/backup/schedule
+ * @desc    Update backup schedule settings
+ * @access  Private - DevZone password required
+ */
+router.put('/backup/schedule', verifyDevPassword, async (req: Request, res: Response) => {
+  const { enabled, schedule, retentionDays } = req.body as {
+    enabled?: boolean;
+    schedule?: string;
+    retentionDays?: number;
+  };
+
+  if (typeof enabled === 'boolean') await setSetting('backup_enabled', String(enabled));
+
+  if (schedule !== undefined) {
+    if (!cron.validate(schedule)) {
+      return res.status(400).json({ success: false, message: 'Cron expression không hợp lệ' });
+    }
+    await setSetting('backup_cron', schedule);
+  }
+
+  if (retentionDays !== undefined && retentionDays > 0) {
+    await setSetting('backup_retention_days', String(retentionDays));
+  }
+
+  await updateBackupCronTask();
+
+  const currentEnabled = (await getSetting('backup_enabled', 'false')) === 'true';
+  const currentSchedule = await getSetting('backup_cron', '0 2 * * *');
+  const currentRetention = await getSetting('backup_retention_days', '15');
+
+  res.json({
+    success: true,
+    message: `Backup tự động ${currentEnabled ? 'đã bật' : 'đã tắt'}`,
+    data: {
+      enabled: currentEnabled,
+      schedule: currentSchedule,
+      retentionDays: parseInt(currentRetention, 10),
+    },
+  });
+});
+
+/**
+ * @route   POST /api/dev-zone/backup/cleanup
+ * @desc    Manually trigger old backup cleanup
+ * @access  Private - DevZone password required
+ */
+router.post('/backup/cleanup', verifyDevPassword, async (req: Request, res: Response) => {
+  try {
+    const result = await backupService.cleanupOldBackups();
+    res.json({
+      success: true,
+      message: `Đã xóa ${result.deleted} file backup cũ`,
+      data: result,
+    });
+  } catch (error: unknown) {
+    const errMessage = error instanceof Error ? error.message : String(error);
+    res.status(500).json({ success: false, message: errMessage });
+  }
 });
 
 export default router;

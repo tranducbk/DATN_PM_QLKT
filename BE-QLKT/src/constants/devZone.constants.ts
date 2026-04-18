@@ -13,6 +13,9 @@ export const SETTING_DEFAULTS = {
   allow_view_errors_super_admin: 'false',
   allow_view_errors_admin: 'false',
   allow_view_errors_manager: 'false',
+  backup_enabled: 'false',
+  backup_cron: '0 2 * * *',
+  backup_retention_days: '15',
 } as const;
 
 export type SettingKey = keyof typeof SETTING_DEFAULTS;

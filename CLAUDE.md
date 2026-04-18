@@ -33,7 +33,7 @@ PM QLKT/
 ```
 
 - **4 roles**: SUPER_ADMIN > ADMIN > MANAGER > USER
-- **7 award types**: Annual, Unit Annual, HCCSVV, Contribution, Commemoration Medal, Military Flag, Scientific Achievement
+- **7 award types**: Annual, Unit Annual, Tenure Medals (`tenure-medals`), Contribution (`contribution-medals`), Commemorative Medal (`commemorative-medals`), Military Flag (`military-flag`), Scientific Achievement
 - **Real-time**: Socket.IO for notifications
 - **Auth**: JWT (access + refresh tokens)
 
@@ -79,9 +79,12 @@ PM QLKT/
 - **Error classes**: `AppError`, `NotFoundError`, `ForbiddenError`
 - **Type declarations**: Khai báo `interface`/`type` ở đầu file (sau imports), không khai báo inline trong function body. Đặc biệt `req.body`, `req.query`, `req.params` phải được cast sang named interface/type — không dùng `req.body as { field?: string }` trực tiếp
 - **Fire-and-forget logs**: `writeSystemLog` trong catch block phải dùng `void writeSystemLog(...)` — không bỏ qua promise hoàn toàn
-- **Rename resource slug**: Khi đổi tên resource (vd: `hccsvv` → `tenure-medals`), phải cập nhật đồng bộ: tên biến, export name, import, audit log map, notification map, route path, FE API URL
+- **Rename resource slug**: Khi đổi tên resource (vd: `hccsvv` → `tenure-medals`), phải cập nhật đồng bộ: tên biến, export name, import, audit log map, notification map, route path, FE API URL. Sau đó chạy migration SQL để cập nhật `system_logs.resource` và `notifications.resource` trong DB (`UPDATE system_logs SET resource = 'new-slug' WHERE resource = 'old-slug'`)
 - **Audit log helpers**: Tên biến local phải match resource slug (vd: `const tenureMedals = buildAwardTypeHelpers('tenure-medals')` — không dùng tên cũ `hccsvv`)
-- **Best-effort catches**: Empty `catch` trong helper/description builder phải có comment `// best-effort — {tên hàm} must not throw`
+- **Audit log imports trong routes**: `getResourceId` lấy từ `middlewares/auditLog`; `getLogDescription` lấy từ `helpers/auditLog`. Không import `getResourceId` từ helpers
+- **Best-effort catches**: Bare `catch` dùng khi swallow hoàn toàn (không cần biết lỗi gì). Dùng `catch (error) { console.error('...context...', error); }` khi muốn surface lỗi để debug nhưng không được throw (vd: audit log payload builder). `console.error` trong catch block của audit helpers là chấp nhận được — khác với `console.log` trong business logic
+- **Backup**: SQL text backup (`backups/*.sql`) sinh bởi `backup.service.ts`. Schedule + toggle qua DevZone (`/api/dev-zone/backup/*`). Download/delete qua `/api/backups` (SUPER_ADMIN only). Backup logs (`resource: 'backup'`) trong system_logs chỉ SUPER_ADMIN xem được — service tự filter cho role thấp hơn
+- **System log visibility**: `resource: 'backup'` restricted to SUPER_ADMIN in `systemLogs.service.ts`. Khi thêm resource mới chỉ dành cho SUPER_ADMIN, áp dụng cùng pattern: check `userRole !== ROLES.SUPER_ADMIN` trong `getLogs` và `getResources`
 
 ### Frontend
 - **API client**: `apiClient` object in `lib/api/index.ts` — single entry point for all API calls
@@ -162,7 +165,7 @@ Exported functions phải có JSDoc chuẩn:
 - Use default exports for React components
 - Use underscore prefix for unused params (just name them normally)
 - Hardcode status/role strings — use constants from `constants/` directory
-- Use `console.log` in production code — use system log (`writeSystemLog`)
+- Use `console.log` in production code — use system log (`writeSystemLog`). Exception: `console.error` trong catch block của audit/log helpers là cho phép
 - Create new files for one-time utilities — add to existing helper files
 - Mix Vietnamese and English in the same identifier
 - Use `as never` type assertions — use proper type casts
@@ -170,5 +173,5 @@ Exported functions phải có JSDoc chuẩn:
 - Copy-paste logic across services — extract to shared helper first
 - Write generic JSDoc like `/** getXxx API wrapper. @returns API response payload */` — omit JSDoc if there's nothing meaningful to add
 - Change route `@desc` or `@access` comments to Vietnamese — keep them in English always
-- Use `catch (e)` or `catch (error)` when the variable is not used — use bare `catch` instead
+- Use `catch (e)` or `catch (error)` when the variable is not used and not logged — use bare `catch` instead. Nếu cần log lỗi, dùng `catch (error) { console.error('...context...', error); }`
 - Declare `interface`/`type` inline inside function bodies — always declare at the top of the file

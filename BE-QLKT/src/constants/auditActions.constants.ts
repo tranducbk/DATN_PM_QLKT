@@ -14,6 +14,7 @@ export const AUDIT_ACTIONS = {
   PROPOSE: 'PROPOSE',
   RECALCULATE: 'RECALCULATE',
   BULK: 'BULK',
+  BACKUP: 'BACKUP',
 } as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];

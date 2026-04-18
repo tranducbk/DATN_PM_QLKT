@@ -101,7 +101,19 @@ class SystemLogsService {
     }
 
     if (search) where.description = { contains: search, mode: 'insensitive' };
-    if (resource) where.resource = resource;
+
+    // Backup logs are restricted to SUPER_ADMIN only
+    if (userRole !== ROLES.SUPER_ADMIN) {
+      if (resource) {
+        if (resource === 'backup') return { logs: [], total: 0, stats: { create: 0, delete: 0, update: 0 } };
+        where.resource = resource;
+      } else {
+        where.resource = { not: 'backup' };
+      }
+    } else if (resource) {
+      where.resource = resource;
+    }
+
     if (startDate || endDate) {
       where.created_at = {
         ...(startDate && { gte: new Date(startDate) }),
@@ -149,13 +161,16 @@ class SystemLogsService {
   }
 
   /**
-   * Returns distinct resource values from system logs.
-   * @returns List of resource strings
+   * Returns distinct resource values from system logs, filtered by caller's role.
+   * @param userRole - Role of the requesting user
+   * @returns List of resource strings visible to that role
    */
-  async getResources() {
+  async getResources(userRole: string) {
+    const where = userRole !== ROLES.SUPER_ADMIN ? { resource: { not: 'backup' } } : {};
     const resources = await prisma.systemLog.findMany({
       select: { resource: true },
       distinct: ['resource'],
+      where,
       orderBy: { resource: 'asc' },
     });
     return resources.map((item: { resource: string }) => item.resource);

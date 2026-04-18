@@ -60,7 +60,7 @@ class SystemLogsController {
   });
 
   getResources = catchAsync(async (req: Request, res: Response) => {
-    const data = await systemLogsService.getResources();
+    const data = await systemLogsService.getResources(req.user!.role);
     return ResponseHelper.success(res, { message: 'Lấy danh sách tài nguyên thành công', data });
   });
 
