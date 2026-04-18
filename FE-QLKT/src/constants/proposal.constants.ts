@@ -1,5 +1,4 @@
 
-/** Trạng thái đề xuất — khớp với BE PROPOSAL_STATUS */
 export const PROPOSAL_STATUS = {
   PENDING: 'PENDING',
   APPROVED: 'APPROVED',
@@ -8,14 +7,12 @@ export const PROPOSAL_STATUS = {
 
 export type ProposalStatus = (typeof PROPOSAL_STATUS)[keyof typeof PROPOSAL_STATUS];
 
-/** Label tiếng Việt cho trạng thái */
 export const PROPOSAL_STATUS_LABELS: Record<string, string> = {
   PENDING: 'Chờ duyệt',
   APPROVED: 'Đã duyệt',
   REJECTED: 'Từ chối',
 };
 
-/** Màu tag Ant Design cho trạng thái */
 export const PROPOSAL_STATUS_COLORS: Record<string, string> = {
   PENDING: 'orange',
   APPROVED: 'green',
@@ -27,14 +24,12 @@ export function getProposalStatusLabel(status: string | undefined | null): strin
   return PROPOSAL_STATUS_LABELS[status] || status;
 }
 
-/** Màu Badge (antd) — cột trạng thái */
 export const PROPOSAL_STATUS_BADGE_COLORS: Record<string, string> = {
   [PROPOSAL_STATUS.PENDING]: 'gold',
   [PROPOSAL_STATUS.APPROVED]: 'green',
   [PROPOSAL_STATUS.REJECTED]: 'red',
 };
 
-/** Loại đề xuất — khớp với BE PROPOSAL_TYPES */
 export const PROPOSAL_TYPES = {
   CA_NHAN_HANG_NAM: 'CA_NHAN_HANG_NAM',
   DON_VI_HANG_NAM: 'DON_VI_HANG_NAM',
@@ -64,7 +59,6 @@ export function getProposalTypeLabel(type: string | undefined | null): string {
   return PROPOSAL_TYPE_LABELS[type] || type;
 }
 
-/** Admin — màn Quản lý đề xuất: nhãn tab vs cột trạng thái (copy UI hiện tại) */
 export const PROPOSAL_STATUS_ADMIN: Record<
   string,
   { tabLabel: string; tableTagText: string; tagColor: string }
@@ -86,7 +80,6 @@ export const PROPOSAL_STATUS_ADMIN: Record<
   },
 };
 
-/** Admin — danh sách đề xuất: label rút gọn + màu Tag (cột + bộ lọc loại) */
 export const PROPOSAL_TYPE_ADMIN_TAG: Record<string, { label: string; color: string }> = {
   [PROPOSAL_TYPES.CA_NHAN_HANG_NAM]: { label: 'Khen thưởng cá nhân hằng năm', color: 'blue' },
   [PROPOSAL_TYPES.DON_VI_HANG_NAM]: { label: 'Khen thưởng đơn vị hằng năm', color: 'cyan' },

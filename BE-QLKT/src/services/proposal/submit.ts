@@ -165,7 +165,7 @@ async function submitProposal(
       throw new ValidationError('Dữ liệu đề xuất không hợp lệ');
     }
 
-    // For DON_VI_HANG_NAM, input items use `don_vi_id` instead of `personnel_id`.
+    // For DON_VI_HANG_NAM, input items use don_vi_id instead of personnel_id.
     let personnelList: SubmitPersonnelRow[] = [];
     if (type !== PROPOSAL_TYPES.DON_VI_HANG_NAM) {
       const personnelIds = titleData

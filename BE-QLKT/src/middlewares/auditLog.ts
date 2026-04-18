@@ -27,7 +27,8 @@ const redactSensitiveFields = (obj: unknown): unknown => {
 const parseResponse = (responseData: unknown): Record<string, unknown> | null => {
   try {
     return typeof responseData === 'string' ? JSON.parse(responseData) as Record<string, unknown> : responseData as Record<string, unknown>;
-  } catch {
+  } catch (error) {
+   console.error('Failed to parse audit response payload:', error);
     return null;
   }
 };
@@ -69,7 +70,7 @@ const auditLog = (options: AuditLogOptions = { action: '', resource: '' }) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     const originalJson = res.json;
 
-    res.json = function (this: Response, data: unknown) {
+    const jsonWithAudit: Response['json'] = function (this: Response, data: unknown) {
       // Restore the original method to prevent recursive calls.
       res.json = originalJson;
 
@@ -104,14 +105,16 @@ const auditLog = (options: AuditLogOptions = { action: '', resource: '' }) => {
                 },
               });
             })
-            .catch(() => {
-              // Swallow logging errors to keep response behavior unchanged.
+            .catch(error => {
+              console.error('Failed to write audit log:', error);
             });
         }
       }
 
       return originalJson.call(this, data);
-    } as Response['json'];
+    };
+
+    res.json = jsonWithAudit;
 
     next();
   };

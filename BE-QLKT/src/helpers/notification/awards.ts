@@ -726,7 +726,8 @@ async function notifyOnImport(
     notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
 
     return notifications.length;
-  } catch {
+  } catch (error) {
+   console.error('Failed to create/send award notifications:', error);
     return 0;
   }
 }

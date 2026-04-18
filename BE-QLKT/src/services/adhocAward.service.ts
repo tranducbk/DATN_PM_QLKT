@@ -149,7 +149,8 @@ class AdhocAwardService {
           let decodedName = file.originalname;
           try {
             decodedName = Buffer.from(file.originalname, 'latin1').toString('utf8');
-          } catch {
+          } catch (error) {
+   console.error('Failed to decode uploaded attachment name during adhoc-award create:', error);
             decodedName = file.originalname;
           }
           const sanitizedName = decodedName.replace(/[<>:"/\\|?*]/g, '_');
@@ -561,7 +562,8 @@ class AdhocAwardService {
           try {
             const fullPath = path.join(__dirname, '..', '..', fileToRemove.path);
             await fs.unlink(fullPath);
-          } catch {
+          } catch (error) {
+   console.error('Failed to delete removed attachment during adhoc-award update:', error);
             // ignore file deletion errors
           }
           existingAttachedFiles.splice(index, 1);
@@ -577,7 +579,8 @@ class AdhocAwardService {
           let decodedName = file.originalname;
           try {
             decodedName = Buffer.from(file.originalname, 'latin1').toString('utf8');
-          } catch {
+          } catch (error) {
+   console.error('Failed to decode uploaded attachment name during adhoc-award update:', error);
             decodedName = file.originalname;
           }
           const sanitizedName = decodedName.replace(/[<>:"/\\|?*]/g, '_');
@@ -799,7 +802,8 @@ class AdhocAwardService {
         try {
           const fullPath = path.join(__dirname, '..', '..', file.path);
           await fs.unlink(fullPath);
-        } catch {
+        } catch (error) {
+   console.error('Failed to delete attachment file during adhoc-award delete:', error);
           // ignore
         }
       }
@@ -810,7 +814,8 @@ class AdhocAwardService {
 
       try {
         await this.notifyOnAdhocAwardDeleted(awardInfo, admin?.username || 'Admin');
-      } catch {
+      } catch (error) {
+   console.error('Failed to send adhoc-award deletion notifications:', error);
         // ignore
       }
 

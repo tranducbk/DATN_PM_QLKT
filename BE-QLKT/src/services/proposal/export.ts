@@ -175,7 +175,7 @@ async function exportTemplate(userId, type = 'HANG_NAM') {
       status: PROPOSAL_STATUS.APPROVED,
     }));
 
-    // Column D: restrict `loai` to the approved science-achievement codes.
+    // Column D: restrict loai to approved science-achievement codes.
     sheetThanhTich.getColumn(4).eachCell({ includeEmpty: true }, (cell, rowNumber) => {
       if (rowNumber > 1) {
         cell.dataValidation = {
@@ -297,34 +297,29 @@ async function exportTemplateNienHan(workbook, quanNhanList) {
  * @returns {Promise<Object>} - Đường dẫn file
  */
 async function getPdfFile(filename) {
+  const storagePath = path.join(__dirname, '..', '..', '..', 'storage', 'proposals');
+  const primaryFilePath = path.join(storagePath, filename);
   try {
-    // Try storage/proposals first (proposal attachments)
-    const storagePath = path.join(__dirname, '..', '..', '..', 'storage', 'proposals');
-    let filePath = path.join(storagePath, filename);
-
-    try {
-      await fs.access(filePath);
-      return {
-        filePath,
-        filename,
-      };
-    } catch {
-      // Fall back to uploads/decisions when file not found at primary path
-      const decisionsPath = path.join(__dirname, '..', '..', '..', 'uploads', 'decisions');
-      filePath = path.join(decisionsPath, filename);
-
-      try {
-        await fs.access(filePath);
-        return {
-          filePath,
-          filename,
-        };
-      } catch {
-        throw new NotFoundError('File PDF');
-      }
-    }
+    await fs.access(primaryFilePath);
+    return {
+      filePath: primaryFilePath,
+      filename,
+    };
   } catch (error) {
-    throw error;
+    console.error('Failed to access proposal file at primary location:', error);
+  }
+
+  const decisionsPath = path.join(__dirname, '..', '..', '..', 'uploads', 'decisions');
+  const fallbackFilePath = path.join(decisionsPath, filename);
+  try {
+    await fs.access(fallbackFilePath);
+    return {
+      filePath: fallbackFilePath,
+      filename,
+    };
+  } catch (error) {
+    console.error('Failed to access proposal file at fallback location:', error);
+    throw new NotFoundError('File PDF');
   }
 }
 

@@ -720,7 +720,8 @@ class CommemorativeMedalService {
           const years = parsed.years || 0;
           const months = parsed.months || 0;
           return years * 12 + months;
-        } catch {
+        } catch (error) {
+   console.error('Failed to parse thoi_gian JSON when exporting commemorative medals:', error);
           return thoiGian;
         }
       }

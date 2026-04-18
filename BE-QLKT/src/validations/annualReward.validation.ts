@@ -46,7 +46,8 @@ export const bulkCreate: Joi.ObjectSchema = Joi.object({
             return helpers.error('any.invalid');
           }
           return parsed;
-        } catch {
+        } catch (error) {
+   console.error('Failed to parse annualReward selected_personnel JSON:', error);
           return helpers.error('any.invalid');
         }
       }, 'parse personnel_ids json')
@@ -59,7 +60,8 @@ export const bulkCreate: Joi.ObjectSchema = Joi.object({
         const parsed = JSON.parse(value);
         if (!Array.isArray(parsed)) return helpers.error('any.invalid');
         return parsed;
-      } catch {
+      } catch (error) {
+   console.error('Failed to parse annualReward title_data JSON:', error);
         return helpers.error('any.invalid');
       }
     }, 'parse personnel_rewards_data json')

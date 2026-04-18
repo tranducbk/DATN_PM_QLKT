@@ -44,7 +44,8 @@ const annualRewards: Record<
           select: { ho_ten: true },
         });
         hoTen = personnel?.ho_ten || '';
-      } catch {
+      } catch (error) {
+   console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
         // best-effort — audit description must not throw
       }
     }
@@ -55,7 +56,8 @@ const annualRewards: Record<
       if (reward?.QuanNhan?.ho_ten) {
         hoTen = reward.QuanNhan.ho_ten;
       }
-    } catch {
+    } catch (error) {
+   console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
       // best-effort — audit description must not throw
     }
 
@@ -90,7 +92,8 @@ const annualRewards: Record<
         })) as DanhHieuHangNamWithHoTen | null;
         hoTen = rewardRecord?.QuanNhan?.ho_ten || '';
       }
-    } catch {
+    } catch (error) {
+   console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
       // best-effort — audit description must not throw
     }
 
@@ -124,7 +127,8 @@ const annualRewards: Record<
       if (reward?.nam) {
         nam = reward.nam;
       }
-    } catch {
+    } catch (error) {
+   console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
       // best-effort — audit description must not throw
     }
 
@@ -139,7 +143,8 @@ const annualRewards: Record<
           danhHieu = rewardRecord.danh_hieu || danhHieu;
           nam = String(rewardRecord.nam ?? nam);
         }
-      } catch {
+      } catch (error) {
+   console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
         // best-effort — audit description must not throw
       }
     }
@@ -168,7 +173,8 @@ const annualRewards: Record<
           ? JSON.parse(req.body.personnel_ids)
           : req.body?.personnel_ids;
       personnelCount = Array.isArray(personnelIds) ? personnelIds.length : 0;
-    } catch {
+    } catch (error) {
+   console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
       // best-effort — audit description must not throw
     }
 
@@ -178,7 +184,8 @@ const annualRewards: Record<
       successCount = result?.success || result?.successCount || 0;
       skippedCount = result?.skipped || 0;
       errorCount = result?.errors || 0;
-    } catch {
+    } catch (error) {
+   console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
       // best-effort — audit description must not throw
     }
 
@@ -227,7 +234,8 @@ const annualRewards: Record<
           failCount > 0 ? `, ${failCount} thất bại` : ''
         })`;
       }
-    } catch {
+    } catch (error) {
+   console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
       // best-effort — audit description must not throw
     }
 
@@ -261,7 +269,8 @@ const adhocAwards: Record<
       } else if (award?.DonViTrucThuoc?.ten_don_vi) {
         tenDonVi = award.DonViTrucThuoc.ten_don_vi;
       }
-    } catch {
+    } catch (error) {
+   console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
       // best-effort — audit description must not throw
     }
 
@@ -288,7 +297,9 @@ const adhocAwards: Record<
             tenDonVi = unit?.ten_don_vi || '';
           }
         }
-      } catch {}
+      } catch (error) {
+        console.error('Failed to resolve unit name for adhoc-award audit log:', error);
+      }
     }
 
     let description = `Tạo khen thưởng đột xuất ${type}: ${awardForm}`;
@@ -326,7 +337,8 @@ const adhocAwards: Record<
       } else if (award?.DonViTrucThuoc?.ten_don_vi) {
         tenDonVi = award.DonViTrucThuoc.ten_don_vi;
       }
-    } catch {
+    } catch (error) {
+   console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
       // best-effort — audit description must not throw
     }
 
@@ -350,7 +362,8 @@ const adhocAwards: Record<
             tenDonVi = award.DonViTrucThuoc.ten_don_vi;
           }
         }
-      } catch {
+      } catch (error) {
+   console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
         // best-effort — audit description must not throw
       }
     }
@@ -386,7 +399,8 @@ const adhocAwards: Record<
       } else if (award?.DonViTrucThuoc?.ten_don_vi) {
         tenDonVi = award.DonViTrucThuoc.ten_don_vi;
       }
-    } catch {
+    } catch (error) {
+   console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
       // best-effort — audit description must not throw
     }
 
@@ -411,7 +425,8 @@ const adhocAwards: Record<
             tenDonVi = award.DonViTrucThuoc.ten_don_vi;
           }
         }
-      } catch {
+      } catch (error) {
+   console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
         // best-effort — audit description must not throw
       }
     }
@@ -461,7 +476,8 @@ const awards: Record<
       if (typeof selectedPersonnel === 'string') {
         try {
           parsedSelectedPersonnel = JSON.parse(selectedPersonnel);
-        } catch {
+        } catch (error) {
+   console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
           // best-effort — audit description must not throw
         }
       }
@@ -469,7 +485,8 @@ const awards: Record<
       if (typeof selectedUnits === 'string') {
         try {
           parsedSelectedUnits = JSON.parse(selectedUnits);
-        } catch {
+        } catch (error) {
+   console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
           // best-effort — audit description must not throw
         }
       }
@@ -477,7 +494,8 @@ const awards: Record<
       if (typeof titleData === 'string') {
         try {
           parsedTitleData = JSON.parse(titleData);
-        } catch {
+        } catch (error) {
+   console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
           // best-effort — audit description must not throw
         }
       }
@@ -565,7 +583,8 @@ const awards: Record<
       }
 
       return description;
-    } catch {
+    } catch (error) {
+   console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
       return 'Thêm khen thưởng đồng loạt';
     }
   },
@@ -615,7 +634,8 @@ function buildAwardTypeHelpers(resource: string): Record<
         if (record?.QuanNhan?.ho_ten) {
           hoTen = record.QuanNhan.ho_ten;
         }
-      } catch {
+      } catch (error) {
+   console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
         // best-effort — audit description must not throw
       }
 
@@ -657,7 +677,8 @@ function buildAwardTypeHelpers(resource: string): Record<
             nam = String(record.nam ?? '');
             danhHieu = record.danh_hieu || '';
           }
-        } catch {
+        } catch (error) {
+   console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
           // Ignore error — record may already be deleted
         }
       }
@@ -694,7 +715,8 @@ function buildAwardTypeHelpers(resource: string): Record<
             failCount > 0 ? `, ${failCount} thất bại` : ''
           })`;
         }
-      } catch {
+      } catch (error) {
+   console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
         // best-effort — audit description must not throw
       }
 
@@ -717,7 +739,8 @@ const getUnitNameFromResponse = (responseData: unknown): string => {
     const record = data?.data || data;
     if (record?.CoQuanDonVi?.ten_don_vi) return record.CoQuanDonVi.ten_don_vi;
     if (record?.DonViTrucThuoc?.ten_don_vi) return record.DonViTrucThuoc.ten_don_vi;
-  } catch {
+  } catch (error) {
+   console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
     // best-effort — audit description must not throw
   }
   return '';
@@ -737,7 +760,8 @@ const unitAnnualAwards: Record<
       const result = data?.data || data;
       successCount = result?.imported || result?.success || result?.successCount || result?.total || 0;
       failCount = result?.failed || result?.failCount || 0;
-    } catch {
+    } catch (error) {
+   console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
       // best-effort — audit description must not throw
     }
 
@@ -799,7 +823,8 @@ const unitAnnualAwards: Record<
       else if (record?.DonViTrucThuoc?.ten_don_vi) tenDonVi = record.DonViTrucThuoc.ten_don_vi;
       if (record?.danh_hieu) danhHieu = record.danh_hieu;
       if (record?.nam) nam = String(record.nam);
-    } catch {
+    } catch (error) {
+   console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
       // best-effort — audit description must not throw
     }
 
@@ -817,7 +842,8 @@ const unitAnnualAwards: Record<
           danhHieu = danhHieu || record.danh_hieu || '';
           nam = nam || String(record.nam ?? '');
         }
-      } catch {
+      } catch (error) {
+   console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
         // best-effort — audit description must not throw
       }
     }
@@ -861,7 +887,8 @@ const unitAnnualAwards: Record<
       const record = data?.data || data;
       danhHieu = record?.danh_hieu || '';
       nam = record?.nam ? String(record.nam) : '';
-    } catch {
+    } catch (error) {
+   console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
       // best-effort — audit description must not throw
     }
 
@@ -881,7 +908,8 @@ const unitAnnualAwards: Record<
             danhHieu = danhHieu || record.danh_hieu || '';
             nam = nam || String(record.nam ?? '');
           }
-        } catch {
+        } catch (error) {
+   console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
           // best-effort — audit description must not throw
         }
       }
@@ -907,7 +935,8 @@ const unitAnnualAwards: Record<
       const record = data?.data || data;
       danhHieu = record?.danh_hieu || '';
       nam = record?.nam ? String(record.nam) : '';
-    } catch {
+    } catch (error) {
+   console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
       // best-effort — audit description must not throw
     }
 
@@ -927,7 +956,8 @@ const unitAnnualAwards: Record<
             danhHieu = danhHieu || record.danh_hieu || '';
             nam = nam || String(record.nam ?? '');
           }
-        } catch {
+        } catch (error) {
+   console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
           // best-effort — audit description must not throw
         }
       }
@@ -957,7 +987,8 @@ const unitAnnualAwards: Record<
       const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
       const result = data?.data || data;
       updatedCount = result?.updated || 0;
-    } catch {
+    } catch (error) {
+   console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
       // best-effort — audit description must not throw
     }
 

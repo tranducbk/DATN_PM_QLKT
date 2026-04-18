@@ -31,7 +31,8 @@ const parseResponseData = (responseData: unknown): Record<string, unknown> | nul
       return parsed as Record<string, unknown>;
     }
     return null;
-  } catch {
+  } catch (error) {
+   console.error('Audit log helper fallback triggered (helpers/auditLog/constants.ts):', error);
     return null;
   }
 };
@@ -87,7 +88,8 @@ const getUnitNameFromUnitId = async (unitId: string, prisma: PrismaClient): Prom
       return tenDonVi;
     }
     return '';
-  } catch {
+  } catch (error) {
+   console.error('Audit log helper fallback triggered (helpers/auditLog/constants.ts):', error);
     return '';
   }
 };
@@ -100,7 +102,8 @@ const queryPersonnelName = async (personnelId: string, prisma: PrismaClient): Pr
       select: { ho_ten: true },
     });
     return personnel?.ho_ten || '';
-  } catch {
+  } catch (error) {
+   console.error('Audit log helper fallback triggered (helpers/auditLog/constants.ts):', error);
     return '';
   }
 };
@@ -127,7 +130,8 @@ const queryPositionInfo = async (
       tenChucVu: chucVu.ten_chuc_vu || '',
       tenDonVi: getUnitNameFromChucVu(chucVu),
     };
-  } catch {
+  } catch (error) {
+   console.error('Audit log helper fallback triggered (helpers/auditLog/constants.ts):', error);
     return { tenChucVu: '', tenDonVi: '' };
   }
 };
@@ -180,7 +184,8 @@ const getFileName = (req: { file?: { originalname?: string } }): string => {
   if (!req.file?.originalname) return FALLBACK.NO_FILE;
   try {
     return Buffer.from(req.file.originalname, 'latin1').toString('utf8');
-  } catch {
+  } catch (error) {
+   console.error('Audit log helper fallback triggered (helpers/auditLog/constants.ts):', error);
     return req.file.originalname;
   }
 };

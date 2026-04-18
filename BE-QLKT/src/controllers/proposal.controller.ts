@@ -259,7 +259,8 @@ class ProposalController {
         data_nien_han: JSON.parse(body.data_nien_han || '[]'),
         data_cong_hien: JSON.parse(body.data_cong_hien || '[]'),
       };
-    } catch {
+    } catch (error) {
+   console.error('Failed to parse approveProposal payload JSON:', error);
       return ResponseHelper.badRequest(res, 'Dữ liệu không hợp lệ');
     }
     const decisions = {

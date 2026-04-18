@@ -285,7 +285,7 @@ class PersonnelService {
         select: { he_so_chuc_vu: true },
       });
 
-      // Create initial `LichSuChucVu` record.
+      // Create initial LichSuChucVu record.
       const ngayBatDau = new Date();
       await tx.lichSuChucVu.create({
         data: {
@@ -1100,7 +1100,7 @@ class PersonnelService {
       }),
     ]);
 
-    // Composite key: `${unitId}_${ten_chuc_vu}` → position record.
+    // Composite key: unitId_ten_chuc_vu -> position record.
     const chucVuByUnitAndName = new Map(
       chucVuRows.flatMap(cv => {
         const keys: [string, typeof cv][] = [];

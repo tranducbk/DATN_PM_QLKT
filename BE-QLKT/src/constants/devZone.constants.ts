@@ -1,8 +1,3 @@
-/**
- * Constants cho Dev Zone — cấu hình hệ thống
- */
-
-/** Giá trị mặc định seed vào bảng system_settings khi DB mới tạo */
 export const SETTING_DEFAULTS = {
   cron_enabled: 'true',
   cron_schedule: '0 1 1 * *',
@@ -22,7 +17,6 @@ export const SETTING_DEFAULTS = {
 
 export type SettingKey = keyof typeof SETTING_DEFAULTS;
 
-/** Danh sách các loại khen thưởng hỗ trợ toggle import */
 export const AWARD_TYPES = [
   'annual',
   'unit',
@@ -35,7 +29,6 @@ export const AWARD_TYPES = [
 
 export type AwardType = (typeof AWARD_TYPES)[number];
 
-/** Tính năng hệ thống (không phải award type) */
 export const SYSTEM_FEATURES = ['notify_import', 'delete_logs', 'view_errors_super_admin', 'view_errors_admin', 'view_errors_manager'] as const;
 
 export type SystemFeature = (typeof SYSTEM_FEATURES)[number];

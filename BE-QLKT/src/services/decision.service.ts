@@ -238,7 +238,8 @@ class DecisionService {
           filename: filename,
           error: null,
         };
-      } catch {
+      } catch (error) {
+   console.error('Failed to access decision file on disk:', error);
         return {
           success: false,
           filePath: null,

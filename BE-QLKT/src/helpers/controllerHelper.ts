@@ -12,7 +12,7 @@ export function getAdminUsername(req: Request): string {
 }
 
 /**
- * Parses `personnel_ids` from query string values.
+ * Parses personnel_ids from query string values.
  * @param query - Express request query object
  * @returns Normalized personnel ID list
  */
@@ -97,7 +97,7 @@ export async function getManagerUnitContext(req: Request): Promise<Record<string
  * - If the unit is a parent unit, includes personnel in the parent or its subordinate units.
  * - If the unit is a subordinate unit, filters directly by that subordinate unit.
  *
- * @param unit - Unit payload containing `co_quan_don_vi_id` or `don_vi_truc_thuoc_id`
+ * @param unit - Unit payload containing co_quan_don_vi_id or don_vi_truc_thuoc_id
  * @param extraFilter - Optional additional personnel filters
  * @returns Prisma `where` condition for personnel, or null when no unit is available
  */
@@ -130,11 +130,11 @@ export async function buildUnitWhereFilter(
 
 /**
  * Helper that builds manager-scoped personnel filter directly from request context.
- * Combines `getManagerUnitFilter` and `buildUnitWhereFilter`.
+ * Combines getManagerUnitFilter and buildUnitWhereFilter.
  *
  * @param req - Express request
  * @param extraFilter - Optional additional personnel filters
- * @returns Prisma `where` condition for personnel, or null when request user is not a manager
+ * @returns Prisma where condition for personnel, or null when request user is not a manager
  */
 export async function buildManagerQuanNhanFilter(
   req: Request,

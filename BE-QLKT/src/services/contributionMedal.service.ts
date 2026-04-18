@@ -594,7 +594,8 @@ class ContributionAwardService {
           const years = parsed.years ?? 0;
           const months = parsed.months ?? 0;
           return years * 12 + months;
-        } catch {
+        } catch (error) {
+   console.error('Failed to parse thoi_gian JSON when exporting contribution medals:', error);
           return thoiGian;
         }
       }

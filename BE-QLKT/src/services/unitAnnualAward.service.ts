@@ -156,7 +156,7 @@ class UnitAnnualAwardService {
       },
     });
 
-    // JSON payload keeps DVQT/ĐVTT in `danh_hieu`; BKBQP/BKTTCP ride on boolean columns instead.
+    // JSON payload keeps DVQT/ĐVTT in danh_hieu; BKBQP/BKTTCP use boolean columns.
     const validRecords = records.filter(
       r => r.danh_hieu && DANH_HIEU_DON_VI_CO_BAN.has(r.danh_hieu)
     );

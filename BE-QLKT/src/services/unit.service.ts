@@ -300,7 +300,8 @@ class UnitService {
       if (!descendant) return false;
 
       return descendant.co_quan_don_vi_id === ancestorId;
-    } catch {
+    } catch (error) {
+   console.error('Failed to resolve unit hierarchy relation:', error);
       return false;
     }
   }

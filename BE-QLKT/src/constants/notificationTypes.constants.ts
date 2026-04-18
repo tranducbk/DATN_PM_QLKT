@@ -1,7 +1,3 @@
-/**
- * Notification Types Constants
- * Định nghĩa tất cả các loại thông báo trong hệ thống
- */
 export const NOTIFICATION_TYPES = {
   PROPOSAL_SUBMITTED: 'PROPOSAL_SUBMITTED',
   PROPOSAL_APPROVED: 'PROPOSAL_APPROVED',
@@ -19,10 +15,6 @@ export const NOTIFICATION_TYPES = {
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[keyof typeof NOTIFICATION_TYPES];
 
-/**
- * Resource Types Constants
- * Định nghĩa các loại tài nguyên trong hệ thống
- */
 export const RESOURCE_TYPES = {
   PERSONNEL: 'personnel',
   PROPOSALS: 'proposals',

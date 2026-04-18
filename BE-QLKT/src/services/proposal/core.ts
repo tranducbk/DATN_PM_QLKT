@@ -384,7 +384,7 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
       }
     }
 
-    // Approved proposals only: hydrate PDF paths from persisted awards (`data_cong_hien` has its own branch).
+    // Approved proposals only: hydrate PDF paths from persisted awards (data_cong_hien has its own branch).
     if (
       proposal.status === PROPOSAL_STATUS.APPROVED &&
       dataDanhHieu.length > 0 &&

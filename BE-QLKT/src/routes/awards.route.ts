@@ -92,7 +92,8 @@ router.post(
           has_attached_files: (files?.attached_files?.length ?? 0) > 0,
           attached_files_count: files?.attached_files?.length || 0,
         };
-      } catch {
+      } catch (error) {
+   console.error('Failed to build bulk-award audit payload from request:', error);
         return null;
       }
     },

@@ -7,7 +7,6 @@ import {
   EXCEL_INLINE_VALIDATION_MAX_LENGTH,
 } from '../constants/excel.constants';
 
-/** Excel template column configuration. */
 export interface TemplateColumn {
   header: string;
   key: string;
@@ -25,7 +24,6 @@ export interface PersonnelColumnMapping {
   chucVu: number;
 }
 
-/** Full configuration used to build an Excel template. */
 export interface TemplateConfig {
   sheetName: string;
   columns: TemplateColumn[];

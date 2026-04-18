@@ -1,10 +1,5 @@
 import type { ProposalType } from './proposalTypes.constants';
 
-/**
- * Constants cho các loại danh hiệu khen thưởng
- * Đây là nguồn dữ liệu duy nhất (Single Source of Truth) cho tất cả mapping danh hiệu
- */
-
 export const DANH_HIEU_CA_NHAN_HANG_NAM = {
   CSTDCS: 'CSTDCS',
   CSTT: 'CSTT',
@@ -42,7 +37,6 @@ export const DANH_HIEU_NCKH = {
   SKKH: 'SKKH',
 } as const;
 
-// Must stay in sync with all DANH_HIEU_* objects above — add entry here when adding a new code.
 export const DANH_HIEU_MAP: Record<string, string> = {
   CSTDCS: 'Chiến sĩ thi đua Cơ sở',
   CSTT: 'Chiến sĩ tiên tiến',

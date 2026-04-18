@@ -14,7 +14,8 @@ const formatDate = (dateStr: Date | string | null | undefined): string => {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = date.getFullYear();
     return `${day}-${month}-${year}`;
-  } catch {
+  } catch (error) {
+   console.error('Failed to format date string:', error);
     return '';
   }
 };

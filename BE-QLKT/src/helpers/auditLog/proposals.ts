@@ -244,7 +244,8 @@ const proposals: Record<
         if (typeof value === 'string') {
           try {
             return JSON.parse(value);
-          } catch {
+          } catch (error) {
+   console.error('Audit log helper fallback triggered (helpers/auditLog/proposals.ts):', error);
             return [];
           }
         }

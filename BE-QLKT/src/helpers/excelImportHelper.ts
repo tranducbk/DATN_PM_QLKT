@@ -6,13 +6,11 @@ import { MAX_EXCEL_ROWS, IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.c
 
 type CellValue = string | number | null | undefined;
 
-/** Preview result for a single imported Excel row. */
 export interface PreviewItem {
   row_number: number;
   errors: string[];
 }
 
-/** Aggregate preview result containing valid/invalid rows and summary. */
 export interface PreviewResult<T> {
   valid: T[];
   invalid: T[];
@@ -23,7 +21,6 @@ export interface PreviewResult<T> {
   };
 }
 
-/** Minimal personnel fields used during import validation. */
 export interface PersonnelInfo {
   id: string;
   ho_ten: string;
@@ -40,7 +37,6 @@ export interface PersonnelInfo {
  */
 async function loadWorkbook(buffer: Buffer): Promise<ExcelJS.Workbook> {
   const workbook = new ExcelJS.Workbook();
-  // exceljs load() accepts Buffer but TS definition expects ArrayBuffer
   await workbook.xlsx.load(buffer as unknown as ArrayBuffer);
   return workbook;
 }
@@ -68,7 +64,6 @@ function getAndValidateWorksheet(
       );
     }
   } else {
-    // Pick the first visible worksheet not in the exclude list
     const excludeSet = new Set(excludeSheetNames.map(n => n.toLowerCase()));
     worksheet = workbook.worksheets.find(
       ws => !excludeSet.has(ws.name.toLowerCase()) && ws.state !== 'veryHidden'

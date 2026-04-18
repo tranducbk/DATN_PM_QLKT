@@ -185,7 +185,6 @@ export const DANH_HIEU_COLORS: Record<string, string> = {
   SKKH: 'green',
 };
 
-/** Tabs that use personnel selection when exporting */
 export const INDIVIDUAL_AWARD_TABS = [
   'CNHN',
   'HCCSVV',
@@ -195,7 +194,6 @@ export const INDIVIDUAL_AWARD_TABS = [
   'NCKH',
 ];
 
-/** Maps bulk-create award types to dev zone feature flags */
 export const AWARD_TYPE_TO_ALLOW: Record<string, string> = {
   CA_NHAN_HANG_NAM: 'allow_annual',
   DON_VI_HANG_NAM: 'allow_unit',

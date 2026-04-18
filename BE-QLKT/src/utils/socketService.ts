@@ -42,7 +42,8 @@ function initSocket(httpServer: HttpServer): Server {
       const decoded = jwt.verify(token, JWT_SECRET) as DecodedToken;
       (socket as Socket & { user: DecodedToken }).user = decoded;
       next();
-    } catch {
+    } catch (error) {
+   console.error('Socket auth failed while verifying JWT token:', error);
       next(new Error('Token không hợp lệ'));
     }
   });

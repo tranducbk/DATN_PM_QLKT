@@ -14,7 +14,8 @@ function parseJsonStringArray(value: unknown): string[] | null {
       const parsed = JSON.parse(value);
       if (!Array.isArray(parsed)) return null;
       return parsed.every((v: unknown) => typeof v === 'string') ? (parsed as string[]) : null;
-    } catch {
+    } catch (error) {
+   console.error('Failed to parse awardBulk selectedPersonnel JSON:', error);
       return null;
     }
   }
@@ -47,7 +48,8 @@ function parseJsonTitleData(value: unknown): Array<Record<string, unknown>> | nu
       )
         ? (parsed as Array<Record<string, unknown>>)
         : null;
-    } catch {
+    } catch (error) {
+   console.error('Failed to parse awardBulk titleData JSON:', error);
       return null;
     }
   }

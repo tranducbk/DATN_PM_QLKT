@@ -47,7 +47,6 @@ export const AWARD_TYPE_OPTIONS = [
   },
 ] as const;
 
-/** Tính năng hệ thống (không phải award type) */
 export const SYSTEM_FEATURE_OPTIONS = [
   {
     key: 'notify_import',

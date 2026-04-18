@@ -142,7 +142,9 @@ const accounts: Record<
           const displayName = account.QuanNhan?.ho_ten || account.username;
           return `Đặt lại mật khẩu cho tài khoản: ${displayName} (${account.username})`;
         }
-      } catch {}
+      } catch (error) {
+        console.error('Failed to load account when building reset-password audit log:', error);
+      }
     }
 
     const username = req.body?.username || FALLBACK.UNKNOWN;

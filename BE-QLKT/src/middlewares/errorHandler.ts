@@ -97,6 +97,12 @@ const errorHandler = (
   });
 };
 
+/**
+ * Express middleware to handle 404 errors.
+ * @param req - Express request
+ * @param res - Express response
+ * @returns Nothing
+ */
 const notFoundHandler = (req: Request, res: Response): void => {
   res.status(404).json({
     success: false,
