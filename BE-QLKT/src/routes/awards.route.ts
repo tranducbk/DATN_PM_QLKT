@@ -4,7 +4,7 @@ import awardBulkController from '../controllers/awardBulk.controller';
 import { verifyToken, checkRole, requireAdmin } from '../middlewares/auth';
 import { validate } from '../middlewares/validate';
 import { auditLog } from '../middlewares/auditLog';
-import { getLogDescription, getResourceId } from '../helpers/auditLog';
+import { getLogDescription } from '../helpers/auditLog';
 import { ROLES } from '../constants/roles.constants';
 import { bulkUpload } from '../configs/multer';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';

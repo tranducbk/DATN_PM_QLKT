@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+
 import { auth } from './auth';
 import { accounts } from './accounts';
 import { personnel, positionHistory, scientificAchievements } from './personnel';
@@ -98,32 +99,4 @@ const getLogDescription = (resource: string, action: string): LogDescriptionFn =
   return actionHelper;
 };
 
-const getResourceId = {
-  fromParams:
-    (paramName: string = 'id') =>
-    (req: Request): string | null => {
-      return (req.params?.[paramName] as string) || null;
-    },
-  fromResponse:
-    () =>
-    (req: Request, res: Response, responseData: unknown): string | null => {
-      try {
-        const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
-        if (data && typeof data === 'object') {
-          const obj = data as Record<string, unknown>;
-          const nested = obj.data as Record<string, unknown> | undefined;
-          return (nested?.id as string) || (obj.id as string) || null;
-        }
-        return null;
-      } catch {
-        return null;
-      }
-    },
-  fromBody:
-    (fieldName: string = 'id') =>
-    (req: Request): string | null => {
-      return req.body?.[fieldName] || null;
-    },
-};
-
-export { getLogDescription, getResourceId, createLogDescription };
+export { getLogDescription, createLogDescription };

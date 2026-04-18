@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import positionHistoryController from '../controllers/positionHistory.controller';
 import { verifyToken, requireManager, requireAuth } from '../middlewares/auth';
-import { auditLog } from '../middlewares/auditLog';
-import { getLogDescription, getResourceId } from '../helpers/auditLog';
+import { auditLog, getResourceId } from '../middlewares/auditLog';
+import { getLogDescription } from '../helpers/auditLog';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 
 const router = Router();

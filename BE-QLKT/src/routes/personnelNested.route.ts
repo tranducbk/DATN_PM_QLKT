@@ -4,8 +4,8 @@ import positionHistoryController from '../controllers/positionHistory.controller
 import scientificAchievementController from '../controllers/scientificAchievement.controller';
 import profileController from '../controllers/profile.controller';
 import { verifyToken, requireManager, requireAuth } from '../middlewares/auth';
-import { auditLog } from '../middlewares/auditLog';
-import { getLogDescription, getResourceId } from '../helpers/auditLog';
+import { auditLog, getResourceId } from '../middlewares/auditLog';
+import { getLogDescription } from '../helpers/auditLog';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 
 const router = Router({ mergeParams: true });

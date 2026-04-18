@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import personnelController from '../controllers/personnel.controller';
 import { verifyToken, requireAdmin, requireManager, requireAuth } from '../middlewares/auth';
-import { auditLog } from '../middlewares/auditLog';
-import { getLogDescription, getResourceId } from '../helpers/auditLog';
+import { auditLog, getResourceId } from '../middlewares/auditLog';
+import { getLogDescription } from '../helpers/auditLog';
 import { excelUpload as upload } from '../configs/multer';
 import { validate } from '../middlewares/validate';
 import { personnelValidation } from '../validations';

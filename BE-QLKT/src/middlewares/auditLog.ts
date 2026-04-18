@@ -32,6 +32,26 @@ const parseResponse = (responseData: unknown): Record<string, unknown> | null =>
   }
 };
 
+const getStringId = (value: unknown): string | null => {
+  return typeof value === 'string' && value.trim() !== '' ? value : null;
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+};
+
+const extractResourceId = (parsed: Record<string, unknown> | null): string | null => {
+  if (!parsed) return null;
+
+  const nestedData = parsed.data;
+  if (isRecord(nestedData)) {
+    const nestedId = getStringId(nestedData.id);
+    if (nestedId) return nestedId;
+  }
+
+  return getStringId(parsed.id);
+};
+
 const isSuccessResponse = (responseData: unknown): boolean => {
   const parsed = parseResponse(responseData);
   return parsed?.success === true;
@@ -117,7 +137,7 @@ const getResourceId = {
   },
   fromResponse: () => (req: Request, res: Response, responseData: unknown) => {
     const data = parseResponse(responseData);
-    return (data?.data as Record<string, unknown>)?.id as string || (data?.id as string) || null;
+    return extractResourceId(data);
   },
 };
 

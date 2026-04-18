@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import proposalController from '../controllers/proposal.controller';
 import { verifyToken, checkRole } from '../middlewares/auth';
-import { auditLog } from '../middlewares/auditLog';
-import { getLogDescription, getResourceId } from '../helpers/auditLog';
+import { auditLog, getResourceId } from '../middlewares/auditLog';
+import { getLogDescription } from '../helpers/auditLog';
 import { ROLES } from '../constants/roles.constants';
 import { writeLimiter } from '../configs/rateLimiter';
 import { documentUpload as upload } from '../configs/multer';
