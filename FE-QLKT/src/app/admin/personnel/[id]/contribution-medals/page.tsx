@@ -34,6 +34,8 @@ import { useTheme } from '@/components/ThemeProvider';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 import { FETCH_ALL_LIMIT } from '@/lib/constants/pagination.constants';
+import type { PersonnelDetail } from '@/lib/types/personnelList';
+
 
 const { Title, Paragraph } = Typography;
 
@@ -56,7 +58,7 @@ export default function AdminContributionAwardsPage() {
   const personnelId = params?.id as string;
   const { theme } = useTheme();
   const [loading, setLoading] = useState(true);
-  const [personnel, setPersonnel] = useState<any>(null);
+  const [personnel, setPersonnel] = useState<PersonnelDetail | null>(null);
   const [awards, setAwards] = useState<ContributionAward[]>([]);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);

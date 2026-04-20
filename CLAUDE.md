@@ -107,7 +107,7 @@ Exported functions phải có JSDoc chuẩn:
 
 - Exported functions: **bắt buộc** `@param` + `@returns`
 - Private/internal functions: 1 dòng mô tả là đủ
-- Interfaces/Types: 1 dòng mô tả, chỉ doc field nếu non-obvious
+- Interfaces/Types: optional 1-line English description — omit if the name is self-explanatory; only doc individual fields if non-obvious
 - **Không** comment giải thích WHAT code làm — code phải tự giải thích qua naming
 - **Chỉ** comment WHY (hidden constraints, workarounds, business rules)
 - **Không** dùng section dividers (`// ─── ... ───`, `// -----------`)
@@ -116,7 +116,7 @@ Exported functions phải có JSDoc chuẩn:
 
 ## Inline Comment Rules (STRICT)
 
-- **Language: English only** — no Vietnamese, no mixed Vietnamese/English
+- **Language: English only** — no Vietnamese, no mixed Vietnamese/English. This applies to all inline comments AND JSDoc for interfaces/types (1-line description must be English, or omit entirely if obvious from the name)
 - **WHY not WHAT**: Delete any comment that just restates what the next line does
   - ❌ `// Check if personnel exists` before `const p = await prisma.quanNhan.findUnique(...)`
   - ❌ `// Validate year` before `if (nam < 2000 || nam > 2100)`

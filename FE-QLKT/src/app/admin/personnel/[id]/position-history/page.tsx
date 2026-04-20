@@ -39,6 +39,8 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import { calculateDuration, formatDate } from '@/lib/utils';
 import { useTheme } from '@/components/ThemeProvider';
 import dayjs from 'dayjs';
+import type { PersonnelDetail } from '@/lib/types/personnelList';
+
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -57,12 +59,12 @@ export default function PositionHistoryPage() {
   const [form] = Form.useForm();
 
   const [loading, setLoading] = useState(true);
-  const [personnel, setPersonnel] = useState<any>(null);
+  const [personnel, setPersonnel] = useState<PersonnelDetail | null>(null);
   const [histories, setHistories] = useState<HistoryRecord[]>([]);
   const [positions, setPositions] = useState<any[]>([]);
   const [units, setUnits] = useState<any[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingHistory, setEditingHistory] = useState<any>(null);
+  const [editingHistory, setEditingHistory] = useState<HistoryRecord | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -142,7 +144,7 @@ export default function PositionHistoryPage() {
     setDialogOpen(true);
   };
 
-  const isCurrentPosition = editingHistory && !editingHistory.ngay_ket_thuc;
+  const isCurrentPosition = !!(editingHistory && !editingHistory.ngay_ket_thuc);
 
   const handleCloseDialog = () => {
     setDialogOpen(false);
@@ -173,8 +175,9 @@ export default function PositionHistoryPage() {
         payload.chuc_vu_id = values.chuc_vu_id;
       }
 
-      const res = editingHistory
-        ? await apiClient.updatePositionHistory(editingHistory.id, payload)
+      const historyId = editingHistory?.id;
+      const res = historyId
+        ? await apiClient.updatePositionHistory(historyId, payload)
         : await apiClient.createPositionHistory(personnelId, payload);
 
       if (res.success) {
@@ -193,7 +196,7 @@ export default function PositionHistoryPage() {
                   ngay_ket_thuc: positionWarning.suggestedEndDate,
                 };
                 const updateRes = await apiClient.updatePositionHistory(
-                  editingHistory.id,
+                  historyId!,
                   newPayload
                 );
                 if (updateRes.success) {

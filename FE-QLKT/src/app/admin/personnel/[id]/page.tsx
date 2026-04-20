@@ -38,13 +38,15 @@ import { apiClient } from '@/lib/apiClient';
 import { formatDate } from '@/lib/utils';
 import styles from './personnel-detail.module.css';
 import { ROLES, getRoleInfo } from '@/constants/roles.constants';
+import type { PersonnelDetail, ServiceProfile, AnnualProfile, ContributionProfile, MedalData } from '@/lib/types/personnelList';
 import {
   ELIGIBILITY_STATUS,
   ELIGIBILITY_STATUS_MAP,
 } from '@/constants/eligibilityStatus.constants';
-import { DANH_HIEU_MAP } from '@/constants/danhHieu.constants';
+import { DANH_HIEU_MAP, HCQKQT_YEARS_REQUIRED, KNC_YEARS_REQUIRED_NAM, KNC_YEARS_REQUIRED_NU } from '@/constants/danhHieu.constants';
 
 const { Title, Text } = Typography;
+
 
 export default function PersonnelDetailPage() {
   const { isDark } = useTheme();
@@ -54,12 +56,12 @@ export default function PersonnelDetailPage() {
   const personnelId = params?.id as string;
   const activeTab = searchParams?.get('tab') || '1';
   const [loading, setLoading] = useState(true);
-  const [personnel, setPersonnel] = useState<any>(null);
-  const [serviceProfile, setServiceProfile] = useState<any>(null);
-  const [annualProfile, setAnnualProfile] = useState<any>(null);
-  const [contributionProfile, setContributionProfile] = useState<any>(null);
-  const [militaryFlag, setMilitaryFlag] = useState<any>(null);
-  const [commemorationMedals, setCommemorationMedals] = useState<any>(null);
+  const [personnel, setPersonnel] = useState<PersonnelDetail | null>(null);
+  const [serviceProfile, setServiceProfile] = useState<ServiceProfile | null>(null);
+  const [annualProfile, setAnnualProfile] = useState<AnnualProfile | null>(null);
+  const [contributionProfile, setContributionProfile] = useState<ContributionProfile | null>(null);
+  const [militaryFlag, setMilitaryFlag] = useState<MedalData | null>(null);
+  const [commemorationMedals, setCommemorationMedals] = useState<MedalData | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -372,88 +374,88 @@ export default function PersonnelDetailPage() {
               </div>
 
               {/* HC Bảo vệ Tổ quốc */}
-              <div className="mb-6">
-                <Text strong className="text-base">
-                  Huân chương Bảo vệ Tổ quốc
-                </Text>
-                <Divider className="my-3" />
-                <Row gutter={[16, 16]}>
-                  <Col xs={24} md={8}>
-                    <Card size="small" className="h-full">
-                      <Statistic
-                        title="Tháng tích lũy 0.7"
-                        value={(() => {
-                          const { years, months } = convertMonthsToYearsAndMonths(
-                            contributionProfile.months_07 || 0
-                          );
-                          return `${years} năm ${months} tháng`;
-                        })()}
-                        valueStyle={{ color: '#3f8600' }}
-                      />
-                    </Card>
-                  </Col>
-                  <Col xs={24} md={8}>
-                    <Card size="small" className="h-full">
-                      <Statistic
-                        title="Tháng tích lũy 0.8"
-                        value={(() => {
-                          const { years, months } = convertMonthsToYearsAndMonths(
-                            contributionProfile.months_08 || 0
-                          );
-                          return `${years} năm ${months} tháng`;
-                        })()}
-                        valueStyle={{ color: '#3f8600' }}
-                      />
-                    </Card>
-                  </Col>
-                  <Col xs={24} md={8}>
-                    <Card size="small" className="h-full">
-                      <Statistic
-                        title="Tháng tích lũy 0.9-1.0"
-                        value={(() => {
-                          const { years, months } = convertMonthsToYearsAndMonths(
-                            contributionProfile.months_0910 || 0
-                          );
-                          return `${years} năm ${months} tháng`;
-                        })()}
-                        valueStyle={{ color: '#3f8600' }}
-                      />
-                    </Card>
-                  </Col>
-                  <Col xs={24} md={8}>
-                    <Card size="small" className="h-full">
-                      <Statistic
-                        title="Hạng Ba"
-                        value={0}
-                        valueStyle={{ fontSize: '14px' }}
-                        valueRender={() => getStatusTag(contributionProfile.hcbvtq_hang_ba_status)}
-                      />
-                    </Card>
-                  </Col>
-                  <Col xs={24} md={8}>
-                    <Card size="small" className="h-full">
-                      <Statistic
-                        title="Hạng Nhì"
-                        value={0}
-                        valueStyle={{ fontSize: '14px' }}
-                        valueRender={() => getStatusTag(contributionProfile.hcbvtq_hang_nhi_status)}
-                      />
-                    </Card>
-                  </Col>
-                  <Col xs={24} md={8}>
-                    <Card size="small" className="h-full">
-                      <Statistic
-                        title="Hạng Nhất"
-                        value={0}
-                        valueStyle={{ fontSize: '14px' }}
-                        valueRender={() =>
-                          getStatusTag(contributionProfile.hcbvtq_hang_nhat_status)
-                        }
-                      />
-                    </Card>
-                  </Col>
-                </Row>
-              </div>
+              {contributionProfile && (
+                <div className="mb-6">
+                  <Text strong className="text-base">
+                    Huân chương Bảo vệ Tổ quốc
+                  </Text>
+                  <Divider className="my-3" />
+                  <Row gutter={[16, 16]}>
+                    <Col xs={24} md={8}>
+                      <Card size="small" className="h-full">
+                        <Statistic
+                          title="Tháng tích lũy 0.7"
+                          value={(() => {
+                            const { years, months } = convertMonthsToYearsAndMonths(
+                              contributionProfile.months_07 || 0
+                            );
+                            return `${years} năm ${months} tháng`;
+                          })()}
+                          valueStyle={{ color: '#3f8600' }}
+                        />
+                      </Card>
+                    </Col>
+                    <Col xs={24} md={8}>
+                      <Card size="small" className="h-full">
+                        <Statistic
+                          title="Tháng tích lũy 0.8"
+                          value={(() => {
+                            const { years, months } = convertMonthsToYearsAndMonths(
+                              contributionProfile.months_08 || 0
+                            );
+                            return `${years} năm ${months} tháng`;
+                          })()}
+                          valueStyle={{ color: '#3f8600' }}
+                        />
+                      </Card>
+                    </Col>
+                    <Col xs={24} md={8}>
+                      <Card size="small" className="h-full">
+                        <Statistic
+                          title="Tháng tích lũy 0.9-1.0"
+                          value={(() => {
+                            const { years, months } = convertMonthsToYearsAndMonths(
+                              contributionProfile.months_0910 || 0
+                            );
+                            return `${years} năm ${months} tháng`;
+                          })()}
+                          valueStyle={{ color: '#3f8600' }}
+                        />
+                      </Card>
+                    </Col>
+                    <Col xs={24} md={8}>
+                      <Card size="small" className="h-full">
+                        <Statistic
+                          title="Hạng Ba"
+                          value={0}
+                          valueStyle={{ fontSize: '14px' }}
+                          valueRender={() => getStatusTag(contributionProfile.hcbvtq_hang_ba_status)}
+                        />
+                      </Card>
+                    </Col>
+                    <Col xs={24} md={8}>
+                      <Card size="small" className="h-full">
+                        <Statistic
+                          title="Hạng Nhì"
+                          value={0}
+                          valueStyle={{ fontSize: '14px' }}
+                          valueRender={() => getStatusTag(contributionProfile.hcbvtq_hang_nhi_status)}
+                        />
+                      </Card>
+                    </Col>
+                    <Col xs={24} md={8}>
+                      <Card size="small" className="h-full">
+                        <Statistic
+                          title="Hạng Nhất"
+                          value={0}
+                          valueStyle={{ fontSize: '14px' }}
+                          valueRender={() => getStatusTag(contributionProfile.hcbvtq_hang_nhat_status)}
+                        />
+                      </Card>
+                    </Col>
+                  </Row>
+                </div>
+              )}
 
               {/* HC Quân kỳ Quyết thắng */}
               <div className="mb-6">
@@ -473,7 +475,7 @@ export default function PersonnelDetailPage() {
                           if (hasReceived) {
                             return getStatusTag(ELIGIBILITY_STATUS.DA_NHAN);
                           } else {
-                            const yearsRequired = 25;
+                            const yearsRequired = HCQKQT_YEARS_REQUIRED;
                             const yearsOfService = calculateYearsOfService(personnel.ngay_nhap_ngu);
                             const eligible = yearsOfService >= yearsRequired;
                             return (
@@ -526,7 +528,7 @@ export default function PersonnelDetailPage() {
                           if (hasReceived) {
                             return getStatusTag(ELIGIBILITY_STATUS.DA_NHAN);
                           } else {
-                            const yearsRequired = personnel.gioi_tinh === 'NAM' ? 25 : 20;
+                            const yearsRequired = personnel.gioi_tinh === 'NAM' ? KNC_YEARS_REQUIRED_NAM : KNC_YEARS_REQUIRED_NU;
                             const yearsOfService = calculateYearsOfService(personnel.ngay_nhap_ngu);
                             const eligible = yearsOfService >= yearsRequired;
                             return (
@@ -927,7 +929,6 @@ export default function PersonnelDetailPage() {
             centered
             tabBarStyle={{ marginBottom: 24 }}
             moreIcon={null}
-            renderTabBar={(props, DefaultTabBar) => <DefaultTabBar {...props} />}
           />
         </Card>
       </div>

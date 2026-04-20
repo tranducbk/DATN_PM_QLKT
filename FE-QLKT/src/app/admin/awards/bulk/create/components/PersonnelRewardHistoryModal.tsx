@@ -27,7 +27,7 @@ interface AnnualProfile {
   du_dieu_kien_bkbqp?: boolean;
   du_dieu_kien_cstdtq?: boolean;
   du_dieu_kien_bkttcp?: boolean;
-  goi_y?: string;
+  goi_y?: string | null;
 }
 
 interface PersonnelRewardHistoryModalProps {

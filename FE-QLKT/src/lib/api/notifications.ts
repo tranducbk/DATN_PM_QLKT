@@ -21,7 +21,7 @@ export async function getNotifications(params?: {
   limit?: number;
   isRead?: boolean;
   type?: string;
-}): Promise<ApiResponse<{ notifications: NotificationItem[]; total?: number; unread_count?: number }>> {
+}): Promise<ApiResponse<NotificationItem[]>> {
   try {
     const res = await axiosInstance.get('/api/notifications', { params });
     return { success: res.data?.success, data: res.data?.data, pagination: res.data?.pagination };

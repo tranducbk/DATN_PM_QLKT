@@ -4,7 +4,7 @@ import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHel
 import { checkDuplicateAward } from '../helpers/awardValidation';
 import profileService from './profile.service';
 import * as notificationHelper from '../helpers/notification';
-import { getDanhHieuName, DANH_HIEU_HCBVTQ } from '../constants/danhHieu.constants';
+import { getDanhHieuName, DANH_HIEU_HCBVTQ, CONG_HIEN_BASE_REQUIRED_MONTHS, CONG_HIEN_FEMALE_REQUIRED_MONTHS } from '../constants/danhHieu.constants';
 import { ROLES } from '../constants/roles.constants';
 import { ValidationError, NotFoundError } from '../middlewares/errorHandler';
 import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys, sanitizeRowData } from '../helpers/excelHelper';
@@ -333,8 +333,7 @@ class ContributionAwardService {
       const months0_9_1_0 = getTotalMonths('0.9-1.0');
 
       const isFemale = personnel.gioi_tinh === GENDER.FEMALE;
-      // 120 months (10 yrs) for male, 80 months (~6.7 yrs) for female
-      const baseMonths = isFemale ? 80 : 120;
+      const baseMonths = isFemale ? CONG_HIEN_FEMALE_REQUIRED_MONTHS : CONG_HIEN_BASE_REQUIRED_MONTHS;
 
       let eligible = false;
       if (danh_hieu === DANH_HIEU_HCBVTQ.HANG_NHAT) {

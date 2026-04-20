@@ -163,6 +163,7 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { theme, toggle } = useTheme();
+  const isDark = theme === 'dark';
   const { user, logout: authLogout } = useAuth();
 
   const actualRole = (user?.role ?? role) as UserRole;
@@ -241,9 +242,8 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
         page: 1,
         limit: FETCH_ALL_LIMIT,
       });
-      if (response.success && response.data) {
-        const list = (response.data.notifications || []) as NotificationItem[];
-        setNotifications(list);
+      if (response.success && Array.isArray(response.data)) {
+        setNotifications(response.data);
       }
     } catch (error: unknown) {
       logApiError(error, 'Tải danh sách thông báo');
@@ -571,10 +571,10 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
       label: (
         <div className="flex items-center justify-between gap-3 w-full">
           <span className="flex items-center gap-2">
-            {theme === 'dark' ? <BulbFilled /> : <BulbOutlined />}
-            {theme === 'dark' ? 'Chế độ tối' : 'Chế độ sáng'}
+            {isDark ? <BulbFilled /> : <BulbOutlined />}
+            {isDark ? 'Chế độ tối' : 'Chế độ sáng'}
           </span>
-          <Switch checked={theme === 'dark'} onChange={toggle} size="small" />
+          <Switch checked={isDark} onChange={toggle} size="small" />
         </div>
       ),
       onClick: (e: MenuInfo) => {
@@ -597,7 +597,7 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
     <div className="h-full flex flex-col">
       <div
         className={`p-5 text-center border-b-2 transition-all ${
-          theme === 'dark'
+          isDark
             ? 'border-blue-700 bg-gradient-to-b from-gray-800 to-gray-900'
             : 'border-blue-200 bg-gradient-to-b from-blue-50 to-white'
         }`}
@@ -605,14 +605,14 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
         <h1
           className={`font-bold tracking-wider transition-all ${
             collapsed ? 'text-lg' : 'text-2xl'
-          } ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}
+          } ${isDark ? 'text-blue-400' : 'text-blue-600'}`}
         >
           QLKT
         </h1>
         {!collapsed && (
           <p
             className={`text-xs mt-2 font-medium uppercase tracking-wide ${
-              theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+              isDark ? 'text-gray-400' : 'text-gray-600'
             }`}
           >
             {getRoleInfo(actualRole).label}
@@ -620,7 +620,7 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
         )}
       </div>
       <Menu
-        theme={theme === 'dark' ? 'dark' : 'light'}
+        theme={isDark ? 'dark' : 'light'}
         mode="inline"
         items={getMenuItems()}
         className="flex-1"
@@ -639,40 +639,46 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
     <ConfigProvider
       renderEmpty={() => <Empty description="Không có dữ liệu" />}
       theme={{
-        algorithm: theme === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
+        algorithm: isDark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
         token: {
-          colorBgContainer: theme === 'dark' ? '#1f2937' : '#ffffff',
-          colorText: theme === 'dark' ? '#f3f4f6' : '#111827',
-          colorBorder: theme === 'dark' ? '#4b5563' : '#d1d5db',
-          colorTextPlaceholder: theme === 'dark' ? '#9ca3af' : '#6b7280',
+          colorBgContainer: isDark ? '#1f2937' : '#ffffff',
+          colorText: isDark ? '#f3f4f6' : '#111827',
+          colorBorder: isDark ? '#4b5563' : '#d1d5db',
+          colorTextPlaceholder: isDark ? '#9ca3af' : '#6b7280',
           borderRadius: 8,
         },
         components: {
           Layout: {
-            headerBg: theme === 'dark' ? '#1f2937' : '#ffffff',
-            bodyBg: theme === 'dark' ? '#111827' : '#f9fafb',
-            footerBg: theme === 'dark' ? '#1f2937' : '#ffffff',
-            siderBg: theme === 'dark' ? '#1f2937' : '#ffffff',
+            headerBg: isDark ? '#1f2937' : '#ffffff',
+            bodyBg: isDark ? '#111827' : '#f9fafb',
+            footerBg: isDark ? '#1f2937' : '#ffffff',
+            siderBg: isDark ? '#1f2937' : '#ffffff',
           },
           Menu: {
             darkItemBg: '#1f2937',
             darkSubMenuItemBg: '#1f2937',
           },
           Dropdown: {
-            colorBgElevated: theme === 'dark' ? '#1f2937' : '#ffffff',
-            controlItemBgHover: theme === 'dark' ? '#374151' : '#f3f4f6',
+            colorBgElevated: isDark ? '#1f2937' : '#ffffff',
+            controlItemBgHover: isDark ? '#374151' : '#f3f4f6',
           },
           Drawer: {
-            colorBgElevated: theme === 'dark' ? '#1f2937' : '#ffffff',
+            colorBgElevated: isDark ? '#1f2937' : '#ffffff',
           },
         },
       }}
     >
       <App>
         {isLoggingOut && (
-          <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-white/80 dark:bg-gray-900/90 backdrop-blur-sm transition-opacity duration-300">
+          <div
+            className="fixed inset-0 z-[9999] flex flex-col items-center justify-center backdrop-blur-sm transition-opacity duration-300"
+            style={{ background: isDark ? 'rgba(17,24,39,0.92)' : 'rgba(249,250,251,0.92)' }}
+          >
             <Spin size="large" />
-            <p className="mt-4 text-base font-medium text-gray-600 dark:text-gray-300">
+            <p
+              className="mt-4 text-base font-medium"
+              style={{ color: isDark ? '#e5e7eb' : '#111827' }}
+            >
               Đang đăng xuất...
             </p>
           </div>
@@ -688,7 +694,7 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
               onCollapse={setCollapsed}
               collapsedWidth={80}
               width={250}
-              className={theme === 'dark' ? 'bg-gray-800' : 'bg-white'}
+              className={isDark ? 'bg-gray-800' : 'bg-white'}
               style={{
                 overflow: 'auto',
                 height: '100vh',
@@ -718,7 +724,7 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
           >
             <Header
               className={`shadow-sm px-4 flex items-center justify-between ${
-                theme === 'dark' ? 'bg-gray-800 border-b border-gray-700' : 'bg-white'
+                isDark ? 'bg-gray-800 border-b border-gray-700' : 'bg-white'
               }`}
               style={{ position: 'sticky', top: 0, zIndex: 10 }}
             >
@@ -728,7 +734,7 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
                     type="text"
                     icon={mobileDrawerOpen ? <CloseOutlined /> : <MenuOutlined />}
                     onClick={() => setMobileDrawerOpen(!mobileDrawerOpen)}
-                    className={theme === 'dark' ? 'text-gray-300' : ''}
+                    className={isDark ? 'text-gray-300' : ''}
                   />
                 )}
                 {!isMobile && (
@@ -736,7 +742,7 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
                     type="text"
                     icon={<MenuOutlined />}
                     onClick={() => setCollapsed(!collapsed)}
-                    className={theme === 'dark' ? 'text-gray-300' : ''}
+                    className={isDark ? 'text-gray-300' : ''}
                   />
                 )}
               </div>
@@ -919,7 +925,7 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
                 >
                   <div
                     className={`flex items-center gap-3 cursor-pointer group px-3 rounded-lg transition-colors ${
-                      theme === 'dark' ? 'hover:bg-gray-700/50' : 'hover:bg-blue-50/50'
+                      isDark ? 'hover:bg-gray-700/50' : 'hover:bg-blue-50/50'
                     }`}
                   >
                     <Avatar
@@ -933,7 +939,7 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
                     </Avatar>
                     <span
                       className={`hidden sm:block text-sm font-semibold ${
-                        theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
+                        isDark ? 'text-gray-200' : 'text-gray-700'
                       }`}
                     >
                       {userName}
@@ -945,7 +951,7 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
 
             <Content
               className={`${
-                theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'
+                isDark ? 'bg-gray-900' : 'bg-gray-50'
               } min-h-[calc(100vh-64px-70px)] min-w-0 max-w-full`}
             >
               {children}
@@ -953,7 +959,7 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
 
             <Footer
               className={`text-center py-6 ${
-                theme === 'dark'
+                isDark
                   ? 'bg-gray-800 border-t-2 border-blue-700 text-gray-300'
                   : 'bg-white border-t-2 border-blue-200'
               }`}

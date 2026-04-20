@@ -222,7 +222,7 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
       key: 'stt',
       width: 60,
       align: 'center',
-      render: (_value, _record, index) => index + 1,
+      render: ( value, record, index) => index + 1,
     },
     {
       title: 'Họ tên',
@@ -235,14 +235,14 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
       key: 'cap_bac',
       width: 120,
       ellipsis: true,
-      render: (_value, record) => record.cap_bac ?? '-',
+      render: (value, record) => record.cap_bac ?? '-',
     },
     {
       title: 'Chức vụ',
       key: 'chuc_vu',
       width: 150,
       ellipsis: true,
-      render: (_value, record) =>
+      render: (value, record) =>
         record.ChucVu?.ten_chuc_vu ?? record.chuc_vu_name ?? '-',
     },
   ];
@@ -253,7 +253,7 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
       key: 'stt',
       width: 60,
       align: 'center',
-      render: (_value, _record, index) => index + 1,
+      render: ( value, record, index) => index + 1,
     },
     {
       title: 'Mã đơn vị',

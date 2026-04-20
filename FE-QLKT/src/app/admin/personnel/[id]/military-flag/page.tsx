@@ -33,6 +33,8 @@ import { formatDate } from '@/lib/utils';
 import { useTheme } from '@/components/ThemeProvider';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
+import type { PersonnelDetail, ServiceProfile } from '@/lib/types/personnelList';
+
 
 const { Title, Paragraph } = Typography;
 
@@ -54,8 +56,8 @@ export default function AdminMilitaryFlagPage() {
   const personnelId = params?.id as string;
   const { theme } = useTheme();
   const [loading, setLoading] = useState(true);
-  const [personnel, setPersonnel] = useState<any>(null);
-  const [serviceProfile, setServiceProfile] = useState<any>(null);
+  const [personnel, setPersonnel] = useState<PersonnelDetail | null>(null);
+  const [serviceProfile, setServiceProfile] = useState<ServiceProfile | null>(null);
   const [flags, setFlags] = useState<MilitaryFlag[]>([]);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);

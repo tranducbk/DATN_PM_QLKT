@@ -204,6 +204,18 @@ export const AWARD_TYPE_TO_ALLOW: Record<string, string> = {
   NCKH: 'allow_scientific',
 };
 
+/** Years of service required for each HC Chiến sĩ Vẻ vang rank. */
+export const HCCSVV_YEARS_HANG_BA = 10;
+export const HCCSVV_YEARS_HANG_NHI = 15;
+export const HCCSVV_YEARS_HANG_NHAT = 20;
+
+/** Minimum years of service for HC Quân kỳ Quyết thắng (both genders). */
+export const HCQKQT_YEARS_REQUIRED = 25;
+
+/** Minimum years of service for KNC VSNXD QDNDVN by gender. */
+export const KNC_YEARS_REQUIRED_NAM = 25;
+export const KNC_YEARS_REQUIRED_NU = 20;
+
 export function getLoaiKhenThuongByDanhHieu(danhHieu: string | null | undefined): string {
   if (!danhHieu) return 'Chưa xác định';
   if (danhHieu.startsWith('HCBVTQ')) return LOAI_DE_XUAT_MAP.CONG_HIEN;

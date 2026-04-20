@@ -38,6 +38,13 @@ import { formatDate } from '@/lib/utils';
 
 const { Title, Text } = Typography;
 
+interface CheckResultsSummary {
+  total: number;
+  can_add: number;
+  has_reward: number;
+  has_proposal: number;
+}
+
 interface PersonnelRewardData {
   personnel_id: string;
   ho_ten?: string;
@@ -66,7 +73,7 @@ export default function BulkRewardDetailsPage() {
   const [loading, setLoading] = useState(false);
   const [personnelData, setPersonnelData] = useState<PersonnelRewardData[]>([]);
   const [fileList, setFileList] = useState<UploadFile[]>([]);
-  const [checkResults, setCheckResults] = useState<any>(null);
+  const [checkResults, setCheckResults] = useState<{ summary: CheckResultsSummary } | null>(null);
   const [positions, setPositions] = useState<any[]>([]);
 
   const [eligiblePersonnelIds, setEligiblePersonnelIds] = useState<string[]>([]);
@@ -318,7 +325,7 @@ export default function BulkRewardDetailsPage() {
       key: 'stt',
       width: 60,
       align: 'center',
-      render: (_: any, __: any, index: number) => index + 1,
+      render: (_: unknown, __: any, index: number) => index + 1,
     },
     {
       title: 'Họ tên',
@@ -348,7 +355,7 @@ export default function BulkRewardDetailsPage() {
       title: 'Cơ quan đơn vị',
       key: 'co_quan_don_vi',
       width: 200,
-      render: (_: any, record: PersonnelRewardData) => {
+      render: (_: unknown, record: PersonnelRewardData) => {
         if (record.DonViTrucThuoc?.CoQuanDonVi) {
           return record.DonViTrucThuoc.CoQuanDonVi.ten_don_vi;
         }
@@ -359,7 +366,7 @@ export default function BulkRewardDetailsPage() {
       title: 'Đơn vị trực thuộc',
       key: 'don_vi_truc_thuoc',
       width: 200,
-      render: (_: any, record: PersonnelRewardData) => {
+      render: (_: unknown, record: PersonnelRewardData) => {
         return record.DonViTrucThuoc?.ten_don_vi || '-';
       },
     },
@@ -371,7 +378,7 @@ export default function BulkRewardDetailsPage() {
       ),
       key: 'cap_bac_edit',
       width: 200,
-      render: (_: any, record: PersonnelRewardData) => (
+      render: (_: unknown, record: PersonnelRewardData) => (
         <Select
           value={record.cap_bac_edit}
           onChange={value => {
@@ -395,7 +402,7 @@ export default function BulkRewardDetailsPage() {
       ),
       key: 'chuc_vu_edit',
       width: 250,
-      render: (_: any, record: PersonnelRewardData) => {
+      render: (_: unknown, record: PersonnelRewardData) => {
         return (
           <Input
             value={record.chuc_vu_edit || ''}
@@ -420,7 +427,7 @@ export default function BulkRewardDetailsPage() {
       key: 'so_quyet_dinh',
       width: 200,
       align: 'center' as const,
-      render: (_: any, record: PersonnelRewardData) => {
+      render: (_: unknown, record: PersonnelRewardData) => {
         const soQuyetDinh = record.so_quyet_dinh;
 
         if (!soQuyetDinh || (typeof soQuyetDinh === 'string' && soQuyetDinh.trim() === '')) {

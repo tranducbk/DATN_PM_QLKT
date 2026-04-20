@@ -12,7 +12,7 @@ import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys, s
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
 import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
-import { DANH_HIEU_MAP } from '../constants/danhHieu.constants';
+import { DANH_HIEU_MAP, KNC_YEARS_REQUIRED_NAM, KNC_YEARS_REQUIRED_NU } from '../constants/danhHieu.constants';
 import { GENDER } from '../constants/gender.constants';
 
 export interface CommemorativeMedalValidItem {
@@ -265,7 +265,7 @@ class CommemorativeMedalService {
       const serviceMonths = calculateServiceMonths(ngayNhapNgu, referenceDate);
       const serviceYears = serviceMonths / 12;
       const isFemale = personnel.gioi_tinh === GENDER.FEMALE;
-      const requiredYears = isFemale ? 20 : 25;
+      const requiredYears = isFemale ? KNC_YEARS_REQUIRED_NU : KNC_YEARS_REQUIRED_NAM;
 
       if (serviceYears < requiredYears) {
         errors.push({

@@ -25,6 +25,8 @@ import { useTheme } from '@/components/ThemeProvider';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 import { DANH_HIEU_MAP } from '@/constants/danhHieu.constants';
+import type { PersonnelDetail } from '@/lib/types/personnelList';
+
 
 const { Title, Paragraph } = Typography;
 
@@ -44,7 +46,7 @@ export default function ManagerCommemorationMedalsPage() {
   const personnelId = params?.id as string;
   const { theme } = useTheme();
   const [loading, setLoading] = useState(true);
-  const [personnel, setPersonnel] = useState<any>(null);
+  const [personnel, setPersonnel] = useState<PersonnelDetail | null>(null);
   const [medals, setMedals] = useState<CommemorationMedal[]>([]);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);

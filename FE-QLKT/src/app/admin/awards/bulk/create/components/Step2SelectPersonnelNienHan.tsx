@@ -21,6 +21,7 @@ import type { DateInput } from '@/lib/types';
 import { apiClient } from '@/lib/apiClient';
 import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/lib/constants/pagination.constants';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
+import { HCCSVV_YEARS_HANG_BA, HCCSVV_YEARS_HANG_NHI, HCCSVV_YEARS_HANG_NHAT } from '@/constants/danhHieu.constants';
 import { ExcelImportSection } from './ExcelImportSection';
 import * as XLSX from 'xlsx';
 
@@ -235,15 +236,15 @@ export function Step2SelectPersonnelNienHan({
         : record.ngay_nhap_ngu;
 
     const eligibilityDateBa = new Date(startDate);
-    eligibilityDateBa.setFullYear(eligibilityDateBa.getFullYear() + 10);
+    eligibilityDateBa.setFullYear(eligibilityDateBa.getFullYear() + HCCSVV_YEARS_HANG_BA);
     const eligibilityYearBa = eligibilityDateBa.getFullYear();
 
     const eligibilityDateNhi = new Date(startDate);
-    eligibilityDateNhi.setFullYear(eligibilityDateNhi.getFullYear() + 15);
+    eligibilityDateNhi.setFullYear(eligibilityDateNhi.getFullYear() + HCCSVV_YEARS_HANG_NHI);
     const eligibilityYearNhi = eligibilityDateNhi.getFullYear();
 
     const eligibilityDateNhat = new Date(startDate);
-    eligibilityDateNhat.setFullYear(eligibilityDateNhat.getFullYear() + 20);
+    eligibilityDateNhat.setFullYear(eligibilityDateNhat.getFullYear() + HCCSVV_YEARS_HANG_NHAT);
     const eligibilityYearNhat = eligibilityDateNhat.getFullYear();
 
     const currentYear = new Date().getFullYear();
@@ -473,7 +474,7 @@ export function Step2SelectPersonnelNienHan({
           return (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
               <Text type="warning" strong>
-                Chưa đủ 10 năm
+                Chưa đủ {HCCSVV_YEARS_HANG_BA} năm
               </Text>
               <Text type="secondary" style={{ fontSize: '11px' }}>
                 Còn {hangBa.yearsNeeded} năm
@@ -518,7 +519,7 @@ export function Step2SelectPersonnelNienHan({
                 Đã nhận Hạng Ba
               </Text>
               <Text type="warning" style={{ fontSize: '11px' }}>
-                Chưa đủ 15 năm (Hạng Nhì)
+                Chưa đủ {HCCSVV_YEARS_HANG_NHI} năm (Hạng Nhì)
               </Text>
             </div>
           );
@@ -546,7 +547,7 @@ export function Step2SelectPersonnelNienHan({
                 Đã nhận Hạng Nhì
               </Text>
               <Text type="warning" style={{ fontSize: '11px' }}>
-                Chưa đủ 20 năm (Hạng Nhất)
+                Chưa đủ {HCCSVV_YEARS_HANG_NHAT} năm (Hạng Nhất)
               </Text>
             </div>
           );
@@ -774,11 +775,11 @@ export function Step2SelectPersonnelNienHan({
         const hasHangNhat = serviceProfile?.hccsvv_hang_nhat_status === ELIGIBILITY_STATUS.DA_NHAN;
 
         if (!hasHangBa && eligibility && !eligibility.hangBa.eligible) {
-          title = `Chưa đủ 10 năm để đề xuất Hạng Ba. Còn ${eligibility.hangBa.yearsNeeded} năm.`;
+          title = `Chưa đủ ${HCCSVV_YEARS_HANG_BA} năm để đề xuất Hạng Ba. Còn ${eligibility.hangBa.yearsNeeded} năm.`;
         } else if (hasHangBa && !hasHangNhi && eligibility && !eligibility.hangNhi.eligible) {
-          title = `Chưa đủ 15 năm để đề xuất Hạng Nhì. Còn ${eligibility.hangNhi.yearsNeeded} năm.`;
+          title = `Chưa đủ ${HCCSVV_YEARS_HANG_NHI} năm để đề xuất Hạng Nhì. Còn ${eligibility.hangNhi.yearsNeeded} năm.`;
         } else if (hasHangNhi && !hasHangNhat && eligibility && !eligibility.hangNhat.eligible) {
-          title = `Chưa đủ 20 năm để đề xuất Hạng Nhất. Còn ${eligibility.hangNhat.yearsNeeded} năm.`;
+          title = `Chưa đủ ${HCCSVV_YEARS_HANG_NHAT} năm để đề xuất Hạng Nhất. Còn ${eligibility.hangNhat.yearsNeeded} năm.`;
         } else if (hasHangNhat) {
           title = 'Quân nhân này đã nhận đủ tất cả hạng HCCSVV.';
         }
@@ -823,15 +824,15 @@ export function Step2SelectPersonnelNienHan({
 
           if (!hasHangBa && eligibility && !eligibility.hangBa.eligible) {
             message.warning(
-              `Quân nhân ${record.ho_ten} chưa đủ 10 năm để đề xuất Hạng Ba. Còn ${eligibility.hangBa.yearsNeeded} năm.`
+              `Quân nhân ${record.ho_ten} chưa đủ ${HCCSVV_YEARS_HANG_BA} năm để đề xuất Hạng Ba. Còn ${eligibility.hangBa.yearsNeeded} năm.`
             );
           } else if (hasHangBa && !hasHangNhi && eligibility && !eligibility.hangNhi.eligible) {
             message.warning(
-              `Quân nhân ${record.ho_ten} chưa đủ 15 năm để đề xuất Hạng Nhì. Còn ${eligibility.hangNhi.yearsNeeded} năm.`
+              `Quân nhân ${record.ho_ten} chưa đủ ${HCCSVV_YEARS_HANG_NHI} năm để đề xuất Hạng Nhì. Còn ${eligibility.hangNhi.yearsNeeded} năm.`
             );
           } else if (hasHangNhi && !hasHangNhat && eligibility && !eligibility.hangNhat.eligible) {
             message.warning(
-              `Quân nhân ${record.ho_ten} chưa đủ 20 năm để đề xuất Hạng Nhất. Còn ${eligibility.hangNhat.yearsNeeded} năm.`
+              `Quân nhân ${record.ho_ten} chưa đủ ${HCCSVV_YEARS_HANG_NHAT} năm để đề xuất Hạng Nhất. Còn ${eligibility.hangNhat.yearsNeeded} năm.`
             );
           } else if (hasHangNhat) {
             message.warning(`Quân nhân ${record.ho_ten} đã nhận đủ tất cả hạng HCCSVV.`);

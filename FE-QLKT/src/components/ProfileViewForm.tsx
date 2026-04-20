@@ -11,6 +11,8 @@ import { useTheme } from '@/components/ThemeProvider';
 import { getAntdThemeConfig } from '@/lib/antdTheme';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { getRoleInfo } from '@/constants/roles.constants';
+import type { PersonnelDetail } from '@/lib/types/personnelList';
+
 
 interface ProfileViewFormProps {
   personnelId?: string;
@@ -22,7 +24,7 @@ export function ProfileViewForm({
   const router = useRouter();
   const { isDark } = useTheme();
   const [loading, setLoading] = useState(true);
-  const [personnelData, setPersonnelData] = useState<any>(null);
+  const [personnelData, setPersonnelData] = useState<PersonnelDetail | null>(null);
 
   useEffect(() => {
     loadPersonnelData();
@@ -81,6 +83,10 @@ export function ProfileViewForm({
         <Spin size="large" tip="Đang tải thông tin..." />
       </div>
     );
+  }
+
+  if (!personnelData) {
+    return null;
   }
 
   return (

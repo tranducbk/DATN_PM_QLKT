@@ -686,7 +686,7 @@ export default function ManagerProposalDetailPage() {
                         key: 'so_quyet_dinh',
                         width: 180,
                         align: 'center' as const,
-                        render: (text: string, _record: ThanhTichItem) => {
+                        render: (text: string, record: ThanhTichItem) => {
                           if (!text || (typeof text === 'string' && text.trim() === '')) {
                             return <Text type="secondary">-</Text>;
                           }
@@ -879,7 +879,7 @@ export default function ManagerProposalDetailPage() {
                         key: 'so_quyet_dinh',
                         width: 180,
                         align: 'center' as const,
-                        render: (text: string, _record: DanhHieuItem) => {
+                        render: (text: string, record: DanhHieuItem) => {
                           if (!text || (typeof text === 'string' && text.trim() === '')) {
                             return <Text type="secondary">-</Text>;
                           }

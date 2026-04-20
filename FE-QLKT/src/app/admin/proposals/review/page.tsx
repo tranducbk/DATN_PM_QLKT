@@ -173,7 +173,7 @@ export default function ProposalReviewPage() {
       key: 'stt',
       width: 60,
       align: 'center',
-      render: (_value, _record, index) => <div style={{ textAlign: 'center' }}>{index + 1}</div>,
+      render: ( value, record, index) => <div style={{ textAlign: 'center' }}>{index + 1}</div>,
     },
     {
       title: 'Đơn vị',
@@ -202,7 +202,7 @@ export default function ProposalReviewPage() {
       title: 'Thời gian cập nhật',
       key: 'ngay_duyet',
       align: 'center' as const,
-      render: (_value, record) => {
+      render: (value, record) => {
         const dateValue = record.ngay_duyet || record.createdAt;
         if (!dateValue) return '-';
         return <div style={{ textAlign: 'center' }}>{formatDateTime(dateValue)}</div>;
@@ -220,7 +220,7 @@ export default function ProposalReviewPage() {
       key: 'so_luong',
       align: 'center' as const,
       width: 100,
-      render: (_value, record) => {
+      render: (value, record) => {
         let count = 0;
         switch (record.loai_de_xuat) {
           case PROPOSAL_TYPES.NCKH:
@@ -259,7 +259,7 @@ export default function ProposalReviewPage() {
       key: 'action',
       align: 'center' as const,
       width: 200,
-      render: (_value, record) => (
+      render: (value, record) => (
         <div style={{ textAlign: 'center' }}>
           <Space>
             <Button

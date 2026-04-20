@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import {
   Card,
+  Tag,
+  Timeline,
   Breadcrumb,
   Typography,
   ConfigProvider,
@@ -19,6 +21,8 @@ import {
   BankOutlined,
   FileTextOutlined,
   ArrowRightOutlined,
+  ClockCircleOutlined,
+  CheckCircleOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { apiClient } from '@/lib/apiClient';
@@ -196,11 +200,14 @@ export default function SuperAdminDashboard() {
 
         {/* Header */}
         <div style={{ marginBottom: '24px' }}>
-          <Title level={1} style={{ margin: 0 }}>
-            Xin chào, Quản trị viên cấp cao
+          <Title
+            level={2}
+            className="!mb-3 !text-4xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent dark:from-blue-400 dark:to-purple-400"
+          >
+            Xin chào, {displayName}
           </Title>
-          <Text type="secondary" style={{ display: 'block', marginTop: '4px' }}>
-            Bảng điều khiển hệ thống
+          <Text type="secondary" style={{ display: 'block', marginTop: '4px', fontSize: 16 }}>
+            Bảng điều khiển hệ thống · Toàn quyền quản trị
           </Text>
         </div>
 
@@ -218,47 +225,38 @@ export default function SuperAdminDashboard() {
             const isNumber = typeof stat.value === 'number';
             return (
               <Link key={index} href={stat.link}>
-                <Card hoverable style={{ cursor: 'pointer' }}>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      marginBottom: '16px',
-                    }}
-                  >
-                    <div>
+                <Card
+                  hoverable
+                  style={{
+                    borderRadius: 10,
+                    boxShadow: theme === 'dark' ? '0 1px 6px rgba(0,0,0,0.35)' : '0 1px 4px rgba(0,0,0,0.06)',
+                    transition: 'all 0.3s ease',
+                  }}
+                  styles={{ body: { padding: '20px' } }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                    <div
+                      style={{
+                        width: 56, height: 56, borderRadius: 12,
+                        background: stat.bgColor,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <IconComponent style={{ fontSize: 26, color: stat.iconColor }} />
+                    </div>
+                    <div style={{ flex: 1 }}>
                       <Text
                         type="secondary"
-                        style={{ fontSize: '14px', display: 'block', marginBottom: '4px' }}
+                        style={{ fontSize: 13, fontWeight: 500, display: 'block', marginBottom: 4 }}
                       >
                         {stat.title}
                       </Text>
-                      <div style={{ fontSize: '28px', fontWeight: 'bold' }}>
+                      <div style={{ fontSize: isNumber ? 28 : 22, fontWeight: 'bold', lineHeight: 1.1 }}>
                         {loading && isNumber ? '...' : stat.value}
                       </div>
                     </div>
-                    <div
-                      style={{
-                        padding: '12px',
-                        backgroundColor: stat.bgColor,
-                        borderRadius: '8px',
-                      }}
-                    >
-                      <IconComponent style={{ fontSize: '24px', color: stat.iconColor }} />
-                    </div>
-                  </div>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      color: '#6b7280',
-                      fontSize: '14px',
-                    }}
-                  >
-                    <ArrowRightOutlined style={{ fontSize: '16px' }} />
-                    <span>Truy cập</span>
+                    <ArrowRightOutlined style={{ fontSize: 14, color: '#9ca3af' }} />
                   </div>
                 </Card>
               </Link>
@@ -327,22 +325,96 @@ export default function SuperAdminDashboard() {
         </div>
 
         {/* System Info */}
-        <Card>
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '24px' }}>
-            <div style={{ padding: '8px', backgroundColor: '#dcfce7', borderRadius: '8px' }}>
-              <SettingOutlined style={{ fontSize: '20px', color: '#16a34a' }} />
-            </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16 }}>
+          <Card
+            style={{ borderRadius: 10, boxShadow: theme === 'dark' ? '0 1px 6px rgba(0,0,0,0.35)' : '0 1px 4px rgba(0,0,0,0.06)' }}
+            styles={{ body: { padding: '0 20px' } }}
+            title={
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <SafetyOutlined style={{ color: '#3b82f6' }} />
+                <span style={{ fontWeight: 600 }}>Thông tin hệ thống</span>
+              </span>
+            }
+          >
             <div>
-              <Title level={4} style={{ marginBottom: '8px' }}>
-                Quyền quản trị Super Admin
-              </Title>
-              <Text type="secondary" style={{ fontSize: '14px' }}>
-                Bạn có toàn quyền quản lý hệ thống, bao gồm tài khoản, quân nhân, đơn vị và xem nhật
-                ký hoạt động. Vui lòng sử dụng các quyền này một cách cẩn thận và có trách nhiệm.
-              </Text>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px 0', borderBottom: `1px solid ${theme === 'dark' ? '#374151' : '#f3f4f6'}` }}>
+                <div style={{ width: 36, height: 36, borderRadius: 8, background: theme === 'dark' ? 'rgba(139,92,246,0.2)' : '#f3e8ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <UserOutlined style={{ color: theme === 'dark' ? '#a78bfa' : '#7c3aed', fontSize: 15 }} />
+                </div>
+                <div>
+                  <Text type="secondary" style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 4 }}>Vai trò</Text>
+                  <Tag color="purple" style={{ fontSize: 13, padding: '2px 10px', margin: 0 }}>
+                    {ROLE_LABELS[user?.role?.toUpperCase() || ''] || displayName}
+                  </Tag>
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, padding: '16px 0' }}>
+                <div style={{ width: 36, height: 36, borderRadius: 8, background: theme === 'dark' ? 'rgba(16,185,129,0.15)' : '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <SettingOutlined style={{ color: theme === 'dark' ? '#34d399' : '#16a34a', fontSize: 15 }} />
+                </div>
+                <div>
+                  <Text type="secondary" style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 4 }}>Quyền hạn</Text>
+                  <Text style={{ fontSize: 13 }}>Toàn quyền quản lý tài khoản, nhật ký hệ thống và cấu hình</Text>
+                </div>
+              </div>
             </div>
-          </div>
-        </Card>
+          </Card>
+
+          <Card
+            style={{ borderRadius: 10, boxShadow: theme === 'dark' ? '0 1px 6px rgba(0,0,0,0.35)' : '0 1px 4px rgba(0,0,0,0.06)' }}
+            styles={{ body: { padding: '20px' } }}
+            title={
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <ClockCircleOutlined style={{ color: '#10b981' }} />
+                <span style={{ fontWeight: 600 }}>Hoạt động gần đây</span>
+              </span>
+            }
+          >
+            <Timeline
+              items={[
+                {
+                  color: 'blue',
+                  children: (
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                        <ClockCircleOutlined style={{ fontSize: 12, color: '#6b7280' }} />
+                        <Text type="secondary" style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Thời gian đăng nhập</Text>
+                      </div>
+                      <Text strong style={{ fontSize: 13 }}>{new Date().toLocaleString('vi-VN')}</Text>
+                    </div>
+                  ),
+                },
+                {
+                  color: 'green',
+                  children: (
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                        <CheckCircleOutlined style={{ fontSize: 12, color: '#6b7280' }} />
+                        <Text type="secondary" style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Trạng thái hệ thống</Text>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 0 3px rgba(34,197,94,0.2)' }} />
+                        <Text style={{ fontSize: 13, fontWeight: 600, color: '#22c55e' }}>Hoạt động bình thường</Text>
+                      </div>
+                    </div>
+                  ),
+                },
+                {
+                  color: 'gray',
+                  children: (
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                        <UserOutlined style={{ fontSize: 12, color: '#6b7280' }} />
+                        <Text type="secondary" style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Phiên làm việc</Text>
+                      </div>
+                      <Text style={{ fontSize: 13 }}>{user?.username || displayName}</Text>
+                    </div>
+                  ),
+                },
+              ]}
+            />
+          </Card>
+        </div>
       </div>
     </ConfigProvider>
   );

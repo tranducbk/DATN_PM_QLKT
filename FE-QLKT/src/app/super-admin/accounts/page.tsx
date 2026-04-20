@@ -31,7 +31,8 @@ import {
 import Link from 'next/link';
 import { apiClient } from '@/lib/apiClient';
 import { useTheme } from '@/components/ThemeProvider';
-import { ROLES, getRoleInfo } from '@/constants/roles.constants';
+import { ROLES, getRoleInfo, roleSelectOptions } from '@/constants/roles.constants';
+import { formatDateTime } from '@/lib/utils';
 
 const { Title } = Typography;
 
@@ -150,7 +151,7 @@ export default function AccountsListPage() {
       width: 60,
       fixed: 'left',
       align: 'center',
-      render: (_value, _record, index) =>
+      render: ( value, record, index) =>
         (pagination.current - 1) * pagination.pageSize + index + 1,
     },
     {
@@ -174,7 +175,7 @@ export default function AccountsListPage() {
       key: 'quan_nhan',
       width: 150,
       align: 'center' as const,
-      render: (_value, record) => {
+      render: (value, record) => {
         if (record.quan_nhan_id) {
           return <Link href={`/super-admin/accounts/${record.id}`}>{record.ho_ten}</Link>;
         }
@@ -187,14 +188,14 @@ export default function AccountsListPage() {
       width: 150,
       align: 'center' as const,
       ellipsis: true,
-      render: (_value, record) => record.don_vi || <span className="text-gray-400">-</span>,
+      render: (value, record) => record.don_vi || <span className="text-gray-400">-</span>,
     },
     {
       title: 'Cấp bậc / Chức vụ',
       key: 'cap_bac_chuc_vu',
       width: 180,
       align: 'center' as const,
-      render: (_value, record) => {
+      render: (value, record) => {
         const capBac = record.cap_bac;
         const chucVu = record.chuc_vu;
         if (!capBac && !chucVu) {
@@ -226,16 +227,7 @@ export default function AccountsListPage() {
       key: 'createdAt',
       width: 160,
       align: 'center' as const,
-      render: (date: string) => {
-        if (!date) return '-';
-        const d = new Date(date);
-        const hours = d.getHours().toString().padStart(2, '0');
-        const minutes = d.getMinutes().toString().padStart(2, '0');
-        const day = d.getDate().toString().padStart(2, '0');
-        const month = (d.getMonth() + 1).toString().padStart(2, '0');
-        const year = d.getFullYear();
-        return `${hours}:${minutes} ${day}/${month}/${year}`;
-      },
+      render: (date: string) => formatDateTime(date),
     },
     {
       title: 'Thao tác',
@@ -243,7 +235,7 @@ export default function AccountsListPage() {
       width: 200,
       fixed: 'right' as const,
       align: 'center' as const,
-      render: (_value, record) => (
+      render: (value, record) => (
         <Space size="small" wrap>
           <Link href={`/super-admin/accounts/${record.id}`}>
             <Button size="small">Chi tiết</Button>
@@ -284,7 +276,7 @@ export default function AccountsListPage() {
           ]}
         />
         <div className="flex justify-between items-center">
-          <Title level={2} className="mb-0">
+          <Title level={2} className="!mb-0">
             Quản lý Tài khoản
           </Title>
           <Link href="/super-admin/accounts/create">
@@ -298,12 +290,12 @@ export default function AccountsListPage() {
           <Space direction="vertical" style={{ width: '100%' }} size="middle">
             <Space wrap>
               <Input
-                placeholder="Tìm kiếm theo tên đăng nhập"
+                placeholder="Tìm username hoặc họ tên..."
                 prefix={<SearchOutlined />}
                 value={searchText}
                 onChange={e => setSearchText(e.target.value)}
                 onPressEnter={handleSearch}
-                style={{ width: 250 }}
+                style={{ width: 320 }}
               />
               <Select
                 placeholder="Lọc theo vai trò"
@@ -311,11 +303,7 @@ export default function AccountsListPage() {
                 value={roleFilter}
                 onChange={handleRoleFilterChange}
                 style={{ width: 200 }}
-                options={[
-                  { value: ROLES.ADMIN, label: 'Admin' },
-                  { value: ROLES.MANAGER, label: 'Quản lý' },
-                  { value: ROLES.USER, label: 'Người dùng' },
-                ]}
+                options={roleSelectOptions([ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER, ROLES.USER])}
               />
               <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
                 Tìm kiếm

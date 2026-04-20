@@ -43,7 +43,8 @@ import type { UploadFile } from 'antd/es/upload/interface';
 import type { ColumnsType } from 'antd/es/table';
 import type { DateInput } from '@/lib/types';
 import { apiClient } from '@/lib/apiClient';
-import { getDanhHieuName } from '@/constants/danhHieu.constants';
+import { getDanhHieuName, HCQKQT_YEARS_REQUIRED } from '@/constants/danhHieu.constants';
+import type { UnitApiRow } from '@/lib/types/personnelList';
 import { PROPOSAL_TYPES, type ProposalType } from '@/constants/proposal.constants';
 // Shared components — reuse from admin to avoid duplicating ~2000 lines
 import { Step2SelectPersonnelCaNhanHangNam } from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelCaNhanHangNam';
@@ -157,14 +158,6 @@ export default function CreateProposalPage() {
   const steps = getSteps();
 
   useEffect(() => {
-    // Only initialise year on first mount
-    if (!nam) {
-      const currentYear = new Date().getFullYear();
-      setNam(currentYear);
-    }
-  }, []);
-
-  useEffect(() => {
     if (currentStep === 0) {
       setSelectedPersonnelIds([]);
       setSelectedUnitIds([]);
@@ -214,7 +207,7 @@ export default function CreateProposalPage() {
       const unitsRes = await apiClient.getMyUnits();
       if (unitsRes.success) {
         const unitsData = unitsRes.data || [];
-        const selectedUnits = unitsData.filter((unit: any) => selectedUnitIds.includes(unit.id));
+        const selectedUnits = (unitsData as UnitApiRow[]).filter(unit => selectedUnitIds.includes(unit.id));
         setUnitDetails(selectedUnits);
       }
     } catch (error) {
@@ -345,10 +338,10 @@ export default function CreateProposalPage() {
           const years = Math.floor(months / 12);
 
           // Requirement: >= 25 years of service (gender-neutral)
-          if (years < 25) {
+          if (years < HCQKQT_YEARS_REQUIRED) {
             ineligiblePersonnel.push({
               ho_ten: p.ho_ten,
-              reason: `Chưa đủ 25 năm phục vụ (hiện tại: ${years} năm)`,
+              reason: `Chưa đủ ${HCQKQT_YEARS_REQUIRED} năm phục vụ (hiện tại: ${years} năm)`,
             });
           }
         }
@@ -356,7 +349,7 @@ export default function CreateProposalPage() {
         if (ineligiblePersonnel.length > 0) {
           const names = ineligiblePersonnel.map(p => `${p.ho_ten} (${p.reason})`).join(', ');
           antMessage.error(
-            `Một số quân nhân chưa đủ điều kiện đề xuất Huy chương Quân kỳ quyết thắng (yêu cầu >= 25 năm): ${names}. Vui lòng cập nhật trước khi tiếp tục.`
+            `Một số quân nhân chưa đủ điều kiện đề xuất Huy chương Quân kỳ quyết thắng (yêu cầu >= ${HCQKQT_YEARS_REQUIRED} năm): ${names}. Vui lòng cập nhật trước khi tiếp tục.`
           );
           return;
         }
@@ -525,7 +518,7 @@ export default function CreateProposalPage() {
           if (ineligiblePersonnel.length > 0) {
             const names = ineligiblePersonnel.map(p => `${p.ho_ten} (${p.reason})`).join(', ');
             antMessage.error(
-              `Một số quân nhân chưa đủ điều kiện đề xuất Huy chương Quân kỳ quyết thắng (yêu cầu >= 25 năm): ${names}. Vui lòng cập nhật trước khi đề xuất.`
+              `Một số quân nhân chưa đủ điều kiện đề xuất Huy chương Quân kỳ quyết thắng (yêu cầu >= ${HCQKQT_YEARS_REQUIRED} năm): ${names}. Vui lòng cập nhật trước khi đề xuất.`
             );
             setLoading(false);
             return;
@@ -955,7 +948,7 @@ export default function CreateProposalPage() {
               key: 'tong_thang',
               width: 150,
               align: 'center' as const,
-              render: (_: any, record: any) => {
+              render: (_: unknown, record: any) => {
                 const result = calculateTotalMonths(record.ngay_nhap_ngu, record.ngay_xuat_ngu);
                 if (!result) return <Text type="secondary">-</Text>;
 

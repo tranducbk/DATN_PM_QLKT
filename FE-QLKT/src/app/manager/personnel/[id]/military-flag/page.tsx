@@ -24,6 +24,8 @@ import { apiClient } from '@/lib/apiClient';
 import { useTheme } from '@/components/ThemeProvider';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
+import type { PersonnelDetail } from '@/lib/types/personnelList';
+
 
 const { Title, Paragraph } = Typography;
 
@@ -45,7 +47,7 @@ export default function ManagerMilitaryFlagPage() {
   const personnelId = params?.id as string;
   const { theme } = useTheme();
   const [loading, setLoading] = useState(true);
-  const [personnel, setPersonnel] = useState<any>(null);
+  const [personnel, setPersonnel] = useState<PersonnelDetail | null>(null);
   const [flags, setFlags] = useState<MilitaryFlag[]>([]);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);

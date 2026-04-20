@@ -291,7 +291,7 @@ export default function AdminAwardsPage() {
       key: 'ngay_sinh',
       width: 120,
       align: 'center',
-      render: (_: any, record: any) => {
+      render: (_: unknown, record: any) => {
         // Get date from nested QuanNhan or direct field
         const hasNestedQuanNhan =
           activeTab === 'NCKH' ||
@@ -316,7 +316,7 @@ export default function AdminAwardsPage() {
       key: 'cap_bac_chuc_vu',
       width: 150,
       align: 'center',
-      render: (_: any, record: any) => {
+      render: (_: unknown, record: any) => {
         const capBac = record.cap_bac;
         const chucVu = record.chuc_vu;
 
@@ -345,7 +345,7 @@ export default function AdminAwardsPage() {
       key: 'loai_khen_thuong',
       width: 140,
       align: 'center',
-      render: (_: any, record: any) => {
+      render: (_: unknown, record: any) => {
         if (activeTab === 'NCKH') {
           const loaiMap: Record<string, string> = {
             DTKH: 'ĐTKH',

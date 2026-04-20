@@ -116,6 +116,7 @@ interface DecisionAutocompleteRow {
   so_quyet_dinh: string;
   nguoi_ky: string;
   ngay_ky: string;
+  file_path?: string | null;
 }
 
 interface PersonnelAwardInfo {
@@ -241,7 +242,7 @@ export default function AdhocAwardsPage() {
   // Decision autocomplete states
   const [decisionOptions, setDecisionOptions] = useState<{ value: string; label: string }[]>([]);
   const [searchingDecision, setSearchingDecision] = useState(false);
-  const [selectedDecision, setSelectedDecision] = useState<any>(null);
+  const [selectedDecision, setSelectedDecision] = useState<DecisionAutocompleteRow | null>(null);
 
   // Table filter states
   const [tableFilters, setTableFilters] = useState<TableFilters>(INITIAL_TABLE_FILTERS);
@@ -1042,7 +1043,7 @@ export default function AdhocAwardsPage() {
                   title: 'Chức vụ',
                   key: 'chuc_vu',
                   width: 150,
-                  render: (_value, record: Personnel) => record.ChucVu?.ten_chuc_vu || '-',
+                  render: (value, record: Personnel) => record.ChucVu?.ten_chuc_vu || '-',
                 },
               ]}
               dataSource={filteredPersonnel}
@@ -1061,7 +1062,7 @@ export default function AdhocAwardsPage() {
                 title={
                   <span>
                     Cấp bậc / Chức vụ ({createFormData.personnelIds.length} quân nhân)
-                    <span style={{ color: '#ff4d4f' }}> *</span>
+                    <span className="text-red-500"> *</span>
                   </span>
                 }
                 style={{ marginTop: 16 }}
@@ -1161,7 +1162,7 @@ export default function AdhocAwardsPage() {
                   title: 'Loại',
                   key: 'loai',
                   width: 150,
-                  render: (_value, record: Unit) => {
+                  render: (value, record: Unit) => {
                     const isCoQuan = units.find(u => u.id === record.id);
                     return (
                       <Tag color={isCoQuan ? 'blue' : 'green'}>
@@ -1248,7 +1249,7 @@ export default function AdhocAwardsPage() {
                       const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
                       const link = document.createElement('a');
                       link.href = `${baseUrl}/${selectedDecision.file_path}`;
-                      link.download = selectedDecision.file_path.split('/').pop() || 'file';
+                      link.download = selectedDecision.file_path?.split('/').pop() || 'file';
                       link.target = '_blank';
                       document.body.appendChild(link);
                       link.click();
@@ -1413,7 +1414,7 @@ export default function AdhocAwardsPage() {
                     {
                       title: 'Cấp bậc',
                       key: 'cap_bac',
-                      render: (_value, record: Personnel) => {
+                      render: (value, record: Personnel) => {
                         const awardInfo = createFormData.personnelAwardInfo.find(
                           info => info.personnelId === record.id
                         );
@@ -1423,7 +1424,7 @@ export default function AdhocAwardsPage() {
                     {
                       title: 'Chức vụ',
                       key: 'chuc_vu',
-                      render: (_value, record: Personnel) => {
+                      render: (value, record: Personnel) => {
                         const awardInfo = createFormData.personnelAwardInfo.find(
                           info => info.personnelId === record.id
                         );
@@ -1446,7 +1447,7 @@ export default function AdhocAwardsPage() {
                     {
                       title: 'Loại',
                       key: 'loai',
-                      render: (_value, record: Unit | undefined) => {
+                      render: (value, record: Unit | undefined) => {
                         const isCoQuan = units.find(u => u.id === record?.id);
                         return (
                           <Tag color={isCoQuan ? 'blue' : 'green'}>

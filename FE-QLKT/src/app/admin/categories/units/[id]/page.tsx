@@ -19,13 +19,21 @@ import { ArrowLeftOutlined, HomeOutlined, PlusOutlined, EditOutlined } from '@an
 import { UnitForm } from '@/components/categories/UnitForm';
 import { UnitsTable } from '@/components/categories/UnitsTable';
 import { PositionForm } from '@/components/categories/PositionForm';
-import { PositionsTable } from '@/components/categories/PositionsTable';
+import { PositionsTable, type PositionRow } from '@/components/categories/PositionsTable';
 import { apiClient } from '@/lib/apiClient';
+import type { UnitApiRow } from '@/lib/types/personnelList';
 import { calcUnitTotal } from '@/lib/utils';
 import { useTheme } from '@/components/ThemeProvider';
 import Link from 'next/link';
 
 const { Title, Text } = Typography;
+
+interface UnitDetail extends UnitApiRow {
+  co_quan_don_vi_id?: string | null;
+  so_luong?: number;
+  DonViTrucThuoc?: (UnitApiRow & { so_luong?: number })[];
+  ChucVu?: PositionRow[];
+}
 
 export default function UnitDetailPage() {
   const { theme } = useTheme();
@@ -33,12 +41,12 @@ export default function UnitDetailPage() {
   const router = useRouter();
   const unitId = params.id as string;
 
-  const [unit, setUnit] = useState<any>(null);
-  const [units, setUnits] = useState<any[]>([]);
+  const [unit, setUnit] = useState<UnitDetail | null>(null);
+  const [units, setUnits] = useState<UnitApiRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogType, setDialogType] = useState<'unit' | 'position'>('unit');
-  const [editingItem, setEditingItem] = useState<any>(null);
+  const [editingItem, setEditingItem] = useState<UnitApiRow | PositionRow | null>(null);
   const [activeTab, setActiveTab] = useState('info');
 
   useEffect(() => {
@@ -68,10 +76,10 @@ export default function UnitDetailPage() {
     }
   }
 
-  const handleOpenDialog = (type: 'unit' | 'position', item?: any) => {
+  const handleOpenDialog = (type: 'unit' | 'position', item?: UnitApiRow | PositionRow) => {
     setDialogType(type);
     if (type === 'unit' && !item) {
-      setEditingItem({ co_quan_don_vi_id: unitId });
+      setEditingItem({ id: '', ten_don_vi: '', co_quan_don_vi_id: unitId });
     } else {
       setEditingItem(item || null);
     }

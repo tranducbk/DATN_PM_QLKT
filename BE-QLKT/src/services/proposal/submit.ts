@@ -1,6 +1,6 @@
 import { PROPOSAL_TYPES, type ProposalType } from '../../constants/proposalTypes.constants';
 import { calculateServiceMonths } from '../../helpers/serviceYearsHelper';
-import { DANH_HIEU_HCCSVV, DANH_HIEU_HCBVTQ, DANH_HIEU_CA_NHAN_HANG_NAM, DANH_HIEU_CA_NHAN_CO_BAN } from '../../constants/danhHieu.constants';
+import { DANH_HIEU_HCCSVV, DANH_HIEU_HCBVTQ, DANH_HIEU_CA_NHAN_HANG_NAM, DANH_HIEU_CA_NHAN_CO_BAN, HCQKQT_YEARS_REQUIRED, KNC_YEARS_REQUIRED_NAM, KNC_YEARS_REQUIRED_NU, CONG_HIEN_BASE_REQUIRED_MONTHS, CONG_HIEN_FEMALE_REQUIRED_MONTHS } from '../../constants/danhHieu.constants';
 import { prisma } from '../../models';
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -703,7 +703,7 @@ async function submitProposal(
           const months = calculateServiceMonths(ngayNhapNgu, ngayKetThuc);
           const years = Math.floor(months / 12);
 
-          const requiredYears = 25;
+          const requiredYears = HCQKQT_YEARS_REQUIRED;
 
           if (years < requiredYears) {
             ineligiblePersonnel.push({
@@ -724,7 +724,7 @@ async function submitProposal(
       if (ineligiblePersonnel.length > 0) {
         const names = ineligiblePersonnel.map(p => `${p.ho_ten} (${p.reason})`).join(', ');
         throw new ValidationError(
-          `Một số quân nhân chưa đủ điều kiện để đề xuất Huy chương Quân kỳ quyết thắng (yêu cầu >= 25 năm phục vụ):\n${names}`
+          `Một số quân nhân chưa đủ điều kiện để đề xuất Huy chương Quân kỳ quyết thắng (yêu cầu >= ${HCQKQT_YEARS_REQUIRED} năm phục vụ):\n${names}`
         );
       }
     }
@@ -797,7 +797,7 @@ async function submitProposal(
           const months = calculateServiceMonths(ngayNhapNgu, ngayKetThuc);
           const years = Math.floor(months / 12);
 
-          const requiredYears = quanNhan.gioi_tinh === GENDER.FEMALE ? 20 : 25;
+          const requiredYears = quanNhan.gioi_tinh === GENDER.FEMALE ? KNC_YEARS_REQUIRED_NU : KNC_YEARS_REQUIRED_NAM;
 
           if (years < requiredYears) {
             ineligiblePersonnel.push({
@@ -825,8 +825,8 @@ async function submitProposal(
 
     // Validation for CONG_HIEN: minimum 10-year requirement by grouped history.
     if (type === PROPOSAL_TYPES.CONG_HIEN && dataDanhHieu && dataDanhHieu.length > 0) {
-      const baseRequiredMonths = 10 * 12;
-      const femaleRequiredMonths = Math.round(baseRequiredMonths * (2 / 3));
+      const baseRequiredMonths = CONG_HIEN_BASE_REQUIRED_MONTHS;
+      const femaleRequiredMonths = CONG_HIEN_FEMALE_REQUIRED_MONTHS;
 
       const personnelIds = dataDanhHieu.map(item => item.personnel_id).filter(Boolean);
       const positionHistoriesMap: Record<string, LichSuChucVuForCongHien[]> = {};

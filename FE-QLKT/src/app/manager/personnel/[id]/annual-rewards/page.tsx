@@ -23,6 +23,8 @@ import { LeftOutlined, HomeOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/apiClient';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { useTheme } from '@/components/ThemeProvider';
+import type { PersonnelDetail } from '@/lib/types/personnelList';
+
 
 const { Title, Paragraph } = Typography;
 
@@ -51,7 +53,7 @@ export default function ManagerAnnualRewardsPage() {
   const { theme } = useTheme();
 
   const [loading, setLoading] = useState(true);
-  const [personnel, setPersonnel] = useState<any>(null);
+  const [personnel, setPersonnel] = useState<PersonnelDetail | null>(null);
   const [rewards, setRewards] = useState<RewardRecord[]>([]);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);

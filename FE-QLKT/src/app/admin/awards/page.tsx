@@ -359,7 +359,7 @@ export default function AdminAwardsPage() {
       key: 'ngay_sinh',
       width: 120,
       align: 'center',
-      render: (_: any, record: any) => {
+      render: (_: unknown, record: any) => {
         // Get date from nested QuanNhan or direct field
         const hasNestedQuanNhan =
           activeTab === 'NCKH' ||
@@ -379,7 +379,7 @@ export default function AdminAwardsPage() {
       key: 'cap_bac_chuc_vu',
       width: 150,
       align: 'center',
-      render: (_: any, record: any) => {
+      render: (_: unknown, record: any) => {
         const capBac = record.cap_bac;
         const chucVu = record.chuc_vu;
 
@@ -408,7 +408,7 @@ export default function AdminAwardsPage() {
       key: 'loai_khen_thuong',
       width: 140,
       align: 'center',
-      render: (_: any, record: any) => {
+      render: (_: unknown, record: any) => {
         // Only visible on the NCKH tab (filtered below)
         const loaiMap: Record<string, string> = {
           DTKH: 'Đề tài khoa học',
@@ -517,7 +517,7 @@ export default function AdminAwardsPage() {
       width: 100,
       align: 'center',
       fixed: 'right',
-      render: (_: any, record: any) => {
+      render: (_: unknown, record: any) => {
         return (
           <Popconfirm
             title="Xóa khen thưởng"

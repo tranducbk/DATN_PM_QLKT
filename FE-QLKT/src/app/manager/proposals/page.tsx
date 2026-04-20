@@ -178,7 +178,7 @@ export default function ManagerProposalsPage() {
       key: 'stt',
       width: 60,
       align: 'center',
-      render: (_value, _record, index) => <Text strong>{index + 1}</Text>,
+      render: ( value, record, index) => <Text strong>{index + 1}</Text>,
     },
     {
       title: 'Ngày gửi',
@@ -217,7 +217,7 @@ export default function ManagerProposalsPage() {
       key: 'so_luong',
       align: 'center' as const,
       width: 120,
-      render: (_value, record) => {
+      render: (value, record) => {
         let count = 0;
         let tooltip = '';
 
@@ -267,7 +267,7 @@ export default function ManagerProposalsPage() {
       key: 'ngay_duyet',
       width: 180,
       align: 'center' as const,
-      render: (_value, record) => {
+      render: (value, record) => {
         const dateValue = record.ngay_duyet || record.createdAt;
         if (!dateValue) return <Text type="secondary">-</Text>;
 
@@ -279,7 +279,7 @@ export default function ManagerProposalsPage() {
       key: 'action',
       align: 'center' as const,
       width: 260,
-      render: (_value, record) => (
+      render: (value, record) => (
         <Space>
           <Button
             type="primary"

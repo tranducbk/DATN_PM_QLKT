@@ -13,6 +13,9 @@ import {
   DANH_HIEU_DON_VI_BANG_KHEN,
   DANH_HIEU_HCCSVV,
   DANH_HIEU_HCBVTQ,
+  CONG_HIEN_BASE_REQUIRED_MONTHS,
+  CONG_HIEN_FEMALE_REQUIRED_MONTHS,
+  HCQKQT_YEARS_REQUIRED,
 } from '../constants/danhHieu.constants';
 import { PROPOSAL_TYPES, type ProposalType } from '../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
@@ -311,9 +314,9 @@ class AwardBulkService {
             quanNhan.ngay_nhap_ngu,
             quanNhan.ngay_xuat_ngu
           );
-          if (serviceTime && serviceTime.years < 25) {
+          if (serviceTime && serviceTime.years < HCQKQT_YEARS_REQUIRED) {
             errors.push(
-              `Quân nhân "${quanNhan.ho_ten}" chưa đủ 25 năm phục vụ (hiện tại: ${serviceTime.years} năm)`
+              `Quân nhân "${quanNhan.ho_ten}" chưa đủ ${HCQKQT_YEARS_REQUIRED} năm phục vụ (hiện tại: ${serviceTime.years} năm)`
             );
           }
         }
@@ -626,8 +629,8 @@ class AwardBulkService {
           throw new ValidationError(`Phát hiện lỗi validation:\n${errors.join('\n')}`);
         }
 
-        const baseRequiredMonths = 10 * 12;
-        const femaleRequiredMonths = Math.round(baseRequiredMonths * (2 / 3));
+        const baseRequiredMonths = CONG_HIEN_BASE_REQUIRED_MONTHS;
+        const femaleRequiredMonths = CONG_HIEN_FEMALE_REQUIRED_MONTHS;
 
         const congHienPersonnelIds = titleData.map(item => item.personnel_id).filter(Boolean);
 

@@ -5,7 +5,7 @@ import positionHistoryService from './positionHistory.service';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { NotFoundError } from '../middlewares/errorHandler';
-import { DANH_HIEU_HCCSVV, DANH_HIEU_HCBVTQ, DANH_HIEU_CA_NHAN_BANG_KHEN, DANH_HIEU_CA_NHAN_HANG_NAM, DANH_HIEU_CA_NHAN_CO_BAN } from '../constants/danhHieu.constants';
+import { DANH_HIEU_HCCSVV, DANH_HIEU_HCBVTQ, DANH_HIEU_CA_NHAN_BANG_KHEN, DANH_HIEU_CA_NHAN_HANG_NAM, DANH_HIEU_CA_NHAN_CO_BAN, CONG_HIEN_BASE_REQUIRED_MONTHS, CONG_HIEN_FEMALE_REQUIRED_MONTHS } from '../constants/danhHieu.constants';
 import { GENDER } from '../constants/gender.constants';
 
 class ProfileService {
@@ -819,8 +819,8 @@ class ProfileService {
       const months0_9_1_0 = getTotalMonthsByGroup(personnel.LichSuChucVu, '0.9-1.0');
       const months0_8 = getTotalMonthsByGroup(personnel.LichSuChucVu, '0.8');
       const months0_7 = getTotalMonthsByGroup(personnel.LichSuChucVu, '0.7');
-      const baseRequiredMonths = 10 * 12;
-      const femaleRequiredMonths = Math.round(baseRequiredMonths * (2 / 3));
+      const baseRequiredMonths = CONG_HIEN_BASE_REQUIRED_MONTHS;
+      const femaleRequiredMonths = CONG_HIEN_FEMALE_REQUIRED_MONTHS;
 
       const requiredMonths =
         personnel?.gioi_tinh === GENDER.FEMALE ? femaleRequiredMonths : baseRequiredMonths;

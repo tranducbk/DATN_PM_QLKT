@@ -14,6 +14,11 @@ import {
   DANH_HIEU_HCCSVV,
   DANH_HIEU_HCBVTQ,
   DANH_HIEU_NCKH,
+  HCQKQT_YEARS_REQUIRED,
+  KNC_YEARS_REQUIRED_NAM,
+  KNC_YEARS_REQUIRED_NU,
+  CONG_HIEN_BASE_REQUIRED_MONTHS,
+  CONG_HIEN_FEMALE_REQUIRED_MONTHS,
 } from '../../constants/danhHieu.constants';
 import { NotFoundError, ValidationError } from '../../middlewares/errorHandler';
 import { sanitizeFilename } from './helpers';
@@ -210,9 +215,9 @@ async function approveProposal(
         const months = calculateServiceMonths(ngayNhapNgu, ngayKetThuc);
         const years = Math.floor(months / 12);
 
-        if (years < 25) {
+        if (years < HCQKQT_YEARS_REQUIRED) {
           duplicateErrors.push(
-            `${quanNhan.ho_ten}: Chưa đủ 25 năm phục vụ để nhận HC QKQT (hiện tại: ${years} năm)`
+            `${quanNhan.ho_ten}: Chưa đủ ${HCQKQT_YEARS_REQUIRED} năm phục vụ để nhận HC QKQT (hiện tại: ${years} năm)`
           );
         }
       }
@@ -259,7 +264,7 @@ async function approveProposal(
 
         const months = calculateServiceMonths(ngayNhapNgu, ngayKetThuc);
         const years = Math.floor(months / 12);
-        const requiredYears = quanNhan.gioi_tinh === GENDER.FEMALE ? 20 : 25;
+        const requiredYears = quanNhan.gioi_tinh === GENDER.FEMALE ? KNC_YEARS_REQUIRED_NU : KNC_YEARS_REQUIRED_NAM;
 
         if (years < requiredYears) {
           duplicateErrors.push(
@@ -271,9 +276,8 @@ async function approveProposal(
 
     // CONG_HIEN: requires minimum contribution time (by position coefficient group).
     if (proposalType === PROPOSAL_TYPES.CONG_HIEN && congHienData && congHienData.length > 0) {
-      const baseRequiredMonths = 10 * 12; // 120 months (10 yrs) for male
-      // 2/3 of male requirement = 80 months for female
-      const femaleRequiredMonths = Math.round(baseRequiredMonths * (2 / 3));
+      const baseRequiredMonths = CONG_HIEN_BASE_REQUIRED_MONTHS;
+      const femaleRequiredMonths = CONG_HIEN_FEMALE_REQUIRED_MONTHS;
 
       const personnelIds = congHienData.map(item => item.personnel_id).filter(Boolean);
       const positionHistoriesMap = {};

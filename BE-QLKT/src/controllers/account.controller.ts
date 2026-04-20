@@ -57,7 +57,7 @@ class AccountController {
       roleFilter = (role as string) || ADMIN_MANAGED_ROLES.join(',');
     }
 
-    const excludeSuperAdmin = userRole === ROLES.SUPER_ADMIN;
+    const excludeSuperAdmin = userRole !== ROLES.SUPER_ADMIN;
     const result = await accountService.getAccounts(
       page,
       limit,
@@ -66,8 +66,11 @@ class AccountController {
       excludeSuperAdmin
     );
 
-    return ResponseHelper.success(res, {
-      data: result,
+    return ResponseHelper.paginated(res, {
+      data: result.accounts,
+      total: result.pagination.total,
+      page: result.pagination.page,
+      limit: result.pagination.limit,
       message: 'Lấy danh sách tài khoản thành công',
     });
   });

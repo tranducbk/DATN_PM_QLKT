@@ -9,6 +9,7 @@ import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys, s
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
 import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
+import { HCQKQT_YEARS_REQUIRED } from '../constants/danhHieu.constants';
 
 interface PreviewError {
   row: number;
@@ -238,12 +239,12 @@ class MilitaryFlagService {
       if (personnel.ngay_nhap_ngu) {
         const nhapNguDate = new Date(personnel.ngay_nhap_ngu);
         const yearsServed = nam - nhapNguDate.getFullYear();
-        if (yearsServed < 25) {
+        if (yearsServed < HCQKQT_YEARS_REQUIRED) {
           errors.push({
             row: rowNumber,
             ho_ten,
             nam,
-            message: `Chưa đủ 25 năm phục vụ (mới ${yearsServed} năm, nhập ngũ ${nhapNguDate.getFullYear()})`,
+            message: `Chưa đủ ${HCQKQT_YEARS_REQUIRED} năm phục vụ (mới ${yearsServed} năm, nhập ngũ ${nhapNguDate.getFullYear()})`,
           });
           continue;
         }

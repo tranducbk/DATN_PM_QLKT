@@ -63,7 +63,7 @@ export function PositionHistoryModal({
       key: 'index',
       width: 60,
       align: 'center',
-      render: (_: any, __: any, index: number) => index + 1,
+      render: (_: unknown, __: any, index: number) => index + 1,
     },
     {
       title: 'Chức vụ',

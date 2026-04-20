@@ -218,7 +218,7 @@ export default function BulkAddAnnualRewardsPage() {
       key: 'stt',
       width: 60,
       align: 'center',
-      render: (_value, _record, index) => index + 1,
+      render: ( value, record, index) => index + 1,
     },
     {
       title: 'Họ tên',
@@ -237,7 +237,7 @@ export default function BulkAddAnnualRewardsPage() {
       title: 'Cơ quan đơn vị',
       key: 'co_quan_don_vi',
       width: 200,
-      render: (_value, record) => {
+      render: (value, record) => {
         if (record.DonViTrucThuoc?.CoQuanDonVi) {
           return record.DonViTrucThuoc.CoQuanDonVi.ten_don_vi;
         }
@@ -248,7 +248,7 @@ export default function BulkAddAnnualRewardsPage() {
       title: 'Đơn vị trực thuộc',
       key: 'don_vi_truc_thuoc',
       width: 200,
-      render: (_value, record) => {
+      render: (value, record) => {
         return record.DonViTrucThuoc?.ten_don_vi || '-';
       },
     },
@@ -256,7 +256,7 @@ export default function BulkAddAnnualRewardsPage() {
       title: 'Cấp bậc / Chức vụ',
       key: 'cap_bac_chuc_vu',
       width: 200,
-      render: (_value, record) => {
+      render: (value, record) => {
         const capBac = record.cap_bac;
         const chucVu = record.ChucVu?.ten_chuc_vu;
         return (

@@ -249,7 +249,7 @@ export function Step3SetTitlesHCQKQT({
       key: 'tong_thang',
       width: 150,
       align: 'center',
-      render: (_: any, record: Personnel) => {
+      render: (_: unknown, record: Personnel) => {
         const result = calculateTotalMonths(record.ngay_nhap_ngu, record.ngay_xuat_ngu);
         if (!result) return <Text type="secondary">-</Text>;
 

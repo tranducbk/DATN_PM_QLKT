@@ -38,6 +38,8 @@ import { formatDate } from '@/lib/utils';
 import { getAntdThemeConfig } from '@/lib/antdTheme';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { ROLES, getRoleInfo } from '@/constants/roles.constants';
+import type { PersonnelDetail } from '@/lib/types/personnelList';
+
 
 const parseAddressToArray = (addressString: string | null): string[] | undefined => {
   if (!addressString) return undefined;
@@ -163,7 +165,7 @@ export function ProfileEditForm({
   const { isDark } = useTheme();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [personnelData, setPersonnelData] = useState<any>(null);
+  const [personnelData, setPersonnelData] = useState<PersonnelDetail | null>(null);
   const [showTempCCCDWarning, setShowTempCCCDWarning] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
@@ -330,6 +332,10 @@ export function ProfileEditForm({
         <Spin size="large" tip="Đang tải thông tin..." />
       </div>
     );
+  }
+
+  if (!personnelData) {
+    return null;
   }
 
   if (!isEditing) {

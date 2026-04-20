@@ -102,7 +102,7 @@ export function makeErrorColumn(): ColumnsType<PreviewItem>[number] {
     title: 'Lỗi',
     key: 'error',
     width: 500,
-    render: (_: any, record: any) => {
+    render: (_: unknown, record: any) => {
       const errorText = record.message ?? record.error ?? FALLBACK_ERROR;
       return <Text type="danger">{errorText}</Text>;
     },
@@ -115,7 +115,7 @@ export function makeSTTColumn(width = 60): ColumnsType<PreviewItem>[number] {
     title: 'STT',
     width,
     align: 'center' as const,
-    render: (_: any, __: any, index: number) => index + 1,
+    render: (_: unknown, __: any, index: number) => index + 1,
   };
 }
 

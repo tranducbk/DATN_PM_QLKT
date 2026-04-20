@@ -9,9 +9,11 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import { ServiceHistoryModal } from './ServiceHistoryModal';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
+import { HCCSVV_YEARS_HANG_BA, HCCSVV_YEARS_HANG_NHI, HCCSVV_YEARS_HANG_NHAT } from '@/constants/danhHieu.constants';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
 import { formatDate } from '@/lib/utils';
 import type { DateInput } from '@/lib/types';
+import type { ServiceProfile } from '@/lib/types/personnelList';
 
 const { Text } = Typography;
 
@@ -67,7 +69,7 @@ export function Step3SetTitlesNienHan({
   const [serviceProfilesMap, setServiceProfilesMap] = useState<Record<string, any>>({});
   const [serviceHistoryModalVisible, setServiceHistoryModalVisible] = useState(false);
   const [selectedPersonnel, setSelectedPersonnel] = useState<Personnel | null>(null);
-  const [serviceProfile, setServiceProfile] = useState<any>(null);
+  const [serviceProfile, setServiceProfile] = useState<ServiceProfile | null>(null);
   const [loadingModal, setLoadingModal] = useState(false);
 
   useEffect(() => {
@@ -200,15 +202,15 @@ export function Step3SetTitlesNienHan({
         : record.ngay_nhap_ngu;
 
     const eligibilityDateBa = new Date(startDate);
-    eligibilityDateBa.setFullYear(eligibilityDateBa.getFullYear() + 10);
+    eligibilityDateBa.setFullYear(eligibilityDateBa.getFullYear() + HCCSVV_YEARS_HANG_BA);
     const eligibilityYearBa = eligibilityDateBa.getFullYear();
 
     const eligibilityDateNhi = new Date(startDate);
-    eligibilityDateNhi.setFullYear(eligibilityDateNhi.getFullYear() + 15);
+    eligibilityDateNhi.setFullYear(eligibilityDateNhi.getFullYear() + HCCSVV_YEARS_HANG_NHI);
     const eligibilityYearNhi = eligibilityDateNhi.getFullYear();
 
     const eligibilityDateNhat = new Date(startDate);
-    eligibilityDateNhat.setFullYear(eligibilityDateNhat.getFullYear() + 20);
+    eligibilityDateNhat.setFullYear(eligibilityDateNhat.getFullYear() + HCCSVV_YEARS_HANG_NHAT);
     const eligibilityYearNhat = eligibilityDateNhat.getFullYear();
 
     const currentYear = currentDate.getFullYear();
@@ -349,7 +351,7 @@ export function Step3SetTitlesNienHan({
       key: 'tong_thang',
       width: 150,
       align: 'center',
-      render: (_: any, record: Personnel) => {
+      render: (_: unknown, record: Personnel) => {
         const result = calculateTotalMonths(record.ngay_nhap_ngu, record.ngay_xuat_ngu);
         if (!result) return <Text type="secondary">-</Text>;
 

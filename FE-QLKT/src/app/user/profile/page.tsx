@@ -37,7 +37,9 @@ import { useTheme } from '@/components/ThemeProvider';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { useAuth } from '@/contexts/AuthContext';
 import { PROPOSAL_STATUS, getProposalStatusLabel } from '@/constants/proposal.constants';
-import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
+import { ELIGIBILITY_STATUS, ELIGIBILITY_STATUS_MAP } from '@/constants/eligibilityStatus.constants';
+import type { PersonnelDetail, ServiceProfile, AnnualProfile, ContributionProfile, MedalData } from '@/lib/types/personnelList';
+import { HCQKQT_YEARS_REQUIRED, KNC_YEARS_REQUIRED_NAM, KNC_YEARS_REQUIRED_NU } from '@/constants/danhHieu.constants';
 
 const { Title, Text } = Typography;
 
@@ -46,16 +48,16 @@ export default function UserProfilePage() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [personnelId, setPersonnelId] = useState<string | null>(null);
-  const [personnelInfo, setPersonnelInfo] = useState<any>(null);
-  const [annualRewards, setAnnualRewards] = useState<any[]>([]);
-  const [scientificAchievements, setScientificAchievements] = useState<any[]>([]);
-  const [positionHistory, setPositionHistory] = useState<any[]>([]);
-  const [adhocAwards, setAdhocAwards] = useState<any[]>([]);
-  const [serviceProfile, setServiceProfile] = useState<any>(null);
-  const [annualProfile, setAnnualProfile] = useState<any>(null);
-  const [contributionProfile, setContributionProfile] = useState<any>(null);
-  const [militaryFlag, setMilitaryFlag] = useState<any>(null);
-  const [commemorationMedals, setCommemorationMedals] = useState<any>(null);
+  const [personnelInfo, setPersonnelInfo] = useState<PersonnelDetail | null>(null);
+  const [annualRewards, setAnnualRewards] = useState<unknown[]>([]);
+  const [scientificAchievements, setScientificAchievements] = useState<unknown[]>([]);
+  const [positionHistory, setPositionHistory] = useState<unknown[]>([]);
+  const [adhocAwards, setAdhocAwards] = useState<unknown[]>([]);
+  const [serviceProfile, setServiceProfile] = useState<ServiceProfile | null>(null);
+  const [annualProfile, setAnnualProfile] = useState<AnnualProfile | null>(null);
+  const [contributionProfile, setContributionProfile] = useState<ContributionProfile | null>(null);
+  const [militaryFlag, setMilitaryFlag] = useState<MedalData | null>(null);
+  const [commemorationMedals, setCommemorationMedals] = useState<MedalData | null>(null);
 
   const calculateYearsOfService = (ngayNhapNgu: string) => {
     if (!ngayNhapNgu) return 0;
@@ -70,13 +72,8 @@ export default function UserProfilePage() {
     return { years, months };
   };
 
-  const getStatusTag = (status: string) => {
-    const statusMap: Record<string, { label: string; color: string }> = {
-      DA_NHAN: { label: 'Đã nhận', color: 'green' },
-      DU_DIEU_KIEN: { label: 'Đủ điều kiện', color: 'orange' },
-      CHUA_DU: { label: 'Chưa đủ', color: 'default' },
-    };
-    const s = statusMap[status] || statusMap.CHUA_DU;
+  const getStatusTag = (status: string | undefined) => {
+    const s = ELIGIBILITY_STATUS_MAP[status ?? ''] || ELIGIBILITY_STATUS_MAP[ELIGIBILITY_STATUS.CHUA_DU];
     return <Tag color={s.color}>{s.label}</Tag>;
   };
 
@@ -212,7 +209,7 @@ export default function UserProfilePage() {
       key: 'index',
       width: 80,
       align: 'center' as const,
-      render: (_: any, __: any, index: number) => index + 1,
+      render: (_: unknown, __: any, index: number) => index + 1,
     },
     {
       title: 'Năm',
@@ -315,7 +312,7 @@ export default function UserProfilePage() {
       key: 'index',
       width: 80,
       align: 'center' as const,
-      render: (_: any, __: any, index: number) => index + 1,
+      render: (_: unknown, __: any, index: number) => index + 1,
     },
     {
       title: 'Năm',
@@ -400,7 +397,7 @@ export default function UserProfilePage() {
       width: 80,
       align: 'center' as const,
       fixed: 'left' as const,
-      render: (_: any, __: any, index: number) => index + 1,
+      render: (_: unknown, __: any, index: number) => index + 1,
     },
     {
       title: 'Chức vụ',
@@ -439,7 +436,7 @@ export default function UserProfilePage() {
       key: 'duration',
       width: 120,
       align: 'center' as const,
-      render: (_: any, record: any) => {
+      render: (_: unknown, record: any) => {
         if (!record.ngay_bat_dau) return '-';
         return calculateDuration(record.ngay_bat_dau, record.ngay_ket_thuc);
       },
@@ -453,7 +450,7 @@ export default function UserProfilePage() {
       width: 80,
       align: 'center' as const,
       fixed: 'left' as const,
-      render: (_: any, __: any, index: number) => index + 1,
+      render: (_: unknown, __: any, index: number) => index + 1,
     },
     {
       title: 'Hình thức khen thưởng',
@@ -733,7 +730,7 @@ export default function UserProfilePage() {
                           if (hasReceived) {
                             return getStatusTag(ELIGIBILITY_STATUS.DA_NHAN);
                           } else {
-                            const yearsRequired = 25;
+                            const yearsRequired = HCQKQT_YEARS_REQUIRED;
                             const yearsOfService = calculateYearsOfService(
                               personnelInfo.ngay_nhap_ngu
                             );
@@ -788,7 +785,7 @@ export default function UserProfilePage() {
                           if (hasReceived) {
                             return getStatusTag(ELIGIBILITY_STATUS.DA_NHAN);
                           } else {
-                            const yearsRequired = personnelInfo.gioi_tinh === 'NAM' ? 25 : 20;
+                            const yearsRequired = personnelInfo.gioi_tinh === 'NAM' ? KNC_YEARS_REQUIRED_NAM : KNC_YEARS_REQUIRED_NU;
                             const yearsOfService = calculateYearsOfService(
                               personnelInfo.ngay_nhap_ngu
                             );

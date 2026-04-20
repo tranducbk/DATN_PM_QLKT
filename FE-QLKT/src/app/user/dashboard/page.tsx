@@ -45,6 +45,7 @@ import { formatDate, formatDateTime } from '@/lib/utils';
 import { useTheme } from '@/components/ThemeProvider';
 import { useAuth } from '@/contexts/AuthContext';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
+import type { PersonnelDetail, ServiceProfile, AnnualProfile, ContributionProfile } from '@/lib/types/personnelList';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -64,11 +65,11 @@ export default function UserDashboard() {
   const { theme } = useTheme();
   const { user, isLoading: authLoading } = useAuth();
   const [displayName, setDisplayName] = useState('Quân nhân');
-  const [personnelInfo, setPersonnelInfo] = useState<any>(null);
-  const [annualProfile, setAnnualProfile] = useState<any>(null);
-  const [serviceProfile, setServiceProfile] = useState<any>(null);
-  const [contributionProfile, setContributionProfile] = useState<any>(null);
-  const [annualRewards, setAnnualRewards] = useState<any[]>([]);
+  const [personnelInfo, setPersonnelInfo] = useState<PersonnelDetail | null>(null);
+  const [annualProfile, setAnnualProfile] = useState<AnnualProfile | null>(null);
+  const [serviceProfile, setServiceProfile] = useState<ServiceProfile | null>(null);
+  const [contributionProfile, setContributionProfile] = useState<ContributionProfile | null>(null);
+  const [annualRewards, setAnnualRewards] = useState<unknown[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 

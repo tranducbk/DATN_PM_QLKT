@@ -18,7 +18,7 @@ import {
 import { PlusOutlined, HomeOutlined } from '@ant-design/icons';
 import dynamic from 'next/dynamic';
 import { UnitsTable } from '@/components/categories/UnitsTable';
-import { PositionsTable } from '@/components/categories/PositionsTable';
+import { PositionsTable, type PositionRow } from '@/components/categories/PositionsTable';
 import { apiClient } from '@/lib/apiClient';
 import { useTheme } from '@/components/ThemeProvider';
 import Link from 'next/link';
@@ -43,23 +43,15 @@ interface CategoryUnitRow {
   co_quan_don_vi_id?: string | null;
 }
 
-/** Chức vụ từ getPositions (lọc theo cơ quan). */
-interface CategoryPositionRow {
-  id: string;
-  ten_chuc_vu?: string;
-  co_quan_don_vi_id?: string | null;
-  CoQuanDonVi?: { id?: string };
-  DonViTrucThuoc?: { CoQuanDonVi?: { id?: string } };
-}
 
 export default function CategoriesPage() {
   const { theme } = useTheme();
   const [units, setUnits] = useState<CategoryUnitRow[]>([]);
-  const [positions, setPositions] = useState<CategoryPositionRow[]>([]);
+  const [positions, setPositions] = useState<PositionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogType, setDialogType] = useState<'unit' | 'position'>('unit');
-  const [editingItem, setEditingItem] = useState<CategoryUnitRow | CategoryPositionRow | null>(
+  const [editingItem, setEditingItem] = useState<CategoryUnitRow | PositionRow | null>(
     null
   );
   const [selectedUnit, setSelectedUnit] = useState('ALL');
@@ -77,7 +69,7 @@ export default function CategoriesPage() {
         apiClient.getPositions(),
       ]);
       setUnits((unitsRes.data || []) as CategoryUnitRow[]);
-      setPositions((positionsRes.data || []) as CategoryPositionRow[]);
+      setPositions((positionsRes.data || []) as PositionRow[]);
     } catch (error) {
       message.error('Không thể tải dữ liệu');
     } finally {
@@ -87,7 +79,7 @@ export default function CategoriesPage() {
 
   const handleOpenDialog = (
     type: 'unit' | 'position',
-    item?: CategoryUnitRow | CategoryPositionRow | null
+    item?: CategoryUnitRow | PositionRow | null
   ) => {
     setDialogType(type);
     if (type === 'unit' && !item) {

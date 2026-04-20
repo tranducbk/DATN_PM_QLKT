@@ -99,7 +99,7 @@ export function ProposalDetailModal({
       key: 'index',
       width: 60,
       align: 'center',
-      render: (_value, _record, index) => index + 1,
+      render: ( value, record, index) => index + 1,
     },
     {
       title: 'Họ và tên',
@@ -132,7 +132,7 @@ export function ProposalDetailModal({
       key: 'cap_bac_chuc_vu',
       width: 200,
       align: 'center',
-      render: (_value, record) => {
+      render: (value, record) => {
         const capBac = record.cap_bac;
         const chucVu = record.ChucVu?.ten_chuc_vu || record.chuc_vu;
         return (

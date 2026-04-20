@@ -2,60 +2,49 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import type { z } from 'zod';
-import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { accountCreateSchema } from '@/lib/schemas';
+import { Form, Input, Select, Button, message, Typography } from 'antd';
 import { apiClient } from '@/lib/apiClient';
-import { Loader2, Eye, EyeOff } from 'lucide-react';
-import { message } from 'antd';
 import { useAuth } from '@/contexts/AuthContext';
 import { ROLES, roleSelectOptions } from '@/constants/roles.constants';
 import { getApiErrorMessage } from '@/lib/apiError';
 import type { ManagerPositionRow, UnitApiRow } from '@/lib/types/personnelList';
 
-type AccountCreateValues = z.infer<typeof accountCreateSchema>;
+const { Text } = Typography;
 
-/** CQ đơn vị (form tạo tài khoản). */
 interface AccountCoQuanDonViOption {
   id: string;
   ten_don_vi: string;
   ma_don_vi: string;
 }
 
-/** Đơn vị trực thuộc (lọc theo CQ). */
 interface AccountDonViTrucThuocOption extends AccountCoQuanDonViOption {
   co_quan_don_vi_id?: string | null;
-  CoQuanDonVi?: UnitApiRow['CoQuanDonVi'] | null;
+  CoQuanDonVi?: { id: string; ten_don_vi: string } | null;
+}
+
+interface CreateFormValues {
+  role: string;
+  username: string;
+  password?: string;
+  confirmPassword?: string;
+  co_quan_don_vi_id?: string;
+  don_vi_truc_thuoc_id?: string;
+  chuc_vu_id?: string;
 }
 
 export function AccountCreateForm() {
+  const [form] = Form.useForm<CreateFormValues>();
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [coQuanDonViList, setCoQuanDonViList] = useState<AccountCoQuanDonViOption[]>([]);
   const [donViTrucThuocList, setDonViTrucThuocList] = useState<AccountDonViTrucThuocOption[]>([]);
   const [positions, setPositions] = useState<ManagerPositionRow[]>([]);
   const router = useRouter();
   const { user } = useAuth();
   const currentUserRole = user?.role || '';
+
+  const selectedRole = Form.useWatch('role', form);
+  const selectedCoQuanDonViId = Form.useWatch('co_quan_don_vi_id', form);
+  const selectedDonViTrucThuocId = Form.useWatch('don_vi_truc_thuoc_id', form);
 
   useEffect(() => {
     fetchUnitsAndPositions();
@@ -67,12 +56,10 @@ export function AccountCreateForm() {
         apiClient.getUnits({ hierarchy: true }),
         apiClient.getPositions(),
       ]);
-
       if (unitsRes.success) {
         const unitsData = (unitsRes.data || []) as UnitApiRow[];
         const coQuanDonVi: AccountCoQuanDonViOption[] = [];
         const donViTrucThuoc: AccountDonViTrucThuocOption[] = [];
-
         unitsData.forEach((unit: UnitApiRow) => {
           coQuanDonVi.push({
             id: unit.id,
@@ -89,31 +76,14 @@ export function AccountCreateForm() {
             });
           });
         });
-
         setCoQuanDonViList(coQuanDonVi);
         setDonViTrucThuocList(donViTrucThuoc);
       }
-
       if (positionsRes.success) {
         setPositions((positionsRes.data || []) as ManagerPositionRow[]);
       }
-    } catch {
-    }
+    } catch {}
   };
-
-  const form = useForm<AccountCreateValues>({
-    resolver: zodResolver(accountCreateSchema),
-    defaultValues: {
-      username: '',
-      password: '',
-      confirmPassword: '',
-      role: ROLES.USER,
-    },
-  });
-
-  const selectedRole = form.watch('role');
-  const selectedCoQuanDonViId = form.watch('co_quan_don_vi_id');
-  const selectedDonViTrucThuocId = form.watch('don_vi_truc_thuoc_id');
 
   const filteredDonViTrucThuoc =
     selectedRole === ROLES.USER && selectedCoQuanDonViId
@@ -122,10 +92,9 @@ export function AccountCreateForm() {
 
   const filteredPositions = (() => {
     if (selectedRole === ROLES.MANAGER && selectedCoQuanDonViId) {
-      // MANAGER: positions belonging to co_quan_don_vi only
       return positions.filter(p => p.co_quan_don_vi_id === selectedCoQuanDonViId);
-    } else if (selectedRole === ROLES.USER && selectedDonViTrucThuocId) {
-      // USER: positions belonging to don_vi_truc_thuoc
+    }
+    if (selectedRole === ROLES.USER && selectedDonViTrucThuocId) {
       return positions.filter(p => p.don_vi_truc_thuoc_id === selectedDonViTrucThuocId);
     }
     return [];
@@ -133,16 +102,16 @@ export function AccountCreateForm() {
 
   useEffect(() => {
     if (selectedCoQuanDonViId !== undefined) {
-      form.setValue('chuc_vu_id', undefined);
+      form.setFieldsValue({ chuc_vu_id: undefined });
       if (selectedRole === ROLES.USER) {
-        form.setValue('don_vi_truc_thuoc_id', undefined);
+        form.setFieldsValue({ don_vi_truc_thuoc_id: undefined });
       }
     }
   }, [selectedCoQuanDonViId, selectedRole, form]);
 
   useEffect(() => {
     if (selectedRole === ROLES.USER && selectedDonViTrucThuocId !== undefined) {
-      form.setValue('chuc_vu_id', undefined);
+      form.setFieldsValue({ chuc_vu_id: undefined });
     }
   }, [selectedDonViTrucThuocId, selectedRole, form]);
 
@@ -158,370 +127,257 @@ export function AccountCreateForm() {
 
   const canSubmit = () => {
     if (selectedRole === ROLES.MANAGER) {
+      return coQuanDonViList.length > 0 && !!selectedCoQuanDonViId && filteredPositions.length > 0;
+    }
+    if (selectedRole === ROLES.USER) {
       return (
         coQuanDonViList.length > 0 &&
-        selectedCoQuanDonViId !== undefined &&
-        filteredPositions.length > 0
-      );
-    } else if (selectedRole === ROLES.USER) {
-      return (
-        coQuanDonViList.length > 0 &&
-        selectedCoQuanDonViId !== undefined &&
+        !!selectedCoQuanDonViId &&
         filteredDonViTrucThuoc.length > 0 &&
-        selectedDonViTrucThuocId !== undefined &&
+        !!selectedDonViTrucThuocId &&
         filteredPositions.length > 0
       );
     }
     return true;
   };
 
-  // Tooltip cho button submit
   const getSubmitButtonTooltip = () => {
     if (selectedRole === ROLES.MANAGER) {
-      if (coQuanDonViList.length === 0) {
+      if (coQuanDonViList.length === 0)
         return 'Không có cơ quan đơn vị nào. Vui lòng tạo cơ quan đơn vị trước.';
-      }
-      if (!selectedCoQuanDonViId) {
-        return 'Vui lòng chọn Cơ quan đơn vị cho tài khoản MANAGER.';
-      }
-      if (filteredPositions.length === 0) {
+      if (!selectedCoQuanDonViId) return 'Vui lòng chọn Cơ quan đơn vị cho tài khoản MANAGER.';
+      if (filteredPositions.length === 0)
         return 'Cơ quan đơn vị này chưa có chức vụ nào. Vui lòng tạo chức vụ trước.';
-      }
     } else if (selectedRole === ROLES.USER) {
-      if (coQuanDonViList.length === 0) {
+      if (coQuanDonViList.length === 0)
         return 'Không có cơ quan đơn vị nào. Vui lòng tạo cơ quan đơn vị trước.';
-      }
-      if (!selectedCoQuanDonViId) {
-        return 'Vui lòng chọn Cơ quan đơn vị cho tài khoản USER.';
-      }
-      if (filteredDonViTrucThuoc.length === 0) {
+      if (!selectedCoQuanDonViId) return 'Vui lòng chọn Cơ quan đơn vị cho tài khoản USER.';
+      if (filteredDonViTrucThuoc.length === 0)
         return 'Cơ quan đơn vị này chưa có đơn vị trực thuộc. Vui lòng tạo đơn vị trực thuộc trước.';
-      }
-      if (!selectedDonViTrucThuocId) {
-        return 'Vui lòng chọn Đơn vị trực thuộc cho tài khoản USER.';
-      }
-      if (filteredPositions.length === 0) {
+      if (!selectedDonViTrucThuocId) return 'Vui lòng chọn Đơn vị trực thuộc cho tài khoản USER.';
+      if (filteredPositions.length === 0)
         return 'Đơn vị trực thuộc này chưa có chức vụ nào. Vui lòng tạo chức vụ trước.';
-      }
     }
     return '';
   };
 
-  async function onSubmit(values: AccountCreateValues) {
+  const onFinish = async (values: CreateFormValues) => {
     try {
       setLoading(true);
-
       const { confirmPassword, ...rest } = values;
-      const submitData = { ...rest, password: rest.password ?? '' };
-
-      const response = await apiClient.createAccount(submitData);
-
+      void confirmPassword;
+      const response = await apiClient.createAccount({ ...rest, password: rest.password ?? '' });
       if (response.success) {
         message.success('Tạo tài khoản thành công');
         if (currentUserRole === ROLES.SUPER_ADMIN) {
           router.push('/super-admin/accounts');
-        } else if (currentUserRole === ROLES.ADMIN) {
-          router.push('/admin/accounts');
         } else {
-          router.push('/super-admin/accounts');
+          router.push('/admin/accounts');
         }
       } else {
         message.error(response.message || 'Có lỗi xảy ra khi tạo tài khoản');
       }
     } catch (error: unknown) {
-      const errorMessage = getApiErrorMessage(error, 'Có lỗi xảy ra khi tạo tài khoản');
-
-      message.error(errorMessage);
+      message.error(getApiErrorMessage(error, 'Có lỗi xảy ra khi tạo tài khoản'));
     } finally {
       setLoading(false);
     }
-  }
+  };
+
+  const showUnitSection = selectedRole === ROLES.MANAGER || selectedRole === ROLES.USER;
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        {/* Account Information */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Thông tin tài khoản</h3>
+    <Form
+      form={form}
+      layout="vertical"
+      onFinish={onFinish}
+      initialValues={{ role: ROLES.USER }}
+      className="space-y-2"
+    >
+      <div className="space-y-1">
+        <h3 className="text-lg font-semibold mb-4">Thông tin tài khoản</h3>
 
-          <FormField
-            control={form.control}
-            name="role"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Vai trò *</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                  disabled={loading}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn vai trò" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {getAvailableRoles().map(role => (
-                      <SelectItem key={role.value} value={role.value}>
-                        {role.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
+        <Form.Item
+          label="Vai trò"
+          name="role"
+          rules={[{ required: true, message: 'Vui lòng chọn vai trò' }]}
+        >
+          <Select
+            options={getAvailableRoles().map(r => ({ value: r.value, label: r.label }))}
+            disabled={loading}
+            placeholder="Chọn vai trò"
           />
+        </Form.Item>
 
-          <FormField
-            control={form.control}
-            name="username"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Tên đăng nhập *</FormLabel>
-                <FormControl>
-                  <Input placeholder="Nhập tên đăng nhập" {...field} disabled={loading} />
-                </FormControl>
-                {(selectedRole === ROLES.MANAGER || selectedRole === ROLES.USER) && (
-                  <p className="text-sm text-muted-foreground">
-                    Khuyến nghị: Sử dụng số CCCD của quân nhân làm tên đăng nhập
-                  </p>
-                )}
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        <Form.Item
+          label="Tên đăng nhập"
+          name="username"
+          rules={[
+            { required: true, message: 'Vui lòng nhập tên đăng nhập' },
+            { min: 3, message: 'Tên đăng nhập phải có ít nhất 3 ký tự' },
+          ]}
+          extra={
+            selectedRole === ROLES.MANAGER || selectedRole === ROLES.USER ? (
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                Khuyến nghị: Sử dụng số CCCD của quân nhân làm tên đăng nhập
+              </Text>
+            ) : undefined
+          }
+        >
+          <Input placeholder="Nhập tên đăng nhập" disabled={loading} />
+        </Form.Item>
 
-          <FormField
-            control={form.control}
-            name="password"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Mật khẩu</FormLabel>
-                <FormControl>
-                  <div className="relative">
-                    <Input
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="Nhập mật khẩu"
-                      {...field}
-                      disabled={loading}
-                      className="pr-10"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                      disabled={loading}
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                </FormControl>
-                <p className="text-sm text-muted-foreground">
-                  Để trống sẽ sử dụng mật khẩu mặc định của hệ thống
-                </p>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        <Form.Item
+          label="Mật khẩu"
+          name="password"
+          rules={[
+            {
+              validator: (_, value) => {
+                if (!value) return Promise.resolve();
+                if (
+                  value.length < 8 ||
+                  !/[A-Z]/.test(value) ||
+                  !/[a-z]/.test(value) ||
+                  !/[0-9]/.test(value)
+                ) {
+                  return Promise.reject(
+                    'Mật khẩu phải có ít nhất 8 ký tự, gồm chữ hoa, chữ thường và số'
+                  );
+                }
+                return Promise.resolve();
+              },
+            },
+          ]}
+          extra={
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              Để trống sẽ sử dụng mật khẩu mặc định của hệ thống
+            </Text>
+          }
+        >
+          <Input.Password placeholder="Nhập mật khẩu" disabled={loading} />
+        </Form.Item>
 
-          <FormField
-            control={form.control}
-            name="confirmPassword"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Xác nhận mật khẩu</FormLabel>
-                <FormControl>
-                  <div className="relative">
-                    <Input
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      placeholder="Nhập lại mật khẩu"
-                      {...field}
-                      disabled={loading}
-                      className="pr-10"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                      disabled={loading}
-                    >
-                      {showConfirmPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                    </button>
-                  </div>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+        <Form.Item
+          label="Xác nhận mật khẩu"
+          name="confirmPassword"
+          dependencies={['password']}
+          rules={[
+            ({ getFieldValue }) => ({
+              validator(_, value) {
+                const pwd = getFieldValue('password');
+                if (!pwd || !value || pwd === value) return Promise.resolve();
+                return Promise.reject('Mật khẩu xác nhận không khớp');
+              },
+            }),
+          ]}
+        >
+          <Input.Password placeholder="Nhập lại mật khẩu" disabled={loading} />
+        </Form.Item>
+      </div>
 
-        {/* Unit and Position - For MANAGER and USER */}
-        {(selectedRole === ROLES.MANAGER || selectedRole === ROLES.USER) && (
-          <div className="space-y-4 border-t pt-4">
-            <h3 className="text-lg font-semibold">Thông tin đơn vị và chức vụ</h3>
+      {showUnitSection && (
+        <div className="border-t pt-4 space-y-1">
+          <h3 className="text-lg font-semibold mb-4">Thông tin đơn vị và chức vụ</h3>
 
-            {/* Cơ quan đơn vị - Cho cả MANAGER và USER */}
-            <FormField
-              control={form.control}
-              name="co_quan_don_vi_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Cơ quan đơn vị *</FormLabel>
-                  <Select
-                    onValueChange={value => field.onChange(value)}
-                    value={field.value}
-                    disabled={loading || coQuanDonViList.length === 0}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue
-                          placeholder={
-                            coQuanDonViList.length === 0
-                              ? 'Không có cơ quan đơn vị nào'
-                              : 'Chọn cơ quan đơn vị'
-                          }
-                        />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {coQuanDonViList.map(unit => (
-                        <SelectItem key={unit.id} value={unit.id}>
-                          {unit.ten_don_vi}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                  {coQuanDonViList.length === 0 && (
-                    <p className="text-sm text-destructive mt-1">
-                      Không có cơ quan đơn vị nào. Vui lòng tạo cơ quan đơn vị trước.
-                    </p>
-                  )}
-                </FormItem>
-              )}
-            />
-
-            {/* Đơn vị trực thuộc - Chỉ cho USER */}
-            {selectedRole === ROLES.USER && (
-              <FormField
-                control={form.control}
-                name="don_vi_truc_thuoc_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Đơn vị trực thuộc *</FormLabel>
-                    <Select
-                      onValueChange={value => field.onChange(value)}
-                      value={field.value}
-                      disabled={
-                        loading || !selectedCoQuanDonViId || filteredDonViTrucThuoc.length === 0
-                      }
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue
-                            placeholder={
-                              !selectedCoQuanDonViId
-                                ? 'Vui lòng chọn cơ quan đơn vị trước'
-                                : filteredDonViTrucThuoc.length === 0
-                                  ? 'Không có đơn vị trực thuộc nào'
-                                  : 'Chọn đơn vị trực thuộc'
-                            }
-                          />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {filteredDonViTrucThuoc.map(unit => (
-                          <SelectItem key={unit.id} value={unit.id}>
-                            {unit.ten_don_vi}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                    {selectedCoQuanDonViId && filteredDonViTrucThuoc.length === 0 && (
-                      <p className="text-sm text-destructive mt-1">
-                        Cơ quan đơn vị này chưa có đơn vị trực thuộc. Vui lòng tạo đơn vị trực thuộc
-                        trước.
-                      </p>
-                    )}
-                  </FormItem>
-                )}
-              />
-            )}
-
-            {/* Chức vụ */}
-            <FormField
-              control={form.control}
-              name="chuc_vu_id"
-              render={({ field }) => {
-                const canSelectPosition =
-                  (selectedRole === ROLES.MANAGER && selectedCoQuanDonViId) ||
-                  (selectedRole === ROLES.USER && selectedDonViTrucThuocId);
-
-                return (
-                  <FormItem>
-                    <FormLabel>Chức vụ</FormLabel>
-                    <Select
-                      onValueChange={value => field.onChange(value)}
-                      value={field.value}
-                      disabled={loading || !canSelectPosition || filteredPositions.length === 0}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue
-                            placeholder={
-                              !canSelectPosition
-                                ? selectedRole === ROLES.MANAGER
-                                  ? 'Vui lòng chọn cơ quan đơn vị trước'
-                                  : 'Vui lòng chọn đơn vị trực thuộc trước'
-                                : filteredPositions.length === 0
-                                  ? 'Không có chức vụ nào'
-                                  : 'Chọn chức vụ'
-                            }
-                          />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {filteredPositions.map(position => (
-                          <SelectItem key={position.id} value={position.id}>
-                            {position.ten_chuc_vu}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                    {canSelectPosition && filteredPositions.length === 0 && (
-                      <p className="text-sm text-destructive mt-1">
-                        Đơn vị này chưa có chức vụ nào. Vui lòng tạo chức vụ trước.
-                      </p>
-                    )}
-                  </FormItem>
-                );
-              }}
-            />
-          </div>
-        )}
-
-        <div className="flex gap-2 justify-end pt-2">
-          <Button type="button" variant="default" onClick={() => router.back()} disabled={loading}>
-            Hủy
-          </Button>
-          <Button
-            type="submit"
-            variant="outline"
-            disabled={loading || !canSubmit()}
-            title={getSubmitButtonTooltip()}
+          <Form.Item
+            label="Cơ quan đơn vị"
+            name="co_quan_don_vi_id"
+            rules={[{ required: true, message: 'Vui lòng chọn cơ quan đơn vị' }]}
+            extra={
+              coQuanDonViList.length === 0 ? (
+                <Text type="danger" style={{ fontSize: 12 }}>
+                  Không có cơ quan đơn vị nào. Vui lòng tạo cơ quan đơn vị trước.
+                </Text>
+              ) : undefined
+            }
           >
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {loading ? 'Đang tạo...' : 'Tạo tài khoản'}
-          </Button>
+            <Select
+              options={coQuanDonViList.map(u => ({ value: u.id, label: u.ten_don_vi }))}
+              disabled={loading || coQuanDonViList.length === 0}
+              placeholder={
+                coQuanDonViList.length === 0 ? 'Không có cơ quan đơn vị nào' : 'Chọn cơ quan đơn vị'
+              }
+            />
+          </Form.Item>
+
+          {selectedRole === ROLES.USER && (
+            <Form.Item
+              label="Đơn vị trực thuộc"
+              name="don_vi_truc_thuoc_id"
+              rules={[{ required: true, message: 'Vui lòng chọn đơn vị trực thuộc' }]}
+              extra={
+                selectedCoQuanDonViId && filteredDonViTrucThuoc.length === 0 ? (
+                  <Text type="danger" style={{ fontSize: 12 }}>
+                    Cơ quan đơn vị này chưa có đơn vị trực thuộc. Vui lòng tạo đơn vị trực thuộc
+                    trước.
+                  </Text>
+                ) : undefined
+              }
+            >
+              <Select
+                options={filteredDonViTrucThuoc.map(u => ({ value: u.id, label: u.ten_don_vi }))}
+                disabled={loading || !selectedCoQuanDonViId || filteredDonViTrucThuoc.length === 0}
+                placeholder={
+                  !selectedCoQuanDonViId
+                    ? 'Vui lòng chọn cơ quan đơn vị trước'
+                    : filteredDonViTrucThuoc.length === 0
+                      ? 'Không có đơn vị trực thuộc nào'
+                      : 'Chọn đơn vị trực thuộc'
+                }
+              />
+            </Form.Item>
+          )}
+
+          <Form.Item
+            label="Chức vụ"
+            name="chuc_vu_id"
+            extra={
+              (selectedRole === ROLES.MANAGER
+                ? !!selectedCoQuanDonViId
+                : !!selectedDonViTrucThuocId) && filteredPositions.length === 0 ? (
+                <Text type="danger" style={{ fontSize: 12 }}>
+                  Đơn vị này chưa có chức vụ nào. Vui lòng tạo chức vụ trước.
+                </Text>
+              ) : undefined
+            }
+          >
+            <Select
+              options={filteredPositions.map(p => ({ value: p.id, label: p.ten_chuc_vu }))}
+              disabled={
+                loading ||
+                !(selectedRole === ROLES.MANAGER
+                  ? selectedCoQuanDonViId
+                  : selectedDonViTrucThuocId) ||
+                filteredPositions.length === 0
+              }
+              placeholder={
+                !(selectedRole === ROLES.MANAGER ? selectedCoQuanDonViId : selectedDonViTrucThuocId)
+                  ? selectedRole === ROLES.MANAGER
+                    ? 'Vui lòng chọn cơ quan đơn vị trước'
+                    : 'Vui lòng chọn đơn vị trực thuộc trước'
+                  : filteredPositions.length === 0
+                    ? 'Không có chức vụ nào'
+                    : 'Chọn chức vụ'
+              }
+            />
+          </Form.Item>
         </div>
-      </form>
+      )}
+
+      <div className="flex gap-2 justify-end pt-2">
+        <Button onClick={() => router.back()} disabled={loading}>
+          Hủy
+        </Button>
+        <Button
+          type="primary"
+          htmlType="submit"
+          loading={loading}
+          disabled={!canSubmit()}
+          title={getSubmitButtonTooltip()}
+        >
+          {loading ? 'Đang tạo...' : 'Tạo tài khoản'}
+        </Button>
+      </div>
     </Form>
   );
 }

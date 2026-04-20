@@ -27,10 +27,18 @@ interface UnitAnnualAward {
   file_quyet_dinh_bkttcp?: string | null;
 }
 
+export interface UnitAnnualAwards {
+  tong_dvqt?: number;
+  dvqt_lien_tuc?: number;
+  du_dieu_kien_bk_tong_cuc?: boolean;
+  du_dieu_kien_bk_thu_tuong?: boolean;
+  tong_dvqt_json?: UnitAnnualAward[];
+}
+
 interface UnitAnnualAwardHistoryModalProps {
   visible: boolean;
   unit: Unit | null;
-  annualAwards: any;
+  annualAwards: UnitAnnualAwards | null;
   loading: boolean;
   onClose: () => void;
 }

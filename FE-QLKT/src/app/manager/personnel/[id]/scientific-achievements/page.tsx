@@ -8,6 +8,8 @@ import type { ColumnsType } from 'antd/es/table';
 import { LeftOutlined, HomeOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/apiClient';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
+import type { PersonnelDetail } from '@/lib/types/personnelList';
+
 
 const { Title, Paragraph } = Typography;
 
@@ -24,7 +26,7 @@ export default function ManagerScientificAchievementsPage() {
   const params = useParams();
   const personnelId = params?.id as string;
   const [loading, setLoading] = useState(true);
-  const [personnel, setPersonnel] = useState<any>(null);
+  const [personnel, setPersonnel] = useState<PersonnelDetail | null>(null);
   const [achievements, setAchievements] = useState<AchievementRecord[]>([]);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);

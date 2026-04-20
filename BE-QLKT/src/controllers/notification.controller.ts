@@ -28,12 +28,12 @@ class NotificationController {
       type,
     });
 
-    return ResponseHelper.success(res, {
+    return ResponseHelper.paginated(res, {
+      data: result.notifications,
+      total: result.total,
+      page,
+      limit,
       message: 'Lấy danh sách thông báo thành công',
-      data: {
-        notifications: result.notifications,
-        pagination: { total: result.total, page, limit, totalPages: result.totalPages },
-      },
     });
   });
 

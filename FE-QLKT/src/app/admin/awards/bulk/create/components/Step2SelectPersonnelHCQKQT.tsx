@@ -20,6 +20,7 @@ import { formatDate } from '@/lib/utils';
 import type { DateInput } from '@/lib/types';
 import { apiClient } from '@/lib/apiClient';
 import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/lib/constants/pagination.constants';
+import { HCQKQT_YEARS_REQUIRED } from '@/constants/danhHieu.constants';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { ExcelImportSection } from './ExcelImportSection';
 import * as XLSX from 'xlsx';
@@ -247,7 +248,7 @@ export function Step2SelectPersonnelHCQKQT({
     }
 
     // Requirement: >= 25 years of service (gender-neutral)
-    const requiredYears = 25;
+    const requiredYears = HCQKQT_YEARS_REQUIRED;
     if (result.years < requiredYears) {
       return {
         eligible: false,
@@ -774,7 +775,7 @@ export function Step2SelectPersonnelHCQKQT({
           return (
             <Alert
               message="Cảnh báo"
-              description={`Có ${ineligibleCount} quân nhân không đủ điều kiện đề xuất (yêu cầu: >= 25 năm phục vụ). Vui lòng kiểm tra và cập nhật thông tin trước khi đề xuất.`}
+              description={`Có ${ineligibleCount} quân nhân không đủ điều kiện đề xuất (yêu cầu: >= ${HCQKQT_YEARS_REQUIRED} năm phục vụ). Vui lòng kiểm tra và cập nhật thông tin trước khi đề xuất.`}
               type="warning"
               showIcon
               style={{ marginBottom: 16 }}

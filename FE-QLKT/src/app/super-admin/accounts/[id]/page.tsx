@@ -29,12 +29,40 @@ import { ROLES, getRoleInfo } from '@/constants/roles.constants';
 
 const { Title } = Typography;
 
+interface AccountDetail {
+  id: string;
+  username: string;
+  role: string;
+  createdAt: string;
+  updatedAt: string;
+  QuanNhan?: {
+    ho_ten?: string | null;
+    cccd?: string | null;
+    ngay_sinh?: string | null;
+    gioi_tinh?: string | null;
+    so_dien_thoai?: string | null;
+    cap_bac?: string | null;
+    que_quan_2_cap?: string | null;
+    que_quan_3_cap?: string | null;
+    tru_quan?: string | null;
+    cho_o_hien_nay?: string | null;
+    ngay_nhap_ngu?: string | null;
+    ngay_xuat_ngu?: string | null;
+    ngay_vao_dang?: string | null;
+    ngay_vao_dang_chinh_thuc?: string | null;
+    so_the_dang_vien?: string | null;
+    DonViTrucThuoc?: { ma_don_vi?: string; ten_don_vi?: string; CoQuanDonVi?: { ten_don_vi?: string } | null } | null;
+    CoQuanDonVi?: { ma_don_vi?: string; ten_don_vi?: string } | null;
+    ChucVu?: { ten_chuc_vu?: string } | null;
+  } | null;
+}
+
 export default function AccountDetailPage() {
   const { theme } = useTheme();
   const params = useParams();
   const accountId = params?.id as string;
   const [loading, setLoading] = useState(true);
-  const [account, setAccount] = useState<any>(null);
+  const [account, setAccount] = useState<AccountDetail | null>(null);
   const [resetting, setResetting] = useState(false);
 
   useEffect(() => {

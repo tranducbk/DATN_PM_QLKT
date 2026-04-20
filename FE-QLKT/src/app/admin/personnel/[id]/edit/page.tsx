@@ -26,6 +26,8 @@ import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
 import { useAuth } from '@/contexts/AuthContext';
 import { ROLES } from '@/constants/roles.constants';
 import { VietnamAddressCascader } from '@/components/VietnamAddressCascader';
+import type { PersonnelDetail } from '@/lib/types/personnelList';
+
 
 const { Title } = Typography;
 
@@ -104,7 +106,7 @@ export default function PersonnelEditPage() {
   const router = useRouter();
   const params = useParams();
   const personnelId = params?.id as string;
-  const [personnel, setPersonnel] = useState<any>(null);
+  const [personnel, setPersonnel] = useState<PersonnelDetail | null>(null);
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);

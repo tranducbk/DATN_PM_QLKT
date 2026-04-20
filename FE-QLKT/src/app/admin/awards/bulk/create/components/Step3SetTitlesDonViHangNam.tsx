@@ -7,7 +7,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
-import { UnitAnnualAwardHistoryModal } from './UnitAnnualAwardHistoryModal';
+import { UnitAnnualAwardHistoryModal, type UnitAnnualAwards } from './UnitAnnualAwardHistoryModal';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 import {
   DANH_HIEU_CA_NHAN_HANG_NAM,
@@ -93,7 +93,7 @@ export function Step3SetTitlesDonViHangNam({
   const [unitAnnualAwardHistoryModalVisible, setUnitAnnualAwardHistoryModalVisible] =
     useState(false);
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
-  const [unitAnnualAwards, setUnitAnnualAwards] = useState<any>(null);
+  const [unitAnnualAwards, setUnitAnnualAwards] = useState<UnitAnnualAwards | null>(null);
   const [allUnitAnnualAwards, setAllUnitAnnualAwards] = useState<Record<string, any>>({});
   const [loadingModal, setLoadingModal] = useState(false);
 

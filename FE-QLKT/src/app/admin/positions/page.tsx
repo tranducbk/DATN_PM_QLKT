@@ -16,7 +16,7 @@ import {
 } from 'antd';
 import { useTheme } from '@/components/ThemeProvider';
 import { PositionForm } from '@/components/categories/PositionForm';
-import { PositionsTable } from '@/components/categories/PositionsTable';
+import { PositionsTable, type PositionRow } from '@/components/categories/PositionsTable';
 import { apiClient } from '@/lib/apiClient';
 import {
   PlusOutlined,
@@ -33,11 +33,11 @@ const { Title, Text } = Typography;
 
 export default function PositionsPage() {
   const { theme } = useTheme();
-  const [positions, setPositions] = useState<any[]>([]);
-  const [units, setUnits] = useState<any[]>([]);
+  const [positions, setPositions] = useState<PositionRow[]>([]);
+  const [units, setUnits] = useState<{ id: string; ten_don_vi: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingPosition, setEditingPosition] = useState<any>(null);
+  const [editingPosition, setEditingPosition] = useState<PositionRow | null>(null);
   const [selectedUnit, setSelectedUnit] = useState('ALL');
 
   useEffect(() => {
@@ -60,7 +60,7 @@ export default function PositionsPage() {
     }
   }
 
-  const handleOpenDialog = (position?: any) => {
+  const handleOpenDialog = (position?: PositionRow) => {
     setEditingPosition(position || null);
     setDialogOpen(true);
   };
@@ -119,22 +119,10 @@ export default function PositionsPage() {
               level={1}
               style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '12px' }}
             >
-              <div
-                style={{
-                  padding: '12px',
-                  background: 'linear-gradient(135deg, #dc2626 0%, #f97316 100%)',
-                  borderRadius: '12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <IdcardOutlined style={{ fontSize: '32px', color: '#fff' }} />
-              </div>
               Quản lý Chức vụ
             </Title>
             <Text type="secondary" style={{ display: 'block', marginTop: '8px', fontSize: '15px' }}>
-              Quản lý thông tin chức vụ, cấp bậc và nhóm cống hiến
+              Quản lý thông tin chức vụ, cấp bậc
             </Text>
           </div>
           <Button

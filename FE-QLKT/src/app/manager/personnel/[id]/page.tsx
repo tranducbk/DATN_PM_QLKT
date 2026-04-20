@@ -38,9 +38,10 @@ import { apiClient } from '@/lib/apiClient';
 import { formatDate } from '@/lib/utils';
 import styles from './personnel-detail.module.css';
 import { ROLES, getRoleInfo } from '@/constants/roles.constants';
+import type { PersonnelDetail, ServiceProfile, AnnualProfile, ContributionProfile, MedalData } from '@/lib/types/personnelList';
 import { useAuth } from '@/contexts/AuthContext';
-import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
-import { DANH_HIEU_MAP } from '@/constants/danhHieu.constants';
+import { ELIGIBILITY_STATUS, ELIGIBILITY_STATUS_MAP } from '@/constants/eligibilityStatus.constants';
+import { DANH_HIEU_MAP, HCQKQT_YEARS_REQUIRED, KNC_YEARS_REQUIRED_NAM, KNC_YEARS_REQUIRED_NU } from '@/constants/danhHieu.constants';
 
 const { Title, Text } = Typography;
 
@@ -53,12 +54,12 @@ export default function ManagerPersonnelDetailPage() {
   const activeTab = searchParams?.get('tab') || '1';
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [personnel, setPersonnel] = useState<any>(null);
-  const [serviceProfile, setServiceProfile] = useState<any>(null);
-  const [annualProfile, setAnnualProfile] = useState<any>(null);
-  const [contributionProfile, setContributionProfile] = useState<any>(null);
-  const [militaryFlag, setMilitaryFlag] = useState<any>(null);
-  const [commemorationMedals, setCommemorationMedals] = useState<any>(null);
+  const [personnel, setPersonnel] = useState<PersonnelDetail | null>(null);
+  const [serviceProfile, setServiceProfile] = useState<ServiceProfile | null>(null);
+  const [annualProfile, setAnnualProfile] = useState<AnnualProfile | null>(null);
+  const [contributionProfile, setContributionProfile] = useState<ContributionProfile | null>(null);
+  const [militaryFlag, setMilitaryFlag] = useState<MedalData | null>(null);
+  const [commemorationMedals, setCommemorationMedals] = useState<MedalData | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -112,13 +113,8 @@ export default function ManagerPersonnelDetailPage() {
     }
   }, [personnelId]);
 
-  const getStatusTag = (status: string) => {
-    const statusMap: Record<string, { label: string; color: string }> = {
-      DA_NHAN: { label: 'Đã nhận', color: 'green' },
-      DU_DIEU_KIEN: { label: 'Đủ điều kiện', color: 'orange' },
-      CHUA_DU: { label: 'Chưa đủ', color: 'default' },
-    };
-    const s = statusMap[status] || statusMap.CHUA_DU;
+  const getStatusTag = (status: string | undefined) => {
+    const s = ELIGIBILITY_STATUS_MAP[status ?? ''] || ELIGIBILITY_STATUS_MAP[ELIGIBILITY_STATUS.CHUA_DU];
     return <Tag color={s.color}>{s.label}</Tag>;
   };
 
@@ -483,7 +479,7 @@ export default function ManagerPersonnelDetailPage() {
                           if (hasReceived) {
                             return getStatusTag(ELIGIBILITY_STATUS.DA_NHAN);
                           } else {
-                            const yearsRequired = 25;
+                            const yearsRequired = HCQKQT_YEARS_REQUIRED;
                             const yearsOfService = calculateYearsOfService(personnel.ngay_nhap_ngu);
                             const eligible = yearsOfService >= yearsRequired;
                             return (
@@ -536,7 +532,7 @@ export default function ManagerPersonnelDetailPage() {
                           if (hasReceived) {
                             return getStatusTag(ELIGIBILITY_STATUS.DA_NHAN);
                           } else {
-                            const yearsRequired = personnel.gioi_tinh === 'NAM' ? 25 : 20;
+                            const yearsRequired = personnel.gioi_tinh === 'NAM' ? KNC_YEARS_REQUIRED_NAM : KNC_YEARS_REQUIRED_NU;
                             const yearsOfService = calculateYearsOfService(personnel.ngay_nhap_ngu);
                             const eligible = yearsOfService >= yearsRequired;
                             return (

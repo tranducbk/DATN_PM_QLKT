@@ -22,7 +22,7 @@ import { apiClient } from '@/lib/apiClient';
 import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/lib/constants/pagination.constants';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { ExcelImportSection } from './ExcelImportSection';
-import { DANH_HIEU_MAP } from '@/constants/danhHieu.constants';
+import { DANH_HIEU_MAP, KNC_YEARS_REQUIRED_NAM, KNC_YEARS_REQUIRED_NU } from '@/constants/danhHieu.constants';
 import * as XLSX from 'xlsx';
 
 const { Text } = Typography;
@@ -253,7 +253,7 @@ export function Step2SelectPersonnelKNCVSNXDQDNDVN({
     }
 
     // Requirement: female >= 20 years, male >= 25 years
-    const requiredYears = record.gioi_tinh === 'NU' ? 20 : 25;
+    const requiredYears = record.gioi_tinh === 'NU' ? KNC_YEARS_REQUIRED_NU : KNC_YEARS_REQUIRED_NAM;
     if (result.years < requiredYears) {
       return {
         eligible: false,

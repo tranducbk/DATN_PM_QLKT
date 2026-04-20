@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import {
   Card,
   Typography,
@@ -14,29 +14,49 @@ import {
   ConfigProvider,
   theme as antdTheme,
   Skeleton,
+  Input,
+  Select,
 } from 'antd';
 import {
   PlusOutlined,
-  EditOutlined,
   DeleteOutlined,
   LockOutlined,
   HomeOutlined,
+  SearchOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useTheme } from '@/components/ThemeProvider';
 import { apiClient } from '@/lib/apiClient';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
-import { ROLES } from '@/constants/roles.constants';
+import { ROLES, ROLE_LABELS, ROLE_COLORS, roleSelectOptions } from '@/constants/roles.constants';
 
 const { Title } = Typography;
 const { confirm } = Modal;
 
+interface AccountRow {
+  id: string;
+  username: string;
+  role: string;
+  quan_nhan_id: string | null;
+  ho_ten: string | null;
+  don_vi: string | null;
+  cap_bac: string | null;
+  chuc_vu: string | null;
+}
+
+const ROLE_ORDER: Record<string, number> = {
+  [ROLES.SUPER_ADMIN]: 0,
+  [ROLES.ADMIN]: 1,
+  [ROLES.MANAGER]: 2,
+  [ROLES.USER]: 3,
+};
+
 export default function AdminAccountsPage() {
   const { theme } = useTheme();
-  const router = useRouter();
-  const [accounts, setAccounts] = useState([]);
+  const [accounts, setAccounts] = useState<AccountRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchText, setSearchText] = useState('');
+  const [roleFilter, setRoleFilter] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     loadAccounts();
@@ -58,7 +78,24 @@ export default function AdminAccountsPage() {
     }
   };
 
-  const handleDelete = (account: any) => {
+  const filteredAccounts = useMemo(() => {
+    let result = [...accounts];
+    if (searchText.trim()) {
+      const q = searchText.trim().toLowerCase();
+      result = result.filter(
+        a =>
+          a.username.toLowerCase().includes(q) ||
+          (a.ho_ten && a.ho_ten.toLowerCase().includes(q))
+      );
+    }
+    if (roleFilter) {
+      result = result.filter(a => a.role === roleFilter);
+    }
+    result.sort((a, b) => (ROLE_ORDER[a.role] ?? 99) - (ROLE_ORDER[b.role] ?? 99));
+    return result;
+  }, [accounts, searchText, roleFilter]);
+
+  const handleDelete = (account: AccountRow) => {
     confirm({
       title: 'Xác nhận xóa',
       content: account.quan_nhan_id
@@ -95,7 +132,7 @@ export default function AdminAccountsPage() {
     });
   };
 
-  const handleResetPassword = (account: any) => {
+  const handleResetPassword = (account: AccountRow) => {
     confirm({
       title: 'Xác nhận reset mật khẩu',
       content: `Reset mật khẩu tài khoản "${account.username}" về "Hvkhqs@123"?`,
@@ -117,16 +154,9 @@ export default function AdminAccountsPage() {
     });
   };
 
-  const getRoleTag = (role: string) => {
-    const roleConfig: Record<string, { color: string; label: string }> = {
-      [ROLES.SUPER_ADMIN]: { color: 'purple', label: 'Super Admin' },
-      [ROLES.ADMIN]: { color: 'red', label: 'Admin' },
-      [ROLES.MANAGER]: { color: 'blue', label: 'Quản lý' },
-      [ROLES.USER]: { color: 'green', label: 'Người dùng' },
-    };
-    const config = roleConfig[role] || { color: 'default', label: role };
-    return <Tag color={config.color}>{config.label}</Tag>;
-  };
+  const getRoleTag = (role: string) => (
+    <Tag color={ROLE_COLORS[role] ?? 'default'}>{ROLE_LABELS[role] ?? role}</Tag>
+  );
 
   const columns = [
     {
@@ -146,7 +176,7 @@ export default function AdminAccountsPage() {
       title: 'Quân nhân',
       key: 'quan_nhan',
       align: 'center' as const,
-      render: (_: any, record: any) => {
+      render: (_: unknown, record: AccountRow) => {
         if (record.quan_nhan_id) {
           return <Link href={`/admin/personnel/${record.quan_nhan_id}`}>{record.ho_ten}</Link>;
         }
@@ -157,14 +187,15 @@ export default function AdminAccountsPage() {
       title: 'Đơn vị',
       key: 'don_vi',
       align: 'center' as const,
-      render: (_: any, record: any) => record.don_vi || <span className="text-gray-400">-</span>,
+      render: (_: unknown, record: AccountRow) =>
+        record.don_vi || <span className="text-gray-400">-</span>,
     },
     {
       title: 'Cấp bậc / Chức vụ',
       key: 'cap_bac_chuc_vu',
       width: 180,
       align: 'center' as const,
-      render: (_: any, record: any) => {
+      render: (_: unknown, record: AccountRow) => {
         const capBac = record.cap_bac;
         const chucVu = record.chuc_vu;
         if (!capBac && !chucVu) {
@@ -194,7 +225,7 @@ export default function AdminAccountsPage() {
       title: 'Thao tác',
       key: 'actions',
       align: 'center' as const,
-      render: (_: any, record: any) => {
+      render: (_: unknown, record: AccountRow) => {
         // Admin cannot modify SUPER_ADMIN or other ADMIN accounts
         const canModify = record.role !== ROLES.SUPER_ADMIN && record.role !== ROLES.ADMIN;
 
@@ -273,10 +304,29 @@ export default function AdminAccountsPage() {
           </Link>
         </div>
 
-        {/* Table */}
+        {/* Filters */}
         <Card>
+          <div className="flex gap-3 flex-wrap mb-4">
+            <Input
+              placeholder="Tìm username hoặc họ tên..."
+              prefix={<SearchOutlined />}
+              value={searchText}
+              onChange={e => setSearchText(e.target.value)}
+              allowClear
+              style={{ width: 320 }}
+            />
+            <Select
+              placeholder="Lọc theo vai trò"
+              allowClear
+              value={roleFilter}
+              onChange={val => setRoleFilter(val)}
+              style={{ width: 180 }}
+              options={roleSelectOptions([ROLES.ADMIN, ROLES.MANAGER, ROLES.USER])}
+            />
+          </div>
+
           <Table
-            dataSource={accounts}
+            dataSource={filteredAccounts}
             columns={columns}
             rowKey="id"
             loading={loading}

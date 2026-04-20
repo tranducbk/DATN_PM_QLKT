@@ -11,6 +11,7 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import { ScientificAchievementHistoryModal } from './ScientificAchievementHistoryModal';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
 import { PROPOSAL_STATUS, PROPOSAL_STATUS_LABELS, PROPOSAL_STATUS_COLORS } from '@/constants/proposal.constants';
+import type { AnnualProfile } from '@/lib/types/personnelList';
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -74,7 +75,7 @@ export function Step3SetTitlesNCKH({
   const [scientificAchievementHistoryModalVisible, setScientificAchievementHistoryModalVisible] =
     useState(false);
   const [selectedPersonnel, setSelectedPersonnel] = useState<Personnel | null>(null);
-  const [annualProfile, setAnnualProfile] = useState<any>(null);
+  const [annualProfile, setAnnualProfile] = useState<AnnualProfile | null>(null);
   const [scientificAchievements, setScientificAchievements] = useState<any[]>([]);
   const [loadingModal, setLoadingModal] = useState(false);
 

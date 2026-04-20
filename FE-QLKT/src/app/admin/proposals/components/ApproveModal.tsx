@@ -73,9 +73,15 @@ const FIELD_BY_LOAI: Record<string, { soQuyetDinh: string; pdf: string }> = {
 interface DecisionFormData {
   so_quyet_dinh: string;
   nam: number;
-  ngay_ky: any;
+  ngay_ky: unknown;
   nguoi_ky: string;
   ghi_chu?: string;
+}
+
+interface DecisionLookupRow {
+  so_quyet_dinh: string;
+  nguoi_ky?: string;
+  ngay_ky?: string;
 }
 
 export function ApproveModal({ visible, proposal, onClose, onSuccess }: ApproveModalProps) {
@@ -86,7 +92,7 @@ export function ApproveModal({ visible, proposal, onClose, onSuccess }: ApproveM
   // Decision autocomplete
   const [decisionOptions, setDecisionOptions] = useState<any[]>([]);
   const [searchingDecision, setSearchingDecision] = useState(false);
-  const [selectedDecision, setSelectedDecision] = useState<any>(null);
+  const [selectedDecision, setSelectedDecision] = useState<DecisionLookupRow | null>(null);
 
   // File upload
   const [fileList, setFileList] = useState<any[]>([]);

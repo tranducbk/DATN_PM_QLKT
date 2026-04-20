@@ -73,6 +73,18 @@ interface TitleData {
   chuc_vu?: string;
 }
 
+interface AnnualProfile {
+  tong_cstdcs: number;
+  tong_cstdcs_json?: CSTDCSItem[];
+  cstdcs_lien_tuc?: number;
+  tong_nckh: number;
+  tong_nckh_json?: NCKHItem[];
+  du_dieu_kien_bkbqp?: boolean;
+  du_dieu_kien_cstdtq?: boolean;
+  du_dieu_kien_bkttcp?: boolean;
+  goi_y?: string | null;
+}
+
 interface CSTDCSItem {
   nam: number;
   danh_hieu: string;
@@ -115,7 +127,7 @@ export function Step3SetTitlesCaNhanHangNam({
   const [historyModalVisible, setHistoryModalVisible] = useState(false);
   const [selectedPersonnel, setSelectedPersonnel] = useState<Personnel | null>(null);
   const [loadingModal, setLoadingModal] = useState(false);
-  const [selectedAnnualProfile, setSelectedAnnualProfile] = useState<any>(null);
+  const [selectedAnnualProfile, setSelectedAnnualProfile] = useState<AnnualProfile | null>(null);
   const [annualProfiles, setAnnualProfiles] = useState<Record<string, any>>({});
   const [loadingProfiles, setLoadingProfiles] = useState(false);
 

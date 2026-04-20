@@ -7,9 +7,20 @@ import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/apiClient';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
 
+export interface PositionRow {
+  id: string;
+  ten_chuc_vu?: string;
+  he_so_chuc_vu?: number | string | null;
+  is_manager?: boolean;
+  don_vi_id?: string | null;
+  co_quan_don_vi_id?: string | null;
+  CoQuanDonVi?: { id?: string; ten_don_vi?: string } | null | undefined;
+  DonViTrucThuoc?: { ten_don_vi?: string; CoQuanDonVi?: { id?: string; ten_don_vi?: string } | null | undefined } | null | undefined;
+}
+
 interface PositionsTableProps {
-  positions: any[];
-  onEdit?: (position: any) => void;
+  positions: PositionRow[];
+  onEdit?: (position: PositionRow) => void;
   onRefresh?: () => void;
 }
 
@@ -32,7 +43,7 @@ export function PositionsTable({ positions, onEdit, onRefresh }: PositionsTableP
     }
   };
 
-  const columns: ColumnsType<any> = [
+  const columns: ColumnsType<PositionRow> = [
     {
       title: 'Tên Chức vụ',
       dataIndex: 'ten_chuc_vu',

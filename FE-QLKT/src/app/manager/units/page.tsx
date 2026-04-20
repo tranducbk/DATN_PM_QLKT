@@ -417,7 +417,7 @@ export default function ManagerUnitsPage() {
                     key: 'stt',
                     width: 60,
                     align: 'center',
-                    render: (_value, _record, index) => index + 1,
+                    render: ( value, record, index) => index + 1,
                   },
                   {
                     title: 'Năm',
@@ -431,7 +431,7 @@ export default function ManagerUnitsPage() {
                     key: 'ten_don_vi',
                     width: 200,
                     align: 'center',
-                    render: (_value, record) => {
+                    render: (value, record) => {
                       const unitName =
                         record?.DonViTrucThuoc?.ten_don_vi ?? record?.CoQuanDonVi?.ten_don_vi ?? '';
                       const parentName = record?.DonViTrucThuoc?.CoQuanDonVi?.ten_don_vi;
@@ -465,7 +465,7 @@ export default function ManagerUnitsPage() {
                     key: 'ghi_chu',
                     width: 200,
                     align: 'center',
-                    render: (_value, record) => {
+                    render: (value, record) => {
                       if (record.ghi_chu) {
                         return (
                           <Text type="secondary" style={COLUMN_STYLES.noteText}>

@@ -90,7 +90,7 @@ export default function AdminProposalsPage() {
   const [decisionModalVisible, setDecisionModalVisible] = useState(false);
   const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
-  const [selectedDecision, setSelectedDecision] = useState<any>(null);
+  const [selectedDecision, setSelectedDecision] = useState<unknown>(null);
   const [extraordinaryRewardModalVisible, setExtraordinaryRewardModalVisible] = useState(false);
 
   useEffect(() => {
@@ -245,7 +245,7 @@ export default function AdminProposalsPage() {
       title: 'Thời gian cập nhật',
       key: 'ngay_duyet',
       width: 160,
-      render: (_value, record: Proposal) => {
+      render: (value, record: Proposal) => {
         const dateValue = record.ngay_duyet || record.createdAt;
         if (!dateValue) return '-';
         return formatDateTime(dateValue);
