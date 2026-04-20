@@ -5,9 +5,9 @@ import { NotFoundError, ForbiddenError, ValidationError } from '../../middleware
 import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
 
 /**
- * Lấy thông tin user với đơn vị (helper method)
- * @param {number} userId - ID của tài khoản
- * @returns {Promise<Object>} - User object với QuanNhan
+ * Fetches user with their associated QuanNhan and unit relations.
+ * @param userId - Account ID
+ * @returns User record with QuanNhan included, or null if not found
  */
 async function getUserWithUnit(userId: string) {
   return await prisma.taiKhoan.findUnique({
@@ -28,12 +28,12 @@ async function getUserWithUnit(userId: string) {
 }
 
 /**
- * Lấy danh sách đề xuất
- * @param {number} userId - ID của tài khoản
- * @param {string} userRole - Role của user (ADMIN, MANAGER)
- * @param {number} page - Trang hiện tại
- * @param {number} limit - Số bản ghi mỗi trang
- * @returns {Promise<Object>} - Danh sách đề xuất
+ * Returns paginated proposals filtered by role — ADMIN sees all, MANAGER sees own unit only.
+ * @param userId - Caller's account ID
+ * @param userRole - Caller's role (ADMIN or MANAGER)
+ * @param page - Page number (1-based)
+ * @param limit - Records per page
+ * @returns Paginated proposal list with total count
  */
 async function getProposals(
   userId: string,
@@ -130,11 +130,11 @@ async function getProposals(
 }
 
 /**
- * Lấy chi tiết 1 đề xuất
- * @param {number} proposalId - ID của đề xuất
- * @param {number} userId - ID của tài khoản
- * @param {string} userRole - Role của user
- * @returns {Promise<Object>} - Chi tiết đề xuất
+ * Returns full detail of a single proposal; enforces unit-based visibility for MANAGER.
+ * @param proposalId - Proposal ID
+ * @param userId - Caller's account ID
+ * @param userRole - Caller's role
+ * @returns Proposal with all related data included
  */
 async function getProposalById(proposalId: string, userId: string, userRole: string) {
   try {
@@ -602,11 +602,11 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
 }
 
 /**
- * Xóa đề xuất (chỉ Manager có thể xóa đề xuất của chính mình, và chỉ khi status = PENDING)
- * @param {number} proposalId - ID của đề xuất
- * @param {number} userId - ID của tài khoản
- * @param {string} userRole - Role của user
- * @returns {Promise<Object>} - Kết quả xóa
+ * Deletes a proposal — only the owning MANAGER can delete, and only when status is PENDING.
+ * @param proposalId - Proposal ID
+ * @param userId - Caller's account ID
+ * @param userRole - Caller's role
+ * @returns Deleted proposal record
  */
 async function deleteProposal(proposalId, userId, userRole) {
   try {
