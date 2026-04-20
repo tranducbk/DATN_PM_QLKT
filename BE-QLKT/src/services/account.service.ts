@@ -219,6 +219,7 @@ class AccountService {
 
     const existingAccount = await prisma.taiKhoan.findUnique({
       where: { username },
+      select: { id: true },
     });
 
     if (existingAccount) {
@@ -230,18 +231,14 @@ class AccountService {
     let heSoChucVu = 0;
 
     if (personnel_id) {
-      const personnel = await prisma.quanNhan.findUnique({
-        where: { id: personnel_id },
-      });
+      const [personnel, existingPersonnelAccount] = await Promise.all([
+        prisma.quanNhan.findUnique({ where: { id: personnel_id }, select: { id: true } }),
+        prisma.taiKhoan.findUnique({ where: { quan_nhan_id: personnel_id }, select: { id: true } }),
+      ]);
 
       if (!personnel) {
         throw new NotFoundError('Quân nhân');
       }
-
-      const existingPersonnelAccount = await prisma.taiKhoan.findUnique({
-        where: { quan_nhan_id: personnel_id },
-      });
-
       if (existingPersonnelAccount) {
         throw new ValidationError('Quân nhân này đã có tài khoản');
       }
@@ -271,19 +268,22 @@ class AccountService {
         throw new ValidationError('Vui lòng chọn chức vụ');
       }
 
-      if (co_quan_don_vi_id) {
-        const coQuanDonVi = await prisma.coQuanDonVi.findUnique({
-          where: { id: co_quan_don_vi_id },
-        });
-        if (!coQuanDonVi) {
-          throw new NotFoundError('Cơ quan đơn vị');
-        }
-      }
+      const [coQuanDonVi, donViTrucThuoc] = await Promise.all([
+        co_quan_don_vi_id
+          ? prisma.coQuanDonVi.findUnique({ where: { id: co_quan_don_vi_id }, select: { id: true } })
+          : null,
+        don_vi_truc_thuoc_id
+          ? prisma.donViTrucThuoc.findUnique({
+              where: { id: don_vi_truc_thuoc_id },
+              select: { id: true, co_quan_don_vi_id: true },
+            })
+          : null,
+      ]);
 
+      if (co_quan_don_vi_id && !coQuanDonVi) {
+        throw new NotFoundError('Cơ quan đơn vị');
+      }
       if (don_vi_truc_thuoc_id) {
-        const donViTrucThuoc = await prisma.donViTrucThuoc.findUnique({
-          where: { id: don_vi_truc_thuoc_id },
-        });
         if (!donViTrucThuoc) {
           throw new NotFoundError('Đơn vị trực thuộc');
         }
@@ -399,6 +399,7 @@ class AccountService {
 
     const account = await prisma.taiKhoan.findUnique({
       where: { id },
+      select: { id: true },
     });
 
     if (!account) {
@@ -439,6 +440,7 @@ class AccountService {
   async resetPassword(accountId: string): Promise<{ message: string }> {
     const account = await prisma.taiKhoan.findUnique({
       where: { id: accountId },
+      select: { id: true },
     });
 
     if (!account) {

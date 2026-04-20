@@ -916,7 +916,8 @@ export default function ManagerPersonnelDetailPage() {
               <Link href="/manager/personnel">
                 <Button icon={<ArrowLeftOutlined />}>Quay lại</Button>
               </Link>
-              {user?.quan_nhan_id !== personnelId && (
+              {(user?.quan_nhan_id === personnelId ||
+                personnel.TaiKhoan?.role === ROLES.USER) && (
                 <Link href={`/manager/personnel/${personnelId}/edit`}>
                   <Button type="primary" icon={<EditOutlined />}>
                     Chỉnh sửa

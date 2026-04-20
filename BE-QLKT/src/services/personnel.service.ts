@@ -22,6 +22,12 @@ import { sanitizeRowData } from '../helpers/excelHelper';
 
 type DateInput = Date | null;
 
+const personnelInclude = {
+  CoQuanDonVi: true,
+  DonViTrucThuoc: { include: { CoQuanDonVi: true } },
+  ChucVu: true,
+} as const;
+
 interface UpdatePersonnelInput {
   unit_id?: string;
   position_id?: string;
@@ -111,18 +117,8 @@ class PersonnelService {
         where: whereCondition,
         skip,
         take: limitNum,
-        include: {
-          CoQuanDonVi: true,
-          DonViTrucThuoc: {
-            include: {
-              CoQuanDonVi: true,
-            },
-          },
-          ChucVu: true,
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
+        include: personnelInclude,
+        orderBy: { createdAt: 'desc' },
       }),
       prisma.quanNhan.count({ where: whereCondition }),
     ]);
@@ -206,6 +202,7 @@ class PersonnelService {
     // Ensure CCCD is unique.
     const existingPersonnel = await prisma.quanNhan.findUnique({
       where: { cccd },
+      select: { id: true },
     });
 
     if (existingPersonnel) {
@@ -225,6 +222,7 @@ class PersonnelService {
     // Ensure position exists.
     const position = await prisma.chucVu.findUnique({
       where: { id: position_id },
+      select: { id: true },
     });
 
     if (!position) {
@@ -236,6 +234,7 @@ class PersonnelService {
     // Ensure account username is unique.
     const existingAccount = await prisma.taiKhoan.findUnique({
       where: { username },
+      select: { id: true },
     });
 
     if (existingAccount) {
@@ -268,15 +267,7 @@ class PersonnelService {
     const result = await prisma.$transaction(async tx => {
       const newPersonnel = await tx.quanNhan.create({
         data: personnelData,
-        include: {
-          CoQuanDonVi: true,
-          DonViTrucThuoc: {
-            include: {
-              CoQuanDonVi: true,
-            },
-          },
-          ChucVu: true,
-        },
+        include: personnelInclude,
       });
 
       // Load position coefficient for initial history row.
@@ -375,10 +366,18 @@ class PersonnelService {
     // Ensure personnel exists.
     const personnel = await prisma.quanNhan.findUnique({
       where: { id: String(id) },
+      include: { TaiKhoan: { select: { role: true } } },
     });
 
     if (!personnel) {
       throw new NotFoundError('Quân nhân');
+    }
+
+    if (userRole === ROLES.MANAGER && userQuanNhanId !== id) {
+      const targetRole = personnel.TaiKhoan?.role;
+      if (targetRole === ROLES.MANAGER) {
+        throw new ForbiddenError('Bạn không có quyền sửa thông tin của quản lý khác');
+      }
     }
 
     // USER can only edit their own profile.
@@ -447,6 +446,7 @@ class PersonnelService {
     if (cccdValue && cccdValue !== personnel.cccd) {
       const existingPersonnel = await prisma.quanNhan.findUnique({
         where: { cccd: cccdValue },
+        select: { id: true },
       });
 
       if (existingPersonnel) {
@@ -458,8 +458,8 @@ class PersonnelService {
     const currentUnitId = personnel.co_quan_don_vi_id || personnel.don_vi_truc_thuoc_id;
     if (unitId && unitId !== currentUnitId) {
       const [coQuanDonVi, donViTrucThuoc] = await Promise.all([
-        prisma.coQuanDonVi.findUnique({ where: { id: unitId } }),
-        prisma.donViTrucThuoc.findUnique({ where: { id: unitId } }),
+        prisma.coQuanDonVi.findUnique({ where: { id: unitId }, select: { id: true } }),
+        prisma.donViTrucThuoc.findUnique({ where: { id: unitId }, select: { id: true } }),
       ]);
 
       if (!coQuanDonVi && !donViTrucThuoc) {
@@ -471,6 +471,7 @@ class PersonnelService {
     if (positionId && positionId !== personnel.chuc_vu_id) {
       const position = await prisma.chucVu.findUnique({
         where: { id: positionId },
+        select: { id: true },
       });
 
       if (!position) {
@@ -557,15 +558,7 @@ class PersonnelService {
       const txUpdatedPersonnel = await tx.quanNhan.update({
         where: { id: String(id) },
         data: updateData,
-        include: {
-          CoQuanDonVi: true,
-          DonViTrucThuoc: {
-            include: {
-              CoQuanDonVi: true,
-            },
-          },
-          ChucVu: true,
-        },
+        include: personnelInclude,
       });
 
       // If position changed, close old history and create new history row.
@@ -875,15 +868,7 @@ class PersonnelService {
    */
   async exportPersonnel() {
     const personnel = await prisma.quanNhan.findMany({
-      include: {
-        CoQuanDonVi: true,
-        DonViTrucThuoc: {
-          include: {
-            CoQuanDonVi: true,
-          },
-        },
-        ChucVu: true,
-      },
+      include: personnelInclude,
       orderBy: [{ co_quan_don_vi_id: 'asc' }, { don_vi_truc_thuoc_id: 'asc' }, { ho_ten: 'asc' }],
     });
 
@@ -910,17 +895,21 @@ class PersonnelService {
     worksheet.getColumn(1).numFmt = '@';
 
     personnel.forEach(p => {
-      worksheet.addRow(sanitizeRowData({
-        cccd: p.cccd,
-        ho_ten: p.ho_ten,
-        ngay_sinh: p.ngay_sinh ? new Date(p.ngay_sinh).toISOString().slice(0, 10) : '',
-        ngay_nhap_ngu: p.ngay_nhap_ngu ? new Date(p.ngay_nhap_ngu).toISOString().slice(0, 10) : '',
-        ma_don_vi: (p.DonViTrucThuoc || p.CoQuanDonVi)?.ma_don_vi || '',
-        ten_don_vi: (p.DonViTrucThuoc || p.CoQuanDonVi)?.ten_don_vi || '',
-        ten_chuc_vu: p.ChucVu?.ten_chuc_vu || '',
-        is_manager: p.ChucVu?.is_manager ? 'TRUE' : 'FALSE',
-        he_so_chuc_vu: p.ChucVu?.he_so_chuc_vu || '',
-      }));
+      worksheet.addRow(
+        sanitizeRowData({
+          cccd: p.cccd,
+          ho_ten: p.ho_ten,
+          ngay_sinh: p.ngay_sinh ? new Date(p.ngay_sinh).toISOString().slice(0, 10) : '',
+          ngay_nhap_ngu: p.ngay_nhap_ngu
+            ? new Date(p.ngay_nhap_ngu).toISOString().slice(0, 10)
+            : '',
+          ma_don_vi: (p.DonViTrucThuoc || p.CoQuanDonVi)?.ma_don_vi || '',
+          ten_don_vi: (p.DonViTrucThuoc || p.CoQuanDonVi)?.ten_don_vi || '',
+          ten_chuc_vu: p.ChucVu?.ten_chuc_vu || '',
+          is_manager: p.ChucVu?.is_manager ? 'TRUE' : 'FALSE',
+          he_so_chuc_vu: p.ChucVu?.he_so_chuc_vu || '',
+        })
+      );
     });
 
     const buffer = await workbook.xlsx.writeBuffer();
@@ -1063,15 +1052,9 @@ class PersonnelService {
       prisma.quanNhan.findMany({ where: { cccd: { in: cccdList } } }),
     ]);
 
-    const coQuanDonViByCode = new Map(
-      coQuanDonViRows.map(u => [u.ma_don_vi, u] as const)
-    );
-    const donViTrucThuocByCode = new Map(
-      donViTrucThuocRows.map(u => [u.ma_don_vi, u] as const)
-    );
-    const existingPersonnelByCccd = new Map(
-      existingPersonnelRows.map(p => [p.cccd, p] as const)
-    );
+    const coQuanDonViByCode = new Map(coQuanDonViRows.map(u => [u.ma_don_vi, u] as const));
+    const donViTrucThuocByCode = new Map(donViTrucThuocRows.map(u => [u.ma_don_vi, u] as const));
+    const existingPersonnelByCccd = new Map(existingPersonnelRows.map(p => [p.cccd, p] as const));
 
     // Collect all resolved unit IDs so positions can be batch-fetched per unit.
     const allUnitIds = new Set<string>();
@@ -1105,7 +1088,8 @@ class PersonnelService {
       chucVuRows.flatMap(cv => {
         const keys: [string, typeof cv][] = [];
         if (cv.co_quan_don_vi_id) keys.push([`${cv.co_quan_don_vi_id}_${cv.ten_chuc_vu}`, cv]);
-        if (cv.don_vi_truc_thuoc_id) keys.push([`${cv.don_vi_truc_thuoc_id}_${cv.ten_chuc_vu}`, cv]);
+        if (cv.don_vi_truc_thuoc_id)
+          keys.push([`${cv.don_vi_truc_thuoc_id}_${cv.ten_chuc_vu}`, cv]);
         return keys;
       })
     );

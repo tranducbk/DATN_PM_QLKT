@@ -335,8 +335,7 @@ class AwardBulkService {
     ghiChu,
     adminId,
   }: BulkCreateAwardsParams) {
-    try {
-      const errors: string[] = [];
+    const errors: string[] = [];
       const affectedPersonnelIds = new Set<string>();
       let importedCount = 0;
 
@@ -702,22 +701,6 @@ class AwardBulkService {
           return info && info.gioi_tinh === GENDER.FEMALE ? femaleRequiredMonths : baseRequiredMonths;
         };
 
-        const checkEligibleForRank = (personnelId: string, rank: string) => {
-          const months0_9_1_0 = getTotalMonthsByGroup(personnelId, '0.9-1.0');
-          const months0_8 = getTotalMonthsByGroup(personnelId, '0.8');
-          const months0_7 = getTotalMonthsByGroup(personnelId, '0.7');
-          const requiredMonths = getRequiredMonths(personnelId);
-
-          if (rank === 'HANG_NHAT') {
-            return months0_9_1_0 >= requiredMonths;
-          } else if (rank === 'HANG_NHI') {
-            return months0_8 + months0_9_1_0 >= requiredMonths;
-          } else if (rank === 'HANG_BA') {
-            return months0_7 + months0_8 + months0_9_1_0 >= requiredMonths;
-          }
-          return false;
-        };
-
         const eligibleTitleData: TitleDataItem[] = [];
         for (const item of titleData) {
           if (!item.danh_hieu || !item.personnel_id) {
@@ -730,33 +713,30 @@ class AwardBulkService {
           const gioiTinh = info && info.gioi_tinh;
           const requiredMonths = getRequiredMonths(item.personnel_id);
 
+          // Compute once per person — used in both eligibility check and error message
+          const months0_9_1_0 = getTotalMonthsByGroup(item.personnel_id, '0.9-1.0');
+          const months0_8 = getTotalMonthsByGroup(item.personnel_id, '0.8');
+          const months0_7 = getTotalMonthsByGroup(item.personnel_id, '0.7');
+
           let eligible = false;
           let rankName = '';
+          let totalMonths = 0;
 
           if (item.danh_hieu === DANH_HIEU_HCBVTQ.HANG_NHAT) {
-            eligible = checkEligibleForRank(item.personnel_id, 'HANG_NHAT');
+            totalMonths = months0_9_1_0;
+            eligible = totalMonths >= requiredMonths;
             rankName = 'Hạng Nhất';
           } else if (item.danh_hieu === DANH_HIEU_HCBVTQ.HANG_NHI) {
-            eligible = checkEligibleForRank(item.personnel_id, 'HANG_NHI');
+            totalMonths = months0_8 + months0_9_1_0;
+            eligible = totalMonths >= requiredMonths;
             rankName = 'Hạng Nhì';
           } else if (item.danh_hieu === DANH_HIEU_HCBVTQ.HANG_BA) {
-            eligible = checkEligibleForRank(item.personnel_id, 'HANG_BA');
+            totalMonths = months0_7 + months0_8 + months0_9_1_0;
+            eligible = totalMonths >= requiredMonths;
             rankName = 'Hạng Ba';
           }
 
           if (!eligible) {
-            const months0_9_1_0 = getTotalMonthsByGroup(item.personnel_id, '0.9-1.0');
-            const months0_8 = getTotalMonthsByGroup(item.personnel_id, '0.8');
-            const months0_7 = getTotalMonthsByGroup(item.personnel_id, '0.7');
-
-            let totalMonths = 0;
-            if (item.danh_hieu === DANH_HIEU_HCBVTQ.HANG_NHAT) {
-              totalMonths = months0_9_1_0;
-            } else if (item.danh_hieu === DANH_HIEU_HCBVTQ.HANG_NHI) {
-              totalMonths = months0_8 + months0_9_1_0;
-            } else if (item.danh_hieu === DANH_HIEU_HCBVTQ.HANG_BA) {
-              totalMonths = months0_7 + months0_8 + months0_9_1_0;
-            }
 
             const totalYears = Math.floor(totalMonths / 12);
             const remainingMonths = totalMonths % 12;
@@ -859,23 +839,20 @@ class AwardBulkService {
         });
       }
 
-      return {
-        message:
-          importedCount > 0
-            ? `Đã thêm thành công ${importedCount} ${
-                type === PROPOSAL_TYPES.DON_VI_HANG_NAM ? 'đơn vị' : 'quân nhân'
-              }${errors.length > 0 ? `, ${errors.length} lỗi` : ''}`
-            : 'Thêm khen thưởng thành công!',
-        data: {
-          importedCount,
-          errorCount: errors.length,
-          errors: errors.length > 0 ? errors : undefined,
-          affectedPersonnelIds: Array.from(affectedPersonnelIds),
-        },
-      };
-    } catch (error) {
-      throw error;
-    }
+    return {
+      message:
+        importedCount > 0
+          ? `Đã thêm thành công ${importedCount} ${
+              type === PROPOSAL_TYPES.DON_VI_HANG_NAM ? 'đơn vị' : 'quân nhân'
+            }${errors.length > 0 ? `, ${errors.length} lỗi` : ''}`
+          : 'Thêm khen thưởng thành công!',
+      data: {
+        importedCount,
+        errorCount: errors.length,
+        errors: errors.length > 0 ? errors : undefined,
+        affectedPersonnelIds: Array.from(affectedPersonnelIds),
+      },
+    };
   }
 
   calculateThoiGian(quanNhan: QuanNhan): Record<string, any> | null {

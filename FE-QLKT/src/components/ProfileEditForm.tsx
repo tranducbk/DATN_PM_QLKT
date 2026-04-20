@@ -34,7 +34,7 @@ import { apiClient } from '@/lib/apiClient';
 import { VietnamAddressCascader } from './VietnamAddressCascader';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
 import { useTheme } from '@/components/ThemeProvider';
-import { formatDate } from '@/lib/utils';
+import { formatDate, capitalizeWords } from '@/lib/utils';
 import { getAntdThemeConfig } from '@/lib/antdTheme';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { ROLES, getRoleInfo } from '@/constants/roles.constants';
@@ -616,6 +616,7 @@ export function ProfileEditForm({
                   placeholder="Nhập họ và tên"
                   size="large"
                   className="rounded-lg"
+                  onChange={e => form.setFieldValue('ho_ten', capitalizeWords(e.target.value))}
                 />
               </Form.Item>
 

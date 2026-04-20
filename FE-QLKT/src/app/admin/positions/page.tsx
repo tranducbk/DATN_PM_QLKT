@@ -276,7 +276,6 @@ export default function PositionsPage() {
         <Modal
           title={
             <span style={{ fontSize: '18px', fontWeight: 600 }}>
-              <IdcardOutlined style={{ marginRight: '8px', color: '#dc2626' }} />
               {editingPosition ? 'Sửa Chức vụ' : 'Thêm Chức vụ mới'}
             </span>
           }

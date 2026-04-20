@@ -2,74 +2,47 @@ import { prisma } from '../models';
 import type { Prisma } from '../generated/prisma';
 import { NotFoundError, AppError, ValidationError } from '../middlewares/errorHandler';
 
+const positionInclude = {
+  CoQuanDonVi: true,
+  DonViTrucThuoc: { include: { CoQuanDonVi: true } },
+} as const;
+
 class PositionService {
   async getPositions(unitId?: string, includeChildren: boolean = false) {
+    const unitIds: string[] = unitId ? [unitId] : [];
+
     if (includeChildren && unitId) {
       const [coQuanDonVi, donViTrucThuoc] = await Promise.all([
-        prisma.coQuanDonVi.findUnique({ where: { id: unitId } }),
-        prisma.donViTrucThuoc.findUnique({ where: { id: unitId } }),
+        prisma.coQuanDonVi.findUnique({ where: { id: unitId }, select: { id: true } }),
+        prisma.donViTrucThuoc.findUnique({ where: { id: unitId }, select: { id: true } }),
       ]);
 
       if (!coQuanDonVi && !donViTrucThuoc) {
         throw new NotFoundError('Đơn vị');
       }
 
-      const unitIds: string[] = [unitId];
-
       if (coQuanDonVi) {
         const childUnits = await prisma.donViTrucThuoc.findMany({
           where: { co_quan_don_vi_id: unitId },
           select: { id: true },
         });
-        childUnits.forEach(child => unitIds.push(child.id));
+        unitIds.push(...childUnits.map(c => c.id));
       }
-
-      const positions = await prisma.chucVu.findMany({
-        where: {
-          OR: [{ co_quan_don_vi_id: { in: unitIds } }, { don_vi_truc_thuoc_id: { in: unitIds } }],
-        },
-        include: {
-          CoQuanDonVi: true,
-          DonViTrucThuoc: {
-            include: {
-              CoQuanDonVi: true,
-            },
-          },
-        },
-        orderBy: [
-          { CoQuanDonVi: { ma_don_vi: 'asc' } },
-          { DonViTrucThuoc: { ma_don_vi: 'asc' } },
-          { id: 'asc' },
-        ],
-      });
-
-      return positions;
-    } else {
-      const whereClause = unitId
-        ? {
-            OR: [{ co_quan_don_vi_id: unitId }, { don_vi_truc_thuoc_id: unitId }],
-          }
-        : {};
-
-      const positions = await prisma.chucVu.findMany({
-        where: whereClause,
-        include: {
-          CoQuanDonVi: true,
-          DonViTrucThuoc: {
-            include: {
-              CoQuanDonVi: true,
-            },
-          },
-        },
-        orderBy: [
-          { CoQuanDonVi: { ma_don_vi: 'asc' } },
-          { DonViTrucThuoc: { ma_don_vi: 'asc' } },
-          { id: 'asc' },
-        ],
-      });
-
-      return positions;
     }
+
+    const where = unitIds.length
+      ? { OR: [{ co_quan_don_vi_id: { in: unitIds } }, { don_vi_truc_thuoc_id: { in: unitIds } }] }
+      : {};
+
+    return prisma.chucVu.findMany({
+      where,
+      include: positionInclude,
+      orderBy: [
+        { CoQuanDonVi: { ma_don_vi: 'asc' } },
+        { DonViTrucThuoc: { ma_don_vi: 'asc' } },
+        { id: 'asc' },
+      ],
+    });
   }
 
   async createPosition(data: {
@@ -80,11 +53,9 @@ class PositionService {
   }) {
     const { unit_id, ten_chuc_vu, is_manager, he_so_chuc_vu } = data;
 
-    const unitIdString = typeof unit_id === 'string' ? unit_id : String(unit_id);
-
     const [coQuanDonVi, donViTrucThuoc] = await Promise.all([
-      prisma.coQuanDonVi.findUnique({ where: { id: unitIdString } }),
-      prisma.donViTrucThuoc.findUnique({ where: { id: unitIdString } }),
+      prisma.coQuanDonVi.findUnique({ where: { id: unit_id }, select: { id: true } }),
+      prisma.donViTrucThuoc.findUnique({ where: { id: unit_id }, select: { id: true } }),
     ]);
 
     if (!coQuanDonVi && !donViTrucThuoc) {
@@ -94,15 +65,10 @@ class PositionService {
     const isCoQuanDonVi = !!coQuanDonVi;
 
     const existingPosition = await prisma.chucVu.findFirst({
-      where: isCoQuanDonVi
-        ? {
-            co_quan_don_vi_id: unitIdString,
-            ten_chuc_vu,
-          }
-        : {
-            don_vi_truc_thuoc_id: unitIdString,
-            ten_chuc_vu,
-          },
+      where: {
+        ten_chuc_vu,
+        ...(isCoQuanDonVi ? { co_quan_don_vi_id: unit_id } : { don_vi_truc_thuoc_id: unit_id }),
+      },
     });
 
     if (existingPosition) {
@@ -114,23 +80,11 @@ class PositionService {
       is_manager: isCoQuanDonVi ? is_manager || false : false,
       he_so_chuc_vu: he_so_chuc_vu ?? 0,
       ...(isCoQuanDonVi
-        ? { co_quan_don_vi_id: unitIdString, don_vi_truc_thuoc_id: null }
-        : { co_quan_don_vi_id: null, don_vi_truc_thuoc_id: unitIdString }),
+        ? { co_quan_don_vi_id: unit_id, don_vi_truc_thuoc_id: null }
+        : { co_quan_don_vi_id: null, don_vi_truc_thuoc_id: unit_id }),
     };
 
-    const newPosition = await prisma.chucVu.create({
-      data: createData,
-      include: {
-        CoQuanDonVi: true,
-        DonViTrucThuoc: {
-          include: {
-            CoQuanDonVi: true,
-          },
-        },
-      },
-    });
-
-    return newPosition;
+    return prisma.chucVu.create({ data: createData, include: positionInclude });
   }
 
   async updatePosition(
@@ -165,46 +119,28 @@ class PositionService {
       throw new ValidationError('Không có thay đổi nào để cập nhật');
     }
 
-    const updatedPosition = await prisma.chucVu.update({
+    return prisma.chucVu.update({
       where: { id },
-      data: {
-        ten_chuc_vu: newTenChucVu,
-        is_manager: newIsManager,
-        he_so_chuc_vu: newHeSoChucVu,
-      },
-      include: {
-        CoQuanDonVi: true,
-        DonViTrucThuoc: {
-          include: {
-            CoQuanDonVi: true,
-          },
-        },
-      },
+      data: { ten_chuc_vu: newTenChucVu, is_manager: newIsManager, he_so_chuc_vu: newHeSoChucVu },
+      include: positionInclude,
     });
-
-    return updatedPosition;
   }
 
   async deletePosition(id: string) {
-    const position = await prisma.chucVu.findUnique({
-      where: { id },
-      include: {
-        CoQuanDonVi: { select: { ten_don_vi: true } },
-        DonViTrucThuoc: {
-          include: {
-            CoQuanDonVi: { select: { ten_don_vi: true } },
-          },
+    const [position, personnelCount] = await Promise.all([
+      prisma.chucVu.findUnique({
+        where: { id },
+        include: {
+          CoQuanDonVi: { select: { ten_don_vi: true } },
+          DonViTrucThuoc: { include: { CoQuanDonVi: { select: { ten_don_vi: true } } } },
         },
-      },
-    });
+      }),
+      prisma.quanNhan.count({ where: { chuc_vu_id: id } }),
+    ]);
 
     if (!position) {
       throw new NotFoundError('Chức vụ');
     }
-
-    const personnelCount = await prisma.quanNhan.count({
-      where: { chuc_vu_id: id },
-    });
 
     if (personnelCount > 0) {
       throw new AppError(

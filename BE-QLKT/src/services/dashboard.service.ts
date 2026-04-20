@@ -1,6 +1,5 @@
 import type { Prisma } from '../generated/prisma';
 import { prisma } from '../models';
-import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 
 function getLastNDays(n: number): string[] {
@@ -19,34 +18,31 @@ function getLastNMonths(n: number): string[] {
   });
 }
 
-function buildDateStats(dates: string[], countMap: Record<string, number>): { date: string; count: number }[] {
-  return dates.map(date => ({ date, count: countMap[date] || 0 }));
+function buildStats(keys: string[], countMap: Record<string, number>, label: string) {
+  return keys.map(key => ({ [label]: key, count: countMap[key] || 0 }));
 }
 
-function buildMonthStats(months: string[], countMap: Record<string, number>): { month: string; count: number }[] {
-  return months.map(month => ({ month, count: countMap[month] || 0 }));
+function countRecords<T>(records: T[], toKey: (record: T) => string | null | undefined): Record<string, number> {
+  const countMap: Record<string, number> = {};
+  for (const record of records) {
+    const key = toKey(record);
+    if (key) countMap[key] = (countMap[key] || 0) + 1;
+  }
+  return countMap;
 }
 
 function countByDate(records: { created_at?: Date; createdAt?: Date }[]): Record<string, number> {
-  const countMap: Record<string, number> = {};
-  records.forEach(record => {
-    const dateValue = record.created_at || record.createdAt;
-    if (dateValue) {
-      const key = new Date(dateValue).toISOString().split('T')[0];
-      countMap[key] = (countMap[key] || 0) + 1;
-    }
+  return countRecords(records, r => {
+    const d = r.created_at || r.createdAt;
+    return d ? new Date(d).toISOString().split('T')[0] : null;
   });
-  return countMap;
 }
 
 function countByMonth(records: { createdAt: Date }[]): Record<string, number> {
-  const countMap: Record<string, number> = {};
-  records.forEach(record => {
-    const date = new Date(record.createdAt);
-    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-    countMap[key] = (countMap[key] || 0) + 1;
+  return countRecords(records, r => {
+    const d = new Date(r.createdAt);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   });
-  return countMap;
 }
 
 function daysAgo(n: number): Date {
@@ -72,58 +68,45 @@ async function groupQuanNhanByCapBac(
   return prisma.quanNhan.groupBy({ by: ['cap_bac'], where, _count: { id: true } });
 }
 
+type ManagerPersonnel = { don_vi_truc_thuoc_id: string | null; co_quan_don_vi_id: string | null };
+
 class DashboardService {
   /**
    * Returns general statistics for SUPER_ADMIN.
    * @returns Statistics data
    */
   async getStatistics() {
-    const roleDistribution = await prisma.taiKhoan.groupBy({
-      by: ['role'],
-      _count: { id: true },
-    });
-
-    const dailyActivity = await prisma.systemLog.findMany({
-      where: { created_at: { gte: daysAgo(7) } },
-      select: { created_at: true },
-    });
-
-    const last7Days = buildDateStats(getLastNDays(7), countByDate(dailyActivity));
-
-    const logsByAction = await prisma.systemLog.groupBy({
-      by: ['action'],
-      _count: { id: true },
-      orderBy: { _count: { id: 'desc' } },
-      take: 10,
-    });
-
-    const newAccounts = await prisma.taiKhoan.findMany({
-      where: { createdAt: { gte: daysAgo(30) } },
-      select: { createdAt: true },
-      orderBy: { createdAt: 'asc' },
-    });
-
-    const last30Days = buildDateStats(getLastNDays(30), countByDate(newAccounts));
-
-    const [totalAccounts, totalPersonnel, totalUnits, totalLogs] = await Promise.all([
+    const [
+      roleDistribution,
+      dailyActivity,
+      logsByAction,
+      newAccounts,
+      totalAccounts,
+      totalPersonnel,
+      coQuanCount,
+      donViCount,
+      totalLogs,
+    ] = await Promise.all([
+      prisma.taiKhoan.groupBy({ by: ['role'], _count: { id: true } }),
+      prisma.systemLog.findMany({ where: { created_at: { gte: daysAgo(7) } }, select: { created_at: true } }),
+      prisma.systemLog.groupBy({ by: ['action'], _count: { id: true }, orderBy: { _count: { id: 'desc' } }, take: 10 }),
+      prisma.taiKhoan.findMany({ where: { createdAt: { gte: daysAgo(30) } }, select: { createdAt: true }, orderBy: { createdAt: 'asc' } }),
       prisma.taiKhoan.count(),
       prisma.quanNhan.count(),
-      prisma.coQuanDonVi.count().then(async coQuan => {
-        const donVi = await prisma.donViTrucThuoc.count();
-        return coQuan + donVi;
-      }),
+      prisma.coQuanDonVi.count(),
+      prisma.donViTrucThuoc.count(),
       prisma.systemLog.count(),
     ]);
 
     return {
       totalAccounts,
       totalPersonnel,
-      totalUnits,
+      totalUnits: coQuanCount + donViCount,
       totalLogs,
       roleDistribution: roleDistribution.map(item => ({ role: item.role, count: item._count.id })),
-      dailyActivity: last7Days,
+      dailyActivity: buildStats(getLastNDays(7), countByDate(dailyActivity), 'date'),
       logsByAction: logsByAction.map(item => ({ action: item.action, count: item._count.id })),
-      newAccountsByDate: last30Days,
+      newAccountsByDate: buildStats(getLastNDays(30), countByDate(newAccounts), 'date'),
     };
   }
 
@@ -132,41 +115,31 @@ class DashboardService {
    * @returns Admin statistics data
    */
   async getAdminStatistics() {
-    const scientificAchievementsByType = await prisma.thanhTichKhoaHoc.groupBy({
-      by: ['loai'],
-      _count: { id: true },
-    });
-
-    const proposalsByType = await prisma.bangDeXuat.groupBy({
-      by: ['loai_de_xuat'],
-      where: { createdAt: { gte: daysAgo(7) } },
-      _count: { id: true },
-    });
-
-    const proposalsByStatus = await prisma.bangDeXuat.groupBy({
-      by: ['status'],
-      _count: { id: true },
-    });
-
-    const scientificAchievements = await prisma.thanhTichKhoaHoc.findMany({
-      where: { createdAt: { gte: monthsAgo(6) } },
-      select: { createdAt: true },
-    });
-
-    const last6Months = buildMonthStats(getLastNMonths(6), countByMonth(scientificAchievements));
-
-    const totalPersonnel = await prisma.quanNhan.count();
-    const totalUnits = await prisma.donViTrucThuoc.count();
-    const totalPositions = await prisma.chucVu.count();
-    const pendingApprovals = await prisma.bangDeXuat.count({
-      where: { status: PROPOSAL_STATUS.PENDING },
-    });
+    const [
+      scientificAchievementsByType,
+      proposalsByType,
+      proposalsByStatus,
+      scientificAchievements,
+      totalPersonnel,
+      totalUnits,
+      totalPositions,
+      pendingApprovals,
+    ] = await Promise.all([
+      prisma.thanhTichKhoaHoc.groupBy({ by: ['loai'], _count: { id: true } }),
+      prisma.bangDeXuat.groupBy({ by: ['loai_de_xuat'], where: { createdAt: { gte: daysAgo(7) } }, _count: { id: true } }),
+      prisma.bangDeXuat.groupBy({ by: ['status'], _count: { id: true } }),
+      prisma.thanhTichKhoaHoc.findMany({ where: { createdAt: { gte: monthsAgo(6) } }, select: { createdAt: true } }),
+      prisma.quanNhan.count(),
+      prisma.donViTrucThuoc.count(),
+      prisma.chucVu.count(),
+      prisma.bangDeXuat.count({ where: { status: PROPOSAL_STATUS.PENDING } }),
+    ]);
 
     return {
       scientificAchievementsByType: scientificAchievementsByType.map(item => ({ type: item.loai, count: item._count.id })),
       proposalsByType: proposalsByType.map(item => ({ type: item.loai_de_xuat, count: item._count.id })),
       proposalsByStatus: proposalsByStatus.map(item => ({ status: item.status, count: item._count.id })),
-      scientificAchievementsByMonth: last6Months,
+      scientificAchievementsByMonth: buildStats(getLastNMonths(6), countByMonth(scientificAchievements), 'month'),
       totalPersonnel,
       totalUnits,
       totalPositions,
@@ -181,25 +154,23 @@ class DashboardService {
    * @returns Manager statistics data
    */
   async getManagerStatistics(userId: string, quanNhanId: string | undefined) {
-    let unitId: string | null = null;
+    let managerPersonnel: ManagerPersonnel | null = null;
 
     if (quanNhanId) {
-      const personnel = await prisma.quanNhan.findUnique({
+      managerPersonnel = await prisma.quanNhan.findUnique({
         where: { id: quanNhanId },
         select: { don_vi_truc_thuoc_id: true, co_quan_don_vi_id: true },
       });
-      unitId = personnel?.co_quan_don_vi_id ?? personnel?.don_vi_truc_thuoc_id ?? null;
     } else {
       const account = await prisma.taiKhoan.findUnique({
         where: { id: userId },
         select: { quan_nhan_id: true },
       });
       if (account?.quan_nhan_id) {
-        const personnel = await prisma.quanNhan.findUnique({
+        managerPersonnel = await prisma.quanNhan.findUnique({
           where: { id: account.quan_nhan_id },
           select: { don_vi_truc_thuoc_id: true, co_quan_don_vi_id: true },
         });
-        unitId = personnel?.co_quan_don_vi_id ?? personnel?.don_vi_truc_thuoc_id ?? null;
       }
     }
 
@@ -209,14 +180,11 @@ class DashboardService {
       scientificAchievementsByType: [], personnelByPosition: [],
     };
 
+    // DVTT takes priority — CQDV may be the parent unit (avoid double-counting)
+    const unitId = managerPersonnel?.don_vi_truc_thuoc_id ?? managerPersonnel?.co_quan_don_vi_id ?? null;
     if (!unitId) return empty;
 
-    const managerPersonnel = await prisma.quanNhan.findUnique({
-      where: { id: quanNhanId || '' },
-      select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true },
-    });
-
-    const isCoQuanDonVi = managerPersonnel?.co_quan_don_vi_id === unitId;
+    const isCoQuanDonVi = !managerPersonnel?.don_vi_truc_thuoc_id && !!managerPersonnel?.co_quan_don_vi_id;
 
     let personnelInUnit: { id: string }[] = [];
     let donViTrucThuocIdList: string[] = [];
@@ -242,6 +210,10 @@ class DashboardService {
     const sixMonthsAgoDate = monthsAgo(6);
     const monthKeys = getLastNMonths(6);
 
+    const unitFilter: Prisma.QuanNhanWhereInput = isCoQuanDonVi
+      ? { OR: [{ co_quan_don_vi_id: unitId }, { don_vi_truc_thuoc_id: { in: donViTrucThuocIdList } }] }
+      : { don_vi_truc_thuoc_id: unitId };
+
     const [annualAwards, recentAwards, personnelByRank, proposalsByStatus, proposalsByType, scientificAchievements, scientificAchievementsByType, personnelWithPositions] =
       await Promise.all([
         personnelIds.length > 0
@@ -250,11 +222,7 @@ class DashboardService {
         personnelIds.length > 0
           ? prisma.danhHieuHangNam.findMany({ where: { quan_nhan_id: { in: personnelIds }, createdAt: { gte: sixMonthsAgoDate } }, select: { createdAt: true } })
           : [],
-        groupQuanNhanByCapBac(
-          isCoQuanDonVi
-            ? { OR: [{ co_quan_don_vi_id: unitId }, { don_vi_truc_thuoc_id: { in: donViTrucThuocIdList } }], cap_bac: { not: null } }
-            : { don_vi_truc_thuoc_id: unitId, cap_bac: { not: null } }
-        ),
+        groupQuanNhanByCapBac({ ...unitFilter, cap_bac: { not: null } }),
         prisma.bangDeXuat.groupBy({ by: ['status'], where: { nguoi_de_xuat_id: userId }, _count: { id: true } }),
         prisma.bangDeXuat.groupBy({ by: ['loai_de_xuat'], where: { nguoi_de_xuat_id: userId }, _count: { id: true } }),
         personnelIds.length > 0
@@ -263,13 +231,11 @@ class DashboardService {
         personnelIds.length > 0
           ? prisma.thanhTichKhoaHoc.groupBy({ by: ['loai'], where: { quan_nhan_id: { in: personnelIds } }, _count: { id: true } })
           : [],
-        isCoQuanDonVi
-          ? prisma.quanNhan.findMany({ where: { OR: [{ co_quan_don_vi_id: unitId }, { don_vi_truc_thuoc_id: { in: donViTrucThuocIdList } }] }, select: { chuc_vu_id: true } })
-          : prisma.quanNhan.findMany({ where: { don_vi_truc_thuoc_id: unitId }, select: { chuc_vu_id: true } }),
+        prisma.quanNhan.findMany({ where: unitFilter, select: { chuc_vu_id: true } }),
       ]);
 
     const awardsByType: Record<string, number> = {};
-    annualAwards.forEach((award: { danh_hieu: string | null }) => {
+    annualAwards.forEach(award => {
       if (award.danh_hieu) awardsByType[award.danh_hieu] = (awardsByType[award.danh_hieu] || 0) + 1;
     });
 
@@ -287,9 +253,9 @@ class DashboardService {
       awardsByType: Object.entries(awardsByType).map(([type, count]) => ({ type, count })),
       proposalsByType: proposalsByType.map(item => ({ type: item.loai_de_xuat, count: item._count.id })),
       proposalsByStatus: proposalsByStatus.map(item => ({ status: item.status, count: item._count.id })),
-      awardsByMonth: buildMonthStats(monthKeys, countByMonth(recentAwards)),
+      awardsByMonth: buildStats(monthKeys, countByMonth(recentAwards), 'month'),
       personnelByRank: personnelByRank.filter(item => item.cap_bac).map(item => ({ rank: item.cap_bac, count: item._count.id })),
-      scientificAchievementsByMonth: buildMonthStats(monthKeys, countByMonth(scientificAchievements)),
+      scientificAchievementsByMonth: buildStats(monthKeys, countByMonth(scientificAchievements), 'month'),
       scientificAchievementsByType: scientificAchievementsByType.map(item => ({ type: item.loai, count: item._count.id })),
       personnelByPosition: Object.entries(positionCounts).map(([positionId, count]) => ({
         positionId,

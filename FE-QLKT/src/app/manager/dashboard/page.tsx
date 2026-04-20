@@ -52,7 +52,8 @@ const ActionBarChart = dynamic(
   { ssr: false, loading: chartLoading }
 );
 const ActivityLineChart = dynamic(
-  () => import('@/components/charts/ActivityLineChart').then(m => ({ default: m.ActivityLineChart })),
+  () =>
+    import('@/components/charts/ActivityLineChart').then(m => ({ default: m.ActivityLineChart })),
   { ssr: false, loading: chartLoading }
 );
 const PieChart = dynamic(
@@ -525,25 +526,49 @@ export default function ManagerDashboard() {
                 styles={{ body: { padding: '0 20px' } }}
               >
                 <div>
-                  <div className={`flex items-center gap-4 py-4 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-100'}`}>
-                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${theme === 'dark' ? 'bg-blue-900/40' : 'bg-blue-50'}`}>
-                      <UserOutlined style={{ color: theme === 'dark' ? '#60a5fa' : '#2563eb', fontSize: 15 }} />
+                  <div
+                    className={`flex items-center gap-4 py-4 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-100'}`}
+                  >
+                    <div
+                      className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${theme === 'dark' ? 'bg-blue-900/40' : 'bg-blue-50'}`}
+                    >
+                      <UserOutlined
+                        style={{ color: theme === 'dark' ? '#60a5fa' : '#2563eb', fontSize: 15 }}
+                      />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className={`text-xs font-medium uppercase tracking-wide mb-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Vai trò</p>
-                      <Tag color={ROLE_COLORS[user?.role || ''] || 'blue'} style={{ fontSize: 13, padding: '2px 10px', margin: 0 }}>
+                      <p
+                        className={`text-xs font-medium uppercase tracking-wide mb-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}
+                      >
+                        Vai trò
+                      </p>
+                      <Tag
+                        color={ROLE_COLORS[user?.role || ''] || 'blue'}
+                        style={{ fontSize: 13, padding: '2px 10px', margin: 0 }}
+                      >
                         {ROLE_LABELS[user?.role?.toUpperCase() || ''] || displayName}
                       </Tag>
                     </div>
                   </div>
                   <div className="flex items-start gap-4 py-4">
-                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${theme === 'dark' ? 'bg-purple-900/40' : 'bg-purple-50'}`}>
-                      <LockOutlined style={{ color: theme === 'dark' ? '#a78bfa' : '#7c3aed', fontSize: 15 }} />
+                    <div
+                      className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${theme === 'dark' ? 'bg-purple-900/40' : 'bg-purple-50'}`}
+                    >
+                      <LockOutlined
+                        style={{ color: theme === 'dark' ? '#a78bfa' : '#7c3aed', fontSize: 15 }}
+                      />
                     </div>
                     <div className="flex-1">
-                      <p className={`text-xs font-medium uppercase tracking-wide mb-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Quyền hạn</p>
-                      <p className={`text-sm leading-relaxed ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-                        Tạo và theo dõi đề xuất khen thưởng · Quản lý quân nhân và khen thưởng trong đơn vị
+                      <p
+                        className={`text-xs font-medium uppercase tracking-wide mb-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}
+                      >
+                        Quyền hạn
+                      </p>
+                      <p
+                        className={`text-sm leading-relaxed ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}
+                      >
+                        Tạo và theo dõi đề xuất khen thưởng · Quản lý quân nhân và khen thưởng trong
+                        đơn vị
                       </p>
                     </div>
                   </div>
@@ -566,11 +591,17 @@ export default function ManagerDashboard() {
                       color: 'blue',
                       children: (
                         <div>
-                          <div className={`flex items-center gap-1.5 mb-1 text-xs font-semibold uppercase tracking-wide ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                          <div
+                            className={`flex items-center gap-1.5 mb-1 text-xs font-semibold uppercase tracking-wide ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}
+                          >
                             <ClockCircleOutlined style={{ fontSize: 12 }} />
                             Thời gian đăng nhập
                           </div>
-                          <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-gray-200' : 'text-gray-800'}`}>{formatDateTime(new Date())}</p>
+                          <p
+                            className={`text-sm font-semibold ${theme === 'dark' ? 'text-gray-200' : 'text-gray-800'}`}
+                          >
+                            {formatDateTime(new Date())}
+                          </p>
                         </div>
                       ),
                     },
@@ -578,13 +609,20 @@ export default function ManagerDashboard() {
                       color: 'green',
                       children: (
                         <div>
-                          <div className={`flex items-center gap-1.5 mb-1 text-xs font-semibold uppercase tracking-wide ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                          <div
+                            className={`flex items-center gap-1.5 mb-1 text-xs font-semibold uppercase tracking-wide ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}
+                          >
                             <CheckCircleOutlined style={{ fontSize: 12 }} />
                             Trạng thái hệ thống
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="inline-block w-2 h-2 rounded-full bg-green-500" style={{ boxShadow: '0 0 0 3px rgba(16,185,129,0.2)' }} />
-                            <span className="text-sm font-semibold text-green-500">Hoạt động bình thường</span>
+                            <span
+                              className="inline-block w-2 h-2 rounded-full bg-green-500"
+                              style={{ boxShadow: '0 0 0 3px rgba(16,185,129,0.2)' }}
+                            />
+                            <span className="text-sm font-semibold text-green-500">
+                              Hoạt động bình thường
+                            </span>
                           </div>
                         </div>
                       ),
@@ -593,11 +631,17 @@ export default function ManagerDashboard() {
                       color: 'gray',
                       children: (
                         <div>
-                          <div className={`flex items-center gap-1.5 mb-1 text-xs font-semibold uppercase tracking-wide ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                          <div
+                            className={`flex items-center gap-1.5 mb-1 text-xs font-semibold uppercase tracking-wide ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}
+                          >
                             <UserOutlined style={{ fontSize: 12 }} />
                             Phiên làm việc
                           </div>
-                          <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{user?.username || displayName}</p>
+                          <p
+                            className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}
+                          >
+                            {user?.username || displayName}
+                          </p>
                         </div>
                       ),
                     },

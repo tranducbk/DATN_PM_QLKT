@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/select';
 import { personnelFormSchema } from '@/lib/schemas';
 import { apiClient } from '@/lib/apiClient';
+import { capitalizeWords } from '@/lib/utils';
 import { App } from 'antd';
 import { getApiErrorMessage } from '@/lib/apiError';
 
@@ -110,7 +111,12 @@ export function PersonnelForm({
             <FormItem>
               <FormLabel>Họ tên</FormLabel>
               <FormControl>
-                <Input placeholder="Nhập họ tên" {...field} disabled={readOnly} />
+                <Input
+                  placeholder="Nhập họ tên"
+                  {...field}
+                  disabled={readOnly}
+                  onChange={e => field.onChange(capitalizeWords(e.target.value))}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

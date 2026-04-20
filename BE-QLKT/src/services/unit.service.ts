@@ -55,7 +55,7 @@ class UnitService {
   async getAllSubUnits(coQuanDonViId?: string) {
     const whereClause = coQuanDonViId ? { co_quan_don_vi_id: coQuanDonViId } : {};
 
-    const donViTrucThuoc = await prisma.donViTrucThuoc.findMany({
+    return prisma.donViTrucThuoc.findMany({
       where: whereClause,
       include: {
         CoQuanDonVi: true,
@@ -65,8 +65,6 @@ class UnitService {
         ma_don_vi: 'asc',
       },
     });
-
-    return donViTrucThuoc;
   }
 
   async getManagerUnits(userQuanNhanId: string) {
@@ -85,35 +83,23 @@ class UnitService {
     const units: Record<string, unknown>[] = [];
 
     if (manager.co_quan_don_vi_id) {
-      const coQuanDonVi = await prisma.coQuanDonVi.findUnique({
-        where: { id: manager.co_quan_don_vi_id },
-        select: {
-          id: true,
-          ten_don_vi: true,
-          ma_don_vi: true,
-        },
-      });
-
-      if (coQuanDonVi) {
-        units.push(coQuanDonVi);
-      }
-
-      const donViTrucThuoc = await prisma.donViTrucThuoc.findMany({
-        where: { co_quan_don_vi_id: manager.co_quan_don_vi_id },
-        include: {
-          CoQuanDonVi: {
-            select: {
-              id: true,
-              ten_don_vi: true,
-              ma_don_vi: true,
+      const [coQuanDonVi, donViTrucThuoc] = await Promise.all([
+        prisma.coQuanDonVi.findUnique({
+          where: { id: manager.co_quan_don_vi_id },
+          select: { id: true, ten_don_vi: true, ma_don_vi: true },
+        }),
+        prisma.donViTrucThuoc.findMany({
+          where: { co_quan_don_vi_id: manager.co_quan_don_vi_id },
+          include: {
+            CoQuanDonVi: {
+              select: { id: true, ten_don_vi: true, ma_don_vi: true },
             },
           },
-        },
-        orderBy: {
-          ma_don_vi: 'asc',
-        },
-      });
+          orderBy: { ma_don_vi: 'asc' },
+        }),
+      ]);
 
+      if (coQuanDonVi) units.push(coQuanDonVi);
       units.push(...donViTrucThuoc);
     } else if (manager.don_vi_truc_thuoc_id) {
       const donViTrucThuoc = await prisma.donViTrucThuoc.findUnique({
@@ -152,44 +138,22 @@ class UnitService {
     if (co_quan_don_vi_id) {
       const parentUnit = await prisma.coQuanDonVi.findUnique({
         where: { id: co_quan_don_vi_id },
+        select: { id: true },
       });
 
       if (!parentUnit) {
         throw new NotFoundError('Cơ quan đơn vị');
       }
 
-      const newUnit = await prisma.donViTrucThuoc.create({
-        data: {
-          co_quan_don_vi_id,
-          ma_don_vi,
-          ten_don_vi,
-          so_luong: 0,
-        },
-        include: {
-          CoQuanDonVi: true,
-          ChucVu: true,
-        },
+      return prisma.donViTrucThuoc.create({
+        data: { co_quan_don_vi_id, ma_don_vi, ten_don_vi, so_luong: 0 },
+        include: { CoQuanDonVi: true, ChucVu: true },
       });
-
-      await prisma.donViTrucThuoc.count({
-        where: { co_quan_don_vi_id },
-      });
-
-      return newUnit;
     } else {
-      const newUnit = await prisma.coQuanDonVi.create({
-        data: {
-          ma_don_vi,
-          ten_don_vi,
-          so_luong: 0,
-        },
-        include: {
-          DonViTrucThuoc: true,
-          ChucVu: true,
-        },
+      return prisma.coQuanDonVi.create({
+        data: { ma_don_vi, ten_don_vi, so_luong: 0 },
+        include: { DonViTrucThuoc: true, ChucVu: true },
       });
-
-      return newUnit;
     }
   }
 
@@ -230,6 +194,7 @@ class UnitService {
       if (co_quan_don_vi_id !== undefined) {
         const parentUnit = await prisma.coQuanDonVi.findUnique({
           where: { id: co_quan_don_vi_id },
+          select: { id: true },
         });
 
         if (!parentUnit) {
@@ -239,16 +204,11 @@ class UnitService {
         updateData.co_quan_don_vi_id = co_quan_don_vi_id;
       }
 
-      const updatedUnit = await prisma.donViTrucThuoc.update({
+      return prisma.donViTrucThuoc.update({
         where: { id },
         data: updateData,
-        include: {
-          CoQuanDonVi: true,
-          ChucVu: true,
-        },
+        include: { CoQuanDonVi: true, ChucVu: true },
       });
-
-      return updatedUnit;
     } else {
       const updateData: Record<string, unknown> = {};
       if (ma_don_vi) {
@@ -272,20 +232,14 @@ class UnitService {
       }
       if (ten_don_vi) updateData.ten_don_vi = ten_don_vi;
 
-      const updatedUnit = await prisma.coQuanDonVi.update({
+      return prisma.coQuanDonVi.update({
         where: { id },
         data: updateData,
         include: {
-          DonViTrucThuoc: {
-            include: {
-              ChucVu: true,
-            },
-          },
+          DonViTrucThuoc: { include: { ChucVu: true } },
           ChucVu: true,
         },
       });
-
-      return updatedUnit;
     }
   }
 
@@ -330,45 +284,33 @@ class UnitService {
         );
       }
 
-      const personnelCount = await prisma.quanNhan.count({
-        where: { co_quan_don_vi_id: id },
-      });
+      const [personnelCount, positionCount] = await Promise.all([
+        prisma.quanNhan.count({ where: { co_quan_don_vi_id: id } }),
+        prisma.chucVu.count({ where: { co_quan_don_vi_id: id } }),
+      ]);
 
       if (personnelCount > 0) {
         throw new ValidationError(`Không thể xóa cơ quan đơn vị vì còn ${personnelCount} quân nhân`);
       }
-
-      const positionCount = await prisma.chucVu.count({
-        where: { co_quan_don_vi_id: id },
-      });
-
       if (positionCount > 0) {
         throw new ValidationError(`Không thể xóa cơ quan đơn vị vì còn ${positionCount} chức vụ`);
       }
 
-      await prisma.coQuanDonVi.delete({
-        where: { id },
-      });
+      await prisma.coQuanDonVi.delete({ where: { id } });
     } else {
-      const personnelCount = await prisma.quanNhan.count({
-        where: { don_vi_truc_thuoc_id: id },
-      });
+      const [personnelCount, positionCount] = await Promise.all([
+        prisma.quanNhan.count({ where: { don_vi_truc_thuoc_id: id } }),
+        prisma.chucVu.count({ where: { don_vi_truc_thuoc_id: id } }),
+      ]);
 
       if (personnelCount > 0) {
         throw new ValidationError(`Không thể xóa đơn vị trực thuộc vì còn ${personnelCount} quân nhân`);
       }
-
-      const positionCount = await prisma.chucVu.count({
-        where: { don_vi_truc_thuoc_id: id },
-      });
-
       if (positionCount > 0) {
         throw new ValidationError(`Không thể xóa đơn vị trực thuộc vì còn ${positionCount} chức vụ`);
       }
 
-      await prisma.donViTrucThuoc.delete({
-        where: { id },
-      });
+      await prisma.donViTrucThuoc.delete({ where: { id } });
     }
 
     return { message: 'Xóa cơ quan đơn vị/đơn vị trực thuộc thành công' };

@@ -95,3 +95,28 @@ export function calcUnitTotal(unit: { so_luong?: number; DonViTrucThuoc?: { so_l
   const children = (unit.DonViTrucThuoc ?? []).reduce((sum, sub) => sum + (sub.so_luong ?? 0), 0);
   return own + children;
 }
+
+/**
+ * Capitalizes only the first character of a string.
+ * Handles Vietnamese diacritics correctly via Unicode toUpperCase.
+ * @param value - Raw input string
+ * @returns String with first character uppercased
+ */
+export function capitalizeFirst(value: string): string {
+  if (!value) return value;
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+/**
+ * Capitalizes the first letter of each word.
+ * Handles Vietnamese diacritics correctly via Unicode toUpperCase.
+ * @param value - Raw input string
+ * @returns String with each word capitalized
+ */
+export function capitalizeWords(value: string): string {
+  if (!value) return value;
+  return value
+    .split(' ')
+    .map(word => (word ? word.charAt(0).toUpperCase() + word.slice(1) : word))
+    .join(' ');
+}

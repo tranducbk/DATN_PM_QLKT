@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Form, Input, Button, Space, Select, Checkbox, message, Typography } from 'antd';
+import { Form, AutoComplete, Input, Button, Space, Select, Checkbox, message, Typography } from 'antd';
 import { apiClient } from '@/lib/apiClient';
 import { getApiErrorMessage } from '@/lib/apiError';
+import { capitalizeFirst } from '@/lib/utils';
 
 const { Text } = Typography;
 
@@ -17,6 +18,17 @@ interface PositionFormProps {
 export function PositionForm({ position, units = [], onSuccess, onClose }: PositionFormProps) {
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
+  const [positionSuggestions, setPositionSuggestions] = useState<string[]>([]);
+  const [filteredOptions, setFilteredOptions] = useState<{ value: string }[]>([]);
+
+  useEffect(() => {
+    apiClient.getPositions().then(res => {
+      if (res.success && Array.isArray(res.data)) {
+        const unique = Array.from(new Set((res.data as { ten_chuc_vu: string }[]).map(p => p.ten_chuc_vu))).sort();
+        setPositionSuggestions(unique);
+      }
+    });
+  }, []);
 
   const isDonViTrucThuoc =
     (units.length === 1 && !!units[0].co_quan_don_vi_id) ||
@@ -103,15 +115,30 @@ export function PositionForm({ position, units = [], onSuccess, onClose }: Posit
         name="ten_chuc_vu"
         rules={[{ required: true, message: 'Vui lòng nhập tên chức vụ' }]}
       >
-        <Input placeholder="Nhập tên chức vụ" />
+        <AutoComplete
+          placeholder="Nhập tên chức vụ"
+          options={filteredOptions}
+          onSearch={text => {
+            const normalized = capitalizeFirst(text);
+            form.setFieldValue('ten_chuc_vu', normalized);
+            setFilteredOptions(
+              positionSuggestions
+                .filter(s => s.toLowerCase().includes(text.toLowerCase()))
+                .map(s => ({ value: s }))
+            );
+          }}
+          onSelect={value => form.setFieldValue('ten_chuc_vu', capitalizeFirst(value))}
+          onBlur={() => {
+            const current = form.getFieldValue('ten_chuc_vu');
+            if (current) form.setFieldValue('ten_chuc_vu', capitalizeFirst(current));
+          }}
+        />
       </Form.Item>
 
       {!position?.id && (
         <>
-          {/* Nếu chỉ có 1 đơn vị (tạo từ trang chi tiết), hiển thị thông tin đơn vị thay vì dropdown */}
           {units.length === 1 ? (
             <>
-              {/* Hiển thị cơ quan đơn vị nếu đơn vị hiện tại là đơn vị trực thuộc */}
               {units[0].co_quan_don_vi && (
                 <Form.Item label="Cơ quan đơn vị">
                   <Text type="secondary">
@@ -133,11 +160,7 @@ export function PositionForm({ position, units = [], onSuccess, onClose }: Posit
             </>
           ) : (
             <Form.Item
-              label={
-                <span>
-                  Đơn vị <span style={{ color: 'red' }}>*</span>
-                </span>
-              }
+              label="Đơn vị"
               name="don_vi_id"
               rules={[{ required: true, message: 'Vui lòng chọn đơn vị' }]}
             >
@@ -153,11 +176,7 @@ export function PositionForm({ position, units = [], onSuccess, onClose }: Posit
         </>
       )}
 
-      <Form.Item
-        label="Hệ số chức vụ"
-        name="he_so_chuc_vu"
-        extra="Mặc định là 0 nếu để trống"
-      >
+      <Form.Item label="Hệ số chức vụ" name="he_so_chuc_vu" extra="Mặc định là 0 nếu để trống">
         <Input type="number" placeholder="Nhập hệ số chức vụ (VD: 1.0)" step="0.01" min="0" />
       </Form.Item>
 
