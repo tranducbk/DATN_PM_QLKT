@@ -43,7 +43,10 @@ function initSocket(httpServer: HttpServer): Server {
       (socket as Socket & { user: DecodedToken }).user = decoded;
       next();
     } catch (error) {
-   console.error('Socket auth failed while verifying JWT token:', error);
+      if (error instanceof jwt.TokenExpiredError) {
+        return next(new Error('TOKEN_EXPIRED'));
+      }
+      console.error('Socket auth failed while verifying JWT token:', error);
       next(new Error('Token không hợp lệ'));
     }
   });

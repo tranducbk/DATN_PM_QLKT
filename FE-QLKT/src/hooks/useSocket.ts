@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { io } from 'socket.io-client';
 import type { Socket } from 'socket.io-client';
+import axiosInstance from '@/utils/axiosInstance';
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:4000';
 
@@ -59,7 +60,26 @@ export function useSocket(
     socket.on('reconnect', () => updateStatus('connected'));
     socket.on('reconnect_failed', () => updateStatus('disconnected'));
 
-    socket.on('connect_error', () => {
+    socket.on('connect_error', async (err: Error) => {
+      if (err.message === 'TOKEN_EXPIRED') {
+        const storedRefresh = localStorage.getItem('refreshToken');
+        if (!storedRefresh) return;
+        try {
+          const res = await axiosInstance.post('/api/auth/refresh', { refreshToken: storedRefresh });
+          const newToken = res.data?.data?.accessToken;
+          if (newToken) {
+            localStorage.setItem('accessToken', newToken);
+            const newRefresh = res.data?.data?.refreshToken;
+            if (newRefresh) localStorage.setItem('refreshToken', newRefresh);
+            (socket.auth as Record<string, string>).token = newToken;
+            window.dispatchEvent(new CustomEvent('tokenRefreshed', { detail: { accessToken: newToken } }));
+            socket.connect();
+          }
+        } catch {
+          // Refresh failed — let axiosInstance interceptor handle force logout on next API call
+        }
+        return;
+      }
       const latestToken = localStorage.getItem('accessToken');
       if (latestToken && latestToken !== (socket.auth as Record<string, string>)?.token) {
         (socket.auth as Record<string, string>).token = latestToken;
