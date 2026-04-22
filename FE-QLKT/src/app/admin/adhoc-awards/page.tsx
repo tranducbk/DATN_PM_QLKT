@@ -259,8 +259,8 @@ export default function AdhocAwardsPage() {
   const fetchAwards = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await apiClient.getAdhocAwards();
-      const awardsData = res.data ?? [];
+      const adhocAwardsResponse = await apiClient.getAdhocAwards();
+      const awardsData = adhocAwardsResponse.data ?? [];
       setAwards(awardsData);
     } catch (err) {
       message.error('Không tải được danh sách khen thưởng đột xuất');
@@ -305,14 +305,14 @@ export default function AdhocAwardsPage() {
 
     try {
       setSearchingDecision(true);
-      const response = await apiClient.autocompleteDecisions(
+      const decisionAutocompleteResponse = await apiClient.autocompleteDecisions(
         value.trim(),
         10,
         PROPOSAL_TYPES.DOT_XUAT
       );
-      if (response.success && response.data) {
+      if (decisionAutocompleteResponse.success && decisionAutocompleteResponse.data) {
         setDecisionOptions(
-          (response.data as DecisionAutocompleteRow[]).map(item => ({
+          (decisionAutocompleteResponse.data as DecisionAutocompleteRow[]).map(item => ({
             value: item.so_quyet_dinh,
             label: `${item.so_quyet_dinh} - ${item.nguoi_ky} (${dayjs(item.ngay_ky).format('DD/MM/YYYY')})`,
           }))
@@ -329,9 +329,9 @@ export default function AdhocAwardsPage() {
 
   const handleDecisionSelect = async (value: string, isEdit = false) => {
     try {
-      const response = await apiClient.getDecisionBySoQuyetDinh(value);
-      if (response.success && response.data) {
-        const decision = response.data;
+      const decisionLookupResponse = await apiClient.getDecisionBySoQuyetDinh(value);
+      if (decisionLookupResponse.success && decisionLookupResponse.data) {
+        const decision = decisionLookupResponse.data;
         setSelectedDecision(decision);
 
         if (isEdit) {
@@ -356,9 +356,13 @@ export default function AdhocAwardsPage() {
     }
   };
 
-  // FILE HANDLING
   const handleOpenDecisionFile = async (soQuyetDinh: string) => {
     await downloadDecisionFile(soQuyetDinh);
+  };
+
+  const parseYearFilter = (value: string | number): number | null => {
+    if (value === '') return null;
+    return typeof value === 'number' ? value : Number(value);
   };
 
   // CREATE HANDLERS
@@ -445,9 +449,9 @@ export default function AdhocAwardsPage() {
           }
         });
 
-        const result = await apiClient.createAdhocAward(formData);
-        if (!result.success) {
-          message.error(result.message || 'Thao tác thất bại');
+        const createAwardResponse = await apiClient.createAdhocAward(formData);
+        if (!createAwardResponse.success) {
+          message.error(createAwardResponse.message || 'Thao tác thất bại');
           return;
         }
       }
@@ -540,10 +544,10 @@ export default function AdhocAwardsPage() {
         formData.append('removeAttachedFileIndexes', JSON.stringify(removedAttachedFileIndexes));
       }
 
-      const result = await apiClient.updateAdhocAward(editingAward.id, formData);
+      const updateAwardResponse = await apiClient.updateAdhocAward(editingAward.id, formData);
 
-      if (!result.success) {
-        message.error(result.message || 'Cập nhật thất bại');
+      if (!updateAwardResponse.success) {
+        message.error(updateAwardResponse.message || 'Cập nhật thất bại');
         return;
       }
       message.success('Cập nhật khen thưởng đột xuất thành công');
@@ -559,9 +563,9 @@ export default function AdhocAwardsPage() {
   // DELETE HANDLER
   const handleDelete = async (id: string) => {
     try {
-      const result = await apiClient.deleteAdhocAward(id);
-      if (!result.success) {
-        message.error(result.message || 'Xóa thất bại');
+      const deleteAwardResponse = await apiClient.deleteAdhocAward(id);
+      if (!deleteAwardResponse.success) {
+        message.error(deleteAwardResponse.message || 'Xóa thất bại');
         return;
       }
       message.success('Xóa khen thưởng đột xuất thành công');
@@ -1552,10 +1556,7 @@ export default function AdhocAwardsPage() {
                 placeholder="Tất cả các năm"
                 value={tableFilters.year !== null ? tableFilters.year : ''}
                 onChange={value =>
-                  setTableFilters(prev => ({
-                    ...prev,
-                    year: value === '' ? null : typeof value === 'number' ? value : Number(value),
-                  }))
+                  setTableFilters(prev => ({ ...prev, year: parseYearFilter(value) }))
                 }
                 allowClear
                 size="large"
@@ -1743,15 +1744,10 @@ export default function AdhocAwardsPage() {
                   </Tag>
                 </Descriptions.Item>
                 <Descriptions.Item label="Chi tiết">
-                  {editingAward.doi_tuong === 'CA_NHAN' && editingAward.QuanNhan ? (
-                    <strong>{editingAward.QuanNhan.ho_ten}</strong>
-                  ) : editingAward.CoQuanDonVi ? (
-                    editingAward.CoQuanDonVi.ten_don_vi
-                  ) : editingAward.DonViTrucThuoc ? (
-                    editingAward.DonViTrucThuoc.ten_don_vi
-                  ) : (
-                    '-'
-                  )}
+                  {editingAward.doi_tuong === 'CA_NHAN' && editingAward.QuanNhan && <strong>{editingAward.QuanNhan.ho_ten}</strong>}
+                  {editingAward.doi_tuong !== 'CA_NHAN' && !!editingAward.CoQuanDonVi && editingAward.CoQuanDonVi.ten_don_vi}
+                  {editingAward.doi_tuong !== 'CA_NHAN' && !editingAward.CoQuanDonVi && editingAward.DonViTrucThuoc && editingAward.DonViTrucThuoc.ten_don_vi}
+                  {editingAward.doi_tuong !== 'CA_NHAN' && !editingAward.CoQuanDonVi && !editingAward.DonViTrucThuoc && '-'}
                 </Descriptions.Item>
               </Descriptions>
             </Card>
@@ -1975,10 +1971,9 @@ export default function AdhocAwardsPage() {
                   <strong>{detailAward.nam}</strong>
                 </Descriptions.Item>
                 <Descriptions.Item label="Chi tiết" span={2}>
-                  {detailAward.doi_tuong === 'CA_NHAN' && detailAward.QuanNhan ? (
+                  {detailAward.doi_tuong === 'CA_NHAN' && detailAward.QuanNhan && (
                     <div>
                       <strong>{detailAward.QuanNhan.ho_ten}</strong>
-                      {/* Chỉ hiển thị cấp bậc/chức vụ từ DB đã lưu, không hiện đơn vị */}
                       {detailAward.cap_bac && (
                         <div>
                           <Text type="secondary">Cấp bậc: {detailAward.cap_bac}</Text>
@@ -1990,9 +1985,11 @@ export default function AdhocAwardsPage() {
                         </div>
                       )}
                     </div>
-                  ) : detailAward.CoQuanDonVi ? (
+                  )}
+                  {detailAward.doi_tuong !== 'CA_NHAN' && !!detailAward.CoQuanDonVi && (
                     <strong>{detailAward.CoQuanDonVi.ten_don_vi}</strong>
-                  ) : detailAward.DonViTrucThuoc ? (
+                  )}
+                  {detailAward.doi_tuong !== 'CA_NHAN' && !detailAward.CoQuanDonVi && detailAward.DonViTrucThuoc && (
                     <div>
                       <strong>{detailAward.DonViTrucThuoc.ten_don_vi}</strong>
                       {detailAward.DonViTrucThuoc.CoQuanDonVi && (
@@ -2003,9 +2000,8 @@ export default function AdhocAwardsPage() {
                         </div>
                       )}
                     </div>
-                  ) : (
-                    '-'
                   )}
+                  {detailAward.doi_tuong !== 'CA_NHAN' && !detailAward.CoQuanDonVi && !detailAward.DonViTrucThuoc && '-'}
                 </Descriptions.Item>
               </Descriptions>
             </Card>

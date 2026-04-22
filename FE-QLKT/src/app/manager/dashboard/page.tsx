@@ -507,7 +507,7 @@ export default function ManagerDashboard() {
                     type="dashed"
                     className="w-full h-auto py-4 text-base font-medium hover:scale-105 transition-transform border-2 hover:border-blue-500 whitespace-normal break-words"
                   >
-                    Hồ sơ Khen thưởng Hằng năm
+                    Hồ sơ khen thưởng hằng năm
                   </Button>
                 </Link>
               </div>

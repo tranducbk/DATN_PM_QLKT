@@ -80,10 +80,7 @@ export default function ManagerContributionAwardsPage() {
           const awardPersonnelId = award.quan_nhan_id || award.QuanNhan?.id;
           if (awardPersonnelId === personnelId) {
             const danhHieu = award.danh_hieu || '';
-            let rank = '';
-            if (danhHieu.includes('HANG_BA')) rank = 'Hạng Ba';
-            else if (danhHieu.includes('HANG_NHI')) rank = 'Hạng Nhì';
-            else if (danhHieu.includes('HANG_NHAT')) rank = 'Hạng Nhất';
+            const rank = danhHieu.includes('HANG_NHAT') ? 'Hạng Nhất' : danhHieu.includes('HANG_NHI') ? 'Hạng Nhì' : danhHieu.includes('HANG_BA') ? 'Hạng Ba' : '';
 
             mappedAwards.push({
               id: award.id,

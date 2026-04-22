@@ -87,6 +87,8 @@ export function PersonnelForm({
     }
   }
 
+  const submitLabel = loading ? 'Đang xử lý...' : personnel ? 'Cập nhật' : 'Tạo mới';
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -246,7 +248,7 @@ export function PersonnelForm({
               Hủy
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Đang xử lý...' : personnel ? 'Cập nhật' : 'Tạo mới'}
+              {submitLabel}
             </Button>
           </div>
         )}

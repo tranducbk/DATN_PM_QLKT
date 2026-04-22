@@ -313,17 +313,19 @@ export function PersonnelRewardHistoryModal({
       } }}
       className="personnel-reward-history-modal"
     >
-      {loading ? (
+      {loading && (
         <div style={{ textAlign: 'center', padding: '40px 0' }}>
           <Text type="secondary">Đang tải dữ liệu...</Text>
         </div>
-      ) : !hasData ? (
+      )}
+      {!loading && !hasData && (
         <div style={{ textAlign: 'center', padding: '40px 0' }}>
           <Text type="secondary" style={{ fontSize: '16px' }}>
             Lịch sử khen thưởng trống
           </Text>
         </div>
-      ) : (
+      )}
+      {!loading && hasData && (
         <div>
           <Descriptions
             title="Tóm tắt hồ sơ hằng năm"

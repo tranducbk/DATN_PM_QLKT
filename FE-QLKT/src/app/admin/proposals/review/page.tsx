@@ -221,23 +221,16 @@ export default function ProposalReviewPage() {
       align: 'center' as const,
       width: 100,
       render: (value, record) => {
-        let count = 0;
-        switch (record.loai_de_xuat) {
-          case PROPOSAL_TYPES.NCKH:
-            count = record.so_thanh_tich ?? 0;
-            break;
-          case PROPOSAL_TYPES.NIEN_HAN:
-          case PROPOSAL_TYPES.HC_QKQT:
-          case PROPOSAL_TYPES.KNC_VSNXD_QDNDVN:
-            count = record.so_nien_han ?? 0;
-            break;
-          case PROPOSAL_TYPES.CONG_HIEN:
-            count = record.so_cong_hien ?? 0;
-            break;
-          default:
-            count = record.so_danh_hieu ?? 0;
-            break;
-        }
+        const countFieldMap: Record<string, keyof Proposal> = {
+          [PROPOSAL_TYPES.NCKH]: 'so_thanh_tich',
+          [PROPOSAL_TYPES.NIEN_HAN]: 'so_nien_han',
+          [PROPOSAL_TYPES.HC_QKQT]: 'so_nien_han',
+          [PROPOSAL_TYPES.KNC_VSNXD_QDNDVN]: 'so_nien_han',
+          [PROPOSAL_TYPES.CONG_HIEN]: 'so_cong_hien',
+        };
+        const proposalType = record.loai_de_xuat ?? '';
+        const countField = countFieldMap[proposalType];
+        const count = (countField ? record[countField] : record.so_danh_hieu) ?? 0;
         return (
           <div style={{ textAlign: 'center' }}>
             <span style={{ fontSize: '14px', fontWeight: 500 }}>{count}</span>
@@ -467,27 +460,28 @@ export default function ProposalReviewPage() {
                 )}
               </Card>
 
-              {loading ? (
+              {loading && (
                 <div style={{ textAlign: 'center', padding: '48px 0' }}>
                   <Spin indicator={<LoadingOutlined style={{ fontSize: 32 }} spin />} />
                   <div style={{ marginTop: '12px' }}>
                     <Typography.Text type="secondary">Đang tải...</Typography.Text>
                   </div>
                 </div>
-              ) : filteredProposals.length === 0 ? (
+              )}
+              {!loading && filteredProposals.length === 0 && (
                 <Empty
                   description={
-                    activeTab === 'all'
-                      ? 'Chưa có đề xuất nào'
-                      : activeTab === 'pending'
-                        ? 'Chưa có đề xuất chờ phê duyệt'
-                        : activeTab === 'approved'
-                          ? 'Chưa có đề xuất nào được phê duyệt'
-                          : 'Chưa có đề xuất nào bị từ chối'
+                    {
+                      all: 'Chưa có đề xuất nào',
+                      pending: 'Chưa có đề xuất chờ phê duyệt',
+                      approved: 'Chưa có đề xuất nào được phê duyệt',
+                      rejected: 'Chưa có đề xuất nào bị từ chối',
+                    }[activeTab] ?? 'Chưa có đề xuất nào'
                   }
                   style={{ padding: '48px 0' }}
                 />
-              ) : (
+              )}
+              {!loading && filteredProposals.length > 0 && (
                 <Table
                   columns={columns}
                   dataSource={filteredProposals}

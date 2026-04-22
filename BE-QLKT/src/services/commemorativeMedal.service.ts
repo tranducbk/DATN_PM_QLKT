@@ -22,6 +22,7 @@ export interface CommemorativeMedalValidItem {
   cap_bac: string | null;
   chuc_vu: string | null;
   nam: number;
+  thang: number;
   so_quyet_dinh: string;
   ghi_chu: string | null;
   service_years: number;
@@ -42,6 +43,7 @@ class CommemorativeMedalService {
       { header: 'Cấp bậc', key: 'cap_bac', width: 15 },
       { header: 'Chức vụ', key: 'chuc_vu', width: 20 },
       { header: 'Năm (*)', key: 'nam', width: 10 },
+      { header: 'Tháng (*)', key: 'thang', width: 10 },
       { header: 'Số quyết định', key: 'so_quyet_dinh', width: 20 },
       { header: 'Ghi chú', key: 'ghi_chu', width: 25 },
     ];
@@ -52,7 +54,7 @@ class CommemorativeMedalService {
       personnelIds,
       repeatMap,
       loaiKhenThuong: PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
-      editableColumnLetters: ['G'],
+      editableColumnLetters: ['H'],
     });
   }
 
@@ -70,6 +72,7 @@ class CommemorativeMedalService {
     const idCol = getHeaderCol(headerMap, ['id', 'ma_quan_nhan', 'personnel_id']);
     const hoTenCol = getHeaderCol(headerMap, ['ho_va_ten', 'ho_ten', 'hoten', 'hovaten', 'ten']);
     const namCol = getHeaderCol(headerMap, ['nam', 'year']);
+    const thangCol = getHeaderCol(headerMap, ['thang', 'month', 'tháng']);
     const capBacCol = getHeaderCol(headerMap, ['cap_bac', 'capbac', 'cap_bc']);
     const chucVuCol = getHeaderCol(headerMap, ['chuc_vu', 'chucvu', 'chc_vu']);
     const soQuyetDinhCol = getHeaderCol(headerMap, ['so_quyet_dinh', 'soquyetdinh', 'so_qd']);
@@ -135,6 +138,8 @@ class CommemorativeMedalService {
       const idValue = idCol ? row.getCell(idCol).value : null;
       const ho_ten = hoTenCol ? String(row.getCell(hoTenCol).value ?? '').trim() : '';
       const namVal = row.getCell(namCol).value;
+      const thangRaw = thangCol ? Number(row.getCell(thangCol).value) : NaN;
+      const thang = !isNaN(thangRaw) && thangRaw >= 1 && thangRaw <= 12 ? Math.floor(thangRaw) : 12;
       const cap_bac = capBacCol ? String(row.getCell(capBacCol).value ?? '').trim() : null;
       const chuc_vu = chucVuCol ? String(row.getCell(chucVuCol).value ?? '').trim() : null;
       const so_quyet_dinh = soQuyetDinhCol
@@ -261,7 +266,7 @@ class CommemorativeMedalService {
       }
 
       const ngayNhapNgu = new Date(personnel.ngay_nhap_ngu);
-      const referenceDate = new Date(nam, 11, 31); // Dec 31 of the award year — eligibility reference date
+      const referenceDate = new Date(nam, thang, 0); // last day of selected month — eligibility reference date
       const serviceMonths = calculateServiceMonths(ngayNhapNgu, referenceDate);
       const serviceYears = serviceMonths / 12;
       const isFemale = personnel.gioi_tinh === GENDER.FEMALE;
@@ -310,6 +315,7 @@ class CommemorativeMedalService {
         cap_bac: capBac,
         chuc_vu: chucVu,
         nam,
+        thang,
         so_quyet_dinh,
         ghi_chu,
         service_years: Math.floor(serviceYears),
@@ -367,13 +373,14 @@ class CommemorativeMedalService {
     }
 
     return await prisma.$transaction(
-      async tx => {
+      async prismaTx => {
         const results = [];
         for (const item of validItems) {
-          const result = await tx.kyNiemChuongVSNXDQDNDVN.upsert({
+          const result = await prismaTx.kyNiemChuongVSNXDQDNDVN.upsert({
             where: { quan_nhan_id: item.personnel_id },
             update: {
               nam: item.nam,
+              thang: item.thang ?? 12,
               cap_bac: item.cap_bac ?? null,
               chuc_vu: item.chuc_vu ?? null,
               so_quyet_dinh: item.so_quyet_dinh ?? null,
@@ -382,6 +389,7 @@ class CommemorativeMedalService {
             create: {
               quan_nhan_id: item.personnel_id,
               nam: item.nam,
+              thang: item.thang ?? 12,
               cap_bac: item.cap_bac ?? null,
               chuc_vu: item.chuc_vu ?? null,
               so_quyet_dinh: item.so_quyet_dinh ?? null,

@@ -84,9 +84,10 @@ class ProposalService {
     userId: string,
     type: ProposalType,
     nam: number,
-    ghiChu: string | null
+    ghiChu: string | null,
+    thang: number = 12
   ) {
-    return submit.submitProposal(titleData, attachedFiles, soQuyetDinh, userId, type, nam, ghiChu);
+    return submit.submitProposal(titleData, attachedFiles, soQuyetDinh, userId, type, nam, ghiChu, thang);
   }
 
   async approveProposal(

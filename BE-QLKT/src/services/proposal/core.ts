@@ -534,7 +534,7 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
     ) {
       const personnelIds = dataCongHien.map(d => d.personnel_id).filter(Boolean);
       if (personnelIds.length > 0) {
-        const congHienFromDB = await prisma.khenThuongCongHien.findMany({
+        const congHienFromDB = await prisma.khenThuongHCBVTQ.findMany({
           where: {
             quan_nhan_id: { in: personnelIds },
           },

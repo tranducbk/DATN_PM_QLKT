@@ -223,13 +223,13 @@ type TransactionClient = Prisma.TransactionClient;
  */
 async function runConfirmTransaction<T>(
   items: T[],
-  upsertFn: (item: T, tx: TransactionClient) => Promise<unknown>,
+  upsertFn: (item: T, prismaTx: TransactionClient) => Promise<unknown>,
   timeout: number = IMPORT_TRANSACTION_TIMEOUT
 ): Promise<{ imported: number }> {
   return await prisma.$transaction(
-    async tx => {
+    async prismaTx => {
       for (const item of items) {
-        await upsertFn(item, tx);
+        await upsertFn(item, prismaTx);
       }
       return { imported: items.length };
     },

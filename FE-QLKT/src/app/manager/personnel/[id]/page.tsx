@@ -33,15 +33,31 @@ import {
 import Link from 'next/link';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useTheme } from '@/components/ThemeProvider';
+import { MedalProgressCard } from '@/components/personnel/MedalProgressCard';
 import { getAntdThemeConfig } from '@/lib/antdTheme';
 import { apiClient } from '@/lib/apiClient';
 import { formatDate } from '@/lib/utils';
+import { getReceivedMonthYearText } from '@/lib/medalDisplay';
 import styles from './personnel-detail.module.css';
 import { ROLES, getRoleInfo } from '@/constants/roles.constants';
-import type { PersonnelDetail, ServiceProfile, AnnualProfile, ContributionProfile, MedalData } from '@/lib/types/personnelList';
+import type {
+  PersonnelDetail,
+  ServiceProfile,
+  AnnualProfile,
+  ContributionProfile,
+  MedalData,
+} from '@/lib/types/personnelList';
 import { useAuth } from '@/contexts/AuthContext';
-import { ELIGIBILITY_STATUS, ELIGIBILITY_STATUS_MAP } from '@/constants/eligibilityStatus.constants';
-import { DANH_HIEU_MAP, HCQKQT_YEARS_REQUIRED, KNC_YEARS_REQUIRED_NAM, KNC_YEARS_REQUIRED_NU } from '@/constants/danhHieu.constants';
+import {
+  ELIGIBILITY_STATUS,
+  ELIGIBILITY_STATUS_MAP,
+} from '@/constants/eligibilityStatus.constants';
+import {
+  DANH_HIEU_MAP,
+  HCQKQT_YEARS_REQUIRED,
+  KNC_YEARS_REQUIRED_NAM,
+  KNC_YEARS_REQUIRED_NU,
+} from '@/constants/danhHieu.constants';
 
 const { Title, Text } = Typography;
 
@@ -114,7 +130,8 @@ export default function ManagerPersonnelDetailPage() {
   }, [personnelId]);
 
   const getStatusTag = (status: string | undefined) => {
-    const s = ELIGIBILITY_STATUS_MAP[status ?? ''] || ELIGIBILITY_STATUS_MAP[ELIGIBILITY_STATUS.CHUA_DU];
+    const s =
+      ELIGIBILITY_STATUS_MAP[status ?? ''] || ELIGIBILITY_STATUS_MAP[ELIGIBILITY_STATUS.CHUA_DU];
     return <Tag color={s.color}>{s.label}</Tag>;
   };
 
@@ -122,7 +139,9 @@ export default function ManagerPersonnelDetailPage() {
     if (!ngayNhapNgu) return 0;
     const now = new Date();
     const nhapNgu = new Date(ngayNhapNgu);
-    return Math.floor((now.getTime() - nhapNgu.getTime()) / (1000 * 60 * 60 * 24 * 365));
+    const months =
+      (now.getFullYear() - nhapNgu.getFullYear()) * 12 + now.getMonth() - nhapNgu.getMonth();
+    return Math.floor(Math.max(0, months) / 12);
   };
 
   const convertMonthsToYearsAndMonths = (totalMonths: number) => {
@@ -323,9 +342,7 @@ export default function ManagerPersonnelDetailPage() {
                       />
                       {serviceProfile.hccsvv_hang_ba_ngay && (
                         <Text type="secondary" className="text-xs">
-                          {serviceProfile.hccsvv_hang_ba_status === ELIGIBILITY_STATUS.DA_NHAN
-                            ? `Năm ${new Date(serviceProfile.hccsvv_hang_ba_ngay).getFullYear()}`
-                            : formatDate(serviceProfile.hccsvv_hang_ba_ngay)}
+                          {formatDate(serviceProfile.hccsvv_hang_ba_ngay)}
                         </Text>
                       )}
                     </Card>
@@ -340,9 +357,7 @@ export default function ManagerPersonnelDetailPage() {
                       />
                       {serviceProfile.hccsvv_hang_nhi_ngay && (
                         <Text type="secondary" className="text-xs">
-                          {serviceProfile.hccsvv_hang_nhi_status === ELIGIBILITY_STATUS.DA_NHAN
-                            ? `Năm ${new Date(serviceProfile.hccsvv_hang_nhi_ngay).getFullYear()}`
-                            : formatDate(serviceProfile.hccsvv_hang_nhi_ngay)}
+                          {formatDate(serviceProfile.hccsvv_hang_nhi_ngay)}
                         </Text>
                       )}
                     </Card>
@@ -357,9 +372,7 @@ export default function ManagerPersonnelDetailPage() {
                       />
                       {serviceProfile.hccsvv_hang_nhat_ngay && (
                         <Text type="secondary" className="text-xs">
-                          {serviceProfile.hccsvv_hang_nhat_status === ELIGIBILITY_STATUS.DA_NHAN
-                            ? `Năm ${new Date(serviceProfile.hccsvv_hang_nhat_ngay).getFullYear()}`
-                            : formatDate(serviceProfile.hccsvv_hang_nhat_ngay)}
+                          {formatDate(serviceProfile.hccsvv_hang_nhat_ngay)}
                         </Text>
                       )}
                     </Card>
@@ -376,192 +389,132 @@ export default function ManagerPersonnelDetailPage() {
                 )}
               </div>
 
-              {/* HC Bảo vệ Tổ quốc */}
-              <div className="mb-6">
-                <Text strong className="text-base">
-                  Huân chương Bảo vệ Tổ quốc
-                </Text>
-                <Divider className="my-3" />
+              <div
+                className="mt-6 pt-4"
+                style={{ borderTop: `1px solid ${isDark ? '#1f2937' : '#f0f0f0'}` }}
+              >
                 <Row gutter={[16, 16]}>
-                  <Col xs={24} md={8}>
-                    <Card size="small" className="h-full">
-                      <Statistic
-                        title="Tháng tích lũy 0.7"
-                        value={(() => {
-                          const { years, months } = convertMonthsToYearsAndMonths(
-                            contributionProfile?.months_07 || 0
-                          );
-                          return `${years} năm ${months} tháng`;
-                        })()}
-                        valueStyle={{ color: '#3f8600' }}
-                      />
-                    </Card>
+                  <Col xs={24} md={12}>
+                    <MedalProgressCard
+                      title={DANH_HIEU_MAP.HC_QKQT}
+                      isDark={isDark}
+                      hasReceived={!!militaryFlag?.hasReceived}
+                      receivedAt={getReceivedMonthYearText(militaryFlag)}
+                      yearsRequired={HCQKQT_YEARS_REQUIRED}
+                      yearsOfService={calculateYearsOfService(personnel.ngay_nhap_ngu)}
+                      receivedStatusTag={getStatusTag(ELIGIBILITY_STATUS.DA_NHAN)}
+                    />
                   </Col>
-                  <Col xs={24} md={8}>
-                    <Card size="small" className="h-full">
-                      <Statistic
-                        title="Tháng tích lũy 0.8"
-                        value={(() => {
-                          const { years, months } = convertMonthsToYearsAndMonths(
-                            contributionProfile?.months_08 || 0
-                          );
-                          return `${years} năm ${months} tháng`;
-                        })()}
-                        valueStyle={{ color: '#3f8600' }}
-                      />
-                    </Card>
-                  </Col>
-                  <Col xs={24} md={8}>
-                    <Card size="small" className="h-full">
-                      <Statistic
-                        title="Tháng tích lũy 0.9-1.0"
-                        value={(() => {
-                          const { years, months } = convertMonthsToYearsAndMonths(
-                            contributionProfile?.months_0910 || 0
-                          );
-                          return `${years} năm ${months} tháng`;
-                        })()}
-                        valueStyle={{ color: '#3f8600' }}
-                      />
-                    </Card>
-                  </Col>
-                  <Col xs={24} md={8}>
-                    <Card size="small" className="h-full">
-                      <Statistic
-                        title="Hạng Ba"
-                        value={0}
-                        valueStyle={{ fontSize: '14px' }}
-                        valueRender={() => getStatusTag(contributionProfile?.hcbvtq_hang_ba_status)}
-                      />
-                    </Card>
-                  </Col>
-                  <Col xs={24} md={8}>
-                    <Card size="small" className="h-full">
-                      <Statistic
-                        title="Hạng Nhì"
-                        value={0}
-                        valueStyle={{ fontSize: '14px' }}
-                        valueRender={() =>
-                          getStatusTag(contributionProfile?.hcbvtq_hang_nhi_status)
-                        }
-                      />
-                    </Card>
-                  </Col>
-                  <Col xs={24} md={8}>
-                    <Card size="small" className="h-full">
-                      <Statistic
-                        title="Hạng Nhất"
-                        value={0}
-                        valueStyle={{ fontSize: '14px' }}
-                        valueRender={() =>
-                          getStatusTag(contributionProfile?.hcbvtq_hang_nhat_status)
-                        }
-                      />
-                    </Card>
+                  <Col xs={24} md={12}>
+                    <MedalProgressCard
+                      title={DANH_HIEU_MAP.KNC_VSNXD_QDNDVN}
+                      isDark={isDark}
+                      hasReceived={!!commemorationMedals?.hasReceived}
+                      receivedAt={getReceivedMonthYearText(commemorationMedals)}
+                      yearsRequired={
+                        personnel.gioi_tinh === 'NAM' ? KNC_YEARS_REQUIRED_NAM : KNC_YEARS_REQUIRED_NU
+                      }
+                      yearsOfService={calculateYearsOfService(personnel.ngay_nhap_ngu)}
+                      receivedStatusTag={getStatusTag(ELIGIBILITY_STATUS.DA_NHAN)}
+                    />
                   </Col>
                 </Row>
               </div>
-              {/* HC Quân kỳ Quyết thắng */}
-              <div className="mb-6">
-                <Text strong className="text-base">
-                  Huy chương Quân kỳ Quyết thắng
-                </Text>
-                <Divider className="my-3" />
-                <Row gutter={[16, 16]}>
-                  <Col xs={24} md={24}>
-                    <Card size="small" className="h-full">
-                      <Statistic
-                        title="Huy chương Quân kỳ Quyết thắng"
-                        value={0}
-                        valueStyle={{ fontSize: '14px' }}
-                        valueRender={() => {
-                          const hasReceived = militaryFlag && militaryFlag.hasReceived;
-                          if (hasReceived) {
-                            return getStatusTag(ELIGIBILITY_STATUS.DA_NHAN);
-                          } else {
-                            const yearsRequired = HCQKQT_YEARS_REQUIRED;
-                            const yearsOfService = calculateYearsOfService(personnel.ngay_nhap_ngu);
-                            const eligible = yearsOfService >= yearsRequired;
-                            return (
-                              <div>
-                                <Text>HC QKQT {yearsRequired} năm</Text>
-                                {eligible ? (
-                                  <Tag color="orange" style={{ marginLeft: 8 }}>
-                                    Đủ điều kiện
-                                  </Tag>
-                                ) : (
-                                  <Tag color="default" style={{ marginLeft: 8 }}>
-                                    Chưa đủ ({yearsOfService}/{yearsRequired} năm)
-                                  </Tag>
-                                )}
-                              </div>
-                            );
-                          }
-                        }}
-                      />
-                      {militaryFlag &&
-                        militaryFlag.hasReceived &&
-                        militaryFlag.data &&
-                        militaryFlag.data.length > 0 &&
-                        militaryFlag.data[0].ngay_cap && (
-                          <Text type="secondary" className="text-xs">
-                            {formatDate(militaryFlag.data[0].ngay_cap)}
-                          </Text>
-                        )}
-                    </Card>
-                  </Col>
-                </Row>
-              </div>
+            </Card>
+          )}
 
-              {/* Kỷ niệm chương VSNXD QĐNDVN */}
-              <div>
-                <Text strong className="text-base">
-                  Kỷ niệm chương VSNXD QĐNDVN
-                </Text>
-                <Divider className="my-3" />
-                <Row gutter={[16, 16]}>
-                  <Col xs={24} md={24}>
-                    <Card size="small" className="h-full">
-                      <Statistic
-                        title="Kỷ niệm chương VSNXD QĐNDVN"
-                        value={0}
-                        valueStyle={{ fontSize: '14px' }}
-                        valueRender={() => {
-                          const hasReceived =
-                            commemorationMedals && commemorationMedals.hasReceived;
-                          if (hasReceived) {
-                            return getStatusTag(ELIGIBILITY_STATUS.DA_NHAN);
-                          } else {
-                            const yearsRequired = personnel.gioi_tinh === 'NAM' ? KNC_YEARS_REQUIRED_NAM : KNC_YEARS_REQUIRED_NU;
-                            const yearsOfService = calculateYearsOfService(personnel.ngay_nhap_ngu);
-                            const eligible = yearsOfService >= yearsRequired;
-                            return (
-                              <div>
-                                <Text>KNC VSNXD QDNDVN {yearsRequired} năm</Text>
-                                {eligible ? (
-                                  <Tag color="orange" style={{ marginLeft: 8 }}>
-                                    Đủ điều kiện
-                                  </Tag>
-                                ) : (
-                                  <Tag color="default" style={{ marginLeft: 8 }}>
-                                    Chưa đủ ({yearsOfService}/{yearsRequired} năm)
-                                  </Tag>
-                                )}
-                              </div>
-                            );
-                          }
-                        }}
-                      />
-                      {commemorationMedals?.hasReceived &&
-                        commemorationMedals.data?.[0]?.ngay_cap && (
-                          <Text type="secondary" className="text-xs">
-                            {formatDate(commemorationMedals.data[0].ngay_cap)}
-                          </Text>
-                        )}
-                    </Card>
-                  </Col>
-                </Row>
-              </div>
+          {/* Hồ sơ cống hiến */}
+          {contributionProfile && (
+            <Card
+              title={
+                <span className="flex items-center gap-2">
+                  <SafetyOutlined /> Hồ sơ cống hiến
+                </span>
+              }
+              size="small"
+            >
+              <Text strong className="text-base">
+                {DANH_HIEU_MAP.HCBVTQ_HANG_NHAT.replace(' Hạng Nhất', '')}
+              </Text>
+              <Divider className="my-3" />
+              <Row gutter={[16, 16]}>
+                <Col xs={24} md={8}>
+                  <Card size="small" className="h-full">
+                    <Statistic
+                      title="Tháng tích lũy 0.7"
+                      value={(() => {
+                        const { years, months } = convertMonthsToYearsAndMonths(
+                          contributionProfile?.months_07 || 0
+                        );
+                        return `${years} năm ${months} tháng`;
+                      })()}
+                      valueStyle={{ color: '#3f8600' }}
+                    />
+                  </Card>
+                </Col>
+                <Col xs={24} md={8}>
+                  <Card size="small" className="h-full">
+                    <Statistic
+                      title="Tháng tích lũy 0.8"
+                      value={(() => {
+                        const { years, months } = convertMonthsToYearsAndMonths(
+                          contributionProfile?.months_08 || 0
+                        );
+                        return `${years} năm ${months} tháng`;
+                      })()}
+                      valueStyle={{ color: '#3f8600' }}
+                    />
+                  </Card>
+                </Col>
+                <Col xs={24} md={8}>
+                  <Card size="small" className="h-full">
+                    <Statistic
+                      title="Tháng tích lũy 0.9-1.0"
+                      value={(() => {
+                        const { years, months } = convertMonthsToYearsAndMonths(
+                          contributionProfile?.months_0910 || 0
+                        );
+                        return `${years} năm ${months} tháng`;
+                      })()}
+                      valueStyle={{ color: '#3f8600' }}
+                    />
+                  </Card>
+                </Col>
+                <Col xs={24} md={8}>
+                  <Card size="small" className="h-full">
+                    <Statistic
+                      title="Hạng Ba"
+                      value={0}
+                      valueStyle={{ fontSize: '14px' }}
+                      valueRender={() => getStatusTag(contributionProfile?.hcbvtq_hang_ba_status)}
+                    />
+                  </Card>
+                </Col>
+                <Col xs={24} md={8}>
+                  <Card size="small" className="h-full">
+                    <Statistic
+                      title="Hạng Nhì"
+                      value={0}
+                      valueStyle={{ fontSize: '14px' }}
+                      valueRender={() =>
+                        getStatusTag(contributionProfile?.hcbvtq_hang_nhi_status)
+                      }
+                    />
+                  </Card>
+                </Col>
+                <Col xs={24} md={8}>
+                  <Card size="small" className="h-full">
+                    <Statistic
+                      title="Hạng Nhất"
+                      value={0}
+                      valueStyle={{ fontSize: '14px' }}
+                      valueRender={() =>
+                        getStatusTag(contributionProfile?.hcbvtq_hang_nhat_status)
+                      }
+                    />
+                  </Card>
+                </Col>
+              </Row>
             </Card>
           )}
 
@@ -633,6 +586,20 @@ export default function ManagerPersonnelDetailPage() {
                   <Col xs={24} md={8}>
                     <Card size="small">
                       <Statistic
+                        title="Chiến sĩ thi đua Toàn quân"
+                        value={0}
+                        valueStyle={{ fontSize: '14px' }}
+                        valueRender={() => (
+                          <Tag color={annualProfile.du_dieu_kien_cstdtq ? 'green' : 'default'}>
+                            {annualProfile.du_dieu_kien_cstdtq ? 'Đủ điều kiện' : 'Chưa đủ'}
+                          </Tag>
+                        )}
+                      />
+                    </Card>
+                  </Col>
+                  <Col xs={24} md={8}>
+                    <Card size="small">
+                      <Statistic
                         title="Bằng khen BQP"
                         value={0}
                         valueStyle={{ fontSize: '14px' }}
@@ -647,21 +614,7 @@ export default function ManagerPersonnelDetailPage() {
                   <Col xs={24} md={8}>
                     <Card size="small">
                       <Statistic
-                        title="CSTD Toàn quân"
-                        value={0}
-                        valueStyle={{ fontSize: '14px' }}
-                        valueRender={() => (
-                          <Tag color={annualProfile.du_dieu_kien_cstdtq ? 'green' : 'default'}>
-                            {annualProfile.du_dieu_kien_cstdtq ? 'Đủ điều kiện' : 'Chưa đủ'}
-                          </Tag>
-                        )}
-                      />
-                    </Card>
-                  </Col>
-                  <Col xs={24} md={8}>
-                    <Card size="small">
-                      <Statistic
-                        title="BK Thủ tướng Chính phủ"
+                        title="Bằng khen của Thủ tướng Chính phủ"
                         value={0}
                         valueStyle={{ fontSize: '14px' }}
                         valueRender={() => (
@@ -916,8 +869,7 @@ export default function ManagerPersonnelDetailPage() {
               <Link href="/manager/personnel">
                 <Button icon={<ArrowLeftOutlined />}>Quay lại</Button>
               </Link>
-              {(user?.quan_nhan_id === personnelId ||
-                personnel.TaiKhoan?.role === ROLES.USER) && (
+              {(user?.quan_nhan_id === personnelId || personnel.TaiKhoan?.role === ROLES.USER) && (
                 <Link href={`/manager/personnel/${personnelId}/edit`}>
                   <Button type="primary" icon={<EditOutlined />}>
                     Chỉnh sửa

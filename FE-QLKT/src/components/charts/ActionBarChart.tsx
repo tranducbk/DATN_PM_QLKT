@@ -30,7 +30,7 @@ export function ActionBarChart({
     labels:
       filteredData.length > 0
         ? filteredData.map(item => {
-            let action = labelMapper ? labelMapper(item.action) : item.action;
+            const action = labelMapper ? labelMapper(item.action) : item.action;
             if (action.length > maxLabelLength) {
               return action.substring(0, maxLabelLength) + '...';
             }

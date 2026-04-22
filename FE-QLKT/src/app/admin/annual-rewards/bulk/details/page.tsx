@@ -103,11 +103,10 @@ export default function BulkRewardDetailsPage() {
       const nam = parseInt(namParam);
       const danhHieu = danhHieuParam;
 
-      let checkResultsData = null;
-      if (checkResultsParam) {
-        checkResultsData = JSON.parse(decodeURIComponent(checkResultsParam));
-        setCheckResults(checkResultsData);
-      }
+      const checkResultsData = checkResultsParam
+        ? JSON.parse(decodeURIComponent(checkResultsParam))
+        : null;
+      if (checkResultsData) setCheckResults(checkResultsData);
 
       // Keep eligible list for submit step
       setEligiblePersonnelIds(eligibleIds);

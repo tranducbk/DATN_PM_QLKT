@@ -126,14 +126,10 @@ export default function PersonnelPage() {
           const donViTen =
             donViTrucThuocRelation?.ten_don_vi || donViTrucThuocRelation?.ten || coQuanTen || null;
 
-          let donViDisplay = '-';
-          if (donViTrucThuocRelation?.ten_don_vi || donViTrucThuocRelation?.ten) {
-            const tenDonVi =
-              donViTrucThuocRelation.ten_don_vi || donViTrucThuocRelation.ten || '';
-            donViDisplay = coQuanTen ? `${tenDonVi} (${coQuanTen})` : tenDonVi;
-          } else if (coQuanTen) {
-            donViDisplay = coQuanTen;
-          }
+          const tenDonVi = donViTrucThuocRelation?.ten_don_vi || donViTrucThuocRelation?.ten || '';
+          const donViDisplay = tenDonVi
+            ? coQuanTen ? `${tenDonVi} (${coQuanTen})` : tenDonVi
+            : coQuanTen || '-';
 
           const resolvedCoQuanId =
             p.co_quan_don_vi_id ||
@@ -227,20 +223,12 @@ export default function PersonnelPage() {
       const matchesSearch =
         p.ho_ten?.toLowerCase().includes(searchTerm.toLowerCase()) || p.cccd?.includes(searchTerm);
 
-      let matchesCoQuanDonVi = true;
-      if (selectedCoQuanDonVi && selectedCoQuanDonVi !== 'ALL') {
-        if (p.co_quan_don_vi_id === selectedCoQuanDonVi) {
-          matchesCoQuanDonVi = true;
-        }
-        else if (p.DonViTrucThuoc?.CoQuanDonVi?.id === selectedCoQuanDonVi) {
-          matchesCoQuanDonVi = true;
-        }
-        else if (p.DonViTrucThuoc?.co_quan_don_vi_id === selectedCoQuanDonVi) {
-          matchesCoQuanDonVi = true;
-        } else {
-          matchesCoQuanDonVi = false;
-        }
-      }
+      const matchesCoQuanDonVi =
+        !selectedCoQuanDonVi ||
+        selectedCoQuanDonVi === 'ALL' ||
+        p.co_quan_don_vi_id === selectedCoQuanDonVi ||
+        p.DonViTrucThuoc?.CoQuanDonVi?.id === selectedCoQuanDonVi ||
+        p.DonViTrucThuoc?.co_quan_don_vi_id === selectedCoQuanDonVi;
 
       const matchesDonViTrucThuoc =
         !selectedDonViTrucThuoc ||

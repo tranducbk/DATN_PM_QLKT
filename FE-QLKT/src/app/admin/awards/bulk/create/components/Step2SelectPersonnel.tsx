@@ -110,11 +110,11 @@ export function Step2SelectPersonnel({
       searchText === '' || p.ho_ten.toLowerCase().includes(searchText.toLowerCase());
 
     // Unit filter
-    let matchesUnit = true;
-    if (unitFilter && unitFilter !== 'ALL') {
-      const unitId = unitFilter.split('|')[0];
-      matchesUnit = p.don_vi_truc_thuoc_id === unitId || p.co_quan_don_vi_id === unitId;
-    }
+    const matchesUnit =
+      !unitFilter ||
+      unitFilter === 'ALL' ||
+      p.don_vi_truc_thuoc_id === unitFilter.split('|')[0] ||
+      p.co_quan_don_vi_id === unitFilter.split('|')[0];
 
     return matchesSearch && matchesUnit;
   });
@@ -137,15 +137,11 @@ export function Step2SelectPersonnel({
         const coQuan = record.DonViTrucThuoc?.CoQuanDonVi || record.CoQuanDonVi;
         const donViTrucThuoc = record.DonViTrucThuoc;
 
-        let donViDisplay: string | null = null;
-
-        if (donViTrucThuoc?.ten_don_vi) {
-          donViDisplay = coQuan?.ten_don_vi
+        const donViDisplay: string | null = donViTrucThuoc?.ten_don_vi
+          ? coQuan?.ten_don_vi
             ? `${donViTrucThuoc.ten_don_vi} (${coQuan.ten_don_vi})`
-            : donViTrucThuoc.ten_don_vi;
-        } else if (coQuan?.ten_don_vi) {
-          donViDisplay = coQuan.ten_don_vi;
-        }
+            : donViTrucThuoc.ten_don_vi
+          : coQuan?.ten_don_vi || null;
 
         return (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -208,27 +204,7 @@ export function Step2SelectPersonnel({
           return null;
         }
 
-        let years = endDate.getFullYear() - startDate.getFullYear();
-        let months = endDate.getMonth() - startDate.getMonth();
-        let days = endDate.getDate() - startDate.getDate();
-
-        if (days < 0) {
-          months -= 1;
-          const lastDayOfPrevMonth = new Date(
-            endDate.getFullYear(),
-            endDate.getMonth(),
-            0
-          ).getDate();
-          days += lastDayOfPrevMonth;
-        }
-
-        if (months < 0) {
-          years -= 1;
-          months += 12;
-        }
-
-        const totalMonths = years * 12 + months;
-
+        const totalMonths = Math.max(0, (endDate.getFullYear() - startDate.getFullYear()) * 12 + endDate.getMonth() - startDate.getMonth());
         const totalYears = Math.floor(totalMonths / 12);
         const remainingMonths = totalMonths % 12;
 

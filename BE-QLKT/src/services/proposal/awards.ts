@@ -227,7 +227,7 @@ async function getAwardsStatistics() {
       prisma.danhHieuHangNam.count({
         where: { danh_hieu: { not: null, notIn: Object.values(DANH_HIEU_HCBVTQ) } },
       }),
-      prisma.khenThuongCongHien.count(),
+      prisma.khenThuongHCBVTQ.count(),
       prisma.khenThuongHCCSVV.count(),
       prisma.huanChuongQuanKyQuyetThang.count(),
       prisma.kyNiemChuongVSNXDQDNDVN.count(),

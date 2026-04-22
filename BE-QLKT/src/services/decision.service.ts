@@ -393,7 +393,7 @@ class DecisionService {
     const soQuyetDinh = existingDecision.so_quyet_dinh;
     const [danhHieu, congHien, hccsvv, dotXuat, huanChuong, kyNiem, thanhTich] = await Promise.all([
       prisma.danhHieuHangNam.findFirst({ where: { so_quyet_dinh: soQuyetDinh } }),
-      prisma.khenThuongCongHien.findFirst({ where: { so_quyet_dinh: soQuyetDinh } }),
+      prisma.khenThuongHCBVTQ.findFirst({ where: { so_quyet_dinh: soQuyetDinh } }),
       prisma.khenThuongHCCSVV.findFirst({ where: { so_quyet_dinh: soQuyetDinh } }),
       prisma.khenThuongDotXuat.findFirst({ where: { so_quyet_dinh: soQuyetDinh } }),
       prisma.huanChuongQuanKyQuyetThang.findFirst({ where: { so_quyet_dinh: soQuyetDinh } }),

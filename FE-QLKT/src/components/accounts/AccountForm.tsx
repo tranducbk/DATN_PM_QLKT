@@ -112,6 +112,8 @@ export function AccountForm({ account, personnel = [], onSuccess, onClose }: Acc
     }
   }
 
+  const submitLabel = loading ? 'Đang xử lý...' : account ? 'Cập nhật' : 'Tạo mới';
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -233,7 +235,7 @@ export function AccountForm({ account, personnel = [], onSuccess, onClose }: Acc
             Hủy
           </Button>
           <Button type="submit" disabled={loading}>
-            {loading ? 'Đang xử lý...' : account ? 'Cập nhật' : 'Tạo mới'}
+            {submitLabel}
           </Button>
         </div>
       </form>

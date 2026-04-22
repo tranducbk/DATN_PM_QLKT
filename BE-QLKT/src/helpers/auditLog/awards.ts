@@ -609,7 +609,7 @@ const AWARD_PRISMA_MODEL: Record<string, AwardModelAccessor> = {
   'tenure-medals': prisma.khenThuongHCCSVV as unknown as AwardModelAccessor,
   'commemorative-medals': prisma.kyNiemChuongVSNXDQDNDVN as unknown as AwardModelAccessor,
   'military-flag': prisma.huanChuongQuanKyQuyetThang as unknown as AwardModelAccessor,
-  'contribution-medals': prisma.khenThuongCongHien as unknown as AwardModelAccessor,
+  'contribution-medals': prisma.khenThuongHCBVTQ as unknown as AwardModelAccessor,
 };
 
 function buildAwardTypeHelpers(resource: string): Record<

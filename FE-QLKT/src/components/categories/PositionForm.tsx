@@ -86,12 +86,9 @@ export function PositionForm({ position, units = [], onSuccess, onClose }: Posit
         }
       }
 
-      let res;
-      if (position?.id) {
-        res = await apiClient.updatePosition(position.id.toString(), payload);
-      } else {
-        res = await apiClient.createPosition(payload);
-      }
+      const res = position?.id
+        ? await apiClient.updatePosition(position.id.toString(), payload)
+        : await apiClient.createPosition(payload);
 
       if (res.success) {
         message.success(position?.id ? 'Cập nhật chức vụ thành công' : 'Tạo chức vụ thành công');

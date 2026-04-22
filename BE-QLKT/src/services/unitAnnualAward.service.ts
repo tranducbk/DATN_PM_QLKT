@@ -1217,7 +1217,7 @@ class UnitAnnualAwardService {
     }
 
     return await prisma.$transaction(
-      async tx => {
+      async prismaTx => {
         const results = [];
         for (const item of validItems) {
           const upsertWhere = item.is_co_quan_don_vi
@@ -1249,7 +1249,7 @@ class UnitAnnualAwardService {
             createData.don_vi_truc_thuoc_id = item.unit_id;
           }
 
-          const result = await tx.danhHieuDonViHangNam.upsert({
+          const result = await prismaTx.danhHieuDonViHangNam.upsert({
             where: upsertWhere,
             update: {
               danh_hieu: item.danh_hieu,

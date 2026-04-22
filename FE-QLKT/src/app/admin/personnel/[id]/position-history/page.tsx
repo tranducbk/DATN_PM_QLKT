@@ -89,22 +89,9 @@ export default function PositionHistoryPage() {
       if (historiesRes.success) {
         const mappedHistories = (historiesRes.data || []).map((h: any) => {
           const chucVu = h.ChucVu || {};
-          let unitInfo = '';
-
-          if (chucVu.DonViTrucThuoc) {
-            const donViName = chucVu.DonViTrucThuoc.ten_don_vi || '';
-            const coQuanName = chucVu.DonViTrucThuoc.CoQuanDonVi?.ten_don_vi || '';
-            if (donViName && coQuanName) {
-              unitInfo = `${donViName}, ${coQuanName}`;
-            } else if (donViName) {
-              unitInfo = donViName;
-            } else if (coQuanName) {
-              unitInfo = coQuanName;
-            }
-          }
-          else if (chucVu.CoQuanDonVi) {
-            unitInfo = chucVu.CoQuanDonVi.ten_don_vi || '';
-          }
+          const unitInfo = chucVu.DonViTrucThuoc
+            ? [chucVu.DonViTrucThuoc.ten_don_vi, chucVu.DonViTrucThuoc.CoQuanDonVi?.ten_don_vi].filter(Boolean).join(', ')
+            : chucVu.CoQuanDonVi?.ten_don_vi || '';
 
           return {
             ...h,
@@ -262,15 +249,10 @@ export default function PositionHistoryPage() {
 
     histories.forEach((history: any) => {
       const heSo = Number(history.he_so_chuc_vu) || 0;
-      let belongsToGroup = false;
-
-      if (group === '0.7') {
-        belongsToGroup = heSo >= 0.7 && heSo < 0.8;
-      } else if (group === '0.8') {
-        belongsToGroup = heSo >= 0.8 && heSo < 0.9;
-      } else if (group === '0.9-1.0') {
-        belongsToGroup = heSo >= 0.9 && heSo <= 1.0;
-      }
+      const belongsToGroup =
+        (group === '0.7' && heSo >= 0.7 && heSo < 0.8) ||
+        (group === '0.8' && heSo >= 0.8 && heSo < 0.9) ||
+        (group === '0.9-1.0' && heSo >= 0.9 && heSo <= 1.0);
 
       if (belongsToGroup && history.so_thang !== null && history.so_thang !== undefined) {
         totalMonths += history.so_thang;
@@ -542,14 +524,12 @@ export default function PositionHistoryPage() {
                 }}
               >
                 {positions.map((pos: any) => {
-                  let unitName = '';
-                  if (pos.CoQuanDonVi) {
-                    unitName = pos.CoQuanDonVi.ten_don_vi;
-                  } else if (pos.DonViTrucThuoc) {
-                    const donViName = pos.DonViTrucThuoc.ten_don_vi;
-                    const coQuanName = pos.DonViTrucThuoc.CoQuanDonVi?.ten_don_vi;
-                    unitName = coQuanName ? `${donViName} (${coQuanName})` : donViName;
-                  }
+                  const unitName = pos.CoQuanDonVi?.ten_don_vi
+                    ?? (pos.DonViTrucThuoc
+                      ? pos.DonViTrucThuoc.CoQuanDonVi?.ten_don_vi
+                        ? `${pos.DonViTrucThuoc.ten_don_vi} (${pos.DonViTrucThuoc.CoQuanDonVi.ten_don_vi})`
+                        : pos.DonViTrucThuoc.ten_don_vi
+                      : '');
 
                   const heSo = pos.he_so_chuc_vu ? ` (HS: ${pos.he_so_chuc_vu})` : '';
                   const displayText = unitName

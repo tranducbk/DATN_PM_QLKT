@@ -20,6 +20,7 @@ import { buildUnitWhereFilter } from '../helpers/controllerHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { DEFAULT_PASSWORD } from '../configs';
 import { sanitizeRowData } from '../helpers/excelHelper';
+import { calculateTenureMonthsWithDayPrecision } from '../helpers/serviceYearsHelper';
 
 type DateInput = Date | null;
 
@@ -200,7 +201,6 @@ class PersonnelService {
   async createPersonnel(data) {
     const { cccd, unit_id, position_id, role = ROLES.USER } = data;
 
-    // Ensure CCCD is unique.
     const existingPersonnel = await prisma.quanNhan.findUnique({
       where: { cccd },
       select: { id: true },
@@ -220,7 +220,6 @@ class PersonnelService {
       throw new NotFoundError('Đơn vị');
     }
 
-    // Ensure position exists.
     const position = await prisma.chucVu.findUnique({
       where: { id: position_id },
       select: { id: true },
@@ -232,7 +231,6 @@ class PersonnelService {
 
     const username = cccd;
 
-    // Ensure account username is unique.
     const existingAccount = await prisma.taiKhoan.findUnique({
       where: { username },
       select: { id: true },
@@ -265,21 +263,21 @@ class PersonnelService {
     const hashedPassword = await bcrypt.hash(defaultPassword, 10);
 
     // Wrap all writes in one transaction for consistency.
-    const result = await prisma.$transaction(async tx => {
-      const newPersonnel = await tx.quanNhan.create({
+    const result = await prisma.$transaction(async prismaTx => {
+      const newPersonnel = await prismaTx.quanNhan.create({
         data: personnelData,
         include: personnelInclude,
       });
 
       // Load position coefficient for initial history row.
-      const chucVu = await tx.chucVu.findUnique({
+      const chucVu = await prismaTx.chucVu.findUnique({
         where: { id: position_id },
         select: { he_so_chuc_vu: true },
       });
 
       // Create initial LichSuChucVu record.
       const ngayBatDau = new Date();
-      await tx.lichSuChucVu.create({
+      await prismaTx.lichSuChucVu.create({
         data: {
           quan_nhan_id: newPersonnel.id,
           chuc_vu_id: position_id,
@@ -291,7 +289,7 @@ class PersonnelService {
       });
 
       // Create linked account.
-      const account = await tx.taiKhoan.create({
+      const account = await prismaTx.taiKhoan.create({
         data: {
           username,
           password_hash: hashedPassword,
@@ -302,12 +300,12 @@ class PersonnelService {
 
       // Update unit personnel count.
       if (isCoQuanDonVi) {
-        await tx.coQuanDonVi.update({
+        await prismaTx.coQuanDonVi.update({
           where: { id: unit_id },
           data: { so_luong: { increment: 1 } },
         });
       } else {
-        await tx.donViTrucThuoc.update({
+        await prismaTx.donViTrucThuoc.update({
           where: { id: unit_id },
           data: { so_luong: { increment: 1 } },
         });
@@ -364,7 +362,6 @@ class PersonnelService {
     const donViTrucThuocId = don_vi_truc_thuoc_id ?? undefined;
     const cccdValue = cccd;
 
-    // Ensure personnel exists.
     const personnel = await prisma.quanNhan.findUnique({
       where: { id: String(id) },
       include: { TaiKhoan: { select: { role: true } } },
@@ -455,7 +452,6 @@ class PersonnelService {
       }
     }
 
-    // Validate new unit when changed.
     const currentUnitId = personnel.co_quan_don_vi_id || personnel.don_vi_truc_thuoc_id;
     if (unitId && unitId !== currentUnitId) {
       const [coQuanDonVi, donViTrucThuoc] = await Promise.all([
@@ -468,7 +464,6 @@ class PersonnelService {
       }
     }
 
-    // Validate new position when changed.
     if (positionId && positionId !== personnel.chuc_vu_id) {
       const position = await prisma.chucVu.findUnique({
         where: { id: positionId },
@@ -555,8 +550,8 @@ class PersonnelService {
     }
 
     // Use transaction to keep all writes consistent.
-    const { updatedPersonnel, unitTransferInfo } = await prisma.$transaction(async tx => {
-      const txUpdatedPersonnel = await tx.quanNhan.update({
+    const { updatedPersonnel, unitTransferInfo } = await prisma.$transaction(async prismaTx => {
+      const txUpdatedPersonnel = await prismaTx.quanNhan.update({
         where: { id: String(id) },
         data: updateData,
         include: personnelInclude,
@@ -566,7 +561,7 @@ class PersonnelService {
       if (positionId && positionId !== personnel.chuc_vu_id) {
         const today = new Date();
 
-        const oldHistories = await tx.lichSuChucVu.findMany({
+        const oldHistories = await prismaTx.lichSuChucVu.findMany({
           where: {
             quan_nhan_id: id,
             ngay_ket_thuc: null,
@@ -575,14 +570,9 @@ class PersonnelService {
 
         for (const oldHistory of oldHistories) {
           const ngayBatDauOld = new Date(oldHistory.ngay_bat_dau);
-          let months = (today.getFullYear() - ngayBatDauOld.getFullYear()) * 12;
-          months += today.getMonth() - ngayBatDauOld.getMonth();
-          if (today.getDate() < ngayBatDauOld.getDate()) {
-            months--;
-          }
-          const soThangOld = Math.max(0, months);
+          const soThangOld = calculateTenureMonthsWithDayPrecision(ngayBatDauOld, today);
 
-          await tx.lichSuChucVu.update({
+          await prismaTx.lichSuChucVu.update({
             where: { id: oldHistory.id },
             data: {
               ngay_ket_thuc: today,
@@ -591,12 +581,12 @@ class PersonnelService {
           });
         }
 
-        const newChucVu = await tx.chucVu.findUnique({
+        const newChucVu = await prismaTx.chucVu.findUnique({
           where: { id: positionId },
           select: { he_so_chuc_vu: true },
         });
 
-        await tx.lichSuChucVu.create({
+        await prismaTx.lichSuChucVu.create({
           data: {
             quan_nhan_id: id,
             chuc_vu_id: positionId,
@@ -627,7 +617,7 @@ class PersonnelService {
         const oldPrimaryUnitId = oldDonViTrucThuocId || oldCoQuanDonViId;
         if (oldPrimaryUnitId) {
           if (oldDonViTrucThuocId) {
-            const oldDvtt = await tx.donViTrucThuoc.findUnique({
+            const oldDvtt = await prismaTx.donViTrucThuoc.findUnique({
               where: { id: oldDonViTrucThuocId },
               select: { id: true, ten_don_vi: true },
             });
@@ -637,19 +627,19 @@ class PersonnelService {
                 ten_don_vi: oldDvtt.ten_don_vi,
                 isCoQuanDonVi: false,
               };
-              await tx.donViTrucThuoc.update({
+              await prismaTx.donViTrucThuoc.update({
                 where: { id: oldDonViTrucThuocId },
                 data: { so_luong: { decrement: 1 } },
               });
             }
           } else if (oldCoQuanDonViId) {
-            const oldCqDv = await tx.coQuanDonVi.findUnique({
+            const oldCqDv = await prismaTx.coQuanDonVi.findUnique({
               where: { id: oldCoQuanDonViId },
               select: { id: true, ten_don_vi: true },
             });
             if (oldCqDv) {
               oldUnitInfo = { id: oldCqDv.id, ten_don_vi: oldCqDv.ten_don_vi, isCoQuanDonVi: true };
-              await tx.coQuanDonVi.update({
+              await prismaTx.coQuanDonVi.update({
                 where: { id: oldCoQuanDonViId },
                 data: { so_luong: { decrement: 1 } },
               });
@@ -661,7 +651,7 @@ class PersonnelService {
         const newPrimaryUnitId = newDonViTrucThuocId || newCoQuanDonViId;
         if (newPrimaryUnitId) {
           if (newDonViTrucThuocId) {
-            const newDvtt = await tx.donViTrucThuoc.findUnique({
+            const newDvtt = await prismaTx.donViTrucThuoc.findUnique({
               where: { id: newDonViTrucThuocId },
               select: { id: true, ten_don_vi: true },
             });
@@ -671,19 +661,19 @@ class PersonnelService {
                 ten_don_vi: newDvtt.ten_don_vi,
                 isCoQuanDonVi: false,
               };
-              await tx.donViTrucThuoc.update({
+              await prismaTx.donViTrucThuoc.update({
                 where: { id: newDonViTrucThuocId },
                 data: { so_luong: { increment: 1 } },
               });
             }
           } else if (newCoQuanDonViId) {
-            const newCqDv = await tx.coQuanDonVi.findUnique({
+            const newCqDv = await prismaTx.coQuanDonVi.findUnique({
               where: { id: newCoQuanDonViId },
               select: { id: true, ten_don_vi: true },
             });
             if (newCqDv) {
               newUnitInfo = { id: newCqDv.id, ten_don_vi: newCqDv.ten_don_vi, isCoQuanDonVi: true };
-              await tx.coQuanDonVi.update({
+              await prismaTx.coQuanDonVi.update({
                 where: { id: newCoQuanDonViId },
                 data: { so_luong: { increment: 1 } },
               });
@@ -734,11 +724,10 @@ class PersonnelService {
   /**
    * Xóa quân nhân và tất cả dữ liệu liên quan
    * Cascade delete: TaiKhoan, LichSuChucVu, ThanhTichKhoaHoc, DanhHieuHangNam,
-   * KhenThuongCongHien, HuanChuongQuanKyQuyetThang, KyNiemChuongVSNXDQDNDVN,
+   * KhenThuongHCBVTQ, HuanChuongQuanKyQuyetThang, KyNiemChuongVSNXDQDNDVN,
    * KhenThuongHCCSVV, KhenThuongDotXuat, HoSoNienHan, HoSoCongHien, HoSoHangNam
    */
   async deletePersonnel(id, userRole, userQuanNhanId) {
-    // Ensure personnel exists.
     const personnel = await prisma.quanNhan.findUnique({
       where: { id: String(id) },
       include: {
@@ -765,71 +754,71 @@ class PersonnelService {
     const isCoQuanDonVi = !personnel.don_vi_truc_thuoc_id && !!personnel.co_quan_don_vi_id;
 
     // Use transaction for full cascade delete.
-    await prisma.$transaction(async tx => {
+    await prisma.$transaction(async prismaTx => {
       // Delete linked account.
       if (personnel.TaiKhoan) {
-        await tx.taiKhoan.delete({
+        await prismaTx.taiKhoan.delete({
           where: { id: personnel.TaiKhoan.id },
         });
       }
 
       // Delete position history.
-      await tx.lichSuChucVu.deleteMany({
+      await prismaTx.lichSuChucVu.deleteMany({
         where: { quan_nhan_id: id },
       });
 
       // Delete scientific achievements.
-      await tx.thanhTichKhoaHoc.deleteMany({
+      await prismaTx.thanhTichKhoaHoc.deleteMany({
         where: { quan_nhan_id: id },
       });
 
       // Delete annual titles.
-      await tx.danhHieuHangNam.deleteMany({
+      await prismaTx.danhHieuHangNam.deleteMany({
         where: { quan_nhan_id: id },
       });
 
       // Delete contribution awards.
-      await tx.khenThuongCongHien.deleteMany({
+      await prismaTx.khenThuongHCBVTQ.deleteMany({
         where: { quan_nhan_id: id },
       });
 
       // Delete HC_QKQT awards.
-      await tx.huanChuongQuanKyQuyetThang.deleteMany({
+      await prismaTx.huanChuongQuanKyQuyetThang.deleteMany({
         where: { quan_nhan_id: id },
       });
 
       // Delete KNC_VSNXD_QDNDVN awards.
-      await tx.kyNiemChuongVSNXDQDNDVN.deleteMany({
+      await prismaTx.kyNiemChuongVSNXDQDNDVN.deleteMany({
         where: { quan_nhan_id: id },
       });
 
       // Delete HCCSVV awards.
-      await tx.khenThuongHCCSVV.deleteMany({
+      await prismaTx.khenThuongHCCSVV.deleteMany({
         where: { quan_nhan_id: id },
       });
 
       // Delete ad-hoc awards.
-      await tx.khenThuongDotXuat.deleteMany({
+      await prismaTx.khenThuongDotXuat.deleteMany({
         where: { quan_nhan_id: id },
       });
 
       // Delete tenure profiles.
-      await tx.hoSoNienHan.deleteMany({
+      await prismaTx.hoSoNienHan.deleteMany({
         where: { quan_nhan_id: id },
       });
 
       // Delete contribution profiles.
-      await tx.hoSoCongHien.deleteMany({
+      await prismaTx.hoSoCongHien.deleteMany({
         where: { quan_nhan_id: id },
       });
 
       // Delete annual profiles.
-      await tx.hoSoHangNam.deleteMany({
+      await prismaTx.hoSoHangNam.deleteMany({
         where: { quan_nhan_id: id },
       });
 
       // Delete personnel row.
-      await tx.quanNhan.delete({
+      await prismaTx.quanNhan.delete({
         where: { id: String(id) },
       });
 
@@ -837,12 +826,12 @@ class PersonnelService {
       if (unitId) {
         try {
           if (isCoQuanDonVi) {
-            await tx.coQuanDonVi.update({
+            await prismaTx.coQuanDonVi.update({
               where: { id: unitId },
               data: { so_luong: { decrement: 1 } },
             });
           } else {
-            await tx.donViTrucThuoc.update({
+            await prismaTx.donViTrucThuoc.update({
               where: { id: unitId },
               data: { so_luong: { decrement: 1 } },
             });
@@ -1257,12 +1246,7 @@ class PersonnelService {
 
           for (const oldHistory of openHistories) {
             const ngayBatDauOld = new Date(oldHistory.ngay_bat_dau);
-            let months = (today.getFullYear() - ngayBatDauOld.getFullYear()) * 12;
-            months += today.getMonth() - ngayBatDauOld.getMonth();
-            if (today.getDate() < ngayBatDauOld.getDate()) {
-              months--;
-            }
-            const soThangOld = Math.max(0, months);
+            const soThangOld = calculateTenureMonthsWithDayPrecision(ngayBatDauOld, today);
 
             await prisma.lichSuChucVu.update({
               where: { id: oldHistory.id },
@@ -1309,7 +1293,7 @@ class PersonnelService {
     const ineligiblePersonnel = [];
 
     const [existingAwards, pendingProposals] = await Promise.all([
-      prisma.khenThuongCongHien.findMany({
+      prisma.khenThuongHCBVTQ.findMany({
         where: { quan_nhan_id: { in: personnelIds } },
       }),
       prisma.bangDeXuat.findMany({

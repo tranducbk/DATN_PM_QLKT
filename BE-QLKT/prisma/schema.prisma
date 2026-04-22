@@ -26,7 +26,7 @@ model CoQuanDonVi {
   HoSoDonViHangNam       HoSoDonViHangNam[]
   KhenThuongDotXuat       KhenThuongDotXuat[]
 
-  @@map("co_quan_don_vi")
+  @@map("CoQuanDonVi")
 }
 
 // 2. Bảng Đơn vị trực thuộc
@@ -48,7 +48,7 @@ model DonViTrucThuoc {
   HoSoDonViHangNam         HoSoDonViHangNam[]
   KhenThuongDotXuat         KhenThuongDotXuat[]
 
-  @@map("don_vi_truc_thuoc")
+  @@map("DonViTrucThuoc")
 }
 
 // 3. Bảng Chức vụ
@@ -70,7 +70,7 @@ model ChucVu {
 
   @@unique([co_quan_don_vi_id, ten_chuc_vu])
   @@unique([don_vi_truc_thuoc_id, ten_chuc_vu])
-  @@map("chuc_vu")
+  @@map("ChucVu")
 }
 
 // 4. Bảng Quân nhân
@@ -106,7 +106,7 @@ model QuanNhan {
   LichSuChucVu      LichSuChucVu[]
   ThanhTichKhoaHoc  ThanhTichKhoaHoc[]
   DanhHieuHangNam   DanhHieuHangNam[]
-  KhenThuongCongHien KhenThuongCongHien?
+  KhenThuongHCBVTQ   KhenThuongHCBVTQ?
   KhenThuongHCCSVV   KhenThuongHCCSVV[]
   KhenThuongDotXuat  KhenThuongDotXuat[]
   HuanChuongQuanKyQuyetThang HuanChuongQuanKyQuyetThang?
@@ -116,7 +116,7 @@ model QuanNhan {
   HoSoHangNam       HoSoHangNam?
 
   @@index([co_quan_don_vi_id])
-  @@map("quan_nhan")
+  @@map("QuanNhan")
 }
 
 // 5. Bảng Tài khoản
@@ -137,7 +137,7 @@ model TaiKhoan {
   DeXuatDaDuyet          BangDeXuat[]             @relation("NguoiDuyet")
   ThongBao               ThongBao[] @relation("NguoiNhan") // Thông báo nhận được
 
-  @@map("tai_khoan")
+  @@map("TaiKhoan")
 }
 
 // 6. Bảng Lịch sử chức vụ (INPUT - để tính thời gian cống hiến)
@@ -156,7 +156,7 @@ model LichSuChucVu {
   QuanNhan QuanNhan @relation(fields: [quan_nhan_id], references: [id], onDelete: Cascade)
   ChucVu   ChucVu   @relation(fields: [chuc_vu_id], references: [id], onDelete: Cascade)
 
-  @@map("lich_su_chuc_vu")
+  @@map("LichSuChucVu")
 }
 
 // 7. Bảng Thành tích khoa học (INPUT)
@@ -164,7 +164,7 @@ model ThanhTichKhoaHoc {
   id              String   @id @default(cuid()) @db.VarChar(30)
   quan_nhan_id    String   @db.VarChar(30)
   nam             Int
-  loai            String   @db.VarChar(10) // NCKH, SKKH
+  loai            String   @db.VarChar(10) // DTKH, SKKH
   mo_ta           String   @db.VarChar(500)
   cap_bac         String?  @db.VarChar(50) // Cấp bậc tại thời điểm được đề xuất
   chuc_vu         String?  @db.VarChar(255) // Chức vụ tại thời điểm được đề xuất (text tự do)
@@ -177,7 +177,7 @@ model ThanhTichKhoaHoc {
   QuanNhan QuanNhan @relation(fields: [quan_nhan_id], references: [id], onDelete: Cascade)
 
   @@index([quan_nhan_id, nam])
-  @@map("thanh_tich_khoa_hoc")
+  @@map("ThanhTichKhoaHoc")
 }
 
 // 8. Bảng Danh hiệu hằng năm (INPUT + OUTPUT)
@@ -203,11 +203,11 @@ model DanhHieuHangNam {
   QuanNhan QuanNhan @relation(fields: [quan_nhan_id], references: [id], onDelete: Cascade)
 
   @@unique([quan_nhan_id, nam])
-  @@map("danh_hieu_hang_nam")
+  @@map("DanhHieuHangNam")
 }
 
-// 9. Bảng Khen thưởng Cống hiến (OUTPUT)
-model KhenThuongCongHien {
+// 9. Bảng Khen thưởng Huân chương Bảo vệ Tổ quốc (OUTPUT)
+model KhenThuongHCBVTQ {
   id                     String   @id @default(cuid()) @db.VarChar(30)
   quan_nhan_id           String   @unique @db.VarChar(30) // Mỗi quân nhân chỉ có 1 danh hiệu khen thưởng cống hiến
   danh_hieu              String   @db.VarChar(20) // HCBVTQ_HANG_BA, HCBVTQ_HANG_NHI, HCBVTQ_HANG_NHAT
@@ -226,7 +226,7 @@ model KhenThuongCongHien {
   // Relations
   QuanNhan QuanNhan @relation(fields: [quan_nhan_id], references: [id], onDelete: Cascade)
 
-  @@map("khen_thuong_cong_hien")
+  @@map("KhenThuongHCBVTQ")
 }
 
 // 10. Bảng Khen thưởng Huy chương Quân kỳ quyết thắng (OUTPUT)
@@ -234,6 +234,7 @@ model HuanChuongQuanKyQuyetThang {
   id                     String   @id @default(cuid()) @db.VarChar(30)
   quan_nhan_id           String   @unique @db.VarChar(30) // Mỗi quân nhân chỉ có 1 huân chương
   nam                    Int // Năm được trao
+  thang                  Int      @default(12) // Tháng được trao (1-12)
   cap_bac                String?  @db.VarChar(50) // Cấp bậc tại thời điểm được đề xuất
   chuc_vu                String?  @db.VarChar(255) // Chức vụ tại thời điểm được đề xuất (text tự do)
   ghi_chu                String?  @db.Text // Ghi chú bổ sung (vd: Phó giám đốc tại đơn vị A)
@@ -246,7 +247,7 @@ model HuanChuongQuanKyQuyetThang {
   // Relations
   QuanNhan QuanNhan @relation(fields: [quan_nhan_id], references: [id], onDelete: Cascade)
 
-  @@map("huan_chuong_quan_ky_quyet_thang")
+  @@map("HuanChuongQuanKyQuyetThang")
 }
 
 // 11. Bảng Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN (OUTPUT)
@@ -254,6 +255,7 @@ model KyNiemChuongVSNXDQDNDVN {
   id                     String   @id @default(cuid()) @db.VarChar(30)
   quan_nhan_id           String   @unique @db.VarChar(30) // Mỗi quân nhân chỉ có 1 kỷ niệm chương
   nam                    Int // Năm được trao
+  thang                  Int      @default(12) // Tháng được trao (1-12)
   cap_bac                String?  @db.VarChar(50) // Cấp bậc tại thời điểm được đề xuất
   chuc_vu                String?  @db.VarChar(255) // Chức vụ tại thời điểm được đề xuất (text tự do)
   ghi_chu                String?  @db.Text // Ghi chú bổ sung (vd: Phó giám đốc tại đơn vị A)
@@ -266,7 +268,7 @@ model KyNiemChuongVSNXDQDNDVN {
   // Relations
   QuanNhan QuanNhan @relation(fields: [quan_nhan_id], references: [id], onDelete: Cascade)
 
-  @@map("ky_niem_chuong_vsnxd_qdndvn")
+  @@map("KyNiemChuongVSNXDQDNDVN")
 }
 
 // 12. Bảng Khen thưởng Huy chương Chiến sĩ Vẻ vang (OUTPUT)
@@ -275,6 +277,7 @@ model KhenThuongHCCSVV {
   quan_nhan_id           String   @db.VarChar(30)
   danh_hieu              String   @db.VarChar(20) // HCCSVV_HANG_BA, HCCSVV_HANG_NHI, HCCSVV_HANG_NHAT
   nam                    Int // Năm được trao
+  thang                  Int      @default(12) // Tháng được trao (1-12)
   cap_bac                String?  @db.VarChar(50) // Cấp bậc tại thời điểm được đề xuất
   chuc_vu                String?  @db.VarChar(255) // Chức vụ tại thời điểm được đề xuất (text tự do)
   ghi_chu                String?  @db.Text // Ghi chú bổ sung (vd: Phó giám đốc tại đơn vị A)
@@ -289,7 +292,7 @@ model KhenThuongHCCSVV {
 
   // Mỗi người chỉ có tối đa 1 bản ghi cho mỗi hạng
   @@unique([quan_nhan_id, danh_hieu])
-  @@map("khen_thuong_hccsvv")
+  @@map("KhenThuongHCCSVV")
 }
 
 // 13. Bảng Khen thưởng Đột xuất (OUTPUT)
@@ -318,7 +321,7 @@ model KhenThuongDotXuat {
   @@index([quan_nhan_id, nam])
   @@index([co_quan_don_vi_id, nam])
   @@index([don_vi_truc_thuoc_id, nam])
-  @@map("khen_thuong_dot_xuat")
+  @@map("KhenThuongDotXuat")
 }
 
 // 14. Bảng Hồ sơ Niên hạn (OUTPUT - chỉ cho HCCSVV)
@@ -341,7 +344,7 @@ model HoSoNienHan {
   // Relations
   QuanNhan QuanNhan @relation(fields: [quan_nhan_id], references: [id], onDelete: Cascade)
 
-  @@map("ho_so_nien_han")
+  @@map("HoSoNienHan")
 }
 
 // 15. Bảng Hồ sơ Cống hiến (OUTPUT - cho HCBVTQ)
@@ -368,7 +371,7 @@ model HoSoCongHien {
   // Relations
   QuanNhan QuanNhan @relation(fields: [quan_nhan_id], references: [id], onDelete: Cascade)
 
-  @@map("ho_so_cong_hien")
+  @@map("HoSoCongHien")
 }
 
 // 16. Bảng Hồ sơ Hằng năm (OUTPUT)
@@ -393,7 +396,7 @@ model HoSoHangNam {
   // Relations
   QuanNhan QuanNhan @relation(fields: [quan_nhan_id], references: [id], onDelete: Cascade)
 
-  @@map("ho_so_hang_nam")
+  @@map("HoSoHangNam")
 }
 
 // 17. Bảng Nhật ký hệ thống
@@ -417,7 +420,7 @@ model SystemLog {
   @@index([actor_role, createdAt])
   @@index([action, createdAt])
   @@index([resource, createdAt])
-  @@map("system_logs")
+  @@map("SystemLog")
 }
 
 // 18. Bảng Thông báo (Notifications)
@@ -443,7 +446,7 @@ model ThongBao {
   @@index([nguoi_nhan_id, is_read, createdAt])
   @@index([recipient_role, is_read, createdAt])
   @@index([type, createdAt])
-  @@map("notifications")
+  @@map("ThongBao")
 }
 
 // 19. Bảng Đề xuất Khen thưởng (Proposals)
@@ -453,7 +456,8 @@ model BangDeXuat {
   don_vi_truc_thuoc_id String?   @db.VarChar(30) // ID đơn vị trực thuộc của Manager nộp đề xuất (nullable)
   nguoi_de_xuat_id     String    @db.VarChar(30) // ID tài khoản người đề xuất
   loai_de_xuat         String    @db.VarChar(20) // CA_NHAN_HANG_NAM, DON_VI_HANG_NAM, NIEN_HAN, CONG_HIEN, DOT_XUAT, NCKH
-  nam                  Int       @default(2025) // Năm đề xuất
+  nam                  Int // Năm đề xuất
+  thang                Int       @default(12)   // Tháng đề xuất (1-12)
   status               String    @default("PENDING") @db.VarChar(20) // PENDING, APPROVED, REJECTED
   data_danh_hieu       Json? // Dữ liệu danh hiệu (JSON array) - cho HANG_NAM
   data_thanh_tich      Json? // Dữ liệu thành tích (JSON array) - cho HANG_NAM
@@ -474,7 +478,7 @@ model BangDeXuat {
   NguoiDuyet     TaiKhoan?       @relation("NguoiDuyet", fields: [nguoi_duyet_id], references: [id], onDelete: SetNull)
 
   @@index([status, loai_de_xuat])
-  @@map("bang_de_xuat")
+  @@map("BangDeXuat")
 }
 
 // 20. Bảng Hồ Sơ Đơn Vị Hằng Năm
@@ -500,7 +504,7 @@ model HoSoDonViHangNam {
   @@unique([don_vi_truc_thuoc_id, nam], name: "unique_don_vi_truc_thuoc_nam")
   @@index([co_quan_don_vi_id, nam])
   @@index([don_vi_truc_thuoc_id, nam])
-  @@map("ho_so_don_vi_hang_nam")
+  @@map("HoSoDonViHangNam")
 }
 
 // 21. Bảng Danh Hiệu Đơn Vị Hằng Năm
@@ -531,7 +535,7 @@ model DanhHieuDonViHangNam {
   @@unique([don_vi_truc_thuoc_id, nam], name: "unique_don_vi_truc_thuoc_nam_dh")
   @@index([co_quan_don_vi_id, nam])
   @@index([don_vi_truc_thuoc_id, nam])
-  @@map("danh_hieu_don_vi_hang_nam")
+  @@map("DanhHieuDonViHangNam")
 }
 
 // 22. Bảng File Quyết định
@@ -550,7 +554,7 @@ model FileQuyetDinh {
   @@index([so_quyet_dinh])
   @@index([nam])
   @@index([loai_khen_thuong])
-  @@map("file_quyet_dinh")
+  @@map("FileQuyetDinh")
 }
 
 // Bảng cấu hình hệ thống (key-value)
@@ -560,7 +564,7 @@ model SystemSetting {
   value     String   @db.Text // Giá trị (JSON hoặc string)
   updatedAt DateTime @updatedAt @db.Timestamp(0)
 
-  @@map("system_settings")
+  @@map("SystemSetting")
 }
 
 generator erd {

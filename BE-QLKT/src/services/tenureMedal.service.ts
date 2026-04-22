@@ -21,6 +21,7 @@ export interface HccsvvValidItem {
   cap_bac: string | null;
   chuc_vu: string | null;
   nam: number;
+  thang: number;
   danh_hieu: string;
   so_quyet_dinh: string;
   ghi_chu: string | null;
@@ -39,6 +40,7 @@ class HCCSVVService {
       { header: 'Cấp bậc', key: 'cap_bac', width: 15 },
       { header: 'Chức vụ', key: 'chuc_vu', width: 20 },
       { header: 'Năm (*)', key: 'nam', width: 10 },
+      { header: 'Tháng (*)', key: 'thang', width: 10 },
       { header: 'Danh hiệu (*)', key: 'danh_hieu', width: 25 },
       { header: 'Số quyết định', key: 'so_quyet_dinh', width: 20 },
       { header: 'Ghi chú', key: 'ghi_chu', width: 25 },
@@ -51,7 +53,7 @@ class HCCSVVService {
       repeatMap,
       loaiKhenThuong: PROPOSAL_TYPES.NIEN_HAN,
       danhHieuOptions: '"HCCSVV_HANG_BA,HCCSVV_HANG_NHI,HCCSVV_HANG_NHAT"',
-      editableColumnLetters: ['G', 'H'],
+      editableColumnLetters: ['G', 'H', 'I'],
     });
   }
 
@@ -84,6 +86,7 @@ class HCCSVVService {
     const capBacCol = getHeaderCol(headerMap, ['cap_bac', 'capbac', 'cap_bc']);
     const chucVuCol = getHeaderCol(headerMap, ['chuc_vu', 'chucvu', 'chc_vu']);
     const namCol = getHeaderCol(headerMap, ['nam', 'year']);
+    const thangCol = getHeaderCol(headerMap, ['thang', 'month', 'tháng']);
     const danhHieuCol = getHeaderCol(headerMap, ['danh_hieu', 'danhhieu', 'danh_hiu']);
     const soQuyetDinhCol = getHeaderCol(headerMap, ['so_quyet_dinh', 'soquyetdinh', 'so_qd']);
     const ghiChuCol = getHeaderCol(headerMap, ['ghi_chu', 'ghichu', 'ghi_ch']);
@@ -163,6 +166,8 @@ class HCCSVVService {
       const idValue = idCol ? row.getCell(idCol).value : null;
       const ho_ten = hoTenCol ? String(row.getCell(hoTenCol).value ?? '').trim() : '';
       const namVal = row.getCell(namCol).value;
+      const thangRaw = thangCol ? Number(row.getCell(thangCol).value) : NaN;
+      const thang = !isNaN(thangRaw) && thangRaw >= 1 && thangRaw <= 12 ? Math.floor(thangRaw) : 12;
       const danh_hieu_raw = String(row.getCell(danhHieuCol).value ?? '').trim();
       const cap_bac = capBacCol ? String(row.getCell(capBacCol).value ?? '').trim() : null;
       const chuc_vu = chucVuCol ? String(row.getCell(chucVuCol).value ?? '').trim() : null;
@@ -359,6 +364,7 @@ class HCCSVVService {
         cap_bac: capBac,
         chuc_vu: chucVu,
         nam,
+        thang,
         danh_hieu,
         so_quyet_dinh,
         ghi_chu,
@@ -433,10 +439,10 @@ class HCCSVVService {
     }
 
     return await prisma.$transaction(
-      async tx => {
+      async prismaTx => {
         const results = [];
         for (const item of validItems) {
-          const result = await tx.khenThuongHCCSVV.upsert({
+          const result = await prismaTx.khenThuongHCCSVV.upsert({
             where: {
               quan_nhan_id_danh_hieu: {
                 quan_nhan_id: item.personnel_id,
@@ -445,6 +451,7 @@ class HCCSVVService {
             },
             update: {
               nam: item.nam,
+              thang: item.thang ?? 12,
               cap_bac: item.cap_bac ?? null,
               chuc_vu: item.chuc_vu ?? null,
               so_quyet_dinh: item.so_quyet_dinh ?? null,
@@ -454,6 +461,7 @@ class HCCSVVService {
               quan_nhan_id: item.personnel_id,
               danh_hieu: item.danh_hieu,
               nam: item.nam,
+              thang: item.thang ?? 12,
               cap_bac: item.cap_bac ?? null,
               chuc_vu: item.chuc_vu ?? null,
               so_quyet_dinh: item.so_quyet_dinh ?? null,

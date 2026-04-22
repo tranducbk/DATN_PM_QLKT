@@ -1,5 +1,5 @@
 import { prisma } from '../models';
-import { calculateServiceMonths } from '../helpers/serviceYearsHelper';
+import { calculateServiceMonths, calculateTenureMonthsWithDayPrecision } from '../helpers/serviceYearsHelper';
 import annualRewardService from './annualReward.service';
 import unitAnnualAwardService from './unitAnnualAward.service';
 import scientificAchievementService from './scientificAchievement.service';
@@ -81,7 +81,7 @@ class AwardBulkService {
       case PROPOSAL_TYPES.KNC_VSNXD_QDNDVN:
         return prisma.kyNiemChuongVSNXDQDNDVN.findMany({ where: { quan_nhan_id: { in: personnelIds } }, select: { quan_nhan_id: true } });
       case PROPOSAL_TYPES.CONG_HIEN:
-        return prisma.khenThuongCongHien.findMany({ where: { quan_nhan_id: { in: personnelIds } }, select: { quan_nhan_id: true, danh_hieu: true } });
+        return prisma.khenThuongHCBVTQ.findMany({ where: { quan_nhan_id: { in: personnelIds } }, select: { quan_nhan_id: true, danh_hieu: true } });
       default:
         return Promise.resolve([]);
     }
@@ -486,7 +486,7 @@ class AwardBulkService {
           }
         }
       } else if (type === PROPOSAL_TYPES.HC_QKQT) {
-        await prisma.$transaction(async tx => {
+        await prisma.$transaction(async prismaTx => {
           for (const item of titleData) {
             const quanNhan = personnelMap.get(item.personnel_id);
 
@@ -496,7 +496,7 @@ class AwardBulkService {
 
             const thoiGian = this.calculateThoiGian(quanNhan);
 
-            await tx.huanChuongQuanKyQuyetThang.upsert({
+            await prismaTx.huanChuongQuanKyQuyetThang.upsert({
               where: { quan_nhan_id: item.personnel_id },
               create: {
                 quan_nhan_id: item.personnel_id,
@@ -536,7 +536,7 @@ class AwardBulkService {
           throw new ValidationError(`Phát hiện lỗi validation:\n${errors.join('\n')}`);
         }
 
-        await prisma.$transaction(async tx => {
+        await prisma.$transaction(async prismaTx => {
           for (const item of titleData) {
             const quanNhan = personnelMap.get(item.personnel_id);
 
@@ -546,7 +546,7 @@ class AwardBulkService {
 
             const thoiGian = this.calculateThoiGian(quanNhan);
 
-            await tx.khenThuongHCCSVV.upsert({
+            await prismaTx.khenThuongHCCSVV.upsert({
               where: {
                 quan_nhan_id_danh_hieu: {
                   quan_nhan_id: item.personnel_id,
@@ -578,7 +578,7 @@ class AwardBulkService {
           }
         });
       } else if (type === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN) {
-        await prisma.$transaction(async tx => {
+        await prisma.$transaction(async prismaTx => {
           for (const item of titleData) {
             const quanNhan = personnelMap.get(item.personnel_id);
 
@@ -588,7 +588,7 @@ class AwardBulkService {
 
             const thoiGian = this.calculateThoiGian(quanNhan);
 
-            await tx.kyNiemChuongVSNXDQDNDVN.upsert({
+            await prismaTx.kyNiemChuongVSNXDQDNDVN.upsert({
               where: { quan_nhan_id: item.personnel_id },
               create: {
                 quan_nhan_id: item.personnel_id,
@@ -662,12 +662,12 @@ class AwardBulkService {
           let entry: PositionEntry;
           if ((h.so_thang === null || h.so_thang === undefined) && h.ngay_bat_dau && !h.ngay_ket_thuc) {
             const ngayBatDau = new Date(h.ngay_bat_dau);
-            let months = (today.getFullYear() - ngayBatDau.getFullYear()) * 12;
-            months += today.getMonth() - ngayBatDau.getMonth();
-            if (today.getDate() < ngayBatDau.getDate()) {
-              months--;
-            }
-            entry = { he_so_chuc_vu: Number(h.he_so_chuc_vu), so_thang: Math.max(0, months), ngay_bat_dau: h.ngay_bat_dau, ngay_ket_thuc: h.ngay_ket_thuc };
+            entry = {
+              he_so_chuc_vu: Number(h.he_so_chuc_vu),
+              so_thang: calculateTenureMonthsWithDayPrecision(ngayBatDau, today),
+              ngay_bat_dau: h.ngay_bat_dau,
+              ngay_ket_thuc: h.ngay_ket_thuc,
+            };
           } else {
             entry = { he_so_chuc_vu: Number(h.he_so_chuc_vu), so_thang: h.so_thang, ngay_bat_dau: h.ngay_bat_dau, ngay_ket_thuc: h.ngay_ket_thuc };
           }
@@ -772,9 +772,9 @@ class AwardBulkService {
           throw new ValidationError(`Phát hiện lỗi validation:\n${errors.join('\n')}`);
         }
 
-        await prisma.$transaction(async tx => {
+        await prisma.$transaction(async prismaTx => {
           for (const item of eligibleTitleData) {
-            await tx.khenThuongCongHien.upsert({
+            await prismaTx.khenThuongHCBVTQ.upsert({
               where: { quan_nhan_id: item.personnel_id },
               create: {
                 quan_nhan_id: item.personnel_id,
@@ -861,12 +861,7 @@ class AwardBulkService {
     const ngayNhapNgu = new Date(quanNhan.ngay_nhap_ngu);
     const ngayKetThuc = quanNhan.ngay_xuat_ngu ? new Date(quanNhan.ngay_xuat_ngu) : new Date();
 
-    let months = (ngayKetThuc.getFullYear() - ngayNhapNgu.getFullYear()) * 12;
-    months += ngayKetThuc.getMonth() - ngayNhapNgu.getMonth();
-    if (ngayKetThuc.getDate() < ngayNhapNgu.getDate()) {
-      months--;
-    }
-    months = Math.max(0, months);
+    const months = calculateServiceMonths(ngayNhapNgu, ngayKetThuc);
 
     const years = Math.floor(months / 12);
     const remainingMonths = months % 12;

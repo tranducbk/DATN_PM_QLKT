@@ -759,7 +759,7 @@ export async function deleteUnitAnnualAward(id: string): Promise<ApiResponse> {
 
 export async function getUnitAnnualProfile(donViId: string, year?: number): Promise<ApiResponse> {
   try {
-    let url = year
+    const url = year
       ? `/api/awards/units/annual/profile/${donViId}?year=${year}`
       : `/api/awards/units/annual/profile/${donViId}`;
 

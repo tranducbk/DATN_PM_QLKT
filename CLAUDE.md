@@ -94,6 +94,7 @@ PM QLKT/
 - **State**: React Context for auth (`AuthContext`), custom hooks for data (`useFetch`, `useMutation`)
 - **UI text**: All user-facing text in Vietnamese
 - **Date formatting**: Always use `formatDate()`, `formatDateTime()` from `lib/utils.ts`
+- **Conditional rendering**: Dùng multiple `{condition && <Component />}` blocks riêng thay vì ternary lồng nhau — tránh `condition ? <A /> : otherCondition ? <B /> : null`
 
 ## JSDoc Standards
 
@@ -123,6 +124,8 @@ Exported functions phải có JSDoc chuẩn:
   - ❌ `// Check if personnel exists` before `const p = await prisma.quanNhan.findUnique(...)`
   - ❌ `// Validate year` before `if (nam < 2000 || nam > 2100)`
   - ❌ `// Delete record` before `await prisma.x.delete(...)`
+  - ❌ `// intentionally not pre-filled` hoặc `// intentionally left empty` — code tự nói lên điều đó
+  - ❌ `// Ensure X exists`, `// Validate X`, `// Compute X`, `// Build X`, `// Parse X` — đây là WHAT, không phải WHY
   - ✅ `// DVTT takes priority — increment CQDV only when no DVTT (avoid double-counting)`
   - ✅ `// Skip initial mount — only fire on subsequent status changes`
   - ✅ `// HC BVTQ is a one-time lifetime award, no duplicates allowed`
@@ -137,6 +140,10 @@ Exported functions phải có JSDoc chuẩn:
 - Service > 800 dòng → tách logic phức tạp vào helper riêng
 - Nếu 3+ services có logic giống nhau → extract vào shared helper
 - FE: API file > 500 dòng → tách theo domain (`api/awards.ts`, `api/personnel.ts`)
+
+### Variable declarations
+- Dùng `const` thay `let` khi giá trị không cần reassign — chỉ dùng `let` khi thực sự cần thay đổi giá trị sau khai báo
+- Không dùng `let` để khai báo biến rồi gán lại ngay trong `if/else` — thay bằng ternary hoặc tách hàm
 
 ### DRY (Don't Repeat Yourself)
 - Magic numbers → extract vào `constants/` (vd: `MAX_EXCEL_ROWS`, `MIN_TEMPLATE_ROWS`)

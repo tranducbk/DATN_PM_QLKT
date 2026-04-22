@@ -70,9 +70,9 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
     if (!open) return;
     const loadUnits = async () => {
       try {
-        const res = await apiClient.getUnits();
-        if (res.success) {
-          setUnits(res.data ?? []);
+        const unitsResponse = await apiClient.getUnits();
+        if (unitsResponse.success) {
+          setUnits(unitsResponse.data ?? []);
         }
       } catch (error: unknown) {
         message.error(getApiErrorMessage(error, 'Không thể tải danh sách đơn vị'));
@@ -94,11 +94,14 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
     const fetchPersonnel = async () => {
       try {
         setLoadingPersonnel(true);
-        const res = await apiClient.getPersonnel({ unit_id: donViId, limit: FETCH_ALL_LIMIT });
-        if (res.success) {
-          const list = res.data?.rows ?? res.data ?? [];
+        const personnelResponse = await apiClient.getPersonnel({
+          unit_id: donViId,
+          limit: FETCH_ALL_LIMIT,
+        });
+        if (personnelResponse.success) {
+          const personnelRows = personnelResponse.data?.rows ?? personnelResponse.data ?? [];
           setPersonnelList(
-            Array.isArray(list) ? (list as ExportPersonnelPreviewRow[]) : []
+            Array.isArray(personnelRows) ? (personnelRows as ExportPersonnelPreviewRow[]) : []
           );
         } else {
           setPersonnelList([]);
@@ -155,34 +158,17 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
         params.unit_ids = selectedUnitIds.join(',');
       }
 
-      let blob: Blob;
-
-      switch (activeTab) {
-        case 'CNHN':
-          blob = await apiClient.exportAnnualRewards(params);
-          break;
-        case 'DVHN':
-          blob = await apiClient.exportUnitAnnualAwards(params);
-          break;
-        case 'HCCSVV':
-          blob = await apiClient.exportHCCSVV(params);
-          break;
-        case 'HCBVTQ':
-          blob = await apiClient.exportContributionAwards(params);
-          break;
-        case 'KNC_VSNXD_QDNDVN':
-          blob = await apiClient.exportCommemorationMedals(params);
-          break;
-        case 'HCQKQT':
-          blob = await apiClient.exportMilitaryFlag(params);
-          break;
-        case 'NCKH':
-          blob = await apiClient.exportScientificAchievements(params);
-          break;
-        case 'KTDX':
-        default:
-          blob = await apiClient.exportAwards(params);
-      }
+      const exportFnMap: Record<string, (p: typeof params) => Promise<Blob>> = {
+        CNHN: apiClient.exportAnnualRewards.bind(apiClient),
+        DVHN: apiClient.exportUnitAnnualAwards.bind(apiClient),
+        HCCSVV: apiClient.exportHCCSVV.bind(apiClient),
+        HCBVTQ: apiClient.exportContributionAwards.bind(apiClient),
+        KNC_VSNXD_QDNDVN: apiClient.exportCommemorationMedals.bind(apiClient),
+        HCQKQT: apiClient.exportMilitaryFlag.bind(apiClient),
+        NCKH: apiClient.exportScientificAchievements.bind(apiClient),
+      };
+      const exportFn = exportFnMap[activeTab] ?? apiClient.exportAwards.bind(apiClient);
+      const blob = await exportFn(params);
 
       // Build filename
       const baseFilename = AWARD_TAB_FILENAME[activeTab] ?? 'khen_thuong';

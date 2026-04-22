@@ -178,6 +178,20 @@ interface ProposalDetail {
   updatedAt: string;
 }
 
+const NIEN_HAN_STYLE_TYPES: ProposalType[] = [
+  PROPOSAL_TYPES.NIEN_HAN,
+  PROPOSAL_TYPES.HC_QKQT,
+  PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
+];
+
+const DANH_HIEU_FALLBACK_TYPES: ProposalType[] = [
+  PROPOSAL_TYPES.NCKH,
+  PROPOSAL_TYPES.NIEN_HAN,
+  PROPOSAL_TYPES.HC_QKQT,
+  PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
+  PROPOSAL_TYPES.CONG_HIEN,
+];
+
 export default function ManagerProposalDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -282,15 +296,10 @@ export default function ManagerProposalDetailPage() {
 
     histories.forEach((history: PositionHistoryEntry) => {
       const heSo = Number(history.he_so_chuc_vu) || 0;
-      let belongsToGroup = false;
-
-      if (group === '0.7') {
-        belongsToGroup = heSo >= 0.7 && heSo < 0.8;
-      } else if (group === '0.8') {
-        belongsToGroup = heSo >= 0.8 && heSo < 0.9;
-      } else if (group === '0.9-1.0') {
-        belongsToGroup = heSo >= 0.9 && heSo <= 1.0;
-      }
+      const belongsToGroup =
+        (group === '0.7' && heSo >= 0.7 && heSo < 0.8) ||
+        (group === '0.8' && heSo >= 0.8 && heSo < 0.9) ||
+        (group === '0.9-1.0' && heSo >= 0.9 && heSo <= 1.0);
 
       if (belongsToGroup && history.so_thang !== null && history.so_thang !== undefined) {
         totalMonths += history.so_thang;
@@ -461,15 +470,16 @@ export default function ManagerProposalDetailPage() {
               {formatDateTime(proposal.createdAt)}
             </Descriptions.Item>
             <Descriptions.Item label="Số lượng" span={2}>
-              {proposal.loai_de_xuat === PROPOSAL_TYPES.NCKH ? (
+              {proposal.loai_de_xuat === PROPOSAL_TYPES.NCKH && (
                 <Tag color="magenta">{proposal.data_thanh_tich?.length || 0} đề tài/sáng kiến</Tag>
-              ) : proposal.loai_de_xuat === PROPOSAL_TYPES.NIEN_HAN ||
-                proposal.loai_de_xuat === PROPOSAL_TYPES.HC_QKQT ||
-                proposal.loai_de_xuat === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN ? (
+              )}
+              {NIEN_HAN_STYLE_TYPES.includes(proposal.loai_de_xuat) && (
                 <Tag color="blue">{proposal.data_nien_han?.length || 0} quân nhân</Tag>
-              ) : proposal.loai_de_xuat === PROPOSAL_TYPES.CONG_HIEN ? (
+              )}
+              {proposal.loai_de_xuat === PROPOSAL_TYPES.CONG_HIEN && (
                 <Tag color="purple">{proposal.data_cong_hien?.length || 0} quân nhân</Tag>
-              ) : (
+              )}
+              {!DANH_HIEU_FALLBACK_TYPES.includes(proposal.loai_de_xuat) && (
                 <Tag color="blue">{proposal.data_danh_hieu?.length || 0} quân nhân</Tag>
               )}
             </Descriptions.Item>
@@ -569,8 +579,7 @@ export default function ManagerProposalDetailPage() {
           )}
         </Card>
 
-        {/* Data Tables - Hiển thị theo loại đề xuất */}
-        {proposal.loai_de_xuat === PROPOSAL_TYPES.NCKH ? (
+        {proposal.loai_de_xuat === PROPOSAL_TYPES.NCKH && (
           <Card
             className="shadow-sm"
             title={
@@ -714,9 +723,10 @@ export default function ManagerProposalDetailPage() {
               ]}
             />
           </Card>
-        ) : proposal.loai_de_xuat === PROPOSAL_TYPES.CONG_HIEN &&
-          proposal.data_cong_hien &&
-          proposal.data_cong_hien.length > 0 ? (
+        )}
+
+        {proposal.loai_de_xuat === PROPOSAL_TYPES.CONG_HIEN &&
+          !!proposal.data_cong_hien?.length && (
           <Card
             className="shadow-sm"
             title={
@@ -907,7 +917,11 @@ export default function ManagerProposalDetailPage() {
               ]}
             />
           </Card>
-        ) : proposal.data_danh_hieu && proposal.data_danh_hieu.length > 0 ? (
+        )}
+
+        {proposal.loai_de_xuat !== PROPOSAL_TYPES.NCKH &&
+          proposal.loai_de_xuat !== PROPOSAL_TYPES.CONG_HIEN &&
+          !!proposal.data_danh_hieu?.length && (
           <Card
             className="shadow-sm"
             title={
@@ -1061,35 +1075,6 @@ export default function ManagerProposalDetailPage() {
                     );
                   },
                 },
-                // Time columns only apply to CONG_HIEN proposals
-                ...(proposal.loai_de_xuat === PROPOSAL_TYPES.CONG_HIEN
-                  ? [
-                      {
-                        title: 'Tổng thời gian (0.7)',
-                        key: 'total_time_0_7',
-                        width: 150,
-                        align: 'center' as const,
-                        render: (_: unknown, record: DanhHieuItem) =>
-                          calculateTotalTimeByGroup(record.personnel_id || '', '0.7'),
-                      },
-                      {
-                        title: 'Tổng thời gian (0.8)',
-                        key: 'total_time_0_8',
-                        width: 150,
-                        align: 'center' as const,
-                        render: (_: unknown, record: DanhHieuItem) =>
-                          calculateTotalTimeByGroup(record.personnel_id || '', '0.8'),
-                      },
-                      {
-                        title: 'Tổng thời gian (0.9-1.0)',
-                        key: 'total_time_0_9_1_0',
-                        width: 150,
-                        align: 'center' as const,
-                        render: (_: unknown, record: DanhHieuItem) =>
-                          calculateTotalTimeByGroup(record.personnel_id || '', '0.9-1.0'),
-                      },
-                    ]
-                  : []),
                 ...(proposal.status === PROPOSAL_STATUS.APPROVED
                   ? [
                       {
@@ -1132,7 +1117,12 @@ export default function ManagerProposalDetailPage() {
               ]}
             />
           </Card>
-        ) : proposal.data_nien_han && proposal.data_nien_han.length > 0 ? (
+        )}
+
+        {proposal.loai_de_xuat !== PROPOSAL_TYPES.NCKH &&
+          proposal.loai_de_xuat !== PROPOSAL_TYPES.CONG_HIEN &&
+          !proposal.data_danh_hieu?.length &&
+          !!proposal.data_nien_han?.length && (
           <Card
             className="shadow-sm"
             title={
@@ -1308,7 +1298,7 @@ export default function ManagerProposalDetailPage() {
               ]}
             />
           </Card>
-        ) : null}
+        )}
 
         {proposal.status === PROPOSAL_STATUS.REJECTED && (
           <Card className="shadow-sm bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200">

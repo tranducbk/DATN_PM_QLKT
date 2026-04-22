@@ -53,7 +53,7 @@ export function ServiceHistoryModal({
         {serviceProfile ? (
           <div>
             <Title level={5} style={{ marginTop: 0 }}>
-              Huy chương Chiến sĩ Vẻ vang (HCCSVV)
+              Huy chương Chiến sĩ Vẻ vang
             </Title>
             <Descriptions bordered column={1} size="small" style={{ marginBottom: 24 }}>
               {HCCSVV_ROWS.map(({ label, statusKey, danhHieu }) => {

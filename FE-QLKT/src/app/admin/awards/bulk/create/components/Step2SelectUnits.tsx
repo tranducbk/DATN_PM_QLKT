@@ -60,6 +60,7 @@ export function Step2SelectUnits({
   const [units, setUnits] = useState<Unit[]>([]);
   const [searchText, setSearchText] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('ALL');
+  const CURRENT_YEAR = new Date().getFullYear();
   const [localNam, setLocalNam] = useState<number | null>(nam);
 
   // Fetch all units
@@ -133,10 +134,7 @@ export function Step2SelectUnits({
       unit.ma_don_vi.toLowerCase().includes(searchText.toLowerCase());
 
     // Type filter
-    let matchesType = true;
-    if (typeFilter !== 'ALL') {
-      matchesType = unit.type === typeFilter;
-    }
+    const matchesType = typeFilter === 'ALL' || unit.type === typeFilter;
 
     return matchesSearch && matchesType;
   });
@@ -394,25 +392,23 @@ export function Step2SelectUnits({
                 setLocalNam(intValue);
               }
             }}
-            onBlur={e => {
-              // Clamp to valid range and propagate to parent on blur
+            onBlur={() => {
               const currentValue = localNam;
+              let finalValue: number;
               if (currentValue === null || currentValue === undefined || currentValue < 1900) {
-                const finalValue = 1900;
-                setLocalNam(finalValue);
-                onNamChange(finalValue);
-              } else if (currentValue > 2999) {
-                const finalValue = 2999;
-                setLocalNam(finalValue);
-                onNamChange(finalValue);
+                finalValue = CURRENT_YEAR;
+              } else if (currentValue > CURRENT_YEAR) {
+                finalValue = CURRENT_YEAR;
               } else {
-                onNamChange(currentValue);
+                finalValue = currentValue;
               }
+              setLocalNam(finalValue);
+              onNamChange(finalValue);
             }}
             style={{ width: 150 }}
             size="large"
             min={1900}
-            max={2999}
+            max={CURRENT_YEAR}
             placeholder="Nhập năm"
             controls={true}
             step={1}

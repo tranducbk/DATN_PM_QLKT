@@ -331,9 +331,9 @@ class AccountService {
 
     const hashedPassword = await bcrypt.hash(finalPassword, 10);
 
-    const newAccount = await prisma.$transaction(async tx => {
+    const newAccount = await prisma.$transaction(async prismaTx => {
       if (personnelDataForCreate) {
-        const newPersonnel = await tx.quanNhan.create({
+        const newPersonnel = await prismaTx.quanNhan.create({
           data: {
             cccd: null,
             ho_ten: username,
@@ -346,7 +346,7 @@ class AccountService {
         });
         finalPersonnelId = newPersonnel.id;
 
-        await tx.lichSuChucVu.create({
+        await prismaTx.lichSuChucVu.create({
           data: {
             quan_nhan_id: newPersonnel.id,
             chuc_vu_id: chuc_vu_id!,
@@ -359,19 +359,19 @@ class AccountService {
 
         // DVTT takes priority — only increment CQDV when no DVTT (avoid double-counting)
         if (don_vi_truc_thuoc_id) {
-          await tx.donViTrucThuoc.update({
+          await prismaTx.donViTrucThuoc.update({
             where: { id: don_vi_truc_thuoc_id },
             data: { so_luong: { increment: 1 } },
           });
         } else if (co_quan_don_vi_id) {
-          await tx.coQuanDonVi.update({
+          await prismaTx.coQuanDonVi.update({
             where: { id: co_quan_don_vi_id },
             data: { so_luong: { increment: 1 } },
           });
         }
       }
 
-      return tx.taiKhoan.create({
+      return prismaTx.taiKhoan.create({
         data: {
           quan_nhan_id: finalPersonnelId || null,
           username,
@@ -522,7 +522,7 @@ class AccountService {
       );
     }
 
-    await prisma.$transaction(async tx => {
+    await prisma.$transaction(async prismaTx => {
       for (const proposal of proposals) {
         let updated = false;
 
@@ -557,12 +557,12 @@ class AccountService {
             (!dataThanhTich || dataThanhTich.length === 0);
 
           if (isEmpty) {
-            await tx.bangDeXuat.delete({
+            await prismaTx.bangDeXuat.delete({
               where: { id: proposal.id },
             });
             deletedProposals++;
           } else {
-            await tx.bangDeXuat.update({
+            await prismaTx.bangDeXuat.update({
               where: { id: proposal.id },
               data: {
                 data_danh_hieu: (dataDanhHieu as Prisma.InputJsonValue) || [],
@@ -573,23 +573,23 @@ class AccountService {
         }
       }
 
-      await tx.taiKhoan.delete({
+      await prismaTx.taiKhoan.delete({
         where: { id },
       });
 
-      await tx.quanNhan.delete({
+      await prismaTx.quanNhan.delete({
         where: { id: personnelId },
       });
 
       if (unitId) {
         try {
           if (isCoQuanDonVi) {
-            await tx.coQuanDonVi.update({
+            await prismaTx.coQuanDonVi.update({
               where: { id: unitId },
               data: { so_luong: { decrement: 1 } },
             });
           } else {
-            await tx.donViTrucThuoc.update({
+            await prismaTx.donViTrucThuoc.update({
               where: { id: unitId },
               data: { so_luong: { decrement: 1 } },
             });

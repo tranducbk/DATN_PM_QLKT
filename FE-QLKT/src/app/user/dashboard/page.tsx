@@ -45,7 +45,12 @@ import { formatDate, formatDateTime } from '@/lib/utils';
 import { useTheme } from '@/components/ThemeProvider';
 import { useAuth } from '@/contexts/AuthContext';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
-import type { PersonnelDetail, ServiceProfile, AnnualProfile, ContributionProfile } from '@/lib/types/personnelList';
+import type {
+  PersonnelDetail,
+  ServiceProfile,
+  AnnualProfile,
+  ContributionProfile,
+} from '@/lib/types/personnelList';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -97,13 +102,14 @@ export default function UserDashboard() {
         const currentYear = new Date().getFullYear();
         const personnelId = user.quan_nhan_id;
 
-        const [personnelRes, annualRes, serviceRes, contributionRes, rewardsRes] = await Promise.all([
-          apiClient.getPersonnelById(personnelId),
-          apiClient.getAnnualProfile(personnelId, currentYear),
-          apiClient.getServiceProfile(personnelId),
-          apiClient.getContributionProfile(personnelId),
-          apiClient.getAnnualRewardsByPersonnel(personnelId),
-        ]);
+        const [personnelRes, annualRes, serviceRes, contributionRes, rewardsRes] =
+          await Promise.all([
+            apiClient.getPersonnelById(personnelId),
+            apiClient.getAnnualProfile(personnelId, currentYear),
+            apiClient.getServiceProfile(personnelId),
+            apiClient.getContributionProfile(personnelId),
+            apiClient.getAnnualRewardsByPersonnel(personnelId),
+          ]);
 
         if (personnelRes.success) {
           setPersonnelInfo(personnelRes.data);
@@ -135,9 +141,11 @@ export default function UserDashboard() {
     if (!personnelInfo?.ngay_nhap_ngu) return 0;
     const startDate = new Date(personnelInfo.ngay_nhap_ngu);
     const today = new Date();
-    const diffTime = Math.abs(today.getTime() - startDate.getTime());
-    const diffYears = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 365));
-    return diffYears;
+    const months =
+      (today.getFullYear() - startDate.getFullYear()) * 12 +
+      today.getMonth() -
+      startDate.getMonth();
+    return Math.floor(Math.max(0, months) / 12);
   };
 
   // Calculate total service months
@@ -148,11 +156,10 @@ export default function UserDashboard() {
       ? new Date(personnelInfo.ngay_xuat_ngu)
       : new Date();
 
-    let months = (endDate.getFullYear() - startDate.getFullYear()) * 12;
-    months += endDate.getMonth() - startDate.getMonth();
-    if (endDate.getDate() < startDate.getDate()) {
-      months--;
-    }
+    const months =
+      (endDate.getFullYear() - startDate.getFullYear()) * 12 +
+      endDate.getMonth() -
+      startDate.getMonth();
     return Math.max(0, months);
   };
 
@@ -608,7 +615,7 @@ export default function UserDashboard() {
                 title={
                   <Space>
                     <TrophyOutlined className="text-blue-600" />
-                    <span className="font-semibold">Hồ sơ Khen thưởng Hằng năm</span>
+                    <span className="font-semibold">Hồ sơ khen thưởng hằng năm</span>
                   </Space>
                 }
                 className="shadow-md border-0 h-full"
@@ -763,14 +770,16 @@ export default function UserDashboard() {
                           status={
                             serviceProfile.hccsvv_hang_ba_status === ELIGIBILITY_STATUS.DA_NHAN
                               ? 'success'
-                              : serviceProfile.hccsvv_hang_ba_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN
+                              : serviceProfile.hccsvv_hang_ba_status ===
+                                  ELIGIBILITY_STATUS.DU_DIEU_KIEN
                                 ? 'processing'
                                 : 'default'
                           }
                           text={
                             serviceProfile.hccsvv_hang_ba_status === ELIGIBILITY_STATUS.DA_NHAN
                               ? 'Đã nhận'
-                              : serviceProfile.hccsvv_hang_ba_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN
+                              : serviceProfile.hccsvv_hang_ba_status ===
+                                  ELIGIBILITY_STATUS.DU_DIEU_KIEN
                                 ? 'Đủ điều kiện'
                                 : 'Chưa đủ'
                           }
@@ -794,14 +803,16 @@ export default function UserDashboard() {
                           status={
                             serviceProfile.hccsvv_hang_nhi_status === ELIGIBILITY_STATUS.DA_NHAN
                               ? 'success'
-                              : serviceProfile.hccsvv_hang_nhi_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN
+                              : serviceProfile.hccsvv_hang_nhi_status ===
+                                  ELIGIBILITY_STATUS.DU_DIEU_KIEN
                                 ? 'processing'
                                 : 'default'
                           }
                           text={
                             serviceProfile.hccsvv_hang_nhi_status === ELIGIBILITY_STATUS.DA_NHAN
                               ? 'Đã nhận'
-                              : serviceProfile.hccsvv_hang_nhi_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN
+                              : serviceProfile.hccsvv_hang_nhi_status ===
+                                  ELIGIBILITY_STATUS.DU_DIEU_KIEN
                                 ? 'Đủ điều kiện'
                                 : 'Chưa đủ'
                           }
@@ -825,14 +836,16 @@ export default function UserDashboard() {
                           status={
                             serviceProfile.hccsvv_hang_nhat_status === ELIGIBILITY_STATUS.DA_NHAN
                               ? 'success'
-                              : serviceProfile.hccsvv_hang_nhat_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN
+                              : serviceProfile.hccsvv_hang_nhat_status ===
+                                  ELIGIBILITY_STATUS.DU_DIEU_KIEN
                                 ? 'processing'
                                 : 'default'
                           }
                           text={
                             serviceProfile.hccsvv_hang_nhat_status === ELIGIBILITY_STATUS.DA_NHAN
                               ? 'Đã nhận'
-                              : serviceProfile.hccsvv_hang_nhat_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN
+                              : serviceProfile.hccsvv_hang_nhat_status ===
+                                  ELIGIBILITY_STATUS.DU_DIEU_KIEN
                                 ? 'Đủ điều kiện'
                                 : 'Chưa đủ'
                           }
@@ -916,16 +929,20 @@ export default function UserDashboard() {
                               <Text strong>Hạng Ba ({targetMonths} tháng)</Text>
                               <Badge
                                 status={
-                                  contributionProfile.hcbvtq_hang_ba_status === ELIGIBILITY_STATUS.DA_NHAN
+                                  contributionProfile.hcbvtq_hang_ba_status ===
+                                  ELIGIBILITY_STATUS.DA_NHAN
                                     ? 'success'
-                                    : contributionProfile.hcbvtq_hang_ba_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN
+                                    : contributionProfile.hcbvtq_hang_ba_status ===
+                                        ELIGIBILITY_STATUS.DU_DIEU_KIEN
                                       ? 'processing'
                                       : 'default'
                                 }
                                 text={
-                                  contributionProfile.hcbvtq_hang_ba_status === ELIGIBILITY_STATUS.DA_NHAN
+                                  contributionProfile.hcbvtq_hang_ba_status ===
+                                  ELIGIBILITY_STATUS.DA_NHAN
                                     ? 'Đã nhận'
-                                    : contributionProfile.hcbvtq_hang_ba_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN
+                                    : contributionProfile.hcbvtq_hang_ba_status ===
+                                        ELIGIBILITY_STATUS.DU_DIEU_KIEN
                                       ? 'Đủ điều kiện'
                                       : 'Chưa đủ'
                                 }
@@ -950,16 +967,20 @@ export default function UserDashboard() {
                               <Text strong>Hạng Nhì ({targetMonths} tháng)</Text>
                               <Badge
                                 status={
-                                  contributionProfile.hcbvtq_hang_nhi_status === ELIGIBILITY_STATUS.DA_NHAN
+                                  contributionProfile.hcbvtq_hang_nhi_status ===
+                                  ELIGIBILITY_STATUS.DA_NHAN
                                     ? 'success'
-                                    : contributionProfile.hcbvtq_hang_nhi_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN
+                                    : contributionProfile.hcbvtq_hang_nhi_status ===
+                                        ELIGIBILITY_STATUS.DU_DIEU_KIEN
                                       ? 'processing'
                                       : 'default'
                                 }
                                 text={
-                                  contributionProfile.hcbvtq_hang_nhi_status === ELIGIBILITY_STATUS.DA_NHAN
+                                  contributionProfile.hcbvtq_hang_nhi_status ===
+                                  ELIGIBILITY_STATUS.DA_NHAN
                                     ? 'Đã nhận'
-                                    : contributionProfile.hcbvtq_hang_nhi_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN
+                                    : contributionProfile.hcbvtq_hang_nhi_status ===
+                                        ELIGIBILITY_STATUS.DU_DIEU_KIEN
                                       ? 'Đủ điều kiện'
                                       : 'Chưa đủ'
                                 }
@@ -984,16 +1005,20 @@ export default function UserDashboard() {
                               <Text strong>Hạng Nhất ({targetMonths} tháng)</Text>
                               <Badge
                                 status={
-                                  contributionProfile.hcbvtq_hang_nhat_status === ELIGIBILITY_STATUS.DA_NHAN
+                                  contributionProfile.hcbvtq_hang_nhat_status ===
+                                  ELIGIBILITY_STATUS.DA_NHAN
                                     ? 'success'
-                                    : contributionProfile.hcbvtq_hang_nhat_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN
+                                    : contributionProfile.hcbvtq_hang_nhat_status ===
+                                        ELIGIBILITY_STATUS.DU_DIEU_KIEN
                                       ? 'processing'
                                       : 'default'
                                 }
                                 text={
-                                  contributionProfile.hcbvtq_hang_nhat_status === ELIGIBILITY_STATUS.DA_NHAN
+                                  contributionProfile.hcbvtq_hang_nhat_status ===
+                                  ELIGIBILITY_STATUS.DA_NHAN
                                     ? 'Đã nhận'
-                                    : contributionProfile.hcbvtq_hang_nhat_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN
+                                    : contributionProfile.hcbvtq_hang_nhat_status ===
+                                        ELIGIBILITY_STATUS.DU_DIEU_KIEN
                                       ? 'Đủ điều kiện'
                                       : 'Chưa đủ'
                                 }

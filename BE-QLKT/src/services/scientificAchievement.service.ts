@@ -574,10 +574,10 @@ class ScientificAchievementService {
 
   async confirmImport(validItems: ConfirmImportItem[], adminId: string) {
     return await prisma.$transaction(
-      async tx => {
+      async prismaTx => {
         const results = [];
         for (const item of validItems) {
-          const result = await tx.thanhTichKhoaHoc.create({
+          const result = await prismaTx.thanhTichKhoaHoc.create({
             data: {
               quan_nhan_id: item.personnel_id,
               nam: item.nam,

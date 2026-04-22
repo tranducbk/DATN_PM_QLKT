@@ -726,9 +726,9 @@ class ProfileService {
         newProfile.hccsvv_hang_ba_status || ELIGIBILITY_STATUS.CHUA_DU,
         'Ba'
       );
-      // Use actual received year from DB, not projected year
-      if (hccsvvBa.status === ELIGIBILITY_STATUS.DA_NHAN && hccsvvNamNhan[DANH_HIEU_HCCSVV.HANG_BA]) {
-        hccsvvBa.ngay = new Date(hccsvvNamNhan[DANH_HIEU_HCCSVV.HANG_BA], 0, 1);
+      // Giữ nguyên ngày đã lưu từ approve (do admin nhập), không tính lại
+      if (hccsvvBa.status === ELIGIBILITY_STATUS.DA_NHAN && existingProfile?.hccsvv_hang_ba_ngay) {
+        hccsvvBa.ngay = existingProfile.hccsvv_hang_ba_ngay;
       }
 
       // Rank 2 requires Rank 3 to already be received (DA_NHAN), not just eligible
@@ -740,8 +740,8 @@ class ProfileService {
           newProfile.hccsvv_hang_nhi_status || ELIGIBILITY_STATUS.CHUA_DU,
           'Nhì'
         );
-        if (hccsvvNhi.status === ELIGIBILITY_STATUS.DA_NHAN && hccsvvNamNhan[DANH_HIEU_HCCSVV.HANG_NHI]) {
-          hccsvvNhi.ngay = new Date(hccsvvNamNhan[DANH_HIEU_HCCSVV.HANG_NHI], 0, 1);
+        if (hccsvvNhi.status === ELIGIBILITY_STATUS.DA_NHAN && existingProfile?.hccsvv_hang_nhi_ngay) {
+          hccsvvNhi.ngay = existingProfile.hccsvv_hang_nhi_ngay;
         }
       } else {
         hccsvvNhi = {
@@ -760,8 +760,8 @@ class ProfileService {
           newProfile.hccsvv_hang_nhat_status || ELIGIBILITY_STATUS.CHUA_DU,
           'Nhất'
         );
-        if (hccsvvNhat.status === ELIGIBILITY_STATUS.DA_NHAN && hccsvvNamNhan[DANH_HIEU_HCCSVV.HANG_NHAT]) {
-          hccsvvNhat.ngay = new Date(hccsvvNamNhan[DANH_HIEU_HCCSVV.HANG_NHAT], 0, 1);
+        if (hccsvvNhat.status === ELIGIBILITY_STATUS.DA_NHAN && existingProfile?.hccsvv_hang_nhat_ngay) {
+          hccsvvNhat.ngay = existingProfile.hccsvv_hang_nhat_ngay;
         }
       } else {
         hccsvvNhat = {
@@ -887,7 +887,7 @@ class ProfileService {
         where: { quan_nhan_id: personnelId },
       });
 
-      const personnelHCBVTQ = await prisma.khenThuongCongHien.findMany({
+      const personnelHCBVTQ = await prisma.khenThuongHCBVTQ.findMany({
         where: { quan_nhan_id: personnelId },
       });
 
@@ -952,14 +952,14 @@ class ProfileService {
       });
 
       // Legacy table: refresh coefficient-group month mirrors when a contribution award row exists.
-      const existingCongHien = await prisma.khenThuongCongHien.findUnique({
+      const existingCongHien = await prisma.khenThuongHCBVTQ.findUnique({
         where: { quan_nhan_id: personnelId },
       });
 
       if (existingCongHien) {
         let updatedStatus = existingCongHien.danh_hieu;
 
-        await prisma.khenThuongCongHien.update({
+        await prisma.khenThuongHCBVTQ.update({
           where: { id: existingCongHien.id },
           data: {
             thoi_gian_nhom_0_7: existingCongHien.thoi_gian_nhom_0_7,

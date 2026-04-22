@@ -44,6 +44,7 @@ interface SubmitProposalBody {
   title_data?: unknown;
   selected_personnel?: string[];
   nam?: number | string;
+  thang?: number | string;
   ghi_chu?: string;
 }
 
@@ -163,6 +164,7 @@ class ProposalController {
       title_data,
       selected_personnel,
       nam,
+      thang,
       ghi_chu,
     } = body;
     if (!ALL_PROPOSAL_TYPES.includes(type as ProposalType)) {
@@ -195,7 +197,8 @@ class ProposalController {
       userId,
       type,
       typeof nam === 'string' ? parseInt(nam, 10) : Number(nam),
-      ghi_chu
+      ghi_chu,
+      typeof thang === 'string' ? parseInt(thang, 10) : Number(thang) || 12
     );
     try {
       await notificationHelper.notifyAdminsOnProposalSubmission(result.proposal, user);

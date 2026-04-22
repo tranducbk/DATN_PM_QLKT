@@ -541,7 +541,7 @@ class AnnualRewardService {
       });
     }
 
-    const { created, updated } = await prisma.$transaction(async tx => {
+    const { created, updated } = await prisma.$transaction(async prismaTx => {
       const txCreated: string[] = [];
       const txUpdated: string[] = [];
 
@@ -561,7 +561,7 @@ class AnnualRewardService {
         const existing = existingRewardByKey.get(`${personnel.id}_${nam}`) ?? null;
 
         if (!existing) {
-          const createdReward = await tx.danhHieuHangNam.create({
+          const createdReward = await prismaTx.danhHieuHangNam.create({
             data: {
               quan_nhan_id: personnel.id,
               nam,
@@ -576,7 +576,7 @@ class AnnualRewardService {
           });
           txCreated.push(createdReward.id);
         } else {
-          await tx.danhHieuHangNam.update({
+          await prismaTx.danhHieuHangNam.update({
             where: { id: existing.id },
             data: {
               danh_hieu,
@@ -726,7 +726,6 @@ class AnnualRewardService {
       (item, proposal) => item.personnel_id ? `${item.personnel_id}_${proposal.nam}` : null
     );
 
-    // Build lookup Maps
     const personnelMap = new Map(personnelList.map(p => [p.id, p]));
     // Map<personnelId_nam, record> for duplicate checking
     const rewardByKey = new Map(
@@ -1025,10 +1024,10 @@ class AnnualRewardService {
     }
 
     return await prisma.$transaction(
-      async tx => {
+      async prismaTx => {
         const results: DanhHieuHangNam[] = [];
         for (const item of validItems) {
-          const result = await tx.danhHieuHangNam.upsert({
+          const result = await prismaTx.danhHieuHangNam.upsert({
             where: {
               quan_nhan_id_nam: {
                 quan_nhan_id: item.personnel_id,
@@ -1227,7 +1226,7 @@ class AnnualRewardService {
       }
     }
 
-    const created = await prisma.$transaction(async tx => {
+    const created = await prisma.$transaction(async prismaTx => {
       const txCreated: DanhHieuHangNam[] = [];
 
       for (const personnelId of personnelIds) {
@@ -1293,7 +1292,7 @@ class AnnualRewardService {
             if (individualSoQuyetDinh) updateData.so_quyet_dinh = individualSoQuyetDinh;
             if (ghi_chu) updateData.ghi_chu = ghi_chu;
 
-            rewardRecord = await tx.danhHieuHangNam.update({
+            rewardRecord = await prismaTx.danhHieuHangNam.update({
               where: { id: existingReward.id },
               data: updateData,
             });
@@ -1302,7 +1301,7 @@ class AnnualRewardService {
             continue;
           }
         } else {
-          rewardRecord = await tx.danhHieuHangNam.create({
+          rewardRecord = await prismaTx.danhHieuHangNam.create({
             data: {
               quan_nhan_id: personnelId,
               nam: namInt,

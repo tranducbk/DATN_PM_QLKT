@@ -119,7 +119,7 @@ export interface AnnualProfile {
 
 export interface MedalData {
   hasReceived: boolean;
-  data?: { ngay_cap?: string | null }[];
+  data?: { ngay_cap?: string | null; nam?: number; thang?: number }[];
 }
 
 export interface PersonnelDetail {

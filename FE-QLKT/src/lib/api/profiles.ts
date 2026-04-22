@@ -9,7 +9,7 @@ import type { ApiResponse } from '@/lib/types';
 export async function getAnnualProfile(personnelId: string, year?: number): Promise<ApiResponse> {
   try {
     // If year is provided, API will auto-recalculate before returning
-    let url = year
+    const url = year
       ? `/api/profiles/annual/${personnelId}?year=${year}`
       : `/api/profiles/annual/${personnelId}`;
 

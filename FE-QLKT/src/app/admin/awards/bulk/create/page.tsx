@@ -82,6 +82,7 @@ export default function BulkAddAwardsPage() {
 
   // Step 2: Select Personnel/Units
   const [nam, setNam] = useState(new Date().getFullYear());
+  const [thang, setThang] = useState(new Date().getMonth() + 1);
   const [selectedPersonnelIds, setSelectedPersonnelIds] = useState<string[]>([]);
   const [selectedUnitIds, setSelectedUnitIds] = useState<string[]>([]);
 
@@ -315,6 +316,7 @@ export default function BulkAddAwardsPage() {
       const formData = new FormData();
       formData.append('type', awardType);
       formData.append('nam', String(nam));
+      formData.append('thang', String(thang));
 
       if (awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
         formData.append('selected_units', JSON.stringify(selectedUnitIds));
@@ -448,6 +450,7 @@ export default function BulkAddAwardsPage() {
                 onPersonnelChange={setSelectedPersonnelIds}
                 nam={nam}
                 onNamChange={setNam}
+                onThangChange={setThang}
                 onTitleDataChange={setTitleData}
                 onNextStep={() => setCurrentStep(prev => prev + 1)}
               />
@@ -459,6 +462,7 @@ export default function BulkAddAwardsPage() {
                 onPersonnelChange={setSelectedPersonnelIds}
                 nam={nam}
                 onNamChange={setNam}
+                onThangChange={setThang}
                 onTitleDataChange={setTitleData}
                 onNextStep={() => setCurrentStep(prev => prev + 1)}
               />
@@ -470,6 +474,7 @@ export default function BulkAddAwardsPage() {
                 onPersonnelChange={setSelectedPersonnelIds}
                 nam={nam}
                 onNamChange={setNam}
+                onThangChange={setThang}
                 onTitleDataChange={setTitleData}
                 onNextStep={() => setCurrentStep(prev => prev + 1)}
               />

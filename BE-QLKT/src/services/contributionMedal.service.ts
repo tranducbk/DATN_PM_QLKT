@@ -14,6 +14,7 @@ import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { GENDER } from '../constants/gender.constants';
+import { calculateTenureMonthsWithDayPrecision } from '../helpers/serviceYearsHelper';
 
 interface ContributionAwardValidItem {
   row: number;
@@ -110,7 +111,7 @@ class ContributionAwardService {
             })
           : Promise.resolve([]),
         allPersonnelIds.size > 0
-          ? prisma.khenThuongCongHien.findMany({
+          ? prisma.khenThuongHCBVTQ.findMany({
               where: { quan_nhan_id: { in: [...allPersonnelIds] } },
             })
           : Promise.resolve([]),
@@ -316,12 +317,7 @@ class ContributionAwardService {
           let months = h.so_thang;
           if ((months === null || months === undefined) && h.ngay_bat_dau && !h.ngay_ket_thuc) {
             const start = new Date(h.ngay_bat_dau);
-            months =
-              (today.getFullYear() - start.getFullYear()) * 12 +
-              today.getMonth() -
-              start.getMonth();
-            if (today.getDate() < start.getDate()) months--;
-            months = Math.max(0, months);
+            months = calculateTenureMonthsWithDayPrecision(start, today);
           }
           if (months) total += Number(months);
         });
@@ -402,7 +398,7 @@ class ContributionAwardService {
       prisma.bangDeXuat.findMany({
         where: { loai_de_xuat: PROPOSAL_TYPES.CONG_HIEN, status: PROPOSAL_STATUS.PENDING },
       }),
-      prisma.khenThuongCongHien.findMany({
+      prisma.khenThuongHCBVTQ.findMany({
         where: { quan_nhan_id: { in: personnelIds } },
         select: { quan_nhan_id: true, danh_hieu: true },
       }),
@@ -438,10 +434,10 @@ class ContributionAwardService {
     }
 
     return await prisma.$transaction(
-      async tx => {
+      async prismaTx => {
         const results = [];
         for (const item of validItems) {
-          const result = await tx.khenThuongCongHien.create({
+          const result = await prismaTx.khenThuongHCBVTQ.create({
             data: {
               quan_nhan_id: item.personnel_id,
               danh_hieu: item.danh_hieu,
@@ -512,7 +508,7 @@ class ContributionAwardService {
     }
 
     const [data, total] = await Promise.all([
-      prisma.khenThuongCongHien.findMany({
+      prisma.khenThuongHCBVTQ.findMany({
         where,
         include: {
           QuanNhan: {
@@ -531,7 +527,7 @@ class ContributionAwardService {
         take: limit,
         orderBy: { nam: 'desc' },
       }),
-      prisma.khenThuongCongHien.count({ where }),
+      prisma.khenThuongHCBVTQ.count({ where }),
     ]);
 
     return {
@@ -628,18 +624,18 @@ class ContributionAwardService {
    * Get Contribution Awards statistics
    */
   async getStatistics() {
-    const byRank = await prisma.khenThuongCongHien.groupBy({
+    const byRank = await prisma.khenThuongHCBVTQ.groupBy({
       by: ['danh_hieu'],
       _count: { id: true },
     });
 
-    const byYear = await prisma.khenThuongCongHien.groupBy({
+    const byYear = await prisma.khenThuongHCBVTQ.groupBy({
       by: ['nam'],
       _count: { id: true },
       orderBy: { nam: 'desc' },
     });
 
-    const total = await prisma.khenThuongCongHien.count();
+    const total = await prisma.khenThuongHCBVTQ.count();
 
     return {
       total,
@@ -672,7 +668,7 @@ class ContributionAwardService {
    * @returns {Promise<Object>}
    */
   async deleteAward(id: string, adminUsername: string = 'Admin') {
-    const award = await prisma.khenThuongCongHien.findUnique({
+    const award = await prisma.khenThuongHCBVTQ.findUnique({
       where: { id },
       include: {
         QuanNhan: true,
@@ -687,7 +683,7 @@ class ContributionAwardService {
     const personnel = award.QuanNhan;
 
     // Delete award only, proposals are kept for audit trail
-    await prisma.khenThuongCongHien.delete({
+    await prisma.khenThuongHCBVTQ.delete({
       where: { id },
     });
 

@@ -61,14 +61,10 @@ export function NCKHProposalForm({
         ...values,
       };
 
-      let newData: NCKHRecord[];
-      if (editingRecord) {
-        newData = dataSource.map(item => (item.key === editingRecord.key ? newRecord : item));
-        message.success('Cập nhật thành công!');
-      } else {
-        newData = [...dataSource, newRecord];
-        message.success('Thêm mới thành công!');
-      }
+      const newData: NCKHRecord[] = editingRecord
+        ? dataSource.map(item => (item.key === editingRecord.key ? newRecord : item))
+        : [...dataSource, newRecord];
+      message.success(editingRecord ? 'Cập nhật thành công!' : 'Thêm mới thành công!');
 
       setDataSource(newData);
       onDataChange?.(newData);

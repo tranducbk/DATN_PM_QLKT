@@ -184,19 +184,10 @@ export default function ManagerPersonnelPage() {
       return;
     }
 
-    let shouldInclude = false;
-
-    if (pos.co_quan_don_vi_id === managerUnitId) {
-      shouldInclude = true;
-    }
-
-    if (!shouldInclude && pos.don_vi_truc_thuoc_id && pos.DonViTrucThuoc) {
-      const coQuanIdFromRelation =
-        pos.DonViTrucThuoc.co_quan_don_vi_id || pos.DonViTrucThuoc.CoQuanDonVi?.id;
-      if (coQuanIdFromRelation === managerUnitId) {
-        shouldInclude = true;
-      }
-    }
+    const coQuanIdFromRelation = pos.DonViTrucThuoc?.co_quan_don_vi_id || pos.DonViTrucThuoc?.CoQuanDonVi?.id;
+    const shouldInclude =
+      pos.co_quan_don_vi_id === managerUnitId ||
+      (!!pos.don_vi_truc_thuoc_id && !!pos.DonViTrucThuoc && coQuanIdFromRelation === managerUnitId);
 
     if (shouldInclude) {
       const positionName = pos.ten_chuc_vu?.trim() || '';

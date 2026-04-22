@@ -88,7 +88,8 @@ async function submitProposal(
   userId: string,
   type: ProposalType = PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
   nam: number,
-  ghiChu: string | null = null
+  ghiChu: string | null = null,
+  thang: number = 12
 ) {
   try {
     const user = await prisma.taiKhoan.findUnique({
@@ -428,7 +429,6 @@ async function submitProposal(
       dataNienHan = titleData.map(item => {
         const personnel = personnelMap[item.personnel_id];
 
-        // Compute service duration from enlistment date.
         let thoiGian = null;
         if (personnel?.ngay_nhap_ngu) {
           const ngayNhapNgu = new Date(personnel.ngay_nhap_ngu);
@@ -535,7 +535,6 @@ async function submitProposal(
                 },
               });
 
-              // Compute active months for current position records.
               const updatedHistories = histories.map(history => {
                 if (history.so_thang === null || history.so_thang === undefined) {
                   if (history.ngay_bat_dau && !history.ngay_ket_thuc) {
@@ -575,12 +574,10 @@ async function submitProposal(
                 return totalMonths;
               };
 
-              // Compute duration for all three groups.
               const months0_7 = getTotalMonthsByGroup('0.7');
               const months0_8 = getTotalMonthsByGroup('0.8');
               const months0_9_1_0 = getTotalMonthsByGroup('0.9-1.0');
 
-              // Format duration to readable years/months.
               const formatTime = (totalMonths: number) => {
                 const years = Math.floor(totalMonths / 12);
                 const remainingMonths = totalMonths % 12;
@@ -994,6 +991,7 @@ async function submitProposal(
       nguoi_de_xuat_id: userId,
       loai_de_xuat: type,
       nam: parseInt(String(nam), 10) || new Date().getFullYear(),
+      thang: parseInt(String(thang), 10) || 12,
       status: PROPOSAL_STATUS.PENDING,
       data_danh_hieu: dataDanhHieu as Prisma.InputJsonValue,
       data_thanh_tich: dataThanhTich as Prisma.InputJsonValue,

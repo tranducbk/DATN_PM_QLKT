@@ -178,14 +178,7 @@ export async function previewFile(filePath: string, customFilename?: string): Pr
   try {
     const filename = customFilename || filePath.split('/').pop() || 'document';
 
-    // Normalize file path to API route when needed.
-    let apiPath = filePath;
-    if (!filePath.startsWith('/api/')) {
-      const fileOnly = filePath.split('/').pop();
-      apiPath = `/api/proposals/uploads/${fileOnly}`;
-    }
-
-    const response = await axiosInstance.get(apiPath, {
+    const response = await axiosInstance.get(filePath, {
       responseType: 'blob',
     });
 

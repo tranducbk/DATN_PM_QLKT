@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { useState, useEffect } from 'react';
 import {
   Card,
@@ -221,23 +222,14 @@ export default function AdminProposalsPage() {
       width: 100,
       align: 'center',
       render: (_, record) => {
-        let count = 0;
-        switch (record.loai_de_xuat) {
-          case PROPOSAL_TYPES.NCKH:
-            count = record.data_thanh_tich?.length || 0;
-            break;
-          case PROPOSAL_TYPES.NIEN_HAN:
-          case PROPOSAL_TYPES.HC_QKQT:
-          case PROPOSAL_TYPES.KNC_VSNXD_QDNDVN:
-            count = record.data_nien_han?.length || 0;
-            break;
-          case PROPOSAL_TYPES.CONG_HIEN:
-            count = record.data_cong_hien?.length || 0;
-            break;
-          default:
-            count = record.selected_personnel?.length || record.data_danh_hieu?.length || 0;
-            break;
-        }
+        const countMap: Record<string, number> = {
+          [PROPOSAL_TYPES.NCKH]: record.data_thanh_tich?.length || 0,
+          [PROPOSAL_TYPES.NIEN_HAN]: record.data_nien_han?.length || 0,
+          [PROPOSAL_TYPES.HC_QKQT]: record.data_nien_han?.length || 0,
+          [PROPOSAL_TYPES.KNC_VSNXD_QDNDVN]: record.data_nien_han?.length || 0,
+          [PROPOSAL_TYPES.CONG_HIEN]: record.data_cong_hien?.length || 0,
+        };
+        const count = countMap[record.loai_de_xuat] ?? (record.selected_personnel?.length || record.data_danh_hieu?.length || 0);
         return <Tag color="cyan">{count}</Tag>;
       },
     },
@@ -259,16 +251,13 @@ export default function AdminProposalsPage() {
       align: 'center',
       render: (status: string) => {
         const cfg = PROPOSAL_STATUS_ADMIN[status] ?? { tableTagText: status, tagColor: 'default' };
-        const icon =
-          status === PROPOSAL_STATUS.PENDING ? (
-            <ClockCircleOutlined />
-          ) : status === PROPOSAL_STATUS.APPROVED ? (
-            <CheckCircleOutlined />
-          ) : status === PROPOSAL_STATUS.REJECTED ? (
-            <CloseCircleOutlined />
-          ) : undefined;
+        const iconMap: Record<string, React.ReactNode> = {
+          [PROPOSAL_STATUS.PENDING]: <ClockCircleOutlined />,
+          [PROPOSAL_STATUS.APPROVED]: <CheckCircleOutlined />,
+          [PROPOSAL_STATUS.REJECTED]: <CloseCircleOutlined />,
+        };
         return (
-          <Tag icon={icon} color={cfg.tagColor}>
+          <Tag icon={iconMap[status]} color={cfg.tagColor}>
             {cfg.tableTagText}
           </Tag>
         );
@@ -284,12 +273,10 @@ export default function AdminProposalsPage() {
           return <Text type="secondary">-</Text>;
         }
 
-        let soQuyetDinh: string | null = null;
-        if (record.data_danh_hieu && record.data_danh_hieu.length > 0) {
-          soQuyetDinh = record.data_danh_hieu[0]?.so_quyet_dinh || null;
-        } else if (record.data_thanh_tich && record.data_thanh_tich.length > 0) {
-          soQuyetDinh = record.data_thanh_tich[0]?.so_quyet_dinh || null;
-        }
+        const soQuyetDinh: string | null =
+          record.data_danh_hieu?.[0]?.so_quyet_dinh ||
+          record.data_thanh_tich?.[0]?.so_quyet_dinh ||
+          null;
 
         return soQuyetDinh ? <Text code>{soQuyetDinh}</Text> : <Text type="secondary">-</Text>;
       },

@@ -64,6 +64,7 @@ interface Step2SelectPersonnelHCQKQTProps {
   onPersonnelChange: (ids: string[]) => void;
   nam: number;
   onNamChange: (nam: number) => void;
+  onThangChange?: (thang: number) => void;
   onTitleDataChange?: (titleData: any[]) => void;
   onNextStep?: () => void;
   isManager?: boolean;
@@ -74,6 +75,7 @@ export function Step2SelectPersonnelHCQKQT({
   onPersonnelChange,
   nam,
   onNamChange,
+  onThangChange,
   onTitleDataChange,
   onNextStep,
   isManager = false,
@@ -82,7 +84,11 @@ export function Step2SelectPersonnelHCQKQT({
   const [personnel, setPersonnel] = useState<Personnel[]>([]);
   const [searchText, setSearchText] = useState('');
   const [unitFilter, setUnitFilter] = useState<string>('ALL');
+  const NOW = new Date();
+  const CURRENT_YEAR = NOW.getFullYear();
+  const CURRENT_MONTH = NOW.getMonth() + 1;
   const [localNam, setLocalNam] = useState<number | null>(nam);
+  const [localThang, setLocalThang] = useState<number>(CURRENT_MONTH);
   const [alreadyReceivedMap, setAlreadyReceivedMap] = useState<Record<string, boolean>>({});
   const [receivedReasonMap, setReceivedReasonMap] = useState<Record<string, string>>({});
   const [checkingReceived, setCheckingReceived] = useState(false);
@@ -113,8 +119,11 @@ export function Step2SelectPersonnelHCQKQT({
             const response = await apiClient.checkHCQKQT(p.id);
             if (response.success) {
               receivedMap[p.id] = response.data.alreadyReceived;
-              if (response.data.alreadyReceived && response.data.reason) {
-                reasonMap[p.id] = response.data.reason;
+              if (response.data.alreadyReceived) {
+                const yearReceived = response.data.award?.nam;
+                reasonMap[p.id] = yearReceived
+                  ? `Đã nhận (${yearReceived})`
+                  : (response.data.reason || 'Đã nhận');
               }
             }
           } catch (error) {
@@ -176,18 +185,19 @@ export function Step2SelectPersonnelHCQKQT({
     const matchesSearch =
       searchText === '' || p.ho_ten.toLowerCase().includes(searchText.toLowerCase());
 
-    let matchesUnit = true;
-    if (unitFilter && unitFilter !== 'ALL') {
-      const unitId = unitFilter.split('|')[0];
-      matchesUnit = p.don_vi_truc_thuoc_id === unitId || p.co_quan_don_vi_id === unitId;
-    }
+    const matchesUnit =
+      !unitFilter ||
+      unitFilter === 'ALL' ||
+      p.don_vi_truc_thuoc_id === unitFilter.split('|')[0] ||
+      p.co_quan_don_vi_id === unitFilter.split('|')[0];
 
     return matchesSearch && matchesUnit;
   });
 
   const calculateTotalMonths = (
     ngayNhapNgu: DateInput,
-    ngayXuatNgu: DateInput
+    ngayXuatNgu: DateInput,
+    referenceDate?: Date
   ) => {
     if (!ngayNhapNgu) return null;
 
@@ -197,28 +207,13 @@ export function Step2SelectPersonnelHCQKQT({
         ? typeof ngayXuatNgu === 'string'
           ? new Date(ngayXuatNgu)
           : ngayXuatNgu
-        : new Date();
+        : (referenceDate ?? new Date());
 
       if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
         return null;
       }
 
-      let years = endDate.getFullYear() - startDate.getFullYear();
-      let months = endDate.getMonth() - startDate.getMonth();
-      let days = endDate.getDate() - startDate.getDate();
-
-      if (days < 0) {
-        months -= 1;
-        const lastDayOfPrevMonth = new Date(endDate.getFullYear(), endDate.getMonth(), 0).getDate();
-        days += lastDayOfPrevMonth;
-      }
-
-      if (months < 0) {
-        years -= 1;
-        months += 12;
-      }
-
-      const totalMonths = years * 12 + months;
+      const totalMonths = Math.max(0, (endDate.getFullYear() - startDate.getFullYear()) * 12 + endDate.getMonth() - startDate.getMonth());
       const totalYears = Math.floor(totalMonths / 12);
       const remainingMonths = totalMonths % 12;
 
@@ -232,6 +227,8 @@ export function Step2SelectPersonnelHCQKQT({
     }
   };
 
+  const refDate = new Date(localNam ?? CURRENT_YEAR, localThang, 0);
+
   // Check whether a personnel meets the HC_QKQT eligibility requirement
   const checkEligibleForHCQKQT = (record: Personnel): { eligible: boolean; reason?: string } => {
     if (alreadyReceivedMap[record.id]) {
@@ -242,12 +239,11 @@ export function Step2SelectPersonnelHCQKQT({
       return { eligible: false, reason: 'Chưa cập nhật ngày nhập ngũ' };
     }
 
-    const result = calculateTotalMonths(record.ngay_nhap_ngu, record.ngay_xuat_ngu);
+    const result = calculateTotalMonths(record.ngay_nhap_ngu, record.ngay_xuat_ngu, refDate);
     if (!result || result.years === 0) {
       return { eligible: false, reason: 'Chưa đủ thời gian phục vụ' };
     }
 
-    // Requirement: >= 25 years of service (gender-neutral)
     const requiredYears = HCQKQT_YEARS_REQUIRED;
     if (result.years < requiredYears) {
       return {
@@ -298,15 +294,11 @@ export function Step2SelectPersonnelHCQKQT({
         const coQuan = record.DonViTrucThuoc?.CoQuanDonVi || record.CoQuanDonVi;
         const donViTrucThuoc = record.DonViTrucThuoc;
 
-        let donViDisplay: string | null = null;
-
-        if (donViTrucThuoc?.ten_don_vi) {
-          donViDisplay = coQuan?.ten_don_vi
+        const donViDisplay: string | null = donViTrucThuoc?.ten_don_vi
+          ? coQuan?.ten_don_vi
             ? `${donViTrucThuoc.ten_don_vi} (${coQuan.ten_don_vi})`
-            : donViTrucThuoc.ten_don_vi;
-        } else if (coQuan?.ten_don_vi) {
-          donViDisplay = coQuan.ten_don_vi;
-        }
+            : donViTrucThuoc.ten_don_vi
+          : coQuan?.ten_don_vi || null;
 
         return (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -374,7 +366,7 @@ export function Step2SelectPersonnelHCQKQT({
       width: 150,
       align: 'center',
       render: (_, record) => {
-        const result = calculateTotalMonths(record.ngay_nhap_ngu, record.ngay_xuat_ngu);
+        const result = calculateTotalMonths(record.ngay_nhap_ngu, record.ngay_xuat_ngu, refDate);
         if (!result) return <Text type="secondary">-</Text>;
 
         if (result.years > 0 && result.months > 0) {
@@ -464,8 +456,10 @@ export function Step2SelectPersonnelHCQKQT({
             const hoTen = row[0]?.toString().trim();
             const ngaySinh = row[1]?.toString().trim();
             const nam = row[2]?.toString().trim();
-            const capBac = row[3]?.toString().trim();
-            const chucVu = row[4]?.toString().trim();
+            const thangRaw = parseInt(row[3]?.toString().trim() ?? '');
+            const thang = !isNaN(thangRaw) && thangRaw >= 1 && thangRaw <= 12 ? thangRaw : localThang;
+            const capBac = row[4]?.toString().trim();
+            const chucVu = row[5]?.toString().trim();
 
             if (!hoTen) {
               errors.push(`Dòng ${rowNumber}: Thiếu họ tên`);
@@ -479,20 +473,13 @@ export function Step2SelectPersonnelHCQKQT({
 
             const namInt = parseInt(nam);
 
-            // Match by name + DOB (DOB optional — used to disambiguate duplicate names)
-            let matchingPersonnel;
-            if (ngaySinh) {
-              matchingPersonnel = personnel.find(p => {
-                const nameMatch =
-                  p.ho_ten.toLowerCase().trim() === hoTen.toLowerCase().trim();
-                const personnelBirth = p.ngay_sinh ? formatDate(p.ngay_sinh) : '';
-                return nameMatch && personnelBirth === ngaySinh;
-              });
-            } else {
-              matchingPersonnel = personnel.find(
-                p => p.ho_ten.toLowerCase().trim() === hoTen.toLowerCase().trim()
-              );
-            }
+            const matchingPersonnel = ngaySinh
+              ? personnel.find(p => {
+                  const nameMatch = p.ho_ten.toLowerCase().trim() === hoTen.toLowerCase().trim();
+                  const personnelBirth = p.ngay_sinh ? formatDate(p.ngay_sinh) : '';
+                  return nameMatch && personnelBirth === ngaySinh;
+                })
+              : personnel.find(p => p.ho_ten.toLowerCase().trim() === hoTen.toLowerCase().trim());
 
             if (!matchingPersonnel) {
               const errorMsg = ngaySinh
@@ -508,6 +495,7 @@ export function Step2SelectPersonnelHCQKQT({
               personnel_id: matchingPersonnel.id,
               danh_hieu: 'HC_QKQT',
               nam: namInt,
+              thang,
               cap_bac: capBac,
               chuc_vu: chucVu,
               ghi_chu: '',
@@ -577,10 +565,11 @@ export function Step2SelectPersonnelHCQKQT({
               award.personnel_id ??
               award.co_quan_don_vi_id ??
               award.don_vi_truc_thuoc_id ??
-              '' // fallback if all ID fields are null/undefined
+              ''
           ),
           danh_hieu: 'HC_QKQT',
           nam: award.nam,
+          thang: award.thang ?? localThang,
           cap_bac: award.cap_bac,
           chuc_vu: award.chuc_vu,
           ghi_chu: award.ghi_chu,
@@ -696,35 +685,60 @@ export function Step2SelectPersonnelHCQKQT({
               const intValue = Math.floor(Number(value));
 
               if (!isNaN(intValue)) {
-                // Allow any value while typing; clamp only on blur
                 setLocalNam(intValue);
+                if (intValue === CURRENT_YEAR && localThang > CURRENT_MONTH) {
+                  setLocalThang(CURRENT_MONTH);
+                  onThangChange?.(CURRENT_MONTH);
+                }
               }
             }}
-            onBlur={e => {
-              // Clamp to valid range and propagate to parent on blur
+            onBlur={() => {
               const currentValue = localNam;
+              let finalValue: number;
               if (currentValue === null || currentValue === undefined || currentValue < 1900) {
-                const finalValue = 1900;
-                setLocalNam(finalValue);
-                onNamChange(finalValue);
-              } else if (currentValue > 2999) {
-                const finalValue = 2999;
-                setLocalNam(finalValue);
-                onNamChange(finalValue);
+                finalValue = CURRENT_YEAR;
+              } else if (currentValue > CURRENT_YEAR) {
+                finalValue = CURRENT_YEAR;
               } else {
-                onNamChange(currentValue);
+                finalValue = currentValue;
+              }
+              setLocalNam(finalValue);
+              onNamChange(finalValue);
+              if (finalValue === CURRENT_YEAR && localThang > CURRENT_MONTH) {
+                setLocalThang(CURRENT_MONTH);
+                onThangChange?.(CURRENT_MONTH);
               }
             }}
             style={{ width: 150 }}
             size="large"
             min={1900}
-            max={2999}
+            max={CURRENT_YEAR}
             placeholder="Nhập năm"
             controls={true}
             step={1}
             precision={0}
             keyboard={true}
           />
+        </div>
+        <div>
+          <Text strong>Tháng: </Text>
+          <Select
+            value={localThang}
+            onChange={v => {
+              const val = v ?? CURRENT_MONTH;
+              setLocalThang(val);
+              onThangChange?.(val);
+            }}
+            style={{ width: 110 }}
+            size="large"
+            allowClear
+          >
+            {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+              <Select.Option key={m} value={m} disabled={localNam === CURRENT_YEAR && m > CURRENT_MONTH}>
+                Tháng {m}
+              </Select.Option>
+            ))}
+          </Select>
         </div>
 
         <Input

@@ -228,12 +228,9 @@ export default function AdminAwardsPage() {
       } else if (activeTab === 'KTDX') {
         if (nameFilter) {
           const doiTuong = record.doi_tuong || record.loai;
-          let searchText = '';
-          if (doiTuong === 'CA_NHAN') {
-            searchText = record.QuanNhan?.ho_ten || '';
-          } else {
-            searchText = record.CoQuanDonVi?.ten_don_vi || record.DonViTrucThuoc?.ten_don_vi || '';
-          }
+          const searchText = doiTuong === 'CA_NHAN'
+            ? record.QuanNhan?.ho_ten || ''
+            : record.CoQuanDonVi?.ten_don_vi || record.DonViTrucThuoc?.ten_don_vi || '';
           const hinhThuc = record.hinh_thuc_khen_thuong || '';
           const combined = `${searchText} ${hinhThuc}`.toLowerCase();
           if (!combined.includes(nameFilter)) return false;
@@ -308,26 +305,24 @@ export default function AdminAwardsPage() {
           activeTab === 'KNC_VSNXD_QDNDVN';
         const hoTen = hasNestedQuanNhan ? record.QuanNhan?.ho_ten : text;
         const unitInfo: string[] = [];
-        let parentUnit: string | null = null;
+        const parentUnit: string | null = hasNestedQuanNhan
+          ? record.QuanNhan?.DonViTrucThuoc?.CoQuanDonVi?.ten_don_vi || null
+          : record.DonViTrucThuoc?.CoQuanDonVi?.ten_don_vi || null;
 
         if (hasNestedQuanNhan) {
           if (record.QuanNhan?.DonViTrucThuoc?.ten_don_vi) {
             unitInfo.push(record.QuanNhan.DonViTrucThuoc.ten_don_vi);
-            parentUnit = record.QuanNhan.DonViTrucThuoc.CoQuanDonVi?.ten_don_vi || null;
           }
           if (record.QuanNhan?.CoQuanDonVi?.ten_don_vi) {
             unitInfo.push(record.QuanNhan.CoQuanDonVi.ten_don_vi);
           }
         } else {
-          // Unit awards
           if (record.DonViTrucThuoc?.ten_don_vi) {
             unitInfo.push(record.DonViTrucThuoc.ten_don_vi);
-            parentUnit = record.DonViTrucThuoc.CoQuanDonVi?.ten_don_vi || null;
           }
           if (record.CoQuanDonVi?.ten_don_vi) {
             unitInfo.push(record.CoQuanDonVi.ten_don_vi);
           }
-          // Fallback to string fields
           if (unitInfo.length === 0) {
             if (record.don_vi_truc_thuoc) unitInfo.push(record.don_vi_truc_thuoc);
             if (record.co_quan_don_vi) unitInfo.push(record.co_quan_don_vi);

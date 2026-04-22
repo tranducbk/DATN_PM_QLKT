@@ -167,7 +167,7 @@ export async function checkDuplicateAward(
     }
 
     if (proposalType === PROPOSAL_TYPES.CONG_HIEN) {
-      const actualAward = await prisma.khenThuongCongHien.findFirst({
+      const actualAward = await prisma.khenThuongHCBVTQ.findFirst({
         where: { quan_nhan_id: personnelId },
       });
       if (actualAward) {

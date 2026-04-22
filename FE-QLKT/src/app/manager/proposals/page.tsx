@@ -218,34 +218,15 @@ export default function ManagerProposalsPage() {
       align: 'center' as const,
       width: 120,
       render: (value, record) => {
-        let count = 0;
-        let tooltip = '';
-
-        switch (record.loai_de_xuat) {
-          case PROPOSAL_TYPES.NCKH:
-            count = record.so_thanh_tich ?? 0;
-            tooltip = 'Số đề tài/sáng kiến khoa học';
-            break;
-          case PROPOSAL_TYPES.NIEN_HAN:
-          case PROPOSAL_TYPES.HC_QKQT:
-          case PROPOSAL_TYPES.KNC_VSNXD_QDNDVN:
-            count = record.so_nien_han ?? 0;
-            tooltip = 'Số quân nhân đề xuất huy chương chiến sĩ vẻ vang';
-            break;
-          case PROPOSAL_TYPES.CONG_HIEN:
-            count = record.so_cong_hien ?? 0;
-            tooltip = 'Số quân nhân đề xuất huân chương bảo vệ tổ quốc';
-            break;
-          case PROPOSAL_TYPES.DON_VI_HANG_NAM:
-            count = record.so_danh_hieu ?? 0;
-            tooltip = 'Số đơn vị đề xuất';
-            break;
-          case PROPOSAL_TYPES.CA_NHAN_HANG_NAM:
-          default:
-            count = record.so_danh_hieu ?? 0;
-            tooltip = 'Số quân nhân đề xuất';
-            break;
-        }
+        const countTooltipMap: Record<string, { count: number; tooltip: string }> = {
+          [PROPOSAL_TYPES.NCKH]: { count: record.so_thanh_tich ?? 0, tooltip: 'Số đề tài/sáng kiến khoa học' },
+          [PROPOSAL_TYPES.NIEN_HAN]: { count: record.so_nien_han ?? 0, tooltip: 'Số quân nhân đề xuất huy chương chiến sĩ vẻ vang' },
+          [PROPOSAL_TYPES.HC_QKQT]: { count: record.so_nien_han ?? 0, tooltip: 'Số quân nhân đề xuất huy chương chiến sĩ vẻ vang' },
+          [PROPOSAL_TYPES.KNC_VSNXD_QDNDVN]: { count: record.so_nien_han ?? 0, tooltip: 'Số quân nhân đề xuất huy chương chiến sĩ vẻ vang' },
+          [PROPOSAL_TYPES.CONG_HIEN]: { count: record.so_cong_hien ?? 0, tooltip: 'Số quân nhân đề xuất huân chương bảo vệ tổ quốc' },
+          [PROPOSAL_TYPES.DON_VI_HANG_NAM]: { count: record.so_danh_hieu ?? 0, tooltip: 'Số đơn vị đề xuất' },
+        };
+        const { count, tooltip } = countTooltipMap[record.loai_de_xuat] ?? { count: record.so_danh_hieu ?? 0, tooltip: 'Số quân nhân đề xuất' };
 
         return (
           <Tooltip title={tooltip}>

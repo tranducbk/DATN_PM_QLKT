@@ -126,7 +126,7 @@ router.get('/export-sample', verifyToken, requireAdmin, personnelController.expo
  * @route   DELETE /api/personnel/:id
  * @desc    Delete a personnel and all related records (cascade delete)
  *          Includes: TaiKhoan, LichSuChucVu, ThanhTichKhoaHoc, DanhHieuHangNam,
- *          KhenThuongCongHien, HuanChuongQuanKyQuyetThang, KyNiemChuongVSNXDQDNDVN,
+ *          KhenThuongHCBVTQ, HuanChuongQuanKyQuyetThang, KyNiemChuongVSNXDQDNDVN,
  *          KhenThuongHCCSVV, KhenThuongDotXuat, HoSoNienHan, HoSoCongHien, HoSoHangNam
  * @access  Private - ADMIN only
  */

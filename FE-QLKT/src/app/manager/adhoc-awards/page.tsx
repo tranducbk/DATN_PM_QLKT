@@ -504,10 +504,9 @@ export default function ManagerAdhocAwardsPage() {
                   <strong>{detailAward.nam}</strong>
                 </Descriptions.Item>
                 <Descriptions.Item label="Chi tiết" span={2}>
-                  {detailAward.doi_tuong === 'CA_NHAN' && detailAward.QuanNhan ? (
+                  {detailAward.doi_tuong === 'CA_NHAN' && detailAward.QuanNhan && (
                     <div>
                       <strong>{detailAward.QuanNhan.ho_ten}</strong>
-                      {/* Chỉ hiển thị cấp bậc/chức vụ từ DB đã lưu */}
                       {detailAward.cap_bac && (
                         <div>
                           <Text type="secondary">Cấp bậc: {detailAward.cap_bac}</Text>
@@ -519,9 +518,11 @@ export default function ManagerAdhocAwardsPage() {
                         </div>
                       )}
                     </div>
-                  ) : detailAward.CoQuanDonVi ? (
+                  )}
+                  {detailAward.doi_tuong !== 'CA_NHAN' && !!detailAward.CoQuanDonVi && (
                     <strong>{detailAward.CoQuanDonVi.ten_don_vi}</strong>
-                  ) : detailAward.DonViTrucThuoc ? (
+                  )}
+                  {detailAward.doi_tuong !== 'CA_NHAN' && !detailAward.CoQuanDonVi && detailAward.DonViTrucThuoc && (
                     <div>
                       <strong>{detailAward.DonViTrucThuoc.ten_don_vi}</strong>
                       {detailAward.DonViTrucThuoc.CoQuanDonVi && (
@@ -532,9 +533,8 @@ export default function ManagerAdhocAwardsPage() {
                         </div>
                       )}
                     </div>
-                  ) : (
-                    '-'
                   )}
+                  {detailAward.doi_tuong !== 'CA_NHAN' && !detailAward.CoQuanDonVi && !detailAward.DonViTrucThuoc && '-'}
                 </Descriptions.Item>
               </Descriptions>
             </Card>

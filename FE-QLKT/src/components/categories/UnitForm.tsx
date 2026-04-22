@@ -56,12 +56,9 @@ export function UnitForm({ unit, units = [], onSuccess, onClose }: UnitFormProps
         payload.co_quan_don_vi_id = null;
       }
 
-      let res;
-      if (unit?.id) {
-        res = await apiClient.updateUnit(unit.id.toString(), payload);
-      } else {
-        res = await apiClient.createUnit(payload);
-      }
+      const res = unit?.id
+        ? await apiClient.updateUnit(unit.id.toString(), payload)
+        : await apiClient.createUnit(payload);
 
       if (!res.success) {
         message.error(res.message || 'Có lỗi xảy ra');

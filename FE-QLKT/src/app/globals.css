@@ -712,7 +712,6 @@
     border-radius: 8px !important;
   }
 
-  .dark .ant-select-selector > *,
   .dark .ant-select-selector .ant-select-selection-search,
   .dark .ant-select-selector .ant-select-selection-search-input,
   .dark .ant-select-selector .ant-select-selection-item,
@@ -757,14 +756,12 @@
     color: #9ca3af !important;
   }
 
-  .dark .ant-select:hover .ant-select-selector,
-  .dark .ant-select:hover .ant-select-selector > * {
+  .dark .ant-select:hover .ant-select-selector {
     border-color: #60a5fa !important;
     background-color: #1f2937 !important;
   }
 
-  .dark .ant-select-focused .ant-select-selector,
-  .dark .ant-select-focused .ant-select-selector > * {
+  .dark .ant-select-focused .ant-select-selector {
     border-color: #2563eb !important;
     background-color: #1f2937 !important;
     box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2) !important;
@@ -773,19 +770,14 @@
   /* Additional fixes for Select sizes and variants */
   .dark .ant-select-lg,
   .dark .ant-select-lg .ant-select-selector,
-  .dark .ant-select-lg .ant-select-selector > *,
   .dark .ant-select-sm,
   .dark .ant-select-sm .ant-select-selector,
-  .dark .ant-select-sm .ant-select-selector > *,
   .dark .ant-select-outlined,
   .dark .ant-select-outlined .ant-select-selector,
-  .dark .ant-select-outlined .ant-select-selector > *,
   .dark .ant-select-single,
   .dark .ant-select-single .ant-select-selector,
-  .dark .ant-select-single .ant-select-selector > *,
   .dark .ant-select-show-arrow,
-  .dark .ant-select-show-arrow .ant-select-selector,
-  .dark .ant-select-show-arrow .ant-select-selector > * {
+  .dark .ant-select-show-arrow .ant-select-selector {
     background-color: #1f2937 !important;
     border-color: #4b5563 !important;
     border-radius: 8px !important;

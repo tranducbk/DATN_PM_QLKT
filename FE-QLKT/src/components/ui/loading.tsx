@@ -22,13 +22,9 @@ export function Loading({
   const content = (
     <div className={`flex flex-col items-center justify-center ${className}`}>
       <div className="mb-4">
-        {size === 'small' ? (
-          <Loader2 className="h-6 w-6 animate-spin text-blue-600 dark:text-blue-400" />
-        ) : size === 'large' ? (
-          <Loader2 className="h-12 w-12 animate-spin text-blue-600 dark:text-blue-400" />
-        ) : (
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600 dark:text-blue-400" />
-        )}
+        {size === 'small' && <Loader2 className="h-6 w-6 animate-spin text-blue-600 dark:text-blue-400" />}
+        {size === 'default' && <Loader2 className="h-8 w-8 animate-spin text-blue-600 dark:text-blue-400" />}
+        {size === 'large' && <Loader2 className="h-12 w-12 animate-spin text-blue-600 dark:text-blue-400" />}
       </div>
       {message && (
         <p

@@ -25,6 +25,7 @@ interface PreviewValidItem {
   cap_bac: string | null;
   chuc_vu: string | null;
   nam: number;
+  thang: number;
   so_quyet_dinh: string | null;
   ghi_chu: string | null;
   history: {
@@ -37,6 +38,7 @@ export interface ConfirmImportItem {
   personnel_id: string;
   ho_ten: string;
   nam: number;
+  thang?: number;
   cap_bac?: string | null;
   chuc_vu?: string | null;
   so_quyet_dinh?: string | null;
@@ -62,6 +64,7 @@ class MilitaryFlagService {
     const capBacCol = getHeaderCol(headerMap, ['cap_bac', 'capbac', 'cap_bc']);
     const chucVuCol = getHeaderCol(headerMap, ['chuc_vu', 'chucvu', 'chc_vu']);
     const namCol = getHeaderCol(headerMap, ['nam', 'year']);
+    const thangCol = getHeaderCol(headerMap, ['thang', 'month', 'tháng']);
     const soQuyetDinhCol = getHeaderCol(headerMap, ['so_quyet_dinh', 'soquyetdinh', 'so_qd']);
     const ghiChuCol = getHeaderCol(headerMap, ['ghi_chu', 'ghichu', 'ghi_ch']);
 
@@ -125,6 +128,8 @@ class MilitaryFlagService {
       const idValue = idCol ? row.getCell(idCol).value : null;
       const ho_ten = hoTenCol ? String(row.getCell(hoTenCol).value ?? '').trim() : '';
       const namVal = row.getCell(namCol).value;
+      const thangRaw = thangCol ? Number(row.getCell(thangCol).value) : NaN;
+      const thang = !isNaN(thangRaw) && thangRaw >= 1 && thangRaw <= 12 ? Math.floor(thangRaw) : 12;
       const cap_bac = capBacCol ? String(row.getCell(capBacCol).value ?? '').trim() : null;
       const chuc_vu = chucVuCol ? String(row.getCell(chucVuCol).value ?? '').trim() : null;
       const so_quyet_dinh = soQuyetDinhCol
@@ -277,6 +282,7 @@ class MilitaryFlagService {
         cap_bac: capBac,
         chuc_vu: chucVu,
         nam,
+        thang,
         so_quyet_dinh,
         ghi_chu,
         history,
@@ -329,13 +335,14 @@ class MilitaryFlagService {
     }
 
     return await prisma.$transaction(
-      async tx => {
+      async prismaTx => {
         const results = [];
         for (const item of validItems) {
-          const result = await tx.huanChuongQuanKyQuyetThang.upsert({
+          const result = await prismaTx.huanChuongQuanKyQuyetThang.upsert({
             where: { quan_nhan_id: item.personnel_id },
             update: {
               nam: item.nam,
+              thang: item.thang ?? 12,
               cap_bac: item.cap_bac ?? null,
               chuc_vu: item.chuc_vu ?? null,
               so_quyet_dinh: item.so_quyet_dinh ?? null,
@@ -344,6 +351,7 @@ class MilitaryFlagService {
             create: {
               quan_nhan_id: item.personnel_id,
               nam: item.nam,
+              thang: item.thang ?? 12,
               cap_bac: item.cap_bac ?? null,
               chuc_vu: item.chuc_vu ?? null,
               so_quyet_dinh: item.so_quyet_dinh ?? null,
@@ -366,6 +374,7 @@ class MilitaryFlagService {
       { header: 'Cấp bậc', key: 'cap_bac', width: 15 },
       { header: 'Chức vụ', key: 'chuc_vu', width: 20 },
       { header: 'Năm (*)', key: 'nam', width: 10 },
+      { header: 'Tháng (*)', key: 'thang', width: 10 },
       { header: 'Số quyết định', key: 'so_quyet_dinh', width: 20 },
       { header: 'Ghi chú', key: 'ghi_chu', width: 25 },
     ];
@@ -376,7 +385,7 @@ class MilitaryFlagService {
       personnelIds,
       repeatMap,
       loaiKhenThuong: PROPOSAL_TYPES.HC_QKQT,
-      editableColumnLetters: ['G'],
+      editableColumnLetters: ['H'],
     });
   }
 

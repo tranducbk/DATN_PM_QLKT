@@ -87,6 +87,7 @@ export default function CreateProposalPage() {
 
   // Step 2: Select Personnel/Units
   const [nam, setNam] = useState(new Date().getFullYear());
+  const [thang, setThang] = useState(new Date().getMonth() + 1);
   const [selectedPersonnelIds, setSelectedPersonnelIds] = useState<string[]>([]);
   const [selectedUnitIds, setSelectedUnitIds] = useState<string[]>([]);
 
@@ -328,13 +329,7 @@ export default function CreateProposalPage() {
           const ngayNhapNgu = new Date(p.ngay_nhap_ngu);
           const ngayKetThuc = p.ngay_xuat_ngu ? new Date(p.ngay_xuat_ngu) : new Date();
 
-          let months = (ngayKetThuc.getFullYear() - ngayNhapNgu.getFullYear()) * 12;
-          months += ngayKetThuc.getMonth() - ngayNhapNgu.getMonth();
-          if (ngayKetThuc.getDate() < ngayNhapNgu.getDate()) {
-            months--;
-          }
-          months = Math.max(0, months);
-
+          const months = Math.max(0, (ngayKetThuc.getFullYear() - ngayNhapNgu.getFullYear()) * 12 + ngayKetThuc.getMonth() - ngayNhapNgu.getMonth());
           const years = Math.floor(months / 12);
 
           // Requirement: >= 25 years of service (gender-neutral)
@@ -499,9 +494,6 @@ export default function CreateProposalPage() {
 
             let months = (ngayKetThuc.getFullYear() - ngayNhapNgu.getFullYear()) * 12;
             months += ngayKetThuc.getMonth() - ngayNhapNgu.getMonth();
-            if (ngayKetThuc.getDate() < ngayNhapNgu.getDate()) {
-              months--;
-            }
             months = Math.max(0, months);
 
             const years = Math.floor(months / 12);
@@ -533,6 +525,7 @@ export default function CreateProposalPage() {
       const formData = new FormData();
       formData.append('type', proposalType);
       formData.append('nam', String(nam));
+      formData.append('thang', String(thang));
 
       if (proposalType === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
         formData.append('selected_units', JSON.stringify(selectedUnitIds));
@@ -674,6 +667,7 @@ export default function CreateProposalPage() {
                 onPersonnelChange={setSelectedPersonnelIds}
                 nam={nam}
                 onNamChange={setNam}
+                onThangChange={setThang}
                 onTitleDataChange={setTitleData}
                 onNextStep={() => setCurrentStep(prev => prev + 1)}
                 isManager
@@ -686,6 +680,7 @@ export default function CreateProposalPage() {
                 onPersonnelChange={setSelectedPersonnelIds}
                 nam={nam}
                 onNamChange={setNam}
+                onThangChange={setThang}
                 onTitleDataChange={setTitleData}
                 onNextStep={() => setCurrentStep(prev => prev + 1)}
                 isManager
@@ -698,6 +693,7 @@ export default function CreateProposalPage() {
                 onPersonnelChange={setSelectedPersonnelIds}
                 nam={nam}
                 onNamChange={setNam}
+                onThangChange={setThang}
                 onTitleDataChange={setTitleData}
                 onNextStep={() => setCurrentStep(prev => prev + 1)}
                 isManager
@@ -910,26 +906,12 @@ export default function CreateProposalPage() {
                   return null;
                 }
 
-                let years = endDate.getFullYear() - startDate.getFullYear();
-                let months = endDate.getMonth() - startDate.getMonth();
-                let days = endDate.getDate() - startDate.getDate();
-
-                if (days < 0) {
-                  months -= 1;
-                  const lastDayOfPrevMonth = new Date(
-                    endDate.getFullYear(),
-                    endDate.getMonth(),
-                    0
-                  ).getDate();
-                  days += lastDayOfPrevMonth;
-                }
-
-                if (months < 0) {
-                  years -= 1;
-                  months += 12;
-                }
-
-                const totalMonths = years * 12 + months;
+                const totalMonths = Math.max(
+                  0,
+                  (endDate.getFullYear() - startDate.getFullYear()) * 12 +
+                    endDate.getMonth() -
+                    startDate.getMonth()
+                );
                 const totalYears = Math.floor(totalMonths / 12);
                 const remainingMonths = totalMonths % 12;
 

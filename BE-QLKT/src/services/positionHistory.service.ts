@@ -1,6 +1,7 @@
 import { prisma } from '../models';
 import moment from 'moment';
 import { AppError, NotFoundError, ValidationError } from '../middlewares/errorHandler';
+import { calculateTenureMonthsWithDayPrecision } from '../helpers/serviceYearsHelper';
 
 interface CreatePositionHistoryData {
   personnel_id: string;
@@ -88,12 +89,7 @@ class PositionHistoryService {
     const updatedHistory = history.map(item => {
       if (!item.ngay_ket_thuc) {
         const ngayBatDau = new Date(item.ngay_bat_dau);
-        let months = (today.getFullYear() - ngayBatDau.getFullYear()) * 12;
-        months += today.getMonth() - ngayBatDau.getMonth();
-        if (today.getDate() < ngayBatDau.getDate()) {
-          months--;
-        }
-        const soThang = Math.max(0, months);
+        const soThang = calculateTenureMonthsWithDayPrecision(ngayBatDau, today);
 
         return {
           ...item,
@@ -198,12 +194,7 @@ class PositionHistoryService {
     let soThang: number | null = null;
     if (ngay_ket_thuc) {
       const ngayKetThucDate = new Date(ngay_ket_thuc);
-      let months = (ngayKetThucDate.getFullYear() - ngayBatDauDate.getFullYear()) * 12;
-      months += ngayKetThucDate.getMonth() - ngayBatDauDate.getMonth();
-      if (ngayKetThucDate.getDate() < ngayBatDauDate.getDate()) {
-        months--;
-      }
-      soThang = Math.max(0, months);
+      soThang = calculateTenureMonthsWithDayPrecision(ngayBatDauDate, ngayKetThucDate);
     }
 
     const newHistory = await prisma.lichSuChucVu.create({
@@ -356,12 +347,7 @@ class PositionHistoryService {
 
     let soThang = history.so_thang;
     if (ngayBatDauFinal && ngayKetThucFinal) {
-      let months = (ngayKetThucFinal.getFullYear() - ngayBatDauFinal.getFullYear()) * 12;
-      months += ngayKetThucFinal.getMonth() - ngayBatDauFinal.getMonth();
-      if (ngayKetThucFinal.getDate() < ngayBatDauFinal.getDate()) {
-        months--;
-      }
-      soThang = Math.max(0, months);
+      soThang = calculateTenureMonthsWithDayPrecision(ngayBatDauFinal, ngayKetThucFinal);
     } else if (!ngayKetThucFinal) {
       soThang = null;
     }

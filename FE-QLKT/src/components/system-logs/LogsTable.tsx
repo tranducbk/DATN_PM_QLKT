@@ -126,31 +126,22 @@ export function LogsTable({ logs, loading, selectedRowKeys, onSelectionChange }:
   const sortedLogs = useMemo(() => {
     if (!sortField || !sortOrder) return logs;
 
+    const getFieldValue = (log: (typeof logs)[number]): string => {
+      const fieldMap: Record<string, string> = {
+        actor: (log.actor_name || log.actor_id || '').toLowerCase(),
+        role: (log.actor_role || '').toLowerCase(),
+        action: (ACTION_LABELS[log.action] || log.action || '').toLowerCase(),
+      };
+      return fieldMap[sortField] ?? '';
+    };
+
     const sorted = [...logs].sort((a, b) => {
-      let aValue = '';
-      let bValue = '';
-
-      switch (sortField) {
-        case 'time': {
-          const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-          return sortOrder === 'asc' ? diff : -diff;
-        }
-        case 'actor':
-          aValue = (a.actor_name || a.actor_id || '').toLowerCase();
-          bValue = (b.actor_name || b.actor_id || '').toLowerCase();
-          break;
-        case 'role':
-          aValue = (a.actor_role || '').toLowerCase();
-          bValue = (b.actor_role || '').toLowerCase();
-          break;
-        case 'action':
-          aValue = (ACTION_LABELS[a.action] || a.action || '').toLowerCase();
-          bValue = (ACTION_LABELS[b.action] || b.action || '').toLowerCase();
-          break;
-        default:
-          return 0;
+      if (sortField === 'time') {
+        const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        return sortOrder === 'asc' ? diff : -diff;
       }
-
+      const aValue = getFieldValue(a);
+      const bValue = getFieldValue(b);
       if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
       if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
       return 0;

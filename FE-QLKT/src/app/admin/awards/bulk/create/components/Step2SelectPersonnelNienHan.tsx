@@ -65,10 +65,17 @@ interface Step2SelectPersonnelNienHanProps {
   onPersonnelChange: (ids: string[]) => void;
   nam: number;
   onNamChange: (nam: number) => void;
+  onThangChange?: (thang: number) => void;
   onTitleDataChange?: (titleData: any[]) => void;
   onNextStep?: () => void;
   bypassEligibility?: boolean;
   isManager?: boolean;
+}
+
+function formatMonthsRemaining(years: number, months: number): string {
+  if (years > 0 && months > 0) return `${years} năm ${months} tháng`;
+  if (years > 0) return `${years} năm`;
+  return `${months} tháng`;
 }
 
 export function Step2SelectPersonnelNienHan({
@@ -76,6 +83,7 @@ export function Step2SelectPersonnelNienHan({
   onPersonnelChange,
   nam,
   onNamChange,
+  onThangChange,
   onTitleDataChange,
   onNextStep,
   bypassEligibility = false,
@@ -86,7 +94,12 @@ export function Step2SelectPersonnelNienHan({
   const [personnel, setPersonnel] = useState<Personnel[]>([]);
   const [searchText, setSearchText] = useState('');
   const [unitFilter, setUnitFilter] = useState<string>('ALL');
+  const NOW = new Date();
+  const CURRENT_YEAR = NOW.getFullYear();
+  const CURRENT_MONTH = NOW.getMonth() + 1;
+
   const [localNam, setLocalNam] = useState<number | null>(nam);
+  const [localThang, setLocalThang] = useState<number>(CURRENT_MONTH);
   const [serviceProfilesMap, setServiceProfilesMap] = useState<Record<string, any>>({});
 
   useEffect(() => {
@@ -166,18 +179,19 @@ export function Step2SelectPersonnelNienHan({
     const matchesSearch =
       searchText === '' || p.ho_ten.toLowerCase().includes(searchText.toLowerCase());
 
-    let matchesUnit = true;
-    if (unitFilter && unitFilter !== 'ALL') {
-      const unitId = unitFilter.split('|')[0];
-      matchesUnit = p.don_vi_truc_thuoc_id === unitId || p.co_quan_don_vi_id === unitId;
-    }
+    const matchesUnit =
+      !unitFilter ||
+      unitFilter === 'ALL' ||
+      p.don_vi_truc_thuoc_id === unitFilter.split('|')[0] ||
+      p.co_quan_don_vi_id === unitFilter.split('|')[0];
 
     return matchesSearch && matchesUnit;
   });
 
   const calculateTotalMonths = (
     ngayNhapNgu: DateInput,
-    ngayXuatNgu: DateInput
+    ngayXuatNgu: DateInput,
+    referenceDate?: Date
   ) => {
     if (!ngayNhapNgu) return null;
 
@@ -187,28 +201,13 @@ export function Step2SelectPersonnelNienHan({
         ? typeof ngayXuatNgu === 'string'
           ? new Date(ngayXuatNgu)
           : ngayXuatNgu
-        : new Date();
+        : (referenceDate ?? new Date());
 
       if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
         return null;
       }
 
-      let years = endDate.getFullYear() - startDate.getFullYear();
-      let months = endDate.getMonth() - startDate.getMonth();
-      let days = endDate.getDate() - startDate.getDate();
-
-      if (days < 0) {
-        months -= 1;
-        const lastDayOfPrevMonth = new Date(endDate.getFullYear(), endDate.getMonth(), 0).getDate();
-        days += lastDayOfPrevMonth;
-      }
-
-      if (months < 0) {
-        years -= 1;
-        months += 12;
-      }
-
-      const totalMonths = years * 12 + months;
+      const totalMonths = Math.max(0, (endDate.getFullYear() - startDate.getFullYear()) * 12 + endDate.getMonth() - startDate.getMonth());
       const totalYears = Math.floor(totalMonths / 12);
       const remainingMonths = totalMonths % 12;
 
@@ -247,22 +246,35 @@ export function Step2SelectPersonnelNienHan({
     eligibilityDateNhat.setFullYear(eligibilityDateNhat.getFullYear() + HCCSVV_YEARS_HANG_NHAT);
     const eligibilityYearNhat = eligibilityDateNhat.getFullYear();
 
-    const currentYear = new Date().getFullYear();
+    const currentYear = localNam ?? new Date().getFullYear();
+    const refDate = new Date(currentYear, localThang - 1, 1);
+
+    const monthsUntil = (target: Date): number => {
+      const total = (target.getFullYear() - refDate.getFullYear()) * 12 + (target.getMonth() - refDate.getMonth());
+      return Math.max(0, total);
+    };
+
+    const remainingBa = monthsUntil(eligibilityDateBa);
+    const remainingNhi = monthsUntil(eligibilityDateNhi);
+    const remainingNhat = monthsUntil(eligibilityDateNhat);
 
     return {
       hangBa: {
         eligible: currentYear >= eligibilityYearBa,
-        yearsNeeded: Math.max(0, eligibilityYearBa - currentYear),
+        yearsNeeded: Math.floor(remainingBa / 12),
+        monthsNeeded: remainingBa % 12,
         totalYears,
       },
       hangNhi: {
         eligible: currentYear >= eligibilityYearNhi,
-        yearsNeeded: Math.max(0, eligibilityYearNhi - currentYear),
+        yearsNeeded: Math.floor(remainingNhi / 12),
+        monthsNeeded: remainingNhi % 12,
         totalYears,
       },
       hangNhat: {
         eligible: currentYear >= eligibilityYearNhat,
-        yearsNeeded: Math.max(0, eligibilityYearNhat - currentYear),
+        yearsNeeded: Math.floor(remainingNhat / 12),
+        monthsNeeded: remainingNhat % 12,
         totalYears,
       },
     };
@@ -344,15 +356,11 @@ export function Step2SelectPersonnelNienHan({
         const coQuan = record.DonViTrucThuoc?.CoQuanDonVi || record.CoQuanDonVi;
         const donViTrucThuoc = record.DonViTrucThuoc;
 
-        let donViDisplay: string | null = null;
-
-        if (donViTrucThuoc?.ten_don_vi) {
-          donViDisplay = coQuan?.ten_don_vi
+        const donViDisplay: string | null = donViTrucThuoc?.ten_don_vi
+          ? coQuan?.ten_don_vi
             ? `${donViTrucThuoc.ten_don_vi} (${coQuan.ten_don_vi})`
-            : donViTrucThuoc.ten_don_vi;
-        } else if (coQuan?.ten_don_vi) {
-          donViDisplay = coQuan.ten_don_vi;
-        }
+            : donViTrucThuoc.ten_don_vi
+          : coQuan?.ten_don_vi || null;
 
         return (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -432,7 +440,9 @@ export function Step2SelectPersonnelNienHan({
       width: 150,
       align: 'center',
       render: (_, record) => {
-        const result = calculateTotalMonths(record.ngay_nhap_ngu, record.ngay_xuat_ngu);
+        const refYear = localNam ?? new Date().getFullYear();
+        const lastDayOfMonth = new Date(refYear, localThang, 0);
+        const result = calculateTotalMonths(record.ngay_nhap_ngu, record.ngay_xuat_ngu, lastDayOfMonth);
         if (!result) return <Text type="secondary">-</Text>;
 
         if (result.years > 0 && result.months > 0) {
@@ -477,7 +487,7 @@ export function Step2SelectPersonnelNienHan({
                 Chưa đủ {HCCSVV_YEARS_HANG_BA} năm
               </Text>
               <Text type="secondary" style={{ fontSize: '11px' }}>
-                Còn {hangBa.yearsNeeded} năm
+                Còn {formatMonthsRemaining(hangBa.yearsNeeded, hangBa.monthsNeeded)}
               </Text>
             </div>
           );
@@ -519,7 +529,7 @@ export function Step2SelectPersonnelNienHan({
                 Đã nhận Hạng Ba
               </Text>
               <Text type="warning" style={{ fontSize: '11px' }}>
-                Chưa đủ {HCCSVV_YEARS_HANG_NHI} năm (Hạng Nhì)
+                Còn {formatMonthsRemaining(hangNhi.yearsNeeded, hangNhi.monthsNeeded)} nữa (Hạng Nhì)
               </Text>
             </div>
           );
@@ -547,7 +557,7 @@ export function Step2SelectPersonnelNienHan({
                 Đã nhận Hạng Nhì
               </Text>
               <Text type="warning" style={{ fontSize: '11px' }}>
-                Chưa đủ {HCCSVV_YEARS_HANG_NHAT} năm (Hạng Nhất)
+                Còn {formatMonthsRemaining(hangNhat.yearsNeeded, hangNhat.monthsNeeded)} nữa (Hạng Nhất)
               </Text>
             </div>
           );
@@ -598,9 +608,11 @@ export function Step2SelectPersonnelNienHan({
             const hoTen = row[0]?.toString().trim();
             const ngaySinh = row[1]?.toString().trim();
             const nam = row[2]?.toString().trim();
-            const capBac = row[3]?.toString().trim();
-            const chucVu = row[4]?.toString().trim();
-            const danhHieu = row[5]?.toString().trim();
+            const thangRaw = row[3] !== undefined && row[3] !== null && row[3] !== '' ? parseInt(row[3].toString().trim()) : NaN;
+            const thang = !isNaN(thangRaw) && thangRaw >= 1 && thangRaw <= 12 ? thangRaw : localThang;
+            const capBac = row[4]?.toString().trim();
+            const chucVu = row[5]?.toString().trim();
+            const danhHieu = row[6]?.toString().trim();
 
             if (!hoTen) {
               errors.push(`Dòng ${rowNumber}: Thiếu họ tên`);
@@ -619,20 +631,13 @@ export function Step2SelectPersonnelNienHan({
 
             const namInt = parseInt(nam);
 
-            // Match by name + DOB (DOB optional — used to disambiguate duplicate names)
-            let matchingPersonnel;
-            if (ngaySinh) {
-              matchingPersonnel = personnel.find(p => {
-                const nameMatch =
-                  p.ho_ten.toLowerCase().trim() === hoTen.toLowerCase().trim();
-                const personnelBirth = p.ngay_sinh ? formatDate(p.ngay_sinh) : '';
-                return nameMatch && personnelBirth === ngaySinh;
-              });
-            } else {
-              matchingPersonnel = personnel.find(
-                p => p.ho_ten.toLowerCase().trim() === hoTen.toLowerCase().trim()
-              );
-            }
+            const matchingPersonnel = ngaySinh
+              ? personnel.find(p => {
+                  const nameMatch = p.ho_ten.toLowerCase().trim() === hoTen.toLowerCase().trim();
+                  const personnelBirth = p.ngay_sinh ? formatDate(p.ngay_sinh) : '';
+                  return nameMatch && personnelBirth === ngaySinh;
+                })
+              : personnel.find(p => p.ho_ten.toLowerCase().trim() === hoTen.toLowerCase().trim());
 
             if (!matchingPersonnel) {
               const errorMsg = ngaySinh
@@ -648,6 +653,7 @@ export function Step2SelectPersonnelNienHan({
               personnel_id: matchingPersonnel.id,
               danh_hieu: danhHieu,
               nam: namInt,
+              thang,
               cap_bac: capBac,
               chuc_vu: chucVu,
               ghi_chu: '',
@@ -721,6 +727,7 @@ export function Step2SelectPersonnelNienHan({
           ),
           danh_hieu: award.danh_hieu,
           nam: award.nam,
+          thang: award.thang ?? localThang,
           cap_bac: award.cap_bac,
           chuc_vu: award.chuc_vu,
           ghi_chu: award.ghi_chu,
@@ -762,28 +769,23 @@ export function Step2SelectPersonnelNienHan({
       const missingNgayNhapNgu = !record.ngay_nhap_ngu;
       const canPropose = canProposeNextRank(record);
 
-      let title = '';
-      if (missingGender) {
-        title = 'Quân nhân này chưa cập nhật giới tính. Vui lòng cập nhật trước khi đề xuất.';
-      } else if (missingNgayNhapNgu) {
-        title = 'Quân nhân này chưa cập nhật ngày nhập ngũ. Vui lòng cập nhật trước khi đề xuất.';
-      } else if (!canPropose) {
-        const eligibility = checkHCCSVVEligibility(record);
-        const serviceProfile = serviceProfilesMap[record.id];
-        const hasHangBa = serviceProfile?.hccsvv_hang_ba_status === ELIGIBILITY_STATUS.DA_NHAN;
-        const hasHangNhi = serviceProfile?.hccsvv_hang_nhi_status === ELIGIBILITY_STATUS.DA_NHAN;
-        const hasHangNhat = serviceProfile?.hccsvv_hang_nhat_status === ELIGIBILITY_STATUS.DA_NHAN;
-
-        if (!hasHangBa && eligibility && !eligibility.hangBa.eligible) {
-          title = `Chưa đủ ${HCCSVV_YEARS_HANG_BA} năm để đề xuất Hạng Ba. Còn ${eligibility.hangBa.yearsNeeded} năm.`;
-        } else if (hasHangBa && !hasHangNhi && eligibility && !eligibility.hangNhi.eligible) {
-          title = `Chưa đủ ${HCCSVV_YEARS_HANG_NHI} năm để đề xuất Hạng Nhì. Còn ${eligibility.hangNhi.yearsNeeded} năm.`;
-        } else if (hasHangNhi && !hasHangNhat && eligibility && !eligibility.hangNhat.eligible) {
-          title = `Chưa đủ ${HCCSVV_YEARS_HANG_NHAT} năm để đề xuất Hạng Nhất. Còn ${eligibility.hangNhat.yearsNeeded} năm.`;
-        } else if (hasHangNhat) {
-          title = 'Quân nhân này đã nhận đủ tất cả hạng HCCSVV.';
+      const getTitle = (): string => {
+        if (missingGender) return 'Quân nhân này chưa cập nhật giới tính. Vui lòng cập nhật trước khi đề xuất.';
+        if (missingNgayNhapNgu) return 'Quân nhân này chưa cập nhật ngày nhập ngũ. Vui lòng cập nhật trước khi đề xuất.';
+        if (!canPropose) {
+          const eligibility = checkHCCSVVEligibility(record);
+          const serviceProfile = serviceProfilesMap[record.id];
+          const hasHangBa = serviceProfile?.hccsvv_hang_ba_status === ELIGIBILITY_STATUS.DA_NHAN;
+          const hasHangNhi = serviceProfile?.hccsvv_hang_nhi_status === ELIGIBILITY_STATUS.DA_NHAN;
+          const hasHangNhat = serviceProfile?.hccsvv_hang_nhat_status === ELIGIBILITY_STATUS.DA_NHAN;
+          if (!hasHangBa && eligibility && !eligibility.hangBa.eligible) return `Chưa đủ ${HCCSVV_YEARS_HANG_BA} năm để đề xuất Hạng Ba. Còn ${formatMonthsRemaining(eligibility.hangBa.yearsNeeded, eligibility.hangBa.monthsNeeded)}.`;
+          if (hasHangBa && !hasHangNhi && eligibility && !eligibility.hangNhi.eligible) return `Chưa đủ ${HCCSVV_YEARS_HANG_NHI} năm để đề xuất Hạng Nhì. Còn ${formatMonthsRemaining(eligibility.hangNhi.yearsNeeded, eligibility.hangNhi.monthsNeeded)}.`;
+          if (hasHangNhi && !hasHangNhat && eligibility && !eligibility.hangNhat.eligible) return `Chưa đủ ${HCCSVV_YEARS_HANG_NHAT} năm để đề xuất Hạng Nhất. Còn ${formatMonthsRemaining(eligibility.hangNhat.yearsNeeded, eligibility.hangNhat.monthsNeeded)}.`;
+          if (hasHangNhat) return 'Quân nhân này đã nhận đủ tất cả hạng HCCSVV.';
         }
-      }
+        return '';
+      };
+      const title = getTitle();
 
       return {
         disabled: bypassEligibility
@@ -824,15 +826,15 @@ export function Step2SelectPersonnelNienHan({
 
           if (!hasHangBa && eligibility && !eligibility.hangBa.eligible) {
             message.warning(
-              `Quân nhân ${record.ho_ten} chưa đủ ${HCCSVV_YEARS_HANG_BA} năm để đề xuất Hạng Ba. Còn ${eligibility.hangBa.yearsNeeded} năm.`
+              `Quân nhân ${record.ho_ten} chưa đủ ${HCCSVV_YEARS_HANG_BA} năm để đề xuất Hạng Ba. Còn ${formatMonthsRemaining(eligibility.hangBa.yearsNeeded, eligibility.hangBa.monthsNeeded)}.`
             );
           } else if (hasHangBa && !hasHangNhi && eligibility && !eligibility.hangNhi.eligible) {
             message.warning(
-              `Quân nhân ${record.ho_ten} chưa đủ ${HCCSVV_YEARS_HANG_NHI} năm để đề xuất Hạng Nhì. Còn ${eligibility.hangNhi.yearsNeeded} năm.`
+              `Quân nhân ${record.ho_ten} chưa đủ ${HCCSVV_YEARS_HANG_NHI} năm để đề xuất Hạng Nhì. Còn ${formatMonthsRemaining(eligibility.hangNhi.yearsNeeded, eligibility.hangNhi.monthsNeeded)}.`
             );
           } else if (hasHangNhi && !hasHangNhat && eligibility && !eligibility.hangNhat.eligible) {
             message.warning(
-              `Quân nhân ${record.ho_ten} chưa đủ ${HCCSVV_YEARS_HANG_NHAT} năm để đề xuất Hạng Nhất. Còn ${eligibility.hangNhat.yearsNeeded} năm.`
+              `Quân nhân ${record.ho_ten} chưa đủ ${HCCSVV_YEARS_HANG_NHAT} năm để đề xuất Hạng Nhất. Còn ${formatMonthsRemaining(eligibility.hangNhat.yearsNeeded, eligibility.hangNhat.monthsNeeded)}.`
             );
           } else if (hasHangNhat) {
             message.warning(`Quân nhân ${record.ho_ten} đã nhận đủ tất cả hạng HCCSVV.`);
@@ -888,12 +890,11 @@ export function Step2SelectPersonnelNienHan({
       )}
 
       <Space style={{ marginBottom: 16 }} size="middle" wrap>
-        <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <Text strong>Năm đề xuất: </Text>
           <InputNumber
             value={localNam}
             onChange={value => {
-              // Allow null so the user can clear and retype without validation errors
               if (value === null || value === undefined) {
                 setLocalNam(null);
                 return;
@@ -902,35 +903,58 @@ export function Step2SelectPersonnelNienHan({
               const intValue = Math.floor(Number(value));
 
               if (!isNaN(intValue)) {
-                // Allow any value while typing; clamp only on blur
                 setLocalNam(intValue);
+                if (intValue === CURRENT_YEAR && localThang > CURRENT_MONTH) {
+                  setLocalThang(CURRENT_MONTH);
+                  onThangChange?.(CURRENT_MONTH);
+                }
               }
             }}
-            onBlur={e => {
-              // Clamp to valid range and propagate to parent on blur
+            onBlur={() => {
               const currentValue = localNam;
+              let finalValue: number;
               if (currentValue === null || currentValue === undefined || currentValue < 1900) {
-                const finalValue = 1900;
-                setLocalNam(finalValue);
-                onNamChange(finalValue);
-              } else if (currentValue > 2999) {
-                const finalValue = 2999;
-                setLocalNam(finalValue);
-                onNamChange(finalValue);
+                finalValue = CURRENT_YEAR;
+              } else if (currentValue > CURRENT_YEAR) {
+                finalValue = CURRENT_YEAR;
               } else {
-                onNamChange(currentValue);
+                finalValue = currentValue;
+              }
+              setLocalNam(finalValue);
+              onNamChange(finalValue);
+              if (finalValue === CURRENT_YEAR && localThang > CURRENT_MONTH) {
+                setLocalThang(CURRENT_MONTH);
+                onThangChange?.(CURRENT_MONTH);
               }
             }}
             style={{ width: 150 }}
             size="large"
             min={1900}
-            max={2999}
+            max={CURRENT_YEAR}
             placeholder="Nhập năm"
             controls={true}
             step={1}
             precision={0}
             keyboard={true}
           />
+          <Text strong>Tháng: </Text>
+          <Select
+            value={localThang}
+            onChange={v => {
+              const val = v ?? CURRENT_MONTH;
+              setLocalThang(val);
+              onThangChange?.(val);
+            }}
+            style={{ width: 110 }}
+            size="large"
+            allowClear
+          >
+            {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+              <Select.Option key={m} value={m} disabled={localNam === CURRENT_YEAR && m > CURRENT_MONTH}>
+                Tháng {m}
+              </Select.Option>
+            ))}
+          </Select>
         </div>
 
         <Input

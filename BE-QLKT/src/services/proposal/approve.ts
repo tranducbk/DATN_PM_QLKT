@@ -609,7 +609,7 @@ async function approveProposal(
 
     // TRANSACTION: Wrap all database writes in a transaction
     await prisma.$transaction(
-      async tx => {
+      async prismaTx => {
         // Unit annual titles import.
         if (proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
           for (const item of danhHieuData) {
@@ -661,7 +661,7 @@ async function approveProposal(
                 ],
               };
 
-              const existingAward = await tx.danhHieuDonViHangNam.findFirst({
+              const existingAward = await prismaTx.danhHieuDonViHangNam.findFirst({
                 where: whereCondition,
               });
 
@@ -687,12 +687,12 @@ async function approveProposal(
 
               let savedAward;
               if (existingAward) {
-                savedAward = await tx.danhHieuDonViHangNam.update({
+                savedAward = await prismaTx.danhHieuDonViHangNam.update({
                   where: { id: existingAward.id },
                   data: data,
                 });
               } else {
-                savedAward = await tx.danhHieuDonViHangNam.create({
+                savedAward = await prismaTx.danhHieuDonViHangNam.create({
                   data: {
                     ...(coQuanDonViId && {
                       CoQuanDonVi: { connect: { id: coQuanDonViId } },
@@ -727,7 +727,7 @@ async function approveProposal(
             }
           }
         } else if (proposal.loai_de_xuat === PROPOSAL_TYPES.CONG_HIEN) {
-          // Contribution proposals import into KhenThuongCongHien.
+          // Contribution proposals import into KhenThuongHCBVTQ.
           for (const item of congHienData) {
             try {
               if (!item.personnel_id) {
@@ -735,7 +735,7 @@ async function approveProposal(
                 continue;
               }
 
-              const quanNhan = await tx.quanNhan.findUnique({
+              const quanNhan = await prismaTx.quanNhan.findUnique({
                 where: { id: item.personnel_id },
               });
 
@@ -754,7 +754,7 @@ async function approveProposal(
               const thoiGianNhom0_8 = item.thoi_gian_nhom_0_8 || null;
               const thoiGianNhom0_9_1_0 = item.thoi_gian_nhom_0_9_1_0 || null;
 
-              const existingCongHien = await tx.khenThuongCongHien.findUnique({
+              const existingCongHien = await prismaTx.khenThuongHCBVTQ.findUnique({
                 where: {
                   quan_nhan_id: quanNhan.id,
                 },
@@ -771,7 +771,7 @@ async function approveProposal(
                 const newRank = rankOrder[item.danh_hieu] || 0;
 
                 if (newRank > existingRank) {
-                  await tx.khenThuongCongHien.update({
+                  await prismaTx.khenThuongHCBVTQ.update({
                     where: { id: existingCongHien.id },
                     data: {
                       danh_hieu: item.danh_hieu,
@@ -797,7 +797,7 @@ async function approveProposal(
                   );
                 }
               } else {
-                await tx.khenThuongCongHien.create({
+                await prismaTx.khenThuongHCBVTQ.create({
                   data: {
                     quan_nhan_id: quanNhan.id,
                     danh_hieu: item.danh_hieu,
@@ -829,7 +829,7 @@ async function approveProposal(
                 continue;
               }
 
-              const quanNhan = await tx.quanNhan.findUnique({
+              const quanNhan = await prismaTx.quanNhan.findUnique({
                 where: { id: item.personnel_id },
               });
 
@@ -924,7 +924,7 @@ async function approveProposal(
                 data.so_quyet_dinh_bkttcp = soQuyetDinhBKTTCP;
               }
 
-              const savedDanhHieu = await tx.danhHieuHangNam.upsert({
+              const savedDanhHieu = await prismaTx.danhHieuHangNam.upsert({
                 where: {
                   quan_nhan_id_nam: {
                     quan_nhan_id: quanNhan.id,
@@ -982,7 +982,7 @@ async function approveProposal(
                 continue;
               }
 
-              const quanNhan = await tx.quanNhan.findUnique({
+              const quanNhan = await prismaTx.quanNhan.findUnique({
                 where: { id: item.personnel_id },
               });
 
@@ -1005,8 +1005,28 @@ async function approveProposal(
                 let filePdf = item.file_quyet_dinh || danhHieuDecision.file_pdf || null;
 
                 const namLuu = proposal.nam;
+                const thangLuu = (item as any).thang || proposal.thang || 12;
 
-                // Compute service time from enlistment date.
+                let ngayNhan: Date | null = null;
+                if (item.ngay_nhan) {
+                  const parsed = new Date(item.ngay_nhan);
+                  if (!isNaN(parsed.getTime())) {
+                    if (parsed.getFullYear() !== namLuu) {
+                      errors.push(
+                        `Ngày nhận của quân nhân ${quanNhan.id} (${item.ngay_nhan}) không cùng năm với năm đề xuất (${namLuu})`
+                      );
+                      continue;
+                    }
+                    ngayNhan = new Date(Date.UTC(parsed.getFullYear(), parsed.getMonth(), parsed.getDate()));
+                  }
+                }
+                if (!ngayNhan) {
+                  errors.push(
+                    `Quân nhân ${quanNhan.ho_ten || quanNhan.id} thiếu ngày nhận huy chương`
+                  );
+                  continue;
+                }
+
                 let thoiGian = null;
                 if (quanNhan.ngay_nhap_ngu) {
                   const ngayNhapNgu = new Date(quanNhan.ngay_nhap_ngu);
@@ -1014,12 +1034,7 @@ async function approveProposal(
                     ? new Date(quanNhan.ngay_xuat_ngu)
                     : new Date();
 
-                  let months = (ngayKetThuc.getFullYear() - ngayNhapNgu.getFullYear()) * 12;
-                  months += ngayKetThuc.getMonth() - ngayNhapNgu.getMonth();
-                  if (ngayKetThuc.getDate() < ngayNhapNgu.getDate()) {
-                    months--;
-                  }
-                  months = Math.max(0, months);
+                  const months = calculateServiceMonths(ngayNhapNgu, ngayKetThuc);
 
                   const years = Math.floor(months / 12);
                   const remainingMonths = months % 12;
@@ -1038,7 +1053,7 @@ async function approveProposal(
                   };
                 }
 
-                await tx.khenThuongHCCSVV.upsert({
+                await prismaTx.khenThuongHCCSVV.upsert({
                   where: {
                     quan_nhan_id_danh_hieu: {
                       quan_nhan_id: quanNhan.id,
@@ -1047,6 +1062,7 @@ async function approveProposal(
                   },
                   update: {
                     nam: namLuu,
+                    thang: thangLuu,
                     cap_bac: item.cap_bac || null,
                     chuc_vu: item.chuc_vu || null,
                     ghi_chu: item.ghi_chu || null,
@@ -1057,11 +1073,29 @@ async function approveProposal(
                     quan_nhan_id: quanNhan.id,
                     danh_hieu: item.danh_hieu,
                     nam: namLuu,
+                    thang: thangLuu,
                     cap_bac: item.cap_bac || null,
                     chuc_vu: item.chuc_vu || null,
                     ghi_chu: item.ghi_chu || null,
                     so_quyet_dinh: soQuyetDinh,
                     thoi_gian: thoiGian,
+                  },
+                });
+
+                // Ghi đè ngày nhận vào HoSoNienHan theo hạng
+                const ngayNhanField =
+                  item.danh_hieu === DANH_HIEU_HCCSVV.HANG_BA
+                    ? 'hccsvv_hang_ba_ngay'
+                    : item.danh_hieu === DANH_HIEU_HCCSVV.HANG_NHI
+                      ? 'hccsvv_hang_nhi_ngay'
+                      : 'hccsvv_hang_nhat_ngay';
+
+                await prismaTx.hoSoNienHan.upsert({
+                  where: { quan_nhan_id: quanNhan.id },
+                  update: { [ngayNhanField]: ngayNhan },
+                  create: {
+                    quan_nhan_id: quanNhan.id,
+                    [ngayNhanField]: ngayNhan,
                   },
                 });
 
@@ -1089,7 +1123,7 @@ async function approveProposal(
                 continue;
               }
 
-              const quanNhan = await tx.quanNhan.findUnique({
+              const quanNhan = await prismaTx.quanNhan.findUnique({
                 where: { id: item.personnel_id },
               });
 
@@ -1106,6 +1140,7 @@ async function approveProposal(
               let filePdf = item.file_quyet_dinh || danhHieuDecision.file_pdf || null;
 
               const namLuu = proposal.nam;
+              const thangLuu = proposal.thang || 12;
 
               // Compute service time from enlistment date.
               let thoiGian = null;
@@ -1115,12 +1150,7 @@ async function approveProposal(
                   ? new Date(quanNhan.ngay_xuat_ngu)
                   : new Date();
 
-                let months = (ngayKetThuc.getFullYear() - ngayNhapNgu.getFullYear()) * 12;
-                months += ngayKetThuc.getMonth() - ngayNhapNgu.getMonth();
-                if (ngayKetThuc.getDate() < ngayNhapNgu.getDate()) {
-                  months--;
-                }
-                months = Math.max(0, months);
+                const months = calculateServiceMonths(ngayNhapNgu, ngayKetThuc);
 
                 const years = Math.floor(months / 12);
                 const remainingMonths = months % 12;
@@ -1139,17 +1169,18 @@ async function approveProposal(
                 };
               }
 
-              const existingHC_QKQT = await tx.huanChuongQuanKyQuyetThang.findUnique({
+              const existingHC_QKQT = await prismaTx.huanChuongQuanKyQuyetThang.findUnique({
                 where: {
                   quan_nhan_id: quanNhan.id,
                 },
               });
 
               if (existingHC_QKQT) {
-                await tx.huanChuongQuanKyQuyetThang.update({
+                await prismaTx.huanChuongQuanKyQuyetThang.update({
                   where: { id: existingHC_QKQT.id },
                   data: {
                     nam: namLuu,
+                    thang: thangLuu,
                     cap_bac: item.cap_bac || null,
                     chuc_vu: item.chuc_vu || null,
                     ghi_chu: item.ghi_chu || null,
@@ -1158,10 +1189,11 @@ async function approveProposal(
                   },
                 });
               } else {
-                await tx.huanChuongQuanKyQuyetThang.create({
+                await prismaTx.huanChuongQuanKyQuyetThang.create({
                   data: {
                     quan_nhan_id: quanNhan.id,
                     nam: namLuu,
+                    thang: thangLuu,
                     cap_bac: item.cap_bac || null,
                     chuc_vu: item.chuc_vu || null,
                     ghi_chu: item.ghi_chu || null,
@@ -1193,7 +1225,7 @@ async function approveProposal(
                 continue;
               }
 
-              const quanNhan = await tx.quanNhan.findUnique({
+              const quanNhan = await prismaTx.quanNhan.findUnique({
                 where: { id: item.personnel_id },
               });
 
@@ -1208,6 +1240,7 @@ async function approveProposal(
               let filePdf = item.file_quyet_dinh || danhHieuDecision.file_pdf || null;
 
               const namLuu = proposal.nam;
+              const thangLuu = proposal.thang || 12;
 
               let thoiGian = null;
               if (quanNhan.ngay_nhap_ngu) {
@@ -1216,12 +1249,7 @@ async function approveProposal(
                   ? new Date(quanNhan.ngay_xuat_ngu)
                   : new Date();
 
-                let months = (ngayKetThuc.getFullYear() - ngayNhapNgu.getFullYear()) * 12;
-                months += ngayKetThuc.getMonth() - ngayNhapNgu.getMonth();
-                if (ngayKetThuc.getDate() < ngayNhapNgu.getDate()) {
-                  months--;
-                }
-                months = Math.max(0, months);
+                const months = calculateServiceMonths(ngayNhapNgu, ngayKetThuc);
 
                 const years = Math.floor(months / 12);
                 const remainingMonths = months % 12;
@@ -1240,17 +1268,18 @@ async function approveProposal(
                 };
               }
 
-              const existingKNC = await tx.kyNiemChuongVSNXDQDNDVN.findUnique({
+              const existingKNC = await prismaTx.kyNiemChuongVSNXDQDNDVN.findUnique({
                 where: {
                   quan_nhan_id: quanNhan.id,
                 },
               });
 
               if (existingKNC) {
-                await tx.kyNiemChuongVSNXDQDNDVN.update({
+                await prismaTx.kyNiemChuongVSNXDQDNDVN.update({
                   where: { id: existingKNC.id },
                   data: {
                     nam: namLuu,
+                    thang: thangLuu,
                     cap_bac: item.cap_bac || null,
                     chuc_vu: item.chuc_vu || null,
                     ghi_chu: item.ghi_chu || null,
@@ -1259,10 +1288,11 @@ async function approveProposal(
                   },
                 });
               } else {
-                await tx.kyNiemChuongVSNXDQDNDVN.create({
+                await prismaTx.kyNiemChuongVSNXDQDNDVN.create({
                   data: {
                     quan_nhan_id: quanNhan.id,
                     nam: namLuu,
+                    thang: thangLuu,
                     cap_bac: item.cap_bac || null,
                     chuc_vu: item.chuc_vu || null,
                     ghi_chu: item.ghi_chu || null,
@@ -1291,7 +1321,7 @@ async function approveProposal(
               continue;
             }
 
-            const quanNhan = await tx.quanNhan.findUnique({
+            const quanNhan = await prismaTx.quanNhan.findUnique({
               where: { id: item.personnel_id },
             });
 
@@ -1319,7 +1349,7 @@ async function approveProposal(
 
             const soQuyetDinhThanhTich = item.so_quyet_dinh || null;
 
-            await tx.thanhTichKhoaHoc.create({
+            await prismaTx.thanhTichKhoaHoc.create({
               data: {
                 quan_nhan_id: quanNhan.id,
                 nam: parseInt(item.nam, 10),
@@ -1366,7 +1396,7 @@ async function approveProposal(
         if (decisions.so_quyet_dinh_dot_xuat) decisionsToSync.add(decisions.so_quyet_dinh_dot_xuat);
         if (decisions.so_quyet_dinh_nckh) decisionsToSync.add(decisions.so_quyet_dinh_nckh);
 
-        const adminInfo = await tx.taiKhoan.findUnique({
+        const adminInfo = await prismaTx.taiKhoan.findUnique({
           where: { id: adminId },
           include: {
             QuanNhan: {
@@ -1387,7 +1417,7 @@ async function approveProposal(
           if (!soQuyetDinh) continue;
 
           try {
-            const existing = await tx.fileQuyetDinh.findUnique({
+            const existing = await prismaTx.fileQuyetDinh.findUnique({
               where: { so_quyet_dinh: soQuyetDinh },
             });
 
@@ -1459,7 +1489,7 @@ async function approveProposal(
 
               let loaiKhenThuong = proposal.loai_de_xuat || PROPOSAL_TYPES.CA_NHAN_HANG_NAM;
 
-              await tx.fileQuyetDinh.create({
+              await prismaTx.fileQuyetDinh.create({
                 data: {
                   so_quyet_dinh: soQuyetDinh,
                   nam: proposal.nam,
@@ -1513,7 +1543,7 @@ async function approveProposal(
                 }
 
                 if (filePath) {
-                  await tx.fileQuyetDinh.update({
+                  await prismaTx.fileQuyetDinh.update({
                     where: { so_quyet_dinh: soQuyetDinh },
                     data: { file_path: filePath },
                   });
@@ -1594,13 +1624,6 @@ async function approveProposal(
         }
       }
     } else {
-      const recalculateType =
-        proposal.loai_de_xuat === PROPOSAL_TYPES.NIEN_HAN
-          ? 'hồ sơ khen thưởng niên hạn (HCCSVV)'
-          : proposal.loai_de_xuat === PROPOSAL_TYPES.CONG_HIEN
-            ? 'hồ sơ cống hiến (HCBVTQ)'
-            : 'hồ sơ hằng năm';
-
       for (const personnelId of affectedPersonnelIds) {
         try {
           if (proposal.loai_de_xuat === PROPOSAL_TYPES.NIEN_HAN) {

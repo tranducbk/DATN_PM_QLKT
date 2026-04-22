@@ -66,6 +66,7 @@ export function Step2SelectPersonnelNCKH({
   const [personnel, setPersonnel] = useState<Personnel[]>([]);
   const [searchText, setSearchText] = useState('');
   const [unitFilter, setUnitFilter] = useState<string>('ALL');
+  const CURRENT_YEAR = new Date().getFullYear();
   const [localNam, setLocalNam] = useState<number | null>(nam);
 
   useEffect(() => {
@@ -112,11 +113,11 @@ export function Step2SelectPersonnelNCKH({
     const matchesSearch =
       searchText === '' || p.ho_ten.toLowerCase().includes(searchText.toLowerCase());
 
-    let matchesUnit = true;
-    if (unitFilter && unitFilter !== 'ALL') {
-      const unitId = unitFilter.split('|')[0];
-      matchesUnit = p.don_vi_truc_thuoc_id === unitId || p.co_quan_don_vi_id === unitId;
-    }
+    const matchesUnit =
+      !unitFilter ||
+      unitFilter === 'ALL' ||
+      p.don_vi_truc_thuoc_id === unitFilter.split('|')[0] ||
+      p.co_quan_don_vi_id === unitFilter.split('|')[0];
 
     return matchesSearch && matchesUnit;
   });
@@ -139,15 +140,11 @@ export function Step2SelectPersonnelNCKH({
         const coQuan = record.DonViTrucThuoc?.CoQuanDonVi || record.CoQuanDonVi;
         const donViTrucThuoc = record.DonViTrucThuoc;
 
-        let donViDisplay: string | null = null;
-
-        if (donViTrucThuoc?.ten_don_vi) {
-          donViDisplay = coQuan?.ten_don_vi
+        const donViDisplay: string | null = donViTrucThuoc?.ten_don_vi
+          ? coQuan?.ten_don_vi
             ? `${donViTrucThuoc.ten_don_vi} (${coQuan.ten_don_vi})`
-            : donViTrucThuoc.ten_don_vi;
-        } else if (coQuan?.ten_don_vi) {
-          donViDisplay = coQuan.ten_don_vi;
-        }
+            : donViTrucThuoc.ten_don_vi
+          : coQuan?.ten_don_vi || null;
 
         return (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -244,20 +241,13 @@ export function Step2SelectPersonnelNCKH({
 
             const namInt = parseInt(nam);
 
-            // Match by name + DOB (DOB optional — used to disambiguate duplicate names)
-            let matchingPersonnel;
-            if (ngaySinh) {
-              matchingPersonnel = personnel.find(p => {
-                const nameMatch =
-                  p.ho_ten.toLowerCase().trim() === hoTen.toLowerCase().trim();
-                const personnelBirth = p.ngay_sinh ? formatDate(p.ngay_sinh) : '';
-                return nameMatch && personnelBirth === ngaySinh;
-              });
-            } else {
-              matchingPersonnel = personnel.find(
-                p => p.ho_ten.toLowerCase().trim() === hoTen.toLowerCase().trim()
-              );
-            }
+            const matchingPersonnel = ngaySinh
+              ? personnel.find(p => {
+                  const nameMatch = p.ho_ten.toLowerCase().trim() === hoTen.toLowerCase().trim();
+                  const personnelBirth = p.ngay_sinh ? formatDate(p.ngay_sinh) : '';
+                  return nameMatch && personnelBirth === ngaySinh;
+                })
+              : personnel.find(p => p.ho_ten.toLowerCase().trim() === hoTen.toLowerCase().trim());
 
             if (!matchingPersonnel) {
               const errorMsg = ngaySinh
@@ -437,25 +427,23 @@ export function Step2SelectPersonnelNCKH({
                 setLocalNam(intValue);
               }
             }}
-            onBlur={e => {
-              // Clamp to valid range and propagate to parent on blur
+            onBlur={() => {
               const currentValue = localNam;
+              let finalValue: number;
               if (currentValue === null || currentValue === undefined || currentValue < 1900) {
-                const finalValue = 1900;
-                setLocalNam(finalValue);
-                onNamChange(finalValue);
-              } else if (currentValue > 2999) {
-                const finalValue = 2999;
-                setLocalNam(finalValue);
-                onNamChange(finalValue);
+                finalValue = CURRENT_YEAR;
+              } else if (currentValue > CURRENT_YEAR) {
+                finalValue = CURRENT_YEAR;
               } else {
-                onNamChange(currentValue);
+                finalValue = currentValue;
               }
+              setLocalNam(finalValue);
+              onNamChange(finalValue);
             }}
             style={{ width: 150 }}
             size="large"
             min={1900}
-            max={2999}
+            max={CURRENT_YEAR}
             placeholder="Nhập năm"
             controls={true}
             step={1}

@@ -30,7 +30,7 @@ import {
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
-import { previewFile } from '@/utils/filePreview';
+import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { DEFAULT_PAGE_SIZE, DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { LOAI_KHEN_THUONG_OPTIONS, getLoaiDeXuatName } from '@/constants/danhHieu.constants';
@@ -107,18 +107,18 @@ export default function AdminDecisionsPage() {
         params.search = debouncedSearch;
       }
 
-      const response = await apiClient.getDecisions(params);
+      const decisionsResponse = await apiClient.getDecisions(params);
 
-      if (response.success) {
+      if (decisionsResponse.success) {
         // getDecisions normalizes BE response: `{ data: { items, pagination } }` → `data` is the `items` array
-        const rows = Array.isArray(response.data) ? response.data : [];
-        setDecisions(rows as Decision[]);
+        const decisionRows = Array.isArray(decisionsResponse.data) ? decisionsResponse.data : [];
+        setDecisions(decisionRows as Decision[]);
         setPagination(prev => ({
           ...prev,
-          total: response.pagination?.total ?? rows.length,
+          total: decisionsResponse.pagination?.total ?? decisionRows.length,
         }));
       } else {
-        message.error(response.message || 'Lỗi khi tải danh sách quyết định');
+        message.error(decisionsResponse.message || 'Lỗi khi tải danh sách quyết định');
       }
     } catch {
       message.error('Lỗi khi tải danh sách quyết định');
@@ -129,12 +129,12 @@ export default function AdminDecisionsPage() {
 
   const handleDelete = async (id: string) => {
     try {
-      const response = await apiClient.deleteDecision(id);
-      if (response.success) {
+      const deleteDecisionResponse = await apiClient.deleteDecision(id);
+      if (deleteDecisionResponse.success) {
         message.success('Xóa quyết định thành công');
         fetchDecisions();
       } else {
-        message.error(response.message || 'Lỗi khi xóa quyết định');
+        message.error(deleteDecisionResponse.message || 'Lỗi khi xóa quyết định');
       }
     } catch (error: unknown) {
       message.error(getApiErrorMessage(error, 'Lỗi khi xóa quyết định'));
@@ -277,7 +277,7 @@ export default function AdminDecisionsPage() {
               <Button
                 type="link"
                 icon={<FileTextOutlined />}
-                onClick={() => previewFile(record.file_path!)}
+                onClick={() => downloadDecisionFile(record.so_quyet_dinh)}
                 size="small"
                 style={{ padding: '0 4px', minWidth: '60px' }}
               >
@@ -398,7 +398,7 @@ export default function AdminDecisionsPage() {
                   key="preview"
                   type="primary"
                   icon={<EyeOutlined />}
-                  onClick={() => previewFile(selectedDecision.file_path!)}
+                  onClick={() => downloadDecisionFile(selectedDecision.so_quyet_dinh)}
                 >
                   Xem file PDF
                 </Button>,
@@ -433,7 +433,7 @@ export default function AdminDecisionsPage() {
                 <Button
                   type="link"
                   icon={<FileTextOutlined />}
-                  onClick={() => previewFile(selectedDecision!.file_path!)}
+                  onClick={() => downloadDecisionFile(selectedDecision!.so_quyet_dinh)}
                 >
                   {selectedDecision.file_path.split('/').pop()}
                 </Button>

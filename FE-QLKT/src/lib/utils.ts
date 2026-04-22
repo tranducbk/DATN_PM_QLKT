@@ -27,7 +27,7 @@ export function calculateDuration(startDate: DatePoint, endDate?: DatePoint): st
   let months = (end.getFullYear() - start.getFullYear()) * 12;
   months += end.getMonth() - start.getMonth();
 
-  // If day-of-month at end is smaller than start day, subtract one month.
+  // For position-tenure displays, if end day is before start day, subtract one month.
   if (end.getDate() < start.getDate()) {
     months--;
   }
