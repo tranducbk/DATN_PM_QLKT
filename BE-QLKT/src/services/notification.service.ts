@@ -109,7 +109,7 @@ class NotificationService {
           },
         },
         orderBy: {
-          created_at: 'desc',
+          createdAt: 'desc',
         },
       }),
       prisma.thongBao.count({ where }),
@@ -151,7 +151,7 @@ class NotificationService {
       where: { id: notificationId },
       data: {
         is_read: true,
-        read_at: new Date(),
+        readAt: new Date(),
       },
     });
 
@@ -166,7 +166,7 @@ class NotificationService {
       },
       data: {
         is_read: true,
-        read_at: new Date(),
+        readAt: new Date(),
       },
     });
 
@@ -206,7 +206,7 @@ class NotificationService {
     const result = await prisma.thongBao.deleteMany({
       where: {
         is_read: true,
-        read_at: {
+        readAt: {
           lt: thirtyDaysAgo,
         },
       },

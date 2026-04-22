@@ -32,7 +32,7 @@ export interface LogEntry {
   actor_role: string;
   description: string;
   details: string;
-  created_at: string;
+  createdAt: string;
   resource?: string;
   resource_id?: string;
 }
@@ -132,7 +132,7 @@ export function LogsTable({ logs, loading, selectedRowKeys, onSelectionChange }:
 
       switch (sortField) {
         case 'time': {
-          const diff = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
           return sortOrder === 'asc' ? diff : -diff;
         }
         case 'actor':
@@ -273,7 +273,7 @@ export function LogsTable({ logs, loading, selectedRowKeys, onSelectionChange }:
                 </TableCell>
               )}
               <TableCell className="text-sm text-gray-900 dark:text-gray-100 font-medium whitespace-nowrap">
-                {formatDateTimeFull(log.created_at)}
+                {formatDateTimeFull(log.createdAt)}
               </TableCell>
               <TableCell className="text-sm font-medium text-gray-900 dark:text-gray-100">
                 <div className="whitespace-normal break-words max-w-[160px]">

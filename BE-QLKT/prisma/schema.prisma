@@ -14,8 +14,8 @@ model CoQuanDonVi {
   ma_don_vi  String   @unique @db.VarChar(50)
   ten_don_vi String   @db.VarChar(255)
   so_luong   Int      @default(0)
-  createdAt  DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt  DateTime @updatedAt @db.Timestamptz(6)
+  createdAt  DateTime @default(now()) @db.Timestamp(0)
+  updatedAt  DateTime @updatedAt @db.Timestamp(0)
 
   // Relations
   ChucVu                 ChucVu[]
@@ -36,8 +36,8 @@ model DonViTrucThuoc {
   ma_don_vi         String   @unique @db.VarChar(50)
   ten_don_vi        String   @db.VarChar(255)
   so_luong          Int      @default(0)
-  createdAt         DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt         DateTime @updatedAt @db.Timestamptz(6)
+  createdAt         DateTime @default(now()) @db.Timestamp(0)
+  updatedAt         DateTime @updatedAt @db.Timestamp(0)
 
   // Relations
   CoQuanDonVi              CoQuanDonVi              @relation(fields: [co_quan_don_vi_id], references: [id], onDelete: Cascade)
@@ -59,8 +59,8 @@ model ChucVu {
   ten_chuc_vu           String   @db.VarChar(255)
   is_manager             Boolean  @default(false)
   he_so_chuc_vu         Decimal  @default(0) @db.Decimal(10, 2) // Hệ số chức vụ
-  createdAt             DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt             DateTime @updatedAt @db.Timestamptz(6)
+  createdAt             DateTime @default(now()) @db.Timestamp(0)
+  updatedAt             DateTime @updatedAt @db.Timestamp(0)
 
   // Relations
   CoQuanDonVi    CoQuanDonVi?    @relation(fields: [co_quan_don_vi_id], references: [id], onDelete: Cascade)
@@ -95,8 +95,8 @@ model QuanNhan {
   co_quan_don_vi_id        String?   @db.VarChar(30) // ID cơ quan đơn vị (nullable)
   don_vi_truc_thuoc_id     String?   @db.VarChar(30) // ID đơn vị trực thuộc (nullable)
   chuc_vu_id               String    @db.VarChar(30)
-  createdAt                DateTime  @default(now()) @db.Timestamptz(6)
-  updatedAt                DateTime  @updatedAt @db.Timestamptz(6)
+  createdAt                DateTime  @default(now()) @db.Timestamp(0)
+  updatedAt                DateTime  @updatedAt @db.Timestamp(0)
 
   // Relations
   CoQuanDonVi      CoQuanDonVi?      @relation(fields: [co_quan_don_vi_id], references: [id], onDelete: Cascade)
@@ -127,8 +127,8 @@ model TaiKhoan {
   password_hash String   @db.VarChar(255)
   role          String   @db.VarChar(20) // SUPER_ADMIN, ADMIN, MANAGER, USER
   refreshToken  String?  @db.Text
-  createdAt     DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt     DateTime @updatedAt @db.Timestamptz(6)
+  createdAt     DateTime @default(now()) @db.Timestamp(0)
+  updatedAt     DateTime @updatedAt @db.Timestamp(0)
 
   // Relations
   QuanNhan               QuanNhan?                @relation(fields: [quan_nhan_id], references: [id], onDelete: Cascade)
@@ -149,8 +149,8 @@ model LichSuChucVu {
   ngay_bat_dau  DateTime  @db.Date
   ngay_ket_thuc DateTime? @db.Date
   so_thang      Int?      // Số tháng giữ chức vụ (tính từ ngày bắt đầu đến ngày kết thúc, tính tới tháng)
-  createdAt     DateTime  @default(now()) @db.Timestamptz(6)
-  updatedAt     DateTime  @updatedAt @db.Timestamptz(6)
+  createdAt     DateTime  @default(now()) @db.Timestamp(0)
+  updatedAt     DateTime  @updatedAt @db.Timestamp(0)
 
   // Relations
   QuanNhan QuanNhan @relation(fields: [quan_nhan_id], references: [id], onDelete: Cascade)
@@ -170,8 +170,8 @@ model ThanhTichKhoaHoc {
   chuc_vu         String?  @db.VarChar(255) // Chức vụ tại thời điểm được đề xuất (text tự do)
   ghi_chu         String?  @db.Text // Ghi chú bổ sung
   so_quyet_dinh   String?  @db.VarChar(100) // Số quyết định khen thưởng (nếu có)
-  createdAt       DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt       DateTime @updatedAt @db.Timestamptz(6)
+  createdAt       DateTime @default(now()) @db.Timestamp(0)
+  updatedAt       DateTime @updatedAt @db.Timestamp(0)
 
   // Relations
   QuanNhan QuanNhan @relation(fields: [quan_nhan_id], references: [id], onDelete: Cascade)
@@ -196,8 +196,8 @@ model DanhHieuHangNam {
   so_quyet_dinh_cstdtq   String?  @db.VarChar(100)
   nhan_bkttcp            Boolean  @default(false)
   so_quyet_dinh_bkttcp   String?  @db.VarChar(100)
-  createdAt              DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt              DateTime @updatedAt @db.Timestamptz(6)
+  createdAt              DateTime @default(now()) @db.Timestamp(0)
+  updatedAt              DateTime @updatedAt @db.Timestamp(0)
 
   // Relations
   QuanNhan QuanNhan @relation(fields: [quan_nhan_id], references: [id], onDelete: Cascade)
@@ -220,8 +220,8 @@ model KhenThuongCongHien {
   thoi_gian_nhom_0_7     Json? // { total_months, years, months, display }
   thoi_gian_nhom_0_8     Json? // { total_months, years, months, display }
   thoi_gian_nhom_0_9_1_0 Json? // { total_months, years, months, display }
-  createdAt              DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt              DateTime @updatedAt @db.Timestamptz(6)
+  createdAt              DateTime @default(now()) @db.Timestamp(0)
+  updatedAt              DateTime @updatedAt @db.Timestamp(0)
 
   // Relations
   QuanNhan QuanNhan @relation(fields: [quan_nhan_id], references: [id], onDelete: Cascade)
@@ -240,8 +240,8 @@ model HuanChuongQuanKyQuyetThang {
   so_quyet_dinh          String?  @db.VarChar(100) // Số quyết định
   // Thời gian tính từ ngày nhập ngũ
   thoi_gian              Json? // { total_months, years, months, display }
-  createdAt              DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt              DateTime @updatedAt @db.Timestamptz(6)
+  createdAt              DateTime @default(now()) @db.Timestamp(0)
+  updatedAt              DateTime @updatedAt @db.Timestamp(0)
 
   // Relations
   QuanNhan QuanNhan @relation(fields: [quan_nhan_id], references: [id], onDelete: Cascade)
@@ -260,8 +260,8 @@ model KyNiemChuongVSNXDQDNDVN {
   so_quyet_dinh          String?  @db.VarChar(100) // Số quyết định
   // Thời gian tính từ ngày nhập ngũ
   thoi_gian              Json? // { total_months, years, months, display }
-  createdAt              DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt              DateTime @updatedAt @db.Timestamptz(6)
+  createdAt              DateTime @default(now()) @db.Timestamp(0)
+  updatedAt              DateTime @updatedAt @db.Timestamp(0)
 
   // Relations
   QuanNhan QuanNhan @relation(fields: [quan_nhan_id], references: [id], onDelete: Cascade)
@@ -281,8 +281,8 @@ model KhenThuongHCCSVV {
   so_quyet_dinh          String?  @db.VarChar(100) // Số quyết định
   // Thời gian tính từ ngày nhập ngũ
   thoi_gian              Json? // { total_months, years, months, display }
-  createdAt              DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt              DateTime @updatedAt @db.Timestamptz(6)
+  createdAt              DateTime @default(now()) @db.Timestamp(0)
+  updatedAt              DateTime @updatedAt @db.Timestamp(0)
 
   // Relations
   QuanNhan QuanNhan @relation(fields: [quan_nhan_id], references: [id], onDelete: Cascade)
@@ -307,8 +307,8 @@ model KhenThuongDotXuat {
   ghi_chu                String?  @db.Text // Ghi chú bổ sung (vd: Phó giám đốc tại đơn vị A)
   so_quyet_dinh          String?  @db.VarChar(100) // Số quyết định
   files_dinh_kem         Json?    // File đính kèm (attached files)
-  createdAt              DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt              DateTime @updatedAt @db.Timestamptz(6)
+  createdAt              DateTime @default(now()) @db.Timestamp(0)
+  updatedAt              DateTime @updatedAt @db.Timestamp(0)
 
   // Relations
   QuanNhan      QuanNhan?      @relation(fields: [quan_nhan_id], references: [id], onDelete: Cascade)
@@ -321,7 +321,7 @@ model KhenThuongDotXuat {
   @@map("khen_thuong_dot_xuat")
 }
 
-// 14. Bảng Hồ sơ khen thưởng niên hạn (OUTPUT - chỉ cho HCCSVV)
+// 14. Bảng Hồ sơ Niên hạn (OUTPUT - chỉ cho HCCSVV)
 model HoSoNienHan {
   id           String @id @default(cuid()) @db.VarChar(30)
   quan_nhan_id String @unique @db.VarChar(30)
@@ -335,8 +335,8 @@ model HoSoNienHan {
   hccsvv_hang_nhat_ngay   DateTime? @db.Date
 
   goi_y     String?  @db.Text
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @db.Timestamp(0)
+  updatedAt DateTime @updatedAt @db.Timestamp(0)
 
   // Relations
   QuanNhan QuanNhan @relation(fields: [quan_nhan_id], references: [id], onDelete: Cascade)
@@ -344,7 +344,7 @@ model HoSoNienHan {
   @@map("ho_so_nien_han")
 }
 
-// 14b. Bảng Hồ sơ Cống hiến (OUTPUT - cho HCBVTQ)
+// 15. Bảng Hồ sơ Cống hiến (OUTPUT - cho HCBVTQ)
 model HoSoCongHien {
   id           String @id @default(cuid()) @db.VarChar(30)
   quan_nhan_id String @unique @db.VarChar(30)
@@ -362,8 +362,8 @@ model HoSoCongHien {
   hcbvtq_hang_nhat_ngay   DateTime? @db.Date
 
   goi_y     String?  @db.Text
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @db.Timestamp(0)
+  updatedAt DateTime @updatedAt @db.Timestamp(0)
 
   // Relations
   QuanNhan QuanNhan @relation(fields: [quan_nhan_id], references: [id], onDelete: Cascade)
@@ -371,7 +371,7 @@ model HoSoCongHien {
   @@map("ho_so_cong_hien")
 }
 
-// 10. Bảng Hồ sơ Hằng năm (OUTPUT)
+// 16. Bảng Hồ sơ Hằng năm (OUTPUT)
 model HoSoHangNam {
   id                   String   @id @default(cuid()) @db.VarChar(30)
   quan_nhan_id         String   @unique @db.VarChar(30)
@@ -387,8 +387,8 @@ model HoSoHangNam {
   du_dieu_kien_cstdtq  Boolean  @default(false)
   du_dieu_kien_bkttcp  Boolean  @default(false)
   goi_y                String?  @db.Text
-  createdAt            DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt            DateTime @updatedAt @db.Timestamptz(6)
+  createdAt            DateTime @default(now()) @db.Timestamp(0)
+  updatedAt            DateTime @updatedAt @db.Timestamp(0)
 
   // Relations
   QuanNhan QuanNhan @relation(fields: [quan_nhan_id], references: [id], onDelete: Cascade)
@@ -396,7 +396,7 @@ model HoSoHangNam {
   @@map("ho_so_hang_nam")
 }
 
-// 11. Bảng Nhật ký hệ thống
+// 17. Bảng Nhật ký hệ thống
 model SystemLog {
   id                String   @id @default(cuid()) @db.VarChar(30)
   nguoi_thuc_hien_id String?  @db.VarChar(30) // ID của người thực hiện hành động (null cho SYSTEM)
@@ -408,19 +408,19 @@ model SystemLog {
   payload           Json? // Dữ liệu chi tiết (before/after values)
   ip_address        String?  @db.VarChar(45) // IPv4/IPv6
   user_agent        String?  @db.Text
-  created_at        DateTime @default(now()) @db.Timestamptz(6)
+  createdAt         DateTime @default(now()) @db.Timestamp(0)
 
   // Relations
   NguoiThucHien TaiKhoan?  @relation("NguoiThucHien", fields: [nguoi_thuc_hien_id], references: [id], onDelete: SetNull)
   ThongBao      ThongBao[] @relation("NhatKyHeThong") // Thông báo được tạo từ log này
 
-  @@index([actor_role, created_at])
-  @@index([action, created_at])
-  @@index([resource, created_at])
+  @@index([actor_role, createdAt])
+  @@index([action, createdAt])
+  @@index([resource, createdAt])
   @@map("system_logs")
 }
 
-// 13. Bảng Thông báo (Notifications)
+// 18. Bảng Thông báo (Notifications)
 model ThongBao {
   id                 String    @id @default(cuid()) @db.VarChar(30)
   nguoi_nhan_id      String?   @db.VarChar(30) // ID người nhận thông báo
@@ -433,20 +433,20 @@ model ThongBao {
   link               String?   @db.VarChar(255) // URL để navigate đến
   is_read            Boolean   @default(false) // Đã đọc chưa
   nhat_ky_he_thong_id String?   @db.VarChar(30) // ID của system log liên quan (nếu có)
-  created_at         DateTime  @default(now()) @db.Timestamptz(6)
-  read_at            DateTime? @db.Timestamptz(6) // Thời gian đọc
+  createdAt          DateTime  @default(now()) @db.Timestamp(0)
+  readAt             DateTime? @db.Timestamp(0)
 
   // Relations
   NguoiNhan TaiKhoan?   @relation("NguoiNhan", fields: [nguoi_nhan_id], references: [id], onDelete: Cascade)
   NhatKyHeThong SystemLog? @relation("NhatKyHeThong", fields: [nhat_ky_he_thong_id], references: [id], onDelete: SetNull)
 
-  @@index([nguoi_nhan_id, is_read, created_at])
-  @@index([recipient_role, is_read, created_at])
-  @@index([type, created_at])
+  @@index([nguoi_nhan_id, is_read, createdAt])
+  @@index([recipient_role, is_read, createdAt])
+  @@index([type, createdAt])
   @@map("notifications")
 }
 
-// 14. Bảng Đề xuất Khen thưởng (Proposals)
+// 19. Bảng Đề xuất Khen thưởng (Proposals)
 model BangDeXuat {
   id                   String    @id @default(cuid()) @db.VarChar(30)
   co_quan_don_vi_id    String?   @db.VarChar(30) // ID cơ quan đơn vị của Manager nộp đề xuất (nullable)
@@ -463,9 +463,9 @@ model BangDeXuat {
   ghi_chu              String?   @db.Text // Ghi chú từ Manager hoặc Admin
   rejection_reason     String?   @db.Text // Lý do từ chối (nếu status = REJECTED)
   nguoi_duyet_id       String?   @db.VarChar(30) // ID tài khoản Admin phê duyệt
-  ngay_duyet           DateTime? @db.Timestamptz(6) // Ngày phê duyệt
-  createdAt            DateTime  @default(now()) @db.Timestamptz(6)
-  updatedAt            DateTime  @updatedAt @db.Timestamptz(6)
+  ngay_duyet           DateTime? @db.Timestamp(0) // Ngày phê duyệt
+  createdAt            DateTime  @default(now()) @db.Timestamp(0)
+  updatedAt            DateTime  @updatedAt @db.Timestamp(0)
 
   // Relations
   CoQuanDonVi    CoQuanDonVi?    @relation(fields: [co_quan_don_vi_id], references: [id], onDelete: Cascade)
@@ -477,7 +477,7 @@ model BangDeXuat {
   @@map("bang_de_xuat")
 }
 
-// 15. Bảng Hồ Sơ Đơn Vị Hằng Năm
+// 20. Bảng Hồ Sơ Đơn Vị Hằng Năm
 model HoSoDonViHangNam {
   id                        String    @id @default(cuid()) @db.VarChar(30)
   co_quan_don_vi_id         String?   @db.VarChar(30)
@@ -489,8 +489,8 @@ model HoSoDonViHangNam {
   du_dieu_kien_bk_tong_cuc  Boolean   @default(false)
   du_dieu_kien_bk_thu_tuong Boolean   @default(false)
   goi_y                     String?   @db.Text
-  createdAt                 DateTime  @default(now()) @db.Timestamptz(6)
-  updatedAt                 DateTime  @updatedAt @db.Timestamptz(6)
+  createdAt                 DateTime  @default(now()) @db.Timestamp(0)
+  updatedAt                 DateTime  @updatedAt @db.Timestamp(0)
 
   // Relations
   CoQuanDonVi        CoQuanDonVi?    @relation(fields: [co_quan_don_vi_id], references: [id], onDelete: Cascade)
@@ -503,7 +503,7 @@ model HoSoDonViHangNam {
   @@map("ho_so_don_vi_hang_nam")
 }
 
-// 17. Bảng Danh Hiệu Đơn Vị Hằng Năm
+// 21. Bảng Danh Hiệu Đơn Vị Hằng Năm
 model DanhHieuDonViHangNam {
   id                      String   @id @default(cuid()) @db.VarChar(30)
   co_quan_don_vi_id       String?  @db.VarChar(30)
@@ -518,10 +518,10 @@ model DanhHieuDonViHangNam {
   status                  String    @default("PENDING") @db.VarChar(20)
   nguoi_tao_id            String    @db.VarChar(30)
   nguoi_duyet_id          String?   @db.VarChar(30)
-  ngay_duyet              DateTime? @db.Timestamptz(6)
+  ngay_duyet              DateTime? @db.Timestamp(0)
   ghi_chu                 String?   @db.Text
-  createdAt               DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt               DateTime @updatedAt @db.Timestamptz(6)
+  createdAt               DateTime @default(now()) @db.Timestamp(0)
+  updatedAt               DateTime @updatedAt @db.Timestamp(0)
 
   // Relations
   CoQuanDonVi        CoQuanDonVi?    @relation(fields: [co_quan_don_vi_id], references: [id], onDelete: Cascade)
@@ -534,7 +534,7 @@ model DanhHieuDonViHangNam {
   @@map("danh_hieu_don_vi_hang_nam")
 }
 
-// 18. Bảng File Quyết định
+// 22. Bảng File Quyết định
 model FileQuyetDinh {
   id               String   @id @default(cuid()) @db.VarChar(30)
   so_quyet_dinh    String   @unique @db.VarChar(100) // Số quyết định (unique)
@@ -544,8 +544,8 @@ model FileQuyetDinh {
   file_path        String?  @db.VarChar(500) // Đường dẫn file PDF/Word
   loai_khen_thuong String?  @db.VarChar(50) // CA_NHAN_HANG_NAM, DON_VI_HANG_NAM, NIEN_HAN, CONG_HIEN, DOT_XUAT, NCKH
   ghi_chu          String?  @db.Text // Ghi chú
-  createdAt        DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt        DateTime @updatedAt @db.Timestamptz(6)
+  createdAt        DateTime @default(now()) @db.Timestamp(0)
+  updatedAt        DateTime @updatedAt @db.Timestamp(0)
 
   @@index([so_quyet_dinh])
   @@index([nam])
@@ -558,7 +558,7 @@ model SystemSetting {
   id        String   @id @default(cuid()) @db.VarChar(30)
   key       String   @unique @db.VarChar(100) // Tên cấu hình
   value     String   @db.Text // Giá trị (JSON hoặc string)
-  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamp(0)
 
   @@map("system_settings")
 }

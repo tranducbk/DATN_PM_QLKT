@@ -7,7 +7,7 @@ export type NotificationItem = {
   title?: string;
   message?: string;
   is_read?: boolean;
-  created_at?: string;
+  createdAt?: string;
   link?: string | null;
   type?: string;
 };

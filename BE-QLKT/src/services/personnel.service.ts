@@ -18,6 +18,7 @@ import profileService from './profile.service';
 import * as notificationHelper from '../helpers/notification';
 import { buildUnitWhereFilter } from '../helpers/controllerHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
+import { DEFAULT_PASSWORD } from '../configs';
 import { sanitizeRowData } from '../helpers/excelHelper';
 
 type DateInput = Date | null;
@@ -260,7 +261,7 @@ class PersonnelService {
     }
 
     // Hash password outside transaction to reduce lock duration.
-    const defaultPassword = process.env.DEFAULT_PASSWORD || 'Hvkhqs@123';
+    const defaultPassword = DEFAULT_PASSWORD || 'Hvkhqs@123';
     const hashedPassword = await bcrypt.hash(defaultPassword, 10);
 
     // Wrap all writes in one transaction for consistency.

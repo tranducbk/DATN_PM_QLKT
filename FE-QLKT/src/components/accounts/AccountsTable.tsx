@@ -79,7 +79,7 @@ export function AccountsTable({ accounts, onEdit, onRefresh }: AccountsTableProp
                     {account.role}
                   </span>
                 </TableCell>
-                <TableCell>{formatDate(account.created_at)}</TableCell>
+                <TableCell>{formatDate(account.createdAt)}</TableCell>
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>

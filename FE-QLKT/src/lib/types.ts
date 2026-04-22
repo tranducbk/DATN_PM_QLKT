@@ -31,7 +31,7 @@ export interface Account {
   personnel_id: string;
   personnel_name: string;
   role: UserRole;
-  created_at: string;
+  createdAt: string;
 }
 
 /** Quân nhân flat (`don_vi_id` đơn); cây đơn vị đầy đủ — `PersonnelListItem` trong `personnelList.ts`. */

@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt';
 import { prisma } from '../models';
+import { DEFAULT_PASSWORD } from '../configs';
 import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import {
@@ -320,7 +321,7 @@ class AccountService {
       heSoChucVu = Number(chucVu?.he_so_chuc_vu) || 0;
     }
 
-    const finalPassword = password || process.env.DEFAULT_PASSWORD;
+    const finalPassword = password || DEFAULT_PASSWORD;
     if (!finalPassword) {
       throw new ValidationError('Mật khẩu mặc định chưa được cấu hình (DEFAULT_PASSWORD)');
     }
@@ -447,7 +448,7 @@ class AccountService {
       throw new NotFoundError('Tài khoản');
     }
 
-    const defaultPassword = process.env.DEFAULT_PASSWORD;
+    const defaultPassword = DEFAULT_PASSWORD;
     if (!defaultPassword) {
       throw new ValidationError('Mật khẩu mặc định chưa được cấu hình (DEFAULT_PASSWORD)');
     }

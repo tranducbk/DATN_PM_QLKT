@@ -22,6 +22,7 @@ cd FE-QLKT && npm run format       # Prettier format
 cd BE-QLKT && npx prisma migrate dev    # Run migrations
 cd BE-QLKT && npx prisma generate       # Generate client
 cd BE-QLKT && npx prisma studio         # DB GUI
+cd BE-QLKT && npx prisma db push        # Sync schema (dev only, no migration file)
 ```
 
 ## Architecture
@@ -83,6 +84,7 @@ PM QLKT/
 - **Audit log helpers**: Tên biến local phải match resource slug (vd: `const tenureMedals = buildAwardTypeHelpers('tenure-medals')` — không dùng tên cũ `hccsvv`)
 - **Audit log imports trong routes**: `getResourceId` lấy từ `middlewares/auditLog`; `getLogDescription` lấy từ `helpers/auditLog`. Không import `getResourceId` từ helpers
 - **Best-effort catches**: Bare `catch` dùng khi swallow hoàn toàn (không cần biết lỗi gì). Dùng `catch (error) { console.error('...context...', error); }` khi muốn surface lỗi để debug nhưng không được throw (vd: audit log payload builder). `console.error` trong catch block của audit helpers là chấp nhận được — khác với `console.log` trong business logic
+- **DB column rename**: Khi đổi tên cột có dữ liệu, KHÔNG dùng `db push` (sẽ drop + recreate → mất data). Thay vào đó: (1) viết script dùng `prisma.$executeRawUnsafe('ALTER TABLE x RENAME COLUMN old TO "new"')` trong `src/scripts/`, (2) chạy script để đổi tên cột trong DB, (3) sau đó mới `db push` để sync schema — lúc này Prisma thấy cột đã đúng tên, không drop gì cả.
 - **Backup**: SQL text backup (`backups/*.sql`) sinh bởi `backup.service.ts`. Schedule + toggle qua DevZone (`/api/dev-zone/backup/*`). Download/delete qua `/api/backups` (SUPER_ADMIN only). Backup logs (`resource: 'backup'`) trong system_logs chỉ SUPER_ADMIN xem được — service tự filter cho role thấp hơn
 - **System log visibility**: `resource: 'backup'` restricted to SUPER_ADMIN in `systemLogs.service.ts`. Khi thêm resource mới chỉ dành cho SUPER_ADMIN, áp dụng cùng pattern: check `userRole !== ROLES.SUPER_ADMIN` trong `getLogs` và `getResources`
 

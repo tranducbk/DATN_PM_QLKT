@@ -10,13 +10,6 @@ import { errorHandler, notFoundHandler } from './middlewares/errorHandler';
 import { initSocket } from './utils/socketService';
 import routes from './routes/index';
 
-const REQUIRED_ENV = ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'DATABASE_URL'];
-const missingEnv = REQUIRED_ENV.filter(key => !process.env[key]);
-if (missingEnv.length > 0) {
-  console.error(`❌ Thiếu biến môi trường bắt buộc: ${missingEnv.join(', ')}`);
-  process.exit(1);
-}
-
 const app = express();
 const httpServer = createServer(app);
 

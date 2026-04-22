@@ -38,10 +38,7 @@ interface RawLogEntry {
   actor_role?: string;
   description?: string;
   details?: string;
-  created_at?: string;
   createdAt?: string;
-  time?: string;
-  timestamp?: string;
   resource?: string;
   resource_id?: string;
   NguoiThucHien?: { QuanNhan?: { ho_ten?: string }; username?: string };
@@ -126,7 +123,7 @@ export function SystemLogsPageContent({ basePath }: SystemLogsPageContentProps) 
           actor_role: l?.actor_role || '',
           details: l?.details || l?.description || '',
           description: l?.description || l?.details || '',
-          created_at: l?.created_at ?? l?.createdAt ?? l?.time ?? l?.timestamp ?? '',
+          createdAt: l?.createdAt ?? '',
         };
       });
 

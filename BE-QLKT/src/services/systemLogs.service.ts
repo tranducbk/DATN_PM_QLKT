@@ -115,7 +115,7 @@ class SystemLogsService {
     }
 
     if (startDate || endDate) {
-      where.created_at = {
+      where.createdAt = {
         ...(startDate && { gte: new Date(startDate) }),
         ...(endDate && { lte: new Date(endDate) }),
       };
@@ -136,7 +136,7 @@ class SystemLogsService {
             },
           },
         },
-        orderBy: { created_at: 'desc' },
+        orderBy: { createdAt: 'desc' },
       }),
       prisma.systemLog.count({ where }),
       prisma.systemLog.count({ where: { ...where, action: { contains: 'CREATE' } } }),

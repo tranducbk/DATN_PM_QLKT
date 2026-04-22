@@ -194,7 +194,7 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
     const row: NotificationItem =
       notification && typeof notification === 'object'
         ? (notification as NotificationItem)
-        : { message: String(notification), created_at: new Date().toISOString() };
+        : { message: String(notification), createdAt: new Date().toISOString() };
     setNotifications(prev => [row, ...prev]);
     setLatestNotification(row as SocketNotificationPayload);
   }, []);
@@ -860,7 +860,7 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
                                           }`}
                                         >
                                           <span>
-                                            {formatNotificationTime(notification.created_at)}
+                                            {formatNotificationTime(notification.createdAt)}
                                           </span>
                                         </p>
                                         {notification.is_read && (

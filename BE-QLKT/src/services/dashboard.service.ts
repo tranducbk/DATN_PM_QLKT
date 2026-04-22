@@ -31,11 +31,10 @@ function countRecords<T>(records: T[], toKey: (record: T) => string | null | und
   return countMap;
 }
 
-function countByDate(records: { created_at?: Date; createdAt?: Date }[]): Record<string, number> {
-  return countRecords(records, r => {
-    const d = r.created_at || r.createdAt;
-    return d ? new Date(d).toISOString().split('T')[0] : null;
-  });
+function countByDate(records: { createdAt?: Date }[]): Record<string, number> {
+  return countRecords(records, r =>
+    r.createdAt ? new Date(r.createdAt).toISOString().split('T')[0] : null
+  );
 }
 
 function countByMonth(records: { createdAt: Date }[]): Record<string, number> {
@@ -88,7 +87,7 @@ class DashboardService {
       totalLogs,
     ] = await Promise.all([
       prisma.taiKhoan.groupBy({ by: ['role'], _count: { id: true } }),
-      prisma.systemLog.findMany({ where: { created_at: { gte: daysAgo(7) } }, select: { created_at: true } }),
+      prisma.systemLog.findMany({ where: { createdAt: { gte: daysAgo(7) } }, select: { createdAt: true } }),
       prisma.systemLog.groupBy({ by: ['action'], _count: { id: true }, orderBy: { _count: { id: 'desc' } }, take: 10 }),
       prisma.taiKhoan.findMany({ where: { createdAt: { gte: daysAgo(30) } }, select: { createdAt: true }, orderBy: { createdAt: 'asc' } }),
       prisma.taiKhoan.count(),

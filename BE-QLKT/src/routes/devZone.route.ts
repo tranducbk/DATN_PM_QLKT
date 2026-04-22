@@ -11,10 +11,11 @@ import { getSetting, setSetting, getSettings } from '../helpers/settingsHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { authLimiter } from '../configs/rateLimiter';
+import { DEV_ZONE_PASSWORD } from '../configs';
 
 const router = Router();
 
-const DEV_PASSWORD = process.env.DEV_ZONE_PASSWORD;
+const DEV_PASSWORD = DEV_ZONE_PASSWORD;
 if (!DEV_PASSWORD) {
   console.warn('[DevZone] DEV_ZONE_PASSWORD env var is not set — devZone routes are disabled');
 }
