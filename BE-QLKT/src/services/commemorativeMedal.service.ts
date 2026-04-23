@@ -1,5 +1,5 @@
 import { prisma } from '../models';
-import { calculateServiceMonths } from '../helpers/serviceYearsHelper';
+import { calculateServiceMonths, formatServiceDuration } from '../helpers/serviceYearsHelper';
 import ExcelJS from 'exceljs';
 import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHelper';
 
@@ -40,10 +40,13 @@ class CommemorativeMedalService {
       { header: 'STT', key: 'stt', width: 6 },
       { header: 'ID', key: 'id', width: 10 },
       { header: 'Họ và tên', key: 'ho_ten', width: 25 },
+      { header: 'Ngày sinh', key: 'ngay_sinh', width: 14 },
+      { header: 'Cơ quan đơn vị', key: 'co_quan_don_vi', width: 20 },
+      { header: 'Đơn vị trực thuộc', key: 'don_vi_truc_thuoc', width: 20 },
       { header: 'Cấp bậc', key: 'cap_bac', width: 15 },
       { header: 'Chức vụ', key: 'chuc_vu', width: 20 },
       { header: 'Năm (*)', key: 'nam', width: 10 },
-      { header: 'Tháng (*)', key: 'thang', width: 10 },
+      { header: 'Tháng (*)', key: 'thang', width: 10, validationFormulae: '"1,2,3,4,5,6,7,8,9,10,11,12"' },
       { header: 'Số quyết định', key: 'so_quyet_dinh', width: 20 },
       { header: 'Ghi chú', key: 'ghi_chu', width: 25 },
     ];
@@ -54,7 +57,7 @@ class CommemorativeMedalService {
       personnelIds,
       repeatMap,
       loaiKhenThuong: PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
-      editableColumnLetters: ['H'],
+      editableColumnLetters: ['K'],
     });
   }
 
@@ -138,8 +141,7 @@ class CommemorativeMedalService {
       const idValue = idCol ? row.getCell(idCol).value : null;
       const ho_ten = hoTenCol ? String(row.getCell(hoTenCol).value ?? '').trim() : '';
       const namVal = row.getCell(namCol).value;
-      const thangRaw = thangCol ? Number(row.getCell(thangCol).value) : NaN;
-      const thang = !isNaN(thangRaw) && thangRaw >= 1 && thangRaw <= 12 ? Math.floor(thangRaw) : 12;
+      const thangVal = thangCol ? row.getCell(thangCol).value : null;
       const cap_bac = capBacCol ? String(row.getCell(capBacCol).value ?? '').trim() : null;
       const chuc_vu = chucVuCol ? String(row.getCell(chucVuCol).value ?? '').trim() : null;
       const so_quyet_dinh = soQuyetDinhCol
@@ -154,6 +156,7 @@ class CommemorativeMedalService {
       const missingFields = [];
       if (!idValue) missingFields.push('ID');
       if (!namVal) missingFields.push('Năm');
+      if (!thangVal) missingFields.push('Tháng');
       if (missingFields.length > 0) {
         errors.push({
           row: rowNumber,
@@ -201,6 +204,18 @@ class CommemorativeMedalService {
           ho_ten,
           nam,
           message: `Năm ${nam} không hợp lệ. Chỉ được nhập đến năm hiện tại (${currentYear})`,
+        });
+        continue;
+      }
+
+      const thang = parseInt(String(thangVal), 10);
+      if (!Number.isInteger(thang) || thang < 1 || thang > 12) {
+        errors.push({
+          row: rowNumber,
+          ho_ten,
+          nam,
+          thang: thangVal,
+          message: `Tháng "${thangVal}" không hợp lệ. Chỉ được nhập 1-12`,
         });
         continue;
       }
@@ -268,16 +283,18 @@ class CommemorativeMedalService {
       const ngayNhapNgu = new Date(personnel.ngay_nhap_ngu);
       const referenceDate = new Date(nam, thang, 0); // last day of selected month — eligibility reference date
       const serviceMonths = calculateServiceMonths(ngayNhapNgu, referenceDate);
-      const serviceYears = serviceMonths / 12;
       const isFemale = personnel.gioi_tinh === GENDER.FEMALE;
       const requiredYears = isFemale ? KNC_YEARS_REQUIRED_NU : KNC_YEARS_REQUIRED_NAM;
 
-      if (serviceYears < requiredYears) {
+      const requiredMonths = requiredYears * 12;
+      if (serviceMonths < requiredMonths) {
+        const diff = requiredMonths - serviceMonths;
         errors.push({
           row: rowNumber,
           ho_ten,
           nam,
-          message: `Chưa đủ điều kiện: ${isFemale ? 'Nữ' : 'Nam'} cần >= ${requiredYears} năm phục vụ, hiện ${Math.floor(serviceYears)} năm`,
+          thang,
+          message: `Chưa đủ điều kiện: ${isFemale ? 'Nữ' : 'Nam'} cần >= ${requiredYears} năm phục vụ, hiện ${formatServiceDuration(serviceMonths)}, còn thiếu ${formatServiceDuration(diff)}`,
         });
         continue;
       }
@@ -318,7 +335,7 @@ class CommemorativeMedalService {
         thang,
         so_quyet_dinh,
         ghi_chu,
-        service_years: Math.floor(serviceYears),
+        service_years: Math.floor(serviceMonths / 12),
         gioi_tinh: personnel.gioi_tinh ?? GENDER.MALE,
         history,
       });
@@ -546,7 +563,7 @@ class CommemorativeMedalService {
         const kncRecord = kncMap.get(personnel.id);
         if (kncRecord) {
           results.errors.push(
-            `Dòng ${rowNumber}: Quân nhân đã có Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN (năm ${kncRecord.nam || nam}) (Quân nhân: ${ho_ten}, Năm: ${nam})`
+            `Dòng ${rowNumber}: Quân nhân đã có Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN (năm ${kncRecord.nam || nam}) (Quân nhân: ${ho_ten}, Năm: ${nam})`
           );
           results.failed++;
           continue;
@@ -558,7 +575,7 @@ class CommemorativeMedalService {
         });
         if (hasPendingProposal) {
           results.errors.push(
-            `Dòng ${rowNumber}: Quân nhân đang có đề xuất Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN chờ duyệt (Quân nhân: ${ho_ten}, Năm: ${nam})`
+            `Dòng ${rowNumber}: Quân nhân đang có đề xuất Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN chờ duyệt (Quân nhân: ${ho_ten}, Năm: ${nam})`
           );
           results.failed++;
           continue;

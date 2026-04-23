@@ -15,7 +15,6 @@ import {
   makeCapBacColumn,
   makeChucVuColumn,
   makeSoQDColumn,
-  makeGhiChuColumn,
 } from '@/components/import-review/ImportReviewPageContent';
 
 export default function ImportReviewKNCVSNXDQDNDVNPage() {
@@ -26,8 +25,19 @@ export default function ImportReviewKNCVSNXDQDNDVNPage() {
       makeCapBacColumn(),
       makeChucVuColumn(),
       makeNamColumn(),
+      {
+        title: 'Tháng',
+        dataIndex: 'thang',
+        width: 70,
+        align: 'center' as const,
+      },
       makeSoQDColumn(),
-      makeGhiChuColumn(),
+      {
+        title: 'Ghi chú',
+        dataIndex: 'ghi_chu',
+        width: 200,
+        render: (val: string) => val ?? '',
+      },
     ],
     []
   );
@@ -43,6 +53,12 @@ export default function ImportReviewKNCVSNXDQDNDVNPage() {
       makeRowNumberColumn(),
       makeHoTenColumn(150, true),
       makeNamColumn(60, true),
+      {
+        title: 'Tháng',
+        dataIndex: 'thang',
+        width: 70,
+        align: 'center' as const,
+      },
       makeErrorColumn(),
     ],
     []
@@ -50,9 +66,9 @@ export default function ImportReviewKNCVSNXDQDNDVNPage() {
 
   const config: ImportReviewConfig = {
     sessionStorageKey: 'importPreviewDataKNCVSNXDQDNDVN',
-    title: 'Xem trước dữ liệu Import - Kỷ niệm chương VSNXD QĐNDVN',
+    title: 'Xem trước dữ liệu Import - Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
     confirmImport: apiClient.confirmCommemorationMedalsImport,
-    successMessage: count => `Import thành công ${count} bản ghi Kỷ niệm chương VSNXD QĐNDVN.`,
+    successMessage: count => `Import thành công ${count} bản ghi Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN.`,
     confirmButtonLabel: 'quân nhân',
     validColumns,
     invalidColumns,

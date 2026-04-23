@@ -28,7 +28,10 @@ import {
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { formatDate } from '@/lib/utils';
 import type { AwardType } from '@/constants/danhHieu.constants';
-import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/lib/constants/pagination.constants';
+import {
+  DEFAULT_ANTD_TABLE_PAGINATION,
+  FETCH_ALL_LIMIT,
+} from '@/lib/constants/pagination.constants';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -55,6 +58,51 @@ interface Award {
   mo_ta?: string;
   ten_de_tai?: string;
 }
+
+interface AwardFilters {
+  nam: string;
+  ho_ten: string;
+  danh_hieu: string;
+  de_tai: string;
+}
+
+interface QuanNhanInfo {
+  ho_ten?: string;
+  ngay_sinh?: string;
+  CoQuanDonVi?: { ten_don_vi?: string };
+  DonViTrucThuoc?: { ten_don_vi?: string };
+}
+
+type AwardRow = Award & {
+  QuanNhan?: QuanNhanInfo;
+  loai?: string;
+  thoi_gian?: { display?: string };
+  thoi_gian_nhom_0_7?: { display?: string };
+  thoi_gian_nhom_0_8?: { display?: string };
+  thoi_gian_nhom_0_9_1_0?: { display?: string };
+};
+
+const INITIAL_FILTERS: AwardFilters = {
+  nam: '',
+  ho_ten: '',
+  danh_hieu: '',
+  de_tai: '',
+};
+
+const TABS_WITH_DANH_HIEU_FILTER = new Set<AwardType>(['CNHN', 'HCCSVV', 'HCBVTQ']);
+const TABS_WITH_NESTED_QUAN_NHAN = new Set<AwardType>([
+  'NCKH',
+  'HCQKQT',
+  'HCBVTQ',
+  'HCCSVV',
+  'KNC_VSNXD_QDNDVN',
+]);
+
+const DANH_HIEU_OPTIONS: Record<string, string[]> = {
+  CNHN: ['CSTDCS', 'CSTT', 'BKBQP', 'CSTDTQ'],
+  HCCSVV: ['HCCSVV_HANG_NHAT', 'HCCSVV_HANG_NHI', 'HCCSVV_HANG_BA'],
+  HCBVTQ: ['HCBVTQ_HANG_NHAT', 'HCBVTQ_HANG_NHI', 'HCBVTQ_HANG_BA'],
+};
 
 const AWARD_TYPE_CONFIG: Record<
   string,
@@ -96,35 +144,19 @@ const AWARD_TYPE_CONFIG: Record<
   },
 };
 
-export default function AdminAwardsPage() {
+export default function ManagerAwardsPage() {
   const [activeTab, setActiveTab] = useState<AwardType>('CNHN');
   const [awards, setAwards] = useState<Award[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({
-    nam: '',
-    ho_ten: '',
-    danh_hieu: '',
-    de_tai: '',
-  });
+  const [filters, setFilters] = useState<AwardFilters>(INITIAL_FILTERS);
   const [debouncedFilters, setDebouncedFilters] = useState(filters);
-
-  const DANH_HIEU_OPTIONS: Record<string, string[]> = {
-    CNHN: ['CSTDCS', 'CSTT', 'BKBQP', 'CSTDTQ'],
-    HCCSVV: ['HCCSVV_HANG_NHAT', 'HCCSVV_HANG_NHI', 'HCCSVV_HANG_BA'],
-    HCBVTQ: ['HCBVTQ_HANG_NHAT', 'HCBVTQ_HANG_NHI', 'HCBVTQ_HANG_BA'],
-  };
 
   useEffect(() => {
     fetchAwards();
   }, [activeTab]);
 
   useEffect(() => {
-    setFilters({
-      nam: '',
-      ho_ten: '',
-      danh_hieu: '',
-      de_tai: '',
-    });
+    setFilters(INITIAL_FILTERS);
   }, [activeTab]);
 
   useEffect(() => {
@@ -152,7 +184,7 @@ export default function AdminAwardsPage() {
     }
   };
 
-  const handleFilterChange = (key: string, value: string) => {
+  const handleFilterChange = (key: keyof AwardFilters, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
 
@@ -160,7 +192,40 @@ export default function AdminAwardsPage() {
     await downloadDecisionFile(soQuyetDinh);
   };
 
-  const getPersonName = (record: any) => record?.QuanNhan?.ho_ten || record?.ho_ten || '';
+  const getPersonName = (record: AwardRow) => record.QuanNhan?.ho_ten || record.ho_ten || '';
+
+  const resolvePersonnelDisplay = (record: AwardRow) => {
+    const isAnnualTab = activeTab === 'CNHN';
+    const hasNestedQuanNhan = TABS_WITH_NESTED_QUAN_NHAN.has(activeTab);
+
+    const hoTen = hasNestedQuanNhan
+      ? record.QuanNhan?.ho_ten
+      : isAnnualTab
+        ? record.QuanNhan?.ho_ten || record.ho_ten
+        : record.ho_ten;
+
+    const ngaySinh = hasNestedQuanNhan
+      ? record.QuanNhan?.ngay_sinh
+      : isAnnualTab
+        ? record.QuanNhan?.ngay_sinh || record.ngay_sinh
+        : record.ngay_sinh;
+
+    const unitInfo: string[] = [];
+    if (hasNestedQuanNhan || (isAnnualTab && record.QuanNhan)) {
+      if (record.QuanNhan?.DonViTrucThuoc?.ten_don_vi) unitInfo.push(record.QuanNhan.DonViTrucThuoc.ten_don_vi);
+      if (record.QuanNhan?.CoQuanDonVi?.ten_don_vi) unitInfo.push(record.QuanNhan.CoQuanDonVi.ten_don_vi);
+    } else if (isAnnualTab) {
+      if (record.don_vi_truc_thuoc) unitInfo.push(record.don_vi_truc_thuoc);
+      if (record.co_quan_don_vi) unitInfo.push(record.co_quan_don_vi);
+      if (record.don_vi) unitInfo.push(record.don_vi);
+    }
+
+    return {
+      hoTen: hoTen || '-',
+      ngaySinh,
+      unitInfoText: unitInfo.length > 0 ? unitInfo.join(', ') : record.don_vi || '',
+    };
+  };
 
   const danhHieuOptions = useMemo(() => {
     const options = DANH_HIEU_OPTIONS[activeTab] || [];
@@ -238,45 +303,12 @@ export default function AdminAwardsPage() {
       key: 'ho_ten',
       width: 200,
       align: 'center',
-      render: (text: string, record: any) => {
-        // Handle nested QuanNhan structure for scientific, military flag, contribution, hccsvv, and commemoration awards
-        // Note: annual awards may or may not have nested QuanNhan, so we check both
-        const hasNestedQuanNhan =
-          activeTab === 'NCKH' ||
-          activeTab === 'HCQKQT' ||
-          activeTab === 'HCBVTQ' ||
-          activeTab === 'HCCSVV' ||
-          activeTab === 'KNC_VSNXD_QDNDVN';
-
-        // For annual tab, check if QuanNhan exists, otherwise use direct fields
-        const isAnnualTab = activeTab === 'CNHN';
-        const hoTen = hasNestedQuanNhan
-          ? record.QuanNhan?.ho_ten
-          : isAnnualTab
-            ? record.QuanNhan?.ho_ten || text || record.ho_ten
-            : text;
-        const unitInfo: string[] = [];
-
-        if (hasNestedQuanNhan || (isAnnualTab && record.QuanNhan)) {
-          // Has nested QuanNhan structure
-          if (record.QuanNhan?.DonViTrucThuoc?.ten_don_vi) {
-            unitInfo.push(record.QuanNhan.DonViTrucThuoc.ten_don_vi);
-          }
-          if (record.QuanNhan?.CoQuanDonVi?.ten_don_vi) {
-            unitInfo.push(record.QuanNhan.CoQuanDonVi.ten_don_vi);
-          }
-        } else if (isAnnualTab) {
-          // Annual tab without nested QuanNhan - use direct fields
-          if (record.don_vi_truc_thuoc) unitInfo.push(record.don_vi_truc_thuoc);
-          if (record.co_quan_don_vi) unitInfo.push(record.co_quan_don_vi);
-          if (record.don_vi) unitInfo.push(record.don_vi);
-        }
-
-        const unitInfoText = unitInfo.length > 0 ? unitInfo.join(', ') : record.don_vi || '';
+      render: (_text: string, record: AwardRow) => {
+        const { hoTen, unitInfoText } = resolvePersonnelDisplay(record);
 
         return (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <Text strong>{hoTen || '-'}</Text>
+            <Text strong>{hoTen}</Text>
             {unitInfoText && (
               <Text type="secondary" style={{ fontSize: '12px', marginTop: '4px' }}>
                 {unitInfoText}
@@ -291,23 +323,8 @@ export default function AdminAwardsPage() {
       key: 'ngay_sinh',
       width: 120,
       align: 'center',
-      render: (_: unknown, record: any) => {
-        // Get date from nested QuanNhan or direct field
-        const hasNestedQuanNhan =
-          activeTab === 'NCKH' ||
-          activeTab === 'HCQKQT' ||
-          activeTab === 'HCBVTQ' ||
-          activeTab === 'HCCSVV' ||
-          activeTab === 'KNC_VSNXD_QDNDVN';
-
-        // For annual tab, check if QuanNhan exists, otherwise use direct field
-        const isAnnualTab = activeTab === 'CNHN';
-        const ngaySinh = hasNestedQuanNhan
-          ? record.QuanNhan?.ngay_sinh
-          : isAnnualTab
-            ? record.QuanNhan?.ngay_sinh || record.ngay_sinh
-            : record.ngay_sinh;
-
+      render: (_: unknown, record: AwardRow) => {
+        const { ngaySinh } = resolvePersonnelDisplay(record);
         return <Text>{formatDate(ngaySinh)}</Text>;
       },
     },
@@ -316,7 +333,7 @@ export default function AdminAwardsPage() {
       key: 'cap_bac_chuc_vu',
       width: 150,
       align: 'center',
-      render: (_: unknown, record: any) => {
+      render: (_: unknown, record: AwardRow) => {
         const capBac = record.cap_bac;
         const chucVu = record.chuc_vu;
 
@@ -345,13 +362,14 @@ export default function AdminAwardsPage() {
       key: 'loai_khen_thuong',
       width: 140,
       align: 'center',
-      render: (_: unknown, record: any) => {
+      render: (_: unknown, record: AwardRow) => {
         if (activeTab === 'NCKH') {
           const loaiMap: Record<string, string> = {
             DTKH: 'ĐTKH',
             SKKH: 'SKKH',
           };
-          return <Text>{loaiMap[record.loai] || record.loai || '-'}</Text>;
+          const loai = record.loai ?? '';
+          return <Text>{loaiMap[loai] || loai || '-'}</Text>;
         }
         if (activeTab === 'HCQKQT' || activeTab === 'HCCSVV' || activeTab === 'KNC_VSNXD_QDNDVN') {
           const thanhTich = record.thoi_gian?.display || '-';
@@ -382,7 +400,7 @@ export default function AdminAwardsPage() {
       key: activeTab === 'NCKH' ? 'mo_ta' : 'danh_hieu',
       width: 220,
       align: 'center',
-      render: (text: string | null, record: any) => {
+      render: (text: string | null, record: AwardRow) => {
         // Scientific achievements
         if (activeTab === 'NCKH') {
           return (
@@ -395,8 +413,7 @@ export default function AdminAwardsPage() {
 
         // Commemoration medals — if record exists, default title is KNC
         if (activeTab === 'KNC_VSNXD_QDNDVN') {
-          const danhHieu =
-            DANH_HIEU_MAP['KNC_VSNXD_QDNDVN'] || 'Kỷ niệm chương VSNXD QĐNDVN';
+          const danhHieu = DANH_HIEU_MAP['KNC_VSNXD_QDNDVN'] || 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN';
           return (
             <div style={COLUMN_STYLES.container}>
               <Text strong>{danhHieu}</Text>
@@ -412,7 +429,7 @@ export default function AdminAwardsPage() {
 
         // Military flag — if record exists, default title is HC_QKQT
         if (activeTab === 'HCQKQT') {
-          const danhHieu = DANH_HIEU_MAP['HC_QKQT'] || 'Huy chương Quân kỳ Quyết thắng';
+          const danhHieu = DANH_HIEU_MAP['HC_QKQT'] || 'Huy chương Quân kỳ quyết thắng';
           return (
             <div style={COLUMN_STYLES.container}>
               <Text strong>{danhHieu}</Text>
@@ -432,11 +449,7 @@ export default function AdminAwardsPage() {
           return (
             <div style={COLUMN_STYLES.container}>
               <Text>{fullName}</Text>
-              {record.ghi_chu && (
-                <Text type="secondary" style={COLUMN_STYLES.noteText}>
-                  {record.ghi_chu}
-                </Text>
-              )}
+              {record.ghi_chu && <Text type="secondary" style={COLUMN_STYLES.noteText}>{record.ghi_chu}</Text>}
               {renderDecision(record.so_quyet_dinh, handleDownloadDecision)}
             </div>
           );
@@ -448,11 +461,7 @@ export default function AdminAwardsPage() {
           return (
             <div style={COLUMN_STYLES.container}>
               <Text>{fullName}</Text>
-              {record.ghi_chu && (
-                <Text type="secondary" style={COLUMN_STYLES.noteText}>
-                  {record.ghi_chu}
-                </Text>
-              )}
+              {record.ghi_chu && <Text type="secondary" style={COLUMN_STYLES.noteText}>{record.ghi_chu}</Text>}
               {renderDecision(record.so_quyet_dinh, handleDownloadDecision)}
             </div>
           );
@@ -470,7 +479,7 @@ export default function AdminAwardsPage() {
         <Breadcrumb.Item href="/">
           <HomeOutlined />
         </Breadcrumb.Item>
-        <Breadcrumb.Item>Quản Lý Khen Thưởng</Breadcrumb.Item>
+        <Breadcrumb.Item>Quản lý khen thưởng</Breadcrumb.Item>
       </Breadcrumb>
 
       <div
@@ -483,7 +492,7 @@ export default function AdminAwardsPage() {
       >
         <div>
           <Title level={2} style={{ margin: 0 }}>
-            Quản Lý Khen Thưởng
+            Quản lý khen thưởng
           </Title>
           <Paragraph type="secondary" style={{ marginTop: '4px', marginBottom: 0 }}>
             Danh sách khen thưởng tất cả các đơn vị
@@ -513,17 +522,17 @@ export default function AdminAwardsPage() {
           },
           {
             key: 'KNC_VSNXD_QDNDVN',
-            label: 'Kỷ niệm chương VSNXD QĐNDVN',
+            label: 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
             children: renderAwardContent(),
           },
           {
             key: 'HCQKQT',
-            label: 'Huy chương Quân kỳ Quyết thắng',
+            label: 'Huy chương Quân kỳ quyết thắng',
             children: renderAwardContent(),
           },
           {
             key: 'NCKH',
-            label: 'Thành tích NCKH',
+            label: 'Thành tích Nghiên cứu khoa học',
             children: renderAwardContent(),
           },
         ]}
@@ -591,7 +600,7 @@ export default function AdminAwardsPage() {
                 size="large"
               />
             </div>
-            {(activeTab === 'CNHN' || activeTab === 'HCCSVV' || activeTab === 'HCBVTQ') && (
+            {TABS_WITH_DANH_HIEU_FILTER.has(activeTab) && (
               <div
                 style={{
                   flex: '1 1 250px',
@@ -641,7 +650,7 @@ export default function AdminAwardsPage() {
               <div style={{ height: '22px', marginBottom: '8px' }}></div>
               <Button
                 size="large"
-                onClick={() => setFilters({ nam: '', ho_ten: '', danh_hieu: '', de_tai: '' })}
+                onClick={() => setFilters(INITIAL_FILTERS)}
                 icon={null}
               >
                 Xóa bộ lọc

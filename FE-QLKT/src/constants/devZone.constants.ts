@@ -2,7 +2,6 @@
  * Constants cho Dev Zone
  */
 
-
 export const DEV_ZONE_API = '/api/dev-zone';
 
 export const DEV_SESSION_KEY = 'dev_zone_session';
@@ -22,9 +21,21 @@ export const CRON_PRESETS = [
 
 /** Danh sách loại khen thưởng cho toggle bật/tắt */
 export const AWARD_TYPE_OPTIONS = [
-  { key: 'annual', label: 'Khen thưởng cá nhân hằng năm', description: 'Import, file mẫu, thêm đồng loạt' },
-  { key: 'unit', label: 'Khen thưởng đơn vị hằng năm', description: 'Import, file mẫu, thêm đồng loạt' },
-  { key: 'hccsvv', label: 'Huy chương Chiến sĩ vẻ vang', description: 'Import, file mẫu, thêm đồng loạt' },
+  {
+    key: 'annual',
+    label: 'Khen thưởng cá nhân hằng năm',
+    description: 'Import, file mẫu, thêm đồng loạt',
+  },
+  {
+    key: 'unit',
+    label: 'Khen thưởng đơn vị hằng năm',
+    description: 'Import, file mẫu, thêm đồng loạt',
+  },
+  {
+    key: 'hccsvv',
+    label: 'Huy chương Chiến sĩ vẻ vang',
+    description: 'Import, file mẫu, thêm đồng loạt',
+  },
   {
     key: 'contribution',
     label: 'Huân chương Bảo vệ Tổ quốc',
@@ -32,17 +43,17 @@ export const AWARD_TYPE_OPTIONS = [
   },
   {
     key: 'commemoration',
-    label: 'Kỷ niệm chương VSNXD QĐNDVN',
+    label: 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
     description: 'Import, file mẫu, thêm đồng loạt',
   },
   {
     key: 'militaryFlag',
-    label: 'HC Quân kỳ Quyết thắng',
+    label: 'HC Quân kỳ quyết thắng',
     description: 'Import, file mẫu, thêm đồng loạt',
   },
   {
     key: 'scientific',
-    label: 'Thành tích NCKH',
+    label: 'Thành tích Nghiên cứu khoa học',
     description: 'Import, file mẫu, thêm đồng loạt',
   },
 ] as const;

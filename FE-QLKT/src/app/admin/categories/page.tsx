@@ -131,7 +131,7 @@ export default function CategoriesPage() {
                 ),
               },
               {
-                title: 'Quản lý Cơ quan Đơn vị',
+                title: 'Quản lý cơ quan đơn vị',
               },
             ]}
           />
@@ -149,7 +149,7 @@ export default function CategoriesPage() {
           >
             <div>
               <Title level={2} style={{ margin: 0, marginBottom: 8 }}>
-                Quản lý Cơ quan Đơn vị
+                Quản lý cơ quan đơn vị
               </Title>
               <Text type="secondary">
                 Quản lý cơ quan đơn vị ({units.length}) và chức vụ ({positions.length})

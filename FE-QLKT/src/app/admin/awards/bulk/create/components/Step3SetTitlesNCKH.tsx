@@ -344,15 +344,15 @@ export function Step3SetTitlesNCKH({
   return (
     <div>
       <Alert
-        message="Hướng dẫn"
+        message="Bước 3: Thiết lập thông tin thành tích - Nghiên cứu khoa học"
         description={
           <div>
             <p>
-              1. Chọn loại và nhập mô tả cho từng quân nhân đã chọn (
+              1. Chọn loại thành tích và nhập mô tả cho từng quân nhân (
               <strong>{personnel.length}</strong> quân nhân)
             </p>
-            <p>2. Đảm bảo tất cả quân nhân đều đã được chọn loại và nhập mô tả</p>
-            <p>3. Sau khi hoàn tất, nhấn &quot;Tiếp tục&quot; để sang bước upload file</p>
+            <p>2. Đảm bảo mọi quân nhân đều có đủ thông tin bắt buộc trước khi chuyển bước.</p>
+            <p>3. Hoàn tất khai báo, nhấn &quot;Tiếp tục&quot; để sang bước đính kèm tệp.</p>
           </div>
         }
         type="info"

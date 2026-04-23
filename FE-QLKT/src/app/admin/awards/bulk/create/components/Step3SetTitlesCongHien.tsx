@@ -430,25 +430,21 @@ export function Step3SetTitlesCongHien({
   return (
     <div>
       <Alert
-        message="Hướng dẫn"
+        message="Bước 3: Thiết lập danh hiệu - Huân chương Bảo vệ Tổ quốc"
         description={
           <div>
             <p>
-              1. Chọn danh hiệu khen thưởng cho từng quân nhân đã chọn (
-              <strong>{personnel.length}</strong> quân nhân)
+              1. Thiết lập danh hiệu cho <strong>{personnel.length}</strong> quân nhân đã chọn.
             </p>
             <p style={{ marginTop: 8, paddingLeft: 16, borderLeft: '3px solid #1890ff' }}>
-              <strong>Lưu ý cho đề xuất Huân chương Bảo vệ Tổ quốc:</strong>
-              <br />- Yêu cầu thời gian: <strong>Nam: 10 năm (120 tháng)</strong>,{' '}
-              <strong>Nữ: 6 năm 8 tháng (80 tháng)</strong> - giảm 1/3 thời gian
-              <br />
-              - Hạng Nhất: cần từ nhóm hệ số 0.9-1.0
-              <br />
-              - Hạng Nhì: cần từ nhóm hệ số 0.8 + 0.9-1.0 (hạng cao cộng vào)
-              <br />- Hạng Ba: cần từ nhóm hệ số 0.7 + 0.8 + 0.9-1.0 (tất cả hạng cao cộng vào)
+              <strong>Quy tắc xét điều kiện:</strong>
+              <br />- Thời gian phục vụ tối thiểu: Nam 10 năm (120 tháng), Nữ 6 năm 8 tháng (80 tháng).
+              <br />- Hạng Nhất: xét nhóm hệ số 0.9-1.0.
+              <br />- Hạng Nhì: xét nhóm 0.8 + 0.9-1.0.
+              <br />- Hạng Ba: xét nhóm 0.7 + 0.8 + 0.9-1.0.
             </p>
-            <p>2. Đảm bảo tất cả quân nhân đều đã được chọn danh hiệu</p>
-            <p>3. Sau khi hoàn tất, nhấn &quot;Tiếp tục&quot; để sang bước upload file</p>
+            <p>2. Kiểm tra để tất cả quân nhân đều đã có danh hiệu trước khi chuyển bước.</p>
+            <p>3. Hoàn tất khai báo, nhấn &quot;Tiếp tục&quot; để sang bước đính kèm tệp.</p>
           </div>
         }
         type="info"

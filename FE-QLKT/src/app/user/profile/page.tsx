@@ -585,7 +585,7 @@ export default function UserProfilePage() {
               {serviceProfile && (
                 <div className="mb-6">
                   <Text strong className="text-base">
-                    Huy chương Chiến sĩ Vẻ vang
+                    Huy chương Chiến sĩ vẻ vang
                   </Text>
                   <Divider className="my-3" />
                   <Row gutter={[16, 16]}>
@@ -1386,7 +1386,7 @@ export default function UserProfilePage() {
     },
     {
       key: '3',
-      label: 'Thành tích NCKH',
+      label: 'Thành tích Nghiên cứu khoa học',
       children: (
         <div className="space-y-4">
           <div className="mb-4">

@@ -116,7 +116,7 @@ class HCCSVVController {
     }
     const result = await hccsvvService.importFromExcel(file.buffer, user.id);
     return ResponseHelper.success(res, {
-      message: 'Import Huy chương Chiến sĩ Vẻ vang thành công',
+      message: 'Import Huy chương Chiến sĩ vẻ vang thành công',
       data: result,
     });
   });

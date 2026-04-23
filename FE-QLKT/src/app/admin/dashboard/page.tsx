@@ -36,7 +36,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/apiClient';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { formatDateTime } from '@/lib/utils';
-import { PROPOSAL_STATUS_LABELS, PROPOSAL_TYPE_LABELS } from '@/constants/proposal.constants';
+import {
+  isProposalType,
+  PROPOSAL_STATUS_LABELS,
+  PROPOSAL_TYPE_LABELS,
+} from '@/constants/proposal.constants';
 import { ROLE_LABELS, ROLE_COLORS } from '@/constants/roles.constants';
 import { THANH_TICH_KHOA_HOC_SHORT_LABELS } from '@/constants/danhHieu.constants';
 
@@ -264,14 +268,14 @@ export default function AdminDashboard() {
                     label: THANH_TICH_KHOA_HOC_SHORT_LABELS[item.type] || item.type,
                     value: item.count,
                   }))}
-                  title="Thành tích NCKH theo loại"
+                  title="Thành tích Nghiên cứu khoa học theo loại"
                   colors={['rgba(59, 130, 246, 0.8)', 'rgba(34, 197, 94, 0.8)']}
                 />
               </Col>
               <Col xs={24} lg={8}>
                 <PieChart
-                  data={chartData.proposalsByType.map((item: any) => ({
-                    label: PROPOSAL_TYPE_LABELS[item.type] || item.type,
+                  data={chartData.proposalsByType.map((item: { type: string; count: number }) => ({
+                    label: isProposalType(item.type) ? PROPOSAL_TYPE_LABELS[item.type] : item.type,
                     value: item.count,
                   }))}
                   title="Đề xuất theo loại (7 ngày gần nhất)"
@@ -297,7 +301,7 @@ export default function AdminDashboard() {
                     date: item.month,
                     count: item.count,
                   }))}
-                  title="Thành tích NCKH (6 tháng gần nhất)"
+                  title="Thành tích Nghiên cứu khoa học (6 tháng gần nhất)"
                   label="Số lượng thành tích"
                   color="rgba(34, 197, 94, 1)"
                 />
@@ -310,7 +314,9 @@ export default function AdminDashboard() {
                   }))}
                   title="Đề xuất theo loại (7 ngày gần nhất)"
                   maxLabelLength={20}
-                  labelMapper={(label: string) => PROPOSAL_TYPE_LABELS[label] || label}
+                  labelMapper={(label: string) =>
+                    isProposalType(label) ? PROPOSAL_TYPE_LABELS[label] : label
+                  }
                   color="rgba(59, 130, 246, 1)"
                 />
               </Col>
@@ -329,7 +335,7 @@ export default function AdminDashboard() {
                     size="large"
                     className="w-full h-auto py-4 text-base font-medium hover:scale-105 transition-transform"
                   >
-                    Quản lý Quân nhân
+                    Quản lý quân nhân
                   </Button>
                 </Link>
                 <Link href="/admin/categories">
@@ -338,7 +344,7 @@ export default function AdminDashboard() {
                     size="large"
                     className="w-full h-auto py-4 text-base font-medium hover:scale-105 transition-transform"
                   >
-                    Quản lý Cơ quan Đơn vị
+                    Quản lý cơ quan đơn vị
                   </Button>
                 </Link>
                 <Link href="/admin/positions">
@@ -347,7 +353,7 @@ export default function AdminDashboard() {
                     size="large"
                     className="w-full h-auto py-4 text-base font-medium hover:scale-105 transition-transform"
                   >
-                    Quản lý Chức vụ
+                    Quản lý chức vụ
                   </Button>
                 </Link>
                 <Link href="/admin/personnel/create">

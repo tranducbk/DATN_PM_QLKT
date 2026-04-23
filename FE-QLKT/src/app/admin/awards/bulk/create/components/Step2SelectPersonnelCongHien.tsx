@@ -700,14 +700,13 @@ export function Step2SelectPersonnelCongHien({
   return (
     <div>
       <Alert
-        message="Bước 2: Chọn quân nhân - Huân chương Bảo vệ Tổ quốc"
+        message="Bước 2: Lựa chọn quân nhân - Huân chương Bảo vệ Tổ quốc"
         description={
           <div>
-            <p>1. Nhập năm đề xuất khen thưởng</p>
-            <p>
-              2. Chọn các quân nhân cần đề xuất Huân chương Bảo vệ Tổ quốc từ danh sách dưới đây
-            </p>
-            <p>3. Sau khi chọn xong, nhấn &quot;Tiếp tục&quot; để sang bước chọn danh hiệu</p>
+            <p>1. Chọn năm đề xuất để hệ thống xác định điều kiện theo kỳ xét.</p>
+            <p>2. Lựa chọn quân nhân đủ điều kiện từ danh sách.</p>
+            <p>3. Kiểm tra cảnh báo điều kiện trước khi xác nhận lựa chọn.</p>
+            <p>4. Hoàn tất lựa chọn, nhấn &quot;Tiếp tục&quot; để sang bước chọn danh hiệu.</p>
           </div>
         }
         type="info"

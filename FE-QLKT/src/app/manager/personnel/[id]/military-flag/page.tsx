@@ -26,7 +26,6 @@ import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 import type { PersonnelDetail } from '@/lib/types/personnelList';
 
-
 const { Title, Paragraph } = Typography;
 
 interface MilitaryFlag {
@@ -76,7 +75,7 @@ export default function ManagerMilitaryFlagPage() {
             mappedFlags.push({
               id: item.id,
               type: 'HCQKQT',
-              name: 'Huy chương Quân kỳ Quyết thắng',
+              name: 'Huy chương Quân kỳ quyết thắng',
               nam: item.nam,
               cap_bac: item.cap_bac,
               chuc_vu: item.chuc_vu,
@@ -114,7 +113,7 @@ export default function ManagerMilitaryFlagPage() {
   const handleDelete = async () => {
     if (!deleteId) return;
     try {
-      message.success('Xóa Huy chương Quân kỳ Quyết thắng thành công');
+      message.success('Xóa Huy chương Quân kỳ quyết thắng thành công');
       setDeleteModalOpen(false);
       setDeleteId(null);
       loadData();
@@ -125,13 +124,13 @@ export default function ManagerMilitaryFlagPage() {
 
   const columns: TableColumnsType<MilitaryFlag> = [
     {
-      title: 'Năm',
-      dataIndex: 'nam',
-      key: 'nam',
-      width: 80,
-      minWidth: 70,
+      title: 'Tháng/Năm',
+      key: 'thang_nam',
+      width: 100,
+      minWidth: 90,
       align: 'center',
-      render: (nam: number) => nam || '-',
+      render: (_: unknown, record: any) =>
+        record.thang && record.nam ? `${record.thang}/${record.nam}` : record.nam || '-',
     },
     {
       title: 'Cấp bậc',
@@ -222,7 +221,7 @@ export default function ManagerMilitaryFlagPage() {
           <Breadcrumb.Item>
             <Link href={`/manager/personnel/${personnelId}`}>{personnel?.ho_ten}</Link>
           </Breadcrumb.Item>
-          <Breadcrumb.Item>Huy chương Quân kỳ Quyết thắng</Breadcrumb.Item>
+          <Breadcrumb.Item>Huy chương Quân kỳ quyết thắng</Breadcrumb.Item>
         </Breadcrumb>
 
         {/* Header */}
@@ -243,7 +242,7 @@ export default function ManagerMilitaryFlagPage() {
               </Link>
             </Space>
             <Title level={2} style={{ marginTop: 8, marginBottom: 8 }}>
-              Huy chương Quân kỳ Quyết thắng
+              Huy chương Quân kỳ quyết thắng
             </Title>
             {personnel && (
               <Paragraph type="secondary" style={{ fontSize: 14, marginBottom: 0 }}>
@@ -271,7 +270,7 @@ export default function ManagerMilitaryFlagPage() {
               scroll={{ x: 'max-content' }}
               size="small"
               locale={{
-                emptyText: <Empty description="Chưa có dữ liệu Huy chương Quân kỳ Quyết thắng" />,
+                emptyText: <Empty description="Chưa có dữ liệu Huy chương Quân kỳ quyết thắng" />,
               }}
             />
           </Card>
@@ -291,7 +290,7 @@ export default function ManagerMilitaryFlagPage() {
           okButtonProps={{ danger: true }}
         >
           <Paragraph>
-            Bạn có chắc chắn muốn xóa Huy chương Quân kỳ Quyết thắng này? Hành động này không thể
+            Bạn có chắc chắn muốn xóa Huy chương Quân kỳ quyết thắng này? Hành động này không thể
             hoàn tác.
           </Paragraph>
         </Modal>

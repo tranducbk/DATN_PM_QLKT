@@ -85,7 +85,7 @@ class ProposalService {
     type: ProposalType,
     nam: number,
     ghiChu: string | null,
-    thang: number = 12
+    thang: number | null
   ) {
     return submit.submitProposal(titleData, attachedFiles, soQuyetDinh, userId, type, nam, ghiChu, thang);
   }

@@ -110,7 +110,7 @@ export default function AdminDecisionsPage() {
       const decisionsResponse = await apiClient.getDecisions(params);
 
       if (decisionsResponse.success) {
-        // getDecisions normalizes BE response: `{ data: { items, pagination } }` → `data` is the `items` array
+        // getDecisions already normalizes response; data is the items array.
         const decisionRows = Array.isArray(decisionsResponse.data) ? decisionsResponse.data : [];
         setDecisions(decisionRows as Decision[]);
         setPagination(prev => ({
@@ -310,7 +310,7 @@ export default function AdminDecisionsPage() {
           }}
         >
           <Title level={4} style={{ margin: 0 }}>
-            Quản lý Quyết định Khen thưởng
+            Quản lý quyết định khen thưởng
           </Title>
           <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
             Thêm quyết định
@@ -385,7 +385,7 @@ export default function AdminDecisionsPage() {
 
       {/* Detail Modal */}
       <Modal
-        title="Chi tiết Quyết định"
+        title="Chi tiết quyết định"
         open={detailModalVisible}
         onCancel={() => setDetailModalVisible(false)}
         footer={[

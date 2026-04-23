@@ -86,7 +86,7 @@ export function BooleanIcon({ value }: { value: boolean | undefined }) {
   );
 }
 
-export const renderText = (val: string) => val ?? '--';
+export const renderText = (val: string) => val ?? '';
 
 const FALLBACK_ERROR = 'Lỗi không xác định';
 
@@ -146,7 +146,7 @@ export function makeNamColumn(width = 80, withRender = false): ColumnsType<Previ
     width,
     align: 'center' as const,
   };
-  return withRender ? { ...col, render: (val: number) => val ?? '--' } : col;
+  return withRender ? { ...col, render: (val: number) => val ?? '' } : col;
 }
 
 export function makeSoQDColumn(width = 140): ColumnsType<PreviewItem>[number] {

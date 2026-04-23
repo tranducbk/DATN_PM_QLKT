@@ -369,7 +369,7 @@ export default function PersonnelPage() {
               ),
             },
             {
-              title: 'Quản lý Quân nhân',
+              title: 'Quản lý quân nhân',
             },
           ]}
         />
@@ -387,7 +387,7 @@ export default function PersonnelPage() {
         >
           <div>
             <Title level={2} style={{ margin: 0, marginBottom: 8 }}>
-              Quản lý Quân nhân
+              Quản lý quân nhân
             </Title>
             <Text type="secondary">
               Quản lý thông tin quân nhân trong hệ thống ({filteredPersonnel.length} quân nhân)

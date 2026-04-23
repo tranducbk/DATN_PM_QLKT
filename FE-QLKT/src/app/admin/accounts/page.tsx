@@ -288,18 +288,18 @@ export default function AdminAccountsPage() {
                 </Link>
               ),
             },
-            { title: 'Quản lý Tài khoản' },
+            { title: 'Quản lý tài khoản' },
           ]}
         />
 
         {/* Header */}
         <div className="flex justify-between items-center">
           <Title level={2} className="!mb-0">
-            Quản lý Tài khoản
+            Quản lý tài khoản
           </Title>
           <Link href="/admin/accounts/create">
             <Button type="primary" icon={<PlusOutlined />} size="large">
-              Tạo Tài khoản
+              Tạo tài khoản
             </Button>
           </Link>
         </div>

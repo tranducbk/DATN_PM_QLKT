@@ -4,7 +4,7 @@ import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHel
 import { checkDuplicateAward } from '../helpers/awardValidation';
 import profileService from './profile.service';
 import * as notificationHelper from '../helpers/notification';
-import { getDanhHieuName, DANH_HIEU_HCBVTQ, CONG_HIEN_BASE_REQUIRED_MONTHS, CONG_HIEN_FEMALE_REQUIRED_MONTHS } from '../constants/danhHieu.constants';
+import { getDanhHieuName, resolveDanhHieuCode, buildDanhHieuExcelOptions, DANH_HIEU_HCBVTQ, CONG_HIEN_BASE_REQUIRED_MONTHS, CONG_HIEN_FEMALE_REQUIRED_MONTHS } from '../constants/danhHieu.constants';
 import { ROLES } from '../constants/roles.constants';
 import { ValidationError, NotFoundError } from '../middlewares/errorHandler';
 import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys, sanitizeRowData } from '../helpers/excelHelper';
@@ -40,6 +40,9 @@ class ContributionAwardService {
       { header: 'STT', key: 'stt', width: 6 },
       { header: 'ID', key: 'id', width: 10 },
       { header: 'Họ và tên', key: 'ho_ten', width: 25 },
+      { header: 'Ngày sinh', key: 'ngay_sinh', width: 14 },
+      { header: 'Cơ quan đơn vị', key: 'co_quan_don_vi', width: 20 },
+      { header: 'Đơn vị trực thuộc', key: 'don_vi_truc_thuoc', width: 20 },
       { header: 'Cấp bậc', key: 'cap_bac', width: 15 },
       { header: 'Chức vụ', key: 'chuc_vu', width: 20 },
       { header: 'Năm (*)', key: 'nam', width: 10 },
@@ -54,8 +57,8 @@ class ContributionAwardService {
       personnelIds,
       repeatMap,
       loaiKhenThuong: PROPOSAL_TYPES.CONG_HIEN,
-      danhHieuOptions: '"HCBVTQ_HANG_BA,HCBVTQ_HANG_NHI,HCBVTQ_HANG_NHAT"',
-      editableColumnLetters: ['G', 'H'],
+      danhHieuOptions: buildDanhHieuExcelOptions(Object.values(DANH_HIEU_HCBVTQ)),
+      editableColumnLetters: ['J', 'K'],
     });
   }
 
@@ -234,8 +237,8 @@ class ContributionAwardService {
         continue;
       }
 
-      const danhHieuUpper = danh_hieu_raw.toUpperCase();
-      if (!validDanhHieu.includes(danhHieuUpper)) {
+      const resolvedDanhHieu = resolveDanhHieuCode(danh_hieu_raw);
+      if (!validDanhHieu.includes(resolvedDanhHieu)) {
         errors.push({
           row: rowNumber,
           ho_ten,
@@ -245,7 +248,7 @@ class ContributionAwardService {
         });
         continue;
       }
-      const danh_hieu = danhHieuUpper;
+      const danh_hieu = resolvedDanhHieu;
 
       // Decision number must exist in the system (not just non-empty)
       if (!so_quyet_dinh) {

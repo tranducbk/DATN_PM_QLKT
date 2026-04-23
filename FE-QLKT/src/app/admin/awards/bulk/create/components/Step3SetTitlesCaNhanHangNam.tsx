@@ -40,6 +40,12 @@ const NCKH_LOAI_LABELS: Record<string, string> = {
   SKKH: 'Sáng kiến khoa học',
 };
 
+const NHOM_CSTDCS_CSTT = new Set(['CSTDCS', 'CSTT']);
+const NHOM_CHUOI = new Set(['BKBQP', 'CSTDTQ', 'BKTTCP']);
+const MIXED_GROUP_WARNING =
+  'Không thể đề xuất CSTDCS/CSTT cùng với BKBQP/CSTDTQ/BKTTCP trong một đề xuất. ' +
+  'Vui lòng tạo đề xuất riêng cho loại danh hiệu này.';
+
 interface Personnel {
   id: string;
   ho_ten: string;
@@ -113,6 +119,8 @@ interface Step3SetTitlesCaNhanHangNamProps {
   onTitleDataChange: (data: TitleData[]) => void;
   nam: number;
 }
+
+type DanhHieuGroup = 'nhom_cstdcs_cstt' | 'nhom_chuoi' | null;
 
 export function Step3SetTitlesCaNhanHangNam({
   selectedPersonnelIds,
@@ -197,21 +205,19 @@ export function Step3SetTitlesCaNhanHangNam({
     }
   };
 
-  const getSelectedDanhHieuType = () => {
+  const getDanhHieuGroup = (danhHieu?: string | null): DanhHieuGroup => {
+    if (!danhHieu) return null;
+    if (NHOM_CSTDCS_CSTT.has(danhHieu)) return 'nhom_cstdcs_cstt';
+    if (NHOM_CHUOI.has(danhHieu)) return 'nhom_chuoi';
+    return null;
+  };
+
+  const getSelectedDanhHieuType = (): DanhHieuGroup => {
     const selectedDanhHieus = titleData.map(item => item.danh_hieu).filter(Boolean);
 
     if (selectedDanhHieus.length === 0) return null;
 
-    const hasChinh = selectedDanhHieus.some(dh => dh === 'CSTDCS' || dh === 'CSTT');
-    const hasBKBQP = selectedDanhHieus.some(dh => dh === 'BKBQP');
-    const hasCSTDTQ = selectedDanhHieus.some(dh => dh === 'CSTDTQ');
-
-    if (hasChinh) {
-      return 'chinh'; // CSTDCS/CSTT
-    } else if (hasBKBQP || hasCSTDTQ) {
-      return 'bkbqp_cstdtq'; // BKBQP and CSTDTQ can be awarded together
-    }
-    return null;
+    return getDanhHieuGroup(selectedDanhHieus[0]);
   };
 
   const getDanhHieuOptions = (id: string) => {
@@ -235,10 +241,12 @@ export function Step3SetTitlesCaNhanHangNam({
       }
     }
 
-    if (selectedType === 'chinh') {
+    if (selectedType === 'nhom_cstdcs_cstt') {
       return allOptions.filter(opt => opt.value === 'CSTDCS' || opt.value === 'CSTT');
-    } else if (selectedType === 'bkbqp_cstdtq') {
-      return allOptions.filter(opt => opt.value === 'BKBQP' || opt.value === 'CSTDTQ');
+    } else if (selectedType === 'nhom_chuoi') {
+      return allOptions.filter(
+        opt => opt.value === 'BKBQP' || opt.value === 'CSTDTQ' || opt.value === 'BKTTCP'
+      );
     }
 
     return allOptions;
@@ -247,25 +255,24 @@ export function Step3SetTitlesCaNhanHangNam({
   const updateTitle = async (id: string, field: string, value: any) => {
     if (field === 'danh_hieu' && value) {
       const selectedType = getSelectedDanhHieuType();
-      const isChinh = value === 'CSTDCS' || value === 'CSTT';
-      const isBKBQP_CSTDTQ = value === 'BKBQP' || value === 'CSTDTQ';
+      const selectedGroup = getSelectedDanhHieuType();
+      const valueGroup = getDanhHieuGroup(value);
 
-      if (selectedType === 'chinh' && isBKBQP_CSTDTQ) {
+      if (
+        selectedGroup &&
+        valueGroup &&
+        selectedGroup !== valueGroup &&
+        selectedType === 'nhom_cstdcs_cstt'
+      ) {
         const currentData = titleData.find(d => d.personnel_id === id);
         if (!currentData || !currentData.danh_hieu) {
-          message.warning(
-            'Không thể đề xuất CSTDCS/CSTT cùng với BKBQP/CSTDTQ trong một đề xuất. ' +
-              'Vui lòng tạo đề xuất riêng cho loại danh hiệu này.'
-          );
+          message.warning(MIXED_GROUP_WARNING);
           return;
         }
-      } else if (selectedType === 'bkbqp_cstdtq' && isChinh) {
+      } else if (selectedGroup && valueGroup && selectedGroup !== valueGroup && selectedType === 'nhom_chuoi') {
         const currentData = titleData.find(d => d.personnel_id === id);
         if (!currentData || !currentData.danh_hieu) {
-          message.warning(
-            'Không thể đề xuất CSTDCS/CSTT cùng với BKBQP/CSTDTQ trong một đề xuất. ' +
-              'Vui lòng tạo đề xuất riêng cho loại danh hiệu này.'
-          );
+          message.warning(MIXED_GROUP_WARNING);
           return;
         }
       }
@@ -476,19 +483,19 @@ export function Step3SetTitlesCaNhanHangNam({
   return (
     <div>
       <Alert
-        message="Hướng dẫn"
+        message="Bước 3: Thiết lập danh hiệu - Cá nhân hằng năm"
         description={
           <div>
             <p>
-              1. Chọn danh hiệu khen thưởng cho từng quân nhân đã chọn (
+              1. Thiết lập danh hiệu cho từng quân nhân đã chọn (
               <strong>{personnel.length}</strong> quân nhân)
             </p>
             <p>
-              2. <strong>Lưu ý:</strong> Không thể đề xuất CSTDCS/CSTT cùng với BKBQP/CSTDTQ trong
-              một đề xuất. BKBQP và CSTDTQ có thể đề xuất cùng nhau.
+              2. Quy tắc nghiệp vụ: không đề xuất CSTDCS/CSTT cùng BKBQP/CSTDTQ/BKTTCP trong cùng
+              một hồ sơ; BKBQP/CSTDTQ/BKTTCP có thể đi cùng nhau.
             </p>
-            <p>3. Đảm bảo tất cả quân nhân đều đã được chọn danh hiệu</p>
-            <p>4. Sau khi hoàn tất, nhấn &quot;Tiếp tục&quot; để sang bước upload file</p>
+            <p>3. Đảm bảo tất cả quân nhân đã có danh hiệu trước khi chuyển bước.</p>
+            <p>4. Hoàn tất khai báo, nhấn &quot;Tiếp tục&quot; để sang bước đính kèm tệp.</p>
           </div>
         }
         type="info"

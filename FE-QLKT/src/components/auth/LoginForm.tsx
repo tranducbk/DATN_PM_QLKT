@@ -116,7 +116,7 @@ export function LoginForm() {
               />
             </div>
             <h1 className="card-title">Đăng nhập</h1>
-            <p className="card-subtitle">Hệ thống Quản lý Khen thưởng</p>
+            <p className="card-subtitle">Hệ thống quản lý khen thưởng</p>
           </div>
 
           {/* Error Alert */}

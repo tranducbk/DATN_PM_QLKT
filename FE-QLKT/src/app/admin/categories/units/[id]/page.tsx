@@ -169,7 +169,7 @@ export default function UnitDetailPage() {
               ),
             },
             {
-              title: <Link href="/admin/categories">Quản lý Cơ quan Đơn vị</Link>,
+              title: <Link href="/admin/categories">Quản lý cơ quan đơn vị</Link>,
             },
             {
               title: unit.ten_don_vi,

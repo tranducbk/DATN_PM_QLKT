@@ -35,7 +35,11 @@ import { useTheme } from '@/components/ThemeProvider';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/apiClient';
 import { formatDateTime } from '@/lib/utils';
-import { PROPOSAL_STATUS_LABELS, PROPOSAL_TYPE_LABELS } from '@/constants/proposal.constants';
+import {
+  isProposalType,
+  PROPOSAL_STATUS_LABELS,
+  PROPOSAL_TYPE_LABELS,
+} from '@/constants/proposal.constants';
 import { ROLE_LABELS, ROLE_COLORS } from '@/constants/roles.constants';
 import { DANH_HIEU_MAP, THANH_TICH_KHOA_HOC_SHORT_LABELS } from '@/constants/danhHieu.constants';
 
@@ -400,7 +404,9 @@ export default function ManagerDashboard() {
                   }))}
                   title="Đề xuất theo loại"
                   maxLabelLength={15}
-                  labelMapper={(label: string) => PROPOSAL_TYPE_LABELS[label] || label}
+                  labelMapper={(label: string) =>
+                    isProposalType(label) ? PROPOSAL_TYPE_LABELS[label] : label
+                  }
                   color="rgba(59, 130, 246, 1)"
                 />
               </Col>
@@ -413,7 +419,7 @@ export default function ManagerDashboard() {
                     label: THANH_TICH_KHOA_HOC_SHORT_LABELS[item.type] || item.type,
                     value: item.count,
                   }))}
-                  title="Thành tích NCKH theo loại"
+                  title="Thành tích Nghiên cứu khoa học theo loại"
                   colors={['rgba(59, 130, 246, 0.8)', 'rgba(34, 197, 94, 0.8)']}
                 />
               </Col>
@@ -434,7 +440,7 @@ export default function ManagerDashboard() {
                     date: item.month,
                     count: item.count,
                   }))}
-                  title="Thành tích NCKH (6 tháng gần nhất)"
+                  title="Thành tích Nghiên cứu khoa học (6 tháng gần nhất)"
                   label="Số lượng thành tích"
                   color="rgba(34, 197, 94, 1)"
                 />
@@ -488,7 +494,7 @@ export default function ManagerDashboard() {
                     size="large"
                     className="w-full h-auto py-4 text-base font-medium hover:scale-105 transition-transform whitespace-normal break-words"
                   >
-                    Tạo Đề xuất
+                    Tạo đề xuất
                   </Button>
                 </Link>
                 <Link href="/manager/awards">
@@ -497,7 +503,7 @@ export default function ManagerDashboard() {
                     size="large"
                     className="w-full h-auto py-4 text-base font-medium hover:scale-105 transition-transform whitespace-normal break-words"
                   >
-                    Khen Thưởng Đơn vị
+                    Khen thưởng đơn vị
                   </Button>
                 </Link>
                 <Link href="/manager/profiles/annual">

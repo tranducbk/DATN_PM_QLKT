@@ -152,7 +152,7 @@ export default function ScientificAchievementsPage() {
         <Breadcrumb.Item>
           <Link href={`/admin/personnel/${personnelId}`}>{personnel?.ho_ten}</Link>
         </Breadcrumb.Item>
-        <Breadcrumb.Item>Thành tích NCKH</Breadcrumb.Item>
+        <Breadcrumb.Item>Thành tích Nghiên cứu khoa học</Breadcrumb.Item>
       </Breadcrumb>
 
       {/* Header */}
@@ -173,7 +173,7 @@ export default function ScientificAchievementsPage() {
             </Link>
           </Space>
           <Title level={2} style={{ marginTop: 8, marginBottom: 8 }}>
-            Thành tích NCKH
+            Thành tích Nghiên cứu khoa học
           </Title>
           {personnel && (
             <Paragraph type="secondary" style={{ fontSize: 14, marginBottom: 0 }}>

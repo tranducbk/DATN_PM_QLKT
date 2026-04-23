@@ -314,7 +314,7 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
         {
           key: 'accounts',
           icon: <TeamOutlined />,
-          label: <Link href="/super-admin/accounts">Quản lý Tài khoản</Link>,
+          label: <Link href="/super-admin/accounts">Quản lý tài khoản</Link>,
         },
         {
           key: 'add-awards',
@@ -335,32 +335,32 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
         {
           key: 'accounts',
           icon: <UserOutlined />,
-          label: <Link href="/admin/accounts">Quản lý Tài khoản</Link>,
+          label: <Link href="/admin/accounts">Quản lý tài khoản</Link>,
         },
         {
           key: 'personnel',
           icon: <TeamOutlined />,
-          label: <Link href="/admin/personnel">Quản lý Quân nhân</Link>,
+          label: <Link href="/admin/personnel">Quản lý quân nhân</Link>,
         },
         {
           key: 'categories',
           icon: <ApartmentOutlined />,
-          label: <Link href="/admin/categories">Quản lý Cơ quan Đơn vị</Link>,
+          label: <Link href="/admin/categories">Quản lý cơ quan đơn vị</Link>,
         },
         {
           key: 'proposals',
           icon: <FileSyncOutlined />,
-          label: <Link href="/admin/proposals/review">Duyệt Đề xuất</Link>,
+          label: <Link href="/admin/proposals/review">Duyệt đề xuất</Link>,
         },
         {
           key: 'decisions',
           icon: <FileTextOutlined />,
-          label: <Link href="/admin/decisions">Quản lý Quyết định</Link>,
+          label: <Link href="/admin/decisions">Quản lý quyết định</Link>,
         },
         {
           key: 'awards',
           icon: <FileDoneOutlined />,
-          label: <Link href="/admin/awards">Quản lý Khen Thưởng</Link>,
+          label: <Link href="/admin/awards">Quản lý khen thưởng</Link>,
         },
         {
           key: 'bulk-awards',
@@ -370,7 +370,7 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
         {
           key: 'adhoc-awards',
           icon: <ContainerOutlined />,
-          label: <Link href="/admin/adhoc-awards">Khen thưởng Đột xuất</Link>,
+          label: <Link href="/admin/adhoc-awards">Khen thưởng đột xuất</Link>,
         },
         {
           key: 'system-logs',
@@ -386,7 +386,7 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
         {
           key: 'personnel',
           icon: <TeamOutlined />,
-          label: <Link href="/manager/personnel">Quân nhân Đơn vị</Link>,
+          label: <Link href="/manager/personnel">Quân nhân đơn vị</Link>,
         },
         {
           key: 'proposals-list',
@@ -450,104 +450,49 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
   };
 
   const getChangePasswordPath = () => {
-    switch (actualRole) {
-      case ROLES.SUPER_ADMIN:
-        return '/super-admin/change-password';
-      case ROLES.ADMIN:
-        return '/admin/change-password';
-      case ROLES.MANAGER:
-        return '/manager/change-password';
-      default:
-        return '/user/change-password';
-    }
+    const roleSlug = actualRole === ROLES.SUPER_ADMIN ? 'super-admin' : (actualRole || 'user').toLowerCase();
+    return `/${roleSlug}/change-password`;
   };
 
   const getSelectedKey = () => {
     if (!pathname) return 'dashboard';
 
-    // Check awards/bulk before awards (sub-route takes priority)
-    if (pathname.startsWith('/admin/awards/bulk')) {
-      return 'bulk-awards';
-    }
-    if (pathname.startsWith('/admin/awards')) {
-      return 'awards';
-    }
-    if (pathname.startsWith('/admin/adhoc-awards')) {
-      return 'adhoc-awards';
-    }
-    if (pathname.startsWith('/admin/personnel')) {
-      return 'personnel';
-    }
-    if (pathname.startsWith('/admin/categories')) {
-      return 'categories';
-    }
-    if (pathname.startsWith('/admin/proposals')) {
-      return 'proposals';
-    }
-    if (pathname.startsWith('/admin/decisions')) {
-      return 'decisions';
-    }
-    if (pathname.startsWith('/admin/accounts')) {
-      return 'accounts';
-    }
-    if (pathname.startsWith('/admin/system-logs')) {
-      return 'system-logs';
-    }
-    if (pathname.startsWith('/admin/dashboard') || pathname === '/admin') {
-      return 'dashboard';
-    }
+    // Priority-ordered: longer prefixes first to avoid false matches
+    const routeKeyMap: [string, string][] = [
+      ['/admin/awards/bulk', 'bulk-awards'],
+      ['/admin/awards', 'awards'],
+      ['/admin/adhoc-awards', 'adhoc-awards'],
+      ['/admin/personnel', 'personnel'],
+      ['/admin/categories', 'categories'],
+      ['/admin/proposals', 'proposals'],
+      ['/admin/decisions', 'decisions'],
+      ['/admin/accounts', 'accounts'],
+      ['/admin/system-logs', 'system-logs'],
+      ['/super-admin/accounts', 'accounts'],
+      ['/super-admin/add-awards', 'add-awards'],
+      ['/super-admin/system-logs', 'system-logs'],
+      ['/manager/profile/edit', 'profile-edit'],
+      ['/manager/proposals', 'proposals-list'],
+      ['/manager/awards', 'awards'],
+      ['/manager/units', 'units'],
+      ['/manager/adhoc-awards', 'adhoc-awards'],
+      ['/manager/system-logs', 'system-logs'],
+      ['/manager/personnel', 'personnel'],
+      ['/user/profile/edit', 'profile-edit'],
+      ['/user/profile', 'profile'],
+    ];
 
-    if (pathname.startsWith('/super-admin/accounts')) {
-      return 'accounts';
-    }
-    if (pathname.startsWith('/super-admin/add-awards')) {
-      return 'add-awards';
-    }
-    if (pathname.startsWith('/super-admin/system-logs')) {
-      return 'system-logs';
-    }
-    if (pathname.startsWith('/super-admin/dashboard') || pathname === '/super-admin') {
-      return 'dashboard';
-    }
-
-    if (pathname.startsWith('/manager/profile/edit')) {
-      return 'profile-edit';
-    }
-    // /manager/personnel/[id] — own profile vs unit personnel
+    // Manager viewing own profile vs unit personnel
     const managerPersonnelMatch = pathname.match(/^\/manager\/personnel\/([^/]+)/);
     if (managerPersonnelMatch) {
-      const viewingId = managerPersonnelMatch[1];
-      return viewingId === String(personnelId) ? 'profile' : 'personnel';
-    }
-    if (pathname.startsWith('/manager/personnel')) {
-      return 'personnel';
-    }
-    if (pathname.startsWith('/manager/proposals')) {
-      return 'proposals-list';
-    }
-    if (pathname.startsWith('/manager/awards')) {
-      return 'awards';
-    }
-    if (pathname.startsWith('/manager/units')) {
-      return 'units';
-    }
-    if (pathname.startsWith('/manager/adhoc-awards')) {
-      return 'adhoc-awards';
-    }
-    if (pathname.startsWith('/manager/system-logs')) {
-      return 'system-logs';
-    }
-    if (pathname.startsWith('/manager/dashboard') || pathname === '/manager') {
-      return 'dashboard';
+      return managerPersonnelMatch[1] === String(personnelId) ? 'profile' : 'personnel';
     }
 
-    if (pathname.startsWith('/user/profile/edit')) {
-      return 'profile-edit';
-    }
-    if (pathname.startsWith('/user/profile')) {
-      return 'profile';
-    }
-    if (pathname.startsWith('/user/dashboard') || pathname === '/user') {
+    const match = routeKeyMap.find(([prefix]) => pathname.startsWith(prefix));
+    if (match) return match[1];
+
+    // Role root paths (e.g. /admin, /manager)
+    if (pathname.match(/^\/(admin|super-admin|manager|user)(\/dashboard)?$/)) {
       return 'dashboard';
     }
 
@@ -966,7 +911,7 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
             >
               <p className="font-medium">© 2026 Học viện Khoa học Quân sự. All rights reserved.</p>
               <p className="text-xs mt-1 text-gray-500 dark:text-gray-400">
-                Hệ thống Quản lý Khen thưởng
+                Hệ thống quản lý khen thưởng
               </p>
             </Footer>
           </Layout>

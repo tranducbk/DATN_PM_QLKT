@@ -15,7 +15,6 @@ import {
   makeCapBacColumn,
   makeChucVuColumn,
   makeSoQDColumn,
-  makeGhiChuColumn,
 } from '@/components/import-review/ImportReviewPageContent';
 
 export default function ImportReviewHCQKQTPage() {
@@ -26,8 +25,19 @@ export default function ImportReviewHCQKQTPage() {
       makeCapBacColumn(),
       makeChucVuColumn(),
       makeNamColumn(),
+      {
+        title: 'Tháng',
+        dataIndex: 'thang',
+        width: 70,
+        align: 'center' as const,
+      },
       makeSoQDColumn(),
-      makeGhiChuColumn(),
+      {
+        title: 'Ghi chú',
+        dataIndex: 'ghi_chu',
+        width: 200,
+        render: (val: string) => val ?? '',
+      },
     ],
     []
   );
@@ -43,6 +53,12 @@ export default function ImportReviewHCQKQTPage() {
       makeRowNumberColumn(),
       makeHoTenColumn(150, true),
       makeNamColumn(60, true),
+      {
+        title: 'Tháng',
+        dataIndex: 'thang',
+        width: 70,
+        align: 'center' as const,
+      },
       makeErrorColumn(),
     ],
     []
@@ -50,9 +66,9 @@ export default function ImportReviewHCQKQTPage() {
 
   const config: ImportReviewConfig = {
     sessionStorageKey: 'importPreviewDataHCQKQT',
-    title: 'Xem trước dữ liệu Import - HC Quân kỳ Quyết thắng',
+    title: 'Xem trước dữ liệu Import - HC Quân kỳ quyết thắng',
     confirmImport: apiClient.confirmMilitaryFlagImport,
-    successMessage: count => `Import thành công ${count} bản ghi HC Quân kỳ Quyết thắng.`,
+    successMessage: count => `Import thành công ${count} bản ghi HC Quân kỳ quyết thắng.`,
     confirmButtonLabel: 'quân nhân',
     validColumns,
     invalidColumns,

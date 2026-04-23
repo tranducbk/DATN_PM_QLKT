@@ -53,16 +53,16 @@ const personnelBaseSchema = wrapItemsSchema(
 /** Danh hiệu hằng năm (Annual Reward) */
 export const confirmImportAnnualReward: Joi.ObjectSchema = personnelWithDanhHieuSchema;
 
-/** Huy chương Chiến sĩ Vẻ vang (HCCSVV) */
+/** Huy chương Chiến sĩ vẻ vang (HCCSVV) */
 export const confirmImportHccsvv: Joi.ObjectSchema = personnelWithDanhHieuSchema;
 
 /** Huân chương Bảo vệ Tổ quốc (Contribution Award / HCBVTQ) */
 export const confirmImportContributionAward: Joi.ObjectSchema = personnelWithDanhHieuSchema;
 
-/** Huy chương Quân kỳ Quyết thắng (Military Flag) */
+/** Huy chương Quân kỳ quyết thắng (Military Flag) */
 export const confirmImportMilitaryFlag: Joi.ObjectSchema = personnelBaseSchema;
 
-/** Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN (Commemorative Medal) */
+/** Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN (Commemorative Medal) */
 export const confirmImportCommemorativeMedal: Joi.ObjectSchema = personnelBaseSchema;
 
 /**

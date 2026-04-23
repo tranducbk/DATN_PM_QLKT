@@ -13,7 +13,7 @@ const roboto = Roboto({
 });
 
 export const metadata: Metadata = {
-  title: 'Quản lý Khen thưởng',
+  title: 'Quản lý khen thưởng',
   description: 'Hệ thống quản lý khen thưởng',
   icons: {
     icon: '/logo-msa.png',

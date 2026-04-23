@@ -487,39 +487,16 @@ class AwardBulkService {
         }
       } else if (type === PROPOSAL_TYPES.HC_QKQT) {
         await prisma.$transaction(async prismaTx => {
-          for (const item of titleData) {
-            const quanNhan = personnelMap.get(item.personnel_id);
-
-            if (!quanNhan) {
-              throw new NotFoundError(`Quân nhân (ID: ${item.personnel_id})`);
-            }
-
-            const thoiGian = this.calculateThoiGian(quanNhan);
-
-            await prismaTx.huanChuongQuanKyQuyetThang.upsert({
-              where: { quan_nhan_id: item.personnel_id },
-              create: {
-                quan_nhan_id: item.personnel_id,
-                nam: nam,
-                cap_bac: item.cap_bac || null,
-                chuc_vu: item.chuc_vu || null,
-                ghi_chu: ghiChu || null,
-                so_quyet_dinh: item.so_quyet_dinh || null,
-                thoi_gian: thoiGian,
-              },
-              update: {
-                nam: nam,
-                cap_bac: item.cap_bac || null,
-                chuc_vu: item.chuc_vu || null,
-                ghi_chu: ghiChu || null,
-                so_quyet_dinh: item.so_quyet_dinh || null,
-                thoi_gian: thoiGian,
-              },
-            });
-
-            importedCount++;
-            affectedPersonnelIds.add(item.personnel_id);
-          }
+          const result = await this.bulkUpsertMedalAward(
+            prismaTx.huanChuongQuanKyQuyetThang,
+            (personnelId) => ({ quan_nhan_id: personnelId }),
+            titleData,
+            personnelMap,
+            nam,
+            ghiChu
+          );
+          importedCount += result.importedCount;
+          result.affectedPersonnelIds.forEach(id => affectedPersonnelIds.add(id));
         });
       } else if (type === PROPOSAL_TYPES.NIEN_HAN) {
         const allowedDanhHieus: string[] = Object.values(DANH_HIEU_HCCSVV);
@@ -537,81 +514,32 @@ class AwardBulkService {
         }
 
         await prisma.$transaction(async prismaTx => {
-          for (const item of titleData) {
-            const quanNhan = personnelMap.get(item.personnel_id);
-
-            if (!quanNhan) {
-              throw new NotFoundError(`Quân nhân (ID: ${item.personnel_id})`);
-            }
-
-            const thoiGian = this.calculateThoiGian(quanNhan);
-
-            await prismaTx.khenThuongHCCSVV.upsert({
-              where: {
-                quan_nhan_id_danh_hieu: {
-                  quan_nhan_id: item.personnel_id,
-                  danh_hieu: item.danh_hieu,
-                },
-              },
-              create: {
-                quan_nhan_id: item.personnel_id,
-                danh_hieu: item.danh_hieu,
-                nam: nam,
-                cap_bac: item.cap_bac || null,
-                chuc_vu: item.chuc_vu || null,
-                ghi_chu: ghiChu || null,
-                so_quyet_dinh: item.so_quyet_dinh || null,
-                thoi_gian: thoiGian,
-              },
-              update: {
-                nam: nam,
-                cap_bac: item.cap_bac || null,
-                chuc_vu: item.chuc_vu || null,
-                ghi_chu: ghiChu || null,
-                so_quyet_dinh: item.so_quyet_dinh || null,
-                thoi_gian: thoiGian,
-              },
-            });
-
-            importedCount++;
-            affectedPersonnelIds.add(item.personnel_id);
-          }
+          const result = await this.bulkUpsertMedalAward(
+            prismaTx.khenThuongHCCSVV,
+            (personnelId, danhHieu) => ({
+              quan_nhan_id_danh_hieu: { quan_nhan_id: personnelId, danh_hieu: danhHieu },
+            }),
+            titleData,
+            personnelMap,
+            nam,
+            ghiChu,
+            (item) => ({ danh_hieu: item.danh_hieu })
+          );
+          importedCount += result.importedCount;
+          result.affectedPersonnelIds.forEach(id => affectedPersonnelIds.add(id));
         });
       } else if (type === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN) {
         await prisma.$transaction(async prismaTx => {
-          for (const item of titleData) {
-            const quanNhan = personnelMap.get(item.personnel_id);
-
-            if (!quanNhan) {
-              throw new NotFoundError(`Quân nhân (ID: ${item.personnel_id})`);
-            }
-
-            const thoiGian = this.calculateThoiGian(quanNhan);
-
-            await prismaTx.kyNiemChuongVSNXDQDNDVN.upsert({
-              where: { quan_nhan_id: item.personnel_id },
-              create: {
-                quan_nhan_id: item.personnel_id,
-                nam: nam,
-                cap_bac: item.cap_bac || null,
-                chuc_vu: item.chuc_vu || null,
-                ghi_chu: ghiChu || null,
-                so_quyet_dinh: item.so_quyet_dinh || null,
-                thoi_gian: thoiGian,
-              },
-              update: {
-                nam: nam,
-                cap_bac: item.cap_bac || null,
-                chuc_vu: item.chuc_vu || null,
-                ghi_chu: ghiChu || null,
-                so_quyet_dinh: item.so_quyet_dinh || null,
-                thoi_gian: thoiGian,
-              },
-            });
-
-            importedCount++;
-            affectedPersonnelIds.add(item.personnel_id);
-          }
+          const result = await this.bulkUpsertMedalAward(
+            prismaTx.kyNiemChuongVSNXDQDNDVN,
+            (personnelId) => ({ quan_nhan_id: personnelId }),
+            titleData,
+            personnelMap,
+            nam,
+            ghiChu
+          );
+          importedCount += result.importedCount;
+          result.affectedPersonnelIds.forEach(id => affectedPersonnelIds.add(id));
         });
       } else if (type === PROPOSAL_TYPES.CONG_HIEN) {
         const allowedDanhHieus: string[] = Object.values(DANH_HIEU_HCBVTQ);
@@ -853,6 +781,54 @@ class AwardBulkService {
         affectedPersonnelIds: Array.from(affectedPersonnelIds),
       },
     };
+  }
+
+  /** Upsert medal awards in a single transaction for one-time or keyed-by-danh-hieu medal types. */
+  private async bulkUpsertMedalAward(
+    model: { upsert: (args: any) => Promise<any> },
+    buildWhere: (personnelId: string, danhHieu: string) => Record<string, any>,
+    titleData: TitleDataItem[],
+    personnelMap: Map<string, QuanNhan>,
+    nam: number,
+    ghiChu: string | null | undefined,
+    extraDataBuilder?: (item: TitleDataItem) => Record<string, any>
+  ): Promise<{ importedCount: number; affectedPersonnelIds: Set<string> }> {
+    const importedCount = { value: 0 };
+    const affectedPersonnelIds = new Set<string>();
+
+    for (const item of titleData) {
+      const quanNhan = personnelMap.get(item.personnel_id);
+
+      if (!quanNhan) {
+        throw new NotFoundError(`Quân nhân (ID: ${item.personnel_id})`);
+      }
+
+      const thoiGian = this.calculateThoiGian(quanNhan);
+      const where = buildWhere(item.personnel_id, item.danh_hieu);
+      const extraData = extraDataBuilder ? extraDataBuilder(item) : {};
+
+      const baseData = {
+        quan_nhan_id: item.personnel_id,
+        nam,
+        cap_bac: item.cap_bac || null,
+        chuc_vu: item.chuc_vu || null,
+        ghi_chu: ghiChu || null,
+        so_quyet_dinh: item.so_quyet_dinh || null,
+        thoi_gian: thoiGian,
+        ...extraData,
+      };
+
+      await model.upsert({
+        where,
+        create: baseData,
+        update: baseData,
+      });
+
+      importedCount.value++;
+      affectedPersonnelIds.add(item.personnel_id);
+    }
+
+    return { importedCount: importedCount.value, affectedPersonnelIds };
   }
 
   calculateThoiGian(quanNhan: QuanNhan): Record<string, any> | null {

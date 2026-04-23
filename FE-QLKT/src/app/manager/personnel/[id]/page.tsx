@@ -328,7 +328,7 @@ export default function ManagerPersonnelDetailPage() {
               {/* Huy chương chiến sĩ Vẻ vang */}
               <div className="mb-6">
                 <Text strong className="text-base">
-                  Huy chương Chiến sĩ Vẻ vang
+                  Huy chương Chiến sĩ vẻ vang
                 </Text>
                 <Divider className="my-3" />
                 <Row gutter={[16, 16]}>
@@ -412,7 +412,9 @@ export default function ManagerPersonnelDetailPage() {
                       hasReceived={!!commemorationMedals?.hasReceived}
                       receivedAt={getReceivedMonthYearText(commemorationMedals)}
                       yearsRequired={
-                        personnel.gioi_tinh === 'NAM' ? KNC_YEARS_REQUIRED_NAM : KNC_YEARS_REQUIRED_NU
+                        personnel.gioi_tinh === 'NAM'
+                          ? KNC_YEARS_REQUIRED_NAM
+                          : KNC_YEARS_REQUIRED_NU
                       }
                       yearsOfService={calculateYearsOfService(personnel.ngay_nhap_ngu)}
                       receivedStatusTag={getStatusTag(ELIGIBILITY_STATUS.DA_NHAN)}
@@ -496,9 +498,7 @@ export default function ManagerPersonnelDetailPage() {
                       title="Hạng Nhì"
                       value={0}
                       valueStyle={{ fontSize: '14px' }}
-                      valueRender={() =>
-                        getStatusTag(contributionProfile?.hcbvtq_hang_nhi_status)
-                      }
+                      valueRender={() => getStatusTag(contributionProfile?.hcbvtq_hang_nhi_status)}
                     />
                   </Card>
                 </Col>
@@ -508,9 +508,7 @@ export default function ManagerPersonnelDetailPage() {
                       title="Hạng Nhất"
                       value={0}
                       valueStyle={{ fontSize: '14px' }}
-                      valueRender={() =>
-                        getStatusTag(contributionProfile?.hcbvtq_hang_nhat_status)
-                      }
+                      valueRender={() => getStatusTag(contributionProfile?.hcbvtq_hang_nhat_status)}
                     />
                   </Card>
                 </Col>
@@ -718,7 +716,7 @@ export default function ManagerPersonnelDetailPage() {
                   <div className="flex flex-col items-center gap-2">
                     <ExperimentOutlined style={{ fontSize: '32px' }} />
                     <Text strong style={{ fontSize: '16px' }}>
-                      Thành tích NCKH
+                      Thành tích Nghiên cứu khoa học
                     </Text>
                   </div>
                 </Card>
@@ -768,7 +766,7 @@ export default function ManagerPersonnelDetailPage() {
                   <div className="flex flex-col items-center gap-2">
                     <TrophyOutlined style={{ fontSize: '32px' }} />
                     <Text strong style={{ fontSize: '16px' }}>
-                      Huy chương Quân kỳ Quyết thắng
+                      Huy chương Quân kỳ quyết thắng
                     </Text>
                   </div>
                 </Card>

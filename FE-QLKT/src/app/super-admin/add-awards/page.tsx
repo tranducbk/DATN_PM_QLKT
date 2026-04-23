@@ -67,6 +67,7 @@ export default function SuperAdminAddAwardsPage() {
 
   // Step 1: Select Personnel
   const [nam, setNam] = useState(new Date().getFullYear());
+  const [thang, setThang] = useState(new Date().getMonth() + 1);
   const [selectedPersonnelIds, setSelectedPersonnelIds] = useState<string[]>([]);
 
   // Step 2: Set Titles
@@ -290,6 +291,8 @@ export default function SuperAdminAddAwardsPage() {
             onPersonnelChange={setSelectedPersonnelIds}
             nam={nam}
             onNamChange={setNam}
+            thang={thang}
+            onThangChange={setThang}
             onTitleDataChange={setTitleData}
             onNextStep={() => setCurrentStep(prev => prev + 1)}
             bypassEligibility={true}
@@ -304,6 +307,7 @@ export default function SuperAdminAddAwardsPage() {
             titleData={titleData}
             onTitleDataChange={setTitleData}
             nam={nam}
+            thang={thang}
             bypassEligibility={true}
           />
         );

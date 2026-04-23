@@ -11,14 +11,14 @@ export interface DuplicateCheckResult {
 }
 
 /**
- * Cross-checks persisted awards vs in-flight `bang_de_xuat` rows for the same person/year/title.
- * @param personnelId - `quan_nhan.id`
+ * Checks duplicate awards in stored records and pending proposals.
+ * @param personnelId - Personnel ID
  * @param nam - Fiscal or calendar year depending on proposal type
- * @param danhHieu - Concrete `danh_hieu` / medal code under test
- * @param proposalType - Branch selector (`PROPOSAL_TYPES.*`)
+ * @param danhHieu - Award code being checked
+ * @param proposalType - Proposal type
  * @param status - When set, narrows pending lookups; defaults to pending-only paths inside
  * @param excludeProposalId - Exclude current record during edit flows
- * @returns `exists: true` with operator-facing `message` when a hard conflict is found
+ * @returns exists=true with conflict message when a duplicate is found
  */
 export async function checkDuplicateAward(
   personnelId: string,
@@ -140,7 +140,7 @@ export async function checkDuplicateAward(
       if (actualAward) {
         return {
           exists: true,
-          message: `Quân nhân đã có Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN (năm ${actualAward.nam || nam})`,
+          message: `Quân nhân đã có Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN (năm ${actualAward.nam || nam})`,
         };
       }
 
@@ -161,7 +161,7 @@ export async function checkDuplicateAward(
       if (pendingExisting) {
         return {
           exists: true,
-          message: `Quân nhân đang có đề xuất Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN chờ duyệt (năm ${pendingExisting.nam})`,
+          message: `Quân nhân đang có đề xuất Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN chờ duyệt (năm ${pendingExisting.nam})`,
         };
       }
     }
@@ -209,12 +209,12 @@ export async function checkDuplicateAward(
 }
 
 /**
- * Unit annual flow: pending JSON collisions first, then reconciles against `danhHieuDonViHangNam`.
- * @param donViId - Same key stored on proposal rows (`don_vi_id` in JSON payloads)
+ * Unit annual flow: checks pending proposals first, then stored unit awards.
+ * @param donViId - Unit ID used in proposal data
  * @param nam - Award year under review
  * @param danhHieu - ĐVQT/ĐVTT/BK… code being proposed
- * @param proposalType - Must be `DON_VI_HANG_NAM` for the implemented branch
- * @returns `exists: true` when another open proposal or stored unit award blocks the insert
+ * @param proposalType - Expected unit annual proposal type
+ * @returns exists=true when a pending proposal or stored award blocks insert
  */
 export async function checkDuplicateUnitAward(
   donViId: string,

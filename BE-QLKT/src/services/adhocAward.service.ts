@@ -81,7 +81,84 @@ function parseAttachedFiles(json: Prisma.JsonValue | null): AttachedFileInfo[] {
   return json as unknown as AttachedFileInfo[];
 }
 
+interface ManagerUnitFilterCoQuan {
+  type: 'coQuan';
+  coQuanId: string;
+  dvttIds?: string[];
+}
+
+interface ManagerUnitFilterDvtt {
+  type: 'dvtt';
+  dvttId: string;
+}
+
+type ManagerUnitFilter = ManagerUnitFilterCoQuan | ManagerUnitFilterDvtt;
+
 class AdhocAwardService {
+  /** Fetch all MANAGER accounts belonging to a given CQDV. */
+  private async fetchManagersByCoQuanId(coQuanId: string) {
+    return prisma.taiKhoan.findMany({
+      where: {
+        role: ROLES.MANAGER,
+        QuanNhan: { co_quan_don_vi_id: coQuanId },
+      },
+      select: { id: true, role: true },
+    });
+  }
+
+  /** Build and merge unit-scoped OR filter for manager visibility into `where`. */
+  private applyManagerUnitFilter(
+    where: Record<string, unknown>,
+    hoTen: string | undefined,
+    filter: ManagerUnitFilter
+  ): void {
+    const unitFilter: Record<string, unknown>[] = [];
+
+    if (filter.type === 'coQuan') {
+      const dvttCondition =
+        filter.dvttIds && filter.dvttIds.length > 0
+          ? [{ don_vi_truc_thuoc_id: { in: filter.dvttIds } }]
+          : [];
+
+      unitFilter.push({
+        doi_tuong: ADHOC_TYPE.CA_NHAN,
+        QuanNhan: {
+          ...(hoTen && { ho_ten: { contains: hoTen, mode: 'insensitive' } }),
+          OR: [{ co_quan_don_vi_id: filter.coQuanId }, ...dvttCondition],
+        },
+      });
+
+      unitFilter.push({
+        doi_tuong: ADHOC_TYPE.TAP_THE,
+        OR: [{ co_quan_don_vi_id: filter.coQuanId }, ...dvttCondition],
+      });
+    } else {
+      unitFilter.push({
+        doi_tuong: ADHOC_TYPE.CA_NHAN,
+        QuanNhan: {
+          ...(hoTen && { ho_ten: { contains: hoTen, mode: 'insensitive' } }),
+          don_vi_truc_thuoc_id: filter.dvttId,
+        },
+      });
+
+      unitFilter.push({
+        doi_tuong: ADHOC_TYPE.TAP_THE,
+        don_vi_truc_thuoc_id: filter.dvttId,
+      });
+    }
+
+    if (where.OR) {
+      where.AND = [{ OR: where.OR }, { OR: unitFilter }];
+      delete where.OR;
+    } else {
+      where.OR = unitFilter;
+    }
+
+    if (hoTen) {
+      delete where.QuanNhan;
+    }
+  }
+
   async createAdhocAward({
     adminId,
     type,
@@ -96,126 +173,122 @@ class AdhocAwardService {
     decisionNumber,
     attachedFiles,
   }: CreateAdhocAwardParams): Promise<KhenThuongDotXuat> {
-    try {
-      const admin = await prisma.taiKhoan.findUnique({
-        where: { id: adminId },
+    const admin = await prisma.taiKhoan.findUnique({
+      where: { id: adminId },
+    });
+
+    if (!admin || admin.role !== ROLES.ADMIN) {
+      throw new ForbiddenError('Chỉ Admin mới có quyền tạo khen thưởng đột xuất');
+    }
+
+    if (type === ADHOC_TYPE.CA_NHAN) {
+      const personnel = await prisma.quanNhan.findUnique({
+        where: { id: personnelId },
       });
 
-      if (!admin || admin.role !== ROLES.ADMIN) {
-        throw new ForbiddenError('Chỉ Admin mới có quyền tạo khen thưởng đột xuất');
+      if (!personnel) {
+        throw new NotFoundError('Quân nhân');
       }
+    }
 
-      if (type === ADHOC_TYPE.CA_NHAN) {
-        const personnel = await prisma.quanNhan.findUnique({
-          where: { id: personnelId },
+    if (type === ADHOC_TYPE.TAP_THE) {
+      if (unitType === 'CO_QUAN_DON_VI') {
+        const unit = await prisma.coQuanDonVi.findUnique({
+          where: { id: unitId },
         });
 
-        if (!personnel) {
-          throw new NotFoundError('Quân nhân');
+        if (!unit) {
+          throw new NotFoundError('Cơ quan đơn vị');
+        }
+      } else if (unitType === 'DON_VI_TRUC_THUOC') {
+        const unit = await prisma.donViTrucThuoc.findUnique({
+          where: { id: unitId },
+        });
+
+        if (!unit) {
+          throw new NotFoundError('Đơn vị trực thuộc');
         }
       }
-
-      if (type === ADHOC_TYPE.TAP_THE) {
-        if (unitType === 'CO_QUAN_DON_VI') {
-          const unit = await prisma.coQuanDonVi.findUnique({
-            where: { id: unitId },
-          });
-
-          if (!unit) {
-            throw new NotFoundError('Cơ quan đơn vị');
-          }
-        } else if (unitType === 'DON_VI_TRUC_THUOC') {
-          const unit = await prisma.donViTrucThuoc.findUnique({
-            where: { id: unitId },
-          });
-
-          if (!unit) {
-            throw new NotFoundError('Đơn vị trực thuộc');
-          }
-        }
-      }
-
-      const proposalsDir = path.join(__dirname, '..', '..', 'storage', 'proposals');
-      await fs.mkdir(proposalsDir, { recursive: true });
-
-      const uploadedAttachedFiles: AttachedFileInfo[] = [];
-
-      if (attachedFiles && attachedFiles.length > 0) {
-        const attachedDir = path.join(__dirname, '..', '..', 'storage', 'proposals');
-        await fs.mkdir(attachedDir, { recursive: true });
-
-        for (const file of attachedFiles) {
-          const timestamp = Date.now();
-          let decodedName = file.originalname;
-          try {
-            decodedName = Buffer.from(file.originalname, 'latin1').toString('utf8');
-          } catch (error) {
-   console.error('Failed to decode uploaded attachment name during adhoc-award create:', error);
-            decodedName = file.originalname;
-          }
-          const sanitizedName = decodedName.replace(/[<>:"/\\|?*]/g, '_');
-          const uniqueName = `${timestamp}_${sanitizedName}`;
-          const filePath = path.join(attachedDir, uniqueName);
-
-          await fs.writeFile(filePath, file.buffer);
-
-          uploadedAttachedFiles.push({
-            filename: uniqueName,
-            originalName: decodedName,
-            path: `storage/proposals/${uniqueName}`,
-            size: file.size,
-            mimeType: file.mimetype,
-            uploadedAt: new Date().toISOString(),
-          });
-        }
-      }
-
-      const adhocAward = await prisma.khenThuongDotXuat.create({
-        data: {
-          loai: 'KHEN_THUONG_DOT_XUAT',
-          doi_tuong: type,
-          ...(type === ADHOC_TYPE.CA_NHAN && personnelId && { quan_nhan_id: personnelId }),
-          ...(type === ADHOC_TYPE.TAP_THE && unitType === 'CO_QUAN_DON_VI' && { co_quan_don_vi_id: unitId }),
-          ...(type === ADHOC_TYPE.TAP_THE &&
-            unitType === 'DON_VI_TRUC_THUOC' && { don_vi_truc_thuoc_id: unitId }),
-          hinh_thuc_khen_thuong: awardForm,
-          nam: year,
-          cap_bac: rank || null,
-          chuc_vu: position || null,
-          ghi_chu: note || null,
-          so_quyet_dinh: decisionNumber || null,
-          files_dinh_kem:
-            uploadedAttachedFiles.length > 0
-              ? (JSON.parse(JSON.stringify(uploadedAttachedFiles)) as Prisma.InputJsonValue)
-              : null,
-        },
-        include: {
-          QuanNhan: {
-            include: {
-              CoQuanDonVi: true,
-              DonViTrucThuoc: true,
-              ChucVu: true,
-            },
-          },
-          CoQuanDonVi: true,
-          DonViTrucThuoc: {
-            include: {
-              CoQuanDonVi: true,
-            },
-          },
-        },
-      });
-
-      try {
-        await this.notifyOnAdhocAwardCreated(adhocAward, admin.username);
-      } catch (e) {
-        console.error('notifyOnAdhocAwardCreated failed:', e);
-      }
-
-      return adhocAward;
-    } catch (error) {
-      throw error;
     }
+
+    const proposalsDir = path.join(__dirname, '..', '..', 'storage', 'proposals');
+    await fs.mkdir(proposalsDir, { recursive: true });
+
+    const uploadedAttachedFiles: AttachedFileInfo[] = [];
+
+    if (attachedFiles && attachedFiles.length > 0) {
+      const attachedDir = path.join(__dirname, '..', '..', 'storage', 'proposals');
+      await fs.mkdir(attachedDir, { recursive: true });
+
+      for (const file of attachedFiles) {
+        const timestamp = Date.now();
+        let decodedName = file.originalname;
+        try {
+          decodedName = Buffer.from(file.originalname, 'latin1').toString('utf8');
+        } catch (error) {
+          console.error('Failed to decode uploaded attachment name during adhoc-award create:', error);
+          decodedName = file.originalname;
+        }
+        const sanitizedName = decodedName.replace(/[<>:"/\\|?*]/g, '_');
+        const uniqueName = `${timestamp}_${sanitizedName}`;
+        const filePath = path.join(attachedDir, uniqueName);
+
+        await fs.writeFile(filePath, file.buffer);
+
+        uploadedAttachedFiles.push({
+          filename: uniqueName,
+          originalName: decodedName,
+          path: `storage/proposals/${uniqueName}`,
+          size: file.size,
+          mimeType: file.mimetype,
+          uploadedAt: new Date().toISOString(),
+        });
+      }
+    }
+
+    const adhocAward = await prisma.khenThuongDotXuat.create({
+      data: {
+        loai: 'KHEN_THUONG_DOT_XUAT',
+        doi_tuong: type,
+        ...(type === ADHOC_TYPE.CA_NHAN && personnelId && { quan_nhan_id: personnelId }),
+        ...(type === ADHOC_TYPE.TAP_THE && unitType === 'CO_QUAN_DON_VI' && { co_quan_don_vi_id: unitId }),
+        ...(type === ADHOC_TYPE.TAP_THE &&
+          unitType === 'DON_VI_TRUC_THUOC' && { don_vi_truc_thuoc_id: unitId }),
+        hinh_thuc_khen_thuong: awardForm,
+        nam: year,
+        cap_bac: rank || null,
+        chuc_vu: position || null,
+        ghi_chu: note || null,
+        so_quyet_dinh: decisionNumber || null,
+        files_dinh_kem:
+          uploadedAttachedFiles.length > 0
+            ? (JSON.parse(JSON.stringify(uploadedAttachedFiles)) as Prisma.InputJsonValue)
+            : null,
+      },
+      include: {
+        QuanNhan: {
+          include: {
+            CoQuanDonVi: true,
+            DonViTrucThuoc: true,
+            ChucVu: true,
+          },
+        },
+        CoQuanDonVi: true,
+        DonViTrucThuoc: {
+          include: {
+            CoQuanDonVi: true,
+          },
+        },
+      },
+    });
+
+    try {
+      await this.notifyOnAdhocAwardCreated(adhocAward, admin.username);
+    } catch (e) {
+      console.error('notifyOnAdhocAwardCreated failed:', e);
+    }
+
+    return adhocAward;
   }
 
   async notifyOnAdhocAwardCreated(
@@ -235,13 +308,7 @@ class AdhocAwardService {
       const managerCqdvId = cqdvId || (dvtt?.co_quan_don_vi_id as string | null);
 
       if (managerCqdvId) {
-        const managers = await prisma.taiKhoan.findMany({
-          where: {
-            role: ROLES.MANAGER,
-            QuanNhan: { co_quan_don_vi_id: managerCqdvId },
-          },
-          select: { id: true, role: true },
-        });
+        const managers = await this.fetchManagersByCoQuanId(managerCqdvId);
 
         managers.forEach(manager => {
           notifications.push({
@@ -282,13 +349,7 @@ class AdhocAwardService {
       if (adhocAward.CoQuanDonVi) {
         const coQuanDonVi = adhocAward.CoQuanDonVi as Record<string, unknown>;
         unitName = coQuanDonVi.ten_don_vi as string;
-        const managers = await prisma.taiKhoan.findMany({
-          where: {
-            role: ROLES.MANAGER,
-            QuanNhan: { co_quan_don_vi_id: adhocAward.co_quan_don_vi_id as string },
-          },
-          select: { id: true, role: true },
-        });
+        const managers = await this.fetchManagersByCoQuanId(adhocAward.co_quan_don_vi_id as string);
 
         managers.forEach(manager => {
           notifications.push({
@@ -309,13 +370,9 @@ class AdhocAwardService {
           ?.ten_don_vi as string | undefined;
 
         if (donViTrucThuoc.co_quan_don_vi_id) {
-          const parentManagers = await prisma.taiKhoan.findMany({
-            where: {
-              role: ROLES.MANAGER,
-              QuanNhan: { co_quan_don_vi_id: donViTrucThuoc.co_quan_don_vi_id as string },
-            },
-            select: { id: true, role: true },
-          });
+          const parentManagers = await this.fetchManagersByCoQuanId(
+            donViTrucThuoc.co_quan_don_vi_id as string
+          );
 
           parentManagers.forEach(manager => {
             notifications.push({
@@ -358,142 +415,54 @@ class AdhocAwardService {
     data: KhenThuongDotXuat[];
     pagination: { page: number; limit: number; total: number; totalPages: number };
   }> {
-    try {
-      const skip = (page - 1) * limit;
+    const skip = (page - 1) * limit;
 
-      const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = {};
 
-      if (type) {
-        where.doi_tuong = type;
-      }
-
-      if (year) {
-        where.nam = year;
-      }
-
-      if (personnelId) {
-        where.quan_nhan_id = personnelId;
-      }
-
-      if (unitId) {
-        where.OR = [{ co_quan_don_vi_id: unitId }, { don_vi_truc_thuoc_id: unitId }];
-      }
-
-      if (ho_ten) {
-        where.QuanNhan = {
-          ho_ten: { contains: ho_ten, mode: 'insensitive' },
-        };
-      }
-
-      if (managerCoQuanId) {
-        const unitFilter: Record<string, unknown>[] = [];
-
-        unitFilter.push({
-          doi_tuong: ADHOC_TYPE.CA_NHAN,
-          QuanNhan: {
-            ...(ho_ten && { ho_ten: { contains: ho_ten, mode: 'insensitive' } }),
-            OR: [
-              { co_quan_don_vi_id: managerCoQuanId },
-              ...(managerDonViTrucThuocIds && managerDonViTrucThuocIds.length > 0
-                ? [{ don_vi_truc_thuoc_id: { in: managerDonViTrucThuocIds } }]
-                : []),
-            ],
-          },
-        });
-
-        unitFilter.push({
-          doi_tuong: ADHOC_TYPE.TAP_THE,
-          OR: [
-            { co_quan_don_vi_id: managerCoQuanId },
-            ...(managerDonViTrucThuocIds && managerDonViTrucThuocIds.length > 0
-              ? [{ don_vi_truc_thuoc_id: { in: managerDonViTrucThuocIds } }]
-              : []),
-          ],
-        });
-
-        if (where.OR) {
-          where.AND = [{ OR: where.OR }, { OR: unitFilter }];
-          delete where.OR;
-        } else {
-          where.OR = unitFilter;
-        }
-
-        if (ho_ten) {
-          delete where.QuanNhan;
-        }
-      } else if (managerDonViTrucThuocId) {
-        const unitFilter: Record<string, unknown>[] = [];
-
-        unitFilter.push({
-          doi_tuong: ADHOC_TYPE.CA_NHAN,
-          QuanNhan: {
-            ...(ho_ten && { ho_ten: { contains: ho_ten, mode: 'insensitive' } }),
-            don_vi_truc_thuoc_id: managerDonViTrucThuocId,
-          },
-        });
-
-        unitFilter.push({
-          doi_tuong: ADHOC_TYPE.TAP_THE,
-          don_vi_truc_thuoc_id: managerDonViTrucThuocId,
-        });
-
-        if (where.OR) {
-          where.AND = [{ OR: where.OR }, { OR: unitFilter }];
-          delete where.OR;
-        } else {
-          where.OR = unitFilter;
-        }
-
-        if (ho_ten) {
-          delete where.QuanNhan;
-        }
-      }
-
-      const [total, data] = await Promise.all([
-        prisma.khenThuongDotXuat.count({ where: where as Prisma.KhenThuongDotXuatWhereInput }),
-        prisma.khenThuongDotXuat.findMany({
-          where: where as Prisma.KhenThuongDotXuatWhereInput,
-          skip,
-          take: limit,
-          orderBy: {
-            createdAt: 'desc',
-          },
-          include: {
-            QuanNhan: {
-              include: {
-                CoQuanDonVi: true,
-                DonViTrucThuoc: true,
-                ChucVu: true,
-              },
-            },
-            CoQuanDonVi: true,
-            DonViTrucThuoc: {
-              include: {
-                CoQuanDonVi: true,
-              },
-            },
-          },
-        }),
-      ]);
-
-      return {
-        data,
-        pagination: {
-          page,
-          limit,
-          total,
-          totalPages: Math.ceil(total / limit),
-        },
-      };
-    } catch (error) {
-      throw error;
+    if (type) {
+      where.doi_tuong = type;
     }
-  }
 
-  async getAdhocAwardById(id: string): Promise<KhenThuongDotXuat> {
-    try {
-      const adhocAward = await prisma.khenThuongDotXuat.findUnique({
-        where: { id },
+    if (year) {
+      where.nam = year;
+    }
+
+    if (personnelId) {
+      where.quan_nhan_id = personnelId;
+    }
+
+    if (unitId) {
+      where.OR = [{ co_quan_don_vi_id: unitId }, { don_vi_truc_thuoc_id: unitId }];
+    }
+
+    if (ho_ten) {
+      where.QuanNhan = {
+        ho_ten: { contains: ho_ten, mode: 'insensitive' },
+      };
+    }
+
+    if (managerCoQuanId) {
+      this.applyManagerUnitFilter(where, ho_ten, {
+        type: 'coQuan',
+        coQuanId: managerCoQuanId,
+        dvttIds: managerDonViTrucThuocIds,
+      });
+    } else if (managerDonViTrucThuocId) {
+      this.applyManagerUnitFilter(where, ho_ten, {
+        type: 'dvtt',
+        dvttId: managerDonViTrucThuocId,
+      });
+    }
+
+    const [total, data] = await Promise.all([
+      prisma.khenThuongDotXuat.count({ where: where as Prisma.KhenThuongDotXuatWhereInput }),
+      prisma.khenThuongDotXuat.findMany({
+        where: where as Prisma.KhenThuongDotXuatWhereInput,
+        skip,
+        take: limit,
+        orderBy: {
+          createdAt: 'desc',
+        },
         include: {
           QuanNhan: {
             include: {
@@ -509,16 +478,45 @@ class AdhocAwardService {
             },
           },
         },
-      });
+      }),
+    ]);
 
-      if (!adhocAward) {
-        throw new NotFoundError('Khen thưởng đột xuất');
-      }
+    return {
+      data,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
 
-      return adhocAward;
-    } catch (error) {
-      throw error;
+  async getAdhocAwardById(id: string): Promise<KhenThuongDotXuat> {
+    const adhocAward = await prisma.khenThuongDotXuat.findUnique({
+      where: { id },
+      include: {
+        QuanNhan: {
+          include: {
+            CoQuanDonVi: true,
+            DonViTrucThuoc: true,
+            ChucVu: true,
+          },
+        },
+        CoQuanDonVi: true,
+        DonViTrucThuoc: {
+          include: {
+            CoQuanDonVi: true,
+          },
+        },
+      },
+    });
+
+    if (!adhocAward) {
+      throw new NotFoundError('Khen thưởng đột xuất');
     }
+
+    return adhocAward;
   }
 
   async updateAdhocAward({
@@ -533,114 +531,109 @@ class AdhocAwardService {
     attachedFiles,
     removeAttachedFileIndexes,
   }: UpdateAdhocAwardParams): Promise<KhenThuongDotXuat> {
-    try {
-      const admin = await prisma.taiKhoan.findUnique({
-        where: { id: adminId },
-      });
+    const admin = await prisma.taiKhoan.findUnique({
+      where: { id: adminId },
+    });
 
-      if (!admin || admin.role !== ROLES.ADMIN) {
-        throw new ForbiddenError('Chỉ Admin mới có quyền cập nhật khen thưởng đột xuất');
-      }
+    if (!admin || admin.role !== ROLES.ADMIN) {
+      throw new ForbiddenError('Chỉ Admin mới có quyền cập nhật khen thưởng đột xuất');
+    }
 
-      const existing = await prisma.khenThuongDotXuat.findUnique({
-        where: { id },
-      });
+    const existing = await prisma.khenThuongDotXuat.findUnique({
+      where: { id },
+    });
 
-      if (!existing) {
-        throw new NotFoundError('Khen thưởng đột xuất');
-      }
+    if (!existing) {
+      throw new NotFoundError('Khen thưởng đột xuất');
+    }
 
-      let existingAttachedFiles: AttachedFileInfo[] = parseAttachedFiles(existing.files_dinh_kem);
+    let existingAttachedFiles: AttachedFileInfo[] = parseAttachedFiles(existing.files_dinh_kem);
 
-      if (removeAttachedFileIndexes && removeAttachedFileIndexes.length > 0) {
-        const filesToRemove = [...removeAttachedFileIndexes]
-          .sort((a, b) => b - a)
-          .filter(index => index >= 0 && index < existingAttachedFiles.length);
+    if (removeAttachedFileIndexes && removeAttachedFileIndexes.length > 0) {
+      const filesToRemove = [...removeAttachedFileIndexes]
+        .sort((a, b) => b - a)
+        .filter(index => index >= 0 && index < existingAttachedFiles.length);
 
-        for (const index of filesToRemove) {
-          const fileToRemove = existingAttachedFiles[index];
-          try {
-            const fullPath = path.join(__dirname, '..', '..', fileToRemove.path);
-            await fs.unlink(fullPath);
-          } catch (error) {
-   console.error('Failed to delete removed attachment during adhoc-award update:', error);
-            // ignore file deletion errors
-          }
-          existingAttachedFiles.splice(index, 1);
+      for (const index of filesToRemove) {
+        const fileToRemove = existingAttachedFiles[index];
+        try {
+          const fullPath = path.join(__dirname, '..', '..', fileToRemove.path);
+          await fs.unlink(fullPath);
+        } catch (error) {
+          console.error('Failed to delete removed attachment during adhoc-award update:', error);
         }
+        existingAttachedFiles.splice(index, 1);
       }
+    }
 
-      if (attachedFiles && attachedFiles.length > 0) {
-        const proposalsDir = path.join(__dirname, '..', '..', 'storage', 'proposals');
-        await fs.mkdir(proposalsDir, { recursive: true });
+    if (attachedFiles && attachedFiles.length > 0) {
+      const proposalsDir = path.join(__dirname, '..', '..', 'storage', 'proposals');
+      await fs.mkdir(proposalsDir, { recursive: true });
 
-        for (const file of attachedFiles) {
-          const timestamp = Date.now();
-          let decodedName = file.originalname;
-          try {
-            decodedName = Buffer.from(file.originalname, 'latin1').toString('utf8');
-          } catch (error) {
-   console.error('Failed to decode uploaded attachment name during adhoc-award update:', error);
-            decodedName = file.originalname;
-          }
-          const sanitizedName = decodedName.replace(/[<>:"/\\|?*]/g, '_');
-          const uniqueName = `${timestamp}_${sanitizedName}`;
-          const filePath = path.join(proposalsDir, uniqueName);
-
-          await fs.writeFile(filePath, file.buffer);
-
-          existingAttachedFiles.push({
-            filename: uniqueName,
-            originalName: decodedName,
-            path: `storage/proposals/${uniqueName}`,
-            size: file.size,
-            mimeType: file.mimetype,
-            uploadedAt: new Date().toISOString(),
-          });
+      for (const file of attachedFiles) {
+        const timestamp = Date.now();
+        let decodedName = file.originalname;
+        try {
+          decodedName = Buffer.from(file.originalname, 'latin1').toString('utf8');
+        } catch (error) {
+          console.error('Failed to decode uploaded attachment name during adhoc-award update:', error);
+          decodedName = file.originalname;
         }
+        const sanitizedName = decodedName.replace(/[<>:"/\\|?*]/g, '_');
+        const uniqueName = `${timestamp}_${sanitizedName}`;
+        const filePath = path.join(proposalsDir, uniqueName);
+
+        await fs.writeFile(filePath, file.buffer);
+
+        existingAttachedFiles.push({
+          filename: uniqueName,
+          originalName: decodedName,
+          path: `storage/proposals/${uniqueName}`,
+          size: file.size,
+          mimeType: file.mimetype,
+          uploadedAt: new Date().toISOString(),
+        });
       }
+    }
 
-      const updateData: Record<string, unknown> = {};
+    const updateData: Record<string, unknown> = {};
 
-      if (awardForm !== undefined) updateData.hinh_thuc_khen_thuong = awardForm;
-      if (year !== undefined) updateData.nam = year;
-      if (rank !== undefined) updateData.cap_bac = rank;
-      if (position !== undefined) updateData.chuc_vu = position;
-      if (note !== undefined) updateData.ghi_chu = note;
-      if (decisionNumber !== undefined) updateData.so_quyet_dinh = decisionNumber;
+    if (awardForm !== undefined) updateData.hinh_thuc_khen_thuong = awardForm;
+    if (year !== undefined) updateData.nam = year;
+    if (rank !== undefined) updateData.cap_bac = rank;
+    if (position !== undefined) updateData.chuc_vu = position;
+    if (note !== undefined) updateData.ghi_chu = note;
+    if (decisionNumber !== undefined) updateData.so_quyet_dinh = decisionNumber;
 
-      updateData.files_dinh_kem = existingAttachedFiles.length > 0 ? existingAttachedFiles : null;
+    updateData.files_dinh_kem = existingAttachedFiles.length > 0 ? existingAttachedFiles : null;
 
-      const updated = await prisma.khenThuongDotXuat.update({
-        where: { id },
-        data: updateData as Prisma.KhenThuongDotXuatUpdateInput,
-        include: {
-          QuanNhan: {
-            include: {
-              CoQuanDonVi: true,
-              DonViTrucThuoc: true,
-              ChucVu: true,
-            },
-          },
-          CoQuanDonVi: true,
-          DonViTrucThuoc: {
-            include: {
-              CoQuanDonVi: true,
-            },
+    const updated = await prisma.khenThuongDotXuat.update({
+      where: { id },
+      data: updateData as Prisma.KhenThuongDotXuatUpdateInput,
+      include: {
+        QuanNhan: {
+          include: {
+            CoQuanDonVi: true,
+            DonViTrucThuoc: true,
+            ChucVu: true,
           },
         },
-      });
+        CoQuanDonVi: true,
+        DonViTrucThuoc: {
+          include: {
+            CoQuanDonVi: true,
+          },
+        },
+      },
+    });
 
-      try {
-        await this.notifyOnAdhocAwardUpdated(updated, admin.username);
-      } catch (e) {
-        console.error('notifyOnAdhocAwardUpdated failed:', e);
-      }
-
-      return updated;
-    } catch (error) {
-      throw error;
+    try {
+      await this.notifyOnAdhocAwardUpdated(updated, admin.username);
+    } catch (e) {
+      console.error('notifyOnAdhocAwardUpdated failed:', e);
     }
+
+    return updated;
   }
 
   async notifyOnAdhocAwardUpdated(
@@ -659,13 +652,7 @@ class AdhocAwardService {
       const managerCqdvId = cqdvId || (dvtt?.co_quan_don_vi_id as string | null);
 
       if (managerCqdvId) {
-        const managers = await prisma.taiKhoan.findMany({
-          where: {
-            role: ROLES.MANAGER,
-            QuanNhan: { co_quan_don_vi_id: managerCqdvId },
-          },
-          select: { id: true, role: true },
-        });
+        const managers = await this.fetchManagersByCoQuanId(managerCqdvId);
 
         managers.forEach(manager => {
           notifications.push({
@@ -704,13 +691,7 @@ class AdhocAwardService {
       if (adhocAward.CoQuanDonVi) {
         const coQuanDonVi = adhocAward.CoQuanDonVi as Record<string, unknown>;
         unitName = coQuanDonVi.ten_don_vi as string;
-        const managers = await prisma.taiKhoan.findMany({
-          where: {
-            role: ROLES.MANAGER,
-            QuanNhan: { co_quan_don_vi_id: adhocAward.co_quan_don_vi_id as string },
-          },
-          select: { id: true, role: true },
-        });
+        const managers = await this.fetchManagersByCoQuanId(adhocAward.co_quan_don_vi_id as string);
 
         managers.forEach(manager => {
           notifications.push({
@@ -731,13 +712,9 @@ class AdhocAwardService {
           ?.ten_don_vi as string | undefined;
 
         if (donViTrucThuoc.co_quan_don_vi_id) {
-          const parentManagers = await prisma.taiKhoan.findMany({
-            where: {
-              role: ROLES.MANAGER,
-              QuanNhan: { co_quan_don_vi_id: donViTrucThuoc.co_quan_don_vi_id as string },
-            },
-            select: { id: true, role: true },
-          });
+          const parentManagers = await this.fetchManagersByCoQuanId(
+            donViTrucThuoc.co_quan_don_vi_id as string
+          );
 
           parentManagers.forEach(manager => {
             notifications.push({
@@ -766,63 +743,57 @@ class AdhocAwardService {
   }
 
   async deleteAdhocAward(id: string, adminId: string): Promise<{ success: boolean }> {
-    try {
-      const admin = await prisma.taiKhoan.findUnique({
-        where: { id: adminId },
-      });
+    const admin = await prisma.taiKhoan.findUnique({
+      where: { id: adminId },
+    });
 
-      const adhocAward = await prisma.khenThuongDotXuat.findUnique({
-        where: { id },
-        include: {
-          QuanNhan: {
-            include: {
-              CoQuanDonVi: true,
-              DonViTrucThuoc: true,
-            },
-          },
-          CoQuanDonVi: true,
-          DonViTrucThuoc: {
-            include: {
-              CoQuanDonVi: true,
-            },
+    const adhocAward = await prisma.khenThuongDotXuat.findUnique({
+      where: { id },
+      include: {
+        QuanNhan: {
+          include: {
+            CoQuanDonVi: true,
+            DonViTrucThuoc: true,
           },
         },
-      });
+        CoQuanDonVi: true,
+        DonViTrucThuoc: {
+          include: {
+            CoQuanDonVi: true,
+          },
+        },
+      },
+    });
 
-      if (!adhocAward) {
-        throw new NotFoundError('Khen thưởng đột xuất');
-      }
-
-      const awardInfo = { ...adhocAward };
-
-      const attachedFilesRaw = adhocAward.files_dinh_kem as unknown as AttachedFileInfo[] | null;
-      const attachedFilesList = attachedFilesRaw || [];
-
-      for (const file of attachedFilesList) {
-        try {
-          const fullPath = path.join(__dirname, '..', '..', file.path);
-          await fs.unlink(fullPath);
-        } catch (error) {
-   console.error('Failed to delete attachment file during adhoc-award delete:', error);
-          // ignore
-        }
-      }
-
-      await prisma.khenThuongDotXuat.delete({
-        where: { id },
-      });
-
-      try {
-        await this.notifyOnAdhocAwardDeleted(awardInfo, admin?.username || 'Admin');
-      } catch (error) {
-   console.error('Failed to send adhoc-award deletion notifications:', error);
-        // ignore
-      }
-
-      return { success: true };
-    } catch (error) {
-      throw error;
+    if (!adhocAward) {
+      throw new NotFoundError('Khen thưởng đột xuất');
     }
+
+    const awardInfo = { ...adhocAward };
+
+    const attachedFilesRaw = adhocAward.files_dinh_kem as unknown as AttachedFileInfo[] | null;
+    const attachedFilesList = attachedFilesRaw || [];
+
+    for (const file of attachedFilesList) {
+      try {
+        const fullPath = path.join(__dirname, '..', '..', file.path);
+        await fs.unlink(fullPath);
+      } catch (error) {
+        console.error('Failed to delete attachment file during adhoc-award delete:', error);
+      }
+    }
+
+    await prisma.khenThuongDotXuat.delete({
+      where: { id },
+    });
+
+    try {
+      await this.notifyOnAdhocAwardDeleted(awardInfo, admin?.username || 'Admin');
+    } catch (error) {
+      console.error('Failed to send adhoc-award deletion notifications:', error);
+    }
+
+    return { success: true };
   }
 
   async notifyOnAdhocAwardDeleted(
@@ -841,13 +812,7 @@ class AdhocAwardService {
       const managerCqdvId = cqdvId || (dvtt?.co_quan_don_vi_id as string | null);
 
       if (managerCqdvId) {
-        const managers = await prisma.taiKhoan.findMany({
-          where: {
-            role: ROLES.MANAGER,
-            QuanNhan: { co_quan_don_vi_id: managerCqdvId },
-          },
-          select: { id: true, role: true },
-        });
+        const managers = await this.fetchManagersByCoQuanId(managerCqdvId);
 
         managers.forEach(manager => {
           notifications.push({
@@ -886,13 +851,7 @@ class AdhocAwardService {
       if (adhocAward.CoQuanDonVi) {
         const coQuanDonVi = adhocAward.CoQuanDonVi as Record<string, unknown>;
         unitName = coQuanDonVi.ten_don_vi as string;
-        const managers = await prisma.taiKhoan.findMany({
-          where: {
-            role: ROLES.MANAGER,
-            QuanNhan: { co_quan_don_vi_id: adhocAward.co_quan_don_vi_id as string },
-          },
-          select: { id: true, role: true },
-        });
+        const managers = await this.fetchManagersByCoQuanId(adhocAward.co_quan_don_vi_id as string);
 
         managers.forEach(manager => {
           notifications.push({
@@ -913,13 +872,9 @@ class AdhocAwardService {
           ?.ten_don_vi as string | undefined;
 
         if (donViTrucThuoc.co_quan_don_vi_id) {
-          const parentManagers = await prisma.taiKhoan.findMany({
-            where: {
-              role: ROLES.MANAGER,
-              QuanNhan: { co_quan_don_vi_id: donViTrucThuoc.co_quan_don_vi_id as string },
-            },
-            select: { id: true, role: true },
-          });
+          const parentManagers = await this.fetchManagersByCoQuanId(
+            donViTrucThuoc.co_quan_don_vi_id as string
+          );
 
           parentManagers.forEach(manager => {
             notifications.push({
@@ -948,87 +903,79 @@ class AdhocAwardService {
   }
 
   async getAdhocAwardsByPersonnel(personnelId: string): Promise<KhenThuongDotXuat[]> {
-    try {
-      const personnel = await prisma.quanNhan.findUnique({
-        where: { id: personnelId },
-      });
+    const personnel = await prisma.quanNhan.findUnique({
+      where: { id: personnelId },
+    });
 
-      if (!personnel) {
-        throw new NotFoundError('Quân nhân');
-      }
+    if (!personnel) {
+      throw new NotFoundError('Quân nhân');
+    }
 
-      const adhocAwards = await prisma.khenThuongDotXuat.findMany({
-        where: {
-          doi_tuong: ADHOC_TYPE.CA_NHAN,
-          quan_nhan_id: personnelId,
-        },
-        orderBy: {
-          nam: 'desc',
-        },
-        include: {
-          QuanNhan: {
-            include: {
-              CoQuanDonVi: true,
-              DonViTrucThuoc: true,
-              ChucVu: true,
-            },
+    const adhocAwards = await prisma.khenThuongDotXuat.findMany({
+      where: {
+        doi_tuong: ADHOC_TYPE.CA_NHAN,
+        quan_nhan_id: personnelId,
+      },
+      orderBy: {
+        nam: 'desc',
+      },
+      include: {
+        QuanNhan: {
+          include: {
+            CoQuanDonVi: true,
+            DonViTrucThuoc: true,
+            ChucVu: true,
           },
         },
-      });
+      },
+    });
 
-      return adhocAwards;
-    } catch (error) {
-      throw error;
-    }
+    return adhocAwards;
   }
 
   async getAdhocAwardsByUnit(unitId: string, unitType: string): Promise<KhenThuongDotXuat[]> {
-    try {
-      const where: Prisma.KhenThuongDotXuatWhereInput = {
-        doi_tuong: ADHOC_TYPE.TAP_THE,
-      };
+    const where: Prisma.KhenThuongDotXuatWhereInput = {
+      doi_tuong: ADHOC_TYPE.TAP_THE,
+    };
 
-      if (unitType === 'CO_QUAN_DON_VI') {
-        where.co_quan_don_vi_id = unitId;
+    if (unitType === 'CO_QUAN_DON_VI') {
+      where.co_quan_don_vi_id = unitId;
 
-        const unit = await prisma.coQuanDonVi.findUnique({
-          where: { id: unitId },
-        });
-
-        if (!unit) {
-          throw new NotFoundError('Cơ quan đơn vị');
-        }
-      } else if (unitType === 'DON_VI_TRUC_THUOC') {
-        where.don_vi_truc_thuoc_id = unitId;
-
-        const unit = await prisma.donViTrucThuoc.findUnique({
-          where: { id: unitId },
-        });
-
-        if (!unit) {
-          throw new NotFoundError('Đơn vị trực thuộc');
-        }
-      }
-
-      const adhocAwards = await prisma.khenThuongDotXuat.findMany({
-        where,
-        orderBy: {
-          nam: 'desc',
-        },
-        include: {
-          CoQuanDonVi: true,
-          DonViTrucThuoc: {
-            include: {
-              CoQuanDonVi: true,
-            },
-          },
-        },
+      const unit = await prisma.coQuanDonVi.findUnique({
+        where: { id: unitId },
       });
 
-      return adhocAwards;
-    } catch (error) {
-      throw error;
+      if (!unit) {
+        throw new NotFoundError('Cơ quan đơn vị');
+      }
+    } else if (unitType === 'DON_VI_TRUC_THUOC') {
+      where.don_vi_truc_thuoc_id = unitId;
+
+      const unit = await prisma.donViTrucThuoc.findUnique({
+        where: { id: unitId },
+      });
+
+      if (!unit) {
+        throw new NotFoundError('Đơn vị trực thuộc');
+      }
     }
+
+    const adhocAwards = await prisma.khenThuongDotXuat.findMany({
+      where,
+      orderBy: {
+        nam: 'desc',
+      },
+      include: {
+        CoQuanDonVi: true,
+        DonViTrucThuoc: {
+          include: {
+            CoQuanDonVi: true,
+          },
+        },
+      },
+    });
+
+    return adhocAwards;
   }
 }
 

@@ -244,13 +244,13 @@ export default function ManagerUnitsPage() {
               ),
             },
             {
-              title: 'Quản lý Đơn vị',
+              title: 'Quản lý đơn vị',
             },
           ]}
         />
 
         <div className="mt-4">
-          <Title level={2}>Quản lý Đơn vị</Title>
+          <Title level={2}>Quản lý đơn vị</Title>
           <Text type="secondary">
             Quản lý và xem chi tiết các đơn vị trực thuộc cùng tất cả khen thưởng
           </Text>

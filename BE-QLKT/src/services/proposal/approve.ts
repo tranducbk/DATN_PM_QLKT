@@ -1,18 +1,27 @@
 import { prisma } from '../../models';
 import { promises as fs } from 'fs';
-import { calculateServiceMonths } from '../../helpers/serviceYearsHelper';
+import { calculateServiceMonths, formatServiceDuration } from '../../helpers/serviceYearsHelper';
 import path from 'path';
 import type { BangDeXuat, TaiKhoan } from '../../generated/prisma';
-import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
+import {
+  PROPOSAL_TYPES,
+  requiresProposalMonth,
+  type ProposalType,
+} from '../../constants/proposalTypes.constants';
 import profileService from '../profile.service';
 import unitAnnualAwardService from '../unitAnnualAward.service';
 import {
+  CONG_HIEN_HE_SO_GROUPS,
+  CONG_HIEN_HE_SO_RANGES,
+  type CongHienHeSoGroup,
   getDanhHieuName,
   DANH_HIEU_CA_NHAN_HANG_NAM,
+  DANH_HIEU_CA_NHAN_CO_BAN,
   DANH_HIEU_CA_NHAN_KHAC,
   DANH_HIEU_DON_VI_HANG_NAM,
   DANH_HIEU_HCCSVV,
   DANH_HIEU_HCBVTQ,
+  HCBVTQ_RANK_KEYS,
   DANH_HIEU_NCKH,
   HCQKQT_YEARS_REQUIRED,
   KNC_YEARS_REQUIRED_NAM,
@@ -24,21 +33,29 @@ import { NotFoundError, ValidationError } from '../../middlewares/errorHandler';
 import { sanitizeFilename } from './helpers';
 import { checkDuplicateAward } from './validation';
 import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
+import { ELIGIBILITY_STATUS } from '../../constants/eligibilityStatus.constants';
 import { writeSystemLog } from '../../helpers/systemLogHelper';
 import { GENDER } from '../../constants/gender.constants';
 
-/** Normalizes `Json?` columns (`data_*` on `bang_de_xuat`) into an array of objects. */
+const MIXED_CA_NHAN_HANG_NAM_ERROR =
+  'Không thể đề xuất CSTDCS/CSTT cùng với BKBQP/CSTDTQ/BKTTCP trong một đề xuất. ' +
+  'Vui lòng tách thành các đề xuất riêng: một đề xuất cho CSTDCS/CSTT, và một đề xuất riêng cho BKBQP/CSTDTQ/BKTTCP.';
+const MIXED_DON_VI_HANG_NAM_ERROR =
+  'Không thể đề xuất ĐVQT/ĐVTT cùng với BKBQP/BKTTCP trong một đề xuất. ' +
+  'Vui lòng tách thành các đề xuất riêng: một đề xuất cho ĐVQT/ĐVTT, và một đề xuất riêng cho BKBQP/BKTTCP.';
+
+/** Converts optional proposal JSON fields to an object array. */
 function asJsonObjectArray(value: unknown): any[] {
   return Array.isArray(value) ? value : [];
 }
 
-/** `bang_de_xuat.id` — VarChar(30), cuid */
+/** Proposal ID (bang_de_xuat.id). */
 type ProposalId = BangDeXuat['id'];
-/** `tai_khoan.id` — VarChar(30), cuid (approver/admin). */
+/** Admin account ID (tai_khoan.id). */
 type AdminAccountId = TaiKhoan['id'];
 
 /**
- * Edited payload mapped to `BangDeXuat` JSON columns (`data_*`).
+ * Edited payload mapped to BangDeXuat JSON columns.
  * Elements are business JSON objects and are not strictly typed at DB level.
  */
 export type EditedProposalPayload = {
@@ -48,18 +65,26 @@ export type EditedProposalPayload = {
   data_cong_hien?: any[] | null;
 };
 
+type DecisionInputMap = Record<string, string | null | undefined>;
+type UploadedDecisionFile = {
+  buffer: Buffer;
+  originalname: string;
+};
+
+const PROPOSAL_APPROVE_TX_TIMEOUT_MS = 60000;
+
 /**
  * Approves a proposal and imports its data into the main tables.
- * @param proposalId - `bang_de_xuat.id`
- * @param editedData - Edited JSON arrays for `BangDeXuat.data_*`
- * @param adminId - Approver account id (`tai_khoan.id`)
+ * @param proposalId - Proposal ID
+ * @param editedData - Edited JSON arrays for proposal data fields
+ * @param adminId - Approver account ID
  */
 async function approveProposal(
   proposalId: ProposalId,
   editedData: EditedProposalPayload,
   adminId: AdminAccountId,
-  decisions: Record<string, any> = {},
-  pdfFiles: Record<string, any> = {},
+  decisions: DecisionInputMap = {},
+  pdfFiles: Record<string, UploadedDecisionFile | undefined> = {},
   ghiChu: string | null = null
 ) {
   try {
@@ -93,6 +118,15 @@ async function approveProposal(
       throw new ValidationError('Đề xuất này đã được phê duyệt trước đó');
     }
 
+    if (
+      requiresProposalMonth(proposal.loai_de_xuat as ProposalType) &&
+      (proposal.thang == null || proposal.thang < 1 || proposal.thang > 12)
+    ) {
+      throw new ValidationError(
+        'Đề xuất thiếu tháng. HCCSVV/HCQKQT/KNC bắt buộc có tháng (1-12) trước khi phê duyệt.'
+      );
+    }
+
     // Import source: prefer edited payload, fall back to stored JSON.
     const danhHieuData = asJsonObjectArray(editedData.data_danh_hieu ?? proposal.data_danh_hieu);
     const thanhTichData = asJsonObjectArray(editedData.data_thanh_tich ?? proposal.data_thanh_tich);
@@ -123,6 +157,20 @@ async function approveProposal(
       danhHieuData &&
       danhHieuData.length > 0
     ) {
+      const selectedDanhHieu = danhHieuData.map(item => item.danh_hieu).filter(Boolean);
+      const hasChinh = selectedDanhHieu.some(danhHieu => DANH_HIEU_CA_NHAN_CO_BAN.has(danhHieu));
+      const hasNhomChuoi = selectedDanhHieu.some(danhHieu =>
+        [
+          DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP,
+          DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ,
+          DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP,
+        ].includes(danhHieu)
+      );
+
+      if (hasChinh && hasNhomChuoi) {
+        throw new ValidationError(MIXED_CA_NHAN_HANG_NAM_ERROR);
+      }
+
       const validItems = danhHieuData.filter(item => item.personnel_id && item.danh_hieu);
       const errors = await Promise.all(
         validItems.flatMap(item => {
@@ -147,6 +195,24 @@ async function approveProposal(
         })
       );
       errors.filter(Boolean).forEach(err => duplicateErrors.push(err));
+    }
+
+    if (
+      proposalType === PROPOSAL_TYPES.DON_VI_HANG_NAM &&
+      danhHieuData &&
+      danhHieuData.length > 0
+    ) {
+      const selectedDanhHieu = danhHieuData.map(item => item.danh_hieu).filter(Boolean);
+      const hasDanhHieuDonVi = selectedDanhHieu.some(danhHieu =>
+        [DANH_HIEU_DON_VI_HANG_NAM.DVQT, DANH_HIEU_DON_VI_HANG_NAM.DVTT].includes(danhHieu)
+      );
+      const hasBangKhenDonVi = selectedDanhHieu.some(danhHieu =>
+        [DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP, DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP].includes(danhHieu)
+      );
+
+      if (hasDanhHieuDonVi && hasBangKhenDonVi) {
+        throw new ValidationError(MIXED_DON_VI_HANG_NAM_ERROR);
+      }
     }
 
     // Tenure-based awards (NIEN_HAN / HC_QKQT / KNC_VSNXD_QDNDVN).
@@ -186,6 +252,9 @@ async function approveProposal(
       );
     }
 
+    // Reference date for eligibility calculations
+    const refDate = new Date(proposal.nam, proposal.thang as number, 0);
+
     // Re-validate eligibility rules before approving.
     // HC_QKQT: requires >= 25 years of service.
     if (proposalType === PROPOSAL_TYPES.HC_QKQT && nienHanData && nienHanData.length > 0) {
@@ -210,14 +279,13 @@ async function approveProposal(
         }
 
         const ngayNhapNgu = new Date(quanNhan.ngay_nhap_ngu);
-        const ngayKetThuc = quanNhan.ngay_xuat_ngu ? new Date(quanNhan.ngay_xuat_ngu) : new Date();
+        const ngayKetThuc = quanNhan.ngay_xuat_ngu ? new Date(quanNhan.ngay_xuat_ngu) : refDate;
 
         const months = calculateServiceMonths(ngayNhapNgu, ngayKetThuc);
-        const years = Math.floor(months / 12);
 
-        if (years < HCQKQT_YEARS_REQUIRED) {
+        if (months < HCQKQT_YEARS_REQUIRED * 12) {
           duplicateErrors.push(
-            `${quanNhan.ho_ten}: Chưa đủ ${HCQKQT_YEARS_REQUIRED} năm phục vụ để nhận HC QKQT (hiện tại: ${years} năm)`
+            `${quanNhan.ho_ten}: Chưa đủ ${HCQKQT_YEARS_REQUIRED} năm phục vụ để nhận HC QKQT (hiện ${formatServiceDuration(months)})`
           );
         }
       }
@@ -260,15 +328,14 @@ async function approveProposal(
         }
 
         const ngayNhapNgu = new Date(quanNhan.ngay_nhap_ngu);
-        const ngayKetThuc = quanNhan.ngay_xuat_ngu ? new Date(quanNhan.ngay_xuat_ngu) : new Date();
+        const ngayKetThuc = quanNhan.ngay_xuat_ngu ? new Date(quanNhan.ngay_xuat_ngu) : refDate;
 
         const months = calculateServiceMonths(ngayNhapNgu, ngayKetThuc);
-        const years = Math.floor(months / 12);
         const requiredYears = quanNhan.gioi_tinh === GENDER.FEMALE ? KNC_YEARS_REQUIRED_NU : KNC_YEARS_REQUIRED_NAM;
 
-        if (years < requiredYears) {
+        if (months < requiredYears * 12) {
           duplicateErrors.push(
-            `${quanNhan.ho_ten}: Chưa đủ ${requiredYears} năm phục vụ để nhận KNC VSNXD QĐNDVN (hiện tại: ${years} năm)`
+            `${quanNhan.ho_ten}: Chưa đủ ${requiredYears} năm phục vụ để nhận KNC VSNXD QĐNDVN (hiện ${formatServiceDuration(months)})`
           );
         }
       }
@@ -334,21 +401,16 @@ async function approveProposal(
         }
       }
 
-      const getTotalMonthsByGroup = (personnelId, group) => {
+      const getTotalMonthsByGroup = (personnelId, group: CongHienHeSoGroup) => {
         const histories = positionHistoriesMap[personnelId] || [];
         let totalMonths = 0;
 
         histories.forEach(history => {
           const heSo = Number(history.he_so_chuc_vu) || 0;
-          let belongsToGroup = false;
-
-          if (group === '0.7') {
-            belongsToGroup = heSo >= 0.7 && heSo < 0.8;
-          } else if (group === '0.8') {
-            belongsToGroup = heSo >= 0.8 && heSo < 0.9;
-          } else if (group === '0.9-1.0') {
-            belongsToGroup = heSo >= 0.9 && heSo <= 1.0;
-          }
+          const range = CONG_HIEN_HE_SO_RANGES[group];
+          const belongsToGroup = range
+            ? heSo >= range.min && (range.includeMax ? heSo <= range.max : heSo < range.max)
+            : false;
 
           if (belongsToGroup && history.so_thang !== null && history.so_thang !== undefined) {
             totalMonths += Number(history.so_thang);
@@ -363,17 +425,23 @@ async function approveProposal(
         return gioiTinh === GENDER.FEMALE ? femaleRequiredMonths : baseRequiredMonths;
       };
 
-      const checkEligibleForRank = (personnelId, rank) => {
-        const months0_9_1_0 = getTotalMonthsByGroup(personnelId, '0.9-1.0');
-        const months0_8 = getTotalMonthsByGroup(personnelId, '0.8');
-        const months0_7 = getTotalMonthsByGroup(personnelId, '0.7');
+      const checkEligibleForRank = (
+        personnelId,
+        rank: (typeof HCBVTQ_RANK_KEYS)[keyof typeof HCBVTQ_RANK_KEYS]
+      ) => {
+        const months0_9_1_0 = getTotalMonthsByGroup(
+          personnelId,
+          CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10
+        );
+        const months0_8 = getTotalMonthsByGroup(personnelId, CONG_HIEN_HE_SO_GROUPS.LEVEL_08);
+        const months0_7 = getTotalMonthsByGroup(personnelId, CONG_HIEN_HE_SO_GROUPS.LEVEL_07);
         const requiredMonths = getRequiredMonths(personnelId);
 
-        if (rank === 'HANG_NHAT') {
+        if (rank === HCBVTQ_RANK_KEYS.HANG_NHAT) {
           return months0_9_1_0 >= requiredMonths;
-        } else if (rank === 'HANG_NHI') {
+        } else if (rank === HCBVTQ_RANK_KEYS.HANG_NHI) {
           return months0_8 + months0_9_1_0 >= requiredMonths;
-        } else if (rank === 'HANG_BA') {
+        } else if (rank === HCBVTQ_RANK_KEYS.HANG_BA) {
           return months0_7 + months0_8 + months0_9_1_0 >= requiredMonths;
         }
 
@@ -391,20 +459,23 @@ async function approveProposal(
         let rankName = '';
 
         if (item.danh_hieu === DANH_HIEU_HCBVTQ.HANG_NHAT) {
-          eligible = checkEligibleForRank(item.personnel_id, 'HANG_NHAT');
+          eligible = checkEligibleForRank(item.personnel_id, HCBVTQ_RANK_KEYS.HANG_NHAT);
           rankName = 'Hạng Nhất';
         } else if (item.danh_hieu === DANH_HIEU_HCBVTQ.HANG_NHI) {
-          eligible = checkEligibleForRank(item.personnel_id, 'HANG_NHI');
+          eligible = checkEligibleForRank(item.personnel_id, HCBVTQ_RANK_KEYS.HANG_NHI);
           rankName = 'Hạng Nhì';
         } else if (item.danh_hieu === DANH_HIEU_HCBVTQ.HANG_BA) {
-          eligible = checkEligibleForRank(item.personnel_id, 'HANG_BA');
+          eligible = checkEligibleForRank(item.personnel_id, HCBVTQ_RANK_KEYS.HANG_BA);
           rankName = 'Hạng Ba';
         }
 
         if (!eligible) {
-          const months0_9_1_0 = getTotalMonthsByGroup(item.personnel_id, '0.9-1.0');
-          const months0_8 = getTotalMonthsByGroup(item.personnel_id, '0.8');
-          const months0_7 = getTotalMonthsByGroup(item.personnel_id, '0.7');
+          const months0_9_1_0 = getTotalMonthsByGroup(
+            item.personnel_id,
+            CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10
+          );
+          const months0_8 = getTotalMonthsByGroup(item.personnel_id, CONG_HIEN_HE_SO_GROUPS.LEVEL_08);
+          const months0_7 = getTotalMonthsByGroup(item.personnel_id, CONG_HIEN_HE_SO_GROUPS.LEVEL_07);
 
           let totalMonths = 0;
           if (item.danh_hieu === DANH_HIEU_HCBVTQ.HANG_NHAT) {
@@ -607,6 +678,17 @@ async function approveProposal(
       },
     };
 
+    const updateData: Record<string, any> = {
+      status: PROPOSAL_STATUS.APPROVED,
+      nguoi_duyet_id: adminId,
+      ngay_duyet: new Date(),
+      data_danh_hieu: danhHieuData,
+      data_thanh_tich: thanhTichData,
+      data_nien_han: nienHanData,
+      data_cong_hien: congHienData,
+      ...(ghiChu ? { ghi_chu: ghiChu } : {}),
+    };
+
     // TRANSACTION: Wrap all database writes in a transaction
     await prisma.$transaction(
       async prismaTx => {
@@ -631,27 +713,18 @@ async function approveProposal(
 
               const decisionInfo = decisionMapping[item.danh_hieu] || {};
               const soQuyetDinh = item.so_quyet_dinh || decisionInfo.so_quyet_dinh || null;
-              const fileQuyetDinh = item.file_quyet_dinh || decisionInfo.file_pdf || null;
 
               const nhanBKBQP = item.nhan_bkbqp || false;
               const soQuyetDinhBKBQP =
                 item.so_quyet_dinh_bkbqp ||
                 (nhanBKBQP ? specialDecisionMapping.BKBQP?.so_quyet_dinh : null) ||
                 (nhanBKBQP ? item.so_quyet_dinh : null);
-              const fileQuyetDinhBKBQP =
-                item.file_quyet_dinh_bkbqp ||
-                (nhanBKBQP ? specialDecisionMapping.BKBQP?.file_pdf : null) ||
-                (nhanBKBQP ? item.file_quyet_dinh : null);
 
               const nhanBKTTCP = item.nhan_bkttcp || false;
               const soQuyetDinhBKTTCP =
                 item.so_quyet_dinh_bkttcp ||
-                (nhanBKTTCP ? specialDecisionMapping.CSTDTQ?.so_quyet_dinh : null) ||
+                (nhanBKTTCP ? specialDecisionMapping.BKTTCP?.so_quyet_dinh : null) ||
                 (nhanBKTTCP ? item.so_quyet_dinh : null);
-              const fileQuyetDinhBKTTCP =
-                item.file_quyet_dinh_bkttcp ||
-                (nhanBKTTCP ? specialDecisionMapping.CSTDTQ?.file_pdf : null) ||
-                (nhanBKTTCP ? item.file_quyet_dinh : null);
 
               const whereCondition = {
                 nam: namValue,
@@ -1004,99 +1077,58 @@ async function approveProposal(
                 let soQuyetDinh = item.so_quyet_dinh || danhHieuDecision.so_quyet_dinh || null;
                 let filePdf = item.file_quyet_dinh || danhHieuDecision.file_pdf || null;
 
-                const namLuu = proposal.nam;
-                const thangLuu = (item as any).thang || proposal.thang || 12;
-
-                let ngayNhan: Date | null = null;
-                if (item.ngay_nhan) {
-                  const parsed = new Date(item.ngay_nhan);
-                  if (!isNaN(parsed.getTime())) {
-                    if (parsed.getFullYear() !== namLuu) {
-                      errors.push(
-                        `Ngày nhận của quân nhân ${quanNhan.id} (${item.ngay_nhan}) không cùng năm với năm đề xuất (${namLuu})`
-                      );
-                      continue;
-                    }
-                    ngayNhan = new Date(Date.UTC(parsed.getFullYear(), parsed.getMonth(), parsed.getDate()));
-                  }
-                }
-                if (!ngayNhan) {
-                  errors.push(
-                    `Quân nhân ${quanNhan.ho_ten || quanNhan.id} thiếu ngày nhận huy chương`
-                  );
+                const nam = proposal.nam;
+                const thang = item.thang_nhan ?? (item as any).thang ?? proposal.thang;
+                if (!thang || thang < 1 || thang > 12) {
+                  errors.push(`Quân nhân ${quanNhan.ho_ten || quanNhan.id} thiếu tháng nhận huy chương`);
                   continue;
                 }
 
+                // Service time from enlistment to award month
                 let thoiGian = null;
                 if (quanNhan.ngay_nhap_ngu) {
-                  const ngayNhapNgu = new Date(quanNhan.ngay_nhap_ngu);
-                  const ngayKetThuc = quanNhan.ngay_xuat_ngu
+                  const endDate = quanNhan.ngay_xuat_ngu
                     ? new Date(quanNhan.ngay_xuat_ngu)
-                    : new Date();
-
-                  const months = calculateServiceMonths(ngayNhapNgu, ngayKetThuc);
-
-                  const years = Math.floor(months / 12);
-                  const remainingMonths = months % 12;
+                    : new Date(nam, thang, 0);
+                  const months = calculateServiceMonths(new Date(quanNhan.ngay_nhap_ngu), endDate);
                   thoiGian = {
                     total_months: months,
-                    years: years,
-                    months: remainingMonths,
-                    display:
-                      months === 0
-                        ? '-'
-                        : years > 0 && remainingMonths > 0
-                          ? `${years} năm ${remainingMonths} tháng`
-                          : years > 0
-                            ? `${years} năm`
-                            : `${remainingMonths} tháng`,
+                    years: Math.floor(months / 12),
+                    months: months % 12,
+                    display: formatServiceDuration(months),
                   };
                 }
 
+                const awardData = {
+                  nam,
+                  thang,
+                  cap_bac: item.cap_bac || null,
+                  chuc_vu: item.chuc_vu || null,
+                  ghi_chu: item.ghi_chu || null,
+                  so_quyet_dinh: soQuyetDinh,
+                  thoi_gian: thoiGian,
+                };
+
                 await prismaTx.khenThuongHCCSVV.upsert({
-                  where: {
-                    quan_nhan_id_danh_hieu: {
-                      quan_nhan_id: quanNhan.id,
-                      danh_hieu: item.danh_hieu,
-                    },
-                  },
-                  update: {
-                    nam: namLuu,
-                    thang: thangLuu,
-                    cap_bac: item.cap_bac || null,
-                    chuc_vu: item.chuc_vu || null,
-                    ghi_chu: item.ghi_chu || null,
-                    so_quyet_dinh: soQuyetDinh,
-                    thoi_gian: thoiGian,
-                  },
-                  create: {
-                    quan_nhan_id: quanNhan.id,
-                    danh_hieu: item.danh_hieu,
-                    nam: namLuu,
-                    thang: thangLuu,
-                    cap_bac: item.cap_bac || null,
-                    chuc_vu: item.chuc_vu || null,
-                    ghi_chu: item.ghi_chu || null,
-                    so_quyet_dinh: soQuyetDinh,
-                    thoi_gian: thoiGian,
-                  },
+                  where: { quan_nhan_id_danh_hieu: { quan_nhan_id: quanNhan.id, danh_hieu: item.danh_hieu } },
+                  update: awardData,
+                  create: { quan_nhan_id: quanNhan.id, danh_hieu: item.danh_hieu, ...awardData },
                 });
 
-                // Ghi đè ngày nhận vào HoSoNienHan theo hạng
-                const ngayNhanField =
-                  item.danh_hieu === DANH_HIEU_HCCSVV.HANG_BA
-                    ? 'hccsvv_hang_ba_ngay'
-                    : item.danh_hieu === DANH_HIEU_HCCSVV.HANG_NHI
-                      ? 'hccsvv_hang_nhi_ngay'
-                      : 'hccsvv_hang_nhat_ngay';
+                // Mark received in tenure profile + store first-of-month date
+                const ngayNhan = new Date(Date.UTC(nam, thang - 1, 1));
+                const PROFILE_FIELDS: Record<string, { status: string; ngay: string }> = {
+                  [DANH_HIEU_HCCSVV.HANG_BA]: { status: 'hccsvv_hang_ba_status', ngay: 'hccsvv_hang_ba_ngay' },
+                  [DANH_HIEU_HCCSVV.HANG_NHI]: { status: 'hccsvv_hang_nhi_status', ngay: 'hccsvv_hang_nhi_ngay' },
+                  [DANH_HIEU_HCCSVV.HANG_NHAT]: { status: 'hccsvv_hang_nhat_status', ngay: 'hccsvv_hang_nhat_ngay' },
+                };
+                const fields = PROFILE_FIELDS[item.danh_hieu];
+                const profileUpdate = { [fields.status]: ELIGIBILITY_STATUS.DA_NHAN, [fields.ngay]: ngayNhan };
 
                 await prismaTx.hoSoNienHan.upsert({
                   where: { quan_nhan_id: quanNhan.id },
-                  update: { [ngayNhanField]: ngayNhan },
-                  create: {
-                    quan_nhan_id: quanNhan.id,
-                    [ngayNhanField]: ngayNhan,
-                  },
+                  update: profileUpdate,
+                  create: { quan_nhan_id: quanNhan.id, ...profileUpdate },
                 });
 
                 importedNienHan++;
@@ -1140,32 +1172,21 @@ async function approveProposal(
               let filePdf = item.file_quyet_dinh || danhHieuDecision.file_pdf || null;
 
               const namLuu = proposal.nam;
-              const thangLuu = proposal.thang || 12;
+              const thangLuu = proposal.thang as number;
 
-              // Compute service time from enlistment date.
               let thoiGian = null;
               if (quanNhan.ngay_nhap_ngu) {
                 const ngayNhapNgu = new Date(quanNhan.ngay_nhap_ngu);
                 const ngayKetThuc = quanNhan.ngay_xuat_ngu
                   ? new Date(quanNhan.ngay_xuat_ngu)
-                  : new Date();
+                  : new Date(namLuu, thangLuu, 0);
 
                 const months = calculateServiceMonths(ngayNhapNgu, ngayKetThuc);
-
-                const years = Math.floor(months / 12);
-                const remainingMonths = months % 12;
                 thoiGian = {
                   total_months: months,
-                  years: years,
-                  months: remainingMonths,
-                  display:
-                    months === 0
-                      ? '-'
-                      : years > 0 && remainingMonths > 0
-                        ? `${years} năm ${remainingMonths} tháng`
-                        : years > 0
-                          ? `${years} năm`
-                          : `${remainingMonths} tháng`,
+                  years: Math.floor(months / 12),
+                  months: months % 12,
+                  display: formatServiceDuration(months),
                 };
               }
 
@@ -1240,31 +1261,21 @@ async function approveProposal(
               let filePdf = item.file_quyet_dinh || danhHieuDecision.file_pdf || null;
 
               const namLuu = proposal.nam;
-              const thangLuu = proposal.thang || 12;
+              const thangLuu = proposal.thang as number;
 
               let thoiGian = null;
               if (quanNhan.ngay_nhap_ngu) {
                 const ngayNhapNgu = new Date(quanNhan.ngay_nhap_ngu);
                 const ngayKetThuc = quanNhan.ngay_xuat_ngu
                   ? new Date(quanNhan.ngay_xuat_ngu)
-                  : new Date();
+                  : new Date(namLuu, thangLuu, 0);
 
                 const months = calculateServiceMonths(ngayNhapNgu, ngayKetThuc);
-
-                const years = Math.floor(months / 12);
-                const remainingMonths = months % 12;
                 thoiGian = {
                   total_months: months,
-                  years: years,
-                  months: remainingMonths,
-                  display:
-                    months === 0
-                      ? '-'
-                      : years > 0 && remainingMonths > 0
-                        ? `${years} năm ${remainingMonths} tháng`
-                        : years > 0
-                          ? `${years} năm`
-                          : `${remainingMonths} tháng`,
+                  years: Math.floor(months / 12),
+                  months: months % 12,
+                  display: formatServiceDuration(months),
                 };
               }
 
@@ -1551,7 +1562,7 @@ async function approveProposal(
               }
             }
           } catch (error) {
-            writeSystemLog({
+            void writeSystemLog({
               action: 'ERROR',
               resource: 'proposals',
               description: 'ProposalApprove.syncDecisionFiles failed',
@@ -1568,39 +1579,25 @@ async function approveProposal(
             } lỗi khi thêm khen thưởng:\n${errors.join('\n')}`
           );
         }
+
+        // Keep status update in the same transaction as imports.
+        const updateResult = await prismaTx.bangDeXuat.updateMany({
+          where: { id: proposalId, status: PROPOSAL_STATUS.PENDING },
+          data: updateData,
+        });
+
+        if (updateResult.count === 0) {
+          throw new ValidationError(
+            'Đề xuất đã bị thay đổi bởi người khác. Vui lòng tải lại trang và thử lại.'
+          );
+        }
       },
-      { timeout: 60000 }
+      { timeout: PROPOSAL_APPROVE_TX_TIMEOUT_MS }
     ); // End of transaction
-
-    // Update proposal status (imports succeeded if we got here).
-    const updateData: Record<string, any> = {
-      status: PROPOSAL_STATUS.APPROVED,
-      nguoi_duyet_id: adminId,
-      ngay_duyet: new Date(),
-      data_danh_hieu: danhHieuData,
-      data_thanh_tich: thanhTichData,
-      data_nien_han: nienHanData,
-      data_cong_hien: congHienData,
-      ...(ghiChu ? { ghi_chu: ghiChu } : {}),
-    };
-
-    // Atomic update: only approve when current status is still PENDING.
-    const updateResult = await prisma.bangDeXuat.updateMany({
-      where: { id: proposalId, status: PROPOSAL_STATUS.PENDING },
-      data: updateData,
-    });
-
-    if (updateResult.count === 0) {
-      throw new ValidationError(
-        'Đề xuất đã bị thay đổi bởi người khác. Vui lòng tải lại trang và thử lại.'
-      );
-    }
 
     // Recalculate profiles impacted by this approval.
     let recalculateSuccess = 0;
     let recalculateErrors = 0;
-
-    await new Promise(resolve => setTimeout(resolve, 100));
 
     if (proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
       const affectedUnits = new Set();

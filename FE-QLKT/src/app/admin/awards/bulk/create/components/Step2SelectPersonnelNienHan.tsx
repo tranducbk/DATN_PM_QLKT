@@ -65,6 +65,7 @@ interface Step2SelectPersonnelNienHanProps {
   onPersonnelChange: (ids: string[]) => void;
   nam: number;
   onNamChange: (nam: number) => void;
+  thang: number;
   onThangChange?: (thang: number) => void;
   onTitleDataChange?: (titleData: any[]) => void;
   onNextStep?: () => void;
@@ -83,6 +84,7 @@ export function Step2SelectPersonnelNienHan({
   onPersonnelChange,
   nam,
   onNamChange,
+  thang,
   onThangChange,
   onTitleDataChange,
   onNextStep,
@@ -99,7 +101,7 @@ export function Step2SelectPersonnelNienHan({
   const CURRENT_MONTH = NOW.getMonth() + 1;
 
   const [localNam, setLocalNam] = useState<number | null>(nam);
-  const [localThang, setLocalThang] = useState<number>(CURRENT_MONTH);
+  const [localThang, setLocalThang] = useState<number>(thang);
   const [serviceProfilesMap, setServiceProfilesMap] = useState<Record<string, any>>({});
 
   useEffect(() => {
@@ -109,6 +111,23 @@ export function Step2SelectPersonnelNienHan({
   useEffect(() => {
     setLocalNam(nam);
   }, [nam]);
+
+  useEffect(() => {
+    setLocalThang(thang);
+  }, [thang]);
+
+  // Auto-deselect personnel who become ineligible when year/month changes
+  useEffect(() => {
+    if (bypassEligibility || selectedPersonnelIds.length === 0 || personnel.length === 0) return;
+    const personnelById = new Map(personnel.map(p => [p.id, p] as const));
+    const stillEligible = selectedPersonnelIds.filter(id => {
+      const record = personnelById.get(id);
+      return record && canProposeNextRank(record);
+    });
+    if (stillEligible.length < selectedPersonnelIds.length) {
+      onPersonnelChange(stillEligible);
+    }
+  }, [bypassEligibility, selectedPersonnelIds, personnel, serviceProfilesMap, localNam, localThang, onPersonnelChange]);
 
   const fetchPersonnel = async () => {
     try {
@@ -246,8 +265,8 @@ export function Step2SelectPersonnelNienHan({
     eligibilityDateNhat.setFullYear(eligibilityDateNhat.getFullYear() + HCCSVV_YEARS_HANG_NHAT);
     const eligibilityYearNhat = eligibilityDateNhat.getFullYear();
 
-    const currentYear = localNam ?? new Date().getFullYear();
-    const refDate = new Date(currentYear, localThang - 1, 1);
+    const proposalYear = localNam ?? new Date().getFullYear();
+    const refDate = new Date(proposalYear, localThang, 0);
 
     const monthsUntil = (target: Date): number => {
       const total = (target.getFullYear() - refDate.getFullYear()) * 12 + (target.getMonth() - refDate.getMonth());
@@ -260,19 +279,19 @@ export function Step2SelectPersonnelNienHan({
 
     return {
       hangBa: {
-        eligible: currentYear >= eligibilityYearBa,
+        eligible: refDate >= eligibilityDateBa,
         yearsNeeded: Math.floor(remainingBa / 12),
         monthsNeeded: remainingBa % 12,
         totalYears,
       },
       hangNhi: {
-        eligible: currentYear >= eligibilityYearNhi,
+        eligible: refDate >= eligibilityDateNhi,
         yearsNeeded: Math.floor(remainingNhi / 12),
         monthsNeeded: remainingNhi % 12,
         totalYears,
       },
       hangNhat: {
-        eligible: currentYear >= eligibilityYearNhat,
+        eligible: refDate >= eligibilityDateNhat,
         yearsNeeded: Math.floor(remainingNhat / 12),
         monthsNeeded: remainingNhat % 12,
         totalYears,
@@ -848,17 +867,13 @@ export function Step2SelectPersonnelNienHan({
   return (
     <div>
       <Alert
-        message="Bước 2: Chọn quân nhân - Huy chương Chiến sĩ vẻ vang"
+        message="Bước 2: Lựa chọn quân nhân - Huy chương Chiến sĩ vẻ vang"
         description={
           <div>
-            <p>1. Nhập năm đề xuất khen thưởng</p>
-            <p>
-              2. Chọn các quân nhân cần đề xuất Huy chương Chiến sĩ vẻ vang từ danh sách dưới đây
-            </p>
-            <p>
-              3. Bảng hiển thị thông tin ngày nhập ngũ, xuất ngũ và tổng tháng để hỗ trợ lựa chọn
-            </p>
-            <p>4. Sau khi chọn xong, nhấn &quot;Tiếp tục&quot; để sang bước chọn danh hiệu</p>
+            <p>1. Chọn năm và tháng đề xuất để hệ thống đánh giá điều kiện chính xác theo mốc thời gian.</p>
+            <p>2. Lựa chọn quân nhân đủ điều kiện từ danh sách gợi ý.</p>
+            <p>3. Đối chiếu thông tin ngày nhập ngũ, ngày xuất ngũ và thời gian công tác trước khi chọn.</p>
+            <p>4. Hoàn tất lựa chọn, nhấn &quot;Tiếp tục&quot; để sang bước xác nhận danh hiệu.</p>
           </div>
         }
         type="info"
@@ -904,6 +919,9 @@ export function Step2SelectPersonnelNienHan({
 
               if (!isNaN(intValue)) {
                 setLocalNam(intValue);
+                if (intValue >= 1900 && intValue <= CURRENT_YEAR) {
+                  onNamChange(intValue);
+                }
                 if (intValue === CURRENT_YEAR && localThang > CURRENT_MONTH) {
                   setLocalThang(CURRENT_MONTH);
                   onThangChange?.(CURRENT_MONTH);

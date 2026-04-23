@@ -53,6 +53,7 @@ interface Step3SetTitlesNienHanProps {
   titleData: TitleData[];
   onTitleDataChange: (data: TitleData[]) => void;
   nam: number;
+  thang: number;
   bypassEligibility?: boolean;
 }
 
@@ -62,6 +63,7 @@ export function Step3SetTitlesNienHan({
   titleData,
   onTitleDataChange,
   nam,
+  thang,
   bypassEligibility = false,
 }: Step3SetTitlesNienHanProps) {
   const [loading, setLoading] = useState(false);
@@ -149,11 +151,12 @@ export function Step3SetTitlesNienHan({
 
     try {
       const startDate = typeof ngayNhapNgu === 'string' ? new Date(ngayNhapNgu) : ngayNhapNgu;
+      const refDate = new Date(nam, thang, 0);
       const endDate = ngayXuatNgu
         ? typeof ngayXuatNgu === 'string'
           ? new Date(ngayXuatNgu)
           : ngayXuatNgu
-        : new Date();
+        : refDate;
 
       if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
         return null;
@@ -180,30 +183,26 @@ export function Step3SetTitlesNienHan({
     const result = calculateTotalMonths(record.ngay_nhap_ngu, record.ngay_xuat_ngu);
     if (!result) return null;
 
-    const currentDate = new Date();
     const startDate =
       typeof record.ngay_nhap_ngu === 'string'
         ? new Date(record.ngay_nhap_ngu)
         : record.ngay_nhap_ngu;
 
+    const refDate = new Date(nam, thang, 0);
+
     const eligibilityDateBa = new Date(startDate);
     eligibilityDateBa.setFullYear(eligibilityDateBa.getFullYear() + HCCSVV_YEARS_HANG_BA);
-    const eligibilityYearBa = eligibilityDateBa.getFullYear();
 
     const eligibilityDateNhi = new Date(startDate);
     eligibilityDateNhi.setFullYear(eligibilityDateNhi.getFullYear() + HCCSVV_YEARS_HANG_NHI);
-    const eligibilityYearNhi = eligibilityDateNhi.getFullYear();
 
     const eligibilityDateNhat = new Date(startDate);
     eligibilityDateNhat.setFullYear(eligibilityDateNhat.getFullYear() + HCCSVV_YEARS_HANG_NHAT);
-    const eligibilityYearNhat = eligibilityDateNhat.getFullYear();
-
-    const currentYear = currentDate.getFullYear();
 
     return {
-      hangBa: currentYear >= eligibilityYearBa,
-      hangNhi: currentYear >= eligibilityYearNhi,
-      hangNhat: currentYear >= eligibilityYearNhat,
+      hangBa: refDate >= eligibilityDateBa,
+      hangNhi: refDate >= eligibilityDateNhi,
+      hangNhat: refDate >= eligibilityDateNhat,
     };
   };
 
@@ -370,9 +369,9 @@ export function Step3SetTitlesNienHan({
       render: (_, record) => {
         const data = getTitleData(record.id);
         const awardLabels: Record<string, string> = {
-          HCCSVV_HANG_BA: 'Huy chương Chiến sĩ Vẻ vang Hạng Ba',
-          HCCSVV_HANG_NHI: 'Huy chương Chiến sĩ Vẻ vang Hạng Nhì',
-          HCCSVV_HANG_NHAT: 'Huy chương Chiến sĩ Vẻ vang Hạng Nhất',
+          HCCSVV_HANG_BA: 'Huy chương Chiến sĩ vẻ vang Hạng Ba',
+          HCCSVV_HANG_NHI: 'Huy chương Chiến sĩ vẻ vang Hạng Nhì',
+          HCCSVV_HANG_NHAT: 'Huy chương Chiến sĩ vẻ vang Hạng Nhất',
         };
 
         if (bypassEligibility) {
@@ -441,23 +440,19 @@ export function Step3SetTitlesNienHan({
   return (
     <div>
       <Alert
-        message="Hướng dẫn"
+        message="Bước 3: Thiết lập danh hiệu - Huy chương Chiến sĩ vẻ vang"
         description={
           <div>
             <p>
-              1. Danh hiệu khen thưởng sẽ được tự động xác định dựa trên thời gian phục vụ và lịch
-              sử khen thưởng cho từng quân nhân đã chọn (<strong>{personnel.length}</strong> quân
-              nhân)
+              1. Hệ thống tự động gợi ý danh hiệu theo thời gian phục vụ và lịch sử đã nhận cho{' '}
+              <strong>{personnel.length}</strong> quân nhân.
             </p>
             <p>
-              2. <strong>Yêu cầu thời gian:</strong> Hạng Ba: 10 năm, Hạng Nhì: 15 năm, Hạng Nhất:
-              20 năm
+              2. Yêu cầu thời gian: Hạng Ba 10 năm, Hạng Nhì 15 năm, Hạng Nhất 20 năm.
             </p>
-            <p>
-              3. <strong>Lưu ý:</strong> Phải nhận từ thấp lên cao: Hạng Ba → Hạng Nhì → Hạng Nhất
-            </p>
-            <p>4. Đảm bảo tất cả quân nhân đều đã được xác định danh hiệu</p>
-            <p>5. Sau khi hoàn tất, nhấn &quot;Tiếp tục&quot; để sang bước upload file</p>
+            <p>3. Quy tắc xét: nhận theo thứ tự Hạng Ba → Hạng Nhì → Hạng Nhất.</p>
+            <p>4. Kiểm tra để tất cả quân nhân đều đã có danh hiệu trước khi chuyển bước.</p>
+            <p>5. Hoàn tất khai báo, nhấn &quot;Tiếp tục&quot; để sang bước đính kèm tệp.</p>
           </div>
         }
         type="info"
@@ -469,7 +464,7 @@ export function Step3SetTitlesNienHan({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <Space size="middle" align="center">
           <Tag color="red" style={{ fontSize: 14, padding: '4px 12px', margin: 0 }}>
-            Năm {nam}
+            Năm {nam} - Tháng {thang}
           </Tag>
           <Text type="secondary">
             Tổng số quân nhân: <strong>{personnel.length}</strong>

@@ -35,11 +35,18 @@ import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { previewFileWithApi } from '@/utils/filePreview';
 import { useTheme } from '@/components/ThemeProvider';
 import { getAntdTableThemeConfig } from '@/lib/antdTheme';
-import { DANH_HIEU_MAP } from '@/constants/danhHieu.constants';
 import {
+  CONG_HIEN_HE_SO_GROUPS,
+  CONG_HIEN_HE_SO_RANGES,
+  DANH_HIEU_MAP,
+  type CongHienHeSoGroup,
+} from '@/constants/danhHieu.constants';
+import {
+  PROPOSAL_REVIEW_CARD_TITLES,
   PROPOSAL_STATUS,
   PROPOSAL_STATUS_LABELS,
   PROPOSAL_TYPES,
+  isProposalType,
   getProposalTypeLabel,
   type ProposalType,
 } from '@/constants/proposal.constants';
@@ -51,6 +58,7 @@ interface DanhHieuItem {
   personnel_id: string;
   ho_ten: string;
   nam: number;
+  thang?: number | null;
   danh_hieu: string | null;
   cap_bac?: string | null;
   chuc_vu?: string | null;
@@ -154,6 +162,7 @@ interface ProposalDetail {
   id: string;
   loai_de_xuat: ProposalType;
   nam: number;
+  thang?: number;
   don_vi: {
     id: string;
     ma_don_vi: string;
@@ -290,16 +299,16 @@ export default function ManagerProposalDetailPage() {
     }
   };
 
-  const calculateTotalTimeByGroup = (personnelId: string, group: '0.7' | '0.8' | '0.9-1.0') => {
+  const calculateTotalTimeByGroup = (personnelId: string, group: CongHienHeSoGroup) => {
     const histories = positionHistoriesMap[personnelId] || [];
     let totalMonths = 0;
 
     histories.forEach((history: PositionHistoryEntry) => {
       const heSo = Number(history.he_so_chuc_vu) || 0;
-      const belongsToGroup =
-        (group === '0.7' && heSo >= 0.7 && heSo < 0.8) ||
-        (group === '0.8' && heSo >= 0.8 && heSo < 0.9) ||
-        (group === '0.9-1.0' && heSo >= 0.9 && heSo <= 1.0);
+      const range = CONG_HIEN_HE_SO_RANGES[group];
+      const belongsToGroup = range
+        ? heSo >= range.min && (range.includeMax ? heSo <= range.max : heSo < range.max)
+        : false;
 
       if (belongsToGroup && history.so_thang !== null && history.so_thang !== undefined) {
         totalMonths += history.so_thang;
@@ -453,9 +462,14 @@ export default function ManagerProposalDetailPage() {
               </Tag>
             </Descriptions.Item>
             <Descriptions.Item label="Năm đề xuất">
-              <Text strong style={{ fontSize: 16 }}>
-                {proposal.nam}
-              </Text>
+              <Text strong>{proposal.nam}</Text>
+              {[PROPOSAL_TYPES.NIEN_HAN, PROPOSAL_TYPES.HC_QKQT, PROPOSAL_TYPES.KNC_VSNXD_QDNDVN].includes(
+                proposal.loai_de_xuat as any
+              ) && proposal.thang && (
+                <Text type="secondary" style={{ marginLeft: 8 }}>
+                  (Tháng {proposal.thang})
+                </Text>
+              )}
             </Descriptions.Item>
             <Descriptions.Item label="Trạng thái">
               {getStatusTag(proposal.status)}
@@ -585,7 +599,10 @@ export default function ManagerProposalDetailPage() {
             title={
               <span>
                 <BookOutlined style={{ marginRight: 8 }} />
-                Thành Tích Khoa Học ({proposal.data_thanh_tich?.length || 0})
+                {(isProposalType(proposal.loai_de_xuat)
+                  ? PROPOSAL_REVIEW_CARD_TITLES[proposal.loai_de_xuat]
+                  : getProposalTypeLabel(proposal.loai_de_xuat))}{' '}
+                ({proposal.data_thanh_tich?.length || 0})
               </span>
             }
           >
@@ -732,7 +749,10 @@ export default function ManagerProposalDetailPage() {
             title={
               <span>
                 <TrophyOutlined style={{ marginRight: 8 }} />
-                Huân chương Bảo vệ Tổ quốc ({proposal.data_cong_hien?.length || 0})
+                {(isProposalType(proposal.loai_de_xuat)
+                  ? PROPOSAL_REVIEW_CARD_TITLES[proposal.loai_de_xuat]
+                  : getProposalTypeLabel(proposal.loai_de_xuat))}{' '}
+                ({proposal.data_cong_hien?.length || 0})
               </span>
             }
           >
@@ -842,7 +862,10 @@ export default function ManagerProposalDetailPage() {
                     }
                     return (
                       <Text style={{ whiteSpace: 'nowrap' }}>
-                        {calculateTotalTimeByGroup(record.personnel_id || '', '0.7')}
+                        {calculateTotalTimeByGroup(
+                          record.personnel_id || '',
+                          CONG_HIEN_HE_SO_GROUPS.LEVEL_07
+                        )}
                       </Text>
                     );
                   },
@@ -859,7 +882,10 @@ export default function ManagerProposalDetailPage() {
                     }
                     return (
                       <Text style={{ whiteSpace: 'nowrap' }}>
-                        {calculateTotalTimeByGroup(record.personnel_id || '', '0.8')}
+                        {calculateTotalTimeByGroup(
+                          record.personnel_id || '',
+                          CONG_HIEN_HE_SO_GROUPS.LEVEL_08
+                        )}
                       </Text>
                     );
                   },
@@ -876,7 +902,10 @@ export default function ManagerProposalDetailPage() {
                     }
                     return (
                       <Text style={{ whiteSpace: 'nowrap' }}>
-                        {calculateTotalTimeByGroup(record.personnel_id || '', '0.9-1.0')}
+                        {calculateTotalTimeByGroup(
+                          record.personnel_id || '',
+                          CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10
+                        )}
                       </Text>
                     );
                   },
@@ -927,7 +956,10 @@ export default function ManagerProposalDetailPage() {
             title={
               <span>
                 <TrophyOutlined style={{ marginRight: 8 }} />
-                Danh Hiệu Hằng Năm ({proposal.data_danh_hieu?.length || 0})
+                {(isProposalType(proposal.loai_de_xuat)
+                  ? PROPOSAL_REVIEW_CARD_TITLES[proposal.loai_de_xuat]
+                  : getProposalTypeLabel(proposal.loai_de_xuat))}{' '}
+                ({proposal.data_danh_hieu?.length || 0})
               </span>
             }
           >
@@ -1128,7 +1160,7 @@ export default function ManagerProposalDetailPage() {
             title={
               <span>
                 <ClockCircleOutlined style={{ marginRight: 8 }} />
-                Niên Hạn ({proposal.data_nien_han?.length || 0})
+                {getProposalTypeLabel(proposal.loai_de_xuat)} ({proposal.data_nien_han?.length || 0})
               </span>
             }
           >
@@ -1209,25 +1241,19 @@ export default function ManagerProposalDetailPage() {
                   title: 'Năm',
                   dataIndex: 'nam',
                   key: 'nam',
-                  width: 100,
+                  width: 70,
                   align: 'center',
                 },
                 {
-                  title: 'Danh hiệu đề xuất',
-                  dataIndex: 'danh_hieu',
-                  key: 'danh_hieu',
-                  width: 180,
+                  title: 'Tháng',
+                  dataIndex: 'thang',
+                  key: 'thang',
+                  width: 70,
                   align: 'center',
-                  render: (text: string) => {
-                    return text ? (
-                      <Text>{DANH_HIEU_MAP[text] || text}</Text>
-                    ) : (
-                      <Text type="secondary">-</Text>
-                    );
-                  },
+                  render: (val: number | null | undefined) => val ?? '',
                 },
                 {
-                  title: 'Thời gian',
+                  title: 'Tổng thời gian',
                   dataIndex: 'thoi_gian',
                   key: 'thoi_gian',
                   width: 150,
@@ -1254,6 +1280,20 @@ export default function ManagerProposalDetailPage() {
                       );
                     }
                     return <Text style={{ whiteSpace: 'nowrap' }}>{String(thoiGian)}</Text>;
+                  },
+                },
+                {
+                  title: 'Danh hiệu đề xuất',
+                  dataIndex: 'danh_hieu',
+                  key: 'danh_hieu',
+                  width: 180,
+                  align: 'center',
+                  render: (text: string) => {
+                    return text ? (
+                      <Text>{DANH_HIEU_MAP[text] || text}</Text>
+                    ) : (
+                      <Text type="secondary">-</Text>
+                    );
                   },
                 },
                 ...(proposal.status === PROPOSAL_STATUS.APPROVED

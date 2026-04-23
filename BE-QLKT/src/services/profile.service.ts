@@ -1,6 +1,7 @@
 import type { HoSoNienHan } from '../generated/prisma';
 import { prisma } from '../models';
 import { ELIGIBILITY_STATUS } from '../constants/eligibilityStatus.constants';
+import { formatServiceDuration } from '../helpers/serviceYearsHelper';
 import positionHistoryService from './positionHistory.service';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { writeSystemLog } from '../helpers/systemLogHelper';
@@ -10,8 +11,8 @@ import { GENDER } from '../constants/gender.constants';
 
 class ProfileService {
   /**
-   * Loads or bootstraps `ho_so_hang_nam` with unit + position context for the UI card.
-   * @param personnelId - `quan_nhan.id`
+   * Loads or creates the annual profile with unit and position context.
+   * @param personnelId - Personnel ID
    * @returns Annual profile row (created when missing)
    */
   async getAnnualProfile(personnelId) {
@@ -65,9 +66,9 @@ class ProfileService {
   }
 
   /**
-   * Loads or bootstraps `ho_so_nien_han` for HCCSVV tiers; augments with award years map.
-   * @param personnelId - `quan_nhan.id`
-   * @returns Tenure profile plus `hccsvv_nam_nhan` sidecar for the FE timeline
+   * Loads or creates the tenure profile and augments it with award year/month data.
+   * @param personnelId - Personnel ID
+   * @returns Tenure profile with hccsvv_nam_nhan timeline data
    */
   async getTenureProfile(personnelId) {
     const includeQuanNhan = {
@@ -76,7 +77,7 @@ class ProfileService {
           CoQuanDonVi: true,
           DonViTrucThuoc: { include: { CoQuanDonVi: true } },
           ChucVu: true,
-          KhenThuongHCCSVV: { select: { danh_hieu: true, nam: true } },
+          KhenThuongHCCSVV: { select: { danh_hieu: true, nam: true, thang: true } },
         },
       },
     };
@@ -100,15 +101,15 @@ class ProfileService {
     }
 
     (profile as Record<string, unknown>).hccsvv_nam_nhan = Object.fromEntries(
-      (profile.QuanNhan?.KhenThuongHCCSVV || []).map(r => [r.danh_hieu, r.nam])
+      (profile.QuanNhan?.KhenThuongHCCSVV || []).map(r => [r.danh_hieu, { nam: r.nam, thang: r.thang }])
     );
 
     return profile;
   }
 
   /**
-   * Loads or bootstraps `ho_so_cong_hien` (HCBVTQ months + tier statuses).
-   * @param personnelId - `quan_nhan.id`
+   * Loads or creates the contribution profile with months and tier statuses.
+   * @param personnelId - Personnel ID
    * @returns Contribution profile row (created when missing)
    */
   async getContributionProfile(personnelId) {
@@ -355,9 +356,7 @@ class ProfileService {
     }
 
     const today = new Date();
-    const currentYear = today.getFullYear();
     const eligibilityDate = this.calculateEligibilityDate(ngayNhapNgu, soNam);
-    const eligibilityYear = eligibilityDate.getFullYear();
 
     // Case 13: Admin explicitly set DA_NHAN
     if (currentStatus === ELIGIBILITY_STATUS.DA_NHAN) {
@@ -368,242 +367,44 @@ class ProfileService {
       };
     }
 
-    // Case 11: Current year equals eligibility year
-    if (currentYear === eligibilityYear) {
+    if (today >= eligibilityDate) {
       return {
         status: ELIGIBILITY_STATUS.DU_DIEU_KIEN,
         ngay: eligibilityDate,
-        goiY: `Đủ điều kiện (${soNam} năm) xét HCCSVV Hạng ${hangName} trong năm nay. Ngày xét duyệt dự kiến: ${eligibilityDate.toLocaleDateString(
-          'vi-VN'
-        )}.`,
+        goiY: `Đủ điều kiện (${soNam} năm) xét HCCSVV Hạng ${hangName}. Ngày đủ điều kiện: ${eligibilityDate.toLocaleDateString('vi-VN')}.`,
       };
     }
 
-    // Case 12: Current year exceeds eligibility year (overdue)
-    if (currentYear > eligibilityYear) {
-      return {
-        status: ELIGIBILITY_STATUS.DU_DIEU_KIEN,
-        ngay: eligibilityDate,
-        goiY: `Đã quá hạn xét HCCSVV Hạng ${hangName}. Ngày đủ điều kiện: ${eligibilityDate.toLocaleDateString(
-          'vi-VN'
-        )}. Chờ Quản trị viên cập nhật.`,
-      };
-    }
-
-    // Case 14: Current year is before eligibility year (not yet due)
-    if (currentYear < eligibilityYear) {
-      const yearsLeft = eligibilityYear - currentYear;
-      return {
-        status: ELIGIBILITY_STATUS.CHUA_DU,
-        ngay: null,
-        goiY: `Chưa đủ điều kiện (${soNam} năm) xét HCCSVV Hạng ${hangName}. Dự kiến: ${eligibilityDate.toLocaleDateString(
-          'vi-VN'
-        )} (còn ${yearsLeft} năm).`,
-      };
-    }
-
-    // Fallback
+    const monthsLeft = Math.max(0,
+      (eligibilityDate.getFullYear() - today.getFullYear()) * 12 +
+      eligibilityDate.getMonth() - today.getMonth()
+    );
     return {
       status: ELIGIBILITY_STATUS.CHUA_DU,
       ngay: null,
-      goiY: `Đang tính toán HCCSVV Hạng ${hangName}...`,
+      goiY: `Chưa đủ điều kiện (${soNam} năm) xét HCCSVV Hạng ${hangName}. Dự kiến: ${eligibilityDate.toLocaleDateString('vi-VN')} (còn ${formatServiceDuration(monthsLeft)}).`,
     };
   }
 
   /**
-   * Recomputes `ho_so_hang_nam` streak counters and suggestion copy for one personnel.
-   * Encodes BKBQP (2y), CSTDTQ (3y), BKTTCP (7y + BKBQP/CSTDTQ chains) against CSTDCS + NCKH.
-   * @param personnelId - `quan_nhan.id`
-   * @param year - Evaluation year (defaults to current calendar year)
-   * @returns Success response with operator message and the upserted annual-profile row
+   * Loads personnel with awards/achievements and computes all streak counters.
+   * @param personnelId - Personnel ID
+   * @param year - Evaluation anchor year
+   * @returns Personnel data, lists, and computed streaks
    */
-  async recalculateAnnualProfile(personnelId, year = new Date().getFullYear()) {
-    try {
-      const personnel = await prisma.quanNhan.findUnique({
-        where: { id: personnelId },
-        include: {
-          DanhHieuHangNam: {
-            where: {
-              nam: { lte: year },
-            },
-            orderBy: { nam: 'asc' },
-          },
-          ThanhTichKhoaHoc: {
-            where: { nam: { lte: year } },
-            orderBy: { nam: 'asc' },
-          },
-        },
-      });
-
-      if (!personnel) {
-        throw new NotFoundError('Quân nhân');
-      }
-
-      const danhHieuList = personnel.DanhHieuHangNam || [];
-      const thanhTichList = personnel.ThanhTichKhoaHoc || [];
-
-      let du_dieu_kien_bkbqp = false;
-      let du_dieu_kien_cstdtq = false;
-      let du_dieu_kien_bkttcp = false;
-      // Store as JSON: CSTDCS flags and years with BKBQP/CSTDTQ/BKTTCP
-      const tong_cstdcs_json = danhHieuList
-        .filter(
-          dh => dh.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS || dh.nhan_bkbqp || dh.nhan_cstdtq || dh.nhan_bkttcp
-        )
-        .map(dh => ({
-          nam: dh.nam,
-          danh_hieu: dh.danh_hieu,
-          so_quyet_dinh: dh.so_quyet_dinh || null,
-          nhan_bkbqp: dh.nhan_bkbqp || false,
-          nhan_cstdtq: dh.nhan_cstdtq || false,
-          nhan_bkttcp: dh.nhan_bkttcp || false,
-          so_quyet_dinh_bkbqp: dh.so_quyet_dinh_bkbqp || null,
-          so_quyet_dinh_cstdtq: dh.so_quyet_dinh_cstdtq || null,
-          so_quyet_dinh_bkttcp: dh.so_quyet_dinh_bkttcp || null,
-        }))
-        .sort((a, b) => a.nam - b.nam);
-      const tong_cstdcs = tong_cstdcs_json.length;
-      const tong_nckh_json = thanhTichList
-        .map(tt => ({
-          nam: tt.nam,
-          loai: tt.loai,
-          mo_ta: tt.mo_ta,
-          so_quyet_dinh: tt.so_quyet_dinh || null,
-        }))
-        .sort((a, b) => a.nam - b.nam);
-      const tong_nckh = tong_nckh_json.length;
-
-      const cstdcs_lien_tuc = this.calculateContinuousCSTDCS(
-        danhHieuList.filter(dh => dh.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS),
-        year
-      );
-
-      const nckh_lien_tuc = this.calculateContinuousNCKH(thanhTichList, year);
-
-      const bkbqp_lien_tuc = this.calculateContinuousBKBQP(danhHieuList, year);
-
-      const cstdtq_lien_tuc = this.calculateContinuousCSTDTQ(danhHieuList, year);
-
-      du_dieu_kien_bkbqp =
-        cstdcs_lien_tuc % 2 === 0 && cstdcs_lien_tuc >= 2 && nckh_lien_tuc >= cstdcs_lien_tuc;
-      du_dieu_kien_cstdtq =
-        cstdcs_lien_tuc % 3 === 0 &&
-        bkbqp_lien_tuc >= 1 &&
-        cstdcs_lien_tuc >= 3 &&
-        nckh_lien_tuc >= cstdcs_lien_tuc;
-      if (cstdcs_lien_tuc % 6 === 0) {
-        const bkbqp_lt = this.calculateContinuousBKBQP(danhHieuList, year - 1);
-        du_dieu_kien_cstdtq =
-          cstdcs_lien_tuc % 3 === 0 &&
-          bkbqp_lt >= 1 &&
-          cstdcs_lien_tuc >= 3 &&
-          nckh_lien_tuc >= cstdcs_lien_tuc;
-      }
-
-      // BKTTCP requires 7 consecutive CSTDCS + 3 consecutive BKBQP + 2 consecutive CSTDTQ
-      du_dieu_kien_bkttcp =
-        cstdcs_lien_tuc % 7 === 0 &&
-        bkbqp_lien_tuc % 3 === 0 &&
-        cstdtq_lien_tuc % 2 === 0 &&
-        nckh_lien_tuc >= cstdcs_lien_tuc &&
-        cstdcs_lien_tuc >= 7 &&
-        bkbqp_lien_tuc >= 3 &&
-        cstdtq_lien_tuc >= 2;
-
-      // Suggest only BKBQP, CSTDTQ and BKTTCP — other awards are handled separately
-      let goi_y = '';
-
-      if (du_dieu_kien_bkttcp === true) {
-        // Eligible for BKTTCP
-        goi_y = 'Đã đủ điều kiện đề nghị xét Bằng khen thi đua cấp phòng (BKTTCP).';
-      } else if (du_dieu_kien_cstdtq === true) {
-        // Eligible for CSTDTQ but not yet BKTTCP
-        goi_y = 'Đã đủ điều kiện đề nghị xét Chiến sĩ thi đua Toàn quân.';
-      } else if (du_dieu_kien_bkbqp === true) {
-        // Eligible for BKBQP but not yet CSTDTQ
-        goi_y = 'Đã đủ điều kiện đề nghị xét Bằng khen Bộ Quốc phòng.';
-      } else {
-        // Not yet eligible
-        goi_y =
-          'Chưa đủ điều kiện đề nghị xét Bằng khen Bộ Quốc phòng hoặc Chiến sĩ thi đua Toàn quân.';
-      }
-
-      const hoSoHangNam = await prisma.hoSoHangNam.upsert({
-        where: { quan_nhan_id: personnelId },
-        update: {
-          tong_cstdcs: tong_cstdcs,
-          tong_nckh: tong_nckh,
-          tong_cstdcs_json: tong_cstdcs_json,
-          tong_nckh_json: tong_nckh_json,
-          cstdcs_lien_tuc: cstdcs_lien_tuc,
-          nckh_lien_tuc: nckh_lien_tuc,
-          bkbqp_lien_tuc: bkbqp_lien_tuc,
-          cstdtq_lien_tuc: cstdtq_lien_tuc,
-          du_dieu_kien_bkbqp: du_dieu_kien_bkbqp,
-          du_dieu_kien_cstdtq: du_dieu_kien_cstdtq,
-          du_dieu_kien_bkttcp: du_dieu_kien_bkttcp,
-          goi_y: goi_y,
-        },
-        create: {
-          quan_nhan_id: personnelId,
-          tong_cstdcs: tong_cstdcs,
-          tong_nckh: tong_nckh,
-          tong_cstdcs_json: tong_cstdcs_json,
-          tong_nckh_json: tong_nckh_json,
-          cstdcs_lien_tuc: cstdcs_lien_tuc,
-          nckh_lien_tuc: nckh_lien_tuc,
-          bkbqp_lien_tuc: bkbqp_lien_tuc,
-          cstdtq_lien_tuc: cstdtq_lien_tuc,
-          du_dieu_kien_bkbqp: du_dieu_kien_bkbqp,
-          du_dieu_kien_cstdtq: du_dieu_kien_cstdtq,
-          du_dieu_kien_bkttcp: du_dieu_kien_bkttcp,
-          goi_y: goi_y,
-        },
-      });
-
-      return {
-        success: true,
-        message: 'Tính toán hồ sơ hằng năm thành công',
-        data: hoSoHangNam,
-      };
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  /**
-   * Chain eligibility for BKBQP / CSTDTQ / BKTTCP (proposal submit, approval, import preview).
-   * @param personnelId - `quan_nhan.id`
-   * @param year - Proposal year under validation
-   * @param danhHieu - Medal code (`BKBQP`, `CSTDTQ`, `BKTTCP`); other codes short-circuit to eligible
-   * @returns Gate result with Vietnamese `reason` for operators
-   */
-  async checkAwardEligibility(personnelId, year, danhHieu) {
-    // Chain check applies only to BKBQP, CSTDTQ, BKTTCP
-    if (!DANH_HIEU_CA_NHAN_BANG_KHEN.has(danhHieu)) {
-      return { eligible: true, reason: '' };
-    }
-
+  private async computeAnnualStreaks(personnelId: string, year: number) {
     const personnel = await prisma.quanNhan.findUnique({
       where: { id: personnelId },
       include: {
-        DanhHieuHangNam: {
-          where: { nam: { lte: year } },
-          orderBy: { nam: 'asc' },
-        },
-        ThanhTichKhoaHoc: {
-          where: { nam: { lte: year } },
-          orderBy: { nam: 'asc' },
-        },
+        DanhHieuHangNam: { where: { nam: { lte: year } }, orderBy: { nam: 'asc' } },
+        ThanhTichKhoaHoc: { where: { nam: { lte: year } }, orderBy: { nam: 'asc' } },
       },
     });
 
-    if (!personnel) {
-      return { eligible: false, reason: 'Quân nhân không tồn tại' };
-    }
+    if (!personnel) throw new NotFoundError('Quân nhân');
 
-    const danhHieuList = personnel.DanhHieuHangNam;
-    const thanhTichList = personnel.ThanhTichKhoaHoc;
+    const danhHieuList = personnel.DanhHieuHangNam || [];
+    const thanhTichList = personnel.ThanhTichKhoaHoc || [];
 
     const cstdcs_lien_tuc = this.calculateContinuousCSTDCS(
       danhHieuList.filter(dh => dh.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS),
@@ -613,16 +414,160 @@ class ProfileService {
     const bkbqp_lien_tuc = this.calculateContinuousBKBQP(danhHieuList, year);
     const cstdtq_lien_tuc = this.calculateContinuousCSTDTQ(danhHieuList, year);
 
+    return { personnel, danhHieuList, thanhTichList, cstdcs_lien_tuc, nckh_lien_tuc, bkbqp_lien_tuc, cstdtq_lien_tuc };
+  }
+
+  /**
+   * Computes BKBQP / CSTDTQ / BKTTCP eligibility flags from streak counters.
+   * @param streaks - Streak values from computeAnnualStreaks
+   * @param danhHieuList - Full annual award list for re-check edge cases
+   * @param year - Evaluation year
+   * @returns Eligibility booleans for the three medal tiers
+   */
+  private computeEligibilityFlags(
+    streaks: { cstdcs_lien_tuc: number; nckh_lien_tuc: number; bkbqp_lien_tuc: number; cstdtq_lien_tuc: number },
+    danhHieuList: unknown[],
+    year: number
+  ) {
+    const { cstdcs_lien_tuc, nckh_lien_tuc, bkbqp_lien_tuc, cstdtq_lien_tuc } = streaks;
+
+    const du_dieu_kien_bkbqp =
+      cstdcs_lien_tuc % 2 === 0 && cstdcs_lien_tuc >= 2 && nckh_lien_tuc >= cstdcs_lien_tuc;
+
+    let du_dieu_kien_cstdtq =
+      cstdcs_lien_tuc % 3 === 0 &&
+      bkbqp_lien_tuc >= 1 &&
+      cstdcs_lien_tuc >= 3 &&
+      nckh_lien_tuc >= cstdcs_lien_tuc;
+    // Edge case: at 6-year boundary, check BKBQP from previous year
+    if (cstdcs_lien_tuc % 6 === 0) {
+      const bkbqp_lt = this.calculateContinuousBKBQP(danhHieuList, year - 1);
+      du_dieu_kien_cstdtq =
+        cstdcs_lien_tuc % 3 === 0 &&
+        bkbqp_lt >= 1 &&
+        cstdcs_lien_tuc >= 3 &&
+        nckh_lien_tuc >= cstdcs_lien_tuc;
+    }
+
+    const du_dieu_kien_bkttcp =
+      cstdcs_lien_tuc % 7 === 0 &&
+      bkbqp_lien_tuc % 3 === 0 &&
+      cstdtq_lien_tuc % 2 === 0 &&
+      nckh_lien_tuc >= cstdcs_lien_tuc &&
+      cstdcs_lien_tuc >= 7 &&
+      bkbqp_lien_tuc >= 3 &&
+      cstdtq_lien_tuc >= 2;
+
+    return { du_dieu_kien_bkbqp, du_dieu_kien_cstdtq, du_dieu_kien_bkttcp };
+  }
+
+  /**
+   * Recomputes annual-profile counters and suggestion text for one personnel.
+   * @param personnelId - Personnel ID
+   * @param year - Evaluation year (defaults to current calendar year)
+   * @returns Success response with message and updated profile row
+   */
+  async recalculateAnnualProfile(personnelId, year = new Date().getFullYear()) {
+    const { danhHieuList, thanhTichList, cstdcs_lien_tuc, nckh_lien_tuc, bkbqp_lien_tuc, cstdtq_lien_tuc } =
+      await this.computeAnnualStreaks(personnelId, year);
+
+    const tong_cstdcs_json = danhHieuList
+      .filter(
+        dh => dh.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS || dh.nhan_bkbqp || dh.nhan_cstdtq || dh.nhan_bkttcp
+      )
+      .map(dh => ({
+        nam: dh.nam,
+        danh_hieu: dh.danh_hieu,
+        so_quyet_dinh: dh.so_quyet_dinh || null,
+        nhan_bkbqp: dh.nhan_bkbqp || false,
+        nhan_cstdtq: dh.nhan_cstdtq || false,
+        nhan_bkttcp: dh.nhan_bkttcp || false,
+        so_quyet_dinh_bkbqp: dh.so_quyet_dinh_bkbqp || null,
+        so_quyet_dinh_cstdtq: dh.so_quyet_dinh_cstdtq || null,
+        so_quyet_dinh_bkttcp: dh.so_quyet_dinh_bkttcp || null,
+      }))
+      .sort((a, b) => a.nam - b.nam);
+    const tong_cstdcs = tong_cstdcs_json.length;
+    const tong_nckh_json = thanhTichList
+      .map(tt => ({
+        nam: tt.nam,
+        loai: tt.loai,
+        mo_ta: tt.mo_ta,
+        so_quyet_dinh: tt.so_quyet_dinh || null,
+      }))
+      .sort((a, b) => a.nam - b.nam);
+    const tong_nckh = tong_nckh_json.length;
+
+    const { du_dieu_kien_bkbqp, du_dieu_kien_cstdtq, du_dieu_kien_bkttcp } =
+      this.computeEligibilityFlags(
+        { cstdcs_lien_tuc, nckh_lien_tuc, bkbqp_lien_tuc, cstdtq_lien_tuc },
+        danhHieuList,
+        year
+      );
+
+    const goi_y = du_dieu_kien_bkttcp
+      ? 'Đã đủ điều kiện đề nghị xét Bằng khen thi đua cấp phòng (BKTTCP).'
+      : du_dieu_kien_cstdtq
+        ? 'Đã đủ điều kiện đề nghị xét Chiến sĩ thi đua Toàn quân.'
+        : du_dieu_kien_bkbqp
+          ? 'Đã đủ điều kiện đề nghị xét Bằng khen Bộ Quốc phòng.'
+          : 'Chưa đủ điều kiện đề nghị xét Bằng khen Bộ Quốc phòng hoặc Chiến sĩ thi đua Toàn quân.';
+
+    const profileData = {
+      tong_cstdcs,
+      tong_nckh,
+      tong_cstdcs_json,
+      tong_nckh_json,
+      cstdcs_lien_tuc,
+      nckh_lien_tuc,
+      bkbqp_lien_tuc,
+      cstdtq_lien_tuc,
+      du_dieu_kien_bkbqp,
+      du_dieu_kien_cstdtq,
+      du_dieu_kien_bkttcp,
+      goi_y,
+    };
+
+    const hoSoHangNam = await prisma.hoSoHangNam.upsert({
+      where: { quan_nhan_id: personnelId },
+      update: profileData,
+      create: { quan_nhan_id: personnelId, ...profileData },
+    });
+
+    return {
+      success: true,
+      message: 'Tính toán hồ sơ hằng năm thành công',
+      data: hoSoHangNam,
+    };
+  }
+
+  /**
+   * Chain eligibility for BKBQP / CSTDTQ / BKTTCP (proposal submit, approval, import preview).
+   * @param personnelId - Personnel ID
+   * @param year - Proposal year under validation
+   * @param danhHieu - Medal code to validate
+   * @returns Eligibility result with operator-facing reason
+   */
+  async checkAwardEligibility(personnelId, year, danhHieu) {
+    if (!DANH_HIEU_CA_NHAN_BANG_KHEN.has(danhHieu)) {
+      return { eligible: true, reason: '' };
+    }
+
+    let streaks;
+    try {
+      streaks = await this.computeAnnualStreaks(personnelId, year);
+    } catch {
+      return { eligible: false, reason: 'Quân nhân không tồn tại' };
+    }
+
+    const { cstdcs_lien_tuc, nckh_lien_tuc, bkbqp_lien_tuc, cstdtq_lien_tuc, danhHieuList } = streaks;
+
     if (danhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP) {
       const eligible =
         cstdcs_lien_tuc % 2 === 0 && cstdcs_lien_tuc >= 2 && nckh_lien_tuc >= cstdcs_lien_tuc;
-      if (!eligible) {
-        return {
-          eligible: false,
-          reason: `Chưa đủ điều kiện BKBQP: cần 2 năm CSTDCS liên tục + mỗi năm có NCKH (hiện có ${cstdcs_lien_tuc} năm CSTDCS, ${nckh_lien_tuc} năm NCKH liên tục)`,
-        };
-      }
-      return { eligible: true, reason: 'Đủ điều kiện BKBQP' };
+      return eligible
+        ? { eligible: true, reason: 'Đủ điều kiện BKBQP' }
+        : { eligible: false, reason: `Chưa đủ điều kiện BKBQP: cần 2 năm CSTDCS liên tục + mỗi năm có NCKH (hiện có ${cstdcs_lien_tuc} năm CSTDCS, ${nckh_lien_tuc} năm NCKH liên tục)` };
     }
 
     if (danhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ) {
@@ -639,13 +584,9 @@ class ProfileService {
           cstdcs_lien_tuc >= 3 &&
           nckh_lien_tuc >= cstdcs_lien_tuc;
       }
-      if (!eligible) {
-        return {
-          eligible: false,
-          reason: `Chưa đủ điều kiện CSTDTQ: cần 3 năm CSTDCS liên tục + đã có BKBQP + mỗi năm có NCKH (hiện có ${cstdcs_lien_tuc} năm CSTDCS, ${bkbqp_lien_tuc} lần BKBQP, ${nckh_lien_tuc} năm NCKH liên tục)`,
-        };
-      }
-      return { eligible: true, reason: 'Đủ điều kiện CSTDTQ' };
+      return eligible
+        ? { eligible: true, reason: 'Đủ điều kiện CSTDTQ' }
+        : { eligible: false, reason: `Chưa đủ điều kiện CSTDTQ: cần 3 năm CSTDCS liên tục + đã có BKBQP + mỗi năm có NCKH (hiện có ${cstdcs_lien_tuc} năm CSTDCS, ${bkbqp_lien_tuc} lần BKBQP, ${nckh_lien_tuc} năm NCKH liên tục)` };
     }
 
     if (danhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP) {
@@ -657,13 +598,9 @@ class ProfileService {
         cstdcs_lien_tuc >= 7 &&
         bkbqp_lien_tuc >= 3 &&
         cstdtq_lien_tuc >= 2;
-      if (!eligible) {
-        return {
-          eligible: false,
-          reason: `Chưa đủ điều kiện BKTTCP: cần 7 năm CSTDCS + 3 lần BKBQP + 2 lần CSTDTQ + NCKH mỗi năm (hiện có ${cstdcs_lien_tuc} CSTDCS, ${bkbqp_lien_tuc} BKBQP, ${cstdtq_lien_tuc} CSTDTQ, ${nckh_lien_tuc} NCKH)`,
-        };
-      }
-      return { eligible: true, reason: 'Đủ điều kiện BKTTCP' };
+      return eligible
+        ? { eligible: true, reason: 'Đủ điều kiện BKTTCP' }
+        : { eligible: false, reason: `Chưa đủ điều kiện BKTTCP: cần 7 năm CSTDCS + 3 lần BKBQP + 2 lần CSTDTQ + NCKH mỗi năm (hiện có ${cstdcs_lien_tuc} CSTDCS, ${bkbqp_lien_tuc} BKBQP, ${cstdtq_lien_tuc} CSTDTQ, ${nckh_lien_tuc} NCKH)` };
     }
 
     return { eligible: true, reason: '' };
@@ -671,14 +608,13 @@ class ProfileService {
 
   /**
    * Recomputes HCCSVV tier statuses and hints on `ho_so_nien_han` from `khen_thuong_hccsvv` (tenure medals only).
-   * @param personnelId - `quan_nhan.id`
+   * @param personnelId - Personnel ID
    * @returns Success message for admin flows
    */
   async recalculateTenureProfile(personnelId) {
-    try {
-      const personnel = await prisma.quanNhan.findUnique({
-        where: { id: personnelId },
-      });
+    const personnel = await prisma.quanNhan.findUnique({
+      where: { id: personnelId },
+    });
 
       if (!personnel) {
         throw new NotFoundError('Quân nhân');
@@ -779,39 +715,29 @@ class ProfileService {
       const finalGoiY =
         goiYList.length > 0
           ? goiYList.join('\n')
-          : 'Chưa đủ điều kiện xét Huy chương Chiến sĩ Vẻ vang.';
+          : 'Chưa đủ điều kiện xét Huy chương Chiến sĩ vẻ vang.';
+
+      const tenureData = {
+        hccsvv_hang_ba_status: hccsvvBa.status,
+        hccsvv_hang_ba_ngay: hccsvvBa.ngay,
+        hccsvv_hang_nhi_status: hccsvvNhi.status,
+        hccsvv_hang_nhi_ngay: hccsvvNhi.ngay,
+        hccsvv_hang_nhat_status: hccsvvNhat.status,
+        hccsvv_hang_nhat_ngay: hccsvvNhat.ngay,
+        goi_y: finalGoiY,
+      };
 
       await prisma.hoSoNienHan.upsert({
         where: { quan_nhan_id: personnelId },
-        update: {
-          hccsvv_hang_ba_status: hccsvvBa.status,
-          hccsvv_hang_ba_ngay: hccsvvBa.ngay,
-          hccsvv_hang_nhi_status: hccsvvNhi.status,
-          hccsvv_hang_nhi_ngay: hccsvvNhi.ngay,
-          hccsvv_hang_nhat_status: hccsvvNhat.status,
-          hccsvv_hang_nhat_ngay: hccsvvNhat.ngay,
-          goi_y: finalGoiY,
-        },
-        create: {
-          quan_nhan_id: personnelId,
-          hccsvv_hang_ba_status: hccsvvBa.status,
-          hccsvv_hang_ba_ngay: hccsvvBa.ngay,
-          hccsvv_hang_nhi_status: hccsvvNhi.status,
-          hccsvv_hang_nhi_ngay: hccsvvNhi.ngay,
-          hccsvv_hang_nhat_status: hccsvvNhat.status,
-          hccsvv_hang_nhat_ngay: hccsvvNhat.ngay,
-          goi_y: finalGoiY,
-        },
+        update: tenureData,
+        create: { quan_nhan_id: personnelId, ...tenureData },
       });
-      return { message: 'Tính toán lại hồ sơ Huy chương Chiến sĩ vẻ vang thành công' };
-    } catch (error) {
-      throw error;
-    }
+    return { message: 'Tính toán lại hồ sơ Huy chương Chiến sĩ vẻ vang thành công' };
   }
 
   /**
    * Recomputes HCBVTQ months and tier eligibility on `ho_so_cong_hien` from position history and existing medals.
-   * @param personnelId - `quan_nhan.id`
+   * @param personnelId - Personnel ID
    * @returns Success message for admin flows
    */
   async recalculateContributionProfile(personnelId) {
@@ -864,8 +790,8 @@ class ProfileService {
 
       return totalMonths;
     };
-    try {
-      const personnel = await prisma.quanNhan.findUnique({
+
+    const personnel = await prisma.quanNhan.findUnique({
         where: { id: personnelId },
         include: {
           LichSuChucVu: {
@@ -920,35 +846,24 @@ class ProfileService {
       const months0_8 = getTotalMonthsByGroup(personnel.LichSuChucVu, '0.8');
       const months0_9_1_0 = getTotalMonthsByGroup(personnel.LichSuChucVu, '0.9-1.0');
 
+      const contributionData = {
+        hcbvtq_total_months: months0_7 + months0_8 + months0_9_1_0,
+        months_07: months0_7,
+        months_08: months0_8,
+        months_0910: months0_9_1_0,
+        hcbvtq_hang_ba_status: hcbvtqBa.status,
+        hcbvtq_hang_ba_ngay: null as Date | null,
+        hcbvtq_hang_nhi_status: hcbvtqNhi.status,
+        hcbvtq_hang_nhi_ngay: null as Date | null,
+        hcbvtq_hang_nhat_status: hcbvtqNhat.status,
+        hcbvtq_hang_nhat_ngay: null as Date | null,
+        goi_y: null as string | null,
+      };
+
       await prisma.hoSoCongHien.upsert({
         where: { quan_nhan_id: personnelId },
-        update: {
-          hcbvtq_total_months: months0_7 + months0_8 + months0_9_1_0,
-          months_07: months0_7,
-          months_08: months0_8,
-          months_0910: months0_9_1_0,
-          hcbvtq_hang_ba_status: hcbvtqBa.status,
-          hcbvtq_hang_ba_ngay: null,
-          hcbvtq_hang_nhi_status: hcbvtqNhi.status,
-          hcbvtq_hang_nhi_ngay: null,
-          hcbvtq_hang_nhat_status: hcbvtqNhat.status,
-          hcbvtq_hang_nhat_ngay: null,
-          goi_y: null,
-        },
-        create: {
-          quan_nhan_id: personnelId,
-          hcbvtq_total_months: months0_7 + months0_8 + months0_9_1_0,
-          months_07: months0_7,
-          months_08: months0_8,
-          months_0910: months0_9_1_0,
-          hcbvtq_hang_ba_status: hcbvtqBa.status,
-          hcbvtq_hang_ba_ngay: null,
-          hcbvtq_hang_nhi_status: hcbvtqNhi.status,
-          hcbvtq_hang_nhi_ngay: null,
-          hcbvtq_hang_nhat_status: hcbvtqNhat.status,
-          hcbvtq_hang_nhat_ngay: null,
-          goi_y: null,
-        },
+        update: contributionData,
+        create: { quan_nhan_id: personnelId, ...contributionData },
       });
 
       // Legacy table: refresh coefficient-group month mirrors when a contribution award row exists.
@@ -969,10 +884,7 @@ class ProfileService {
         });
       }
 
-      return { message: 'Tính toán lại hồ sơ Huân chương Bảo vệ Tổ quốc thành công' };
-    } catch (error) {
-      throw error;
-    }
+    return { message: 'Tính toán lại hồ sơ Huân chương Bảo vệ Tổ quốc thành công' };
   }
 
   /**
@@ -1097,7 +1009,7 @@ class ProfileService {
 
   /**
    * Partially updates tenure medal statuses after admin verification.
-   * @param personnelId - `quan_nhan.id`
+   * @param personnelId - Personnel ID
    * @param updates - Subset of HCCSVV / HCBVTQ status fields
    * @returns Updated `ho_so_nien_han` row (status columns only; no relation includes)
    */

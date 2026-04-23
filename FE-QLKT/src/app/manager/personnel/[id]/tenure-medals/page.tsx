@@ -94,7 +94,7 @@ export default function ManagerServiceRewardsPage() {
             mappedRewards.push({
               id: award.id,
               type: 'HCCSVV',
-              name: 'Huy chương Chiến sĩ Vẻ vang',
+              name: 'Huy chương Chiến sĩ vẻ vang',
               nam: award.nam,
               cap_bac: award.cap_bac,
               chuc_vu: award.chuc_vu,
@@ -161,13 +161,13 @@ export default function ManagerServiceRewardsPage() {
       ),
     },
     {
-      title: 'Năm',
-      dataIndex: 'nam',
-      key: 'nam',
-      width: 80,
-      minWidth: 70,
+      title: 'Tháng/Năm',
+      key: 'thang_nam',
+      width: 100,
+      minWidth: 90,
       align: 'center',
-      render: (nam: number) => nam || '-',
+      render: (_: unknown, record: any) =>
+        record.thang && record.nam ? `${record.thang}/${record.nam}` : record.nam || '-',
     },
     {
       title: 'Cấp bậc',

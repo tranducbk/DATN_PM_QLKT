@@ -105,6 +105,7 @@ async function getProposals(
         id: p.id,
         loai_de_xuat: p.loai_de_xuat,
         nam: p.nam,
+        thang: p.thang,
         don_vi: (p.DonViTrucThuoc || p.CoQuanDonVi)?.ten_don_vi || '-',
         nguoi_de_xuat: p.NguoiDeXuat.QuanNhan?.ho_ten || p.NguoiDeXuat.username,
         status: p.status,
@@ -567,6 +568,7 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
       id: proposal.id,
       loai_de_xuat: proposal.loai_de_xuat,
       nam: proposal.nam,
+      thang: proposal.thang,
       don_vi: {
         id: (proposal.DonViTrucThuoc || proposal.CoQuanDonVi)?.id || null,
         ma_don_vi: (proposal.DonViTrucThuoc || proposal.CoQuanDonVi)?.ma_don_vi || '',

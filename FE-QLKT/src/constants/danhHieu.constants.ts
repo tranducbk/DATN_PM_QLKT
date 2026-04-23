@@ -27,6 +27,24 @@ export const DANH_HIEU_HCBVTQ = {
   HANG_NHAT: 'HCBVTQ_HANG_NHAT',
 } as const;
 
+export const CONG_HIEN_HE_SO_GROUPS = {
+  LEVEL_07: '0.7',
+  LEVEL_08: '0.8',
+  LEVEL_09_10: '0.9-1.0',
+} as const;
+
+export type CongHienHeSoGroup =
+  (typeof CONG_HIEN_HE_SO_GROUPS)[keyof typeof CONG_HIEN_HE_SO_GROUPS];
+
+export const CONG_HIEN_HE_SO_RANGES: Record<
+  CongHienHeSoGroup,
+  { min: number; max: number; includeMax: boolean }
+> = {
+  [CONG_HIEN_HE_SO_GROUPS.LEVEL_07]: { min: 0.7, max: 0.8, includeMax: false },
+  [CONG_HIEN_HE_SO_GROUPS.LEVEL_08]: { min: 0.8, max: 0.9, includeMax: false },
+  [CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10]: { min: 0.9, max: 1.0, includeMax: true },
+};
+
 export const DANH_HIEU_DAC_BIET = {
   HC_QKQT: 'HC_QKQT',
   KNC_VSNXD_QDNDVN: 'KNC_VSNXD_QDNDVN',
@@ -53,17 +71,30 @@ export const DANH_HIEU_MAP: Record<string, string> = {
   ĐVQT: 'Đơn vị Quyết thắng',
   ĐVTT: 'Đơn vị Tiên tiến',
 
-  HCCSVV_HANG_BA: 'Huy chương Chiến sĩ Vẻ vang Hạng Ba',
-  HCCSVV_HANG_NHI: 'Huy chương Chiến sĩ Vẻ vang Hạng Nhì',
-  HCCSVV_HANG_NHAT: 'Huy chương Chiến sĩ Vẻ vang Hạng Nhất',
+  HCCSVV_HANG_BA: 'Huy chương Chiến sĩ vẻ vang Hạng Ba',
+  HCCSVV_HANG_NHI: 'Huy chương Chiến sĩ vẻ vang Hạng Nhì',
+  HCCSVV_HANG_NHAT: 'Huy chương Chiến sĩ vẻ vang Hạng Nhất',
 
   HCBVTQ_HANG_BA: 'Huân chương Bảo vệ Tổ quốc Hạng Ba',
   HCBVTQ_HANG_NHI: 'Huân chương Bảo vệ Tổ quốc Hạng Nhì',
   HCBVTQ_HANG_NHAT: 'Huân chương Bảo vệ Tổ quốc Hạng Nhất',
 
-  HC_QKQT: 'Huy chương Quân kỳ Quyết thắng',
-  KNC_VSNXD_QDNDVN: 'Kỷ niệm chương VSNXD QĐNDVN',
+  HC_QKQT: 'Huy chương Quân kỳ quyết thắng',
+  KNC_VSNXD_QDNDVN: 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
 
+  DTKH: 'Đề tài khoa học',
+  SKKH: 'Sáng kiến khoa học',
+};
+
+export const DANH_HIEU_SHORT_MAP: Record<string, string> = {
+  CSTDCS: 'Chiến sĩ thi đua Cơ sở',
+  CSTT: 'Chiến sĩ tiên tiến',
+  HCCSVV_HANG_BA: 'HCCSVV Hạng Ba',
+  HCCSVV_HANG_NHI: 'HCCSVV Hạng Nhì',
+  HCCSVV_HANG_NHAT: 'HCCSVV Hạng Nhất',
+  HCBVTQ_HANG_BA: 'HCBVTQ Hạng Ba',
+  HCBVTQ_HANG_NHI: 'HCBVTQ Hạng Nhì',
+  HCBVTQ_HANG_NHAT: 'HCBVTQ Hạng Nhất',
   DTKH: 'Đề tài khoa học',
   SKKH: 'Sáng kiến khoa học',
 };
@@ -74,9 +105,9 @@ export const LOAI_DE_XUAT_MAP: Record<string, string> = {
   NIEN_HAN: 'Huy chương Chiến sĩ vẻ vang',
   CONG_HIEN: 'Huân chương Bảo vệ Tổ quốc',
   DOT_XUAT: 'Khen thưởng đột xuất',
-  HC_QKQT: 'Huy chương Quân kỳ Quyết thắng',
-  KNC_VSNXD_QDNDVN: 'Kỷ niệm chương VSNXD QĐNDVN',
-  NCKH: 'Thành tích NCKH',
+  HC_QKQT: 'Huy chương Quân kỳ quyết thắng',
+  KNC_VSNXD_QDNDVN: 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
+  NCKH: 'Thành tích Nghiên cứu khoa học',
 };
 
 /** Options cho dropdown loại khen thưởng (dùng chung cho decisions page, modal, v.v.) */
@@ -91,7 +122,7 @@ export const AWARD_TYPE_MAP: Record<string, string> = {
   CONTRIBUTION: 'Huân chương Bảo vệ Tổ quốc',
   TENURE: 'Huy chương Chiến sĩ vẻ vang',
   ADHOC: 'Khen thưởng đột xuất',
-  SCIENTIFIC: 'Thành tích NCKH',
+  SCIENTIFIC: 'Thành tích Nghiên cứu khoa học',
 };
 
 export const DANH_HIEU_OPTIONS = {
@@ -143,9 +174,9 @@ export const AWARD_TAB_LABELS: Record<AwardType, string> = {
   DVHN: 'Khen thưởng đơn vị hằng năm',
   HCCSVV: 'Huy chương Chiến sĩ vẻ vang',
   HCBVTQ: 'Huân chương Bảo vệ Tổ quốc',
-  KNC_VSNXD_QDNDVN: 'Kỷ niệm chương VSNXD QĐNDVN',
-  HCQKQT: 'Huy chương Quân kỳ Quyết thắng',
-  NCKH: 'Thành tích NCKH',
+  KNC_VSNXD_QDNDVN: 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
+  HCQKQT: 'Huy chương Quân kỳ quyết thắng',
+  NCKH: 'Thành tích Nghiên cứu khoa học',
   KTDX: 'Khen thưởng đột xuất',
 };
 
@@ -209,7 +240,7 @@ export const HCCSVV_YEARS_HANG_BA = 10;
 export const HCCSVV_YEARS_HANG_NHI = 15;
 export const HCCSVV_YEARS_HANG_NHAT = 20;
 
-/** Minimum years of service for HC Quân kỳ Quyết thắng (both genders). */
+/** Minimum years of service for HC Quân kỳ quyết thắng (both genders). */
 export const HCQKQT_YEARS_REQUIRED = 25;
 
 /** Minimum years of service for KNC VSNXD QDNDVN by gender. */
@@ -220,7 +251,8 @@ export function getLoaiKhenThuongByDanhHieu(danhHieu: string | null | undefined)
   if (!danhHieu) return 'Chưa xác định';
   if (danhHieu.startsWith('HCBVTQ')) return LOAI_DE_XUAT_MAP.CONG_HIEN;
   if (danhHieu.startsWith('HCCSVV')) return LOAI_DE_XUAT_MAP.NIEN_HAN;
-  if (['CSTDCS', 'CSTT', 'BKBQP', 'CSTDTQ', 'BKTTCP'].includes(danhHieu)) return LOAI_DE_XUAT_MAP.CA_NHAN_HANG_NAM;
+  if (['CSTDCS', 'CSTT', 'BKBQP', 'CSTDTQ', 'BKTTCP'].includes(danhHieu))
+    return LOAI_DE_XUAT_MAP.CA_NHAN_HANG_NAM;
   if (['ĐVQT', 'ĐVTT'].includes(danhHieu)) return LOAI_DE_XUAT_MAP.DON_VI_HANG_NAM;
   if (danhHieu === 'HC_QKQT') return LOAI_DE_XUAT_MAP.HC_QKQT;
   if (danhHieu === 'KNC_VSNXD_QDNDVN') return LOAI_DE_XUAT_MAP.KNC_VSNXD_QDNDVN;

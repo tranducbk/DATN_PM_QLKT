@@ -327,7 +327,7 @@ export function DecisionModal({
 
   const getHintText = () => {
     if (selectedDecision)
-      return 'Đã chọn quyết định. Click nút X để chọn lại quyết định khác. Để sửa thông tin, vui lòng vào trang "Quản lý Quyết định".';
+      return 'Đã chọn quyết định. Click nút X để chọn lại quyết định khác. Để sửa thông tin, vui lòng vào trang "Quản lý quyết định".';
     if (initialDecision) return 'Chế độ chỉnh sửa. Có thể thay đổi các thông tin quyết định.';
     return 'Nhập để tìm kiếm quyết định đã có hoặc tạo mới';
   };

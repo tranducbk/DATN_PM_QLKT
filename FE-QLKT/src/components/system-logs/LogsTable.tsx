@@ -64,9 +64,9 @@ const resourceLabels: Record<string, string> = {
   'adhoc-awards': 'Khen thưởng đột xuất',
   'tenure-medals': 'Huy chương Chiến sĩ vẻ vang',
   'contribution-medals': 'Huân chương Bảo vệ Tổ quốc',
-  'commemorative-medals': 'Kỷ niệm chương VSNXD QĐNDVN',
-  'military-flag': 'Huy chương Quân kỳ Quyết thắng',
-  'scientific-achievements': 'Thành tích NCKH',
+  'commemorative-medals': 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
+  'military-flag': 'Huy chương Quân kỳ quyết thắng',
+  'scientific-achievements': 'Thành tích Nghiên cứu khoa học',
   'position-history': 'Lịch sử chức vụ',
   'system-logs': 'Nhật ký hệ thống',
 };

@@ -14,7 +14,7 @@ import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.consta
 
 const { Text, Title } = Typography;
 
-/** Dòng `title_data` / `data_danh_hieu`; API có thể chỉ có `so_quyet_dinh`. */
+/** Row data from title_data/data_danh_hieu; may contain only so_quyet_dinh. */
 interface ProposalTitleDataRow {
   personnel_id?: string;
   ho_ten?: string;
@@ -33,6 +33,7 @@ interface Proposal {
   id: string;
   loai_de_xuat: string;
   nam: number;
+  thang?: number;
   status: string;
   createdAt: string;
   ngay_duyet?: string;
@@ -148,6 +149,27 @@ export function ProposalDetailModal({
       },
     },
   ];
+
+  const typesWithThang = [PROPOSAL_TYPES.NIEN_HAN, PROPOSAL_TYPES.HC_QKQT, PROPOSAL_TYPES.KNC_VSNXD_QDNDVN];
+
+  columns.push({
+    title: 'Năm',
+    dataIndex: 'nam',
+    key: 'nam',
+    width: 70,
+    align: 'center' as const,
+  });
+
+  if (typesWithThang.includes(proposal.loai_de_xuat)) {
+    columns.push({
+      title: 'Tháng',
+      dataIndex: 'thang',
+      key: 'thang',
+      width: 70,
+      align: 'center' as const,
+      render: (val: number | null | undefined) => val ?? '',
+    });
+  }
 
   // Add appropriate columns based on proposal type
   if (proposal.loai_de_xuat === PROPOSAL_TYPES.NCKH) {

@@ -1,14 +1,14 @@
 'use client';
 
 import { useMemo } from 'react';
+import { Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
-import { DANH_HIEU_COLORS } from '@/constants/danhHieu.constants';
+import { DANH_HIEU_SHORT_MAP, DANH_HIEU_COLORS } from '@/constants/danhHieu.constants';
 import {
   ImportReviewPageContent,
   type PreviewItem,
   type ImportReviewConfig,
-  getDanhHieuTag,
   makeErrorColumn,
   makeSTTColumn,
   makeRowNumberColumn,
@@ -17,8 +17,14 @@ import {
   makeCapBacColumn,
   makeChucVuColumn,
   makeSoQDColumn,
-  makeGhiChuColumn,
 } from '@/components/import-review/ImportReviewPageContent';
+
+function getShortDanhHieuTag(danhHieu: string | undefined) {
+  if (!danhHieu) return <Tag>--</Tag>;
+  const label = DANH_HIEU_SHORT_MAP[danhHieu] ?? danhHieu;
+  const color = DANH_HIEU_COLORS[danhHieu] ?? 'default';
+  return <Tag color={color} style={{ whiteSpace: 'nowrap' }}>{label}</Tag>;
+}
 
 export default function ImportReviewHCCSVVPage() {
   const validColumns: ColumnsType<PreviewItem> = useMemo(
@@ -29,13 +35,31 @@ export default function ImportReviewHCCSVVPage() {
       makeChucVuColumn(),
       makeNamColumn(),
       {
+        title: 'Tháng',
+        dataIndex: 'thang',
+        width: 70,
+        align: 'center',
+      },
+      {
+        title: 'Tổng thời gian',
+        dataIndex: 'tong_thoi_gian',
+        width: 130,
+        align: 'center',
+        render: (val: string) => val || '',
+      },
+      {
         title: 'Danh hiệu',
         dataIndex: 'danh_hieu',
-        width: 200,
-        render: (val: string) => getDanhHieuTag(val, DANH_HIEU_COLORS),
+        width: 160,
+        render: (val: string) => getShortDanhHieuTag(val),
       },
       makeSoQDColumn(),
-      makeGhiChuColumn(),
+      {
+        title: 'Ghi chú',
+        dataIndex: 'ghi_chu',
+        width: 200,
+        render: (val: string) => val ?? '',
+      },
     ],
     []
   );
@@ -46,8 +70,8 @@ export default function ImportReviewHCCSVVPage() {
       {
         title: 'Danh hiệu',
         dataIndex: 'danh_hieu',
-        width: 200,
-        render: (val: string) => getDanhHieuTag(val, DANH_HIEU_COLORS),
+        width: 160,
+        render: (val: string) => getShortDanhHieuTag(val),
       },
       makeSoQDColumn(120),
     ],
@@ -61,11 +85,16 @@ export default function ImportReviewHCCSVVPage() {
       makeHoTenColumn(150, true),
       makeNamColumn(60, true),
       {
+        title: 'Tháng',
+        dataIndex: 'thang',
+        width: 70,
+        align: 'center',
+      },
+      {
         title: 'Danh hiệu',
         dataIndex: 'danh_hieu',
-        width: 180,
-        ellipsis: true,
-        render: (val: string) => (val ? getDanhHieuTag(val, DANH_HIEU_COLORS) : '--'),
+        width: 160,
+        render: (val: string) => (val ? getShortDanhHieuTag(val) : ''),
       },
       makeErrorColumn(),
     ],

@@ -413,19 +413,18 @@ export function Step3SetTitlesDonViHangNam({
   return (
     <div>
       <Alert
-        message="Hướng dẫn"
+        message="Bước 3: Thiết lập danh hiệu - Đơn vị hằng năm"
         description={
           <div>
             <p>
-              1. Chọn danh hiệu khen thưởng cho từng đơn vị đã chọn (<strong>{units.length}</strong>{' '}
-              đơn vị)
+              1. Thiết lập danh hiệu cho <strong>{units.length}</strong> đơn vị đã chọn.
             </p>
             <p>
-              2. <strong>Lưu ý:</strong> Không thể đề xuất ĐVQT/ĐVTT cùng với BKBQP/BKTTCP trong một
-              đề xuất. BKBQP và BKTTCP có thể đề xuất cùng nhau.
+              2. Quy tắc nghiệp vụ: không đề xuất ĐVQT/ĐVTT cùng BKBQP/BKTTCP trong cùng một hồ sơ;
+              BKBQP và BKTTCP có thể đi cùng nhau.
             </p>
-            <p>3. Đảm bảo tất cả đơn vị đều đã được chọn danh hiệu</p>
-            <p>4. Sau khi hoàn tất, nhấn &quot;Tiếp tục&quot; để sang bước upload file</p>
+            <p>3. Đảm bảo tất cả đơn vị đã có danh hiệu trước khi chuyển bước.</p>
+            <p>4. Hoàn tất khai báo, nhấn &quot;Tiếp tục&quot; để sang bước đính kèm tệp.</p>
           </div>
         }
         type="info"

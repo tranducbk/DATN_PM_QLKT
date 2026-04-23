@@ -49,6 +49,7 @@ interface Step3SetTitlesHCQKQTProps {
   titleData: TitleData[];
   onTitleDataChange: (data: TitleData[]) => void;
   nam: number;
+  thang: number;
 }
 
 export function Step3SetTitlesHCQKQT({
@@ -57,6 +58,7 @@ export function Step3SetTitlesHCQKQT({
   titleData,
   onTitleDataChange,
   nam,
+  thang,
 }: Step3SetTitlesHCQKQTProps) {
   const [loading, setLoading] = useState(false);
   const [personnel, setPersonnel] = useState<Personnel[]>([]);
@@ -109,25 +111,28 @@ export function Step3SetTitlesHCQKQT({
     }
   };
 
-  const calculateTotalMonths = (
-    ngayNhapNgu: DateInput,
-    ngayXuatNgu: DateInput
-  ) => {
+  const calculateTotalMonths = (ngayNhapNgu: DateInput, ngayXuatNgu: DateInput) => {
     if (!ngayNhapNgu) return null;
 
     try {
       const startDate = typeof ngayNhapNgu === 'string' ? new Date(ngayNhapNgu) : ngayNhapNgu;
+      const refDate = new Date(nam, thang, 0);
       const endDate = ngayXuatNgu
         ? typeof ngayXuatNgu === 'string'
           ? new Date(ngayXuatNgu)
           : ngayXuatNgu
-        : new Date();
+        : refDate;
 
       if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
         return null;
       }
 
-      const totalMonths = Math.max(0, (endDate.getFullYear() - startDate.getFullYear()) * 12 + endDate.getMonth() - startDate.getMonth());
+      const totalMonths = Math.max(
+        0,
+        (endDate.getFullYear() - startDate.getFullYear()) * 12 +
+          endDate.getMonth() -
+          startDate.getMonth()
+      );
       const totalYears = Math.floor(totalMonths / 12);
       const remainingMonths = totalMonths % 12;
 
@@ -261,7 +266,7 @@ export function Step3SetTitlesHCQKQT({
       key: 'danh_hieu',
       width: 200,
       align: 'center',
-      render: () => <Text>Huy chương Quân kỳ Quyết thắng</Text>,
+      render: () => <Text>Huy chương Quân kỳ quyết thắng</Text>,
     },
   ];
 
@@ -273,19 +278,19 @@ export function Step3SetTitlesHCQKQT({
   return (
     <div>
       <Alert
-        message="Hướng dẫn"
+        message="Bước 3: Thiết lập danh hiệu - Huy chương Quân kỳ quyết thắng"
         description={
           <div>
             <p>
-              1. Chọn danh hiệu khen thưởng cho từng quân nhân đã chọn (
-              <strong>{personnel.length}</strong> quân nhân)
+              1. Xác nhận danh hiệu cho từng quân nhân đã chọn (<strong>{personnel.length}</strong>{' '}
+              quân nhân)
             </p>
             <p>
-              2. Yêu cầu: Quân nhân phải có ít nhất <strong>25 năm</strong> phục vụ (không phân biệt
-              nam nữ)
+              2. Điều kiện tối thiểu: thời gian phục vụ từ <strong>25 năm</strong> trở lên (không
+              phân biệt giới tính).
             </p>
-            <p>3. Đảm bảo tất cả quân nhân đều đã được chọn danh hiệu</p>
-            <p>4. Sau khi hoàn tất, nhấn &quot;Tiếp tục&quot; để sang bước upload file</p>
+            <p>3. Đảm bảo tất cả quân nhân đã có danh hiệu trước khi chuyển bước.</p>
+            <p>4. Hoàn tất khai báo, nhấn &quot;Tiếp tục&quot; để sang bước đính kèm tệp.</p>
           </div>
         }
         type="info"
@@ -294,10 +299,17 @@ export function Step3SetTitlesHCQKQT({
         style={{ marginBottom: 24 }}
       />
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 16,
+        }}
+      >
         <Space size="middle" align="center">
           <Tag color="red" style={{ fontSize: 14, padding: '4px 12px', margin: 0 }}>
-            Năm {nam}
+            Năm {nam} - Tháng {thang}
           </Tag>
           <Text type="secondary">
             Tổng số quân nhân: <strong>{personnel.length}</strong>

@@ -20,10 +20,9 @@ import {
   ConfigProvider,
   theme as antdTheme,
   Popconfirm,
-  DatePicker,
   Tooltip,
 } from 'antd';
-import dayjs, { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 import { getApiErrorMessage } from '@/lib/apiError';
 
 import {
@@ -47,10 +46,19 @@ import { apiClient } from '@/lib/apiClient';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { previewFileWithApi } from '@/utils/filePreview';
 import { useTheme } from '@/components/ThemeProvider';
-import { getDanhHieuName } from '@/constants/danhHieu.constants';
 import {
+  CONG_HIEN_HE_SO_GROUPS,
+  CONG_HIEN_HE_SO_RANGES,
+  type CongHienHeSoGroup,
+  getDanhHieuName,
+} from '@/constants/danhHieu.constants';
+import { renderServiceTime } from '@/lib/serviceTimeHelpers';
+import {
+  PROPOSAL_REVIEW_CARD_TITLES,
+  PROPOSAL_MONTH_OPTIONS,
   PROPOSAL_STATUS,
   PROPOSAL_TYPES,
+  isProposalType,
   getProposalTypeLabel,
 } from '@/constants/proposal.constants';
 
@@ -65,6 +73,7 @@ interface DanhHieuItem {
   ten_don_vi?: string;
   ma_don_vi?: string;
   nam: number;
+  thang?: number | null;
   danh_hieu: string | null;
   cap_bac?: string | null;
   chuc_vu?: string | null;
@@ -79,6 +88,7 @@ interface DanhHieuItem {
   file_quyet_dinh_bkbqp?: string | null;
   file_quyet_dinh_cstdtq?: string | null;
   ngay_nhan?: string | null;
+  thang_nhan?: number | null;
   co_quan_don_vi?: {
     id: string;
     ten_co_quan_don_vi: string;
@@ -151,6 +161,7 @@ interface ProposalDetail {
   id: string;
   loai_de_xuat: string;
   nam: number;
+  thang?: number;
   don_vi: {
     id: string;
     ma_don_vi: string;
@@ -205,13 +216,12 @@ export default function ProposalDetailPage() {
   } | null>(null);
 
   // Bulk ngày nhận cho HCCSVV
-  const [bulkNgayNhan, setBulkNgayNhan] = useState<Dayjs | null>(null);
+  const [bulkThangNhan, setBulkThangNhan] = useState<number | null>(null);
 
   // Selection states for Danh Hieu
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
   const bulkSelectedSet = new Set(selectedRowKeys.map(String));
-  const bulkValidYear = editedNienHan.find((_, idx) => bulkSelectedSet.has(String(idx)))?.nam_quyet_dinh;
 
   // Selection states for Thanh Tich
   const [selectedThanhTichKeys, setSelectedThanhTichKeys] = useState<React.Key[]>([]);
@@ -283,7 +293,7 @@ export default function ProposalDetailPage() {
         setEditedNienHan(
           parsedNienHan.map((item: DanhHieuItem) => ({
             ...item,
-            ngay_nhan: item.ngay_nhan ?? null,
+            thang_nhan: item.thang_nhan ?? item.thang ?? null,
           }))
         );
         setEditedCongHien(parsedCongHien);
@@ -301,14 +311,20 @@ export default function ProposalDetailPage() {
         if (proposalAwardRows.length > 0) {
           detailTasks.push(fetchPersonnelDetails(proposalAwardRows));
         }
-        if (proposalResponse.data.loai_de_xuat === PROPOSAL_TYPES.CONG_HIEN && parsedCongHien.length > 0) {
+        if (
+          proposalResponse.data.loai_de_xuat === PROPOSAL_TYPES.CONG_HIEN &&
+          parsedCongHien.length > 0
+        ) {
           detailTasks.push(fetchPositionHistories(parsedCongHien));
         }
         if (detailTasks.length > 0) {
           await Promise.all(detailTasks);
         }
       } else {
-        setMessageAlert({ type: 'error', text: proposalResponse.message || 'Không tải được đề xuất' });
+        setMessageAlert({
+          type: 'error',
+          text: proposalResponse.message || 'Không tải được đề xuất',
+        });
       }
     } catch (error: unknown) {
       setMessageAlert({ type: 'error', text: getApiErrorMessage(error, 'Lỗi khi tải đề xuất') });
@@ -355,7 +371,6 @@ export default function ProposalDetailPage() {
                 historiesMap[item.personnel_id] = positionHistoryResponse.data;
               }
             } catch (error) {
-              // Ignore errors for individual personnel
               historiesMap[item.personnel_id] = [];
             }
           }
@@ -368,16 +383,16 @@ export default function ProposalDetailPage() {
     }
   };
 
-  const calculateTotalTimeByGroup = (personnelId: string, group: '0.7' | '0.8' | '0.9-1.0') => {
+  const calculateTotalTimeByGroup = (personnelId: string, group: CongHienHeSoGroup) => {
     const histories = positionHistoriesMap[personnelId] || [];
     let totalMonths = 0;
 
     histories.forEach((history: PositionHistoryEntry) => {
       const heSo = Number(history.he_so_chuc_vu) || 0;
-      const belongsToGroup =
-        (group === '0.7' && heSo >= 0.7 && heSo < 0.8) ||
-        (group === '0.8' && heSo >= 0.8 && heSo < 0.9) ||
-        (group === '0.9-1.0' && heSo >= 0.9 && heSo <= 1.0);
+      const range = CONG_HIEN_HE_SO_RANGES[group];
+      const belongsToGroup = range
+        ? heSo >= range.min && (range.includeMax ? heSo <= range.max : heSo < range.max)
+        : false;
 
       if (belongsToGroup && history.so_thang !== null && history.so_thang !== undefined) {
         totalMonths += history.so_thang;
@@ -418,7 +433,10 @@ export default function ProposalDetailPage() {
           router.push('/admin/proposals/review');
         }, 2000);
       } else {
-        setMessageAlert({ type: 'error', text: rejectResponse.message || 'Lỗi khi từ chối đề xuất' });
+        setMessageAlert({
+          type: 'error',
+          text: rejectResponse.message || 'Lỗi khi từ chối đề xuất',
+        });
       }
     } catch (error: unknown) {
       setMessageAlert({
@@ -483,8 +501,8 @@ export default function ProposalDetailPage() {
         const label = `Huy chương Chiến sĩ vẻ vang ${index + 1}: ${item.ho_ten || 'N/A'}`;
         if (!item.so_quyet_dinh || item.so_quyet_dinh.trim() === '') {
           missingDecisions.push(label);
-        } else if (!item.ngay_nhan) {
-          missingDecisions.push(`${label} (thiếu ngày nhận)`);
+        } else if (!item.thang_nhan) {
+          missingDecisions.push(`${label} (thiếu tháng nhận)`);
         }
       });
     }
@@ -563,8 +581,8 @@ export default function ProposalDetailPage() {
             const loaiDeXuat = proposal?.loai_de_xuat;
             const suffixMap: Record<string, string> = {
               [PROPOSAL_TYPES.NIEN_HAN]: `Đã thêm ${importedNienHan}/${totalNienHan} Huy chương Chiến sĩ vẻ vang thành công.`,
-              [PROPOSAL_TYPES.HC_QKQT]: `Đã thêm ${importedNienHan}/${totalNienHan} Huy chương Quân kỳ Quyết thắng thành công.`,
-              [PROPOSAL_TYPES.KNC_VSNXD_QDNDVN]: `Đã thêm ${importedNienHan}/${totalNienHan} Kỷ niệm chương VSNXD QĐNDVN thành công.`,
+              [PROPOSAL_TYPES.HC_QKQT]: `Đã thêm ${importedNienHan}/${totalNienHan} Huy chương Quân kỳ quyết thắng thành công.`,
+              [PROPOSAL_TYPES.KNC_VSNXD_QDNDVN]: `Đã thêm ${importedNienHan}/${totalNienHan} Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN thành công.`,
               [PROPOSAL_TYPES.CONG_HIEN]: `Đã thêm ${importedDanhHieu}/${totalDanhHieu} Huân chương Bảo vệ Tổ quốc thành công.`,
               [PROPOSAL_TYPES.NCKH]: `Đã thêm ${importedThanhTich}/${totalThanhTich} thành tích nghiên cứu khoa học thành công.`,
               [PROPOSAL_TYPES.DON_VI_HANG_NAM]: `Đã thêm ${importedDanhHieu}/${totalDanhHieu} khen thưởng đơn vị thành công.`,
@@ -580,7 +598,10 @@ export default function ProposalDetailPage() {
             const successMessage = `Đã phê duyệt đề xuất thành công. ${suffixMap[loaiDeXuat ?? ''] ?? defaultSuffix}`;
 
             if (approvalImportSummary.errors && approvalImportSummary.errors.length > 0) {
-              message.warning(`${successMessage} Có ${approvalImportSummary.errors.length} lỗi xảy ra.`, 5);
+              message.warning(
+                `${successMessage} Có ${approvalImportSummary.errors.length} lỗi xảy ra.`,
+                5
+              );
               setMessageAlert({
                 type: 'error',
                 text: `Có ${approvalImportSummary.errors.length} lỗi khi thêm dữ liệu:\n${approvalImportSummary.errors
@@ -855,6 +876,32 @@ export default function ProposalDetailPage() {
         </div>
       ),
     },
+    ...((
+      [PROPOSAL_TYPES.NIEN_HAN, PROPOSAL_TYPES.HC_QKQT, PROPOSAL_TYPES.KNC_VSNXD_QDNDVN] as string[]
+    ).includes(proposal?.loai_de_xuat)
+      ? [
+          {
+            title: 'Tháng',
+            dataIndex: 'thang',
+            key: 'thang',
+            width: 70,
+            align: 'center' as const,
+            render: (val: number | null | undefined) => val ?? '',
+          },
+          {
+            title: 'Tổng thời gian',
+            key: 'tong_thoi_gian',
+            width: 150,
+            align: 'center' as const,
+            render: (_: unknown, record: DanhHieuItem) => {
+              const person = personnelDetails[record.personnel_id ?? ''] as any;
+              if (!person) return '';
+              if (!record.thang) return <Text type="secondary">-</Text>;
+              return renderServiceTime(person, record.nam, record.thang);
+            },
+          },
+        ]
+      : []),
     {
       title: 'Danh hiệu',
       dataIndex: 'danh_hieu',
@@ -878,7 +925,7 @@ export default function ProposalDetailPage() {
             width: 150,
             align: 'center' as const,
             render: (_: unknown, record: DanhHieuItem) =>
-              calculateTotalTimeByGroup(record.personnel_id ?? '', '0.7'),
+              calculateTotalTimeByGroup(record.personnel_id ?? '', CONG_HIEN_HE_SO_GROUPS.LEVEL_07),
           },
           {
             title: 'Tổng thời gian (0.8)',
@@ -886,7 +933,7 @@ export default function ProposalDetailPage() {
             width: 150,
             align: 'center' as const,
             render: (_: unknown, record: DanhHieuItem) =>
-              calculateTotalTimeByGroup(record.personnel_id ?? '', '0.8'),
+              calculateTotalTimeByGroup(record.personnel_id ?? '', CONG_HIEN_HE_SO_GROUPS.LEVEL_08),
           },
           {
             title: 'Tổng thời gian (0.9-1.0)',
@@ -894,42 +941,39 @@ export default function ProposalDetailPage() {
             width: 150,
             align: 'center' as const,
             render: (_: unknown, record: DanhHieuItem) =>
-              calculateTotalTimeByGroup(record.personnel_id ?? '', '0.9-1.0'),
+              calculateTotalTimeByGroup(
+                record.personnel_id ?? '',
+                CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10
+              ),
           },
         ]
       : []),
-    ...(proposal?.loai_de_xuat === PROPOSAL_TYPES.NIEN_HAN
-      ? [
-          {
-            title: 'Ngày nhận',
-            key: 'ngay_nhan',
-            width: 160,
-            align: 'center' as const,
-            render: (_: unknown, record: DanhHieuItem, index: number) => {
-              const hasDecision = !!record.so_quyet_dinh?.trim();
-              const validYear = record.nam_quyet_dinh;
-              return (
-                <DatePicker
-                  value={record.ngay_nhan ? dayjs(record.ngay_nhan) : null}
-                  format="DD/MM/YYYY"
-                  disabled={!hasDecision || proposal?.status !== PROPOSAL_STATUS.PENDING}
-                  placeholder={hasDecision ? 'Chọn ngày nhận' : 'Chưa có số QĐ'}
-                  disabledDate={date => !!validYear && date.year() !== validYear}
-                  onChange={val => {
-                    if (val && validYear && val.year() !== validYear) {
-                      message.warning(`Ngày nhận phải trong năm ${validYear}`);
-                      return;
-                    }
-                    updateNienHan(index, 'ngay_nhan', val ? val.format('YYYY-MM-DD') : null);
-                  }}
-                  style={{ width: '100%' }}
-                  size="small"
-                />
-              );
-            },
-          },
-        ]
-      : []),
+    {
+      title: 'Tháng nhận',
+      key: 'thang_nhan',
+      width: 100,
+      align: 'center' as const,
+      render: (_: unknown, record: DanhHieuItem, index: number) => {
+        const hasDecision = !!record.so_quyet_dinh?.trim();
+        return (
+          <Select
+            value={record.thang_nhan ?? undefined}
+            onChange={val => updateNienHan(index, 'thang_nhan', val)}
+            disabled={!hasDecision || proposal?.status !== PROPOSAL_STATUS.PENDING}
+            placeholder={hasDecision ? 'Tháng' : '—'}
+            size="small"
+            style={{ width: '100%' }}
+            allowClear
+          >
+            {PROPOSAL_MONTH_OPTIONS.map(m => (
+              <Select.Option key={m} value={m}>
+                T{m}
+              </Select.Option>
+            ))}
+          </Select>
+        );
+      },
+    },
     {
       title: 'Số quyết định',
       dataIndex: 'so_quyet_dinh',
@@ -1305,8 +1349,8 @@ export default function ProposalDetailPage() {
           <Breadcrumb.Item href="/">
             <HomeOutlined />
           </Breadcrumb.Item>
-          <Breadcrumb.Item href="/admin/proposals/review">Duyệt Đề Xuất</Breadcrumb.Item>
-          <Breadcrumb.Item>Chi Tiết</Breadcrumb.Item>
+          <Breadcrumb.Item href="/admin/proposals/review">Duyệt đề xuất</Breadcrumb.Item>
+          <Breadcrumb.Item>Chi tiết</Breadcrumb.Item>
         </Breadcrumb>
 
         <div style={{ marginBottom: '24px' }}>
@@ -1322,7 +1366,7 @@ export default function ProposalDetailPage() {
             style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}
           >
             <div>
-              <Title level={2}>Chi Tiết Đề Xuất</Title>
+              <Title level={2}>Chi tiết đề xuất</Title>
               <Paragraph>Xem và chỉnh sửa trước khi phê duyệt</Paragraph>
             </div>
             {proposal.status === PROPOSAL_STATUS.APPROVED ? (
@@ -1506,7 +1550,11 @@ export default function ProposalDetailPage() {
 
         {proposal.loai_de_xuat === PROPOSAL_TYPES.NCKH && (
           <Card
-            title="Thành Tích Khoa Học"
+            title={
+              isProposalType(proposal.loai_de_xuat)
+                ? PROPOSAL_REVIEW_CARD_TITLES[proposal.loai_de_xuat]
+                : getProposalTypeLabel(proposal.loai_de_xuat)
+            }
             extra={
               proposal.status === PROPOSAL_STATUS.PENDING && (
                 <Button
@@ -1548,68 +1596,56 @@ export default function ProposalDetailPage() {
           proposal.loai_de_xuat === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN) && (
           <Card
             title={
-              proposal.loai_de_xuat === PROPOSAL_TYPES.NIEN_HAN
-                ? 'Danh Sách Huy chương Chiến sĩ vẻ vang'
-                : proposal.loai_de_xuat === PROPOSAL_TYPES.HC_QKQT
-                  ? 'Huy chương quân kỳ Quyết Thắng'
-                  : 'Kỷ Niệm Chương Vì Sự Nghiệp XD QĐNDVN'
+              isProposalType(proposal.loai_de_xuat)
+                ? PROPOSAL_REVIEW_CARD_TITLES[proposal.loai_de_xuat]
+                : getProposalTypeLabel(proposal.loai_de_xuat)
             }
             extra={
               proposal.status === PROPOSAL_STATUS.PENDING && (
                 <Space wrap>
-                  {proposal.loai_de_xuat === PROPOSAL_TYPES.NIEN_HAN &&
-                    selectedRowKeys.length > 0 && (
-                      <Space>
-                        <DatePicker
-                          value={bulkNgayNhan}
-                          format="DD/MM/YYYY"
-                          placeholder="Chọn ngày nhận"
-                          disabledDate={date => !!bulkValidYear && date.year() !== bulkValidYear}
-                          onChange={val => {
-                            if (val && bulkValidYear && val.year() !== bulkValidYear) {
-                              message.warning(`Ngày nhận phải trong năm ${bulkValidYear}`);
+                  {selectedRowKeys.length > 0 && (
+                    <Space>
+                      <Select
+                        value={bulkThangNhan}
+                        onChange={val => setBulkThangNhan(val)}
+                        placeholder="Chọn tháng nhận"
+                        style={{ width: 140 }}
+                        allowClear
+                      >
+                        {PROPOSAL_MONTH_OPTIONS.map(m => (
+                          <Select.Option key={m} value={m}>
+                            Tháng {m}
+                          </Select.Option>
+                        ))}
+                      </Select>
+                      <Tooltip
+                        title={`Áp dụng tháng nhận cho ${selectedRowKeys.length} hàng được chọn`}
+                      >
+                        <Button
+                          onClick={() => {
+                            if (!bulkThangNhan) {
+                              message.warning('Vui lòng chọn tháng nhận trước');
                               return;
                             }
-                            setBulkNgayNhan(val);
+                            setEditedNienHan(prev =>
+                              prev.map((item, idx) =>
+                                bulkSelectedSet.has(String(idx))
+                                  ? { ...item, thang_nhan: bulkThangNhan }
+                                  : item
+                              )
+                            );
+                            const count = selectedRowKeys.length;
+                            setBulkThangNhan(null);
+                            message.success(
+                              `Đã đặt tháng ${bulkThangNhan} cho ${count} hàng được chọn`
+                            );
                           }}
-                          style={{ width: 160 }}
-                        />
-                        <Tooltip
-                          title={`Áp dụng ngày nhận cho ${selectedRowKeys.length} hàng được chọn`}
                         >
-                          <Button
-                            onClick={() => {
-                              if (!bulkNgayNhan) {
-                                message.warning('Vui lòng chọn ngày nhận trước');
-                                return;
-                              }
-                              const missingDecision = editedNienHan.some(
-                                (item, idx) =>
-                                  bulkSelectedSet.has(String(idx)) &&
-                                  (!item.so_quyet_dinh || item.so_quyet_dinh.trim() === '')
-                              );
-                              if (missingDecision) {
-                                message.warning('Một số quân nhân chưa có số quyết định');
-                                return;
-                              }
-                              const dateStr = bulkNgayNhan.format('YYYY-MM-DD');
-                              setEditedNienHan(prev =>
-                                prev.map((item, idx) =>
-                                  bulkSelectedSet.has(String(idx))
-                                    ? { ...item, ngay_nhan: dateStr }
-                                    : item
-                                )
-                              );
-                              const count = selectedRowKeys.length;
-                              setBulkNgayNhan(null);
-                              message.success(`Đã đặt ngày ${bulkNgayNhan.format('DD/MM/YYYY')} cho ${count} hàng được chọn`);
-                            }}
-                          >
-                            Áp dụng ({selectedRowKeys.length})
-                          </Button>
-                        </Tooltip>
-                      </Space>
-                    )}
+                          Áp dụng ({selectedRowKeys.length})
+                        </Button>
+                      </Tooltip>
+                    </Space>
+                  )}
                   <Button
                     type="primary"
                     icon={<FileTextOutlined />}
@@ -1647,7 +1683,11 @@ export default function ProposalDetailPage() {
 
         {proposal.loai_de_xuat === PROPOSAL_TYPES.CONG_HIEN && (
           <Card
-            title="Danh Sách Huân chương Bảo vệ Tổ quốc"
+            title={
+              isProposalType(proposal.loai_de_xuat)
+                ? PROPOSAL_REVIEW_CARD_TITLES[proposal.loai_de_xuat]
+                : getProposalTypeLabel(proposal.loai_de_xuat)
+            }
             extra={
               proposal.status === PROPOSAL_STATUS.PENDING && (
                 <Button
@@ -1696,9 +1736,9 @@ export default function ProposalDetailPage() {
           editedDanhHieu.length > 0 && (
             <Card
               title={
-                proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM
-                  ? 'Danh Hiệu Đơn Vị Hằng Năm'
-                  : 'Danh Hiệu Hằng Năm'
+                isProposalType(proposal.loai_de_xuat)
+                  ? PROPOSAL_REVIEW_CARD_TITLES[proposal.loai_de_xuat]
+                  : getProposalTypeLabel(proposal.loai_de_xuat)
               }
               extra={
                 proposal.status === PROPOSAL_STATUS.PENDING && (

@@ -5,7 +5,7 @@ import { ROLES } from '../constants/roles.constants';
 /**
  * Gets the admin username from the request.
  * @param req - Express request
- * @returns Admin username, or `Admin` as fallback
+ * @returns Admin username, or Admin as fallback
  */
 export function getAdminUsername(req: Request): string {
   return req.user?.username ?? 'Admin';
@@ -66,7 +66,7 @@ export async function getSubordinateUnitIds(coQuanDonViId: string): Promise<stri
 
 /**
  * Resolves the manager's unit context including subordinate unit IDs.
- * Returns metadata for building service-level filters — not a Prisma `where` object.
+ * Returns metadata for service-level filters, not a Prisma where object.
  * @param req - Express request
  * @returns Unit context with optional sub-unit list, or null when not applicable
  */
@@ -91,15 +91,15 @@ export async function getManagerUnitContext(req: Request): Promise<Record<string
 }
 
 /**
- * Builds a Prisma `where` condition for personnel filtering by unit.
- * Reused by both manager-based filtering and explicit `unit_id` filtering.
+ * Builds a Prisma where condition for personnel filtering by unit.
+ * Reused by manager-based filtering and explicit unit_id filtering.
  *
  * - If the unit is a parent unit, includes personnel in the parent or its subordinate units.
  * - If the unit is a subordinate unit, filters directly by that subordinate unit.
  *
  * @param unit - Unit payload containing co_quan_don_vi_id or don_vi_truc_thuoc_id
  * @param extraFilter - Optional additional personnel filters
- * @returns Prisma `where` condition for personnel, or null when no unit is available
+ * @returns Prisma where condition for personnel, or null when no unit is available
  */
 export async function buildUnitWhereFilter(
   unit: { co_quan_don_vi_id?: string | null; don_vi_truc_thuoc_id?: string | null },
@@ -143,4 +143,13 @@ export async function buildManagerQuanNhanFilter(
   const managerUnit = await getManagerUnitFilter(req);
   if (!managerUnit) return null;
   return buildUnitWhereFilter(managerUnit, extraFilter);
+}
+
+/**
+ * Normalizes a route param that may be a string or string array to a single string.
+ * @param value - Route param value from Express params
+ * @returns The first element if array, or the value itself
+ */
+export function resolveIdParam(value: string | string[]): string {
+  return Array.isArray(value) ? value[0] : value;
 }

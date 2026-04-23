@@ -260,7 +260,7 @@ export default function ProposalReviewPage() {
               icon={<EyeOutlined />}
               onClick={() => router.push(`/admin/proposals/review/${record.id}`)}
             >
-              {record.status === PROPOSAL_STATUS.PENDING ? 'Xem và Duyệt' : 'Xem Chi Tiết'}
+              {record.status === PROPOSAL_STATUS.PENDING ? 'Xem và duyệt' : 'Xem chi tiết'}
             </Button>
             <Popconfirm
               title="Xóa đề xuất"
@@ -337,11 +337,11 @@ export default function ProposalReviewPage() {
         <Breadcrumb.Item href="/">
           <HomeOutlined />
         </Breadcrumb.Item>
-        <Breadcrumb.Item>Duyệt Đề Xuất</Breadcrumb.Item>
+        <Breadcrumb.Item>Duyệt đề xuất</Breadcrumb.Item>
       </Breadcrumb>
 
       <div style={{ marginBottom: '24px' }}>
-        <Title level={2}>Duyệt Đề Xuất Khen Thưởng</Title>
+        <Title level={2}>Duyệt đề xuất khen thưởng</Title>
         <Paragraph>Xem và phê duyệt các đề xuất khen thưởng từ các đơn vị</Paragraph>
       </div>
 
@@ -366,7 +366,7 @@ export default function ProposalReviewPage() {
                   {activeTab === 'all'
                     ? 'Danh sách tất cả các đề xuất'
                     : activeTab === 'pending'
-                      ? "Nhấn 'Xem và Duyệt' để kiểm tra và phê duyệt đề xuất"
+                      ? "Nhấn 'Xem và duyệt' để kiểm tra và phê duyệt đề xuất"
                       : activeTab === 'approved'
                         ? 'Danh sách các đề xuất đã được phê duyệt và import vào hệ thống'
                         : 'Danh sách các đề xuất đã bị từ chối'}

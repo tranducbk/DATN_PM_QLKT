@@ -120,13 +120,13 @@ export default function ManagerCommemorationMedalsPage() {
 
   const columns: TableColumnsType<CommemorationMedal> = [
     {
-      title: 'Năm',
-      dataIndex: 'nam',
-      key: 'nam',
-      width: 80,
-      minWidth: 70,
+      title: 'Tháng/Năm',
+      key: 'thang_nam',
+      width: 100,
+      minWidth: 90,
       align: 'center',
-      render: (nam: number) => nam || '-',
+      render: (_: unknown, record: any) =>
+        record.thang && record.nam ? `${record.thang}/${record.nam}` : record.nam || '-',
     },
     {
       title: 'Cấp bậc',

@@ -1,13 +1,27 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Table, Input, Select, Space, Alert, Typography, InputNumber, Divider, Empty, message } from 'antd';
+import {
+  Table,
+  Input,
+  Select,
+  Space,
+  Alert,
+  Typography,
+  InputNumber,
+  Divider,
+  Empty,
+  message,
+} from 'antd';
 import { SearchOutlined, TeamOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { formatDate } from '@/lib/utils';
 import { apiClient } from '@/lib/apiClient';
-import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/lib/constants/pagination.constants';
+import {
+  DEFAULT_ANTD_TABLE_PAGINATION,
+  FETCH_ALL_LIMIT,
+} from '@/lib/constants/pagination.constants';
 import { ExcelImportSection } from './ExcelImportSection';
 import * as XLSX from 'xlsx';
 
@@ -286,17 +300,20 @@ export function Step2SelectPersonnelNCKH({
             const duplicateIds = new Set<string>();
             (batchResponse.data as any[]).forEach(result => {
               if (result.exists) {
-                const hoTen = personnel.find(p => p.id === result.personnel_id)?.ho_ten || result.personnel_id;
+                const hoTen =
+                  personnel.find(p => p.id === result.personnel_id)?.ho_ten || result.personnel_id;
                 errors.push(`${hoTen}: ${result.message}`);
                 duplicateIds.add(result.personnel_id);
               }
             });
-            const filteredTitleData = duplicateIds.size > 0
-              ? titleData.filter(item => !duplicateIds.has(item.personnel_id))
-              : titleData;
-            const filteredPersonnelIds = duplicateIds.size > 0
-              ? uniquePersonnelIds.filter(id => !duplicateIds.has(id))
-              : uniquePersonnelIds;
+            const filteredTitleData =
+              duplicateIds.size > 0
+                ? titleData.filter(item => !duplicateIds.has(item.personnel_id))
+                : titleData;
+            const filteredPersonnelIds =
+              duplicateIds.size > 0
+                ? uniquePersonnelIds.filter(id => !duplicateIds.has(id))
+                : uniquePersonnelIds;
             resolve({
               imported: filteredTitleData.length,
               total: dataRows.length,
@@ -370,14 +387,12 @@ export function Step2SelectPersonnelNCKH({
   return (
     <div>
       <Alert
-        message="Bước 2: Chọn quân nhân - ĐTKH/SKKH"
+        message="Bước 2: Lựa chọn quân nhân - Đề tài khoa học/Sáng kiến khoa học"
         description={
           <div>
-            <p>1. Nhập năm đề xuất khen thưởng</p>
-            <p>2. Chọn các quân nhân có thành tích ĐTKH/SKKH từ danh sách dưới đây</p>
-            <p>
-              3. Sau khi chọn xong, nhấn &quot;Tiếp tục&quot; để sang bước nhập thông tin chi tiết
-            </p>
+            <p>1. Chọn năm đề xuất để hệ thống lọc dữ liệu theo đúng kỳ xét.</p>
+            <p>2. Lựa chọn quân nhân có thành tích phù hợp từ danh sách.</p>
+            <p>3. Kiểm tra lại số lượng đã chọn, sau đó nhấn &quot;Tiếp tục&quot; để sang bước khai báo chi tiết.</p>
           </div>
         }
         type="info"
@@ -396,7 +411,9 @@ export function Step2SelectPersonnelNCKH({
             templateFileName="mau_import_thanh_tich_khoa_hoc"
             onImportSuccess={handleImportSuccess}
             selectedPersonnelIds={selectedPersonnelIds}
-            selectedNames={selectedPersonnelIds.map(id => personnel.find(p => p.id === id)?.ho_ten || '')}
+            selectedNames={selectedPersonnelIds.map(
+              id => personnel.find(p => p.id === id)?.ho_ten || ''
+            )}
             entityLabel="quân nhân"
             localProcessing={true}
             onLocalProcess={handleLocalExcelProcess}
@@ -404,7 +421,6 @@ export function Step2SelectPersonnelNCKH({
             reviewPath="/admin/awards/bulk/import-review-nckh"
             sessionStorageKey="importPreviewDataNCKH"
           />
-
         </>
       )}
 

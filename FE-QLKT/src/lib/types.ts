@@ -1,11 +1,11 @@
-/** Tài khoản, ngày, entity đơn giản. Chi tiết danh sách quân nhân: `personnelList.ts`. */
+/** Shared base types for accounts, dates, and simple entities. */
 
 import { ROLES } from '@/constants/roles.constants';
 
 /** Pagination metadata returned by list APIs. */
 export type PaginationMeta = { total: number; page?: number; limit?: number; totalPages?: number };
 
-/** Cấu trúc trả về chung của tất cả hàm trong `lib/api/*`. */
+/** Standard API response shape used across API modules. */
 export type ApiResponse<T = any> = { success: boolean; data?: T; message?: string; pagination?: PaginationMeta };
 
 export const USER_ROLE_VALUES = [
@@ -18,10 +18,10 @@ export const USER_ROLE_VALUES = [
 /** Vai trò tài khoản — khớp BE / JWT */
 export type UserRole = (typeof USER_ROLE_VALUES)[number];
 
-/** Ngày từ API/form: ISO string, `Date`, hoặc thiếu. */
+/** Date input from API/forms: ISO string, Date, null, or undefined. */
 export type DateInput = string | Date | null | undefined;
 
-/** Điểm thời gian bắt buộc (không null) — ví dụ `calculateDuration` */
+/** Required date point (null is not allowed). */
 export type DatePoint = string | Date;
 
 /** Tài khoản trong danh sách / layout (payload tóm tắt từ API). */
@@ -34,7 +34,7 @@ export interface Account {
   createdAt: string;
 }
 
-/** Quân nhân flat (`don_vi_id` đơn); cây đơn vị đầy đủ — `PersonnelListItem` trong `personnelList.ts`. */
+/** Flat personnel row used by simple list screens. */
 export interface Personnel {
   id: string;
   cccd: string;
@@ -46,7 +46,7 @@ export interface Personnel {
   ngay_nhap_ngu: string;
 }
 
-/** Đơn vị tóm tắt; không dùng cho cây admin (`UnitApiRow`). */
+/** Lightweight unit shape for quick selection/display. */
 export interface Unit {
   id: string;
   ma_don_vi: string;
@@ -54,7 +54,7 @@ export interface Unit {
   quan_so: number;
 }
 
-/** Chức vụ theo đơn vị đơn; phân cấp CQ/ĐVTT — `ManagerPositionRow` trong `personnelList.ts`. */
+/** Position data scoped to a single unit. */
 export interface Position {
   id: string;
   ten_chuc_vu: string;

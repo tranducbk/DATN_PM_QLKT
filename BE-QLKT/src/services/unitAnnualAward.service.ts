@@ -9,6 +9,7 @@ import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { parseHeaderMap, getHeaderCol, parseBooleanValue, sanitizeRowData } from '../helpers/excelHelper';
 import { NotFoundError, ValidationError, ForbiddenError } from '../middlewares/errorHandler';
+import { resolveUnit, buildUnitIdFields } from '../helpers/unitHelper';
 import { applyThinBordersToGrid } from '../helpers/excelTemplateHelper';
 import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
 
@@ -231,18 +232,7 @@ class UnitAnnualAwardService {
     const year = Number(nam);
     const unitId = don_vi_id;
 
-    const coQuanDonVi = await prisma.coQuanDonVi.findUnique({ where: { id: unitId } });
-    const donViTrucThuoc = await prisma.donViTrucThuoc.findUnique({ where: { id: unitId } });
-
-    if (!coQuanDonVi && !donViTrucThuoc) {
-      throw new NotFoundError('Đơn vị');
-    }
-
-    const isCoQuanDonVi = !!coQuanDonVi;
-
-    const whereCondition = isCoQuanDonVi
-      ? { co_quan_don_vi_id: unitId, nam: year }
-      : { don_vi_truc_thuoc_id: unitId, nam: year };
+    const { isCoQuanDonVi } = await resolveUnit(unitId);
 
     const record = await prisma.danhHieuDonViHangNam.upsert({
       where: isCoQuanDonVi
@@ -254,8 +244,7 @@ class UnitAnnualAwardService {
         status: PROPOSAL_STATUS.PENDING,
       },
       create: {
-        co_quan_don_vi_id: isCoQuanDonVi ? unitId : null,
-        don_vi_truc_thuoc_id: isCoQuanDonVi ? null : unitId,
+        ...buildUnitIdFields(unitId, isCoQuanDonVi),
         nam: year,
         danh_hieu: danh_hieu || null,
         ghi_chu: ghi_chu || null,
@@ -496,14 +485,7 @@ class UnitAnnualAwardService {
     const year = Number(nam);
     const unitId = don_vi_id;
 
-    const [coQuanDonVi, donViTrucThuoc] = await Promise.all([
-      prisma.coQuanDonVi.findUnique({ where: { id: unitId } }),
-      prisma.donViTrucThuoc.findUnique({ where: { id: unitId } }),
-    ]);
-
-    if (!coQuanDonVi && !donViTrucThuoc) {
-      throw new NotFoundError('Đơn vị');
-    }
+    const { isCoQuanDonVi } = await resolveUnit(unitId);
 
     if (danh_hieu) {
       const existing = await prisma.danhHieuDonViHangNam.findFirst({
@@ -523,22 +505,9 @@ class UnitAnnualAwardService {
       }
     }
 
-    const isCoQuanDonVi = !!coQuanDonVi;
-
     const whereCondition = isCoQuanDonVi
       ? { unique_co_quan_don_vi_nam_dh: { co_quan_don_vi_id: unitId, nam: year } }
       : { unique_don_vi_truc_thuoc_nam_dh: { don_vi_truc_thuoc_id: unitId, nam: year } };
-
-    const createData = {
-      nam: year,
-      danh_hieu: danh_hieu || null,
-      so_quyet_dinh: so_quyet_dinh || null,
-      ghi_chu: ghi_chu || null,
-      nguoi_tao_id: nguoi_tao_id,
-      status: PROPOSAL_STATUS.APPROVED,
-      // co_quan_don_vi_id for main units, don_vi_truc_thuoc_id for sub-units
-      ...(isCoQuanDonVi ? { co_quan_don_vi_id: unitId } : { don_vi_truc_thuoc_id: unitId }),
-    };
 
     const record = await prisma.danhHieuDonViHangNam.upsert({
       where: whereCondition,
@@ -547,7 +516,15 @@ class UnitAnnualAwardService {
         so_quyet_dinh: so_quyet_dinh || null,
         ghi_chu: ghi_chu || null,
       },
-      create: createData,
+      create: {
+        ...buildUnitIdFields(unitId, isCoQuanDonVi),
+        nam: year,
+        danh_hieu: danh_hieu || null,
+        so_quyet_dinh: so_quyet_dinh || null,
+        ghi_chu: ghi_chu || null,
+        nguoi_tao_id: nguoi_tao_id,
+        status: PROPOSAL_STATUS.APPROVED,
+      },
       include: { CoQuanDonVi: true, DonViTrucThuoc: true },
     });
 
@@ -626,15 +603,7 @@ class UnitAnnualAwardService {
    * Lấy hồ sơ gợi ý hằng năm của đơn vị (tương tự getAnnualProfile)
    */
   async getAnnualUnit(donViId, year) {
-    const donVi =
-      (await prisma.coQuanDonVi.findUnique({ where: { id: donViId } })) ||
-      (await prisma.donViTrucThuoc.findUnique({ where: { id: donViId } }));
-
-    if (!donVi) {
-      throw new NotFoundError('Đơn vị');
-    }
-
-    const isCoQuanDonVi = !('co_quan_don_vi_id' in donVi);
+    const { isCoQuanDonVi } = await resolveUnit(donViId);
 
     let profile = await prisma.hoSoDonViHangNam.findFirst({
       where: {
@@ -652,8 +621,7 @@ class UnitAnnualAwardService {
       const currentYear = new Date().getFullYear();
       profile = await prisma.hoSoDonViHangNam.create({
         data: {
-          co_quan_don_vi_id: isCoQuanDonVi ? donViId : null,
-          don_vi_truc_thuoc_id: isCoQuanDonVi ? null : donViId,
+          ...buildUnitIdFields(donViId, isCoQuanDonVi),
           nam: currentYear,
           tong_dvqt: 0,
           tong_dvqt_json: [],
@@ -676,72 +644,60 @@ class UnitAnnualAwardService {
    * Tính toán lại hồ sơ hằng năm của đơn vị (tương tự recalculateAnnualProfile)
    */
   async recalculateAnnualUnit(donViId, year = null) {
-    try {
-      const donVi =
-        (await prisma.coQuanDonVi.findUnique({ where: { id: donViId } })) ||
-        (await prisma.donViTrucThuoc.findUnique({ where: { id: donViId } }));
+    const { isCoQuanDonVi } = await resolveUnit(donViId);
+    const targetYear = year || new Date().getFullYear();
 
-      if (!donVi) {
-        throw new NotFoundError('Đơn vị');
-      }
-
-      const isCoQuanDonVi = !('co_quan_don_vi_id' in donVi);
-      const targetYear = year || new Date().getFullYear();
-
-      const danhHieuList = await prisma.danhHieuDonViHangNam.findMany({
+    const [danhHieuList, dvqtResult, dvqtLienTuc, bkbqpLienTuc] = await Promise.all([
+      prisma.danhHieuDonViHangNam.findMany({
         where: {
           OR: [{ co_quan_don_vi_id: donViId }, { don_vi_truc_thuoc_id: donViId }],
           nam: { lte: targetYear },
           status: PROPOSAL_STATUS.APPROVED,
         },
         orderBy: { nam: 'asc' },
-      });
+      }),
+      this.calculateTotalDVQT(donViId, targetYear),
+      this.calculateContinuousYears(donViId, targetYear),
+      this.calculateBKBQPContinuous(donViId, targetYear),
+    ]);
 
-      const dvqtResult = await this.calculateTotalDVQT(donViId, targetYear);
-      const dvqtLienTuc = await this.calculateContinuousYears(donViId, targetYear);
-      const bkbqpLienTuc = await this.calculateBKBQPContinuous(donViId, targetYear);
+    const du_dieu_kien_bk_tong_cuc = dvqtLienTuc % 2 === 0 && dvqtLienTuc >= 1;
+    const du_dieu_kien_bk_thu_tuong =
+      dvqtLienTuc % 7 === 0 && bkbqpLienTuc % 3 === 0 && dvqtLienTuc >= 7 && bkbqpLienTuc >= 3;
 
-      const du_dieu_kien_bk_tong_cuc = dvqtLienTuc % 2 === 0 && dvqtLienTuc >= 1;
-      const du_dieu_kien_bk_thu_tuong =
-        dvqtLienTuc % 7 === 0 && bkbqpLienTuc % 3 === 0 && dvqtLienTuc >= 7 && bkbqpLienTuc >= 3;
+    const currentYearAward = danhHieuList.find(dh => dh.nam === targetYear);
+    const hasDecision = !!currentYearAward?.so_quyet_dinh;
 
-      const currentYearAward = danhHieuList.find(dh => dh.nam === targetYear);
-      const hasDecision = !!currentYearAward?.so_quyet_dinh;
+    const goi_y = this.buildSuggestion(dvqtLienTuc, hasDecision);
 
-      const goi_y = this.buildSuggestion(dvqtLienTuc, hasDecision);
+    const whereCondition = isCoQuanDonVi
+      ? { unique_co_quan_don_vi_nam: { co_quan_don_vi_id: donViId, nam: targetYear } }
+      : { unique_don_vi_truc_thuoc_nam: { don_vi_truc_thuoc_id: donViId, nam: targetYear } };
 
-      const whereCondition = isCoQuanDonVi
-        ? { unique_co_quan_don_vi_nam: { co_quan_don_vi_id: donViId, nam: targetYear } }
-        : { unique_don_vi_truc_thuoc_nam: { don_vi_truc_thuoc_id: donViId, nam: targetYear } };
+    const hoSoData = {
+      tong_dvqt: dvqtResult.total,
+      tong_dvqt_json: dvqtResult.details,
+      dvqt_lien_tuc: dvqtLienTuc % 7,
+      du_dieu_kien_bk_tong_cuc,
+      du_dieu_kien_bk_thu_tuong,
+      goi_y,
+    };
 
-      const hoSoData = {
-        tong_dvqt: dvqtResult.total,
-        tong_dvqt_json: dvqtResult.details,
-        dvqt_lien_tuc: dvqtLienTuc % 7,
-        du_dieu_kien_bk_tong_cuc,
-        du_dieu_kien_bk_thu_tuong,
-        goi_y,
-      };
+    const hoSo = await prisma.hoSoDonViHangNam.upsert({
+      where: whereCondition,
+      update: hoSoData,
+      create: {
+        ...hoSoData,
+        ...buildUnitIdFields(donViId, isCoQuanDonVi),
+        nam: targetYear,
+      },
+      include: {
+        CoQuanDonVi: true,
+        DonViTrucThuoc: true,
+      },
+    });
 
-      const hoSo = await prisma.hoSoDonViHangNam.upsert({
-        where: whereCondition,
-        update: hoSoData,
-        create: {
-          ...hoSoData,
-          co_quan_don_vi_id: isCoQuanDonVi ? donViId : null,
-          don_vi_truc_thuoc_id: isCoQuanDonVi ? null : donViId,
-          nam: targetYear,
-        },
-        include: {
-          CoQuanDonVi: true,
-          DonViTrucThuoc: true,
-        },
-      });
-
-      return hoSo;
-    } catch (error) {
-      throw error;
-    }
+    return hoSo;
   }
 
   /**

@@ -4,7 +4,11 @@ import { ROLES } from '../constants/roles.constants';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
-import { parsePersonnelIdsFromQuery, getManagerUnitFilter, getAdminUsername } from '../helpers/controllerHelper';
+import {
+  parsePersonnelIdsFromQuery,
+  getManagerUnitFilter,
+  getAdminUsername,
+} from '../helpers/controllerHelper';
 import { parsePagination } from '../helpers/paginationHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { notifyOnImport } from '../helpers/notification';
@@ -47,7 +51,13 @@ class MilitaryFlagController {
     if (query.repeat_map) {
       try {
         Object.assign(repeatMap, JSON.parse(query.repeat_map));
-      } catch (e) { writeSystemLog({ action: 'ERROR', resource: 'military-flag', description: `Dữ liệu repeat_map không hợp lệ: ${e}` }); }
+      } catch (e) {
+        writeSystemLog({
+          action: 'ERROR',
+          resource: 'military-flag',
+          description: `Dữ liệu repeat_map không hợp lệ: ${e}`,
+        });
+      }
     }
 
     const workbook = await militaryFlagService.exportTemplate(personnelIds, repeatMap);
@@ -72,7 +82,7 @@ class MilitaryFlagController {
       userRole: user.role,
       action: AUDIT_ACTIONS.IMPORT_PREVIEW,
       resource: 'military-flag',
-      description: `Tải lên file "${Buffer.from(file.originalname, 'latin1').toString('utf8')}" để review Huy chương Quân kỳ Quyết thắng: ${result.valid?.length ?? 0} hợp lệ, ${result.errors?.length ?? 0} lỗi`,
+      description: `Tải lên file "${Buffer.from(file.originalname, 'latin1').toString('utf8')}" để review Huy chương Quân kỳ quyết thắng: ${result.valid?.length ?? 0} hợp lệ, ${result.errors?.length ?? 0} lỗi`,
       payload: {
         filename: Buffer.from(file.originalname, 'latin1').toString('utf8'),
         total: result.total,
@@ -96,7 +106,14 @@ class MilitaryFlagController {
       payload: { imported: result.imported ?? items.length },
     });
     const personnelIds = items.map((i: { personnel_id: string }) => i.personnel_id);
-    notifyOnImport(user.id, 'military-flag', result.imported ?? items.length, personnelIds).catch((e) => writeSystemLog({ action: 'ERROR', resource: 'military-flag', description: `Lỗi gửi thông báo import HC quân kỳ quyết thắng: ${e}` }));
+    notifyOnImport(user.id, 'military-flag', result.imported ?? items.length, personnelIds).catch(
+      e =>
+        writeSystemLog({
+          action: 'ERROR',
+          resource: 'military-flag',
+          description: `Lỗi gửi thông báo import HC quân kỳ quyết thắng: ${e}`,
+        })
+    );
     return ResponseHelper.success(res, { data: result, message: 'Thao tác thành công' });
   });
 
@@ -196,7 +213,7 @@ class MilitaryFlagController {
     const result = await militaryFlagService.getByPersonnelId(personnel_id);
     return ResponseHelper.success(res, {
       data: { hasReceived: result.length > 0, data: result },
-      message: 'Lấy Huân chương Quân kỳ Quyết thắng theo quân nhân thành công',
+      message: 'Lấy Huân chương Quân kỳ quyết thắng theo quân nhân thành công',
     });
   });
 

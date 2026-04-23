@@ -10,11 +10,13 @@ import { writeSystemLog } from '../helpers/systemLogHelper';
 import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
 import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
 import { HCQKQT_YEARS_REQUIRED } from '../constants/danhHieu.constants';
+import { calculateServiceMonths, formatServiceDuration } from '../helpers/serviceYearsHelper';
 
 interface PreviewError {
   row: number;
   ho_ten: string;
   nam: number | unknown;
+  thang?: number | unknown;
   message: string;
 }
 
@@ -128,8 +130,7 @@ class MilitaryFlagService {
       const idValue = idCol ? row.getCell(idCol).value : null;
       const ho_ten = hoTenCol ? String(row.getCell(hoTenCol).value ?? '').trim() : '';
       const namVal = row.getCell(namCol).value;
-      const thangRaw = thangCol ? Number(row.getCell(thangCol).value) : NaN;
-      const thang = !isNaN(thangRaw) && thangRaw >= 1 && thangRaw <= 12 ? Math.floor(thangRaw) : 12;
+      const thangVal = thangCol ? row.getCell(thangCol).value : null;
       const cap_bac = capBacCol ? String(row.getCell(capBacCol).value ?? '').trim() : null;
       const chuc_vu = chucVuCol ? String(row.getCell(chucVuCol).value ?? '').trim() : null;
       const so_quyet_dinh = soQuyetDinhCol
@@ -144,6 +145,7 @@ class MilitaryFlagService {
       const missingFields: string[] = [];
       if (!idValue) missingFields.push('ID');
       if (!namVal) missingFields.push('Năm');
+      if (!thangVal) missingFields.push('Tháng');
       if (missingFields.length > 0) {
         errors.push({
           row: rowNumber,
@@ -195,6 +197,18 @@ class MilitaryFlagService {
         continue;
       }
 
+      const thang = parseInt(String(thangVal), 10);
+      if (!Number.isInteger(thang) || thang < 1 || thang > 12) {
+        errors.push({
+          row: rowNumber,
+          ho_ten,
+          nam,
+          thang: thangVal,
+          message: `Tháng "${thangVal}" không hợp lệ. Chỉ được nhập 1-12`,
+        });
+        continue;
+      }
+
       if (!so_quyet_dinh) {
         errors.push({ row: rowNumber, ho_ten, nam, message: 'Thiếu số quyết định' });
         continue;
@@ -242,14 +256,17 @@ class MilitaryFlagService {
       }
 
       if (personnel.ngay_nhap_ngu) {
-        const nhapNguDate = new Date(personnel.ngay_nhap_ngu);
-        const yearsServed = nam - nhapNguDate.getFullYear();
-        if (yearsServed < HCQKQT_YEARS_REQUIRED) {
+        const refDate = new Date(nam, thang, 0);
+        const serviceMonths = calculateServiceMonths(new Date(personnel.ngay_nhap_ngu), refDate);
+        const requiredMonths = HCQKQT_YEARS_REQUIRED * 12;
+        if (serviceMonths < requiredMonths) {
+          const diff = requiredMonths - serviceMonths;
           errors.push({
             row: rowNumber,
             ho_ten,
             nam,
-            message: `Chưa đủ ${HCQKQT_YEARS_REQUIRED} năm phục vụ (mới ${yearsServed} năm, nhập ngũ ${nhapNguDate.getFullYear()})`,
+            thang,
+            message: `Chưa đủ ${HCQKQT_YEARS_REQUIRED} năm phục vụ (hiện ${formatServiceDuration(serviceMonths)}, còn thiếu ${formatServiceDuration(diff)})`,
           });
           continue;
         }
@@ -371,10 +388,13 @@ class MilitaryFlagService {
       { header: 'STT', key: 'stt', width: 6 },
       { header: 'ID', key: 'id', width: 10 },
       { header: 'Họ và tên', key: 'ho_ten', width: 25 },
+      { header: 'Ngày sinh', key: 'ngay_sinh', width: 14 },
+      { header: 'Cơ quan đơn vị', key: 'co_quan_don_vi', width: 20 },
+      { header: 'Đơn vị trực thuộc', key: 'don_vi_truc_thuoc', width: 20 },
       { header: 'Cấp bậc', key: 'cap_bac', width: 15 },
       { header: 'Chức vụ', key: 'chuc_vu', width: 20 },
       { header: 'Năm (*)', key: 'nam', width: 10 },
-      { header: 'Tháng (*)', key: 'thang', width: 10 },
+      { header: 'Tháng (*)', key: 'thang', width: 10, validationFormulae: '"1,2,3,4,5,6,7,8,9,10,11,12"' },
       { header: 'Số quyết định', key: 'so_quyet_dinh', width: 20 },
       { header: 'Ghi chú', key: 'ghi_chu', width: 25 },
     ];
@@ -385,7 +405,7 @@ class MilitaryFlagService {
       personnelIds,
       repeatMap,
       loaiKhenThuong: PROPOSAL_TYPES.HC_QKQT,
-      editableColumnLetters: ['H'],
+      editableColumnLetters: ['K'],
     });
   }
 

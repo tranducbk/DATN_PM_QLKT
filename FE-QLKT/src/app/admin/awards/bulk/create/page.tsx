@@ -48,6 +48,12 @@ import { Step2SelectUnits } from './components/Step2SelectUnits';
 import { Step3SetTitles } from './components/Step3SetTitles';
 import { DecisionModal } from '@/components/DecisionModal';
 import type { DateInput } from '@/lib/types';
+import type { ContributionProfile } from '@/lib/types/personnelList';
+import {
+  renderServiceTime,
+  makeContributionColumns,
+  fetchContributionProfiles,
+} from '@/lib/serviceTimeHelpers';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -93,6 +99,11 @@ export default function BulkAddAwardsPage() {
   const [personnelDetails, setPersonnelDetails] = useState<Personnel[]>([]);
   const [unitDetails, setUnitDetails] = useState<any[]>([]);
 
+  // HCBVTQ contribution profiles (months_07, months_08, months_0910)
+  const [contributionProfiles, setContributionProfiles] = useState<
+    Record<string, ContributionProfile>
+  >({});
+
   // Step 5: Note
   const [note, setNote] = useState<string>('');
 
@@ -125,13 +136,13 @@ export default function BulkAddAwardsPage() {
     },
     [PROPOSAL_TYPES.HC_QKQT]: {
       icon: <TrophyOutlined />,
-      label: 'Huy chương Quân kỳ Quyết thắng',
-      description: 'Huy chương Quân kỳ Quyết thắng',
+      label: 'Huy chương Quân kỳ quyết thắng',
+      description: 'Huy chương Quân kỳ quyết thắng',
     },
     [PROPOSAL_TYPES.KNC_VSNXD_QDNDVN]: {
       icon: <TrophyOutlined />,
-      label: 'Kỷ niệm chương VSNXD QĐNDVN',
-      description: 'Kỷ niệm chương VSNXD QĐNDVN',
+      label: 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
+      description: 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
     },
     [PROPOSAL_TYPES.CONG_HIEN]: {
       icon: <HeartOutlined />,
@@ -140,14 +151,15 @@ export default function BulkAddAwardsPage() {
     },
     [PROPOSAL_TYPES.NCKH]: {
       icon: <ExperimentOutlined />,
-      label: 'Thành tích NCKH',
+      label: 'Thành tích Nghiên cứu khoa học',
       description: 'Đề tài khoa học / Sáng kiến khoa học',
     },
   };
 
   // 6-step wizard (file upload step removed)
   const getSteps = () => {
-    const step2Title = awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? 'Chọn đơn vị' : 'Chọn quân nhân';
+    const step2Title =
+      awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? 'Chọn đơn vị' : 'Chọn quân nhân';
     return [
       { title: 'Chọn loại', icon: <TrophyOutlined /> },
       { title: step2Title, icon: <TeamOutlined /> },
@@ -201,6 +213,9 @@ export default function BulkAddAwardsPage() {
       } else if (selectedPersonnelIds.length > 0) {
         fetchPersonnelDetails();
       }
+      if (awardType === PROPOSAL_TYPES.CONG_HIEN && selectedPersonnelIds.length > 0) {
+        loadContributionProfiles();
+      }
     }
   }, [currentStep, awardType, selectedUnitIds, selectedPersonnelIds]);
 
@@ -215,6 +230,11 @@ export default function BulkAddAwardsPage() {
     }
   };
 
+  const loadContributionProfiles = async () => {
+    const profiles = await fetchContributionProfiles(selectedPersonnelIds);
+    setContributionProfiles(profiles);
+  };
+
   const fetchUnitDetails = async () => {
     try {
       const unitsRes = await apiClient.getUnits();
@@ -223,8 +243,7 @@ export default function BulkAddAwardsPage() {
         const selectedUnits = unitsData.filter((unit: any) => selectedUnitIds.includes(unit.id));
         setUnitDetails(selectedUnits);
       }
-    } catch {
-    }
+    } catch {}
   };
 
   // Validate current step
@@ -239,7 +258,9 @@ export default function BulkAddAwardsPage() {
         return selectedPersonnelIds.length > 0;
       case 2:
         const expectedLength =
-          awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? selectedUnitIds.length : selectedPersonnelIds.length;
+          awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM
+            ? selectedUnitIds.length
+            : selectedPersonnelIds.length;
         if (titleData.length !== expectedLength) return false;
 
         if (awardType === PROPOSAL_TYPES.NCKH) {
@@ -254,7 +275,8 @@ export default function BulkAddAwardsPage() {
       case 3:
         return true; // Review step
       case 4: {
-        const ids = awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? selectedUnitIds : selectedPersonnelIds;
+        const ids =
+          awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? selectedUnitIds : selectedPersonnelIds;
         return ids.every(id => decisionDataMap[id]?.so_quyet_dinh?.trim());
       }
       default:
@@ -295,7 +317,8 @@ export default function BulkAddAwardsPage() {
 
   const handleSubmit = async () => {
     try {
-      const ids = awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? selectedUnitIds : selectedPersonnelIds;
+      const ids =
+        awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? selectedUnitIds : selectedPersonnelIds;
       const missingDecision = ids.some(id => !decisionDataMap[id]?.so_quyet_dinh?.trim());
       if (missingDecision) {
         antMessage.error('Vui lòng nhập số quyết định cho tất cả trước khi thêm khen thưởng!');
@@ -450,6 +473,7 @@ export default function BulkAddAwardsPage() {
                 onPersonnelChange={setSelectedPersonnelIds}
                 nam={nam}
                 onNamChange={setNam}
+                thang={thang}
                 onThangChange={setThang}
                 onTitleDataChange={setTitleData}
                 onNextStep={() => setCurrentStep(prev => prev + 1)}
@@ -462,6 +486,7 @@ export default function BulkAddAwardsPage() {
                 onPersonnelChange={setSelectedPersonnelIds}
                 nam={nam}
                 onNamChange={setNam}
+                thang={thang}
                 onThangChange={setThang}
                 onTitleDataChange={setTitleData}
                 onNextStep={() => setCurrentStep(prev => prev + 1)}
@@ -474,6 +499,7 @@ export default function BulkAddAwardsPage() {
                 onPersonnelChange={setSelectedPersonnelIds}
                 nam={nam}
                 onNamChange={setNam}
+                thang={thang}
                 onThangChange={setThang}
                 onTitleDataChange={setTitleData}
                 onNextStep={() => setCurrentStep(prev => prev + 1)}
@@ -516,6 +542,7 @@ export default function BulkAddAwardsPage() {
             onPersonnelChange={setSelectedPersonnelIds}
             onUnitChange={setSelectedUnitIds}
             nam={nam}
+            thang={thang}
           />
         );
 
@@ -627,6 +654,28 @@ export default function BulkAddAwardsPage() {
               },
             }
           );
+
+          if (
+            (
+              [
+                PROPOSAL_TYPES.NIEN_HAN,
+                PROPOSAL_TYPES.HC_QKQT,
+                PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
+              ] as string[]
+            ).includes(awardType)
+          ) {
+            reviewColumns.push({
+              title: 'Tổng thời gian',
+              key: 'tong_thoi_gian',
+              width: 150,
+              align: 'center' as const,
+              render: (_: unknown, record: any) => renderServiceTime(record, nam, thang),
+            });
+          }
+
+          if (awardType === PROPOSAL_TYPES.CONG_HIEN) {
+            reviewColumns.push(...makeContributionColumns(contributionProfiles));
+          }
         }
 
         // Add title/achievement columns
@@ -699,8 +748,21 @@ export default function BulkAddAwardsPage() {
                 <Descriptions.Item label="Năm">
                   <Text strong>{nam}</Text>
                 </Descriptions.Item>
+                {(
+                  [
+                    PROPOSAL_TYPES.NIEN_HAN,
+                    PROPOSAL_TYPES.HC_QKQT,
+                    PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
+                  ] as string[]
+                ).includes(awardType) && (
+                  <Descriptions.Item label="Tháng">
+                    <Text strong>{thang}</Text>
+                  </Descriptions.Item>
+                )}
                 <Descriptions.Item
-                  label={awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? 'Số đơn vị' : 'Số quân nhân'}
+                  label={
+                    awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? 'Số đơn vị' : 'Số quân nhân'
+                  }
                 >
                   <Text strong>
                     {awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM
@@ -757,7 +819,8 @@ export default function BulkAddAwardsPage() {
         );
 
       case 4: // Step 5: Add decision number
-        const decisionTableData = awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? unitDetails : personnelDetails;
+        const decisionTableData =
+          awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? unitDetails : personnelDetails;
 
         const decisionColumns: ColumnsType<any> = [
           {
@@ -835,7 +898,9 @@ export default function BulkAddAwardsPage() {
                   type="primary"
                   onClick={() => {
                     const allIds =
-                      awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? selectedUnitIds : selectedPersonnelIds;
+                      awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM
+                        ? selectedUnitIds
+                        : selectedPersonnelIds;
                     setSelectedPersonnelForDecision(allIds);
                     setDecisionModalVisible(true);
                   }}
@@ -857,7 +922,8 @@ export default function BulkAddAwardsPage() {
         );
 
       case 5: // Step 6: Final review before submit
-        const finalTableData = awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? unitDetails : personnelDetails;
+        const finalTableData =
+          awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? unitDetails : personnelDetails;
 
         const finalColumns: ColumnsType<any> = [
           {
@@ -876,6 +942,28 @@ export default function BulkAddAwardsPage() {
             render: (text: string) => <Text strong>{text}</Text>,
           },
         ];
+
+        if (
+          (
+            [
+              PROPOSAL_TYPES.NIEN_HAN,
+              PROPOSAL_TYPES.HC_QKQT,
+              PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
+            ] as string[]
+          ).includes(awardType)
+        ) {
+          finalColumns.push({
+            title: 'Tổng thời gian',
+            key: 'tong_thoi_gian',
+            width: 150,
+            align: 'center' as const,
+            render: (_: unknown, record: any) => renderServiceTime(record, nam, thang),
+          });
+        }
+
+        if (awardType === PROPOSAL_TYPES.CONG_HIEN) {
+          finalColumns.push(...makeContributionColumns(contributionProfiles));
+        }
 
         // Add columns based on award type
         if (awardType === PROPOSAL_TYPES.NCKH) {

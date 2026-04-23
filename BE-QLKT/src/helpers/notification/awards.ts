@@ -174,7 +174,7 @@ async function notifyOnAwardDeleted(
       HCCSVV: 'Huy chương Chiến sĩ vẻ vang',
       HCBVTQ: 'Huân chương Bảo vệ Tổ quốc',
       KNC_VSNXD_QDNDVN: DANH_HIEU_MAP.KNC_VSNXD_QDNDVN,
-      HCQKQT: 'Huy chương Quân kỳ Quyết thắng',
+      HCQKQT: 'Huy chương Quân kỳ quyết thắng',
       CA_NHAN_HANG_NAM: 'Danh hiệu hằng năm',
       NCKH: 'Thành tích khoa học',
     };
@@ -387,7 +387,7 @@ async function notifyOnBulkAwardAdded(
       DON_VI_HANG_NAM: 'Danh hiệu đơn vị hằng năm',
       NCKH: 'Thành tích khoa học',
       NIEN_HAN: 'Huy chương Chiến sĩ vẻ vang',
-      HC_QKQT: 'Huy chương Quân kỳ Quyết thắng',
+      HC_QKQT: 'Huy chương Quân kỳ quyết thắng',
       KNC_VSNXD_QDNDVN: DANH_HIEU_MAP.KNC_VSNXD_QDNDVN,
       CONG_HIEN: 'Huân chương Bảo vệ Tổ quốc',
     };
@@ -478,9 +478,13 @@ async function notifyOnBulkAwardAdded(
           } else if (awardType === PROPOSAL_TYPES.CONG_HIEN && item.danh_hieu) {
             userAwards.push(`${getDanhHieuName(item.danh_hieu)}${nam ? ` (năm ${nam})` : ''}`);
           } else if (awardType === PROPOSAL_TYPES.HC_QKQT) {
-            userAwards.push(`${getDanhHieuName(PROPOSAL_TYPES.HC_QKQT)}${nam ? ` (năm ${nam})` : ''}`);
+            userAwards.push(
+              `${getDanhHieuName(PROPOSAL_TYPES.HC_QKQT)}${nam ? ` (năm ${nam})` : ''}`
+            );
           } else if (awardType === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN) {
-            userAwards.push(`${getDanhHieuName(PROPOSAL_TYPES.KNC_VSNXD_QDNDVN)}${nam ? ` (năm ${nam})` : ''}`);
+            userAwards.push(
+              `${getDanhHieuName(PROPOSAL_TYPES.KNC_VSNXD_QDNDVN)}${nam ? ` (năm ${nam})` : ''}`
+            );
           }
         });
 
@@ -727,7 +731,7 @@ async function notifyOnImport(
 
     return notifications.length;
   } catch (error) {
-   console.error('Failed to create/send award notifications:', error);
+    console.error('Failed to create/send award notifications:', error);
     return 0;
   }
 }

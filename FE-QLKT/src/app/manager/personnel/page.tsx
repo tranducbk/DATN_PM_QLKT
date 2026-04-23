@@ -276,7 +276,7 @@ export default function ManagerPersonnelPage() {
               <HomeOutlined />
             </Link>
           </Breadcrumb.Item>
-          <Breadcrumb.Item>Quản lý Quân nhân Đơn vị</Breadcrumb.Item>
+          <Breadcrumb.Item>Quản lý quân nhân đơn vị</Breadcrumb.Item>
         </Breadcrumb>
 
         {/* Header */}
@@ -292,7 +292,7 @@ export default function ManagerPersonnelPage() {
         >
           <div>
             <Title level={1} style={{ margin: 0 }}>
-              Quản lý Quân nhân Đơn vị
+              Quản lý quân nhân đơn vị
             </Title>
             <Text type="secondary" style={{ display: 'block', marginTop: '8px' }}>
               Xem và quản lý thông tin quân nhân thuộc đơn vị của bạn

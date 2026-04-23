@@ -4,7 +4,7 @@ import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHel
 
 import profileService from './profile.service';
 import * as notificationHelper from '../helpers/notification';
-import { getDanhHieuName, DANH_HIEU_HCCSVV } from '../constants/danhHieu.constants';
+import { getDanhHieuName, resolveDanhHieuCode, buildDanhHieuExcelOptions, DANH_HIEU_HCCSVV, HCCSVV_YEARS_HANG_BA, HCCSVV_YEARS_HANG_NHI, HCCSVV_YEARS_HANG_NHAT } from '../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
@@ -12,6 +12,7 @@ import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys, s
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { ValidationError, NotFoundError, AppError } from '../middlewares/errorHandler';
 import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
+import { calculateServiceMonths, formatServiceDuration } from '../helpers/serviceYearsHelper';
 import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
 
 export interface HccsvvValidItem {
@@ -37,10 +38,13 @@ class HCCSVVService {
       { header: 'STT', key: 'stt', width: 6 },
       { header: 'ID', key: 'id', width: 10 },
       { header: 'Họ và tên', key: 'ho_ten', width: 25 },
+      { header: 'Ngày sinh', key: 'ngay_sinh', width: 14 },
+      { header: 'Cơ quan đơn vị', key: 'co_quan_don_vi', width: 20 },
+      { header: 'Đơn vị trực thuộc', key: 'don_vi_truc_thuoc', width: 20 },
       { header: 'Cấp bậc', key: 'cap_bac', width: 15 },
       { header: 'Chức vụ', key: 'chuc_vu', width: 20 },
       { header: 'Năm (*)', key: 'nam', width: 10 },
-      { header: 'Tháng (*)', key: 'thang', width: 10 },
+      { header: 'Tháng (*)', key: 'thang', width: 10, validationFormulae: '"1,2,3,4,5,6,7,8,9,10,11,12"' },
       { header: 'Danh hiệu (*)', key: 'danh_hieu', width: 25 },
       { header: 'Số quyết định', key: 'so_quyet_dinh', width: 20 },
       { header: 'Ghi chú', key: 'ghi_chu', width: 25 },
@@ -52,8 +56,8 @@ class HCCSVVService {
       personnelIds,
       repeatMap,
       loaiKhenThuong: PROPOSAL_TYPES.NIEN_HAN,
-      danhHieuOptions: '"HCCSVV_HANG_BA,HCCSVV_HANG_NHI,HCCSVV_HANG_NHAT"',
-      editableColumnLetters: ['G', 'H', 'I'],
+      danhHieuOptions: buildDanhHieuExcelOptions(Object.values(DANH_HIEU_HCCSVV)),
+      editableColumnLetters: ['J', 'K', 'L'],
     });
   }
 
@@ -166,8 +170,7 @@ class HCCSVVService {
       const idValue = idCol ? row.getCell(idCol).value : null;
       const ho_ten = hoTenCol ? String(row.getCell(hoTenCol).value ?? '').trim() : '';
       const namVal = row.getCell(namCol).value;
-      const thangRaw = thangCol ? Number(row.getCell(thangCol).value) : NaN;
-      const thang = !isNaN(thangRaw) && thangRaw >= 1 && thangRaw <= 12 ? Math.floor(thangRaw) : 12;
+      const thangVal = thangCol ? row.getCell(thangCol).value : null;
       const danh_hieu_raw = String(row.getCell(danhHieuCol).value ?? '').trim();
       const cap_bac = capBacCol ? String(row.getCell(capBacCol).value ?? '').trim() : null;
       const chuc_vu = chucVuCol ? String(row.getCell(chucVuCol).value ?? '').trim() : null;
@@ -183,6 +186,7 @@ class HCCSVVService {
           row: rowNumber,
           ho_ten,
           nam: namVal,
+          thang: thangVal,
           danh_hieu: '',
           message: 'Bỏ qua — không có danh hiệu nào được điền',
         });
@@ -194,12 +198,14 @@ class HCCSVVService {
       const missingFields = [];
       if (!idValue) missingFields.push('ID');
       if (!namVal) missingFields.push('Năm');
+      if (!thangVal) missingFields.push('Tháng');
       if (!danh_hieu_raw) missingFields.push('Danh hiệu');
       if (missingFields.length > 0) {
         errors.push({
           row: rowNumber,
           ho_ten,
           nam: namVal,
+          thang: thangVal,
           danh_hieu: danh_hieu_raw,
           message: `Thiếu ${missingFields.join(', ')}`,
         });
@@ -212,6 +218,7 @@ class HCCSVVService {
           row: rowNumber,
           ho_ten,
           nam: namVal,
+          thang: thangVal,
           danh_hieu: danh_hieu_raw,
           message: `ID không hợp lệ: ${idValue}`,
         });
@@ -223,6 +230,7 @@ class HCCSVVService {
           row: rowNumber,
           ho_ten,
           nam: namVal,
+          thang: thangVal,
           danh_hieu: danh_hieu_raw,
           message: `Không tìm thấy quân nhân với ID ${personnelId}`,
         });
@@ -235,6 +243,7 @@ class HCCSVVService {
           row: rowNumber,
           ho_ten,
           nam: namVal,
+          thang: thangVal,
           danh_hieu: danh_hieu_raw,
           message: `Giá trị năm không hợp lệ: ${namVal}`,
         });
@@ -245,28 +254,43 @@ class HCCSVVService {
           row: rowNumber,
           ho_ten,
           nam,
+          thang: thangVal,
           danh_hieu: danh_hieu_raw,
           message: `Năm ${nam} không hợp lệ. Chỉ được nhập đến năm hiện tại (${currentYear})`,
         });
         continue;
       }
 
-      const danhHieuUpper = danh_hieu_raw.toUpperCase();
-      if (!validDanhHieu.includes(danhHieuUpper)) {
+      const thang = parseInt(String(thangVal), 10);
+      if (!Number.isInteger(thang) || thang < 1 || thang > 12) {
         errors.push({
           row: rowNumber,
           ho_ten,
           nam,
+          thang: thangVal,
+          danh_hieu: danh_hieu_raw,
+          message: `Tháng "${thangVal}" không hợp lệ. Chỉ được nhập 1-12`,
+        });
+        continue;
+      }
+
+      const resolvedDanhHieu = resolveDanhHieuCode(danh_hieu_raw);
+      if (!validDanhHieu.includes(resolvedDanhHieu)) {
+        errors.push({
+          row: rowNumber,
+          ho_ten,
+          nam,
+          thang,
           danh_hieu: danh_hieu_raw,
           message: `Danh hiệu "${danh_hieu_raw}" không tồn tại. Chỉ chấp nhận: ${validDanhHieu.join(', ')}`,
         });
         continue;
       }
-      const danh_hieu = danhHieuUpper;
+      const danh_hieu = resolvedDanhHieu;
 
       // Decision number must exist in the system (not just non-empty)
       if (!so_quyet_dinh) {
-        errors.push({ row: rowNumber, ho_ten, nam, danh_hieu, message: 'Thiếu số quyết định' });
+        errors.push({ row: rowNumber, ho_ten, nam, thang, danh_hieu, message: 'Thiếu số quyết định' });
         continue;
       }
       if (!validDecisionNumbers.has(so_quyet_dinh)) {
@@ -274,6 +298,7 @@ class HCCSVVService {
           row: rowNumber,
           ho_ten,
           nam,
+          thang,
           danh_hieu,
           message: `Số quyết định "${so_quyet_dinh}" không tồn tại trên hệ thống`,
         });
@@ -286,6 +311,7 @@ class HCCSVVService {
           row: rowNumber,
           ho_ten,
           nam,
+          thang,
           danh_hieu,
           message: `Trùng lặp trong file — cùng quân nhân, danh hiệu ${danh_hieu}`,
         });
@@ -299,6 +325,7 @@ class HCCSVVService {
           row: rowNumber,
           ho_ten,
           nam,
+          thang,
           danh_hieu,
           message: `Đã có ${getDanhHieuName(danh_hieu)} trên hệ thống`,
         });
@@ -310,6 +337,7 @@ class HCCSVVService {
           row: rowNumber,
           ho_ten,
           nam,
+          thang,
           danh_hieu,
           message: `Quân nhân đang có đề xuất ${getDanhHieuName(danh_hieu)} chờ duyệt`,
         });
@@ -329,8 +357,36 @@ class HCCSVVService {
             row: rowNumber,
             ho_ten,
             nam,
+            thang,
             danh_hieu,
             message: `Chưa có ${getDanhHieuName(prerequisite)}. Phải có Hạng Ba trước Hạng Nhì, Hạng Nhì trước Hạng Nhất`,
+          });
+          continue;
+        }
+      }
+
+      // Eligibility: check service time meets the required years for this rank
+      const refDate = new Date(nam, thang, 0);
+      const serviceTotalMonths = personnel.ngay_nhap_ngu
+        ? calculateServiceMonths(personnel.ngay_nhap_ngu as Date, (personnel.ngay_xuat_ngu as Date | null) ?? refDate)
+        : null;
+
+      if (serviceTotalMonths !== null) {
+        const yearsRequired: Record<string, number> = {
+          [DANH_HIEU_HCCSVV.HANG_BA]: HCCSVV_YEARS_HANG_BA,
+          [DANH_HIEU_HCCSVV.HANG_NHI]: HCCSVV_YEARS_HANG_NHI,
+          [DANH_HIEU_HCCSVV.HANG_NHAT]: HCCSVV_YEARS_HANG_NHAT,
+        };
+        const required = yearsRequired[danh_hieu];
+        if (required && serviceTotalMonths < required * 12) {
+          const diff = required * 12 - serviceTotalMonths;
+          errors.push({
+            row: rowNumber,
+            ho_ten,
+            nam,
+            thang,
+            danh_hieu,
+            message: `Chưa đủ thời gian phục vụ cho ${getDanhHieuName(danh_hieu)} (yêu cầu ${required} năm, còn thiếu ${formatServiceDuration(diff)})`,
           });
           continue;
         }
@@ -351,11 +407,14 @@ class HCCSVVService {
           row: rowNumber,
           ho_ten: hoTen,
           nam,
+          thang,
           danh_hieu,
           message: `Thiếu ${missingInfoFields.join(', ')} (cả trong file và hệ thống)`,
         });
         continue;
       }
+
+      const tong_thoi_gian = serviceTotalMonths !== null ? formatServiceDuration(serviceTotalMonths) : null;
 
       valid.push({
         row: rowNumber,
@@ -365,6 +424,7 @@ class HCCSVVService {
         chuc_vu: chucVu,
         nam,
         thang,
+        tong_thoi_gian,
         danh_hieu,
         so_quyet_dinh,
         ghi_chu,

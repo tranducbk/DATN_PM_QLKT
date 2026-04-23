@@ -38,6 +38,7 @@ import {
   PROPOSAL_TYPES,
   PROPOSAL_TYPE_ADMIN_TAG,
   PROPOSAL_STATUS_ADMIN,
+  isProposalType,
 } from '@/constants/proposal.constants';
 import { ProposalDetailModal } from './components/ProposalDetailModal';
 import { RejectModal } from './components/RejectModal';
@@ -179,7 +180,9 @@ export default function AdminProposalsPage() {
       key: 'loai_de_xuat',
       width: 140,
       render: (type: string) => {
-        const config = PROPOSAL_TYPE_ADMIN_TAG[type] ?? { label: type, color: 'default' };
+        const config = isProposalType(type)
+          ? PROPOSAL_TYPE_ADMIN_TAG[type]
+          : { label: type, color: 'default' };
         return <Tag color={config.color}>{config.label}</Tag>;
       },
     },
@@ -374,7 +377,7 @@ export default function AdminProposalsPage() {
             ),
           },
           {
-            title: 'Quản lý Đề xuất Khen thưởng',
+            title: 'Quản lý đề xuất khen thưởng',
           },
         ]}
       />
@@ -389,7 +392,7 @@ export default function AdminProposalsPage() {
         }}
       >
         <div>
-          <Title level={2}>Quản lý Đề xuất Khen thưởng</Title>
+          <Title level={2}>Quản lý đề xuất khen thưởng</Title>
           <Text type="secondary">Xem, phê duyệt hoặc từ chối các đề xuất khen thưởng</Text>
         </div>
         <Button
@@ -398,7 +401,7 @@ export default function AdminProposalsPage() {
           size="large"
           onClick={() => setExtraordinaryRewardModalVisible(true)}
         >
-          Thêm Đột xuất
+          Thêm đột xuất
         </Button>
       </div>
 

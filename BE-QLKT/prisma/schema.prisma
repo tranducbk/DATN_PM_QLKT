@@ -457,7 +457,7 @@ model BangDeXuat {
   nguoi_de_xuat_id     String    @db.VarChar(30) // ID tài khoản người đề xuất
   loai_de_xuat         String    @db.VarChar(20) // CA_NHAN_HANG_NAM, DON_VI_HANG_NAM, NIEN_HAN, CONG_HIEN, DOT_XUAT, NCKH
   nam                  Int // Năm đề xuất
-  thang                Int       @default(12)   // Tháng đề xuất (1-12)
+  thang                Int?   // Tháng đề xuất (1-12), chỉ bắt buộc cho HCCSVV/HCQKQT/KNC
   status               String    @default("PENDING") @db.VarChar(20) // PENDING, APPROVED, REJECTED
   data_danh_hieu       Json? // Dữ liệu danh hiệu (JSON array) - cho HANG_NAM
   data_thanh_tich      Json? // Dữ liệu thành tích (JSON array) - cho HANG_NAM

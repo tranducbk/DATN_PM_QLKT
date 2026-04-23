@@ -53,7 +53,7 @@ export function ServiceHistoryModal({
         {serviceProfile ? (
           <div>
             <Title level={5} style={{ marginTop: 0 }}>
-              Huy chương Chiến sĩ Vẻ vang
+              Huy chương Chiến sĩ vẻ vang
             </Title>
             <Descriptions bordered column={1} size="small" style={{ marginBottom: 24 }}>
               {HCCSVV_ROWS.map(({ label, statusKey, danhHieu }) => {
@@ -64,7 +64,9 @@ export function ServiceHistoryModal({
                     <Tag color={config.color}>{config.text}</Tag>
                     {status === ELIGIBILITY_STATUS.DA_NHAN && namNhan[danhHieu] && (
                       <Text type="secondary" style={{ marginLeft: 8 }}>
-                        Năm {namNhan[danhHieu]}
+                        {namNhan[danhHieu].thang
+                          ? `${namNhan[danhHieu].thang}/${namNhan[danhHieu].nam}`
+                          : `Năm ${namNhan[danhHieu].nam ?? namNhan[danhHieu]}`}
                       </Text>
                     )}
                   </Descriptions.Item>

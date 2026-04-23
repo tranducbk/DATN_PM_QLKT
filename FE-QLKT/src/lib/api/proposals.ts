@@ -165,7 +165,7 @@ export async function checkDuplicateUnit(params: {
 /**
  * Batch-checks a list of personnel items for duplicate awards/proposals in a single request.
  * @param items - Array of items to check
- * @returns Array of `{ personnel_id, danh_hieu, exists, message }` in the same order as input
+ * @returns Duplicate-check results in the same order as input
  */
 export async function checkDuplicateBatch(
   items: Array<{ personnel_id: string; nam: number; danh_hieu: string; proposal_type: string }>
@@ -181,7 +181,7 @@ export async function checkDuplicateBatch(
 /**
  * Batch-checks a list of unit items for duplicate awards/proposals in a single request.
  * @param items - Array of items to check
- * @returns Array of `{ don_vi_id, danh_hieu, exists, message }` in the same order as input
+ * @returns Duplicate-check results in the same order as input
  */
 export async function checkDuplicateUnitBatch(
   items: Array<{ don_vi_id: string; nam: number; danh_hieu: string; proposal_type: string }>

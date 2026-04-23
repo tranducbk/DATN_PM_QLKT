@@ -65,6 +65,7 @@ interface Step2SelectPersonnelKNCVSNXDQDNDVNProps {
   onPersonnelChange: (ids: string[]) => void;
   nam: number;
   onNamChange: (nam: number) => void;
+  thang: number;
   onThangChange?: (thang: number) => void;
   onTitleDataChange?: (titleData: any[]) => void;
   onNextStep?: () => void;
@@ -76,6 +77,7 @@ export function Step2SelectPersonnelKNCVSNXDQDNDVN({
   onPersonnelChange,
   nam,
   onNamChange,
+  thang,
   onThangChange,
   onTitleDataChange,
   onNextStep,
@@ -89,7 +91,7 @@ export function Step2SelectPersonnelKNCVSNXDQDNDVN({
   const CURRENT_YEAR = NOW.getFullYear();
   const CURRENT_MONTH = NOW.getMonth() + 1;
   const [localNam, setLocalNam] = useState<number | null>(nam);
-  const [localThang, setLocalThang] = useState<number>(CURRENT_MONTH);
+  const [localThang, setLocalThang] = useState<number>(thang);
   const [alreadyReceivedMap, setAlreadyReceivedMap] = useState<Record<string, boolean>>({});
   const [receivedReasonMap, setReceivedReasonMap] = useState<Record<string, string>>({});
   const [checkingReceived, setCheckingReceived] = useState(false);
@@ -101,6 +103,10 @@ export function Step2SelectPersonnelKNCVSNXDQDNDVN({
   useEffect(() => {
     setLocalNam(nam);
   }, [nam]);
+
+  useEffect(() => {
+    setLocalThang(thang);
+  }, [thang]);
 
   useEffect(() => {
     if (personnel.length > 0) {
@@ -653,12 +659,10 @@ export function Step2SelectPersonnelKNCVSNXDQDNDVN({
         message={`Bước 2: Chọn quân nhân — ${DANH_HIEU_MAP['KNC_VSNXD_QDNDVN']}`}
         description={
           <div>
-            <p>1. Nhập năm đề xuất khen thưởng</p>
-            <p>2. Chọn các quân nhân cần đề xuất khen thưởng từ danh sách dưới đây</p>
-            <p>
-              3. Bảng hiển thị thông tin ngày nhập ngũ, xuất ngũ và tổng tháng để hỗ trợ lựa chọn
-            </p>
-            <p>4. Sau khi chọn xong, nhấn &quot;Tiếp tục&quot; để sang bước chọn danh hiệu</p>
+            <p>1. Chọn năm và tháng đề xuất để hệ thống đánh giá điều kiện theo đúng mốc thời gian.</p>
+            <p>2. Lựa chọn quân nhân đủ điều kiện từ danh sách.</p>
+            <p>3. Đối chiếu thời gian công tác và cảnh báo điều kiện trước khi xác nhận.</p>
+            <p>4. Hoàn tất lựa chọn, nhấn &quot;Tiếp tục&quot; để sang bước chọn danh hiệu.</p>
           </div>
         }
         type="info"
@@ -705,6 +709,9 @@ export function Step2SelectPersonnelKNCVSNXDQDNDVN({
 
               if (!isNaN(intValue)) {
                 setLocalNam(intValue);
+                if (intValue >= 1900 && intValue <= CURRENT_YEAR) {
+                  onNamChange(intValue);
+                }
                 if (intValue === CURRENT_YEAR && localThang > CURRENT_MONTH) {
                   setLocalThang(CURRENT_MONTH);
                   onThangChange?.(CURRENT_MONTH);

@@ -6,13 +6,18 @@ import commemorativeMedalService from '../services/commemorativeMedal.service';
 import militaryFlagService from '../services/militaryFlag.service';
 import * as notificationHelper from '../helpers/notification';
 import { ROLES } from '../constants/roles.constants';
-import { PROPOSAL_TYPES, type ProposalType } from '../constants/proposalTypes.constants';
+import {
+  PROPOSAL_TYPES,
+  requiresProposalMonth,
+  type ProposalType,
+} from '../constants/proposalTypes.constants';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { parsePagination } from '../helpers/paginationHelper';
 import { setFileSendHeaders } from '../helpers/fileResponseHeaders';
+import { resolveIdParam } from '../helpers/controllerHelper';
 
 // DVTT takes priority over CQDV — CQDV is the parent unit, filtering by it would include all sub-units
 function managerUnitFilterId(qn: {
@@ -190,6 +195,15 @@ class ProposalController {
     }
     const files = req.files as Record<string, Express.Multer.File[]> | undefined;
     const attachedFiles = files?.attached_files || [];
+    const parsedMonthRaw = typeof thang === 'string' ? parseInt(thang, 10) : Number(thang);
+    const parsedMonth = Number.isInteger(parsedMonthRaw) ? parsedMonthRaw : null;
+    if (requiresProposalMonth(type as ProposalType) && (parsedMonth === null || parsedMonth < 1 || parsedMonth > 12)) {
+      return ResponseHelper.badRequest(
+        res,
+        'Tháng là bắt buộc cho đề xuất HCCSVV/HCQKQT/KNC và phải nằm trong khoảng 1-12'
+      );
+    }
+
     const result = await proposalService.submitProposal(
       titleDataParsed,
       attachedFiles,
@@ -198,7 +212,7 @@ class ProposalController {
       type,
       typeof nam === 'string' ? parseInt(nam, 10) : Number(nam),
       ghi_chu,
-      typeof thang === 'string' ? parseInt(thang, 10) : Number(thang) || 12
+      parsedMonth
     );
     try {
       await notificationHelper.notifyAdminsOnProposalSubmission(result.proposal, user);
@@ -237,7 +251,7 @@ class ProposalController {
   getProposalById = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
     const params = req.params as ProposalIdParams;
-    const id = Array.isArray(params.id) ? params.id[0] : params.id;
+    const id = resolveIdParam(params.id);
     if (!id) {
       return ResponseHelper.badRequest(res, 'ID đề xuất không hợp lệ');
     }
@@ -252,7 +266,7 @@ class ProposalController {
     const user = req.user!;
     const params = req.params as ProposalIdParams;
     const body = req.body as ApproveProposalBody;
-    const id = Array.isArray(params.id) ? params.id[0] : params.id;
+    const id = resolveIdParam(params.id);
     const adminId = user.id;
     let editedData;
     try {
@@ -332,9 +346,7 @@ class ProposalController {
 
   getPdfFile = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as GetPdfFileParams;
-    const filename = decodeURIComponent(
-      Array.isArray(params.filename) ? params.filename[0] : String(params.filename ?? '')
-    );
+    const filename = decodeURIComponent(resolveIdParam(params.filename || ''));
     if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
       return ResponseHelper.badRequest(res, 'Tên file không hợp lệ');
     }
@@ -347,7 +359,7 @@ class ProposalController {
     const user = req.user!;
     const params = req.params as ProposalIdParams;
     const body = req.body as RejectProposalBody;
-    const id = Array.isArray(params.id) ? params.id[0] : params.id;
+    const id = resolveIdParam(params.id);
     const { ghi_chu, ly_do } = body;
     const rejectReason = ghi_chu || ly_do;
     if (!id) {
@@ -381,7 +393,7 @@ class ProposalController {
 
   downloadProposalExcel = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as ProposalIdParams;
-    const id = Array.isArray(params.id) ? params.id[0] : params.id;
+    const id = resolveIdParam(params.id);
     if (!id) {
       return ResponseHelper.badRequest(res, 'ID đề xuất không hợp lệ');
     }
@@ -452,7 +464,7 @@ class ProposalController {
   deleteProposal = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
     const params = req.params as ProposalIdParams;
-    const id = Array.isArray(params.id) ? params.id[0] : params.id;
+    const id = resolveIdParam(params.id);
     if (!id) {
       return ResponseHelper.badRequest(res, 'ID đề xuất không hợp lệ');
     }
@@ -568,7 +580,7 @@ class ProposalController {
       return ResponseHelper.badRequest(res, 'Vui lòng gửi file Excel');
     }
     return ResponseHelper.success(res, {
-      message: 'Import Huy chương Chiến sĩ Vẻ vang thành công',
+      message: 'Import Huy chương Chiến sĩ vẻ vang thành công',
       data: await hccsvvService.importFromExcel(file.buffer, user.id),
     });
   });

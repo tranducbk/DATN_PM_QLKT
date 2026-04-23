@@ -204,7 +204,7 @@ export default function HomePage() {
               Hệ thống
               <br />
               <span className="text-shimmer">
-                Quản lý Khen thưởng
+                Quản lý khen thưởng
               </span>
             </h1>
 
@@ -372,9 +372,9 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-6 lg:px-8 py-16 lg:py-20">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10 lg:gap-16">
             <div className="md:col-span-2">
-              <h3 className="text-white font-bold text-xl mb-4">Về Hệ thống Quản lý Khen thưởng</h3>
+              <h3 className="text-white font-bold text-xl mb-4">Về hệ thống quản lý khen thưởng</h3>
               <p className="text-blue-200/50 leading-relaxed mb-6">
-                Hệ thống Quản lý Khen thưởng là giải pháp công nghệ hiện đại được phát triển phục vụ
+                Hệ thống quản lý khen thưởng là giải pháp công nghệ hiện đại được phát triển phục vụ
                 công tác thi đua khen thưởng tại Học viện Khoa học Quân sự. Hệ thống hỗ trợ số hóa toàn
                 bộ quy trình từ đề xuất, xét duyệt đến ra quyết định khen thưởng, đảm bảo tính minh
                 bạch, chính xác và hiệu quả.

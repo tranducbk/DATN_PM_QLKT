@@ -57,8 +57,8 @@ export interface ParsedThanhTich {
 
 /**
  * Strips path/hostile characters from an upload name while keeping the extension.
- * @param filename - Client-provided `Content-Disposition` / path tail
- * @returns Filesystem-safe basename + extension (falls back to `file`)
+ * @param filename - Client-provided filename
+ * @returns Filesystem-safe basename + extension (falls back to file)
  */
 export function sanitizeFilename(filename: string): string {
   if (!filename || typeof filename !== 'string') {
@@ -86,8 +86,8 @@ export function sanitizeFilename(filename: string): string {
 }
 
 /**
- * Delegates to `cccdHelper` after stringifying the Excel cell payload.
- * @param value - Raw `exceljs` cell value
+ * Delegates to cccdHelper after stringifying the Excel cell payload.
+ * @param value - Raw Excel cell value
  * @returns Digits-only national ID string
  */
 export function parseCCCD(value: CellValue): string {
@@ -97,16 +97,16 @@ export function parseCCCD(value: CellValue): string {
 /**
  * Trims printable cell text; treats blank cells as absent.
  * @param cell - Optional cell handle
- * @returns Trimmed string, or `null` when empty / missing
+ * @returns Trimmed string, or null when empty or missing
  */
 export function parseCellToString(cell: { value?: CellValue } | undefined): string | null {
   return cell?.value ? String(cell.value).trim() : null;
 }
 
 /**
- * Best-effort integer parse for year / numeric columns (`parseInt` semantics).
+ * Best-effort integer parse for year or numeric columns.
  * @param cell - Optional cell handle
- * @returns Integer or `null` when empty or non-numeric
+ * @returns Integer or null when empty or non-numeric
  */
 export function parseCellToInt(cell: { value?: CellValue } | undefined): number | null {
   const value = cell?.value ?? null;
@@ -116,18 +116,18 @@ export function parseCellToInt(cell: { value?: CellValue } | undefined): number 
 }
 
 /**
- * Import convention: checkbox columns use literal `X` (case-insensitive).
+ * Import convention: checkbox columns use literal X (case-insensitive).
  * @param cell - Optional cell handle
- * @returns `true` when the visible text is `X`
+ * @returns true when the visible text is X
  */
 export function isCellChecked(cell: { value?: CellValue } | undefined): boolean {
   return cell?.value ? String(cell.value).toUpperCase().trim() === 'X' : false;
 }
 
 /**
- * Filters out vendor “example” rows (`ví dụ`, `example`, …) so they never enter validation.
- * @param text - Typically `ho_ten` or `mo_ta` column text
- * @returns `true` when the row should be skipped as a demo row
+ * Skips sample rows before validation.
+ * @param text - Usually ho_ten or mo_ta
+ * @returns true when the row should be skipped
  */
 export function isSampleRow(text: string | null): boolean {
   if (!text) return false;
@@ -138,16 +138,16 @@ export function isSampleRow(text: string | null): boolean {
 /**
  * Hook point for future structured logging; currently a deliberate no-op to keep import noise down.
  * @param sheet - Active worksheet instance
- * @param sheetName - Canonical name from `SHEET_NAMES`
+ * @param sheetName - Canonical name from SHEET_NAMES
  * @returns void
  */
 export function logSheetInfo(sheet: Worksheet, sheetName: string): void {}
 
 /**
- * One `DanhHieuHangNam` row: CCCD + year gate, optional CSTDCS/CSTT, certificate columns.
- * @param row - `exceljs` row iterator payload
+ * Parses one DanhHieuHangNam row.
+ * @param row - ExcelJS row payload
  * @param rowNumber - 1-based index (reserved for diagnostics)
- * @returns `ParsedDanhHieu`, or `null` when the row is blank, sample, or structurally invalid
+ * @returns ParsedDanhHieu, or null when the row is invalid
  */
 export function parseDanhHieuRow(row: Row, rowNumber: number): ParsedDanhHieu | null {
   const cccdCell = row.getCell(CELL_INDICES.CCCD);

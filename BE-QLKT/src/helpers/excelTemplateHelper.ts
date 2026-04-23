@@ -20,6 +20,9 @@ export interface PersonnelColumnMapping {
   stt: number;
   id: number;
   hoTen: number;
+  ngaySinh: number;
+  coQuanDonVi: number;
+  donViTrucThuoc: number;
   capBac: number;
   chucVu: number;
 }
@@ -59,7 +62,11 @@ export async function queryPersonnelForTemplate(personnelIds: string[]) {
   if (personnelIds.length === 0) return [];
   return prisma.quanNhan.findMany({
     where: { id: { in: personnelIds } },
-    include: { ChucVu: true },
+    include: {
+      ChucVu: true,
+      CoQuanDonVi: { select: { ten_don_vi: true } },
+      DonViTrucThuoc: { select: { ten_don_vi: true } },
+    },
   });
 }
 
@@ -265,8 +272,11 @@ export function applyConditionalFormatting(
 interface PersonnelWithPosition {
   id: string;
   ho_ten: string | null;
+  ngay_sinh?: Date | string | null;
   cap_bac: string | null;
   ChucVu: { ten_chuc_vu: string } | null;
+  CoQuanDonVi?: { ten_don_vi: string } | null;
+  DonViTrucThuoc?: { ten_don_vi: string } | null;
 }
 
 /**
@@ -288,31 +298,43 @@ export function prefillPersonnelRows(
     stt: 1,
     id: 2,
     hoTen: 3,
-    capBac: 4,
-    chucVu: 5,
+    ngaySinh: 4,
+    coQuanDonVi: 5,
+    donViTrucThuoc: 6,
+    capBac: 7,
+    chucVu: 8,
     ...options?.startCol,
   };
 
   const repeatMap = options?.repeatMap ?? {};
   let stt = 0;
 
+  const formatDate = (date: Date | string | null | undefined): string => {
+    if (!date) return '';
+    const d = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(d.getTime())) return '';
+    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+  };
+
   personnelList.forEach(person => {
     const rowCount = repeatMap[person.id] || 1;
     for (let r = 0; r < rowCount; r++) {
       stt++;
       const rowValues: Record<string, any> = {};
-
-      // Build row using worksheet column keys by position.
       const cols = worksheet.columns as ExcelJS.Column[];
-      if (cols[mapping.stt - 1]) rowValues[cols[mapping.stt - 1].key as string] = stt;
-      if (cols[mapping.id - 1]) rowValues[cols[mapping.id - 1].key as string] = person.id;
-      if (cols[mapping.hoTen - 1])
-        rowValues[cols[mapping.hoTen - 1].key as string] = person.ho_ten ?? '';
-      if (cols[mapping.capBac - 1])
-        rowValues[cols[mapping.capBac - 1].key as string] = person.cap_bac ?? '';
-      if (cols[mapping.chucVu - 1])
-        rowValues[cols[mapping.chucVu - 1].key as string] =
-          person.ChucVu ? person.ChucVu.ten_chuc_vu : '';
+
+      const set = (colIdx: number, value: string | number) => {
+        if (cols[colIdx - 1]) rowValues[cols[colIdx - 1].key as string] = value;
+      };
+
+      set(mapping.stt, stt);
+      set(mapping.id, person.id);
+      set(mapping.hoTen, person.ho_ten ?? '');
+      set(mapping.ngaySinh, formatDate(person.ngay_sinh));
+      set(mapping.coQuanDonVi, person.CoQuanDonVi?.ten_don_vi ?? '');
+      set(mapping.donViTrucThuoc, person.DonViTrucThuoc?.ten_don_vi ?? '');
+      set(mapping.capBac, person.cap_bac ?? '');
+      set(mapping.chucVu, person.ChucVu ? person.ChucVu.ten_chuc_vu : '');
 
       worksheet.addRow(rowValues);
     }
@@ -336,7 +358,7 @@ export async function buildTemplate(config: TemplateConfig): Promise<ExcelJS.Wor
     danhHieuOptions,
     includeCapBac = true,
     includeDecision = true,
-    readonlyColumns = [1, 2, 3],
+    readonlyColumns = [1, 2, 3, 4, 5, 6],
     redColumns = [],
     editableColumnLetters = [],
     personnelMapping,

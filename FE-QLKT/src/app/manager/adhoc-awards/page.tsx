@@ -362,7 +362,7 @@ export default function ManagerAdhocAwardsPage() {
       <Card>
         <div style={{ marginBottom: 16 }}>
           <Title level={3} style={{ margin: 0 }}>
-            Khen thưởng Đột xuất
+            Khen thưởng đột xuất
           </Title>
           <Text type="secondary">Danh sách khen thưởng đột xuất trong đơn vị của bạn</Text>
         </div>

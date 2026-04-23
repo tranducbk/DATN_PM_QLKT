@@ -100,7 +100,7 @@ export default function PositionsPage() {
               <HomeOutlined />
             </Link>
           </Breadcrumb.Item>
-          <Breadcrumb.Item>Quản lý Chức vụ</Breadcrumb.Item>
+          <Breadcrumb.Item>Quản lý chức vụ</Breadcrumb.Item>
         </Breadcrumb>
 
         {/* Header */}
@@ -119,7 +119,7 @@ export default function PositionsPage() {
               level={1}
               style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '12px' }}
             >
-              Quản lý Chức vụ
+              Quản lý chức vụ
             </Title>
             <Text type="secondary" style={{ display: 'block', marginTop: '8px', fontSize: '15px' }}>
               Quản lý thông tin chức vụ, cấp bậc

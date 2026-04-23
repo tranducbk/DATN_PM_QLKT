@@ -35,7 +35,7 @@ function parseHeaderMap(worksheet: Worksheet): Record<string, number> {
 
 /**
  * Finds a header column by trying multiple key variations.
- * @param headerMap - Header map from `parseHeaderMap`
+ * @param headerMap - Header map from parseHeaderMap
  * @param variations - Candidate header keys (e.g. ['ho_ten', 'hoten'])
  * @returns 1-based column number, or null when not found
  */
@@ -59,7 +59,7 @@ function parseBooleanValue(value: CellValue | null | undefined): boolean {
 
 /**
  * Resolves personnel display data from Excel row and DB fallback.
- * @param row - Excel row values (`ho_ten`, `cap_bac`, `chuc_vu`)
+ * @param row - Excel row values (ho_ten, cap_bac, chuc_vu)
  * @param personnel - Personnel record from database
  * @returns Resolved values and missing field names
  */
@@ -81,8 +81,8 @@ function resolvePersonnelInfo(
 
 /**
  * Builds a key set from pending proposals for fast duplicate checks.
- * @param proposals - Pending proposals from `bangDeXuat`
- * @param dataField - JSON data field name (e.g. `data_danh_hieu`, `data_nien_han`)
+ * @param proposals - Pending proposals from bangDeXuat
+ * @param dataField - JSON data field name (for example: data_danh_hieu)
  * @param keyBuilder - Callback to build a key from each proposal item
  * @returns Set of keys for O(1) lookup
  */

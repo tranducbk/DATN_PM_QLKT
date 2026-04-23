@@ -334,15 +334,14 @@ export function Step2SelectUnits({
   return (
     <div>
       <Alert
-        message="Hướng dẫn"
+        message="Bước 2: Lựa chọn đơn vị"
         description={
           <div>
-            <p>1. Nhập năm đề xuất khen thưởng</p>
+            <p>1. Chọn năm đề xuất để xác định kỳ xét.</p>
             <p>
-              2. Chọn các đơn vị cần đề xuất khen thưởng từ danh sách dưới đây (bao gồm cơ quan đơn
-              vị và đơn vị trực thuộc)
+              2. Lựa chọn đơn vị đề xuất từ danh sách (bao gồm cơ quan đơn vị và đơn vị trực thuộc).
             </p>
-            <p>3. Sau khi chọn xong, nhấn &quot;Tiếp tục&quot; để sang bước chọn danh hiệu</p>
+            <p>3. Kiểm tra lại danh sách đã chọn và nhấn &quot;Tiếp tục&quot; để sang bước chọn danh hiệu.</p>
           </div>
         }
         type="info"

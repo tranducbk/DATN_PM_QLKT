@@ -41,8 +41,10 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useState, useEffect } from 'react';
 import { apiClient } from '@/lib/apiClient';
+import { calculateServiceMonthsWithToday } from '@/lib/serviceTimeHelpers';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { useTheme } from '@/components/ThemeProvider';
+import { StatCard } from '@/components/dashboard/StatCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 import type {
@@ -68,6 +70,7 @@ const UserDashboardPieChart = dynamic(
 
 export default function UserDashboard() {
   const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const { user, isLoading: authLoading } = useAuth();
   const [displayName, setDisplayName] = useState('Quân nhân');
   const [personnelInfo, setPersonnelInfo] = useState<PersonnelDetail | null>(null);
@@ -136,35 +139,11 @@ export default function UserDashboard() {
     fetchProfiles();
   }, [authLoading, user]);
 
-  // Calculate service years
-  const calculateServiceYears = () => {
-    if (!personnelInfo?.ngay_nhap_ngu) return 0;
-    const startDate = new Date(personnelInfo.ngay_nhap_ngu);
-    const today = new Date();
-    const months =
-      (today.getFullYear() - startDate.getFullYear()) * 12 +
-      today.getMonth() -
-      startDate.getMonth();
-    return Math.floor(Math.max(0, months) / 12);
-  };
-
-  // Calculate total service months
-  const calculateServiceMonths = () => {
-    if (!personnelInfo?.ngay_nhap_ngu) return 0;
-    const startDate = new Date(personnelInfo.ngay_nhap_ngu);
-    const endDate = personnelInfo?.ngay_xuat_ngu
-      ? new Date(personnelInfo.ngay_xuat_ngu)
-      : new Date();
-
-    const months =
-      (endDate.getFullYear() - startDate.getFullYear()) * 12 +
-      endDate.getMonth() -
-      startDate.getMonth();
-    return Math.max(0, months);
-  };
-
-  const serviceYears = calculateServiceYears();
-  const serviceMonths = calculateServiceMonths();
+  const serviceMonths = calculateServiceMonthsWithToday(
+    personnelInfo?.ngay_nhap_ngu ?? null,
+    personnelInfo?.ngay_xuat_ngu ?? null
+  );
+  const serviceYears = Math.floor(serviceMonths / 12);
 
   // Calculate progress for medals
   const getProgressData = (status: string, current: number, target: number) => {
@@ -178,12 +157,12 @@ export default function UserDashboard() {
     return (
       <ConfigProvider
         theme={{
-          algorithm: theme === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
+          algorithm: isDark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
         }}
       >
         <div
           className={`flex items-center justify-center min-h-screen ${
-            theme === 'dark'
+            isDark
               ? 'bg-gradient-to-br from-gray-900 to-gray-800'
               : 'bg-gradient-to-br from-blue-50 to-indigo-50'
           }`}
@@ -200,12 +179,12 @@ export default function UserDashboard() {
   return (
     <ConfigProvider
       theme={{
-        algorithm: theme === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
+        algorithm: isDark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
       }}
     >
       <div
         className={`min-h-screen ${
-          theme === 'dark'
+          isDark
             ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900'
             : 'bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50'
         }`}
@@ -216,7 +195,7 @@ export default function UserDashboard() {
             style={{
               borderRadius: '12px',
               boxShadow:
-                theme === 'dark'
+                isDark
                   ? '0 4px 16px rgba(0, 0, 0, 0.4)'
                   : '0 4px 16px rgba(0, 0, 0, 0.1)',
               overflow: 'hidden',
@@ -227,7 +206,7 @@ export default function UserDashboard() {
             <div
               style={{
                 background:
-                  theme === 'dark'
+                  isDark
                     ? 'linear-gradient(135deg, #1e3a8a 0%, #312e81 100%)'
                     : 'linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)',
                 padding: '32px',
@@ -291,265 +270,41 @@ export default function UserDashboard() {
               marginBottom: '24px',
             }}
           >
-            <Card
-              hoverable
-              style={{
-                borderRadius: '10px',
-                boxShadow:
-                  theme === 'dark'
-                    ? '0 1px 6px rgba(0, 0, 0, 0.35)'
-                    : '0 1px 4px rgba(0, 0, 0, 0.06)',
-                transition: 'all 0.3s ease',
-              }}
-              styles={{ body: { padding: '20px' } }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <div
-                  style={{
-                    width: '56px',
-                    height: '56px',
-                    borderRadius: '12px',
-                    background: theme === 'dark' ? '#1e3a8a' : '#e6f0ff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow:
-                      theme === 'dark'
-                        ? '0 1px 3px rgba(59, 130, 246, 0.3)'
-                        : '0 1px 3px rgba(59, 130, 246, 0.2)',
-                  }}
-                >
-                  <TrophyOutlined
-                    style={{
-                      fontSize: '26px',
-                      color: theme === 'dark' ? '#60a5fa' : '#2563eb',
-                    }}
-                  />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <Text
-                    type="secondary"
-                    style={{
-                      fontSize: '14px',
-                      fontWeight: 500,
-                      display: 'block',
-                      marginBottom: '4px',
-                      color: theme === 'dark' ? '#cbd5e1' : '#475569',
-                    }}
-                  >
-                    Tổng CSTDCS
-                  </Text>
-                  <div
-                    style={{
-                      fontSize: '28px',
-                      fontWeight: 'bold',
-                      color: theme === 'dark' ? '#e5e7eb' : '#0f172a',
-                      lineHeight: '1.1',
-                    }}
-                  >
-                    {annualProfile?.tong_cstdcs || 0}
-                  </div>
-                </div>
-              </div>
-            </Card>
+            <StatCard
+              icon={<TrophyOutlined />}
+              label="Tổng CSTDCS"
+              value={annualProfile?.tong_cstdcs || 0}
+              isDark={isDark}
+              darkColors={{ iconBg: '#1e3a8a', iconShadow: '0 1px 3px rgba(59, 130, 246, 0.3)', iconColor: '#60a5fa' }}
+              lightColors={{ iconBg: '#e6f0ff', iconShadow: '0 1px 3px rgba(59, 130, 246, 0.2)', iconColor: '#2563eb' }}
+            />
 
-            <Card
-              hoverable
-              style={{
-                borderRadius: '10px',
-                boxShadow:
-                  theme === 'dark'
-                    ? '0 1px 6px rgba(0, 0, 0, 0.35)'
-                    : '0 1px 4px rgba(0, 0, 0, 0.06)',
-                transition: 'all 0.3s ease',
-              }}
-              styles={{ body: { padding: '20px' } }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <div
-                  style={{
-                    width: '56px',
-                    height: '56px',
-                    borderRadius: '12px',
-                    background: theme === 'dark' ? '#0b3d2e' : '#e8f5e9',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow:
-                      theme === 'dark'
-                        ? '0 1px 3px rgba(16, 185, 129, 0.3)'
-                        : '0 1px 3px rgba(16, 185, 129, 0.2)',
-                  }}
-                >
-                  <ExperimentOutlined
-                    style={{
-                      fontSize: '26px',
-                      color: theme === 'dark' ? '#34d399' : '#059669',
-                    }}
-                  />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <Text
-                    type="secondary"
-                    style={{
-                      fontSize: '14px',
-                      fontWeight: 500,
-                      display: 'block',
-                      marginBottom: '4px',
-                      color: theme === 'dark' ? '#cbd5e1' : '#475569',
-                    }}
-                  >
-                    Tổng NCKH
-                  </Text>
-                  <div
-                    style={{
-                      fontSize: '28px',
-                      fontWeight: 'bold',
-                      color: theme === 'dark' ? '#e5e7eb' : '#0f172a',
-                      lineHeight: '1.1',
-                    }}
-                  >
-                    {Array.isArray(annualProfile?.tong_nckh)
-                      ? annualProfile.tong_nckh.length
-                      : annualProfile?.tong_nckh || 0}
-                  </div>
-                </div>
-              </div>
-            </Card>
+            <StatCard
+              icon={<ExperimentOutlined />}
+              label="Tổng NCKH"
+              value={Array.isArray(annualProfile?.tong_nckh) ? annualProfile.tong_nckh.length : annualProfile?.tong_nckh || 0}
+              isDark={isDark}
+              darkColors={{ iconBg: '#0b3d2e', iconShadow: '0 1px 3px rgba(16, 185, 129, 0.3)', iconColor: '#34d399' }}
+              lightColors={{ iconBg: '#e8f5e9', iconShadow: '0 1px 3px rgba(16, 185, 129, 0.2)', iconColor: '#059669' }}
+            />
 
-            <Card
-              hoverable
-              style={{
-                borderRadius: '10px',
-                boxShadow:
-                  theme === 'dark'
-                    ? '0 1px 6px rgba(0, 0, 0, 0.35)'
-                    : '0 1px 4px rgba(0, 0, 0, 0.06)',
-                transition: 'all 0.3s ease',
-              }}
-              styles={{ body: { padding: '20px' } }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <div
-                  style={{
-                    width: '56px',
-                    height: '56px',
-                    borderRadius: '12px',
-                    background: theme === 'dark' ? '#78350f' : '#fef9c3',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow:
-                      theme === 'dark'
-                        ? '0 1px 3px rgba(234, 179, 8, 0.3)'
-                        : '0 1px 3px rgba(234, 179, 8, 0.2)',
-                  }}
-                >
-                  <TrophyOutlined
-                    style={{
-                      fontSize: '26px',
-                      color: theme === 'dark' ? '#fbbf24' : '#d97706',
-                    }}
-                  />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <Text
-                    type="secondary"
-                    style={{
-                      fontSize: '14px',
-                      fontWeight: 500,
-                      display: 'block',
-                      marginBottom: '4px',
-                      color: theme === 'dark' ? '#cbd5e1' : '#475569',
-                    }}
-                  >
-                    CSTDCS liên tục
-                  </Text>
-                  <div
-                    style={{
-                      fontSize: '28px',
-                      fontWeight: 'bold',
-                      color: theme === 'dark' ? '#e5e7eb' : '#0f172a',
-                      lineHeight: '1.1',
-                    }}
-                  >
-                    {annualProfile?.cstdcs_lien_tuc || 0}{' '}
-                    <span
-                      style={{
-                        fontSize: '24px',
-                        fontWeight: 'bold',
-                        color: theme === 'dark' ? '#e5e7eb' : '#0f172a',
-                        marginLeft: '4px',
-                      }}
-                    >
-                      năm
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </Card>
+            <StatCard
+              icon={<TrophyOutlined />}
+              label="CSTDCS liên tục"
+              value={<>{annualProfile?.cstdcs_lien_tuc || 0} <span style={{ fontSize: '24px', marginLeft: '4px' }}>năm</span></>}
+              isDark={isDark}
+              darkColors={{ iconBg: '#78350f', iconShadow: '0 1px 3px rgba(234, 179, 8, 0.3)', iconColor: '#fbbf24' }}
+              lightColors={{ iconBg: '#fef9c3', iconShadow: '0 1px 3px rgba(234, 179, 8, 0.2)', iconColor: '#d97706' }}
+            />
 
-            <Card
-              hoverable
-              style={{
-                borderRadius: '10px',
-                boxShadow:
-                  theme === 'dark'
-                    ? '0 1px 6px rgba(0, 0, 0, 0.35)'
-                    : '0 1px 4px rgba(0, 0, 0, 0.06)',
-                transition: 'all 0.3s ease',
-              }}
-              styles={{ body: { padding: '20px' } }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <div
-                  style={{
-                    width: '56px',
-                    height: '56px',
-                    borderRadius: '12px',
-                    background: theme === 'dark' ? '#3b0764' : '#f3e8ff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow:
-                      theme === 'dark'
-                        ? '0 1px 3px rgba(139, 92, 246, 0.3)'
-                        : '0 1px 3px rgba(139, 92, 246, 0.2)',
-                  }}
-                >
-                  <ClockCircleOutlined
-                    style={{
-                      fontSize: '26px',
-                      color: theme === 'dark' ? '#a78bfa' : '#7c3aed',
-                    }}
-                  />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <Text
-                    type="secondary"
-                    style={{
-                      fontSize: '14px',
-                      fontWeight: 500,
-                      display: 'block',
-                      marginBottom: '4px',
-                      color: theme === 'dark' ? '#cbd5e1' : '#475569',
-                    }}
-                  >
-                    Tháng cống hiến
-                  </Text>
-                  <div
-                    style={{
-                      fontSize: '24px',
-                      fontWeight: 'bold',
-                      color: theme === 'dark' ? '#e5e7eb' : '#0f172a',
-                      lineHeight: '1.2',
-                    }}
-                  >
-                    {serviceMonths} tháng
-                  </div>
-                </div>
-              </div>
-            </Card>
+            <StatCard
+              icon={<ClockCircleOutlined />}
+              label="Tháng cống hiến"
+              value={`${serviceMonths} tháng`}
+              isDark={isDark}
+              darkColors={{ iconBg: '#3b0764', iconShadow: '0 1px 3px rgba(139, 92, 246, 0.3)', iconColor: '#a78bfa' }}
+              lightColors={{ iconBg: '#f3e8ff', iconShadow: '0 1px 3px rgba(139, 92, 246, 0.2)', iconColor: '#7c3aed' }}
+            />
           </div>
 
           {/* Personal Info Card */}
@@ -630,7 +385,7 @@ export default function UserDashboard() {
                         showIcon
                         icon={<BulbOutlined />}
                         className={
-                          theme === 'dark'
+                          isDark
                             ? 'border-blue-700 bg-blue-900/30'
                             : 'border-blue-200 bg-blue-50'
                         }
@@ -638,7 +393,7 @@ export default function UserDashboard() {
                     )}
 
                     <Divider orientation="left" className="!my-4">
-                      <Text strong className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>
+                      <Text strong className={isDark ? 'text-gray-300' : 'text-gray-600'}>
                         Tổng các danh hiệu đã nhận
                       </Text>
                     </Divider>
@@ -681,7 +436,7 @@ export default function UserDashboard() {
                           value: danhHieuCounts.CSTDTQ,
                         },
                         {
-                          label: 'Thành tích NCKH',
+                          label: 'Thành tích Nghiên cứu khoa học',
                           value: tongNCKH,
                         },
                       ].filter(item => item.value > 0);
@@ -749,7 +504,7 @@ export default function UserDashboard() {
                         showIcon
                         icon={<CheckCircleOutlined />}
                         className={
-                          theme === 'dark'
+                          isDark
                             ? 'border-green-700 bg-green-900/30'
                             : 'border-green-200 bg-green-50'
                         }
@@ -757,8 +512,8 @@ export default function UserDashboard() {
                     )}
 
                     <Divider orientation="left" className="!my-4">
-                      <Text strong className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>
-                        Huy chương Chiến sĩ Vẻ vang
+                      <Text strong className={isDark ? 'text-gray-300' : 'text-gray-600'}>
+                        Huy chương Chiến sĩ vẻ vang
                       </Text>
                     </Divider>
 
@@ -894,7 +649,7 @@ export default function UserDashboard() {
                         showIcon
                         icon={<BulbOutlined />}
                         className={
-                          theme === 'dark'
+                          isDark
                             ? 'border-blue-700 bg-blue-900/30'
                             : 'border-blue-200 bg-blue-50'
                         }
@@ -902,7 +657,7 @@ export default function UserDashboard() {
                     )}
 
                     <Divider orientation="left" className="!my-4">
-                      <Text strong className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>
+                      <Text strong className={isDark ? 'text-gray-300' : 'text-gray-600'}>
                         Huân chương Bảo vệ Tổ quốc
                       </Text>
                     </Divider>
@@ -1067,7 +822,7 @@ export default function UserDashboard() {
                   <Card
                     hoverable
                     className={`text-center h-full ${
-                      theme === 'dark'
+                      isDark
                         ? 'bg-gradient-to-br from-blue-900/40 to-blue-800/40 border-blue-700'
                         : 'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200'
                     }`}
@@ -1087,7 +842,7 @@ export default function UserDashboard() {
                   <Card
                     hoverable
                     className={`text-center h-full ${
-                      theme === 'dark'
+                      isDark
                         ? 'bg-gradient-to-br from-purple-900/40 to-purple-800/40 border-purple-700'
                         : 'bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200'
                     }`}
@@ -1106,7 +861,7 @@ export default function UserDashboard() {
                 <Card
                   hoverable
                   className={`text-center h-full cursor-pointer ${
-                    theme === 'dark'
+                    isDark
                       ? 'bg-gradient-to-br from-green-900/40 to-green-800/40 border-green-700'
                       : 'bg-gradient-to-br from-green-50 to-green-100 border-green-200'
                   }`}

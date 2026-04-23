@@ -1,10 +1,9 @@
 import { prisma } from '../models';
 import ExcelJS from 'exceljs';
 import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHelper';
-
-import profileService from './profile.service';
 import * as notificationHelper from '../helpers/notification';
-import { formatDanhHieuList, getDanhHieuName, DANH_HIEU_CA_NHAN_CO_BAN, DANH_HIEU_CA_NHAN_BANG_KHEN, DANH_HIEU_CA_NHAN_HANG_NAM } from '../constants/danhHieu.constants';
+import { safeRecalculateAnnualProfile } from '../helpers/profileRecalcHelper';
+import { formatDanhHieuList, getDanhHieuName, resolveDanhHieuCode, buildDanhHieuExcelOptions, DANH_HIEU_CA_NHAN_CO_BAN, DANH_HIEU_CA_NHAN_BANG_KHEN, DANH_HIEU_CA_NHAN_HANG_NAM } from '../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { NotFoundError, ValidationError } from '../middlewares/errorHandler';
@@ -208,11 +207,7 @@ class AnnualRewardService {
       },
     });
 
-    try {
-      await profileService.recalculateAnnualProfile(personnel_id);
-    } catch (e) {
-      writeSystemLog({ action: 'ERROR', resource: 'annual-rewards', description: `Lỗi tính lại hồ sơ hằng năm: ${e}` });
-    }
+    await safeRecalculateAnnualProfile(personnel_id);
 
     return newReward;
   }
@@ -269,11 +264,7 @@ class AnnualRewardService {
       },
     });
 
-    try {
-      await profileService.recalculateAnnualProfile(reward.quan_nhan_id);
-    } catch (e) {
-      writeSystemLog({ action: 'ERROR', resource: 'annual-rewards', description: `Lỗi tính lại hồ sơ hằng năm: ${e}` });
-    }
+    await safeRecalculateAnnualProfile(reward.quan_nhan_id);
 
     return updatedReward;
   }
@@ -310,11 +301,7 @@ class AnnualRewardService {
       where: { id },
     });
 
-    try {
-      await profileService.recalculateAnnualProfile(personnelId);
-    } catch (e) {
-      writeSystemLog({ action: 'ERROR', resource: 'annual-rewards', description: `Lỗi tính lại hồ sơ hằng năm: ${e}` });
-    }
+    await safeRecalculateAnnualProfile(personnelId);
 
     try {
       await notificationHelper.notifyOnAwardDeleted(
@@ -480,14 +467,14 @@ class AnnualRewardService {
         continue;
       }
 
-      const danhHieuUpper = danh_hieu_raw.toUpperCase();
-      if (!validDanhHieu.has(danhHieuUpper)) {
+      const resolvedDanhHieu = resolveDanhHieuCode(danh_hieu_raw);
+      if (!validDanhHieu.has(resolvedDanhHieu)) {
         errors.push(
           `Dòng ${rowNumber}: Danh hiệu "${danh_hieu_raw}" không đúng. Chỉ được nhập: ${formatDanhHieuList([...validDanhHieu])}`
         );
         continue;
       }
-      const danh_hieu = danhHieuUpper;
+      const danh_hieu = resolvedDanhHieu;
 
       const fileKey = `${personnel.id}_${nam}`;
       if (seenInFile.has(fileKey)) {
@@ -614,11 +601,7 @@ class AnnualRewardService {
     const selectedPersonnelIds = [...selectedPersonnelIdSet];
 
     for (const personnelId of selectedPersonnelIds) {
-      try {
-        await profileService.recalculateAnnualProfile(personnelId);
-      } catch (e) {
-        writeSystemLog({ action: 'ERROR', resource: 'annual-rewards', description: `Lỗi tính lại hồ sơ hằng năm: ${e}` });
-      }
+      await safeRecalculateAnnualProfile(personnelId);
     }
 
     const imported = created.length + updated.length;
@@ -863,8 +846,8 @@ class AnnualRewardService {
         continue;
       }
 
-      const danhHieuUpper = danh_hieu_raw.toUpperCase();
-      if (!validDanhHieu.has(danhHieuUpper)) {
+      const resolvedDanhHieu = resolveDanhHieuCode(danh_hieu_raw);
+      if (!validDanhHieu.has(resolvedDanhHieu)) {
         errors.push({
           row: rowNumber,
           ho_ten,
@@ -874,7 +857,7 @@ class AnnualRewardService {
         });
         continue;
       }
-      const danh_hieu = danhHieuUpper;
+      const danh_hieu = resolvedDanhHieu;
 
       if (!so_quyet_dinh) {
         errors.push({ row: rowNumber, ho_ten, nam, danh_hieu, message: 'Thiếu số quyết định' });
@@ -1324,11 +1307,7 @@ class AnnualRewardService {
     });
 
     for (const rewardRecord of created) {
-      try {
-        await profileService.recalculateAnnualProfile(rewardRecord.quan_nhan_id);
-      } catch (e) {
-        writeSystemLog({ action: 'ERROR', resource: 'annual-rewards', description: `Lỗi tính lại hồ sơ hằng năm: ${e}` });
-      }
+      await safeRecalculateAnnualProfile(rewardRecord.quan_nhan_id);
     }
 
     writeSystemLog({
@@ -1357,6 +1336,9 @@ class AnnualRewardService {
       { header: 'STT', key: 'stt', width: 6 },
       { header: 'ID', key: 'id', width: 10 },
       { header: 'Họ và tên', key: 'ho_ten', width: 25 },
+      { header: 'Ngày sinh', key: 'ngay_sinh', width: 14 },
+      { header: 'Cơ quan đơn vị', key: 'co_quan_don_vi', width: 20 },
+      { header: 'Đơn vị trực thuộc', key: 'don_vi_truc_thuoc', width: 20 },
       { header: 'Cấp bậc', key: 'cap_bac', width: 15 },
       { header: 'Chức vụ', key: 'chuc_vu', width: 20 },
       { header: 'Năm (*)', key: 'nam', width: 10 },
@@ -1374,9 +1356,12 @@ class AnnualRewardService {
       personnelIds,
       repeatMap,
       loaiKhenThuong: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
-      danhHieuOptions: '"CSTT,CSTDCS"',
-      redColumns: [10, 11, 12],
-      editableColumnLetters: ['G', 'H'],
+      danhHieuOptions: buildDanhHieuExcelOptions([
+        DANH_HIEU_CA_NHAN_HANG_NAM.CSTT,
+        DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS,
+      ]),
+      redColumns: [13, 14, 15],
+      editableColumnLetters: ['J', 'K'],
     });
   }
 

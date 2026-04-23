@@ -18,7 +18,7 @@ import { MODAL_TABLE_PREVIEW_PAGE_SIZE, FETCH_ALL_LIMIT } from '@/lib/constants/
 
 const { Text } = Typography;
 
-/** Preview quân nhân (getPersonnel theo đơn vị). */
+/** Personnel preview rows loaded by selected unit. */
 interface ExportPersonnelPreviewRow {
   id: string;
   ho_ten?: string | null;
@@ -27,7 +27,7 @@ interface ExportPersonnelPreviewRow {
   ChucVu?: { ten_chuc_vu?: string | null };
 }
 
-/** Đơn vị trong bảng chọn (cùng state `units`). */
+/** Unit rows shown in the selection table. */
 interface ExportUnitPreviewRow {
   id: string;
   ten_don_vi: string;
@@ -133,7 +133,7 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
 
       if (tuNam) params.tu_nam = tuNam;
       if (denNam) params.den_nam = denNam;
-      // Single-year selection uses the legacy `nam` param for backward compatibility
+      // Single-year selection uses the legacy nam param for backward compatibility.
       if (tuNam && denNam && tuNam === denNam) {
         params.nam = tuNam;
         delete params.tu_nam;

@@ -277,7 +277,7 @@ export default function AccountsListPage() {
         />
         <div className="flex justify-between items-center">
           <Title level={2} className="!mb-0">
-            Quản lý Tài khoản
+            Quản lý tài khoản
           </Title>
           <Link href="/super-admin/accounts/create">
             <Button type="primary" icon={<PlusOutlined />}>

@@ -39,3 +39,16 @@ export function calculateTenureMonthsWithDayPrecision(
 
   return Math.max(0, months);
 }
+
+/**
+ * Formats total months as "X năm Y tháng".
+ * @param totalMonths - Number of months
+ * @returns Human-readable Vietnamese duration string
+ */
+export function formatServiceDuration(totalMonths: number): string {
+  const years = Math.floor(totalMonths / 12);
+  const months = totalMonths % 12;
+  if (years > 0 && months > 0) return `${years} năm ${months} tháng`;
+  if (years > 0) return `${years} năm`;
+  return `${months} tháng`;
+}

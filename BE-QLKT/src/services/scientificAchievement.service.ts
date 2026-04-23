@@ -3,6 +3,7 @@ import ExcelJS from 'exceljs';
 import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHelper';
 import profileService from './profile.service';
 import * as notificationHelper from '../helpers/notification';
+import { resolveDanhHieuCode, buildDanhHieuExcelOptions, DANH_HIEU_NCKH } from '../constants/danhHieu.constants';
 import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { writeSystemLog } from '../helpers/systemLogHelper';
@@ -296,10 +297,13 @@ class ScientificAchievementService {
       { header: 'STT', key: 'stt', width: 6 },
       { header: 'ID', key: 'id', width: 10 },
       { header: 'Họ và tên', key: 'ho_ten', width: 25 },
+      { header: 'Ngày sinh', key: 'ngay_sinh', width: 14 },
+      { header: 'Cơ quan đơn vị', key: 'co_quan_don_vi', width: 20 },
+      { header: 'Đơn vị trực thuộc', key: 'don_vi_truc_thuoc', width: 20 },
       { header: 'Cấp bậc', key: 'cap_bac', width: 15 },
       { header: 'Chức vụ', key: 'chuc_vu', width: 20 },
       { header: 'Năm (*)', key: 'nam', width: 10 },
-      { header: 'Loại (*)', key: 'loai', width: 15, validationFormulae: '"DTKH,SKKH"' },
+      { header: 'Loại (*)', key: 'loai', width: 20, validationFormulae: buildDanhHieuExcelOptions(Object.values(DANH_HIEU_NCKH)) },
       { header: 'Mô tả (*)', key: 'mo_ta', width: 40 },
       { header: 'Số quyết định', key: 'so_quyet_dinh', width: 20 },
       { header: 'Ghi chú', key: 'ghi_chu', width: 25 },
@@ -477,8 +481,8 @@ class ScientificAchievementService {
         continue;
       }
 
-      const loaiUpper = loai_raw.toUpperCase();
-      if (!validLoai.includes(loaiUpper)) {
+      const resolvedLoai = resolveDanhHieuCode(loai_raw);
+      if (!validLoai.includes(resolvedLoai)) {
         errors.push({
           row: rowNumber,
           ho_ten,
@@ -488,7 +492,7 @@ class ScientificAchievementService {
         });
         continue;
       }
-      const loai = loaiUpper;
+      const loai = resolvedLoai;
 
       if (!so_quyet_dinh) {
         errors.push({ row: rowNumber, ho_ten, nam, loai, message: 'Thiếu số quyết định' });

@@ -296,15 +296,15 @@ export function Step2SelectPersonnel({
   return (
     <div>
       <Alert
-        message="Hướng dẫn"
+        message="Bước 2: Lựa chọn quân nhân"
         description={
           <div>
-            <p>1. Nhập năm đề xuất khen thưởng</p>
+            <p>1. Chọn năm đề xuất để xác định kỳ xét.</p>
             <p>
-              2. Chọn các quân nhân cần đề xuất khen thưởng từ danh sách dưới đây (bao gồm tất cả
-              quân nhân thuộc cơ quan đơn vị và đơn vị trực thuộc của bạn)
+              2. Lựa chọn quân nhân trong phạm vi đơn vị quản lý (bao gồm cơ quan đơn vị và đơn vị
+              trực thuộc).
             </p>
-            <p>3. Sau khi chọn xong, nhấn &quot;Tiếp tục&quot; để sang bước chọn danh hiệu</p>
+            <p>3. Kiểm tra lại danh sách đã chọn và nhấn &quot;Tiếp tục&quot; để sang bước chọn danh hiệu.</p>
           </div>
         }
         type="info"

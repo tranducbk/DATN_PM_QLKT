@@ -95,7 +95,7 @@ export default function ImportReviewNCKHPage() {
 
   const config: ImportReviewConfig = {
     sessionStorageKey: 'importPreviewDataNCKH',
-    title: 'Xem trước dữ liệu Import - Thành tích NCKH',
+    title: 'Xem trước dữ liệu Import - Thành tích Nghiên cứu khoa học',
     confirmImport: apiClient.confirmScientificAchievementsImport,
     successMessage: count => `Import thành công ${count} bản ghi thành tích NCKH.`,
     confirmButtonLabel: 'quân nhân',

@@ -24,6 +24,20 @@ import { calculateTenureMonthsWithDayPrecision } from '../helpers/serviceYearsHe
 
 type DateInput = Date | null;
 
+/** Increments or decrements the personnel count on a unit (CoQuanDonVi or DonViTrucThuoc). */
+async function adjustUnitCount(
+  tx: { coQuanDonVi: typeof prisma.coQuanDonVi; donViTrucThuoc: typeof prisma.donViTrucThuoc },
+  unitId: string,
+  isCoQuanDonVi: boolean,
+  direction: 'increment' | 'decrement'
+) {
+  const model = isCoQuanDonVi ? tx.coQuanDonVi : tx.donViTrucThuoc;
+  await (model as any).update({
+    where: { id: unitId },
+    data: { so_luong: { [direction]: 1 } },
+  });
+}
+
 const personnelInclude = {
   CoQuanDonVi: true,
   DonViTrucThuoc: { include: { CoQuanDonVi: true } },
@@ -298,18 +312,7 @@ class PersonnelService {
         },
       });
 
-      // Update unit personnel count.
-      if (isCoQuanDonVi) {
-        await prismaTx.coQuanDonVi.update({
-          where: { id: unit_id },
-          data: { so_luong: { increment: 1 } },
-        });
-      } else {
-        await prismaTx.donViTrucThuoc.update({
-          where: { id: unit_id },
-          data: { so_luong: { increment: 1 } },
-        });
-      }
+      await adjustUnitCount(prismaTx, unit_id, isCoQuanDonVi, 'increment');
 
       // Return personnel with account data.
       return {
@@ -613,71 +616,28 @@ class PersonnelService {
         let oldUnitInfo = null;
         let newUnitInfo = null;
 
-        // Resolve old primary unit (child unit first).
+        // DVTT takes priority over CQDV when determining effective unit
         const oldPrimaryUnitId = oldDonViTrucThuocId || oldCoQuanDonViId;
+        const oldIsCqdv = !oldDonViTrucThuocId && !!oldCoQuanDonViId;
         if (oldPrimaryUnitId) {
-          if (oldDonViTrucThuocId) {
-            const oldDvtt = await prismaTx.donViTrucThuoc.findUnique({
-              where: { id: oldDonViTrucThuocId },
-              select: { id: true, ten_don_vi: true },
-            });
-            if (oldDvtt) {
-              oldUnitInfo = {
-                id: oldDvtt.id,
-                ten_don_vi: oldDvtt.ten_don_vi,
-                isCoQuanDonVi: false,
-              };
-              await prismaTx.donViTrucThuoc.update({
-                where: { id: oldDonViTrucThuocId },
-                data: { so_luong: { decrement: 1 } },
-              });
-            }
-          } else if (oldCoQuanDonViId) {
-            const oldCqDv = await prismaTx.coQuanDonVi.findUnique({
-              where: { id: oldCoQuanDonViId },
-              select: { id: true, ten_don_vi: true },
-            });
-            if (oldCqDv) {
-              oldUnitInfo = { id: oldCqDv.id, ten_don_vi: oldCqDv.ten_don_vi, isCoQuanDonVi: true };
-              await prismaTx.coQuanDonVi.update({
-                where: { id: oldCoQuanDonViId },
-                data: { so_luong: { decrement: 1 } },
-              });
-            }
+          const oldUnit = oldIsCqdv
+            ? await prismaTx.coQuanDonVi.findUnique({ where: { id: oldPrimaryUnitId }, select: { id: true, ten_don_vi: true } })
+            : await prismaTx.donViTrucThuoc.findUnique({ where: { id: oldPrimaryUnitId }, select: { id: true, ten_don_vi: true } });
+          if (oldUnit) {
+            oldUnitInfo = { id: oldUnit.id, ten_don_vi: oldUnit.ten_don_vi, isCoQuanDonVi: oldIsCqdv };
+            await adjustUnitCount(prismaTx, oldPrimaryUnitId, oldIsCqdv, 'decrement');
           }
         }
 
-        // Resolve new primary unit (child unit first).
         const newPrimaryUnitId = newDonViTrucThuocId || newCoQuanDonViId;
+        const newIsCqdv = !newDonViTrucThuocId && !!newCoQuanDonViId;
         if (newPrimaryUnitId) {
-          if (newDonViTrucThuocId) {
-            const newDvtt = await prismaTx.donViTrucThuoc.findUnique({
-              where: { id: newDonViTrucThuocId },
-              select: { id: true, ten_don_vi: true },
-            });
-            if (newDvtt) {
-              newUnitInfo = {
-                id: newDvtt.id,
-                ten_don_vi: newDvtt.ten_don_vi,
-                isCoQuanDonVi: false,
-              };
-              await prismaTx.donViTrucThuoc.update({
-                where: { id: newDonViTrucThuocId },
-                data: { so_luong: { increment: 1 } },
-              });
-            }
-          } else if (newCoQuanDonViId) {
-            const newCqDv = await prismaTx.coQuanDonVi.findUnique({
-              where: { id: newCoQuanDonViId },
-              select: { id: true, ten_don_vi: true },
-            });
-            if (newCqDv) {
-              newUnitInfo = { id: newCqDv.id, ten_don_vi: newCqDv.ten_don_vi, isCoQuanDonVi: true };
-              await prismaTx.coQuanDonVi.update({
-                where: { id: newCoQuanDonViId },
-                data: { so_luong: { increment: 1 } },
-              });
-            }
+          const newUnit = newIsCqdv
+            ? await prismaTx.coQuanDonVi.findUnique({ where: { id: newPrimaryUnitId }, select: { id: true, ten_don_vi: true } })
+            : await prismaTx.donViTrucThuoc.findUnique({ where: { id: newPrimaryUnitId }, select: { id: true, ten_don_vi: true } });
+          if (newUnit) {
+            newUnitInfo = { id: newUnit.id, ten_don_vi: newUnit.ten_don_vi, isCoQuanDonVi: newIsCqdv };
+            await adjustUnitCount(prismaTx, newPrimaryUnitId, newIsCqdv, 'increment');
           }
         }
 
@@ -822,20 +782,9 @@ class PersonnelService {
         where: { id: String(id) },
       });
 
-      // Decrement unit personnel count.
       if (unitId) {
         try {
-          if (isCoQuanDonVi) {
-            await prismaTx.coQuanDonVi.update({
-              where: { id: unitId },
-              data: { so_luong: { decrement: 1 } },
-            });
-          } else {
-            await prismaTx.donViTrucThuoc.update({
-              where: { id: unitId },
-              data: { so_luong: { decrement: 1 } },
-            });
-          }
+          await adjustUnitCount(prismaTx, unitId, isCoQuanDonVi, 'decrement');
         } catch (error) {
           throw new AppError(
             `Không thể cập nhật số lượng quân nhân của đơn vị: ${error.message}`,
@@ -1161,17 +1110,7 @@ class PersonnelService {
 
         const newPersonnel = await prisma.quanNhan.create({ data: personnelData });
 
-        if (isCoQuanDonVi) {
-          await prisma.coQuanDonVi.update({
-            where: { id: unit.id },
-            data: { so_luong: { increment: 1 } },
-          });
-        } else {
-          await prisma.donViTrucThuoc.update({
-            where: { id: unit.id },
-            data: { so_luong: { increment: 1 } },
-          });
-        }
+        await adjustUnitCount(prisma, unit.id, isCoQuanDonVi, 'increment');
 
         const ngayBatDau = ngay_nhap_ngu || new Date();
         await prisma.lichSuChucVu.create({
@@ -1214,30 +1153,9 @@ class PersonnelService {
 
         if (oldUnitId !== newUnitId) {
           if (oldUnitId) {
-            if (oldIsCoQuanDonVi) {
-              await prisma.coQuanDonVi.update({
-                where: { id: oldUnitId },
-                data: { so_luong: { decrement: 1 } },
-              });
-            } else {
-              await prisma.donViTrucThuoc.update({
-                where: { id: oldUnitId },
-                data: { so_luong: { decrement: 1 } },
-              });
-            }
+            await adjustUnitCount(prisma, oldUnitId, oldIsCoQuanDonVi, 'decrement');
           }
-
-          if (isCoQuanDonVi) {
-            await prisma.coQuanDonVi.update({
-              where: { id: newUnitId },
-              data: { so_luong: { increment: 1 } },
-            });
-          } else {
-            await prisma.donViTrucThuoc.update({
-              where: { id: newUnitId },
-              data: { so_luong: { increment: 1 } },
-            });
-          }
+          await adjustUnitCount(prisma, newUnitId, isCoQuanDonVi, 'increment');
         }
 
         if (position.id !== existing.chuc_vu_id) {

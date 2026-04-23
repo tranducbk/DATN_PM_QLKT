@@ -27,6 +27,7 @@ interface Step3SetTitlesProps {
   onPersonnelChange?: (ids: string[]) => void;
   onUnitChange?: (ids: string[]) => void;
   nam: number;
+  thang: number;
 }
 
 export function Step3SetTitles({
@@ -38,6 +39,7 @@ export function Step3SetTitles({
   onPersonnelChange = () => {},
   onUnitChange = () => {},
   nam,
+  thang,
 }: Step3SetTitlesProps) {
   // Dispatch to the appropriate Step3 sub-component based on proposal type
   switch (proposalType) {
@@ -49,6 +51,7 @@ export function Step3SetTitles({
           titleData={titleData}
           onTitleDataChange={onTitleDataChange}
           nam={nam}
+          thang={thang}
         />
       );
     case PROPOSAL_TYPES.KNC_VSNXD_QDNDVN:
@@ -59,6 +62,7 @@ export function Step3SetTitles({
           titleData={titleData}
           onTitleDataChange={onTitleDataChange}
           nam={nam}
+          thang={thang}
         />
       );
     case PROPOSAL_TYPES.CA_NHAN_HANG_NAM:
@@ -89,6 +93,7 @@ export function Step3SetTitles({
           titleData={titleData}
           onTitleDataChange={onTitleDataChange}
           nam={nam}
+          thang={thang}
         />
       );
     case PROPOSAL_TYPES.CONG_HIEN:

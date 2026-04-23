@@ -50,6 +50,7 @@ interface Step3SetTitlesKNCVSNXDQDNDVNProps {
   titleData: TitleData[];
   onTitleDataChange: (data: TitleData[]) => void;
   nam: number;
+  thang: number;
 }
 
 export function Step3SetTitlesKNCVSNXDQDNDVN({
@@ -58,6 +59,7 @@ export function Step3SetTitlesKNCVSNXDQDNDVN({
   titleData,
   onTitleDataChange,
   nam,
+  thang,
 }: Step3SetTitlesKNCVSNXDQDNDVNProps) {
   const [loading, setLoading] = useState(false);
   const [personnel, setPersonnel] = useState<Personnel[]>([]);
@@ -118,11 +120,12 @@ export function Step3SetTitlesKNCVSNXDQDNDVN({
 
     try {
       const startDate = typeof ngayNhapNgu === 'string' ? new Date(ngayNhapNgu) : ngayNhapNgu;
+      const refDate = new Date(nam, thang, 0);
       const endDate = ngayXuatNgu
         ? typeof ngayXuatNgu === 'string'
           ? new Date(ngayXuatNgu)
           : ngayXuatNgu
-        : new Date();
+        : refDate;
 
       if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
         return null;
@@ -274,7 +277,7 @@ export function Step3SetTitlesKNCVSNXDQDNDVN({
       key: 'danh_hieu',
       width: 200,
       align: 'center',
-      render: () => <Text>Kỷ niệm chương VSNXD QĐNDVN</Text>,
+      render: () => <Text>Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN</Text>,
     },
   ];
 
@@ -286,18 +289,18 @@ export function Step3SetTitlesKNCVSNXDQDNDVN({
   return (
     <div>
       <Alert
-        message="Hướng dẫn"
+        message="Bước 3: Thiết lập danh hiệu - Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN"
         description={
           <div>
             <p>
-              1. Chọn danh hiệu khen thưởng cho từng quân nhân đã chọn (
+              1. Xác nhận danh hiệu cho từng quân nhân đã chọn (
               <strong>{personnel.length}</strong> quân nhân)
             </p>
             <p>
-              2. Yêu cầu: <strong>Nữ: 20 năm</strong>, <strong>Nam: 25 năm</strong> phục vụ
+              2. Điều kiện thời gian phục vụ: <strong>Nữ từ 20 năm</strong>, <strong>Nam từ 25 năm</strong>.
             </p>
-            <p>3. Đảm bảo tất cả quân nhân đều đã được chọn danh hiệu</p>
-            <p>4. Sau khi hoàn tất, nhấn &quot;Tiếp tục&quot; để sang bước upload file</p>
+            <p>3. Đảm bảo tất cả quân nhân đã có danh hiệu trước khi chuyển bước.</p>
+            <p>4. Hoàn tất khai báo, nhấn &quot;Tiếp tục&quot; để sang bước đính kèm tệp.</p>
           </div>
         }
         type="info"
@@ -309,7 +312,7 @@ export function Step3SetTitlesKNCVSNXDQDNDVN({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <Space size="middle" align="center">
           <Tag color="red" style={{ fontSize: 14, padding: '4px 12px', margin: 0 }}>
-            Năm {nam}
+            Năm {nam} - Tháng {thang}
           </Tag>
           <Text type="secondary">
             Tổng số quân nhân: <strong>{personnel.length}</strong>

@@ -19,7 +19,10 @@ import type { ColumnsType } from 'antd/es/table';
 import { formatDate } from '@/lib/utils';
 import type { DateInput } from '@/lib/types';
 import { apiClient } from '@/lib/apiClient';
-import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/lib/constants/pagination.constants';
+import {
+  DEFAULT_ANTD_TABLE_PAGINATION,
+  FETCH_ALL_LIMIT,
+} from '@/lib/constants/pagination.constants';
 import { HCQKQT_YEARS_REQUIRED } from '@/constants/danhHieu.constants';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { ExcelImportSection } from './ExcelImportSection';
@@ -64,6 +67,7 @@ interface Step2SelectPersonnelHCQKQTProps {
   onPersonnelChange: (ids: string[]) => void;
   nam: number;
   onNamChange: (nam: number) => void;
+  thang: number;
   onThangChange?: (thang: number) => void;
   onTitleDataChange?: (titleData: any[]) => void;
   onNextStep?: () => void;
@@ -75,6 +79,7 @@ export function Step2SelectPersonnelHCQKQT({
   onPersonnelChange,
   nam,
   onNamChange,
+  thang,
   onThangChange,
   onTitleDataChange,
   onNextStep,
@@ -88,7 +93,7 @@ export function Step2SelectPersonnelHCQKQT({
   const CURRENT_YEAR = NOW.getFullYear();
   const CURRENT_MONTH = NOW.getMonth() + 1;
   const [localNam, setLocalNam] = useState<number | null>(nam);
-  const [localThang, setLocalThang] = useState<number>(CURRENT_MONTH);
+  const [localThang, setLocalThang] = useState<number>(thang);
   const [alreadyReceivedMap, setAlreadyReceivedMap] = useState<Record<string, boolean>>({});
   const [receivedReasonMap, setReceivedReasonMap] = useState<Record<string, string>>({});
   const [checkingReceived, setCheckingReceived] = useState(false);
@@ -100,6 +105,10 @@ export function Step2SelectPersonnelHCQKQT({
   useEffect(() => {
     setLocalNam(nam);
   }, [nam]);
+
+  useEffect(() => {
+    setLocalThang(thang);
+  }, [thang]);
 
   useEffect(() => {
     if (personnel.length > 0) {
@@ -123,7 +132,7 @@ export function Step2SelectPersonnelHCQKQT({
                 const yearReceived = response.data.award?.nam;
                 reasonMap[p.id] = yearReceived
                   ? `Đã nhận (${yearReceived})`
-                  : (response.data.reason || 'Đã nhận');
+                  : response.data.reason || 'Đã nhận';
               }
             }
           } catch (error) {
@@ -160,9 +169,7 @@ export function Step2SelectPersonnelHCQKQT({
         message.error(response.message || 'Không thể lấy danh sách quân nhân');
       }
     } catch (error: unknown) {
-      message.error(
-        getApiErrorMessage(error) || 'Lỗi khi tải danh sách quân nhân'
-      );
+      message.error(getApiErrorMessage(error) || 'Lỗi khi tải danh sách quân nhân');
     } finally {
       setLoading(false);
     }
@@ -213,7 +220,12 @@ export function Step2SelectPersonnelHCQKQT({
         return null;
       }
 
-      const totalMonths = Math.max(0, (endDate.getFullYear() - startDate.getFullYear()) * 12 + endDate.getMonth() - startDate.getMonth());
+      const totalMonths = Math.max(
+        0,
+        (endDate.getFullYear() - startDate.getFullYear()) * 12 +
+          endDate.getMonth() -
+          startDate.getMonth()
+      );
       const totalYears = Math.floor(totalMonths / 12);
       const remainingMonths = totalMonths % 12;
 
@@ -457,7 +469,8 @@ export function Step2SelectPersonnelHCQKQT({
             const ngaySinh = row[1]?.toString().trim();
             const nam = row[2]?.toString().trim();
             const thangRaw = parseInt(row[3]?.toString().trim() ?? '');
-            const thang = !isNaN(thangRaw) && thangRaw >= 1 && thangRaw <= 12 ? thangRaw : localThang;
+            const thang =
+              !isNaN(thangRaw) && thangRaw >= 1 && thangRaw <= 12 ? thangRaw : localThang;
             const capBac = row[4]?.toString().trim();
             const chucVu = row[5]?.toString().trim();
 
@@ -518,17 +531,20 @@ export function Step2SelectPersonnelHCQKQT({
             const duplicateIds = new Set<string>();
             (batchResponse.data as any[]).forEach(result => {
               if (result.exists) {
-                const hoTen = personnel.find(p => p.id === result.personnel_id)?.ho_ten || result.personnel_id;
+                const hoTen =
+                  personnel.find(p => p.id === result.personnel_id)?.ho_ten || result.personnel_id;
                 errors.push(`${hoTen}: ${result.message}`);
                 duplicateIds.add(result.personnel_id);
               }
             });
-            const filteredTitleData = duplicateIds.size > 0
-              ? titleData.filter(item => !duplicateIds.has(item.personnel_id))
-              : titleData;
-            const filteredPersonnelIds = duplicateIds.size > 0
-              ? uniquePersonnelIds.filter(id => !duplicateIds.has(id))
-              : uniquePersonnelIds;
+            const filteredTitleData =
+              duplicateIds.size > 0
+                ? titleData.filter(item => !duplicateIds.has(item.personnel_id))
+                : titleData;
+            const filteredPersonnelIds =
+              duplicateIds.size > 0
+                ? uniquePersonnelIds.filter(id => !duplicateIds.has(id))
+                : uniquePersonnelIds;
             resolve({
               imported: filteredTitleData.length,
               total: dataRows.length,
@@ -632,15 +648,13 @@ export function Step2SelectPersonnelHCQKQT({
   return (
     <div>
       <Alert
-        message="Bước 2: Chọn quân nhân - Huy chương Quân kỳ quyết thắng"
+        message="Bước 2: Lựa chọn quân nhân - Huy chương Quân kỳ quyết thắng"
         description={
           <div>
-            <p>1. Nhập năm đề xuất khen thưởng</p>
-            <p>2. Chọn các quân nhân cần đề xuất khen thưởng từ danh sách dưới đây</p>
-            <p>
-              3. Bảng hiển thị thông tin ngày nhập ngũ, xuất ngũ và tổng tháng để hỗ trợ lựa chọn
-            </p>
-            <p>4. Sau khi chọn xong, nhấn &quot;Tiếp tục&quot; để sang bước chọn danh hiệu</p>
+            <p>1. Chọn năm và tháng đề xuất để hệ thống tính điều kiện phục vụ theo đúng kỳ xét.</p>
+            <p>2. Lựa chọn quân nhân đủ điều kiện từ danh sách.</p>
+            <p>3. Đối chiếu thông tin thời gian phục vụ trước khi xác nhận.</p>
+            <p>4. Hoàn tất lựa chọn, nhấn &quot;Tiếp tục&quot; để sang bước chọn danh hiệu.</p>
           </div>
         }
         type="info"
@@ -658,7 +672,9 @@ export function Step2SelectPersonnelHCQKQT({
             templateFileName="mau_import_hcqkqt"
             onImportSuccess={handleImportSuccess}
             selectedPersonnelIds={selectedPersonnelIds}
-            selectedNames={selectedPersonnelIds.map(id => personnel.find(p => p.id === id)?.ho_ten || '')}
+            selectedNames={selectedPersonnelIds.map(
+              id => personnel.find(p => p.id === id)?.ho_ten || ''
+            )}
             entityLabel="quân nhân"
             localProcessing={true}
             onLocalProcess={handleLocalExcelProcess}
@@ -666,7 +682,6 @@ export function Step2SelectPersonnelHCQKQT({
             reviewPath="/admin/awards/bulk/import-review-hcqkqt"
             sessionStorageKey="importPreviewDataHCQKQT"
           />
-
         </>
       )}
 
@@ -686,6 +701,9 @@ export function Step2SelectPersonnelHCQKQT({
 
               if (!isNaN(intValue)) {
                 setLocalNam(intValue);
+                if (intValue >= 1900 && intValue <= CURRENT_YEAR) {
+                  onNamChange(intValue);
+                }
                 if (intValue === CURRENT_YEAR && localThang > CURRENT_MONTH) {
                   setLocalThang(CURRENT_MONTH);
                   onThangChange?.(CURRENT_MONTH);
@@ -734,7 +752,11 @@ export function Step2SelectPersonnelHCQKQT({
             allowClear
           >
             {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
-              <Select.Option key={m} value={m} disabled={localNam === CURRENT_YEAR && m > CURRENT_MONTH}>
+              <Select.Option
+                key={m}
+                value={m}
+                disabled={localNam === CURRENT_YEAR && m > CURRENT_MONTH}
+              >
                 Tháng {m}
               </Select.Option>
             ))}
