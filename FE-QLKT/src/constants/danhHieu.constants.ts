@@ -45,6 +45,13 @@ export const CONG_HIEN_HE_SO_RANGES: Record<
   [CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10]: { min: 0.9, max: 1.0, includeMax: true },
 };
 
+/** Minimum service months for HCBVTQ baseline (male). */
+export const CONG_HIEN_BASE_REQUIRED_MONTHS = 120;
+/** Female requirement = 2/3 of male baseline. */
+export const CONG_HIEN_FEMALE_REQUIRED_MONTHS = Math.round(
+  CONG_HIEN_BASE_REQUIRED_MONTHS * (2 / 3)
+);
+
 export const DANH_HIEU_DAC_BIET = {
   HC_QKQT: 'HC_QKQT',
   KNC_VSNXD_QDNDVN: 'KNC_VSNXD_QDNDVN',

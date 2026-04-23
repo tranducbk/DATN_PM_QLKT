@@ -66,9 +66,9 @@ export default function ImportReviewHCQKQTPage() {
 
   const config: ImportReviewConfig = {
     sessionStorageKey: 'importPreviewDataHCQKQT',
-    title: 'Xem trước dữ liệu Import - HC Quân kỳ quyết thắng',
+    title: 'Xem trước dữ liệu tải lên - HC Quân kỳ quyết thắng',
     confirmImport: apiClient.confirmMilitaryFlagImport,
-    successMessage: count => `Import thành công ${count} bản ghi HC Quân kỳ quyết thắng.`,
+    successMessage: count => `Tải dữ liệu thành công ${count} bản ghi HC Quân kỳ quyết thắng.`,
     confirmButtonLabel: 'quân nhân',
     validColumns,
     invalidColumns,

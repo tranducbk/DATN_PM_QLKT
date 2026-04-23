@@ -73,7 +73,7 @@ const RESOURCE_VI: Record<string, string> = {
   'scientific-achievements': 'thành tích khoa học',
   'adhoc-awards': 'khen thưởng đột xuất',
   'commemorative-medals': 'kỷ niệm chương',
-  'contribution-medals': 'huân chương bảo vệ tổ quốc',
+  'contribution-medals': 'Huân chương Bảo vệ Tổ quốc',
   'military-flag': 'huân chương quân kỳ quyết thắng',
   'tenure-medals': 'huy chương chiến sĩ vẻ vang',
   awards: 'khen thưởng',

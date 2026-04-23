@@ -180,7 +180,7 @@ export default function PersonnelExportPage() {
             </Button>
           </Space>
           <Paragraph type="secondary" style={{ fontSize: 13, marginTop: 16, marginBottom: 0 }}>
-            Tải file Excel mẫu để import dữ liệu quân nhân
+            Tải file Excel mẫu để tải dữ liệu quân nhân
           </Paragraph>
         </Card>
       </div>

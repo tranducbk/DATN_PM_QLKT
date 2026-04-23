@@ -24,37 +24,37 @@ export const AWARD_TYPE_OPTIONS = [
   {
     key: 'annual',
     label: 'Khen thưởng cá nhân hằng năm',
-    description: 'Import, file mẫu, thêm đồng loạt',
+    description: 'Tải dữ liệu, file mẫu, thêm đồng loạt',
   },
   {
     key: 'unit',
     label: 'Khen thưởng đơn vị hằng năm',
-    description: 'Import, file mẫu, thêm đồng loạt',
+    description: 'Tải dữ liệu, file mẫu, thêm đồng loạt',
   },
   {
     key: 'hccsvv',
     label: 'Huy chương Chiến sĩ vẻ vang',
-    description: 'Import, file mẫu, thêm đồng loạt',
+    description: 'Tải dữ liệu, file mẫu, thêm đồng loạt',
   },
   {
     key: 'contribution',
     label: 'Huân chương Bảo vệ Tổ quốc',
-    description: 'Import, file mẫu, thêm đồng loạt',
+    description: 'Tải dữ liệu, file mẫu, thêm đồng loạt',
   },
   {
     key: 'commemoration',
     label: 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
-    description: 'Import, file mẫu, thêm đồng loạt',
+    description: 'Tải dữ liệu, file mẫu, thêm đồng loạt',
   },
   {
     key: 'militaryFlag',
     label: 'HC Quân kỳ quyết thắng',
-    description: 'Import, file mẫu, thêm đồng loạt',
+    description: 'Tải dữ liệu, file mẫu, thêm đồng loạt',
   },
   {
     key: 'scientific',
     label: 'Thành tích Nghiên cứu khoa học',
-    description: 'Import, file mẫu, thêm đồng loạt',
+    description: 'Tải dữ liệu, file mẫu, thêm đồng loạt',
   },
 ] as const;
 

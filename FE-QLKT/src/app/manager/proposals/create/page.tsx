@@ -119,6 +119,13 @@ export default function CreateProposalPage() {
   // Step 5: Note
   const [proposalNote, setProposalNote] = useState<string>('');
 
+  const getProposalReferenceEndDate = (): Date => {
+    if (Number.isInteger(thang) && thang >= 1 && thang <= 12) {
+      return new Date(nam, thang, 0);
+    }
+    return new Date(nam, 11, 31);
+  };
+
   // Proposal type config
   const proposalTypeConfig: Partial<
     Record<ProposalType, { icon: React.ReactNode; label: string; description: string }>
@@ -126,32 +133,33 @@ export default function CreateProposalPage() {
     [PROPOSAL_TYPES.CA_NHAN_HANG_NAM]: {
       icon: <TrophyOutlined />,
       label: 'Khen thưởng cá nhân hằng năm',
-      description: 'Danh hiệu CSTT-CS, CSTĐ-CS, BK-BQP, CSTĐ-TQ',
+      description: 'Danh hiệu CSTT, CSTDCS, BKBQP, CSTĐTQ',
     },
     [PROPOSAL_TYPES.DON_VI_HANG_NAM]: {
       icon: <TeamOutlined />,
       label: 'Khen thưởng đơn vị hằng năm',
-      description: 'ĐVTT, ĐVQT, BK-BQP, BK-TTCP',
+      description: 'Danh hiệu ĐVTT, ĐVQT, BKBQP, BKTTCP',
     },
     [PROPOSAL_TYPES.NIEN_HAN]: {
       icon: <ClockCircleOutlined />,
       label: 'Huy chương Chiến sĩ vẻ vang',
-      description: 'HCCSVV 3 hạng (Hạng Ba, Nhì, Nhất)',
+      description: 'Danh hiệu Huy chương Chiến sĩ vẻ vang 3 hạng (Ba, Nhì, Nhất)',
     },
     [PROPOSAL_TYPES.HC_QKQT]: {
       icon: <TrophyOutlined />,
       label: 'Huy chương Quân kỳ quyết thắng',
-      description: 'Huy chương Quân kỳ quyết thắng',
+      description: 'Yêu cầu đủ 25 năm phục vụ trong QĐNDVN',
     },
     [PROPOSAL_TYPES.KNC_VSNXD_QDNDVN]: {
       icon: <TrophyOutlined />,
       label: 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
-      description: 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
+      description:
+        'Yêu cầu đủ 25 năm phục vụ đối với nam và 20 năm phục vụ đối với nữ trong QĐNDVN',
     },
     [PROPOSAL_TYPES.CONG_HIEN]: {
       icon: <HeartOutlined />,
       label: 'Huân chương Bảo vệ Tổ quốc',
-      description: 'HCBVTQ 3 hạng (Hạng Ba, Nhì, Nhất)',
+      description: 'Danh hiệu Huân chương Bảo vệ Tổ quốc 3 hạng (Ba, Nhì, Nhất)',
     },
     [PROPOSAL_TYPES.NCKH]: {
       icon: <ExperimentOutlined />,
@@ -347,6 +355,7 @@ export default function CreateProposalPage() {
       selectedPersonnelIds.length > 0
     ) {
       try {
+        const proposalReferenceEndDate = getProposalReferenceEndDate();
         const promises = selectedPersonnelIds.map(id => apiClient.getPersonnelById(id));
         const responses = await Promise.all(promises);
         const personnelData = responses.filter(r => r.success).map(r => r.data);
@@ -363,12 +372,16 @@ export default function CreateProposalPage() {
           }
 
           const ngayNhapNgu = new Date(p.ngay_nhap_ngu);
-          const ngayKetThuc = p.ngay_xuat_ngu ? new Date(p.ngay_xuat_ngu) : new Date();
+          const ngayKetThuc = p.ngay_xuat_ngu
+            ? new Date(p.ngay_xuat_ngu)
+            : proposalReferenceEndDate;
+          const effectiveEndDate =
+            ngayKetThuc > proposalReferenceEndDate ? proposalReferenceEndDate : ngayKetThuc;
 
           const months = Math.max(
             0,
-            (ngayKetThuc.getFullYear() - ngayNhapNgu.getFullYear()) * 12 +
-              ngayKetThuc.getMonth() -
+            (effectiveEndDate.getFullYear() - ngayNhapNgu.getFullYear()) * 12 +
+              effectiveEndDate.getMonth() -
               ngayNhapNgu.getMonth()
           );
           const years = Math.floor(months / 12);
@@ -509,6 +522,7 @@ export default function CreateProposalPage() {
       // HC_QKQT: validate >= 25 years of service
       if (proposalType === PROPOSAL_TYPES.HC_QKQT && selectedPersonnelIds.length > 0) {
         try {
+          const proposalReferenceEndDate = getProposalReferenceEndDate();
           const promises = selectedPersonnelIds.map(id => apiClient.getPersonnelById(id));
           const responses = await Promise.all(promises);
           const personnelData = responses.filter(r => r.success).map(r => r.data);
@@ -525,10 +539,14 @@ export default function CreateProposalPage() {
             }
 
             const ngayNhapNgu = new Date(p.ngay_nhap_ngu);
-            const ngayKetThuc = p.ngay_xuat_ngu ? new Date(p.ngay_xuat_ngu) : new Date();
+            const ngayKetThuc = p.ngay_xuat_ngu
+              ? new Date(p.ngay_xuat_ngu)
+              : proposalReferenceEndDate;
+            const effectiveEndDate =
+              ngayKetThuc > proposalReferenceEndDate ? proposalReferenceEndDate : ngayKetThuc;
 
-            let months = (ngayKetThuc.getFullYear() - ngayNhapNgu.getFullYear()) * 12;
-            months += ngayKetThuc.getMonth() - ngayNhapNgu.getMonth();
+            let months = (effectiveEndDate.getFullYear() - ngayNhapNgu.getFullYear()) * 12;
+            months += effectiveEndDate.getMonth() - ngayNhapNgu.getMonth();
             months = Math.max(0, months);
 
             const years = Math.floor(months / 12);
@@ -562,7 +580,7 @@ export default function CreateProposalPage() {
       formData.append('nam', String(nam));
       if (requiresProposalMonth(proposalType)) {
         if (!Number.isInteger(thang) || thang < 1 || thang > 12) {
-          antMessage.error('HCCSVV/HCQKQT/KNC bắt buộc chọn tháng hợp lệ (1-12)');
+          antMessage.error('Loại đề xuất này bắt buộc chọn tháng hợp lệ (1-12)');
           return;
         }
         formData.append('thang', String(thang));
@@ -750,6 +768,8 @@ export default function CreateProposalPage() {
                 onPersonnelChange={setSelectedPersonnelIds}
                 nam={nam}
                 onNamChange={setNam}
+                thang={thang}
+                onThangChange={setThang}
                 onTitleDataChange={setTitleData}
                 onNextStep={() => setCurrentStep(prev => prev + 1)}
                 isManager
@@ -1016,20 +1036,14 @@ export default function CreateProposalPage() {
                     <Tag icon={proposalTypeSummary.icon}>{proposalTypeSummary.label}</Tag>
                   ) : null}
                 </Descriptions.Item>
-                <Descriptions.Item label="Năm đề xuất">
-                  <Text strong>{nam}</Text>
-                </Descriptions.Item>
-                {(
-                  [
-                    PROPOSAL_TYPES.NIEN_HAN,
-                    PROPOSAL_TYPES.HC_QKQT,
-                    PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
-                  ] as string[]
-                ).includes(proposalType) && (
+                {requiresProposalMonth(proposalType) && (
                   <Descriptions.Item label="Tháng đề xuất">
                     <Text strong>{thang}</Text>
                   </Descriptions.Item>
                 )}
+                <Descriptions.Item label="Năm đề xuất">
+                  <Text strong>{nam}</Text>
+                </Descriptions.Item>
                 <Descriptions.Item
                   label={
                     proposalType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? 'Số đơn vị' : 'Số quân nhân'

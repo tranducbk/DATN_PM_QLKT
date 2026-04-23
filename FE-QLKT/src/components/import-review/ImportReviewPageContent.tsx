@@ -231,7 +231,7 @@ export function ImportReviewPageContent({ config }: { config: ImportReviewConfig
 
   const historyLabel = config.historyLabel ?? 'Lịch sử khen thưởng';
   const noHistoryLabel = config.noHistoryLabel ?? 'Chưa có lịch sử khen thưởng.';
-  const breadcrumbLastItem = config.breadcrumbLastItem ?? 'Xem trước Import';
+  const breadcrumbLastItem = config.breadcrumbLastItem ?? 'Xem trước dữ liệu tải lên';
 
   const validColumnsPaginated = useMemo(() => {
     return config.validColumns.map(col => {
@@ -285,10 +285,10 @@ export function ImportReviewPageContent({ config }: { config: ImportReviewConfig
         sessionStorage.removeItem(config.sessionStorageKey);
         router.push('/admin/awards');
       } else {
-        message.error(result?.message ?? 'Import thất bại. Vui lòng thử lại.');
+        message.error(result?.message ?? 'Tải dữ liệu thất bại. Vui lòng thử lại.');
       }
     } catch (error: unknown) {
-      message.error(getApiErrorMessage(error, 'Import thất bại. Vui lòng thử lại.'));
+      message.error(getApiErrorMessage(error, 'Tải dữ liệu thất bại. Vui lòng thử lại.'));
     } finally {
       setConfirming(false);
     }
@@ -323,7 +323,7 @@ export function ImportReviewPageContent({ config }: { config: ImportReviewConfig
               ),
             },
             { title: <Link href="/admin/awards">Khen thưởng</Link> },
-            { title: 'Xem trước Import' },
+            { title: 'Xem trước dữ liệu tải lên' },
           ]}
         />
         <Result
@@ -528,7 +528,7 @@ export function ImportReviewPageContent({ config }: { config: ImportReviewConfig
           onClick={handleConfirm}
         >
           {confirming
-            ? 'Đang import...'
+            ? 'Đang tải dữ liệu...'
             : `Xác nhận import (${selectedCount} ${config.confirmButtonLabel})`}
         </Button>
       </div>

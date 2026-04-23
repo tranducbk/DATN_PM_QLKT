@@ -23,8 +23,15 @@ import {
   FETCH_ALL_LIMIT,
 } from '@/lib/constants/pagination.constants';
 import { ExcelImportSection } from './ExcelImportSection';
-import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
-import { PROPOSAL_STATUS } from '@/constants/proposal.constants';
+import { PROPOSAL_STATUS, PROPOSAL_MONTH_OPTIONS } from '@/constants/proposal.constants';
+import {
+  calculateContributionMonthsByGroup,
+  formatMonthsToText,
+  getContributionRequiredMonths,
+  getHighestEligibleContributionAward,
+  getReferenceEndDate,
+} from '@/lib/contributionTimeHelper';
+import { DANH_HIEU_SHORT_MAP } from '@/constants/danhHieu.constants';
 import * as XLSX from 'xlsx';
 
 const { Text } = Typography;
@@ -65,6 +72,8 @@ interface Step2SelectPersonnelCongHienProps {
   onPersonnelChange: (ids: string[]) => void;
   nam: number;
   onNamChange: (nam: number) => void;
+  thang?: number;
+  onThangChange?: (thang: number) => void;
   onTitleDataChange?: (titleData: any[]) => void;
   onNextStep?: () => void;
   isManager?: boolean;
@@ -85,6 +94,8 @@ export function Step2SelectPersonnelCongHien({
   onPersonnelChange,
   nam,
   onNamChange,
+  thang,
+  onThangChange,
   onTitleDataChange,
   onNextStep,
   isManager = false,
@@ -97,8 +108,8 @@ export function Step2SelectPersonnelCongHien({
   const [positionHistoriesMap, setPositionHistoriesMap] = useState<Record<string, any[]>>({});
   const CURRENT_YEAR = new Date().getFullYear();
   const [localNam, setLocalNam] = useState<number | null>(nam);
+  const [localThang, setLocalThang] = useState<number>(thang ?? new Date().getMonth() + 1);
   const [ineligiblePersonnel, setIneligiblePersonnel] = useState<IneligiblePersonnel[]>([]);
-  const [contributionProfiles, setContributionProfiles] = useState<Record<string, any>>({});
 
   useEffect(() => {
     fetchPersonnel();
@@ -107,7 +118,6 @@ export function Step2SelectPersonnelCongHien({
   useEffect(() => {
     if (personnel.length > 0) {
       fetchPositionHistories(personnel);
-      fetchContributionProfiles(personnel.map(p => p.id));
       checkContributionEligibility(personnel.map(p => p.id));
     }
   }, [personnel.length]);
@@ -161,29 +171,6 @@ export function Step2SelectPersonnelCongHien({
     }
   };
 
-  const fetchContributionProfiles = async (personnelIds: string[]) => {
-    try {
-      const profilesMap: Record<string, any> = {};
-
-      await Promise.all(
-        personnelIds.map(async id => {
-          try {
-            const response = await apiClient.getContributionProfile(id);
-            if (response.success && response.data) {
-              profilesMap[id] = response.data;
-            }
-          } catch (error) {
-            // Error handled silently per-item
-          }
-        })
-      );
-
-      setContributionProfiles(profilesMap);
-    } catch (error) {
-      message.error(getApiErrorMessage(error));
-    }
-  };
-
   const checkContributionEligibility = async (personnelIds: string[]) => {
     try {
       setCheckingEligibility(true);
@@ -199,36 +186,17 @@ export function Step2SelectPersonnelCongHien({
     }
   };
 
-  /** Computes total service months for a coefficient group from API data. */
   const getTotalMonthsByGroup = (personnelId: string, group: '0.7' | '0.8' | '0.9-1.0'): number => {
-    const profile = contributionProfiles[personnelId];
-    if (!profile) return 0;
-
-    if (group === '0.7') {
-      return profile.months_07 || 0;
-    } else if (group === '0.8') {
-      return profile.months_08 || 0;
-    } else if (group === '0.9-1.0') {
-      return profile.months_0910 || 0;
-    }
-
-    return 0;
+    const histories = positionHistoriesMap[personnelId] || [];
+    if (!histories.length) return 0;
+    const effectiveYear = localNam ?? nam;
+    const referenceEndDate = getReferenceEndDate(effectiveYear, localThang);
+    return calculateContributionMonthsByGroup(histories, group, referenceEndDate);
   };
 
   const calculateTotalTimeByGroup = (personnelId: string, group: '0.7' | '0.8' | '0.9-1.0') => {
     const totalMonths = getTotalMonthsByGroup(personnelId, group);
-
-    const years = Math.floor(totalMonths / 12);
-    const remainingMonths = totalMonths % 12;
-
-    if (totalMonths === 0) return '-';
-    if (years > 0 && remainingMonths > 0) {
-      return `${years} năm ${remainingMonths} tháng`;
-    } else if (years > 0) {
-      return `${years} năm`;
-    } else {
-      return `${remainingMonths} tháng`;
-    }
+    return formatMonthsToText(totalMonths);
   };
 
   /** Checks whether a personnel meets the service-time requirement for a given HCBVTQ rank. */
@@ -236,30 +204,29 @@ export function Step2SelectPersonnelCongHien({
     personnelId: string,
     rank: 'HANG_NHAT' | 'HANG_NHI' | 'HANG_BA'
   ): boolean => {
-    const profile = contributionProfiles[personnelId];
-    if (!profile) return false;
+    const person = personnel.find(p => p.id === personnelId);
+    if (!person) return false;
 
-    if (rank === 'HANG_NHAT') {
-      return profile.hcbvtq_hang_nhat_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN;
-    } else if (rank === 'HANG_NHI') {
-      return profile.hcbvtq_hang_nhi_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN;
-    } else if (rank === 'HANG_BA') {
-      return profile.hcbvtq_hang_ba_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN;
-    }
+    const requiredMonths = getContributionRequiredMonths(person.gioi_tinh);
 
-    return false;
+    const months07 = getTotalMonthsByGroup(personnelId, '0.7');
+    const months08 = getTotalMonthsByGroup(personnelId, '0.8');
+    const months0910 = getTotalMonthsByGroup(personnelId, '0.9-1.0');
+
+    if (rank === 'HANG_NHAT') return months0910 >= requiredMonths;
+    if (rank === 'HANG_NHI') return months08 + months0910 >= requiredMonths;
+    return months07 + months08 + months0910 >= requiredMonths;
   };
 
   /** Returns the highest HCBVTQ rank the personnel qualifies for. */
   const getHighestEligibleAward = (personnelId: string): string | null => {
-    if (checkEligibleForRank(personnelId, 'HANG_NHAT')) {
-      return 'HCBVTQ_HANG_NHAT';
-    } else if (checkEligibleForRank(personnelId, 'HANG_NHI')) {
-      return 'HCBVTQ_HANG_NHI';
-    } else if (checkEligibleForRank(personnelId, 'HANG_BA')) {
-      return 'HCBVTQ_HANG_BA';
-    }
-    return null;
+    const person = personnel.find(p => p.id === personnelId);
+    if (!person) return null;
+    const requiredMonths = getContributionRequiredMonths(person.gioi_tinh);
+    const months07 = getTotalMonthsByGroup(personnelId, '0.7');
+    const months08 = getTotalMonthsByGroup(personnelId, '0.8');
+    const months0910 = getTotalMonthsByGroup(personnelId, '0.9-1.0');
+    return getHighestEligibleContributionAward(months07, months08, months0910, requiredMonths);
   };
 
   const units = Array.from(
@@ -421,15 +388,30 @@ export function Step2SelectPersonnelCongHien({
         if (ineligible) {
           if (ineligible.status === PROPOSAL_STATUS.APPROVED) {
             return (
-              <Text type="danger" strong>
-                Đã nhận ({ineligible.awardYear})
-              </Text>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                <Text type="danger" strong>
+                  Đã nhận{' '}
+                  {ineligible.awardTitle
+                    ? DANH_HIEU_SHORT_MAP[ineligible.awardTitle] || ineligible.awardTitle
+                    : 'Huân chương Bảo vệ Tổ quốc'}
+                </Text>
+                <Text type="secondary" style={{ fontSize: '11px', textAlign: 'center' }}>
+                  {ineligible.awardYear ? `Năm ${ineligible.awardYear}` : ineligible.reason}
+                </Text>
+              </div>
             );
           } else if (ineligible.status === PROPOSAL_STATUS.PENDING) {
             return (
-              <Text type="warning" strong>
-                Đang chờ duyệt
-              </Text>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                <Text type="warning" strong>
+                  Đang chờ duyệt
+                </Text>
+                <Text type="secondary" style={{ fontSize: '11px', textAlign: 'center' }}>
+                  {ineligible.proposalYear
+                    ? `Hồ sơ đề xuất năm ${ineligible.proposalYear}`
+                    : ineligible.reason}
+                </Text>
+              </div>
             );
           }
         }
@@ -633,64 +615,74 @@ export function Step2SelectPersonnelCongHien({
     }
   };
 
+  const getSelectionDisabledReason = (record: Personnel): string | null => {
+    if (checkingEligibility) {
+      return 'Đang kiểm tra tính đủ điều kiện, vui lòng chờ...';
+    }
+
+    const missingGender =
+      !record.gioi_tinh || (record.gioi_tinh !== 'NAM' && record.gioi_tinh !== 'NU');
+    if (missingGender) {
+      return 'Quân nhân này chưa cập nhật giới tính. Vui lòng cập nhật trước khi đề xuất.';
+    }
+
+    const ineligible = ineligiblePersonnel.find(i => i.personnelId === record.id);
+    if (ineligible?.status === PROPOSAL_STATUS.APPROVED) {
+      return `Quân nhân đã nhận danh hiệu Huân chương Bảo vệ Tổ quốc năm ${ineligible.awardYear}`;
+    }
+    if (ineligible?.status === PROPOSAL_STATUS.PENDING) {
+      return 'Quân nhân đang có đề xuất Huân chương Bảo vệ Tổ quốc chờ duyệt';
+    }
+
+    const highestAward = getHighestEligibleAward(record.id);
+    if (!highestAward) {
+      return 'Quân nhân không đủ điều kiện nhận Huân chương Bảo vệ Tổ quốc';
+    }
+
+    return null;
+  };
+
+  useEffect(() => {
+    if (checkingEligibility || personnel.length === 0 || selectedPersonnelIds.length === 0) {
+      return;
+    }
+
+    const selectableIds = selectedPersonnelIds.filter(id => {
+      const person = personnel.find(p => p.id === id);
+      if (!person) return false;
+      return !getSelectionDisabledReason(person);
+    });
+
+    if (selectableIds.length !== selectedPersonnelIds.length) {
+      onPersonnelChange(selectableIds);
+      message.info('Đã tự bỏ chọn các quân nhân không còn đủ điều kiện theo mốc tháng/năm hiện tại.');
+    }
+  }, [
+    checkingEligibility,
+    ineligiblePersonnel,
+    localNam,
+    localThang,
+    onPersonnelChange,
+    personnel,
+    positionHistoriesMap,
+    selectedPersonnelIds,
+  ]);
+
   const rowSelection = {
     selectedRowKeys: selectedPersonnelIds,
     onChange: (selectedRowKeys: React.Key[]) => {
       onPersonnelChange(selectedRowKeys as string[]);
     },
     getCheckboxProps: (record: Personnel) => {
-      // Disable all checkboxes while checking eligibility
-      if (checkingEligibility) {
-        return {
-          disabled: true,
-          title: 'Đang kiểm tra tính đủ điều kiện, vui lòng chờ...',
-        };
-      }
-
-      const missingGender =
-        !record.gioi_tinh || (record.gioi_tinh !== 'NAM' && record.gioi_tinh !== 'NU');
-
-      const ineligible = ineligiblePersonnel.find(i => i.personnelId === record.id);
-
-      const highestAward = getHighestEligibleAward(record.id);
-      const notEligible = !highestAward;
-
-      if (missingGender) return { disabled: true, title: 'Quân nhân này chưa cập nhật giới tính. Vui lòng cập nhật trước khi đề xuất.' };
-      if (ineligible?.status === PROPOSAL_STATUS.APPROVED) return { disabled: true, title: `Quân nhân đã nhận danh hiệu huân chương bảo vệ tổ quốc năm ${ineligible.awardYear}` };
-      if (ineligible?.status === PROPOSAL_STATUS.PENDING) return { disabled: true, title: 'Quân nhân đang có đề xuất huân chương bảo vệ tổ quốc chờ duyệt' };
-      if (notEligible) return { disabled: true, title: 'Quân nhân không đủ điều kiện nhận huân chương bảo vệ tổ quốc' };
+      const disabledReason = getSelectionDisabledReason(record);
+      if (disabledReason) return { disabled: true, title: disabledReason };
       return { disabled: false, title: '' };
     },
     onSelect: (record: Personnel, selected: boolean) => {
       if (selected) {
-        const missingGender =
-          !record.gioi_tinh || (record.gioi_tinh !== 'NAM' && record.gioi_tinh !== 'NU');
-        if (missingGender) {
-          message.warning(
-            `Quân nhân ${record.ho_ten} chưa cập nhật giới tính. Vui lòng cập nhật trước khi đề xuất.`
-          );
-          return false;
-        }
-
-        const ineligible = ineligiblePersonnel.find(i => i.personnelId === record.id);
-        if (ineligible) {
-          if (ineligible.status === PROPOSAL_STATUS.APPROVED) {
-            message.warning(
-              `Quân nhân ${record.ho_ten} đã nhận danh hiệu huân chương bảo vệ tổ quốc năm ${ineligible.awardYear}`
-            );
-          } else if (ineligible.status === PROPOSAL_STATUS.PENDING) {
-            message.warning(
-              `Quân nhân ${record.ho_ten} đang có đề xuất huân chương bảo vệ tổ quốc chờ duyệt`
-            );
-          }
-          return false;
-        }
-
-        const highestAward = getHighestEligibleAward(record.id);
-        if (!highestAward) {
-          message.warning(
-            `Quân nhân ${record.ho_ten} không đủ điều kiện nhận huân chương bảo vệ tổ quốc`
-          );
+        const disabledReason = getSelectionDisabledReason(record);
+        if (disabledReason) {
+          message.warning(`Quân nhân ${record.ho_ten}: ${disabledReason}`);
           return false;
         }
       }
@@ -739,6 +731,24 @@ export function Step2SelectPersonnelCongHien({
       )}
 
       <Space style={{ marginBottom: 16 }} size="middle" wrap>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Text strong>Tháng: </Text>
+          <Select
+            value={localThang}
+            onChange={val => {
+              setLocalThang(val);
+              onThangChange?.(val);
+            }}
+            style={{ width: 120 }}
+            size="large"
+          >
+            {PROPOSAL_MONTH_OPTIONS.map(m => (
+              <Select.Option key={m} value={m}>
+                Tháng {m}
+              </Select.Option>
+            ))}
+          </Select>
+        </div>
         <div>
           <Text strong>Năm đề xuất: </Text>
           <InputNumber
@@ -828,6 +838,16 @@ export function Step2SelectPersonnelCongHien({
         const ineligibleCount = filteredPersonnel.filter(p =>
           ineligiblePersonnel.some(i => i.personnelId === p.id)
         ).length;
+        const pendingCount = filteredPersonnel.filter(p =>
+          ineligiblePersonnel.some(
+            i => i.personnelId === p.id && i.status === PROPOSAL_STATUS.PENDING
+          )
+        ).length;
+        const approvedCount = filteredPersonnel.filter(p =>
+          ineligiblePersonnel.some(
+            i => i.personnelId === p.id && i.status === PROPOSAL_STATUS.APPROVED
+          )
+        ).length;
 
         const notEligibleCount = filteredPersonnel.filter(p => {
           const missingGender = !p.gioi_tinh || (p.gioi_tinh !== 'NAM' && p.gioi_tinh !== 'NU');
@@ -855,8 +875,8 @@ export function Step2SelectPersonnelCongHien({
           warnings.push(
             <Alert
               key="eligibility-warning"
-              message="Thông báo"
-              description={`Có ${ineligibleCount} quân nhân đã nhận hoặc đang chờ duyệt Huân chương Bảo vệ Tổ quốc, không được phép chọn lại.`}
+              message="Không thể chọn lại Huân chương Bảo vệ Tổ quốc"
+              description={`Có ${ineligibleCount} quân nhân đã có hồ sơ Huân chương Bảo vệ Tổ quốc trong hệ thống (${pendingCount} đang chờ duyệt, ${approvedCount} đã duyệt). Vui lòng bỏ chọn các quân nhân này hoặc xử lý hồ sơ hiện tại trước khi đề xuất mới.`}
               type="info"
               showIcon
               style={{ marginBottom: 16 }}
@@ -868,8 +888,8 @@ export function Step2SelectPersonnelCongHien({
           warnings.push(
             <Alert
               key="not-eligible-warning"
-              message="Thông báo"
-              description={`Có ${notEligibleCount} quân nhân không đủ điều kiện nhận huân chương bảo vệ tổ quốc.`}
+              message="Chưa đủ điều kiện theo thời gian công tác"
+              description={`Có ${notEligibleCount} quân nhân chưa đạt mốc thời gian công tác tính đến tháng ${localThang}/${localNam ?? nam} nên chưa đủ điều kiện đề xuất Huân chương Bảo vệ Tổ quốc.`}
               type="info"
               showIcon
               style={{ marginBottom: 16 }}

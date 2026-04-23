@@ -157,6 +157,52 @@ interface DurationDisplay {
   months?: number;
 }
 
+const CONG_HIEN_GROUP_COLUMNS: Array<{
+  key: CongHienHeSoGroup;
+  title: string;
+  dataField:
+    | 'thoi_gian_nhom_0_7'
+    | 'thoi_gian_nhom_0_8'
+    | 'thoi_gian_nhom_0_9_1_0';
+}> = [
+  {
+    key: CONG_HIEN_HE_SO_GROUPS.LEVEL_07,
+    title: 'Tổng thời gian (0.7)',
+    dataField: 'thoi_gian_nhom_0_7',
+  },
+  {
+    key: CONG_HIEN_HE_SO_GROUPS.LEVEL_08,
+    title: 'Tổng thời gian (0.8)',
+    dataField: 'thoi_gian_nhom_0_8',
+  },
+  {
+    key: CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10,
+    title: 'Tổng thời gian (0.9-1.0)',
+    dataField: 'thoi_gian_nhom_0_9_1_0',
+  },
+];
+
+const getDurationDisplay = (value: unknown): string | null => {
+  if (!value) return null;
+
+  if (typeof value === 'object' && value !== null) {
+    const display = (value as DurationDisplay).display;
+    return typeof display === 'string' && display.trim() ? display : null;
+  }
+
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value) as DurationDisplay;
+      const display = parsed?.display;
+      return typeof display === 'string' && display.trim() ? display : null;
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
+};
+
 
 interface ProposalDetail {
   id: string;
@@ -328,6 +374,22 @@ export default function ManagerProposalDetailPage() {
     }
   };
 
+  const renderContributionGroupDuration = (
+    record: DanhHieuItem,
+    group: CongHienHeSoGroup,
+    dataField: 'thoi_gian_nhom_0_7' | 'thoi_gian_nhom_0_8' | 'thoi_gian_nhom_0_9_1_0'
+  ) => {
+    const display = getDurationDisplay(record[dataField]);
+    if (display) {
+      return <Text style={{ whiteSpace: 'nowrap' }}>{display}</Text>;
+    }
+    return (
+      <Text style={{ whiteSpace: 'nowrap' }}>
+        {calculateTotalTimeByGroup(record.personnel_id || '', group)}
+      </Text>
+    );
+  };
+
   const handleOpenDecisionFile = async (soQuyetDinh: string) => {
     await downloadDecisionFile(soQuyetDinh);
   };
@@ -463,9 +525,13 @@ export default function ManagerProposalDetailPage() {
             </Descriptions.Item>
             <Descriptions.Item label="Năm đề xuất">
               <Text strong>{proposal.nam}</Text>
-              {[PROPOSAL_TYPES.NIEN_HAN, PROPOSAL_TYPES.HC_QKQT, PROPOSAL_TYPES.KNC_VSNXD_QDNDVN].includes(
-                proposal.loai_de_xuat as any
-              ) && proposal.thang && (
+              {[
+                PROPOSAL_TYPES.NIEN_HAN,
+                PROPOSAL_TYPES.HC_QKQT,
+                PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
+                PROPOSAL_TYPES.CONG_HIEN,
+              ].includes(proposal.loai_de_xuat as any) &&
+                proposal.thang && (
                 <Text type="secondary" style={{ marginLeft: 8 }}>
                   (Tháng {proposal.thang})
                 </Text>
@@ -830,6 +896,13 @@ export default function ManagerProposalDetailPage() {
                   },
                 },
                 {
+                  title: 'Tháng',
+                  key: 'thang',
+                  width: 90,
+                  align: 'center',
+                  render: (_: unknown, record: DanhHieuItem) => record.thang ?? null,
+                },
+                {
                   title: 'Năm',
                   dataIndex: 'nam',
                   key: 'nam',
@@ -850,66 +923,14 @@ export default function ManagerProposalDetailPage() {
                     );
                   },
                 },
-                {
-                  title: 'Tổng thời gian (0.7)',
-                  key: 'total_time_0_7',
+                ...CONG_HIEN_GROUP_COLUMNS.map(groupColumn => ({
+                  title: groupColumn.title,
+                  key: `total_time_${groupColumn.key}`,
                   width: 150,
                   align: 'center' as const,
-                  render: (_: unknown, record: DanhHieuItem) => {
-                    const thoiGian = record.thoi_gian_nhom_0_7;
-                    if (thoiGian && typeof thoiGian === 'object' && thoiGian.display) {
-                      return <Text style={{ whiteSpace: 'nowrap' }}>{thoiGian.display}</Text>;
-                    }
-                    return (
-                      <Text style={{ whiteSpace: 'nowrap' }}>
-                        {calculateTotalTimeByGroup(
-                          record.personnel_id || '',
-                          CONG_HIEN_HE_SO_GROUPS.LEVEL_07
-                        )}
-                      </Text>
-                    );
-                  },
-                },
-                {
-                  title: 'Tổng thời gian (0.8)',
-                  key: 'total_time_0_8',
-                  width: 150,
-                  align: 'center' as const,
-                  render: (_: unknown, record: DanhHieuItem) => {
-                    const thoiGian = record.thoi_gian_nhom_0_8;
-                    if (thoiGian && typeof thoiGian === 'object' && thoiGian.display) {
-                      return <Text style={{ whiteSpace: 'nowrap' }}>{thoiGian.display}</Text>;
-                    }
-                    return (
-                      <Text style={{ whiteSpace: 'nowrap' }}>
-                        {calculateTotalTimeByGroup(
-                          record.personnel_id || '',
-                          CONG_HIEN_HE_SO_GROUPS.LEVEL_08
-                        )}
-                      </Text>
-                    );
-                  },
-                },
-                {
-                  title: 'Tổng thời gian (0.9-1.0)',
-                  key: 'total_time_0_9_1_0',
-                  width: 150,
-                  align: 'center' as const,
-                  render: (_: unknown, record: DanhHieuItem) => {
-                    const thoiGian = record.thoi_gian_nhom_0_9_1_0;
-                    if (thoiGian && typeof thoiGian === 'object' && thoiGian.display) {
-                      return <Text style={{ whiteSpace: 'nowrap' }}>{thoiGian.display}</Text>;
-                    }
-                    return (
-                      <Text style={{ whiteSpace: 'nowrap' }}>
-                        {calculateTotalTimeByGroup(
-                          record.personnel_id || '',
-                          CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10
-                        )}
-                      </Text>
-                    );
-                  },
-                },
+                  render: (_: unknown, record: DanhHieuItem) =>
+                    renderContributionGroupDuration(record, groupColumn.key, groupColumn.dataField),
+                })),
                 ...(proposal.status === PROPOSAL_STATUS.APPROVED
                   ? [
                       {

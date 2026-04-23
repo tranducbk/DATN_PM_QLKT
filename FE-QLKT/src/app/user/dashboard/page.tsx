@@ -797,7 +797,7 @@ export default function UserDashboard() {
                   </Space>
                 ) : (
                   <Alert
-                    message="Chưa có dữ liệu hồ sơ huân chương bảo vệ tổ quốc"
+                    message="Chưa có dữ liệu hồ sơ Huân chương Bảo vệ Tổ quốc"
                     type="warning"
                     showIcon
                   />

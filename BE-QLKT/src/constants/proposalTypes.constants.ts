@@ -15,6 +15,7 @@ export const PROPOSAL_TYPES_REQUIRING_MONTH = new Set<ProposalType>([
   PROPOSAL_TYPES.NIEN_HAN,
   PROPOSAL_TYPES.HC_QKQT,
   PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
+  PROPOSAL_TYPES.CONG_HIEN,
 ]);
 
 export function requiresProposalMonth(type: ProposalType): boolean {

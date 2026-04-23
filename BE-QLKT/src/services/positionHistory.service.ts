@@ -156,28 +156,13 @@ class PositionHistoryService {
       },
     });
 
-    const hasUnfinishedPosition = existingHistory.some(h => !h.ngay_ket_thuc);
-    if (hasUnfinishedPosition && !ngay_ket_thuc) {
-      const unfinishedPosition = existingHistory.find(h => !h.ngay_ket_thuc)!;
-      const unfinishedStart = moment(unfinishedPosition.ngay_bat_dau).format('DD/MM/YYYY');
-      throw new AppError(
-        `Đã có chức vụ chưa kết thúc (bắt đầu từ ${unfinishedStart}). Vui lòng kết thúc chức vụ hiện tại trước khi tạo chức vụ mới chưa kết thúc.`,
-        409
-      );
-    }
-
     const ngayBatDauMoment = moment(ngay_bat_dau);
     const ngayKetThucMoment = ngay_ket_thuc ? moment(ngay_ket_thuc) : null;
-
     for (const existing of existingHistory) {
       const existingStart = moment(existing.ngay_bat_dau);
       const existingEnd = existing.ngay_ket_thuc ? moment(existing.ngay_ket_thuc) : null;
-
       if (this.isOverlapping(existingStart, existingEnd, ngayBatDauMoment, ngayKetThucMoment)) {
         const existingEndStr = existingEnd ? existingEnd.format('DD/MM/YYYY') : 'hiện tại';
-        const newEndStr = ngayKetThucMoment
-          ? ngayKetThucMoment.format('DD/MM/YYYY')
-          : 'chưa kết thúc';
         throw new AppError(
           `Khoảng thời gian đảm nhiệm chức vụ trùng lặp với chức vụ khác (${existingStart.format(
             'DD/MM/YYYY'
@@ -326,20 +311,15 @@ class PositionHistoryService {
 
     const ngayBatDauMoment = moment(ngayBatDauFinal);
     const ngayKetThucMoment = ngayKetThucFinal ? moment(ngayKetThucFinal) : null;
-
     for (const existing of existingHistory) {
       const existingStart = moment(existing.ngay_bat_dau);
       const existingEnd = existing.ngay_ket_thuc ? moment(existing.ngay_ket_thuc) : null;
-
       if (this.isOverlapping(existingStart, existingEnd, ngayBatDauMoment, ngayKetThucMoment)) {
         const existingEndStr = existingEnd ? existingEnd.format('DD/MM/YYYY') : 'hiện tại';
-        const newEndStr = ngayKetThucMoment
-          ? ngayKetThucMoment.format('DD/MM/YYYY')
-          : 'chưa kết thúc';
         throw new AppError(
           `Khoảng thời gian đảm nhiệm chức vụ trùng lặp với chức vụ khác (${existingStart.format(
             'DD/MM/YYYY'
-          )} - ${existingEndStr}). Vui lòng chọn khoảng thời gian không trùng lặp.`,
+          )} - ${existingEndStr}). Vui lòng điều chỉnh ngày bắt đầu/kết thúc để không bị chồng lấn.`,
           409
         );
       }

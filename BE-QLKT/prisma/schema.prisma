@@ -212,18 +212,17 @@ model KhenThuongHCBVTQ {
   quan_nhan_id           String   @unique @db.VarChar(30) // Mỗi quân nhân chỉ có 1 danh hiệu khen thưởng cống hiến
   danh_hieu              String   @db.VarChar(20) // HCBVTQ_HANG_BA, HCBVTQ_HANG_NHI, HCBVTQ_HANG_NHAT
   nam                    Int // Năm được trao
-  cap_bac                String?  @db.VarChar(50) // Cấp bậc tại thời điểm được đề xuất
-  chuc_vu                String?  @db.VarChar(255) // Chức vụ tại thời điểm được đề xuất (text tự do)
-  ghi_chu                String?  @db.Text // Ghi chú bổ sung (vd: Phó giám đốc tại đơn vị A)
-  so_quyet_dinh          String?  @db.VarChar(100) // Số quyết định
-  // Thời gian đảm nhiệm chức vụ theo 3 nhóm hệ số
-  thoi_gian_nhom_0_7     Json? // { total_months, years, months, display }
-  thoi_gian_nhom_0_8     Json? // { total_months, years, months, display }
-  thoi_gian_nhom_0_9_1_0 Json? // { total_months, years, months, display }
+  thang                  Int // Tháng được trao (bắt buộc nhập khi duyệt)
+  cap_bac                String?  @db.VarChar(50)
+  chuc_vu                String?  @db.VarChar(255)
+  ghi_chu                String?  @db.Text
+  so_quyet_dinh          String?  @db.VarChar(100)
+  thoi_gian_nhom_0_7     Json?
+  thoi_gian_nhom_0_8     Json?
+  thoi_gian_nhom_0_9_1_0 Json?
   createdAt              DateTime @default(now()) @db.Timestamp(0)
   updatedAt              DateTime @updatedAt @db.Timestamp(0)
 
-  // Relations
   QuanNhan QuanNhan @relation(fields: [quan_nhan_id], references: [id], onDelete: Cascade)
 
   @@map("KhenThuongHCBVTQ")
@@ -234,7 +233,7 @@ model HuanChuongQuanKyQuyetThang {
   id                     String   @id @default(cuid()) @db.VarChar(30)
   quan_nhan_id           String   @unique @db.VarChar(30) // Mỗi quân nhân chỉ có 1 huân chương
   nam                    Int // Năm được trao
-  thang                  Int      @default(12) // Tháng được trao (1-12)
+  thang                  Int // Tháng được trao (bắt buộc nhập khi duyệt)
   cap_bac                String?  @db.VarChar(50) // Cấp bậc tại thời điểm được đề xuất
   chuc_vu                String?  @db.VarChar(255) // Chức vụ tại thời điểm được đề xuất (text tự do)
   ghi_chu                String?  @db.Text // Ghi chú bổ sung (vd: Phó giám đốc tại đơn vị A)
@@ -250,12 +249,12 @@ model HuanChuongQuanKyQuyetThang {
   @@map("HuanChuongQuanKyQuyetThang")
 }
 
-// 11. Bảng Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN (OUTPUT)
+// 11. Bảng Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN (OUTPUT)
 model KyNiemChuongVSNXDQDNDVN {
   id                     String   @id @default(cuid()) @db.VarChar(30)
   quan_nhan_id           String   @unique @db.VarChar(30) // Mỗi quân nhân chỉ có 1 kỷ niệm chương
   nam                    Int // Năm được trao
-  thang                  Int      @default(12) // Tháng được trao (1-12)
+  thang                  Int // Tháng được trao (bắt buộc nhập khi duyệt)
   cap_bac                String?  @db.VarChar(50) // Cấp bậc tại thời điểm được đề xuất
   chuc_vu                String?  @db.VarChar(255) // Chức vụ tại thời điểm được đề xuất (text tự do)
   ghi_chu                String?  @db.Text // Ghi chú bổ sung (vd: Phó giám đốc tại đơn vị A)
@@ -277,7 +276,7 @@ model KhenThuongHCCSVV {
   quan_nhan_id           String   @db.VarChar(30)
   danh_hieu              String   @db.VarChar(20) // HCCSVV_HANG_BA, HCCSVV_HANG_NHI, HCCSVV_HANG_NHAT
   nam                    Int // Năm được trao
-  thang                  Int      @default(12) // Tháng được trao (1-12)
+  thang                  Int // Tháng được trao (bắt buộc nhập khi duyệt)
   cap_bac                String?  @db.VarChar(50) // Cấp bậc tại thời điểm được đề xuất
   chuc_vu                String?  @db.VarChar(255) // Chức vụ tại thời điểm được đề xuất (text tự do)
   ghi_chu                String?  @db.Text // Ghi chú bổ sung (vd: Phó giám đốc tại đơn vị A)

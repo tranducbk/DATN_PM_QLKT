@@ -3,7 +3,7 @@ import {
   requiresProposalMonth,
   type ProposalType,
 } from '../../constants/proposalTypes.constants';
-import { calculateServiceMonths } from '../../helpers/serviceYearsHelper';
+import { calculateServiceMonths, recalcPositionMonths, buildCutoffDate } from '../../helpers/serviceYearsHelper';
 import {
   CONG_HIEN_HE_SO_GROUPS,
   CONG_HIEN_HE_SO_RANGES,
@@ -561,18 +561,8 @@ async function submitProposal(
               },
             });
 
-            const updatedHistories = histories.map(history => {
-              if (history.so_thang === null || history.so_thang === undefined) {
-                if (history.ngay_bat_dau && !history.ngay_ket_thuc) {
-                  const ngayBatDau = new Date(history.ngay_bat_dau);
-                  return {
-                    ...history,
-                    so_thang: calculateServiceMonths(ngayBatDau),
-                  };
-                }
-              }
-              return history;
-            });
+            const cutoffDate = buildCutoffDate(nam, thang != null ? parseInt(String(thang), 10) : null);
+            const updatedHistories = recalcPositionMonths(histories, cutoffDate);
 
             // Aggregate months by coefficient group.
             const getTotalMonthsByGroup = (group: CongHienHeSoGroup) => {
@@ -901,20 +891,8 @@ async function submitProposal(
         }
 
         const histories = historiesByPersonnel.get(personnelId) ?? [];
-        const updatedHistories = histories.map(item => {
-          if (item.so_thang === null || item.so_thang === undefined) {
-            if (item.ngay_bat_dau && !item.ngay_ket_thuc) {
-              const ngayBatDau = new Date(item.ngay_bat_dau);
-              return {
-                ...item,
-                so_thang: calculateServiceMonths(ngayBatDau),
-              };
-            }
-          }
-          return item;
-        });
-
-        positionHistoriesMap[personnelId] = updatedHistories;
+        const cutoffDate = buildCutoffDate(nam, thang != null ? parseInt(String(thang), 10) : null);
+        positionHistoriesMap[personnelId] = recalcPositionMonths(histories, cutoffDate);
       } catch (error) {
         console.error('ProposalSubmit.buildPositionHistories failed', { personnelId, error });
         positionHistoriesMap[personnelId] = [];
@@ -1030,10 +1008,10 @@ async function submitProposal(
     }
   }
 
-  const normalizedMonth = thang != null ? parseInt(String(thang), 10) : null;
+  const parsedMonth = thang != null ? parseInt(String(thang), 10) : null;
   const monthRequired = requiresProposalMonth(type);
-  if (monthRequired && (normalizedMonth == null || normalizedMonth < 1 || normalizedMonth > 12)) {
-    throw new ValidationError('Thiếu tháng đề xuất. HCCSVV/HCQKQT/KNC bắt buộc nhập tháng (1-12).');
+  if (monthRequired && (parsedMonth == null || parsedMonth < 1 || parsedMonth > 12)) {
+    throw new ValidationError('Thiếu tháng đề xuất. Loại đề xuất này bắt buộc nhập tháng (1-12).');
   }
 
   // Persist proposal after validation.
@@ -1042,7 +1020,7 @@ async function submitProposal(
     nguoi_de_xuat_id: userId,
     loai_de_xuat: type,
     nam: parseInt(String(nam), 10) || new Date().getFullYear(),
-    thang: monthRequired ? normalizedMonth : null,
+    thang: monthRequired ? parsedMonth : null,
     status: PROPOSAL_STATUS.PENDING,
     data_danh_hieu: dataDanhHieu as Prisma.InputJsonValue,
     data_thanh_tich: dataThanhTich as Prisma.InputJsonValue,

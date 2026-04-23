@@ -144,6 +144,9 @@ Exported functions phải có JSDoc chuẩn:
 ### Variable declarations
 - Dùng `const` thay `let` khi giá trị không cần reassign — chỉ dùng `let` khi thực sự cần thay đổi giá trị sau khai báo
 - Không dùng `let` để khai báo biến rồi gán lại ngay trong `if/else` — thay bằng ternary hoặc tách hàm
+- Không khai báo biến mà không dùng (unused variable). Nếu biến chỉ dùng cho side-effect trong tương lai thì chưa được phép khai báo trước.
+- Khi validate theo mốc đề xuất có `nam/thang`, luôn chuẩn hóa alias cục bộ (`proposalYear`, `proposalMonth`) và dùng nhất quán trong cùng block; tránh trộn trực tiếp `proposal.nam` với alias gây khó đọc.
+- Validate thời gian theo tháng/năm phải theo thứ tự: (1) input hợp lệ, (2) không trước tháng/năm đề xuất, (3) không trước tháng/năm quyết định (nếu có `nam_quyet_dinh`/`thang_quyet_dinh`).
 
 ### DRY (Don't Repeat Yourself)
 - Magic numbers → extract vào `constants/` (vd: `MAX_EXCEL_ROWS`, `MIN_TEMPLATE_ROWS`)

@@ -103,9 +103,9 @@ export default function ImportReviewHCCSVVPage() {
 
   const config: ImportReviewConfig = {
     sessionStorageKey: 'importPreviewDataHCCSVV',
-    title: 'Xem trước dữ liệu Import - Khen thưởng HCCSVV',
+    title: 'Xem trước dữ liệu tải lên - Khen thưởng HCCSVV',
     confirmImport: apiClient.confirmHCCSVVImport,
-    successMessage: count => `Import thành công ${count} bản ghi khen thưởng HCCSVV.`,
+    successMessage: count => `Tải dữ liệu thành công ${count} bản ghi khen thưởng HCCSVV.`,
     confirmButtonLabel: 'quân nhân',
     validColumns,
     invalidColumns,

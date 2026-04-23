@@ -19,6 +19,7 @@ interface ConfirmImportItem {
   personnel_id: string;
   ho_ten: string | null;
   nam: number;
+  thang: number;
   danh_hieu: string;
   so_quyet_dinh: string;
   cap_bac: string | null;
@@ -106,7 +107,7 @@ class ContributionAwardController {
       userRole: user.role,
       action: AUDIT_ACTIONS.IMPORT,
       resource: 'contribution-medals',
-      description: `Nhập dữ liệu huân chương bảo vệ tổ quốc thành công: ${result.imported ?? items.length} bản ghi`,
+      description: `Nhập dữ liệu Huân chương Bảo vệ Tổ quốc thành công: ${result.imported ?? items.length} bản ghi`,
       payload: { imported: result.imported ?? items.length },
     });
     const personnelIds = items.map((i: { personnel_id: string }) => i.personnel_id);

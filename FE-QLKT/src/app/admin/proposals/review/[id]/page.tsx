@@ -21,6 +21,7 @@ import {
   theme as antdTheme,
   Popconfirm,
   Tooltip,
+  DatePicker,
 } from 'antd';
 import dayjs from 'dayjs';
 import { getApiErrorMessage } from '@/lib/apiError';
@@ -89,6 +90,7 @@ interface DanhHieuItem {
   file_quyet_dinh_cstdtq?: string | null;
   ngay_nhan?: string | null;
   thang_nhan?: number | null;
+  nam_nhan?: number | null;
   co_quan_don_vi?: {
     id: string;
     ten_co_quan_don_vi: string;
@@ -215,8 +217,7 @@ export default function ProposalDetailPage() {
     text: string;
   } | null>(null);
 
-  // Bulk ngày nhận cho HCCSVV
-  const [bulkThangNhan, setBulkThangNhan] = useState<number | null>(null);
+  const [bulkMonthPicker, setBulkMonthPicker] = useState<dayjs.Dayjs | null>(null);
 
   // Selection states for Danh Hieu
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
@@ -402,7 +403,7 @@ export default function ProposalDetailPage() {
     const years = Math.floor(totalMonths / 12);
     const remainingMonths = totalMonths % 12;
 
-    if (totalMonths === 0) return '-';
+    if (totalMonths === 0) return '—';
     if (years > 0 && remainingMonths > 0) {
       return `${years} năm ${remainingMonths} tháng`;
     } else if (years > 0) {
@@ -410,6 +411,23 @@ export default function ProposalDetailPage() {
     } else {
       return `${remainingMonths} tháng`;
     }
+  };
+
+  const getDurationDisplay = (value: unknown): string | null => {
+    if (!value) return null;
+    if (typeof value === 'object' && value !== null) {
+      const display = (value as { display?: unknown }).display;
+      return typeof display === 'string' && display.trim() ? display : null;
+    }
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value) as { display?: unknown };
+        return typeof parsed.display === 'string' && parsed.display.trim() ? parsed.display : null;
+      } catch {
+        return null;
+      }
+    }
+    return null;
   };
 
   const handleReject = async () => {
@@ -501,7 +519,7 @@ export default function ProposalDetailPage() {
         const label = `Huy chương Chiến sĩ vẻ vang ${index + 1}: ${item.ho_ten || 'N/A'}`;
         if (!item.so_quyet_dinh || item.so_quyet_dinh.trim() === '') {
           missingDecisions.push(label);
-        } else if (!item.thang_nhan) {
+        } else if (!item.thang_nhan || !item.nam_nhan) {
           missingDecisions.push(`${label} (thiếu tháng nhận)`);
         }
       });
@@ -509,8 +527,11 @@ export default function ProposalDetailPage() {
 
     if (editedCongHien.length > 0) {
       editedCongHien.forEach((item, index) => {
+        const label = `Huân chương Bảo vệ Tổ quốc ${index + 1}: ${item.ho_ten || 'N/A'}`;
         if (!item.so_quyet_dinh || item.so_quyet_dinh.trim() === '') {
-          missingDecisions.push(`Huân chương Bảo vệ Tổ quốc ${index + 1}: ${item.ho_ten || 'N/A'}`);
+          missingDecisions.push(label);
+        } else if (!item.thang_nhan || !item.nam_nhan) {
+          missingDecisions.push(`${label} (thiếu tháng nhận)`);
         }
       });
     }
@@ -859,25 +880,13 @@ export default function ProposalDetailPage() {
         );
       },
     },
-    {
-      title: 'Năm',
-      dataIndex: 'nam',
-      key: 'nam',
-      width: 80,
-      align: 'center' as const,
-      render: (_: unknown, record: DanhHieuItem, index: number) => (
-        <div style={{ textAlign: 'center' }}>
-          <EditableCell
-            value={record.nam}
-            type="number"
-            onSave={val => updateDanhHieu(index, 'nam', parseInt(val))}
-            editable={proposal.status === PROPOSAL_STATUS.PENDING}
-          />
-        </div>
-      ),
-    },
     ...((
-      [PROPOSAL_TYPES.NIEN_HAN, PROPOSAL_TYPES.HC_QKQT, PROPOSAL_TYPES.KNC_VSNXD_QDNDVN] as string[]
+      [
+        PROPOSAL_TYPES.NIEN_HAN,
+        PROPOSAL_TYPES.HC_QKQT,
+        PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
+        PROPOSAL_TYPES.CONG_HIEN,
+      ] as string[]
     ).includes(proposal?.loai_de_xuat)
       ? [
           {
@@ -886,8 +895,22 @@ export default function ProposalDetailPage() {
             key: 'thang',
             width: 70,
             align: 'center' as const,
-            render: (val: number | null | undefined) => val ?? '',
+            render: (val: number | null | undefined) => val ?? proposal?.thang ?? '',
           },
+        ]
+      : []),
+    {
+      title: 'Năm',
+      dataIndex: 'nam',
+      key: 'nam',
+      width: 80,
+      align: 'center' as const,
+      render: (_: unknown, record: DanhHieuItem) => <Text>{record.nam}</Text>,
+    },
+    ...((
+      [PROPOSAL_TYPES.NIEN_HAN, PROPOSAL_TYPES.HC_QKQT, PROPOSAL_TYPES.KNC_VSNXD_QDNDVN] as string[]
+    ).includes(proposal?.loai_de_xuat)
+      ? [
           {
             title: 'Tổng thời gian',
             key: 'tong_thoi_gian',
@@ -896,7 +919,7 @@ export default function ProposalDetailPage() {
             render: (_: unknown, record: DanhHieuItem) => {
               const person = personnelDetails[record.personnel_id ?? ''] as any;
               if (!person) return '';
-              if (!record.thang) return <Text type="secondary">-</Text>;
+              if (!record.thang) return <Text type="secondary">—</Text>;
               return renderServiceTime(person, record.nam, record.thang);
             },
           },
@@ -924,53 +947,94 @@ export default function ProposalDetailPage() {
             key: 'total_time_0_7',
             width: 150,
             align: 'center' as const,
-            render: (_: unknown, record: DanhHieuItem) =>
-              calculateTotalTimeByGroup(record.personnel_id ?? '', CONG_HIEN_HE_SO_GROUPS.LEVEL_07),
+            render: (_: unknown, record: DanhHieuItem) => {
+              const display = getDurationDisplay((record as any).thoi_gian_nhom_0_7);
+              return display
+                ? display
+                : calculateTotalTimeByGroup(
+                    record.personnel_id ?? '',
+                    CONG_HIEN_HE_SO_GROUPS.LEVEL_07
+                  );
+            },
           },
           {
             title: 'Tổng thời gian (0.8)',
             key: 'total_time_0_8',
             width: 150,
             align: 'center' as const,
-            render: (_: unknown, record: DanhHieuItem) =>
-              calculateTotalTimeByGroup(record.personnel_id ?? '', CONG_HIEN_HE_SO_GROUPS.LEVEL_08),
+            render: (_: unknown, record: DanhHieuItem) => {
+              const display = getDurationDisplay((record as any).thoi_gian_nhom_0_8);
+              return display
+                ? display
+                : calculateTotalTimeByGroup(
+                    record.personnel_id ?? '',
+                    CONG_HIEN_HE_SO_GROUPS.LEVEL_08
+                  );
+            },
           },
           {
             title: 'Tổng thời gian (0.9-1.0)',
             key: 'total_time_0_9_1_0',
             width: 150,
             align: 'center' as const,
-            render: (_: unknown, record: DanhHieuItem) =>
-              calculateTotalTimeByGroup(
-                record.personnel_id ?? '',
-                CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10
-              ),
+            render: (_: unknown, record: DanhHieuItem) => {
+              const display = getDurationDisplay((record as any).thoi_gian_nhom_0_9_1_0);
+              return display
+                ? display
+                : calculateTotalTimeByGroup(
+                    record.personnel_id ?? '',
+                    CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10
+                  );
+            },
           },
         ]
       : []),
     {
       title: 'Tháng nhận',
       key: 'thang_nhan',
-      width: 100,
+      width: 140,
       align: 'center' as const,
       render: (_: unknown, record: DanhHieuItem, index: number) => {
         const hasDecision = !!record.so_quyet_dinh?.trim();
+        const editable = hasDecision && proposal?.status === PROPOSAL_STATUS.PENDING;
+        const hasValue = !!(record.thang_nhan && record.nam_nhan);
+
+        if (!editable && hasValue) {
+          return <Text>{`${String(record.thang_nhan).padStart(2, '0')}/${record.nam_nhan}`}</Text>;
+        }
+        if (!editable) {
+          return <Text type="secondary">—</Text>;
+        }
+
+        const minDate = proposal?.thang
+          ? dayjs()
+              .year(proposal.nam)
+              .month(proposal.thang - 1)
+          : undefined;
+        const pickerValue = hasValue
+          ? dayjs()
+              .year(record.nam_nhan!)
+              .month(record.thang_nhan! - 1)
+          : null;
         return (
-          <Select
-            value={record.thang_nhan ?? undefined}
-            onChange={val => updateNienHan(index, 'thang_nhan', val)}
-            disabled={!hasDecision || proposal?.status !== PROPOSAL_STATUS.PENDING}
-            placeholder={hasDecision ? 'Tháng' : '—'}
+          <DatePicker
+            picker="month"
+            value={pickerValue}
+            minDate={minDate}
+            onChange={date => {
+              if (date) {
+                updateNienHan(index, 'thang_nhan', date.month() + 1);
+                updateNienHan(index, 'nam_nhan', date.year());
+              } else {
+                updateNienHan(index, 'thang_nhan', null);
+                updateNienHan(index, 'nam_nhan', null);
+              }
+            }}
+            placeholder="Chọn tháng"
             size="small"
+            variant="filled"
             style={{ width: '100%' }}
-            allowClear
-          >
-            {PROPOSAL_MONTH_OPTIONS.map(m => (
-              <Select.Option key={m} value={m}>
-                T{m}
-              </Select.Option>
-            ))}
-          </Select>
+          />
         );
       },
     },
@@ -1022,6 +1086,62 @@ export default function ProposalDetailPage() {
       },
     },
   ];
+
+  const congHienThangNhanColumn = {
+    title: 'Tháng nhận',
+    key: 'thang_nhan_ch',
+    width: 140,
+    align: 'center' as const,
+    render: (_: unknown, record: DanhHieuItem, index: number) => {
+      const hasDecision = !!record.so_quyet_dinh?.trim();
+      const editable = hasDecision && proposal?.status === PROPOSAL_STATUS.PENDING;
+      const hasValue = !!(record.thang_nhan && record.nam_nhan);
+
+      if (!editable && hasValue) {
+        return <Text>{`${String(record.thang_nhan).padStart(2, '0')}/${record.nam_nhan}`}</Text>;
+      }
+      if (!editable) {
+        return <Text type="secondary">—</Text>;
+      }
+
+      const minDate = proposal?.thang
+        ? dayjs()
+            .year(proposal.nam)
+            .month(proposal.thang - 1)
+        : undefined;
+      const pickerValue = hasValue
+        ? dayjs()
+            .year(record.nam_nhan!)
+            .month(record.thang_nhan! - 1)
+        : null;
+      return (
+        <DatePicker
+          picker="month"
+          value={pickerValue}
+          minDate={minDate}
+          onChange={date => {
+            if (date) {
+              updateCongHien(index, 'thang_nhan', date.month() + 1);
+              updateCongHien(index, 'nam_nhan', date.year());
+            } else {
+              updateCongHien(index, 'thang_nhan', null);
+              updateCongHien(index, 'nam_nhan', null);
+            }
+          }}
+          placeholder="Chọn tháng"
+          size="small"
+          variant="filled"
+          style={{ width: '100%' }}
+        />
+      );
+    },
+  };
+
+  const congHienColumns = caNhanHangNamColumns
+    .filter(column => column.key !== 'thang_nhan')
+    .flatMap(column =>
+      column.key === 'so_quyet_dinh' ? [congHienThangNhanColumn, column] : [column]
+    );
 
   const donViHangNamColumns = [
     {
@@ -1603,49 +1723,65 @@ export default function ProposalDetailPage() {
             extra={
               proposal.status === PROPOSAL_STATUS.PENDING && (
                 <Space wrap>
-                  {selectedRowKeys.length > 0 && (
-                    <Space>
-                      <Select
-                        value={bulkThangNhan}
-                        onChange={val => setBulkThangNhan(val)}
-                        placeholder="Chọn tháng nhận"
-                        style={{ width: 140 }}
-                        allowClear
+                  <Space>
+                    <DatePicker
+                      picker="month"
+                      value={bulkMonthPicker}
+                      onChange={val => setBulkMonthPicker(val)}
+                      placeholder="Chọn tháng nhận"
+                      variant="filled"
+                      style={{ width: 160 }}
+                      disabled={selectedRowKeys.length === 0}
+                      minDate={
+                        proposal.thang
+                          ? dayjs()
+                              .year(proposal.nam)
+                              .month(proposal.thang - 1)
+                          : undefined
+                      }
+                    />
+                    <Tooltip
+                      title={
+                        selectedRowKeys.length > 0
+                          ? `Áp dụng tháng nhận cho ${selectedRowKeys.length} hàng được chọn`
+                          : 'Chọn ít nhất 1 hàng để áp dụng'
+                      }
+                    >
+                      <Button
+                        disabled={selectedRowKeys.length === 0}
+                        onClick={() => {
+                          if (!bulkMonthPicker) {
+                            message.warning('Vui lòng chọn tháng nhận trước');
+                            return;
+                          }
+                          const thang = bulkMonthPicker.month() + 1;
+                          const nam = bulkMonthPicker.year();
+                          let applied = 0;
+                          const eligible = editedNienHan.filter(
+                            (item, idx) =>
+                              bulkSelectedSet.has(String(idx)) && !!item.so_quyet_dinh?.trim()
+                          );
+                          if (eligible.length === 0) {
+                            message.warning('Không có hàng nào đã có số quyết định để áp dụng');
+                            return;
+                          }
+                          setEditedNienHan(prev =>
+                            prev.map((item, idx) => {
+                              if (!bulkSelectedSet.has(String(idx))) return item;
+                              if (!item.so_quyet_dinh?.trim()) return item;
+                              return { ...item, thang_nhan: thang, nam_nhan: nam };
+                            })
+                          );
+                          setBulkMonthPicker(null);
+                          message.success(
+                            `Đã đặt tháng ${thang}/${nam} cho ${eligible.length} hàng`
+                          );
+                        }}
                       >
-                        {PROPOSAL_MONTH_OPTIONS.map(m => (
-                          <Select.Option key={m} value={m}>
-                            Tháng {m}
-                          </Select.Option>
-                        ))}
-                      </Select>
-                      <Tooltip
-                        title={`Áp dụng tháng nhận cho ${selectedRowKeys.length} hàng được chọn`}
-                      >
-                        <Button
-                          onClick={() => {
-                            if (!bulkThangNhan) {
-                              message.warning('Vui lòng chọn tháng nhận trước');
-                              return;
-                            }
-                            setEditedNienHan(prev =>
-                              prev.map((item, idx) =>
-                                bulkSelectedSet.has(String(idx))
-                                  ? { ...item, thang_nhan: bulkThangNhan }
-                                  : item
-                              )
-                            );
-                            const count = selectedRowKeys.length;
-                            setBulkThangNhan(null);
-                            message.success(
-                              `Đã đặt tháng ${bulkThangNhan} cho ${count} hàng được chọn`
-                            );
-                          }}
-                        >
-                          Áp dụng ({selectedRowKeys.length})
-                        </Button>
-                      </Tooltip>
-                    </Space>
-                  )}
+                        Áp dụng ({selectedRowKeys.length})
+                      </Button>
+                    </Tooltip>
+                  </Space>
                   <Button
                     type="primary"
                     icon={<FileTextOutlined />}
@@ -1690,31 +1826,91 @@ export default function ProposalDetailPage() {
             }
             extra={
               proposal.status === PROPOSAL_STATUS.PENDING && (
-                <Button
-                  type="primary"
-                  icon={<FileTextOutlined />}
-                  onClick={() => {
-                    setDecisionModalType('danh_hieu');
-                    setDecisionModalVisible(true);
-                  }}
-                  disabled={selectedRowKeys.length === 0}
-                >
-                  Thêm số quyết định ({selectedRowKeys.length} người)
-                </Button>
+                <Space wrap>
+                  <Space>
+                    <DatePicker
+                      picker="month"
+                      value={bulkMonthPicker}
+                      onChange={val => setBulkMonthPicker(val)}
+                      placeholder="Chọn tháng nhận"
+                      variant="filled"
+                      style={{ width: 160 }}
+                      disabled={selectedRowKeys.length === 0}
+                      minDate={
+                        proposal.thang
+                          ? dayjs()
+                              .year(proposal.nam)
+                              .month(proposal.thang - 1)
+                          : undefined
+                      }
+                    />
+                    <Tooltip
+                      title={
+                        selectedRowKeys.length > 0
+                          ? `Áp dụng tháng nhận cho ${selectedRowKeys.length} hàng được chọn`
+                          : 'Chọn ít nhất 1 hàng để áp dụng'
+                      }
+                    >
+                      <Button
+                        disabled={selectedRowKeys.length === 0}
+                        onClick={() => {
+                          if (!bulkMonthPicker) {
+                            message.warning('Vui lòng chọn tháng nhận trước');
+                            return;
+                          }
+                          const thang = bulkMonthPicker.month() + 1;
+                          const nam = bulkMonthPicker.year();
+                          const eligible = editedCongHien.filter(
+                            (item, idx) =>
+                              bulkSelectedSet.has(String(idx)) && !!item.so_quyet_dinh?.trim()
+                          );
+                          if (eligible.length === 0) {
+                            message.warning('Không có hàng nào đã có số quyết định để áp dụng');
+                            return;
+                          }
+                          setEditedCongHien(prev =>
+                            prev.map((item, idx) => {
+                              if (!bulkSelectedSet.has(String(idx))) return item;
+                              if (!item.so_quyet_dinh?.trim()) return item;
+                              return { ...item, thang_nhan: thang, nam_nhan: nam };
+                            })
+                          );
+                          setBulkMonthPicker(null);
+                          message.success(
+                            `Đã đặt tháng ${thang}/${nam} cho ${eligible.length} hàng`
+                          );
+                        }}
+                      >
+                        Áp dụng ({selectedRowKeys.length})
+                      </Button>
+                    </Tooltip>
+                  </Space>
+                  <Button
+                    type="primary"
+                    icon={<FileTextOutlined />}
+                    onClick={() => {
+                      setDecisionModalType('danh_hieu');
+                      setDecisionModalVisible(true);
+                    }}
+                    disabled={selectedRowKeys.length === 0}
+                  >
+                    Thêm số quyết định ({selectedRowKeys.length} người)
+                  </Button>
+                </Space>
               )
             }
           >
             {editedCongHien.length === 0 ? (
               <Empty
                 image={<WarningOutlined style={{ fontSize: 48, color: '#d9d9d9' }} />}
-                description="Không có dữ liệu huân chương bảo vệ tổ quốc"
+                description="Không có dữ liệu Huân chương Bảo vệ Tổ quốc"
               />
             ) : (
               <Table
                 rowSelection={
                   proposal.status === PROPOSAL_STATUS.PENDING ? rowSelection : undefined
                 }
-                columns={caNhanHangNamColumns}
+                columns={congHienColumns}
                 dataSource={editedCongHien}
                 rowKey={(_, index) => index ?? 0}
                 pagination={false}

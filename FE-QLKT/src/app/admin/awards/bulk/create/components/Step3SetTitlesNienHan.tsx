@@ -464,7 +464,7 @@ export function Step3SetTitlesNienHan({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <Space size="middle" align="center">
           <Tag color="red" style={{ fontSize: 14, padding: '4px 12px', margin: 0 }}>
-            Năm {nam} - Tháng {thang}
+            Tháng {thang} - Năm {nam}
           </Tag>
           <Text type="secondary">
             Tổng số quân nhân: <strong>{personnel.length}</strong>

@@ -186,10 +186,10 @@ export function ExcelImportSection({
           return true;
         }
 
-        message.error(response.message || 'Import thất bại');
+        message.error(response.message || 'Tải dữ liệu thất bại');
         return false;
       } catch (error: unknown) {
-        message.error(getApiErrorMessage(error, 'Import thất bại'));
+        message.error(getApiErrorMessage(error, 'Tải dữ liệu thất bại'));
         return false;
       } finally {
         setUploading(false);
@@ -215,13 +215,13 @@ export function ExcelImportSection({
           <CloudUploadOutlined style={{ fontSize: 24, color: token.colorPrimary }} />
           <div style={{ flex: 1 }}>
             <strong style={{ fontSize: 16, color: token.colorText }}>
-              Import nhanh từ file Excel
+              Tải dữ liệu nhanh từ file Excel
             </strong>
             <br />
             <span style={{ color: token.colorTextSecondary }}>
               {selectedPersonnelIds.length === 0
                 ? `Chọn ít nhất 1 ${entityLabel} từ danh sách bên dưới trước, sau đó tải file mẫu để điền thông tin`
-                : `Tải file mẫu (${selectedPersonnelIds.length} ${entityLabel} đã chọn), điền thông tin và upload để tự động điền dữ liệu`}
+                : `Tải file mẫu (${selectedPersonnelIds.length} ${entityLabel} đã chọn), điền thông tin và tải lên để tự động điền dữ liệu`}
             </span>
           </div>
         </div>
@@ -252,7 +252,7 @@ export function ExcelImportSection({
                 file.type === 'application/vnd.ms-excel';
 
               if (!isExcel) {
-                message.error('Chỉ được upload file Excel (.xlsx, .xls)');
+                message.error('Chỉ được tải lên file Excel (.xlsx, .xls)');
                 return false;
               }
 
@@ -263,7 +263,7 @@ export function ExcelImportSection({
             accept=".xlsx,.xls"
           >
             <Button icon={<UploadOutlined />} loading={uploading} size="large" type="primary">
-              {uploading ? 'Đang upload...' : 'Upload file Excel'}
+              {uploading ? 'Đang tải lên...' : 'Tải lên file Excel'}
             </Button>
           </Upload>
         </Space>

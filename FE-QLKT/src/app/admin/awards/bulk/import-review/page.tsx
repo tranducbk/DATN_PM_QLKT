@@ -96,9 +96,9 @@ export default function ImportReviewPage() {
 
   const config: ImportReviewConfig = {
     sessionStorageKey: 'importPreviewData',
-    title: 'Xem trước dữ liệu Import - Khen thưởng cá nhân hằng năm',
+    title: 'Xem trước dữ liệu tải lên - Khen thưởng cá nhân hằng năm',
     confirmImport: apiClient.confirmAnnualRewardsImport,
-    successMessage: count => `Import thành công ${count} bản ghi khen thưởng cá nhân hằng năm.`,
+    successMessage: count => `Tải dữ liệu thành công ${count} bản ghi khen thưởng cá nhân hằng năm.`,
     confirmButtonLabel: 'quân nhân',
     validColumns,
     invalidColumns,

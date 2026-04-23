@@ -104,6 +104,7 @@ export function Step3SetTitles({
           titleData={titleData}
           onTitleDataChange={onTitleDataChange}
           nam={nam}
+          thang={thang}
         />
       );
     case PROPOSAL_TYPES.NCKH:

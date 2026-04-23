@@ -74,9 +74,9 @@ export default function ImportReviewHCBVTQPage() {
 
   const config: ImportReviewConfig = {
     sessionStorageKey: 'importPreviewDataHCBVTQ',
-    title: 'Xem trước dữ liệu Import - Huân chương Bảo vệ Tổ quốc',
+    title: 'Xem trước dữ liệu tải lên - Huân chương Bảo vệ Tổ quốc',
     confirmImport: apiClient.confirmContributionAwardsImport,
-    successMessage: count => `Import thành công ${count} bản ghi Huân chương Bảo vệ Tổ quốc.`,
+    successMessage: count => `Tải dữ liệu thành công ${count} bản ghi Huân chương Bảo vệ Tổ quốc.`,
     confirmButtonLabel: 'quân nhân',
     validColumns,
     invalidColumns,

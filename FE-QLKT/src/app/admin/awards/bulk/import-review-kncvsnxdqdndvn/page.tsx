@@ -66,9 +66,10 @@ export default function ImportReviewKNCVSNXDQDNDVNPage() {
 
   const config: ImportReviewConfig = {
     sessionStorageKey: 'importPreviewDataKNCVSNXDQDNDVN',
-    title: 'Xem trước dữ liệu Import - Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
+    title: 'Xem trước dữ liệu tải lên - Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
     confirmImport: apiClient.confirmCommemorationMedalsImport,
-    successMessage: count => `Import thành công ${count} bản ghi Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN.`,
+    successMessage: count =>
+      `Tải dữ liệu thành công ${count} bản ghi Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN.`,
     confirmButtonLabel: 'quân nhân',
     validColumns,
     invalidColumns,

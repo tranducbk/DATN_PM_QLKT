@@ -23,6 +23,7 @@ interface ContributionAwardValidItem {
   cap_bac: string | null;
   chuc_vu: string | null;
   nam: number;
+  thang: number;
   danh_hieu: string;
   so_quyet_dinh: string;
   ghi_chu: string | null;
@@ -79,6 +80,7 @@ class ContributionAwardService {
     const danhHieuCol = getHeaderCol(headerMap, ['danh_hieu', 'danhhieu', 'danh_hiu']);
     const capBacCol = getHeaderCol(headerMap, ['cap_bac', 'capbac', 'cap_bc']);
     const chucVuCol = getHeaderCol(headerMap, ['chuc_vu', 'chucvu', 'chc_vu']);
+    const thangCol = getHeaderCol(headerMap, ['thang', 'thang_nhan', 'month']);
     const soQuyetDinhCol = getHeaderCol(headerMap, ['so_quyet_dinh', 'soquyetdinh', 'so_qd']);
     const ghiChuCol = getHeaderCol(headerMap, ['ghi_chu', 'ghichu', 'ghi_ch']);
 
@@ -159,6 +161,7 @@ class ContributionAwardService {
       const so_quyet_dinh = soQuyetDinhCol
         ? String(row.getCell(soQuyetDinhCol).value ?? '').trim()
         : null;
+      const thangVal = thangCol ? row.getCell(thangCol).value : null;
       const ghi_chu = ghiChuCol ? String(row.getCell(ghiChuCol).value ?? '').trim() : null;
 
       if (!idValue && !namVal && !danh_hieu_raw) continue;
@@ -233,6 +236,18 @@ class ContributionAwardService {
           nam,
           danh_hieu: danh_hieu_raw,
           message: `Năm ${nam} không hợp lệ. Chỉ được nhập đến năm hiện tại (${currentYear})`,
+        });
+        continue;
+      }
+
+      const thang = thangVal ? parseInt(String(thangVal), 10) : null;
+      if (!thang || thang < 1 || thang > 12) {
+        errors.push({
+          row: rowNumber,
+          ho_ten,
+          nam,
+          danh_hieu: danh_hieu_raw,
+          message: `Tháng nhận không hợp lệ (cần 1-12, nhận được: ${thangVal ?? 'trống'})`,
         });
         continue;
       }
@@ -379,6 +394,7 @@ class ContributionAwardService {
         cap_bac: capBac,
         chuc_vu: chucVu,
         nam,
+        thang,
         danh_hieu,
         so_quyet_dinh,
         ghi_chu,
@@ -445,6 +461,7 @@ class ContributionAwardService {
               quan_nhan_id: item.personnel_id,
               danh_hieu: item.danh_hieu,
               nam: item.nam,
+              thang: item.thang,
               cap_bac: item.cap_bac ?? null,
               chuc_vu: item.chuc_vu ?? null,
               so_quyet_dinh: item.so_quyet_dinh ?? null,

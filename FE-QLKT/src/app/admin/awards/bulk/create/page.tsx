@@ -122,32 +122,32 @@ export default function BulkAddAwardsPage() {
     [PROPOSAL_TYPES.CA_NHAN_HANG_NAM]: {
       icon: <TrophyOutlined />,
       label: 'Khen thưởng cá nhân hằng năm',
-      description: 'Danh hiệu CSTT-CS, CSTĐ-CS, BK-BQP, CSTĐ-TQ',
+      description: 'Danh hiệu CSTT, CSTDCS, BKBQP, CSTĐTQ, BKTTCP',
     },
     [PROPOSAL_TYPES.DON_VI_HANG_NAM]: {
       icon: <TeamOutlined />,
       label: 'Khen thưởng đơn vị hằng năm',
-      description: 'ĐVTT, ĐVQT, BK-BQP, BK-TTCP',
+      description: 'Danh hiệu ĐVTT, ĐVQT, BKBQP, BKTTCP',
     },
     [PROPOSAL_TYPES.NIEN_HAN]: {
       icon: <ClockCircleOutlined />,
       label: 'Huy chương Chiến sĩ vẻ vang',
-      description: 'HCCSVV 3 hạng (Hạng Ba, Nhì, Nhất)',
+      description: 'Danh hiệu Huy chương Chiến sĩ vẻ vang 3 hạng (Ba, Nhì, Nhất)',
     },
     [PROPOSAL_TYPES.HC_QKQT]: {
       icon: <TrophyOutlined />,
       label: 'Huy chương Quân kỳ quyết thắng',
-      description: 'Huy chương Quân kỳ quyết thắng',
+      description: 'Yêu cầu đủ 25 năm phục vụ trong QĐNDVN',
     },
     [PROPOSAL_TYPES.KNC_VSNXD_QDNDVN]: {
       icon: <TrophyOutlined />,
       label: 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
-      description: 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
+      description: 'Yêu cầu đủ 25 năm phục vụ đối với nam và 20 năm phục vụ đối với nữ trong QĐNDVN',
     },
     [PROPOSAL_TYPES.CONG_HIEN]: {
       icon: <HeartOutlined />,
       label: 'Huân chương Bảo vệ Tổ quốc',
-      description: 'HCBVTQ 3 hạng (Hạng Ba, Nhì, Nhất)',
+      description: 'Danh hiệu Huân chương Bảo vệ Tổ quốc 3 hạng (Ba, Nhì, Nhất)',
     },
     [PROPOSAL_TYPES.NCKH]: {
       icon: <ExperimentOutlined />,
@@ -512,6 +512,8 @@ export default function BulkAddAwardsPage() {
                 onPersonnelChange={setSelectedPersonnelIds}
                 nam={nam}
                 onNamChange={setNam}
+                thang={thang}
+                onThangChange={setThang}
                 onTitleDataChange={setTitleData}
                 onNextStep={() => setCurrentStep(prev => prev + 1)}
               />

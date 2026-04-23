@@ -103,14 +103,14 @@ export default function ImportReviewUnitPage() {
 
   const config: ImportReviewConfig = {
     sessionStorageKey: 'importPreviewDataUnit',
-    title: 'Xem trước dữ liệu Import - Khen thưởng đơn vị hằng năm',
+    title: 'Xem trước dữ liệu tải lên - Khen thưởng đơn vị hằng năm',
     confirmImport: apiClient.confirmUnitAnnualAwardsImport,
-    successMessage: count => `Import thành công ${count} bản ghi khen thưởng đơn vị hằng năm.`,
+    successMessage: count => `Tải dữ liệu thành công ${count} bản ghi khen thưởng đơn vị hằng năm.`,
     confirmButtonLabel: 'đơn vị',
     validColumns,
     invalidColumns,
     historyColumns,
-    breadcrumbLastItem: 'Xem trước Import đơn vị',
+    breadcrumbLastItem: 'Xem trước dữ liệu tải lên đơn vị',
     historyLabel: 'Lịch sử khen thưởng đơn vị',
   };
 

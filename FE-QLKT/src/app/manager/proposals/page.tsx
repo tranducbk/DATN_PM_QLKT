@@ -223,7 +223,7 @@ export default function ManagerProposalsPage() {
           [PROPOSAL_TYPES.NIEN_HAN]: { count: record.so_nien_han ?? 0, tooltip: 'Số quân nhân đề xuất huy chương chiến sĩ vẻ vang' },
           [PROPOSAL_TYPES.HC_QKQT]: { count: record.so_nien_han ?? 0, tooltip: 'Số quân nhân đề xuất huy chương chiến sĩ vẻ vang' },
           [PROPOSAL_TYPES.KNC_VSNXD_QDNDVN]: { count: record.so_nien_han ?? 0, tooltip: 'Số quân nhân đề xuất huy chương chiến sĩ vẻ vang' },
-          [PROPOSAL_TYPES.CONG_HIEN]: { count: record.so_cong_hien ?? 0, tooltip: 'Số quân nhân đề xuất huân chương bảo vệ tổ quốc' },
+          [PROPOSAL_TYPES.CONG_HIEN]: { count: record.so_cong_hien ?? 0, tooltip: 'Số quân nhân đề xuất Huân chương Bảo vệ Tổ quốc' },
           [PROPOSAL_TYPES.DON_VI_HANG_NAM]: { count: record.so_danh_hieu ?? 0, tooltip: 'Số đơn vị đề xuất' },
         };
         const { count, tooltip } = countTooltipMap[record.loai_de_xuat] ?? { count: record.so_danh_hieu ?? 0, tooltip: 'Số quân nhân đề xuất' };

@@ -10,7 +10,13 @@ import { apiClient } from '@/lib/apiClient';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { PositionHistoryModal } from './PositionHistoryModal';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
-import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
+import {
+  calculateContributionMonthsByGroup,
+  formatMonthsToText,
+  getContributionRequiredMonths,
+  getHighestEligibleContributionAward,
+  getReferenceEndDate,
+} from '@/lib/contributionTimeHelper';
 
 const { Text } = Typography;
 
@@ -52,6 +58,7 @@ interface Step3SetTitlesCongHienProps {
   titleData: TitleData[];
   onTitleDataChange: (data: TitleData[]) => void;
   nam: number;
+  thang: number;
 }
 
 export function Step3SetTitlesCongHien({
@@ -60,6 +67,7 @@ export function Step3SetTitlesCongHien({
   titleData,
   onTitleDataChange,
   nam,
+  thang,
 }: Step3SetTitlesCongHienProps) {
   const [loading, setLoading] = useState(false);
   const [personnel, setPersonnel] = useState<Personnel[]>([]);
@@ -68,7 +76,6 @@ export function Step3SetTitlesCongHien({
   const [selectedPersonnel, setSelectedPersonnel] = useState<Personnel | null>(null);
   const [positionHistory, setPositionHistory] = useState<any[]>([]);
   const [loadingModal, setLoadingModal] = useState(false);
-  const [contributionProfiles, setContributionProfiles] = useState<Record<string, any>>({});
 
   useEffect(() => {
     if (selectedPersonnelIds.length > 0) {
@@ -77,7 +84,7 @@ export function Step3SetTitlesCongHien({
       setPersonnel([]);
       onTitleDataChange([]);
     }
-  }, [selectedPersonnelIds]);
+  }, [selectedPersonnelIds, nam, thang]);
 
   const fetchPersonnelDetails = async () => {
     try {
@@ -87,26 +94,7 @@ export function Step3SetTitlesCongHien({
       const personnelData = responses.filter(r => r.success).map(r => r.data);
       setPersonnel(personnelData);
 
-      // Trigger recalculate cho contribution profiles
-      const profilesMap: Record<string, any> = {};
-
-      await Promise.all(
-        personnelData.map(async p => {
-          if (p.id) {
-            try {
-              const response = await apiClient.getContributionProfile(p.id);
-              if (response.success && response.data) {
-                profilesMap[p.id] = response.data;
-              }
-            } catch (error) {
-              // Error handled silently per-item
-            }
-          }
-        })
-      );
-      setContributionProfiles(profilesMap);
-      // Fetch position histories for display
-      await fetchPositionHistories(personnelData);
+      const historiesMap = await fetchPositionHistories(personnelData);
 
       // Helper function to convert months to {years, months} object
       const monthsToTimeObject = (totalMonths: number) => {
@@ -116,43 +104,49 @@ export function Step3SetTitlesCongHien({
         return { years, months };
       };
 
+      const monthsByGroup = (personnelId: string, group: '0.7' | '0.8' | '0.9-1.0') =>
+        calculateTotalMonthsByGroup(historiesMap[personnelId] || [], group);
+      const requiredMonths = (person: Personnel) => getContributionRequiredMonths(person.gioi_tinh);
+      const resolveDanhHieu = (person: Personnel): string | undefined => {
+        const m07 = monthsByGroup(person.id, '0.7');
+        const m08 = monthsByGroup(person.id, '0.8');
+        const m0910 = monthsByGroup(person.id, '0.9-1.0');
+        const required = requiredMonths(person);
+        return getHighestEligibleContributionAward(m07, m08, m0910, required) || undefined;
+      };
+
       // Initialize title data if empty
       if (titleData.length === 0) {
         const initialData = personnelData.map((p: Personnel) => {
-          const profile = profilesMap[p.id];
+          const m07 = monthsByGroup(p.id, '0.7');
+          const m08 = monthsByGroup(p.id, '0.8');
+          const m0910 = monthsByGroup(p.id, '0.9-1.0');
           return {
             personnel_id: p.id,
-            danh_hieu: getHighestEligibleAward(profile),
+            danh_hieu: resolveDanhHieu(p),
             cap_bac: p.cap_bac || '',
             chuc_vu: p.ChucVu?.ten_chuc_vu || '',
-            thoi_gian_nhom_0_7: monthsToTimeObject(profile?.months_07 || 0),
-            thoi_gian_nhom_0_8: monthsToTimeObject(profile?.months_08 || 0),
-            thoi_gian_nhom_0_9_1_0: monthsToTimeObject(profile?.months_0910 || 0),
+            thoi_gian_nhom_0_7: monthsToTimeObject(m07),
+            thoi_gian_nhom_0_8: monthsToTimeObject(m08),
+            thoi_gian_nhom_0_9_1_0: monthsToTimeObject(m0910),
           };
         });
         onTitleDataChange(initialData);
       } else {
         const updatedData = titleData.map(item => {
           const p = personnelData.find((pd: Personnel) => pd.id === item.personnel_id);
-          const profile = profilesMap[item.personnel_id || ''];
-          const needsUpdate =
-            !item.cap_bac ||
-            !item.chuc_vu ||
-            !item.thoi_gian_nhom_0_7 ||
-            !item.thoi_gian_nhom_0_8 ||
-            !item.thoi_gian_nhom_0_9_1_0;
-
-          if (p && needsUpdate) {
+          if (p) {
+            const m07 = monthsByGroup(p.id, '0.7');
+            const m08 = monthsByGroup(p.id, '0.8');
+            const m0910 = monthsByGroup(p.id, '0.9-1.0');
             return {
               ...item,
               cap_bac: item.cap_bac || p.cap_bac || '',
               chuc_vu: item.chuc_vu || p.ChucVu?.ten_chuc_vu || '',
-              thoi_gian_nhom_0_7:
-                item.thoi_gian_nhom_0_7 || monthsToTimeObject(profile?.months_07 || 0),
-              thoi_gian_nhom_0_8:
-                item.thoi_gian_nhom_0_8 || monthsToTimeObject(profile?.months_08 || 0),
-              thoi_gian_nhom_0_9_1_0:
-                item.thoi_gian_nhom_0_9_1_0 || monthsToTimeObject(profile?.months_0910 || 0),
+              danh_hieu: resolveDanhHieu(p),
+              thoi_gian_nhom_0_7: monthsToTimeObject(m07),
+              thoi_gian_nhom_0_8: monthsToTimeObject(m08),
+              thoi_gian_nhom_0_9_1_0: monthsToTimeObject(m0910),
             };
           }
           return item;
@@ -188,58 +182,24 @@ export function Step3SetTitlesCongHien({
       );
 
       setPositionHistoriesMap(historiesMap);
+      return historiesMap;
     } catch (error) {
       message.error(getApiErrorMessage(error));
+      return {};
     }
   };
 
-  /** Computes total service months for a coefficient group from API data. */
+  const calculateTotalMonthsByGroup = (histories: any[], group: '0.7' | '0.8' | '0.9-1.0') => {
+    if (!histories?.length) return 0;
+    const referenceEndDate = getReferenceEndDate(nam, thang);
+    return calculateContributionMonthsByGroup(histories, group, referenceEndDate);
+  };
+
+  /** Computes total service months for a coefficient group from position history by proposal month/year. */
   const calculateTotalTimeByGroup = (personnelId: string, group: '0.7' | '0.8' | '0.9-1.0') => {
-    let totalMonths = 0;
-    if (group === '0.7') totalMonths = contributionProfiles[personnelId]?.months_07 || 0;
-    else if (group === '0.8') totalMonths = contributionProfiles[personnelId]?.months_08 || 0;
-    else if (group === '0.9-1.0') totalMonths = contributionProfiles[personnelId]?.months_0910 || 0;
-
-    const years = Math.floor(totalMonths / 12);
-    const remainingMonths = totalMonths % 12;
-
-    if (totalMonths === 0) return '-';
-    if (years > 0 && remainingMonths > 0) {
-      return `${years} năm ${remainingMonths} tháng`;
-    } else if (years > 0) {
-      return `${years} năm`;
-    } else {
-      return `${remainingMonths} tháng`;
-    }
-  };
-
-  /** Checks whether a personnel meets the service-time requirement for a given HCBVTQ rank. */
-  const checkEligibleForRank = (
-    profile: any,
-    rank: 'HANG_NHAT' | 'HANG_NHI' | 'HANG_BA'
-  ): boolean => {
-    if (!profile) return false;
-    if (rank === 'HANG_NHAT') {
-      return profile.hcbvtq_hang_nhat_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN;
-    } else if (rank === 'HANG_NHI') {
-      return profile.hcbvtq_hang_nhi_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN;
-    } else if (rank === 'HANG_BA') {
-      return profile.hcbvtq_hang_ba_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN;
-    }
-
-    return false;
-  };
-
-  /** Returns the highest HCBVTQ rank the personnel qualifies for. */
-  const getHighestEligibleAward = (profile: any): string | undefined => {
-    if (checkEligibleForRank(profile, 'HANG_NHAT')) {
-      return 'HCBVTQ_HANG_NHAT';
-    } else if (checkEligibleForRank(profile, 'HANG_NHI')) {
-      return 'HCBVTQ_HANG_NHI';
-    } else if (checkEligibleForRank(profile, 'HANG_BA')) {
-      return 'HCBVTQ_HANG_BA';
-    }
-    return undefined;
+    const histories = positionHistoriesMap[personnelId] || [];
+    const totalMonths = calculateTotalMonthsByGroup(histories, group);
+    return formatMonthsToText(totalMonths);
   };
 
   const getDanhHieuOptions = () => {
@@ -456,7 +416,7 @@ export function Step3SetTitlesCongHien({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <Space size="middle" align="center">
           <Tag color="red" style={{ fontSize: 14, padding: '4px 12px', margin: 0 }}>
-            Năm {nam}
+            Tháng {thang} - Năm {nam}
           </Tag>
           <Text type="secondary">
             Tổng số quân nhân: <strong>{personnel.length}</strong>
