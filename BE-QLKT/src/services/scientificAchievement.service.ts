@@ -8,9 +8,9 @@ import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { NotFoundError, ValidationError } from '../middlewares/errorHandler';
-import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
+import { buildTemplate, TemplateColumn, styleHeaderRow } from '../helpers/excelTemplateHelper';
 import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, sanitizeRowData } from '../helpers/excelHelper';
-import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
+import { IMPORT_TRANSACTION_TIMEOUT, EXPORT_FETCH_LIMIT } from '../constants/excel.constants';
 import { VALID_NCKH } from './proposal/helpers';
 
 interface CreateAchievementData {
@@ -243,7 +243,7 @@ class ScientificAchievementService {
         },
       },
       orderBy: [{ nam: 'desc' }, { createdAt: 'desc' }],
-      take: 10000,
+      take: EXPORT_FETCH_LIMIT,
     });
 
     const workbook = new ExcelJS.Workbook();
@@ -263,12 +263,7 @@ class ScientificAchievementService {
       { header: 'Ghi chú', key: 'ghi_chu', width: 30 },
     ];
 
-    worksheet.getRow(1).font = { bold: true };
-    worksheet.getRow(1).fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFD3D3D3' },
-    };
+    styleHeaderRow(worksheet);
 
     achievements.forEach((achievement, index) => {
       const quanNhan = achievement.QuanNhan;

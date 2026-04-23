@@ -30,46 +30,42 @@ async function notifyManagerOnPersonnelAdded(
   personnel: PersonnelBasicInfo,
   adminUsername: string
 ): Promise<number> {
-  try {
-    const managers = await prisma.taiKhoan.findMany({
-      where: {
-        role: ROLES.MANAGER,
-        QuanNhan: {
-          co_quan_don_vi_id: personnel.don_vi_id,
-        },
+  const managers = await prisma.taiKhoan.findMany({
+    where: {
+      role: ROLES.MANAGER,
+      QuanNhan: {
+        co_quan_don_vi_id: personnel.don_vi_id,
       },
-      select: {
-        id: true,
-        role: true,
-      },
-    });
+    },
+    select: {
+      id: true,
+      role: true,
+    },
+  });
 
-    if (managers.length === 0) {
-      return 0;
-    }
-
-    const adminDisplayName = await getDisplayName(adminUsername);
-
-    const notifications = managers.map(manager => ({
-      nguoi_nhan_id: manager.id,
-      recipient_role: manager.role,
-      type: NOTIFICATION_TYPES.PERSONNEL_ADDED,
-      title: 'Quân nhân mới được thêm',
-      message: `${adminDisplayName} đã thêm quân nhân mới: ${personnel.ho_ten} (CCCD: ${personnel.cccd})`,
-      resource: RESOURCE_TYPES.PERSONNEL,
-      tai_nguyen_id: personnel.id,
-      link: `/manager/personnel/${personnel.id}`,
-    }));
-
-    await prisma.thongBao.createMany({
-      data: notifications,
-    });
-    notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
-
-    return notifications.length;
-  } catch (error) {
-    throw error;
+  if (managers.length === 0) {
+    return 0;
   }
+
+  const adminDisplayName = await getDisplayName(adminUsername);
+
+  const notifications = managers.map(manager => ({
+    nguoi_nhan_id: manager.id,
+    recipient_role: manager.role,
+    type: NOTIFICATION_TYPES.PERSONNEL_ADDED,
+    title: 'Quân nhân mới được thêm',
+    message: `${adminDisplayName} đã thêm quân nhân mới: ${personnel.ho_ten} (CCCD: ${personnel.cccd})`,
+    resource: RESOURCE_TYPES.PERSONNEL,
+    tai_nguyen_id: personnel.id,
+    link: `/manager/personnel/${personnel.id}`,
+  }));
+
+  await prisma.thongBao.createMany({
+    data: notifications,
+  });
+  notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
+
+  return notifications.length;
 }
 
 interface UnitInfo {

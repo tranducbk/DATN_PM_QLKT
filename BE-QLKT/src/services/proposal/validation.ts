@@ -212,7 +212,7 @@ export async function checkDuplicateAward(
  * Unit annual flow: checks pending proposals first, then stored unit awards.
  * @param donViId - Unit ID used in proposal data
  * @param nam - Award year under review
- * @param danhHieu - ĐVQT/ĐVTT/BK… code being proposed
+ * @param danhHieu - Proposed unit-award code
  * @param proposalType - Expected unit annual proposal type
  * @returns exists=true when a pending proposal or stored award blocks insert
  */

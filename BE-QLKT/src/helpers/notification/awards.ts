@@ -68,96 +68,88 @@ async function notifyManagersOnAwardAdded(
   awardType: string,
   adminUsername: string
 ): Promise<number> {
-  try {
-    const managers = await prisma.taiKhoan.findMany({
-      where: {
-        role: ROLES.MANAGER,
-        QuanNhan: {
-          co_quan_don_vi_id: donViId,
-        },
+  const managers = await prisma.taiKhoan.findMany({
+    where: {
+      role: ROLES.MANAGER,
+      QuanNhan: {
+        co_quan_don_vi_id: donViId,
       },
-      select: {
-        id: true,
-        role: true,
-      },
-    });
+    },
+    select: {
+      id: true,
+      role: true,
+    },
+  });
 
-    if (managers.length === 0) {
-      return 0;
-    }
-
-    const adminDisplayName = await getDisplayName(adminUsername);
-
-    const notifications = managers.map(manager => ({
-      nguoi_nhan_id: manager.id,
-      recipient_role: manager.role,
-      type: NOTIFICATION_TYPES.AWARD_ADDED,
-      title: 'Khen thưởng mới đã được thêm',
-      message: `${adminDisplayName} đã thêm danh sách khen thưởng ${awardType} năm ${year} cho đơn vị ${donViName}`,
-      resource: RESOURCE_TYPES.AWARDS,
-      tai_nguyen_id: donViId,
-      link: `/manager/awards?don_vi_id=${donViId}&nam=${year}`,
-    }));
-
-    await prisma.thongBao.createMany({
-      data: notifications,
-    });
-    notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
-
-    return notifications.length;
-  } catch (error) {
-    throw error;
+  if (managers.length === 0) {
+    return 0;
   }
+
+  const adminDisplayName = await getDisplayName(adminUsername);
+
+  const notifications = managers.map(manager => ({
+    nguoi_nhan_id: manager.id,
+    recipient_role: manager.role,
+    type: NOTIFICATION_TYPES.AWARD_ADDED,
+    title: 'Khen thưởng mới đã được thêm',
+    message: `${adminDisplayName} đã thêm danh sách khen thưởng ${awardType} năm ${year} cho đơn vị ${donViName}`,
+    resource: RESOURCE_TYPES.AWARDS,
+    tai_nguyen_id: donViId,
+    link: `/manager/awards?don_vi_id=${donViId}&nam=${year}`,
+  }));
+
+  await prisma.thongBao.createMany({
+    data: notifications,
+  });
+  notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
+
+  return notifications.length;
 }
 
 async function notifyUserOnAchievementApproved(
   achievement: AchievementInfo,
   approverUsername: string
 ): Promise<{ nguoi_nhan_id: string | null } | null> {
-  try {
-    const account = await prisma.taiKhoan.findFirst({
-      where: {
-        quan_nhan_id: achievement.quan_nhan_id,
-      },
-      select: {
-        id: true,
-        role: true,
-      },
-    });
+  const account = await prisma.taiKhoan.findFirst({
+    where: {
+      quan_nhan_id: achievement.quan_nhan_id,
+    },
+    select: {
+      id: true,
+      role: true,
+    },
+  });
 
-    if (!account) {
-      return null;
-    }
-
-    const approverDisplayName = await getDisplayName(approverUsername);
-
-    const loaiMap: Record<string, string> = {
-      DTKH: 'Đề tài khoa học',
-      SKKH: 'Sáng kiến khoa học',
-      NCKH: 'Nghiên cứu khoa học',
-    };
-    const loaiName = loaiMap[achievement.loai] || achievement.loai || 'Thành tích khoa học';
-
-    const notification = await prisma.thongBao.create({
-      data: {
-        nguoi_nhan_id: account.id,
-        recipient_role: account.role,
-        type: NOTIFICATION_TYPES.ACHIEVEMENT_APPROVED,
-        title: 'Thành tích khoa học đã được phê duyệt',
-        message: `${loaiName} năm ${achievement.nam || 'không xác định'} của bạn đã được ${approverDisplayName} phê duyệt`,
-        resource: RESOURCE_TYPES.ACHIEVEMENTS,
-        tai_nguyen_id: achievement.id,
-        link: `/user/profile`,
-      },
-    });
-
-    if (notification.nguoi_nhan_id) {
-      emitNotificationToUser(notification.nguoi_nhan_id, notification);
-    }
-    return notification;
-  } catch (error) {
-    throw error;
+  if (!account) {
+    return null;
   }
+
+  const approverDisplayName = await getDisplayName(approverUsername);
+
+  const loaiMap: Record<string, string> = {
+    DTKH: 'Đề tài khoa học',
+    SKKH: 'Sáng kiến khoa học',
+    NCKH: 'Nghiên cứu khoa học',
+  };
+  const loaiName = loaiMap[achievement.loai] || achievement.loai || 'Thành tích khoa học';
+
+  const notification = await prisma.thongBao.create({
+    data: {
+      nguoi_nhan_id: account.id,
+      recipient_role: account.role,
+      type: NOTIFICATION_TYPES.ACHIEVEMENT_APPROVED,
+      title: 'Thành tích khoa học đã được phê duyệt',
+      message: `${loaiName} năm ${achievement.nam || 'không xác định'} của bạn đã được ${approverDisplayName} phê duyệt`,
+      resource: RESOURCE_TYPES.ACHIEVEMENTS,
+      tai_nguyen_id: achievement.id,
+      link: `/user/profile`,
+    },
+  });
+
+  if (notification.nguoi_nhan_id) {
+    emitNotificationToUser(notification.nguoi_nhan_id, notification);
+  }
+  return notification;
 }
 
 async function notifyOnAwardDeleted(
@@ -613,12 +605,12 @@ const RESOURCE_TO_PROPOSAL_TYPE: Record<string, string> = {
 };
 
 /**
- * Gửi thông báo cho chỉ huy đơn vị khi import khen thưởng (nếu feature bật).
- * @param adminId - ID tài khoản admin thực hiện import
- * @param awardResource - Resource key (vd: 'annual-rewards', 'hccsvv')
- * @param importedCount - Số bản ghi đã import
- * @param personnelIds - Danh sách personnel_id (cho khen thưởng cá nhân)
- * @param unitIds - Danh sách unit_id (cho khen thưởng đơn vị)
+ * Notifies unit managers after award imports when the feature flag is enabled.
+ * @param adminId - Admin account ID that triggered import
+ * @param awardResource - Resource key (e.g. 'annual-rewards', 'hccsvv')
+ * @param importedCount - Number of imported records
+ * @param personnelIds - Imported personnel IDs for individual-award imports
+ * @param unitIds - Imported unit IDs for unit-award imports
  */
 async function notifyOnImport(
   adminId: string,

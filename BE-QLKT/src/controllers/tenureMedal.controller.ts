@@ -108,19 +108,6 @@ class HCCSVVController {
     return ResponseHelper.success(res, { message: 'Thao tác thành công', data: result });
   });
 
-  importFromExcel = catchAsync(async (req: Request, res: Response) => {
-    const user = req.user!;
-    const file = req.file;
-    if (!file) {
-      return ResponseHelper.badRequest(res, 'Vui lòng gửi file Excel');
-    }
-    const result = await hccsvvService.importFromExcel(file.buffer, user.id);
-    return ResponseHelper.success(res, {
-      message: 'Import Huy chương Chiến sĩ vẻ vang thành công',
-      data: result,
-    });
-  });
-
   getAll = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as GetAllQuery;
     const user = req.user!;

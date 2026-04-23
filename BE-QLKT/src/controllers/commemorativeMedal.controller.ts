@@ -109,18 +109,6 @@ class CommemorativeMedalController {
     return ResponseHelper.success(res, { data: result, message: 'Import dữ liệu thành công' });
   });
 
-  importFromExcel = catchAsync(async (req: Request, res: Response) => {
-    const user = req.user!;
-    const file = req.file;
-    if (!file) return ResponseHelper.badRequest(res, 'Vui lòng gửi file Excel');
-
-    const result = await commemorativeMedalService.importFromExcel(file.buffer, user.id);
-    return ResponseHelper.success(res, {
-      data: result,
-      message: 'Import Kỷ niệm chương thành công',
-    });
-  });
-
   getAll = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as GetAllQuery;
     const user = req.user!;

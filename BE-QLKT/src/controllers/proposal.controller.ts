@@ -573,18 +573,6 @@ class ProposalController {
     return res.status(200).send(buffer);
   });
 
-  importHCCSVV = catchAsync(async (req: Request, res: Response) => {
-    const user = req.user!;
-    const file = req.file;
-    if (!file) {
-      return ResponseHelper.badRequest(res, 'Vui lòng gửi file Excel');
-    }
-    return ResponseHelper.success(res, {
-      message: 'Import Huy chương Chiến sĩ vẻ vang thành công',
-      data: await hccsvvService.importFromExcel(file.buffer, user.id),
-    });
-  });
-
   getAllHCCSVV = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
     const query = req.query as AwardsFilterQuery;
@@ -736,18 +724,6 @@ class ProposalController {
       `attachment; filename="mau_import_knc_vsnxd_qdndvn_${new Date().toISOString().slice(0, 10)}.xlsx"`
     );
     return res.status(200).send(buffer);
-  });
-
-  importCommemorativeMedals = catchAsync(async (req: Request, res: Response) => {
-    const user = req.user!;
-    const file = req.file;
-    if (!file) {
-      return ResponseHelper.badRequest(res, 'Vui lòng gửi file Excel');
-    }
-    return ResponseHelper.success(res, {
-      message: 'Import Kỷ niệm chương thành công',
-      data: await commemorativeMedalService.importFromExcel(file.buffer, user.id),
-    });
   });
 
   getAllCommemorativeMedals = catchAsync(async (req: Request, res: Response) => {

@@ -45,19 +45,6 @@ router.post(
 );
 
 /**
- * @route   POST /api/tenure-medals/import
- * @desc    Import HCCSVV medals from Excel (legacy direct import)
- * @access  ADMIN, MANAGER
- */
-router.post(
-  '/import',
-  verifyToken,
-  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
-  upload.single('file'),
-  hccsvvController.importFromExcel
-);
-
-/**
  * @route   GET /api/tenure-medals
  * @desc    List HCCSVV medals (Admin: all units, Manager: own unit)
  * @access  ADMIN, MANAGER

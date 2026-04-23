@@ -10,8 +10,8 @@ import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { parseHeaderMap, getHeaderCol, parseBooleanValue, sanitizeRowData } from '../helpers/excelHelper';
 import { NotFoundError, ValidationError, ForbiddenError } from '../middlewares/errorHandler';
 import { resolveUnit, buildUnitIdFields } from '../helpers/unitHelper';
-import { applyThinBordersToGrid } from '../helpers/excelTemplateHelper';
-import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
+import { applyThinBordersToGrid, styleHeaderRow } from '../helpers/excelTemplateHelper';
+import { IMPORT_TRANSACTION_TIMEOUT, EXCEL_INLINE_VALIDATION_MAX_LENGTH, MIN_TEMPLATE_ROWS, EXPORT_FETCH_LIMIT } from '../constants/excel.constants';
 
 interface UnitAnnualAwardValidItem {
   row: number;
@@ -89,8 +89,8 @@ function checkUnitDuplicate(
 
 class UnitAnnualAwardService {
   /**
-   * Tính số năm liên tục được danh hiệu DVQT (Đơn vị Quyết thắng)
-   * Quy ước: có bản ghi DanhHieuDonViHangNam năm X với danh_hieu = "ĐVQT" thì được tính là đạt danh hiệu năm đó
+   * Calculates consecutive years a unit achieved DVQT.
+   * A year counts when DanhHieuDonViHangNam has `danh_hieu = "DVQT"` for that year.
    */
   async calculateContinuousYears(donViId, year) {
     // Check awarded records (danh hieu) in DanhHieuDonViHangNam table
@@ -136,7 +136,7 @@ class UnitAnnualAwardService {
   }
 
   /**
-   * Tính tổng số lần đơn vị đạt danh hiệu DVQT
+   * Calculates total times a unit achieved DVQT.
    */
   async calculateTotalDVQT(donViId, year) {
     const records = await prisma.danhHieuDonViHangNam.findMany({
@@ -157,7 +157,7 @@ class UnitAnnualAwardService {
       },
     });
 
-    // JSON payload keeps DVQT/ĐVTT in danh_hieu; BKBQP/BKTTCP use boolean columns.
+    // JSON payload keeps DVQT/DVTT in danh_hieu; BKBQP/BKTTCP use booleans.
     const validRecords = records.filter(
       r => r.danh_hieu && DANH_HIEU_DON_VI_CO_BAN.has(r.danh_hieu)
     );
@@ -187,10 +187,10 @@ class UnitAnnualAwardService {
   }
 
   /**
-   * Kiểm tra điều kiện khen thưởng chuỗi cho đơn vị
-   * @param {string} donViId - ID đơn vị
-   * @param {number} year - Năm cần kiểm tra
-   * @param {string} danhHieu - BKBQP hoặc BKTTCP
+   * Validates chain-award eligibility for a unit.
+   * @param {string} donViId - Unit ID
+   * @param {number} year - Target year
+   * @param {string} danhHieu - BKBQP or BKTTCP
    * @returns {Object} { eligible: boolean, reason: string }
    */
   async checkUnitAwardEligibility(donViId, year, danhHieu) {
@@ -227,7 +227,7 @@ class UnitAnnualAwardService {
     return { eligible: true, reason: '' };
   }
 
-  /** Manager đề xuất (status=PENDING) - Tạo bản ghi DanhHieuDonViHangNam */
+  /** Manager proposal flow (PENDING): creates DanhHieuDonViHangNam records. */
   async propose({ don_vi_id, nam, danh_hieu, ghi_chu, nguoi_tao_id }) {
     const year = Number(nam);
     const unitId = don_vi_id;
@@ -259,7 +259,7 @@ class UnitAnnualAwardService {
     return record;
   }
 
-  /** Admin duyệt danh hiệu */
+  /** Admin approval flow for unit awards. */
   async approve(
     id,
     {
@@ -314,7 +314,7 @@ class UnitAnnualAwardService {
     return updatedDanhHieu;
   }
 
-  /** Admin từ chối danh hiệu */
+  /** Admin rejection flow for unit awards. */
   async reject(id: string, { ghi_chu, nguoi_duyet_id }: { ghi_chu: string; nguoi_duyet_id: string }) {
     const rejectedDanhHieu = await prisma.danhHieuDonViHangNam.update({
       where: { id: String(id) },
@@ -455,15 +455,15 @@ class UnitAnnualAwardService {
   }
 
   /**
-   * Upsert bản ghi DanhHieuDonViHangNam và tự động cập nhật HoSoDonViHangNam
-   * @param {Object} params - Tham số
-   * @param {string} params.don_vi_id - ID đơn vị (có thể là CoQuanDonVi hoặc DonViTrucThuoc)
-   * @param {number} params.nam - Năm
-   * @param {string} params.danh_hieu - Danh hiệu
-   * @param {string} [params.so_quyet_dinh] - Số quyết định
-   * @param {string} [params.ghi_chu] - Ghi chú
-   * @param {string} params.nguoi_tao_id - ID người tạo
-   * @returns {Promise<Object>} Bản ghi đã tạo/cập nhật
+   * Upserts DanhHieuDonViHangNam and synchronizes HoSoDonViHangNam.
+   * @param {Object} params - Input payload
+   * @param {string} params.don_vi_id - Unit ID (CoQuanDonVi or DonViTrucThuoc)
+   * @param {number} params.nam - Year
+   * @param {string} params.danh_hieu - Award code
+   * @param {string} [params.so_quyet_dinh] - Decision number
+   * @param {string} [params.ghi_chu] - Note
+   * @param {string} params.nguoi_tao_id - Creator ID
+   * @returns {Promise<Object>} Upserted record
    */
   async upsert({
     don_vi_id,
@@ -534,7 +534,7 @@ class UnitAnnualAwardService {
   }
 
   /**
-   * Recalculate theo đơn vị và năm (hoặc toàn bộ)
+   * Recalculates by unit and year, or for all records.
    */
   async recalculate({ don_vi_id, nam }) {
     if (don_vi_id && nam) {
@@ -600,7 +600,7 @@ class UnitAnnualAwardService {
   }
 
   /**
-   * Lấy hồ sơ gợi ý hằng năm của đơn vị (tương tự getAnnualProfile)
+   * Returns annual suggestion profile for a unit (similar to getAnnualProfile).
    */
   async getAnnualUnit(donViId, year) {
     const { isCoQuanDonVi } = await resolveUnit(donViId);
@@ -641,7 +641,7 @@ class UnitAnnualAwardService {
   }
 
   /**
-   * Tính toán lại hồ sơ hằng năm của đơn vị (tương tự recalculateAnnualProfile)
+   * Recalculates annual profile for a unit (similar to recalculateAnnualProfile).
    */
   async recalculateAnnualUnit(donViId, year = null) {
     const { isCoQuanDonVi } = await resolveUnit(donViId);
@@ -701,7 +701,7 @@ class UnitAnnualAwardService {
   }
 
   /**
-   * Lấy lịch sử khen thưởng hằng năm cho 1 đơn vị (danh sách DanhHieuDonViHangNam)
+   * Returns annual award history for one unit from DanhHieuDonViHangNam.
    */
   async getUnitAnnualAwards(donViId: string, userRole: string = ROLES.ADMIN, userQuanNhanId: string | null = null) {
     if (!donViId) throw new ValidationError('don_vi_id là bắt buộc');
@@ -752,10 +752,10 @@ class UnitAnnualAwardService {
   }
 
   /**
-   * Xuất file mẫu Excel để import
+   * Exports an Excel template for import.
    */
   /**
-   * Preview import: parse + validate Excel, trả về danh sách hợp lệ / lỗi — KHÔNG lưu DB
+   * Previews import by parsing and validating Excel rows without DB writes.
    */
   async previewImport(buffer: Buffer) {
     const workbook = await loadWorkbook(buffer);
@@ -1085,7 +1085,7 @@ class UnitAnnualAwardService {
   }
 
   /**
-   * Confirm import: lưu dữ liệu đã validate vào DB
+   * Persists validated import rows into the database.
    */
   async confirmImport(validItems: UnitAnnualAwardValidItem[], adminId: string) {
     // Batch query to check duplicates — avoids N+1
@@ -1286,8 +1286,7 @@ class UnitAnnualAwardService {
     let soQdValidation = null;
     if (decisionList.length > 0) {
       const formulaStr = decisionList.join(',');
-      // Excel formula limit: use direct list if short enough
-      if (formulaStr.length < 255) {
+      if (formulaStr.length < EXCEL_INLINE_VALIDATION_MAX_LENGTH) {
         soQdValidation = {
           type: 'list' as const,
           allowBlank: true,
@@ -1371,7 +1370,7 @@ class UnitAnnualAwardService {
 
     // Apply data validations to data rows
     const totalPrefillRows = unitIds.reduce((sum, uid) => sum + (repeatMap[uid] || 1), 0);
-    const maxRows = Math.max(totalPrefillRows + 1, 50);
+    const maxRows = Math.max(totalPrefillRows + 1, MIN_TEMPLATE_ROWS);
     for (let r = 2; r <= maxRows; r++) {
       worksheet.getCell(`F${r}`).dataValidation = danhHieuValidation;
       if (soQdValidation) {
@@ -1403,7 +1402,7 @@ class UnitAnnualAwardService {
   }
 
   /**
-   * Import khen thưởng đơn vị từ Excel
+   * Imports unit awards from Excel.
    */
   async importFromExcel(buffer: Buffer, adminId: string) {
     const workbook = await loadWorkbook(buffer);
@@ -1668,7 +1667,7 @@ class UnitAnnualAwardService {
   }
 
   /**
-   * Xuất danh sách khen thưởng đơn vị ra Excel
+   * Exports unit award list to Excel.
    */
   async exportToExcel(filters: Record<string, any> = {}, userRole: string, userQuanNhanId: string) {
     const { nam, danh_hieu } = filters;
@@ -1697,7 +1696,7 @@ class UnitAnnualAwardService {
         DonViTrucThuoc: true,
       },
       orderBy: [{ nam: 'desc' }, { createdAt: 'desc' }],
-      take: 10000,
+      take: EXPORT_FETCH_LIMIT,
     });
 
     const workbook = new ExcelJS.Workbook();
@@ -1717,12 +1716,7 @@ class UnitAnnualAwardService {
       { header: 'Ghi chú', key: 'ghi_chu', width: 30 },
     ];
 
-    worksheet.getRow(1).font = { bold: true };
-    worksheet.getRow(1).fill = {
-      type: 'pattern' as const,
-      pattern: 'solid' as const,
-      fgColor: { argb: 'FFD3D3D3' },
-    };
+    styleHeaderRow(worksheet);
 
     awards.forEach((award, index) => {
       const donVi = award.CoQuanDonVi || award.DonViTrucThuoc;
@@ -1745,7 +1739,7 @@ class UnitAnnualAwardService {
   }
 
   /**
-   * Thống kê khen thưởng đơn vị
+   * Returns unit award statistics.
    */
   async getStatistics(filters: Record<string, any> = {}, userRole: string, userQuanNhanId: string) {
     const { nam } = filters;

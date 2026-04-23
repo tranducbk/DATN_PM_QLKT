@@ -632,7 +632,7 @@ function buildAwardTypeHelpers(
   const typeName = AWARD_TYPE_NAMES[resource] || resource;
   const model = AWARD_PRISMA_MODEL[resource];
 
-  /** Uses specific rank name (e.g. "HCCSVV Hạng Ba") when available, falls back to type name. */
+  /** Uses specific rank names when available, otherwise falls back to type label. */
   const getAwardLabel = (danhHieu?: string) => {
     if (!danhHieu) return typeName;
     const name = getDanhHieuName(danhHieu);

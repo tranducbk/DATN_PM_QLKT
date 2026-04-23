@@ -73,29 +73,25 @@ async function sendSystemNotification(
   resourceId: string | null = null,
   link: string | null = null
 ): Promise<number> {
-  try {
-    const notifications = recipients.map(recipient => ({
-      nguoi_nhan_id: recipient.id,
-      recipient_role: recipient.role,
-      type,
-      title,
-      message,
-      resource,
-      tai_nguyen_id: resourceId || null,
-      link,
-    }));
+  const notifications = recipients.map(recipient => ({
+    nguoi_nhan_id: recipient.id,
+    recipient_role: recipient.role,
+    type,
+    title,
+    message,
+    resource,
+    tai_nguyen_id: resourceId || null,
+    link,
+  }));
 
-    if (notifications.length > 0) {
-      await prisma.thongBao.createMany({
-        data: notifications,
-      });
-      notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
-    }
-
-    return notifications.length;
-  } catch (error) {
-    throw error;
+  if (notifications.length > 0) {
+    await prisma.thongBao.createMany({
+      data: notifications,
+    });
+    notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
   }
+
+  return notifications.length;
 }
 
 export {

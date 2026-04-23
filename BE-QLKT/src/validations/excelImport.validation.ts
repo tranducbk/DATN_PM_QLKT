@@ -50,23 +50,23 @@ const personnelBaseSchema = wrapItemsSchema(
   })
 );
 
-/** Danh hiệu hằng năm (Annual Reward) */
+/** Annual reward. */
 export const confirmImportAnnualReward: Joi.ObjectSchema = personnelWithDanhHieuSchema;
 
-/** Huy chương Chiến sĩ vẻ vang (HCCSVV) */
+/** Glorious Soldier Medal (HCCSVV). */
 export const confirmImportHccsvv: Joi.ObjectSchema = personnelWithDanhHieuSchema;
 
-/** Huân chương Bảo vệ Tổ quốc (Contribution Award / HCBVTQ) */
+/** Fatherland Defense Order (Contribution Award / HCBVTQ). */
 export const confirmImportContributionAward: Joi.ObjectSchema = personnelWithDanhHieuSchema;
 
-/** Huy chương Quân kỳ quyết thắng (Military Flag) */
+/** Determined-to-Win Military Flag Medal. */
 export const confirmImportMilitaryFlag: Joi.ObjectSchema = personnelBaseSchema;
 
-/** Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN (Commemorative Medal) */
+/** Commemorative Medal for Building the Vietnam People's Army. */
 export const confirmImportCommemorativeMedal: Joi.ObjectSchema = personnelBaseSchema;
 
 /**
- * Thành tích khoa học (Scientific Achievement)
+ * Scientific achievement.
  * Fields: personnel_id, nam, loai, mo_ta, cap_bac, chuc_vu, so_quyet_dinh, ghi_chu
  */
 export const confirmImportScientificAchievement: Joi.ObjectSchema = wrapItemsSchema(
@@ -80,7 +80,7 @@ export const confirmImportScientificAchievement: Joi.ObjectSchema = wrapItemsSch
 );
 
 /**
- * Danh hiệu đơn vị hằng năm (Unit Annual Award)
+ * Annual unit award.
  * Fields: unit_id, nam, danh_hieu, so_quyet_dinh, ghi_chu, is_co_quan_don_vi
  */
 export const confirmImportUnitAnnualAward: Joi.ObjectSchema = wrapItemsSchema(

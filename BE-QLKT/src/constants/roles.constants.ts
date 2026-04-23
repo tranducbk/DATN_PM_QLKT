@@ -1,5 +1,5 @@
 /**
- * Vai trò người dùng trong hệ thống
+ * Supported user roles in the system.
  */
 export const ROLES = {
   SUPER_ADMIN: 'SUPER_ADMIN',

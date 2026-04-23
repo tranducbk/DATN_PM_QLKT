@@ -52,7 +52,7 @@ router.get(
 
 /**
  * @route   GET /api/annual-rewards/check-knc-vsnxd/:personnelId
- * @desc    Check if a personnel has already received KNC VSNXD QĐNDVN
+ * @desc    Check if a personnel has already received KNC VSNXD QDNDVN
  * @access  Private - ADMIN, MANAGER
  */
 router.get(

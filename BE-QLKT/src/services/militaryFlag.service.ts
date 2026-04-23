@@ -7,7 +7,7 @@ import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { ValidationError, NotFoundError } from '../middlewares/errorHandler';
 import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys, sanitizeRowData } from '../helpers/excelHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
-import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
+import { buildTemplate, TemplateColumn, styleHeaderRow } from '../helpers/excelTemplateHelper';
 import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
 import { HCQKQT_YEARS_REQUIRED } from '../constants/danhHieu.constants';
 import { calculateServiceMonths, formatServiceDuration } from '../helpers/serviceYearsHelper';
@@ -503,12 +503,7 @@ class MilitaryFlagService {
       { header: 'Đơn vị', key: 'don_vi', width: 30 },
     ];
 
-    worksheet.getRow(1).font = { bold: true };
-    worksheet.getRow(1).fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFD3D3D3' },
-    };
+    styleHeaderRow(worksheet);
 
     data.forEach((item, index) => {
       worksheet.addRow(sanitizeRowData({

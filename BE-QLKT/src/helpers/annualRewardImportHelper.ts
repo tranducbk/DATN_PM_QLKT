@@ -1,14 +1,12 @@
 import ExcelJS from 'exceljs';
 import { prisma } from '../models';
 import { loadWorkbook, getAndValidateWorksheet } from './excelImportHelper';
-import { parseHeaderMap, getHeaderCol, buildPendingKeys } from './excelHelper';
+import { parseHeaderMap, getHeaderCol } from './excelHelper';
 import { DANH_HIEU_CA_NHAN_CO_BAN } from '../constants/danhHieu.constants';
-import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
-import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { ValidationError } from '../middlewares/errorHandler';
 import type { QuanNhan, DanhHieuHangNam } from '../generated/prisma';
 
-interface ColumnMap {
+export interface ColumnMap {
   idCol: number | null;
   hoTenCol: number | null;
   namCol: number | null;
@@ -22,28 +20,28 @@ interface ColumnMap {
   soQuyetDinhCol: number | null;
 }
 
-interface BatchMaps {
+export interface AnnualRewardBatchMaps {
   personnelMap: Map<string, QuanNhan & { ChucVu: { ten_chuc_vu: string } | null }>;
   existingAwardKeys: Set<string>;
   existingRewardByKey: Map<string, DanhHieuHangNam>;
   rewardsByPersonnel: Map<string, DanhHieuHangNam[]>;
-  proposalsByYear: Map<number, Array<Record<string, unknown>>>;
-  pendingKeys: Set<string>;
 }
 
 export interface AnnualRewardImportContext {
   worksheet: ExcelJS.Worksheet;
   columns: ColumnMap;
-  batchMaps: BatchMaps;
+  batchMaps: AnnualRewardBatchMaps;
+  allYears: Set<number>;
   currentYear: number;
   validDanhHieu: Set<string>;
 }
 
 /**
  * Resolves the shared import context used by both previewImport and importFromExcelBuffer.
- * Handles workbook loading, header parsing, validation, and batch DB queries.
+ * Handles workbook loading, header parsing, validation, and batch DB queries for personnel + existing awards.
+ * Proposal queries are left to callers since they need different status filters.
  * @param buffer - Excel file buffer
- * @returns Parsed worksheet, column map, and pre-fetched DB maps
+ * @returns Parsed worksheet, column map, collected year set, and pre-fetched DB maps
  * @throws ValidationError - When required columns are missing or sheet type is wrong
  */
 export async function resolveAnnualRewardImportContext(buffer: Buffer): Promise<AnnualRewardImportContext> {
@@ -96,20 +94,13 @@ export async function resolveAnnualRewardImportContext(buffer: Buffer): Promise<
     }
   }
 
-  const [personnelList, existingRewards, pendingProposals] = await Promise.all([
+  const [personnelList, existingRewards] = await Promise.all([
     prisma.quanNhan.findMany({
       where: { id: { in: [...allPersonnelIds] } },
       include: { ChucVu: { select: { ten_chuc_vu: true } } },
     }),
     prisma.danhHieuHangNam.findMany({
       where: { quan_nhan_id: { in: [...allPersonnelIds] } },
-    }),
-    prisma.bangDeXuat.findMany({
-      where: {
-        loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
-        nam: { in: [...allYears] },
-        status: { in: [PROPOSAL_STATUS.APPROVED, PROPOSAL_STATUS.PENDING] },
-      },
     }),
   ]);
 
@@ -130,20 +121,6 @@ export async function resolveAnnualRewardImportContext(buffer: Buffer): Promise<
     rewardsByPersonnel.set(r.quan_nhan_id, list);
   }
 
-  const proposalsByYear = new Map<number, Array<Record<string, unknown>>>();
-  for (const proposal of pendingProposals) {
-    if (proposal.nam == null) continue;
-    const list = proposalsByYear.get(proposal.nam) ?? [];
-    list.push(proposal as unknown as Record<string, unknown>);
-    proposalsByYear.set(proposal.nam, list);
-  }
-
-  const pendingKeysSet = buildPendingKeys(
-    pendingProposals as unknown as Array<Record<string, unknown>>,
-    'data_danh_hieu',
-    (item, proposal) => item.personnel_id ? `${item.personnel_id}_${(proposal as Record<string, unknown>).nam}` : null
-  );
-
   return {
     worksheet,
     columns,
@@ -152,9 +129,8 @@ export async function resolveAnnualRewardImportContext(buffer: Buffer): Promise<
       existingAwardKeys,
       existingRewardByKey,
       rewardsByPersonnel,
-      proposalsByYear,
-      pendingKeys: pendingKeysSet,
     },
+    allYears,
     currentYear: new Date().getFullYear(),
     validDanhHieu: DANH_HIEU_CA_NHAN_CO_BAN,
   };

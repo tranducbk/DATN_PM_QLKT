@@ -1,17 +1,17 @@
 import { prisma } from '../models';
 import ExcelJS from 'exceljs';
-import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHelper';
 import * as notificationHelper from '../helpers/notification';
 import { safeRecalculateAnnualProfile } from '../helpers/profileRecalcHelper';
+import { resolveAnnualRewardImportContext } from '../helpers/annualRewardImportHelper';
 import { formatDanhHieuList, getDanhHieuName, resolveDanhHieuCode, buildDanhHieuExcelOptions, DANH_HIEU_CA_NHAN_CO_BAN, DANH_HIEU_CA_NHAN_BANG_KHEN, DANH_HIEU_CA_NHAN_HANG_NAM } from '../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { NotFoundError, ValidationError } from '../middlewares/errorHandler';
 import { writeSystemLog } from '../helpers/systemLogHelper';
-import { parseHeaderMap, getHeaderCol, parseBooleanValue, resolvePersonnelInfo, buildPendingKeys, sanitizeRowData } from '../helpers/excelHelper';
+import { parseBooleanValue, resolvePersonnelInfo, buildPendingKeys, sanitizeRowData } from '../helpers/excelHelper';
 import type { DanhHieuHangNam, QuanNhan, Prisma } from '../generated/prisma';
-import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
-import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
+import { buildTemplate, TemplateColumn, styleHeaderRow } from '../helpers/excelTemplateHelper';
+import { IMPORT_TRANSACTION_TIMEOUT, EXPORT_FETCH_LIMIT } from '../constants/excel.constants';
 
 interface CreateAnnualRewardData {
   personnel_id: string;
@@ -323,37 +323,23 @@ class AnnualRewardService {
   }
 
   async importFromExcelBuffer(buffer: Buffer): Promise<ImportResult> {
-    const workbook = await loadWorkbook(buffer);
-    const worksheet = getAndValidateWorksheet(workbook, {
-      excludeSheetNames: ['_CapBac', '_QuyetDinh'],
+    const { worksheet, columns, batchMaps, allYears, currentYear, validDanhHieu } =
+      await resolveAnnualRewardImportContext(buffer);
+    const { idCol, hoTenCol, namCol, danhHieuCol, capBacCol, chucVuCol, ghiChuCol, bkbqpCol, cstdtqCol, bkttcpCol } = columns;
+    const { personnelMap: personnelById, existingAwardKeys, existingRewardByKey } = batchMaps;
+
+    // Import checks against APPROVED proposals for duplicate detection
+    const approvedProposals = await prisma.bangDeXuat.findMany({
+      where: { loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM, nam: { in: [...allYears] }, status: PROPOSAL_STATUS.APPROVED },
     });
-
-    const headerMap = parseHeaderMap(worksheet);
-
-    const idCol = getHeaderCol(headerMap, ['id', 'ma_quan_nhan', 'personnel_id']);
-    const hoTenCol = getHeaderCol(headerMap, ['ho_va_ten', 'ho_ten', 'hoten', 'hovaten', 'ten']);
-    const namCol = getHeaderCol(headerMap, ['nam', 'year']);
-    const danhHieuCol = getHeaderCol(headerMap, ['danh_hieu', 'danhhieu', 'danh_hiu']);
-    const capBacCol = getHeaderCol(headerMap, ['cap_bac', 'capbac', 'cap_bc']);
-    const chucVuCol = getHeaderCol(headerMap, ['chuc_vu', 'chucvu', 'chc_vu']);
-    const ghiChuCol = getHeaderCol(headerMap, ['ghi_chu', 'ghichu', 'ghi_ch']);
-    const bkbqpCol = getHeaderCol(headerMap, ['nhan_bkbqp', 'bkbqp']);
-    const cstdtqCol = getHeaderCol(headerMap, ['nhan_cstdtq', 'cstdtq']);
-    const bkttcpCol = getHeaderCol(headerMap, ['nhan_bkttcp', 'bkttcp']);
-
-    if (!idCol || !namCol || !danhHieuCol) {
-      throw new ValidationError(
-        `File thiếu cột bắt buộc (cần có: mã quân nhân hoặc ID, Năm, Danh hiệu). Các cột đang có: ${Object.keys(headerMap).join(', ') || '(trống)'}.`
-      );
+    const proposalsByYear = new Map<number, typeof approvedProposals>();
+    for (const proposal of approvedProposals) {
+      if (proposal.nam == null) continue;
+      const list = proposalsByYear.get(proposal.nam) ?? [];
+      list.push(proposal);
+      proposalsByYear.set(proposal.nam, list);
     }
 
-    if (worksheet.name === 'Khen thưởng đơn vị') {
-      throw new ValidationError(
-        'Sai loại file: đây là mẫu khen thưởng đơn vị. Vui lòng dùng mẫu danh hiệu cá nhân hằng năm.'
-      );
-    }
-
-    const validDanhHieu = DANH_HIEU_CA_NHAN_CO_BAN;
     const errors: string[] = [];
     const selectedPersonnelIdSet = new Set<string>();
     const titleData: Record<string, unknown>[] = [];
@@ -372,52 +358,6 @@ class AnnualRewardService {
       nhan_bkttcp: boolean;
     }[] = [];
     const seenInFile = new Set<string>();
-    const currentYear = new Date().getFullYear();
-
-    // Batch query: collect all unique personnel IDs + nam values, then query once
-    const allPersonnelIds = new Set<string>();
-    const allYears = new Set<number>();
-    for (let r = 2; r <= worksheet.rowCount; r++) {
-      const row = worksheet.getRow(r);
-      const idValue = idCol ? row.getCell(idCol).value : null;
-      if (idValue) {
-        const id = String(idValue).trim();
-        if (id) allPersonnelIds.add(id);
-      }
-      const namVal = namCol ? parseInt(String(row.getCell(namCol).value), 10) : NaN;
-      if (!isNaN(namVal)) allYears.add(namVal);
-    }
-    const [allPersonnel, existingDanhHieu, pendingProposals] = await Promise.all([
-      prisma.quanNhan.findMany({
-        where: { id: { in: [...allPersonnelIds] } },
-        include: { ChucVu: { select: { ten_chuc_vu: true } } },
-      }),
-      prisma.danhHieuHangNam.findMany({
-        where: { quan_nhan_id: { in: [...allPersonnelIds] } },
-      }),
-      prisma.bangDeXuat.findMany({
-        where: {
-          loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
-          nam: { in: [...allYears] },
-          status: PROPOSAL_STATUS.APPROVED,
-        },
-      }),
-    ]);
-    const personnelById = new Map(allPersonnel.map(p => [p.id, p] as const));
-    const existingAwardKeys = new Set(
-      existingDanhHieu.map(d => `${d.quan_nhan_id}_${d.nam}_${d.danh_hieu}`)
-    );
-    // Key "personnelId_nam" for existing record lookup in transaction
-    const existingRewardByKey = new Map(
-      existingDanhHieu.map(d => [`${d.quan_nhan_id}_${d.nam}`, d] as const)
-    );
-    const proposalsByYear = new Map<number, typeof pendingProposals>();
-    for (const proposal of pendingProposals) {
-      if (proposal.nam == null) continue;
-      const list = proposalsByYear.get(proposal.nam) ?? [];
-      list.push(proposal);
-      proposalsByYear.set(proposal.nam, list);
-    }
 
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
       const row = worksheet.getRow(rowNumber);
@@ -622,85 +562,17 @@ class AnnualRewardService {
   }
 
   async previewImport(buffer: Buffer): Promise<PreviewResult> {
-    const workbook = await loadWorkbook(buffer);
-    const worksheet = getAndValidateWorksheet(workbook, {
-      excludeSheetNames: ['_CapBac', '_QuyetDinh'],
-    });
+    const { worksheet, columns, batchMaps, allYears, currentYear, validDanhHieu } =
+      await resolveAnnualRewardImportContext(buffer);
+    const { idCol, hoTenCol, namCol, danhHieuCol, capBacCol, chucVuCol, ghiChuCol, bkbqpCol, cstdtqCol, bkttcpCol, soQuyetDinhCol } = columns;
+    const { personnelMap, existingRewardByKey: rewardByKey, rewardsByPersonnel } = batchMaps;
 
-    const headerMap = parseHeaderMap(worksheet);
-
-    const idCol = getHeaderCol(headerMap, ['id', 'ma_quan_nhan', 'personnel_id']);
-    const hoTenCol = getHeaderCol(headerMap, ['ho_va_ten', 'ho_ten', 'hoten', 'hovaten', 'ten']);
-    const namCol = getHeaderCol(headerMap, ['nam', 'year']);
-    const danhHieuCol = getHeaderCol(headerMap, ['danh_hieu', 'danhhieu', 'danh_hiu']);
-    const capBacCol = getHeaderCol(headerMap, ['cap_bac', 'capbac', 'cap_bc']);
-    const chucVuCol = getHeaderCol(headerMap, ['chuc_vu', 'chucvu', 'chc_vu']);
-    const ghiChuCol = getHeaderCol(headerMap, ['ghi_chu', 'ghichu', 'ghi_ch']);
-    const bkbqpCol = getHeaderCol(headerMap, ['nhan_bkbqp', 'bkbqp']);
-    const cstdtqCol = getHeaderCol(headerMap, ['nhan_cstdtq', 'cstdtq']);
-    const bkttcpCol = getHeaderCol(headerMap, ['nhan_bkttcp', 'bkttcp']);
-    const soQuyetDinhCol = getHeaderCol(headerMap, ['so_quyet_dinh', 'soquyetdinh', 'so_qd']);
-
-    if (!idCol || !namCol || !danhHieuCol) {
-      throw new ValidationError(
-        `File thiếu cột bắt buộc (cần có: mã quân nhân hoặc ID, Năm, Danh hiệu). Các cột đang có: ${Object.keys(headerMap).join(', ') || '(trống)'}.`
-      );
-    }
-
-    if (worksheet.name === 'Khen thưởng đơn vị') {
-      throw new ValidationError(
-        'Sai loại file: đây là mẫu khen thưởng đơn vị. Vui lòng dùng mẫu danh hiệu cá nhân hằng năm.'
-      );
-    }
-
-    const validDanhHieu = DANH_HIEU_CA_NHAN_CO_BAN;
-    const errors: PreviewError[] = [];
-    const valid: PreviewValidItem[] = [];
-    let total = 0;
-    const seenInFile = new Set<string>();
-    const currentYear = new Date().getFullYear();
-
-    const existingDecisions = await prisma.fileQuyetDinh.findMany({
-      select: { so_quyet_dinh: true },
-    });
-    const validDecisionNumbers = new Set(existingDecisions.map(d => d.so_quyet_dinh));
-
-    const allPersonnelIds = new Set<string>();
-    const allYears = new Set<number>();
-    for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
-      const row = worksheet.getRow(rowNumber);
-      const idValue = idCol ? row.getCell(idCol).value : null;
-      if (idValue) {
-        const id = String(idValue).trim();
-        if (id) allPersonnelIds.add(id);
-      }
-      const namVal = namCol ? row.getCell(namCol).value : null;
-      if (namVal) {
-        const parsed = parseInt(String(namVal), 10);
-        if (!isNaN(parsed)) allYears.add(parsed);
-      }
-    }
-
-    const [personnelList, existingAnnualRewards, pendingProposals] = await Promise.all([
-      prisma.quanNhan.findMany({
-        where: { id: { in: [...allPersonnelIds] } },
-        include: { ChucVu: { select: { ten_chuc_vu: true } } },
-      }),
-      prisma.danhHieuHangNam.findMany({
-        where: { quan_nhan_id: { in: [...allPersonnelIds] } },
-        select: {
-          quan_nhan_id: true,
-          nam: true,
-          danh_hieu: true,
-          nhan_bkbqp: true,
-          nhan_cstdtq: true,
-          nhan_bkttcp: true,
-          so_quyet_dinh: true,
-        },
-      }),
+    // Preview checks against PENDING proposals + existing decisions
+    const [pendingProposals, existingDecisions] = await Promise.all([
       prisma.bangDeXuat.findMany({
         where: { loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM, status: PROPOSAL_STATUS.PENDING, nam: { in: [...allYears] } },
       }),
+      prisma.fileQuyetDinh.findMany({ select: { so_quyet_dinh: true } }),
     ]);
 
     const pendingKeys = buildPendingKeys(
@@ -708,19 +580,12 @@ class AnnualRewardService {
       'data_danh_hieu',
       (item, proposal) => item.personnel_id ? `${item.personnel_id}_${proposal.nam}` : null
     );
+    const validDecisionNumbers = new Set(existingDecisions.map(d => d.so_quyet_dinh));
 
-    const personnelMap = new Map(personnelList.map(p => [p.id, p]));
-    // Map<personnelId_nam, record> for duplicate checking
-    const rewardByKey = new Map(
-      existingAnnualRewards.map(r => [`${r.quan_nhan_id}_${r.nam}`, r])
-    );
-    // Map<personnelId, records[]> for history
-    const rewardsByPersonnel = new Map<string, typeof existingAnnualRewards>();
-    for (const r of existingAnnualRewards) {
-      const list = rewardsByPersonnel.get(r.quan_nhan_id) || [];
-      list.push(r);
-      rewardsByPersonnel.set(r.quan_nhan_id, list);
-    }
+    const errors: PreviewError[] = [];
+    const valid: PreviewValidItem[] = [];
+    let total = 0;
+    const seenInFile = new Set<string>();
 
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
       const row = worksheet.getRow(rowNumber);
@@ -1391,7 +1256,7 @@ class AnnualRewardService {
         },
       },
       orderBy: [{ nam: 'desc' }, { createdAt: 'desc' }],
-      take: 10000,
+      take: EXPORT_FETCH_LIMIT,
     });
 
     const workbook = new ExcelJS.Workbook();
@@ -1415,8 +1280,7 @@ class AnnualRewardService {
       { header: 'Số QĐ BKTTCP', key: 'so_quyet_dinh_bkttcp', width: 20 },
     ];
 
-    worksheet.getRow(1).font = { bold: true };
-    worksheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD3D3D3' } };
+    styleHeaderRow(worksheet);
 
     filteredAwards.forEach((award, index) => {
       worksheet.addRow(sanitizeRowData({

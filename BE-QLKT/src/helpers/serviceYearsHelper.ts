@@ -41,7 +41,7 @@ export function calculateTenureMonthsWithDayPrecision(
 }
 
 /**
- * Formats total months as "X năm Y tháng".
+ * Formats total months as "X years Y months".
  * @param totalMonths - Number of months
  * @returns Human-readable Vietnamese duration string
  */

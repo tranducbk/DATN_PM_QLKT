@@ -190,19 +190,19 @@ export function getLoaiDeXuatName(loaiDeXuat: string | null | undefined): string
   return LOAI_DE_XUAT_MAP[loaiDeXuat as ProposalType] || loaiDeXuat;
 }
 
-/** Years of service required for each HC Chiến sĩ Vẻ vang rank. */
+/** Years of service required for each HCCSVV rank. */
 export const HCCSVV_YEARS_HANG_BA = 10;
 export const HCCSVV_YEARS_HANG_NHI = 15;
 export const HCCSVV_YEARS_HANG_NHAT = 20;
 
-/** Minimum years of service for HC Quân kỳ quyết thắng (gender-neutral). */
+/** Minimum years of service for HCQKQT. */
 export const HCQKQT_YEARS_REQUIRED = 25;
 
 /** Minimum years of service for KNC VSNXD QDNDVN by gender. */
 export const KNC_YEARS_REQUIRED_NAM = 25;
 export const KNC_YEARS_REQUIRED_NU = 20;
 
-/** Minimum service months for HC Bảo vệ Tổ quốc (Cống hiến) — male baseline. */
+/** Minimum service months for HCBVTQ baseline (male). */
 export const CONG_HIEN_BASE_REQUIRED_MONTHS = 120; // 10 years
 /** Female requirement = 2/3 of male baseline. */
 export const CONG_HIEN_FEMALE_REQUIRED_MONTHS = Math.round(

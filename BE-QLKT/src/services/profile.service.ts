@@ -339,11 +339,11 @@ class ProfileService {
   }
 
   /**
-   * Eligibility snapshot for one HCCSVV tier (Ba/Nhì/Nhất), including operator-facing `goiY` text.
+   * Eligibility snapshot for one HCCSVV tier, including operator-facing `goiY` text.
    * @param ngayNhapNgu - Enlistment date
    * @param soNam - Required years for this tier
    * @param currentStatus - `ELIGIBILITY_STATUS` from `ho_so_nien_han`
-   * @param hangName - Tier label (`Ba`, `Nhì`, `Nhất`)
+   * @param hangName - Tier label
    * @returns Status, optional milestone date, and Vietnamese guidance string
    */
   calculateHCCSVV(ngayNhapNgu, soNam, currentStatus, hangName) {
@@ -662,7 +662,7 @@ class ProfileService {
         newProfile.hccsvv_hang_ba_status || ELIGIBILITY_STATUS.CHUA_DU,
         'Ba'
       );
-      // Giữ nguyên ngày đã lưu từ approve (do admin nhập), không tính lại
+      // Preserve the approval date entered by admins; do not recompute it here.
       if (hccsvvBa.status === ELIGIBILITY_STATUS.DA_NHAN && existingProfile?.hccsvv_hang_ba_ngay) {
         hccsvvBa.ngay = existingProfile.hccsvv_hang_ba_ngay;
       }
@@ -892,7 +892,7 @@ class ProfileService {
    * @param totalMonths - Cumulative qualifying months
    * @param requiredMonths - Threshold from position group rules
    * @param currentStatus - Existing `ELIGIBILITY_STATUS` (preserves `DA_NHAN`)
-   * @param rank - Medal tier label for `goiY` copy (`Ba`, `Nhì`, `Nhất`)
+   * @param rank - Medal tier label used in `goiY` text
    * @returns Status, optional milestone date, and Vietnamese guidance string
    */
   calculateHCBVTQ(totalMonths, requiredMonths, currentStatus, rank) {

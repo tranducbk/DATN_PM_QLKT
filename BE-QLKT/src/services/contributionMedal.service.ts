@@ -9,7 +9,7 @@ import { ROLES } from '../constants/roles.constants';
 import { ValidationError, NotFoundError } from '../middlewares/errorHandler';
 import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys, sanitizeRowData } from '../helpers/excelHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
-import { buildTemplate, TemplateColumn } from '../helpers/excelTemplateHelper';
+import { buildTemplate, TemplateColumn, styleHeaderRow } from '../helpers/excelTemplateHelper';
 import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
@@ -63,8 +63,8 @@ class ContributionAwardService {
   }
 
   /**
-   * Preview import HCBVTQ từ Excel (chỉ validate, không ghi DB)
-   * Trả về danh sách valid items kèm lịch sử, và danh sách lỗi
+   * Previews HCBVTQ import from Excel (validation only, no DB writes).
+   * Returns valid rows with history and detailed validation errors.
    */
   async previewImport(buffer: Buffer) {
     const workbook = await loadWorkbook(buffer);
@@ -390,7 +390,7 @@ class ContributionAwardService {
   }
 
   /**
-   * Confirm import: lưu dữ liệu đã validate vào DB
+   * Persists validated import rows into the database.
    * HCBVTQ is one-time-per-lifetime — block if person already has any record
    */
   async confirmImport(validItems: ContributionAwardValidItem[], adminId: string) {
@@ -570,12 +570,7 @@ class ContributionAwardService {
       { header: 'Ghi chú', key: 'ghi_chu', width: 30 },
     ];
 
-    worksheet.getRow(1).font = { bold: true };
-    worksheet.getRow(1).fill = {
-      type: 'pattern' as const,
-      pattern: 'solid' as const,
-      fgColor: { argb: 'FFD3D3D3' },
-    };
+    styleHeaderRow(worksheet);
 
     // Convert {years, months} object to total months
     const convertThoiGian = thoiGian => {
@@ -667,7 +662,7 @@ class ContributionAwardService {
   /**
    * Delete Contribution Award
    * @param {string} id - Award ID
-   * @param {string} adminUsername - Username của admin thực hiện xóa
+   * @param {string} adminUsername - Admin username performing the deletion
    * @returns {Promise<Object>}
    */
   async deleteAward(id: string, adminUsername: string = 'Admin') {

@@ -45,19 +45,6 @@ router.post(
 );
 
 /**
- * @route   POST /api/commemorative-medals/import
- * @desc    Import commemorative medals from Excel (legacy direct import)
- * @access  ADMIN, MANAGER
- */
-router.post(
-  '/import',
-  verifyToken,
-  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
-  upload.single('file'),
-  commemorativeMedalController.importFromExcel
-);
-
-/**
  * @route   GET /api/commemorative-medals
  * @desc    List commemorative medals (Admin: all units, Manager: own unit)
  * @access  ADMIN, MANAGER
@@ -95,7 +82,7 @@ router.get(
 
 /**
  * @route   GET /api/commemorative-medals/personnel/:personnel_id
- * @desc    Get commemorative medals (VSNXD QĐNDVN) for a personnel
+ * @desc    Get commemorative medals (VSNXD QDNDVN) for a personnel
  * @access  ADMIN, MANAGER, USER
  */
 router.get(

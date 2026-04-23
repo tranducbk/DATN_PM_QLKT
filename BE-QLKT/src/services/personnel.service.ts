@@ -328,9 +328,7 @@ class PersonnelService {
     return result;
   }
 
-  /**
-   * Cập nhật quân nhân (chuyển đơn vị, chức vụ)
-   */
+  /** Updates personnel data, including unit and position reassignment. */
   async updatePersonnel(
     id: string,
     data: UpdatePersonnelInput,
@@ -682,10 +680,8 @@ class PersonnelService {
   }
 
   /**
-   * Xóa quân nhân và tất cả dữ liệu liên quan
-   * Cascade delete: TaiKhoan, LichSuChucVu, ThanhTichKhoaHoc, DanhHieuHangNam,
-   * KhenThuongHCBVTQ, HuanChuongQuanKyQuyetThang, KyNiemChuongVSNXDQDNDVN,
-   * KhenThuongHCCSVV, KhenThuongDotXuat, HoSoNienHan, HoSoCongHien, HoSoHangNam
+   * Deletes personnel and all related records through cascade constraints.
+   * Cascade covers accounts, histories, awards, and annual profile snapshots.
    */
   async deletePersonnel(id, userRole, userQuanNhanId) {
     const personnel = await prisma.quanNhan.findUnique({

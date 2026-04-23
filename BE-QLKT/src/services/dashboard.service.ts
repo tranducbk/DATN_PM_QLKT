@@ -59,7 +59,7 @@ function monthsAgo(n: number): Date {
   return date;
 }
 
-/** groupBy theo quân hàm — Prisma overload bị sai khi `where` có `cap_bac: { not: null }` (runtime đúng). */
+/** Prisma typings reject this groupBy overload, but the runtime query is valid. */
 async function groupQuanNhanByCapBac(
   where: Prisma.QuanNhanWhereInput
 ): Promise<{ cap_bac: string | null; _count: { id: number } }[]> {

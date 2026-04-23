@@ -382,8 +382,8 @@ class UnitService {
   }
 
   /**
-   * Tính lại so_luong cho tất cả đơn vị dựa trên số quân nhân thực tế.
-   * @returns Số đơn vị đã được cập nhật
+   * Recalculates `so_luong` for all units from current personnel assignments.
+   * @returns Number of updated units
    */
   async recalculatePersonnelCount() {
     const [coQuanDonViList, donViTrucThuocList, cqdvCounts, dvttCounts] = await Promise.all([
