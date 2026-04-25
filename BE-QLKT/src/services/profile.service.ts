@@ -207,12 +207,8 @@ class ProfileService {
     let currentYear = year - 1;
     for (const reward of uniqueRewards) {
       if (reward.nam !== currentYear) break;
-      if (reward.status === PROPOSAL_STATUS.APPROVED) {
-        count++;
-        currentYear--;
-      } else {
-        break;
-      }
+      count++;
+      currentYear--;
     }
 
     return count;

@@ -197,7 +197,7 @@ async function notifyOnAwardDeleted(
           recipient_role: manager.role,
           type: NOTIFICATION_TYPES.AWARD_DELETED,
           title: 'Khen thưởng đã bị xóa',
-          message: `${adminDisplayName} đã xóa ${awardTypeName}${danhHieu ? ` (${danhHieu})` : ''}${
+          message: `${adminDisplayName} đã xóa ${awardTypeName}${
             nam ? ` năm ${nam}` : ''
           } của quân nhân ${personnel.ho_ten || 'Chưa xác định'}`,
           resource: RESOURCE_TYPES.AWARDS,
@@ -223,7 +223,7 @@ async function notifyOnAwardDeleted(
         recipient_role: personnelAccount.role,
         type: NOTIFICATION_TYPES.AWARD_DELETED,
         title: 'Khen thưởng của bạn đã bị xóa',
-        message: `${awardTypeName}${danhHieu ? ` (${danhHieu})` : ''}${
+        message: `${awardTypeName}${
           nam ? ` năm ${nam}` : ''
         } của bạn đã bị ${adminDisplayName} xóa khỏi hệ thống`,
         resource: RESOURCE_TYPES.AWARDS,
@@ -686,8 +686,8 @@ async function notifyOnImport(
           nguoi_nhan_id: manager.id,
           recipient_role: manager.role,
           type: NOTIFICATION_TYPES.AWARD_ADDED,
-          title: 'Khen thưởng mới được import',
-          message: `${adminDisplayName} đã import ${importedCount} bản ghi ${awardLabel} cho đơn vị của bạn`,
+          title: 'Khen thưởng mới được nhập dữ liệu',
+          message: `${adminDisplayName} đã nhập ${importedCount} bản ghi ${awardLabel} cho đơn vị của bạn`,
           resource: RESOURCE_TYPES.AWARDS,
           tai_nguyen_id: null,
           link: `/manager/awards`,
@@ -708,7 +708,7 @@ async function notifyOnImport(
           recipient_role: account.role,
           type: NOTIFICATION_TYPES.AWARD_ADDED,
           title: 'Bạn đã nhận khen thưởng',
-          message: `${adminDisplayName} đã thêm ${awardLabel} cho bạn qua import dữ liệu`,
+          message: `${adminDisplayName} đã thêm ${awardLabel} cho bạn qua nhập dữ liệu`,
           resource: RESOURCE_TYPES.AWARDS,
           tai_nguyen_id: null,
           link: `/user/profile`,

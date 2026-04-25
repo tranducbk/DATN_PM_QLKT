@@ -450,7 +450,8 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
   };
 
   const getChangePasswordPath = () => {
-    const roleSlug = actualRole === ROLES.SUPER_ADMIN ? 'super-admin' : (actualRole || 'user').toLowerCase();
+    const roleSlug =
+      actualRole === ROLES.SUPER_ADMIN ? 'super-admin' : (actualRole || 'user').toLowerCase();
     return `/${roleSlug}/change-password`;
   };
 
@@ -665,7 +666,10 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
 
           <Layout
             className="min-w-0 flex-1"
-            style={{ marginLeft: isMobile ? 0 : collapsed ? 80 : 250, transition: 'margin-left 0.2s ease' }}
+            style={{
+              marginLeft: isMobile ? 0 : collapsed ? 80 : 250,
+              transition: 'margin-left 0.2s ease',
+            }}
           >
             <Header
               className={`shadow-sm px-4 flex items-center justify-between ${

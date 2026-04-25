@@ -54,6 +54,14 @@ class AwardBulkController {
       adminId,
     });
 
+    if (result.data.errorCount > 0 && result.data.importedCount === 0) {
+      return res.status(400).json({
+        success: false,
+        message: result.message,
+        data: result.data,
+      });
+    }
+
     return ResponseHelper.success(res, { message: result.message, data: result.data });
   });
 }

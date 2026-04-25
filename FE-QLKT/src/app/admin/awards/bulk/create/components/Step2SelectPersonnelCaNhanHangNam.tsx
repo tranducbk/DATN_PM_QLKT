@@ -388,7 +388,7 @@ export function Step2SelectPersonnelCaNhanHangNam({
             onLocalProcess={handleLocalExcelProcess}
             previewImport={apiClient.previewAnnualRewardsImport}
             reviewPath="/admin/awards/bulk/import-review"
-            sessionStorageKey="importPreviewData"
+            sessionStorageKey="importPreviewDataCNHN"
           />
 
         </>

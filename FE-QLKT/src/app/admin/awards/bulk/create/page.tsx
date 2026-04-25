@@ -355,25 +355,26 @@ export default function BulkAddAwardsPage() {
 
       const result = await apiClient.bulkCreateAwards(formData);
 
-      if (!result.success) {
-        throw new Error(result.message || 'Thêm khen thưởng thất bại');
-      }
-
       const data = result.data || {};
       const importedCount = data.importedCount || 0;
       const errorCount = data.errorCount || 0;
+      const errorDetails: string[] = data.errors || [];
 
-      const msg =
-        importedCount > 0
-          ? `Đã thêm thành công ${importedCount} ${awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? 'đơn vị' : 'quân nhân'}${
-              errorCount > 0 ? `, ${errorCount} lỗi` : ''
-            }`
-          : 'Thêm khen thưởng thành công!';
+      if (!result.success) {
+        const errorMsg = errorDetails.length > 0
+          ? `${result.message}:\n${errorDetails.join('\n')}`
+          : result.message || 'Thêm khen thưởng thất bại';
+        antMessage.error(errorMsg, 5);
+        return;
+      }
 
-      if (errorCount > 0 && data.errors) {
-        antMessage.warning(msg);
+      if (errorCount > 0) {
+        antMessage.warning(
+          `Đã thêm ${importedCount}, ${errorCount} lỗi: ${errorDetails.join('; ')}`,
+          5
+        );
       } else {
-        antMessage.success(msg);
+        antMessage.success(result.message);
       }
 
       setTimeout(() => {

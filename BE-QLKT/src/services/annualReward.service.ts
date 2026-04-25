@@ -3,12 +3,27 @@ import ExcelJS from 'exceljs';
 import * as notificationHelper from '../helpers/notification';
 import { safeRecalculateAnnualProfile } from '../helpers/profileRecalcHelper';
 import { resolveAnnualRewardImportContext } from '../helpers/annualRewardImportHelper';
-import { formatDanhHieuList, getDanhHieuName, resolveDanhHieuCode, buildDanhHieuExcelOptions, DANH_HIEU_CA_NHAN_CO_BAN, DANH_HIEU_CA_NHAN_BANG_KHEN, DANH_HIEU_CA_NHAN_HANG_NAM } from '../constants/danhHieu.constants';
+import {
+  formatDanhHieuList,
+  getDanhHieuName,
+  resolveDanhHieuFromRecord,
+  resolveDanhHieuCode,
+  buildDanhHieuExcelOptions,
+  DANH_HIEU_CA_NHAN_CO_BAN,
+  DANH_HIEU_CA_NHAN_BANG_KHEN,
+  DANH_HIEU_CA_NHAN_HANG_NAM,
+} from '../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { NotFoundError, ValidationError } from '../middlewares/errorHandler';
 import { writeSystemLog } from '../helpers/systemLogHelper';
-import { parseBooleanValue, resolvePersonnelInfo, buildPendingKeys, sanitizeRowData } from '../helpers/excelHelper';
+import {
+  parseBooleanValue,
+  resolvePersonnelInfo,
+  buildPendingKeys,
+  sanitizeRowData,
+  validatePersonnelNameMatch,
+} from '../helpers/excelHelper';
 import type { DanhHieuHangNam, QuanNhan, Prisma } from '../generated/prisma';
 import { buildTemplate, TemplateColumn, styleHeaderRow } from '../helpers/excelTemplateHelper';
 import { IMPORT_TRANSACTION_TIMEOUT, EXPORT_FETCH_LIMIT } from '../constants/excel.constants';
@@ -85,6 +100,12 @@ interface ConfirmImportItem {
   cap_bac?: string | null;
   chuc_vu?: string | null;
   so_quyet_dinh?: string | null;
+  so_quyet_dinh_bkbqp?: string | null;
+  so_quyet_dinh_cstdtq?: string | null;
+  so_quyet_dinh_bkttcp?: string | null;
+  nhan_bkbqp?: boolean;
+  nhan_cstdtq?: boolean;
+  nhan_bkttcp?: boolean;
   ghi_chu?: string | null;
 }
 
@@ -311,7 +332,11 @@ class AnnualRewardService {
         adminUsername
       );
     } catch (e) {
-      writeSystemLog({ action: 'ERROR', resource: 'annual-rewards', description: `Lỗi gửi thông báo xóa khen thưởng hằng năm: ${e}` });
+      writeSystemLog({
+        action: 'ERROR',
+        resource: 'annual-rewards',
+        description: `Lỗi gửi thông báo xóa khen thưởng hằng năm: ${e}`,
+      });
     }
 
     return {
@@ -325,12 +350,26 @@ class AnnualRewardService {
   async importFromExcelBuffer(buffer: Buffer): Promise<ImportResult> {
     const { worksheet, columns, batchMaps, allYears, currentYear, validDanhHieu } =
       await resolveAnnualRewardImportContext(buffer);
-    const { idCol, hoTenCol, namCol, danhHieuCol, capBacCol, chucVuCol, ghiChuCol, bkbqpCol, cstdtqCol, bkttcpCol } = columns;
+    const {
+      idCol,
+      hoTenCol,
+      namCol,
+      danhHieuCol,
+      capBacCol,
+      chucVuCol,
+      ghiChuCol,
+      bkbqpCol,
+      cstdtqCol,
+      bkttcpCol,
+    } = columns;
     const { personnelMap: personnelById, existingAwardKeys, existingRewardByKey } = batchMaps;
 
-    // Import checks against APPROVED proposals for duplicate detection
     const approvedProposals = await prisma.bangDeXuat.findMany({
-      where: { loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM, nam: { in: [...allYears] }, status: PROPOSAL_STATUS.APPROVED },
+      where: {
+        loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
+        nam: { in: [...allYears] },
+        status: PROPOSAL_STATUS.PENDING,
+      },
     });
     const proposalsByYear = new Map<number, typeof approvedProposals>();
     for (const proposal of approvedProposals) {
@@ -392,7 +431,7 @@ class AnnualRewardService {
       }
       const personnel = personnelById.get(personnelId);
       if (!personnel) {
-        errors.push(`Dòng ${rowNumber}: Không tìm thấy quân nhân (mã: ${personnelId}).`);
+        errors.push(`Dòng ${rowNumber}: Không tìm thấy quân nhân với ID ${personnelId}`);
         continue;
       }
 
@@ -435,7 +474,9 @@ class AnnualRewardService {
         const proposalsForYear = proposalsByYear.get(nam) ?? [];
         const hasPendingProposal = proposalsForYear.some(p => {
           const dataDanhHieu = (p.data_danh_hieu as Array<Record<string, unknown>>) ?? [];
-          return dataDanhHieu.some(item => item.personnel_id === personnel.id && item.danh_hieu === danh_hieu);
+          return dataDanhHieu.some(
+            item => item.personnel_id === personnel.id && item.danh_hieu === danh_hieu
+          );
         });
         if (hasPendingProposal) {
           errors.push(
@@ -445,12 +486,16 @@ class AnnualRewardService {
         }
       }
 
-      const { hoTen, capBac, chucVu, missingFields: missingInfoFields } = resolvePersonnelInfo(
-        { ho_ten, cap_bac, chuc_vu },
-        personnel
-      );
+      const {
+        hoTen,
+        capBac,
+        chucVu,
+        missingFields: missingInfoFields,
+      } = resolvePersonnelInfo({ ho_ten, cap_bac, chuc_vu }, personnel);
       if (missingInfoFields.length > 0) {
-        errors.push(`Dòng ${rowNumber}: Thiếu ${missingInfoFields.join(', ')} (cả trong file và hệ thống)`);
+        errors.push(
+          `Dòng ${rowNumber}: Thiếu ${missingInfoFields.join(', ')} (cả trong file và hệ thống)`
+        );
         continue;
       }
 
@@ -468,75 +513,78 @@ class AnnualRewardService {
       });
     }
 
-    const { created, updated } = await prisma.$transaction(async prismaTx => {
-      const txCreated: string[] = [];
-      const txUpdated: string[] = [];
+    const { created, updated } = await prisma.$transaction(
+      async prismaTx => {
+        const txCreated: string[] = [];
+        const txUpdated: string[] = [];
 
-      for (const rowData of rowsToProcess) {
-        const {
-          personnel,
-          nam,
-          danh_hieu,
-          cap_bac,
-          chuc_vu,
-          ghi_chu,
-          nhan_bkbqp,
-          nhan_cstdtq,
-          nhan_bkttcp,
-        } = rowData;
+        for (const rowData of rowsToProcess) {
+          const {
+            personnel,
+            nam,
+            danh_hieu,
+            cap_bac,
+            chuc_vu,
+            ghi_chu,
+            nhan_bkbqp,
+            nhan_cstdtq,
+            nhan_bkttcp,
+          } = rowData;
 
-        const existing = existingRewardByKey.get(`${personnel.id}_${nam}`) ?? null;
+          const existing = existingRewardByKey.get(`${personnel.id}_${nam}`) ?? null;
 
-        if (!existing) {
-          const createdReward = await prismaTx.danhHieuHangNam.create({
-            data: {
-              quan_nhan_id: personnel.id,
-              nam,
-              danh_hieu,
-              cap_bac: cap_bac || null,
-              chuc_vu: chuc_vu || null,
-              ghi_chu: ghi_chu || null,
-              nhan_bkbqp: nhan_bkbqp || false,
-              nhan_cstdtq: nhan_cstdtq || false,
-              nhan_bkttcp: nhan_bkttcp || false,
-            },
+          if (!existing) {
+            const createdReward = await prismaTx.danhHieuHangNam.create({
+              data: {
+                quan_nhan_id: personnel.id,
+                nam,
+                danh_hieu,
+                cap_bac: cap_bac || null,
+                chuc_vu: chuc_vu || null,
+                ghi_chu: ghi_chu || null,
+                nhan_bkbqp: nhan_bkbqp || false,
+                nhan_cstdtq: nhan_cstdtq || false,
+                nhan_bkttcp: nhan_bkttcp || false,
+              },
+            });
+            txCreated.push(createdReward.id);
+          } else {
+            await prismaTx.danhHieuHangNam.update({
+              where: { id: existing.id },
+              data: {
+                danh_hieu,
+                cap_bac: cap_bac !== undefined ? cap_bac : existing.cap_bac,
+                chuc_vu: chuc_vu !== undefined ? chuc_vu : existing.chuc_vu,
+                ghi_chu: ghi_chu !== undefined ? ghi_chu : existing.ghi_chu,
+                nhan_bkbqp: nhan_bkbqp !== undefined ? nhan_bkbqp : existing.nhan_bkbqp,
+                nhan_cstdtq: nhan_cstdtq !== undefined ? nhan_cstdtq : existing.nhan_cstdtq,
+                nhan_bkttcp: nhan_bkttcp !== undefined ? nhan_bkttcp : existing.nhan_bkttcp,
+              },
+            });
+            txUpdated.push(existing.id);
+          }
+
+          selectedPersonnelIdSet.add(personnel.id);
+
+          titleData.push({
+            personnelId: personnel.id,
+            quan_nhan_id: personnel.id,
+            danh_hieu: danh_hieu,
+            nam: nam,
+            cap_bac: cap_bac || null,
+            chuc_vu: chuc_vu || null,
+            ghi_chu: ghi_chu || null,
+            nhan_bkbqp: nhan_bkbqp || false,
+            nhan_cstdtq: nhan_cstdtq || false,
+            nhan_bkttcp: nhan_bkttcp || false,
+            so_quyet_dinh: null,
           });
-          txCreated.push(createdReward.id);
-        } else {
-          await prismaTx.danhHieuHangNam.update({
-            where: { id: existing.id },
-            data: {
-              danh_hieu,
-              cap_bac: cap_bac !== undefined ? cap_bac : existing.cap_bac,
-              chuc_vu: chuc_vu !== undefined ? chuc_vu : existing.chuc_vu,
-              ghi_chu: ghi_chu !== undefined ? ghi_chu : existing.ghi_chu,
-              nhan_bkbqp: nhan_bkbqp !== undefined ? nhan_bkbqp : existing.nhan_bkbqp,
-              nhan_cstdtq: nhan_cstdtq !== undefined ? nhan_cstdtq : existing.nhan_cstdtq,
-              nhan_bkttcp: nhan_bkttcp !== undefined ? nhan_bkttcp : existing.nhan_bkttcp,
-            },
-          });
-          txUpdated.push(existing.id);
         }
 
-        selectedPersonnelIdSet.add(personnel.id);
-
-        titleData.push({
-          personnelId: personnel.id,
-          quan_nhan_id: personnel.id,
-          danh_hieu: danh_hieu,
-          nam: nam,
-          cap_bac: cap_bac || null,
-          chuc_vu: chuc_vu || null,
-          ghi_chu: ghi_chu || null,
-          nhan_bkbqp: nhan_bkbqp || false,
-          nhan_cstdtq: nhan_cstdtq || false,
-          nhan_bkttcp: nhan_bkttcp || false,
-          so_quyet_dinh: null,
-        });
-      }
-
-      return { created: txCreated, updated: txUpdated };
-    }, { timeout: IMPORT_TRANSACTION_TIMEOUT });
+        return { created: txCreated, updated: txUpdated };
+      },
+      { timeout: IMPORT_TRANSACTION_TIMEOUT }
+    );
 
     const selectedPersonnelIds = [...selectedPersonnelIdSet];
 
@@ -564,13 +612,29 @@ class AnnualRewardService {
   async previewImport(buffer: Buffer): Promise<PreviewResult> {
     const { worksheet, columns, batchMaps, allYears, currentYear, validDanhHieu } =
       await resolveAnnualRewardImportContext(buffer);
-    const { idCol, hoTenCol, namCol, danhHieuCol, capBacCol, chucVuCol, ghiChuCol, bkbqpCol, cstdtqCol, bkttcpCol, soQuyetDinhCol } = columns;
+    const {
+      idCol,
+      hoTenCol,
+      namCol,
+      danhHieuCol,
+      capBacCol,
+      chucVuCol,
+      ghiChuCol,
+      bkbqpCol,
+      cstdtqCol,
+      bkttcpCol,
+      soQuyetDinhCol,
+    } = columns;
     const { personnelMap, existingRewardByKey: rewardByKey, rewardsByPersonnel } = batchMaps;
 
     // Preview checks against PENDING proposals + existing decisions
     const [pendingProposals, existingDecisions] = await Promise.all([
       prisma.bangDeXuat.findMany({
-        where: { loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM, status: PROPOSAL_STATUS.PENDING, nam: { in: [...allYears] } },
+        where: {
+          loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
+          status: PROPOSAL_STATUS.PENDING,
+          nam: { in: [...allYears] },
+        },
       }),
       prisma.fileQuyetDinh.findMany({ select: { so_quyet_dinh: true } }),
     ]);
@@ -578,7 +642,7 @@ class AnnualRewardService {
     const pendingKeys = buildPendingKeys(
       pendingProposals as Array<Record<string, unknown>>,
       'data_danh_hieu',
-      (item, proposal) => item.personnel_id ? `${item.personnel_id}_${proposal.nam}` : null
+      (item, proposal) => (item.personnel_id ? `${item.personnel_id}_${proposal.nam}` : null)
     );
     const validDecisionNumbers = new Set(existingDecisions.map(d => d.so_quyet_dinh));
 
@@ -684,7 +748,19 @@ class AnnualRewardService {
           ho_ten,
           nam: namVal,
           danh_hieu: danh_hieu_raw,
-          message: `Không tìm thấy quân nhân (mã: ${personnelId}).`,
+          message: `Không tìm thấy quân nhân với ID ${personnelId}`,
+        });
+        continue;
+      }
+
+      const nameMismatch = validatePersonnelNameMatch(ho_ten, personnel.ho_ten);
+      if (nameMismatch) {
+        errors.push({
+          row: rowNumber,
+          ho_ten,
+          nam: namVal,
+          danh_hieu: danh_hieu_raw,
+          message: nameMismatch,
         });
         continue;
       }
@@ -754,13 +830,14 @@ class AnnualRewardService {
 
       // Check duplicate in DB (using pre-fetched Map)
       const existingReward = rewardByKey.get(`${personnel.id}_${nam}`);
-      if (existingReward && existingReward.danh_hieu) {
+      const existingDh = existingReward ? resolveDanhHieuFromRecord(existingReward) : null;
+      if (existingReward && existingDh === danh_hieu) {
         errors.push({
           row: rowNumber,
           ho_ten,
           nam,
           danh_hieu,
-          message: `Đã có ${getDanhHieuName(existingReward.danh_hieu)} (${existingReward.danh_hieu}) cho năm ${nam}.`,
+          message: `Đã có ${getDanhHieuName(existingDh)} cho năm ${nam}.`,
         });
         continue;
       }
@@ -790,10 +867,12 @@ class AnnualRewardService {
           so_quyet_dinh: r.so_quyet_dinh,
         }));
 
-      const { hoTen, capBac, chucVu, missingFields: missingInfoFields } = resolvePersonnelInfo(
-        { ho_ten, cap_bac, chuc_vu },
-        personnel
-      );
+      const {
+        hoTen,
+        capBac,
+        chucVu,
+        missingFields: missingInfoFields,
+      } = resolvePersonnelInfo({ ho_ten, cap_bac, chuc_vu }, personnel);
       if (missingInfoFields.length > 0) {
         errors.push({
           row: rowNumber,
@@ -826,44 +905,52 @@ class AnnualRewardService {
     const personnelIds = [...new Set(validItems.map(item => item.personnel_id))];
     const uniqueYears = [...new Set(validItems.map(item => item.nam))];
 
-    // Parallel: check pending proposals + existing records
-    const [pendingProposals, existingRecords] = await Promise.all([
+    const [pendingProposals, existingRecords, personnelList] = await Promise.all([
       prisma.bangDeXuat.findMany({
-        where: { loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM, status: PROPOSAL_STATUS.PENDING, nam: { in: uniqueYears } },
+        where: {
+          loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
+          status: PROPOSAL_STATUS.PENDING,
+          nam: { in: uniqueYears },
+        },
       }),
       prisma.danhHieuHangNam.findMany({
         where: {
           quan_nhan_id: { in: personnelIds },
           nam: { in: uniqueYears },
         },
-        select: { quan_nhan_id: true, nam: true, danh_hieu: true },
+        select: { quan_nhan_id: true, nam: true, danh_hieu: true, nhan_bkbqp: true, nhan_cstdtq: true, nhan_bkttcp: true },
+      }),
+      prisma.quanNhan.findMany({
+        where: { id: { in: personnelIds } },
+        select: { id: true, ho_ten: true },
       }),
     ]);
+    const hoTenMap = new Map(personnelList.map(p => [p.id, p.ho_ten]));
 
     const pendingKeys = buildPendingKeys(
       pendingProposals as Array<Record<string, unknown>>,
       'data_danh_hieu',
-      (item, proposal) => item.personnel_id ? `${item.personnel_id}_${proposal.nam}` : null
+      (item, proposal) => (item.personnel_id ? `${item.personnel_id}_${proposal.nam}` : null)
     );
     const pendingConflicts: string[] = [];
     for (const item of validItems) {
       if (pendingKeys.has(`${item.personnel_id}_${item.nam}`)) {
-        pendingConflicts.push(`${item.ho_ten} năm ${item.nam}: đang có đề xuất chờ duyệt`);
+        pendingConflicts.push(`${hoTenMap.get(item.personnel_id) || item.ho_ten || item.personnel_id} năm ${item.nam}: đang có đề xuất chờ duyệt`);
       }
     }
     if (pendingConflicts.length > 0) {
       throw new ValidationError(pendingConflicts.join('; '));
     }
-    const existingMap = new Map(
-      existingRecords.map(r => [`${r.quan_nhan_id}|${r.nam}`, r])
-    );
+    const existingMap = new Map(existingRecords.map(r => [`${r.quan_nhan_id}|${r.nam}`, r]));
 
     const conflicts: string[] = [];
     for (const item of validItems) {
       const existing = existingMap.get(`${item.personnel_id}|${item.nam}`);
       if (existing && existing.danh_hieu !== item.danh_hieu) {
+        const hoTen = hoTenMap.get(item.personnel_id) || item.ho_ten || item.personnel_id;
+        const existingName = getDanhHieuName(resolveDanhHieuFromRecord(existing));
         conflicts.push(
-          `${item.ho_ten} năm ${item.nam}: đã có ${getDanhHieuName(existing.danh_hieu)}, không thể ghi đè bằng ${getDanhHieuName(item.danh_hieu)}`
+          `${hoTen} năm ${item.nam}: đã có ${existingName}, không thể ghi đè bằng ${getDanhHieuName(item.danh_hieu)}`
         );
       }
     }
@@ -875,6 +962,33 @@ class AnnualRewardService {
       async prismaTx => {
         const results: DanhHieuHangNam[] = [];
         for (const item of validItems) {
+          const isBangKhen = DANH_HIEU_CA_NHAN_BANG_KHEN.has(item.danh_hieu);
+          const nhanBKBQP = item.nhan_bkbqp || item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP;
+          const nhanCSTDTQ =
+            item.nhan_cstdtq || item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ;
+          const nhanBKTTCP =
+            item.nhan_bkttcp || item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP;
+          const finalDanhHieu = isBangKhen ? null : item.danh_hieu;
+
+          const sharedData = {
+            cap_bac: item.cap_bac ?? null,
+            chuc_vu: item.chuc_vu ?? null,
+            ghi_chu: item.ghi_chu ?? null,
+            nhan_bkbqp: nhanBKBQP,
+            nhan_cstdtq: nhanCSTDTQ,
+            nhan_bkttcp: nhanBKTTCP,
+            so_quyet_dinh: isBangKhen ? undefined : (item.so_quyet_dinh ?? null),
+            so_quyet_dinh_bkbqp: nhanBKBQP
+              ? item.so_quyet_dinh_bkbqp || item.so_quyet_dinh || null
+              : undefined,
+            so_quyet_dinh_cstdtq: nhanCSTDTQ
+              ? item.so_quyet_dinh_cstdtq || item.so_quyet_dinh || null
+              : undefined,
+            so_quyet_dinh_bkttcp: nhanBKTTCP
+              ? item.so_quyet_dinh_bkttcp || item.so_quyet_dinh || null
+              : undefined,
+          };
+
           const result = await prismaTx.danhHieuHangNam.upsert({
             where: {
               quan_nhan_id_nam: {
@@ -883,20 +997,14 @@ class AnnualRewardService {
               },
             },
             update: {
-              danh_hieu: item.danh_hieu,
-              cap_bac: item.cap_bac ?? null,
-              chuc_vu: item.chuc_vu ?? null,
-              so_quyet_dinh: item.so_quyet_dinh ?? null,
-              ghi_chu: item.ghi_chu ?? null,
+              danh_hieu: finalDanhHieu,
+              ...sharedData,
             },
             create: {
               quan_nhan_id: item.personnel_id,
               nam: item.nam,
-              danh_hieu: item.danh_hieu,
-              cap_bac: item.cap_bac ?? null,
-              chuc_vu: item.chuc_vu ?? null,
-              so_quyet_dinh: item.so_quyet_dinh ?? null,
-              ghi_chu: item.ghi_chu ?? null,
+              danh_hieu: finalDanhHieu,
+              ...sharedData,
             },
           });
           results.push(result);
@@ -974,6 +1082,10 @@ class AnnualRewardService {
           );
 
           if (found) {
+            // APPROVED proposal: only block if award actually exists in DB
+            if (proposal.status === PROPOSAL_STATUS.APPROVED && !result.has_reward) {
+              continue;
+            }
             result.has_proposal = true;
             result.proposal = {
               id: proposal.id,
@@ -1001,11 +1113,9 @@ class AnnualRewardService {
 
   async bulkCreateAnnualRewards(data: BulkCreateData): Promise<{
     success: number;
-    skipped: number;
     errors: number;
     details: {
       created: DanhHieuHangNam[];
-      skipped: { personnelId: string; reason: string }[];
       errors: { personnelId: string; error: string }[];
     };
   }> {
@@ -1028,7 +1138,6 @@ class AnnualRewardService {
     }
 
     const errors: { personnelId: string; error: string }[] = [];
-    const skipped: { personnelId: string; reason: string }[] = [];
 
     const personnelDataMap: Record<
       string,
@@ -1054,7 +1163,7 @@ class AnnualRewardService {
         where: {
           loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
           nam: namInt,
-          status: PROPOSAL_STATUS.APPROVED,
+          status: PROPOSAL_STATUS.PENDING,
         },
       }),
     ]);
@@ -1062,7 +1171,15 @@ class AnnualRewardService {
     const personnelMap = new Map(allPersonnel.map(p => [p.id, p] as const));
     const existingRewardMap = new Map(existingRewards.map(r => [r.quan_nhan_id, r] as const));
     const existingAwardSet = new Set(
-      existingRewards.filter(r => r.danh_hieu === danh_hieu).map(r => r.quan_nhan_id)
+      existingRewards
+        .filter(r => {
+          if (r.danh_hieu === danh_hieu) return true;
+          if (danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP && r.nhan_bkbqp) return true;
+          if (danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ && r.nhan_cstdtq) return true;
+          if (danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP && r.nhan_bkttcp) return true;
+          return false;
+        })
+        .map(r => r.quan_nhan_id)
     );
     const pendingProposalPersonnelSet = new Set<string>();
     for (const proposal of approvedProposals) {
@@ -1125,43 +1242,65 @@ class AnnualRewardService {
         let rewardRecord: DanhHieuHangNam;
 
         if (existingReward) {
-          if (DANH_HIEU_CA_NHAN_BANG_KHEN.has(danh_hieu)) {
-            const updateData: Prisma.DanhHieuHangNamUpdateInput = {};
-            if (danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP) {
-              updateData.nhan_bkbqp = true;
-            } else if (danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ) {
-              updateData.nhan_cstdtq = true;
-            } else if (danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP) {
-              updateData.nhan_bkttcp = true;
-            }
+          const isBangKhen = DANH_HIEU_CA_NHAN_BANG_KHEN.has(danh_hieu);
+          const isCoBan = DANH_HIEU_CA_NHAN_CO_BAN.has(danh_hieu);
+          const canUpdate = isBangKhen || (isCoBan && !existingReward.danh_hieu);
 
-            if (individualCapBac) updateData.cap_bac = individualCapBac;
-            if (individualChucVu) updateData.chuc_vu = individualChucVu;
-            if (individualSoQuyetDinh) updateData.so_quyet_dinh = individualSoQuyetDinh;
-            if (ghi_chu) updateData.ghi_chu = ghi_chu;
-
-            rewardRecord = await prismaTx.danhHieuHangNam.update({
-              where: { id: existingReward.id },
-              data: updateData,
-            });
-          } else {
-            skipped.push({ personnelId, reason: `Đã có danh hiệu cho năm ${nam}` });
+          if (!canUpdate) {
+            errors.push({ personnelId, error: `Đã có danh hiệu ${getDanhHieuName(existingReward.danh_hieu || danh_hieu)} cho năm ${nam}` });
             continue;
           }
+
+          const updateData: Prisma.DanhHieuHangNamUpdateInput = {};
+          if (isBangKhen) {
+            if (danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP) {
+              updateData.nhan_bkbqp = true;
+              if (individualSoQuyetDinh) updateData.so_quyet_dinh_bkbqp = individualSoQuyetDinh;
+            } else if (danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ) {
+              updateData.nhan_cstdtq = true;
+              if (individualSoQuyetDinh) updateData.so_quyet_dinh_cstdtq = individualSoQuyetDinh;
+            } else if (danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP) {
+              updateData.nhan_bkttcp = true;
+              if (individualSoQuyetDinh) updateData.so_quyet_dinh_bkttcp = individualSoQuyetDinh;
+            }
+          } else {
+            updateData.danh_hieu = danh_hieu;
+            if (individualSoQuyetDinh) updateData.so_quyet_dinh = individualSoQuyetDinh;
+          }
+
+          if (individualCapBac) updateData.cap_bac = individualCapBac;
+          if (individualChucVu) updateData.chuc_vu = individualChucVu;
+          if (ghi_chu) updateData.ghi_chu = ghi_chu;
+
+          rewardRecord = await prismaTx.danhHieuHangNam.update({
+            where: { id: existingReward.id },
+            data: updateData,
+          });
         } else {
+          const createData: Prisma.DanhHieuHangNamCreateInput = {
+            QuanNhan: { connect: { id: personnelId } },
+            nam: namInt,
+            danh_hieu: finalDanhHieu,
+            cap_bac: individualCapBac || null,
+            chuc_vu: individualChucVu || null,
+            ghi_chu: ghi_chu || null,
+            nhan_bkbqp: nhanBKBQP,
+            nhan_cstdtq: nhanCSTDTQ,
+            nhan_bkttcp: nhanBKTTCP,
+          };
+
+          if (nhanBKBQP) {
+            createData.so_quyet_dinh_bkbqp = individualSoQuyetDinh || null;
+          } else if (nhanCSTDTQ) {
+            createData.so_quyet_dinh_cstdtq = individualSoQuyetDinh || null;
+          } else if (nhanBKTTCP) {
+            createData.so_quyet_dinh_bkttcp = individualSoQuyetDinh || null;
+          } else {
+            createData.so_quyet_dinh = individualSoQuyetDinh || null;
+          }
+
           rewardRecord = await prismaTx.danhHieuHangNam.create({
-            data: {
-              quan_nhan_id: personnelId,
-              nam: namInt,
-              danh_hieu: finalDanhHieu,
-              cap_bac: individualCapBac || null,
-              chuc_vu: individualChucVu || null,
-              so_quyet_dinh: individualSoQuyetDinh || null,
-              ghi_chu: ghi_chu || null,
-              nhan_bkbqp: nhanBKBQP,
-              nhan_cstdtq: nhanCSTDTQ,
-              nhan_bkttcp: nhanBKTTCP,
-            },
+            data: createData,
           });
         }
 
@@ -1175,19 +1314,12 @@ class AnnualRewardService {
       await safeRecalculateAnnualProfile(rewardRecord.quan_nhan_id);
     }
 
-    writeSystemLog({
-      action: 'BULK_CREATE',
-      resource: 'annual-rewards',
-      description: `[Bulk tạo danh hiệu] ${danh_hieu} năm ${nam}: ${created.length} thành công, ${skipped.length} bỏ qua, ${errors.length} lỗi`,
-    });
 
     return {
       success: created.length,
-      skipped: skipped.length,
       errors: errors.length,
       details: {
         created,
-        skipped,
         errors,
       },
     };
@@ -1207,12 +1339,9 @@ class AnnualRewardService {
       { header: 'Cấp bậc', key: 'cap_bac', width: 15 },
       { header: 'Chức vụ', key: 'chuc_vu', width: 20 },
       { header: 'Năm (*)', key: 'nam', width: 10 },
-      { header: 'Danh hiệu (*)', key: 'danh_hieu', width: 15 },
+      { header: 'Danh hiệu (*)', key: 'danh_hieu', width: 20 },
       { header: 'Số quyết định', key: 'so_quyet_dinh', width: 20 },
       { header: 'Ghi chú', key: 'ghi_chu', width: 25 },
-      { header: 'BKBQP (không điền)', key: 'nhan_bkbqp', width: 18 },
-      { header: 'CSTDTQ (không điền)', key: 'nhan_cstdtq', width: 18 },
-      { header: 'BKTTCP (không điền)', key: 'nhan_bkttcp', width: 18 },
     ];
 
     return buildTemplate({
@@ -1225,7 +1354,6 @@ class AnnualRewardService {
         DANH_HIEU_CA_NHAN_HANG_NAM.CSTT,
         DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS,
       ]),
-      redColumns: [13, 14, 15],
       editableColumnLetters: ['J', 'K'],
     });
   }
@@ -1283,23 +1411,25 @@ class AnnualRewardService {
     styleHeaderRow(worksheet);
 
     filteredAwards.forEach((award, index) => {
-      worksheet.addRow(sanitizeRowData({
-        stt: index + 1,
-        id: award.QuanNhan?.id ?? '',
-        ho_ten: award.QuanNhan?.ho_ten ?? '',
-        cap_bac: award.cap_bac ?? '',
-        chuc_vu: award.chuc_vu ?? '',
-        nam: award.nam,
-        danh_hieu: award.danh_hieu ?? '',
-        so_quyet_dinh: award.so_quyet_dinh ?? '',
-        ghi_chu: award.ghi_chu ?? '',
-        nhan_bkbqp: award.nhan_bkbqp ? 'Có' : '',
-        so_quyet_dinh_bkbqp: award.so_quyet_dinh_bkbqp ?? '',
-        nhan_cstdtq: award.nhan_cstdtq ? 'Có' : '',
-        so_quyet_dinh_cstdtq: award.so_quyet_dinh_cstdtq ?? '',
-        nhan_bkttcp: award.nhan_bkttcp ? 'Có' : '',
-        so_quyet_dinh_bkttcp: award.so_quyet_dinh_bkttcp ?? '',
-      }));
+      worksheet.addRow(
+        sanitizeRowData({
+          stt: index + 1,
+          id: award.QuanNhan?.id ?? '',
+          ho_ten: award.QuanNhan?.ho_ten ?? '',
+          cap_bac: award.cap_bac ?? '',
+          chuc_vu: award.chuc_vu ?? '',
+          nam: award.nam,
+          danh_hieu: award.danh_hieu ?? '',
+          so_quyet_dinh: award.so_quyet_dinh ?? '',
+          ghi_chu: award.ghi_chu ?? '',
+          nhan_bkbqp: award.nhan_bkbqp ? 'Có' : '',
+          so_quyet_dinh_bkbqp: award.so_quyet_dinh_bkbqp ?? '',
+          nhan_cstdtq: award.nhan_cstdtq ? 'Có' : '',
+          so_quyet_dinh_cstdtq: award.so_quyet_dinh_cstdtq ?? '',
+          nhan_bkttcp: award.nhan_bkttcp ? 'Có' : '',
+          so_quyet_dinh_bkttcp: award.so_quyet_dinh_bkttcp ?? '',
+        })
+      );
     });
 
     return workbook;
@@ -1385,7 +1515,8 @@ class AnnualRewardService {
         data_nien_han: { array_contains: [{ personnel_id: personnelId }] },
       },
     });
-    if (pendingProposal) return { alreadyReceived: true, reason: 'Đang chờ duyệt', proposal: pendingProposal };
+    if (pendingProposal)
+      return { alreadyReceived: true, reason: 'Đang chờ duyệt', proposal: pendingProposal };
 
     return { alreadyReceived: false, reason: null };
   }
@@ -1408,7 +1539,8 @@ class AnnualRewardService {
         data_nien_han: { array_contains: [{ personnel_id: personnelId }] },
       },
     });
-    if (pendingProposal) return { alreadyReceived: true, reason: 'Đang chờ duyệt', proposal: pendingProposal };
+    if (pendingProposal)
+      return { alreadyReceived: true, reason: 'Đang chờ duyệt', proposal: pendingProposal };
 
     return { alreadyReceived: false, reason: null };
   }
@@ -1434,7 +1566,9 @@ class AnnualRewardService {
     const [awards, total] = await Promise.all([
       prisma.danhHieuHangNam.findMany({
         where,
-        include: { QuanNhan: { include: { CoQuanDonVi: true, DonViTrucThuoc: true, ChucVu: true } } },
+        include: {
+          QuanNhan: { include: { CoQuanDonVi: true, DonViTrucThuoc: true, ChucVu: true } },
+        },
         orderBy: [{ nam: 'desc' }, { createdAt: 'desc' }],
         skip: (page - 1) * limit,
         take: limit,

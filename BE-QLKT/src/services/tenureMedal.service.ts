@@ -4,11 +4,11 @@ import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHel
 
 import profileService from './profile.service';
 import * as notificationHelper from '../helpers/notification';
-import { getDanhHieuName, resolveDanhHieuCode, buildDanhHieuExcelOptions, DANH_HIEU_HCCSVV, HCCSVV_YEARS_HANG_BA, HCCSVV_YEARS_HANG_NHI, HCCSVV_YEARS_HANG_NHAT } from '../constants/danhHieu.constants';
+import { getDanhHieuName, formatDanhHieuList, resolveDanhHieuCode, buildDanhHieuExcelOptions, DANH_HIEU_HCCSVV, HCCSVV_YEARS_HANG_BA, HCCSVV_YEARS_HANG_NHI, HCCSVV_YEARS_HANG_NHAT } from '../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
-import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys, sanitizeRowData } from '../helpers/excelHelper';
+import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys, sanitizeRowData, validatePersonnelNameMatch } from '../helpers/excelHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { ValidationError, NotFoundError, AppError } from '../middlewares/errorHandler';
 import { buildTemplate, TemplateColumn, styleHeaderRow } from '../helpers/excelTemplateHelper';
@@ -237,6 +237,12 @@ class HCCSVVService {
         continue;
       }
 
+      const nameMismatch = validatePersonnelNameMatch(ho_ten, personnel.ho_ten);
+      if (nameMismatch) {
+        errors.push({ row: rowNumber, ho_ten, nam: namVal, thang: thangVal, danh_hieu: danh_hieu_raw, message: nameMismatch });
+        continue;
+      }
+
       const nam = parseInt(String(namVal), 10);
       if (!Number.isInteger(nam)) {
         errors.push({
@@ -282,7 +288,7 @@ class HCCSVVService {
           nam,
           thang,
           danh_hieu: danh_hieu_raw,
-          message: `Danh hiệu "${danh_hieu_raw}" không tồn tại. Chỉ chấp nhận: ${validDanhHieu.join(', ')}`,
+          message: `Danh hiệu "${danh_hieu_raw}" không tồn tại. Chỉ chấp nhận: ${formatDanhHieuList(validDanhHieu)}`,
         });
         continue;
       }
@@ -713,7 +719,7 @@ class HCCSVVService {
 
     const validDanhHieu = Object.values(DANH_HIEU_HCCSVV);
     if (!validDanhHieu.includes(danh_hieu)) {
-      throw new ValidationError(`Danh hiệu không hợp lệ. Chỉ chấp nhận: ${validDanhHieu.join(', ')}`);
+      throw new ValidationError(`Danh hiệu không hợp lệ. Chỉ chấp nhận: ${formatDanhHieuList(validDanhHieu)}`);
     }
 
     // Check if personnel exists

@@ -195,7 +195,7 @@ export function Step3SetTitlesCaNhanHangNam({
       setAnnualProfiles(prev => ({ ...prev, ...map }));
 
       hideMessage();
-      message.success('Tải dữ liệu và tính toán hồ sơ hoàn tất!');
+      message.success('Nhập dữ liệu và tính toán hồ sơ hoàn tất!');
     } catch {
       hideMessage();
       message.error('Có lỗi khi tải dữ liệu');
@@ -230,15 +230,17 @@ export function Step3SetTitlesCaNhanHangNam({
       { label: 'Bằng khen Thủ tướng Chính phủ', value: 'BKTTCP' },
     ];
     if (annualProfiles[id]) {
-      if (annualProfiles[id].du_dieu_kien_bkbqp === false) {
+      const profile = annualProfiles[id];
+      if (profile.du_dieu_kien_bkbqp === false) {
         allOptions = allOptions.filter(opt => opt.value !== 'BKBQP');
       }
-      if (annualProfiles[id].du_dieu_kien_cstdtq === false) {
+      if (profile.du_dieu_kien_cstdtq === false) {
         allOptions = allOptions.filter(opt => opt.value !== 'CSTDTQ');
       }
-      if (annualProfiles[id].du_dieu_kien_bkttcp === false) {
+      if (profile.du_dieu_kien_bkttcp === false) {
         allOptions = allOptions.filter(opt => opt.value !== 'BKTTCP');
       }
+
     }
 
     if (selectedType === 'nhom_cstdcs_cstt') {
@@ -252,8 +254,27 @@ export function Step3SetTitlesCaNhanHangNam({
     return allOptions;
   };
 
+  const checkAlreadyReceived = (id: string, danhHieu: string): boolean => {
+    const profile = annualProfiles[id];
+    if (!profile) return false;
+    const yearRecords: CSTDCSItem[] = profile.tong_cstdcs_json || [];
+    const thisYear = yearRecords.find((r: CSTDCSItem) => r.nam === nam);
+    if (!thisYear) return false;
+    if (danhHieu === 'BKBQP' && thisYear.nhan_bkbqp) return true;
+    if (danhHieu === 'CSTDTQ' && thisYear.nhan_cstdtq) return true;
+    if (danhHieu === 'BKTTCP' && thisYear.nhan_bkttcp) return true;
+    return false;
+  };
+
   const updateTitle = async (id: string, field: string, value: any) => {
     if (field === 'danh_hieu' && value) {
+      if (checkAlreadyReceived(id, value)) {
+        const p = personnel.find(p => p.id === id);
+        const label = getDanhHieuOptions(id).find(opt => opt.value === value)?.label || value;
+        message.error(`${p?.ho_ten || 'Quân nhân'} đã nhận ${label} năm ${nam}`);
+        return;
+      }
+
       const selectedType = getSelectedDanhHieuType();
       const selectedGroup = getSelectedDanhHieuType();
       const valueGroup = getDanhHieuGroup(value);
@@ -475,7 +496,12 @@ export function Step3SetTitlesCaNhanHangNam({
     },
   ];
 
-  const allTitlesSet = personnel.every(p => {
+  const hasDuplicateAward = personnel.some(p => {
+    const data = getTitleData(p.id);
+    return data.danh_hieu && checkAlreadyReceived(p.id, data.danh_hieu);
+  });
+
+  const allTitlesSet = !hasDuplicateAward && personnel.every(p => {
     const data = getTitleData(p.id);
     return data.danh_hieu;
   });
@@ -677,7 +703,7 @@ export function Step3SetTitlesCaNhanHangNam({
               },
               {
                 key: 'nckh',
-                label: `NCKH/SKKH (${
+                label: `NCKH (${
                   Array.isArray(selectedAnnualProfile.tong_nckh)
                     ? selectedAnnualProfile.tong_nckh.length
                     : 0
@@ -736,7 +762,7 @@ export function Step3SetTitlesCaNhanHangNam({
                         ]}
                       />
                     ) : (
-                      <Text type="secondary">Chưa có thành tích NCKH/SKKH</Text>
+                      <Text type="secondary">Chưa có thành tích NCKH</Text>
                     )}
                   </div>
                 ),

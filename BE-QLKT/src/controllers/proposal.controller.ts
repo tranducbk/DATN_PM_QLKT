@@ -340,7 +340,7 @@ class ProposalController {
     }
     return ResponseHelper.success(res, {
       message: result.message,
-      data: { ...result.result, proposal: result.proposal },
+      data: result.result,
     });
   });
 
@@ -387,7 +387,7 @@ class ProposalController {
     }
     return ResponseHelper.success(res, {
       message: result.message,
-      data: { ...result.result, proposal: result.proposal },
+      data: result.result,
     });
   });
 
@@ -568,7 +568,7 @@ class ProposalController {
     );
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="mau_import_hccsvv_${new Date().toISOString().slice(0, 10)}.xlsx"`
+      `attachment; filename="mau_nhap_hccsvv_${new Date().toISOString().slice(0, 10)}.xlsx"`
     );
     return res.status(200).send(buffer);
   });
@@ -637,7 +637,7 @@ class ProposalController {
     );
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="mau_import_hcbvtq_${new Date().toISOString().slice(0, 10)}.xlsx"`
+      `attachment; filename="mau_nhap_hcbvtq_${new Date().toISOString().slice(0, 10)}.xlsx"`
     );
     return res.status(200).send(buffer);
   });
@@ -721,7 +721,7 @@ class ProposalController {
     );
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="mau_import_knc_vsnxd_qdndvn_${new Date().toISOString().slice(0, 10)}.xlsx"`
+      `attachment; filename="mau_nhap_knc_vsnxd_qdndvn_${new Date().toISOString().slice(0, 10)}.xlsx"`
     );
     return res.status(200).send(buffer);
   });
@@ -788,7 +788,7 @@ class ProposalController {
     );
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="mau_import_hcqkqt_${new Date().toISOString().slice(0, 10)}.xlsx"`
+      `attachment; filename="mau_nhap_hcqkqt_${new Date().toISOString().slice(0, 10)}.xlsx"`
     );
     return res.status(200).send(buffer);
   });

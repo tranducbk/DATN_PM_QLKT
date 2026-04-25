@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
-import { DANH_HIEU_COLORS, THANH_TICH_KHOA_HOC_SHORT_LABELS } from '@/constants/danhHieu.constants';
+import { DANH_HIEU_COLORS, THANH_TICH_KHOA_HOC_FULL_LABELS } from '@/constants/danhHieu.constants';
 import {
   ImportReviewPageContent,
   type PreviewItem,
@@ -15,8 +15,7 @@ import {
   makeRowNumberColumn,
   makeHoTenColumn,
   makeNamColumn,
-  makeCapBacColumn,
-  makeChucVuColumn,
+  makeCapBacChucVuColumn,
   makeSoQDColumn,
   makeGhiChuColumn,
 } from '@/components/import-review/ImportReviewPageContent';
@@ -24,8 +23,8 @@ import {
 function getLoaiTag(loai: string | undefined) {
   if (!loai) return <Tag>--</Tag>;
   const color = DANH_HIEU_COLORS[loai] ?? 'default';
-  const label = THANH_TICH_KHOA_HOC_SHORT_LABELS[loai] ?? loai;
-  return <Tag color={color}>{label}</Tag>;
+  const label = THANH_TICH_KHOA_HOC_FULL_LABELS[loai] ?? loai;
+  return <Tag color={color} style={{ whiteSpace: 'nowrap' }}>{label}</Tag>;
 }
 
 export default function ImportReviewNCKHPage() {
@@ -33,20 +32,17 @@ export default function ImportReviewNCKHPage() {
     () => [
       makeSTTColumn(),
       makeHoTenColumn(),
-      makeCapBacColumn(),
-      makeChucVuColumn(),
+      makeCapBacChucVuColumn(),
       makeNamColumn(),
       {
         title: 'Loại',
         dataIndex: 'loai',
-        width: 100,
+        width: 170,
         render: (val: string) => getLoaiTag(val),
       },
       {
         title: 'Mô tả',
         dataIndex: 'mo_ta',
-        width: 200,
-        ellipsis: true,
         render: renderText,
       },
       makeSoQDColumn(),
@@ -61,14 +57,12 @@ export default function ImportReviewNCKHPage() {
       {
         title: 'Loại',
         dataIndex: 'loai',
-        width: 100,
+        width: 170,
         render: (val: string) => getLoaiTag(val),
       },
       {
         title: 'Mô tả',
         dataIndex: 'mo_ta',
-        width: 200,
-        ellipsis: true,
         render: renderText,
       },
       makeSoQDColumn(120),
@@ -85,7 +79,7 @@ export default function ImportReviewNCKHPage() {
       {
         title: 'Loại',
         dataIndex: 'loai',
-        width: 100,
+        width: 170,
         render: (val: string) => (val ? getLoaiTag(val) : '--'),
       },
       makeErrorColumn(),
@@ -97,13 +91,13 @@ export default function ImportReviewNCKHPage() {
     sessionStorageKey: 'importPreviewDataNCKH',
     title: 'Xem trước dữ liệu tải lên - Thành tích Nghiên cứu khoa học',
     confirmImport: apiClient.confirmScientificAchievementsImport,
-    successMessage: count => `Tải dữ liệu thành công ${count} bản ghi thành tích NCKH.`,
+    successMessage: count => `Nhập dữ liệu thành công ${count} bản ghi thành tích Nghiên cứu khoa học.`,
     confirmButtonLabel: 'quân nhân',
     validColumns,
     invalidColumns,
     historyColumns,
-    historyLabel: 'Lịch sử thành tích NCKH',
-    noHistoryLabel: 'Chưa có lịch sử thành tích NCKH.',
+    historyLabel: 'Lịch sử thành tích Nghiên cứu khoa học',
+    noHistoryLabel: 'Chưa có lịch sử thành tích Nghiên cứu khoa học.',
   };
 
   return <ImportReviewPageContent config={config} />;

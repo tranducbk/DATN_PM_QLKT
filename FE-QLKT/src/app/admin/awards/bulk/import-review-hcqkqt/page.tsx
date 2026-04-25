@@ -12,8 +12,7 @@ import {
   makeRowNumberColumn,
   makeHoTenColumn,
   makeNamColumn,
-  makeCapBacColumn,
-  makeChucVuColumn,
+  makeCapBacChucVuColumn,
   makeSoQDColumn,
 } from '@/components/import-review/ImportReviewPageContent';
 
@@ -22,8 +21,7 @@ export default function ImportReviewHCQKQTPage() {
     () => [
       makeSTTColumn(),
       makeHoTenColumn(),
-      makeCapBacColumn(),
-      makeChucVuColumn(),
+      makeCapBacChucVuColumn(),
       makeNamColumn(),
       {
         title: 'Tháng',
@@ -66,9 +64,9 @@ export default function ImportReviewHCQKQTPage() {
 
   const config: ImportReviewConfig = {
     sessionStorageKey: 'importPreviewDataHCQKQT',
-    title: 'Xem trước dữ liệu tải lên - HC Quân kỳ quyết thắng',
+    title: 'Xem trước dữ liệu tải lên - Huy chương Quân kỳ quyết thắng',
     confirmImport: apiClient.confirmMilitaryFlagImport,
-    successMessage: count => `Tải dữ liệu thành công ${count} bản ghi HC Quân kỳ quyết thắng.`,
+    successMessage: count => `Nhập dữ liệu thành công ${count} bản ghi Huy chương Quân kỳ quyết thắng.`,
     confirmButtonLabel: 'quân nhân',
     validColumns,
     invalidColumns,

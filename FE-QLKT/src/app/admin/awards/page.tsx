@@ -51,6 +51,7 @@ interface AwardCore {
   cap_bac?: string;
   chuc_vu: string;
   nam: number;
+  thang?: number | null;
   danh_hieu: string | null;
   so_quyet_dinh?: string | null;
   ghi_chu?: string | null;
@@ -324,6 +325,8 @@ export default function AdminAwardsPage() {
     });
   }, [awards, debouncedFilters, activeTab]);
 
+  const TABS_WITH_THANG_NHAN = new Set<AwardType>(['HCCSVV', 'HCBVTQ', 'HCQKQT', 'KNC_VSNXD_QDNDVN']);
+
   const columns: TableColumnsType<AwardTableRow> = [
     {
       title: 'STT',
@@ -390,12 +393,16 @@ export default function AdminAwardsPage() {
       },
     },
     {
-      title: 'Năm',
-      dataIndex: 'nam',
+      title: TABS_WITH_THANG_NHAN.has(activeTab) ? 'Thời gian nhận' : 'Năm nhận',
       key: 'nam',
-      width: 70,
+      width: TABS_WITH_THANG_NHAN.has(activeTab) ? 120 : 70,
       align: 'center',
-      render: text => <Text strong>{text}</Text>,
+      render: (_: unknown, record: AwardTableRow) => {
+        if (TABS_WITH_THANG_NHAN.has(activeTab) && record.thang) {
+          return <Text strong>{`${String(record.thang).padStart(2, '0')}/${record.nam}`}</Text>;
+        }
+        return <Text strong>{record.nam}</Text>;
+      },
     },
     {
       title: activeTab === 'NCKH' ? 'Loại thành tích' : 'Loại khen thưởng',

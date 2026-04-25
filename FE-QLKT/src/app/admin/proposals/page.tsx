@@ -39,6 +39,7 @@ import {
   PROPOSAL_TYPE_ADMIN_TAG,
   PROPOSAL_STATUS_ADMIN,
   isProposalType,
+  type ProposalType,
 } from '@/constants/proposal.constants';
 import { ProposalDetailModal } from './components/ProposalDetailModal';
 import { RejectModal } from './components/RejectModal';
@@ -50,7 +51,7 @@ const { Title, Text } = Typography;
 
 interface Proposal {
   id: string;
-  loai_de_xuat: string;
+  loai_de_xuat: ProposalType;
   nam: number;
   status: string;
   createdAt: string;

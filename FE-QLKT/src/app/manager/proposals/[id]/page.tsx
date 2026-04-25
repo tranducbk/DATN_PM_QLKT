@@ -20,11 +20,9 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import {
   HomeOutlined,
   ArrowLeftOutlined,
-  EyeOutlined,
   ClockCircleOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
-  FilePdfOutlined,
   TrophyOutlined,
   BookOutlined,
 } from '@ant-design/icons';
@@ -32,7 +30,7 @@ import { formatDateTime } from '@/lib/utils';
 import Link from 'next/link';
 import { apiClient } from '@/lib/apiClient';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
-import { previewFileWithApi } from '@/utils/filePreview';
+import { FileAttachmentList } from '@/components/proposals/FileAttachmentList';
 import { useTheme } from '@/components/ThemeProvider';
 import { getAntdTableThemeConfig } from '@/lib/antdTheme';
 import {
@@ -50,7 +48,6 @@ import {
   getProposalTypeLabel,
   type ProposalType,
 } from '@/constants/proposal.constants';
-import styles from './proposal-detail.module.css';
 
 const { Title, Text } = Typography;
 
@@ -64,6 +61,8 @@ interface DanhHieuItem {
   chuc_vu?: string | null;
   so_quyet_dinh?: string | null;
   file_quyet_dinh?: string | null;
+  thang_nhan?: number | null;
+  nam_nhan?: number | null;
   // Legacy scalar fields (kept for backward compatibility)
   nhan_bkbqp?: boolean;
   so_quyet_dinh_bkbqp?: string | null;
@@ -160,10 +159,7 @@ interface DurationDisplay {
 const CONG_HIEN_GROUP_COLUMNS: Array<{
   key: CongHienHeSoGroup;
   title: string;
-  dataField:
-    | 'thoi_gian_nhom_0_7'
-    | 'thoi_gian_nhom_0_8'
-    | 'thoi_gian_nhom_0_9_1_0';
+  dataField: 'thoi_gian_nhom_0_7' | 'thoi_gian_nhom_0_8' | 'thoi_gian_nhom_0_9_1_0';
 }> = [
   {
     key: CONG_HIEN_HE_SO_GROUPS.LEVEL_07,
@@ -202,7 +198,6 @@ const getDurationDisplay = (value: unknown): string | null => {
 
   return null;
 };
-
 
 interface ProposalDetail {
   id: string;
@@ -254,7 +249,9 @@ export default function ManagerProposalDetailPage() {
   const proposalId = params?.id as string;
   const [proposal, setProposal] = useState<ProposalDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [positionHistoriesMap, setPositionHistoriesMap] = useState<Record<string, PositionHistoryEntry[]>>({});
+  const [positionHistoriesMap, setPositionHistoriesMap] = useState<
+    Record<string, PositionHistoryEntry[]>
+  >({});
 
   useEffect(() => {
     if (proposalId) {
@@ -532,10 +529,10 @@ export default function ManagerProposalDetailPage() {
                 PROPOSAL_TYPES.CONG_HIEN,
               ].includes(proposal.loai_de_xuat as any) &&
                 proposal.thang && (
-                <Text type="secondary" style={{ marginLeft: 8 }}>
-                  (Tháng {proposal.thang})
-                </Text>
-              )}
+                  <Text type="secondary" style={{ marginLeft: 8 }}>
+                    (Tháng {proposal.thang})
+                  </Text>
+                )}
             </Descriptions.Item>
             <Descriptions.Item label="Trạng thái">
               {getStatusTag(proposal.status)}
@@ -595,68 +592,11 @@ export default function ManagerProposalDetailPage() {
 
         {/* Attached Files */}
         <Card title="File đính kèm" className="shadow-sm">
-          {proposal.files_attached && proposal.files_attached.length > 0 ? (
-            <Space direction="vertical" style={{ width: '100%' }} size="middle">
-              {proposal.files_attached.map((file, index) => (
-                <div
-                  key={index}
-                  className={`${styles.fileItem} ${
-                    isDark ? styles.fileItemDark : styles.fileItemLight
-                  }`}
-                >
-                  <div className={styles.fileContent}>
-                    <div className={styles.fileHeader}>
-                      <FilePdfOutlined
-                        className={isDark ? styles.fileIconDark : styles.fileIconLight}
-                      />
-                      <Text
-                        strong
-                        className={`break-all ${
-                          isDark ? styles.fileNameDark : styles.fileNameLight
-                        }`}
-                      >
-                        {(() => {
-                          try {
-                            if (file.originalName && typeof file.originalName === 'string') {
-                              if (file.originalName.includes('%')) {
-                                return decodeURIComponent(file.originalName);
-                              }
-                              return file.originalName;
-                            }
-                            return file.originalName || '-';
-                          } catch (e) {
-                            return file.originalName || '-';
-                          }
-                        })()}
-                      </Text>
-                    </div>
-                    <Text
-                      type="secondary"
-                      className={`text-xs ${isDark ? styles.fileInfoDark : styles.fileInfoLight}`}
-                    >
-                      Kích thước: {(file.size / 1024).toFixed(2)} KB • Ngày tải lên:{' '}
-                      {formatDateTime(file.uploadedAt)}
-                    </Text>
-                  </div>
-                  <Button
-                    type="primary"
-                    icon={<EyeOutlined />}
-                    onClick={() => {
-                      previewFileWithApi(
-                        `/api/proposals/uploads/${file.filename}`,
-                        file.originalName
-                      );
-                    }}
-                    className={styles.downloadButton}
-                  >
-                    Xem file
-                  </Button>
-                </div>
-              ))}
-            </Space>
-          ) : (
-            <Text type="secondary">Không có file đính kèm</Text>
-          )}
+          <FileAttachmentList
+            files={proposal.files_attached || []}
+            mode="server"
+            emptyText="Không có file đính kèm"
+          />
         </Card>
 
         {proposal.loai_de_xuat === PROPOSAL_TYPES.NCKH && (
@@ -665,9 +605,9 @@ export default function ManagerProposalDetailPage() {
             title={
               <span>
                 <BookOutlined style={{ marginRight: 8 }} />
-                {(isProposalType(proposal.loai_de_xuat)
+                {isProposalType(proposal.loai_de_xuat)
                   ? PROPOSAL_REVIEW_CARD_TITLES[proposal.loai_de_xuat]
-                  : getProposalTypeLabel(proposal.loai_de_xuat))}{' '}
+                  : getProposalTypeLabel(proposal.loai_de_xuat)}{' '}
                 ({proposal.data_thanh_tich?.length || 0})
               </span>
             }
@@ -810,222 +750,38 @@ export default function ManagerProposalDetailPage() {
 
         {proposal.loai_de_xuat === PROPOSAL_TYPES.CONG_HIEN &&
           !!proposal.data_cong_hien?.length && (
-          <Card
-            className="shadow-sm"
-            title={
-              <span>
-                <TrophyOutlined style={{ marginRight: 8 }} />
-                {(isProposalType(proposal.loai_de_xuat)
-                  ? PROPOSAL_REVIEW_CARD_TITLES[proposal.loai_de_xuat]
-                  : getProposalTypeLabel(proposal.loai_de_xuat))}{' '}
-                ({proposal.data_cong_hien?.length || 0})
-              </span>
-            }
-          >
-            <Table
-              dataSource={proposal.data_cong_hien || []}
-              rowKey={(_, index) => `ch_${index}`}
-              pagination={false}
-              scroll={{ x: 'max-content' }}
-              columns={[
-                {
-                  title: 'STT',
-                  key: 'index',
-                  width: 60,
-                  align: 'center',
-                  render: (_, __, index) => index + 1,
-                },
-                {
-                  title: 'Họ và tên',
-                  dataIndex: 'ho_ten',
-                  key: 'ho_ten',
-                  width: 250,
-                  align: 'center',
-                  render: (text: string, record: DanhHieuItem) => {
-                    const coQuanDonVi = record.co_quan_don_vi?.ten_co_quan_don_vi;
-                    const donViTrucThuoc = record.don_vi_truc_thuoc?.ten_don_vi;
-                    const parts = [];
-                    if (donViTrucThuoc) parts.push(donViTrucThuoc);
-                    if (coQuanDonVi) parts.push(coQuanDonVi);
-                    const unitInfo = parts.length > 0 ? parts.join(', ') : null;
-
-                    return (
-                      <div
-                        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
-                      >
-                        <Text strong>{text || '-'}</Text>
-                        {unitInfo && (
-                          <Text type="secondary" style={{ fontSize: '12px', marginTop: '4px' }}>
-                            {unitInfo}
-                          </Text>
-                        )}
-                      </div>
-                    );
+            <Card
+              className="shadow-sm"
+              title={
+                <span>
+                  <TrophyOutlined style={{ marginRight: 8 }} />
+                  {isProposalType(proposal.loai_de_xuat)
+                    ? PROPOSAL_REVIEW_CARD_TITLES[proposal.loai_de_xuat]
+                    : getProposalTypeLabel(proposal.loai_de_xuat)}{' '}
+                  ({proposal.data_cong_hien?.length || 0})
+                </span>
+              }
+            >
+              <Table
+                dataSource={proposal.data_cong_hien || []}
+                rowKey={(_, index) => `ch_${index}`}
+                pagination={false}
+                scroll={{ x: 'max-content' }}
+                columns={[
+                  {
+                    title: 'STT',
+                    key: 'index',
+                    width: 60,
+                    align: 'center',
+                    render: (_, __, index) => index + 1,
                   },
-                },
-                {
-                  title: 'Cấp bậc / Chức vụ',
-                  key: 'cap_bac_chuc_vu',
-                  width: 180,
-                  align: 'center',
-                  render: (_: unknown, record: DanhHieuItem) => {
-                    // Rank/position stored at proposal creation time (Step 3), not current personnel data
-                    const capBac = record.cap_bac;
-                    const chucVu = record.chuc_vu;
-
-                    if (!capBac && !chucVu) {
-                      return <span>-</span>;
-                    }
-
-                    return (
-                      <div
-                        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
-                      >
-                        {capBac && (
-                          <Text strong style={{ marginBottom: chucVu ? '4px' : '0' }}>
-                            {capBac}
-                          </Text>
-                        )}
-                        {chucVu && (
-                          <Text type="secondary" style={{ fontSize: '12px' }}>
-                            {chucVu}
-                          </Text>
-                        )}
-                      </div>
-                    );
-                  },
-                },
-                {
-                  title: 'Tháng',
-                  key: 'thang',
-                  width: 90,
-                  align: 'center',
-                  render: (_: unknown, record: DanhHieuItem) => record.thang ?? null,
-                },
-                {
-                  title: 'Năm',
-                  dataIndex: 'nam',
-                  key: 'nam',
-                  width: 100,
-                  align: 'center',
-                },
-                {
-                  title: 'Danh hiệu đề xuất',
-                  dataIndex: 'danh_hieu',
-                  key: 'danh_hieu',
-                  width: 280,
-                  align: 'center',
-                  render: (text: string) => {
-                    return text ? (
-                      <Text style={{ whiteSpace: 'nowrap' }}>{DANH_HIEU_MAP[text] || text}</Text>
-                    ) : (
-                      <Text type="secondary">-</Text>
-                    );
-                  },
-                },
-                ...CONG_HIEN_GROUP_COLUMNS.map(groupColumn => ({
-                  title: groupColumn.title,
-                  key: `total_time_${groupColumn.key}`,
-                  width: 150,
-                  align: 'center' as const,
-                  render: (_: unknown, record: DanhHieuItem) =>
-                    renderContributionGroupDuration(record, groupColumn.key, groupColumn.dataField),
-                })),
-                ...(proposal.status === PROPOSAL_STATUS.APPROVED
-                  ? [
-                      {
-                        title: 'Số quyết định',
-                        dataIndex: 'so_quyet_dinh',
-                        key: 'so_quyet_dinh',
-                        width: 180,
-                        align: 'center' as const,
-                        render: (text: string, record: DanhHieuItem) => {
-                          if (!text || (typeof text === 'string' && text.trim() === '')) {
-                            return <Text type="secondary">-</Text>;
-                          }
-
-                          return (
-                            <a
-                              onClick={e => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleOpenDecisionFile(text);
-                              }}
-                              style={{
-                                color: '#1890ff',
-                                cursor: 'pointer',
-                                textDecoration: 'underline',
-                              }}
-                            >
-                              {text}
-                            </a>
-                          );
-                        },
-                      },
-                    ]
-                  : []),
-              ]}
-            />
-          </Card>
-        )}
-
-        {proposal.loai_de_xuat !== PROPOSAL_TYPES.NCKH &&
-          proposal.loai_de_xuat !== PROPOSAL_TYPES.CONG_HIEN &&
-          !!proposal.data_danh_hieu?.length && (
-          <Card
-            className="shadow-sm"
-            title={
-              <span>
-                <TrophyOutlined style={{ marginRight: 8 }} />
-                {(isProposalType(proposal.loai_de_xuat)
-                  ? PROPOSAL_REVIEW_CARD_TITLES[proposal.loai_de_xuat]
-                  : getProposalTypeLabel(proposal.loai_de_xuat))}{' '}
-                ({proposal.data_danh_hieu?.length || 0})
-              </span>
-            }
-          >
-            <Table
-              dataSource={proposal.data_danh_hieu || []}
-              rowKey={(_, index) => `dh_${index}`}
-              pagination={false}
-              scroll={{ x: 'max-content' }}
-              columns={[
-                {
-                  title: 'STT',
-                  key: 'index',
-                  width: 60,
-                  align: 'center',
-                  render: (_, __, index) => index + 1,
-                },
-                {
-                  title:
-                    proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM
-                      ? 'Tên đơn vị'
-                      : 'Họ và tên',
-                  dataIndex:
-                    proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM
-                      ? 'ten_don_vi'
-                      : 'ho_ten',
-                  key:
-                    proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM
-                      ? 'ten_don_vi'
-                      : 'ho_ten',
-                  width: 250,
-                  align: 'center',
-                  render: (text: string, record: DanhHieuItem) => {
-                    if (proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
-                      // For units, show unit name
-                      return (
-                        <div
-                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
-                        >
-                          <Text strong style={{ whiteSpace: 'nowrap' }}>
-                            {text || '-'}
-                          </Text>
-                        </div>
-                      );
-                    } else {
-                      // For personnel, show name and unit info
+                  {
+                    title: 'Họ và tên',
+                    dataIndex: 'ho_ten',
+                    key: 'ho_ten',
+                    width: 250,
+                    align: 'center',
+                    render: (text: string, record: DanhHieuItem) => {
                       const coQuanDonVi = record.co_quan_don_vi?.ten_co_quan_don_vi;
                       const donViTrucThuoc = record.don_vi_truc_thuoc?.ten_don_vi;
                       const parts = [];
@@ -1037,44 +793,23 @@ export default function ManagerProposalDetailPage() {
                         <div
                           style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
                         >
-                          <Text strong style={{ whiteSpace: 'nowrap' }}>
-                            {text || '-'}
-                          </Text>
+                          <Text strong>{text || '-'}</Text>
                           {unitInfo && (
-                            <Text
-                              type="secondary"
-                              style={{ fontSize: '12px', marginTop: '4px', whiteSpace: 'nowrap' }}
-                            >
+                            <Text type="secondary" style={{ fontSize: '12px', marginTop: '4px' }}>
                               {unitInfo}
                             </Text>
                           )}
                         </div>
                       );
-                    }
+                    },
                   },
-                },
-                {
-                  title:
-                    proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM
-                      ? 'Mã đơn vị'
-                      : 'Cấp bậc / Chức vụ',
-                  key:
-                    proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM
-                      ? 'ma_don_vi'
-                      : 'cap_bac_chuc_vu',
-                  width: 180,
-                  align: 'center',
-                  render: (_: unknown, record: DanhHieuItem) => {
-                    if (proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
-                      // For units, show unit code
-                      const unitRecord = record as DanhHieuItem & { ma_don_vi?: string };
-                      return (
-                        <Text strong style={{ whiteSpace: 'nowrap' }}>
-                          {unitRecord.ma_don_vi || '-'}
-                        </Text>
-                      );
-                    } else {
-                      // For personnel, show rank and position
+                  {
+                    title: 'Cấp bậc / Chức vụ',
+                    key: 'cap_bac_chuc_vu',
+                    width: 180,
+                    align: 'center',
+                    render: (_: unknown, record: DanhHieuItem) => {
+                      // Rank/position stored at proposal creation time (Step 3), not current personnel data
                       const capBac = record.cap_bac;
                       const chucVu = record.chuc_vu;
 
@@ -1087,279 +822,529 @@ export default function ManagerProposalDetailPage() {
                           style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
                         >
                           {capBac && (
-                            <Text
-                              strong
-                              style={{ marginBottom: chucVu ? '4px' : '0', whiteSpace: 'nowrap' }}
-                            >
+                            <Text strong style={{ marginBottom: chucVu ? '4px' : '0' }}>
                               {capBac}
                             </Text>
                           )}
                           {chucVu && (
-                            <Text
-                              type="secondary"
-                              style={{ fontSize: '12px', whiteSpace: 'nowrap' }}
-                            >
+                            <Text type="secondary" style={{ fontSize: '12px' }}>
                               {chucVu}
                             </Text>
                           )}
                         </div>
                       );
-                    }
+                    },
                   },
-                },
-                {
-                  title: 'Năm',
-                  dataIndex: 'nam',
-                  key: 'nam',
-                  width: 100,
-                  align: 'center',
-                },
-                {
-                  title: 'Danh hiệu đề xuất',
-                  dataIndex: 'danh_hieu',
-                  key: 'danh_hieu',
-                  width: 280,
-                  align: 'center',
-                  render: (text: string) => {
-                    return text ? (
-                      <Text style={{ whiteSpace: 'nowrap' }}>{DANH_HIEU_MAP[text] || text}</Text>
-                    ) : (
-                      <Text type="secondary">-</Text>
-                    );
+                  {
+                    title: 'Tháng',
+                    dataIndex: 'thang',
+                    width: 90,
+                    align: 'center',
+                    render: (val: number | null | undefined) => val ?? proposal?.thang ?? '—',
                   },
-                },
-                ...(proposal.status === PROPOSAL_STATUS.APPROVED
-                  ? [
-                      {
-                        title: 'Số quyết định',
-                        dataIndex: 'so_quyet_dinh',
-                        key: 'so_quyet_dinh',
-                        width: 180,
-                        align: 'center' as const,
-                        render: (text: string, record: DanhHieuItem) => {
-                          const soQuyetDinh =
-                            text || record.so_quyet_dinh_bkbqp || record.so_quyet_dinh_cstdtq;
-
-                          if (
-                            !soQuyetDinh ||
-                            (typeof soQuyetDinh === 'string' && soQuyetDinh.trim() === '')
-                          ) {
-                            return <Text type="secondary">-</Text>;
-                          }
-
-                          return (
-                            <a
-                              onClick={e => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleOpenDecisionFile(soQuyetDinh);
-                              }}
-                              style={{
-                                color: '#52c41a',
-                                cursor: 'pointer',
-                                textDecoration: 'underline',
-                              }}
-                            >
-                              {soQuyetDinh}
-                            </a>
-                          );
+                  {
+                    title: 'Năm',
+                    dataIndex: 'nam',
+                    key: 'nam',
+                    width: 100,
+                    align: 'center',
+                  },
+                  {
+                    title: 'Danh hiệu đề xuất',
+                    dataIndex: 'danh_hieu',
+                    key: 'danh_hieu',
+                    width: 280,
+                    align: 'center',
+                    render: (text: string) => {
+                      return text ? (
+                        <Text style={{ whiteSpace: 'nowrap' }}>{DANH_HIEU_MAP[text] || text}</Text>
+                      ) : (
+                        <Text type="secondary">-</Text>
+                      );
+                    },
+                  },
+                  ...CONG_HIEN_GROUP_COLUMNS.map(groupColumn => ({
+                    title: groupColumn.title,
+                    key: `total_time_${groupColumn.key}`,
+                    width: 150,
+                    align: 'center' as const,
+                    render: (_: unknown, record: DanhHieuItem) =>
+                      renderContributionGroupDuration(
+                        record,
+                        groupColumn.key,
+                        groupColumn.dataField
+                      ),
+                  })),
+                  ...(proposal.status === PROPOSAL_STATUS.APPROVED
+                    ? [
+                        {
+                          title: 'Tháng nhận',
+                          key: 'thang_nhan_cong_hien',
+                          width: 120,
+                          align: 'center' as const,
+                          render: (_: unknown, record: DanhHieuItem) => {
+                            if (record.thang_nhan && record.nam_nhan) {
+                              return (
+                                <Text>{`${String(record.thang_nhan).padStart(2, '0')}/${record.nam_nhan}`}</Text>
+                              );
+                            }
+                            return <Text type="secondary">—</Text>;
+                          },
                         },
-                      },
-                    ]
-                  : []),
-              ]}
-            />
-          </Card>
-        )}
+                        {
+                          title: 'Số quyết định',
+                          dataIndex: 'so_quyet_dinh',
+                          key: 'so_quyet_dinh',
+                          width: 180,
+                          align: 'center' as const,
+                          render: (text: string, record: DanhHieuItem) => {
+                            if (!text || (typeof text === 'string' && text.trim() === '')) {
+                              return <Text type="secondary">-</Text>;
+                            }
+
+                            return (
+                              <a
+                                onClick={e => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleOpenDecisionFile(text);
+                                }}
+                                style={{
+                                  color: '#1890ff',
+                                  cursor: 'pointer',
+                                  textDecoration: 'underline',
+                                }}
+                              >
+                                {text}
+                              </a>
+                            );
+                          },
+                        },
+                      ]
+                    : []),
+                ]}
+              />
+            </Card>
+          )}
+
+        {proposal.loai_de_xuat !== PROPOSAL_TYPES.NCKH &&
+          proposal.loai_de_xuat !== PROPOSAL_TYPES.CONG_HIEN &&
+          !!proposal.data_danh_hieu?.length && (
+            <Card
+              className="shadow-sm"
+              title={
+                <span>
+                  <TrophyOutlined style={{ marginRight: 8 }} />
+                  {isProposalType(proposal.loai_de_xuat)
+                    ? PROPOSAL_REVIEW_CARD_TITLES[proposal.loai_de_xuat]
+                    : getProposalTypeLabel(proposal.loai_de_xuat)}{' '}
+                  ({proposal.data_danh_hieu?.length || 0})
+                </span>
+              }
+            >
+              <Table
+                dataSource={proposal.data_danh_hieu || []}
+                rowKey={(_, index) => `dh_${index}`}
+                pagination={false}
+                scroll={{ x: 'max-content' }}
+                columns={[
+                  {
+                    title: 'STT',
+                    key: 'index',
+                    width: 60,
+                    align: 'center',
+                    render: (_, __, index) => index + 1,
+                  },
+                  {
+                    title:
+                      proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM
+                        ? 'Tên đơn vị'
+                        : 'Họ và tên',
+                    dataIndex:
+                      proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM
+                        ? 'ten_don_vi'
+                        : 'ho_ten',
+                    key:
+                      proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM
+                        ? 'ten_don_vi'
+                        : 'ho_ten',
+                    width: 250,
+                    align: 'center',
+                    render: (text: string, record: DanhHieuItem) => {
+                      if (proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
+                        // For units, show unit name
+                        return (
+                          <div
+                            style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                            }}
+                          >
+                            <Text strong style={{ whiteSpace: 'nowrap' }}>
+                              {text || '-'}
+                            </Text>
+                          </div>
+                        );
+                      } else {
+                        // For personnel, show name and unit info
+                        const coQuanDonVi = record.co_quan_don_vi?.ten_co_quan_don_vi;
+                        const donViTrucThuoc = record.don_vi_truc_thuoc?.ten_don_vi;
+                        const parts = [];
+                        if (donViTrucThuoc) parts.push(donViTrucThuoc);
+                        if (coQuanDonVi) parts.push(coQuanDonVi);
+                        const unitInfo = parts.length > 0 ? parts.join(', ') : null;
+
+                        return (
+                          <div
+                            style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                            }}
+                          >
+                            <Text strong style={{ whiteSpace: 'nowrap' }}>
+                              {text || '-'}
+                            </Text>
+                            {unitInfo && (
+                              <Text
+                                type="secondary"
+                                style={{ fontSize: '12px', marginTop: '4px', whiteSpace: 'nowrap' }}
+                              >
+                                {unitInfo}
+                              </Text>
+                            )}
+                          </div>
+                        );
+                      }
+                    },
+                  },
+                  {
+                    title:
+                      proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM
+                        ? 'Mã đơn vị'
+                        : 'Cấp bậc / Chức vụ',
+                    key:
+                      proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM
+                        ? 'ma_don_vi'
+                        : 'cap_bac_chuc_vu',
+                    width: 180,
+                    align: 'center',
+                    render: (_: unknown, record: DanhHieuItem) => {
+                      if (proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
+                        // For units, show unit code
+                        const unitRecord = record as DanhHieuItem & { ma_don_vi?: string };
+                        return (
+                          <Text strong style={{ whiteSpace: 'nowrap' }}>
+                            {unitRecord.ma_don_vi || '-'}
+                          </Text>
+                        );
+                      } else {
+                        // For personnel, show rank and position
+                        const capBac = record.cap_bac;
+                        const chucVu = record.chuc_vu;
+
+                        if (!capBac && !chucVu) {
+                          return <span>-</span>;
+                        }
+
+                        return (
+                          <div
+                            style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                            }}
+                          >
+                            {capBac && (
+                              <Text
+                                strong
+                                style={{ marginBottom: chucVu ? '4px' : '0', whiteSpace: 'nowrap' }}
+                              >
+                                {capBac}
+                              </Text>
+                            )}
+                            {chucVu && (
+                              <Text
+                                type="secondary"
+                                style={{ fontSize: '12px', whiteSpace: 'nowrap' }}
+                              >
+                                {chucVu}
+                              </Text>
+                            )}
+                          </div>
+                        );
+                      }
+                    },
+                  },
+                  {
+                    title: 'Năm',
+                    dataIndex: 'nam',
+                    key: 'nam',
+                    width: 100,
+                    align: 'center',
+                  },
+                  {
+                    title: 'Danh hiệu đề xuất',
+                    dataIndex: 'danh_hieu',
+                    key: 'danh_hieu',
+                    width: 280,
+                    align: 'center',
+                    render: (text: string) => {
+                      return text ? (
+                        <Text style={{ whiteSpace: 'nowrap' }}>{DANH_HIEU_MAP[text] || text}</Text>
+                      ) : (
+                        <Text type="secondary">-</Text>
+                      );
+                    },
+                  },
+                  ...(proposal.status === PROPOSAL_STATUS.APPROVED
+                    ? [
+                        {
+                          title: 'Số quyết định',
+                          dataIndex: 'so_quyet_dinh',
+                          key: 'so_quyet_dinh',
+                          width: 180,
+                          align: 'center' as const,
+                          render: (text: string, record: DanhHieuItem) => {
+                            const soQuyetDinh =
+                              text || record.so_quyet_dinh_bkbqp || record.so_quyet_dinh_cstdtq;
+
+                            if (
+                              !soQuyetDinh ||
+                              (typeof soQuyetDinh === 'string' && soQuyetDinh.trim() === '')
+                            ) {
+                              return <Text type="secondary">-</Text>;
+                            }
+
+                            return (
+                              <a
+                                onClick={e => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleOpenDecisionFile(soQuyetDinh);
+                                }}
+                                style={{
+                                  color: '#52c41a',
+                                  cursor: 'pointer',
+                                  textDecoration: 'underline',
+                                }}
+                              >
+                                {soQuyetDinh}
+                              </a>
+                            );
+                          },
+                        },
+                      ]
+                    : []),
+                ]}
+              />
+            </Card>
+          )}
 
         {proposal.loai_de_xuat !== PROPOSAL_TYPES.NCKH &&
           proposal.loai_de_xuat !== PROPOSAL_TYPES.CONG_HIEN &&
           !proposal.data_danh_hieu?.length &&
           !!proposal.data_nien_han?.length && (
-          <Card
-            className="shadow-sm"
-            title={
-              <span>
-                <ClockCircleOutlined style={{ marginRight: 8 }} />
-                {getProposalTypeLabel(proposal.loai_de_xuat)} ({proposal.data_nien_han?.length || 0})
-              </span>
-            }
-          >
-            <Table
-              dataSource={proposal.data_nien_han || []}
-              rowKey={(_, index) => `nh_${index}`}
-              pagination={false}
-              scroll={{ x: 'max-content' }}
-              columns={[
-                {
-                  title: 'STT',
-                  key: 'index',
-                  width: 60,
-                  align: 'center',
-                  render: (_, __, index) => index + 1,
-                },
-                {
-                  title: 'Họ và tên',
-                  dataIndex: 'ho_ten',
-                  key: 'ho_ten',
-                  width: 250,
-                  align: 'center',
-                  render: (text: string, record: DanhHieuItem) => {
-                    const coQuanDonVi = record.co_quan_don_vi?.ten_co_quan_don_vi;
-                    const donViTrucThuoc = record.don_vi_truc_thuoc?.ten_don_vi;
-                    const parts = [];
-                    if (donViTrucThuoc) parts.push(donViTrucThuoc);
-                    if (coQuanDonVi) parts.push(coQuanDonVi);
-                    const unitInfo = parts.length > 0 ? parts.join(', ') : null;
-
-                    return (
-                      <div
-                        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
-                      >
-                        <Text strong>{text || '-'}</Text>
-                        {unitInfo && (
-                          <Text type="secondary" style={{ fontSize: '12px', marginTop: '4px' }}>
-                            {unitInfo}
-                          </Text>
-                        )}
-                      </div>
-                    );
+            <Card
+              className="shadow-sm"
+              title={
+                <span>
+                  <ClockCircleOutlined style={{ marginRight: 8 }} />
+                  {getProposalTypeLabel(proposal.loai_de_xuat)} (
+                  {proposal.data_nien_han?.length || 0})
+                </span>
+              }
+            >
+              <Table
+                dataSource={proposal.data_nien_han || []}
+                rowKey={(_, index) => `nh_${index}`}
+                pagination={false}
+                scroll={{ x: 'max-content' }}
+                columns={[
+                  {
+                    title: 'STT',
+                    key: 'index',
+                    width: 60,
+                    align: 'center',
+                    render: (_, __, index) => index + 1,
                   },
-                },
-                {
-                  title: 'Cấp bậc / Chức vụ',
-                  key: 'cap_bac_chuc_vu',
-                  width: 180,
-                  align: 'center',
-                  render: (_: unknown, record: DanhHieuItem) => {
-                    // Rank/position stored at proposal creation time (Step 3), not current personnel data
-                    const capBac = record.cap_bac;
-                    const chucVu = record.chuc_vu;
+                  {
+                    title: 'Họ và tên',
+                    dataIndex: 'ho_ten',
+                    key: 'ho_ten',
+                    width: 250,
+                    align: 'center',
+                    render: (text: string, record: DanhHieuItem) => {
+                      const coQuanDonVi = record.co_quan_don_vi?.ten_co_quan_don_vi;
+                      const donViTrucThuoc = record.don_vi_truc_thuoc?.ten_don_vi;
+                      const parts = [];
+                      if (donViTrucThuoc) parts.push(donViTrucThuoc);
+                      if (coQuanDonVi) parts.push(coQuanDonVi);
+                      const unitInfo = parts.length > 0 ? parts.join(', ') : null;
 
-                    if (!capBac && !chucVu) {
-                      return <span>-</span>;
-                    }
-
-                    return (
-                      <div
-                        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
-                      >
-                        {capBac && (
-                          <Text strong style={{ marginBottom: chucVu ? '4px' : '0' }}>
-                            {capBac}
-                          </Text>
-                        )}
-                        {chucVu && (
-                          <Text type="secondary" style={{ fontSize: '12px' }}>
-                            {chucVu}
-                          </Text>
-                        )}
-                      </div>
-                    );
-                  },
-                },
-                {
-                  title: 'Năm',
-                  dataIndex: 'nam',
-                  key: 'nam',
-                  width: 70,
-                  align: 'center',
-                },
-                {
-                  title: 'Tháng',
-                  dataIndex: 'thang',
-                  key: 'thang',
-                  width: 70,
-                  align: 'center',
-                  render: (val: number | null | undefined) => val ?? '',
-                },
-                {
-                  title: 'Tổng thời gian',
-                  dataIndex: 'thoi_gian',
-                  key: 'thoi_gian',
-                  width: 150,
-                  align: 'center',
-                  render: (thoiGian: unknown) => {
-                    if (!thoiGian) return <Text type="secondary">-</Text>;
-                    if (typeof thoiGian === 'string') {
-                      try {
-                        const parsed = JSON.parse(thoiGian) as DurationDisplay;
-                        return (
-                          <Text style={{ whiteSpace: 'nowrap' }}>{parsed.display || '-'}</Text>
-                        );
-                      } catch {
-                        return <Text style={{ whiteSpace: 'nowrap' }}>{thoiGian}</Text>;
-                      }
-                    }
-                    if (typeof thoiGian === 'object') {
-                      const duration = thoiGian as DurationDisplay;
                       return (
-                        <Text style={{ whiteSpace: 'nowrap' }}>
-                          {duration.display ||
-                            `${duration.years || 0} năm ${duration.months || 0} tháng`}
-                        </Text>
+                        <div
+                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+                        >
+                          <Text strong>{text || '-'}</Text>
+                          {unitInfo && (
+                            <Text type="secondary" style={{ fontSize: '12px', marginTop: '4px' }}>
+                              {unitInfo}
+                            </Text>
+                          )}
+                        </div>
                       );
-                    }
-                    return <Text style={{ whiteSpace: 'nowrap' }}>{String(thoiGian)}</Text>;
+                    },
                   },
-                },
-                {
-                  title: 'Danh hiệu đề xuất',
-                  dataIndex: 'danh_hieu',
-                  key: 'danh_hieu',
-                  width: 180,
-                  align: 'center',
-                  render: (text: string) => {
-                    return text ? (
-                      <Text>{DANH_HIEU_MAP[text] || text}</Text>
-                    ) : (
-                      <Text type="secondary">-</Text>
-                    );
+                  {
+                    title: 'Cấp bậc / Chức vụ',
+                    key: 'cap_bac_chuc_vu',
+                    width: 180,
+                    align: 'center',
+                    render: (_: unknown, record: DanhHieuItem) => {
+                      // Rank/position stored at proposal creation time (Step 3), not current personnel data
+                      const capBac = record.cap_bac;
+                      const chucVu = record.chuc_vu;
+
+                      if (!capBac && !chucVu) {
+                        return <span>-</span>;
+                      }
+
+                      return (
+                        <div
+                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+                        >
+                          {capBac && (
+                            <Text strong style={{ marginBottom: chucVu ? '4px' : '0' }}>
+                              {capBac}
+                            </Text>
+                          )}
+                          {chucVu && (
+                            <Text type="secondary" style={{ fontSize: '12px' }}>
+                              {chucVu}
+                            </Text>
+                          )}
+                        </div>
+                      );
+                    },
                   },
-                },
-                ...(proposal.status === PROPOSAL_STATUS.APPROVED
-                  ? [
-                      {
-                        title: 'Số quyết định',
-                        dataIndex: 'so_quyet_dinh',
-                        key: 'so_quyet_dinh',
-                        width: 180,
-                        align: 'center' as const,
-                        render: (text: string, record: DanhHieuItem) => {
-                          const soQuyetDinh =
-                            text || record.so_quyet_dinh_bkbqp || record.so_quyet_dinh_cstdtq;
-
-                          if (
-                            !soQuyetDinh ||
-                            (typeof soQuyetDinh === 'string' && soQuyetDinh.trim() === '')
-                          ) {
-                            return <Text type="secondary">-</Text>;
-                          }
-
+                  {
+                    title: 'Năm',
+                    dataIndex: 'nam',
+                    key: 'nam',
+                    width: 70,
+                    align: 'center',
+                  },
+                  {
+                    title: 'Tháng',
+                    dataIndex: 'thang',
+                    key: 'thang',
+                    width: 70,
+                    align: 'center',
+                    render: (val: number | null | undefined) => val ?? proposal?.thang ?? '—',
+                  },
+                  {
+                    title: 'Tổng thời gian',
+                    dataIndex: 'thoi_gian',
+                    key: 'thoi_gian',
+                    width: 150,
+                    align: 'center',
+                    render: (thoiGian: unknown) => {
+                      if (!thoiGian) return <Text type="secondary">-</Text>;
+                      if (typeof thoiGian === 'string') {
+                        try {
+                          const parsed = JSON.parse(thoiGian) as DurationDisplay;
                           return (
-                            <a
-                              onClick={e => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleOpenDecisionFile(soQuyetDinh);
-                              }}
-                              style={{
-                                color: '#52c41a',
-                                cursor: 'pointer',
-                                textDecoration: 'underline',
-                              }}
-                            >
-                              {soQuyetDinh}
-                            </a>
+                            <Text style={{ whiteSpace: 'nowrap' }}>{parsed.display || '-'}</Text>
                           );
+                        } catch {
+                          return <Text style={{ whiteSpace: 'nowrap' }}>{thoiGian}</Text>;
+                        }
+                      }
+                      if (typeof thoiGian === 'object') {
+                        const duration = thoiGian as DurationDisplay;
+                        return (
+                          <Text style={{ whiteSpace: 'nowrap' }}>
+                            {duration.display ||
+                              `${duration.years || 0} năm ${duration.months || 0} tháng`}
+                          </Text>
+                        );
+                      }
+                      return <Text style={{ whiteSpace: 'nowrap' }}>{String(thoiGian)}</Text>;
+                    },
+                  },
+                  {
+                    title: 'Danh hiệu đề xuất',
+                    dataIndex: 'danh_hieu',
+                    key: 'danh_hieu',
+                    width: 180,
+                    align: 'center',
+                    render: (text: string) => {
+                      return text ? (
+                        <Text>{DANH_HIEU_MAP[text] || text}</Text>
+                      ) : (
+                        <Text type="secondary">-</Text>
+                      );
+                    },
+                  },
+                  ...(proposal.status === PROPOSAL_STATUS.APPROVED
+                    ? [
+                        {
+                          title: 'Tháng nhận',
+                          key: 'thang_nhan_nien_han',
+                          width: 120,
+                          align: 'center' as const,
+                          render: (_: unknown, record: DanhHieuItem) => {
+                            if (record.thang_nhan && record.nam_nhan) {
+                              return (
+                                <Text>{`${String(record.thang_nhan).padStart(2, '0')}/${record.nam_nhan}`}</Text>
+                              );
+                            }
+                            return <Text type="secondary">—</Text>;
+                          },
                         },
-                      },
-                    ]
-                  : []),
-              ]}
-            />
-          </Card>
-        )}
+                        {
+                          title: 'Số quyết định',
+                          dataIndex: 'so_quyet_dinh',
+                          key: 'so_quyet_dinh',
+                          width: 180,
+                          align: 'center' as const,
+                          render: (text: string, record: DanhHieuItem) => {
+                            const soQuyetDinh =
+                              text || record.so_quyet_dinh_bkbqp || record.so_quyet_dinh_cstdtq;
+
+                            if (
+                              !soQuyetDinh ||
+                              (typeof soQuyetDinh === 'string' && soQuyetDinh.trim() === '')
+                            ) {
+                              return <Text type="secondary">-</Text>;
+                            }
+
+                            return (
+                              <a
+                                onClick={e => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleOpenDecisionFile(soQuyetDinh);
+                                }}
+                                style={{
+                                  color: '#52c41a',
+                                  cursor: 'pointer',
+                                  textDecoration: 'underline',
+                                }}
+                              >
+                                {soQuyetDinh}
+                              </a>
+                            );
+                          },
+                        },
+                      ]
+                    : []),
+                ]}
+              />
+            </Card>
+          )}
 
         {proposal.status === PROPOSAL_STATUS.REJECTED && (
           <Card className="shadow-sm bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200">

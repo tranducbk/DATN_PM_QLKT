@@ -3,15 +3,14 @@ import ExcelJS from 'exceljs';
 import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHelper';
 import profileService from './profile.service';
 import * as notificationHelper from '../helpers/notification';
-import { resolveDanhHieuCode, buildDanhHieuExcelOptions, DANH_HIEU_NCKH } from '../constants/danhHieu.constants';
+import { buildDanhHieuExcelOptions, DANH_HIEU_NCKH, resolveNckhCode } from '../constants/danhHieu.constants';
 import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { NotFoundError, ValidationError } from '../middlewares/errorHandler';
 import { buildTemplate, TemplateColumn, styleHeaderRow } from '../helpers/excelTemplateHelper';
-import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, sanitizeRowData } from '../helpers/excelHelper';
+import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, sanitizeRowData, validatePersonnelNameMatch } from '../helpers/excelHelper';
 import { IMPORT_TRANSACTION_TIMEOUT, EXPORT_FETCH_LIMIT } from '../constants/excel.constants';
-import { VALID_NCKH } from './proposal/helpers';
 
 interface CreateAchievementData {
   personnel_id: string;
@@ -110,16 +109,16 @@ class ScientificAchievementService {
       throw new NotFoundError('Quân nhân');
     }
 
-    const validLoai = VALID_NCKH as readonly string[];
-    if (!validLoai.includes(loai)) {
-      throw new ValidationError('Loại thành tích không hợp lệ. Loại hợp lệ: ' + validLoai.join(', '));
+    const loaiCode = resolveNckhCode(loai);
+    if (!loaiCode) {
+      throw new ValidationError('Loại thành tích không hợp lệ. Chỉ chấp nhận: ' + Object.values(DANH_HIEU_NCKH).join(', '));
     }
 
     const newAchievement = await prisma.thanhTichKhoaHoc.create({
       data: {
         quan_nhan_id: personnel_id,
         nam,
-        loai,
+        loai: loaiCode,
         mo_ta,
         cap_bac: cap_bac || null,
         chuc_vu: chuc_vu || null,
@@ -131,7 +130,7 @@ class ScientificAchievementService {
     try {
       await profileService.recalculateAnnualProfile(personnel_id);
     } catch (e) {
-      console.error('recalculateAnnualProfile failed:', e);
+      void writeSystemLog({ action: 'ERROR', resource: 'scientific-achievements', description: `Lỗi tính lại hồ sơ hằng năm: ${e}` });
     }
 
     return newAchievement;
@@ -148,16 +147,17 @@ class ScientificAchievementService {
       throw new NotFoundError('Thành tích');
     }
 
+    let loaiCode: string | null = null;
     if (loai) {
-      const validLoai = VALID_NCKH as readonly string[];
-      if (!validLoai.includes(loai)) {
+      loaiCode = resolveNckhCode(loai);
+      if (!loaiCode) {
         throw new ValidationError('Loại thành tích không hợp lệ');
       }
     }
 
     const updateData: Record<string, unknown> = {};
     if (nam !== undefined) updateData.nam = nam;
-    if (loai !== undefined) updateData.loai = loai;
+    if (loaiCode) updateData.loai = loaiCode;
     if (mo_ta !== undefined) updateData.mo_ta = mo_ta;
     if (cap_bac !== undefined) updateData.cap_bac = cap_bac;
     if (chuc_vu !== undefined) updateData.chuc_vu = chuc_vu;
@@ -171,7 +171,7 @@ class ScientificAchievementService {
     try {
       await profileService.recalculateAnnualProfile(achievement.quan_nhan_id);
     } catch (e) {
-      console.error('recalculateAnnualProfile failed:', e);
+      void writeSystemLog({ action: 'ERROR', resource: 'scientific-achievements', description: `Lỗi tính lại hồ sơ hằng năm: ${e}` });
     }
 
     return updatedAchievement;
@@ -337,7 +337,6 @@ class ScientificAchievementService {
       );
     }
 
-    const validLoai = VALID_NCKH as readonly string[];
     const errors: PreviewError[] = [];
     const valid: PreviewValidItem[] = [];
     let total = 0;
@@ -385,7 +384,6 @@ class ScientificAchievementService {
       existingAchievementsList.map(a => `${a.quan_nhan_id}_${a.nam}_${a.loai}_${a.mo_ta}`)
     );
     const validDecisionNumbers = new Set(existingDecisions.map(d => d.so_quyet_dinh));
-
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
       const row = worksheet.getRow(rowNumber);
       const idValue = idCol ? row.getCell(idCol).value : null;
@@ -454,6 +452,12 @@ class ScientificAchievementService {
         continue;
       }
 
+      const nameMismatch = validatePersonnelNameMatch(ho_ten, personnel.ho_ten);
+      if (nameMismatch) {
+        errors.push({ row: rowNumber, ho_ten, nam: namVal, loai: loai_raw, message: nameMismatch });
+        continue;
+      }
+
       const nam = parseInt(String(namVal));
       if (!Number.isInteger(nam)) {
         errors.push({
@@ -476,18 +480,17 @@ class ScientificAchievementService {
         continue;
       }
 
-      const resolvedLoai = resolveDanhHieuCode(loai_raw);
-      if (!validLoai.includes(resolvedLoai)) {
+      const loai = resolveNckhCode(loai_raw);
+      if (!loai) {
         errors.push({
           row: rowNumber,
           ho_ten,
           nam,
           loai: loai_raw,
-          message: `Loại "${loai_raw}" không hợp lệ. Chỉ chấp nhận: ${validLoai.join(', ')}`,
+          message: `Loại "${loai_raw}" không hợp lệ. Chỉ chấp nhận: ${Object.values(DANH_HIEU_NCKH).join(', ')}`,
         });
         continue;
       }
-      const loai = resolvedLoai;
 
       if (!so_quyet_dinh) {
         errors.push({ row: rowNumber, ho_ten, nam, loai, message: 'Thiếu số quyết định' });
@@ -580,7 +583,7 @@ class ScientificAchievementService {
             data: {
               quan_nhan_id: item.personnel_id,
               nam: item.nam,
-              loai: item.loai,
+              loai: resolveNckhCode(item.loai) ?? item.loai,
               mo_ta: item.mo_ta,
               cap_bac: item.cap_bac ?? null,
               chuc_vu: item.chuc_vu ?? null,

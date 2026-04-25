@@ -39,7 +39,7 @@ export function ExcelImportSection({
   onLocalProcess,
   previewImport,
   reviewPath = '/admin/awards/bulk/import-review',
-  sessionStorageKey = 'importPreviewData',
+  sessionStorageKey = 'importPreviewDataCNHN',
 }: ExcelImportSectionProps) {
   const allowImport = useDevZoneFeature(awardType);
   const router = useRouter();
@@ -186,10 +186,10 @@ export function ExcelImportSection({
           return true;
         }
 
-        message.error(response.message || 'Tải dữ liệu thất bại');
+        message.error(response.message || 'Nhập dữ liệu thất bại');
         return false;
       } catch (error: unknown) {
-        message.error(getApiErrorMessage(error, 'Tải dữ liệu thất bại'));
+        message.error(getApiErrorMessage(error, 'Nhập dữ liệu thất bại'));
         return false;
       } finally {
         setUploading(false);
@@ -215,7 +215,7 @@ export function ExcelImportSection({
           <CloudUploadOutlined style={{ fontSize: 24, color: token.colorPrimary }} />
           <div style={{ flex: 1 }}>
             <strong style={{ fontSize: 16, color: token.colorText }}>
-              Tải dữ liệu nhanh từ file Excel
+              Nhập dữ liệu nhanh từ file Excel
             </strong>
             <br />
             <span style={{ color: token.colorTextSecondary }}>

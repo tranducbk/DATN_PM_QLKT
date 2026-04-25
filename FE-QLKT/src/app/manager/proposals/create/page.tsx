@@ -26,7 +26,6 @@ import { getApiErrorMessage } from '@/lib/apiError';
 
 import {
   UploadOutlined,
-  DownloadOutlined,
   HomeOutlined,
   TrophyOutlined,
   TeamOutlined,
@@ -36,7 +35,6 @@ import {
   CheckCircleOutlined,
   ArrowLeftOutlined,
   EditOutlined,
-  FileOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
 import type { UploadFile } from 'antd/es/upload/interface';
@@ -50,6 +48,7 @@ import {
   requiresProposalMonth,
   type ProposalType,
 } from '@/constants/proposal.constants';
+import { FileAttachmentList } from '@/components/proposals/FileAttachmentList';
 // Shared components — reuse from admin to avoid duplicating ~2000 lines
 import { Step2SelectPersonnelCaNhanHangNam } from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelCaNhanHangNam';
 import { Step2SelectPersonnelNienHan } from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelNienHan';
@@ -1068,51 +1067,7 @@ export default function CreateProposalPage() {
             {/* File đính kèm */}
             {attachedFiles.length > 0 && (
               <Card title="File đính kèm" style={{ marginTop: 16, marginBottom: 16 }}>
-                <Space direction="vertical" style={{ width: '100%' }} size="middle">
-                  {attachedFiles.map((file, index) => (
-                    <div
-                      key={index}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '8px 12px',
-                        backgroundColor: 'rgba(0, 0, 0, 0.02)',
-                        border: '1px solid rgba(0, 0, 0, 0.06)',
-                        borderRadius: '4px',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <FileOutlined style={{ color: '#1890ff', fontSize: '16px' }} />
-                        <Text style={{ fontSize: '14px' }}>{file.name || 'Không có tên file'}</Text>
-                        {file.size && (
-                          <Text type="secondary" style={{ fontSize: '12px' }}>
-                            ({(file.size / 1024).toFixed(2)} KB)
-                          </Text>
-                        )}
-                      </div>
-                      <Button
-                        type="link"
-                        icon={<DownloadOutlined />}
-                        style={{ padding: '0 8px', borderRadius: '6px' }}
-                        onClick={() => {
-                          if (file.originFileObj) {
-                            const url = URL.createObjectURL(file.originFileObj);
-                            const link = document.createElement('a');
-                            link.href = url;
-                            link.download = file.name;
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                            URL.revokeObjectURL(url);
-                          }
-                        }}
-                      >
-                        Tải xuống
-                      </Button>
-                    </div>
-                  ))}
-                </Space>
+                <FileAttachmentList files={attachedFiles} mode="local" />
               </Card>
             )}
 

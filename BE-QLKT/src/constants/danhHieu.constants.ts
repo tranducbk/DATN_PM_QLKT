@@ -63,6 +63,21 @@ export const DANH_HIEU_NCKH = {
   SKKH: 'Sáng kiến khoa học',
 } as const;
 
+/** Maps full label back to DB code. */
+export const NCKH_LABEL_TO_CODE: Record<string, string> = Object.fromEntries(
+  Object.entries(DANH_HIEU_NCKH).map(([code, label]) => [label, code])
+);
+
+/**
+ * Resolves a NCKH loai value (code or full label) to its DB code.
+ * @param input - 'DTKH', 'SKKH', 'Đề tài khoa học', or 'Sáng kiến khoa học'
+ * @returns DB code ('DTKH' | 'SKKH') or null if invalid
+ */
+export function resolveNckhCode(input: string): string | null {
+  if (input in DANH_HIEU_NCKH) return input;
+  return NCKH_LABEL_TO_CODE[input] ?? null;
+}
+
 export const DANH_HIEU_MAP: Record<string, string> = {
   CSTDCS: 'Chiến sĩ thi đua cơ sở',
   CSTT: 'Chiến sĩ tiên tiến',
@@ -177,7 +192,7 @@ export function getDanhHieuName(danhHieu: string | null | undefined): string {
  * @returns Single-line comma-separated list
  */
 export function formatDanhHieuList(codes: readonly string[]): string {
-  return codes.map(c => `${getDanhHieuName(c)} (${c})`).join(', ');
+  return codes.map(c => getDanhHieuName(c)).join(', ');
 }
 
 /**
@@ -231,3 +246,21 @@ export const DANH_HIEU_DON_VI_BANG_KHEN = new Set<string>([
   DANH_HIEU_DON_VI_HANG_NAM.BKBQP,
   DANH_HIEU_DON_VI_HANG_NAM.BKTTCP,
 ]);
+
+/**
+ * Resolves danh_hieu code from record — handles chain awards where danh_hieu is null.
+ * @param record - Record with danh_hieu and nhan_* flags
+ * @returns Danh hieu code or null
+ */
+export function resolveDanhHieuFromRecord(record: {
+  danh_hieu?: string | null;
+  nhan_bkbqp?: boolean;
+  nhan_cstdtq?: boolean;
+  nhan_bkttcp?: boolean;
+}): string | null {
+  if (record.danh_hieu) return record.danh_hieu;
+  if (record.nhan_bkbqp) return DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP;
+  if (record.nhan_cstdtq) return DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ;
+  if (record.nhan_bkttcp) return DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP;
+  return null;
+}

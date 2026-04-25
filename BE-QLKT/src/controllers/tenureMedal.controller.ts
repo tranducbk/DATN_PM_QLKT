@@ -59,7 +59,7 @@ class HCCSVVController {
     }
     const workbook = await hccsvvService.exportTemplate(personnelIds, repeatMap);
     const buffer = await workbook.xlsx.writeBuffer();
-    const fileName = `mau_import_hccsvv_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    const fileName = `mau_nhap_hccsvv_${new Date().toISOString().slice(0, 10)}.xlsx`;
     res.setHeader(
       'Content-Type',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'

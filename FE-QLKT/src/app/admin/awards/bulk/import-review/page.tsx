@@ -15,8 +15,7 @@ import {
   makeRowNumberColumn,
   makeHoTenColumn,
   makeNamColumn,
-  makeCapBacColumn,
-  makeChucVuColumn,
+  makeCapBacChucVuColumn,
   makeSoQDColumn,
   makeGhiChuColumn,
 } from '@/components/import-review/ImportReviewPageContent';
@@ -26,13 +25,11 @@ export default function ImportReviewPage() {
     () => [
       makeSTTColumn(),
       makeHoTenColumn(),
-      makeCapBacColumn(),
-      makeChucVuColumn(),
+      makeCapBacChucVuColumn(),
       makeNamColumn(),
       {
         title: 'Danh hiệu',
         dataIndex: 'danh_hieu',
-        width: 200,
         render: (val: string) => getDanhHieuTag(val, DANH_HIEU_COLORS),
       },
       makeSoQDColumn(),
@@ -47,7 +44,6 @@ export default function ImportReviewPage() {
       {
         title: 'Danh hiệu',
         dataIndex: 'danh_hieu',
-        width: 200,
         render: (val: string) => getDanhHieuTag(val, DANH_HIEU_COLORS),
       },
       {
@@ -85,8 +81,6 @@ export default function ImportReviewPage() {
       {
         title: 'Danh hiệu',
         dataIndex: 'danh_hieu',
-        width: 180,
-        ellipsis: true,
         render: (val: string) => (val ? getDanhHieuTag(val, DANH_HIEU_COLORS) : '--'),
       },
       makeErrorColumn(),
@@ -95,10 +89,10 @@ export default function ImportReviewPage() {
   );
 
   const config: ImportReviewConfig = {
-    sessionStorageKey: 'importPreviewData',
+    sessionStorageKey: 'importPreviewDataCNHN',
     title: 'Xem trước dữ liệu tải lên - Khen thưởng cá nhân hằng năm',
     confirmImport: apiClient.confirmAnnualRewardsImport,
-    successMessage: count => `Tải dữ liệu thành công ${count} bản ghi khen thưởng cá nhân hằng năm.`,
+    successMessage: count => `Nhập dữ liệu thành công ${count} bản ghi khen thưởng cá nhân hằng năm.`,
     confirmButtonLabel: 'quân nhân',
     validColumns,
     invalidColumns,

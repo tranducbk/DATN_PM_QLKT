@@ -3,15 +3,32 @@ import { prisma } from '../models';
 import ExcelJS from 'exceljs';
 import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHelper';
 
-import { getDanhHieuName, DANH_HIEU_CA_NHAN_HANG_NAM, DANH_HIEU_DON_VI_HANG_NAM, DANH_HIEU_DON_VI_CO_BAN, DANH_HIEU_DON_VI_BANG_KHEN } from '../constants/danhHieu.constants';
+import {
+  getDanhHieuName,
+  formatDanhHieuList,
+  DANH_HIEU_CA_NHAN_HANG_NAM,
+  DANH_HIEU_DON_VI_HANG_NAM,
+  DANH_HIEU_DON_VI_CO_BAN,
+  DANH_HIEU_DON_VI_BANG_KHEN,
+} from '../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
-import { parseHeaderMap, getHeaderCol, parseBooleanValue, sanitizeRowData } from '../helpers/excelHelper';
+import {
+  parseHeaderMap,
+  getHeaderCol,
+  parseBooleanValue,
+  sanitizeRowData,
+} from '../helpers/excelHelper';
 import { NotFoundError, ValidationError, ForbiddenError } from '../middlewares/errorHandler';
 import { resolveUnit, buildUnitIdFields } from '../helpers/unitHelper';
 import { applyThinBordersToGrid, styleHeaderRow } from '../helpers/excelTemplateHelper';
-import { IMPORT_TRANSACTION_TIMEOUT, EXCEL_INLINE_VALIDATION_MAX_LENGTH, MIN_TEMPLATE_ROWS, EXPORT_FETCH_LIMIT } from '../constants/excel.constants';
+import {
+  IMPORT_TRANSACTION_TIMEOUT,
+  EXCEL_INLINE_VALIDATION_MAX_LENGTH,
+  MIN_TEMPLATE_ROWS,
+  EXPORT_FETCH_LIMIT,
+} from '../constants/excel.constants';
 
 interface UnitAnnualAwardValidItem {
   row: number;
@@ -37,8 +54,11 @@ function checkUnitDuplicate(
   unitId: string,
   nam: number,
   danhHieu: string,
-  existingAwardByUnitYear: Map<string, { danh_hieu: string | null; nhan_bkbqp: boolean; nhan_bkttcp: boolean }>,
-  proposalsByYear: Map<number, Array<{ data_danh_hieu: any }>>,
+  existingAwardByUnitYear: Map<
+    string,
+    { danh_hieu: string | null; nhan_bkbqp: boolean; nhan_bkttcp: boolean }
+  >,
+  proposalsByYear: Map<number, Array<{ data_danh_hieu: any }>>
 ): void {
   const proposalsForYear = proposalsByYear.get(nam) ?? [];
   const hasPendingProposal = proposalsForYear.some(p => {
@@ -46,7 +66,9 @@ function checkUnitDuplicate(
     return data.some(item => item.don_vi_id === unitId && item.danh_hieu === danhHieu);
   });
   if (hasPendingProposal) {
-    throw new ValidationError(`Đơn vị đã có đề xuất danh hiệu ${getDanhHieuName(danhHieu)} cho năm ${nam}`);
+    throw new ValidationError(
+      `Đơn vị đã có đề xuất danh hiệu ${getDanhHieuName(danhHieu)} cho năm ${nam}`
+    );
   }
 
   const existingAward = existingAwardByUnitYear.get(`${unitId}_${nam}`);
@@ -57,7 +79,9 @@ function checkUnitDuplicate(
 
   if (isDv && existingAward.danh_hieu) {
     if (existingAward.danh_hieu === danhHieu) {
-      throw new ValidationError(`Đơn vị đã có danh hiệu ${getDanhHieuName(danhHieu)} năm ${nam} trên hệ thống`);
+      throw new ValidationError(
+        `Đơn vị đã có danh hiệu ${getDanhHieuName(danhHieu)} năm ${nam} trên hệ thống`
+      );
     }
     throw new ValidationError(
       `Đơn vị đã có danh hiệu ${getDanhHieuName(existingAward.danh_hieu)} năm ${nam}, không thể thêm ${getDanhHieuName(danhHieu)}`
@@ -66,15 +90,21 @@ function checkUnitDuplicate(
 
   if (isBk) {
     if (danhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP && existingAward.nhan_bkbqp) {
-      throw new ValidationError(`Đơn vị đã có ${getDanhHieuName(danhHieu)} năm ${nam} trên hệ thống`);
+      throw new ValidationError(
+        `Đơn vị đã có ${getDanhHieuName(danhHieu)} năm ${nam} trên hệ thống`
+      );
     }
     if (danhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP && existingAward.nhan_bkttcp) {
-      throw new ValidationError(`Đơn vị đã có ${getDanhHieuName(danhHieu)} năm ${nam} trên hệ thống`);
+      throw new ValidationError(
+        `Đơn vị đã có ${getDanhHieuName(danhHieu)} năm ${nam} trên hệ thống`
+      );
     }
   }
 
   if (isDv && (existingAward.nhan_bkbqp || existingAward.nhan_bkttcp)) {
-    const existingBk = existingAward.nhan_bkbqp ? DANH_HIEU_DON_VI_HANG_NAM.BKBQP : DANH_HIEU_DON_VI_HANG_NAM.BKTTCP;
+    const existingBk = existingAward.nhan_bkbqp
+      ? DANH_HIEU_DON_VI_HANG_NAM.BKBQP
+      : DANH_HIEU_DON_VI_HANG_NAM.BKTTCP;
     throw new ValidationError(
       `Đơn vị đã có ${getDanhHieuName(existingBk)} năm ${nam}, không thể thêm ${getDanhHieuName(danhHieu)}`
     );
@@ -315,7 +345,10 @@ class UnitAnnualAwardService {
   }
 
   /** Admin rejection flow for unit awards. */
-  async reject(id: string, { ghi_chu, nguoi_duyet_id }: { ghi_chu: string; nguoi_duyet_id: string }) {
+  async reject(
+    id: string,
+    { ghi_chu, nguoi_duyet_id }: { ghi_chu: string; nguoi_duyet_id: string }
+  ) {
     const rejectedDanhHieu = await prisma.danhHieuDonViHangNam.update({
       where: { id: String(id) },
       data: {
@@ -703,7 +736,11 @@ class UnitAnnualAwardService {
   /**
    * Returns annual award history for one unit from DanhHieuDonViHangNam.
    */
-  async getUnitAnnualAwards(donViId: string, userRole: string = ROLES.ADMIN, userQuanNhanId: string | null = null) {
+  async getUnitAnnualAwards(
+    donViId: string,
+    userRole: string = ROLES.ADMIN,
+    userQuanNhanId: string | null = null
+  ) {
     if (!donViId) throw new ValidationError('don_vi_id là bắt buộc');
 
     const donVi =
@@ -898,7 +935,7 @@ class UnitAnnualAwardService {
           ma_don_vi: maDonVi,
           nam: namVal,
           danh_hieu: danhHieuRaw,
-          message: 'BKBQP không được import qua Excel. Vui lòng chỉ thêm trên giao diện.',
+          message: 'BKBQP không được nhập qua Excel. Vui lòng chỉ thêm trên giao diện.',
         });
         continue;
       }
@@ -909,7 +946,7 @@ class UnitAnnualAwardService {
           ma_don_vi: maDonVi,
           nam: namVal,
           danh_hieu: danhHieuRaw,
-          message: 'BKTTCP không được import qua Excel. Vui lòng chỉ thêm trên giao diện.',
+          message: 'BKTTCP không được nhập qua Excel. Vui lòng chỉ thêm trên giao diện.',
         });
         continue;
       }
@@ -962,7 +999,7 @@ class UnitAnnualAwardService {
           ma_don_vi: maDonVi,
           nam,
           danh_hieu: danhHieuRaw,
-          message: `Danh hiệu "${danhHieuRaw}" không hợp lệ. Chỉ chấp nhận: ${validDanhHieu.join(', ')}`,
+          message: `Danh hiệu "${danhHieuRaw}" không hợp lệ. Chỉ chấp nhận: ${formatDanhHieuList(validDanhHieu)}`,
         });
         continue;
       }
@@ -1042,7 +1079,11 @@ class UnitAnnualAwardService {
       // NOTE: Left as per-row query because checkUnitAwardEligibility depends on
       // per-row computed values (unitId, nam) and has complex internal logic
       if (danhHieu === DANH_HIEU_DON_VI_HANG_NAM.BKTTCP) {
-        const eligibility = await this.checkUnitAwardEligibility(unitId, nam, DANH_HIEU_DON_VI_HANG_NAM.BKTTCP);
+        const eligibility = await this.checkUnitAwardEligibility(
+          unitId,
+          nam,
+          DANH_HIEU_DON_VI_HANG_NAM.BKTTCP
+        );
         if (!eligibility.eligible) {
           errors.push({
             row: rowNumber,
@@ -1100,7 +1141,14 @@ class UnitAnnualAwardService {
             { don_vi_truc_thuoc_id: { in: uniqueUnitIds }, nam: { in: uniqueYears } },
           ],
         },
-        select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true, nam: true, danh_hieu: true, nhan_bkbqp: true, nhan_bkttcp: true },
+        select: {
+          co_quan_don_vi_id: true,
+          don_vi_truc_thuoc_id: true,
+          nam: true,
+          danh_hieu: true,
+          nhan_bkbqp: true,
+          nhan_bkttcp: true,
+        },
       }),
       prisma.bangDeXuat.findMany({
         where: {
@@ -1111,7 +1159,7 @@ class UnitAnnualAwardService {
       }),
     ]);
 
-    const awardMap = new Map<string, typeof existingAwards[number]>();
+    const awardMap = new Map<string, (typeof existingAwards)[number]>();
     for (const award of existingAwards) {
       const unitId = award.co_quan_don_vi_id || award.don_vi_truc_thuoc_id;
       if (unitId) awardMap.set(`${unitId}|${award.nam}`, award);
@@ -1128,7 +1176,9 @@ class UnitAnnualAwardService {
         );
       });
       if (existingProposal) {
-        duplicateErrors.push(`Đơn vị đã có đề xuất danh hiệu ${getDanhHieuName(danhHieu)} cho năm ${nam}`);
+        duplicateErrors.push(
+          `Đơn vị đã có đề xuất danh hiệu ${getDanhHieuName(danhHieu)} cho năm ${nam}`
+        );
         continue;
       }
 
@@ -1139,31 +1189,49 @@ class UnitAnnualAwardService {
 
         if (isDv && existingAward.danh_hieu) {
           if (existingAward.danh_hieu === danhHieu) {
-            duplicateErrors.push(`Đơn vị đã có danh hiệu ${getDanhHieuName(danhHieu)} năm ${nam} trên hệ thống`);
+            duplicateErrors.push(
+              `Đơn vị đã có danh hiệu ${getDanhHieuName(danhHieu)} năm ${nam} trên hệ thống`
+            );
             continue;
           }
-          duplicateErrors.push(`Đơn vị đã có danh hiệu ${getDanhHieuName(existingAward.danh_hieu)} năm ${nam}, không thể thêm ${getDanhHieuName(danhHieu)}`);
+          duplicateErrors.push(
+            `Đơn vị đã có danh hiệu ${getDanhHieuName(existingAward.danh_hieu)} năm ${nam}, không thể thêm ${getDanhHieuName(danhHieu)}`
+          );
           continue;
         }
 
         if (isBk) {
           if (danhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP && existingAward.nhan_bkbqp) {
-            duplicateErrors.push(`Đơn vị đã có ${getDanhHieuName(danhHieu)} năm ${nam} trên hệ thống`);
+            duplicateErrors.push(
+              `Đơn vị đã có ${getDanhHieuName(danhHieu)} năm ${nam} trên hệ thống`
+            );
             continue;
           }
           if (danhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP && existingAward.nhan_bkttcp) {
-            duplicateErrors.push(`Đơn vị đã có ${getDanhHieuName(danhHieu)} năm ${nam} trên hệ thống`);
+            duplicateErrors.push(
+              `Đơn vị đã có ${getDanhHieuName(danhHieu)} năm ${nam} trên hệ thống`
+            );
             continue;
           }
         }
 
         if (isDv && (existingAward.nhan_bkbqp || existingAward.nhan_bkttcp)) {
-          const existingBk = existingAward.nhan_bkbqp ? DANH_HIEU_DON_VI_HANG_NAM.BKBQP : DANH_HIEU_DON_VI_HANG_NAM.BKTTCP;
-          duplicateErrors.push(`Đơn vị đã có ${getDanhHieuName(existingBk)} năm ${nam}, không thể thêm ${getDanhHieuName(danhHieu)}`);
+          const existingBk = existingAward.nhan_bkbqp
+            ? DANH_HIEU_DON_VI_HANG_NAM.BKBQP
+            : DANH_HIEU_DON_VI_HANG_NAM.BKTTCP;
+          duplicateErrors.push(
+            `Đơn vị đã có ${getDanhHieuName(existingBk)} năm ${nam}, không thể thêm ${getDanhHieuName(danhHieu)}`
+          );
           continue;
         }
-        if (isBk && existingAward.danh_hieu && DANH_HIEU_DON_VI_CO_BAN.has(existingAward.danh_hieu)) {
-          duplicateErrors.push(`Đơn vị đã có danh hiệu ${getDanhHieuName(existingAward.danh_hieu)} năm ${nam}, không thể thêm ${getDanhHieuName(danhHieu)}`);
+        if (
+          isBk &&
+          existingAward.danh_hieu &&
+          DANH_HIEU_DON_VI_CO_BAN.has(existingAward.danh_hieu)
+        ) {
+          duplicateErrors.push(
+            `Đơn vị đã có danh hiệu ${getDanhHieuName(existingAward.danh_hieu)} năm ${nam}, không thể thêm ${getDanhHieuName(danhHieu)}`
+          );
           continue;
         }
       }
@@ -1190,13 +1258,26 @@ class UnitAnnualAwardService {
                 },
               };
 
+          const isBkBqp = item.danh_hieu === DANH_HIEU_DON_VI_HANG_NAM.BKBQP;
+          const isBkTtcp = item.danh_hieu === DANH_HIEU_DON_VI_HANG_NAM.BKTTCP;
+          const isBk = isBkBqp || isBkTtcp;
+          const finalDanhHieu = isBk ? null : item.danh_hieu;
+
+          const sharedData: Record<string, any> = {
+            ghi_chu: item.ghi_chu ?? null,
+            nhan_bkbqp: isBkBqp,
+            nhan_bkttcp: isBkTtcp,
+            so_quyet_dinh: isBk ? undefined : (item.so_quyet_dinh ?? null),
+            so_quyet_dinh_bkbqp: isBkBqp ? (item.so_quyet_dinh ?? null) : undefined,
+            so_quyet_dinh_bkttcp: isBkTtcp ? (item.so_quyet_dinh ?? null) : undefined,
+          };
+
           const createData: Record<string, any> = {
             nam: item.nam,
-            danh_hieu: item.danh_hieu,
-            so_quyet_dinh: item.so_quyet_dinh ?? null,
-            ghi_chu: item.ghi_chu ?? null,
+            danh_hieu: finalDanhHieu,
             status: PROPOSAL_STATUS.APPROVED,
             nguoi_tao_id: adminId,
+            ...sharedData,
           };
 
           if (item.is_co_quan_don_vi) {
@@ -1208,9 +1289,8 @@ class UnitAnnualAwardService {
           const result = await prismaTx.danhHieuDonViHangNam.upsert({
             where: upsertWhere,
             update: {
-              danh_hieu: item.danh_hieu,
-              so_quyet_dinh: item.so_quyet_dinh ?? null,
-              ghi_chu: item.ghi_chu ?? null,
+              danh_hieu: finalDanhHieu,
+              ...sharedData,
             },
             create: createData as Prisma.DanhHieuDonViHangNamUncheckedCreateInput,
           });
@@ -1222,7 +1302,11 @@ class UnitAnnualAwardService {
     );
   }
 
-  async exportTemplate(unitIds: string[] = [], userRole: string = ROLES.MANAGER, repeatMap: Record<string, number> = {}) {
+  async exportTemplate(
+    unitIds: string[] = [],
+    userRole: string = ROLES.MANAGER,
+    repeatMap: Record<string, number> = {}
+  ) {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Khen thưởng đơn vị');
 
@@ -1236,8 +1320,6 @@ class UnitAnnualAwardService {
       { header: 'Danh hiệu (*)', key: 'danh_hieu', width: 20 },
       { header: 'Số quyết định', key: 'so_quyet_dinh', width: 20 },
       { header: 'Ghi chú', key: 'ghi_chu', width: 30 },
-      { header: 'BKBQP (không điền)', key: 'bkbqp', width: 20 },
-      { header: 'BKTTCP (không điền)', key: 'bkttcp', width: 20 },
     ];
 
     worksheet.columns = columns;
@@ -1259,17 +1341,6 @@ class UnitAnnualAwardService {
     for (let col = 1; col <= 4; col++) {
       headerRowObj.getCell(col).fill = readonlyFill;
     }
-
-    // Red background for BKBQP, BKTTCP columns (columns 9-10)
-    const redFill = {
-      type: 'pattern' as const,
-      pattern: 'solid' as const,
-      fgColor: { argb: 'FFFF0000' },
-    };
-    headerRowObj.getCell(9).fill = redFill;
-    headerRowObj.getCell(9).font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    headerRowObj.getCell(10).fill = redFill;
-    headerRowObj.getCell(10).font = { bold: true, color: { argb: 'FFFFFFFF' } };
 
     const danhHieuValidation = {
       type: 'list' as const,
@@ -1325,47 +1396,41 @@ class UnitAnnualAwardService {
 
         const rowCount = repeatMap[uid] || 1;
         for (let r = 0; r < rowCount; r++) {
-          const dataRow = worksheet.addRow(sanitizeRowData({
-            stt,
-            id: unit.id,
-            ma_don_vi: unit.ma_don_vi || '',
-            ten_don_vi: unit.ten_don_vi || '',
-            nam: '',
-            danh_hieu: '',
-            so_quyet_dinh: '',
-            ghi_chu: '',
-            bkbqp: '',
-            bkttcp: '',
-          }));
+          const dataRow = worksheet.addRow(
+            sanitizeRowData({
+              stt,
+              id: unit.id,
+              ma_don_vi: unit.ma_don_vi || '',
+              ten_don_vi: unit.ten_don_vi || '',
+              nam: '',
+              danh_hieu: '',
+              so_quyet_dinh: '',
+              ghi_chu: '',
+            })
+          );
 
           // Readonly yellow background: STT, ID, unit code, unit name
           for (let col = 1; col <= 4; col++) {
             dataRow.getCell(col).fill = readonlyFill;
           }
 
-          // Red background for BKBQP, BKTTCP
-          dataRow.getCell(9).fill = redFill;
-          dataRow.getCell(10).fill = redFill;
-
           stt++;
         }
       }
     } else {
       // Add sample row
-      const sampleRow = worksheet.addRow(sanitizeRowData({
-        stt: 1,
-        id: '',
-        ma_don_vi: 'DV001',
-        ten_don_vi: 'Đơn vị mẫu',
-        nam: new Date().getFullYear(),
-        danh_hieu: DANH_HIEU_DON_VI_HANG_NAM.DVQT,
-        so_quyet_dinh: '',
-        ghi_chu: '',
-        bkbqp: '',
-        bkttcp: '',
-      }));
-      sampleRow.getCell(9).fill = redFill;
-      sampleRow.getCell(10).fill = redFill;
+      worksheet.addRow(
+        sanitizeRowData({
+          stt: 1,
+          id: '',
+          ma_don_vi: 'DV001',
+          ten_don_vi: 'Đơn vị mẫu',
+          nam: new Date().getFullYear(),
+          danh_hieu: DANH_HIEU_DON_VI_HANG_NAM.DVQT,
+          so_quyet_dinh: '',
+          ghi_chu: '',
+        })
+      );
     }
 
     // Apply data validations to data rows
@@ -1485,11 +1550,23 @@ class UnitAnnualAwardService {
       prisma.danhHieuDonViHangNam.findMany({
         where: {
           AND: [
-            { OR: [{ co_quan_don_vi_id: { in: allCQDVIds } }, { don_vi_truc_thuoc_id: { in: allDVTTIds } }] },
+            {
+              OR: [
+                { co_quan_don_vi_id: { in: allCQDVIds } },
+                { don_vi_truc_thuoc_id: { in: allDVTTIds } },
+              ],
+            },
             { nam: { in: [...allYears] } },
           ],
         },
-        select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true, nam: true, danh_hieu: true, nhan_bkbqp: true, nhan_bkttcp: true },
+        select: {
+          co_quan_don_vi_id: true,
+          don_vi_truc_thuoc_id: true,
+          nam: true,
+          danh_hieu: true,
+          nhan_bkbqp: true,
+          nhan_bkttcp: true,
+        },
       }),
       prisma.bangDeXuat.findMany({
         where: {
@@ -1500,10 +1577,12 @@ class UnitAnnualAwardService {
       }),
     ]);
 
-    const existingAwardByUnitYear = new Map<string, typeof existingAwardList[number]>();
+    const existingAwardByUnitYear = new Map<string, (typeof existingAwardList)[number]>();
     for (const award of existingAwardList) {
-      if (award.co_quan_don_vi_id) existingAwardByUnitYear.set(`${award.co_quan_don_vi_id}_${award.nam}`, award);
-      if (award.don_vi_truc_thuoc_id) existingAwardByUnitYear.set(`${award.don_vi_truc_thuoc_id}_${award.nam}`, award);
+      if (award.co_quan_don_vi_id)
+        existingAwardByUnitYear.set(`${award.co_quan_don_vi_id}_${award.nam}`, award);
+      if (award.don_vi_truc_thuoc_id)
+        existingAwardByUnitYear.set(`${award.don_vi_truc_thuoc_id}_${award.nam}`, award);
     }
     const proposalsByYear = new Map<number, typeof pendingProposalList>();
     for (const proposal of pendingProposalList) {
@@ -1549,7 +1628,8 @@ class UnitAnnualAwardService {
         }
 
         // Verify award chain requirement
-        const checkDanhHieu = danhHieu === DANH_HIEU_DON_VI_HANG_NAM.BKTTCP ? DANH_HIEU_DON_VI_HANG_NAM.BKTTCP : null;
+        const checkDanhHieu =
+          danhHieu === DANH_HIEU_DON_VI_HANG_NAM.BKTTCP ? DANH_HIEU_DON_VI_HANG_NAM.BKTTCP : null;
         const checkBkbqp = bkbqpRaw ? 'BKBQP' : null;
 
         const donVi = coQuanDonViByMa.get(maDonVi) ?? null;
@@ -1578,7 +1658,20 @@ class UnitAnnualAwardService {
             if (!eligibility.eligible) throw new ValidationError(eligibility.reason);
           }
 
-          checkUnitDuplicate(donViTrucThuoc.id, nam, danhHieu, existingAwardByUnitYear, proposalsByYear);
+          checkUnitDuplicate(
+            donViTrucThuoc.id,
+            nam,
+            danhHieu,
+            existingAwardByUnitYear,
+            proposalsByYear
+          );
+
+          const isBkDvtt = DANH_HIEU_DON_VI_BANG_KHEN.has(danhHieu);
+          const finalDhDvtt = isBkDvtt ? null : danhHieu;
+          const dvttIsBkbqp = danhHieu === DANH_HIEU_DON_VI_HANG_NAM.BKBQP || nhanBkbqp;
+          const dvttIsBkttcp = danhHieu === DANH_HIEU_DON_VI_HANG_NAM.BKTTCP;
+          const dvttSoQdBkbqp = dvttIsBkbqp ? (soQdBkbqp || soQuyetDinh || null) : null;
+          const dvttSoQdBkttcp = dvttIsBkttcp ? (soQuyetDinh || null) : null;
 
           const award = await prisma.danhHieuDonViHangNam.upsert({
             where: {
@@ -1590,20 +1683,24 @@ class UnitAnnualAwardService {
             create: {
               don_vi_truc_thuoc_id: donViTrucThuoc.id,
               nam,
-              danh_hieu: danhHieu,
-              so_quyet_dinh: soQuyetDinh || null,
+              danh_hieu: finalDhDvtt,
+              so_quyet_dinh: isBkDvtt ? null : (soQuyetDinh || null),
               ghi_chu: ghiChu || null,
-              nhan_bkbqp: nhanBkbqp,
-              so_quyet_dinh_bkbqp: soQdBkbqp || null,
+              nhan_bkbqp: dvttIsBkbqp,
+              so_quyet_dinh_bkbqp: dvttSoQdBkbqp,
+              nhan_bkttcp: dvttIsBkttcp,
+              so_quyet_dinh_bkttcp: dvttSoQdBkttcp,
               status: PROPOSAL_STATUS.APPROVED,
               nguoi_tao_id: adminId,
             },
             update: {
-              danh_hieu: danhHieu,
-              so_quyet_dinh: soQuyetDinh || null,
+              danh_hieu: finalDhDvtt,
+              so_quyet_dinh: isBkDvtt ? undefined : (soQuyetDinh || null),
               ghi_chu: ghiChu || null,
-              nhan_bkbqp: nhanBkbqp,
-              so_quyet_dinh_bkbqp: soQdBkbqp || null,
+              nhan_bkbqp: dvttIsBkbqp,
+              so_quyet_dinh_bkbqp: dvttSoQdBkbqp,
+              nhan_bkttcp: dvttIsBkttcp,
+              so_quyet_dinh_bkttcp: dvttSoQdBkttcp,
             },
           });
           imported.push(award);
@@ -1616,11 +1713,22 @@ class UnitAnnualAwardService {
             if (!eligibility.eligible) throw new ValidationError(eligibility.reason);
           }
           if (checkBkbqp) {
-            const eligibility = await this.checkUnitAwardEligibility(donVi.id, nam, DANH_HIEU_DON_VI_HANG_NAM.BKBQP);
+            const eligibility = await this.checkUnitAwardEligibility(
+              donVi.id,
+              nam,
+              DANH_HIEU_DON_VI_HANG_NAM.BKBQP
+            );
             if (!eligibility.eligible) throw new ValidationError(eligibility.reason);
           }
 
           checkUnitDuplicate(donVi.id, nam, danhHieu, existingAwardByUnitYear, proposalsByYear);
+
+          const isBkCqdv = DANH_HIEU_DON_VI_BANG_KHEN.has(danhHieu);
+          const finalDhCqdv = isBkCqdv ? null : danhHieu;
+          const cqdvIsBkbqp = danhHieu === DANH_HIEU_DON_VI_HANG_NAM.BKBQP || nhanBkbqp;
+          const cqdvIsBkttcp = danhHieu === DANH_HIEU_DON_VI_HANG_NAM.BKTTCP;
+          const cqdvSoQdBkbqp = cqdvIsBkbqp ? (soQdBkbqp || soQuyetDinh || null) : null;
+          const cqdvSoQdBkttcp = cqdvIsBkttcp ? (soQuyetDinh || null) : null;
 
           const award = await prisma.danhHieuDonViHangNam.upsert({
             where: {
@@ -1632,20 +1740,24 @@ class UnitAnnualAwardService {
             create: {
               co_quan_don_vi_id: donVi.id,
               nam,
-              danh_hieu: danhHieu,
-              so_quyet_dinh: soQuyetDinh || null,
+              danh_hieu: finalDhCqdv,
+              so_quyet_dinh: isBkCqdv ? null : (soQuyetDinh || null),
               ghi_chu: ghiChu || null,
-              nhan_bkbqp: nhanBkbqp,
-              so_quyet_dinh_bkbqp: soQdBkbqp || null,
+              nhan_bkbqp: cqdvIsBkbqp,
+              so_quyet_dinh_bkbqp: cqdvSoQdBkbqp,
+              nhan_bkttcp: cqdvIsBkttcp,
+              so_quyet_dinh_bkttcp: cqdvSoQdBkttcp,
               status: PROPOSAL_STATUS.APPROVED,
               nguoi_tao_id: adminId,
             },
             update: {
-              danh_hieu: danhHieu,
-              so_quyet_dinh: soQuyetDinh || null,
+              danh_hieu: finalDhCqdv,
+              so_quyet_dinh: isBkCqdv ? undefined : (soQuyetDinh || null),
               ghi_chu: ghiChu || null,
-              nhan_bkbqp: nhanBkbqp,
-              so_quyet_dinh_bkbqp: soQdBkbqp || null,
+              nhan_bkbqp: cqdvIsBkbqp,
+              so_quyet_dinh_bkbqp: cqdvSoQdBkbqp,
+              nhan_bkttcp: cqdvIsBkttcp,
+              so_quyet_dinh_bkttcp: cqdvSoQdBkttcp,
             },
           });
           imported.push(award);
@@ -1720,19 +1832,21 @@ class UnitAnnualAwardService {
 
     awards.forEach((award, index) => {
       const donVi = award.CoQuanDonVi || award.DonViTrucThuoc;
-      worksheet.addRow(sanitizeRowData({
-        stt: index + 1,
-        ma_don_vi: donVi?.ma_don_vi || '',
-        ten_don_vi: donVi?.ten_don_vi || '',
-        nam: award.nam,
-        danh_hieu: getDanhHieuName(award.danh_hieu),
-        so_quyet_dinh: award.so_quyet_dinh || '',
-        nhan_bkbqp: award.nhan_bkbqp ? 'Có' : '',
-        so_quyet_dinh_bkbqp: award.so_quyet_dinh_bkbqp || '',
-        nhan_bkttcp: award.nhan_bkttcp ? 'Có' : '',
-        so_quyet_dinh_bkttcp: award.so_quyet_dinh_bkttcp || '',
-        ghi_chu: award.ghi_chu || '',
-      }));
+      worksheet.addRow(
+        sanitizeRowData({
+          stt: index + 1,
+          ma_don_vi: donVi?.ma_don_vi || '',
+          ten_don_vi: donVi?.ten_don_vi || '',
+          nam: award.nam,
+          danh_hieu: getDanhHieuName(award.danh_hieu),
+          so_quyet_dinh: award.so_quyet_dinh || '',
+          nhan_bkbqp: award.nhan_bkbqp ? 'Có' : '',
+          so_quyet_dinh_bkbqp: award.so_quyet_dinh_bkbqp || '',
+          nhan_bkttcp: award.nhan_bkttcp ? 'Có' : '',
+          so_quyet_dinh_bkttcp: award.so_quyet_dinh_bkttcp || '',
+          ghi_chu: award.ghi_chu || '',
+        })
+      );
     });
 
     return workbook;

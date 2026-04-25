@@ -655,7 +655,7 @@ class PersonnelService {
     try {
       await profileService.recalculateAnnualProfile(id);
     } catch (recalcError) {
-      console.error('[personnel] recalculateAnnualProfile error:', recalcError);
+      void writeSystemLog({ action: 'ERROR', resource: 'personnel', description: `Lỗi tính lại hồ sơ hằng năm quân nhân ${id}: ${recalcError}` });
     }
 
     // Send transfer notification outside transaction.
@@ -668,7 +668,7 @@ class PersonnelService {
           adminUsername
         );
       } catch (notifError) {
-        console.error('[personnel] notifyOnPersonnelTransfer error:', notifError);
+        void writeSystemLog({ action: 'ERROR', resource: 'personnel', description: `Lỗi gửi thông báo chuyển đơn vị quân nhân ${id}: ${notifError}` });
       }
     }
 

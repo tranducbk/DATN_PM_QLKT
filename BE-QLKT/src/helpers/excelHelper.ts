@@ -121,4 +121,20 @@ function sanitizeRowData<T extends Record<string, unknown>>(row: T): T {
   return result as T;
 }
 
-export { removeVietnameseAccents, parseHeaderMap, getHeaderCol, parseBooleanValue, resolvePersonnelInfo, buildPendingKeys, sanitizeRowData };
+/**
+ * Validates that the name in the Excel row matches the personnel record in DB.
+ * @param excelName - Name from the Excel file
+ * @param dbName - Name from the database
+ * @returns Error message if mismatch, null if OK or no name provided
+ */
+function validatePersonnelNameMatch(excelName: string | null | undefined, dbName: string): string | null {
+  if (!excelName || !excelName.trim()) return null;
+  const normalizedExcel = excelName.trim().toLowerCase().replace(/\s+/g, ' ');
+  const normalizedDb = dbName.trim().toLowerCase().replace(/\s+/g, ' ');
+  if (normalizedExcel !== normalizedDb) {
+    return `Tên "${excelName.trim()}" không khớp với tên trong hệ thống "${dbName}". Vui lòng kiểm tra lại ID.`;
+  }
+  return null;
+}
+
+export { removeVietnameseAccents, parseHeaderMap, getHeaderCol, parseBooleanValue, resolvePersonnelInfo, buildPendingKeys, sanitizeRowData, validatePersonnelNameMatch };

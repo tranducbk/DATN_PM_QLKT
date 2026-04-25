@@ -7,6 +7,7 @@ import * as notificationHelper from '../helpers/notification';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import {
   getDanhHieuName,
+  formatDanhHieuList,
   DANH_HIEU_MAP,
   DANH_HIEU_CA_NHAN_HANG_NAM,
   DANH_HIEU_DON_VI_CO_BAN,
@@ -16,13 +17,14 @@ import {
   CONG_HIEN_BASE_REQUIRED_MONTHS,
   CONG_HIEN_FEMALE_REQUIRED_MONTHS,
   HCQKQT_YEARS_REQUIRED,
+  DANH_HIEU_NCKH,
+  LOAI_DE_XUAT_MAP,
 } from '../constants/danhHieu.constants';
 import { PROPOSAL_TYPES, type ProposalType } from '../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { AppError, NotFoundError, ValidationError } from '../middlewares/errorHandler';
 import type { QuanNhan } from '../generated/prisma';
 import { GENDER } from '../constants/gender.constants';
-import { VALID_NCKH } from './proposal/helpers';
 
 interface ServiceYears {
   years: number;
@@ -326,6 +328,16 @@ class AwardBulkService {
     return errors;
   }
 
+  private throwValidationErrors(errors: string[], type: string, nam: number, adminId?: string): never {
+    void writeSystemLog({
+      userId: adminId,
+      action: 'ERROR',
+      resource: 'awards',
+      description: `[Thêm khen thưởng đồng loạt] ${LOAI_DE_XUAT_MAP[type as keyof typeof LOAI_DE_XUAT_MAP] || type} năm ${nam} — Validation thất bại: ${errors.join('; ')}`,
+    });
+    throw new ValidationError(`Phát hiện lỗi validation:\n${errors.join('\n')}`);
+  }
+
   async bulkCreateAwards({
     type,
     nam,
@@ -376,11 +388,11 @@ class AwardBulkService {
       }
 
       if (type === PROPOSAL_TYPES.NCKH) {
+        const validNCKHCodes = Object.keys(DANH_HIEU_NCKH);
         for (const item of titleData) {
-          const validLoai = VALID_NCKH as readonly string[];
-          if (!item.loai || !validLoai.includes(item.loai)) {
+          if (!item.loai || !validNCKHCodes.includes(item.loai)) {
             errors.push(
-              `Thành tích khoa học phải có loại hợp lệ: ${VALID_NCKH.join(', ')} (quân nhân: ${item.personnel_id})`
+              `Thành tích khoa học phải có loại hợp lệ: ${validNCKHCodes.join(', ')} (quân nhân: ${item.personnel_id})`
             );
           }
           if (!item.mo_ta || item.mo_ta.trim() === '') {
@@ -394,7 +406,7 @@ class AwardBulkService {
         for (const item of titleData) {
           if (!item.danh_hieu || !allowedDanhHieu.includes(item.danh_hieu)) {
             errors.push(
-              `Danh hiệu đơn vị không hợp lệ: ${item.danh_hieu}. Chỉ chấp nhận: ${allowedDanhHieu.join(', ')}`
+              `Danh hiệu đơn vị không hợp lệ: ${item.danh_hieu}. Chỉ chấp nhận: ${formatDanhHieuList(allowedDanhHieu)}`
             );
           }
         }
@@ -405,14 +417,14 @@ class AwardBulkService {
         for (const item of titleData) {
           if (!item.danh_hieu || !allowedDanhHieu.includes(item.danh_hieu)) {
             errors.push(
-              `Danh hiệu không hợp lệ: ${item.danh_hieu}. Chỉ chấp nhận: ${allowedDanhHieu.join(', ')}`
+              `Danh hiệu không hợp lệ: ${item.danh_hieu}. Chỉ chấp nhận: ${formatDanhHieuList(allowedDanhHieu)}`
             );
           }
         }
       }
 
       if (errors.length > 0) {
-        throw new ValidationError(`Phát hiện lỗi validation:\n${errors.join('\n')}`);
+        this.throwValidationErrors(errors, type, nam, adminId);
       }
 
       // Single batch for branches that only need basic personnel fields
@@ -444,7 +456,10 @@ class AwardBulkService {
           ghi_chu: ghiChu,
         });
 
-        importedCount = result.details.created.length || selectedPersonnel.length;
+        importedCount = result.details.created.length;
+        if (result.details.errors.length > 0) {
+          errors.push(...result.details.errors.map(e => e.error));
+        }
         selectedPersonnel.forEach(id => affectedPersonnelIds.add(id));
       } else if (type === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
         for (const item of titleData) {
@@ -459,9 +474,9 @@ class AwardBulkService {
             });
             importedCount++;
           } catch (error) {
-            errors.push(
-              `Lỗi khi thêm khen thưởng cho đơn vị ${item.don_vi_id}: ${(error as Error).message}`
-            );
+            const unitMsg = `Lỗi khi thêm khen thưởng cho đơn vị ${item.don_vi_id}: ${(error as Error).message}`;
+            console.error('[bulkCreateAwards]', unitMsg, error);
+            errors.push(unitMsg);
           }
         }
       } else if (type === PROPOSAL_TYPES.NCKH) {
@@ -480,9 +495,9 @@ class AwardBulkService {
             importedCount++;
             affectedPersonnelIds.add(item.personnel_id);
           } catch (error) {
-            errors.push(
-              `Lỗi khi thêm thành tích cho quân nhân ${item.personnel_id}: ${(error as Error).message}`
-            );
+            const nckhMsg = `Lỗi khi thêm thành tích cho quân nhân ${item.personnel_id}: ${(error as Error).message}`;
+            console.error('[bulkCreateAwards]', nckhMsg, error);
+            errors.push(nckhMsg);
           }
         }
       } else if (type === PROPOSAL_TYPES.HC_QKQT) {
@@ -505,12 +520,12 @@ class AwardBulkService {
             errors.push(`Huy chương CSVV thiếu danh_hieu cho quân nhân ${item.personnel_id}`);
           } else if (!allowedDanhHieus.includes(item.danh_hieu)) {
             errors.push(
-              `Danh hiệu "${item.danh_hieu}" không hợp lệ. Chỉ cho phép: ${allowedDanhHieus.join(', ')}`
+              `Danh hiệu "${item.danh_hieu}" không hợp lệ. Chỉ cho phép: ${formatDanhHieuList(allowedDanhHieus)}`
             );
           }
         }
         if (errors.length > 0) {
-          throw new ValidationError(`Phát hiện lỗi validation:\n${errors.join('\n')}`);
+          this.throwValidationErrors(errors, type, nam, adminId);
         }
 
         await prisma.$transaction(async prismaTx => {
@@ -548,12 +563,12 @@ class AwardBulkService {
             errors.push(`HC BVTQ thiếu danh_hieu cho quân nhân ${item.personnel_id}`);
           } else if (!allowedDanhHieus.includes(item.danh_hieu)) {
             errors.push(
-              `Danh hiệu "${item.danh_hieu}" không hợp lệ. Chỉ cho phép: ${allowedDanhHieus.join(', ')}`
+              `Danh hiệu "${item.danh_hieu}" không hợp lệ. Chỉ cho phép: ${formatDanhHieuList(allowedDanhHieus)}`
             );
           }
         }
         if (errors.length > 0) {
-          throw new ValidationError(`Phát hiện lỗi validation:\n${errors.join('\n')}`);
+          this.throwValidationErrors(errors, type, nam, adminId);
         }
 
         const baseRequiredMonths = CONG_HIEN_BASE_REQUIRED_MONTHS;
@@ -697,7 +712,7 @@ class AwardBulkService {
         }
 
         if (eligibleTitleData.length === 0 && errors.length > 0) {
-          throw new ValidationError(`Phát hiện lỗi validation:\n${errors.join('\n')}`);
+          this.throwValidationErrors(errors, type, nam, adminId);
         }
 
         await prisma.$transaction(async prismaTx => {
@@ -739,9 +754,6 @@ class AwardBulkService {
         );
       }
 
-      if (errors.length > 0 && importedCount === 0) {
-        throw new AppError(`Thêm khen thưởng thất bại:\n${errors.join('\n')}`, 500);
-      }
 
       try {
         const admin = await prisma.taiKhoan.findUnique({
@@ -767,18 +779,36 @@ class AwardBulkService {
         });
       }
 
+    const unit = type === PROPOSAL_TYPES.DON_VI_HANG_NAM ? 'đơn vị' : 'quân nhân';
+    let message: string;
+    if (importedCount > 0 && errors.length > 0) {
+      message = `Đã thêm thành công ${importedCount} ${unit}, ${errors.length} lỗi`;
+    } else if (importedCount > 0) {
+      message = `Đã thêm thành công ${importedCount} ${unit}`;
+    } else if (errors.length > 0) {
+      message = `Thêm khen thưởng thất bại: ${errors.length} lỗi`;
+    } else {
+      message = importedCount > 0 ? 'Thêm khen thưởng thành công!' : 'Không có dữ liệu nào được thêm';
+    }
+
+    if (errors.length > 0) {
+      void writeSystemLog({
+        userId: adminId,
+        userRole: 'ADMIN',
+        action: 'ERROR',
+        resource: 'awards',
+        description: `[Thêm khen thưởng đồng loạt] ${LOAI_DE_XUAT_MAP[type as keyof typeof LOAI_DE_XUAT_MAP] || type} năm ${nam}: ${importedCount} thành công, ${errors.length} lỗi. Chi tiết: ${errors.join('; ')}`,
+      });
+    }
+
     return {
-      message:
-        importedCount > 0
-          ? `Đã thêm thành công ${importedCount} ${
-              type === PROPOSAL_TYPES.DON_VI_HANG_NAM ? 'đơn vị' : 'quân nhân'
-            }${errors.length > 0 ? `, ${errors.length} lỗi` : ''}`
-          : 'Thêm khen thưởng thành công!',
+      message,
       data: {
         importedCount,
         errorCount: errors.length,
         errors: errors.length > 0 ? errors : undefined,
         affectedPersonnelIds: Array.from(affectedPersonnelIds),
+        data_danh_hieu: titleData,
       },
     };
   }

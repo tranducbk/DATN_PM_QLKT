@@ -64,7 +64,7 @@ class ContributionAwardController {
 
     const workbook = await contributionAwardService.exportTemplate(personnelIds, repeatMap);
     const buffer = await workbook.xlsx.writeBuffer();
-    const fileName = `mau_import_hcbvtq_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    const fileName = `mau_nhap_hcbvtq_${new Date().toISOString().slice(0, 10)}.xlsx`;
     res.setHeader(
       'Content-Type',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -99,7 +99,7 @@ class ContributionAwardController {
     const body = req.body as ConfirmImportBody;
     const { items } = body;
     if (!items || !Array.isArray(items) || items.length === 0) {
-      return ResponseHelper.badRequest(res, 'Không có dữ liệu để import');
+      return ResponseHelper.badRequest(res, 'Không có dữ liệu để nhập');
     }
     const result = await contributionAwardService.confirmImport(items, user.id);
     await writeSystemLog({

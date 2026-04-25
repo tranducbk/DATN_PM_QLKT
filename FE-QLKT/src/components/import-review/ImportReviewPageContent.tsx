@@ -27,6 +27,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { DANH_HIEU_MAP } from '@/constants/danhHieu.constants';
 import { getApiErrorMessage, logApiError } from '@/lib/apiError';
+import { formatDate } from '@/lib/utils';
 import { DEFAULT_PAGE_SIZE, DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
 
 const { Title, Text } = Typography;
@@ -36,6 +37,7 @@ export interface PreviewItem {
   personnel_id?: string;
   unit_id?: string;
   ho_ten?: string;
+  ngay_sinh?: string;
   cap_bac?: string;
   chuc_vu?: string;
   ma_don_vi?: string;
@@ -78,6 +80,9 @@ export interface ImportReviewConfig {
   noHistoryLabel?: string;
 }
 
+const centerAlignColumns = <T,>(columns: ColumnsType<T>): ColumnsType<T> =>
+  columns.map(col => ({ ...col, align: 'center' as const }));
+
 export function BooleanIcon({ value }: { value: boolean | undefined }) {
   return value ? (
     <CheckCircleOutlined style={{ color: '#52c41a', fontSize: 16 }} />
@@ -94,7 +99,7 @@ export function getDanhHieuTag(danhHieu: string | undefined, colorMap: DanhHieuC
   if (!danhHieu) return <Tag>--</Tag>;
   const label = DANH_HIEU_MAP[danhHieu] ?? danhHieu;
   const color = colorMap[danhHieu] ?? 'default';
-  return <Tag color={color}>{label}</Tag>;
+  return <Tag color={color} style={{ whiteSpace: 'nowrap' }}>{label}</Tag>;
 }
 
 export function makeErrorColumn(): ColumnsType<PreviewItem>[number] {
@@ -129,14 +134,26 @@ export function makeRowNumberColumn(): ColumnsType<PreviewItem>[number] {
   };
 }
 
-export function makeHoTenColumn(width = 180, withRender = false): ColumnsType<PreviewItem>[number] {
-  const col = {
+export function makeHoTenColumn(width = 200, withRender = false): ColumnsType<PreviewItem>[number] {
+  return {
     title: 'Họ tên',
     dataIndex: 'ho_ten',
     width,
-    ellipsis: true,
+    render: (_: unknown, record: PreviewItem) => {
+      const name = record.ho_ten || '';
+      if (withRender && !name) return '--';
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <Text strong>{name || '-'}</Text>
+          {record.ngay_sinh && (
+            <Text type="secondary" style={{ fontSize: '12px', marginTop: '2px' }}>
+              {formatDate(record.ngay_sinh)}
+            </Text>
+          )}
+        </div>
+      );
+    },
   };
-  return withRender ? { ...col, render: renderText } : col;
 }
 
 export function makeNamColumn(width = 80, withRender = false): ColumnsType<PreviewItem>[number] {
@@ -159,31 +176,43 @@ export function makeSoQDColumn(width = 140): ColumnsType<PreviewItem>[number] {
   };
 }
 
-export function makeGhiChuColumn(width = 150): ColumnsType<PreviewItem>[number] {
+export function makeGhiChuColumn(): ColumnsType<PreviewItem>[number] {
   return {
     title: 'Ghi chú',
     dataIndex: 'ghi_chu',
-    width,
-    ellipsis: true,
     render: renderText,
   };
 }
 
 export function makeCapBacColumn(): ColumnsType<PreviewItem>[number] {
-  return {
-    title: 'Cấp bậc',
-    dataIndex: 'cap_bac',
-    width: 120,
-    ellipsis: true,
-  };
+  return makeCapBacChucVuColumn();
 }
 
 export function makeChucVuColumn(): ColumnsType<PreviewItem>[number] {
+  return { title: 'Chức vụ', dataIndex: 'chuc_vu', width: 0 };
+}
+
+export function makeCapBacChucVuColumn(width = 160): ColumnsType<PreviewItem>[number] {
   return {
-    title: 'Chức vụ',
-    dataIndex: 'chuc_vu',
-    width: 150,
-    ellipsis: true,
+    title: 'Cấp bậc / Chức vụ',
+    key: 'cap_bac_chuc_vu',
+    width,
+    align: 'center' as const,
+    render: (_: unknown, record: PreviewItem) => {
+      const capBac = record.cap_bac;
+      const chucVu = record.chuc_vu;
+      if (!capBac && !chucVu) return <span>-</span>;
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          {capBac && <Text strong>{capBac}</Text>}
+          {chucVu && (
+            <Text type="secondary" style={{ fontSize: '12px', marginTop: capBac ? '2px' : '0' }}>
+              {chucVu}
+            </Text>
+          )}
+        </div>
+      );
+    },
   };
 }
 
@@ -218,7 +247,7 @@ export function ImportReviewPageContent({ config }: { config: ImportReviewConfig
         setSelectedRowKeys(valid.map(v => v.__key as React.Key));
       }
     } catch (error: unknown) {
-      logApiError(error, 'đọc dữ liệu xem trước import');
+      logApiError(error, 'đọc dữ liệu xem trước nhập dữ liệu');
     } finally {
       setLoading(false);
     }
@@ -234,7 +263,8 @@ export function ImportReviewPageContent({ config }: { config: ImportReviewConfig
   const breadcrumbLastItem = config.breadcrumbLastItem ?? 'Xem trước dữ liệu tải lên';
 
   const validColumnsPaginated = useMemo(() => {
-    return config.validColumns.map(col => {
+    const centeredColumns = centerAlignColumns(config.validColumns);
+    return centeredColumns.map(col => {
       const c = col as ColumnsType<PreviewItem>[number];
       if (c.key === 'stt') {
         return {
@@ -248,7 +278,8 @@ export function ImportReviewPageContent({ config }: { config: ImportReviewConfig
   }, [config.validColumns, validPagination.current, validPagination.pageSize]);
 
   const invalidColumnsPaginated = useMemo(() => {
-    return config.invalidColumns.map(col => {
+    const centeredColumns = centerAlignColumns(config.invalidColumns);
+    return centeredColumns.map(col => {
       const c = col as ColumnsType<PreviewItem>[number];
       if (c.key === 'stt') {
         return {
@@ -261,9 +292,14 @@ export function ImportReviewPageContent({ config }: { config: ImportReviewConfig
     });
   }, [config.invalidColumns, invalidPagination.current, invalidPagination.pageSize]);
 
+  const historyColumnsCentered = useMemo(
+    () => centerAlignColumns(config.historyColumns),
+    [config.historyColumns]
+  );
+
   const handleConfirm = async () => {
     if (!previewData || selectedRowKeys.length === 0) {
-      message.warning('Vui lòng chọn ít nhất một bản ghi để import.');
+      message.warning('Vui lòng chọn ít nhất một bản ghi để nhập dữ liệu.');
       return;
     }
 
@@ -285,10 +321,10 @@ export function ImportReviewPageContent({ config }: { config: ImportReviewConfig
         sessionStorage.removeItem(config.sessionStorageKey);
         router.push('/admin/awards');
       } else {
-        message.error(result?.message ?? 'Tải dữ liệu thất bại. Vui lòng thử lại.');
+        message.error(result?.message ?? 'Nhập dữ liệu thất bại. Vui lòng thử lại.');
       }
     } catch (error: unknown) {
-      message.error(getApiErrorMessage(error, 'Tải dữ liệu thất bại. Vui lòng thử lại.'));
+      message.error(getApiErrorMessage(error, 'Nhập dữ liệu thất bại. Vui lòng thử lại.'));
     } finally {
       setConfirming(false);
     }
@@ -329,7 +365,7 @@ export function ImportReviewPageContent({ config }: { config: ImportReviewConfig
         <Result
           status="info"
           title="Không có dữ liệu xem trước"
-          subTitle="Vui lòng quay lại và upload file Excel để xem trước dữ liệu import."
+          subTitle="Vui lòng quay lại và tải lên file Excel để xem trước dữ liệu nhập dữ liệu."
           extra={
             <Button type="primary" icon={<ArrowLeftOutlined />} onClick={() => router.back()}>
               Quay lại
@@ -387,8 +423,8 @@ export function ImportReviewPageContent({ config }: { config: ImportReviewConfig
         }
         description={
           invalidCount > 0
-            ? 'Một số bản ghi có lỗi và sẽ không được import. Vui lòng kiểm tra và sửa trong file Excel nếu cần.'
-            : 'Tất cả bản ghi đều hợp lệ và sẵn sàng import.'
+            ? 'Một số bản ghi có lỗi và sẽ không được nhập dữ liệu. Vui lòng kiểm tra và sửa trong file Excel nếu cần.'
+            : 'Tất cả bản ghi đều hợp lệ và sẵn sàng nhập dữ liệu.'
         }
       />
 
@@ -428,7 +464,7 @@ export function ImportReviewPageContent({ config }: { config: ImportReviewConfig
                     </Space>
                     <Table
                       rowKey={(_r, i) => `history-${i}`}
-                      columns={config.historyColumns}
+                      columns={historyColumnsCentered}
                       dataSource={record.history}
                       pagination={false}
                       size="small"
@@ -529,7 +565,7 @@ export function ImportReviewPageContent({ config }: { config: ImportReviewConfig
         >
           {confirming
             ? 'Đang tải dữ liệu...'
-            : `Xác nhận import (${selectedCount} ${config.confirmButtonLabel})`}
+            : `Xác nhận nhập dữ liệu (${selectedCount} ${config.confirmButtonLabel})`}
         </Button>
       </div>
     </div>

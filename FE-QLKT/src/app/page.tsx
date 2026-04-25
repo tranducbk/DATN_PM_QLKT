@@ -319,7 +319,7 @@ export default function HomePage() {
                 'Quản lý khen thưởng tập trung',
                 'Luồng phê duyệt nhiều cấp',
                 'Thông báo thời gian thực',
-                'Import / Export Excel',
+                'Nhập / Xuất Excel',
                 'Phân quyền 4 vai trò',
                 '7 loại khen thưởng',
                 'Kiểm tra điều kiện tự động',

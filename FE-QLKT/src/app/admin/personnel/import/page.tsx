@@ -79,13 +79,13 @@ export default function PersonnelImportPage() {
       const result = await apiClient.importPersonnel(selectedFile);
 
       if (!result.success) {
-        message.error(result.message || 'Có lỗi xảy ra khi tải dữ liệu');
+        message.error(result.message || 'Có lỗi xảy ra khi nhập dữ liệu');
         return;
       }
       setImportResult(result.data);
-      message.success('Tải dữ liệu quân nhân thành công');
+      message.success('Nhập dữ liệu quân nhân thành công');
     } catch (error: unknown) {
-      message.error(getApiErrorMessage(error, 'Có lỗi xảy ra khi tải dữ liệu'));
+      message.error(getApiErrorMessage(error, 'Có lỗi xảy ra khi nhập dữ liệu'));
     } finally {
       setLoading(false);
     }
@@ -133,7 +133,7 @@ export default function PersonnelImportPage() {
         <Breadcrumb.Item>
           <Link href="/admin/personnel">Quân nhân</Link>
         </Breadcrumb.Item>
-        <Breadcrumb.Item>Tải dữ liệu</Breadcrumb.Item>
+        <Breadcrumb.Item>Nhập dữ liệu</Breadcrumb.Item>
       </Breadcrumb>
 
       {/* Header */}
@@ -144,10 +144,10 @@ export default function PersonnelImportPage() {
           </Link>
         </Space>
         <Title level={2} style={{ marginTop: 8, marginBottom: 8 }}>
-          Tải dữ liệu quân nhân
+          Nhập dữ liệu quân nhân
         </Title>
         <Paragraph type="secondary" style={{ fontSize: 14, marginBottom: 0 }}>
-          Tải dữ liệu quân nhân từ file Excel
+          Nhập dữ liệu quân nhân từ file Excel
         </Paragraph>
       </div>
 
@@ -186,7 +186,7 @@ export default function PersonnelImportPage() {
                   block
                   size="large"
                 >
-                  {loading ? 'Đang tải dữ liệu...' : 'Tải dữ liệu'}
+                  {loading ? 'Đang nhập dữ liệu...' : 'Nhập dữ liệu'}
                 </Button>
               )}
 
@@ -208,7 +208,7 @@ export default function PersonnelImportPage() {
               />
             </Space>
             <Paragraph type="secondary" style={{ fontSize: 13, marginTop: 16, marginBottom: 0 }}>
-              Chọn file Excel chứa dữ liệu quân nhân để tải dữ liệu
+              Chọn file Excel chứa dữ liệu quân nhân để nhập dữ liệu
             </Paragraph>
           </Card>
         </Col>
@@ -264,7 +264,7 @@ export default function PersonnelImportPage() {
           title={
             <Space>
               <CheckCircleOutlined style={{ color: '#52c41a' }} />
-              <span>Kết quả tải dữ liệu</span>
+              <span>Kết quả nhập dữ liệu</span>
             </Space>
           }
           style={{ marginTop: 24 }}

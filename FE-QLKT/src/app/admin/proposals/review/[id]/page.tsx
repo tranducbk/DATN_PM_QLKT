@@ -36,16 +36,14 @@ import {
   ArrowLeftOutlined,
   WarningOutlined,
   FileTextOutlined,
-  DownloadOutlined,
   DeleteOutlined,
-  EyeOutlined,
 } from '@ant-design/icons';
 import { EditableCell } from '@/components/EditableCell';
 import { DecisionModal } from '@/components/DecisionModal';
 import { formatDateTime } from '@/lib/utils';
 import { apiClient } from '@/lib/apiClient';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
-import { previewFileWithApi } from '@/utils/filePreview';
+import { FileAttachmentList } from '@/components/proposals/FileAttachmentList';
 import { useTheme } from '@/components/ThemeProvider';
 import {
   CONG_HIEN_HE_SO_GROUPS,
@@ -494,14 +492,12 @@ export default function ProposalDetailPage() {
 
     if (editedDanhHieu.length > 0) {
       editedDanhHieu.forEach((item, index) => {
-        if (proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
-          if (!item.so_quyet_dinh || item.so_quyet_dinh.trim() === '') {
-            missingDecisions.push(`Đơn vị ${index + 1}: ${item.ten_don_vi || 'N/A'}`);
-          }
-        } else {
-          if (!item.so_quyet_dinh || item.so_quyet_dinh.trim() === '') {
-            missingDecisions.push(`Quân nhân ${index + 1}: ${item.ho_ten || 'N/A'}`);
-          }
+        const hasQD = item.so_quyet_dinh?.trim() || item.so_quyet_dinh_bkbqp || item.so_quyet_dinh_cstdtq || item.so_quyet_dinh_bkttcp;
+        if (!hasQD) {
+          const label = proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM
+            ? `Đơn vị ${index + 1}: ${item.ten_don_vi || 'N/A'}`
+            : `Quân nhân ${index + 1}: ${item.ho_ten || 'N/A'}`;
+          missingDecisions.push(label);
         }
       });
     }
@@ -570,7 +566,7 @@ export default function ProposalDetailPage() {
 
     modal.confirm({
       title: 'Xác nhận phê duyệt',
-      content: 'Bạn có chắc chắn muốn phê duyệt đề xuất này? Dữ liệu sẽ được import vào hệ thống.',
+      content: 'Bạn có chắc chắn muốn phê duyệt đề xuất này? Dữ liệu sẽ được nhập vào hệ thống.',
       okText: 'Phê duyệt',
       cancelText: 'Hủy',
       centered: true,
@@ -661,58 +657,10 @@ export default function ProposalDetailPage() {
       const applyDecision = (item: DanhHieuItem, index: number) => {
         if (!selectedSet.has(String(index))) return item;
 
-        const loaiKhenThuong = decision.loai_khen_thuong || '';
-        const soQuyetDinh = decision.so_quyet_dinh || '';
-
-        // BKBQP/CSTDTQ decisions only apply to CA_NHAN_HANG_NAM proposals
-        if (loaiDeXuat === PROPOSAL_TYPES.CA_NHAN_HANG_NAM) {
-          const isBKBQP =
-            loaiKhenThuong.includes('BKBQP') ||
-            soQuyetDinh.toLowerCase().includes('bkbqp') ||
-            soQuyetDinh.toLowerCase().includes('bằng khen');
-          const isCSTDTQ =
-            loaiKhenThuong.includes('CSTDTQ') ||
-            soQuyetDinh.toLowerCase().includes('cstdtq') ||
-            soQuyetDinh.toLowerCase().includes('chiến sĩ thi đua toàn quân');
-          const isBKTTCP =
-            loaiKhenThuong.includes('BKTTCP') ||
-            soQuyetDinh.toLowerCase().includes('bkttcp') ||
-            soQuyetDinh.toLowerCase().includes('bằng khen toàn quân phổ thông');
-
-          if (isBKBQP) {
-            return {
-              ...item,
-              nhan_bkbqp: true,
-              so_quyet_dinh_bkbqp: decision.so_quyet_dinh,
-              file_quyet_dinh_bkbqp: decision.file_path || null,
-              so_quyet_dinh: item.so_quyet_dinh || null,
-              file_quyet_dinh: item.file_quyet_dinh || null,
-            };
-          } else if (isCSTDTQ) {
-            return {
-              ...item,
-              nhan_cstdtq: true,
-              so_quyet_dinh_cstdtq: decision.so_quyet_dinh,
-              file_quyet_dinh_cstdtq: decision.file_path || null,
-              so_quyet_dinh: item.so_quyet_dinh || null,
-              file_quyet_dinh: item.file_quyet_dinh || null,
-            };
-          } else if (isBKTTCP) {
-            return {
-              ...item,
-              nhan_bkttcp: true,
-              so_quyet_dinh_bkttcp: decision.so_quyet_dinh,
-              file_quyet_dinh_bkttcp: decision.file_path || null,
-              so_quyet_dinh: item.so_quyet_dinh || null,
-              file_quyet_dinh: item.file_quyet_dinh || null,
-            };
-          }
-        }
-
+        // FE luôn gán so_quyet_dinh chung, BE tự map theo danh_hieu
         return {
           ...item,
           so_quyet_dinh: decision.so_quyet_dinh,
-          file_quyet_dinh: decision.file_path || null,
           ...(decision.nam ? { nam_quyet_dinh: decision.nam } : {}),
         };
       };
@@ -770,16 +718,12 @@ export default function ProposalDetailPage() {
     setEditedThanhTich(nextThanhTichItems);
   };
 
-  const updateNienHan = (index: number, field: keyof DanhHieuItem, value: unknown) => {
-    const nextNienHanItems = [...editedNienHan];
-    nextNienHanItems[index] = { ...nextNienHanItems[index], [field]: value };
-    setEditedNienHan(nextNienHanItems);
+  const updateNienHan = (index: number, fields: Partial<DanhHieuItem>) => {
+    setEditedNienHan(prev => prev.map((item, i) => (i === index ? { ...item, ...fields } : item)));
   };
 
-  const updateCongHien = (index: number, field: keyof DanhHieuItem, value: unknown) => {
-    const nextCongHienItems = [...editedCongHien];
-    nextCongHienItems[index] = { ...nextCongHienItems[index], [field]: value };
-    setEditedCongHien(nextCongHienItems);
+  const updateCongHien = (index: number, fields: Partial<DanhHieuItem>) => {
+    setEditedCongHien(prev => prev.map((item, i) => (i === index ? { ...item, ...fields } : item)));
   };
 
   const handleOpenDecisionFile = async (soQuyetDinh: string) => {
@@ -895,7 +839,7 @@ export default function ProposalDetailPage() {
             key: 'thang',
             width: 70,
             align: 'center' as const,
-            render: (val: number | null | undefined) => val ?? proposal?.thang ?? '',
+            render: (val: number | null | undefined) => val ?? proposal?.thang ?? '—',
           },
         ]
       : []),
@@ -991,18 +935,18 @@ export default function ProposalDetailPage() {
       : []),
     {
       title: 'Tháng nhận',
-      key: 'thang_nhan',
-      width: 140,
+      key: 'thang_nhan_nien_han',
+      width: 160,
       align: 'center' as const,
       render: (_: unknown, record: DanhHieuItem, index: number) => {
         const hasDecision = !!record.so_quyet_dinh?.trim();
-        const editable = hasDecision && proposal?.status === PROPOSAL_STATUS.PENDING;
+        const isPending = proposal?.status === PROPOSAL_STATUS.PENDING;
         const hasValue = !!(record.thang_nhan && record.nam_nhan);
 
-        if (!editable && hasValue) {
+        if (!isPending && hasValue) {
           return <Text>{`${String(record.thang_nhan).padStart(2, '0')}/${record.nam_nhan}`}</Text>;
         }
-        if (!editable) {
+        if (!isPending) {
           return <Text type="secondary">—</Text>;
         }
 
@@ -1016,18 +960,17 @@ export default function ProposalDetailPage() {
               .year(record.nam_nhan!)
               .month(record.thang_nhan! - 1)
           : null;
-        return (
+        const picker = (
           <DatePicker
             picker="month"
             value={pickerValue}
             minDate={minDate}
+            disabled={!hasDecision}
             onChange={date => {
               if (date) {
-                updateNienHan(index, 'thang_nhan', date.month() + 1);
-                updateNienHan(index, 'nam_nhan', date.year());
+                updateNienHan(index, { thang_nhan: date.month() + 1, nam_nhan: date.year() });
               } else {
-                updateNienHan(index, 'thang_nhan', null);
-                updateNienHan(index, 'nam_nhan', null);
+                updateNienHan(index, { thang_nhan: null, nam_nhan: null });
               }
             }}
             placeholder="Chọn tháng"
@@ -1036,6 +979,10 @@ export default function ProposalDetailPage() {
             style={{ width: '100%' }}
           />
         );
+        if (!hasDecision) {
+          return <Tooltip title="Cần thêm số quyết định trước">{picker}</Tooltip>;
+        }
+        return picker;
       },
     },
     {
@@ -1089,18 +1036,18 @@ export default function ProposalDetailPage() {
 
   const congHienThangNhanColumn = {
     title: 'Tháng nhận',
-    key: 'thang_nhan_ch',
-    width: 140,
+    key: 'thang_nhan_cong_hien',
+    width: 160,
     align: 'center' as const,
     render: (_: unknown, record: DanhHieuItem, index: number) => {
       const hasDecision = !!record.so_quyet_dinh?.trim();
-      const editable = hasDecision && proposal?.status === PROPOSAL_STATUS.PENDING;
+      const isPending = proposal?.status === PROPOSAL_STATUS.PENDING;
       const hasValue = !!(record.thang_nhan && record.nam_nhan);
 
-      if (!editable && hasValue) {
+      if (!isPending && hasValue) {
         return <Text>{`${String(record.thang_nhan).padStart(2, '0')}/${record.nam_nhan}`}</Text>;
       }
-      if (!editable) {
+      if (!isPending) {
         return <Text type="secondary">—</Text>;
       }
 
@@ -1114,18 +1061,17 @@ export default function ProposalDetailPage() {
             .year(record.nam_nhan!)
             .month(record.thang_nhan! - 1)
         : null;
-      return (
+      const picker = (
         <DatePicker
           picker="month"
           value={pickerValue}
           minDate={minDate}
+          disabled={!hasDecision}
           onChange={date => {
             if (date) {
-              updateCongHien(index, 'thang_nhan', date.month() + 1);
-              updateCongHien(index, 'nam_nhan', date.year());
+              updateCongHien(index, { thang_nhan: date.month() + 1, nam_nhan: date.year() });
             } else {
-              updateCongHien(index, 'thang_nhan', null);
-              updateCongHien(index, 'nam_nhan', null);
+              updateCongHien(index, { thang_nhan: null, nam_nhan: null });
             }
           }}
           placeholder="Chọn tháng"
@@ -1134,11 +1080,15 @@ export default function ProposalDetailPage() {
           style={{ width: '100%' }}
         />
       );
+      if (!hasDecision) {
+        return <Tooltip title="Cần thêm số quyết định trước">{picker}</Tooltip>;
+      }
+      return picker;
     },
   };
 
   const congHienColumns = caNhanHangNamColumns
-    .filter(column => column.key !== 'thang_nhan')
+    .filter(column => column.key !== 'thang_nhan_nien_han')
     .flatMap(column =>
       column.key === 'so_quyet_dinh' ? [congHienThangNhanColumn, column] : [column]
     );
@@ -1608,64 +1558,11 @@ export default function ProposalDetailPage() {
 
         {/* File đính kèm */}
         <Card title="File đính kèm" style={{ marginBottom: '24px' }}>
-          {proposal.files_attached && proposal.files_attached.length > 0 ? (
-            <Space direction="vertical" style={{ width: '100%' }} size="small">
-              {proposal.files_attached.map(
-                (
-                  file: {
-                    filename: string;
-                    originalName?: string;
-                    originalname?: string;
-                    size?: number;
-                  },
-                  index: number
-                ) => (
-                  <div
-                    key={index}
-                    className="file-attachment-item"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '8px 12px',
-                      backgroundColor: 'rgba(0, 0, 0, 0.02)',
-                      border: '1px solid rgba(0, 0, 0, 0.06)',
-                      borderRadius: '4px',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <FileTextOutlined style={{ color: '#1890ff', fontSize: '16px' }} />
-                      <Text style={{ fontSize: '14px' }}>
-                        {file.originalName ||
-                          file.originalname ||
-                          file.filename ||
-                          'Không có tên file'}
-                      </Text>
-                      {file.size && (
-                        <Text type="secondary" style={{ fontSize: '12px' }}>
-                          ({(file.size / 1024).toFixed(2)} KB)
-                        </Text>
-                      )}
-                    </div>
-                    <Button
-                      type="primary"
-                      icon={<EyeOutlined />}
-                      onClick={() => {
-                        const filename = file.filename;
-                        const displayName =
-                          file.originalName || file.originalname || file.filename || 'document.pdf';
-                        previewFileWithApi(`/api/proposals/uploads/${filename}`, displayName);
-                      }}
-                    >
-                      Xem file
-                    </Button>
-                  </div>
-                )
-              )}
-            </Space>
-          ) : (
-            <Text type="secondary">Không có file đính kèm</Text>
-          )}
+          <FileAttachmentList
+            files={proposal.files_attached || []}
+            mode="server"
+            emptyText="Không có file đính kèm"
+          />
         </Card>
 
         {proposal.loai_de_xuat === PROPOSAL_TYPES.NCKH && (
@@ -1966,9 +1863,9 @@ export default function ProposalDetailPage() {
                   columns={
                     proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM
                       ? donViHangNamColumns
-                      : proposal.loai_de_xuat === PROPOSAL_TYPES.CA_NHAN_HANG_NAM
-                        ? caNhanHangNamColumns
-                        : caNhanHangNamColumns
+                      : caNhanHangNamColumns.filter(
+                          col => col.key !== 'thang_nhan_nien_han'
+                        )
                   }
                   dataSource={editedDanhHieu}
                   rowKey={(_, index) => index ?? 0}
@@ -2010,7 +1907,6 @@ export default function ProposalDetailPage() {
           {proposal.status === PROPOSAL_STATUS.PENDING && (
             <div style={{ display: 'flex', gap: '12px' }}>
               <Button
-                danger
                 icon={<CloseCircleOutlined />}
                 onClick={() => setRejectModalVisible(true)}
                 size="large"

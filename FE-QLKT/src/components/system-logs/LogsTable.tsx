@@ -57,7 +57,7 @@ const resourceLabels: Record<string, string> = {
   proposals: 'Đề xuất',
   decisions: 'Quyết định',
   awards: 'Khen thưởng',
-  'award-bulk': 'Khen thưởng hàng loạt',
+  'award-bulk': 'Khen thưởng đồng loạt',
   auth: 'Xác thực',
   'annual-rewards': 'Khen thưởng cá nhân hằng năm',
   'unit-annual-awards': 'Khen thưởng đơn vị hằng năm',

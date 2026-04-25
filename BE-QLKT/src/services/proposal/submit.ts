@@ -3,7 +3,12 @@ import {
   requiresProposalMonth,
   type ProposalType,
 } from '../../constants/proposalTypes.constants';
-import { calculateServiceMonths, recalcPositionMonths, buildCutoffDate } from '../../helpers/serviceYearsHelper';
+import { writeSystemLog } from '../../helpers/systemLogHelper';
+import {
+  calculateServiceMonths,
+  recalcPositionMonths,
+  buildCutoffDate,
+} from '../../helpers/serviceYearsHelper';
 import {
   CONG_HIEN_HE_SO_GROUPS,
   CONG_HIEN_HE_SO_RANGES,
@@ -522,6 +527,7 @@ async function submitProposal(
           personnel_id: item.personnel_id,
           ho_ten: personnel?.ho_ten || '',
           nam: nam,
+          thang: thang,
           danh_hieu: item.danh_hieu,
           cap_bac: item.cap_bac || null,
           chuc_vu: item.chuc_vu || null,
@@ -561,7 +567,10 @@ async function submitProposal(
               },
             });
 
-            const cutoffDate = buildCutoffDate(nam, thang != null ? parseInt(String(thang), 10) : null);
+            const cutoffDate = buildCutoffDate(
+              nam,
+              thang != null ? parseInt(String(thang), 10) : null
+            );
             const updatedHistories = recalcPositionMonths(histories, cutoffDate);
 
             // Aggregate months by coefficient group.
@@ -574,11 +583,7 @@ async function submitProposal(
                   ? heSo >= range.min && (range.includeMax ? heSo <= range.max : heSo < range.max)
                   : false;
 
-                if (
-                  belongsToGroup &&
-                  history.so_thang !== null &&
-                  history.so_thang !== undefined
-                ) {
+                if (belongsToGroup && history.so_thang !== null && history.so_thang !== undefined) {
                   totalMonths += Number(history.so_thang);
                 }
               });
@@ -614,10 +619,8 @@ async function submitProposal(
               thoi_gian_nhom_0_9_1_0: formatTime(months0_9_1_0),
             };
           } catch (error) {
-            console.error('ProposalSubmit.fetchPositionHistory failed', {
-              personnelId: item.personnel_id,
-              error,
-            });
+            console.error('ProposalSubmit.fetchPositionHistory failed', { personnelId: item.personnel_id, error });
+            void writeSystemLog({ action: 'ERROR', resource: 'proposals', description: `[Tạo đề xuất] Lỗi lấy lịch sử chức vụ quân nhân ${item.personnel_id}: ${(error as Error).message}` });
             return baseData;
           }
         }
@@ -723,9 +726,7 @@ async function submitProposal(
         }
 
         const ngayNhapNgu = new Date(quanNhan.ngay_nhap_ngu);
-        const ngayKetThuc = quanNhan.ngay_xuat_ngu
-          ? new Date(quanNhan.ngay_xuat_ngu)
-          : new Date();
+        const ngayKetThuc = quanNhan.ngay_xuat_ngu ? new Date(quanNhan.ngay_xuat_ngu) : new Date();
 
         const months = calculateServiceMonths(ngayNhapNgu, ngayKetThuc);
         const years = Math.floor(months / 12);
@@ -740,6 +741,8 @@ async function submitProposal(
           });
         }
       } catch (error) {
+        console.error('[submitProposal] eligibility check error:', { personnelId, error });
+        void writeSystemLog({ action: 'ERROR', resource: 'proposals', description: `[Tạo đề xuất] Lỗi kiểm tra điều kiện quân nhân ${personnelId}: ${(error as Error).message}` });
         ineligiblePersonnel.push({
           id: personnelId,
           ho_ten: 'Không có dữ liệu',
@@ -817,9 +820,7 @@ async function submitProposal(
         }
 
         const ngayNhapNgu = new Date(quanNhan.ngay_nhap_ngu);
-        const ngayKetThuc = quanNhan.ngay_xuat_ngu
-          ? new Date(quanNhan.ngay_xuat_ngu)
-          : new Date();
+        const ngayKetThuc = quanNhan.ngay_xuat_ngu ? new Date(quanNhan.ngay_xuat_ngu) : new Date();
 
         const months = calculateServiceMonths(ngayNhapNgu, ngayKetThuc);
         const years = Math.floor(months / 12);
@@ -835,6 +836,8 @@ async function submitProposal(
           });
         }
       } catch (error) {
+        console.error('[submitProposal] eligibility check error:', { personnelId, error });
+        void writeSystemLog({ action: 'ERROR', resource: 'proposals', description: `[Tạo đề xuất] Lỗi kiểm tra điều kiện quân nhân ${personnelId}: ${(error as Error).message}` });
         ineligiblePersonnel.push({
           id: personnelId,
           ho_ten: 'Không có dữ liệu',
@@ -895,14 +898,12 @@ async function submitProposal(
         positionHistoriesMap[personnelId] = recalcPositionMonths(histories, cutoffDate);
       } catch (error) {
         console.error('ProposalSubmit.buildPositionHistories failed', { personnelId, error });
+        void writeSystemLog({ action: 'ERROR', resource: 'proposals', description: `[Tạo đề xuất] Lỗi tính lịch sử chức vụ quân nhân ${personnelId}: ${(error as Error).message}` });
         positionHistoriesMap[personnelId] = [];
       }
     }
 
-    const getTotalMonthsByGroup = (
-      personnelId: string,
-      group: CongHienHeSoGroup
-    ) => {
+    const getTotalMonthsByGroup = (personnelId: string, group: CongHienHeSoGroup) => {
       const histories = positionHistoriesMap[personnelId] || [];
       let totalMonths = 0;
 
@@ -926,7 +927,10 @@ async function submitProposal(
       return gioiTinh === GENDER.FEMALE ? femaleRequiredMonths : baseRequiredMonths;
     };
 
-    const checkEligibleForRank = (personnelId: string, rank: (typeof HCBVTQ_RANK_KEYS)[keyof typeof HCBVTQ_RANK_KEYS]) => {
+    const checkEligibleForRank = (
+      personnelId: string,
+      rank: (typeof HCBVTQ_RANK_KEYS)[keyof typeof HCBVTQ_RANK_KEYS]
+    ) => {
       const months0_9_1_0 = getTotalMonthsByGroup(personnelId, CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10);
       const months0_8 = getTotalMonthsByGroup(personnelId, CONG_HIEN_HE_SO_GROUPS.LEVEL_08);
       const months0_7 = getTotalMonthsByGroup(personnelId, CONG_HIEN_HE_SO_GROUPS.LEVEL_07);
@@ -966,7 +970,10 @@ async function submitProposal(
       }
 
       if (!eligible) {
-        const months0_9_1_0 = getTotalMonthsByGroup(item.personnel_id, CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10);
+        const months0_9_1_0 = getTotalMonthsByGroup(
+          item.personnel_id,
+          CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10
+        );
         const months0_8 = getTotalMonthsByGroup(item.personnel_id, CONG_HIEN_HE_SO_GROUPS.LEVEL_08);
         const months0_7 = getTotalMonthsByGroup(item.personnel_id, CONG_HIEN_HE_SO_GROUPS.LEVEL_07);
 
@@ -1043,9 +1050,7 @@ async function submitProposal(
         },
       },
       NguoiDeXuat: {
-        include: {
-          QuanNhan: true,
-        },
+        select: { id: true, username: true, QuanNhan: { select: { id: true, ho_ten: true } } },
       },
     },
   });

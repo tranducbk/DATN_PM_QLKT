@@ -9,7 +9,7 @@ import {
   getUnitNameFromUnitId,
   getFileName,
 } from './constants';
-import { getDanhHieuName } from '../../constants/danhHieu.constants';
+import { getDanhHieuName, resolveDanhHieuFromRecord } from '../../constants/danhHieu.constants';
 import { ADHOC_TYPE } from '../../constants/adhocType.constants';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 
@@ -127,9 +127,7 @@ const annualRewards: Record<
       if (reward?.QuanNhan?.ho_ten) {
         hoTen = reward.QuanNhan.ho_ten;
       }
-      if (reward?.danh_hieu) {
-        danhHieu = reward.danh_hieu;
-      }
+      danhHieu = resolveDanhHieuFromRecord(reward) || danhHieu;
       if (reward?.nam) {
         nam = reward.nam;
       }
@@ -146,7 +144,7 @@ const annualRewards: Record<
         })) as DanhHieuHangNamWithHoTen | null;
         if (rewardRecord) {
           hoTen = rewardRecord.QuanNhan?.ho_ten || hoTen;
-          danhHieu = rewardRecord.danh_hieu || danhHieu;
+          danhHieu = resolveDanhHieuFromRecord(rewardRecord) || danhHieu;
           nam = String(rewardRecord.nam ?? nam);
         }
       } catch (error) {

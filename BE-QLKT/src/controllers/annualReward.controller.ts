@@ -329,7 +329,7 @@ class AnnualRewardController {
     const body = req.body as ConfirmImportBody;
     const { items } = body;
     if (!items || !Array.isArray(items) || items.length === 0) {
-      return ResponseHelper.badRequest(res, 'Không có dữ liệu để import');
+      return ResponseHelper.badRequest(res, 'Không có dữ liệu để nhập');
     }
     const result = await annualRewardService.confirmImport(items);
     await writeSystemLog({
@@ -396,7 +396,7 @@ class AnnualRewardController {
     );
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="mau_import_ca_nhan_hang_nam_${new Date().toISOString().slice(0, 10)}.xlsx"`
+      `attachment; filename="mau_nhap_ca_nhan_hang_nam_${new Date().toISOString().slice(0, 10)}.xlsx"`
     );
     return res.status(200).send(buffer);
   });

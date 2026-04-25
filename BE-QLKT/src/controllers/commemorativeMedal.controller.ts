@@ -54,7 +54,7 @@ class CommemorativeMedalController {
     const workbook = await commemorativeMedalService.exportTemplate(personnelIds, repeatMap);
     const buffer = await workbook.xlsx.writeBuffer();
 
-    const fileName = `mau_import_knc_vsnxd_qdndvn_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    const fileName = `mau_nhap_knc_vsnxd_qdndvn_${new Date().toISOString().slice(0, 10)}.xlsx`;
     res.setHeader(
       'Content-Type',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'

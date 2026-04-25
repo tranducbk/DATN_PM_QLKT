@@ -1,5 +1,5 @@
 import { prisma } from '../../models';
-import { getDanhHieuName, DANH_HIEU_CA_NHAN_HANG_NAM, DANH_HIEU_DON_VI_CO_BAN, DANH_HIEU_DON_VI_BANG_KHEN } from '../../constants/danhHieu.constants';
+import { getDanhHieuName, DANH_HIEU_CA_NHAN_HANG_NAM, DANH_HIEU_CA_NHAN_BANG_KHEN, DANH_HIEU_DON_VI_CO_BAN, DANH_HIEU_DON_VI_BANG_KHEN } from '../../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
 import type { Prisma } from '../../generated/prisma';
@@ -29,9 +29,17 @@ export async function checkDuplicateAward(
   excludeProposalId: string | null = null
 ): Promise<DuplicateCheckResult> {
     if (proposalType === PROPOSAL_TYPES.CA_NHAN_HANG_NAM) {
-      const actualAward = await prisma.danhHieuHangNam.findFirst({
-        where: { quan_nhan_id: personnelId, nam, danh_hieu: danhHieu },
-      });
+      const isBangKhen = DANH_HIEU_CA_NHAN_BANG_KHEN.has(danhHieu);
+      const whereClause = isBangKhen
+        ? {
+            quan_nhan_id: personnelId,
+            nam,
+            ...(danhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP && { nhan_bkbqp: true }),
+            ...(danhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ && { nhan_cstdtq: true }),
+            ...(danhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP && { nhan_bkttcp: true }),
+          }
+        : { quan_nhan_id: personnelId, nam, danh_hieu: danhHieu };
+      const actualAward = await prisma.danhHieuHangNam.findFirst({ where: whereClause });
       if (actualAward) {
         return {
           exists: true,

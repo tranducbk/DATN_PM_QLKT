@@ -8,7 +8,7 @@ import * as notificationHelper from '../helpers/notification';
 import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { ValidationError, NotFoundError } from '../middlewares/errorHandler';
-import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys, sanitizeRowData } from '../helpers/excelHelper';
+import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys, sanitizeRowData, validatePersonnelNameMatch } from '../helpers/excelHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { buildTemplate, TemplateColumn, styleHeaderRow } from '../helpers/excelTemplateHelper';
 import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
@@ -185,6 +185,12 @@ class CommemorativeMedalService {
           nam: namVal,
           message: `Không tìm thấy quân nhân với ID ${personnelId}`,
         });
+        continue;
+      }
+
+      const nameMismatch = validatePersonnelNameMatch(ho_ten, personnel.ho_ten);
+      if (nameMismatch) {
+        errors.push({ row: rowNumber, ho_ten, nam: namVal, message: nameMismatch });
         continue;
       }
 

@@ -368,7 +368,7 @@ export default function ProposalReviewPage() {
                     : activeTab === 'pending'
                       ? "Nhấn 'Xem và duyệt' để kiểm tra và phê duyệt đề xuất"
                       : activeTab === 'approved'
-                        ? 'Danh sách các đề xuất đã được phê duyệt và import vào hệ thống'
+                        ? 'Danh sách các đề xuất đã được phê duyệt và nhập vào hệ thống'
                         : 'Danh sách các đề xuất đã bị từ chối'}
                 </Paragraph>
               }

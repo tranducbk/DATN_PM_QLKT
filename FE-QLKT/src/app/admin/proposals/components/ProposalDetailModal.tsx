@@ -4,12 +4,12 @@ import { Modal, Descriptions, Tag, Table, Button, Space, Typography, Divider, Em
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
-  DownloadOutlined,
   FileTextOutlined,
 } from '@ant-design/icons';
+import { FileAttachmentList } from '@/components/proposals/FileAttachmentList';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
-import { PROPOSAL_STATUS, PROPOSAL_TYPES, PROPOSAL_TYPE_LABELS } from '@/constants/proposal.constants';
+import { PROPOSAL_STATUS, PROPOSAL_TYPES, PROPOSAL_TYPE_LABELS, type ProposalType } from '@/constants/proposal.constants';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
 
 const { Text, Title } = Typography;
@@ -31,7 +31,7 @@ interface ProposalTitleDataRow {
 
 interface Proposal {
   id: string;
-  loai_de_xuat: string;
+  loai_de_xuat: ProposalType;
   nam: number;
   thang?: number;
   status: string;
@@ -39,6 +39,7 @@ interface Proposal {
   ngay_duyet?: string;
   rejection_reason?: string;
   file_path?: string;
+  files_attached?: { filename: string; originalName?: string; size?: number; uploadedAt?: string }[];
   ghi_chu?: string;
   NguoiDeXuat?: {
     QuanNhan?: {
@@ -150,7 +151,7 @@ export function ProposalDetailModal({
     },
   ];
 
-  const typesWithThang = [PROPOSAL_TYPES.NIEN_HAN, PROPOSAL_TYPES.HC_QKQT, PROPOSAL_TYPES.KNC_VSNXD_QDNDVN];
+  const typesWithThang: ProposalType[] = [PROPOSAL_TYPES.NIEN_HAN, PROPOSAL_TYPES.HC_QKQT, PROPOSAL_TYPES.KNC_VSNXD_QDNDVN];
 
   columns.push({
     title: 'Năm',
@@ -267,13 +268,11 @@ export function ProposalDetailModal({
         </Descriptions>
 
         {/* File attachment */}
-        {proposal.file_path && (
+        {proposal.files_attached && proposal.files_attached.length > 0 && (
           <div style={{ marginTop: 16 }}>
             <Text strong>File đính kèm:</Text>
             <div style={{ marginTop: 8 }}>
-              <Button icon={<DownloadOutlined />} size="small">
-                Tải xuống file
-              </Button>
+              <FileAttachmentList files={proposal.files_attached} mode="server" />
             </div>
           </div>
         )}

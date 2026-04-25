@@ -294,8 +294,8 @@ export function NCKHProposalForm({
                 popupMatchSelectWidth={false}
                 styles={{ popup: { root: { minWidth: 'max-content' } } }}
               >
-                <Select.Option value="DTKH">Đề tài Khoa học (ĐTKH)</Select.Option>
-                <Select.Option value="SKKH">Sáng kiến Khoa học (SKKH)</Select.Option>
+                <Select.Option value="DTKH">Đề tài khoa học</Select.Option>
+                <Select.Option value="SKKH">Sáng kiến khoa học</Select.Option>
               </Select>
             </Form.Item>
           </div>

@@ -12,8 +12,7 @@ import {
   makeRowNumberColumn,
   makeHoTenColumn,
   makeNamColumn,
-  makeCapBacColumn,
-  makeChucVuColumn,
+  makeCapBacChucVuColumn,
   makeSoQDColumn,
 } from '@/components/import-review/ImportReviewPageContent';
 
@@ -22,8 +21,7 @@ export default function ImportReviewKNCVSNXDQDNDVNPage() {
     () => [
       makeSTTColumn(),
       makeHoTenColumn(),
-      makeCapBacColumn(),
-      makeChucVuColumn(),
+      makeCapBacChucVuColumn(),
       makeNamColumn(),
       {
         title: 'Tháng',
@@ -69,7 +67,7 @@ export default function ImportReviewKNCVSNXDQDNDVNPage() {
     title: 'Xem trước dữ liệu tải lên - Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
     confirmImport: apiClient.confirmCommemorationMedalsImport,
     successMessage: count =>
-      `Tải dữ liệu thành công ${count} bản ghi Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN.`,
+      `Nhập dữ liệu thành công ${count} bản ghi Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN.`,
     confirmButtonLabel: 'quân nhân',
     validColumns,
     invalidColumns,

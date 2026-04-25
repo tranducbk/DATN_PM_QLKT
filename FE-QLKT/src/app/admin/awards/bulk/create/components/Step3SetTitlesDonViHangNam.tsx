@@ -205,6 +205,7 @@ export function Step3SetTitlesDonViHangNam({
           opt => opt.value !== DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP
         );
       }
+
     }
 
     if (selectedType === SELECTED_DANH_HIEU_MIX.DON_VI) {
@@ -218,8 +219,26 @@ export function Step3SetTitlesDonViHangNam({
     return allOptions;
   };
 
+  const checkAlreadyReceived = (id: string, danhHieu: string): boolean => {
+    const profile = allUnitAnnualAwards[id];
+    if (!profile) return false;
+    const yearRecords: any[] = profile.tong_dvqt_json || [];
+    const thisYear = yearRecords.find((r: any) => r.nam === nam);
+    if (!thisYear) return false;
+    if (danhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP && thisYear.nhan_bkbqp) return true;
+    if (danhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP && thisYear.nhan_bkttcp) return true;
+    return false;
+  };
+
   const updateTitle = async (id: string, field: string, value: any) => {
     if (field === 'danh_hieu' && value) {
+      if (checkAlreadyReceived(id, value)) {
+        const u = units.find(u => u.id === id);
+        const label = getDanhHieuOptions(id).find(opt => opt.value === value)?.label || value;
+        message.error(`${u?.ten_don_vi || 'Đơn vị'} đã nhận ${label} năm ${nam}`);
+        return;
+      }
+
       const selectedType = getSelectedDanhHieuType();
       const valueStr = String(value);
       const pickingDv = isUnitDvTitle(valueStr);
@@ -405,7 +424,12 @@ export function Step3SetTitlesDonViHangNam({
     },
   ];
 
-  const allTitlesSet = units.every(u => {
+  const hasDuplicateAward = units.some(u => {
+    const data = getTitleData(u.id);
+    return data.danh_hieu && checkAlreadyReceived(u.id, data.danh_hieu);
+  });
+
+  const allTitlesSet = !hasDuplicateAward && units.every(u => {
     const data = getTitleData(u.id);
     return data.danh_hieu;
   });

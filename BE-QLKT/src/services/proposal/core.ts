@@ -613,9 +613,7 @@ async function deleteProposal(proposalId, userId, userRole) {
         },
       },
       NguoiDeXuat: {
-        include: {
-          QuanNhan: true,
-        },
+        select: { id: true, username: true, QuanNhan: { select: { id: true, ho_ten: true } } },
       },
     },
   });

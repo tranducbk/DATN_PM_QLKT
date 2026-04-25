@@ -14,8 +14,7 @@ import {
   makeRowNumberColumn,
   makeHoTenColumn,
   makeNamColumn,
-  makeCapBacColumn,
-  makeChucVuColumn,
+  makeCapBacChucVuColumn,
   makeSoQDColumn,
 } from '@/components/import-review/ImportReviewPageContent';
 
@@ -31,8 +30,7 @@ export default function ImportReviewHCCSVVPage() {
     () => [
       makeSTTColumn(),
       makeHoTenColumn(),
-      makeCapBacColumn(),
-      makeChucVuColumn(),
+      makeCapBacChucVuColumn(),
       makeNamColumn(),
       {
         title: 'Tháng',
@@ -50,7 +48,6 @@ export default function ImportReviewHCCSVVPage() {
       {
         title: 'Danh hiệu',
         dataIndex: 'danh_hieu',
-        width: 160,
         render: (val: string) => getShortDanhHieuTag(val),
       },
       makeSoQDColumn(),
@@ -70,7 +67,6 @@ export default function ImportReviewHCCSVVPage() {
       {
         title: 'Danh hiệu',
         dataIndex: 'danh_hieu',
-        width: 160,
         render: (val: string) => getShortDanhHieuTag(val),
       },
       makeSoQDColumn(120),
@@ -93,7 +89,6 @@ export default function ImportReviewHCCSVVPage() {
       {
         title: 'Danh hiệu',
         dataIndex: 'danh_hieu',
-        width: 160,
         render: (val: string) => (val ? getShortDanhHieuTag(val) : ''),
       },
       makeErrorColumn(),
@@ -103,9 +98,9 @@ export default function ImportReviewHCCSVVPage() {
 
   const config: ImportReviewConfig = {
     sessionStorageKey: 'importPreviewDataHCCSVV',
-    title: 'Xem trước dữ liệu tải lên - Khen thưởng HCCSVV',
+    title: 'Xem trước dữ liệu tải lên - Huy chương Chiến sĩ vẻ vang',
     confirmImport: apiClient.confirmHCCSVVImport,
-    successMessage: count => `Tải dữ liệu thành công ${count} bản ghi khen thưởng HCCSVV.`,
+    successMessage: count => `Nhập dữ liệu thành công ${count} bản ghi Huy chương Chiến sĩ vẻ vang.`,
     confirmButtonLabel: 'quân nhân',
     validColumns,
     invalidColumns,

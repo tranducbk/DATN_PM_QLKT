@@ -24,45 +24,45 @@ export const AWARD_TYPE_OPTIONS = [
   {
     key: 'annual',
     label: 'Khen thưởng cá nhân hằng năm',
-    description: 'Tải dữ liệu, file mẫu, thêm đồng loạt',
+    description: 'Nhập dữ liệu, file mẫu, thêm đồng loạt',
   },
   {
     key: 'unit',
     label: 'Khen thưởng đơn vị hằng năm',
-    description: 'Tải dữ liệu, file mẫu, thêm đồng loạt',
+    description: 'Nhập dữ liệu, file mẫu, thêm đồng loạt',
   },
   {
     key: 'hccsvv',
     label: 'Huy chương Chiến sĩ vẻ vang',
-    description: 'Tải dữ liệu, file mẫu, thêm đồng loạt',
+    description: 'Nhập dữ liệu, file mẫu, thêm đồng loạt',
   },
   {
     key: 'contribution',
     label: 'Huân chương Bảo vệ Tổ quốc',
-    description: 'Tải dữ liệu, file mẫu, thêm đồng loạt',
+    description: 'Nhập dữ liệu, file mẫu, thêm đồng loạt',
   },
   {
     key: 'commemoration',
     label: 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
-    description: 'Tải dữ liệu, file mẫu, thêm đồng loạt',
+    description: 'Nhập dữ liệu, file mẫu, thêm đồng loạt',
   },
   {
     key: 'militaryFlag',
     label: 'HC Quân kỳ quyết thắng',
-    description: 'Tải dữ liệu, file mẫu, thêm đồng loạt',
+    description: 'Nhập dữ liệu, file mẫu, thêm đồng loạt',
   },
   {
     key: 'scientific',
     label: 'Thành tích Nghiên cứu khoa học',
-    description: 'Tải dữ liệu, file mẫu, thêm đồng loạt',
+    description: 'Nhập dữ liệu, file mẫu, thêm đồng loạt',
   },
 ] as const;
 
 export const SYSTEM_FEATURE_OPTIONS = [
   {
     key: 'notify_import',
-    label: 'Thông báo khi import khen thưởng',
-    description: 'Gửi thông báo cho chỉ huy đơn vị khi import/thêm khen thưởng cho đơn vị đó',
+    label: 'Thông báo khi nhập khen thưởng',
+    description: 'Gửi thông báo cho chỉ huy đơn vị khi nhập/thêm khen thưởng cho đơn vị đó',
   },
   {
     key: 'delete_logs',

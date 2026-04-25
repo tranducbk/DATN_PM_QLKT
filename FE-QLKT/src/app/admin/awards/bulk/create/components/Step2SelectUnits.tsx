@@ -366,7 +366,7 @@ export function Step2SelectUnits({
             onLocalProcess={handleLocalExcelProcess}
             previewImport={apiClient.previewUnitAnnualAwardsImport}
             reviewPath="/admin/awards/bulk/import-review-unit"
-            sessionStorageKey="importPreviewDataUnit"
+            sessionStorageKey="importPreviewDataDVHN"
           />
         </>
       )}

@@ -1,7 +1,20 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Table, Select, Input, Alert, Typography, Space, Button, Modal, Tabs, Tag, Empty, message } from 'antd';
+import {
+  Table,
+  Select,
+  Input,
+  Alert,
+  Typography,
+  Space,
+  Button,
+  Modal,
+  Tabs,
+  Tag,
+  Empty,
+  message,
+} from 'antd';
 import { EditOutlined, HistoryOutlined, EyeOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
@@ -10,7 +23,11 @@ import { apiClient } from '@/lib/apiClient';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { ScientificAchievementHistoryModal } from './ScientificAchievementHistoryModal';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
-import { PROPOSAL_STATUS, PROPOSAL_STATUS_LABELS, PROPOSAL_STATUS_COLORS } from '@/constants/proposal.constants';
+import {
+  PROPOSAL_STATUS,
+  PROPOSAL_STATUS_LABELS,
+  PROPOSAL_STATUS_COLORS,
+} from '@/constants/proposal.constants';
 import type { AnnualProfile } from '@/lib/types/personnelList';
 
 const { Text } = Typography;
@@ -287,8 +304,8 @@ export function Step3SetTitlesNCKH({
             popupMatchSelectWidth={false}
             styles={{ popup: { root: { minWidth: 'max-content' } } }}
             options={[
-              { label: 'Đề tài khoa học (ĐTKH)', value: 'DTKH' },
-              { label: 'Sáng kiến khoa học (SKKH)', value: 'SKKH' },
+              { label: 'Đề tài khoa học', value: 'DTKH' },
+              { label: 'Sáng kiến khoa học', value: 'SKKH' },
             ]}
           />
         );
@@ -361,7 +378,14 @@ export function Step3SetTitlesNCKH({
         style={{ marginBottom: 24 }}
       />
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 16,
+        }}
+      >
         <Space size="middle" align="center">
           <Tag color="red" style={{ fontSize: 14, padding: '4px 12px', margin: 0 }}>
             Năm {nam}
@@ -409,7 +433,7 @@ export function Step3SetTitlesNCKH({
       <Modal
         title={
           <span>
-            <EyeOutlined /> Thông tin NCKH/SKKH - {selectedPersonnel?.ho_ten}
+            <EyeOutlined /> Thông tin NCKH - {selectedPersonnel?.ho_ten}
           </span>
         }
         open={modalVisible}
@@ -438,7 +462,7 @@ export function Step3SetTitlesNCKH({
             items={[
               {
                 key: 'nckh',
-                label: `NCKH/SKKH (${
+                label: `NCKH (${
                   Array.isArray(annualProfile.tong_nckh) ? annualProfile.tong_nckh.length : 0
                 })`,
                 children: (
@@ -502,7 +526,7 @@ export function Step3SetTitlesNCKH({
                         ]}
                       />
                     ) : (
-                      <Text type="secondary">Chưa có thành tích NCKH/SKKH</Text>
+                      <Text type="secondary">Chưa có thành tích NCKH</Text>
                     )}
                   </div>
                 ),

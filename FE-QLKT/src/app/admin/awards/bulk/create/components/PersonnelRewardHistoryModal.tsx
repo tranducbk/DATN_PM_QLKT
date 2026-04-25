@@ -5,7 +5,6 @@ import { HistoryOutlined, DownloadOutlined, FileTextOutlined } from '@ant-design
 import type { ColumnsType } from 'antd/es/table';
 import { previewFileWithApi } from '@/utils/filePreview';
 import { formatDate } from '@/lib/utils';
-import { PROPOSAL_STATUS, PROPOSAL_STATUS_LABELS, PROPOSAL_STATUS_COLORS } from '@/constants/proposal.constants';
 
 const { Text } = Typography;
 
@@ -105,72 +104,51 @@ export function PersonnelRewardHistoryModal({
       width: 200,
       align: 'center',
       render: (_, record) => {
-        // Decision number for standard CSTDCS
-        const soQDCSTDCS = record.so_quyet_dinh;
-        const fileCSTDCS = record.file_quyet_dinh;
-        // Decision number for BKBQP or CSTDTQ
-        const soQDBKBQP = record.so_quyet_dinh_bkbqp;
-        const soQDCSTDTQ = record.so_quyet_dinh_cstdtq;
-        const fileBKBQP = record.file_quyet_dinh_bkbqp;
-        const fileCSTDTQ = record.file_quyet_dinh_cstdtq;
-
         const items = [];
         const danhHieu = record.danh_hieu;
+        const soQD = record.so_quyet_dinh;
+        const file = record.file_quyet_dinh;
 
-        if (soQDCSTDCS && danhHieu) {
+        if (soQD && danhHieu) {
           items.push(
             <div key={danhHieu}>
               <Text
                 style={{
                   fontSize: '12px',
-                  cursor: fileCSTDCS ? 'pointer' : 'default',
-                  color: fileCSTDCS ? '#1890ff' : undefined,
-                  textDecoration: fileCSTDCS ? 'underline' : 'none',
+                  cursor: file ? 'pointer' : 'default',
+                  color: file ? '#1890ff' : undefined,
+                  textDecoration: file ? 'underline' : 'none',
                 }}
-                onClick={() => fileCSTDCS && handlePreviewFile(fileCSTDCS, soQDCSTDCS)}
+                onClick={() => file && handlePreviewFile(file, soQD)}
               >
-                {danhHieu}: {soQDCSTDCS}
-                {fileCSTDCS && <DownloadOutlined style={{ marginLeft: '4px' }} />}
+                {danhHieu}: {soQD}
+                {file && <DownloadOutlined style={{ marginLeft: '4px' }} />}
               </Text>
             </div>
           );
         }
 
-        if (soQDBKBQP) {
-          items.push(
-            <div key="bkbqp">
-              <Text
-                type="secondary"
-                style={{
-                  fontSize: '12px',
-                  cursor: fileBKBQP ? 'pointer' : 'default',
-                  color: fileBKBQP ? '#1890ff' : undefined,
-                  textDecoration: fileBKBQP ? 'underline' : 'none',
-                }}
-                onClick={() => fileBKBQP && handlePreviewFile(fileBKBQP, soQDBKBQP)}
-              >
-                BKBQP: {soQDBKBQP}
-                {fileBKBQP && <DownloadOutlined style={{ marginLeft: '4px' }} />}
-              </Text>
-            </div>
-          );
-        }
+        const chainAwards = [
+          { key: 'bkbqp', label: 'BKBQP', flag: record.nhan_bkbqp, qd: record.so_quyet_dinh_bkbqp, file: record.file_quyet_dinh_bkbqp },
+          { key: 'cstdtq', label: 'CSTDTQ', flag: record.nhan_cstdtq, qd: record.so_quyet_dinh_cstdtq, file: record.file_quyet_dinh_cstdtq },
+          { key: 'bkttcp', label: 'BKTTCP', flag: record.nhan_bkttcp, qd: record.so_quyet_dinh_bkttcp, file: record.file_quyet_dinh_bkttcp },
+        ];
 
-        if (soQDCSTDTQ) {
+        for (const award of chainAwards) {
+          if (!award.flag && !award.qd) continue;
           items.push(
-            <div key="cstdtq">
+            <div key={award.key}>
               <Text
-                type="secondary"
                 style={{
                   fontSize: '12px',
-                  cursor: fileCSTDTQ ? 'pointer' : 'default',
-                  color: fileCSTDTQ ? '#1890ff' : undefined,
-                  textDecoration: fileCSTDTQ ? 'underline' : 'none',
+                  cursor: award.file ? 'pointer' : 'default',
+                  color: award.file ? '#1890ff' : undefined,
+                  textDecoration: award.file ? 'underline' : 'none',
                 }}
-                onClick={() => fileCSTDTQ && handlePreviewFile(fileCSTDTQ, soQDCSTDTQ)}
+                onClick={() => award.file && handlePreviewFile(award.file, award.qd || award.label)}
               >
-                CSTDTQ: {soQDCSTDTQ}
-                {fileCSTDTQ && <DownloadOutlined style={{ marginLeft: '4px' }} />}
+                {award.label}: {award.qd || 'Chưa có số QĐ'}
+                {award.file && <DownloadOutlined style={{ marginLeft: '4px' }} />}
               </Text>
             </div>
           );
@@ -274,18 +252,6 @@ export function PersonnelRewardHistoryModal({
         return <Text type="secondary">-</Text>;
       },
     },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      key: 'status',
-      width: 120,
-      align: 'center',
-      render: (status: string) => {
-        const color = PROPOSAL_STATUS_COLORS[status] || 'orange';
-        const text = PROPOSAL_STATUS_LABELS[status] || status;
-        return <Tag color={color}>{text}</Tag>;
-      },
-    },
   ];
 
   return (
@@ -306,11 +272,13 @@ export function PersonnelRewardHistoryModal({
       loading={loading}
       centered
       style={{ top: 20 }}
-      styles={{ body: {
-        maxHeight: 'calc(100vh - 200px)',
-        overflowY: 'auto',
-        padding: '24px',
-      } }}
+      styles={{
+        body: {
+          maxHeight: 'calc(100vh - 200px)',
+          overflowY: 'auto',
+          padding: '24px',
+        },
+      }}
       className="personnel-reward-history-modal"
     >
       {loading && (
@@ -334,7 +302,7 @@ export function PersonnelRewardHistoryModal({
             style={{ marginBottom: 24 }}
           >
             <Descriptions.Item label="Tổng CSTDCS">{tongCstdcs.length} năm</Descriptions.Item>
-            <Descriptions.Item label="Tổng NCKH/SKKH">{tongNckh.length}</Descriptions.Item>
+            <Descriptions.Item label="Tổng NCKH">{tongNckh.length}</Descriptions.Item>
             <Descriptions.Item label="CSTDCS liên tục">
               {annualProfile?.cstdcs_lien_tuc || 0} năm
             </Descriptions.Item>
@@ -390,7 +358,7 @@ export function PersonnelRewardHistoryModal({
               },
               {
                 key: 'nckh',
-                label: `NCKH/SKKH (${tongNckh.length})`,
+                label: `NCKH (${tongNckh.length})`,
                 children: (
                   <div>
                     {tongNckh.length > 0 ? (
@@ -405,7 +373,7 @@ export function PersonnelRewardHistoryModal({
                         scroll={{ x: 'max-content' }}
                       />
                     ) : (
-                      <Text type="secondary">Chưa có thành tích NCKH/SKKH</Text>
+                      <Text type="secondary">Chưa có thành tích NCKH</Text>
                     )}
                   </div>
                 ),

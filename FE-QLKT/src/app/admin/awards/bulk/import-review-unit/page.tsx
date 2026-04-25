@@ -33,15 +33,12 @@ export default function ImportReviewUnitPage() {
       {
         title: 'Tên đơn vị',
         dataIndex: 'ten_don_vi',
-        width: 220,
-        ellipsis: true,
         render: renderText,
       },
       makeNamColumn(),
       {
         title: 'Danh hiệu',
         dataIndex: 'danh_hieu',
-        width: 200,
         render: (val: string) => getDanhHieuTag(val, DANH_HIEU_COLORS),
       },
       makeSoQDColumn(),
@@ -56,7 +53,6 @@ export default function ImportReviewUnitPage() {
       {
         title: 'Danh hiệu',
         dataIndex: 'danh_hieu',
-        width: 200,
         render: (val: string) => getDanhHieuTag(val, DANH_HIEU_COLORS),
       },
       {
@@ -85,15 +81,12 @@ export default function ImportReviewUnitPage() {
       {
         title: 'Tên đơn vị',
         dataIndex: 'ten_don_vi',
-        width: 180,
-        ellipsis: true,
         render: renderText,
       },
       makeNamColumn(60, true),
       {
         title: 'Danh hiệu',
         dataIndex: 'danh_hieu',
-        width: 130,
         render: (val: string) => (val ? getDanhHieuTag(val, DANH_HIEU_COLORS) : '--'),
       },
       makeErrorColumn(),
@@ -102,10 +95,10 @@ export default function ImportReviewUnitPage() {
   );
 
   const config: ImportReviewConfig = {
-    sessionStorageKey: 'importPreviewDataUnit',
+    sessionStorageKey: 'importPreviewDataDVHN',
     title: 'Xem trước dữ liệu tải lên - Khen thưởng đơn vị hằng năm',
     confirmImport: apiClient.confirmUnitAnnualAwardsImport,
-    successMessage: count => `Tải dữ liệu thành công ${count} bản ghi khen thưởng đơn vị hằng năm.`,
+    successMessage: count => `Nhập dữ liệu thành công ${count} bản ghi khen thưởng đơn vị hằng năm.`,
     confirmButtonLabel: 'đơn vị',
     validColumns,
     invalidColumns,

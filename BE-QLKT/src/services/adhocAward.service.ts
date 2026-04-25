@@ -7,6 +7,7 @@ import { ADHOC_TYPE } from '../constants/adhocType.constants';
 import { ForbiddenError, NotFoundError } from '../middlewares/errorHandler';
 import { emitNotificationToUser } from '../utils/socketService';
 import type { KhenThuongDotXuat, Prisma } from '../generated/prisma';
+import { writeSystemLog } from '../helpers/systemLogHelper';
 
 interface UploadedFile {
   originalname: string;
@@ -286,6 +287,7 @@ class AdhocAwardService {
       await this.notifyOnAdhocAwardCreated(adhocAward, admin.username);
     } catch (e) {
       console.error('notifyOnAdhocAwardCreated failed:', e);
+      void writeSystemLog({ action: 'ERROR', resource: 'adhoc-awards', description: `Lỗi gửi thông báo tạo khen thưởng đột xuất: ${e}` });
     }
 
     return adhocAward;
@@ -631,6 +633,7 @@ class AdhocAwardService {
       await this.notifyOnAdhocAwardUpdated(updated, admin.username);
     } catch (e) {
       console.error('notifyOnAdhocAwardUpdated failed:', e);
+      void writeSystemLog({ action: 'ERROR', resource: 'adhoc-awards', description: `Lỗi gửi thông báo cập nhật khen thưởng đột xuất: ${e}` });
     }
 
     return updated;
@@ -780,6 +783,7 @@ class AdhocAwardService {
         await fs.unlink(fullPath);
       } catch (error) {
         console.error('Failed to delete attachment file during adhoc-award delete:', error);
+        void writeSystemLog({ action: 'ERROR', resource: 'adhoc-awards', description: `Lỗi xóa file đính kèm khen thưởng đột xuất: ${error}` });
       }
     }
 
@@ -791,6 +795,7 @@ class AdhocAwardService {
       await this.notifyOnAdhocAwardDeleted(awardInfo, admin?.username || 'Admin');
     } catch (error) {
       console.error('Failed to send adhoc-award deletion notifications:', error);
+      void writeSystemLog({ action: 'ERROR', resource: 'adhoc-awards', description: `Lỗi gửi thông báo xóa khen thưởng đột xuất: ${error}` });
     }
 
     return { success: true };

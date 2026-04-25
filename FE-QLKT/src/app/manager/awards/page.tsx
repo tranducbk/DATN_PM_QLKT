@@ -46,6 +46,7 @@ interface Award {
   cap_bac?: string;
   chuc_vu: string;
   nam: number;
+  thang?: number | null;
   danh_hieu: string | null;
   so_quyet_dinh?: string | null;
   ghi_chu?: string | null;
@@ -350,12 +351,16 @@ export default function ManagerAwardsPage() {
       },
     },
     {
-      title: 'Năm',
-      dataIndex: 'nam',
+      title: (['HCCSVV', 'HCBVTQ', 'HCQKQT', 'KNC_VSNXD_QDNDVN'] as AwardType[]).includes(activeTab) ? 'Thời gian nhận' : 'Năm nhận',
       key: 'nam',
-      width: 70,
+      width: (['HCCSVV', 'HCBVTQ', 'HCQKQT', 'KNC_VSNXD_QDNDVN'] as AwardType[]).includes(activeTab) ? 120 : 70,
       align: 'center',
-      render: text => <Text strong>{text}</Text>,
+      render: (_: unknown, record: AwardRow) => {
+        if ((['HCCSVV', 'HCBVTQ', 'HCQKQT', 'KNC_VSNXD_QDNDVN'] as AwardType[]).includes(activeTab) && record.thang) {
+          return <Text strong>{`${String(record.thang).padStart(2, '0')}/${record.nam}`}</Text>;
+        }
+        return <Text strong>{record.nam}</Text>;
+      },
     },
     {
       title: 'Loại khen thưởng',
@@ -667,7 +672,6 @@ export default function ManagerAwardsPage() {
             ) : (
               <Table
                 columns={columns.filter(col => {
-                  // Keep 'loai_khen_thuong' for scientific tab only
                   if (col.key === 'loai_khen_thuong' && activeTab !== 'NCKH') {
                     return false;
                   }

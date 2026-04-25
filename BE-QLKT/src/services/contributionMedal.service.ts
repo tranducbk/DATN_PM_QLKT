@@ -4,10 +4,10 @@ import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHel
 import { checkDuplicateAward } from '../helpers/awardValidation';
 import profileService from './profile.service';
 import * as notificationHelper from '../helpers/notification';
-import { getDanhHieuName, resolveDanhHieuCode, buildDanhHieuExcelOptions, DANH_HIEU_HCBVTQ, CONG_HIEN_BASE_REQUIRED_MONTHS, CONG_HIEN_FEMALE_REQUIRED_MONTHS } from '../constants/danhHieu.constants';
+import { getDanhHieuName, formatDanhHieuList, resolveDanhHieuCode, buildDanhHieuExcelOptions, DANH_HIEU_HCBVTQ, CONG_HIEN_BASE_REQUIRED_MONTHS, CONG_HIEN_FEMALE_REQUIRED_MONTHS } from '../constants/danhHieu.constants';
 import { ROLES } from '../constants/roles.constants';
 import { ValidationError, NotFoundError } from '../middlewares/errorHandler';
-import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys, sanitizeRowData } from '../helpers/excelHelper';
+import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys, sanitizeRowData, validatePersonnelNameMatch } from '../helpers/excelHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { buildTemplate, TemplateColumn, styleHeaderRow } from '../helpers/excelTemplateHelper';
 import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
@@ -218,6 +218,12 @@ class ContributionAwardService {
         continue;
       }
 
+      const nameMismatch = validatePersonnelNameMatch(ho_ten, personnel.ho_ten);
+      if (nameMismatch) {
+        errors.push({ row: rowNumber, ho_ten, nam: namVal, danh_hieu: danh_hieu_raw, message: nameMismatch });
+        continue;
+      }
+
       const nam = parseInt(String(namVal), 10);
       if (!Number.isInteger(nam)) {
         errors.push({
@@ -259,7 +265,7 @@ class ContributionAwardService {
           ho_ten,
           nam,
           danh_hieu: danh_hieu_raw,
-          message: `Danh hiệu "${danh_hieu_raw}" không hợp lệ. Chỉ chấp nhận: ${validDanhHieu.join(', ')}`,
+          message: `Danh hiệu "${danh_hieu_raw}" không hợp lệ. Chỉ chấp nhận: ${formatDanhHieuList(validDanhHieu)}`,
         });
         continue;
       }

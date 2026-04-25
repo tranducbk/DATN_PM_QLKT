@@ -66,6 +66,15 @@ export const THANH_TICH_KHOA_HOC = {
 export const THANH_TICH_KHOA_HOC_SHORT_LABELS: Record<string, string> = {
   DTKH: 'ĐTKH',
   SKKH: 'SKKH',
+  'Đề tài khoa học': 'ĐTKH',
+  'Sáng kiến khoa học': 'SKKH',
+};
+
+export const THANH_TICH_KHOA_HOC_FULL_LABELS: Record<string, string> = {
+  DTKH: 'Đề tài khoa học',
+  SKKH: 'Sáng kiến khoa học',
+  'Đề tài khoa học': 'Đề tài khoa học',
+  'Sáng kiến khoa học': 'Sáng kiến khoa học',
 };
 
 export const DANH_HIEU_MAP: Record<string, string> = {
@@ -221,6 +230,8 @@ export const DANH_HIEU_COLORS: Record<string, string> = {
   ĐVTT: 'blue',
   DTKH: 'blue',
   SKKH: 'green',
+  'Đề tài khoa học': 'blue',
+  'Sáng kiến khoa học': 'green',
 };
 
 export const INDIVIDUAL_AWARD_TABS = [
