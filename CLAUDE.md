@@ -35,6 +35,9 @@ PM QLKT/
 
 - **4 roles**: SUPER_ADMIN > ADMIN > MANAGER > USER
 - **7 award types**: Annual, Unit Annual, Tenure Medals (`tenure-medals`), Contribution (`contribution-medals`), Commemorative Medal (`commemorative-medals`), Military Flag (`military-flag`), Scientific Achievement
+- **Annual chain awards** (cá nhân): BKBQP (2y CSTDCS), CSTDTQ (3y + BKBQP), BKTTCP (7y + 3 BKBQP + 2 CSTDTQ). Each needs NCKH every year. BKTTCP only supported once (>7y shows "chưa hỗ trợ"). Flag fields: `nhan_bkbqp/cstdtq/bkttcp` + `so_quyet_dinh_*/ghi_chu_*` per flag.
+- **Annual chain awards** (đơn vị): BKBQP (2y ĐVQT), BKTTCP (7y + 3 BKBQP). No CSTDTQ. Same pattern.
+- **Eligibility logic**: `computeEligibilityFlags` (profile) and `checkAwardEligibility` (API validation) MUST use same formulas. Both use `countFlagInRange`/`countBKBQPInStreak` for counting within streak.
 - **Real-time**: Socket.IO for notifications
 - **Auth**: JWT (access + refresh tokens)
 

@@ -144,25 +144,20 @@ class UnitAnnualAwardService {
     return continuous;
   }
 
-  async calculateBKBQPContinuous(donViId, year) {
-    // Check awarded records (nhan_bkbqp) in DanhHieuDonViHangNam table
-    const records = await prisma.danhHieuDonViHangNam.findMany({
+  /**
+   * Đếm tổng số lần nhận BKBQP trong chuỗi ĐVQT liên tục.
+   */
+  async countBKBQPInStreak(donViId, year, dvqtStreak?: number) {
+    const streak = dvqtStreak ?? await this.calculateContinuousYears(donViId, year);
+    const startYear = (year - 1) - streak + 1;
+    const count = await prisma.danhHieuDonViHangNam.count({
       where: {
         OR: [{ co_quan_don_vi_id: donViId }, { don_vi_truc_thuoc_id: donViId }],
-        nam: { lte: year - 1 },
+        nam: { gte: startYear, lte: year - 1 },
         nhan_bkbqp: true,
       },
-      orderBy: { nam: 'desc' },
-      select: { nam: true, danh_hieu: true },
     });
-    let continuous = 0;
-    let current = year - 1;
-    for (const r of records) {
-      if (r.nam !== current) break;
-      continuous += 1;
-      current -= 2;
-    }
-    return continuous;
+    return count;
   }
 
   /**
@@ -205,15 +200,20 @@ class UnitAnnualAwardService {
     };
   }
 
-  buildSuggestion(dvqtLienTuc, hasDecision) {
-    if (hasDecision) return null;
-    if (dvqtLienTuc >= 5) {
-      return 'Đủ điều kiện đề xuất Bằng khen Thủ tướng Chính phủ (5 năm liên tục DVQT).';
+  buildSuggestion(dvqtLienTuc: number, du_dieu_kien_bk_tong_cuc: boolean, du_dieu_kien_bk_thu_tuong: boolean, hasReceivedBKTTCP: boolean) {
+    const tenBKBQP = getDanhHieuName(DANH_HIEU_DON_VI_HANG_NAM.BKBQP);
+    const tenBKTTCP = getDanhHieuName(DANH_HIEU_DON_VI_HANG_NAM.BKTTCP);
+
+    if (du_dieu_kien_bk_thu_tuong) {
+      return `Đã đủ điều kiện đề nghị xét ${tenBKTTCP}.`;
     }
-    if (dvqtLienTuc >= 3) {
-      return 'Đủ điều kiện đề xuất Bằng khen Tổng cục (3 năm liên tục DVQT).';
+    if (hasReceivedBKTTCP && dvqtLienTuc % 7 === 0 && dvqtLienTuc > 7) {
+      return `Phần mềm chưa hỗ trợ khen thưởng cao hơn ${tenBKTTCP}, sẽ phát triển trong thời gian tới.`;
     }
-    return null;
+    if (du_dieu_kien_bk_tong_cuc) {
+      return `Đã đủ điều kiện đề nghị xét ${tenBKBQP}.`;
+    }
+    return `Chưa đủ điều kiện đề nghị xét ${tenBKBQP}.`;
   }
 
   /**
@@ -229,29 +229,34 @@ class UnitAnnualAwardService {
     }
 
     const dvqtLienTuc = await this.calculateContinuousYears(donViId, year);
-    const bkbqpLienTuc = await this.calculateBKBQPContinuous(donViId, year);
+    const bkbqpLienTuc = await this.countBKBQPInStreak(donViId, year);
 
     if (danhHieu === DANH_HIEU_DON_VI_HANG_NAM.BKBQP) {
-      const eligible = dvqtLienTuc % 2 === 0 && dvqtLienTuc >= 1;
+      const eligible = dvqtLienTuc >= 2 && dvqtLienTuc % 2 === 0;
       if (!eligible) {
         return {
           eligible: false,
-          reason: `Chưa đủ điều kiện BKBQP: cần 2 năm ĐVQT liên tục (hiện có ${dvqtLienTuc} năm ĐVQT liên tục)`,
+          reason: `Chưa đủ điều kiện ${getDanhHieuName(danhHieu)}: cần 2 năm ĐVQT liên tục (hiện có ${dvqtLienTuc} năm)`,
         };
       }
-      return { eligible: true, reason: 'Đủ điều kiện BKBQP' };
+      return { eligible: true, reason: `Đủ điều kiện ${getDanhHieuName(danhHieu)}` };
     }
 
     if (danhHieu === DANH_HIEU_DON_VI_HANG_NAM.BKTTCP) {
-      const eligible =
-        dvqtLienTuc % 7 === 0 && bkbqpLienTuc % 3 === 0 && dvqtLienTuc >= 7 && bkbqpLienTuc >= 3;
+      if (dvqtLienTuc > 7 && dvqtLienTuc % 7 === 0) {
+        return {
+          eligible: false,
+          reason: `Phần mềm chưa hỗ trợ khen thưởng cao hơn ${getDanhHieuName(danhHieu)}, sẽ phát triển trong thời gian tới.`,
+        };
+      }
+      const eligible = dvqtLienTuc === 7 && bkbqpLienTuc === 3;
       if (!eligible) {
         return {
           eligible: false,
-          reason: `Chưa đủ điều kiện BKTTCP: cần 7 năm ĐVQT + 3 lần BKBQP liên tục (hiện có ${dvqtLienTuc} năm ĐVQT, ${bkbqpLienTuc} lần BKBQP)`,
+          reason: `Chưa đủ điều kiện ${getDanhHieuName(danhHieu)}: cần 7 năm ĐVQT + 3 lần BKBQP (hiện có ${dvqtLienTuc} năm ĐVQT, ${bkbqpLienTuc} lần BKBQP)`,
         };
       }
-      return { eligible: true, reason: 'Đủ điều kiện BKTTCP' };
+      return { eligible: true, reason: `Đủ điều kiện ${getDanhHieuName(danhHieu)}` };
     }
 
     return { eligible: true, reason: '' };
@@ -528,13 +533,25 @@ class UnitAnnualAwardService {
             { don_vi_truc_thuoc_id: unitId, nam: year },
           ],
         },
-        select: { danh_hieu: true },
+        select: { danh_hieu: true, nhan_bkbqp: true, nhan_bkttcp: true },
       });
 
-      if (existing?.danh_hieu && existing.danh_hieu !== danh_hieu) {
-        throw new ValidationError(
-          `Đơn vị đã có danh hiệu ${getDanhHieuName(existing.danh_hieu)} năm ${year}, không thể thêm ${getDanhHieuName(danh_hieu)}`
-        );
+      if (existing) {
+        const isDv = DANH_HIEU_DON_VI_CO_BAN.has(danh_hieu);
+        const isBkbqp = danh_hieu === DANH_HIEU_DON_VI_HANG_NAM.BKBQP;
+        const isBkttcp = danh_hieu === DANH_HIEU_DON_VI_HANG_NAM.BKTTCP;
+
+        if (isDv && existing.danh_hieu) {
+          throw new ValidationError(
+            `Đơn vị đã có danh hiệu ${getDanhHieuName(existing.danh_hieu)} năm ${year}`
+          );
+        }
+        if (isBkbqp && existing.nhan_bkbqp) {
+          throw new ValidationError(`Đơn vị đã có Bằng khen Bộ Quốc phòng năm ${year}`);
+        }
+        if (isBkttcp && existing.nhan_bkttcp) {
+          throw new ValidationError(`Đơn vị đã có Bằng khen Thủ tướng Chính phủ năm ${year}`);
+        }
       }
     }
 
@@ -542,19 +559,43 @@ class UnitAnnualAwardService {
       ? { unique_co_quan_don_vi_nam_dh: { co_quan_don_vi_id: unitId, nam: year } }
       : { unique_don_vi_truc_thuoc_nam_dh: { don_vi_truc_thuoc_id: unitId, nam: year } };
 
+    const isBk = DANH_HIEU_DON_VI_BANG_KHEN.has(danh_hieu || '');
+    const isBkbqp = danh_hieu === DANH_HIEU_DON_VI_HANG_NAM.BKBQP;
+    const isBkttcp = danh_hieu === DANH_HIEU_DON_VI_HANG_NAM.BKTTCP;
+
+    const updateData: Record<string, unknown> = {};
+    if (isBk) {
+      if (isBkbqp) {
+        updateData.nhan_bkbqp = true;
+        if (so_quyet_dinh) updateData.so_quyet_dinh_bkbqp = so_quyet_dinh;
+        if (ghi_chu) updateData.ghi_chu_bkbqp = ghi_chu;
+      }
+      if (isBkttcp) {
+        updateData.nhan_bkttcp = true;
+        if (so_quyet_dinh) updateData.so_quyet_dinh_bkttcp = so_quyet_dinh;
+        if (ghi_chu) updateData.ghi_chu_bkttcp = ghi_chu;
+      }
+    } else {
+      updateData.danh_hieu = danh_hieu || null;
+      if (so_quyet_dinh) updateData.so_quyet_dinh = so_quyet_dinh;
+      if (ghi_chu) updateData.ghi_chu = ghi_chu;
+    }
+
     const record = await prisma.danhHieuDonViHangNam.upsert({
       where: whereCondition,
-      update: {
-        danh_hieu: danh_hieu || null,
-        so_quyet_dinh: so_quyet_dinh || null,
-        ghi_chu: ghi_chu || null,
-      },
+      update: updateData,
       create: {
         ...buildUnitIdFields(unitId, isCoQuanDonVi),
         nam: year,
-        danh_hieu: danh_hieu || null,
-        so_quyet_dinh: so_quyet_dinh || null,
-        ghi_chu: ghi_chu || null,
+        danh_hieu: isBk ? null : (danh_hieu || null),
+        so_quyet_dinh: isBk ? null : (so_quyet_dinh || null),
+        ghi_chu: isBk ? null : (ghi_chu || null),
+        nhan_bkbqp: isBkbqp,
+        ...(isBkbqp && so_quyet_dinh && { so_quyet_dinh_bkbqp: so_quyet_dinh }),
+        ...(isBkbqp && ghi_chu && { ghi_chu_bkbqp: ghi_chu }),
+        nhan_bkttcp: isBkttcp,
+        ...(isBkttcp && so_quyet_dinh && { so_quyet_dinh_bkttcp: so_quyet_dinh }),
+        ...(isBkttcp && ghi_chu && { ghi_chu_bkttcp: ghi_chu }),
         nguoi_tao_id: nguoi_tao_id,
         status: PROPOSAL_STATUS.APPROVED,
       },
@@ -691,17 +732,23 @@ class UnitAnnualAwardService {
       }),
       this.calculateTotalDVQT(donViId, targetYear),
       this.calculateContinuousYears(donViId, targetYear),
-      this.calculateBKBQPContinuous(donViId, targetYear),
+      Promise.resolve(0), // placeholder — bkbqp calculated after dvqt streak
     ]);
 
-    const du_dieu_kien_bk_tong_cuc = dvqtLienTuc % 2 === 0 && dvqtLienTuc >= 1;
+    // Recalculate BKBQP within ĐVQT streak
+    const bkbqpInStreak = await this.countBKBQPInStreak(donViId, targetYear, dvqtLienTuc);
+
+    // BKBQP: cứ 2 năm ĐVQT liên tục
+    const du_dieu_kien_bk_tong_cuc = dvqtLienTuc >= 2 && dvqtLienTuc % 2 === 0;
+    // BKTTCP: đúng 7 năm ĐVQT + 3 BKBQP (chỉ lần 1)
     const du_dieu_kien_bk_thu_tuong =
-      dvqtLienTuc % 7 === 0 && bkbqpLienTuc % 3 === 0 && dvqtLienTuc >= 7 && bkbqpLienTuc >= 3;
+      dvqtLienTuc === 7 && bkbqpInStreak === 3;
 
     const currentYearAward = danhHieuList.find(dh => dh.nam === targetYear);
     const hasDecision = !!currentYearAward?.so_quyet_dinh;
 
-    const goi_y = this.buildSuggestion(dvqtLienTuc, hasDecision);
+    const hasReceivedBKTTCP = danhHieuList.some(dh => dh.nhan_bkttcp === true);
+    const goi_y = this.buildSuggestion(dvqtLienTuc, du_dieu_kien_bk_tong_cuc, du_dieu_kien_bk_thu_tuong, hasReceivedBKTTCP);
 
     const whereCondition = isCoQuanDonVi
       ? { unique_co_quan_don_vi_nam: { co_quan_don_vi_id: donViId, nam: targetYear } }
@@ -710,7 +757,7 @@ class UnitAnnualAwardService {
     const hoSoData = {
       tong_dvqt: dvqtResult.total,
       tong_dvqt_json: dvqtResult.details,
-      dvqt_lien_tuc: dvqtLienTuc % 7,
+      dvqt_lien_tuc: dvqtLienTuc,
       du_dieu_kien_bk_tong_cuc,
       du_dieu_kien_bk_thu_tuong,
       goi_y,
@@ -1264,12 +1311,18 @@ class UnitAnnualAwardService {
           const finalDanhHieu = isBk ? null : item.danh_hieu;
 
           const sharedData: Record<string, any> = {
-            ghi_chu: item.ghi_chu ?? null,
-            nhan_bkbqp: isBkBqp,
-            nhan_bkttcp: isBkTtcp,
+            ghi_chu: isBk ? undefined : (item.ghi_chu ?? null),
             so_quyet_dinh: isBk ? undefined : (item.so_quyet_dinh ?? null),
-            so_quyet_dinh_bkbqp: isBkBqp ? (item.so_quyet_dinh ?? null) : undefined,
-            so_quyet_dinh_bkttcp: isBkTtcp ? (item.so_quyet_dinh ?? null) : undefined,
+            ...(isBkBqp && {
+              nhan_bkbqp: true,
+              so_quyet_dinh_bkbqp: item.so_quyet_dinh ?? null,
+              ...(item.ghi_chu && { ghi_chu_bkbqp: item.ghi_chu }),
+            }),
+            ...(isBkTtcp && {
+              nhan_bkttcp: true,
+              so_quyet_dinh_bkttcp: item.so_quyet_dinh ?? null,
+              ...(item.ghi_chu && { ghi_chu_bkttcp: item.ghi_chu }),
+            }),
           };
 
           const createData: Record<string, any> = {
@@ -1296,7 +1349,7 @@ class UnitAnnualAwardService {
           });
           results.push(result);
         }
-        return { imported: results.length };
+        return { imported: results.length, data: results };
       },
       { timeout: IMPORT_TRANSACTION_TIMEOUT }
     );
@@ -1685,22 +1738,21 @@ class UnitAnnualAwardService {
               nam,
               danh_hieu: finalDhDvtt,
               so_quyet_dinh: isBkDvtt ? null : (soQuyetDinh || null),
-              ghi_chu: ghiChu || null,
+              ghi_chu: isBkDvtt ? null : (ghiChu || null),
               nhan_bkbqp: dvttIsBkbqp,
               so_quyet_dinh_bkbqp: dvttSoQdBkbqp,
+              ...(dvttIsBkbqp && ghiChu && { ghi_chu_bkbqp: ghiChu }),
               nhan_bkttcp: dvttIsBkttcp,
               so_quyet_dinh_bkttcp: dvttSoQdBkttcp,
+              ...(dvttIsBkttcp && ghiChu && { ghi_chu_bkttcp: ghiChu }),
               status: PROPOSAL_STATUS.APPROVED,
               nguoi_tao_id: adminId,
             },
             update: {
-              danh_hieu: finalDhDvtt,
-              so_quyet_dinh: isBkDvtt ? undefined : (soQuyetDinh || null),
-              ghi_chu: ghiChu || null,
-              nhan_bkbqp: dvttIsBkbqp,
-              so_quyet_dinh_bkbqp: dvttSoQdBkbqp,
-              nhan_bkttcp: dvttIsBkttcp,
-              so_quyet_dinh_bkttcp: dvttSoQdBkttcp,
+              ...(isBkDvtt ? {} : { danh_hieu: finalDhDvtt, so_quyet_dinh: soQuyetDinh || null }),
+              ...(isBkDvtt ? {} : (ghiChu ? { ghi_chu: ghiChu } : {})),
+              ...(dvttIsBkbqp && { nhan_bkbqp: true, so_quyet_dinh_bkbqp: dvttSoQdBkbqp, ...(ghiChu && { ghi_chu_bkbqp: ghiChu }) }),
+              ...(dvttIsBkttcp && { nhan_bkttcp: true, so_quyet_dinh_bkttcp: dvttSoQdBkttcp, ...(ghiChu && { ghi_chu_bkttcp: ghiChu }) }),
             },
           });
           imported.push(award);
@@ -1742,22 +1794,21 @@ class UnitAnnualAwardService {
               nam,
               danh_hieu: finalDhCqdv,
               so_quyet_dinh: isBkCqdv ? null : (soQuyetDinh || null),
-              ghi_chu: ghiChu || null,
+              ghi_chu: isBkCqdv ? null : (ghiChu || null),
               nhan_bkbqp: cqdvIsBkbqp,
               so_quyet_dinh_bkbqp: cqdvSoQdBkbqp,
+              ...(cqdvIsBkbqp && ghiChu && { ghi_chu_bkbqp: ghiChu }),
               nhan_bkttcp: cqdvIsBkttcp,
               so_quyet_dinh_bkttcp: cqdvSoQdBkttcp,
+              ...(cqdvIsBkttcp && ghiChu && { ghi_chu_bkttcp: ghiChu }),
               status: PROPOSAL_STATUS.APPROVED,
               nguoi_tao_id: adminId,
             },
             update: {
-              danh_hieu: finalDhCqdv,
-              so_quyet_dinh: isBkCqdv ? undefined : (soQuyetDinh || null),
-              ghi_chu: ghiChu || null,
-              nhan_bkbqp: cqdvIsBkbqp,
-              so_quyet_dinh_bkbqp: cqdvSoQdBkbqp,
-              nhan_bkttcp: cqdvIsBkttcp,
-              so_quyet_dinh_bkttcp: cqdvSoQdBkttcp,
+              ...(isBkCqdv ? {} : { danh_hieu: finalDhCqdv, so_quyet_dinh: soQuyetDinh || null }),
+              ...(isBkCqdv ? {} : (ghiChu ? { ghi_chu: ghiChu } : {})),
+              ...(cqdvIsBkbqp && { nhan_bkbqp: true, so_quyet_dinh_bkbqp: cqdvSoQdBkbqp, ...(ghiChu && { ghi_chu_bkbqp: ghiChu }) }),
+              ...(cqdvIsBkttcp && { nhan_bkttcp: true, so_quyet_dinh_bkttcp: cqdvSoQdBkttcp, ...(ghiChu && { ghi_chu_bkttcp: ghiChu }) }),
             },
           });
           imported.push(award);

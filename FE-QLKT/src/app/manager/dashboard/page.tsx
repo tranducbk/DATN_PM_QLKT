@@ -17,15 +17,17 @@ import {
   Spin,
 } from 'antd';
 import {
-  TeamOutlined,
+  AuditOutlined,
+  FileDoneOutlined,
+  FileSearchOutlined,
   FileTextOutlined,
-  StarOutlined,
+  TeamOutlined,
   TrophyOutlined,
   PlusOutlined,
   CheckCircleOutlined,
   HomeOutlined,
   UserOutlined,
-  SafetyOutlined,
+  SafetyCertificateOutlined,
   ClockCircleOutlined,
   LockOutlined,
 } from '@ant-design/icons';
@@ -161,44 +163,44 @@ export default function ManagerDashboard() {
       title: 'Quân số Đơn vị',
       value: stats.totalPersonnel,
       icon: TeamOutlined,
-      iconColor: theme === 'dark' ? 'text-blue-400' : 'text-blue-600',
+      iconColor: theme === 'dark' ? 'text-slate-300' : 'text-slate-600',
       bgColor:
         theme === 'dark'
-          ? 'bg-gradient-to-br from-blue-900/30 to-blue-800/20'
-          : 'bg-gradient-to-br from-blue-50 to-blue-100',
+          ? 'bg-slate-700/40'
+          : 'bg-slate-100',
       link: '/manager/personnel',
     },
     {
       title: 'Tổng CSTDCS',
       value: stats.totalCSTDCS,
-      icon: FileTextOutlined,
-      iconColor: theme === 'dark' ? 'text-green-400' : 'text-green-600',
+      icon: FileDoneOutlined,
+      iconColor: theme === 'dark' ? 'text-slate-300' : 'text-slate-600',
       bgColor:
         theme === 'dark'
-          ? 'bg-gradient-to-br from-green-900/30 to-green-800/20'
-          : 'bg-gradient-to-br from-green-50 to-green-100',
+          ? 'bg-slate-700/40'
+          : 'bg-slate-100',
       link: '#',
     },
     {
       title: 'Tổng NCKH',
       value: stats.totalNCKH,
-      icon: StarOutlined,
-      iconColor: theme === 'dark' ? 'text-yellow-400' : 'text-yellow-600',
+      icon: FileSearchOutlined,
+      iconColor: theme === 'dark' ? 'text-slate-300' : 'text-slate-600',
       bgColor:
         theme === 'dark'
-          ? 'bg-gradient-to-br from-yellow-900/30 to-yellow-800/20'
-          : 'bg-gradient-to-br from-yellow-50 to-yellow-100',
+          ? 'bg-slate-700/40'
+          : 'bg-slate-100',
       link: '#',
     },
     {
       title: 'Khen thưởng',
       value: stats.totalAwards,
-      icon: TrophyOutlined,
-      iconColor: theme === 'dark' ? 'text-purple-400' : 'text-purple-600',
+      icon: AuditOutlined,
+      iconColor: theme === 'dark' ? 'text-slate-300' : 'text-slate-600',
       bgColor:
         theme === 'dark'
-          ? 'bg-gradient-to-br from-purple-900/30 to-purple-800/20'
-          : 'bg-gradient-to-br from-purple-50 to-purple-100',
+          ? 'bg-slate-700/40'
+          : 'bg-slate-100',
       link: '/manager/awards',
     },
   ];
@@ -228,7 +230,7 @@ export default function ManagerDashboard() {
         <div className="mb-2">
           <Title
             level={2}
-            className="!mb-3 !text-4xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent dark:from-blue-400 dark:to-purple-400"
+            className="!mb-3 !text-4xl"
           >
             Xin chào, {displayName}
           </Title>
@@ -263,6 +265,7 @@ export default function ManagerDashboard() {
               gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
               gap: '16px',
               marginBottom: '24px',
+              alignItems: 'stretch',
             }}
           >
             {statCards.map((stat, index) => {
@@ -273,69 +276,32 @@ export default function ManagerDashboard() {
                 theme === 'dark'
                   ? '0 1px 6px rgba(0, 0, 0, 0.35)'
                   : '0 1px 4px rgba(0, 0, 0, 0.06)';
-              const iconShadows = {
-                blue:
-                  theme === 'dark'
-                    ? '0 1px 3px rgba(59, 130, 246, 0.3)'
-                    : '0 1px 3px rgba(59, 130, 246, 0.2)',
-                green:
-                  theme === 'dark'
-                    ? '0 1px 3px rgba(16, 185, 129, 0.3)'
-                    : '0 1px 3px rgba(16, 185, 129, 0.2)',
-                yellow:
-                  theme === 'dark'
-                    ? '0 1px 3px rgba(234, 179, 8, 0.3)'
-                    : '0 1px 3px rgba(234, 179, 8, 0.2)',
-                purple:
-                  theme === 'dark'
-                    ? '0 1px 3px rgba(139, 92, 246, 0.3)'
-                    : '0 1px 3px rgba(139, 92, 246, 0.2)',
-              };
-              const iconBgs = {
-                blue: theme === 'dark' ? '#1e3a8a' : '#e6f0ff',
-                green: theme === 'dark' ? '#0b3d2e' : '#e8f5e9',
-                yellow: theme === 'dark' ? '#78350f' : '#fef9c3',
-                purple: theme === 'dark' ? '#3b0764' : '#f3e8ff',
-              };
-              const iconColors = {
-                blue: theme === 'dark' ? '#60a5fa' : '#2563eb',
-                green: theme === 'dark' ? '#34d399' : '#059669',
-                yellow: theme === 'dark' ? '#fbbf24' : '#d97706',
-                purple: theme === 'dark' ? '#a78bfa' : '#7c3aed',
-              };
-              const iconKeys = ['blue', 'green', 'yellow', 'purple'];
-              const iconKey = iconKeys[index] || 'blue';
 
               return (
-                <Link key={index} href={stat.link}>
+                <Link key={index} href={stat.link} style={{ display: 'block', height: '100%' }}>
                   <Card
                     hoverable
                     style={{
                       borderRadius: '10px',
                       boxShadow: cardShadow,
                       transition: 'all 0.3s ease',
+                      height: '100%',
                     }}
-                    styles={{ body: { padding: '20px' } }}
+                    styles={{ body: { padding: '20px', height: '100%' } }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', minHeight: 84 }}>
                       <div
                         style={{
                           width: '56px',
                           height: '56px',
                           borderRadius: '12px',
-                          background: iconBgs[iconKey as keyof typeof iconBgs],
+                          background: theme === 'dark' ? 'rgba(148, 163, 184, 0.14)' : '#f1f5f9',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          boxShadow: iconShadows[iconKey as keyof typeof iconShadows],
                         }}
                       >
-                        <Icon
-                          style={{
-                            fontSize: '26px',
-                            color: iconColors[iconKey as keyof typeof iconColors],
-                          }}
-                        />
+                        <Icon className={stat.iconColor} style={{ fontSize: '26px' }} />
                       </div>
                       <div style={{ flex: 1 }}>
                         <Text
@@ -524,7 +490,7 @@ export default function ManagerDashboard() {
               <Card
                 title={
                   <Space>
-                    <SafetyOutlined style={{ color: '#3b82f6' }} />
+                    <SafetyCertificateOutlined style={{ color: '#3b82f6' }} />
                     <span className="font-semibold">Thông tin hệ thống</span>
                   </Space>
                 }

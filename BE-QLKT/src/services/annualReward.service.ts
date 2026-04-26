@@ -32,6 +32,7 @@ interface CreateAnnualRewardData {
   personnel_id: string;
   nam: number;
   danh_hieu?: string | null;
+  so_quyet_dinh?: string | null;
   cap_bac?: string | null;
   chuc_vu?: string | null;
   ghi_chu?: string | null;
@@ -201,14 +202,58 @@ class AnnualRewardService {
     }
 
     const existingReward = await prisma.danhHieuHangNam.findFirst({
-      where: {
-        quan_nhan_id: personnel_id,
-        nam,
-      },
+      where: { quan_nhan_id: personnel_id, nam },
     });
 
     if (existingReward) {
-      throw new ValidationError(`Năm ${nam} đã có danh hiệu cho quân nhân này.`);
+      const isBangKhen = !danh_hieu || DANH_HIEU_CA_NHAN_BANG_KHEN.has(danh_hieu);
+      const isCoBan = danh_hieu && DANH_HIEU_CA_NHAN_CO_BAN.has(danh_hieu);
+
+      // Block: existing has same base title, or adding base title when one already exists
+      if (isCoBan && existingReward.danh_hieu) {
+        throw new ValidationError(`Năm ${nam} đã có ${getDanhHieuName(existingReward.danh_hieu)}.`);
+      }
+      // Block: adding same flag that already exists
+      if (nhan_bkbqp && existingReward.nhan_bkbqp) {
+        throw new ValidationError(`Năm ${nam} đã có Bằng khen Bộ Quốc phòng.`);
+      }
+      if (nhan_cstdtq && existingReward.nhan_cstdtq) {
+        throw new ValidationError(`Năm ${nam} đã có Chiến sĩ thi đua toàn quân.`);
+      }
+      if (nhan_bkttcp && existingReward.nhan_bkttcp) {
+        throw new ValidationError(`Năm ${nam} đã có Bằng khen Thủ tướng Chính phủ.`);
+      }
+
+      // Allow: merge into existing record
+      const updateData: Record<string, unknown> = {};
+      if (isCoBan) {
+        updateData.danh_hieu = danh_hieu;
+        if (data.so_quyet_dinh) updateData.so_quyet_dinh = data.so_quyet_dinh;
+      }
+      if (nhan_bkbqp) {
+        updateData.nhan_bkbqp = true;
+        if (so_quyet_dinh_bkbqp) updateData.so_quyet_dinh_bkbqp = so_quyet_dinh_bkbqp;
+        if (ghi_chu) updateData.ghi_chu_bkbqp = ghi_chu;
+      } else if (nhan_cstdtq) {
+        updateData.nhan_cstdtq = true;
+        if (so_quyet_dinh_cstdtq) updateData.so_quyet_dinh_cstdtq = so_quyet_dinh_cstdtq;
+        if (ghi_chu) updateData.ghi_chu_cstdtq = ghi_chu;
+      } else if (nhan_bkttcp) {
+        updateData.nhan_bkttcp = true;
+        if (so_quyet_dinh_bkttcp) updateData.so_quyet_dinh_bkttcp = so_quyet_dinh_bkttcp;
+        if (ghi_chu) updateData.ghi_chu_bkttcp = ghi_chu;
+      } else if (ghi_chu) {
+        updateData.ghi_chu = ghi_chu;
+      }
+      if (cap_bac) updateData.cap_bac = cap_bac;
+      if (chuc_vu) updateData.chuc_vu = chuc_vu;
+
+      const updated = await prisma.danhHieuHangNam.update({
+        where: { id: existingReward.id },
+        data: updateData,
+      });
+      await safeRecalculateAnnualProfile(personnel_id);
+      return updated;
     }
 
     const newReward = await prisma.danhHieuHangNam.create({
@@ -216,6 +261,7 @@ class AnnualRewardService {
         quan_nhan_id: personnel_id,
         nam,
         danh_hieu,
+        so_quyet_dinh: data.so_quyet_dinh || null,
         cap_bac: cap_bac || null,
         chuc_vu: chuc_vu || null,
         ghi_chu: ghi_chu || null,
@@ -556,9 +602,9 @@ class AnnualRewardService {
                 cap_bac: cap_bac !== undefined ? cap_bac : existing.cap_bac,
                 chuc_vu: chuc_vu !== undefined ? chuc_vu : existing.chuc_vu,
                 ghi_chu: ghi_chu !== undefined ? ghi_chu : existing.ghi_chu,
-                nhan_bkbqp: nhan_bkbqp !== undefined ? nhan_bkbqp : existing.nhan_bkbqp,
-                nhan_cstdtq: nhan_cstdtq !== undefined ? nhan_cstdtq : existing.nhan_cstdtq,
-                nhan_bkttcp: nhan_bkttcp !== undefined ? nhan_bkttcp : existing.nhan_bkttcp,
+                nhan_bkbqp: nhan_bkbqp || existing.nhan_bkbqp,
+                nhan_cstdtq: nhan_cstdtq || existing.nhan_cstdtq,
+                nhan_bkttcp: nhan_bkttcp || existing.nhan_bkttcp,
               },
             });
             txUpdated.push(existing.id);
@@ -830,14 +876,13 @@ class AnnualRewardService {
 
       // Check duplicate in DB (using pre-fetched Map)
       const existingReward = rewardByKey.get(`${personnel.id}_${nam}`);
-      const existingDh = existingReward ? resolveDanhHieuFromRecord(existingReward) : null;
-      if (existingReward && existingDh === danh_hieu) {
+      if (existingReward && existingReward.danh_hieu === danh_hieu) {
         errors.push({
           row: rowNumber,
           ho_ten,
           nam,
           danh_hieu,
-          message: `Đã có ${getDanhHieuName(existingDh)} cho năm ${nam}.`,
+          message: `Đã có ${getDanhHieuName(danh_hieu)} cho năm ${nam}.`,
         });
         continue;
       }
@@ -946,11 +991,12 @@ class AnnualRewardService {
     const conflicts: string[] = [];
     for (const item of validItems) {
       const existing = existingMap.get(`${item.personnel_id}|${item.nam}`);
-      if (existing && existing.danh_hieu !== item.danh_hieu) {
+      if (!existing) continue;
+      // Only conflict when existing has a different base title (CSTDCS vs CSTT)
+      if (existing.danh_hieu && existing.danh_hieu !== item.danh_hieu) {
         const hoTen = hoTenMap.get(item.personnel_id) || item.ho_ten || item.personnel_id;
-        const existingName = getDanhHieuName(resolveDanhHieuFromRecord(existing));
         conflicts.push(
-          `${hoTen} năm ${item.nam}: đã có ${existingName}, không thể ghi đè bằng ${getDanhHieuName(item.danh_hieu)}`
+          `${hoTen} năm ${item.nam}: đã có ${getDanhHieuName(existing.danh_hieu)}, không thể ghi đè bằng ${getDanhHieuName(item.danh_hieu)}`
         );
       }
     }
@@ -973,20 +1019,23 @@ class AnnualRewardService {
           const sharedData = {
             cap_bac: item.cap_bac ?? null,
             chuc_vu: item.chuc_vu ?? null,
-            ghi_chu: item.ghi_chu ?? null,
-            nhan_bkbqp: nhanBKBQP,
-            nhan_cstdtq: nhanCSTDTQ,
-            nhan_bkttcp: nhanBKTTCP,
+            ghi_chu: isBangKhen ? undefined : (item.ghi_chu ?? null),
             so_quyet_dinh: isBangKhen ? undefined : (item.so_quyet_dinh ?? null),
-            so_quyet_dinh_bkbqp: nhanBKBQP
-              ? item.so_quyet_dinh_bkbqp || item.so_quyet_dinh || null
-              : undefined,
-            so_quyet_dinh_cstdtq: nhanCSTDTQ
-              ? item.so_quyet_dinh_cstdtq || item.so_quyet_dinh || null
-              : undefined,
-            so_quyet_dinh_bkttcp: nhanBKTTCP
-              ? item.so_quyet_dinh_bkttcp || item.so_quyet_dinh || null
-              : undefined,
+            ...(nhanBKBQP && {
+              nhan_bkbqp: true,
+              so_quyet_dinh_bkbqp: item.so_quyet_dinh_bkbqp || item.so_quyet_dinh || null,
+              ...(item.ghi_chu && { ghi_chu_bkbqp: item.ghi_chu }),
+            }),
+            ...(nhanCSTDTQ && {
+              nhan_cstdtq: true,
+              so_quyet_dinh_cstdtq: item.so_quyet_dinh_cstdtq || item.so_quyet_dinh || null,
+              ...(item.ghi_chu && { ghi_chu_cstdtq: item.ghi_chu }),
+            }),
+            ...(nhanBKTTCP && {
+              nhan_bkttcp: true,
+              so_quyet_dinh_bkttcp: item.so_quyet_dinh_bkttcp || item.so_quyet_dinh || null,
+              ...(item.ghi_chu && { ghi_chu_bkttcp: item.ghi_chu }),
+            }),
           };
 
           const result = await prismaTx.danhHieuHangNam.upsert({
@@ -1009,7 +1058,7 @@ class AnnualRewardService {
           });
           results.push(result);
         }
-        return { imported: results.length };
+        return { imported: results.length, data: results };
       },
       { timeout: IMPORT_TRANSACTION_TIMEOUT }
     );
@@ -1270,7 +1319,12 @@ class AnnualRewardService {
 
           if (individualCapBac) updateData.cap_bac = individualCapBac;
           if (individualChucVu) updateData.chuc_vu = individualChucVu;
-          if (ghi_chu) updateData.ghi_chu = ghi_chu;
+          if (ghi_chu) {
+            if (nhanBKBQP) updateData.ghi_chu_bkbqp = ghi_chu;
+            else if (nhanCSTDTQ) updateData.ghi_chu_cstdtq = ghi_chu;
+            else if (nhanBKTTCP) updateData.ghi_chu_bkttcp = ghi_chu;
+            else updateData.ghi_chu = ghi_chu;
+          }
 
           rewardRecord = await prismaTx.danhHieuHangNam.update({
             where: { id: existingReward.id },
@@ -1283,10 +1337,13 @@ class AnnualRewardService {
             danh_hieu: finalDanhHieu,
             cap_bac: individualCapBac || null,
             chuc_vu: individualChucVu || null,
-            ghi_chu: ghi_chu || null,
+            ghi_chu: nhanBKBQP || nhanCSTDTQ || nhanBKTTCP ? null : (ghi_chu || null),
             nhan_bkbqp: nhanBKBQP,
             nhan_cstdtq: nhanCSTDTQ,
             nhan_bkttcp: nhanBKTTCP,
+            ...(nhanBKBQP && ghi_chu && { ghi_chu_bkbqp: ghi_chu }),
+            ...(nhanCSTDTQ && ghi_chu && { ghi_chu_cstdtq: ghi_chu }),
+            ...(nhanBKTTCP && ghi_chu && { ghi_chu_bkttcp: ghi_chu }),
           };
 
           if (nhanBKBQP) {

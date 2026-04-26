@@ -1064,7 +1064,8 @@ async function approveProposal(
 
             data.cap_bac = item.cap_bac || null;
             data.chuc_vu = item.chuc_vu || null;
-            data.ghi_chu = item.ghi_chu || null;
+
+            const note = item.ghi_chu || ghiChu;
 
             if (
               item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTT ||
@@ -1072,19 +1073,22 @@ async function approveProposal(
             ) {
               data.danh_hieu = item.danh_hieu;
               data.so_quyet_dinh = soQuyetDinhDanhHieu;
+              if (note) data.ghi_chu = note;
             }
-
             if (isBkbqp) {
               data.nhan_bkbqp = bkbqp.nhan;
               data.so_quyet_dinh_bkbqp = bkbqp.soQD;
+              if (note) data.ghi_chu_bkbqp = note;
             }
             if (isCstdtq) {
               data.nhan_cstdtq = cstdtq.nhan;
               data.so_quyet_dinh_cstdtq = cstdtq.soQD;
+              if (note) data.ghi_chu_cstdtq = note;
             }
             if (isBkttcp) {
               data.nhan_bkttcp = bkttcp.nhan;
               data.so_quyet_dinh_bkttcp = bkttcp.soQD;
+              if (note) data.ghi_chu_bkttcp = note;
             }
 
             await prismaTx.danhHieuHangNam.upsert({
@@ -1100,25 +1104,7 @@ async function approveProposal(
               create: {
                 quan_nhan_id: quanNhan.id,
                 nam: namNhan,
-                cap_bac: item.cap_bac || null,
-                chuc_vu: item.chuc_vu || null,
-                ghi_chu: item.ghi_chu || null,
-                danh_hieu:
-                  item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTT ||
-                  item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS
-                    ? item.danh_hieu
-                    : null,
-                so_quyet_dinh:
-                  item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTT ||
-                  item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS
-                    ? soQuyetDinhDanhHieu
-                    : null,
-                nhan_bkbqp: bkbqp.nhan,
-                so_quyet_dinh_bkbqp: bkbqp.soQD,
-                nhan_cstdtq: cstdtq.nhan,
-                so_quyet_dinh_cstdtq: cstdtq.soQD,
-                nhan_bkttcp: bkttcp.nhan,
-                so_quyet_dinh_bkttcp: bkttcp.soQD,
+                ...data,
               },
             });
 

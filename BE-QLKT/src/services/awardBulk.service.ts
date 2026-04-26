@@ -23,7 +23,7 @@ import {
 import { PROPOSAL_TYPES, type ProposalType } from '../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { AppError, NotFoundError, ValidationError } from '../middlewares/errorHandler';
-import type { QuanNhan } from '../generated/prisma';
+import type { QuanNhan, Prisma } from '../generated/prisma';
 import { GENDER } from '../constants/gender.constants';
 
 interface ServiceYears {
@@ -348,6 +348,8 @@ class AwardBulkService {
     adminId,
   }: BulkCreateAwardsParams) {
     const errors: string[] = [];
+      const createdRecords: unknown[] = [];
+      const errorDetails: { personnelId: string; error: string }[] = [];
       const affectedPersonnelIds = new Set<string>();
       let importedCount = 0;
 
@@ -457,14 +459,16 @@ class AwardBulkService {
         });
 
         importedCount = result.details.created.length;
+        createdRecords.push(...result.details.created);
         if (result.details.errors.length > 0) {
+          errorDetails.push(...result.details.errors);
           errors.push(...result.details.errors.map(e => e.error));
         }
         selectedPersonnel.forEach(id => affectedPersonnelIds.add(id));
       } else if (type === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
         for (const item of titleData) {
           try {
-            await unitAnnualAwardService.upsert({
+            const record = await unitAnnualAwardService.upsert({
               don_vi_id: item.don_vi_id,
               nam: nam,
               danh_hieu: item.danh_hieu,
@@ -472,17 +476,19 @@ class AwardBulkService {
               ghi_chu: ghiChu || null,
               nguoi_tao_id: adminId,
             });
+            createdRecords.push(record);
             importedCount++;
           } catch (error) {
             const unitMsg = `Lỗi khi thêm khen thưởng cho đơn vị ${item.don_vi_id}: ${(error as Error).message}`;
             console.error('[bulkCreateAwards]', unitMsg, error);
             errors.push(unitMsg);
+            errorDetails.push({ personnelId: item.don_vi_id || '', error: unitMsg });
           }
         }
       } else if (type === PROPOSAL_TYPES.NCKH) {
         for (const item of titleData) {
           try {
-            await scientificAchievementService.createAchievement({
+            const record = await scientificAchievementService.createAchievement({
               personnel_id: item.personnel_id,
               nam: nam,
               loai: item.loai,
@@ -492,12 +498,14 @@ class AwardBulkService {
               so_quyet_dinh: item.so_quyet_dinh || null,
               ghi_chu: ghiChu || null,
             });
+            createdRecords.push(record);
             importedCount++;
             affectedPersonnelIds.add(item.personnel_id);
           } catch (error) {
             const nckhMsg = `Lỗi khi thêm thành tích cho quân nhân ${item.personnel_id}: ${(error as Error).message}`;
             console.error('[bulkCreateAwards]', nckhMsg, error);
             errors.push(nckhMsg);
+            errorDetails.push({ personnelId: item.personnel_id || '', error: nckhMsg });
           }
         }
       } else if (type === PROPOSAL_TYPES.HC_QKQT) {
@@ -722,15 +730,15 @@ class AwardBulkService {
               create: {
                 quan_nhan_id: item.personnel_id,
                 danh_hieu: item.danh_hieu,
-                nam: nam,
+                nam,
                 cap_bac: item.cap_bac || null,
                 chuc_vu: item.chuc_vu || null,
                 ghi_chu: ghiChu || null,
                 so_quyet_dinh: item.so_quyet_dinh || null,
-                thoi_gian_nhom_0_7: item.thoi_gian_nhom_0_7 || null,
-                thoi_gian_nhom_0_8: item.thoi_gian_nhom_0_8 || null,
-                thoi_gian_nhom_0_9_1_0: item.thoi_gian_nhom_0_9_1_0 || null,
-              },
+                thoi_gian_nhom_0_7: item.thoi_gian_nhom_0_7 || undefined,
+                thoi_gian_nhom_0_8: item.thoi_gian_nhom_0_8 || undefined,
+                thoi_gian_nhom_0_9_1_0: item.thoi_gian_nhom_0_9_1_0 || undefined,
+              } as Prisma.KhenThuongHCBVTQUncheckedCreateInput,
               update: {
                 danh_hieu: item.danh_hieu,
                 nam: nam,
@@ -806,9 +814,9 @@ class AwardBulkService {
       data: {
         importedCount,
         errorCount: errors.length,
-        errors: errors.length > 0 ? errors : undefined,
+        created: createdRecords.length > 0 ? createdRecords : undefined,
+        errors: errorDetails.length > 0 ? errorDetails : undefined,
         affectedPersonnelIds: Array.from(affectedPersonnelIds),
-        data_danh_hieu: titleData,
       },
     };
   }

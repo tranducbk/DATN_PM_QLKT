@@ -6,7 +6,7 @@ import positionHistoryService from './positionHistory.service';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { NotFoundError } from '../middlewares/errorHandler';
-import { DANH_HIEU_HCCSVV, DANH_HIEU_HCBVTQ, DANH_HIEU_CA_NHAN_BANG_KHEN, DANH_HIEU_CA_NHAN_HANG_NAM, DANH_HIEU_CA_NHAN_CO_BAN, CONG_HIEN_BASE_REQUIRED_MONTHS, CONG_HIEN_FEMALE_REQUIRED_MONTHS } from '../constants/danhHieu.constants';
+import { DANH_HIEU_HCCSVV, DANH_HIEU_HCBVTQ, DANH_HIEU_CA_NHAN_BANG_KHEN, DANH_HIEU_CA_NHAN_HANG_NAM, DANH_HIEU_CA_NHAN_CO_BAN, CONG_HIEN_BASE_REQUIRED_MONTHS, CONG_HIEN_FEMALE_REQUIRED_MONTHS, getDanhHieuName } from '../constants/danhHieu.constants';
 import { GENDER } from '../constants/gender.constants';
 
 class ProfileService {
@@ -220,18 +220,13 @@ class ProfileService {
    * @param year - Evaluation anchor year
    * @returns Number of BKBQP steps in the active chain
    */
-  calculateContinuousBKBQP(danhHieuList, year) {
-    let count = 0;
-    const sortedRewards = [...danhHieuList].sort((a, b) => b.nam - a.nam);
-    const filteredRewards = sortedRewards.filter(r => r.nhan_bkbqp === true && r.nam <= year - 1);
-    let currentYear = year - 1;
-
-    for (const reward of filteredRewards) {
-      if (reward.nam !== currentYear) break;
-      count++;
-      currentYear -= 2;
-    }
-    return count;
+  /**
+   * Đếm tổng số lần nhận BKBQP trong chuỗi CSTDCS liên tục.
+   */
+  countBKBQPInStreak(danhHieuList, year, cstdcsStreak: number) {
+    const endYear = year - 1;
+    const startYear = endYear - cstdcsStreak + 1;
+    return danhHieuList.filter(r => r.nhan_bkbqp === true && r.nam >= startYear && r.nam <= endYear).length;
   }
 
   /**
@@ -240,18 +235,22 @@ class ProfileService {
    * @param year - Evaluation anchor year
    * @returns Number of CSTDTQ steps in the active chain
    */
-  calculateContinuousCSTDTQ(danhHieuList, year) {
-    let count = 0;
-    const sortedRewards = [...danhHieuList].sort((a, b) => b.nam - a.nam);
-    const filteredRewards = sortedRewards.filter(r => r.nhan_cstdtq === true && r.nam <= year - 1);
-    let currentYear = year - 1;
+  /**
+   * Counts records with flag = true within N years back from year-1.
+   */
+  private countFlagInRange(danhHieuList: any[], year: number, rangeYears: number, flagKey: string): number {
+    const endYear = year - 1;
+    const startYear = endYear - rangeYears + 1;
+    return danhHieuList.filter(r => (r as any)[flagKey] === true && r.nam >= startYear && r.nam <= endYear).length;
+  }
 
-    for (const reward of filteredRewards) {
-      if (reward.nam !== currentYear) break;
-      count++;
-      currentYear -= 3;
-    }
-    return count;
+  /**
+   * Đếm tổng số lần nhận CSTDTQ trong chuỗi CSTDCS liên tục.
+   */
+  countCSTDTQInStreak(danhHieuList, year, cstdcsStreak: number) {
+    const endYear = year - 1;
+    const startYear = endYear - cstdcsStreak + 1;
+    return danhHieuList.filter(r => r.nhan_cstdtq === true && r.nam >= startYear && r.nam <= endYear).length;
   }
 
   /**
@@ -407,8 +406,9 @@ class ProfileService {
       year
     );
     const nckh_lien_tuc = this.calculateContinuousNCKH(thanhTichList, year);
-    const bkbqp_lien_tuc = this.calculateContinuousBKBQP(danhHieuList, year);
-    const cstdtq_lien_tuc = this.calculateContinuousCSTDTQ(danhHieuList, year);
+
+    const bkbqp_lien_tuc = this.countBKBQPInStreak(danhHieuList, year, cstdcs_lien_tuc);
+    const cstdtq_lien_tuc = this.countCSTDTQInStreak(danhHieuList, year, cstdcs_lien_tuc);
 
     return { personnel, danhHieuList, thanhTichList, cstdcs_lien_tuc, nckh_lien_tuc, bkbqp_lien_tuc, cstdtq_lien_tuc };
   }
@@ -426,33 +426,25 @@ class ProfileService {
     year: number
   ) {
     const { cstdcs_lien_tuc, nckh_lien_tuc, bkbqp_lien_tuc, cstdtq_lien_tuc } = streaks;
+    const hasEnoughNCKH = nckh_lien_tuc >= cstdcs_lien_tuc;
 
+    // BKBQP: cứ 2 năm CSTDCS liên tục = eligible (chuỗi riêng, không phụ thuộc chu kỳ 7 năm)
     const du_dieu_kien_bkbqp =
-      cstdcs_lien_tuc % 2 === 0 && cstdcs_lien_tuc >= 2 && nckh_lien_tuc >= cstdcs_lien_tuc;
+      cstdcs_lien_tuc >= 2 && cstdcs_lien_tuc % 2 === 0 && hasEnoughNCKH;
 
-    let du_dieu_kien_cstdtq =
-      cstdcs_lien_tuc % 3 === 0 &&
-      bkbqp_lien_tuc >= 1 &&
-      cstdcs_lien_tuc >= 3 &&
-      nckh_lien_tuc >= cstdcs_lien_tuc;
-    // Edge case: at 6-year boundary, check BKBQP from previous year
-    if (cstdcs_lien_tuc % 6 === 0) {
-      const bkbqp_lt = this.calculateContinuousBKBQP(danhHieuList, year - 1);
-      du_dieu_kien_cstdtq =
-        cstdcs_lien_tuc % 3 === 0 &&
-        bkbqp_lt >= 1 &&
-        cstdcs_lien_tuc >= 3 &&
-        nckh_lien_tuc >= cstdcs_lien_tuc;
-    }
+    // CSTDTQ: cứ 3 năm + đã có BKBQP (tổng trong chuỗi >= 1)
+    const du_dieu_kien_cstdtq =
+      cstdcs_lien_tuc >= 3 && cstdcs_lien_tuc % 3 === 0 &&
+      bkbqp_lien_tuc >= 1 && hasEnoughNCKH;
 
+    // BKTTCP: đúng 7 năm + giật lại 7 năm check đủ 3 BKBQP + 2 CSTDTQ
+    const bkbqpIn7Years = this.countFlagInRange(danhHieuList, year, 7, 'nhan_bkbqp');
+    const cstdtqIn7Years = this.countFlagInRange(danhHieuList, year, 7, 'nhan_cstdtq');
     const du_dieu_kien_bkttcp =
-      cstdcs_lien_tuc % 7 === 0 &&
-      bkbqp_lien_tuc % 3 === 0 &&
-      cstdtq_lien_tuc % 2 === 0 &&
-      nckh_lien_tuc >= cstdcs_lien_tuc &&
-      cstdcs_lien_tuc >= 7 &&
-      bkbqp_lien_tuc >= 3 &&
-      cstdtq_lien_tuc >= 2;
+      cstdcs_lien_tuc === 7 &&
+      bkbqpIn7Years === 3 &&
+      cstdtqIn7Years === 2 &&
+      hasEnoughNCKH;
 
     return { du_dieu_kien_bkbqp, du_dieu_kien_cstdtq, du_dieu_kien_bkttcp };
   }
@@ -501,13 +493,24 @@ class ProfileService {
         year
       );
 
-    const goi_y = du_dieu_kien_bkttcp
-      ? 'Đã đủ điều kiện đề nghị xét Bằng khen thi đua cấp phòng (BKTTCP).'
-      : du_dieu_kien_cstdtq
-        ? 'Đã đủ điều kiện đề nghị xét Chiến sĩ thi đua Toàn quân.'
-        : du_dieu_kien_bkbqp
-          ? 'Đã đủ điều kiện đề nghị xét Bằng khen Bộ Quốc phòng.'
-          : 'Chưa đủ điều kiện đề nghị xét Bằng khen Bộ Quốc phòng hoặc Chiến sĩ thi đua Toàn quân.';
+    const hasReceivedBKTTCP = danhHieuList.some((dh: any) => dh.nhan_bkttcp === true);
+
+    const labelBKBQP = getDanhHieuName(DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP);
+    const labelCSTDTQ = getDanhHieuName(DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ);
+    const labelBKTTCP = getDanhHieuName(DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP);
+
+    let goi_y: string;
+    if (du_dieu_kien_bkttcp) {
+      goi_y = `Đã đủ điều kiện đề nghị xét ${labelBKTTCP}.`;
+    } else if (hasReceivedBKTTCP && cstdcs_lien_tuc % 7 === 0 && cstdcs_lien_tuc > 7) {
+      goi_y = `Phần mềm chưa hỗ trợ khen thưởng cao hơn ${labelBKTTCP}, sẽ phát triển trong thời gian tới.`;
+    } else if (du_dieu_kien_cstdtq) {
+      goi_y = `Đã đủ điều kiện đề nghị xét ${labelCSTDTQ}.`;
+    } else if (du_dieu_kien_bkbqp) {
+      goi_y = `Đã đủ điều kiện đề nghị xét ${labelBKBQP}.`;
+    } else {
+      goi_y = `Chưa đủ điều kiện đề nghị xét ${labelBKBQP} hoặc ${labelCSTDTQ}.`;
+    }
 
     const profileData = {
       tong_cstdcs,
@@ -562,41 +565,34 @@ class ProfileService {
       const eligible =
         cstdcs_lien_tuc % 2 === 0 && cstdcs_lien_tuc >= 2 && nckh_lien_tuc >= cstdcs_lien_tuc;
       return eligible
-        ? { eligible: true, reason: 'Đủ điều kiện BKBQP' }
-        : { eligible: false, reason: `Chưa đủ điều kiện BKBQP: cần 2 năm CSTDCS liên tục + mỗi năm có NCKH (hiện có ${cstdcs_lien_tuc} năm CSTDCS, ${nckh_lien_tuc} năm NCKH liên tục)` };
+        ? { eligible: true, reason: `Đủ điều kiện ${getDanhHieuName(danhHieu)}` }
+        : { eligible: false, reason: `Chưa đủ điều kiện ${getDanhHieuName(danhHieu)}: cần 2 năm CSTDCS liên tục + mỗi năm có NCKH (hiện có ${cstdcs_lien_tuc} năm CSTDCS, ${nckh_lien_tuc} năm NCKH)` };
     }
 
     if (danhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ) {
-      let eligible =
-        cstdcs_lien_tuc % 3 === 0 &&
+      const eligible =
+        cstdcs_lien_tuc >= 3 && cstdcs_lien_tuc % 3 === 0 &&
         bkbqp_lien_tuc >= 1 &&
-        cstdcs_lien_tuc >= 3 &&
         nckh_lien_tuc >= cstdcs_lien_tuc;
-      if (cstdcs_lien_tuc % 6 === 0) {
-        const bkbqp_lt = this.calculateContinuousBKBQP(danhHieuList, year - 1);
-        eligible =
-          cstdcs_lien_tuc % 3 === 0 &&
-          bkbqp_lt >= 1 &&
-          cstdcs_lien_tuc >= 3 &&
-          nckh_lien_tuc >= cstdcs_lien_tuc;
-      }
       return eligible
-        ? { eligible: true, reason: 'Đủ điều kiện CSTDTQ' }
-        : { eligible: false, reason: `Chưa đủ điều kiện CSTDTQ: cần 3 năm CSTDCS liên tục + đã có BKBQP + mỗi năm có NCKH (hiện có ${cstdcs_lien_tuc} năm CSTDCS, ${bkbqp_lien_tuc} lần BKBQP, ${nckh_lien_tuc} năm NCKH liên tục)` };
+        ? { eligible: true, reason: `Đủ điều kiện ${getDanhHieuName(danhHieu)}` }
+        : { eligible: false, reason: `Chưa đủ điều kiện ${getDanhHieuName(danhHieu)}: cần 3 năm CSTDCS liên tục + đã có BKBQP + mỗi năm có NCKH (hiện có ${cstdcs_lien_tuc} CSTDCS, ${bkbqp_lien_tuc} BKBQP, ${nckh_lien_tuc} NCKH)` };
     }
 
     if (danhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP) {
+      if (cstdcs_lien_tuc > 7 && cstdcs_lien_tuc % 7 === 0) {
+        return { eligible: false, reason: `Phần mềm chưa hỗ trợ khen thưởng cao hơn ${getDanhHieuName(danhHieu)}, sẽ phát triển trong thời gian tới.` };
+      }
+      const bkbqpIn7Years = this.countFlagInRange(danhHieuList, year, 7, 'nhan_bkbqp');
+      const cstdtqIn7Years = this.countFlagInRange(danhHieuList, year, 7, 'nhan_cstdtq');
       const eligible =
-        cstdcs_lien_tuc % 7 === 0 &&
-        bkbqp_lien_tuc % 3 === 0 &&
-        cstdtq_lien_tuc % 2 === 0 &&
-        nckh_lien_tuc >= cstdcs_lien_tuc &&
-        cstdcs_lien_tuc >= 7 &&
-        bkbqp_lien_tuc >= 3 &&
-        cstdtq_lien_tuc >= 2;
+        cstdcs_lien_tuc === 7 &&
+        bkbqpIn7Years === 3 &&
+        cstdtqIn7Years === 2 &&
+        nckh_lien_tuc >= cstdcs_lien_tuc;
       return eligible
-        ? { eligible: true, reason: 'Đủ điều kiện BKTTCP' }
-        : { eligible: false, reason: `Chưa đủ điều kiện BKTTCP: cần 7 năm CSTDCS + 3 lần BKBQP + 2 lần CSTDTQ + NCKH mỗi năm (hiện có ${cstdcs_lien_tuc} CSTDCS, ${bkbqp_lien_tuc} BKBQP, ${cstdtq_lien_tuc} CSTDTQ, ${nckh_lien_tuc} NCKH)` };
+        ? { eligible: true, reason: `Đủ điều kiện ${getDanhHieuName(danhHieu)}` }
+        : { eligible: false, reason: `Chưa đủ điều kiện ${getDanhHieuName(danhHieu)}: cần 7 năm CSTDCS + 3 BKBQP + 2 CSTDTQ + NCKH mỗi năm (hiện có ${cstdcs_lien_tuc} CSTDCS, ${bkbqpIn7Years} BKBQP, ${cstdtqIn7Years} CSTDTQ, ${nckh_lien_tuc} NCKH)` };
     }
 
     return { eligible: true, reason: '' };

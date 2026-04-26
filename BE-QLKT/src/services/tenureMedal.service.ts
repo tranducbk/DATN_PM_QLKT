@@ -536,7 +536,7 @@ class HCCSVVService {
           });
           results.push(result);
         }
-        return { imported: results.length };
+        return { imported: results.length, data: results };
       },
       { timeout: IMPORT_TRANSACTION_TIMEOUT }
     );
@@ -746,16 +746,17 @@ class HCCSVVService {
     }
 
     // Create the award
+    const createData = {
+      quan_nhan_id: quan_nhan_id as string,
+      danh_hieu: danh_hieu as string,
+      nam: nam as number,
+      cap_bac: (cap_bac ?? personnel.cap_bac) as string,
+      chuc_vu: chuc_vu as string,
+      so_quyet_dinh: so_quyet_dinh as string,
+      ghi_chu: ghi_chu as string,
+    };
     const createdRecord = await prisma.khenThuongHCCSVV.create({
-      data: {
-        quan_nhan_id,
-        danh_hieu,
-        nam,
-        cap_bac: cap_bac ?? personnel.cap_bac,
-        chuc_vu: chuc_vu,
-        so_quyet_dinh: so_quyet_dinh,
-        ghi_chu: ghi_chu,
-      },
+      data: createData as any,
       include: {
         QuanNhan: {
           select: {

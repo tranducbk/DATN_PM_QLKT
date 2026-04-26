@@ -25,12 +25,16 @@ import {
 import { getApiErrorMessage } from '@/lib/apiError';
 
 import {
+  AppstoreOutlined,
+  FlagOutlined,
+  SafetyCertificateOutlined,
+  SendOutlined,
+  StarOutlined,
   UploadOutlined,
   HomeOutlined,
   TrophyOutlined,
   TeamOutlined,
   ClockCircleOutlined,
-  HeartOutlined,
   ExperimentOutlined,
   CheckCircleOutlined,
   ArrowLeftOutlined,
@@ -140,23 +144,23 @@ export default function CreateProposalPage() {
       description: 'Danh hiệu ĐVTT, ĐVQT, BKBQP, BKTTCP',
     },
     [PROPOSAL_TYPES.NIEN_HAN]: {
-      icon: <ClockCircleOutlined />,
+      icon: <SafetyCertificateOutlined />,
       label: 'Huy chương Chiến sĩ vẻ vang',
       description: 'Danh hiệu Huy chương Chiến sĩ vẻ vang 3 hạng (Ba, Nhì, Nhất)',
     },
     [PROPOSAL_TYPES.HC_QKQT]: {
-      icon: <TrophyOutlined />,
+      icon: <FlagOutlined />,
       label: 'Huy chương Quân kỳ quyết thắng',
       description: 'Yêu cầu đủ 25 năm phục vụ trong QĐNDVN',
     },
     [PROPOSAL_TYPES.KNC_VSNXD_QDNDVN]: {
-      icon: <TrophyOutlined />,
+      icon: <StarOutlined />,
       label: 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
       description:
         'Yêu cầu đủ 25 năm phục vụ đối với nam và 20 năm phục vụ đối với nữ trong QĐNDVN',
     },
     [PROPOSAL_TYPES.CONG_HIEN]: {
-      icon: <HeartOutlined />,
+      icon: <SafetyCertificateOutlined />,
       label: 'Huân chương Bảo vệ Tổ quốc',
       description: 'Danh hiệu Huân chương Bảo vệ Tổ quốc 3 hạng (Ba, Nhì, Nhất)',
     },
@@ -172,11 +176,11 @@ export default function CreateProposalPage() {
     const step2Title =
       proposalType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? 'Chọn đơn vị' : 'Chọn quân nhân';
     return [
-      { title: 'Chọn loại', icon: <TrophyOutlined /> },
+      { title: 'Chọn loại', icon: <AppstoreOutlined /> },
       { title: step2Title, icon: <TeamOutlined /> },
       { title: 'Thêm danh hiệu', icon: <CheckCircleOutlined /> },
       { title: 'Upload file', icon: <UploadOutlined /> },
-      { title: 'Xem lại & Gửi', icon: <CheckCircleOutlined /> },
+      { title: 'Xem lại & Gửi', icon: <SendOutlined /> },
     ];
   };
   const steps = getSteps();

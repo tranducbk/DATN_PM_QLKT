@@ -192,10 +192,13 @@ model DanhHieuHangNam {
   so_quyet_dinh          String?  @db.VarChar(100) // Số quyết định danh hiệu
   nhan_bkbqp             Boolean  @default(false)
   so_quyet_dinh_bkbqp    String?  @db.VarChar(100)
+  ghi_chu_bkbqp          String?  @db.Text
   nhan_cstdtq            Boolean  @default(false)
   so_quyet_dinh_cstdtq   String?  @db.VarChar(100)
+  ghi_chu_cstdtq         String?  @db.Text
   nhan_bkttcp            Boolean  @default(false)
   so_quyet_dinh_bkttcp   String?  @db.VarChar(100)
+  ghi_chu_bkttcp         String?  @db.Text
   createdAt              DateTime @default(now()) @db.Timestamp(0)
   updatedAt              DateTime @updatedAt @db.Timestamp(0)
 
@@ -516,8 +519,10 @@ model DanhHieuDonViHangNam {
   so_quyet_dinh           String?  @db.VarChar(100)
   nhan_bkbqp              Boolean  @default(false)
   so_quyet_dinh_bkbqp     String?  @db.VarChar(100)
+  ghi_chu_bkbqp           String?  @db.Text
   nhan_bkttcp             Boolean  @default(false)
   so_quyet_dinh_bkttcp    String?  @db.VarChar(100)
+  ghi_chu_bkttcp          String?  @db.Text
   status                  String    @default("PENDING") @db.VarChar(20)
   nguoi_tao_id            String    @db.VarChar(30)
   nguoi_duyet_id          String?   @db.VarChar(30)

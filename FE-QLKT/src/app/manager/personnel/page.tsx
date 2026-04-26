@@ -246,9 +246,8 @@ export default function ManagerPersonnelPage() {
   const uniquePositions = uniquePositionIds.size;
   const statTextColor = theme === 'dark' ? '#e5e7eb' : '#0f172a';
   const statSubTextColor = theme === 'dark' ? '#cbd5e1' : '#475569';
-  const iconBgBlue = theme === 'dark' ? '#1e3a8a' : '#e6f0ff';
-  const iconBgGreen = theme === 'dark' ? '#0b3d2e' : '#e8f5e9';
-  const iconBgPurple = theme === 'dark' ? '#3b0764' : '#f3e8ff';
+  const iconContainerBg = theme === 'dark' ? 'rgba(148, 163, 184, 0.14)' : '#f1f5f9';
+  const iconColor = theme === 'dark' ? '#cbd5e1' : '#475569';
   const iconShadow =
     theme === 'dark' ? '0 1px 3px rgba(0, 0, 0, 0.45)' : '0 1px 3px rgba(0, 0, 0, 0.05)';
   const cardShadow =
@@ -310,6 +309,7 @@ export default function ManagerPersonnelPage() {
             gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
             gap: '16px',
             marginBottom: '24px',
+            alignItems: 'stretch',
           }}
         >
           <Card
@@ -318,16 +318,17 @@ export default function ManagerPersonnelPage() {
               borderRadius: '10px',
               boxShadow: cardShadow,
               transition: 'all 0.3s ease',
+              height: '100%',
             }}
-            styles={{ body: { padding: '20px' } }}
+            styles={{ body: { padding: '20px', height: '100%' } }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', minHeight: 84 }}>
               <div
                 style={{
                   width: '56px',
                   height: '56px',
                   borderRadius: '12px',
-                  background: iconBgBlue,
+                  background: iconContainerBg,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -337,7 +338,7 @@ export default function ManagerPersonnelPage() {
                 <UserOutlined
                   style={{
                     fontSize: '26px',
-                    color: theme === 'dark' ? '#93c5fd' : '#1d4ed8',
+                    color: iconColor,
                   }}
                 />
               </div>
@@ -374,16 +375,17 @@ export default function ManagerPersonnelPage() {
               borderRadius: '10px',
               boxShadow: cardShadow,
               transition: 'all 0.3s ease',
+              height: '100%',
             }}
-            styles={{ body: { padding: '20px' } }}
+            styles={{ body: { padding: '20px', height: '100%' } }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', minHeight: 84 }}>
               <div
                 style={{
                   width: '56px',
                   height: '56px',
                   borderRadius: '12px',
-                  background: iconBgGreen,
+                  background: iconContainerBg,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -393,7 +395,7 @@ export default function ManagerPersonnelPage() {
                 <ApartmentOutlined
                   style={{
                     fontSize: '26px',
-                    color: theme === 'dark' ? '#6ee7b7' : '#0f9d58',
+                    color: iconColor,
                   }}
                 />
               </div>
@@ -423,16 +425,17 @@ export default function ManagerPersonnelPage() {
               borderRadius: '10px',
               boxShadow: cardShadow,
               transition: 'all 0.3s ease',
+              height: '100%',
             }}
-            styles={{ body: { padding: '20px' } }}
+            styles={{ body: { padding: '20px', height: '100%' } }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', minHeight: 84 }}>
               <div
                 style={{
                   width: '56px',
                   height: '56px',
                   borderRadius: '12px',
-                  background: iconBgPurple,
+                  background: iconContainerBg,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -442,7 +445,7 @@ export default function ManagerPersonnelPage() {
                 <SafetyCertificateOutlined
                   style={{
                     fontSize: '26px',
-                    color: theme === 'dark' ? '#c4b5fd' : '#7c3aed',
+                    color: iconColor,
                   }}
                 />
               </div>

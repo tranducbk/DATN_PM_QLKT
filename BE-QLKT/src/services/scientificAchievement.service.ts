@@ -593,7 +593,7 @@ class ScientificAchievementService {
           });
           results.push(result);
         }
-        return { imported: results.length };
+        return { imported: results.length, data: results };
       },
       { timeout: IMPORT_TRANSACTION_TIMEOUT }
     );
