@@ -147,10 +147,11 @@ const AWARD_TYPE_CONFIG: Record<
 
 export default function ManagerAwardsPage() {
   const [activeTab, setActiveTab] = useState<AwardType>('CNHN');
-  const [awards, setAwards] = useState<Award[]>([]);
+  const [awardsByTab, setAwardsByTab] = useState<Partial<Record<AwardType, Award[]>>>({});
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<AwardFilters>(INITIAL_FILTERS);
   const [debouncedFilters, setDebouncedFilters] = useState(filters);
+  const awards = awardsByTab[activeTab] ?? [];
 
   useEffect(() => {
     fetchAwards();
@@ -167,6 +168,11 @@ export default function ManagerAwardsPage() {
 
   const fetchAwards = async () => {
     try {
+      const cachedData = awardsByTab[activeTab];
+      if (cachedData) {
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       const params: any = { limit: FETCH_ALL_LIMIT };
 
@@ -177,7 +183,7 @@ export default function ManagerAwardsPage() {
         message.error(result.message || 'Không thể tải danh sách khen thưởng');
         return;
       }
-      setAwards(result.data ?? []);
+      setAwardsByTab(prev => ({ ...prev, [activeTab]: result.data ?? [] }));
     } catch {
       message.error('Không thể tải danh sách khen thưởng');
     } finally {
@@ -322,7 +328,7 @@ export default function ManagerAwardsPage() {
     {
       title: 'Ngày sinh',
       key: 'ngay_sinh',
-      width: 120,
+      width: 110,
       align: 'center',
       render: (_: unknown, record: AwardRow) => {
         const { ngaySinh } = resolvePersonnelDisplay(record);
@@ -332,7 +338,7 @@ export default function ManagerAwardsPage() {
     {
       title: 'Cấp bậc / Chức vụ',
       key: 'cap_bac_chuc_vu',
-      width: 150,
+      width: 140,
       align: 'center',
       render: (_: unknown, record: AwardRow) => {
         const capBac = record.cap_bac;
@@ -403,7 +409,7 @@ export default function ManagerAwardsPage() {
             : 'Danh hiệu',
       dataIndex: activeTab === 'NCKH' ? 'mo_ta' : 'danh_hieu',
       key: activeTab === 'NCKH' ? 'mo_ta' : 'danh_hieu',
-      width: 220,
+      width: 300,
       align: 'center',
       render: (text: string | null, record: AwardRow) => {
         // Scientific achievements
@@ -513,35 +519,30 @@ export default function ManagerAwardsPage() {
           {
             key: 'CNHN',
             label: 'Khen thưởng cá nhân hằng năm',
-            children: renderAwardContent(),
           },
           {
             key: 'HCCSVV',
             label: 'Huy chương Chiến sĩ vẻ vang',
-            children: renderAwardContent(),
           },
           {
             key: 'HCBVTQ',
             label: 'Huân chương Bảo vệ Tổ quốc',
-            children: renderAwardContent(),
           },
           {
             key: 'KNC_VSNXD_QDNDVN',
             label: 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
-            children: renderAwardContent(),
           },
           {
             key: 'HCQKQT',
             label: 'Huy chương Quân kỳ quyết thắng',
-            children: renderAwardContent(),
           },
           {
             key: 'NCKH',
             label: 'Thành tích Nghiên cứu khoa học',
-            children: renderAwardContent(),
           },
         ]}
       />
+      {renderAwardContent()}
     </div>
   );
 

@@ -1,20 +1,25 @@
 import { prisma } from '../models';
 import ExcelJS from 'exceljs';
 import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHelper';
-import { checkDuplicateAward } from '../helpers/awardValidation';
 import profileService from './profile.service';
 import * as notificationHelper from '../helpers/notification';
-import { getDanhHieuName, formatDanhHieuList, resolveDanhHieuCode, buildDanhHieuExcelOptions, DANH_HIEU_HCBVTQ, CONG_HIEN_BASE_REQUIRED_MONTHS, CONG_HIEN_FEMALE_REQUIRED_MONTHS } from '../constants/danhHieu.constants';
-import { ROLES } from '../constants/roles.constants';
+import { getDanhHieuName, formatDanhHieuList, resolveDanhHieuCode, DANH_HIEU_HCBVTQ, CONG_HIEN_BASE_REQUIRED_MONTHS, CONG_HIEN_FEMALE_REQUIRED_MONTHS } from '../constants/danhHieu.constants';
 import { ValidationError, NotFoundError } from '../middlewares/errorHandler';
 import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys, sanitizeRowData, validatePersonnelNameMatch } from '../helpers/excelHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
-import { buildTemplate, TemplateColumn, styleHeaderRow } from '../helpers/excelTemplateHelper';
+import { buildTemplate, styleHeaderRow } from '../helpers/excelTemplateHelper';
 import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { GENDER } from '../constants/gender.constants';
 import { calculateTenureMonthsWithDayPrecision } from '../helpers/serviceYearsHelper';
+import { validateHCBVTQHighestRank, type PositionMonthsByGroup } from '../helpers/hcbvtqHighestRankValidation';
+import { CONG_HIEN_HE_SO_GROUPS } from '../constants/danhHieu.constants';
+import {
+  AWARD_EXCEL_SHEETS,
+  HCBVTQ_TEMPLATE_COLUMNS,
+  HCBVTQ_TEMPLATE_OPTIONS,
+} from '../constants/awardExcel.constants';
 
 interface ContributionAwardValidItem {
   row: number;
@@ -37,28 +42,13 @@ class ContributionAwardService {
    * @param {string} userRole
    */
   async exportTemplate(personnelIds: string[] = [], repeatMap: Record<string, number> = {}) {
-    const columns: TemplateColumn[] = [
-      { header: 'STT', key: 'stt', width: 6 },
-      { header: 'ID', key: 'id', width: 10 },
-      { header: 'Họ và tên', key: 'ho_ten', width: 25 },
-      { header: 'Ngày sinh', key: 'ngay_sinh', width: 14 },
-      { header: 'Cơ quan đơn vị', key: 'co_quan_don_vi', width: 20 },
-      { header: 'Đơn vị trực thuộc', key: 'don_vi_truc_thuoc', width: 20 },
-      { header: 'Cấp bậc', key: 'cap_bac', width: 15 },
-      { header: 'Chức vụ', key: 'chuc_vu', width: 20 },
-      { header: 'Năm (*)', key: 'nam', width: 10 },
-      { header: 'Danh hiệu (*)', key: 'danh_hieu', width: 25 },
-      { header: 'Số quyết định', key: 'so_quyet_dinh', width: 20 },
-      { header: 'Ghi chú', key: 'ghi_chu', width: 25 },
-    ];
-
     return buildTemplate({
-      sheetName: 'HCBVTQ',
-      columns,
+      sheetName: AWARD_EXCEL_SHEETS.HCBVTQ,
+      columns: HCBVTQ_TEMPLATE_COLUMNS,
       personnelIds,
       repeatMap,
       loaiKhenThuong: PROPOSAL_TYPES.CONG_HIEN,
-      danhHieuOptions: buildDanhHieuExcelOptions(Object.values(DANH_HIEU_HCBVTQ)),
+      danhHieuOptions: HCBVTQ_TEMPLATE_OPTIONS,
       editableColumnLetters: ['J', 'K'],
     });
   }
@@ -69,7 +59,9 @@ class ContributionAwardService {
    */
   async previewImport(buffer: Buffer) {
     const workbook = await loadWorkbook(buffer);
-    const worksheet = getAndValidateWorksheet(workbook, { sheetName: 'HCBVTQ' });
+    const worksheet = getAndValidateWorksheet(workbook, {
+      sheetName: AWARD_EXCEL_SHEETS.HCBVTQ,
+    });
 
     // Header map
     const headerMap = parseHeaderMap(worksheet);
@@ -328,14 +320,14 @@ class ContributionAwardService {
       const positionHistories = positionHistoriesMap.get(personnelId) ?? [];
 
       const today = new Date();
-      const getTotalMonths = group => {
+      const getTotalMonths = (group: string) => {
         let total = 0;
         positionHistories.forEach(h => {
           const heSo = Number(h.ChucVu?.he_so_chuc_vu) || 0;
           let match = false;
-          if (group === '0.7') match = heSo >= 0.7 && heSo < 0.8;
-          else if (group === '0.8') match = heSo >= 0.8 && heSo < 0.9;
-          else if (group === '0.9-1.0') match = heSo >= 0.9 && heSo <= 1.0;
+          if (group === CONG_HIEN_HE_SO_GROUPS.LEVEL_07) match = heSo >= 0.7 && heSo < 0.8;
+          else if (group === CONG_HIEN_HE_SO_GROUPS.LEVEL_08) match = heSo >= 0.8 && heSo < 0.9;
+          else if (group === CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10) match = heSo >= 0.9 && heSo <= 1.0;
           if (!match) return;
 
           let months = h.so_thang;
@@ -348,9 +340,9 @@ class ContributionAwardService {
         return total;
       };
 
-      const months0_7 = getTotalMonths('0.7');
-      const months0_8 = getTotalMonths('0.8');
-      const months0_9_1_0 = getTotalMonths('0.9-1.0');
+      const months0_7 = getTotalMonths(CONG_HIEN_HE_SO_GROUPS.LEVEL_07);
+      const months0_8 = getTotalMonths(CONG_HIEN_HE_SO_GROUPS.LEVEL_08);
+      const months0_9_1_0 = getTotalMonths(CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10);
 
       const isFemale = personnel.gioi_tinh === GENDER.FEMALE;
       const baseMonths = isFemale ? CONG_HIEN_FEMALE_REQUIRED_MONTHS : CONG_HIEN_BASE_REQUIRED_MONTHS;
@@ -372,6 +364,24 @@ class ContributionAwardService {
           nam,
           danh_hieu,
           message: `Chưa đủ thời gian giữ chức vụ cho ${getDanhHieuName(danh_hieu)} (cần ${baseMonths} tháng, hiện có: ${totalDisplay})`,
+        });
+        continue;
+      }
+
+      // Reject rank lower than highest qualifying for the personnel.
+      const monthsByGroup: PositionMonthsByGroup = {
+        [CONG_HIEN_HE_SO_GROUPS.LEVEL_07]: months0_7,
+        [CONG_HIEN_HE_SO_GROUPS.LEVEL_08]: months0_8,
+        [CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10]: months0_9_1_0,
+      };
+      const downgradeError = validateHCBVTQHighestRank(danh_hieu, monthsByGroup, baseMonths);
+      if (downgradeError) {
+        errors.push({
+          row: rowNumber,
+          ho_ten,
+          nam,
+          danh_hieu,
+          message: downgradeError,
         });
         continue;
       }
@@ -456,6 +466,60 @@ class ContributionAwardService {
     }
     if (conflicts.length > 0) {
       throw new ValidationError(conflicts.join('; '));
+    }
+
+    const [personnelInfos, positionRows] = await Promise.all([
+      prisma.quanNhan.findMany({
+        where: { id: { in: personnelIds } },
+        select: { id: true, gioi_tinh: true },
+      }),
+      prisma.lichSuChucVu.findMany({
+        where: { quan_nhan_id: { in: personnelIds } },
+        include: { ChucVu: { select: { he_so_chuc_vu: true } } },
+      }),
+    ]);
+    const genderMap = new Map(personnelInfos.map(p => [p.id, p.gioi_tinh]));
+    const positionsMap = new Map<string, typeof positionRows>();
+    for (const h of positionRows) {
+      const list = positionsMap.get(h.quan_nhan_id) ?? [];
+      list.push(h);
+      positionsMap.set(h.quan_nhan_id, list);
+    }
+    const today = new Date();
+    const getMonths = (personnelId: string, group: string): number => {
+      const histories = positionsMap.get(personnelId) ?? [];
+      let total = 0;
+      histories.forEach(h => {
+        const heSo = Number(h.ChucVu?.he_so_chuc_vu) || 0;
+        let match = false;
+        if (group === CONG_HIEN_HE_SO_GROUPS.LEVEL_07) match = heSo >= 0.7 && heSo < 0.8;
+        else if (group === CONG_HIEN_HE_SO_GROUPS.LEVEL_08) match = heSo >= 0.8 && heSo < 0.9;
+        else if (group === CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10) match = heSo >= 0.9 && heSo <= 1.0;
+        if (!match) return;
+        let months = h.so_thang;
+        if ((months === null || months === undefined) && h.ngay_bat_dau && !h.ngay_ket_thuc) {
+          months = calculateTenureMonthsWithDayPrecision(new Date(h.ngay_bat_dau), today);
+        }
+        if (months) total += Number(months);
+      });
+      return total;
+    };
+    const downgradeErrors: string[] = [];
+    for (const item of validItems) {
+      const months: PositionMonthsByGroup = {
+        [CONG_HIEN_HE_SO_GROUPS.LEVEL_07]: getMonths(item.personnel_id, CONG_HIEN_HE_SO_GROUPS.LEVEL_07),
+        [CONG_HIEN_HE_SO_GROUPS.LEVEL_08]: getMonths(item.personnel_id, CONG_HIEN_HE_SO_GROUPS.LEVEL_08),
+        [CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10]: getMonths(item.personnel_id, CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10),
+      };
+      const isFemale = genderMap.get(item.personnel_id) === GENDER.FEMALE;
+      const requiredMonths = isFemale ? CONG_HIEN_FEMALE_REQUIRED_MONTHS : CONG_HIEN_BASE_REQUIRED_MONTHS;
+      const downgradeError = validateHCBVTQHighestRank(item.danh_hieu, months, requiredMonths);
+      if (downgradeError) {
+        downgradeErrors.push(`${item.ho_ten}: ${downgradeError}`);
+      }
+    }
+    if (downgradeErrors.length > 0) {
+      throw new ValidationError(downgradeErrors.join('; '));
     }
 
     return await prisma.$transaction(
@@ -570,11 +634,11 @@ class ContributionAwardService {
   /**
    * Export Contribution Awards to Excel
    */
-  async exportToExcel(filters: Record<string, any> = {}) {
+  async exportToExcel(filters: Record<string, unknown> = {}) {
     const { data } = await this.getAll(filters, 1, 10000);
 
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('HCBVTQ');
+    const worksheet = workbook.addWorksheet(AWARD_EXCEL_SHEETS.HCBVTQ);
 
     worksheet.columns = [
       { header: 'STT', key: 'stt', width: 6 },
@@ -711,7 +775,7 @@ class ContributionAwardService {
     try {
       await profileService.recalculateContributionProfile(personnelId);
     } catch (recalcError) {
-      writeSystemLog({
+      void writeSystemLog({
         action: 'ERROR',
         resource: 'contribution-medals',
         resourceId: id,
@@ -722,7 +786,7 @@ class ContributionAwardService {
     try {
       await notificationHelper.notifyOnAwardDeleted(award, personnel, 'HCBVTQ', adminUsername);
     } catch (notifyError) {
-      writeSystemLog({
+      void writeSystemLog({
         action: 'ERROR',
         resource: 'contribution-medals',
         resourceId: id,

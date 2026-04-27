@@ -197,7 +197,9 @@ class UnitAnnualAwardController {
 
   remove = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as IdParams;
-    await service.remove(String(params.id));
+    const query = req.query as { awardType?: string };
+    const awardType = typeof query.awardType === 'string' ? query.awardType.trim() || null : null;
+    await service.remove(String(params.id), awardType);
     return ResponseHelper.success(res, { data: true, message: 'Đã xóa bản ghi' });
   });
 

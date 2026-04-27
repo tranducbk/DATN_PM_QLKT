@@ -17,17 +17,15 @@ import {
   Spin,
 } from 'antd';
 import {
-  AuditOutlined,
-  FileDoneOutlined,
-  FileSearchOutlined,
-  FileTextOutlined,
   TeamOutlined,
+  FileTextOutlined,
+  StarOutlined,
   TrophyOutlined,
   PlusOutlined,
   CheckCircleOutlined,
   HomeOutlined,
   UserOutlined,
-  SafetyCertificateOutlined,
+  SafetyOutlined,
   ClockCircleOutlined,
   LockOutlined,
 } from '@ant-design/icons';
@@ -46,6 +44,18 @@ import { ROLE_LABELS, ROLE_COLORS } from '@/constants/roles.constants';
 import { DANH_HIEU_MAP, THANH_TICH_KHOA_HOC_SHORT_LABELS } from '@/constants/danhHieu.constants';
 
 const { Title, Text } = Typography;
+
+interface CountByKey {
+  count: number;
+}
+interface AwardByType extends CountByKey { type: string; }
+interface ProposalByStatus extends CountByKey { status: string; }
+interface ProposalByType extends CountByKey { type: string; }
+interface AchievementByType extends CountByKey { type: string; }
+interface AwardByMonth extends CountByKey { month: string; }
+interface AchievementByMonth extends CountByKey { month: string; }
+interface PersonnelByRank extends CountByKey { rank: string; }
+interface PersonnelByPosition extends CountByKey { positionName: string; }
 
 const chartLoading = () => (
   <div className="flex min-h-[220px] items-center justify-center py-6">
@@ -163,44 +173,44 @@ export default function ManagerDashboard() {
       title: 'Quân số Đơn vị',
       value: stats.totalPersonnel,
       icon: TeamOutlined,
-      iconColor: theme === 'dark' ? 'text-slate-300' : 'text-slate-600',
+      iconColor: theme === 'dark' ? 'text-blue-400' : 'text-blue-600',
       bgColor:
         theme === 'dark'
-          ? 'bg-slate-700/40'
-          : 'bg-slate-100',
+          ? 'bg-gradient-to-br from-blue-900/30 to-blue-800/20'
+          : 'bg-gradient-to-br from-blue-50 to-blue-100',
       link: '/manager/personnel',
     },
     {
       title: 'Tổng CSTDCS',
       value: stats.totalCSTDCS,
-      icon: FileDoneOutlined,
-      iconColor: theme === 'dark' ? 'text-slate-300' : 'text-slate-600',
+      icon: FileTextOutlined,
+      iconColor: theme === 'dark' ? 'text-green-400' : 'text-green-600',
       bgColor:
         theme === 'dark'
-          ? 'bg-slate-700/40'
-          : 'bg-slate-100',
+          ? 'bg-gradient-to-br from-green-900/30 to-green-800/20'
+          : 'bg-gradient-to-br from-green-50 to-green-100',
       link: '#',
     },
     {
       title: 'Tổng NCKH',
       value: stats.totalNCKH,
-      icon: FileSearchOutlined,
-      iconColor: theme === 'dark' ? 'text-slate-300' : 'text-slate-600',
+      icon: StarOutlined,
+      iconColor: theme === 'dark' ? 'text-yellow-400' : 'text-yellow-600',
       bgColor:
         theme === 'dark'
-          ? 'bg-slate-700/40'
-          : 'bg-slate-100',
+          ? 'bg-gradient-to-br from-yellow-900/30 to-yellow-800/20'
+          : 'bg-gradient-to-br from-yellow-50 to-yellow-100',
       link: '#',
     },
     {
       title: 'Khen thưởng',
       value: stats.totalAwards,
-      icon: AuditOutlined,
-      iconColor: theme === 'dark' ? 'text-slate-300' : 'text-slate-600',
+      icon: TrophyOutlined,
+      iconColor: theme === 'dark' ? 'text-purple-400' : 'text-purple-600',
       bgColor:
         theme === 'dark'
-          ? 'bg-slate-700/40'
-          : 'bg-slate-100',
+          ? 'bg-gradient-to-br from-purple-900/30 to-purple-800/20'
+          : 'bg-gradient-to-br from-purple-50 to-purple-100',
       link: '/manager/awards',
     },
   ];
@@ -230,7 +240,7 @@ export default function ManagerDashboard() {
         <div className="mb-2">
           <Title
             level={2}
-            className="!mb-3 !text-4xl"
+            className="!mb-3 !text-4xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent dark:from-blue-400 dark:to-purple-400"
           >
             Xin chào, {displayName}
           </Title>
@@ -265,7 +275,6 @@ export default function ManagerDashboard() {
               gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
               gap: '16px',
               marginBottom: '24px',
-              alignItems: 'stretch',
             }}
           >
             {statCards.map((stat, index) => {
@@ -276,32 +285,69 @@ export default function ManagerDashboard() {
                 theme === 'dark'
                   ? '0 1px 6px rgba(0, 0, 0, 0.35)'
                   : '0 1px 4px rgba(0, 0, 0, 0.06)';
+              const iconShadows = {
+                blue:
+                  theme === 'dark'
+                    ? '0 1px 3px rgba(59, 130, 246, 0.3)'
+                    : '0 1px 3px rgba(59, 130, 246, 0.2)',
+                green:
+                  theme === 'dark'
+                    ? '0 1px 3px rgba(16, 185, 129, 0.3)'
+                    : '0 1px 3px rgba(16, 185, 129, 0.2)',
+                yellow:
+                  theme === 'dark'
+                    ? '0 1px 3px rgba(234, 179, 8, 0.3)'
+                    : '0 1px 3px rgba(234, 179, 8, 0.2)',
+                purple:
+                  theme === 'dark'
+                    ? '0 1px 3px rgba(139, 92, 246, 0.3)'
+                    : '0 1px 3px rgba(139, 92, 246, 0.2)',
+              };
+              const iconBgs = {
+                blue: theme === 'dark' ? '#1e3a8a' : '#e6f0ff',
+                green: theme === 'dark' ? '#0b3d2e' : '#e8f5e9',
+                yellow: theme === 'dark' ? '#78350f' : '#fef9c3',
+                purple: theme === 'dark' ? '#3b0764' : '#f3e8ff',
+              };
+              const iconColors = {
+                blue: theme === 'dark' ? '#60a5fa' : '#2563eb',
+                green: theme === 'dark' ? '#34d399' : '#059669',
+                yellow: theme === 'dark' ? '#fbbf24' : '#d97706',
+                purple: theme === 'dark' ? '#a78bfa' : '#7c3aed',
+              };
+              const iconKeys = ['blue', 'green', 'yellow', 'purple'];
+              const iconKey = iconKeys[index] || 'blue';
 
               return (
-                <Link key={index} href={stat.link} style={{ display: 'block', height: '100%' }}>
+                <Link key={index} href={stat.link}>
                   <Card
                     hoverable
                     style={{
                       borderRadius: '10px',
                       boxShadow: cardShadow,
                       transition: 'all 0.3s ease',
-                      height: '100%',
                     }}
-                    styles={{ body: { padding: '20px', height: '100%' } }}
+                    styles={{ body: { padding: '20px' } }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', minHeight: 84 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                       <div
                         style={{
                           width: '56px',
                           height: '56px',
                           borderRadius: '12px',
-                          background: theme === 'dark' ? 'rgba(148, 163, 184, 0.14)' : '#f1f5f9',
+                          background: iconBgs[iconKey as keyof typeof iconBgs],
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
+                          boxShadow: iconShadows[iconKey as keyof typeof iconShadows],
                         }}
                       >
-                        <Icon className={stat.iconColor} style={{ fontSize: '26px' }} />
+                        <Icon
+                          style={{
+                            fontSize: '26px',
+                            color: iconColors[iconKey as keyof typeof iconColors],
+                          }}
+                        />
                       </div>
                       <div style={{ flex: 1 }}>
                         <Text
@@ -341,7 +387,7 @@ export default function ManagerDashboard() {
             <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
               <Col xs={24} lg={8}>
                 <PieChart
-                  data={chartData.awardsByType.map((item: any) => ({
+                  data={chartData.awardsByType.map((item: AwardByType) => ({
                     label: DANH_HIEU_MAP[item.type] || item.type,
                     value: item.count,
                   }))}
@@ -350,7 +396,7 @@ export default function ManagerDashboard() {
               </Col>
               <Col xs={24} lg={8}>
                 <PieChart
-                  data={chartData.proposalsByStatus.map((item: any) => ({
+                  data={chartData.proposalsByStatus.map((item: ProposalByStatus) => ({
                     label: PROPOSAL_STATUS_LABELS[item.status] || item.status,
                     value: item.count,
                   }))}
@@ -364,7 +410,7 @@ export default function ManagerDashboard() {
               </Col>
               <Col xs={24} lg={8}>
                 <ActionBarChart
-                  data={chartData.proposalsByType.map((item: any) => ({
+                  data={chartData.proposalsByType.map((item: ProposalByType) => ({
                     action: item.type,
                     count: item.count,
                   }))}
@@ -381,7 +427,7 @@ export default function ManagerDashboard() {
             <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
               <Col xs={24} lg={8}>
                 <PieChart
-                  data={chartData.scientificAchievementsByType.map((item: any) => ({
+                  data={chartData.scientificAchievementsByType.map((item: AchievementByType) => ({
                     label: THANH_TICH_KHOA_HOC_SHORT_LABELS[item.type] || item.type,
                     value: item.count,
                   }))}
@@ -391,7 +437,7 @@ export default function ManagerDashboard() {
               </Col>
               <Col xs={24} lg={8}>
                 <ActivityLineChart
-                  data={chartData.awardsByMonth.map((item: any) => ({
+                  data={chartData.awardsByMonth.map((item: AwardByMonth) => ({
                     date: item.month,
                     count: item.count,
                   }))}
@@ -402,7 +448,7 @@ export default function ManagerDashboard() {
               </Col>
               <Col xs={24} lg={8}>
                 <ActivityLineChart
-                  data={chartData.scientificAchievementsByMonth.map((item: any) => ({
+                  data={chartData.scientificAchievementsByMonth.map((item: AchievementByMonth) => ({
                     date: item.month,
                     count: item.count,
                   }))}
@@ -416,7 +462,7 @@ export default function ManagerDashboard() {
             <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
               <Col xs={24} lg={12}>
                 <ActionBarChart
-                  data={chartData.personnelByRank.map((item: any) => ({
+                  data={chartData.personnelByRank.map((item: PersonnelByRank) => ({
                     action: item.rank,
                     count: item.count,
                   }))}
@@ -427,7 +473,7 @@ export default function ManagerDashboard() {
               </Col>
               <Col xs={24} lg={12}>
                 <ActionBarChart
-                  data={chartData.personnelByPosition.map((item: any) => ({
+                  data={chartData.personnelByPosition.map((item: PersonnelByPosition) => ({
                     action: item.positionName,
                     count: item.count,
                   }))}
@@ -443,41 +489,41 @@ export default function ManagerDashboard() {
               title={<span className="text-lg font-semibold">Lối tắt</span>}
               className="shadow-lg"
             >
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Link href="/manager/personnel">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
+                <Link href="/manager/personnel" className="block h-full">
                   <Button
                     type="primary"
                     icon={<TeamOutlined />}
                     size="large"
-                    className="w-full h-auto py-4 text-base font-medium hover:scale-105 transition-transform whitespace-normal break-words"
+                    className="w-full h-full min-h-[84px] py-4 text-base font-medium hover:scale-105 transition-transform whitespace-normal break-words"
                   >
                     Xem danh sách Quân nhân
                   </Button>
                 </Link>
-                <Link href="/manager/proposals/create">
+                <Link href="/manager/proposals/create" className="block h-full">
                   <Button
                     icon={<PlusOutlined />}
                     size="large"
-                    className="w-full h-auto py-4 text-base font-medium hover:scale-105 transition-transform whitespace-normal break-words"
+                    className="w-full h-full min-h-[84px] py-4 text-base font-medium hover:scale-105 transition-transform whitespace-normal break-words"
                   >
                     Tạo đề xuất
                   </Button>
                 </Link>
-                <Link href="/manager/awards">
+                <Link href="/manager/awards" className="block h-full">
                   <Button
                     icon={<TrophyOutlined />}
                     size="large"
-                    className="w-full h-auto py-4 text-base font-medium hover:scale-105 transition-transform whitespace-normal break-words"
+                    className="w-full h-full min-h-[84px] py-4 text-base font-medium hover:scale-105 transition-transform whitespace-normal break-words"
                   >
                     Khen thưởng đơn vị
                   </Button>
                 </Link>
-                <Link href="/manager/profiles/annual">
+                <Link href="/manager/profiles/annual" className="block h-full">
                   <Button
                     icon={<FileTextOutlined />}
                     size="large"
                     type="dashed"
-                    className="w-full h-auto py-4 text-base font-medium hover:scale-105 transition-transform border-2 hover:border-blue-500 whitespace-normal break-words"
+                    className="w-full h-full min-h-[84px] py-4 text-base font-medium hover:scale-105 transition-transform border-2 hover:border-blue-500 whitespace-normal break-words"
                   >
                     Hồ sơ khen thưởng hằng năm
                   </Button>
@@ -490,7 +536,7 @@ export default function ManagerDashboard() {
               <Card
                 title={
                   <Space>
-                    <SafetyCertificateOutlined style={{ color: '#3b82f6' }} />
+                    <SafetyOutlined style={{ color: '#3b82f6' }} />
                     <span className="font-semibold">Thông tin hệ thống</span>
                   </Space>
                 }

@@ -13,8 +13,16 @@ interface YearQuery {
   year?: string;
 }
 
+interface CheckEligibilityItem {
+  type?: string;
+  personnel_id?: string;
+  don_vi_id?: string;
+  nam: number;
+  danh_hieu: string;
+}
+
 interface CheckEligibilityBody {
-  items?: Array<Record<string, unknown>>;
+  items?: CheckEligibilityItem[];
 }
 
 interface UpdateTenureProfileBody {
@@ -84,7 +92,7 @@ class ProfileController {
     }
     const results = [];
     for (const item of items) {
-      let result: Record<string, unknown>;
+      let result: { eligible: boolean; reason: string };
       if (item.type === 'DON_VI' && item.don_vi_id) {
         result = await unitAnnualAwardService.checkUnitAwardEligibility(
           item.don_vi_id,

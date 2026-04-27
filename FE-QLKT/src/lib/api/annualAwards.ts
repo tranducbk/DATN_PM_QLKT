@@ -120,9 +120,12 @@ export async function updateAnnualReward(
   }
 }
 
-export async function deleteAnnualReward(id: string): Promise<ApiResponse> {
+export async function deleteAnnualReward(id: string, awardType?: string): Promise<ApiResponse> {
   try {
-    const res = await axiosInstance.delete(`/api/annual-rewards/${id}`);
+    const url = awardType
+      ? `/api/annual-rewards/${id}?awardType=${encodeURIComponent(awardType)}`
+      : `/api/annual-rewards/${id}`;
+    const res = await axiosInstance.delete(url);
     return { success: res.data?.success, data: res.data?.data };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };

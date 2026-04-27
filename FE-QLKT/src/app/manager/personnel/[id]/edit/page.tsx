@@ -25,6 +25,7 @@ import dayjs from 'dayjs';
 import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
 import { ROLES } from '@/constants/roles.constants';
 import { VietnamAddressCascader } from '@/components/VietnamAddressCascader';
+import type { ManagerPositionRow } from '@/lib/types/personnelList';
 
 const { Title } = Typography;
 
@@ -208,23 +209,23 @@ export default function ManagerPersonnelEditPage() {
       return positions;
     }
 
-    let filtered: any[] = [];
+    let filtered: ManagerPositionRow[] = [];
 
     if (isManagerPersonnel) {
       if (selectedCoQuanDonViId) {
-        filtered = positions.filter((p: any) => p.co_quan_don_vi_id === selectedCoQuanDonViId);
+        filtered = positions.filter((p: ManagerPositionRow) => p.co_quan_don_vi_id === selectedCoQuanDonViId);
       }
     } else {
       if (selectedDonViTrucThuocId) {
         filtered = positions.filter(
-          (p: any) => p.don_vi_truc_thuoc_id === selectedDonViTrucThuocId
+          (p: ManagerPositionRow) => p.don_vi_truc_thuoc_id === selectedDonViTrucThuocId
         );
       }
     }
 
     // Always include the currently assigned position even if it no longer matches the filter
-    if (currentPositionId && !filtered.find((p: any) => p.id === currentPositionId)) {
-      const currentPosition = positions.find((p: any) => p.id === currentPositionId);
+    if (currentPositionId && !filtered.find((p: ManagerPositionRow) => p.id === currentPositionId)) {
+      const currentPosition = positions.find((p: ManagerPositionRow) => p.id === currentPositionId);
       if (currentPosition) {
         filtered = [currentPosition, ...filtered];
       }
@@ -578,7 +579,7 @@ export default function ManagerPersonnelEditPage() {
                           setCurrentPositionId(value);
                         }}
                       >
-                        {filteredPositions.map((pos: any) => (
+                        {filteredPositions.map((pos: ManagerPositionRow) => (
                           <Select.Option key={pos.id} value={pos.id}>
                             {pos.ten_chuc_vu}
                           </Select.Option>

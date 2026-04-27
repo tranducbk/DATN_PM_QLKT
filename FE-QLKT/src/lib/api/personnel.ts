@@ -165,36 +165,3 @@ export async function exportPersonnel(): Promise<Blob> {
   }
 }
 
-/**
- * exportPersonnelSample API wrapper.
- * @returns API response payload
- */
-export async function exportPersonnelSample(): Promise<Blob> {
-  try {
-    const res = await axiosInstance.get('/api/personnel/export-sample', {
-      responseType: 'blob',
-    });
-    return res.data;
-  } catch (e: unknown) {
-    throw new Error(getApiErrorMessage(e));
-  }
-}
-
-/**
- * importPersonnel API wrapper.
- * @returns API response payload
- */
-export async function importPersonnel(file: File): Promise<ApiResponse> {
-  try {
-    const formData = new FormData();
-    formData.append('file', file);
-    const res = await axiosInstance.post('/api/personnel/import', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return { success: res.data?.success, data: res.data?.data };
-  } catch (e: unknown) {
-    return { success: false, message: getApiErrorMessage(e) };
-  }
-}

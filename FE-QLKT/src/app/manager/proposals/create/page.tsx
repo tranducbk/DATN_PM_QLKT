@@ -25,17 +25,10 @@ import {
 import { getApiErrorMessage } from '@/lib/apiError';
 
 import {
-  AppstoreOutlined,
-  FlagOutlined,
-  SafetyCertificateOutlined,
-  SendOutlined,
-  StarOutlined,
   UploadOutlined,
   HomeOutlined,
   TrophyOutlined,
   TeamOutlined,
-  ClockCircleOutlined,
-  ExperimentOutlined,
   CheckCircleOutlined,
   ArrowLeftOutlined,
   EditOutlined,
@@ -47,21 +40,23 @@ import type { DateInput } from '@/lib/types';
 import { apiClient } from '@/lib/apiClient';
 import { getDanhHieuName, HCQKQT_YEARS_REQUIRED } from '@/constants/danhHieu.constants';
 import type { UnitApiRow, ContributionProfile } from '@/lib/types/personnelList';
+import type { TitleDataItem } from '@/lib/types/proposal';
 import {
   PROPOSAL_TYPES,
   requiresProposalMonth,
   type ProposalType,
 } from '@/constants/proposal.constants';
+import { PROPOSAL_TYPE_ICON_COMPONENTS } from '@/constants/proposalUi.constants';
 import { FileAttachmentList } from '@/components/proposals/FileAttachmentList';
 // Shared components — reuse from admin to avoid duplicating ~2000 lines
-import { Step2SelectPersonnelCaNhanHangNam } from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelCaNhanHangNam';
-import { Step2SelectPersonnelNienHan } from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelNienHan';
-import { Step2SelectPersonnelHCQKQT } from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelHCQKQT';
-import { Step2SelectPersonnelKNCVSNXDQDNDVN } from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelKNCVSNXDQDNDVN';
-import { Step2SelectPersonnelCongHien } from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelCongHien';
-import { Step2SelectPersonnelNCKH } from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelNCKH';
-import { Step2SelectUnits } from '@/app/admin/awards/bulk/create/components/Step2SelectUnits';
-import { Step3SetTitles } from '@/app/admin/awards/bulk/create/components/Step3SetTitles';
+import { Step2SelectPersonnelCaNhanHangNam } from '@/components/proposals/bulk/Step2SelectPersonnelCaNhanHangNam';
+import { Step2SelectPersonnelNienHan } from '@/components/proposals/bulk/Step2SelectPersonnelNienHan';
+import { Step2SelectPersonnelHCQKQT } from '@/components/proposals/bulk/Step2SelectPersonnelHCQKQT';
+import { Step2SelectPersonnelKNCVSNXDQDNDVN } from '@/components/proposals/bulk/Step2SelectPersonnelKNCVSNXDQDNDVN';
+import { Step2SelectPersonnelCongHien } from '@/components/proposals/bulk/Step2SelectPersonnelCongHien';
+import { Step2SelectPersonnelNCKH } from '@/components/proposals/bulk/Step2SelectPersonnelNCKH';
+import { Step2SelectUnits } from '@/components/proposals/bulk/Step2SelectUnits';
+import { Step3SetTitles } from '@/components/proposals/bulk/Step3SetTitles';
 
 import {
   renderServiceTime,
@@ -90,6 +85,11 @@ interface Personnel {
   };
 }
 
+type ReviewRow = (Personnel | UnitApiRow) & Partial<TitleDataItem> & {
+  id: string;
+  co_quan_don_vi_id?: string | null;
+};
+
 export default function CreateProposalPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
@@ -105,7 +105,7 @@ export default function CreateProposalPage() {
   const [selectedUnitIds, setSelectedUnitIds] = useState<string[]>([]);
 
   // Step 3: Set Titles
-  const [titleData, setTitleData] = useState<any[]>([]);
+  const [titleData, setTitleData] = useState<TitleDataItem[]>([]);
 
   // HCBVTQ contribution profiles
   const [contributionProfiles, setContributionProfiles] = useState<
@@ -117,7 +117,7 @@ export default function CreateProposalPage() {
 
   // Step 5: Personnel/Unit details for review
   const [personnelDetails, setPersonnelDetails] = useState<Personnel[]>([]);
-  const [unitDetails, setUnitDetails] = useState<any[]>([]);
+  const [unitDetails, setUnitDetails] = useState<UnitApiRow[]>([]);
 
   // Step 5: Note
   const [proposalNote, setProposalNote] = useState<string>('');
@@ -129,43 +129,48 @@ export default function CreateProposalPage() {
     return new Date(nam, 11, 31);
   };
 
+  const renderProposalTypeIcon = (type: ProposalType) => {
+    const Icon = PROPOSAL_TYPE_ICON_COMPONENTS[type];
+    return Icon ? <Icon /> : <TrophyOutlined />;
+  };
+
   // Proposal type config
   const proposalTypeConfig: Partial<
     Record<ProposalType, { icon: React.ReactNode; label: string; description: string }>
   > = {
     [PROPOSAL_TYPES.CA_NHAN_HANG_NAM]: {
-      icon: <TrophyOutlined />,
+      icon: renderProposalTypeIcon(PROPOSAL_TYPES.CA_NHAN_HANG_NAM),
       label: 'Khen thưởng cá nhân hằng năm',
       description: 'Danh hiệu CSTT, CSTDCS, BKBQP, CSTĐTQ',
     },
     [PROPOSAL_TYPES.DON_VI_HANG_NAM]: {
-      icon: <TeamOutlined />,
+      icon: renderProposalTypeIcon(PROPOSAL_TYPES.DON_VI_HANG_NAM),
       label: 'Khen thưởng đơn vị hằng năm',
       description: 'Danh hiệu ĐVTT, ĐVQT, BKBQP, BKTTCP',
     },
     [PROPOSAL_TYPES.NIEN_HAN]: {
-      icon: <SafetyCertificateOutlined />,
+      icon: renderProposalTypeIcon(PROPOSAL_TYPES.NIEN_HAN),
       label: 'Huy chương Chiến sĩ vẻ vang',
       description: 'Danh hiệu Huy chương Chiến sĩ vẻ vang 3 hạng (Ba, Nhì, Nhất)',
     },
     [PROPOSAL_TYPES.HC_QKQT]: {
-      icon: <FlagOutlined />,
+      icon: renderProposalTypeIcon(PROPOSAL_TYPES.HC_QKQT),
       label: 'Huy chương Quân kỳ quyết thắng',
       description: 'Yêu cầu đủ 25 năm phục vụ trong QĐNDVN',
     },
     [PROPOSAL_TYPES.KNC_VSNXD_QDNDVN]: {
-      icon: <StarOutlined />,
+      icon: renderProposalTypeIcon(PROPOSAL_TYPES.KNC_VSNXD_QDNDVN),
       label: 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
       description:
         'Yêu cầu đủ 25 năm phục vụ đối với nam và 20 năm phục vụ đối với nữ trong QĐNDVN',
     },
     [PROPOSAL_TYPES.CONG_HIEN]: {
-      icon: <SafetyCertificateOutlined />,
+      icon: renderProposalTypeIcon(PROPOSAL_TYPES.CONG_HIEN),
       label: 'Huân chương Bảo vệ Tổ quốc',
       description: 'Danh hiệu Huân chương Bảo vệ Tổ quốc 3 hạng (Ba, Nhì, Nhất)',
     },
     [PROPOSAL_TYPES.NCKH]: {
-      icon: <ExperimentOutlined />,
+      icon: renderProposalTypeIcon(PROPOSAL_TYPES.NCKH),
       label: 'Thành tích Nghiên cứu khoa học',
       description: 'Đề tài khoa học / Sáng kiến khoa học',
     },
@@ -176,11 +181,11 @@ export default function CreateProposalPage() {
     const step2Title =
       proposalType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? 'Chọn đơn vị' : 'Chọn quân nhân';
     return [
-      { title: 'Chọn loại', icon: <AppstoreOutlined /> },
+      { title: 'Chọn loại', icon: <TrophyOutlined /> },
       { title: step2Title, icon: <TeamOutlined /> },
       { title: 'Thêm danh hiệu', icon: <CheckCircleOutlined /> },
       { title: 'Upload file', icon: <UploadOutlined /> },
-      { title: 'Xem lại & Gửi', icon: <SendOutlined /> },
+      { title: 'Xem lại & Gửi', icon: <CheckCircleOutlined /> },
     ];
   };
   const steps = getSteps();
@@ -511,7 +516,7 @@ export default function CreateProposalPage() {
           const missingNames = missingInfo
             .map(
               item =>
-                personnelDetails.find(p => p.id === item.personnel_id || p.id === item.personnelId)
+                personnelDetails.find(p => p.id === item.personnel_id)
                   ?.ho_ten
             )
             .filter(Boolean)
@@ -842,7 +847,7 @@ export default function CreateProposalPage() {
 
       case 4: // Step 5: Review & Submit
         // Merge personnel/unit details with title data
-        let reviewTableData: any[] = [];
+        let reviewTableData: ReviewRow[] = [];
 
         if (proposalType === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
           reviewTableData = unitDetails.map(unit => {
@@ -865,7 +870,7 @@ export default function CreateProposalPage() {
         }
 
         // Build table columns based on proposal type
-        const reviewColumns: ColumnsType<any> = [];
+        const reviewColumns: ColumnsType<ReviewRow> = [];
 
         if (proposalType === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
           reviewColumns.push(
@@ -932,7 +937,7 @@ export default function CreateProposalPage() {
               key: 'cap_bac_chuc_vu',
               width: 200,
               align: 'center',
-              render: (_, record: any) => {
+              render: (_, record) => {
                 // Rank/position from Step 3 — no fallback to current personnel data
                 const capBac = record.cap_bac;
                 const chucVu = record.chuc_vu;
@@ -960,12 +965,14 @@ export default function CreateProposalPage() {
               key: 'tong_thoi_gian',
               width: 150,
               align: 'center' as const,
-              render: (_: unknown, record: any) => renderServiceTime(record, nam, thang),
+              render: (_: unknown, record: ReviewRow) => renderServiceTime(record, nam, thang),
             });
           }
 
           if (proposalType === PROPOSAL_TYPES.CONG_HIEN) {
-            reviewColumns.push(...makeContributionColumns(contributionProfiles));
+            reviewColumns.push(
+              ...(makeContributionColumns(contributionProfiles) as ColumnsType<ReviewRow>)
+            );
           }
         }
 
@@ -991,9 +998,7 @@ export default function CreateProposalPage() {
               align: 'center',
               render: (_, record) => {
                 const moTa = titleData.find(
-                  t =>
-                    String(t.personnelId) === String(record.id) ||
-                    String(t.personnel_id) === String(record.id)
+                  t => String(t.personnel_id) === String(record.id)
                 )?.mo_ta;
                 return <Text>{moTa}</Text>;
               },
@@ -1090,7 +1095,7 @@ export default function CreateProposalPage() {
                       const allowedTitles = ['CSTT', 'CSTDCS', 'ĐVTT', 'ĐVQT'];
                       const titleCounts: Record<string, number> = {};
 
-                      reviewTableData.forEach((item: any) => {
+                      reviewTableData.forEach(item => {
                         const title = item.danh_hieu;
                         if (title && allowedTitles.includes(title)) {
                           titleCounts[title] = (titleCounts[title] || 0) + 1;

@@ -44,6 +44,7 @@ import { formatDateTime } from '@/lib/utils';
 import { apiClient } from '@/lib/apiClient';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import { FileAttachmentList } from '@/components/proposals/FileAttachmentList';
+import { ProposalStatusTag } from '@/components/proposals/ProposalStatusTag';
 import { useTheme } from '@/components/ThemeProvider';
 import {
   CONG_HIEN_HE_SO_GROUPS,
@@ -59,7 +60,9 @@ import {
   PROPOSAL_TYPES,
   isProposalType,
   getProposalTypeLabel,
+  getProposalStatusLabel,
 } from '@/constants/proposal.constants';
+import { ADMIN_PROPOSAL_DETAIL_STATUS_LABELS } from '@/constants/proposalUi.constants';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -1439,15 +1442,14 @@ export default function ProposalDetailPage() {
               <Title level={2}>Chi tiết đề xuất</Title>
               <Paragraph>Xem và chỉnh sửa trước khi phê duyệt</Paragraph>
             </div>
-            {proposal.status === PROPOSAL_STATUS.APPROVED ? (
-              <Tag color="success" style={{ fontSize: 14, padding: '4px 12px' }}>
-                Đã phê duyệt
-              </Tag>
-            ) : (
-              <Tag color="warning" style={{ fontSize: 14, padding: '4px 12px' }}>
-                Đang chờ duyệt
-              </Tag>
-            )}
+            <ProposalStatusTag
+              status={proposal.status}
+              variant="adminReview"
+              label={
+                ADMIN_PROPOSAL_DETAIL_STATUS_LABELS[proposal.status] ??
+                getProposalStatusLabel(proposal.status)
+              }
+            />
           </div>
         </div>
 
@@ -1485,13 +1487,14 @@ export default function ProposalDetailPage() {
                 Trạng thái
               </Text>
               <div style={{ fontWeight: 500 }}>
-                {proposal.status === PROPOSAL_STATUS.PENDING && (
-                  <Tag color="warning">Đang chờ duyệt</Tag>
-                )}
-                {proposal.status === PROPOSAL_STATUS.APPROVED && (
-                  <Tag color="success">Đã phê duyệt</Tag>
-                )}
-                {proposal.status === PROPOSAL_STATUS.REJECTED && <Tag color="error">Từ chối</Tag>}
+                <ProposalStatusTag
+                  status={proposal.status}
+                  variant="adminReview"
+                  label={
+                    ADMIN_PROPOSAL_DETAIL_STATUS_LABELS[proposal.status] ??
+                    getProposalStatusLabel(proposal.status)
+                  }
+                />
               </div>
             </div>
             <div>

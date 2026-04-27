@@ -44,7 +44,11 @@ interface UnitAnnualAwardRow {
   ghi_chu?: string | null;
   so_quyet_dinh?: string | null;
   nhan_bkbqp?: boolean;
+  so_quyet_dinh_bkbqp?: string | null;
+  ghi_chu_bkbqp?: string | null;
   nhan_bkttcp?: boolean;
+  so_quyet_dinh_bkttcp?: string | null;
+  ghi_chu_bkttcp?: string | null;
   DonViTrucThuoc?: {
     ten_don_vi?: string | null;
     CoQuanDonVi?: { ten_don_vi?: string | null };
@@ -431,6 +435,13 @@ export default function ManagerUnitsPage() {
                     key: 'ten_don_vi',
                     width: 200,
                     align: 'center',
+                    onCell: () => ({
+                      style: {
+                        whiteSpace: 'normal',
+                        wordBreak: 'break-word',
+                        overflowWrap: 'anywhere',
+                      },
+                    }),
                     render: (value, record) => {
                       const unitName =
                         record?.DonViTrucThuoc?.ten_don_vi ?? record?.CoQuanDonVi?.ten_don_vi ?? '';
@@ -452,38 +463,26 @@ export default function ManagerUnitsPage() {
                     title: 'Danh hiệu',
                     dataIndex: 'danh_hieu',
                     key: 'danh_hieu',
-                    width: 320,
+                    width: 360,
                     align: 'center',
+                    onCell: () => ({
+                      style: {
+                        whiteSpace: 'normal',
+                        wordBreak: 'break-word',
+                        overflowWrap: 'anywhere',
+                      },
+                    }),
                     render: (text: string | null, record) => {
                       return renderAnnualAwards(text, record, {
                         onDownload: handleOpenDecisionFile,
                       });
                     },
                   },
-                  {
-                    title: 'Ghi chú',
-                    key: 'ghi_chu',
-                    width: 200,
-                    align: 'center',
-                    render: (value, record) => {
-                      if (record.ghi_chu) {
-                        return (
-                          <Text type="secondary" style={COLUMN_STYLES.noteText}>
-                            {record.ghi_chu}
-                          </Text>
-                        );
-                      }
-                      return (
-                        <Text type="secondary" style={{ fontStyle: 'italic', opacity: 0.6 }}>
-                          Không có ghi chú
-                        </Text>
-                      );
-                    },
-                  },
                 ] satisfies TableColumnsType<UnitAnnualAwardRow>
               }
               dataSource={filteredAwards}
               rowKey="id"
+              tableLayout="fixed"
               pagination={{
                 ...DEFAULT_ANTD_TABLE_PAGINATION,
                 pageSize: awardsPageSize,
@@ -493,7 +492,7 @@ export default function ManagerUnitsPage() {
                   setAwardsPageSize(size);
                 },
               }}
-              scroll={{ x: 800 }}
+              scroll={{ x: 700 }}
             />
           )}
         </Card>

@@ -1,4 +1,12 @@
-import type { HoSoNienHan } from '../generated/prisma';
+import type {
+  HoSoNienHan,
+  HoSoHangNam,
+  HoSoCongHien,
+  DanhHieuHangNam,
+  ThanhTichKhoaHoc,
+  QuanNhan,
+  LichSuChucVu,
+} from '../generated/prisma';
 import { prisma } from '../models';
 import { ELIGIBILITY_STATUS } from '../constants/eligibilityStatus.constants';
 import { formatServiceDuration } from '../helpers/serviceYearsHelper';
@@ -8,6 +16,59 @@ import { writeSystemLog } from '../helpers/systemLogHelper';
 import { NotFoundError } from '../middlewares/errorHandler';
 import { DANH_HIEU_HCCSVV, DANH_HIEU_HCBVTQ, DANH_HIEU_CA_NHAN_BANG_KHEN, DANH_HIEU_CA_NHAN_HANG_NAM, DANH_HIEU_CA_NHAN_CO_BAN, CONG_HIEN_BASE_REQUIRED_MONTHS, CONG_HIEN_FEMALE_REQUIRED_MONTHS, getDanhHieuName } from '../constants/danhHieu.constants';
 import { GENDER } from '../constants/gender.constants';
+import { PERSONAL_CHAIN_AWARDS, findChainAwardConfig } from '../constants/chainAwards.constants';
+import { checkChainEligibility, type EligibilityResult, type FlagsInWindow } from './eligibility/chainEligibility';
+
+interface HCCSVVCalcResult {
+  status: string;
+  ngay: Date | null;
+  goiY: string;
+}
+
+interface HCBVTQCalcResult {
+  status: string;
+  ngay: Date | null;
+  goiY: string;
+}
+
+interface SpecialCaseResult {
+  isSpecialCase: boolean;
+  goiY: string;
+  resetChain: boolean;
+}
+
+interface NCKHYearsResult {
+  hasNCKH: boolean;
+  years: number[];
+}
+
+interface AnnualStreakResult {
+  personnel: QuanNhan & {
+    DanhHieuHangNam: DanhHieuHangNam[];
+    ThanhTichKhoaHoc: ThanhTichKhoaHoc[];
+  };
+  danhHieuList: DanhHieuHangNam[];
+  thanhTichList: ThanhTichKhoaHoc[];
+  cstdcs_lien_tuc: number;
+  nckh_lien_tuc: number;
+  bkbqp_lien_tuc: number;
+  cstdtq_lien_tuc: number;
+}
+
+interface TenureProfileUpdate {
+  hccsvv_hang_ba_status?: string;
+  hccsvv_hang_nhi_status?: string;
+  hccsvv_hang_nhat_status?: string;
+  hcbvtq_hang_ba_status?: string;
+  hcbvtq_hang_nhi_status?: string;
+  hcbvtq_hang_nhat_status?: string;
+}
+
+interface RecalculateResult {
+  message: string;
+  success: number;
+  errors: Array<{ personnelId: string; hoTen: string; error: string }>;
+}
 
 class ProfileService {
   /**
@@ -15,7 +76,7 @@ class ProfileService {
    * @param personnelId - Personnel ID
    * @returns Annual profile row (created when missing)
    */
-  async getAnnualProfile(personnelId) {
+  async getAnnualProfile(personnelId: string) {
     const personnel = await prisma.quanNhan.findUnique({
       where: { id: personnelId },
     });
@@ -70,7 +131,7 @@ class ProfileService {
    * @param personnelId - Personnel ID
    * @returns Tenure profile with hccsvv_nam_nhan timeline data
    */
-  async getTenureProfile(personnelId) {
+  async getTenureProfile(personnelId: string) {
     const includeQuanNhan = {
       QuanNhan: {
         include: {
@@ -112,7 +173,7 @@ class ProfileService {
    * @param personnelId - Personnel ID
    * @returns Contribution profile row (created when missing)
    */
-  async getContributionProfile(personnelId) {
+  async getContributionProfile(personnelId: string) {
     const personnel = await prisma.quanNhan.findUnique({
       where: { id: personnelId },
     });
@@ -173,7 +234,7 @@ class ProfileService {
    * @param year - Evaluation anchor year
    * @returns Streak length; non-`CSTDCS` years in the sequence stop the count
    */
-  calculateContinuousCSTDCS(danhHieuList, year) {
+  calculateContinuousCSTDCS(danhHieuList: DanhHieuHangNam[], year: number): number {
     let count = 0;
     const sortedRewards = [...danhHieuList].sort((a, b) => b.nam - a.nam);
     const filteredRewards = sortedRewards.filter(r => r.nam <= year - 1);
@@ -197,7 +258,7 @@ class ProfileService {
    * @param year - Proposal / evaluation anchor year
    * @returns Streak length
    */
-  calculateContinuousNCKH(thanhTichList, year) {
+  calculateContinuousNCKH(thanhTichList: ThanhTichKhoaHoc[], year: number): number {
     let count = 0;
     const sortedRewards = [...thanhTichList].sort((a, b) => b.nam - a.nam);
     const filteredRewards = sortedRewards.filter(r => r.nam <= year - 1);
@@ -223,7 +284,7 @@ class ProfileService {
   /**
    * Đếm tổng số lần nhận BKBQP trong chuỗi CSTDCS liên tục.
    */
-  countBKBQPInStreak(danhHieuList, year, cstdcsStreak: number) {
+  countBKBQPInStreak(danhHieuList: DanhHieuHangNam[], year: number, cstdcsStreak: number): number {
     const endYear = year - 1;
     const startYear = endYear - cstdcsStreak + 1;
     return danhHieuList.filter(r => r.nhan_bkbqp === true && r.nam >= startYear && r.nam <= endYear).length;
@@ -238,16 +299,21 @@ class ProfileService {
   /**
    * Counts records with flag = true within N years back from year-1.
    */
-  private countFlagInRange(danhHieuList: any[], year: number, rangeYears: number, flagKey: string): number {
+  private countFlagInRange(
+    danhHieuList: Array<Record<string, unknown> & { nam: number }>,
+    year: number,
+    rangeYears: number,
+    flagKey: string
+  ): number {
     const endYear = year - 1;
     const startYear = endYear - rangeYears + 1;
-    return danhHieuList.filter(r => (r as any)[flagKey] === true && r.nam >= startYear && r.nam <= endYear).length;
+    return danhHieuList.filter(r => r[flagKey] === true && r.nam >= startYear && r.nam <= endYear).length;
   }
 
   /**
    * Đếm tổng số lần nhận CSTDTQ trong chuỗi CSTDCS liên tục.
    */
-  countCSTDTQInStreak(danhHieuList, year, cstdcsStreak: number) {
+  countCSTDTQInStreak(danhHieuList: DanhHieuHangNam[], year: number, cstdcsStreak: number): number {
     const endYear = year - 1;
     const startYear = endYear - cstdcsStreak + 1;
     return danhHieuList.filter(r => r.nhan_cstdtq === true && r.nam >= startYear && r.nam <= endYear).length;
@@ -259,7 +325,7 @@ class ProfileService {
    * @param years - Years to intersect (e.g. streak window)
    * @returns Flags plus the matching year subset
    */
-  checkNCKHInYears(nckhList, years) {
+  checkNCKHInYears(nckhList: ThanhTichKhoaHoc[], years: number[]): NCKHYearsResult {
     const nckhYears = nckhList.map(n => n.nam);
     const foundYears = years.filter(year => nckhYears.includes(year));
     return {
@@ -273,7 +339,7 @@ class ProfileService {
    * @param danhHieuList - Annual rows (newest first after internal sort)
    * @returns Whether to show a one-off hint and whether streak counters reset
    */
-  handleSpecialCases(danhHieuList) {
+  handleSpecialCases(danhHieuList: DanhHieuHangNam[]): SpecialCaseResult {
     const sortedRewards = [...danhHieuList].sort((a, b) => b.nam - a.nam);
     const latestReward = sortedRewards[0];
 
@@ -326,7 +392,7 @@ class ProfileService {
    * @param soNam - Required tenure (10 / 15 / 20)
    * @returns Calendar date when the tier becomes eligible, or `null` without enlistment
    */
-  calculateEligibilityDate(ngayNhapNgu, soNam) {
+  calculateEligibilityDate(ngayNhapNgu: Date | null | undefined, soNam: number): Date | null {
     if (!ngayNhapNgu) return null;
     const eligibilityDate = new Date(ngayNhapNgu);
     eligibilityDate.setFullYear(eligibilityDate.getFullYear() + soNam);
@@ -341,7 +407,12 @@ class ProfileService {
    * @param hangName - Tier label
    * @returns Status, optional milestone date, and Vietnamese guidance string
    */
-  calculateHCCSVV(ngayNhapNgu, soNam, currentStatus, hangName) {
+  calculateHCCSVV(
+    ngayNhapNgu: Date | null | undefined,
+    soNam: number,
+    currentStatus: string,
+    hangName: string
+  ): HCCSVVCalcResult {
     if (!ngayNhapNgu) {
       return {
         status: ELIGIBILITY_STATUS.CHUA_DU,
@@ -387,7 +458,7 @@ class ProfileService {
    * @param year - Evaluation anchor year
    * @returns Personnel data, lists, and computed streaks
    */
-  private async computeAnnualStreaks(personnelId: string, year: number) {
+  private async computeAnnualStreaks(personnelId: string, year: number): Promise<AnnualStreakResult> {
     const personnel = await prisma.quanNhan.findUnique({
       where: { id: personnelId },
       include: {
@@ -422,22 +493,22 @@ class ProfileService {
    */
   private computeEligibilityFlags(
     streaks: { cstdcs_lien_tuc: number; nckh_lien_tuc: number; bkbqp_lien_tuc: number; cstdtq_lien_tuc: number },
-    danhHieuList: unknown[],
+    danhHieuList: Array<Record<string, unknown> & { nam: number }>,
     year: number
   ) {
-    const { cstdcs_lien_tuc, nckh_lien_tuc, bkbqp_lien_tuc, cstdtq_lien_tuc } = streaks;
+    const { cstdcs_lien_tuc, nckh_lien_tuc } = streaks;
     const hasEnoughNCKH = nckh_lien_tuc >= cstdcs_lien_tuc;
 
-    // BKBQP: cứ 2 năm CSTDCS liên tục = eligible (chuỗi riêng, không phụ thuộc chu kỳ 7 năm)
     const du_dieu_kien_bkbqp =
       cstdcs_lien_tuc >= 2 && cstdcs_lien_tuc % 2 === 0 && hasEnoughNCKH;
 
-    // CSTDTQ: cứ 3 năm + đã có BKBQP (tổng trong chuỗi >= 1)
+    // CSTDTQ counts BKBQP within the 3-year cycle window — flags from earlier cycles
+    // cannot retro-claim into the current one.
+    const bkbqpIn3Years = this.countFlagInRange(danhHieuList, year, 3, 'nhan_bkbqp');
     const du_dieu_kien_cstdtq =
       cstdcs_lien_tuc >= 3 && cstdcs_lien_tuc % 3 === 0 &&
-      bkbqp_lien_tuc >= 1 && hasEnoughNCKH;
+      bkbqpIn3Years >= 1 && hasEnoughNCKH;
 
-    // BKTTCP: đúng 7 năm + giật lại 7 năm check đủ 3 BKBQP + 2 CSTDTQ
     const bkbqpIn7Years = this.countFlagInRange(danhHieuList, year, 7, 'nhan_bkbqp');
     const cstdtqIn7Years = this.countFlagInRange(danhHieuList, year, 7, 'nhan_cstdtq');
     const du_dieu_kien_bkttcp =
@@ -455,7 +526,7 @@ class ProfileService {
    * @param year - Evaluation year (defaults to current calendar year)
    * @returns Success response with message and updated profile row
    */
-  async recalculateAnnualProfile(personnelId, year = new Date().getFullYear()) {
+  async recalculateAnnualProfile(personnelId: string, year: number = new Date().getFullYear()): Promise<{ success: boolean; message: string; data: HoSoHangNam }> {
     const { danhHieuList, thanhTichList, cstdcs_lien_tuc, nckh_lien_tuc, bkbqp_lien_tuc, cstdtq_lien_tuc } =
       await this.computeAnnualStreaks(personnelId, year);
 
@@ -493,7 +564,7 @@ class ProfileService {
         year
       );
 
-    const hasReceivedBKTTCP = danhHieuList.some((dh: any) => dh.nhan_bkttcp === true);
+    const hasReceivedBKTTCP = danhHieuList.some(dh => dh.nhan_bkttcp === true);
 
     const labelBKBQP = getDanhHieuName(DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP);
     const labelCSTDTQ = getDanhHieuName(DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ);
@@ -547,10 +618,13 @@ class ProfileService {
    * @param danhHieu - Medal code to validate
    * @returns Eligibility result with operator-facing reason
    */
-  async checkAwardEligibility(personnelId, year, danhHieu) {
+  async checkAwardEligibility(personnelId: string, year: number, danhHieu: string): Promise<EligibilityResult> {
     if (!DANH_HIEU_CA_NHAN_BANG_KHEN.has(danhHieu)) {
       return { eligible: true, reason: '' };
     }
+
+    const config = findChainAwardConfig(PERSONAL_CHAIN_AWARDS, danhHieu);
+    if (!config) return { eligible: true, reason: '' };
 
     let streaks;
     try {
@@ -559,43 +633,55 @@ class ProfileService {
       return { eligible: false, reason: 'Quân nhân không tồn tại' };
     }
 
-    const { cstdcs_lien_tuc, nckh_lien_tuc, bkbqp_lien_tuc, cstdtq_lien_tuc, danhHieuList } = streaks;
+    const { cstdcs_lien_tuc, nckh_lien_tuc, danhHieuList } = streaks;
 
-    if (danhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP) {
-      const eligible =
-        cstdcs_lien_tuc % 2 === 0 && cstdcs_lien_tuc >= 2 && nckh_lien_tuc >= cstdcs_lien_tuc;
-      return eligible
-        ? { eligible: true, reason: `Đủ điều kiện ${getDanhHieuName(danhHieu)}` }
-        : { eligible: false, reason: `Chưa đủ điều kiện ${getDanhHieuName(danhHieu)}: cần 2 năm CSTDCS liên tục + mỗi năm có NCKH (hiện có ${cstdcs_lien_tuc} năm CSTDCS, ${nckh_lien_tuc} năm NCKH)` };
-    }
+    // Always window prerequisite-flag counts to the cycle length (3y CSTDTQ, 7y BKTTCP).
+    // A streak past the cycle boundary cannot retro-claim flags from earlier cycles.
+    const flagsInWindow: FlagsInWindow = {};
+    config.requiredFlags.forEach(f => {
+      flagsInWindow[f.code] = this.countFlagInRange(
+        danhHieuList,
+        year,
+        config.cycleYears,
+        this.flagColumnFor(f.code)
+      );
+    });
 
-    if (danhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ) {
-      const eligible =
-        cstdcs_lien_tuc >= 3 && cstdcs_lien_tuc % 3 === 0 &&
-        bkbqp_lien_tuc >= 1 &&
-        nckh_lien_tuc >= cstdcs_lien_tuc;
-      return eligible
-        ? { eligible: true, reason: `Đủ điều kiện ${getDanhHieuName(danhHieu)}` }
-        : { eligible: false, reason: `Chưa đủ điều kiện ${getDanhHieuName(danhHieu)}: cần 3 năm CSTDCS liên tục + đã có BKBQP + mỗi năm có NCKH (hiện có ${cstdcs_lien_tuc} CSTDCS, ${bkbqp_lien_tuc} BKBQP, ${nckh_lien_tuc} NCKH)` };
-    }
+    const hasReceived = config.isLifetime
+      ? danhHieuList.some((dh: DanhHieuHangNam) => (dh as unknown as Record<string, unknown>)[config.flagColumn] === true)
+      : false;
 
-    if (danhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP) {
-      if (cstdcs_lien_tuc > 7 && cstdcs_lien_tuc % 7 === 0) {
-        return { eligible: false, reason: `Phần mềm chưa hỗ trợ khen thưởng cao hơn ${getDanhHieuName(danhHieu)}, sẽ phát triển trong thời gian tới.` };
+    const lastClaimYear = this.findLastClaimYear(danhHieuList, config.flagColumn, year);
+
+    return checkChainEligibility(
+      config,
+      { streakLength: cstdcs_lien_tuc, nckhStreak: nckh_lien_tuc, lastClaimYear },
+      hasReceived,
+      flagsInWindow,
+      year
+    );
+  }
+
+  /** Latest year < evaluationYear where the given flag column is true; null when never claimed. */
+  private findLastClaimYear(danhHieuList: DanhHieuHangNam[], flagColumn: string, evaluationYear: number): number | null {
+    let max: number | null = null;
+    for (const dh of danhHieuList) {
+      const record = dh as unknown as Record<string, unknown>;
+      if (record[flagColumn] === true && dh.nam < evaluationYear) {
+        if (max === null || dh.nam > max) max = dh.nam;
       }
-      const bkbqpIn7Years = this.countFlagInRange(danhHieuList, year, 7, 'nhan_bkbqp');
-      const cstdtqIn7Years = this.countFlagInRange(danhHieuList, year, 7, 'nhan_cstdtq');
-      const eligible =
-        cstdcs_lien_tuc === 7 &&
-        bkbqpIn7Years === 3 &&
-        cstdtqIn7Years === 2 &&
-        nckh_lien_tuc >= cstdcs_lien_tuc;
-      return eligible
-        ? { eligible: true, reason: `Đủ điều kiện ${getDanhHieuName(danhHieu)}` }
-        : { eligible: false, reason: `Chưa đủ điều kiện ${getDanhHieuName(danhHieu)}: cần 7 năm CSTDCS + 3 BKBQP + 2 CSTDTQ + NCKH mỗi năm (hiện có ${cstdcs_lien_tuc} CSTDCS, ${bkbqpIn7Years} BKBQP, ${cstdtqIn7Years} CSTDTQ, ${nckh_lien_tuc} NCKH)` };
     }
+    return max;
+  }
 
-    return { eligible: true, reason: '' };
+  /** Maps a chain award code to its boolean flag column on `DanhHieuHangNam`. */
+  private flagColumnFor(code: string): string {
+    const map: Record<string, string> = {
+      [DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP]: 'nhan_bkbqp',
+      [DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ]: 'nhan_cstdtq',
+      [DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP]: 'nhan_bkttcp',
+    };
+    return map[code] ?? '';
   }
 
   /**
@@ -603,7 +689,7 @@ class ProfileService {
    * @param personnelId - Personnel ID
    * @returns Success message for admin flows
    */
-  async recalculateTenureProfile(personnelId) {
+  async recalculateTenureProfile(personnelId: string): Promise<{ message: string }> {
     const personnel = await prisma.quanNhan.findUnique({
       where: { id: personnelId },
     });
@@ -732,8 +818,11 @@ class ProfileService {
    * @param personnelId - Personnel ID
    * @returns Success message for admin flows
    */
-  async recalculateContributionProfile(personnelId) {
-    const checkEligibleForRank = (personnel, rank) => {
+  async recalculateContributionProfile(personnelId: string): Promise<{ message: string }> {
+    const checkEligibleForRank = (
+      personnel: QuanNhan & { LichSuChucVu: LichSuChucVu[] },
+      rank: 'HANG_BA' | 'HANG_NHI' | 'HANG_NHAT'
+    ): boolean => {
       const months0_9_1_0 = getTotalMonthsByGroup(personnel.LichSuChucVu, '0.9-1.0');
       const months0_8 = getTotalMonthsByGroup(personnel.LichSuChucVu, '0.8');
       const months0_7 = getTotalMonthsByGroup(personnel.LichSuChucVu, '0.7');
@@ -753,7 +842,7 @@ class ProfileService {
 
       return false;
     };
-    const getTotalMonthsByGroup = (histories, group) => {
+    const getTotalMonthsByGroup = (histories: LichSuChucVu[], group: '0.7' | '0.8' | '0.9-1.0'): number => {
       let totalMonths = 0;
 
       histories.forEach(history => {
@@ -767,7 +856,7 @@ class ProfileService {
         } else if (group === '0.9-1.0') {
           belongsToGroup = heSo >= 0.9 && heSo <= 1.0;
         }
-        const monthDiff = (start, end) => {
+        const monthDiff = (start: Date, end: Date): number => {
           const s = new Date(start);
           const e = new Date(end);
 
@@ -887,7 +976,12 @@ class ProfileService {
    * @param rank - Medal tier label used in `goiY` text
    * @returns Status, optional milestone date, and Vietnamese guidance string
    */
-  calculateHCBVTQ(totalMonths, requiredMonths, currentStatus, rank) {
+  calculateHCBVTQ(
+    totalMonths: number,
+    requiredMonths: number,
+    currentStatus: string,
+    rank: string
+  ): HCBVTQCalcResult {
     // Already received — preserve status
     if (currentStatus === ELIGIBILITY_STATUS.DA_NHAN) {
       return {
@@ -925,7 +1019,7 @@ class ProfileService {
    * Batch job: `recalculateAnnualProfile` for every personnel (best-effort per row).
    * @returns Aggregate counts and per-personnel error list
    */
-  async recalculateAll() {
+  async recalculateAll(): Promise<RecalculateResult> {
     const allPersonnel = await prisma.quanNhan.findMany({
       select: { id: true, ho_ten: true },
     });
@@ -937,7 +1031,7 @@ class ProfileService {
     });
 
     let successCount = 0;
-    const errors = [];
+    const errors: Array<{ personnelId: string; hoTen: string; error: string }> = [];
 
     for (const personnel of allPersonnel) {
       try {
@@ -976,7 +1070,7 @@ class ProfileService {
    * Admin listing of tenure profiles with nested unit + position context.
    * @returns All `ho_so_nien_han` rows with relations
    */
-  async getAllTenureProfiles() {
+  async getAllTenureProfiles(): Promise<HoSoNienHan[]> {
     const profiles = await prisma.hoSoNienHan.findMany({
       include: {
         QuanNhan: {
@@ -1005,7 +1099,7 @@ class ProfileService {
    * @param updates - Subset of HCCSVV / HCBVTQ status fields
    * @returns Updated `ho_so_nien_han` row (status columns only; no relation includes)
    */
-  async updateTenureProfile(personnelId, updates) {
+  async updateTenureProfile(personnelId: string, updates: TenureProfileUpdate): Promise<HoSoNienHan> {
     const profile = await prisma.hoSoNienHan.findUnique({
       where: { quan_nhan_id: personnelId },
     });
@@ -1014,7 +1108,7 @@ class ProfileService {
       throw new NotFoundError('Hồ sơ Huy chương Chiến sĩ vẻ vang');
     }
 
-    const validStatuses = [
+    const validStatuses: string[] = [
       ELIGIBILITY_STATUS.CHUA_DU,
       ELIGIBILITY_STATUS.DU_DIEU_KIEN,
       ELIGIBILITY_STATUS.DA_NHAN,

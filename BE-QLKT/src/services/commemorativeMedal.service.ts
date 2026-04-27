@@ -10,10 +10,11 @@ import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { ValidationError, NotFoundError } from '../middlewares/errorHandler';
 import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys, sanitizeRowData, validatePersonnelNameMatch } from '../helpers/excelHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
-import { buildTemplate, TemplateColumn, styleHeaderRow } from '../helpers/excelTemplateHelper';
+import { buildTemplate, styleHeaderRow } from '../helpers/excelTemplateHelper';
 import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
 import { DANH_HIEU_MAP, KNC_YEARS_REQUIRED_NAM, KNC_YEARS_REQUIRED_NU } from '../constants/danhHieu.constants';
 import { GENDER } from '../constants/gender.constants';
+import { AWARD_EXCEL_SHEETS, KNC_TEMPLATE_COLUMNS } from '../constants/awardExcel.constants';
 
 export interface CommemorativeMedalValidItem {
   row: number;
@@ -36,24 +37,9 @@ class CommemorativeMedalService {
    * Pre-filled with selected personnel
    */
   async exportTemplate(personnelIds: string[] = [], repeatMap: Record<string, number> = {}) {
-    const columns: TemplateColumn[] = [
-      { header: 'STT', key: 'stt', width: 6 },
-      { header: 'ID', key: 'id', width: 10 },
-      { header: 'Họ và tên', key: 'ho_ten', width: 25 },
-      { header: 'Ngày sinh', key: 'ngay_sinh', width: 14 },
-      { header: 'Cơ quan đơn vị', key: 'co_quan_don_vi', width: 20 },
-      { header: 'Đơn vị trực thuộc', key: 'don_vi_truc_thuoc', width: 20 },
-      { header: 'Cấp bậc', key: 'cap_bac', width: 15 },
-      { header: 'Chức vụ', key: 'chuc_vu', width: 20 },
-      { header: 'Năm (*)', key: 'nam', width: 10 },
-      { header: 'Tháng (*)', key: 'thang', width: 10, validationFormulae: '"1,2,3,4,5,6,7,8,9,10,11,12"' },
-      { header: 'Số quyết định', key: 'so_quyet_dinh', width: 20 },
-      { header: 'Ghi chú', key: 'ghi_chu', width: 25 },
-    ];
-
     return buildTemplate({
-      sheetName: 'KNC VSNXD QDNDVN',
-      columns,
+      sheetName: AWARD_EXCEL_SHEETS.KNC,
+      columns: KNC_TEMPLATE_COLUMNS,
       personnelIds,
       repeatMap,
       loaiKhenThuong: PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
@@ -67,7 +53,7 @@ class CommemorativeMedalService {
    */
   async previewImport(buffer: Buffer) {
     const workbook = await loadWorkbook(buffer);
-    const worksheet = getAndValidateWorksheet(workbook, { sheetName: 'KNC VSNXD QDNDVN' });
+    const worksheet = getAndValidateWorksheet(workbook, { sheetName: AWARD_EXCEL_SHEETS.KNC });
 
     // Header map
     const headerMap = parseHeaderMap(worksheet);
@@ -286,6 +272,18 @@ class CommemorativeMedalService {
         continue;
       }
 
+      // Reject explicit if gender is missing/invalid — falling back to NAM would silently apply
+      // the stricter 25-year threshold and could mis-reject eligible female personnel.
+      if (personnel.gioi_tinh !== GENDER.MALE && personnel.gioi_tinh !== GENDER.FEMALE) {
+        errors.push({
+          row: rowNumber,
+          ho_ten,
+          nam,
+          message: 'Chưa cập nhật thông tin giới tính',
+        });
+        continue;
+      }
+
       const ngayNhapNgu = new Date(personnel.ngay_nhap_ngu);
       const referenceDate = new Date(nam, thang, 0); // last day of selected month — eligibility reference date
       const serviceMonths = calculateServiceMonths(ngayNhapNgu, referenceDate);
@@ -342,7 +340,7 @@ class CommemorativeMedalService {
         so_quyet_dinh,
         ghi_chu,
         service_years: Math.floor(serviceMonths / 12),
-        gioi_tinh: personnel.gioi_tinh ?? GENDER.MALE,
+        gioi_tinh: personnel.gioi_tinh,
         history,
       });
     }
@@ -506,11 +504,11 @@ class CommemorativeMedalService {
   /**
    * Export Commemorative Medals to Excel
    */
-  async exportToExcel(filters: Record<string, any> = {}) {
+  async exportToExcel(filters: Record<string, unknown> = {}) {
     const { data } = await this.getAll(filters, 1, 10000);
 
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('KNC VSNXD QDNDVN');
+    const worksheet = workbook.addWorksheet(AWARD_EXCEL_SHEETS.KNC);
 
     worksheet.columns = [
       { header: 'STT', key: 'stt', width: 5 },

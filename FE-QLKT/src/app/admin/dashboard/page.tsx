@@ -327,41 +327,41 @@ export default function AdminDashboard() {
               title={<span className="text-lg font-semibold">Thao tác nhanh</span>}
               className="shadow-lg"
             >
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Link href="/admin/personnel">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
+                <Link href="/admin/personnel" className="block h-full">
                   <Button
                     type="primary"
                     icon={<TeamOutlined />}
                     size="large"
-                    className="w-full h-auto py-4 text-base font-medium hover:scale-105 transition-transform"
+                    className="w-full h-full min-h-[84px] py-4 text-base font-medium hover:scale-105 transition-transform whitespace-normal break-words"
                   >
                     Quản lý quân nhân
                   </Button>
                 </Link>
-                <Link href="/admin/categories">
+                <Link href="/admin/categories" className="block h-full">
                   <Button
                     icon={<ApartmentOutlined />}
                     size="large"
-                    className="w-full h-auto py-4 text-base font-medium hover:scale-105 transition-transform"
+                    className="w-full h-full min-h-[84px] py-4 text-base font-medium hover:scale-105 transition-transform whitespace-normal break-words"
                   >
                     Quản lý cơ quan đơn vị
                   </Button>
                 </Link>
-                <Link href="/admin/positions">
+                <Link href="/admin/positions" className="block h-full">
                   <Button
                     icon={<FileTextOutlined />}
                     size="large"
-                    className="w-full h-auto py-4 text-base font-medium hover:scale-105 transition-transform"
+                    className="w-full h-full min-h-[84px] py-4 text-base font-medium hover:scale-105 transition-transform whitespace-normal break-words"
                   >
                     Quản lý chức vụ
                   </Button>
                 </Link>
-                <Link href="/admin/personnel/create">
+                <Link href="/admin/personnel/create" className="block h-full">
                   <Button
                     icon={<PlusOutlined />}
                     size="large"
                     type="dashed"
-                    className="w-full h-auto py-4 text-base font-medium hover:scale-105 transition-transform border-2 hover:border-blue-500"
+                    className="w-full h-full min-h-[84px] py-4 text-base font-medium hover:scale-105 transition-transform border-2 hover:border-blue-500 whitespace-normal break-words"
                   >
                     Thêm Quân nhân
                   </Button>

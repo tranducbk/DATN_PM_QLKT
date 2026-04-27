@@ -36,13 +36,13 @@ import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 import { FETCH_ALL_LIMIT } from '@/lib/constants/pagination.constants';
 import type { PersonnelDetail } from '@/lib/types/personnelList';
 
-
 const { Title, Paragraph } = Typography;
 
 interface ContributionAward {
   id: string;
   type: string;
   name: string;
+  thang?: number | null;
   nam?: number;
   cap_bac?: string;
   chuc_vu?: string;
@@ -82,7 +82,6 @@ export default function AdminContributionAwardsPage() {
 
       setPersonnel(personnelRes.data);
 
-
       const mappedAwards: ContributionAward[] = [];
 
       if (contributionRes.success && contributionRes.data) {
@@ -90,12 +89,19 @@ export default function AdminContributionAwardsPage() {
           const awardPersonnelId = award.quan_nhan_id || award.QuanNhan?.id;
           if (awardPersonnelId === personnelId) {
             const danhHieu = award.danh_hieu || '';
-            const rank = danhHieu.includes('HANG_NHAT') ? 'Hạng Nhất' : danhHieu.includes('HANG_NHI') ? 'Hạng Nhì' : danhHieu.includes('HANG_BA') ? 'Hạng Ba' : '';
+            const rank = danhHieu.includes('HANG_NHAT')
+              ? 'hạng Nhất'
+              : danhHieu.includes('HANG_NHI')
+                ? 'hạng Nhì'
+                : danhHieu.includes('HANG_BA')
+                  ? 'hạng Ba'
+                  : '';
 
             mappedAwards.push({
               id: award.id,
               type: 'HCBVTQ',
               name: `Huân chương Bảo vệ Tổ quốc ${rank}`,
+              thang: award.thang,
               nam: award.nam,
               cap_bac: award.cap_bac,
               chuc_vu: award.chuc_vu,
@@ -163,13 +169,17 @@ export default function AdminContributionAwardsPage() {
       ),
     },
     {
-      title: 'Năm',
-      dataIndex: 'nam',
-      key: 'nam',
-      width: 80,
+      title: 'Thời gian nhận',
+      key: 'thoi_gian_nhan',
+      width: 120,
       minWidth: 70,
       align: 'center',
-      render: (nam: number) => nam || '-',
+      render: (_: unknown, record: ContributionAward) => {
+        if (record.thang && record.nam) {
+          return `${String(record.thang).padStart(2, '0')}/${record.nam}`;
+        }
+        return record.nam || '-';
+      },
     },
     {
       title: 'Cấp bậc',

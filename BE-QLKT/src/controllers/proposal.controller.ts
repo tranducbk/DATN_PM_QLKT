@@ -18,6 +18,7 @@ import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { parsePagination } from '../helpers/paginationHelper';
 import { setFileSendHeaders } from '../helpers/fileResponseHeaders';
 import { resolveIdParam } from '../helpers/controllerHelper';
+import type { EditedProposalData } from '../types/proposal';
 
 // DVTT takes priority over CQDV — CQDV is the parent unit, filtering by it would include all sub-units
 function managerUnitFilterId(qn: {
@@ -38,10 +39,6 @@ function parseYearQuery(value: unknown): number | null {
 }
 
 const ALL_PROPOSAL_TYPES = Object.values(PROPOSAL_TYPES);
-
-interface ExportTemplateQuery {
-  type?: ProposalType;
-}
 
 interface SubmitProposalBody {
   so_quyet_dinh?: string;
@@ -75,6 +72,73 @@ interface ApproveProposalBody {
   so_quyet_dinh_dot_xuat?: string;
   so_quyet_dinh_nckh?: string;
   ghi_chu?: string;
+}
+
+interface ParsedApproveBody {
+  editedData: EditedProposalData;
+  decisions: {
+    so_quyet_dinh_ca_nhan_hang_nam?: string;
+    so_quyet_dinh_don_vi_hang_nam?: string;
+    so_quyet_dinh_nien_han?: string;
+    so_quyet_dinh_cong_hien?: string;
+    so_quyet_dinh_dot_xuat?: string;
+    so_quyet_dinh_nckh?: string;
+  };
+  pdfFiles: Record<string, Express.Multer.File | undefined>;
+}
+
+function parseApproveBody(
+  body: ApproveProposalBody,
+  files: Record<string, Express.Multer.File[]> | undefined
+): ParsedApproveBody {
+  const editedData = {
+    data_danh_hieu: JSON.parse(body.data_danh_hieu || '[]'),
+    data_thanh_tich: JSON.parse(body.data_thanh_tich || '[]'),
+    data_nien_han: JSON.parse(body.data_nien_han || '[]'),
+    data_cong_hien: JSON.parse(body.data_cong_hien || '[]'),
+  };
+  const decisions = {
+    so_quyet_dinh_ca_nhan_hang_nam: body.so_quyet_dinh_ca_nhan_hang_nam,
+    so_quyet_dinh_don_vi_hang_nam: body.so_quyet_dinh_don_vi_hang_nam,
+    so_quyet_dinh_nien_han: body.so_quyet_dinh_nien_han,
+    so_quyet_dinh_cong_hien: body.so_quyet_dinh_cong_hien,
+    so_quyet_dinh_dot_xuat: body.so_quyet_dinh_dot_xuat,
+    so_quyet_dinh_nckh: body.so_quyet_dinh_nckh,
+  };
+  const pdfFiles = {
+    file_pdf_ca_nhan_hang_nam: files?.file_pdf_ca_nhan_hang_nam?.[0],
+    file_pdf_don_vi_hang_nam: files?.file_pdf_don_vi_hang_nam?.[0],
+    file_pdf_nien_han: files?.file_pdf_nien_han?.[0],
+    file_pdf_cong_hien: files?.file_pdf_cong_hien?.[0],
+    file_pdf_dot_xuat: files?.file_pdf_dot_xuat?.[0],
+    file_pdf_nckh: files?.file_pdf_nckh?.[0],
+  };
+  return { editedData, decisions, pdfFiles };
+}
+
+interface NotifyContext {
+  userId: string;
+  userRole: string;
+  resource: string;
+  description: string;
+}
+
+async function safeNotify(
+  ctx: NotifyContext,
+  fn: () => Promise<unknown>
+): Promise<void> {
+  try {
+    await fn();
+  } catch (error) {
+    void writeSystemLog({
+      userId: ctx.userId,
+      userRole: ctx.userRole,
+      action: 'ERROR',
+      resource: ctx.resource,
+      description: ctx.description,
+      payload: { error: String(error) },
+    });
+  }
 }
 
 interface GetPdfFileParams {
@@ -136,28 +200,6 @@ interface CheckDuplicateUnitBatchBody {
 }
 
 class ProposalController {
-  exportTemplate = catchAsync(async (req: Request, res: Response) => {
-    const user = req.user!;
-    const query = req.query as ExportTemplateQuery;
-    const userId = user.id;
-    const { type = PROPOSAL_TYPES.CA_NHAN_HANG_NAM } = query;
-    if (!ALL_PROPOSAL_TYPES.includes(type as ProposalType)) {
-      return ResponseHelper.badRequest(
-        res,
-        'Loại đề xuất không hợp lệ. Chỉ chấp nhận: ' + ALL_PROPOSAL_TYPES.join(', ')
-      );
-    }
-    const buffer = await proposalService.exportTemplate(userId, type as string);
-    const typeName = (type as string).toLowerCase();
-    const fileName = `mau_de_xuat_${typeName}_${new Date().toISOString().slice(0, 10)}.xlsx`;
-    res.setHeader(
-      'Content-Type',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    );
-    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-    return res.status(200).send(buffer);
-  });
-
   submitProposal = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
     const body = req.body as SubmitProposalBody;
@@ -167,7 +209,6 @@ class ProposalController {
       so_quyet_dinh,
       type = PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       title_data,
-      selected_personnel,
       nam,
       thang,
       ghi_chu,
@@ -214,18 +255,15 @@ class ProposalController {
       ghi_chu,
       parsedMonth
     );
-    try {
-      await notificationHelper.notifyAdminsOnProposalSubmission(result.proposal, user);
-    } catch (notifError) {
-      await writeSystemLog({
+    await safeNotify(
+      {
         userId: user.id,
         userRole: user.role,
-        action: 'ERROR',
         resource: 'proposals',
         description: 'Lỗi gửi thông báo cho Admin khi nộp đề xuất',
-        payload: { error: String(notifError) },
-      });
-    }
+      },
+      () => notificationHelper.notifyAdminsOnProposalSubmission(result.proposal, user)
+    );
     return ResponseHelper.created(res, { message: result.message, data: result.proposal });
   });
 
@@ -267,76 +305,49 @@ class ProposalController {
     const params = req.params as ProposalIdParams;
     const body = req.body as ApproveProposalBody;
     const id = resolveIdParam(params.id);
-    const adminId = user.id;
-    let editedData;
-    try {
-      editedData = {
-        data_danh_hieu: JSON.parse(body.data_danh_hieu || '[]'),
-        data_thanh_tich: JSON.parse(body.data_thanh_tich || '[]'),
-        data_nien_han: JSON.parse(body.data_nien_han || '[]'),
-        data_cong_hien: JSON.parse(body.data_cong_hien || '[]'),
-      };
-    } catch (error) {
-   console.error('Failed to parse approveProposal payload JSON:', error);
-      return ResponseHelper.badRequest(res, 'Dữ liệu không hợp lệ');
-    }
-    const decisions = {
-      so_quyet_dinh_ca_nhan_hang_nam: body.so_quyet_dinh_ca_nhan_hang_nam,
-      so_quyet_dinh_don_vi_hang_nam: body.so_quyet_dinh_don_vi_hang_nam,
-      so_quyet_dinh_nien_han: body.so_quyet_dinh_nien_han,
-      so_quyet_dinh_cong_hien: body.so_quyet_dinh_cong_hien,
-      so_quyet_dinh_dot_xuat: body.so_quyet_dinh_dot_xuat,
-      so_quyet_dinh_nckh: body.so_quyet_dinh_nckh,
-    };
-    const files = req.files as Record<string, Express.Multer.File[]> | undefined;
-    const pdfFiles = {
-      file_pdf_ca_nhan_hang_nam: files?.file_pdf_ca_nhan_hang_nam?.[0],
-      file_pdf_don_vi_hang_nam: files?.file_pdf_don_vi_hang_nam?.[0],
-      file_pdf_nien_han: files?.file_pdf_nien_han?.[0],
-      file_pdf_cong_hien: files?.file_pdf_cong_hien?.[0],
-      file_pdf_dot_xuat: files?.file_pdf_dot_xuat?.[0],
-      file_pdf_nckh: files?.file_pdf_nckh?.[0],
-    };
     if (!id) {
       return ResponseHelper.badRequest(res, 'ID đề xuất không hợp lệ');
     }
+    const files = req.files as Record<string, Express.Multer.File[]> | undefined;
+    let parsed: ParsedApproveBody;
+    try {
+      parsed = parseApproveBody(body, files);
+    } catch (error) {
+      console.error('Failed to parse approveProposal payload JSON:', error);
+      return ResponseHelper.badRequest(res, 'Dữ liệu không hợp lệ');
+    }
     const result = await proposalService.approveProposal(
       String(id),
-      editedData,
-      adminId,
-      decisions,
-      pdfFiles,
+      parsed.editedData,
+      user.id,
+      parsed.decisions,
+      parsed.pdfFiles,
       body.ghi_chu || null
     );
-    try {
-      await notificationHelper.notifyManagerOnProposalApproval(result.proposal, user);
-    } catch (notifError) {
-      await writeSystemLog({
+    await safeNotify(
+      {
         userId: user.id,
         userRole: user.role,
-        action: 'ERROR',
         resource: 'proposals',
         description: 'Lỗi gửi thông báo cho Manager khi duyệt đề xuất',
-        payload: { error: String(notifError) },
-      });
-    }
-    try {
-      if (result.affectedPersonnelIds?.length > 0) {
-        await notificationHelper.notifyUsersOnAwardApproved(
-          result.affectedPersonnelIds as string[],
-          result.proposal,
-          user.username
-        );
-      }
-    } catch (notifError) {
-      await writeSystemLog({
-        userId: user.id,
-        userRole: user.role,
-        action: 'ERROR',
-        resource: 'proposals',
-        description: 'Lỗi gửi thông báo cho quân nhân khi duyệt khen thưởng',
-        payload: { error: String(notifError) },
-      });
+      },
+      () => notificationHelper.notifyManagerOnProposalApproval(result.proposal, user)
+    );
+    if (result.affectedPersonnelIds?.length > 0) {
+      await safeNotify(
+        {
+          userId: user.id,
+          userRole: user.role,
+          resource: 'proposals',
+          description: 'Lỗi gửi thông báo cho quân nhân khi duyệt khen thưởng',
+        },
+        () =>
+          notificationHelper.notifyUsersOnAwardApproved(
+            result.affectedPersonnelIds as string[],
+            result.proposal,
+            user.username
+          )
+      );
     }
     return ResponseHelper.success(res, {
       message: result.message,
@@ -369,44 +380,19 @@ class ProposalController {
       return ResponseHelper.badRequest(res, 'Vui lòng nhập lý do từ chối');
     }
     const result = await proposalService.rejectProposal(String(id), rejectReason, user.id);
-    try {
-      await notificationHelper.notifyManagerOnProposalRejection(
-        result.proposal,
-        user,
-        rejectReason
-      );
-    } catch (notifError) {
-      await writeSystemLog({
+    await safeNotify(
+      {
         userId: user.id,
         userRole: user.role,
-        action: 'ERROR',
         resource: 'proposals',
         description: 'Lỗi gửi thông báo cho Manager khi từ chối đề xuất',
-        payload: { error: String(notifError) },
-      });
-    }
+      },
+      () => notificationHelper.notifyManagerOnProposalRejection(result.proposal, user, rejectReason)
+    );
     return ResponseHelper.success(res, {
       message: result.message,
       data: result.result,
     });
-  });
-
-  downloadProposalExcel = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as ProposalIdParams;
-    const id = resolveIdParam(params.id);
-    if (!id) {
-      return ResponseHelper.badRequest(res, 'ID đề xuất không hợp lệ');
-    }
-    const buffer = await proposalService.downloadProposalExcel(String(id));
-    res.setHeader(
-      'Content-Type',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    );
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="de_xuat_${id}_${new Date().toISOString().slice(0, 10)}.xlsx"`
-    );
-    return res.status(200).send(buffer);
   });
 
   getAllAwards = catchAsync(async (req: Request, res: Response) => {

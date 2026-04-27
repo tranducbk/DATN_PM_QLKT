@@ -4,16 +4,36 @@ import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHel
 
 import profileService from './profile.service';
 import * as notificationHelper from '../helpers/notification';
-import { getDanhHieuName, formatDanhHieuList, resolveDanhHieuCode, buildDanhHieuExcelOptions, DANH_HIEU_HCCSVV, HCCSVV_YEARS_HANG_BA, HCCSVV_YEARS_HANG_NHI, HCCSVV_YEARS_HANG_NHAT } from '../constants/danhHieu.constants';
+import {
+  getDanhHieuName,
+  formatDanhHieuList,
+  resolveDanhHieuCode,
+  DANH_HIEU_HCCSVV,
+  HCCSVV_YEARS_HANG_BA,
+  HCCSVV_YEARS_HANG_NHI,
+  HCCSVV_YEARS_HANG_NHAT,
+} from '../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
-import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
-import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys, sanitizeRowData, validatePersonnelNameMatch } from '../helpers/excelHelper';
+import {
+  parseHeaderMap,
+  getHeaderCol,
+  resolvePersonnelInfo,
+  buildPendingKeys,
+  sanitizeRowData,
+  validatePersonnelNameMatch,
+} from '../helpers/excelHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { ValidationError, NotFoundError, AppError } from '../middlewares/errorHandler';
-import { buildTemplate, TemplateColumn, styleHeaderRow } from '../helpers/excelTemplateHelper';
+import { validateHCCSVVRankOrder } from '../helpers/hccsvvRankOrderValidation';
+import { buildTemplate, styleHeaderRow } from '../helpers/excelTemplateHelper';
 import { calculateServiceMonths, formatServiceDuration } from '../helpers/serviceYearsHelper';
 import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
+import {
+  AWARD_EXCEL_SHEETS,
+  HCCSVV_TEMPLATE_COLUMNS,
+  HCCSVV_TEMPLATE_OPTIONS,
+} from '../constants/awardExcel.constants';
 
 export interface HccsvvValidItem {
   row: number;
@@ -34,29 +54,13 @@ class HCCSVVService {
    * Export template Excel for HCCSVV import
    */
   async exportTemplate(personnelIds: string[] = [], repeatMap: Record<string, number> = {}) {
-    const columns: TemplateColumn[] = [
-      { header: 'STT', key: 'stt', width: 6 },
-      { header: 'ID', key: 'id', width: 10 },
-      { header: 'Họ và tên', key: 'ho_ten', width: 25 },
-      { header: 'Ngày sinh', key: 'ngay_sinh', width: 14 },
-      { header: 'Cơ quan đơn vị', key: 'co_quan_don_vi', width: 20 },
-      { header: 'Đơn vị trực thuộc', key: 'don_vi_truc_thuoc', width: 20 },
-      { header: 'Cấp bậc', key: 'cap_bac', width: 15 },
-      { header: 'Chức vụ', key: 'chuc_vu', width: 20 },
-      { header: 'Năm (*)', key: 'nam', width: 10 },
-      { header: 'Tháng (*)', key: 'thang', width: 10, validationFormulae: '"1,2,3,4,5,6,7,8,9,10,11,12"' },
-      { header: 'Danh hiệu (*)', key: 'danh_hieu', width: 25 },
-      { header: 'Số quyết định', key: 'so_quyet_dinh', width: 20 },
-      { header: 'Ghi chú', key: 'ghi_chu', width: 25 },
-    ];
-
     return buildTemplate({
-      sheetName: 'HCCSVV',
-      columns,
+      sheetName: AWARD_EXCEL_SHEETS.HCCSVV,
+      columns: HCCSVV_TEMPLATE_COLUMNS,
       personnelIds,
       repeatMap,
       loaiKhenThuong: PROPOSAL_TYPES.NIEN_HAN,
-      danhHieuOptions: buildDanhHieuExcelOptions(Object.values(DANH_HIEU_HCCSVV)),
+      danhHieuOptions: HCCSVV_TEMPLATE_OPTIONS,
       editableColumnLetters: ['J', 'K', 'L'],
     });
   }
@@ -71,12 +75,12 @@ class HCCSVVService {
     });
 
     // Verify sheet name is not for other award types
-    if (worksheet.name === 'Danh hiệu hằng năm') {
+    if (worksheet.name === AWARD_EXCEL_SHEETS.ANNUAL_PERSONAL) {
       throw new ValidationError(
         'File Excel không đúng loại. Đây là file danh hiệu hằng năm, không phải HCCSVV.'
       );
     }
-    if (worksheet.name === 'Khen thưởng đơn vị') {
+    if (worksheet.name === AWARD_EXCEL_SHEETS.ANNUAL_UNIT) {
       throw new ValidationError(
         'File Excel không đúng loại. Đây là file khen thưởng đơn vị, không phải HCCSVV.'
       );
@@ -149,7 +153,8 @@ class HCCSVVService {
     const pendingKeys = buildPendingKeys(
       pendingProposals as Array<Record<string, unknown>>,
       'data_nien_han',
-      (item) => item.personnel_id && item.danh_hieu ? `${item.personnel_id}_${item.danh_hieu}` : null
+      item =>
+        item.personnel_id && item.danh_hieu ? `${item.personnel_id}_${item.danh_hieu}` : null
     );
 
     const personnelMap = new Map(personnelList.map(p => [p.id, p]));
@@ -239,7 +244,14 @@ class HCCSVVService {
 
       const nameMismatch = validatePersonnelNameMatch(ho_ten, personnel.ho_ten);
       if (nameMismatch) {
-        errors.push({ row: rowNumber, ho_ten, nam: namVal, thang: thangVal, danh_hieu: danh_hieu_raw, message: nameMismatch });
+        errors.push({
+          row: rowNumber,
+          ho_ten,
+          nam: namVal,
+          thang: thangVal,
+          danh_hieu: danh_hieu_raw,
+          message: nameMismatch,
+        });
         continue;
       }
 
@@ -296,7 +308,14 @@ class HCCSVVService {
 
       // Decision number must exist in the system (not just non-empty)
       if (!so_quyet_dinh) {
-        errors.push({ row: rowNumber, ho_ten, nam, thang, danh_hieu, message: 'Thiếu số quyết định' });
+        errors.push({
+          row: rowNumber,
+          ho_ten,
+          nam,
+          thang,
+          danh_hieu,
+          message: 'Thiếu số quyết định',
+        });
         continue;
       }
       if (!validDecisionNumbers.has(so_quyet_dinh)) {
@@ -365,16 +384,35 @@ class HCCSVVService {
             nam,
             thang,
             danh_hieu,
-            message: `Chưa có ${getDanhHieuName(prerequisite)}. Phải có Hạng Ba trước Hạng Nhì, Hạng Nhì trước Hạng Nhất`,
+            message: `Chưa có ${getDanhHieuName(prerequisite)}. Phải có hạng Ba trước hạng Nhì, hạng Nhì trước hạng Nhất`,
           });
           continue;
         }
       }
 
+      // Combine DB records + earlier rows in this batch for sequential year check
+      const existingForOrder = (hccsvvByPersonnel.get(personnelId) || []).map(r => ({
+        danh_hieu: r.danh_hieu,
+        nam: r.nam,
+      }));
+      for (const v of valid) {
+        if (v.personnel_id === personnelId) {
+          existingForOrder.push({ danh_hieu: v.danh_hieu, nam: v.nam });
+        }
+      }
+      const orderError = validateHCCSVVRankOrder(danh_hieu, nam, existingForOrder);
+      if (orderError) {
+        errors.push({ row: rowNumber, ho_ten, nam, thang, danh_hieu, message: orderError });
+        continue;
+      }
+
       // Eligibility: check service time meets the required years for this rank
       const refDate = new Date(nam, thang, 0);
       const serviceTotalMonths = personnel.ngay_nhap_ngu
-        ? calculateServiceMonths(personnel.ngay_nhap_ngu as Date, (personnel.ngay_xuat_ngu as Date | null) ?? refDate)
+        ? calculateServiceMonths(
+            personnel.ngay_nhap_ngu as Date,
+            (personnel.ngay_xuat_ngu as Date | null) ?? refDate
+          )
         : null;
 
       if (serviceTotalMonths !== null) {
@@ -404,10 +442,12 @@ class HCCSVVService {
         .slice(0, 5)
         .map(r => ({ nam: r.nam, danh_hieu: r.danh_hieu, so_quyet_dinh: r.so_quyet_dinh }));
 
-      const { hoTen, capBac, chucVu, missingFields: missingInfoFields } = resolvePersonnelInfo(
-        { ho_ten, cap_bac, chuc_vu },
-        personnel
-      );
+      const {
+        hoTen,
+        capBac,
+        chucVu,
+        missingFields: missingInfoFields,
+      } = resolvePersonnelInfo({ ho_ten, cap_bac, chuc_vu }, personnel);
       if (missingInfoFields.length > 0) {
         errors.push({
           row: rowNumber,
@@ -420,7 +460,8 @@ class HCCSVVService {
         continue;
       }
 
-      const tong_thoi_gian = serviceTotalMonths !== null ? formatServiceDuration(serviceTotalMonths) : null;
+      const tong_thoi_gian =
+        serviceTotalMonths !== null ? formatServiceDuration(serviceTotalMonths) : null;
 
       valid.push({
         row: rowNumber,
@@ -461,19 +502,22 @@ class HCCSVVService {
       }),
       prisma.khenThuongHCCSVV.findMany({
         where: { quan_nhan_id: { in: personnelIds } },
-        select: { quan_nhan_id: true, danh_hieu: true },
+        select: { quan_nhan_id: true, danh_hieu: true, nam: true },
       }),
     ]);
 
     const pendingKeys = buildPendingKeys(
       pendingProposals as Array<Record<string, unknown>>,
       'data_nien_han',
-      (item) => item.personnel_id && item.danh_hieu ? `${item.personnel_id}_${item.danh_hieu}` : null
+      item =>
+        item.personnel_id && item.danh_hieu ? `${item.personnel_id}_${item.danh_hieu}` : null
     );
     const pendingConflicts: string[] = [];
     for (const item of validItems) {
       if (pendingKeys.has(`${item.personnel_id}_${item.danh_hieu}`)) {
-        pendingConflicts.push(`${item.ho_ten}: đang có đề xuất ${getDanhHieuName(item.danh_hieu)} chờ duyệt`);
+        pendingConflicts.push(
+          `${item.ho_ten}: đang có đề xuất ${getDanhHieuName(item.danh_hieu)} chờ duyệt`
+        );
       }
     }
     if (pendingConflicts.length > 0) {
@@ -502,6 +546,33 @@ class HCCSVVService {
     }
     if (conflicts.length > 0) {
       throw new ValidationError(conflicts.join('; '));
+    }
+
+    const existingByPersonnel = new Map<string, { danh_hieu: string; nam: number }[]>();
+    for (const r of existingRecords) {
+      const list = existingByPersonnel.get(r.quan_nhan_id) || [];
+      list.push({ danh_hieu: r.danh_hieu, nam: r.nam });
+      existingByPersonnel.set(r.quan_nhan_id, list);
+    }
+    const orderConflicts: string[] = [];
+    const sortedItems = [...validItems].sort((a, b) => a.nam - b.nam);
+    const accumulated = new Map<string, { danh_hieu: string; nam: number }[]>();
+    for (const item of sortedItems) {
+      const dbList = existingByPersonnel.get(item.personnel_id) || [];
+      const batchList = accumulated.get(item.personnel_id) || [];
+      const orderError = validateHCCSVVRankOrder(item.danh_hieu, item.nam, [
+        ...dbList,
+        ...batchList,
+      ]);
+      if (orderError) {
+        orderConflicts.push(`${item.ho_ten}: ${orderError}`);
+      } else {
+        batchList.push({ danh_hieu: item.danh_hieu, nam: item.nam });
+        accumulated.set(item.personnel_id, batchList);
+      }
+    }
+    if (orderConflicts.length > 0) {
+      throw new ValidationError(orderConflicts.join('; '));
     }
 
     return await prisma.$transaction(
@@ -545,11 +616,7 @@ class HCCSVVService {
   /**
    * Get all HCCSVV with filters and pagination
    */
-  async getAll(
-    filters: Record<string, unknown> = {},
-    page: number = 1,
-    limit: number = 50
-  ) {
+  async getAll(filters: Record<string, unknown> = {}, page: number = 1, limit: number = 50) {
     const where: Record<string, unknown> = {};
 
     const quanNhanFilter: Record<string, unknown> = {};
@@ -629,11 +696,11 @@ class HCCSVVService {
   /**
    * Export HCCSVV to Excel
    */
-  async exportToExcel(filters: Record<string, any> = {}) {
+  async exportToExcel(filters: Record<string, unknown> = {}) {
     const { data } = await this.getAll(filters, 1, 10000);
 
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('HCCSVV');
+    const worksheet = workbook.addWorksheet(AWARD_EXCEL_SHEETS.HCCSVV);
 
     worksheet.columns = [
       { header: 'STT', key: 'stt', width: 6 },
@@ -650,17 +717,19 @@ class HCCSVVService {
     styleHeaderRow(worksheet);
 
     data.forEach((item, index) => {
-      worksheet.addRow(sanitizeRowData({
-        stt: index + 1,
-        id: item.quan_nhan_id,
-        ho_ten: item.QuanNhan?.ho_ten ?? '',
-        cap_bac: item.cap_bac ?? '',
-        chuc_vu: item.chuc_vu ?? '',
-        nam: item.nam,
-        danh_hieu: item.danh_hieu,
-        so_quyet_dinh: item.so_quyet_dinh ?? '',
-        ghi_chu: item.ghi_chu ?? '',
-      }));
+      worksheet.addRow(
+        sanitizeRowData({
+          stt: index + 1,
+          id: item.quan_nhan_id,
+          ho_ten: item.QuanNhan?.ho_ten ?? '',
+          cap_bac: item.cap_bac ?? '',
+          chuc_vu: item.chuc_vu ?? '',
+          nam: item.nam,
+          danh_hieu: item.danh_hieu,
+          so_quyet_dinh: item.so_quyet_dinh ?? '',
+          ghi_chu: item.ghi_chu ?? '',
+        })
+      );
     });
 
     return await workbook.xlsx.writeBuffer();
@@ -719,7 +788,9 @@ class HCCSVVService {
 
     const validDanhHieu = Object.values(DANH_HIEU_HCCSVV);
     if (!validDanhHieu.includes(danh_hieu)) {
-      throw new ValidationError(`Danh hiệu không hợp lệ. Chỉ chấp nhận: ${formatDanhHieuList(validDanhHieu)}`);
+      throw new ValidationError(
+        `Danh hiệu không hợp lệ. Chỉ chấp nhận: ${formatDanhHieuList(validDanhHieu)}`
+      );
     }
 
     // Check if personnel exists
@@ -745,9 +816,18 @@ class HCCSVVService {
       throw new AppError(`Quân nhân ${personnel.ho_ten} đã có ${getDanhHieuName(danh_hieu)}`, 409);
     }
 
+    const existingRanks = await prisma.khenThuongHCCSVV.findMany({
+      where: { quan_nhan_id: quan_nhan_id },
+      select: { danh_hieu: true, nam: true },
+    });
+    const orderError = validateHCCSVVRankOrder(danh_hieu, nam as number, existingRanks);
+    if (orderError) {
+      throw new ValidationError(`Quân nhân ${personnel.ho_ten}: ${orderError}`);
+    }
+
     // Create the award
     const createData = {
-      quan_nhan_id: quan_nhan_id as string,
+      QuanNhan: { connect: { id: quan_nhan_id as string } },
       danh_hieu: danh_hieu as string,
       nam: nam as number,
       cap_bac: (cap_bac ?? personnel.cap_bac) as string,
@@ -756,6 +836,7 @@ class HCCSVVService {
       ghi_chu: ghi_chu as string,
     };
     const createdRecord = await prisma.khenThuongHCCSVV.create({
+      // Phase 1 refactor in progress: createData is missing `thang` (NOT NULL in schema). Loose cast preserves prior runtime behavior; remove once Phase 1 finalizes the shape.
       data: createData as any,
       include: {
         QuanNhan: {

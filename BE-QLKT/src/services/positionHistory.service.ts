@@ -57,7 +57,7 @@ class PositionHistoryService {
 
   async getPositionHistory(personnelId: string) {
     if (!personnelId) {
-      throw new ValidationError('personnel_id là bắt buộc');
+      throw new ValidationError('Personnel ID is required');
     }
 
     const personnel = await prisma.quanNhan.findUnique({

@@ -6,7 +6,6 @@ import { resolveAnnualRewardImportContext } from '../helpers/annualRewardImportH
 import {
   formatDanhHieuList,
   getDanhHieuName,
-  resolveDanhHieuFromRecord,
   resolveDanhHieuCode,
   buildDanhHieuExcelOptions,
   DANH_HIEU_CA_NHAN_CO_BAN,
@@ -17,6 +16,12 @@ import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { NotFoundError, ValidationError } from '../middlewares/errorHandler';
 import { writeSystemLog } from '../helpers/systemLogHelper';
+import { validateDecisionNumbers } from './eligibility/decisionNumberValidation';
+import profileService from './profile.service';
+import {
+  collectPendingProposalPersonnelIdsForAward,
+  isPersonalChainAward,
+} from './eligibility/annualBulkValidation';
 import {
   parseBooleanValue,
   resolvePersonnelInfo,
@@ -27,6 +32,8 @@ import {
 import type { DanhHieuHangNam, QuanNhan, Prisma } from '../generated/prisma';
 import { buildTemplate, TemplateColumn, styleHeaderRow } from '../helpers/excelTemplateHelper';
 import { IMPORT_TRANSACTION_TIMEOUT, EXPORT_FETCH_LIMIT } from '../constants/excel.constants';
+import { PERSONAL_ANNUAL_TEMPLATE_COLUMNS } from '../constants/annualExcel.constants';
+import { AWARD_EXCEL_SHEETS } from '../constants/awardExcel.constants';
 
 interface CreateAnnualRewardData {
   personnel_id: string;
@@ -206,7 +213,6 @@ class AnnualRewardService {
     });
 
     if (existingReward) {
-      const isBangKhen = !danh_hieu || DANH_HIEU_CA_NHAN_BANG_KHEN.has(danh_hieu);
       const isCoBan = danh_hieu && DANH_HIEU_CA_NHAN_CO_BAN.has(danh_hieu);
 
       // Block: existing has same base title, or adding base title when one already exists
@@ -222,6 +228,23 @@ class AnnualRewardService {
       }
       if (nhan_bkttcp && existingReward.nhan_bkttcp) {
         throw new ValidationError(`Năm ${nam} đã có Bằng khen Thủ tướng Chính phủ.`);
+      }
+
+      const mergeDecisionErrors = validateDecisionNumbers(
+        {
+          danh_hieu: isCoBan ? danh_hieu : null,
+          so_quyet_dinh: isCoBan ? data.so_quyet_dinh : null,
+          nhan_bkbqp,
+          so_quyet_dinh_bkbqp,
+          nhan_cstdtq,
+          so_quyet_dinh_cstdtq,
+          nhan_bkttcp,
+          so_quyet_dinh_bkttcp,
+        },
+        { entityType: 'personal', entityName: personnel.ho_ten }
+      );
+      if (mergeDecisionErrors.length > 0) {
+        throw new ValidationError(mergeDecisionErrors.join('\n'));
       }
 
       // Allow: merge into existing record
@@ -254,6 +277,23 @@ class AnnualRewardService {
       });
       await safeRecalculateAnnualProfile(personnel_id);
       return updated;
+    }
+
+    const createDecisionErrors = validateDecisionNumbers(
+      {
+        danh_hieu,
+        so_quyet_dinh: data.so_quyet_dinh,
+        nhan_bkbqp,
+        so_quyet_dinh_bkbqp,
+        nhan_cstdtq,
+        so_quyet_dinh_cstdtq,
+        nhan_bkttcp,
+        so_quyet_dinh_bkttcp,
+      },
+      { entityType: 'personal', entityName: personnel.ho_ten }
+    );
+    if (createDecisionErrors.length > 0) {
+      throw new ValidationError(createDecisionErrors.join('\n'));
     }
 
     const newReward = await prisma.danhHieuHangNam.create({
@@ -338,7 +378,8 @@ class AnnualRewardService {
 
   async deleteAnnualReward(
     id: string,
-    adminUsername: string = 'Admin'
+    adminUsername: string = 'Admin',
+    awardType?: string | null
   ): Promise<{
     message: string;
     personnelId: string;
@@ -363,6 +404,102 @@ class AnnualRewardService {
 
     const personnelId = reward.quan_nhan_id;
     const personnel = reward.QuanNhan;
+
+    // Awards page renders one row per year with multiple awards. Granular
+    // delete clears only the requested award + its decision number + note;
+    // the row is removed entirely when no awards remain.
+    if (awardType) {
+      const validTypes = new Set<string>([
+        ...DANH_HIEU_CA_NHAN_CO_BAN,
+        ...DANH_HIEU_CA_NHAN_BANG_KHEN,
+      ]);
+      if (!validTypes.has(awardType)) {
+        throw new ValidationError(
+          `Loại danh hiệu không hợp lệ. Chỉ được chọn: ${formatDanhHieuList([...validTypes])}.`
+        );
+      }
+
+      const updateData: Prisma.DanhHieuHangNamUpdateInput = {};
+      const isBaseAward = DANH_HIEU_CA_NHAN_CO_BAN.has(awardType);
+
+      if (isBaseAward) {
+        if (reward.danh_hieu !== awardType) {
+          throw new ValidationError(
+            `Bản ghi không có ${getDanhHieuName(awardType)}`
+          );
+        }
+        updateData.danh_hieu = null;
+        updateData.so_quyet_dinh = null;
+        updateData.ghi_chu = null;
+      } else if (awardType === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP) {
+        if (!reward.nhan_bkbqp) {
+          throw new ValidationError(
+            `Bản ghi không có ${getDanhHieuName(awardType)}`
+          );
+        }
+        updateData.nhan_bkbqp = false;
+        updateData.so_quyet_dinh_bkbqp = null;
+        updateData.ghi_chu_bkbqp = null;
+      } else if (awardType === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ) {
+        if (!reward.nhan_cstdtq) {
+          throw new ValidationError(
+            `Bản ghi không có ${getDanhHieuName(awardType)}`
+          );
+        }
+        updateData.nhan_cstdtq = false;
+        updateData.so_quyet_dinh_cstdtq = null;
+        updateData.ghi_chu_cstdtq = null;
+      } else if (awardType === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP) {
+        if (!reward.nhan_bkttcp) {
+          throw new ValidationError(
+            `Bản ghi không có ${getDanhHieuName(awardType)}`
+          );
+        }
+        updateData.nhan_bkttcp = false;
+        updateData.so_quyet_dinh_bkttcp = null;
+        updateData.ghi_chu_bkttcp = null;
+      }
+
+      const remainingDanhHieu = isBaseAward ? null : reward.danh_hieu;
+      const remainingBkbqp =
+        awardType === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP ? false : reward.nhan_bkbqp;
+      const remainingCstdtq =
+        awardType === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ ? false : reward.nhan_cstdtq;
+      const remainingBkttcp =
+        awardType === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP ? false : reward.nhan_bkttcp;
+      const isEmpty =
+        !remainingDanhHieu && !remainingBkbqp && !remainingCstdtq && !remainingBkttcp;
+
+      if (isEmpty) {
+        await prisma.danhHieuHangNam.delete({ where: { id } });
+      } else {
+        await prisma.danhHieuHangNam.update({ where: { id }, data: updateData });
+      }
+
+      await safeRecalculateAnnualProfile(personnelId);
+
+      try {
+        await notificationHelper.notifyOnAwardDeleted(
+          reward,
+          personnel,
+          PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
+          adminUsername
+        );
+      } catch (e) {
+        void writeSystemLog({
+          action: 'ERROR',
+          resource: 'annual-rewards',
+          description: `Lỗi gửi thông báo xóa khen thưởng hằng năm: ${e}`,
+        });
+      }
+
+      return {
+        message: `Đã xóa ${getDanhHieuName(awardType)}.`,
+        personnelId,
+        personnel,
+        reward,
+      };
+    }
 
     await prisma.danhHieuHangNam.delete({
       where: { id },
@@ -410,15 +547,15 @@ class AnnualRewardService {
     } = columns;
     const { personnelMap: personnelById, existingAwardKeys, existingRewardByKey } = batchMaps;
 
-    const approvedProposals = await prisma.bangDeXuat.findMany({
+    const pendingProposals = await prisma.bangDeXuat.findMany({
       where: {
         loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
         nam: { in: [...allYears] },
         status: PROPOSAL_STATUS.PENDING,
       },
     });
-    const proposalsByYear = new Map<number, typeof approvedProposals>();
-    for (const proposal of approvedProposals) {
+    const proposalsByYear = new Map<number, typeof pendingProposals>();
+    for (const proposal of pendingProposals) {
       if (proposal.nam == null) continue;
       const list = proposalsByYear.get(proposal.nam) ?? [];
       list.push(proposal);
@@ -1004,6 +1141,35 @@ class AnnualRewardService {
       throw new ValidationError(conflicts.join('; '));
     }
 
+    const decisionErrors: string[] = [];
+    for (const item of validItems) {
+      const isBangKhen = DANH_HIEU_CA_NHAN_BANG_KHEN.has(item.danh_hieu);
+      const nhanBKBQP = item.nhan_bkbqp || item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP;
+      const nhanCSTDTQ = item.nhan_cstdtq || item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ;
+      const nhanBKTTCP = item.nhan_bkttcp || item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP;
+      const sharedDecision = item.so_quyet_dinh ?? null;
+      const errs = validateDecisionNumbers(
+        {
+          danh_hieu: isBangKhen ? null : item.danh_hieu,
+          so_quyet_dinh: isBangKhen ? null : sharedDecision,
+          nhan_bkbqp: nhanBKBQP,
+          so_quyet_dinh_bkbqp: item.so_quyet_dinh_bkbqp || sharedDecision,
+          nhan_cstdtq: nhanCSTDTQ,
+          so_quyet_dinh_cstdtq: item.so_quyet_dinh_cstdtq || sharedDecision,
+          nhan_bkttcp: nhanBKTTCP,
+          so_quyet_dinh_bkttcp: item.so_quyet_dinh_bkttcp || sharedDecision,
+        },
+        {
+          entityType: 'personal',
+          entityName: hoTenMap.get(item.personnel_id) || item.ho_ten || item.personnel_id,
+        }
+      );
+      decisionErrors.push(...errs);
+    }
+    if (decisionErrors.length > 0) {
+      throw new ValidationError(decisionErrors.join('\n'));
+    }
+
     return await prisma.$transaction(
       async prismaTx => {
         const results: DanhHieuHangNam[] = [];
@@ -1203,7 +1369,7 @@ class AnnualRewardService {
     const personnelIds = personnel_ids.map(id => String(id)).filter(Boolean);
     const namInt = nam;
 
-    const [allPersonnel, existingRewards, approvedProposals] = await Promise.all([
+    const [allPersonnel, existingRewards, pendingProposals] = await Promise.all([
       prisma.quanNhan.findMany({ where: { id: { in: personnelIds } } }),
       prisma.danhHieuHangNam.findMany({
         where: { quan_nhan_id: { in: personnelIds }, nam: namInt },
@@ -1230,13 +1396,21 @@ class AnnualRewardService {
         })
         .map(r => r.quan_nhan_id)
     );
-    const pendingProposalPersonnelSet = new Set<string>();
-    for (const proposal of approvedProposals) {
-      const dataDanhHieu = (proposal.data_danh_hieu as Array<Record<string, unknown>>) ?? [];
-      for (const item of dataDanhHieu) {
-        if (item.danh_hieu === danh_hieu && typeof item.personnel_id === 'string') {
-          pendingProposalPersonnelSet.add(item.personnel_id);
-        }
+    const pendingProposalPersonnelSet = collectPendingProposalPersonnelIdsForAward(
+      pendingProposals as Array<{ data_danh_hieu: unknown }>,
+      danh_hieu
+    );
+
+    const eligibilityMap = new Map<string, { eligible: boolean; reason: string }>();
+    if (isPersonalChainAward(danh_hieu)) {
+      const eligibilityResults = await Promise.all(
+        personnelIds.map(async personnelId => ({
+          personnelId,
+          result: await profileService.checkAwardEligibility(personnelId, namInt, danh_hieu),
+        }))
+      );
+      for (const { personnelId, result } of eligibilityResults) {
+        eligibilityMap.set(personnelId, result);
       }
     }
 
@@ -1268,6 +1442,42 @@ class AnnualRewardService {
             personnelId,
             error: `Quân nhân đã có đề xuất danh hiệu ${getDanhHieuName(danh_hieu)} cho năm ${namInt}`,
           });
+          continue;
+        }
+
+        if (isPersonalChainAward(danh_hieu)) {
+          const eligibility = eligibilityMap.get(personnelId) || {
+            eligible: false,
+            reason: 'Không xác định được điều kiện khen thưởng',
+          };
+          if (!eligibility.eligible) {
+            errors.push({
+              personnelId,
+              error: eligibility.reason,
+            });
+            continue;
+          }
+        }
+
+        const isCoBanRow = DANH_HIEU_CA_NHAN_CO_BAN.has(danh_hieu);
+        const isBkbqpRow = danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP;
+        const isCstdtqRow = danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ;
+        const isBkttcpRow = danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP;
+        const decisionErrors = validateDecisionNumbers(
+          {
+            danh_hieu: isCoBanRow ? danh_hieu : null,
+            so_quyet_dinh: isCoBanRow ? individualSoQuyetDinh : null,
+            nhan_bkbqp: isBkbqpRow,
+            so_quyet_dinh_bkbqp: isBkbqpRow ? individualSoQuyetDinh : null,
+            nhan_cstdtq: isCstdtqRow,
+            so_quyet_dinh_cstdtq: isCstdtqRow ? individualSoQuyetDinh : null,
+            nhan_bkttcp: isBkttcpRow,
+            so_quyet_dinh_bkttcp: isBkttcpRow ? individualSoQuyetDinh : null,
+          },
+          { entityType: 'personal', entityName: personnel.ho_ten }
+        );
+        if (decisionErrors.length > 0) {
+          errors.push({ personnelId, error: decisionErrors.join('\n') });
           continue;
         }
 
@@ -1386,23 +1596,10 @@ class AnnualRewardService {
     personnelIds: string[] = [],
     repeatMap: Record<string, number> = {}
   ): Promise<ExcelJS.Workbook> {
-    const columns: TemplateColumn[] = [
-      { header: 'STT', key: 'stt', width: 6 },
-      { header: 'ID', key: 'id', width: 10 },
-      { header: 'Họ và tên', key: 'ho_ten', width: 25 },
-      { header: 'Ngày sinh', key: 'ngay_sinh', width: 14 },
-      { header: 'Cơ quan đơn vị', key: 'co_quan_don_vi', width: 20 },
-      { header: 'Đơn vị trực thuộc', key: 'don_vi_truc_thuoc', width: 20 },
-      { header: 'Cấp bậc', key: 'cap_bac', width: 15 },
-      { header: 'Chức vụ', key: 'chuc_vu', width: 20 },
-      { header: 'Năm (*)', key: 'nam', width: 10 },
-      { header: 'Danh hiệu (*)', key: 'danh_hieu', width: 20 },
-      { header: 'Số quyết định', key: 'so_quyet_dinh', width: 20 },
-      { header: 'Ghi chú', key: 'ghi_chu', width: 25 },
-    ];
+    const columns: TemplateColumn[] = [...PERSONAL_ANNUAL_TEMPLATE_COLUMNS];
 
     return buildTemplate({
-      sheetName: 'Danh hiệu hằng năm',
+      sheetName: AWARD_EXCEL_SHEETS.ANNUAL_PERSONAL,
       columns,
       personnelIds,
       repeatMap,
@@ -1445,7 +1642,7 @@ class AnnualRewardService {
     });
 
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Danh hiệu hằng năm');
+    const worksheet = workbook.addWorksheet(AWARD_EXCEL_SHEETS.ANNUAL_PERSONAL);
 
     worksheet.columns = [
       { header: 'STT', key: 'stt', width: 6 },

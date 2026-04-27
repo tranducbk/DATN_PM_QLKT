@@ -51,8 +51,6 @@ export const apiClient = {
   updatePositionHistory: personnelApi.updatePositionHistory,
   deletePositionHistory: personnelApi.deletePositionHistory,
   exportPersonnel: personnelApi.exportPersonnel,
-  exportPersonnelSample: personnelApi.exportPersonnelSample,
-  importPersonnel: personnelApi.importPersonnel,
 
   // Units & Positions
   getUnits: unitsApi.getUnits,
@@ -150,13 +148,11 @@ export const apiClient = {
   checkContributionEligibility: awardsApi.checkContributionEligibility,
 
   // Proposals
-  getProposalTemplate: proposalsApi.getProposalTemplate,
   submitProposal: proposalsApi.submitProposal,
   getProposals: proposalsApi.getProposals,
   getProposalById: proposalsApi.getProposalById,
   approveProposal: proposalsApi.approveProposal,
   rejectProposal: proposalsApi.rejectProposal,
-  downloadProposalExcel: proposalsApi.downloadProposalExcel,
   deleteProposal: proposalsApi.deleteProposal,
   uploadDecision: proposalsApi.uploadDecision,
   checkDuplicate: proposalsApi.checkDuplicate,

@@ -11,6 +11,8 @@ import {
   DANH_HIEU_DON_VI_CO_BAN,
   DANH_HIEU_DON_VI_BANG_KHEN,
 } from '../constants/danhHieu.constants';
+import { UNIT_CHAIN_AWARDS, findChainAwardConfig } from '../constants/chainAwards.constants';
+import { checkChainEligibility, type FlagsInWindow } from './eligibility/chainEligibility';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
@@ -22,6 +24,7 @@ import {
 } from '../helpers/excelHelper';
 import { NotFoundError, ValidationError, ForbiddenError } from '../middlewares/errorHandler';
 import { resolveUnit, buildUnitIdFields } from '../helpers/unitHelper';
+import { validateDecisionNumbers } from './eligibility/decisionNumberValidation';
 import { applyThinBordersToGrid, styleHeaderRow } from '../helpers/excelTemplateHelper';
 import {
   IMPORT_TRANSACTION_TIMEOUT,
@@ -29,6 +32,11 @@ import {
   MIN_TEMPLATE_ROWS,
   EXPORT_FETCH_LIMIT,
 } from '../constants/excel.constants';
+import {
+  UNIT_ANNUAL_DANH_HIEU_VALIDATION_FORMULA,
+  UNIT_ANNUAL_TEMPLATE_COLUMNS,
+} from '../constants/annualExcel.constants';
+import { AWARD_EXCEL_SHEETS } from '../constants/awardExcel.constants';
 
 interface UnitAnnualAwardValidItem {
   row: number;
@@ -228,38 +236,48 @@ class UnitAnnualAwardService {
       return { eligible: true, reason: '' };
     }
 
+    const config = findChainAwardConfig(UNIT_CHAIN_AWARDS, danhHieu);
+    if (!config) return { eligible: true, reason: '' };
+
     const dvqtLienTuc = await this.calculateContinuousYears(donViId, year);
-    const bkbqpLienTuc = await this.countBKBQPInStreak(donViId, year);
+    // Count BKBQP within the cycle window (e.g. last 7y for BKTTCP) so that flags from
+    // earlier cycles do not retro-claim into the current one.
+    const bkbqpInCycle = await this.countBKBQPInStreak(donViId, year, config.cycleYears);
 
-    if (danhHieu === DANH_HIEU_DON_VI_HANG_NAM.BKBQP) {
-      const eligible = dvqtLienTuc >= 2 && dvqtLienTuc % 2 === 0;
-      if (!eligible) {
-        return {
-          eligible: false,
-          reason: `Chưa đủ điều kiện ${getDanhHieuName(danhHieu)}: cần 2 năm ĐVQT liên tục (hiện có ${dvqtLienTuc} năm)`,
-        };
-      }
-      return { eligible: true, reason: `Đủ điều kiện ${getDanhHieuName(danhHieu)}` };
+    const flagsInWindow: FlagsInWindow = {};
+    config.requiredFlags.forEach(f => {
+      flagsInWindow[f.code] = bkbqpInCycle;
+    });
+
+    // Lifetime block: scan only when needed to keep non-lifetime checks at the original 2 queries.
+    let hasReceived = false;
+    if (config.isLifetime) {
+      const lifetimeCount = await prisma.danhHieuDonViHangNam.count({
+        where: {
+          OR: [{ co_quan_don_vi_id: donViId }, { don_vi_truc_thuoc_id: donViId }],
+          [config.flagColumn]: true,
+        },
+      });
+      hasReceived = lifetimeCount > 0;
     }
 
-    if (danhHieu === DANH_HIEU_DON_VI_HANG_NAM.BKTTCP) {
-      if (dvqtLienTuc > 7 && dvqtLienTuc % 7 === 0) {
-        return {
-          eligible: false,
-          reason: `Phần mềm chưa hỗ trợ khen thưởng cao hơn ${getDanhHieuName(danhHieu)}, sẽ phát triển trong thời gian tới.`,
-        };
-      }
-      const eligible = dvqtLienTuc === 7 && bkbqpLienTuc === 3;
-      if (!eligible) {
-        return {
-          eligible: false,
-          reason: `Chưa đủ điều kiện ${getDanhHieuName(danhHieu)}: cần 7 năm ĐVQT + 3 lần BKBQP (hiện có ${dvqtLienTuc} năm ĐVQT, ${bkbqpLienTuc} lần BKBQP)`,
-        };
-      }
-      return { eligible: true, reason: `Đủ điều kiện ${getDanhHieuName(danhHieu)}` };
-    }
+    const lastClaim = await prisma.danhHieuDonViHangNam.findFirst({
+      where: {
+        OR: [{ co_quan_don_vi_id: donViId }, { don_vi_truc_thuoc_id: donViId }],
+        [config.flagColumn]: true,
+        nam: { lt: year },
+      },
+      orderBy: { nam: 'desc' },
+      select: { nam: true },
+    });
 
-    return { eligible: true, reason: '' };
+    return checkChainEligibility(
+      config,
+      { streakLength: dvqtLienTuc, nckhStreak: 0, lastClaimYear: lastClaim?.nam ?? null },
+      hasReceived,
+      flagsInWindow,
+      year
+    );
   }
 
   /** Manager proposal flow (PENDING): creates DanhHieuDonViHangNam records. */
@@ -563,6 +581,23 @@ class UnitAnnualAwardService {
     const isBkbqp = danh_hieu === DANH_HIEU_DON_VI_HANG_NAM.BKBQP;
     const isBkttcp = danh_hieu === DANH_HIEU_DON_VI_HANG_NAM.BKTTCP;
 
+    if (danh_hieu) {
+      const decisionErrors = validateDecisionNumbers(
+        {
+          danh_hieu: isBk ? null : danh_hieu,
+          so_quyet_dinh: isBk ? null : so_quyet_dinh,
+          nhan_bkbqp: isBkbqp,
+          so_quyet_dinh_bkbqp: isBkbqp ? so_quyet_dinh : null,
+          nhan_bkttcp: isBkttcp,
+          so_quyet_dinh_bkttcp: isBkttcp ? so_quyet_dinh : null,
+        },
+        { entityType: 'unit', entityName: unitId }
+      );
+      if (decisionErrors.length > 0) {
+        throw new ValidationError(decisionErrors.join('\n'));
+      }
+    }
+
     const updateData: Record<string, unknown> = {};
     if (isBk) {
       if (isBkbqp) {
@@ -656,7 +691,7 @@ class UnitAnnualAwardService {
     return count;
   }
 
-  async remove(id: string) {
+  async remove(id: string, awardType?: string | null) {
     const danhHieu = await prisma.danhHieuDonViHangNam.findUnique({
       where: { id: String(id) },
     });
@@ -665,9 +700,70 @@ class UnitAnnualAwardService {
       throw new NotFoundError('Danh hiệu đơn vị hằng năm');
     }
 
+    const donViId = danhHieu.co_quan_don_vi_id || danhHieu.don_vi_truc_thuoc_id;
+
+    // Awards page renders one row per year with multiple awards. Granular
+    // delete clears only the requested award + its decision number + note;
+    // the row is removed entirely when no awards remain.
+    if (awardType) {
+      const validTypes = new Set<string>([
+        ...DANH_HIEU_DON_VI_CO_BAN,
+        ...DANH_HIEU_DON_VI_BANG_KHEN,
+      ]);
+      if (!validTypes.has(awardType)) {
+        throw new ValidationError(
+          `Loại danh hiệu không hợp lệ. Chỉ được chọn: ${formatDanhHieuList([...validTypes])}.`
+        );
+      }
+
+      const updateData: Prisma.DanhHieuDonViHangNamUpdateInput = {};
+      const isBaseAward = DANH_HIEU_DON_VI_CO_BAN.has(awardType);
+
+      if (isBaseAward) {
+        if (danhHieu.danh_hieu !== awardType) {
+          throw new ValidationError(`Bản ghi không có ${getDanhHieuName(awardType)}`);
+        }
+        updateData.danh_hieu = null;
+        updateData.so_quyet_dinh = null;
+        updateData.ghi_chu = null;
+      } else if (awardType === DANH_HIEU_DON_VI_HANG_NAM.BKBQP) {
+        if (!danhHieu.nhan_bkbqp) {
+          throw new ValidationError(`Bản ghi không có ${getDanhHieuName(awardType)}`);
+        }
+        updateData.nhan_bkbqp = false;
+        updateData.so_quyet_dinh_bkbqp = null;
+        updateData.ghi_chu_bkbqp = null;
+      } else if (awardType === DANH_HIEU_DON_VI_HANG_NAM.BKTTCP) {
+        if (!danhHieu.nhan_bkttcp) {
+          throw new ValidationError(`Bản ghi không có ${getDanhHieuName(awardType)}`);
+        }
+        updateData.nhan_bkttcp = false;
+        updateData.so_quyet_dinh_bkttcp = null;
+        updateData.ghi_chu_bkttcp = null;
+      }
+
+      const remainingDanhHieu = isBaseAward ? null : danhHieu.danh_hieu;
+      const remainingBkbqp =
+        awardType === DANH_HIEU_DON_VI_HANG_NAM.BKBQP ? false : danhHieu.nhan_bkbqp;
+      const remainingBkttcp =
+        awardType === DANH_HIEU_DON_VI_HANG_NAM.BKTTCP ? false : danhHieu.nhan_bkttcp;
+      const isEmpty = !remainingDanhHieu && !remainingBkbqp && !remainingBkttcp;
+
+      if (isEmpty) {
+        await prisma.danhHieuDonViHangNam.delete({ where: { id: String(id) } });
+      } else {
+        await prisma.danhHieuDonViHangNam.update({
+          where: { id: String(id) },
+          data: updateData,
+        });
+      }
+
+      await this.recalculateAnnualUnit(donViId, danhHieu.nam);
+      return true;
+    }
+
     await prisma.danhHieuDonViHangNam.delete({ where: { id: String(id) } });
 
-    const donViId = danhHieu.co_quan_don_vi_id || danhHieu.don_vi_truc_thuoc_id;
     await this.recalculateAnnualUnit(donViId, danhHieu.nam);
 
     return true;
@@ -872,7 +968,7 @@ class UnitAnnualAwardService {
     }
 
     // Verify file type by sheet name
-    if (worksheet.name === 'Danh hiệu hằng năm') {
+    if (worksheet.name === AWARD_EXCEL_SHEETS.ANNUAL_PERSONAL) {
       throw new ValidationError(
         'File Excel không đúng loại. Đây là file khen thưởng cá nhân, không phải đơn vị hằng năm.'
       );
@@ -1287,6 +1383,27 @@ class UnitAnnualAwardService {
       throw new ValidationError(duplicateErrors.join('; '));
     }
 
+    const decisionErrors: string[] = [];
+    for (const item of validItems) {
+      const isBkBqp = item.danh_hieu === DANH_HIEU_DON_VI_HANG_NAM.BKBQP;
+      const isBkTtcp = item.danh_hieu === DANH_HIEU_DON_VI_HANG_NAM.BKTTCP;
+      const errs = validateDecisionNumbers(
+        {
+          danh_hieu: isBkBqp || isBkTtcp ? null : item.danh_hieu,
+          so_quyet_dinh: isBkBqp || isBkTtcp ? null : item.so_quyet_dinh,
+          nhan_bkbqp: isBkBqp,
+          so_quyet_dinh_bkbqp: isBkBqp ? item.so_quyet_dinh : null,
+          nhan_bkttcp: isBkTtcp,
+          so_quyet_dinh_bkttcp: isBkTtcp ? item.so_quyet_dinh : null,
+        },
+        { entityType: 'unit', entityName: item.ten_don_vi || item.unit_id }
+      );
+      decisionErrors.push(...errs);
+    }
+    if (decisionErrors.length > 0) {
+      throw new ValidationError(decisionErrors.join('\n'));
+    }
+
     return await prisma.$transaction(
       async prismaTx => {
         const results = [];
@@ -1361,19 +1478,10 @@ class UnitAnnualAwardService {
     repeatMap: Record<string, number> = {}
   ) {
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Khen thưởng đơn vị');
+    const worksheet = workbook.addWorksheet(AWARD_EXCEL_SHEETS.ANNUAL_UNIT);
 
     // Define columns
-    const columns = [
-      { header: 'STT', key: 'stt', width: 8 },
-      { header: 'ID', key: 'id', width: 30 },
-      { header: 'Mã đơn vị', key: 'ma_don_vi', width: 15 },
-      { header: 'Tên đơn vị', key: 'ten_don_vi', width: 30 },
-      { header: 'Năm (*)', key: 'nam', width: 10 },
-      { header: 'Danh hiệu (*)', key: 'danh_hieu', width: 20 },
-      { header: 'Số quyết định', key: 'so_quyet_dinh', width: 20 },
-      { header: 'Ghi chú', key: 'ghi_chu', width: 30 },
-    ];
+    const columns = [...UNIT_ANNUAL_TEMPLATE_COLUMNS];
 
     worksheet.columns = columns;
 
@@ -1398,7 +1506,7 @@ class UnitAnnualAwardService {
     const danhHieuValidation = {
       type: 'list' as const,
       allowBlank: true,
-      formulae: ['"ĐVQT,ĐVTT"'],
+      formulae: [UNIT_ANNUAL_DANH_HIEU_VALIDATION_FORMULA],
     };
 
     const existingDecisions = await prisma.fileQuyetDinh.findMany({
@@ -1526,7 +1634,7 @@ class UnitAnnualAwardService {
     const workbook = await loadWorkbook(buffer);
 
     // Try to find worksheet by name first, fallback to first worksheet
-    let worksheet = workbook.getWorksheet('Khen thưởng đơn vị');
+    let worksheet = workbook.getWorksheet(AWARD_EXCEL_SHEETS.ANNUAL_UNIT);
     if (!worksheet) {
       worksheet = workbook.worksheets[0];
     }
@@ -1863,7 +1971,7 @@ class UnitAnnualAwardService {
     });
 
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Khen thưởng đơn vị');
+    const worksheet = workbook.addWorksheet(AWARD_EXCEL_SHEETS.ANNUAL_UNIT);
 
     worksheet.columns = [
       { header: 'STT', key: 'stt', width: 8 },

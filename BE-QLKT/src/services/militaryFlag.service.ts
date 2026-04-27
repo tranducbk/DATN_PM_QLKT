@@ -7,8 +7,9 @@ import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { ValidationError, NotFoundError } from '../middlewares/errorHandler';
 import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys, sanitizeRowData, validatePersonnelNameMatch } from '../helpers/excelHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
-import { buildTemplate, TemplateColumn, styleHeaderRow } from '../helpers/excelTemplateHelper';
+import { buildTemplate, styleHeaderRow } from '../helpers/excelTemplateHelper';
 import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
+import { AWARD_EXCEL_SHEETS, HCQKQT_TEMPLATE_COLUMNS } from '../constants/awardExcel.constants';
 import { HCQKQT_YEARS_REQUIRED } from '../constants/danhHieu.constants';
 import { calculateServiceMonths, formatServiceDuration } from '../helpers/serviceYearsHelper';
 
@@ -57,7 +58,9 @@ interface MilitaryFlagFilters {
 class MilitaryFlagService {
   async previewImport(buffer: Buffer) {
     const workbook = await loadWorkbook(buffer);
-    const worksheet = getAndValidateWorksheet(workbook, { sheetName: 'HC QKQT' });
+    const worksheet = getAndValidateWorksheet(workbook, {
+      sheetName: AWARD_EXCEL_SHEETS.HC_QKQT,
+    });
 
     const headerMap = parseHeaderMap(worksheet);
 
@@ -390,24 +393,9 @@ class MilitaryFlagService {
   }
 
   async exportTemplate(personnelIds: string[] = [], repeatMap: Record<string, number> = {}) {
-    const columns: TemplateColumn[] = [
-      { header: 'STT', key: 'stt', width: 6 },
-      { header: 'ID', key: 'id', width: 10 },
-      { header: 'Họ và tên', key: 'ho_ten', width: 25 },
-      { header: 'Ngày sinh', key: 'ngay_sinh', width: 14 },
-      { header: 'Cơ quan đơn vị', key: 'co_quan_don_vi', width: 20 },
-      { header: 'Đơn vị trực thuộc', key: 'don_vi_truc_thuoc', width: 20 },
-      { header: 'Cấp bậc', key: 'cap_bac', width: 15 },
-      { header: 'Chức vụ', key: 'chuc_vu', width: 20 },
-      { header: 'Năm (*)', key: 'nam', width: 10 },
-      { header: 'Tháng (*)', key: 'thang', width: 10, validationFormulae: '"1,2,3,4,5,6,7,8,9,10,11,12"' },
-      { header: 'Số quyết định', key: 'so_quyet_dinh', width: 20 },
-      { header: 'Ghi chú', key: 'ghi_chu', width: 25 },
-    ];
-
     return buildTemplate({
-      sheetName: 'HC QKQT',
-      columns,
+      sheetName: AWARD_EXCEL_SHEETS.HC_QKQT,
+      columns: HCQKQT_TEMPLATE_COLUMNS,
       personnelIds,
       repeatMap,
       loaiKhenThuong: PROPOSAL_TYPES.HC_QKQT,
@@ -495,7 +483,7 @@ class MilitaryFlagService {
     const { data } = await this.getAll(filters, 1, 10000);
 
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('HCQKQT');
+    const worksheet = workbook.addWorksheet(AWARD_EXCEL_SHEETS.HC_QKQT);
 
     worksheet.columns = [
       { header: 'STT', key: 'stt', width: 6 },

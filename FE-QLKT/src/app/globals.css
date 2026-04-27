@@ -176,7 +176,7 @@
   background-color: #4a4a2a !important;
 }
 
-/* Tô màu dòng quân nhân đã đủ Hạng Ba nhưng chưa đủ Hạng Nhì/Nhất */
+/* Tô màu dòng quân nhân đã đủ hạng Ba nhưng chưa đủ hạng Nhì/Nhất */
 .ant-table-tbody > tr.row-partial-eligible-hccsvv > td {
   background-color: #fffbe6 !important;
 }
@@ -2177,28 +2177,46 @@ button[class*='bg-primary']:hover:not(:disabled) {
   padding: 16px 10px !important;
 }
 
-/* Bỏ focus ring cho tabs */
-.ant-tabs-tab:focus,
-.ant-tabs-tab:focus-visible,
-.ant-tabs-tab-active:focus,
-.ant-tabs-tab-active:focus-visible,
-.ant-tabs-tab-btn:focus,
-.ant-tabs-tab-btn:focus-visible,
-.ant-tabs-tab:focus-within,
-.ant-tabs-tab-active:focus-within {
-  outline: none !important;
-  box-shadow: none !important;
-  border: none !important;
+/* Smooth tab interaction and avoid square click highlight */
+.ant-tabs-tab-btn {
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease;
 }
 
-/* Bỏ focus ring cho tab node (RC Tabs) */
-[role='tab']:focus,
-[role='tab']:focus-visible,
-[role='tab'][aria-selected='true']:focus,
-[role='tab'][aria-selected='true']:focus-visible {
+.ant-tabs-ink-bar {
+  transition:
+    transform 0.25s ease,
+    width 0.25s ease,
+    left 0.25s ease;
+}
+
+/* Mouse click focus should not show harsh square outline */
+.ant-tabs-tab-btn:focus:not(:focus-visible),
+.ant-tabs-tab:focus:not(:focus-visible),
+.ant-tabs-tab:focus-within:not(:focus-visible) {
   outline: none !important;
   box-shadow: none !important;
-  border: none !important;
+}
+
+/* Keep keyboard accessibility with subtle focus style */
+.ant-tabs-tab-btn:focus-visible,
+[role='tab']:focus-visible {
+  outline: 2px solid rgba(59, 130, 246, 0.45) !important;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.dark .ant-tabs-tab-btn:focus-visible,
+.dark [role='tab']:focus-visible {
+  outline-color: rgba(96, 165, 250, 0.55) !important;
+}
+
+/* Prevent default UA outline from rc-tabs nodes */
+[role='tab']:focus {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 /* Tab active styling - highlight toàn bộ chiều cao */
@@ -2891,3 +2909,4 @@ body.ant-modal-open {
 .ant-table-wrapper {
   max-width: 100%;
 }
+

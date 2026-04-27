@@ -258,8 +258,10 @@ class AnnualRewardController {
     const id = normalizeParam(params.id);
     if (!id) return ResponseHelper.badRequest(res, 'Thiếu id');
 
+    const query = req.query as { awardType?: string };
+    const awardType = normalizeParam(query.awardType) || null;
     const adminUsername = getAdminUsername(req);
-    const result = await annualRewardService.deleteAnnualReward(id, adminUsername);
+    const result = await annualRewardService.deleteAnnualReward(id, adminUsername, awardType);
     return ResponseHelper.success(res, { message: result.message });
   });
 

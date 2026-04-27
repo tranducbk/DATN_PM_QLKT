@@ -27,6 +27,10 @@ import {
   COLUMN_STYLES,
   renderDecision,
   renderAnnualAwards,
+  renderUnitAnnualAwards,
+  collectPersonalAwards,
+  collectUnitAwards,
+  renderAwardDeleteButtons,
 } from '@/utils/awardsHelper';
 import { AWARD_TAB_DANH_HIEU, type AwardType } from '@/constants/danhHieu.constants';
 
@@ -109,12 +113,28 @@ const TABS_WITH_NESTED_QUAN_NHAN = new Set<AwardType>([
 
 const TABS_WITH_DANH_HIEU_FILTER = new Set<AwardType>(['CNHN', 'DVHN', 'HCCSVV', 'HCBVTQ']);
 const TABS_WITH_DIRECT_DANH_HIEU_FILTER = new Set<AwardType>(['DVHN', 'HCCSVV', 'HCBVTQ']);
+interface AwardTypeFetchParams {
+  limit?: number;
+  page?: number;
+  [key: string]: unknown;
+}
+
+interface AwardTypeApiResult {
+  success: boolean;
+  message?: string;
+  data?: AwardTableRow[];
+}
+
+interface AwardTypeDeleteResult {
+  success: boolean;
+  message?: string;
+}
 
 const AWARD_TYPE_CONFIG: Record<
   string,
   {
-    fetch: (params: any) => Promise<any>;
-    delete: (id: string) => Promise<any>;
+    fetch: (params: AwardTypeFetchParams) => Promise<AwardTypeApiResult>;
+    delete: (id: string, awardType?: string) => Promise<AwardTypeDeleteResult>;
   }
 > = {
   CNHN: { fetch: apiClient.getAnnualRewards, delete: apiClient.deleteAnnualReward },
@@ -134,12 +154,13 @@ const AWARD_TYPE_CONFIG: Record<
 
 export default function AdminAwardsPage() {
   const [activeTab, setActiveTab] = useState<AwardType>('CNHN');
-  const [awards, setAwards] = useState<AwardTableRow[]>([]);
+  const [awardsByTab, setAwardsByTab] = useState<Partial<Record<AwardType, AwardTableRow[]>>>({});
   const [loading, setLoading] = useState(true);
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [filters, setFilters] = useState<AwardFilters>(INITIAL_FILTERS);
   const [debouncedFilters, setDebouncedFilters] = useState(filters);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<{ id: string; awardType?: string } | null>(null);
+  const awards = awardsByTab[activeTab] ?? [];
 
   useEffect(() => {
     fetchAwards();
@@ -156,8 +177,13 @@ export default function AdminAwardsPage() {
 
   const fetchAwards = async () => {
     try {
+      const cachedData = awardsByTab[activeTab];
+      if (cachedData) {
+        setLoading(false);
+        return;
+      }
       setLoading(true);
-      const params: any = { limit: FETCH_ALL_LIMIT };
+      const params: AwardTypeFetchParams = { limit: FETCH_ALL_LIMIT };
 
       const config = AWARD_TYPE_CONFIG[activeTab];
       const result = await (config ?? AWARD_TYPE_CONFIG.CNHN).fetch(params);
@@ -166,7 +192,7 @@ export default function AdminAwardsPage() {
         message.error(result.message || 'Không thể tải danh sách khen thưởng');
         return;
       }
-      setAwards(result.data ?? []);
+      setAwardsByTab(prev => ({ ...prev, [activeTab]: result.data ?? [] }));
     } catch {
       message.error('Không thể tải danh sách khen thưởng');
     } finally {
@@ -178,26 +204,26 @@ export default function AdminAwardsPage() {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleDeleteAward = async (id: string) => {
+  const handleDeleteAward = async (id: string, awardType?: string, awardLabel?: string) => {
     try {
-      setDeletingId(id);
+      setDeleting({ id, awardType });
       const config = AWARD_TYPE_CONFIG[activeTab];
       if (!config) {
         message.error('Loại khen thưởng không được hỗ trợ xóa');
         return;
       }
-      const result = await config.delete(id);
+      const result = await config.delete(id, awardType);
 
       if (!result.success) {
         message.error(result.message || 'Xóa khen thưởng thất bại');
         return;
       }
-      message.success('Xóa khen thưởng thành công');
+      message.success(awardLabel ? `Đã xóa ${awardLabel}` : 'Xóa khen thưởng thành công');
       await fetchAwards();
     } catch (error: unknown) {
       message.error(getApiErrorMessage(error, 'Có lỗi xảy ra khi xóa khen thưởng'));
     } finally {
-      setDeletingId(null);
+      setDeleting(null);
     }
   };
 
@@ -364,7 +390,7 @@ export default function AdminAwardsPage() {
     {
       title: 'Ngày sinh',
       key: 'ngay_sinh',
-      width: 120,
+      width: 110,
       align: 'center',
       render: (_: unknown, record: AwardTableRow) => {
         const { ngaySinh } = resolvePersonnelDisplay(record);
@@ -374,7 +400,7 @@ export default function AdminAwardsPage() {
     {
       title: 'Cấp bậc / Chức vụ',
       key: 'cap_bac_chuc_vu',
-      width: 150,
+      width: 140,
       align: 'center',
       render: (_: unknown, record: AwardTableRow) => {
         const capBac = record.cap_bac;
@@ -428,7 +454,7 @@ export default function AdminAwardsPage() {
             : 'Danh hiệu',
       dataIndex: activeTab === 'NCKH' ? 'mo_ta' : 'danh_hieu',
       key: activeTab === 'NCKH' ? 'mo_ta' : 'danh_hieu',
-      width: 220,
+      width: 300,
       align: 'center',
       render: (text: string | null, record: AwardTableRow) => {
         // Scientific achievements
@@ -509,17 +535,32 @@ export default function AdminAwardsPage() {
           );
         }
 
-        // Annual awards (default) and Unit awards
+        if (activeTab === 'DVHN') {
+          return renderUnitAnnualAwards(text, record, { onDownload: handleDownloadDecision });
+        }
+
         return renderAnnualAwards(text, record, { onDownload: handleDownloadDecision });
       },
     },
     {
       title: 'Thao tác',
       key: 'action',
-      width: 100,
+      width: 130,
       align: 'center',
       fixed: 'right',
       render: (_: unknown, record: AwardTableRow) => {
+        if (activeTab === 'CNHN') {
+          const awards = collectPersonalAwards(record);
+          return renderAwardDeleteButtons(awards, (awardCode, awardLabel) =>
+            handleDeleteAward(record.id, awardCode, awardLabel)
+          );
+        }
+        if (activeTab === 'DVHN') {
+          const awards = collectUnitAwards(record);
+          return renderAwardDeleteButtons(awards, (awardCode, awardLabel) =>
+            handleDeleteAward(record.id, awardCode, awardLabel)
+          );
+        }
         return (
           <Popconfirm
             title="Xóa khen thưởng"
@@ -533,7 +574,7 @@ export default function AdminAwardsPage() {
               type="text"
               danger
               icon={<DeleteOutlined />}
-              loading={deletingId === record.id}
+              loading={deleting?.id === record.id && !deleting?.awardType}
               size="small"
             >
               Xóa
@@ -603,40 +644,34 @@ export default function AdminAwardsPage() {
           {
             key: 'CNHN',
             label: 'Khen thưởng cá nhân hằng năm',
-            children: renderAwardContent(),
           },
           {
             key: 'DVHN',
             label: 'Khen thưởng đơn vị hằng năm',
-            children: renderAwardContent(),
           },
           {
             key: 'HCCSVV',
             label: 'Huy chương Chiến sĩ vẻ vang',
-            children: renderAwardContent(),
           },
           {
             key: 'HCBVTQ',
             label: 'Huân chương Bảo vệ Tổ quốc',
-            children: renderAwardContent(),
           },
           {
             key: 'KNC_VSNXD_QDNDVN',
             label: 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
-            children: renderAwardContent(),
           },
           {
             key: 'HCQKQT',
             label: 'Huy chương Quân kỳ quyết thắng',
-            children: renderAwardContent(),
           },
           {
             key: 'NCKH',
             label: 'Thành tích Nghiên cứu khoa học',
-            children: renderAwardContent(),
           },
         ]}
       />
+      {renderAwardContent()}
 
       <ExportModal
         open={exportModalOpen}

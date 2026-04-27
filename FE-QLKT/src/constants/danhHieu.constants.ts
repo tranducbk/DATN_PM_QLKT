@@ -87,13 +87,13 @@ export const DANH_HIEU_MAP: Record<string, string> = {
   ĐVQT: 'Đơn vị Quyết thắng',
   ĐVTT: 'Đơn vị Tiên tiến',
 
-  HCCSVV_HANG_BA: 'Huy chương Chiến sĩ vẻ vang Hạng Ba',
-  HCCSVV_HANG_NHI: 'Huy chương Chiến sĩ vẻ vang Hạng Nhì',
-  HCCSVV_HANG_NHAT: 'Huy chương Chiến sĩ vẻ vang Hạng Nhất',
+  HCCSVV_HANG_BA: 'Huy chương Chiến sĩ vẻ vang hạng Ba',
+  HCCSVV_HANG_NHI: 'Huy chương Chiến sĩ vẻ vang hạng Nhì',
+  HCCSVV_HANG_NHAT: 'Huy chương Chiến sĩ vẻ vang hạng Nhất',
 
-  HCBVTQ_HANG_BA: 'Huân chương Bảo vệ Tổ quốc Hạng Ba',
-  HCBVTQ_HANG_NHI: 'Huân chương Bảo vệ Tổ quốc Hạng Nhì',
-  HCBVTQ_HANG_NHAT: 'Huân chương Bảo vệ Tổ quốc Hạng Nhất',
+  HCBVTQ_HANG_BA: 'Huân chương Bảo vệ Tổ quốc hạng Ba',
+  HCBVTQ_HANG_NHI: 'Huân chương Bảo vệ Tổ quốc hạng Nhì',
+  HCBVTQ_HANG_NHAT: 'Huân chương Bảo vệ Tổ quốc hạng Nhất',
 
   HC_QKQT: 'Huy chương Quân kỳ quyết thắng',
   KNC_VSNXD_QDNDVN: 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
@@ -105,12 +105,12 @@ export const DANH_HIEU_MAP: Record<string, string> = {
 export const DANH_HIEU_SHORT_MAP: Record<string, string> = {
   CSTDCS: 'Chiến sĩ thi đua Cơ sở',
   CSTT: 'Chiến sĩ tiên tiến',
-  HCCSVV_HANG_BA: 'HCCSVV Hạng Ba',
-  HCCSVV_HANG_NHI: 'HCCSVV Hạng Nhì',
-  HCCSVV_HANG_NHAT: 'HCCSVV Hạng Nhất',
-  HCBVTQ_HANG_BA: 'HCBVTQ Hạng Ba',
-  HCBVTQ_HANG_NHI: 'HCBVTQ Hạng Nhì',
-  HCBVTQ_HANG_NHAT: 'HCBVTQ Hạng Nhất',
+  HCCSVV_HANG_BA: 'HCCSVV hạng Ba',
+  HCCSVV_HANG_NHI: 'HCCSVV hạng Nhì',
+  HCCSVV_HANG_NHAT: 'HCCSVV hạng Nhất',
+  HCBVTQ_HANG_BA: 'HCBVTQ hạng Ba',
+  HCBVTQ_HANG_NHI: 'HCBVTQ hạng Nhì',
+  HCBVTQ_HANG_NHAT: 'HCBVTQ hạng Nhất',
   DTKH: 'Đề tài khoa học',
   SKKH: 'Sáng kiến khoa học',
 };

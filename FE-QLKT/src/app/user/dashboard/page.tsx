@@ -405,13 +405,16 @@ export default function UserDashboard() {
                         CSTT: 0,
                         BKBQP: 0,
                         CSTDTQ: 0,
+                        BKTTCP: 0,
                       };
 
+                      // Base titles live in `danh_hieu`; chain awards in `nhan_*` boolean flags.
                       annualRewards.forEach((reward: any) => {
-                        const danhHieu = reward.danh_hieu;
-                        if (danhHieu && danhHieuCounts.hasOwnProperty(danhHieu)) {
-                          danhHieuCounts[danhHieu]++;
-                        }
+                        if (reward.danh_hieu === 'CSTDCS') danhHieuCounts.CSTDCS++;
+                        else if (reward.danh_hieu === 'CSTT') danhHieuCounts.CSTT++;
+                        if (reward.nhan_bkbqp) danhHieuCounts.BKBQP++;
+                        if (reward.nhan_cstdtq) danhHieuCounts.CSTDTQ++;
+                        if (reward.nhan_bkttcp) danhHieuCounts.BKTTCP++;
                       });
 
                       const tongNCKH = Array.isArray(annualProfile?.tong_nckh)
@@ -420,20 +423,24 @@ export default function UserDashboard() {
 
                       const chartData = [
                         {
-                          label: 'Chiến sĩ thi đua cơ sở',
-                          value: danhHieuCounts.CSTDCS,
+                          label: 'Bằng khen của Thủ tướng Chính phủ',
+                          value: danhHieuCounts.BKTTCP,
                         },
                         {
-                          label: 'Chiến sĩ tiên tiến',
-                          value: danhHieuCounts.CSTT,
+                          label: 'Chiến sĩ thi đua toàn quân',
+                          value: danhHieuCounts.CSTDTQ,
                         },
                         {
                           label: 'Bằng khen của Bộ trưởng Bộ Quốc phòng',
                           value: danhHieuCounts.BKBQP,
                         },
                         {
-                          label: 'Chiến sĩ thi đua toàn quân',
-                          value: danhHieuCounts.CSTDTQ,
+                          label: 'Chiến sĩ thi đua cơ sở',
+                          value: danhHieuCounts.CSTDCS,
+                        },
+                        {
+                          label: 'Chiến sĩ tiên tiến',
+                          value: danhHieuCounts.CSTT,
                         },
                         {
                           label: 'Thành tích Nghiên cứu khoa học',
@@ -517,10 +524,10 @@ export default function UserDashboard() {
                       </Text>
                     </Divider>
 
-                    {/* HCCSVV - Hạng Ba */}
+                    {/* HCCSVV - hạng Ba */}
                     <div>
                       <div className="flex justify-between items-center mb-2">
-                        <Text strong>Hạng Ba (120 tháng)</Text>
+                        <Text strong>hạng Ba (120 tháng)</Text>
                         <Badge
                           status={
                             serviceProfile.hccsvv_hang_ba_status === ELIGIBILITY_STATUS.DA_NHAN
@@ -550,10 +557,10 @@ export default function UserDashboard() {
                       />
                     </div>
 
-                    {/* HCCSVV - Hạng Nhì */}
+                    {/* HCCSVV - hạng Nhì */}
                     <div>
                       <div className="flex justify-between items-center mb-2">
-                        <Text strong>Hạng Nhì (180 tháng)</Text>
+                        <Text strong>hạng Nhì (180 tháng)</Text>
                         <Badge
                           status={
                             serviceProfile.hccsvv_hang_nhi_status === ELIGIBILITY_STATUS.DA_NHAN
@@ -583,10 +590,10 @@ export default function UserDashboard() {
                       />
                     </div>
 
-                    {/* HCCSVV - Hạng Nhất */}
+                    {/* HCCSVV - hạng Nhất */}
                     <div>
                       <div className="flex justify-between items-center mb-2">
-                        <Text strong>Hạng Nhất (240 tháng)</Text>
+                        <Text strong>hạng Nhất (240 tháng)</Text>
                         <Badge
                           status={
                             serviceProfile.hccsvv_hang_nhat_status === ELIGIBILITY_STATUS.DA_NHAN
@@ -678,10 +685,10 @@ export default function UserDashboard() {
 
                       return (
                         <>
-                          {/* HCBVTQ - Hạng Ba */}
+                          {/* HCBVTQ - hạng Ba */}
                           <div>
                             <div className="flex justify-between items-center mb-2">
-                              <Text strong>Hạng Ba ({targetMonths} tháng)</Text>
+                              <Text strong>hạng Ba ({targetMonths} tháng)</Text>
                               <Badge
                                 status={
                                   contributionProfile.hcbvtq_hang_ba_status ===
@@ -716,10 +723,10 @@ export default function UserDashboard() {
                             </Text>
                           </div>
 
-                          {/* HCBVTQ - Hạng Nhì */}
+                          {/* HCBVTQ - hạng Nhì */}
                           <div>
                             <div className="flex justify-between items-center mb-2">
-                              <Text strong>Hạng Nhì ({targetMonths} tháng)</Text>
+                              <Text strong>hạng Nhì ({targetMonths} tháng)</Text>
                               <Badge
                                 status={
                                   contributionProfile.hcbvtq_hang_nhi_status ===
@@ -754,10 +761,10 @@ export default function UserDashboard() {
                             </Text>
                           </div>
 
-                          {/* HCBVTQ - Hạng Nhất */}
+                          {/* HCBVTQ - hạng Nhất */}
                           <div>
                             <div className="flex justify-between items-center mb-2">
-                              <Text strong>Hạng Nhất ({targetMonths} tháng)</Text>
+                              <Text strong>hạng Nhất ({targetMonths} tháng)</Text>
                               <Badge
                                 status={
                                   contributionProfile.hcbvtq_hang_nhat_status ===
@@ -817,8 +824,8 @@ export default function UserDashboard() {
             className="shadow-md border-0"
           >
             <Row gutter={[16, 16]}>
-              <Col xs={24} sm={12} md={8}>
-                <Link href="/user/profile" className="block">
+              <Col xs={24} sm={12} md={8} className="flex">
+                <Link href="/user/profile" className="block h-full w-full">
                   <Card
                     hoverable
                     className={`text-center h-full ${
@@ -837,8 +844,8 @@ export default function UserDashboard() {
                   </Card>
                 </Link>
               </Col>
-              <Col xs={24} sm={12} md={8}>
-                <Link href="/user/change-password" className="block">
+              <Col xs={24} sm={12} md={8} className="flex">
+                <Link href="/user/change-password" className="block h-full w-full">
                   <Card
                     hoverable
                     className={`text-center h-full ${
@@ -857,10 +864,10 @@ export default function UserDashboard() {
                   </Card>
                 </Link>
               </Col>
-              <Col xs={24} sm={12} md={8}>
+              <Col xs={24} sm={12} md={8} className="flex">
                 <Card
                   hoverable
-                  className={`text-center h-full cursor-pointer ${
+                  className={`text-center h-full w-full cursor-pointer ${
                     isDark
                       ? 'bg-gradient-to-br from-green-900/40 to-green-800/40 border-green-700'
                       : 'bg-gradient-to-br from-green-50 to-green-100 border-green-200'

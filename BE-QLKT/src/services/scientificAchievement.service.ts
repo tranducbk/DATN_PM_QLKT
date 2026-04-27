@@ -3,14 +3,15 @@ import ExcelJS from 'exceljs';
 import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHelper';
 import profileService from './profile.service';
 import * as notificationHelper from '../helpers/notification';
-import { buildDanhHieuExcelOptions, DANH_HIEU_NCKH, resolveNckhCode } from '../constants/danhHieu.constants';
+import { DANH_HIEU_NCKH, resolveNckhCode } from '../constants/danhHieu.constants';
 import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { NotFoundError, ValidationError } from '../middlewares/errorHandler';
-import { buildTemplate, TemplateColumn, styleHeaderRow } from '../helpers/excelTemplateHelper';
+import { buildTemplate, styleHeaderRow } from '../helpers/excelTemplateHelper';
 import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, sanitizeRowData, validatePersonnelNameMatch } from '../helpers/excelHelper';
 import { IMPORT_TRANSACTION_TIMEOUT, EXPORT_FETCH_LIMIT } from '../constants/excel.constants';
+import { AWARD_EXCEL_SHEETS, NCKH_TEMPLATE_COLUMNS } from '../constants/awardExcel.constants';
 
 interface CreateAchievementData {
   personnel_id: string;
@@ -79,7 +80,7 @@ export interface ConfirmImportItem {
 class ScientificAchievementService {
   async getAchievements(personnelId: string) {
     if (!personnelId) {
-      throw new ValidationError('personnel_id là bắt buộc');
+      throw new ValidationError('Personnel ID is required');
     }
 
     const personnel = await prisma.quanNhan.findUnique({
@@ -247,7 +248,7 @@ class ScientificAchievementService {
     });
 
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('NCKH');
+    const worksheet = workbook.addWorksheet(AWARD_EXCEL_SHEETS.NCKH);
 
     worksheet.columns = [
       { header: 'STT', key: 'stt', width: 6 },
@@ -288,25 +289,9 @@ class ScientificAchievementService {
   }
 
   async generateTemplate(personnelIds: string[] = [], repeatMap: Record<string, number> = {}) {
-    const columns: TemplateColumn[] = [
-      { header: 'STT', key: 'stt', width: 6 },
-      { header: 'ID', key: 'id', width: 10 },
-      { header: 'Họ và tên', key: 'ho_ten', width: 25 },
-      { header: 'Ngày sinh', key: 'ngay_sinh', width: 14 },
-      { header: 'Cơ quan đơn vị', key: 'co_quan_don_vi', width: 20 },
-      { header: 'Đơn vị trực thuộc', key: 'don_vi_truc_thuoc', width: 20 },
-      { header: 'Cấp bậc', key: 'cap_bac', width: 15 },
-      { header: 'Chức vụ', key: 'chuc_vu', width: 20 },
-      { header: 'Năm (*)', key: 'nam', width: 10 },
-      { header: 'Loại (*)', key: 'loai', width: 20, validationFormulae: buildDanhHieuExcelOptions(Object.values(DANH_HIEU_NCKH)) },
-      { header: 'Mô tả (*)', key: 'mo_ta', width: 40 },
-      { header: 'Số quyết định', key: 'so_quyet_dinh', width: 20 },
-      { header: 'Ghi chú', key: 'ghi_chu', width: 25 },
-    ];
-
     return buildTemplate({
-      sheetName: 'NCKH',
-      columns,
+      sheetName: AWARD_EXCEL_SHEETS.NCKH,
+      columns: NCKH_TEMPLATE_COLUMNS,
       personnelIds,
       repeatMap,
       loaiKhenThuong: PROPOSAL_TYPES.NCKH,
@@ -315,7 +300,7 @@ class ScientificAchievementService {
 
   async previewImport(buffer: Buffer) {
     const workbook = await loadWorkbook(buffer);
-    const worksheet = getAndValidateWorksheet(workbook, { sheetName: 'NCKH' });
+    const worksheet = getAndValidateWorksheet(workbook, { sheetName: AWARD_EXCEL_SHEETS.NCKH });
 
     const headerMap = parseHeaderMap(worksheet);
 

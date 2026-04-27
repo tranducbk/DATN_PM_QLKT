@@ -687,7 +687,7 @@ async function notifyOnImport(
           recipient_role: manager.role,
           type: NOTIFICATION_TYPES.AWARD_ADDED,
           title: 'Khen thưởng mới được nhập dữ liệu',
-          message: `${adminDisplayName} đã nhập ${importedCount} bản ghi ${awardLabel} cho đơn vị của bạn`,
+          message: `${adminDisplayName} đã thêm ${importedCount} danh hiệu ${awardLabel} cho đơn vị của bạn`,
           resource: RESOURCE_TYPES.AWARDS,
           tai_nguyen_id: null,
           link: `/manager/awards`,

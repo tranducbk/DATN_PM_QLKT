@@ -7,31 +7,17 @@ import {
   Tabs,
   Table,
   Button,
-  Badge,
   Typography,
   Breadcrumb,
   Space,
   Spin,
   Empty,
-  Select,
-  Row,
-  Col,
   Popconfirm,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { getApiErrorMessage } from '@/lib/apiError';
 
-import {
-  HomeOutlined,
-  EyeOutlined,
-  ClockCircleOutlined,
-  CheckCircleOutlined,
-  WarningOutlined,
-  LoadingOutlined,
-  UnorderedListOutlined,
-  FilterOutlined,
-  DeleteOutlined,
-} from '@ant-design/icons';
+import { HomeOutlined, EyeOutlined, LoadingOutlined, DeleteOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/apiClient';
 import {
   DEFAULT_PAGE_SIZE,
@@ -39,14 +25,11 @@ import {
 } from '@/lib/constants/pagination.constants';
 import { formatDateTime } from '@/lib/utils';
 import { message } from 'antd';
-import {
-  PROPOSAL_STATUS,
-  PROPOSAL_STATUS_LABELS,
-  PROPOSAL_TYPES,
-  getProposalTypeLabel,
-  getProposalStatusLabel,
-  PROPOSAL_STATUS_BADGE_COLORS,
-} from '@/constants/proposal.constants';
+import { PROPOSAL_STATUS, PROPOSAL_TYPES, getProposalTypeLabel } from '@/constants/proposal.constants';
+import { ProposalListFilterBar } from '@/components/proposals/ProposalListFilterBar';
+import { ProposalStatusTag } from '@/components/proposals/ProposalStatusTag';
+import { useProposalListFilters } from '@/hooks/useProposalListFilters';
+import { buildProposalListTabItems } from '@/lib/proposalListTabs';
 
 const { Title, Paragraph } = Typography;
 
@@ -71,11 +54,20 @@ export default function ProposalReviewPage() {
   const router = useRouter();
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('all');
-  const [yearFilter, setYearFilter] = useState<number | ''>('');
-  const [typeFilter, setTypeFilter] = useState<string>('');
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const {
+    activeTab,
+    setActiveTab,
+    yearFilter,
+    setYearFilter,
+    typeFilter,
+    setTypeFilter,
+    resetFilters,
+    availableYears,
+    availableTypes,
+    filteredProposals,
+  } = useProposalListFilters(proposals);
 
   useEffect(() => {
     fetchProposals();
@@ -98,50 +90,6 @@ export default function ProposalReviewPage() {
     }
   };
 
-  const availableYears = useMemo(() => {
-    const years = new Set<number>();
-    proposals.forEach(proposal => {
-      if (proposal.nam) {
-        years.add(proposal.nam);
-      }
-    });
-    return Array.from(years).sort((a, b) => b - a); // descending
-  }, [proposals]);
-
-  const availableTypes = useMemo(() => {
-    const types = new Set<string>();
-    proposals.forEach(proposal => {
-      if (proposal.loai_de_xuat) {
-        types.add(proposal.loai_de_xuat);
-      }
-    });
-    return Array.from(types);
-  }, [proposals]);
-
-  const filteredProposals = useMemo(() => {
-    return proposals.filter(p => {
-      // Filter theo tab
-      const statusMatch =
-        activeTab === 'all' ||
-        (activeTab === 'pending' && p.status === PROPOSAL_STATUS.PENDING) ||
-        (activeTab === 'approved' && p.status === PROPOSAL_STATUS.APPROVED) ||
-        (activeTab === 'rejected' && p.status === PROPOSAL_STATUS.REJECTED);
-
-      if (!statusMatch) return false;
-
-      if (yearFilter !== '' && p.nam !== yearFilter) return false;
-
-      if (typeFilter !== '' && p.loai_de_xuat !== typeFilter) return false;
-
-      return true;
-    });
-  }, [proposals, activeTab, yearFilter, typeFilter]);
-
-  const handleResetFilters = () => {
-    setYearFilter('');
-    setTypeFilter('');
-  };
-
   const handleDeleteProposal = async (proposalId: string) => {
     try {
       setDeletingId(proposalId);
@@ -159,13 +107,6 @@ export default function ProposalReviewPage() {
       setDeletingId(null);
     }
   };
-
-  const getStatusBadge = (status: string) => (
-    <Badge
-      color={PROPOSAL_STATUS_BADGE_COLORS[status] || 'default'}
-      text={getProposalStatusLabel(status)}
-    />
-  );
 
   const columns: ColumnsType<Proposal> = [
     {
@@ -244,7 +185,9 @@ export default function ProposalReviewPage() {
       key: 'status',
       align: 'center' as const,
       render: (status: string) => (
-        <div style={{ textAlign: 'center' }}>{getStatusBadge(status)}</div>
+        <div style={{ textAlign: 'center' }}>
+          <ProposalStatusTag status={status} variant="adminReview" />
+        </div>
       ),
     },
     {
@@ -280,56 +223,10 @@ export default function ProposalReviewPage() {
     },
   ];
 
-  const tabItems = useMemo(() => {
-    const statusCounts = proposals.reduce(
-      (acc, p) => {
-        acc[p.status] = (acc[p.status] || 0) + 1;
-        return acc;
-      },
-      {} as Record<string, number>
-    );
-
-    return [
-      {
-        key: 'all',
-        label: (
-          <span>
-            <UnorderedListOutlined style={{ marginRight: 8 }} />
-            Tất cả ({proposals.length})
-          </span>
-        ),
-      },
-      {
-        key: 'pending',
-        label: (
-          <span>
-            <ClockCircleOutlined style={{ marginRight: 8 }} />
-            {PROPOSAL_STATUS_LABELS[PROPOSAL_STATUS.PENDING]} (
-            {statusCounts[PROPOSAL_STATUS.PENDING] || 0})
-          </span>
-        ),
-      },
-      {
-        key: 'approved',
-        label: (
-          <span>
-            <CheckCircleOutlined style={{ marginRight: 8 }} />
-            {PROPOSAL_STATUS_LABELS[PROPOSAL_STATUS.APPROVED]} (
-            {statusCounts[PROPOSAL_STATUS.APPROVED] || 0})
-          </span>
-        ),
-      },
-      {
-        key: 'rejected',
-        label: (
-          <span>
-            <WarningOutlined style={{ marginRight: 8 }} />
-            Đã từ chối ({statusCounts[PROPOSAL_STATUS.REJECTED] || 0})
-          </span>
-        ),
-      },
-    ];
-  }, [proposals]);
+  const tabItems = useMemo(
+    () => buildProposalListTabItems(proposals, 'adminReview'),
+    [proposals]
+  );
 
   return (
     <div style={{ padding: '24px' }}>
@@ -373,92 +270,17 @@ export default function ProposalReviewPage() {
                 </Paragraph>
               }
             >
-              {/* Filter Section */}
-              <Card
-                size="small"
-                style={{ marginBottom: 16 }}
-                styles={{ body: { padding: '16px' } }}
-              >
-                <Row gutter={[16, 16]} align="bottom">
-                  <Col xs={24} sm={12} md={6}>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <label
-                        style={{
-                          display: 'block',
-                          marginBottom: 4,
-                          fontSize: 12,
-                        }}
-                      >
-                        <FilterOutlined /> Năm
-                      </label>
-                      <Select
-                        style={{ width: '100%' }}
-                        placeholder="Tất cả các năm"
-                        value={yearFilter || ''}
-                        onChange={value => setYearFilter(value ? Number(value) : '')}
-                        allowClear={yearFilter !== ''}
-                        size="large"
-                      >
-                        <Select.Option value="">Tất cả các năm</Select.Option>
-                        {availableYears.map(year => (
-                          <Select.Option key={year} value={year}>
-                            {year}
-                          </Select.Option>
-                        ))}
-                      </Select>
-                    </div>
-                  </Col>
-                  <Col xs={24} sm={12} md={6}>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <label
-                        style={{
-                          display: 'block',
-                          marginBottom: 4,
-                          fontSize: 12,
-                        }}
-                      >
-                        <FilterOutlined /> Loại đề xuất
-                      </label>
-                      <Select
-                        style={{ width: '100%' }}
-                        placeholder="Tất cả loại"
-                        value={typeFilter || ''}
-                        onChange={value => setTypeFilter(value || '')}
-                        allowClear={typeFilter !== ''}
-                        size="large"
-                      >
-                        <Select.Option value="">Tất cả các loại đề xuất</Select.Option>
-                        {availableTypes.map(type => (
-                          <Select.Option key={type} value={type}>
-                            {getProposalTypeLabel(type)}
-                          </Select.Option>
-                        ))}
-                      </Select>
-                    </div>
-                  </Col>
-                  <Col xs={24} sm={24} md={4}>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <div style={{ height: '22px', marginBottom: '8px' }}></div>
-                      <Button
-                        onClick={handleResetFilters}
-                        size="large"
-                        style={{ width: '100%' }}
-                        icon={null}
-                      >
-                        Xóa bộ lọc
-                      </Button>
-                    </div>
-                  </Col>
-                </Row>
-                {(yearFilter !== '' || typeFilter !== '') && (
-                  <div style={{ marginTop: 12 }}>
-                    <Typography.Text type="secondary">
-                      Đang hiển thị <strong>{filteredProposals.length}</strong> / {proposals.length}{' '}
-                      đề xuất
-                    </Typography.Text>
-                  </div>
-                )}
-              </Card>
+              <ProposalListFilterBar
+                availableYears={availableYears}
+                availableTypes={availableTypes}
+                yearFilter={yearFilter}
+                onYearChange={setYearFilter}
+                typeFilter={typeFilter}
+                onTypeChange={setTypeFilter}
+                onReset={resetFilters}
+                filteredCount={filteredProposals.length}
+                totalCount={proposals.length}
+              />
 
               {loading && (
                 <div style={{ textAlign: 'center', padding: '48px 0' }}>

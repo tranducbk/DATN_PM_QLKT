@@ -64,6 +64,11 @@ export const bulkCreateAwards: Joi.ObjectSchema = Joi.object({
   nam: Joi.number().integer().min(YEAR_MIN).max(YEAR_MAX).required().messages({
     'any.required': 'nam là bắt buộc',
   }),
+  thang: Joi.number().integer().min(1).max(12).optional().allow(null, '').messages({
+    'number.base': 'thang phải là số nguyên 1-12',
+    'number.min': 'thang phải từ 1 đến 12',
+    'number.max': 'thang phải từ 1 đến 12',
+  }),
 
   selected_personnel: parseJsonStringArraySchema('selected_personnel').optional(),
   selected_units: parseJsonStringArraySchema('selected_units').optional(),
@@ -95,6 +100,17 @@ export const bulkCreateAwards: Joi.ObjectSchema = Joi.object({
       if (!selectedPersonnel || selectedPersonnel.length === 0) {
         return helpers.error('any.invalid', { key: 'selected_personnel' });
       }
+    }
+
+    // HCCSVV/HCQKQT/KNC/CONG_HIEN persist `thang` directly into the award table — required.
+    const typesNeedingThang: ProposalType[] = [
+      PROPOSAL_TYPES.NIEN_HAN,
+      PROPOSAL_TYPES.HC_QKQT,
+      PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
+      PROPOSAL_TYPES.CONG_HIEN,
+    ];
+    if (typesNeedingThang.includes(type) && (value.thang == null || value.thang === '')) {
+      return helpers.error('any.invalid', { key: 'thang' });
     }
 
     if (type === PROPOSAL_TYPES.DON_VI_HANG_NAM) {

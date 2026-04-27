@@ -6,11 +6,28 @@ import { getActionLabel } from '@/components/system-logs/constants';
 import { ROLE_LABELS } from '@/constants/roles.constants';
 import '@/lib/chartConfig';
 
+interface RoleDistributionItem {
+  role: string;
+  count: number;
+}
+interface DailyActivityItem {
+  date: string;
+  count: number;
+}
+interface LogsByActionItem {
+  action: string;
+  count: number;
+}
+interface NewAccountsByDateItem {
+  date: string;
+  count: number;
+}
+
 export interface SuperAdminDashboardChartData {
-  roleDistribution: unknown[];
-  dailyActivity: unknown[];
-  logsByAction: unknown[];
-  newAccountsByDate: unknown[];
+  roleDistribution: RoleDistributionItem[];
+  dailyActivity: DailyActivityItem[];
+  logsByAction: LogsByActionItem[];
+  newAccountsByDate: NewAccountsByDateItem[];
 }
 
 interface SuperAdminDashboardChartsProps {
@@ -29,14 +46,14 @@ export default function SuperAdminDashboardCharts({
   const roleChartData = {
     labels:
       chartData.roleDistribution.length > 0
-        ? chartData.roleDistribution.map((item: any) => ROLE_LABELS[item.role] || item.role)
+        ? chartData.roleDistribution.map(item => ROLE_LABELS[item.role] || item.role)
         : ['Chưa có dữ liệu'],
     datasets: [
       {
         label: 'Số lượng',
         data:
           chartData.roleDistribution.length > 0
-            ? chartData.roleDistribution.map((item: any) => item.count)
+            ? chartData.roleDistribution.map(item => item.count)
             : [0],
         backgroundColor: [
           'rgba(239, 68, 68, 0.8)',
@@ -87,7 +104,7 @@ export default function SuperAdminDashboardCharts({
   const activityChartData = {
     labels:
       chartData.dailyActivity.length > 0
-        ? chartData.dailyActivity.map((item: any) => {
+        ? chartData.dailyActivity.map(item => {
             const date = new Date(item.date);
             return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
           })
@@ -97,7 +114,7 @@ export default function SuperAdminDashboardCharts({
         label: 'Số lượng hoạt động',
         data:
           chartData.dailyActivity.length > 0
-            ? chartData.dailyActivity.map((item: any) => item.count)
+            ? chartData.dailyActivity.map(item => item.count)
             : [],
         borderColor: 'rgba(59, 130, 246, 1)',
         backgroundColor: 'rgba(59, 130, 246, 0.1)',
@@ -158,11 +175,10 @@ export default function SuperAdminDashboardCharts({
     },
   };
 
-
   const logsChartData = {
     labels:
       chartData.logsByAction.length > 0
-        ? chartData.logsByAction.map((item: any) => {
+        ? chartData.logsByAction.map(item => {
             const label = getActionLabel(item.action?.toUpperCase() || '');
             return label.length > 20 ? label.substring(0, 20) + '...' : label;
           })
@@ -172,7 +188,7 @@ export default function SuperAdminDashboardCharts({
         label: 'Số lượng',
         data:
           chartData.logsByAction.length > 0
-            ? chartData.logsByAction.map((item: any) => item.count)
+            ? chartData.logsByAction.map(item => item.count)
             : [0],
         backgroundColor: 'rgba(59, 130, 246, 0.8)',
         borderColor: 'rgba(59, 130, 246, 1)',
@@ -248,7 +264,7 @@ export default function SuperAdminDashboardCharts({
   const accountsChartData = {
     labels:
       chartData.newAccountsByDate.length > 0
-        ? chartData.newAccountsByDate.map((item: any) => {
+        ? chartData.newAccountsByDate.map(item => {
             const date = new Date(item.date);
             return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
           })
@@ -258,7 +274,7 @@ export default function SuperAdminDashboardCharts({
         label: 'Tài khoản mới',
         data:
           chartData.newAccountsByDate.length > 0
-            ? chartData.newAccountsByDate.map((item: any) => item.count)
+            ? chartData.newAccountsByDate.map(item => item.count)
             : [],
         borderColor: 'rgba(34, 197, 94, 1)',
         backgroundColor: 'rgba(34, 197, 94, 0.2)',

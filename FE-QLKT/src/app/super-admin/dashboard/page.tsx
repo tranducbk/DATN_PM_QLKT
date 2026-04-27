@@ -218,28 +218,37 @@ export default function SuperAdminDashboard() {
             gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
             gap: '16px',
             marginBottom: '24px',
+            alignItems: 'stretch',
           }}
         >
           {statCards.map((stat, index) => {
             const IconComponent = stat.icon;
             const isNumber = typeof stat.value === 'number';
             return (
-              <Link key={index} href={stat.link}>
+              <Link key={index} href={stat.link} style={{ display: 'block', height: '100%' }}>
                 <Card
                   hoverable
                   style={{
                     borderRadius: 10,
-                    boxShadow: theme === 'dark' ? '0 1px 6px rgba(0,0,0,0.35)' : '0 1px 4px rgba(0,0,0,0.06)',
+                    boxShadow:
+                      theme === 'dark'
+                        ? '0 1px 6px rgba(0,0,0,0.35)'
+                        : '0 1px 4px rgba(0,0,0,0.06)',
                     transition: 'all 0.3s ease',
+                    height: '100%',
                   }}
-                  styles={{ body: { padding: '20px' } }}
+                  styles={{ body: { padding: '20px', height: '100%' } }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, minHeight: 84 }}>
                     <div
                       style={{
-                        width: 56, height: 56, borderRadius: 12,
+                        width: 56,
+                        height: 56,
+                        borderRadius: 12,
                         background: stat.bgColor,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                         flexShrink: 0,
                       }}
                     >
@@ -252,7 +261,13 @@ export default function SuperAdminDashboard() {
                       >
                         {stat.title}
                       </Text>
-                      <div style={{ fontSize: isNumber ? 28 : 22, fontWeight: 'bold', lineHeight: 1.1 }}>
+                      <div
+                        style={{
+                          fontSize: isNumber ? 28 : 22,
+                          fontWeight: 'bold',
+                          lineHeight: 1.1,
+                        }}
+                      >
                         {loading && isNumber ? '...' : stat.value}
                       </div>
                     </div>
@@ -278,13 +293,14 @@ export default function SuperAdminDashboard() {
               gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
               gap: '16px',
               marginBottom: '24px',
+              alignItems: 'stretch',
             }}
           >
             {quickActions.map((action, index) => {
               const IconComponent = action.icon;
               return (
-                <Link key={index} href={action.link}>
-                  <Card hoverable style={{ cursor: 'pointer', height: '100%' }}>
+                <Link key={index} href={action.link} style={{ display: 'block', height: '100%' }}>
+                  <Card hoverable style={{ cursor: 'pointer', height: '100%' }} styles={{ body: { height: '100%' } }}>
                     <div
                       style={{
                         padding: '12px',
@@ -325,9 +341,19 @@ export default function SuperAdminDashboard() {
         </div>
 
         {/* System Info */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16 }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: 16,
+          }}
+        >
           <Card
-            style={{ borderRadius: 10, boxShadow: theme === 'dark' ? '0 1px 6px rgba(0,0,0,0.35)' : '0 1px 4px rgba(0,0,0,0.06)' }}
+            style={{
+              borderRadius: 10,
+              boxShadow:
+                theme === 'dark' ? '0 1px 6px rgba(0,0,0,0.35)' : '0 1px 4px rgba(0,0,0,0.06)',
+            }}
             styles={{ body: { padding: '0 20px' } }}
             title={
               <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -337,31 +363,97 @@ export default function SuperAdminDashboard() {
             }
           >
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px 0', borderBottom: `1px solid ${theme === 'dark' ? '#374151' : '#f3f4f6'}` }}>
-                <div style={{ width: 36, height: 36, borderRadius: 8, background: theme === 'dark' ? 'rgba(139,92,246,0.2)' : '#f3e8ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <UserOutlined style={{ color: theme === 'dark' ? '#a78bfa' : '#7c3aed', fontSize: 15 }} />
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 16,
+                  padding: '16px 0',
+                  borderBottom: `1px solid ${theme === 'dark' ? '#374151' : '#f3f4f6'}`,
+                }}
+              >
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 8,
+                    background: theme === 'dark' ? 'rgba(139,92,246,0.2)' : '#f3e8ff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <UserOutlined
+                    style={{ color: theme === 'dark' ? '#a78bfa' : '#7c3aed', fontSize: 15 }}
+                  />
                 </div>
                 <div>
-                  <Text type="secondary" style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 4 }}>Vai trò</Text>
+                  <Text
+                    type="secondary"
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      display: 'block',
+                      marginBottom: 4,
+                    }}
+                  >
+                    Vai trò
+                  </Text>
                   <Tag color="purple" style={{ fontSize: 13, padding: '2px 10px', margin: 0 }}>
                     {ROLE_LABELS[user?.role?.toUpperCase() || ''] || displayName}
                   </Tag>
                 </div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, padding: '16px 0' }}>
-                <div style={{ width: 36, height: 36, borderRadius: 8, background: theme === 'dark' ? 'rgba(16,185,129,0.15)' : '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <SettingOutlined style={{ color: theme === 'dark' ? '#34d399' : '#16a34a', fontSize: 15 }} />
+              <div
+                style={{ display: 'flex', alignItems: 'flex-start', gap: 16, padding: '16px 0' }}
+              >
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 8,
+                    background: theme === 'dark' ? 'rgba(16,185,129,0.15)' : '#dcfce7',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <SettingOutlined
+                    style={{ color: theme === 'dark' ? '#34d399' : '#16a34a', fontSize: 15 }}
+                  />
                 </div>
                 <div>
-                  <Text type="secondary" style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 4 }}>Quyền hạn</Text>
-                  <Text style={{ fontSize: 13 }}>Toàn quyền quản lý tài khoản, nhật ký hệ thống và cấu hình</Text>
+                  <Text
+                    type="secondary"
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      display: 'block',
+                      marginBottom: 4,
+                    }}
+                  >
+                    Quyền hạn
+                  </Text>
+                  <Text style={{ fontSize: 13 }}>
+                    Toàn quyền quản lý tài khoản, nhật ký hệ thống và cấu hình
+                  </Text>
                 </div>
               </div>
             </div>
           </Card>
 
           <Card
-            style={{ borderRadius: 10, boxShadow: theme === 'dark' ? '0 1px 6px rgba(0,0,0,0.35)' : '0 1px 4px rgba(0,0,0,0.06)' }}
+            style={{
+              borderRadius: 10,
+              boxShadow:
+                theme === 'dark' ? '0 1px 6px rgba(0,0,0,0.35)' : '0 1px 4px rgba(0,0,0,0.06)',
+            }}
             styles={{ body: { padding: '20px' } }}
             title={
               <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -376,11 +468,25 @@ export default function SuperAdminDashboard() {
                   color: 'blue',
                   children: (
                     <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                      <div
+                        style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}
+                      >
                         <ClockCircleOutlined style={{ fontSize: 12, color: '#6b7280' }} />
-                        <Text type="secondary" style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Thời gian đăng nhập</Text>
+                        <Text
+                          type="secondary"
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 600,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em',
+                          }}
+                        >
+                          Thời gian đăng nhập
+                        </Text>
                       </div>
-                      <Text strong style={{ fontSize: 13 }}>{new Date().toLocaleString('vi-VN')}</Text>
+                      <Text strong style={{ fontSize: 13 }}>
+                        {new Date().toLocaleString('vi-VN')}
+                      </Text>
                     </div>
                   ),
                 },
@@ -388,13 +494,36 @@ export default function SuperAdminDashboard() {
                   color: 'green',
                   children: (
                     <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                      <div
+                        style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}
+                      >
                         <CheckCircleOutlined style={{ fontSize: 12, color: '#6b7280' }} />
-                        <Text type="secondary" style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Trạng thái hệ thống</Text>
+                        <Text
+                          type="secondary"
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 600,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em',
+                          }}
+                        >
+                          Trạng thái hệ thống
+                        </Text>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 0 3px rgba(34,197,94,0.2)' }} />
-                        <Text style={{ fontSize: 13, fontWeight: 600, color: '#22c55e' }}>Hoạt động bình thường</Text>
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            width: 8,
+                            height: 8,
+                            borderRadius: '50%',
+                            background: '#22c55e',
+                            boxShadow: '0 0 0 3px rgba(34,197,94,0.2)',
+                          }}
+                        />
+                        <Text style={{ fontSize: 13, fontWeight: 600, color: '#22c55e' }}>
+                          Hoạt động bình thường
+                        </Text>
                       </div>
                     </div>
                   ),
@@ -403,9 +532,21 @@ export default function SuperAdminDashboard() {
                   color: 'gray',
                   children: (
                     <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                      <div
+                        style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}
+                      >
                         <UserOutlined style={{ fontSize: 12, color: '#6b7280' }} />
-                        <Text type="secondary" style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Phiên làm việc</Text>
+                        <Text
+                          type="secondary"
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 600,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em',
+                          }}
+                        >
+                          Phiên làm việc
+                        </Text>
                       </div>
                       <Text style={{ fontSize: 13 }}>{user?.username || displayName}</Text>
                     </div>

@@ -10,6 +10,78 @@ export interface DuplicateCheckResult {
   status?: string;
 }
 
+export interface PayloadCaNhanDanhHieuItem {
+  personnel_id?: string;
+  danh_hieu?: string;
+}
+
+export interface PayloadDonViDanhHieuItem {
+  don_vi_id?: string;
+  don_vi_type?: string;
+  ten_don_vi?: string;
+  danh_hieu?: string;
+}
+
+export const INVALID_DANH_HIEU_ERROR = 'Phát hiện danh hiệu không hợp lệ trong dữ liệu đề xuất.';
+export const DUPLICATE_IN_PAYLOAD_ERROR = 'Phát hiện dữ liệu bị lặp ngay trong payload đề xuất.';
+export const MIXED_CA_NHAN_HANG_NAM_ERROR =
+  'Không thể đề xuất CSTDCS/CSTT cùng với BKBQP/CSTDTQ/BKTTCP trong một đề xuất. ' +
+  'Vui lòng tách thành các đề xuất riêng: một đề xuất cho CSTDCS/CSTT, và một đề xuất riêng cho BKBQP/CSTDTQ/BKTTCP.';
+export const MIXED_DON_VI_HANG_NAM_ERROR =
+  'Không thể đề xuất ĐVQT/ĐVTT cùng với BKBQP/BKTTCP trong một đề xuất. ' +
+  'Vui lòng tách thành các đề xuất riêng: một đề xuất cho ĐVQT/ĐVTT, và một đề xuất riêng cho BKBQP/BKTTCP.';
+
+/**
+ * Returns invalid award codes compared to an allowed set.
+ */
+export function findInvalidDanhHieu(
+  selectedDanhHieu: string[],
+  validDanhHieu: Set<string>
+): string[] {
+  return selectedDanhHieu.filter(danhHieu => !validDanhHieu.has(danhHieu));
+}
+
+/**
+ * Detects duplicate personnel-award pairs within one payload.
+ */
+export function collectDuplicateCaNhanPayload(
+  items: PayloadCaNhanDanhHieuItem[],
+  resolveName: (personnelId: string) => string
+): string[] {
+  const payloadKeys = new Set<string>();
+  const duplicatePayloadItems: string[] = [];
+  for (const item of items) {
+    if (!item.personnel_id || !item.danh_hieu) continue;
+    const payloadKey = `${item.personnel_id}::${item.danh_hieu}`;
+    if (payloadKeys.has(payloadKey)) {
+      const hoTen = resolveName(item.personnel_id);
+      duplicatePayloadItems.push(`${hoTen}: ${item.danh_hieu}`);
+    }
+    payloadKeys.add(payloadKey);
+  }
+  return duplicatePayloadItems;
+}
+
+/**
+ * Detects duplicate unit-award pairs within one payload.
+ */
+export function collectDuplicateDonViPayload(
+  items: PayloadDonViDanhHieuItem[]
+): string[] {
+  const payloadKeys = new Set<string>();
+  const duplicatePayloadItems: string[] = [];
+  for (const item of items) {
+    if (!item.don_vi_id || !item.danh_hieu) continue;
+    const payloadKey = `${item.don_vi_type || 'UNKNOWN'}::${item.don_vi_id}::${item.danh_hieu}`;
+    if (payloadKeys.has(payloadKey)) {
+      const tenDonVi = item.ten_don_vi || item.don_vi_id;
+      duplicatePayloadItems.push(`${tenDonVi}: ${item.danh_hieu}`);
+    }
+    payloadKeys.add(payloadKey);
+  }
+  return duplicatePayloadItems;
+}
+
 /**
  * Checks duplicate awards in stored records and pending proposals.
  * @param personnelId - Personnel ID

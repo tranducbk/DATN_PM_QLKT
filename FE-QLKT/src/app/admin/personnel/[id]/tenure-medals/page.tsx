@@ -90,7 +90,7 @@ export default function AdminServiceRewardsPage() {
         hccsvvRes.data.forEach((award: any) => {
           if (award.quan_nhan_id === personnelId || award.QuanNhan?.id === personnelId) {
             const danhHieu = award.danh_hieu || '';
-            const rank = danhHieu.includes('HANG_NHAT') ? 'Hạng Nhất' : danhHieu.includes('HANG_NHI') ? 'Hạng Nhì' : danhHieu.includes('HANG_BA') ? 'Hạng Ba' : '';
+            const rank = danhHieu.includes('HANG_NHAT') ? 'hạng Nhất' : danhHieu.includes('HANG_NHI') ? 'hạng Nhì' : danhHieu.includes('HANG_BA') ? 'hạng Ba' : '';
 
             mappedRewards.push({
               id: award.id,

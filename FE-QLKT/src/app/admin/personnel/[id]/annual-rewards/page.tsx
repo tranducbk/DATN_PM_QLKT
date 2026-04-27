@@ -28,6 +28,7 @@ import {
 import { apiClient } from '@/lib/apiClient';
 import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
 import type { PersonnelDetail } from '@/lib/types/personnelList';
+import { renderAnnualAwards } from '@/utils/awardsHelper';
 
 
 const { Title, Paragraph } = Typography;
@@ -44,10 +45,13 @@ interface RewardRecord {
   nhan_bkbqp: boolean;
   so_quyet_dinh_bkbqp?: string;
   file_quyet_dinh_bkbqp?: string;
+  ghi_chu_bkbqp?: string;
   nhan_cstdtq: boolean;
   so_quyet_dinh_cstdtq?: string;
+  ghi_chu_cstdtq?: string;
   nhan_bkttcp: boolean;
   so_quyet_dinh_bkttcp?: string;
+  ghi_chu_bkttcp?: string;
   file_quyet_dinh_cstdtq?: string;
 }
 
@@ -113,7 +117,7 @@ export default function AnnualRewardsPage() {
       title: 'Năm',
       dataIndex: 'nam',
       key: 'nam',
-      width: 80,
+      width: 70,
       align: 'center',
       render: (text: number) => <div style={{ textAlign: 'center' }}>{text || '-'}</div>,
     },
@@ -121,204 +125,35 @@ export default function AnnualRewardsPage() {
       title: 'Danh hiệu',
       dataIndex: 'danh_hieu',
       key: 'danh_hieu',
-      width: 150,
+      width: 320,
       align: 'center',
-      ellipsis: true,
-      render: (text: string) => (
-        <div style={{ textAlign: 'center' }} title={text}>
-          {text || '-'}
+      onCell: () => ({
+        style: {
+          whiteSpace: 'normal',
+          wordBreak: 'break-word',
+          overflowWrap: 'anywhere',
+        },
+      }),
+      render: (text: string, record: RewardRecord) =>
+        renderAnnualAwards(text, record, {
+          onDownload: handleOpenDecisionFile,
+        }),
+    },
+    {
+      title: 'Chức vụ / Cấp bậc',
+      key: 'chuc_vu_cap_bac',
+      width: 160,
+      align: 'center',
+      render: (_: unknown, record: RewardRecord) => (
+        <div style={{ textAlign: 'center', wordBreak: 'break-word' }}>
+          <div title={record.chuc_vu || '-'}>
+            {record.chuc_vu || '-'}
+          </div>
+          <div style={{ fontSize: 12, opacity: 0.75 }} title={record.cap_bac || '-'}>
+            {record.cap_bac || '-'}
+          </div>
         </div>
       ),
-    },
-    {
-      title: 'Cấp bậc',
-      dataIndex: 'cap_bac',
-      key: 'cap_bac',
-      width: 100,
-      align: 'center',
-      ellipsis: true,
-      render: (text: string) => (
-        <div style={{ textAlign: 'center' }} title={text}>
-          {text || '-'}
-        </div>
-      ),
-    },
-    {
-      title: 'Chức vụ',
-      dataIndex: 'chuc_vu',
-      key: 'chuc_vu',
-      width: 140,
-      align: 'center',
-      ellipsis: true,
-      render: (text: string) => (
-        <div style={{ textAlign: 'center' }} title={text}>
-          {text || '-'}
-        </div>
-      ),
-    },
-    {
-      title: 'Ghi chú',
-      dataIndex: 'ghi_chu',
-      key: 'ghi_chu',
-      width: 150,
-      ellipsis: true,
-      align: 'center',
-      render: (text: string) => (
-        <div style={{ textAlign: 'center' }} title={text}>
-          {text ? (
-            text
-          ) : (
-            <span style={{ fontStyle: 'italic', opacity: 0.6 }}>Không có ghi chú</span>
-          )}
-        </div>
-      ),
-    },
-    {
-      title: 'Nhận BKBQP',
-      dataIndex: 'nhan_bkbqp',
-      key: 'nhan_bkbqp',
-      width: 100,
-      align: 'center',
-      render: (value: boolean) => (value ? <Tag color="green">Có</Tag> : <Tag>Không</Tag>),
-    },
-    {
-      title: 'Nhận CSTDTQ',
-      dataIndex: 'nhan_cstdtq',
-      key: 'nhan_cstdtq',
-      width: 100,
-      align: 'center',
-      render: (value: boolean) => (value ? <Tag color="green">Có</Tag> : <Tag>Không</Tag>),
-    },
-    {
-      title: 'Nhận BKTTCP',
-      dataIndex: 'nhan_bkttcp',
-      key: 'nhan_bkttcp',
-      width: 100,
-      align: 'center',
-      render: (value: boolean) => (value ? <Tag color="green">Có</Tag> : <Tag>Không</Tag>),
-    },
-    {
-      title: 'Số quyết định',
-      dataIndex: 'so_quyet_dinh',
-      key: 'so_quyet_dinh',
-      width: 180,
-      align: 'center',
-      ellipsis: true,
-      render: (text: string, record: RewardRecord) => {
-        const items = [];
-
-        if (record.so_quyet_dinh) {
-          items.push(
-            <div key="general" style={{ textAlign: 'center' }}>
-              {record.so_quyet_dinh.trim() !== '' ? (
-                <a
-                  onClick={e => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleOpenDecisionFile(record.so_quyet_dinh!);
-                  }}
-                  style={{
-                    color: '#52c41a',
-                    fontWeight: 500,
-                    textDecoration: 'underline',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {record.so_quyet_dinh}
-                </a>
-              ) : (
-                <span style={{ fontWeight: 400 }}>Chưa có</span>
-              )}
-            </div>
-          );
-        }
-        if (record.nhan_bkbqp || record.so_quyet_dinh_bkbqp) {
-          items.push(
-            <div key="bkbqp" style={{ textAlign: 'center' }}>
-              BKBQP:{' '}
-              {record.so_quyet_dinh_bkbqp && record.so_quyet_dinh_bkbqp.trim() !== '' ? (
-                <a
-                  onClick={e => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleOpenDecisionFile(record.so_quyet_dinh_bkbqp!);
-                  }}
-                  style={{
-                    color: '#52c41a',
-                    fontWeight: 500,
-                    textDecoration: 'underline',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {record.so_quyet_dinh_bkbqp}
-                </a>
-              ) : (
-                <span style={{ fontWeight: 400 }}>Chưa có</span>
-              )}
-            </div>
-          );
-        }
-
-        if (record.nhan_cstdtq || record.so_quyet_dinh_cstdtq) {
-          items.push(
-            <div key="cstdtq" style={{ textAlign: 'center' }}>
-              CSTDTQ:{' '}
-              {record.so_quyet_dinh_cstdtq && record.so_quyet_dinh_cstdtq.trim() !== '' ? (
-                <a
-                  onClick={e => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleOpenDecisionFile(record.so_quyet_dinh_cstdtq!);
-                  }}
-                  style={{
-                    color: '#52c41a',
-                    fontWeight: 500,
-                    textDecoration: 'underline',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {record.so_quyet_dinh_cstdtq}
-                </a>
-              ) : (
-                <span style={{ fontWeight: 400 }}>Chưa có</span>
-              )}
-            </div>
-          );
-        }
-
-        if (record.nhan_bkttcp || record.so_quyet_dinh_bkttcp) {
-          items.push(
-            <div key="bkttcp" style={{ textAlign: 'center' }}>
-              BKTTCP:{' '}
-              {record.so_quyet_dinh_bkttcp && record.so_quyet_dinh_bkttcp.trim() !== '' ? (
-                <a
-                  onClick={e => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleOpenDecisionFile(record.so_quyet_dinh_bkttcp!);
-                  }}
-                  style={{
-                    color: '#52c41a',
-                    fontWeight: 500,
-                    textDecoration: 'underline',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {record.so_quyet_dinh_bkttcp}
-                </a>
-              ) : (
-                <span style={{ fontWeight: 400 }}>Chưa có</span>
-              )}
-            </div>
-          );
-        }
-
-        return items.length > 0 ? (
-          <div style={{ textAlign: 'center' }}>{items}</div>
-        ) : (
-          <div style={{ textAlign: 'center' }}>-</div>
-        );
-      },
     },
   ];
 
@@ -383,7 +218,8 @@ export default function AnnualRewardsPage() {
             dataSource={rewards}
             rowKey="id"
             pagination={false}
-            scroll={{ x: 950 }}
+            tableLayout="fixed"
+            scroll={{ x: 720 }}
             locale={{
               emptyText: <Empty description="Chưa có dữ liệu khen thưởng hằng năm" />,
             }}

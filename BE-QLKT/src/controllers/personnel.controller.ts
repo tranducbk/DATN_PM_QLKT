@@ -178,18 +178,6 @@ class PersonnelController {
     return ResponseHelper.success(res, { data: result, message: 'Xóa quân nhân thành công' });
   });
 
-  importPersonnel = catchAsync(async (req: Request, res: Response) => {
-    const file = req.file;
-    if (!file?.buffer) {
-      return ResponseHelper.badRequest(
-        res,
-        'Không tìm thấy file upload. Vui lòng gửi form-data field "file"'
-      );
-    }
-    const result = await personnelService.importFromExcelBuffer(file.buffer);
-    return ResponseHelper.success(res, { data: result, message: 'Import quân nhân hoàn tất' });
-  });
-
   exportPersonnel = catchAsync(async (req: Request, res: Response) => {
     const buffer = await personnelService.exportPersonnel();
     const fileName = `quan_nhan_${new Date().toISOString().slice(0, 10)}.xlsx`;
@@ -198,16 +186,6 @@ class PersonnelController {
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     );
     res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-    return res.status(200).send(buffer);
-  });
-
-  exportPersonnelSample = catchAsync(async (req: Request, res: Response) => {
-    const buffer = await personnelService.exportPersonnelSample();
-    res.setHeader(
-      'Content-Type',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    );
-    res.setHeader('Content-Disposition', `attachment; filename="mau_quan_nhan.xlsx"`);
     return res.status(200).send(buffer);
   });
 

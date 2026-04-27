@@ -3,6 +3,7 @@ import { prisma } from '../models';
 import { loadWorkbook, getAndValidateWorksheet } from './excelImportHelper';
 import { parseHeaderMap, getHeaderCol } from './excelHelper';
 import { DANH_HIEU_CA_NHAN_CO_BAN } from '../constants/danhHieu.constants';
+import { AWARD_EXCEL_SHEETS } from '../constants/awardExcel.constants';
 import { ValidationError } from '../middlewares/errorHandler';
 import type { QuanNhan, DanhHieuHangNam } from '../generated/prisma';
 
@@ -72,7 +73,7 @@ export async function resolveAnnualRewardImportContext(buffer: Buffer): Promise<
     );
   }
 
-  if (worksheet.name === 'Khen thưởng đơn vị') {
+  if (worksheet.name === AWARD_EXCEL_SHEETS.ANNUAL_UNIT) {
     throw new ValidationError(
       'Sai loại file: đây là mẫu khen thưởng đơn vị. Vui lòng dùng mẫu danh hiệu cá nhân hằng năm.'
     );

@@ -1,25 +1,6 @@
 import axiosInstance from '@/utils/axiosInstance';
 import { getApiErrorMessage } from '@/lib/apiError';
-import { PROPOSAL_TYPES, type ProposalType } from '@/constants/proposal.constants';
 import type { ApiResponse } from '@/lib/types';
-
-/**
- * getProposalTemplate API wrapper.
- * @returns API response payload
- */
-export async function getProposalTemplate(
-  type: ProposalType = PROPOSAL_TYPES.CA_NHAN_HANG_NAM
-): Promise<Blob> {
-  try {
-    const res = await axiosInstance.get('/api/proposals/template', {
-      params: { type },
-      responseType: 'blob',
-    });
-    return res.data;
-  } catch (e: unknown) {
-    throw new Error(getApiErrorMessage(e));
-  }
-}
 
 /**
  * submitProposal API wrapper.
@@ -93,21 +74,6 @@ export async function rejectProposal(id: string, ghi_chu: string): Promise<ApiRe
     return { success: res.data?.success, data: res.data?.data, message: res.data?.message };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
-  }
-}
-
-/**
- * downloadProposalExcel API wrapper.
- * @returns API response payload
- */
-export async function downloadProposalExcel(id: string): Promise<Blob> {
-  try {
-    const res = await axiosInstance.get(`/api/proposals/${id}/download-excel`, {
-      responseType: 'blob',
-    });
-    return res.data;
-  } catch (e: unknown) {
-    throw new Error(getApiErrorMessage(e));
   }
 }
 

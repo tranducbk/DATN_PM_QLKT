@@ -26,7 +26,11 @@ import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
 import { useAuth } from '@/contexts/AuthContext';
 import { ROLES } from '@/constants/roles.constants';
 import { VietnamAddressCascader } from '@/components/VietnamAddressCascader';
-import type { PersonnelDetail } from '@/lib/types/personnelList';
+import type {
+  PersonnelDetail,
+  UnitOptionRow,
+  ManagerPositionRow,
+} from '@/lib/types/personnelList';
 
 
 const { Title } = Typography;
@@ -135,7 +139,7 @@ export default function PersonnelEditPage() {
           apiClient.getPositions(),
         ]);
 
-        const coQuanList = (coQuanRes?.data || []).filter((unit: any) => !unit.co_quan_don_vi_id);
+        const coQuanList = (coQuanRes?.data || []).filter((unit: UnitOptionRow) => !unit.co_quan_don_vi_id);
         const donViList = donViTrucThuocRes?.data || [];
         const allPositions = positionsRes?.data || [];
 
@@ -220,23 +224,23 @@ export default function PersonnelEditPage() {
       return positions;
     }
 
-    let filtered: any[] = [];
+    let filtered: ManagerPositionRow[] = [];
 
     if (isManagerPersonnel) {
       if (selectedCoQuanDonViId) {
-        filtered = positions.filter((p: any) => p.co_quan_don_vi_id === selectedCoQuanDonViId);
+        filtered = positions.filter((p: ManagerPositionRow) => p.co_quan_don_vi_id === selectedCoQuanDonViId);
       }
     } else {
       if (selectedDonViTrucThuocId) {
         filtered = positions.filter(
-          (p: any) => p.don_vi_truc_thuoc_id === selectedDonViTrucThuocId
+          (p: ManagerPositionRow) => p.don_vi_truc_thuoc_id === selectedDonViTrucThuocId
         );
       }
     }
 
     // Always include the currently assigned position even if it no longer matches the filter
-    if (currentPositionId && !filtered.find((p: any) => p.id === currentPositionId)) {
-      const currentPosition = positions.find((p: any) => p.id === currentPositionId);
+    if (currentPositionId && !filtered.find((p: ManagerPositionRow) => p.id === currentPositionId)) {
+      const currentPosition = positions.find((p: ManagerPositionRow) => p.id === currentPositionId);
       if (currentPosition) {
         filtered = [currentPosition, ...filtered];
       }
@@ -563,7 +567,7 @@ export default function PersonnelEditPage() {
                             });
                           }}
                         >
-                          {coQuanDonViList.map((unit: any) => (
+                          {coQuanDonViList.map((unit: UnitOptionRow) => (
                             <Select.Option key={unit.id} value={unit.id}>
                               {unit.ten_don_vi} ({unit.ma_don_vi})
                             </Select.Option>
@@ -596,9 +600,9 @@ export default function PersonnelEditPage() {
                           >
                             {donViTrucThuocList
                               .filter(
-                                (unit: any) => unit.co_quan_don_vi_id === selectedCoQuanDonViId
+                                (unit: UnitOptionRow) => unit.co_quan_don_vi_id === selectedCoQuanDonViId
                               )
-                              .map((unit: any) => (
+                              .map((unit: UnitOptionRow) => (
                                 <Select.Option key={unit.id} value={unit.id}>
                                   {unit.ten_don_vi} ({unit.ma_don_vi})
                                 </Select.Option>
@@ -631,7 +635,7 @@ export default function PersonnelEditPage() {
                         setCurrentPositionId(value);
                       }}
                     >
-                      {filteredPositions.map((pos: any) => (
+                      {filteredPositions.map((pos: ManagerPositionRow) => (
                         <Select.Option key={pos.id} value={pos.id}>
                           {pos.ten_chuc_vu}
                         </Select.Option>

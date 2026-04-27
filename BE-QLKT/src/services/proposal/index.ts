@@ -9,6 +9,7 @@ import type { Prisma } from '../../generated/prisma';
 import type { ProposalType } from '../../constants/proposalTypes.constants';
 import type { DuplicateCheckResult } from './validation';
 import type { SubmitTitleDataItem, SubmitAttachedFile } from './submit';
+import type { EditedProposalData } from '../../types/proposal';
 
 interface MulterFile {
   buffer: Buffer;
@@ -92,7 +93,7 @@ class ProposalService {
 
   async approveProposal(
     proposalId: string,
-    editedData: Record<string, unknown>,
+    editedData: EditedProposalData,
     adminId: string,
     decisions: Record<string, string | null>,
     pdfFiles: Record<string, MulterFile>,
@@ -104,15 +105,6 @@ class ProposalService {
     return approve.rejectProposal(proposalId, lyDo, adminId);
   }
 
-  async exportTemplate(userId: string, type: string) {
-    return exportModule.exportTemplate(userId, type);
-  }
-  async exportTemplateNienHan(workbook: import('exceljs').Workbook, quanNhanList: unknown[]) {
-    return exportModule.exportTemplateNienHan(workbook, quanNhanList);
-  }
-  async downloadProposalExcel(proposalId: string) {
-    return exportModule.downloadProposalExcel(proposalId);
-  }
   async getPdfFile(filename: string) {
     return exportModule.getPdfFile(filename);
   }

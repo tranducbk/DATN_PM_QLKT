@@ -1,4 +1,5 @@
 import { prisma } from '../../models';
+import type { Prisma } from '../../generated/prisma';
 import { ROLES } from '../../constants/roles.constants';
 import { PROPOSAL_TYPES, type ProposalType } from '../../constants/proposalTypes.constants';
 import { NotFoundError, ForbiddenError, ValidationError } from '../../middlewares/errorHandler';
@@ -43,7 +44,7 @@ async function getProposals(
 ) {
   const skip = (page - 1) * limit;
 
-  let whereCondition: Record<string, any> = {};
+  let whereCondition: Prisma.BangDeXuatWhereInput = {};
 
   if (userRole === ROLES.MANAGER) {
     // Manager can only view proposals from their own unit

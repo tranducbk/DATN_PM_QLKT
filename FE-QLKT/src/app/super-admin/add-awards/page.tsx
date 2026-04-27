@@ -34,8 +34,8 @@ import Link from 'next/link';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
 import { getDanhHieuName } from '@/constants/danhHieu.constants';
-import { Step2SelectPersonnelNienHan } from '@/app/admin/awards/bulk/create/components/Step2SelectPersonnelNienHan';
-import { Step3SetTitlesNienHan } from '@/app/admin/awards/bulk/create/components/Step3SetTitlesNienHan';
+import { Step2SelectPersonnelNienHan } from '@/components/proposals/bulk/Step2SelectPersonnelNienHan';
+import { Step3SetTitlesNienHan } from '@/components/proposals/bulk/Step3SetTitlesNienHan';
 import { DecisionModal } from '@/components/DecisionModal';
 import type { DateInput } from '@/lib/types';
 
@@ -274,7 +274,7 @@ export default function SuperAdminAddAwardsPage() {
                       type="secondary"
                       style={{ fontSize: 13, display: 'block', marginLeft: 28 }}
                     >
-                      Huy chương Chiến sĩ vẻ vang 3 hạng (Hạng Ba, Nhì, Nhất) - Không kiểm tra điều
+                      Huy chương Chiến sĩ vẻ vang 3 hạng (hạng Ba, Nhì, Nhất) - Không kiểm tra điều
                       kiện thời gian phục vụ
                     </Text>
                   </Space>

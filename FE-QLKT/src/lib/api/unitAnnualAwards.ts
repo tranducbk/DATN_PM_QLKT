@@ -76,9 +76,12 @@ export async function exportUnitAnnualAwards(params?: {
   }
 }
 
-export async function deleteUnitAnnualAward(id: string): Promise<ApiResponse> {
+export async function deleteUnitAnnualAward(id: string, awardType?: string): Promise<ApiResponse> {
   try {
-    const res = await axiosInstance.delete(`/api/awards/units/annual/${id}`);
+    const url = awardType
+      ? `/api/awards/units/annual/${id}?awardType=${encodeURIComponent(awardType)}`
+      : `/api/awards/units/annual/${id}`;
+    const res = await axiosInstance.delete(url);
     return { success: res.data?.success, data: res.data?.data };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };

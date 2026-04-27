@@ -3,7 +3,6 @@ import personnelController from '../controllers/personnel.controller';
 import { verifyToken, requireAdmin, requireManager, requireAuth } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
-import { excelUpload as upload } from '../configs/multer';
 import { validate } from '../middlewares/validate';
 import { personnelValidation } from '../validations';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
@@ -81,24 +80,6 @@ router.put(
 );
 
 /**
- * @route   POST /api/personnel/import
- * @desc    Bulk import personnel from Excel
- * @access  Private - ADMIN only
- */
-router.post(
-  '/import',
-  verifyToken,
-  requireAdmin,
-  upload.single('file'),
-  auditLog({
-    action: AUDIT_ACTIONS.IMPORT,
-    resource: 'personnel',
-    getDescription: getLogDescription('personnel', 'IMPORT'),
-  }),
-  personnelController.importPersonnel
-);
-
-/**
  * @route   GET /api/personnel/export
  * @desc    Export all personnel data to Excel
  * @access  Private - ADMIN only
@@ -114,13 +95,6 @@ router.get(
   }),
   personnelController.exportPersonnel
 );
-
-/**
- * @route   GET /api/personnel/export-sample
- * @desc    Download Excel sample template for personnel import
- * @access  Private - ADMIN only
- */
-router.get('/export-sample', verifyToken, requireAdmin, personnelController.exportPersonnelSample);
 
 /**
  * @route   DELETE /api/personnel/:id

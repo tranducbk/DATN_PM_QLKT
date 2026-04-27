@@ -10,12 +10,13 @@ class AwardBulkController {
     const body = req.body as {
       type?: string;
       nam?: number;
+      thang?: number | null;
       selected_personnel?: string[];
       selected_units?: string[];
       title_data?: TitleDataItem[];
       ghi_chu?: string;
     };
-    const { type, nam, selected_personnel, selected_units, title_data, ghi_chu } = body;
+    const { type, nam, thang, selected_personnel, selected_units, title_data, ghi_chu } = body;
     const adminId = user.id;
 
     if (type === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
@@ -46,6 +47,7 @@ class AwardBulkController {
     const result = await awardBulkService.bulkCreateAwards({
       type,
       nam,
+      thang: thang ?? null,
       selectedPersonnel: selected_personnel || [],
       selectedUnits: selected_units,
       titleData: title_data,

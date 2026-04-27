@@ -11,18 +11,6 @@ import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 const router = Router();
 
 /**
- * @route   GET /api/proposals/template
- * @desc    Download Excel template for proposals
- * @access  MANAGER, ADMIN
- */
-router.get(
-  '/template',
-  verifyToken,
-  checkRole([ROLES.MANAGER, ROLES.ADMIN]),
-  proposalController.exportTemplate
-);
-
-/**
  * @route   POST /api/proposals
  * @desc    Submit an award proposal with attached files
  * @access  MANAGER, ADMIN
@@ -159,18 +147,6 @@ router.post(
     getResourceId: getResourceId.fromParams('id'),
   }),
   proposalController.rejectProposal
-);
-
-/**
- * @route   GET /api/proposals/:id/download-excel
- * @desc    Download the Excel file for a proposal
- * @access  MANAGER, ADMIN
- */
-router.get(
-  '/:id/download-excel',
-  verifyToken,
-  checkRole([ROLES.MANAGER, ROLES.ADMIN]),
-  proposalController.downloadProposalExcel
 );
 
 /**

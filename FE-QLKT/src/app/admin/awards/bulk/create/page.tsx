@@ -25,9 +25,6 @@ import {
   HomeOutlined,
   TrophyOutlined,
   TeamOutlined,
-  ClockCircleOutlined,
-  HeartOutlined,
-  ExperimentOutlined,
   CheckCircleOutlined,
   ArrowLeftOutlined,
   EditOutlined,
@@ -38,17 +35,19 @@ import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
 import { getDanhHieuName } from '@/constants/danhHieu.constants';
 import { PROPOSAL_TYPES, type ProposalType } from '@/constants/proposal.constants';
-import { Step2SelectPersonnelCaNhanHangNam } from './components/Step2SelectPersonnelCaNhanHangNam';
-import { Step2SelectPersonnelNienHan } from './components/Step2SelectPersonnelNienHan';
-import { Step2SelectPersonnelHCQKQT } from './components/Step2SelectPersonnelHCQKQT';
-import { Step2SelectPersonnelKNCVSNXDQDNDVN } from './components/Step2SelectPersonnelKNCVSNXDQDNDVN';
-import { Step2SelectPersonnelCongHien } from './components/Step2SelectPersonnelCongHien';
-import { Step2SelectPersonnelNCKH } from './components/Step2SelectPersonnelNCKH';
-import { Step2SelectUnits } from './components/Step2SelectUnits';
-import { Step3SetTitles } from './components/Step3SetTitles';
+import { PROPOSAL_TYPE_ICON_COMPONENTS } from '@/constants/proposalUi.constants';
+import { Step2SelectPersonnelCaNhanHangNam } from '@/components/proposals/bulk/Step2SelectPersonnelCaNhanHangNam';
+import { Step2SelectPersonnelNienHan } from '@/components/proposals/bulk/Step2SelectPersonnelNienHan';
+import { Step2SelectPersonnelHCQKQT } from '@/components/proposals/bulk/Step2SelectPersonnelHCQKQT';
+import { Step2SelectPersonnelKNCVSNXDQDNDVN } from '@/components/proposals/bulk/Step2SelectPersonnelKNCVSNXDQDNDVN';
+import { Step2SelectPersonnelCongHien } from '@/components/proposals/bulk/Step2SelectPersonnelCongHien';
+import { Step2SelectPersonnelNCKH } from '@/components/proposals/bulk/Step2SelectPersonnelNCKH';
+import { Step2SelectUnits } from '@/components/proposals/bulk/Step2SelectUnits';
+import { Step3SetTitles } from '@/components/proposals/bulk/Step3SetTitles';
 import { DecisionModal } from '@/components/DecisionModal';
 import type { DateInput } from '@/lib/types';
-import type { ContributionProfile } from '@/lib/types/personnelList';
+import type { ContributionProfile, UnitApiRow } from '@/lib/types/personnelList';
+import type { TitleDataItem, DecisionDataMap, DecisionRef } from '@/lib/types/proposal';
 import {
   renderServiceTime,
   makeContributionColumns,
@@ -78,6 +77,11 @@ interface Personnel {
   };
 }
 
+type ReviewRow = (Personnel | UnitApiRow) & Partial<TitleDataItem> & {
+  id: string;
+  co_quan_don_vi_id?: string | null;
+};
+
 export default function BulkAddAwardsPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
@@ -93,11 +97,11 @@ export default function BulkAddAwardsPage() {
   const [selectedUnitIds, setSelectedUnitIds] = useState<string[]>([]);
 
   // Step 3: Set Titles
-  const [titleData, setTitleData] = useState<any[]>([]);
+  const [titleData, setTitleData] = useState<TitleDataItem[]>([]);
 
   // Step 4: Personnel/Unit details for review
   const [personnelDetails, setPersonnelDetails] = useState<Personnel[]>([]);
-  const [unitDetails, setUnitDetails] = useState<any[]>([]);
+  const [unitDetails, setUnitDetails] = useState<UnitApiRow[]>([]);
 
   // HCBVTQ contribution profiles (months_07, months_08, months_0910)
   const [contributionProfiles, setContributionProfiles] = useState<
@@ -108,49 +112,52 @@ export default function BulkAddAwardsPage() {
   const [note, setNote] = useState<string>('');
 
   // Step 6: Decision data (so_quyet_dinh per personnel/unit)
-  const [decisionDataMap, setDecisionDataMap] = useState<
-    Record<string, { so_quyet_dinh: string; decision?: any }>
-  >({});
+  const [decisionDataMap, setDecisionDataMap] = useState<DecisionDataMap>({});
   const [decisionModalVisible, setDecisionModalVisible] = useState(false);
   const [selectedPersonnelForDecision, setSelectedPersonnelForDecision] = useState<string[]>([]);
 
   // Award type config
+  const renderAwardTypeIcon = (type: ProposalType) => {
+    const Icon = PROPOSAL_TYPE_ICON_COMPONENTS[type];
+    return Icon ? <Icon /> : <TrophyOutlined />;
+  };
+
   const awardTypeConfig: Record<
     AwardType,
     { icon: React.ReactNode; label: string; description: string }
   > = {
     [PROPOSAL_TYPES.CA_NHAN_HANG_NAM]: {
-      icon: <TrophyOutlined />,
+      icon: renderAwardTypeIcon(PROPOSAL_TYPES.CA_NHAN_HANG_NAM),
       label: 'Khen thưởng cá nhân hằng năm',
       description: 'Danh hiệu CSTT, CSTDCS, BKBQP, CSTĐTQ, BKTTCP',
     },
     [PROPOSAL_TYPES.DON_VI_HANG_NAM]: {
-      icon: <TeamOutlined />,
+      icon: renderAwardTypeIcon(PROPOSAL_TYPES.DON_VI_HANG_NAM),
       label: 'Khen thưởng đơn vị hằng năm',
       description: 'Danh hiệu ĐVTT, ĐVQT, BKBQP, BKTTCP',
     },
     [PROPOSAL_TYPES.NIEN_HAN]: {
-      icon: <ClockCircleOutlined />,
+      icon: renderAwardTypeIcon(PROPOSAL_TYPES.NIEN_HAN),
       label: 'Huy chương Chiến sĩ vẻ vang',
       description: 'Danh hiệu Huy chương Chiến sĩ vẻ vang 3 hạng (Ba, Nhì, Nhất)',
     },
     [PROPOSAL_TYPES.HC_QKQT]: {
-      icon: <TrophyOutlined />,
+      icon: renderAwardTypeIcon(PROPOSAL_TYPES.HC_QKQT),
       label: 'Huy chương Quân kỳ quyết thắng',
       description: 'Yêu cầu đủ 25 năm phục vụ trong QĐNDVN',
     },
     [PROPOSAL_TYPES.KNC_VSNXD_QDNDVN]: {
-      icon: <TrophyOutlined />,
+      icon: renderAwardTypeIcon(PROPOSAL_TYPES.KNC_VSNXD_QDNDVN),
       label: 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
       description: 'Yêu cầu đủ 25 năm phục vụ đối với nam và 20 năm phục vụ đối với nữ trong QĐNDVN',
     },
     [PROPOSAL_TYPES.CONG_HIEN]: {
-      icon: <HeartOutlined />,
+      icon: renderAwardTypeIcon(PROPOSAL_TYPES.CONG_HIEN),
       label: 'Huân chương Bảo vệ Tổ quốc',
       description: 'Danh hiệu Huân chương Bảo vệ Tổ quốc 3 hạng (Ba, Nhì, Nhất)',
     },
     [PROPOSAL_TYPES.NCKH]: {
-      icon: <ExperimentOutlined />,
+      icon: renderAwardTypeIcon(PROPOSAL_TYPES.NCKH),
       label: 'Thành tích Nghiên cứu khoa học',
       description: 'Đề tài khoa học / Sáng kiến khoa học',
     },
@@ -240,7 +247,7 @@ export default function BulkAddAwardsPage() {
       const unitsRes = await apiClient.getUnits();
       if (unitsRes.success) {
         const unitsData = unitsRes.data || [];
-        const selectedUnits = unitsData.filter((unit: any) => selectedUnitIds.includes(unit.id));
+        const selectedUnits = unitsData.filter((unit: UnitApiRow) => selectedUnitIds.includes(unit.id));
         setUnitDetails(selectedUnits);
       }
     } catch {}
@@ -329,7 +336,7 @@ export default function BulkAddAwardsPage() {
 
       const titleDataWithDecisions = titleData.map(item => {
         const personnelId = item.personnel_id || item.don_vi_id;
-        const decisionInfo = decisionDataMap[personnelId];
+        const decisionInfo = personnelId ? decisionDataMap[personnelId] : undefined;
         return {
           ...item,
           so_quyet_dinh: decisionInfo?.so_quyet_dinh || null,
@@ -551,7 +558,7 @@ export default function BulkAddAwardsPage() {
 
       case 3: // Step 4: Review
         // Merge personnel/unit details with title data
-        let reviewTableData: any[] = [];
+        let reviewTableData: ReviewRow[] = [];
 
         if (awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
           reviewTableData = unitDetails.map(unit => {
@@ -574,7 +581,7 @@ export default function BulkAddAwardsPage() {
         }
 
         // Build table columns
-        const reviewColumns: ColumnsType<any> = [];
+        const reviewColumns: ColumnsType<ReviewRow> = [];
 
         if (awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
           reviewColumns.push(
@@ -641,7 +648,7 @@ export default function BulkAddAwardsPage() {
               key: 'cap_bac_chuc_vu',
               width: 200,
               align: 'center',
-              render: (_, record: any) => {
+              render: (_, record) => {
                 const capBac = record.cap_bac;
                 const chucVu = record.chuc_vu;
                 return (
@@ -672,12 +679,14 @@ export default function BulkAddAwardsPage() {
               key: 'tong_thoi_gian',
               width: 150,
               align: 'center' as const,
-              render: (_: unknown, record: any) => renderServiceTime(record, nam, thang),
+              render: (_: unknown, record: ReviewRow) => renderServiceTime(record, nam, thang),
             });
           }
 
           if (awardType === PROPOSAL_TYPES.CONG_HIEN) {
-            reviewColumns.push(...makeContributionColumns(contributionProfiles));
+            reviewColumns.push(
+              ...(makeContributionColumns(contributionProfiles) as ColumnsType<ReviewRow>)
+            );
           }
         }
 
@@ -703,9 +712,7 @@ export default function BulkAddAwardsPage() {
               align: 'center',
               render: (_, record) => {
                 const moTa = titleData.find(
-                  t =>
-                    String(t.personnelId) === String(record.id) ||
-                    String(t.personnel_id) === String(record.id)
+                  t => String(t.personnel_id) === String(record.id)
                 )?.mo_ta;
                 return <Text>{moTa}</Text>;
               },
@@ -928,7 +935,7 @@ export default function BulkAddAwardsPage() {
         const finalTableData =
           awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? unitDetails : personnelDetails;
 
-        const finalColumns: ColumnsType<any> = [
+        const finalColumns: ColumnsType<ReviewRow> = [
           {
             title: 'STT',
             key: 'index',
@@ -960,12 +967,14 @@ export default function BulkAddAwardsPage() {
             key: 'tong_thoi_gian',
             width: 150,
             align: 'center' as const,
-            render: (_: unknown, record: any) => renderServiceTime(record, nam, thang),
+            render: (_: unknown, record: ReviewRow) => renderServiceTime(record, nam, thang),
           });
         }
 
         if (awardType === PROPOSAL_TYPES.CONG_HIEN) {
-          finalColumns.push(...makeContributionColumns(contributionProfiles));
+          finalColumns.push(
+            ...(makeContributionColumns(contributionProfiles) as ColumnsType<ReviewRow>)
+          );
         }
 
         // Add columns based on award type
@@ -981,8 +990,8 @@ export default function BulkAddAwardsPage() {
                 const titleInfo = titleData.find(t => String(t.personnel_id) === String(record.id));
                 const loai = titleInfo?.loai;
                 return (
-                  <Tag color={loai === PROPOSAL_TYPES.NCKH ? 'blue' : 'green'}>
-                    {loai === PROPOSAL_TYPES.NCKH ? 'Đề tài khoa học' : 'Sáng kiến khoa học'}
+                  <Tag color={loai === 'DTKH' ? 'blue' : 'green'}>
+                    {loai === 'DTKH' ? 'Đề tài khoa học' : 'Sáng kiến khoa học'}
                   </Tag>
                 );
               },
@@ -1044,9 +1053,9 @@ export default function BulkAddAwardsPage() {
             />
 
             <Card title="Danh sách khen thưởng sẽ được thêm">
-              <Table
+              <Table<ReviewRow>
                 columns={finalColumns}
-                dataSource={finalTableData}
+                dataSource={finalTableData as ReviewRow[]}
                 rowKey="id"
                 pagination={false}
                 size="small"
@@ -1063,7 +1072,10 @@ export default function BulkAddAwardsPage() {
   };
 
   // Handle decision modal success
-  const handleDecisionSuccess = (decision: any, isNewDecision: boolean = false) => {
+  const handleDecisionSuccess = (
+    decision: { id?: string; so_quyet_dinh: string; nam: number },
+    isNewDecision: boolean = false
+  ) => {
     // Apply decision number to all selected personnel/units
     const newMap = { ...decisionDataMap };
     selectedPersonnelForDecision.forEach(id => {

@@ -8,7 +8,6 @@ import {
   DownloadOutlined,
   FileExcelOutlined,
   CheckCircleOutlined,
-  ExclamationCircleOutlined,
   LeftOutlined,
   HomeOutlined,
 } from '@ant-design/icons';
@@ -37,28 +36,6 @@ export default function PersonnelExportPage() {
       message.success('Xuất dữ liệu quân nhân thành công');
     } catch (error: unknown) {
       message.error(getApiErrorMessage(error, 'Có lỗi xảy ra khi xuất dữ liệu'));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleExportSample = async () => {
-    try {
-      setLoading(true);
-      const blob = await apiClient.exportPersonnelSample();
-
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `mau_quan_nhan.xlsx`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
-      message.success('Tải file mẫu thành công');
-    } catch (error: unknown) {
-      message.error(getApiErrorMessage(error, 'Có lỗi xảy ra khi tải file mẫu'));
     } finally {
       setLoading(false);
     }
@@ -94,13 +71,7 @@ export default function PersonnelExportPage() {
         </Paragraph>
       </div>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
-          gap: 24,
-        }}
-      >
+      <div>
         {/* Export All Data */}
         <Card
           title={
@@ -143,46 +114,6 @@ export default function PersonnelExportPage() {
           </Paragraph>
         </Card>
 
-        {/* Export Sample Template */}
-        <Card
-          title={
-            <Space>
-              <FileExcelOutlined />
-              <span>Tải file mẫu</span>
-            </Space>
-          }
-          style={{ height: '100%' }}
-        >
-          <Space direction="vertical" style={{ width: '100%' }} size="large">
-            <Alert
-              icon={<ExclamationCircleOutlined />}
-              message={
-                <div>
-                  <Text strong>Lưu ý:</Text>
-                  <ul style={{ marginTop: 8, marginBottom: 0, paddingLeft: 20 }}>
-                    <li>File mẫu chứa các cột bắt buộc</li>
-                    <li>Điền đúng định dạng dữ liệu</li>
-                    <li>Mã đơn vị và tên chức vụ phải tồn tại</li>
-                  </ul>
-                </div>
-              }
-              type="warning"
-              showIcon
-            />
-            <Button
-              icon={<DownloadOutlined />}
-              onClick={handleExportSample}
-              loading={loading}
-              block
-              size="large"
-            >
-              {loading ? 'Đang tải...' : 'Tải file mẫu'}
-            </Button>
-          </Space>
-          <Paragraph type="secondary" style={{ fontSize: 13, marginTop: 16, marginBottom: 0 }}>
-            Tải file Excel mẫu để tải dữ liệu quân nhân
-          </Paragraph>
-        </Card>
       </div>
     </div>
   );

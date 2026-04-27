@@ -348,7 +348,7 @@ export function PersonnelDetailView({ role }: PersonnelDetailViewProps) {
                   <Col xs={24} md={8}>
                     <Card size="small" className="h-full">
                       <Statistic
-                        title="Hạng Ba"
+                        title="hạng Ba"
                         value={0}
                         valueStyle={{ fontSize: '14px' }}
                         valueRender={() => getStatusTag(serviceProfile.hccsvv_hang_ba_status)}
@@ -363,7 +363,7 @@ export function PersonnelDetailView({ role }: PersonnelDetailViewProps) {
                   <Col xs={24} md={8}>
                     <Card size="small" className="h-full">
                       <Statistic
-                        title="Hạng Nhì"
+                        title="hạng Nhì"
                         value={0}
                         valueStyle={{ fontSize: '14px' }}
                         valueRender={() => getStatusTag(serviceProfile.hccsvv_hang_nhi_status)}
@@ -378,7 +378,7 @@ export function PersonnelDetailView({ role }: PersonnelDetailViewProps) {
                   <Col xs={24} md={8}>
                     <Card size="small" className="h-full">
                       <Statistic
-                        title="Hạng Nhất"
+                        title="hạng Nhất"
                         value={0}
                         valueStyle={{ fontSize: '14px' }}
                         valueRender={() => getStatusTag(serviceProfile.hccsvv_hang_nhat_status)}
@@ -448,7 +448,7 @@ export function PersonnelDetailView({ role }: PersonnelDetailViewProps) {
               size="small"
             >
               <Text strong className="text-base">
-                {DANH_HIEU_MAP.HCBVTQ_HANG_NHAT.replace(' Hạng Nhất', '')}
+                {DANH_HIEU_MAP.HCBVTQ_HANG_NHAT.replace(' hạng Nhất', '')}
               </Text>
               <Divider className="my-3" />
               <Row gutter={[16, 16]}>
@@ -497,7 +497,7 @@ export function PersonnelDetailView({ role }: PersonnelDetailViewProps) {
                 <Col xs={24} md={8}>
                   <Card size="small" className="h-full">
                     <Statistic
-                      title="Hạng Ba"
+                      title="hạng Ba"
                       value={0}
                       valueStyle={{ fontSize: '14px' }}
                       valueRender={() => getStatusTag(contributionProfile?.hcbvtq_hang_ba_status)}
@@ -507,7 +507,7 @@ export function PersonnelDetailView({ role }: PersonnelDetailViewProps) {
                 <Col xs={24} md={8}>
                   <Card size="small" className="h-full">
                     <Statistic
-                      title="Hạng Nhì"
+                      title="hạng Nhì"
                       value={0}
                       valueStyle={{ fontSize: '14px' }}
                       valueRender={() => getStatusTag(contributionProfile?.hcbvtq_hang_nhi_status)}
@@ -517,7 +517,7 @@ export function PersonnelDetailView({ role }: PersonnelDetailViewProps) {
                 <Col xs={24} md={8}>
                   <Card size="small" className="h-full">
                     <Statistic
-                      title="Hạng Nhất"
+                      title="hạng Nhất"
                       value={0}
                       valueStyle={{ fontSize: '14px' }}
                       valueRender={() =>
