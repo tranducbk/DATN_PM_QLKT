@@ -13,7 +13,11 @@ import { buildTemplate, styleHeaderRow } from '../helpers/excel/excelTemplateHel
 import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
 import { DANH_HIEU_MAP, KNC_YEARS_REQUIRED_NAM, KNC_YEARS_REQUIRED_NU } from '../constants/danhHieu.constants';
 import { GENDER } from '../constants/gender.constants';
-import { AWARD_EXCEL_SHEETS, KNC_TEMPLATE_COLUMNS } from '../constants/awardExcel.constants';
+import {
+  AWARD_EXCEL_SHEETS,
+  KNC_EXPORT_COLUMNS,
+  KNC_TEMPLATE_COLUMNS,
+} from '../constants/awardExcel.constants';
 
 export interface CommemorativeMedalValidItem {
   row: number;
@@ -509,18 +513,7 @@ class CommemorativeMedalService {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet(AWARD_EXCEL_SHEETS.KNC);
 
-    worksheet.columns = [
-      { header: 'STT', key: 'stt', width: 5 },
-      { header: 'CCCD', key: 'cccd', width: 15 },
-      { header: 'Họ tên', key: 'ho_ten', width: 25 },
-      { header: 'Đơn vị', key: 'don_vi', width: 30 },
-      { header: 'Năm', key: 'nam', width: 10 },
-      { header: 'Cấp bậc', key: 'cap_bac', width: 15 },
-      { header: 'Chức vụ', key: 'chuc_vu', width: 30 },
-      { header: 'Thời gian (tháng)', key: 'thoi_gian', width: 18 },
-      { header: 'Số quyết định', key: 'so_quyet_dinh', width: 20 },
-      { header: 'Ghi chú', key: 'ghi_chu', width: 30 },
-    ];
+    worksheet.columns = [...KNC_EXPORT_COLUMNS];
 
     styleHeaderRow(worksheet);
 

@@ -33,6 +33,7 @@ import type { DanhHieuHangNam, QuanNhan, Prisma } from '../generated/prisma';
 import { buildTemplate, TemplateColumn, styleHeaderRow } from '../helpers/excel/excelTemplateHelper';
 import { IMPORT_TRANSACTION_TIMEOUT, EXPORT_FETCH_LIMIT } from '../constants/excel.constants';
 import {
+  ANNUAL_PERSONAL_EXPORT_COLUMNS,
   AWARD_EXCEL_SHEETS,
   PERSONAL_ANNUAL_TEMPLATE_COLUMNS,
 } from '../constants/awardExcel.constants';
@@ -1646,23 +1647,7 @@ class AnnualRewardService {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet(AWARD_EXCEL_SHEETS.ANNUAL_PERSONAL);
 
-    worksheet.columns = [
-      { header: 'STT', key: 'stt', width: 6 },
-      { header: 'ID', key: 'id', width: 10 },
-      { header: 'Họ và tên', key: 'ho_ten', width: 25 },
-      { header: 'Cấp bậc', key: 'cap_bac', width: 15 },
-      { header: 'Chức vụ', key: 'chuc_vu', width: 20 },
-      { header: 'Năm', key: 'nam', width: 10 },
-      { header: 'Danh hiệu', key: 'danh_hieu', width: 15 },
-      { header: 'Số quyết định', key: 'so_quyet_dinh', width: 20 },
-      { header: 'Ghi chú', key: 'ghi_chu', width: 25 },
-      { header: 'BKBQP', key: 'nhan_bkbqp', width: 10 },
-      { header: 'Số QĐ BKBQP', key: 'so_quyet_dinh_bkbqp', width: 20 },
-      { header: 'CSTDTQ', key: 'nhan_cstdtq', width: 10 },
-      { header: 'Số QĐ CSTDTQ', key: 'so_quyet_dinh_cstdtq', width: 20 },
-      { header: 'BKTTCP', key: 'nhan_bkttcp', width: 10 },
-      { header: 'Số QĐ BKTTCP', key: 'so_quyet_dinh_bkttcp', width: 20 },
-    ];
+    worksheet.columns = [...ANNUAL_PERSONAL_EXPORT_COLUMNS];
 
     styleHeaderRow(worksheet);
 

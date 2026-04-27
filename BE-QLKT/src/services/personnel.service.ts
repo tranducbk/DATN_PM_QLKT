@@ -20,6 +20,7 @@ import { writeSystemLog } from '../helpers/systemLogHelper';
 import { DEFAULT_PASSWORD } from '../configs';
 import { sanitizeRowData } from '../helpers/excel/excelHelper';
 import { calculateTenureMonthsWithDayPrecision } from '../helpers/serviceYearsHelper';
+import { PERSONNEL_EXPORT_COLUMNS } from '../constants/awardExcel.constants';
 
 type DateInput = Date | null;
 
@@ -816,21 +817,7 @@ class PersonnelService {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('QuanNhan');
 
-    worksheet.columns = [
-      { header: 'CCCD', key: 'cccd', width: 18 },
-      { header: 'Họ tên', key: 'ho_ten', width: 28 },
-      { header: 'Ngày sinh (YYYY-MM-DD)', key: 'ngay_sinh', width: 20 },
-      {
-        header: 'Ngày nhập ngũ (YYYY-MM-DD)',
-        key: 'ngay_nhap_ngu',
-        width: 24,
-      },
-      { header: 'Mã đơn vị', key: 'ma_don_vi', width: 14 },
-      { header: 'Tên đơn vị', key: 'ten_don_vi', width: 24 },
-      { header: 'Tên chức vụ', key: 'ten_chuc_vu', width: 22 },
-      { header: 'Là chỉ huy (is_manager)', key: 'is_manager', width: 16 },
-      { header: 'Hệ số chức vụ', key: 'he_so_chuc_vu', width: 15 },
-    ];
+    worksheet.columns = [...PERSONNEL_EXPORT_COLUMNS];
 
     // Keep CCCD as text to preserve leading zeros.
     worksheet.getColumn(1).numFmt = '@';

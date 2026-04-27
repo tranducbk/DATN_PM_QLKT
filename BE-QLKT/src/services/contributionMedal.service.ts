@@ -17,6 +17,7 @@ import { validateHCBVTQHighestRank, type PositionMonthsByGroup } from '../helper
 import { CONG_HIEN_HE_SO_GROUPS } from '../constants/danhHieu.constants';
 import {
   AWARD_EXCEL_SHEETS,
+  HCBVTQ_EXPORT_COLUMNS,
   HCBVTQ_TEMPLATE_COLUMNS,
   HCBVTQ_TEMPLATE_OPTIONS,
 } from '../constants/awardExcel.constants';
@@ -640,22 +641,7 @@ class ContributionAwardService {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet(AWARD_EXCEL_SHEETS.HCBVTQ);
 
-    worksheet.columns = [
-      { header: 'STT', key: 'stt', width: 6 },
-      { header: 'ID', key: 'id', width: 10 },
-      { header: 'CCCD', key: 'cccd', width: 15 },
-      { header: 'Họ và tên', key: 'ho_ten', width: 25 },
-      { header: 'Cấp bậc', key: 'cap_bac', width: 15 },
-      { header: 'Chức vụ', key: 'chuc_vu', width: 20 },
-      { header: 'Đơn vị', key: 'don_vi', width: 30 },
-      { header: 'Năm', key: 'nam', width: 10 },
-      { header: 'Danh hiệu', key: 'danh_hieu', width: 25 },
-      { header: 'TG nhóm 0.7 (tháng)', key: 'thoi_gian_nhom_0_7', width: 18 },
-      { header: 'TG nhóm 0.8 (tháng)', key: 'thoi_gian_nhom_0_8', width: 18 },
-      { header: 'TG nhóm 0.9-1.0 (tháng)', key: 'thoi_gian_nhom_0_9_1_0', width: 20 },
-      { header: 'Số quyết định', key: 'so_quyet_dinh', width: 20 },
-      { header: 'Ghi chú', key: 'ghi_chu', width: 30 },
-    ];
+    worksheet.columns = [...HCBVTQ_EXPORT_COLUMNS];
 
     styleHeaderRow(worksheet);
 

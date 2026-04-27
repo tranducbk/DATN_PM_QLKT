@@ -35,6 +35,7 @@ import {
 import {
   AWARD_EXCEL_SHEETS,
   UNIT_ANNUAL_DANH_HIEU_VALIDATION_FORMULA,
+  UNIT_ANNUAL_EXPORT_COLUMNS,
   UNIT_ANNUAL_TEMPLATE_COLUMNS,
 } from '../constants/awardExcel.constants';
 
@@ -1964,19 +1965,7 @@ class UnitAnnualAwardService {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet(AWARD_EXCEL_SHEETS.ANNUAL_UNIT);
 
-    worksheet.columns = [
-      { header: 'STT', key: 'stt', width: 8 },
-      { header: 'Mã đơn vị', key: 'ma_don_vi', width: 15 },
-      { header: 'Tên đơn vị', key: 'ten_don_vi', width: 30 },
-      { header: 'Năm', key: 'nam', width: 10 },
-      { header: 'Danh hiệu', key: 'danh_hieu', width: 20 },
-      { header: 'Số QĐ danh hiệu', key: 'so_quyet_dinh', width: 20 },
-      { header: 'BKBQP', key: 'nhan_bkbqp', width: 10 },
-      { header: 'Số QĐ BKBQP', key: 'so_quyet_dinh_bkbqp', width: 20 },
-      { header: 'BKTTCP', key: 'nhan_bkttcp', width: 10 },
-      { header: 'Số QĐ BKTTCP', key: 'so_quyet_dinh_bkttcp', width: 20 },
-      { header: 'Ghi chú', key: 'ghi_chu', width: 30 },
-    ];
+    worksheet.columns = [...UNIT_ANNUAL_EXPORT_COLUMNS];
 
     styleHeaderRow(worksheet);
 

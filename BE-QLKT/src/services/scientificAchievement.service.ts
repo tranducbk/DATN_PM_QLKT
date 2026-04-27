@@ -10,7 +10,11 @@ import { NotFoundError, ValidationError } from '../middlewares/errorHandler';
 import { buildTemplate, styleHeaderRow } from '../helpers/excel/excelTemplateHelper';
 import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, sanitizeRowData, validatePersonnelNameMatch } from '../helpers/excel/excelHelper';
 import { IMPORT_TRANSACTION_TIMEOUT, EXPORT_FETCH_LIMIT } from '../constants/excel.constants';
-import { AWARD_EXCEL_SHEETS, NCKH_TEMPLATE_COLUMNS } from '../constants/awardExcel.constants';
+import {
+  AWARD_EXCEL_SHEETS,
+  NCKH_EXPORT_COLUMNS,
+  NCKH_TEMPLATE_COLUMNS,
+} from '../constants/awardExcel.constants';
 
 interface CreateAchievementData {
   personnel_id: string;
@@ -249,19 +253,7 @@ class ScientificAchievementService {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet(AWARD_EXCEL_SHEETS.NCKH);
 
-    worksheet.columns = [
-      { header: 'STT', key: 'stt', width: 6 },
-      { header: 'ID', key: 'id', width: 10 },
-      { header: 'Họ và tên', key: 'ho_ten', width: 25 },
-      { header: 'Cấp bậc', key: 'cap_bac', width: 15 },
-      { header: 'Chức vụ', key: 'chuc_vu', width: 20 },
-      { header: 'Đơn vị', key: 'don_vi', width: 30 },
-      { header: 'Năm', key: 'nam', width: 10 },
-      { header: 'Loại', key: 'loai', width: 15 },
-      { header: 'Mô tả', key: 'mo_ta', width: 40 },
-      { header: 'Số quyết định', key: 'so_quyet_dinh', width: 20 },
-      { header: 'Ghi chú', key: 'ghi_chu', width: 30 },
-    ];
+    worksheet.columns = [...NCKH_EXPORT_COLUMNS];
 
     styleHeaderRow(worksheet);
 

@@ -9,7 +9,11 @@ import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys, s
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { buildTemplate, styleHeaderRow } from '../helpers/excel/excelTemplateHelper';
 import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
-import { AWARD_EXCEL_SHEETS, HCQKQT_TEMPLATE_COLUMNS } from '../constants/awardExcel.constants';
+import {
+  AWARD_EXCEL_SHEETS,
+  HCQKQT_TEMPLATE_COLUMNS,
+  MILITARY_FLAG_EXPORT_COLUMNS,
+} from '../constants/awardExcel.constants';
 import { HCQKQT_YEARS_REQUIRED } from '../constants/danhHieu.constants';
 import { calculateServiceMonths, formatServiceDuration } from '../helpers/serviceYearsHelper';
 
@@ -485,17 +489,7 @@ class MilitaryFlagService {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet(AWARD_EXCEL_SHEETS.HC_QKQT);
 
-    worksheet.columns = [
-      { header: 'STT', key: 'stt', width: 6 },
-      { header: 'ID', key: 'id', width: 10 },
-      { header: 'Họ và tên', key: 'ho_ten', width: 25 },
-      { header: 'Cấp bậc', key: 'cap_bac', width: 15 },
-      { header: 'Chức vụ', key: 'chuc_vu', width: 20 },
-      { header: 'Năm', key: 'nam', width: 10 },
-      { header: 'Số quyết định', key: 'so_quyet_dinh', width: 20 },
-      { header: 'Ghi chú', key: 'ghi_chu', width: 25 },
-      { header: 'Đơn vị', key: 'don_vi', width: 30 },
-    ];
+    worksheet.columns = [...MILITARY_FLAG_EXPORT_COLUMNS];
 
     styleHeaderRow(worksheet);
 

@@ -31,6 +31,7 @@ import { calculateServiceMonths, formatServiceDuration } from '../helpers/servic
 import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
 import {
   AWARD_EXCEL_SHEETS,
+  HCCSVV_EXPORT_COLUMNS,
   HCCSVV_TEMPLATE_COLUMNS,
   HCCSVV_TEMPLATE_OPTIONS,
 } from '../constants/awardExcel.constants';
@@ -702,17 +703,7 @@ class HCCSVVService {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet(AWARD_EXCEL_SHEETS.HCCSVV);
 
-    worksheet.columns = [
-      { header: 'STT', key: 'stt', width: 6 },
-      { header: 'ID', key: 'id', width: 10 },
-      { header: 'Họ và tên', key: 'ho_ten', width: 25 },
-      { header: 'Cấp bậc', key: 'cap_bac', width: 15 },
-      { header: 'Chức vụ', key: 'chuc_vu', width: 20 },
-      { header: 'Năm (*)', key: 'nam', width: 10 },
-      { header: 'Danh hiệu (*)', key: 'danh_hieu', width: 25 },
-      { header: 'Số quyết định', key: 'so_quyet_dinh', width: 20 },
-      { header: 'Ghi chú', key: 'ghi_chu', width: 25 },
-    ];
+    worksheet.columns = [...HCCSVV_EXPORT_COLUMNS];
 
     styleHeaderRow(worksheet);
 
