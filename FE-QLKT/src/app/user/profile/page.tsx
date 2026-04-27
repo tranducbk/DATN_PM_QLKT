@@ -177,7 +177,7 @@ export default function UserProfilePage() {
     };
 
     fetchData();
-  }, []);
+  }, [user?.quan_nhan_id]);
 
   const scientificColumns = [
     {

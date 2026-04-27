@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
 
 type Theme = 'light' | 'dark';
 
@@ -30,16 +30,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
   }, [theme, mounted]);
 
-  const setTheme = (t: Theme) => {
+  const setTheme = useCallback((t: Theme) => {
     setThemeState(t);
     localStorage.setItem('theme', t);
     document.documentElement.classList.toggle('dark', t === 'dark');
-  };
+  }, []);
 
-  const toggle = () => {
+  const toggle = useCallback(() => {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(newTheme);
-  };
+  }, [theme, setTheme]);
 
   const isDark = theme === 'dark';
 
@@ -50,7 +50,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       setTheme,
       toggle,
     }),
-    [theme]
+    [theme, isDark, setTheme, toggle]
   );
 
   // Avoid hydration mismatch by not rendering until mounted

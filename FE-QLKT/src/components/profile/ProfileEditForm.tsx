@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Card,
@@ -177,11 +177,7 @@ export function ProfileEditForm({
     }
   };
 
-  useEffect(() => {
-    loadPersonnelData();
-  }, [externalPersonnelId]);
-
-  const loadPersonnelData = async () => {
+  const loadPersonnelData = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -255,7 +251,11 @@ export function ProfileEditForm({
     } finally {
       setLoading(false);
     }
-  };
+  }, [externalPersonnelId, form, router]);
+
+  useEffect(() => {
+    loadPersonnelData();
+  }, [loadPersonnelData]);
 
   const handleSubmit = async (values: any) => {
     try {

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Card,
   Table,
@@ -94,11 +94,7 @@ export default function AdminProposalsPage() {
   const [, setSelectedDecision] = useState<unknown>(null);
   const [, setExtraordinaryRewardModalVisible] = useState(false);
 
-  useEffect(() => {
-    fetchProposals();
-  }, [activeTab]);
-
-  const fetchProposals = async () => {
+  const fetchProposals = useCallback(async () => {
     try {
       setLoading(true);
       const response = await apiClient.getProposals({
@@ -117,7 +113,11 @@ export default function AdminProposalsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab]);
+
+  useEffect(() => {
+    fetchProposals();
+  }, [fetchProposals]);
 
   const filteredProposals = proposals.filter(p => {
     const searchLower = searchText.toLowerCase();

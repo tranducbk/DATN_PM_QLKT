@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Card,
   Typography,
@@ -64,13 +64,7 @@ export default function AccountDetailPage() {
   const [account, setAccount] = useState<AccountDetail | null>(null);
   const [resetting, setResetting] = useState(false);
 
-  useEffect(() => {
-    if (accountId) {
-      fetchAccountDetail();
-    }
-  }, [accountId]);
-
-  const fetchAccountDetail = async () => {
+  const fetchAccountDetail = useCallback(async () => {
     setLoading(true);
     try {
       const response = await apiClient.getAccountById(accountId);
@@ -84,7 +78,13 @@ export default function AccountDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [accountId]);
+
+  useEffect(() => {
+    if (accountId) {
+      fetchAccountDetail();
+    }
+  }, [accountId, fetchAccountDetail]);
 
   const handleResetPassword = async () => {
     try {

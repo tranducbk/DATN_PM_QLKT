@@ -226,6 +226,237 @@ describe('tenureMedal.service - previewImport', () => {
     expect(result.errors[0].message).toContain('Phải có hạng Ba trước');
   });
 
+  it('Empty row giữa data rows → bị skip, không vào valid hay errors', async () => {
+    const p1 = makePersonnel({
+      id: 'qn-empty',
+      ho_ten: 'Có Data',
+      cap_bac: 'Đại uý',
+      ngay_nhap_ngu: new Date('2010-01-01'),
+    });
+    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-EMPTY' }]);
+    prismaMock.quanNhan.findMany.mockResolvedValueOnce([{ ...p1, ChucVu: { ten_chuc_vu: 'Trợ lý' } }]);
+    prismaMock.khenThuongHCCSVV.findMany.mockResolvedValueOnce([]);
+    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
+
+    // Dòng đầu rỗng hoàn toàn (không có id, nam, danh_hieu) — bỏ qua im lặng
+    const buffer = await makeNienHanExcelBuffer([
+      {},
+      {
+        id: 'qn-empty',
+        ho_va_ten: 'Có Data',
+        cap_bac: 'Đại uý',
+        chuc_vu: 'Trợ lý',
+        nam: 2024,
+        thang: 12,
+        danh_hieu: 'HCCSVV_HANG_BA',
+        so_quyet_dinh: 'QD-EMPTY',
+      },
+    ]);
+
+    const result = await tenureMedalService.previewImport(buffer);
+    expect(result.total).toBe(1);
+    expect(result.valid).toHaveLength(1);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it('Duplicate trong cùng file (cùng id + danh_hieu) → row thứ 2 vào errors', async () => {
+    const p1 = makePersonnel({
+      id: 'qn-dup',
+      ho_ten: 'Trùng Lặp',
+      cap_bac: 'Đại uý',
+      ngay_nhap_ngu: new Date('2010-01-01'),
+    });
+    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-DUP' }]);
+    prismaMock.quanNhan.findMany.mockResolvedValueOnce([{ ...p1, ChucVu: { ten_chuc_vu: 'Trợ lý' } }]);
+    prismaMock.khenThuongHCCSVV.findMany.mockResolvedValueOnce([]);
+    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
+
+    const row = {
+      id: 'qn-dup',
+      ho_va_ten: 'Trùng Lặp',
+      cap_bac: 'Đại uý',
+      chuc_vu: 'Trợ lý',
+      nam: 2024,
+      thang: 12,
+      danh_hieu: 'HCCSVV_HANG_BA',
+      so_quyet_dinh: 'QD-DUP',
+    };
+    const buffer = await makeNienHanExcelBuffer([row, { ...row }]);
+
+    const result = await tenureMedalService.previewImport(buffer);
+    expect(result.valid).toHaveLength(1);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0].message).toContain('Trùng lặp trong file');
+  });
+
+  it('Tháng = 0 → errors "không hợp lệ"', async () => {
+    const p1 = makePersonnel({
+      id: 'qn-th0',
+      ho_ten: 'Tháng Zero',
+      cap_bac: 'Đại uý',
+      ngay_nhap_ngu: new Date('2010-01-01'),
+    });
+    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-T0' }]);
+    prismaMock.quanNhan.findMany.mockResolvedValueOnce([{ ...p1, ChucVu: { ten_chuc_vu: 'Trợ lý' } }]);
+    prismaMock.khenThuongHCCSVV.findMany.mockResolvedValueOnce([]);
+    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
+
+    // thang=0 fail ở missingFields trước vì "0" falsy bị coi là thiếu
+    const buffer = await makeNienHanExcelBuffer([
+      {
+        id: 'qn-th0',
+        ho_va_ten: 'Tháng Zero',
+        cap_bac: 'Đại uý',
+        chuc_vu: 'Trợ lý',
+        nam: 2024,
+        thang: 0,
+        danh_hieu: 'HCCSVV_HANG_BA',
+        so_quyet_dinh: 'QD-T0',
+      },
+    ]);
+
+    const result = await tenureMedalService.previewImport(buffer);
+    expect(result.valid).toHaveLength(0);
+    expect(result.errors).toHaveLength(1);
+    // 0 rơi vào nhánh missingFields falsy ("Thiếu Tháng"); 13 được test riêng
+    expect(result.errors[0].message).toBe(IMPORT_NIEN_HAN_MISSING_FIELDS(['Tháng']));
+  });
+
+  it('Tháng = 13 → errors "không hợp lệ. Chỉ được nhập 1-12"', async () => {
+    const p1 = makePersonnel({
+      id: 'qn-th13',
+      ho_ten: 'Tháng OOR',
+      cap_bac: 'Đại uý',
+      ngay_nhap_ngu: new Date('2010-01-01'),
+    });
+    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-T13' }]);
+    prismaMock.quanNhan.findMany.mockResolvedValueOnce([{ ...p1, ChucVu: { ten_chuc_vu: 'Trợ lý' } }]);
+    prismaMock.khenThuongHCCSVV.findMany.mockResolvedValueOnce([]);
+    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
+
+    const buffer = await makeNienHanExcelBuffer([
+      {
+        id: 'qn-th13',
+        ho_va_ten: 'Tháng OOR',
+        cap_bac: 'Đại uý',
+        chuc_vu: 'Trợ lý',
+        nam: 2024,
+        thang: 13,
+        danh_hieu: 'HCCSVV_HANG_BA',
+        so_quyet_dinh: 'QD-T13',
+      },
+    ]);
+
+    const result = await tenureMedalService.previewImport(buffer);
+    expect(result.valid).toHaveLength(0);
+    expect(result.errors[0].message).toContain('Chỉ được nhập 1-12');
+  });
+
+  it('Năm < 1900 → errors "không hợp lệ"', async () => {
+    const p1 = makePersonnel({
+      id: 'qn-y',
+      ho_ten: 'Năm Cũ',
+      cap_bac: 'Đại uý',
+      ngay_nhap_ngu: new Date('2010-01-01'),
+    });
+    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-Y' }]);
+    prismaMock.quanNhan.findMany.mockResolvedValueOnce([{ ...p1, ChucVu: { ten_chuc_vu: 'Trợ lý' } }]);
+    prismaMock.khenThuongHCCSVV.findMany.mockResolvedValueOnce([]);
+    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
+
+    const buffer = await makeNienHanExcelBuffer([
+      {
+        id: 'qn-y',
+        ho_va_ten: 'Năm Cũ',
+        cap_bac: 'Đại uý',
+        chuc_vu: 'Trợ lý',
+        nam: 1899,
+        thang: 12,
+        danh_hieu: 'HCCSVV_HANG_BA',
+        so_quyet_dinh: 'QD-Y',
+      },
+    ]);
+
+    const result = await tenureMedalService.previewImport(buffer);
+    expect(result.valid).toHaveLength(0);
+    expect(result.errors[0].message).toContain('không hợp lệ');
+  });
+
+  it('Danh hiệu enum không hợp lệ → errors "không tồn tại"', async () => {
+    const p1 = makePersonnel({
+      id: 'qn-dh',
+      ho_ten: 'Sai Danh Hiệu',
+      cap_bac: 'Đại uý',
+      ngay_nhap_ngu: new Date('2010-01-01'),
+    });
+    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-DH' }]);
+    prismaMock.quanNhan.findMany.mockResolvedValueOnce([{ ...p1, ChucVu: { ten_chuc_vu: 'Trợ lý' } }]);
+    prismaMock.khenThuongHCCSVV.findMany.mockResolvedValueOnce([]);
+    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
+
+    const buffer = await makeNienHanExcelBuffer([
+      {
+        id: 'qn-dh',
+        ho_va_ten: 'Sai Danh Hiệu',
+        cap_bac: 'Đại uý',
+        chuc_vu: 'Trợ lý',
+        nam: 2024,
+        thang: 12,
+        danh_hieu: 'HCCSVV_HANG_BON',
+        so_quyet_dinh: 'QD-DH',
+      },
+    ]);
+
+    const result = await tenureMedalService.previewImport(buffer);
+    expect(result.valid).toHaveLength(0);
+    expect(result.errors[0].message).toContain('không tồn tại');
+  });
+
+  it('Sheet name là "Danh hiệu hằng năm" → throw ValidationError "không phải HCCSVV"', async () => {
+    // Tự tạo buffer với tên sheet hằng năm cá nhân để kích hoạt guard riêng
+    const workbook = new ExcelJS.Workbook();
+    const ws = workbook.addWorksheet('Danh hiệu hằng năm');
+    ws.addRow([...HEADERS]);
+    ws.addRow(['qn-x', 'X', 'Đại uý', 'Trợ lý', 2024, 12, 'HCCSVV_HANG_BA', 'QD-X', '']);
+    const arr = await workbook.xlsx.writeBuffer();
+    const buffer = Buffer.from(arr as ArrayBuffer);
+
+    await expectError(tenureMedalService.previewImport(buffer), ValidationError, /không phải HCCSVV/);
+  });
+
+  it('Đúng 10.0 năm phục vụ cho HANG_BA → vào valid (boundary)', async () => {
+    // Mốc tháng 11/2024; ngay_nhap_ngu = 2014-12-01 → ~119+ tháng. Dùng đầu năm.
+    // Service dùng calculateServiceMonths với (nam, thang, 0) là cuối tháng.
+    // Chọn mốc đơn giản: nhập ngũ 2014-11-01, mốc 2024-11-30 → đúng 120 tháng.
+    const p1 = makePersonnel({
+      id: 'qn-bound',
+      ho_ten: 'Đúng Mốc',
+      cap_bac: 'Đại uý',
+      ngay_nhap_ngu: new Date('2014-11-01'),
+    });
+    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-BD' }]);
+    prismaMock.quanNhan.findMany.mockResolvedValueOnce([{ ...p1, ChucVu: { ten_chuc_vu: 'Trợ lý' } }]);
+    prismaMock.khenThuongHCCSVV.findMany.mockResolvedValueOnce([]);
+    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
+
+    const buffer = await makeNienHanExcelBuffer([
+      {
+        id: 'qn-bound',
+        ho_va_ten: 'Đúng Mốc',
+        cap_bac: 'Đại uý',
+        chuc_vu: 'Trợ lý',
+        nam: 2024,
+        thang: 11,
+        danh_hieu: 'HCCSVV_HANG_BA',
+        so_quyet_dinh: 'QD-BD',
+      },
+    ]);
+
+    const result = await tenureMedalService.previewImport(buffer);
+    expect(result.valid).toHaveLength(1);
+    expect(result.errors).toHaveLength(0);
+  });
+
   it('Preview HCCSVV_HANG_NHI khi HANG_BA cùng năm → errors "phải sau năm"', async () => {
     const p1 = makePersonnel({
       id: 'qn-rk',

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -57,11 +57,7 @@ export default function AdminServiceRewardsPage() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadData();
-  }, [personnelId]);
-
-  async function loadData() {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [personnelRes, hccsvvRes] = await Promise.all([
@@ -108,7 +104,11 @@ export default function AdminServiceRewardsPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [personnelId]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const getStatusTag = (status: string) => {
     const statusMap: Record<string, { label: string; color: string }> = {

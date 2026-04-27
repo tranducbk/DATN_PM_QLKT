@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Card,
@@ -106,14 +106,7 @@ export default function SuperAdminAddAwardsPage() {
     }
   }, [currentStep]);
 
-  // Fetch personnel details when reaching review step
-  useEffect(() => {
-    if (currentStep === 3 && selectedPersonnelIds.length > 0) {
-      fetchPersonnelDetails();
-    }
-  }, [currentStep, selectedPersonnelIds]);
-
-  const fetchPersonnelDetails = async () => {
+  const fetchPersonnelDetails = useCallback(async () => {
     try {
       const promises = selectedPersonnelIds.map(id => apiClient.getPersonnelById(id));
       const responses = await Promise.all(promises);
@@ -122,7 +115,14 @@ export default function SuperAdminAddAwardsPage() {
     } catch (error) {
       antMessage.error(getApiErrorMessage(error));
     }
-  };
+  }, [selectedPersonnelIds]);
+
+  // Fetch personnel details when reaching review step
+  useEffect(() => {
+    if (currentStep === 3 && selectedPersonnelIds.length > 0) {
+      fetchPersonnelDetails();
+    }
+  }, [currentStep, selectedPersonnelIds, fetchPersonnelDetails]);
 
   // Validate current step
   const canProceedToNextStep = () => {

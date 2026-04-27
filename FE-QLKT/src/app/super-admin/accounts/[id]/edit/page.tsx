@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Form,
   Input,
@@ -36,13 +36,7 @@ export default function AccountEditPage() {
   const [fetchLoading, setFetchLoading] = useState(true);
   const router = useRouter();
 
-  useEffect(() => {
-    if (accountId) {
-      fetchAccountDetail();
-    }
-  }, [accountId]);
-
-  const fetchAccountDetail = async () => {
+  const fetchAccountDetail = useCallback(async () => {
     setFetchLoading(true);
     try {
       const response = await apiClient.getAccountById(accountId);
@@ -60,7 +54,13 @@ export default function AccountEditPage() {
     } finally {
       setFetchLoading(false);
     }
-  };
+  }, [accountId, form]);
+
+  useEffect(() => {
+    if (accountId) {
+      fetchAccountDetail();
+    }
+  }, [accountId, fetchAccountDetail]);
 
   const handleSubmit = async (values: any) => {
     setLoading(true);

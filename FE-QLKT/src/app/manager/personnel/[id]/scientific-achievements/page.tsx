@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Card, Button, Table, Modal, Space, Typography, Breadcrumb, message, Spin, Empty } from 'antd';
@@ -31,11 +31,7 @@ export default function ManagerScientificAchievementsPage() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadData();
-  }, [personnelId]);
-
-  async function loadData() {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [personnelRes, achievementsRes] = await Promise.all([
@@ -54,7 +50,11 @@ export default function ManagerScientificAchievementsPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [personnelId]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleDelete = async () => {
     if (!deleteId) return;

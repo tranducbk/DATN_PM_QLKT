@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Card,
   Table,
@@ -86,11 +86,7 @@ export default function AdminDecisionsPage() {
     return () => clearTimeout(debounceRef.current);
   }, [searchText]);
 
-  useEffect(() => {
-    fetchDecisions();
-  }, [pagination.current, pagination.pageSize, yearFilter, typeFilter, debouncedSearch]);
-
-  const fetchDecisions = async () => {
+  const fetchDecisions = useCallback(async () => {
     try {
       setLoading(true);
       const params: DecisionQueryParams = {
@@ -125,7 +121,12 @@ export default function AdminDecisionsPage() {
     } finally {
       setLoading(false);
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pagination.current, pagination.pageSize, yearFilter, typeFilter, debouncedSearch, message]);
+
+  useEffect(() => {
+    fetchDecisions();
+  }, [fetchDecisions]);
 
   const handleDelete = async (id: string) => {
     try {

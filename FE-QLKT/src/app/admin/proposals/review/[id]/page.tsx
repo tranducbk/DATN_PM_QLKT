@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   Card,
@@ -121,13 +121,57 @@ export default function ProposalDetailPage() {
   const [rejectModalVisible, setRejectModalVisible] = useState(false);
   const [ghiChu, setGhiChu] = useState('');
 
-  useEffect(() => {
-    if (id) {
-      fetchProposalDetail();
-    }
-  }, [id]);
+  const fetchPersonnelDetails = useCallback(async (danhHieuItems: DanhHieuItem[]) => {
+    try {
+      const detailsMap: Record<string, unknown> = {};
 
-  const fetchProposalDetail = async () => {
+      await Promise.all(
+        danhHieuItems.map(async item => {
+          if (item.personnel_id) {
+            try {
+              const personnelResponse = await apiClient.getPersonnelById(item.personnel_id);
+              if (personnelResponse.success && personnelResponse.data) {
+                detailsMap[item.personnel_id] = personnelResponse.data;
+              }
+            } catch (error) {
+              // Ignore errors for individual personnel
+            }
+          }
+        })
+      );
+
+      setPersonnelDetails(detailsMap);
+    } catch (error) {
+      message.error(getApiErrorMessage(error));
+    }
+  }, [message]);
+
+  const fetchPositionHistories = useCallback(async (danhHieuItems: DanhHieuItem[]) => {
+    try {
+      const historiesMap: Record<string, PositionHistoryEntry[]> = {};
+
+      await Promise.all(
+        danhHieuItems.map(async item => {
+          if (item.personnel_id) {
+            try {
+              const positionHistoryResponse = await apiClient.getPositionHistory(item.personnel_id);
+              if (positionHistoryResponse.success && positionHistoryResponse.data) {
+                historiesMap[item.personnel_id] = positionHistoryResponse.data;
+              }
+            } catch (error) {
+              historiesMap[item.personnel_id] = [];
+            }
+          }
+        })
+      );
+
+      setPositionHistoriesMap(historiesMap);
+    } catch (error) {
+      message.error(getApiErrorMessage(error));
+    }
+  }, [message]);
+
+  const fetchProposalDetail = useCallback(async () => {
     try {
       setLoading(true);
       const proposalResponse = await apiClient.getProposalById(String(id));
@@ -190,57 +234,13 @@ export default function ProposalDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, fetchPersonnelDetails, fetchPositionHistories]);
 
-  const fetchPersonnelDetails = async (danhHieuItems: DanhHieuItem[]) => {
-    try {
-      const detailsMap: Record<string, unknown> = {};
-
-      await Promise.all(
-        danhHieuItems.map(async item => {
-          if (item.personnel_id) {
-            try {
-              const personnelResponse = await apiClient.getPersonnelById(item.personnel_id);
-              if (personnelResponse.success && personnelResponse.data) {
-                detailsMap[item.personnel_id] = personnelResponse.data;
-              }
-            } catch (error) {
-              // Ignore errors for individual personnel
-            }
-          }
-        })
-      );
-
-      setPersonnelDetails(detailsMap);
-    } catch (error) {
-      message.error(getApiErrorMessage(error));
+  useEffect(() => {
+    if (id) {
+      fetchProposalDetail();
     }
-  };
-
-  const fetchPositionHistories = async (danhHieuItems: DanhHieuItem[]) => {
-    try {
-      const historiesMap: Record<string, PositionHistoryEntry[]> = {};
-
-      await Promise.all(
-        danhHieuItems.map(async item => {
-          if (item.personnel_id) {
-            try {
-              const positionHistoryResponse = await apiClient.getPositionHistory(item.personnel_id);
-              if (positionHistoryResponse.success && positionHistoryResponse.data) {
-                historiesMap[item.personnel_id] = positionHistoryResponse.data;
-              }
-            } catch (error) {
-              historiesMap[item.personnel_id] = [];
-            }
-          }
-        })
-      );
-
-      setPositionHistoriesMap(historiesMap);
-    } catch (error) {
-      message.error(getApiErrorMessage(error));
-    }
-  };
+  }, [id, fetchProposalDetail]);
 
   const totalTimeByGroup = (personnelId: string, group: CongHienHeSoGroup) =>
     calculateTotalTimeByGroup(positionHistoriesMap[personnelId] || [], group);

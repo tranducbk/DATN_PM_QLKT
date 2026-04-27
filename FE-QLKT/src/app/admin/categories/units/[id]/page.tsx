@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   Button,
@@ -49,11 +49,7 @@ export default function UnitDetailPage() {
   const [editingItem, setEditingItem] = useState<UnitApiRow | PositionRow | null>(null);
   const [activeTab, setActiveTab] = useState('info');
 
-  useEffect(() => {
-    loadUnitDetail();
-  }, [unitId]);
-
-  async function loadUnitDetail() {
+  const loadUnitDetail = useCallback(async () => {
     try {
       setLoading(true);
       const [unitRes, unitsRes] = await Promise.all([
@@ -74,7 +70,11 @@ export default function UnitDetailPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [unitId, router]);
+
+  useEffect(() => {
+    loadUnitDetail();
+  }, [loadUnitDetail]);
 
   const handleOpenDialog = (type: 'unit' | 'position', item?: UnitApiRow | PositionRow) => {
     setDialogType(type);

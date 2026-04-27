@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Card,
@@ -165,7 +165,7 @@ export default function BulkAddAwardsPage() {
       const currentYear = new Date().getFullYear();
       setNam(currentYear);
     }
-  }, []);
+  }, [nam]);
 
   useEffect(() => {
     if (currentStep === 0) {
@@ -190,6 +190,33 @@ export default function BulkAddAwardsPage() {
     setNam(new Date().getFullYear());
   }, [awardType]);
 
+  const fetchPersonnelDetails = useCallback(async () => {
+    try {
+      const promises = selectedPersonnelIds.map(id => apiClient.getPersonnelById(id));
+      const responses = await Promise.all(promises);
+      const personnelData = responses.filter(r => r.success).map(r => r.data);
+      setPersonnelDetails(personnelData);
+    } catch (error) {
+      antMessage.error(getApiErrorMessage(error));
+    }
+  }, [selectedPersonnelIds]);
+
+  const loadContributionProfiles = useCallback(async () => {
+    const profiles = await fetchContributionProfiles(selectedPersonnelIds);
+    setContributionProfiles(profiles);
+  }, [selectedPersonnelIds]);
+
+  const fetchUnitDetails = useCallback(async () => {
+    try {
+      const unitsRes = await apiClient.getUnits();
+      if (unitsRes.success) {
+        const unitsData = unitsRes.data || [];
+        const selectedUnits = unitsData.filter((unit: UnitApiRow) => selectedUnitIds.includes(unit.id));
+        setUnitDetails(selectedUnits);
+      }
+    } catch {}
+  }, [selectedUnitIds]);
+
   // Fetch personnel/unit details when reaching Step 4 (Review)
   useEffect(() => {
     if (currentStep === 3) {
@@ -202,34 +229,7 @@ export default function BulkAddAwardsPage() {
         loadContributionProfiles();
       }
     }
-  }, [currentStep, awardType, selectedUnitIds, selectedPersonnelIds]);
-
-  const fetchPersonnelDetails = async () => {
-    try {
-      const promises = selectedPersonnelIds.map(id => apiClient.getPersonnelById(id));
-      const responses = await Promise.all(promises);
-      const personnelData = responses.filter(r => r.success).map(r => r.data);
-      setPersonnelDetails(personnelData);
-    } catch (error) {
-      antMessage.error(getApiErrorMessage(error));
-    }
-  };
-
-  const loadContributionProfiles = async () => {
-    const profiles = await fetchContributionProfiles(selectedPersonnelIds);
-    setContributionProfiles(profiles);
-  };
-
-  const fetchUnitDetails = async () => {
-    try {
-      const unitsRes = await apiClient.getUnits();
-      if (unitsRes.success) {
-        const unitsData = unitsRes.data || [];
-        const selectedUnits = unitsData.filter((unit: UnitApiRow) => selectedUnitIds.includes(unit.id));
-        setUnitDetails(selectedUnits);
-      }
-    } catch {}
-  };
+  }, [currentStep, awardType, selectedUnitIds, selectedPersonnelIds, fetchUnitDetails, fetchPersonnelDetails, loadContributionProfiles]);
 
   const canProceedToNextStep = () =>
     computeCanProceedToNextStep({

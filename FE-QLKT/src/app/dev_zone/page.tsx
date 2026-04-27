@@ -149,15 +149,6 @@ export default function DevZonePage() {
   const [backupRetention, setBackupRetention] = useState<number>(15);
   const [backupTriggerLoading, setBackupTriggerLoading] = useState(false);
 
-  useEffect(() => {
-    const saved = loadSession();
-    if (saved) {
-      setAuthenticated(true);
-      setDevPassword(saved);
-      fetchStatus(saved);
-    }
-  }, []);
-
   const fetchBackupStatus = useCallback(async (pwd: string) => {
     try {
       const res = await axiosInstance.get(DEV_ZONE_API + '/backup/status', {
@@ -210,6 +201,15 @@ export default function DevZonePage() {
       setLoading(false);
     }
   }, [fetchBackupStatus]);
+
+  useEffect(() => {
+    const saved = loadSession();
+    if (saved) {
+      setAuthenticated(true);
+      setDevPassword(saved);
+      fetchStatus(saved);
+    }
+  }, [fetchStatus]);
 
   const handleAuth = async () => {
     if (!password.trim()) {

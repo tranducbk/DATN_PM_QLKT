@@ -106,6 +106,132 @@ describe('scientificAchievement.service - previewImport', () => {
     expect(result.errors[0].message).toBe(IMPORT_NCKH_DUPLICATE_DB);
   });
 
+  it('Loại không hợp lệ (≠ DTKH/SKKH) → errors "không hợp lệ"', async () => {
+    const p1 = makePersonnel({ id: 'qn-il', ho_ten: 'Nguyễn Văn Il', cap_bac: 'Đại uý' });
+    prismaMock.quanNhan.findMany.mockResolvedValueOnce([{ ...p1, ChucVu: { ten_chuc_vu: 'Trợ lý' } }]);
+    prismaMock.thanhTichKhoaHoc.findMany.mockResolvedValueOnce([]);
+    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-001' }]);
+
+    const buffer = await makeNckhExcelBuffer([
+      {
+        id: 'qn-il',
+        ho_va_ten: 'Nguyễn Văn Il',
+        cap_bac: 'Đại uý',
+        chuc_vu: 'Trợ lý',
+        nam: 2024,
+        loai: 'XXX',
+        mo_ta: 'Foo',
+        so_quyet_dinh: 'QD-001',
+      },
+    ]);
+    const result = await scientificAchievementService.previewImport(buffer);
+    expect(result.valid).toHaveLength(0);
+    expect(result.errors[0].message).toContain('không hợp lệ');
+  });
+
+  it('Thiếu Năm → errors "Thiếu ... Năm"', async () => {
+    const p1 = makePersonnel({ id: 'qn-mn', ho_ten: 'Nguyễn Văn Mn', cap_bac: 'Đại uý' });
+    prismaMock.quanNhan.findMany.mockResolvedValueOnce([{ ...p1, ChucVu: { ten_chuc_vu: 'Trợ lý' } }]);
+    prismaMock.thanhTichKhoaHoc.findMany.mockResolvedValueOnce([]);
+    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-001' }]);
+
+    const buffer = await makeNckhExcelBuffer([
+      {
+        id: 'qn-mn',
+        ho_va_ten: 'Nguyễn Văn Mn',
+        cap_bac: 'Đại uý',
+        chuc_vu: 'Trợ lý',
+        nam: '',
+        loai: 'DTKH',
+        mo_ta: 'Foo',
+        so_quyet_dinh: 'QD-001',
+      },
+    ]);
+    const result = await scientificAchievementService.previewImport(buffer);
+    expect(result.errors[0].message).toContain('Năm');
+  });
+
+  it('Năm vượt currentYear → errors "Năm ... không hợp lệ"', async () => {
+    const p1 = makePersonnel({ id: 'qn-fy', ho_ten: 'Nguyễn Văn Fy', cap_bac: 'Đại uý' });
+    prismaMock.quanNhan.findMany.mockResolvedValueOnce([{ ...p1, ChucVu: { ten_chuc_vu: 'Trợ lý' } }]);
+    prismaMock.thanhTichKhoaHoc.findMany.mockResolvedValueOnce([]);
+    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-001' }]);
+
+    const futureYear = new Date().getFullYear() + 5;
+    const buffer = await makeNckhExcelBuffer([
+      {
+        id: 'qn-fy',
+        ho_va_ten: 'Nguyễn Văn Fy',
+        cap_bac: 'Đại uý',
+        chuc_vu: 'Trợ lý',
+        nam: futureYear,
+        loai: 'DTKH',
+        mo_ta: 'Foo',
+        so_quyet_dinh: 'QD-001',
+      },
+    ]);
+    const result = await scientificAchievementService.previewImport(buffer);
+    expect(result.errors[0].message).toContain(`Năm ${futureYear} không hợp lệ`);
+  });
+
+  it('Duplicate cùng id+nam+loai+mo_ta trong file → row sau errors "Trùng lặp trong file"', async () => {
+    const p1 = makePersonnel({ id: 'qn-df', ho_ten: 'Nguyễn Văn Df', cap_bac: 'Đại uý' });
+    prismaMock.quanNhan.findMany.mockResolvedValueOnce([{ ...p1, ChucVu: { ten_chuc_vu: 'Trợ lý' } }]);
+    prismaMock.thanhTichKhoaHoc.findMany.mockResolvedValueOnce([]);
+    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-001' }]);
+
+    const buffer = await makeNckhExcelBuffer([
+      {
+        id: 'qn-df',
+        ho_va_ten: 'Nguyễn Văn Df',
+        cap_bac: 'Đại uý',
+        chuc_vu: 'Trợ lý',
+        nam: 2024,
+        loai: 'DTKH',
+        mo_ta: 'Đề tài Z',
+        so_quyet_dinh: 'QD-001',
+      },
+      {
+        id: 'qn-df',
+        ho_va_ten: 'Nguyễn Văn Df',
+        cap_bac: 'Đại uý',
+        chuc_vu: 'Trợ lý',
+        nam: 2024,
+        loai: 'DTKH',
+        mo_ta: 'Đề tài Z',
+        so_quyet_dinh: 'QD-001',
+      },
+    ]);
+    const result = await scientificAchievementService.previewImport(buffer);
+    expect(result.valid).toHaveLength(1);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0].message).toContain('Trùng lặp trong file');
+  });
+
+  it('Sai sheet name → throw ValidationError', async () => {
+    const workbook = new ExcelJS.Workbook();
+    workbook.addWorksheet('WrongSheet').addRow([...HEADERS]);
+    const arrayBuffer = await workbook.xlsx.writeBuffer();
+    const buffer = Buffer.from(arrayBuffer as ArrayBuffer);
+    await expect(scientificAchievementService.previewImport(buffer)).rejects.toThrow(
+      /Không tìm thấy sheet/
+    );
+  });
+
+  it('Empty rows (id+nam+loai trống) → skip hoàn toàn', async () => {
+    prismaMock.quanNhan.findMany.mockResolvedValueOnce([]);
+    prismaMock.thanhTichKhoaHoc.findMany.mockResolvedValueOnce([]);
+    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([]);
+
+    const buffer = await makeNckhExcelBuffer([
+      { id: '', ho_va_ten: '', nam: '', loai: '', mo_ta: '', so_quyet_dinh: '' },
+    ]);
+    const result = await scientificAchievementService.previewImport(buffer);
+    expect(result.total).toBe(0);
+    expect(result.valid).toHaveLength(0);
+    expect(result.errors).toHaveLength(0);
+  });
+
   it('Row thiếu Mô tả → errors "Thiếu Mô tả"', async () => {
     const p1 = makePersonnel({ id: 'qn-1', ho_ten: 'Nguyễn Văn A', cap_bac: 'Đại uý' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([{ ...p1, ChucVu: { ten_chuc_vu: 'Trợ lý' } }]);

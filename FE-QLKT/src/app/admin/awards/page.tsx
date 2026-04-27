@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Card,
   Button,
@@ -160,22 +160,9 @@ export default function AdminAwardsPage() {
   const [filters, setFilters] = useState<AwardFilters>(INITIAL_FILTERS);
   const [debouncedFilters, setDebouncedFilters] = useState(filters);
   const [deleting, setDeleting] = useState<{ id: string; awardType?: string } | null>(null);
-  const awards = awardsByTab[activeTab] ?? [];
+  const awards = useMemo(() => awardsByTab[activeTab] ?? [], [awardsByTab, activeTab]);
 
-  useEffect(() => {
-    fetchAwards();
-  }, [activeTab]);
-
-  useEffect(() => {
-    setFilters(INITIAL_FILTERS);
-  }, [activeTab]);
-
-  useEffect(() => {
-    const id = setTimeout(() => setDebouncedFilters(filters), 300);
-    return () => clearTimeout(id);
-  }, [filters]);
-
-  const fetchAwards = async () => {
+  const fetchAwards = useCallback(async () => {
     try {
       const cachedData = awardsByTab[activeTab];
       if (cachedData) {
@@ -198,7 +185,20 @@ export default function AdminAwardsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab, awardsByTab]);
+
+  useEffect(() => {
+    fetchAwards();
+  }, [fetchAwards]);
+
+  useEffect(() => {
+    setFilters(INITIAL_FILTERS);
+  }, [activeTab]);
+
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedFilters(filters), 300);
+    return () => clearTimeout(id);
+  }, [filters]);
 
   const handleFilterChange = (key: keyof AwardFilters, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -241,15 +241,18 @@ export default function AdminAwardsPage() {
     record.don_vi ||
     '';
 
-  const matchesNameFilter = (record: AwardTableRow, normalizedNameFilter: string): boolean => {
-    if (!normalizedNameFilter) return true;
-    if (activeTab === 'DVHN') {
-      return getUnitName(record).toLowerCase().includes(normalizedNameFilter);
-    }
-    return getPersonName(record).toLowerCase().includes(normalizedNameFilter);
-  };
+  const matchesNameFilter = useCallback(
+    (record: AwardTableRow, normalizedNameFilter: string): boolean => {
+      if (!normalizedNameFilter) return true;
+      if (activeTab === 'DVHN') {
+        return getUnitName(record).toLowerCase().includes(normalizedNameFilter);
+      }
+      return getPersonName(record).toLowerCase().includes(normalizedNameFilter);
+    },
+    [activeTab]
+  );
 
-  const matchesDanhHieuFilter = (record: AwardTableRow, selectedDanhHieu: string): boolean => {
+  const matchesDanhHieuFilter = useCallback((record: AwardTableRow, selectedDanhHieu: string): boolean => {
     if (!selectedDanhHieu || !TABS_WITH_DANH_HIEU_FILTER.has(activeTab)) return true;
     if (activeTab === 'CNHN') {
       const isBKBQP = selectedDanhHieu === 'BKBQP' && Boolean(record.nhan_bkbqp);
@@ -262,7 +265,7 @@ export default function AdminAwardsPage() {
       return record.danh_hieu === selectedDanhHieu;
     }
     return true;
-  };
+  }, [activeTab]);
 
   const resolvePersonnelDisplay = (record: AwardTableRow): PersonnelDisplay => {
     const isAnnualTab = activeTab === 'CNHN';
@@ -349,11 +352,11 @@ export default function AdminAwardsPage() {
 
       return true;
     });
-  }, [awards, debouncedFilters, activeTab]);
+  }, [awards, debouncedFilters, activeTab, matchesNameFilter, matchesDanhHieuFilter]);
 
   const TABS_WITH_THANG_NHAN = new Set<AwardType>(['HCCSVV', 'HCBVTQ', 'HCQKQT', 'KNC_VSNXD_QDNDVN']);
 
-  const columns: TableColumnsType<AwardTableRow> = [
+  const columns: TableColumnsType<AwardTableRow> = useMemo(() => [
     {
       title: 'STT',
       key: 'index',
@@ -583,7 +586,8 @@ export default function AdminAwardsPage() {
         );
       },
     },
-  ];
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [activeTab, deleting]);
 
   const visibleColumns = useMemo(
     () =>

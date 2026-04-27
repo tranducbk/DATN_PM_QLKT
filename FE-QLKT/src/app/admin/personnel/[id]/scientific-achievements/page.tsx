@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -42,11 +42,7 @@ export default function ScientificAchievementsPage() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadData();
-  }, [personnelId]);
-
-  async function loadData() {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [personnelRes, achievementsRes] = await Promise.all([
@@ -65,7 +61,11 @@ export default function ScientificAchievementsPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [personnelId]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleDelete = async () => {
     if (!deleteId) return;

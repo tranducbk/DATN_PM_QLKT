@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Card,
@@ -190,21 +190,7 @@ export default function CreateProposalPage() {
     setNam(new Date().getFullYear());
   }, [proposalType]);
 
-  // Fetch personnel/unit details when reaching Step 5 (Review)
-  useEffect(() => {
-    if (currentStep === 4) {
-      if (proposalType === PROPOSAL_TYPES.DON_VI_HANG_NAM && selectedUnitIds.length > 0) {
-        fetchUnitDetails();
-      } else if (selectedPersonnelIds.length > 0) {
-        fetchPersonnelDetails();
-      }
-      if (proposalType === PROPOSAL_TYPES.CONG_HIEN && selectedPersonnelIds.length > 0) {
-        loadContributionProfiles();
-      }
-    }
-  }, [currentStep, proposalType, selectedUnitIds, selectedPersonnelIds]);
-
-  const fetchPersonnelDetails = async () => {
+  const fetchPersonnelDetails = useCallback(async () => {
     try {
       const promises = selectedPersonnelIds.map(id => apiClient.getPersonnelById(id));
       const responses = await Promise.all(promises);
@@ -213,14 +199,14 @@ export default function CreateProposalPage() {
     } catch (error: unknown) {
       antMessage.error(getApiErrorMessage(error, 'Không tải được thông tin quân nhân'));
     }
-  };
+  }, [selectedPersonnelIds]);
 
-  const loadContributionProfiles = async () => {
+  const loadContributionProfiles = useCallback(async () => {
     const profiles = await fetchContributionProfiles(selectedPersonnelIds);
     setContributionProfiles(profiles);
-  };
+  }, [selectedPersonnelIds]);
 
-  const fetchUnitDetails = async () => {
+  const fetchUnitDetails = useCallback(async () => {
     try {
       const unitsRes = await apiClient.getMyUnits();
       if (unitsRes.success) {
@@ -233,7 +219,29 @@ export default function CreateProposalPage() {
     } catch (error) {
       antMessage.error(getApiErrorMessage(error));
     }
-  };
+  }, [selectedUnitIds]);
+
+  // Fetch personnel/unit details when reaching Step 5 (Review)
+  useEffect(() => {
+    if (currentStep === 4) {
+      if (proposalType === PROPOSAL_TYPES.DON_VI_HANG_NAM && selectedUnitIds.length > 0) {
+        fetchUnitDetails();
+      } else if (selectedPersonnelIds.length > 0) {
+        fetchPersonnelDetails();
+      }
+      if (proposalType === PROPOSAL_TYPES.CONG_HIEN && selectedPersonnelIds.length > 0) {
+        loadContributionProfiles();
+      }
+    }
+  }, [
+    currentStep,
+    proposalType,
+    selectedUnitIds,
+    selectedPersonnelIds,
+    fetchUnitDetails,
+    fetchPersonnelDetails,
+    loadContributionProfiles,
+  ]);
 
   const canProceedToNextStep = () =>
     computeCanProceedToNextStep(

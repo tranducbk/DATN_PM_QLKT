@@ -275,6 +275,7 @@ export function ImportReviewPageContent({ config }: { config: ImportReviewConfig
       }
       return col;
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- pagination is manually controlled via setValidPagination in handlers
   }, [config.validColumns, validPagination.current, validPagination.pageSize]);
 
   const invalidColumnsPaginated = useMemo(() => {
@@ -290,6 +291,7 @@ export function ImportReviewPageContent({ config }: { config: ImportReviewConfig
       }
       return col;
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- pagination is manually controlled via setInvalidPagination in handlers
   }, [config.invalidColumns, invalidPagination.current, invalidPagination.pageSize]);
 
   const historyColumnsCentered = useMemo(

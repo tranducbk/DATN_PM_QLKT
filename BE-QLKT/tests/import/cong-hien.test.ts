@@ -192,6 +192,230 @@ describe('contributionMedal.service - previewImport (CONG_HIEN)', () => {
     expect(result.errors[0].message).toContain('Đã có');
   });
 
+  it('Empty row → bị skip silently, không vào valid hay errors', async () => {
+    const p1 = makePersonnel({ id: 'qn-empty-ch', ho_ten: 'Có Data', gioi_tinh: 'NAM' });
+    prismaMock.quanNhan.findMany.mockResolvedValueOnce([
+      { id: p1.id, ho_ten: p1.ho_ten, gioi_tinh: 'NAM', cap_bac: 'Đại uý', ChucVu: { ten_chuc_vu: 'Trợ lý' } },
+    ]);
+    prismaMock.khenThuongHCBVTQ.findMany.mockResolvedValueOnce([]);
+    prismaMock.lichSuChucVu.findMany.mockResolvedValueOnce(eligibleHistory(p1.id));
+    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-EMPTY' }]);
+    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
+
+    const buffer = await makeCongHienExcelBuffer([
+      {},
+      {
+        id: 'qn-empty-ch',
+        ho_va_ten: 'Có Data',
+        nam: 2024,
+        thang: 6,
+        danh_hieu: DANH_HIEU_HCBVTQ.HANG_NHAT,
+        so_quyet_dinh: 'QD-EMPTY',
+        cap_bac: 'Đại uý',
+        chuc_vu: 'Trợ lý',
+      },
+    ]);
+
+    const result = await contributionMedalService.previewImport(buffer);
+    expect(result.total).toBe(1);
+    expect(result.valid).toHaveLength(1);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it('Duplicate trong cùng file (cùng personnel_id) → row thứ 2 vào errors', async () => {
+    const p1 = makePersonnel({ id: 'qn-dup-ch', ho_ten: 'Trùng', gioi_tinh: 'NAM' });
+    prismaMock.quanNhan.findMany.mockResolvedValueOnce([
+      { id: p1.id, ho_ten: p1.ho_ten, gioi_tinh: 'NAM', cap_bac: 'Đại uý', ChucVu: { ten_chuc_vu: 'Trợ lý' } },
+    ]);
+    prismaMock.khenThuongHCBVTQ.findMany.mockResolvedValueOnce([]);
+    prismaMock.lichSuChucVu.findMany.mockResolvedValueOnce(eligibleHistory(p1.id));
+    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-DUP' }]);
+    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
+
+    const row = {
+      id: 'qn-dup-ch',
+      ho_va_ten: 'Trùng',
+      nam: 2024,
+      thang: 6,
+      danh_hieu: DANH_HIEU_HCBVTQ.HANG_NHAT,
+      so_quyet_dinh: 'QD-DUP',
+      cap_bac: 'Đại uý',
+      chuc_vu: 'Trợ lý',
+    };
+    const buffer = await makeCongHienExcelBuffer([row, { ...row }]);
+
+    const result = await contributionMedalService.previewImport(buffer);
+    expect(result.valid).toHaveLength(1);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0].message).toContain('Trùng lặp trong file');
+  });
+
+  it('Tháng = 13 → errors "không hợp lệ"', async () => {
+    const p1 = makePersonnel({ id: 'qn-th13-ch', ho_ten: 'OOR', gioi_tinh: 'NAM' });
+    prismaMock.quanNhan.findMany.mockResolvedValueOnce([
+      { id: p1.id, ho_ten: p1.ho_ten, gioi_tinh: 'NAM', cap_bac: 'Đại uý', ChucVu: { ten_chuc_vu: 'Trợ lý' } },
+    ]);
+    prismaMock.khenThuongHCBVTQ.findMany.mockResolvedValueOnce([]);
+    prismaMock.lichSuChucVu.findMany.mockResolvedValueOnce(eligibleHistory(p1.id));
+    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-T13' }]);
+    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
+
+    const buffer = await makeCongHienExcelBuffer([
+      {
+        id: 'qn-th13-ch',
+        ho_va_ten: 'OOR',
+        nam: 2024,
+        thang: 13,
+        danh_hieu: DANH_HIEU_HCBVTQ.HANG_NHAT,
+        so_quyet_dinh: 'QD-T13',
+        cap_bac: 'Đại uý',
+        chuc_vu: 'Trợ lý',
+      },
+    ]);
+
+    const result = await contributionMedalService.previewImport(buffer);
+    expect(result.valid).toHaveLength(0);
+    expect(result.errors[0].message).toContain('Tháng nhận không hợp lệ');
+  });
+
+  it('Năm < 1900 → errors "không hợp lệ"', async () => {
+    const p1 = makePersonnel({ id: 'qn-y-ch', ho_ten: 'Năm Cũ', gioi_tinh: 'NAM' });
+    prismaMock.quanNhan.findMany.mockResolvedValueOnce([
+      { id: p1.id, ho_ten: p1.ho_ten, gioi_tinh: 'NAM', cap_bac: 'Đại uý', ChucVu: { ten_chuc_vu: 'Trợ lý' } },
+    ]);
+    prismaMock.khenThuongHCBVTQ.findMany.mockResolvedValueOnce([]);
+    prismaMock.lichSuChucVu.findMany.mockResolvedValueOnce(eligibleHistory(p1.id));
+    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-Y' }]);
+    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
+
+    const buffer = await makeCongHienExcelBuffer([
+      {
+        id: 'qn-y-ch',
+        ho_va_ten: 'Năm Cũ',
+        nam: 1899,
+        thang: 6,
+        danh_hieu: DANH_HIEU_HCBVTQ.HANG_NHAT,
+        so_quyet_dinh: 'QD-Y',
+        cap_bac: 'Đại uý',
+        chuc_vu: 'Trợ lý',
+      },
+    ]);
+
+    const result = await contributionMedalService.previewImport(buffer);
+    expect(result.valid).toHaveLength(0);
+    expect(result.errors[0].message).toContain('không hợp lệ');
+  });
+
+  it('Danh hiệu enum không hợp lệ → errors "không hợp lệ"', async () => {
+    const p1 = makePersonnel({ id: 'qn-dh-ch', ho_ten: 'Sai DH', gioi_tinh: 'NAM' });
+    prismaMock.quanNhan.findMany.mockResolvedValueOnce([
+      { id: p1.id, ho_ten: p1.ho_ten, gioi_tinh: 'NAM', cap_bac: 'Đại uý', ChucVu: { ten_chuc_vu: 'Trợ lý' } },
+    ]);
+    prismaMock.khenThuongHCBVTQ.findMany.mockResolvedValueOnce([]);
+    prismaMock.lichSuChucVu.findMany.mockResolvedValueOnce(eligibleHistory(p1.id));
+    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-DH' }]);
+    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
+
+    const buffer = await makeCongHienExcelBuffer([
+      {
+        id: 'qn-dh-ch',
+        ho_va_ten: 'Sai DH',
+        nam: 2024,
+        thang: 6,
+        danh_hieu: 'HCBVTQ_HANG_BON',
+        so_quyet_dinh: 'QD-DH',
+        cap_bac: 'Đại uý',
+        chuc_vu: 'Trợ lý',
+      },
+    ]);
+
+    const result = await contributionMedalService.previewImport(buffer);
+    expect(result.valid).toHaveLength(0);
+    expect(result.errors[0].message).toContain('không hợp lệ');
+  });
+
+  it('Sheet name sai → throw ValidationError "Không tìm thấy sheet"', async () => {
+    // contributionMedal khai báo sheetName: 'HCBVTQ' nên tên sai sẽ fail ngay
+    const workbook = new ExcelJS.Workbook();
+    const ws = workbook.addWorksheet('WrongSheet');
+    ws.addRow([...HEADERS]);
+    const arr = await workbook.xlsx.writeBuffer();
+    const buffer = Buffer.from(arr as ArrayBuffer);
+
+    await expectError(
+      contributionMedalService.previewImport(buffer),
+      ValidationError,
+      /Không tìm thấy sheet "HCBVTQ"/
+    );
+  });
+
+  it('Số quyết định không tồn tại trên hệ thống → errors "không tồn tại trên hệ thống"', async () => {
+    const p1 = makePersonnel({ id: 'qn-qd-bad', ho_ten: 'QD Sai', gioi_tinh: 'NAM' });
+    prismaMock.quanNhan.findMany.mockResolvedValueOnce([
+      { id: p1.id, ho_ten: p1.ho_ten, gioi_tinh: 'NAM', cap_bac: 'Đại uý', ChucVu: { ten_chuc_vu: 'Trợ lý' } },
+    ]);
+    prismaMock.khenThuongHCBVTQ.findMany.mockResolvedValueOnce([]);
+    prismaMock.lichSuChucVu.findMany.mockResolvedValueOnce(eligibleHistory(p1.id));
+    // Hệ thống chỉ có QD-OTHER
+    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-OTHER' }]);
+    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
+
+    const buffer = await makeCongHienExcelBuffer([
+      {
+        id: 'qn-qd-bad',
+        ho_va_ten: 'QD Sai',
+        nam: 2024,
+        thang: 6,
+        danh_hieu: DANH_HIEU_HCBVTQ.HANG_NHAT,
+        so_quyet_dinh: 'QD-NOT-EXISTS',
+        cap_bac: 'Đại uý',
+        chuc_vu: 'Trợ lý',
+      },
+    ]);
+
+    const result = await contributionMedalService.previewImport(buffer);
+    expect(result.valid).toHaveLength(0);
+    expect(result.errors[0].message).toContain('không tồn tại trên hệ thống');
+  });
+
+  it('Đúng 120 tháng nhóm 0.7 cho HANG_BA → vào valid (boundary)', async () => {
+    const p1 = makePersonnel({ id: 'qn-bd-ch', ho_ten: 'Boundary', gioi_tinh: 'NAM' });
+    prismaMock.quanNhan.findMany.mockResolvedValueOnce([
+      { id: p1.id, ho_ten: p1.ho_ten, gioi_tinh: 'NAM', cap_bac: 'Đại uý', ChucVu: { ten_chuc_vu: 'Trợ lý' } },
+    ]);
+    prismaMock.khenThuongHCBVTQ.findMany.mockResolvedValueOnce([]);
+    // Đúng 120 tháng nhóm 0.7 — đạt HANG_BA, không bị downgrade từ nhóm cao hơn
+    prismaMock.lichSuChucVu.findMany.mockResolvedValueOnce([
+      {
+        quan_nhan_id: p1.id,
+        he_so_chuc_vu: 0.7,
+        so_thang: 120,
+        ngay_bat_dau: new Date('2014-01-01'),
+        ngay_ket_thuc: new Date('2024-01-01'),
+        ChucVu: { he_so_chuc_vu: 0.7 },
+      },
+    ]);
+    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-BD' }]);
+    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
+
+    const buffer = await makeCongHienExcelBuffer([
+      {
+        id: 'qn-bd-ch',
+        ho_va_ten: 'Boundary',
+        nam: 2024,
+        thang: 6,
+        danh_hieu: DANH_HIEU_HCBVTQ.HANG_BA,
+        so_quyet_dinh: 'QD-BD',
+        cap_bac: 'Đại uý',
+        chuc_vu: 'Trợ lý',
+      },
+    ]);
+
+    const result = await contributionMedalService.previewImport(buffer);
+    expect(result.errors).toHaveLength(0);
+    expect(result.valid).toHaveLength(1);
+  });
+
   it('Mix valid + invalid → trả cả 2 phần đúng', async () => {
     const p1 = makePersonnel({ id: 'qn-mix-1', ho_ten: 'Hợp Lệ', gioi_tinh: 'NAM' });
     const p2 = makePersonnel({ id: 'qn-mix-2', ho_ten: 'Thiếu Tháng', gioi_tinh: 'NAM' });

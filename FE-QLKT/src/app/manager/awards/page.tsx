@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Card,
   Button,
@@ -156,22 +156,9 @@ export default function ManagerAwardsPage() {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<AwardFilters>(INITIAL_FILTERS);
   const [debouncedFilters, setDebouncedFilters] = useState(filters);
-  const awards = awardsByTab[activeTab] ?? [];
+  const awards = useMemo(() => awardsByTab[activeTab] ?? [], [awardsByTab, activeTab]);
 
-  useEffect(() => {
-    fetchAwards();
-  }, [activeTab]);
-
-  useEffect(() => {
-    setFilters(INITIAL_FILTERS);
-  }, [activeTab]);
-
-  useEffect(() => {
-    const id = setTimeout(() => setDebouncedFilters(filters), 300);
-    return () => clearTimeout(id);
-  }, [filters]);
-
-  const fetchAwards = async () => {
+  const fetchAwards = useCallback(async () => {
     try {
       const cachedData = awardsByTab[activeTab];
       if (cachedData) {
@@ -194,7 +181,20 @@ export default function ManagerAwardsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab, awardsByTab]);
+
+  useEffect(() => {
+    fetchAwards();
+  }, [fetchAwards]);
+
+  useEffect(() => {
+    setFilters(INITIAL_FILTERS);
+  }, [activeTab]);
+
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedFilters(filters), 300);
+    return () => clearTimeout(id);
+  }, [filters]);
 
   const handleFilterChange = (key: keyof AwardFilters, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));

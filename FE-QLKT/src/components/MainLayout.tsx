@@ -80,7 +80,7 @@ function NotificationToast({ notification }: { notification: SocketNotificationP
       placement: 'bottomRight',
       duration: 5,
     });
-  }, [notification]);
+  }, [notification, antNotification]);
 
   return null;
 }

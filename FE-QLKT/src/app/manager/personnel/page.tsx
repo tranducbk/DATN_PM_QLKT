@@ -91,13 +91,7 @@ export default function ManagerPersonnelPage() {
       message.error('Không tìm thấy thông tin quản lý. Vui lòng đăng nhập lại.');
       setLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    if (managerUnitId !== null) {
-      loadData();
-    }
-  }, [managerUnitId, pagination.page, pagination.limit]);
+  }, [user?.don_vi_id, user?.quan_nhan_id]);
 
   const loadData = useCallback(async () => {
     try {
@@ -136,6 +130,12 @@ export default function ManagerPersonnelPage() {
       setLoading(false);
     }
   }, [managerUnitId, pagination.page, pagination.limit, searchTerm]);
+
+  useEffect(() => {
+    if (managerUnitId !== null) {
+      loadData();
+    }
+  }, [managerUnitId, pagination.page, pagination.limit, loadData]);
 
   const handlePageChange = useCallback((page: number) => {
     setPagination(prev => ({ ...prev, page }));
