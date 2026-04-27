@@ -31,7 +31,7 @@ import { apiClient } from '@/lib/apiClient';
 import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { DANH_HIEU_MAP } from '@/lib/award/awardsHelper';
-import { DecisionModal } from '@/components/DecisionModal';
+import { DecisionModal } from '@/components/decisions/DecisionModal';
 import { formatDate } from '@/lib/utils';
 
 const { Title, Text } = Typography;

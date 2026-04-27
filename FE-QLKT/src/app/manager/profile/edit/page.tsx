@@ -1,4 +1,4 @@
-import { ProfileEditForm } from '@/components/ProfileEditForm';
+import { ProfileEditForm } from '@/components/profile/ProfileEditForm';
 
 export default function ManagerProfileEditPage() {
   return <ProfileEditForm />;

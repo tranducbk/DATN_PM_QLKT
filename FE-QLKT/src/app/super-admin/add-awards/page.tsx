@@ -36,7 +36,7 @@ import { apiClient } from '@/lib/apiClient';
 import { getDanhHieuName } from '@/constants/danhHieu.constants';
 import { Step2SelectPersonnelNienHan } from '@/components/proposals/bulk/Step2SelectPersonnelNienHan';
 import { Step3SetTitlesNienHan } from '@/components/proposals/bulk/Step3SetTitlesNienHan';
-import { DecisionModal } from '@/components/DecisionModal';
+import { DecisionModal } from '@/components/decisions/DecisionModal';
 import type { DateInput } from '@/lib/types/common';
 
 const { Title, Paragraph, Text } = Typography;

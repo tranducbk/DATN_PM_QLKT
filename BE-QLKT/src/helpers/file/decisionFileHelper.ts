@@ -1,5 +1,5 @@
-import { prisma } from '../models';
-import { FileQuyetDinh } from '../generated/prisma';
+import { prisma } from '../../models';
+import { FileQuyetDinh } from '../../generated/prisma';
 
 /**
  * Gets the stored file path for a decision number.

@@ -1,11 +1,11 @@
 import ExcelJS from 'exceljs';
-import { prisma } from '../models';
+import { prisma } from '../../models';
 import {
   CAP_BAC_OPTIONS_STRING,
   MIN_TEMPLATE_ROWS,
   MAX_DECISION_DROPDOWN,
   EXCEL_INLINE_VALIDATION_MAX_LENGTH,
-} from '../constants/excel.constants';
+} from '../../constants/excel.constants';
 
 export interface TemplateColumn {
   header: string;

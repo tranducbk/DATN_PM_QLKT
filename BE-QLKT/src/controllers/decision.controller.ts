@@ -3,7 +3,7 @@ import decisionService from '../services/decision.service';
 import { parsePagination, normalizeParam } from '../helpers/paginationHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
-import { setFileSendHeaders } from '../helpers/fileResponseHeaders';
+import { setFileSendHeaders } from '../helpers/file/fileResponseHeaders';
 
 interface GetAllDecisionsQuery {
   nam?: number;

@@ -1,6 +1,6 @@
 import { prisma } from '../models';
 import ExcelJS from 'exceljs';
-import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHelper';
+import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excel/excelImportHelper';
 
 import profileService from './profile.service';
 import * as notificationHelper from '../helpers/notification';
@@ -22,11 +22,11 @@ import {
   buildPendingKeys,
   sanitizeRowData,
   validatePersonnelNameMatch,
-} from '../helpers/excelHelper';
+} from '../helpers/excel/excelHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { ValidationError, NotFoundError, AppError } from '../middlewares/errorHandler';
 import { validateHCCSVVRankOrder } from '../helpers/awardValidation/tenureMedalRankOrder';
-import { buildTemplate, styleHeaderRow } from '../helpers/excelTemplateHelper';
+import { buildTemplate, styleHeaderRow } from '../helpers/excel/excelTemplateHelper';
 import { calculateServiceMonths, formatServiceDuration } from '../helpers/serviceYearsHelper';
 import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
 import {

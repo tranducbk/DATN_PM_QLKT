@@ -27,7 +27,7 @@ import Link from 'next/link';
 import { apiClient } from '@/lib/apiClient';
 import { useTheme } from '@/components/ThemeProvider';
 import { useAuth } from '@/contexts/AuthContext';
-import { PasswordStrengthIndicator } from '@/components/PasswordStrengthIndicator';
+import { PasswordStrengthIndicator } from '@/components/auth/PasswordStrengthIndicator';
 
 const { Title, Text } = Typography;
 

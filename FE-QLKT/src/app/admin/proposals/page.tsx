@@ -42,7 +42,7 @@ import {
 import { ProposalDetailModal } from './components/ProposalDetailModal';
 import { RejectModal } from './components/RejectModal';
 import { ApproveModal } from './components/ApproveModal';
-import { DecisionModal } from '@/components/DecisionModal';
+import { DecisionModal } from '@/components/decisions/DecisionModal';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 
 const { Title, Text } = Typography;

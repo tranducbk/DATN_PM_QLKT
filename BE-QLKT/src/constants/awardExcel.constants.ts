@@ -1,4 +1,4 @@
-import type { TemplateColumn } from '../helpers/excelTemplateHelper';
+import type { TemplateColumn } from '../helpers/excel/excelTemplateHelper';
 import { buildDanhHieuExcelOptions, DANH_HIEU_HCBVTQ, DANH_HIEU_HCCSVV, DANH_HIEU_NCKH } from './danhHieu.constants';
 
 const MONTH_VALIDATION_FORMULA = '"1,2,3,4,5,6,7,8,9,10,11,12"';

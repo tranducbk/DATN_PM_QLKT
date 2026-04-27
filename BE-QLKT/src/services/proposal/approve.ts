@@ -7,7 +7,7 @@ import {
 import profileService from '../profile.service';
 import unitAnnualAwardService from '../unitAnnualAward.service';
 import { NotFoundError, ValidationError } from '../../middlewares/errorHandler';
-import { buildApproveSummaryMessage } from '../../helpers/awardSummaryMessage';
+import { buildApproveSummaryMessage } from '../../helpers/award/awardSummaryMessage';
 import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
 import { writeSystemLog } from '../../helpers/systemLogHelper';
 import type {

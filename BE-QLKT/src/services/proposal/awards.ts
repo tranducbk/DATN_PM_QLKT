@@ -1,6 +1,6 @@
 import { prisma } from '../../models';
 import ExcelJS from 'exceljs';
-import { sanitizeRowData } from '../../helpers/excelHelper';
+import { sanitizeRowData } from '../../helpers/excel/excelHelper';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 import { DANH_HIEU_HCBVTQ } from '../../constants/danhHieu.constants';
 

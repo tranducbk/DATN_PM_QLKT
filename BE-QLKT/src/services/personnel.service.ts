@@ -18,7 +18,7 @@ import * as notificationHelper from '../helpers/notification';
 import { buildUnitWhereFilter } from '../helpers/controllerHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { DEFAULT_PASSWORD } from '../configs';
-import { sanitizeRowData } from '../helpers/excelHelper';
+import { sanitizeRowData } from '../helpers/excel/excelHelper';
 import { calculateTenureMonthsWithDayPrecision } from '../helpers/serviceYearsHelper';
 
 type DateInput = Date | null;

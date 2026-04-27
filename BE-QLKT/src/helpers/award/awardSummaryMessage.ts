@@ -1,4 +1,4 @@
-import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
+import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 
 interface BuildBulkAwardSummaryParams {
   type: string;

@@ -1,8 +1,8 @@
 import ExcelJS from 'exceljs';
-import { Prisma } from '../generated/prisma';
-import { prisma } from '../models';
-import { ValidationError } from '../middlewares/errorHandler';
-import { MAX_EXCEL_ROWS, IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
+import { Prisma } from '../../generated/prisma';
+import { prisma } from '../../models';
+import { ValidationError } from '../../middlewares/errorHandler';
+import { MAX_EXCEL_ROWS, IMPORT_TRANSACTION_TIMEOUT } from '../../constants/excel.constants';
 
 type CellValue = string | number | null | undefined;
 

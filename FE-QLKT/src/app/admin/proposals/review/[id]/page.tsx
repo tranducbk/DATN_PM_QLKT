@@ -35,8 +35,8 @@ import {
   FileTextOutlined,
   DeleteOutlined,
 } from '@ant-design/icons';
-import { EditableCell } from '@/components/EditableCell';
-import { DecisionModal } from '@/components/DecisionModal';
+import { EditableCell } from '@/components/shared/EditableCell';
+import { DecisionModal } from '@/components/decisions/DecisionModal';
 import { formatDateTime } from '@/lib/utils';
 import { apiClient } from '@/lib/apiClient';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';

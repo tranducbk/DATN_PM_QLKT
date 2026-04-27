@@ -5,7 +5,7 @@ import unitAnnualAwardService from './unitAnnualAward.service';
 import scientificAchievementService from './scientificAchievement.service';
 import * as notificationHelper from '../helpers/notification';
 import { writeSystemLog } from '../helpers/systemLogHelper';
-import { buildBulkAwardSummaryMessage } from '../helpers/awardSummaryMessage';
+import { buildBulkAwardSummaryMessage } from '../helpers/award/awardSummaryMessage';
 import {
   getDanhHieuName,
   formatDanhHieuList,

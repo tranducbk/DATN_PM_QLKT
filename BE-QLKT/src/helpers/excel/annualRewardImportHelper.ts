@@ -1,11 +1,11 @@
 import ExcelJS from 'exceljs';
-import { prisma } from '../models';
+import { prisma } from '../../models';
 import { loadWorkbook, getAndValidateWorksheet } from './excelImportHelper';
 import { parseHeaderMap, getHeaderCol } from './excelHelper';
-import { DANH_HIEU_CA_NHAN_CO_BAN } from '../constants/danhHieu.constants';
-import { AWARD_EXCEL_SHEETS } from '../constants/awardExcel.constants';
-import { ValidationError } from '../middlewares/errorHandler';
-import type { QuanNhan, DanhHieuHangNam } from '../generated/prisma';
+import { DANH_HIEU_CA_NHAN_CO_BAN } from '../../constants/danhHieu.constants';
+import { AWARD_EXCEL_SHEETS } from '../../constants/awardExcel.constants';
+import { ValidationError } from '../../middlewares/errorHandler';
+import type { QuanNhan, DanhHieuHangNam } from '../../generated/prisma';
 
 export interface ColumnMap {
   idCol: number | null;

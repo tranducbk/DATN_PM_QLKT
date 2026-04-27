@@ -24,7 +24,7 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import dayjs from 'dayjs';
 import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
 import { ROLES } from '@/constants/roles.constants';
-import { VietnamAddressCascader } from '@/components/VietnamAddressCascader';
+import { VietnamAddressCascader } from '@/components/shared/VietnamAddressCascader';
 import type { ManagerPositionRow } from '@/lib/types/personnelList';
 
 const { Title } = Typography;

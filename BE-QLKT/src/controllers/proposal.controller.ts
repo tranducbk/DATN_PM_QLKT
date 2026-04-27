@@ -16,7 +16,7 @@ import catchAsync from '../helpers/catchAsync';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { parsePagination } from '../helpers/paginationHelper';
-import { setFileSendHeaders } from '../helpers/fileResponseHeaders';
+import { setFileSendHeaders } from '../helpers/file/fileResponseHeaders';
 import { resolveIdParam } from '../helpers/controllerHelper';
 import {
   managerUnitFilterId,
