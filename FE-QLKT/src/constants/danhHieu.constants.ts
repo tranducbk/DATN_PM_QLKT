@@ -78,14 +78,14 @@ export const THANH_TICH_KHOA_HOC_FULL_LABELS: Record<string, string> = {
 };
 
 export const DANH_HIEU_MAP: Record<string, string> = {
-  CSTDCS: 'Chiến sĩ thi đua Cơ sở',
+  CSTDCS: 'Chiến sĩ thi đua cơ sở',
   CSTT: 'Chiến sĩ tiên tiến',
   BKBQP: 'Bằng khen của Bộ trưởng Bộ Quốc phòng',
-  CSTDTQ: 'Chiến sĩ thi đua Toàn quân',
+  CSTDTQ: 'Chiến sĩ thi đua toàn quân',
   BKTTCP: 'Bằng khen của Thủ tướng Chính phủ',
 
-  ĐVQT: 'Đơn vị Quyết thắng',
-  ĐVTT: 'Đơn vị Tiên tiến',
+  ĐVQT: 'Đơn vị quyết thắng',
+  ĐVTT: 'Đơn vị tiên tiến',
 
   HCCSVV_HANG_BA: 'Huy chương Chiến sĩ vẻ vang hạng Ba',
   HCCSVV_HANG_NHI: 'Huy chương Chiến sĩ vẻ vang hạng Nhì',
@@ -103,7 +103,7 @@ export const DANH_HIEU_MAP: Record<string, string> = {
 };
 
 export const DANH_HIEU_SHORT_MAP: Record<string, string> = {
-  CSTDCS: 'Chiến sĩ thi đua Cơ sở',
+  CSTDCS: 'Chiến sĩ thi đua cơ sở',
   CSTT: 'Chiến sĩ tiên tiến',
   HCCSVV_HANG_BA: 'HCCSVV hạng Ba',
   HCCSVV_HANG_NHI: 'HCCSVV hạng Nhì',
@@ -116,8 +116,8 @@ export const DANH_HIEU_SHORT_MAP: Record<string, string> = {
 };
 
 export const LOAI_DE_XUAT_MAP: Record<string, string> = {
-  CA_NHAN_HANG_NAM: 'Khen thưởng cá nhân hằng năm',
-  DON_VI_HANG_NAM: 'Khen thưởng đơn vị hằng năm',
+  CA_NHAN_HANG_NAM: 'Cá nhân hằng năm',
+  DON_VI_HANG_NAM: 'Đơn vị hằng năm',
   NIEN_HAN: 'Huy chương Chiến sĩ vẻ vang',
   CONG_HIEN: 'Huân chương Bảo vệ Tổ quốc',
   DOT_XUAT: 'Khen thưởng đột xuất',
