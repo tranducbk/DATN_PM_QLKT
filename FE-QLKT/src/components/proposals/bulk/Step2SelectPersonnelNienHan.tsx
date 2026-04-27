@@ -89,6 +89,7 @@ export function Step2SelectPersonnelNienHan({
 
   useEffect(() => {
     fetchPersonnel();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -110,6 +111,8 @@ export function Step2SelectPersonnelNienHan({
     if (stillEligible.length < selectedPersonnelIds.length) {
       onPersonnelChange(stillEligible);
     }
+    // canProposeNextRank reads serviceProfilesMap/localNam/localThang already in deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bypassEligibility, selectedPersonnelIds, personnel, serviceProfilesMap, localNam, localThang, onPersonnelChange]);
 
   const fetchPersonnel = async () => {

@@ -38,7 +38,7 @@ function makePositionStub(heSo = 0.5) {
 
 describe('positionHistory.service - createPositionHistory', () => {
   it('tạo record mới với chức vụ + ngày bắt đầu, snapshot hệ số chức vụ', async () => {
-    // Given: personnel & position exist, no existing history
+    // Cho: personnel & position tồn tại, chưa có lịch sử
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(makePersonnelStub());
     prismaMock.chucVu.findUnique.mockResolvedValueOnce(makePositionStub(0.7));
     prismaMock.lichSuChucVu.findMany.mockResolvedValueOnce([]);
@@ -53,7 +53,7 @@ describe('positionHistory.service - createPositionHistory', () => {
     };
     prismaMock.lichSuChucVu.create.mockResolvedValueOnce(created);
 
-    // When
+    // Khi
     const result = await positionHistoryService.createPositionHistory({
       personnel_id: PERSONNEL_ID,
       chuc_vu_id: CHUC_VU_ID,
@@ -61,7 +61,7 @@ describe('positionHistory.service - createPositionHistory', () => {
       ngay_ket_thuc: '2023-12-31',
     });
 
-    // Then: he_so_chuc_vu snapshot = 0.7 (from ChucVu), so_thang computed
+    // Thì: snapshot he_so_chuc_vu = 0.7 (từ ChucVu), so_thang được tính
     expect(prismaMock.lichSuChucVu.create).toHaveBeenCalledTimes(1);
     const createArgs = prismaMock.lichSuChucVu.create.mock.calls[0][0];
     expect(createArgs.data.he_so_chuc_vu).toBe(0.7);
@@ -70,13 +70,13 @@ describe('positionHistory.service - createPositionHistory', () => {
   });
 
   it('override hệ số chức vụ khi caller cung cấp he_so_chuc_vu', async () => {
-    // Given: caller passes a custom he_so_chuc_vu (e.g. historical record)
+    // Cho: caller truyền he_so_chuc_vu tùy chỉnh (vd: bản ghi lịch sử)
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(makePersonnelStub());
     prismaMock.chucVu.findUnique.mockResolvedValueOnce(makePositionStub(0.5));
     prismaMock.lichSuChucVu.findMany.mockResolvedValueOnce([]);
     prismaMock.lichSuChucVu.create.mockResolvedValueOnce({ id: 'lscv-x' });
 
-    // When
+    // Khi
     await positionHistoryService.createPositionHistory({
       personnel_id: PERSONNEL_ID,
       chuc_vu_id: CHUC_VU_ID,
@@ -85,13 +85,13 @@ describe('positionHistory.service - createPositionHistory', () => {
       he_so_chuc_vu: 0.9,
     });
 
-    // Then: stored as-is, ignoring ChucVu.he_so_chuc_vu
+    // Thì: lưu nguyên giá trị, bỏ qua ChucVu.he_so_chuc_vu
     const createArgs = prismaMock.lichSuChucVu.create.mock.calls[0][0];
     expect(createArgs.data.he_so_chuc_vu).toBe(0.9);
   });
 
   it('tạo record với ngày kết thúc < ngày bắt đầu → ValidationError', async () => {
-    // When / Then: validated before any DB call
+    // Khi / Thì: validate trước khi gọi DB
     await expectError(
       positionHistoryService.createPositionHistory({
         personnel_id: PERSONNEL_ID,
@@ -171,7 +171,7 @@ describe('positionHistory.service - createPositionHistory', () => {
   });
 
   it('tạo 2 record cùng QN có khoảng thời gian overlap → AppError 409', async () => {
-    // Given: an existing closed record 2023-01-01 → 2023-12-31
+    // Cho: bản ghi đã đóng 2023-01-01 → 2023-12-31
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(makePersonnelStub());
     prismaMock.chucVu.findUnique.mockResolvedValueOnce(makePositionStub(0.5));
     prismaMock.lichSuChucVu.findMany.mockResolvedValueOnce([
@@ -182,7 +182,7 @@ describe('positionHistory.service - createPositionHistory', () => {
       },
     ]);
 
-    // When / Then: new range 2023-06-01 → 2024-06-01 overlaps
+    // Khi / Thì: khoảng mới 2023-06-01 → 2024-06-01 bị overlap
     await expectError(
       positionHistoryService.createPositionHistory({
         personnel_id: PERSONNEL_ID,
@@ -197,7 +197,7 @@ describe('positionHistory.service - createPositionHistory', () => {
   });
 
   it('tạo 2 record không overlap → success', async () => {
-    // Given: existing closed record 2022-01-01 → 2022-12-31
+    // Cho: bản ghi đã đóng 2022-01-01 → 2022-12-31
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(makePersonnelStub());
     prismaMock.chucVu.findUnique.mockResolvedValueOnce(makePositionStub(0.5));
     prismaMock.lichSuChucVu.findMany.mockResolvedValueOnce([
@@ -209,7 +209,7 @@ describe('positionHistory.service - createPositionHistory', () => {
     ]);
     prismaMock.lichSuChucVu.create.mockResolvedValueOnce({ id: 'lscv-new' });
 
-    // When: new range starts after old ends
+    // Khi: khoảng mới bắt đầu sau khi khoảng cũ kết thúc
     await positionHistoryService.createPositionHistory({
       personnel_id: PERSONNEL_ID,
       chuc_vu_id: CHUC_VU_ID_2,
@@ -217,14 +217,14 @@ describe('positionHistory.service - createPositionHistory', () => {
       ngay_ket_thuc: '2023-12-31',
     });
 
-    // Then
+    // Thì
     expect(prismaMock.lichSuChucVu.create).toHaveBeenCalledTimes(1);
   });
 });
 
 describe('positionHistory.service - updatePositionHistory', () => {
   it('update ngày kết thúc → tự recalc so_thang', async () => {
-    // Given: existing closed record
+    // Cho: bản ghi đã đóng tồn tại
     const existing = {
       id: 'lscv-1',
       quan_nhan_id: PERSONNEL_ID,
@@ -238,19 +238,19 @@ describe('positionHistory.service - updatePositionHistory', () => {
     prismaMock.lichSuChucVu.findMany.mockResolvedValueOnce([]);
     prismaMock.lichSuChucVu.update.mockResolvedValueOnce({ ...existing, so_thang: 11 });
 
-    // When: extend end date to 2023-12-15
+    // Khi: gia hạn ngày kết thúc đến 2023-12-15
     const result = await positionHistoryService.updatePositionHistory(existing.id, {
       ngay_ket_thuc: '2023-12-15',
     });
 
-    // Then: so_thang recomputed (Jan 15 → Dec 15 = 11 months with day precision)
+    // Thì: so_thang tính lại (15/1 → 15/12 = 11 tháng theo ngày)
     const updateArgs = prismaMock.lichSuChucVu.update.mock.calls[0][0];
     expect(updateArgs.data.so_thang).toBe(11);
     expect(result.warning).toBeNull();
   });
 
   it('update ngày bắt đầu sau ngày kết thúc → ValidationError', async () => {
-    // Given: existing closed record
+    // Cho: bản ghi đã đóng tồn tại
     prismaMock.lichSuChucVu.findUnique.mockResolvedValueOnce({
       id: 'lscv-1',
       quan_nhan_id: PERSONNEL_ID,
@@ -261,7 +261,7 @@ describe('positionHistory.service - updatePositionHistory', () => {
       so_thang: 5,
     });
 
-    // When: shift ngay_bat_dau past ngay_ket_thuc
+    // Khi: dời ngay_bat_dau sang sau ngay_ket_thuc
     await expectError(
       positionHistoryService.updatePositionHistory('lscv-1', {
         ngay_bat_dau: '2023-12-01',
@@ -273,7 +273,7 @@ describe('positionHistory.service - updatePositionHistory', () => {
   });
 
   it('update khoảng thời gian gây overlap với record khác → AppError 409', async () => {
-    // Given: target record + a sibling record
+    // Cho: bản ghi target + bản ghi anh em
     prismaMock.lichSuChucVu.findUnique.mockResolvedValueOnce({
       id: 'lscv-1',
       quan_nhan_id: PERSONNEL_ID,
@@ -291,7 +291,7 @@ describe('positionHistory.service - updatePositionHistory', () => {
       },
     ]);
 
-    // When: extend target end date into sibling range
+    // Khi: gia hạn ngày kết thúc target vào khoảng anh em
     await expectError(
       positionHistoryService.updatePositionHistory('lscv-1', {
         ngay_ket_thuc: '2023-09-01',
@@ -316,7 +316,7 @@ describe('positionHistory.service - updatePositionHistory', () => {
 
 describe('positionHistory.service - deletePositionHistory', () => {
   it('xóa record → trả về quan_nhan_id để gọi recalc downstream', async () => {
-    // Given: existing record
+    // Cho: bản ghi tồn tại
     const existing = {
       id: 'lscv-1',
       quan_nhan_id: PERSONNEL_ID,
@@ -329,10 +329,10 @@ describe('positionHistory.service - deletePositionHistory', () => {
     prismaMock.lichSuChucVu.findUnique.mockResolvedValueOnce(existing);
     prismaMock.lichSuChucVu.delete.mockResolvedValueOnce(existing);
 
-    // When
+    // Khi
     const result = await positionHistoryService.deletePositionHistory(existing.id);
 
-    // Then: returns personnel id so caller can trigger total-months recalc
+    // Thì: trả về personnel id để caller trigger tính lại total-months
     expect(prismaMock.lichSuChucVu.delete).toHaveBeenCalledWith({ where: { id: existing.id } });
     expect(result.quan_nhan_id).toBe(PERSONNEL_ID);
     expect(result.message).toBe('Xóa lịch sử chức vụ thành công');
@@ -370,7 +370,7 @@ describe('positionHistory.service - getPositionHistory', () => {
   });
 
   it('lấy history sort theo ngay_bat_dau DESC, recompute so_thang cho record đang mở', async () => {
-    // Given: 2 records — one closed, one open (no ngay_ket_thuc)
+    // Cho: 2 bản ghi — 1 đã đóng, 1 đang mở (không có ngay_ket_thuc)
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(makePersonnelStub());
     const openStart = new Date();
     openStart.setMonth(openStart.getMonth() - 5);
@@ -395,10 +395,10 @@ describe('positionHistory.service - getPositionHistory', () => {
     ];
     prismaMock.lichSuChucVu.findMany.mockResolvedValueOnce(records);
 
-    // When
+    // Khi
     const result = await positionHistoryService.getPositionHistory(PERSONNEL_ID);
 
-    // Then: orderBy passed as { ngay_bat_dau: 'desc' }; open record has so_thang recomputed
+    // Thì: orderBy = { ngay_bat_dau: 'desc' }; bản ghi mở được tính lại so_thang
     const findArgs = prismaMock.lichSuChucVu.findMany.mock.calls[0][0];
     expect(findArgs.orderBy).toEqual({ ngay_bat_dau: 'desc' });
     expect(result).toHaveLength(2);

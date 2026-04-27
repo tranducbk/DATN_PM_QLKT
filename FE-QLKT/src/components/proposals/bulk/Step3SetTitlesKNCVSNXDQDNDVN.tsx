@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Table, Alert, Typography, Space, Tag, message, Select, Input, Empty } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
@@ -66,16 +66,7 @@ export function Step3SetTitlesKNCVSNXDQDNDVN({
   const [loading, setLoading] = useState(false);
   const [personnel, setPersonnel] = useState<Personnel[]>([]);
 
-  useEffect(() => {
-    if (selectedPersonnelIds.length > 0) {
-      fetchPersonnelDetails();
-    } else {
-      setPersonnel([]);
-      onTitleDataChange([]);
-    }
-  }, [selectedPersonnelIds]);
-
-  const fetchPersonnelDetails = async () => {
+  const fetchPersonnelDetails = useCallback(async () => {
     try {
       setLoading(true);
       const promises = selectedPersonnelIds.map(id => apiClient.getPersonnelById(id));
@@ -112,7 +103,17 @@ export function Step3SetTitlesKNCVSNXDQDNDVN({
     } finally {
       setLoading(false);
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPersonnelIds, onTitleDataChange]);
+
+  useEffect(() => {
+    if (selectedPersonnelIds.length > 0) {
+      fetchPersonnelDetails();
+    } else {
+      setPersonnel([]);
+      onTitleDataChange([]);
+    }
+  }, [selectedPersonnelIds, fetchPersonnelDetails, onTitleDataChange]);
 
   const calculateTotalMonths = (
     ngayNhapNgu: DateInput,

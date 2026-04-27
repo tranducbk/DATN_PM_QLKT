@@ -14,10 +14,10 @@ import {
 
 beforeEach(() => {
   resetPrismaMock();
-  // Default duplicate-check stubs: nothing exists in DB and no pending proposals.
+  // Stub mặc định check duplicate: DB rỗng và không có pending proposal.
   prismaMock.danhHieuDonViHangNam.findFirst.mockResolvedValue(null);
   prismaMock.bangDeXuat.findMany.mockResolvedValue([]);
-  // Default chain-eligibility stub — overridden per-test for bypass scenarios.
+  // Stub mặc định cho chain-eligibility — override theo từng test bypass.
   jest
     .spyOn(unitAnnualAwardService, 'checkUnitAwardEligibility')
     .mockResolvedValue({ eligible: true, reason: '' });
@@ -75,7 +75,7 @@ function callSubmitDonVi(items: DonViItem[], userId = 'acc-mgr-1', nam = 2024) {
 
 describe('proposal.submit - DON_VI_HANG_NAM', () => {
   it('gửi thành công với ĐVQT (CQDV)', async () => {
-    // Given: manager submits a CQDV-target ĐVQT proposal
+    // Cho trước: manager submit đề xuất ĐVQT cho target CQDV
     arrangeManagerWithUnit('CQDV');
     const targetUnit = makeUnit({ kind: 'CQDV', id: 'cqdv-target' });
     prismaMock.coQuanDonVi.findUnique.mockResolvedValueOnce({
@@ -85,7 +85,7 @@ describe('proposal.submit - DON_VI_HANG_NAM', () => {
     });
     arrangeProposalCreate();
 
-    // When
+    // Khi
     await callSubmitDonVi([
       {
         don_vi_id: targetUnit.id,
@@ -94,7 +94,7 @@ describe('proposal.submit - DON_VI_HANG_NAM', () => {
       },
     ]);
 
-    // Then: payload carries DVQT with no chain flags set
+    // Kết quả: payload mang DVQT, không có chain flag nào được set
     expect(prismaMock.bangDeXuat.create).toHaveBeenCalledTimes(1);
     const data = prismaMock.bangDeXuat.create.mock.calls[0][0].data;
     expect(data.loai_de_xuat).toBe(PROPOSAL_TYPES.DON_VI_HANG_NAM);
@@ -189,7 +189,7 @@ describe('proposal.submit - DON_VI_HANG_NAM', () => {
   });
 
   it('bypass FE — reject mixed ĐVQT + BKBQP đơn vị trong cùng đề xuất', async () => {
-    // Given: manager + two CQDV target lookups (one per item)
+    // Cho trước: manager + 2 lượt lookup CQDV target (1 lượt mỗi item)
     arrangeManagerWithUnit('CQDV');
     const targetA = makeUnit({ kind: 'CQDV', id: 'cqdv-A' });
     const targetB = makeUnit({ kind: 'CQDV', id: 'cqdv-B' });
@@ -197,7 +197,7 @@ describe('proposal.submit - DON_VI_HANG_NAM', () => {
       .mockResolvedValueOnce({ id: targetA.id, ten_don_vi: targetA.ten_don_vi, ma_don_vi: targetA.ma_don_vi })
       .mockResolvedValueOnce({ id: targetB.id, ten_don_vi: targetB.ten_don_vi, ma_don_vi: targetB.ma_don_vi });
 
-    // When + Then
+    // Khi + Kết quả
     await expectError(
       callSubmitDonVi([
         { don_vi_id: targetA.id, don_vi_type: 'CO_QUAN_DON_VI', danh_hieu: DANH_HIEU_DON_VI_HANG_NAM.DVQT },
@@ -262,7 +262,7 @@ describe('proposal.submit - DON_VI_HANG_NAM', () => {
   });
 
   it('CQDV variant — proposal lưu `co_quan_don_vi_id` của manager', async () => {
-    // Given: manager attached to CQDV unit
+    // Cho trước: manager gắn với đơn vị CQDV
     const mgrUnit = makeUnit({ kind: 'CQDV', id: 'cqdv-MGR-77' });
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       id: 'acc-cqdv',
@@ -296,7 +296,7 @@ describe('proposal.submit - DON_VI_HANG_NAM', () => {
   });
 
   it('DVTT variant — co_quan_don_vi_cha set đúng từ DonViTrucThuoc target', async () => {
-    // Given: target is a DVTT unit; service must populate co_quan_don_vi_cha from its parent
+    // Cho trước: target là DVTT; service phải set co_quan_don_vi_cha từ CQDV cha
     const mgrUnit = makeUnit({ kind: 'DVTT', id: 'dvtt-mgr-99', parentId: 'cqdv-parent-99' });
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       id: 'acc-dvtt',
@@ -322,13 +322,13 @@ describe('proposal.submit - DON_VI_HANG_NAM', () => {
     });
     arrangeProposalCreate('p-dvtt');
 
-    // When
+    // Khi
     await callSubmitDonVi(
       [{ don_vi_id: targetDvtt.id, don_vi_type: 'DON_VI_TRUC_THUOC', danh_hieu: DANH_HIEU_DON_VI_HANG_NAM.DVQT }],
       'acc-dvtt'
     );
 
-    // Then
+    // Kết quả
     const data = prismaMock.bangDeXuat.create.mock.calls[0][0].data;
     expect(data.don_vi_truc_thuoc_id).toBe(mgrUnit.id);
     expect(data.co_quan_don_vi_id).toBeNull();
@@ -343,7 +343,7 @@ describe('proposal.submit - DON_VI_HANG_NAM', () => {
   });
 
   it('bypass FE — reject duplicate khi đơn vị đã có record cùng năm trong DB', async () => {
-    // Given: an existing unit award (ĐVQT) for the same year/unit
+    // Cho trước: đã có danh hiệu đơn vị (ĐVQT) cho cùng năm/đơn vị
     arrangeManagerWithUnit('CQDV');
     const targetUnit = makeUnit({ kind: 'CQDV', id: 'cqdv-dup' });
     prismaMock.coQuanDonVi.findUnique.mockResolvedValueOnce({
@@ -362,7 +362,7 @@ describe('proposal.submit - DON_VI_HANG_NAM', () => {
       nhan_bkttcp: false,
     });
 
-    // When + Then
+    // Khi + Kết quả
     const dupErr = await expectError(
       callSubmitDonVi([
         {
@@ -381,7 +381,7 @@ describe('proposal.submit - DON_VI_HANG_NAM', () => {
   });
 
   it('bypass FE — reject pending conflict cùng đơn vị/danh hiệu/năm', async () => {
-    // Given: an existing PENDING proposal for the same unit/year/danh_hieu
+    // Cho trước: đã có proposal PENDING cho cùng đơn vị/năm/danh_hieu
     arrangeManagerWithUnit('CQDV');
     const targetUnit = makeUnit({ kind: 'CQDV', id: 'cqdv-pending' });
     prismaMock.coQuanDonVi.findUnique.mockResolvedValueOnce({

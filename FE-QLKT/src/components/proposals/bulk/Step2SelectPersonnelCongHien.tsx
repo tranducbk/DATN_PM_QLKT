@@ -124,6 +124,7 @@ export function Step2SelectPersonnelCongHien({
       fetchPositionHistories(personnel);
       checkContributionEligibility(personnel.map(p => p.id));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [personnel.length]);
 
   useEffect(() => {
@@ -642,6 +643,8 @@ export function Step2SelectPersonnelCongHien({
       onPersonnelChange(selectableIds);
       message.info('Đã tự bỏ chọn các quân nhân không còn đủ điều kiện theo mốc tháng/năm hiện tại.');
     }
+    // getSelectionDisabledReason reads state already in deps (ineligiblePersonnel, positionHistoriesMap, etc.)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     checkingEligibility,
     ineligiblePersonnel,

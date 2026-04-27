@@ -25,7 +25,7 @@ afterEach(() => {
 
 describe('awardBulk.service - checkDuplicateAwards (cá nhân)', () => {
   it('detect trùng APPROVED record cùng năm + cùng danh hiệu (CA_NHAN_HANG_NAM)', async () => {
-    // Given: existing CSTDCS award for personnel A in 2024
+    // Cho: đã có CSTDCS cho personnel A năm 2024
     const personnelA = { id: 'qn-A', ho_ten: 'Nguyễn Văn A' };
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([personnelA]);
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
@@ -33,14 +33,14 @@ describe('awardBulk.service - checkDuplicateAwards (cá nhân)', () => {
       { quan_nhan_id: personnelA.id, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS },
     ]);
 
-    // When
+    // Khi
     const errors = await awardBulkService.checkDuplicateAwards(
       PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       2024,
       [{ personnel_id: personnelA.id, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS }]
     );
 
-    // Then: error references the existing record by full name
+    // Thì: error tham chiếu record đã có bằng họ tên đầy đủ
     expect(errors).toHaveLength(1);
     expect(errors[0]).toBe('Nguyễn Văn A: Chiến sĩ thi đua cơ sở năm 2024 đã có trên hệ thống');
   });
@@ -84,7 +84,7 @@ describe('awardBulk.service - checkDuplicateAwards (cá nhân)', () => {
   });
 
   it('one-time HC_QKQT — match theo personnel, không quan tâm danh_hieu', async () => {
-    // Given: personnel already has any HC_QKQT record
+    // Cho: personnel đã có record HC_QKQT bất kỳ
     const personnelA = { id: 'qn-A', ho_ten: 'Phạm C' };
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([personnelA]);
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
@@ -92,14 +92,14 @@ describe('awardBulk.service - checkDuplicateAwards (cá nhân)', () => {
       { quan_nhan_id: personnelA.id },
     ]);
 
-    // When: any HC_QKQT request for the same personnel (danh_hieu can be empty)
+    // Khi: request HC_QKQT cho cùng personnel (danh_hieu có thể rỗng)
     const errors = await awardBulkService.checkDuplicateAwards(
       PROPOSAL_TYPES.HC_QKQT,
       2024,
       [{ personnel_id: personnelA.id, danh_hieu: 'HC_QKQT' }]
     );
 
-    // Then: blocked because the personnel already has the medal
+    // Thì: bị chặn vì personnel đã có huân chương
     expect(errors).toHaveLength(1);
     expect(errors[0]).toBe('Phạm C: đã có Huy chương Quân kỳ quyết thắng trên hệ thống');
   });

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Card,
@@ -77,62 +77,7 @@ export default function BulkRewardDetailsPage() {
   const [decisionModalVisible, setDecisionModalVisible] = useState(false);
   const [editingPersonnelId, setEditingPersonnelId] = useState<string | null>(null);
 
-  useEffect(() => {
-    const personnelIdsParam = searchParams?.get('personnel_ids');
-    const eligibleIdsParam = searchParams?.get('eligible_ids');
-    const namParam = searchParams?.get('nam');
-    const danhHieuParam = searchParams?.get('danh_hieu');
-    const checkResultsParam = searchParams?.get('check_results');
-
-    if (!personnelIdsParam || !namParam || !danhHieuParam) {
-      message.error('Thiếu thông tin cần thiết');
-      router.push('/admin/annual-rewards/bulk');
-      return;
-    }
-
-    try {
-      const personnelIds = JSON.parse(decodeURIComponent(personnelIdsParam));
-      const eligibleIds = eligibleIdsParam
-        ? JSON.parse(decodeURIComponent(eligibleIdsParam))
-        : personnelIds; // Fallback: if no eligible_ids, treat all as eligible
-
-      const nam = parseInt(namParam);
-      const danhHieu = danhHieuParam;
-
-      const checkResultsData = checkResultsParam
-        ? JSON.parse(decodeURIComponent(checkResultsParam))
-        : null;
-      if (checkResultsData) setCheckResults(checkResultsData);
-
-      // Init data for ALL selected personnel, not just eligible ones
-      const initialData: PersonnelRewardData[] = personnelIds.map((id: string) => {
-        const result = checkResultsData?.results?.find((r: any) => r.personnel_id === id);
-        const isEligible = eligibleIds.includes(id);
-        return {
-          personnel_id: id,
-          ho_ten: '',
-          ngay_sinh: '',
-          cap_bac: '',
-          chuc_vu: '',
-          cap_bac_edit: '',
-          chuc_vu_edit: '',
-          isEligible,
-          has_reward: result?.has_reward || false,
-          has_proposal: result?.has_proposal || false,
-        };
-      });
-
-      setPersonnelData(initialData);
-      form.setFieldsValue({ nam, danh_hieu: danhHieu });
-
-      loadInitialData(personnelIds);
-    } catch (error) {
-      message.error('Dữ liệu không hợp lệ');
-      router.push('/admin/annual-rewards/bulk');
-    }
-  }, [searchParams, router, form]);
-
-  const loadInitialData = async (personnelIds: string[]) => {
+  const loadInitialData = useCallback(async (personnelIds: string[]) => {
     try {
       setLoading(true);
       const personnelResponses = await Promise.all(
@@ -190,7 +135,62 @@ export default function BulkRewardDetailsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [form]);
+
+  useEffect(() => {
+    const personnelIdsParam = searchParams?.get('personnel_ids');
+    const eligibleIdsParam = searchParams?.get('eligible_ids');
+    const namParam = searchParams?.get('nam');
+    const danhHieuParam = searchParams?.get('danh_hieu');
+    const checkResultsParam = searchParams?.get('check_results');
+
+    if (!personnelIdsParam || !namParam || !danhHieuParam) {
+      message.error('Thiếu thông tin cần thiết');
+      router.push('/admin/annual-rewards/bulk');
+      return;
+    }
+
+    try {
+      const personnelIds = JSON.parse(decodeURIComponent(personnelIdsParam));
+      const eligibleIds = eligibleIdsParam
+        ? JSON.parse(decodeURIComponent(eligibleIdsParam))
+        : personnelIds; // Fallback: if no eligible_ids, treat all as eligible
+
+      const nam = parseInt(namParam);
+      const danhHieu = danhHieuParam;
+
+      const checkResultsData = checkResultsParam
+        ? JSON.parse(decodeURIComponent(checkResultsParam))
+        : null;
+      if (checkResultsData) setCheckResults(checkResultsData);
+
+      // Init data for ALL selected personnel, not just eligible ones
+      const initialData: PersonnelRewardData[] = personnelIds.map((id: string) => {
+        const result = checkResultsData?.results?.find((r: any) => r.personnel_id === id);
+        const isEligible = eligibleIds.includes(id);
+        return {
+          personnel_id: id,
+          ho_ten: '',
+          ngay_sinh: '',
+          cap_bac: '',
+          chuc_vu: '',
+          cap_bac_edit: '',
+          chuc_vu_edit: '',
+          isEligible,
+          has_reward: result?.has_reward || false,
+          has_proposal: result?.has_proposal || false,
+        };
+      });
+
+      setPersonnelData(initialData);
+      form.setFieldsValue({ nam, danh_hieu: danhHieu });
+
+      loadInitialData(personnelIds);
+    } catch (error) {
+      message.error('Dữ liệu không hợp lệ');
+      router.push('/admin/annual-rewards/bulk');
+    }
+  }, [searchParams, router, form, loadInitialData]);
 
   const handleSubmit = async () => {
     try {

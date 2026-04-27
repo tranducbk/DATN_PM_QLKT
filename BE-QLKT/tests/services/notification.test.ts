@@ -61,13 +61,13 @@ function NOTIFICATION_makeStoredRecord(overrides: Record<string, unknown> = {}) 
 
 describe('notification.service - createNotification', () => {
   it('Tạo record DB với recipient + emit socket cho recipient', async () => {
-    // Given
+    // Cho
     prismaMock.thongBao.create.mockResolvedValueOnce(NOTIFICATION_makeStoredRecord());
 
-    // When
+    // Khi
     const result = await notificationService.createNotification(NOTIFICATION_makeData());
 
-    // Then
+    // Thì
     expect(prismaMock.thongBao.create).toHaveBeenCalledTimes(1);
     const createArgs = prismaMock.thongBao.create.mock.calls[0][0] as {
       data: Record<string, unknown>;
@@ -81,24 +81,24 @@ describe('notification.service - createNotification', () => {
   });
 
   it('Recipient_id null → tạo record nhưng không emit socket', async () => {
-    // Given
+    // Cho
     prismaMock.thongBao.create.mockResolvedValueOnce(
       NOTIFICATION_makeStoredRecord({ nguoi_nhan_id: null })
     );
 
-    // When
+    // Khi
     await notificationService.createNotification({
       ...NOTIFICATION_makeData(),
       recipient_id: null,
     });
 
-    // Then
+    // Thì
     expect(prismaMock.thongBao.create).toHaveBeenCalledTimes(1);
     expect(emitNotificationToUser).not.toHaveBeenCalled();
   });
 
   it('Socket emit thực thi sau khi DB create thành công (thứ tự call)', async () => {
-    // Given
+    // Cho
     const callOrder: string[] = [];
     prismaMock.thongBao.create.mockImplementationOnce(async () => {
       callOrder.push('db.create');
@@ -108,28 +108,28 @@ describe('notification.service - createNotification', () => {
       callOrder.push('socket.emit');
     });
 
-    // When
+    // Khi
     await notificationService.createNotification(NOTIFICATION_makeData());
 
-    // Then
+    // Thì
     expect(callOrder).toEqual(['db.create', 'socket.emit']);
   });
 });
 
 describe('notification.service - getNotificationsByUserId', () => {
   it('Filter theo recipient userId + trả pagination', async () => {
-    // Given
+    // Cho
     const records = [NOTIFICATION_makeStoredRecord()];
     prismaMock.thongBao.findMany.mockResolvedValueOnce(records);
     prismaMock.thongBao.count.mockResolvedValueOnce(1);
 
-    // When
+    // Khi
     const result = await notificationService.getNotificationsByUserId('acc-recipient', {
       page: 1,
       limit: 20,
     });
 
-    // Then
+    // Thì
     const findManyCall = prismaMock.thongBao.findMany.mock.calls[0][0] as {
       where: Record<string, unknown>;
     };
@@ -140,14 +140,14 @@ describe('notification.service - getNotificationsByUserId', () => {
   });
 
   it('Filter isRead=false → chỉ lấy unread', async () => {
-    // Given
+    // Cho
     prismaMock.thongBao.findMany.mockResolvedValueOnce([]);
     prismaMock.thongBao.count.mockResolvedValueOnce(0);
 
-    // When
+    // Khi
     await notificationService.getNotificationsByUserId('acc-recipient', { isRead: false });
 
-    // Then
+    // Thì
     const findManyCall = prismaMock.thongBao.findMany.mock.calls[0][0] as {
       where: Record<string, unknown>;
     };
@@ -193,7 +193,7 @@ describe('notification dispatch - adhoc award create', () => {
       role: ROLES.USER,
     });
 
-    // When
+    // Khi
     await adhocAwardService.createAdhocAward({
       adminId: 'acc-admin',
       type: ADHOC_TYPE.CA_NHAN,
@@ -202,7 +202,7 @@ describe('notification dispatch - adhoc award create', () => {
       personnelId: 'qn-1',
     });
 
-    // Then
+    // Thì
     expect(prismaMock.thongBao.createMany).toHaveBeenCalledTimes(1);
     const createManyArg = prismaMock.thongBao.createMany.mock.calls[0][0] as {
       data: Array<Record<string, unknown>>;
@@ -219,7 +219,7 @@ describe('notification dispatch - adhoc award create', () => {
   });
 
   it('Adhoc tập thể (CQDV) → notify managers của CQDV với type AWARD_ADDED', async () => {
-    // Given
+    // Cho
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       id: 'acc-admin',
       username: 'admin_x',
@@ -244,7 +244,7 @@ describe('notification dispatch - adhoc award create', () => {
       { id: 'acc-mgr-B', role: ROLES.MANAGER },
     ]);
 
-    // When
+    // Khi
     await adhocAwardService.createAdhocAward({
       adminId: 'acc-admin',
       type: ADHOC_TYPE.TAP_THE,
@@ -254,7 +254,7 @@ describe('notification dispatch - adhoc award create', () => {
       unitType: 'CO_QUAN_DON_VI',
     });
 
-    // Then
+    // Thì
     expect(prismaMock.thongBao.createMany).toHaveBeenCalledTimes(1);
     const args = prismaMock.thongBao.createMany.mock.calls[0][0] as {
       data: Array<Record<string, unknown>>;

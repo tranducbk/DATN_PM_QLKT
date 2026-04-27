@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Table,
   Select,
@@ -95,16 +95,7 @@ export function Step3SetTitlesNCKH({
   const [scientificAchievements, setScientificAchievements] = useState<any[]>([]);
   const [loadingModal, setLoadingModal] = useState(false);
 
-  useEffect(() => {
-    if (selectedPersonnelIds.length > 0) {
-      fetchPersonnelDetails();
-    } else {
-      setPersonnel([]);
-      onTitleDataChange([]);
-    }
-  }, [selectedPersonnelIds]);
-
-  const fetchPersonnelDetails = async () => {
+  const fetchPersonnelDetails = useCallback(async () => {
     try {
       setLoading(true);
       const promises = selectedPersonnelIds.map(id => apiClient.getPersonnelById(id));
@@ -142,7 +133,17 @@ export function Step3SetTitlesNCKH({
     } finally {
       setLoading(false);
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPersonnelIds, onTitleDataChange]);
+
+  useEffect(() => {
+    if (selectedPersonnelIds.length > 0) {
+      fetchPersonnelDetails();
+    } else {
+      setPersonnel([]);
+      onTitleDataChange([]);
+    }
+  }, [selectedPersonnelIds, fetchPersonnelDetails, onTitleDataChange]);
 
   const updateTitle = (id: string, field: string, value: any) => {
     const newData = [...titleData];

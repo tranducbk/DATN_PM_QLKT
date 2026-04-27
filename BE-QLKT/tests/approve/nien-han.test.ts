@@ -32,7 +32,7 @@ function buildItem(personnelId: string, danhHieu: string, override: Record<strin
 
 describe('approveProposal — NIEN_HAN (HCCSVV)', () => {
   it('duyệt thành công HCCSVV hạng ba (CQDV)', async () => {
-    // Given: pending NIEN_HAN proposal with valid item
+    // Given: đề xuất NIEN_HAN PENDING với item hợp lệ
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-1' });
     const personnel = makePersonnel({
       unit: cqdv,
@@ -65,10 +65,10 @@ describe('approveProposal — NIEN_HAN (HCCSVV)', () => {
     prismaMock.hoSoNienHan.upsert.mockResolvedValueOnce({});
     prismaMock.bangDeXuat.updateMany.mockResolvedValueOnce({ count: 1 });
 
-    // When
+    // When: gọi duyệt
     await proposalService.approveProposal(proposal.id, {}, ADMIN_ID, {}, {}, null);
 
-    // Then
+    // Then: HCCSVV được upsert và đề xuất chuyển APPROVED
     expect(prismaMock.khenThuongHCCSVV.upsert).toHaveBeenCalledTimes(1);
     const upsertArgs = prismaMock.khenThuongHCCSVV.upsert.mock.calls[0][0];
     expect(upsertArgs.where.quan_nhan_id_danh_hieu).toEqual({

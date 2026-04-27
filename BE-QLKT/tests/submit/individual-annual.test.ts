@@ -11,10 +11,10 @@ import { DANH_HIEU_CA_NHAN_HANG_NAM } from '../../src/constants/danhHieu.constan
 
 beforeEach(() => {
   resetPrismaMock();
-  // Default duplicate-check stubs: nothing exists in DB and no pending proposals.
+  // Stub mặc định check duplicate: DB rỗng và không có pending proposal.
   prismaMock.danhHieuHangNam.findFirst.mockResolvedValue(null);
   prismaMock.bangDeXuat.findMany.mockResolvedValue([]);
-  // Default chain-eligibility stub — overridden per-test for bypass scenarios.
+  // Stub mặc định cho chain-eligibility — override theo từng test bypass.
   jest
     .spyOn(profileService, 'checkAwardEligibility')
     .mockResolvedValue({ eligible: true, reason: '' });
@@ -67,7 +67,7 @@ function callSubmitCaNhan(items: CaNhanItem[], userId = 'acc-mgr-1', nam = 2024)
 
 describe('proposal.submit - CA_NHAN_HANG_NAM', () => {
   it('gửi thành công với 1 item CSTDCS', async () => {
-    // Given: a manager with a CQDV unit and one personnel target for CSTDCS
+    // Cho trước: manager thuộc CQDV và 1 quân nhân target cho CSTDCS
     const { account } = arrangeManagerWithUnit('CQDV');
     const target = makePersonnel({ id: 'qn-T1', ho_ten: 'Nguyễn Văn A' });
     arrangePersonnelLookup([target]);
@@ -81,12 +81,12 @@ describe('proposal.submit - CA_NHAN_HANG_NAM', () => {
       NguoiDeXuat: { id: account.id, username: account.username, QuanNhan: { id: 'qn-manager', ho_ten: 'Manager A' } },
     });
 
-    // When
+    // Khi
     await callSubmitCaNhan([
       { personnel_id: target.id, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS },
     ]);
 
-    // Then
+    // Kết quả
     expect(prismaMock.bangDeXuat.create).toHaveBeenCalledTimes(1);
     const data = prismaMock.bangDeXuat.create.mock.calls[0][0].data;
     expect(data.loai_de_xuat).toBe(PROPOSAL_TYPES.CA_NHAN_HANG_NAM);
@@ -104,7 +104,7 @@ describe('proposal.submit - CA_NHAN_HANG_NAM', () => {
   });
 
   it('gửi thành công BKBQP → auto-set `nhan_bkbqp: true`', async () => {
-    // Given
+    // Cho trước
     arrangeManagerWithUnit('CQDV');
     const target = makePersonnel({ id: 'qn-BK' });
     arrangePersonnelLookup([target]);
@@ -118,12 +118,12 @@ describe('proposal.submit - CA_NHAN_HANG_NAM', () => {
       NguoiDeXuat: { id: 'acc-mgr-1', username: 'admin', QuanNhan: null },
     });
 
-    // When
+    // Khi
     await callSubmitCaNhan([
       { personnel_id: target.id, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP },
     ]);
 
-    // Then: auto-set flags follow danh_hieu
+    // Kết quả: flag tự set theo danh_hieu
     const data = prismaMock.bangDeXuat.create.mock.calls[0][0].data;
     expect(data.data_danh_hieu[0]).toMatchObject({
       danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP,
@@ -188,13 +188,13 @@ describe('proposal.submit - CA_NHAN_HANG_NAM', () => {
   });
 
   it('bypass FE — reject mixed CSTDCS + BKBQP trong cùng đề xuất', async () => {
-    // Given: two items, one base CSTDCS and one chain BKBQP
+    // Cho trước: 2 item, 1 base CSTDCS và 1 chain BKBQP
     arrangeManagerWithUnit('CQDV');
     const a = makePersonnel({ id: 'qn-A' });
     const b = makePersonnel({ id: 'qn-B' });
     arrangePersonnelLookup([a, b]);
 
-    // When + Then
+    // Khi + Kết quả
     await expectError(
       callSubmitCaNhan([
         { personnel_id: a.id, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS },
@@ -243,7 +243,7 @@ describe('proposal.submit - CA_NHAN_HANG_NAM', () => {
   });
 
   it('throw NotFoundError khi tài khoản không có QuanNhan', async () => {
-    // Given: account exists but missing QuanNhan relation
+    // Cho trước: tài khoản tồn tại nhưng thiếu relation QuanNhan
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       id: 'acc-no-qn',
       username: 'orphan',
@@ -268,7 +268,7 @@ describe('proposal.submit - CA_NHAN_HANG_NAM', () => {
 
     await expectError(
       proposalService.submitProposal(
-        // simulate a bypass-FE payload that is not an array
+        // giả lập payload bypass-FE không phải array
         null as unknown as CaNhanItem[],
         null,        'acc-mgr-1',
         PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
@@ -283,7 +283,7 @@ describe('proposal.submit - CA_NHAN_HANG_NAM', () => {
   });
 
   it('CQDV variant — proposal lưu `co_quan_don_vi_id`, `don_vi_truc_thuoc_id: null`', async () => {
-    // Given: manager belongs to a CQDV unit
+    // Cho trước: manager thuộc đơn vị CQDV
     const unit = makeUnit({ kind: 'CQDV', id: 'cqdv-77' });
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       id: 'acc-cqdv',
@@ -310,20 +310,20 @@ describe('proposal.submit - CA_NHAN_HANG_NAM', () => {
       NguoiDeXuat: { id: 'acc-cqdv', username: 'admin', QuanNhan: null },
     });
 
-    // When
+    // Khi
     await callSubmitCaNhan(
       [{ personnel_id: target.id, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS }],
       'acc-cqdv'
     );
 
-    // Then: proposal row attaches co_quan_don_vi_id only
+    // Kết quả: proposal chỉ gắn co_quan_don_vi_id
     const data = prismaMock.bangDeXuat.create.mock.calls[0][0].data;
     expect(data.co_quan_don_vi_id).toBe(unit.id);
     expect(data.don_vi_truc_thuoc_id).toBeNull();
   });
 
   it('DVTT variant — proposal lưu `don_vi_truc_thuoc_id`, `co_quan_don_vi_id: null`', async () => {
-    // Given: manager belongs to a DVTT unit
+    // Cho trước: manager thuộc đơn vị DVTT
     const unit = makeUnit({ kind: 'DVTT', id: 'dvtt-99', parentId: 'cqdv-parent-99' });
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       id: 'acc-dvtt',
@@ -361,7 +361,7 @@ describe('proposal.submit - CA_NHAN_HANG_NAM', () => {
   });
 
   it('titleData rỗng → vẫn tạo proposal với `data_danh_hieu: []`', async () => {
-    // Empty array passes the `Array.isArray` guard and skips the personnel lookup branch
+    // Mảng rỗng pass `Array.isArray` guard và skip nhánh lookup quân nhân
     arrangeManagerWithUnit('CQDV');
     prismaMock.bangDeXuat.create.mockResolvedValueOnce({
       id: 'p-empty',
@@ -378,15 +378,15 @@ describe('proposal.submit - CA_NHAN_HANG_NAM', () => {
     expect(prismaMock.bangDeXuat.create).toHaveBeenCalledTimes(1);
     const data = prismaMock.bangDeXuat.create.mock.calls[0][0].data;
     expect(data.data_danh_hieu).toEqual([]);
-    // CA_NHAN_HANG_NAM is not in PROPOSAL_TYPES_REQUIRING_MONTH, so thang stays null
+    // CA_NHAN_HANG_NAM không thuộc PROPOSAL_TYPES_REQUIRING_MONTH → thang giữ null
     expect(data.thang).toBeNull();
   });
 
-  // CA_NHAN_HANG_NAM is not in PROPOSAL_TYPES_REQUIRING_MONTH (NIEN_HAN, HC_QKQT,
-  // KNC_VSNXD_QDNDVN, CONG_HIEN), so the missing-month branch never fires for this type.
+  // CA_NHAN_HANG_NAM không thuộc PROPOSAL_TYPES_REQUIRING_MONTH (NIEN_HAN, HC_QKQT,
+  // KNC_VSNXD_QDNDVN, CONG_HIEN) → nhánh missing-month không bao giờ fire cho type này.
 
   it('bypass FE — reject duplicate khi đã có danh hiệu cùng năm trong DB', async () => {
-    // Given: an existing CSTDCS award for this personnel/year already in DB
+    // Cho trước: đã có danh hiệu CSTDCS cho quân nhân/năm này trong DB
     arrangeManagerWithUnit('CQDV');
     const target = makePersonnel({ id: 'qn-dup', ho_ten: 'Trần Văn Dup' });
     arrangePersonnelLookup([target]);
@@ -398,7 +398,7 @@ describe('proposal.submit - CA_NHAN_HANG_NAM', () => {
       danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS,
     });
 
-    // When + Then
+    // Khi + Kết quả
     const dupErr = await expectError(
       callSubmitCaNhan([
         { personnel_id: target.id, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS },
@@ -413,7 +413,7 @@ describe('proposal.submit - CA_NHAN_HANG_NAM', () => {
   });
 
   it('bypass FE — reject khi quân nhân chưa đủ ĐK BKBQP', async () => {
-    // Given: eligibility check returns ineligible for BKBQP chain
+    // Cho trước: eligibility check trả về không đủ điều kiện chain BKBQP
     arrangeManagerWithUnit('CQDV');
     const target = makePersonnel({ id: 'qn-not-elig-bk', ho_ten: 'Nguyễn Chưa Đủ' });
     arrangePersonnelLookup([target]);
@@ -423,7 +423,7 @@ describe('proposal.submit - CA_NHAN_HANG_NAM', () => {
       reason: 'Chưa đủ điều kiện BKBQP: cần 2 năm CSTDCS liên tục',
     });
 
-    // When + Then
+    // Khi + Kết quả
     const eligErr = await expectError(
       callSubmitCaNhan([
         { personnel_id: target.id, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP },

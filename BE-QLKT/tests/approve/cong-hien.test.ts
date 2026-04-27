@@ -88,7 +88,7 @@ function buildEligibleHistories(personnelId: string): PositionHistoryRow[] {
 
 describe('approveProposal — CONG_HIEN (HCBVTQ)', () => {
   it('duyệt thành công HCBVTQ hạng nhì cho QN nam đủ tháng', async () => {
-    // Given: pending CONG_HIEN proposal + personnel with enough position months
+    // Given: đề xuất CONG_HIEN PENDING + quân nhân đủ tháng giữ chức
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-ch' });
     const personnel = makePersonnel({
       unit: cqdv,
@@ -123,10 +123,10 @@ describe('approveProposal — CONG_HIEN (HCBVTQ)', () => {
     prismaMock.hoSoCongHien.upsert.mockResolvedValueOnce({});
     prismaMock.bangDeXuat.updateMany.mockResolvedValueOnce({ count: 1 });
 
-    // When
+    // When: gọi duyệt
     const result = await proposalService.approveProposal(proposal.id, {}, ADMIN_ID, {}, {}, null);
 
-    // Then: HCBVTQ created and proposal marked APPROVED
+    // Then: HCBVTQ được tạo và đề xuất chuyển APPROVED
     expect(prismaMock.khenThuongHCBVTQ.create).toHaveBeenCalledTimes(1);
     const createArgs = prismaMock.khenThuongHCBVTQ.create.mock.calls[0][0];
     expect(createArgs.data).toMatchObject({

@@ -80,7 +80,7 @@ function buildContiguousCSTDCS(
 
 describe('profile.service - BKTTCP exhaustive (streak vs flags vs NCKH)', () => {
   it('A1. 7y CSTDCS + 3 BKBQP + 2 CSTDTQ + 7 NCKH → eligible', async () => {
-    // Given: full 7-year contiguous chain with 3 BKBQP and 2 CSTDTQ flags inside
+    // Cho: chuỗi liên tục 7 năm với 3 BKBQP và 2 CSTDTQ trong đó
     const personnelId = 'qn-bkttcp-A1';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2017, 2023, {
       2018: { nhan_bkbqp: true },
@@ -92,20 +92,20 @@ describe('profile.service - BKTTCP exhaustive (streak vs flags vs NCKH)', () => 
       buildPersonnelWithHistory(personnelId, danhHieu, nckh)
     );
 
-    // When
+    // Khi
     const result = await profileService.checkAwardEligibility(
       personnelId,
       2024,
       DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP
     );
 
-    // Then
+    // Thì
     expect(result.eligible).toBe(true);
     expect(result.reason).toBe(eligibilityReasons.bkttcpEligible);
   });
 
   it('A2. 7y CSTDCS + 3 BKBQP + 2 CSTDTQ nhưng thiếu 1 NCKH (6 NCKH) → fail với reason exact', async () => {
-    // Given: full flags but NCKH gap at 2018 (drops NCKH streak — but recall NCKH only counts contiguous from year-1 backwards)
+    // Cho: đủ flag nhưng NCKH gap năm 2018 (NCKH chỉ tính liên tục từ year-1 ngược lại)
     const personnelId = 'qn-bkttcp-A2';
     const { danhHieu } = buildContiguousCSTDCS(2017, 2023, {
       2018: { nhan_bkbqp: true },
@@ -113,7 +113,7 @@ describe('profile.service - BKTTCP exhaustive (streak vs flags vs NCKH)', () => 
       2022: { nhan_bkbqp: true },
       2023: { nhan_cstdtq: true },
     });
-    // NCKH for 2018-2023 only (6 years contiguous from 2023 backwards)
+    // NCKH chỉ từ 2018-2023 (6 năm liên tục từ 2023 ngược lại)
     const nckh: ScienceRow[] = [
       { nam: 2018 },
       { nam: 2019 },
@@ -126,14 +126,14 @@ describe('profile.service - BKTTCP exhaustive (streak vs flags vs NCKH)', () => 
       buildPersonnelWithHistory(personnelId, danhHieu, nckh)
     );
 
-    // When
+    // Khi
     const result = await profileService.checkAwardEligibility(
       personnelId,
       2024,
       DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP
     );
 
-    // Then
+    // Thì
     expect(result.eligible).toBe(false);
     expect(result.reason).toBe(eligibilityReasons.bkttcpReason(7, 3, 2, 6));
   });
@@ -182,7 +182,7 @@ describe('profile.service - BKTTCP exhaustive (streak vs flags vs NCKH)', () => 
   });
 
   it('A5. 7y + 4 BKBQP + 2 CSTDTQ → fail (rule strict bkbqpIn7Years === 3, không phải >=3)', async () => {
-    // Code at profile.service.ts:590 uses === 3 strict equality
+    // Code tại profile.service.ts:590 dùng === 3 strict equality
     const personnelId = 'qn-bkttcp-A5';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2017, 2023, {
       2017: { nhan_bkbqp: true },
@@ -201,7 +201,7 @@ describe('profile.service - BKTTCP exhaustive (streak vs flags vs NCKH)', () => 
       DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP
     );
 
-    // 4 BKBQP fails strict === 3 check
+    // 4 BKBQP fail check strict === 3
     expect(result.eligible).toBe(false);
     expect(result.reason).toBe(eligibilityReasons.bkttcpReason(7, 4, 2, 7));
   });
@@ -254,7 +254,7 @@ describe('profile.service - BKTTCP streak length boundary (cstdcs_lien_tuc stric
   });
 
   it('B3. 8y CSTDCS với flags đủ trong 7y cuối → fail (cstdcs !== 7) - VẠCH TRẦN strict equality', async () => {
-    // Given: 8y contiguous, flags placed in 7-year window 2017-2023
+    // Cho: 8y liên tục, flags đặt trong window 7 năm 2017-2023
     const personnelId = 'qn-bkttcp-B3';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2016, 2023, {
       2018: { nhan_bkbqp: true },
@@ -299,7 +299,7 @@ describe('profile.service - BKTTCP streak length boundary (cstdcs_lien_tuc stric
   });
 
   it('B4b. 13y CSTDCS với flags đủ trong 7y cuối → fail (vẫn không qua dù 13 < 14)', async () => {
-    // 13y user case mentioned in audit — code rejects because cstdcs_lien_tuc !== 7
+    // Case 13y trong audit — code reject vì cstdcs_lien_tuc !== 7
     const personnelId = 'qn-bkttcp-B4-13';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2011, 2023, {
       2018: { nhan_bkbqp: true },
@@ -323,7 +323,7 @@ describe('profile.service - BKTTCP streak length boundary (cstdcs_lien_tuc stric
   });
 
   it('B5. 14y CSTDCS với flags ĐỦ HẾT → "chưa hỗ trợ" (overflow precedes flags check)', async () => {
-    // Given: 14y contiguous, BKTTCP message takes priority over insufficient flags
+    // Cho: 14y liên tục, message BKTTCP ưu tiên hơn check thiếu flag
     const personnelId = 'qn-bkttcp-B5';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2010, 2023, {
       2018: { nhan_bkbqp: true },
@@ -418,7 +418,7 @@ describe('profile.service - BKTTCP streak length boundary (cstdcs_lien_tuc stric
 
 describe('profile.service - BKTTCP đã nhận (lifetime block behavior)', () => {
   it('C1. Đã nhận BKTTCP + 7y CSTDCS mới + đủ flags → block "khen thưởng một lần duy nhất"', async () => {
-    // Given: BKTTCP at 2010 (gap), then fresh 7y chain 2017-2023
+    // Cho: BKTTCP năm 2010 (gap), rồi chuỗi 7y mới 2017-2023
     const personnelId = 'qn-bkttcp-C1';
     const danhHieu: AnnualRow[] = [
       {
@@ -447,7 +447,7 @@ describe('profile.service - BKTTCP đã nhận (lifetime block behavior)', () =>
       DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP
     );
 
-    // Lifetime block fires before insufficient/eligible checks.
+    // Lifetime block kích hoạt trước check insufficient/eligible.
     expect(result.eligible).toBe(false);
     expect(result.reason).toBe(eligibilityReasons.bkttcpLifetimeBlocked);
   });
@@ -510,7 +510,7 @@ describe('profile.service - BKTTCP đã nhận (lifetime block behavior)', () =>
   });
 
   it('C5. Đã nhận BKTTCP + 7y CSTDCS mới + flags ĐỦ + NCKH đủ → block "khen thưởng một lần duy nhất"', async () => {
-    // Lifetime block fires regardless of whether the new chain meets BKTTCP criteria.
+    // Lifetime block kích hoạt bất kể chuỗi mới có đủ tiêu chí BKTTCP hay không.
     const personnelId = 'qn-bkttcp-C5';
     const danhHieu: AnnualRow[] = [
       {
@@ -591,8 +591,8 @@ describe('profile.service - BKTTCP đã nhận (lifetime block behavior)', () =>
   });
 
   it('C4. Recalc với hasReceivedBKTTCP + streak === 7 mới (lúc đầu chuỗi mới) → eligible flag', async () => {
-    // Given: BKTTCP at 2010 then gap, fresh 7y 2017-2023 with full flags
-    // Rule pinned: recalc evaluates du_dieu_kien_bkttcp first; if true, goi_y = eligible
+    // Cho: BKTTCP năm 2010 rồi gap, chuỗi 7y mới 2017-2023 đủ flag
+    // Rule chốt: recalc đánh giá du_dieu_kien_bkttcp trước; nếu true, goi_y = eligible
     const personnelId = 'qn-bkttcp-C4';
     const danhHieu: AnnualRow[] = [
       {
@@ -627,7 +627,7 @@ describe('profile.service - BKTTCP đã nhận (lifetime block behavior)', () =>
 
 describe('profile.service - BKTTCP countFlagInRange edges', () => {
   it('E1. 5y CSTDCS continuous → 1 CSTT → 7y CSTDCS + đủ flags trong 7y mới → eligible BKTTCP', async () => {
-    // Break (CSTT) resets the streak — fresh 7y chain qualifies even though earlier years exist.
+    // Break (CSTT) reset streak — chuỗi 7y mới qualify dù có năm trước đó.
     const personnelId = 'qn-bkttcp-E1';
     const danhHieu: AnnualRow[] = [];
     const nckh: ScienceRow[] = [];
@@ -668,8 +668,8 @@ describe('profile.service - BKTTCP countFlagInRange edges', () => {
   });
 
   it('D1. 13y CSTDCS + 6 BKBQP rải đều (cứ 2y) + 4 CSTDTQ → fail (chỉ 3 BKBQP/2 CSTDTQ trong 7y window, nhưng cstdcs !== 7)', async () => {
-    // Given: 13y CSTDCS contiguous from 2011-2023; BKBQP at 2011/2013/2015/2017/2019/2021,
-    // CSTDTQ at 2014/2017/2020/2023.
+    // Cho: 13y CSTDCS liên tục từ 2011-2023; BKBQP tại 2011/2013/2015/2017/2019/2021,
+    // CSTDTQ tại 2014/2017/2020/2023.
     const personnelId = 'qn-bkttcp-D1';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2011, 2023, {
       2011: { nhan_bkbqp: true },
@@ -686,14 +686,14 @@ describe('profile.service - BKTTCP countFlagInRange edges', () => {
       buildPersonnelWithHistory(personnelId, danhHieu, nckh)
     );
 
-    // When: range 2017-2023 contains BKBQP at 2017/2019/2021 = 3, CSTDTQ at 2017/2020/2023 = 3
+    // Khi: range 2017-2023 chứa BKBQP tại 2017/2019/2021 = 3, CSTDTQ tại 2017/2020/2023 = 3
     const result = await profileService.checkAwardEligibility(
       personnelId,
       2024,
       DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP
     );
 
-    // Then: streak overshoots cycle (13 > 7, not multiple) → missed window message.
+    // Thì: streak vượt cycle (13 > 7, không phải bội số) → message missed window.
     expect(result.eligible).toBe(false);
     expect(result.reason).toBe(eligibilityReasons.bkttcpMissedWindow(13));
   });

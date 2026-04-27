@@ -98,7 +98,7 @@ describe('approveProposal — HC_QKQT', () => {
       ValidationError,
       { startsWith: 'Kiểm tra lại điều kiện trước khi phê duyệt thất bại:\n' }
     );
-    // The reason text uses formatServiceDuration — check the message contains the personnel name
+    // Lý do dùng formatServiceDuration — message phải chứa tên quân nhân
     expect(err.message).toContain(personnel.ho_ten);
     expect(err.message).toContain('HC QKQT');
     expect(prismaMock.huanChuongQuanKyQuyetThang.create).not.toHaveBeenCalled();

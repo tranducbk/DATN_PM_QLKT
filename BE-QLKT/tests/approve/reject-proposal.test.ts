@@ -21,7 +21,7 @@ const MANAGER_ID = 'acc-manager-reject-1';
 
 describe('rejectProposal', () => {
   it('từ chối đề xuất PENDING thành công, lưu lý do và người duyệt', async () => {
-    // Given: a pending proposal
+    // Given: đề xuất đang PENDING
     const proposal = makeProposal({
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
@@ -31,11 +31,11 @@ describe('rejectProposal', () => {
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
     prismaMock.bangDeXuat.updateMany.mockResolvedValueOnce({ count: 1 });
 
-    // When: admin rejects with reason
+    // When: admin từ chối kèm lý do
     const reason = 'Hồ sơ chưa đầy đủ minh chứng';
     const result = await proposalService.rejectProposal(proposal.id, reason, ADMIN_ID);
 
-    // Then: updateMany called with REJECTED + rejection_reason + nguoi_duyet_id
+    // Then: updateMany nhận REJECTED + rejection_reason + nguoi_duyet_id
     expect(prismaMock.bangDeXuat.updateMany).toHaveBeenCalledTimes(1);
     const updateArgs = prismaMock.bangDeXuat.updateMany.mock.calls[0][0];
     expect(updateArgs.where).toEqual({ id: proposal.id, status: PROPOSAL_STATUS.PENDING });
@@ -48,7 +48,7 @@ describe('rejectProposal', () => {
   });
 
   it('từ chối đề xuất đã APPROVED → ValidationError', async () => {
-    // Given: an approved proposal
+    // Given: đề xuất đã APPROVED
     const proposal = makeProposal({
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
@@ -57,7 +57,7 @@ describe('rejectProposal', () => {
     });
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
 
-    // When / Then
+    // When / Then: kiểm tra lỗi
     await expectError(
       proposalService.rejectProposal(proposal.id, 'Lý do', ADMIN_ID),
       ValidationError,
@@ -67,10 +67,10 @@ describe('rejectProposal', () => {
   });
 
   it('từ chối đề xuất không tồn tại → NotFoundError', async () => {
-    // Given: no proposal in DB
+    // Given: không có đề xuất nào trong DB
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(null);
 
-    // When / Then
+    // When / Then: kiểm tra lỗi
     await expectError(
       proposalService.rejectProposal('prop-missing', 'Lý do bất kỳ', ADMIN_ID),
       NotFoundError,
@@ -80,7 +80,7 @@ describe('rejectProposal', () => {
   });
 
   it('từ chối đề xuất đã REJECTED trước đó → ValidationError', async () => {
-    // Given: a previously rejected proposal
+    // Given: đề xuất đã từng bị REJECTED trước đó
     const proposal = makeProposal({
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
@@ -89,7 +89,7 @@ describe('rejectProposal', () => {
     });
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
 
-    // When / Then
+    // When / Then: kiểm tra lỗi
     await expectError(
       proposalService.rejectProposal(proposal.id, 'Lý do', ADMIN_ID),
       ValidationError,
@@ -99,7 +99,7 @@ describe('rejectProposal', () => {
   });
 
   it('từ chối với lý do dài (> 200 ký tự) lưu nguyên vẹn vào rejection_reason', async () => {
-    // Given: a pending proposal and a long reason
+    // Given: đề xuất PENDING và lý do dài
     const proposal = makeProposal({
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: 2024,
@@ -114,10 +114,10 @@ describe('rejectProposal', () => {
       'Cần bổ sung minh chứng cụ thể về thành tích huấn luyện, công tác Đảng-công tác chính trị, ' +
       'và kết quả đánh giá nội bộ năm 2024 trước khi xem xét lại.';
 
-    // When
+    // When: gọi từ chối
     const result = await proposalService.rejectProposal(proposal.id, longReason, ADMIN_ID);
 
-    // Then
+    // Then: lý do được lưu nguyên vẹn
     const updateArgs = prismaMock.bangDeXuat.updateMany.mock.calls[0][0];
     expect(updateArgs.data.rejection_reason).toBe(longReason);
     expect(result.result.ly_do).toBe(longReason);

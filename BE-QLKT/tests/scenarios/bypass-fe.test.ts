@@ -81,7 +81,7 @@ function callSubmitCaNhan(
 
 describe('Bypass FE — payload shape attacks', () => {
   it('titleData = null → ValidationError "Dữ liệu đề xuất không hợp lệ"', async () => {
-    // Given: an attacker submits a JSON body with titleData explicitly null
+    // Given: attacker submit JSON body với titleData = null tường minh
     arrangeManager();
 
     // When + Then
@@ -101,7 +101,7 @@ describe('Bypass FE — payload shape attacks', () => {
   });
 
   it('titleData = "string" → ValidationError vì không phải mảng', async () => {
-    // Given: titleData is a primitive string instead of an array
+    // Given: titleData là string nguyên thủy thay vì mảng
     arrangeManager();
 
     await expectError(
@@ -120,7 +120,7 @@ describe('Bypass FE — payload shape attacks', () => {
   });
 
   it('userId không có QuanNhan → NotFoundError exact', async () => {
-    // Given: account exists but has no linked personnel relation
+    // Given: tài khoản tồn tại nhưng không gắn QuanNhan
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       id: 'acc-orphan',
       username: 'orphan',
@@ -146,8 +146,8 @@ describe('Bypass FE — payload shape attacks', () => {
 
 describe('Bypass FE — year and month boundary attacks', () => {
   it('nam = -1 → service vẫn tạo proposal (KHÔNG validate phía service)', async () => {
-    // Note: Joi validation lives at the route layer; the service does not guard `nam` range.
-    // This test pins the current behavior — see "Rule mơ hồ phát hiện" in the audit report.
+    // Note: Joi validation ở route layer; service không guard range `nam`.
+    // Test này pin behavior hiện tại — xem "Rule mơ hồ phát hiện" trong audit report.
     arrangeManager();
     const target = makePersonnel({ id: 'qn-neg-year' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([target]);
@@ -166,13 +166,13 @@ describe('Bypass FE — year and month boundary attacks', () => {
       -1
     );
 
-    // The service stores nam = -1 unchanged — Joi at the route should have rejected it earlier.
+    // Service lưu nam = -1 nguyên xi — Joi ở route lẽ ra đã reject từ sớm.
     expect(prismaMock.bangDeXuat.create).toHaveBeenCalledTimes(1);
     expect(prismaMock.bangDeXuat.create.mock.calls[0][0].data.nam).toBe(-1);
   });
 
   it('nam = 9999 (tương lai) → service vẫn tạo proposal — pins behavior', async () => {
-    // Pinned: service does not guard against far-future years.
+    // Pinned: service không guard năm tương lai xa.
     arrangeManager();
     const target = makePersonnel({ id: 'qn-9999' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([target]);
@@ -195,7 +195,7 @@ describe('Bypass FE — year and month boundary attacks', () => {
   });
 
   it('thang = 0 cho HC_QKQT → reject với SUBMIT_MISSING_MONTH_ERROR', async () => {
-    // HC_QKQT requires a month in [1, 12]; service rejects 0
+    // HC_QKQT yêu cầu tháng [1, 12]; service reject 0
     arrangeManager();
     const target = makePersonnel({
       id: 'qn-hc-thang0',
@@ -249,8 +249,8 @@ describe('Bypass FE — year and month boundary attacks', () => {
 
 describe('Bypass FE — invalid references', () => {
   it('personnel_id không tồn tại → service tạo proposal nhưng map.ho_ten = ""', async () => {
-    // Service does NOT abort when personnel cannot be found; it stores empty ho_ten.
-    // The route-layer guard normally rejects this, but the service is permissive.
+    // Service KHÔNG abort khi không tìm thấy QN; lưu ho_ten rỗng.
+    // Guard ở route layer thường reject, nhưng service permissive.
     arrangeManager();
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([]);
     prismaMock.bangDeXuat.create.mockResolvedValueOnce({

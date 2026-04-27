@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Table, Select, Alert, Typography, Space, Tag, Button, message, Empty } from 'antd';
 import { EditOutlined, HistoryOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
@@ -97,17 +97,7 @@ export function Step3SetTitlesDonViHangNam({
   const [allUnitAnnualAwards, setAllUnitAnnualAwards] = useState<Record<string, any>>({});
   const [loadingModal, setLoadingModal] = useState(false);
 
-  useEffect(() => {
-    if (selectedUnitIds.length > 0) {
-      fetchUnitDetails();
-      fetchUnitAnnualProfiles();
-    } else {
-      setUnits([]);
-      onTitleDataChange([]);
-    }
-  }, [selectedUnitIds]);
-
-  const fetchUnitDetails = async () => {
+  const fetchUnitDetails = useCallback(async () => {
     try {
       setLoading(true);
       // Admin must fetch all units, not just their own
@@ -144,9 +134,10 @@ export function Step3SetTitlesDonViHangNam({
     } finally {
       setLoading(false);
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedUnitIds, onTitleDataChange]);
 
-  const fetchUnitAnnualProfiles = async () => {
+  const fetchUnitAnnualProfiles = useCallback(async () => {
     if (!selectedUnitIds || selectedUnitIds.length === 0) return;
     const hideMessage = message.loading('Đang tính toán lại hồ sơ đơn vị...', 0);
     try {
@@ -172,7 +163,17 @@ export function Step3SetTitlesDonViHangNam({
       hideMessage();
       message.error('Có lỗi khi tính toán hồ sơ');
     }
-  };
+  }, [selectedUnitIds, nam]);
+
+  useEffect(() => {
+    if (selectedUnitIds.length > 0) {
+      fetchUnitDetails();
+      fetchUnitAnnualProfiles();
+    } else {
+      setUnits([]);
+      onTitleDataChange([]);
+    }
+  }, [selectedUnitIds, fetchUnitDetails, fetchUnitAnnualProfiles, onTitleDataChange]);
 
   const getSelectedDanhHieuType = (): SelectedDanhHieuMixType => {
     const selectedDanhHieus = titleData.map(item => item.danh_hieu).filter(Boolean) as string[];

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Table,
   Input,
@@ -79,13 +79,7 @@ export function Step2SelectPersonnelHCQKQT({
     setLocalThang(thang);
   }, [thang]);
 
-  useEffect(() => {
-    if (personnel.length > 0) {
-      checkAlreadyReceived();
-    }
-  }, [personnel]);
-
-  const checkAlreadyReceived = async () => {
+  const checkAlreadyReceived = useCallback(async () => {
     try {
       setCheckingReceived(true);
       const receivedMap: Record<string, boolean> = {};
@@ -118,7 +112,13 @@ export function Step2SelectPersonnelHCQKQT({
     } finally {
       setCheckingReceived(false);
     }
-  };
+  }, [personnel]);
+
+  useEffect(() => {
+    if (personnel.length > 0) {
+      checkAlreadyReceived();
+    }
+  }, [personnel, checkAlreadyReceived]);
 
   const fetchPersonnel = async () => {
     try {

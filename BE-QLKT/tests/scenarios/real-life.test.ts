@@ -92,7 +92,7 @@ function arrangeKncSubmit(input: {
       ngay_xuat_ngu: input.ngay_xuat_ngu ?? null,
     },
   ]);
-  // checkDuplicateAward (KNC) — no actual award, no pending proposal
+  // checkDuplicateAward (KNC) — chưa có award, không có đề xuất pending
   prismaMock.kyNiemChuongVSNXDQDNDVN.findFirst.mockResolvedValueOnce(null);
   prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
   prismaMock.quanNhan.findMany.mockResolvedValueOnce([
@@ -138,7 +138,7 @@ function callSubmitHcqkqt(personnelId: string, managerId: string, nam = 2024, th
 
 describe('Chuyên gia khen thưởng — KNC VSNXD QĐNDVN (gender boundary)', () => {
   it('QN nữ phục vụ đúng 20 năm → submit thành công', async () => {
-    // Given: female personnel enlisted exactly 20 years before the proposal date
+    // Given: QN nữ nhập ngũ đúng 20 năm trước ngày đề xuất
     const target = makePersonnel({ id: 'qn-nu-20', ho_ten: 'Nguyễn Thị Hai' });
     const ngayNhapNgu = new Date('2004-06-30');
     arrangeKncSubmit({
@@ -148,14 +148,14 @@ describe('Chuyên gia khen thưởng — KNC VSNXD QĐNDVN (gender boundary)', (
       gioi_tinh: 'NU',
     });
 
-    // When + Then: 20 years for female meets KNC_YEARS_REQUIRED_NU
+    // When + Then: 20 năm với nữ đạt KNC_YEARS_REQUIRED_NU
     await expect(callSubmitKnc(target.id, ADMIN_ID)).resolves.toMatchObject({
       message: 'Đã gửi đề xuất khen thưởng thành công',
     });
   });
 
   it('QN nữ 19 năm → submit reject với reason exact', async () => {
-    // Given: female personnel just below the 20-year threshold (xuat_ngu pinned for determinism)
+    // Given: QN nữ thiếu chút để đạt mốc 20 năm (xuat_ngu pin để ổn định)
     const target = makePersonnel({ id: 'qn-nu-19', ho_ten: 'Trần Thị Ba' });
     const ngayNhapNgu = new Date('2005-06-30');
     const ngayXuatNgu = new Date('2024-06-30');
@@ -176,7 +176,7 @@ describe('Chuyên gia khen thưởng — KNC VSNXD QĐNDVN (gender boundary)', (
   });
 
   it('QN nam phục vụ 24 năm → submit reject với reason exact (yêu cầu 25 năm)', async () => {
-    // Given: male personnel below the 25-year threshold
+    // Given: QN nam thiếu mốc 25 năm
     const target = makePersonnel({ id: 'qn-nam-24', ho_ten: 'Lê Văn Bốn' });
     const ngayNhapNgu = new Date('2000-06-30');
     arrangeKncSubmit({
@@ -187,7 +187,7 @@ describe('Chuyên gia khen thưởng — KNC VSNXD QĐNDVN (gender boundary)', (
       gioi_tinh: 'NAM',
     });
 
-    // When + Then: 24 years male → not eligible
+    // When + Then: nam 24 năm → không đủ điều kiện
     await expectError(
       callSubmitKnc(target.id, ADMIN_ID),
       ValidationError,
@@ -196,7 +196,7 @@ describe('Chuyên gia khen thưởng — KNC VSNXD QĐNDVN (gender boundary)', (
   });
 
   it('QN nam phục vụ 25 năm → submit thành công', async () => {
-    // Given: male personnel meeting the 25-year baseline
+    // Given: QN nam đạt mốc 25 năm
     const target = makePersonnel({ id: 'qn-nam-25', ho_ten: 'Phạm Văn Năm' });
     const ngayNhapNgu = new Date('1999-06-30');
     arrangeKncSubmit({
@@ -213,7 +213,7 @@ describe('Chuyên gia khen thưởng — KNC VSNXD QĐNDVN (gender boundary)', (
   });
 
   it('QN gioi_tinh = null → reject với "Chưa cập nhật thông tin giới tính"', async () => {
-    // Given: personnel record without gender data — KNC pre-validation must catch it
+    // Given: QN thiếu giới tính — pre-validation KNC phải bắt được
     const target = makePersonnel({ id: 'qn-no-gender', ho_ten: 'Hoàng Văn Sáu' });
     const ngayNhapNgu = new Date('1995-01-01');
     arrangeKncSubmit({
@@ -231,7 +231,7 @@ describe('Chuyên gia khen thưởng — KNC VSNXD QĐNDVN (gender boundary)', (
   });
 
   it('QN có ngay_xuat_ngu sớm → tính tới ngày xuất ngũ, không phải refDate', async () => {
-    // Given: male personnel discharged in 2020 with 19 years served — must NOT be calculated up to today
+    // Given: QN nam xuất ngũ 2020 với 19 năm phục vụ — KHÔNG tính tới hôm nay
     const target = makePersonnel({ id: 'qn-xn', ho_ten: 'Đỗ Văn Bảy' });
     const ngayNhapNgu = new Date('2001-06-30');
     const ngayXuatNgu = new Date('2020-06-30');
@@ -284,7 +284,7 @@ describe('Chuyên gia khen thưởng — HCQKQT 25 năm boundary', () => {
       },
     ]);
 
-    // When + Then: 24 years 11 months < 25 years
+    // When + Then: 24 năm 11 tháng < 25 năm
     await expectError(
       callSubmitHcqkqt(target.id, 'acc-hc-1'),
       ValidationError,
@@ -293,7 +293,7 @@ describe('Chuyên gia khen thưởng — HCQKQT 25 năm boundary', () => {
   });
 
   it('Approve với QN 24 năm 11 tháng → reject với reason exact dùng formatServiceDuration', async () => {
-    // Given: an HCQKQT proposal that bypassed FE; approve must re-validate eligibility
+    // Given: đề xuất HCQKQT bypass FE; approve phải re-validate điều kiện
     const target = makePersonnel({ id: 'qn-hc-approve' });
     const proposal = makeProposal({
       id: 'p-hcqkqt-fail',
@@ -320,11 +320,11 @@ describe('Chuyên gia khen thưởng — HCQKQT 25 năm boundary', () => {
           ngay_xuat_ngu: new Date('2024-06-01'),
         },
       ]);
-    // checkDuplicateAward(HC_QKQT) — no existing
+    // checkDuplicateAward(HC_QKQT) — chưa tồn tại
     prismaMock.huanChuongQuanKyQuyetThang.findFirst.mockResolvedValueOnce(null);
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
 
-    // months from 1999-07 to 2024-06 = (2024-1999)*12 + (5-6) = 299 → 24y 11m
+    // số tháng từ 1999-07 đến 2024-06 = (2024-1999)*12 + (5-6) = 299 → 24n 11t
     const expectedDuration = 299;
     await expectError(
       proposalService.approveProposal(proposal.id, {}, ADMIN_ID, {}, {}, null),
@@ -337,7 +337,7 @@ describe('Chuyên gia khen thưởng — HCQKQT 25 năm boundary', () => {
 
 describe('Chuyên gia khen thưởng — chuỗi BKBQP/CSTDTQ exact reasons', () => {
   it('CSTDCS năm 2022 + 2023 + NCKH đủ → eligible BKBQP với reason "Đủ điều kiện"', async () => {
-    // Given: minimal 2-year contiguous CSTDCS streak with NCKH coverage
+    // Given: chuỗi CSTDCS liên tục 2 năm tối thiểu kèm NCKH đủ
     const personnelId = 'qn-real-bk-2y';
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(
       buildHistory(
@@ -361,7 +361,7 @@ describe('Chuyên gia khen thưởng — chuỗi BKBQP/CSTDTQ exact reasons', ()
   });
 
   it('3y CSTDCS + 1 BKBQP TRONG streak → eligible CSTDTQ với reason exact', async () => {
-    // Given: 3-year contiguous CSTDCS, BKBQP flag at year 2 of the streak
+    // Given: CSTDCS liên tục 3 năm, flag BKBQP ở năm thứ 2 của chuỗi
     const personnelId = 'qn-real-cs-3y';
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(
       buildHistory(
@@ -386,7 +386,7 @@ describe('Chuyên gia khen thưởng — chuỗi BKBQP/CSTDTQ exact reasons', ()
   });
 
   it('13 năm CSTDCS không "chưa hỗ trợ" — phải bám exact full reason', async () => {
-    // Given: 13 contiguous CSTDCS years (no chain flags) — neither divisible by 7 nor 7 exactly
+    // Given: 13 năm CSTDCS liên tục (không flag chuỗi) — không chia hết 7 và không bằng 7
     const personnelId = 'qn-real-13y';
     const dh: AnnualRow[] = [];
     const nckh: ScienceRow[] = [];
@@ -403,14 +403,14 @@ describe('Chuyên gia khen thưởng — chuỗi BKBQP/CSTDTQ exact reasons', ()
     );
 
     expect(result.eligible).toBe(false);
-    // Exact match — exposes any wording change in the reason template
+    // Match chính xác — phát hiện mọi thay đổi câu chữ trong template reason
     expect(result.reason).toBe(eligibilityReasons.bkttcpMissedWindow(13));
   });
 });
 
 describe('Chuyên gia khen thưởng — duplicate one-time awards (HC_QKQT)', () => {
   it('QN đã có HC_QKQT → submit lại reject với message exact', async () => {
-    // Given: an HC_QKQT record already exists in DB
+    // Given: đã có record HC_QKQT trong DB
     const target = makePersonnel({ id: 'qn-existing-hc' });
     const account = makeAdmin({ id: 'acc-hc-dup' });
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
@@ -427,8 +427,8 @@ describe('Chuyên gia khen thưởng — duplicate one-time awards (HC_QKQT)', (
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([
       { ...target, ngay_nhap_ngu: new Date('1990-01-01'), ngay_xuat_ngu: null },
     ]);
-    // Submit path does not call checkDuplicateAward for HC_QKQT — but approve does.
-    // Here we exercise approve to verify the lifetime duplicate guard.
+    // Submit không gọi checkDuplicateAward cho HC_QKQT — nhưng approve có gọi.
+    // Ta gọi approve để kiểm tra guard duplicate trọn đời.
     const proposal = makeProposal({
       id: 'p-hcqkqt-dup',
       loai: PROPOSAL_TYPES.HC_QKQT,

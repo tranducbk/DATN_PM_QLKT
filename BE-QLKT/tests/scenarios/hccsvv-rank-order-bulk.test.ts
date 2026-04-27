@@ -35,10 +35,10 @@ function arrangeNienHanBulk({ personnel, existingHCCSVV = [] }: ArrangeOptions) 
   // validatePersonnelConditions: quanNhan.findMany (full select)
   prismaMock.quanNhan.findMany.mockResolvedValueOnce(personnel);
 
-  // personnelMap fetch (HC_QKQT/NIEN_HAN/KNC branch)
+  // Lấy personnelMap (nhánh HC_QKQT/NIEN_HAN/KNC)
   prismaMock.quanNhan.findMany.mockResolvedValueOnce(personnel);
 
-  // Rank-order query (new)
+  // Query rank-order (mới)
   prismaMock.khenThuongHCCSVV.findMany.mockResolvedValueOnce(
     existingHCCSVV.map(r => ({ quan_nhan_id: r.quan_nhan_id, danh_hieu: r.danh_hieu, nam: r.nam }))
   );

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Table,
   Select,
@@ -147,16 +147,7 @@ export function Step3SetTitlesCaNhanHangNam({
   const [annualProfiles, setAnnualProfiles] = useState<Record<string, any>>({});
   const [loadingProfiles, setLoadingProfiles] = useState(false);
 
-  useEffect(() => {
-    if (selectedPersonnelIds.length === 0) {
-      setPersonnel([]);
-      onTitleDataChange([]);
-      return;
-    }
-    fetchData();
-  }, [selectedPersonnelIds]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     const hideMessage = message.loading('Đang tải dữ liệu và tính toán hồ sơ...', 0);
     try {
       setLoading(true);
@@ -211,7 +202,17 @@ export function Step3SetTitlesCaNhanHangNam({
       setLoading(false);
       setLoadingProfiles(false);
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPersonnelIds, nam, onTitleDataChange]);
+
+  useEffect(() => {
+    if (selectedPersonnelIds.length === 0) {
+      setPersonnel([]);
+      onTitleDataChange([]);
+      return;
+    }
+    fetchData();
+  }, [selectedPersonnelIds, fetchData, onTitleDataChange]);
 
   const getDanhHieuGroup = (danhHieu?: string | null): DanhHieuGroup => {
     if (!danhHieu) return null;

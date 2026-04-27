@@ -775,8 +775,8 @@ describe('Proposal race conditions', () => {
   });
 
   it('Admin xóa CSTDCS giữa lúc manager submit BKBQP → reject với reason cụ thể', async () => {
-    // Race: manager fetched profile showing 2 CSTDCS years (eligible for BKBQP),
-    // admin then deleted one CSTDCS, manager clicks submit. Eligibility recompute on submit.
+    // Race: manager fetch profile thấy 2 năm CSTDCS (đủ BKBQP),
+    // admin xóa 1 CSTDCS, manager bấm submit. Submit tính lại eligibility.
     const unit = makeUnit({ kind: 'CQDV', id: 'cqdv-race-delete' });
     const target = makePersonnel({ id: 'qn-race-delete', ho_ten: 'QN Bị Xóa', unit });
     const managerQn = makePersonnel({ id: 'qn-mgr-delete', ho_ten: 'Manager', unit });
@@ -795,8 +795,8 @@ describe('Proposal race conditions', () => {
     prismaMock.danhHieuHangNam.findFirst.mockResolvedValue(null);
     prismaMock.bangDeXuat.findMany.mockResolvedValue([]);
 
-    // Override default eligibility mock with the failing reason that profileService
-    // would return after the delete: BKBQP requires 2y CSTDCS but only 1 remains.
+    // Override mock eligibility mặc định với reason fail mà profileService
+    // sẽ trả về sau khi xóa: BKBQP cần 2 năm CSTDCS nhưng chỉ còn 1.
     (profileService.checkAwardEligibility as jest.Mock).mockResolvedValue({
       eligible: false,
       reason:
@@ -820,8 +820,8 @@ describe('Proposal race conditions', () => {
   });
 
   it('Admin xóa CSTDCS giữa lúc proposal BKBQP pending → approve fail với recheck', async () => {
-    // Race: proposal PENDING with BKBQP item, admin deletes CSTDCS,
-    // admin then approves. approveProposal recomputes eligibility on the fresh DB state.
+    // Race: proposal PENDING có BKBQP item, admin xóa CSTDCS,
+    // rồi admin approve. approveProposal tính lại eligibility theo state mới.
     const unit = makeUnit({ kind: 'CQDV', id: 'cqdv-race-approve-delete' });
     const target = makePersonnel({ id: 'qn-race-approve-delete', ho_ten: 'QN Pending', unit });
     const proposal = makeProposal({

@@ -135,6 +135,9 @@ export function SystemLogsPageContent({ basePath }: SystemLogsPageContentProps) 
       setLoading(false);
       setTableLoading(false);
     }
+    // Depending on the full `pagination` object would loop because fetchLogs
+    // updates pagination.total inside; only current/pageSize should re-fire fetch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters, pagination.current, pagination.pageSize]);
 
   useEffect(() => {

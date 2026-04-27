@@ -79,7 +79,7 @@ async function makeExcelBuffer(rows: Record<string, unknown>[]): Promise<Buffer>
 
 describe('Bulk dup — same personnel + same danh_hieu in one proposal payload', () => {
   it('Submit CA_NHAN_HANG_NAM với 2 items trùng (qn-A, CSTDCS) → reject DUPLICATE_IN_PAYLOAD', async () => {
-    // Given: two CSTDCS items for the same personnel in one proposal
+    // Given: 2 item CSTDCS cùng quân nhân trong 1 proposal
     arrangeManager();
     const target = makePersonnel({ id: 'qn-dup-payload', ho_ten: 'Trùng A' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([target]);
@@ -105,10 +105,10 @@ describe('Bulk dup — same personnel + same danh_hieu in one proposal payload',
 
 describe('Bulk dup — duplicate personnel_ids in bulkCreateAnnualRewards', () => {
   it('personnel_ids = [qn1, qn1, qn1] → service iterate 3 lần, mock create 3 lần (KHÔNG dedupe)', async () => {
-    // Pin: bulkCreateAnnualRewards.personnelIds is iterated as-is; the in-memory
-    // existingRewardMap is built once before the transaction starts so subsequent
-    // iterations don't see records created earlier in the same loop.
-    // TODO: dedupe `personnel_ids` at service entry to prevent unique-constraint races.
+    // Pin: bulkCreateAnnualRewards.personnelIds duyệt nguyên xi; existingRewardMap
+    // build 1 lần trước transaction nên các vòng lặp sau không thấy record vừa tạo
+    // trong cùng loop.
+    // TODO: dedupe `personnel_ids` tại entry service để tránh unique-constraint race.
     const target = makePersonnel({ id: 'qn-dup-bulk', ho_ten: 'QN Lặp' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([target]);
     prismaMock.danhHieuHangNam.findMany.mockResolvedValueOnce([]);
@@ -146,7 +146,7 @@ describe('Bulk dup — duplicate personnel_ids in bulkCreateAnnualRewards', () =
       so_quyet_dinh: 'QD-DUP',
     });
 
-    // Pin: 3 creates fire (in production this would hit unique-constraint on the 2nd write)
+    // Pin: 3 lệnh create chạy (production sẽ dính unique-constraint ở write thứ 2)
     expect(result.success).toBe(3);
     expect(prismaMock.danhHieuHangNam.create).toHaveBeenCalledTimes(3);
   });
@@ -186,8 +186,8 @@ describe('Bulk dup — Excel rows referencing same personnel + nam', () => {
 
     const result = await annualRewardService.previewImport(buffer);
 
-    // First row valid; second blocked because seenInFile keys on personnel+nam (NOT danh_hieu).
-    // Pin: same QN + same year is treated as duplicate even with different danh_hieu in the file.
+    // Row đầu hợp lệ; row sau bị chặn vì seenInFile key theo personnel+nam (KHÔNG có danh_hieu).
+    // Pin: cùng QN + cùng năm bị coi là trùng dù khác danh_hieu trong file.
     expect(result.valid).toHaveLength(1);
     expect(result.errors).toHaveLength(1);
     expect(result.errors[0].message).toBe(BULK_DUP_EXCEL_FILE_DUPLICATE(2024));
@@ -196,7 +196,7 @@ describe('Bulk dup — Excel rows referencing same personnel + nam', () => {
 
 describe('Bulk dup — DON_VI_HANG_NAM duplicate units in payload', () => {
   it('2 items cùng don_vi_id + cùng danh_hieu → reject DUPLICATE_IN_PAYLOAD', async () => {
-    // Given: same unit with same DVQT title twice in one proposal
+    // Given: cùng đơn vị + cùng danh hiệu ĐVQT xuất hiện 2 lần trong 1 proposal
     arrangeManager();
     prismaMock.coQuanDonVi.findUnique.mockResolvedValue({
       id: 'cqdv-dup',

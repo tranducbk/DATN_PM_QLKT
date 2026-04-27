@@ -69,7 +69,7 @@ function arrangeProposalCreate(id: string) {
 
 describe('Type confusion — numeric vs string nam/thang', () => {
   it('nam = "2024" (string) → service parseInt, lưu number 2024', async () => {
-    // Pin: submitProposal calls parseInt(String(nam), 10) before persisting
+    // Pin: submitProposal gọi parseInt(String(nam), 10) trước khi lưu
     arrangeManager();
     const target = makePersonnel({ id: 'qn-str-nam' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([target]);
@@ -124,11 +124,11 @@ describe('Type confusion — numeric vs string nam/thang', () => {
   });
 
   it('thang = "abc" (parseInt → NaN) cho HC_QKQT → service KHÔNG bắt NaN ở guard, fail muộn ở step khác', async () => {
-    // Pin: `parsedMonth = parseInt('abc', 10)` is NaN. The guard
-    // `parsedMonth == null || parsedMonth < 1 || parsedMonth > 12` evaluates to false for NaN
-    // (all NaN comparisons are false), so the SUBMIT_MISSING_MONTH branch is skipped.
-    // The flow then drops into HC_QKQT eligibility lookup which surfaces a different error.
-    // TODO: replace `< 1 || > 12` with `!Number.isInteger(parsedMonth) || ...` to catch NaN.
+    // Pin: `parsedMonth = parseInt('abc', 10)` ra NaN. Guard
+    // `parsedMonth == null || parsedMonth < 1 || parsedMonth > 12` đánh giá false với NaN
+    // (mọi so sánh NaN đều false), nên nhánh SUBMIT_MISSING_MONTH bị skip.
+    // Flow rơi vào lookup eligibility HC_QKQT và surface lỗi khác.
+    // TODO: thay `< 1 || > 12` bằng `!Number.isInteger(parsedMonth) || ...` để bắt NaN.
     arrangeManager();
     const target = makePersonnel({
       id: 'qn-bad-thang',
@@ -149,7 +149,7 @@ describe('Type confusion — numeric vs string nam/thang', () => {
         'abc' as unknown as number
       ),
       ValidationError,
-      // Flow reaches HC_QKQT eligibility — quanNhan.findUnique → null → "Không tìm thấy quân nhân"
+      // Flow tới eligibility HC_QKQT — quanNhan.findUnique → null → "Không tìm thấy quân nhân"
       'Một số quân nhân chưa đủ điều kiện để đề xuất Huy chương Quân kỳ quyết thắng (yêu cầu >= 25 năm phục vụ):\nqn-bad-thang: Không tìm thấy quân nhân'
     );
   });
@@ -157,10 +157,10 @@ describe('Type confusion — numeric vs string nam/thang', () => {
 
 describe('Type confusion — danh_hieu casing & duplicate detection', () => {
   it('danh_hieu = "cstdcs" (lowercase) trong CA_NHAN_HANG_NAM → reject INVALID_DANH_HIEU', async () => {
-    // Pin: service compares against the exact code "CSTDCS" — lowercase is rejected.
-    // Excel import uses resolveDanhHieuCode which is case-insensitive, but the proposal
-    // submit path does NOT normalize — the route should pre-validate.
-    // TODO: route Joi enforces uppercase; service-level normalization would close the gap.
+    // Pin: service so sánh exact code "CSTDCS" — chữ thường bị reject.
+    // Excel import dùng resolveDanhHieuCode case-insensitive, nhưng proposal
+    // submit KHÔNG normalize — route phải pre-validate.
+    // TODO: Joi route enforce uppercase; normalize ở service sẽ kín kẽ hơn.
     arrangeManager();
     const target = makePersonnel({ id: 'qn-lower-dh' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([target]);
@@ -180,7 +180,7 @@ describe('Type confusion — danh_hieu casing & duplicate detection', () => {
   });
 
   it('Duplicate check approve dùng exact code matching — "CSTDCS" vs "CSTDCS" (cùng case) → bắt', async () => {
-    // Pin: with exact-case input, duplicate detection on stored DanhHieuHangNam works.
+    // Pin: input đúng case thì duplicate detection trên DanhHieuHangNam lưu sẵn hoạt động.
     const target = makePersonnel({ id: 'qn-dup-exact' });
     const existing = makeAnnualRecord({
       personnelId: target.id,
@@ -213,7 +213,7 @@ describe('Type confusion — danh_hieu casing & duplicate detection', () => {
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([
       { id: target.id, ho_ten: target.ho_ten },
     ]);
-    // CSTDCS approve also probes the CSTT mutually-exclusive partner — both lookups return existing.
+    // Approve CSTDCS cũng probe CSTT (loại trừ nhau) — cả 2 lookup đều trả existing.
     prismaMock.danhHieuHangNam.findFirst
       .mockResolvedValueOnce(existing)
       .mockResolvedValueOnce(existing);
@@ -235,11 +235,11 @@ describe('Type confusion — danh_hieu casing & duplicate detection', () => {
 
 describe('Type confusion — whitespace & empty string', () => {
   it('personnel_id = " qn-1 " (có space) → service KHÔNG trim, treat as ID khác', async () => {
-    // Pin: submitProposal passes personnel_id verbatim into Prisma `findMany({ id: { in: [...] }})`.
-    // The mock returns no row for the trimmed value because we set up qn-1 only.
-    // TODO: trim personnel_id at service entry to avoid silent "không tìm thấy" lookups.
+    // Pin: submitProposal pass personnel_id nguyên xi vào `findMany({ id: { in: [...] }})`.
+    // Mock không trả row nào cho giá trị đã trim vì ta chỉ set up qn-1.
+    // TODO: trim personnel_id tại entry service để tránh lookup "không tìm thấy" thầm lặng.
     arrangeManager();
-    prismaMock.quanNhan.findMany.mockResolvedValue([]); // " qn-1 " not matched
+    prismaMock.quanNhan.findMany.mockResolvedValue([]); // " qn-1 " không match
     prismaMock.bangDeXuat.findMany.mockResolvedValue([]);
     prismaMock.danhHieuHangNam.findFirst.mockResolvedValue(null);
     arrangeProposalCreate('p-space');
@@ -253,7 +253,7 @@ describe('Type confusion — whitespace & empty string', () => {
       null
     );
 
-    // Service stores the untrimmed ID and ho_ten = "" (because personnelMap doesn't match)
+    // Service lưu ID chưa trim và ho_ten = "" (vì personnelMap không match)
     const stored = prismaMock.bangDeXuat.create.mock.calls[0][0].data
       .data_danh_hieu as Array<{ personnel_id: string; ho_ten: string }>;
     expect(stored[0].personnel_id).toBe(' qn-1 ');
@@ -261,7 +261,7 @@ describe('Type confusion — whitespace & empty string', () => {
   });
 
   it('personnel_id rỗng "" → service skip lookup nhưng vẫn lưu vào data_danh_hieu', async () => {
-    // Pin: empty personnel_id is filtered from the findMany call but the proposal item is still persisted
+    // Pin: personnel_id rỗng bị filter khỏi findMany nhưng item proposal vẫn được lưu
     arrangeManager();
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([]);
     arrangeProposalCreate('p-empty');

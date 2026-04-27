@@ -27,11 +27,11 @@ beforeEach(() => {
   jest
     .spyOn(unitAnnualAwardService, 'recalculateAnnualUnit')
     .mockResolvedValue(undefined as unknown as never);
-  // Default chain-eligibility stub — overridden per-test for bypass scenarios.
+  // Stub chain-eligibility mặc định — override theo từng test khi cần bypass.
   jest
     .spyOn(unitAnnualAwardService, 'checkUnitAwardEligibility')
     .mockResolvedValue({ eligible: true, reason: '' });
-  // Default duplicate-check stubs: nothing pending in DB.
+  // Stub check trùng mặc định: không có gì pending trong DB.
   prismaMock.bangDeXuat.findMany.mockResolvedValue([]);
 });
 
@@ -43,7 +43,7 @@ const ADMIN_ID = 'acc-admin-2';
 
 describe('approveProposal — DON_VI_HANG_NAM', () => {
   it('duyệt thành công với ĐVQT (CQDV) → upsert đúng don_vi và status APPROVED', async () => {
-    // Given: pending unit-annual proposal with one ĐVQT item for a CQDV
+    // Given: đề xuất đơn vị hằng năm PENDING với 1 item ĐVQT cho CQDV
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-uv-1' });
     const item = makeProposalItemDonVi({
       unitKind: 'CQDV',
@@ -75,7 +75,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
     );
     prismaMock.bangDeXuat.updateMany.mockResolvedValueOnce({ count: 1 });
 
-    // When
+    // When: gọi duyệt
     await proposalService.approveProposal(
       proposal.id,
       {},
@@ -85,7 +85,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
       null
     );
 
-    // Then
+    // Then: create đúng don_vi và status APPROVED
     expect(prismaMock.danhHieuDonViHangNam.create).toHaveBeenCalledTimes(1);
     const createArgs = prismaMock.danhHieuDonViHangNam.create.mock.calls[0][0];
     expect(createArgs.data.danh_hieu).toBe(DANH_HIEU_DON_VI_HANG_NAM.DVQT);
@@ -100,7 +100,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
   });
 
   it('duyệt thành công với BKBQP (DVTT) → create set nhan_bkbqp và DonViTrucThuoc connect', async () => {
-    // Given: DVTT proposal carrying a unit BKBQP flag (no DV title)
+    // Given: đề xuất DVTT mang flag BKBQP đơn vị (không có DV title)
     const dvtt = makeUnit({ kind: 'DVTT', id: 'dvtt-uv-1', parentId: 'cqdv-parent-uv' });
     const item = makeProposalItemDonVi({
       unitKind: 'DVTT',
@@ -132,7 +132,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
     );
     prismaMock.bangDeXuat.updateMany.mockResolvedValueOnce({ count: 1 });
 
-    // When
+    // When: gọi duyệt
     await proposalService.approveProposal(
       proposal.id,
       {},
@@ -142,7 +142,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
       null
     );
 
-    // Then
+    // Then: create set nhan_bkbqp và DonViTrucThuoc connect đúng
     const createArgs = prismaMock.danhHieuDonViHangNam.create.mock.calls[0][0];
     expect(createArgs.data.nhan_bkbqp).toBe(true);
     expect(createArgs.data.danh_hieu).toBeNull();
@@ -151,7 +151,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
   });
 
   it('reject khi proposal đã APPROVED', async () => {
-    // Given: already approved unit proposal
+    // Given: đề xuất đơn vị đã APPROVED
     const proposal = makeProposal({
       id: 'prop-uv-already',
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
@@ -161,7 +161,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
     });
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
 
-    // When + Then
+    // When + Then: kiểm tra lỗi
     await expectError(
       proposalService.approveProposal(proposal.id, {}, ADMIN_ID, {}, {}, null),
       ValidationError,
@@ -182,7 +182,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
   });
 
   it('bypass FE — reject mixed group ĐVQT + BKBQP cùng đề xuất', async () => {
-    // Given: unit proposal mixes ĐVQT (basic) with BKBQP (chain) — FE forbids; bypassed here
+    // Given: đề xuất đơn vị trộn ĐVQT (basic) + BKBQP (chain) — FE chặn, ở đây bypass
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-mixed' });
     const proposal = makeProposal({
       id: 'prop-uv-mixed-1',
@@ -206,7 +206,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([]);
 
-    // When + Then
+    // When + Then: kiểm tra lỗi
     await expectError(
       proposalService.approveProposal(proposal.id, {}, ADMIN_ID, {}, {}, null),
       ValidationError,
@@ -218,7 +218,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
   });
 
   it('bypass FE — reject mixed group ĐVTT + BKTTCP cùng đề xuất', async () => {
-    // Given: ĐVTT (basic) + BKTTCP (chain) in same proposal
+    // Given: ĐVTT (basic) + BKTTCP (chain) cùng 1 đề xuất
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-mixed-2' });
     const proposal = makeProposal({
       id: 'prop-uv-mixed-2',
@@ -242,7 +242,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([]);
 
-    // When + Then
+    // When + Then: kiểm tra lỗi
     await expectError(
       proposalService.approveProposal(proposal.id, {}, ADMIN_ID, {}, {}, null),
       ValidationError,
@@ -252,7 +252,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
   });
 
   it('bypass FE — reject mixed group ĐVQT + BKTTCP cùng đề xuất', async () => {
-    // Given: another mixed-group variant
+    // Given: một biến thể nhóm trộn khác
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-mixed-3' });
     const proposal = makeProposal({
       id: 'prop-uv-mixed-3',
@@ -276,7 +276,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([]);
 
-    // When + Then
+    // When + Then: kiểm tra lỗi
     await expectError(
       proposalService.approveProposal(proposal.id, {}, ADMIN_ID, {}, {}, null),
       ValidationError,
@@ -287,7 +287,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
   });
 
   it('đơn vị đã có record cùng năm → reject duplicate (Fix #2)', async () => {
-    // Given: an existing unit record for the same year already exists
+    // Given: đơn vị đã có record cùng năm trong DB
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-existing' });
     const item = makeProposalItemDonVi({
       unitKind: 'CQDV',
@@ -314,7 +314,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([]);
     prismaMock.danhHieuDonViHangNam.findFirst.mockResolvedValueOnce(existing);
 
-    // When + Then: duplicate check rejects before transaction runs
+    // When + Then: check trùng reject trước khi vào transaction
     const dupErr = await expectError(
       proposalService.approveProposal(proposal.id, {}, ADMIN_ID, {}, {}, null),
       ValidationError,
@@ -330,7 +330,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
   });
 
   it('reject pending conflict cùng đơn vị/danh hiệu/năm (Fix #2)', async () => {
-    // Given: another PENDING proposal already covers the same unit/year/danh_hieu
+    // Given: đã có 1 đề xuất PENDING khác cùng đơn vị/năm/danh_hieu
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-pending-conflict' });
     const item = makeProposalItemDonVi({
       unitKind: 'CQDV',
@@ -378,7 +378,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
   });
 
   it('bypass FE — reject khi đơn vị chưa đủ ĐK BKBQP đơn vị', async () => {
-    // Given: BKBQP item but unit eligibility returns false
+    // Given: item BKBQP nhưng eligibility đơn vị trả false
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-not-elig-bk' });
     const item = makeProposalItemDonVi({
       unitKind: 'CQDV',
@@ -538,7 +538,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([]);
     prismaMock.danhHieuDonViHangNam.findFirst.mockResolvedValueOnce(null);
 
-    // When + Then
+    // When + Then: kiểm tra lỗi
     const err = await expectError(
       proposalService.approveProposal(proposal.id, {}, ADMIN_ID, {}, {}, null),
       ValidationError,
@@ -627,7 +627,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([]);
     prismaMock.danhHieuDonViHangNam.findFirst.mockResolvedValueOnce(null);
 
-    // When + Then
+    // When + Then: kiểm tra lỗi
     const err = await expectError(
       proposalService.approveProposal(proposal.id, {}, ADMIN_ID, {}, {}, null),
       ValidationError,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Table, Select, Alert, Typography, Space, Tag, message, Button, Input, Empty } from 'antd';
 import { EditOutlined, HistoryOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
@@ -77,16 +77,7 @@ export function Step3SetTitlesCongHien({
   const [positionHistory, setPositionHistory] = useState<any[]>([]);
   const [loadingModal, setLoadingModal] = useState(false);
 
-  useEffect(() => {
-    if (selectedPersonnelIds.length > 0) {
-      fetchPersonnelDetails();
-    } else {
-      setPersonnel([]);
-      onTitleDataChange([]);
-    }
-  }, [selectedPersonnelIds, nam, thang]);
-
-  const fetchPersonnelDetails = async () => {
+  const fetchPersonnelDetails = useCallback(async () => {
     try {
       setLoading(true);
       const promises = selectedPersonnelIds.map(id => apiClient.getPersonnelById(id));
@@ -160,7 +151,17 @@ export function Step3SetTitlesCongHien({
     } finally {
       setLoading(false);
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPersonnelIds, nam, thang, onTitleDataChange]);
+
+  useEffect(() => {
+    if (selectedPersonnelIds.length > 0) {
+      fetchPersonnelDetails();
+    } else {
+      setPersonnel([]);
+      onTitleDataChange([]);
+    }
+  }, [selectedPersonnelIds, nam, thang, fetchPersonnelDetails, onTitleDataChange]);
 
   const fetchPositionHistories = async (personnelList: Personnel[]) => {
     try {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, Spin, message, ConfigProvider, Tag, Breadcrumb } from 'antd';
 import { UserOutlined, HomeOutlined } from '@ant-design/icons';
@@ -26,11 +26,7 @@ export function ProfileViewForm({
   const [loading, setLoading] = useState(true);
   const [personnelData, setPersonnelData] = useState<PersonnelDetail | null>(null);
 
-  useEffect(() => {
-    loadPersonnelData();
-  }, [externalPersonnelId]);
-
-  const loadPersonnelData = async () => {
+  const loadPersonnelData = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -75,7 +71,11 @@ export function ProfileViewForm({
     } finally {
       setLoading(false);
     }
-  };
+  }, [externalPersonnelId, router]);
+
+  useEffect(() => {
+    loadPersonnelData();
+  }, [loadPersonnelData]);
 
   if (loading) {
     return (

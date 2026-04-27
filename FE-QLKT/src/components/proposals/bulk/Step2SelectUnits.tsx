@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Table,
   Input,
@@ -63,16 +63,7 @@ export function Step2SelectUnits({
   const CURRENT_YEAR = new Date().getFullYear();
   const [localNam, setLocalNam] = useState<number | null>(nam);
 
-  // Fetch all units
-  useEffect(() => {
-    fetchUnits();
-  }, []);
-
-  useEffect(() => {
-    setLocalNam(nam);
-  }, [nam]);
-
-  const fetchUnits = async () => {
+  const fetchUnits = useCallback(async () => {
     try {
       setLoading(true);
       const response = isManager ? await apiClient.getMyUnits() : await apiClient.getUnits();
@@ -123,7 +114,15 @@ export function Step2SelectUnits({
     } finally {
       setLoading(false);
     }
-  };
+  }, [isManager]);
+
+  useEffect(() => {
+    fetchUnits();
+  }, [fetchUnits]);
+
+  useEffect(() => {
+    setLocalNam(nam);
+  }, [nam]);
 
   // Filter units
   const filteredUnits = units.filter(unit => {

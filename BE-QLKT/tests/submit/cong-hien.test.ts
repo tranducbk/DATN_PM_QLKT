@@ -17,7 +17,7 @@ import {
 
 beforeEach(() => {
   resetPrismaMock();
-  // Default no-duplicate state — individual tests override to simulate conflicts.
+  // Mặc định không có duplicate — từng test override để giả lập conflict.
   prismaMock.khenThuongHCBVTQ.findFirst.mockResolvedValue(null);
   prismaMock.bangDeXuat.findMany.mockResolvedValue([]);
 });
@@ -102,7 +102,7 @@ function mockBangDeXuatCreated(id = 'p-ch-1') {
 
 describe('proposal.submit - CONG_HIEN (HCBVTQ)', () => {
   it('gửi thành công với hệ số TB 0.85 (60 tháng 0.8 + 60 tháng 0.9) → proposal lưu data_cong_hien', async () => {
-    // Given: a manager + 1 male personnel + 120 months across hệ số groups 0.8 and 0.9
+    // Cho trước: 1 manager + 1 quân nhân nam + 120 tháng trải hệ số 0.8 và 0.9
     arrangeCongHienManager('CQDV');
     const target = makePersonnel({
       id: 'qn-ch-1',
@@ -129,12 +129,12 @@ describe('proposal.submit - CONG_HIEN (HCBVTQ)', () => {
     prismaMock.lichSuChucVu.findMany.mockResolvedValue(histories);
     mockBangDeXuatCreated('p-ch-1');
 
-    // When
+    // Khi
     await callCongHienSubmit([
       { personnel_id: target.id, danh_hieu: DANH_HIEU_HCBVTQ.HANG_NHI },
     ]);
 
-    // Then
+    // Kết quả
     expect(prismaMock.bangDeXuat.create).toHaveBeenCalledTimes(1);
     const data = prismaMock.bangDeXuat.create.mock.calls[0][0].data;
     expect(data.loai_de_xuat).toBe(PROPOSAL_TYPES.CONG_HIEN);
@@ -346,7 +346,7 @@ describe('proposal.submit - CONG_HIEN (HCBVTQ)', () => {
         ngay_ket_thuc: new Date('2023-12-31'),
       },
     ]);
-    // Only `dup` triggers duplicate; findFirst is called per personnel in the loop.
+    // Chỉ `dup` trigger duplicate; findFirst gọi từng quân nhân trong loop.
     prismaMock.khenThuongHCBVTQ.findFirst.mockImplementation(
       async (args: { where: { quan_nhan_id: string } }) => {
         if (args.where.quan_nhan_id === dup.id) {

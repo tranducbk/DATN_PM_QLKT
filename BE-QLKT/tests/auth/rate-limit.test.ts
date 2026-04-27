@@ -57,8 +57,8 @@ function makeReq(ip: string): Request {
 }
 
 /**
- * Drives a rate-limit middleware once and returns whether it called next() (allowed)
- * or invoked res.status/json (blocked).
+ * Chạy 1 lần middleware rate-limit và trả về kết quả: gọi next() (allowed)
+ * hay gọi res.status/json (blocked).
  */
 async function hitLimiter(
   limiter: RequestHandler,
@@ -81,7 +81,7 @@ async function hitLimiter(
       return res;
     });
     Promise.resolve(limiter(req, res as unknown as Response, next)).catch(() => {
-      // express-rate-limit does not throw; defensive catch keeps the promise alive.
+      // express-rate-limit không throw; defensive catch để giữ promise alive.
     });
   });
 }

@@ -72,14 +72,14 @@ function DOT_XUAT_makeAdhocRecord(overrides: Record<string, unknown> = {}) {
 
 describe('adhocAward.service - createAdhocAward', () => {
   it('Tạo thành công cho cá nhân với đầy đủ thông tin', async () => {
-    // Given
+    // Cho
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce(DOT_XUAT_makeAdminAccount());
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(DOT_XUAT_makePersonnelRecord());
     prismaMock.khenThuongDotXuat.create.mockResolvedValueOnce(DOT_XUAT_makeAdhocRecord());
     prismaMock.taiKhoan.findMany.mockResolvedValueOnce([]);
     prismaMock.taiKhoan.findFirst.mockResolvedValueOnce(null);
 
-    // When
+    // Khi
     const result = await adhocAwardService.createAdhocAward({
       adminId: 'acc-admin-dx',
       type: ADHOC_TYPE.CA_NHAN,
@@ -89,7 +89,7 @@ describe('adhocAward.service - createAdhocAward', () => {
       decisionNumber: 'QD-DX-2024',
     });
 
-    // Then
+    // Thì
     expect(result.id).toBe('adh-1');
     const createCall = prismaMock.khenThuongDotXuat.create.mock.calls[0][0] as {
       data: Record<string, unknown>;
@@ -100,14 +100,14 @@ describe('adhocAward.service - createAdhocAward', () => {
   });
 
   it('Non-admin role gọi create → ForbiddenError', async () => {
-    // Given
+    // Cho
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       id: 'acc-mgr',
       username: 'mgr',
       role: ROLES.MANAGER,
     });
 
-    // When / Then
+    // Khi / Thì
     await expect(
       adhocAwardService.createAdhocAward({
         adminId: 'acc-mgr',
@@ -120,11 +120,11 @@ describe('adhocAward.service - createAdhocAward', () => {
   });
 
   it('Quân nhân không tồn tại → NotFoundError', async () => {
-    // Given
+    // Cho
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce(DOT_XUAT_makeAdminAccount());
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(null);
 
-    // When / Then
+    // Khi / Thì
     await expect(
       adhocAwardService.createAdhocAward({
         adminId: 'acc-admin-dx',
@@ -137,11 +137,11 @@ describe('adhocAward.service - createAdhocAward', () => {
   });
 
   it('Đơn vị (CQDV) không tồn tại → NotFoundError', async () => {
-    // Given
+    // Cho
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce(DOT_XUAT_makeAdminAccount());
     prismaMock.coQuanDonVi.findUnique.mockResolvedValueOnce(null);
 
-    // When / Then
+    // Khi / Thì
     await expect(
       adhocAwardService.createAdhocAward({
         adminId: 'acc-admin-dx',
@@ -157,15 +157,15 @@ describe('adhocAward.service - createAdhocAward', () => {
 
 describe('adhocAward.service - getAdhocAwards (pagination)', () => {
   it('Trả pagination + data', async () => {
-    // Given
+    // Cho
     const records = [DOT_XUAT_makeAdhocRecord()];
     prismaMock.khenThuongDotXuat.count.mockResolvedValueOnce(1);
     prismaMock.khenThuongDotXuat.findMany.mockResolvedValueOnce(records);
 
-    // When
+    // Khi
     const result = await adhocAwardService.getAdhocAwards({ page: 1, limit: 20 });
 
-    // Then
+    // Thì
     expect(result.data).toHaveLength(1);
     expect(result.pagination).toEqual({
       page: 1,
@@ -178,7 +178,7 @@ describe('adhocAward.service - getAdhocAwards (pagination)', () => {
 
 describe('adhocAward.service - updateAdhocAward', () => {
   it('Cập nhật thành công khi admin hợp lệ', async () => {
-    // Given
+    // Cho
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce(DOT_XUAT_makeAdminAccount());
     prismaMock.khenThuongDotXuat.findUnique.mockResolvedValueOnce(DOT_XUAT_makeAdhocRecord());
     prismaMock.khenThuongDotXuat.update.mockResolvedValueOnce(
@@ -187,14 +187,14 @@ describe('adhocAward.service - updateAdhocAward', () => {
     prismaMock.taiKhoan.findMany.mockResolvedValueOnce([]);
     prismaMock.taiKhoan.findFirst.mockResolvedValueOnce(null);
 
-    // When
+    // Khi
     const result = await adhocAwardService.updateAdhocAward({
       id: 'adh-1',
       adminId: 'acc-admin-dx',
       awardForm: 'Khen thưởng đột xuất B',
     });
 
-    // Then
+    // Thì
     expect(result.hinh_thuc_khen_thuong).toBe('Khen thưởng đột xuất B');
     const updateCall = prismaMock.khenThuongDotXuat.update.mock.calls[0][0] as {
       data: Record<string, unknown>;
@@ -203,11 +203,11 @@ describe('adhocAward.service - updateAdhocAward', () => {
   });
 
   it('Update record không tồn tại → NotFoundError', async () => {
-    // Given
+    // Cho
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce(DOT_XUAT_makeAdminAccount());
     prismaMock.khenThuongDotXuat.findUnique.mockResolvedValueOnce(null);
 
-    // When / Then
+    // Khi / Thì
     await expect(
       adhocAwardService.updateAdhocAward({
         id: 'adh-not-exist',
@@ -219,27 +219,27 @@ describe('adhocAward.service - updateAdhocAward', () => {
 
 describe('adhocAward.service - deleteAdhocAward', () => {
   it('Xóa thành công và trả { success: true }', async () => {
-    // Given
+    // Cho
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce(DOT_XUAT_makeAdminAccount());
     prismaMock.khenThuongDotXuat.findUnique.mockResolvedValueOnce(DOT_XUAT_makeAdhocRecord());
     prismaMock.khenThuongDotXuat.delete.mockResolvedValueOnce(DOT_XUAT_makeAdhocRecord());
     prismaMock.taiKhoan.findMany.mockResolvedValueOnce([]);
     prismaMock.taiKhoan.findFirst.mockResolvedValueOnce(null);
 
-    // When
+    // Khi
     const result = await adhocAwardService.deleteAdhocAward('adh-1', 'acc-admin-dx');
 
-    // Then
+    // Thì
     expect(result).toEqual({ success: true });
     expect(prismaMock.khenThuongDotXuat.delete).toHaveBeenCalledWith({ where: { id: 'adh-1' } });
   });
 
   it('Delete record không tồn tại → NotFoundError', async () => {
-    // Given
+    // Cho
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce(DOT_XUAT_makeAdminAccount());
     prismaMock.khenThuongDotXuat.findUnique.mockResolvedValueOnce(null);
 
-    // When / Then
+    // Khi / Thì
     await expect(
       adhocAwardService.deleteAdhocAward('adh-not-exist', 'acc-admin-dx')
     ).rejects.toThrow('Khen thưởng đột xuất không tồn tại');

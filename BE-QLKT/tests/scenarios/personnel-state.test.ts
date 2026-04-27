@@ -41,7 +41,7 @@ const ADMIN_ID = 'acc-state-admin';
 
 describe('Personnel state mid-flow — discharge, transfer, delete', () => {
   it('QN xuất ngũ giữa năm proposal → approve HCQKQT vẫn tính tới ngay_xuat_ngu (không tới refDate)', async () => {
-    // Given: proposal nam=2024 thang=12, but personnel discharged 2024-06-30 with only 24y served
+    // Given: proposal nam=2024 thang=12, QN xuất ngũ 2024-06-30 mới phục vụ 24 năm
     const target = makePersonnel({ id: 'qn-discharge-mid' });
     const proposal = makeProposal({
       id: 'p-discharge',
@@ -67,7 +67,7 @@ describe('Personnel state mid-flow — discharge, transfer, delete', () => {
     prismaMock.huanChuongQuanKyQuyetThang.findFirst.mockResolvedValueOnce(null);
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
 
-    // When + Then: 2000-07 to 2024-06 = 287 months = 23y 11m → reject
+    // When + Then: 2000-07 đến 2024-06 = 287 tháng = 23n 11t → reject
     const expectedMonths = 287;
     await expectError(
       proposalService.approveProposal(proposal.id, {}, ADMIN_ID, {}, {}, null),
@@ -78,7 +78,7 @@ describe('Personnel state mid-flow — discharge, transfer, delete', () => {
   });
 
   it('QN bị xoá hoàn toàn giữa flow → approve HCQKQT throw "Không tìm thấy quân nhân"', async () => {
-    // Given: proposal references qn-ghost which no longer exists
+    // Given: proposal trỏ đến qn-ghost đã không còn tồn tại
     const proposal = makeProposal({
       id: 'p-deleted-qn',
       loai: PROPOSAL_TYPES.HC_QKQT,
@@ -90,7 +90,7 @@ describe('Personnel state mid-flow — discharge, transfer, delete', () => {
       ],
     });
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
-    // First findMany: ho_ten map. Second findMany: HC_QKQT eligibility lookup — both empty.
+    // findMany lần 1: map ho_ten. Lần 2: tra HC_QKQT eligibility — đều rỗng.
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
     prismaMock.huanChuongQuanKyQuyetThang.findFirst.mockResolvedValueOnce(null);
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
@@ -103,7 +103,7 @@ describe('Personnel state mid-flow — discharge, transfer, delete', () => {
   });
 
   it('QN thiếu ngay_nhap_ngu (data corruption) → approve HCQKQT reject với reason exact', async () => {
-    // Given: existing personnel but ngay_nhap_ngu was wiped after submit
+    // Given: QN đã có nhưng ngay_nhap_ngu bị xóa sau khi submit
     const target = makePersonnel({ id: 'qn-no-nhapngu' });
     const proposal = makeProposal({
       id: 'p-no-nhap',
@@ -132,8 +132,8 @@ describe('Personnel state mid-flow — discharge, transfer, delete', () => {
   });
 
   it('ngay_xuat_ngu < ngay_nhap_ngu (data corruption) → service clamp 0 tháng, reject "0 năm"', async () => {
-    // Given: corrupted dates where discharge is before enlistment — calculateServiceMonths clamps to 0
-    // TODO: service should reject this corruption upstream instead of pretending months=0
+    // Given: ngày bị lỗi (xuất ngũ trước nhập ngũ) — calculateServiceMonths clamp về 0
+    // TODO: service nên reject corruption này thay vì giả bộ months=0
     const target = makePersonnel({ id: 'qn-corrupt-dates' });
     const proposal = makeProposal({
       id: 'p-corrupt',
@@ -159,7 +159,7 @@ describe('Personnel state mid-flow — discharge, transfer, delete', () => {
     prismaMock.huanChuongQuanKyQuyetThang.findFirst.mockResolvedValueOnce(null);
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
 
-    // months clamps to 0 — formatServiceDuration(0) → "0 tháng"
+    // months clamp về 0 — formatServiceDuration(0) → "0 tháng"
     await expectError(
       proposalService.approveProposal(proposal.id, {}, ADMIN_ID, {}, {}, null),
       ValidationError,
@@ -168,9 +168,9 @@ describe('Personnel state mid-flow — discharge, transfer, delete', () => {
   });
 
   it('QN chuyển đơn vị giữa flow → approve vẫn dùng đơn vị cũ trong proposal record', async () => {
-    // Given: proposal stored under CQDV cũ; QN row now points to CQDV mới.
-    // The proposal's co_quan_don_vi_id is the source of truth — it does NOT re-resolve from QN.
-    // TODO: surface a warning to the approver when the linked QN unit drifts from the proposal.
+    // Given: proposal lưu CQDV cũ; QN row giờ trỏ CQDV mới.
+    // proposal.co_quan_don_vi_id là source of truth — KHÔNG tra lại từ QN.
+    // TODO: cảnh báo người duyệt khi đơn vị QN lệch với đơn vị trong proposal.
     const oldUnit = makeUnit({ kind: 'CQDV', id: 'cqdv-old' });
     const newUnit = makeUnit({ kind: 'CQDV', id: 'cqdv-new' });
     const target = makePersonnel({ id: 'qn-transfer', unit: newUnit });
@@ -192,8 +192,8 @@ describe('Personnel state mid-flow — discharge, transfer, delete', () => {
     });
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
 
-    // Approve already-approved proposal short-circuits — but this exposes that the
-    // proposal.co_quan_don_vi_id stays pinned to the original unit even after QN transfers.
+    // Approve proposal đã approved sẽ short-circuit — nhưng pin được rằng
+    // proposal.co_quan_don_vi_id vẫn giữ đơn vị gốc dù QN đã chuyển.
     await expectError(
       proposalService.approveProposal(proposal.id, {}, ADMIN_ID, {}, {}, null),
       ValidationError,

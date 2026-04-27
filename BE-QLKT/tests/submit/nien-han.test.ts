@@ -57,7 +57,7 @@ function callSubmit(items: NienHanItem[], thang: number | null = 6, nam = 2024) 
 
 describe('proposal.submit - NIEN_HAN', () => {
   it('gửi thành công 1 item HCCSVV hạng ba (CQDV)', async () => {
-    // Given: a manager + 1 personnel with 12 years of service
+    // Cho trước: 1 manager + 1 quân nhân đã 12 năm phục vụ
     arrangeManagerWithUnit('CQDV');
     const target = makePersonnel({
       id: 'qn-1',
@@ -76,10 +76,10 @@ describe('proposal.submit - NIEN_HAN', () => {
       NguoiDeXuat: { id: 'acc-mgr-1', username: 'admin', QuanNhan: null },
     });
 
-    // When
+    // Khi
     await callSubmit([{ personnel_id: target.id, danh_hieu: DANH_HIEU_HCCSVV.HANG_BA }]);
 
-    // Then: proposal created with NIEN_HAN payload + thang preserved
+    // Kết quả: proposal tạo với payload NIEN_HAN + giữ nguyên thang
     expect(prismaMock.bangDeXuat.create).toHaveBeenCalledTimes(1);
     const data = prismaMock.bangDeXuat.create.mock.calls[0][0].data;
     expect(data.loai_de_xuat).toBe(PROPOSAL_TYPES.NIEN_HAN);
