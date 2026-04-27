@@ -165,7 +165,6 @@ export default function ProposalDetailPage() {
             ? JSON.parse(congHienData)
             : [];
 
-        const today = dayjs().format('YYYY-MM-DD');
         setEditedDanhHieu(parsedDanhHieu);
         setEditedThanhTich(parsedThanhTich);
         setEditedNienHan(
@@ -1489,7 +1488,6 @@ export default function ProposalDetailPage() {
                           }
                           const thang = bulkMonthPicker.month() + 1;
                           const nam = bulkMonthPicker.year();
-                          let applied = 0;
                           const eligible = editedNienHan.filter(
                             (item, idx) =>
                               bulkSelectedSet.has(String(idx)) && !!item.so_quyet_dinh?.trim()

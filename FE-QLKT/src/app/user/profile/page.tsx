@@ -101,7 +101,7 @@ export default function UserProfilePage() {
   const { isDark } = useTheme();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [personnelId, setPersonnelId] = useState<string | null>(null);
+  const [, setPersonnelId] = useState<string | null>(null);
   const [personnelInfo, setPersonnelInfo] = useState<PersonnelDetail | null>(null);
   const [annualRewards, setAnnualRewards] = useState<AnnualRewardRow[]>([]);
   const [scientificAchievements, setScientificAchievements] = useState<ScientificAchievementRow[]>([]);
@@ -133,42 +133,6 @@ export default function UserProfilePage() {
       ELIGIBILITY_STATUS_MAP[status ?? ''] || ELIGIBILITY_STATUS_MAP[ELIGIBILITY_STATUS.CHUA_DU];
     return <Tag color={s.color}>{s.label}</Tag>;
   };
-
-  const InfoGrid = ({ items }: { items: Array<{ label: string; value?: ReactNode }> }) => (
-    <div className="overflow-x-auto">
-      <table
-        className={`min-w-full rounded-lg border ${
-          isDark ? 'border-gray-700 bg-gray-900/60' : 'border-gray-200 bg-white'
-        }`}
-      >
-        <tbody>
-          {items.map(item => (
-            <tr
-              key={item.label}
-              className={`border-b last:border-b-0 ${
-                isDark ? 'border-gray-800' : 'border-gray-100'
-              }`}
-            >
-              <td
-                className={`px-4 py-3 text-sm font-semibold w-48 ${
-                  isDark ? 'text-gray-400' : 'text-gray-600'
-                }`}
-              >
-                {item.label}
-              </td>
-              <td
-                className={`px-4 py-3 text-base break-words ${
-                  isDark ? 'text-gray-200' : 'text-gray-800'
-                }`}
-              >
-                {item.value ?? '-'}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
 
   const handleOpenDecisionFile = async (soQuyetDinh: string) => {
     await downloadDecisionFile(soQuyetDinh);
@@ -259,109 +223,6 @@ export default function UserProfilePage() {
 
     fetchData();
   }, []);
-
-  const annualRewardsColumns = [
-    {
-      title: 'STT',
-      key: 'index',
-      width: 80,
-      align: 'center' as const,
-      render: (_: unknown, __: unknown, index: number) => index + 1,
-    },
-    {
-      title: 'Năm',
-      dataIndex: 'nam',
-      key: 'nam',
-      width: 100,
-      align: 'center' as const,
-      sorter: (a: AnnualRewardRow, b: AnnualRewardRow) => a.nam - b.nam,
-    },
-    {
-      title: 'Danh hiệu',
-      dataIndex: 'danh_hieu',
-      key: 'danh_hieu',
-      width: 300,
-      align: 'center' as const,
-      render: (text: string, record: AnnualRewardRow) => {
-        if (!text) return '-';
-
-        const decisions: ReactNode[] = [];
-
-        if (record.so_quyet_dinh_bkbqp && record.so_quyet_dinh_bkbqp.trim() !== '') {
-          decisions.push(
-            <div key="bkbqp" style={{ marginTop: '8px', fontSize: '13px', textAlign: 'center' }}>
-              <Text type="secondary">Bằng khen BQP:</Text>{' '}
-              <a
-                onClick={e => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleOpenDecisionFile(record.so_quyet_dinh_bkbqp!);
-                }}
-                style={{
-                  color: '#52c41a',
-                  cursor: 'pointer',
-                  textDecoration: 'underline',
-                }}
-              >
-                {record.so_quyet_dinh_bkbqp}
-              </a>
-            </div>
-          );
-        }
-
-        if (record.so_quyet_dinh_cstdtq && record.so_quyet_dinh_cstdtq.trim() !== '') {
-          decisions.push(
-            <div key="cstdtq" style={{ marginTop: '8px', fontSize: '13px', textAlign: 'center' }}>
-              <Text type="secondary">CSTĐ Toàn quân:</Text>{' '}
-              <a
-                onClick={e => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleOpenDecisionFile(record.so_quyet_dinh_cstdtq!);
-                }}
-                style={{
-                  color: '#52c41a',
-                  cursor: 'pointer',
-                  textDecoration: 'underline',
-                }}
-              >
-                {record.so_quyet_dinh_cstdtq}
-              </a>
-            </div>
-          );
-        }
-
-        if (record.so_quyet_dinh_bkttcp && record.so_quyet_dinh_bkttcp.trim() !== '') {
-          decisions.push(
-            <div key="bkttcp" style={{ marginTop: '8px', fontSize: '13px', textAlign: 'center' }}>
-              <Text type="secondary">BKTTCP:</Text>{' '}
-              <a
-                onClick={e => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleOpenDecisionFile(record.so_quyet_dinh_bkttcp!);
-                }}
-                style={{
-                  color: '#52c41a',
-                  cursor: 'pointer',
-                  textDecoration: 'underline',
-                }}
-              >
-                {record.so_quyet_dinh_bkttcp}
-              </a>
-            </div>
-          );
-        }
-
-        return (
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontWeight: 500 }}>{text}</div>
-            {decisions.length > 0 && <div>{decisions}</div>}
-          </div>
-        );
-      },
-    },
-  ];
 
   const scientificColumns = [
     {

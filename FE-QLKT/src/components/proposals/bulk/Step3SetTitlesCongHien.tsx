@@ -202,14 +202,6 @@ export function Step3SetTitlesCongHien({
     return formatMonthsToText(totalMonths);
   };
 
-  const getDanhHieuOptions = () => {
-    return [
-      { label: 'Huân chương Bảo vệ Tổ quốc hạng Ba', value: 'HCBVTQ_HANG_BA' },
-      { label: 'Huân chương Bảo vệ Tổ quốc hạng Nhì', value: 'HCBVTQ_HANG_NHI' },
-      { label: 'Huân chương Bảo vệ Tổ quốc hạng Nhất', value: 'HCBVTQ_HANG_NHAT' },
-    ];
-  };
-
   const updateTitle = async (id: string, field: string, value: any) => {
     // danh_hieu is auto-set to the highest eligible rank — no manual validation needed
 

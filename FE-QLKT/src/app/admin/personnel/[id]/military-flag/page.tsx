@@ -50,7 +50,7 @@ export default function AdminMilitaryFlagPage() {
   const { theme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [personnel, setPersonnel] = useState<PersonnelDetail | null>(null);
-  const [serviceProfile, setServiceProfile] = useState<ServiceProfile | null>(null);
+  const [, setServiceProfile] = useState<ServiceProfile | null>(null);
   const [flags, setFlags] = useState<MilitaryFlag[]>([]);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);

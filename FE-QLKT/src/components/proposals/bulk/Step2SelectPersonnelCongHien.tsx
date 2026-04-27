@@ -198,25 +198,6 @@ export function Step2SelectPersonnelCongHien({
     return formatMonthsToText(totalMonths);
   };
 
-  /** Checks whether a personnel meets the service-time requirement for a given HCBVTQ rank. */
-  const checkEligibleForRank = (
-    personnelId: string,
-    rank: 'HANG_NHAT' | 'HANG_NHI' | 'HANG_BA'
-  ): boolean => {
-    const person = personnel.find(p => p.id === personnelId);
-    if (!person) return false;
-
-    const requiredMonths = getContributionRequiredMonths(person.gioi_tinh);
-
-    const months07 = getTotalMonthsByGroup(personnelId, '0.7');
-    const months08 = getTotalMonthsByGroup(personnelId, '0.8');
-    const months0910 = getTotalMonthsByGroup(personnelId, '0.9-1.0');
-
-    if (rank === 'HANG_NHAT') return months0910 >= requiredMonths;
-    if (rank === 'HANG_NHI') return months08 + months0910 >= requiredMonths;
-    return months07 + months08 + months0910 >= requiredMonths;
-  };
-
   /** Returns the highest HCBVTQ rank the personnel qualifies for. */
   const getHighestEligibleAward = (personnelId: string): string | null => {
     const person = personnel.find(p => p.id === personnelId);

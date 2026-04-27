@@ -60,7 +60,7 @@ export default function ManagerUnitsPage() {
   const { theme } = useTheme();
   const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
+  const [selectedUnitId] = useState<string | null>(null);
   const [allAwards, setAllAwards] = useState<UnitAnnualAwardRow[]>([]);
   const [awardsLoading, setAwardsLoading] = useState(false);
   const [unitSearch, setUnitSearch] = useState('');

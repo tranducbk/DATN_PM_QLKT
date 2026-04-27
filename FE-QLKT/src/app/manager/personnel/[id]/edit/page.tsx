@@ -119,7 +119,7 @@ export default function ManagerPersonnelEditPage() {
     undefined
   );
   const [currentPositionId, setCurrentPositionId] = useState<string | undefined>(undefined);
-  const [managerUnitId, setManagerUnitId] = useState<string | null>(null);
+  const [, setManagerUnitId] = useState<string | null>(null);
 
   useEffect(() => {
     const unitId = localStorage.getItem('unit_id');
@@ -339,7 +339,7 @@ export default function ManagerPersonnelEditPage() {
                 form={form}
                 layout="vertical"
                 onFinish={onFinish}
-                onFinishFailed={errorInfo => {
+                onFinishFailed={() => {
                   message.error('Vui lòng kiểm tra lại các trường bắt buộc');
                 }}
                 autoComplete="off"

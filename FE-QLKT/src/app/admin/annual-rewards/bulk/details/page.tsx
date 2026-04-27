@@ -132,21 +132,12 @@ export default function BulkRewardDetailsPage() {
     }
   }, [searchParams, router, form]);
 
-  /** Chức vụ + từng quân nhân — một Promise.all (song song hoàn toàn). */
   const loadInitialData = async (personnelIds: string[]) => {
     try {
       setLoading(true);
-      const results = await Promise.all([
-        apiClient.getPositions(),
-        ...personnelIds.map(id => apiClient.getPersonnelById(id)),
-      ]);
-
-      const positionsRes = results[0];
-      const personnelResponses = results.slice(1);
-
-      if (positionsRes.success) {
-        setPositions(positionsRes.data || []);
-      }
+      const personnelResponses = await Promise.all(
+        personnelIds.map(id => apiClient.getPersonnelById(id))
+      );
 
       const personnelInfo = personnelIds
         .map((id, i) => {
@@ -491,8 +482,6 @@ export default function BulkRewardDetailsPage() {
   ];
 
   const formValues = Form.useWatch([], form);
-  const nam = formValues?.nam;
-  const danhHieu = formValues?.danh_hieu;
 
   return (
     <div className="space-y-6 p-6">

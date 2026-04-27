@@ -42,7 +42,6 @@ export function PersonnelTable({
   personnel,
   sttOffset = 0,
   onEdit,
-  onRefresh,
   readOnly = false,
   viewLinkPrefix = '/admin/personnel',
 }: PersonnelTableProps) {

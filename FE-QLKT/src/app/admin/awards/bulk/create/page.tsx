@@ -1072,8 +1072,7 @@ export default function BulkAddAwardsPage() {
 
   // Handle decision modal success
   const handleDecisionSuccess = (
-    decision: { id?: string; so_quyet_dinh: string; nam: number },
-    isNewDecision: boolean = false
+    decision: { id?: string; so_quyet_dinh: string; nam: number }
   ) => {
     // Apply decision number to all selected personnel/units
     const newMap = { ...decisionDataMap };

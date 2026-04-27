@@ -137,11 +137,6 @@ export default function ManagerPersonnelPage() {
     }
   }, [managerUnitId, pagination.page, pagination.limit, searchTerm]);
 
-  const handleSearch = useCallback(() => {
-    setPagination(prev => ({ ...prev, page: 1 }));
-    loadData();
-  }, [loadData]);
-
   const handlePageChange = useCallback((page: number) => {
     setPagination(prev => ({ ...prev, page }));
   }, []);

@@ -53,7 +53,6 @@ export default function AdminServiceRewardsPage() {
   const { theme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [personnel, setPersonnel] = useState<PersonnelDetail | null>(null);
-  const [serviceProfile, setServiceProfile] = useState<ServiceProfile | null>(null);
   const [rewards, setRewards] = useState<ServiceReward[]>([]);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);

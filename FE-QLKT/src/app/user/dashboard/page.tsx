@@ -50,7 +50,7 @@ import type {
   ContributionProfile,
 } from '@/lib/types/personnelList';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 
 const UserDashboardPieChart = dynamic(
   () => import('@/components/charts/PieChart').then(mod => ({ default: mod.PieChart })),

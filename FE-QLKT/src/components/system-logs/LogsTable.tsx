@@ -47,61 +47,6 @@ interface LogsTableProps {
 type SortField = 'time' | 'actor' | 'role' | 'action' | null;
 type SortOrder = 'asc' | 'desc' | null;
 
-// Mapping cho resource labels (kebab-case keys only — getResourceLabel normalizes _ → -)
-const resourceLabels: Record<string, string> = {
-  accounts: 'Tài khoản',
-  personnel: 'Quân nhân',
-  profiles: 'Hồ sơ quân nhân',
-  units: 'Đơn vị',
-  positions: 'Chức vụ',
-  proposals: 'Đề xuất',
-  decisions: 'Quyết định',
-  awards: 'Khen thưởng',
-  'award-bulk': 'Khen thưởng đồng loạt',
-  auth: 'Xác thực',
-  'annual-rewards': 'Khen thưởng cá nhân hằng năm',
-  'unit-annual-awards': 'Khen thưởng đơn vị hằng năm',
-  'adhoc-awards': 'Khen thưởng đột xuất',
-  'tenure-medals': 'Huy chương Chiến sĩ vẻ vang',
-  'contribution-medals': 'Huân chương Bảo vệ Tổ quốc',
-  'commemorative-medals': 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
-  'military-flag': 'Huy chương Quân kỳ quyết thắng',
-  'scientific-achievements': 'Thành tích Nghiên cứu khoa học',
-  'position-history': 'Lịch sử chức vụ',
-  'system-logs': 'Nhật ký hệ thống',
-};
-
-function getResourceLabel(resource: string): string {
-  if (!resource) return '';
-  const normalized = resource.replace(/_/g, '-');
-  return resourceLabels[resource] || resourceLabels[normalized] || resource;
-}
-
-const actionColors: Record<string, string> = {
-  CREATE:
-    'bg-green-100/50 text-green-900 dark:bg-green-900/60 dark:text-green-50 border-green-300 dark:border-green-600',
-  UPDATE:
-    'bg-blue-100/50 text-blue-900 dark:bg-blue-900/60 dark:text-blue-50 border-blue-300 dark:border-blue-600',
-  DELETE:
-    'bg-red-100/50 text-red-900 dark:bg-red-900/60 dark:text-red-50 border-red-300 dark:border-red-600',
-  RESET:
-    'bg-yellow-100/50 text-yellow-900 dark:bg-yellow-900/60 dark:text-yellow-50 border-yellow-300 dark:border-yellow-600',
-  APPROVE:
-    'bg-emerald-100/50 text-emerald-900 dark:bg-emerald-900/60 dark:text-emerald-50 border-emerald-300 dark:border-emerald-600',
-  REJECT:
-    'bg-orange-100/50 text-orange-900 dark:bg-orange-900/60 dark:text-orange-50 border-orange-300 dark:border-orange-600',
-};
-
-function getActionColor(action: string): string {
-  if (action.includes('CREATE')) return actionColors.CREATE;
-  if (action.includes('UPDATE')) return actionColors.UPDATE;
-  if (action.includes('DELETE')) return actionColors.DELETE;
-  if (action.includes('RESET')) return actionColors.RESET;
-  if (action.includes('APPROVE')) return actionColors.APPROVE;
-  if (action.includes('REJECT')) return actionColors.REJECT;
-  return 'bg-gray-100/50 text-gray-900 dark:bg-gray-800/60 dark:text-gray-50 border-gray-300 dark:border-gray-600';
-}
-
 export function LogsTable({ logs, loading, selectedRowKeys, onSelectionChange }: LogsTableProps) {
   const selectable = !!onSelectionChange;
   const [sortField, setSortField] = useState<SortField>(null);

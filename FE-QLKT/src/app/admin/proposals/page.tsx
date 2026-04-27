@@ -91,8 +91,8 @@ export default function AdminProposalsPage() {
   const [decisionModalVisible, setDecisionModalVisible] = useState(false);
   const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
-  const [selectedDecision, setSelectedDecision] = useState<unknown>(null);
-  const [extraordinaryRewardModalVisible, setExtraordinaryRewardModalVisible] = useState(false);
+  const [, setSelectedDecision] = useState<unknown>(null);
+  const [, setExtraordinaryRewardModalVisible] = useState(false);
 
   useEffect(() => {
     fetchProposals();
@@ -530,7 +530,7 @@ export default function AdminProposalsPage() {
           setDecisionModalVisible(false);
           setSelectedDecision(null);
         }}
-        onSuccess={async (decision, isNewDecision) => {
+        onSuccess={async decision => {
           setSelectedDecision(decision);
 
           const selectedProposals = filteredProposals.filter(p => selectedRowKeys.includes(p.id));

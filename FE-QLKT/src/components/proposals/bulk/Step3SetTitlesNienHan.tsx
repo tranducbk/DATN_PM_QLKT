@@ -68,7 +68,7 @@ export function Step3SetTitlesNienHan({
 }: Step3SetTitlesNienHanProps) {
   const [loading, setLoading] = useState(false);
   const [personnel, setPersonnel] = useState<Personnel[]>([]);
-  const [serviceProfilesMap, setServiceProfilesMap] = useState<Record<string, any>>({});
+  const [, setServiceProfilesMap] = useState<Record<string, any>>({});
   const [serviceHistoryModalVisible, setServiceHistoryModalVisible] = useState(false);
   const [selectedPersonnel, setSelectedPersonnel] = useState<Personnel | null>(null);
   const [serviceProfile, setServiceProfile] = useState<ServiceProfile | null>(null);

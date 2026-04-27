@@ -70,7 +70,7 @@ export default function PersonnelPage() {
   const [chucVuSearchValue, setChucVuSearchValue] = useState<string>('');
   const [selectedCapBac, setSelectedCapBac] = useState<string | 'ALL'>('ALL');
   const [positions, setPositions] = useState<ManagerPositionRow[]>([]);
-  const [tableLoading, setTableLoading] = useState(false);
+  const [, setTableLoading] = useState(false);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: DEFAULT_PAGE_SIZE,

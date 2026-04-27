@@ -34,7 +34,6 @@ import { apiClient } from '@/lib/apiClient';
 import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
 
 const { Title, Text } = Typography;
-const { Search } = Input;
 
 /** Một dòng kết quả `checkAnnualRewards`. */
 interface AnnualRewardCheckResultRow {

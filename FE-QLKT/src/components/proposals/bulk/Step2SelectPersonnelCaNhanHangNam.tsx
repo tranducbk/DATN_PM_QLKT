@@ -59,7 +59,6 @@ export function Step2SelectPersonnelCaNhanHangNam({
   onPersonnelChange,
   nam,
   onNamChange,
-  titleData,
   onTitleDataChange,
   onNextStep,
   isManager = false,

@@ -134,7 +134,7 @@ export function Step3SetTitlesCaNhanHangNam({
   const [modalVisible, setModalVisible] = useState(false);
   const [historyModalVisible, setHistoryModalVisible] = useState(false);
   const [selectedPersonnel, setSelectedPersonnel] = useState<Personnel | null>(null);
-  const [loadingModal, setLoadingModal] = useState(false);
+  const [loadingModal] = useState(false);
   const [selectedAnnualProfile, setSelectedAnnualProfile] = useState<AnnualProfile | null>(null);
   const [annualProfiles, setAnnualProfiles] = useState<Record<string, any>>({});
   const [loadingProfiles, setLoadingProfiles] = useState(false);

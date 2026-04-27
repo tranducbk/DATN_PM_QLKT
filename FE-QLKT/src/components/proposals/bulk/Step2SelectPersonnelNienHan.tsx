@@ -203,15 +203,12 @@ export function Step2SelectPersonnelNienHan({
 
     const eligibilityDateBa = new Date(startDate);
     eligibilityDateBa.setFullYear(eligibilityDateBa.getFullYear() + HCCSVV_YEARS_HANG_BA);
-    const eligibilityYearBa = eligibilityDateBa.getFullYear();
 
     const eligibilityDateNhi = new Date(startDate);
     eligibilityDateNhi.setFullYear(eligibilityDateNhi.getFullYear() + HCCSVV_YEARS_HANG_NHI);
-    const eligibilityYearNhi = eligibilityDateNhi.getFullYear();
 
     const eligibilityDateNhat = new Date(startDate);
     eligibilityDateNhat.setFullYear(eligibilityDateNhat.getFullYear() + HCCSVV_YEARS_HANG_NHAT);
-    const eligibilityYearNhat = eligibilityDateNhat.getFullYear();
 
     const proposalYear = localNam ?? new Date().getFullYear();
     const refDate = new Date(proposalYear, localThang, 0);

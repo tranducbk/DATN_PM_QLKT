@@ -35,8 +35,6 @@ export function ActivityLineChart({
 }: ActivityLineChartProps) {
   const { textColor, gridColor } = useChartTheme();
 
-  const hasData = data.length > 0 && data.some(item => item.count > 0);
-
   const chartData = {
     labels: data.length > 0 ? data.map(item => formatChartLabel(item.date)) : ['Chưa có dữ liệu'],
     datasets: [

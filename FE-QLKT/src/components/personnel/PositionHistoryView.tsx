@@ -66,7 +66,6 @@ export function PositionHistoryView({ role }: PositionHistoryViewProps) {
   const [personnel, setPersonnel] = useState<PersonnelDetail | null>(null);
   const [histories, setHistories] = useState<HistoryRecord[]>([]);
   const [positions, setPositions] = useState<any[]>([]);
-  const [units, setUnits] = useState<any[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingHistory, setEditingHistory] = useState<HistoryRecord | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -117,9 +116,6 @@ export function PositionHistoryView({ role }: PositionHistoryViewProps) {
       }
       if (positionsRes.success) {
         setPositions(positionsRes.data || []);
-      }
-      if (role === 'admin' && results[3]?.success) {
-        setUnits(results[3].data || []);
       }
     } catch {
       message.error('Không thể tải dữ liệu');

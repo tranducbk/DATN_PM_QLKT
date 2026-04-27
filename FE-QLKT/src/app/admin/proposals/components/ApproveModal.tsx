@@ -89,7 +89,7 @@ export function ApproveModal({ visible, proposal, onClose, onSuccess }: ApproveM
 
   // Decision autocomplete
   const [decisionOptions, setDecisionOptions] = useState<any[]>([]);
-  const [searchingDecision, setSearchingDecision] = useState(false);
+  const [, setSearchingDecision] = useState(false);
   const [selectedDecision, setSelectedDecision] = useState<DecisionLookupRow | null>(null);
 
   // File upload

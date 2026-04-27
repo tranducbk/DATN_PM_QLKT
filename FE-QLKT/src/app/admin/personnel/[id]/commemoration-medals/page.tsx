@@ -50,7 +50,7 @@ export default function AdminCommemorativeMedalsPage() {
   const { theme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [personnel, setPersonnel] = useState<PersonnelDetail | null>(null);
-  const [commemorationMedals, setCommemorationMedals] = useState<MedalData | null>(null);
+  const [, setCommemorationMedals] = useState<MedalData | null>(null);
   const [medals, setMedals] = useState<CommemorationMedal[]>([]);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
