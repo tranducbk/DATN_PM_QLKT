@@ -3,6 +3,11 @@ import ExcelJS from 'exceljs';
 import { sanitizeRowData } from '../../helpers/excel/excelHelper';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 import { DANH_HIEU_HCBVTQ } from '../../constants/danhHieu.constants';
+import {
+  AWARD_EXCEL_SHEETS,
+  EXCEL_HEADER_FILL_COLOR,
+  PROPOSAL_AWARDS_EXPORT_COLUMNS,
+} from '../../constants/awardExcel.constants';
 
 /**
  * Returns annual-award data for admin oversight with filterable pagination.
@@ -138,27 +143,15 @@ async function exportAllAwardsExcel(filters: Record<string, unknown> = {}) {
   }
 
   const workbook = new ExcelJS.Workbook();
-  const sheet = workbook.addWorksheet('Danh Sách Khen Thưởng');
+  const sheet = workbook.addWorksheet(AWARD_EXCEL_SHEETS.PROPOSAL_AWARDS);
 
-  sheet.columns = [
-    { header: 'STT', key: 'stt', width: 8 },
-    { header: 'CCCD', key: 'cccd', width: 15 },
-    { header: 'Họ và Tên', key: 'ho_ten', width: 30 },
-    { header: 'Đơn Vị', key: 'don_vi', width: 25 },
-    { header: 'Chức Vụ', key: 'chuc_vu', width: 25 },
-    { header: 'Năm', key: 'nam', width: 10 },
-    { header: 'Danh Hiệu', key: 'danh_hieu', width: 15 },
-    { header: 'BKBQP', key: 'bkbqp', width: 10 },
-    { header: 'Số QĐ BKBQP', key: 'so_qd_bkbqp', width: 20 },
-    { header: 'CSTĐTQ', key: 'cstdtq', width: 10 },
-    { header: 'Số QĐ CSTĐTQ', key: 'so_qd_cstdtq', width: 20 },
-  ];
+  sheet.columns = [...PROPOSAL_AWARDS_EXPORT_COLUMNS];
 
   sheet.getRow(1).font = { bold: true };
   sheet.getRow(1).fill = {
     type: 'pattern' as const,
     pattern: 'solid' as const,
-    fgColor: { argb: 'FFD3D3D3' },
+    fgColor: { argb: EXCEL_HEADER_FILL_COLOR },
   };
   sheet.getRow(1).alignment = { horizontal: 'center', vertical: 'middle' };
 

@@ -34,6 +34,8 @@ import {
 } from '../constants/excel.constants';
 import {
   AWARD_EXCEL_SHEETS,
+  EXCEL_HEADER_FILL_COLOR,
+  EXCEL_HIGHLIGHT_FILL_COLOR,
   UNIT_ANNUAL_DANH_HIEU_VALIDATION_FORMULA,
   UNIT_ANNUAL_EXPORT_COLUMNS,
   UNIT_ANNUAL_TEMPLATE_COLUMNS,
@@ -1483,14 +1485,14 @@ class UnitAnnualAwardService {
     headerRowObj.fill = {
       type: 'pattern' as const,
       pattern: 'solid' as const,
-      fgColor: { argb: 'FFD3D3D3' },
+      fgColor: { argb: EXCEL_HEADER_FILL_COLOR },
     };
 
     // Readonly yellow background: STT, ID, unit code, unit name (cols 1-4)
     const readonlyFill = {
       type: 'pattern' as const,
       pattern: 'solid' as const,
-      fgColor: { argb: 'FFFFFFCC' },
+      fgColor: { argb: EXCEL_HIGHLIGHT_FILL_COLOR },
     };
     for (let col = 1; col <= 4; col++) {
       headerRowObj.getCell(col).fill = readonlyFill;
@@ -1607,7 +1609,11 @@ class UnitAnnualAwardService {
             type: 'expression',
             formulae: [`LEN(TRIM(${col}2))>0`],
             style: {
-              fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFCC' } },
+              fill: {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: EXCEL_HIGHLIGHT_FILL_COLOR },
+              },
             },
             priority: 1,
           },

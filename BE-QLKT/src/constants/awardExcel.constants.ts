@@ -11,7 +11,11 @@ export const AWARD_EXCEL_SHEETS = {
   KNC: 'KNC VSNXD QDNDVN',
   HC_QKQT: 'HC QKQT',
   NCKH: 'NCKH',
+  PROPOSAL_AWARDS: 'Danh Sách Khen Thưởng',
 } as const;
+
+export const EXCEL_HEADER_FILL_COLOR = 'FFD3D3D3';
+export const EXCEL_HIGHLIGHT_FILL_COLOR = 'FFFFFFCC';
 
 export const HCCSVV_TEMPLATE_COLUMNS: TemplateColumn[] = [
   { header: 'STT', key: 'stt', width: 6 },
@@ -229,6 +233,20 @@ export const MILITARY_FLAG_EXPORT_COLUMNS = [
   { header: 'Số quyết định', key: 'so_quyet_dinh', width: 20 },
   { header: 'Ghi chú', key: 'ghi_chu', width: 25 },
   { header: 'Đơn vị', key: 'don_vi', width: 30 },
+];
+
+export const PROPOSAL_AWARDS_EXPORT_COLUMNS = [
+  { header: 'STT', key: 'stt', width: 8 },
+  { header: 'CCCD', key: 'cccd', width: 15 },
+  { header: 'Họ và Tên', key: 'ho_ten', width: 30 },
+  { header: 'Đơn Vị', key: 'don_vi', width: 25 },
+  { header: 'Chức Vụ', key: 'chuc_vu', width: 25 },
+  { header: 'Năm', key: 'nam', width: 10 },
+  { header: 'Danh Hiệu', key: 'danh_hieu', width: 15 },
+  { header: 'BKBQP', key: 'bkbqp', width: 10 },
+  { header: 'Số QĐ BKBQP', key: 'so_qd_bkbqp', width: 20 },
+  { header: 'CSTĐTQ', key: 'cstdtq', width: 10 },
+  { header: 'Số QĐ CSTĐTQ', key: 'so_qd_cstdtq', width: 20 },
 ];
 
 export const PERSONNEL_EXPORT_COLUMNS = [
