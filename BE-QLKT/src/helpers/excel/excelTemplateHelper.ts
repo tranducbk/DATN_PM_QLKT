@@ -1,9 +1,7 @@
 import ExcelJS from 'exceljs';
-import { prisma } from '../../models';
 import {
   CAP_BAC_OPTIONS_STRING,
   MIN_TEMPLATE_ROWS,
-  MAX_DECISION_DROPDOWN,
   EXCEL_INLINE_VALIDATION_MAX_LENGTH,
 } from '../../constants/excel.constants';
 
@@ -30,9 +28,9 @@ export interface PersonnelColumnMapping {
 export interface TemplateConfig {
   sheetName: string;
   columns: TemplateColumn[];
-  personnelIds?: string[];
+  personnelList?: PersonnelWithPosition[];
+  decisionNumbers?: string[];
   repeatMap?: Record<string, number>;
-  loaiKhenThuong?: string;
   danhHieuOptions?: string;
   includeCapBac?: boolean;
   includeDecision?: boolean;
@@ -51,45 +49,6 @@ interface DecisionValidationResult {
   type: 'list';
   allowBlank: boolean;
   formulae: string[];
-}
-
-/**
- * Queries personnel records with positions for template prefill.
- * @param personnelIds - Personnel ID list
- * @returns Personnel records including `ChucVu`
- */
-export async function queryPersonnelForTemplate(personnelIds: string[]) {
-  if (personnelIds.length === 0) return [];
-  return prisma.quanNhan.findMany({
-    where: { id: { in: personnelIds } },
-    include: {
-      ChucVu: true,
-      CoQuanDonVi: { select: { ten_don_vi: true } },
-      DonViTrucThuoc: { select: { ten_don_vi: true } },
-    },
-  });
-}
-
-/**
- * Queries decision numbers for template dropdown fields.
- * @param loaiKhenThuong - Optional award type filter
- * @param take - Maximum number of records to fetch
- * @returns Decision number list sorted by year descending
- */
-export async function queryDecisionsForTemplate(
-  loaiKhenThuong?: string,
-  take = MAX_DECISION_DROPDOWN
-) {
-  const where: Record<string, unknown> = {};
-  if (loaiKhenThuong) where.loai_khen_thuong = loaiKhenThuong;
-
-  const existingDecisions = await prisma.fileQuyetDinh.findMany({
-    where,
-    select: { so_quyet_dinh: true },
-    orderBy: { nam: 'desc' },
-    take,
-  });
-  return existingDecisions.map(d => d.so_quyet_dinh).filter(Boolean) as string[];
 }
 
 /**
@@ -345,16 +304,17 @@ export function prefillPersonnelRows(
 
 /**
  * Builds a complete Excel template workbook from config.
- * @param config - Template configuration (columns, dropdowns, style, prefill)
+ * Caller must pre-fetch personnel + decision data and pass them via `personnelList` / `decisionNumbers`.
+ * @param config - Template configuration (columns, dropdowns, style, prefilled data)
  * @returns ExcelJS workbook ready for export
  */
 export async function buildTemplate(config: TemplateConfig): Promise<ExcelJS.Workbook> {
   const {
     sheetName,
     columns,
-    personnelIds = [],
+    personnelList = [],
+    decisionNumbers = [],
     repeatMap,
-    loaiKhenThuong,
     danhHieuOptions,
     includeCapBac = true,
     includeDecision = true,
@@ -375,11 +335,6 @@ export async function buildTemplate(config: TemplateConfig): Promise<ExcelJS.Wor
   }));
 
   styleHeaderRow(worksheet);
-
-  const [personnelList, decisionNumbers] = await Promise.all([
-    queryPersonnelForTemplate(personnelIds),
-    includeDecision ? queryDecisionsForTemplate(loaiKhenThuong) : Promise.resolve([]),
-  ]);
 
   let totalDataRows = 0;
   if (customRowFiller) {

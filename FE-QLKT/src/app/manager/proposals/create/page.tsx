@@ -33,7 +33,6 @@ import {
 import Link from 'next/link';
 import type { UploadFile } from 'antd/es/upload/interface';
 import type { ColumnsType } from 'antd/es/table';
-import type { DateInput } from '@/lib/types/common';
 import { apiClient } from '@/lib/apiClient';
 import {
   DANH_HIEU_CA_NHAN_HANG_NAM,
@@ -65,32 +64,13 @@ import {
   makeContributionColumns,
   fetchContributionProfiles,
 } from '@/lib/award/serviceTimeHelpers';
+import type { Personnel, ReviewRow } from './types';
+import {
+  getProposalReferenceEndDate as computeProposalReferenceEndDate,
+  canProceedToNextStep as computeCanProceedToNextStep,
+} from './helpers';
 
 const { Title, Paragraph, Text } = Typography;
-
-interface Personnel {
-  id: string;
-  ho_ten: string;
-  cccd: string;
-  ngay_nhap_ngu?: DateInput;
-  ngay_xuat_ngu?: DateInput;
-  ChucVu?: {
-    id: string;
-    ten_chuc_vu: string;
-  };
-  cap_bac?: string;
-  CoQuanDonVi?: {
-    ten_don_vi: string;
-  };
-  DonViTrucThuoc?: {
-    ten_don_vi: string;
-  };
-}
-
-type ReviewRow = (Personnel | UnitApiRow) & Partial<TitleDataItem> & {
-  id: string;
-  co_quan_don_vi_id?: string | null;
-};
 
 export default function CreateProposalPage() {
   const router = useRouter();
@@ -124,12 +104,7 @@ export default function CreateProposalPage() {
   // Step 5: Note
   const [proposalNote, setProposalNote] = useState<string>('');
 
-  const getProposalReferenceEndDate = (): Date => {
-    if (Number.isInteger(thang) && thang >= 1 && thang <= 12) {
-      return new Date(nam, thang, 0);
-    }
-    return new Date(nam, 11, 31);
-  };
+  const getProposalReferenceEndDate = (): Date => computeProposalReferenceEndDate(nam, thang);
 
   const renderProposalTypeIcon = (type: ProposalType) => {
     const Icon = PROPOSAL_TYPE_ICON_COMPONENTS[type];
@@ -260,38 +235,14 @@ export default function CreateProposalPage() {
     }
   };
 
-  // Validate current step
-  const canProceedToNextStep = () => {
-    switch (currentStep) {
-      case 0: // Step 1: Type selected (always true)
-        return true;
-      case 1: // Step 2: Must select at least 1 personnel/unit
-        if (proposalType === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
-          return selectedUnitIds.length > 0;
-        }
-        return selectedPersonnelIds.length > 0;
-      case 2: // Step 3: All personnel/units must have titles set
-        const expectedLength =
-          proposalType === PROPOSAL_TYPES.DON_VI_HANG_NAM
-            ? selectedUnitIds.length
-            : selectedPersonnelIds.length;
-        if (titleData.length !== expectedLength) return false;
-
-        if (proposalType === PROPOSAL_TYPES.NCKH) {
-          return titleData.every(d => d.loai && d.mo_ta && d.cap_bac && d.chuc_vu);
-        }
-
-        if (proposalType === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
-          return titleData.every(d => d.danh_hieu);
-        }
-
-        return titleData.every(d => d.danh_hieu && d.cap_bac?.trim() && d.chuc_vu?.trim());
-      case 3: // Step 4: Always allow to continue (attachedFiles is optional)
-        return true;
-      default:
-        return false;
-    }
-  };
+  const canProceedToNextStep = () =>
+    computeCanProceedToNextStep(
+      currentStep,
+      proposalType,
+      selectedPersonnelIds,
+      selectedUnitIds,
+      titleData
+    );
 
   // Handle next step
   const handleNext = async () => {

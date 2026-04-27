@@ -27,6 +27,7 @@ import { writeSystemLog } from '../helpers/systemLogHelper';
 import { ValidationError, NotFoundError, AppError } from '../middlewares/errorHandler';
 import { validateHCCSVVRankOrder } from '../helpers/awardValidation/tenureMedalRankOrder';
 import { buildTemplate, styleHeaderRow } from '../helpers/excel/excelTemplateHelper';
+import { fetchTemplateData } from './excel/templateData.service';
 import { calculateServiceMonths, formatServiceDuration } from '../helpers/serviceYearsHelper';
 import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
 import {
@@ -55,12 +56,16 @@ class HCCSVVService {
    * Export template Excel for HCCSVV import
    */
   async exportTemplate(personnelIds: string[] = [], repeatMap: Record<string, number> = {}) {
+    const { personnelList, decisionNumbers } = await fetchTemplateData({
+      personnelIds,
+      loaiKhenThuong: PROPOSAL_TYPES.NIEN_HAN,
+    });
     return buildTemplate({
       sheetName: AWARD_EXCEL_SHEETS.HCCSVV,
       columns: HCCSVV_TEMPLATE_COLUMNS,
-      personnelIds,
+      personnelList,
+      decisionNumbers,
       repeatMap,
-      loaiKhenThuong: PROPOSAL_TYPES.NIEN_HAN,
       danhHieuOptions: HCCSVV_TEMPLATE_OPTIONS,
       editableColumnLetters: ['J', 'K', 'L'],
     });

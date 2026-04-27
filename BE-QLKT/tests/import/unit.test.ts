@@ -165,6 +165,123 @@ describe('unitAnnualAward.service - previewImport', () => {
     );
   });
 
+  it('Row trống hoàn toàn → bỏ qua, không tính total/errors', async () => {
+    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-001' }]);
+    prismaMock.coQuanDonVi.findMany.mockResolvedValueOnce([
+      { id: 'cqdv-1', ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A' },
+    ]);
+    prismaMock.donViTrucThuoc.findMany.mockResolvedValueOnce([]);
+    prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce([]);
+
+    const buffer = await makeDonViExcelBuffer([
+      { ma_don_vi: '', ten_don_vi: '', nam: '', danh_hieu: '', so_quyet_dinh: '' },
+      { ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A', nam: 2024, danh_hieu: 'ĐVQT', so_quyet_dinh: 'QD-001' },
+    ]);
+
+    const result = await unitAnnualAwardService.previewImport(buffer);
+
+    expect(result.total).toBe(1);
+    expect(result.valid).toHaveLength(1);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it('Duplicate trong file (cùng đơn vị + năm) → row sau báo "Trùng lặp trong file"', async () => {
+    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([
+      { so_quyet_dinh: 'QD-001' },
+      { so_quyet_dinh: 'QD-002' },
+    ]);
+    prismaMock.coQuanDonVi.findMany.mockResolvedValueOnce([
+      { id: 'cqdv-1', ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A' },
+    ]);
+    prismaMock.donViTrucThuoc.findMany.mockResolvedValueOnce([]);
+    prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce([]);
+
+    const buffer = await makeDonViExcelBuffer([
+      { ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A', nam: 2024, danh_hieu: 'ĐVQT', so_quyet_dinh: 'QD-001' },
+      { ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A', nam: 2024, danh_hieu: 'ĐVTT', so_quyet_dinh: 'QD-002' },
+    ]);
+
+    const result = await unitAnnualAwardService.previewImport(buffer);
+
+    expect(result.valid).toHaveLength(1);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0].message).toContain('Trùng lặp trong file');
+  });
+
+  it('Năm < 1900 → errors về boundary', async () => {
+    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-001' }]);
+    prismaMock.coQuanDonVi.findMany.mockResolvedValueOnce([
+      { id: 'cqdv-1', ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A' },
+    ]);
+    prismaMock.donViTrucThuoc.findMany.mockResolvedValueOnce([]);
+    prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce([]);
+
+    const buffer = await makeDonViExcelBuffer([
+      { ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A', nam: 1800, danh_hieu: 'ĐVQT', so_quyet_dinh: 'QD-001' },
+    ]);
+
+    const result = await unitAnnualAwardService.previewImport(buffer);
+
+    expect(result.valid).toHaveLength(0);
+    expect(result.errors[0].message).toContain('không hợp lệ');
+  });
+
+  it('Năm tương lai → errors về boundary', async () => {
+    const futureYear = new Date().getFullYear() + 5;
+    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-001' }]);
+    prismaMock.coQuanDonVi.findMany.mockResolvedValueOnce([
+      { id: 'cqdv-1', ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A' },
+    ]);
+    prismaMock.donViTrucThuoc.findMany.mockResolvedValueOnce([]);
+    prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce([]);
+
+    const buffer = await makeDonViExcelBuffer([
+      { ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A', nam: futureYear, danh_hieu: 'ĐVQT', so_quyet_dinh: 'QD-001' },
+    ]);
+
+    const result = await unitAnnualAwardService.previewImport(buffer);
+
+    expect(result.valid).toHaveLength(0);
+    expect(result.errors[0].message).toContain('không hợp lệ');
+  });
+
+  it('Danh hiệu enum không hợp lệ → errors "không hợp lệ"', async () => {
+    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-001' }]);
+    prismaMock.coQuanDonVi.findMany.mockResolvedValueOnce([
+      { id: 'cqdv-1', ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A' },
+    ]);
+    prismaMock.donViTrucThuoc.findMany.mockResolvedValueOnce([]);
+    prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce([]);
+
+    const buffer = await makeDonViExcelBuffer([
+      { ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A', nam: 2024, danh_hieu: 'KHONG_TON_TAI', so_quyet_dinh: 'QD-001' },
+    ]);
+
+    const result = await unitAnnualAwardService.previewImport(buffer);
+
+    expect(result.valid).toHaveLength(0);
+    expect(result.errors[0].message).toContain('không hợp lệ');
+  });
+
+  it('Số quyết định không tồn tại trên hệ thống → errors', async () => {
+    // Empty decisions → submitted decision number is unknown
+    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([]);
+    prismaMock.coQuanDonVi.findMany.mockResolvedValueOnce([
+      { id: 'cqdv-1', ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A' },
+    ]);
+    prismaMock.donViTrucThuoc.findMany.mockResolvedValueOnce([]);
+    prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce([]);
+
+    const buffer = await makeDonViExcelBuffer([
+      { ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A', nam: 2024, danh_hieu: 'ĐVQT', so_quyet_dinh: 'QD-INVALID' },
+    ]);
+
+    const result = await unitAnnualAwardService.previewImport(buffer);
+
+    expect(result.valid).toHaveLength(0);
+    expect(result.errors[0].message).toContain('không tồn tại trên hệ thống');
+  });
+
   it('BKBQP trong Excel → reject "không được nhập qua Excel"', async () => {
     prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-001' }]);
     prismaMock.coQuanDonVi.findMany.mockResolvedValueOnce([

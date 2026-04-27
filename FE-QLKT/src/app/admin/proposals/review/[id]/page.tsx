@@ -59,13 +59,21 @@ import {
 } from '@/constants/proposal.constants';
 import { ADMIN_PROPOSAL_DETAIL_STATUS_LABELS } from '@/constants/proposalUi.constants';
 import type {
+  ApprovalImportSummary,
   DanhHieuItem,
   ThanhTichItem,
   PositionHistoryEntry,
   DecisionPayload,
   ProposalDetail,
 } from './types';
-import { calculateTotalTimeByGroup, getDurationDisplay } from './helpers';
+import {
+  buildApprovalSuccessMessage,
+  calculateTotalTimeByGroup,
+  collectMissingDecisions,
+  formatUnitInfo,
+  getDurationDisplay,
+  parseJsonArray,
+} from './helpers';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -125,45 +133,19 @@ export default function ProposalDetailPage() {
       const proposalResponse = await apiClient.getProposalById(String(id));
 
       if (proposalResponse.success && proposalResponse.data) {
-        const filesAttached = proposalResponse.data.files_attached;
-        const parsedFilesAttached = Array.isArray(filesAttached)
-          ? filesAttached
-          : filesAttached && typeof filesAttached === 'string'
-            ? JSON.parse(filesAttached)
-            : [];
+        const parsedFilesAttached = parseJsonArray<NonNullable<ProposalDetail['files_attached']>[number]>(
+          proposalResponse.data.files_attached
+        );
 
         setProposal({
           ...proposalResponse.data,
           files_attached: parsedFilesAttached,
         });
-        const danhHieuData = proposalResponse.data.data_danh_hieu;
-        const thanhTichData = proposalResponse.data.data_thanh_tich;
-        const nienHanData = proposalResponse.data.data_nien_han;
-        const congHienData = proposalResponse.data.data_cong_hien;
 
-        const parsedDanhHieu = Array.isArray(danhHieuData)
-          ? danhHieuData
-          : danhHieuData && typeof danhHieuData === 'string'
-            ? JSON.parse(danhHieuData)
-            : [];
-
-        const parsedThanhTich = Array.isArray(thanhTichData)
-          ? thanhTichData
-          : thanhTichData && typeof thanhTichData === 'string'
-            ? JSON.parse(thanhTichData)
-            : [];
-
-        const parsedNienHan = Array.isArray(nienHanData)
-          ? nienHanData
-          : nienHanData && typeof nienHanData === 'string'
-            ? JSON.parse(nienHanData)
-            : [];
-
-        const parsedCongHien = Array.isArray(congHienData)
-          ? congHienData
-          : congHienData && typeof congHienData === 'string'
-            ? JSON.parse(congHienData)
-            : [];
+        const parsedDanhHieu = parseJsonArray<DanhHieuItem>(proposalResponse.data.data_danh_hieu);
+        const parsedThanhTich = parseJsonArray<ThanhTichItem>(proposalResponse.data.data_thanh_tich);
+        const parsedNienHan = parseJsonArray<DanhHieuItem>(proposalResponse.data.data_nien_han);
+        const parsedCongHien = parseJsonArray<DanhHieuItem>(proposalResponse.data.data_cong_hien);
 
         setEditedDanhHieu(parsedDanhHieu);
         setEditedThanhTich(parsedThanhTich);
@@ -323,49 +305,13 @@ export default function ProposalDetailPage() {
 
   const handleApprove = async () => {
     if (!proposal) return;
-    let missingDecisions: string[] = [];
-
-    if (editedDanhHieu.length > 0) {
-      editedDanhHieu.forEach((item, index) => {
-        const hasQD = item.so_quyet_dinh?.trim() || item.so_quyet_dinh_bkbqp || item.so_quyet_dinh_cstdtq || item.so_quyet_dinh_bkttcp;
-        if (!hasQD) {
-          const label = proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM
-            ? `Đơn vị ${index + 1}: ${item.ten_don_vi || 'N/A'}`
-            : `Quân nhân ${index + 1}: ${item.ho_ten || 'N/A'}`;
-          missingDecisions.push(label);
-        }
-      });
-    }
-
-    if (editedThanhTich.length > 0) {
-      editedThanhTich.forEach((item, index) => {
-        if (!item.so_quyet_dinh || item.so_quyet_dinh.trim() === '') {
-          missingDecisions.push(`Thành tích ${index + 1}: ${item.ho_ten || 'N/A'}`);
-        }
-      });
-    }
-
-    if (editedNienHan.length > 0) {
-      editedNienHan.forEach((item, index) => {
-        const label = `Huy chương Chiến sĩ vẻ vang ${index + 1}: ${item.ho_ten || 'N/A'}`;
-        if (!item.so_quyet_dinh || item.so_quyet_dinh.trim() === '') {
-          missingDecisions.push(label);
-        } else if (!item.thang_nhan || !item.nam_nhan) {
-          missingDecisions.push(`${label} (thiếu tháng nhận)`);
-        }
-      });
-    }
-
-    if (editedCongHien.length > 0) {
-      editedCongHien.forEach((item, index) => {
-        const label = `Huân chương Bảo vệ Tổ quốc ${index + 1}: ${item.ho_ten || 'N/A'}`;
-        if (!item.so_quyet_dinh || item.so_quyet_dinh.trim() === '') {
-          missingDecisions.push(label);
-        } else if (!item.thang_nhan || !item.nam_nhan) {
-          missingDecisions.push(`${label} (thiếu tháng nhận)`);
-        }
-      });
-    }
+    const missingDecisions = collectMissingDecisions({
+      loaiDeXuat: proposal.loai_de_xuat,
+      editedDanhHieu,
+      editedThanhTich,
+      editedNienHan,
+      editedCongHien,
+    });
 
     if (missingDecisions.length > 0) {
       modal.warning({
@@ -422,32 +368,11 @@ export default function ProposalDetailPage() {
           const approveResponse = await apiClient.approveProposal(String(id), formData);
 
           if (approveResponse.success) {
-            const approvalImportSummary = approveResponse.data || {};
-            const importedDanhHieu = approvalImportSummary.imported_danh_hieu || 0;
-            const totalDanhHieu = approvalImportSummary.total_danh_hieu || 0;
-            const importedThanhTich = approvalImportSummary.imported_thanh_tich || 0;
-            const totalThanhTich = approvalImportSummary.total_thanh_tich || 0;
-            const importedNienHan = approvalImportSummary.imported_nien_han || 0;
-            const totalNienHan = approvalImportSummary.total_nien_han || 0;
-
-            const loaiDeXuat = proposal?.loai_de_xuat;
-            const suffixMap: Record<string, string> = {
-              [PROPOSAL_TYPES.NIEN_HAN]: `Đã thêm ${importedNienHan}/${totalNienHan} Huy chương Chiến sĩ vẻ vang thành công.`,
-              [PROPOSAL_TYPES.HC_QKQT]: `Đã thêm ${importedNienHan}/${totalNienHan} Huy chương Quân kỳ quyết thắng thành công.`,
-              [PROPOSAL_TYPES.KNC_VSNXD_QDNDVN]: `Đã thêm ${importedNienHan}/${totalNienHan} Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN thành công.`,
-              [PROPOSAL_TYPES.CONG_HIEN]: `Đã thêm ${importedDanhHieu}/${totalDanhHieu} Huân chương Bảo vệ Tổ quốc thành công.`,
-              [PROPOSAL_TYPES.NCKH]: `Đã thêm ${importedThanhTich}/${totalThanhTich} thành tích nghiên cứu khoa học thành công.`,
-              [PROPOSAL_TYPES.DON_VI_HANG_NAM]: `Đã thêm ${importedDanhHieu}/${totalDanhHieu} khen thưởng đơn vị thành công.`,
-            };
-            const defaultSuffix =
-              importedDanhHieu > 0 && importedThanhTich > 0
-                ? `Đã thêm ${importedDanhHieu}/${totalDanhHieu} danh hiệu và ${importedThanhTich}/${totalThanhTich} thành tích nghiên cứu khoa học thành công.`
-                : importedDanhHieu > 0
-                  ? `Đã thêm ${importedDanhHieu}/${totalDanhHieu} danh hiệu thành công.`
-                  : importedThanhTich > 0
-                    ? `Đã thêm ${importedThanhTich}/${totalThanhTich} thành tích nghiên cứu khoa học thành công.`
-                    : '';
-            const successMessage = `Đã phê duyệt đề xuất thành công. ${suffixMap[loaiDeXuat ?? ''] ?? defaultSuffix}`;
+            const approvalImportSummary: ApprovalImportSummary = approveResponse.data || {};
+            const successMessage = buildApprovalSuccessMessage(
+              approvalImportSummary,
+              proposal?.loai_de_xuat
+            );
 
             if (approvalImportSummary.errors && approvalImportSummary.errors.length > 0) {
               message.warning(
@@ -615,12 +540,7 @@ export default function ProposalDetailPage() {
       width: 250,
       align: 'center' as const,
       render: (text: string, record: DanhHieuItem) => {
-        const coQuanDonVi = record.co_quan_don_vi?.ten_co_quan_don_vi;
-        const donViTrucThuoc = record.don_vi_truc_thuoc?.ten_don_vi;
-        const parts = [];
-        if (donViTrucThuoc) parts.push(donViTrucThuoc);
-        if (coQuanDonVi) parts.push(coQuanDonVi);
-        const unitInfo = parts.length > 0 ? parts.join(', ') : null;
+        const unitInfo = formatUnitInfo(record);
 
         return (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -1002,15 +922,7 @@ export default function ProposalDetailPage() {
       width: 200,
       align: 'center' as const,
       render: (_: unknown, record: DanhHieuItem, index: number) => {
-        const danhHieuMap: Record<string, string> = {
-          ĐVQT: 'Đơn vị Quyết thắng',
-          ĐVTT: 'Đơn vị Tiên tiến',
-          BKBQP: 'Bằng khen của Bộ trưởng Bộ Quốc phòng',
-          BKTTCP: 'Bằng khen Thủ tướng Chính phủ',
-        };
-
-        const fullName = danhHieuMap[record.danh_hieu || ''] || record.danh_hieu || '-';
-
+        const fullName = record.danh_hieu ? getDanhHieuName(record.danh_hieu) : null;
         return (
           <div style={{ textAlign: 'center' }}>
             <Text>{fullName || '-'}</Text>
@@ -1085,12 +997,7 @@ export default function ProposalDetailPage() {
       width: 250,
       align: 'center' as const,
       render: (text: string, record: ThanhTichItem) => {
-        const coQuanDonVi = record.co_quan_don_vi?.ten_co_quan_don_vi;
-        const donViTrucThuoc = record.don_vi_truc_thuoc?.ten_don_vi;
-        const parts = [];
-        if (donViTrucThuoc) parts.push(donViTrucThuoc);
-        if (coQuanDonVi) parts.push(coQuanDonVi);
-        const unitInfo = parts.length > 0 ? parts.join(', ') : null;
+        const unitInfo = formatUnitInfo(record);
 
         return (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>

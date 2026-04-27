@@ -44,7 +44,6 @@ import { Step2SelectPersonnelNCKH } from '@/components/proposals/bulk/Step2Selec
 import { Step2SelectUnits } from '@/components/proposals/bulk/Step2SelectUnits';
 import { Step3SetTitles } from '@/components/proposals/bulk/Step3SetTitles';
 import { DecisionModal } from '@/components/decisions/DecisionModal';
-import type { DateInput } from '@/lib/types/common';
 import type { ContributionProfile, UnitApiRow } from '@/lib/types/personnelList';
 import type { TitleDataItem, DecisionDataMap } from '@/lib/types/proposal';
 import {
@@ -52,34 +51,14 @@ import {
   makeContributionColumns,
   fetchContributionProfiles,
 } from '@/lib/award/serviceTimeHelpers';
+import type { AwardType, Personnel, ReviewRow } from './types';
+import {
+  canProceedToNextStep as computeCanProceedToNextStep,
+  buildTitleDataWithDecisions,
+  hasMissingDecision,
+} from './helpers';
 
 const { Title, Paragraph, Text } = Typography;
-
-type AwardType = Exclude<ProposalType, typeof PROPOSAL_TYPES.DOT_XUAT>;
-
-interface Personnel {
-  id: string;
-  ho_ten: string;
-  cccd: string;
-  ngay_nhap_ngu?: DateInput;
-  ngay_xuat_ngu?: DateInput;
-  ChucVu?: {
-    id: string;
-    ten_chuc_vu: string;
-  };
-  cap_bac?: string;
-  CoQuanDonVi?: {
-    ten_don_vi: string;
-  };
-  DonViTrucThuoc?: {
-    ten_don_vi: string;
-  };
-}
-
-type ReviewRow = (Personnel | UnitApiRow) & Partial<TitleDataItem> & {
-  id: string;
-  co_quan_don_vi_id?: string | null;
-};
 
 export default function BulkAddAwardsPage() {
   const router = useRouter();
@@ -252,43 +231,15 @@ export default function BulkAddAwardsPage() {
     } catch {}
   };
 
-  // Validate current step
-  const canProceedToNextStep = () => {
-    switch (currentStep) {
-      case 0:
-        return true;
-      case 1:
-        if (awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
-          return selectedUnitIds.length > 0;
-        }
-        return selectedPersonnelIds.length > 0;
-      case 2:
-        const expectedLength =
-          awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM
-            ? selectedUnitIds.length
-            : selectedPersonnelIds.length;
-        if (titleData.length !== expectedLength) return false;
-
-        if (awardType === PROPOSAL_TYPES.NCKH) {
-          return titleData.every(d => d.loai && d.mo_ta && d.cap_bac && d.chuc_vu);
-        }
-
-        if (awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
-          return titleData.every(d => d.danh_hieu);
-        }
-
-        return titleData.every(d => d.danh_hieu && d.cap_bac?.trim() && d.chuc_vu?.trim());
-      case 3:
-        return true; // Review step
-      case 4: {
-        const ids =
-          awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? selectedUnitIds : selectedPersonnelIds;
-        return ids.every(id => decisionDataMap[id]?.so_quyet_dinh?.trim());
-      }
-      default:
-        return false;
-    }
-  };
+  const canProceedToNextStep = () =>
+    computeCanProceedToNextStep({
+      currentStep,
+      awardType,
+      selectedPersonnelIds,
+      selectedUnitIds,
+      titleData,
+      decisionDataMap,
+    });
 
   // Handle next step
   const handleNext = async () => {
@@ -325,22 +276,14 @@ export default function BulkAddAwardsPage() {
     try {
       const ids =
         awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? selectedUnitIds : selectedPersonnelIds;
-      const missingDecision = ids.some(id => !decisionDataMap[id]?.so_quyet_dinh?.trim());
-      if (missingDecision) {
+      if (hasMissingDecision(ids, decisionDataMap)) {
         antMessage.error('Vui lòng nhập số quyết định cho tất cả trước khi thêm khen thưởng!');
         return;
       }
 
       setLoading(true);
 
-      const titleDataWithDecisions = titleData.map(item => {
-        const personnelId = item.personnel_id || item.don_vi_id;
-        const decisionInfo = personnelId ? decisionDataMap[personnelId] : undefined;
-        return {
-          ...item,
-          so_quyet_dinh: decisionInfo?.so_quyet_dinh || null,
-        };
-      });
+      const titleDataWithDecisions = buildTitleDataWithDecisions(titleData, decisionDataMap);
 
       const formData = new FormData();
       formData.append('type', awardType);

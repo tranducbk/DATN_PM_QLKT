@@ -180,6 +180,119 @@ describe('commemorativeMedal.service - previewImport (KNC VSNXD)', () => {
     expect(result.errors[0].message).toContain(IMPORT_KNC_NOT_ENOUGH_SERVICE_PREFIX('Nữ', 20));
   });
 
+  it('Nam đúng 25 năm phục vụ (boundary) → vào valid', async () => {
+    // enlist Dec 1999 + ref Dec 2024 → exactly 300 months (25.0y) — boundary inclusive
+    const p1 = makePersonnel({
+      id: 'qn-b1',
+      ho_ten: 'Nguyễn Văn B',
+      gioi_tinh: GENDER.MALE,
+      ngay_nhap_ngu: new Date('1999-12-15'),
+    });
+    prismaMock.quanNhan.findMany.mockResolvedValueOnce([{ ...p1, ChucVu: { ten_chuc_vu: 'Trợ lý' } }]);
+    prismaMock.kyNiemChuongVSNXDQDNDVN.findMany.mockResolvedValueOnce([]);
+    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-001' }]);
+    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
+
+    const buffer = await makeKncExcelBuffer([
+      { id: 'qn-b1', ho_va_ten: 'Nguyễn Văn B', cap_bac: 'Đại uý', chuc_vu: 'Trợ lý', nam: 2024, thang: 12, so_quyet_dinh: 'QD-001' },
+    ]);
+    const result = await commemorativeMedalService.previewImport(buffer);
+    expect(result.valid).toHaveLength(1);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it('Nữ đúng 20 năm phục vụ (boundary) → vào valid', async () => {
+    const p1 = makePersonnel({
+      id: 'qn-b2',
+      ho_ten: 'Trần Thị C',
+      gioi_tinh: GENDER.FEMALE,
+      ngay_nhap_ngu: new Date('2004-12-15'),
+    });
+    prismaMock.quanNhan.findMany.mockResolvedValueOnce([{ ...p1, ChucVu: { ten_chuc_vu: 'Trợ lý' } }]);
+    prismaMock.kyNiemChuongVSNXDQDNDVN.findMany.mockResolvedValueOnce([]);
+    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-001' }]);
+    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
+
+    const buffer = await makeKncExcelBuffer([
+      { id: 'qn-b2', ho_va_ten: 'Trần Thị C', cap_bac: 'Đại uý', chuc_vu: 'Trợ lý', nam: 2024, thang: 12, so_quyet_dinh: 'QD-001' },
+    ]);
+    const result = await commemorativeMedalService.previewImport(buffer);
+    expect(result.valid).toHaveLength(1);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it('Empty/blank rows → bị skip, không tính vào total', async () => {
+    prismaMock.quanNhan.findMany.mockResolvedValueOnce([]);
+    prismaMock.kyNiemChuongVSNXDQDNDVN.findMany.mockResolvedValueOnce([]);
+    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([]);
+    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
+
+    const buffer = await makeKncExcelBuffer([
+      { id: '', ho_va_ten: '', nam: '', thang: '', so_quyet_dinh: '' },
+      { id: '', ho_va_ten: '', nam: '', thang: '', so_quyet_dinh: '' },
+    ]);
+    const result = await commemorativeMedalService.previewImport(buffer);
+    expect(result.total).toBe(0);
+    expect(result.valid).toHaveLength(0);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it('Duplicate cùng personnel_id trong file → row sau errors "Trùng lặp trong file"', async () => {
+    const p1 = makePersonnel({
+      id: 'qn-d',
+      ho_ten: 'Nguyễn Văn D',
+      gioi_tinh: GENDER.MALE,
+      ngay_nhap_ngu: new Date('1995-01-01'),
+    });
+    prismaMock.quanNhan.findMany.mockResolvedValueOnce([{ ...p1, ChucVu: { ten_chuc_vu: 'Trợ lý' } }]);
+    prismaMock.kyNiemChuongVSNXDQDNDVN.findMany.mockResolvedValueOnce([]);
+    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-001' }]);
+    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
+
+    const buffer = await makeKncExcelBuffer([
+      { id: 'qn-d', ho_va_ten: 'Nguyễn Văn D', nam: 2024, thang: 12, so_quyet_dinh: 'QD-001' },
+      { id: 'qn-d', ho_va_ten: 'Nguyễn Văn D', nam: 2024, thang: 12, so_quyet_dinh: 'QD-001' },
+    ]);
+    const result = await commemorativeMedalService.previewImport(buffer);
+    expect(result.valid).toHaveLength(1);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0].message).toContain('Trùng lặp trong file');
+  });
+
+  it('QN đã có KNC trên hệ thống → errors lifetime award', async () => {
+    const p1 = makePersonnel({
+      id: 'qn-e',
+      ho_ten: 'Nguyễn Văn E',
+      gioi_tinh: GENDER.MALE,
+      ngay_nhap_ngu: new Date('1995-01-01'),
+    });
+    prismaMock.quanNhan.findMany.mockResolvedValueOnce([{ ...p1, ChucVu: { ten_chuc_vu: 'Trợ lý' } }]);
+    prismaMock.kyNiemChuongVSNXDQDNDVN.findMany.mockResolvedValueOnce([
+      { quan_nhan_id: 'qn-e', nam: 2020, so_quyet_dinh: 'QD-OLD', ghi_chu: null },
+    ]);
+    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-001' }]);
+    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
+
+    const buffer = await makeKncExcelBuffer([
+      { id: 'qn-e', ho_va_ten: 'Nguyễn Văn E', nam: 2024, thang: 12, so_quyet_dinh: 'QD-001' },
+    ]);
+    const result = await commemorativeMedalService.previewImport(buffer);
+    expect(result.valid).toHaveLength(0);
+    expect(result.errors[0].message).toContain('đã được tặng');
+    expect(result.errors[0].message).toContain('năm 2020');
+  });
+
+  it('Sai sheet name → throw ValidationError', async () => {
+    const workbook = new ExcelJS.Workbook();
+    workbook.addWorksheet('WrongSheet').addRow([...HEADERS]);
+    const arrayBuffer = await workbook.xlsx.writeBuffer();
+    const buffer = Buffer.from(arrayBuffer as ArrayBuffer);
+
+    await expect(commemorativeMedalService.previewImport(buffer)).rejects.toThrow(
+      /Không tìm thấy sheet/
+    );
+  });
+
   it('QN thiếu ngày nhập ngũ → errors "Không có ngày nhập ngũ"', async () => {
     const p1 = makePersonnel({
       id: 'qn-1',

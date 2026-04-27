@@ -175,6 +175,8 @@ Khi có ≥ 4 nhánh `if/else` dispatch theo enum/type (vd: 7 loại đề xuấ
 - Logic lặp 2+ lần → extract function
 - Joi schemas giống nhau → tạo base schema rồi extend
 - FE columns giống nhau → dùng factory functions với optional params
+- **Trước khi tạo helper/map mới**: BẮT BUỘC `grep` constants/ và lib/ tìm xem đã có chưa. Vd: định viết `Record<string, string> = { BKBQP: '...', CSTDTQ: '...' }` thì phải dùng `DANH_HIEU_MAP` / `getDanhHieuName()` từ `constants/danhHieu.constants.ts` thay vì duplicate.
+- **Khi extract helper từ page lớn**: kiểm tra `constants/`, `lib/`, `lib/award/`, `lib/proposal/` trước. Chỉ tạo helper local nếu không có sẵn.
 
 ### Performance
 - Independent DB queries → `Promise.all()` thay vì sequential `await`

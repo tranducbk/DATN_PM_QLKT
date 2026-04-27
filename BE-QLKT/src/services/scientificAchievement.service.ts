@@ -8,6 +8,7 @@ import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { NotFoundError, ValidationError } from '../middlewares/errorHandler';
 import { buildTemplate, styleHeaderRow } from '../helpers/excel/excelTemplateHelper';
+import { fetchTemplateData } from './excel/templateData.service';
 import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, sanitizeRowData, validatePersonnelNameMatch } from '../helpers/excel/excelHelper';
 import { IMPORT_TRANSACTION_TIMEOUT, EXPORT_FETCH_LIMIT } from '../constants/excel.constants';
 import {
@@ -280,12 +281,16 @@ class ScientificAchievementService {
   }
 
   async generateTemplate(personnelIds: string[] = [], repeatMap: Record<string, number> = {}) {
+    const { personnelList, decisionNumbers } = await fetchTemplateData({
+      personnelIds,
+      loaiKhenThuong: PROPOSAL_TYPES.NCKH,
+    });
     return buildTemplate({
       sheetName: AWARD_EXCEL_SHEETS.NCKH,
       columns: NCKH_TEMPLATE_COLUMNS,
-      personnelIds,
+      personnelList,
+      decisionNumbers,
       repeatMap,
-      loaiKhenThuong: PROPOSAL_TYPES.NCKH,
     });
   }
 

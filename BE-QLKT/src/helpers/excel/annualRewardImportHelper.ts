@@ -1,5 +1,4 @@
 import ExcelJS from 'exceljs';
-import { prisma } from '../../models';
 import { loadWorkbook, getAndValidateWorksheet } from './excelImportHelper';
 import { parseHeaderMap, getHeaderCol } from './excelHelper';
 import { DANH_HIEU_CA_NHAN_CO_BAN } from '../../constants/danhHieu.constants';
@@ -28,6 +27,13 @@ export interface AnnualRewardBatchMaps {
   rewardsByPersonnel: Map<string, DanhHieuHangNam[]>;
 }
 
+export interface ParsedAnnualRewardImport {
+  worksheet: ExcelJS.Worksheet;
+  columns: ColumnMap;
+  personnelIds: string[];
+  allYears: Set<number>;
+}
+
 export interface AnnualRewardImportContext {
   worksheet: ExcelJS.Worksheet;
   columns: ColumnMap;
@@ -38,14 +44,13 @@ export interface AnnualRewardImportContext {
 }
 
 /**
- * Resolves the shared import context used by both previewImport and importFromExcelBuffer.
- * Handles workbook loading, header parsing, validation, and batch DB queries for personnel + existing awards.
- * Proposal queries are left to callers since they need different status filters.
+ * Parses the Excel buffer into worksheet + column map and collects personnel IDs / years.
+ * Pure: does not touch the database.
  * @param buffer - Excel file buffer
- * @returns Parsed worksheet, column map, collected year set, and pre-fetched DB maps
+ * @returns Parsed worksheet, column map, distinct personnel IDs, distinct years
  * @throws ValidationError - When required columns are missing or sheet type is wrong
  */
-export async function resolveAnnualRewardImportContext(buffer: Buffer): Promise<AnnualRewardImportContext> {
+export async function parseAnnualRewardImport(buffer: Buffer): Promise<ParsedAnnualRewardImport> {
   const workbook = await loadWorkbook(buffer);
   const worksheet = getAndValidateWorksheet(workbook, {
     excludeSheetNames: ['_CapBac', '_QuyetDinh'],
@@ -79,14 +84,14 @@ export async function resolveAnnualRewardImportContext(buffer: Buffer): Promise<
     );
   }
 
-  const allPersonnelIds = new Set<string>();
+  const personnelIdSet = new Set<string>();
   const allYears = new Set<number>();
   for (let r = 2; r <= worksheet.rowCount; r++) {
     const row = worksheet.getRow(r);
     const idValue = columns.idCol ? row.getCell(columns.idCol).value : null;
     if (idValue) {
       const id = String(idValue).trim();
-      if (id) allPersonnelIds.add(id);
+      if (id) personnelIdSet.add(id);
     }
     const namVal = columns.namCol ? row.getCell(columns.namCol).value : null;
     if (namVal) {
@@ -95,16 +100,25 @@ export async function resolveAnnualRewardImportContext(buffer: Buffer): Promise<
     }
   }
 
-  const [personnelList, existingRewards] = await Promise.all([
-    prisma.quanNhan.findMany({
-      where: { id: { in: [...allPersonnelIds] } },
-      include: { ChucVu: { select: { ten_chuc_vu: true } } },
-    }),
-    prisma.danhHieuHangNam.findMany({
-      where: { quan_nhan_id: { in: [...allPersonnelIds] } },
-    }),
-  ]);
+  return {
+    worksheet,
+    columns,
+    personnelIds: [...personnelIdSet],
+    allYears,
+  };
+}
 
+/**
+ * Builds the batch lookup maps used when validating annual reward imports.
+ * Pure: caller fetches personnel + existing rewards from the DB and passes them in.
+ * @param personnelList - Personnel records (with `ChucVu`) fetched from DB
+ * @param existingRewards - Existing annual reward records fetched from DB
+ * @returns Personnel/reward maps keyed for O(1) lookup
+ */
+export function buildAnnualRewardBatchMaps(
+  personnelList: Array<QuanNhan & { ChucVu: { ten_chuc_vu: string } | null }>,
+  existingRewards: DanhHieuHangNam[]
+): AnnualRewardBatchMaps {
   const personnelMap = new Map(personnelList.map(p => [p.id, p] as const));
 
   const existingAwardKeys = new Set(
@@ -123,15 +137,29 @@ export async function resolveAnnualRewardImportContext(buffer: Buffer): Promise<
   }
 
   return {
-    worksheet,
-    columns,
-    batchMaps: {
-      personnelMap,
-      existingAwardKeys,
-      existingRewardByKey,
-      rewardsByPersonnel,
-    },
-    allYears,
+    personnelMap,
+    existingAwardKeys,
+    existingRewardByKey,
+    rewardsByPersonnel,
+  };
+}
+
+/**
+ * Assembles the full import context from parsed parts + pre-fetched batch maps.
+ * Pure: caller is responsible for DB queries.
+ * @param parsed - Output of `parseAnnualRewardImport`
+ * @param batchMaps - Output of `buildAnnualRewardBatchMaps`
+ * @returns Context consumed by preview / confirm import flows
+ */
+export function buildAnnualRewardImportContext(
+  parsed: ParsedAnnualRewardImport,
+  batchMaps: AnnualRewardBatchMaps
+): AnnualRewardImportContext {
+  return {
+    worksheet: parsed.worksheet,
+    columns: parsed.columns,
+    batchMaps,
+    allYears: parsed.allYears,
     currentYear: new Date().getFullYear(),
     validDanhHieu: DANH_HIEU_CA_NHAN_CO_BAN,
   };

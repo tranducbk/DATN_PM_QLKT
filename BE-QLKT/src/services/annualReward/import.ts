@@ -1,6 +1,11 @@
 import { prisma } from '../../models';
 import { safeRecalculateAnnualProfile } from '../../helpers/profileRecalcHelper';
-import { resolveAnnualRewardImportContext } from '../../helpers/excel/annualRewardImportHelper';
+import {
+  parseAnnualRewardImport,
+  buildAnnualRewardBatchMaps,
+  buildAnnualRewardImportContext,
+  type AnnualRewardImportContext,
+} from '../../helpers/excel/annualRewardImportHelper';
 import {
   formatDanhHieuList,
   getDanhHieuName,
@@ -28,6 +33,23 @@ import type {
   PreviewResult,
   ConfirmImportItem,
 } from './types';
+
+async function resolveAnnualRewardImportContext(buffer: Buffer): Promise<AnnualRewardImportContext> {
+  const parsed = await parseAnnualRewardImport(buffer);
+
+  const [personnelList, existingRewards] = await Promise.all([
+    prisma.quanNhan.findMany({
+      where: { id: { in: parsed.personnelIds } },
+      include: { ChucVu: { select: { ten_chuc_vu: true } } },
+    }),
+    prisma.danhHieuHangNam.findMany({
+      where: { quan_nhan_id: { in: parsed.personnelIds } },
+    }),
+  ]);
+
+  const batchMaps = buildAnnualRewardBatchMaps(personnelList, existingRewards);
+  return buildAnnualRewardImportContext(parsed, batchMaps);
+}
 
 export async function importFromExcelBuffer(buffer: Buffer): Promise<ImportResult> {
   const { worksheet, columns, batchMaps, allYears, currentYear, validDanhHieu } =

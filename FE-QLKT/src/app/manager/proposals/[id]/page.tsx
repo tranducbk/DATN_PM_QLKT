@@ -33,12 +33,7 @@ import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { FileAttachmentList } from '@/components/proposals/FileAttachmentList';
 import { useTheme } from '@/components/ThemeProvider';
 import { getAntdTableThemeConfig } from '@/lib/antdTheme';
-import {
-  CONG_HIEN_HE_SO_GROUPS,
-  CONG_HIEN_HE_SO_RANGES,
-  DANH_HIEU_MAP,
-  type CongHienHeSoGroup,
-} from '@/constants/danhHieu.constants';
+import { DANH_HIEU_MAP, type CongHienHeSoGroup } from '@/constants/danhHieu.constants';
 import {
   PROPOSAL_REVIEW_CARD_TITLES,
   PROPOSAL_STATUS,
@@ -46,201 +41,23 @@ import {
   PROPOSAL_TYPES,
   isProposalType,
   getProposalTypeLabel,
-  type ProposalType,
 } from '@/constants/proposal.constants';
+import type {
+  DanhHieuItem,
+  ThanhTichItem,
+  PositionHistoryEntry,
+  DurationDisplay,
+  ProposalDetail,
+} from './types';
+import {
+  CONG_HIEN_GROUP_COLUMNS,
+  NIEN_HAN_STYLE_TYPES,
+  DANH_HIEU_FALLBACK_TYPES,
+  getDurationDisplay,
+  calculateTotalTimeByGroup,
+} from './helpers';
 
 const { Title, Text } = Typography;
-
-interface DanhHieuItem {
-  personnel_id: string;
-  ho_ten: string;
-  nam: number;
-  thang?: number | null;
-  danh_hieu: string | null;
-  cap_bac?: string | null;
-  chuc_vu?: string | null;
-  so_quyet_dinh?: string | null;
-  file_quyet_dinh?: string | null;
-  thang_nhan?: number | null;
-  nam_nhan?: number | null;
-  // Legacy scalar fields (kept for backward compatibility)
-  nhan_bkbqp?: boolean;
-  so_quyet_dinh_bkbqp?: string | null;
-  file_quyet_dinh_bkbqp?: string | null;
-  nhan_cstdtq?: boolean;
-  so_quyet_dinh_cstdtq?: string | null;
-  nhan_bkttcp?: boolean;
-  so_quyet_dinh_bkttcp?: string | null;
-  file_quyet_dinh_cstdtq?: string | null;
-  thoi_gian_nhom_0_7?: {
-    display?: string;
-    years?: number;
-    months?: number;
-  } | null;
-  thoi_gian_nhom_0_8?: {
-    display?: string;
-    years?: number;
-    months?: number;
-  } | null;
-  thoi_gian_nhom_0_9_1_0?: {
-    display?: string;
-    years?: number;
-    months?: number;
-  } | null;
-  co_quan_don_vi?: {
-    id: string;
-    ten_co_quan_don_vi: string;
-    ma_co_quan_don_vi: string;
-  } | null;
-  don_vi_truc_thuoc?: {
-    id: string;
-    ten_don_vi: string;
-    ma_don_vi: string;
-    co_quan_don_vi?: {
-      id: string;
-      ten_don_vi_truc: string;
-      ma_don_vi: string;
-    } | null;
-  } | null;
-}
-
-interface ThanhTichItem {
-  personnel_id: string;
-  ho_ten: string;
-  nam: number;
-  loai: string;
-  mo_ta: string;
-  status: string;
-  so_quyet_dinh?: string | null;
-  file_quyet_dinh?: string | null;
-  cap_bac?: string | null;
-  chuc_vu?: string | null;
-  co_quan_don_vi?: {
-    id: string;
-    ten_co_quan_don_vi: string;
-    ma_co_quan_don_vi: string;
-  } | null;
-  don_vi_truc_thuoc?: {
-    id: string;
-    ten_don_vi: string;
-    ma_don_vi: string;
-    co_quan_don_vi?: {
-      id: string;
-      ten_don_vi_truc: string;
-      ma_don_vi: string;
-    } | null;
-  } | null;
-}
-
-interface AttachedFile {
-  filename: string;
-  originalName: string;
-  size: number;
-  uploadedAt: string;
-}
-
-interface ReviewerAccount {
-  id: string;
-  username: string;
-  ho_ten?: string;
-}
-
-interface PositionHistoryEntry {
-  he_so_chuc_vu?: number;
-  so_thang?: number | null;
-}
-
-interface DurationDisplay {
-  display?: string;
-  years?: number;
-  months?: number;
-}
-
-const CONG_HIEN_GROUP_COLUMNS: Array<{
-  key: CongHienHeSoGroup;
-  title: string;
-  dataField: 'thoi_gian_nhom_0_7' | 'thoi_gian_nhom_0_8' | 'thoi_gian_nhom_0_9_1_0';
-}> = [
-  {
-    key: CONG_HIEN_HE_SO_GROUPS.LEVEL_07,
-    title: 'Tổng thời gian (0.7)',
-    dataField: 'thoi_gian_nhom_0_7',
-  },
-  {
-    key: CONG_HIEN_HE_SO_GROUPS.LEVEL_08,
-    title: 'Tổng thời gian (0.8)',
-    dataField: 'thoi_gian_nhom_0_8',
-  },
-  {
-    key: CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10,
-    title: 'Tổng thời gian (0.9-1.0)',
-    dataField: 'thoi_gian_nhom_0_9_1_0',
-  },
-];
-
-const getDurationDisplay = (value: unknown): string | null => {
-  if (!value) return null;
-
-  if (typeof value === 'object' && value !== null) {
-    const display = (value as DurationDisplay).display;
-    return typeof display === 'string' && display.trim() ? display : null;
-  }
-
-  if (typeof value === 'string') {
-    try {
-      const parsed = JSON.parse(value) as DurationDisplay;
-      const display = parsed?.display;
-      return typeof display === 'string' && display.trim() ? display : null;
-    } catch {
-      return null;
-    }
-  }
-
-  return null;
-};
-
-interface ProposalDetail {
-  id: string;
-  loai_de_xuat: ProposalType;
-  nam: number;
-  thang?: number;
-  don_vi: {
-    id: string;
-    ma_don_vi: string;
-    ten_don_vi: string;
-  };
-  nguoi_de_xuat: {
-    id: string;
-    username: string;
-    ho_ten: string;
-  };
-  status: string;
-  data_danh_hieu: DanhHieuItem[];
-  data_thanh_tich: ThanhTichItem[];
-  data_nien_han?: DanhHieuItem[];
-  data_cong_hien?: DanhHieuItem[];
-  files_attached: AttachedFile[];
-  nguoi_duyet: ReviewerAccount | null;
-  ngay_duyet: string | null;
-  ghi_chu: string | null;
-  rejection_reason: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-const NIEN_HAN_STYLE_TYPES: ProposalType[] = [
-  PROPOSAL_TYPES.NIEN_HAN,
-  PROPOSAL_TYPES.HC_QKQT,
-  PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
-];
-
-const DANH_HIEU_FALLBACK_TYPES: ProposalType[] = [
-  PROPOSAL_TYPES.NCKH,
-  PROPOSAL_TYPES.NIEN_HAN,
-  PROPOSAL_TYPES.HC_QKQT,
-  PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
-  PROPOSAL_TYPES.CONG_HIEN,
-];
 
 export default function ManagerProposalDetailPage() {
   const router = useRouter();
@@ -342,35 +159,6 @@ export default function ManagerProposalDetailPage() {
     }
   };
 
-  const calculateTotalTimeByGroup = (personnelId: string, group: CongHienHeSoGroup) => {
-    const histories = positionHistoriesMap[personnelId] || [];
-    let totalMonths = 0;
-
-    histories.forEach((history: PositionHistoryEntry) => {
-      const heSo = Number(history.he_so_chuc_vu) || 0;
-      const range = CONG_HIEN_HE_SO_RANGES[group];
-      const belongsToGroup = range
-        ? heSo >= range.min && (range.includeMax ? heSo <= range.max : heSo < range.max)
-        : false;
-
-      if (belongsToGroup && history.so_thang !== null && history.so_thang !== undefined) {
-        totalMonths += history.so_thang;
-      }
-    });
-
-    const years = Math.floor(totalMonths / 12);
-    const remainingMonths = totalMonths % 12;
-
-    if (totalMonths === 0) return '-';
-    if (years > 0 && remainingMonths > 0) {
-      return `${years} năm ${remainingMonths} tháng`;
-    } else if (years > 0) {
-      return `${years} năm`;
-    } else {
-      return `${remainingMonths} tháng`;
-    }
-  };
-
   const renderContributionGroupDuration = (
     record: DanhHieuItem,
     group: CongHienHeSoGroup,
@@ -380,9 +168,10 @@ export default function ManagerProposalDetailPage() {
     if (display) {
       return <Text style={{ whiteSpace: 'nowrap' }}>{display}</Text>;
     }
+    const histories = positionHistoriesMap[record.personnel_id || ''] || [];
     return (
       <Text style={{ whiteSpace: 'nowrap' }}>
-        {calculateTotalTimeByGroup(record.personnel_id || '', group)}
+        {calculateTotalTimeByGroup(histories, group)}
       </Text>
     );
   };

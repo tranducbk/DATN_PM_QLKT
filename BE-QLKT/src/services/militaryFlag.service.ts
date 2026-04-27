@@ -8,6 +8,7 @@ import { ValidationError, NotFoundError } from '../middlewares/errorHandler';
 import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys, sanitizeRowData, validatePersonnelNameMatch } from '../helpers/excel/excelHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { buildTemplate, styleHeaderRow } from '../helpers/excel/excelTemplateHelper';
+import { fetchTemplateData } from './excel/templateData.service';
 import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
 import {
   AWARD_EXCEL_SHEETS,
@@ -397,12 +398,16 @@ class MilitaryFlagService {
   }
 
   async exportTemplate(personnelIds: string[] = [], repeatMap: Record<string, number> = {}) {
+    const { personnelList, decisionNumbers } = await fetchTemplateData({
+      personnelIds,
+      loaiKhenThuong: PROPOSAL_TYPES.HC_QKQT,
+    });
     return buildTemplate({
       sheetName: AWARD_EXCEL_SHEETS.HC_QKQT,
       columns: HCQKQT_TEMPLATE_COLUMNS,
-      personnelIds,
+      personnelList,
+      decisionNumbers,
       repeatMap,
-      loaiKhenThuong: PROPOSAL_TYPES.HC_QKQT,
       editableColumnLetters: ['K'],
     });
   }

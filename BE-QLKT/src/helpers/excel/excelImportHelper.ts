@@ -1,8 +1,6 @@
 import ExcelJS from 'exceljs';
-import { Prisma } from '../../generated/prisma';
-import { prisma } from '../../models';
 import { ValidationError } from '../../middlewares/errorHandler';
-import { MAX_EXCEL_ROWS, IMPORT_TRANSACTION_TIMEOUT } from '../../constants/excel.constants';
+import { MAX_EXCEL_ROWS } from '../../constants/excel.constants';
 
 type CellValue = string | number | null | undefined;
 
@@ -163,43 +161,6 @@ function validateRequired(fields: { name: string; value: CellValue }[]): string 
 }
 
 /**
- * Queries personnel records in batch by ID list.
- * @param personnelIds - Personnel ID list
- * @returns Map keyed by personnel ID
- */
-async function batchQueryPersonnel(personnelIds: string[]): Promise<Map<string, PersonnelInfo>> {
-  if (personnelIds.length === 0) {
-    return new Map();
-  }
-
-  const list = await prisma.quanNhan.findMany({
-    where: { id: { in: personnelIds } },
-    select: {
-      id: true,
-      ho_ten: true,
-      gioi_tinh: true,
-      ngay_sinh: true,
-      ngay_nhap_ngu: true,
-      cap_bac: true,
-    },
-  });
-
-  return new Map(list.map(p => [p.id, p as PersonnelInfo]));
-}
-
-/**
- * Query all decision numbers from the database.
- * Returns a Set for O(1) lookup.
- */
-async function batchQueryDecisions(): Promise<Set<string>> {
-  const decisions = await prisma.fileQuyetDinh.findMany({
-    select: { so_quyet_dinh: true },
-  });
-
-  return new Set(decisions.map(d => d.so_quyet_dinh).filter(Boolean));
-}
-
-/**
  * Validates whether a decision number exists in the system.
  * @param soQuyetDinh - Decision number to validate
  * @param validDecisions - Set of valid decision numbers
@@ -212,31 +173,6 @@ function validateDecisionNumber(soQuyetDinh: string, validDecisions: Set<string>
   return null;
 }
 
-type TransactionClient = Prisma.TransactionClient;
-
-/**
- * Runs batched create/upsert writes inside a Prisma transaction.
- * @param items - Validated items to persist
- * @param upsertFn - Database write callback for each item
- * @param timeout - Transaction timeout in milliseconds
- * @returns Imported item count payload
- */
-async function runConfirmTransaction<T>(
-  items: T[],
-  upsertFn: (item: T, prismaTx: TransactionClient) => Promise<unknown>,
-  timeout: number = IMPORT_TRANSACTION_TIMEOUT
-): Promise<{ imported: number }> {
-  return await prisma.$transaction(
-    async prismaTx => {
-      for (const item of items) {
-        await upsertFn(item, prismaTx);
-      }
-      return { imported: items.length };
-    },
-    { timeout }
-  );
-}
-
 export {
   loadWorkbook,
   getAndValidateWorksheet,
@@ -244,8 +180,5 @@ export {
   getCellNumber,
   validateYear,
   validateRequired,
-  batchQueryPersonnel,
-  batchQueryDecisions,
   validateDecisionNumber,
-  runConfirmTransaction,
 };

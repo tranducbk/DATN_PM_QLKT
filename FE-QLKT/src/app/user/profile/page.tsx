@@ -57,46 +57,15 @@ import {
   KNC_YEARS_REQUIRED_NU,
 } from '@/constants/danhHieu.constants';
 import { getReceivedMonthYearText } from '@/lib/award/medalDisplay';
+import type {
+  AnnualRewardRow,
+  ScientificAchievementRow,
+  PositionHistoryRow,
+  AdhocAwardRow,
+} from './types';
+import { calculateYearsOfService, convertMonthsToYearsAndMonths } from './helpers';
 
 const { Title, Text } = Typography;
-
-interface AnnualRewardRow {
-  id?: string;
-  nam: number;
-  danh_hieu?: string | null;
-  so_quyet_dinh?: string | null;
-  so_quyet_dinh_bkbqp?: string | null;
-  so_quyet_dinh_cstdtq?: string | null;
-  so_quyet_dinh_bkttcp?: string | null;
-  nhan_bkbqp?: boolean;
-  nhan_cstdtq?: boolean;
-  nhan_bkttcp?: boolean;
-}
-
-interface ScientificAchievementRow {
-  id?: string;
-  nam: number;
-  loai?: string;
-  mo_ta?: string;
-  so_quyet_dinh?: string | null;
-  status?: string;
-}
-
-interface PositionHistoryRow {
-  id?: string;
-  ngay_bat_dau?: string | null;
-  ngay_ket_thuc?: string | null;
-  ChucVu?: { ten_chuc_vu?: string; he_so_chuc_vu?: number | string } | null;
-}
-
-interface AdhocAwardRow {
-  id?: string;
-  nam: number;
-  hinh_thuc_khen_thuong?: string;
-  cap_bac?: string;
-  chuc_vu?: string;
-  so_quyet_dinh?: string | null;
-}
 
 export default function UserProfilePage() {
   const { isDark } = useTheme();
@@ -113,21 +82,6 @@ export default function UserProfilePage() {
   const [contributionProfile, setContributionProfile] = useState<ContributionProfile | null>(null);
   const [militaryFlag, setMilitaryFlag] = useState<MedalData | null>(null);
   const [commemorationMedals, setCommemorationMedals] = useState<MedalData | null>(null);
-
-  const calculateYearsOfService = (ngayNhapNgu: string) => {
-    if (!ngayNhapNgu) return 0;
-    const now = new Date();
-    const nhapNgu = new Date(ngayNhapNgu);
-    const months =
-      (now.getFullYear() - nhapNgu.getFullYear()) * 12 + now.getMonth() - nhapNgu.getMonth();
-    return Math.floor(Math.max(0, months) / 12);
-  };
-
-  const convertMonthsToYearsAndMonths = (totalMonths: number) => {
-    const years = Math.floor(totalMonths / 12);
-    const months = totalMonths % 12;
-    return { years, months };
-  };
 
   const getStatusTag = (status: string | undefined) => {
     const s =

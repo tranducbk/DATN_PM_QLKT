@@ -8,6 +8,7 @@ import { ValidationError, NotFoundError } from '../middlewares/errorHandler';
 import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys, sanitizeRowData, validatePersonnelNameMatch } from '../helpers/excel/excelHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { buildTemplate, styleHeaderRow } from '../helpers/excel/excelTemplateHelper';
+import { fetchTemplateData } from './excel/templateData.service';
 import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
@@ -43,12 +44,16 @@ class ContributionAwardService {
    * @param {string} userRole
    */
   async exportTemplate(personnelIds: string[] = [], repeatMap: Record<string, number> = {}) {
+    const { personnelList, decisionNumbers } = await fetchTemplateData({
+      personnelIds,
+      loaiKhenThuong: PROPOSAL_TYPES.CONG_HIEN,
+    });
     return buildTemplate({
       sheetName: AWARD_EXCEL_SHEETS.HCBVTQ,
       columns: HCBVTQ_TEMPLATE_COLUMNS,
-      personnelIds,
+      personnelList,
+      decisionNumbers,
       repeatMap,
-      loaiKhenThuong: PROPOSAL_TYPES.CONG_HIEN,
       danhHieuOptions: HCBVTQ_TEMPLATE_OPTIONS,
       editableColumnLetters: ['J', 'K'],
     });

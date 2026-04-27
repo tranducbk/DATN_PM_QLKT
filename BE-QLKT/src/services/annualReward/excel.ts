@@ -8,6 +8,7 @@ import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 import { sanitizeRowData } from '../../helpers/excel/excelHelper';
 import type { Prisma } from '../../generated/prisma';
 import { buildTemplate, TemplateColumn, styleHeaderRow } from '../../helpers/excel/excelTemplateHelper';
+import { fetchTemplateData } from '../excel/templateData.service';
 import { EXPORT_FETCH_LIMIT } from '../../constants/excel.constants';
 import {
   ANNUAL_PERSONAL_EXPORT_COLUMNS,
@@ -22,12 +23,17 @@ export async function exportTemplate(
 ): Promise<ExcelJS.Workbook> {
   const columns: TemplateColumn[] = [...PERSONAL_ANNUAL_TEMPLATE_COLUMNS];
 
+  const { personnelList, decisionNumbers } = await fetchTemplateData({
+    personnelIds,
+    loaiKhenThuong: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
+  });
+
   return buildTemplate({
     sheetName: AWARD_EXCEL_SHEETS.ANNUAL_PERSONAL,
     columns,
-    personnelIds,
+    personnelList,
+    decisionNumbers,
     repeatMap,
-    loaiKhenThuong: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
     danhHieuOptions: buildDanhHieuExcelOptions([
       DANH_HIEU_CA_NHAN_HANG_NAM.CSTT,
       DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS,
