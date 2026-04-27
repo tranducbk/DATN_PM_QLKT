@@ -23,7 +23,8 @@ import {
   DEFAULT_ANTD_TABLE_PAGINATION,
   FETCH_ALL_LIMIT,
 } from '@/constants/pagination.constants';
-import { HCQKQT_YEARS_REQUIRED } from '@/constants/danhHieu.constants';
+import { DANH_HIEU_DAC_BIET, HCQKQT_YEARS_REQUIRED } from '@/constants/danhHieu.constants';
+import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { ExcelImportSection } from './ExcelImportSection';
 import * as XLSX from 'xlsx';
@@ -436,7 +437,7 @@ export function Step2SelectPersonnelHCQKQT({
 
             titleData.push({
               personnel_id: matchingPersonnel.id,
-              danh_hieu: 'HC_QKQT',
+              danh_hieu: DANH_HIEU_DAC_BIET.HC_QKQT,
               nam: namInt,
               thang,
               cap_bac: capBac,
@@ -454,7 +455,7 @@ export function Step2SelectPersonnelHCQKQT({
                 personnel_id: item.personnel_id,
                 nam: item.nam,
                 danh_hieu: item.danh_hieu,
-                proposal_type: 'HC_QKQT',
+                proposal_type: PROPOSAL_TYPES.HC_QKQT,
               }))
             );
             if (!batchResponse.success) throw new Error(batchResponse.message);
@@ -513,7 +514,7 @@ export function Step2SelectPersonnelHCQKQT({
               award.don_vi_truc_thuoc_id ??
               ''
           ),
-          danh_hieu: 'HC_QKQT',
+          danh_hieu: DANH_HIEU_DAC_BIET.HC_QKQT,
           nam: award.nam,
           thang: award.thang ?? localThang,
           cap_bac: award.cap_bac,

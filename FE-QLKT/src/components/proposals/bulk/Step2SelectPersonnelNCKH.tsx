@@ -23,6 +23,7 @@ import {
 } from '@/constants/pagination.constants';
 import { ExcelImportSection } from './ExcelImportSection';
 import * as XLSX from 'xlsx';
+import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 
 const { Text } = Typography;
 
@@ -292,7 +293,7 @@ export function Step2SelectPersonnelNCKH({
                 personnel_id: item.personnel_id,
                 nam: item.nam,
                 danh_hieu: item.danh_hieu,
-                proposal_type: 'NCKH',
+                proposal_type: PROPOSAL_TYPES.NCKH,
               }))
             );
             if (!batchResponse.success) throw new Error(batchResponse.message);

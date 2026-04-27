@@ -21,6 +21,7 @@ import { apiClient } from '@/lib/apiClient';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { ExcelImportSection } from './ExcelImportSection';
 import * as XLSX from 'xlsx';
+import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 
 const { Text } = Typography;
 
@@ -260,7 +261,7 @@ export function Step2SelectUnits({
                 don_vi_id: item.don_vi_id,
                 nam: item.nam,
                 danh_hieu: item.danh_hieu,
-                proposal_type: 'DON_VI_HANG_NAM',
+                proposal_type: PROPOSAL_TYPES.DON_VI_HANG_NAM,
               }))
             );
             if (!batchResponse.success) throw new Error(batchResponse.message);

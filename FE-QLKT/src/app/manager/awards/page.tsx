@@ -27,7 +27,7 @@ import {
 } from '@/lib/award/awardsHelper';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { formatDate } from '@/lib/utils';
-import type { AwardType } from '@/constants/danhHieu.constants';
+import { DANH_HIEU_CA_NHAN_HANG_NAM, type AwardType } from '@/constants/danhHieu.constants';
 import {
   DEFAULT_ANTD_TABLE_PAGINATION,
   FETCH_ALL_LIMIT,
@@ -100,7 +100,12 @@ const TABS_WITH_NESTED_QUAN_NHAN = new Set<AwardType>([
 ]);
 
 const DANH_HIEU_OPTIONS: Record<string, string[]> = {
-  CNHN: ['CSTDCS', 'CSTT', 'BKBQP', 'CSTDTQ'],
+  CNHN: [
+    DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS,
+    DANH_HIEU_CA_NHAN_HANG_NAM.CSTT,
+    DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP,
+    DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ,
+  ],
   HCCSVV: ['HCCSVV_HANG_NHAT', 'HCCSVV_HANG_NHI', 'HCCSVV_HANG_BA'],
   HCBVTQ: ['HCBVTQ_HANG_NHAT', 'HCBVTQ_HANG_NHI', 'HCBVTQ_HANG_BA'],
 };
@@ -273,9 +278,12 @@ export default function ManagerAwardsPage() {
       if (danhHieuFilter) {
         if (['CNHN', 'HCCSVV', 'HCBVTQ'].includes(activeTab)) {
           if (activeTab === 'CNHN') {
-            const isBKBQP = danhHieuFilter === 'BKBQP' && record.nhan_bkbqp === true;
-            const isCSTDTQ = danhHieuFilter === 'CSTDTQ' && record.nhan_cstdtq === true;
-            const isBKTTCP = danhHieuFilter === 'BKTTCP' && record.nhan_bkttcp === true;
+            const isBKBQP =
+              danhHieuFilter === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP && record.nhan_bkbqp === true;
+            const isCSTDTQ =
+              danhHieuFilter === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ && record.nhan_cstdtq === true;
+            const isBKTTCP =
+              danhHieuFilter === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP && record.nhan_bkttcp === true;
 
             if (!isBKBQP && !isCSTDTQ && !isBKTTCP && record.danh_hieu !== danhHieuFilter) {
               return false;

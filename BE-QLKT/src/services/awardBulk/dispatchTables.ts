@@ -74,15 +74,15 @@ type ServiceYearCheckFn = (personnelIds: string[]) => Promise<string[]>;
 /** Personnel-condition checks keyed by proposal type. */
 export const SERVICE_YEAR_CHECKS: Partial<Record<ProposalType, ServiceYearCheckFn>> = {
   [PROPOSAL_TYPES.HC_QKQT]: async personnelIds => {
-    const results = await batchEvaluateServiceYears(personnelIds, 'HC_QKQT', new Date());
+    const results = await batchEvaluateServiceYears(personnelIds, PROPOSAL_TYPES.HC_QKQT, new Date());
     return results
-      .map(r => buildServiceYearsErrorMessage(r, 'HC_QKQT'))
+      .map(r => buildServiceYearsErrorMessage(r, PROPOSAL_TYPES.HC_QKQT))
       .filter((m): m is string => m !== null);
   },
   [PROPOSAL_TYPES.KNC_VSNXD_QDNDVN]: async personnelIds => {
-    const results = await batchEvaluateServiceYears(personnelIds, 'KNC_VSNXD_QDNDVN', new Date());
+    const results = await batchEvaluateServiceYears(personnelIds, PROPOSAL_TYPES.KNC_VSNXD_QDNDVN, new Date());
     return results
-      .map(r => buildServiceYearsErrorMessage(r, 'KNC_VSNXD_QDNDVN'))
+      .map(r => buildServiceYearsErrorMessage(r, PROPOSAL_TYPES.KNC_VSNXD_QDNDVN))
       .filter((m): m is string => m !== null);
   },
   [PROPOSAL_TYPES.NIEN_HAN]: async personnelIds => {

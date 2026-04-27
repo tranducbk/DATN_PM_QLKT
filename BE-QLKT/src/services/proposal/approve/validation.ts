@@ -256,9 +256,9 @@ async function collectHCQKQTEligibilityErrors(
   nienHanData: ProposalNienHanItem[]
 ): Promise<string[]> {
   const personnelIds = nienHanData.map(item => item.personnel_id).filter(Boolean);
-  const results = await batchEvaluateServiceYears(personnelIds, 'HC_QKQT', ctx.refDate);
+  const results = await batchEvaluateServiceYears(personnelIds, PROPOSAL_TYPES.HC_QKQT, ctx.refDate);
   return results
-    .map(r => buildServiceYearsErrorMessage(r, 'HC_QKQT'))
+    .map(r => buildServiceYearsErrorMessage(r, PROPOSAL_TYPES.HC_QKQT))
     .filter((m): m is string => m !== null);
 }
 
@@ -268,9 +268,9 @@ async function collectKNCEligibilityErrors(
   nienHanData: ProposalNienHanItem[]
 ): Promise<string[]> {
   const personnelIds = nienHanData.map(item => item.personnel_id).filter(Boolean);
-  const results = await batchEvaluateServiceYears(personnelIds, 'KNC_VSNXD_QDNDVN', ctx.refDate);
+  const results = await batchEvaluateServiceYears(personnelIds, PROPOSAL_TYPES.KNC_VSNXD_QDNDVN, ctx.refDate);
   return results
-    .map(r => buildServiceYearsErrorMessage(r, 'KNC_VSNXD_QDNDVN'))
+    .map(r => buildServiceYearsErrorMessage(r, PROPOSAL_TYPES.KNC_VSNXD_QDNDVN))
     .filter((m): m is string => m !== null);
 }
 

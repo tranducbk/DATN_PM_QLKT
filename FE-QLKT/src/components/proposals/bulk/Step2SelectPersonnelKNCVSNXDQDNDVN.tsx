@@ -22,7 +22,14 @@ import type { Step2Personnel as Personnel } from './types';
 import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { ExcelImportSection } from './ExcelImportSection';
-import { DANH_HIEU_MAP, KNC_YEARS_REQUIRED_NAM, KNC_YEARS_REQUIRED_NU } from '@/constants/danhHieu.constants';
+import {
+  DANH_HIEU_DAC_BIET,
+  DANH_HIEU_MAP,
+  KNC_YEARS_REQUIRED_NAM,
+  KNC_YEARS_REQUIRED_NU,
+} from '@/constants/danhHieu.constants';
+import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
+import { GENDER } from '@/constants/gender.constants';
 import * as XLSX from 'xlsx';
 
 const { Text } = Typography;
@@ -190,7 +197,7 @@ export function Step2SelectPersonnelKNCVSNXDQDNDVN({
     }
 
     // Requirement: female >= 20 years, male >= 25 years
-    const requiredYears = record.gioi_tinh === 'NU' ? KNC_YEARS_REQUIRED_NU : KNC_YEARS_REQUIRED_NAM;
+    const requiredYears = record.gioi_tinh === GENDER.FEMALE ? KNC_YEARS_REQUIRED_NU : KNC_YEARS_REQUIRED_NAM;
     if (result.years < requiredYears) {
       return {
         eligible: false,
@@ -295,7 +302,7 @@ export function Step2SelectPersonnelKNCVSNXDQDNDVN({
         if (!record.gioi_tinh) {
           return <Text type="danger">Chưa cập nhật</Text>;
         }
-        return <Text>{record.gioi_tinh === 'NAM' ? 'Nam' : 'Nữ'}</Text>;
+        return <Text>{record.gioi_tinh === GENDER.MALE ? 'Nam' : 'Nữ'}</Text>;
       },
     },
     {
@@ -451,7 +458,7 @@ export function Step2SelectPersonnelKNCVSNXDQDNDVN({
 
             titleData.push({
               personnel_id: matchingPersonnel.id,
-              danh_hieu: 'KNC_VSNXD_QDNDVN',
+              danh_hieu: DANH_HIEU_DAC_BIET.KNC_VSNXD_QDNDVN,
               nam: namInt,
               thang,
               cap_bac: capBac,
@@ -469,7 +476,7 @@ export function Step2SelectPersonnelKNCVSNXDQDNDVN({
                 personnel_id: item.personnel_id,
                 nam: item.nam,
                 danh_hieu: item.danh_hieu,
-                proposal_type: 'KNC_VSNXD_QDNDVN',
+                proposal_type: PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
               }))
             );
             if (!batchResponse.success) throw new Error(batchResponse.message);
@@ -525,7 +532,7 @@ export function Step2SelectPersonnelKNCVSNXDQDNDVN({
               award.don_vi_truc_thuoc_id ??
               ''
           ),
-          danh_hieu: 'KNC_VSNXD_QDNDVN',
+          danh_hieu: DANH_HIEU_DAC_BIET.KNC_VSNXD_QDNDVN,
           nam: award.nam,
           thang: award.thang ?? localThang,
           cap_bac: award.cap_bac,

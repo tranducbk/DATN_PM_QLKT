@@ -12,7 +12,7 @@ import { ELIGIBILITY_STATUS } from '../constants/eligibilityStatus.constants';
 import { formatServiceDuration } from '../helpers/serviceYearsHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { NotFoundError } from '../middlewares/errorHandler';
-import { DANH_HIEU_HCCSVV, DANH_HIEU_HCBVTQ, DANH_HIEU_CA_NHAN_BANG_KHEN, DANH_HIEU_CA_NHAN_HANG_NAM, CONG_HIEN_BASE_REQUIRED_MONTHS, CONG_HIEN_FEMALE_REQUIRED_MONTHS, getDanhHieuName } from '../constants/danhHieu.constants';
+import { DANH_HIEU_HCCSVV, DANH_HIEU_HCBVTQ, DANH_HIEU_CA_NHAN_BANG_KHEN, DANH_HIEU_CA_NHAN_HANG_NAM, CONG_HIEN_BASE_REQUIRED_MONTHS, CONG_HIEN_FEMALE_REQUIRED_MONTHS, getDanhHieuName, HCBVTQ_RANK_KEYS, type HcbvtqRankKey } from '../constants/danhHieu.constants';
 import { GENDER } from '../constants/gender.constants';
 import { PERSONAL_CHAIN_AWARDS, findChainAwardConfig } from '../constants/chainAwards.constants';
 import { checkChainEligibility, type EligibilityResult, type FlagsInWindow } from './eligibility/chainEligibility';
@@ -819,7 +819,7 @@ class ProfileService {
   async recalculateContributionProfile(personnelId: string): Promise<{ message: string }> {
     const checkEligibleForRank = (
       personnel: QuanNhan & { LichSuChucVu: LichSuChucVu[] },
-      rank: 'HANG_BA' | 'HANG_NHI' | 'HANG_NHAT'
+      rank: HcbvtqRankKey
     ): boolean => {
       const months0_9_1_0 = getTotalMonthsByGroup(personnel.LichSuChucVu, '0.9-1.0');
       const months0_8 = getTotalMonthsByGroup(personnel.LichSuChucVu, '0.8');
@@ -830,11 +830,11 @@ class ProfileService {
       const requiredMonths =
         personnel?.gioi_tinh === GENDER.FEMALE ? femaleRequiredMonths : baseRequiredMonths;
 
-      if (rank === 'HANG_NHAT') {
+      if (rank === HCBVTQ_RANK_KEYS.HANG_NHAT) {
         return months0_9_1_0 >= requiredMonths;
-      } else if (rank === 'HANG_NHI') {
+      } else if (rank === HCBVTQ_RANK_KEYS.HANG_NHI) {
         return months0_8 + months0_9_1_0 >= requiredMonths;
-      } else if (rank === 'HANG_BA') {
+      } else if (rank === HCBVTQ_RANK_KEYS.HANG_BA) {
         return months0_7 + months0_8 + months0_9_1_0 >= requiredMonths;
       }
 
@@ -897,7 +897,7 @@ class ProfileService {
         ? {
             status: ELIGIBILITY_STATUS.DA_NHAN,
           }
-        : (await checkEligibleForRank(personnel, 'HANG_BA'))
+        : (await checkEligibleForRank(personnel, HCBVTQ_RANK_KEYS.HANG_BA))
           ? { status: ELIGIBILITY_STATUS.DU_DIEU_KIEN }
           : { status: ELIGIBILITY_STATUS.CHUA_DU };
 
@@ -905,7 +905,7 @@ class ProfileService {
         ? {
             status: ELIGIBILITY_STATUS.DA_NHAN,
           }
-        : (await checkEligibleForRank(personnel, 'HANG_NHI'))
+        : (await checkEligibleForRank(personnel, HCBVTQ_RANK_KEYS.HANG_NHI))
           ? { status: ELIGIBILITY_STATUS.DU_DIEU_KIEN }
           : { status: ELIGIBILITY_STATUS.CHUA_DU };
 
@@ -913,7 +913,7 @@ class ProfileService {
         ? {
             status: ELIGIBILITY_STATUS.DA_NHAN,
           }
-        : (await checkEligibleForRank(personnel, 'HANG_NHAT'))
+        : (await checkEligibleForRank(personnel, HCBVTQ_RANK_KEYS.HANG_NHAT))
           ? { status: ELIGIBILITY_STATUS.DU_DIEU_KIEN }
           : { status: ELIGIBILITY_STATUS.CHUA_DU };
 

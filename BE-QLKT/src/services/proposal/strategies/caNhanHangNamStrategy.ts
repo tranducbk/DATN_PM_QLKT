@@ -273,21 +273,21 @@ class CaNhanHangNamStrategy implements ProposalStrategy {
           'nhan_bkbqp',
           'so_quyet_dinh_bkbqp',
           'file_quyet_dinh_bkbqp',
-          'BKBQP'
+          DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP
         );
         const cstdtq = resolveChain(
           isCstdtq,
           'nhan_cstdtq',
           'so_quyet_dinh_cstdtq',
           'file_quyet_dinh_cstdtq',
-          'CSTDTQ'
+          DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ
         );
         const bkttcp = resolveChain(
           isBkttcp,
           'nhan_bkttcp',
           'so_quyet_dinh_bkttcp',
           'file_quyet_dinh_bkttcp',
-          'BKTTCP'
+          DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP
         );
 
         const data: Record<string, unknown> = {};

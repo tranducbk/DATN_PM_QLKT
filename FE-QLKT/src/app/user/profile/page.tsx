@@ -50,6 +50,7 @@ import type {
   MedalData,
 } from '@/lib/types/personnelList';
 import {
+  DANH_HIEU_CA_NHAN_HANG_NAM,
   DANH_HIEU_MAP,
   HCQKQT_YEARS_REQUIRED,
   KNC_YEARS_REQUIRED_NAM,
@@ -897,7 +898,12 @@ export default function UserProfilePage() {
                           CSTĐ Cơ sở
                         </span>
                       }
-                      value={annualRewards.filter((r: AnnualRewardRow) => r.danh_hieu === 'CSTDCS').length}
+                      value={
+                        annualRewards.filter(
+                          (r: AnnualRewardRow) =>
+                            r.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS
+                        ).length
+                      }
                       valueStyle={{ color: isDark ? '#34d399' : '#059669', fontWeight: 700 }}
                     />
                   </Card>

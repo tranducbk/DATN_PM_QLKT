@@ -43,6 +43,7 @@ import { useTheme } from '@/components/ThemeProvider';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
+import { DANH_HIEU_CA_NHAN_HANG_NAM } from '@/constants/danhHieu.constants';
 import type {
   PersonnelDetail,
   ServiceProfile,
@@ -406,8 +407,10 @@ export default function UserDashboard() {
 
                       // Base titles live in `danh_hieu`; chain awards in `nhan_*` boolean flags.
                       annualRewards.forEach((reward: any) => {
-                        if (reward.danh_hieu === 'CSTDCS') danhHieuCounts.CSTDCS++;
-                        else if (reward.danh_hieu === 'CSTT') danhHieuCounts.CSTT++;
+                        if (reward.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS)
+                          danhHieuCounts.CSTDCS++;
+                        else if (reward.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTT)
+                          danhHieuCounts.CSTT++;
                         if (reward.nhan_bkbqp) danhHieuCounts.BKBQP++;
                         if (reward.nhan_cstdtq) danhHieuCounts.CSTDTQ++;
                         if (reward.nhan_bkttcp) danhHieuCounts.BKTTCP++;

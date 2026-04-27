@@ -18,6 +18,7 @@ import {
   LOAI_DE_XUAT_MAP,
 } from '../constants/danhHieu.constants';
 import { PROPOSAL_TYPES, type ProposalType } from '../constants/proposalTypes.constants';
+import { ROLES } from '../constants/roles.constants';
 import {
   getProposalDataField,
   isOneTimeProposalType,
@@ -431,7 +432,7 @@ class AwardBulkService {
     if (errors.length > 0) {
       void writeSystemLog({
         userId: adminId,
-        userRole: 'ADMIN',
+        userRole: ROLES.ADMIN,
         action: 'ERROR',
         resource: 'awards',
         description: `[Thêm khen thưởng đồng loạt] ${LOAI_DE_XUAT_MAP[type as keyof typeof LOAI_DE_XUAT_MAP] || type} năm ${nam}: ${importedCount} thành công, ${errors.length} lỗi. Chi tiết: ${errors.join('; ')}`,

@@ -21,6 +21,7 @@ import type { TableColumnsType } from 'antd';
 import { apiClient } from '@/lib/apiClient';
 import { DEFAULT_PAGE_SIZE, DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
 import { renderAnnualAwards, DANH_HIEU_MAP } from '@/lib/award/awardsHelper';
+import { DANH_HIEU_CA_NHAN_HANG_NAM } from '@/constants/danhHieu.constants';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 
 const { Title, Text } = Typography;
@@ -166,8 +167,14 @@ export default function ManagerUnitsPage() {
       { value: '', label: 'Tất cả danh hiệu' },
       { value: 'ĐVQT', label: DANH_HIEU_MAP['ĐVQT'] || 'Đơn vị Quyết thắng' },
       { value: 'ĐVTT', label: DANH_HIEU_MAP['ĐVTT'] || 'Đơn vị Tiên tiến' },
-      { value: 'BKBQP', label: DANH_HIEU_MAP['BKBQP'] || 'Bằng khen của Bộ trưởng Bộ Quốc phòng' },
-      { value: 'BKTTCP', label: DANH_HIEU_MAP['BKTTCP'] || 'Bằng khen Thủ tướng Chính phủ' },
+      {
+        value: DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP,
+        label: DANH_HIEU_MAP['BKBQP'] || 'Bằng khen của Bộ trưởng Bộ Quốc phòng',
+      },
+      {
+        value: DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP,
+        label: DANH_HIEU_MAP['BKTTCP'] || 'Bằng khen Thủ tướng Chính phủ',
+      },
     ];
   }, []);
 
@@ -189,8 +196,10 @@ export default function ManagerUnitsPage() {
 
       if (danhHieuFilter) {
         // BKBQP and BKTTCP are boolean fields; ĐVQT and ĐVTT use the danh_hieu string
-        const isBKBQP = danhHieuFilter === 'BKBQP' && record.nhan_bkbqp === true;
-        const isBKTTCP = danhHieuFilter === 'BKTTCP' && record.nhan_bkttcp === true;
+        const isBKBQP =
+          danhHieuFilter === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP && record.nhan_bkbqp === true;
+        const isBKTTCP =
+          danhHieuFilter === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP && record.nhan_bkttcp === true;
 
         if (!isBKBQP && !isBKTTCP && record.danh_hieu !== danhHieuFilter) {
           return false;

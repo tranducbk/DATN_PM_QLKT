@@ -5,6 +5,7 @@ import {
   KNC_YEARS_REQUIRED_NU,
 } from '../../constants/danhHieu.constants';
 import { GENDER } from '../../constants/gender.constants';
+import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 import { calculateServiceMonths, formatServiceDuration } from '../../helpers/serviceYearsHelper';
 
 export type ServiceYearsProposalType = 'HC_QKQT' | 'KNC_VSNXD_QDNDVN';
@@ -48,7 +49,7 @@ export function requiredServiceYears(
   proposalType: ServiceYearsProposalType,
   gioiTinh: string | null | undefined
 ): number {
-  if (proposalType === 'HC_QKQT') return HCQKQT_YEARS_REQUIRED;
+  if (proposalType === PROPOSAL_TYPES.HC_QKQT) return HCQKQT_YEARS_REQUIRED;
   return gioiTinh === GENDER.FEMALE ? KNC_YEARS_REQUIRED_NU : KNC_YEARS_REQUIRED_NAM;
 }
 
@@ -77,7 +78,7 @@ export function evaluateServiceYears(
       requiredYears: null,
     };
   }
-  if (proposalType === 'KNC_VSNXD_QDNDVN') {
+  if (proposalType === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN) {
     const g = personnel.gioi_tinh;
     if (!g || (g !== GENDER.MALE && g !== GENDER.FEMALE)) {
       return {

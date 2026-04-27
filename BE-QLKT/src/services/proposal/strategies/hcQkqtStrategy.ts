@@ -59,9 +59,9 @@ class HcQkqtStrategy implements ProposalStrategy {
 
     const evalIds = dataNienHan.map(i => i.personnel_id).filter((id): id is string => Boolean(id));
     if (evalIds.length > 0) {
-      const results = await batchEvaluateServiceYears(evalIds, 'HC_QKQT', new Date());
+      const results = await batchEvaluateServiceYears(evalIds, PROPOSAL_TYPES.HC_QKQT, new Date());
       const lines = results
-        .map(r => buildServiceYearsErrorMessage(r, 'HC_QKQT'))
+        .map(r => buildServiceYearsErrorMessage(r, PROPOSAL_TYPES.HC_QKQT))
         .filter((m): m is string => m !== null);
       if (lines.length > 0) {
         errors.push(

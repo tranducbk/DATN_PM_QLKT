@@ -35,7 +35,12 @@ import type { UploadFile } from 'antd/es/upload/interface';
 import type { ColumnsType } from 'antd/es/table';
 import type { DateInput } from '@/lib/types/common';
 import { apiClient } from '@/lib/apiClient';
-import { getDanhHieuName, HCQKQT_YEARS_REQUIRED } from '@/constants/danhHieu.constants';
+import {
+  DANH_HIEU_CA_NHAN_HANG_NAM,
+  DANH_HIEU_DON_VI_HANG_NAM,
+  getDanhHieuName,
+  HCQKQT_YEARS_REQUIRED,
+} from '@/constants/danhHieu.constants';
 import type { UnitApiRow, ContributionProfile } from '@/lib/types/personnelList';
 import type { TitleDataItem } from '@/lib/types/proposal';
 import {
@@ -1089,7 +1094,12 @@ export default function CreateProposalPage() {
                     proposalType === PROPOSAL_TYPES.DON_VI_HANG_NAM) &&
                     reviewTableData.length > 0 &&
                     (() => {
-                      const allowedTitles = ['CSTT', 'CSTDCS', 'ĐVTT', 'ĐVQT'];
+                      const allowedTitles: string[] = [
+                        DANH_HIEU_CA_NHAN_HANG_NAM.CSTT,
+                        DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS,
+                        DANH_HIEU_DON_VI_HANG_NAM.DVTT,
+                        DANH_HIEU_DON_VI_HANG_NAM.DVQT,
+                      ];
                       const titleCounts: Record<string, number> = {};
 
                       reviewTableData.forEach(item => {

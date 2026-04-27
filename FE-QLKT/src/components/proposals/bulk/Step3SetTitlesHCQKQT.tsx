@@ -10,6 +10,7 @@ import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants'
 import { formatDate } from '@/lib/utils';
 import type { DateInput } from '@/lib/types/common';
 import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
+import { DANH_HIEU_DAC_BIET } from '@/constants/danhHieu.constants';
 
 const { Text } = Typography;
 
@@ -84,7 +85,7 @@ export function Step3SetTitlesHCQKQT({
       if (titleData.length === 0) {
         const initialData = personnelData.map((p: Personnel) => ({
           personnel_id: p.id,
-          danh_hieu: 'HC_QKQT',
+          danh_hieu: DANH_HIEU_DAC_BIET.HC_QKQT,
           cap_bac: p.cap_bac || '',
           chuc_vu: p.ChucVu?.ten_chuc_vu || '',
         }));
@@ -95,7 +96,7 @@ export function Step3SetTitlesHCQKQT({
           const p = personnelData.find((pd: Personnel) => pd.id === item.personnel_id);
           return {
             ...item,
-            danh_hieu: item.danh_hieu || 'HC_QKQT',
+            danh_hieu: item.danh_hieu || DANH_HIEU_DAC_BIET.HC_QKQT,
             cap_bac: item.cap_bac || p?.cap_bac || '',
             chuc_vu: item.chuc_vu || p?.ChucVu?.ten_chuc_vu || '',
           };
@@ -272,7 +273,7 @@ export function Step3SetTitlesHCQKQT({
 
   const allTitlesSet = personnel.every(p => {
     const data = titleData.find(d => d.personnel_id === p.id);
-    return data?.danh_hieu === 'HC_QKQT';
+    return data?.danh_hieu === DANH_HIEU_DAC_BIET.HC_QKQT;
   });
 
   return (

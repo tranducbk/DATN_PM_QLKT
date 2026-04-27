@@ -10,6 +10,10 @@ import { FileAttachmentList } from '@/components/proposals/FileAttachmentList';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { PROPOSAL_STATUS, PROPOSAL_TYPES, PROPOSAL_TYPE_LABELS, type ProposalType } from '@/constants/proposal.constants';
+import {
+  DANH_HIEU_CA_NHAN_HANG_NAM,
+  DANH_HIEU_DON_VI_HANG_NAM,
+} from '@/constants/danhHieu.constants';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 
 const { Text, Title } = Typography;
@@ -323,7 +327,12 @@ export function ProposalDetailModal({
               (proposal.loai_de_xuat === PROPOSAL_TYPES.CA_NHAN_HANG_NAM ||
                 proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM) &&
               (() => {
-                const allowedTitles = ['CSTT', 'CSTDCS', 'ĐVTT', 'ĐVQT'];
+                const allowedTitles: string[] = [
+                  DANH_HIEU_CA_NHAN_HANG_NAM.CSTT,
+                  DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS,
+                  DANH_HIEU_DON_VI_HANG_NAM.DVTT,
+                  DANH_HIEU_DON_VI_HANG_NAM.DVQT,
+                ];
                 const titleCounts: Record<string, number> = {};
 
                 titleData.forEach(item => {

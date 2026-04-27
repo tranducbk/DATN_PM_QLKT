@@ -1782,7 +1782,7 @@ class UnitAnnualAwardService {
         // Verify award chain requirement
         const checkDanhHieu =
           danhHieu === DANH_HIEU_DON_VI_HANG_NAM.BKTTCP ? DANH_HIEU_DON_VI_HANG_NAM.BKTTCP : null;
-        const checkBkbqp = bkbqpRaw ? 'BKBQP' : null;
+        const checkBkbqp = bkbqpRaw ? DANH_HIEU_DON_VI_HANG_NAM.BKBQP : null;
 
         const donVi = coQuanDonViByMa.get(maDonVi) ?? null;
 

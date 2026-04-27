@@ -21,7 +21,9 @@ import { calculateTotalMonths } from './serviceDuration';
 import type { Step2Personnel as Personnel } from './types';
 import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
+import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 import { HCCSVV_YEARS_HANG_BA, HCCSVV_YEARS_HANG_NHI, HCCSVV_YEARS_HANG_NHAT } from '@/constants/danhHieu.constants';
+import { GENDER } from '@/constants/gender.constants';
 import { ExcelImportSection } from './ExcelImportSection';
 import * as XLSX from 'xlsx';
 
@@ -420,7 +422,7 @@ export function Step2SelectPersonnelNienHan({
         if (!record.gioi_tinh) {
           return <Text type="danger">Chưa cập nhật</Text>;
         }
-        return <Text>{record.gioi_tinh === 'NAM' ? 'Nam' : 'Nữ'}</Text>;
+        return <Text>{record.gioi_tinh === GENDER.MALE ? 'Nam' : 'Nữ'}</Text>;
       },
     },
     {
@@ -712,7 +714,7 @@ export function Step2SelectPersonnelNienHan({
                 personnel_id: item.personnel_id,
                 nam: item.nam,
                 danh_hieu: item.danh_hieu,
-                proposal_type: 'NIEN_HAN',
+                proposal_type: PROPOSAL_TYPES.NIEN_HAN,
               }))
             );
             if (!batchResponse.success) throw new Error(batchResponse.message);

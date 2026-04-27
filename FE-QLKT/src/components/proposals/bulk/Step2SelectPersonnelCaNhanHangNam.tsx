@@ -10,6 +10,7 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import { formatDate } from '@/lib/utils';
 import { ExcelImportSection } from './ExcelImportSection';
 import * as XLSX from 'xlsx';
+import { DANH_HIEU_CA_NHAN_HANG_NAM } from '@/constants/danhHieu.constants';
 
 const { Text } = Typography;
 
@@ -162,7 +163,10 @@ export function Step2SelectPersonnelCaNhanHangNam({
               return;
             }
 
-            const validDanhHieu = ['CSTT', 'CSTDCS'];
+            const validDanhHieu = [
+              DANH_HIEU_CA_NHAN_HANG_NAM.CSTT,
+              DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS,
+            ];
             if (!validDanhHieu.includes(danhHieu.toUpperCase())) {
               errors.push(
                 `Dòng ${rowNumber} (${hoTen}): Danh hiệu không hợp lệ: ${danhHieu}. Chỉ chấp nhận: ${validDanhHieu.join(', ')}`

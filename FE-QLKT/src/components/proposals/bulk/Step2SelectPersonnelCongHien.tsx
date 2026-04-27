@@ -17,12 +17,17 @@ import type { ColumnsType } from 'antd/es/table';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { formatDate } from '@/lib/utils';
 import { apiClient } from '@/lib/apiClient';
+import { GENDER } from '@/constants/gender.constants';
 import {
   DEFAULT_ANTD_TABLE_PAGINATION,
   FETCH_ALL_LIMIT,
 } from '@/constants/pagination.constants';
 import { ExcelImportSection } from './ExcelImportSection';
-import { PROPOSAL_STATUS, PROPOSAL_MONTH_OPTIONS } from '@/constants/proposal.constants';
+import {
+  PROPOSAL_MONTH_OPTIONS,
+  PROPOSAL_STATUS,
+  PROPOSAL_TYPES,
+} from '@/constants/proposal.constants';
 import {
   calculateContributionMonthsByGroup,
   formatMonthsToText,
@@ -332,7 +337,7 @@ export function Step2SelectPersonnelCongHien({
         if (!record.gioi_tinh) {
           return <Text type="danger">Chưa cập nhật</Text>;
         }
-        return <Text>{record.gioi_tinh === 'NAM' ? 'Nam' : 'Nữ'}</Text>;
+        return <Text>{record.gioi_tinh === GENDER.MALE ? 'Nam' : 'Nữ'}</Text>;
       },
     },
     {
@@ -515,7 +520,7 @@ export function Step2SelectPersonnelCongHien({
                 personnel_id: item.personnel_id,
                 nam: item.nam,
                 danh_hieu: item.danh_hieu,
-                proposal_type: 'CONG_HIEN',
+                proposal_type: PROPOSAL_TYPES.CONG_HIEN,
               }))
             );
             if (!batchResponse.success) throw new Error(batchResponse.message);

@@ -41,7 +41,11 @@ import {
   PROPOSAL_TYPE_LABELS,
 } from '@/constants/proposal.constants';
 import { ROLE_LABELS, ROLE_COLORS } from '@/constants/roles.constants';
-import { DANH_HIEU_MAP, THANH_TICH_KHOA_HOC_SHORT_LABELS } from '@/constants/danhHieu.constants';
+import {
+  DANH_HIEU_CA_NHAN_HANG_NAM,
+  DANH_HIEU_MAP,
+  THANH_TICH_KHOA_HOC_SHORT_LABELS,
+} from '@/constants/danhHieu.constants';
 
 const { Title, Text } = Typography;
 
@@ -122,7 +126,8 @@ export default function ManagerDashboard() {
 
           const totalCSTDCS =
             statisticsRes.data.awardsByType.find(
-              (a: { type: string; count: number }) => a.type === 'CSTDCS'
+              (a: { type: string; count: number }) =>
+                a.type === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS
             )?.count || 0;
           const totalNCKH =
             statisticsRes.data.scientificAchievementsByType.reduce(

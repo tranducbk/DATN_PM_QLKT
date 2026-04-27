@@ -34,6 +34,7 @@ import Link from 'next/link';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
 import { getDanhHieuName } from '@/constants/danhHieu.constants';
+import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 import { Step2SelectPersonnelNienHan } from '@/components/proposals/bulk/Step2SelectPersonnelNienHan';
 import { Step3SetTitlesNienHan } from '@/components/proposals/bulk/Step3SetTitlesNienHan';
 import { DecisionModal } from '@/components/decisions/DecisionModal';
@@ -200,7 +201,7 @@ export default function SuperAdminAddAwardsPage() {
       });
 
       const formData = new FormData();
-      formData.append('type', 'NIEN_HAN');
+      formData.append('type', PROPOSAL_TYPES.NIEN_HAN);
       formData.append('nam', String(nam));
       formData.append('selected_personnel', JSON.stringify(selectedPersonnelIds));
       formData.append('title_data', JSON.stringify(titleDataWithDecisions));

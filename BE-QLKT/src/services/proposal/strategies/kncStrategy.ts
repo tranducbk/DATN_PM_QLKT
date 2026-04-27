@@ -56,9 +56,9 @@ class KncStrategy implements ProposalStrategy {
 
     const evalIds = dataNienHan.map(i => i.personnel_id).filter((id): id is string => Boolean(id));
     if (evalIds.length > 0) {
-      const results = await batchEvaluateServiceYears(evalIds, 'KNC_VSNXD_QDNDVN', new Date());
+      const results = await batchEvaluateServiceYears(evalIds, PROPOSAL_TYPES.KNC_VSNXD_QDNDVN, new Date());
       const lines = results
-        .map(r => buildServiceYearsErrorMessage(r, 'KNC_VSNXD_QDNDVN'))
+        .map(r => buildServiceYearsErrorMessage(r, PROPOSAL_TYPES.KNC_VSNXD_QDNDVN))
         .filter((m): m is string => m !== null);
       if (lines.length > 0) {
         errors.push(

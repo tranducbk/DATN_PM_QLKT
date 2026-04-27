@@ -1,7 +1,11 @@
 import { Button, Popconfirm, Typography } from 'antd';
 import { DeleteOutlined } from '@ant-design/icons';
 import type { CSSProperties } from 'react';
-import { DANH_HIEU_MAP, getLoaiKhenThuongByDanhHieu } from '@/constants/danhHieu.constants';
+import {
+  DANH_HIEU_CA_NHAN_HANG_NAM,
+  DANH_HIEU_MAP,
+  getLoaiKhenThuongByDanhHieu,
+} from '@/constants/danhHieu.constants';
 import type { AnnualRewardRecord, UnitAnnualRewardRecord } from '@/lib/types/award';
 
 const { Text } = Typography;
@@ -97,13 +101,25 @@ export const collectPersonalAwards = (record: {
 }): AwardEntry[] => {
   const list: AwardEntry[] = [];
   if (record.nhan_bkttcp) {
-    list.push({ code: 'BKTTCP', label: DANH_HIEU_MAP.BKTTCP, shortLabel: 'BKTTCP' });
+    list.push({
+      code: DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP,
+      label: DANH_HIEU_MAP.BKTTCP,
+      shortLabel: DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP,
+    });
   }
   if (record.nhan_cstdtq) {
-    list.push({ code: 'CSTDTQ', label: DANH_HIEU_MAP.CSTDTQ, shortLabel: 'CSTDTQ' });
+    list.push({
+      code: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ,
+      label: DANH_HIEU_MAP.CSTDTQ,
+      shortLabel: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ,
+    });
   }
   if (record.nhan_bkbqp) {
-    list.push({ code: 'BKBQP', label: DANH_HIEU_MAP.BKBQP, shortLabel: 'BKBQP' });
+    list.push({
+      code: DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP,
+      label: DANH_HIEU_MAP.BKBQP,
+      shortLabel: DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP,
+    });
   }
   if (record.danh_hieu) {
     list.push({
@@ -123,10 +139,18 @@ export const collectUnitAwards = (record: {
 }): AwardEntry[] => {
   const list: AwardEntry[] = [];
   if (record.nhan_bkttcp) {
-    list.push({ code: 'BKTTCP', label: DANH_HIEU_MAP.BKTTCP, shortLabel: 'BKTTCP' });
+    list.push({
+      code: DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP,
+      label: DANH_HIEU_MAP.BKTTCP,
+      shortLabel: DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP,
+    });
   }
   if (record.nhan_bkbqp) {
-    list.push({ code: 'BKBQP', label: DANH_HIEU_MAP.BKBQP, shortLabel: 'BKBQP' });
+    list.push({
+      code: DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP,
+      label: DANH_HIEU_MAP.BKBQP,
+      shortLabel: DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP,
+    });
   }
   if (record.danh_hieu) {
     list.push({
@@ -204,9 +228,9 @@ export const renderAnnualAwards = (
 
   // Render chain awards top-down by prestige: BKTTCP → CSTDTQ → BKBQP → base (CSTDCS/CSTT).
   const chainAwards = [
-    { key: 'bkttcp', flag: record.nhan_bkttcp, decision: record.so_quyet_dinh_bkttcp, code: 'BKTTCP', note: recordNotes.bkttcp },
-    { key: 'cstdtq', flag: record.nhan_cstdtq, decision: record.so_quyet_dinh_cstdtq, code: 'CSTDTQ', note: recordNotes.cstdtq },
-    { key: 'bkbqp', flag: record.nhan_bkbqp, decision: record.so_quyet_dinh_bkbqp, code: 'BKBQP', note: recordNotes.bkbqp },
+    { key: 'bkttcp', flag: record.nhan_bkttcp, decision: record.so_quyet_dinh_bkttcp, code: DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP, note: recordNotes.bkttcp },
+    { key: 'cstdtq', flag: record.nhan_cstdtq, decision: record.so_quyet_dinh_cstdtq, code: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ, note: recordNotes.cstdtq },
+    { key: 'bkbqp', flag: record.nhan_bkbqp, decision: record.so_quyet_dinh_bkbqp, code: DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP, note: recordNotes.bkbqp },
   ];
 
   chainAwards.forEach(({ key, flag, decision, code, note }) => {
@@ -251,8 +275,8 @@ export const renderUnitAnnualAwards = (
 
   // Unit chain order top-down: BKTTCP → BKBQP → base (ĐVQT/ĐVTT).
   const chainAwards = [
-    { key: 'bkttcp', flag: record.nhan_bkttcp, decision: record.so_quyet_dinh_bkttcp, code: 'BKTTCP', note: recordNotes.bkttcp },
-    { key: 'bkbqp', flag: record.nhan_bkbqp, decision: record.so_quyet_dinh_bkbqp, code: 'BKBQP', note: recordNotes.bkbqp },
+    { key: 'bkttcp', flag: record.nhan_bkttcp, decision: record.so_quyet_dinh_bkttcp, code: DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP, note: recordNotes.bkttcp },
+    { key: 'bkbqp', flag: record.nhan_bkbqp, decision: record.so_quyet_dinh_bkbqp, code: DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP, note: recordNotes.bkbqp },
   ];
 
   chainAwards.forEach(({ key, flag, decision, code, note }) => {

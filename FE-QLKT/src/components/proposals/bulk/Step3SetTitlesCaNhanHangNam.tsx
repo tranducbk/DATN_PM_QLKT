@@ -27,6 +27,7 @@ import {
   getProposalStatusLabel,
   PROPOSAL_TYPES,
 } from '@/constants/proposal.constants';
+import { DANH_HIEU_CA_NHAN_HANG_NAM } from '@/constants/danhHieu.constants';
 
 const { Text } = Typography;
 
@@ -40,8 +41,15 @@ const NCKH_LOAI_LABELS: Record<string, string> = {
   SKKH: 'Sáng kiến khoa học',
 };
 
-const NHOM_CSTDCS_CSTT = new Set(['CSTDCS', 'CSTT']);
-const NHOM_CHUOI = new Set(['BKBQP', 'CSTDTQ', 'BKTTCP']);
+const NHOM_CSTDCS_CSTT = new Set<string>([
+  DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS,
+  DANH_HIEU_CA_NHAN_HANG_NAM.CSTT,
+]);
+const NHOM_CHUOI = new Set<string>([
+  DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP,
+  DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ,
+  DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP,
+]);
 const MIXED_GROUP_WARNING =
   'Không thể đề xuất CSTDCS/CSTT cùng với BKBQP/CSTDTQ/BKTTCP trong một đề xuất. ' +
   'Vui lòng tạo đề xuất riêng cho loại danh hiệu này.';
@@ -223,31 +231,38 @@ export function Step3SetTitlesCaNhanHangNam({
   const getDanhHieuOptions = (id: string) => {
     const selectedType = getSelectedDanhHieuType();
     let allOptions = [
-      { label: 'Chiến sĩ thi đua cơ sở', value: 'CSTDCS' },
-      { label: 'Chiến sĩ tiên tiến', value: 'CSTT' },
-      { label: 'Bằng khen của Bộ trưởng Bộ Quốc phòng', value: 'BKBQP' },
-      { label: 'Chiến sĩ thi đua toàn quân', value: 'CSTDTQ' },
-      { label: 'Bằng khen Thủ tướng Chính phủ', value: 'BKTTCP' },
+      { label: 'Chiến sĩ thi đua cơ sở', value: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS },
+      { label: 'Chiến sĩ tiên tiến', value: DANH_HIEU_CA_NHAN_HANG_NAM.CSTT },
+      { label: 'Bằng khen của Bộ trưởng Bộ Quốc phòng', value: DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP },
+      { label: 'Chiến sĩ thi đua toàn quân', value: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ },
+      { label: 'Bằng khen Thủ tướng Chính phủ', value: DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP },
     ];
     if (annualProfiles[id]) {
       const profile = annualProfiles[id];
       if (profile.du_dieu_kien_bkbqp === false) {
-        allOptions = allOptions.filter(opt => opt.value !== 'BKBQP');
+        allOptions = allOptions.filter(opt => opt.value !== DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP);
       }
       if (profile.du_dieu_kien_cstdtq === false) {
-        allOptions = allOptions.filter(opt => opt.value !== 'CSTDTQ');
+        allOptions = allOptions.filter(opt => opt.value !== DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ);
       }
       if (profile.du_dieu_kien_bkttcp === false) {
-        allOptions = allOptions.filter(opt => opt.value !== 'BKTTCP');
+        allOptions = allOptions.filter(opt => opt.value !== DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP);
       }
 
     }
 
     if (selectedType === 'nhom_cstdcs_cstt') {
-      return allOptions.filter(opt => opt.value === 'CSTDCS' || opt.value === 'CSTT');
+      return allOptions.filter(
+        opt =>
+          opt.value === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS ||
+          opt.value === DANH_HIEU_CA_NHAN_HANG_NAM.CSTT
+      );
     } else if (selectedType === 'nhom_chuoi') {
       return allOptions.filter(
-        opt => opt.value === 'BKBQP' || opt.value === 'CSTDTQ' || opt.value === 'BKTTCP'
+        opt =>
+          opt.value === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP ||
+          opt.value === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ ||
+          opt.value === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP
       );
     }
 
@@ -260,9 +275,9 @@ export function Step3SetTitlesCaNhanHangNam({
     const yearRecords: CSTDCSItem[] = profile.tong_cstdcs_json || [];
     const thisYear = yearRecords.find((r: CSTDCSItem) => r.nam === nam);
     if (!thisYear) return false;
-    if (danhHieu === 'BKBQP' && thisYear.nhan_bkbqp) return true;
-    if (danhHieu === 'CSTDTQ' && thisYear.nhan_cstdtq) return true;
-    if (danhHieu === 'BKTTCP' && thisYear.nhan_bkttcp) return true;
+    if (danhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP && thisYear.nhan_bkbqp) return true;
+    if (danhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ && thisYear.nhan_cstdtq) return true;
+    if (danhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP && thisYear.nhan_bkttcp) return true;
     return false;
   };
 
@@ -303,7 +318,9 @@ export function Step3SetTitlesCaNhanHangNam({
       const personnelDetail = personnel.find(p => p.id === id);
       if (personnelDetail) {
         try {
-          const isMutuallyExclusive = value === 'CSTDCS' || value === 'CSTT';
+          const isMutuallyExclusive =
+            value === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS ||
+            value === DANH_HIEU_CA_NHAN_HANG_NAM.CSTT;
           const results = await Promise.all([
             apiClient.checkDuplicate({
               personnel_id: id,
@@ -316,7 +333,10 @@ export function Step3SetTitlesCaNhanHangNam({
                   apiClient.checkDuplicate({
                     personnel_id: id,
                     nam,
-                    danh_hieu: value === 'CSTDCS' ? 'CSTT' : 'CSTDCS',
+                    danh_hieu:
+                      value === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS
+                        ? DANH_HIEU_CA_NHAN_HANG_NAM.CSTT
+                        : DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS,
                     proposal_type: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
                   }),
                 ]
@@ -615,7 +635,7 @@ export function Step3SetTitlesCaNhanHangNam({
           <Tabs
             items={[
               {
-                key: 'CSTDCS',
+                key: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS,
                 label: `Danh hiệu CSTDCS (${selectedAnnualProfile.tong_cstdcs})`,
                 children: (
                   <div>

@@ -10,6 +10,8 @@ import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants'
 import { formatDate } from '@/lib/utils';
 import type { DateInput } from '@/lib/types/common';
 import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
+import { DANH_HIEU_DAC_BIET } from '@/constants/danhHieu.constants';
+import { GENDER } from '@/constants/gender.constants';
 
 const { Text } = Typography;
 
@@ -85,7 +87,7 @@ export function Step3SetTitlesKNCVSNXDQDNDVN({
       if (titleData.length === 0) {
         const initialData = personnelData.map((p: Personnel) => ({
           personnel_id: p.id,
-          danh_hieu: 'KNC_VSNXD_QDNDVN',
+          danh_hieu: DANH_HIEU_DAC_BIET.KNC_VSNXD_QDNDVN,
           cap_bac: p.cap_bac || '',
           chuc_vu: p.ChucVu?.ten_chuc_vu || '',
         }));
@@ -96,7 +98,7 @@ export function Step3SetTitlesKNCVSNXDQDNDVN({
           const p = personnelData.find((pd: Personnel) => pd.id === item.personnel_id);
           return {
             ...item,
-            danh_hieu: item.danh_hieu || 'KNC_VSNXD_QDNDVN',
+            danh_hieu: item.danh_hieu || DANH_HIEU_DAC_BIET.KNC_VSNXD_QDNDVN,
             cap_bac: item.cap_bac || p?.cap_bac || '',
             chuc_vu: item.chuc_vu || p?.ChucVu?.ten_chuc_vu || '',
           };
@@ -242,7 +244,7 @@ export function Step3SetTitlesKNCVSNXDQDNDVN({
         if (!record.gioi_tinh) {
           return <Text type="danger">Chưa cập nhật</Text>;
         }
-        return <Text>{record.gioi_tinh === 'NAM' ? 'Nam' : 'Nữ'}</Text>;
+        return <Text>{record.gioi_tinh === GENDER.MALE ? 'Nam' : 'Nữ'}</Text>;
       },
     },
     {
@@ -283,7 +285,7 @@ export function Step3SetTitlesKNCVSNXDQDNDVN({
 
   const allTitlesSet = personnel.every(p => {
     const data = titleData.find(d => d.personnel_id === p.id);
-    return data?.danh_hieu === 'KNC_VSNXD_QDNDVN';
+    return data?.danh_hieu === DANH_HIEU_DAC_BIET.KNC_VSNXD_QDNDVN;
   });
 
   return (
