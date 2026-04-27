@@ -11,6 +11,13 @@ import { formatDate } from '@/lib/utils';
 import { ExcelImportSection } from './ExcelImportSection';
 import * as XLSX from 'xlsx';
 import { DANH_HIEU_CA_NHAN_HANG_NAM } from '@/constants/danhHieu.constants';
+import type {
+  ExcelRow,
+  Step2ImportSuccessResult,
+  Step2ImportedAward,
+  Step2LocalImportResult,
+} from './types';
+import type { TitleDataItem } from '@/lib/types/proposal';
 
 const { Text } = Typography;
 
@@ -49,8 +56,8 @@ interface Step2SelectPersonnelCaNhanHangNamProps {
   onPersonnelChange: (ids: string[]) => void;
   nam: number;
   onNamChange: (nam: number) => void;
-  titleData?: any[];
-  onTitleDataChange?: (data: any[]) => void;
+  titleData?: TitleDataItem[];
+  onTitleDataChange?: (data: TitleDataItem[]) => void;
   onNextStep?: () => void;
   isManager?: boolean;
 }
@@ -98,7 +105,9 @@ export function Step2SelectPersonnelCaNhanHangNam({
     }
   };
 
-  const handleLocalExcelProcess = async (file: File): Promise<any> => {
+  const handleLocalExcelProcess = async (
+    file: File
+  ): Promise<Step2LocalImportResult<TitleDataItem>> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
 
@@ -115,8 +124,8 @@ export function Step2SelectPersonnelCaNhanHangNam({
             throw new Error('File Excel không có dữ liệu hoặc thiếu header');
           }
 
-          const dataRows = jsonData.slice(1);
-          const titleData: any[] = [];
+          const dataRows = jsonData.slice(1) as ExcelRow[];
+          const titleData: TitleDataItem[] = [];
           const errors: string[] = [];
           const processedPersonnelIds: string[] = [];
 
@@ -124,7 +133,7 @@ export function Step2SelectPersonnelCaNhanHangNam({
           // BKBQP(7), CSTDTQ(8), BKTTCP(9), Decision no. title(10), Decision no. BKBQP(11), Decision no. CSTDTQ(12), Decision no. BKTTCP(13), Note(14)
           const seenKeys = new Set<string>();
 
-          dataRows.forEach((row: any, index: number) => {
+          dataRows.forEach((row: ExcelRow, index: number) => {
             const rowNumber = index + 2;
 
             const personnelId = row[1]?.toString().trim();
@@ -163,7 +172,7 @@ export function Step2SelectPersonnelCaNhanHangNam({
               return;
             }
 
-            const validDanhHieu = [
+            const validDanhHieu: string[] = [
               DANH_HIEU_CA_NHAN_HANG_NAM.CSTT,
               DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS,
             ];
@@ -174,7 +183,7 @@ export function Step2SelectPersonnelCaNhanHangNam({
               return;
             }
 
-            const matchingPersonnel = personnel.find((p: any) => p.id === personnelId);
+            const matchingPersonnel = personnel.find(p => p.id === personnelId);
             if (!matchingPersonnel) {
               errors.push(
                 `Dòng ${rowNumber}: Không tìm thấy quân nhân ID "${personnelId}" (${hoTen}) trong danh sách`
@@ -192,7 +201,7 @@ export function Step2SelectPersonnelCaNhanHangNam({
             }
             seenKeys.add(key);
 
-            const parseBool = (val: string) =>
+            const parseBool = (val: string | undefined) =>
               ['có', 'co', 'true', '1', 'x'].includes((val || '').toLowerCase());
 
             processedPersonnelIds.push(matchingPersonnel.id);
@@ -217,7 +226,7 @@ export function Step2SelectPersonnelCaNhanHangNam({
 
           resolve({
             imported: titleData.length,
-            total: dataRows.filter((r: any) => r[1] || r[5] || r[6]).length,
+            total: dataRows.filter(r => r[1] || r[5] || r[6]).length,
             errors,
             selectedPersonnelIds: uniquePersonnelIds,
             titleData,
@@ -235,7 +244,7 @@ export function Step2SelectPersonnelCaNhanHangNam({
     });
   };
 
-  const handleImportSuccess = (result: any) => {
+  const handleImportSuccess = (result: Step2ImportSuccessResult) => {
     if (result.selectedPersonnelIds && result.selectedPersonnelIds.length > 0) {
       onPersonnelChange(result.selectedPersonnelIds);
     }
@@ -243,20 +252,22 @@ export function Step2SelectPersonnelCaNhanHangNam({
     // Populate titleData from imported data
     if (result.titleData && result.titleData.length > 0 && onTitleDataChange) {
       // Transform to titleData format
-      const titleData = result.titleData.map((award: any) => ({
-        personnel_id: String(
-          award.quan_nhan_id ??
-            award.personnel_id ??
-            award.co_quan_don_vi_id ??
-            award.don_vi_truc_thuoc_id ??
-            '' // fallback if all ID fields are null/undefined
-        ),
-        danh_hieu: award.danh_hieu,
-        nam: award.nam,
-        cap_bac: award.cap_bac,
-        chuc_vu: award.chuc_vu,
-        ghi_chu: award.ghi_chu,
-      }));
+      const titleData: TitleDataItem[] = result.titleData.map(
+        (award: Step2ImportedAward) => ({
+          personnel_id: String(
+            award.quan_nhan_id ??
+              award.personnel_id ??
+              award.co_quan_don_vi_id ??
+              award.don_vi_truc_thuoc_id ??
+              '' // fallback if all ID fields are null/undefined
+          ),
+          danh_hieu: award.danh_hieu,
+          nam: award.nam,
+          cap_bac: award.cap_bac,
+          chuc_vu: award.chuc_vu,
+          ghi_chu: award.ghi_chu,
+        })
+      );
 
       onTitleDataChange(titleData);
 

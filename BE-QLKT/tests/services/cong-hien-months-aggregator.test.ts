@@ -64,7 +64,7 @@ describe('aggregatePositionMonthsByGroup', () => {
       ],
       cutoff
     );
-    // Recalculated covered months should fall close to 12 — far from the stale 999.
+    // Số tháng tính lại nên gần 12 — khác xa giá trị stale 999.
     expect(totals[CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10]).toBeGreaterThan(0);
     expect(totals[CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10]).toBeLessThan(20);
   });

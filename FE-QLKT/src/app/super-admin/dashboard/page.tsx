@@ -30,6 +30,7 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import { useTheme } from '@/components/ThemeProvider';
 import { useAuth } from '@/contexts/AuthContext';
 import { ROLE_LABELS } from '@/constants/roles.constants';
+import { formatDateTime } from '@/lib/utils';
 
 const SuperAdminDashboardCharts = dynamic(
   () => import('@/components/super-admin/SuperAdminDashboardCharts'),
@@ -485,7 +486,7 @@ export default function SuperAdminDashboard() {
                         </Text>
                       </div>
                       <Text strong style={{ fontSize: 13 }}>
-                        {new Date().toLocaleString('vi-VN')}
+                        {formatDateTime(new Date())}
                       </Text>
                     </div>
                   ),

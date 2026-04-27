@@ -64,7 +64,7 @@ function buildPersonnelWithHistory(
 
 describe('profile.service - checkAwardEligibility (BKBQP)', () => {
   it('2 năm CSTDCS liên tục + NCKH đủ → eligible BKBQP', async () => {
-    // Given: personnel achieved CSTDCS in 2022 + 2023 with matching NCKH each year
+    // Cho: personnel đạt CSTDCS năm 2022 + 2023 với NCKH match mỗi năm
     const personnelId = 'qn-elig-1';
     const personnel = buildPersonnelWithHistory(
       personnelId,
@@ -84,14 +84,14 @@ describe('profile.service - checkAwardEligibility (BKBQP)', () => {
     );
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(personnel);
 
-    // When
+    // Khi
     const result = await profileService.checkAwardEligibility(
       personnelId,
       2024,
       DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP
     );
 
-    // Then
+    // Thì
     expect(result.eligible).toBe(true);
   });
 
@@ -121,8 +121,8 @@ describe('profile.service - checkAwardEligibility (BKBQP)', () => {
   });
 
   it('CSTT giữa chuỗi → break streak CSTDCS, BKBQP fail', async () => {
-    // Given: 2022 CSTDCS, 2023 CSTT (non-CSTDCS) — streak resets so only 2023... but CSTT is not CSTDCS
-    // Streak ending 2023 = 0 (last year is CSTT). With year=2024, ending year=2023.
+    // Cho: 2022 CSTDCS, 2023 CSTT (non-CSTDCS) — streak reset, năm cuối là CSTT.
+    // Streak kết 2023 = 0 (năm cuối là CSTT). Với year=2024, ending year=2023.
     const personnelId = 'qn-elig-3';
     const personnel = buildPersonnelWithHistory(
       personnelId,
@@ -148,7 +148,7 @@ describe('profile.service - checkAwardEligibility (BKBQP)', () => {
   });
 
   it('2 năm CSTDCS nhưng thiếu NCKH năm cuối → BKBQP fail', async () => {
-    // Given: NCKH only in 2022 — streak NCKH ends at 2022 (one year), CSTDCS streak = 2
+    // Cho: NCKH chỉ có 2022 — streak NCKH kết 2022 (1 năm), streak CSTDCS = 2
     const personnelId = 'qn-elig-4';
     const personnel = buildPersonnelWithHistory(
       personnelId,
@@ -217,7 +217,7 @@ describe('profile.service - checkAwardEligibility (CSTDTQ + BKTTCP)', () => {
   });
 
   it('7 năm CSTDCS + 3 BKBQP + 2 CSTDTQ + NCKH đủ → eligible BKTTCP', async () => {
-    // Given: BKBQP at 2017/2019/2021, CSTDTQ at 2020/2023, all CSTDCS 2017-2023
+    // Cho: BKBQP tại 2017/2019/2021, CSTDTQ tại 2020/2023, CSTDCS 2017-2023
     const personnelId = 'qn-bkttcp';
     const personnel = buildPersonnelWithHistory(
       personnelId,
@@ -290,7 +290,7 @@ describe('profile.service - checkAwardEligibility (CSTDTQ + BKTTCP)', () => {
   });
 
   it('14 năm CSTDCS liên tục → "chưa hỗ trợ" BKTTCP', async () => {
-    // Given: 14 consecutive CSTDCS years (2010-2023) — streak > 7 and divisible by 7
+    // Cho: 14 năm CSTDCS liên tục (2010-2023) — streak > 7 và chia hết 7
     const personnelId = 'qn-overflow';
     const danhHieuRows: AnnualRow[] = [];
     const thanhTichRows: ScienceRow[] = [];
@@ -318,7 +318,7 @@ describe('profile.service - checkAwardEligibility (CSTDTQ + BKTTCP)', () => {
 
 describe('profile.service - recalculateAnnualProfile', () => {
   it('upsert đúng tong_cstdcs, cstdcs_lien_tuc, du_dieu_kien_bkbqp khi đủ điều kiện', async () => {
-    // Given: 2 CSTDCS years (2022, 2023) + matching NCKH
+    // Cho: 2 năm CSTDCS (2022, 2023) + NCKH match
     const personnelId = 'qn-recalc-1';
     const personnel = buildPersonnelWithHistory(
       personnelId,
@@ -342,10 +342,10 @@ describe('profile.service - recalculateAnnualProfile', () => {
       ...args.create,
     }));
 
-    // When
+    // Khi
     const result = await profileService.recalculateAnnualProfile(personnelId, 2024);
 
-    // Then
+    // Thì
     expect(result.success).toBe(true);
     const upsertArgs = prismaMock.hoSoHangNam.upsert.mock.calls[0][0];
     expect(upsertArgs.update).toMatchObject({
@@ -359,7 +359,7 @@ describe('profile.service - recalculateAnnualProfile', () => {
   });
 
   it('CSTDCS bị break giữa chuỗi → không đủ điều kiện BKTTCP', async () => {
-    // Given: 7 CSTDCS years but with CSTT in middle (year 2020) — streak resets at 2020
+    // Cho: 7 năm CSTDCS với CSTT giữa (năm 2020) — streak reset tại 2020
     const personnelId = 'qn-broken';
     const personnel = buildPersonnelWithHistory(
       personnelId,
@@ -423,13 +423,13 @@ describe('profile.service - recalculateAnnualProfile', () => {
     await profileService.recalculateAnnualProfile(personnelId, 2024);
 
     const upsertArgs = prismaMock.hoSoHangNam.upsert.mock.calls[0][0];
-    // Streak only 3 (2021-2023), so BKTTCP must be false
+    // Streak chỉ 3 (2021-2023), nên BKTTCP phải false
     expect(upsertArgs.update.cstdcs_lien_tuc).toBe(3);
     expect(upsertArgs.update.du_dieu_kien_bkttcp).toBe(false);
   });
 
   it('recalculate cho year khác → kết quả khác (2022 vs 2024)', async () => {
-    // Given: same data — evaluate for 2022 (streak ends at 2021)
+    // Cho: cùng data — evaluate cho 2022 (streak kết tại 2021)
     const personnelId = 'qn-year-shift';
     const danhHieuRows: AnnualRow[] = [
       { nam: 2020, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS, so_quyet_dinh: 'QD-CSTDCS-2020' },
@@ -453,10 +453,10 @@ describe('profile.service - recalculateAnnualProfile', () => {
 
     await profileService.recalculateAnnualProfile(personnelId, 2022);
     const args2022 = prismaMock.hoSoHangNam.upsert.mock.calls[0][0];
-    // Year 2022 → streak ending 2021 = 2 years (2020, 2021)
+    // Năm 2022 → streak kết 2021 = 2 năm (2020, 2021)
     expect(args2022.update.cstdcs_lien_tuc).toBe(2);
 
-    // When: re-evaluate for 2024 — streak ending 2023 = 4 years
+    // Khi: re-evaluate cho 2024 — streak kết 2023 = 4 năm
     resetPrismaMock();
     const personnel2024 = buildPersonnelWithHistory(personnelId, danhHieuRows, thanhTichRows);
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(personnel2024);
@@ -468,7 +468,7 @@ describe('profile.service - recalculateAnnualProfile', () => {
   });
 
   it('đã nhận BKTTCP + streak > 7 + chia hết 7 → goi_y "chưa hỗ trợ"', async () => {
-    // Given: 14 CSTDCS years with BKTTCP flag in latest year
+    // Cho: 14 năm CSTDCS với cờ BKTTCP ở năm mới nhất
     const personnelId = 'qn-after-bkttcp';
     const danhHieuRows: AnnualRow[] = [];
     const thanhTichRows: ScienceRow[] = [];

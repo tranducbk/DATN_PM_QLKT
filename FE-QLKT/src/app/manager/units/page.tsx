@@ -21,7 +21,10 @@ import type { TableColumnsType } from 'antd';
 import { apiClient } from '@/lib/apiClient';
 import { DEFAULT_PAGE_SIZE, DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
 import { renderAnnualAwards, DANH_HIEU_MAP } from '@/lib/award/awardsHelper';
-import { DANH_HIEU_CA_NHAN_HANG_NAM } from '@/constants/danhHieu.constants';
+import {
+  DANH_HIEU_CA_NHAN_HANG_NAM,
+  DANH_HIEU_DON_VI_HANG_NAM,
+} from '@/constants/danhHieu.constants';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 
 const { Title, Text } = Typography;
@@ -165,15 +168,24 @@ export default function ManagerUnitsPage() {
   const danhHieuOptions = useMemo(() => {
     return [
       { value: '', label: 'Tất cả danh hiệu' },
-      { value: 'ĐVQT', label: DANH_HIEU_MAP['ĐVQT'] || 'Đơn vị Quyết thắng' },
-      { value: 'ĐVTT', label: DANH_HIEU_MAP['ĐVTT'] || 'Đơn vị Tiên tiến' },
+      {
+        value: DANH_HIEU_DON_VI_HANG_NAM.DVQT,
+        label: DANH_HIEU_MAP[DANH_HIEU_DON_VI_HANG_NAM.DVQT] || 'Đơn vị Quyết thắng',
+      },
+      {
+        value: DANH_HIEU_DON_VI_HANG_NAM.DVTT,
+        label: DANH_HIEU_MAP[DANH_HIEU_DON_VI_HANG_NAM.DVTT] || 'Đơn vị Tiên tiến',
+      },
       {
         value: DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP,
-        label: DANH_HIEU_MAP['BKBQP'] || 'Bằng khen của Bộ trưởng Bộ Quốc phòng',
+        label:
+          DANH_HIEU_MAP[DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP] ||
+          'Bằng khen của Bộ trưởng Bộ Quốc phòng',
       },
       {
         value: DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP,
-        label: DANH_HIEU_MAP['BKTTCP'] || 'Bằng khen Thủ tướng Chính phủ',
+        label:
+          DANH_HIEU_MAP[DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP] || 'Bằng khen Thủ tướng Chính phủ',
       },
     ];
   }, []);

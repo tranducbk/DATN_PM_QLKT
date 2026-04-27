@@ -85,7 +85,7 @@ function buildContiguousCSTDCS(
 
 describe('profile.service - BKBQP edge cases', () => {
   it('streak gián đoạn rồi tiếp tục: 5y CSTDCS → 1y CSTT → 3y CSTDCS, recalc 2027 → streak = 3', async () => {
-    // Given: 5y CSTDCS (2018-2022), 1y CSTT (2023), 3y CSTDCS (2024-2026)
+    // Cho: 5y CSTDCS (2018-2022), 1y CSTT (2023), 3y CSTDCS (2024-2026)
     const personnelId = 'qn-edge-bkbqp-1';
     const danhHieu: AnnualRow[] = [];
     const nckh: ScienceRow[] = [];
@@ -116,17 +116,17 @@ describe('profile.service - BKBQP edge cases', () => {
     );
     prismaMock.hoSoHangNam.upsert.mockImplementationOnce(async (args: any) => args.create);
 
-    // When: recalc for 2027 — streak ending 2026 only counts 2024-2026
+    // Khi: recalc năm 2027 — streak kết thúc 2026 chỉ tính 2024-2026
     await profileService.recalculateAnnualProfile(personnelId, 2027);
 
-    // Then: streak = 3, BKBQP not eligible (3 is not even), CSTDTQ requires BKBQP in streak
+    // Thì: streak = 3, BKBQP không eligible (3 không chẵn), CSTDTQ cần BKBQP trong streak
     const args = prismaMock.hoSoHangNam.upsert.mock.calls[0][0];
     expect(args.update.cstdcs_lien_tuc).toBe(3);
     expect(args.update.du_dieu_kien_bkbqp).toBe(false);
   });
 
   it('gap year giữa chuỗi (thiếu record năm 2022) → streak chỉ tính 2y mới nhất', async () => {
-    // Given: CSTDCS 2020-2021, missing 2022, CSTDCS 2023-2024
+    // Cho: CSTDCS 2020-2021, thiếu 2022, CSTDCS 2023-2024
     const personnelId = 'qn-edge-bkbqp-2';
     const danhHieu: AnnualRow[] = [
       { nam: 2020, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS, so_quyet_dinh: 'QD-CSTDCS-2020' },
@@ -139,19 +139,19 @@ describe('profile.service - BKBQP edge cases', () => {
       buildPersonnelWithHistory(personnelId, danhHieu, nckh)
     );
 
-    // When: gap at 2022 forces streak reset; streak from 2025 viewpoint = 2023-2024
+    // Khi: gap 2022 reset streak; streak nhìn từ 2025 = 2023-2024
     const result = await profileService.checkAwardEligibility(
       personnelId,
       2025,
       DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP
     );
 
-    // Then: 2y CSTDCS (2023-2024) + matching NCKH → eligible BKBQP
+    // Thì: 2y CSTDCS (2023-2024) + NCKH match → eligible BKBQP
     expect(result.eligible).toBe(true);
   });
 
   it('thiếu NCKH năm GIỮA streak (CSTDCS 2020-2025, thiếu NCKH 2022) → BKBQP fail', async () => {
-    // Given: 6y CSTDCS but NCKH gap at 2022 — NCKH streak ends at 2023 (3 years)
+    // Cho: 6y CSTDCS nhưng NCKH gap 2022 — streak NCKH kết ở 2023 (3 năm)
     const personnelId = 'qn-edge-bkbqp-3';
     const danhHieu: AnnualRow[] = [];
     for (let y = 2020; y <= 2025; y++) {
@@ -172,20 +172,20 @@ describe('profile.service - BKBQP edge cases', () => {
       buildPersonnelWithHistory(personnelId, danhHieu, nckh)
     );
 
-    // When
+    // Khi
     const result = await profileService.checkAwardEligibility(
       personnelId,
       2026,
       DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP
     );
 
-    // Then: NCKH streak (3) < CSTDCS streak (6), so fail
+    // Thì: NCKH streak (3) < CSTDCS streak (6) → fail
     expect(result.eligible).toBe(false);
     expect(result.reason).toBe(eligibilityReasons.bkbqpReason(6, 3));
   });
 
   it('NCKH 2 loại mix DTKH + SKKH trong 2y CSTDCS → vẫn eligible BKBQP', async () => {
-    // Given: 2y CSTDCS, năm 1 DTKH, năm 2 SKKH (cả 2 loại đều count trong NCKH list)
+    // Cho: 2y CSTDCS, năm 1 DTKH, năm 2 SKKH (cả 2 loại đều count trong NCKH list)
     const personnelId = 'qn-edge-bkbqp-4';
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(
       buildPersonnelWithHistory(
@@ -219,7 +219,7 @@ describe('profile.service - BKBQP edge cases', () => {
   });
 
   it('đã có BKBQP cũ năm xa (2015) + 2y CSTDCS mới (2024-2025) → vẫn eligible BKBQP lần nữa', async () => {
-    // Given: BKBQP at 2015 then CSTDCS gap, restart streak 2024-2025
+    // Cho: BKBQP năm 2015 rồi gap CSTDCS, restart streak 2024-2025
     const personnelId = 'qn-edge-bkbqp-5';
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(
       buildPersonnelWithHistory(
@@ -247,19 +247,19 @@ describe('profile.service - BKBQP edge cases', () => {
       )
     );
 
-    // When: streak ending 2025 only sees 2024-2025 (gap at 2016-2023)
+    // Khi: streak kết 2025 chỉ thấy 2024-2025 (gap 2016-2023)
     const result = await profileService.checkAwardEligibility(
       personnelId,
       2026,
       DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP
     );
 
-    // Then: rule allows multiple BKBQP — eligible again on each completed 2y streak
+    // Thì: rule cho phép nhiều BKBQP — eligible lại với mỗi streak 2y hoàn chỉnh
     expect(result.eligible).toBe(true);
   });
 
   it('boundary streak = exactly 2 → eligible (không off-by-one)', async () => {
-    // Given: minimal contiguous chain
+    // Cho: chain liên tục tối thiểu
     const personnelId = 'qn-edge-bkbqp-6';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2022, 2023);
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(
@@ -278,7 +278,7 @@ describe('profile.service - BKBQP edge cases', () => {
 
 describe('profile.service - CSTDTQ edge cases', () => {
   it('BKBQP NGOÀI streak (năm xa 2015) + 3y CSTDCS mới (2024-2026) → fail (BKBQP không count cho streak hiện tại)', async () => {
-    // Given: BKBQP at 2015 then gap, 3y CSTDCS 2024-2026
+    // Cho: BKBQP năm 2015 rồi gap, 3y CSTDCS 2024-2026
     const personnelId = 'qn-edge-cstdtq-1';
     const danhHieu: AnnualRow[] = [
       {
@@ -297,14 +297,14 @@ describe('profile.service - CSTDTQ edge cases', () => {
       buildPersonnelWithHistory(personnelId, danhHieu, nckh)
     );
 
-    // When: streak length = 3 (2024-2026); countBKBQPInStreak counts 2024-2026 → 0
+    // Khi: streak length = 3 (2024-2026); countBKBQPInStreak đếm 2024-2026 → 0
     const result = await profileService.checkAwardEligibility(
       personnelId,
       2027,
       DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ
     );
 
-    // Then: BKBQP older than streak does NOT count for CSTDTQ chain
+    // Thì: BKBQP cũ hơn streak KHÔNG count cho chain CSTDTQ
     expect(result.eligible).toBe(false);
     expect(result.reason).toBe(eligibilityReasons.cstdtqReason(3, 0, 3));
   });
@@ -327,7 +327,7 @@ describe('profile.service - CSTDTQ edge cases', () => {
   });
 
   it('3y có CSTT giữa chuỗi → break streak, fail CSTDTQ', async () => {
-    // Given: CSTDCS 2021, CSTT 2022, CSTDCS 2023 — streak ending 2023 = 1
+    // Cho: CSTDCS 2021, CSTT 2022, CSTDCS 2023 — streak kết 2023 = 1
     const personnelId = 'qn-edge-cstdtq-3';
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(
       buildPersonnelWithHistory(
@@ -359,8 +359,8 @@ describe('profile.service - CSTDTQ edge cases', () => {
   });
 
   it('6y CSTDCS continuous → missed window (strict cycle: streak > 3 disqualifies)', async () => {
-    // Strict-cycle rule: continuous 6y means operator passed the year-3 review window.
-    // Even with 2 BKBQP scattered in, eligibility waits until next chain reset.
+    // Rule strict-cycle: 6y liên tục nghĩa là đã qua window review năm-3.
+    // Dù có 2 BKBQP rải rác, eligibility phải chờ chain reset tiếp theo.
     const personnelId = 'qn-edge-cstdtq-4';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2018, 2023, {
       2019: { nhan_bkbqp: true },
@@ -381,8 +381,8 @@ describe('profile.service - CSTDTQ edge cases', () => {
   });
 
   it('đã nhận CSTDTQ năm 2020 trong streak + 6y continuous + BKBQP 2022 → eligible (effective streak reset to 3)', async () => {
-    // Prior CSTDTQ claim resets the cycle counter. Years 2021-2023 form the next 3y CSTDTQ
-    // cycle, with BKBQP 2022 covering the prerequisite — eligible despite raw streak = 6.
+    // Claim CSTDTQ trước reset cycle counter. Năm 2021-2023 tạo cycle CSTDTQ 3y tiếp,
+    // BKBQP 2022 cover prerequisite — eligible dù raw streak = 6.
     const personnelId = 'qn-edge-cstdtq-5';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2018, 2023, {
       2019: { nhan_bkbqp: true },
@@ -406,7 +406,7 @@ describe('profile.service - CSTDTQ edge cases', () => {
 
 describe('profile.service - BKTTCP edge cases', () => {
   it('7y + 2 BKBQP + 2 CSTDTQ (thiếu 1 BKBQP) → fail', async () => {
-    // Given: 7y contiguous, only 2 BKBQP in 7y window
+    // Cho: 7y liên tục, chỉ 2 BKBQP trong window 7y
     const personnelId = 'qn-edge-bkttcp-1';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2017, 2023, {
       2018: { nhan_bkbqp: true },
@@ -467,7 +467,7 @@ describe('profile.service - BKTTCP edge cases', () => {
   });
 
   it('đã nhận BKTTCP + streak 14y (chia hết 7) → recalc các năm sau "chưa hỗ trợ"', async () => {
-    // Given: 14y CSTDCS contiguous, BKTTCP set in middle (2016)
+    // Cho: 14y CSTDCS liên tục, BKTTCP đặt giữa (2016)
     const personnelId = 'qn-edge-bkttcp-4';
     const danhHieu: AnnualRow[] = [];
     const nckh: ScienceRow[] = [];
@@ -492,12 +492,12 @@ describe('profile.service - BKTTCP edge cases', () => {
     const args = prismaMock.hoSoHangNam.upsert.mock.calls[0][0];
     expect(args.update.cstdcs_lien_tuc).toBe(14);
     expect(args.update.goi_y).toBe(suggestionMessages.personalUnsupported);
-    // BKTTCP eligibility flag must be false because cstdcs_lien_tuc !== 7
+    // Flag eligibility BKTTCP phải false vì cstdcs_lien_tuc !== 7
     expect(args.update.du_dieu_kien_bkttcp).toBe(false);
   });
 
   it('14y mod 7 == 0 → checkAwardEligibility và recalc đồng bộ trả "chưa hỗ trợ"', async () => {
-    // Given: 14y contiguous CSTDCS without BKTTCP flag
+    // Cho: 14y CSTDCS liên tục không có cờ BKTTCP
     const personnelId = 'qn-edge-bkttcp-5';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2010, 2023);
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(
@@ -532,7 +532,7 @@ describe('profile.service - BKTTCP edge cases', () => {
   });
 
   it('8y CSTDCS (không chia hết 7) → KHÔNG hiện "chưa hỗ trợ", fail vì cstdcs !== 7', async () => {
-    // Given: 8y contiguous CSTDCS, no BKTTCP yet
+    // Cho: 8y CSTDCS liên tục, chưa có BKTTCP
     const personnelId = 'qn-edge-bkttcp-7';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2016, 2023, {
       2017: { nhan_bkbqp: true },
@@ -552,7 +552,7 @@ describe('profile.service - BKTTCP edge cases', () => {
 
     expect(result.eligible).toBe(false);
     expect(result.reason).not.toMatch(/chưa hỗ trợ/);
-    // Exact reason format proves regression detection beyond loose substring
+    // Format reason chính xác đảm bảo detect regression hơn so với substring lỏng
     expect(result.reason).toBe(eligibilityReasons.bkttcpMissedWindow(8));
   });
 

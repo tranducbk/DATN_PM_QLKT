@@ -215,7 +215,7 @@ describe('profile.service - BKBQP exhaustive boundaries', () => {
   });
 
   it('9. Đã nhận BKBQP năm trước (trong streak) + 4y CSTDCS mới → eligible (chain cho phép nhiều BKBQP)', async () => {
-    // Given: 4y contiguous CSTDCS, BKBQP at year 2 in streak
+    // Cho: 4y CSTDCS liên tục, BKBQP tại năm 2 trong streak
     const personnelId = 'qn-bkbqp-ex-9';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2020, 2023, {
       2021: { nhan_bkbqp: true },
@@ -230,13 +230,13 @@ describe('profile.service - BKBQP exhaustive boundaries', () => {
       DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP
     );
 
-    // 4 % 2 == 0, NCKH 4 >= 4 → eligible (lifetime not blocked)
+    // 4 % 2 == 0, NCKH 4 >= 4 → eligible (lifetime không chặn)
     expect(result.eligible).toBe(true);
   });
 
   it('10. Claim BKBQP 2022 + 2y CSTDCS + eval 2024 → eligible (effective streak 2024-1-2022 = 1? thực ra 2)', async () => {
     // Claim 2022, evalYear 2024 → effective = 2024-1-2022 = 1. Effective < cycle (2) → fail.
-    // This test pins the post-claim BKBQP rule: must wait at least 2 years after the prior claim.
+    // Test này chốt rule BKBQP post-claim: phải chờ ít nhất 2 năm sau claim trước.
     const personnelId = 'qn-bkbqp-ex-10';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2022, 2023, {
       2022: { nhan_bkbqp: true },
@@ -256,7 +256,7 @@ describe('profile.service - BKBQP exhaustive boundaries', () => {
   });
 
   it('11. Claim BKBQP 2022 + 3y CSTDCS + eval 2025 → eligible (effective streak 2025-1-2022 = 2)', async () => {
-    // Post-claim cycle hits: 2025-1-2022 = 2 = cycleYears. Eligible for next BKBQP.
+    // Cycle post-claim đạt: 2025-1-2022 = 2 = cycleYears. Eligible cho BKBQP tiếp.
     const personnelId = 'qn-bkbqp-ex-11';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2022, 2024, {
       2022: { nhan_bkbqp: true },
@@ -276,7 +276,7 @@ describe('profile.service - BKBQP exhaustive boundaries', () => {
   });
 
   it('12. Claim BKBQP 2022 + 2024 (2 lần) + 5y CSTDCS + eval 2027 → eligible (effective 2 sau claim cuối)', async () => {
-    // Two prior BKBQP claims; latest at 2024 resets cycle counter. evalYear 2027 →
+    // 2 claim BKBQP trước; claim cuối 2024 reset cycle counter. evalYear 2027 →
     // effective = 2027-1-2024 = 2 = cycleYears.
     const personnelId = 'qn-bkbqp-ex-12';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2022, 2026, {

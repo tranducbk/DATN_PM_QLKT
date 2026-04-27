@@ -20,7 +20,7 @@ afterEach(() => {
 
 describe('annualReward.service - createAnnualReward', () => {
   it('tạo mới khi chưa có record (CQDV)', async () => {
-    // Given: a CQDV personnel with no existing annual record for the year
+    // Cho: personnel CQDV chưa có record annual cho năm đó
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-1' });
     const personnel = makePersonnel({ unit: cqdv, id: 'qn-1', ho_ten: 'Nguyễn Văn A' });
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(personnel);
@@ -33,7 +33,7 @@ describe('annualReward.service - createAnnualReward', () => {
     });
     prismaMock.danhHieuHangNam.create.mockResolvedValueOnce(created);
 
-    // When: creating an annual reward
+    // Khi: tạo annual reward
     const result = await annualRewardService.createAnnualReward({
       personnel_id: personnel.id,
       nam: 2024,
@@ -41,7 +41,7 @@ describe('annualReward.service - createAnnualReward', () => {
       so_quyet_dinh: 'QD-001',
     });
 
-    // Then: a new row is created with the supplied fields
+    // Thì: tạo row mới với các field đã cấp
     expect(result).toEqual(created);
     expect(prismaMock.danhHieuHangNam.create).toHaveBeenCalledTimes(1);
     const createArgs = prismaMock.danhHieuHangNam.create.mock.calls[0][0];
@@ -57,7 +57,7 @@ describe('annualReward.service - createAnnualReward', () => {
   });
 
   it('tạo mới khi chưa có record (DVTT)', async () => {
-    // Given: a DVTT personnel with no existing record
+    // Cho: personnel DVTT chưa có record
     const dvtt = makeUnit({ kind: 'DVTT', id: 'dvtt-1', parentId: 'cqdv-parent' });
     const personnel = makePersonnel({ unit: dvtt, id: 'qn-2' });
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(personnel);
@@ -70,7 +70,7 @@ describe('annualReward.service - createAnnualReward', () => {
     });
     prismaMock.danhHieuHangNam.create.mockResolvedValueOnce(created);
 
-    // When
+    // Khi
     await annualRewardService.createAnnualReward({
       personnel_id: personnel.id,
       nam: 2024,
@@ -78,7 +78,7 @@ describe('annualReward.service - createAnnualReward', () => {
       so_quyet_dinh: 'QD-CSTT-1',
     });
 
-    // Then: persistence does not depend on unit kind — DVTT path resolves identically
+    // Thì: persistence không phụ thuộc kind đơn vị — DVTT path resolve giống hệt
     expect(prismaMock.danhHieuHangNam.create).toHaveBeenCalledTimes(1);
     const createArgs = prismaMock.danhHieuHangNam.create.mock.calls[0][0];
     expect(createArgs.data.quan_nhan_id).toBe(personnel.id);
@@ -86,7 +86,7 @@ describe('annualReward.service - createAnnualReward', () => {
   });
 
   it('merge cờ BKBQP vào record CSTDCS đã có', async () => {
-    // Given: existing CSTDCS row for the year, request adds BKBQP flag
+    // Cho: đã có row CSTDCS năm đó, request thêm cờ BKBQP
     const personnel = makePersonnel({ id: 'qn-3' });
     const existing = makeAnnualRecord({
       personnelId: personnel.id,
@@ -102,7 +102,7 @@ describe('annualReward.service - createAnnualReward', () => {
       so_quyet_dinh_bkbqp: 'QD-BKBQP-1',
     });
 
-    // When
+    // Khi
     await annualRewardService.createAnnualReward({
       personnel_id: personnel.id,
       nam: 2024,
@@ -111,7 +111,7 @@ describe('annualReward.service - createAnnualReward', () => {
       ghi_chu: 'note-bkbqp',
     });
 
-    // Then: update flips nhan_bkbqp + sets the BKBQP-specific decision and note
+    // Thì: update bật nhan_bkbqp + set quyết định và ghi chú riêng cho BKBQP
     expect(prismaMock.danhHieuHangNam.update).toHaveBeenCalledTimes(1);
     const updateArgs = prismaMock.danhHieuHangNam.update.mock.calls[0][0];
     expect(updateArgs.where).toEqual({ id: existing.id });
@@ -178,7 +178,7 @@ describe('annualReward.service - createAnnualReward', () => {
   });
 
   it('reject thêm cờ BKBQP lần 2', async () => {
-    // Given: existing record already flagged with BKBQP
+    // Cho: record đã bật cờ BKBQP
     const personnel = makePersonnel({ id: 'qn-6' });
     const existing = makeAnnualRecord({
       personnelId: personnel.id,
@@ -189,7 +189,7 @@ describe('annualReward.service - createAnnualReward', () => {
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(personnel);
     prismaMock.danhHieuHangNam.findFirst.mockResolvedValueOnce(existing);
 
-    // When + Then: a second BKBQP flag must be rejected
+    // Khi + Thì: cờ BKBQP lần 2 phải bị reject
     await expectError(
       annualRewardService.createAnnualReward({
         personnel_id: personnel.id,
@@ -281,7 +281,7 @@ describe('annualReward.service - createAnnualReward', () => {
   });
 
   it('ghi_chu tách biệt per cờ (ghi_chu, ghi_chu_bkbqp, ghi_chu_cstdtq, ghi_chu_bkttcp)', async () => {
-    // Given: existing record with no flags, request adds BKBQP with a note
+    // Cho: record không cờ, request thêm BKBQP kèm ghi chú
     const personnel = makePersonnel({ id: 'qn-10' });
     const existing = makeAnnualRecord({
       personnelId: personnel.id,
@@ -309,7 +309,7 @@ describe('annualReward.service - createAnnualReward', () => {
   });
 
   it('so_quyet_dinh tách biệt đúng field per cờ', async () => {
-    // Given: fresh personnel, request creates record with CSTDTQ flag only
+    // Cho: personnel mới, request tạo record chỉ với cờ CSTDTQ
     const personnel = makePersonnel({ id: 'qn-11' });
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(personnel);
     prismaMock.danhHieuHangNam.findFirst.mockResolvedValueOnce(null);
@@ -339,7 +339,7 @@ describe('annualReward.service - createAnnualReward', () => {
 
 describe('annualReward.service - bulkCreateAnnualRewards', () => {
   it('1 success + 1 đã có → trả `{success: 1, errors: 1, details}`', async () => {
-    // Given: two personnel, one already has a reward conflicting with target
+    // Cho: 2 personnel, 1 đã có reward conflict với target
     const personnelA = makePersonnel({ id: 'qn-A' });
     const personnelB = makePersonnel({ id: 'qn-B' });
     const existingForB = makeAnnualRecord({
@@ -359,7 +359,7 @@ describe('annualReward.service - bulkCreateAnnualRewards', () => {
     });
     prismaMock.danhHieuHangNam.create.mockResolvedValueOnce(createdForA);
 
-    // When
+    // Khi
     const result = await annualRewardService.bulkCreateAnnualRewards({
       personnel_ids: [personnelA.id, personnelB.id],
       nam: 2024,
@@ -367,7 +367,7 @@ describe('annualReward.service - bulkCreateAnnualRewards', () => {
       so_quyet_dinh: 'QD-BULK-1',
     });
 
-    // Then: only personnel A is created; B is reported as an error
+    // Thì: chỉ personnel A được tạo; B trả lỗi
     expect(result.success).toBe(1);
     expect(result.errors).toBe(1);
     expect(result.details.created).toHaveLength(1);
@@ -402,7 +402,7 @@ describe('annualReward.service - bulkCreateAnnualRewards', () => {
   });
 
   it('bulk BKBQP cho QN chưa có CSTDCS → record `danh_hieu: null`', async () => {
-    // Given: bulk BKBQP request for personnel without any prior annual record
+    // Cho: bulk BKBQP cho personnel chưa có record annual
     const a = makePersonnel({ id: 'qn-BK1' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([a]);
     prismaMock.danhHieuHangNam.findMany.mockResolvedValueOnce([]);
@@ -415,7 +415,7 @@ describe('annualReward.service - bulkCreateAnnualRewards', () => {
       makeAnnualRecord({ personnelId: a.id, nam: 2024, nhan_bkbqp: true, so_quyet_dinh_bkbqp: 'QD-BK' })
     );
 
-    // When
+    // Khi
     const result = await annualRewardService.bulkCreateAnnualRewards({
       personnel_ids: [a.id],
       nam: 2024,
@@ -423,7 +423,7 @@ describe('annualReward.service - bulkCreateAnnualRewards', () => {
       so_quyet_dinh: 'QD-BK',
     });
 
-    // Then: created row has only the flag set, danh_hieu remains null
+    // Thì: row tạo ra chỉ bật cờ, danh_hieu vẫn null
     expect(result.success).toBe(1);
     const createArgs = prismaMock.danhHieuHangNam.create.mock.calls[0][0];
     expect(createArgs.data.danh_hieu).toBeNull();
@@ -444,7 +444,7 @@ describe('annualReward.service - bulkCreateAnnualRewards', () => {
   });
 
   it('reject khi quân nhân đang có pending proposal cùng danh hiệu', async () => {
-    // Given: personnel without award but with pending proposal for the same year and danh_hieu
+    // Cho: personnel chưa có award nhưng có pending proposal cùng năm và danh_hieu
     const a = makePersonnel({ id: 'qn-P1' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([a]);
     prismaMock.danhHieuHangNam.findMany.mockResolvedValueOnce([]);
@@ -457,14 +457,14 @@ describe('annualReward.service - bulkCreateAnnualRewards', () => {
       },
     ]);
 
-    // When
+    // Khi
     const result = await annualRewardService.bulkCreateAnnualRewards({
       personnel_ids: [a.id],
       nam: 2024,
       danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS,
     });
 
-    // Then: pending proposal blocks creation
+    // Thì: pending proposal chặn tạo mới
     expect(result.success).toBe(0);
     expect(result.errors).toBe(1);
     expect(result.details.errors[0].error).toBe(
@@ -754,7 +754,7 @@ describe('annualReward.service - decision-number validation', () => {
       })
     );
 
-    // Per-row override: ok has so_quyet_dinh, missing does not.
+    // Override per-row: ok có so_quyet_dinh, missing thì không.
     const result = await annualRewardService.bulkCreateAnnualRewards({
       personnel_ids: [ok.id, missing.id],
       personnel_rewards_data: [
@@ -776,7 +776,7 @@ describe('annualReward.service - decision-number validation', () => {
 
 describe('annualReward.service - deleteAnnualReward (granular)', () => {
   it('xóa CSTDCS khi record còn BKBQP → update danh_hieu/so_quyet_dinh/ghi_chu = null', async () => {
-    // Given: a record holding both CSTDCS and BKBQP
+    // Cho: record giữ cả CSTDCS và BKBQP
     const personnel = makePersonnel({ id: 'qn-del-1' });
     const reward = makeAnnualRecord({
       id: 'dhhn-mix-1',
@@ -797,10 +797,10 @@ describe('annualReward.service - deleteAnnualReward (granular)', () => {
       ghi_chu: null,
     });
 
-    // When: deleting only the CSTDCS award
+    // Khi: chỉ xóa danh hiệu CSTDCS
     const result = await annualRewardService.deleteAnnualReward(reward.id, 'admin', 'CSTDCS');
 
-    // Then: only base-award fields are cleared, BKBQP fields untouched, no row delete
+    // Thì: chỉ field danh hiệu chính bị clear, field BKBQP giữ nguyên, không delete row
     expect(prismaMock.danhHieuHangNam.update).toHaveBeenCalledTimes(1);
     expect(prismaMock.danhHieuHangNam.delete).not.toHaveBeenCalled();
     const updateArgs = prismaMock.danhHieuHangNam.update.mock.calls[0][0];

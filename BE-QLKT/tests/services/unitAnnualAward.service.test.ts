@@ -8,7 +8,7 @@ import { DANH_HIEU_DON_VI_HANG_NAM, getDanhHieuName } from '../../src/constants/
 
 beforeEach(() => {
   resetPrismaMock();
-  // Skip recalc side-effect — we test upsert/remove DB writes only.
+  // Skip side-effect recalc — chỉ test DB writes upsert/remove.
   jest
     .spyOn(unitAnnualAwardService, 'recalculateAnnualUnit')
     .mockResolvedValue(undefined as unknown as never);
@@ -31,7 +31,7 @@ function arrangeResolveUnit(unit: ReturnType<typeof makeUnit>): void {
 
 describe('unitAnnualAward.service - upsert', () => {
   it('tạo mới khi chưa có record (CQDV)', async () => {
-    // Given: a CQDV with no existing unit-annual record
+    // Cho: 1 CQDV chưa có record unit-annual
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-1' });
     arrangeResolveUnit(cqdv);
     prismaMock.danhHieuDonViHangNam.findFirst.mockResolvedValueOnce(null);
@@ -44,7 +44,7 @@ describe('unitAnnualAward.service - upsert', () => {
     });
     prismaMock.danhHieuDonViHangNam.upsert.mockResolvedValueOnce(created);
 
-    // When
+    // Khi
     await unitAnnualAwardService.upsert({
       don_vi_id: cqdv.id,
       nam: 2024,
@@ -53,7 +53,7 @@ describe('unitAnnualAward.service - upsert', () => {
       nguoi_tao_id: 'admin-1',
     });
 
-    // Then: upsert is called with CQDV foreign key set, DVTT FK null
+    // Thì: upsert gọi với CQDV foreign key set, DVTT FK null
     expect(prismaMock.danhHieuDonViHangNam.upsert).toHaveBeenCalledTimes(1);
     const args = prismaMock.danhHieuDonViHangNam.upsert.mock.calls[0][0];
     expect(args.create).toMatchObject({
@@ -102,7 +102,7 @@ describe('unitAnnualAward.service - upsert', () => {
   });
 
   it('merge cờ BKBQP vào record ĐVQT đã có', async () => {
-    // Given: existing DVQT record without BKBQP flag
+    // Cho: record DVQT đã có, chưa có cờ BKBQP
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-2' });
     arrangeResolveUnit(cqdv);
     const existing = makeUnitAnnualRecord({
@@ -134,7 +134,7 @@ describe('unitAnnualAward.service - upsert', () => {
       so_quyet_dinh_bkbqp: 'QD-BK-1',
       ghi_chu_bkbqp: 'note-bkbqp',
     });
-    // BKBQP merge must not overwrite the basic danh_hieu field
+    // Merge BKBQP không được ghi đè field danh_hieu cơ bản
     expect(args.update.danh_hieu).toBeUndefined();
   });
 
@@ -173,7 +173,7 @@ describe('unitAnnualAward.service - upsert', () => {
   });
 
   it('reject thêm cờ BKBQP lần 2', async () => {
-    // Given: existing record already flagged with BKBQP
+    // Cho: record đã bật cờ BKBQP
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-4' });
     arrangeResolveUnit(cqdv);
     prismaMock.danhHieuDonViHangNam.findFirst.mockResolvedValueOnce({
@@ -182,7 +182,7 @@ describe('unitAnnualAward.service - upsert', () => {
       nhan_bkttcp: false,
     });
 
-    // When + Then
+    // Khi + Thì
     await expectError(
       unitAnnualAwardService.upsert({
         don_vi_id: cqdv.id,
@@ -239,7 +239,7 @@ describe('unitAnnualAward.service - upsert', () => {
   });
 
   it('NotFoundError khi đơn vị không tồn tại', async () => {
-    // Given: neither CQDV nor DVTT match the id
+    // Cho: không có CQDV/DVTT nào match id
     prismaMock.coQuanDonVi.findUnique.mockResolvedValueOnce(null);
     prismaMock.donViTrucThuoc.findUnique.mockResolvedValueOnce(null);
 
@@ -394,7 +394,7 @@ describe('unitAnnualAward.service - decision-number validation', () => {
 
 describe('unitAnnualAward.service - remove (granular)', () => {
   it('xóa ĐVQT khi record còn BKBQP → clear danh_hieu/so_quyet_dinh/ghi_chu', async () => {
-    // Given: a unit-annual record holding both DVQT and BKBQP
+    // Cho: record unit-annual giữ cả DVQT và BKBQP
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-del-1' });
     const record = makeUnitAnnualRecord({
       unitId: cqdv.id,
@@ -410,10 +410,10 @@ describe('unitAnnualAward.service - remove (granular)', () => {
     prismaMock.danhHieuDonViHangNam.findUnique.mockResolvedValueOnce(record);
     prismaMock.danhHieuDonViHangNam.update.mockResolvedValueOnce(record);
 
-    // When: deleting only DVQT
+    // Khi: chỉ xóa DVQT
     await unitAnnualAwardService.remove(record.id, 'ĐVQT');
 
-    // Then: only base-award fields cleared, no row delete
+    // Thì: chỉ field danh hiệu chính bị clear, không delete row
     expect(prismaMock.danhHieuDonViHangNam.delete).not.toHaveBeenCalled();
     expect(prismaMock.danhHieuDonViHangNam.update).toHaveBeenCalledTimes(1);
     const args = prismaMock.danhHieuDonViHangNam.update.mock.calls[0][0];

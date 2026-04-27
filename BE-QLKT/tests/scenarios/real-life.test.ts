@@ -253,7 +253,7 @@ describe('Chuyên gia khen thưởng — KNC VSNXD QĐNDVN (gender boundary)', (
 
 describe('Chuyên gia khen thưởng — HCQKQT 25 năm boundary', () => {
   it('Submit fail khi 24 năm 11 tháng', async () => {
-    // Given: male personnel just below the 25-year threshold
+    // Given: QN nam thiếu chút để đạt mốc 25 năm
     const target = makePersonnel({ id: 'qn-hc-24-11', ho_ten: 'Nguyễn Văn Tám' });
     const account = makeAdmin({ id: 'acc-hc-1' });
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({

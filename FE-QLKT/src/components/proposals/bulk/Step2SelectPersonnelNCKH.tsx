@@ -24,6 +24,14 @@ import {
 import { ExcelImportSection } from './ExcelImportSection';
 import * as XLSX from 'xlsx';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
+import type {
+  DuplicateCheckResult,
+  ExcelRow,
+  Step2ImportSuccessResult,
+  Step2ImportedAward,
+  Step2LocalImportResult,
+} from './types';
+import type { TitleDataItem } from '@/lib/types/proposal';
 
 const { Text } = Typography;
 
@@ -62,7 +70,7 @@ interface Step2SelectPersonnelNCKHProps {
   onPersonnelChange: (ids: string[]) => void;
   nam: number;
   onNamChange: (nam: number) => void;
-  onTitleDataChange?: (titleData: any[]) => void;
+  onTitleDataChange?: (titleData: TitleDataItem[]) => void;
   onNextStep?: () => void;
   isManager?: boolean;
 }
@@ -202,7 +210,9 @@ export function Step2SelectPersonnelNCKH({
     },
   ];
 
-  const handleLocalExcelProcess = async (file: File): Promise<any> => {
+  const handleLocalExcelProcess = async (
+    file: File
+  ): Promise<Step2LocalImportResult<TitleDataItem>> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
 
@@ -220,13 +230,13 @@ export function Step2SelectPersonnelNCKH({
             throw new Error('File Excel không có dữ liệu hoặc thiếu header');
           }
 
-          const dataRows = jsonData.slice(1); // skip header row
+          const dataRows = jsonData.slice(1) as ExcelRow[];
 
-          const titleData: any[] = [];
+          const titleData: TitleDataItem[] = [];
           const errors: string[] = [];
           const processedPersonnelIds: string[] = [];
 
-          dataRows.forEach((row: any, index: number) => {
+          dataRows.forEach((row: ExcelRow, index: number) => {
             const rowNumber = index + 2; // +2: skip header + 0-based index
 
             // Validate required fields
@@ -275,7 +285,7 @@ export function Step2SelectPersonnelNCKH({
 
             titleData.push({
               personnel_id: matchingPersonnel.id,
-              loai: loai,
+              loai: loai as 'DTKH' | 'SKKH',
               mo_ta: mota,
               nam: namInt,
               cap_bac: capBac,
@@ -290,16 +300,16 @@ export function Step2SelectPersonnelNCKH({
           try {
             const batchResponse = await apiClient.checkDuplicateBatch(
               titleData.map(item => ({
-                personnel_id: item.personnel_id,
-                nam: item.nam,
-                danh_hieu: item.danh_hieu,
+                personnel_id: item.personnel_id ?? '',
+                nam: item.nam ?? 0,
+                danh_hieu: item.danh_hieu ?? '',
                 proposal_type: PROPOSAL_TYPES.NCKH,
               }))
             );
             if (!batchResponse.success) throw new Error(batchResponse.message);
             const duplicateIds = new Set<string>();
-            (batchResponse.data as any[]).forEach(result => {
-              if (result.exists) {
+            (batchResponse.data as DuplicateCheckResult[]).forEach(result => {
+              if (result.exists && result.personnel_id) {
                 const hoTen =
                   personnel.find(p => p.id === result.personnel_id)?.ho_ten || result.personnel_id;
                 errors.push(`${hoTen}: ${result.message}`);
@@ -308,7 +318,7 @@ export function Step2SelectPersonnelNCKH({
             });
             const filteredTitleData =
               duplicateIds.size > 0
-                ? titleData.filter(item => !duplicateIds.has(item.personnel_id))
+                ? titleData.filter(item => !duplicateIds.has(item.personnel_id ?? ''))
                 : titleData;
             const filteredPersonnelIds =
               duplicateIds.size > 0
@@ -337,28 +347,30 @@ export function Step2SelectPersonnelNCKH({
     });
   };
 
-  const handleImportSuccess = async (result: any) => {
+  const handleImportSuccess = async (result: Step2ImportSuccessResult) => {
     if (result.selectedPersonnelIds && result.selectedPersonnelIds.length > 0) {
       onPersonnelChange(result.selectedPersonnelIds);
 
       // Populate titleData from imported data
       if (result.titleData && result.titleData.length > 0) {
         // Transform to titleData format
-        const titleData = result.titleData.map((achievement: any) => ({
-          personnel_id: String(
-            achievement.quan_nhan_id ??
-              achievement.personnel_id ??
-              achievement.co_quan_don_vi_id ??
-              achievement.don_vi_truc_thuoc_id ??
-              '' // fallback if all ID fields are null/undefined
-          ),
-          loai: achievement.loai,
-          mo_ta: achievement.mo_ta,
-          nam: achievement.nam,
-          cap_bac: achievement.cap_bac,
-          chuc_vu: achievement.chuc_vu,
-          ghi_chu: achievement.ghi_chu,
-        }));
+        const titleData: TitleDataItem[] = result.titleData.map(
+          (achievement: Step2ImportedAward) => ({
+            personnel_id: String(
+              achievement.quan_nhan_id ??
+                achievement.personnel_id ??
+                achievement.co_quan_don_vi_id ??
+                achievement.don_vi_truc_thuoc_id ??
+                '' // fallback if all ID fields are null/undefined
+            ),
+            loai: achievement.loai as 'DTKH' | 'SKKH' | undefined,
+            mo_ta: achievement.mo_ta,
+            nam: achievement.nam,
+            cap_bac: achievement.cap_bac,
+            chuc_vu: achievement.chuc_vu,
+            ghi_chu: achievement.ghi_chu,
+          })
+        );
 
         onTitleDataChange?.(titleData);
 

@@ -22,6 +22,13 @@ import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants'
 import { ExcelImportSection } from './ExcelImportSection';
 import * as XLSX from 'xlsx';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
+import type {
+  DuplicateCheckResult,
+  ExcelRow,
+  Step2ImportSuccessResult,
+  Step2LocalImportResult,
+} from './types';
+import type { TitleDataItem } from '@/lib/types/proposal';
 
 const { Text } = Typography;
 
@@ -37,12 +44,24 @@ interface Unit {
   };
 }
 
+interface RawUnit {
+  id: string;
+  ten_don_vi: string;
+  ma_don_vi: string;
+  co_quan_don_vi_id?: string | null;
+  CoQuanDonVi?: {
+    id: string;
+    ten_don_vi: string;
+    ma_don_vi: string;
+  } | null;
+}
+
 interface Step2SelectUnitsProps {
   selectedUnitIds: string[];
   onUnitChange: (ids: string[]) => void;
   nam: number;
   onNamChange: (nam: number) => void;
-  onTitleDataChange?: (titleData: any[]) => void;
+  onTitleDataChange?: (titleData: TitleDataItem[]) => void;
   onNextStep?: () => void;
   isManager?: boolean;
 }
@@ -73,14 +92,14 @@ export function Step2SelectUnits({
 
         const formattedUnits: Unit[] = [];
 
-        unitsData.forEach((unit: any) => {
+        (unitsData as RawUnit[]).forEach((unit: RawUnit) => {
           if (unit.co_quan_don_vi_id || unit.CoQuanDonVi) {
             formattedUnits.push({
               id: unit.id,
               ten_don_vi: unit.ten_don_vi,
               ma_don_vi: unit.ma_don_vi,
               type: 'DON_VI_TRUC_THUOC',
-              CoQuanDonVi: unit.CoQuanDonVi || null,
+              CoQuanDonVi: unit.CoQuanDonVi || undefined,
             });
           } else {
             formattedUnits.push({
@@ -175,7 +194,9 @@ export function Step2SelectUnits({
     },
   ];
 
-  const handleLocalExcelProcess = async (file: File): Promise<any> => {
+  const handleLocalExcelProcess = async (
+    file: File
+  ): Promise<Step2LocalImportResult<TitleDataItem>> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
 
@@ -193,13 +214,13 @@ export function Step2SelectUnits({
             throw new Error('File Excel không có dữ liệu hoặc thiếu header');
           }
 
-          const dataRows = jsonData.slice(1); // skip header row
+          const dataRows = jsonData.slice(1) as ExcelRow[];
 
-          const titleData: any[] = [];
+          const titleData: TitleDataItem[] = [];
           const errors: string[] = [];
           const processedUnitIds: string[] = [];
 
-          dataRows.forEach((row: any, index: number) => {
+          dataRows.forEach((row: ExcelRow, index: number) => {
             const rowNumber = index + 2; // +2: skip header + 0-based index
 
             // Validate required fields
@@ -257,23 +278,23 @@ export function Step2SelectUnits({
           try {
             const batchResponse = await apiClient.checkDuplicateUnitBatch(
               titleData.map(item => ({
-                don_vi_id: item.don_vi_id,
-                nam: item.nam,
-                danh_hieu: item.danh_hieu,
+                don_vi_id: item.don_vi_id ?? '',
+                nam: item.nam ?? 0,
+                danh_hieu: item.danh_hieu ?? '',
                 proposal_type: PROPOSAL_TYPES.DON_VI_HANG_NAM,
               }))
             );
             if (!batchResponse.success) throw new Error(batchResponse.message);
             const duplicateIds = new Set<string>();
-            (batchResponse.data as any[]).forEach(result => {
-              if (result.exists) {
+            (batchResponse.data as DuplicateCheckResult[]).forEach(result => {
+              if (result.exists && result.don_vi_id) {
                 const tenDonVi = units.find(u => u.id === result.don_vi_id)?.ten_don_vi || result.don_vi_id;
                 errors.push(`${tenDonVi}: ${result.message}`);
                 duplicateIds.add(result.don_vi_id);
               }
             });
             const filteredTitleData = duplicateIds.size > 0
-              ? titleData.filter(item => !duplicateIds.has(item.don_vi_id))
+              ? titleData.filter(item => !duplicateIds.has(item.don_vi_id ?? ''))
               : titleData;
             const filteredUnitIds = duplicateIds.size > 0
               ? uniqueUnitIds.filter(id => !duplicateIds.has(id))
@@ -301,17 +322,18 @@ export function Step2SelectUnits({
     });
   };
 
-  const handleImportSuccess = async (result: any) => {
+  const handleImportSuccess = async (result: Step2ImportSuccessResult) => {
     if (result.selectedUnitIds && result.selectedUnitIds.length > 0) {
       onUnitChange(result.selectedUnitIds);
     }
 
     // Update titleData through parent callback if available
-    if (result.titleData.length > 0 && onTitleDataChange) {
-      onTitleDataChange(result.titleData);
+    const importedTitles = result.titleData ?? [];
+    if (importedTitles.length > 0 && onTitleDataChange) {
+      onTitleDataChange(importedTitles as TitleDataItem[]);
     }
-    if (result.titleData[0].nam) {
-      onNamChange(result.titleData[0].nam);
+    if (importedTitles[0]?.nam) {
+      onNamChange(importedTitles[0].nam);
     }
 
     // Advance to Step 3 (Review) so the user can verify before confirming

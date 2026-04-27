@@ -65,23 +65,23 @@ function dvqtRecordsDesc(records: { nam: number; danh_hieu?: string | null }[]) 
 
 describe('unitAnnualAward.service - checkUnitAwardEligibility (BKBQP)', () => {
   it('CQDV: 2y ĐVQT liên tục → eligible BKBQP', async () => {
-    // Given: CQDV with DVQT records for 2022-2023
+    // Cho: CQDV có records DVQT cho 2022-2023
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkbqp-1' });
     const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2022, 2023);
-    // calculateContinuousYears findMany (DVQT-only, desc)
+    // findMany của calculateContinuousYears (DVQT-only, desc)
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
-    // countBKBQPInStreak re-invokes calculateContinuousYears internally
+    // countBKBQPInStreak gọi lại calculateContinuousYears bên trong
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
     prismaMock.danhHieuDonViHangNam.count.mockResolvedValueOnce(0);
 
-    // When
+    // Khi
     const result = await unitAnnualAwardService.checkUnitAwardEligibility(
       cqdv.id,
       2024,
       DANH_HIEU_DON_VI_HANG_NAM.BKBQP
     );
 
-    // Then
+    // Thì
     expect(result.eligible).toBe(true);
   });
 
@@ -103,7 +103,7 @@ describe('unitAnnualAward.service - checkUnitAwardEligibility (BKBQP)', () => {
   });
 
   it('CQDV: 2y nhưng ĐVTT giữa → break, fail BKBQP', async () => {
-    // Given: 2022 DVQT, 2023 DVTT — calculateContinuousYears only returns DVQT rows
+    // Cho: 2022 DVQT, 2023 DVTT — calculateContinuousYears chỉ trả row DVQT
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkbqp-3' });
     const dvqtOnly = [
       makeUnitAnnualRecord({
@@ -114,12 +114,12 @@ describe('unitAnnualAward.service - checkUnitAwardEligibility (BKBQP)', () => {
         so_quyet_dinh: 'QD-DVQT-2022',
       }),
     ];
-    // Both findMany calls already filter by DVQT only — DVTT row excluded
+    // Cả 2 findMany đã filter chỉ DVQT — row DVTT bị loại
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtOnly);
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtOnly);
     prismaMock.danhHieuDonViHangNam.count.mockResolvedValueOnce(0);
 
-    // When: streak ending 2023 — record 2022 is not at currentYear=2023, so streak = 0
+    // Khi: streak kết 2023 — record 2022 không tại currentYear=2023, streak = 0
     const result = await unitAnnualAwardService.checkUnitAwardEligibility(
       cqdv.id,
       2024,
@@ -133,7 +133,7 @@ describe('unitAnnualAward.service - checkUnitAwardEligibility (BKBQP)', () => {
   it('DVTT: 2y ĐVQT → eligible (records keyed bằng don_vi_truc_thuoc_id)', async () => {
     const dvtt = makeUnit({ kind: 'DVTT', id: 'dvtt-bkbqp-4', parentId: 'cqdv-parent' });
     const records = buildContiguousDVQT(dvtt.id, 'DVTT', 2022, 2023);
-    // Verify records have don_vi_truc_thuoc_id set (not co_quan_don_vi_id)
+    // Verify records có don_vi_truc_thuoc_id (không phải co_quan_don_vi_id)
     expect(records[0].don_vi_truc_thuoc_id).toBe(dvtt.id);
     expect(records[0].co_quan_don_vi_id).toBeNull();
 
@@ -151,7 +151,7 @@ describe('unitAnnualAward.service - checkUnitAwardEligibility (BKBQP)', () => {
   });
 
   it('streak gián đoạn: 5y ĐVQT → 1y ĐVTT → 2y ĐVQT → streak = 2, eligible BKBQP', async () => {
-    // Given: 2018-2022 DVQT, 2023 DVTT, 2024-2025 DVQT — calculateContinuousYears DVQT-only sees gap
+    // Cho: 2018-2022 DVQT, 2023 DVTT, 2024-2025 DVQT — calculateContinuousYears DVQT-only thấy gap
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkbqp-5' });
     const dvqtOnly = [
       makeUnitAnnualRecord({ unitId: cqdv.id, unitKind: 'CQDV', nam: 2025, danh_hieu: DANH_HIEU_DON_VI_HANG_NAM.DVQT, so_quyet_dinh: 'QD-DVQT-2025' }),
@@ -166,14 +166,14 @@ describe('unitAnnualAward.service - checkUnitAwardEligibility (BKBQP)', () => {
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtOnly);
     prismaMock.danhHieuDonViHangNam.count.mockResolvedValueOnce(0);
 
-    // When: target year 2026 → streak ends 2025, walks 2024 (matches), 2023 (DVTT gap → break)
+    // Khi: target year 2026 → streak kết 2025, duyệt 2024 (match), 2023 (DVTT gap → break)
     const result = await unitAnnualAwardService.checkUnitAwardEligibility(
       cqdv.id,
       2026,
       DANH_HIEU_DON_VI_HANG_NAM.BKBQP
     );
 
-    // Then: streak = 2 (2024-2025), 2%2==0 → eligible
+    // Thì: streak = 2 (2024-2025), 2%2==0 → eligible
     expect(result.eligible).toBe(true);
   });
 
@@ -199,7 +199,7 @@ describe('unitAnnualAward.service - checkUnitAwardEligibility (BKBQP)', () => {
   });
 
   it('đã nhận BKBQP đơn vị năm trước trong streak → vẫn eligible nếu chuỗi tiếp tục đủ 2y', async () => {
-    // Given: BKBQP at 2022, 4y contiguous 2021-2024
+    // Cho: BKBQP năm 2022, 4y liên tục 2021-2024
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkbqp-7' });
     const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2021, 2024, {
       2022: { nhan_bkbqp: true },
@@ -208,7 +208,7 @@ describe('unitAnnualAward.service - checkUnitAwardEligibility (BKBQP)', () => {
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
     prismaMock.danhHieuDonViHangNam.count.mockResolvedValueOnce(1);
 
-    // When: streak = 4, 4%2==0 → eligible (chain allows multiple BKBQP)
+    // Khi: streak = 4, 4%2==0 → eligible (chain cho phép nhiều BKBQP)
     const result = await unitAnnualAwardService.checkUnitAwardEligibility(
       cqdv.id,
       2025,
@@ -300,7 +300,7 @@ describe('unitAnnualAward.service - checkUnitAwardEligibility (BKTTCP)', () => {
   });
 
   it('CQDV vs DVTT: eligibility tính riêng — DVTT có streak riêng', async () => {
-    // DVTT: 2y DVQT contiguous keyed by don_vi_truc_thuoc_id
+    // DVTT: 2y DVQT liên tục keyed bằng don_vi_truc_thuoc_id
     const dvtt = makeUnit({ kind: 'DVTT', id: 'dvtt-bkttcp-5', parentId: 'cqdv-parent' });
     const records = buildContiguousDVQT(dvtt.id, 'DVTT', 2022, 2023);
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
@@ -313,7 +313,7 @@ describe('unitAnnualAward.service - checkUnitAwardEligibility (BKTTCP)', () => {
       DANH_HIEU_DON_VI_HANG_NAM.BKTTCP
     );
 
-    // Then: 2y < 7y, fail BKTTCP (separate streak from parent CQDV)
+    // Thì: 2y < 7y, fail BKTTCP (streak riêng với CQDV cha)
     expect(result.eligible).toBe(false);
     expect(result.reason).toBe(unitEligibilityReasons.bkttcpReason(2, 0));
   });
@@ -321,7 +321,7 @@ describe('unitAnnualAward.service - checkUnitAwardEligibility (BKTTCP)', () => {
 
 describe('unitAnnualAward.service - recalculateAnnualUnit (chain flags)', () => {
   it('lifetime block: 14y ĐVQT + đã nhận BKTTCP → goi_y "chưa hỗ trợ"', async () => {
-    // Given: 14y contiguous, BKTTCP flag set in middle
+    // Cho: 14y liên tục, cờ BKTTCP đặt giữa
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-recalc-1' });
     const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2010, 2023, {
       2011: { nhan_bkbqp: true },
@@ -333,21 +333,21 @@ describe('unitAnnualAward.service - recalculateAnnualUnit (chain flags)', () => 
       2022: { nhan_bkbqp: true },
     });
     arrangeResolveUnit(cqdv);
-    // (1) approved-records findMany — full list with status APPROVED
+    // (1) findMany approved-records — full list với status APPROVED
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(records);
-    // (2) calculateTotalDVQT findMany
+    // (2) findMany của calculateTotalDVQT
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(records);
-    // (3) calculateContinuousYears findMany — DVQT-only desc
+    // (3) findMany của calculateContinuousYears — DVQT-only desc
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
-    // (4) countBKBQPInStreak count
+    // (4) count của countBKBQPInStreak
     prismaMock.danhHieuDonViHangNam.count.mockResolvedValueOnce(7);
-    // (5) hoSoDonViHangNam.upsert
+    // (5) upsert hoSoDonViHangNam
     prismaMock.hoSoDonViHangNam.upsert.mockImplementationOnce(async (args: any) => args.create);
 
-    // When
+    // Khi
     await unitAnnualAwardService.recalculateAnnualUnit(cqdv.id, 2024);
 
-    // Then: streak 14, BKTTCP flag triggered → "chưa hỗ trợ" message
+    // Thì: streak 14, cờ BKTTCP kích hoạt → message "chưa hỗ trợ"
     const upsertArgs = prismaMock.hoSoDonViHangNam.upsert.mock.calls[0][0];
     expect(upsertArgs.update.dvqt_lien_tuc).toBe(14);
     expect(upsertArgs.update.du_dieu_kien_bk_thu_tuong).toBe(false);

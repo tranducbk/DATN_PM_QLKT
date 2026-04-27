@@ -10,8 +10,11 @@ export interface TitleDataItem {
   don_vi_id?: string;
   don_vi_type?: 'CO_QUAN_DON_VI' | 'DON_VI_TRUC_THUOC';
   danh_hieu?: string;
+  nam?: number;
+  thang?: number;
   cap_bac?: string | null;
   chuc_vu?: string | null;
+  ghi_chu?: string;
   so_quyet_dinh?: string | null;
   so_quyet_dinh_bkbqp?: string | null;
   so_quyet_dinh_cstdtq?: string | null;

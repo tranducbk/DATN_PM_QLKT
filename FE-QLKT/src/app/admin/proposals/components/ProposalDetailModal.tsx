@@ -8,8 +8,8 @@ import {
 } from '@ant-design/icons';
 import { FileAttachmentList } from '@/components/proposals/FileAttachmentList';
 import type { ColumnsType } from 'antd/es/table';
-import dayjs from 'dayjs';
 import { PROPOSAL_STATUS, PROPOSAL_TYPES, PROPOSAL_TYPE_LABELS, type ProposalType } from '@/constants/proposal.constants';
+import { formatDateTime } from '@/lib/utils';
 import {
   DANH_HIEU_CA_NHAN_HANG_NAM,
   DANH_HIEU_DON_VI_HANG_NAM,
@@ -264,7 +264,7 @@ export function ProposalDetailModal({
             <Tag color="cyan">{personnelCount}</Tag>
           </Descriptions.Item>
           <Descriptions.Item label="Ngày tạo">
-            {dayjs(proposal.createdAt).format('DD/MM/YYYY HH:mm')}
+            {formatDateTime(proposal.createdAt)}
           </Descriptions.Item>
           <Descriptions.Item label="Trạng thái">
             <Tag color={statusDisplay.color}>{statusDisplay.text}</Tag>
@@ -309,7 +309,7 @@ export function ProposalDetailModal({
                 {proposal.NguoiDuyet?.QuanNhan?.ho_ten || proposal.NguoiDuyet?.username || '-'}
               </Descriptions.Item>
               <Descriptions.Item label="Ngày phê duyệt">
-                {proposal.ngay_duyet ? dayjs(proposal.ngay_duyet).format('DD/MM/YYYY HH:mm') : '-'}
+                {formatDateTime(proposal.ngay_duyet)}
               </Descriptions.Item>
             </Descriptions>
           </div>

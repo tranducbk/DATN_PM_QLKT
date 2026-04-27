@@ -18,7 +18,7 @@ import {
   List,
   Button,
 } from 'antd';
-import dayjs from 'dayjs';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import {
   HomeOutlined,
   UserOutlined,
@@ -559,7 +559,7 @@ export default function ManagerAdhocAwardsPage() {
                   {detailAward.ghi_chu || <Text type="secondary">-</Text>}
                 </Descriptions.Item>
                 <Descriptions.Item label="Ngày tạo">
-                  {dayjs(detailAward.createdAt).format('DD/MM/YYYY HH:mm')}
+                  {formatDateTime(detailAward.createdAt)}
                 </Descriptions.Item>
               </Descriptions>
             </Card>
@@ -586,7 +586,7 @@ export default function ManagerAdhocAwardsPage() {
                       <List.Item.Meta
                         avatar={<FileOutlined style={{ fontSize: 24, color: '#1890ff' }} />}
                         title={file.originalName}
-                        description={`${(file.size / 1024).toFixed(1)} KB - ${dayjs(file.uploadedAt).format('DD/MM/YYYY')}`}
+                        description={`${(file.size / 1024).toFixed(1)} KB - ${formatDate(file.uploadedAt)}`}
                       />
                     </List.Item>
                   )}

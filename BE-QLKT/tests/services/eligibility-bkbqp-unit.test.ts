@@ -175,7 +175,7 @@ describe('unitAnnualAward.service - BKBQP exhaustive boundaries (CQDV)', () => {
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
     prismaMock.danhHieuDonViHangNam.count.mockResolvedValueOnce(1);
-    // Last BKBQP claim lookup — finds 2021 (within streak, post-claim effective = 2)
+    // Lookup claim BKBQP cuối — tìm 2021 (trong streak, post-claim effective = 2)
     prismaMock.danhHieuDonViHangNam.findFirst.mockResolvedValueOnce({ nam: 2021 });
 
     const result = await unitAnnualAwardService.checkUnitAwardEligibility(
@@ -188,8 +188,8 @@ describe('unitAnnualAward.service - BKBQP exhaustive boundaries (CQDV)', () => {
   });
 
   it('9. Claim BKBQP đơn vị năm 2022 + 2y ĐVQT + eval 2024 → fail (effective 1 < cycle 2)', async () => {
-    // Latest BKBQP claim at 2022, eval 2024 → effective = 2024-1-2022 = 1.
-    // Below cycle → must wait one more year.
+    // Claim BKBQP cuối tại 2022, eval 2024 → effective = 2024-1-2022 = 1.
+    // Dưới cycle → phải chờ thêm 1 năm.
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkbqp-ex-9' });
     const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2022, 2023, {
       2022: { nhan_bkbqp: true },

@@ -517,7 +517,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
   });
 
   it('reject khi item BKTTCP đơn vị thiếu so_quyet_dinh_bkttcp', async () => {
-    // Given: BKTTCP unit chain item without so_quyet_dinh_bkttcp
+    // Given: item BKTTCP đơn vị thiếu so_quyet_dinh_bkttcp
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-no-qd' });
     const item = makeProposalItemDonVi({
       unitKind: 'CQDV',
@@ -552,8 +552,8 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
   });
 
   it('field isolation — item BKBQP đơn vị only, so_quyet_dinh (ĐVQT) không bị contaminate', async () => {
-    // Given: unit BKBQP item with only so_quyet_dinh_bkbqp.
-    // create.data must NOT contain ĐVQT/ĐVTT so_quyet_dinh nor so_quyet_dinh_bkttcp.
+    // Given: item BKBQP đơn vị chỉ có so_quyet_dinh_bkbqp.
+    // create.data KHÔNG được chứa so_quyet_dinh ĐVQT/ĐVTT lẫn so_quyet_dinh_bkttcp.
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-iso-bk' });
     const item = {
       ...makeProposalItemDonVi({
@@ -587,10 +587,10 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
     );
     prismaMock.bangDeXuat.updateMany.mockResolvedValueOnce({ count: 1 });
 
-    // When
+    // When: gọi duyệt
     await proposalService.approveProposal(proposal.id, {}, ADMIN_ID, {}, {}, null);
 
-    // Then: only BKBQP fields populated; ĐVQT-channel + BKTTCP fields stay null/false
+    // Then: chỉ field BKBQP set; field ĐVQT-channel + BKTTCP giữ null/false
     expect(prismaMock.danhHieuDonViHangNam.create).toHaveBeenCalledTimes(1);
     const createArgs = prismaMock.danhHieuDonViHangNam.create.mock.calls[0][0];
     expect(createArgs.data.nhan_bkbqp).toBe(true);
@@ -602,8 +602,8 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
   });
 
   it('field swap đơn vị — item BKBQP với so_quyet_dinh_bkttcp (nhầm field) → reject', async () => {
-    // Given: unit BKBQP item carries WRONG decision field (so_quyet_dinh_bkttcp).
-    // Required so_quyet_dinh_bkbqp missing → validation must reject.
+    // Given: item BKBQP đơn vị gắn nhầm field (so_quyet_dinh_bkttcp).
+    // Thiếu so_quyet_dinh_bkbqp bắt buộc → validation phải reject.
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-swap-bk' });
     const item = {
       ...makeProposalItemDonVi({

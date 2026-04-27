@@ -10,7 +10,7 @@ import {
   Card,
   List,
 } from 'antd';
-import dayjs from 'dayjs';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import {
   EditOutlined,
   FileOutlined,
@@ -153,7 +153,7 @@ export function DetailAdhocAwardModal({
                 {award.ghi_chu || <Text type="secondary">-</Text>}
               </Descriptions.Item>
               <Descriptions.Item label="Ngày tạo">
-                {dayjs(award.createdAt).format('DD/MM/YYYY HH:mm')}
+                {formatDateTime(award.createdAt)}
               </Descriptions.Item>
             </Descriptions>
           </Card>
@@ -179,7 +179,7 @@ export function DetailAdhocAwardModal({
                     <List.Item.Meta
                       avatar={<FileOutlined style={{ fontSize: 24, color: '#1890ff' }} />}
                       title={file.originalName}
-                      description={`${(file.size / 1024).toFixed(1)} KB - ${dayjs(file.uploadedAt).format('DD/MM/YYYY')}`}
+                      description={`${(file.size / 1024).toFixed(1)} KB - ${formatDate(file.uploadedAt)}`}
                     />
                   </List.Item>
                 )}

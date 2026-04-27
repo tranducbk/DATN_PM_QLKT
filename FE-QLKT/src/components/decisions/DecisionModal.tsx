@@ -20,6 +20,7 @@ import type { UploadFile } from 'antd/es/upload/interface';
 import dayjs from 'dayjs';
 import { apiClient } from '@/lib/apiClient';
 import { LOAI_KHEN_THUONG_OPTIONS } from '@/constants/danhHieu.constants';
+import { formatDate } from '@/lib/utils';
 
 interface Decision {
   id?: string;
@@ -212,7 +213,7 @@ export function DecisionModal({
       setAutocompleteOptions(
         autocompleteResponse.data.map((item: AutocompleteDecisionItem) => ({
           value: item.so_quyet_dinh,
-          label: `${item.so_quyet_dinh} - ${item.nguoi_ky} (${dayjs(item.ngay_ky).format('DD/MM/YYYY')})`,
+          label: `${item.so_quyet_dinh} - ${item.nguoi_ky} (${formatDate(item.ngay_ky)})`,
         }))
       );
     } catch {

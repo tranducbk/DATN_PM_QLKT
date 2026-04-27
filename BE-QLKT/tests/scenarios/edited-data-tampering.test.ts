@@ -74,7 +74,7 @@ function EDITED_buildAnnualProposal(personnelId: string, ho_ten = 'QN A') {
 
 describe('editedData tampering — personnel_id swap', () => {
   it('Đổi personnel_id từ qn-A sang qn-B → service dùng editedData, ghi DB cho qn-B (lỗ hổng)', async () => {
-    // Given: submitted with qn-A, admin sends editedData with qn-B
+    // Given: submit với qn-A, admin gửi editedData với qn-B
     const { proposal } = EDITED_buildAnnualProposal('qn-A', 'Nguyễn A');
     const swappedItem = makeProposalItemCaNhan({
       personnel_id: 'qn-B',
@@ -109,18 +109,18 @@ describe('editedData tampering — personnel_id swap', () => {
       null
     );
 
-    // Then: DB write goes to qn-B — pinned vulnerability
+    // Then: DB ghi cho qn-B — lỗ hổng đã pin
     expect(prismaMock.danhHieuHangNam.upsert).toHaveBeenCalledTimes(1);
     const upsertArgs = prismaMock.danhHieuHangNam.upsert.mock.calls[0][0];
     expect(upsertArgs.where.quan_nhan_id_nam).toEqual({ quan_nhan_id: 'qn-B', nam: 2024 });
-    // TODO: behavior is admin-tampering — service trusts editedData.personnel_id; consider
-    //   rejecting items whose personnel_id is not in the originally submitted payload.
+    // TODO: admin-tampering — service tin editedData.personnel_id; cân nhắc
+    //   reject item có personnel_id không nằm trong payload submit gốc.
   });
 });
 
 describe('editedData tampering — nam override', () => {
   it('editedData nam=2099 trên item nhưng proposal.nam=2024 → service vẫn dùng proposal.nam', async () => {
-    // Given: stored proposal.nam=2024; editedData carries item.nam=2099
+    // Given: proposal lưu nam=2024; editedData mang item.nam=2099
     const { proposal, submittedItem } = EDITED_buildAnnualProposal('qn-nam-override');
     const tamperedItem = { ...submittedItem, nam: 2099 };
 
@@ -148,7 +148,7 @@ describe('editedData tampering — nam override', () => {
       null
     );
 
-    // Then: upsert keyed by proposal.nam (2024), not item.nam (2099)
+    // Then: upsert theo proposal.nam (2024), không phải item.nam (2099)
     const upsertArgs = prismaMock.danhHieuHangNam.upsert.mock.calls[0][0];
     expect(upsertArgs.where.quan_nhan_id_nam.nam).toBe(2024);
     expect(upsertArgs.create.nam).toBe(2024);
@@ -157,7 +157,7 @@ describe('editedData tampering — nam override', () => {
 
 describe('editedData tampering — danh_hieu group escalation', () => {
   it('editedData thêm BKBQP cùng item CSTDCS đã có → block với MIXED_CA_NHAN_HANG_NAM_ERROR', async () => {
-    // Given: stored proposal has only CSTDCS; admin injects a BKBQP for the same person
+    // Given: proposal lưu chỉ có CSTDCS; admin chèn thêm BKBQP cho cùng QN
     const { proposal, submittedItem } = EDITED_buildAnnualProposal('qn-mix');
     const escalatedBkbqp = makeProposalItemCaNhan({
       personnel_id: 'qn-mix',
@@ -188,7 +188,7 @@ describe('editedData tampering — danh_hieu group escalation', () => {
 
 describe('editedData tampering — extra item injection', () => {
   it('editedData thêm 1 item mới (qn-C CSTDCS) ngoài submit data → duplicate check VẪN chạy cho item mới', async () => {
-    // Given: submitted has only qn-A; admin appends qn-C; DB already has qn-C CSTDCS for 2024
+    // Given: submit chỉ có qn-A; admin thêm qn-C; DB đã có qn-C CSTDCS năm 2024
     const { proposal, submittedItem } = EDITED_buildAnnualProposal('qn-A');
     const injectedItem = makeProposalItemCaNhan({
       personnel_id: 'qn-C',
@@ -239,7 +239,7 @@ describe('editedData tampering — extra item injection', () => {
 
 describe('editedData tampering — wrong decision field key', () => {
   it('Item BKBQP nhưng admin set so_quyet_dinh thay vì so_quyet_dinh_bkbqp → vẫn ghi DB (so_quyet_dinh_bkbqp = null)', async () => {
-    // Given: BKBQP item where the chain decision number is mis-keyed under so_quyet_dinh
+    // Given: item BKBQP nhưng số quyết định chuỗi bị đặt nhầm dưới so_quyet_dinh
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bk' });
     const personnel = makePersonnel({ unit: cqdv, id: 'qn-bk' });
     const proposal = makeProposal({
@@ -276,7 +276,7 @@ describe('editedData tampering — wrong decision field key', () => {
     );
     prismaMock.bangDeXuat.updateMany.mockResolvedValueOnce({ count: 1 });
 
-    // When: admin supplies the chain decision via the legitimate `decisions` map.
+    // When: admin cung cấp số quyết định chuỗi qua map `decisions` đúng quy chuẩn.
     await proposalService.approveProposal(
       proposal.id,
       { data_danh_hieu: [tampered] },
@@ -286,21 +286,21 @@ describe('editedData tampering — wrong decision field key', () => {
       null
     );
 
-    // Then: upsert.create writes so_quyet_dinh_bkbqp = "QD-WRONG-FIELD" — the
-    //   misplaced top-level so_quyet_dinh is propagated as the chain decision number,
-    //   shadowing the legitimate decisions.so_quyet_dinh_bkbqp passed by the admin.
+    // Then: upsert.create ghi so_quyet_dinh_bkbqp = "QD-WRONG-FIELD" — số
+    //   so_quyet_dinh top-level đặt nhầm bị lan thành số quyết định chuỗi,
+    //   che mất decisions.so_quyet_dinh_bkbqp hợp lệ admin truyền.
     const upsertArgs = prismaMock.danhHieuHangNam.upsert.mock.calls[0][0];
     expect(upsertArgs.create.nhan_bkbqp).toBe(true);
     expect(upsertArgs.create.so_quyet_dinh_bkbqp).toBe('QD-WRONG-FIELD');
-    // TODO: behavior is `resolveChain` falls back to item.so_quyet_dinh for chain
-    //   awards — a tampered editedData item can override the admin-supplied chain
-    //   decision number. Consider keeping chain-decision lookup strict (mapping only).
+    // TODO: `resolveChain` fallback về item.so_quyet_dinh cho chain awards —
+    //   editedData bị tampering có thể ghi đè số quyết định chuỗi do admin truyền.
+    //   Cân nhắc giữ chain-decision lookup strict (chỉ qua mapping).
   });
 });
 
 describe('editedData tampering — DON_VI item swap', () => {
   it('Đổi co_quan_don_vi_id trong DON_VI item → write theo editedData (lỗ hổng)', async () => {
-    // Given: submitted with cqdv-X; admin rewrites editedData to point at cqdv-Y
+    // Given: submit với cqdv-X; admin sửa editedData trỏ về cqdv-Y
     const cqdvX = makeUnit({ kind: 'CQDV', id: 'cqdv-X' });
     const cqdvY = makeUnit({ kind: 'CQDV', id: 'cqdv-Y' });
     const submittedItem = {
@@ -342,10 +342,10 @@ describe('editedData tampering — DON_VI item swap', () => {
       null
     );
 
-    // Then: DB write targets cqdv-Y, not cqdv-X — pinned vulnerability
+    // Then: DB ghi vào cqdv-Y, không phải cqdv-X — lỗ hổng đã pin
     const createArgs = prismaMock.danhHieuDonViHangNam.create.mock.calls[0][0];
     expect(createArgs.data.CoQuanDonVi.connect.id).toBe(cqdvY.id);
-    // TODO: behavior is unit swap accepted — verify with business whether approve.ts should
-    //   reject editedData unit ids that diverge from the proposal's stored unit scope.
+    // TODO: unit swap được chấp nhận — xác nhận với nghiệp vụ liệu approve.ts có
+    //   nên reject editedData unit id lệch khỏi scope đơn vị lưu trong proposal.
   });
 });

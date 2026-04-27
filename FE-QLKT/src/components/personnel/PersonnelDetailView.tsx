@@ -800,7 +800,7 @@ export function PersonnelDetailView({ role }: PersonnelDetailViewProps) {
                   <div className="flex flex-col items-center gap-2">
                     <TrophyOutlined style={{ fontSize: '32px' }} />
                     <Text strong style={{ fontSize: '16px' }}>
-                      {DANH_HIEU_MAP['KNC_VSNXD_QDNDVN']}
+                      {DANH_HIEU_MAP.KNC_VSNXD_QDNDVN}
                     </Text>
                   </div>
                 </Card>

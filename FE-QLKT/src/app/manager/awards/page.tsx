@@ -27,7 +27,11 @@ import {
 } from '@/lib/award/awardsHelper';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { formatDate } from '@/lib/utils';
-import { DANH_HIEU_CA_NHAN_HANG_NAM, type AwardType } from '@/constants/danhHieu.constants';
+import {
+  DANH_HIEU_CA_NHAN_HANG_NAM,
+  DANH_HIEU_DAC_BIET,
+  type AwardType,
+} from '@/constants/danhHieu.constants';
 import {
   DEFAULT_ANTD_TABLE_PAGINATION,
   FETCH_ALL_LIMIT,
@@ -432,7 +436,7 @@ export default function ManagerAwardsPage() {
 
         // Commemoration medals — if record exists, default title is KNC
         if (activeTab === 'KNC_VSNXD_QDNDVN') {
-          const danhHieu = DANH_HIEU_MAP['KNC_VSNXD_QDNDVN'] || 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN';
+          const danhHieu = DANH_HIEU_MAP[DANH_HIEU_DAC_BIET.KNC_VSNXD_QDNDVN] || 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN';
           return (
             <div style={COLUMN_STYLES.container}>
               <Text strong>{danhHieu}</Text>
@@ -448,7 +452,7 @@ export default function ManagerAwardsPage() {
 
         // Military flag — if record exists, default title is HC_QKQT
         if (activeTab === 'HCQKQT') {
-          const danhHieu = DANH_HIEU_MAP['HC_QKQT'] || 'Huy chương Quân kỳ quyết thắng';
+          const danhHieu = DANH_HIEU_MAP[DANH_HIEU_DAC_BIET.HC_QKQT] || 'Huy chương Quân kỳ quyết thắng';
           return (
             <div style={COLUMN_STYLES.container}>
               <Text strong>{danhHieu}</Text>

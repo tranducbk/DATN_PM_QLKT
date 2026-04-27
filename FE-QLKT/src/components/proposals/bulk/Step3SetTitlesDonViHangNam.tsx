@@ -67,6 +67,19 @@ interface Unit {
   };
 }
 
+interface RawUnit {
+  id: string;
+  ten_don_vi: string;
+  ma_don_vi: string;
+  co_quan_don_vi_id?: string | null;
+  CoQuanDonVi?: {
+    id: string;
+    ten_don_vi: string;
+    ma_don_vi: string;
+  } | null;
+}
+
+
 interface TitleData {
   don_vi_id?: string;
   don_vi_type?: 'CO_QUAN_DON_VI' | 'DON_VI_TRUC_THUOC';
@@ -94,7 +107,7 @@ export function Step3SetTitlesDonViHangNam({
     useState(false);
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
   const [unitAnnualAwards, setUnitAnnualAwards] = useState<UnitAnnualAwards | null>(null);
-  const [allUnitAnnualAwards, setAllUnitAnnualAwards] = useState<Record<string, any>>({});
+  const [allUnitAnnualAwards, setAllUnitAnnualAwards] = useState<Record<string, UnitAnnualAwards | null>>({});
   const [loadingModal, setLoadingModal] = useState(false);
 
   const fetchUnitDetails = useCallback(async () => {
@@ -106,14 +119,15 @@ export function Step3SetTitlesDonViHangNam({
       if (unitsRes.success) {
         const unitsData = unitsRes.data || [];
         // Select units that are returned from /api/units
-        const selectedUnits = unitsData.filter((unit: any) => selectedUnitIds.includes(unit.id));
+        const rawUnits = unitsData as RawUnit[];
+        const selectedUnits = rawUnits.filter(unit => selectedUnitIds.includes(unit.id));
 
-        const formattedUnits: Unit[] = selectedUnits.map((unit: any) => ({
+        const formattedUnits: Unit[] = selectedUnits.map(unit => ({
           id: unit.id,
           ten_don_vi: unit.ten_don_vi,
           ma_don_vi: unit.ma_don_vi,
-          co_quan_don_vi_id: unit.co_quan_don_vi_id,
-          CoQuanDonVi: unit.CoQuanDonVi || null,
+          co_quan_don_vi_id: unit.co_quan_don_vi_id ?? undefined,
+          CoQuanDonVi: unit.CoQuanDonVi || undefined,
         }));
 
         setUnits(formattedUnits);
@@ -137,17 +151,17 @@ export function Step3SetTitlesDonViHangNam({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedUnitIds, onTitleDataChange]);
 
-  const fetchUnitAnnualProfiles = useCallback(async () => {
+  const fetchUnitAnnualAwardss = useCallback(async () => {
     if (!selectedUnitIds || selectedUnitIds.length === 0) return;
     const hideMessage = message.loading('Đang tính toán lại hồ sơ đơn vị...', 0);
     try {
-      const profilesMap: Record<string, any> = {};
+      const profilesMap: Record<string, UnitAnnualAwards | null> = {};
       await Promise.all(
         selectedUnitIds.map(async unitId => {
           try {
             const profileRes = await apiClient.getUnitAnnualProfile(unitId, nam);
             if (profileRes.success && profileRes.data) {
-              profilesMap[unitId] = profileRes.data;
+              profilesMap[unitId] = profileRes.data as UnitAnnualAwards;
             } else {
               profilesMap[unitId] = null;
             }
@@ -168,12 +182,12 @@ export function Step3SetTitlesDonViHangNam({
   useEffect(() => {
     if (selectedUnitIds.length > 0) {
       fetchUnitDetails();
-      fetchUnitAnnualProfiles();
+      fetchUnitAnnualAwardss();
     } else {
       setUnits([]);
       onTitleDataChange([]);
     }
-  }, [selectedUnitIds, fetchUnitDetails, fetchUnitAnnualProfiles, onTitleDataChange]);
+  }, [selectedUnitIds, fetchUnitDetails, fetchUnitAnnualAwardss, onTitleDataChange]);
 
   const getSelectedDanhHieuType = (): SelectedDanhHieuMixType => {
     const selectedDanhHieus = titleData.map(item => item.danh_hieu).filter(Boolean) as string[];
@@ -223,15 +237,15 @@ export function Step3SetTitlesDonViHangNam({
   const checkAlreadyReceived = (id: string, danhHieu: string): boolean => {
     const profile = allUnitAnnualAwards[id];
     if (!profile) return false;
-    const yearRecords: any[] = profile.tong_dvqt_json || [];
-    const thisYear = yearRecords.find((r: any) => r.nam === nam);
+    const yearRecords = profile.tong_dvqt_json || [];
+    const thisYear = yearRecords.find(r => r.nam === nam);
     if (!thisYear) return false;
     if (danhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP && thisYear.nhan_bkbqp) return true;
     if (danhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP && thisYear.nhan_bkttcp) return true;
     return false;
   };
 
-  const updateTitle = async (id: string, field: string, value: any) => {
+  const updateTitle = async (id: string, field: string, value: string) => {
     if (field === 'danh_hieu' && value) {
       if (checkAlreadyReceived(id, value)) {
         const u = units.find(u => u.id === id);

@@ -4,6 +4,7 @@ import { Modal, Table, Tag, Spin, Empty } from 'antd';
 import { HistoryOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
+import { formatDate } from '@/lib/utils';
 
 interface Personnel {
   id: string;
@@ -99,7 +100,7 @@ export function PositionHistoryModal({
       key: 'ngay_bat_dau',
       width: 150,
       align: 'center',
-      render: (date: string) => (date ? dayjs(date).format('DD/MM/YYYY') : '-'),
+      render: (date: string) => formatDate(date),
     },
     {
       title: 'Ngày kết thúc',
@@ -109,7 +110,7 @@ export function PositionHistoryModal({
       align: 'center',
       render: (date: string | null | undefined, record: PositionHistory) => {
         if (date) {
-          return dayjs(date).format('DD/MM/YYYY');
+          return formatDate(date);
         }
         return <Tag color="blue">Đang đảm nhiệm</Tag>;
       },

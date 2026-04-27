@@ -29,6 +29,7 @@ import {
 } from '@ant-design/icons';
 import type { UploadFile } from 'antd';
 import { apiClient } from '@/lib/apiClient';
+import { formatDate } from '@/lib/utils';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 import type {
@@ -90,7 +91,7 @@ export function CreateAdhocAwardModal({
         setDecisionOptions(
           (res.data as DecisionAutocompleteRow[]).map(item => ({
             value: item.so_quyet_dinh,
-            label: `${item.so_quyet_dinh} - ${item.nguoi_ky} (${dayjs(item.ngay_ky).format('DD/MM/YYYY')})`,
+            label: `${item.so_quyet_dinh} - ${item.nguoi_ky} (${formatDate(item.ngay_ky)})`,
           }))
         );
       } else {

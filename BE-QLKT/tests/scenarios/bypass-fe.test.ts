@@ -268,7 +268,7 @@ describe('Bypass FE — invalid references', () => {
       2024
     );
 
-    // Service still creates the proposal — pins current behavior, see audit report.
+    // Service vẫn tạo proposal — pin behavior hiện tại, xem audit report.
     const data = prismaMock.bangDeXuat.create.mock.calls[0][0].data;
     expect(data.data_danh_hieu[0].ho_ten).toBe('');
   });
@@ -289,7 +289,7 @@ describe('Bypass FE — invalid references', () => {
 
 describe('Bypass FE — mixed group attacks (CA_NHAN_HANG_NAM)', () => {
   it('Cùng QN nhận CSTDCS và BKBQP → reject mixed-group exact', async () => {
-    // Self-conflict: same personnel listed twice with incompatible award groups
+    // Tự conflict: cùng QN xuất hiện 2 lần với 2 nhóm danh hiệu xung khắc
     arrangeManager();
     const target = makePersonnel({ id: 'qn-self-conflict' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([target]);
@@ -311,7 +311,7 @@ describe('Bypass FE — mixed group attacks (CA_NHAN_HANG_NAM)', () => {
 
 describe('Bypass FE — approve attacks', () => {
   it('approve proposalId không tồn tại → NotFoundError exact', async () => {
-    // Given: lookup returns null
+    // Given: lookup trả null
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(null);
 
     await expectError(
@@ -322,7 +322,7 @@ describe('Bypass FE — approve attacks', () => {
   });
 
   it('approve proposal đã APPROVED → ValidationError exact', async () => {
-    // Given: proposal already approved
+    // Given: proposal đã approved
     const proposal = makeProposal({
       id: 'p-already',
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
@@ -340,7 +340,7 @@ describe('Bypass FE — approve attacks', () => {
   });
 
   it('approve HC_QKQT proposal thiếu thang → ValidationError "Đề xuất thiếu tháng…"', async () => {
-    // Given: proposal stored without thang — guard re-checks before transaction
+    // Given: proposal lưu thiếu thang — guard re-check trước transaction
     const proposal = makeProposal({
       id: 'p-no-thang',
       loai: PROPOSAL_TYPES.HC_QKQT,
@@ -361,7 +361,7 @@ describe('Bypass FE — approve attacks', () => {
   });
 
   it('editedData mixed-group khi data_danh_hieu lưu sạch → vẫn block', async () => {
-    // Given: stored data is clean but edited payload mixes CSTDCS with BKBQP
+    // Given: data lưu sạch nhưng editedData trộn CSTDCS với BKBQP
     const personnelA = makePersonnel({ id: 'qn-edit-A' });
     const personnelB = makePersonnel({ id: 'qn-edit-B' });
     const cleanItem = makeProposalItemCaNhan({
@@ -381,7 +381,7 @@ describe('Bypass FE — approve attacks', () => {
       { id: personnelB.id, ho_ten: personnelB.ho_ten },
     ]);
 
-    // editedData injects a BKBQP alongside the existing CSTDCS — must be blocked
+    // editedData chèn BKBQP cạnh CSTDCS đã có — phải bị block
     await expectError(
       proposalService.approveProposal(
         proposal.id,
@@ -406,7 +406,7 @@ describe('Bypass FE — approve attacks', () => {
   });
 
   it('editedData mixed-group ĐVQT + BKBQP đơn vị → reject MIXED_DON_VI_HANG_NAM_ERROR', async () => {
-    // Given: a DON_VI_HANG_NAM proposal where editedData mixes ĐVQT + BKBQP
+    // Given: proposal DON_VI_HANG_NAM có editedData trộn ĐVQT + BKBQP
     const cqdvA = makeUnit({ kind: 'CQDV', id: 'cqdv-edit-A' });
     const cqdvB = makeUnit({ kind: 'CQDV', id: 'cqdv-edit-B' });
     const proposal = makeProposal({

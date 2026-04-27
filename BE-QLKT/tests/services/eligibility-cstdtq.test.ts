@@ -99,8 +99,8 @@ describe('profile.service - CSTDTQ exhaustive boundaries', () => {
   });
 
   it('2. 6y CSTDCS + 2 BKBQP + 6 NCKH → missed window (streak 6 > 3, strict cycle)', async () => {
-    // Strict-cycle rule: CSTDTQ must hit boundary streak === 3 exactly. Continuous overshoot
-    // means operator already passed the year-3 review and must wait for the next chain.
+    // Rule strict-cycle: CSTDTQ phải trúng boundary streak === 3 chính xác. Vượt qua
+    // nghĩa là đã qua review năm-3 và phải chờ chain tiếp theo.
     const personnelId = 'qn-cstdtq-ex-2';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2018, 2023, {
       2019: { nhan_bkbqp: true },
@@ -281,8 +281,8 @@ describe('profile.service - CSTDTQ exhaustive boundaries', () => {
   });
 
   it('11b. 9y CSTDCS + 3 BKBQP đầu chuỗi → missed window (streak 9 > 3 dominates count check)', async () => {
-    // Streak overshoots cycle boundary — missed-window reason fires regardless of whether
-    // BKBQP scattering would have satisfied the current 3y window in the old non-strict rule.
+    // Streak vượt cycle boundary — reason missed-window kích hoạt bất kể rằng BKBQP
+    // rải rác có thỏa window 3y hiện tại theo rule non-strict cũ hay không.
     const personnelId = 'qn-cstdtq-ex-11b';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2015, 2023, {
       2016: { nhan_bkbqp: true },
@@ -304,8 +304,8 @@ describe('profile.service - CSTDTQ exhaustive boundaries', () => {
   });
 
   it('12. Đã nhận CSTDTQ năm 2020 (trong streak) + 6y CSTDCS + BKBQP 2022 → eligible (effective streak = 3 sau claim)', async () => {
-    // Last CSTDTQ claim resets the cycle counter. Effective streak = (2024-1) - 2020 = 3,
-    // which lands exactly on the next CSTDTQ boundary; BKBQP 2022 covers the cycle window.
+    // Claim CSTDTQ cuối reset cycle counter. Effective streak = (2024-1) - 2020 = 3,
+    // trúng boundary CSTDTQ tiếp theo; BKBQP 2022 cover cycle window.
     const personnelId = 'qn-cstdtq-ex-11';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2018, 2023, {
       2019: { nhan_bkbqp: true },
@@ -327,7 +327,7 @@ describe('profile.service - CSTDTQ exhaustive boundaries', () => {
   });
 
   it('13. 3y CSTDCS + 1 CSTT + 3y CSTDCS (streak reset to 3 sau break) + BKBQP trong 3y cuối → eligible', async () => {
-    // Break (CSTT) restarts streak — fresh 3y chain qualifies for CSTDTQ when BKBQP lands inside.
+    // Break (CSTT) restart streak — chain 3y mới qualify CSTDTQ khi BKBQP rơi vào trong.
     const personnelId = 'qn-cstdtq-ex-13';
     const danhHieu: AnnualRow[] = [];
     const nckh: ScienceRow[] = [];
@@ -378,8 +378,8 @@ describe('profile.service - CSTDTQ exhaustive boundaries', () => {
   });
 
   it('15. Claim CSTDTQ 2020 + claim 2023 + BKBQP 2024 + 7y CSTDCS → eligible (effective streak 3 sau claim 2023, BKBQP trong cycle window 2024-2026 evalYear 2027)', async () => {
-    // Two prior claims: latest at 2023 resets the cycle counter. evalYear 2027 → effective
-    // streak = 2027-1-2023 = 3. BKBQP 2024 lands inside the 3y cycle window 2024-2026.
+    // 2 claim trước: claim cuối 2023 reset cycle counter. evalYear 2027 → effective
+    // streak = 2027-1-2023 = 3. BKBQP 2024 rơi trong cycle window 3y 2024-2026.
     const personnelId = 'qn-cstdtq-ex-15';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2020, 2026, {
       2020: { nhan_cstdtq: true },
@@ -401,8 +401,8 @@ describe('profile.service - CSTDTQ exhaustive boundaries', () => {
   });
 
   it('16. Claim CSTDTQ 2021 + 4y CSTDCS + BKBQP 2022 → eligible năm 2025 (effective streak 3)', async () => {
-    // evalYear 2025, claim 2021, effective = 2025-1-2021 = 3 → boundary hit; BKBQP 2022
-    // covers cycle window 2022-2024.
+    // evalYear 2025, claim 2021, effective = 2025-1-2021 = 3 → trúng boundary; BKBQP 2022
+    // cover cycle window 2022-2024.
     const personnelId = 'qn-cstdtq-ex-16';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2021, 2024, {
       2021: { nhan_cstdtq: true },
@@ -422,8 +422,8 @@ describe('profile.service - CSTDTQ exhaustive boundaries', () => {
   });
 
   it('17. Claim CSTDTQ 2021 + BKBQP 2022 + eval 2024 → fail (effective streak chỉ 2)', async () => {
-    // Cycle counter restarted by claim 2021 — effective = 2024-1-2021 = 2 < cycle 3.
-    // Prior claim suppresses the missed-window message; surfaces regular insufficient reason.
+    // Cycle counter restart bởi claim 2021 — effective = 2024-1-2021 = 2 < cycle 3.
+    // Claim trước suppress missed-window message; surface reason insufficient bình thường.
     const personnelId = 'qn-cstdtq-ex-17';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2021, 2023, {
       2021: { nhan_cstdtq: true },

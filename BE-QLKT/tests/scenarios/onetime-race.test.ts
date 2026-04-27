@@ -77,7 +77,7 @@ function ONETIME_RACE_buildHcqkqtItem(personnelId: string, hoTen: string): Oneti
 
 describe('One-time race — HC_QKQT parallel approve', () => {
   it('Hai proposal HC_QKQT cùng QN approve song song khi DB trống → cả hai đều reach create (pinned: thiếu unique guard ở approve)', async () => {
-    // Given: same personnel, two pending HC_QKQT proposals from different years/admins.
+    // Given: cùng QN, 2 đề xuất HC_QKQT pending từ năm/admin khác nhau.
     const personnel = makePersonnel({
       id: 'qn-race-hcqkqt',
       ho_ten: 'Race HCQKQT',
@@ -126,7 +126,7 @@ describe('One-time race — HC_QKQT parallel approve', () => {
     });
     prismaMock.bangDeXuat.updateMany.mockResolvedValue({ count: 1 });
 
-    // When: both approves run in parallel
+    // When: hai approve chạy song song
     const results = await Promise.allSettled([
       proposalService.approveProposal(
         propA.id,
@@ -146,19 +146,18 @@ describe('One-time race — HC_QKQT parallel approve', () => {
       ),
     ]);
 
-    // Then: both transactions reach create — no in-process serialization
+    // Then: cả 2 transaction tới create — không serialize trong process
     expect(results[0].status).toBe('fulfilled');
     expect(results[1].status).toBe('fulfilled');
     expect(prismaMock.huanChuongQuanKyQuyetThang.create).toHaveBeenCalledTimes(2);
-    // TODO: behavior is approve-side relies solely on the optimistic
-    //   findUnique-then-create pattern. The DB unique on quan_nhan_id is the only
-    //   real safeguard — consider adding an explicit `findFirst` outside the tx
-    //   and surfacing the duplicate to the second admin instead of letting Prisma
-    //   throw a P2002 from create.
+    // TODO: approve-side hiện chỉ dựa vào pattern optimistic findUnique-then-create.
+    //   DB unique trên quan_nhan_id là safeguard duy nhất — cân nhắc thêm
+    //   `findFirst` ngoài transaction và surface duplicate cho admin thứ 2 thay vì
+    //   để Prisma throw P2002 từ create.
   });
 
   it('Approve-time HC_QKQT khi DB đã có award → checkDuplicateAward block với hcqkqtAlreadyAwardedMessage', async () => {
-    // Given: pending HC_QKQT proposal but DB already has an HC_QKQT row for the same personnel
+    // Given: proposal HC_QKQT pending nhưng DB đã có row HC_QKQT của cùng QN
     const personnel = makePersonnel({
       id: 'qn-hcqkqt-already',
       ho_ten: 'Đã nhận HCQKQT',
@@ -200,7 +199,7 @@ describe('One-time race — HC_QKQT parallel approve', () => {
 
 describe('One-time race — CONG_HIEN upgrade vs duplicate', () => {
   it('QN đã có HCBVTQ_HANG_BA → approve HCBVTQ_HANG_NHI: upgrade qua update (không create mới)', async () => {
-    // Given: existing HCBVTQ_HANG_BA in DB, new proposal asks for HANG_NHI
+    // Given: đã có HCBVTQ_HANG_BA trong DB, proposal mới xin HANG_NHI
     const personnel = makePersonnel({
       id: 'qn-upgrade',
       ho_ten: 'Upgrade CH',
@@ -276,7 +275,7 @@ describe('One-time race — CONG_HIEN upgrade vs duplicate', () => {
   });
 
   it('QN đã có HCBVTQ_HANG_NHI → approve HCBVTQ_HANG_BA: reject với "thấp hơn hoặc bằng"', async () => {
-    // Given: downgrade attempt — should be rejected without DB write
+    // Given: thử downgrade — phải bị reject không ghi DB
     const personnel = makePersonnel({
       id: 'qn-downgrade',
       ho_ten: 'Downgrade CH',
@@ -337,7 +336,7 @@ describe('One-time race — CONG_HIEN upgrade vs duplicate', () => {
       nam: 2022,
     });
 
-    // When/Then: downgrade collected into errors[] inside tx → rollback throws ValidationError
+    // When/Then: downgrade gom vào errors[] trong tx → rollback throw ValidationError
     const expectedMessage = congHienLowerOrEqualBlocked(
       personnel.ho_ten,
       getDanhHieuName(DANH_HIEU_HCBVTQ.HANG_NHI),

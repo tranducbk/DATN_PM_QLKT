@@ -39,6 +39,7 @@ import {
   AWARD_TYPE_OPTIONS,
   SYSTEM_FEATURE_OPTIONS,
 } from '@/constants/devZone.constants';
+import { formatDateTime } from '@/lib/utils';
 import './dev-zone.css';
 
 const DEFAULT_RETENTION_DAYS = 15;
@@ -548,9 +549,7 @@ export default function DevZonePage() {
                           <CloseCircleOutlined />
                         )}
                         Lần chạy gần nhất:{' '}
-                        {status.cron.lastRun
-                          ? new Date(status.cron.lastRun).toLocaleString('vi-VN')
-                          : 'Chưa chạy'}
+                        {status.cron.lastRun ? formatDateTime(status.cron.lastRun) : 'Chưa chạy'}
                       </Space>
                     }
                     description={
@@ -754,7 +753,7 @@ export default function DevZonePage() {
                 <div style={{ marginTop: 12 }}>
                   <Alert
                     type="info"
-                    message={`Lần backup gần nhất: ${new Date(backupStatus.lastRun).toLocaleString('vi-VN')}`}
+                    message={`Lần backup gần nhất: ${formatDateTime(backupStatus.lastRun)}`}
                     showIcon={false}
                   />
                 </div>

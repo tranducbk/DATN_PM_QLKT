@@ -34,9 +34,18 @@ import {
   getContributionRequiredMonths,
   getHighestEligibleContributionAward,
   getReferenceEndDate,
+  type PositionHistoryLike,
 } from '@/lib/award/contributionTimeHelper';
 import { DANH_HIEU_SHORT_MAP } from '@/constants/danhHieu.constants';
 import * as XLSX from 'xlsx';
+import type {
+  DuplicateCheckResult,
+  ExcelRow,
+  Step2ImportSuccessResult,
+  Step2ImportedAward,
+  Step2LocalImportResult,
+} from './types';
+import type { TitleDataItem } from '@/lib/types/proposal';
 
 const { Text } = Typography;
 
@@ -78,7 +87,7 @@ interface Step2SelectPersonnelCongHienProps {
   onNamChange: (nam: number) => void;
   thang?: number;
   onThangChange?: (thang: number) => void;
-  onTitleDataChange?: (titleData: any[]) => void;
+  onTitleDataChange?: (titleData: TitleDataItem[]) => void;
   onNextStep?: () => void;
   isManager?: boolean;
 }
@@ -109,7 +118,7 @@ export function Step2SelectPersonnelCongHien({
   const [personnel, setPersonnel] = useState<Personnel[]>([]);
   const [searchText, setSearchText] = useState('');
   const [unitFilter, setUnitFilter] = useState<string>('ALL');
-  const [positionHistoriesMap, setPositionHistoriesMap] = useState<Record<string, any[]>>({});
+  const [positionHistoriesMap, setPositionHistoriesMap] = useState<Record<string, PositionHistoryLike[]>>({});
   const CURRENT_YEAR = new Date().getFullYear();
   const [localNam, setLocalNam] = useState<number | null>(nam);
   const [localThang, setLocalThang] = useState<number>(thang ?? new Date().getMonth() + 1);
@@ -152,7 +161,7 @@ export function Step2SelectPersonnelCongHien({
 
   const fetchPositionHistories = async (personnelList: Personnel[]) => {
     try {
-      const historiesMap: Record<string, any[]> = {};
+      const historiesMap: Record<string, PositionHistoryLike[]> = {};
 
       await Promise.all(
         personnelList.map(async p => {
@@ -432,7 +441,9 @@ export function Step2SelectPersonnelCongHien({
     },
   ];
 
-  const handleLocalExcelProcess = async (file: File): Promise<any> => {
+  const handleLocalExcelProcess = async (
+    file: File
+  ): Promise<Step2LocalImportResult<TitleDataItem>> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
 
@@ -450,13 +461,13 @@ export function Step2SelectPersonnelCongHien({
             throw new Error('File Excel không có dữ liệu hoặc thiếu header');
           }
 
-          const dataRows = jsonData.slice(1); // skip header row
+          const dataRows = jsonData.slice(1) as ExcelRow[];
 
-          const titleData: any[] = [];
+          const titleData: TitleDataItem[] = [];
           const errors: string[] = [];
           const processedPersonnelIds: string[] = [];
 
-          dataRows.forEach((row: any, index: number) => {
+          dataRows.forEach((row: ExcelRow, index: number) => {
             const rowNumber = index + 2; // +2: skip header + 0-based index
 
             // Validate required fields
@@ -518,23 +529,23 @@ export function Step2SelectPersonnelCongHien({
           try {
             const batchResponse = await apiClient.checkDuplicateBatch(
               titleData.map(item => ({
-                personnel_id: item.personnel_id,
-                nam: item.nam,
-                danh_hieu: item.danh_hieu,
+                personnel_id: item.personnel_id ?? '',
+                nam: item.nam ?? 0,
+                danh_hieu: item.danh_hieu ?? '',
                 proposal_type: PROPOSAL_TYPES.CONG_HIEN,
               }))
             );
             if (!batchResponse.success) throw new Error(batchResponse.message);
             const duplicateIds = new Set<string>();
-            (batchResponse.data as any[]).forEach(result => {
-              if (result.exists) {
+            (batchResponse.data as DuplicateCheckResult[]).forEach(result => {
+              if (result.exists && result.personnel_id) {
                 const hoTen = personnel.find(p => p.id === result.personnel_id)?.ho_ten || result.personnel_id;
                 errors.push(`${hoTen}: ${result.message}`);
                 duplicateIds.add(result.personnel_id);
               }
             });
             const filteredTitleData = duplicateIds.size > 0
-              ? titleData.filter(item => !duplicateIds.has(item.personnel_id))
+              ? titleData.filter(item => !duplicateIds.has(item.personnel_id ?? ''))
               : titleData;
             const filteredPersonnelIds = duplicateIds.size > 0
               ? uniquePersonnelIds.filter(id => !duplicateIds.has(id))
@@ -562,14 +573,14 @@ export function Step2SelectPersonnelCongHien({
     });
   };
 
-  const handleImportSuccess = async (result: any) => {
+  const handleImportSuccess = async (result: Step2ImportSuccessResult) => {
     if (result.selectedPersonnelIds && result.selectedPersonnelIds.length > 0) {
       onPersonnelChange(result.selectedPersonnelIds);
 
       // Populate titleData from imported data
       if (result.titleData && result.titleData.length > 0) {
         // Transform to titleData format
-        const titleData = result.titleData.map((award: any) => ({
+        const titleData: TitleDataItem[] = result.titleData.map((award: Step2ImportedAward) => ({
           personnel_id: String(
             award.quan_nhan_id ??
               award.personnel_id ??

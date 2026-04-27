@@ -32,7 +32,11 @@ import {
   collectUnitAwards,
   renderAwardDeleteButtons,
 } from '@/lib/award/awardsHelper';
-import { AWARD_TAB_DANH_HIEU, type AwardType } from '@/constants/danhHieu.constants';
+import {
+  AWARD_TAB_DANH_HIEU,
+  DANH_HIEU_CA_NHAN_HANG_NAM,
+  type AwardType,
+} from '@/constants/danhHieu.constants';
 
 import { ExportModal } from './ExportModal';
 import {
@@ -255,9 +259,12 @@ export default function AdminAwardsPage() {
   const matchesDanhHieuFilter = useCallback((record: AwardTableRow, selectedDanhHieu: string): boolean => {
     if (!selectedDanhHieu || !TABS_WITH_DANH_HIEU_FILTER.has(activeTab)) return true;
     if (activeTab === 'CNHN') {
-      const isBKBQP = selectedDanhHieu === 'BKBQP' && Boolean(record.nhan_bkbqp);
-      const isCSTDTQ = selectedDanhHieu === 'CSTDTQ' && Boolean(record.nhan_cstdtq);
-      const isBKTTCP = selectedDanhHieu === 'BKTTCP' && Boolean(record.nhan_bkttcp);
+      const isBKBQP =
+        selectedDanhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP && Boolean(record.nhan_bkbqp);
+      const isCSTDTQ =
+        selectedDanhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ && Boolean(record.nhan_cstdtq);
+      const isBKTTCP =
+        selectedDanhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP && Boolean(record.nhan_bkttcp);
       if (isBKBQP || isCSTDTQ || isBKTTCP) return true;
       return record.danh_hieu === selectedDanhHieu;
     }

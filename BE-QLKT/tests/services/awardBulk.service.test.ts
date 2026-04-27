@@ -130,7 +130,7 @@ describe('awardBulk.service - checkDuplicateAwards (cá nhân)', () => {
       { quan_nhan_id: personnelA.id, danh_hieu: DANH_HIEU_HCBVTQ.HANG_BA },
     ]);
 
-    // Even when the request asks for a higher rank, the lifetime guard fires
+    // Dù request hạng cao hơn, lifetime guard vẫn kích hoạt
     const errors = await awardBulkService.checkDuplicateAwards(
       PROPOSAL_TYPES.CONG_HIEN,
       2024,
@@ -144,7 +144,7 @@ describe('awardBulk.service - checkDuplicateAwards (cá nhân)', () => {
   });
 
   it('mix 1 trùng + 1 không trùng → trả đúng 1 lỗi', async () => {
-    // Given: personnel B has the existing record, A is clear
+    // Cho: personnel B đã có record, A trống
     const personnelA = { id: 'qn-A', ho_ten: 'A' };
     const personnelB = { id: 'qn-B', ho_ten: 'B' };
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([personnelA, personnelB]);
@@ -248,7 +248,7 @@ describe('awardBulk.service - checkDuplicateUnitAwards', () => {
   });
 
   it('phân biệt CQDV vs DVTT — record DVTT không trùng với request CQDV', async () => {
-    // Given: existing DVTT record only — request targets CQDV with different id
+    // Cho: chỉ có record DVTT — request nhắm vào CQDV với id khác
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce([
       {
         co_quan_don_vi_id: null,
@@ -260,12 +260,12 @@ describe('awardBulk.service - checkDuplicateUnitAwards', () => {
     ]);
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
 
-    // When: request for cqdv-1 with no matching record
+    // Khi: request cho cqdv-1 không có record matching
     const errors = await awardBulkService.checkDuplicateUnitAwards(2024, [
       { personnel_id: '', don_vi_id: 'cqdv-1', danh_hieu: DANH_HIEU_DON_VI_HANG_NAM.DVQT },
     ]);
 
-    // Then: no error — different unit ids do not collide
+    // Thì: không lỗi — id đơn vị khác nhau không xung đột
     expect(errors).toEqual([]);
   });
 
@@ -306,12 +306,12 @@ describe('awardBulk.service - bulkCreateAwards CONG_HIEN — rank upgrade guard'
   ) {
     const heSo = options.he_so ?? 1.0;
     const soThang = options.so_thang ?? 240;
-    // checkDuplicateAwards — empty so the lifetime guard does not preempt the test
+    // checkDuplicateAwards — rỗng để lifetime guard không can thiệp test
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([{ id: personnel.id, ho_ten: personnel.ho_ten }]);
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
     prismaMock.khenThuongHCBVTQ.findMany.mockResolvedValueOnce([]);
 
-    // CONG_HIEN eligibility setup — caller controls hệ số/tháng to pin highest qualifying rank
+    // Setup CONG_HIEN — caller kiểm soát hệ số/tháng để chốt hạng cao nhất đủ điều kiện
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([
       { id: personnel.id, ho_ten: personnel.ho_ten, gioi_tinh: 'NAM' },
     ]);
@@ -471,7 +471,7 @@ describe('awardBulk.service - bulkCreateAwards CONG_HIEN — rank upgrade guard'
     const qnA = { id: 'qn-bulk-G1', ho_ten: 'Quân Nhân G1' };
     const qnB = { id: 'qn-bulk-G2', ho_ten: 'Quân Nhân G2' };
 
-    // checkDuplicateAwards mocks (existingAwards must be empty so lifetime guard skips)
+    // Mocks checkDuplicateAwards (existingAwards phải rỗng để lifetime guard skip)
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([
       { id: qnA.id, ho_ten: qnA.ho_ten },
       { id: qnB.id, ho_ten: qnB.ho_ten },
@@ -479,7 +479,7 @@ describe('awardBulk.service - bulkCreateAwards CONG_HIEN — rank upgrade guard'
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
     prismaMock.khenThuongHCBVTQ.findMany.mockResolvedValueOnce([]);
 
-    // CONG_HIEN eligibility setup
+    // Setup CONG_HIEN eligibility
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([
       { id: qnA.id, ho_ten: qnA.ho_ten, gioi_tinh: 'NAM' },
       { id: qnB.id, ho_ten: qnB.ho_ten, gioi_tinh: 'NAM' },
@@ -501,7 +501,7 @@ describe('awardBulk.service - bulkCreateAwards CONG_HIEN — rank upgrade guard'
       },
     ]);
 
-    // Rank guard query — A has HANG_BA (upgrade to NHI), B has HANG_NHAT (downgrade attempt)
+    // Query rank guard — A có HANG_BA (upgrade lên NHI), B có HANG_NHAT (thử downgrade)
     prismaMock.khenThuongHCBVTQ.findMany.mockResolvedValueOnce([
       { quan_nhan_id: qnA.id, danh_hieu: DANH_HIEU_HCBVTQ.HANG_BA },
       { quan_nhan_id: qnB.id, danh_hieu: DANH_HIEU_HCBVTQ.HANG_NHAT },

@@ -24,7 +24,7 @@ import { apiClient } from '@/lib/apiClient';
 import { useTheme } from '@/components/ThemeProvider';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
-import { DANH_HIEU_MAP } from '@/constants/danhHieu.constants';
+import { DANH_HIEU_MAP, DANH_HIEU_DAC_BIET } from '@/constants/danhHieu.constants';
 import type { PersonnelDetail } from '@/lib/types/personnelList';
 
 
@@ -69,7 +69,7 @@ export default function ManagerCommemorationMedalsPage() {
           commRes.data.data.forEach((medal: any) => {
             mappedMedals.push({
               id: medal.id,
-              name: DANH_HIEU_MAP['KNC_VSNXD_QDNDVN'],
+              name: DANH_HIEU_MAP[DANH_HIEU_DAC_BIET.KNC_VSNXD_QDNDVN],
               nam: medal.nam,
               cap_bac: medal.cap_bac,
               chuc_vu: medal.chuc_vu,
@@ -217,7 +217,7 @@ export default function ManagerCommemorationMedalsPage() {
           <Breadcrumb.Item>
             <Link href={`/manager/personnel/${personnelId}`}>{personnel?.ho_ten}</Link>
           </Breadcrumb.Item>
-          <Breadcrumb.Item>{DANH_HIEU_MAP['KNC_VSNXD_QDNDVN']}</Breadcrumb.Item>
+          <Breadcrumb.Item>{DANH_HIEU_MAP[DANH_HIEU_DAC_BIET.KNC_VSNXD_QDNDVN]}</Breadcrumb.Item>
         </Breadcrumb>
 
         {/* Header */}
@@ -238,7 +238,7 @@ export default function ManagerCommemorationMedalsPage() {
               </Link>
             </Space>
             <Title level={2} style={{ marginTop: 8, marginBottom: 8 }}>
-              {DANH_HIEU_MAP['KNC_VSNXD_QDNDVN']}
+              {DANH_HIEU_MAP[DANH_HIEU_DAC_BIET.KNC_VSNXD_QDNDVN]}
             </Title>
             {personnel && (
               <Paragraph type="secondary" style={{ fontSize: 14, marginBottom: 0 }}>
@@ -267,7 +267,7 @@ export default function ManagerCommemorationMedalsPage() {
               size="small"
               locale={{
                 emptyText: (
-                  <Empty description={`Chưa có dữ liệu ${DANH_HIEU_MAP['KNC_VSNXD_QDNDVN']}`} />
+                  <Empty description={`Chưa có dữ liệu ${DANH_HIEU_MAP[DANH_HIEU_DAC_BIET.KNC_VSNXD_QDNDVN]}`} />
                 ),
               }}
             />
@@ -288,7 +288,7 @@ export default function ManagerCommemorationMedalsPage() {
           okButtonProps={{ danger: true }}
         >
           <Paragraph>
-            Bạn có chắc chắn muốn xóa {DANH_HIEU_MAP['KNC_VSNXD_QDNDVN']} này? Hành động này không thể hoàn
+            Bạn có chắc chắn muốn xóa {DANH_HIEU_MAP[DANH_HIEU_DAC_BIET.KNC_VSNXD_QDNDVN]} này? Hành động này không thể hoàn
             tác.
           </Paragraph>
         </Modal>

@@ -160,7 +160,7 @@ describe('notification.service - getNotificationsByUserId', () => {
 
 describe('notification dispatch - adhoc award create', () => {
   it('Tạo adhoc cá nhân → notify managers của CQDV + tài khoản personnel với resource AWARDS', async () => {
-    // Given: admin valid; personnel có CQDV; 1 manager + 1 account của personnel
+    // Cho: admin valid; personnel có CQDV; 1 manager + 1 account của personnel
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       id: 'acc-admin',
       username: 'admin_x',

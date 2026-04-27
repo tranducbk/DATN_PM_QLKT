@@ -65,7 +65,7 @@ function arrangeProposalCreate(id: string) {
 
 describe('Date boundary — submit time and proposal year edges', () => {
   it('Submit proposal nam=2025 trong tháng 12/2024 (backdated forward) → service accept, lưu nguyên', async () => {
-    // Pin: service does not block forward-dated proposals; route layer / Joi must guard
+    // Pin: service không block proposal năm tương lai; route layer / Joi phải guard
     arrangeManager();
     const target = makePersonnel({ id: 'qn-fwd', ngay_nhap_ngu: new Date('2010-01-01') });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([target]);
@@ -86,7 +86,7 @@ describe('Date boundary — submit time and proposal year edges', () => {
   });
 
   it('Submit nam=1990 (xa quá khứ) → service vẫn accept', async () => {
-    // Pin: service stores nam=1990 unchanged. TODO: reject nam < currentYear - 5 at service level.
+    // Pin: service lưu nam=1990 nguyên xi. TODO: reject nam < currentYear - 5 ở service level.
     arrangeManager();
     const target = makePersonnel({ id: 'qn-1990' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([target]);
@@ -107,7 +107,7 @@ describe('Date boundary — submit time and proposal year edges', () => {
   });
 
   it('HCQKQT enlistment 1999-07-01, proposal 2024-06 → reject: 24 năm 11 tháng < 25 năm', async () => {
-    // Edge: months from 1999-07 to 2024-05 = 25*12 - 1 = 299 → 24y 11m
+    // Edge: số tháng 1999-07 đến 2024-05 = 25*12 - 1 = 299 → 24n 11t
     arrangeManager();
     const target = makePersonnel({ id: 'qn-boundary' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([
@@ -138,7 +138,7 @@ describe('Date boundary — submit time and proposal year edges', () => {
   });
 
   it('HCQKQT enlistment 1999-06-01, proposal 2024-06 → 25 năm chính xác → submit accept', async () => {
-    // Edge: months from 1999-06 to 2024-05 = 300 → exactly 25y, eligible
+    // Edge: số tháng 1999-06 đến 2024-05 = 300 → đúng 25 năm, đủ điều kiện
     arrangeManager();
     const target = makePersonnel({ id: 'qn-exact-25' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([
@@ -176,8 +176,8 @@ describe('Date boundary — submit time and proposal year edges', () => {
   });
 
   it('Leap-year enlistment 2000-02-29, end 2025-02-28 → calendar-month math không quan tâm ngày', async () => {
-    // calculateServiceMonths uses (year, month) only — day-of-month is ignored.
-    // 2000-02 to 2025-02 = 25*12 = 300 months exactly. TODO: confirm this matches policy intent.
+    // calculateServiceMonths chỉ dùng (year, month) — ngày trong tháng bị bỏ qua.
+    // 2000-02 đến 2025-02 = 25*12 = 300 tháng. TODO: xác nhận khớp policy.
     arrangeManager();
     const target = makePersonnel({ id: 'qn-leap' });
     const proposal = makeProposal({
@@ -204,13 +204,13 @@ describe('Date boundary — submit time and proposal year edges', () => {
     prismaMock.huanChuongQuanKyQuyetThang.findFirst.mockResolvedValueOnce(null);
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
 
-    // 25y exactly — passes HC_QKQT eligibility, fails on a later approve step.
-    // Pin only the eligibility branch by allowing approve to error elsewhere.
-    // Since we mocked decisions/files=null and no further setup, the approve will throw on the
-    // missing decision-validation step — but the eligibility check above must pass first.
+    // Đúng 25 năm — pass eligibility HC_QKQT, fail ở bước approve sau.
+    // Pin riêng nhánh eligibility, cho phép approve lỗi ở chỗ khác.
+    // Vì mock decisions/files=null và không setup tiếp, approve sẽ throw ở bước
+    // validate decision — nhưng eligibility check phía trên phải pass trước.
     await expect(
       proposalService.approveProposal(proposal.id, {}, ADMIN_ID, {}, {}, null)
-    ).rejects.toThrow(); // will error later, but NOT on 25y eligibility — pinned by absence of HCQKQT prefix
+    ).rejects.toThrow(); // sẽ lỗi sau, nhưng KHÔNG phải eligibility 25 năm — pin qua việc thiếu HCQKQT prefix
     const lastCall = prismaMock.huanChuongQuanKyQuyetThang.findFirst.mock.calls[0]?.[0];
     expect(lastCall).toBeDefined();
   });
