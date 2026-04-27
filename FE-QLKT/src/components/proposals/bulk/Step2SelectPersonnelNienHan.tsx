@@ -17,8 +17,9 @@ import { SearchOutlined, TeamOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { formatDate } from '@/lib/utils';
-import type { DateInput } from '@/lib/types';
 import { apiClient } from '@/lib/apiClient';
+import { calculateTotalMonths } from './serviceDuration';
+import type { Step2Personnel as Personnel } from './types';
 import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/lib/constants/pagination.constants';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 import { HCCSVV_YEARS_HANG_BA, HCCSVV_YEARS_HANG_NHI, HCCSVV_YEARS_HANG_NHAT } from '@/constants/danhHieu.constants';
@@ -26,39 +27,6 @@ import { ExcelImportSection } from './ExcelImportSection';
 import * as XLSX from 'xlsx';
 
 const { Text } = Typography;
-
-interface Personnel {
-  id: string;
-  ho_ten: string;
-  cccd: string;
-  cap_bac?: string;
-  gioi_tinh?: string | null;
-  ngay_sinh?: string | null;
-  co_quan_don_vi_id: string;
-  don_vi_truc_thuoc_id: string;
-  chuc_vu_id: string;
-  ngay_nhap_ngu?: DateInput;
-  ngay_xuat_ngu?: DateInput;
-  CoQuanDonVi?: {
-    id: string;
-    ten_don_vi: string;
-    ma_don_vi: string;
-  };
-  DonViTrucThuoc?: {
-    id: string;
-    ten_don_vi: string;
-    ma_don_vi: string;
-    CoQuanDonVi?: {
-      id: string;
-      ten_don_vi: string;
-      ma_don_vi: string;
-    };
-  };
-  ChucVu?: {
-    id: string;
-    ten_chuc_vu: string;
-  };
-}
 
 type HCCSVVRank = 'HCCSVV_HANG_BA' | 'HCCSVV_HANG_NHI' | 'HCCSVV_HANG_NHAT';
 
@@ -220,39 +188,6 @@ export function Step2SelectPersonnelNienHan({
 
     return matchesSearch && matchesUnit;
   });
-
-  const calculateTotalMonths = (
-    ngayNhapNgu: DateInput,
-    ngayXuatNgu: DateInput,
-    referenceDate?: Date
-  ) => {
-    if (!ngayNhapNgu) return null;
-
-    try {
-      const startDate = typeof ngayNhapNgu === 'string' ? new Date(ngayNhapNgu) : ngayNhapNgu;
-      const endDate = ngayXuatNgu
-        ? typeof ngayXuatNgu === 'string'
-          ? new Date(ngayXuatNgu)
-          : ngayXuatNgu
-        : (referenceDate ?? new Date());
-
-      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-        return null;
-      }
-
-      const totalMonths = Math.max(0, (endDate.getFullYear() - startDate.getFullYear()) * 12 + endDate.getMonth() - startDate.getMonth());
-      const totalYears = Math.floor(totalMonths / 12);
-      const remainingMonths = totalMonths % 12;
-
-      return {
-        years: totalYears,
-        months: remainingMonths,
-        totalMonths: totalMonths,
-      };
-    } catch {
-      return null;
-    }
-  };
 
   /** Checks whether service time meets HCCSVV eligibility thresholds. */
   const checkHCCSVVEligibility = (record: Personnel) => {

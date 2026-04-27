@@ -1,6 +1,11 @@
 import { prisma } from '../../../models';
 import { PROPOSAL_TYPES } from '../../../constants/proposalTypes.constants';
-import { CONG_HIEN_HE_SO_GROUPS } from '../../../constants/danhHieu.constants';
+import {
+  CONG_HIEN_HE_SO_GROUPS,
+  DANH_HIEU_HCBVTQ,
+  getDanhHieuName,
+} from '../../../constants/danhHieu.constants';
+import { ELIGIBILITY_STATUS } from '../../../constants/eligibilityStatus.constants';
 import { GENDER } from '../../../constants/gender.constants';
 import { writeSystemLog } from '../../../helpers/systemLogHelper';
 import {
@@ -8,6 +13,7 @@ import {
   formatServiceDuration,
 } from '../../../helpers/serviceYearsHelper';
 import { validateHCBVTQHighestRank } from '../../../helpers/hcbvtqHighestRankValidation';
+import { formatQuanNhanLabel } from './quanNhanLabel';
 import {
   aggregatePositionMonthsByGroup,
   type PositionMonthsByGroup,
@@ -19,7 +25,7 @@ import {
   requiredCongHienMonths,
 } from '../../eligibility/hcbvtqEligibility';
 import { collectPersonnelDuplicateErrors } from '../../eligibility/personnelDuplicateCheck';
-import type { EditedProposalData } from '../../../types/proposal';
+import type { EditedProposalData, ProposalCongHienItem } from '../../../types/proposal';
 import type {
   ProposalStrategy,
   ProposalSubmitContext,
@@ -252,14 +258,171 @@ class CongHienStrategy implements ProposalStrategy {
   }
 
   async importInTransaction(
-    _editedData: EditedProposalData,
-    _ctx: ProposalApproveContext,
-    _decisions: Record<string, string | null | undefined>,
+    editedData: EditedProposalData,
+    ctx: ProposalApproveContext,
+    decisions: Record<string, string | null | undefined>,
     _pdfPaths: Record<string, string | null | undefined>,
-    _acc: ImportAccumulator,
-    _prismaTx: PrismaTx
+    acc: ImportAccumulator,
+    prismaTx: PrismaTx
   ): Promise<void> {
-    // No-op: legacy approve.ts owns import.
+    const congHienData = (editedData.data_cong_hien ?? []) as ProposalCongHienItem[];
+    const proposalYear = ctx.proposalYear;
+    const proposalMonth = ctx.proposalMonth;
+
+    for (const item of congHienData) {
+      try {
+        if (!item.personnel_id) {
+          acc.errors.push('Thiếu thông tin quân nhân khi xử lý Huân chương Bảo vệ Tổ quốc.');
+          continue;
+        }
+        const quanNhan = await prismaTx.quanNhan.findUnique({
+          where: { id: item.personnel_id },
+        });
+        if (!quanNhan) {
+          acc.errors.push(
+            'Không tìm thấy thông tin quân nhân khi xử lý Huân chương Bảo vệ Tổ quốc. ' +
+              'Quân nhân có thể đã bị xoá khỏi hệ thống — vui lòng tải lại đề xuất.'
+          );
+          continue;
+        }
+
+        const soQuyetDinhDanhHieu =
+          item.so_quyet_dinh || decisions.so_quyet_dinh_cong_hien || null;
+        const namNhan = item.nam_nhan;
+        const thangNhan = item.thang_nhan;
+
+        if (!namNhan || !thangNhan || thangNhan < 1 || thangNhan > 12) {
+          acc.errors.push(
+            `${formatQuanNhanLabel(quanNhan)} thiếu tháng/năm nhận Huân chương Bảo vệ Tổ quốc`
+          );
+          continue;
+        }
+        if (
+          namNhan < proposalYear ||
+          (proposalMonth != null && namNhan === proposalYear && thangNhan < proposalMonth)
+        ) {
+          acc.errors.push(
+            `${formatQuanNhanLabel(quanNhan)}: tháng/năm nhận (${thangNhan}/${namNhan}) không được trước tháng/năm đề xuất (${proposalMonth ?? '--'}/${proposalYear})`
+          );
+          continue;
+        }
+        const namQuyetDinh = item.nam_quyet_dinh;
+        const thangQuyetDinh = item.thang_quyet_dinh;
+        if (
+          namQuyetDinh &&
+          (namNhan < namQuyetDinh ||
+            (thangQuyetDinh && namNhan === namQuyetDinh && thangNhan < thangQuyetDinh))
+        ) {
+          acc.errors.push(
+            `${formatQuanNhanLabel(quanNhan)}: tháng/năm nhận (${thangNhan}/${namNhan}) không được trước tháng/năm quyết định (${thangQuyetDinh ?? '--'}/${namQuyetDinh})`
+          );
+          continue;
+        }
+        if (!item.danh_hieu) {
+          acc.errors.push(
+            `${formatQuanNhanLabel(quanNhan)} chưa chọn hạng Huân chương Bảo vệ Tổ quốc.`
+          );
+          continue;
+        }
+
+        const thoiGianNhom0_7 = item.thoi_gian_nhom_0_7 || null;
+        const thoiGianNhom0_8 = item.thoi_gian_nhom_0_8 || null;
+        const thoiGianNhom0_9_1_0 = item.thoi_gian_nhom_0_9_1_0 || null;
+
+        const existingCongHien = await prismaTx.khenThuongHCBVTQ.findUnique({
+          where: { quan_nhan_id: quanNhan.id },
+        });
+
+        if (existingCongHien) {
+          const rankOrder: Record<string, number> = {
+            [DANH_HIEU_HCBVTQ.HANG_BA]: 1,
+            [DANH_HIEU_HCBVTQ.HANG_NHI]: 2,
+            [DANH_HIEU_HCBVTQ.HANG_NHAT]: 3,
+          };
+          const existingRank = rankOrder[existingCongHien.danh_hieu] || 0;
+          const newRank = rankOrder[item.danh_hieu] || 0;
+          if (newRank > existingRank) {
+            await prismaTx.khenThuongHCBVTQ.update({
+              where: { id: existingCongHien.id },
+              data: {
+                danh_hieu: item.danh_hieu,
+                nam: namNhan,
+                thang: thangNhan,
+                cap_bac: item.cap_bac || null,
+                chuc_vu: item.chuc_vu || null,
+                ghi_chu: item.ghi_chu || null,
+                so_quyet_dinh: soQuyetDinhDanhHieu,
+                thoi_gian_nhom_0_7: thoiGianNhom0_7,
+                thoi_gian_nhom_0_8: thoiGianNhom0_8,
+                thoi_gian_nhom_0_9_1_0: thoiGianNhom0_9_1_0,
+              },
+            });
+            acc.importedDanhHieu++;
+            acc.affectedPersonnelIds.add(quanNhan.id);
+          } else {
+            const existingDanhHieuName = getDanhHieuName(existingCongHien.danh_hieu);
+            const newDanhHieuName = getDanhHieuName(item.danh_hieu);
+            acc.errors.push(
+              `Quân nhân "${quanNhan.ho_ten}" đã có Huân chương Bảo vệ Tổ quốc "${existingDanhHieuName}" (năm ${existingCongHien.nam}). ` +
+                `Không thể lưu danh hiệu "${newDanhHieuName}" vì hạng thấp hơn hoặc bằng.`
+            );
+            continue;
+          }
+        } else {
+          await prismaTx.khenThuongHCBVTQ.create({
+            data: {
+              quan_nhan_id: quanNhan.id,
+              danh_hieu: item.danh_hieu,
+              nam: namNhan,
+              thang: thangNhan,
+              cap_bac: item.cap_bac || null,
+              chuc_vu: item.chuc_vu || null,
+              ghi_chu: item.ghi_chu || null,
+              so_quyet_dinh: soQuyetDinhDanhHieu,
+              thoi_gian_nhom_0_7: thoiGianNhom0_7,
+              thoi_gian_nhom_0_8: thoiGianNhom0_8,
+              thoi_gian_nhom_0_9_1_0: thoiGianNhom0_9_1_0,
+            },
+          });
+          acc.importedDanhHieu++;
+          acc.affectedPersonnelIds.add(quanNhan.id);
+        }
+
+        const ngayNhan = new Date(Date.UTC(namNhan, thangNhan - 1, 1));
+        const HCBVTQ_FIELDS: Record<string, { status: string; ngay: string }> = {
+          [DANH_HIEU_HCBVTQ.HANG_BA]: {
+            status: 'hcbvtq_hang_ba_status',
+            ngay: 'hcbvtq_hang_ba_ngay',
+          },
+          [DANH_HIEU_HCBVTQ.HANG_NHI]: {
+            status: 'hcbvtq_hang_nhi_status',
+            ngay: 'hcbvtq_hang_nhi_ngay',
+          },
+          [DANH_HIEU_HCBVTQ.HANG_NHAT]: {
+            status: 'hcbvtq_hang_nhat_status',
+            ngay: 'hcbvtq_hang_nhat_ngay',
+          },
+        };
+        const profileFields = HCBVTQ_FIELDS[item.danh_hieu];
+        if (profileFields) {
+          const profileUpdate = {
+            [profileFields.status]: ELIGIBILITY_STATUS.DA_NHAN,
+            [profileFields.ngay]: ngayNhan,
+          };
+          await prismaTx.hoSoCongHien.upsert({
+            where: { quan_nhan_id: quanNhan.id },
+            update: profileUpdate,
+            create: { quan_nhan_id: quanNhan.id, hcbvtq_total_months: 0, ...profileUpdate },
+          });
+        }
+      } catch (error) {
+        console.error('[approveProposal] HCBVTQ error:', {
+          personnel_id: item.personnel_id,
+          error,
+        });
+        acc.errors.push('Có lỗi xảy ra khi lưu Huân chương Bảo vệ Tổ quốc, vui lòng thử lại.');
+      }
+    }
   }
 
   buildSuccessMessage(acc: ImportAccumulator): string {

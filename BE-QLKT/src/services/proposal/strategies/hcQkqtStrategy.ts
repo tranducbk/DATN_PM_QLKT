@@ -1,10 +1,14 @@
 import { PROPOSAL_TYPES } from '../../../constants/proposalTypes.constants';
-import { HCQKQT_YEARS_REQUIRED } from '../../../constants/danhHieu.constants';
+import {
+  HCQKQT_YEARS_REQUIRED,
+  DANH_HIEU_CA_NHAN_KHAC,
+} from '../../../constants/danhHieu.constants';
 import {
   batchEvaluateServiceYears,
   buildServiceYearsErrorMessage,
 } from '../../eligibility/serviceYearsEligibility';
-import type { EditedProposalData } from '../../../types/proposal';
+import type { Prisma } from '../../../generated/prisma';
+import type { EditedProposalData, ProposalNienHanItem } from '../../../types/proposal';
 import type {
   ProposalStrategy,
   ProposalSubmitContext,
@@ -13,6 +17,7 @@ import type {
   PrismaTx,
   SubmitValidationResult,
 } from './proposalStrategy';
+import { importSingleMedal } from './singleMedalImporter';
 import {
   loadNienHanPersonnelMap,
   buildNienHanPayloadItem,
@@ -68,11 +73,6 @@ class HcQkqtStrategy implements ProposalStrategy {
     return { errors, payload: { data_nien_han: dataNienHan } };
   }
 
-  /**
-   * Approve-time validation lives in approve.ts pipeline (runDuplicateChecks +
-   * runEligibilityChecks + runDecisionNumberChecks). Strategy returns [] so
-   * the dispatcher can be added later without behavior change.
-   */
   async validateApprove(
     _editedData: EditedProposalData,
     _ctx: ProposalApproveContext
@@ -80,16 +80,36 @@ class HcQkqtStrategy implements ProposalStrategy {
     return [];
   }
 
-  /** Approve-time import still routed through legacy `importHCQKQT` in approve.ts. */
   async importInTransaction(
-    _editedData: EditedProposalData,
-    _ctx: ProposalApproveContext,
+    editedData: EditedProposalData,
+    ctx: ProposalApproveContext,
     _decisions: Record<string, string | null | undefined>,
     _pdfPaths: Record<string, string | null | undefined>,
-    _acc: ImportAccumulator,
-    _prismaTx: PrismaTx
+    acc: ImportAccumulator,
+    prismaTx: PrismaTx
   ): Promise<void> {
-    // No-op: legacy approve.ts owns import. Future PR will move logic here.
+    const nienHanData = (editedData.data_nien_han ?? []) as ProposalNienHanItem[];
+    await importSingleMedal(nienHanData, ctx, acc, prismaTx, {
+      medalLabel: 'Huân chương Quân kỳ quyết thắng',
+      logTag: 'HC_QKQT',
+      decisionKey: DANH_HIEU_CA_NHAN_KHAC.HC_QKQT,
+      upsert: async (tx, quanNhanId, writeData) => {
+        const data = writeData as unknown as Prisma.HuanChuongQuanKyQuyetThangUpdateInput;
+        const existing = await tx.huanChuongQuanKyQuyetThang.findUnique({
+          where: { quan_nhan_id: quanNhanId },
+        });
+        if (existing) {
+          await tx.huanChuongQuanKyQuyetThang.update({
+            where: { id: existing.id },
+            data,
+          });
+        } else {
+          await tx.huanChuongQuanKyQuyetThang.create({
+            data: { ...data, quan_nhan_id: quanNhanId } as Prisma.HuanChuongQuanKyQuyetThangUncheckedCreateInput,
+          });
+        }
+      },
+    });
   }
 
   buildSuccessMessage(acc: ImportAccumulator): string {

@@ -149,3 +149,35 @@ import { LoginForm } from '@/components/auth/LoginForm';
 // Bad
 import { LoginForm } from '../../components/auth/LoginForm';
 ```
+
+## Page organization (file > 1000 LOC)
+
+Pattern đã áp dụng cho `app/admin/proposals/review/[id]/page.tsx`:
+
+```
+app/admin/proposals/review/[id]/
+├── page.tsx                  # Component + JSX render
+├── types.ts                  # Local types (DanhHieuItem, ProposalDetail, ...)
+└── helpers.ts                # Pure utility fns (calculateTotalTimeByGroup, ...)
+```
+
+- **Bước 1 (an toàn)**: extract types + pure helpers (không động JSX/state) → giảm size không đổi behavior
+- **Bước 2 (cần browser test)**: tách Card/section thành sub-components
+- **Bước 3 (cần browser test)**: tách columns definitions vào `columns/<type>.ts` files
+
+Không nhảy bước 2/3 nếu không có dev server để verify visual.
+
+## Shared component extraction (Step2SelectPersonnel pattern)
+
+Khi 3+ component có structure giống nhau (vd: `Step2SelectPersonnelHCQKQT`, `KNC`, `NienHan`):
+
+1. Tạo `components/<feature>/types.ts` cho interface chung (vd: `Step2Personnel`)
+2. Tạo `components/<feature>/<utility>.ts` cho pure helpers (vd: `serviceDuration.ts`)
+3. Mỗi component import shared types/helpers thay vì inline
+4. **Chỉ extract base UI component** sau khi đã verify behavior identical trên browser
+
+## User-facing error messages
+
+- Không leak technical ID (CUID, internal field) trong error toast/alert
+- Fallback `record.ho_ten || 'một quân nhân'`, **không** `record.id`
+- Catch error → log technical detail vào `console.error`, hiển thị message generic cho user qua `message.error()`

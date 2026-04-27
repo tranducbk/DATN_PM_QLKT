@@ -726,6 +726,6 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
       ValidationError,
       { startsWith: 'Không thể phê duyệt đề xuất do có 1 lỗi khi thêm khen thưởng:' }
     );
-    expect(error.message).toContain('Thiếu thông tin đơn vị trong dữ liệu');
+    expect(error.message).toContain('Thiếu thông tin đơn vị khi lưu danh hiệu');
   });
 });

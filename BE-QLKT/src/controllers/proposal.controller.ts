@@ -18,186 +18,29 @@ import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { parsePagination } from '../helpers/paginationHelper';
 import { setFileSendHeaders } from '../helpers/fileResponseHeaders';
 import { resolveIdParam } from '../helpers/controllerHelper';
-import type { EditedProposalData } from '../types/proposal';
-
-// DVTT takes priority over CQDV — CQDV is the parent unit, filtering by it would include all sub-units
-function managerUnitFilterId(qn: {
-  co_quan_don_vi_id?: string | null;
-  don_vi_truc_thuoc_id?: string | null;
-}): string | undefined {
-  return qn.don_vi_truc_thuoc_id ?? qn.co_quan_don_vi_id ?? undefined;
-}
-
-function parseYearQuery(value: unknown): number | null {
-  const yearValue = Array.isArray(value) ? value[0] : value;
-  if (typeof yearValue !== 'string' && typeof yearValue !== 'number') {
-    return null;
-  }
-
-  const year = Number(yearValue);
-  return Number.isFinite(year) ? year : null;
-}
+import {
+  managerUnitFilterId,
+  parseApproveBody,
+  parseYearQuery,
+  safeNotify,
+} from './proposal/helpers';
+import type {
+  ApproveProposalBody,
+  AwardsFilterQuery,
+  CheckDuplicateAwardQuery,
+  CheckDuplicatePersonnelBatchBody,
+  CheckDuplicateUnitAwardQuery,
+  CheckDuplicateUnitBatchBody,
+  GetPdfFileParams,
+  GetProposalsQuery,
+  ParsedApproveBody,
+  ProposalIdParams,
+  RejectProposalBody,
+  SubmitProposalBody,
+  UnitYearFilterQuery,
+} from './proposal/types';
 
 const ALL_PROPOSAL_TYPES = Object.values(PROPOSAL_TYPES);
-
-interface SubmitProposalBody {
-  so_quyet_dinh?: string;
-  type?: ProposalType;
-  title_data?: unknown;
-  selected_personnel?: string[];
-  nam?: number | string;
-  thang?: number | string;
-  ghi_chu?: string;
-}
-
-interface GetProposalsQuery {
-  page?: number;
-  limit?: number;
-  [key: string]: unknown;
-}
-
-interface ProposalIdParams {
-  id?: string | string[];
-}
-
-interface ApproveProposalBody {
-  data_danh_hieu?: string;
-  data_thanh_tich?: string;
-  data_nien_han?: string;
-  data_cong_hien?: string;
-  so_quyet_dinh_ca_nhan_hang_nam?: string;
-  so_quyet_dinh_don_vi_hang_nam?: string;
-  so_quyet_dinh_nien_han?: string;
-  so_quyet_dinh_cong_hien?: string;
-  so_quyet_dinh_dot_xuat?: string;
-  so_quyet_dinh_nckh?: string;
-  ghi_chu?: string;
-}
-
-interface ParsedApproveBody {
-  editedData: EditedProposalData;
-  decisions: {
-    so_quyet_dinh_ca_nhan_hang_nam?: string;
-    so_quyet_dinh_don_vi_hang_nam?: string;
-    so_quyet_dinh_nien_han?: string;
-    so_quyet_dinh_cong_hien?: string;
-    so_quyet_dinh_dot_xuat?: string;
-    so_quyet_dinh_nckh?: string;
-  };
-  pdfFiles: Record<string, Express.Multer.File | undefined>;
-}
-
-function parseApproveBody(
-  body: ApproveProposalBody,
-  files: Record<string, Express.Multer.File[]> | undefined
-): ParsedApproveBody {
-  const editedData = {
-    data_danh_hieu: JSON.parse(body.data_danh_hieu || '[]'),
-    data_thanh_tich: JSON.parse(body.data_thanh_tich || '[]'),
-    data_nien_han: JSON.parse(body.data_nien_han || '[]'),
-    data_cong_hien: JSON.parse(body.data_cong_hien || '[]'),
-  };
-  const decisions = {
-    so_quyet_dinh_ca_nhan_hang_nam: body.so_quyet_dinh_ca_nhan_hang_nam,
-    so_quyet_dinh_don_vi_hang_nam: body.so_quyet_dinh_don_vi_hang_nam,
-    so_quyet_dinh_nien_han: body.so_quyet_dinh_nien_han,
-    so_quyet_dinh_cong_hien: body.so_quyet_dinh_cong_hien,
-    so_quyet_dinh_dot_xuat: body.so_quyet_dinh_dot_xuat,
-    so_quyet_dinh_nckh: body.so_quyet_dinh_nckh,
-  };
-  const pdfFiles = {
-    file_pdf_ca_nhan_hang_nam: files?.file_pdf_ca_nhan_hang_nam?.[0],
-    file_pdf_don_vi_hang_nam: files?.file_pdf_don_vi_hang_nam?.[0],
-    file_pdf_nien_han: files?.file_pdf_nien_han?.[0],
-    file_pdf_cong_hien: files?.file_pdf_cong_hien?.[0],
-    file_pdf_dot_xuat: files?.file_pdf_dot_xuat?.[0],
-    file_pdf_nckh: files?.file_pdf_nckh?.[0],
-  };
-  return { editedData, decisions, pdfFiles };
-}
-
-interface NotifyContext {
-  userId: string;
-  userRole: string;
-  resource: string;
-  description: string;
-}
-
-async function safeNotify(
-  ctx: NotifyContext,
-  fn: () => Promise<unknown>
-): Promise<void> {
-  try {
-    await fn();
-  } catch (error) {
-    void writeSystemLog({
-      userId: ctx.userId,
-      userRole: ctx.userRole,
-      action: 'ERROR',
-      resource: ctx.resource,
-      description: ctx.description,
-      payload: { error: String(error) },
-    });
-  }
-}
-
-interface GetPdfFileParams {
-  filename?: string | string[];
-}
-
-interface RejectProposalBody {
-  ghi_chu?: string;
-  ly_do?: string;
-}
-
-interface AwardsFilterQuery {
-  don_vi_id?: string;
-  nam?: number;
-  danh_hieu?: string;
-  [key: string]: unknown;
-}
-
-interface UnitYearFilterQuery {
-  don_vi_id?: string;
-  nam?: number;
-  [key: string]: unknown;
-}
-
-interface CheckDuplicateAwardQuery {
-  personnel_id?: string;
-  nam?: string | number | (string | number)[];
-  danh_hieu?: string;
-  proposal_type?: string;
-}
-
-interface CheckDuplicateUnitAwardQuery {
-  don_vi_id?: string;
-  nam?: string | number | (string | number)[];
-  danh_hieu?: string;
-  proposal_type?: string;
-}
-
-interface CheckDuplicatePersonnelBatchItem {
-  personnel_id: string;
-  nam: number;
-  danh_hieu: string;
-  proposal_type: string;
-}
-
-interface CheckDuplicateUnitBatchItem {
-  don_vi_id: string;
-  nam: number;
-  danh_hieu: string;
-  proposal_type: string;
-}
-
-interface CheckDuplicatePersonnelBatchBody {
-  items?: CheckDuplicatePersonnelBatchItem[];
-}
-
-interface CheckDuplicateUnitBatchBody {
-  items?: CheckDuplicateUnitBatchItem[];
-}
 
 class ProposalController {
   submitProposal = catchAsync(async (req: Request, res: Response) => {

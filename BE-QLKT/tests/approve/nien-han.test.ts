@@ -322,6 +322,6 @@ describe('approveProposal — NIEN_HAN (HCCSVV)', () => {
       ValidationError,
       { startsWith: 'Không thể phê duyệt đề xuất do có 1 lỗi khi thêm khen thưởng:' }
     );
-    expect(error.message).toContain('Huy chương Chiến sĩ vẻ vang thiếu personnel_id');
+    expect(error.message).toContain('Thiếu thông tin quân nhân khi xử lý Huy chương Chiến sĩ vẻ vang');
   });
 });

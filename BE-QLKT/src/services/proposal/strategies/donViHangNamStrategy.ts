@@ -14,7 +14,8 @@ import {
   INVALID_DANH_HIEU_ERROR,
   MIXED_DON_VI_HANG_NAM_ERROR,
 } from '../validation';
-import type { EditedProposalData } from '../../../types/proposal';
+import { PROPOSAL_STATUS } from '../../../constants/proposalStatus.constants';
+import type { EditedProposalData, ProposalDanhHieuItem } from '../../../types/proposal';
 import type {
   ProposalStrategy,
   ProposalSubmitContext,
@@ -179,14 +180,119 @@ class DonViHangNamStrategy implements ProposalStrategy {
   }
 
   async importInTransaction(
-    _editedData: EditedProposalData,
-    _ctx: ProposalApproveContext,
+    editedData: EditedProposalData,
+    ctx: ProposalApproveContext,
     _decisions: Record<string, string | null | undefined>,
     _pdfPaths: Record<string, string | null | undefined>,
-    _acc: ImportAccumulator,
-    _prismaTx: PrismaTx
+    acc: ImportAccumulator,
+    prismaTx: PrismaTx
   ): Promise<void> {
-    // No-op: legacy approve.ts owns import.
+    const danhHieuData = (editedData.data_danh_hieu ?? []) as ProposalDanhHieuItem[];
+    const decisionMapping = ctx.mappings?.decisionMapping ?? {};
+    const specialDecisionMapping = ctx.mappings?.specialDecisionMapping ?? {};
+    const adminId = ctx.adminId;
+
+    for (const item of danhHieuData) {
+      try {
+        if (!item.don_vi_id || !item.don_vi_type) {
+          acc.errors.push('Thiếu thông tin đơn vị khi lưu danh hiệu.');
+          continue;
+        }
+        const coQuanDonViId = item.don_vi_type === 'CO_QUAN_DON_VI' ? item.don_vi_id : null;
+        const donViTrucThuocId = item.don_vi_type === 'DON_VI_TRUC_THUOC' ? item.don_vi_id : null;
+        const namValue =
+          typeof item.nam === 'string' ? parseInt(item.nam, 10) : (item.nam as number);
+        if (!item.danh_hieu || item.danh_hieu.trim() === '') continue;
+
+        const decisionInfo = decisionMapping[item.danh_hieu] || {};
+        const soQuyetDinh = item.so_quyet_dinh || decisionInfo.so_quyet_dinh || null;
+
+        const isBkbqp = item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP || !!item.nhan_bkbqp;
+        const isBkttcp =
+          item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP || !!item.nhan_bkttcp;
+        const soQuyetDinhBKBQP =
+          item.so_quyet_dinh_bkbqp ||
+          (isBkbqp ? (specialDecisionMapping.BKBQP?.so_quyet_dinh ?? null) : null);
+        const soQuyetDinhBKTTCP =
+          item.so_quyet_dinh_bkttcp ||
+          (isBkttcp ? (specialDecisionMapping.BKTTCP?.so_quyet_dinh ?? null) : null);
+
+        const whereCondition = {
+          nam: namValue,
+          OR: [
+            ...(coQuanDonViId ? [{ co_quan_don_vi_id: coQuanDonViId }] : []),
+            ...(donViTrucThuocId ? [{ don_vi_truc_thuoc_id: donViTrucThuocId }] : []),
+          ],
+        };
+
+        const existingAward = await prismaTx.danhHieuDonViHangNam.findFirst({
+          where: whereCondition,
+        });
+        const data: Record<string, unknown> = {};
+        if (
+          item.danh_hieu === DANH_HIEU_DON_VI_HANG_NAM.DVQT ||
+          item.danh_hieu === DANH_HIEU_DON_VI_HANG_NAM.DVTT
+        ) {
+          data.danh_hieu = item.danh_hieu;
+          data.so_quyet_dinh = soQuyetDinh;
+        }
+        if (isBkbqp) {
+          data.nhan_bkbqp = true;
+          data.so_quyet_dinh_bkbqp = soQuyetDinhBKBQP;
+        }
+        if (isBkttcp) {
+          data.nhan_bkttcp = true;
+          data.so_quyet_dinh_bkttcp = soQuyetDinhBKTTCP;
+        }
+        data.status = PROPOSAL_STATUS.APPROVED;
+        data.nguoi_duyet_id = adminId;
+        data.ngay_duyet = new Date();
+        data.ghi_chu = item.ghi_chu || null;
+
+        if (existingAward) {
+          await prismaTx.danhHieuDonViHangNam.update({
+            where: { id: existingAward.id },
+            data,
+          });
+        } else {
+          await prismaTx.danhHieuDonViHangNam.create({
+            data: {
+              ...(coQuanDonViId && { CoQuanDonVi: { connect: { id: coQuanDonViId } } }),
+              ...(donViTrucThuocId && { DonViTrucThuoc: { connect: { id: donViTrucThuocId } } }),
+              nam: namValue,
+              danh_hieu:
+                item.danh_hieu === DANH_HIEU_DON_VI_HANG_NAM.DVQT ||
+                item.danh_hieu === DANH_HIEU_DON_VI_HANG_NAM.DVTT
+                  ? item.danh_hieu
+                  : null,
+              so_quyet_dinh:
+                item.danh_hieu === DANH_HIEU_DON_VI_HANG_NAM.DVQT ||
+                item.danh_hieu === DANH_HIEU_DON_VI_HANG_NAM.DVTT
+                  ? soQuyetDinh
+                  : null,
+              nhan_bkbqp: isBkbqp,
+              so_quyet_dinh_bkbqp: soQuyetDinhBKBQP,
+              nhan_bkttcp: isBkttcp,
+              so_quyet_dinh_bkttcp: soQuyetDinhBKTTCP,
+              status: PROPOSAL_STATUS.APPROVED,
+              nguoi_tao_id: adminId,
+              nguoi_duyet_id: adminId,
+              ngay_duyet: new Date(),
+              ghi_chu: item.ghi_chu || null,
+            },
+          });
+        }
+        acc.importedDanhHieu++;
+        acc.affectedUnitIds.add(item.don_vi_id);
+      } catch (error) {
+        console.error('[approveProposal] unit award error:', {
+          don_vi_id: item.don_vi_id,
+          error,
+        });
+        const tenDonVi = item.ten_don_vi ? ` cho đơn vị "${item.ten_don_vi}"` : '';
+        acc.errors.push(`Có lỗi xảy ra khi lưu danh hiệu đơn vị${tenDonVi}, vui lòng thử lại.`);
+      }
+    }
   }
 
   buildSuccessMessage(acc: ImportAccumulator): string {

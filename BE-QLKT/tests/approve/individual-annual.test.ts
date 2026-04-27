@@ -1137,6 +1137,6 @@ describe('approveProposal — CA_NHAN_HANG_NAM', () => {
       ValidationError,
       { startsWith: 'Không thể phê duyệt đề xuất do có 1 lỗi khi thêm khen thưởng:' }
     );
-    expect(error.message).toContain('Không tìm thấy quân nhân với ID: qn-missing-msg');
+    expect(error.message).toContain('Không tìm thấy thông tin quân nhân khi lưu danh hiệu');
   });
 });

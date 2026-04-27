@@ -1,9 +1,12 @@
 import { PROPOSAL_TYPES } from '../../../constants/proposalTypes.constants';
+import { DANH_HIEU_CA_NHAN_KHAC } from '../../../constants/danhHieu.constants';
 import {
   batchEvaluateServiceYears,
   buildServiceYearsErrorMessage,
 } from '../../eligibility/serviceYearsEligibility';
-import type { EditedProposalData } from '../../../types/proposal';
+import { importSingleMedal } from './singleMedalImporter';
+import type { Prisma } from '../../../generated/prisma';
+import type { EditedProposalData, ProposalNienHanItem } from '../../../types/proposal';
 import type {
   ProposalStrategy,
   ProposalSubmitContext,
@@ -76,14 +79,35 @@ class KncStrategy implements ProposalStrategy {
   }
 
   async importInTransaction(
-    _editedData: EditedProposalData,
-    _ctx: ProposalApproveContext,
+    editedData: EditedProposalData,
+    ctx: ProposalApproveContext,
     _decisions: Record<string, string | null | undefined>,
     _pdfPaths: Record<string, string | null | undefined>,
-    _acc: ImportAccumulator,
-    _prismaTx: PrismaTx
+    acc: ImportAccumulator,
+    prismaTx: PrismaTx
   ): Promise<void> {
-    // No-op: legacy approve.ts owns import.
+    const nienHanData = (editedData.data_nien_han ?? []) as ProposalNienHanItem[];
+    await importSingleMedal(nienHanData, ctx, acc, prismaTx, {
+      medalLabel: 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
+      logTag: 'KNC',
+      decisionKey: DANH_HIEU_CA_NHAN_KHAC.KNC_VSNXD_QDNDVN,
+      upsert: async (tx, quanNhanId, writeData) => {
+        const data = writeData as unknown as Prisma.KyNiemChuongVSNXDQDNDVNUpdateInput;
+        const existing = await tx.kyNiemChuongVSNXDQDNDVN.findUnique({
+          where: { quan_nhan_id: quanNhanId },
+        });
+        if (existing) {
+          await tx.kyNiemChuongVSNXDQDNDVN.update({
+            where: { id: existing.id },
+            data,
+          });
+        } else {
+          await tx.kyNiemChuongVSNXDQDNDVN.create({
+            data: { ...data, quan_nhan_id: quanNhanId } as Prisma.KyNiemChuongVSNXDQDNDVNUncheckedCreateInput,
+          });
+        }
+      },
+    });
   }
 
   buildSuccessMessage(acc: ImportAccumulator): string {

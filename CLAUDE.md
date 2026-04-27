@@ -141,8 +141,27 @@ Exported functions phải có JSDoc chuẩn:
 - **1 helper file = 1 responsibility** (vd: `excelImportHelper` = import, `excelTemplateHelper` = template)
 - File > 500 dòng → xem xét tách
 - Service > 800 dòng → tách logic phức tạp vào helper riêng
+- File > 1000 dòng (vd: `approve.ts` 2001 LOC) → **bắt buộc** tách theo pattern:
+  - `<feature>.ts` (orchestration mỏng, < 500 LOC, public API + flow chính)
+  - `<feature>/types.ts` (shared interfaces/types — không có logic)
+  - `<feature>/<concern>.ts` (mỗi file 1 concern: validation, import, mapping, ...)
+  - Pattern này áp dụng cho cả BE service lẫn FE page (`page.tsx` + `[id]/types.ts` + `[id]/helpers.ts`)
 - Nếu 3+ services có logic giống nhau → extract vào shared helper
 - FE: API file > 500 dòng → tách theo domain (`api/awards.ts`, `api/personnel.ts`)
+- Page > 1000 dòng → tách `types.ts` + `helpers.ts` co-located trước khi tách JSX components
+
+### Strategy pattern cho dispatch theo type
+Khi có ≥ 4 nhánh `if/else` dispatch theo enum/type (vd: 7 loại đề xuất, 4 loại danh hiệu):
+- Tạo `interface XxxStrategy` với các method common (`buildPayload`, `validate`, `import`, ...)
+- Mỗi type có 1 file `<type>Strategy.ts` implement interface
+- Tạo `strategies/index.ts` với REGISTRY map type → instance
+- Caller dispatch qua `getStrategy(type).method(...)` thay vì `if/else`
+- Không để `importInTransaction` no-op stub — phải implement đầy đủ hoặc xoá khỏi interface
+
+### Khi xoá legacy code
+- Khi migrate từ pattern cũ sang mới (vd: legacy `importXxx` → strategy), phải xoá hẳn legacy function. Không để dual-path "for backwards compat" trong cùng file
+- Sau khi xoá legacy: chạy `grep` tên function cũ để verify không còn reference
+- Cleanup unused imports ngay sau khi xoá function — đừng để dangling import
 
 ### Variable declarations
 - Dùng `const` thay `let` khi giá trị không cần reassign — chỉ dùng `let` khi thực sự cần thay đổi giá trị sau khai báo
@@ -168,12 +187,44 @@ Exported functions phải có JSDoc chuẩn:
 - Filter composition: dùng `AND` khi combine multiple where conditions, không overwrite
 - `stripUnknown: true` trong Joi để bỏ fields thừa
 
+### User-facing error messages
+- **Không bao giờ leak technical ID** (CUID, UUID, internal field names) vào message hiển thị cho user.
+  - ❌ `Không tìm thấy quân nhân với ID: clxyz123abc`
+  - ❌ `Thiếu personnel_id trong dữ liệu: {JSON.stringify(item)}`
+  - ❌ `Lỗi import HC_QKQT personnel_id xyz: TypeError: Cannot read property...`
+  - ✅ `Không tìm thấy thông tin quân nhân khi xử lý ... vui lòng tải lại đề xuất.`
+  - ✅ `Có lỗi xảy ra khi lưu Huân chương Quân kỳ quyết thắng, vui lòng thử lại.`
+- Fallback name khi `ho_ten` null: dùng `'một quân nhân'` / `'Một đơn vị'`, **không** dùng `record.id`
+- Catch block: log technical detail vào `console.error` hoặc `writeSystemLog` (giữ lại stack/personnel_id để debug), nhưng push message generic vào `acc.errors`/throw cho user
+- Khi sửa error message, **phải update test assertions** tương ứng trong `tests/approve/`, `tests/scenarios/`, ... — chạy `grep` text cũ trong tests trước khi commit
+
+### Type safety
+- Không dùng `any[]` cho payload arrays — luôn type qua interface trong `types/proposal.ts` hoặc tương đương
+- Khi interface có thêm field mới (vd: `nam_nhan`, `thang_nhan`), update interface tập trung 1 chỗ thay vì cast tại usage site
+- Index signature `[key: string]: unknown` chỉ dùng cho forward-compat — phải có explicit field cho mọi field code đang access
+- Cast Prisma JSON columns: dùng `Prisma.XxxUpdateInput` cast 1 lần ở boundary, không cast `as any` tại mỗi field
+
 ### Khi thêm feature mới (Excel import/export)
 1. Define columns trong service, gọi `buildTemplate(config)` — không viết inline
 2. Preview import: dùng `loadWorkbook()` + `getAndValidateWorksheet()` + `batchQueryPersonnel()`
 3. Confirm import: dùng `runConfirmTransaction()` + Joi validation trên route
 4. Constants: thêm vào `excel.constants.ts`, không hardcode
 5. FE: dùng `createPreviewImport(url)` / `createConfirmImport(url)` factory
+
+### Refactor workflow (BẮT BUỘC theo thứ tự)
+1. **Trước khi sửa**: chạy `npm run typecheck` + `npx jest` để xác lập baseline (số test pass)
+2. **Sau MỖI thay đổi nhỏ** (1 file hoặc 1 logical unit): chạy lại typecheck + tests, không gộp nhiều thay đổi rồi mới test
+3. **Khi refactor file lớn** (split, rename, extract):
+   - Tạo file đích trước, copy code sang
+   - Update imports tại file gốc (không xoá ngay)
+   - Verify typecheck pass
+   - Mới xoá code cũ ở file gốc
+   - Verify lại typecheck + tests
+4. **Nếu test fail vì assertion text** (vd: error message changed): update test assertion, không revert code
+5. **FE refactor UI/JSX**: không tự refactor blind nếu không có browser test. Thay vào đó:
+   - Extract types/helpers (pure functions) là an toàn — refactor được
+   - Extract JSX components / hook logic → cần user xác nhận test trên browser được
+6. **Cleanup pass cuối**: `grep` các unused imports/symbols sau khi xoá function → xoá luôn
 
 ## Do NOT
 

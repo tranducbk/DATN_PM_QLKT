@@ -14,7 +14,7 @@ import {
   INVALID_DANH_HIEU_ERROR,
   MIXED_CA_NHAN_HANG_NAM_ERROR,
 } from '../validation';
-import type { EditedProposalData } from '../../../types/proposal';
+import type { EditedProposalData, ProposalDanhHieuItem } from '../../../types/proposal';
 import type {
   ProposalStrategy,
   ProposalSubmitContext,
@@ -207,14 +207,134 @@ class CaNhanHangNamStrategy implements ProposalStrategy {
   }
 
   async importInTransaction(
-    _editedData: EditedProposalData,
-    _ctx: ProposalApproveContext,
+    editedData: EditedProposalData,
+    ctx: ProposalApproveContext,
     _decisions: Record<string, string | null | undefined>,
     _pdfPaths: Record<string, string | null | undefined>,
-    _acc: ImportAccumulator,
-    _prismaTx: PrismaTx
+    acc: ImportAccumulator,
+    prismaTx: PrismaTx
   ): Promise<void> {
-    // No-op: legacy approve.ts owns import.
+    const danhHieuData = (editedData.data_danh_hieu ?? []) as ProposalDanhHieuItem[];
+    const decisionMapping = ctx.mappings?.decisionMapping ?? {};
+    const specialDecisionMapping = ctx.mappings?.specialDecisionMapping ?? {};
+    const proposalYear = ctx.proposalYear;
+    const ghiChu = ctx.ghiChu;
+
+    for (const item of danhHieuData) {
+      try {
+        if (!item.personnel_id) {
+          acc.errors.push('Thiếu thông tin quân nhân khi lưu danh hiệu.');
+          continue;
+        }
+        const quanNhan = await prismaTx.quanNhan.findUnique({
+          where: { id: item.personnel_id },
+        });
+        if (!quanNhan) {
+          acc.errors.push(
+            'Không tìm thấy thông tin quân nhân khi lưu danh hiệu. ' +
+              'Quân nhân có thể đã bị xoá khỏi hệ thống — vui lòng tải lại đề xuất.'
+          );
+          continue;
+        }
+
+        const namNhan = proposalYear;
+        const danhHieuDecision = item.danh_hieu ? decisionMapping[item.danh_hieu] || {} : {};
+        const soQuyetDinhDanhHieu = item.so_quyet_dinh || danhHieuDecision.so_quyet_dinh || null;
+
+        const isBkbqp = item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP;
+        const isCstdtq = item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ;
+        const isBkttcp = item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP;
+
+        const resolveChain = (
+          isMatch: boolean,
+          flagKey: keyof ProposalDanhHieuItem,
+          qdKey: keyof ProposalDanhHieuItem,
+          fileKey: keyof ProposalDanhHieuItem,
+          mappingKey: string
+        ) => {
+          let nhan = (item[flagKey] as boolean | null | undefined) || isMatch;
+          let soQD =
+            (item[qdKey] as string | null | undefined) ||
+            (isMatch ? item.so_quyet_dinh : null);
+          let filePdf =
+            (item[fileKey] as string | null | undefined) ||
+            (isMatch ? (item.file_quyet_dinh as string | null | undefined) : null);
+          if (soQD || filePdf) nhan = true;
+          const mapping = specialDecisionMapping[mappingKey] || {};
+          if (nhan) {
+            soQD = soQD || mapping.so_quyet_dinh;
+            filePdf = filePdf || mapping.file_pdf;
+          }
+          return { nhan, soQD, filePdf };
+        };
+
+        const bkbqp = resolveChain(
+          isBkbqp,
+          'nhan_bkbqp',
+          'so_quyet_dinh_bkbqp',
+          'file_quyet_dinh_bkbqp',
+          'BKBQP'
+        );
+        const cstdtq = resolveChain(
+          isCstdtq,
+          'nhan_cstdtq',
+          'so_quyet_dinh_cstdtq',
+          'file_quyet_dinh_cstdtq',
+          'CSTDTQ'
+        );
+        const bkttcp = resolveChain(
+          isBkttcp,
+          'nhan_bkttcp',
+          'so_quyet_dinh_bkttcp',
+          'file_quyet_dinh_bkttcp',
+          'BKTTCP'
+        );
+
+        const data: Record<string, unknown> = {};
+        data.cap_bac = item.cap_bac || null;
+        data.chuc_vu = item.chuc_vu || null;
+        const note = item.ghi_chu || ghiChu;
+
+        if (
+          item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTT ||
+          item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS
+        ) {
+          data.danh_hieu = item.danh_hieu;
+          data.so_quyet_dinh = soQuyetDinhDanhHieu;
+          if (note) data.ghi_chu = note;
+        }
+        if (bkbqp.nhan) {
+          data.nhan_bkbqp = true;
+          data.so_quyet_dinh_bkbqp = bkbqp.soQD;
+          if (note) data.ghi_chu_bkbqp = note;
+        }
+        if (cstdtq.nhan) {
+          data.nhan_cstdtq = true;
+          data.so_quyet_dinh_cstdtq = cstdtq.soQD;
+          if (note) data.ghi_chu_cstdtq = note;
+        }
+        if (bkttcp.nhan) {
+          data.nhan_bkttcp = true;
+          data.so_quyet_dinh_bkttcp = bkttcp.soQD;
+          if (note) data.ghi_chu_bkttcp = note;
+        }
+
+        await prismaTx.danhHieuHangNam.upsert({
+          where: { quan_nhan_id_nam: { quan_nhan_id: quanNhan.id, nam: namNhan } },
+          update: { ...data },
+          create: { quan_nhan_id: quanNhan.id, nam: namNhan, ...data },
+        });
+
+        acc.importedDanhHieu++;
+        acc.affectedPersonnelIds.add(quanNhan.id);
+      } catch (error) {
+        console.error('[approveProposal] danh hieu error:', {
+          personnel_id: item.personnel_id,
+          error,
+        });
+        acc.errors.push('Có lỗi xảy ra khi lưu danh hiệu, vui lòng thử lại.');
+      }
+    }
   }
 
   buildSuccessMessage(acc: ImportAccumulator): string {

@@ -33,10 +33,10 @@ import {
   EXPORT_FETCH_LIMIT,
 } from '../constants/excel.constants';
 import {
+  AWARD_EXCEL_SHEETS,
   UNIT_ANNUAL_DANH_HIEU_VALIDATION_FORMULA,
   UNIT_ANNUAL_TEMPLATE_COLUMNS,
-} from '../constants/annualExcel.constants';
-import { AWARD_EXCEL_SHEETS } from '../constants/awardExcel.constants';
+} from '../constants/awardExcel.constants';
 
 interface UnitAnnualAwardValidItem {
   row: number;

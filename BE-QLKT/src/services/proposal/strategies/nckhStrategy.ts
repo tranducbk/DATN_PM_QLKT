@@ -163,27 +163,29 @@ class NckhStrategy implements ProposalStrategy {
     for (const item of items) {
       try {
         if (!item.personnel_id) {
-          acc.errors.push(`Thành tích thiếu personnel_id: ${JSON.stringify(item)}`);
+          acc.errors.push('Thiếu thông tin quân nhân khi lưu thành tích khoa học.');
           continue;
         }
         const quanNhan = await prismaTx.quanNhan.findUnique({ where: { id: item.personnel_id } });
         if (!quanNhan) {
-          acc.errors.push(`Không tìm thấy quân nhân với ID: ${item.personnel_id}`);
+          acc.errors.push(
+            'Không tìm thấy thông tin quân nhân khi lưu thành tích khoa học. ' +
+              'Quân nhân có thể đã bị xoá khỏi hệ thống — vui lòng tải lại đề xuất.'
+          );
           continue;
         }
+        const hoTen = quanNhan.ho_ten || 'một quân nhân';
         if (!item.nam) {
-          acc.errors.push(`Thành tích thiếu năm cho quân nhân ${quanNhan.id}`);
+          acc.errors.push(`Thành tích của ${hoTen} thiếu năm.`);
           continue;
         }
         const loaiCode = resolveNckhCode(item.loai);
         if (!item.loai || !loaiCode) {
-          acc.errors.push(
-            `Thành tích có loại không hợp lệ cho quân nhân ${quanNhan.id}: ${item.loai}`
-          );
+          acc.errors.push(`Thành tích của ${hoTen} có loại không hợp lệ: ${item.loai}.`);
           continue;
         }
         if (!item.mo_ta || item.mo_ta.trim() === '') {
-          acc.errors.push(`Thành tích thiếu mô tả cho quân nhân ${quanNhan.id}`);
+          acc.errors.push(`Thành tích của ${hoTen} thiếu mô tả.`);
           continue;
         }
         await prismaTx.thanhTichKhoaHoc.create({
@@ -201,8 +203,11 @@ class NckhStrategy implements ProposalStrategy {
         acc.importedThanhTich++;
         acc.affectedPersonnelIds.add(quanNhan.id);
       } catch (error) {
-        console.error('[approveProposal] NCKH error:', error);
-        acc.errors.push(`Lỗi nhập thành tích: ${(error as Error).message}`);
+        console.error('[approveProposal] NCKH error:', {
+          personnel_id: item.personnel_id,
+          error,
+        });
+        acc.errors.push('Có lỗi xảy ra khi lưu thành tích khoa học, vui lòng thử lại.');
       }
     }
   }

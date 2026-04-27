@@ -48,7 +48,6 @@ import { ProposalStatusTag } from '@/components/proposals/ProposalStatusTag';
 import { useTheme } from '@/components/ThemeProvider';
 import {
   CONG_HIEN_HE_SO_GROUPS,
-  CONG_HIEN_HE_SO_RANGES,
   type CongHienHeSoGroup,
   getDanhHieuName,
 } from '@/constants/danhHieu.constants';
@@ -63,135 +62,16 @@ import {
   getProposalStatusLabel,
 } from '@/constants/proposal.constants';
 import { ADMIN_PROPOSAL_DETAIL_STATUS_LABELS } from '@/constants/proposalUi.constants';
+import type {
+  DanhHieuItem,
+  ThanhTichItem,
+  PositionHistoryEntry,
+  DecisionPayload,
+  ProposalDetail,
+} from './types';
+import { calculateTotalTimeByGroup, getDurationDisplay } from './helpers';
 
 const { Title, Paragraph, Text } = Typography;
-
-interface DanhHieuItem {
-  personnel_id?: string;
-  don_vi_id?: string;
-  don_vi_type?: 'CO_QUAN_DON_VI' | 'DON_VI_TRUC_THUOC';
-  ho_ten?: string;
-  nam_quyet_dinh?: number;
-  ten_don_vi?: string;
-  ma_don_vi?: string;
-  nam: number;
-  thang?: number | null;
-  danh_hieu: string | null;
-  cap_bac?: string | null;
-  chuc_vu?: string | null;
-  so_quyet_dinh?: string | null;
-  nhan_bkbqp?: boolean;
-  so_quyet_dinh_bkbqp?: string | null;
-  nhan_cstdtq?: boolean;
-  so_quyet_dinh_cstdtq?: string | null;
-  nhan_bkttcp?: boolean;
-  so_quyet_dinh_bkttcp?: string | null;
-  file_quyet_dinh?: string | null;
-  file_quyet_dinh_bkbqp?: string | null;
-  file_quyet_dinh_cstdtq?: string | null;
-  ngay_nhan?: string | null;
-  thang_nhan?: number | null;
-  nam_nhan?: number | null;
-  co_quan_don_vi?: {
-    id: string;
-    ten_co_quan_don_vi: string;
-    ma_co_quan_don_vi: string;
-  } | null;
-  don_vi_truc_thuoc?: {
-    id: string;
-    ten_don_vi: string;
-    ma_don_vi: string;
-    co_quan_don_vi?: {
-      id: string;
-      ten_don_vi_truc: string;
-      ma_don_vi: string;
-    } | null;
-  } | null;
-  co_quan_don_vi_cha?: {
-    id: string;
-    ten_don_vi: string;
-    ma_don_vi: string;
-  } | null;
-}
-
-interface ThanhTichItem {
-  personnel_id: string;
-  ho_ten: string;
-  nam: number;
-  loai: string;
-  mo_ta: string;
-  status: string;
-  so_quyet_dinh?: string;
-  file_quyet_dinh?: string | null;
-  cap_bac?: string | null;
-  chuc_vu?: string | null;
-  co_quan_don_vi?: {
-    id: string;
-    ten_co_quan_don_vi: string;
-    ma_co_quan_don_vi: string;
-  } | null;
-  don_vi_truc_thuoc?: {
-    id: string;
-    ten_don_vi: string;
-    ma_don_vi: string;
-    co_quan_don_vi?: {
-      id: string;
-      ten_don_vi_truc: string;
-      ma_don_vi: string;
-    } | null;
-  } | null;
-}
-
-interface ReviewerAccount {
-  id: string;
-  username: string;
-  ho_ten?: string;
-}
-
-interface PositionHistoryEntry {
-  he_so_chuc_vu?: number;
-  so_thang?: number | null;
-}
-
-interface DecisionPayload {
-  loai_khen_thuong?: string;
-  so_quyet_dinh?: string;
-  file_path?: string | null;
-  nam?: number;
-}
-
-interface ProposalDetail {
-  id: string;
-  loai_de_xuat: string;
-  nam: number;
-  thang?: number;
-  don_vi: {
-    id: string;
-    ma_don_vi: string;
-    ten_don_vi: string;
-  };
-  nguoi_de_xuat: {
-    id: string;
-    username: string;
-    ho_ten: string;
-  };
-  status: string;
-  data_danh_hieu: DanhHieuItem[];
-  data_thanh_tich: ThanhTichItem[];
-  data_nien_han: DanhHieuItem[];
-  data_cong_hien: DanhHieuItem[];
-  files_attached?: Array<{
-    filename: string;
-    originalName: string;
-    size?: number;
-    uploadedAt?: string;
-  }>;
-  ghi_chu: string | null;
-  nguoi_duyet: ReviewerAccount | null;
-  ngay_duyet: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
 
 export default function ProposalDetailPage() {
   const { theme } = useTheme();
@@ -385,51 +265,8 @@ export default function ProposalDetailPage() {
     }
   };
 
-  const calculateTotalTimeByGroup = (personnelId: string, group: CongHienHeSoGroup) => {
-    const histories = positionHistoriesMap[personnelId] || [];
-    let totalMonths = 0;
-
-    histories.forEach((history: PositionHistoryEntry) => {
-      const heSo = Number(history.he_so_chuc_vu) || 0;
-      const range = CONG_HIEN_HE_SO_RANGES[group];
-      const belongsToGroup = range
-        ? heSo >= range.min && (range.includeMax ? heSo <= range.max : heSo < range.max)
-        : false;
-
-      if (belongsToGroup && history.so_thang !== null && history.so_thang !== undefined) {
-        totalMonths += history.so_thang;
-      }
-    });
-
-    const years = Math.floor(totalMonths / 12);
-    const remainingMonths = totalMonths % 12;
-
-    if (totalMonths === 0) return '—';
-    if (years > 0 && remainingMonths > 0) {
-      return `${years} năm ${remainingMonths} tháng`;
-    } else if (years > 0) {
-      return `${years} năm`;
-    } else {
-      return `${remainingMonths} tháng`;
-    }
-  };
-
-  const getDurationDisplay = (value: unknown): string | null => {
-    if (!value) return null;
-    if (typeof value === 'object' && value !== null) {
-      const display = (value as { display?: unknown }).display;
-      return typeof display === 'string' && display.trim() ? display : null;
-    }
-    if (typeof value === 'string') {
-      try {
-        const parsed = JSON.parse(value) as { display?: unknown };
-        return typeof parsed.display === 'string' && parsed.display.trim() ? parsed.display : null;
-      } catch {
-        return null;
-      }
-    }
-    return null;
-  };
+  const totalTimeByGroup = (personnelId: string, group: CongHienHeSoGroup) =>
+    calculateTotalTimeByGroup(positionHistoriesMap[personnelId] || [], group);
 
   const handleReject = async () => {
     if (!ghiChu.trim()) {
@@ -898,7 +735,7 @@ export default function ProposalDetailPage() {
               const display = getDurationDisplay((record as any).thoi_gian_nhom_0_7);
               return display
                 ? display
-                : calculateTotalTimeByGroup(
+                : totalTimeByGroup(
                     record.personnel_id ?? '',
                     CONG_HIEN_HE_SO_GROUPS.LEVEL_07
                   );
@@ -913,7 +750,7 @@ export default function ProposalDetailPage() {
               const display = getDurationDisplay((record as any).thoi_gian_nhom_0_8);
               return display
                 ? display
-                : calculateTotalTimeByGroup(
+                : totalTimeByGroup(
                     record.personnel_id ?? '',
                     CONG_HIEN_HE_SO_GROUPS.LEVEL_08
                   );
@@ -928,7 +765,7 @@ export default function ProposalDetailPage() {
               const display = getDurationDisplay((record as any).thoi_gian_nhom_0_9_1_0);
               return display
                 ? display
-                : calculateTotalTimeByGroup(
+                : totalTimeByGroup(
                     record.personnel_id ?? '',
                     CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10
                   );
