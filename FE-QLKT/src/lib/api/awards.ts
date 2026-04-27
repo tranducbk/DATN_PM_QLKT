@@ -394,7 +394,7 @@ export async function deleteCommemorationMedal(id: string): Promise<ApiResponse>
 
 export async function getMilitaryFlagTemplate(params?: Record<string, string>): Promise<Blob> {
   try {
-    const res = await axiosInstance.get('/api/military-flag/template', {
+    const res = await axiosInstance.get('/api/military-flags/template', {
       params,
       responseType: 'blob',
     });
@@ -411,7 +411,7 @@ export async function getMilitaryFlag(params?: {
   limit?: number;
 }): Promise<ApiResponse> {
   try {
-    const res = await axiosInstance.get('/api/military-flag', { params });
+    const res = await axiosInstance.get('/api/military-flags', { params });
     return { success: res.data?.success, data: res.data?.data, pagination: res.data?.pagination };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
@@ -423,7 +423,7 @@ export async function exportMilitaryFlag(params?: {
   nam?: number;
 }): Promise<Blob> {
   try {
-    const res = await axiosInstance.get('/api/military-flag/export', {
+    const res = await axiosInstance.get('/api/military-flags/export', {
       params,
       responseType: 'blob',
     });
@@ -438,7 +438,7 @@ export async function getMilitaryFlagStatistics(params?: {
   nam?: number;
 }): Promise<ApiResponse> {
   try {
-    const res = await axiosInstance.get('/api/military-flag/statistics', { params });
+    const res = await axiosInstance.get('/api/military-flags/statistics', { params });
     return { success: res.data?.success, data: res.data?.data };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
@@ -447,7 +447,7 @@ export async function getMilitaryFlagStatistics(params?: {
 
 export async function deleteMilitaryFlag(id: string): Promise<ApiResponse> {
   try {
-    const res = await axiosInstance.delete(`/api/military-flag/${id}`);
+    const res = await axiosInstance.delete(`/api/military-flags/${id}`);
     return { success: res.data?.success, data: res.data?.data };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
@@ -456,7 +456,7 @@ export async function deleteMilitaryFlag(id: string): Promise<ApiResponse> {
 
 export async function getMilitaryFlagByPersonnel(personnelId: string): Promise<ApiResponse> {
   try {
-    const res = await axiosInstance.get(`/api/military-flag/personnel/${personnelId}`);
+    const res = await axiosInstance.get(`/api/military-flags/personnel/${personnelId}`);
     return { success: res.data?.success, data: res.data?.data };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
@@ -495,8 +495,8 @@ function createConfirmImport(url: string) {
 export const previewHCCSVVImport = createPreviewImport('/api/tenure-medals/import/preview');
 export const confirmHCCSVVImport = createConfirmImport('/api/tenure-medals/import/confirm');
 
-export const previewMilitaryFlagImport = createPreviewImport('/api/military-flag/import/preview');
-export const confirmMilitaryFlagImport = createConfirmImport('/api/military-flag/import/confirm');
+export const previewMilitaryFlagImport = createPreviewImport('/api/military-flags/import/preview');
+export const confirmMilitaryFlagImport = createConfirmImport('/api/military-flags/import/confirm');
 
 export const previewContributionAwardsImport = createPreviewImport('/api/contribution-medals/import/preview');
 export const confirmContributionAwardsImport = createConfirmImport('/api/contribution-medals/import/confirm');

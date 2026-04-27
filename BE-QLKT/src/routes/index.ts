@@ -9,7 +9,6 @@ import scientificAchievementRoute from './scientificAchievement.route';
 import positionHistoryRoute from './positionHistory.route';
 import profileRoute from './profile.route';
 import systemLogsRoute from './systemLogs.route';
-import categoriesRoute from './categories.route';
 import personnelNestedRoute from './personnelNested.route';
 import proposalRoute from './proposal.route';
 import decisionRoute from './decision.route';
@@ -18,8 +17,8 @@ import notificationRoute from './notification.route';
 import unitAnnualAwardRoute from './unitAnnualAward.route';
 import dashboardRoute from './dashboard.route';
 import adhocAwardRoute from './adhocAward.route';
-import hccsvvRoute from './tenureMedal.route';
-import contributionAwardRoute from './contributionMedal.route';
+import tenureMedalRoute from './tenureMedal.route';
+import contributionMedalRoute from './contributionMedal.route';
 import commemorativeMedalRoute from './commemorativeMedal.route';
 import militaryFlagRoute from './militaryFlag.route';
 import unitController from '../controllers/unit.controller';
@@ -42,9 +41,6 @@ router.use('/api/positions', positionRoute);
 // Sub-units
 router.get('/api/sub-units', verifyToken, requireAdmin, unitController.getAllSubUnits);
 
-// 3.1 Categories (alias routes for frontend compatibility)
-router.use('/api/categories', categoriesRoute);
-
 // 4. Personnel Management
 router.use('/api/personnel', personnelRoute);
 router.use('/api/personnel/:personnelId', personnelNestedRoute);
@@ -64,10 +60,10 @@ router.use('/api/decisions', decisionRoute);
 router.use('/api/awards/units/annual', unitAnnualAwardRoute);
 
 // 5.3. Specialized Award Types
-router.use('/api/tenure-medals', hccsvvRoute);
-router.use('/api/contribution-medals', contributionAwardRoute);
+router.use('/api/tenure-medals', tenureMedalRoute);
+router.use('/api/contribution-medals', contributionMedalRoute);
 router.use('/api/commemorative-medals', commemorativeMedalRoute);
-router.use('/api/military-flag', militaryFlagRoute);
+router.use('/api/military-flags', militaryFlagRoute);
 
 // Awards Management
 router.use('/api/awards', awardsRoute);
