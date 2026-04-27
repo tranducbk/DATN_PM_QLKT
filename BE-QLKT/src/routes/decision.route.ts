@@ -1,10 +1,8 @@
 import { Router } from 'express';
 import decisionController from '../controllers/decision.controller';
 import { verifyToken, requireAdmin } from '../middlewares/auth';
-import { auditLog, createDescription, getResourceId } from '../middlewares/auditLog';
+import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
-import { validate } from '../middlewares/validate';
-import { decisionValidation } from '../validations';
 import { decisionUpload as upload } from '../configs/multer';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 

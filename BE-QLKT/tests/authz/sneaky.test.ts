@@ -83,9 +83,7 @@ describe('Authorization sneaky — submit cross-unit personnel', () => {
     // When
     await proposalService.submitProposal(
       [{ personnel_id: targetInOtherUnit.id, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS }],
-      null,
-      null,
-      AUTH_SNEAKY_MANAGER_ID,
+      null,      AUTH_SNEAKY_MANAGER_ID,
       PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       2024,
       null,
@@ -124,9 +122,7 @@ describe('Authorization sneaky — body field overrides', () => {
     // When: submit with manager userId — service signature has no body override.
     await proposalService.submitProposal(
       [{ personnel_id: target.id, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS }],
-      null,
-      null,
-      AUTH_SNEAKY_MANAGER_ID,
+      null,      AUTH_SNEAKY_MANAGER_ID,
       PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       2024,
       null,
@@ -253,9 +249,7 @@ describe('Authorization sneaky — manager DVTT submitting personnel of parent C
     // When
     await proposalService.submitProposal(
       [{ personnel_id: targetInParent.id, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS }],
-      null,
-      null,
-      AUTH_SNEAKY_MANAGER_ID,
+      null,      AUTH_SNEAKY_MANAGER_ID,
       PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       2024,
       null,

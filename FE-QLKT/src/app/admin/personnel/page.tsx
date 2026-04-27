@@ -28,8 +28,8 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/apiClient';
-import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
-import { DEFAULT_PAGE_SIZE, DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
+import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
+import { DEFAULT_PAGE_SIZE, DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import type {
   AdminCoQuanDonViRow,
   AdminDonViTrucThuocRow,

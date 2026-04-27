@@ -3,7 +3,7 @@
 import { Button, Space, Typography } from 'antd';
 import { FilePdfOutlined, EyeOutlined } from '@ant-design/icons';
 import { useTheme } from '@/components/ThemeProvider';
-import { previewFileWithApi } from '@/utils/filePreview';
+import { previewFileWithApi } from '@/lib/filePreview';
 import { formatDateTime } from '@/lib/utils';
 import styles from './file-attachment.module.css';
 

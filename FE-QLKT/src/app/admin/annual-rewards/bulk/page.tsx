@@ -31,8 +31,7 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/apiClient';
-import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/lib/constants/pagination.constants';
-import { formatDate } from '@/lib/utils';
+import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
 
 const { Title, Text } = Typography;
 const { Search } = Input;

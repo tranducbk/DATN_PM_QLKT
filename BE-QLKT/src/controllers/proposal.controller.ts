@@ -49,7 +49,6 @@ class ProposalController {
     const userId = user.id;
     const userRole = user.role;
     const {
-      so_quyet_dinh,
       type = PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       title_data,
       nam,
@@ -91,7 +90,6 @@ class ProposalController {
     const result = await proposalService.submitProposal(
       titleDataParsed,
       attachedFiles,
-      so_quyet_dinh,
       userId,
       type,
       typeof nam === 'string' ? parseInt(nam, 10) : Number(nam),

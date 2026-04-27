@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import personnelService from '../services/personnel.service';
 import { parsePagination } from '../helpers/paginationHelper';
-import { writeSystemLog } from '../helpers/systemLogHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 

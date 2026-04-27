@@ -11,15 +11,14 @@ import {
   Space,
   Typography,
   Breadcrumb,
-  Popconfirm,
   message,
   Spin,
   Empty,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { LeftOutlined, DeleteOutlined, EditOutlined, HomeOutlined } from '@ant-design/icons';
+import { LeftOutlined, HomeOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/apiClient';
-import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
+import { downloadDecisionFile } from '@/lib/downloadDecisionFile';
 import type { PersonnelDetail } from '@/lib/types/personnelList';
 
 

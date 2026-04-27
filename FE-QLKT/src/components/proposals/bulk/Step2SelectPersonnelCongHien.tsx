@@ -10,7 +10,6 @@ import {
   Typography,
   InputNumber,
   message,
-  Divider,
   Empty,
 } from 'antd';
 import { SearchOutlined, TeamOutlined } from '@ant-design/icons';
@@ -21,7 +20,7 @@ import { apiClient } from '@/lib/apiClient';
 import {
   DEFAULT_ANTD_TABLE_PAGINATION,
   FETCH_ALL_LIMIT,
-} from '@/lib/constants/pagination.constants';
+} from '@/constants/pagination.constants';
 import { ExcelImportSection } from './ExcelImportSection';
 import { PROPOSAL_STATUS, PROPOSAL_MONTH_OPTIONS } from '@/constants/proposal.constants';
 import {

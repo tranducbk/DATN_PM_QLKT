@@ -172,8 +172,6 @@ async function notifyOnAwardDeleted(
     };
     const awardTypeName = awardTypeNameMap[awardType] || awardType;
 
-    const rawDanhHieu = award.danh_hieu || award.loai || '';
-    const danhHieu = getDanhHieuName(rawDanhHieu);
     const nam = award.nam || '';
 
     const donViId = personnel.co_quan_don_vi_id || personnel.don_vi_truc_thuoc_id;

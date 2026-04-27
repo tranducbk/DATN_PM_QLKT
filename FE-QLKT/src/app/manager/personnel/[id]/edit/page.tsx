@@ -22,7 +22,7 @@ import { useTheme } from '@/components/ThemeProvider';
 import { apiClient } from '@/lib/apiClient';
 import { getApiErrorMessage } from '@/lib/apiError';
 import dayjs from 'dayjs';
-import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
+import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
 import { ROLES } from '@/constants/roles.constants';
 import { VietnamAddressCascader } from '@/components/VietnamAddressCascader';
 import type { ManagerPositionRow } from '@/lib/types/personnelList';

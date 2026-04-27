@@ -30,8 +30,8 @@ import {
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
-import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
-import { DEFAULT_PAGE_SIZE, DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
+import { downloadDecisionFile } from '@/lib/downloadDecisionFile';
+import { DEFAULT_PAGE_SIZE, DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { LOAI_KHEN_THUONG_OPTIONS, getLoaiDeXuatName } from '@/constants/danhHieu.constants';
 import dayjs from 'dayjs';

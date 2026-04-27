@@ -4,7 +4,6 @@ import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHel
 import profileService from './profile.service';
 import * as notificationHelper from '../helpers/notification';
 import { DANH_HIEU_NCKH, resolveNckhCode } from '../constants/danhHieu.constants';
-import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { NotFoundError, ValidationError } from '../middlewares/errorHandler';

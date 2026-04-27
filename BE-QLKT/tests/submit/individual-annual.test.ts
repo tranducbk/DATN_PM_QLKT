@@ -57,9 +57,7 @@ function arrangePersonnelLookup(personnel: ReturnType<typeof makePersonnel>[]) {
 function callSubmitCaNhan(items: CaNhanItem[], userId = 'acc-mgr-1', nam = 2024) {
   return proposalService.submitProposal(
     items,
-    null,
-    null,
-    userId,
+    null,    userId,
     PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
     nam,
     null,
@@ -272,9 +270,7 @@ describe('proposal.submit - CA_NHAN_HANG_NAM', () => {
       proposalService.submitProposal(
         // simulate a bypass-FE payload that is not an array
         null as unknown as CaNhanItem[],
-        null,
-        null,
-        'acc-mgr-1',
+        null,        'acc-mgr-1',
         PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
         2024,
         null,

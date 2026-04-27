@@ -233,9 +233,7 @@ describe('Proposal race conditions', () => {
     const results = await Promise.allSettled([
       proposalService.submitProposal(
         [{ personnel_id: target.id, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS }],
-        null,
-        null,
-        MANAGER_ID,
+        null,        MANAGER_ID,
         PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
         2024,
         null,
@@ -243,9 +241,7 @@ describe('Proposal race conditions', () => {
       ),
       proposalService.submitProposal(
         [{ personnel_id: target.id, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS }],
-        null,
-        null,
-        MANAGER_ID,
+        null,        MANAGER_ID,
         PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
         2024,
         null,
@@ -812,9 +808,7 @@ describe('Proposal race conditions', () => {
     await expect(
       proposalService.submitProposal(
         [{ personnel_id: target.id, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP }],
-        null,
-        null,
-        MANAGER_ID,
+        null,        MANAGER_ID,
         PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
         2024,
         null,
@@ -901,9 +895,7 @@ describe('Proposal race conditions', () => {
               danh_hieu: DANH_HIEU_DON_VI_HANG_NAM.BKBQP,
             },
           ],
-          null,
-          null,
-          MANAGER_ID,
+          null,          MANAGER_ID,
           PROPOSAL_TYPES.DON_VI_HANG_NAM,
           2024,
           null,
@@ -1061,9 +1053,7 @@ describe('Proposal race conditions', () => {
               chuc_vu: 'Trợ lý',
             },
           ],
-          null,
-          null,
-          MANAGER_ID,
+          null,          MANAGER_ID,
           PROPOSAL_TYPES.CONG_HIEN,
           2024,
           null,
@@ -1154,9 +1144,7 @@ describe('Proposal race conditions', () => {
       await expect(
         proposalService.submitProposal(
           [{ personnel_id: target.id, danh_hieu: PROPOSAL_TYPES.HC_QKQT }],
-          null,
-          null,
-          MANAGER_ID,
+          null,          MANAGER_ID,
           PROPOSAL_TYPES.HC_QKQT,
           2024,
           null,
@@ -1248,9 +1236,7 @@ describe('Proposal race conditions', () => {
       await expect(
         proposalService.submitProposal(
           [{ personnel_id: target.id, danh_hieu: PROPOSAL_TYPES.KNC_VSNXD_QDNDVN }],
-          null,
-          null,
-          MANAGER_ID,
+          null,          MANAGER_ID,
           PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
           2024,
           null,
@@ -1384,9 +1370,7 @@ describe('Proposal race conditions', () => {
               danh_hieu: DANH_HIEU_HCCSVV.HANG_NHI,
             },
           ],
-          null,
-          null,
-          MANAGER_ID,
+          null,          MANAGER_ID,
           PROPOSAL_TYPES.NIEN_HAN,
           2024,
           null,

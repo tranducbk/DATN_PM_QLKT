@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { Table, Select, Alert, Typography, Space, Tag, message, Button, Input, Empty } from 'antd';
-import { EditOutlined, HistoryOutlined, ReloadOutlined } from '@ant-design/icons';
+import { EditOutlined, HistoryOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { formatDate } from '@/lib/utils';
 import { apiClient } from '@/lib/apiClient';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { PositionHistoryModal } from './PositionHistoryModal';
-import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
+import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
 import {
   calculateContributionMonthsByGroup,
   formatMonthsToText,

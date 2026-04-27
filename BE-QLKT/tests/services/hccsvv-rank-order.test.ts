@@ -1,4 +1,4 @@
-import { validateHCCSVVRankOrder } from '../../src/helpers/hccsvvRankOrderValidation';
+import { validateHCCSVVRankOrder } from '../../src/helpers/awardValidation/tenureMedalRankOrder';
 import { DANH_HIEU_HCCSVV } from '../../src/constants/danhHieu.constants';
 
 describe('validateHCCSVVRankOrder', () => {

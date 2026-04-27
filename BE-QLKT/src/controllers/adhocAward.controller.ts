@@ -18,7 +18,6 @@ interface CreateAdhocAwardBody {
   position?: string;
   note?: string;
   decisionNumber?: string;
-  decisionFilePath?: string;
 }
 
 interface GetAdhocAwardsQuery {
@@ -73,7 +72,6 @@ class AdhocAwardController {
       position,
       note,
       decisionNumber,
-      decisionFilePath,
     } = body;
 
     if (!type || !Object.values(ADHOC_TYPE).includes(type)) {

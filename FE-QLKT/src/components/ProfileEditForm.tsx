@@ -13,9 +13,7 @@ import {
   message,
   Divider,
   Select,
-  Descriptions,
   Tag,
-  Space,
   ConfigProvider,
 } from 'antd';
 import {
@@ -32,7 +30,7 @@ import {
 import dayjs from 'dayjs';
 import { apiClient } from '@/lib/apiClient';
 import { VietnamAddressCascader } from './VietnamAddressCascader';
-import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
+import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
 import { useTheme } from '@/components/ThemeProvider';
 import { formatDate, capitalizeWords } from '@/lib/utils';
 import { getAntdThemeConfig } from '@/lib/antdTheme';

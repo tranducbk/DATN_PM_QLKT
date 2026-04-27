@@ -1,7 +1,7 @@
 import { Router, Request } from 'express';
 import accountController from '../controllers/account.controller';
-import { verifyToken, requireSuperAdmin, requireAdmin } from '../middlewares/auth';
-import { auditLog, createDescription, getResourceId } from '../middlewares/auditLog';
+import { verifyToken, requireAdmin } from '../middlewares/auth';
+import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
 import { writeLimiter } from '../configs/rateLimiter';
 import { validate } from '../middlewares/validate';

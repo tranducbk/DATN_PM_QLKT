@@ -11,7 +11,6 @@ import {
   InputNumber,
   message,
   Tag,
-  Divider,
   Empty,
 } from 'antd';
 import { SearchOutlined, TrophyOutlined } from '@ant-design/icons';
@@ -23,7 +22,7 @@ import type { Step2Personnel as Personnel } from './types';
 import {
   DEFAULT_ANTD_TABLE_PAGINATION,
   FETCH_ALL_LIMIT,
-} from '@/lib/constants/pagination.constants';
+} from '@/constants/pagination.constants';
 import { HCQKQT_YEARS_REQUIRED } from '@/constants/danhHieu.constants';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { ExcelImportSection } from './ExcelImportSection';

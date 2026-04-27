@@ -11,7 +11,6 @@ import {
   InputNumber,
   message,
   Tag,
-  Divider,
   Empty,
 } from 'antd';
 import { SearchOutlined, TrophyOutlined } from '@ant-design/icons';
@@ -20,7 +19,7 @@ import { formatDate } from '@/lib/utils';
 import { apiClient } from '@/lib/apiClient';
 import { calculateTotalMonths } from './serviceDuration';
 import type { Step2Personnel as Personnel } from './types';
-import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/lib/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { ExcelImportSection } from './ExcelImportSection';
 import { DANH_HIEU_MAP, KNC_YEARS_REQUIRED_NAM, KNC_YEARS_REQUIRED_NU } from '@/constants/danhHieu.constants';

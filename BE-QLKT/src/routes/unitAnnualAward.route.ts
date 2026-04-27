@@ -5,7 +5,6 @@ import unitAnnualAwardController from '../controllers/unitAnnualAward.controller
 import {
   verifyToken,
   requireManager,
-  requireAuth,
   requireAdmin,
   checkRole,
 } from '../middlewares/auth';

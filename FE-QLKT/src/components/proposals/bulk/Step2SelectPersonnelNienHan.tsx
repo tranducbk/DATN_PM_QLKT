@@ -10,7 +10,6 @@ import {
   Typography,
   InputNumber,
   message,
-  Divider,
   Empty,
 } from 'antd';
 import { SearchOutlined, TeamOutlined } from '@ant-design/icons';
@@ -20,7 +19,7 @@ import { formatDate } from '@/lib/utils';
 import { apiClient } from '@/lib/apiClient';
 import { calculateTotalMonths } from './serviceDuration';
 import type { Step2Personnel as Personnel } from './types';
-import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/lib/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 import { HCCSVV_YEARS_HANG_BA, HCCSVV_YEARS_HANG_NHI, HCCSVV_YEARS_HANG_NHAT } from '@/constants/danhHieu.constants';
 import { ExcelImportSection } from './ExcelImportSection';

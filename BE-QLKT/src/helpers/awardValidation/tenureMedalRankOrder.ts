@@ -1,4 +1,4 @@
-import { DANH_HIEU_HCCSVV, getDanhHieuName } from '../constants/danhHieu.constants';
+import { DANH_HIEU_HCCSVV, getDanhHieuName } from '../../constants/danhHieu.constants';
 
 const RANK_ORDER = [
   DANH_HIEU_HCCSVV.HANG_BA,

@@ -10,7 +10,7 @@ import {
   DANH_HIEU_DON_VI_BANG_KHEN,
 } from '../../../constants/danhHieu.constants';
 import { ValidationError } from '../../../middlewares/errorHandler';
-import { validateHCBVTQHighestRank } from '../../../helpers/hcbvtqHighestRankValidation';
+import { validateHCBVTQHighestRank } from '../../../helpers/awardValidation/contributionMedalHighestRank';
 import profileService from '../../profile.service';
 import unitAnnualAwardService from '../../unitAnnualAward.service';
 import {

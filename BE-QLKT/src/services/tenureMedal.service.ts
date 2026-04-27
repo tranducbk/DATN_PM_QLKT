@@ -25,7 +25,7 @@ import {
 } from '../helpers/excelHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { ValidationError, NotFoundError, AppError } from '../middlewares/errorHandler';
-import { validateHCCSVVRankOrder } from '../helpers/hccsvvRankOrderValidation';
+import { validateHCCSVVRankOrder } from '../helpers/awardValidation/tenureMedalRankOrder';
 import { buildTemplate, styleHeaderRow } from '../helpers/excelTemplateHelper';
 import { calculateServiceMonths, formatServiceDuration } from '../helpers/serviceYearsHelper';
 import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';

@@ -38,9 +38,7 @@ function arrangeManager() {
 function callSubmit(items: NienHanItem[], thang: number | null = 6, nam = 2024) {
   return proposalService.submitProposal(
     items,
-    null,
-    null,
-    'acc-mgr-1',
+    null,    'acc-mgr-1',
     PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
     nam,
     null,

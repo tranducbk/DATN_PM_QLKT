@@ -6,7 +6,7 @@ import { EditOutlined, HistoryOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
 import { getApiErrorMessage } from '@/lib/apiError';
-import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { UnitAnnualAwardHistoryModal, type UnitAnnualAwards } from './UnitAnnualAwardHistoryModal';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 import {

@@ -2,7 +2,7 @@ import { prisma } from '../../../models';
 import { PROPOSAL_TYPES } from '../../../constants/proposalTypes.constants';
 import { DANH_HIEU_HCCSVV } from '../../../constants/danhHieu.constants';
 import { ELIGIBILITY_STATUS } from '../../../constants/eligibilityStatus.constants';
-import { validateHCCSVVRankOrder } from '../../../helpers/hccsvvRankOrderValidation';
+import { validateHCCSVVRankOrder } from '../../../helpers/awardValidation/tenureMedalRankOrder';
 import { formatQuanNhanLabel } from './quanNhanLabel';
 import {
   calculateServiceMonths,

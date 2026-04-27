@@ -10,7 +10,7 @@ import { FileAttachmentList } from '@/components/proposals/FileAttachmentList';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { PROPOSAL_STATUS, PROPOSAL_TYPES, PROPOSAL_TYPE_LABELS, type ProposalType } from '@/constants/proposal.constants';
-import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 
 const { Text, Title } = Typography;
 

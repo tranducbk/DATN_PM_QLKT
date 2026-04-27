@@ -80,9 +80,7 @@ function callCongHienSubmit(
 ) {
   return proposalService.submitProposal(
     items,
-    null,
-    null,
-    ADMIN_ID,
+    null,    ADMIN_ID,
     PROPOSAL_TYPES.CONG_HIEN,
     nam,
     null,
@@ -200,9 +198,7 @@ describe('proposal.submit - CONG_HIEN (HCBVTQ)', () => {
     await expectError(
       proposalService.submitProposal(
         null as never,
-        null,
-        null,
-        ADMIN_ID,
+        null,        ADMIN_ID,
         PROPOSAL_TYPES.CONG_HIEN,
         2024,
         null,

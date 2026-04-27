@@ -3,8 +3,7 @@
 import { Modal, Table, Tag, Typography, Spin, Descriptions, Empty } from 'antd';
 import { HistoryOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import dayjs from 'dayjs';
-import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
+import { downloadDecisionFile } from '@/lib/downloadDecisionFile';
 
 const { Text } = Typography;
 

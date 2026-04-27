@@ -1,4 +1,4 @@
-import axiosInstance from '@/utils/axiosInstance';
+import axiosInstance from '@/lib/axiosInstance';
 import { getApiErrorMessage } from '@/lib/apiError';
 import type { ApiResponse } from '@/lib/types';
 

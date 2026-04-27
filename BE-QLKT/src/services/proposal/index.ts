@@ -5,7 +5,6 @@ import * as approve from './approve';
 import * as exportModule from './export';
 import * as awards from './awards';
 import * as validation from './validation';
-import type { Prisma } from '../../generated/prisma';
 import type { ProposalType } from '../../constants/proposalTypes.constants';
 import type { DuplicateCheckResult } from './validation';
 import type { SubmitTitleDataItem, SubmitAttachedFile } from './submit';
@@ -38,14 +37,11 @@ class ProposalService {
   isSampleRow(text: string | null) {
     return helpers.isSampleRow(text);
   }
-  logSheetInfo(sheet: import('exceljs').Worksheet, sheetName: string) {
-    return helpers.logSheetInfo(sheet, sheetName);
+  parseDanhHieuRow(row: import('exceljs').Row) {
+    return helpers.parseDanhHieuRow(row);
   }
-  parseDanhHieuRow(row: import('exceljs').Row, rowNumber: number) {
-    return helpers.parseDanhHieuRow(row, rowNumber);
-  }
-  parseThanhTichRow(row: import('exceljs').Row, rowNumber: number) {
-    return helpers.parseThanhTichRow(row, rowNumber);
+  parseThanhTichRow(row: import('exceljs').Row) {
+    return helpers.parseThanhTichRow(row);
   }
   parseDanhHieuSheet(sheet: import('exceljs').Worksheet) {
     return helpers.parseDanhHieuSheet(sheet);
@@ -81,14 +77,13 @@ class ProposalService {
   async submitProposal(
     titleData: SubmitTitleDataItem[],
     attachedFiles: SubmitAttachedFile[] | null,
-    soQuyetDinh: string | null,
     userId: string,
     type: ProposalType,
     nam: number,
     ghiChu: string | null,
     thang: number | null
   ) {
-    return submit.submitProposal(titleData, attachedFiles, soQuyetDinh, userId, type, nam, ghiChu, thang);
+    return submit.submitProposal(titleData, attachedFiles, userId, type, nam, ghiChu, thang);
   }
 
   async approveProposal(

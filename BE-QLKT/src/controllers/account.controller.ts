@@ -155,7 +155,6 @@ class AccountController {
   updateAccount = catchAsync(async (req: Request, res: Response) => {
     const user = req.user;
     const params = req.params as IdParams;
-    const query = req.query as UpdateAccountQuery;
     const body = req.body as UpdateAccountBody;
     const id = normalizeParam(params.id);
     if (!id) {

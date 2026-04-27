@@ -75,9 +75,7 @@ describe('Date boundary — submit time and proposal year edges', () => {
 
     await proposalService.submitProposal(
       [{ personnel_id: target.id, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS }],
-      null,
-      null,
-      ADMIN_ID,
+      null,      ADMIN_ID,
       PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       2025,
       null,
@@ -98,9 +96,7 @@ describe('Date boundary — submit time and proposal year edges', () => {
 
     await proposalService.submitProposal(
       [{ personnel_id: target.id, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS }],
-      null,
-      null,
-      ADMIN_ID,
+      null,      ADMIN_ID,
       PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       1990,
       null,
@@ -130,9 +126,7 @@ describe('Date boundary — submit time and proposal year edges', () => {
     await expectError(
       proposalService.submitProposal(
         [{ personnel_id: target.id, danh_hieu: PROPOSAL_TYPES.HC_QKQT }],
-        null,
-        null,
-        ADMIN_ID,
+        null,        ADMIN_ID,
         PROPOSAL_TYPES.HC_QKQT,
         2024,
         null,
@@ -172,9 +166,7 @@ describe('Date boundary — submit time and proposal year edges', () => {
     await expect(
       proposalService.submitProposal(
         [{ personnel_id: target.id, danh_hieu: PROPOSAL_TYPES.HC_QKQT }],
-        null,
-        null,
-        ADMIN_ID,
+        null,        ADMIN_ID,
         PROPOSAL_TYPES.HC_QKQT,
         2024,
         null,

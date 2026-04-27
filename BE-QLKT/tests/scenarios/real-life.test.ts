@@ -117,9 +117,7 @@ function arrangeKncSubmit(input: {
 function callSubmitKnc(personnelId: string, managerId: string, nam = 2024, thang = 6) {
   return proposalService.submitProposal(
     [{ personnel_id: personnelId, danh_hieu: PROPOSAL_TYPES.KNC_VSNXD_QDNDVN }],
-    null,
-    null,
-    managerId,
+    null,    managerId,
     PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
     nam,
     null,
@@ -130,9 +128,7 @@ function callSubmitKnc(personnelId: string, managerId: string, nam = 2024, thang
 function callSubmitHcqkqt(personnelId: string, managerId: string, nam = 2024, thang = 6) {
   return proposalService.submitProposal(
     [{ personnel_id: personnelId, danh_hieu: PROPOSAL_TYPES.HC_QKQT }],
-    null,
-    null,
-    managerId,
+    null,    managerId,
     PROPOSAL_TYPES.HC_QKQT,
     nam,
     null,

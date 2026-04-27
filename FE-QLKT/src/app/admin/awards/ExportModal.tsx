@@ -6,7 +6,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { DownloadOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/apiClient';
 import { getApiErrorMessage } from '@/lib/apiError';
-import { DANH_HIEU_MAP } from '@/utils/awardsHelper';
+import { DANH_HIEU_MAP } from '@/lib/awardsHelper';
 import {
   AWARD_TAB_LABELS,
   AWARD_TAB_DANH_HIEU,
@@ -14,7 +14,7 @@ import {
   INDIVIDUAL_AWARD_TABS,
   type AwardType,
 } from '@/constants/danhHieu.constants';
-import { MODAL_TABLE_PREVIEW_PAGE_SIZE, FETCH_ALL_LIMIT } from '@/lib/constants/pagination.constants';
+import { MODAL_TABLE_PREVIEW_PAGE_SIZE, FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
 
 const { Text } = Typography;
 

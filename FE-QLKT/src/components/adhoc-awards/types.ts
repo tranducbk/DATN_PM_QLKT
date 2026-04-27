@@ -1,4 +1,4 @@
-import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
+import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
 
 export interface AdhocAward {
   id: string;

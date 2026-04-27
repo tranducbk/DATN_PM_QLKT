@@ -23,7 +23,6 @@ import {
   ClockCircleOutlined,
   HomeOutlined,
   SearchOutlined,
-  FilterOutlined,
   TrophyOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
@@ -31,7 +30,6 @@ import Link from 'next/link';
 import { isAxiosError } from 'axios';
 import { apiClient } from '@/lib/apiClient';
 import { getApiErrorMessage } from '@/lib/apiError';
-import dayjs from 'dayjs';
 import { formatDateTime } from '@/lib/utils';
 import {
   PROPOSAL_STATUS,
@@ -45,7 +43,7 @@ import { ProposalDetailModal } from './components/ProposalDetailModal';
 import { RejectModal } from './components/RejectModal';
 import { ApproveModal } from './components/ApproveModal';
 import { DecisionModal } from '@/components/DecisionModal';
-import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 
 const { Title, Text } = Typography;
 

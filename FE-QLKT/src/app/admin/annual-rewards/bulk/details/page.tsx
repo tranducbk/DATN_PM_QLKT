@@ -12,7 +12,6 @@ import {
   Typography,
   Breadcrumb,
   Upload,
-  Space,
   Alert,
   Select,
   Tag,
@@ -26,13 +25,12 @@ import {
   UploadOutlined,
   FilePdfOutlined,
   FileTextOutlined,
-  CloseOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { apiClient } from '@/lib/apiClient';
-import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
-import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
-import { DANH_HIEU_MAP } from '@/utils/awardsHelper';
+import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
+import { downloadDecisionFile } from '@/lib/downloadDecisionFile';
+import { DANH_HIEU_MAP } from '@/lib/awardsHelper';
 import { DecisionModal } from '@/components/DecisionModal';
 import { formatDate } from '@/lib/utils';
 
@@ -74,9 +72,7 @@ export default function BulkRewardDetailsPage() {
   const [personnelData, setPersonnelData] = useState<PersonnelRewardData[]>([]);
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [checkResults, setCheckResults] = useState<{ summary: CheckResultsSummary } | null>(null);
-  const [positions, setPositions] = useState<any[]>([]);
 
-  const [eligiblePersonnelIds, setEligiblePersonnelIds] = useState<string[]>([]);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [decisionModalVisible, setDecisionModalVisible] = useState(false);
   const [editingPersonnelId, setEditingPersonnelId] = useState<string | null>(null);
@@ -107,9 +103,6 @@ export default function BulkRewardDetailsPage() {
         ? JSON.parse(decodeURIComponent(checkResultsParam))
         : null;
       if (checkResultsData) setCheckResults(checkResultsData);
-
-      // Keep eligible list for submit step
-      setEligiblePersonnelIds(eligibleIds);
 
       // Init data for ALL selected personnel, not just eligible ones
       const initialData: PersonnelRewardData[] = personnelIds.map((id: string) => {

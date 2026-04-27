@@ -23,7 +23,6 @@ import {
   HomeOutlined,
   SyncOutlined,
   IdcardOutlined,
-  SafetyCertificateOutlined,
   CrownOutlined,
   TeamOutlined,
 } from '@ant-design/icons';

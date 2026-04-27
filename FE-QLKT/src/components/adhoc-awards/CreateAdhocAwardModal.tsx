@@ -29,10 +29,9 @@ import {
 } from '@ant-design/icons';
 import type { UploadFile } from 'antd';
 import { apiClient } from '@/lib/apiClient';
-import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 import type {
-  AdhocAward,
   Personnel,
   Unit,
   CreateFormData,

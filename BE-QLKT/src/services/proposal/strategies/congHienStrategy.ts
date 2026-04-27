@@ -12,7 +12,7 @@ import {
   buildCutoffDate,
   formatServiceDuration,
 } from '../../../helpers/serviceYearsHelper';
-import { validateHCBVTQHighestRank } from '../../../helpers/hcbvtqHighestRankValidation';
+import { validateHCBVTQHighestRank } from '../../../helpers/awardValidation/contributionMedalHighestRank';
 import { formatQuanNhanLabel } from './quanNhanLabel';
 import {
   aggregatePositionMonthsByGroup,

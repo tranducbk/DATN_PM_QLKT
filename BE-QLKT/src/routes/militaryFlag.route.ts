@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import militaryFlagController from '../controllers/militaryFlag.controller';
-import { verifyToken, checkRole, requireManager, requireAdmin } from '../middlewares/auth';
+import { verifyToken, checkRole, requireAdmin } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
 import { ROLES } from '../constants/roles.constants';

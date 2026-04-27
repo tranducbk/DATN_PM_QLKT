@@ -24,14 +24,14 @@ import {
   renderDecision,
   renderAnnualAwards,
   getLoaiKhenThuong,
-} from '@/utils/awardsHelper';
-import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
+} from '@/lib/awardsHelper';
+import { downloadDecisionFile } from '@/lib/downloadDecisionFile';
 import { formatDate } from '@/lib/utils';
 import type { AwardType } from '@/constants/danhHieu.constants';
 import {
   DEFAULT_ANTD_TABLE_PAGINATION,
   FETCH_ALL_LIMIT,
-} from '@/lib/constants/pagination.constants';
+} from '@/constants/pagination.constants';
 
 const { Title, Paragraph, Text } = Typography;
 

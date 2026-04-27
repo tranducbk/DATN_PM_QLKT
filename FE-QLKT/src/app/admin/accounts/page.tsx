@@ -27,7 +27,7 @@ import {
 import Link from 'next/link';
 import { useTheme } from '@/components/ThemeProvider';
 import { apiClient } from '@/lib/apiClient';
-import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { ROLES, ROLE_LABELS, ROLE_COLORS, roleSelectOptions } from '@/constants/roles.constants';
 
 const { Title } = Typography;

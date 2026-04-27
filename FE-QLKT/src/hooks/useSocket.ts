@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { io } from 'socket.io-client';
 import type { Socket } from 'socket.io-client';
-import axiosInstance from '@/utils/axiosInstance';
+import axiosInstance from '@/lib/axiosInstance';
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:4000';
 

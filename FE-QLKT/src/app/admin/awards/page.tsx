@@ -21,7 +21,7 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import type { TableColumnsType } from 'antd';
 import { DownloadOutlined, FilterOutlined, HomeOutlined, DeleteOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/apiClient';
-import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
+import { downloadDecisionFile } from '@/lib/downloadDecisionFile';
 import {
   DANH_HIEU_MAP,
   COLUMN_STYLES,
@@ -31,14 +31,14 @@ import {
   collectPersonalAwards,
   collectUnitAwards,
   renderAwardDeleteButtons,
-} from '@/utils/awardsHelper';
+} from '@/lib/awardsHelper';
 import { AWARD_TAB_DANH_HIEU, type AwardType } from '@/constants/danhHieu.constants';
 
 import { ExportModal } from './ExportModal';
 import {
   DEFAULT_ANTD_TABLE_PAGINATION,
   FETCH_ALL_LIMIT,
-} from '@/lib/constants/pagination.constants';
+} from '@/constants/pagination.constants';
 import { formatDate } from '@/lib/utils';
 
 const { Title, Paragraph, Text } = Typography;

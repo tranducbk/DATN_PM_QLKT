@@ -15,13 +15,13 @@ import {
   Input,
   Empty,
 } from 'antd';
-import { EditOutlined, HistoryOutlined, EyeOutlined, ReloadOutlined } from '@ant-design/icons';
+import { EditOutlined, HistoryOutlined, EyeOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
 import { PersonnelRewardHistoryModal } from './PersonnelRewardHistoryModal';
-import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { formatDate } from '@/lib/utils';
-import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
+import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
 import {
   PROPOSAL_STATUS_COLORS,
   getProposalStatusLabel,

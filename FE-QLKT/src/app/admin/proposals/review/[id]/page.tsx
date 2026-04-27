@@ -16,7 +16,6 @@ import {
   Input,
   Tag,
   App,
-  Select,
   ConfigProvider,
   theme as antdTheme,
   Popconfirm,
@@ -30,8 +29,6 @@ import {
   HomeOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
-  TrophyOutlined,
-  BookOutlined,
   LoadingOutlined,
   ArrowLeftOutlined,
   WarningOutlined,
@@ -42,7 +39,7 @@ import { EditableCell } from '@/components/EditableCell';
 import { DecisionModal } from '@/components/DecisionModal';
 import { formatDateTime } from '@/lib/utils';
 import { apiClient } from '@/lib/apiClient';
-import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
+import { downloadDecisionFile } from '@/lib/downloadDecisionFile';
 import { FileAttachmentList } from '@/components/proposals/FileAttachmentList';
 import { ProposalStatusTag } from '@/components/proposals/ProposalStatusTag';
 import { useTheme } from '@/components/ThemeProvider';
@@ -54,7 +51,6 @@ import {
 import { renderServiceTime } from '@/lib/serviceTimeHelpers';
 import {
   PROPOSAL_REVIEW_CARD_TITLES,
-  PROPOSAL_MONTH_OPTIONS,
   PROPOSAL_STATUS,
   PROPOSAL_TYPES,
   isProposalType,

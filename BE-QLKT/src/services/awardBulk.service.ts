@@ -30,9 +30,9 @@ import {
 } from './awardBulk/dispatchTables';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { AppError, NotFoundError, ValidationError } from '../middlewares/errorHandler';
-import { validateHCCSVVRankOrder } from '../helpers/hccsvvRankOrderValidation';
-import { validateHCBVTQRankUpgrade } from '../helpers/hcbvtqRankUpgradeValidation';
-import { validateHCBVTQHighestRank, type PositionMonthsByGroup } from '../helpers/hcbvtqHighestRankValidation';
+import { validateHCCSVVRankOrder } from '../helpers/awardValidation/tenureMedalRankOrder';
+import { validateHCBVTQRankUpgrade } from '../helpers/awardValidation/contributionMedalRankUpgrade';
+import { validateHCBVTQHighestRank, type PositionMonthsByGroup } from '../helpers/awardValidation/contributionMedalHighestRank';
 import { CONG_HIEN_HE_SO_GROUPS } from '../constants/danhHieu.constants';
 import {
   evaluateHCBVTQRank,

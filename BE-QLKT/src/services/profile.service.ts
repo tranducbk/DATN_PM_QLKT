@@ -10,11 +10,9 @@ import type {
 import { prisma } from '../models';
 import { ELIGIBILITY_STATUS } from '../constants/eligibilityStatus.constants';
 import { formatServiceDuration } from '../helpers/serviceYearsHelper';
-import positionHistoryService from './positionHistory.service';
-import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { NotFoundError } from '../middlewares/errorHandler';
-import { DANH_HIEU_HCCSVV, DANH_HIEU_HCBVTQ, DANH_HIEU_CA_NHAN_BANG_KHEN, DANH_HIEU_CA_NHAN_HANG_NAM, DANH_HIEU_CA_NHAN_CO_BAN, CONG_HIEN_BASE_REQUIRED_MONTHS, CONG_HIEN_FEMALE_REQUIRED_MONTHS, getDanhHieuName } from '../constants/danhHieu.constants';
+import { DANH_HIEU_HCCSVV, DANH_HIEU_HCBVTQ, DANH_HIEU_CA_NHAN_BANG_KHEN, DANH_HIEU_CA_NHAN_HANG_NAM, CONG_HIEN_BASE_REQUIRED_MONTHS, CONG_HIEN_FEMALE_REQUIRED_MONTHS, getDanhHieuName } from '../constants/danhHieu.constants';
 import { GENDER } from '../constants/gender.constants';
 import { PERSONAL_CHAIN_AWARDS, findChainAwardConfig } from '../constants/chainAwards.constants';
 import { checkChainEligibility, type EligibilityResult, type FlagsInWindow } from './eligibility/chainEligibility';
@@ -890,10 +888,6 @@ class ProfileService {
         throw new NotFoundError('Quân nhân');
       }
 
-      const existingProfile = await prisma.hoSoCongHien.findUnique({
-        where: { quan_nhan_id: personnelId },
-      });
-
       const personnelHCBVTQ = await prisma.khenThuongHCBVTQ.findMany({
         where: { quan_nhan_id: personnelId },
       });
@@ -953,8 +947,6 @@ class ProfileService {
       });
 
       if (existingCongHien) {
-        let updatedStatus = existingCongHien.danh_hieu;
-
         await prisma.khenThuongHCBVTQ.update({
           where: { id: existingCongHien.id },
           data: {

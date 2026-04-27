@@ -79,9 +79,7 @@ describe('Type confusion — numeric vs string nam/thang', () => {
 
     await proposalService.submitProposal(
       [{ personnel_id: target.id, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS }],
-      null,
-      null,
-      ADMIN_ID,
+      null,      ADMIN_ID,
       PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       '2024' as unknown as number,
       null,
@@ -115,9 +113,7 @@ describe('Type confusion — numeric vs string nam/thang', () => {
 
     await proposalService.submitProposal(
       [{ personnel_id: target.id, danh_hieu: PROPOSAL_TYPES.HC_QKQT }],
-      null,
-      null,
-      ADMIN_ID,
+      null,      ADMIN_ID,
       PROPOSAL_TYPES.HC_QKQT,
       2024,
       null,
@@ -146,9 +142,7 @@ describe('Type confusion — numeric vs string nam/thang', () => {
     await expectError(
       proposalService.submitProposal(
         [{ personnel_id: target.id, danh_hieu: PROPOSAL_TYPES.HC_QKQT }],
-        null,
-        null,
-        ADMIN_ID,
+        null,        ADMIN_ID,
         PROPOSAL_TYPES.HC_QKQT,
         2024,
         null,
@@ -174,9 +168,7 @@ describe('Type confusion — danh_hieu casing & duplicate detection', () => {
     await expectError(
       proposalService.submitProposal(
         [{ personnel_id: target.id, danh_hieu: 'cstdcs' }],
-        null,
-        null,
-        ADMIN_ID,
+        null,        ADMIN_ID,
         PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
         2024,
         null,
@@ -254,9 +246,7 @@ describe('Type confusion — whitespace & empty string', () => {
 
     await proposalService.submitProposal(
       [{ personnel_id: ' qn-1 ', danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS }],
-      null,
-      null,
-      ADMIN_ID,
+      null,      ADMIN_ID,
       PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       2024,
       null,
@@ -278,9 +268,7 @@ describe('Type confusion — whitespace & empty string', () => {
 
     await proposalService.submitProposal(
       [{ personnel_id: '', danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS }],
-      null,
-      null,
-      ADMIN_ID,
+      null,      ADMIN_ID,
       PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       2024,
       null,

@@ -2,7 +2,7 @@ import {
   getHighestQualifyingHCBVTQRank,
   validateHCBVTQHighestRank,
   type PositionMonthsByGroup,
-} from '../../src/helpers/hcbvtqHighestRankValidation';
+} from '../../src/helpers/awardValidation/contributionMedalHighestRank';
 import {
   CONG_HIEN_HE_SO_GROUPS,
   DANH_HIEU_HCBVTQ,

@@ -65,9 +65,7 @@ function arrangeProposalCreate(id = 'p-1') {
 function callSubmitDonVi(items: DonViItem[], userId = 'acc-mgr-1', nam = 2024) {
   return proposalService.submitProposal(
     items as unknown as Parameters<typeof proposalService.submitProposal>[0],
-    null,
-    null,
-    userId,
+    null,    userId,
     PROPOSAL_TYPES.DON_VI_HANG_NAM,
     nam,
     null,

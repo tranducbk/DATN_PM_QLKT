@@ -49,7 +49,7 @@ import { apiClient } from '@/lib/api';
 import type { NotificationItem } from '@/lib/api/notifications';
 import { formatDate } from '@/lib/utils';
 import type { UserRole } from '@/lib/types';
-import { FETCH_ALL_LIMIT } from '@/lib/constants/pagination.constants';
+import { FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
 import { ROLES, getRoleInfo } from '@/constants/roles.constants';
 import { getApiErrorMessage, logApiError } from '@/lib/apiError';
 

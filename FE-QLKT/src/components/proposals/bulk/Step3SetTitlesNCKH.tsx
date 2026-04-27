@@ -15,16 +15,15 @@ import {
   Empty,
   message,
 } from 'antd';
-import { EditOutlined, HistoryOutlined, EyeOutlined, ReloadOutlined } from '@ant-design/icons';
+import { EditOutlined, HistoryOutlined, EyeOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { formatDate } from '@/lib/utils';
 import { apiClient } from '@/lib/apiClient';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { ScientificAchievementHistoryModal } from './ScientificAchievementHistoryModal';
-import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
+import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
 import {
-  PROPOSAL_STATUS,
   PROPOSAL_STATUS_LABELS,
   PROPOSAL_STATUS_COLORS,
 } from '@/constants/proposal.constants';

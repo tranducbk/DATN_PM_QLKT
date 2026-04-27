@@ -37,7 +37,6 @@ class SystemLogsController {
       actorRole: actorRole as string,
       userRole: currentUser.role,
       quanNhanId: currentUser.quan_nhan_id,
-      userId: currentUser.id,
     });
 
     if (!result) {

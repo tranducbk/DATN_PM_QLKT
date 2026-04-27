@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import positionController from '../controllers/position.controller';
 import { verifyToken, requireAdmin, requireManager } from '../middlewares/auth';
-import { auditLog, createDescription, getResourceId } from '../middlewares/auditLog';
+import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
 import { validate } from '../middlewares/validate';
 import { positionValidation } from '../validations';

@@ -131,7 +131,6 @@ class UnitAnnualAwardController {
       nam: body.nam,
       danh_hieu: body.danh_hieu,
       so_quyet_dinh: body.so_quyet_dinh,
-      file_quyet_dinh: body.file_quyet_dinh,
       ghi_chu: body.ghi_chu,
       nguoi_tao_id: user?.id || body.nguoi_tao_id,
     });
@@ -163,7 +162,6 @@ class UnitAnnualAwardController {
     const body = req.body as ApproveBody;
     const data = await service.approve(params.id, {
       so_quyet_dinh: body.so_quyet_dinh,
-      file_quyet_dinh: body.file_quyet_dinh,
       nhan_bkbqp: body.nhan_bkbqp,
       so_quyet_dinh_bkbqp: body.so_quyet_dinh_bkbqp,
       file_quyet_dinh_bkbqp: body.file_quyet_dinh_bkbqp,
@@ -283,8 +281,6 @@ class UnitAnnualAwardController {
 
   getTemplate = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as GetTemplateQuery;
-    const user = req.user!;
-    const userRole = user.role;
     const rawIds = query.unit_ids ?? query.personnel_ids ?? '';
     let unitIds: string[] = [];
     if (rawIds) {
@@ -299,7 +295,7 @@ class UnitAnnualAwardController {
         Object.assign(repeatMap, JSON.parse(query.repeat_map));
       } catch (e) { console.error('Invalid repeat_map JSON:', e); }
     }
-    const workbook = await service.exportTemplate(unitIds, userRole, repeatMap);
+    const workbook = await service.exportTemplate(unitIds, repeatMap);
     res.setHeader(
       'Content-Type',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'

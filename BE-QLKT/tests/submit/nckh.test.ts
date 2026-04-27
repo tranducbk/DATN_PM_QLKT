@@ -41,9 +41,7 @@ function arrangeManager(unitKind: 'CQDV' | 'DVTT' = 'CQDV') {
 function callSubmit(items: NckhItem[], userId = 'acc-mgr-1', nam = 2024) {
   return proposalService.submitProposal(
     items,
-    null,
-    null,
-    userId,
+    null,    userId,
     PROPOSAL_TYPES.NCKH,
     nam,
     null,

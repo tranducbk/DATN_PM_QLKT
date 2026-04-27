@@ -31,11 +31,11 @@ import {
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { apiClient } from '@/lib/apiClient';
-import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/lib/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { calculateDuration, formatDate } from '@/lib/utils';
 import { useTheme } from '@/components/ThemeProvider';
 import { MedalProgressCard } from '@/components/personnel/MedalProgressCard';
-import { downloadDecisionFile } from '@/utils/downloadDecisionFile';
+import { downloadDecisionFile } from '@/lib/downloadDecisionFile';
 import { useAuth } from '@/contexts/AuthContext';
 import { PROPOSAL_STATUS, getProposalStatusLabel } from '@/constants/proposal.constants';
 import {

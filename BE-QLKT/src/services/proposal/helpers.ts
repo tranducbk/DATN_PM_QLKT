@@ -136,20 +136,11 @@ export function isSampleRow(text: string | null): boolean {
 }
 
 /**
- * Hook point for future structured logging; currently a deliberate no-op to keep import noise down.
- * @param sheet - Active worksheet instance
- * @param sheetName - Canonical name from SHEET_NAMES
- * @returns void
- */
-export function logSheetInfo(sheet: Worksheet, sheetName: string): void {}
-
-/**
  * Parses one DanhHieuHangNam row.
  * @param row - ExcelJS row payload
- * @param rowNumber - 1-based index (reserved for diagnostics)
  * @returns ParsedDanhHieu, or null when the row is invalid
  */
-export function parseDanhHieuRow(row: Row, rowNumber: number): ParsedDanhHieu | null {
+export function parseDanhHieuRow(row: Row): ParsedDanhHieu | null {
   const cccdCell = row.getCell(CELL_INDICES.CCCD);
   const hoTenCell = row.getCell(CELL_INDICES.HO_TEN);
   const namCell = row.getCell(CELL_INDICES.NAM);
@@ -197,11 +188,10 @@ export function parseDanhHieuRow(row: Row, rowNumber: number): ParsedDanhHieu | 
 /**
  * One `ThanhTichKhoaHoc` row with strict enums for `loai` / `status`.
  * @param row - `exceljs` row iterator payload
- * @param rowNumber - 1-based index (reserved for diagnostics)
  * @returns `ParsedThanhTich`, or `null` when mandatory cells are missing
  * @throws ValidationError - `loai` ∉ `VALID_NCKH` or `status` ∉ `VALID_STATUS`
  */
-export function parseThanhTichRow(row: Row, rowNumber: number): ParsedThanhTich | null {
+export function parseThanhTichRow(row: Row): ParsedThanhTich | null {
   const cccdCell = row.getCell(CELL_INDICES.CCCD);
   const hoTenCell = row.getCell(CELL_INDICES.HO_TEN);
   const namCell = row.getCell(CELL_INDICES.NAM);
@@ -255,14 +245,12 @@ export function parseThanhTichRow(row: Row, rowNumber: number): ParsedThanhTich 
  * @returns All rows that survived `parseDanhHieuRow`
  */
 export function parseDanhHieuSheet(sheet: Worksheet): ParsedDanhHieu[] {
-  logSheetInfo(sheet, SHEET_NAMES.DANH_HIEU_HANG_NAM);
-
   const danhHieuData: ParsedDanhHieu[] = [];
 
   sheet.eachRow((row, rowNumber) => {
     if (rowNumber <= 1) return;
 
-    const parsed = parseDanhHieuRow(row, rowNumber);
+    const parsed = parseDanhHieuRow(row);
 
     if (parsed) {
       danhHieuData.push(parsed);
@@ -278,14 +266,12 @@ export function parseDanhHieuSheet(sheet: Worksheet): ParsedDanhHieu[] {
  * @returns All rows that survived `parseThanhTichRow` (may throw on bad enums)
  */
 export function parseThanhTichSheet(sheet: Worksheet): ParsedThanhTich[] {
-  logSheetInfo(sheet, SHEET_NAMES.THANH_TICH_KHOA_HOC);
-
   const thanhTichData: ParsedThanhTich[] = [];
 
   sheet.eachRow((row, rowNumber) => {
     if (rowNumber <= 1) return;
 
-    const parsed = parseThanhTichRow(row, rowNumber);
+    const parsed = parseThanhTichRow(row);
 
     if (parsed) {
       thanhTichData.push(parsed);

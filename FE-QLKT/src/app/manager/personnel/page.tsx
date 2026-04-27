@@ -19,7 +19,7 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import {
   DEFAULT_PAGE_SIZE,
   DEFAULT_ANTD_TABLE_PAGINATION,
-} from '@/lib/constants/pagination.constants';
+} from '@/constants/pagination.constants';
 import { useTheme } from '@/components/ThemeProvider';
 import {
   SyncOutlined,
@@ -34,7 +34,7 @@ import { PersonnelForm } from '@/components/personnel/PersonnelForm';
 import { apiClient } from '@/lib/apiClient';
 import { personnelFormSchema } from '@/lib/schemas';
 import type { z } from 'zod';
-import { MILITARY_RANKS } from '@/lib/constants/military-ranks';
+import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import type {

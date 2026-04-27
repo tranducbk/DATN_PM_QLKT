@@ -64,7 +64,6 @@ interface GetLogsParams {
   actorRole?: string;
   userRole: string;
   quanNhanId?: string;
-  userId: string;
 }
 
 class SystemLogsService {
@@ -74,7 +73,7 @@ class SystemLogsService {
    * @returns Logs, total count, and action stats
    */
   async getLogs(params: GetLogsParams) {
-    const { page, limit, search, action, resource, startDate, endDate, actorRole, userRole, quanNhanId, userId } = params;
+    const { page, limit, search, action, resource, startDate, endDate, actorRole, userRole, quanNhanId } = params;
 
     const visibleRoles = VISIBLE_ROLES[userRole];
     if (!visibleRoles) return null;

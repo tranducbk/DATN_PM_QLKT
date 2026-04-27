@@ -13,7 +13,7 @@ import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { GENDER } from '../constants/gender.constants';
 import { calculateTenureMonthsWithDayPrecision } from '../helpers/serviceYearsHelper';
-import { validateHCBVTQHighestRank, type PositionMonthsByGroup } from '../helpers/hcbvtqHighestRankValidation';
+import { validateHCBVTQHighestRank, type PositionMonthsByGroup } from '../helpers/awardValidation/contributionMedalHighestRank';
 import { CONG_HIEN_HE_SO_GROUPS } from '../constants/danhHieu.constants';
 import {
   AWARD_EXCEL_SHEETS,

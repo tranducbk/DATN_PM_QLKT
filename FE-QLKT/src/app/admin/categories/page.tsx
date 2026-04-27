@@ -12,7 +12,6 @@ import {
   message,
   ConfigProvider,
   theme as antdTheme,
-  Space,
   Spin,
 } from 'antd';
 import { PlusOutlined, HomeOutlined } from '@ant-design/icons';

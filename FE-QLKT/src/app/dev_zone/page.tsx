@@ -28,7 +28,7 @@ import {
 } from '@ant-design/icons';
 import Image from 'next/image';
 import { isAxiosError } from 'axios';
-import axiosInstance from '@/utils/axiosInstance';
+import axiosInstance from '@/lib/axiosInstance';
 import { getApiErrorMessage } from '@/lib/apiError';
 import {
   DEV_ZONE_API,

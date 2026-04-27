@@ -5,7 +5,6 @@ import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excelImportHel
 
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import * as notificationHelper from '../helpers/notification';
-import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { ValidationError, NotFoundError } from '../middlewares/errorHandler';
 import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys, sanitizeRowData, validatePersonnelNameMatch } from '../helpers/excelHelper';

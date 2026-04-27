@@ -76,7 +76,7 @@ function callSubmitCaNhan(
   thang: number | null = null,
   type = PROPOSAL_TYPES.CA_NHAN_HANG_NAM
 ) {
-  return proposalService.submitProposal(items, null, null, ADMIN_ID, type, nam, null, thang);
+  return proposalService.submitProposal(items, null, ADMIN_ID, type, nam, null, thang);
 }
 
 describe('Bypass FE — payload shape attacks', () => {
@@ -88,9 +88,7 @@ describe('Bypass FE — payload shape attacks', () => {
     await expectError(
       proposalService.submitProposal(
         null as unknown as CaNhanItem[],
-        null,
-        null,
-        ADMIN_ID,
+        null,        ADMIN_ID,
         PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
         2024,
         null,
@@ -109,9 +107,7 @@ describe('Bypass FE — payload shape attacks', () => {
     await expectError(
       proposalService.submitProposal(
         'not-an-array' as unknown as CaNhanItem[],
-        null,
-        null,
-        ADMIN_ID,
+        null,        ADMIN_ID,
         PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
         2024,
         null,
@@ -136,9 +132,7 @@ describe('Bypass FE — payload shape attacks', () => {
     await expectError(
       proposalService.submitProposal(
         [{ personnel_id: 'qn-1', danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS }],
-        null,
-        null,
-        'acc-orphan',
+        null,        'acc-orphan',
         PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
         2024,
         null,
@@ -215,9 +209,7 @@ describe('Bypass FE — year and month boundary attacks', () => {
     await expectError(
       proposalService.submitProposal(
         [{ personnel_id: target.id, danh_hieu: PROPOSAL_TYPES.HC_QKQT }],
-        null,
-        null,
-        ADMIN_ID,
+        null,        ADMIN_ID,
         PROPOSAL_TYPES.HC_QKQT,
         2024,
         null,
@@ -243,9 +235,7 @@ describe('Bypass FE — year and month boundary attacks', () => {
     await expectError(
       proposalService.submitProposal(
         [{ personnel_id: target.id, danh_hieu: PROPOSAL_TYPES.HC_QKQT }],
-        null,
-        null,
-        ADMIN_ID,
+        null,        ADMIN_ID,
         PROPOSAL_TYPES.HC_QKQT,
         2024,
         null,

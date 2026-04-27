@@ -317,7 +317,6 @@ class UnitAnnualAwardService {
     id,
     {
       so_quyet_dinh,
-      file_quyet_dinh,
       nhan_bkbqp,
       so_quyet_dinh_bkbqp,
       file_quyet_dinh_bkbqp,
@@ -526,7 +525,6 @@ class UnitAnnualAwardService {
     nam,
     danh_hieu,
     so_quyet_dinh,
-    file_quyet_dinh,
     ghi_chu,
     nguoi_tao_id,
   }: {
@@ -534,7 +532,6 @@ class UnitAnnualAwardService {
     nam: number | string;
     danh_hieu?: string | null;
     so_quyet_dinh?: string | null;
-    file_quyet_dinh?: string | null;
     ghi_chu?: string | null;
     nguoi_tao_id: string;
   }) {
@@ -817,7 +814,7 @@ class UnitAnnualAwardService {
     const { isCoQuanDonVi } = await resolveUnit(donViId);
     const targetYear = year || new Date().getFullYear();
 
-    const [danhHieuList, dvqtResult, dvqtLienTuc, bkbqpLienTuc] = await Promise.all([
+    const [danhHieuList, dvqtResult, dvqtLienTuc] = await Promise.all([
       prisma.danhHieuDonViHangNam.findMany({
         where: {
           OR: [{ co_quan_don_vi_id: donViId }, { don_vi_truc_thuoc_id: donViId }],
@@ -828,7 +825,6 @@ class UnitAnnualAwardService {
       }),
       this.calculateTotalDVQT(donViId, targetYear),
       this.calculateContinuousYears(donViId, targetYear),
-      Promise.resolve(0), // placeholder — bkbqp calculated after dvqt streak
     ]);
 
     // Recalculate BKBQP within ĐVQT streak
@@ -839,9 +835,6 @@ class UnitAnnualAwardService {
     // BKTTCP: đúng 7 năm ĐVQT + 3 BKBQP (chỉ lần 1)
     const du_dieu_kien_bk_thu_tuong =
       dvqtLienTuc === 7 && bkbqpInStreak === 3;
-
-    const currentYearAward = danhHieuList.find(dh => dh.nam === targetYear);
-    const hasDecision = !!currentYearAward?.so_quyet_dinh;
 
     const hasReceivedBKTTCP = danhHieuList.some(dh => dh.nhan_bkttcp === true);
     const goi_y = this.buildSuggestion(dvqtLienTuc, du_dieu_kien_bk_tong_cuc, du_dieu_kien_bk_thu_tuong, hasReceivedBKTTCP);
@@ -1474,7 +1467,6 @@ class UnitAnnualAwardService {
 
   async exportTemplate(
     unitIds: string[] = [],
-    userRole: string = ROLES.MANAGER,
     repeatMap: Record<string, number> = {}
   ) {
     const workbook = new ExcelJS.Workbook();
@@ -1647,7 +1639,6 @@ class UnitAnnualAwardService {
     const headerMap = parseHeaderMap(worksheet);
 
     const maDonViCol = getHeaderCol(headerMap, ['ma_don_vi', 'ma_donvi', 'ma', 'madonvi']);
-    const tenDonViCol = getHeaderCol(headerMap, ['ten_don_vi', 'ten_donvi', 'ten', 'tendovi']);
     const namCol = getHeaderCol(headerMap, ['nam', 'year', 'năm']);
     const danhHieuCol = getHeaderCol(headerMap, ['danh_hieu', 'danhhieu', 'danh_hiu', 'danhieu']);
     const soQuyetDinhCol = getHeaderCol(headerMap, [

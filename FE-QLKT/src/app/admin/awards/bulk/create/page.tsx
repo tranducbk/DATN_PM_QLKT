@@ -21,7 +21,6 @@ import {
 import { getApiErrorMessage } from '@/lib/apiError';
 
 import {
-  DownloadOutlined,
   HomeOutlined,
   TrophyOutlined,
   TeamOutlined,
@@ -47,7 +46,7 @@ import { Step3SetTitles } from '@/components/proposals/bulk/Step3SetTitles';
 import { DecisionModal } from '@/components/DecisionModal';
 import type { DateInput } from '@/lib/types';
 import type { ContributionProfile, UnitApiRow } from '@/lib/types/personnelList';
-import type { TitleDataItem, DecisionDataMap, DecisionRef } from '@/lib/types/proposal';
+import type { TitleDataItem, DecisionDataMap } from '@/lib/types/proposal';
 import {
   renderServiceTime,
   makeContributionColumns,

@@ -17,7 +17,6 @@ import { getProposalStrategy } from './strategies';
  * Creates a reward proposal with optional attachments.
  * @param titleData - Proposal title/achievement payload from the frontend
  * @param attachedFiles - Uploaded attachment files (if any)
- * @param soQuyetDinh - Original decision number
  * @param userId - Manager account id
  * @param type - Proposal type
  * @param nam - Proposal year
@@ -47,7 +46,6 @@ export interface SubmitAttachedFile {
 async function submitProposal(
   titleData: SubmitTitleDataItem[],
   attachedFiles: SubmitAttachedFile[] | null,
-  soQuyetDinh: string | null,
   userId: string,
   type: ProposalType = PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
   nam: number,

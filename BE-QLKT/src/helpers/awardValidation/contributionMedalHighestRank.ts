@@ -3,7 +3,7 @@ import {
   DANH_HIEU_HCBVTQ,
   getDanhHieuName,
   type CongHienHeSoGroup,
-} from '../constants/danhHieu.constants';
+} from '../../constants/danhHieu.constants';
 
 export type PositionMonthsByGroup = Record<CongHienHeSoGroup, number>;
 

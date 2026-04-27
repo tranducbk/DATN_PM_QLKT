@@ -1,7 +1,7 @@
-import axiosInstance from '@/utils/axiosInstance';
+import axiosInstance from '@/lib/axiosInstance';
 import { getApiErrorMessage } from '@/lib/apiError';
 import type { ApiResponse } from '@/lib/types';
-import { FETCH_ALL_LIMIT } from '@/lib/constants/pagination.constants';
+import { FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
 
 export async function getUnitAnnualAwards(params?: {
   page?: number;

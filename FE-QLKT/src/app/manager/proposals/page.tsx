@@ -20,7 +20,7 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import {
   DEFAULT_PAGE_SIZE,
   DEFAULT_ANTD_TABLE_PAGINATION,
-} from '@/lib/constants/pagination.constants';
+} from '@/constants/pagination.constants';
 import { formatDateTime } from '@/lib/utils';
 
 import { HomeOutlined, EyeOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons';
