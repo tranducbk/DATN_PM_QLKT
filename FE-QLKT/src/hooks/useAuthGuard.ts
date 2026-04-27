@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import type { UserRole } from '@/lib/types';
+import type { UserRole } from '@/lib/types/common';
 
 /**
  * Redirect map cho từng role

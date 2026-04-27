@@ -37,7 +37,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useState, useEffect } from 'react';
 import { apiClient } from '@/lib/apiClient';
-import { calculateServiceMonthsWithToday } from '@/lib/serviceTimeHelpers';
+import { calculateServiceMonthsWithToday } from '@/lib/award/serviceTimeHelpers';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { useTheme } from '@/components/ThemeProvider';
 import { StatCard } from '@/components/dashboard/StatCard';

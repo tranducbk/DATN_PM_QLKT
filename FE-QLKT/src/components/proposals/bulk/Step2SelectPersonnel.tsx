@@ -8,7 +8,7 @@ import { apiClient } from '@/lib/apiClient';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
 import { formatDate } from '@/lib/utils';
-import type { DateInput } from '@/lib/types';
+import type { DateInput } from '@/lib/types/common';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 
 const { Text } = Typography;

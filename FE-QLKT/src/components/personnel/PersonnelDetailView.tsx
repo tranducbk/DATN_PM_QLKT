@@ -36,7 +36,7 @@ import { MedalProgressCard } from '@/components/personnel/MedalProgressCard';
 import { getAntdThemeConfig } from '@/lib/antdTheme';
 import { apiClient } from '@/lib/apiClient';
 import { formatDate } from '@/lib/utils';
-import { getReceivedMonthYearText } from '@/lib/medalDisplay';
+import { getReceivedMonthYearText } from '@/lib/award/medalDisplay';
 import styles from './personnel-detail.module.css';
 import { ROLES, getRoleInfo } from '@/constants/roles.constants';
 import type {

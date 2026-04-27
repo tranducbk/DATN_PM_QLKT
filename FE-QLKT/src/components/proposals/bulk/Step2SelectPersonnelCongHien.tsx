@@ -29,7 +29,7 @@ import {
   getContributionRequiredMonths,
   getHighestEligibleContributionAward,
   getReferenceEndDate,
-} from '@/lib/contributionTimeHelper';
+} from '@/lib/award/contributionTimeHelper';
 import { DANH_HIEU_SHORT_MAP } from '@/constants/danhHieu.constants';
 import * as XLSX from 'xlsx';
 

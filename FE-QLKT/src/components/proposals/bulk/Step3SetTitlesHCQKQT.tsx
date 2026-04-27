@@ -8,7 +8,7 @@ import { apiClient } from '@/lib/api';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { formatDate } from '@/lib/utils';
-import type { DateInput } from '@/lib/types';
+import type { DateInput } from '@/lib/types/common';
 import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
 
 const { Text } = Typography;

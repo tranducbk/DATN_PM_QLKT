@@ -1,4 +1,4 @@
-import type { DateInput } from '@/lib/types';
+import type { DateInput } from '@/lib/types/common';
 
 /** Personnel record shape used by Step2 personnel-selection components. */
 export interface Step2Personnel {

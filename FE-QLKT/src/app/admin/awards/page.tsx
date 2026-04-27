@@ -21,7 +21,7 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import type { TableColumnsType } from 'antd';
 import { DownloadOutlined, FilterOutlined, HomeOutlined, DeleteOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/apiClient';
-import { downloadDecisionFile } from '@/lib/downloadDecisionFile';
+import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import {
   DANH_HIEU_MAP,
   COLUMN_STYLES,
@@ -31,7 +31,7 @@ import {
   collectPersonalAwards,
   collectUnitAwards,
   renderAwardDeleteButtons,
-} from '@/lib/awardsHelper';
+} from '@/lib/award/awardsHelper';
 import { AWARD_TAB_DANH_HIEU, type AwardType } from '@/constants/danhHieu.constants';
 
 import { ExportModal } from './ExportModal';

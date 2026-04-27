@@ -12,7 +12,7 @@ import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 import { HCCSVV_YEARS_HANG_BA, HCCSVV_YEARS_HANG_NHI, HCCSVV_YEARS_HANG_NHAT } from '@/constants/danhHieu.constants';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { formatDate } from '@/lib/utils';
-import type { DateInput } from '@/lib/types';
+import type { DateInput } from '@/lib/types/common';
 import type { ServiceProfile } from '@/lib/types/personnelList';
 
 const { Text } = Typography;

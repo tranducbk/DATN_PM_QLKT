@@ -1,6 +1,6 @@
 import { Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import type { DateInput } from '@/lib/types';
+import type { DateInput } from '@/lib/types/common';
 import type { ContributionProfile } from '@/lib/types/personnelList';
 import { apiClient } from '@/lib/apiClient';
 

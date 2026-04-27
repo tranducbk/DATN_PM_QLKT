@@ -35,7 +35,7 @@ import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants'
 import { calculateDuration, formatDate } from '@/lib/utils';
 import { useTheme } from '@/components/ThemeProvider';
 import { MedalProgressCard } from '@/components/personnel/MedalProgressCard';
-import { downloadDecisionFile } from '@/lib/downloadDecisionFile';
+import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { useAuth } from '@/contexts/AuthContext';
 import { PROPOSAL_STATUS, getProposalStatusLabel } from '@/constants/proposal.constants';
 import {
@@ -55,7 +55,7 @@ import {
   KNC_YEARS_REQUIRED_NAM,
   KNC_YEARS_REQUIRED_NU,
 } from '@/constants/danhHieu.constants';
-import { getReceivedMonthYearText } from '@/lib/medalDisplay';
+import { getReceivedMonthYearText } from '@/lib/award/medalDisplay';
 
 const { Title, Text } = Typography;
 

@@ -1,6 +1,6 @@
 import axiosInstance from '@/lib/axiosInstance';
 import { getApiErrorMessage } from '@/lib/apiError';
-import type { ApiResponse } from '@/lib/types';
+import type { ApiResponse } from '@/lib/types/common';
 
 /** Position-history mutation response with optional backend warning metadata. */
 export type PositionHistoryWarning = {

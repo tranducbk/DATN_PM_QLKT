@@ -31,8 +31,8 @@ import {
 } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
 import { apiClient } from '@/lib/apiClient';
-import { downloadDecisionFile } from '@/lib/downloadDecisionFile';
-import { previewFileWithApi } from '@/lib/filePreview';
+import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
+import { previewFileWithApi } from '@/lib/file/filePreview';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 
 const { Title, Text } = Typography;

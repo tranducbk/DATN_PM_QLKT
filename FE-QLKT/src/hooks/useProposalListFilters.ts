@@ -1,10 +1,10 @@
 import { useCallback, useMemo, useState } from 'react';
-import type { ProposalListFilterRow } from '@/lib/proposalListFilters';
+import type { ProposalListFilterRow } from '@/lib/proposal/proposalListFilters';
 import {
   getProposalListAvailableTypes,
   getProposalListAvailableYears,
   proposalMatchesTabAndFilters,
-} from '@/lib/proposalListFilters';
+} from '@/lib/proposal/proposalListFilters';
 
 /**
  * Shared tab + year/type filter state for proposal list pages (manager + admin review).

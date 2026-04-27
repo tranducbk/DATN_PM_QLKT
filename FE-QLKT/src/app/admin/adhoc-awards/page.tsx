@@ -31,7 +31,7 @@ import {
 import type { TableColumnsType } from 'antd';
 import { apiClient } from '@/lib/apiClient';
 import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
-import { downloadDecisionFile } from '@/lib/downloadDecisionFile';
+import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { CreateAdhocAwardModal } from '@/components/adhoc-awards/CreateAdhocAwardModal';
 import { EditAdhocAwardModal } from '@/components/adhoc-awards/EditAdhocAwardModal';
 import { DetailAdhocAwardModal } from '@/components/adhoc-awards/DetailAdhocAwardModal';

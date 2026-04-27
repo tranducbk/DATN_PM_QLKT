@@ -29,7 +29,7 @@ import {
 import { formatDateTime } from '@/lib/utils';
 import Link from 'next/link';
 import { apiClient } from '@/lib/apiClient';
-import { downloadDecisionFile } from '@/lib/downloadDecisionFile';
+import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { FileAttachmentList } from '@/components/proposals/FileAttachmentList';
 import { useTheme } from '@/components/ThemeProvider';
 import { getAntdTableThemeConfig } from '@/lib/antdTheme';

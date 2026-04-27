@@ -3,7 +3,7 @@
 import { Modal, Button, Descriptions, Tabs, Table, Tag, Typography, message } from 'antd';
 import { HistoryOutlined, DownloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { previewFileWithApi } from '@/lib/filePreview';
+import { previewFileWithApi } from '@/lib/file/filePreview';
 
 const { Text } = Typography;
 

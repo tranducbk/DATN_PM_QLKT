@@ -20,10 +20,10 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import { LeftOutlined, HomeOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/apiClient';
-import { downloadDecisionFile } from '@/lib/downloadDecisionFile';
+import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { useTheme } from '@/components/ThemeProvider';
 import type { PersonnelDetail } from '@/lib/types/personnelList';
-import { renderAnnualAwards } from '@/lib/awardsHelper';
+import { renderAnnualAwards } from '@/lib/award/awardsHelper';
 
 
 const { Title, Paragraph } = Typography;

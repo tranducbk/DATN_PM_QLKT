@@ -44,14 +44,14 @@ import { Step2SelectPersonnelNCKH } from '@/components/proposals/bulk/Step2Selec
 import { Step2SelectUnits } from '@/components/proposals/bulk/Step2SelectUnits';
 import { Step3SetTitles } from '@/components/proposals/bulk/Step3SetTitles';
 import { DecisionModal } from '@/components/DecisionModal';
-import type { DateInput } from '@/lib/types';
+import type { DateInput } from '@/lib/types/common';
 import type { ContributionProfile, UnitApiRow } from '@/lib/types/personnelList';
 import type { TitleDataItem, DecisionDataMap } from '@/lib/types/proposal';
 import {
   renderServiceTime,
   makeContributionColumns,
   fetchContributionProfiles,
-} from '@/lib/serviceTimeHelpers';
+} from '@/lib/award/serviceTimeHelpers';
 
 const { Title, Paragraph, Text } = Typography;
 

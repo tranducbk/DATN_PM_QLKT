@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { ROLES } from '@/constants/roles.constants';
-import { USER_ROLE_VALUES } from './types';
+import { USER_ROLE_VALUES } from './types/common';
 
 const userRoleEnum = z.enum(USER_ROLE_VALUES);
 

@@ -6,7 +6,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { DownloadOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/apiClient';
 import { getApiErrorMessage } from '@/lib/apiError';
-import { DANH_HIEU_MAP } from '@/lib/awardsHelper';
+import { DANH_HIEU_MAP } from '@/lib/award/awardsHelper';
 import {
   AWARD_TAB_LABELS,
   AWARD_TAB_DANH_HIEU,

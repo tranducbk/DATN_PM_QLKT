@@ -48,7 +48,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api';
 import type { NotificationItem } from '@/lib/api/notifications';
 import { formatDate } from '@/lib/utils';
-import type { UserRole } from '@/lib/types';
+import type { UserRole } from '@/lib/types/common';
 import { FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
 import { ROLES, getRoleInfo } from '@/constants/roles.constants';
 import { getApiErrorMessage, logApiError } from '@/lib/apiError';

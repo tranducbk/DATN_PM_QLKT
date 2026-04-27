@@ -35,7 +35,7 @@ import {
 import { ProposalListFilterBar } from '@/components/proposals/ProposalListFilterBar';
 import { ProposalStatusTag } from '@/components/proposals/ProposalStatusTag';
 import { useProposalListFilters } from '@/hooks/useProposalListFilters';
-import { buildProposalListTabItems } from '@/lib/proposalListTabs';
+import { buildProposalListTabItems } from '@/lib/proposal/proposalListTabs';
 
 const { Title, Text } = Typography;
 

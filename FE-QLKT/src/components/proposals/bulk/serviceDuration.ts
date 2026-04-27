@@ -1,4 +1,4 @@
-import type { DateInput } from '@/lib/types';
+import type { DateInput } from '@/lib/types/common';
 
 export interface ServiceDuration {
   years: number;

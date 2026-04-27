@@ -18,8 +18,8 @@ import {
   UserOutlined,
   TeamOutlined,
 } from '@ant-design/icons';
-import { downloadDecisionFile } from '@/lib/downloadDecisionFile';
-import { previewFileWithApi } from '@/lib/filePreview';
+import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
+import { previewFileWithApi } from '@/lib/file/filePreview';
 import type { AdhocAward, FileInfo } from './types';
 
 const { Text } = Typography;

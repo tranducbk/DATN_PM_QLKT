@@ -11,8 +11,8 @@ import {
   PROPOSAL_STATUS,
   PROPOSAL_STATUS_LABELS,
 } from '@/constants/proposal.constants';
-import type { ProposalListFilterRow } from '@/lib/proposalListFilters';
-import { countProposalsByStatus } from '@/lib/proposalListFilters';
+import type { ProposalListFilterRow } from '@/lib/proposal/proposalListFilters';
+import { countProposalsByStatus } from '@/lib/proposal/proposalListFilters';
 
 export type ProposalListTabsVariant = 'manager' | 'adminReview';
 

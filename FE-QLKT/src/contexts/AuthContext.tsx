@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
-import type { UserRole } from '@/lib/types';
+import type { UserRole } from '@/lib/types/common';
 
 interface AuthUser {
   id: string;

@@ -39,7 +39,7 @@ import { EditableCell } from '@/components/EditableCell';
 import { DecisionModal } from '@/components/DecisionModal';
 import { formatDateTime } from '@/lib/utils';
 import { apiClient } from '@/lib/apiClient';
-import { downloadDecisionFile } from '@/lib/downloadDecisionFile';
+import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { FileAttachmentList } from '@/components/proposals/FileAttachmentList';
 import { ProposalStatusTag } from '@/components/proposals/ProposalStatusTag';
 import { useTheme } from '@/components/ThemeProvider';
@@ -48,7 +48,7 @@ import {
   type CongHienHeSoGroup,
   getDanhHieuName,
 } from '@/constants/danhHieu.constants';
-import { renderServiceTime } from '@/lib/serviceTimeHelpers';
+import { renderServiceTime } from '@/lib/award/serviceTimeHelpers';
 import {
   PROPOSAL_REVIEW_CARD_TITLES,
   PROPOSAL_STATUS,

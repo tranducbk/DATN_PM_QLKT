@@ -24,8 +24,8 @@ import {
   renderDecision,
   renderAnnualAwards,
   getLoaiKhenThuong,
-} from '@/lib/awardsHelper';
-import { downloadDecisionFile } from '@/lib/downloadDecisionFile';
+} from '@/lib/award/awardsHelper';
+import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { formatDate } from '@/lib/utils';
 import type { AwardType } from '@/constants/danhHieu.constants';
 import {

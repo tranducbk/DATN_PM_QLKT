@@ -16,7 +16,7 @@ import {
   getContributionRequiredMonths,
   getHighestEligibleContributionAward,
   getReferenceEndDate,
-} from '@/lib/contributionTimeHelper';
+} from '@/lib/award/contributionTimeHelper';
 
 const { Text } = Typography;
 

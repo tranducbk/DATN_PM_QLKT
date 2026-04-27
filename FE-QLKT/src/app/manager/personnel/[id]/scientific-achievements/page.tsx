@@ -7,7 +7,7 @@ import { Card, Button, Table, Modal, Space, Typography, Breadcrumb, message, Spi
 import type { ColumnsType } from 'antd/es/table';
 import { LeftOutlined, HomeOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/apiClient';
-import { downloadDecisionFile } from '@/lib/downloadDecisionFile';
+import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import type { PersonnelDetail } from '@/lib/types/personnelList';
 
 

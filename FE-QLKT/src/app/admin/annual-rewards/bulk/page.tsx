@@ -18,7 +18,7 @@ import {
   Upload,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import type { DateInput } from '@/lib/types';
+import type { DateInput } from '@/lib/types/common';
 import type { UploadFile } from 'antd/es/upload/interface';
 import {
   ArrowLeftOutlined,

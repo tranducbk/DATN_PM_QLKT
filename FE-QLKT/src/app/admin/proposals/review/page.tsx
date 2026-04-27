@@ -29,7 +29,7 @@ import { PROPOSAL_STATUS, PROPOSAL_TYPES, getProposalTypeLabel } from '@/constan
 import { ProposalListFilterBar } from '@/components/proposals/ProposalListFilterBar';
 import { ProposalStatusTag } from '@/components/proposals/ProposalStatusTag';
 import { useProposalListFilters } from '@/hooks/useProposalListFilters';
-import { buildProposalListTabItems } from '@/lib/proposalListTabs';
+import { buildProposalListTabItems } from '@/lib/proposal/proposalListTabs';
 
 const { Title, Paragraph } = Typography;
 

@@ -33,7 +33,7 @@ import {
 import Link from 'next/link';
 import type { UploadFile } from 'antd/es/upload/interface';
 import type { ColumnsType } from 'antd/es/table';
-import type { DateInput } from '@/lib/types';
+import type { DateInput } from '@/lib/types/common';
 import { apiClient } from '@/lib/apiClient';
 import { getDanhHieuName, HCQKQT_YEARS_REQUIRED } from '@/constants/danhHieu.constants';
 import type { UnitApiRow, ContributionProfile } from '@/lib/types/personnelList';
@@ -59,7 +59,7 @@ import {
   renderServiceTime,
   makeContributionColumns,
   fetchContributionProfiles,
-} from '@/lib/serviceTimeHelpers';
+} from '@/lib/award/serviceTimeHelpers';
 
 const { Title, Paragraph, Text } = Typography;
 
