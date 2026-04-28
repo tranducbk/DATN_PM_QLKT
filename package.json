@@ -1,0 +1,27 @@
+{
+  "name": "pm-qlkt",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PM QLKT - root orchestrator for BE-QLKT + FE-QLKT",
+  "scripts": {
+    "install:be": "cd BE-QLKT && npm install",
+    "install:fe": "cd FE-QLKT && npm install",
+    "install:all": "npm run install:be && npm run install:fe",
+    "build:be": "cd BE-QLKT && npm run build",
+    "build:fe": "cd FE-QLKT && npm run build",
+    "build": "npm run build:be && npm run build:fe",
+    "start": "pm2 start ecosystem.config.js",
+    "stop": "pm2 stop ecosystem.config.js",
+    "restart": "pm2 restart ecosystem.config.js",
+    "reload": "pm2 reload ecosystem.config.js",
+    "delete": "pm2 delete ecosystem.config.js",
+    "logs": "pm2 logs",
+    "status": "pm2 list",
+    "deploy": "npm run build && npm run restart",
+    "typecheck": "cd BE-QLKT && npm run typecheck && cd ../FE-QLKT && npm run typecheck",
+    "test": "cd BE-QLKT && npx jest"
+  },
+  "devDependencies": {
+    "pm2": "^5.4.0"
+  }
+}
