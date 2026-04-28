@@ -34,29 +34,56 @@ const BACKUP_DIR = path.join(process.cwd(), 'backups');
 const FILENAME_PATTERN = /^backup_\d{8}_\d{6}_(manual|scheduled)\.sql$/;
 const DEFAULT_RETENTION_DAYS = 15;
 
+const TABLES = {
+  CoQuanDonVi: 'CoQuanDonVi',
+  DonViTrucThuoc: 'DonViTrucThuoc',
+  ChucVu: 'ChucVu',
+  QuanNhan: 'QuanNhan',
+  TaiKhoan: 'TaiKhoan',
+  LichSuChucVu: 'LichSuChucVu',
+  ThanhTichKhoaHoc: 'ThanhTichKhoaHoc',
+  DanhHieuHangNam: 'DanhHieuHangNam',
+  KhenThuongHCBVTQ: 'KhenThuongHCBVTQ',
+  KhenThuongHCCSVV: 'KhenThuongHCCSVV',
+  KhenThuongDotXuat: 'KhenThuongDotXuat',
+  HuanChuongQuanKyQuyetThang: 'HuanChuongQuanKyQuyetThang',
+  KyNiemChuongVSNXDQDNDVN: 'KyNiemChuongVSNXDQDNDVN',
+  HoSoNienHan: 'HoSoNienHan',
+  HoSoCongHien: 'HoSoCongHien',
+  HoSoHangNam: 'HoSoHangNam',
+  BangDeXuat: 'BangDeXuat',
+  DanhHieuDonViHangNam: 'DanhHieuDonViHangNam',
+  HoSoDonViHangNam: 'HoSoDonViHangNam',
+  FileQuyetDinh: 'FileQuyetDinh',
+  SystemSetting: 'SystemSetting',
+} as const;
+
+// PostgreSQL preserves identifier case only when quoted
+const quoteTable = (name: string): string => `"${name}"`;
+
 const TRUNCATE_ORDER = [
-  'file_quyet_dinh',
-  'bang_de_xuat',
-  'ho_so_don_vi_hang_nam',
-  'danh_hieu_don_vi_hang_nam',
-  'ho_so_hang_nam',
-  'ho_so_cong_hien',
-  'ho_so_nien_han',
-  'ky_niem_chuong_vsnxd_qdndvn',
-  'huan_chuong_quan_ky_quyet_thang',
-  'khen_thuong_dot_xuat',
-  'khen_thuong_hccsvv',
-  'khen_thuong_hcbvtq',
-  'danh_hieu_hang_nam',
-  'thanh_tich_khoa_hoc',
-  'lich_su_chuc_vu',
-  'tai_khoan',
-  'quan_nhan',
-  'chuc_vu',
-  'don_vi_truc_thuoc',
-  'co_quan_don_vi',
-  'system_settings',
-];
+  TABLES.FileQuyetDinh,
+  TABLES.BangDeXuat,
+  TABLES.HoSoDonViHangNam,
+  TABLES.DanhHieuDonViHangNam,
+  TABLES.HoSoHangNam,
+  TABLES.HoSoCongHien,
+  TABLES.HoSoNienHan,
+  TABLES.KyNiemChuongVSNXDQDNDVN,
+  TABLES.HuanChuongQuanKyQuyetThang,
+  TABLES.KhenThuongDotXuat,
+  TABLES.KhenThuongHCCSVV,
+  TABLES.KhenThuongHCBVTQ,
+  TABLES.DanhHieuHangNam,
+  TABLES.ThanhTichKhoaHoc,
+  TABLES.LichSuChucVu,
+  TABLES.TaiKhoan,
+  TABLES.QuanNhan,
+  TABLES.ChucVu,
+  TABLES.DonViTrucThuoc,
+  TABLES.CoQuanDonVi,
+  TABLES.SystemSetting,
+].map(quoteTable);
 
 const validFilename = (filename: string): boolean => FILENAME_PATTERN.test(filename);
 
@@ -76,11 +103,12 @@ const formatValue = (value: unknown): string => {
 };
 
 const buildInsertBlock = (table: string, records: Record<string, unknown>[]): string => {
-  if (records.length === 0) return `-- ${table}: 0 records\n`;
+  const quotedTable = quoteTable(table);
+  if (records.length === 0) return `-- ${quotedTable}: 0 records\n`;
   const cols = Object.keys(records[0]);
   const quotedCols = cols.map(quoteCol).join(', ');
   const valueRows = records.map(r => `  (${cols.map(c => formatValue(r[c])).join(', ')})`);
-  return `-- ${table} (${records.length} records)\nINSERT INTO ${table} (${quotedCols}) VALUES\n${valueRows.join(',\n')};\n`;
+  return `-- ${quotedTable} (${records.length} records)\nINSERT INTO ${quotedTable} (${quotedCols}) VALUES\n${valueRows.join(',\n')};\n`;
 };
 
 const buildTimestamp = (date: Date): string =>
@@ -187,40 +215,40 @@ class BackupService {
       `-- Type:       ${options.type}`,
       `-- Triggered:  ${options.triggeredBy}`,
       `-- Records:    ${totalRecords}`,
-      `-- NOTE: tai_khoan passwords excluded — reset passwords after restore`,
+      `-- NOTE: TaiKhoan passwords excluded — reset passwords after restore`,
       `-- ============================================================`,
       ``,
       `BEGIN;`,
       ``,
       `TRUNCATE TABLE ${TRUNCATE_ORDER.join(', ')} CASCADE;`,
       ``,
-      buildInsertBlock('co_quan_don_vi', coQuanDonVi as Record<string, unknown>[]),
-      buildInsertBlock('don_vi_truc_thuoc', donViTrucThuoc as Record<string, unknown>[]),
-      buildInsertBlock('chuc_vu', chucVu as Record<string, unknown>[]),
-      buildInsertBlock('quan_nhan', quanNhan as Record<string, unknown>[]),
-      buildInsertBlock('tai_khoan', taiKhoan as Record<string, unknown>[]),
-      buildInsertBlock('lich_su_chuc_vu', lichSuChucVu as Record<string, unknown>[]),
-      buildInsertBlock('thanh_tich_khoa_hoc', thanhTichKhoaHoc as Record<string, unknown>[]),
-      buildInsertBlock('danh_hieu_hang_nam', danhHieuHangNam as Record<string, unknown>[]),
-      buildInsertBlock('khen_thuong_hcbvtq', khenThuongHCBVTQ as Record<string, unknown>[]),
-      buildInsertBlock('khen_thuong_hccsvv', khenThuongHCCSVV as Record<string, unknown>[]),
-      buildInsertBlock('khen_thuong_dot_xuat', khenThuongDotXuat as Record<string, unknown>[]),
+      buildInsertBlock(TABLES.CoQuanDonVi, coQuanDonVi as Record<string, unknown>[]),
+      buildInsertBlock(TABLES.DonViTrucThuoc, donViTrucThuoc as Record<string, unknown>[]),
+      buildInsertBlock(TABLES.ChucVu, chucVu as Record<string, unknown>[]),
+      buildInsertBlock(TABLES.QuanNhan, quanNhan as Record<string, unknown>[]),
+      buildInsertBlock(TABLES.TaiKhoan, taiKhoan as Record<string, unknown>[]),
+      buildInsertBlock(TABLES.LichSuChucVu, lichSuChucVu as Record<string, unknown>[]),
+      buildInsertBlock(TABLES.ThanhTichKhoaHoc, thanhTichKhoaHoc as Record<string, unknown>[]),
+      buildInsertBlock(TABLES.DanhHieuHangNam, danhHieuHangNam as Record<string, unknown>[]),
+      buildInsertBlock(TABLES.KhenThuongHCBVTQ, khenThuongHCBVTQ as Record<string, unknown>[]),
+      buildInsertBlock(TABLES.KhenThuongHCCSVV, khenThuongHCCSVV as Record<string, unknown>[]),
+      buildInsertBlock(TABLES.KhenThuongDotXuat, khenThuongDotXuat as Record<string, unknown>[]),
       buildInsertBlock(
-        'huan_chuong_quan_ky_quyet_thang',
+        TABLES.HuanChuongQuanKyQuyetThang,
         huanChuongQuanKyQuyetThang as Record<string, unknown>[]
       ),
-      buildInsertBlock('ky_niem_chuong_vsnxd_qdndvn', kyNiemChuong as Record<string, unknown>[]),
-      buildInsertBlock('ho_so_nien_han', hoSoNienHan as Record<string, unknown>[]),
-      buildInsertBlock('ho_so_cong_hien', hoSoCongHien as Record<string, unknown>[]),
-      buildInsertBlock('ho_so_hang_nam', hoSoHangNam as Record<string, unknown>[]),
-      buildInsertBlock('bang_de_xuat', bangDeXuat as Record<string, unknown>[]),
+      buildInsertBlock(TABLES.KyNiemChuongVSNXDQDNDVN, kyNiemChuong as Record<string, unknown>[]),
+      buildInsertBlock(TABLES.HoSoNienHan, hoSoNienHan as Record<string, unknown>[]),
+      buildInsertBlock(TABLES.HoSoCongHien, hoSoCongHien as Record<string, unknown>[]),
+      buildInsertBlock(TABLES.HoSoHangNam, hoSoHangNam as Record<string, unknown>[]),
+      buildInsertBlock(TABLES.BangDeXuat, bangDeXuat as Record<string, unknown>[]),
       buildInsertBlock(
-        'danh_hieu_don_vi_hang_nam',
+        TABLES.DanhHieuDonViHangNam,
         danhHieuDonViHangNam as Record<string, unknown>[]
       ),
-      buildInsertBlock('ho_so_don_vi_hang_nam', hoSoDonViHangNam as Record<string, unknown>[]),
-      buildInsertBlock('file_quyet_dinh', fileQuyetDinh as Record<string, unknown>[]),
-      buildInsertBlock('system_settings', systemSettings as Record<string, unknown>[]),
+      buildInsertBlock(TABLES.HoSoDonViHangNam, hoSoDonViHangNam as Record<string, unknown>[]),
+      buildInsertBlock(TABLES.FileQuyetDinh, fileQuyetDinh as Record<string, unknown>[]),
+      buildInsertBlock(TABLES.SystemSetting, systemSettings as Record<string, unknown>[]),
       `COMMIT;`,
     ];
 
