@@ -28,7 +28,7 @@ import { useTheme } from '@/components/ThemeProvider';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 import { FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
-import type { PersonnelDetail, ServiceProfile } from '@/lib/types/personnelList';
+import type { PersonnelDetail } from '@/lib/types/personnelList';
 
 
 const { Title, Paragraph } = Typography;
