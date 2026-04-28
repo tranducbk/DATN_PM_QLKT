@@ -1,4 +1,4 @@
-import { prismaMock, resetPrismaMock } from '../helpers/prismaMock';
+import { prismaMock } from '../helpers/prismaMock';
 import { makePersonnel, makeUnit, makeAdmin } from '../helpers/fixtures';
 import { expectError } from '../helpers/errorAssert';
 
@@ -6,15 +6,14 @@ import proposalService from '../../src/services/proposal';
 import { ValidationError } from '../../src/middlewares/errorHandler';
 import { PROPOSAL_TYPES } from '../../src/constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../../src/constants/proposalStatus.constants';
-import { DANH_HIEU_HCCSVV } from '../../src/constants/danhHieu.constants';
+import {
+  DANH_HIEU_CA_NHAN_KHAC,
+  DANH_HIEU_HCCSVV,
+} from '../../src/constants/danhHieu.constants';
 import {
   SUBMIT_MISSING_MONTH_ERROR,
   NIEN_HAN_INVALID_DANH_HIEU_PREFIX,
 } from '../helpers/errorMessages';
-
-beforeEach(() => {
-  resetPrismaMock();
-});
 
 afterEach(() => {
   jest.restoreAllMocks();
@@ -136,7 +135,7 @@ describe('proposal.submit - NIEN_HAN', () => {
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([target]);
 
     await expectError(
-      callSubmit([{ personnel_id: target.id, danh_hieu: 'HC_QKQT' }]),
+      callSubmit([{ personnel_id: target.id, danh_hieu: DANH_HIEU_CA_NHAN_KHAC.HC_QKQT }]),
       ValidationError,
       { startsWith: NIEN_HAN_INVALID_DANH_HIEU_PREFIX }
     );

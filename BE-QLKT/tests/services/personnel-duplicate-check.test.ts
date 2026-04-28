@@ -1,6 +1,7 @@
 import { prismaMock } from '../helpers/prismaMock';
 import { collectPersonnelDuplicateErrors } from '../../src/services/eligibility/personnelDuplicateCheck';
 import { PROPOSAL_TYPES } from '../../src/constants/proposalTypes.constants';
+import { DANH_HIEU_CA_NHAN_KHAC } from '../../src/constants/danhHieu.constants';
 
 describe('collectPersonnelDuplicateErrors', () => {
   it('returns empty array when no items provided', async () => {
@@ -12,7 +13,7 @@ describe('collectPersonnelDuplicateErrors', () => {
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([]);
     const result = await collectPersonnelDuplicateErrors(
       [
-        { personnel_id: '', danh_hieu: 'HC_QKQT' },
+        { personnel_id: '', danh_hieu: DANH_HIEU_CA_NHAN_KHAC.HC_QKQT },
         { personnel_id: 'p1', danh_hieu: '' },
       ],
       2025,
@@ -30,7 +31,7 @@ describe('collectPersonnelDuplicateErrors', () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
 
     const result = await collectPersonnelDuplicateErrors(
-      [{ personnel_id: 'p1', danh_hieu: 'HC_QKQT' }],
+      [{ personnel_id: 'p1', danh_hieu: DANH_HIEU_CA_NHAN_KHAC.HC_QKQT }],
       2025,
       PROPOSAL_TYPES.HC_QKQT,
       { hoTenMap: new Map([['p1', 'Nguyễn Văn A']]) }
@@ -50,7 +51,7 @@ describe('collectPersonnelDuplicateErrors', () => {
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([]);
 
     const result = await collectPersonnelDuplicateErrors(
-      [{ personnel_id: 'p1', danh_hieu: 'HC_QKQT' }],
+      [{ personnel_id: 'p1', danh_hieu: DANH_HIEU_CA_NHAN_KHAC.HC_QKQT }],
       2025,
       PROPOSAL_TYPES.HC_QKQT
     );
@@ -63,7 +64,7 @@ describe('collectPersonnelDuplicateErrors', () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
 
     const result = await collectPersonnelDuplicateErrors(
-      [{ personnel_id: 'p1', danh_hieu: 'HC_QKQT' }],
+      [{ personnel_id: 'p1', danh_hieu: DANH_HIEU_CA_NHAN_KHAC.HC_QKQT }],
       2025,
       PROPOSAL_TYPES.HC_QKQT,
       { hoTenMap: new Map([['p1', 'A']]) }

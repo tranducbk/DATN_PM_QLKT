@@ -140,40 +140,40 @@ export function LogsTable({ logs, loading, selectedRowKeys, onSelectionChange }:
               </TableHead>
             )}
             <TableHead
-              className="w-[180px] font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="w-[180px] text-center font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               onClick={() => handleSort('time')}
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center gap-2">
                 <Clock className="h-4 w-4 shrink-0" />
                 Thời gian
                 <SortIcon field="time" />
               </div>
             </TableHead>
             <TableHead
-              className="w-[160px] font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="w-[160px] text-center font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               onClick={() => handleSort('actor')}
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center gap-2">
                 <User className="h-4 w-4 shrink-0" />
                 Người dùng
                 <SortIcon field="actor" />
               </div>
             </TableHead>
             <TableHead
-              className="w-[140px] font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="w-[140px] text-center font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               onClick={() => handleSort('role')}
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center gap-2">
                 <Shield className="h-4 w-4 shrink-0" />
                 Vai trò
                 <SortIcon field="role" />
               </div>
             </TableHead>
             <TableHead
-              className="w-[160px] font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="w-[160px] text-center font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               onClick={() => handleSort('action')}
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center gap-2">
                 <Activity className="h-4 w-4 shrink-0" />
                 Hành động
                 <SortIcon field="action" />
@@ -208,20 +208,20 @@ export function LogsTable({ logs, loading, selectedRowKeys, onSelectionChange }:
                   />
                 </TableCell>
               )}
-              <TableCell className="text-sm text-gray-900 dark:text-gray-100 font-medium whitespace-nowrap">
+              <TableCell className="text-center text-sm text-gray-900 dark:text-gray-100 font-medium whitespace-nowrap">
                 {formatDateTimeFull(log.createdAt)}
               </TableCell>
-              <TableCell className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                <div className="whitespace-normal break-words max-w-[160px]">
+              <TableCell className="text-center text-sm font-medium text-gray-900 dark:text-gray-100">
+                <div className="whitespace-normal break-words max-w-[160px] mx-auto">
                   {log.actor_name || log.actor_id}
                 </div>
               </TableCell>
-              <TableCell>
+              <TableCell className="text-center">
                 <Tag color={getRoleInfo(log.actor_role).color}>
                   {getRoleInfo(log.actor_role).label}
                 </Tag>
               </TableCell>
-              <TableCell className="text-sm font-medium text-gray-900 dark:text-gray-100">
+              <TableCell className="text-center text-sm font-medium text-gray-900 dark:text-gray-100">
                 {getActionLabel(log.action)}
               </TableCell>
               <TableCell className="text-sm text-gray-600 dark:text-gray-400">

@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs';
-import { prismaMock, resetPrismaMock } from '../helpers/prismaMock';
+import { prismaMock } from '../helpers/prismaMock';
 import { makePersonnel } from '../helpers/fixtures';
 import scientificAchievementService from '../../src/services/scientificAchievement.service';
 import {
@@ -41,10 +41,6 @@ async function makeNckhExcelBuffer(rows: NckhRow[]): Promise<Buffer> {
   const arrayBuffer = await workbook.xlsx.writeBuffer();
   return Buffer.from(arrayBuffer as ArrayBuffer);
 }
-
-beforeEach(() => {
-  resetPrismaMock();
-});
 
 describe('scientificAchievement.service - previewImport', () => {
   it('Row DTKH/SKKH hợp lệ → vào valid', async () => {

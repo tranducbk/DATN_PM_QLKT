@@ -411,7 +411,7 @@ describe('unitAnnualAward.service - remove (granular)', () => {
     prismaMock.danhHieuDonViHangNam.update.mockResolvedValueOnce(record);
 
     // Khi: chỉ xóa DVQT
-    await unitAnnualAwardService.remove(record.id, 'ĐVQT');
+    await unitAnnualAwardService.remove(record.id, DANH_HIEU_DON_VI_HANG_NAM.DVQT);
 
     // Thì: chỉ field danh hiệu chính bị clear, không delete row
     expect(prismaMock.danhHieuDonViHangNam.delete).not.toHaveBeenCalled();
@@ -438,7 +438,7 @@ describe('unitAnnualAward.service - remove (granular)', () => {
     prismaMock.danhHieuDonViHangNam.findUnique.mockResolvedValueOnce(record);
     prismaMock.danhHieuDonViHangNam.update.mockResolvedValueOnce(record);
 
-    await unitAnnualAwardService.remove(record.id, 'ĐVTT');
+    await unitAnnualAwardService.remove(record.id, DANH_HIEU_DON_VI_HANG_NAM.DVTT);
 
     expect(prismaMock.danhHieuDonViHangNam.delete).not.toHaveBeenCalled();
     expect(prismaMock.danhHieuDonViHangNam.update.mock.calls[0][0].data).toEqual({
@@ -463,7 +463,7 @@ describe('unitAnnualAward.service - remove (granular)', () => {
     prismaMock.danhHieuDonViHangNam.findUnique.mockResolvedValueOnce(record);
     prismaMock.danhHieuDonViHangNam.update.mockResolvedValueOnce(record);
 
-    await unitAnnualAwardService.remove(record.id, 'BKBQP');
+    await unitAnnualAwardService.remove(record.id, DANH_HIEU_DON_VI_HANG_NAM.BKBQP);
 
     expect(prismaMock.danhHieuDonViHangNam.delete).not.toHaveBeenCalled();
     expect(prismaMock.danhHieuDonViHangNam.update.mock.calls[0][0].data).toEqual({
@@ -488,7 +488,7 @@ describe('unitAnnualAward.service - remove (granular)', () => {
     prismaMock.danhHieuDonViHangNam.findUnique.mockResolvedValueOnce(record);
     prismaMock.danhHieuDonViHangNam.update.mockResolvedValueOnce(record);
 
-    await unitAnnualAwardService.remove(record.id, 'BKTTCP');
+    await unitAnnualAwardService.remove(record.id, DANH_HIEU_DON_VI_HANG_NAM.BKTTCP);
 
     expect(prismaMock.danhHieuDonViHangNam.delete).not.toHaveBeenCalled();
     expect(prismaMock.danhHieuDonViHangNam.update.mock.calls[0][0].data).toEqual({
@@ -510,7 +510,7 @@ describe('unitAnnualAward.service - remove (granular)', () => {
     prismaMock.danhHieuDonViHangNam.findUnique.mockResolvedValueOnce(record);
     prismaMock.danhHieuDonViHangNam.delete.mockResolvedValueOnce(record);
 
-    await unitAnnualAwardService.remove(record.id, 'ĐVQT');
+    await unitAnnualAwardService.remove(record.id, DANH_HIEU_DON_VI_HANG_NAM.DVQT);
 
     expect(prismaMock.danhHieuDonViHangNam.delete).toHaveBeenCalledTimes(1);
     expect(prismaMock.danhHieuDonViHangNam.update).not.toHaveBeenCalled();
@@ -528,7 +528,7 @@ describe('unitAnnualAward.service - remove (granular)', () => {
     prismaMock.danhHieuDonViHangNam.findUnique.mockResolvedValueOnce(record);
     prismaMock.danhHieuDonViHangNam.delete.mockResolvedValueOnce(record);
 
-    await unitAnnualAwardService.remove(record.id, 'BKBQP');
+    await unitAnnualAwardService.remove(record.id, DANH_HIEU_DON_VI_HANG_NAM.BKBQP);
 
     expect(prismaMock.danhHieuDonViHangNam.delete).toHaveBeenCalledTimes(1);
     expect(prismaMock.danhHieuDonViHangNam.update).not.toHaveBeenCalled();
@@ -546,9 +546,9 @@ describe('unitAnnualAward.service - remove (granular)', () => {
     prismaMock.danhHieuDonViHangNam.findUnique.mockResolvedValueOnce(record);
 
     await expectError(
-      unitAnnualAwardService.remove(record.id, 'ĐVQT'),
+      unitAnnualAwardService.remove(record.id, DANH_HIEU_DON_VI_HANG_NAM.DVQT),
       ValidationError,
-      `Bản ghi không có ${getDanhHieuName('ĐVQT')}`
+      `Bản ghi không có ${getDanhHieuName(DANH_HIEU_DON_VI_HANG_NAM.DVQT)}`
     );
     expect(prismaMock.danhHieuDonViHangNam.delete).not.toHaveBeenCalled();
     expect(prismaMock.danhHieuDonViHangNam.update).not.toHaveBeenCalled();
@@ -576,7 +576,7 @@ describe('unitAnnualAward.service - remove (granular)', () => {
     prismaMock.danhHieuDonViHangNam.findUnique.mockResolvedValueOnce(null);
 
     await expectError(
-      unitAnnualAwardService.remove('not-exist', 'ĐVQT'),
+      unitAnnualAwardService.remove('not-exist', DANH_HIEU_DON_VI_HANG_NAM.DVQT),
       NotFoundError
     );
   });
@@ -616,7 +616,7 @@ describe('unitAnnualAward.service - remove (granular)', () => {
     prismaMock.danhHieuDonViHangNam.findUnique.mockResolvedValueOnce(record);
     prismaMock.danhHieuDonViHangNam.update.mockResolvedValueOnce(record);
 
-    await unitAnnualAwardService.remove(record.id, 'ĐVQT');
+    await unitAnnualAwardService.remove(record.id, DANH_HIEU_DON_VI_HANG_NAM.DVQT);
 
     expect(recalcSpy).toHaveBeenCalledWith(cqdv.id, 2024);
   });

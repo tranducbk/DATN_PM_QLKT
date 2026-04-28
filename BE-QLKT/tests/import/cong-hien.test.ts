@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs';
-import { prismaMock, resetPrismaMock } from '../helpers/prismaMock';
+import { prismaMock } from '../helpers/prismaMock';
 import { makePersonnel } from '../helpers/fixtures';
 import { expectError } from '../helpers/errorAssert';
 import contributionMedalService from '../../src/services/contributionMedal.service';
@@ -63,10 +63,6 @@ function eligibleHistory(personnelId: string, totalMonths = 130): PositionHistor
     },
   ];
 }
-
-beforeEach(() => {
-  resetPrismaMock();
-});
 
 describe('contributionMedal.service - previewImport (CONG_HIEN)', () => {
   it('Row đủ dữ liệu (đủ tháng phục vụ) → vào valid', async () => {

@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs';
-import { prismaMock, resetPrismaMock } from '../helpers/prismaMock';
+import { prismaMock } from '../helpers/prismaMock';
 import { makePersonnel } from '../helpers/fixtures';
 import commemorativeMedalService from '../../src/services/commemorativeMedal.service';
 import { GENDER } from '../../src/constants/gender.constants';
@@ -40,10 +40,6 @@ async function makeKncExcelBuffer(rows: KncRow[]): Promise<Buffer> {
   const arrayBuffer = await workbook.xlsx.writeBuffer();
   return Buffer.from(arrayBuffer as ArrayBuffer);
 }
-
-beforeEach(() => {
-  resetPrismaMock();
-});
 
 describe('commemorativeMedal.service - previewImport (KNC VSNXD)', () => {
   it('Nam ≥ 25 năm phục vụ → vào valid', async () => {

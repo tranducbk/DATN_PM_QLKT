@@ -1,5 +1,8 @@
 import { validateHCCSVVRankOrder } from '../../src/helpers/awardValidation/tenureMedalRankOrder';
-import { DANH_HIEU_HCCSVV } from '../../src/constants/danhHieu.constants';
+import {
+  DANH_HIEU_CA_NHAN_HANG_NAM,
+  DANH_HIEU_HCCSVV,
+} from '../../src/constants/danhHieu.constants';
 
 describe('validateHCCSVVRankOrder', () => {
   it('HANG_BA luôn hợp lệ — không có rank thấp hơn để check', () => {
@@ -64,6 +67,6 @@ describe('validateHCCSVVRankOrder', () => {
   });
 
   it('Rank không thuộc HCCSVV → return null (no-op)', () => {
-    expect(validateHCCSVVRankOrder('CSTDCS', 2024, [])).toBeNull();
+    expect(validateHCCSVVRankOrder(DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS, 2024, [])).toBeNull();
   });
 });

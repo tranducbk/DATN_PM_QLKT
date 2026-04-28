@@ -174,7 +174,7 @@ export function PositionForm({ position, units = [], onSuccess, onClose }: Posit
       )}
 
       <Form.Item label="Hệ số chức vụ" name="he_so_chuc_vu" extra="Mặc định là 0 nếu để trống">
-        <Input type="number" placeholder="Nhập hệ số chức vụ (VD: 1.0)" step="0.01" min="0" />
+        <Input type="number" placeholder="Nhập hệ số chức vụ (VD: 1.0)" step="0.1" min="0" max="1" />
       </Form.Item>
 
       {/* Chỉ hiển thị checkbox "Là Chỉ huy?" cho CƠ QUAN ĐƠN VỊ */}

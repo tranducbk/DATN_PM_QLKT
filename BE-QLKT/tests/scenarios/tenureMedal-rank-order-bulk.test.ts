@@ -1,4 +1,4 @@
-import { prismaMock, resetPrismaMock } from '../helpers/prismaMock';
+import { prismaMock } from '../helpers/prismaMock';
 import { makePersonnel } from '../helpers/fixtures';
 import { expectError } from '../helpers/errorAssert';
 
@@ -6,10 +6,6 @@ import awardBulkService from '../../src/services/awardBulk.service';
 import { ValidationError } from '../../src/middlewares/errorHandler';
 import { PROPOSAL_TYPES } from '../../src/constants/proposalTypes.constants';
 import { DANH_HIEU_HCCSVV } from '../../src/constants/danhHieu.constants';
-
-beforeEach(() => {
-  resetPrismaMock();
-});
 
 afterEach(() => {
   jest.restoreAllMocks();

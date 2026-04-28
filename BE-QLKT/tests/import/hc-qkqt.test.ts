@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs';
-import { prismaMock, resetPrismaMock } from '../helpers/prismaMock';
+import { prismaMock } from '../helpers/prismaMock';
 import { makePersonnel } from '../helpers/fixtures';
 import militaryFlagService from '../../src/services/militaryFlag.service';
 import {
@@ -40,10 +40,6 @@ async function makeHcqkqtExcelBuffer(rows: HcqkqtRow[]): Promise<Buffer> {
   const arrayBuffer = await workbook.xlsx.writeBuffer();
   return Buffer.from(arrayBuffer as ArrayBuffer);
 }
-
-beforeEach(() => {
-  resetPrismaMock();
-});
 
 describe('militaryFlag.service - previewImport', () => {
   it('Row hợp lệ HC QKQT (>= 25 năm phục vụ) → vào valid', async () => {

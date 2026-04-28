@@ -8,7 +8,7 @@
  * the service to reject these payloads instead of silently storing them.
  */
 
-import { prismaMock, resetPrismaMock } from '../helpers/prismaMock';
+import { prismaMock } from '../helpers/prismaMock';
 import {
   makePersonnel,
   makeAdmin,
@@ -28,10 +28,6 @@ import { ValidationError } from '../../src/middlewares/errorHandler';
 import { PROPOSAL_TYPES } from '../../src/constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../../src/constants/proposalStatus.constants';
 import { DANH_HIEU_CA_NHAN_HANG_NAM } from '../../src/constants/danhHieu.constants';
-
-beforeEach(() => {
-  resetPrismaMock();
-});
 
 afterEach(() => {
   jest.restoreAllMocks();

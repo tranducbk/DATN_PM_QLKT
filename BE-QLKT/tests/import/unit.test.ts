@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs';
-import { prismaMock, resetPrismaMock } from '../helpers/prismaMock';
+import { prismaMock } from '../helpers/prismaMock';
 import { makeUnit } from '../helpers/fixtures';
 import { expectError } from '../helpers/errorAssert';
 import unitAnnualAwardService from '../../src/services/unitAnnualAward.service';
@@ -45,10 +45,6 @@ async function makeDonViExcelBuffer(rows: DonViRow[]): Promise<Buffer> {
   return Buffer.from(arrayBuffer as ArrayBuffer);
 }
 
-beforeEach(() => {
-  resetPrismaMock();
-});
-
 describe('unitAnnualAward.service - previewImport', () => {
   it('Excel hợp lệ với 1 row ĐVQT (CQDV) → trả 1 valid item', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-1', ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A' });
@@ -60,7 +56,7 @@ describe('unitAnnualAward.service - previewImport', () => {
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce([]);
 
     const buffer = await makeDonViExcelBuffer([
-      { ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A', nam: 2024, danh_hieu: 'ĐVQT', so_quyet_dinh: 'QD-001' },
+      { ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A', nam: 2024, danh_hieu: DANH_HIEU_DON_VI_HANG_NAM.DVQT, so_quyet_dinh: 'QD-001' },
     ]);
 
     const result = await unitAnnualAwardService.previewImport(buffer);
@@ -73,7 +69,7 @@ describe('unitAnnualAward.service - previewImport', () => {
       is_co_quan_don_vi: true,
       ma_don_vi: 'CQDV01',
       nam: 2024,
-      danh_hieu: 'ĐVQT',
+      danh_hieu: DANH_HIEU_DON_VI_HANG_NAM.DVQT,
       so_quyet_dinh: 'QD-001',
     });
   });
@@ -87,7 +83,7 @@ describe('unitAnnualAward.service - previewImport', () => {
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce([]);
 
     const buffer = await makeDonViExcelBuffer([
-      { ma_don_vi: 'DVTT01', ten_don_vi: 'Đơn vị trực thuộc B', nam: 2024, danh_hieu: 'ĐVTT', so_quyet_dinh: 'QD-002' },
+      { ma_don_vi: 'DVTT01', ten_don_vi: 'Đơn vị trực thuộc B', nam: 2024, danh_hieu: DANH_HIEU_DON_VI_HANG_NAM.DVTT, so_quyet_dinh: 'QD-002' },
     ]);
 
     const result = await unitAnnualAwardService.previewImport(buffer);
@@ -97,7 +93,7 @@ describe('unitAnnualAward.service - previewImport', () => {
       unit_id: 'dvtt-1',
       is_co_quan_don_vi: false,
       ma_don_vi: 'DVTT01',
-      danh_hieu: 'ĐVTT',
+      danh_hieu: DANH_HIEU_DON_VI_HANG_NAM.DVTT,
     });
   });
 
@@ -108,7 +104,7 @@ describe('unitAnnualAward.service - previewImport', () => {
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce([]);
 
     const buffer = await makeDonViExcelBuffer([
-      { ma_don_vi: 'KHONG-CO', ten_don_vi: 'X', nam: 2024, danh_hieu: 'ĐVQT', so_quyet_dinh: 'QD-001' },
+      { ma_don_vi: 'KHONG-CO', ten_don_vi: 'X', nam: 2024, danh_hieu: DANH_HIEU_DON_VI_HANG_NAM.DVQT, so_quyet_dinh: 'QD-001' },
     ]);
 
     const result = await unitAnnualAwardService.previewImport(buffer);
@@ -126,7 +122,7 @@ describe('unitAnnualAward.service - previewImport', () => {
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce([]);
 
     const buffer = await makeDonViExcelBuffer([
-      { ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A', danh_hieu: 'ĐVQT', so_quyet_dinh: 'QD-001' },
+      { ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A', danh_hieu: DANH_HIEU_DON_VI_HANG_NAM.DVQT, so_quyet_dinh: 'QD-001' },
     ]);
 
     const result = await unitAnnualAwardService.previewImport(buffer);
@@ -154,7 +150,7 @@ describe('unitAnnualAward.service - previewImport', () => {
     ]);
 
     const buffer = await makeDonViExcelBuffer([
-      { ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A', nam: 2024, danh_hieu: 'ĐVTT', so_quyet_dinh: 'QD-001' },
+      { ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A', nam: 2024, danh_hieu: DANH_HIEU_DON_VI_HANG_NAM.DVTT, so_quyet_dinh: 'QD-001' },
     ]);
 
     const result = await unitAnnualAwardService.previewImport(buffer);
@@ -175,7 +171,7 @@ describe('unitAnnualAward.service - previewImport', () => {
 
     const buffer = await makeDonViExcelBuffer([
       { ma_don_vi: '', ten_don_vi: '', nam: '', danh_hieu: '', so_quyet_dinh: '' },
-      { ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A', nam: 2024, danh_hieu: 'ĐVQT', so_quyet_dinh: 'QD-001' },
+      { ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A', nam: 2024, danh_hieu: DANH_HIEU_DON_VI_HANG_NAM.DVQT, so_quyet_dinh: 'QD-001' },
     ]);
 
     const result = await unitAnnualAwardService.previewImport(buffer);
@@ -197,8 +193,8 @@ describe('unitAnnualAward.service - previewImport', () => {
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce([]);
 
     const buffer = await makeDonViExcelBuffer([
-      { ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A', nam: 2024, danh_hieu: 'ĐVQT', so_quyet_dinh: 'QD-001' },
-      { ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A', nam: 2024, danh_hieu: 'ĐVTT', so_quyet_dinh: 'QD-002' },
+      { ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A', nam: 2024, danh_hieu: DANH_HIEU_DON_VI_HANG_NAM.DVQT, so_quyet_dinh: 'QD-001' },
+      { ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A', nam: 2024, danh_hieu: DANH_HIEU_DON_VI_HANG_NAM.DVTT, so_quyet_dinh: 'QD-002' },
     ]);
 
     const result = await unitAnnualAwardService.previewImport(buffer);
@@ -217,7 +213,7 @@ describe('unitAnnualAward.service - previewImport', () => {
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce([]);
 
     const buffer = await makeDonViExcelBuffer([
-      { ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A', nam: 1800, danh_hieu: 'ĐVQT', so_quyet_dinh: 'QD-001' },
+      { ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A', nam: 1800, danh_hieu: DANH_HIEU_DON_VI_HANG_NAM.DVQT, so_quyet_dinh: 'QD-001' },
     ]);
 
     const result = await unitAnnualAwardService.previewImport(buffer);
@@ -236,7 +232,7 @@ describe('unitAnnualAward.service - previewImport', () => {
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce([]);
 
     const buffer = await makeDonViExcelBuffer([
-      { ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A', nam: futureYear, danh_hieu: 'ĐVQT', so_quyet_dinh: 'QD-001' },
+      { ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A', nam: futureYear, danh_hieu: DANH_HIEU_DON_VI_HANG_NAM.DVQT, so_quyet_dinh: 'QD-001' },
     ]);
 
     const result = await unitAnnualAwardService.previewImport(buffer);
@@ -273,7 +269,7 @@ describe('unitAnnualAward.service - previewImport', () => {
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce([]);
 
     const buffer = await makeDonViExcelBuffer([
-      { ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A', nam: 2024, danh_hieu: 'ĐVQT', so_quyet_dinh: 'QD-INVALID' },
+      { ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A', nam: 2024, danh_hieu: DANH_HIEU_DON_VI_HANG_NAM.DVQT, so_quyet_dinh: 'QD-INVALID' },
     ]);
 
     const result = await unitAnnualAwardService.previewImport(buffer);
@@ -295,7 +291,7 @@ describe('unitAnnualAward.service - previewImport', () => {
         ma_don_vi: 'CQDV01',
         ten_don_vi: 'Cơ quan A',
         nam: 2024,
-        danh_hieu: 'ĐVQT',
+        danh_hieu: DANH_HIEU_DON_VI_HANG_NAM.DVQT,
         so_quyet_dinh: 'QD-001',
         nhan_bkbqp: 'có',
       },

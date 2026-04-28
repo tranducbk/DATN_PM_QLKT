@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs';
-import { prismaMock, resetPrismaMock } from '../helpers/prismaMock';
+import { prismaMock } from '../helpers/prismaMock';
 import { makePersonnel } from '../helpers/fixtures';
 import { expectError } from '../helpers/errorAssert';
 import annualRewardService from '../../src/services/annualReward.service';
@@ -49,10 +49,6 @@ async function makeCaNhanExcelBuffer(rows: CaNhanRow[]): Promise<Buffer> {
   return Buffer.from(arrayBuffer as ArrayBuffer);
 }
 
-beforeEach(() => {
-  resetPrismaMock();
-});
-
 describe('annualReward.service - previewImport', () => {
   it('Excel hợp lệ với 3 row CSTDCS → trả 3 valid items, no errors', async () => {
     // Given: three personnel rows, all referencing existing personnel and decisions
@@ -69,9 +65,9 @@ describe('annualReward.service - previewImport', () => {
     ]);
 
     const buffer = await makeCaNhanExcelBuffer([
-      { id: 'qn-1', ho_va_ten: 'Nguyễn Văn A', nam: 2024, danh_hieu: 'CSTDCS', so_quyet_dinh: 'QD-001', cap_bac: 'Đại uý', chuc_vu: 'Trợ lý' },
-      { id: 'qn-2', ho_va_ten: 'Nguyễn Văn B', nam: 2024, danh_hieu: 'CSTDCS', so_quyet_dinh: 'QD-002', cap_bac: 'Đại uý', chuc_vu: 'Trợ lý' },
-      { id: 'qn-3', ho_va_ten: 'Nguyễn Văn C', nam: 2024, danh_hieu: 'CSTDCS', so_quyet_dinh: 'QD-003', cap_bac: 'Đại uý', chuc_vu: 'Trợ lý' },
+      { id: 'qn-1', ho_va_ten: 'Nguyễn Văn A', nam: 2024, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS, so_quyet_dinh: 'QD-001', cap_bac: 'Đại uý', chuc_vu: 'Trợ lý' },
+      { id: 'qn-2', ho_va_ten: 'Nguyễn Văn B', nam: 2024, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS, so_quyet_dinh: 'QD-002', cap_bac: 'Đại uý', chuc_vu: 'Trợ lý' },
+      { id: 'qn-3', ho_va_ten: 'Nguyễn Văn C', nam: 2024, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS, so_quyet_dinh: 'QD-003', cap_bac: 'Đại uý', chuc_vu: 'Trợ lý' },
     ]);
 
     // When
@@ -84,7 +80,7 @@ describe('annualReward.service - previewImport', () => {
     expect(result.valid[0]).toMatchObject({
       personnel_id: 'qn-1',
       nam: 2024,
-      danh_hieu: 'CSTDCS',
+      danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS,
       so_quyet_dinh: 'QD-001',
     });
   });
@@ -97,7 +93,7 @@ describe('annualReward.service - previewImport', () => {
     prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-001' }]);
 
     const buffer = await makeCaNhanExcelBuffer([
-      { id: 'qn-1', ho_va_ten: 'Nguyễn Văn A', danh_hieu: 'CSTDCS', so_quyet_dinh: 'QD-001' },
+      { id: 'qn-1', ho_va_ten: 'Nguyễn Văn A', danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS, so_quyet_dinh: 'QD-001' },
     ]);
 
     const result = await annualRewardService.previewImport(buffer);
@@ -133,7 +129,7 @@ describe('annualReward.service - previewImport', () => {
     prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-001' }]);
 
     const buffer = await makeCaNhanExcelBuffer([
-      { id: 'qn-missing', ho_va_ten: 'Ai Đó', nam: 2024, danh_hieu: 'CSTDCS', so_quyet_dinh: 'QD-001' },
+      { id: 'qn-missing', ho_va_ten: 'Ai Đó', nam: 2024, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS, so_quyet_dinh: 'QD-001' },
     ]);
 
     const result = await annualRewardService.previewImport(buffer);
@@ -151,7 +147,7 @@ describe('annualReward.service - previewImport', () => {
     prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-001' }]);
 
     const buffer = await makeCaNhanExcelBuffer([
-      { id: 'qn-1', ho_va_ten: 'Tên Sai Khác', nam: 2024, danh_hieu: 'CSTDCS', so_quyet_dinh: 'QD-001' },
+      { id: 'qn-1', ho_va_ten: 'Tên Sai Khác', nam: 2024, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS, so_quyet_dinh: 'QD-001' },
     ]);
 
     const result = await annualRewardService.previewImport(buffer);
@@ -180,7 +176,7 @@ describe('annualReward.service - previewImport', () => {
     prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-001' }]);
 
     const buffer = await makeCaNhanExcelBuffer([
-      { id: 'qn-1', ho_va_ten: 'Nguyễn Văn A', nam: 2024, danh_hieu: 'CSTDCS', so_quyet_dinh: 'QD-001' },
+      { id: 'qn-1', ho_va_ten: 'Nguyễn Văn A', nam: 2024, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS, so_quyet_dinh: 'QD-001' },
     ]);
 
     const result = await annualRewardService.previewImport(buffer);
@@ -201,7 +197,7 @@ describe('annualReward.service - previewImport', () => {
         id: 'qn-1',
         ho_va_ten: 'Nguyễn Văn A',
         nam: 2024,
-        danh_hieu: 'CSTDCS',
+        danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS,
         so_quyet_dinh: 'QD-001',
         nhan_bkbqp: 'có',
       },
@@ -221,13 +217,13 @@ describe('annualReward.service - previewImport', () => {
       {
         id: 'prop-1',
         nam: 2024,
-        data_danh_hieu: [{ personnel_id: 'qn-1', danh_hieu: 'CSTDCS' }],
+        data_danh_hieu: [{ personnel_id: 'qn-1', danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS }],
       },
     ]);
     prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-001' }]);
 
     const buffer = await makeCaNhanExcelBuffer([
-      { id: 'qn-1', ho_va_ten: 'Nguyễn Văn A', nam: 2024, danh_hieu: 'CSTDCS', so_quyet_dinh: 'QD-001' },
+      { id: 'qn-1', ho_va_ten: 'Nguyễn Văn A', nam: 2024, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS, so_quyet_dinh: 'QD-001' },
     ]);
 
     const result = await annualRewardService.previewImport(buffer);
@@ -248,7 +244,7 @@ describe('annualReward.service - previewImport', () => {
 
     const buffer = await makeCaNhanExcelBuffer([
       { id: '', ho_va_ten: '', nam: '', danh_hieu: '', so_quyet_dinh: '' },
-      { id: 'qn-1', ho_va_ten: 'Nguyễn Văn A', nam: 2024, danh_hieu: 'CSTDCS', so_quyet_dinh: 'QD-001', cap_bac: 'Đại uý', chuc_vu: 'Trợ lý' },
+      { id: 'qn-1', ho_va_ten: 'Nguyễn Văn A', nam: 2024, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS, so_quyet_dinh: 'QD-001', cap_bac: 'Đại uý', chuc_vu: 'Trợ lý' },
     ]);
 
     const result = await annualRewardService.previewImport(buffer);
@@ -269,8 +265,8 @@ describe('annualReward.service - previewImport', () => {
     ]);
 
     const buffer = await makeCaNhanExcelBuffer([
-      { id: 'qn-1', ho_va_ten: 'Nguyễn Văn A', nam: 2024, danh_hieu: 'CSTDCS', so_quyet_dinh: 'QD-001', cap_bac: 'Đại uý', chuc_vu: 'Trợ lý' },
-      { id: 'qn-1', ho_va_ten: 'Nguyễn Văn A', nam: 2024, danh_hieu: 'CSTT', so_quyet_dinh: 'QD-002', cap_bac: 'Đại uý', chuc_vu: 'Trợ lý' },
+      { id: 'qn-1', ho_va_ten: 'Nguyễn Văn A', nam: 2024, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS, so_quyet_dinh: 'QD-001', cap_bac: 'Đại uý', chuc_vu: 'Trợ lý' },
+      { id: 'qn-1', ho_va_ten: 'Nguyễn Văn A', nam: 2024, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTT, so_quyet_dinh: 'QD-002', cap_bac: 'Đại uý', chuc_vu: 'Trợ lý' },
     ]);
 
     const result = await annualRewardService.previewImport(buffer);
@@ -288,7 +284,7 @@ describe('annualReward.service - previewImport', () => {
     prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-001' }]);
 
     const buffer = await makeCaNhanExcelBuffer([
-      { id: 'qn-1', ho_va_ten: 'Nguyễn Văn A', nam: 1800, danh_hieu: 'CSTDCS', so_quyet_dinh: 'QD-001' },
+      { id: 'qn-1', ho_va_ten: 'Nguyễn Văn A', nam: 1800, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS, so_quyet_dinh: 'QD-001' },
     ]);
 
     const result = await annualRewardService.previewImport(buffer);
@@ -306,7 +302,7 @@ describe('annualReward.service - previewImport', () => {
     prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-001' }]);
 
     const buffer = await makeCaNhanExcelBuffer([
-      { id: 'qn-1', ho_va_ten: 'Nguyễn Văn A', nam: futureYear, danh_hieu: 'CSTDCS', so_quyet_dinh: 'QD-001' },
+      { id: 'qn-1', ho_va_ten: 'Nguyễn Văn A', nam: futureYear, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS, so_quyet_dinh: 'QD-001' },
     ]);
 
     const result = await annualRewardService.previewImport(buffer);
@@ -341,7 +337,7 @@ describe('annualReward.service - previewImport', () => {
     prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([]);
 
     const buffer = await makeCaNhanExcelBuffer([
-      { id: 'qn-1', ho_va_ten: 'Nguyễn Văn A', nam: 2024, danh_hieu: 'CSTDCS', so_quyet_dinh: 'QD-INVALID' },
+      { id: 'qn-1', ho_va_ten: 'Nguyễn Văn A', nam: 2024, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS, so_quyet_dinh: 'QD-INVALID' },
     ]);
 
     const result = await annualRewardService.previewImport(buffer);
@@ -362,9 +358,9 @@ describe('annualReward.service - previewImport', () => {
     ]);
 
     const buffer = await makeCaNhanExcelBuffer([
-      { id: 'qn-1', ho_va_ten: 'Nguyễn Văn A', nam: 2024, danh_hieu: 'CSTDCS', so_quyet_dinh: 'QD-001', cap_bac: 'Đại uý', chuc_vu: 'Trợ lý' },
+      { id: 'qn-1', ho_va_ten: 'Nguyễn Văn A', nam: 2024, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS, so_quyet_dinh: 'QD-001', cap_bac: 'Đại uý', chuc_vu: 'Trợ lý' },
       // Invalid — missing year
-      { id: 'qn-2', ho_va_ten: 'Nguyễn Văn B', danh_hieu: 'CSTT', so_quyet_dinh: 'QD-002', cap_bac: 'Đại uý', chuc_vu: 'Trợ lý' },
+      { id: 'qn-2', ho_va_ten: 'Nguyễn Văn B', danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTT, so_quyet_dinh: 'QD-002', cap_bac: 'Đại uý', chuc_vu: 'Trợ lý' },
     ]);
 
     const result = await annualRewardService.previewImport(buffer);
@@ -397,7 +393,7 @@ describe('annualReward.service - confirmImport', () => {
         cap_bac: 'Đại uý',
         chuc_vu: 'Trợ lý',
         nam: 2024,
-        danh_hieu: 'CSTDCS',
+        danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS,
         so_quyet_dinh: 'QD-001',
         ghi_chu: null,
       },
@@ -408,7 +404,7 @@ describe('annualReward.service - confirmImport', () => {
         cap_bac: 'Đại uý',
         chuc_vu: 'Trợ lý',
         nam: 2024,
-        danh_hieu: 'CSTT',
+        danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTT,
         so_quyet_dinh: 'QD-002',
         ghi_chu: null,
       },
@@ -423,7 +419,7 @@ describe('annualReward.service - confirmImport', () => {
     expect(firstCall.create).toMatchObject({
       quan_nhan_id: 'qn-1',
       nam: 2024,
-      danh_hieu: 'CSTDCS',
+      danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS,
       so_quyet_dinh: 'QD-001',
     });
   });
@@ -433,7 +429,7 @@ describe('annualReward.service - confirmImport', () => {
       {
         id: 'prop-1',
         nam: 2024,
-        data_danh_hieu: [{ personnel_id: 'qn-1', danh_hieu: 'CSTDCS' }],
+        data_danh_hieu: [{ personnel_id: 'qn-1', danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS }],
       },
     ]);
     prismaMock.danhHieuHangNam.findMany.mockResolvedValueOnce([]);
@@ -448,7 +444,7 @@ describe('annualReward.service - confirmImport', () => {
           cap_bac: 'Đại uý',
           chuc_vu: 'Trợ lý',
           nam: 2024,
-          danh_hieu: 'CSTDCS',
+          danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS,
           so_quyet_dinh: 'QD-001',
           ghi_chu: null,
         },
@@ -527,7 +523,7 @@ describe('annualReward.service - confirmImport', () => {
     prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-XYZ' }]);
 
     const buffer = await makeCaNhanExcelBuffer([
-      { id: 'qn-prev', ho_va_ten: 'QN Preview', nam: 2024, danh_hieu: 'CSTDCS' },
+      { id: 'qn-prev', ho_va_ten: 'QN Preview', nam: 2024, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS },
     ]);
 
     const result = await annualRewardService.previewImport(buffer);

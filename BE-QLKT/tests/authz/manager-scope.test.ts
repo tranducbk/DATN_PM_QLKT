@@ -1,7 +1,8 @@
 import type { Request } from 'express';
-import { prismaMock, resetPrismaMock } from '../helpers/prismaMock';
+import { prismaMock } from '../helpers/prismaMock';
 import { makeUnit, makePersonnel } from '../helpers/fixtures';
 import { ROLES } from '../../src/constants/roles.constants';
+import { PROPOSAL_TYPES } from '../../src/constants/proposalTypes.constants';
 import {
   buildManagerQuanNhanFilter,
   getManagerUnitContext,
@@ -10,10 +11,6 @@ import { getProposals, getProposalById } from '../../src/services/proposal/core'
 import {
   PROPOSAL_NOT_FOUND_ERROR,
 } from '../helpers/errorMessages';
-
-beforeEach(() => {
-  resetPrismaMock();
-});
 
 interface ManagerAccountFixture {
   accountId: string;
@@ -162,7 +159,7 @@ describe('authz/manager-scope - getProposalById visibility', () => {
     const cqdvB = 'cqdv-B';
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce({
       id: 'p-1',
-      loai_de_xuat: 'CA_NHAN_HANG_NAM',
+      loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       status: 'PENDING',
       nam: 2024,
       thang: null,
@@ -205,7 +202,7 @@ describe('authz/manager-scope - getProposalById visibility', () => {
     const cqdv = 'cqdv-shared';
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce({
       id: 'p-2',
-      loai_de_xuat: 'CA_NHAN_HANG_NAM',
+      loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       status: 'PENDING',
       nam: 2024,
       thang: null,

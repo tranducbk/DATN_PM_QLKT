@@ -1,4 +1,4 @@
-import { prismaMock, resetPrismaMock } from '../helpers/prismaMock';
+import { prismaMock } from '../helpers/prismaMock';
 import { makeProposal, makePersonnel, makeUnit } from '../helpers/fixtures';
 import { expectError } from '../helpers/errorAssert';
 
@@ -7,10 +7,6 @@ import { ValidationError, NotFoundError } from '../../src/middlewares/errorHandl
 import { PROPOSAL_TYPES } from '../../src/constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../../src/constants/proposalStatus.constants';
 import { nckhDuplicateMessage } from '../helpers/errorMessages';
-
-beforeEach(() => {
-  resetPrismaMock();
-});
 
 afterEach(() => {
   jest.restoreAllMocks();

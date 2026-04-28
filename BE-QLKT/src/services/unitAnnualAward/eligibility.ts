@@ -10,7 +10,8 @@ import { checkChainEligibility, type FlagsInWindow } from '../eligibility/chainE
 import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
 import { resolveUnit, buildUnitIdFields } from '../../helpers/unitHelper';
 
-export async function calculateContinuousYears(donViId, year) {
+export async function calculateContinuousYears(donViId: string, year: number) {
+  year = Number(year);
   const records = await prisma.danhHieuDonViHangNam.findMany({
     where: {
       OR: [{ co_quan_don_vi_id: donViId }, { don_vi_truc_thuoc_id: donViId }],
@@ -31,7 +32,8 @@ export async function calculateContinuousYears(donViId, year) {
   return continuous;
 }
 
-export async function countBKBQPInStreak(donViId, year, dvqtStreak?: number) {
+export async function countBKBQPInStreak(donViId: string, year: number, dvqtStreak?: number) {
+  year = Number(year);
   const streak = dvqtStreak ?? (await calculateContinuousYears(donViId, year));
   const startYear = year - 1 - streak + 1;
   const count = await prisma.danhHieuDonViHangNam.count({
@@ -44,7 +46,8 @@ export async function countBKBQPInStreak(donViId, year, dvqtStreak?: number) {
   return count;
 }
 
-export async function calculateTotalDVQT(donViId, year) {
+export async function calculateTotalDVQT(donViId: string, year: number) {
+  year = Number(year);
   const records = await prisma.danhHieuDonViHangNam.findMany({
     where: {
       OR: [{ co_quan_don_vi_id: donViId }, { don_vi_truc_thuoc_id: donViId }],
@@ -101,7 +104,8 @@ export function buildSuggestion(
   return `Chưa đủ điều kiện đề nghị xét ${tenBKBQP}.`;
 }
 
-export async function checkUnitAwardEligibility(donViId, year, danhHieu) {
+export async function checkUnitAwardEligibility(donViId: string, year: number, danhHieu: string) {
+  year = Number(year);
   if (!DANH_HIEU_DON_VI_BANG_KHEN.has(danhHieu)) {
     return { eligible: true, reason: '' };
   }
@@ -128,28 +132,17 @@ export async function checkUnitAwardEligibility(donViId, year, danhHieu) {
     hasReceived = lifetimeCount > 0;
   }
 
-  const lastClaim = await prisma.danhHieuDonViHangNam.findFirst({
-    where: {
-      OR: [{ co_quan_don_vi_id: donViId }, { don_vi_truc_thuoc_id: donViId }],
-      [config.flagColumn]: true,
-      nam: { lt: year },
-    },
-    orderBy: { nam: 'desc' },
-    select: { nam: true },
-  });
-
   return checkChainEligibility(
     config,
-    { streakLength: dvqtLienTuc, nckhStreak: 0, lastClaimYear: lastClaim?.nam ?? null },
+    { streakLength: dvqtLienTuc, nckhStreak: 0 },
     hasReceived,
-    flagsInWindow,
-    year
+    flagsInWindow
   );
 }
 
-export async function recalculateAnnualUnit(donViId, year = null) {
+export async function recalculateAnnualUnit(donViId: string, year: number | null = null) {
   const { isCoQuanDonVi } = await resolveUnit(donViId);
-  const targetYear = year || new Date().getFullYear();
+  const targetYear = year ? Number(year) : new Date().getFullYear();
 
   const [danhHieuList, dvqtResult, dvqtLienTuc] = await Promise.all([
     prisma.danhHieuDonViHangNam.findMany({

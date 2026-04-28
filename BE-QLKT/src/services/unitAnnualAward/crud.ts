@@ -451,7 +451,8 @@ export async function remove(
   return true;
 }
 
-export async function getAnnualUnit(donViId, year) {
+export async function getAnnualUnit(donViId: string, year: number) {
+  year = Number(year);
   const { isCoQuanDonVi } = await resolveUnit(donViId);
 
   let profile = await prisma.hoSoDonViHangNam.findFirst({

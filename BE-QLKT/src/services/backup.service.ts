@@ -261,7 +261,7 @@ class BackupService {
       userRole: 'SYSTEM',
       action: AUDIT_ACTIONS.BACKUP,
       resource: 'backup',
-      description: `Backup dữ liệu: ${filename} (${totalRecords} bản ghi, ${sizeKB} KB)`,
+      description: `Sao lưu dữ liệu: ${filename} (${totalRecords} bản ghi, ${sizeKB} KB)`,
       payload: { filename, type: options.type, totalRecords, sizeKB },
     });
 
@@ -318,7 +318,7 @@ class BackupService {
       userRole: 'SYSTEM',
       action: AUDIT_ACTIONS.DELETE,
       resource: 'backup',
-      description: `Xóa file backup: ${filename}`,
+      description: `Xóa file sao lưu: ${filename}`,
     });
   }
 

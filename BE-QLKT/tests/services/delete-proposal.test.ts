@@ -1,4 +1,4 @@
-import { prismaMock, resetPrismaMock } from '../helpers/prismaMock';
+import { prismaMock } from '../helpers/prismaMock';
 import { makeProposal } from '../helpers/fixtures';
 import { expectError } from '../helpers/errorAssert';
 import {
@@ -12,10 +12,6 @@ import { NotFoundError, ForbiddenError, ValidationError } from '../../src/middle
 import { ROLES } from '../../src/constants/roles.constants';
 import { PROPOSAL_STATUS } from '../../src/constants/proposalStatus.constants';
 import { PROPOSAL_TYPES } from '../../src/constants/proposalTypes.constants';
-
-beforeEach(() => {
-  resetPrismaMock();
-});
 
 const MANAGER_ID = 'acc-manager-del-1';
 const OTHER_MANAGER_ID = 'acc-manager-del-2';

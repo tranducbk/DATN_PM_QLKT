@@ -25,30 +25,14 @@ function findAward(code: string, list: ChainAwardConfig[]): ChainAwardConfig {
 }
 
 describe('eligibility/chainEligibility helper', () => {
-  it('uses effective streak for NCKH when cycle already reset by previous claim', () => {
-    const cstdtq = findAward(DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ, PERSONAL_CHAIN_AWARDS);
-
-    const result = checkChainEligibility(
-      cstdtq,
-      { streakLength: 6, nckhStreak: 3, lastClaimYear: 2020 },
-      false,
-      { [DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP]: 1 },
-      2024
-    );
-
-    expect(result.eligible).toBe(true);
-  });
-
   it('keeps unit chain unaffected by NCKH requirement', () => {
     const unitBkbqp = findAward(DANH_HIEU_DON_VI_HANG_NAM.BKBQP, UNIT_CHAIN_AWARDS);
     const result = checkChainEligibility(
       unitBkbqp,
-      { streakLength: 2, nckhStreak: 0, lastClaimYear: null },
+      { streakLength: 2, nckhStreak: 0 },
       false,
-      {},
-      2024
+      {}
     );
-
     expect(result.eligible).toBe(true);
   });
 });

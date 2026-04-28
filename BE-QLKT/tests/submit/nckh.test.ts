@@ -1,4 +1,4 @@
-import { prismaMock, resetPrismaMock } from '../helpers/prismaMock';
+import { prismaMock } from '../helpers/prismaMock';
 import { makePersonnel, makeUnit, makeAdmin } from '../helpers/fixtures';
 import { expectError } from '../helpers/errorAssert';
 
@@ -6,10 +6,7 @@ import proposalService from '../../src/services/proposal';
 import { NotFoundError } from '../../src/middlewares/errorHandler';
 import { PROPOSAL_TYPES } from '../../src/constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../../src/constants/proposalStatus.constants';
-
-beforeEach(() => {
-  resetPrismaMock();
-});
+import { ROLES } from '../../src/constants/roles.constants';
 
 afterEach(() => {
   jest.restoreAllMocks();
@@ -128,7 +125,7 @@ describe('proposal.submit - NCKH', () => {
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       id: 'acc-no-qn',
       username: 'orphan',
-      role: 'ADMIN',
+      role: ROLES.ADMIN,
       quan_nhan_id: null,
       QuanNhan: null,
     });

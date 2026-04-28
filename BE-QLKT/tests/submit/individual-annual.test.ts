@@ -8,6 +8,7 @@ import { ValidationError, NotFoundError } from '../../src/middlewares/errorHandl
 import { PROPOSAL_TYPES } from '../../src/constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../../src/constants/proposalStatus.constants';
 import { DANH_HIEU_CA_NHAN_HANG_NAM } from '../../src/constants/danhHieu.constants';
+import { ROLES } from '../../src/constants/roles.constants';
 
 beforeEach(() => {
   resetPrismaMock();
@@ -247,7 +248,7 @@ describe('proposal.submit - CA_NHAN_HANG_NAM', () => {
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       id: 'acc-no-qn',
       username: 'orphan',
-      role: 'ADMIN',
+      role: ROLES.ADMIN,
       quan_nhan_id: null,
       QuanNhan: null,
     });
@@ -288,7 +289,7 @@ describe('proposal.submit - CA_NHAN_HANG_NAM', () => {
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       id: 'acc-cqdv',
       username: 'admin',
-      role: 'ADMIN',
+      role: ROLES.ADMIN,
       QuanNhan: {
         id: 'qn-mgr-cqdv',
         ho_ten: 'Mgr',
@@ -328,7 +329,7 @@ describe('proposal.submit - CA_NHAN_HANG_NAM', () => {
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       id: 'acc-dvtt',
       username: 'admin',
-      role: 'ADMIN',
+      role: ROLES.ADMIN,
       QuanNhan: {
         id: 'qn-mgr-dvtt',
         ho_ten: 'Mgr',

@@ -309,11 +309,11 @@ export default function DevZonePage() {
         { headers: { 'x-dev-password': devPassword } },
       );
       if (res.data.success) {
-        message.success(`Backup thành công: ${res.data.data.filename} (${res.data.data.sizeKB} KB)`);
+        message.success(`Sao lưu thành công: ${res.data.data.filename} (${res.data.data.sizeKB} KB)`);
         fetchBackupStatus(devPassword);
       }
     } catch (err: unknown) {
-      message.error(getApiErrorMessage(err, 'Backup thất bại'));
+      message.error(getApiErrorMessage(err, 'Sao lưu thất bại'));
     } finally {
       setBackupTriggerLoading(false);
     }
@@ -635,7 +635,7 @@ export default function DevZonePage() {
               </div>
 
               <div className="dz-feature-row">
-                <span className="dz-feature-label">Tự động backup</span>
+                <span className="dz-feature-label">Tự động sao lưu</span>
                 <Switch
                   checked={backupStatus?.enabled ?? false}
                   onChange={v => {
@@ -650,7 +650,7 @@ export default function DevZonePage() {
               <div className="dz-divider" />
 
               <div>
-                <div className="dz-schedule-label">Lịch backup</div>
+                <div className="dz-schedule-label">Lịch sao lưu</div>
                 <Space direction="vertical" size={8} style={{ width: '100%' }}>
                   <Select
                     style={{ width: '100%' }}
@@ -696,7 +696,7 @@ export default function DevZonePage() {
                           handleUpdateBackupSchedule(undefined, schedule);
                         }}
                       >
-                        Lưu lịch backup
+                        Lưu lịch sao lưu
                       </Button>
                     </Space>
                   )}
@@ -706,7 +706,7 @@ export default function DevZonePage() {
               <div className="dz-divider" />
 
               <div>
-                <div className="dz-schedule-label">Giữ backup trong (ngày)</div>
+                <div className="dz-schedule-label">Giữ bản sao lưu (ngày)</div>
                 <Space size={8}>
                   <InputNumber
                     min={1}
@@ -746,14 +746,14 @@ export default function DevZonePage() {
                 block
                 className="dz-trigger-btn"
               >
-                {backupTriggerLoading ? 'Đang backup...' : 'Backup ngay'}
+                {backupTriggerLoading ? 'Đang sao lưu...' : 'Sao lưu ngay'}
               </Button>
 
               {backupStatus?.lastRun && (
                 <div style={{ marginTop: 12 }}>
                   <Alert
                     type="info"
-                    message={`Lần backup gần nhất: ${formatDateTime(backupStatus.lastRun)}`}
+                    message={`Lần sao lưu gần nhất: ${formatDateTime(backupStatus.lastRun)}`}
                     showIcon={false}
                   />
                 </div>

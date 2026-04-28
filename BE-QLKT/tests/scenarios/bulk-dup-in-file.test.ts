@@ -23,7 +23,10 @@ import annualRewardService from '../../src/services/annualReward.service';
 import { ValidationError } from '../../src/middlewares/errorHandler';
 import { PROPOSAL_TYPES } from '../../src/constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../../src/constants/proposalStatus.constants';
-import { DANH_HIEU_CA_NHAN_HANG_NAM } from '../../src/constants/danhHieu.constants';
+import {
+  DANH_HIEU_CA_NHAN_HANG_NAM,
+  DANH_HIEU_DON_VI_HANG_NAM,
+} from '../../src/constants/danhHieu.constants';
 
 beforeEach(() => {
   resetPrismaMock();
@@ -168,7 +171,7 @@ describe('Bulk dup — Excel rows referencing same personnel + nam', () => {
         id: 'qn-excel-dup',
         ho_va_ten: 'Lê Excel',
         nam: 2024,
-        danh_hieu: 'CSTDCS',
+        danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS,
         so_quyet_dinh: 'QD-A',
         cap_bac: 'Đại uý',
         chuc_vu: 'Trợ lý',
@@ -177,7 +180,7 @@ describe('Bulk dup — Excel rows referencing same personnel + nam', () => {
         id: 'qn-excel-dup',
         ho_va_ten: 'Lê Excel',
         nam: 2024,
-        danh_hieu: 'CSTT',
+        danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTT,
         so_quyet_dinh: 'QD-B',
         cap_bac: 'Đại uý',
         chuc_vu: 'Trợ lý',
@@ -211,13 +214,13 @@ describe('Bulk dup — DON_VI_HANG_NAM duplicate units in payload', () => {
             personnel_id: '',
             don_vi_id: 'cqdv-dup',
             don_vi_type: 'CO_QUAN_DON_VI',
-            danh_hieu: 'ĐVQT',
+            danh_hieu: DANH_HIEU_DON_VI_HANG_NAM.DVQT,
           },
           {
             personnel_id: '',
             don_vi_id: 'cqdv-dup',
             don_vi_type: 'CO_QUAN_DON_VI',
-            danh_hieu: 'ĐVQT',
+            danh_hieu: DANH_HIEU_DON_VI_HANG_NAM.DVQT,
           },
         ],
         null,        ADMIN_ID,

@@ -1,4 +1,4 @@
-import { prismaMock, resetPrismaMock } from '../helpers/prismaMock';
+import { prismaMock } from '../helpers/prismaMock';
 import { expectError } from '../helpers/errorAssert';
 import {
   POSITION_HISTORY_PERSONNEL_ID_REQUIRED,
@@ -19,10 +19,6 @@ import {
   NotFoundError,
   ValidationError,
 } from '../../src/middlewares/errorHandler';
-
-beforeEach(() => {
-  resetPrismaMock();
-});
 
 const PERSONNEL_ID = 'qn-pos-1';
 const CHUC_VU_ID = 'cv-1';

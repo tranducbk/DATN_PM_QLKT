@@ -34,9 +34,17 @@ import {
   WarningOutlined,
   FileTextOutlined,
   DeleteOutlined,
+  HistoryOutlined,
 } from '@ant-design/icons';
 import { EditableCell } from '@/components/shared/EditableCell';
 import { DecisionModal } from '@/components/decisions/DecisionModal';
+import { PersonnelRewardHistoryModal } from '@/components/proposals/bulk/PersonnelRewardHistoryModal';
+import { ServiceHistoryModal } from '@/components/proposals/bulk/ServiceHistoryModal';
+import { PositionHistoryModal } from '@/components/proposals/bulk/PositionHistoryModal';
+import {
+  UnitAnnualAwardHistoryModal,
+  type UnitAnnualAwards,
+} from '@/components/proposals/bulk/UnitAnnualAwardHistoryModal';
 import { formatDateTime } from '@/lib/utils';
 import { apiClient } from '@/lib/apiClient';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
@@ -120,6 +128,27 @@ export default function ProposalDetailPage() {
   // Reject modal
   const [rejectModalVisible, setRejectModalVisible] = useState(false);
   const [ghiChu, setGhiChu] = useState('');
+
+  const [historyModalType, setHistoryModalType] = useState<
+    'annual' | 'service' | 'position' | 'unit' | null
+  >(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyPersonnel, setHistoryPersonnel] = useState<{
+    id: string;
+    ho_ten: string;
+  } | null>(null);
+  const [historyUnit, setHistoryUnit] = useState<{
+    id: string;
+    ten_don_vi: string;
+    ma_don_vi?: string;
+  } | null>(null);
+  const [historyAnnualProfile, setHistoryAnnualProfile] = useState<any>(null);
+  const [historyServiceProfile, setHistoryServiceProfile] = useState<Record<
+    string,
+    unknown
+  > | null>(null);
+  const [historyPositionList, setHistoryPositionList] = useState<any[]>([]);
+  const [historyUnitAwards, setHistoryUnitAwards] = useState<UnitAnnualAwards | null>(null);
 
   const fetchPersonnelDetails = useCallback(async (danhHieuItems: DanhHieuItem[]) => {
     try {
@@ -490,6 +519,67 @@ export default function ProposalDetailPage() {
     await downloadDecisionFile(soQuyetDinh);
   };
 
+  const handleViewPersonnelHistory = async (record: DanhHieuItem) => {
+    if (!proposal || !record.personnel_id) return;
+    const loaiDeXuat = proposal.loai_de_xuat;
+    const personnel = { id: record.personnel_id, ho_ten: record.ho_ten || 'Quân nhân' };
+    setHistoryPersonnel(personnel);
+    setHistoryAnnualProfile(null);
+    setHistoryServiceProfile(null);
+    setHistoryPositionList([]);
+    setHistoryLoading(true);
+
+    try {
+      if (loaiDeXuat === PROPOSAL_TYPES.CA_NHAN_HANG_NAM) {
+        setHistoryModalType('annual');
+        const res = await apiClient.getAnnualProfile(record.personnel_id, proposal.nam);
+        setHistoryAnnualProfile(res.success && res.data ? res.data : null);
+      } else if (
+        loaiDeXuat === PROPOSAL_TYPES.NIEN_HAN ||
+        loaiDeXuat === PROPOSAL_TYPES.HC_QKQT ||
+        loaiDeXuat === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN
+      ) {
+        setHistoryModalType('service');
+        const res = await apiClient.getTenureProfile(record.personnel_id);
+        setHistoryServiceProfile(res.success && res.data ? res.data : null);
+      } else if (loaiDeXuat === PROPOSAL_TYPES.CONG_HIEN) {
+        setHistoryModalType('position');
+        const res = await apiClient.getPositionHistory(record.personnel_id);
+        setHistoryPositionList(res.success && Array.isArray(res.data) ? res.data : []);
+      }
+    } catch (error) {
+      message.error(getApiErrorMessage(error, 'Không thể tải lịch sử khen thưởng'));
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const handleViewUnitHistory = async (record: DanhHieuItem) => {
+    if (!proposal || !record.don_vi_id) return;
+    setHistoryUnit({
+      id: record.don_vi_id,
+      ten_don_vi: record.ten_don_vi || 'Đơn vị',
+      ma_don_vi: record.ma_don_vi,
+    });
+    setHistoryUnitAwards(null);
+    setHistoryModalType('unit');
+    setHistoryLoading(true);
+    try {
+      const res = await apiClient.getUnitAnnualProfile(record.don_vi_id, proposal.nam);
+      setHistoryUnitAwards(res.success && res.data ? (res.data as UnitAnnualAwards) : null);
+    } catch (error) {
+      message.error(getApiErrorMessage(error, 'Không thể tải lịch sử khen thưởng đơn vị'));
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const closeHistoryModal = () => {
+    setHistoryModalType(null);
+    setHistoryPersonnel(null);
+    setHistoryUnit(null);
+  };
+
   if (loading) {
     return (
       <div
@@ -787,6 +877,25 @@ export default function ProposalDetailPage() {
         );
       },
     },
+    {
+      title: proposal?.loai_de_xuat === PROPOSAL_TYPES.CONG_HIEN
+        ? 'Xem lịch sử chức vụ'
+        : 'Xem lịch sử khen thưởng',
+      key: 'history',
+      width: 180,
+      align: 'center' as const,
+      render: (_: unknown, record: DanhHieuItem) => (
+        <Button
+          type="link"
+          icon={<HistoryOutlined />}
+          size="small"
+          onClick={() => handleViewPersonnelHistory(record)}
+          disabled={!record.personnel_id}
+        >
+          Xem lịch sử
+        </Button>
+      ),
+    },
   ];
 
   const congHienThangNhanColumn = {
@@ -977,6 +1086,23 @@ export default function ProposalDetailPage() {
           </div>
         );
       },
+    },
+    {
+      title: 'Xem lịch sử khen thưởng',
+      key: 'history',
+      width: 180,
+      align: 'center' as const,
+      render: (_: unknown, record: DanhHieuItem) => (
+        <Button
+          type="link"
+          icon={<HistoryOutlined />}
+          size="small"
+          onClick={() => handleViewUnitHistory(record)}
+          disabled={!record.don_vi_id}
+        >
+          Xem lịch sử
+        </Button>
+      ),
     },
   ];
 
@@ -1710,6 +1836,38 @@ export default function ProposalDetailPage() {
           onClose={() => setDecisionModalVisible(false)}
           onSuccess={handleDecisionSuccess}
           loaiKhenThuong={proposal?.loai_de_xuat}
+        />
+
+        <PersonnelRewardHistoryModal
+          visible={historyModalType === 'annual'}
+          personnel={historyPersonnel}
+          annualProfile={historyAnnualProfile}
+          loading={historyLoading}
+          onClose={closeHistoryModal}
+        />
+
+        <ServiceHistoryModal
+          visible={historyModalType === 'service'}
+          personnel={historyPersonnel}
+          serviceProfile={historyServiceProfile}
+          loading={historyLoading}
+          onClose={closeHistoryModal}
+        />
+
+        <PositionHistoryModal
+          visible={historyModalType === 'position'}
+          personnel={historyPersonnel}
+          positionHistory={historyPositionList}
+          loading={historyLoading}
+          onClose={closeHistoryModal}
+        />
+
+        <UnitAnnualAwardHistoryModal
+          visible={historyModalType === 'unit'}
+          unit={historyUnit}
+          annualAwards={historyUnitAwards}
+          loading={historyLoading}
+          onClose={closeHistoryModal}
         />
       </div>
     </ConfigProvider>

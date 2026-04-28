@@ -1,66 +1,8 @@
 import { prismaMock, resetPrismaMock } from '../helpers/prismaMock';
-import { makePersonnel, makeAnnualRecord, makeThanhTichKhoaHoc } from '../helpers/fixtures';
+import { AnnualRow, ScienceRow, buildPersonnelWithHistory } from '../helpers/eligibilityFixtures';
 import profileService from '../../src/services/profile.service';
 import { DANH_HIEU_CA_NHAN_HANG_NAM } from '../../src/constants/danhHieu.constants';
 import { eligibilityReasons, suggestionMessages } from '../helpers/errorMessages';
-
-beforeEach(() => {
-  resetPrismaMock();
-});
-
-interface AnnualRow {
-  nam: number;
-  danh_hieu: string | null;
-  nhan_bkbqp?: boolean;
-  nhan_cstdtq?: boolean;
-  nhan_bkttcp?: boolean;
-  so_quyet_dinh?: string | null;
-  so_quyet_dinh_bkbqp?: string | null;
-  so_quyet_dinh_cstdtq?: string | null;
-  so_quyet_dinh_bkttcp?: string | null;
-}
-
-interface ScienceRow {
-  nam: number;
-  loai?: 'DTKH' | 'SKKH';
-  mo_ta?: string;
-  so_quyet_dinh?: string | null;
-}
-
-/** Builds a fixture-shaped result for `prisma.quanNhan.findUnique` with award + science includes. */
-function buildPersonnelWithHistory(
-  personnelId: string,
-  danhHieuRows: AnnualRow[],
-  thanhTichRows: ScienceRow[]
-) {
-  const base = makePersonnel({ id: personnelId });
-  return {
-    ...base,
-    DanhHieuHangNam: danhHieuRows.map(r =>
-      makeAnnualRecord({
-        personnelId,
-        nam: r.nam,
-        danh_hieu: r.danh_hieu,
-        nhan_bkbqp: r.nhan_bkbqp,
-        nhan_cstdtq: r.nhan_cstdtq,
-        nhan_bkttcp: r.nhan_bkttcp,
-        so_quyet_dinh: r.so_quyet_dinh,
-        so_quyet_dinh_bkbqp: r.so_quyet_dinh_bkbqp,
-        so_quyet_dinh_cstdtq: r.so_quyet_dinh_cstdtq,
-        so_quyet_dinh_bkttcp: r.so_quyet_dinh_bkttcp,
-      })
-    ),
-    ThanhTichKhoaHoc: thanhTichRows.map(r =>
-      makeThanhTichKhoaHoc({
-        personnelId,
-        nam: r.nam,
-        loai: r.loai,
-        mo_ta: r.mo_ta,
-        so_quyet_dinh: r.so_quyet_dinh,
-      })
-    ),
-  };
-}
 
 describe('profile.service - checkAwardEligibility (BKBQP)', () => {
   it('2 năm CSTDCS liên tục + NCKH đủ → eligible BKBQP', async () => {

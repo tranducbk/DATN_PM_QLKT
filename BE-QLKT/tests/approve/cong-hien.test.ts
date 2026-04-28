@@ -1,4 +1,4 @@
-import { prismaMock, resetPrismaMock } from '../helpers/prismaMock';
+import { prismaMock } from '../helpers/prismaMock';
 import { makeProposal, makePersonnel, makeUnit } from '../helpers/fixtures';
 import { expectError } from '../helpers/errorAssert';
 
@@ -13,10 +13,6 @@ import {
   CONG_HIEN_APPROVE_INELIGIBLE_PREFIX,
   HCBVTQ_HIGHEST_DOWNGRADE_FRAGMENT,
 } from '../helpers/errorMessages';
-
-beforeEach(() => {
-  resetPrismaMock();
-});
 
 afterEach(() => {
   jest.restoreAllMocks();

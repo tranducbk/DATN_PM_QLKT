@@ -15,6 +15,7 @@ export const ACTION_LABELS: Record<string, string> = {
   BULK: 'Thêm đồng loạt',
   BULK_CREATE: 'Thêm đồng loạt',
   RECALCULATE: 'Tính toán lại',
+  BACKUP: 'Sao lưu',
 };
 
 /** Mapping role → label tiếng Việt */

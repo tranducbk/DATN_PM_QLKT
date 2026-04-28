@@ -32,6 +32,7 @@ import proposalService from '../../src/services/proposal';
 import profileService from '../../src/services/profile.service';
 import { ValidationError, NotFoundError } from '../../src/middlewares/errorHandler';
 import { PROPOSAL_TYPES } from '../../src/constants/proposalTypes.constants';
+import { ROLES } from '../../src/constants/roles.constants';
 import { PROPOSAL_STATUS } from '../../src/constants/proposalStatus.constants';
 import { DANH_HIEU_CA_NHAN_HANG_NAM, DANH_HIEU_DON_VI_HANG_NAM } from '../../src/constants/danhHieu.constants';
 
@@ -124,7 +125,7 @@ describe('Bypass FE — payload shape attacks', () => {
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       id: 'acc-orphan',
       username: 'orphan',
-      role: 'ADMIN',
+      role: ROLES.ADMIN,
       quan_nhan_id: null,
       QuanNhan: null,
     });

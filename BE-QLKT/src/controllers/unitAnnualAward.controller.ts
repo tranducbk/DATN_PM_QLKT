@@ -50,7 +50,7 @@ interface GetUnitAnnualProfileParams {
 }
 
 interface GetUnitAnnualProfileQuery {
-  year?: number;
+  year?: string;
 }
 
 interface ConfirmImportItem {
@@ -224,12 +224,14 @@ class UnitAnnualAwardController {
     const query = req.query as GetUnitAnnualProfileQuery;
     const { don_vi_id } = params;
     const { year } = query;
-    const yearNumber = year ?? null;
+    const yearNumber = year != null && year !== '' ? Number(year) : null;
     if (!don_vi_id) {
       return ResponseHelper.badRequest(res, 'Thiếu thông tin đơn vị');
     }
-    if (yearNumber) await service.recalculateAnnualUnit(don_vi_id, yearNumber);
-    const result = await service.getAnnualUnit(don_vi_id, yearNumber || new Date().getFullYear());
+    if (yearNumber && !Number.isNaN(yearNumber)) {
+      await service.recalculateAnnualUnit(don_vi_id, yearNumber);
+    }
+    const result = await service.getAnnualUnit(don_vi_id, yearNumber && !Number.isNaN(yearNumber) ? yearNumber : new Date().getFullYear());
     return ResponseHelper.success(res, {
       message: 'Lấy hồ sơ hằng năm đơn vị thành công',
       data: result,

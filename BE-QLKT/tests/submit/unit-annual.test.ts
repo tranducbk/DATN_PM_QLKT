@@ -11,6 +11,7 @@ import {
   DANH_HIEU_DON_VI_HANG_NAM,
   DANH_HIEU_CA_NHAN_HANG_NAM,
 } from '../../src/constants/danhHieu.constants';
+import { ROLES } from '../../src/constants/roles.constants';
 
 beforeEach(() => {
   resetPrismaMock();
@@ -267,7 +268,7 @@ describe('proposal.submit - DON_VI_HANG_NAM', () => {
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       id: 'acc-cqdv',
       username: 'admin',
-      role: 'ADMIN',
+      role: ROLES.ADMIN,
       QuanNhan: {
         id: 'qn-mgr-cqdv',
         ho_ten: 'Mgr',
@@ -301,7 +302,7 @@ describe('proposal.submit - DON_VI_HANG_NAM', () => {
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       id: 'acc-dvtt',
       username: 'admin',
-      role: 'ADMIN',
+      role: ROLES.ADMIN,
       QuanNhan: {
         id: 'qn-mgr-dvtt',
         ho_ten: 'Mgr',

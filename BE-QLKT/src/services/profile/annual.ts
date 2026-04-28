@@ -423,27 +423,12 @@ export async function checkAwardEligibility(personnelId: string, year: number, d
     ? danhHieuList.some((dh: DanhHieuHangNam) => (dh as unknown as Record<string, unknown>)[config.flagColumn] === true)
     : false;
 
-  const lastClaimYear = findLastClaimYear(danhHieuList, config.flagColumn, year);
-
   return checkChainEligibility(
     config,
-    { streakLength: cstdcs_lien_tuc, nckhStreak: nckh_lien_tuc, lastClaimYear },
+    { streakLength: cstdcs_lien_tuc, nckhStreak: nckh_lien_tuc },
     hasReceived,
-    flagsInWindow,
-    year
+    flagsInWindow
   );
-}
-
-/** Latest year < evaluationYear where the given flag column is true; null when never claimed. */
-function findLastClaimYear(danhHieuList: DanhHieuHangNam[], flagColumn: string, evaluationYear: number): number | null {
-  let max: number | null = null;
-  for (const dh of danhHieuList) {
-    const record = dh as unknown as Record<string, unknown>;
-    if (record[flagColumn] === true && dh.nam < evaluationYear) {
-      if (max === null || dh.nam > max) max = dh.nam;
-    }
-  }
-  return max;
 }
 
 /** Maps a chain award code to its boolean flag column on `DanhHieuHangNam`. */

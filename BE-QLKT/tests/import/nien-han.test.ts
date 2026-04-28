@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs';
-import { prismaMock, resetPrismaMock } from '../helpers/prismaMock';
+import { prismaMock } from '../helpers/prismaMock';
 import { makePersonnel } from '../helpers/fixtures';
 import { expectError } from '../helpers/errorAssert';
 import tenureMedalService from '../../src/services/tenureMedal.service';
@@ -46,10 +46,6 @@ async function makeNienHanExcelBuffer(rows: NienHanRow[]): Promise<Buffer> {
   return Buffer.from(arrayBuffer as ArrayBuffer);
 }
 
-beforeEach(() => {
-  resetPrismaMock();
-});
-
 describe('tenureMedal.service - previewImport', () => {
   it('Row hợp lệ HCCSVV_HANG_BA → push vào valid, không có errors', async () => {
     // Given: personnel enlisted >= 10 years before reference month
@@ -72,7 +68,7 @@ describe('tenureMedal.service - previewImport', () => {
         chuc_vu: 'Trợ lý',
         nam: 2024,
         thang: 12,
-        danh_hieu: 'HCCSVV_HANG_BA',
+        danh_hieu: DANH_HIEU_HCCSVV.HANG_BA,
         so_quyet_dinh: 'QD-001',
       },
     ]);
@@ -101,7 +97,7 @@ describe('tenureMedal.service - previewImport', () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
 
     const buffer = await makeNienHanExcelBuffer([
-      { id: 'qn-1', ho_va_ten: 'Nguyễn Văn A', nam: 2024, danh_hieu: 'HCCSVV_HANG_BA' },
+      { id: 'qn-1', ho_va_ten: 'Nguyễn Văn A', nam: 2024, danh_hieu: DANH_HIEU_HCCSVV.HANG_BA },
     ]);
 
     const result = await tenureMedalService.previewImport(buffer);
@@ -123,7 +119,7 @@ describe('tenureMedal.service - previewImport', () => {
         ho_va_ten: 'Ai Đó',
         nam: 2024,
         thang: 12,
-        danh_hieu: 'HCCSVV_HANG_BA',
+        danh_hieu: DANH_HIEU_HCCSVV.HANG_BA,
         so_quyet_dinh: 'QD-001',
       },
     ]);
@@ -154,7 +150,7 @@ describe('tenureMedal.service - previewImport', () => {
         chuc_vu: 'Trợ lý',
         nam: 2024,
         thang: 12,
-        danh_hieu: 'HCCSVV_HANG_BA',
+        danh_hieu: DANH_HIEU_HCCSVV.HANG_BA,
         so_quyet_dinh: 'QD-001',
       },
     ]);
@@ -185,7 +181,7 @@ describe('tenureMedal.service - previewImport', () => {
         chuc_vu: 'Trợ lý',
         nam: 2024,
         thang: 12,
-        danh_hieu: 'HCCSVV_HANG_NHI',
+        danh_hieu: DANH_HIEU_HCCSVV.HANG_NHI,
         so_quyet_dinh: 'QD-002',
       },
     ]);
@@ -216,7 +212,7 @@ describe('tenureMedal.service - previewImport', () => {
         chuc_vu: 'Trợ lý',
         nam: 2024,
         thang: 12,
-        danh_hieu: 'HCCSVV_HANG_NHI',
+        danh_hieu: DANH_HIEU_HCCSVV.HANG_NHI,
         so_quyet_dinh: 'QD-RK',
       },
     ]);
@@ -248,7 +244,7 @@ describe('tenureMedal.service - previewImport', () => {
         chuc_vu: 'Trợ lý',
         nam: 2024,
         thang: 12,
-        danh_hieu: 'HCCSVV_HANG_BA',
+        danh_hieu: DANH_HIEU_HCCSVV.HANG_BA,
         so_quyet_dinh: 'QD-EMPTY',
       },
     ]);
@@ -278,7 +274,7 @@ describe('tenureMedal.service - previewImport', () => {
       chuc_vu: 'Trợ lý',
       nam: 2024,
       thang: 12,
-      danh_hieu: 'HCCSVV_HANG_BA',
+      danh_hieu: DANH_HIEU_HCCSVV.HANG_BA,
       so_quyet_dinh: 'QD-DUP',
     };
     const buffer = await makeNienHanExcelBuffer([row, { ...row }]);
@@ -310,7 +306,7 @@ describe('tenureMedal.service - previewImport', () => {
         chuc_vu: 'Trợ lý',
         nam: 2024,
         thang: 0,
-        danh_hieu: 'HCCSVV_HANG_BA',
+        danh_hieu: DANH_HIEU_HCCSVV.HANG_BA,
         so_quyet_dinh: 'QD-T0',
       },
     ]);
@@ -342,7 +338,7 @@ describe('tenureMedal.service - previewImport', () => {
         chuc_vu: 'Trợ lý',
         nam: 2024,
         thang: 13,
-        danh_hieu: 'HCCSVV_HANG_BA',
+        danh_hieu: DANH_HIEU_HCCSVV.HANG_BA,
         so_quyet_dinh: 'QD-T13',
       },
     ]);
@@ -372,7 +368,7 @@ describe('tenureMedal.service - previewImport', () => {
         chuc_vu: 'Trợ lý',
         nam: 1899,
         thang: 12,
-        danh_hieu: 'HCCSVV_HANG_BA',
+        danh_hieu: DANH_HIEU_HCCSVV.HANG_BA,
         so_quyet_dinh: 'QD-Y',
       },
     ]);
@@ -417,7 +413,7 @@ describe('tenureMedal.service - previewImport', () => {
     const workbook = new ExcelJS.Workbook();
     const ws = workbook.addWorksheet('Danh hiệu hằng năm');
     ws.addRow([...HEADERS]);
-    ws.addRow(['qn-x', 'X', 'Đại uý', 'Trợ lý', 2024, 12, 'HCCSVV_HANG_BA', 'QD-X', '']);
+    ws.addRow(['qn-x', 'X', 'Đại uý', 'Trợ lý', 2024, 12, DANH_HIEU_HCCSVV.HANG_BA, 'QD-X', '']);
     const arr = await workbook.xlsx.writeBuffer();
     const buffer = Buffer.from(arr as ArrayBuffer);
 
@@ -447,7 +443,7 @@ describe('tenureMedal.service - previewImport', () => {
         chuc_vu: 'Trợ lý',
         nam: 2024,
         thang: 11,
-        danh_hieu: 'HCCSVV_HANG_BA',
+        danh_hieu: DANH_HIEU_HCCSVV.HANG_BA,
         so_quyet_dinh: 'QD-BD',
       },
     ]);
@@ -479,7 +475,7 @@ describe('tenureMedal.service - previewImport', () => {
         chuc_vu: 'Trợ lý',
         nam: 2024,
         thang: 12,
-        danh_hieu: 'HCCSVV_HANG_NHI',
+        danh_hieu: DANH_HIEU_HCCSVV.HANG_NHI,
         so_quyet_dinh: 'QD-RK',
       },
     ]);

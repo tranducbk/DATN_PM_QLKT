@@ -1,4 +1,4 @@
-import { prismaMock, resetPrismaMock } from '../helpers/prismaMock';
+import { prismaMock } from '../helpers/prismaMock';
 import { makePersonnel, makeAnnualRecord, makeUnit } from '../helpers/fixtures';
 import { expectError } from '../helpers/errorAssert';
 import { missingDecisionNumberMessage } from '../helpers/errorMessages';
@@ -9,10 +9,6 @@ import {
   DANH_HIEU_CA_NHAN_HANG_NAM,
   getDanhHieuName,
 } from '../../src/constants/danhHieu.constants';
-
-beforeEach(() => {
-  resetPrismaMock();
-});
 
 afterEach(() => {
   jest.restoreAllMocks();
@@ -798,7 +794,7 @@ describe('annualReward.service - deleteAnnualReward (granular)', () => {
     });
 
     // Khi: chỉ xóa danh hiệu CSTDCS
-    const result = await annualRewardService.deleteAnnualReward(reward.id, 'admin', 'CSTDCS');
+    const result = await annualRewardService.deleteAnnualReward(reward.id, 'admin', DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS);
 
     // Thì: chỉ field danh hiệu chính bị clear, field BKBQP giữ nguyên, không delete row
     expect(prismaMock.danhHieuHangNam.update).toHaveBeenCalledTimes(1);
@@ -810,7 +806,7 @@ describe('annualReward.service - deleteAnnualReward (granular)', () => {
       so_quyet_dinh: null,
       ghi_chu: null,
     });
-    expect(result.message).toContain(getDanhHieuName('CSTDCS'));
+    expect(result.message).toContain(getDanhHieuName(DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS));
   });
 
   it('xóa BKBQP khi record còn CSTDCS → clear flags BKBQP, giữ CSTDCS', async () => {
@@ -828,7 +824,7 @@ describe('annualReward.service - deleteAnnualReward (granular)', () => {
     prismaMock.danhHieuHangNam.findUnique.mockResolvedValueOnce({ ...reward, QuanNhan: personnel });
     prismaMock.danhHieuHangNam.update.mockResolvedValueOnce(reward);
 
-    await annualRewardService.deleteAnnualReward(reward.id, 'admin', 'BKBQP');
+    await annualRewardService.deleteAnnualReward(reward.id, 'admin', DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP);
 
     expect(prismaMock.danhHieuHangNam.delete).not.toHaveBeenCalled();
     const updateArgs = prismaMock.danhHieuHangNam.update.mock.calls[0][0];
@@ -854,7 +850,7 @@ describe('annualReward.service - deleteAnnualReward (granular)', () => {
     prismaMock.danhHieuHangNam.findUnique.mockResolvedValueOnce({ ...reward, QuanNhan: personnel });
     prismaMock.danhHieuHangNam.update.mockResolvedValueOnce(reward);
 
-    await annualRewardService.deleteAnnualReward(reward.id, 'admin', 'CSTDTQ');
+    await annualRewardService.deleteAnnualReward(reward.id, 'admin', DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ);
 
     expect(prismaMock.danhHieuHangNam.delete).not.toHaveBeenCalled();
     expect(prismaMock.danhHieuHangNam.update.mock.calls[0][0].data).toEqual({
@@ -879,7 +875,7 @@ describe('annualReward.service - deleteAnnualReward (granular)', () => {
     prismaMock.danhHieuHangNam.findUnique.mockResolvedValueOnce({ ...reward, QuanNhan: personnel });
     prismaMock.danhHieuHangNam.update.mockResolvedValueOnce(reward);
 
-    await annualRewardService.deleteAnnualReward(reward.id, 'admin', 'BKTTCP');
+    await annualRewardService.deleteAnnualReward(reward.id, 'admin', DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP);
 
     expect(prismaMock.danhHieuHangNam.delete).not.toHaveBeenCalled();
     expect(prismaMock.danhHieuHangNam.update.mock.calls[0][0].data).toEqual({
@@ -901,7 +897,7 @@ describe('annualReward.service - deleteAnnualReward (granular)', () => {
     prismaMock.danhHieuHangNam.findUnique.mockResolvedValueOnce({ ...reward, QuanNhan: personnel });
     prismaMock.danhHieuHangNam.delete.mockResolvedValueOnce(reward);
 
-    await annualRewardService.deleteAnnualReward(reward.id, 'admin', 'CSTDCS');
+    await annualRewardService.deleteAnnualReward(reward.id, 'admin', DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS);
 
     expect(prismaMock.danhHieuHangNam.delete).toHaveBeenCalledTimes(1);
     expect(prismaMock.danhHieuHangNam.update).not.toHaveBeenCalled();
@@ -919,7 +915,7 @@ describe('annualReward.service - deleteAnnualReward (granular)', () => {
     prismaMock.danhHieuHangNam.findUnique.mockResolvedValueOnce({ ...reward, QuanNhan: personnel });
     prismaMock.danhHieuHangNam.delete.mockResolvedValueOnce(reward);
 
-    await annualRewardService.deleteAnnualReward(reward.id, 'admin', 'BKBQP');
+    await annualRewardService.deleteAnnualReward(reward.id, 'admin', DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP);
 
     expect(prismaMock.danhHieuHangNam.delete).toHaveBeenCalledTimes(1);
     expect(prismaMock.danhHieuHangNam.update).not.toHaveBeenCalled();
@@ -937,9 +933,9 @@ describe('annualReward.service - deleteAnnualReward (granular)', () => {
     prismaMock.danhHieuHangNam.findUnique.mockResolvedValueOnce({ ...reward, QuanNhan: personnel });
 
     await expectError(
-      annualRewardService.deleteAnnualReward(reward.id, 'admin', 'CSTDCS'),
+      annualRewardService.deleteAnnualReward(reward.id, 'admin', DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS),
       ValidationError,
-      `Bản ghi không có ${getDanhHieuName('CSTDCS')}`
+      `Bản ghi không có ${getDanhHieuName(DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS)}`
     );
     expect(prismaMock.danhHieuHangNam.delete).not.toHaveBeenCalled();
     expect(prismaMock.danhHieuHangNam.update).not.toHaveBeenCalled();
@@ -967,7 +963,7 @@ describe('annualReward.service - deleteAnnualReward (granular)', () => {
     prismaMock.danhHieuHangNam.findUnique.mockResolvedValueOnce(null);
 
     await expectError(
-      annualRewardService.deleteAnnualReward('not-exist', 'admin', 'CSTDCS'),
+      annualRewardService.deleteAnnualReward('not-exist', 'admin', DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS),
       NotFoundError
     );
   });
@@ -1010,7 +1006,7 @@ describe('annualReward.service - deleteAnnualReward (granular)', () => {
     prismaMock.danhHieuHangNam.findUnique.mockResolvedValueOnce({ ...reward, QuanNhan: personnel });
     prismaMock.danhHieuHangNam.update.mockResolvedValueOnce(reward);
 
-    await annualRewardService.deleteAnnualReward(reward.id, 'admin', 'CSTDCS');
+    await annualRewardService.deleteAnnualReward(reward.id, 'admin', DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS);
 
     expect(profileMock).toHaveBeenCalledWith(personnel.id);
   });
