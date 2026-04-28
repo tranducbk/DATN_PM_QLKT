@@ -14,18 +14,8 @@ class UnitAnnualAwardService {
   calculateTotalDVQT(donViId, year) {
     return eligibility.calculateTotalDVQT(donViId, year);
   }
-  buildSuggestion(
-    dvqtLienTuc: number,
-    du_dieu_kien_bk_tong_cuc: boolean,
-    du_dieu_kien_bk_thu_tuong: boolean,
-    hasReceivedBKTTCP: boolean
-  ) {
-    return eligibility.buildSuggestion(
-      dvqtLienTuc,
-      du_dieu_kien_bk_tong_cuc,
-      du_dieu_kien_bk_thu_tuong,
-      hasReceivedBKTTCP
-    );
+  buildSuggestion(du_dieu_kien_bk_tong_cuc: boolean, du_dieu_kien_bk_thu_tuong: boolean) {
+    return eligibility.buildSuggestion(du_dieu_kien_bk_tong_cuc, du_dieu_kien_bk_thu_tuong);
   }
   checkUnitAwardEligibility(donViId, year, danhHieu) {
     return eligibility.checkUnitAwardEligibility(donViId, year, danhHieu);

@@ -35,9 +35,19 @@ PM QLKT/
 
 - **4 roles**: SUPER_ADMIN > ADMIN > MANAGER > USER
 - **7 award types**: Annual, Unit Annual, Tenure Medals (`tenure-medals`), Contribution (`contribution-medals`), Commemorative Medal (`commemorative-medals`), Military Flag (`military-flag`), Scientific Achievement
-- **Annual chain awards** (cá nhân): BKBQP (2y CSTDCS), CSTDTQ (3y + BKBQP), BKTTCP (7y + 3 BKBQP + 2 CSTDTQ). Each needs NCKH every year. BKTTCP only supported once (>7y shows "chưa hỗ trợ"). Flag fields: `nhan_bkbqp/cstdtq/bkttcp` + `so_quyet_dinh_*/ghi_chu_*` per flag.
-- **Annual chain awards** (đơn vị): BKBQP (2y ĐVQT), BKTTCP (7y + 3 BKBQP). No CSTDTQ. Same pattern.
-- **Eligibility logic**: `computeEligibilityFlags` (profile) and `checkAwardEligibility` (API validation) MUST use same formulas. Both use `countFlagInRange`/`countBKBQPInStreak` for counting within streak.
+- **Annual chain awards** (cá nhân): BKBQP (2y CSTDCS), CSTDTQ (3y + 1 BKBQP trong cửa sổ trượt 3y), BKTTCP (7y + 3 BKBQP + 2 CSTDTQ trong 7y cuối). Mỗi loại cần NCKH mỗi năm. Flag fields: `nhan_bkbqp/cstdtq/bkttcp` + `so_quyet_dinh_*/ghi_chu_*`.
+- **Annual chain awards** (đơn vị): BKBQP (2y ĐVQT), BKTTCP (7y + 3 BKBQP trong 7y cuối). Không có CSTDTQ. Không có NCKH.
+- **Chain cycle semantics** — quan trọng:
+  - **Cycle repeats** mỗi `cycleYears`: BKBQP cứ mỗi 2y, CSTDTQ mỗi 3y, BKTTCP mỗi 7y. Eligibility = `streak >= cycleYears && streak % cycleYears === 0` cộng với điều kiện flags/NCKH.
+  - **Lỡ đợt**: nếu đến mốc đề nghị mà không đề xuất, cycle tiếp tục đếm — đến chu kỳ sau (cộng `cycleYears` năm) lại được xét, KHÔNG cần đứt chuỗi CSTDCS/ĐVQT.
+  - **BKBQP/CSTDTQ/BKTTCP đơn vị**: `isLifetime: false`. Có thể nhận lặp lại sau mỗi cycle.
+  - **BKTTCP cá nhân**: `isLifetime: true` — sau khi nhận 1 lần, lifetime block với message "Đã có BKTTCP. Phần mềm chưa hỗ trợ các danh hiệu cao hơn BKTTCP, sẽ phát triển trong thời gian tới." (không có "một lần duy nhất" tách riêng nữa).
+  - **CSTDTQ BKBQP-trong-3y**: cửa sổ trượt 3 năm cuối từ `year-1`. BKBQP của chu kỳ trước tự rơi ra → bắt buộc có BKBQP mới ở chu kỳ hiện tại.
+  - **Unit BKTTCP BKBQP-trong-7y**: cửa sổ trượt 7 năm cuối. BKBQP cũ rơi ra giống CSTDTQ.
+  - **Personal BKTTCP**: dùng `bkbqpIn7Years === 3` và `cstdtqIn7Years === 2` strict (vì lifetime). Unit BKTTCP non-lifetime dùng `>= 3`.
+- **Chain context helpers** (`services/profile/annual.ts`): `lastFlagYearInChain`, `computeChainContext` derive `chainStartYear`, `lastBkbqp/Cstdtq/BkttcpYear`, `streakSinceLast<flag>`, `missedBkbqp/Cstdtq` từ `DanhHieuHangNam` — không lưu DB. FE đọc qua `AnnualStreakResult.chainContext`.
+- **Eligibility logic**: `computeEligibilityFlags` (recalc profile) và `checkAwardEligibility` (API validation) MUST khớp nhau. Cùng dùng `chainEligibility.checkChainEligibility` cho rule core; `computeEligibilityFlags` áp lifetime block riêng cho personal BKTTCP qua `hasReceivedBKTTCP` flag.
+- **Recalc goi_y order** (personal): `hasReceivedBKTTCP` → "chưa hỗ trợ cao hơn" trước; rồi `du_dieu_kien_bkttcp/cstdtq/bkbqp` → eligible message; cuối cùng "Chưa đủ ĐK BKBQP/CSTDTQ".
 - **Real-time**: Socket.IO for notifications
 - **Auth**: JWT (access + refresh tokens)
 

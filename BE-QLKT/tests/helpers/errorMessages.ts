@@ -151,17 +151,7 @@ export const eligibilityReasons = {
       [`${cstdcs} năm CSTDCS`, `${bkbqp7} BKBQP`, `${cstdtq7} CSTDTQ`, `${nckh} năm NCKH`]
     );
   },
-  bkttcpMissedWindow(streakLength: number): string {
-    return (
-      `Đã bỏ lỡ thời điểm xét ${NAME_BKTTCP}. Hiện đã ${streakLength} năm CSTDCS liên tục, ` +
-      `đáng lẽ đề xuất khi đủ 7 năm. Vui lòng đợi đến khi bắt đầu chu kỳ ${NAME_BKTTCP} mới để được xét lại.`
-    );
-  },
-  bkttcpUnsupported:
-    `Phần mềm chưa hỗ trợ khen thưởng cao hơn ${NAME_BKTTCP}, sẽ phát triển trong thời gian tới.`,
-  bkttcpLifetimeBlocked:
-    `Đã có ${NAME_BKTTCP}. Đây là khen thưởng một lần duy nhất.`,
-  bkttcpLifetimeBlockedAndUnsupported:
+  bkttcpAlreadyReceived:
     `Đã có ${NAME_BKTTCP}. Phần mềm chưa hỗ trợ các danh hiệu cao hơn ${NAME_BKTTCP}, sẽ phát triển trong thời gian tới.`,
 };
 
@@ -183,18 +173,6 @@ export const unitEligibilityReasons = {
       [`${dvqt} năm ĐVQT`, `${bkbqp} BKBQP`]
     );
   },
-  bkttcpMissedWindow(streakLength: number): string {
-    return (
-      `Đã bỏ lỡ thời điểm xét ${NAME_BKTTCP}. Hiện đã ${streakLength} năm ĐVQT liên tục, ` +
-      `đáng lẽ đề xuất khi đủ 7 năm. Vui lòng đợi đến khi bắt đầu chu kỳ ${NAME_BKTTCP} mới để được xét lại.`
-    );
-  },
-  bkttcpUnsupported:
-    `Phần mềm chưa hỗ trợ khen thưởng cao hơn ${NAME_BKTTCP}, sẽ phát triển trong thời gian tới.`,
-  bkttcpLifetimeBlocked:
-    `Đã có ${NAME_BKTTCP}. Đây là khen thưởng một lần duy nhất.`,
-  bkttcpLifetimeBlockedAndUnsupported:
-    `Đã có ${NAME_BKTTCP}. Phần mềm chưa hỗ trợ các danh hiệu cao hơn ${NAME_BKTTCP}, sẽ phát triển trong thời gian tới.`,
 };
 
 export const NIEN_HAN_INVALID_DANH_HIEU_PREFIX =
@@ -404,8 +382,6 @@ export const suggestionMessages = {
   unitEligibleBkttcp: 'Đã đủ điều kiện đề nghị xét Bằng khen của Thủ tướng Chính phủ.',
   unitEligibleBkbqp: 'Đã đủ điều kiện đề nghị xét Bằng khen của Bộ trưởng Bộ Quốc phòng.',
   unitNotEligible: 'Chưa đủ điều kiện đề nghị xét Bằng khen của Bộ trưởng Bộ Quốc phòng.',
-  unitUnsupported:
-    'Phần mềm chưa hỗ trợ khen thưởng cao hơn Bằng khen của Thủ tướng Chính phủ, sẽ phát triển trong thời gian tới.',
 };
 
 /**

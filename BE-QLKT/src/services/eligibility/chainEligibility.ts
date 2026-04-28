@@ -52,41 +52,17 @@ export function checkChainEligibility(
   flagsInWindow: FlagsInWindow
 ): EligibilityResult {
   const name = getDanhHieuName(award.code);
-  const overflow =
-    streaks.streakLength > award.cycleYears && streaks.streakLength % award.cycleYears === 0;
 
-  if (award.isLifetime) {
-    if (hasReceived) {
-      if (overflow) {
-        return {
-          eligible: false,
-          reason: `Đã có ${name}. Phần mềm chưa hỗ trợ các danh hiệu cao hơn ${name}, sẽ phát triển trong thời gian tới.`,
-        };
-      }
-      return {
-        eligible: false,
-        reason: `Đã có ${name}. Đây là khen thưởng một lần duy nhất.`,
-      };
-    }
-    if (overflow) {
-      return {
-        eligible: false,
-        reason: `Phần mềm chưa hỗ trợ khen thưởng cao hơn ${name}, sẽ phát triển trong thời gian tới.`,
-      };
-    }
-    if (streaks.streakLength > award.cycleYears) {
-      return {
-        eligible: false,
-        reason:
-          `Đã bỏ lỡ thời điểm xét ${name}. Hiện đã ${streaks.streakLength} năm ${award.streakLabel} liên tục, ` +
-          `đáng lẽ đề xuất khi đủ ${award.cycleYears} năm. Vui lòng đợi đến khi bắt đầu chu kỳ ${name} mới để được xét lại.`,
-      };
-    }
+  if (award.isLifetime && hasReceived) {
+    return {
+      eligible: false,
+      reason: `Đã có ${name}. Phần mềm chưa hỗ trợ các danh hiệu cao hơn ${name}, sẽ phát triển trong thời gian tới.`,
+    };
   }
 
-  const cycleMet = award.isLifetime
-    ? streaks.streakLength === award.cycleYears
-    : streaks.streakLength >= award.cycleYears && streaks.streakLength % award.cycleYears === 0;
+  const cycleMet =
+    streaks.streakLength >= award.cycleYears &&
+    streaks.streakLength % award.cycleYears === 0;
   const flagsMet = award.requiredFlags.every(f => {
     const have = flagsInWindow[f.code] ?? 0;
     return award.isLifetime ? have === f.count : have >= f.count;

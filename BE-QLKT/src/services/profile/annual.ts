@@ -9,7 +9,7 @@ import { NotFoundError } from '../../middlewares/errorHandler';
 import { DANH_HIEU_CA_NHAN_BANG_KHEN, DANH_HIEU_CA_NHAN_HANG_NAM, getDanhHieuName } from '../../constants/danhHieu.constants';
 import { PERSONAL_CHAIN_AWARDS, findChainAwardConfig } from '../../constants/chainAwards.constants';
 import { checkChainEligibility, type EligibilityResult, type FlagsInWindow } from '../eligibility/chainEligibility';
-import type { AnnualStreakResult, NCKHYearsResult, RecalculateResult, SpecialCaseResult } from './types';
+import type { AnnualStreakResult, ChainContext, NCKHYearsResult, RecalculateResult, SpecialCaseResult } from './types';
 
 /**
  * Loads or creates the annual profile with unit and position context.
@@ -158,6 +158,70 @@ export function countCSTDTQInStreak(danhHieuList: DanhHieuHangNam[], year: numbe
 }
 
 /**
+ * Latest year within `[chainStartYear, year-1]` where `flagKey` is true; null when none.
+ * @param danhHieuList - Annual title rows
+ * @param flagKey - Boolean flag column (`nhan_bkbqp`, `nhan_cstdtq`, `nhan_bkttcp`)
+ * @param chainStartYear - First year of the current CSTDCS streak
+ * @param year - Evaluation anchor year
+ */
+export function lastFlagYearInChain(
+  danhHieuList: Array<{ nam: number } & Record<string, unknown>>,
+  flagKey: string,
+  chainStartYear: number,
+  year: number
+): number | null {
+  let max = -1;
+  for (const r of danhHieuList) {
+    if (r[flagKey] === true && r.nam >= chainStartYear && r.nam <= year - 1 && r.nam > max) {
+      max = r.nam;
+    }
+  }
+  return max < 0 ? null : max;
+}
+
+/**
+ * Builds chain-cycle context — derives anchor years and "streak since last flag"
+ * for each chain award without storing extra DB columns. The anchor for the next
+ * award cycle is `lastFlagYear + 1`; when nothing received yet the anchor falls
+ * back to the chain's first CSTDCS year.
+ * @param danhHieuList - Annual title rows for this person
+ * @param cstdcsLienTuc - Continuous CSTDCS streak count anchored at `year - 1`
+ * @param year - Evaluation anchor year
+ */
+export function computeChainContext(
+  danhHieuList: Array<{ nam: number } & Record<string, unknown>>,
+  cstdcsLienTuc: number,
+  year: number
+): ChainContext {
+  const chainStartYear = year - cstdcsLienTuc;
+  const lastBkbqpYear = lastFlagYearInChain(danhHieuList, 'nhan_bkbqp', chainStartYear, year);
+  const lastCstdtqYear = lastFlagYearInChain(danhHieuList, 'nhan_cstdtq', chainStartYear, year);
+  const lastBkttcpYear = lastFlagYearInChain(danhHieuList, 'nhan_bkttcp', chainStartYear, year);
+
+  const streakSinceLastBkbqp =
+    lastBkbqpYear !== null ? year - lastBkbqpYear - 1 : cstdcsLienTuc;
+  const streakSinceLastCstdtq =
+    lastCstdtqYear !== null ? year - lastCstdtqYear - 1 : cstdcsLienTuc;
+  const streakSinceLastBkttcp =
+    lastBkttcpYear !== null ? year - lastBkttcpYear - 1 : cstdcsLienTuc;
+
+  const missedBkbqp = streakSinceLastBkbqp >= 2 ? Math.floor((streakSinceLastBkbqp - 1) / 2) : 0;
+  const missedCstdtq = streakSinceLastCstdtq >= 3 ? Math.floor((streakSinceLastCstdtq - 1) / 3) : 0;
+
+  return {
+    chainStartYear,
+    lastBkbqpYear,
+    lastCstdtqYear,
+    lastBkttcpYear,
+    streakSinceLastBkbqp,
+    streakSinceLastCstdtq,
+    streakSinceLastBkttcp,
+    missedBkbqp,
+    missedCstdtq,
+  };
+}
+
+/**
  * Whether approved NCKH exists for any year in the candidate list.
  * @param nckhList - Approved `ThanhTichKhoaHoc` rows
  * @param years - Years to intersect (e.g. streak window)
@@ -252,12 +316,26 @@ export async function computeAnnualStreaks(personnelId: string, year: number): P
 
   const bkbqp_lien_tuc = countBKBQPInStreak(danhHieuList, year, cstdcs_lien_tuc);
   const cstdtq_lien_tuc = countCSTDTQInStreak(danhHieuList, year, cstdcs_lien_tuc);
+  const chainContext = computeChainContext(danhHieuList, cstdcs_lien_tuc, year);
 
-  return { personnel, danhHieuList, thanhTichList, cstdcs_lien_tuc, nckh_lien_tuc, bkbqp_lien_tuc, cstdtq_lien_tuc };
+  return {
+    personnel,
+    danhHieuList,
+    thanhTichList,
+    cstdcs_lien_tuc,
+    nckh_lien_tuc,
+    bkbqp_lien_tuc,
+    cstdtq_lien_tuc,
+    chainContext,
+  };
 }
 
 /**
  * Computes BKBQP / CSTDTQ / BKTTCP eligibility flags from streak counters.
+ * BKBQP and BKTTCP use "streak since last receipt" so missed cycles automatically
+ * advance the next opportunity by `cycleYears`. CSTDTQ keeps the fixed 3-year
+ * BKBQP-window because business rule requires BKBQP within the trailing 3 years
+ * of the current proposal — flags from earlier cycles cannot retro-claim.
  * @param streaks - Streak values from computeAnnualStreaks
  * @param danhHieuList - Full annual award list for re-check edge cases
  * @param year - Evaluation year
@@ -270,21 +348,25 @@ export function computeEligibilityFlags(
 ) {
   const { cstdcs_lien_tuc, nckh_lien_tuc } = streaks;
   const hasEnoughNCKH = nckh_lien_tuc >= cstdcs_lien_tuc;
+  const ctx = computeChainContext(danhHieuList, cstdcs_lien_tuc, year);
 
   const du_dieu_kien_bkbqp =
-    cstdcs_lien_tuc >= 2 && cstdcs_lien_tuc % 2 === 0 && hasEnoughNCKH;
+    ctx.streakSinceLastBkbqp >= 2 &&
+    ctx.streakSinceLastBkbqp % 2 === 0 &&
+    hasEnoughNCKH;
 
-  // CSTDTQ counts BKBQP within the 3-year cycle window — flags from earlier cycles
-  // cannot retro-claim into the current one.
   const bkbqpIn3Years = countFlagInRange(danhHieuList, year, 3, 'nhan_bkbqp');
   const du_dieu_kien_cstdtq =
     cstdcs_lien_tuc >= 3 && cstdcs_lien_tuc % 3 === 0 &&
     bkbqpIn3Years >= 1 && hasEnoughNCKH;
 
+  const hasReceivedBKTTCP = danhHieuList.some(r => r.nhan_bkttcp === true);
   const bkbqpIn7Years = countFlagInRange(danhHieuList, year, 7, 'nhan_bkbqp');
   const cstdtqIn7Years = countFlagInRange(danhHieuList, year, 7, 'nhan_cstdtq');
   const du_dieu_kien_bkttcp =
-    cstdcs_lien_tuc === 7 &&
+    !hasReceivedBKTTCP &&
+    cstdcs_lien_tuc >= 7 &&
+    cstdcs_lien_tuc % 7 === 0 &&
     bkbqpIn7Years === 3 &&
     cstdtqIn7Years === 2 &&
     hasEnoughNCKH;
@@ -343,10 +425,10 @@ export async function recalculateAnnualProfile(personnelId: string, year: number
   const labelBKTTCP = getDanhHieuName(DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP);
 
   let goi_y: string;
-  if (du_dieu_kien_bkttcp) {
-    goi_y = `Đã đủ điều kiện đề nghị xét ${labelBKTTCP}.`;
-  } else if (hasReceivedBKTTCP && cstdcs_lien_tuc % 7 === 0 && cstdcs_lien_tuc > 7) {
+  if (hasReceivedBKTTCP) {
     goi_y = `Phần mềm chưa hỗ trợ khen thưởng cao hơn ${labelBKTTCP}, sẽ phát triển trong thời gian tới.`;
+  } else if (du_dieu_kien_bkttcp) {
+    goi_y = `Đã đủ điều kiện đề nghị xét ${labelBKTTCP}.`;
   } else if (du_dieu_kien_cstdtq) {
     goi_y = `Đã đủ điều kiện đề nghị xét ${labelCSTDTQ}.`;
   } else if (du_dieu_kien_bkbqp) {

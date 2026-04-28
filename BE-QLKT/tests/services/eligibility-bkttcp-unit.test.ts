@@ -56,7 +56,7 @@ function dvqtRecordsDesc(records: { nam: number; danh_hieu?: string | null }[]) 
     .sort((a, b) => b.nam - a.nam);
 }
 
-/** Counts BKBQP flags within [year-streak..year-1]. */
+/** Counts BKBQP flags within the last `streak` years from `year-1` (matches checkUnitAwardEligibility window). */
 function countBKBQPInWindow(
   records: { nam: number; nhan_bkbqp?: boolean }[],
   year: number,
@@ -67,8 +67,8 @@ function countBKBQPInWindow(
   return records.filter(r => r.nhan_bkbqp === true && r.nam >= startYear && r.nam <= endYear).length;
 }
 
-describe('unitAnnualAward.service - BKTTCP exhaustive (streak vs BKBQP)', () => {
-  it('CQDV: 7y ĐVQT + 3 BKBQP trong streak → eligible BKTTCP', async () => {
+describe('unitAnnualAward.service - BKTTCP eligibility (lặp lại sau 7 năm)', () => {
+  it('CQDV: 7y ĐVQT + 3 BKBQP trong streak → eligible', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-A1' });
     const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2017, 2023, {
       2018: { nhan_bkbqp: true },
@@ -109,8 +109,7 @@ describe('unitAnnualAward.service - BKTTCP exhaustive (streak vs BKBQP)', () => 
     expect(result.reason).toBe(unitEligibilityReasons.bkttcpReason(7, 2));
   });
 
-  it('7y ĐVQT + 4 BKBQP → fail (rule strict bkbqpLienTuc === 3)', async () => {
-    // Code tại unitAnnualAward.service.ts:252 dùng === 3 strict
+  it('7y ĐVQT + 4 BKBQP → eligible (>=3 BKBQP đủ rồi)', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-A5' });
     const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2017, 2023, {
       2017: { nhan_bkbqp: true },
@@ -128,13 +127,12 @@ describe('unitAnnualAward.service - BKTTCP exhaustive (streak vs BKBQP)', () => 
       DANH_HIEU_DON_VI_HANG_NAM.BKTTCP
     );
 
-    expect(result.eligible).toBe(false);
-    expect(result.reason).toBe(unitEligibilityReasons.bkttcpReason(7, 4));
+    expect(result.eligible).toBe(true);
   });
 });
 
-describe('unitAnnualAward.service - BKTTCP streak length boundary (dvqtLienTuc strict === 7)', () => {
-  it('6y ĐVQT + 3 BKBQP → fail (dvqt < 7)', async () => {
+describe('unitAnnualAward.service - BKTTCP streak length boundary (chấp nhận bội số 7)', () => {
+  it('6y ĐVQT + 3 BKBQP → fail (streak < 7)', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-B1' });
     const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2018, 2023, {
       2018: { nhan_bkbqp: true },
@@ -155,7 +153,7 @@ describe('unitAnnualAward.service - BKTTCP streak length boundary (dvqtLienTuc s
     expect(result.reason).toBe(unitEligibilityReasons.bkttcpReason(6, 3));
   });
 
-  it('8y ĐVQT với 3 BKBQP trong 7y cuối → fail (dvqt !== 7) - VẠCH TRẦN strict', async () => {
+  it('8y ĐVQT (không bội 7) + 3 BKBQP → fail "Chưa đủ điều kiện..."', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-B3' });
     const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2016, 2023, {
       2018: { nhan_bkbqp: true },
@@ -164,8 +162,7 @@ describe('unitAnnualAward.service - BKTTCP streak length boundary (dvqtLienTuc s
     });
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
-    // countBKBQPInStreak đếm mọi BKBQP trong window streak (ở đây 8 năm)
-    const bkbqpCount = countBKBQPInWindow(records, 2024, 8);
+    const bkbqpCount = countBKBQPInWindow(records, 2024, 7);
     prismaMock.danhHieuDonViHangNam.count.mockResolvedValueOnce(bkbqpCount);
 
     const result = await unitAnnualAwardService.checkUnitAwardEligibility(
@@ -175,10 +172,10 @@ describe('unitAnnualAward.service - BKTTCP streak length boundary (dvqtLienTuc s
     );
 
     expect(result.eligible).toBe(false);
-    expect(result.reason).toBe(unitEligibilityReasons.bkttcpMissedWindow(8));
+    expect(result.reason).toBe(unitEligibilityReasons.bkttcpReason(8, bkbqpCount));
   });
 
-  it('13y ĐVQT với BKBQP đủ trong 7y cuối → fail (vẫn không qua, không "chưa hỗ trợ")', async () => {
+  it('13y ĐVQT (không bội 7) → fail insufficient', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-B4-13' });
     const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2011, 2023, {
       2018: { nhan_bkbqp: true },
@@ -187,7 +184,7 @@ describe('unitAnnualAward.service - BKTTCP streak length boundary (dvqtLienTuc s
     });
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
-    const bkbqpCount = countBKBQPInWindow(records, 2024, 13);
+    const bkbqpCount = countBKBQPInWindow(records, 2024, 7);
     prismaMock.danhHieuDonViHangNam.count.mockResolvedValueOnce(bkbqpCount);
 
     const result = await unitAnnualAwardService.checkUnitAwardEligibility(
@@ -197,11 +194,10 @@ describe('unitAnnualAward.service - BKTTCP streak length boundary (dvqtLienTuc s
     );
 
     expect(result.eligible).toBe(false);
-    expect(result.reason).not.toMatch(/chưa hỗ trợ/);
-    expect(result.reason).toBe(unitEligibilityReasons.bkttcpMissedWindow(13));
+    expect(result.reason).toBe(unitEligibilityReasons.bkttcpReason(13, bkbqpCount));
   });
 
-  it('14y ĐVQT với BKBQP đủ → "chưa hỗ trợ" (overflow precedes count check)', async () => {
+  it('14y ĐVQT (bội 7) + 3 BKBQP trong 7y cuối → eligible (chu kỳ 2)', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-B5' });
     const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2010, 2023, {
       2018: { nhan_bkbqp: true },
@@ -218,11 +214,11 @@ describe('unitAnnualAward.service - BKTTCP streak length boundary (dvqtLienTuc s
       DANH_HIEU_DON_VI_HANG_NAM.BKTTCP
     );
 
-    expect(result.eligible).toBe(false);
-    expect(result.reason).toBe(unitEligibilityReasons.bkttcpUnsupported);
+    expect(result.eligible).toBe(true);
+    expect(result.reason).toBe(unitEligibilityReasons.bkttcpEligible);
   });
 
-  it('21y ĐVQT (mod 7) → "chưa hỗ trợ"', async () => {
+  it('21y ĐVQT (bội 7) + 0 BKBQP trong 7y cuối → fail insufficient', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-B6' });
     const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2003, 2023);
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
@@ -236,10 +232,10 @@ describe('unitAnnualAward.service - BKTTCP streak length boundary (dvqtLienTuc s
     );
 
     expect(result.eligible).toBe(false);
-    expect(result.reason).toBe(unitEligibilityReasons.bkttcpUnsupported);
+    expect(result.reason).toBe(unitEligibilityReasons.bkttcpReason(21, 0));
   });
 
-  it('15y ĐVQT (NOT mod 7) → fail "Chưa đủ điều kiện..."', async () => {
+  it('15y ĐVQT (không bội 7) → fail insufficient', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-B8-15' });
     const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2009, 2023);
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
@@ -253,13 +249,12 @@ describe('unitAnnualAward.service - BKTTCP streak length boundary (dvqtLienTuc s
     );
 
     expect(result.eligible).toBe(false);
-    expect(result.reason).not.toMatch(/chưa hỗ trợ/);
-    expect(result.reason).toBe(unitEligibilityReasons.bkttcpMissedWindow(15));
+    expect(result.reason).toBe(unitEligibilityReasons.bkttcpReason(15, 0));
   });
 });
 
-describe('unitAnnualAward.service - BKTTCP đã nhận (lifetime block check)', () => {
-  it('Đã nhận BKTTCP + streak 7y mới + 3 BKBQP → block "khen thưởng một lần duy nhất"', async () => {
+describe('unitAnnualAward.service - BKTTCP đã nhận trước (cho phép nhận lại)', () => {
+  it('Đã nhận BKTTCP cũ + chuỗi 7y mới + 3 BKBQP → eligible (không lifetime block)', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-C1' });
     const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2017, 2023, {
       2018: { nhan_bkbqp: true },
@@ -269,8 +264,6 @@ describe('unitAnnualAward.service - BKTTCP đã nhận (lifetime block check)', 
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
     prismaMock.danhHieuDonViHangNam.count.mockResolvedValueOnce(3);
-    // Lifetime block prisma.count cho mọi row có nhan_bkttcp = true
-    prismaMock.danhHieuDonViHangNam.count.mockResolvedValueOnce(1);
 
     const result = await unitAnnualAwardService.checkUnitAwardEligibility(
       cqdv.id,
@@ -278,41 +271,20 @@ describe('unitAnnualAward.service - BKTTCP đã nhận (lifetime block check)', 
       DANH_HIEU_DON_VI_HANG_NAM.BKTTCP
     );
 
-    expect(result.eligible).toBe(false);
-    expect(result.reason).toBe(unitEligibilityReasons.bkttcpLifetimeBlocked);
+    expect(result.eligible).toBe(true);
   });
 
-  it('Đã nhận BKTTCP + 14y ĐVQT → reason kết hợp "Đã có ... chưa hỗ trợ cao hơn"', async () => {
+  it('Đã nhận BKTTCP năm 2016 + 14y ĐVQT (chu kỳ 2) + 3 BKBQP trong 7y cuối → eligible', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-C2' });
     const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2010, 2023, {
       2016: { nhan_bkttcp: true },
-    });
-    prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
-    prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
-    prismaMock.danhHieuDonViHangNam.count.mockResolvedValueOnce(0);
-    prismaMock.danhHieuDonViHangNam.count.mockResolvedValueOnce(1);
-
-    const result = await unitAnnualAwardService.checkUnitAwardEligibility(
-      cqdv.id,
-      2024,
-      DANH_HIEU_DON_VI_HANG_NAM.BKTTCP
-    );
-
-    expect(result.eligible).toBe(false);
-    expect(result.reason).toBe(unitEligibilityReasons.bkttcpLifetimeBlockedAndUnsupported);
-  });
-
-  it('Đã nhận BKTTCP + 7y ĐVQT mới + 3 BKBQP → block "khen thưởng một lần duy nhất"', async () => {
-    const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-C4' });
-    const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2017, 2023, {
       2018: { nhan_bkbqp: true },
       2020: { nhan_bkbqp: true },
-      2022: { nhan_bkbqp: true, nhan_bkttcp: true },
+      2022: { nhan_bkbqp: true },
     });
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
     prismaMock.danhHieuDonViHangNam.count.mockResolvedValueOnce(3);
-    prismaMock.danhHieuDonViHangNam.count.mockResolvedValueOnce(1);
 
     const result = await unitAnnualAwardService.checkUnitAwardEligibility(
       cqdv.id,
@@ -320,67 +292,7 @@ describe('unitAnnualAward.service - BKTTCP đã nhận (lifetime block check)', 
       DANH_HIEU_DON_VI_HANG_NAM.BKTTCP
     );
 
-    expect(result.eligible).toBe(false);
-    expect(result.reason).toBe(unitEligibilityReasons.bkttcpLifetimeBlocked);
-  });
-
-  it('Đã nhận BKTTCP + 21y ĐVQT → reason kết hợp lifetime + overflow', async () => {
-    const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-C5' });
-    const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2003, 2023, {
-      2009: { nhan_bkttcp: true },
-    });
-    prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
-    prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
-    prismaMock.danhHieuDonViHangNam.count.mockResolvedValueOnce(0);
-    prismaMock.danhHieuDonViHangNam.count.mockResolvedValueOnce(1);
-
-    const result = await unitAnnualAwardService.checkUnitAwardEligibility(
-      cqdv.id,
-      2024,
-      DANH_HIEU_DON_VI_HANG_NAM.BKTTCP
-    );
-
-    expect(result.eligible).toBe(false);
-    expect(result.reason).toBe(unitEligibilityReasons.bkttcpLifetimeBlockedAndUnsupported);
-  });
-
-  it('CHƯA nhận BKTTCP đơn vị + 14y ĐVQT → "chưa hỗ trợ" KHÔNG có "Đã có"', async () => {
-    const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-C6' });
-    const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2010, 2023);
-    prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
-    prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
-    prismaMock.danhHieuDonViHangNam.count.mockResolvedValueOnce(0);
-    prismaMock.danhHieuDonViHangNam.count.mockResolvedValueOnce(0);
-
-    const result = await unitAnnualAwardService.checkUnitAwardEligibility(
-      cqdv.id,
-      2024,
-      DANH_HIEU_DON_VI_HANG_NAM.BKTTCP
-    );
-
-    expect(result.eligible).toBe(false);
-    expect(result.reason).toBe(unitEligibilityReasons.bkttcpUnsupported);
-    expect(result.reason).not.toMatch(/Đã có/);
-  });
-
-  it('Recalc với hasReceivedBKTTCP + streak 21y → goi_y "chưa hỗ trợ"', async () => {
-    const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-C3' });
-    const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2003, 2023, {
-      2009: { nhan_bkttcp: true },
-    });
-    arrangeResolveUnit(cqdv);
-    prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(records);
-    prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(records);
-    prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
-    prismaMock.danhHieuDonViHangNam.count.mockResolvedValueOnce(0);
-    prismaMock.hoSoDonViHangNam.upsert.mockImplementationOnce(async (args: any) => args.create);
-
-    await unitAnnualAwardService.recalculateAnnualUnit(cqdv.id, 2024);
-
-    const upsertArgs = prismaMock.hoSoDonViHangNam.upsert.mock.calls[0][0];
-    expect(upsertArgs.update.dvqt_lien_tuc).toBe(21);
-    expect(upsertArgs.update.du_dieu_kien_bk_thu_tuong).toBe(false);
-    expect(upsertArgs.update.goi_y).toBe(suggestionMessages.unitUnsupported);
+    expect(result.eligible).toBe(true);
   });
 });
 
@@ -405,7 +317,7 @@ describe('unitAnnualAward.service - BKTTCP DVTT variants', () => {
     expect(result.eligible).toBe(true);
   });
 
-  it('DVTT: 14y ĐVQT → "chưa hỗ trợ"', async () => {
+  it('DVTT: 14y ĐVQT (bội 7) + 0 BKBQP trong 7y cuối → fail insufficient', async () => {
     const dvtt = makeUnit({ kind: 'DVTT', id: 'dvtt-bkttcp-B5', parentId: 'cqdv-parent' });
     const records = buildContiguousDVQT(dvtt.id, 'DVTT', 2010, 2023);
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
@@ -419,14 +331,12 @@ describe('unitAnnualAward.service - BKTTCP DVTT variants', () => {
     );
 
     expect(result.eligible).toBe(false);
-    expect(result.reason).toBe(unitEligibilityReasons.bkttcpUnsupported);
+    expect(result.reason).toBe(unitEligibilityReasons.bkttcpReason(14, 0));
   });
 });
 
 describe('unitAnnualAward.service - BKTTCP break-then-fresh streak', () => {
   it('5y ĐVQT → 1y ĐVTT (break) → 7y ĐVQT + 3 BKBQP trong 7y mới → eligible', async () => {
-    // Streak gãy ở row ĐVTT. calculateContinuousYears duyệt records DVQT-only
-    // ngược từ currentYear, dừng tại boundary năm 2017, trả streak = 7.
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-E1' });
     const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2017, 2023, {
       2018: { nhan_bkbqp: true },
@@ -448,8 +358,8 @@ describe('unitAnnualAward.service - BKTTCP break-then-fresh streak', () => {
   });
 });
 
-describe('unitAnnualAward.service - BKTTCP countBKBQPInStreak edges', () => {
-  it('13y ĐVQT + 6 BKBQP cụm đầu (2011-2016, không có cái nào trong 7y cuối) → fail với 0 BKBQP', async () => {
+describe('unitAnnualAward.service - BKTTCP BKBQP window edges', () => {
+  it('13y ĐVQT + 6 BKBQP cụm đầu (không có cái nào trong 7y cuối) → fail (insufficient streak chu kỳ)', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-D2' });
     const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2011, 2023, {
       2011: { nhan_bkbqp: true },
@@ -461,8 +371,7 @@ describe('unitAnnualAward.service - BKTTCP countBKBQPInStreak edges', () => {
     });
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
-    // streak = 13 → start year = 2011, cả 6 BKBQP nằm trong window — count trả 6
-    const bkbqpCount = countBKBQPInWindow(records, 2024, 13);
+    const bkbqpCount = countBKBQPInWindow(records, 2024, 7);
     prismaMock.danhHieuDonViHangNam.count.mockResolvedValueOnce(bkbqpCount);
 
     const result = await unitAnnualAwardService.checkUnitAwardEligibility(
@@ -471,112 +380,13 @@ describe('unitAnnualAward.service - BKTTCP countBKBQPInStreak edges', () => {
       DANH_HIEU_DON_VI_HANG_NAM.BKTTCP
     );
 
-    // streak vượt cycle (13 > 7, không phải bội số) → message missed window.
     expect(result.eligible).toBe(false);
-    expect(result.reason).toBe(unitEligibilityReasons.bkttcpMissedWindow(13));
-  });
-});
-
-describe('unitAnnualAward.service - checkUnitAwardEligibility (BKTTCP)', () => {
-  it('7y ĐVQT + 3 BKBQP trong streak → eligible BKTTCP', async () => {
-    const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-1' });
-    const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2017, 2023, {
-      2018: { nhan_bkbqp: true },
-      2020: { nhan_bkbqp: true },
-      2022: { nhan_bkbqp: true },
-    });
-    prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
-    prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
-    prismaMock.danhHieuDonViHangNam.count.mockResolvedValueOnce(3);
-
-    const result = await unitAnnualAwardService.checkUnitAwardEligibility(
-      cqdv.id,
-      2024,
-      DANH_HIEU_DON_VI_HANG_NAM.BKTTCP
-    );
-
-    expect(result.eligible).toBe(true);
-  });
-
-  it('7y ĐVQT + 2 BKBQP → fail (thiếu 1 BKBQP)', async () => {
-    const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-2' });
-    const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2017, 2023, {
-      2018: { nhan_bkbqp: true },
-      2020: { nhan_bkbqp: true },
-    });
-    prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
-    prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
-    prismaMock.danhHieuDonViHangNam.count.mockResolvedValueOnce(2);
-
-    const result = await unitAnnualAwardService.checkUnitAwardEligibility(
-      cqdv.id,
-      2024,
-      DANH_HIEU_DON_VI_HANG_NAM.BKTTCP
-    );
-
-    expect(result.eligible).toBe(false);
-    expect(result.reason).toBe(unitEligibilityReasons.bkttcpReason(7, 2));
-  });
-
-  it('14y mod 7 == 0 → "chưa hỗ trợ"', async () => {
-    const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-3' });
-    const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2010, 2023);
-    prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
-    prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
-    prismaMock.danhHieuDonViHangNam.count.mockResolvedValueOnce(7);
-
-    const result = await unitAnnualAwardService.checkUnitAwardEligibility(
-      cqdv.id,
-      2024,
-      DANH_HIEU_DON_VI_HANG_NAM.BKTTCP
-    );
-
-    expect(result.eligible).toBe(false);
-    expect(result.reason).toBe(unitEligibilityReasons.bkttcpUnsupported);
-  });
-
-  it('đã nhận BKTTCP đơn vị + streak 7y mới → lifetime block "khen thưởng một lần duy nhất"', async () => {
-    const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-4' });
-    const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2017, 2023, {
-      2018: { nhan_bkbqp: true },
-      2020: { nhan_bkbqp: true },
-      2022: { nhan_bkbqp: true, nhan_bkttcp: true },
-    });
-    prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
-    prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
-    prismaMock.danhHieuDonViHangNam.count.mockResolvedValueOnce(3);
-    prismaMock.danhHieuDonViHangNam.count.mockResolvedValueOnce(1);
-
-    const result = await unitAnnualAwardService.checkUnitAwardEligibility(
-      cqdv.id,
-      2024,
-      DANH_HIEU_DON_VI_HANG_NAM.BKTTCP
-    );
-
-    expect(result.eligible).toBe(false);
-    expect(result.reason).toBe(unitEligibilityReasons.bkttcpLifetimeBlocked);
-  });
-
-  it('CQDV vs DVTT: eligibility tính riêng — DVTT có streak riêng', async () => {
-    const dvtt = makeUnit({ kind: 'DVTT', id: 'dvtt-bkttcp-5', parentId: 'cqdv-parent' });
-    const records = buildContiguousDVQT(dvtt.id, 'DVTT', 2022, 2023);
-    prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
-    prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
-    prismaMock.danhHieuDonViHangNam.count.mockResolvedValueOnce(0);
-
-    const result = await unitAnnualAwardService.checkUnitAwardEligibility(
-      dvtt.id,
-      2024,
-      DANH_HIEU_DON_VI_HANG_NAM.BKTTCP
-    );
-
-    expect(result.eligible).toBe(false);
-    expect(result.reason).toBe(unitEligibilityReasons.bkttcpReason(2, 0));
+    expect(result.reason).toBe(unitEligibilityReasons.bkttcpReason(13, bkbqpCount));
   });
 });
 
 describe('unitAnnualAward.service - recalculateAnnualUnit (chain flags)', () => {
-  it('lifetime block: 14y ĐVQT + đã nhận BKTTCP → goi_y "chưa hỗ trợ"', async () => {
+  it('14y ĐVQT + đã nhận BKTTCP 2016 + 3 BKBQP trong cycle 2 (2017-2023) → eligible BKTTCP', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-recalc-1' });
     const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2010, 2023, {
       2011: { nhan_bkbqp: true },
@@ -591,15 +401,33 @@ describe('unitAnnualAward.service - recalculateAnnualUnit (chain flags)', () => 
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(records);
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(records);
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
-    prismaMock.danhHieuDonViHangNam.count.mockResolvedValueOnce(7);
     prismaMock.hoSoDonViHangNam.upsert.mockImplementationOnce(async (args: any) => args.create);
 
     await unitAnnualAwardService.recalculateAnnualUnit(cqdv.id, 2024);
 
     const upsertArgs = prismaMock.hoSoDonViHangNam.upsert.mock.calls[0][0];
     expect(upsertArgs.update.dvqt_lien_tuc).toBe(14);
+    expect(upsertArgs.update.du_dieu_kien_bk_thu_tuong).toBe(true);
+    expect(upsertArgs.update.goi_y).toBe(suggestionMessages.unitEligibleBkttcp);
+  });
+
+  it('21y ĐVQT + đã nhận BKTTCP 2009 + 0 BKBQP trong cycle hiện tại → not eligible BKTTCP', async () => {
+    const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-C3' });
+    const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2003, 2023, {
+      2009: { nhan_bkttcp: true },
+    });
+    arrangeResolveUnit(cqdv);
+    prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(records);
+    prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(records);
+    prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
+    prismaMock.hoSoDonViHangNam.upsert.mockImplementationOnce(async (args: any) => args.create);
+
+    await unitAnnualAwardService.recalculateAnnualUnit(cqdv.id, 2024);
+
+    const upsertArgs = prismaMock.hoSoDonViHangNam.upsert.mock.calls[0][0];
+    expect(upsertArgs.update.dvqt_lien_tuc).toBe(21);
     expect(upsertArgs.update.du_dieu_kien_bk_thu_tuong).toBe(false);
-    expect(upsertArgs.update.goi_y).toBe(suggestionMessages.unitUnsupported);
+    expect(upsertArgs.update.goi_y).toBe(suggestionMessages.unitNotEligible);
   });
 
   it('7y ĐVQT + 3 BKBQP → recalc set du_dieu_kien_bk_thu_tuong = true', async () => {
@@ -613,7 +441,6 @@ describe('unitAnnualAward.service - recalculateAnnualUnit (chain flags)', () => 
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(records);
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(records);
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
-    prismaMock.danhHieuDonViHangNam.count.mockResolvedValueOnce(3);
     prismaMock.hoSoDonViHangNam.upsert.mockImplementationOnce(async (args: any) => args.create);
 
     await unitAnnualAwardService.recalculateAnnualUnit(cqdv.id, 2024);

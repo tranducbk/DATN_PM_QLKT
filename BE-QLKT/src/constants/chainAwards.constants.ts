@@ -15,13 +15,6 @@ export interface ChainAwardConfig {
   flagColumn: string;
   /** Vietnamese label for "streak unit" used in messages: 'CSTDCS' (personal) or 'ĐVQT' (unit). */
   streakLabel: string;
-  /**
-   * When true, a streak that overshoots the cycle without landing on a boundary multiple
-   * yields a "missed window" reason instead of "Chưa đủ điều kiện…". Applies to awards where
-   * skipping a cycle requires a fresh chain (CSTDTQ, BKTTCP). BKBQP keeps the simple cadence
-   * (its 2-year cycle is too short for the missed-window concept to be meaningful).
-   */
-  enforceMissedWindow: boolean;
 }
 
 /** Personal annual chain awards — ordered by ascending eligibility level. */
@@ -34,7 +27,6 @@ export const PERSONAL_CHAIN_AWARDS: ChainAwardConfig[] = [
     isLifetime: false,
     flagColumn: 'nhan_bkbqp',
     streakLabel: 'CSTDCS',
-    enforceMissedWindow: false,
   },
   {
     code: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ,
@@ -44,7 +36,6 @@ export const PERSONAL_CHAIN_AWARDS: ChainAwardConfig[] = [
     isLifetime: false,
     flagColumn: 'nhan_cstdtq',
     streakLabel: 'CSTDCS',
-    enforceMissedWindow: true,
   },
   {
     code: DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP,
@@ -57,7 +48,6 @@ export const PERSONAL_CHAIN_AWARDS: ChainAwardConfig[] = [
     isLifetime: true,
     flagColumn: 'nhan_bkttcp',
     streakLabel: 'CSTDCS',
-    enforceMissedWindow: true,
   },
 ];
 
@@ -71,17 +61,15 @@ export const UNIT_CHAIN_AWARDS: ChainAwardConfig[] = [
     isLifetime: false,
     flagColumn: 'nhan_bkbqp',
     streakLabel: 'ĐVQT',
-    enforceMissedWindow: false,
   },
   {
     code: DANH_HIEU_DON_VI_HANG_NAM.BKTTCP,
     cycleYears: 7,
     requiredFlags: [{ code: DANH_HIEU_DON_VI_HANG_NAM.BKBQP, count: 3 }],
     requiresNCKH: false,
-    isLifetime: true,
+    isLifetime: false,
     flagColumn: 'nhan_bkttcp',
     streakLabel: 'ĐVQT',
-    enforceMissedWindow: true,
   },
 ];
 

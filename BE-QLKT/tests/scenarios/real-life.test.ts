@@ -400,7 +400,7 @@ describe('Chuyên gia khen thưởng — chuỗi BKBQP/CSTDTQ exact reasons', ()
 
     expect(result.eligible).toBe(false);
     // Match chính xác — phát hiện mọi thay đổi câu chữ trong template reason
-    expect(result.reason).toBe(eligibilityReasons.bkttcpMissedWindow(13));
+    expect(result.reason).toBe(eligibilityReasons.bkttcpReason(13, 0, 0, 13));
   });
 });
 

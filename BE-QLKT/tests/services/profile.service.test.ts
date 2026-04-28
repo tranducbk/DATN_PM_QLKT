@@ -231,8 +231,7 @@ describe('profile.service - checkAwardEligibility (CSTDTQ + BKTTCP)', () => {
     expect(result.eligible).toBe(true);
   });
 
-  it('14 năm CSTDCS liên tục → "chưa hỗ trợ" BKTTCP', async () => {
-    // Cho: 14 năm CSTDCS liên tục (2010-2023) — streak > 7 và chia hết 7
+  it('14 năm CSTDCS liên tục, chưa nhận BKTTCP, không có flags → fail insufficient (không phải "chưa hỗ trợ")', async () => {
     const personnelId = 'qn-overflow';
     const danhHieuRows: AnnualRow[] = [];
     const thanhTichRows: ScienceRow[] = [];
@@ -254,7 +253,7 @@ describe('profile.service - checkAwardEligibility (CSTDTQ + BKTTCP)', () => {
     );
 
     expect(result.eligible).toBe(false);
-    expect(result.reason).toBe(eligibilityReasons.bkttcpUnsupported);
+    expect(result.reason).toBe(eligibilityReasons.bkttcpReason(14, 0, 0, 14));
   });
 });
 

@@ -84,19 +84,14 @@ export async function calculateTotalDVQT(donViId: string, year: number) {
 }
 
 export function buildSuggestion(
-  dvqtLienTuc: number,
   du_dieu_kien_bk_tong_cuc: boolean,
-  du_dieu_kien_bk_thu_tuong: boolean,
-  hasReceivedBKTTCP: boolean
+  du_dieu_kien_bk_thu_tuong: boolean
 ) {
   const tenBKBQP = getDanhHieuName(DANH_HIEU_DON_VI_HANG_NAM.BKBQP);
   const tenBKTTCP = getDanhHieuName(DANH_HIEU_DON_VI_HANG_NAM.BKTTCP);
 
   if (du_dieu_kien_bk_thu_tuong) {
     return `Đã đủ điều kiện đề nghị xét ${tenBKTTCP}.`;
-  }
-  if (hasReceivedBKTTCP && dvqtLienTuc % 7 === 0 && dvqtLienTuc > 7) {
-    return `Phần mềm chưa hỗ trợ khen thưởng cao hơn ${tenBKTTCP}, sẽ phát triển trong thời gian tới.`;
   }
   if (du_dieu_kien_bk_tong_cuc) {
     return `Đã đủ điều kiện đề nghị xét ${tenBKBQP}.`;
@@ -140,6 +135,22 @@ export async function checkUnitAwardEligibility(donViId: string, year: number, d
   );
 }
 
+/** Latest year ≤ year-1 in the current ĐVQT chain where `flagKey` is true; null when none. */
+function lastUnitFlagYearInChain(
+  rows: Array<{ nam: number; nhan_bkbqp?: boolean | null; nhan_bkttcp?: boolean | null }>,
+  flagKey: 'nhan_bkbqp' | 'nhan_bkttcp',
+  chainStartYear: number,
+  year: number
+): number | null {
+  let max = -1;
+  for (const r of rows) {
+    if (r[flagKey] === true && r.nam >= chainStartYear && r.nam <= year - 1 && r.nam > max) {
+      max = r.nam;
+    }
+  }
+  return max < 0 ? null : max;
+}
+
 export async function recalculateAnnualUnit(donViId: string, year: number | null = null) {
   const { isCoQuanDonVi } = await resolveUnit(donViId);
   const targetYear = year ? Number(year) : new Date().getFullYear();
@@ -157,18 +168,26 @@ export async function recalculateAnnualUnit(donViId: string, year: number | null
     calculateContinuousYears(donViId, targetYear),
   ]);
 
-  const bkbqpInStreak = await countBKBQPInStreak(donViId, targetYear, dvqtLienTuc);
+  const chainStartYear = targetYear - dvqtLienTuc;
+  const lastBkbqpYear = lastUnitFlagYearInChain(danhHieuList, 'nhan_bkbqp', chainStartYear, targetYear);
+  const lastBkttcpYear = lastUnitFlagYearInChain(danhHieuList, 'nhan_bkttcp', chainStartYear, targetYear);
+  const streakSinceLastBkbqp =
+    lastBkbqpYear !== null ? targetYear - lastBkbqpYear - 1 : dvqtLienTuc;
+  const streakSinceLastBkttcp =
+    lastBkttcpYear !== null ? targetYear - lastBkttcpYear - 1 : dvqtLienTuc;
 
-  const du_dieu_kien_bk_tong_cuc = dvqtLienTuc >= 2 && dvqtLienTuc % 2 === 0;
-  const du_dieu_kien_bk_thu_tuong = dvqtLienTuc === 7 && bkbqpInStreak === 3;
+  const bkbqpInLast7Years = danhHieuList.filter(
+    r => r.nhan_bkbqp === true && r.nam >= targetYear - 7 && r.nam <= targetYear - 1
+  ).length;
 
-  const hasReceivedBKTTCP = danhHieuList.some(dh => dh.nhan_bkttcp === true);
-  const goi_y = buildSuggestion(
-    dvqtLienTuc,
-    du_dieu_kien_bk_tong_cuc,
-    du_dieu_kien_bk_thu_tuong,
-    hasReceivedBKTTCP
-  );
+  const du_dieu_kien_bk_tong_cuc =
+    streakSinceLastBkbqp >= 2 && streakSinceLastBkbqp % 2 === 0;
+  const du_dieu_kien_bk_thu_tuong =
+    streakSinceLastBkttcp >= 7 &&
+    streakSinceLastBkttcp % 7 === 0 &&
+    bkbqpInLast7Years >= 3;
+
+  const goi_y = buildSuggestion(du_dieu_kien_bk_tong_cuc, du_dieu_kien_bk_thu_tuong);
 
   const whereCondition = isCoQuanDonVi
     ? { unique_co_quan_don_vi_nam: { co_quan_don_vi_id: donViId, nam: targetYear } }
