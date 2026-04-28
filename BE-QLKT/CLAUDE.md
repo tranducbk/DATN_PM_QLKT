@@ -21,8 +21,18 @@ src/
 │   ├── catchAsync.ts        # Async error wrapper for controllers
 │   ├── responseHelper.ts    # Standardized API responses
 │   ├── paginationHelper.ts  # Pagination (MAX_LIMIT = 100)
-│   ├── controllerHelpers.ts # Shared controller utilities (buildManagerQuanNhanFilter, etc.)
+│   ├── controllerHelper.ts  # Shared controller utilities (buildManagerQuanNhanFilter, etc.)
+│   ├── profileRecalcHelper.ts
+│   ├── serviceYearsHelper.ts
+│   ├── settingsHelper.ts
+│   ├── systemLogHelper.ts
+│   ├── unitHelper.ts
+│   ├── cccdHelper.ts, datetimeHelper.ts
 │   ├── auditLog/            # Audit log description builders by domain
+│   ├── award/               # Award-specific helpers
+│   ├── awardValidation/     # Cross-cutting award validation helpers
+│   ├── excel/               # Excel template + import/export helpers
+│   ├── file/                # File handling helpers
 │   └── notification/        # Notification helpers by domain
 ├── validations/             # Joi schemas (entityName.validation.ts)
 ├── constants/               # All use entityName.constants.ts pattern
@@ -118,6 +128,33 @@ Paginated responses (`ResponseHelper.paginated`): `data` là mảng trực tiế
 - `strict: false`, `strictNullChecks: false` (relaxed mode)
 - Target: ES2020, Module: CommonJS
 - Type declarations in `src/types/`
+
+## Chain awards eligibility (BKBQP / CSTDTQ / BKTTCP)
+
+Source files (sửa logic chuỗi phải đụng tất cả):
+
+```
+src/constants/chainAwards.constants.ts        # PERSONAL_CHAIN_AWARDS, UNIT_CHAIN_AWARDS configs
+src/services/eligibility/chainEligibility.ts  # checkChainEligibility (core rule, dùng cho cả personal & unit)
+src/services/profile/annual.ts                # personal: lastFlagYearInChain, computeChainContext,
+                                              #   computeEligibilityFlags, checkAwardEligibility, recalculateAnnualProfile
+src/services/profile/types.ts                 # ChainContext, AnnualStreakResult
+src/services/unitAnnualAward/eligibility.ts   # unit: cùng pattern, async DB
+```
+
+**Rule chốt** (xem root `CLAUDE.md` để chi tiết):
+- Cycle = repeatable mỗi `cycleYears` (BKBQP=2, CSTDTQ=3, BKTTCP=7). Eligibility = `streak >= cycleYears && % cycleYears === 0` + flags + NCKH (personal).
+- Lỡ đợt → đợi đến chu kỳ kế (cộng `cycleYears` năm), KHÔNG cần đứt chuỗi CSTDCS/ĐVQT.
+- BKTTCP cá nhân `isLifetime: true` → sau khi nhận một lần, lifetime block với reason "Đã có ... chưa hỗ trợ cao hơn ...". Tất cả chuỗi đơn vị + BKBQP/CSTDTQ cá nhân đều `isLifetime: false` (lặp lại).
+- `chainEligibility.ts` **không còn** branch "đã bỏ lỡ" / "chưa hỗ trợ" độc lập — chỉ giữ lifetime block khi `hasReceived=true`.
+- Cửa sổ đếm flags:
+  - CSTDTQ count BKBQP: cửa sổ trượt 3y cuối từ `year-1`.
+  - Unit BKTTCP count BKBQP: cửa sổ trượt 7y cuối từ `year-1`.
+  - Personal BKTTCP count BKBQP/CSTDTQ: cửa sổ trượt 7y cuối, strict `=== 3` và `=== 2`.
+
+**Khi sửa rule chuỗi**: phải update cả `computeEligibilityFlags` (recalc) và `checkAwardEligibility` (API) để khớp; cập nhật tests trong `tests/services/eligibility-{bkbqp,cstdtq,bkttcp}-{personal,unit}.test.ts`, `chainContext.test.ts`, `chainCycleScenarios.test.ts`.
+
+**Khi đổi message**: update keys trong `tests/helpers/errorMessages.ts` (`eligibilityReasons`, `unitEligibilityReasons`, `suggestionMessages`) — single source cho assertion-grade messages.
 
 ## Service module organization (file > 800 LOC)
 
