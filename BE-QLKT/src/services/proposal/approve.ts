@@ -1,4 +1,5 @@
-import { prisma } from '../../models';
+import { proposalRepository } from '../../repositories/proposal.repository';
+import { quanNhanRepository } from '../../repositories/quanNhan.repository';
 import {
   PROPOSAL_TYPES,
   requiresProposalMonth,
@@ -52,7 +53,7 @@ export type EditedProposalPayload = {
 
 /** Loads the proposal with all relations required by the approve pipeline. */
 async function loadApproveProposal(proposalId: ProposalId) {
-  return prisma.bangDeXuat.findUnique({
+  return proposalRepository.findUniqueRaw({
     where: { id: proposalId },
     include: {
       CoQuanDonVi: true,
@@ -100,7 +101,7 @@ async function buildPersonnelHoTenMap(
 
   const personnelHoTenList =
     allItemPersonnelIds.length > 0
-      ? await prisma.quanNhan.findMany({
+      ? await quanNhanRepository.findManyRaw({
           where: { id: { in: allItemPersonnelIds } },
           select: { id: true, ho_ten: true },
         })
@@ -343,7 +344,7 @@ async function approveProposal(
  * @param adminId - Admin account id (`tai_khoan.id`)
  */
 async function rejectProposal(proposalId: ProposalId, lyDo: string, adminId: AdminAccountId) {
-  const proposal = await prisma.bangDeXuat.findUnique({
+  const proposal = await proposalRepository.findUniqueRaw({
     where: { id: proposalId },
     include: {
       CoQuanDonVi: true,
@@ -362,15 +363,15 @@ async function rejectProposal(proposalId: ProposalId, lyDo: string, adminId: Adm
     throw new ValidationError('Đề xuất này đã bị từ chối trước đó');
   }
 
-  const updateResult = await prisma.bangDeXuat.updateMany({
-    where: { id: proposalId, status: PROPOSAL_STATUS.PENDING },
-    data: {
+  const updateResult = await proposalRepository.updateMany(
+    { id: proposalId, status: PROPOSAL_STATUS.PENDING },
+    {
       status: PROPOSAL_STATUS.REJECTED,
       nguoi_duyet_id: adminId,
       ngay_duyet: new Date(),
       rejection_reason: lyDo,
-    },
-  });
+    }
+  );
 
   if (updateResult.count === 0) {
     throw new ValidationError(

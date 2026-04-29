@@ -1,5 +1,4 @@
 import type { Prisma } from '../../generated/prisma';
-import { prisma } from '../../models';
 import { Request, Response } from 'express';
 import { normalizeParam } from '../paginationHelper';
 import {
@@ -16,6 +15,9 @@ import {
   getFileName,
 } from './constants';
 import type { ChucVuWithUnit } from './constants';
+import { positionHistoryRepository } from '../../repositories/positionHistory.repository';
+import { quanNhanRepository } from '../../repositories/quanNhan.repository';
+import { scientificAchievementRepository } from '../../repositories/scientificAchievement.repository';
 
 type ThanhTichKhoaHocWithHoTen = Prisma.ThanhTichKhoaHocGetPayload<{
   include: { QuanNhan: { select: { ho_ten: true } } };
@@ -114,7 +116,7 @@ const personnel: Record<
 
     if (!hoTen && personnelId) {
       try {
-        const personnelRecord = await prisma.quanNhan.findUnique({
+        const personnelRecord = await quanNhanRepository.findUniqueRaw({
           where: { id: personnelId },
           select: { ho_ten: true },
         });
@@ -260,13 +262,13 @@ const positionHistory: Record<
 
     if ((!hoTen || !tenChucVu) && historyId) {
       await withPrisma(async prisma => {
-        const historyRecord = await prisma.lichSuChucVu.findUnique({
+        const historyRecord = await positionHistoryRepository.findUniqueRaw({
           where: { id: historyId as string },
           select: {
             quan_nhan_id: true,
             chuc_vu_id: true,
           },
-        });
+        }, prisma);
 
         if (historyRecord) {
           if (!personnelId) {
@@ -320,7 +322,7 @@ const positionHistory: Record<
 
     if ((!hoTen || !tenChucVu) && historyId) {
       await withPrisma(async prisma => {
-        const history = await prisma.lichSuChucVu.findUnique({
+        const history = await positionHistoryRepository.findUniqueRaw({
           where: { id: historyId as string },
           include: {
             QuanNhan: { select: { ho_ten: true } },
@@ -335,7 +337,7 @@ const positionHistory: Record<
               },
             },
           },
-        });
+        }, prisma);
 
         if (history) {
           if (!hoTen && history.QuanNhan?.ho_ten) {
@@ -386,7 +388,7 @@ const scientificAchievements: Record<
     let hoTen = '';
     if (personnelId) {
       try {
-        const personnelRecord = await prisma.quanNhan.findUnique({
+        const personnelRecord = await quanNhanRepository.findUniqueRaw({
           where: { id: personnelId },
           select: { ho_ten: true },
         });
@@ -425,7 +427,7 @@ const scientificAchievements: Record<
       if (achievement?.QuanNhan?.ho_ten) {
         hoTen = achievement.QuanNhan.ho_ten;
       } else if (achievementId) {
-        const achievementRecord = (await prisma.thanhTichKhoaHoc.findUnique({
+        const achievementRecord = (await scientificAchievementRepository.findUniqueRaw({
           where: { id: achievementId },
           include: { QuanNhan: { select: { ho_ten: true } } },
         })) as ThanhTichKhoaHocWithHoTen | null;
@@ -464,7 +466,7 @@ const scientificAchievements: Record<
 
     if ((!hoTen || !loai) && achievementId) {
       try {
-        const achievementRecord = (await prisma.thanhTichKhoaHoc.findUnique({
+        const achievementRecord = (await scientificAchievementRepository.findUniqueRaw({
           where: { id: achievementId },
           include: { QuanNhan: { select: { ho_ten: true } } },
         })) as ThanhTichKhoaHocWithHoTen | null;

@@ -2,7 +2,9 @@ import type {
   QuanNhan,
   LichSuChucVu,
 } from '../../generated/prisma';
-import { prisma } from '../../models';
+import { quanNhanRepository } from '../../repositories/quanNhan.repository';
+import { contributionMedalRepository } from '../../repositories/contributionMedal.repository';
+import { contributionProfileRepository } from '../../repositories/contributionProfile.repository';
 import { ELIGIBILITY_STATUS } from '../../constants/eligibilityStatus.constants';
 import { NotFoundError } from '../../middlewares/errorHandler';
 import { DANH_HIEU_HCBVTQ, CONG_HIEN_BASE_REQUIRED_MONTHS, CONG_HIEN_FEMALE_REQUIRED_MONTHS, HCBVTQ_RANK_KEYS, type HcbvtqRankKey } from '../../constants/danhHieu.constants';
@@ -15,15 +17,13 @@ import type { HCBVTQCalcResult } from './types';
  * @returns Contribution profile row (created when missing)
  */
 export async function getContributionProfile(personnelId: string) {
-  const personnel = await prisma.quanNhan.findUnique({
-    where: { id: personnelId },
-  });
+  const personnel = await quanNhanRepository.findIdById(personnelId);
 
   if (!personnel) {
     throw new NotFoundError('Quân nhân');
   }
 
-  let profile = await prisma.hoSoCongHien.findUnique({
+  let profile = await contributionProfileRepository.findUniqueRaw({
     where: { quan_nhan_id: personnelId },
     include: {
       QuanNhan: {
@@ -41,7 +41,7 @@ export async function getContributionProfile(personnelId: string) {
   });
 
   if (!profile) {
-    profile = await prisma.hoSoCongHien.create({
+    profile = await contributionProfileRepository.createRaw({
       data: {
         quan_nhan_id: personnelId,
         hcbvtq_total_months: 0,
@@ -128,25 +128,25 @@ export async function recalculateContributionProfile(personnelId: string): Promi
     return totalMonths;
   };
 
-  const personnel = await prisma.quanNhan.findUnique({
-      where: { id: personnelId },
-      include: {
-        LichSuChucVu: {
-          include: {
-            ChucVu: true,
-          },
-          orderBy: {
-            ngay_bat_dau: 'asc',
-          },
+  const selectedPersonnel = await quanNhanRepository.findUniqueRaw({
+    where: { id: personnelId },
+    include: {
+      LichSuChucVu: {
+        include: {
+          ChucVu: true,
+        },
+        orderBy: {
+          ngay_bat_dau: 'asc',
         },
       },
-    });
+    },
+  });
 
-    if (!personnel) {
+    if (!selectedPersonnel) {
       throw new NotFoundError('Quân nhân');
     }
 
-    const personnelHCBVTQ = await prisma.khenThuongHCBVTQ.findMany({
+    const personnelHCBVTQ = await contributionMedalRepository.findManyRaw({
       where: { quan_nhan_id: personnelId },
     });
 
@@ -155,7 +155,7 @@ export async function recalculateContributionProfile(personnelId: string): Promi
       ? {
           status: ELIGIBILITY_STATUS.DA_NHAN,
         }
-      : (await checkEligibleForRank(personnel, HCBVTQ_RANK_KEYS.HANG_BA))
+      : (await checkEligibleForRank(selectedPersonnel, HCBVTQ_RANK_KEYS.HANG_BA))
         ? { status: ELIGIBILITY_STATUS.DU_DIEU_KIEN }
         : { status: ELIGIBILITY_STATUS.CHUA_DU };
 
@@ -163,7 +163,7 @@ export async function recalculateContributionProfile(personnelId: string): Promi
       ? {
           status: ELIGIBILITY_STATUS.DA_NHAN,
         }
-      : (await checkEligibleForRank(personnel, HCBVTQ_RANK_KEYS.HANG_NHI))
+      : (await checkEligibleForRank(selectedPersonnel, HCBVTQ_RANK_KEYS.HANG_NHI))
         ? { status: ELIGIBILITY_STATUS.DU_DIEU_KIEN }
         : { status: ELIGIBILITY_STATUS.CHUA_DU };
 
@@ -171,13 +171,13 @@ export async function recalculateContributionProfile(personnelId: string): Promi
       ? {
           status: ELIGIBILITY_STATUS.DA_NHAN,
         }
-      : (await checkEligibleForRank(personnel, HCBVTQ_RANK_KEYS.HANG_NHAT))
+      : (await checkEligibleForRank(selectedPersonnel, HCBVTQ_RANK_KEYS.HANG_NHAT))
         ? { status: ELIGIBILITY_STATUS.DU_DIEU_KIEN }
         : { status: ELIGIBILITY_STATUS.CHUA_DU };
 
-    const months0_7 = getTotalMonthsByGroup(personnel.LichSuChucVu, '0.7');
-    const months0_8 = getTotalMonthsByGroup(personnel.LichSuChucVu, '0.8');
-    const months0_9_1_0 = getTotalMonthsByGroup(personnel.LichSuChucVu, '0.9-1.0');
+    const months0_7 = getTotalMonthsByGroup(selectedPersonnel.LichSuChucVu, '0.7');
+    const months0_8 = getTotalMonthsByGroup(selectedPersonnel.LichSuChucVu, '0.8');
+    const months0_9_1_0 = getTotalMonthsByGroup(selectedPersonnel.LichSuChucVu, '0.9-1.0');
 
     const contributionData = {
       hcbvtq_total_months: months0_7 + months0_8 + months0_9_1_0,
@@ -193,25 +193,22 @@ export async function recalculateContributionProfile(personnelId: string): Promi
       goi_y: null as string | null,
     };
 
-    await prisma.hoSoCongHien.upsert({
-      where: { quan_nhan_id: personnelId },
-      update: contributionData,
-      create: { quan_nhan_id: personnelId, ...contributionData },
-    });
+    await contributionProfileRepository.upsert(
+      personnelId,
+      { quan_nhan_id: personnelId, ...contributionData },
+      contributionData
+    );
 
     // Legacy table: refresh coefficient-group month mirrors when a contribution award row exists.
-    const existingCongHien = await prisma.khenThuongHCBVTQ.findUnique({
+    const existingCongHien = await contributionMedalRepository.findUniqueRaw({
       where: { quan_nhan_id: personnelId },
     });
 
     if (existingCongHien) {
-      await prisma.khenThuongHCBVTQ.update({
-        where: { id: existingCongHien.id },
-        data: {
-          thoi_gian_nhom_0_7: existingCongHien.thoi_gian_nhom_0_7,
-          thoi_gian_nhom_0_8: existingCongHien.thoi_gian_nhom_0_8,
-          thoi_gian_nhom_0_9_1_0: existingCongHien.thoi_gian_nhom_0_9_1_0,
-        },
+      await contributionMedalRepository.update(existingCongHien.id, {
+        thoi_gian_nhom_0_7: existingCongHien.thoi_gian_nhom_0_7,
+        thoi_gian_nhom_0_8: existingCongHien.thoi_gian_nhom_0_8,
+        thoi_gian_nhom_0_9_1_0: existingCongHien.thoi_gian_nhom_0_9_1_0,
       });
     }
 

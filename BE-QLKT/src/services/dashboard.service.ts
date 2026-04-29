@@ -1,5 +1,12 @@
 import type { Prisma } from '../generated/prisma';
-import { prisma } from '../models';
+import { danhHieuHangNamRepository } from '../repositories/danhHieu.repository';
+import { quanNhanRepository } from '../repositories/quanNhan.repository';
+import { coQuanDonViRepository, donViTrucThuocRepository } from '../repositories/unit.repository';
+import { positionRepository } from '../repositories/position.repository';
+import { accountRepository } from '../repositories/account.repository';
+import { systemLogRepository } from '../repositories/systemLog.repository';
+import { scientificAchievementRepository } from '../repositories/scientificAchievement.repository';
+import { proposalRepository } from '../repositories/proposal.repository';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 
 function getLastNDays(n: number): string[] {
@@ -59,14 +66,6 @@ function monthsAgo(n: number): Date {
   return date;
 }
 
-/** Prisma typings reject this groupBy overload, but the runtime query is valid. */
-async function groupQuanNhanByCapBac(
-  where: Prisma.QuanNhanWhereInput
-): Promise<{ cap_bac: string | null; _count: { id: number } }[]> {
-  // @ts-expect-error Prisma groupBy overload does not match the cap_bac filter
-  return prisma.quanNhan.groupBy({ by: ['cap_bac'], where, _count: { id: true } });
-}
-
 type ManagerPersonnel = { don_vi_truc_thuoc_id: string | null; co_quan_don_vi_id: string | null };
 
 class DashboardService {
@@ -86,15 +85,15 @@ class DashboardService {
       donViCount,
       totalLogs,
     ] = await Promise.all([
-      prisma.taiKhoan.groupBy({ by: ['role'], _count: { id: true } }),
-      prisma.systemLog.findMany({ where: { createdAt: { gte: daysAgo(7) } }, select: { createdAt: true } }),
-      prisma.systemLog.groupBy({ by: ['action'], _count: { id: true }, orderBy: { _count: { id: 'desc' } }, take: 10 }),
-      prisma.taiKhoan.findMany({ where: { createdAt: { gte: daysAgo(30) } }, select: { createdAt: true }, orderBy: { createdAt: 'asc' } }),
-      prisma.taiKhoan.count(),
-      prisma.quanNhan.count(),
-      prisma.coQuanDonVi.count(),
-      prisma.donViTrucThuoc.count(),
-      prisma.systemLog.count(),
+      accountRepository.groupByRole(),
+      systemLogRepository.findManyRaw({ where: { createdAt: { gte: daysAgo(7) } }, select: { createdAt: true } }),
+      systemLogRepository.groupByActionTop(10),
+      accountRepository.findManyRaw({ where: { createdAt: { gte: daysAgo(30) } }, select: { createdAt: true }, orderBy: { createdAt: 'asc' } }),
+      accountRepository.count({}),
+      quanNhanRepository.count({}),
+      coQuanDonViRepository.count(),
+      donViTrucThuocRepository.count(),
+      systemLogRepository.count({}),
     ]);
 
     return {
@@ -124,14 +123,14 @@ class DashboardService {
       totalPositions,
       pendingApprovals,
     ] = await Promise.all([
-      prisma.thanhTichKhoaHoc.groupBy({ by: ['loai'], _count: { id: true } }),
-      prisma.bangDeXuat.groupBy({ by: ['loai_de_xuat'], where: { createdAt: { gte: daysAgo(7) } }, _count: { id: true } }),
-      prisma.bangDeXuat.groupBy({ by: ['status'], _count: { id: true } }),
-      prisma.thanhTichKhoaHoc.findMany({ where: { createdAt: { gte: monthsAgo(6) } }, select: { createdAt: true } }),
-      prisma.quanNhan.count(),
-      prisma.donViTrucThuoc.count(),
-      prisma.chucVu.count(),
-      prisma.bangDeXuat.count({ where: { status: PROPOSAL_STATUS.PENDING } }),
+      scientificAchievementRepository.groupByLoai(),
+      proposalRepository.groupByLoaiDeXuat({ createdAt: { gte: daysAgo(7) } }),
+      proposalRepository.groupByStatus(),
+      scientificAchievementRepository.findManyRaw({ where: { createdAt: { gte: monthsAgo(6) } }, select: { createdAt: true } }),
+      quanNhanRepository.count({}),
+      donViTrucThuocRepository.count(),
+      positionRepository.count({}),
+      proposalRepository.count({ status: PROPOSAL_STATUS.PENDING }),
     ]);
 
     return {
@@ -156,20 +155,14 @@ class DashboardService {
     let managerPersonnel: ManagerPersonnel | null = null;
 
     if (quanNhanId) {
-      managerPersonnel = await prisma.quanNhan.findUnique({
-        where: { id: quanNhanId },
-        select: { don_vi_truc_thuoc_id: true, co_quan_don_vi_id: true },
-      });
+      managerPersonnel = await quanNhanRepository.findUnitScope(quanNhanId);
     } else {
-      const account = await prisma.taiKhoan.findUnique({
+      const account = await accountRepository.findUniqueRaw({
         where: { id: userId },
         select: { quan_nhan_id: true },
       });
       if (account?.quan_nhan_id) {
-        managerPersonnel = await prisma.quanNhan.findUnique({
-          where: { id: account.quan_nhan_id },
-          select: { don_vi_truc_thuoc_id: true, co_quan_don_vi_id: true },
-        });
+        managerPersonnel = await quanNhanRepository.findUnitScope(account.quan_nhan_id);
       }
     }
 
@@ -189,17 +182,14 @@ class DashboardService {
     let donViTrucThuocIdList: string[] = [];
 
     if (isCoQuanDonVi) {
-      const subUnits = await prisma.donViTrucThuoc.findMany({
-        where: { co_quan_don_vi_id: unitId },
-        select: { id: true },
-      });
+      const subUnits = await donViTrucThuocRepository.findIdsByCoQuanDonViId(unitId);
       donViTrucThuocIdList = subUnits.map(d => d.id);
-      personnelInUnit = await prisma.quanNhan.findMany({
+      personnelInUnit = await quanNhanRepository.findManyRaw({
         where: { OR: [{ co_quan_don_vi_id: unitId }, { don_vi_truc_thuoc_id: { in: donViTrucThuocIdList } }] },
         select: { id: true },
       });
     } else {
-      personnelInUnit = await prisma.quanNhan.findMany({
+      personnelInUnit = await quanNhanRepository.findManyRaw({
         where: { don_vi_truc_thuoc_id: unitId },
         select: { id: true },
       });
@@ -216,21 +206,21 @@ class DashboardService {
     const [annualAwards, recentAwards, personnelByRank, proposalsByStatus, proposalsByType, scientificAchievements, scientificAchievementsByType, personnelWithPositions] =
       await Promise.all([
         personnelIds.length > 0
-          ? prisma.danhHieuHangNam.findMany({ where: { quan_nhan_id: { in: personnelIds } }, select: { danh_hieu: true } })
+          ? danhHieuHangNamRepository.findMany({ where: { quan_nhan_id: { in: personnelIds } }, select: { danh_hieu: true } })
           : [],
         personnelIds.length > 0
-          ? prisma.danhHieuHangNam.findMany({ where: { quan_nhan_id: { in: personnelIds }, createdAt: { gte: sixMonthsAgoDate } }, select: { createdAt: true } })
+          ? danhHieuHangNamRepository.findMany({ where: { quan_nhan_id: { in: personnelIds }, createdAt: { gte: sixMonthsAgoDate } }, select: { createdAt: true } })
           : [],
-        groupQuanNhanByCapBac({ ...unitFilter, cap_bac: { not: null } }),
-        prisma.bangDeXuat.groupBy({ by: ['status'], where: { nguoi_de_xuat_id: userId }, _count: { id: true } }),
-        prisma.bangDeXuat.groupBy({ by: ['loai_de_xuat'], where: { nguoi_de_xuat_id: userId }, _count: { id: true } }),
+        quanNhanRepository.groupByCapBac({ ...unitFilter, cap_bac: { not: null } }),
+        proposalRepository.groupByStatus({ nguoi_de_xuat_id: userId }),
+        proposalRepository.groupByLoaiDeXuat({ nguoi_de_xuat_id: userId }),
         personnelIds.length > 0
-          ? prisma.thanhTichKhoaHoc.findMany({ where: { quan_nhan_id: { in: personnelIds }, createdAt: { gte: sixMonthsAgoDate } }, select: { createdAt: true } })
+          ? scientificAchievementRepository.findManyRaw({ where: { quan_nhan_id: { in: personnelIds }, createdAt: { gte: sixMonthsAgoDate } }, select: { createdAt: true } })
           : [],
         personnelIds.length > 0
-          ? prisma.thanhTichKhoaHoc.groupBy({ by: ['loai'], where: { quan_nhan_id: { in: personnelIds } }, _count: { id: true } })
+          ? scientificAchievementRepository.groupByLoai({ quan_nhan_id: { in: personnelIds } })
           : [],
-        prisma.quanNhan.findMany({ where: unitFilter, select: { chuc_vu_id: true } }),
+        quanNhanRepository.findManyRaw({ where: unitFilter, select: { chuc_vu_id: true } }),
       ]);
 
     const awardsByType: Record<string, number> = {};
@@ -244,7 +234,7 @@ class DashboardService {
     });
 
     const positionIds = Object.keys(positionCounts);
-    const positions = await prisma.chucVu.findMany({ where: { id: { in: positionIds } }, select: { id: true, ten_chuc_vu: true } });
+    const positions = await positionRepository.findManyRaw({ where: { id: { in: positionIds } }, select: { id: true, ten_chuc_vu: true } });
     const positionMap: Record<string, string> = {};
     positions.forEach(pos => { positionMap[pos.id] = pos.ten_chuc_vu; });
 

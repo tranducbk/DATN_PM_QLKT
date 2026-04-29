@@ -1,4 +1,4 @@
-import { prisma } from '../models';
+import { systemLogRepository } from '../repositories/systemLog.repository';
 
 interface WriteSystemLogParams {
   userId?: string;
@@ -27,16 +27,14 @@ async function writeSystemLog({
   try {
     // Use null actor ID for system-level logs without a foreign key.
     const actorId = userId && userId !== 'SYSTEM' ? userId : null;
-    await prisma.systemLog.create({
-      data: {
-        nguoi_thuc_hien_id: actorId,
-        actor_role: userRole || 'SYSTEM',
-        action,
-        resource,
-        tai_nguyen_id: resourceId,
-        description: description.substring(0, 500),
-        payload: payload ? JSON.stringify(payload) : undefined,
-      },
+    await systemLogRepository.create({
+      nguoi_thuc_hien_id: actorId,
+      actor_role: userRole || 'SYSTEM',
+      action,
+      resource,
+      tai_nguyen_id: resourceId,
+      description: description.substring(0, 500),
+      payload: payload ? JSON.stringify(payload) : undefined,
     });
   } catch (e) {
     console.error('writeSystemLog failed:', e);

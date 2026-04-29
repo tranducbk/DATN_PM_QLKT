@@ -1,4 +1,5 @@
 import { prisma } from '../../../models';
+import { scientificAchievementRepository } from '../../../repositories/scientificAchievement.repository';
 import { buildCutoffDate, formatServiceDuration } from '../../../helpers/serviceYearsHelper';
 import { PROPOSAL_TYPES } from '../../../constants/proposalTypes.constants';
 import {
@@ -176,7 +177,7 @@ async function collectNckhDuplicates(
   if (validItems.length === 0) return errors;
 
   const nckhPersonnelIds = [...new Set(validItems.map(item => item.personnel_id))];
-  const existingNckh = await prisma.thanhTichKhoaHoc.findMany({
+  const existingNckh = await scientificAchievementRepository.findManyRaw({
     where: { quan_nhan_id: { in: nckhPersonnelIds } },
     select: { quan_nhan_id: true, nam: true, mo_ta: true },
   });

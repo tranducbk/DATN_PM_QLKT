@@ -1,5 +1,6 @@
 import { Request } from 'express';
-import { prisma } from '../models';
+import { quanNhanRepository } from '../repositories/quanNhan.repository';
+import { donViTrucThuocRepository } from '../repositories/unit.repository';
 import { ROLES } from '../constants/roles.constants';
 
 /**
@@ -37,10 +38,7 @@ export async function getManagerUnitFilter(req: Request) {
   const quanNhanId = req.user?.quan_nhan_id;
   if (!quanNhanId) return null;
 
-  const personnel = await prisma.quanNhan.findUnique({
-    where: { id: quanNhanId },
-    select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true },
-  });
+  const personnel = await quanNhanRepository.findUnitScope(quanNhanId);
   if (!personnel) return null;
 
   return {
@@ -57,10 +55,7 @@ export async function getManagerUnitFilter(req: Request) {
  * @returns List of subordinate unit IDs
  */
 export async function getSubordinateUnitIds(coQuanDonViId: string): Promise<string[]> {
-  const list = await prisma.donViTrucThuoc.findMany({
-    where: { co_quan_don_vi_id: coQuanDonViId },
-    select: { id: true },
-  });
+  const list = await donViTrucThuocRepository.findIdsByCoQuanDonViId(coQuanDonViId);
   return list.map(d => d.id);
 }
 

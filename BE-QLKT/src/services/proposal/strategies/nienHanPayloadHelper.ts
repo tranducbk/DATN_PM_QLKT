@@ -1,4 +1,4 @@
-import { prisma } from '../../../models';
+import { quanNhanRepository } from '../../../repositories/quanNhan.repository';
 import {
   calculateServiceMonths,
   formatServiceDuration,
@@ -38,7 +38,7 @@ export async function loadNienHanPersonnelMap(
   personnelIds: string[]
 ): Promise<Map<string, NienHanPersonnelRow>> {
   if (personnelIds.length === 0) return new Map();
-  const rows = await prisma.quanNhan.findMany({
+  const rows = await quanNhanRepository.findManyRaw({
     where: { id: { in: personnelIds } },
     select: {
       id: true,

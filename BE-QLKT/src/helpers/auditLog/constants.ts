@@ -2,6 +2,9 @@ import { prisma } from '../../models';
 import { formatDate } from '../datetimeHelper';
 import { PrismaClient } from '../../generated/prisma';
 import { ROLES } from '../../constants/roles.constants';
+import { quanNhanRepository } from '../../repositories/quanNhan.repository';
+import { coQuanDonViRepository, donViTrucThuocRepository } from '../../repositories/unit.repository';
+import { positionRepository } from '../../repositories/position.repository';
 
 const FALLBACK = {
   UNKNOWN: 'Chưa xác định',
@@ -64,26 +67,26 @@ const getUnitNameFromChucVu = (chucVu: ChucVuWithUnit | null | undefined): strin
 const getUnitNameFromUnitId = async (unitId: string, prisma: PrismaClient): Promise<string> => {
   if (!unitId) return '';
   try {
-    const [coQuanDonVi, donViTrucThuoc] = await Promise.all([
-      prisma.coQuanDonVi.findUnique({
+    const [selectedCoQuan, selectedDonVi] = await Promise.all([
+      coQuanDonViRepository.findUniqueRaw({
         where: { id: unitId },
         select: { ten_don_vi: true },
-      }),
-      prisma.donViTrucThuoc.findUnique({
+      }, prisma),
+      donViTrucThuocRepository.findUniqueRaw({
         where: { id: unitId },
         include: {
           CoQuanDonVi: { select: { ten_don_vi: true } },
         },
-      }),
+      }, prisma),
     ]);
 
-    if (coQuanDonVi?.ten_don_vi) {
-      return coQuanDonVi.ten_don_vi;
+    if (selectedCoQuan?.ten_don_vi) {
+      return selectedCoQuan.ten_don_vi;
     }
-    if (donViTrucThuoc?.ten_don_vi) {
-      const tenDonVi = donViTrucThuoc.ten_don_vi;
-      if (donViTrucThuoc.CoQuanDonVi?.ten_don_vi) {
-        return `${tenDonVi} (${donViTrucThuoc.CoQuanDonVi.ten_don_vi})`;
+    if (selectedDonVi?.ten_don_vi) {
+      const tenDonVi = selectedDonVi.ten_don_vi;
+      if (selectedDonVi.CoQuanDonVi?.ten_don_vi) {
+        return `${tenDonVi} (${selectedDonVi.CoQuanDonVi.ten_don_vi})`;
       }
       return tenDonVi;
     }
@@ -97,10 +100,10 @@ const getUnitNameFromUnitId = async (unitId: string, prisma: PrismaClient): Prom
 const queryPersonnelName = async (personnelId: string, prisma: PrismaClient): Promise<string> => {
   if (!personnelId) return '';
   try {
-    const personnel = await prisma.quanNhan.findUnique({
+    const personnel = await quanNhanRepository.findUniqueRaw({
       where: { id: personnelId },
       select: { ho_ten: true },
-    });
+    }, prisma);
     return personnel?.ho_ten || '';
   } catch (error) {
    console.error('Audit log helper fallback triggered (helpers/auditLog/constants.ts):', error);
@@ -114,7 +117,7 @@ const queryPositionInfo = async (
 ): Promise<{ tenChucVu: string; tenDonVi: string }> => {
   if (!chucVuId) return { tenChucVu: '', tenDonVi: '' };
   try {
-    const chucVu = await prisma.chucVu.findUnique({
+    const chucVu = await positionRepository.findUniqueRaw({
       where: { id: chucVuId },
       include: {
         CoQuanDonVi: { select: { ten_don_vi: true } },
@@ -124,7 +127,7 @@ const queryPositionInfo = async (
           },
         },
       },
-    });
+    }, prisma);
     if (!chucVu) return { tenChucVu: '', tenDonVi: '' };
     return {
       tenChucVu: chucVu.ten_chuc_vu || '',

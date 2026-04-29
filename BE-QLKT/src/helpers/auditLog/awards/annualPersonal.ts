@@ -1,8 +1,9 @@
-import { prisma } from '../../../models';
+import { danhHieuHangNamRepository } from '../../../repositories/danhHieu.repository';
 import { Request, Response } from 'express';
 import { FALLBACK, getFileName } from '../constants';
 import { getDanhHieuName, resolveDanhHieuFromRecord } from '../../../constants/danhHieu.constants';
 import { routeParamId, DanhHieuHangNamWithHoTen } from './shared';
+import { quanNhanRepository } from '../../../repositories/quanNhan.repository';
 
 export const annualRewards: Record<
   string,
@@ -18,7 +19,7 @@ export const annualRewards: Record<
     let hoTen = '';
     if (personnelId) {
       try {
-        const personnel = await prisma.quanNhan.findUnique({
+        const personnel = await quanNhanRepository.findUniqueRaw({
           where: { id: personnelId },
           select: { ho_ten: true },
         });
@@ -65,7 +66,7 @@ export const annualRewards: Record<
       if (reward?.QuanNhan?.ho_ten) {
         hoTen = reward.QuanNhan.ho_ten;
       } else if (rewardId) {
-        const rewardRecord = (await prisma.danhHieuHangNam.findUnique({
+        const rewardRecord = (await danhHieuHangNamRepository.findUnique({
           where: { id: rewardId },
           include: { QuanNhan: { select: { ho_ten: true } } },
         })) as DanhHieuHangNamWithHoTen | null;
@@ -111,7 +112,7 @@ export const annualRewards: Record<
 
     if ((!hoTen || !danhHieu) && rewardId) {
       try {
-        const rewardRecord = (await prisma.danhHieuHangNam.findUnique({
+        const rewardRecord = (await danhHieuHangNamRepository.findUnique({
           where: { id: rewardId },
           include: { QuanNhan: { select: { ho_ten: true } } },
         })) as DanhHieuHangNamWithHoTen | null;

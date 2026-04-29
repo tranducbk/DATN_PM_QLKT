@@ -1,4 +1,9 @@
-import { prisma } from '../../models';
+import { danhHieuHangNamRepository } from '../../repositories/danhHieu.repository';
+import { quanNhanRepository } from '../../repositories/quanNhan.repository';
+import { tenureMedalRepository } from '../../repositories/tenureMedal.repository';
+import { militaryFlagRepository } from '../../repositories/militaryFlag.repository';
+import { commemorativeMedalRepository } from '../../repositories/commemorativeMedal.repository';
+import { contributionMedalRepository } from '../../repositories/contributionMedal.repository';
 import { PROPOSAL_TYPES, type ProposalType } from '../../constants/proposalTypes.constants';
 import { DANH_HIEU_MAP, getDanhHieuName } from '../../constants/danhHieu.constants';
 import {
@@ -11,27 +16,27 @@ type AwardTableQueryFn = (personnelIds: string[], nam: number) => Promise<Array<
 /** Award table query per proposal type. Returns raw rows containing `quan_nhan_id` (and `danh_hieu` when relevant). */
 export const AWARD_TABLE_QUERIES: Partial<Record<ProposalType, AwardTableQueryFn>> = {
   [PROPOSAL_TYPES.CA_NHAN_HANG_NAM]: (ids, nam) =>
-    prisma.danhHieuHangNam.findMany({
+    danhHieuHangNamRepository.findMany({
       where: { quan_nhan_id: { in: ids }, nam },
       select: { quan_nhan_id: true, danh_hieu: true },
     }) as Promise<Array<Record<string, unknown>>>,
   [PROPOSAL_TYPES.NIEN_HAN]: ids =>
-    prisma.khenThuongHCCSVV.findMany({
+    tenureMedalRepository.findManyRaw({
       where: { quan_nhan_id: { in: ids } },
       select: { quan_nhan_id: true, danh_hieu: true },
     }) as Promise<Array<Record<string, unknown>>>,
   [PROPOSAL_TYPES.HC_QKQT]: ids =>
-    prisma.huanChuongQuanKyQuyetThang.findMany({
+    militaryFlagRepository.findManyRaw({
       where: { quan_nhan_id: { in: ids } },
       select: { quan_nhan_id: true },
     }) as Promise<Array<Record<string, unknown>>>,
   [PROPOSAL_TYPES.KNC_VSNXD_QDNDVN]: ids =>
-    prisma.kyNiemChuongVSNXDQDNDVN.findMany({
+    commemorativeMedalRepository.findManyRaw({
       where: { quan_nhan_id: { in: ids } },
       select: { quan_nhan_id: true },
     }) as Promise<Array<Record<string, unknown>>>,
   [PROPOSAL_TYPES.CONG_HIEN]: ids =>
-    prisma.khenThuongHCBVTQ.findMany({
+    contributionMedalRepository.findManyRaw({
       where: { quan_nhan_id: { in: ids } },
       select: { quan_nhan_id: true, danh_hieu: true },
     }) as Promise<Array<Record<string, unknown>>>,
@@ -87,7 +92,7 @@ export const SERVICE_YEAR_CHECKS: Partial<Record<ProposalType, ServiceYearCheckF
   },
   [PROPOSAL_TYPES.NIEN_HAN]: async personnelIds => {
     const errors: string[] = [];
-    const personnelList = await prisma.quanNhan.findMany({
+    const personnelList = await quanNhanRepository.findManyRaw({
       where: { id: { in: personnelIds } },
       select: { id: true, ho_ten: true, ngay_nhap_ngu: true },
     });

@@ -1,4 +1,5 @@
-import { prisma } from '../models';
+import { quanNhanRepository } from '../repositories/quanNhan.repository';
+import { accountRepository } from '../repositories/account.repository';
 import * as notificationHelper from '../helpers/notification';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { buildBulkAwardSummaryMessage } from '../helpers/award/awardSummaryMessage';
@@ -129,7 +130,7 @@ class AwardBulkService {
       type === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN
     ) {
       const personnelIds = titleData.map(item => item.personnel_id as string).filter(Boolean);
-      const personnel = await prisma.quanNhan.findMany({ where: { id: { in: personnelIds } } });
+      const personnel = await quanNhanRepository.findManyByIds(personnelIds);
       for (const p of personnel) personnelMap.set(p.id, p);
     }
 
@@ -161,7 +162,7 @@ class AwardBulkService {
     importedCount = importedCountRef.value;
 
     try {
-      const admin = await prisma.taiKhoan.findUnique({
+      const admin = await accountRepository.findUniqueRaw({
         where: { id: adminId },
         select: { username: true },
       });

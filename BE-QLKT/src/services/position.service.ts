@@ -1,4 +1,6 @@
-import { prisma } from '../models';
+import { quanNhanRepository } from '../repositories/quanNhan.repository';
+import { coQuanDonViRepository, donViTrucThuocRepository } from '../repositories/unit.repository';
+import { positionRepository } from '../repositories/position.repository';
 import type { Prisma } from '../generated/prisma';
 import { NotFoundError, AppError, ValidationError } from '../middlewares/errorHandler';
 
@@ -13,8 +15,8 @@ class PositionService {
 
     if (includeChildren && unitId) {
       const [coQuanDonVi, donViTrucThuoc] = await Promise.all([
-        prisma.coQuanDonVi.findUnique({ where: { id: unitId }, select: { id: true } }),
-        prisma.donViTrucThuoc.findUnique({ where: { id: unitId }, select: { id: true } }),
+        coQuanDonViRepository.findIdById(unitId),
+        donViTrucThuocRepository.findIdById(unitId),
       ]);
 
       if (!coQuanDonVi && !donViTrucThuoc) {
@@ -22,10 +24,7 @@ class PositionService {
       }
 
       if (coQuanDonVi) {
-        const childUnits = await prisma.donViTrucThuoc.findMany({
-          where: { co_quan_don_vi_id: unitId },
-          select: { id: true },
-        });
+        const childUnits = await donViTrucThuocRepository.findIdsByCoQuanDonViId(unitId);
         unitIds.push(...childUnits.map(c => c.id));
       }
     }
@@ -34,7 +33,7 @@ class PositionService {
       ? { OR: [{ co_quan_don_vi_id: { in: unitIds } }, { don_vi_truc_thuoc_id: { in: unitIds } }] }
       : {};
 
-    return prisma.chucVu.findMany({
+    return positionRepository.findManyRaw({
       where,
       include: positionInclude,
       orderBy: [
@@ -54,8 +53,8 @@ class PositionService {
     const { unit_id, ten_chuc_vu, is_manager, he_so_chuc_vu } = data;
 
     const [coQuanDonVi, donViTrucThuoc] = await Promise.all([
-      prisma.coQuanDonVi.findUnique({ where: { id: unit_id }, select: { id: true } }),
-      prisma.donViTrucThuoc.findUnique({ where: { id: unit_id }, select: { id: true } }),
+      coQuanDonViRepository.findIdById(unit_id),
+      donViTrucThuocRepository.findIdById(unit_id),
     ]);
 
     if (!coQuanDonVi && !donViTrucThuoc) {
@@ -64,7 +63,7 @@ class PositionService {
 
     const isCoQuanDonVi = !!coQuanDonVi;
 
-    const existingPosition = await prisma.chucVu.findFirst({
+    const existingPosition = await positionRepository.findFirstRaw({
       where: {
         ten_chuc_vu,
         ...(isCoQuanDonVi ? { co_quan_don_vi_id: unit_id } : { don_vi_truc_thuoc_id: unit_id }),
@@ -84,7 +83,7 @@ class PositionService {
         : { co_quan_don_vi_id: null, don_vi_truc_thuoc_id: unit_id }),
     };
 
-    return prisma.chucVu.create({ data: createData, include: positionInclude });
+    return positionRepository.createRaw({ data: createData, include: positionInclude });
   }
 
   async updatePosition(
@@ -93,7 +92,7 @@ class PositionService {
   ) {
     const { ten_chuc_vu, is_manager, he_so_chuc_vu } = data;
 
-    const position = await prisma.chucVu.findUnique({
+    const position = await positionRepository.findUniqueRaw({
       where: { id },
     });
 
@@ -119,7 +118,7 @@ class PositionService {
       throw new ValidationError('Không có thay đổi nào để cập nhật');
     }
 
-    return prisma.chucVu.update({
+    return positionRepository.updateRaw({
       where: { id },
       data: { ten_chuc_vu: newTenChucVu, is_manager: newIsManager, he_so_chuc_vu: newHeSoChucVu },
       include: positionInclude,
@@ -128,14 +127,14 @@ class PositionService {
 
   async deletePosition(id: string) {
     const [position, personnelCount] = await Promise.all([
-      prisma.chucVu.findUnique({
+      positionRepository.findUniqueRaw({
         where: { id },
         include: {
           CoQuanDonVi: { select: { ten_don_vi: true } },
           DonViTrucThuoc: { include: { CoQuanDonVi: { select: { ten_don_vi: true } } } },
         },
       }),
-      prisma.quanNhan.count({ where: { chuc_vu_id: id } }),
+      quanNhanRepository.count({ chuc_vu_id: id }),
     ]);
 
     if (!position) {
@@ -149,9 +148,7 @@ class PositionService {
       );
     }
 
-    await prisma.chucVu.delete({
-      where: { id },
-    });
+    await positionRepository.delete(id);
 
     return {
       message: 'Xóa chức vụ thành công',

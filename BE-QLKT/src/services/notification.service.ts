@@ -2,6 +2,7 @@ import { prisma } from '../models';
 import { emitNotificationToUser } from '../utils/socketService';
 import type { ThongBao, Prisma } from '../generated/prisma';
 import { NotFoundError } from '../middlewares/errorHandler';
+import { notificationRepository } from '../repositories/notification.repository';
 
 interface CreateNotificationData {
   recipient_id: string | null;
@@ -44,18 +45,16 @@ class NotificationService {
       system_log_id,
     } = data;
 
-    const notification = await prisma.thongBao.create({
-      data: {
-        nguoi_nhan_id: recipient_id,
-        recipient_role,
-        type,
-        title,
-        message,
-        resource,
-        tai_nguyen_id: resource_id || null,
-        link,
-        nhat_ky_he_thong_id: system_log_id,
-      },
+    const notification = await notificationRepository.create({
+      nguoi_nhan_id: recipient_id,
+      recipient_role,
+      type,
+      title,
+      message,
+      resource,
+      tai_nguyen_id: resource_id || null,
+      link,
+      nhat_ky_he_thong_id: system_log_id,
     });
 
     if (recipient_id) {
@@ -68,9 +67,7 @@ class NotificationService {
   async createBulkNotifications(
     notifications: Prisma.ThongBaoCreateManyInput[]
   ): Promise<Prisma.BatchPayload> {
-    const result = await prisma.thongBao.createMany({
-      data: notifications,
-    });
+    const result = await notificationRepository.createMany(notifications);
 
     return result;
   }
@@ -95,7 +92,7 @@ class NotificationService {
     }
 
     const [notifications, total] = await Promise.all([
-      prisma.thongBao.findMany({
+      notificationRepository.findManyRaw({
         skip: Number(skip),
         take: Number(limit),
         where,
@@ -112,7 +109,7 @@ class NotificationService {
           createdAt: 'desc',
         },
       }),
-      prisma.thongBao.count({ where }),
+      notificationRepository.count(where),
     ]);
 
     return {
@@ -125,77 +122,70 @@ class NotificationService {
   }
 
   async getUnreadCount(userId: string): Promise<number> {
-    const count = await prisma.thongBao.count({
-      where: {
-        nguoi_nhan_id: userId,
-        is_read: false,
-      },
+    const count = await notificationRepository.count({
+      nguoi_nhan_id: userId,
+      is_read: false,
     });
 
     return count;
   }
 
   async markAsRead(notificationId: string, userId: string): Promise<ThongBao> {
-    const notification = await prisma.thongBao.findFirst({
+    const notification = await notificationRepository.findManyRaw({
       where: {
         id: notificationId,
         nguoi_nhan_id: userId,
       },
+      take: 1,
     });
 
-    if (!notification) {
+    if (!notification[0]) {
       throw new NotFoundError('Thông báo');
     }
 
-    const updated = await prisma.thongBao.update({
-      where: { id: notificationId },
-      data: {
-        is_read: true,
-        readAt: new Date(),
-      },
+    const updated = await notificationRepository.update(notificationId, {
+      is_read: true,
+      readAt: new Date(),
     });
 
     return updated;
   }
 
   async markAllAsRead(userId: string): Promise<Prisma.BatchPayload> {
-    const result = await prisma.thongBao.updateMany({
-      where: {
+    const result = await notificationRepository.updateMany(
+      {
         nguoi_nhan_id: userId,
         is_read: false,
       },
-      data: {
+      {
         is_read: true,
         readAt: new Date(),
-      },
-    });
+      }
+    );
 
     return result;
   }
 
   async deleteNotification(notificationId: string, userId: string): Promise<{ message: string }> {
-    const notification = await prisma.thongBao.findFirst({
+    const notification = await notificationRepository.findManyRaw({
       where: {
         id: notificationId,
         nguoi_nhan_id: userId,
       },
+      take: 1,
     });
 
-    if (!notification) {
+    if (!notification[0]) {
       throw new NotFoundError('Thông báo');
     }
 
-    await prisma.thongBao.delete({
-      where: { id: notificationId },
-    });
+    await notificationRepository.delete(notificationId);
 
     return { message: 'Xóa thông báo thành công' };
   }
 
   async deleteAllNotifications(userId: string): Promise<{ message: string; deleted: number }> {
-    const result = await prisma.thongBao.deleteMany({
-      where: { nguoi_nhan_id: userId },
-    });
+    const result = await notificationRepository.deleteMany({ nguoi_nhan_id: userId });
     return { message: `Đã xóa ${result.count} thông báo`, deleted: result.count };
   }
 
@@ -203,12 +193,10 @@ class NotificationService {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const result = await prisma.thongBao.deleteMany({
-      where: {
-        is_read: true,
-        readAt: {
-          lt: thirtyDaysAgo,
-        },
+    const result = await notificationRepository.deleteMany({
+      is_read: true,
+      readAt: {
+        lt: thirtyDaysAgo,
       },
     });
 

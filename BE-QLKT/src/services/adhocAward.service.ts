@@ -1,6 +1,11 @@
 import path from 'path';
 import fs from 'fs/promises';
 import { prisma } from '../models';
+import { quanNhanRepository } from '../repositories/quanNhan.repository';
+import { coQuanDonViRepository, donViTrucThuocRepository } from '../repositories/unit.repository';
+import { adhocAwardRepository } from '../repositories/adhocAward.repository';
+import { accountRepository } from '../repositories/account.repository';
+import { notificationRepository } from '../repositories/notification.repository';
 import { NOTIFICATION_TYPES, RESOURCE_TYPES } from '../constants/notificationTypes.constants';
 import { ROLES } from '../constants/roles.constants';
 import { ADHOC_TYPE } from '../constants/adhocType.constants';
@@ -98,7 +103,7 @@ type ManagerUnitFilter = ManagerUnitFilterCoQuan | ManagerUnitFilterDvtt;
 class AdhocAwardService {
   /** Fetch all MANAGER accounts belonging to a given CQDV. */
   private async fetchManagersByCoQuanId(coQuanId: string) {
-    return prisma.taiKhoan.findMany({
+    return accountRepository.findManyRaw({
       where: {
         role: ROLES.MANAGER,
         QuanNhan: { co_quan_don_vi_id: coQuanId },
@@ -174,7 +179,7 @@ class AdhocAwardService {
     decisionNumber,
     attachedFiles,
   }: CreateAdhocAwardParams): Promise<KhenThuongDotXuat> {
-    const admin = await prisma.taiKhoan.findUnique({
+    const admin = await accountRepository.findUniqueRaw({
       where: { id: adminId },
     });
 
@@ -183,9 +188,7 @@ class AdhocAwardService {
     }
 
     if (type === ADHOC_TYPE.CA_NHAN) {
-      const personnel = await prisma.quanNhan.findUnique({
-        where: { id: personnelId },
-      });
+      const personnel = await quanNhanRepository.findIdById(String(personnelId));
 
       if (!personnel) {
         throw new NotFoundError('Quân nhân');
@@ -194,17 +197,13 @@ class AdhocAwardService {
 
     if (type === ADHOC_TYPE.TAP_THE) {
       if (unitType === 'CO_QUAN_DON_VI') {
-        const unit = await prisma.coQuanDonVi.findUnique({
-          where: { id: unitId },
-        });
+        const unit = await coQuanDonViRepository.findIdById(String(unitId));
 
         if (!unit) {
           throw new NotFoundError('Cơ quan đơn vị');
         }
       } else if (unitType === 'DON_VI_TRUC_THUOC') {
-        const unit = await prisma.donViTrucThuoc.findUnique({
-          where: { id: unitId },
-        });
+        const unit = await donViTrucThuocRepository.findIdById(String(unitId));
 
         if (!unit) {
           throw new NotFoundError('Đơn vị trực thuộc');
@@ -247,41 +246,24 @@ class AdhocAwardService {
       }
     }
 
-    const adhocAward = await prisma.khenThuongDotXuat.create({
-      data: {
-        loai: 'KHEN_THUONG_DOT_XUAT',
-        doi_tuong: type,
-        ...(type === ADHOC_TYPE.CA_NHAN && personnelId && { quan_nhan_id: personnelId }),
-        ...(type === ADHOC_TYPE.TAP_THE && unitType === 'CO_QUAN_DON_VI' && { co_quan_don_vi_id: unitId }),
-        ...(type === ADHOC_TYPE.TAP_THE &&
-          unitType === 'DON_VI_TRUC_THUOC' && { don_vi_truc_thuoc_id: unitId }),
-        hinh_thuc_khen_thuong: awardForm,
-        nam: year,
-        cap_bac: rank || null,
-        chuc_vu: position || null,
-        ghi_chu: note || null,
-        so_quyet_dinh: decisionNumber || null,
-        files_dinh_kem:
-          uploadedAttachedFiles.length > 0
-            ? (JSON.parse(JSON.stringify(uploadedAttachedFiles)) as Prisma.InputJsonValue)
-            : null,
-      },
-      include: {
-        QuanNhan: {
-          include: {
-            CoQuanDonVi: true,
-            DonViTrucThuoc: true,
-            ChucVu: true,
-          },
-        },
-        CoQuanDonVi: true,
-        DonViTrucThuoc: {
-          include: {
-            CoQuanDonVi: true,
-          },
-        },
-      },
-    });
+    const adhocAward = await adhocAwardRepository.create({
+      loai: 'KHEN_THUONG_DOT_XUAT',
+      doi_tuong: type,
+      ...(type === ADHOC_TYPE.CA_NHAN && personnelId && { quan_nhan_id: personnelId }),
+      ...(type === ADHOC_TYPE.TAP_THE && unitType === 'CO_QUAN_DON_VI' && { co_quan_don_vi_id: unitId }),
+      ...(type === ADHOC_TYPE.TAP_THE &&
+        unitType === 'DON_VI_TRUC_THUOC' && { don_vi_truc_thuoc_id: unitId }),
+      hinh_thuc_khen_thuong: awardForm,
+      nam: year,
+      cap_bac: rank || null,
+      chuc_vu: position || null,
+      ghi_chu: note || null,
+      so_quyet_dinh: decisionNumber || null,
+      files_dinh_kem:
+        uploadedAttachedFiles.length > 0
+          ? (JSON.parse(JSON.stringify(uploadedAttachedFiles)) as Prisma.InputJsonValue)
+          : null,
+    } as Prisma.KhenThuongDotXuatUncheckedCreateInput);
 
     try {
       await this.notifyOnAdhocAwardCreated(adhocAward, admin.username);
@@ -326,7 +308,7 @@ class AdhocAwardService {
         });
       }
 
-      const personnelAccount = await prisma.taiKhoan.findFirst({
+      const personnelAccount = await accountRepository.findFirstRaw({
         where: { quan_nhan_id: personnel.id as string },
         select: { id: true, role: true },
       });
@@ -395,7 +377,7 @@ class AdhocAwardService {
     }
 
     if (notifications.length > 0) {
-      await prisma.thongBao.createMany({ data: notifications });
+      await notificationRepository.createMany(notifications);
       notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n as unknown as Record<string, unknown>));
     }
 
@@ -457,8 +439,8 @@ class AdhocAwardService {
     }
 
     const [total, data] = await Promise.all([
-      prisma.khenThuongDotXuat.count({ where: where as Prisma.KhenThuongDotXuatWhereInput }),
-      prisma.khenThuongDotXuat.findMany({
+      adhocAwardRepository.count(where as Prisma.KhenThuongDotXuatWhereInput),
+      adhocAwardRepository.findManyRaw({
         where: where as Prisma.KhenThuongDotXuatWhereInput,
         skip,
         take: limit,
@@ -495,7 +477,7 @@ class AdhocAwardService {
   }
 
   async getAdhocAwardById(id: string): Promise<KhenThuongDotXuat> {
-    const adhocAward = await prisma.khenThuongDotXuat.findUnique({
+    const adhocAward = await adhocAwardRepository.findUniqueRaw({
       where: { id },
       include: {
         QuanNhan: {
@@ -533,7 +515,7 @@ class AdhocAwardService {
     attachedFiles,
     removeAttachedFileIndexes,
   }: UpdateAdhocAwardParams): Promise<KhenThuongDotXuat> {
-    const admin = await prisma.taiKhoan.findUnique({
+    const admin = await accountRepository.findUniqueRaw({
       where: { id: adminId },
     });
 
@@ -541,7 +523,7 @@ class AdhocAwardService {
       throw new ForbiddenError('Chỉ Admin mới có quyền cập nhật khen thưởng đột xuất');
     }
 
-    const existing = await prisma.khenThuongDotXuat.findUnique({
+    const existing = await adhocAwardRepository.findUniqueRaw({
       where: { id },
     });
 
@@ -609,7 +591,7 @@ class AdhocAwardService {
 
     updateData.files_dinh_kem = existingAttachedFiles.length > 0 ? existingAttachedFiles : null;
 
-    const updated = await prisma.khenThuongDotXuat.update({
+    const updated = await adhocAwardRepository.updateRaw({
       where: { id },
       data: updateData as Prisma.KhenThuongDotXuatUpdateInput,
       include: {
@@ -671,7 +653,7 @@ class AdhocAwardService {
         });
       }
 
-      const personnelAccount = await prisma.taiKhoan.findFirst({
+      const personnelAccount = await accountRepository.findFirstRaw({
         where: { quan_nhan_id: personnel.id as string },
         select: { id: true, role: true },
       });
@@ -738,7 +720,7 @@ class AdhocAwardService {
     }
 
     if (notifications.length > 0) {
-      await prisma.thongBao.createMany({ data: notifications });
+      await notificationRepository.createMany(notifications);
       notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n as unknown as Record<string, unknown>));
     }
 
@@ -746,11 +728,11 @@ class AdhocAwardService {
   }
 
   async deleteAdhocAward(id: string, adminId: string): Promise<{ success: boolean }> {
-    const admin = await prisma.taiKhoan.findUnique({
+    const admin = await accountRepository.findUniqueRaw({
       where: { id: adminId },
     });
 
-    const adhocAward = await prisma.khenThuongDotXuat.findUnique({
+    const adhocAward = await adhocAwardRepository.findUniqueRaw({
       where: { id },
       include: {
         QuanNhan: {
@@ -787,9 +769,7 @@ class AdhocAwardService {
       }
     }
 
-    await prisma.khenThuongDotXuat.delete({
-      where: { id },
-    });
+    await adhocAwardRepository.delete(id);
 
     try {
       await this.notifyOnAdhocAwardDeleted(awardInfo, admin?.username || 'Admin');
@@ -833,7 +813,7 @@ class AdhocAwardService {
         });
       }
 
-      const personnelAccount = await prisma.taiKhoan.findFirst({
+      const personnelAccount = await accountRepository.findFirstRaw({
         where: { quan_nhan_id: personnel.id as string },
         select: { id: true, role: true },
       });
@@ -900,7 +880,7 @@ class AdhocAwardService {
     }
 
     if (notifications.length > 0) {
-      await prisma.thongBao.createMany({ data: notifications });
+      await notificationRepository.createMany(notifications);
       notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n as unknown as Record<string, unknown>));
     }
 
@@ -908,15 +888,13 @@ class AdhocAwardService {
   }
 
   async getAdhocAwardsByPersonnel(personnelId: string): Promise<KhenThuongDotXuat[]> {
-    const personnel = await prisma.quanNhan.findUnique({
-      where: { id: personnelId },
-    });
+    const personnel = await quanNhanRepository.findIdById(personnelId);
 
     if (!personnel) {
       throw new NotFoundError('Quân nhân');
     }
 
-    const adhocAwards = await prisma.khenThuongDotXuat.findMany({
+    const adhocAwards = await adhocAwardRepository.findManyRaw({
       where: {
         doi_tuong: ADHOC_TYPE.CA_NHAN,
         quan_nhan_id: personnelId,
@@ -946,9 +924,7 @@ class AdhocAwardService {
     if (unitType === 'CO_QUAN_DON_VI') {
       where.co_quan_don_vi_id = unitId;
 
-      const unit = await prisma.coQuanDonVi.findUnique({
-        where: { id: unitId },
-      });
+      const unit = await coQuanDonViRepository.findIdById(unitId);
 
       if (!unit) {
         throw new NotFoundError('Cơ quan đơn vị');
@@ -956,16 +932,14 @@ class AdhocAwardService {
     } else if (unitType === 'DON_VI_TRUC_THUOC') {
       where.don_vi_truc_thuoc_id = unitId;
 
-      const unit = await prisma.donViTrucThuoc.findUnique({
-        where: { id: unitId },
-      });
+      const unit = await donViTrucThuocRepository.findIdById(unitId);
 
       if (!unit) {
         throw new NotFoundError('Đơn vị trực thuộc');
       }
     }
 
-    const adhocAwards = await prisma.khenThuongDotXuat.findMany({
+    const adhocAwards = await adhocAwardRepository.findManyRaw({
       where,
       orderBy: {
         nam: 'desc',

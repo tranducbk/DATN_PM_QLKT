@@ -1,5 +1,9 @@
 import type { Prisma } from '../../generated/prisma';
 import { prisma } from '../../models';
+import { danhHieuDonViHangNamRepository } from '../../repositories/danhHieu.repository';
+import { coQuanDonViRepository, donViTrucThuocRepository } from '../../repositories/unit.repository';
+import { decisionFileRepository } from '../../repositories/decisionFile.repository';
+import { proposalRepository } from '../../repositories/proposal.repository';
 import { loadWorkbook, getAndValidateWorksheet } from '../../helpers/excel/excelImportHelper';
 
 import {
@@ -140,7 +144,7 @@ export async function previewImport(buffer: Buffer, deps: UnitAnnualAwardDeps = 
   const seenInFile = new Set();
   const currentYear = new Date().getFullYear();
 
-  const existingDecisions = await prisma.fileQuyetDinh.findMany({
+  const existingDecisions = await decisionFileRepository.findManyRaw({
     select: { so_quyet_dinh: true },
   });
   const validDecisionNumbers = new Set(existingDecisions.map(d => d.so_quyet_dinh));
@@ -153,10 +157,10 @@ export async function previewImport(buffer: Buffer, deps: UnitAnnualAwardDeps = 
   }
 
   const [coQuanDonViList, donViTrucThuocList] = await Promise.all([
-    prisma.coQuanDonVi.findMany({
+    coQuanDonViRepository.findManyRaw({
       where: { ma_don_vi: { in: [...allMaDonVi] } },
     }),
-    prisma.donViTrucThuoc.findMany({
+    donViTrucThuocRepository.findManyRaw({
       where: { ma_don_vi: { in: [...allMaDonVi] } },
     }),
   ]);
@@ -168,7 +172,7 @@ export async function previewImport(buffer: Buffer, deps: UnitAnnualAwardDeps = 
   for (const u of coQuanDonViList) allUnitIds.add(u.id);
   for (const u of donViTrucThuocList) allUnitIds.add(u.id);
 
-  const existingUnitAwards = await prisma.danhHieuDonViHangNam.findMany({
+  const existingUnitAwards = await danhHieuDonViHangNamRepository.findMany({
     where: {
       OR: [
         { co_quan_don_vi_id: { in: [...allUnitIds] } },
@@ -423,7 +427,7 @@ export async function confirmImport(validItems: UnitAnnualAwardValidItem[], admi
   const uniqueYears = [...new Set(validItems.map(item => item.nam))];
 
   const [existingAwards, existingProposals] = await Promise.all([
-    prisma.danhHieuDonViHangNam.findMany({
+    danhHieuDonViHangNamRepository.findMany({
       where: {
         OR: [
           { co_quan_don_vi_id: { in: uniqueUnitIds }, nam: { in: uniqueYears } },
@@ -439,7 +443,7 @@ export async function confirmImport(validItems: UnitAnnualAwardValidItem[], admi
         nhan_bkttcp: true,
       },
     }),
-    prisma.bangDeXuat.findMany({
+    proposalRepository.findManyRaw({
       where: {
         loai_de_xuat: PROPOSAL_TYPES.DON_VI_HANG_NAM,
         nam: { in: uniqueYears },
@@ -602,14 +606,14 @@ export async function confirmImport(validItems: UnitAnnualAwardValidItem[], admi
           createData.don_vi_truc_thuoc_id = item.unit_id;
         }
 
-        const result = await prismaTx.danhHieuDonViHangNam.upsert({
+        const result = await danhHieuDonViHangNamRepository.upsert({
           where: upsertWhere,
           update: {
             danh_hieu: finalDanhHieu,
             ...sharedData,
           },
           create: createData as Prisma.DanhHieuDonViHangNamUncheckedCreateInput,
-        });
+        }, prismaTx);
         results.push(result);
       }
       return { imported: results.length, data: results };
@@ -686,8 +690,8 @@ export async function importFromExcel(
   }
 
   const [coQuanDonViList, donViTrucThuocList] = await Promise.all([
-    prisma.coQuanDonVi.findMany({ where: { ma_don_vi: { in: [...allMaDonVi] } } }),
-    prisma.donViTrucThuoc.findMany({ where: { ma_don_vi: { in: [...allMaDonVi] } } }),
+    coQuanDonViRepository.findManyRaw({ where: { ma_don_vi: { in: [...allMaDonVi] } } }),
+    donViTrucThuocRepository.findManyRaw({ where: { ma_don_vi: { in: [...allMaDonVi] } } }),
   ]);
   const coQuanDonViByMa = new Map(coQuanDonViList.map(u => [u.ma_don_vi, u] as const));
   const donViTrucThuocByMa = new Map(donViTrucThuocList.map(u => [u.ma_don_vi, u] as const));
@@ -695,7 +699,7 @@ export async function importFromExcel(
   const allCQDVIds = coQuanDonViList.map(u => u.id);
   const allDVTTIds = donViTrucThuocList.map(u => u.id);
   const [existingAwardList, pendingProposalList] = await Promise.all([
-    prisma.danhHieuDonViHangNam.findMany({
+    danhHieuDonViHangNamRepository.findMany({
       where: {
         AND: [
           {
@@ -716,7 +720,7 @@ export async function importFromExcel(
         nhan_bkttcp: true,
       },
     }),
-    prisma.bangDeXuat.findMany({
+    proposalRepository.findManyRaw({
       where: {
         loai_de_xuat: PROPOSAL_TYPES.DON_VI_HANG_NAM,
         nam: { in: [...allYears] },
@@ -820,7 +824,7 @@ export async function importFromExcel(
         const dvttSoQdBkbqp = dvttIsBkbqp ? (soQdBkbqp || soQuyetDinh || null) : null;
         const dvttSoQdBkttcp = dvttIsBkttcp ? (soQuyetDinh || null) : null;
 
-        const award = await prisma.danhHieuDonViHangNam.upsert({
+        const award = await danhHieuDonViHangNamRepository.upsert({
           where: {
             unique_don_vi_truc_thuoc_nam_dh: {
               don_vi_truc_thuoc_id: donViTrucThuoc.id,
@@ -876,7 +880,7 @@ export async function importFromExcel(
         const cqdvSoQdBkbqp = cqdvIsBkbqp ? (soQdBkbqp || soQuyetDinh || null) : null;
         const cqdvSoQdBkttcp = cqdvIsBkttcp ? (soQuyetDinh || null) : null;
 
-        const award = await prisma.danhHieuDonViHangNam.upsert({
+        const award = await danhHieuDonViHangNamRepository.upsert({
           where: {
             unique_co_quan_don_vi_nam_dh: {
               co_quan_don_vi_id: donVi.id,

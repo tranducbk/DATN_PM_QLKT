@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { prisma } from '../models';
+import { systemSettingRepository } from '../repositories/systemSetting.repository';
 
 /**
  * Reads a system setting value by key.
@@ -8,7 +8,7 @@ import { prisma } from '../models';
  * @returns Setting value or default value
  */
 async function getSetting(key: string, defaultValue: string): Promise<string> {
-  const setting = await prisma.systemSetting.findUnique({ where: { key } });
+  const setting = await systemSettingRepository.findUniqueByKey(key);
   return setting ? setting.value : defaultValue;
 }
 
@@ -19,11 +19,7 @@ async function getSetting(key: string, defaultValue: string): Promise<string> {
  * @returns Promise resolved when persistence completes
  */
 async function setSetting(key: string, value: string): Promise<void> {
-  await prisma.systemSetting.upsert({
-    where: { key },
-    update: { value: String(value) },
-    create: { key, value: String(value) },
-  });
+  await systemSettingRepository.upsert(key, String(value));
 }
 
 /**
@@ -32,9 +28,7 @@ async function setSetting(key: string, value: string): Promise<void> {
  * @returns Key-value map of existing settings
  */
 async function getSettings(keys: string[]): Promise<Record<string, string>> {
-  const settings = await prisma.systemSetting.findMany({
-    where: { key: { in: keys } },
-  });
+  const settings = await systemSettingRepository.findManyByKeys(keys);
   const map: Record<string, string> = {};
   for (const s of settings) {
     map[s.key] = s.value;

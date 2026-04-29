@@ -1,4 +1,10 @@
 import { prisma } from '../models';
+import { quanNhanRepository } from '../repositories/quanNhan.repository';
+import { donViTrucThuocRepository } from '../repositories/unit.repository';
+import { commemorativeMedalRepository } from '../repositories/commemorativeMedal.repository';
+import { decisionFileRepository } from '../repositories/decisionFile.repository';
+import { proposalRepository } from '../repositories/proposal.repository';
+import { accountRepository } from '../repositories/account.repository';
 import { calculateServiceMonths, formatServiceDuration } from '../helpers/serviceYearsHelper';
 import ExcelJS from 'exceljs';
 import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excel/excelImportHelper';
@@ -99,20 +105,20 @@ class CommemorativeMedalService {
 
     const [personnelList, existingKncList, existingDecisions, pendingProposals] = await Promise.all([
       allPersonnelIds.size > 0
-        ? prisma.quanNhan.findMany({
+        ? quanNhanRepository.findManyRaw({
             where: { id: { in: [...allPersonnelIds] } },
             select: { id: true, ho_ten: true, gioi_tinh: true, ngay_nhap_ngu: true, cap_bac: true, ChucVu: { select: { ten_chuc_vu: true } } },
           })
         : Promise.resolve([]),
       allPersonnelIds.size > 0
-        ? prisma.kyNiemChuongVSNXDQDNDVN.findMany({
+        ? commemorativeMedalRepository.findManyRaw({
             where: { quan_nhan_id: { in: [...allPersonnelIds] } },
           })
         : Promise.resolve([]),
-      prisma.fileQuyetDinh.findMany({
+      decisionFileRepository.findManyRaw({
         select: { so_quyet_dinh: true },
       }),
-      prisma.bangDeXuat.findMany({
+      proposalRepository.findManyRaw({
         where: {
           loai_de_xuat: PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
           status: PROPOSAL_STATUS.PENDING,
@@ -364,10 +370,10 @@ class CommemorativeMedalService {
 
     // Parallel: check pending proposals + existing records
     const [pendingProposals, existingRecords] = await Promise.all([
-      prisma.bangDeXuat.findMany({
+      proposalRepository.findManyRaw({
         where: { loai_de_xuat: PROPOSAL_TYPES.KNC_VSNXD_QDNDVN, status: PROPOSAL_STATUS.PENDING },
       }),
-      prisma.kyNiemChuongVSNXDQDNDVN.findMany({
+      commemorativeMedalRepository.findManyRaw({
         where: { quan_nhan_id: { in: personnelIds } },
         select: { quan_nhan_id: true, nam: true },
       }),
@@ -447,10 +453,9 @@ class CommemorativeMedalService {
     if (filters.don_vi_id) {
       if (filters.include_sub_units) {
         // include_sub_units: expand filter to all DVTT under the parent unit
-        const donViTrucThuocIds = await prisma.donViTrucThuoc.findMany({
-          where: { co_quan_don_vi_id: filters.don_vi_id },
-          select: { id: true },
-        });
+        const donViTrucThuocIds = await donViTrucThuocRepository.findIdsByCoQuanDonViId(
+          String(filters.don_vi_id)
+        );
         const donViTrucThuocIdList = donViTrucThuocIds.map(d => d.id);
         where.QuanNhan = {
           ...quanNhanFilter,
@@ -477,7 +482,7 @@ class CommemorativeMedalService {
     }
 
     const [data, total] = await Promise.all([
-      prisma.kyNiemChuongVSNXDQDNDVN.findMany({
+      commemorativeMedalRepository.findManyRaw({
         where,
         include: {
           QuanNhan: {
@@ -495,7 +500,7 @@ class CommemorativeMedalService {
         take: limit,
         orderBy: { nam: 'desc' },
       }),
-      prisma.kyNiemChuongVSNXDQDNDVN.count({ where }),
+      commemorativeMedalRepository.count(where),
     ]);
 
     return {
@@ -568,13 +573,9 @@ class CommemorativeMedalService {
    * Get Commemorative Medals statistics
    */
   async getStatistics() {
-    const byYear = await prisma.kyNiemChuongVSNXDQDNDVN.groupBy({
-      by: ['nam'],
-      _count: { id: true },
-      orderBy: { nam: 'desc' },
-    });
+    const byYear = await commemorativeMedalRepository.groupByYear();
 
-    const total = await prisma.kyNiemChuongVSNXDQDNDVN.count();
+    const total = await commemorativeMedalRepository.count({});
 
     return {
       total,
@@ -586,7 +587,7 @@ class CommemorativeMedalService {
    * Get user with unit info (helper method)
    */
   async getUserWithUnit(userId: string) {
-    return await prisma.taiKhoan.findUnique({
+    return await accountRepository.findUniqueRaw({
       where: { id: userId },
       include: {
         QuanNhan: {
@@ -603,7 +604,7 @@ class CommemorativeMedalService {
    * Get Commemorative Medal by personnel ID
    */
   async getByPersonnelId(personnelId: string) {
-    const result = await prisma.kyNiemChuongVSNXDQDNDVN.findUnique({
+    const result = await commemorativeMedalRepository.findUniqueRaw({
       where: { quan_nhan_id: personnelId },
       include: {
         QuanNhan: {
@@ -625,13 +626,7 @@ class CommemorativeMedalService {
    * Get personnel by ID (helper method)
    */
   async getPersonnelById(personnelId: string) {
-    return await prisma.quanNhan.findUnique({
-      where: { id: personnelId },
-      select: {
-        co_quan_don_vi_id: true,
-        don_vi_truc_thuoc_id: true,
-      },
-    });
+    return await quanNhanRepository.findUnitScope(personnelId);
   }
 
   /**
@@ -641,7 +636,7 @@ class CommemorativeMedalService {
    * @returns {Promise<Object>}
    */
   async deleteAward(id: string, adminUsername: string = 'Admin') {
-    const award = await prisma.kyNiemChuongVSNXDQDNDVN.findUnique({
+    const award = await commemorativeMedalRepository.findUniqueRaw({
       where: { id },
       include: {
         QuanNhan: true,
@@ -656,9 +651,7 @@ class CommemorativeMedalService {
     const personnel = award.QuanNhan;
 
     // Delete award only, proposals are kept for audit trail
-    await prisma.kyNiemChuongVSNXDQDNDVN.delete({
-      where: { id },
-    });
+    await commemorativeMedalRepository.delete(id);
 
     // KNC VSNXD does not affect annual/tenure/contribution profiles
 

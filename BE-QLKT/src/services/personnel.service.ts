@@ -1,5 +1,16 @@
 import type { Prisma } from '../generated/prisma';
 import { prisma } from '../models';
+import { quanNhanRepository } from '../repositories/quanNhan.repository';
+import { danhHieuHangNamRepository } from '../repositories/danhHieu.repository';
+import { contributionMedalRepository } from '../repositories/contributionMedal.repository';
+import { accountRepository } from '../repositories/account.repository';
+import { proposalRepository } from '../repositories/proposal.repository';
+import { positionRepository } from '../repositories/position.repository';
+import { positionHistoryRepository } from '../repositories/positionHistory.repository';
+import {
+  coQuanDonViRepository,
+  donViTrucThuocRepository,
+} from '../repositories/unit.repository';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import ExcelJS from 'exceljs';
 import bcrypt from 'bcrypt';
@@ -24,32 +35,22 @@ import { PERSONNEL_EXPORT_COLUMNS } from '../constants/awardExcel.constants';
 
 type DateInput = Date | null;
 
+type AdjustTx = Prisma.TransactionClient | typeof prisma;
+
 /** Increments or decrements the personnel count on a unit (CoQuanDonVi or DonViTrucThuoc). */
 async function adjustUnitCount(
-  tx: { coQuanDonVi: typeof prisma.coQuanDonVi; donViTrucThuoc: typeof prisma.donViTrucThuoc },
+  tx: AdjustTx,
   unitId: string,
   isCoQuanDonVi: boolean,
   direction: 'increment' | 'decrement'
 ) {
-  // Union of two Prisma delegates — concrete update signatures diverge, so call each branch directly to preserve type safety.
-  if (isCoQuanDonVi) {
-    await tx.coQuanDonVi.update({
-      where: { id: unitId },
-      data: { so_luong: { [direction]: 1 } },
-    });
+  const repo = isCoQuanDonVi ? coQuanDonViRepository : donViTrucThuocRepository;
+  if (direction === 'increment') {
+    await repo.incrementSoLuong(unitId, tx);
   } else {
-    await tx.donViTrucThuoc.update({
-      where: { id: unitId },
-      data: { so_luong: { [direction]: 1 } },
-    });
+    await repo.decrementSoLuong(unitId, tx);
   }
 }
-
-const personnelInclude = {
-  CoQuanDonVi: true,
-  DonViTrucThuoc: { include: { CoQuanDonVi: true } },
-  ChucVu: true,
-} as const;
 
 interface UpdatePersonnelInput {
   unit_id?: string;
@@ -100,10 +101,7 @@ class PersonnelService {
 
     // Manager can only query personnel inside their unit scope.
     if (userRole === ROLES.MANAGER && userQuanNhanId) {
-      const manager = await prisma.quanNhan.findUnique({
-        where: { id: userQuanNhanId },
-        select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true },
-      });
+      const manager = await quanNhanRepository.findUnitScope(userQuanNhanId);
 
       if (manager) {
         const unitFilter = await buildUnitWhereFilter(manager);
@@ -136,14 +134,8 @@ class PersonnelService {
     }
 
     const [personnel, total] = await Promise.all([
-      prisma.quanNhan.findMany({
-        where: whereCondition,
-        skip,
-        take: limitNum,
-        include: personnelInclude,
-        orderBy: { createdAt: 'desc' },
-      }),
-      prisma.quanNhan.count({ where: whereCondition }),
+      quanNhanRepository.findMany({ where: whereCondition, skip, take: limitNum }),
+      quanNhanRepository.count(whereCondition),
     ]);
 
     return {
@@ -159,25 +151,7 @@ class PersonnelService {
 
   /** Returns one personnel record by id. */
   async getPersonnelById(id, userRole, userQuanNhanId) {
-    const personnel = await prisma.quanNhan.findUnique({
-      where: { id: String(id) },
-      include: {
-        CoQuanDonVi: true,
-        DonViTrucThuoc: {
-          include: {
-            CoQuanDonVi: true,
-          },
-        },
-        ChucVu: true,
-        TaiKhoan: {
-          select: {
-            id: true,
-            username: true,
-            role: true,
-          },
-        },
-      },
-    });
+    const personnel = await quanNhanRepository.findByIdForDetail(String(id));
 
     if (!personnel) {
       throw new NotFoundError('Quân nhân');
@@ -190,17 +164,13 @@ class PersonnelService {
 
     // MANAGER can only view personnel in their unit scope.
     if (userRole === ROLES.MANAGER && userQuanNhanId) {
-      const manager = await prisma.quanNhan.findUnique({
-        where: { id: userQuanNhanId },
-        select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true },
-      });
+      const manager = await quanNhanRepository.findUnitScope(userQuanNhanId);
 
       if (manager && manager.co_quan_don_vi_id) {
         // Load all child units of manager's parent unit.
-        const donViTrucThuocList = await prisma.donViTrucThuoc.findMany({
-          where: { co_quan_don_vi_id: manager.co_quan_don_vi_id },
-          select: { id: true },
-        });
+        const donViTrucThuocList = await donViTrucThuocRepository.findIdsByCoQuanDonViId(
+          manager.co_quan_don_vi_id
+        );
         const donViTrucThuocIds = donViTrucThuocList.map(dv => dv.id);
 
         // Allow if personnel belongs to parent unit or any child unit.
@@ -222,10 +192,7 @@ class PersonnelService {
   async createPersonnel(data) {
     const { cccd, unit_id, position_id, role = ROLES.USER } = data;
 
-    const existingPersonnel = await prisma.quanNhan.findUnique({
-      where: { cccd },
-      select: { id: true },
-    });
+    const existingPersonnel = await quanNhanRepository.findIdByCccd(cccd);
 
     if (existingPersonnel) {
       throw new ValidationError('CCCD đã tồn tại trong hệ thống');
@@ -233,15 +200,15 @@ class PersonnelService {
 
     // Unit can be either CoQuanDonVi or DonViTrucThuoc.
     const [coQuanDonVi, donViTrucThuoc] = await Promise.all([
-      prisma.coQuanDonVi.findUnique({ where: { id: unit_id } }),
-      prisma.donViTrucThuoc.findUnique({ where: { id: unit_id } }),
+      coQuanDonViRepository.findById(unit_id),
+      donViTrucThuocRepository.findById(unit_id),
     ]);
 
     if (!coQuanDonVi && !donViTrucThuoc) {
       throw new NotFoundError('Đơn vị');
     }
 
-    const position = await prisma.chucVu.findUnique({
+    const position = await positionRepository.findUniqueRaw({
       where: { id: position_id },
       select: { id: true },
     });
@@ -252,7 +219,7 @@ class PersonnelService {
 
     const username = cccd;
 
-    const existingAccount = await prisma.taiKhoan.findUnique({
+    const existingAccount = await accountRepository.findUniqueRaw({
       where: { username },
       select: { id: true },
     });
@@ -285,29 +252,27 @@ class PersonnelService {
 
     // Wrap all writes in one transaction for consistency.
     const result = await prisma.$transaction(async prismaTx => {
-      const newPersonnel = await prismaTx.quanNhan.create({
-        data: personnelData,
-        include: personnelInclude,
-      });
+      const newPersonnel = await quanNhanRepository.create(personnelData, prismaTx);
 
       // Load position coefficient for initial history row.
-      const chucVu = await prismaTx.chucVu.findUnique({
+      const chucVu = await positionRepository.findUniqueRaw({
         where: { id: position_id },
         select: { he_so_chuc_vu: true },
-      });
+      }, prismaTx);
 
       // Create initial LichSuChucVu record.
       const ngayBatDau = new Date();
-      await prismaTx.lichSuChucVu.create({
-        data: {
+      await positionHistoryRepository.create(
+        {
           quan_nhan_id: newPersonnel.id,
           chuc_vu_id: position_id,
           he_so_chuc_vu: Number(chucVu?.he_so_chuc_vu ?? 0),
           ngay_bat_dau: ngayBatDau,
           ngay_ket_thuc: null,
-          so_thang: null, // null = ongoing, calculated when position ends
+          so_thang: null,
         },
-      });
+        prismaTx
+      );
 
       // Create linked account.
       const account = await prismaTx.taiKhoan.create({
@@ -370,10 +335,7 @@ class PersonnelService {
     const donViTrucThuocId = don_vi_truc_thuoc_id ?? undefined;
     const cccdValue = cccd;
 
-    const personnel = await prisma.quanNhan.findUnique({
-      where: { id: String(id) },
-      include: { TaiKhoan: { select: { role: true } } },
-    });
+    const personnel = await quanNhanRepository.findByIdWithAccountRole(String(id));
 
     if (!personnel) {
       throw new NotFoundError('Quân nhân');
@@ -400,10 +362,7 @@ class PersonnelService {
 
     // MANAGER can only edit personnel in their unit scope.
     if (userRole === ROLES.MANAGER && userQuanNhanId) {
-      const manager = await prisma.quanNhan.findUnique({
-        where: { id: userQuanNhanId },
-        select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true },
-      });
+      const manager = await quanNhanRepository.findUnitScope(userQuanNhanId);
 
       if (manager) {
         let hasPermission = false;
@@ -414,10 +373,9 @@ class PersonnelService {
             hasPermission = true;
           } else if (personnel.don_vi_truc_thuoc_id) {
             // Check if personnel child unit belongs to manager parent unit.
-            const donViTrucThuoc = await prisma.donViTrucThuoc.findUnique({
-              where: { id: personnel.don_vi_truc_thuoc_id },
-              select: { co_quan_don_vi_id: true },
-            });
+            const donViTrucThuoc = await donViTrucThuocRepository.findCoQuanDonViIdById(
+              personnel.don_vi_truc_thuoc_id
+            );
             if (donViTrucThuoc && donViTrucThuoc.co_quan_don_vi_id === manager.co_quan_don_vi_id) {
               hasPermission = true;
             }
@@ -429,10 +387,9 @@ class PersonnelService {
             hasPermission = true;
           } else if (personnel.co_quan_don_vi_id) {
             // Check if personnel parent unit matches manager parent unit.
-            const managerDonViTrucThuoc = await prisma.donViTrucThuoc.findUnique({
-              where: { id: manager.don_vi_truc_thuoc_id },
-              select: { co_quan_don_vi_id: true },
-            });
+            const managerDonViTrucThuoc = await donViTrucThuocRepository.findCoQuanDonViIdById(
+              manager.don_vi_truc_thuoc_id
+            );
             if (
               managerDonViTrucThuoc &&
               personnel.co_quan_don_vi_id === managerDonViTrucThuoc.co_quan_don_vi_id
@@ -450,10 +407,7 @@ class PersonnelService {
 
     // Re-check CCCD uniqueness when changed.
     if (cccdValue && cccdValue !== personnel.cccd) {
-      const existingPersonnel = await prisma.quanNhan.findUnique({
-        where: { cccd: cccdValue },
-        select: { id: true },
-      });
+      const existingPersonnel = await quanNhanRepository.findIdByCccd(cccdValue);
 
       if (existingPersonnel) {
         throw new ValidationError('CCCD đã tồn tại trong hệ thống');
@@ -463,8 +417,8 @@ class PersonnelService {
     const currentUnitId = personnel.co_quan_don_vi_id || personnel.don_vi_truc_thuoc_id;
     if (unitId && unitId !== currentUnitId) {
       const [coQuanDonVi, donViTrucThuoc] = await Promise.all([
-        prisma.coQuanDonVi.findUnique({ where: { id: unitId }, select: { id: true } }),
-        prisma.donViTrucThuoc.findUnique({ where: { id: unitId }, select: { id: true } }),
+        coQuanDonViRepository.findIdById(unitId),
+        donViTrucThuocRepository.findIdById(unitId),
       ]);
 
       if (!coQuanDonVi && !donViTrucThuoc) {
@@ -473,7 +427,7 @@ class PersonnelService {
     }
 
     if (positionId && positionId !== personnel.chuc_vu_id) {
-      const position = await prisma.chucVu.findUnique({
+      const position = await positionRepository.findUniqueRaw({
         where: { id: positionId },
         select: { id: true },
       });
@@ -516,10 +470,7 @@ class PersonnelService {
     if (co_quan_don_vi_id !== undefined || don_vi_truc_thuoc_id !== undefined) {
       // Auto-fill parent unit when child unit is provided.
       if (donViTrucThuocId) {
-        const donViTrucThuoc = await prisma.donViTrucThuoc.findUnique({
-          where: { id: donViTrucThuocId },
-          select: { co_quan_don_vi_id: true },
-        });
+        const donViTrucThuoc = await donViTrucThuocRepository.findCoQuanDonViIdById(donViTrucThuocId);
 
         if (donViTrucThuoc) {
           updateData.co_quan_don_vi_id = donViTrucThuoc.co_quan_don_vi_id;
@@ -537,11 +488,8 @@ class PersonnelService {
       }
     } else if (unitId && unitId !== currentUnitId) {
       const [coQuanDonVi, donViTrucThuoc] = await Promise.all([
-        prisma.coQuanDonVi.findUnique({ where: { id: unitId } }),
-        prisma.donViTrucThuoc.findUnique({
-          where: { id: unitId },
-          select: { id: true, co_quan_don_vi_id: true },
-        }),
+        coQuanDonViRepository.findById(unitId),
+        donViTrucThuocRepository.findIdAndParentById(unitId),
       ]);
 
       if (coQuanDonVi) {
@@ -559,11 +507,7 @@ class PersonnelService {
 
     // Use transaction to keep all writes consistent.
     const { updatedPersonnel, unitTransferInfo } = await prisma.$transaction(async prismaTx => {
-      const txUpdatedPersonnel = await prismaTx.quanNhan.update({
-        where: { id: String(id) },
-        data: updateData,
-        include: personnelInclude,
-      });
+      const txUpdatedPersonnel = await quanNhanRepository.update(String(id), updateData, prismaTx);
 
       // If position changed, close old history and create new history row.
       if (positionId && positionId !== personnel.chuc_vu_id) {
@@ -626,8 +570,8 @@ class PersonnelService {
         const oldIsCqdv = !oldDonViTrucThuocId && !!oldCoQuanDonViId;
         if (oldPrimaryUnitId) {
           const oldUnit = oldIsCqdv
-            ? await prismaTx.coQuanDonVi.findUnique({ where: { id: oldPrimaryUnitId }, select: { id: true, ten_don_vi: true } })
-            : await prismaTx.donViTrucThuoc.findUnique({ where: { id: oldPrimaryUnitId }, select: { id: true, ten_don_vi: true } });
+            ? await coQuanDonViRepository.findNameById(oldPrimaryUnitId, prismaTx)
+            : await donViTrucThuocRepository.findNameById(oldPrimaryUnitId, prismaTx);
           if (oldUnit) {
             oldUnitInfo = { id: oldUnit.id, ten_don_vi: oldUnit.ten_don_vi, isCoQuanDonVi: oldIsCqdv };
             await adjustUnitCount(prismaTx, oldPrimaryUnitId, oldIsCqdv, 'decrement');
@@ -638,8 +582,8 @@ class PersonnelService {
         const newIsCqdv = !newDonViTrucThuocId && !!newCoQuanDonViId;
         if (newPrimaryUnitId) {
           const newUnit = newIsCqdv
-            ? await prismaTx.coQuanDonVi.findUnique({ where: { id: newPrimaryUnitId }, select: { id: true, ten_don_vi: true } })
-            : await prismaTx.donViTrucThuoc.findUnique({ where: { id: newPrimaryUnitId }, select: { id: true, ten_don_vi: true } });
+            ? await coQuanDonViRepository.findNameById(newPrimaryUnitId, prismaTx)
+            : await donViTrucThuocRepository.findNameById(newPrimaryUnitId, prismaTx);
           if (newUnit) {
             newUnitInfo = { id: newUnit.id, ten_don_vi: newUnit.ten_don_vi, isCoQuanDonVi: newIsCqdv };
             await adjustUnitCount(prismaTx, newPrimaryUnitId, newIsCqdv, 'increment');
@@ -691,12 +635,7 @@ class PersonnelService {
    * Cascade covers accounts, histories, awards, and annual profile snapshots.
    */
   async deletePersonnel(id, userRole, userQuanNhanId) {
-    const personnel = await prisma.quanNhan.findUnique({
-      where: { id: String(id) },
-      include: {
-        TaiKhoan: true,
-      },
-    });
+    const personnel = await quanNhanRepository.findByIdWithAccount(String(id));
 
     if (!personnel) {
       throw new NotFoundError('Quân nhân');
@@ -736,9 +675,7 @@ class PersonnelService {
       });
 
       // Delete annual titles.
-      await prismaTx.danhHieuHangNam.deleteMany({
-        where: { quan_nhan_id: id },
-      });
+      await danhHieuHangNamRepository.deleteManyByPersonnelId(id, prismaTx);
 
       // Delete contribution awards.
       await prismaTx.khenThuongHCBVTQ.deleteMany({
@@ -781,9 +718,7 @@ class PersonnelService {
       });
 
       // Delete personnel row.
-      await prismaTx.quanNhan.delete({
-        where: { id: String(id) },
-      });
+      await quanNhanRepository.delete(String(id), prismaTx);
 
       if (unitId) {
         try {
@@ -809,10 +744,7 @@ class PersonnelService {
    * @returns Excel workbook buffer.
    */
   async exportPersonnel() {
-    const personnel = await prisma.quanNhan.findMany({
-      include: personnelInclude,
-      orderBy: [{ co_quan_don_vi_id: 'asc' }, { don_vi_truc_thuoc_id: 'asc' }, { ho_ten: 'asc' }],
-    });
+    const personnel = await quanNhanRepository.findAllForExport();
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('QuanNhan');
@@ -850,14 +782,14 @@ class PersonnelService {
    * @param personnelIds - Personnel ids to validate.
    * @returns Ineligible personnel with reason and status.
    */
-  async checkContributionEligibility(personnelIds) {
+  async checkContributionEligibility(personnelIds: string[]) {
     const ineligiblePersonnel = [];
 
     const [existingAwards, pendingProposals] = await Promise.all([
-      prisma.khenThuongHCBVTQ.findMany({
+      contributionMedalRepository.findManyRaw({
         where: { quan_nhan_id: { in: personnelIds } },
       }),
-      prisma.bangDeXuat.findMany({
+      proposalRepository.findManyRaw({
         where: {
           loai_de_xuat: PROPOSAL_TYPES.CONG_HIEN,
           status: PROPOSAL_STATUS.PENDING,

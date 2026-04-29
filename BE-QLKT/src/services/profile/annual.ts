@@ -3,7 +3,8 @@ import type {
   DanhHieuHangNam,
   ThanhTichKhoaHoc,
 } from '../../generated/prisma';
-import { prisma } from '../../models';
+import { quanNhanRepository } from '../../repositories/quanNhan.repository';
+import { annualProfileRepository } from '../../repositories/annualProfile.repository';
 import { writeSystemLog } from '../../helpers/systemLogHelper';
 import { NotFoundError } from '../../middlewares/errorHandler';
 import { DANH_HIEU_CA_NHAN_BANG_KHEN, DANH_HIEU_CA_NHAN_HANG_NAM, getDanhHieuName } from '../../constants/danhHieu.constants';
@@ -17,15 +18,13 @@ import type { AnnualStreakResult, ChainContext, NCKHYearsResult, RecalculateResu
  * @returns Annual profile row (created when missing)
  */
 export async function getAnnualProfile(personnelId: string) {
-  const personnel = await prisma.quanNhan.findUnique({
-    where: { id: personnelId },
-  });
+  const personnel = await quanNhanRepository.findIdById(personnelId);
 
   if (!personnel) {
     throw new NotFoundError('Quân nhân');
   }
 
-  let profile = await prisma.hoSoHangNam.findUnique({
+  let profile = await annualProfileRepository.findUniqueRaw({
     where: { quan_nhan_id: personnelId },
     include: {
       QuanNhan: {
@@ -39,7 +38,7 @@ export async function getAnnualProfile(personnelId: string) {
   });
 
   if (!profile) {
-    profile = await prisma.hoSoHangNam.create({
+    profile = await annualProfileRepository.createRaw({
       data: {
         quan_nhan_id: personnelId,
         tong_cstdcs: 0,
@@ -295,14 +294,13 @@ export function handleSpecialCases(danhHieuList: DanhHieuHangNam[]): SpecialCase
  * @returns Personnel data, lists, and computed streaks
  */
 export async function computeAnnualStreaks(personnelId: string, year: number): Promise<AnnualStreakResult> {
-  const personnel = await prisma.quanNhan.findUnique({
+  const personnel = await quanNhanRepository.findUniqueRaw({
     where: { id: personnelId },
     include: {
       DanhHieuHangNam: { where: { nam: { lte: year } }, orderBy: { nam: 'asc' } },
       ThanhTichKhoaHoc: { where: { nam: { lte: year } }, orderBy: { nam: 'asc' } },
     },
   });
-
   if (!personnel) throw new NotFoundError('Quân nhân');
 
   const danhHieuList = personnel.DanhHieuHangNam || [];
@@ -452,11 +450,11 @@ export async function recalculateAnnualProfile(personnelId: string, year: number
     goi_y,
   };
 
-  const hoSoHangNam = await prisma.hoSoHangNam.upsert({
-    where: { quan_nhan_id: personnelId },
-    update: profileData,
-    create: { quan_nhan_id: personnelId, ...profileData },
-  });
+  const hoSoHangNam = await annualProfileRepository.upsert(
+    personnelId,
+    { quan_nhan_id: personnelId, ...profileData },
+    profileData
+  );
 
   return {
     success: true,
@@ -528,7 +526,7 @@ function flagColumnFor(code: string): string {
  * @returns Aggregate counts and per-personnel error list
  */
 export async function recalculateAll(): Promise<RecalculateResult> {
-  const allPersonnel = await prisma.quanNhan.findMany({
+  const allPersonnel = await quanNhanRepository.findManyRaw({
     select: { id: true, ho_ten: true },
   });
 

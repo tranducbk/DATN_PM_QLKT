@@ -1,4 +1,5 @@
-import { prisma } from '../../models';
+import { quanNhanRepository } from '../../repositories/quanNhan.repository';
+import { positionHistoryRepository } from '../../repositories/positionHistory.repository';
 import {
   CONG_HIEN_BASE_REQUIRED_MONTHS,
   CONG_HIEN_FEMALE_REQUIRED_MONTHS,
@@ -70,11 +71,11 @@ export async function loadHCBVTQEvaluationContext(
   }
 
   const [quanNhanList, allHistories] = await Promise.all([
-    prisma.quanNhan.findMany({
+    quanNhanRepository.findManyRaw({
       where: { id: { in: uniqueIds } },
       select: { id: true, ho_ten: true, gioi_tinh: true },
     }),
-    prisma.lichSuChucVu.findMany({
+    positionHistoryRepository.findManyRaw({
       where: { quan_nhan_id: { in: uniqueIds } },
       select: {
         quan_nhan_id: true,

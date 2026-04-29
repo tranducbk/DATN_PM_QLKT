@@ -1,4 +1,10 @@
 import { prisma } from '../../models';
+import { danhHieuHangNamRepository, danhHieuDonViHangNamRepository } from '../../repositories/danhHieu.repository';
+import { tenureMedalRepository } from '../../repositories/tenureMedal.repository';
+import { militaryFlagRepository } from '../../repositories/militaryFlag.repository';
+import { commemorativeMedalRepository } from '../../repositories/commemorativeMedal.repository';
+import { contributionMedalRepository } from '../../repositories/contributionMedal.repository';
+import { proposalRepository } from '../../repositories/proposal.repository';
 import { getDanhHieuName, DANH_HIEU_CA_NHAN_HANG_NAM, DANH_HIEU_CA_NHAN_BANG_KHEN, DANH_HIEU_DON_VI_CO_BAN, DANH_HIEU_DON_VI_BANG_KHEN } from '../../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
@@ -111,7 +117,7 @@ export async function checkDuplicateAward(
             ...(danhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP && { nhan_bkttcp: true }),
           }
         : { quan_nhan_id: personnelId, nam, danh_hieu: danhHieu };
-      const actualAward = await prisma.danhHieuHangNam.findFirst({ where: whereClause });
+      const actualAward = await danhHieuHangNamRepository.findFirst({ where: whereClause });
       if (actualAward) {
         return {
           exists: true,
@@ -119,7 +125,7 @@ export async function checkDuplicateAward(
         };
       }
 
-      const proposals = await prisma.bangDeXuat.findMany({
+      const proposals = await proposalRepository.findManyRaw({
         where: {
           loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
           nam,
@@ -145,7 +151,7 @@ export async function checkDuplicateAward(
     }
 
     if (proposalType === PROPOSAL_TYPES.NIEN_HAN && danhHieu?.startsWith('HCCSVV_')) {
-      const actualAward = await prisma.khenThuongHCCSVV.findFirst({
+      const actualAward = await tenureMedalRepository.findFirstRaw({
         where: {
           quan_nhan_id: personnelId,
           danh_hieu: danhHieu,
@@ -158,7 +164,7 @@ export async function checkDuplicateAward(
         };
       }
 
-      const pendingProposals = await prisma.bangDeXuat.findMany({
+      const pendingProposals = await proposalRepository.findManyRaw({
         where: {
           loai_de_xuat: PROPOSAL_TYPES.NIEN_HAN,
           nam,
@@ -181,7 +187,7 @@ export async function checkDuplicateAward(
     }
 
     if (proposalType === PROPOSAL_TYPES.HC_QKQT) {
-      const actualAward = await prisma.huanChuongQuanKyQuyetThang.findFirst({
+      const actualAward = await militaryFlagRepository.findFirstRaw({
         where: { quan_nhan_id: personnelId },
       });
       if (actualAward) {
@@ -191,7 +197,7 @@ export async function checkDuplicateAward(
         };
       }
 
-      const pendingProposals = await prisma.bangDeXuat.findMany({
+      const pendingProposals = await proposalRepository.findManyRaw({
         where: {
           loai_de_xuat: PROPOSAL_TYPES.HC_QKQT,
           nam,
@@ -214,7 +220,7 @@ export async function checkDuplicateAward(
     }
 
     if (proposalType === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN) {
-      const actualAward = await prisma.kyNiemChuongVSNXDQDNDVN.findFirst({
+      const actualAward = await commemorativeMedalRepository.findFirstRaw({
         where: { quan_nhan_id: personnelId },
       });
       if (actualAward) {
@@ -224,7 +230,7 @@ export async function checkDuplicateAward(
         };
       }
 
-      const pendingProposals = await prisma.bangDeXuat.findMany({
+      const pendingProposals = await proposalRepository.findManyRaw({
         where: {
           loai_de_xuat: PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
           nam,
@@ -247,7 +253,7 @@ export async function checkDuplicateAward(
     }
 
     if (proposalType === PROPOSAL_TYPES.CONG_HIEN) {
-      const actualAward = await prisma.khenThuongHCBVTQ.findFirst({
+      const actualAward = await contributionMedalRepository.findFirstRaw({
         where: { quan_nhan_id: personnelId },
       });
       if (actualAward) {
@@ -257,7 +263,7 @@ export async function checkDuplicateAward(
         };
       }
 
-      const pendingProposals = await prisma.bangDeXuat.findMany({
+      const pendingProposals = await proposalRepository.findManyRaw({
         where: {
           loai_de_xuat: PROPOSAL_TYPES.CONG_HIEN,
           nam,
@@ -303,7 +309,7 @@ export async function checkDuplicateUnitAward(
   proposalType: string
 ): Promise<DuplicateCheckResult> {
     if (proposalType === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
-      const proposals = await prisma.bangDeXuat.findMany({
+      const proposals = await proposalRepository.findManyRaw({
         where: {
           loai_de_xuat: PROPOSAL_TYPES.DON_VI_HANG_NAM,
           nam,
@@ -329,7 +335,7 @@ export async function checkDuplicateUnitAward(
         };
       }
 
-      const existingAward = await prisma.danhHieuDonViHangNam.findFirst({
+      const existingAward = await danhHieuDonViHangNamRepository.findFirst({
         where: {
           OR: [
             { co_quan_don_vi_id: donViId, nam },

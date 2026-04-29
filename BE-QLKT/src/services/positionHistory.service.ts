@@ -1,4 +1,6 @@
-import { prisma } from '../models';
+import { quanNhanRepository } from '../repositories/quanNhan.repository';
+import { positionRepository } from '../repositories/position.repository';
+import { positionHistoryRepository } from '../repositories/positionHistory.repository';
 import moment from 'moment';
 import { AppError, NotFoundError, ValidationError } from '../middlewares/errorHandler';
 import { calculateTenureMonthsWithDayPrecision } from '../helpers/serviceYearsHelper';
@@ -60,15 +62,13 @@ class PositionHistoryService {
       throw new ValidationError('Personnel ID is required');
     }
 
-    const personnel = await prisma.quanNhan.findUnique({
-      where: { id: personnelId },
-    });
+    const personnel = await quanNhanRepository.findIdById(personnelId);
 
     if (!personnel) {
       throw new NotFoundError('Quân nhân');
     }
 
-    const history = await prisma.lichSuChucVu.findMany({
+    const history = await positionHistoryRepository.findManyRaw({
       where: { quan_nhan_id: personnelId },
       include: {
         ChucVu: {
@@ -130,15 +130,13 @@ class PositionHistoryService {
       }
     }
 
-    const personnel = await prisma.quanNhan.findUnique({
-      where: { id: personnel_id },
-    });
+    const personnel = await quanNhanRepository.findIdById(personnel_id);
 
     if (!personnel) {
       throw new NotFoundError('Quân nhân');
     }
 
-    const position = await prisma.chucVu.findUnique({
+    const position = await positionRepository.findUniqueRaw({
       where: { id: chuc_vu_id },
       select: { he_so_chuc_vu: true },
     });
@@ -147,7 +145,7 @@ class PositionHistoryService {
       throw new NotFoundError('Chức vụ');
     }
 
-    const existingHistory = await prisma.lichSuChucVu.findMany({
+    const existingHistory = await positionHistoryRepository.findManyRaw({
       where: { quan_nhan_id: personnel_id },
       select: {
         id: true,
@@ -182,7 +180,7 @@ class PositionHistoryService {
       soThang = calculateTenureMonthsWithDayPrecision(ngayBatDauDate, ngayKetThucDate);
     }
 
-    const newHistory = await prisma.lichSuChucVu.create({
+    const newHistory = await positionHistoryRepository.createRaw({
       data: {
         quan_nhan_id: personnel_id,
         chuc_vu_id,
@@ -220,7 +218,7 @@ class PositionHistoryService {
 
     const { chuc_vu_id, ngay_bat_dau, ngay_ket_thuc, he_so_chuc_vu } = data || {};
 
-    const history = await prisma.lichSuChucVu.findUnique({
+    const history = await positionHistoryRepository.findUniqueRaw({
       where: { id },
     });
 
@@ -237,7 +235,7 @@ class PositionHistoryService {
 
     let heSoChucVu = he_so_chuc_vu !== undefined ? he_so_chuc_vu : history.he_so_chuc_vu;
     if (chuc_vu_id && he_so_chuc_vu === undefined && !isCurrentPosition) {
-      const position = await prisma.chucVu.findUnique({
+      const position = await positionRepository.findUniqueRaw({
         where: { id: chuc_vu_id },
         select: { he_so_chuc_vu: true },
       });
@@ -268,7 +266,7 @@ class PositionHistoryService {
       }
     }
 
-    const existingHistory = await prisma.lichSuChucVu.findMany({
+    const existingHistory = await positionHistoryRepository.findManyRaw({
       where: {
         quan_nhan_id: history.quan_nhan_id,
         id: { not: id },
@@ -343,7 +341,7 @@ class PositionHistoryService {
       updateData.chuc_vu_id = chuc_vu_id;
     }
 
-    const updatedHistory = await prisma.lichSuChucVu.update({
+    const updatedHistory = await positionHistoryRepository.updateRaw({
       where: { id },
       data: updateData,
       include: {
@@ -372,7 +370,7 @@ class PositionHistoryService {
   }
 
   async deletePositionHistory(id: string) {
-    const history = await prisma.lichSuChucVu.findUnique({
+    const history = await positionHistoryRepository.findUniqueRaw({
       where: { id },
     });
 
@@ -380,9 +378,7 @@ class PositionHistoryService {
       throw new NotFoundError('Lịch sử chức vụ');
     }
 
-    await prisma.lichSuChucVu.delete({
-      where: { id },
-    });
+    await positionHistoryRepository.delete(id);
 
     return { message: 'Xóa lịch sử chức vụ thành công', quan_nhan_id: history.quan_nhan_id };
   }

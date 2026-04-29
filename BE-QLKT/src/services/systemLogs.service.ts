@@ -1,4 +1,7 @@
-import { prisma } from '../models';
+import { quanNhanRepository } from '../repositories/quanNhan.repository';
+import { donViTrucThuocRepository } from '../repositories/unit.repository';
+import { accountRepository } from '../repositories/account.repository';
+import { systemLogRepository } from '../repositories/systemLog.repository';
 import { ROLES } from '../constants/roles.constants';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { isFeatureEnabled } from '../helpers/settingsHelper';
@@ -11,10 +14,7 @@ const VISIBLE_ROLES: Record<string, string[]> = {
 };
 
 async function getManagerAccountIds(quanNhanId: string): Promise<string[]> {
-  const manager = await prisma.quanNhan.findUnique({
-    where: { id: quanNhanId },
-    select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true },
-  });
+  const manager = await quanNhanRepository.findUnitScope(quanNhanId);
   if (!manager) return [];
 
   const unitFilter = manager.co_quan_don_vi_id
@@ -24,10 +24,9 @@ async function getManagerAccountIds(quanNhanId: string): Promise<string[]> {
           {
             don_vi_truc_thuoc_id: {
               in: (
-                await prisma.donViTrucThuoc.findMany({
-                  where: { co_quan_don_vi_id: manager.co_quan_don_vi_id },
-                  select: { id: true },
-                })
+                await donViTrucThuocRepository.findIdsByCoQuanDonViId(
+                  manager.co_quan_don_vi_id
+                )
               ).map(d => d.id),
             },
           },
@@ -40,13 +39,13 @@ async function getManagerAccountIds(quanNhanId: string): Promise<string[]> {
   if (!unitFilter) return [];
 
   const personnelIds = (
-    await prisma.quanNhan.findMany({ where: unitFilter, select: { id: true } })
+    await quanNhanRepository.findManyRaw({ where: unitFilter, select: { id: true } })
   ).map(p => p.id);
 
   if (personnelIds.length === 0) return [];
 
   return (
-    await prisma.taiKhoan.findMany({
+    await accountRepository.findManyRaw({
       where: { quan_nhan_id: { in: personnelIds } },
       select: { id: true },
     })
@@ -121,7 +120,7 @@ class SystemLogsService {
     }
 
     const [logs, total, createCount, deleteCount, updateCount] = await Promise.all([
-      prisma.systemLog.findMany({
+      systemLogRepository.findManyRaw({
         skip: (page - 1) * limit,
         take: limit,
         where,
@@ -137,10 +136,10 @@ class SystemLogsService {
         },
         orderBy: { createdAt: 'desc' },
       }),
-      prisma.systemLog.count({ where }),
-      prisma.systemLog.count({ where: { ...where, action: { contains: 'CREATE' } } }),
-      prisma.systemLog.count({ where: { ...where, action: { contains: 'DELETE' } } }),
-      prisma.systemLog.count({ where: { ...where, action: { contains: 'UPDATE' } } }),
+      systemLogRepository.count(where),
+      systemLogRepository.count({ ...where, action: { contains: 'CREATE' } }),
+      systemLogRepository.count({ ...where, action: { contains: 'DELETE' } }),
+      systemLogRepository.count({ ...where, action: { contains: 'UPDATE' } }),
     ]);
 
     return { logs, total, stats: { create: createCount, delete: deleteCount, update: updateCount } };
@@ -151,7 +150,7 @@ class SystemLogsService {
    * @returns List of action strings
    */
   async getActions() {
-    const actions = await prisma.systemLog.findMany({
+    const actions = await systemLogRepository.findManyRaw({
       select: { action: true },
       distinct: ['action'],
       orderBy: { action: 'asc' },
@@ -166,7 +165,7 @@ class SystemLogsService {
    */
   async getResources(userRole: string) {
     const where = userRole !== ROLES.SUPER_ADMIN ? { resource: { not: 'backup' } } : {};
-    const resources = await prisma.systemLog.findMany({
+    const resources = await systemLogRepository.findManyRaw({
       select: { resource: true },
       distinct: ['resource'],
       where,
@@ -181,7 +180,7 @@ class SystemLogsService {
    * @returns Number of deleted records
    */
   async deleteLogs(ids: string[]) {
-    const result = await prisma.systemLog.deleteMany({ where: { id: { in: ids } } });
+    const result = await systemLogRepository.deleteMany({ id: { in: ids } });
     return result.count;
   }
 
@@ -192,16 +191,14 @@ class SystemLogsService {
    * @returns Number of deleted records
    */
   async deleteAllLogs(actorId: string, actorRole: string) {
-    const count = await prisma.systemLog.count();
-    await prisma.systemLog.deleteMany({});
-    await prisma.systemLog.create({
-      data: {
-        nguoi_thuc_hien_id: actorId,
-        actor_role: actorRole,
-        action: AUDIT_ACTIONS.DELETE,
-        resource: 'system-logs',
-        description: `Xoá toàn bộ ${count} nhật ký hệ thống`,
-      },
+    const count = await systemLogRepository.count({});
+    await systemLogRepository.deleteMany({});
+    await systemLogRepository.create({
+      nguoi_thuc_hien_id: actorId,
+      actor_role: actorRole,
+      action: AUDIT_ACTIONS.DELETE,
+      resource: 'system-logs',
+      description: `Xoá toàn bộ ${count} nhật ký hệ thống`,
     });
     return count;
   }

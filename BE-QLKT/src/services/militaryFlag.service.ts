@@ -1,4 +1,10 @@
 import { prisma } from '../models';
+import { quanNhanRepository } from '../repositories/quanNhan.repository';
+import { donViTrucThuocRepository } from '../repositories/unit.repository';
+import { militaryFlagRepository } from '../repositories/militaryFlag.repository';
+import { decisionFileRepository } from '../repositories/decisionFile.repository';
+import { proposalRepository } from '../repositories/proposal.repository';
+import { accountRepository } from '../repositories/account.repository';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import ExcelJS from 'exceljs';
 import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excel/excelImportHelper';
@@ -102,20 +108,20 @@ class MilitaryFlagService {
 
     const [personnelList, existingAwardsList, existingDecisions, pendingProposals] = await Promise.all([
       allPersonnelIds.size > 0
-        ? prisma.quanNhan.findMany({
+        ? quanNhanRepository.findManyRaw({
             where: { id: { in: [...allPersonnelIds] } },
             select: { id: true, ho_ten: true, cap_bac: true, ngay_nhap_ngu: true, ChucVu: { select: { ten_chuc_vu: true } } },
           })
         : Promise.resolve([]),
       allPersonnelIds.size > 0
-        ? prisma.huanChuongQuanKyQuyetThang.findMany({
+        ? militaryFlagRepository.findManyRaw({
             where: { quan_nhan_id: { in: [...allPersonnelIds] } },
           })
         : Promise.resolve([]),
-      prisma.fileQuyetDinh.findMany({
+      decisionFileRepository.findManyRaw({
         select: { so_quyet_dinh: true },
       }),
-      prisma.bangDeXuat.findMany({
+      proposalRepository.findManyRaw({
         where: {
           loai_de_xuat: PROPOSAL_TYPES.HC_QKQT,
           status: PROPOSAL_STATUS.PENDING,
@@ -328,10 +334,10 @@ class MilitaryFlagService {
 
     // Parallel: check pending proposals + existing records
     const [pendingProposals, existingRecords] = await Promise.all([
-      prisma.bangDeXuat.findMany({
+      proposalRepository.findManyRaw({
         where: { loai_de_xuat: PROPOSAL_TYPES.HC_QKQT, status: PROPOSAL_STATUS.PENDING },
       }),
-      prisma.huanChuongQuanKyQuyetThang.findMany({
+      militaryFlagRepository.findManyRaw({
         where: { quan_nhan_id: { in: personnelIds } },
         select: { quan_nhan_id: true, nam: true },
       }),
@@ -426,10 +432,9 @@ class MilitaryFlagService {
 
     if (filters.don_vi_id) {
       if (filters.include_sub_units) {
-        const donViTrucThuocIds = await prisma.donViTrucThuoc.findMany({
-          where: { co_quan_don_vi_id: filters.don_vi_id },
-          select: { id: true },
-        });
+        const donViTrucThuocIds = await donViTrucThuocRepository.findIdsByCoQuanDonViId(
+          String(filters.don_vi_id)
+        );
         const donViTrucThuocIdList = donViTrucThuocIds.map(d => d.id);
         where.QuanNhan = {
           ...quanNhanFilter,
@@ -456,7 +461,7 @@ class MilitaryFlagService {
     }
 
     const [data, total] = await Promise.all([
-      prisma.huanChuongQuanKyQuyetThang.findMany({
+      militaryFlagRepository.findManyRaw({
         where,
         include: {
           QuanNhan: {
@@ -474,7 +479,7 @@ class MilitaryFlagService {
         take: limit,
         orderBy: { nam: 'desc' },
       }),
-      prisma.huanChuongQuanKyQuyetThang.count({ where }),
+      militaryFlagRepository.count(where),
     ]);
 
     return {
@@ -517,13 +522,9 @@ class MilitaryFlagService {
   }
 
   async getStatistics() {
-    const byYear = await prisma.huanChuongQuanKyQuyetThang.groupBy({
-      by: ['nam'],
-      _count: { id: true },
-      orderBy: { nam: 'desc' },
-    });
+    const byYear = await militaryFlagRepository.groupByYear();
 
-    const total = await prisma.huanChuongQuanKyQuyetThang.count();
+    const total = await militaryFlagRepository.count({});
 
     return {
       total,
@@ -532,7 +533,7 @@ class MilitaryFlagService {
   }
 
   async getUserWithUnit(userId: string) {
-    return await prisma.taiKhoan.findUnique({
+    return await accountRepository.findUniqueRaw({
       where: { id: userId },
       include: {
         QuanNhan: {
@@ -546,7 +547,7 @@ class MilitaryFlagService {
   }
 
   async getByPersonnelId(personnelId: string) {
-    const result = await prisma.huanChuongQuanKyQuyetThang.findUnique({
+    const result = await militaryFlagRepository.findUniqueRaw({
       where: { quan_nhan_id: personnelId },
       include: {
         QuanNhan: {
@@ -565,17 +566,11 @@ class MilitaryFlagService {
   }
 
   async getPersonnelById(personnelId: string) {
-    return await prisma.quanNhan.findUnique({
-      where: { id: personnelId },
-      select: {
-        co_quan_don_vi_id: true,
-        don_vi_truc_thuoc_id: true,
-      },
-    });
+    return await quanNhanRepository.findUnitScope(personnelId);
   }
 
   async deleteAward(id: string, adminUsername = 'Admin') {
-    const award = await prisma.huanChuongQuanKyQuyetThang.findUnique({
+    const award = await militaryFlagRepository.findUniqueRaw({
       where: { id },
       include: {
         QuanNhan: true,
@@ -589,9 +584,7 @@ class MilitaryFlagService {
     const personnelId = award.quan_nhan_id;
     const personnel = award.QuanNhan;
 
-    await prisma.huanChuongQuanKyQuyetThang.delete({
-      where: { id },
-    });
+    await militaryFlagRepository.delete(id);
 
     try {
       await notificationHelper.notifyOnAwardDeleted(award, personnel, 'HCQKQT', adminUsername);

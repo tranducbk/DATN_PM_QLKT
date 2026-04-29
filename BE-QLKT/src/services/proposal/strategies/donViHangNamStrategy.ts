@@ -1,4 +1,5 @@
-import { prisma } from '../../../models';
+import { danhHieuDonViHangNamRepository } from '../../../repositories/danhHieu.repository';
+import { coQuanDonViRepository, donViTrucThuocRepository } from '../../../repositories/unit.repository';
 import { PROPOSAL_TYPES } from '../../../constants/proposalTypes.constants';
 import {
   DANH_HIEU_CA_NHAN_HANG_NAM,
@@ -57,13 +58,13 @@ async function buildDonViPayload(
       let coQuanDonViCha: { id: string; ten_don_vi: string; ma_don_vi: string } | null = null;
 
       if (item.don_vi_type === 'CO_QUAN_DON_VI' && item.don_vi_id) {
-        const donVi = await prisma.coQuanDonVi.findUnique({
+        const donVi = await coQuanDonViRepository.findUniqueRaw({
           where: { id: item.don_vi_id },
           select: { id: true, ten_don_vi: true, ma_don_vi: true },
         });
         donViInfo = donVi;
       } else if (item.don_vi_type === 'DON_VI_TRUC_THUOC' && item.don_vi_id) {
-        const donVi = await prisma.donViTrucThuoc.findUnique({
+        const donVi = await donViTrucThuocRepository.findUniqueRaw({
           where: { id: item.don_vi_id },
           include: {
             CoQuanDonVi: {
@@ -225,9 +226,9 @@ class DonViHangNamStrategy implements ProposalStrategy {
           ],
         };
 
-        const existingAward = await prismaTx.danhHieuDonViHangNam.findFirst({
+        const existingAward = await danhHieuDonViHangNamRepository.findFirst({
           where: whereCondition,
-        });
+        }, prismaTx);
         const data: Record<string, unknown> = {};
         if (
           item.danh_hieu === DANH_HIEU_DON_VI_HANG_NAM.DVQT ||
@@ -250,12 +251,12 @@ class DonViHangNamStrategy implements ProposalStrategy {
         data.ghi_chu = item.ghi_chu || null;
 
         if (existingAward) {
-          await prismaTx.danhHieuDonViHangNam.update({
+          await danhHieuDonViHangNamRepository.updateRaw({
             where: { id: existingAward.id },
             data,
-          });
+          }, prismaTx);
         } else {
-          await prismaTx.danhHieuDonViHangNam.create({
+          await danhHieuDonViHangNamRepository.createRaw({
             data: {
               ...(coQuanDonViId && { CoQuanDonVi: { connect: { id: coQuanDonViId } } }),
               ...(donViTrucThuocId && { DonViTrucThuoc: { connect: { id: donViTrucThuocId } } }),
@@ -280,7 +281,7 @@ class DonViHangNamStrategy implements ProposalStrategy {
               ngay_duyet: new Date(),
               ghi_chu: item.ghi_chu || null,
             },
-          });
+          }, prismaTx);
         }
         acc.importedDanhHieu++;
         acc.affectedUnitIds.add(item.don_vi_id);

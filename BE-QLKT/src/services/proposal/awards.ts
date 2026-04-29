@@ -1,5 +1,27 @@
-import { prisma } from '../../models';
+import { danhHieuHangNamRepository, danhHieuDonViHangNamRepository } from '../../repositories/danhHieu.repository';
+import { contributionMedalRepository } from '../../repositories/contributionMedal.repository';
+import { tenureMedalRepository } from '../../repositories/tenureMedal.repository';
+import { militaryFlagRepository } from '../../repositories/militaryFlag.repository';
+import { commemorativeMedalRepository } from '../../repositories/commemorativeMedal.repository';
+import { scientificAchievementRepository } from '../../repositories/scientificAchievement.repository';
+import { decisionFileRepository } from '../../repositories/decisionFile.repository';
+import { proposalRepository } from '../../repositories/proposal.repository';
+import type { Prisma } from '../../generated/prisma';
 import ExcelJS from 'exceljs';
+
+const danhHieuWithPersonnelInclude = {
+  QuanNhan: {
+    include: {
+      CoQuanDonVi: true,
+      DonViTrucThuoc: { include: { CoQuanDonVi: true } },
+      ChucVu: true,
+    },
+  },
+} satisfies Prisma.DanhHieuHangNamInclude;
+
+type DanhHieuHangNamWithPersonnel = Prisma.DanhHieuHangNamGetPayload<{
+  include: typeof danhHieuWithPersonnelInclude;
+}>;
 import { sanitizeRowData } from '../../helpers/excel/excelHelper';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 import { DANH_HIEU_HCBVTQ } from '../../constants/danhHieu.constants';
@@ -26,31 +48,19 @@ async function getAllAwards(
   const danh_hieu = filters.danh_hieu as string | undefined;
   const skip = (page - 1) * limit;
 
-  const where: Record<string, unknown> = {};
+  const where: Prisma.DanhHieuHangNamWhereInput = {};
   if (nam) where.nam = parseInt(String(nam), 10);
   if (danh_hieu) where.danh_hieu = danh_hieu;
 
   const [awards, total] = await Promise.all([
-    prisma.danhHieuHangNam.findMany({
+    danhHieuHangNamRepository.findMany({
       where,
-      include: {
-        QuanNhan: {
-          include: {
-            CoQuanDonVi: true,
-            DonViTrucThuoc: {
-              include: {
-                CoQuanDonVi: true,
-              },
-            },
-            ChucVu: true,
-          },
-        },
-      },
+      include: danhHieuWithPersonnelInclude,
       skip,
       take: limit,
       orderBy: [{ nam: 'desc' }, { QuanNhan: { ho_ten: 'asc' } }],
-    }),
-    prisma.danhHieuHangNam.count({ where }),
+    }) as Promise<DanhHieuHangNamWithPersonnel[]>,
+    danhHieuHangNamRepository.count({ where }),
   ]);
 
   let filteredAwards = awards;
@@ -62,7 +72,7 @@ async function getAllAwards(
 
   const awardsWithNCKH = await Promise.all(
     filteredAwards.map(async a => {
-      const thanhTichList = await prisma.thanhTichKhoaHoc.findMany({
+      const thanhTichList = await scientificAchievementRepository.findManyRaw({
         where: {
           quan_nhan_id: a.QuanNhan.id,
           nam: a.nam,
@@ -113,27 +123,15 @@ async function exportAllAwardsExcel(filters: Record<string, unknown> = {}) {
   const don_vi_id = filters.don_vi_id as string | undefined;
   const nam = filters.nam;
   const danh_hieu = filters.danh_hieu as string | undefined;
-  const where: Record<string, unknown> = {};
+  const where: Prisma.DanhHieuHangNamWhereInput = {};
   if (nam) where.nam = parseInt(String(nam), 10);
   if (danh_hieu) where.danh_hieu = danh_hieu;
 
-  const awards = await prisma.danhHieuHangNam.findMany({
+  const awards = (await danhHieuHangNamRepository.findMany({
     where,
-    include: {
-      QuanNhan: {
-        include: {
-          CoQuanDonVi: true,
-          DonViTrucThuoc: {
-            include: {
-              CoQuanDonVi: true,
-            },
-          },
-          ChucVu: true,
-        },
-      },
-    },
+    include: danhHieuWithPersonnelInclude,
     orderBy: [{ nam: 'desc' }, { QuanNhan: { ho_ten: 'asc' } }],
-  });
+  })) as DanhHieuHangNamWithPersonnel[];
 
   let filteredAwards = awards;
   if (don_vi_id) {
@@ -180,24 +178,8 @@ async function exportAllAwardsExcel(filters: Record<string, unknown> = {}) {
 }
 
 async function getAwardsStatistics() {
-  const decisionsByType = await prisma.fileQuyetDinh.groupBy({
-    by: ['loai_khen_thuong'],
-    where: {
-      loai_khen_thuong: {
-        not: null,
-      },
-    },
-    _count: {
-      id: true,
-    },
-  });
-
-  const proposalsByType = await prisma.bangDeXuat.groupBy({
-    by: ['loai_de_xuat'],
-    _count: {
-      id: true,
-    },
-  });
+  const decisionsByType = await decisionFileRepository.groupByLoaiKhenThuong();
+  const proposalsByType = await proposalRepository.groupByLoaiDeXuat();
 
   const [
     annualRewardCount,
@@ -208,15 +190,15 @@ async function getAwardsStatistics() {
     scientificAchievementCount,
     unitAnnualRewardCount,
   ] = await Promise.all([
-    prisma.danhHieuHangNam.count({
+    danhHieuHangNamRepository.count({
       where: { danh_hieu: { not: null, notIn: Object.values(DANH_HIEU_HCBVTQ) } },
     }),
-    prisma.khenThuongHCBVTQ.count(),
-    prisma.khenThuongHCCSVV.count(),
-    prisma.huanChuongQuanKyQuyetThang.count(),
-    prisma.kyNiemChuongVSNXDQDNDVN.count(),
-    prisma.thanhTichKhoaHoc.count(),
-    prisma.danhHieuDonViHangNam.count({
+    contributionMedalRepository.count({}),
+    tenureMedalRepository.count({}),
+    militaryFlagRepository.count({}),
+    commemorativeMedalRepository.count({}),
+    scientificAchievementRepository.count({}),
+    danhHieuDonViHangNamRepository.count({
       where: { danh_hieu: { not: null } },
     }),
   ]);

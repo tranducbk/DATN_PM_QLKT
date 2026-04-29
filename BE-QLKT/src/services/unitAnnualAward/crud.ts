@@ -1,5 +1,9 @@
 import type { Prisma } from '../../generated/prisma';
 import { prisma } from '../../models';
+import { danhHieuDonViHangNamRepository } from '../../repositories/danhHieu.repository';
+import { quanNhanRepository } from '../../repositories/quanNhan.repository';
+import { coQuanDonViRepository, donViTrucThuocRepository } from '../../repositories/unit.repository';
+import { unitAnnualProfileRepository } from '../../repositories/unitAnnualProfile.repository';
 import {
   getDanhHieuName,
   formatDanhHieuList,
@@ -30,7 +34,7 @@ export async function propose(
 
   const { isCoQuanDonVi } = await resolveUnit(unitId);
 
-  const record = await prisma.danhHieuDonViHangNam.upsert({
+  const record = await danhHieuDonViHangNamRepository.upsert({
     where: isCoQuanDonVi
       ? { unique_co_quan_don_vi_nam_dh: { co_quan_don_vi_id: unitId, nam: year } }
       : { unique_don_vi_truc_thuoc_nam_dh: { don_vi_truc_thuoc_id: unitId, nam: year } },
@@ -96,7 +100,7 @@ export async function approve(
     updateData.file_quyet_dinh_bkttcp = file_quyet_dinh_bkttcp || null;
   }
 
-  const updatedDanhHieu = await prisma.danhHieuDonViHangNam.update({
+  const updatedDanhHieu = await danhHieuDonViHangNamRepository.updateRaw({
     where: { id: String(id) },
     data: updateData,
     include: { CoQuanDonVi: true, DonViTrucThuoc: true },
@@ -113,7 +117,7 @@ export async function reject(
   { ghi_chu, nguoi_duyet_id }: { ghi_chu: string; nguoi_duyet_id: string },
   deps: UnitAnnualAwardDeps = defaultDeps
 ) {
-  const rejectedDanhHieu = await prisma.danhHieuDonViHangNam.update({
+  const rejectedDanhHieu = await danhHieuDonViHangNamRepository.updateRaw({
     where: { id: String(id) },
     data: {
       status: PROPOSAL_STATUS.REJECTED,
@@ -131,10 +135,7 @@ export async function reject(
 }
 
 export async function getSubUnits(coQuanDonViId) {
-  const subUnits = await prisma.donViTrucThuoc.findMany({
-    where: { co_quan_don_vi_id: coQuanDonViId },
-    select: { id: true },
-  });
+  const subUnits = await donViTrucThuocRepository.findIdsByCoQuanDonViId(coQuanDonViId);
   return subUnits.map(u => u.id);
 }
 
@@ -155,10 +156,7 @@ export async function list({
 
   let allowedUnitIds: string[] | null = null;
   if ((userRole === ROLES.USER || userRole === ROLES.MANAGER) && userQuanNhanId) {
-    const user = await prisma.quanNhan.findUnique({
-      where: { id: userQuanNhanId },
-      select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true },
-    });
+    const user = await quanNhanRepository.findUnitScope(userQuanNhanId);
 
     if (user) {
       if (userRole === ROLES.MANAGER && user.co_quan_don_vi_id) {
@@ -192,8 +190,8 @@ export async function list({
   }
 
   const [total, awards] = await Promise.all([
-    prisma.danhHieuDonViHangNam.count({ where }),
-    prisma.danhHieuDonViHangNam.findMany({
+    danhHieuDonViHangNamRepository.count({ where }),
+    danhHieuDonViHangNamRepository.findMany({
       where,
       orderBy: [{ nam: 'desc' }, { createdAt: 'desc' }],
       skip: (Number(page) - 1) * Number(limit),
@@ -219,7 +217,7 @@ export async function getById(
   userQuanNhanId: string,
   _deps: UnitAnnualAwardDeps = defaultDeps
 ) {
-  const record = await prisma.danhHieuDonViHangNam.findUnique({
+  const record = await danhHieuDonViHangNamRepository.findUnique({
     where: { id: String(id) },
     include: { CoQuanDonVi: true, DonViTrucThuoc: true },
   });
@@ -227,10 +225,7 @@ export async function getById(
   if (!record) return null;
 
   if ((userRole === ROLES.USER || userRole === ROLES.MANAGER) && userQuanNhanId) {
-    const user = await prisma.quanNhan.findUnique({
-      where: { id: userQuanNhanId },
-      select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true },
-    });
+    const user = await quanNhanRepository.findUnitScope(userQuanNhanId);
 
     if (!user) return null;
 
@@ -274,7 +269,7 @@ export async function upsert({
   const { isCoQuanDonVi } = await resolveUnit(unitId);
 
   if (danh_hieu) {
-    const existing = await prisma.danhHieuDonViHangNam.findFirst({
+    const existing = await danhHieuDonViHangNamRepository.findFirst({
       where: {
         OR: [
           { co_quan_don_vi_id: unitId, nam: year },
@@ -346,7 +341,7 @@ export async function upsert({
     if (ghi_chu) updateData.ghi_chu = ghi_chu;
   }
 
-  const record = await prisma.danhHieuDonViHangNam.upsert({
+  const record = await danhHieuDonViHangNamRepository.upsert({
     where: whereCondition,
     update: updateData,
     create: {
@@ -377,7 +372,7 @@ export async function remove(
   awardType?: string | null,
   deps: UnitAnnualAwardDeps = defaultDeps
 ) {
-  const danhHieu = await prisma.danhHieuDonViHangNam.findUnique({
+  const danhHieu = await danhHieuDonViHangNamRepository.findUnique({
     where: { id: String(id) },
   });
 
@@ -432,9 +427,9 @@ export async function remove(
     const isEmpty = !remainingDanhHieu && !remainingBkbqp && !remainingBkttcp;
 
     if (isEmpty) {
-      await prisma.danhHieuDonViHangNam.delete({ where: { id: String(id) } });
+      await danhHieuDonViHangNamRepository.delete(String(id));
     } else {
-      await prisma.danhHieuDonViHangNam.update({
+      await danhHieuDonViHangNamRepository.updateRaw({
         where: { id: String(id) },
         data: updateData,
       });
@@ -444,7 +439,7 @@ export async function remove(
     return true;
   }
 
-  await prisma.danhHieuDonViHangNam.delete({ where: { id: String(id) } });
+  await danhHieuDonViHangNamRepository.delete(String(id));
 
   await deps.recalculateAnnualUnit(donViId, danhHieu.nam);
 
@@ -455,7 +450,7 @@ export async function getAnnualUnit(donViId: string, year: number) {
   year = Number(year);
   const { isCoQuanDonVi } = await resolveUnit(donViId);
 
-  let profile = await prisma.hoSoDonViHangNam.findFirst({
+  let profile = await unitAnnualProfileRepository.findFirstRaw({
     where: {
       OR: [{ co_quan_don_vi_id: donViId }, { don_vi_truc_thuoc_id: donViId }],
       nam: year,
@@ -469,7 +464,7 @@ export async function getAnnualUnit(donViId: string, year: number) {
 
   if (!profile) {
     const currentYear = new Date().getFullYear();
-    profile = await prisma.hoSoDonViHangNam.create({
+    profile = await unitAnnualProfileRepository.createRaw({
       data: {
         ...buildUnitIdFields(donViId, isCoQuanDonVi),
         nam: currentYear,
@@ -498,17 +493,14 @@ export async function getUnitAnnualAwards(
   if (!donViId) throw new ValidationError('don_vi_id là bắt buộc');
 
   const donVi =
-    (await prisma.coQuanDonVi.findUnique({ where: { id: donViId } })) ||
-    (await prisma.donViTrucThuoc.findUnique({ where: { id: donViId } }));
+    (await coQuanDonViRepository.findById(donViId)) ||
+    (await donViTrucThuocRepository.findById(donViId));
 
   if (!donVi) throw new NotFoundError('Đơn vị');
 
   if (userRole === ROLES.ADMIN || userRole === ROLES.SUPER_ADMIN) {
   } else if ((userRole === ROLES.MANAGER || userRole === ROLES.USER) && userQuanNhanId) {
-    const user = await prisma.quanNhan.findUnique({
-      where: { id: userQuanNhanId },
-      select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true },
-    });
+    const user = await quanNhanRepository.findUnitScope(userQuanNhanId);
 
     if (!user) throw new NotFoundError('Thông tin người dùng');
 
@@ -529,7 +521,7 @@ export async function getUnitAnnualAwards(
     throw new ForbiddenError('Không có quyền truy cập');
   }
 
-  const danhHieuRecords = await prisma.danhHieuDonViHangNam.findMany({
+  const danhHieuRecords = await danhHieuDonViHangNamRepository.findMany({
     where: {
       OR: [{ co_quan_don_vi_id: donViId }, { don_vi_truc_thuoc_id: donViId }],
       status: PROPOSAL_STATUS.APPROVED,

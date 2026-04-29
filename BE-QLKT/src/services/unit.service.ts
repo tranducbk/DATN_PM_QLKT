@@ -1,5 +1,10 @@
-import { prisma } from '../models';
 import { AppError, NotFoundError, ValidationError } from '../middlewares/errorHandler';
+import {
+  coQuanDonViRepository,
+  donViTrucThuocRepository,
+} from '../repositories/unit.repository';
+import { quanNhanRepository } from '../repositories/quanNhan.repository';
+import { positionRepository } from '../repositories/position.repository';
 
 interface CreateUnitData {
   ma_don_vi: string;
@@ -18,32 +23,18 @@ class UnitService {
     const { hierarchy = false, page = 1, limit = 20 } = options;
 
     if (hierarchy) {
-      const include = {
-        DonViTrucThuoc: { include: { ChucVu: true } },
-        ChucVu: true,
-      };
-      const orderBy = { ma_don_vi: 'asc' as const };
-
       const [items, total] = await Promise.all([
-        prisma.coQuanDonVi.findMany({
-          include,
-          orderBy,
+        coQuanDonViRepository.findManyHierarchyPaginated({
           skip: (page - 1) * limit,
           take: limit,
         }),
-        prisma.coQuanDonVi.count(),
+        coQuanDonViRepository.count(),
       ]);
       return { items, total };
     } else {
       const [cqdv, dvtt] = await Promise.all([
-        prisma.coQuanDonVi.findMany({
-          select: { id: true, ten_don_vi: true, ma_don_vi: true },
-          orderBy: { ma_don_vi: 'asc' },
-        }),
-        prisma.donViTrucThuoc.findMany({
-          include: { CoQuanDonVi: { select: { id: true, ten_don_vi: true, ma_don_vi: true } }, ChucVu: true },
-          orderBy: { ma_don_vi: 'asc' },
-        }),
+        coQuanDonViRepository.findAllLight(),
+        donViTrucThuocRepository.findAllWithParentLight(),
       ]);
       const items = [...cqdv, ...dvtt].sort((a, b) =>
         a.ma_don_vi.localeCompare(b.ma_don_vi)
@@ -53,28 +44,11 @@ class UnitService {
   }
 
   async getAllSubUnits(coQuanDonViId?: string) {
-    const whereClause = coQuanDonViId ? { co_quan_don_vi_id: coQuanDonViId } : {};
-
-    return prisma.donViTrucThuoc.findMany({
-      where: whereClause,
-      include: {
-        CoQuanDonVi: true,
-        ChucVu: true,
-      },
-      orderBy: {
-        ma_don_vi: 'asc',
-      },
-    });
+    return donViTrucThuocRepository.findManySubUnits(coQuanDonViId);
   }
 
   async getManagerUnits(userQuanNhanId: string) {
-    const manager = await prisma.quanNhan.findUnique({
-      where: { id: userQuanNhanId },
-      select: {
-        co_quan_don_vi_id: true,
-        don_vi_truc_thuoc_id: true,
-      },
-    });
+    const manager = await quanNhanRepository.findUnitScope(userQuanNhanId);
 
     if (!manager) {
       throw new NotFoundError('Thông tin quân nhân');
@@ -84,36 +58,16 @@ class UnitService {
 
     if (manager.co_quan_don_vi_id) {
       const [coQuanDonVi, donViTrucThuoc] = await Promise.all([
-        prisma.coQuanDonVi.findUnique({
-          where: { id: manager.co_quan_don_vi_id },
-          select: { id: true, ten_don_vi: true, ma_don_vi: true },
-        }),
-        prisma.donViTrucThuoc.findMany({
-          where: { co_quan_don_vi_id: manager.co_quan_don_vi_id },
-          include: {
-            CoQuanDonVi: {
-              select: { id: true, ten_don_vi: true, ma_don_vi: true },
-            },
-          },
-          orderBy: { ma_don_vi: 'asc' },
-        }),
+        coQuanDonViRepository.findLightById(manager.co_quan_don_vi_id),
+        donViTrucThuocRepository.findManyByParent(manager.co_quan_don_vi_id),
       ]);
 
       if (coQuanDonVi) units.push(coQuanDonVi);
       units.push(...donViTrucThuoc);
     } else if (manager.don_vi_truc_thuoc_id) {
-      const donViTrucThuoc = await prisma.donViTrucThuoc.findUnique({
-        where: { id: manager.don_vi_truc_thuoc_id },
-        include: {
-          CoQuanDonVi: {
-            select: {
-              id: true,
-              ten_don_vi: true,
-              ma_don_vi: true,
-            },
-          },
-        },
-      });
+      const donViTrucThuoc = await donViTrucThuocRepository.findDeepById(
+        manager.don_vi_truc_thuoc_id
+      );
 
       if (donViTrucThuoc) {
         units.push(donViTrucThuoc);
@@ -127,8 +81,8 @@ class UnitService {
     const { ma_don_vi, ten_don_vi, co_quan_don_vi_id } = data;
 
     const [existingCoQuanDonVi, existingDonViTrucThuoc] = await Promise.all([
-      prisma.coQuanDonVi.findUnique({ where: { ma_don_vi } }),
-      prisma.donViTrucThuoc.findUnique({ where: { ma_don_vi } }),
+      coQuanDonViRepository.findByMaDonVi(ma_don_vi),
+      donViTrucThuocRepository.findByMaDonVi(ma_don_vi),
     ]);
 
     if (existingCoQuanDonVi || existingDonViTrucThuoc) {
@@ -136,24 +90,20 @@ class UnitService {
     }
 
     if (co_quan_don_vi_id) {
-      const parentUnit = await prisma.coQuanDonVi.findUnique({
-        where: { id: co_quan_don_vi_id },
-        select: { id: true },
-      });
+      const parentUnit = await coQuanDonViRepository.findIdById(co_quan_don_vi_id);
 
       if (!parentUnit) {
         throw new NotFoundError('Cơ quan đơn vị');
       }
 
-      return prisma.donViTrucThuoc.create({
-        data: { co_quan_don_vi_id, ma_don_vi, ten_don_vi, so_luong: 0 },
-        include: { CoQuanDonVi: true, ChucVu: true },
+      return donViTrucThuocRepository.create({
+        co_quan_don_vi_id,
+        ma_don_vi,
+        ten_don_vi,
+        so_luong: 0,
       });
     } else {
-      return prisma.coQuanDonVi.create({
-        data: { ma_don_vi, ten_don_vi, so_luong: 0 },
-        include: { DonViTrucThuoc: true, ChucVu: true },
-      });
+      return coQuanDonViRepository.create({ ma_don_vi, ten_don_vi, so_luong: 0 });
     }
   }
 
@@ -161,8 +111,8 @@ class UnitService {
     const { ma_don_vi, ten_don_vi, co_quan_don_vi_id } = data;
 
     const [coQuanDonVi, donViTrucThuoc] = await Promise.all([
-      prisma.coQuanDonVi.findUnique({ where: { id } }),
-      prisma.donViTrucThuoc.findUnique({ where: { id } }),
+      coQuanDonViRepository.findById(id),
+      donViTrucThuocRepository.findById(id),
     ]);
 
     if (!coQuanDonVi && !donViTrucThuoc) {
@@ -173,17 +123,8 @@ class UnitService {
       const updateData: Record<string, unknown> = {};
       if (ma_don_vi) {
         const [existingDonVi, existingCoQuan] = await Promise.all([
-          prisma.donViTrucThuoc.findFirst({
-            where: {
-              ma_don_vi: ma_don_vi,
-              id: { not: id },
-            },
-          }),
-          prisma.coQuanDonVi.findFirst({
-            where: {
-              ma_don_vi: ma_don_vi,
-            },
-          }),
+          donViTrucThuocRepository.findOtherByMaDonVi(ma_don_vi, id),
+          coQuanDonViRepository.findFirstByMaDonVi(ma_don_vi),
         ]);
         if (existingDonVi || existingCoQuan) {
           throw new AppError('Mã đơn vị đã tồn tại', 409);
@@ -192,10 +133,7 @@ class UnitService {
       }
       if (ten_don_vi) updateData.ten_don_vi = ten_don_vi;
       if (co_quan_don_vi_id !== undefined) {
-        const parentUnit = await prisma.coQuanDonVi.findUnique({
-          where: { id: co_quan_don_vi_id },
-          select: { id: true },
-        });
+        const parentUnit = await coQuanDonViRepository.findIdById(co_quan_don_vi_id);
 
         if (!parentUnit) {
           throw new NotFoundError('Cơ quan đơn vị');
@@ -204,26 +142,13 @@ class UnitService {
         updateData.co_quan_don_vi_id = co_quan_don_vi_id;
       }
 
-      return prisma.donViTrucThuoc.update({
-        where: { id },
-        data: updateData,
-        include: { CoQuanDonVi: true, ChucVu: true },
-      });
+      return donViTrucThuocRepository.update(id, updateData);
     } else {
       const updateData: Record<string, unknown> = {};
       if (ma_don_vi) {
         const [existingCoQuan, existingDonVi] = await Promise.all([
-          prisma.coQuanDonVi.findFirst({
-            where: {
-              ma_don_vi: ma_don_vi,
-              id: { not: id },
-            },
-          }),
-          prisma.donViTrucThuoc.findFirst({
-            where: {
-              ma_don_vi: ma_don_vi,
-            },
-          }),
+          coQuanDonViRepository.findOtherByMaDonVi(ma_don_vi, id),
+          donViTrucThuocRepository.findFirstByMaDonVi(ma_don_vi),
         ]);
         if (existingCoQuan || existingDonVi) {
           throw new AppError('Mã đơn vị đã tồn tại', 409);
@@ -232,14 +157,7 @@ class UnitService {
       }
       if (ten_don_vi) updateData.ten_don_vi = ten_don_vi;
 
-      return prisma.coQuanDonVi.update({
-        where: { id },
-        data: updateData,
-        include: {
-          DonViTrucThuoc: { include: { ChucVu: true } },
-          ChucVu: true,
-        },
-      });
+      return coQuanDonViRepository.update(id, updateData);
     }
   }
 
@@ -247,30 +165,21 @@ class UnitService {
     try {
       if (ancestorId === descendantId) return true;
 
-      const descendant = await prisma.donViTrucThuoc.findUnique({
-        where: { id: descendantId },
-      });
+      const descendant = await donViTrucThuocRepository.findById(descendantId);
 
       if (!descendant) return false;
 
       return descendant.co_quan_don_vi_id === ancestorId;
     } catch (error) {
-   console.error('Failed to resolve unit hierarchy relation:', error);
+      console.error('Failed to resolve unit hierarchy relation:', error);
       return false;
     }
   }
 
   async deleteUnit(id: string) {
     const [coQuanDonVi, donViTrucThuoc] = await Promise.all([
-      prisma.coQuanDonVi.findUnique({
-        where: { id },
-        include: {
-          DonViTrucThuoc: true,
-        },
-      }),
-      prisma.donViTrucThuoc.findUnique({
-        where: { id },
-      }),
+      coQuanDonViRepository.findWithChildren(id),
+      donViTrucThuocRepository.findById(id),
     ]);
 
     if (!coQuanDonVi && !donViTrucThuoc) {
@@ -285,8 +194,8 @@ class UnitService {
       }
 
       const [personnelCount, positionCount] = await Promise.all([
-        prisma.quanNhan.count({ where: { co_quan_don_vi_id: id } }),
-        prisma.chucVu.count({ where: { co_quan_don_vi_id: id } }),
+        quanNhanRepository.count({ co_quan_don_vi_id: id }),
+        positionRepository.count({ co_quan_don_vi_id: id }),
       ]);
 
       if (personnelCount > 0) {
@@ -296,11 +205,11 @@ class UnitService {
         throw new ValidationError(`Không thể xóa cơ quan đơn vị vì còn ${positionCount} chức vụ`);
       }
 
-      await prisma.coQuanDonVi.delete({ where: { id } });
+      await coQuanDonViRepository.delete(id);
     } else {
       const [personnelCount, positionCount] = await Promise.all([
-        prisma.quanNhan.count({ where: { don_vi_truc_thuoc_id: id } }),
-        prisma.chucVu.count({ where: { don_vi_truc_thuoc_id: id } }),
+        quanNhanRepository.count({ don_vi_truc_thuoc_id: id }),
+        positionRepository.count({ don_vi_truc_thuoc_id: id }),
       ]);
 
       if (personnelCount > 0) {
@@ -310,7 +219,7 @@ class UnitService {
         throw new ValidationError(`Không thể xóa đơn vị trực thuộc vì còn ${positionCount} chức vụ`);
       }
 
-      await prisma.donViTrucThuoc.delete({ where: { id } });
+      await donViTrucThuocRepository.delete(id);
     }
 
     return { message: 'Xóa cơ quan đơn vị/đơn vị trực thuộc thành công' };
@@ -318,60 +227,8 @@ class UnitService {
 
   async getUnitById(id: string) {
     const [coQuanDonVi, donViTrucThuoc] = await Promise.all([
-      prisma.coQuanDonVi.findUnique({
-        where: { id },
-        include: {
-          DonViTrucThuoc: {
-            include: {
-              ChucVu: {
-                include: {
-                  CoQuanDonVi: true,
-                  DonViTrucThuoc: {
-                    include: {
-                      CoQuanDonVi: true,
-                    },
-                  },
-                },
-              },
-            },
-          },
-          ChucVu: {
-            include: {
-              CoQuanDonVi: true,
-              DonViTrucThuoc: {
-                include: {
-                  CoQuanDonVi: true,
-                },
-              },
-            },
-          },
-        },
-      }),
-      prisma.donViTrucThuoc.findUnique({
-        where: { id },
-        include: {
-          CoQuanDonVi: {
-            select: {
-              id: true,
-              ma_don_vi: true,
-              ten_don_vi: true,
-              so_luong: true,
-              createdAt: true,
-              updatedAt: true,
-            },
-          },
-          ChucVu: {
-            include: {
-              CoQuanDonVi: true,
-              DonViTrucThuoc: {
-                include: {
-                  CoQuanDonVi: true,
-                },
-              },
-            },
-          },
-        },
-      }),
+      coQuanDonViRepository.findDeepById(id),
+      donViTrucThuocRepository.findDeepById(id),
     ]);
 
     if (!coQuanDonVi && !donViTrucThuoc) {
@@ -387,18 +244,10 @@ class UnitService {
    */
   async recalculatePersonnelCount() {
     const [coQuanDonViList, donViTrucThuocList, cqdvCounts, dvttCounts] = await Promise.all([
-      prisma.coQuanDonVi.findMany({ select: { id: true, so_luong: true } }),
-      prisma.donViTrucThuoc.findMany({ select: { id: true, so_luong: true } }),
-      prisma.quanNhan.groupBy({
-        by: ['co_quan_don_vi_id'],
-        where: { co_quan_don_vi_id: { not: null }, don_vi_truc_thuoc_id: null },
-        _count: true,
-      }),
-      prisma.quanNhan.groupBy({
-        by: ['don_vi_truc_thuoc_id'],
-        where: { don_vi_truc_thuoc_id: { not: null } },
-        _count: true,
-      }),
+      coQuanDonViRepository.findAllForRecalc(),
+      donViTrucThuocRepository.findAllForRecalc(),
+      quanNhanRepository.groupByCoQuanDonViForRecalc(),
+      quanNhanRepository.groupByDonViTrucThuocForRecalc(),
     ]);
 
     const cqdvCountMap = new Map(cqdvCounts.map(c => [c.co_quan_don_vi_id!, c._count]));
@@ -410,14 +259,12 @@ class UnitService {
 
     if (updated > 0) {
       await Promise.all([
-        ...cqdvToUpdate.map(u => prisma.coQuanDonVi.update({
-          where: { id: u.id },
-          data: { so_luong: cqdvCountMap.get(u.id) ?? 0 },
-        })),
-        ...dvttToUpdate.map(u => prisma.donViTrucThuoc.update({
-          where: { id: u.id },
-          data: { so_luong: dvttCountMap.get(u.id) ?? 0 },
-        })),
+        ...cqdvToUpdate.map(u =>
+          coQuanDonViRepository.updateSoLuong(u.id, cqdvCountMap.get(u.id) ?? 0)
+        ),
+        ...dvttToUpdate.map(u =>
+          donViTrucThuocRepository.updateSoLuong(u.id, dvttCountMap.get(u.id) ?? 0)
+        ),
       ]);
     }
 

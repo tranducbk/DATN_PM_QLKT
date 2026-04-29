@@ -1,5 +1,5 @@
-import { prisma } from '../../models';
 import { FileQuyetDinh } from '../../generated/prisma';
+import { decisionFileRepository } from '../../repositories/decisionFile.repository';
 
 /**
  * Gets the stored file path for a decision number.
@@ -12,7 +12,7 @@ async function getDecisionFilePath(soQuyetDinh: string | null | undefined): Prom
   }
 
   try {
-    const decision = await prisma.fileQuyetDinh.findUnique({
+    const decision = await decisionFileRepository.findUniqueRaw({
       where: { so_quyet_dinh: soQuyetDinh.trim() },
       select: { file_path: true },
     });
@@ -37,7 +37,7 @@ async function getDecisionInfo(
   }
 
   try {
-    const decision = await prisma.fileQuyetDinh.findUnique({
+    const decision = await decisionFileRepository.findUniqueRaw({
       where: { so_quyet_dinh: soQuyetDinh.trim() },
     });
 

@@ -1,9 +1,9 @@
-import { prisma } from '../../models';
 import { Request, Response } from 'express';
 import { normalizeParam } from '../paginationHelper';
 import { FALLBACK } from './constants';
 import { getLoaiDeXuatName } from '../../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
+import { proposalRepository } from '../../repositories/proposal.repository';
 
 
 /** Loose shape for proposal data from JSON or Prisma */
@@ -95,7 +95,7 @@ const proposals: Record<
 
       if (!proposal && proposalId && proposalId !== FALLBACK.UNKNOWN) {
         try {
-          proposal = await prisma.bangDeXuat.findUnique({
+          proposal = await proposalRepository.findUniqueRaw({
             where: { id: proposalId },
             include: {
               NguoiDeXuat: {
@@ -215,7 +215,7 @@ const proposals: Record<
 
     if (!proposal && proposalId) {
       try {
-        proposal = await prisma.bangDeXuat.findUnique({
+        proposal = await proposalRepository.findUniqueRaw({
           where: { id: proposalId },
           include: {
             NguoiDeXuat: {
@@ -294,7 +294,7 @@ const proposals: Record<
 
     if (!proposal && proposalId) {
       try {
-        proposal = await prisma.bangDeXuat.findUnique({
+        proposal = await proposalRepository.findUniqueRaw({
           where: { id: proposalId },
           include: {
             NguoiDeXuat: {

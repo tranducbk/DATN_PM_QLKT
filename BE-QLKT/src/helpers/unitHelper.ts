@@ -1,4 +1,4 @@
-import { prisma } from '../models';
+import { coQuanDonViRepository, donViTrucThuocRepository } from '../repositories/unit.repository';
 import { NotFoundError } from '../middlewares/errorHandler';
 
 interface ResolvedUnit {
@@ -14,8 +14,8 @@ interface ResolvedUnit {
  */
 export async function resolveUnit(unitId: string): Promise<ResolvedUnit> {
   const [coQuanDonVi, donViTrucThuoc] = await Promise.all([
-    prisma.coQuanDonVi.findUnique({ where: { id: unitId }, select: { id: true } }),
-    prisma.donViTrucThuoc.findUnique({ where: { id: unitId }, select: { id: true } }),
+    coQuanDonViRepository.findIdById(unitId),
+    donViTrucThuocRepository.findIdById(unitId),
   ]);
 
   if (!coQuanDonVi && !donViTrucThuoc) {

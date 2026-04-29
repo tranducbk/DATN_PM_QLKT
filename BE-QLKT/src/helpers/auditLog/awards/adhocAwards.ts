@@ -1,8 +1,10 @@
-import { prisma } from '../../../models';
 import { Request, Response } from 'express';
 import { FALLBACK } from '../constants';
 import { ADHOC_TYPE } from '../../../constants/adhocType.constants';
 import { routeParamId, KhenThuongDotXuatWithAuditRels } from './shared';
+import { adhocAwardRepository } from '../../../repositories/adhocAward.repository';
+import { quanNhanRepository } from '../../../repositories/quanNhan.repository';
+import { coQuanDonViRepository, donViTrucThuocRepository } from '../../../repositories/unit.repository';
 
 export const adhocAwards: Record<
   string,
@@ -38,23 +40,17 @@ export const adhocAwards: Record<
     if (!hoTen && !tenDonVi) {
       try {
         if (type === 'cá nhân' && personnelId) {
-          const personnel = await prisma.quanNhan.findUnique({
+          const personnel = await quanNhanRepository.findUniqueRaw({
             where: { id: personnelId },
             select: { ho_ten: true },
           });
           hoTen = personnel?.ho_ten || '';
         } else if (type === 'tập thể' && unitId && unitType) {
           if (unitType === 'CO_QUAN_DON_VI') {
-            const unit = await prisma.coQuanDonVi.findUnique({
-              where: { id: unitId },
-              select: { ten_don_vi: true },
-            });
+            const unit = await coQuanDonViRepository.findLightById(unitId);
             tenDonVi = unit?.ten_don_vi || '';
           } else if (unitType === 'DON_VI_TRUC_THUOC') {
-            const unit = await prisma.donViTrucThuoc.findUnique({
-              where: { id: unitId },
-              select: { ten_don_vi: true },
-            });
+            const unit = await donViTrucThuocRepository.findNameById(unitId);
             tenDonVi = unit?.ten_don_vi || '';
           }
         }
@@ -105,7 +101,7 @@ export const adhocAwards: Record<
 
     if (!hoTen && !tenDonVi && awardId) {
       try {
-        const award = (await prisma.khenThuongDotXuat.findUnique({
+        const award = (await adhocAwardRepository.findUniqueRaw({
           where: { id: awardId },
           include: {
             QuanNhan: { select: { ho_ten: true } },
@@ -167,7 +163,7 @@ export const adhocAwards: Record<
 
     if (!hoTen && !tenDonVi && awardId) {
       try {
-        const award = (await prisma.khenThuongDotXuat.findUnique({
+        const award = (await adhocAwardRepository.findUniqueRaw({
           where: { id: awardId },
           include: {
             QuanNhan: { select: { ho_ten: true } },

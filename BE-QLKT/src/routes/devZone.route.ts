@@ -1,5 +1,4 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { prisma } from '../models';
 import profileService from '../services/profile.service';
 import unitAnnualAwardService from '../services/unitAnnualAward.service';
 import unitService from '../services/unit.service';
@@ -12,6 +11,7 @@ import { writeSystemLog } from '../helpers/systemLogHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { authLimiter } from '../configs/rateLimiter';
 import { DEV_ZONE_PASSWORD } from '../configs';
+import { systemSettingRepository } from '../repositories/systemSetting.repository';
 
 const router = Router();
 
@@ -118,7 +118,7 @@ const updateBackupCronTask = async () => {
 
 /** Seeds default system settings to DB if they do not already exist. */
 async function seedDefaults() {
-  const existing = await prisma.systemSetting.findMany({
+  const existing = await systemSettingRepository.findManyRaw({
     where: { key: { in: Object.keys(SETTING_DEFAULTS) } },
     select: { key: true },
   });
@@ -127,7 +127,7 @@ async function seedDefaults() {
     .filter(([key]) => !existingKeys.has(key))
     .map(([key, value]) => ({ key, value: value as string }));
   if (toCreate.length > 0) {
-    await prisma.systemSetting.createMany({ data: toCreate });
+    await systemSettingRepository.createMany(toCreate);
   }
 }
 

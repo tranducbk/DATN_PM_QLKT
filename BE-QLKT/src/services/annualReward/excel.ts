@@ -1,4 +1,5 @@
 import { prisma } from '../../models';
+import { danhHieuHangNamRepository } from '../../repositories/danhHieu.repository';
 import ExcelJS from 'exceljs';
 import {
   buildDanhHieuExcelOptions,
@@ -57,7 +58,7 @@ export async function exportToExcel(filters: ExportFilters = {}): Promise<ExcelJ
     };
   }
 
-  const filteredAwards = await prisma.danhHieuHangNam.findMany({
+  const filteredAwards = (await danhHieuHangNamRepository.findMany({
     where,
     include: {
       QuanNhan: {
@@ -69,7 +70,9 @@ export async function exportToExcel(filters: ExportFilters = {}): Promise<ExcelJ
     },
     orderBy: [{ nam: 'desc' }, { createdAt: 'desc' }],
     take: EXPORT_FETCH_LIMIT,
-  });
+  })) as Prisma.DanhHieuHangNamGetPayload<{
+    include: { QuanNhan: { include: { CoQuanDonVi: true; DonViTrucThuoc: true } } };
+  }>[];
 
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet(AWARD_EXCEL_SHEETS.ANNUAL_PERSONAL);

@@ -1,8 +1,8 @@
 import type { Prisma } from '../../generated/prisma';
-import { prisma } from '../../models';
 import { Request, Response } from 'express';
 import { normalizeParam } from '../paginationHelper';
 import { FALLBACK, ROLE_NAMES } from './constants';
+import { accountRepository } from '../../repositories/account.repository';
 
 
 type TaiKhoanHoTenSelect = Prisma.TaiKhoanGetPayload<{
@@ -54,7 +54,7 @@ const accounts: Record<
 
     if ((!username || !hoTen) && accountId) {
       try {
-        const account = (await prisma.taiKhoan.findUnique({
+        const account = (await accountRepository.findUniqueRaw({
           where: { id: accountId },
           select: {
             username: true,
@@ -102,7 +102,7 @@ const accounts: Record<
 
     if ((!username || !hoTen) && accountId) {
       try {
-        const account = (await prisma.taiKhoan.findUnique({
+        const account = (await accountRepository.findUniqueRaw({
           where: { id: accountId },
           select: {
             username: true,
@@ -130,7 +130,7 @@ const accounts: Record<
 
     if (accountId) {
       try {
-        const account = await prisma.taiKhoan.findUnique({
+        const account = await accountRepository.findUniqueRaw({
           where: { id: accountId },
           select: {
             username: true,

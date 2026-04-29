@@ -1,6 +1,14 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { prisma } from '../models';
+import { danhHieuHangNamRepository } from '../repositories/danhHieu.repository';
+import { decisionFileRepository } from '../repositories/decisionFile.repository';
+import { contributionMedalRepository } from '../repositories/contributionMedal.repository';
+import { tenureMedalRepository } from '../repositories/tenureMedal.repository';
+import { adhocAwardRepository } from '../repositories/adhocAward.repository';
+import { militaryFlagRepository } from '../repositories/militaryFlag.repository';
+import { commemorativeMedalRepository } from '../repositories/commemorativeMedal.repository';
+import { scientificAchievementRepository } from '../repositories/scientificAchievement.repository';
 import { AppError, NotFoundError, ValidationError } from '../middlewares/errorHandler';
 import type { FileQuyetDinh, Prisma } from '../generated/prisma';
 
@@ -74,13 +82,13 @@ class DecisionService {
     }
 
     const [decisions, total] = await Promise.all([
-      prisma.fileQuyetDinh.findMany({
+      decisionFileRepository.findManyRaw({
         where: whereClause,
         orderBy: [{ nam: 'desc' }, { ngay_ky: 'desc' }, { so_quyet_dinh: 'desc' }],
         skip,
         take: limit,
       }),
-      prisma.fileQuyetDinh.count({ where: whereClause }),
+      decisionFileRepository.count(whereClause),
     ]);
 
     return {
@@ -111,7 +119,7 @@ class DecisionService {
     };
     if (loaiKhenThuong) where.loai_khen_thuong = loaiKhenThuong;
 
-    const decisions = await prisma.fileQuyetDinh.findMany({
+    const decisions = await decisionFileRepository.findManyRaw({
       where,
       orderBy: [{ nam: 'desc' }, { ngay_ky: 'desc' }],
       take: limit,
@@ -121,7 +129,7 @@ class DecisionService {
   }
 
   async getDecisionById(id: string): Promise<FileQuyetDinh> {
-    const decision = await prisma.fileQuyetDinh.findUnique({
+    const decision = await decisionFileRepository.findUniqueRaw({
       where: { id },
     });
 
@@ -133,7 +141,7 @@ class DecisionService {
   }
 
   async getDecisionBySoQuyetDinh(soQuyetDinh: string): Promise<FileQuyetDinh | null> {
-    const decision = await prisma.fileQuyetDinh.findUnique({
+    const decision = await decisionFileRepository.findUniqueRaw({
       where: { so_quyet_dinh: soQuyetDinh },
     });
 
@@ -151,7 +159,7 @@ class DecisionService {
         };
       }
 
-      const decision = await prisma.fileQuyetDinh.findUnique({
+      const decision = await decisionFileRepository.findUniqueRaw({
         where: { so_quyet_dinh: soQuyetDinh.trim() },
       });
 
@@ -200,7 +208,7 @@ class DecisionService {
         };
       }
 
-      const decision = await prisma.fileQuyetDinh.findUnique({
+      const decision = await decisionFileRepository.findUniqueRaw({
         where: { so_quyet_dinh: soQuyetDinh.trim() },
       });
 
@@ -270,7 +278,7 @@ class DecisionService {
       return {};
     }
 
-    const decisions = await prisma.fileQuyetDinh.findMany({
+    const decisions = await decisionFileRepository.findManyRaw({
       where: {
         so_quyet_dinh: {
           in: validSoQDs,
@@ -316,7 +324,7 @@ class DecisionService {
   async createDecision(data: CreateDecisionData): Promise<FileQuyetDinh> {
     const { so_quyet_dinh, nam, ngay_ky, nguoi_ky, file_path, loai_khen_thuong, ghi_chu } = data;
 
-    const existingDecision = await prisma.fileQuyetDinh.findUnique({
+    const existingDecision = await decisionFileRepository.findUniqueRaw({
       where: { so_quyet_dinh },
     });
 
@@ -328,23 +336,21 @@ class DecisionService {
       throw new ValidationError('Thiếu thông tin bắt buộc: số quyết định, năm, ngày ký, người ký');
     }
 
-    const newDecision = await prisma.fileQuyetDinh.create({
-      data: {
-        so_quyet_dinh: so_quyet_dinh.trim(),
-        nam: parseInt(String(nam)),
-        ngay_ky: new Date(ngay_ky),
-        nguoi_ky: nguoi_ky.trim(),
-        file_path: file_path || null,
-        loai_khen_thuong: loai_khen_thuong || null,
-        ghi_chu: ghi_chu || null,
-      },
+    const newDecision = await decisionFileRepository.create({
+      so_quyet_dinh: so_quyet_dinh.trim(),
+      nam: parseInt(String(nam)),
+      ngay_ky: new Date(ngay_ky),
+      nguoi_ky: nguoi_ky.trim(),
+      file_path: file_path || null,
+      loai_khen_thuong: loai_khen_thuong || null,
+      ghi_chu: ghi_chu || null,
     });
 
     return newDecision;
   }
 
   async updateDecision(id: string, data: UpdateDecisionData): Promise<FileQuyetDinh> {
-    const existingDecision = await prisma.fileQuyetDinh.findUnique({
+    const existingDecision = await decisionFileRepository.findUniqueRaw({
       where: { id },
     });
 
@@ -355,7 +361,7 @@ class DecisionService {
     const { so_quyet_dinh, nam, ngay_ky, nguoi_ky, file_path, loai_khen_thuong, ghi_chu } = data;
 
     if (so_quyet_dinh && so_quyet_dinh !== existingDecision.so_quyet_dinh) {
-      const duplicateDecision = await prisma.fileQuyetDinh.findUnique({
+      const duplicateDecision = await decisionFileRepository.findUniqueRaw({
         where: { so_quyet_dinh },
       });
 
@@ -373,16 +379,13 @@ class DecisionService {
     if (loai_khen_thuong !== undefined) updateData.loai_khen_thuong = loai_khen_thuong;
     if (ghi_chu !== undefined) updateData.ghi_chu = ghi_chu;
 
-    const updatedDecision = await prisma.fileQuyetDinh.update({
-      where: { id },
-      data: updateData,
-    });
+    const updatedDecision = await decisionFileRepository.update(id, updateData);
 
     return updatedDecision;
   }
 
   async deleteDecision(id: string): Promise<{ message: string }> {
-    const existingDecision = await prisma.fileQuyetDinh.findUnique({
+    const existingDecision = await decisionFileRepository.findUniqueRaw({
       where: { id },
     });
 
@@ -392,13 +395,13 @@ class DecisionService {
 
     const soQuyetDinh = existingDecision.so_quyet_dinh;
     const [danhHieu, congHien, hccsvv, dotXuat, huanChuong, kyNiem, thanhTich] = await Promise.all([
-      prisma.danhHieuHangNam.findFirst({ where: { so_quyet_dinh: soQuyetDinh } }),
-      prisma.khenThuongHCBVTQ.findFirst({ where: { so_quyet_dinh: soQuyetDinh } }),
-      prisma.khenThuongHCCSVV.findFirst({ where: { so_quyet_dinh: soQuyetDinh } }),
-      prisma.khenThuongDotXuat.findFirst({ where: { so_quyet_dinh: soQuyetDinh } }),
-      prisma.huanChuongQuanKyQuyetThang.findFirst({ where: { so_quyet_dinh: soQuyetDinh } }),
-      prisma.kyNiemChuongVSNXDQDNDVN.findFirst({ where: { so_quyet_dinh: soQuyetDinh } }),
-      prisma.thanhTichKhoaHoc.findFirst({ where: { so_quyet_dinh: soQuyetDinh } }),
+      danhHieuHangNamRepository.findFirst({ where: { so_quyet_dinh: soQuyetDinh } }),
+      contributionMedalRepository.findFirstRaw({ where: { so_quyet_dinh: soQuyetDinh } }),
+      tenureMedalRepository.findFirstRaw({ where: { so_quyet_dinh: soQuyetDinh } }),
+      adhocAwardRepository.findFirstRaw({ where: { so_quyet_dinh: soQuyetDinh } }),
+      militaryFlagRepository.findFirstRaw({ where: { so_quyet_dinh: soQuyetDinh } }),
+      commemorativeMedalRepository.findFirstRaw({ where: { so_quyet_dinh: soQuyetDinh } }),
+      scientificAchievementRepository.findFirstRaw({ where: { so_quyet_dinh: soQuyetDinh } }),
     ]);
 
     const isInUse = danhHieu || congHien || hccsvv || dotXuat || huanChuong || kyNiem || thanhTich;
@@ -408,15 +411,13 @@ class DecisionService {
       );
     }
 
-    await prisma.fileQuyetDinh.delete({
-      where: { id },
-    });
+    await decisionFileRepository.delete(id);
 
     return { message: 'Xóa quyết định thành công' };
   }
 
   async getAvailableYears(): Promise<number[]> {
-    const years = await prisma.fileQuyetDinh.findMany({
+    const years = await decisionFileRepository.findManyRaw({
       select: {
         nam: true,
       },
@@ -430,7 +431,7 @@ class DecisionService {
   }
 
   async getAwardTypes(): Promise<string[]> {
-    const types = await prisma.fileQuyetDinh.findMany({
+    const types = await decisionFileRepository.findManyRaw({
       select: {
         loai_khen_thuong: true,
       },

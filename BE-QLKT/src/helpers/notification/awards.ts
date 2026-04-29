@@ -1,5 +1,4 @@
 import {
-  prisma,
   NOTIFICATION_TYPES,
   RESOURCE_TYPES,
   ROLES,
@@ -11,6 +10,10 @@ import {
 } from './helpers';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 import { isFeatureEnabled } from '../settingsHelper';
+import { accountRepository } from '../../repositories/account.repository';
+import { notificationRepository } from '../../repositories/notification.repository';
+import { quanNhanRepository } from '../../repositories/quanNhan.repository';
+import { coQuanDonViRepository, donViTrucThuocRepository } from '../../repositories/unit.repository';
 
 interface AchievementInfo {
   id: string;
@@ -68,7 +71,7 @@ async function notifyManagersOnAwardAdded(
   awardType: string,
   adminUsername: string
 ): Promise<number> {
-  const managers = await prisma.taiKhoan.findMany({
+  const managers = await accountRepository.findManyRaw({
     where: {
       role: ROLES.MANAGER,
       QuanNhan: {
@@ -98,9 +101,7 @@ async function notifyManagersOnAwardAdded(
     link: `/manager/awards?don_vi_id=${donViId}&nam=${year}`,
   }));
 
-  await prisma.thongBao.createMany({
-    data: notifications,
-  });
+  await notificationRepository.createMany(notifications);
   notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
 
   return notifications.length;
@@ -110,7 +111,7 @@ async function notifyUserOnAchievementApproved(
   achievement: AchievementInfo,
   approverUsername: string
 ): Promise<{ nguoi_nhan_id: string | null } | null> {
-  const account = await prisma.taiKhoan.findFirst({
+  const account = await accountRepository.findFirstRaw({
     where: {
       quan_nhan_id: achievement.quan_nhan_id,
     },
@@ -133,17 +134,15 @@ async function notifyUserOnAchievementApproved(
   };
   const loaiName = loaiMap[achievement.loai] || achievement.loai || 'Thành tích khoa học';
 
-  const notification = await prisma.thongBao.create({
-    data: {
-      nguoi_nhan_id: account.id,
-      recipient_role: account.role,
-      type: NOTIFICATION_TYPES.ACHIEVEMENT_APPROVED,
-      title: 'Thành tích khoa học đã được phê duyệt',
-      message: `${loaiName} năm ${achievement.nam || 'không xác định'} của bạn đã được ${approverDisplayName} phê duyệt`,
-      resource: RESOURCE_TYPES.ACHIEVEMENTS,
-      tai_nguyen_id: achievement.id,
-      link: `/user/profile`,
-    },
+  const notification = await notificationRepository.create({
+    nguoi_nhan_id: account.id,
+    recipient_role: account.role,
+    type: NOTIFICATION_TYPES.ACHIEVEMENT_APPROVED,
+    title: 'Thành tích khoa học đã được phê duyệt',
+    message: `${loaiName} năm ${achievement.nam || 'không xác định'} của bạn đã được ${approverDisplayName} phê duyệt`,
+    resource: RESOURCE_TYPES.ACHIEVEMENTS,
+    tai_nguyen_id: achievement.id,
+    link: `/user/profile`,
   });
 
   if (notification.nguoi_nhan_id) {
@@ -176,7 +175,7 @@ async function notifyOnAwardDeleted(
 
     const donViId = personnel.co_quan_don_vi_id || personnel.don_vi_truc_thuoc_id;
     if (donViId) {
-      const managers = await prisma.taiKhoan.findMany({
+      const managers = await accountRepository.findManyRaw({
         where: {
           role: ROLES.MANAGER,
           QuanNhan: {
@@ -205,7 +204,7 @@ async function notifyOnAwardDeleted(
       });
     }
 
-    const personnelAccount = await prisma.taiKhoan.findFirst({
+    const personnelAccount = await accountRepository.findFirstRaw({
       where: {
         quan_nhan_id: personnel.id,
       },
@@ -231,9 +230,7 @@ async function notifyOnAwardDeleted(
     }
 
     if (notifications.length > 0) {
-      await prisma.thongBao.createMany({
-        data: notifications,
-      });
+      await notificationRepository.createMany(notifications);
       notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
     }
 
@@ -257,7 +254,7 @@ async function notifyUsersOnAwardApproved(
     const notifications: NotificationInput[] = [];
     const approverDisplayName = await getDisplayName(approverUsername);
 
-    const accounts = await prisma.taiKhoan.findMany({
+    const accounts = await accountRepository.findManyRaw({
       where: {
         quan_nhan_id: {
           in: personnelIds,
@@ -347,9 +344,7 @@ async function notifyUsersOnAwardApproved(
     }
 
     if (notifications.length > 0) {
-      await prisma.thongBao.createMany({
-        data: notifications,
-      });
+      await notificationRepository.createMany(notifications);
       notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
     }
 
@@ -384,7 +379,7 @@ async function notifyOnBulkAwardAdded(
     const awardTypeName = bulkAwardTypeMap[awardType] || awardType;
 
     if (personnelIds && personnelIds.length > 0) {
-      const accounts = await prisma.taiKhoan.findMany({
+      const accounts = await accountRepository.findManyRaw({
         where: {
           quan_nhan_id: {
             in: personnelIds,
@@ -413,7 +408,7 @@ async function notifyOnBulkAwardAdded(
 
       const allManagers =
         allDonViIds.size > 0
-          ? await prisma.taiKhoan.findMany({
+          ? await accountRepository.findManyRaw({
               where: {
                 role: ROLES.MANAGER,
                 QuanNhan: {
@@ -527,27 +522,28 @@ async function notifyOnBulkAwardAdded(
 
     if (unitIds && unitIds.length > 0 && awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
       for (const unitId of unitIds) {
-        let donVi: { id: string; ten_don_vi: string; co_quan_don_vi_id?: string | null } | null =
-          await prisma.donViTrucThuoc.findUnique({
+        const [donViTrucThuoc, coQuanDonVi] = await Promise.all([
+          donViTrucThuocRepository.findUniqueRaw({
             where: { id: unitId },
             select: { id: true, ten_don_vi: true, co_quan_don_vi_id: true },
-          });
-
-        if (!donVi) {
-          donVi = await prisma.coQuanDonVi.findUnique({
+          }),
+          coQuanDonViRepository.findUniqueRaw({
             where: { id: unitId },
             select: { id: true, ten_don_vi: true },
-          });
-        }
+          }),
+        ]);
+        const donVi = donViTrucThuoc ?? coQuanDonVi;
 
         if (!donVi) continue;
+        const coQuanDonViId =
+          'co_quan_don_vi_id' in donVi ? (donVi.co_quan_don_vi_id ?? donVi.id) : donVi.id;
 
-        const managers = await prisma.taiKhoan.findMany({
+        const managers = await accountRepository.findManyRaw({
           where: {
             role: ROLES.MANAGER,
             QuanNhan: {
               OR: [
-                { co_quan_don_vi_id: donVi.co_quan_don_vi_id || donVi.id },
+                { co_quan_don_vi_id: coQuanDonViId },
                 { don_vi_truc_thuoc_id: donVi.id },
               ].filter(Boolean),
             },
@@ -579,9 +575,7 @@ async function notifyOnBulkAwardAdded(
     }
 
     if (notifications.length > 0) {
-      await prisma.thongBao.createMany({
-        data: notifications,
-      });
+      await notificationRepository.createMany(notifications);
       notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
     }
 
@@ -621,7 +615,7 @@ async function notifyOnImport(
     const enabled = await isFeatureEnabled('allow_notify_import');
     if (!enabled) return 0;
 
-    const admin = await prisma.taiKhoan.findUnique({
+    const admin = await accountRepository.findUniqueRaw({
       where: { id: adminId },
       select: { username: true },
     });
@@ -635,7 +629,7 @@ async function notifyOnImport(
     const affectedUnitIds = new Set<string>();
 
     if (personnelIds.length > 0) {
-      const personnel = await prisma.quanNhan.findMany({
+      const personnel = await quanNhanRepository.findManyRaw({
         where: { id: { in: personnelIds } },
         select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true },
       });
@@ -652,7 +646,7 @@ async function notifyOnImport(
     if (affectedUnitIds.size === 0) return 0;
 
     // Find managers of affected units
-    const managers = await prisma.taiKhoan.findMany({
+    const managers = await accountRepository.findManyRaw({
       where: {
         role: ROLES.MANAGER,
         QuanNhan: {
@@ -695,7 +689,7 @@ async function notifyOnImport(
 
     // Notify personnel accounts for individual awards only.
     if (personnelIds.length > 0) {
-      const personnelAccounts = await prisma.taiKhoan.findMany({
+      const personnelAccounts = await accountRepository.findManyRaw({
         where: { quan_nhan_id: { in: personnelIds } },
         select: { id: true, role: true },
       });
@@ -716,7 +710,7 @@ async function notifyOnImport(
 
     if (notifications.length === 0) return 0;
 
-    await prisma.thongBao.createMany({ data: notifications });
+    await notificationRepository.createMany(notifications);
     notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
 
     return notifications.length;

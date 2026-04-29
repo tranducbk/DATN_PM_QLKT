@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { ROLES } from '../constants/roles.constants';
-import { prisma } from '../models';
+import { accountRepository } from '../repositories/account.repository';
 import { JwtUser } from '../types/express';
 import { JWT_SECRET } from '../configs';
 
@@ -28,7 +28,7 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction): Pro
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as JwtUser;
 
-    const account = await prisma.taiKhoan.findUnique({
+    const account = await accountRepository.findUniqueRaw({
       where: { id: decoded.id },
       select: { refreshToken: true },
     });

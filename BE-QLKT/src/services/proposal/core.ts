@@ -1,4 +1,12 @@
-import { prisma } from '../../models';
+import { danhHieuHangNamRepository } from '../../repositories/danhHieu.repository';
+import { quanNhanRepository } from '../../repositories/quanNhan.repository';
+import { coQuanDonViRepository, donViTrucThuocRepository } from '../../repositories/unit.repository';
+import { tenureMedalRepository } from '../../repositories/tenureMedal.repository';
+import { militaryFlagRepository } from '../../repositories/militaryFlag.repository';
+import { commemorativeMedalRepository } from '../../repositories/commemorativeMedal.repository';
+import { contributionMedalRepository } from '../../repositories/contributionMedal.repository';
+import { accountRepository } from '../../repositories/account.repository';
+import { proposalRepository } from '../../repositories/proposal.repository';
 import type { Prisma } from '../../generated/prisma';
 import { ROLES } from '../../constants/roles.constants';
 import { PROPOSAL_TYPES, type ProposalType } from '../../constants/proposalTypes.constants';
@@ -11,7 +19,7 @@ import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
  * @returns User record with QuanNhan included, or null if not found
  */
 async function getUserWithUnit(userId: string) {
-  return await prisma.taiKhoan.findUnique({
+  return await accountRepository.findUniqueRaw({
     where: { id: userId },
     include: {
       QuanNhan: {
@@ -48,7 +56,7 @@ async function getProposals(
 
   if (userRole === ROLES.MANAGER) {
     // Manager can only view proposals from their own unit
-    const user = await prisma.taiKhoan.findUnique({
+    const user = await accountRepository.findUniqueRaw({
       where: { id: userId },
       include: {
         QuanNhan: {
@@ -73,7 +81,7 @@ async function getProposals(
   }
 
   const [proposals, total] = await Promise.all([
-    prisma.bangDeXuat.findMany({
+    proposalRepository.findManyRaw({
       where: whereCondition,
       skip,
       take: limit,
@@ -97,7 +105,7 @@ async function getProposals(
       },
       orderBy: { createdAt: 'desc' },
     }),
-    prisma.bangDeXuat.count({ where: whereCondition }),
+    proposalRepository.count(whereCondition),
   ]);
 
   return {
@@ -135,7 +143,7 @@ async function getProposals(
  * @returns Proposal with all related data included
  */
 async function getProposalById(proposalId: string, userId: string, userRole: string) {
-  const proposal = await prisma.bangDeXuat.findUnique({
+  const proposal = await proposalRepository.findUniqueRaw({
     where: { id: proposalId },
     include: {
       CoQuanDonVi: true,
@@ -171,7 +179,7 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
   }
 
   if (userRole === ROLES.MANAGER) {
-    const user = await prisma.taiKhoan.findUnique({
+    const user = await accountRepository.findUniqueRaw({
       where: { id: userId },
       include: {
         QuanNhan: {
@@ -241,17 +249,10 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
         let coQuanDonViCha = null;
 
         if (item.don_vi_type === 'CO_QUAN_DON_VI' && item.don_vi_id) {
-          const donVi = await prisma.coQuanDonVi.findUnique({
-            where: { id: item.don_vi_id },
-            select: {
-              id: true,
-              ten_don_vi: true,
-              ma_don_vi: true,
-            },
-          });
+          const donVi = await coQuanDonViRepository.findLightById(item.don_vi_id);
           donViInfo = donVi;
         } else if (item.don_vi_type === 'DON_VI_TRUC_THUOC' && item.don_vi_id) {
-          const donVi = await prisma.donViTrucThuoc.findUnique({
+          const selectedDonVi = await donViTrucThuocRepository.findUniqueRaw({
             where: { id: item.don_vi_id },
             include: {
               CoQuanDonVi: {
@@ -263,12 +264,14 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
               },
             },
           });
-          donViInfo = {
-            id: donVi.id,
-            ten_don_vi: donVi.ten_don_vi,
-            ma_don_vi: donVi.ma_don_vi,
-          };
-          coQuanDonViCha = donVi.CoQuanDonVi;
+          if (selectedDonVi) {
+            donViInfo = {
+              id: selectedDonVi.id,
+              ten_don_vi: selectedDonVi.ten_don_vi,
+              ma_don_vi: selectedDonVi.ma_don_vi,
+            };
+            coQuanDonViCha = selectedDonVi.CoQuanDonVi;
+          }
         }
 
         return {
@@ -292,7 +295,7 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
     const personnelMap = {};
 
     if (allPersonnelIds.length > 0) {
-      const personnelList = await prisma.quanNhan.findMany({
+      const personnelList = await quanNhanRepository.findManyRaw({
         where: {
           id: {
             in: allPersonnelIds,
@@ -338,9 +341,9 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
       });
 
       // Helper to enrich a data item with personnel info
-      const enrichItem = item => {
+      const enrichItem = (item: Record<string, any>) => {
         const personnel = personnelMap[item.personnel_id];
-        const enrichedItem = {
+        const enrichedItem: Record<string, any> = {
           ...item,
           ho_ten: item.ho_ten || personnel?.ho_ten || '',
           nam: item.nam || proposal.createdAt?.getFullYear() || new Date().getFullYear(),
@@ -392,7 +395,7 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
     } else {
       const personnelIds = dataDanhHieu.map(d => d.personnel_id).filter(Boolean);
       if (personnelIds.length > 0) {
-        const danhHieuFromDB = await prisma.danhHieuHangNam.findMany({
+        const danhHieuFromDB = await danhHieuHangNamRepository.findMany({
           where: {
             quan_nhan_id: { in: personnelIds },
             nam: proposal.nam,
@@ -413,8 +416,8 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
           danhHieuMap[personnelId].push(dh);
         });
 
-        dataDanhHieu = dataDanhHieu.map(item => {
-          const dbRecords = danhHieuMap[item.personnel_id] || [];
+        dataDanhHieu = dataDanhHieu.map((item: Record<string, any>) => {
+          const dbRecords = (danhHieuMap[item.personnel_id] || []) as Record<string, any>[];
           const matchingRecord = dbRecords.find(
             r => r.danh_hieu === item.danh_hieu && r.nam === item.nam
           );
@@ -443,7 +446,7 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
       const personnelIds = dataNienHan.map(d => d.personnel_id).filter(Boolean);
       if (personnelIds.length > 0) {
         if (proposal.loai_de_xuat === PROPOSAL_TYPES.NIEN_HAN) {
-          const hccsvvFromDB = await prisma.khenThuongHCCSVV.findMany({
+          const hccsvvFromDB = await tenureMedalRepository.findManyRaw({
             where: {
               quan_nhan_id: { in: personnelIds },
               nam: proposal.nam,
@@ -470,7 +473,7 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
             return item;
           });
         } else if (proposal.loai_de_xuat === PROPOSAL_TYPES.HC_QKQT) {
-          const hcqkqtFromDB = await prisma.huanChuongQuanKyQuyetThang.findMany({
+          const hcqkqtFromDB = await militaryFlagRepository.findManyRaw({
             where: {
               quan_nhan_id: { in: personnelIds },
               nam: proposal.nam,
@@ -495,7 +498,7 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
             return item;
           });
         } else if (proposal.loai_de_xuat === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN) {
-          const kncFromDB = await prisma.kyNiemChuongVSNXDQDNDVN.findMany({
+          const kncFromDB = await commemorativeMedalRepository.findManyRaw({
             where: {
               quan_nhan_id: { in: personnelIds },
               nam: proposal.nam,
@@ -531,7 +534,7 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
   ) {
     const personnelIds = dataCongHien.map(d => d.personnel_id).filter(Boolean);
     if (personnelIds.length > 0) {
-      const congHienFromDB = await prisma.khenThuongHCBVTQ.findMany({
+      const congHienFromDB = await contributionMedalRepository.findManyRaw({
         where: {
           quan_nhan_id: { in: personnelIds },
         },
@@ -603,8 +606,8 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
  * @param userRole - Caller's role
  * @returns Deleted proposal record
  */
-async function deleteProposal(proposalId, userId, userRole) {
-  const proposal = await prisma.bangDeXuat.findUnique({
+async function deleteProposal(proposalId: string, userId: string, userRole: string) {
+  const proposal = await proposalRepository.findUniqueRaw({
     where: { id: proposalId },
     include: {
       CoQuanDonVi: true,
@@ -637,8 +640,9 @@ async function deleteProposal(proposalId, userId, userRole) {
   // PDFs are in files_attached — no separate deletion needed
 
   // Atomic delete guarded by status=PENDING to prevent race condition
-  const deleteResult = await prisma.bangDeXuat.deleteMany({
-    where: { id: proposalId, status: PROPOSAL_STATUS.PENDING },
+  const deleteResult = await proposalRepository.deleteMany({
+    id: proposalId,
+    status: PROPOSAL_STATUS.PENDING,
   });
 
   if (deleteResult.count === 0) {

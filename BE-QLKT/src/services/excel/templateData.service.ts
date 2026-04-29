@@ -1,5 +1,6 @@
-import { prisma } from '../../models';
 import { MAX_DECISION_DROPDOWN } from '../../constants/excel.constants';
+import { quanNhanRepository } from '../../repositories/quanNhan.repository';
+import { decisionFileRepository } from '../../repositories/decisionFile.repository';
 
 export interface PersonnelTemplateRecord {
   id: string;
@@ -20,7 +21,7 @@ export async function fetchPersonnelForTemplate(
   personnelIds: string[]
 ): Promise<PersonnelTemplateRecord[]> {
   if (personnelIds.length === 0) return [];
-  return prisma.quanNhan.findMany({
+  return quanNhanRepository.findManyRaw({
     where: { id: { in: personnelIds } },
     include: {
       ChucVu: true,
@@ -43,7 +44,7 @@ export async function fetchDecisionsForTemplate(
   const where: Record<string, unknown> = {};
   if (loaiKhenThuong) where.loai_khen_thuong = loaiKhenThuong;
 
-  const existingDecisions = await prisma.fileQuyetDinh.findMany({
+  const existingDecisions = await decisionFileRepository.findManyRaw({
     where,
     select: { so_quyet_dinh: true },
     orderBy: { nam: 'desc' },

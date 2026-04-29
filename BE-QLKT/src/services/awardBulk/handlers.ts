@@ -1,4 +1,8 @@
 import { prisma } from '../../models';
+import { quanNhanRepository } from '../../repositories/quanNhan.repository';
+import { tenureMedalRepository } from '../../repositories/tenureMedal.repository';
+import { contributionMedalRepository } from '../../repositories/contributionMedal.repository';
+import { positionHistoryRepository } from '../../repositories/positionHistory.repository';
 import { calculateServiceMonths, formatServiceDuration, buildCutoffDate } from '../../helpers/serviceYearsHelper';
 import annualRewardService from '../annualReward.service';
 import unitAnnualAwardService from '../unitAnnualAward.service';
@@ -227,7 +231,7 @@ async function handleNienHan(ctx: BulkCreateContext): Promise<void> {
   }
 
   const nienHanPersonnelIds = titleData.map(item => item.personnel_id).filter(Boolean);
-  const existingHCCSVV = await prisma.khenThuongHCCSVV.findMany({
+  const existingHCCSVV = await tenureMedalRepository.findManyRaw({
     where: { quan_nhan_id: { in: nienHanPersonnelIds } },
     select: { quan_nhan_id: true, danh_hieu: true, nam: true },
   });
@@ -287,11 +291,11 @@ async function handleCongHien(ctx: BulkCreateContext): Promise<void> {
   const congHienPersonnelIds = titleData.map(item => item.personnel_id).filter(Boolean);
 
   const [congHienPersonnel, allPositionHistories] = await Promise.all([
-    prisma.quanNhan.findMany({
+    quanNhanRepository.findManyRaw({
       where: { id: { in: congHienPersonnelIds } },
       select: { id: true, ho_ten: true, gioi_tinh: true },
     }),
-    prisma.lichSuChucVu.findMany({
+    positionHistoryRepository.findManyRaw({
       where: { quan_nhan_id: { in: congHienPersonnelIds } },
       select: {
         quan_nhan_id: true,
@@ -374,7 +378,7 @@ async function handleCongHien(ctx: BulkCreateContext): Promise<void> {
     .map(it => it.personnel_id)
     .filter(Boolean);
   if (hcbvtqPersonnelIds.length > 0) {
-    const existingHCBVTQ = await prisma.khenThuongHCBVTQ.findMany({
+    const existingHCBVTQ = await contributionMedalRepository.findManyRaw({
       where: { quan_nhan_id: { in: hcbvtqPersonnelIds } },
       select: { quan_nhan_id: true, danh_hieu: true },
     });

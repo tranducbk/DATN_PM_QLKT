@@ -1,5 +1,10 @@
 import bcrypt from 'bcrypt';
 import { prisma } from '../models';
+import { quanNhanRepository } from '../repositories/quanNhan.repository';
+import { coQuanDonViRepository, donViTrucThuocRepository } from '../repositories/unit.repository';
+import { accountRepository } from '../repositories/account.repository';
+import { proposalRepository } from '../repositories/proposal.repository';
+import { positionRepository } from '../repositories/position.repository';
 import { DEFAULT_PASSWORD } from '../configs';
 import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
@@ -102,7 +107,7 @@ class AccountService {
     };
 
     const [accounts, total] = await Promise.all([
-      prisma.taiKhoan.findMany({
+      accountRepository.findManyRaw({
         skip,
         take: limitNum,
         where: whereClause,
@@ -111,7 +116,7 @@ class AccountService {
           createdAt: 'desc',
         },
       }),
-      prisma.taiKhoan.count({ where: whereClause }),
+      accountRepository.count(whereClause),
     ]);
 
     const formattedAccounts: FormattedAccount[] = accounts.map(account => {
@@ -142,7 +147,7 @@ class AccountService {
   }
 
   async getAccountById(id: string): Promise<Record<string, unknown>> {
-    const account = await prisma.taiKhoan.findUnique({
+    const account = await accountRepository.findUniqueRaw({
       where: { id },
       include: ACCOUNT_QUAN_NHAN_INCLUDE,
     });
@@ -218,7 +223,7 @@ class AccountService {
       chuc_vu_id,
     } = data;
 
-    const existingAccount = await prisma.taiKhoan.findUnique({
+    const existingAccount = await accountRepository.findUniqueRaw({
       where: { username },
       select: { id: true },
     });
@@ -233,8 +238,8 @@ class AccountService {
 
     if (personnel_id) {
       const [personnel, existingPersonnelAccount] = await Promise.all([
-        prisma.quanNhan.findUnique({ where: { id: personnel_id }, select: { id: true } }),
-        prisma.taiKhoan.findUnique({ where: { quan_nhan_id: personnel_id }, select: { id: true } }),
+        quanNhanRepository.findIdById(personnel_id),
+        accountRepository.findUniqueRaw({ where: { quan_nhan_id: personnel_id }, select: { id: true } }),
       ]);
 
       if (!personnel) {
@@ -271,13 +276,10 @@ class AccountService {
 
       const [coQuanDonVi, donViTrucThuoc] = await Promise.all([
         co_quan_don_vi_id
-          ? prisma.coQuanDonVi.findUnique({ where: { id: co_quan_don_vi_id }, select: { id: true } })
+          ? coQuanDonViRepository.findIdById(co_quan_don_vi_id)
           : null,
         don_vi_truc_thuoc_id
-          ? prisma.donViTrucThuoc.findUnique({
-              where: { id: don_vi_truc_thuoc_id },
-              select: { id: true, co_quan_don_vi_id: true },
-            })
+          ? donViTrucThuocRepository.findIdAndParentById(don_vi_truc_thuoc_id)
           : null,
       ]);
 
@@ -293,7 +295,7 @@ class AccountService {
         }
       }
 
-      const chucVu = await prisma.chucVu.findUnique({
+      const chucVu = await positionRepository.findUniqueRaw({
         where: { id: chuc_vu_id },
         select: { he_so_chuc_vu: true, is_manager: true },
       });
@@ -359,15 +361,9 @@ class AccountService {
 
         // DVTT takes priority — only increment CQDV when no DVTT (avoid double-counting)
         if (don_vi_truc_thuoc_id) {
-          await prismaTx.donViTrucThuoc.update({
-            where: { id: don_vi_truc_thuoc_id },
-            data: { so_luong: { increment: 1 } },
-          });
+          await donViTrucThuocRepository.incrementSoLuong(don_vi_truc_thuoc_id, prismaTx);
         } else if (co_quan_don_vi_id) {
-          await prismaTx.coQuanDonVi.update({
-            where: { id: co_quan_don_vi_id },
-            data: { so_luong: { increment: 1 } },
-          });
+          await coQuanDonViRepository.incrementSoLuong(co_quan_don_vi_id, prismaTx);
         }
       }
 
@@ -398,7 +394,7 @@ class AccountService {
   async updateAccount(id: string, data: UpdateAccountData): Promise<FormattedAccount> {
     const { role, password } = data;
 
-    const account = await prisma.taiKhoan.findUnique({
+    const account = await accountRepository.findUniqueRaw({
       where: { id },
       select: { id: true },
     });
@@ -419,7 +415,7 @@ class AccountService {
       updateData.password_hash = hashedPassword;
     }
 
-    const updatedAccount = await prisma.taiKhoan.update({
+    const updatedAccount = await accountRepository.updateRaw({
       where: { id },
       data: updateData,
       include: ACCOUNT_QUAN_NHAN_INCLUDE,
@@ -439,7 +435,7 @@ class AccountService {
   }
 
   async resetPassword(accountId: string): Promise<{ message: string }> {
-    const account = await prisma.taiKhoan.findUnique({
+    const account = await accountRepository.findUniqueRaw({
       where: { id: accountId },
       select: { id: true },
     });
@@ -454,10 +450,7 @@ class AccountService {
     }
     const hashedPassword = await bcrypt.hash(defaultPassword, 10);
 
-    await prisma.taiKhoan.update({
-      where: { id: accountId },
-      data: { password_hash: hashedPassword },
-    });
+    await accountRepository.update(accountId, { password_hash: hashedPassword });
 
     return { message: 'Đặt lại mật khẩu thành công. Mật khẩu mới là mật khẩu mặc định' };
   }
@@ -466,7 +459,7 @@ class AccountService {
     id: string,
     forceDelete: boolean = false
   ): Promise<{ message: string; deletedProposals?: number }> {
-    const account = await prisma.taiKhoan.findUnique({
+    const account = await accountRepository.findUniqueRaw({
       where: { id },
       include: {
         QuanNhan: true,
@@ -482,7 +475,7 @@ class AccountService {
     }
 
     if (!account.QuanNhan) {
-      await prisma.taiKhoan.delete({ where: { id } });
+      await accountRepository.delete(id);
       return { message: 'Xóa tài khoản thành công' };
     }
 
@@ -494,7 +487,7 @@ class AccountService {
     const isCoQuanDonVi =
       !account.QuanNhan.don_vi_truc_thuoc_id && !!account.QuanNhan.co_quan_don_vi_id;
 
-    const proposals = await prisma.bangDeXuat.findMany({
+    const proposals = await proposalRepository.findManyRaw({
       where: {
         OR: [
           {
@@ -577,22 +570,14 @@ class AccountService {
         where: { id },
       });
 
-      await prismaTx.quanNhan.delete({
-        where: { id: personnelId },
-      });
+      await quanNhanRepository.delete(personnelId, prismaTx);
 
       if (unitId) {
         try {
           if (isCoQuanDonVi) {
-            await prismaTx.coQuanDonVi.update({
-              where: { id: unitId },
-              data: { so_luong: { decrement: 1 } },
-            });
+            await coQuanDonViRepository.decrementSoLuong(unitId, prismaTx);
           } else {
-            await prismaTx.donViTrucThuoc.update({
-              where: { id: unitId },
-              data: { so_luong: { decrement: 1 } },
-            });
+            await donViTrucThuocRepository.decrementSoLuong(unitId, prismaTx);
           }
         } catch (error: unknown) {
           throw new AppError(

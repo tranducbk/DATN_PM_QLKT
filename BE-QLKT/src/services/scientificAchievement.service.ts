@@ -1,4 +1,7 @@
 import { prisma } from '../models';
+import { quanNhanRepository } from '../repositories/quanNhan.repository';
+import { scientificAchievementRepository } from '../repositories/scientificAchievement.repository';
+import { decisionFileRepository } from '../repositories/decisionFile.repository';
 import ExcelJS from 'exceljs';
 import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excel/excelImportHelper';
 import profileService from './profile.service';
@@ -87,15 +90,13 @@ class ScientificAchievementService {
       throw new ValidationError('Personnel ID is required');
     }
 
-    const personnel = await prisma.quanNhan.findUnique({
-      where: { id: personnelId },
-    });
+    const personnel = await quanNhanRepository.findIdById(personnelId);
 
     if (!personnel) {
       throw new NotFoundError('Quân nhân');
     }
 
-    const achievements = await prisma.thanhTichKhoaHoc.findMany({
+    const achievements = await scientificAchievementRepository.findManyRaw({
       where: { quan_nhan_id: personnelId },
       orderBy: { nam: 'desc' },
     });
@@ -106,9 +107,7 @@ class ScientificAchievementService {
   async createAchievement(data: CreateAchievementData) {
     const { personnel_id, nam, loai, mo_ta, cap_bac, chuc_vu, so_quyet_dinh, ghi_chu } = data;
 
-    const personnel = await prisma.quanNhan.findUnique({
-      where: { id: personnel_id },
-    });
+    const personnel = await quanNhanRepository.findIdById(personnel_id);
 
     if (!personnel) {
       throw new NotFoundError('Quân nhân');
@@ -119,17 +118,15 @@ class ScientificAchievementService {
       throw new ValidationError('Loại thành tích không hợp lệ. Chỉ chấp nhận: ' + Object.values(DANH_HIEU_NCKH).join(', '));
     }
 
-    const newAchievement = await prisma.thanhTichKhoaHoc.create({
-      data: {
-        quan_nhan_id: personnel_id,
-        nam,
-        loai: loaiCode,
-        mo_ta,
-        cap_bac: cap_bac || null,
-        chuc_vu: chuc_vu || null,
-        so_quyet_dinh: so_quyet_dinh || null,
-        ghi_chu: ghi_chu || null,
-      },
+    const newAchievement = await scientificAchievementRepository.create({
+      quan_nhan_id: personnel_id,
+      nam,
+      loai: loaiCode,
+      mo_ta,
+      cap_bac: cap_bac || null,
+      chuc_vu: chuc_vu || null,
+      so_quyet_dinh: so_quyet_dinh || null,
+      ghi_chu: ghi_chu || null,
     });
 
     try {
@@ -144,7 +141,7 @@ class ScientificAchievementService {
   async updateAchievement(id: string, data: UpdateAchievementData) {
     const { nam, loai, mo_ta, cap_bac, chuc_vu, ghi_chu } = data;
 
-    const achievement = await prisma.thanhTichKhoaHoc.findUnique({
+    const achievement = await scientificAchievementRepository.findUniqueRaw({
       where: { id },
     });
 
@@ -168,10 +165,7 @@ class ScientificAchievementService {
     if (chuc_vu !== undefined) updateData.chuc_vu = chuc_vu;
     if (ghi_chu !== undefined) updateData.ghi_chu = ghi_chu;
 
-    const updatedAchievement = await prisma.thanhTichKhoaHoc.update({
-      where: { id },
-      data: updateData,
-    });
+    const updatedAchievement = await scientificAchievementRepository.update(id, updateData);
 
     try {
       await profileService.recalculateAnnualProfile(achievement.quan_nhan_id);
@@ -183,7 +177,7 @@ class ScientificAchievementService {
   }
 
   async deleteAchievement(id: string, adminUsername = 'Admin') {
-    const achievement = await prisma.thanhTichKhoaHoc.findUnique({
+    const achievement = await scientificAchievementRepository.findUniqueRaw({
       where: { id },
       include: {
         QuanNhan: true,
@@ -197,9 +191,7 @@ class ScientificAchievementService {
     const personnelId = achievement.quan_nhan_id;
     const personnel = achievement.QuanNhan;
 
-    await prisma.thanhTichKhoaHoc.delete({
-      where: { id },
-    });
+    await scientificAchievementRepository.delete(id);
 
     try {
       await profileService.recalculateAnnualProfile(personnelId);
@@ -236,7 +228,7 @@ class ScientificAchievementService {
       };
     }
 
-    const achievements = await prisma.thanhTichKhoaHoc.findMany({
+    const achievements = await scientificAchievementRepository.findManyRaw({
       where,
       include: {
         QuanNhan: {
@@ -336,18 +328,18 @@ class ScientificAchievementService {
 
     const [personnelList, existingAchievementsList, existingDecisions] = await Promise.all([
       allPersonnelIds.size > 0
-        ? prisma.quanNhan.findMany({
+        ? quanNhanRepository.findManyRaw({
             where: { id: { in: [...allPersonnelIds] } },
             select: { id: true, ho_ten: true, cap_bac: true, ChucVu: { select: { ten_chuc_vu: true } } },
           })
         : Promise.resolve([]),
       allPersonnelIds.size > 0
-        ? prisma.thanhTichKhoaHoc.findMany({
+        ? scientificAchievementRepository.findManyRaw({
             where: { quan_nhan_id: { in: [...allPersonnelIds] } },
             select: { quan_nhan_id: true, nam: true, loai: true, mo_ta: true, so_quyet_dinh: true },
           })
         : Promise.resolve([]),
-      prisma.fileQuyetDinh.findMany({
+      decisionFileRepository.findManyRaw({
         select: { so_quyet_dinh: true },
       }),
     ]);
@@ -560,8 +552,8 @@ class ScientificAchievementService {
       async prismaTx => {
         const results = [];
         for (const item of validItems) {
-          const result = await prismaTx.thanhTichKhoaHoc.create({
-            data: {
+          const result = await scientificAchievementRepository.create(
+            {
               quan_nhan_id: item.personnel_id,
               nam: item.nam,
               loai: resolveNckhCode(item.loai) ?? item.loai,
@@ -571,7 +563,8 @@ class ScientificAchievementService {
               so_quyet_dinh: item.so_quyet_dinh ?? null,
               ghi_chu: item.ghi_chu ?? null,
             },
-          });
+            prismaTx
+          );
           results.push(result);
         }
         return { imported: results.length, data: results };
@@ -599,14 +592,14 @@ class ScientificAchievementService {
     if (quanNhanWhere) where.QuanNhan = quanNhanWhere;
 
     const [achievements, total] = await Promise.all([
-      prisma.thanhTichKhoaHoc.findMany({
+      scientificAchievementRepository.findManyRaw({
         where,
         include: { QuanNhan: { include: { CoQuanDonVi: true, DonViTrucThuoc: true, ChucVu: true } } },
         orderBy: [{ nam: 'desc' }, { createdAt: 'desc' }],
         skip: (page - 1) * limit,
         take: limit,
       }),
-      prisma.thanhTichKhoaHoc.count({ where }),
+      scientificAchievementRepository.count(where),
     ]);
 
     return { achievements, total };

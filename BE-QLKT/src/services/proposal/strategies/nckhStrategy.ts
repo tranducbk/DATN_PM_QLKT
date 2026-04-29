@@ -1,4 +1,6 @@
 import { prisma } from '../../../models';
+import { quanNhanRepository } from '../../../repositories/quanNhan.repository';
+import { scientificAchievementRepository } from '../../../repositories/scientificAchievement.repository';
 import { PROPOSAL_TYPES } from '../../../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../../../constants/proposalStatus.constants';
 import { resolveNckhCode } from '../../../constants/danhHieu.constants';
@@ -39,7 +41,7 @@ interface NckhPersonnelRow {
 
 async function loadPersonnelMap(personnelIds: string[]): Promise<Map<string, NckhPersonnelRow>> {
   if (personnelIds.length === 0) return new Map();
-  const rows = await prisma.quanNhan.findMany({
+  const rows = await quanNhanRepository.findManyRaw({
     where: { id: { in: personnelIds } },
     select: {
       id: true,
@@ -124,7 +126,7 @@ class NckhStrategy implements ProposalStrategy {
     if (validItems.length === 0) return [];
 
     const personnelIds = [...new Set(validItems.map(i => i.personnel_id as string))];
-    const existing = await prisma.thanhTichKhoaHoc.findMany({
+    const existing = await scientificAchievementRepository.findManyRaw({
       where: { quan_nhan_id: { in: personnelIds } },
       select: { quan_nhan_id: true, nam: true, mo_ta: true },
     });
@@ -166,7 +168,10 @@ class NckhStrategy implements ProposalStrategy {
           acc.errors.push('Thiếu thông tin quân nhân khi lưu thành tích khoa học.');
           continue;
         }
-        const quanNhan = await prismaTx.quanNhan.findUnique({ where: { id: item.personnel_id } });
+        const quanNhan = await quanNhanRepository.findUniqueRaw(
+          { where: { id: item.personnel_id }, select: { id: true, ho_ten: true } },
+          prismaTx
+        );
         if (!quanNhan) {
           acc.errors.push(
             'Không tìm thấy thông tin quân nhân khi lưu thành tích khoa học. ' +

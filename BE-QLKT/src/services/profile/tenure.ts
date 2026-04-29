@@ -1,7 +1,9 @@
 import type {
   HoSoNienHan,
 } from '../../generated/prisma';
-import { prisma } from '../../models';
+import { quanNhanRepository } from '../../repositories/quanNhan.repository';
+import { tenureMedalRepository } from '../../repositories/tenureMedal.repository';
+import { tenureProfileRepository } from '../../repositories/tenureProfile.repository';
 import { ELIGIBILITY_STATUS } from '../../constants/eligibilityStatus.constants';
 import { formatServiceDuration } from '../../helpers/serviceYearsHelper';
 import { NotFoundError } from '../../middlewares/errorHandler';
@@ -25,13 +27,13 @@ export async function getTenureProfile(personnelId: string) {
     },
   };
 
-  let profile = await prisma.hoSoNienHan.findUnique({
+  let profile = await tenureProfileRepository.findUniqueRaw({
     where: { quan_nhan_id: personnelId },
     include: includeQuanNhan,
   });
 
   if (!profile) {
-    profile = await prisma.hoSoNienHan.create({
+    profile = await tenureProfileRepository.createRaw({
       data: {
         quan_nhan_id: personnelId,
         hccsvv_hang_ba_status: ELIGIBILITY_STATUS.CHUA_DU,
@@ -122,19 +124,18 @@ export function calculateHCCSVV(
  * @returns Success message for admin flows
  */
 export async function recalculateTenureProfile(personnelId: string): Promise<{ message: string }> {
-  const personnel = await prisma.quanNhan.findUnique({
+  const personnel = await quanNhanRepository.findUniqueRaw({
     where: { id: personnelId },
+    select: { id: true, ngay_nhap_ngu: true },
   });
 
     if (!personnel) {
       throw new NotFoundError('Quân nhân');
     }
 
-    const existingProfile = await prisma.hoSoNienHan.findUnique({
-      where: { quan_nhan_id: personnelId },
-    });
+    const existingProfile = await tenureProfileRepository.findByPersonnelId(personnelId);
 
-    const khenthuonghccsvv = await prisma.khenThuongHCCSVV.findMany({
+    const khenthuonghccsvv = await tenureMedalRepository.findManyRaw({
       where: { quan_nhan_id: personnelId },
     });
 
@@ -237,11 +238,11 @@ export async function recalculateTenureProfile(personnelId: string): Promise<{ m
       goi_y: finalGoiY,
     };
 
-    await prisma.hoSoNienHan.upsert({
-      where: { quan_nhan_id: personnelId },
-      update: tenureData,
-      create: { quan_nhan_id: personnelId, ...tenureData },
-    });
+    await tenureProfileRepository.upsert(
+      personnelId,
+      { quan_nhan_id: personnelId, ...tenureData },
+      tenureData
+    );
   return { message: 'Tính toán lại hồ sơ Huy chương Chiến sĩ vẻ vang thành công' };
 }
 
@@ -250,7 +251,7 @@ export async function recalculateTenureProfile(personnelId: string): Promise<{ m
  * @returns All `ho_so_nien_han` rows with relations
  */
 export async function getAllTenureProfiles(): Promise<HoSoNienHan[]> {
-  const profiles = await prisma.hoSoNienHan.findMany({
+  const profiles = await tenureProfileRepository.findManyRaw({
     include: {
       QuanNhan: {
         include: {
@@ -279,9 +280,7 @@ export async function getAllTenureProfiles(): Promise<HoSoNienHan[]> {
  * @returns Updated `ho_so_nien_han` row (status columns only; no relation includes)
  */
 export async function updateTenureProfile(personnelId: string, updates: TenureProfileUpdate): Promise<HoSoNienHan> {
-  const profile = await prisma.hoSoNienHan.findUnique({
-    where: { quan_nhan_id: personnelId },
-  });
+  const profile = await tenureProfileRepository.findByPersonnelId(personnelId);
 
   if (!profile) {
     throw new NotFoundError('Hồ sơ Huy chương Chiến sĩ vẻ vang');
@@ -320,7 +319,7 @@ export async function updateTenureProfile(personnelId: string, updates: TenurePr
     updateData.hcbvtq_hang_nhat_status = updates.hcbvtq_hang_nhat_status;
   }
 
-  const updatedProfile = await prisma.hoSoNienHan.update({
+  const updatedProfile = await tenureProfileRepository.updateRaw({
     where: { quan_nhan_id: personnelId },
     data: updateData,
   });

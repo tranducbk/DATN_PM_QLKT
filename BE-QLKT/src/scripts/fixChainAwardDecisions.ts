@@ -3,13 +3,15 @@
  * Run: npx tsx src/scripts/fixChainAwardDecisions.ts
  */
 import { prisma } from '../models';
+import { danhHieuHangNamRepository, danhHieuDonViHangNamRepository } from '../repositories/danhHieu.repository';
+import { quanNhanRepository } from '../repositories/quanNhan.repository';
 import profileService from '../services/profile.service';
 
 async function main() {
   console.log('=== Fix chain award decisions ===\n');
 
   // 1. Fix DanhHieuHangNam: so_quyet_dinh in wrong field
-  const wrongRecords = await prisma.danhHieuHangNam.findMany({
+  const wrongRecords = await danhHieuHangNamRepository.findMany({
     where: {
       danh_hieu: null,
       OR: [
@@ -35,7 +37,7 @@ async function main() {
       updates.so_quyet_dinh_bkttcp = record.so_quyet_dinh;
     }
 
-    await prisma.danhHieuHangNam.update({
+    await danhHieuHangNamRepository.updateRaw({
       where: { id: record.id },
       data: updates,
     });
@@ -44,7 +46,7 @@ async function main() {
   }
 
   // 2. Fix DanhHieuDonViHangNam: same issue
-  const wrongUnitRecords = await prisma.danhHieuDonViHangNam.findMany({
+  const wrongUnitRecords = await danhHieuDonViHangNamRepository.findMany({
     where: {
       danh_hieu: null,
       OR: [
@@ -66,7 +68,7 @@ async function main() {
       updates.so_quyet_dinh_bkttcp = record.so_quyet_dinh;
     }
 
-    await prisma.danhHieuDonViHangNam.update({
+    await danhHieuDonViHangNamRepository.updateRaw({
       where: { id: record.id },
       data: updates,
     });
@@ -75,7 +77,9 @@ async function main() {
   }
 
   // 3. Recalculate all annual profiles
-  const allPersonnel = await prisma.quanNhan.findMany({ select: { id: true, ho_ten: true } });
+  const allPersonnel = await quanNhanRepository.findManyRaw({
+    select: { id: true, ho_ten: true },
+  });
   console.log(`\nRecalculating ${allPersonnel.length} profiles...\n`);
 
   let success = 0;

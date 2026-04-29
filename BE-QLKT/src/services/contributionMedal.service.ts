@@ -1,4 +1,11 @@
 import { prisma } from '../models';
+import { quanNhanRepository } from '../repositories/quanNhan.repository';
+import { donViTrucThuocRepository } from '../repositories/unit.repository';
+import { contributionMedalRepository } from '../repositories/contributionMedal.repository';
+import { positionHistoryRepository } from '../repositories/positionHistory.repository';
+import { decisionFileRepository } from '../repositories/decisionFile.repository';
+import { proposalRepository } from '../repositories/proposal.repository';
+import { accountRepository } from '../repositories/account.repository';
 import ExcelJS from 'exceljs';
 import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excel/excelImportHelper';
 import profileService from './profile.service';
@@ -108,26 +115,26 @@ class ContributionAwardService {
     const [personnelList, existingAwardsList, allPositionHistories, existingDecisions, pendingProposals] =
       await Promise.all([
         allPersonnelIds.size > 0
-          ? prisma.quanNhan.findMany({
+          ? quanNhanRepository.findManyRaw({
               where: { id: { in: [...allPersonnelIds] } },
               select: { id: true, ho_ten: true, gioi_tinh: true, cap_bac: true, ChucVu: { select: { ten_chuc_vu: true } } },
             })
           : Promise.resolve([]),
         allPersonnelIds.size > 0
-          ? prisma.khenThuongHCBVTQ.findMany({
+          ? contributionMedalRepository.findManyRaw({
               where: { quan_nhan_id: { in: [...allPersonnelIds] } },
             })
           : Promise.resolve([]),
         allPersonnelIds.size > 0
-          ? prisma.lichSuChucVu.findMany({
+          ? positionHistoryRepository.findManyRaw({
               where: { quan_nhan_id: { in: [...allPersonnelIds] } },
               include: { ChucVu: { select: { he_so_chuc_vu: true } } },
             })
           : Promise.resolve([]),
-        prisma.fileQuyetDinh.findMany({
+        decisionFileRepository.findManyRaw({
           select: { so_quyet_dinh: true },
         }),
-        prisma.bangDeXuat.findMany({
+        proposalRepository.findManyRaw({
           where: { loai_de_xuat: PROPOSAL_TYPES.CONG_HIEN, status: PROPOSAL_STATUS.PENDING },
         }),
       ]);
@@ -436,10 +443,10 @@ class ContributionAwardService {
 
     // Parallel: check pending proposals + existing records
     const [pendingProposals, existingRecords] = await Promise.all([
-      prisma.bangDeXuat.findMany({
+      proposalRepository.findManyRaw({
         where: { loai_de_xuat: PROPOSAL_TYPES.CONG_HIEN, status: PROPOSAL_STATUS.PENDING },
       }),
-      prisma.khenThuongHCBVTQ.findMany({
+      contributionMedalRepository.findManyRaw({
         where: { quan_nhan_id: { in: personnelIds } },
         select: { quan_nhan_id: true, danh_hieu: true },
       }),
@@ -475,11 +482,11 @@ class ContributionAwardService {
     }
 
     const [personnelInfos, positionRows] = await Promise.all([
-      prisma.quanNhan.findMany({
+      quanNhanRepository.findManyRaw({
         where: { id: { in: personnelIds } },
         select: { id: true, gioi_tinh: true },
       }),
-      prisma.lichSuChucVu.findMany({
+      positionHistoryRepository.findManyRaw({
         where: { quan_nhan_id: { in: personnelIds } },
         include: { ChucVu: { select: { he_so_chuc_vu: true } } },
       }),
@@ -570,10 +577,9 @@ class ContributionAwardService {
     if (filters.don_vi_id) {
       if (filters.include_sub_units) {
         // include_sub_units: expand filter to all DVTT under the parent unit
-        const donViTrucThuocIds = await prisma.donViTrucThuoc.findMany({
-          where: { co_quan_don_vi_id: filters.don_vi_id },
-          select: { id: true },
-        });
+        const donViTrucThuocIds = await donViTrucThuocRepository.findIdsByCoQuanDonViId(
+          String(filters.don_vi_id)
+        );
         const donViTrucThuocIdList = donViTrucThuocIds.map(d => d.id);
         where.QuanNhan = {
           ...quanNhanFilter,
@@ -604,7 +610,7 @@ class ContributionAwardService {
     }
 
     const [data, total] = await Promise.all([
-      prisma.khenThuongHCBVTQ.findMany({
+      contributionMedalRepository.findManyRaw({
         where,
         include: {
           QuanNhan: {
@@ -623,7 +629,7 @@ class ContributionAwardService {
         take: limit,
         orderBy: { nam: 'desc' },
       }),
-      prisma.khenThuongHCBVTQ.count({ where }),
+      contributionMedalRepository.count(where),
     ]);
 
     return {
@@ -700,18 +706,10 @@ class ContributionAwardService {
    * Get Contribution Awards statistics
    */
   async getStatistics() {
-    const byRank = await prisma.khenThuongHCBVTQ.groupBy({
-      by: ['danh_hieu'],
-      _count: { id: true },
-    });
+    const byRank = await contributionMedalRepository.groupByDanhHieu();
+    const byYear = await contributionMedalRepository.groupByYear();
 
-    const byYear = await prisma.khenThuongHCBVTQ.groupBy({
-      by: ['nam'],
-      _count: { id: true },
-      orderBy: { nam: 'desc' },
-    });
-
-    const total = await prisma.khenThuongHCBVTQ.count();
+    const total = await contributionMedalRepository.count({});
 
     return {
       total,
@@ -724,7 +722,7 @@ class ContributionAwardService {
    * Get user with unit info (helper method)
    */
   async getUserWithUnit(userId: string) {
-    return await prisma.taiKhoan.findUnique({
+    return await accountRepository.findUniqueRaw({
       where: { id: userId },
       include: {
         QuanNhan: {
@@ -744,7 +742,7 @@ class ContributionAwardService {
    * @returns {Promise<Object>}
    */
   async deleteAward(id: string, adminUsername: string = 'Admin') {
-    const award = await prisma.khenThuongHCBVTQ.findUnique({
+    const award = await contributionMedalRepository.findUniqueRaw({
       where: { id },
       include: {
         QuanNhan: true,
@@ -759,9 +757,7 @@ class ContributionAwardService {
     const personnel = award.QuanNhan;
 
     // Delete award only, proposals are kept for audit trail
-    await prisma.khenThuongHCBVTQ.delete({
-      where: { id },
-    });
+    await contributionMedalRepository.delete(id);
 
     try {
       await profileService.recalculateContributionProfile(personnelId);

@@ -1,4 +1,8 @@
 import { prisma } from '../../models';
+import { danhHieuHangNamRepository } from '../../repositories/danhHieu.repository';
+import { quanNhanRepository } from '../../repositories/quanNhan.repository';
+import { proposalRepository } from '../../repositories/proposal.repository';
+import { decisionFileRepository } from '../../repositories/decisionFile.repository';
 import { safeRecalculateAnnualProfile } from '../../helpers/profileRecalcHelper';
 import {
   parseAnnualRewardImport,
@@ -38,11 +42,11 @@ async function resolveAnnualRewardImportContext(buffer: Buffer): Promise<AnnualR
   const parsed = await parseAnnualRewardImport(buffer);
 
   const [personnelList, existingRewards] = await Promise.all([
-    prisma.quanNhan.findMany({
+    quanNhanRepository.findManyRaw({
       where: { id: { in: parsed.personnelIds } },
       include: { ChucVu: { select: { ten_chuc_vu: true } } },
     }),
-    prisma.danhHieuHangNam.findMany({
+    danhHieuHangNamRepository.findMany({
       where: { quan_nhan_id: { in: parsed.personnelIds } },
     }),
   ]);
@@ -68,7 +72,7 @@ export async function importFromExcelBuffer(buffer: Buffer): Promise<ImportResul
   } = columns;
   const { personnelMap: personnelById, existingAwardKeys, existingRewardByKey } = batchMaps;
 
-  const pendingProposals = await prisma.bangDeXuat.findMany({
+  const pendingProposals = await proposalRepository.findManyRaw({
     where: {
       loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: { in: [...allYears] },
@@ -238,7 +242,7 @@ export async function importFromExcelBuffer(buffer: Buffer): Promise<ImportResul
         const existing = existingRewardByKey.get(`${personnel.id}_${nam}`) ?? null;
 
         if (!existing) {
-          const createdReward = await prismaTx.danhHieuHangNam.create({
+          const createdReward = await danhHieuHangNamRepository.createRaw({
             data: {
               quan_nhan_id: personnel.id,
               nam,
@@ -250,10 +254,10 @@ export async function importFromExcelBuffer(buffer: Buffer): Promise<ImportResul
               nhan_cstdtq: nhan_cstdtq || false,
               nhan_bkttcp: nhan_bkttcp || false,
             },
-          });
+          }, prismaTx);
           txCreated.push(createdReward.id);
         } else {
-          await prismaTx.danhHieuHangNam.update({
+          await danhHieuHangNamRepository.updateRaw({
             where: { id: existing.id },
             data: {
               danh_hieu,
@@ -264,7 +268,7 @@ export async function importFromExcelBuffer(buffer: Buffer): Promise<ImportResul
               nhan_cstdtq: nhan_cstdtq || existing.nhan_cstdtq,
               nhan_bkttcp: nhan_bkttcp || existing.nhan_bkttcp,
             },
-          });
+          }, prismaTx);
           txUpdated.push(existing.id);
         }
 
@@ -333,14 +337,14 @@ export async function previewImport(buffer: Buffer): Promise<PreviewResult> {
 
   // Preview checks against PENDING proposals + existing decisions
   const [pendingProposals, existingDecisions] = await Promise.all([
-    prisma.bangDeXuat.findMany({
+    proposalRepository.findManyRaw({
       where: {
         loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
         status: PROPOSAL_STATUS.PENDING,
         nam: { in: [...allYears] },
       },
     }),
-    prisma.fileQuyetDinh.findMany({ select: { so_quyet_dinh: true } }),
+    decisionFileRepository.findManyRaw({ select: { so_quyet_dinh: true } }),
   ]);
 
   const pendingKeys = buildPendingKeys(
@@ -611,21 +615,21 @@ export async function confirmImport(
   const uniqueYears = [...new Set(validItems.map(item => item.nam))];
 
   const [pendingProposals, existingRecords, personnelList] = await Promise.all([
-    prisma.bangDeXuat.findMany({
+    proposalRepository.findManyRaw({
       where: {
         loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
         status: PROPOSAL_STATUS.PENDING,
         nam: { in: uniqueYears },
       },
     }),
-    prisma.danhHieuHangNam.findMany({
+    danhHieuHangNamRepository.findMany({
       where: {
         quan_nhan_id: { in: personnelIds },
         nam: { in: uniqueYears },
       },
       select: { quan_nhan_id: true, nam: true, danh_hieu: true, nhan_bkbqp: true, nhan_cstdtq: true, nhan_bkttcp: true },
     }),
-    prisma.quanNhan.findMany({
+    quanNhanRepository.findManyRaw({
       where: { id: { in: personnelIds } },
       select: { id: true, ho_ten: true },
     }),
@@ -727,7 +731,7 @@ export async function confirmImport(
           }),
         };
 
-        const result = await prismaTx.danhHieuHangNam.upsert({
+        const result = await danhHieuHangNamRepository.upsertRaw({
           where: {
             quan_nhan_id_nam: {
               quan_nhan_id: item.personnel_id,
@@ -744,7 +748,7 @@ export async function confirmImport(
             danh_hieu: finalDanhHieu,
             ...sharedData,
           },
-        });
+        }, prismaTx);
         results.push(result);
       }
       return { imported: results.length, data: results };

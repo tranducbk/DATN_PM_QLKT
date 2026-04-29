@@ -1,5 +1,4 @@
 import {
-  prisma,
   NOTIFICATION_TYPES,
   RESOURCE_TYPES,
   ROLES,
@@ -7,6 +6,8 @@ import {
   formatProposalType,
   getDisplayName,
 } from './helpers';
+import { accountRepository } from '../../repositories/account.repository';
+import { notificationRepository } from '../../repositories/notification.repository';
 
 interface ProposalNotifyInfo {
   id: string;
@@ -19,7 +20,7 @@ async function notifyAdminsOnProposalSubmission(
   proposal: ProposalNotifyInfo,
   submitter: { username: string }
 ): Promise<number> {
-  const admins = await prisma.taiKhoan.findMany({
+  const admins = await accountRepository.findManyRaw({
     where: {
       role: ROLES.ADMIN,
     },
@@ -44,9 +45,7 @@ async function notifyAdminsOnProposalSubmission(
   }));
 
   if (notifications.length > 0) {
-    await prisma.thongBao.createMany({
-      data: notifications,
-    });
+    await notificationRepository.createMany(notifications);
     notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
   }
 
@@ -60,17 +59,15 @@ async function notifyManagerOnProposalApproval(
   if (!proposal.nguoi_de_xuat_id) return null;
   const proposalTypeName = formatProposalType(proposal.loai_de_xuat);
   const approverDisplayName = await getDisplayName(approver.username);
-  const notification = await prisma.thongBao.create({
-    data: {
-      nguoi_nhan_id: proposal.nguoi_de_xuat_id,
-      recipient_role: ROLES.MANAGER,
-      type: NOTIFICATION_TYPES.PROPOSAL_APPROVED,
-      title: 'Đề xuất đã được phê duyệt',
-      message: `${proposalTypeName} của bạn đã được ${approverDisplayName} phê duyệt`,
-      resource: RESOURCE_TYPES.PROPOSALS,
-      tai_nguyen_id: proposal.id,
-      link: `/manager/proposals/${proposal.id}`,
-    },
+  const notification = await notificationRepository.create({
+    nguoi_nhan_id: proposal.nguoi_de_xuat_id,
+    recipient_role: ROLES.MANAGER,
+    type: NOTIFICATION_TYPES.PROPOSAL_APPROVED,
+    title: 'Đề xuất đã được phê duyệt',
+    message: `${proposalTypeName} của bạn đã được ${approverDisplayName} phê duyệt`,
+    resource: RESOURCE_TYPES.PROPOSALS,
+    tai_nguyen_id: proposal.id,
+    link: `/manager/proposals/${proposal.id}`,
   });
 
   if (notification.nguoi_nhan_id) {
@@ -87,17 +84,15 @@ async function notifyManagerOnProposalRejection(
   if (!proposal.nguoi_de_xuat_id) return null;
   const proposalTypeName = formatProposalType(proposal.loai_de_xuat);
   const rejectorDisplayName = await getDisplayName(rejector.username);
-  const notification = await prisma.thongBao.create({
-    data: {
-      nguoi_nhan_id: proposal.nguoi_de_xuat_id,
-      recipient_role: ROLES.MANAGER,
-      type: NOTIFICATION_TYPES.PROPOSAL_REJECTED,
-      title: 'Đề xuất bị từ chối',
-      message: `${proposalTypeName} của bạn đã bị ${rejectorDisplayName} từ chối. Lý do: ${reason || 'Không có lý do cụ thể'}`,
-      resource: RESOURCE_TYPES.PROPOSALS,
-      tai_nguyen_id: proposal.id,
-      link: `/manager/proposals/${proposal.id}`,
-    },
+  const notification = await notificationRepository.create({
+    nguoi_nhan_id: proposal.nguoi_de_xuat_id,
+    recipient_role: ROLES.MANAGER,
+    type: NOTIFICATION_TYPES.PROPOSAL_REJECTED,
+    title: 'Đề xuất bị từ chối',
+    message: `${proposalTypeName} của bạn đã bị ${rejectorDisplayName} từ chối. Lý do: ${reason || 'Không có lý do cụ thể'}`,
+    resource: RESOURCE_TYPES.PROPOSALS,
+    tai_nguyen_id: proposal.id,
+    link: `/manager/proposals/${proposal.id}`,
   });
 
   if (notification.nguoi_nhan_id) {

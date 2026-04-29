@@ -7,16 +7,15 @@
 
 import 'dotenv/config';
 import bcrypt from 'bcrypt';
-import { PrismaClient } from '../generated/prisma';
 import { ROLES } from '../constants/roles.constants';
-
-const prisma = new PrismaClient();
+import { accountRepository } from '../repositories/account.repository';
+import { prisma } from '../models';
 
 async function initializeSuperAdmin() {
   try {
     console.log('🚀 Starting to initialize SUPER_ADMIN...\n');
 
-    const existingSuperAdmin = await prisma.taiKhoan.findFirst({
+    const existingSuperAdmin = await accountRepository.findFirstRaw({
       where: { role: ROLES.SUPER_ADMIN },
     });
 
@@ -28,7 +27,7 @@ async function initializeSuperAdmin() {
       process.exit(1);
     }
 
-    const existingUser = await prisma.taiKhoan.findFirst({
+    const existingUser = await accountRepository.findFirstRaw({
       where: { username: 'superadmin' },
     });
 
@@ -46,13 +45,11 @@ async function initializeSuperAdmin() {
     const hashedPassword = await bcrypt.hash(defaultPassword, 10);
 
     // No quan_nhan link needed for SUPER_ADMIN
-    const superAdmin = await prisma.taiKhoan.create({
-      data: {
-        username: 'superadmin',
-        password_hash: hashedPassword,
-        role: ROLES.SUPER_ADMIN,
-        quan_nhan_id: null,
-      },
+    const superAdmin = await accountRepository.create({
+      username: 'superadmin',
+      password_hash: hashedPassword,
+      role: ROLES.SUPER_ADMIN,
+      quan_nhan_id: null,
     });
 
     console.log('✅ SUPER_ADMIN initialization successful!\n');

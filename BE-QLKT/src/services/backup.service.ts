@@ -1,6 +1,25 @@
 import fs from 'fs';
 import path from 'path';
 import { prisma } from '../models';
+import { danhHieuHangNamRepository, danhHieuDonViHangNamRepository } from '../repositories/danhHieu.repository';
+import { contributionMedalRepository } from '../repositories/contributionMedal.repository';
+import { tenureMedalRepository } from '../repositories/tenureMedal.repository';
+import { adhocAwardRepository } from '../repositories/adhocAward.repository';
+import { militaryFlagRepository } from '../repositories/militaryFlag.repository';
+import { commemorativeMedalRepository } from '../repositories/commemorativeMedal.repository';
+import { scientificAchievementRepository } from '../repositories/scientificAchievement.repository';
+import { quanNhanRepository } from '../repositories/quanNhan.repository';
+import { coQuanDonViRepository, donViTrucThuocRepository } from '../repositories/unit.repository';
+import { accountRepository } from '../repositories/account.repository';
+import { proposalRepository } from '../repositories/proposal.repository';
+import { decisionFileRepository } from '../repositories/decisionFile.repository';
+import { positionRepository } from '../repositories/position.repository';
+import { positionHistoryRepository } from '../repositories/positionHistory.repository';
+import { tenureProfileRepository } from '../repositories/tenureProfile.repository';
+import { contributionProfileRepository } from '../repositories/contributionProfile.repository';
+import { annualProfileRepository } from '../repositories/annualProfile.repository';
+import { unitAnnualProfileRepository } from '../repositories/unitAnnualProfile.repository';
+import { systemSettingRepository } from '../repositories/systemSetting.repository';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { getSetting, setSetting } from '../helpers/settingsHelper';
@@ -150,12 +169,12 @@ class BackupService {
       fileQuyetDinh,
       systemSettings,
     ] = await Promise.all([
-      prisma.coQuanDonVi.findMany(),
-      prisma.donViTrucThuoc.findMany(),
-      prisma.chucVu.findMany(),
-      prisma.quanNhan.findMany(),
+      coQuanDonViRepository.findManyRaw({}),
+      donViTrucThuocRepository.findManyRaw({}),
+      positionRepository.findManyRaw({}),
+      quanNhanRepository.findManyRaw({}),
       // Exclude password_hash and refreshToken — reset passwords after restore
-      prisma.taiKhoan.findMany({
+      accountRepository.findManyRaw({
         select: {
           id: true,
           quan_nhan_id: true,
@@ -165,22 +184,22 @@ class BackupService {
           updatedAt: true,
         },
       }),
-      prisma.lichSuChucVu.findMany(),
-      prisma.thanhTichKhoaHoc.findMany(),
-      prisma.danhHieuHangNam.findMany(),
-      prisma.khenThuongHCBVTQ.findMany(),
-      prisma.khenThuongHCCSVV.findMany(),
-      prisma.khenThuongDotXuat.findMany(),
-      prisma.huanChuongQuanKyQuyetThang.findMany(),
-      prisma.kyNiemChuongVSNXDQDNDVN.findMany(),
-      prisma.hoSoNienHan.findMany(),
-      prisma.hoSoCongHien.findMany(),
-      prisma.hoSoHangNam.findMany(),
-      prisma.bangDeXuat.findMany(),
-      prisma.danhHieuDonViHangNam.findMany(),
-      prisma.hoSoDonViHangNam.findMany(),
-      prisma.fileQuyetDinh.findMany(),
-      prisma.systemSetting.findMany(),
+      positionHistoryRepository.findManyRaw({}),
+      scientificAchievementRepository.findManyRaw({}),
+      danhHieuHangNamRepository.findMany({}),
+      contributionMedalRepository.findManyRaw({}),
+      tenureMedalRepository.findManyRaw({}),
+      adhocAwardRepository.findManyRaw({}),
+      militaryFlagRepository.findManyRaw({}),
+      commemorativeMedalRepository.findManyRaw({}),
+      tenureProfileRepository.findManyRaw({}),
+      contributionProfileRepository.findManyRaw({}),
+      annualProfileRepository.findManyRaw({}),
+      proposalRepository.findManyRaw({}),
+      danhHieuDonViHangNamRepository.findMany({}),
+      unitAnnualProfileRepository.findManyRaw({}),
+      decisionFileRepository.findManyRaw({}),
+      systemSettingRepository.findManyRaw({}),
     ]);
 
     const allSets = [

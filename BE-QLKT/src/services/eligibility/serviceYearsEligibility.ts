@@ -1,4 +1,4 @@
-import { prisma } from '../../models';
+import { quanNhanRepository } from '../../repositories/quanNhan.repository';
 import {
   HCQKQT_YEARS_REQUIRED,
   KNC_YEARS_REQUIRED_NAM,
@@ -166,7 +166,7 @@ export async function batchEvaluateServiceYears(
   const uniqueIds = Array.from(new Set(personnelIds.filter(Boolean)));
   if (uniqueIds.length === 0) return [];
 
-  const list = await prisma.quanNhan.findMany({
+  const list = await quanNhanRepository.findManyRaw({
     where: { id: { in: uniqueIds } },
     select: {
       id: true,

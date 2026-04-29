@@ -1,11 +1,13 @@
 import {
-  prisma,
   NOTIFICATION_TYPES,
   RESOURCE_TYPES,
   ROLES,
   emitNotificationToUser,
   getDisplayName,
 } from './helpers';
+import { accountRepository } from '../../repositories/account.repository';
+import { notificationRepository } from '../../repositories/notification.repository';
+import { donViTrucThuocRepository } from '../../repositories/unit.repository';
 
 interface PersonnelBasicInfo {
   id: string;
@@ -30,7 +32,7 @@ async function notifyManagerOnPersonnelAdded(
   personnel: PersonnelBasicInfo,
   adminUsername: string
 ): Promise<number> {
-  const managers = await prisma.taiKhoan.findMany({
+  const managers = await accountRepository.findManyRaw({
     where: {
       role: ROLES.MANAGER,
       QuanNhan: {
@@ -60,9 +62,9 @@ async function notifyManagerOnPersonnelAdded(
     link: `/manager/personnel/${personnel.id}`,
   }));
 
-  await prisma.thongBao.createMany({
-    data: notifications,
-  });
+  await notificationRepository.createMany(
+    notifications
+  );
   notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
 
   return notifications.length;
@@ -91,10 +93,7 @@ async function notifyOnPersonnelTransfer(
         return unitInfo.id;
       }
 
-      const donViTrucThuoc = await prisma.donViTrucThuoc.findUnique({
-        where: { id: unitInfo.id },
-        select: { co_quan_don_vi_id: true },
-      });
+      const donViTrucThuoc = await donViTrucThuocRepository.findCoQuanDonViIdById(unitInfo.id);
       return donViTrucThuoc?.co_quan_don_vi_id || null;
     };
 
@@ -105,7 +104,7 @@ async function notifyOnPersonnelTransfer(
       oldCoQuanDonViId && newCoQuanDonViId && oldCoQuanDonViId === newCoQuanDonViId;
 
     if (isSameCoQuanDonVi) {
-      const managers = await prisma.taiKhoan.findMany({
+      const managers = await accountRepository.findManyRaw({
         where: {
           role: ROLES.MANAGER,
           QuanNhan: {
@@ -132,7 +131,7 @@ async function notifyOnPersonnelTransfer(
       });
     } else {
       if (newCoQuanDonViId) {
-        const newUnitManagers = await prisma.taiKhoan.findMany({
+        const newUnitManagers = await accountRepository.findManyRaw({
           where: {
             role: ROLES.MANAGER,
             QuanNhan: {
@@ -160,7 +159,7 @@ async function notifyOnPersonnelTransfer(
       }
 
       if (oldCoQuanDonViId) {
-        const oldUnitManagers = await prisma.taiKhoan.findMany({
+        const oldUnitManagers = await accountRepository.findManyRaw({
           where: {
             role: ROLES.MANAGER,
             QuanNhan: {
@@ -193,7 +192,7 @@ async function notifyOnPersonnelTransfer(
       }
     }
 
-    const personnelAccount = await prisma.taiKhoan.findFirst({
+    const personnelAccount = await accountRepository.findFirstRaw({
       where: {
         quan_nhan_id: personnel.id,
       },
@@ -217,9 +216,7 @@ async function notifyOnPersonnelTransfer(
     }
 
     if (notifications.length > 0) {
-      await prisma.thongBao.createMany({
-        data: notifications,
-      });
+      await notificationRepository.createMany(notifications);
       notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
     }
 

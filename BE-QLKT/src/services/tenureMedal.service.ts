@@ -1,4 +1,10 @@
 import { prisma } from '../models';
+import { quanNhanRepository } from '../repositories/quanNhan.repository';
+import { donViTrucThuocRepository } from '../repositories/unit.repository';
+import { tenureMedalRepository } from '../repositories/tenureMedal.repository';
+import { decisionFileRepository } from '../repositories/decisionFile.repository';
+import { proposalRepository } from '../repositories/proposal.repository';
+import { accountRepository } from '../repositories/account.repository';
 import ExcelJS from 'exceljs';
 import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excel/excelImportHelper';
 
@@ -118,7 +124,7 @@ class HCCSVVService {
     const seenInFile = new Set();
     const currentYear = new Date().getFullYear();
 
-    const existingDecisions = await prisma.fileQuyetDinh.findMany({
+    const existingDecisions = await decisionFileRepository.findManyRaw({
       select: { so_quyet_dinh: true },
     });
     const validDecisionNumbers = new Set(existingDecisions.map(d => d.so_quyet_dinh));
@@ -140,15 +146,15 @@ class HCCSVVService {
     }
 
     const [personnelList, existingHCCSVVRecords, pendingProposals] = await Promise.all([
-      prisma.quanNhan.findMany({
+      quanNhanRepository.findManyRaw({
         where: { id: { in: [...allPersonnelIds] } },
         include: { ChucVu: { select: { ten_chuc_vu: true } } },
       }),
-      prisma.khenThuongHCCSVV.findMany({
+      tenureMedalRepository.findManyRaw({
         where: { quan_nhan_id: { in: [...allPersonnelIds] } },
         select: { quan_nhan_id: true, danh_hieu: true, nam: true, so_quyet_dinh: true },
       }),
-      prisma.bangDeXuat.findMany({
+      proposalRepository.findManyRaw({
         where: {
           loai_de_xuat: PROPOSAL_TYPES.NIEN_HAN,
           status: PROPOSAL_STATUS.PENDING,
@@ -503,10 +509,10 @@ class HCCSVVService {
 
     // Parallel: check pending proposals + existing records
     const [pendingProposals, existingRecords] = await Promise.all([
-      prisma.bangDeXuat.findMany({
+      proposalRepository.findManyRaw({
         where: { loai_de_xuat: PROPOSAL_TYPES.NIEN_HAN, status: PROPOSAL_STATUS.PENDING },
       }),
-      prisma.khenThuongHCCSVV.findMany({
+      tenureMedalRepository.findManyRaw({
         where: { quan_nhan_id: { in: personnelIds } },
         select: { quan_nhan_id: true, danh_hieu: true, nam: true },
       }),
@@ -633,10 +639,9 @@ class HCCSVVService {
     if (filters.don_vi_id) {
       if (filters.include_sub_units) {
         // include_sub_units: expand filter to all DVTT under the parent unit
-        const donViTrucThuocIds = await prisma.donViTrucThuoc.findMany({
-          where: { co_quan_don_vi_id: filters.don_vi_id },
-          select: { id: true },
-        });
+        const donViTrucThuocIds = await donViTrucThuocRepository.findIdsByCoQuanDonViId(
+          String(filters.don_vi_id)
+        );
         const donViTrucThuocIdList = donViTrucThuocIds.map(d => d.id);
         where.QuanNhan = {
           ...quanNhanFilter,
@@ -667,7 +672,7 @@ class HCCSVVService {
     }
 
     const [data, total] = await Promise.all([
-      prisma.khenThuongHCCSVV.findMany({
+      tenureMedalRepository.findManyRaw({
         where,
         include: {
           QuanNhan: {
@@ -685,7 +690,7 @@ class HCCSVVService {
         take: limit,
         orderBy: { nam: 'desc' },
       }),
-      prisma.khenThuongHCCSVV.count({ where }),
+      tenureMedalRepository.count(where),
     ]);
 
     return {
@@ -735,18 +740,10 @@ class HCCSVVService {
    * Get HCCSVV statistics
    */
   async getStatistics() {
-    const byRank = await prisma.khenThuongHCCSVV.groupBy({
-      by: ['danh_hieu'],
-      _count: { id: true },
-    });
+    const byRank = await tenureMedalRepository.groupByDanhHieu();
+    const byYear = await tenureMedalRepository.groupByYear();
 
-    const byYear = await prisma.khenThuongHCCSVV.groupBy({
-      by: ['nam'],
-      _count: { id: true },
-      orderBy: { nam: 'desc' },
-    });
-
-    const total = await prisma.khenThuongHCCSVV.count();
+    const total = await tenureMedalRepository.count({});
 
     return {
       total,
@@ -759,7 +756,7 @@ class HCCSVVService {
    * Get user with unit info (helper method)
    */
   async getUserWithUnit(userId: string) {
-    return await prisma.taiKhoan.findUnique({
+    return await accountRepository.findUniqueRaw({
       where: { id: userId },
       include: {
         QuanNhan: {
@@ -789,9 +786,9 @@ class HCCSVVService {
       );
     }
 
-    // Check if personnel exists
-    const personnel = await prisma.quanNhan.findUnique({
+    const personnel = await quanNhanRepository.findUniqueRaw({
       where: { id: quan_nhan_id },
+      select: { id: true, ho_ten: true, cap_bac: true },
     });
 
     if (!personnel) {
@@ -799,7 +796,7 @@ class HCCSVVService {
     }
 
     // Check if already exists (unique constraint: quan_nhan_id + danh_hieu)
-    const existing = await prisma.khenThuongHCCSVV.findUnique({
+    const existing = await tenureMedalRepository.findUniqueRaw({
       where: {
         quan_nhan_id_danh_hieu: {
           quan_nhan_id: quan_nhan_id,
@@ -812,7 +809,7 @@ class HCCSVVService {
       throw new AppError(`Quân nhân ${personnel.ho_ten} đã có ${getDanhHieuName(danh_hieu)}`, 409);
     }
 
-    const existingRanks = await prisma.khenThuongHCCSVV.findMany({
+    const existingRanks = await tenureMedalRepository.findManyRaw({
       where: { quan_nhan_id: quan_nhan_id },
       select: { danh_hieu: true, nam: true },
     });
@@ -831,7 +828,7 @@ class HCCSVVService {
       so_quyet_dinh: so_quyet_dinh as string,
       ghi_chu: ghi_chu as string,
     };
-    const createdRecord = await prisma.khenThuongHCCSVV.create({
+    const createdRecord = await tenureMedalRepository.createRaw({
       // Phase 1 refactor in progress: createData is missing `thang` (NOT NULL in schema). Loose cast preserves prior runtime behavior; remove once Phase 1 finalizes the shape.
       data: createData as any,
       include: {
@@ -867,7 +864,7 @@ class HCCSVVService {
    * @returns {Promise<Object>}
    */
   async deleteAward(id: string, adminUsername: string = 'Admin') {
-    const award = await prisma.khenThuongHCCSVV.findUnique({
+    const award = await tenureMedalRepository.findUniqueRaw({
       where: { id },
       include: {
         QuanNhan: true,
@@ -882,9 +879,7 @@ class HCCSVVService {
     const personnel = award.QuanNhan;
 
     // Delete award only, proposals are kept for audit trail
-    await prisma.khenThuongHCCSVV.delete({
-      where: { id },
-    });
+    await tenureMedalRepository.delete(id);
 
     try {
       await profileService.recalculateTenureProfile(personnelId);

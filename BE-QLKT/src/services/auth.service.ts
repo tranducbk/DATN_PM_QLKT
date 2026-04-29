@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { prisma } from '../models';
+import { accountRepository } from '../repositories/account.repository';
 import { JWT_SECRET, JWT_REFRESH_SECRET } from '../configs';
 import { AppError, NotFoundError, ValidationError } from '../middlewares/errorHandler';
 import { emitToUser } from '../utils/socketService';
@@ -49,7 +49,7 @@ class AuthService {
   }
 
   async login(username: string, password: string): Promise<LoginResult> {
-    const account = await prisma.taiKhoan.findUnique({
+    const account = await accountRepository.findUniqueRaw({
       where: { username },
       include: {
         QuanNhan: {
@@ -82,9 +82,8 @@ class AuthService {
       message: 'Tài khoản của bạn đã được đăng nhập ở nơi khác.',
     });
 
-    await prisma.taiKhoan.update({
-      where: { id: account.id },
-      data: { refreshToken },
+    await accountRepository.update(account.id, {
+      refreshToken,
     });
 
     const quanNhan = account.QuanNhan;
@@ -117,9 +116,7 @@ class AuthService {
 
       const decoded = jwt.verify(refreshToken, JWT_REFRESH_SECRET) as JwtPayload;
 
-      const account = await prisma.taiKhoan.findUnique({
-        where: { id: decoded.id },
-      });
+      const account = await accountRepository.findById(decoded.id);
 
       if (!account || account.refreshToken !== refreshToken) {
         throw new AppError('Refresh token không hợp lệ', 401);
@@ -128,10 +125,7 @@ class AuthService {
       const newAccessToken = this.generateAccessToken(account);
       const newRefreshToken = this.generateRefreshToken(account);
 
-      await prisma.taiKhoan.update({
-        where: { id: account.id },
-        data: { refreshToken: newRefreshToken },
-      });
+      await accountRepository.update(account.id, { refreshToken: newRefreshToken });
 
       return {
         accessToken: newAccessToken,
@@ -153,10 +147,7 @@ class AuthService {
       throw new AppError('Refresh token không được cung cấp', 401);
     }
 
-    await prisma.taiKhoan.updateMany({
-      where: { refreshToken },
-      data: { refreshToken: null },
-    });
+    await accountRepository.updateMany({ refreshToken }, { refreshToken: null });
 
     return { message: 'Đăng xuất thành công' };
   }
@@ -166,9 +157,7 @@ class AuthService {
     oldPassword: string,
     newPassword: string
   ): Promise<{ message: string }> {
-    const account = await prisma.taiKhoan.findUnique({
-      where: { id: userId },
-    });
+    const account = await accountRepository.findById(userId);
 
     if (!account) {
       throw new NotFoundError('Tài khoản');
@@ -185,12 +174,9 @@ class AuthService {
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    await prisma.taiKhoan.update({
-      where: { id: userId },
-      data: {
-        password_hash: hashedPassword,
-        refreshToken: null,
-      },
+    await accountRepository.update(userId, {
+      password_hash: hashedPassword,
+      refreshToken: null,
     });
 
     return { message: 'Đổi mật khẩu thành công. Vui lòng đăng nhập lại.' };

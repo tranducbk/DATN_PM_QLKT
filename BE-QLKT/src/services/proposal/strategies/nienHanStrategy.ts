@@ -1,4 +1,5 @@
 import { prisma } from '../../../models';
+import { tenureMedalRepository } from '../../../repositories/tenureMedal.repository';
 import { PROPOSAL_TYPES } from '../../../constants/proposalTypes.constants';
 import { DANH_HIEU_HCCSVV } from '../../../constants/danhHieu.constants';
 import { ELIGIBILITY_STATUS } from '../../../constants/eligibilityStatus.constants';
@@ -62,7 +63,7 @@ class NienHanStrategy implements ProposalStrategy {
         .map(i => i.personnel_id)
         .filter((id): id is string => Boolean(id));
       if (evalIds.length > 0) {
-        const existingHCCSVV = await prisma.khenThuongHCCSVV.findMany({
+        const existingHCCSVV = await tenureMedalRepository.findManyRaw({
           where: { quan_nhan_id: { in: evalIds } },
           select: { quan_nhan_id: true, danh_hieu: true, nam: true },
         });

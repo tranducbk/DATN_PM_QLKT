@@ -1,4 +1,4 @@
-import { prisma } from '../../models';
+import { quanNhanRepository } from '../../repositories/quanNhan.repository';
 import { checkDuplicateAward } from '../proposal/validation';
 
 export interface PersonnelDuplicateCheckItem {
@@ -42,7 +42,7 @@ export async function collectPersonnelDuplicateErrors(
   let hoTenMap = options.hoTenMap;
   if (!hoTenMap) {
     const personnelIds = Array.from(new Set(validItems.map(item => item.personnel_id)));
-    const list = await prisma.quanNhan.findMany({
+    const list = await quanNhanRepository.findManyRaw({
       where: { id: { in: personnelIds } },
       select: { id: true, ho_ten: true },
     });

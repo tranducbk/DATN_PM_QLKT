@@ -1,4 +1,9 @@
 import { prisma } from '../../models';
+import { danhHieuDonViHangNamRepository } from '../../repositories/danhHieu.repository';
+import { quanNhanRepository } from '../../repositories/quanNhan.repository';
+import { coQuanDonViRepository, donViTrucThuocRepository } from '../../repositories/unit.repository';
+import { decisionFileRepository } from '../../repositories/decisionFile.repository';
+import type { Prisma } from '../../generated/prisma';
 import ExcelJS from 'exceljs';
 import {
   getDanhHieuName,
@@ -57,7 +62,7 @@ export async function exportTemplate(
     formulae: [UNIT_ANNUAL_DANH_HIEU_VALIDATION_FORMULA],
   };
 
-  const existingDecisions = await prisma.fileQuyetDinh.findMany({
+  const existingDecisions = await decisionFileRepository.findManyRaw({
     where: { loai_khen_thuong: PROPOSAL_TYPES.DON_VI_HANG_NAM },
     select: { so_quyet_dinh: true },
     orderBy: { nam: 'desc' },
@@ -86,10 +91,10 @@ export async function exportTemplate(
   }
 
   if (unitIds && unitIds.length > 0) {
-    const coQuanDonVis = await prisma.coQuanDonVi.findMany({
+    const coQuanDonVis = await coQuanDonViRepository.findManyRaw({
       where: { id: { in: unitIds } },
     });
-    const donViTrucThuocs = await prisma.donViTrucThuoc.findMany({
+    const donViTrucThuocs = await donViTrucThuocRepository.findManyRaw({
       where: { id: { in: unitIds } },
     });
 
@@ -186,10 +191,7 @@ export async function exportToExcel(
   if (danh_hieu) where.danh_hieu = danh_hieu;
 
   if (userRole === ROLES.MANAGER && userQuanNhanId) {
-    const user = await prisma.quanNhan.findUnique({
-      where: { id: userQuanNhanId },
-      select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true },
-    });
+    const user = await quanNhanRepository.findUnitScope(userQuanNhanId);
 
     if (user?.co_quan_don_vi_id) {
       where.co_quan_don_vi_id = user.co_quan_don_vi_id;
@@ -198,7 +200,7 @@ export async function exportToExcel(
     }
   }
 
-  const awards = await prisma.danhHieuDonViHangNam.findMany({
+  const awards = (await danhHieuDonViHangNamRepository.findMany({
     where,
     include: {
       CoQuanDonVi: true,
@@ -206,7 +208,9 @@ export async function exportToExcel(
     },
     orderBy: [{ nam: 'desc' }, { createdAt: 'desc' }],
     take: EXPORT_FETCH_LIMIT,
-  });
+  })) as Prisma.DanhHieuDonViHangNamGetPayload<{
+    include: { CoQuanDonVi: true; DonViTrucThuoc: true };
+  }>[];
 
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet(AWARD_EXCEL_SHEETS.ANNUAL_UNIT);
@@ -248,10 +252,7 @@ export async function getStatistics(
   if (nam) where.nam = nam;
 
   if (userRole === ROLES.MANAGER && userQuanNhanId) {
-    const user = await prisma.quanNhan.findUnique({
-      where: { id: userQuanNhanId },
-      select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true },
-    });
+    const user = await quanNhanRepository.findUnitScope(userQuanNhanId);
 
     if (user?.co_quan_don_vi_id) {
       where.co_quan_don_vi_id = user.co_quan_don_vi_id;
@@ -260,7 +261,7 @@ export async function getStatistics(
     }
   }
 
-  const awards = await prisma.danhHieuDonViHangNam.findMany({
+  const awards = await danhHieuDonViHangNamRepository.findMany({
     where,
   });
 

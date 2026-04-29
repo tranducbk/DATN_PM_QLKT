@@ -3,7 +3,8 @@ import {
   requiresProposalMonth,
   type ProposalType,
 } from '../../constants/proposalTypes.constants';
-import { prisma } from '../../models';
+import { accountRepository } from '../../repositories/account.repository';
+import { proposalRepository } from '../../repositories/proposal.repository';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
@@ -52,7 +53,7 @@ async function submitProposal(
   ghiChu: string | null = null,
   thang: number | null
 ) {
-  const user = await prisma.taiKhoan.findUnique({
+  const user = await accountRepository.findUniqueRaw({
     where: { id: userId },
     include: {
       QuanNhan: {
@@ -170,7 +171,7 @@ async function submitProposal(
       : { co_quan_don_vi_id: null, don_vi_truc_thuoc_id: donViId }),
   } as Prisma.BangDeXuatUncheckedCreateInput;
 
-  const proposal = await prisma.bangDeXuat.create({
+  const proposal = await proposalRepository.createRaw({
     data: proposalData,
     include: {
       CoQuanDonVi: true,

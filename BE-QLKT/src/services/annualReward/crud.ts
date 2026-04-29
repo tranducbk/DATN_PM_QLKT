@@ -1,4 +1,9 @@
 import { prisma } from '../../models';
+import { danhHieuHangNamRepository } from '../../repositories/danhHieu.repository';
+import { quanNhanRepository } from '../../repositories/quanNhan.repository';
+import { militaryFlagRepository } from '../../repositories/militaryFlag.repository';
+import { commemorativeMedalRepository } from '../../repositories/commemorativeMedal.repository';
+import { proposalRepository } from '../../repositories/proposal.repository';
 import * as notificationHelper from '../../helpers/notification';
 import { safeRecalculateAnnualProfile } from '../../helpers/profileRecalcHelper';
 import {
@@ -32,15 +37,13 @@ export async function getAnnualRewards(personnelId: string): Promise<DanhHieuHan
     throw new ValidationError('Thiếu thông tin quân nhân cần tra cứu.');
   }
 
-  const personnel = await prisma.quanNhan.findUnique({
-    where: { id: personnelId },
-  });
+  const personnel = await quanNhanRepository.findById(personnelId);
 
   if (!personnel) {
     throw new NotFoundError('Quân nhân');
   }
 
-  const rewards = await prisma.danhHieuHangNam.findMany({
+  const rewards = await danhHieuHangNamRepository.findMany({
     where: { quan_nhan_id: personnelId },
     orderBy: {
       nam: 'desc',
@@ -66,9 +69,7 @@ export async function createAnnualReward(data: CreateAnnualRewardData): Promise<
     so_quyet_dinh_bkttcp,
   } = data;
 
-  const personnel = await prisma.quanNhan.findUnique({
-    where: { id: personnel_id },
-  });
+  const personnel = await quanNhanRepository.findById(personnel_id);
 
   if (!personnel) {
     throw new NotFoundError('Quân nhân');
@@ -81,7 +82,7 @@ export async function createAnnualReward(data: CreateAnnualRewardData): Promise<
     );
   }
 
-  const existingReward = await prisma.danhHieuHangNam.findFirst({
+  const existingReward = await danhHieuHangNamRepository.findFirst({
     where: { quan_nhan_id: personnel_id, nam },
   });
 
@@ -144,7 +145,7 @@ export async function createAnnualReward(data: CreateAnnualRewardData): Promise<
     if (cap_bac) updateData.cap_bac = cap_bac;
     if (chuc_vu) updateData.chuc_vu = chuc_vu;
 
-    const updated = await prisma.danhHieuHangNam.update({
+    const updated = await danhHieuHangNamRepository.updateRaw({
       where: { id: existingReward.id },
       data: updateData,
     });
@@ -169,7 +170,7 @@ export async function createAnnualReward(data: CreateAnnualRewardData): Promise<
     throw new ValidationError(createDecisionErrors.join('\n'));
   }
 
-  const newReward = await prisma.danhHieuHangNam.create({
+  const newReward = await danhHieuHangNamRepository.createRaw({
     data: {
       quan_nhan_id: personnel_id,
       nam,
@@ -210,7 +211,7 @@ export async function updateAnnualReward(
     so_quyet_dinh_bkttcp,
   } = data;
 
-  const reward = await prisma.danhHieuHangNam.findUnique({
+  const reward = await danhHieuHangNamRepository.findUnique({
     where: { id },
   });
 
@@ -227,7 +228,7 @@ export async function updateAnnualReward(
     }
   }
 
-  const updatedReward = await prisma.danhHieuHangNam.update({
+  const updatedReward = await danhHieuHangNamRepository.updateRaw({
     where: { id },
     data: {
       nam: nam || reward.nam,
@@ -262,7 +263,7 @@ export async function deleteAnnualReward(
   personnel: QuanNhan | null;
   reward: DanhHieuHangNam;
 }> {
-  const reward = await prisma.danhHieuHangNam.findUnique({
+  const reward = (await danhHieuHangNamRepository.findUnique({
     where: { id },
     include: {
       QuanNhan: {
@@ -272,7 +273,9 @@ export async function deleteAnnualReward(
         },
       },
     },
-  });
+  })) as Prisma.DanhHieuHangNamGetPayload<{
+    include: { QuanNhan: { include: { CoQuanDonVi: true; DonViTrucThuoc: true } } };
+  }> | null;
 
   if (!reward) {
     throw new NotFoundError('Danh hiệu hằng năm');
@@ -347,9 +350,9 @@ export async function deleteAnnualReward(
       !remainingDanhHieu && !remainingBkbqp && !remainingCstdtq && !remainingBkttcp;
 
     if (isEmpty) {
-      await prisma.danhHieuHangNam.delete({ where: { id } });
+      await danhHieuHangNamRepository.delete(id);
     } else {
-      await prisma.danhHieuHangNam.update({ where: { id }, data: updateData });
+      await danhHieuHangNamRepository.updateRaw({ where: { id }, data: updateData });
     }
 
     await safeRecalculateAnnualProfile(personnelId);
@@ -377,9 +380,7 @@ export async function deleteAnnualReward(
     };
   }
 
-  await prisma.danhHieuHangNam.delete({
-    where: { id },
-  });
+  await danhHieuHangNamRepository.delete(id);
 
   await safeRecalculateAnnualProfile(personnelId);
 
@@ -412,8 +413,8 @@ export async function checkAnnualRewards(
   danhHieu: string
 ): Promise<{ results: CheckResult[]; summary: Record<string, number> }> {
   const [existingRewards, proposals] = await Promise.all([
-    prisma.danhHieuHangNam.findMany({ where: { quan_nhan_id: { in: personnelIds }, nam } }),
-    prisma.bangDeXuat.findMany({
+    danhHieuHangNamRepository.findMany({ where: { quan_nhan_id: { in: personnelIds }, nam } }),
+    proposalRepository.findManyRaw({
       where: {
         loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
         nam,
@@ -546,11 +547,11 @@ export async function bulkCreateAnnualRewards(data: BulkCreateData): Promise<{
   const namInt = nam;
 
   const [allPersonnel, existingRewards, pendingProposals] = await Promise.all([
-    prisma.quanNhan.findMany({ where: { id: { in: personnelIds } } }),
-    prisma.danhHieuHangNam.findMany({
+    quanNhanRepository.findManyByIds(personnelIds),
+    danhHieuHangNamRepository.findMany({
       where: { quan_nhan_id: { in: personnelIds }, nam: namInt },
     }),
-    prisma.bangDeXuat.findMany({
+    proposalRepository.findManyRaw({
       where: {
         loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
         nam: namInt,
@@ -712,10 +713,10 @@ export async function bulkCreateAnnualRewards(data: BulkCreateData): Promise<{
           else updateData.ghi_chu = ghi_chu;
         }
 
-        rewardRecord = await prismaTx.danhHieuHangNam.update({
+        rewardRecord = await danhHieuHangNamRepository.updateRaw({
           where: { id: existingReward.id },
           data: updateData,
-        });
+        }, prismaTx);
       } else {
         const createData: Prisma.DanhHieuHangNamCreateInput = {
           QuanNhan: { connect: { id: personnelId } },
@@ -742,9 +743,9 @@ export async function bulkCreateAnnualRewards(data: BulkCreateData): Promise<{
           createData.so_quyet_dinh = individualSoQuyetDinh || null;
         }
 
-        rewardRecord = await prismaTx.danhHieuHangNam.create({
+        rewardRecord = await danhHieuHangNamRepository.createRaw({
           data: createData,
-        });
+        }, prismaTx);
       }
 
       txCreated.push(rewardRecord);
@@ -778,7 +779,7 @@ export async function getStatistics(filters: StatisticsFilters = {}): Promise<{
   const where: Prisma.DanhHieuHangNamWhereInput = {};
   if (nam) where.nam = nam;
 
-  const awards = await prisma.danhHieuHangNam.findMany({
+  const awards = (await danhHieuHangNamRepository.findMany({
     where,
     include: {
       QuanNhan: {
@@ -788,7 +789,9 @@ export async function getStatistics(filters: StatisticsFilters = {}): Promise<{
         },
       },
     },
-  });
+  })) as Prisma.DanhHieuHangNamGetPayload<{
+    include: { QuanNhan: { select: { co_quan_don_vi_id: true; don_vi_truc_thuoc_id: true } } };
+  }>[];
 
   let filteredAwards = awards;
   if (don_vi_id) {
@@ -836,12 +839,12 @@ export async function getStatistics(filters: StatisticsFilters = {}): Promise<{
  * @returns Check result with alreadyReceived flag and reason
  */
 export async function checkAlreadyReceivedHCQKQT(personnelId: string) {
-  const existingAward = await prisma.huanChuongQuanKyQuyetThang.findUnique({
+  const existingAward = await militaryFlagRepository.findUniqueRaw({
     where: { quan_nhan_id: personnelId },
   });
   if (existingAward) return { alreadyReceived: true, reason: 'Đã nhận', award: existingAward };
 
-  const pendingProposal = await prisma.bangDeXuat.findFirst({
+  const pendingProposal = await proposalRepository.findFirstRaw({
     where: {
       loai_de_xuat: PROPOSAL_TYPES.HC_QKQT,
       status: PROPOSAL_STATUS.PENDING,
@@ -860,12 +863,12 @@ export async function checkAlreadyReceivedHCQKQT(personnelId: string) {
  * @returns Check result with alreadyReceived flag and reason
  */
 export async function checkAlreadyReceivedKNCVSNXDQDNDVN(personnelId: string) {
-  const existingAward = await prisma.kyNiemChuongVSNXDQDNDVN.findUnique({
+  const existingAward = await commemorativeMedalRepository.findUniqueRaw({
     where: { quan_nhan_id: personnelId },
   });
   if (existingAward) return { alreadyReceived: true, reason: 'Đã nhận', award: existingAward };
 
-  const pendingProposal = await prisma.bangDeXuat.findFirst({
+  const pendingProposal = await proposalRepository.findFirstRaw({
     where: {
       loai_de_xuat: PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
       status: PROPOSAL_STATUS.PENDING,
@@ -897,7 +900,7 @@ export async function getAnnualRewardsList(params: {
   if (quanNhanWhere) where.QuanNhan = quanNhanWhere;
 
   const [awards, total] = await Promise.all([
-    prisma.danhHieuHangNam.findMany({
+    danhHieuHangNamRepository.findMany({
       where,
       include: {
         QuanNhan: { include: { CoQuanDonVi: true, DonViTrucThuoc: true, ChucVu: true } },
@@ -906,7 +909,7 @@ export async function getAnnualRewardsList(params: {
       skip: (page - 1) * limit,
       take: limit,
     }),
-    prisma.danhHieuHangNam.count({ where }),
+    danhHieuHangNamRepository.count({ where }),
   ]);
 
   return { awards, total };

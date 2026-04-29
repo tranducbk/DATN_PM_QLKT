@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { prisma } from '../models';
+import { systemLogRepository } from '../repositories/systemLog.repository';
 
 import type { AuditLogOptions } from '../types/api';
 
@@ -91,18 +91,16 @@ const auditLog = (options: AuditLogOptions = { action: '', resource: '' }) => {
               const resourceId = getResourceId(req, res, data);
               const payload = redactSensitiveFields(getPayload(req, res, data));
 
-              await prisma.systemLog.create({
-                data: {
-                  nguoi_thuc_hien_id: user.id,
-                  actor_role: user.role,
-                  action,
-                  resource,
-                  tai_nguyen_id: resourceId ?? undefined,
-                  description,
-                  payload: payload ? JSON.stringify(payload) : undefined,
-                  ip_address: req.ip || req.socket.remoteAddress,
-                  user_agent: req.get('User-Agent'),
-                },
+              await systemLogRepository.create({
+                nguoi_thuc_hien_id: user.id,
+                actor_role: user.role,
+                action,
+                resource,
+                tai_nguyen_id: resourceId ?? undefined,
+                description,
+                payload: payload ? JSON.stringify(payload) : undefined,
+                ip_address: req.ip || req.socket.remoteAddress,
+                user_agent: req.get('User-Agent'),
               });
             })
             .catch(error => {

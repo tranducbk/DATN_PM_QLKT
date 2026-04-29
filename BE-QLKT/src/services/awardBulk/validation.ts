@@ -1,4 +1,6 @@
-import { prisma } from '../../models';
+import { danhHieuDonViHangNamRepository } from '../../repositories/danhHieu.repository';
+import { quanNhanRepository } from '../../repositories/quanNhan.repository';
+import { proposalRepository } from '../../repositories/proposal.repository';
 import { writeSystemLog } from '../../helpers/systemLogHelper';
 import {
   getDanhHieuName,
@@ -47,11 +49,11 @@ export async function checkDuplicateAwards(
 
   // Just query PENDING proposals — APPROVED awards are already in the award table
   const [personnelList, pendingProposals, existingAwardsRaw] = await Promise.all([
-    prisma.quanNhan.findMany({
+    quanNhanRepository.findManyRaw({
       where: { id: { in: personnelIds } },
       select: { id: true, ho_ten: true },
     }),
-    prisma.bangDeXuat.findMany({
+    proposalRepository.findManyRaw({
       where: { loai_de_xuat: type, nam, status: PROPOSAL_STATUS.PENDING },
     }),
     getAwardTableQuery(type, personnelIds, nam),
@@ -119,7 +121,7 @@ export async function checkDuplicateUnitAwards(
   if (unitIds.length === 0) return duplicateErrors;
 
   const [existingAwards, pendingProposals] = await Promise.all([
-    prisma.danhHieuDonViHangNam.findMany({
+    danhHieuDonViHangNamRepository.findMany({
       where: {
         OR: [
           { co_quan_don_vi_id: { in: unitIds }, nam },
@@ -128,7 +130,7 @@ export async function checkDuplicateUnitAwards(
       },
       select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true, danh_hieu: true, nhan_bkbqp: true, nhan_bkttcp: true },
     }),
-    prisma.bangDeXuat.findMany({
+    proposalRepository.findManyRaw({
       where: { loai_de_xuat: PROPOSAL_TYPES.DON_VI_HANG_NAM, nam, status: PROPOSAL_STATUS.PENDING },
     }),
   ]);

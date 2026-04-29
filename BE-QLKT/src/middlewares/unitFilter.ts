@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { prisma } from '../models';
+import { quanNhanRepository } from '../repositories/quanNhan.repository';
+import { donViTrucThuocRepository } from '../repositories/unit.repository';
 import { ROLES } from '../constants/roles.constants';
 
 interface UnitInfo {
@@ -10,10 +11,7 @@ interface UnitInfo {
 const getUnitInfo = async (quanNhanId: string): Promise<UnitInfo | null> => {
   if (!quanNhanId) return null;
 
-  const personnel = await prisma.quanNhan.findUnique({
-    where: { id: quanNhanId },
-    select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true },
-  });
+  const personnel = await quanNhanRepository.findUnitScope(quanNhanId);
 
   if (!personnel) return null;
 
@@ -38,13 +36,12 @@ const getPersonnelInUnit = async (unitInfo: UnitInfo): Promise<Array<{ id: strin
   if (!unitInfo) return [];
 
   if (unitInfo.isCoQuanDonVi) {
-    const donViTrucThuocIds = await prisma.donViTrucThuoc.findMany({
-      where: { co_quan_don_vi_id: unitInfo.don_vi_id },
-      select: { id: true },
-    });
+    const donViTrucThuocIds = await donViTrucThuocRepository.findIdsByCoQuanDonViId(
+      unitInfo.don_vi_id
+    );
     const donViTrucThuocIdList = donViTrucThuocIds.map(d => d.id);
 
-    return prisma.quanNhan.findMany({
+    return quanNhanRepository.findManyRaw({
       where: {
         OR: [
           { co_quan_don_vi_id: unitInfo.don_vi_id },
@@ -55,7 +52,7 @@ const getPersonnelInUnit = async (unitInfo: UnitInfo): Promise<Array<{ id: strin
     });
   }
 
-  return prisma.quanNhan.findMany({
+  return quanNhanRepository.findManyRaw({
     where: { don_vi_truc_thuoc_id: unitInfo.don_vi_id },
     select: { id: true },
   });

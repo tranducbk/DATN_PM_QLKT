@@ -1,4 +1,6 @@
 import { prisma } from '../../models';
+import { danhHieuDonViHangNamRepository } from '../../repositories/danhHieu.repository';
+import { unitAnnualProfileRepository } from '../../repositories/unitAnnualProfile.repository';
 import {
   getDanhHieuName,
   DANH_HIEU_DON_VI_HANG_NAM,
@@ -12,7 +14,7 @@ import { resolveUnit, buildUnitIdFields } from '../../helpers/unitHelper';
 
 export async function calculateContinuousYears(donViId: string, year: number) {
   year = Number(year);
-  const records = await prisma.danhHieuDonViHangNam.findMany({
+  const records = await danhHieuDonViHangNamRepository.findMany({
     where: {
       OR: [{ co_quan_don_vi_id: donViId }, { don_vi_truc_thuoc_id: donViId }],
       nam: { lte: year - 1 },
@@ -36,7 +38,7 @@ export async function countBKBQPInStreak(donViId: string, year: number, dvqtStre
   year = Number(year);
   const streak = dvqtStreak ?? (await calculateContinuousYears(donViId, year));
   const startYear = year - 1 - streak + 1;
-  const count = await prisma.danhHieuDonViHangNam.count({
+  const count = await danhHieuDonViHangNamRepository.count({
     where: {
       OR: [{ co_quan_don_vi_id: donViId }, { don_vi_truc_thuoc_id: donViId }],
       nam: { gte: startYear, lte: year - 1 },
@@ -48,7 +50,7 @@ export async function countBKBQPInStreak(donViId: string, year: number, dvqtStre
 
 export async function calculateTotalDVQT(donViId: string, year: number) {
   year = Number(year);
-  const records = await prisma.danhHieuDonViHangNam.findMany({
+  const records = await danhHieuDonViHangNamRepository.findMany({
     where: {
       OR: [{ co_quan_don_vi_id: donViId }, { don_vi_truc_thuoc_id: donViId }],
       nam: { lte: year },
@@ -118,7 +120,7 @@ export async function checkUnitAwardEligibility(donViId: string, year: number, d
 
   let hasReceived = false;
   if (config.isLifetime) {
-    const lifetimeCount = await prisma.danhHieuDonViHangNam.count({
+    const lifetimeCount = await danhHieuDonViHangNamRepository.count({
       where: {
         OR: [{ co_quan_don_vi_id: donViId }, { don_vi_truc_thuoc_id: donViId }],
         [config.flagColumn]: true,
@@ -156,7 +158,7 @@ export async function recalculateAnnualUnit(donViId: string, year: number | null
   const targetYear = year ? Number(year) : new Date().getFullYear();
 
   const [danhHieuList, dvqtResult, dvqtLienTuc] = await Promise.all([
-    prisma.danhHieuDonViHangNam.findMany({
+    danhHieuDonViHangNamRepository.findMany({
       where: {
         OR: [{ co_quan_don_vi_id: donViId }, { don_vi_truc_thuoc_id: donViId }],
         nam: { lte: targetYear },
@@ -202,7 +204,7 @@ export async function recalculateAnnualUnit(donViId: string, year: number | null
     goi_y,
   };
 
-  const hoSo = await prisma.hoSoDonViHangNam.upsert({
+  const hoSo = await unitAnnualProfileRepository.upsertRaw({
     where: whereCondition,
     update: hoSoData,
     create: {
@@ -226,7 +228,7 @@ export async function recalculate({ don_vi_id, nam }) {
   }
 
   if (don_vi_id) {
-    const records = await prisma.hoSoDonViHangNam.findMany({
+    const records = await unitAnnualProfileRepository.findManyRaw({
       where: {
         OR: [{ co_quan_don_vi_id: don_vi_id }, { don_vi_truc_thuoc_id: don_vi_id }],
       },
@@ -241,7 +243,7 @@ export async function recalculate({ don_vi_id, nam }) {
     return records.length;
   }
 
-  const records = await prisma.hoSoDonViHangNam.findMany({
+  const records = await unitAnnualProfileRepository.findManyRaw({
     select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true, nam: true },
   });
 

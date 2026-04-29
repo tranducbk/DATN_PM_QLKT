@@ -1,8 +1,16 @@
 import { prisma } from '../../../models';
+import { danhHieuDonViHangNamRepository } from '../../../repositories/danhHieu.repository';
 import { Request, Response } from 'express';
 import { FALLBACK, getUnitNameFromUnitId, getFileName } from '../constants';
 import { getDanhHieuName } from '../../../constants/danhHieu.constants';
 import { routeParamId } from './shared';
+
+type DanhHieuDonViWithUnit = {
+  danh_hieu: string | null;
+  nam: number | null;
+  CoQuanDonVi?: { ten_don_vi: string | null } | null;
+  DonViTrucThuoc?: { ten_don_vi: string | null } | null;
+} | null;
 
 const UNIT_AWARD_LABEL = 'danh hiệu đơn vị hằng năm';
 
@@ -105,13 +113,13 @@ export const unitAnnualAwards: Record<
 
     if ((!tenDonVi || !danhHieu) && rewardId) {
       try {
-        const record = await prisma.danhHieuDonViHangNam.findUnique({
+        const record = (await danhHieuDonViHangNamRepository.findUnique({
           where: { id: rewardId },
           include: {
             CoQuanDonVi: { select: { ten_don_vi: true } },
             DonViTrucThuoc: { select: { ten_don_vi: true } },
           },
-        });
+        })) as DanhHieuDonViWithUnit;
         if (record) {
           tenDonVi =
             tenDonVi || record.CoQuanDonVi?.ten_don_vi || record.DonViTrucThuoc?.ten_don_vi || '';
@@ -172,13 +180,13 @@ export const unitAnnualAwards: Record<
       const rewardId = routeParamId(req.params?.id);
       if (rewardId) {
         try {
-          const record = await prisma.danhHieuDonViHangNam.findUnique({
+          const record = (await danhHieuDonViHangNamRepository.findUnique({
             where: { id: rewardId },
             include: {
               CoQuanDonVi: { select: { ten_don_vi: true } },
               DonViTrucThuoc: { select: { ten_don_vi: true } },
             },
-          });
+          })) as DanhHieuDonViWithUnit;
           if (record) {
             tenDonVi =
               tenDonVi || record.CoQuanDonVi?.ten_don_vi || record.DonViTrucThuoc?.ten_don_vi || '';
@@ -221,13 +229,13 @@ export const unitAnnualAwards: Record<
       const rewardId = routeParamId(req.params?.id);
       if (rewardId) {
         try {
-          const record = await prisma.danhHieuDonViHangNam.findUnique({
+          const record = (await danhHieuDonViHangNamRepository.findUnique({
             where: { id: rewardId },
             include: {
               CoQuanDonVi: { select: { ten_don_vi: true } },
               DonViTrucThuoc: { select: { ten_don_vi: true } },
             },
-          });
+          })) as DanhHieuDonViWithUnit;
           if (record) {
             tenDonVi =
               tenDonVi || record.CoQuanDonVi?.ten_don_vi || record.DonViTrucThuoc?.ten_don_vi || '';

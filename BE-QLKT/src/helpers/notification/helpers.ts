@@ -1,7 +1,8 @@
-import { prisma } from '../../models';
 import { NOTIFICATION_TYPES, RESOURCE_TYPES } from '../../constants/notificationTypes.constants';
 import { ROLES } from '../../constants/roles.constants';
 import { emitNotificationToUser } from '../../utils/socketService';
+import { accountRepository } from '../../repositories/account.repository';
+import { notificationRepository } from '../../repositories/notification.repository';
 import {
   DANH_HIEU_MAP,
   LOAI_DE_XUAT_MAP,
@@ -31,7 +32,7 @@ const formatProposalType = (loaiDeXuat: string): string => {
  */
 async function getDisplayName(username: string): Promise<string> {
   try {
-    const account = await prisma.taiKhoan.findUnique({
+    const account = await accountRepository.findUniqueRaw({
       where: { username },
       include: {
         QuanNhan: {
@@ -85,9 +86,7 @@ async function sendSystemNotification(
   }));
 
   if (notifications.length > 0) {
-    await prisma.thongBao.createMany({
-      data: notifications,
-    });
+    await notificationRepository.createMany(notifications);
     notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
   }
 
@@ -95,7 +94,6 @@ async function sendSystemNotification(
 }
 
 export {
-  prisma,
   NOTIFICATION_TYPES,
   RESOURCE_TYPES,
   ROLES,

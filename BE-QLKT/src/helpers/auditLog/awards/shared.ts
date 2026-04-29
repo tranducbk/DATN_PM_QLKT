@@ -3,6 +3,10 @@ import { prisma } from '../../../models';
 import { Request, Response } from 'express';
 import { queryPersonnelName, getFileName } from '../constants';
 import { getDanhHieuName } from '../../../constants/danhHieu.constants';
+import { tenureMedalRepository } from '../../../repositories/tenureMedal.repository';
+import { commemorativeMedalRepository } from '../../../repositories/commemorativeMedal.repository';
+import { militaryFlagRepository } from '../../../repositories/militaryFlag.repository';
+import { contributionMedalRepository } from '../../../repositories/contributionMedal.repository';
 
 /** Normalizes route/query ID values (Express can pass string or string[]). */
 export function routeParamId(v: string | string[] | undefined | null): string | null {
@@ -43,10 +47,10 @@ export type AwardModelAccessor = {
 
 /** Prisma model accessor keyed by resource slug */
 export const AWARD_PRISMA_MODEL: Record<string, AwardModelAccessor> = {
-  'tenure-medals': prisma.khenThuongHCCSVV as unknown as AwardModelAccessor,
-  'commemorative-medals': prisma.kyNiemChuongVSNXDQDNDVN as unknown as AwardModelAccessor,
-  'military-flag': prisma.huanChuongQuanKyQuyetThang as unknown as AwardModelAccessor,
-  'contribution-medals': prisma.khenThuongHCBVTQ as unknown as AwardModelAccessor,
+  'tenure-medals': { findUnique: args => tenureMedalRepository.findUniqueRaw(args) },
+  'commemorative-medals': { findUnique: args => commemorativeMedalRepository.findUniqueRaw(args) },
+  'military-flag': { findUnique: args => militaryFlagRepository.findUniqueRaw(args) },
+  'contribution-medals': { findUnique: args => contributionMedalRepository.findUniqueRaw(args) },
 };
 
 export function buildAwardTypeHelpers(

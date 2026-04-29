@@ -1,4 +1,5 @@
-import { prisma } from '../../../models';
+import { danhHieuHangNamRepository } from '../../../repositories/danhHieu.repository';
+import { quanNhanRepository } from '../../../repositories/quanNhan.repository';
 import { PROPOSAL_TYPES } from '../../../constants/proposalTypes.constants';
 import {
   DANH_HIEU_CA_NHAN_HANG_NAM,
@@ -48,7 +49,7 @@ interface CaNhanPersonnelRow {
 
 async function loadPersonnelMap(personnelIds: string[]): Promise<Map<string, CaNhanPersonnelRow>> {
   if (personnelIds.length === 0) return new Map();
-  const rows = await prisma.quanNhan.findMany({
+  const rows = await quanNhanRepository.findManyRaw({
     where: { id: { in: personnelIds } },
     select: {
       id: true,
@@ -226,9 +227,7 @@ class CaNhanHangNamStrategy implements ProposalStrategy {
           acc.errors.push('Thiếu thông tin quân nhân khi lưu danh hiệu.');
           continue;
         }
-        const quanNhan = await prismaTx.quanNhan.findUnique({
-          where: { id: item.personnel_id },
-        });
+        const quanNhan = await quanNhanRepository.findIdById(item.personnel_id, prismaTx);
         if (!quanNhan) {
           acc.errors.push(
             'Không tìm thấy thông tin quân nhân khi lưu danh hiệu. ' +
@@ -319,11 +318,11 @@ class CaNhanHangNamStrategy implements ProposalStrategy {
           if (note) data.ghi_chu_bkttcp = note;
         }
 
-        await prismaTx.danhHieuHangNam.upsert({
+        await danhHieuHangNamRepository.upsertRaw({
           where: { quan_nhan_id_nam: { quan_nhan_id: quanNhan.id, nam: namNhan } },
           update: { ...data },
           create: { quan_nhan_id: quanNhan.id, nam: namNhan, ...data },
-        });
+        }, prismaTx);
 
         acc.importedDanhHieu++;
         acc.affectedPersonnelIds.add(quanNhan.id);

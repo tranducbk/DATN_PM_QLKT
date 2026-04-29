@@ -1,4 +1,4 @@
-import { prisma } from '../../../models';
+import { decisionFileRepository } from '../../../repositories/decisionFile.repository';
 import { promises as fs } from 'fs';
 import path from 'path';
 import {
@@ -68,7 +68,7 @@ export async function persistDecisionPdfs(
   const getFilePathFromDB = async (soQuyetDinh: string | null | undefined) => {
     if (!soQuyetDinh) return null;
     try {
-      const decision = await prisma.fileQuyetDinh.findUnique({
+      const decision = await decisionFileRepository.findUniqueRaw({
         where: { so_quyet_dinh: soQuyetDinh },
         select: { file_path: true },
       });

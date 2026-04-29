@@ -1,4 +1,5 @@
-import { prisma } from '../../../models';
+import { quanNhanRepository } from '../../../repositories/quanNhan.repository';
+import { positionHistoryRepository } from '../../../repositories/positionHistory.repository';
 import { PROPOSAL_TYPES } from '../../../constants/proposalTypes.constants';
 import {
   CONG_HIEN_HE_SO_GROUPS,
@@ -60,7 +61,7 @@ async function loadPersonnelMap(
   personnelIds: string[]
 ): Promise<Map<string, CongHienPersonnelRow>> {
   if (personnelIds.length === 0) return new Map();
-  const rows = await prisma.quanNhan.findMany({
+  const rows = await quanNhanRepository.findManyRaw({
     where: { id: { in: personnelIds } },
     select: {
       id: true,
@@ -139,7 +140,7 @@ class CongHienStrategy implements ProposalStrategy {
 
         if (!item.personnel_id) return baseData;
         try {
-          const histories = await prisma.lichSuChucVu.findMany({
+          const histories = await positionHistoryRepository.findManyRaw({
             where: { quan_nhan_id: item.personnel_id },
             select: {
               he_so_chuc_vu: true,
@@ -275,9 +276,10 @@ class CongHienStrategy implements ProposalStrategy {
           acc.errors.push('Thiếu thông tin quân nhân khi xử lý Huân chương Bảo vệ Tổ quốc.');
           continue;
         }
-        const quanNhan = await prismaTx.quanNhan.findUnique({
-          where: { id: item.personnel_id },
-        });
+        const quanNhan = await quanNhanRepository.findUniqueRaw(
+          { where: { id: item.personnel_id }, select: { id: true, ho_ten: true } },
+          prismaTx
+        );
         if (!quanNhan) {
           acc.errors.push(
             'Không tìm thấy thông tin quân nhân khi xử lý Huân chương Bảo vệ Tổ quốc. ' +
