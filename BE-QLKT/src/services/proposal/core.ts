@@ -241,7 +241,7 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
         if (item.ten_don_vi && item.ma_don_vi) {
           return {
             ...item,
-            nam: item.nam || proposal.createdAt?.getFullYear() || new Date().getFullYear(),
+            nam: item.nam ?? proposal.createdAt.getFullYear(),
           };
         }
 
@@ -278,7 +278,7 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
           ...item,
           ten_don_vi: item.ten_don_vi || donViInfo?.ten_don_vi || '',
           ma_don_vi: item.ma_don_vi || donViInfo?.ma_don_vi || '',
-          nam: item.nam || proposal.createdAt?.getFullYear() || new Date().getFullYear(),
+          nam: item.nam ?? proposal.createdAt.getFullYear(),
           co_quan_don_vi_cha: item.co_quan_don_vi_cha || coQuanDonViCha,
         };
       })
@@ -346,9 +346,9 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
         const enrichedItem: Record<string, any> = {
           ...item,
           ho_ten: item.ho_ten || personnel?.ho_ten || '',
-          nam: item.nam || proposal.createdAt?.getFullYear() || new Date().getFullYear(),
-          cap_bac: item.cap_bac !== undefined && item.cap_bac !== null ? item.cap_bac : null,
-          chuc_vu: item.chuc_vu !== undefined && item.chuc_vu !== null ? item.chuc_vu : null,
+          nam: item.nam ?? proposal.createdAt.getFullYear(),
+          cap_bac: item.cap_bac ?? null,
+          chuc_vu: item.chuc_vu ?? null,
         };
 
         if (!item.co_quan_don_vi && personnel?.CoQuanDonVi) {

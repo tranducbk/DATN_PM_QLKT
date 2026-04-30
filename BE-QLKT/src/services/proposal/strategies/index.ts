@@ -9,15 +9,10 @@ import { caNhanHangNamStrategy } from './caNhanHangNamStrategy';
 import { congHienStrategy } from './congHienStrategy';
 
 /**
- * Registry of proposal-type strategies. Entries set to `null` indicate the
- * proposal type is not yet migrated to the strategy pattern; the legacy
- * if/else chains in `submit.ts` / `approve.ts` still own those flows.
- *
- * Migration steps for adding a strategy:
- *   1. Implement `ProposalStrategy` in `<type>Strategy.ts`
- *   2. Replace the `null` here with the new strategy instance
- *   3. Remove the corresponding legacy branch from submit/approve dispatchers
- *   4. Run jest + typecheck (629/629, no errors) before committing
+ * Registry of proposal-type strategies. DOT_XUAT is intentionally null:
+ * khen thưởng đột xuất is created directly by ADMIN through `adhocAward.service`
+ * (writes straight to `KhenThuongDotXuat`), never goes through the BangDeXuat
+ * approval pipeline.
  */
 const REGISTRY: Record<ProposalType, ProposalStrategy | null> = {
   [PROPOSAL_TYPES.CA_NHAN_HANG_NAM]: caNhanHangNamStrategy,

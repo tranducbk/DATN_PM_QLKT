@@ -80,6 +80,11 @@ async function submitProposal(
     throw new ValidationError('Dữ liệu đề xuất không hợp lệ');
   }
 
+  const parsedYear = parseInt(String(nam), 10);
+  if (Number.isNaN(parsedYear)) {
+    throw new ValidationError('Năm đề xuất không hợp lệ');
+  }
+
   // Fail fast on missing month so eligibility errors don't mask the real cause.
   const parsedMonth = thang != null ? parseInt(String(thang), 10) : null;
   const monthRequired = requiresProposalMonth(type);
@@ -100,18 +105,11 @@ async function submitProposal(
 
     for (const file of attachedFiles) {
       if (file && file.buffer) {
-        let originalName = file.originalname || 'file';
-        try {
-          if (Buffer.isBuffer(originalName)) {
-            originalName = originalName.toString('utf8');
-          } else if (typeof originalName === 'string') {
-            originalName = Buffer.from(originalName, 'latin1').toString('utf8');
-          }
-        } catch {
-          originalName = 'file';
-        }
-
-        const sanitizedOriginalName = sanitizeFilename(originalName);
+        const rawName = file.originalname || 'file';
+        const decodedName = Buffer.isBuffer(rawName)
+          ? rawName.toString('utf8')
+          : Buffer.from(rawName, 'latin1').toString('utf8');
+        const sanitizedOriginalName = sanitizeFilename(decodedName);
 
         // Use timestamp + short uuid to avoid filename collisions.
         const timestamp = Date.now();
@@ -126,7 +124,7 @@ async function submitProposal(
         // Keep original name for UI display.
         filesInfo.push({
           filename: savedFilename,
-          originalName: originalName,
+          originalName: decodedName,
           size: file.size,
           uploadedAt: new Date().toISOString(),
         });
@@ -140,7 +138,7 @@ async function submitProposal(
         userId,
         donViId,
         isCoQuanDonVi: !!user.QuanNhan.co_quan_don_vi_id,
-        nam,
+        nam: parsedYear,
         thang: parsedMonth,
       })
     : null;
@@ -157,7 +155,7 @@ async function submitProposal(
   const proposalData = {
     nguoi_de_xuat_id: userId,
     loai_de_xuat: type,
-    nam: parseInt(String(nam), 10) || new Date().getFullYear(),
+    nam: parsedYear,
     thang: monthRequired ? parsedMonth : null,
     status: PROPOSAL_STATUS.PENDING,
     data_danh_hieu: dataDanhHieu,

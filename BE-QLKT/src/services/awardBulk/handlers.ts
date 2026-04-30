@@ -454,15 +454,9 @@ async function handleCongHien(ctx: BulkCreateContext): Promise<void> {
           chuc_vu: item.chuc_vu || null,
           ghi_chu: ghiChu || null,
           so_quyet_dinh: item.so_quyet_dinh || null,
-          thoi_gian_nhom_0_7: item.thoi_gian_nhom_0_7
-            ? (item.thoi_gian_nhom_0_7 as unknown as Prisma.InputJsonValue)
-            : null,
-          thoi_gian_nhom_0_8: item.thoi_gian_nhom_0_8
-            ? (item.thoi_gian_nhom_0_8 as unknown as Prisma.InputJsonValue)
-            : null,
-          thoi_gian_nhom_0_9_1_0: item.thoi_gian_nhom_0_9_1_0
-            ? (item.thoi_gian_nhom_0_9_1_0 as unknown as Prisma.InputJsonValue)
-            : null,
+          thoi_gian_nhom_0_7: (item.thoi_gian_nhom_0_7 ?? null) as Prisma.InputJsonValue,
+          thoi_gian_nhom_0_8: (item.thoi_gian_nhom_0_8 ?? null) as Prisma.InputJsonValue,
+          thoi_gian_nhom_0_9_1_0: (item.thoi_gian_nhom_0_9_1_0 ?? null) as Prisma.InputJsonValue,
         },
       });
 

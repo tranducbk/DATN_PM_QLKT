@@ -22,8 +22,8 @@ const accounts: Record<
     try {
       const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
       hoTen = data?.data?.QuanNhan?.ho_ten || data?.data?.ho_ten || '';
-    } catch (e) {
-      // Ignore
+    } catch (error) {
+      console.error('[auditLog/accounts:CREATE] failed to parse response data:', error);
     }
 
     let description = `Tạo tài khoản: ${username}`;
@@ -48,8 +48,8 @@ const accounts: Record<
       const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
       username = data?.data?.username || username;
       hoTen = data?.data?.QuanNhan?.ho_ten || '';
-    } catch (e) {
-      // Ignore
+    } catch (error) {
+      console.error('[auditLog/accounts:UPDATE] failed to parse response data:', error);
     }
 
     if ((!username || !hoTen) && accountId) {
@@ -66,7 +66,7 @@ const accounts: Record<
           hoTen = hoTen || account.QuanNhan?.ho_ten || '';
         }
       } catch (error) {
-        // Ignore
+        console.error('[auditLog/accounts:UPDATE] failed to load account fallback:', error);
       }
     }
 
@@ -96,8 +96,8 @@ const accounts: Record<
       const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
       username = data?.data?.username || '';
       hoTen = data?.data?.QuanNhan?.ho_ten || data?.data?.ho_ten || '';
-    } catch (e) {
-      // Ignore
+    } catch (error) {
+      console.error('[auditLog/accounts:DELETE] failed to parse response data:', error);
     }
 
     if ((!username || !hoTen) && accountId) {
@@ -114,7 +114,7 @@ const accounts: Record<
           hoTen = hoTen || account.QuanNhan?.ho_ten || '';
         }
       } catch (error) {
-        // Ignore
+        console.error('[auditLog/accounts:DELETE] failed to load account fallback:', error);
       }
     }
 

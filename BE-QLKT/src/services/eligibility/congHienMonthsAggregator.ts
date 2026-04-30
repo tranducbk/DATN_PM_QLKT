@@ -66,6 +66,9 @@ export function aggregatePositionMonthsByGroup(
   histories: PositionHistoryEntry[],
   cutoffDate: Date
 ): PositionMonthsByGroup {
-  const recalculated = recalcPositionMonths(histories as any[], cutoffDate);
-  return sumMonthsByGroup(recalculated as PositionHistoryEntry[]);
+  const recalculated = recalcPositionMonths(
+    histories.map(h => ({ ...h, ngay_bat_dau: h.ngay_bat_dau ?? null })),
+    cutoffDate
+  );
+  return sumMonthsByGroup(recalculated);
 }

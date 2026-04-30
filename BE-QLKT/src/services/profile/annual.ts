@@ -481,8 +481,11 @@ export async function checkAwardEligibility(personnelId: string, year: number, d
   let streaks;
   try {
     streaks = await computeAnnualStreaks(personnelId, year);
-  } catch {
-    return { eligible: false, reason: 'Quân nhân không tồn tại' };
+  } catch (error) {
+    if (error instanceof NotFoundError) {
+      return { eligible: false, reason: 'Quân nhân không tồn tại' };
+    }
+    throw error;
   }
 
   const { cstdcs_lien_tuc, nckh_lien_tuc, danhHieuList } = streaks;

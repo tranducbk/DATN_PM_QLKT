@@ -110,7 +110,7 @@ export function parseCellToString(cell: { value?: CellValue } | undefined): stri
  */
 export function parseCellToInt(cell: { value?: CellValue } | undefined): number | null {
   const value = cell?.value ?? null;
-  if (value === null || value === undefined) return null;
+  if (value === null) return null;
   const parsed = parseInt(String(value));
   return !isNaN(parsed) ? parsed : null;
 }
