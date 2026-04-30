@@ -23,6 +23,10 @@ import {
 } from '../constants/awardExcel.constants';
 import { HCQKQT_YEARS_REQUIRED } from '../constants/danhHieu.constants';
 import { calculateServiceMonths, formatServiceDuration } from '../helpers/serviceYearsHelper';
+import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
+import { AWARD_LABELS } from '../constants/awardLabels.constants';
+
+const AWARD_LABEL = AWARD_LABELS[AWARD_SLUGS.MILITARY_FLAG];
 
 interface PreviewError {
   row: number;
@@ -591,14 +595,14 @@ class MilitaryFlagService {
     } catch (error) {
       writeSystemLog({
         action: 'ERROR',
-        resource: 'military-flag',
+        resource: AWARD_SLUGS.MILITARY_FLAG,
         resourceId: id,
-        description: `Lỗi gửi thông báo xóa khen thưởng HCQKQT: ${error}`,
+        description: `Lỗi gửi thông báo xóa khen thưởng ${AWARD_LABEL}: ${error}`,
       });
     }
 
     return {
-      message: 'Xóa khen thưởng HCQKQT thành công',
+      message: `Xóa khen thưởng ${AWARD_LABEL} thành công`,
       personnelId,
     };
   }

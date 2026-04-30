@@ -9,7 +9,11 @@ import { notificationRepository } from '../repositories/notification.repository'
 import { NOTIFICATION_TYPES, RESOURCE_TYPES } from '../constants/notificationTypes.constants';
 import { ROLES } from '../constants/roles.constants';
 import { ADHOC_TYPE } from '../constants/adhocType.constants';
+import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
+import { AWARD_LABELS } from '../constants/awardLabels.constants';
 import { ForbiddenError, NotFoundError } from '../middlewares/errorHandler';
+
+const AWARD_LABEL = AWARD_LABELS[AWARD_SLUGS.ADHOC_AWARDS];
 import { emitNotificationToUser } from '../utils/socketService';
 import type { KhenThuongDotXuat, Prisma } from '../generated/prisma';
 import { writeSystemLog } from '../helpers/systemLogHelper';
@@ -269,7 +273,7 @@ class AdhocAwardService {
       await this.notifyOnAdhocAwardCreated(adhocAward, admin.username);
     } catch (e) {
       console.error('notifyOnAdhocAwardCreated failed:', e);
-      void writeSystemLog({ action: 'ERROR', resource: 'adhoc-awards', description: `Lỗi gửi thông báo tạo khen thưởng đột xuất: ${e}` });
+      void writeSystemLog({ action: 'ERROR', resource: AWARD_SLUGS.ADHOC_AWARDS, description: `Lỗi gửi thông báo tạo ${AWARD_LABEL}: ${e}` });
     }
 
     return adhocAward;
@@ -615,7 +619,7 @@ class AdhocAwardService {
       await this.notifyOnAdhocAwardUpdated(updated, admin.username);
     } catch (e) {
       console.error('notifyOnAdhocAwardUpdated failed:', e);
-      void writeSystemLog({ action: 'ERROR', resource: 'adhoc-awards', description: `Lỗi gửi thông báo cập nhật khen thưởng đột xuất: ${e}` });
+      void writeSystemLog({ action: 'ERROR', resource: AWARD_SLUGS.ADHOC_AWARDS, description: `Lỗi gửi thông báo cập nhật ${AWARD_LABEL}: ${e}` });
     }
 
     return updated;
@@ -765,7 +769,7 @@ class AdhocAwardService {
         await fs.unlink(fullPath);
       } catch (error) {
         console.error('Failed to delete attachment file during adhoc-award delete:', error);
-        void writeSystemLog({ action: 'ERROR', resource: 'adhoc-awards', description: `Lỗi xóa file đính kèm khen thưởng đột xuất: ${error}` });
+        void writeSystemLog({ action: 'ERROR', resource: AWARD_SLUGS.ADHOC_AWARDS, description: `Lỗi xóa file đính kèm ${AWARD_LABEL}: ${error}` });
       }
     }
 
@@ -775,7 +779,7 @@ class AdhocAwardService {
       await this.notifyOnAdhocAwardDeleted(awardInfo, admin?.username || 'Admin');
     } catch (error) {
       console.error('Failed to send adhoc-award deletion notifications:', error);
-      void writeSystemLog({ action: 'ERROR', resource: 'adhoc-awards', description: `Lỗi gửi thông báo xóa khen thưởng đột xuất: ${error}` });
+      void writeSystemLog({ action: 'ERROR', resource: AWARD_SLUGS.ADHOC_AWARDS, description: `Lỗi gửi thông báo xóa ${AWARD_LABEL}: ${error}` });
     }
 
     return { success: true };

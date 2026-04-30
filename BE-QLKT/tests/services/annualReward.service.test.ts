@@ -986,7 +986,7 @@ describe('annualReward.service - deleteAnnualReward (granular)', () => {
 
     expect(prismaMock.danhHieuHangNam.delete).toHaveBeenCalledTimes(1);
     expect(prismaMock.danhHieuHangNam.update).not.toHaveBeenCalled();
-    expect(result.message).toBe('Đã xóa danh hiệu hằng năm.');
+    expect(result.message).toBe('Đã xóa Danh hiệu hằng năm.');
   });
 
   it('gọi recalc profile sau khi xóa granular', async () => {

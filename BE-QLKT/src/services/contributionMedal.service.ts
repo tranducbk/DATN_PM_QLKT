@@ -20,6 +20,10 @@ import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { GENDER } from '../constants/gender.constants';
+import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
+import { AWARD_LABELS } from '../constants/awardLabels.constants';
+
+const AWARD_LABEL = AWARD_LABELS[AWARD_SLUGS.CONTRIBUTION_MEDALS];
 import { calculateTenureMonthsWithDayPrecision } from '../helpers/serviceYearsHelper';
 import { validateHCBVTQHighestRank, type PositionMonthsByGroup } from '../helpers/awardValidation/contributionMedalHighestRank';
 import { CONG_HIEN_HE_SO_GROUPS } from '../constants/danhHieu.constants';
@@ -764,9 +768,9 @@ class ContributionAwardService {
     } catch (recalcError) {
       void writeSystemLog({
         action: 'ERROR',
-        resource: 'contribution-medals',
+        resource: AWARD_SLUGS.CONTRIBUTION_MEDALS,
         resourceId: id,
-        description: `Lỗi tính lại hồ sơ khen thưởng cống hiến sau khi xóa HCBVTQ: ${recalcError}`,
+        description: `Lỗi tính lại hồ sơ khen thưởng cống hiến sau khi xóa ${AWARD_LABEL}: ${recalcError}`,
       });
     }
 
@@ -775,14 +779,14 @@ class ContributionAwardService {
     } catch (notifyError) {
       void writeSystemLog({
         action: 'ERROR',
-        resource: 'contribution-medals',
+        resource: AWARD_SLUGS.CONTRIBUTION_MEDALS,
         resourceId: id,
-        description: `Lỗi gửi thông báo xóa khen thưởng HCBVTQ: ${notifyError}`,
+        description: `Lỗi gửi thông báo xóa khen thưởng ${AWARD_LABEL}: ${notifyError}`,
       });
     }
 
     return {
-      message: 'Xóa khen thưởng HCBVTQ thành công',
+      message: `Xóa khen thưởng ${AWARD_LABEL} thành công`,
       personnelId,
     };
   }

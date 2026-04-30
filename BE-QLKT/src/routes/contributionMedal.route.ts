@@ -6,6 +6,7 @@ import { getLogDescription } from '../helpers/auditLog';
 import { ROLES } from '../constants/roles.constants';
 import { excelUpload as upload } from '../configs/multer';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 import { validate } from '../middlewares/validate';
 import { excelImportValidation } from '../validations';
 
@@ -91,8 +92,8 @@ router.delete(
   requireAdmin,
   auditLog({
     action: AUDIT_ACTIONS.DELETE,
-    resource: 'contribution-medals',
-    getDescription: getLogDescription('contribution-medals', 'DELETE'),
+    resource: AWARD_SLUGS.CONTRIBUTION_MEDALS,
+    getDescription: getLogDescription(AWARD_SLUGS.CONTRIBUTION_MEDALS, 'DELETE'),
     getResourceId: getResourceId.fromParams('id'),
   }),
   contributionAwardController.deleteAward

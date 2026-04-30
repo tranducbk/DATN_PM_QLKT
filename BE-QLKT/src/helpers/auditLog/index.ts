@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 
+import { AWARD_SLUGS } from '../../constants/awardSlugs.constants';
+import { AWARD_RESOURCE } from '../../constants/awardResource.constants';
 import { auth } from './auth';
 import { accounts } from './accounts';
 import { personnel, positionHistory, scientificAchievements } from './personnel';
@@ -25,22 +27,22 @@ type LogDescriptionFn = (
 
 const createLogDescription: Record<string, Record<string, LogDescriptionFn>> = {
   proposals,
-  'annual-rewards': annualRewards,
+  [AWARD_SLUGS.ANNUAL_REWARDS]: annualRewards,
   'position-history': positionHistory,
   accounts,
   personnel,
   units,
   positions,
   decisions,
-  'scientific-achievements': scientificAchievements,
+  [AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS]: scientificAchievements,
   auth,
-  'adhoc-awards': adhocAwards,
+  [AWARD_SLUGS.ADHOC_AWARDS]: adhocAwards,
   awards,
-  'tenure-medals': tenureMedals,
-  'commemorative-medals': commemorativeMedals,
-  'military-flag': militaryFlag,
-  'contribution-medals': contributionMedals,
-  'unit-annual-awards': unitAnnualAwards,
+  [AWARD_SLUGS.TENURE_MEDALS]: tenureMedals,
+  [AWARD_SLUGS.COMMEMORATIVE_MEDALS]: commemorativeMedals,
+  [AWARD_SLUGS.MILITARY_FLAG]: militaryFlag,
+  [AWARD_SLUGS.CONTRIBUTION_MEDALS]: contributionMedals,
+  [AWARD_SLUGS.UNIT_ANNUAL_AWARDS]: unitAnnualAwards,
 };
 
 const ACTION_VI: Record<string, string> = {
@@ -67,16 +69,16 @@ const RESOURCE_VI: Record<string, string> = {
   proposals: 'đề xuất',
   decisions: 'quyết định',
   profiles: 'hồ sơ',
-  'annual-rewards': 'danh hiệu hằng năm',
-  'unit-annual-awards': 'khen thưởng đơn vị hằng năm',
   'position-history': 'lịch sử chức vụ',
-  'scientific-achievements': 'thành tích khoa học',
-  'adhoc-awards': 'khen thưởng đột xuất',
-  'commemorative-medals': 'kỷ niệm chương',
-  'contribution-medals': 'Huân chương Bảo vệ Tổ quốc',
-  'military-flag': 'huân chương quân kỳ quyết thắng',
-  'tenure-medals': 'huy chương chiến sĩ vẻ vang',
   awards: 'khen thưởng',
+  [AWARD_SLUGS.ANNUAL_REWARDS]: AWARD_RESOURCE[AWARD_SLUGS.ANNUAL_REWARDS].vi,
+  [AWARD_SLUGS.UNIT_ANNUAL_AWARDS]: AWARD_RESOURCE[AWARD_SLUGS.UNIT_ANNUAL_AWARDS].vi,
+  [AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS]: AWARD_RESOURCE[AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS].vi,
+  [AWARD_SLUGS.ADHOC_AWARDS]: AWARD_RESOURCE[AWARD_SLUGS.ADHOC_AWARDS].vi,
+  [AWARD_SLUGS.COMMEMORATIVE_MEDALS]: AWARD_RESOURCE[AWARD_SLUGS.COMMEMORATIVE_MEDALS].vi,
+  [AWARD_SLUGS.CONTRIBUTION_MEDALS]: AWARD_RESOURCE[AWARD_SLUGS.CONTRIBUTION_MEDALS].vi,
+  [AWARD_SLUGS.MILITARY_FLAG]: AWARD_RESOURCE[AWARD_SLUGS.MILITARY_FLAG].vi,
+  [AWARD_SLUGS.TENURE_MEDALS]: AWARD_RESOURCE[AWARD_SLUGS.TENURE_MEDALS].vi,
 };
 
 const fallbackDescription = (action: string, resource: string): string => {

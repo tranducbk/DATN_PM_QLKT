@@ -19,7 +19,11 @@ import {
 } from '../../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
+import { AWARD_SLUGS } from '../../constants/awardSlugs.constants';
+import { AWARD_LABELS } from '../../constants/awardLabels.constants';
 import { ValidationError } from '../../middlewares/errorHandler';
+
+const AWARD_LABEL = AWARD_LABELS[AWARD_SLUGS.ANNUAL_REWARDS];
 import { writeSystemLog } from '../../helpers/systemLogHelper';
 import { validateDecisionNumbers } from '../eligibility/decisionNumberValidation';
 import {
@@ -303,8 +307,8 @@ export async function importFromExcelBuffer(buffer: Buffer): Promise<ImportResul
   const imported = created.length + updated.length;
   writeSystemLog({
     action: 'IMPORT',
-    resource: 'annual-rewards',
-    description: `[Import danh hiệu] Hoàn tất: ${imported}/${total} thành công, ${errors.length} lỗi`,
+    resource: AWARD_SLUGS.ANNUAL_REWARDS,
+    description: `[Import ${AWARD_LABEL}] Hoàn tất: ${imported}/${total} thành công, ${errors.length} lỗi`,
     payload: errors.length > 0 ? { errors: errors.slice(0, 10) } : null,
   });
 

@@ -9,6 +9,8 @@ import {
   getDisplayName,
 } from './helpers';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
+import { AWARD_SLUGS } from '../../constants/awardSlugs.constants';
+import { AWARD_RESOURCE } from '../../constants/awardResource.constants';
 import { isFeatureEnabled } from '../settingsHelper';
 import { accountRepository } from '../../repositories/account.repository';
 import { notificationRepository } from '../../repositories/notification.repository';
@@ -586,20 +588,10 @@ async function notifyOnBulkAwardAdded(
   }
 }
 
-const RESOURCE_TO_PROPOSAL_TYPE: Record<string, string> = {
-  'annual-rewards': PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
-  'unit-annual-awards': PROPOSAL_TYPES.DON_VI_HANG_NAM,
-  'tenure-medals': PROPOSAL_TYPES.NIEN_HAN,
-  'commemorative-medals': PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
-  'contribution-medals': PROPOSAL_TYPES.CONG_HIEN,
-  'military-flag': PROPOSAL_TYPES.HC_QKQT,
-  'scientific-achievements': PROPOSAL_TYPES.NCKH,
-};
-
 /**
  * Notifies unit managers after award imports when the feature flag is enabled.
  * @param adminId - Admin account ID that triggered import
- * @param awardResource - Resource key (e.g. 'annual-rewards', 'hccsvv')
+ * @param awardResource - Award slug from `AWARD_SLUGS` (e.g. `AWARD_SLUGS.ANNUAL_REWARDS`)
  * @param importedCount - Number of imported records
  * @param personnelIds - Imported personnel IDs for individual-award imports
  * @param unitIds - Imported unit IDs for unit-award imports
@@ -622,8 +614,9 @@ async function notifyOnImport(
     if (!admin) return 0;
 
     const adminDisplayName = await getDisplayName(admin.username);
-    const proposalType = RESOURCE_TO_PROPOSAL_TYPE[awardResource];
-    const awardLabel = proposalType ? LOAI_DE_XUAT_MAP[proposalType] : awardResource;
+    const meta = AWARD_RESOURCE[awardResource as keyof typeof AWARD_RESOURCE];
+    const proposalType = meta?.proposalType ?? null;
+    const awardLabel = proposalType ? LOAI_DE_XUAT_MAP[proposalType] : (meta?.vi ?? awardResource);
 
     // Collect affected unit IDs
     const affectedUnitIds = new Set<string>();

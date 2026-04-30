@@ -7,6 +7,7 @@ import { verifyToken, requireManager, requireAuth } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 
 const router = Router({ mergeParams: true });
 
@@ -42,8 +43,8 @@ router.post(
   requireManager,
   auditLog({
     action: AUDIT_ACTIONS.CREATE,
-    resource: 'annual-rewards',
-    getDescription: getLogDescription('annual-rewards', 'CREATE'),
+    resource: AWARD_SLUGS.ANNUAL_REWARDS,
+    getDescription: getLogDescription(AWARD_SLUGS.ANNUAL_REWARDS, 'CREATE'),
     getResourceId: getResourceId.fromResponse(),
   }),
   (req: Request, res: Response, next: NextFunction) => {

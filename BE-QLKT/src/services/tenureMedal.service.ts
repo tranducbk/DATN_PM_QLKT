@@ -21,6 +21,10 @@ import {
 } from '../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
+import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
+import { AWARD_LABELS } from '../constants/awardLabels.constants';
+
+const AWARD_LABEL = AWARD_LABELS[AWARD_SLUGS.TENURE_MEDALS];
 import {
   parseHeaderMap,
   getHeaderCol,
@@ -849,8 +853,8 @@ class HCCSVVService {
     } catch (recalcError) {
       writeSystemLog({
         action: 'ERROR',
-        resource: 'tenure-medals',
-        description: `Lỗi tính lại hồ sơ khen thưởng niên hạn sau khi thêm HCCSVV: ${recalcError}`,
+        resource: AWARD_SLUGS.TENURE_MEDALS,
+        description: `Lỗi tính lại hồ sơ khen thưởng niên hạn sau khi thêm ${AWARD_LABEL}: ${recalcError}`,
       });
     }
 
@@ -886,9 +890,9 @@ class HCCSVVService {
     } catch (recalcError) {
       writeSystemLog({
         action: 'ERROR',
-        resource: 'tenure-medals',
+        resource: AWARD_SLUGS.TENURE_MEDALS,
         resourceId: id,
-        description: `Lỗi tính lại hồ sơ khen thưởng niên hạn sau khi xóa HCCSVV: ${recalcError}`,
+        description: `Lỗi tính lại hồ sơ khen thưởng niên hạn sau khi xóa ${AWARD_LABEL}: ${recalcError}`,
       });
     }
 
@@ -897,14 +901,14 @@ class HCCSVVService {
     } catch (notifyError) {
       writeSystemLog({
         action: 'ERROR',
-        resource: 'tenure-medals',
+        resource: AWARD_SLUGS.TENURE_MEDALS,
         resourceId: id,
-        description: `Lỗi gửi thông báo xóa khen thưởng HCCSVV: ${notifyError}`,
+        description: `Lỗi gửi thông báo xóa khen thưởng ${AWARD_LABEL}: ${notifyError}`,
       });
     }
 
     return {
-      message: 'Xóa khen thưởng HCCSVV thành công',
+      message: `Xóa khen thưởng ${AWARD_LABEL} thành công`,
       personnelId,
     };
   }

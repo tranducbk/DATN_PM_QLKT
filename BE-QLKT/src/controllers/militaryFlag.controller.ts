@@ -11,7 +11,11 @@ import {
 } from '../helpers/controllerHelper';
 import { parsePagination } from '../helpers/paginationHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
+import { AWARD_LABELS } from '../constants/awardLabels.constants';
 import { notifyOnImport } from '../helpers/notification';
+
+const AWARD_LABEL = AWARD_LABELS[AWARD_SLUGS.MILITARY_FLAG];
 
 interface GetTemplateQuery {
   repeat_map?: string;
@@ -54,8 +58,8 @@ class MilitaryFlagController {
       } catch (e) {
         writeSystemLog({
           action: 'ERROR',
-          resource: 'military-flag',
-          description: `Dữ liệu repeat_map không hợp lệ: ${e}`,
+          resource: AWARD_SLUGS.MILITARY_FLAG,
+          description: `Dữ liệu repeat_map (${AWARD_LABEL}) không hợp lệ: ${e}`,
         });
       }
     }
@@ -81,8 +85,8 @@ class MilitaryFlagController {
       userId: user.id,
       userRole: user.role,
       action: AUDIT_ACTIONS.IMPORT_PREVIEW,
-      resource: 'military-flag',
-      description: `Tải lên file "${Buffer.from(file.originalname, 'latin1').toString('utf8')}" để review Huy chương Quân kỳ quyết thắng: ${result.valid?.length ?? 0} hợp lệ, ${result.errors?.length ?? 0} lỗi`,
+      resource: AWARD_SLUGS.MILITARY_FLAG,
+      description: `Tải lên file "${Buffer.from(file.originalname, 'latin1').toString('utf8')}" để review ${AWARD_LABEL}: ${result.valid?.length ?? 0} hợp lệ, ${result.errors?.length ?? 0} lỗi`,
       payload: {
         filename: Buffer.from(file.originalname, 'latin1').toString('utf8'),
         total: result.total,
@@ -101,17 +105,17 @@ class MilitaryFlagController {
       userId: user.id,
       userRole: user.role,
       action: AUDIT_ACTIONS.IMPORT,
-      resource: 'military-flag',
-      description: `Nhập dữ liệu huân chương quân kỳ quyết thắng thành công: ${result.imported ?? items.length} bản ghi`,
+      resource: AWARD_SLUGS.MILITARY_FLAG,
+      description: `Nhập dữ liệu ${AWARD_LABEL} thành công: ${result.imported ?? items.length} bản ghi`,
       payload: { imported: result.imported ?? items.length },
     });
     const personnelIds = items.map((i: { personnel_id: string }) => i.personnel_id);
-    notifyOnImport(user.id, 'military-flag', result.imported ?? items.length, personnelIds).catch(
+    notifyOnImport(user.id, AWARD_SLUGS.MILITARY_FLAG, result.imported ?? items.length, personnelIds).catch(
       e =>
         writeSystemLog({
           action: 'ERROR',
-          resource: 'military-flag',
-          description: `Lỗi gửi thông báo import HC quân kỳ quyết thắng: ${e}`,
+          resource: AWARD_SLUGS.MILITARY_FLAG,
+          description: `Lỗi gửi thông báo import ${AWARD_LABEL}: ${e}`,
         })
     );
     return ResponseHelper.success(res, { data: result, message: 'Thao tác thành công' });
@@ -144,7 +148,7 @@ class MilitaryFlagController {
       total: result.pagination.total,
       page: result.pagination.page,
       limit: result.pagination.limit,
-      message: 'Lấy danh sách HCQKQT thành công',
+      message: `Lấy danh sách ${AWARD_LABEL} thành công`,
     });
   });
 
@@ -180,7 +184,7 @@ class MilitaryFlagController {
     const statistics = await militaryFlagService.getStatistics();
     return ResponseHelper.success(res, {
       data: statistics,
-      message: 'Lấy thống kê HCQKQT thành công',
+      message: `Lấy thống kê ${AWARD_LABEL} thành công`,
     });
   });
 
@@ -213,7 +217,7 @@ class MilitaryFlagController {
     const result = await militaryFlagService.getByPersonnelId(personnel_id);
     return ResponseHelper.success(res, {
       data: { hasReceived: result.length > 0, data: result },
-      message: 'Lấy Huân chương Quân kỳ quyết thắng theo quân nhân thành công',
+      message: `Lấy ${AWARD_LABEL} theo quân nhân thành công`,
     });
   });
 

@@ -12,6 +12,10 @@ import {
   donViTrucThuocRepository,
 } from '../repositories/unit.repository';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
+import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
+import { AWARD_LABELS } from '../constants/awardLabels.constants';
+
+const HCBVTQ_LABEL = AWARD_LABELS[AWARD_SLUGS.CONTRIBUTION_MEDALS];
 import ExcelJS from 'exceljs';
 import bcrypt from 'bcrypt';
 import { parseCCCD } from '../helpers/cccdHelper';
@@ -824,7 +828,7 @@ class PersonnelService {
       if (existingAward) {
         ineligiblePersonnel.push({
           personnelId,
-          reason: 'Đã nhận Huân chương Bảo vệ Tổ quốc',
+          reason: `Đã nhận ${HCBVTQ_LABEL}`,
           status: PROPOSAL_STATUS.APPROVED,
           awardYear: existingAward.nam,
           awardTitle: existingAward.danh_hieu,
@@ -836,7 +840,7 @@ class PersonnelService {
       if (pendingProposal) {
         ineligiblePersonnel.push({
           personnelId,
-          reason: 'Đang chờ duyệt đề xuất Huân chương Bảo vệ Tổ quốc',
+          reason: `Đang chờ duyệt đề xuất ${HCBVTQ_LABEL}`,
           status: PROPOSAL_STATUS.PENDING,
           proposalId: pendingProposal.id,
           proposalYear: pendingProposal.nam,

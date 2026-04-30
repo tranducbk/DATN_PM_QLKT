@@ -4,7 +4,11 @@ import { writeSystemLog } from '../helpers/systemLogHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
+import { AWARD_LABELS } from '../constants/awardLabels.constants';
 import { notifyOnImport } from '../helpers/notification';
+
+const AWARD_LABEL = AWARD_LABELS[AWARD_SLUGS.UNIT_ANNUAL_AWARDS];
 
 interface ListQuery {
   page?: number;
@@ -249,8 +253,8 @@ class UnitAnnualAwardController {
       userId: user.id,
       userRole: user.role,
       action: AUDIT_ACTIONS.IMPORT_PREVIEW,
-      resource: 'unit-annual-awards',
-      description: `Tải lên file "${file.originalname ? Buffer.from(file.originalname, 'latin1').toString('utf8') : 'Excel'}" để review khen thưởng đơn vị hằng năm: ${result.valid?.length || 0} hợp lệ, ${result.errors?.length || 0} lỗi`,
+      resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
+      description: `Tải lên file "${file.originalname ? Buffer.from(file.originalname, 'latin1').toString('utf8') : 'Excel'}" để review ${AWARD_LABEL}: ${result.valid?.length || 0} hợp lệ, ${result.errors?.length || 0} lỗi`,
       payload: {
         filename: file.originalname ? Buffer.from(file.originalname, 'latin1').toString('utf8') : undefined,
         total: result.total,
@@ -272,12 +276,12 @@ class UnitAnnualAwardController {
       userId: user.id,
       userRole: user.role,
       action: AUDIT_ACTIONS.IMPORT,
-      resource: 'unit-annual-awards',
-      description: `Nhập dữ liệu khen thưởng đơn vị hằng năm thành công: ${result.imported ?? items.length} bản ghi`,
+      resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
+      description: `Nhập dữ liệu ${AWARD_LABEL} thành công: ${result.imported ?? items.length} bản ghi`,
       payload: { imported: result.imported ?? items.length },
     });
     const unitIds = items.map((i: { unit_id: string }) => i.unit_id);
-    notifyOnImport(user.id, 'unit-annual-awards', result.imported ?? items.length, [], unitIds).catch((e) => { console.error('[unit-annual-awards] notifyOnImport failed:', e); });
+    notifyOnImport(user.id, AWARD_SLUGS.UNIT_ANNUAL_AWARDS, result.imported ?? items.length, [], unitIds).catch((e) => { console.error('[unit-annual-awards] notifyOnImport failed:', e); });
     return ResponseHelper.success(res, { data: result, message: 'Thao tác thành công' });
   });
 

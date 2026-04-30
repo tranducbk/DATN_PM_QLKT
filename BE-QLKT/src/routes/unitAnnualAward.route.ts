@@ -16,6 +16,7 @@ import {
   decisionUploadDir as uploadDir,
 } from '../configs/multer';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 import { validate } from '../middlewares/validate';
 import { excelImportValidation, unitAnnualAwardValidation } from '../validations';
 
@@ -79,8 +80,8 @@ router.post(
   upload.single('file'),
   auditLog({
     action: AUDIT_ACTIONS.IMPORT,
-    resource: 'unit-annual-awards',
-    getDescription: getLogDescription('unit-annual-awards', 'IMPORT'),
+    resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
+    getDescription: getLogDescription(AWARD_SLUGS.UNIT_ANNUAL_AWARDS, 'IMPORT'),
     getResourceId: () => null,
   }),
   unitAnnualAwardController.importFromExcel
@@ -144,8 +145,8 @@ router.post(
   requireManager,
   auditLog({
     action: AUDIT_ACTIONS.CREATE,
-    resource: 'unit-annual-awards',
-    getDescription: getLogDescription('unit-annual-awards', 'CREATE'),
+    resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
+    getDescription: getLogDescription(AWARD_SLUGS.UNIT_ANNUAL_AWARDS, 'CREATE'),
     getResourceId: getResourceId.fromResponse(),
   }),
   unitAnnualAwardController.upsert
@@ -162,8 +163,8 @@ router.put(
   requireManager,
   auditLog({
     action: AUDIT_ACTIONS.UPDATE,
-    resource: 'unit-annual-awards',
-    getDescription: getLogDescription('unit-annual-awards', 'UPDATE'),
+    resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
+    getDescription: getLogDescription(AWARD_SLUGS.UNIT_ANNUAL_AWARDS, 'UPDATE'),
     getResourceId: getResourceId.fromParams('id'),
   }),
   unitAnnualAwardController.upsert
@@ -180,8 +181,8 @@ router.delete(
   requireManager,
   auditLog({
     action: AUDIT_ACTIONS.DELETE,
-    resource: 'unit-annual-awards',
-    getDescription: getLogDescription('unit-annual-awards', 'DELETE'),
+    resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
+    getDescription: getLogDescription(AWARD_SLUGS.UNIT_ANNUAL_AWARDS, 'DELETE'),
     getResourceId: getResourceId.fromParams('id'),
   }),
   unitAnnualAwardController.remove
@@ -198,8 +199,8 @@ router.post(
   requireManager,
   auditLog({
     action: AUDIT_ACTIONS.PROPOSE,
-    resource: 'unit-annual-awards',
-    getDescription: getLogDescription('unit-annual-awards', 'PROPOSE'),
+    resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
+    getDescription: getLogDescription(AWARD_SLUGS.UNIT_ANNUAL_AWARDS, 'PROPOSE'),
     getResourceId: () => null,
   }),
   unitAnnualAwardController.propose
@@ -216,8 +217,8 @@ router.post(
   requireAdmin,
   auditLog({
     action: AUDIT_ACTIONS.APPROVE,
-    resource: 'unit-annual-awards',
-    getDescription: getLogDescription('unit-annual-awards', 'APPROVE'),
+    resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
+    getDescription: getLogDescription(AWARD_SLUGS.UNIT_ANNUAL_AWARDS, 'APPROVE'),
     getResourceId: getResourceId.fromParams('id'),
   }),
   unitAnnualAwardController.approve
@@ -234,8 +235,8 @@ router.post(
   requireAdmin,
   auditLog({
     action: AUDIT_ACTIONS.REJECT,
-    resource: 'unit-annual-awards',
-    getDescription: getLogDescription('unit-annual-awards', 'REJECT'),
+    resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
+    getDescription: getLogDescription(AWARD_SLUGS.UNIT_ANNUAL_AWARDS, 'REJECT'),
     getResourceId: getResourceId.fromParams('id'),
   }),
   unitAnnualAwardController.reject
@@ -252,8 +253,8 @@ router.post(
   requireManager,
   auditLog({
     action: AUDIT_ACTIONS.RECALCULATE,
-    resource: 'unit-annual-awards',
-    getDescription: getLogDescription('unit-annual-awards', 'RECALCULATE'),
+    resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
+    getDescription: getLogDescription(AWARD_SLUGS.UNIT_ANNUAL_AWARDS, 'RECALCULATE'),
     getResourceId: () => null,
   }),
   unitAnnualAwardController.recalculate

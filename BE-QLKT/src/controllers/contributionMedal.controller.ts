@@ -7,7 +7,11 @@ import catchAsync from '../helpers/catchAsync';
 import { parsePersonnelIdsFromQuery, getManagerUnitFilter, getAdminUsername } from '../helpers/controllerHelper';
 import { parsePagination } from '../helpers/paginationHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
+import { AWARD_LABELS } from '../constants/awardLabels.constants';
 import { notifyOnImport } from '../helpers/notification';
+
+const AWARD_LABEL = AWARD_LABELS[AWARD_SLUGS.CONTRIBUTION_MEDALS];
 
 interface GetTemplateQuery {
   repeat_map?: string;
@@ -83,8 +87,8 @@ class ContributionAwardController {
       userId: user.id,
       userRole: user.role,
       action: AUDIT_ACTIONS.IMPORT_PREVIEW,
-      resource: 'contribution-medals',
-      description: `Tải lên file "${Buffer.from(file.originalname, 'latin1').toString('utf8')}" để review Huân chương Bảo vệ Tổ quốc: ${result.valid?.length ?? 0} hợp lệ, ${result.errors?.length ?? 0} lỗi`,
+      resource: AWARD_SLUGS.CONTRIBUTION_MEDALS,
+      description: `Tải lên file "${Buffer.from(file.originalname, 'latin1').toString('utf8')}" để review ${AWARD_LABEL}: ${result.valid?.length ?? 0} hợp lệ, ${result.errors?.length ?? 0} lỗi`,
       payload: {
         filename: Buffer.from(file.originalname, 'latin1').toString('utf8'),
         total: result.total,
@@ -106,12 +110,12 @@ class ContributionAwardController {
       userId: user.id,
       userRole: user.role,
       action: AUDIT_ACTIONS.IMPORT,
-      resource: 'contribution-medals',
-      description: `Nhập dữ liệu Huân chương Bảo vệ Tổ quốc thành công: ${result.imported ?? items.length} bản ghi`,
+      resource: AWARD_SLUGS.CONTRIBUTION_MEDALS,
+      description: `Nhập dữ liệu ${AWARD_LABEL} thành công: ${result.imported ?? items.length} bản ghi`,
       payload: { imported: result.imported ?? items.length },
     });
     const personnelIds = items.map((i: { personnel_id: string }) => i.personnel_id);
-    notifyOnImport(user.id, 'contribution-medals', result.imported ?? items.length, personnelIds).catch((e) => { console.error('[contribution-awards] notifyOnImport failed:', e); });
+    notifyOnImport(user.id, AWARD_SLUGS.CONTRIBUTION_MEDALS, result.imported ?? items.length, personnelIds).catch((e) => { console.error('[contribution-awards] notifyOnImport failed:', e); });
     return ResponseHelper.success(res, { data: result, message: 'Thao tác thành công' });
   });
 
@@ -143,7 +147,7 @@ class ContributionAwardController {
       total: result.pagination.total,
       page: result.pagination.page,
       limit: result.pagination.limit,
-      message: 'Lấy danh sách HCBVTQ thành công',
+      message: `Lấy danh sách ${AWARD_LABEL} thành công`,
     });
   });
 
@@ -180,7 +184,7 @@ class ContributionAwardController {
     const statistics = await contributionAwardService.getStatistics();
     return ResponseHelper.success(res, {
       data: statistics,
-      message: 'Lấy thống kê HCBVTQ thành công',
+      message: `Lấy thống kê ${AWARD_LABEL} thành công`,
     });
   });
 

@@ -292,7 +292,7 @@ describe('tenureMedal.service - deleteAward', () => {
     const result = await tenureMedalService.deleteAward('hccsvv-1', 'admin_user');
 
     expect(result.personnelId).toBe(personnel.id);
-    expect(result.message).toContain('Xóa khen thưởng HCCSVV thành công');
+    expect(result.message).toContain('Xóa khen thưởng Huy chương Chiến sĩ vẻ vang thành công');
     expect(prismaMock.khenThuongHCCSVV.delete).toHaveBeenCalledWith({ where: { id: 'hccsvv-1' } });
   });
 

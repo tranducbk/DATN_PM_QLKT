@@ -3,6 +3,8 @@ import { prisma } from '../../../models';
 import { Request, Response } from 'express';
 import { queryPersonnelName, getFileName } from '../constants';
 import { getDanhHieuName } from '../../../constants/danhHieu.constants';
+import { AWARD_SLUGS } from '../../../constants/awardSlugs.constants';
+import { AWARD_LABELS } from '../../../constants/awardLabels.constants';
 import { tenureMedalRepository } from '../../../repositories/tenureMedal.repository';
 import { commemorativeMedalRepository } from '../../../repositories/commemorativeMedal.repository';
 import { militaryFlagRepository } from '../../../repositories/militaryFlag.repository';
@@ -26,13 +28,6 @@ export type KhenThuongDotXuatWithAuditRels = Prisma.KhenThuongDotXuatGetPayload<
   };
 }>;
 
-export const AWARD_TYPE_NAMES: Record<string, string> = {
-  'tenure-medals': 'Huy chương Chiến sĩ vẻ vang',
-  'commemorative-medals': 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
-  'military-flag': 'Huy chương Quân kỳ quyết thắng',
-  'contribution-medals': 'Huân chương Bảo vệ Tổ quốc',
-};
-
 export type AwardModelAccessor = {
   findUnique: (args: {
     where: { id: string };
@@ -47,10 +42,10 @@ export type AwardModelAccessor = {
 
 /** Prisma model accessor keyed by resource slug */
 export const AWARD_PRISMA_MODEL: Record<string, AwardModelAccessor> = {
-  'tenure-medals': { findUnique: args => tenureMedalRepository.findUniqueRaw(args) },
-  'commemorative-medals': { findUnique: args => commemorativeMedalRepository.findUniqueRaw(args) },
-  'military-flag': { findUnique: args => militaryFlagRepository.findUniqueRaw(args) },
-  'contribution-medals': { findUnique: args => contributionMedalRepository.findUniqueRaw(args) },
+  [AWARD_SLUGS.TENURE_MEDALS]: { findUnique: args => tenureMedalRepository.findUniqueRaw(args) },
+  [AWARD_SLUGS.COMMEMORATIVE_MEDALS]: { findUnique: args => commemorativeMedalRepository.findUniqueRaw(args) },
+  [AWARD_SLUGS.MILITARY_FLAG]: { findUnique: args => militaryFlagRepository.findUniqueRaw(args) },
+  [AWARD_SLUGS.CONTRIBUTION_MEDALS]: { findUnique: args => contributionMedalRepository.findUniqueRaw(args) },
 };
 
 export function buildAwardTypeHelpers(
@@ -59,7 +54,7 @@ export function buildAwardTypeHelpers(
   string,
   (req: Request, res: Response, responseData: unknown) => string | Promise<string>
 > {
-  const typeName = AWARD_TYPE_NAMES[resource] || resource;
+  const typeName = AWARD_LABELS[resource as keyof typeof AWARD_LABELS] || resource;
   const model = AWARD_PRISMA_MODEL[resource];
 
   /** Uses specific rank names when available, otherwise falls back to type label. */

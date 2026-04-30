@@ -7,7 +7,11 @@ import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 import { parsePagination } from '../helpers/paginationHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
+import { AWARD_LABELS } from '../constants/awardLabels.constants';
 import { notifyOnImport } from '../helpers/notification';
+
+const AWARD_LABEL = AWARD_LABELS[AWARD_SLUGS.TENURE_MEDALS];
 
 interface GetTemplateQuery {
   repeat_map?: string;
@@ -79,8 +83,8 @@ class HCCSVVController {
       userId: user.id,
       userRole: user.role,
       action: AUDIT_ACTIONS.IMPORT_PREVIEW,
-      resource: 'tenure-medals',
-      description: `Tải lên file "${file.originalname ? Buffer.from(file.originalname, 'latin1').toString('utf8') : 'Excel'}" để review huy chương chiến sĩ vẻ vang: ${result.valid?.length || 0} hợp lệ, ${result.errors?.length || 0} lỗi`,
+      resource: AWARD_SLUGS.TENURE_MEDALS,
+      description: `Tải lên file "${file.originalname ? Buffer.from(file.originalname, 'latin1').toString('utf8') : 'Excel'}" để review ${AWARD_LABEL}: ${result.valid?.length || 0} hợp lệ, ${result.errors?.length || 0} lỗi`,
       payload: {
         filename: file.originalname ? Buffer.from(file.originalname, 'latin1').toString('utf8') : undefined,
         total: result.total,
@@ -99,12 +103,12 @@ class HCCSVVController {
       userId: user.id,
       userRole: user.role,
       action: AUDIT_ACTIONS.IMPORT,
-      resource: 'tenure-medals',
-      description: `Nhập dữ liệu huy chương chiến sĩ vẻ vang thành công: ${result.imported || items.length} bản ghi`,
+      resource: AWARD_SLUGS.TENURE_MEDALS,
+      description: `Nhập dữ liệu ${AWARD_LABEL} thành công: ${result.imported || items.length} bản ghi`,
       payload: { imported: result.imported || items.length },
     });
     const personnelIds = items.map((i: { personnel_id: string }) => i.personnel_id);
-    notifyOnImport(user.id, 'tenure-medals', result.imported || items.length, personnelIds).catch((e) => { console.error('[hccsvv] notifyOnImport failed:', e); });
+    notifyOnImport(user.id, AWARD_SLUGS.TENURE_MEDALS, result.imported || items.length, personnelIds).catch((e) => { console.error('[hccsvv] notifyOnImport failed:', e); });
     return ResponseHelper.success(res, { message: 'Thao tác thành công', data: result });
   });
 
@@ -134,7 +138,7 @@ class HCCSVVController {
       total: result.pagination.total,
       page: result.pagination.page,
       limit: result.pagination.limit,
-      message: 'Lấy danh sách HCCSVV thành công',
+      message: `Lấy danh sách ${AWARD_LABEL} thành công`,
     });
   });
 
@@ -168,7 +172,7 @@ class HCCSVVController {
   getStatistics = catchAsync(async (req: Request, res: Response) => {
     const statistics = await hccsvvService.getStatistics();
     return ResponseHelper.success(res, {
-      message: 'Lấy thống kê HCCSVV thành công',
+      message: `Lấy thống kê ${AWARD_LABEL} thành công`,
       data: statistics,
     });
   });
@@ -193,7 +197,7 @@ class HCCSVVController {
     );
     res.locals.createdId = result.id;
     return ResponseHelper.created(res, {
-      message: 'Thêm khen thưởng HCCSVV thành công',
+      message: `Thêm khen thưởng ${AWARD_LABEL} thành công`,
       data: result,
     });
   });

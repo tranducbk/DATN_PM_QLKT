@@ -7,7 +7,11 @@ import { writeSystemLog } from '../helpers/systemLogHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
+import { AWARD_LABELS } from '../constants/awardLabels.constants';
 import { notifyOnImport } from '../helpers/notification';
+
+const AWARD_LABEL = AWARD_LABELS[AWARD_SLUGS.ANNUAL_REWARDS];
 import {
   parsePersonnelIdsFromQuery,
   buildManagerQuanNhanFilter,
@@ -193,8 +197,8 @@ class AnnualRewardController {
         userId: user?.id,
         userRole: user?.role,
         action: 'ERROR',
-        resource: 'annual-rewards',
-        description: 'Lỗi tính lại hồ sơ hằng năm sau khi thêm danh hiệu',
+        resource: AWARD_SLUGS.ANNUAL_REWARDS,
+        description: `Lỗi tính lại hồ sơ hằng năm sau khi thêm ${AWARD_LABEL}`,
         payload: { error: String(recalcError), personnel_id },
       });
     }
@@ -244,8 +248,8 @@ class AnnualRewardController {
         userId: user?.id,
         userRole: user?.role,
         action: 'ERROR',
-        resource: 'annual-rewards',
-        description: 'Lỗi tính lại hồ sơ hằng năm sau khi cập nhật danh hiệu',
+        resource: AWARD_SLUGS.ANNUAL_REWARDS,
+        description: `Lỗi tính lại hồ sơ hằng năm sau khi cập nhật ${AWARD_LABEL}`,
         payload: { error: String(recalcError), personnel_id: result.quan_nhan_id },
       });
     }
@@ -315,8 +319,8 @@ class AnnualRewardController {
       userId: user.id,
       userRole: user.role,
       action: AUDIT_ACTIONS.IMPORT_PREVIEW,
-      resource: 'annual-rewards',
-      description: `Tải lên file "${Buffer.from(file.originalname, 'latin1').toString('utf8')}" để review danh hiệu cá nhân hằng năm: ${result.valid?.length ?? 0} hợp lệ, ${result.errors?.length ?? 0} lỗi`,
+      resource: AWARD_SLUGS.ANNUAL_REWARDS,
+      description: `Tải lên file "${Buffer.from(file.originalname, 'latin1').toString('utf8')}" để review ${AWARD_LABEL}: ${result.valid?.length ?? 0} hợp lệ, ${result.errors?.length ?? 0} lỗi`,
       payload: {
         filename: Buffer.from(file.originalname, 'latin1').toString('utf8'),
         total: result.total,
@@ -338,12 +342,12 @@ class AnnualRewardController {
       userId: user.id,
       userRole: user.role,
       action: AUDIT_ACTIONS.IMPORT,
-      resource: 'annual-rewards',
-      description: `Nhập dữ liệu danh hiệu cá nhân hằng năm thành công: ${result.imported ?? items.length} bản ghi`,
+      resource: AWARD_SLUGS.ANNUAL_REWARDS,
+      description: `Nhập dữ liệu ${AWARD_LABEL} thành công: ${result.imported ?? items.length} bản ghi`,
       payload: { imported: result.imported ?? items.length },
     });
     const personnelIds = items.map((i: { personnel_id: string }) => i.personnel_id);
-    notifyOnImport(user.id, 'annual-rewards', result.imported ?? items.length, personnelIds).catch((e) => { console.error('[annual-rewards] notifyOnImport failed:', e); });
+    notifyOnImport(user.id, AWARD_SLUGS.ANNUAL_REWARDS, result.imported ?? items.length, personnelIds).catch((e) => { console.error('[annual-rewards] notifyOnImport failed:', e); });
     return ResponseHelper.success(res, { data: result, message: 'Thao tác thành công' });
   });
 

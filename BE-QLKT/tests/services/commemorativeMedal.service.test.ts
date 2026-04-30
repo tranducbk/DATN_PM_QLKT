@@ -230,7 +230,7 @@ describe('commemorativeMedal.service - deleteAward', () => {
     const result = await commemorativeMedalService.deleteAward('knc-1', 'admin_user');
 
     expect(result.personnelId).toBe(personnel.id);
-    expect(result.message).toContain('Xóa khen thưởng KNC VSNXD thành công');
+    expect(result.message).toContain('Xóa khen thưởng Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN thành công');
     expect(prismaMock.kyNiemChuongVSNXDQDNDVN.delete).toHaveBeenCalledWith({
       where: { id: 'knc-1' },
     });

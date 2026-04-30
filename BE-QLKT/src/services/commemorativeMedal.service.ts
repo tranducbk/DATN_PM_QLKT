@@ -20,6 +20,10 @@ import { fetchTemplateData } from './excel/templateData.service';
 import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
 import { DANH_HIEU_MAP, KNC_YEARS_REQUIRED_NAM, KNC_YEARS_REQUIRED_NU } from '../constants/danhHieu.constants';
 import { GENDER } from '../constants/gender.constants';
+import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
+import { AWARD_LABELS } from '../constants/awardLabels.constants';
+
+const AWARD_LABEL = AWARD_LABELS[AWARD_SLUGS.COMMEMORATIVE_MEDALS];
 import {
   AWARD_EXCEL_SHEETS,
   KNC_EXPORT_COLUMNS,
@@ -665,14 +669,14 @@ class CommemorativeMedalService {
     } catch (notifyError) {
       writeSystemLog({
         action: 'ERROR',
-        resource: 'commemorative-medals',
+        resource: AWARD_SLUGS.COMMEMORATIVE_MEDALS,
         resourceId: id,
-        description: `Lỗi gửi thông báo xóa khen thưởng KNC VSNXD: ${notifyError}`,
+        description: `Lỗi gửi thông báo xóa khen thưởng ${AWARD_LABEL}: ${notifyError}`,
       });
     }
 
     return {
-      message: 'Xóa khen thưởng KNC VSNXD thành công',
+      message: `Xóa khen thưởng ${AWARD_LABEL} thành công`,
       personnelId,
     };
   }

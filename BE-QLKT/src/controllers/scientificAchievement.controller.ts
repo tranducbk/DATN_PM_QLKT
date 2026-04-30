@@ -7,8 +7,12 @@ import { writeSystemLog } from '../helpers/systemLogHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
+import { AWARD_LABELS } from '../constants/awardLabels.constants';
 import { parsePersonnelIdsFromQuery, buildManagerQuanNhanFilter, getAdminUsername } from '../helpers/controllerHelper';
 import { notifyOnImport } from '../helpers/notification';
+
+const AWARD_LABEL = AWARD_LABELS[AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS];
 
 interface GetAchievementsQuery {
   personnel_id?: string;
@@ -113,8 +117,8 @@ class ScientificAchievementController {
         userId: user?.id,
         userRole: user?.role,
         action: 'ERROR',
-        resource: 'scientific-achievements',
-        description: 'Lỗi tính lại hồ sơ hằng năm sau khi thêm thành tích NCKH',
+        resource: AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS,
+        description: `Lỗi tính lại hồ sơ hằng năm sau khi thêm ${AWARD_LABEL}`,
         payload: { error: String(recalcError), personnel_id },
       });
     }
@@ -145,8 +149,8 @@ class ScientificAchievementController {
         userId: user?.id,
         userRole: user?.role,
         action: 'ERROR',
-        resource: 'scientific-achievements',
-        description: 'Lỗi tính lại hồ sơ hằng năm sau khi cập nhật thành tích NCKH',
+        resource: AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS,
+        description: `Lỗi tính lại hồ sơ hằng năm sau khi cập nhật ${AWARD_LABEL}`,
         payload: { error: String(recalcError), personnel_id: result.quan_nhan_id },
       });
     }
@@ -221,8 +225,8 @@ class ScientificAchievementController {
       userId: user.id,
       userRole: user.role,
       action: AUDIT_ACTIONS.IMPORT_PREVIEW,
-      resource: 'scientific-achievements',
-      description: `Tải lên file "${file.originalname ? Buffer.from(file.originalname, 'latin1').toString('utf8') : 'Excel'}" để review thành tích khoa học: ${result.valid?.length || 0} hợp lệ, ${result.errors?.length || 0} lỗi`,
+      resource: AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS,
+      description: `Tải lên file "${file.originalname ? Buffer.from(file.originalname, 'latin1').toString('utf8') : 'Excel'}" để review ${AWARD_LABEL}: ${result.valid?.length || 0} hợp lệ, ${result.errors?.length || 0} lỗi`,
       payload: {
         filename: file.originalname ? Buffer.from(file.originalname, 'latin1').toString('utf8') : undefined,
         total: result.total,
@@ -244,12 +248,12 @@ class ScientificAchievementController {
       userId: user.id,
       userRole: user.role,
       action: AUDIT_ACTIONS.IMPORT,
-      resource: 'scientific-achievements',
-      description: `Nhập dữ liệu thành tích khoa học thành công: ${result.imported || items.length} bản ghi`,
+      resource: AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS,
+      description: `Nhập dữ liệu ${AWARD_LABEL} thành công: ${result.imported || items.length} bản ghi`,
       payload: { imported: result.imported || items.length },
     });
     const personnelIds = items.map((i: { personnel_id: string }) => i.personnel_id);
-    notifyOnImport(user.id, 'scientific-achievements', result.imported || items.length, personnelIds).catch((e) => { console.error('[scientific-achievements] notifyOnImport failed:', e); });
+    notifyOnImport(user.id, AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS, result.imported || items.length, personnelIds).catch((e) => { console.error('[scientific-achievements] notifyOnImport failed:', e); });
     return ResponseHelper.success(res, { message: 'Thao tác thành công', data: result });
   });
 }

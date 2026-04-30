@@ -7,8 +7,11 @@ import catchAsync from '../helpers/catchAsync';
 import { parsePersonnelIdsFromQuery, getManagerUnitFilter, getAdminUsername } from '../helpers/controllerHelper';
 import { parsePagination } from '../helpers/paginationHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
+import { AWARD_LABELS } from '../constants/awardLabels.constants';
 import { notifyOnImport } from '../helpers/notification';
-import { DANH_HIEU_MAP } from '../constants/danhHieu.constants';
+
+const AWARD_LABEL = AWARD_LABELS[AWARD_SLUGS.COMMEMORATIVE_MEDALS];
 
 interface GetTemplateQuery {
   repeat_map?: string;
@@ -74,8 +77,8 @@ class CommemorativeMedalController {
       userId: user.id,
       userRole: user.role,
       action: AUDIT_ACTIONS.IMPORT_PREVIEW,
-      resource: 'commemorative-medals',
-      description: `Tải lên file "${Buffer.from(file.originalname, 'latin1').toString('utf8')}" để review ${DANH_HIEU_MAP.KNC_VSNXD_QDNDVN}: ${result.valid?.length ?? 0} hợp lệ, ${result.errors?.length ?? 0} lỗi`,
+      resource: AWARD_SLUGS.COMMEMORATIVE_MEDALS,
+      description: `Tải lên file "${Buffer.from(file.originalname, 'latin1').toString('utf8')}" để review ${AWARD_LABEL}: ${result.valid?.length ?? 0} hợp lệ, ${result.errors?.length ?? 0} lỗi`,
       payload: {
         filename: Buffer.from(file.originalname, 'latin1').toString('utf8'),
         total: result.total,
@@ -99,12 +102,12 @@ class CommemorativeMedalController {
       userId: user.id,
       userRole: user.role,
       action: AUDIT_ACTIONS.IMPORT,
-      resource: 'commemorative-medals',
-      description: `Nhập dữ liệu kỷ niệm chương thành công: ${result.imported ?? items.length} bản ghi`,
+      resource: AWARD_SLUGS.COMMEMORATIVE_MEDALS,
+      description: `Nhập dữ liệu ${AWARD_LABEL} thành công: ${result.imported ?? items.length} bản ghi`,
       payload: { imported: result.imported ?? items.length },
     });
     const personnelIds = items.map((i: { personnel_id: string }) => i.personnel_id);
-    notifyOnImport(user.id, 'commemorative-medals', result.imported ?? items.length, personnelIds).catch((e) => { console.error('[commemorative-medals] notifyOnImport failed:', e); });
+    notifyOnImport(user.id, AWARD_SLUGS.COMMEMORATIVE_MEDALS, result.imported ?? items.length, personnelIds).catch((e) => { console.error('[commemorative-medals] notifyOnImport failed:', e); });
 
     return ResponseHelper.success(res, { data: result, message: 'Import dữ liệu thành công' });
   });
@@ -136,7 +139,7 @@ class CommemorativeMedalController {
       total: result.pagination.total,
       page: result.pagination.page,
       limit: result.pagination.limit,
-      message: 'Lấy danh sách Kỷ niệm chương thành công',
+      message: `Lấy danh sách ${AWARD_LABEL} thành công`,
     });
   });
 
@@ -172,7 +175,7 @@ class CommemorativeMedalController {
     const statistics = await commemorativeMedalService.getStatistics();
     return ResponseHelper.success(res, {
       data: statistics,
-      message: 'Lấy thống kê Kỷ niệm chương thành công',
+      message: `Lấy thống kê ${AWARD_LABEL} thành công`,
     });
   });
 
@@ -205,7 +208,7 @@ class CommemorativeMedalController {
     const result = await commemorativeMedalService.getByPersonnelId(String(personnel_id));
     return ResponseHelper.success(res, {
       data: { hasReceived: result.length > 0, data: result },
-      message: `Lấy ${DANH_HIEU_MAP.KNC_VSNXD_QDNDVN} theo quân nhân thành công`,
+      message: `Lấy ${AWARD_LABEL} theo quân nhân thành công`,
     });
   });
 

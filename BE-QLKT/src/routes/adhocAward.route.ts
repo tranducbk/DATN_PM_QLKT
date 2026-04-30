@@ -6,6 +6,7 @@ import { getLogDescription } from '../helpers/auditLog';
 import { ROLES } from '../constants/roles.constants';
 import { adhocAwardUpload as upload } from '../configs/multer';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 
 const router = Router();
 
@@ -64,8 +65,8 @@ router.post(
   ]),
   auditLog({
     action: AUDIT_ACTIONS.CREATE,
-    resource: 'adhoc-awards',
-    getDescription: getLogDescription('adhoc-awards', 'CREATE'),
+    resource: AWARD_SLUGS.ADHOC_AWARDS,
+    getDescription: getLogDescription(AWARD_SLUGS.ADHOC_AWARDS, 'CREATE'),
     getResourceId: getResourceId.fromResponse(),
   }),
   adhocAwardController.createAdhocAward
@@ -84,8 +85,8 @@ router.put(
   ]),
   auditLog({
     action: AUDIT_ACTIONS.UPDATE,
-    resource: 'adhoc-awards',
-    getDescription: getLogDescription('adhoc-awards', 'UPDATE'),
+    resource: AWARD_SLUGS.ADHOC_AWARDS,
+    getDescription: getLogDescription(AWARD_SLUGS.ADHOC_AWARDS, 'UPDATE'),
     getResourceId: getResourceId.fromParams('id'),
   }),
   adhocAwardController.updateAdhocAward
@@ -100,8 +101,8 @@ router.delete(
   '/:id',
   auditLog({
     action: AUDIT_ACTIONS.DELETE,
-    resource: 'adhoc-awards',
-    getDescription: getLogDescription('adhoc-awards', 'DELETE'),
+    resource: AWARD_SLUGS.ADHOC_AWARDS,
+    getDescription: getLogDescription(AWARD_SLUGS.ADHOC_AWARDS, 'DELETE'),
     getResourceId: getResourceId.fromParams('id'),
   }),
   adhocAwardController.deleteAdhocAward

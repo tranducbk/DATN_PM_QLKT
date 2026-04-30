@@ -21,6 +21,7 @@ import { excelImportValidation } from '../validations';
 import { annualRewardValidation } from '../validations';
 import { normalizeParam } from '../helpers/paginationHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 
 const router = Router();
 
@@ -73,8 +74,8 @@ router.post(
   validate(annualRewardValidation.createAnnualReward),
   auditLog({
     action: AUDIT_ACTIONS.CREATE,
-    resource: 'annual-rewards',
-    getDescription: getLogDescription('annual-rewards', 'CREATE'),
+    resource: AWARD_SLUGS.ANNUAL_REWARDS,
+    getDescription: getLogDescription(AWARD_SLUGS.ANNUAL_REWARDS, 'CREATE'),
     getResourceId: getResourceId.fromResponse(),
   }),
   annualRewardController.createAnnualReward
@@ -92,8 +93,8 @@ router.put(
   validate(annualRewardValidation.updateAnnualReward),
   auditLog({
     action: AUDIT_ACTIONS.UPDATE,
-    resource: 'annual-rewards',
-    getDescription: getLogDescription('annual-rewards', 'UPDATE'),
+    resource: AWARD_SLUGS.ANNUAL_REWARDS,
+    getDescription: getLogDescription(AWARD_SLUGS.ANNUAL_REWARDS, 'UPDATE'),
     getResourceId: getResourceId.fromParams('id'),
   }),
   annualRewardController.updateAnnualReward
@@ -110,8 +111,8 @@ router.delete(
   requireAdmin,
   auditLog({
     action: AUDIT_ACTIONS.DELETE,
-    resource: 'annual-rewards',
-    getDescription: getLogDescription('annual-rewards', 'DELETE'),
+    resource: AWARD_SLUGS.ANNUAL_REWARDS,
+    getDescription: getLogDescription(AWARD_SLUGS.ANNUAL_REWARDS, 'DELETE'),
     getResourceId: getResourceId.fromParams('id'),
   }),
   annualRewardController.deleteAnnualReward
@@ -143,8 +144,8 @@ router.post(
   validate(annualRewardValidation.bulkCreate),
   auditLog({
     action: AUDIT_ACTIONS.BULK,
-    resource: 'annual-rewards',
-    getDescription: getLogDescription('annual-rewards', 'BULK'),
+    resource: AWARD_SLUGS.ANNUAL_REWARDS,
+    getDescription: getLogDescription(AWARD_SLUGS.ANNUAL_REWARDS, 'BULK'),
     getResourceId: () => null,
   }),
   annualRewardController.bulkCreateAnnualRewards
@@ -188,8 +189,8 @@ router.post(
   upload.single('file'),
   auditLog({
     action: AUDIT_ACTIONS.IMPORT,
-    resource: 'annual-rewards',
-    getDescription: getLogDescription('annual-rewards', 'IMPORT'),
+    resource: AWARD_SLUGS.ANNUAL_REWARDS,
+    getDescription: getLogDescription(AWARD_SLUGS.ANNUAL_REWARDS, 'IMPORT'),
     getResourceId: () => null,
   }),
   annualRewardController.importAnnualRewards

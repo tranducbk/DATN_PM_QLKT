@@ -15,7 +15,11 @@ import {
 } from '../../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
+import { AWARD_SLUGS } from '../../constants/awardSlugs.constants';
+import { AWARD_LABELS } from '../../constants/awardLabels.constants';
 import { NotFoundError, ValidationError } from '../../middlewares/errorHandler';
+
+const AWARD_LABEL = AWARD_LABELS[AWARD_SLUGS.ANNUAL_REWARDS];
 import { writeSystemLog } from '../../helpers/systemLogHelper';
 import { validateDecisionNumbers } from '../eligibility/decisionNumberValidation';
 import profileService from '../profile.service';
@@ -367,8 +371,8 @@ export async function deleteAnnualReward(
     } catch (e) {
       void writeSystemLog({
         action: 'ERROR',
-        resource: 'annual-rewards',
-        description: `Lỗi gửi thông báo xóa khen thưởng hằng năm: ${e}`,
+        resource: AWARD_SLUGS.ANNUAL_REWARDS,
+        description: `Lỗi gửi thông báo xóa ${AWARD_LABEL}: ${e}`,
       });
     }
 
@@ -394,13 +398,13 @@ export async function deleteAnnualReward(
   } catch (e) {
     writeSystemLog({
       action: 'ERROR',
-      resource: 'annual-rewards',
-      description: `Lỗi gửi thông báo xóa khen thưởng hằng năm: ${e}`,
+      resource: AWARD_SLUGS.ANNUAL_REWARDS,
+      description: `Lỗi gửi thông báo xóa ${AWARD_LABEL}: ${e}`,
     });
   }
 
   return {
-    message: 'Đã xóa danh hiệu hằng năm.',
+    message: `Đã xóa ${AWARD_LABEL}.`,
     personnelId,
     personnel,
     reward,

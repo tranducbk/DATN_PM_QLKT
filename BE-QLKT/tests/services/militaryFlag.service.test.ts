@@ -162,7 +162,7 @@ describe('militaryFlag.service - deleteAward', () => {
     const result = await militaryFlagService.deleteAward('hc-1', 'admin_user');
 
     expect(result.personnelId).toBe(personnel.id);
-    expect(result.message).toContain('Xóa khen thưởng HCQKQT thành công');
+    expect(result.message).toContain('Xóa khen thưởng Huy chương Quân kỳ quyết thắng thành công');
     expect(prismaMock.huanChuongQuanKyQuyetThang.delete).toHaveBeenCalledWith({
       where: { id: 'hc-1' },
     });

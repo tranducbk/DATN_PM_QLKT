@@ -1,4 +1,5 @@
 import profileService from '../services/profile.service';
+import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 import { writeSystemLog } from './systemLogHelper';
 
 /**
@@ -9,7 +10,7 @@ import { writeSystemLog } from './systemLogHelper';
  */
 export async function safeRecalculateAnnualProfile(
   personnelId: string,
-  resource = 'annual-rewards'
+  resource: string = AWARD_SLUGS.ANNUAL_REWARDS
 ): Promise<void> {
   try {
     await profileService.recalculateAnnualProfile(personnelId);

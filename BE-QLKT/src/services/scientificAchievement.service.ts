@@ -8,8 +8,12 @@ import profileService from './profile.service';
 import * as notificationHelper from '../helpers/notification';
 import { DANH_HIEU_NCKH, resolveNckhCode } from '../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
+import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
+import { AWARD_LABELS } from '../constants/awardLabels.constants';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { NotFoundError, ValidationError } from '../middlewares/errorHandler';
+
+const AWARD_LABEL = AWARD_LABELS[AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS];
 import { buildTemplate, styleHeaderRow } from '../helpers/excel/excelTemplateHelper';
 import { fetchTemplateData } from './excel/templateData.service';
 import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, sanitizeRowData, validatePersonnelNameMatch } from '../helpers/excel/excelHelper';
@@ -132,7 +136,7 @@ class ScientificAchievementService {
     try {
       await profileService.recalculateAnnualProfile(personnel_id);
     } catch (e) {
-      void writeSystemLog({ action: 'ERROR', resource: 'scientific-achievements', description: `Lỗi tính lại hồ sơ hằng năm: ${e}` });
+      void writeSystemLog({ action: 'ERROR', resource: AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS, description: `Lỗi tính lại hồ sơ hằng năm sau khi cập nhật ${AWARD_LABEL}: ${e}` });
     }
 
     return newAchievement;
@@ -170,7 +174,7 @@ class ScientificAchievementService {
     try {
       await profileService.recalculateAnnualProfile(achievement.quan_nhan_id);
     } catch (e) {
-      void writeSystemLog({ action: 'ERROR', resource: 'scientific-achievements', description: `Lỗi tính lại hồ sơ hằng năm: ${e}` });
+      void writeSystemLog({ action: 'ERROR', resource: AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS, description: `Lỗi tính lại hồ sơ hằng năm sau khi cập nhật ${AWARD_LABEL}: ${e}` });
     }
 
     return updatedAchievement;
@@ -196,7 +200,7 @@ class ScientificAchievementService {
     try {
       await profileService.recalculateAnnualProfile(personnelId);
     } catch (error) {
-      writeSystemLog({ action: 'ERROR', resource: 'scientific-achievements', description: `Lỗi tính lại hồ sơ hằng năm sau khi xóa thành tích NCKH: ${error}` });
+      writeSystemLog({ action: 'ERROR', resource: AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS, description: `Lỗi tính lại hồ sơ hằng năm sau khi xóa ${AWARD_LABEL}: ${error}` });
     }
 
     try {
@@ -207,7 +211,7 @@ class ScientificAchievementService {
         adminUsername
       );
     } catch (error) {
-      writeSystemLog({ action: 'ERROR', resource: 'scientific-achievements', description: `Lỗi gửi thông báo xóa thành tích NCKH: ${error}` });
+      writeSystemLog({ action: 'ERROR', resource: AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS, description: `Lỗi gửi thông báo xóa ${AWARD_LABEL}: ${error}` });
     }
 
     return {
