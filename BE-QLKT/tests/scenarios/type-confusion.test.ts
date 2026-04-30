@@ -160,7 +160,7 @@ describe('Type confusion — danh_hieu casing & duplicate detection', () => {
     // Pin: service so sánh exact code "CSTDCS" — chữ thường bị reject.
     // Excel import dùng resolveDanhHieuCode case-insensitive, nhưng proposal
     // submit KHÔNG normalize — route phải pre-validate.
-    // TODO: Joi route enforce uppercase; normalize ở service sẽ kín kẽ hơn.
+    // TODO: Zod route enforce uppercase; normalize ở service sẽ kín kẽ hơn.
     arrangeManager();
     const target = makePersonnel({ id: 'qn-lower-dh' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([target]);

@@ -1,17 +1,13 @@
-import Joi from 'joi';
+import { z } from 'zod';
 
-export const createUnit: Joi.ObjectSchema = Joi.object({
-  ma_don_vi: Joi.string().trim().required().messages({
-    'any.required': 'Mã đơn vị là bắt buộc',
-  }),
-  ten_don_vi: Joi.string().trim().required().messages({
-    'any.required': 'Tên đơn vị là bắt buộc',
-  }),
-  co_quan_don_vi_id: Joi.string().trim().optional().allow(null),
+export const createUnit = z.object({
+  ma_don_vi: z.string().trim().min(1, 'Mã đơn vị là bắt buộc'),
+  ten_don_vi: z.string().trim().min(1, 'Tên đơn vị là bắt buộc'),
+  co_quan_don_vi_id: z.string().trim().nullable().optional(),
 });
 
-export const updateUnit: Joi.ObjectSchema = Joi.object({
-  ma_don_vi: Joi.string().trim().optional(),
-  ten_don_vi: Joi.string().trim().optional(),
-  co_quan_don_vi_id: Joi.string().trim().optional().allow(null),
+export const updateUnit = z.object({
+  ma_don_vi: z.string().trim().optional(),
+  ten_don_vi: z.string().trim().optional(),
+  co_quan_don_vi_id: z.string().trim().nullable().optional(),
 });

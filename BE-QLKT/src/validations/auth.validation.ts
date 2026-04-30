@@ -1,28 +1,15 @@
-import Joi from 'joi';
+import { z } from 'zod';
 
-export const login: Joi.ObjectSchema = Joi.object({
-  username: Joi.string().trim().required().messages({
-    'string.empty': 'Tên đăng nhập không được để trống',
-    'any.required': 'Tên đăng nhập là bắt buộc',
-  }),
-  password: Joi.string().required().messages({
-    'string.empty': 'Mật khẩu không được để trống',
-    'any.required': 'Mật khẩu là bắt buộc',
-  }),
+export const login = z.object({
+  username: z.string().trim().min(1, 'Tên đăng nhập không được để trống'),
+  password: z.string().min(1, 'Mật khẩu không được để trống'),
 });
 
-export const changePassword: Joi.ObjectSchema = Joi.object({
-  oldPassword: Joi.string().required().messages({
-    'any.required': 'Mật khẩu hiện tại là bắt buộc',
-  }),
-  newPassword: Joi.string().min(8).required().messages({
-    'string.min': 'Mật khẩu mới phải có ít nhất 8 ký tự',
-    'any.required': 'Mật khẩu mới là bắt buộc',
-  }),
+export const changePassword = z.object({
+  oldPassword: z.string().min(1, 'Mật khẩu hiện tại là bắt buộc'),
+  newPassword: z.string().min(8, 'Mật khẩu mới phải có ít nhất 8 ký tự'),
 });
 
-export const refreshToken: Joi.ObjectSchema = Joi.object({
-  refreshToken: Joi.string().required().messages({
-    'any.required': 'Refresh token là bắt buộc',
-  }),
+export const refreshToken = z.object({
+  refreshToken: z.string().min(1, 'Refresh token là bắt buộc'),
 });

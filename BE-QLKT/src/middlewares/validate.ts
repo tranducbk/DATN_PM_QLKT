@@ -1,24 +1,20 @@
 import { Request, Response, NextFunction, RequestHandler } from 'express';
-import Joi from 'joi';
+import { ZodType } from 'zod';
 
 type ValidationSource = 'body' | 'query' | 'params';
 
 /**
- * Creates Joi-based validation middleware for request payloads.
- * @param schema - Joi object schema
+ * Creates Zod-based validation middleware for request payloads.
+ * @param schema - Zod schema
  * @param source - Request source to validate (body, query, or params)
  * @returns Express request handler
  */
-const validate = (schema: Joi.ObjectSchema, source: ValidationSource = 'body'): RequestHandler => {
+const validate = (schema: ZodType, source: ValidationSource = 'body'): RequestHandler => {
   return (req: Request, res: Response, next: NextFunction): void => {
-    const { error, value } = schema.validate(req[source], {
-      abortEarly: false,
-      stripUnknown: true,
-      convert: true,
-    });
+    const result = schema.safeParse(req[source]);
 
-    if (error) {
-      const messages = error.details.map(detail => detail.message);
+    if (!result.success) {
+      const messages = result.error.issues.map(issue => issue.message);
       res.status(400).json({
         success: false,
         message: 'Dữ liệu không hợp lệ',
@@ -27,7 +23,7 @@ const validate = (schema: Joi.ObjectSchema, source: ValidationSource = 'body'): 
       return;
     }
 
-    req[source] = value;
+    req[source] = result.data;
     next();
   };
 };

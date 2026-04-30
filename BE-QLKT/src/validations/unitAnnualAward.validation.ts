@@ -1,19 +1,19 @@
-import Joi from 'joi';
+import { z } from 'zod';
 
-export const listUnitAnnualAwardsQuery: Joi.ObjectSchema = Joi.object({
-  page: Joi.number().integer().min(1).optional(),
-  limit: Joi.number().integer().min(1).optional(),
-  year: Joi.number().integer().min(1900).max(2100).optional(),
-  nam: Joi.number().integer().min(1900).max(2100).optional(),
-  don_vi_id: Joi.string().trim().optional(),
-  danh_hieu: Joi.string().trim().optional(),
+export const listUnitAnnualAwardsQuery = z.object({
+  page: z.coerce.number().int().min(1).optional(),
+  limit: z.coerce.number().int().min(1).optional(),
+  year: z.coerce.number().int().min(1900).max(2100).optional(),
+  nam: z.coerce.number().int().min(1900).max(2100).optional(),
+  don_vi_id: z.string().trim().optional(),
+  danh_hieu: z.string().trim().optional(),
 });
 
-export const exportUnitAnnualAwardsQuery: Joi.ObjectSchema = Joi.object({
-  nam: Joi.number().integer().min(1900).max(2100).optional(),
-  danh_hieu: Joi.string().trim().optional(),
+export const exportUnitAnnualAwardsQuery = z.object({
+  nam: z.coerce.number().int().min(1900).max(2100).optional(),
+  danh_hieu: z.string().trim().optional(),
 });
 
-export const getUnitAnnualAwardsStatisticsQuery: Joi.ObjectSchema = Joi.object({
-  nam: Joi.number().integer().min(1900).max(2100).optional(),
+export const getUnitAnnualAwardsStatisticsQuery = z.object({
+  nam: z.coerce.number().int().min(1900).max(2100).optional(),
 });

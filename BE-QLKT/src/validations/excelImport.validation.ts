@@ -1,81 +1,58 @@
-import Joi from 'joi';
+import { z } from 'zod';
 
-/**
- * Shared base fields for personnel-based import items
- */
 const personnelImportItemBase = {
-  personnel_id: Joi.string().trim().required().messages({
-    'any.required': 'ID quân nhân là bắt buộc',
-  }),
-  nam: Joi.number().integer().min(1900).max(2100).required().messages({
-    'any.required': 'Năm là bắt buộc',
-  }),
-  cap_bac: Joi.string().trim().optional().allow(null, ''),
-  chuc_vu: Joi.string().trim().optional().allow(null, ''),
-  so_quyet_dinh: Joi.string().trim().optional().allow(null, ''),
-  ghi_chu: Joi.string().trim().optional().allow(null, ''),
+  personnel_id: z.string().trim().min(1, 'ID quân nhân là bắt buộc'),
+  nam: z
+    .number({ message: 'Năm là bắt buộc' })
+    .int('Năm phải là số nguyên')
+    .min(1900, 'Năm phải từ 1900 đến 2100')
+    .max(2100, 'Năm phải từ 1900 đến 2100'),
+  cap_bac: z.string().trim().nullable().optional(),
+  chuc_vu: z.string().trim().nullable().optional(),
+  so_quyet_dinh: z.string().trim().nullable().optional(),
+  ghi_chu: z.string().trim().nullable().optional(),
 };
 
-/**
- * Wraps an item schema into { items: [...] } body schema
- */
-const wrapItemsSchema = (itemSchema: Joi.ObjectSchema): Joi.ObjectSchema =>
-  Joi.object({
-    items: Joi.array().items(itemSchema).min(1).required().messages({
-      'array.min': 'Danh sách phải có ít nhất 1 mục',
-      'any.required': 'Danh sách items là bắt buộc',
-    }),
+const wrapItemsSchema = <T extends z.ZodTypeAny>(itemSchema: T) =>
+  z.object({
+    items: z
+      .array(itemSchema, { message: 'Danh sách items là bắt buộc' })
+      .min(1, 'Danh sách phải có ít nhất 1 mục'),
   });
 
-/**
- * Shared schema: personnel base fields + danh_hieu required
- * Used by: Annual Reward, HCCSVV, Contribution Award (HCBVTQ)
- */
 const personnelWithDanhHieuSchema = wrapItemsSchema(
-  Joi.object({
+  z.object({
     ...personnelImportItemBase,
-    danh_hieu: Joi.string().trim().required().messages({
-      'any.required': 'Danh hiệu là bắt buộc',
-    }),
+    danh_hieu: z.string().trim().min(1, 'Danh hiệu là bắt buộc'),
   })
 );
 
-/**
- * Shared schema: personnel base fields only
- * Used by: Military Flag, Commemorative Medal
- */
-const personnelBaseSchema = wrapItemsSchema(
-  Joi.object({
-    ...personnelImportItemBase,
-  })
-);
+const personnelBaseSchema = wrapItemsSchema(z.object({ ...personnelImportItemBase }));
 
 /** Annual reward. */
-export const confirmImportAnnualReward: Joi.ObjectSchema = personnelWithDanhHieuSchema;
+export const confirmImportAnnualReward = personnelWithDanhHieuSchema;
 
 /** Glorious Soldier Medal (HCCSVV). */
-export const confirmImportHccsvv: Joi.ObjectSchema = personnelWithDanhHieuSchema;
+export const confirmImportHccsvv = personnelWithDanhHieuSchema;
 
 /** Fatherland Defense Order (Contribution Award / HCBVTQ). */
-export const confirmImportContributionAward: Joi.ObjectSchema = personnelWithDanhHieuSchema;
+export const confirmImportContributionAward = personnelWithDanhHieuSchema;
 
 /** Determined-to-Win Military Flag Medal. */
-export const confirmImportMilitaryFlag: Joi.ObjectSchema = personnelBaseSchema;
+export const confirmImportMilitaryFlag = personnelBaseSchema;
 
 /** Commemorative Medal for Building the Vietnam People's Army. */
-export const confirmImportCommemorativeMedal: Joi.ObjectSchema = personnelBaseSchema;
+export const confirmImportCommemorativeMedal = personnelBaseSchema;
 
 /**
  * Scientific achievement.
  * Fields: personnel_id, nam, loai, mo_ta, cap_bac, chuc_vu, so_quyet_dinh, ghi_chu
  */
-export const confirmImportScientificAchievement: Joi.ObjectSchema = wrapItemsSchema(
-  Joi.object({
+export const confirmImportScientificAchievement = wrapItemsSchema(
+  z.object({
     ...personnelImportItemBase,
-    loai: Joi.string().trim().required().messages({
-      'any.required': 'Loại thành tích là bắt buộc',
-    }),
-    mo_ta: Joi.string().trim().optional().allow(null, ''),
+    loai: z.string().trim().min(1, 'Loại thành tích là bắt buộc'),
+    mo_ta: z.string().trim().nullable().optional(),
   })
 );
 
@@ -83,21 +60,17 @@ export const confirmImportScientificAchievement: Joi.ObjectSchema = wrapItemsSch
  * Annual unit award.
  * Fields: unit_id, nam, danh_hieu, so_quyet_dinh, ghi_chu, is_co_quan_don_vi
  */
-export const confirmImportUnitAnnualAward: Joi.ObjectSchema = wrapItemsSchema(
-  Joi.object({
-    unit_id: Joi.string().trim().required().messages({
-      'any.required': 'ID đơn vị là bắt buộc',
-    }),
-    nam: Joi.number().integer().min(1900).max(2100).required().messages({
-      'any.required': 'Năm là bắt buộc',
-    }),
-    danh_hieu: Joi.string().trim().required().messages({
-      'any.required': 'Danh hiệu là bắt buộc',
-    }),
-    so_quyet_dinh: Joi.string().trim().optional().allow(null, ''),
-    ghi_chu: Joi.string().trim().optional().allow(null, ''),
-    is_co_quan_don_vi: Joi.boolean().required().messages({
-      'any.required': 'Loại đơn vị (is_co_quan_don_vi) là bắt buộc',
-    }),
+export const confirmImportUnitAnnualAward = wrapItemsSchema(
+  z.object({
+    unit_id: z.string().trim().min(1, 'ID đơn vị là bắt buộc'),
+    nam: z
+      .number({ message: 'Năm là bắt buộc' })
+      .int('Năm phải là số nguyên')
+      .min(1900, 'Năm phải từ 1900 đến 2100')
+      .max(2100, 'Năm phải từ 1900 đến 2100'),
+    danh_hieu: z.string().trim().min(1, 'Danh hiệu là bắt buộc'),
+    so_quyet_dinh: z.string().trim().nullable().optional(),
+    ghi_chu: z.string().trim().nullable().optional(),
+    is_co_quan_don_vi: z.boolean({ message: 'Loại đơn vị (is_co_quan_don_vi) là bắt buộc' }),
   })
 );

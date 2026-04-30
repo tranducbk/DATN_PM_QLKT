@@ -147,7 +147,7 @@ describe('Bypass FE — payload shape attacks', () => {
 
 describe('Bypass FE — year and month boundary attacks', () => {
   it('nam = -1 → service vẫn tạo proposal (KHÔNG validate phía service)', async () => {
-    // Note: Joi validation ở route layer; service không guard range `nam`.
+    // Note: Zod validation ở route layer; service không guard range `nam`.
     // Test này pin behavior hiện tại — xem "Rule mơ hồ phát hiện" trong audit report.
     arrangeManager();
     const target = makePersonnel({ id: 'qn-neg-year' });

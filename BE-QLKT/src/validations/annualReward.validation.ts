@@ -1,101 +1,107 @@
-import Joi from 'joi';
+import { z } from 'zod';
 
-export const createAnnualReward: Joi.ObjectSchema = Joi.object({
-  personnel_id: Joi.string().trim().required().messages({
-    'any.required': 'ID quân nhân là bắt buộc',
-  }),
-  nam: Joi.number().integer().min(1900).max(2100).required().messages({
-    'any.required': 'Năm là bắt buộc',
-  }),
-  danh_hieu: Joi.string().trim().required().messages({
-    'any.required': 'Danh hiệu là bắt buộc',
-  }),
-  cap_bac: Joi.string().trim().optional().allow(null, ''),
-  chuc_vu: Joi.string().trim().optional().allow(null, ''),
-  ghi_chu: Joi.string().trim().optional().allow(null, ''),
-  nhan_bkbqp: Joi.boolean().optional(),
-  so_quyet_dinh_bkbqp: Joi.string().trim().optional().allow(null, ''),
-  nhan_cstdtq: Joi.boolean().optional(),
-  so_quyet_dinh_cstdtq: Joi.string().trim().optional().allow(null, ''),
-  nhan_bkttcp: Joi.boolean().optional(),
-  so_quyet_dinh_bkttcp: Joi.string().trim().optional().allow(null, ''),
+export const createAnnualReward = z.object({
+  personnel_id: z.string().trim().min(1, 'ID quân nhân là bắt buộc'),
+  nam: z
+    .number({ message: 'Năm là bắt buộc' })
+    .int()
+    .min(1900)
+    .max(2100),
+  danh_hieu: z.string().trim().min(1, 'Danh hiệu là bắt buộc'),
+  cap_bac: z.string().trim().nullable().optional(),
+  chuc_vu: z.string().trim().nullable().optional(),
+  ghi_chu: z.string().trim().nullable().optional(),
+  nhan_bkbqp: z.boolean().optional(),
+  so_quyet_dinh_bkbqp: z.string().trim().nullable().optional(),
+  nhan_cstdtq: z.boolean().optional(),
+  so_quyet_dinh_cstdtq: z.string().trim().nullable().optional(),
+  nhan_bkttcp: z.boolean().optional(),
+  so_quyet_dinh_bkttcp: z.string().trim().nullable().optional(),
 });
 
-export const updateAnnualReward: Joi.ObjectSchema = Joi.object({
-  nam: Joi.number().integer().min(1900).max(2100).optional(),
-  danh_hieu: Joi.string().trim().optional(),
-  cap_bac: Joi.string().trim().optional().allow(null, ''),
-  chuc_vu: Joi.string().trim().optional().allow(null, ''),
-  ghi_chu: Joi.string().trim().optional().allow(null, ''),
-  nhan_bkbqp: Joi.boolean().optional(),
-  so_quyet_dinh_bkbqp: Joi.string().trim().optional().allow(null, ''),
-  nhan_cstdtq: Joi.boolean().optional(),
-  so_quyet_dinh_cstdtq: Joi.string().trim().optional().allow(null, ''),
-  nhan_bkttcp: Joi.boolean().optional(),
-  so_quyet_dinh_bkttcp: Joi.string().trim().optional().allow(null, ''),
+export const updateAnnualReward = z.object({
+  nam: z.number().int().min(1900).max(2100).optional(),
+  danh_hieu: z.string().trim().optional(),
+  cap_bac: z.string().trim().nullable().optional(),
+  chuc_vu: z.string().trim().nullable().optional(),
+  ghi_chu: z.string().trim().nullable().optional(),
+  nhan_bkbqp: z.boolean().optional(),
+  so_quyet_dinh_bkbqp: z.string().trim().nullable().optional(),
+  nhan_cstdtq: z.boolean().optional(),
+  so_quyet_dinh_cstdtq: z.string().trim().nullable().optional(),
+  nhan_bkttcp: z.boolean().optional(),
+  so_quyet_dinh_bkttcp: z.string().trim().nullable().optional(),
 });
 
-export const bulkCreate: Joi.ObjectSchema = Joi.object({
-  personnel_ids: Joi.alternatives()
-    .try(
-      Joi.array().items(Joi.string().trim()).min(1),
-      Joi.string().custom((value, helpers) => {
-        try {
-          const parsed = JSON.parse(value);
-          if (!Array.isArray(parsed) || !parsed.every((x: unknown) => typeof x === 'string')) {
-            return helpers.error('any.invalid');
-          }
-          return parsed;
-        } catch (error) {
-   console.error('Failed to parse annualReward selected_personnel JSON:', error);
-          return helpers.error('any.invalid');
-        }
-      }, 'parse personnel_ids json')
-    )
-    .required(),
-  personnel_rewards_data: Joi.alternatives().try(
-    Joi.array().items(Joi.object().unknown(true)),
-    Joi.string().custom((value, helpers) => {
-      try {
-        const parsed = JSON.parse(value);
-        if (!Array.isArray(parsed)) return helpers.error('any.invalid');
-        return parsed;
-      } catch (error) {
-   console.error('Failed to parse annualReward title_data JSON:', error);
-        return helpers.error('any.invalid');
+const personnelIdsSchema = z.union([
+  z.array(z.string().trim()).min(1),
+  z.string().transform((value, ctx) => {
+    try {
+      const parsed = JSON.parse(value);
+      if (!Array.isArray(parsed) || !parsed.every((x: unknown) => typeof x === 'string')) {
+        ctx.addIssue({ code: 'custom', message: 'personnel_ids không hợp lệ' });
+        return z.NEVER;
       }
-    }, 'parse personnel_rewards_data json')
-  ).optional(),
-  nam: Joi.number().integer().min(1900).max(2100).required(),
-  danh_hieu: Joi.string().trim().required(),
-  ghi_chu: Joi.string().trim().optional().allow(null, ''),
-  so_quyet_dinh: Joi.string().trim().optional().allow(null, ''),
-  cap_bac: Joi.string().trim().optional().allow(null, ''),
-  chuc_vu: Joi.string().trim().optional().allow(null, ''),
+      return parsed as string[];
+    } catch (error) {
+      console.error('Failed to parse annualReward selected_personnel JSON:', error);
+      ctx.addIssue({ code: 'custom', message: 'personnel_ids không hợp lệ' });
+      return z.NEVER;
+    }
+  }),
+]);
+
+const personnelRewardsDataSchema = z.union([
+  z.array(z.record(z.string(), z.unknown())),
+  z.string().transform((value, ctx) => {
+    try {
+      const parsed = JSON.parse(value);
+      if (!Array.isArray(parsed)) {
+        ctx.addIssue({ code: 'custom', message: 'personnel_rewards_data không hợp lệ' });
+        return z.NEVER;
+      }
+      return parsed as unknown[];
+    } catch (error) {
+      console.error('Failed to parse annualReward title_data JSON:', error);
+      ctx.addIssue({ code: 'custom', message: 'personnel_rewards_data không hợp lệ' });
+      return z.NEVER;
+    }
+  }),
+]);
+
+export const bulkCreate = z.object({
+  personnel_ids: personnelIdsSchema,
+  personnel_rewards_data: personnelRewardsDataSchema.optional(),
+  nam: z.number().int().min(1900).max(2100),
+  danh_hieu: z.string().trim().min(1),
+  ghi_chu: z.string().trim().nullable().optional(),
+  so_quyet_dinh: z.string().trim().nullable().optional(),
+  cap_bac: z.string().trim().nullable().optional(),
+  chuc_vu: z.string().trim().nullable().optional(),
 });
 
-export const checkAnnualRewards: Joi.ObjectSchema = Joi.object({
-  personnel_ids: Joi.array().items(Joi.string().trim()).min(1).required(),
-  nam: Joi.number().integer().min(1900).max(2100).required(),
-  danh_hieu: Joi.string().trim().required(),
+export const checkAnnualRewards = z.object({
+  personnel_ids: z.array(z.string().trim()).min(1),
+  nam: z.number().int().min(1900).max(2100),
+  danh_hieu: z.string().trim().min(1),
 });
 
-export const getAnnualRewardsQuery: Joi.ObjectSchema = Joi.object({
-  personnel_id: Joi.string().trim().optional(),
-  page: Joi.number().integer().min(1).optional(),
-  limit: Joi.number().integer().min(1).optional(),
-  nam: Joi.number().integer().min(1900).max(2100).optional(),
-  danh_hieu: Joi.string().trim().optional(),
-  ho_ten: Joi.string().trim().optional(),
+export const getAnnualRewardsQuery = z.object({
+  personnel_id: z.string().trim().optional(),
+  page: z.coerce.number().int().min(1).optional(),
+  limit: z.coerce.number().int().min(1).optional(),
+  nam: z.coerce.number().int().min(1900).max(2100).optional(),
+  danh_hieu: z.string().trim().optional(),
+  ho_ten: z.string().trim().optional(),
 });
 
-export const exportAnnualRewardsQuery: Joi.ObjectSchema = Joi.object({
-  nam: Joi.number().integer().min(1900).max(2100).optional(),
-  danh_hieu: Joi.string().trim().optional(),
-  don_vi_id: Joi.string().trim().optional(),
-  personnel_ids: Joi.string().trim().optional(), // comma-separated
+export const exportAnnualRewardsQuery = z.object({
+  nam: z.coerce.number().int().min(1900).max(2100).optional(),
+  danh_hieu: z.string().trim().optional(),
+  don_vi_id: z.string().trim().optional(),
+  personnel_ids: z.string().trim().optional(),
 });
 
-export const getAnnualRewardsStatisticsQuery: Joi.ObjectSchema = Joi.object({
-  nam: Joi.number().integer().min(1900).max(2100).optional(),
+export const getAnnualRewardsStatisticsQuery = z.object({
+  nam: z.coerce.number().int().min(1900).max(2100).optional(),
 });

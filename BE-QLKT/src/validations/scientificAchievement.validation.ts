@@ -1,42 +1,36 @@
-import Joi from 'joi';
+import { z } from 'zod';
 
-export const createAchievement: Joi.ObjectSchema = Joi.object({
-  personnel_id: Joi.string().trim().required().messages({
-    'any.required': 'ID quân nhân là bắt buộc',
-  }),
-  nam: Joi.number().integer().min(1900).max(2100).required().messages({
-    'any.required': 'Năm là bắt buộc',
-  }),
-  loai: Joi.string().trim().required().messages({
-    'any.required': 'Loại thành tích là bắt buộc',
-  }),
-  mo_ta: Joi.string().trim().optional().allow(null, ''),
-  cap_bac: Joi.string().trim().optional().allow(null, ''),
-  chuc_vu: Joi.string().trim().optional().allow(null, ''),
-  ghi_chu: Joi.string().trim().optional().allow(null, ''),
-  status: Joi.string().trim().optional(),
+export const createAchievement = z.object({
+  personnel_id: z.string().trim().min(1, 'ID quân nhân là bắt buộc'),
+  nam: z.number({ message: 'Năm là bắt buộc' }).int().min(1900).max(2100),
+  loai: z.string().trim().min(1, 'Loại thành tích là bắt buộc'),
+  mo_ta: z.string().trim().nullable().optional(),
+  cap_bac: z.string().trim().nullable().optional(),
+  chuc_vu: z.string().trim().nullable().optional(),
+  ghi_chu: z.string().trim().nullable().optional(),
+  status: z.string().trim().optional(),
 });
 
-export const updateAchievement: Joi.ObjectSchema = Joi.object({
-  nam: Joi.number().integer().min(1900).max(2100).optional(),
-  loai: Joi.string().trim().optional(),
-  mo_ta: Joi.string().trim().optional().allow(null, ''),
-  cap_bac: Joi.string().trim().optional().allow(null, ''),
-  chuc_vu: Joi.string().trim().optional().allow(null, ''),
-  ghi_chu: Joi.string().trim().optional().allow(null, ''),
-  status: Joi.string().trim().optional(),
+export const updateAchievement = z.object({
+  nam: z.number().int().min(1900).max(2100).optional(),
+  loai: z.string().trim().optional(),
+  mo_ta: z.string().trim().nullable().optional(),
+  cap_bac: z.string().trim().nullable().optional(),
+  chuc_vu: z.string().trim().nullable().optional(),
+  ghi_chu: z.string().trim().nullable().optional(),
+  status: z.string().trim().optional(),
 });
 
-export const getAchievementsQuery: Joi.ObjectSchema = Joi.object({
-  personnel_id: Joi.string().trim().optional(),
-  page: Joi.number().integer().min(1).optional(),
-  limit: Joi.number().integer().min(1).optional(),
-  nam: Joi.number().integer().min(1900).max(2100).optional(),
-  loai: Joi.string().trim().optional(),
-  ho_ten: Joi.string().trim().optional(),
+export const getAchievementsQuery = z.object({
+  personnel_id: z.string().trim().optional(),
+  page: z.coerce.number().int().min(1).optional(),
+  limit: z.coerce.number().int().min(1).optional(),
+  nam: z.coerce.number().int().min(1900).max(2100).optional(),
+  loai: z.string().trim().optional(),
+  ho_ten: z.string().trim().optional(),
 });
 
-export const exportAchievementsQuery: Joi.ObjectSchema = Joi.object({
-  nam: Joi.number().integer().min(1900).max(2100).optional(),
-  loai: Joi.string().trim().optional(),
+export const exportAchievementsQuery = z.object({
+  nam: z.coerce.number().int().min(1900).max(2100).optional(),
+  loai: z.string().trim().optional(),
 });
