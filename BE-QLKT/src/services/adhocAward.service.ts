@@ -6,6 +6,7 @@ import { coQuanDonViRepository, donViTrucThuocRepository } from '../repositories
 import { adhocAwardRepository } from '../repositories/adhocAward.repository';
 import { accountRepository } from '../repositories/account.repository';
 import { notificationRepository } from '../repositories/notification.repository';
+import { getDisplayName } from '../helpers/notification/helpers';
 import { NOTIFICATION_TYPES, RESOURCE_TYPES } from '../constants/notificationTypes.constants';
 import { ROLES } from '../constants/roles.constants';
 import { ADHOC_TYPE } from '../constants/adhocType.constants';
@@ -284,6 +285,7 @@ class AdhocAwardService {
     adminUsername: string
   ): Promise<number> {
     const notifications: NotificationData[] = [];
+    const adminDisplayName = await getDisplayName(adminUsername);
 
     if (adhocAward.doi_tuong === ADHOC_TYPE.CA_NHAN && adhocAward.QuanNhan) {
       const personnel = adhocAward.QuanNhan as Record<string, unknown>;
@@ -304,7 +306,7 @@ class AdhocAwardService {
             recipient_role: manager.role,
             type: NOTIFICATION_TYPES.AWARD_ADDED,
             title: 'Khen thưởng đột xuất mới',
-            message: `${adminUsername} đã thêm khen thưởng đột xuất "${awardName}" năm ${year} cho quân nhân ${personnel.ho_ten}`,
+            message: `${adminDisplayName} đã thêm khen thưởng đột xuất "${awardName}" năm ${year} cho quân nhân ${personnel.ho_ten}`,
             resource: RESOURCE_TYPES.AWARDS,
             tai_nguyen_id: adhocAward.id as string,
             link: `/manager/adhoc-awards`,
@@ -345,7 +347,7 @@ class AdhocAwardService {
             recipient_role: manager.role,
             type: NOTIFICATION_TYPES.AWARD_ADDED,
             title: 'Đơn vị được khen thưởng đột xuất',
-            message: `${adminUsername} đã thêm khen thưởng đột xuất "${awardName}" năm ${year} cho đơn vị ${unitName}`,
+            message: `${adminDisplayName} đã thêm khen thưởng đột xuất "${awardName}" năm ${year} cho đơn vị ${unitName}`,
             resource: RESOURCE_TYPES.AWARDS,
             tai_nguyen_id: adhocAward.id as string,
             link: `/manager/adhoc-awards`,
@@ -368,7 +370,7 @@ class AdhocAwardService {
               recipient_role: manager.role,
               type: NOTIFICATION_TYPES.AWARD_ADDED,
               title: 'Đơn vị trực thuộc được khen thưởng đột xuất',
-              message: `${adminUsername} đã thêm khen thưởng đột xuất "${awardName}" năm ${year} cho đơn vị ${unitName}${
+              message: `${adminDisplayName} đã thêm khen thưởng đột xuất "${awardName}" năm ${year} cho đơn vị ${unitName}${
                 parentUnitName ? ` (thuộc ${parentUnitName})` : ''
               }`,
               resource: RESOURCE_TYPES.AWARDS,
@@ -630,6 +632,7 @@ class AdhocAwardService {
     adminUsername: string
   ): Promise<number> {
     const notifications: NotificationData[] = [];
+    const adminDisplayName = await getDisplayName(adminUsername);
     const awardName = adhocAward.hinh_thuc_khen_thuong as string;
     const year = adhocAward.nam as number;
 
@@ -649,7 +652,7 @@ class AdhocAwardService {
             recipient_role: manager.role,
             type: NOTIFICATION_TYPES.AWARD_UPDATED,
             title: 'Khen thưởng đột xuất đã được cập nhật',
-            message: `${adminUsername} đã cập nhật khen thưởng đột xuất "${awardName}" năm ${year} của quân nhân ${personnel.ho_ten}`,
+            message: `${adminDisplayName} đã cập nhật khen thưởng đột xuất "${awardName}" năm ${year} của quân nhân ${personnel.ho_ten}`,
             resource: RESOURCE_TYPES.AWARDS,
             tai_nguyen_id: adhocAward.id as string,
             link: `/manager/adhoc-awards`,
@@ -688,7 +691,7 @@ class AdhocAwardService {
             recipient_role: manager.role,
             type: NOTIFICATION_TYPES.AWARD_UPDATED,
             title: 'Khen thưởng đơn vị đã được cập nhật',
-            message: `${adminUsername} đã cập nhật khen thưởng đột xuất "${awardName}" năm ${year} của đơn vị ${unitName}`,
+            message: `${adminDisplayName} đã cập nhật khen thưởng đột xuất "${awardName}" năm ${year} của đơn vị ${unitName}`,
             resource: RESOURCE_TYPES.AWARDS,
             tai_nguyen_id: adhocAward.id as string,
             link: `/manager/adhoc-awards`,
@@ -711,7 +714,7 @@ class AdhocAwardService {
               recipient_role: manager.role,
               type: NOTIFICATION_TYPES.AWARD_UPDATED,
               title: 'Khen thưởng đơn vị trực thuộc đã được cập nhật',
-              message: `${adminUsername} đã cập nhật khen thưởng đột xuất "${awardName}" năm ${year} của đơn vị ${unitName}${
+              message: `${adminDisplayName} đã cập nhật khen thưởng đột xuất "${awardName}" năm ${year} của đơn vị ${unitName}${
                 parentUnitName ? ` (thuộc ${parentUnitName})` : ''
               }`,
               resource: RESOURCE_TYPES.AWARDS,
@@ -790,6 +793,7 @@ class AdhocAwardService {
     adminUsername: string
   ): Promise<number> {
     const notifications: NotificationData[] = [];
+    const adminDisplayName = await getDisplayName(adminUsername);
     const awardName = adhocAward.hinh_thuc_khen_thuong as string;
     const year = adhocAward.nam as number;
 
@@ -809,7 +813,7 @@ class AdhocAwardService {
             recipient_role: manager.role,
             type: NOTIFICATION_TYPES.AWARD_DELETED,
             title: 'Khen thưởng đột xuất đã bị xóa',
-            message: `${adminUsername} đã xóa khen thưởng đột xuất "${awardName}" năm ${year} của quân nhân ${personnel.ho_ten}`,
+            message: `${adminDisplayName} đã xóa khen thưởng đột xuất "${awardName}" năm ${year} của quân nhân ${personnel.ho_ten}`,
             resource: RESOURCE_TYPES.AWARDS,
             tai_nguyen_id: personnel.id as string,
             link: `/manager/adhoc-awards`,
@@ -848,7 +852,7 @@ class AdhocAwardService {
             recipient_role: manager.role,
             type: NOTIFICATION_TYPES.AWARD_DELETED,
             title: 'Khen thưởng đơn vị đã bị xóa',
-            message: `${adminUsername} đã xóa khen thưởng đột xuất "${awardName}" năm ${year} của đơn vị ${unitName}`,
+            message: `${adminDisplayName} đã xóa khen thưởng đột xuất "${awardName}" năm ${year} của đơn vị ${unitName}`,
             resource: RESOURCE_TYPES.AWARDS,
             tai_nguyen_id: adhocAward.co_quan_don_vi_id as string,
             link: `/manager/adhoc-awards`,
@@ -871,7 +875,7 @@ class AdhocAwardService {
               recipient_role: manager.role,
               type: NOTIFICATION_TYPES.AWARD_DELETED,
               title: 'Khen thưởng đơn vị trực thuộc đã bị xóa',
-              message: `${adminUsername} đã xóa khen thưởng đột xuất "${awardName}" năm ${year} của đơn vị ${unitName}${
+              message: `${adminDisplayName} đã xóa khen thưởng đột xuất "${awardName}" năm ${year} của đơn vị ${unitName}${
                 parentUnitName ? ` (thuộc ${parentUnitName})` : ''
               }`,
               resource: RESOURCE_TYPES.AWARDS,

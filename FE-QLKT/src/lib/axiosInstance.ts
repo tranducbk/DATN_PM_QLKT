@@ -46,22 +46,45 @@ function extractTokens(data: Record<string, any>): {
   };
 }
 
+function formatRateLimitMessage(baseMessage: string | undefined, seconds: number | null): string {
+  const fallback = 'Quá nhiều yêu cầu, vui lòng thử lại sau.';
+  if (seconds == null || Number.isNaN(seconds)) return baseMessage || fallback;
+  if (seconds <= 0) return 'Đã hết thời gian chờ, vui lòng thử lại.';
+  if (seconds < 60) return `Quá nhiều yêu cầu, vui lòng thử lại sau ${seconds} giây.`;
+  const minutes = Math.ceil(seconds / 60);
+  return `Quá nhiều yêu cầu, vui lòng thử lại sau ${minutes} phút.`;
+}
+
 axiosInstance.interceptors.response.use(
   response => response,
   async error => {
     const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
     const status = error.response?.status;
 
-    // Rate limit → retry sau 1s
-    if (status === 429) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      return axiosInstance(originalRequest);
-    }
-
     const isAuthRequest =
       originalRequest?.url?.includes('/api/auth/login') ||
       originalRequest?.url?.includes('/api/auth/refresh');
     const isDevZoneRequest = originalRequest?.url?.includes('/api/dev-zone');
+
+    // 429 retry-after windows are minute-scale; auto-retrying every 1s creates an infinite loop.
+    if (status === 429) {
+      const retryAfterRaw = error.response?.headers?.['retry-after'];
+      const retrySeconds =
+        typeof retryAfterRaw === 'string' && retryAfterRaw.trim() !== ''
+          ? parseInt(retryAfterRaw, 10)
+          : null;
+      const baseMsg = error.response?.data?.message;
+      const formatted = formatRateLimitMessage(baseMsg, retrySeconds);
+      if (error.response?.data && typeof error.response.data === 'object') {
+        (error.response.data as { message?: string }).message = formatted;
+      }
+      if (!isAuthRequest && typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('apiError', { detail: { message: formatted, status } })
+        );
+      }
+      return Promise.reject(error);
+    }
 
     // Refresh request fail → force logout ngay
     if (status === 401 && originalRequest?.url?.includes('/api/auth/refresh')) {

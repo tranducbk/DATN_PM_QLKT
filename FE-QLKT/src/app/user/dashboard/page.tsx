@@ -32,6 +32,7 @@ import {
   ReloadOutlined,
   BulbOutlined,
   ExperimentOutlined,
+  SafetyCertificateOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
@@ -44,6 +45,7 @@ import { StatCard } from '@/components/dashboard/StatCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 import { DANH_HIEU_CA_NHAN_HANG_NAM } from '@/constants/danhHieu.constants';
+import { ROLE_LABELS } from '@/constants/roles.constants';
 import type {
   PersonnelDetail,
   ServiceProfile,
@@ -90,8 +92,8 @@ export default function UserDashboard() {
 
         if (user) {
           const name = (user.ho_ten || '').trim();
-          const username = (user.username || '').trim();
-          setDisplayName(name || username || 'Người dùng');
+          const role = (user.role || '').toUpperCase();
+          setDisplayName(name || ROLE_LABELS[role]);
         }
 
         if (!user?.quan_nhan_id) {
@@ -268,7 +270,7 @@ export default function UserDashboard() {
             }}
           >
             <StatCard
-              icon={<TrophyOutlined />}
+              icon={<SafetyCertificateOutlined />}
               label="Tổng CSTDCS"
               value={annualProfile?.tong_cstdcs || 0}
               isDark={isDark}

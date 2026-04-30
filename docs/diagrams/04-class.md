@@ -495,12 +495,16 @@ classDiagram
 
     class NotificationType {
         <<enumeration>>
-        NEW_PERSONNEL
-        APPROVAL_PENDING
-        ACHIEVEMENT_SUBMITTED
+        PROPOSAL_SUBMITTED
         PROPOSAL_APPROVED
         PROPOSAL_REJECTED
-        BACKUP_FAILED
+        PROPOSAL_DELETED
+        PERSONNEL_ADDED
+        PERSONNEL_TRANSFERRED
+        ACHIEVEMENT_APPROVED
+        AWARD_ADDED
+        AWARD_UPDATED
+        AWARD_DELETED
     }
 
     class AuditLogMiddleware {

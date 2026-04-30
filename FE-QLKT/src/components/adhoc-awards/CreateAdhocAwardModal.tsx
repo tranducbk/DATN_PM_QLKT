@@ -29,7 +29,7 @@ import {
 } from '@ant-design/icons';
 import type { UploadFile } from 'antd';
 import { apiClient } from '@/lib/apiClient';
-import { formatDate } from '@/lib/utils';
+import { formatDate, capitalizeWords } from '@/lib/utils';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 import type {
@@ -737,7 +737,9 @@ export function CreateAdhocAwardModal({
               <Text style={{ display: 'block', marginBottom: 4 }}>Người ký quyết định</Text>
               <Input
                 value={createFormData.signer}
-                onChange={e => setCreateFormData({ ...createFormData, signer: e.target.value })}
+                onChange={e =>
+                  setCreateFormData({ ...createFormData, signer: capitalizeWords(e.target.value) })
+                }
                 placeholder="VD: Trung tướng Nguyễn Văn A - Chính ủy"
                 size="large"
                 disabled={!!selectedDecision}

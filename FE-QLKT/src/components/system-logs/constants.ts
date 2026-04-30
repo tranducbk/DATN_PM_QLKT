@@ -18,13 +18,7 @@ export const ACTION_LABELS: Record<string, string> = {
   BACKUP: 'Sao lưu',
 };
 
-/** Mapping role → label tiếng Việt */
-export const ROLE_LABELS: Record<string, string> = {
-  SUPER_ADMIN: 'Quản trị viên cấp cao',
-  ADMIN: 'Quản trị viên',
-  MANAGER: 'Quản lý',
-  USER: 'Người dùng',
-};
+export { ROLE_LABELS } from '@/constants/roles.constants';
 
 /** Lấy label tiếng Việt cho action, fallback format đẹp nếu chưa có trong map */
 export function getActionLabel(action: string): string {

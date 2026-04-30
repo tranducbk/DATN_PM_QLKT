@@ -20,7 +20,7 @@ import type { UploadFile } from 'antd/es/upload/interface';
 import dayjs from 'dayjs';
 import { apiClient } from '@/lib/apiClient';
 import { LOAI_KHEN_THUONG_OPTIONS } from '@/constants/danhHieu.constants';
-import { formatDate } from '@/lib/utils';
+import { formatDate, capitalizeWords } from '@/lib/utils';
 
 interface Decision {
   id?: string;
@@ -433,6 +433,7 @@ export function DecisionModal({
           name="nguoi_ky"
           label="Người ký quyết định"
           rules={[{ required: true, message: 'Vui lòng nhập người ký' }]}
+          getValueFromEvent={e => capitalizeWords(e.target.value)}
           style={{ marginBottom: 0 }}
         >
           <Input

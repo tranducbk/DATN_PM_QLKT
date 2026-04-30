@@ -191,7 +191,46 @@ sequenceDiagram
 
 ---
 
-## C4.7 — Tuần tự sao lưu dữ liệu theo lịch
+## C4.7 — Tuần tự xóa đề xuất khen thưởng
+
+```mermaid
+sequenceDiagram
+    actor Actor as Người xóa
+    actor MGR as Chỉ huy đơn vị
+    actor ADM as Phòng Chính trị
+    participant Page as TrangDeXuat
+    participant Ctrl as DeXuatController
+    participant DX as DeXuat
+    participant TB as ThongBao
+
+    Actor->>Page: Chọn xóa đề xuất
+    Page->>Page: xác nhận thao tác
+    Page->>Ctrl: yêu cầu xóa đề xuất
+    Ctrl->>DX: tìm đề xuất theo id
+
+    alt không tồn tại hoặc đã duyệt
+        Ctrl-->>Page: Lỗi không thể xóa
+        Page-->>Actor: Hiển thị thông báo lỗi
+    else hợp lệ
+        Ctrl->>DX: Xóa đề xuất
+        DX-->>Ctrl: đã xóa
+
+        Ctrl->>TB: Tạo thông báo cho Phòng Chính trị (trừ người xóa)
+        TB-->>ADM: Thông báo đề xuất bị xóa
+
+        opt Phòng Chính trị xóa đề xuất của Chỉ huy đơn vị
+            Ctrl->>TB: Tạo thông báo cho Chỉ huy đơn vị đã đề xuất
+            TB-->>MGR: Thông báo đề xuất của bạn đã bị xóa
+        end
+
+        Ctrl-->>Page: Đã xóa thành công
+        Page-->>Actor: Hiển thị thông báo xóa thành công
+    end
+```
+
+---
+
+## C4.8 — Tuần tự sao lưu dữ liệu theo lịch
 
 ```mermaid
 sequenceDiagram
@@ -238,7 +277,8 @@ sequenceDiagram
 | C4.4 | Recalc chuỗi | 4 | Background process, có alt lifetime block |
 | C4.5 | Import Excel | 6 | 2 bước Preview/Confirm |
 | C4.6 | Thông báo realtime | 4 | Pub-sub qua kênh Socket |
-| C4.7 | Sao lưu dữ liệu | 7 | Cron + alt bật/tắt |
+| C4.7 | Xóa đề xuất | 7 | 3 actor + alt validate + opt thông báo cho người đề xuất |
+| C4.8 | Sao lưu dữ liệu | 7 | Cron + alt bật/tắt |
 
 **Style nguyên tắc** (theo báo cáo mẫu):
 - Actor: tên Tiếng Việt nghiệp vụ ("Chỉ huy đơn vị", "Phòng Chính trị", "Quân nhân", "Người dùng")

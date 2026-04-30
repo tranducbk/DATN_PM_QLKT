@@ -3,6 +3,7 @@ import { normalizeParam } from '../paginationHelper';
 import { FALLBACK } from './constants';
 import { getLoaiDeXuatName } from '../../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
+import { ROLE_LABELS } from '../../constants/roles.constants';
 import { proposalRepository } from '../../repositories/proposal.repository';
 
 
@@ -14,12 +15,23 @@ interface ParsedProposal {
   NguoiDeXuat?: {
     QuanNhan?: { ho_ten?: string };
     username?: string;
+    role?: string;
   } | null;
   data_danh_hieu?: unknown;
   data_thanh_tich?: unknown;
   data_nien_han?: unknown;
   data_cong_hien?: unknown;
   [key: string]: unknown;
+}
+
+function resolveProposerDisplayName(nguoiDeXuat: ParsedProposal['NguoiDeXuat']): string {
+  if (!nguoiDeXuat) return FALLBACK.UNKNOWN;
+  return (
+    nguoiDeXuat.QuanNhan?.ho_ten ||
+    (nguoiDeXuat.role ? ROLE_LABELS[nguoiDeXuat.role] : '') ||
+    nguoiDeXuat.username ||
+    FALLBACK.UNKNOWN
+  );
 }
 
 const proposals: Record<
@@ -123,12 +135,9 @@ const proposals: Record<
 
         const nam = proposal.nam || result.nam || '';
 
-        let nguoiDeXuat = FALLBACK.UNKNOWN;
+        let nguoiDeXuat: string = FALLBACK.UNKNOWN;
         if (proposal.NguoiDeXuat) {
-          nguoiDeXuat =
-            proposal.NguoiDeXuat.QuanNhan?.ho_ten ||
-            proposal.NguoiDeXuat.username ||
-            FALLBACK.UNKNOWN;
+          nguoiDeXuat = resolveProposerDisplayName(proposal.NguoiDeXuat);
         } else if (result.nguoi_de_xuat) {
           nguoiDeXuat = result.nguoi_de_xuat;
         }
@@ -230,10 +239,7 @@ const proposals: Record<
       const loaiDeXuat = proposal.loai_de_xuat || '';
       const typeName = getLoaiDeXuatName(loaiDeXuat);
 
-      const nguoiDeXuat =
-        proposal.NguoiDeXuat?.QuanNhan?.ho_ten ||
-        proposal.NguoiDeXuat?.username ||
-        FALLBACK.UNKNOWN;
+      const nguoiDeXuat = resolveProposerDisplayName(proposal.NguoiDeXuat);
       const nam = proposal.nam || FALLBACK.UNKNOWN;
 
       let soLuong = 0;
@@ -307,10 +313,7 @@ const proposals: Record<
 
     if (proposal) {
       const typeName = getLoaiDeXuatName(proposal.loai_de_xuat || '');
-      const nguoiDeXuat =
-        proposal.NguoiDeXuat?.QuanNhan?.ho_ten ||
-        proposal.NguoiDeXuat?.username ||
-        FALLBACK.UNKNOWN;
+      const nguoiDeXuat = resolveProposerDisplayName(proposal.NguoiDeXuat);
       const nam = proposal.nam || FALLBACK.UNKNOWN;
 
       return `Xóa đề xuất ${typeName} (năm ${nam}) do ${nguoiDeXuat} đề xuất`;

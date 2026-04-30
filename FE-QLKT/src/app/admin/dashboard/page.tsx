@@ -1,6 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
+import {
+  StatCard,
+  getStatCardPalette,
+  type StatCardColor,
+} from '@/components/dashboard/StatCard';
 import {
   Card,
   Typography,
@@ -21,13 +26,13 @@ import {
   TeamOutlined,
   FileTextOutlined,
   CheckCircleOutlined,
-  PlusOutlined,
   ApartmentOutlined,
   HomeOutlined,
   UserOutlined,
   SafetyOutlined,
   ClockCircleOutlined,
   LockOutlined,
+  IdcardOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
@@ -75,6 +80,7 @@ export default function AdminDashboard() {
     totalUnits: 0,
     totalPositions: 0,
     pendingApprovals: 0,
+    rejectedProposals: 0,
   });
   const [chartData, setChartData] = useState({
     scientificAchievementsByType: [],
@@ -92,22 +98,26 @@ export default function AdminDashboard() {
       try {
         setLoading(true);
 
-        // Priority: full name > username > role label
         if (user) {
           const name = (user.ho_ten || '').trim();
-          const username = (user.username || '').trim();
           const role = (user.role || '').toUpperCase();
-          setDisplayName(name || username || ROLE_LABELS[role] || 'Admin');
+          setDisplayName(name || ROLE_LABELS[role]);
         }
 
         const statisticsRes = await apiClient.getAdminDashboardStatistics();
 
         if (statisticsRes.success && statisticsRes.data) {
+          const proposalsByStatus = statisticsRes.data.proposalsByStatus || [];
+          const rejectedProposals =
+            proposalsByStatus.find(
+              (p: { status: string; count: number }) => p.status === 'REJECTED'
+            )?.count || 0;
           setStats({
             totalPersonnel: statisticsRes.data.totalPersonnel || 0,
             totalUnits: statisticsRes.data.totalUnits || 0,
             totalPositions: statisticsRes.data.totalPositions || 0,
             pendingApprovals: statisticsRes.data.pendingApprovals || 0,
+            rejectedProposals,
           });
 
           setChartData({
@@ -127,50 +137,47 @@ export default function AdminDashboard() {
     fetchStats();
   }, [authLoading, user]);
 
-  const statCards = [
+  const statCards: Array<{
+    title: string;
+    value: number;
+    icon: ReactNode;
+    color: StatCardColor;
+    link: string;
+  }> = [
     {
       title: 'Tổng số Quân nhân',
       value: stats.totalPersonnel,
-      icon: TeamOutlined,
-      iconColor: theme === 'dark' ? 'text-blue-400' : 'text-blue-600',
-      bgColor:
-        theme === 'dark'
-          ? 'bg-gradient-to-br from-blue-900/30 to-blue-800/20'
-          : 'bg-gradient-to-br from-blue-50 to-blue-100',
+      icon: <TeamOutlined />,
+      color: 'blue',
       link: '/admin/personnel',
     },
     {
       title: 'Tổng số Đơn vị',
       value: stats.totalUnits,
-      icon: ApartmentOutlined,
-      iconColor: theme === 'dark' ? 'text-green-400' : 'text-green-600',
-      bgColor:
-        theme === 'dark'
-          ? 'bg-gradient-to-br from-green-900/30 to-green-800/20'
-          : 'bg-gradient-to-br from-green-50 to-green-100',
+      icon: <ApartmentOutlined />,
+      color: 'green',
       link: '/admin/categories',
     },
     {
       title: 'Tổng số Chức vụ',
       value: stats.totalPositions,
-      icon: FileTextOutlined,
-      iconColor: theme === 'dark' ? 'text-purple-400' : 'text-purple-600',
-      bgColor:
-        theme === 'dark'
-          ? 'bg-gradient-to-br from-purple-900/30 to-purple-800/20'
-          : 'bg-gradient-to-br from-purple-50 to-purple-100',
+      icon: <IdcardOutlined />,
+      color: 'purple',
       link: '/admin/positions',
     },
     {
       title: 'Đề xuất chờ duyệt',
       value: stats.pendingApprovals,
-      icon: CheckCircleOutlined,
-      iconColor: theme === 'dark' ? 'text-orange-400' : 'text-orange-600',
-      bgColor:
-        theme === 'dark'
-          ? 'bg-gradient-to-br from-orange-900/30 to-orange-800/20'
-          : 'bg-gradient-to-br from-orange-50 to-orange-100',
+      icon: <ClockCircleOutlined />,
+      color: 'orange',
       link: '/admin/proposals/review',
+    },
+    {
+      title: 'Đề xuất bị từ chối',
+      value: stats.rejectedProposals,
+      icon: <FileTextOutlined />,
+      color: 'yellow',
+      link: '/admin/proposals',
     },
   ];
 
@@ -222,39 +229,24 @@ export default function AdminDashboard() {
             <Skeleton active paragraph={{ rows: 4 }} />
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {statCards.map((stat, index) => {
-              const Icon = stat.icon;
-              return (
-                <Link key={index} href={stat.link}>
-                  <Card className="shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1 overflow-hidden">
-                    <div className="flex items-center justify-between p-1">
-                      <div className="flex-1 min-w-0">
-                        <p
-                          className={`text-sm font-medium uppercase tracking-wide ${
-                            theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                          }`}
-                        >
-                          {stat.title}
-                        </p>
-                        <p
-                          className={`text-4xl font-bold mt-2 ${
-                            theme === 'dark' ? 'text-gray-100' : 'text-gray-900'
-                          }`}
-                        >
-                          {stat.value.toLocaleString()}
-                        </p>
-                      </div>
-                      <div
-                        className={`w-14 h-14 rounded-2xl ${stat.bgColor} shadow-inner flex-shrink-0 flex items-center justify-center`}
-                      >
-                        <Icon className={stat.iconColor} style={{ fontSize: '28px' }} />
-                      </div>
-                    </div>
-                  </Card>
-                </Link>
-              );
-            })}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+              gap: '16px',
+            }}
+          >
+            {statCards.map((stat, index) => (
+              <StatCard
+                key={index}
+                icon={stat.icon}
+                label={stat.title}
+                value={stat.value.toLocaleString()}
+                isDark={theme === 'dark'}
+                {...getStatCardPalette(stat.color)}
+                link={stat.link}
+              />
+            ))}
           </div>
         )}
 
@@ -328,44 +320,40 @@ export default function AdminDashboard() {
               className="shadow-lg"
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
-                <Link href="/admin/personnel" className="block h-full">
-                  <Button
-                    type="primary"
-                    icon={<TeamOutlined />}
-                    size="large"
-                    className="w-full h-full min-h-[84px] py-4 text-base font-medium hover:scale-105 transition-transform whitespace-normal break-words"
-                  >
-                    Quản lý quân nhân
-                  </Button>
-                </Link>
-                <Link href="/admin/categories" className="block h-full">
-                  <Button
-                    icon={<ApartmentOutlined />}
-                    size="large"
-                    className="w-full h-full min-h-[84px] py-4 text-base font-medium hover:scale-105 transition-transform whitespace-normal break-words"
-                  >
-                    Quản lý cơ quan đơn vị
-                  </Button>
-                </Link>
-                <Link href="/admin/positions" className="block h-full">
-                  <Button
-                    icon={<FileTextOutlined />}
-                    size="large"
-                    className="w-full h-full min-h-[84px] py-4 text-base font-medium hover:scale-105 transition-transform whitespace-normal break-words"
-                  >
-                    Quản lý chức vụ
-                  </Button>
-                </Link>
-                <Link href="/admin/personnel/create" className="block h-full">
-                  <Button
-                    icon={<PlusOutlined />}
-                    size="large"
-                    type="dashed"
-                    className="w-full h-full min-h-[84px] py-4 text-base font-medium hover:scale-105 transition-transform border-2 hover:border-blue-500 whitespace-normal break-words"
-                  >
-                    Thêm Quân nhân
-                  </Button>
-                </Link>
+                {[
+                  {
+                    href: '/admin/personnel',
+                    icon: <TeamOutlined />,
+                    label: 'Quản lý quân nhân',
+                    primary: true,
+                  },
+                  {
+                    href: '/admin/proposals/review',
+                    icon: <ClockCircleOutlined />,
+                    label: 'Duyệt đề xuất',
+                  },
+                  {
+                    href: '/admin/categories',
+                    icon: <ApartmentOutlined />,
+                    label: 'Quản lý cơ quan đơn vị',
+                  },
+                  {
+                    href: '/admin/positions',
+                    icon: <IdcardOutlined />,
+                    label: 'Quản lý chức vụ',
+                  },
+                ].map(({ href, icon, label, primary }) => (
+                  <Link key={href} href={href} className="block h-full">
+                    <Button
+                      type={primary ? 'primary' : 'default'}
+                      icon={icon}
+                      size="large"
+                      className="w-full h-full min-h-[84px] py-4 text-base font-medium whitespace-normal break-words transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
+                    >
+                      {label}
+                    </Button>
+                  </Link>
+                ))}
               </div>
             </Card>
 

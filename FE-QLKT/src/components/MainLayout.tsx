@@ -104,6 +104,8 @@ function ApiErrorHandler() {
  * Component hiển thị toast khi trạng thái kết nối socket thay đổi.
  * Phải đặt bên trong <App> để dùng được App.useApp().
  */
+const DISCONNECT_TOAST_DEBOUNCE_MS = 3000;
+
 function ConnectionStatusToast({ status }: { status: SocketConnectionStatus }) {
   const { message } = App.useApp();
   const prevStatusRef = useRef<SocketConnectionStatus | null>(null);
@@ -111,10 +113,16 @@ function ConnectionStatusToast({ status }: { status: SocketConnectionStatus }) {
   useEffect(() => {
     const prev = prevStatusRef.current;
     prevStatusRef.current = status;
-    if (prev === null) return; // skip initial mount
-    if (status === 'disconnected' && prev !== 'disconnected') {
-      message.warning('Mất kết nối máy chủ. Đang thử kết nối lại...');
-    } else if (status === 'connected' && prev !== 'connected') {
+    if (prev === null) return;
+    // Only toast on real connection loss (was established) — skip initial connect fail
+    // and token-refresh cycles. Debounce so transient blips don't surface.
+    if (status === 'disconnected' && prev === 'connected') {
+      const timer = setTimeout(() => {
+        message.warning('Mất kết nối máy chủ. Đang thử kết nối lại...');
+      }, DISCONNECT_TOAST_DEBOUNCE_MS);
+      return () => clearTimeout(timer);
+    }
+    if (status === 'connected' && prev === 'disconnected') {
       message.success('Đã kết nối lại máy chủ.');
     }
   }, [status, message]);

@@ -21,6 +21,7 @@ import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants'
 import { useTheme } from '@/components/ThemeProvider';
 import { useDevZone } from '@/contexts/DevZoneContext';
 import type { SystemLogStats } from '@/lib/api/systemLogs';
+import { ROLE_LABELS } from '@/constants/roles.constants';
 import Link from 'next/link';
 
 const { Title, Text } = Typography;
@@ -111,9 +112,9 @@ export function SystemLogsPageContent({ basePath }: SystemLogsPageContentProps) 
       const normalized: LogEntry[] = list.map(l => {
         const actorName =
           l?.NguoiThucHien?.QuanNhan?.ho_ten ||
+          ROLE_LABELS[l?.actor_role || ''] ||
           l?.NguoiThucHien?.username ||
           l?.actor_name ||
-          (l?.actor_role === 'SYSTEM' ? 'Hệ thống' : '') ||
           '';
         return {
           ...l,

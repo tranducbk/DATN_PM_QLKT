@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import {
   Card,
   Typography,
@@ -19,19 +19,25 @@ import {
 import {
   TeamOutlined,
   FileTextOutlined,
-  StarOutlined,
   TrophyOutlined,
   PlusOutlined,
   CheckCircleOutlined,
   HomeOutlined,
   UserOutlined,
   SafetyOutlined,
+  SafetyCertificateOutlined,
+  ExperimentOutlined,
   ClockCircleOutlined,
   LockOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useTheme } from '@/components/ThemeProvider';
+import {
+  StatCard,
+  getStatCardPalette,
+  type StatCardColor,
+} from '@/components/dashboard/StatCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/apiClient';
 import { formatDateTime } from '@/lib/utils';
@@ -87,10 +93,11 @@ export default function ManagerDashboard() {
   const [loading, setLoading] = useState(true);
   const [displayName, setDisplayName] = useState('Trưởng phòng');
   const [stats, setStats] = useState({
-    totalPersonnel: 156,
-    totalCSTDCS: 89,
-    totalNCKH: 34,
+    totalPersonnel: 0,
+    totalCSTDCS: 0,
+    totalNCKH: 0,
     totalAwards: 0,
+    pendingProposals: 0,
   });
   const [chartData, setChartData] = useState({
     awardsByType: [],
@@ -114,10 +121,8 @@ export default function ManagerDashboard() {
 
         if (user) {
           const name = (user.ho_ten || '').trim();
-          const username = (user.username || '').trim();
           const role = (user.role || '').toUpperCase();
-          const roleFallback = ROLE_LABELS[role] || 'Trưởng phòng';
-          setDisplayName(name || username || roleFallback);
+          setDisplayName(name || ROLE_LABELS[role]);
         }
         const statisticsRes = await apiClient.getManagerDashboardStatistics();
 
@@ -138,11 +143,16 @@ export default function ManagerDashboard() {
             (sum: number, a: { count: number }) => sum + a.count,
             0
           );
+          const pendingProposals =
+            statisticsRes.data.proposalsByStatus?.find(
+              (p: { status: string; count: number }) => p.status === 'PENDING'
+            )?.count || 0;
           setStats({
             totalPersonnel,
             totalCSTDCS,
             totalNCKH,
             totalAwards,
+            pendingProposals,
           });
           setChartData({
             awardsByType: statisticsRes.data.awardsByType || [],
@@ -164,6 +174,7 @@ export default function ManagerDashboard() {
           totalCSTDCS: 0,
           totalNCKH: 0,
           totalAwards: 0,
+          pendingProposals: 0,
         });
       } finally {
         setLoading(false);
@@ -173,50 +184,47 @@ export default function ManagerDashboard() {
     fetchStats();
   }, [authLoading, user]);
 
-  const statCards = [
+  const statCards: Array<{
+    title: string;
+    value: number;
+    icon: ReactNode;
+    color: StatCardColor;
+    link: string;
+  }> = [
     {
       title: 'Quân số Đơn vị',
       value: stats.totalPersonnel,
-      icon: TeamOutlined,
-      iconColor: theme === 'dark' ? 'text-blue-400' : 'text-blue-600',
-      bgColor:
-        theme === 'dark'
-          ? 'bg-gradient-to-br from-blue-900/30 to-blue-800/20'
-          : 'bg-gradient-to-br from-blue-50 to-blue-100',
+      icon: <TeamOutlined />,
+      color: 'blue',
       link: '/manager/personnel',
     },
     {
       title: 'Tổng CSTDCS',
       value: stats.totalCSTDCS,
-      icon: FileTextOutlined,
-      iconColor: theme === 'dark' ? 'text-green-400' : 'text-green-600',
-      bgColor:
-        theme === 'dark'
-          ? 'bg-gradient-to-br from-green-900/30 to-green-800/20'
-          : 'bg-gradient-to-br from-green-50 to-green-100',
-      link: '#',
+      icon: <SafetyCertificateOutlined />,
+      color: 'green',
+      link: '/manager/awards',
     },
     {
       title: 'Tổng NCKH',
       value: stats.totalNCKH,
-      icon: StarOutlined,
-      iconColor: theme === 'dark' ? 'text-yellow-400' : 'text-yellow-600',
-      bgColor:
-        theme === 'dark'
-          ? 'bg-gradient-to-br from-yellow-900/30 to-yellow-800/20'
-          : 'bg-gradient-to-br from-yellow-50 to-yellow-100',
-      link: '#',
+      icon: <ExperimentOutlined />,
+      color: 'yellow',
+      link: '/manager/awards',
     },
     {
       title: 'Khen thưởng',
       value: stats.totalAwards,
-      icon: TrophyOutlined,
-      iconColor: theme === 'dark' ? 'text-purple-400' : 'text-purple-600',
-      bgColor:
-        theme === 'dark'
-          ? 'bg-gradient-to-br from-purple-900/30 to-purple-800/20'
-          : 'bg-gradient-to-br from-purple-50 to-purple-100',
+      icon: <TrophyOutlined />,
+      color: 'purple',
       link: '/manager/awards',
+    },
+    {
+      title: 'Đề xuất chờ duyệt',
+      value: stats.pendingProposals,
+      icon: <ClockCircleOutlined />,
+      color: 'orange',
+      link: '/manager/proposals',
     },
   ];
 
@@ -282,107 +290,17 @@ export default function ManagerDashboard() {
               marginBottom: '24px',
             }}
           >
-            {statCards.map((stat, index) => {
-              const Icon = stat.icon;
-              const statTextColor = theme === 'dark' ? '#e5e7eb' : '#0f172a';
-              const statSubTextColor = theme === 'dark' ? '#cbd5e1' : '#475569';
-              const cardShadow =
-                theme === 'dark'
-                  ? '0 1px 6px rgba(0, 0, 0, 0.35)'
-                  : '0 1px 4px rgba(0, 0, 0, 0.06)';
-              const iconShadows = {
-                blue:
-                  theme === 'dark'
-                    ? '0 1px 3px rgba(59, 130, 246, 0.3)'
-                    : '0 1px 3px rgba(59, 130, 246, 0.2)',
-                green:
-                  theme === 'dark'
-                    ? '0 1px 3px rgba(16, 185, 129, 0.3)'
-                    : '0 1px 3px rgba(16, 185, 129, 0.2)',
-                yellow:
-                  theme === 'dark'
-                    ? '0 1px 3px rgba(234, 179, 8, 0.3)'
-                    : '0 1px 3px rgba(234, 179, 8, 0.2)',
-                purple:
-                  theme === 'dark'
-                    ? '0 1px 3px rgba(139, 92, 246, 0.3)'
-                    : '0 1px 3px rgba(139, 92, 246, 0.2)',
-              };
-              const iconBgs = {
-                blue: theme === 'dark' ? '#1e3a8a' : '#e6f0ff',
-                green: theme === 'dark' ? '#0b3d2e' : '#e8f5e9',
-                yellow: theme === 'dark' ? '#78350f' : '#fef9c3',
-                purple: theme === 'dark' ? '#3b0764' : '#f3e8ff',
-              };
-              const iconColors = {
-                blue: theme === 'dark' ? '#60a5fa' : '#2563eb',
-                green: theme === 'dark' ? '#34d399' : '#059669',
-                yellow: theme === 'dark' ? '#fbbf24' : '#d97706',
-                purple: theme === 'dark' ? '#a78bfa' : '#7c3aed',
-              };
-              const iconKeys = ['blue', 'green', 'yellow', 'purple'];
-              const iconKey = iconKeys[index] || 'blue';
-
-              return (
-                <Link key={index} href={stat.link}>
-                  <Card
-                    hoverable
-                    style={{
-                      borderRadius: '10px',
-                      boxShadow: cardShadow,
-                      transition: 'all 0.3s ease',
-                    }}
-                    styles={{ body: { padding: '20px' } }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                      <div
-                        style={{
-                          width: '56px',
-                          height: '56px',
-                          borderRadius: '12px',
-                          background: iconBgs[iconKey as keyof typeof iconBgs],
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          boxShadow: iconShadows[iconKey as keyof typeof iconShadows],
-                        }}
-                      >
-                        <Icon
-                          style={{
-                            fontSize: '26px',
-                            color: iconColors[iconKey as keyof typeof iconColors],
-                          }}
-                        />
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <Text
-                          type="secondary"
-                          style={{
-                            fontSize: '14px',
-                            fontWeight: 500,
-                            display: 'block',
-                            marginBottom: '4px',
-                            color: statSubTextColor,
-                          }}
-                        >
-                          {stat.title}
-                        </Text>
-                        <div
-                          style={{
-                            fontSize: index === 0 ? '32px' : '28px',
-                            fontWeight: 'bold',
-                            color: statTextColor,
-                            lineHeight: '1.1',
-                          }}
-                        >
-                          {stat.value.toLocaleString()}
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                </Link>
-              );
-            })}
+            {statCards.map((stat, index) => (
+              <StatCard
+                key={index}
+                icon={stat.icon}
+                label={stat.title}
+                value={stat.value.toLocaleString()}
+                isDark={theme === 'dark'}
+                {...getStatCardPalette(stat.color)}
+                link={stat.link}
+              />
+            ))}
           </div>
         )}
 
@@ -491,48 +409,44 @@ export default function ManagerDashboard() {
 
             {/* Quick Actions */}
             <Card
-              title={<span className="text-lg font-semibold">Lối tắt</span>}
+              title={<span className="text-lg font-semibold">Thao tác nhanh</span>}
               className="shadow-lg"
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
-                <Link href="/manager/personnel" className="block h-full">
-                  <Button
-                    type="primary"
-                    icon={<TeamOutlined />}
-                    size="large"
-                    className="w-full h-full min-h-[84px] py-4 text-base font-medium hover:scale-105 transition-transform whitespace-normal break-words"
-                  >
-                    Xem danh sách Quân nhân
-                  </Button>
-                </Link>
-                <Link href="/manager/proposals/create" className="block h-full">
-                  <Button
-                    icon={<PlusOutlined />}
-                    size="large"
-                    className="w-full h-full min-h-[84px] py-4 text-base font-medium hover:scale-105 transition-transform whitespace-normal break-words"
-                  >
-                    Tạo đề xuất
-                  </Button>
-                </Link>
-                <Link href="/manager/awards" className="block h-full">
-                  <Button
-                    icon={<TrophyOutlined />}
-                    size="large"
-                    className="w-full h-full min-h-[84px] py-4 text-base font-medium hover:scale-105 transition-transform whitespace-normal break-words"
-                  >
-                    Khen thưởng đơn vị
-                  </Button>
-                </Link>
-                <Link href="/manager/profiles/annual" className="block h-full">
-                  <Button
-                    icon={<FileTextOutlined />}
-                    size="large"
-                    type="dashed"
-                    className="w-full h-full min-h-[84px] py-4 text-base font-medium hover:scale-105 transition-transform border-2 hover:border-blue-500 whitespace-normal break-words"
-                  >
-                    Hồ sơ khen thưởng hằng năm
-                  </Button>
-                </Link>
+                {[
+                  {
+                    href: '/manager/personnel',
+                    icon: <TeamOutlined />,
+                    label: 'Xem danh sách Quân nhân',
+                    primary: true,
+                  },
+                  {
+                    href: '/manager/proposals/create',
+                    icon: <PlusOutlined />,
+                    label: 'Tạo đề xuất',
+                  },
+                  {
+                    href: '/manager/proposals',
+                    icon: <FileTextOutlined />,
+                    label: 'Quản lý đề xuất',
+                  },
+                  {
+                    href: '/manager/awards',
+                    icon: <TrophyOutlined />,
+                    label: 'Khen thưởng đơn vị',
+                  },
+                ].map(({ href, icon, label, primary }) => (
+                  <Link key={href} href={href} className="block h-full">
+                    <Button
+                      type={primary ? 'primary' : 'default'}
+                      icon={icon}
+                      size="large"
+                      className="w-full h-full min-h-[84px] py-4 text-base font-medium whitespace-normal break-words transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
+                    >
+                      {label}
+                    </Button>
+                  </Link>
+                ))}
               </div>
             </Card>
 

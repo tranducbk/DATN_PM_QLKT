@@ -1,5 +1,5 @@
 import { NOTIFICATION_TYPES, RESOURCE_TYPES } from '../../constants/notificationTypes.constants';
-import { ROLES } from '../../constants/roles.constants';
+import { ROLES, ROLE_LABELS } from '../../constants/roles.constants';
 import { emitNotificationToUser } from '../../utils/socketService';
 import { accountRepository } from '../../repositories/account.repository';
 import { notificationRepository } from '../../repositories/notification.repository';
@@ -45,6 +45,10 @@ async function getDisplayName(username: string): Promise<string> {
 
     if (account?.QuanNhan?.ho_ten) {
       return account.QuanNhan.ho_ten;
+    }
+
+    if (account?.role && ROLE_LABELS[account.role]) {
+      return ROLE_LABELS[account.role];
     }
 
     return username;

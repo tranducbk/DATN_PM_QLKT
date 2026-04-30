@@ -3,6 +3,7 @@ import {
   notifyAdminsOnProposalSubmission,
   notifyManagerOnProposalApproval,
   notifyManagerOnProposalRejection,
+  notifyOnProposalDeletion,
 } from './proposals';
 import {
   notifyManagersOnAwardAdded,
@@ -20,6 +21,7 @@ export {
   notifyAdminsOnProposalSubmission,
   notifyManagerOnProposalApproval,
   notifyManagerOnProposalRejection,
+  notifyOnProposalDeletion,
   notifyManagersOnAwardAdded,
   notifyUserOnAchievementApproved,
   notifyOnAwardDeleted,

@@ -1,6 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
+import {
+  StatCard,
+  getStatCardPalette,
+  type StatCardColor,
+} from '@/components/dashboard/StatCard';
 import dynamic from 'next/dynamic';
 import {
   Card,
@@ -15,10 +20,9 @@ import {
 } from 'antd';
 import {
   UserOutlined,
+  UserAddOutlined,
   SafetyOutlined,
   SettingOutlined,
-  FundOutlined,
-  BankOutlined,
   FileTextOutlined,
   ArrowRightOutlined,
   ClockCircleOutlined,
@@ -56,6 +60,7 @@ export default function SuperAdminDashboard() {
     totalUnits: 0,
     totalLogs: 0,
     recentActivity: 0,
+    newAccounts30d: 0,
   });
   const [chartData, setChartData] = useState({
     roleDistribution: [],
@@ -74,23 +79,29 @@ export default function SuperAdminDashboard() {
       try {
         setLoading(true);
 
-        // Priority: full name > username > role label
         if (user) {
           const name = (user.ho_ten || '').trim();
-          const username = (user.username || '').trim();
           const role = (user.role || '').toUpperCase();
-          setDisplayName(name || username || ROLE_LABELS[role] || 'Super Admin');
+          setDisplayName(name || ROLE_LABELS[role]);
         }
         const statisticsRes = await apiClient.getDashboardStatistics();
 
         if (statisticsRes.success && statisticsRes.data) {
           const data = statisticsRes.data;
+          const dailyActivity: Array<{ date: string; count: number }> = data.dailyActivity || [];
+          const newAccountsByDate: Array<{ date: string; count: number }> = data.newAccountsByDate || [];
+          const recentActivity = dailyActivity.reduce((sum, item) => sum + (item.count || 0), 0);
+          const newAccounts30d = newAccountsByDate.reduce(
+            (sum, item) => sum + (item.count || 0),
+            0
+          );
           setStats({
             totalAccounts: data.totalAccounts || 0,
             totalPersonnel: data.totalPersonnel || 0,
             totalUnits: data.totalUnits || 0,
             totalLogs: data.totalLogs || 0,
-            recentActivity: 0,
+            recentActivity,
+            newAccounts30d,
           });
           setChartData({
             roleDistribution: data.roleDistribution || [],
@@ -109,38 +120,40 @@ export default function SuperAdminDashboard() {
     fetchData();
   }, [authLoading, user]);
 
-  const statCards = [
+  const statCards: Array<{
+    title: string;
+    value: ReactNode;
+    icon: ReactNode;
+    color: StatCardColor;
+    link: string;
+  }> = [
     {
       title: 'Tổng tài khoản',
       value: stats.totalAccounts,
-      icon: UserOutlined,
-      bgColor: theme === 'dark' ? 'rgba(14, 165, 233, 0.2)' : '#e0f2fe',
-      iconColor: theme === 'dark' ? '#38bdf8' : '#0284c7',
+      icon: <UserOutlined />,
+      color: 'blue',
       link: '/super-admin/accounts',
     },
     {
-      title: 'Quản lý tài khoản',
-      value: 'Xem',
-      icon: SafetyOutlined,
-      bgColor: theme === 'dark' ? 'rgba(34, 197, 94, 0.2)' : '#dcfce7',
-      iconColor: theme === 'dark' ? '#4ade80' : '#16a34a',
+      title: 'Tài khoản mới (30 ngày)',
+      value: stats.newAccounts30d,
+      icon: <UserAddOutlined />,
+      color: 'green',
       link: '/super-admin/accounts',
+    },
+    {
+      title: 'Hoạt động (7 ngày)',
+      value: stats.recentActivity,
+      icon: <ClockCircleOutlined />,
+      color: 'orange',
+      link: '/super-admin/system-logs',
     },
     {
       title: 'Nhật ký hệ thống',
       value: stats.totalLogs,
-      icon: FileTextOutlined,
-      bgColor: theme === 'dark' ? 'rgba(168, 85, 247, 0.2)' : '#f3e8ff',
-      iconColor: theme === 'dark' ? '#c084fc' : '#9333ea',
+      icon: <FileTextOutlined />,
+      color: 'purple',
       link: '/super-admin/system-logs',
-    },
-    {
-      title: 'Tạo tài khoản mới',
-      value: '+',
-      icon: FundOutlined,
-      bgColor: theme === 'dark' ? 'rgba(249, 115, 22, 0.2)' : '#fed7aa',
-      iconColor: theme === 'dark' ? '#fb923c' : '#ea580c',
-      link: '/super-admin/accounts/create',
     },
   ];
 
@@ -156,7 +169,7 @@ export default function SuperAdminDashboard() {
     {
       title: 'Tạo tài khoản mới',
       description: 'Thêm tài khoản và quân nhân mới vào hệ thống',
-      icon: SafetyOutlined,
+      icon: UserAddOutlined,
       iconColor: theme === 'dark' ? '#4ade80' : '#16a34a',
       bgColor: theme === 'dark' ? 'rgba(34, 197, 94, 0.2)' : '#dcfce7',
       link: '/super-admin/accounts/create',
@@ -172,7 +185,7 @@ export default function SuperAdminDashboard() {
     {
       title: 'Cài đặt hệ thống',
       description: 'Quản lý cấu hình và thiết lập hệ thống',
-      icon: BankOutlined,
+      icon: SettingOutlined,
       iconColor: theme === 'dark' ? '#fb923c' : '#ea580c',
       bgColor: theme === 'dark' ? 'rgba(249, 115, 22, 0.2)' : '#fed7aa',
       link: '/super-admin/dashboard',
@@ -223,59 +236,23 @@ export default function SuperAdminDashboard() {
           }}
         >
           {statCards.map((stat, index) => {
-            const IconComponent = stat.icon;
             const isNumber = typeof stat.value === 'number';
+            const displayValue =
+              loading && isNumber
+                ? '...'
+                : isNumber
+                  ? (stat.value as number).toLocaleString()
+                  : stat.value;
             return (
-              <Link key={index} href={stat.link} style={{ display: 'block', height: '100%' }}>
-                <Card
-                  hoverable
-                  style={{
-                    borderRadius: 10,
-                    boxShadow:
-                      theme === 'dark'
-                        ? '0 1px 6px rgba(0,0,0,0.35)'
-                        : '0 1px 4px rgba(0,0,0,0.06)',
-                    transition: 'all 0.3s ease',
-                    height: '100%',
-                  }}
-                  styles={{ body: { padding: '20px', height: '100%' } }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, minHeight: 84 }}>
-                    <div
-                      style={{
-                        width: 56,
-                        height: 56,
-                        borderRadius: 12,
-                        background: stat.bgColor,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                      }}
-                    >
-                      <IconComponent style={{ fontSize: 26, color: stat.iconColor }} />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <Text
-                        type="secondary"
-                        style={{ fontSize: 13, fontWeight: 500, display: 'block', marginBottom: 4 }}
-                      >
-                        {stat.title}
-                      </Text>
-                      <div
-                        style={{
-                          fontSize: isNumber ? 28 : 22,
-                          fontWeight: 'bold',
-                          lineHeight: 1.1,
-                        }}
-                      >
-                        {loading && isNumber ? '...' : stat.value}
-                      </div>
-                    </div>
-                    <ArrowRightOutlined style={{ fontSize: 14, color: '#9ca3af' }} />
-                  </div>
-                </Card>
-              </Link>
+              <StatCard
+                key={index}
+                icon={stat.icon}
+                label={stat.title}
+                value={displayValue}
+                isDark={theme === 'dark'}
+                {...getStatCardPalette(stat.color)}
+                link={stat.link}
+              />
             );
           })}
         </div>
@@ -301,7 +278,12 @@ export default function SuperAdminDashboard() {
               const IconComponent = action.icon;
               return (
                 <Link key={index} href={action.link} style={{ display: 'block', height: '100%' }}>
-                  <Card hoverable style={{ cursor: 'pointer', height: '100%' }} styles={{ body: { height: '100%' } }}>
+                  <Card
+                    hoverable
+                    className="transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
+                    style={{ cursor: 'pointer', height: '100%' }}
+                    styles={{ body: { height: '100%' } }}
+                  >
                     <div
                       style={{
                         padding: '12px',

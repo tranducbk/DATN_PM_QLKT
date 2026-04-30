@@ -657,6 +657,8 @@ async function deleteProposal(proposalId: string, userId: string, userRole: stri
       id: proposal.id,
       don_vi: (proposal.DonViTrucThuoc || proposal.CoQuanDonVi)?.ten_don_vi || '-',
       status: proposal.status,
+      loai_de_xuat: proposal.loai_de_xuat,
+      nguoi_de_xuat_id: proposal.nguoi_de_xuat_id,
     },
   };
 }

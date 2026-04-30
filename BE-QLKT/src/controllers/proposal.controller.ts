@@ -302,13 +302,30 @@ class ProposalController {
       action: AUDIT_ACTIONS.DELETE,
       resource: 'proposals',
       resourceId: id,
-      description: `Xóa đề xuất khen thưởng ID ${id} - Đơn vị: ${(result.proposal as { don_vi?: string }).don_vi}`,
+      description: `Xóa đề xuất khen thưởng ID ${id} - Đơn vị: ${result.proposal.don_vi}`,
       payload: {
         proposal_id: id,
-        don_vi: (result.proposal as { don_vi?: string }).don_vi,
+        don_vi: result.proposal.don_vi,
         status: result.proposal.status,
       },
     });
+    await safeNotify(
+      {
+        userId: user.id,
+        userRole: user.role,
+        resource: 'proposals',
+        description: 'Lỗi gửi thông báo khi xóa đề xuất',
+      },
+      () =>
+        notificationHelper.notifyOnProposalDeletion(
+          {
+            id: result.proposal.id,
+            loai_de_xuat: result.proposal.loai_de_xuat,
+            nguoi_de_xuat_id: result.proposal.nguoi_de_xuat_id ?? undefined,
+          },
+          user
+        )
+    );
     return ResponseHelper.success(res, { message: result.message, data: result.proposal });
   });
 
