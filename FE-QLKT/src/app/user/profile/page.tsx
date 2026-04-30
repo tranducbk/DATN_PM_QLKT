@@ -32,12 +32,11 @@ import {
 import Link from 'next/link';
 import { apiClient } from '@/lib/apiClient';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
-import { calculateDuration, formatDate } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 import { useTheme } from '@/components/ThemeProvider';
 import { MedalProgressCard } from '@/components/personnel/MedalProgressCard';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { useAuth } from '@/contexts/AuthContext';
-import { PROPOSAL_STATUS, getProposalStatusLabel } from '@/constants/proposal.constants';
 import {
   ELIGIBILITY_STATUS,
   ELIGIBILITY_STATUS_MAP,
@@ -63,7 +62,12 @@ import type {
   PositionHistoryRow,
   AdhocAwardRow,
 } from './types';
-import { calculateYearsOfService, convertMonthsToYearsAndMonths } from './helpers';
+import { calculateYearsOfService, formatYearsAndMonths } from './helpers';
+import {
+  makeScientificColumns,
+  makePositionHistoryColumns,
+  makeAdhocColumns,
+} from './columns';
 
 const { Title, Text } = Typography;
 
@@ -179,227 +183,9 @@ export default function UserProfilePage() {
     fetchData();
   }, [user?.quan_nhan_id]);
 
-  const scientificColumns = [
-    {
-      title: 'STT',
-      key: 'index',
-      width: 80,
-      align: 'center' as const,
-      render: (_: unknown, __: unknown, index: number) => index + 1,
-    },
-    {
-      title: 'Năm',
-      dataIndex: 'nam',
-      key: 'nam',
-      width: 100,
-      align: 'center' as const,
-      sorter: (a: ScientificAchievementRow, b: ScientificAchievementRow) => a.nam - b.nam,
-    },
-    {
-      title: 'Loại',
-      dataIndex: 'loai',
-      key: 'loai',
-      width: 120,
-      align: 'center' as const,
-      render: (text: string) => text || '-',
-    },
-    {
-      title: 'Mô tả',
-      dataIndex: 'mo_ta',
-      key: 'mo_ta',
-      minWidth: 200,
-      align: 'center' as const,
-      ellipsis: {
-        showTitle: false,
-      },
-      render: (text: string) => (
-        <span title={text} style={{ display: 'block', maxWidth: '100%' }}>
-          {text || '-'}
-        </span>
-      ),
-    },
-    {
-      title: 'Số quyết định',
-      dataIndex: 'so_quyet_dinh',
-      key: 'so_quyet_dinh',
-      width: 150,
-      align: 'center' as const,
-      render: (text: string, _record: ScientificAchievementRow) => {
-        if (!text || text.trim() === '') return '-';
-        return (
-          <a
-            onClick={e => {
-              e.preventDefault();
-              e.stopPropagation();
-              handleOpenDecisionFile(text);
-            }}
-            style={{
-              color: '#52c41a',
-              cursor: 'pointer',
-              textDecoration: 'underline',
-            }}
-          >
-            {text}
-          </a>
-        );
-      },
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      key: 'status',
-      width: 120,
-      align: 'center' as const,
-      render: (text: string) => {
-        const label = getProposalStatusLabel(text);
-        if (text === PROPOSAL_STATUS.APPROVED) {
-          return <span style={{ color: '#52c41a' }}>{label}</span>;
-        }
-        if (text === PROPOSAL_STATUS.REJECTED) {
-          return <span style={{ color: '#ff4d4f' }}>{label}</span>;
-        }
-        return <span style={{ color: '#faad14' }}>{label}</span>;
-      },
-    },
-  ];
-
-  const positionHistoryColumns = [
-    {
-      title: 'STT',
-      key: 'index',
-      width: 80,
-      align: 'center' as const,
-      fixed: 'left' as const,
-      render: (_: unknown, __: unknown, index: number) => index + 1,
-    },
-    {
-      title: 'Chức vụ',
-      dataIndex: 'ChucVu',
-      key: 'ChucVu',
-      width: 200,
-      align: 'center' as const,
-      render: (chucVu: PositionHistoryRow['ChucVu']) => chucVu?.ten_chuc_vu || 'N/A',
-    },
-    {
-      title: 'Hệ số chức vụ',
-      dataIndex: 'ChucVu',
-      key: 'he_so_chuc_vu',
-      width: 130,
-      align: 'center' as const,
-      render: (chucVu: PositionHistoryRow['ChucVu']) => chucVu?.he_so_chuc_vu || 'N/A',
-    },
-    {
-      title: 'Ngày bắt đầu',
-      dataIndex: 'ngay_bat_dau',
-      key: 'ngay_bat_dau',
-      width: 130,
-      align: 'center' as const,
-      render: (date: string) => (date ? formatDate(date) : 'N/A'),
-    },
-    {
-      title: 'Ngày kết thúc',
-      dataIndex: 'ngay_ket_thuc',
-      key: 'ngay_ket_thuc',
-      width: 130,
-      align: 'center' as const,
-      render: (date: string) => (date ? formatDate(date) : 'Hiện tại'),
-    },
-    {
-      title: 'Thời gian',
-      key: 'duration',
-      width: 120,
-      align: 'center' as const,
-      render: (_: unknown, record: PositionHistoryRow) => {
-        if (!record.ngay_bat_dau) return '-';
-        return calculateDuration(record.ngay_bat_dau, record.ngay_ket_thuc ?? undefined);
-      },
-    },
-  ];
-
-  const adhocColumns = [
-    {
-      title: 'STT',
-      key: 'index',
-      width: 80,
-      align: 'center' as const,
-      fixed: 'left' as const,
-      render: (_: unknown, __: unknown, index: number) => index + 1,
-    },
-    {
-      title: 'Hình thức khen thưởng',
-      dataIndex: 'hinh_thuc_khen_thuong',
-      key: 'hinh_thuc_khen_thuong',
-      width: 200,
-      align: 'center' as const,
-      ellipsis: {
-        showTitle: false,
-      },
-      render: (text: string) => (
-        <span title={text} style={{ display: 'block', maxWidth: '100%' }}>
-          {text || '-'}
-        </span>
-      ),
-    },
-    {
-      title: 'Năm',
-      dataIndex: 'nam',
-      key: 'nam',
-      width: 100,
-      align: 'center' as const,
-      sorter: (a: AdhocAwardRow, b: AdhocAwardRow) => a.nam - b.nam,
-    },
-    {
-      title: 'Cấp bậc',
-      dataIndex: 'cap_bac',
-      key: 'cap_bac',
-      width: 120,
-      align: 'center' as const,
-      render: (text: string) => text || '-',
-    },
-    {
-      title: 'Chức vụ',
-      dataIndex: 'chuc_vu',
-      key: 'chuc_vu',
-      width: 150,
-      align: 'center' as const,
-      ellipsis: {
-        showTitle: false,
-      },
-      render: (text: string) => (
-        <span title={text} style={{ display: 'block', maxWidth: '100%' }}>
-          {text || '-'}
-        </span>
-      ),
-    },
-    {
-      title: 'Số quyết định',
-      dataIndex: 'so_quyet_dinh',
-      key: 'so_quyet_dinh',
-      width: 180,
-      align: 'center' as const,
-      render: (text: string, _record: AdhocAwardRow) => {
-        if (!text || text.trim() === '') return '-';
-
-        return (
-          <a
-            onClick={e => {
-              e.preventDefault();
-              e.stopPropagation();
-              handleOpenDecisionFile(text);
-            }}
-            style={{
-              color: '#52c41a',
-              fontWeight: 500,
-              textDecoration: 'underline',
-              cursor: 'pointer',
-            }}
-          >
-            {text}
-          </a>
-        );
-      },
-    },
-  ];
+  const scientificColumns = makeScientificColumns(handleOpenDecisionFile);
+  const positionHistoryColumns = makePositionHistoryColumns();
+  const adhocColumns = makeAdhocColumns(handleOpenDecisionFile);
 
   if (loading) {
     return (
@@ -500,10 +286,7 @@ export default function UserProfilePage() {
                   )}
                 </div>
               )}
-              <div
-                className="mt-6 pt-4"
-                style={{ borderTop: `1px solid ${isDark ? '#1f2937' : '#f0f0f0'}` }}
-              >
+              <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-800">
                 <Row gutter={[16, 16]}>
                   <Col xs={24} md={12}>
                     <MedalProgressCard
@@ -554,13 +337,10 @@ export default function UserProfilePage() {
                   <Card size="small" className="h-full">
                     <Statistic
                       title="Tháng tích lũy 0.7"
-                      value={(() => {
-                        const { years, months } = convertMonthsToYearsAndMonths(
-                          contributionProfile?.months_07 || 0
-                        );
-                        return `${years} năm ${months} tháng`;
-                      })()}
-                      valueStyle={{ color: '#3f8600' }}
+                      value={formatYearsAndMonths(contributionProfile?.months_07)}
+                      valueRender={node => (
+                        <span className="text-green-700 dark:text-emerald-300">{node}</span>
+                      )}
                     />
                   </Card>
                 </Col>
@@ -568,13 +348,10 @@ export default function UserProfilePage() {
                   <Card size="small" className="h-full">
                     <Statistic
                       title="Tháng tích lũy 0.8"
-                      value={(() => {
-                        const { years, months } = convertMonthsToYearsAndMonths(
-                          contributionProfile?.months_08 || 0
-                        );
-                        return `${years} năm ${months} tháng`;
-                      })()}
-                      valueStyle={{ color: '#3f8600' }}
+                      value={formatYearsAndMonths(contributionProfile?.months_08)}
+                      valueRender={node => (
+                        <span className="text-green-700 dark:text-emerald-300">{node}</span>
+                      )}
                     />
                   </Card>
                 </Col>
@@ -582,13 +359,10 @@ export default function UserProfilePage() {
                   <Card size="small" className="h-full">
                     <Statistic
                       title="Tháng tích lũy 0.9-1.0"
-                      value={(() => {
-                        const { years, months } = convertMonthsToYearsAndMonths(
-                          contributionProfile?.months_0910 || 0
-                        );
-                        return `${years} năm ${months} tháng`;
-                      })()}
-                      valueStyle={{ color: '#3f8600' }}
+                      value={formatYearsAndMonths(contributionProfile?.months_0910)}
+                      valueRender={node => (
+                        <span className="text-green-700 dark:text-emerald-300">{node}</span>
+                      )}
                     />
                   </Card>
                 </Col>
@@ -657,7 +431,9 @@ export default function UserProfilePage() {
                             : annualProfile.tong_cstdcs || 0
                         }
                         suffix="năm"
-                        valueStyle={{ color: '#1890ff' }}
+                        valueRender={node => (
+                          <span className="text-blue-500 dark:text-blue-400">{node}</span>
+                        )}
                       />
                     </Card>
                   </Col>
@@ -763,7 +539,7 @@ export default function UserProfilePage() {
             <Empty
               image={Empty.PRESENTED_IMAGE_SIMPLE}
               description={
-                <span style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>
+                <span className="text-gray-500 dark:text-gray-400">
                   Chưa có dữ liệu danh hiệu hằng năm
                 </span>
               }
@@ -1012,12 +788,7 @@ export default function UserProfilePage() {
                       {/* Year content card */}
                       <Card
                         size="small"
-                        className="shadow-md hover:shadow-lg transition-shadow duration-300"
-                        style={{
-                          borderRadius: '12px',
-                          border: isDark ? '1px solid #374151' : '1px solid #e5e7eb',
-                          background: isDark ? '#1f2937' : '#ffffff',
-                        }}
+                        className="shadow-md hover:shadow-lg transition-shadow duration-300 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
                       >
                         <div className="space-y-4">
                           {rewards.flatMap((reward: AnnualRewardRow) => {
@@ -1098,8 +869,7 @@ export default function UserProfilePage() {
                                             e.stopPropagation();
                                             handleOpenDecisionFile(reward.so_quyet_dinh!);
                                           }}
-                                          className="hover:underline"
-                                          style={{ color: '#52c41a', cursor: 'pointer' }}
+                                          className="hover:underline text-green-600 dark:text-green-400 cursor-pointer"
                                         >
                                           {reward.so_quyet_dinh}
                                         </a>
@@ -1157,8 +927,7 @@ export default function UserProfilePage() {
                                           e.stopPropagation();
                                           handleOpenDecisionFile(reward.so_quyet_dinh_bkbqp!);
                                         }}
-                                        className="hover:underline"
-                                        style={{ color: '#52c41a', cursor: 'pointer' }}
+                                        className="hover:underline text-green-600 dark:text-green-400 cursor-pointer"
                                       >
                                         {reward.so_quyet_dinh_bkbqp}
                                       </a>
@@ -1215,8 +984,7 @@ export default function UserProfilePage() {
                                           e.stopPropagation();
                                           handleOpenDecisionFile(reward.so_quyet_dinh_cstdtq!);
                                         }}
-                                        className="hover:underline"
-                                        style={{ color: '#52c41a', cursor: 'pointer' }}
+                                        className="hover:underline text-green-600 dark:text-green-400 cursor-pointer"
                                       >
                                         {reward.so_quyet_dinh_cstdtq}
                                       </a>
@@ -1273,8 +1041,7 @@ export default function UserProfilePage() {
                                           e.stopPropagation();
                                           handleOpenDecisionFile(reward.so_quyet_dinh_bkttcp!);
                                         }}
-                                        className="hover:underline"
-                                        style={{ color: '#52c41a', cursor: 'pointer' }}
+                                        className="hover:underline text-green-600 dark:text-green-400 cursor-pointer"
                                       >
                                         {reward.so_quyet_dinh_bkttcp}
                                       </a>
@@ -1321,7 +1088,7 @@ export default function UserProfilePage() {
                 <Empty
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                   description={
-                    <span style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>
+                    <span className="text-gray-500 dark:text-gray-400">
                       Chưa có thành tích khoa học nào
                     </span>
                   }
@@ -1357,7 +1124,7 @@ export default function UserProfilePage() {
                 <Empty
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                   description={
-                    <span style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>
+                    <span className="text-gray-500 dark:text-gray-400">
                       Chưa có lịch sử chức vụ nào
                     </span>
                   }
@@ -1393,7 +1160,7 @@ export default function UserProfilePage() {
                 <Empty
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                   description={
-                    <span style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>
+                    <span className="text-gray-500 dark:text-gray-400">
                       Chưa có khen thưởng đột xuất nào
                     </span>
                   }

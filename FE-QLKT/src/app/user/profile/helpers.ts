@@ -15,3 +15,8 @@ export function convertMonthsToYearsAndMonths(totalMonths: number): {
   const months = totalMonths % 12;
   return { years, months };
 }
+
+export function formatYearsAndMonths(totalMonths: number | null | undefined): string {
+  const { years, months } = convertMonthsToYearsAndMonths(totalMonths || 0);
+  return `${years} năm ${months} tháng`;
+}
