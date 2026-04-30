@@ -48,6 +48,16 @@ erDiagram
 
     SystemLog ||--o{ ThongBao : "tạo từ log"
 
+    BangDeXuat ||--o{ FileQuyetDinh : "sinh ra (auto-create khi approve)"
+    FileQuyetDinh ||--o{ DanhHieuHangNam : "FK so_quyet_dinh (4 cột: main + bkbqp + cstdtq + bkttcp)"
+    FileQuyetDinh ||--o{ ThanhTichKhoaHoc : "FK so_quyet_dinh"
+    FileQuyetDinh ||--o{ KhenThuongHCBVTQ : "FK so_quyet_dinh"
+    FileQuyetDinh ||--o{ KhenThuongHCCSVV : "FK so_quyet_dinh"
+    FileQuyetDinh ||--o{ HuanChuongQuanKyQuyetThang : "FK so_quyet_dinh"
+    FileQuyetDinh ||--o{ KyNiemChuongVSNXDQDNDVN : "FK so_quyet_dinh"
+    FileQuyetDinh ||--o{ KhenThuongDotXuat : "FK so_quyet_dinh"
+    FileQuyetDinh ||--o{ DanhHieuDonViHangNam : "FK so_quyet_dinh (3 cột: main + bkbqp + bkttcp)"
+
     CoQuanDonVi {
         string id PK
         string ma_don_vi UK
@@ -70,6 +80,8 @@ erDiagram
         string ten_chuc_vu
         boolean is_manager
         decimal he_so_chuc_vu
+        timestamp createdAt
+        timestamp updatedAt
     }
     QuanNhan {
         string id PK
@@ -77,8 +89,17 @@ erDiagram
         string ho_ten
         string gioi_tinh
         date ngay_sinh
+        string que_quan_2_cap
+        string que_quan_3_cap
+        string tru_quan
+        string cho_o_hien_nay
+        json co_quan_don_vi
         date ngay_nhap_ngu
         date ngay_xuat_ngu
+        date ngay_vao_dang
+        date ngay_vao_dang_chinh_thuc
+        string so_the_dang_vien
+        string so_dien_thoai
         string cap_bac
         string co_quan_don_vi_id FK
         string don_vi_truc_thuoc_id FK
@@ -114,10 +135,19 @@ erDiagram
         string quan_nhan_id FK
         int nam
         string danh_hieu
-        boolean nhan_bkbqp
-        boolean nhan_cstdtq
-        boolean nhan_bkttcp
+        string cap_bac
+        string chuc_vu
+        string ghi_chu
         string so_quyet_dinh
+        boolean nhan_bkbqp
+        string so_quyet_dinh_bkbqp
+        string ghi_chu_bkbqp
+        boolean nhan_cstdtq
+        string so_quyet_dinh_cstdtq
+        string ghi_chu_cstdtq
+        boolean nhan_bkttcp
+        string so_quyet_dinh_bkttcp
+        string ghi_chu_bkttcp
     }
     KhenThuongHCBVTQ {
         string id PK
@@ -125,6 +155,10 @@ erDiagram
         string danh_hieu
         int nam
         int thang
+        string cap_bac
+        string chuc_vu
+        string ghi_chu
+        string so_quyet_dinh
         json thoi_gian_nhom_0_7
         json thoi_gian_nhom_0_8
         json thoi_gian_nhom_0_9_1_0
@@ -134,6 +168,10 @@ erDiagram
         string quan_nhan_id FK
         int nam
         int thang
+        string cap_bac
+        string chuc_vu
+        string ghi_chu
+        string so_quyet_dinh
         json thoi_gian
     }
     KyNiemChuongVSNXDQDNDVN {
@@ -141,6 +179,10 @@ erDiagram
         string quan_nhan_id FK
         int nam
         int thang
+        string cap_bac
+        string chuc_vu
+        string ghi_chu
+        string so_quyet_dinh
         json thoi_gian
     }
     KhenThuongHCCSVV {
@@ -149,24 +191,36 @@ erDiagram
         string danh_hieu
         int nam
         int thang
+        string cap_bac
+        string chuc_vu
+        string ghi_chu
+        string so_quyet_dinh
         json thoi_gian
     }
     KhenThuongDotXuat {
         string id PK
+        string loai
         string doi_tuong
         string quan_nhan_id FK
         string co_quan_don_vi_id FK
         string don_vi_truc_thuoc_id FK
         string hinh_thuc_khen_thuong
         int nam
+        string cap_bac
+        string chuc_vu
+        string ghi_chu
+        string so_quyet_dinh
         json files_dinh_kem
     }
     HoSoNienHan {
         string id PK
         string quan_nhan_id FK
         string hccsvv_hang_ba_status
+        date hccsvv_hang_ba_ngay
         string hccsvv_hang_nhi_status
+        date hccsvv_hang_nhi_ngay
         string hccsvv_hang_nhat_status
+        date hccsvv_hang_nhat_ngay
         string goi_y
     }
     HoSoCongHien {
@@ -186,7 +240,10 @@ erDiagram
         string quan_nhan_id FK
         int tong_cstdcs
         int tong_nckh
+        json tong_cstdcs_json
+        json tong_nckh_json
         int cstdcs_lien_tuc
+        int nckh_lien_tuc
         int bkbqp_lien_tuc
         int cstdtq_lien_tuc
         boolean du_dieu_kien_bkbqp
@@ -231,6 +288,7 @@ erDiagram
         json data_nien_han
         json data_cong_hien
         json files_attached
+        string ghi_chu
         string rejection_reason
     }
     HoSoDonViHangNam {
@@ -239,6 +297,7 @@ erDiagram
         string don_vi_truc_thuoc_id FK
         int nam
         int tong_dvqt
+        json tong_dvqt_json
         int dvqt_lien_tuc
         boolean du_dieu_kien_bk_tong_cuc
         boolean du_dieu_kien_bk_thu_tuong
@@ -250,9 +309,15 @@ erDiagram
         string don_vi_truc_thuoc_id FK
         int nam
         string danh_hieu
+        string so_quyet_dinh
         boolean nhan_bkbqp
+        string so_quyet_dinh_bkbqp
+        string ghi_chu_bkbqp
         boolean nhan_bkttcp
+        string so_quyet_dinh_bkttcp
+        string ghi_chu_bkttcp
         string status
+        string ghi_chu
         string nguoi_tao_id FK
         string nguoi_duyet_id FK
     }
@@ -264,6 +329,7 @@ erDiagram
         string nguoi_ky
         string file_path
         string loai_khen_thuong
+        string ghi_chu
     }
     SystemSetting {
         string id PK
@@ -271,6 +337,21 @@ erDiagram
         string value
     }
 ```
+
+**Ghi chú thiết kế** (giải đáp 2 bảng ban đầu trông như "đứng riêng"):
+
+- **`SystemSetting`** — bảng cấu hình toàn cục dạng key-value (`BACKUP_ENABLED`, `BACKUP_RETENTION_DAYS`, lịch cron…). Không liên kết entity nghiệp vụ là **chủ ý thiết kế** — đây là pattern chuẩn cho application config (tương tự `application_settings` của Django/Rails).
+- **`FileQuyetDinh`** — liên kết qua **hard FK natural key** `so_quyet_dinh` (UK) tới 8 bảng khen thưởng (13 FK columns tổng) + payload JSON của `BangDeXuat` (`data_danh_hieu`, `data_thanh_tich`, `data_nien_han`, `data_cong_hien`) qua app-layer cascade. Thiết kế:
+  1. `so_quyet_dinh` là số quyết định **do cơ quan ngoài** (BQP, TTCP, ĐVCT) ban hành — đã có ý nghĩa nghiệp vụ + `@unique` constraint trên `FileQuyetDinh.so_quyet_dinh`. Dùng làm **target column** cho FK natural-key thay vì surrogate `id`.
+  2. **Hard FK** với `@relation(... onUpdate: Cascade, onDelete: Restrict)`:
+     - `onUpdate: Cascade` → khi rename `FileQuyetDinh.so_quyet_dinh`, Postgres tự cập nhật 13 cột FK text trên 8 bảng khen thưởng.
+     - `onDelete: Restrict` → không cho xoá `FileQuyetDinh` nếu còn award đang reference (ngăn dangling).
+     - Chống orphan ở DB level: insert award với `so_quyet_dinh` không tồn tại → constraint reject.
+  3. **JSON columns trên `BangDeXuat`** (`data_*`): Postgres FK không cover được field lồng trong JSON → vẫn dùng app-layer cascade trong `services/decision/cascadeRename.ts` để rename `so_quyet_dinh` trong payload các đề xuất `PENDING` cùng 1 transaction với `FileQuyetDinh.update`.
+  4. **Index hỗ trợ cascade**: 13 `@@index([so_quyet_dinh*])` để cascade rename + tra cứu in-use khi xoá đều O(log N).
+  5. Modal chọn quyết định (`DecisionModal.tsx`) chỉ cho autocomplete từ `FileQuyetDinh` đã có hoặc tạo mới ngay tại đó — không cho nhập tự do (ngăn orphan từ FE).
+  6. Flow approve proposal (`decisionMappings.ts`): `syncDecisionFiles` chạy **trước** khi insert award rows để đảm bảo `FileQuyetDinh` tồn tại (yêu cầu của hard FK).
+  → DB-level integrity strict cho tham chiếu text, app-layer integrity cho JSON. Trade-off: phải clean orphan/empty trước migration (`scripts/cleanupSoQuyetDinhFk.ts`) và đặt 4 named relation cho `DanhHieuHangNam` (Prisma yêu cầu khi multi-FK cùng target).
 
 ---
 
@@ -308,6 +389,8 @@ erDiagram
         string ten_chuc_vu
         boolean is_manager
         decimal he_so_chuc_vu
+        timestamp createdAt
+        timestamp updatedAt
     }
     QuanNhan {
         string id PK
@@ -387,7 +470,10 @@ erDiagram
         string quan_nhan_id FK
         int tong_cstdcs
         int tong_nckh
+        json tong_cstdcs_json "chi tiết danh hiệu"
+        json tong_nckh_json "chi tiết NCKH"
         int cstdcs_lien_tuc "streak"
+        int nckh_lien_tuc "streak NCKH"
         int bkbqp_lien_tuc
         int cstdtq_lien_tuc
         boolean du_dieu_kien_bkbqp "kết quả recalc"
@@ -427,6 +513,10 @@ erDiagram
         string danh_hieu "HCBVTQ_HANG_BA NHI NHAT"
         int nam
         int thang
+        string cap_bac
+        string chuc_vu
+        string ghi_chu
+        string so_quyet_dinh
         json thoi_gian_nhom_0_7
         json thoi_gian_nhom_0_8
         json thoi_gian_nhom_0_9_1_0
@@ -437,6 +527,10 @@ erDiagram
         string danh_hieu "HCCSVV_HANG_BA NHI NHAT"
         int nam
         int thang
+        string cap_bac
+        string chuc_vu
+        string ghi_chu
+        string so_quyet_dinh
         json thoi_gian
     }
     HuanChuongQuanKyQuyetThang {
@@ -444,6 +538,10 @@ erDiagram
         string quan_nhan_id FK
         int nam
         int thang
+        string cap_bac
+        string chuc_vu
+        string ghi_chu
+        string so_quyet_dinh
         json thoi_gian "tính từ ngày nhập ngũ"
     }
     KyNiemChuongVSNXDQDNDVN {
@@ -451,16 +549,25 @@ erDiagram
         string quan_nhan_id FK
         int nam
         int thang
+        string cap_bac
+        string chuc_vu
+        string ghi_chu
+        string so_quyet_dinh
         json thoi_gian "20 năm nữ 25 năm nam đến ngày xuất ngũ"
     }
     KhenThuongDotXuat {
         string id PK
+        string loai
         string doi_tuong "CA_NHAN TAP_THE"
         string quan_nhan_id FK
         string co_quan_don_vi_id FK
         string don_vi_truc_thuoc_id FK
         string hinh_thuc_khen_thuong
         int nam
+        string cap_bac
+        string chuc_vu
+        string ghi_chu
+        string so_quyet_dinh
         json files_dinh_kem
     }
     HoSoNienHan {
@@ -469,7 +576,9 @@ erDiagram
         string hccsvv_hang_ba_status
         date hccsvv_hang_ba_ngay
         string hccsvv_hang_nhi_status
+        date hccsvv_hang_nhi_ngay
         string hccsvv_hang_nhat_status
+        date hccsvv_hang_nhat_ngay
         string goi_y
     }
     HoSoCongHien {
@@ -522,6 +631,7 @@ erDiagram
         json data_nien_han
         json data_cong_hien
         json files_attached
+        string ghi_chu
         string rejection_reason
         timestamp ngay_duyet
     }
@@ -537,6 +647,7 @@ erDiagram
         boolean nhan_bkttcp "đơn vị"
         string so_quyet_dinh_bkttcp
         string status
+        string ghi_chu
         string nguoi_tao_id FK
         string nguoi_duyet_id FK
     }
@@ -546,6 +657,7 @@ erDiagram
         string don_vi_truc_thuoc_id FK
         int nam
         int tong_dvqt
+        json tong_dvqt_json "chi tiết ĐVQT"
         int dvqt_lien_tuc "streak ĐVQT"
         boolean du_dieu_kien_bk_tong_cuc
         boolean du_dieu_kien_bk_thu_tuong
@@ -559,6 +671,7 @@ erDiagram
         string nguoi_ky
         string file_path
         string loai_khen_thuong
+        string ghi_chu
     }
 ```
 

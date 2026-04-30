@@ -1,5 +1,10 @@
 import { z } from 'zod';
 import { PROPOSAL_TYPES, type ProposalType } from '../constants/proposalTypes.constants';
+import {
+  addChainSqdIssues,
+  PERSONAL_CHAIN_SQD_PAIRS,
+  UNIT_CHAIN_SQD_PAIRS,
+} from './helpers/chainAwardSqd';
 
 const YEAR_MIN = 1900;
 const YEAR_MAX = 2100;
@@ -137,7 +142,8 @@ export const bulkCreateAwards = z
     }
 
     if (type === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
-      for (const item of titleData) {
+      for (let idx = 0; idx < titleData.length; idx += 1) {
+        const item = titleData[idx];
         if (typeof item.don_vi_id !== 'string' || item.don_vi_id.trim() === '') {
           ctx.addIssue({
             code: 'custom',
@@ -154,6 +160,7 @@ export const bulkCreateAwards = z
           });
           return;
         }
+        addChainSqdIssues(item, ctx, UNIT_CHAIN_SQD_PAIRS, ['title_data', idx]);
       }
     } else if (type === PROPOSAL_TYPES.NCKH) {
       for (const item of titleData) {
@@ -187,7 +194,8 @@ export const bulkCreateAwards = z
       type === PROPOSAL_TYPES.NIEN_HAN ||
       type === PROPOSAL_TYPES.CONG_HIEN
     ) {
-      for (const item of titleData) {
+      for (let idx = 0; idx < titleData.length; idx += 1) {
+        const item = titleData[idx];
         if (typeof item.personnel_id !== 'string' || item.personnel_id.trim() === '') {
           ctx.addIssue({
             code: 'custom',
@@ -203,6 +211,9 @@ export const bulkCreateAwards = z
             message: 'title_data.danh_hieu không hợp lệ',
           });
           return;
+        }
+        if (type === PROPOSAL_TYPES.CA_NHAN_HANG_NAM) {
+          addChainSqdIssues(item, ctx, PERSONAL_CHAIN_SQD_PAIRS, ['title_data', idx]);
         }
       }
     } else {

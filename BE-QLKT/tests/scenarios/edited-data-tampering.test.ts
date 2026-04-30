@@ -344,7 +344,7 @@ describe('editedData tampering — DON_VI item swap', () => {
 
     // Then: DB ghi vào cqdv-Y, không phải cqdv-X — lỗ hổng đã pin
     const createArgs = prismaMock.danhHieuDonViHangNam.create.mock.calls[0][0];
-    expect(createArgs.data.CoQuanDonVi.connect.id).toBe(cqdvY.id);
+    expect(createArgs.data.co_quan_don_vi_id).toBe(cqdvY.id);
     // TODO: unit swap được chấp nhận — xác nhận với nghiệp vụ liệu approve.ts có
     //   nên reject editedData unit id lệch khỏi scope đơn vị lưu trong proposal.
   });

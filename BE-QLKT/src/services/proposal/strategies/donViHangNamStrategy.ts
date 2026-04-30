@@ -1,3 +1,4 @@
+import type { Prisma } from '../../../generated/prisma';
 import { danhHieuDonViHangNamRepository } from '../../../repositories/danhHieu.repository';
 import { coQuanDonViRepository, donViTrucThuocRepository } from '../../../repositories/unit.repository';
 import { PROPOSAL_TYPES } from '../../../constants/proposalTypes.constants';
@@ -256,32 +257,26 @@ class DonViHangNamStrategy implements ProposalStrategy {
             data,
           }, prismaTx);
         } else {
-          await danhHieuDonViHangNamRepository.createRaw({
-            data: {
-              ...(coQuanDonViId && { CoQuanDonVi: { connect: { id: coQuanDonViId } } }),
-              ...(donViTrucThuocId && { DonViTrucThuoc: { connect: { id: donViTrucThuocId } } }),
-              nam: namValue,
-              danh_hieu:
-                item.danh_hieu === DANH_HIEU_DON_VI_HANG_NAM.DVQT ||
-                item.danh_hieu === DANH_HIEU_DON_VI_HANG_NAM.DVTT
-                  ? item.danh_hieu
-                  : null,
-              so_quyet_dinh:
-                item.danh_hieu === DANH_HIEU_DON_VI_HANG_NAM.DVQT ||
-                item.danh_hieu === DANH_HIEU_DON_VI_HANG_NAM.DVTT
-                  ? soQuyetDinh
-                  : null,
-              nhan_bkbqp: isBkbqp,
-              so_quyet_dinh_bkbqp: soQuyetDinhBKBQP,
-              nhan_bkttcp: isBkttcp,
-              so_quyet_dinh_bkttcp: soQuyetDinhBKTTCP,
-              status: PROPOSAL_STATUS.APPROVED,
-              nguoi_tao_id: adminId,
-              nguoi_duyet_id: adminId,
-              ngay_duyet: new Date(),
-              ghi_chu: item.ghi_chu || null,
-            },
-          }, prismaTx);
+          const isMainAward =
+            item.danh_hieu === DANH_HIEU_DON_VI_HANG_NAM.DVQT ||
+            item.danh_hieu === DANH_HIEU_DON_VI_HANG_NAM.DVTT;
+          const createData: Prisma.DanhHieuDonViHangNamUncheckedCreateInput = {
+            co_quan_don_vi_id: coQuanDonViId ?? null,
+            don_vi_truc_thuoc_id: donViTrucThuocId ?? null,
+            nam: namValue,
+            danh_hieu: isMainAward ? item.danh_hieu : null,
+            so_quyet_dinh: isMainAward ? soQuyetDinh : null,
+            nhan_bkbqp: isBkbqp,
+            so_quyet_dinh_bkbqp: isBkbqp ? soQuyetDinhBKBQP : null,
+            nhan_bkttcp: isBkttcp,
+            so_quyet_dinh_bkttcp: isBkttcp ? soQuyetDinhBKTTCP : null,
+            status: PROPOSAL_STATUS.APPROVED,
+            nguoi_tao_id: adminId,
+            nguoi_duyet_id: adminId,
+            ngay_duyet: new Date(),
+            ghi_chu: item.ghi_chu || null,
+          };
+          await danhHieuDonViHangNamRepository.createRaw({ data: createData }, prismaTx);
         }
         acc.importedDanhHieu++;
         acc.affectedUnitIds.add(item.don_vi_id);

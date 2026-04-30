@@ -302,7 +302,7 @@ export async function deleteAnnualReward(
       );
     }
 
-    const updateData: Prisma.DanhHieuHangNamUpdateInput = {};
+    const updateData: Prisma.DanhHieuHangNamUncheckedUpdateInput = {};
     const isBaseAward = DANH_HIEU_CA_NHAN_CO_BAN.has(awardType);
 
     if (isBaseAward) {
@@ -691,7 +691,7 @@ export async function bulkCreateAnnualRewards(data: BulkCreateData): Promise<{
           continue;
         }
 
-        const updateData: Prisma.DanhHieuHangNamUpdateInput = {};
+        const updateData: Prisma.DanhHieuHangNamUncheckedUpdateInput = {};
         if (isBangKhen) {
           if (danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP) {
             updateData.nhan_bkbqp = true;
@@ -722,8 +722,8 @@ export async function bulkCreateAnnualRewards(data: BulkCreateData): Promise<{
           data: updateData,
         }, prismaTx);
       } else {
-        const createData: Prisma.DanhHieuHangNamCreateInput = {
-          QuanNhan: { connect: { id: personnelId } },
+        const createData: Prisma.DanhHieuHangNamUncheckedCreateInput = {
+          quan_nhan_id: personnelId,
           nam: namInt,
           danh_hieu: finalDanhHieu,
           cap_bac: individualCapBac || null,

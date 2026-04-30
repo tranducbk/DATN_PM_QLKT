@@ -264,7 +264,7 @@ describe('Proposal race conditions — parallel approvals across proposals', () 
     expect(rejected.length).toBe(1);
     expect(prismaMock.danhHieuDonViHangNam.create).toHaveBeenCalled();
     const firstCreateArgs = prismaMock.danhHieuDonViHangNam.create.mock.calls[0][0];
-    expect(firstCreateArgs.data.DonViTrucThuoc).toEqual({ connect: { id: dvtt.id } });
+    expect(firstCreateArgs.data.don_vi_truc_thuoc_id).toBe(dvtt.id);
   });
 
   it('Hai proposal NCKH từ 2 manager duyệt song song -> hiện tại cả hai đều approve', async () => {

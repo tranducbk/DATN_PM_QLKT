@@ -18,6 +18,11 @@ interface DecisionRowFixture {
 
 const LOAI_KHEN_THUONG_CA_NHAN = PROPOSAL_TYPES.CA_NHAN_HANG_NAM;
 
+/** Stub findMany on bangDeXuat so the cascade rename's pending-proposal scan is a no-op. */
+function mockCascadeRenameNoOp(): void {
+  prismaMock.bangDeXuat.findMany.mockResolvedValue([] as never);
+}
+
 function makeDecision(overrides: Partial<DecisionRowFixture> = {}): DecisionRowFixture {
   return {
     id: overrides.id ?? 'qd-1',
@@ -95,6 +100,7 @@ describe('decision.service - updateDecision', () => {
       .mockResolvedValueOnce(null);
     const updated = makeDecision({ id: 'qd-1', so_quyet_dinh: '456/QĐ-BQP' });
     prismaMock.fileQuyetDinh.update.mockResolvedValueOnce(updated as never);
+    mockCascadeRenameNoOp();
 
     const result = await decisionService.updateDecision('qd-1', {
       so_quyet_dinh: '456/QĐ-BQP',
@@ -166,14 +172,24 @@ describe('decision.service - getDecisionBySoQuyetDinh', () => {
 });
 
 describe('decision.service - deleteDecision', () => {
-  function mockNoAwardLinks() {
-    prismaMock.danhHieuHangNam.findFirst.mockResolvedValueOnce(null);
-    prismaMock.khenThuongHCBVTQ.findFirst.mockResolvedValueOnce(null);
-    prismaMock.khenThuongHCCSVV.findFirst.mockResolvedValueOnce(null);
-    prismaMock.khenThuongDotXuat.findFirst.mockResolvedValueOnce(null);
-    prismaMock.huanChuongQuanKyQuyetThang.findFirst.mockResolvedValueOnce(null);
-    prismaMock.kyNiemChuongVSNXDQDNDVN.findFirst.mockResolvedValueOnce(null);
-    prismaMock.thanhTichKhoaHoc.findFirst.mockResolvedValueOnce(null);
+  function mockNoAwardLinks(): void {
+    const zero = 0;
+    prismaMock.thanhTichKhoaHoc.count.mockResolvedValueOnce(zero as never);
+    prismaMock.danhHieuHangNam.count
+      .mockResolvedValueOnce(zero as never)
+      .mockResolvedValueOnce(zero as never)
+      .mockResolvedValueOnce(zero as never)
+      .mockResolvedValueOnce(zero as never);
+    prismaMock.khenThuongHCBVTQ.count.mockResolvedValueOnce(zero as never);
+    prismaMock.huanChuongQuanKyQuyetThang.count.mockResolvedValueOnce(zero as never);
+    prismaMock.kyNiemChuongVSNXDQDNDVN.count.mockResolvedValueOnce(zero as never);
+    prismaMock.khenThuongHCCSVV.count.mockResolvedValueOnce(zero as never);
+    prismaMock.khenThuongDotXuat.count.mockResolvedValueOnce(zero as never);
+    prismaMock.danhHieuDonViHangNam.count
+      .mockResolvedValueOnce(zero as never)
+      .mockResolvedValueOnce(zero as never)
+      .mockResolvedValueOnce(zero as never);
+    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([] as never);
   }
 
   it('Cho decision không liên kết award nào Khi xoá Thì gọi delete', async () => {
@@ -189,15 +205,133 @@ describe('decision.service - deleteDecision', () => {
 
   it('Cho decision đang được dùng trong DanhHieuHangNam Khi xoá Thì throw ValidationError', async () => {
     prismaMock.fileQuyetDinh.findUnique.mockResolvedValueOnce(makeDecision() as never);
-    prismaMock.danhHieuHangNam.findFirst.mockResolvedValueOnce({ id: 'dh-1' } as never);
-    prismaMock.khenThuongHCBVTQ.findFirst.mockResolvedValueOnce(null);
-    prismaMock.khenThuongHCCSVV.findFirst.mockResolvedValueOnce(null);
-    prismaMock.khenThuongDotXuat.findFirst.mockResolvedValueOnce(null);
-    prismaMock.huanChuongQuanKyQuyetThang.findFirst.mockResolvedValueOnce(null);
-    prismaMock.kyNiemChuongVSNXDQDNDVN.findFirst.mockResolvedValueOnce(null);
-    prismaMock.thanhTichKhoaHoc.findFirst.mockResolvedValueOnce(null);
+    prismaMock.thanhTichKhoaHoc.count.mockResolvedValueOnce(0 as never);
+    prismaMock.danhHieuHangNam.count
+      .mockResolvedValueOnce(2 as never)
+      .mockResolvedValueOnce(0 as never)
+      .mockResolvedValueOnce(0 as never)
+      .mockResolvedValueOnce(0 as never);
+    prismaMock.khenThuongHCBVTQ.count.mockResolvedValueOnce(0 as never);
+    prismaMock.huanChuongQuanKyQuyetThang.count.mockResolvedValueOnce(0 as never);
+    prismaMock.kyNiemChuongVSNXDQDNDVN.count.mockResolvedValueOnce(0 as never);
+    prismaMock.khenThuongHCCSVV.count.mockResolvedValueOnce(0 as never);
+    prismaMock.khenThuongDotXuat.count.mockResolvedValueOnce(0 as never);
+    prismaMock.danhHieuDonViHangNam.count
+      .mockResolvedValueOnce(0 as never)
+      .mockResolvedValueOnce(0 as never)
+      .mockResolvedValueOnce(0 as never);
+    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([] as never);
 
     await expect(decisionService.deleteDecision('qd-1')).rejects.toBeInstanceOf(ValidationError);
+
+    expect(prismaMock.fileQuyetDinh.delete).not.toHaveBeenCalled();
+  });
+
+  it('Cho decision đang được dùng ở chain BKBQP cá nhân Khi xoá Thì throw ValidationError', async () => {
+    prismaMock.fileQuyetDinh.findUnique.mockResolvedValueOnce(makeDecision() as never);
+    prismaMock.thanhTichKhoaHoc.count.mockResolvedValueOnce(0 as never);
+    prismaMock.danhHieuHangNam.count
+      .mockResolvedValueOnce(0 as never)
+      .mockResolvedValueOnce(3 as never)
+      .mockResolvedValueOnce(0 as never)
+      .mockResolvedValueOnce(0 as never);
+    prismaMock.khenThuongHCBVTQ.count.mockResolvedValueOnce(0 as never);
+    prismaMock.huanChuongQuanKyQuyetThang.count.mockResolvedValueOnce(0 as never);
+    prismaMock.kyNiemChuongVSNXDQDNDVN.count.mockResolvedValueOnce(0 as never);
+    prismaMock.khenThuongHCCSVV.count.mockResolvedValueOnce(0 as never);
+    prismaMock.khenThuongDotXuat.count.mockResolvedValueOnce(0 as never);
+    prismaMock.danhHieuDonViHangNam.count
+      .mockResolvedValueOnce(0 as never)
+      .mockResolvedValueOnce(0 as never)
+      .mockResolvedValueOnce(0 as never);
+    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([] as never);
+
+    await expect(decisionService.deleteDecision('qd-1')).rejects.toMatchObject({
+      message: expect.stringContaining('BKBQP cá nhân: 3 bản ghi'),
+    });
+  });
+
+  it('Cho decision đang được tham chiếu trong proposal PENDING Khi xoá Thì throw ValidationError + liệt kê đề xuất', async () => {
+    const decision = makeDecision({ so_quyet_dinh: '123/QĐ-BQP' });
+    prismaMock.fileQuyetDinh.findUnique.mockResolvedValueOnce(decision as never);
+    prismaMock.thanhTichKhoaHoc.count.mockResolvedValueOnce(0 as never);
+    prismaMock.danhHieuHangNam.count
+      .mockResolvedValueOnce(0 as never)
+      .mockResolvedValueOnce(0 as never)
+      .mockResolvedValueOnce(0 as never)
+      .mockResolvedValueOnce(0 as never);
+    prismaMock.khenThuongHCBVTQ.count.mockResolvedValueOnce(0 as never);
+    prismaMock.huanChuongQuanKyQuyetThang.count.mockResolvedValueOnce(0 as never);
+    prismaMock.kyNiemChuongVSNXDQDNDVN.count.mockResolvedValueOnce(0 as never);
+    prismaMock.khenThuongHCCSVV.count.mockResolvedValueOnce(0 as never);
+    prismaMock.khenThuongDotXuat.count.mockResolvedValueOnce(0 as never);
+    prismaMock.danhHieuDonViHangNam.count
+      .mockResolvedValueOnce(0 as never)
+      .mockResolvedValueOnce(0 as never)
+      .mockResolvedValueOnce(0 as never);
+    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([
+      {
+        id: 'bdx-pending',
+        status: 'PENDING',
+        data_danh_hieu: [{ personnel_id: 'p1', so_quyet_dinh: '123/QĐ-BQP' }],
+        data_thanh_tich: null,
+        data_nien_han: null,
+        data_cong_hien: null,
+      },
+    ] as never);
+
+    await expect(decisionService.deleteDecision('qd-1')).rejects.toMatchObject({
+      message: expect.stringContaining('Đề xuất đang chờ duyệt: 1'),
+    });
+
+    expect(prismaMock.fileQuyetDinh.delete).not.toHaveBeenCalled();
+  });
+
+  it('Cho decision đang được tham chiếu trong proposal APPROVED + REJECTED Khi xoá Thì throw + liệt kê đủ 2 status', async () => {
+    const decision = makeDecision({ so_quyet_dinh: '123/QĐ-BQP' });
+    prismaMock.fileQuyetDinh.findUnique.mockResolvedValueOnce(decision as never);
+    prismaMock.thanhTichKhoaHoc.count.mockResolvedValueOnce(0 as never);
+    prismaMock.danhHieuHangNam.count
+      .mockResolvedValueOnce(0 as never)
+      .mockResolvedValueOnce(0 as never)
+      .mockResolvedValueOnce(0 as never)
+      .mockResolvedValueOnce(0 as never);
+    prismaMock.khenThuongHCBVTQ.count.mockResolvedValueOnce(0 as never);
+    prismaMock.huanChuongQuanKyQuyetThang.count.mockResolvedValueOnce(0 as never);
+    prismaMock.kyNiemChuongVSNXDQDNDVN.count.mockResolvedValueOnce(0 as never);
+    prismaMock.khenThuongHCCSVV.count.mockResolvedValueOnce(0 as never);
+    prismaMock.khenThuongDotXuat.count.mockResolvedValueOnce(0 as never);
+    prismaMock.danhHieuDonViHangNam.count
+      .mockResolvedValueOnce(0 as never)
+      .mockResolvedValueOnce(0 as never)
+      .mockResolvedValueOnce(0 as never);
+    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([
+      {
+        id: 'bdx-approved',
+        status: 'APPROVED',
+        data_thanh_tich: [{ personnel_id: 'p2', so_quyet_dinh: '123/QĐ-BQP' }],
+        data_danh_hieu: null,
+        data_nien_han: null,
+        data_cong_hien: null,
+      },
+      {
+        id: 'bdx-rejected',
+        status: 'REJECTED',
+        data_nien_han: [{ personnel_id: 'p3', so_quyet_dinh: '123/QĐ-BQP' }],
+        data_danh_hieu: null,
+        data_thanh_tich: null,
+        data_cong_hien: null,
+      },
+    ] as never);
+
+    const errorPromise = decisionService.deleteDecision('qd-1');
+    await expect(errorPromise).rejects.toBeInstanceOf(ValidationError);
+    await expect(errorPromise).rejects.toMatchObject({
+      message: expect.stringContaining('Đề xuất đã duyệt (lịch sử): 1'),
+    });
+    await expect(errorPromise).rejects.toMatchObject({
+      message: expect.stringContaining('Đề xuất bị từ chối (lịch sử): 1'),
+    });
 
     expect(prismaMock.fileQuyetDinh.delete).not.toHaveBeenCalled();
   });

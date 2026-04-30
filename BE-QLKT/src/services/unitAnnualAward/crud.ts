@@ -393,7 +393,7 @@ export async function remove(
       );
     }
 
-    const updateData: Prisma.DanhHieuDonViHangNamUpdateInput = {};
+    const updateData: Prisma.DanhHieuDonViHangNamUncheckedUpdateInput = {};
     const isBaseAward = DANH_HIEU_DON_VI_CO_BAN.has(awardType);
 
     if (isBaseAward) {

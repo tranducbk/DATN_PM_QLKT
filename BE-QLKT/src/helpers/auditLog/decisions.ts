@@ -1,16 +1,25 @@
 import { Request, Response } from 'express';
 import { FALLBACK, parseResponseData, formatDate, asRecord } from './constants';
-
-const LOAI_QUYET_DINH_NAMES: Record<string, string> = {
-  DANH_HIEU_HANG_NAM: 'Danh hiệu hằng năm',
-  DANH_HIEU_NIEN_HAN: 'Huy chương Chiến sĩ vẻ vang',
-  CONG_HIEN: 'Huân chương Bảo vệ Tổ quốc',
-  BKBQP: 'Bằng khen Bộ Quốc phòng',
-  CSTDTQ: 'Chiến sĩ thi đua toàn quốc',
-};
+import { LOAI_DE_XUAT_MAP } from '../../constants/danhHieu.constants';
+import type { ProposalType } from '../../constants/proposalTypes.constants';
 
 const getLoaiName = (loaiQuyetDinh: string): string => {
-  return LOAI_QUYET_DINH_NAMES[loaiQuyetDinh] || loaiQuyetDinh || '';
+  if (!loaiQuyetDinh) return '';
+  return LOAI_DE_XUAT_MAP[loaiQuyetDinh as ProposalType] || loaiQuyetDinh;
+};
+
+interface CascadeSummaryShape {
+  proposalsScanned?: number;
+  proposalsUpdated?: number;
+}
+
+const formatCascadeSummary = (cascade: CascadeSummaryShape): string => {
+  const proposalsUpdated = cascade.proposalsUpdated ?? 0;
+  // Award tables auto-update via Postgres ON UPDATE CASCADE; only JSON proposal payloads need app-level rename.
+  if (proposalsUpdated === 0) {
+    return '\n- Cascade: Bảng khen thưởng tự cập nhật qua FK; không có đề xuất chờ duyệt nào tham chiếu số cũ';
+  }
+  return `\n- Cascade cập nhật: ${proposalsUpdated} đề xuất đang chờ duyệt (bảng khen thưởng tự cập nhật qua FK)`;
 };
 
 const decisions: Record<string, (req: Request, res: Response, responseData: unknown) => string> = {
@@ -39,10 +48,12 @@ const decisions: Record<string, (req: Request, res: Response, responseData: unkn
     const resolvedLoai = loaiQuyetDinh || (decision?.loai_quyet_dinh as string) || '';
     const resolvedNam = nam || (decision?.nam as number) || '';
     const loaiName = getLoaiName(resolvedLoai);
+    const cascade = asRecord(decision?.cascade) as CascadeSummaryShape | null;
 
     let description = `Cập nhật quyết định: ${resolvedSoQD}`;
     if (loaiName) description += ` (${loaiName})`;
     if (resolvedNam) description += `\n- Năm: ${resolvedNam}`;
+    if (cascade) description += formatCascadeSummary(cascade);
     return description;
   },
   DELETE: (req: Request, res: Response, responseData: unknown): string => {

@@ -67,6 +67,9 @@ export async function runImportTransaction(
         } as ApproveDecisionMappings,
       };
 
+      // FileQuyetDinh rows must exist before award rows can reference them via hard FK.
+      await syncDecisionFiles(ctx, danhHieuData, thanhTichData, decisions, pdfPaths, prismaTx);
+
       if (proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
         await donViHangNamStrategy.importInTransaction(
           { data_danh_hieu: danhHieuData } as EditedProposalData,
@@ -147,8 +150,6 @@ export async function runImportTransaction(
         acc as StrategyImportAccumulator,
         prismaTx
       );
-
-      await syncDecisionFiles(ctx, danhHieuData, thanhTichData, decisions, pdfPaths, prismaTx);
 
       if (acc.errors.length > 0) {
         throw new ValidationError(

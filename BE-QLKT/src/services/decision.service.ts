@@ -1,16 +1,18 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { prisma } from '../models';
-import { danhHieuHangNamRepository } from '../repositories/danhHieu.repository';
 import { decisionFileRepository } from '../repositories/decisionFile.repository';
-import { contributionMedalRepository } from '../repositories/contributionMedal.repository';
-import { tenureMedalRepository } from '../repositories/tenureMedal.repository';
-import { adhocAwardRepository } from '../repositories/adhocAward.repository';
-import { militaryFlagRepository } from '../repositories/militaryFlag.repository';
-import { commemorativeMedalRepository } from '../repositories/commemorativeMedal.repository';
-import { scientificAchievementRepository } from '../repositories/scientificAchievement.repository';
 import { AppError, NotFoundError, ValidationError } from '../middlewares/errorHandler';
 import type { FileQuyetDinh, Prisma } from '../generated/prisma';
+import {
+  cascadeRenameSoQuyetDinh,
+  type CascadeRenameSummary,
+} from './decision/cascadeRename';
+import { findDecisionUsages, formatUsageError } from './decision/findUsages';
+
+export type UpdateDecisionResult = FileQuyetDinh & {
+  cascade: CascadeRenameSummary | null;
+};
 
 interface DecisionFilters {
   nam?: number;
@@ -349,7 +351,7 @@ class DecisionService {
     return newDecision;
   }
 
-  async updateDecision(id: string, data: UpdateDecisionData): Promise<FileQuyetDinh> {
+  async updateDecision(id: string, data: UpdateDecisionData): Promise<UpdateDecisionResult> {
     const existingDecision = await decisionFileRepository.findUniqueRaw({
       where: { id },
     });
@@ -359,10 +361,18 @@ class DecisionService {
     }
 
     const { so_quyet_dinh, nam, ngay_ky, nguoi_ky, file_path, loai_khen_thuong, ghi_chu } = data;
+    const newSqd = so_quyet_dinh?.trim();
 
-    if (so_quyet_dinh && so_quyet_dinh !== existingDecision.so_quyet_dinh) {
+    if (so_quyet_dinh !== undefined && !newSqd) {
+      throw new ValidationError('Số quyết định không được để trống');
+    }
+
+    const oldSqd = existingDecision.so_quyet_dinh;
+    const willRename = !!newSqd && newSqd !== oldSqd;
+
+    if (willRename) {
       const duplicateDecision = await decisionFileRepository.findUniqueRaw({
-        where: { so_quyet_dinh },
+        where: { so_quyet_dinh: newSqd },
       });
 
       if (duplicateDecision) {
@@ -371,7 +381,7 @@ class DecisionService {
     }
 
     const updateData: Prisma.FileQuyetDinhUpdateInput = {};
-    if (so_quyet_dinh !== undefined) updateData.so_quyet_dinh = so_quyet_dinh.trim();
+    if (newSqd !== undefined) updateData.so_quyet_dinh = newSqd;
     if (nam !== undefined) updateData.nam = parseInt(String(nam));
     if (ngay_ky !== undefined) updateData.ngay_ky = new Date(ngay_ky);
     if (nguoi_ky !== undefined) updateData.nguoi_ky = nguoi_ky.trim();
@@ -379,9 +389,15 @@ class DecisionService {
     if (loai_khen_thuong !== undefined) updateData.loai_khen_thuong = loai_khen_thuong;
     if (ghi_chu !== undefined) updateData.ghi_chu = ghi_chu;
 
-    const updatedDecision = await decisionFileRepository.update(id, updateData);
+    const { decision, cascade } = await prisma.$transaction(async tx => {
+      const updated = await tx.fileQuyetDinh.update({ where: { id }, data: updateData });
+      const cascadeSummary = willRename
+        ? await cascadeRenameSoQuyetDinh(tx, oldSqd, newSqd!)
+        : null;
+      return { decision: updated, cascade: cascadeSummary };
+    });
 
-    return updatedDecision;
+    return { ...decision, cascade };
   }
 
   async deleteDecision(id: string): Promise<{ message: string }> {
@@ -393,22 +409,9 @@ class DecisionService {
       throw new NotFoundError('Quyết định');
     }
 
-    const soQuyetDinh = existingDecision.so_quyet_dinh;
-    const [danhHieu, congHien, hccsvv, dotXuat, huanChuong, kyNiem, thanhTich] = await Promise.all([
-      danhHieuHangNamRepository.findFirst({ where: { so_quyet_dinh: soQuyetDinh } }),
-      contributionMedalRepository.findFirstRaw({ where: { so_quyet_dinh: soQuyetDinh } }),
-      tenureMedalRepository.findFirstRaw({ where: { so_quyet_dinh: soQuyetDinh } }),
-      adhocAwardRepository.findFirstRaw({ where: { so_quyet_dinh: soQuyetDinh } }),
-      militaryFlagRepository.findFirstRaw({ where: { so_quyet_dinh: soQuyetDinh } }),
-      commemorativeMedalRepository.findFirstRaw({ where: { so_quyet_dinh: soQuyetDinh } }),
-      scientificAchievementRepository.findFirstRaw({ where: { so_quyet_dinh: soQuyetDinh } }),
-    ]);
-
-    const isInUse = danhHieu || congHien || hccsvv || dotXuat || huanChuong || kyNiem || thanhTich;
-    if (isInUse) {
-      throw new ValidationError(
-        `Không thể xóa quyết định "${soQuyetDinh}" vì đang được sử dụng trong dữ liệu khen thưởng.`
-      );
+    const usage = await findDecisionUsages(existingDecision.so_quyet_dinh);
+    if (usage.inUse) {
+      throw new ValidationError(formatUsageError(existingDecision.so_quyet_dinh, usage));
     }
 
     await decisionFileRepository.delete(id);

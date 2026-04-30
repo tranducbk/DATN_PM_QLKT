@@ -89,8 +89,8 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
     expect(prismaMock.danhHieuDonViHangNam.create).toHaveBeenCalledTimes(1);
     const createArgs = prismaMock.danhHieuDonViHangNam.create.mock.calls[0][0];
     expect(createArgs.data.danh_hieu).toBe(DANH_HIEU_DON_VI_HANG_NAM.DVQT);
-    expect(createArgs.data.CoQuanDonVi).toEqual({ connect: { id: cqdv.id } });
-    expect(createArgs.data.DonViTrucThuoc).toBeUndefined();
+    expect(createArgs.data.co_quan_don_vi_id).toBe(cqdv.id);
+    expect(createArgs.data.don_vi_truc_thuoc_id).toBeNull();
     expect(createArgs.data.status).toBe(PROPOSAL_STATUS.APPROVED);
 
     expect(prismaMock.bangDeXuat.updateMany).toHaveBeenCalledTimes(1);
@@ -146,7 +146,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
     const createArgs = prismaMock.danhHieuDonViHangNam.create.mock.calls[0][0];
     expect(createArgs.data.nhan_bkbqp).toBe(true);
     expect(createArgs.data.danh_hieu).toBeNull();
-    expect(createArgs.data.DonViTrucThuoc).toEqual({ connect: { id: dvtt.id } });
+    expect(createArgs.data.don_vi_truc_thuoc_id).toBe(dvtt.id);
     expect(createArgs.data.CoQuanDonVi).toBeUndefined();
   });
 
