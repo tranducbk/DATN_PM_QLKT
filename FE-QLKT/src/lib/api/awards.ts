@@ -140,7 +140,7 @@ export async function exportAwards(params?: {
   }
 }
 
-export async function getHCCSVVTemplate(params?: Record<string, string>): Promise<Blob> {
+export async function getTenureMedalsTemplate(params?: Record<string, string>): Promise<Blob> {
   try {
     const res = await axiosInstance.get('/api/tenure-medals/template', {
       params,
@@ -152,7 +152,7 @@ export async function getHCCSVVTemplate(params?: Record<string, string>): Promis
   }
 }
 
-export async function importHCCSVV(file: File): Promise<ApiResponse> {
+export async function importTenureMedals(file: File): Promise<ApiResponse> {
   try {
     const formData = new FormData();
     formData.append('file', file);
@@ -167,7 +167,7 @@ export async function importHCCSVV(file: File): Promise<ApiResponse> {
   }
 }
 
-export async function getHCCSVV(params?: {
+export async function getTenureMedals(params?: {
   don_vi_id?: number;
   nam?: number;
   danh_hieu?: string;
@@ -182,7 +182,7 @@ export async function getHCCSVV(params?: {
   }
 }
 
-export async function exportHCCSVV(params?: {
+export async function exportTenureMedals(params?: {
   don_vi_id?: number;
   nam?: number;
   danh_hieu?: string;
@@ -198,7 +198,7 @@ export async function exportHCCSVV(params?: {
   }
 }
 
-export async function getHCCSVVStatistics(params?: {
+export async function getTenureMedalsStatistics(params?: {
   don_vi_id?: number;
   nam?: number;
 }): Promise<ApiResponse> {
@@ -210,7 +210,7 @@ export async function getHCCSVVStatistics(params?: {
   }
 }
 
-export async function deleteHCCSVV(id: string): Promise<ApiResponse> {
+export async function deleteTenureMedal(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete(`/api/tenure-medals/${id}`);
     return { success: res.data?.success, data: res.data?.data };
@@ -219,7 +219,7 @@ export async function deleteHCCSVV(id: string): Promise<ApiResponse> {
   }
 }
 
-export async function createHCCSVVDirect(body: {
+export async function createTenureMedalDirect(body: {
   quan_nhan_id: string;
   danh_hieu: string;
   nam: number;
@@ -236,7 +236,7 @@ export async function createHCCSVVDirect(body: {
   }
 }
 
-export async function getContributionAwardsTemplate(params?: Record<string, string>): Promise<Blob> {
+export async function getContributionMedalsTemplate(params?: Record<string, string>): Promise<Blob> {
   try {
     const res = await axiosInstance.get('/api/contribution-medals/template', {
       params,
@@ -248,7 +248,7 @@ export async function getContributionAwardsTemplate(params?: Record<string, stri
   }
 }
 
-export async function importContributionAwards(file: File): Promise<ApiResponse> {
+export async function importContributionMedals(file: File): Promise<ApiResponse> {
   try {
     const formData = new FormData();
     formData.append('file', file);
@@ -263,7 +263,7 @@ export async function importContributionAwards(file: File): Promise<ApiResponse>
   }
 }
 
-export async function getContributionAwards(params?: {
+export async function getContributionMedals(params?: {
   don_vi_id?: number;
   nam?: number;
   danh_hieu?: string;
@@ -278,7 +278,7 @@ export async function getContributionAwards(params?: {
   }
 }
 
-export async function exportContributionAwards(params?: {
+export async function exportContributionMedals(params?: {
   don_vi_id?: number;
   nam?: number;
   danh_hieu?: string;
@@ -294,7 +294,7 @@ export async function exportContributionAwards(params?: {
   }
 }
 
-export async function getContributionAwardsStatistics(params?: {
+export async function getContributionMedalsStatistics(params?: {
   don_vi_id?: number;
   nam?: number;
 }): Promise<ApiResponse> {
@@ -306,7 +306,7 @@ export async function getContributionAwardsStatistics(params?: {
   }
 }
 
-export async function deleteContributionAward(id: string): Promise<ApiResponse> {
+export async function deleteContributionMedal(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete(`/api/contribution-medals/${id}`);
     return { success: res.data?.success, data: res.data?.data };
@@ -492,14 +492,14 @@ function createConfirmImport(url: string) {
   };
 }
 
-export const previewHCCSVVImport = createPreviewImport('/api/tenure-medals/import/preview');
-export const confirmHCCSVVImport = createConfirmImport('/api/tenure-medals/import/confirm');
+export const previewTenureMedalsImport = createPreviewImport('/api/tenure-medals/import/preview');
+export const confirmTenureMedalsImport = createConfirmImport('/api/tenure-medals/import/confirm');
 
 export const previewMilitaryFlagImport = createPreviewImport('/api/military-flags/import/preview');
 export const confirmMilitaryFlagImport = createConfirmImport('/api/military-flags/import/confirm');
 
-export const previewContributionAwardsImport = createPreviewImport('/api/contribution-medals/import/preview');
-export const confirmContributionAwardsImport = createConfirmImport('/api/contribution-medals/import/confirm');
+export const previewContributionMedalsImport = createPreviewImport('/api/contribution-medals/import/preview');
+export const confirmContributionMedalsImport = createConfirmImport('/api/contribution-medals/import/confirm');
 
 export const previewCommemorationMedalsImport = createPreviewImport('/api/commemorative-medals/import/preview');
 export const confirmCommemorationMedalsImport = createConfirmImport('/api/commemorative-medals/import/confirm');

@@ -362,7 +362,7 @@ export function ApproveModal({ visible, proposal, onClose, onSuccess }: ApproveM
     <Modal
       title={
         <Space>
-          <CheckCircleOutlined style={{ color: '#52c41a' }} />
+          <CheckCircleOutlined className="text-green-600 dark:text-green-400" />
           <span>Phê duyệt đề xuất khen thưởng</span>
         </Space>
       }

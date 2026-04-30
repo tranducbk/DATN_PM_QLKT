@@ -10,7 +10,7 @@ import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants'
 import { formatDate } from '@/lib/utils';
 import type { DateInput } from '@/lib/types/common';
 import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
-import { DANH_HIEU_DAC_BIET } from '@/constants/danhHieu.constants';
+import { DANH_HIEU_DAC_BIET, AWARD_TAB_LABELS } from '@/constants/danhHieu.constants';
 
 const { Text } = Typography;
 
@@ -268,7 +268,7 @@ export function Step3SetTitlesHCQKQT({
       key: 'danh_hieu',
       width: 200,
       align: 'center',
-      render: () => <Text>Huy chương Quân kỳ quyết thắng</Text>,
+      render: () => <Text>{AWARD_TAB_LABELS.HCQKQT}</Text>,
     },
   ];
 
@@ -280,7 +280,7 @@ export function Step3SetTitlesHCQKQT({
   return (
     <div>
       <Alert
-        message="Bước 3: Thiết lập danh hiệu - Huy chương Quân kỳ quyết thắng"
+        message={`Bước 3: Thiết lập danh hiệu - ${AWARD_TAB_LABELS.HCQKQT}`}
         description={
           <div>
             <p>

@@ -127,7 +127,7 @@ export default function ScientificAchievementsPage() {
         return (
           <a
             onClick={() => handleOpenDecisionFile(so_quyet_dinh!)}
-            style={{ color: '#52c41a', textDecoration: 'underline', cursor: 'pointer' }}
+            className="text-green-600 dark:text-green-400 underline cursor-pointer"
           >
             {so_quyet_dinh || 'N/A'}
           </a>

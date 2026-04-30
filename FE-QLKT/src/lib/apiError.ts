@@ -1,7 +1,8 @@
 /**
- * Lấy chuỗi lỗi hiển thị từ lỗi axios/fetch/Error (dùng chung thay cho `catch (e: any)`).
+ * Extract user-facing message from axios/fetch/Error and log raw error to console for debugging.
  */
 export function getApiErrorMessage(error: unknown, fallback = 'Đã xảy ra lỗi'): string {
+  console.error('[API Error]', error);
   if (error && typeof error === 'object') {
     const e = error as {
       message?: string;

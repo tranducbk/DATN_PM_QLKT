@@ -19,6 +19,43 @@ export function getAntdThemeConfig(isDark: boolean): ThemeConfig {
 }
 
 /**
+ * Builds the MainLayout-scoped theme config (Layout/Menu/Dropdown/Drawer overrides).
+ * @param isDark - Whether dark mode is enabled
+ * @returns Ant Design theme configuration for the app shell
+ */
+export function getAntdLayoutThemeConfig(isDark: boolean): ThemeConfig {
+  return {
+    algorithm: isDark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
+    token: {
+      colorBgContainer: isDark ? '#1f2937' : '#ffffff',
+      colorText: isDark ? '#f3f4f6' : '#111827',
+      colorBorder: isDark ? '#4b5563' : '#d1d5db',
+      colorTextPlaceholder: isDark ? '#9ca3af' : '#6b7280',
+      borderRadius: 8,
+    },
+    components: {
+      Layout: {
+        headerBg: isDark ? '#1f2937' : '#ffffff',
+        bodyBg: isDark ? '#111827' : '#f9fafb',
+        footerBg: isDark ? '#1f2937' : '#ffffff',
+        siderBg: isDark ? '#1f2937' : '#ffffff',
+      },
+      Menu: {
+        darkItemBg: '#1f2937',
+        darkSubMenuItemBg: '#1f2937',
+      },
+      Dropdown: {
+        colorBgElevated: isDark ? '#1f2937' : '#ffffff',
+        controlItemBgHover: isDark ? '#374151' : '#f3f4f6',
+      },
+      Drawer: {
+        colorBgElevated: isDark ? '#1f2937' : '#ffffff',
+      },
+    },
+  };
+}
+
+/**
  * Builds Ant Design table-focused theme overrides for light/dark mode.
  * @param isDark - Whether dark mode is enabled
  * @returns Ant Design theme configuration with table overrides

@@ -85,9 +85,9 @@ const centerAlignColumns = <T,>(columns: ColumnsType<T>): ColumnsType<T> =>
 
 export function BooleanIcon({ value }: { value: boolean | undefined }) {
   return value ? (
-    <CheckCircleOutlined style={{ color: '#52c41a', fontSize: 16 }} />
+    <CheckCircleOutlined className="text-green-600 dark:text-green-400 text-base" />
   ) : (
-    <CloseCircleOutlined style={{ color: '#d9d9d9', fontSize: 16 }} />
+    <CloseCircleOutlined className="text-gray-300 dark:text-gray-600 text-base" />
   );
 }
 
@@ -407,13 +407,13 @@ export function ImportReviewPageContent({ config }: { config: ImportReviewConfig
         message={
           <Space size="large">
             <Text>
-              <Text strong style={{ color: '#52c41a' }}>
+              <Text strong className="text-green-600 dark:text-green-400">
                 {validCount} hợp lệ
               </Text>
               {invalidCount > 0 && (
                 <>
                   ,{' '}
-                  <Text strong style={{ color: '#ff4d4f' }}>
+                  <Text strong className="text-red-500 dark:text-red-400">
                     {invalidCount} lỗi
                   </Text>
                 </>
@@ -434,7 +434,7 @@ export function ImportReviewPageContent({ config }: { config: ImportReviewConfig
         <Card
           title={
             <Space>
-              <CheckCircleOutlined style={{ color: '#52c41a' }} />
+              <CheckCircleOutlined className="text-green-600 dark:text-green-400" />
               <span>Dữ liệu hợp lệ ({validCount})</span>
             </Space>
           }
@@ -508,7 +508,7 @@ export function ImportReviewPageContent({ config }: { config: ImportReviewConfig
         <Card
           title={
             <Space>
-              <CloseCircleOutlined style={{ color: '#ff4d4f' }} />
+              <CloseCircleOutlined className="text-red-500 dark:text-red-400" />
               <span>Dữ liệu lỗi ({invalidCount})</span>
             </Space>
           }

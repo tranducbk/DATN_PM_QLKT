@@ -22,7 +22,7 @@ import type { Step2Personnel as Personnel } from './types';
 import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
-import { HCCSVV_YEARS_HANG_BA, HCCSVV_YEARS_HANG_NHI, HCCSVV_YEARS_HANG_NHAT } from '@/constants/danhHieu.constants';
+import { HCCSVV_YEARS_HANG_BA, HCCSVV_YEARS_HANG_NHI, HCCSVV_YEARS_HANG_NHAT, AWARD_TAB_LABELS } from '@/constants/danhHieu.constants';
 import { GENDER } from '@/constants/gender.constants';
 import { ExcelImportSection } from './ExcelImportSection';
 import * as XLSX from 'xlsx';
@@ -277,7 +277,7 @@ export function Step2SelectPersonnelNienHan({
     const hasHangNhat = serviceProfile?.hccsvv_hang_nhat_status === ELIGIBILITY_STATUS.DA_NHAN;
 
     if (hasHangNhat) {
-      return { eligible: false, reason: 'Đã nhận đủ tất cả hạng Huy chương Chiến sĩ vẻ vang' };
+      return { eligible: false, reason: `Đã nhận đủ tất cả hạng ${AWARD_TAB_LABELS.HCCSVV}` };
     }
 
     const namNhan = serviceProfile?.hccsvv_nam_nhan as
@@ -858,7 +858,7 @@ export function Step2SelectPersonnelNienHan({
   return (
     <div>
       <Alert
-        message="Bước 2: Lựa chọn quân nhân - Huy chương Chiến sĩ vẻ vang"
+        message={`Bước 2: Lựa chọn quân nhân - ${AWARD_TAB_LABELS.HCCSVV}`}
         description={
           <div>
             <p>1. Chọn năm và tháng đề xuất để hệ thống đánh giá điều kiện chính xác theo mốc thời gian.</p>
@@ -878,18 +878,18 @@ export function Step2SelectPersonnelNienHan({
         <>
           <ExcelImportSection
             awardType="NIEN_HAN"
-            downloadTemplate={apiClient.getHCCSVVTemplate}
-            importFile={apiClient.importHCCSVV}
-            templateFileName="mau_import_hccsvv"
+            downloadTemplate={apiClient.getTenureMedalsTemplate}
+            importFile={apiClient.importTenureMedals}
+            templateFileName="mau_import_tenure_medals"
             onImportSuccess={handleImportSuccess}
             selectedPersonnelIds={selectedPersonnelIds}
             selectedNames={selectedPersonnelIds.map(id => personnel.find(p => p.id === id)?.ho_ten || '')}
             entityLabel="quân nhân"
             localProcessing={true}
             onLocalProcess={handleLocalExcelProcess}
-            previewImport={apiClient.previewHCCSVVImport}
+            previewImport={apiClient.previewTenureMedalsImport}
             reviewPath="/admin/awards/bulk/import-review-tenure-medals"
-            sessionStorageKey="importPreviewDataHCCSVV"
+            sessionStorageKey="importPreviewDataTenureMedals"
           />
 
         </>
@@ -999,7 +999,7 @@ export function Step2SelectPersonnelNienHan({
       <div style={{ marginBottom: 16 }}>
         <Text type="secondary">
           Tổng số quân nhân: <strong>{filteredPersonnel.length}</strong> | Đã chọn:{' '}
-          <strong style={{ color: '#1890ff' }}>{selectedPersonnelIds.length}</strong>
+          <strong className="text-blue-500 dark:text-blue-400">{selectedPersonnelIds.length}</strong>
         </Text>
       </div>
 

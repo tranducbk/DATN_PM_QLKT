@@ -55,11 +55,17 @@ export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicato
         {results.map(check => (
           <div key={check.label} className="flex items-center gap-2">
             {check.met ? (
-              <CheckCircleOutlined style={{ color: '#52c41a', fontSize: 14 }} />
+              <CheckCircleOutlined className="text-green-600 dark:text-green-400 text-sm" />
             ) : (
-              <CloseCircleOutlined style={{ color: '#d9d9d9', fontSize: 14 }} />
+              <CloseCircleOutlined className="text-gray-300 dark:text-gray-600 text-sm" />
             )}
-            <Text style={{ fontSize: 12, color: check.met ? '#52c41a' : '#8c8c8c' }}>
+            <Text
+              className={`text-xs ${
+                check.met
+                  ? 'text-green-600 dark:text-green-400'
+                  : 'text-gray-500 dark:text-gray-400'
+              }`}
+            >
               {check.label}
             </Text>
           </div>

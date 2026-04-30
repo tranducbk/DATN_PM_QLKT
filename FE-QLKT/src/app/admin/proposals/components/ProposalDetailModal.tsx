@@ -209,7 +209,7 @@ export function ProposalDetailModal({
     <Modal
       title={
         <Space>
-          <FileTextOutlined style={{ color: '#1890ff' }} />
+          <FileTextOutlined className="text-blue-500 dark:text-blue-400" />
           <span>Chi tiết đề xuất khen thưởng</span>
         </Space>
       }

@@ -112,12 +112,11 @@ export function PersonnelRewardHistoryModal({
           items.push(
             <div key={danhHieu}>
               <Text
-                style={{
-                  fontSize: '12px',
-                  cursor: file ? 'pointer' : 'default',
-                  color: file ? '#1890ff' : undefined,
-                  textDecoration: file ? 'underline' : 'none',
-                }}
+                className={`text-xs ${
+                  file
+                    ? 'cursor-pointer text-blue-500 dark:text-blue-400 underline'
+                    : 'cursor-default no-underline'
+                }`}
                 onClick={() => file && handlePreviewFile(file, soQD)}
               >
                 {danhHieu}: {soQD}
@@ -138,12 +137,11 @@ export function PersonnelRewardHistoryModal({
           items.push(
             <div key={award.key}>
               <Text
-                style={{
-                  fontSize: '12px',
-                  cursor: award.file ? 'pointer' : 'default',
-                  color: award.file ? '#1890ff' : undefined,
-                  textDecoration: award.file ? 'underline' : 'none',
-                }}
+                className={`text-xs ${
+                  award.file
+                    ? 'cursor-pointer text-blue-500 dark:text-blue-400 underline'
+                    : 'cursor-default no-underline'
+                }`}
                 onClick={() => award.file && handlePreviewFile(award.file, award.qd || award.label)}
               >
                 {award.label}: {award.qd || 'Chưa có số QĐ'}
@@ -232,15 +230,11 @@ export function PersonnelRewardHistoryModal({
         if (soQD) {
           return (
             <Text
-              style={{
-                cursor: filePath ? 'pointer' : 'default',
-                color: filePath ? '#1890ff' : undefined,
-                textDecoration: filePath ? 'underline' : 'none',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '4px',
-              }}
+              className={`flex items-center justify-center gap-1 ${
+                filePath
+                  ? 'cursor-pointer text-blue-500 dark:text-blue-400 underline'
+                  : 'cursor-default no-underline'
+              }`}
               onClick={() => filePath && handlePreviewFile(filePath, soQD)}
             >
               {soQD}

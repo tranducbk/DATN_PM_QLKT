@@ -97,9 +97,9 @@ export default function ImportReviewHCCSVVPage() {
   );
 
   const config: ImportReviewConfig = {
-    sessionStorageKey: 'importPreviewDataHCCSVV',
+    sessionStorageKey: 'importPreviewDataTenureMedals',
     title: 'Xem trước dữ liệu tải lên - Huy chương Chiến sĩ vẻ vang',
-    confirmImport: apiClient.confirmHCCSVVImport,
+    confirmImport: apiClient.confirmTenureMedalsImport,
     successMessage: count => `Nhập dữ liệu thành công ${count} bản ghi Huy chương Chiến sĩ vẻ vang.`,
     confirmButtonLabel: 'quân nhân',
     validColumns,

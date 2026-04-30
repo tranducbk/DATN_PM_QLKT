@@ -264,7 +264,7 @@ export default function SuperAdminAddAwardsPage() {
                 >
                   <Space direction="vertical" size="small">
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 20, color: '#1890ff' }}>
+                      <span className="text-xl text-blue-500 dark:text-blue-400">
                         <ClockCircleOutlined />
                       </span>
                       <Text strong style={{ fontSize: 16 }}>

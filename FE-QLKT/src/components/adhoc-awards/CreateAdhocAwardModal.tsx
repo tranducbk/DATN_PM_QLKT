@@ -288,7 +288,7 @@ export function CreateAdhocAwardModal({
           <Space direction="vertical" style={{ width: '100%' }} size="middle">
             <div>
               <Text strong style={{ display: 'block', marginBottom: 8 }}>
-                Loại <span style={{ color: '#ff4d4f' }}>*</span>
+                Loại <span className="text-red-500 dark:text-red-400">*</span>
               </Text>
               <Select
                 size="large"
@@ -311,7 +311,7 @@ export function CreateAdhocAwardModal({
 
             <div>
               <Text strong style={{ display: 'block', marginBottom: 8 }}>
-                Năm <span style={{ color: '#ff4d4f' }}>*</span>
+                Năm <span className="text-red-500 dark:text-red-400">*</span>
               </Text>
               <InputNumber
                 size="large"
@@ -327,7 +327,7 @@ export function CreateAdhocAwardModal({
 
             <div>
               <Text strong style={{ display: 'block', marginBottom: 8 }}>
-                Hình thức khen thưởng <span style={{ color: '#ff4d4f' }}>*</span>
+                Hình thức khen thưởng <span className="text-red-500 dark:text-red-400">*</span>
               </Text>
               <Input
                 size="large"
@@ -345,7 +345,7 @@ export function CreateAdhocAwardModal({
             <div style={{ marginBottom: 12 }}>
               <Text type="secondary">
                 Đã chọn:{' '}
-                <strong style={{ color: '#1890ff' }}>{createFormData.personnelIds.length}</strong>{' '}
+                <strong className="text-blue-500 dark:text-blue-400">{createFormData.personnelIds.length}</strong>{' '}
                 quân nhân
               </Text>
             </div>
@@ -549,7 +549,7 @@ export function CreateAdhocAwardModal({
             <div style={{ marginBottom: 12 }}>
               <Text type="secondary">
                 Đã chọn:{' '}
-                <strong style={{ color: '#1890ff' }}>{createFormData.unitIds.length}</strong> đơn vị
+                <strong className="text-blue-500 dark:text-blue-400">{createFormData.unitIds.length}</strong> đơn vị
               </Text>
             </div>
             <Space direction="vertical" size="small" style={{ marginBottom: 16, width: '100%' }}>
@@ -650,7 +650,7 @@ export function CreateAdhocAwardModal({
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <FileOutlined style={{ color: '#52c41a' }} />
+                    <FileOutlined className="text-green-600 dark:text-green-400" />
                     <Text>{selectedDecision.file_path.split('/').pop()}</Text>
                     <Tag color="green">Đã lưu</Tag>
                   </div>
@@ -797,7 +797,7 @@ export function CreateAdhocAwardModal({
                         borderRadius: 4,
                       }}
                     >
-                      <FileOutlined style={{ color: '#1890ff' }} />
+                      <FileOutlined className="text-blue-500 dark:text-blue-400" />
                       <Text>{file.name}</Text>
                     </div>
                   ))}

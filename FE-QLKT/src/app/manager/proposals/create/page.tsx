@@ -48,6 +48,7 @@ import {
   type ProposalType,
 } from '@/constants/proposal.constants';
 import { PROPOSAL_TYPE_ICON_COMPONENTS } from '@/constants/proposalUi.constants';
+import { AWARD_TYPE_REGISTRY } from '@/constants/awardTypeRegistry.constants';
 import { FileAttachmentList } from '@/components/proposals/FileAttachmentList';
 // Shared components — reuse from admin to avoid duplicating ~2000 lines
 import { Step2SelectPersonnelCaNhanHangNam } from '@/components/proposals/bulk/Step2SelectPersonnelCaNhanHangNam';
@@ -111,47 +112,23 @@ export default function CreateProposalPage() {
     return Icon ? <Icon /> : <TrophyOutlined />;
   };
 
-  // Proposal type config
   const proposalTypeConfig: Partial<
     Record<ProposalType, { icon: React.ReactNode; label: string; description: string }>
-  > = {
-    [PROPOSAL_TYPES.CA_NHAN_HANG_NAM]: {
-      icon: renderProposalTypeIcon(PROPOSAL_TYPES.CA_NHAN_HANG_NAM),
-      label: 'Khen thưởng cá nhân hằng năm',
-      description: 'Danh hiệu CSTT, CSTDCS, BKBQP, CSTĐTQ',
-    },
-    [PROPOSAL_TYPES.DON_VI_HANG_NAM]: {
-      icon: renderProposalTypeIcon(PROPOSAL_TYPES.DON_VI_HANG_NAM),
-      label: 'Khen thưởng đơn vị hằng năm',
-      description: 'Danh hiệu ĐVTT, ĐVQT, BKBQP, BKTTCP',
-    },
-    [PROPOSAL_TYPES.NIEN_HAN]: {
-      icon: renderProposalTypeIcon(PROPOSAL_TYPES.NIEN_HAN),
-      label: 'Huy chương Chiến sĩ vẻ vang',
-      description: 'Danh hiệu Huy chương Chiến sĩ vẻ vang 3 hạng (Ba, Nhì, Nhất)',
-    },
-    [PROPOSAL_TYPES.HC_QKQT]: {
-      icon: renderProposalTypeIcon(PROPOSAL_TYPES.HC_QKQT),
-      label: 'Huy chương Quân kỳ quyết thắng',
-      description: 'Yêu cầu đủ 25 năm phục vụ trong QĐNDVN',
-    },
-    [PROPOSAL_TYPES.KNC_VSNXD_QDNDVN]: {
-      icon: renderProposalTypeIcon(PROPOSAL_TYPES.KNC_VSNXD_QDNDVN),
-      label: 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
-      description:
-        'Yêu cầu đủ 25 năm phục vụ đối với nam và 20 năm phục vụ đối với nữ trong QĐNDVN',
-    },
-    [PROPOSAL_TYPES.CONG_HIEN]: {
-      icon: renderProposalTypeIcon(PROPOSAL_TYPES.CONG_HIEN),
-      label: 'Huân chương Bảo vệ Tổ quốc',
-      description: 'Danh hiệu Huân chương Bảo vệ Tổ quốc 3 hạng (Ba, Nhì, Nhất)',
-    },
-    [PROPOSAL_TYPES.NCKH]: {
-      icon: renderProposalTypeIcon(PROPOSAL_TYPES.NCKH),
-      label: 'Thành tích Nghiên cứu khoa học',
-      description: 'Đề tài khoa học / Sáng kiến khoa học',
-    },
-  };
+  > = Object.fromEntries(
+    (Object.keys(AWARD_TYPE_REGISTRY) as ProposalType[])
+      .filter(code => code !== PROPOSAL_TYPES.DOT_XUAT)
+      .map(code => {
+        const meta = AWARD_TYPE_REGISTRY[code];
+        return [
+          code,
+          {
+            icon: renderProposalTypeIcon(code),
+            label: meta.label,
+            description: meta.description,
+          },
+        ];
+      })
+  );
 
   // Steps config
   const getSteps = () => {
@@ -635,10 +612,11 @@ export default function CreateProposalPage() {
                     <Space direction="vertical" size="small">
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <span
-                          style={{
-                            fontSize: 20,
-                            color: proposalType === key ? '#1890ff' : '#8c8c8c',
-                          }}
+                          className={`text-xl ${
+                            proposalType === key
+                              ? 'text-blue-500 dark:text-blue-400'
+                              : 'text-gray-500 dark:text-gray-400'
+                          }`}
                         >
                           {config.icon}
                         </span>
@@ -795,7 +773,7 @@ export default function CreateProposalPage() {
               accept=".pdf,.doc,.docx,.xls,.xlsx"
             >
               <p className="ant-upload-drag-icon">
-                <UploadOutlined style={{ fontSize: 48, color: '#1890ff' }} />
+                <UploadOutlined className="text-5xl text-blue-500 dark:text-blue-400" />
               </p>
               <p className="ant-upload-text">Click hoặc kéo file vào đây để upload</p>
               <p className="ant-upload-hint">
@@ -1081,14 +1059,7 @@ export default function CreateProposalPage() {
                       }));
 
                       return (
-                        <span
-                          style={{
-                            fontSize: '14px',
-                            marginLeft: '12px',
-                            color: '#1890ff',
-                            fontWeight: 600,
-                          }}
-                        >
+                        <span className="text-sm ml-3 text-blue-500 dark:text-blue-400 font-semibold">
                           (
                           {percentages.map((item, idx) => (
                             <span key={item.title}>

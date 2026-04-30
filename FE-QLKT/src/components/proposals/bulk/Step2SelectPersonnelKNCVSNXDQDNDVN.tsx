@@ -751,7 +751,7 @@ export function Step2SelectPersonnelKNCVSNXDQDNDVN({
       <div style={{ marginBottom: 16 }}>
         <Text type="secondary">
           Tổng số quân nhân: <strong>{filteredPersonnel.length}</strong> | Đã chọn:{' '}
-          <strong style={{ color: '#1890ff' }}>{selectedPersonnelIds.length}</strong>
+          <strong className="text-blue-500 dark:text-blue-400">{selectedPersonnelIds.length}</strong>
         </Text>
       </div>
 

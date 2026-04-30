@@ -53,6 +53,7 @@ import {
 } from '@/constants/eligibilityStatus.constants';
 import {
   DANH_HIEU_MAP,
+  AWARD_TAB_LABELS,
   HCQKQT_YEARS_REQUIRED,
   KNC_YEARS_REQUIRED_NAM,
   KNC_YEARS_REQUIRED_NU,
@@ -341,7 +342,7 @@ export function PersonnelDetailView({ role }: PersonnelDetailViewProps) {
             >
               <div className="mb-6">
                 <Text strong className="text-base">
-                  Huy chương Chiến sĩ vẻ vang
+                  {AWARD_TAB_LABELS.HCCSVV}
                 </Text>
                 <Divider className="my-3" />
                 <Row gutter={[16, 16]}>
@@ -402,10 +403,7 @@ export function PersonnelDetailView({ role }: PersonnelDetailViewProps) {
                 )}
               </div>
 
-              <div
-                className="mt-6 pt-4"
-                style={{ borderTop: `1px solid ${isDark ? '#1f2937' : '#f0f0f0'}` }}
-              >
+              <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-800">
                 <Row gutter={[16, 16]}>
                   <Col xs={24} md={12}>
                     <MedalProgressCard
@@ -462,7 +460,9 @@ export function PersonnelDetailView({ role }: PersonnelDetailViewProps) {
                         );
                         return `${years} năm ${months} tháng`;
                       })()}
-                      valueStyle={{ color: '#3f8600' }}
+                      valueRender={node => (
+                        <span className="text-green-700 dark:text-emerald-300">{node}</span>
+                      )}
                     />
                   </Card>
                 </Col>
@@ -476,7 +476,9 @@ export function PersonnelDetailView({ role }: PersonnelDetailViewProps) {
                         );
                         return `${years} năm ${months} tháng`;
                       })()}
-                      valueStyle={{ color: '#3f8600' }}
+                      valueRender={node => (
+                        <span className="text-green-700 dark:text-emerald-300">{node}</span>
+                      )}
                     />
                   </Card>
                 </Col>
@@ -490,7 +492,9 @@ export function PersonnelDetailView({ role }: PersonnelDetailViewProps) {
                         );
                         return `${years} năm ${months} tháng`;
                       })()}
-                      valueStyle={{ color: '#3f8600' }}
+                      valueRender={node => (
+                        <span className="text-green-700 dark:text-emerald-300">{node}</span>
+                      )}
                     />
                   </Card>
                 </Col>
@@ -555,7 +559,9 @@ export function PersonnelDetailView({ role }: PersonnelDetailViewProps) {
                             : annualProfile.tong_cstdcs || 0
                         }
                         suffix="năm"
-                        valueStyle={{ color: '#1890ff' }}
+                        valueRender={node => (
+                          <span className="text-blue-500 dark:text-blue-400">{node}</span>
+                        )}
                       />
                     </Card>
                   </Col>
@@ -752,7 +758,7 @@ export function PersonnelDetailView({ role }: PersonnelDetailViewProps) {
                   <div className="flex flex-col items-center gap-2">
                     <SafetyOutlined style={{ fontSize: '32px' }} />
                     <Text strong style={{ fontSize: '16px' }}>
-                      Huy chương Chiến sĩ vẻ vang
+                      {AWARD_TAB_LABELS.HCCSVV}
                     </Text>
                   </div>
                 </Card>
@@ -776,7 +782,7 @@ export function PersonnelDetailView({ role }: PersonnelDetailViewProps) {
                   <div className="flex flex-col items-center gap-2">
                     <TrophyOutlined style={{ fontSize: '32px' }} />
                     <Text strong style={{ fontSize: '16px' }}>
-                      Huy chương Quân kỳ quyết thắng
+                      {AWARD_TAB_LABELS.HCQKQT}
                     </Text>
                   </div>
                 </Card>
@@ -824,7 +830,7 @@ export function PersonnelDetailView({ role }: PersonnelDetailViewProps) {
                   <div className="flex flex-col items-center gap-2">
                     <TrophyOutlined style={{ fontSize: '32px' }} />
                     <Text strong style={{ fontSize: '16px' }}>
-                      Huân chương Bảo vệ Tổ quốc
+                      {AWARD_TAB_LABELS.HCBVTQ}
                     </Text>
                   </div>
                 </Card>

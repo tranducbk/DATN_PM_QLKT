@@ -10,40 +10,9 @@ import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/constants/pagi
 import { formatDate } from '@/lib/utils';
 import type { DateInput } from '@/lib/types/common';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
+import type { Step2Personnel as Personnel } from './types';
 
 const { Text } = Typography;
-
-interface Personnel {
-  id: string;
-  ho_ten: string;
-  cccd: string;
-  co_quan_don_vi_id: string;
-  don_vi_truc_thuoc_id: string;
-  chuc_vu_id: string;
-  cap_bac?: string;
-  ngay_sinh?: string | null;
-  ngay_nhap_ngu?: DateInput;
-  ngay_xuat_ngu?: DateInput;
-  CoQuanDonVi?: {
-    id: string;
-    ten_don_vi: string;
-    ma_don_vi: string;
-  };
-  DonViTrucThuoc?: {
-    id: string;
-    ten_don_vi: string;
-    ma_don_vi: string;
-    CoQuanDonVi?: {
-      id: string;
-      ten_don_vi: string;
-      ma_don_vi: string;
-    };
-  };
-  ChucVu?: {
-    id: string;
-    ten_chuc_vu: string;
-  };
-}
 
 interface Step2SelectPersonnelProps {
   selectedPersonnelIds: string[];
@@ -362,7 +331,7 @@ export function Step2SelectPersonnel({
       <div style={{ marginBottom: 16 }}>
         <Text type="secondary">
           Tổng số quân nhân: <strong>{filteredPersonnel.length}</strong> | Đã chọn:{' '}
-          <strong style={{ color: '#1890ff' }}>{selectedPersonnelIds.length}</strong>
+          <strong className="text-blue-500 dark:text-blue-400">{selectedPersonnelIds.length}</strong>
         </Text>
       </div>
 

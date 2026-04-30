@@ -16,40 +16,11 @@ import type {
   Step2ImportSuccessResult,
   Step2ImportedAward,
   Step2LocalImportResult,
+  Step2Personnel as Personnel,
 } from './types';
 import type { TitleDataItem } from '@/lib/types/proposal';
 
 const { Text } = Typography;
-
-interface Personnel {
-  id: string;
-  ho_ten: string;
-  cccd: string;
-  ngay_sinh?: string | null;
-  cap_bac?: string;
-  co_quan_don_vi_id: string;
-  don_vi_truc_thuoc_id: string;
-  chuc_vu_id: string;
-  CoQuanDonVi?: {
-    id: string;
-    ten_don_vi: string;
-    ma_don_vi: string;
-  };
-  DonViTrucThuoc?: {
-    id: string;
-    ten_don_vi: string;
-    ma_don_vi: string;
-    CoQuanDonVi?: {
-      id: string;
-      ten_don_vi: string;
-      ma_don_vi: string;
-    };
-  };
-  ChucVu?: {
-    id: string;
-    ten_chuc_vu: string;
-  };
-}
 
 interface Step2SelectPersonnelCaNhanHangNamProps {
   selectedPersonnelIds: string[];
@@ -485,7 +456,7 @@ export function Step2SelectPersonnelCaNhanHangNam({
       <div style={{ marginBottom: 16 }}>
         <Text type="secondary">
           Tổng số quân nhân: <strong>{filteredPersonnel.length}</strong> | Đã chọn:{' '}
-          <strong style={{ color: '#1890ff' }}>{selectedPersonnelIds.length}</strong>
+          <strong className="text-blue-500 dark:text-blue-400">{selectedPersonnelIds.length}</strong>
         </Text>
       </div>
 

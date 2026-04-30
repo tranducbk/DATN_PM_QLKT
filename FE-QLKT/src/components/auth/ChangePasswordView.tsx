@@ -268,7 +268,7 @@ export function ChangePasswordView({ dashboardHref }: ChangePasswordViewProps) {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <div className="change-password-security-tip">
                   <CheckCircleOutlined
-                    style={{ color: '#52c41a', fontSize: '18px', marginTop: '2px' }}
+                    className="text-green-600 dark:text-green-400 text-lg mt-0.5"
                   />
                   <div>
                     <Text strong style={{ display: 'block', marginBottom: '4px' }}>
@@ -281,7 +281,7 @@ export function ChangePasswordView({ dashboardHref }: ChangePasswordViewProps) {
                 </div>
                 <div className="change-password-security-tip">
                   <CheckCircleOutlined
-                    style={{ color: '#52c41a', fontSize: '18px', marginTop: '2px' }}
+                    className="text-green-600 dark:text-green-400 text-lg mt-0.5"
                   />
                   <div>
                     <Text strong style={{ display: 'block', marginBottom: '4px' }}>
@@ -294,7 +294,7 @@ export function ChangePasswordView({ dashboardHref }: ChangePasswordViewProps) {
                 </div>
                 <div className="change-password-security-tip">
                   <CheckCircleOutlined
-                    style={{ color: '#52c41a', fontSize: '18px', marginTop: '2px' }}
+                    className="text-green-600 dark:text-green-400 text-lg mt-0.5"
                   />
                   <div>
                     <Text strong style={{ display: 'block', marginBottom: '4px' }}>
@@ -307,7 +307,7 @@ export function ChangePasswordView({ dashboardHref }: ChangePasswordViewProps) {
                 </div>
                 <div className="change-password-security-tip">
                   <CheckCircleOutlined
-                    style={{ color: '#52c41a', fontSize: '18px', marginTop: '2px' }}
+                    className="text-green-600 dark:text-green-400 text-lg mt-0.5"
                   />
                   <div>
                     <Text strong style={{ display: 'block', marginBottom: '4px' }}>

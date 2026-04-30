@@ -60,9 +60,9 @@ export default function ManagerServiceRewardsPage() {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const [personnelRes, hccsvvRes] = await Promise.all([
+      const [personnelRes, tenureRes] = await Promise.all([
         apiClient.getPersonnelById(personnelId),
-        apiClient.getHCCSVV({ limit: FETCH_ALL_LIMIT }),
+        apiClient.getTenureMedals({ limit: FETCH_ALL_LIMIT }),
       ]);
 
       if (!personnelRes.success || !personnelRes.data) {
@@ -74,8 +74,8 @@ export default function ManagerServiceRewardsPage() {
 
       const mappedRewards: ServiceReward[] = [];
 
-      if (hccsvvRes.success && hccsvvRes.data) {
-        hccsvvRes.data.forEach((award: any) => {
+      if (tenureRes.success && tenureRes.data) {
+        tenureRes.data.forEach((award: any) => {
           if (award.quan_nhan_id === personnelId || award.QuanNhan?.id === personnelId) {
             const danhHieu = award.danh_hieu || '';
             const rank = danhHieu.includes('HANG_NHAT') ? 'hạng Nhất' : danhHieu.includes('HANG_NHI') ? 'hạng Nhì' : danhHieu.includes('HANG_BA') ? 'hạng Ba' : '';
@@ -199,12 +199,7 @@ export default function ManagerServiceRewardsPage() {
               e.stopPropagation();
               handleOpenDecisionFile(soQuyetDinh);
             }}
-            style={{
-              color: '#52c41a',
-              fontWeight: 500,
-              textDecoration: 'underline',
-              cursor: 'pointer',
-            }}
+            className="text-green-600 dark:text-green-400 font-medium underline cursor-pointer"
           >
             {soQuyetDinh}
           </a>

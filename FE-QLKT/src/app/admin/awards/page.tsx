@@ -143,8 +143,8 @@ const AWARD_TYPE_CONFIG: Record<
 > = {
   CNHN: { fetch: apiClient.getAnnualRewards, delete: apiClient.deleteAnnualReward },
   DVHN: { fetch: apiClient.getUnitAnnualAwards, delete: apiClient.deleteUnitAnnualAward },
-  HCCSVV: { fetch: apiClient.getHCCSVV, delete: apiClient.deleteHCCSVV },
-  HCBVTQ: { fetch: apiClient.getContributionAwards, delete: apiClient.deleteContributionAward },
+  HCCSVV: { fetch: apiClient.getTenureMedals, delete: apiClient.deleteTenureMedal },
+  HCBVTQ: { fetch: apiClient.getContributionMedals, delete: apiClient.deleteContributionMedal },
   KNC_VSNXD_QDNDVN: {
     fetch: apiClient.getCommemorationMedals,
     delete: apiClient.deleteCommemorationMedal,

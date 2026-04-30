@@ -4,6 +4,7 @@ import { Modal, Descriptions, Typography, Spin, Tag, Divider, Empty } from 'antd
 import { HistoryOutlined } from '@ant-design/icons';
 
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
+import { AWARD_TAB_LABELS } from '@/constants/danhHieu.constants';
 
 const { Text, Title } = Typography;
 
@@ -40,7 +41,7 @@ export function ServiceHistoryModal({
       title={
         <span>
           <HistoryOutlined style={{ marginRight: 8 }} />
-          Lịch sử Huy chương Chiến sĩ vẻ vang - {personnel?.ho_ten}
+          Lịch sử {AWARD_TAB_LABELS.HCCSVV} - {personnel?.ho_ten}
         </span>
       }
       open={visible}
@@ -53,7 +54,7 @@ export function ServiceHistoryModal({
         {serviceProfile ? (
           <div>
             <Title level={5} style={{ marginTop: 0 }}>
-              Huy chương Chiến sĩ vẻ vang
+              {AWARD_TAB_LABELS.HCCSVV}
             </Title>
             <Descriptions bordered column={1} size="small" style={{ marginBottom: 24 }}>
               {HCCSVV_ROWS.map(({ label, statusKey, danhHieu }) => {

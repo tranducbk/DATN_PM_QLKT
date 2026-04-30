@@ -315,7 +315,7 @@ export default function AdminProposalsPage() {
                 size="small"
                 icon={<CheckCircleOutlined />}
                 onClick={() => handleApprove(record)}
-                style={{ color: '#52c41a' }}
+                className="text-green-600 dark:text-green-400"
               >
                 Phê duyệt
               </Button>

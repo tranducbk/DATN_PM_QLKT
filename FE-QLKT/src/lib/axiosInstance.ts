@@ -1,5 +1,6 @@
 import axios, { AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
 import { BASE_URL } from '@/configs';
+import { clearAuthStorage } from '@/lib/authStorage';
 
 const axiosInstance = axios.create({
   baseURL: BASE_URL,
@@ -30,7 +31,7 @@ const processQueue = (error: unknown, token: string | null = null) => {
 
 function forceLogout() {
   if (typeof window !== 'undefined') {
-    localStorage.clear();
+    clearAuthStorage();
     window.location.href = '/login';
   }
 }

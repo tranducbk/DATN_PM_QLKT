@@ -128,13 +128,13 @@ const AWARD_TYPE_CONFIG: Record<
     exportFilename: 'ca_nhan_hang_nam',
   },
   HCCSVV: {
-    fetch: apiClient.getHCCSVV,
-    export: apiClient.exportHCCSVV,
+    fetch: apiClient.getTenureMedals,
+    export: apiClient.exportTenureMedals,
     exportFilename: 'hccsvv',
   },
   HCBVTQ: {
-    fetch: apiClient.getContributionAwards,
-    export: apiClient.exportContributionAwards,
+    fetch: apiClient.getContributionMedals,
+    export: apiClient.exportContributionMedals,
     exportFilename: 'hcbvtq_cong_hien',
   },
   KNC_VSNXD_QDNDVN: {

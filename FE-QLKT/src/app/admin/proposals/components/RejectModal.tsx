@@ -60,7 +60,7 @@ export function RejectModal({ visible, proposal, onClose, onSuccess }: RejectMod
     <Modal
       title={
         <span>
-          <CloseCircleOutlined style={{ color: '#ff4d4f', marginRight: 8 }} />
+          <CloseCircleOutlined className="text-red-500 dark:text-red-400 mr-2" />
           Từ chối đề xuất khen thưởng
         </span>
       }

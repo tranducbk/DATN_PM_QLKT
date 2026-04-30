@@ -519,11 +519,7 @@ export default function ManagerProposalDetailPage() {
                                 e.stopPropagation();
                                 handleOpenDecisionFile(text);
                               }}
-                              style={{
-                                color: '#1890ff',
-                                cursor: 'pointer',
-                                textDecoration: 'underline',
-                              }}
+                              className="text-blue-500 dark:text-blue-400 cursor-pointer underline"
                             >
                               {text}
                             </a>
@@ -698,11 +694,7 @@ export default function ManagerProposalDetailPage() {
                                   e.stopPropagation();
                                   handleOpenDecisionFile(text);
                                 }}
-                                style={{
-                                  color: '#1890ff',
-                                  cursor: 'pointer',
-                                  textDecoration: 'underline',
-                                }}
+                                className="text-blue-500 dark:text-blue-400 cursor-pointer underline"
                               >
                                 {text}
                               </a>
@@ -913,11 +905,7 @@ export default function ManagerProposalDetailPage() {
                                   e.stopPropagation();
                                   handleOpenDecisionFile(soQuyetDinh);
                                 }}
-                                style={{
-                                  color: '#52c41a',
-                                  cursor: 'pointer',
-                                  textDecoration: 'underline',
-                                }}
+                                className="text-green-600 dark:text-green-400 cursor-pointer underline"
                               >
                                 {soQuyetDinh}
                               </a>
@@ -1117,11 +1105,7 @@ export default function ManagerProposalDetailPage() {
                                   e.stopPropagation();
                                   handleOpenDecisionFile(soQuyetDinh);
                                 }}
-                                style={{
-                                  color: '#52c41a',
-                                  cursor: 'pointer',
-                                  textDecoration: 'underline',
-                                }}
+                                className="text-green-600 dark:text-green-400 cursor-pointer underline"
                               >
                                 {soQuyetDinh}
                               </a>

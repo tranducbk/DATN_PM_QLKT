@@ -148,12 +148,14 @@ export const DANH_HIEU_OPTIONS = {
   CONG_HIEN: ['HCBVTQ_HANG_BA', 'HCBVTQ_HANG_NHI', 'HCBVTQ_HANG_NHAT'],
 } as const;
 
+const EMPTY_LABEL = '-';
+
 /**
  * @param danhHieu - Mã danh hiệu
  * @returns Tên tiếng Việt hoặc mã gốc nếu không tìm thấy
  */
 export function getDanhHieuName(danhHieu: string | null | undefined): string {
-  if (!danhHieu) return 'Chưa có dữ liệu';
+  if (!danhHieu) return EMPTY_LABEL;
   return DANH_HIEU_MAP[danhHieu] || danhHieu;
 }
 
@@ -162,7 +164,7 @@ export function getDanhHieuName(danhHieu: string | null | undefined): string {
  * @returns Tên tiếng Việt hoặc mã gốc nếu không tìm thấy
  */
 export function getLoaiDeXuatName(loaiDeXuat: string | null | undefined): string {
-  if (!loaiDeXuat) return 'Chưa xác định';
+  if (!loaiDeXuat) return EMPTY_LABEL;
   return LOAI_DE_XUAT_MAP[loaiDeXuat] || loaiDeXuat;
 }
 
@@ -171,7 +173,7 @@ export function getLoaiDeXuatName(loaiDeXuat: string | null | undefined): string
  * @returns Tên tiếng Việt hoặc mã gốc nếu không tìm thấy
  */
 export function getAwardTypeName(awardType: string | null | undefined): string {
-  if (!awardType) return 'Chưa xác định';
+  if (!awardType) return EMPTY_LABEL;
   return AWARD_TYPE_MAP[awardType] || awardType;
 }
 

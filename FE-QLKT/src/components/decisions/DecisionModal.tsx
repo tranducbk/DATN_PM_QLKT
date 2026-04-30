@@ -89,7 +89,7 @@ function FileSection({
           gap: 12,
         }}
       >
-        <FileTextOutlined style={{ fontSize: 24, color: '#1890ff' }} />
+        <FileTextOutlined className="text-2xl text-blue-500 dark:text-blue-400" />
         <div style={{ flex: 1 }}>
           <div style={{ fontWeight: 500 }}>{fileList[0].name}</div>
           <div style={{ fontSize: 12, opacity: 0.7 }}>
@@ -116,7 +116,7 @@ function FileSection({
           gap: 12,
         }}
       >
-        <FileTextOutlined style={{ fontSize: 24, color: '#52c41a' }} />
+        <FileTextOutlined className="text-2xl text-green-600 dark:text-green-400" />
         <div style={{ flex: 1 }}>
           <div style={{ fontWeight: 500 }}>{selectedFilePath.split('/').pop()}</div>
           <div style={{ fontSize: 12, opacity: 0.7 }}>File PDF đã được tải lên</div>
@@ -136,7 +136,7 @@ function FileSection({
       disabled={disabled}
     >
       <p className="ant-upload-drag-icon">
-        <UploadOutlined style={{ fontSize: 48, color: '#1890ff' }} />
+        <UploadOutlined className="text-5xl text-blue-500 dark:text-blue-400" />
       </p>
       <p className="ant-upload-text">Kéo thả file vào đây hoặc click để chọn file</p>
       <p className="ant-upload-hint">Chỉ chấp nhận file PDF</p>

@@ -464,7 +464,7 @@ export function Step2SelectUnits({
       <div style={{ marginBottom: 16 }}>
         <Text type="secondary">
           Tổng số đơn vị: <strong>{filteredUnits.length}</strong> | Đã chọn:{' '}
-          <strong style={{ color: '#1890ff' }}>{selectedUnitIds.length}</strong>
+          <strong className="text-blue-500 dark:text-blue-400">{selectedUnitIds.length}</strong>
         </Text>
       </div>
 

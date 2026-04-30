@@ -461,12 +461,9 @@ export default function BulkRewardDetailsPage() {
                   setDecisionModalVisible(true);
                 }
               }}
-              style={{
-                color: '#52c41a',
-                fontWeight: 500,
-                textDecoration: 'underline',
-                cursor: record.isEligible ? 'pointer' : 'not-allowed',
-              }}
+              className={`text-green-600 dark:text-green-400 font-medium underline ${
+                record.isEligible ? 'cursor-pointer' : 'cursor-not-allowed'
+              }`}
               title={
                 record.isEligible
                   ? 'Click để thay đổi, Ctrl+Click để tải file'

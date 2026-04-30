@@ -130,7 +130,7 @@ export function UnitAnnualAwardHistoryModal({
                 {d.soQuyetDinh ? (
                   <a
                     onClick={() => handleOpenDecisionFile(d.soQuyetDinh)}
-                    style={{ color: '#52c41a', cursor: 'pointer', textDecoration: 'underline' }}
+                    className="text-green-600 dark:text-green-400 cursor-pointer underline"
                   >
                     {d.label}
                   </a>

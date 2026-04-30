@@ -11,10 +11,15 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import { PositionHistoryModal } from './PositionHistoryModal';
 import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
 import {
+  AWARD_TAB_LABELS,
+  DANH_HIEU_HCBVTQ,
+  getDanhHieuName,
+} from '@/constants/danhHieu.constants';
+import {
   calculateContributionMonthsByGroup,
   formatMonthsToText,
   getContributionRequiredMonths,
-  getHighestEligibleContributionAward,
+  getHighestEligibleContributionMedal,
   getReferenceEndDate,
 } from '@/lib/award/contributionTimeHelper';
 
@@ -103,7 +108,7 @@ export function Step3SetTitlesCongHien({
         const m08 = monthsByGroup(person.id, '0.8');
         const m0910 = monthsByGroup(person.id, '0.9-1.0');
         const required = requiredMonths(person);
-        return getHighestEligibleContributionAward(m07, m08, m0910, required) || undefined;
+        return getHighestEligibleContributionMedal(m07, m08, m0910, required) || undefined;
       };
 
       // Initialize title data if empty
@@ -324,13 +329,13 @@ export function Step3SetTitlesCongHien({
       render: (_, record) => {
         const data = getTitleData(record.id);
         const awardLabels: Record<string, string> = {
-          HCBVTQ_HANG_NHAT: 'Huân chương Bảo vệ Tổ quốc hạng Nhất',
-          HCBVTQ_HANG_NHI: 'Huân chương Bảo vệ Tổ quốc hạng Nhì',
-          HCBVTQ_HANG_BA: 'Huân chương Bảo vệ Tổ quốc hạng Ba',
+          [DANH_HIEU_HCBVTQ.HANG_NHAT]: getDanhHieuName(DANH_HIEU_HCBVTQ.HANG_NHAT),
+          [DANH_HIEU_HCBVTQ.HANG_NHI]: getDanhHieuName(DANH_HIEU_HCBVTQ.HANG_NHI),
+          [DANH_HIEU_HCBVTQ.HANG_BA]: getDanhHieuName(DANH_HIEU_HCBVTQ.HANG_BA),
         };
 
         return (
-          <Text strong style={{ color: !data.danh_hieu ? '#ff4d4f' : undefined }}>
+          <Text strong className={!data.danh_hieu ? 'text-red-500 dark:text-red-400' : ''}>
             {data.danh_hieu ? awardLabels[data.danh_hieu] || data.danh_hieu : 'Chưa xác định'}
           </Text>
         );
@@ -383,7 +388,7 @@ export function Step3SetTitlesCongHien({
   return (
     <div>
       <Alert
-        message="Bước 3: Thiết lập danh hiệu - Huân chương Bảo vệ Tổ quốc"
+        message={`Bước 3: Thiết lập danh hiệu - ${AWARD_TAB_LABELS.HCBVTQ}`}
         description={
           <div>
             <p>

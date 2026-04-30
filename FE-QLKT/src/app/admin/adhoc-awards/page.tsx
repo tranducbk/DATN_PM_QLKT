@@ -250,7 +250,7 @@ export default function AdhocAwardsPage() {
                   e.stopPropagation();
                   handleOpenDecisionFile(record.so_quyet_dinh!);
                 }}
-                style={{ color: '#52c41a', cursor: 'pointer', fontSize: 12 }}
+                className="text-green-600 dark:text-green-400 cursor-pointer text-xs"
               >
                 QĐ: {record.so_quyet_dinh}
               </a>
@@ -298,7 +298,7 @@ export default function AdhocAwardsPage() {
                   setDetailModalVisible(true);
                 }}
                 size="small"
-                style={{ color: '#52c41a' }}
+                className="text-green-600 dark:text-green-400"
               />
             </Tooltip>
             <Tooltip title="Chỉnh sửa">
@@ -310,7 +310,7 @@ export default function AdhocAwardsPage() {
                   handleOpenEditModal(record);
                 }}
                 size="small"
-                style={{ color: '#1890ff' }}
+                className="text-blue-500 dark:text-blue-400"
               />
             </Tooltip>
             <Popconfirm

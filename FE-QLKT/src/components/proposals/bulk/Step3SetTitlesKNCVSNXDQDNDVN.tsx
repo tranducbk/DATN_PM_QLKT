@@ -10,7 +10,7 @@ import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants'
 import { formatDate } from '@/lib/utils';
 import type { DateInput } from '@/lib/types/common';
 import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
-import { DANH_HIEU_DAC_BIET } from '@/constants/danhHieu.constants';
+import { DANH_HIEU_DAC_BIET, AWARD_TAB_LABELS } from '@/constants/danhHieu.constants';
 import { GENDER } from '@/constants/gender.constants';
 
 const { Text } = Typography;
@@ -280,7 +280,7 @@ export function Step3SetTitlesKNCVSNXDQDNDVN({
       key: 'danh_hieu',
       width: 200,
       align: 'center',
-      render: () => <Text>Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN</Text>,
+      render: () => <Text>{AWARD_TAB_LABELS.KNC_VSNXD_QDNDVN}</Text>,
     },
   ];
 
@@ -292,7 +292,7 @@ export function Step3SetTitlesKNCVSNXDQDNDVN({
   return (
     <div>
       <Alert
-        message="Bước 3: Thiết lập danh hiệu - Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN"
+        message={`Bước 3: Thiết lập danh hiệu - ${AWARD_TAB_LABELS.KNC_VSNXD_QDNDVN}`}
         description={
           <div>
             <p>

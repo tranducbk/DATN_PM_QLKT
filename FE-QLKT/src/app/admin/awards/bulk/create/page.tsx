@@ -35,6 +35,7 @@ import { apiClient } from '@/lib/apiClient';
 import { getDanhHieuName } from '@/constants/danhHieu.constants';
 import { PROPOSAL_TYPES, type ProposalType } from '@/constants/proposal.constants';
 import { PROPOSAL_TYPE_ICON_COMPONENTS } from '@/constants/proposalUi.constants';
+import { AWARD_TYPE_REGISTRY } from '@/constants/awardTypeRegistry.constants';
 import { Step2SelectPersonnelCaNhanHangNam } from '@/components/proposals/bulk/Step2SelectPersonnelCaNhanHangNam';
 import { Step2SelectPersonnelNienHan } from '@/components/proposals/bulk/Step2SelectPersonnelNienHan';
 import { Step2SelectPersonnelHCQKQT } from '@/components/proposals/bulk/Step2SelectPersonnelHCQKQT';
@@ -100,46 +101,21 @@ export default function BulkAddAwardsPage() {
     return Icon ? <Icon /> : <TrophyOutlined />;
   };
 
-  const awardTypeConfig: Record<
-    AwardType,
-    { icon: React.ReactNode; label: string; description: string }
-  > = {
-    [PROPOSAL_TYPES.CA_NHAN_HANG_NAM]: {
-      icon: renderAwardTypeIcon(PROPOSAL_TYPES.CA_NHAN_HANG_NAM),
-      label: 'Khen thưởng cá nhân hằng năm',
-      description: 'Danh hiệu CSTT, CSTDCS, BKBQP, CSTĐTQ, BKTTCP',
-    },
-    [PROPOSAL_TYPES.DON_VI_HANG_NAM]: {
-      icon: renderAwardTypeIcon(PROPOSAL_TYPES.DON_VI_HANG_NAM),
-      label: 'Khen thưởng đơn vị hằng năm',
-      description: 'Danh hiệu ĐVTT, ĐVQT, BKBQP, BKTTCP',
-    },
-    [PROPOSAL_TYPES.NIEN_HAN]: {
-      icon: renderAwardTypeIcon(PROPOSAL_TYPES.NIEN_HAN),
-      label: 'Huy chương Chiến sĩ vẻ vang',
-      description: 'Danh hiệu Huy chương Chiến sĩ vẻ vang 3 hạng (Ba, Nhì, Nhất)',
-    },
-    [PROPOSAL_TYPES.HC_QKQT]: {
-      icon: renderAwardTypeIcon(PROPOSAL_TYPES.HC_QKQT),
-      label: 'Huy chương Quân kỳ quyết thắng',
-      description: 'Yêu cầu đủ 25 năm phục vụ trong QĐNDVN',
-    },
-    [PROPOSAL_TYPES.KNC_VSNXD_QDNDVN]: {
-      icon: renderAwardTypeIcon(PROPOSAL_TYPES.KNC_VSNXD_QDNDVN),
-      label: 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
-      description: 'Yêu cầu đủ 25 năm phục vụ đối với nam và 20 năm phục vụ đối với nữ trong QĐNDVN',
-    },
-    [PROPOSAL_TYPES.CONG_HIEN]: {
-      icon: renderAwardTypeIcon(PROPOSAL_TYPES.CONG_HIEN),
-      label: 'Huân chương Bảo vệ Tổ quốc',
-      description: 'Danh hiệu Huân chương Bảo vệ Tổ quốc 3 hạng (Ba, Nhì, Nhất)',
-    },
-    [PROPOSAL_TYPES.NCKH]: {
-      icon: renderAwardTypeIcon(PROPOSAL_TYPES.NCKH),
-      label: 'Thành tích Nghiên cứu khoa học',
-      description: 'Đề tài khoa học / Sáng kiến khoa học',
-    },
-  };
+  const awardTypeConfig = Object.fromEntries(
+    (Object.keys(AWARD_TYPE_REGISTRY) as ProposalType[])
+      .filter(code => code !== PROPOSAL_TYPES.DOT_XUAT)
+      .map(code => {
+        const meta = AWARD_TYPE_REGISTRY[code];
+        return [
+          code,
+          {
+            icon: renderAwardTypeIcon(code),
+            label: meta.label,
+            description: meta.description,
+          },
+        ];
+      })
+  ) as Record<AwardType, { icon: React.ReactNode; label: string; description: string }>;
 
   // 6-step wizard (file upload step removed)
   const getSteps = () => {
@@ -365,10 +341,11 @@ export default function BulkAddAwardsPage() {
                     <Space direction="vertical" size="small">
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <span
-                          style={{
-                            fontSize: 20,
-                            color: awardType === key ? '#1890ff' : '#8c8c8c',
-                          }}
+                          className={`text-xl ${
+                            awardType === key
+                              ? 'text-blue-500 dark:text-blue-400'
+                              : 'text-gray-500 dark:text-gray-400'
+                          }`}
                         >
                           {config.icon}
                         </span>

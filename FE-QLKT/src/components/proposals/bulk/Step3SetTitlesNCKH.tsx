@@ -207,7 +207,7 @@ export function Step3SetTitlesNCKH({
       align: 'center',
       render: (_, record, index) => (
         <span
-          style={{ cursor: 'pointer', color: '#1890ff' }}
+          className="cursor-pointer text-blue-500 dark:text-blue-400"
           onClick={() => handleViewDetails(record)}
           onMouseEnter={e => {
             e.currentTarget.style.textDecoration = 'underline';

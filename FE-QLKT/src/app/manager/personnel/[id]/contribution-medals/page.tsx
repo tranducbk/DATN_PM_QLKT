@@ -30,7 +30,7 @@ import type { PersonnelDetail } from '@/lib/types/personnelList';
 
 const { Title, Paragraph } = Typography;
 
-interface ContributionAward {
+interface ContributionMedal {
   id: string;
   type: string;
   name: string;
@@ -45,13 +45,13 @@ interface ContributionAward {
   status: string;
 }
 
-export default function ManagerContributionAwardsPage() {
+export default function ManagerContributionMedalsPage() {
   const params = useParams();
   const personnelId = params?.id as string;
   const { theme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [personnel, setPersonnel] = useState<PersonnelDetail | null>(null);
-  const [awards, setAwards] = useState<ContributionAward[]>([]);
+  const [awards, setAwards] = useState<ContributionMedal[]>([]);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -60,7 +60,7 @@ export default function ManagerContributionAwardsPage() {
       setLoading(true);
       const [personnelRes, contributionRes] = await Promise.all([
         apiClient.getPersonnelById(personnelId),
-        apiClient.getContributionAwards({ limit: FETCH_ALL_LIMIT }),
+        apiClient.getContributionMedals({ limit: FETCH_ALL_LIMIT }),
       ]);
 
       if (!personnelRes.success || !personnelRes.data) {
@@ -70,7 +70,7 @@ export default function ManagerContributionAwardsPage() {
 
       setPersonnel(personnelRes.data);
 
-      const mappedAwards: ContributionAward[] = [];
+      const mappedAwards: ContributionMedal[] = [];
 
       if (contributionRes.success && contributionRes.data) {
         contributionRes.data.forEach((award: any) => {
@@ -135,7 +135,7 @@ export default function ManagerContributionAwardsPage() {
     }
   };
 
-  const columns: TableColumnsType<ContributionAward> = [
+  const columns: TableColumnsType<ContributionMedal> = [
     {
       title: 'Tên khen thưởng',
       dataIndex: 'name',
@@ -143,7 +143,7 @@ export default function ManagerContributionAwardsPage() {
       width: 220,
       minWidth: 180,
       fixed: 'left',
-      render: (name: string, record: ContributionAward) => (
+      render: (name: string, record: ContributionMedal) => (
         <div>
           <div style={{ fontWeight: 500 }}>{name}</div>
           {record.rank && (
@@ -158,7 +158,7 @@ export default function ManagerContributionAwardsPage() {
       width: 120,
       minWidth: 70,
       align: 'center',
-      render: (_: unknown, record: ContributionAward) => {
+      render: (_: unknown, record: ContributionMedal) => {
         if (record.thang && record.nam) {
           return `${String(record.thang).padStart(2, '0')}/${record.nam}`;
         }
@@ -202,12 +202,7 @@ export default function ManagerContributionAwardsPage() {
               e.stopPropagation();
               handleOpenDecisionFile(soQuyetDinh);
             }}
-            style={{
-              color: '#52c41a',
-              fontWeight: 500,
-              textDecoration: 'underline',
-              cursor: 'pointer',
-            }}
+            className="text-green-600 dark:text-green-400 font-medium underline cursor-pointer"
           >
             {soQuyetDinh}
           </a>

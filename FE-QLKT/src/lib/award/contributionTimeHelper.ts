@@ -61,7 +61,7 @@ export const formatMonthsToText = (totalMonths: number): string => {
 export const getContributionRequiredMonths = (gender?: string | null): number =>
   gender === 'NU' ? CONG_HIEN_FEMALE_REQUIRED_MONTHS : CONG_HIEN_BASE_REQUIRED_MONTHS;
 
-export const getHighestEligibleContributionAward = (
+export const getHighestEligibleContributionMedal = (
   months07: number,
   months08: number,
   months0910: number,

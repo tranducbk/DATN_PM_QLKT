@@ -23,7 +23,7 @@ import {
   DEFAULT_ANTD_TABLE_PAGINATION,
   FETCH_ALL_LIMIT,
 } from '@/constants/pagination.constants';
-import { DANH_HIEU_DAC_BIET, HCQKQT_YEARS_REQUIRED } from '@/constants/danhHieu.constants';
+import { DANH_HIEU_DAC_BIET, HCQKQT_YEARS_REQUIRED, AWARD_TAB_LABELS } from '@/constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { ExcelImportSection } from './ExcelImportSection';
@@ -589,7 +589,7 @@ export function Step2SelectPersonnelHCQKQT({
   return (
     <div>
       <Alert
-        message="Bước 2: Lựa chọn quân nhân - Huy chương Quân kỳ quyết thắng"
+        message={`Bước 2: Lựa chọn quân nhân - ${AWARD_TAB_LABELS.HCQKQT}`}
         description={
           <div>
             <p>1. Chọn năm và tháng đề xuất để hệ thống tính điều kiện phục vụ theo đúng kỳ xét.</p>
@@ -737,7 +737,7 @@ export function Step2SelectPersonnelHCQKQT({
       <div style={{ marginBottom: 16 }}>
         <Text type="secondary">
           Tổng số quân nhân: <strong>{filteredPersonnel.length}</strong> | Đã chọn:{' '}
-          <strong style={{ color: '#1890ff' }}>{selectedPersonnelIds.length}</strong>
+          <strong className="text-blue-500 dark:text-blue-400">{selectedPersonnelIds.length}</strong>
         </Text>
       </div>
 

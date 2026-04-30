@@ -67,13 +67,7 @@ export function MedalProgressCard({
         </Text>
         {isEligible ? <Tag color="orange">Đủ điều kiện</Tag> : <Tag color="default">Chưa đủ</Tag>}
       </div>
-      <Text
-        style={{
-          fontSize: 13,
-          fontWeight: 500,
-          color: isDark ? '#9ca3af' : '#6b7280',
-        }}
-      >
+      <Text className="text-[13px] font-medium text-gray-500 dark:text-gray-400">
         {yearsOfService}/{yearsRequired} năm
       </Text>
       <div className="mt-2">

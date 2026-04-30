@@ -9,7 +9,14 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import { ServiceHistoryModal } from './ServiceHistoryModal';
 import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
-import { HCCSVV_YEARS_HANG_BA, HCCSVV_YEARS_HANG_NHI, HCCSVV_YEARS_HANG_NHAT } from '@/constants/danhHieu.constants';
+import {
+  HCCSVV_YEARS_HANG_BA,
+  HCCSVV_YEARS_HANG_NHI,
+  HCCSVV_YEARS_HANG_NHAT,
+  getDanhHieuName,
+  DANH_HIEU_HCCSVV,
+  AWARD_TAB_LABELS,
+} from '@/constants/danhHieu.constants';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { formatDate } from '@/lib/utils';
 import type { DateInput } from '@/lib/types/common';
@@ -382,9 +389,9 @@ export function Step3SetTitlesNienHan({
       render: (_, record) => {
         const data = getTitleData(record.id);
         const awardLabels: Record<string, string> = {
-          HCCSVV_HANG_BA: 'Huy chương Chiến sĩ vẻ vang hạng Ba',
-          HCCSVV_HANG_NHI: 'Huy chương Chiến sĩ vẻ vang hạng Nhì',
-          HCCSVV_HANG_NHAT: 'Huy chương Chiến sĩ vẻ vang hạng Nhất',
+          [DANH_HIEU_HCCSVV.HANG_BA]: getDanhHieuName(DANH_HIEU_HCCSVV.HANG_BA),
+          [DANH_HIEU_HCCSVV.HANG_NHI]: getDanhHieuName(DANH_HIEU_HCCSVV.HANG_NHI),
+          [DANH_HIEU_HCCSVV.HANG_NHAT]: getDanhHieuName(DANH_HIEU_HCCSVV.HANG_NHAT),
         };
 
         if (bypassEligibility) {
@@ -421,7 +428,7 @@ export function Step3SetTitlesNienHan({
         }
 
         return (
-          <Text strong style={{ color: !data.danh_hieu ? '#ff4d4f' : undefined }}>
+          <Text strong className={!data.danh_hieu ? 'text-red-500 dark:text-red-400' : ''}>
             {data.danh_hieu ? awardLabels[data.danh_hieu] || data.danh_hieu : 'Chưa xác định'}
           </Text>
         );
@@ -453,7 +460,7 @@ export function Step3SetTitlesNienHan({
   return (
     <div>
       <Alert
-        message="Bước 3: Thiết lập danh hiệu - Huy chương Chiến sĩ vẻ vang"
+        message={`Bước 3: Thiết lập danh hiệu - ${AWARD_TAB_LABELS.HCCSVV}`}
         description={
           <div>
             <p>

@@ -49,7 +49,8 @@ export const renderDecision = (
           e.stopPropagation();
           onDownload(soQuyetDinh);
         }}
-        style={{ ...COLUMN_STYLES.decisionText, cursor: 'pointer', color: '#52c41a' }}
+        style={COLUMN_STYLES.decisionText}
+        className="cursor-pointer text-green-600 dark:text-green-400"
       >
         Số QĐ: {soQuyetDinh}
       </a>
@@ -306,9 +307,7 @@ export const renderUnitAnnualAwards = (
   return <div style={COLUMN_STYLES.container}>{items}</div>;
 };
 
-// Re-export from constants for backward compatibility
 export const getLoaiKhenThuong = (danhHieu: string | null): string => {
   if (!danhHieu) return '-';
-  const result = getLoaiKhenThuongByDanhHieu(danhHieu);
-  return result === 'Chưa xác định' ? '-' : result;
+  return getLoaiKhenThuongByDanhHieu(danhHieu);
 };

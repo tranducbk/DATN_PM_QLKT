@@ -32,11 +32,11 @@ import {
   calculateContributionMonthsByGroup,
   formatMonthsToText,
   getContributionRequiredMonths,
-  getHighestEligibleContributionAward,
+  getHighestEligibleContributionMedal,
   getReferenceEndDate,
   type PositionHistoryLike,
 } from '@/lib/award/contributionTimeHelper';
-import { DANH_HIEU_SHORT_MAP } from '@/constants/danhHieu.constants';
+import { DANH_HIEU_SHORT_MAP, AWARD_TAB_LABELS } from '@/constants/danhHieu.constants';
 import * as XLSX from 'xlsx';
 import type {
   DuplicateCheckResult,
@@ -44,41 +44,11 @@ import type {
   Step2ImportSuccessResult,
   Step2ImportedAward,
   Step2LocalImportResult,
+  Step2Personnel as Personnel,
 } from './types';
 import type { TitleDataItem } from '@/lib/types/proposal';
 
 const { Text } = Typography;
-
-interface Personnel {
-  id: string;
-  ho_ten: string;
-  cccd: string;
-  ngay_sinh?: string | null;
-  gioi_tinh?: string | null;
-  co_quan_don_vi_id: string;
-  don_vi_truc_thuoc_id: string;
-  chuc_vu_id: string;
-  cap_bac?: string;
-  CoQuanDonVi?: {
-    id: string;
-    ten_don_vi: string;
-    ma_don_vi: string;
-  };
-  DonViTrucThuoc?: {
-    id: string;
-    ten_don_vi: string;
-    ma_don_vi: string;
-    CoQuanDonVi?: {
-      id: string;
-      ten_don_vi: string;
-      ma_don_vi: string;
-    };
-  };
-  ChucVu?: {
-    id: string;
-    ten_chuc_vu: string;
-  };
-}
 
 interface Step2SelectPersonnelCongHienProps {
   selectedPersonnelIds: string[];
@@ -221,7 +191,7 @@ export function Step2SelectPersonnelCongHien({
     const months07 = getTotalMonthsByGroup(personnelId, '0.7');
     const months08 = getTotalMonthsByGroup(personnelId, '0.8');
     const months0910 = getTotalMonthsByGroup(personnelId, '0.9-1.0');
-    return getHighestEligibleContributionAward(months07, months08, months0910, requiredMonths);
+    return getHighestEligibleContributionMedal(months07, months08, months0910, requiredMonths);
   };
 
   const units = Array.from(
@@ -388,7 +358,7 @@ export function Step2SelectPersonnelCongHien({
                   Đã nhận{' '}
                   {ineligible.awardTitle
                     ? DANH_HIEU_SHORT_MAP[ineligible.awardTitle] || ineligible.awardTitle
-                    : 'Huân chương Bảo vệ Tổ quốc'}
+                    : AWARD_TAB_LABELS.HCBVTQ}
                 </Text>
                 <Text type="secondary" style={{ fontSize: '11px', textAlign: 'center' }}>
                   {ineligible.awardYear ? `Năm ${ineligible.awardYear}` : ineligible.reason}
@@ -625,15 +595,15 @@ export function Step2SelectPersonnelCongHien({
 
     const ineligible = ineligiblePersonnel.find(i => i.personnelId === record.id);
     if (ineligible?.status === PROPOSAL_STATUS.APPROVED) {
-      return `Quân nhân đã nhận danh hiệu Huân chương Bảo vệ Tổ quốc năm ${ineligible.awardYear}`;
+      return `Quân nhân đã nhận danh hiệu ${AWARD_TAB_LABELS.HCBVTQ} năm ${ineligible.awardYear}`;
     }
     if (ineligible?.status === PROPOSAL_STATUS.PENDING) {
-      return 'Quân nhân đang có đề xuất Huân chương Bảo vệ Tổ quốc chờ duyệt';
+      return `Quân nhân đang có đề xuất ${AWARD_TAB_LABELS.HCBVTQ} chờ duyệt`;
     }
 
     const highestAward = getHighestEligibleAward(record.id);
     if (!highestAward) {
-      return 'Quân nhân không đủ điều kiện nhận Huân chương Bảo vệ Tổ quốc';
+      return `Quân nhân không đủ điều kiện nhận ${AWARD_TAB_LABELS.HCBVTQ}`;
     }
 
     return null;
@@ -691,7 +661,7 @@ export function Step2SelectPersonnelCongHien({
   return (
     <div>
       <Alert
-        message="Bước 2: Lựa chọn quân nhân - Huân chương Bảo vệ Tổ quốc"
+        message={`Bước 2: Lựa chọn quân nhân - ${AWARD_TAB_LABELS.HCBVTQ}`}
         description={
           <div>
             <p>1. Chọn năm đề xuất để hệ thống xác định điều kiện theo kỳ xét.</p>
@@ -711,8 +681,8 @@ export function Step2SelectPersonnelCongHien({
         <>
           <ExcelImportSection
             awardType="CONG_HIEN"
-            downloadTemplate={apiClient.getContributionAwardsTemplate}
-            importFile={apiClient.importContributionAwards}
+            downloadTemplate={apiClient.getContributionMedalsTemplate}
+            importFile={apiClient.importContributionMedals}
             templateFileName="mau_import_hcbvtq"
             onImportSuccess={handleImportSuccess}
             selectedPersonnelIds={selectedPersonnelIds}
@@ -722,7 +692,7 @@ export function Step2SelectPersonnelCongHien({
             entityLabel="quân nhân"
             localProcessing={true}
             onLocalProcess={handleLocalExcelProcess}
-            previewImport={apiClient.previewContributionAwardsImport}
+            previewImport={apiClient.previewContributionMedalsImport}
             reviewPath="/admin/awards/bulk/import-review-hcbvtq"
             sessionStorageKey="importPreviewDataHCBVTQ"
           />
@@ -824,7 +794,7 @@ export function Step2SelectPersonnelCongHien({
       <div style={{ marginBottom: 16 }}>
         <Text type="secondary">
           Tổng số quân nhân: <strong>{filteredPersonnel.length}</strong> | Đã chọn:{' '}
-          <strong style={{ color: '#1890ff' }}>{selectedPersonnelIds.length}</strong>
+          <strong className="text-blue-500 dark:text-blue-400">{selectedPersonnelIds.length}</strong>
         </Text>
       </div>
 
@@ -874,8 +844,8 @@ export function Step2SelectPersonnelCongHien({
           warnings.push(
             <Alert
               key="eligibility-warning"
-              message="Không thể chọn lại Huân chương Bảo vệ Tổ quốc"
-              description={`Có ${ineligibleCount} quân nhân đã có hồ sơ Huân chương Bảo vệ Tổ quốc trong hệ thống (${pendingCount} đang chờ duyệt, ${approvedCount} đã duyệt). Vui lòng bỏ chọn các quân nhân này hoặc xử lý hồ sơ hiện tại trước khi đề xuất mới.`}
+              message={`Không thể chọn lại ${AWARD_TAB_LABELS.HCBVTQ}`}
+              description={`Có ${ineligibleCount} quân nhân đã có hồ sơ ${AWARD_TAB_LABELS.HCBVTQ} trong hệ thống (${pendingCount} đang chờ duyệt, ${approvedCount} đã duyệt). Vui lòng bỏ chọn các quân nhân này hoặc xử lý hồ sơ hiện tại trước khi đề xuất mới.`}
               type="info"
               showIcon
               style={{ marginBottom: 16 }}
@@ -888,7 +858,7 @@ export function Step2SelectPersonnelCongHien({
             <Alert
               key="not-eligible-warning"
               message="Chưa đủ điều kiện theo thời gian công tác"
-              description={`Có ${notEligibleCount} quân nhân chưa đạt mốc thời gian công tác tính đến tháng ${localThang}/${localNam ?? nam} nên chưa đủ điều kiện đề xuất Huân chương Bảo vệ Tổ quốc.`}
+              description={`Có ${notEligibleCount} quân nhân chưa đạt mốc thời gian công tác tính đến tháng ${localThang}/${localNam ?? nam} nên chưa đủ điều kiện đề xuất ${AWARD_TAB_LABELS.HCBVTQ}.`}
               type="info"
               showIcon
               style={{ marginBottom: 16 }}

@@ -232,7 +232,7 @@ export function NCKHProposalForm({
       <Modal
         title={
           <Space>
-            <ExperimentOutlined style={{ color: '#1890ff' }} />
+            <ExperimentOutlined className="text-blue-500 dark:text-blue-400" />
             {editingRecord ? 'Chỉnh sửa thành tích' : 'Thêm thành tích ĐTKH/SKKH'}
           </Space>
         }

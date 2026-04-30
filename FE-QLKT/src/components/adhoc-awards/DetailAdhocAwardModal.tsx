@@ -141,7 +141,7 @@ export function DetailAdhocAwardModal({
                 {award.so_quyet_dinh ? (
                   <a
                     onClick={() => handleOpenDecisionFile(award.so_quyet_dinh!)}
-                    style={{ color: '#52c41a', cursor: 'pointer' }}
+                    className="text-green-600 dark:text-green-400 cursor-pointer"
                   >
                     {award.so_quyet_dinh}
                   </a>
@@ -177,7 +177,7 @@ export function DetailAdhocAwardModal({
                     ]}
                   >
                     <List.Item.Meta
-                      avatar={<FileOutlined style={{ fontSize: 24, color: '#1890ff' }} />}
+                      avatar={<FileOutlined className="text-2xl text-blue-500 dark:text-blue-400" />}
                       title={file.originalName}
                       description={`${(file.size / 1024).toFixed(1)} KB - ${formatDate(file.uploadedAt)}`}
                     />

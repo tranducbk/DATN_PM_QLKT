@@ -169,12 +169,7 @@ export default function ManagerMilitaryFlagPage() {
               e.stopPropagation();
               handleOpenDecisionFile(soQuyetDinh);
             }}
-            style={{
-              color: '#52c41a',
-              fontWeight: 500,
-              textDecoration: 'underline',
-              cursor: 'pointer',
-            }}
+            className="text-green-600 dark:text-green-400 font-medium underline cursor-pointer"
           >
             {soQuyetDinh}
           </a>

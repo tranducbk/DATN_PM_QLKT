@@ -225,7 +225,7 @@ export function EditAdhocAwardModal({
 
           <div>
             <Text strong style={{ display: 'block', marginBottom: 8 }}>
-              Hình thức khen thưởng <span style={{ color: '#ff4d4f' }}>*</span>
+              Hình thức khen thưởng <span className="text-red-500 dark:text-red-400">*</span>
             </Text>
             <Input
               value={editFormData.awardForm}
@@ -236,7 +236,7 @@ export function EditAdhocAwardModal({
 
           <div>
             <Text strong style={{ display: 'block', marginBottom: 8 }}>
-              Năm <span style={{ color: '#ff4d4f' }}>*</span>
+              Năm <span className="text-red-500 dark:text-red-400">*</span>
             </Text>
             <InputNumber
               style={{ width: '100%' }}
@@ -320,7 +320,7 @@ export function EditAdhocAwardModal({
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <FileOutlined style={{ color: '#1890ff' }} />
+                      <FileOutlined className="text-blue-500 dark:text-blue-400" />
                       <Text>{file.name}</Text>
                       {file.uid.startsWith('existing-attached-') && (
                         <Tag color="blue">Đã lưu</Tag>

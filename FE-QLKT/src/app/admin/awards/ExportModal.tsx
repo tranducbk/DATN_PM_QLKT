@@ -161,8 +161,8 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
       const exportFnMap: Record<string, (p: typeof params) => Promise<Blob>> = {
         CNHN: apiClient.exportAnnualRewards.bind(apiClient),
         DVHN: apiClient.exportUnitAnnualAwards.bind(apiClient),
-        HCCSVV: apiClient.exportHCCSVV.bind(apiClient),
-        HCBVTQ: apiClient.exportContributionAwards.bind(apiClient),
+        HCCSVV: apiClient.exportTenureMedals.bind(apiClient),
+        HCBVTQ: apiClient.exportContributionMedals.bind(apiClient),
         KNC_VSNXD_QDNDVN: apiClient.exportCommemorationMedals.bind(apiClient),
         HCQKQT: apiClient.exportMilitaryFlag.bind(apiClient),
         NCKH: apiClient.exportScientificAchievements.bind(apiClient),
