@@ -43,6 +43,7 @@ flowchart LR
     US --- UC1
 
     SA --- UC2
+    AD --- UC2
     SA --- UC13
     SA --- UC14
 
@@ -65,6 +66,7 @@ flowchart LR
     MG --- UC9
     MG --- UC10
     MG --- UC11
+    MG --- UC13
     MG --- UC15
 
     US --- UC11
@@ -74,7 +76,7 @@ flowchart LR
     MG --- UC12
 ```
 
-**Mô tả**: 4 actor truy cập hệ thống qua 15 nhóm chức năng. SUPER_ADMIN có quyền cao nhất (account, backup, log). ADMIN và MANAGER thao tác nghiệp vụ khen thưởng. USER chủ yếu xem hồ sơ cá nhân và nhận thông báo.
+**Mô tả**: 4 actor truy cập hệ thống qua 15 nhóm chức năng. SUPER_ADMIN có quyền cao nhất (backup, xem log resource = 'backup'). ADMIN cùng SUPER_ADMIN quản lý tài khoản (cùng dùng `requireAdmin`). MANAGER có thể xem nhật ký hệ thống (route dùng `requireManager`) nhưng bị filter bỏ log backup. USER chủ yếu xem hồ sơ cá nhân và nhận thông báo.
 
 **Phân nhóm khen thưởng theo nghiệp vụ** (5 nhóm — mỗi nhóm có sơ đồ phân rã riêng):
 - **UC5 Hằng năm** — danh hiệu theo từng năm. Phân rã thành **cá nhân hằng năm** (CSTDCS / CSTT / BKBQP / CSTDTQ / BKTTCP — xem A1.5) và **đơn vị hằng năm** (ĐVQT / ĐVTT / BKBQP đơn vị / BKTTCP đơn vị — xem A1.6).
@@ -92,6 +94,7 @@ flowchart LR
 ```mermaid
 flowchart LR
     SA(((Quản trị viên)))
+    AD(((Phòng Chính trị)))
 
     subgraph SYS[Quản lý tài khoản]
         UC1(Tạo tài khoản mới)
@@ -119,7 +122,19 @@ flowchart LR
     SA --- UC7
     SA --- UC8
     SA --- UC9
+
+    AD --- UC1
+    AD --- UC2
+    AD --- UC3
+    AD --- UC4
+    AD --- UC5
+    AD --- UC6
+    AD --- UC7
+    AD --- UC8
+    AD --- UC9
 ```
+
+**Quyền**: route `/api/accounts` dùng middleware `requireAdmin` → cả SUPER_ADMIN (Quản trị viên) và ADMIN (Phòng Chính trị) đều có thể tạo / sửa / khóa / reset / xoá tài khoản.
 
 ---
 
@@ -127,6 +142,7 @@ flowchart LR
 
 ```mermaid
 flowchart LR
+    SA(((Quản trị viên)))
     AD(((Phòng Chính trị)))
     MG(((Chỉ huy đơn vị)))
 
@@ -148,22 +164,41 @@ flowchart LR
         UC4 -.->|include| UC11
     end
 
+    SA --- UC1
+    SA --- UC2
+    SA --- UC3
+    SA --- UC4
+    SA --- UC5
+    SA --- UC6
+    SA --- UC8
+    SA --- UC9
+    SA --- UC10
+    SA --- UC11
+
     AD --- UC1
     AD --- UC2
     AD --- UC3
     AD --- UC4
     AD --- UC5
+    AD --- UC6
     AD --- UC8
     AD --- UC9
     AD --- UC10
     AD --- UC11
 
+    MG --- UC2
     MG --- UC4
     MG --- UC5
+    MG --- UC6
     MG --- UC9
     MG --- UC10
     MG --- UC11
 ```
+
+**Phân quyền route**:
+- POST/DELETE/EXPORT (`/api/personnel`): `requireAdmin` → SUPER_ADMIN + ADMIN.
+- PUT `/api/personnel/:id`: `requireManager` → SUPER_ADMIN + ADMIN + MANAGER (MANAGER chỉ sửa quân nhân thuộc đơn vị quản lý).
+- GET list / detail: MANAGER xem được trong phạm vi đơn vị; USER chỉ xem hồ sơ của chính mình.
 
 **Lưu ý**: Bảng `QuanNhan` hiện **không hỗ trợ Excel import** — chỉ thêm thủ công qua form (xem A3.2). Excel import chỉ áp dụng cho các loại khen thưởng (xem A1.7).
 
@@ -548,6 +583,7 @@ flowchart LR
 flowchart LR
     SA(((Quản trị viên)))
     AD(((Phòng Chính trị)))
+    MG(((Chỉ huy đơn vị)))
 
     subgraph SYS[System log]
         UC1(Ghi log tự động khi có hành động)
@@ -582,9 +618,18 @@ flowchart LR
     AD --- UC5
     AD --- UC6
     AD --- UC7
+
+    MG --- UC2
+    MG --- UC3
+    MG --- UC4
+    MG --- UC5
+    MG --- UC6
+    MG --- UC7
 ```
 
-**Đặc thù**: UC9 — log của `resource: 'backup'` chỉ SUPER_ADMIN xem được (filter ở `systemLogs.service.ts`).
+**Phân quyền**: route `/api/system-logs` dùng `requireManager` → cả SUPER_ADMIN, ADMIN và MANAGER đều được xem nhật ký. Tuy nhiên service `systemLogs.service.ts` áp filter:
+- **UC9** — log có `resource: 'backup'` chỉ SUPER_ADMIN xem được; ADMIN và MANAGER bị filter loại bỏ hoàn toàn.
+- MANAGER còn bị giới hạn theo phạm vi đơn vị: chỉ thấy log do tài khoản trong các đơn vị mình quản lý thực hiện (qua `getManagerAccountIds`).
 
 ---
 
@@ -677,8 +722,8 @@ flowchart LR
 | # | Sơ đồ | Số use case | Actor |
 |---|---|---|---|
 | A1.1 | Use case tổng quát | 15 | 4 |
-| A1.2 | Quản lý tài khoản | 9 | SUPER_ADMIN |
-| A1.3 | Quản lý quân nhân | 11 | ADMIN, MANAGER |
+| A1.2 | Quản lý tài khoản | 9 | SUPER_ADMIN, ADMIN |
+| A1.3 | Quản lý quân nhân | 11 | SUPER_ADMIN, ADMIN, MANAGER |
 | A1.4 | Quản lý đơn vị | 10 | SUPER_ADMIN, ADMIN |
 | A1.5 | Hằng năm cá nhân (thuộc UC5) | 10 | ADMIN, MANAGER, USER |
 | A1.6 | Hằng năm đơn vị (thuộc UC5) | 7 | ADMIN, MANAGER |
@@ -687,7 +732,7 @@ flowchart LR
 | A1.9 | Khen thưởng đột xuất (UC9 — flow riêng) | 9 | ADMIN, MANAGER, USER |
 | A1.10 | Eligibility engine (UC11) | 9 | System, MANAGER, USER |
 | A1.11 | Thông báo realtime (UC12) | 6 | 4 role |
-| A1.12 | Nhật ký hệ thống (UC13) | 9 | SUPER_ADMIN, ADMIN |
+| A1.12 | Nhật ký hệ thống (UC13) | 9 | SUPER_ADMIN, ADMIN, MANAGER |
 | A1.13 | Backup (UC14) | 9 | SUPER_ADMIN, Cron |
 | A1.14 | Báo cáo thống kê (UC15) | 8 | ADMIN, MANAGER |
 

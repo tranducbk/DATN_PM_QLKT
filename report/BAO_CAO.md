@@ -1030,17 +1030,17 @@ Các bước cài đặt trên máy phát triển cá nhân được trình bày
 
 **Bước 2.** Sao chép tệp cấu hình mẫu `.env.example` thành `.env` trong cả hai thư mục, sau đó chỉnh sửa các giá trị thiết yếu — `DATABASE_URL` cho chuỗi kết nối PostgreSQL, `JWT_SECRET` cho khoá bí mật phát hành Access Token, `REFRESH_SECRET` cho khoá phát hành Refresh Token, `CLIENT_URL` cho địa chỉ frontend.
 
-**Bước 3.** Khởi tạo cơ sở dữ liệu trong thư mục `BE-QLKT` bằng lệnh `npx prisma migrate dev` để áp dụng các tệp migration đã có; tiếp theo chạy lệnh `npm run db:seed` để tạo tài khoản SuperAdmin mặc định cùng các danh mục cơ bản.
+**Bước 3.** Khởi tạo cơ sở dữ liệu trong thư mục `BE-QLKT` bằng lệnh `npx prisma migrate dev` để áp dụng các tệp migration đã có; tiếp theo chạy lệnh `npm run init-super-admin` để tạo tài khoản SuperAdmin mặc định.
 
-**Bước 4.** Khởi chạy môi trường phát triển — `npm run dev` ở `BE-QLKT` cho backend tại cổng 3000 và lệnh tương tự ở `FE-QLKT` cho frontend tại cổng 3001.
+**Bước 4.** Khởi chạy môi trường phát triển — `npm run dev` ở `BE-QLKT` cho backend tại cổng 4000 và lệnh tương tự ở `FE-QLKT` cho frontend tại cổng 3000.
 
-Sau bước 4, mở trình duyệt tới `http://localhost:3001` và đăng nhập bằng tài khoản SuperAdmin mặc định để bắt đầu cấu hình các đơn vị, chức vụ và tài khoản phụ trợ.
+Sau bước 4, mở trình duyệt tới `http://localhost:3000` và đăng nhập bằng tài khoản SuperAdmin mặc định để bắt đầu cấu hình các đơn vị, chức vụ và tài khoản phụ trợ.
 
 ### 4.5.3 Triển khai sản xuất với PM2 và Nginx
 
-Trên máy chủ sản xuất, sản phẩm được vận hành bằng PM2 — công cụ quản lý tiến trình hỗ trợ tự khởi động lại khi tiến trình bị dừng đột ngột, ghi log có thời gian và theo dõi tài nguyên hệ thống. Tệp `ecosystem.config.js` ở thư mục gốc của dự án khai báo hai tiến trình ứng dụng: `qlkt-backend` chạy lệnh `npm run start` trong thư mục `BE-QLKT` ở cổng 3000 và `qlkt-frontend` chạy tương tự trong thư mục `FE-QLKT` ở cổng 3001. Cả hai tiến trình được đặt biến môi trường `NODE_ENV` là `production`.
+Trên máy chủ sản xuất, sản phẩm được vận hành bằng PM2 — công cụ quản lý tiến trình hỗ trợ tự khởi động lại khi tiến trình bị dừng đột ngột, ghi log có thời gian và theo dõi tài nguyên hệ thống. Tệp `ecosystem.config.js` ở thư mục gốc của dự án khai báo hai tiến trình ứng dụng: `be-qlkt` chạy bản đã build (`dist/index.js`) trong thư mục `BE-QLKT` ở cổng 4000 (giá trị `PORT` đọc từ `BE-QLKT/.env`) và `fe-qlkt` chạy `next start` trong thư mục `FE-QLKT` ở cổng 3000 (cổng mặc định của Next.js). Cả hai tiến trình được đặt biến môi trường `NODE_ENV` là `production`.
 
-Khởi chạy bằng lệnh `pm2 start ecosystem.config.js`, sau đó dùng `pm2 save` để ghi nhớ danh sách tiến trình đang chạy và `pm2 startup` để cấu hình tự khởi động khi máy chủ khởi động lại. Nginx được cấu hình làm reverse proxy: chuyển tiếp các yêu cầu có tiền tố `/api/*` tới cổng 3000 (backend), các yêu cầu còn lại tới cổng 3001 (frontend), đồng thời xử lý chứng chỉ TLS cho lớp HTTPS bên ngoài.
+Khởi chạy bằng lệnh `pm2 start ecosystem.config.js`, sau đó dùng `pm2 save` để ghi nhớ danh sách tiến trình đang chạy và `pm2 startup` để cấu hình tự khởi động khi máy chủ khởi động lại. Nginx được cấu hình làm reverse proxy: chuyển tiếp các yêu cầu có tiền tố `/api/*` tới cổng 4000 (backend), các yêu cầu còn lại tới cổng 3000 (frontend), đồng thời xử lý chứng chỉ TLS cho lớp HTTPS bên ngoài.
 
 ### 4.5.4 Sao lưu và giám sát
 

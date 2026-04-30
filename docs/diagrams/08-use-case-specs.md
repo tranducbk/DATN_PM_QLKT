@@ -4,15 +4,17 @@
 >
 > Mỗi bảng đối chiếu với route + service thực tế trong code (file BE-QLKT/src).
 >
-> **Tên actor lấy từ `FE-QLKT/src/constants/roles.constants.ts`**:
+> **Tên actor lấy từ `FE-QLKT/src/constants/roles.constants.ts`** (`ROLE_LABELS`):
 >
 > | Role code | Display name (dùng trong báo cáo) |
 > |---|---|
-> | Quản trị viên | Quản trị viên |
-> | Phòng Chính trị | Phòng Chính trị |
-> | Chỉ huy đơn vị | Chỉ huy đơn vị |
+> | SUPER_ADMIN | Quản trị viên |
+> | ADMIN | Phòng Chính trị |
+> | MANAGER | Chỉ huy đơn vị |
 > | USER | Người dùng |
 > | SYSTEM | Hệ thống |
+>
+> **Quy ước**: trong các bảng đặc tả dưới đây, "Quản trị viên" luôn ám chỉ vai trò SUPER_ADMIN, "Phòng Chính trị" ám chỉ ADMIN, "Chỉ huy đơn vị" ám chỉ MANAGER. Khi nhiều role cùng truy cập một use case, liệt kê đầy đủ và kèm chú thích role code trong ngoặc.
 
 ---
 
@@ -55,31 +57,31 @@
 
 | Tên ca sử dụng: Quản lý quân nhân | ID: UC-02 |
 |---|---|
-| **Tác nhân hệ thống** | Phòng Chính trị (CRUD), Chỉ huy đơn vị (chỉ xem) |
-| **Tiền điều kiện** | Đã đăng nhập với tài khoản có quyền truy cập trang quản lý quân nhân |
+| **Tác nhân hệ thống** | Quản trị viên (SUPER_ADMIN — tạo/sửa/xoá/xuất Excel), Phòng Chính trị (ADMIN — tạo/sửa/xoá/xuất Excel), Chỉ huy đơn vị (MANAGER — chỉ xem + cập nhật quân nhân thuộc đơn vị mình), Người dùng (USER — chỉ xem hồ sơ cá nhân) |
+| **Tiền điều kiện** | Đã đăng nhập. Tạo / xoá / xuất Excel yêu cầu role SUPER_ADMIN hoặc ADMIN (`requireAdmin`). Cập nhật yêu cầu role SUPER_ADMIN, ADMIN hoặc MANAGER (`requireManager`); MANAGER chỉ được sửa quân nhân thuộc đơn vị quản lý |
 | **Luồng sự kiện chính** | |
 
 | STT | Thực hiện | Hành động |
 |---|---|---|
-| 1 | Phòng Chính trị | Thêm mới quân nhân |
-| 1.1 | Phòng Chính trị | Chọn "Thêm quân nhân" |
+| 1 | Quản trị viên / Phòng Chính trị | Thêm mới quân nhân (POST `/api/personnel` — `requireAdmin`) |
+| 1.1 | Quản trị viên / Phòng Chính trị | Chọn "Thêm quân nhân" |
 | 1.2 | Hệ thống | Hiển thị form thêm quân nhân với các trường (CCCD, họ tên, giới tính, ngày sinh, đơn vị, chức vụ, cấp bậc, ngày nhập ngũ, ...) |
-| 1.3 | Phòng Chính trị | Nhập thông tin và chọn lưu |
+| 1.3 | Quản trị viên / Phòng Chính trị | Nhập thông tin và chọn lưu |
 | 1.4 | Hệ thống | Validate Joi (CCCD đúng định dạng, đơn vị tồn tại, chức vụ tồn tại) |
 | 1.5 | Hệ thống | Lưu `QuanNhan` + tạo bản ghi `LichSuChucVu` đầu tiên |
 | 1.6 | Hệ thống | Tăng `so_luong` của CQDV/DVTT, tạo các hồ sơ rỗng (`HoSoNienHan`, `HoSoCongHien`, `HoSoHangNam`) |
 | 1.7 | Hệ thống | Ghi SystemLog action CREATE và thông báo thành công |
-| 2 | Phòng Chính trị | Cập nhật thông tin quân nhân |
-| 2.1 | Phòng Chính trị | Tìm kiếm quân nhân theo bộ lọc và từ khóa |
-| 2.2 | Hệ thống | Hiển thị danh sách quân nhân tương ứng |
-| 2.3 | Phòng Chính trị | Chọn quân nhân cần sửa, chọn "Chỉnh sửa" |
+| 2 | Quản trị viên / Phòng Chính trị / Chỉ huy đơn vị | Cập nhật thông tin quân nhân (PUT `/api/personnel/:id` — `requireManager`) |
+| 2.1 | Quản trị viên / Phòng Chính trị / Chỉ huy đơn vị | Tìm kiếm quân nhân theo bộ lọc và từ khóa |
+| 2.2 | Hệ thống | Hiển thị danh sách quân nhân tương ứng (MANAGER chỉ thấy đơn vị mình) |
+| 2.3 | Quản trị viên / Phòng Chính trị / Chỉ huy đơn vị | Chọn quân nhân cần sửa, chọn "Chỉnh sửa" |
 | 2.4 | Hệ thống | Hiển thị form với dữ liệu hiện tại |
-| 2.5 | Phòng Chính trị | Sửa thông tin và lưu |
+| 2.5 | Quản trị viên / Phòng Chính trị / Chỉ huy đơn vị | Sửa thông tin và lưu |
 | 2.6 | Hệ thống | Validate, cập nhật DB, điều chỉnh `so_luong` đơn vị nếu chuyển đơn vị, ghi log |
-| 3 | Phòng Chính trị | Xóa quân nhân |
-| 3.1 | Phòng Chính trị | Tìm quân nhân và chọn "Xóa" |
+| 3 | Quản trị viên / Phòng Chính trị | Xóa quân nhân (DELETE `/api/personnel/:id` — `requireAdmin`) |
+| 3.1 | Quản trị viên / Phòng Chính trị | Tìm quân nhân và chọn "Xóa" |
 | 3.2 | Hệ thống | Hiển thị xác nhận |
-| 3.3 | Phòng Chính trị | Xác nhận xóa |
+| 3.3 | Quản trị viên / Phòng Chính trị | Xác nhận xóa |
 | 3.4 | Hệ thống | Xóa `QuanNhan` (cascade các bảng liên quan), giảm `so_luong`, ghi log |
 
 | **Luồng sự kiện thay thế** | |
@@ -88,9 +90,10 @@
 | STT | Thực hiện | Hành động |
 |---|---|---|
 | 1.4a | Hệ thống | Validate fail (CCCD trùng / đơn vị không tồn tại) → Trả 400 với message tiếng Việt |
-| 1.4b | Phòng Chính trị | Sửa lại dữ liệu, tiếp tục từ 1.3 |
+| 1.4b | Quản trị viên / Phòng Chính trị | Sửa lại dữ liệu, tiếp tục từ 1.3 |
 | 2.6a | Hệ thống | Cập nhật fail → Trả 400 |
-| 2.6b | Phòng Chính trị | Sửa lại dữ liệu |
+| 2.6b | Quản trị viên / Phòng Chính trị / Chỉ huy đơn vị | Sửa lại dữ liệu |
+| 2.6c | Hệ thống | MANAGER cập nhật quân nhân ngoài phạm vi đơn vị quản lý → Trả 403 Forbidden |
 
 | **Hậu điều kiện** | Bảng `QuanNhan` được cập nhật. `so_luong` của các đơn vị liên quan được điều chỉnh chính xác. Các hồ sơ con (`HoSoNienHan`, `HoSoCongHien`, `HoSoHangNam`) được khởi tạo cho quân nhân mới |
 
@@ -322,24 +325,24 @@
 
 | Tên ca sử dụng: Quản lý tài khoản | ID: UC-09 |
 |---|---|
-| **Tác nhân hệ thống** | Quản trị viên |
-| **Tiền điều kiện** | Đã đăng nhập với vai trò Quản trị viên |
+| **Tác nhân hệ thống** | Quản trị viên (SUPER_ADMIN), Phòng Chính trị (ADMIN) |
+| **Tiền điều kiện** | Đã đăng nhập với vai trò SUPER_ADMIN hoặc ADMIN (route `/api/accounts` dùng `requireAdmin`) |
 | **Luồng sự kiện chính** | |
 
 | STT | Thực hiện | Hành động |
 |---|---|---|
-| 1 | Quản trị viên | Tạo tài khoản mới |
-| 1.1 | Quản trị viên | Chọn quân nhân cần cấp tài khoản, nhập username + role |
+| 1 | Quản trị viên / Phòng Chính trị | Tạo tài khoản mới |
+| 1.1 | Quản trị viên / Phòng Chính trị | Chọn quân nhân cần cấp tài khoản, nhập username + role |
 | 1.2 | Hệ thống | Sinh password mặc định, hash bằng bcrypt, lưu `TaiKhoan` với FK `quan_nhan_id` |
-| 1.3 | Hệ thống | Trả password gốc 1 lần để SUPER_ADMIN gửi cho người dùng |
-| 2 | Quản trị viên | Cập nhật role / khóa tài khoản |
-| 2.1 | Quản trị viên | Sửa role hoặc bật/tắt active |
+| 1.3 | Hệ thống | Trả password gốc 1 lần để người tạo gửi cho người dùng |
+| 2 | Quản trị viên / Phòng Chính trị | Cập nhật role / khóa tài khoản |
+| 2.1 | Quản trị viên / Phòng Chính trị | Sửa role hoặc bật/tắt active |
 | 2.2 | Hệ thống | UPDATE `TaiKhoan`, ghi log |
-| 3 | Quản trị viên | Reset password |
-| 3.1 | Quản trị viên | Chọn "Reset mật khẩu" |
+| 3 | Quản trị viên / Phòng Chính trị | Reset password |
+| 3.1 | Quản trị viên / Phòng Chính trị | Chọn "Reset mật khẩu" |
 | 3.2 | Hệ thống | Sinh password mới, hash, lưu DB, trả lại 1 lần |
-| 4 | Quản trị viên | Xóa tài khoản |
-| 4.1 | Quản trị viên | Xác nhận xóa |
+| 4 | Quản trị viên / Phòng Chính trị | Xóa tài khoản |
+| 4.1 | Quản trị viên / Phòng Chính trị | Xác nhận xóa |
 | 4.2 | Hệ thống | DELETE `TaiKhoan` (cascade các log liên quan giữ lại với SetNull) |
 
 | **Luồng sự kiện thay thế** | |
@@ -358,18 +361,18 @@
 
 | Tên ca sử dụng: Xem nhật ký hệ thống | ID: UC-10 |
 |---|---|
-| **Tác nhân hệ thống** | Quản trị viên, Phòng Chính trị |
-| **Tiền điều kiện** | Đã đăng nhập với vai trò có quyền (Phòng Chính trị không xem được log resource = 'backup') |
+| **Tác nhân hệ thống** | Quản trị viên (SUPER_ADMIN), Phòng Chính trị (ADMIN), Chỉ huy đơn vị (MANAGER) |
+| **Tiền điều kiện** | Đã đăng nhập với vai trò SUPER_ADMIN, ADMIN hoặc MANAGER (route `/api/system-logs` dùng `requireManager`). Log có `resource = 'backup'` chỉ SUPER_ADMIN xem được — ADMIN và MANAGER bị filter trong `systemLogs.service.ts` |
 | **Luồng sự kiện chính** | |
 
 | STT | Thực hiện | Hành động |
 |---|---|---|
-| 1 | Phòng Chính trị | Truy cập trang "Nhật ký hệ thống" |
+| 1 | Quản trị viên / Phòng Chính trị / Chỉ huy đơn vị | Truy cập trang "Nhật ký hệ thống" |
 | 1.1 | Hệ thống | Hiển thị bảng log với cột: thời gian, người thực hiện, role, action, resource, mô tả |
-| 1.2 | Phòng Chính trị | Áp dụng bộ lọc (resource, action, người thực hiện, khoảng thời gian) |
-| 1.3 | Hệ thống | `systemLogsService.getLogs(userRole, filters)` — **filter resource = 'backup' nếu role != SUPER_ADMIN** |
+| 1.2 | Quản trị viên / Phòng Chính trị / Chỉ huy đơn vị | Áp dụng bộ lọc (resource, action, người thực hiện, khoảng thời gian) |
+| 1.3 | Hệ thống | `systemLogsService.getLogs(userRole, filters)` — **filter resource = 'backup' nếu role != SUPER_ADMIN**; MANAGER còn bị giới hạn theo phạm vi đơn vị qua `getManagerAccountIds` |
 | 1.4 | Hệ thống | Trả về danh sách log (paginated) |
-| 1.5 | Phòng Chính trị | Click vào 1 log để xem chi tiết payload (before/after JSON) |
+| 1.5 | Quản trị viên / Phòng Chính trị / Chỉ huy đơn vị | Click vào 1 log để xem chi tiết payload (before/after JSON) |
 | 1.6 | Hệ thống | Hiển thị modal với JSON payload |
 
 | **Luồng sự kiện thay thế** | |
@@ -377,7 +380,8 @@
 
 | STT | Thực hiện | Hành động |
 |---|---|---|
-| 1.3a | Hệ thống | ADMIN cố xem log backup → tự động bị filter, không thấy bản ghi nào |
+| 1.3a | Hệ thống | ADMIN hoặc MANAGER cố xem log resource = 'backup' → tự động bị filter trong service, không thấy bản ghi nào |
+| 1.3b | Hệ thống | MANAGER chỉ thấy log do tài khoản trong phạm vi đơn vị mình quản lý thực hiện |
 
 | **Hậu điều kiện** | Người dùng nắm được lịch sử hành động trong hệ thống, phục vụ công tác kiểm tra, truy vết |
 
@@ -388,15 +392,15 @@
 | ID | Use case | Actor | Đặc điểm |
 |---|---|---|---|
 | UC-01 | Đăng nhập | 4 role | JWT + bcrypt |
-| UC-02 | Quản lý quân nhân | ADMIN, MANAGER | Auto init 3 hồ sơ + recalc so_luong |
+| UC-02 | Quản lý quân nhân | SUPER_ADMIN, ADMIN, MANAGER (cập nhật) | Auto init 3 hồ sơ + recalc so_luong |
 | UC-03 | Tạo đề xuất hằng năm | MANAGER, ADMIN | Strategy + chain eligibility |
-| UC-04 | Phê duyệt đề xuất | Phòng Chính trị | Transaction + recalc + 2 notification |
+| UC-04 | Phê duyệt đề xuất | ADMIN | Transaction + recalc + 2 notification |
 | UC-05 | Recalc eligibility | System (auto) | Chain rule + lifetime block |
-| UC-06 | Import Excel khen thưởng | Phòng Chính trị | Preview + Confirm 2 bước |
+| UC-06 | Import Excel khen thưởng | ADMIN | Preview + Confirm 2 bước |
 | UC-07 | Quản lý đơn vị | SUPER_ADMIN, ADMIN | Cây CQDV → DVTT |
 | UC-08 | Backup | SUPER_ADMIN, Cron | Custom JSON-to-SQL, monthly default |
-| UC-09 | Quản lý tài khoản | Quản trị viên | Bcrypt hash, 1-1 với quân nhân |
-| UC-10 | Xem nhật ký | SUPER_ADMIN, ADMIN | Filter theo role |
+| UC-09 | Quản lý tài khoản | SUPER_ADMIN, ADMIN | Bcrypt hash, 1-1 với quân nhân |
+| UC-10 | Xem nhật ký | SUPER_ADMIN, ADMIN, MANAGER | Filter `resource = 'backup'` cho non-SUPER_ADMIN |
 
 → Báo cáo mẫu HRM có 5 bảng đặc tả. PM QLKT có **10 bảng** — đủ cho mục 2.3 báo cáo, mỗi bảng đối chiếu trực tiếp với code.
 

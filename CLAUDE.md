@@ -253,3 +253,45 @@ Khi có ≥ 4 nhánh `if/else` dispatch theo enum/type (vd: 7 loại đề xuấ
 - Change route `@desc` or `@access` comments to Vietnamese — keep them in English always
 - Use `catch (e)` or `catch (error)` when the variable is not used and not logged — use bare `catch` instead. Nếu cần log lỗi, dùng `catch (error) { console.error('...context...', error); }`
 - Declare `interface`/`type` inline inside function bodies — always declare at the top of the file
+
+## Documentation sync (báo cáo ĐATN)
+
+**Rule:** code is the single source of truth — báo cáo/slide/diagram bám theo code, không ngược lại. Khi sửa code làm thay đổi thứ mà tài liệu đang mô tả (port, script name, dependency, kiến trúc, schema, route, eligibility rule, số liệu test, UC behavior), **bắt buộc** mở file liên quan dưới đây và update đồng bộ trong cùng commit. Refactor thuần nội bộ (rename biến, extract helper, chia file) không cần đồng bộ doc.
+
+### Doc index — file nào chứa gì
+
+| File | Nội dung | Khi nào động vào |
+|---|---|---|
+| `report/BAO_CAO.md` | Báo cáo chính 5 chương (giới thiệu / khảo sát yêu cầu / công nghệ / thiết kế-triển khai / đóng góp). §4.5 chứa hướng dẫn cài đặt + deploy (port, script, pm2, nginx). §4.1.7 chứa thiết kế DB | Đổi behavior người dùng/admin nhìn thấy, đổi tech, đổi số liệu |
+| `slides/defense.marp.md` | Source slides Marp — 11 slide chính | Đổi tech stack, kiến trúc, demo flow, số test |
+| `slides/defense.html` | Slides đã render từ `defense.marp.md` | Re-render mỗi khi marp.md đổi |
+| `slides/slide-content.md` | Bản nháp text dài cho slide (lời nói) | Đổi nội dung slides chính |
+| `docs/diagrams/01-use-case.md` | Use case tổng + 8 phân rã | Thêm UC mới, đổi role/permission |
+| `docs/diagrams/02-activity.md` | Activity diagram — quy trình duyệt đề xuất | Đổi proposal flow / state |
+| `docs/diagrams/03-architecture.md` | Sơ đồ kiến trúc layers | Đổi cấu trúc folder/layer |
+| `docs/diagrams/04-class.md` | Class diagram domain model | Đổi service/strategy/repository structure |
+| `docs/diagrams/05-sequence.md` | Sequence diagram các flow chính | Đổi flow login / submit / approve |
+| `docs/diagrams/06-erd.md` | ERD schema DB | Đổi `schema.prisma` (model, FK, field) |
+| `docs/diagrams/07-deployment.md` | Deployment topology (PM2, Nginx, port) | Đổi port, deploy config |
+| `docs/diagrams/08-use-case-specs.md` | Đặc tả chi tiết UC (precondition, flow, postcondition) | Đổi UC behavior cụ thể |
+| `docs/diagrams/plagiarism-warnings.md` | Cảnh báo trùng lặp với báo cáo mẫu HUST | Khi viết phần dễ trùng |
+| `docs/diagrams/README.md` | Mục lục thư mục diagrams + hướng dẫn render | Thêm sơ đồ mới |
+| `PLAN_BAO_CAO.md` | Kế hoạch viết báo cáo (timeline, todo) | Đổi scope/timeline báo cáo |
+| `SAMPLE_REPORT_OUTLINE.md` | Phân tích báo cáo mẫu HUST 2024.2 — chỉ tham khảo cấu trúc, không sửa | (read-only) |
+| `PROJECT_REVIEW.md` | Code review priority list (CRITICAL §3 / MEDIUM §4 / LOW §5) | Đánh dấu DONE/PARTIAL khi fix xong, thêm issue mới phát hiện |
+| `BE-QLKT/CLAUDE.md` | Rule BE-specific (anti-pattern AP-1 → AP-9, eligibility, repository pattern) | Đổi BE convention/architecture |
+| `FE-QLKT/CLAUDE.md` | Rule FE-specific | Đổi FE convention/architecture |
+
+### Sync triggers — đổi gì thì check file nào
+
+| Loại thay đổi | File phải check |
+|---|---|
+| Đổi port BE/FE, đổi script `npm run *`, dependency mới (vd: Joi → Zod) | `report/BAO_CAO.md` §3.x (công nghệ) + §4.5 (cài đặt + deploy) · `docs/diagrams/07-deployment.md` · `slides/defense.marp.md` (slide tech stack + deployment) |
+| Đổi `schema.prisma` (model, field, FK) | `docs/diagrams/06-erd.md` · `report/BAO_CAO.md` §4.1.7 |
+| Thêm/sửa UC, đổi role permission | `docs/diagrams/01-use-case.md` + `08-use-case-specs.md` · `report/BAO_CAO.md` §2.2 + §2.3 |
+| Đổi proposal flow / approve flow | `docs/diagrams/02-activity.md` + `05-sequence.md` · `report/BAO_CAO.md` §5.2 · slide "Quy trình đề xuất" |
+| Đổi eligibility rule chuỗi danh hiệu | `BE-QLKT/CLAUDE.md` §Chain awards · `report/BAO_CAO.md` §5.1 · slide "Chuỗi danh hiệu" |
+| Đổi tech stack (lib, framework version) | `report/BAO_CAO.md` Chương 3 · `slides/defense.marp.md` §Tech Stack |
+| Đổi số test / coverage / số liệu kpi | `report/BAO_CAO.md` §4.4 + §5.x (kết quả định lượng) · slide "Kiểm thử" |
+| Refactor lớn (split file, extract module, đổi layer) | `report/BAO_CAO.md` §4.1 · `docs/diagrams/03-architecture.md` + `04-class.md` |
+| Fix issue trong PROJECT_REVIEW.md | Đánh dấu trạng thái mới (DONE/PARTIAL) ngay trong file đó kèm 1 dòng evidence |

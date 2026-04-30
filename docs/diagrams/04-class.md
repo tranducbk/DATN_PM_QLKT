@@ -15,8 +15,10 @@ classDiagram
         +String gioi_tinh
         +Date ngay_sinh
         +String que_quan_2_cap
+        +String que_quan_3_cap
         +String tru_quan
         +String cho_o_hien_nay
+        +Json co_quan_don_vi
         +Date ngay_nhap_ngu
         +Date ngay_xuat_ngu
         +Date ngay_vao_dang
@@ -245,12 +247,17 @@ classDiagram
 classDiagram
     class ChainAwardConfig {
         +String code
-        +String displayName
         +Number cycleYears
-        +Boolean isLifetime
+        +RequiredFlag[] requiredFlags
         +Boolean requiresNCKH
-        +Number bkbqpInWindow
-        +Number cstdtqInWindow
+        +Boolean isLifetime
+        +String flagColumn
+        +String streakLabel
+    }
+
+    class RequiredFlag {
+        +String code
+        +Number count
     }
 
     class PersonalChainAwards {
@@ -287,7 +294,9 @@ classDiagram
 
     class ChainEligibility {
         <<service>>
-        +checkChainEligibility(personnel, year, code, ctx, hasReceivedFlag) ChainEligibilityResult
+        +checkChainEligibility(award, streaks, hasReceived, flagsInWindow) EligibilityResult
+        +buildInsufficientReason(award, streaks, flagsInWindow) String
+        +checkAwardEligibility(personnelId, year, danhHieu) Promise~EligibilityResult~
     }
 
     class AnnualProfileService {
@@ -295,7 +304,6 @@ classDiagram
         +lastFlagYearInChain(records, code) Number
         +computeChainContext(records, year) ChainContext
         +computeEligibilityFlags(personnel, ctx, awards, nckh) EligibilityFlags
-        +checkAwardEligibility(personnel, year, code) ChainEligibilityResult
     }
 
     class UnitEligibilityService {
@@ -304,24 +312,30 @@ classDiagram
     }
 
     class CongHienMonthsAggregator {
-        +recalcPositionMonths(histories, joinDate) AggregateResult
-        +months_07 Number
-        +months_08 Number
-        +months_0910 Number
+        <<module>>
+        +classifyHeSoGroup(heSo) CongHienHeSoGroup
+        +sumMonthsByGroup(histories) PositionMonthsByGroup
+        +aggregatePositionMonthsByGroup(histories, cutoffDate) PositionMonthsByGroup
     }
 
-    class ServiceYearsEligibility {
-        +calculateYearsToYear(joinDate, year) Number
-        +checkTenureRank(years, rank) Boolean
+    class ServiceYearsHelper {
+        <<module>>
+        +calculateServiceMonths(startDate, endDate) Number
+        +calculateCoveredMonthsByMonth(startDate, endDate) Number
+        +calculateTenureMonthsWithDayPrecision(startDate, endDate) Number
+        +recalcPositionMonths(histories, cutoffDate) PositionHistory[]
+        +buildCutoffDate(nam, thang) Date
+        +formatServiceDuration(totalMonths) String
     }
 
     PersonalChainAwards o-- ChainAwardConfig
     UnitChainAwards o-- ChainAwardConfig
+    ChainAwardConfig o-- RequiredFlag
     AnnualProfileService --> ChainEligibility : uses core
     UnitEligibilityService --> ChainEligibility : uses core
     AnnualProfileService --> ChainContext : computes
-    AnnualProfileService --> CongHienMonthsAggregator : uses
-    AnnualProfileService --> ServiceYearsEligibility : uses
+    AnnualProfileService --> ServiceYearsHelper : uses
+    CongHienMonthsAggregator --> ServiceYearsHelper : uses
     ChainEligibility --> ChainEligibilityResult : returns
     ChainEligibility --> PersonalChainAwards : reads
     ChainEligibility --> UnitChainAwards : reads
@@ -549,7 +563,7 @@ classDiagram
 |---|---|---|---|
 | C3.1 | Quản lý quân nhân | 6 + 2 enum | Layered architecture |
 | C3.2 | Đề xuất khen thưởng | 11 | **Strategy pattern** (điểm bán) |
-| C3.3 | Eligibility module | 9 | **Single source of truth** chain rule |
+| C3.3 | Eligibility module | 11 | **Single source of truth** chain rule |
 | C3.4 | Tài khoản phân quyền | 9 + 1 enum | Middleware chain |
 | C3.5 | Audit log + Notification | 9 + 2 enum | Cross-cutting concern |
 
