@@ -13,7 +13,6 @@ import {
   Switch,
   ConfigProvider,
   App,
-  theme as antdTheme,
   Spin,
   Modal,
   Empty,
@@ -22,27 +21,15 @@ import {
 import type { MenuProps } from 'antd';
 import type { MenuInfo } from 'rc-menu/lib/interface';
 import {
-  DashboardOutlined,
-  TeamOutlined,
-  FileTextOutlined,
   LogoutOutlined,
   MenuOutlined,
   CloseOutlined,
   BulbOutlined,
   BulbFilled,
-  UserOutlined,
   LockOutlined,
   BellOutlined,
-  ApartmentOutlined,
-  TrophyOutlined,
-  FileSyncOutlined,
-  FileDoneOutlined,
-  ContainerOutlined,
-  HistoryOutlined,
-  SolutionOutlined,
 } from '@ant-design/icons';
 import { useRouter, usePathname } from 'next/navigation';
-import Link from 'next/link';
 import { useTheme } from './ThemeProvider';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api';
@@ -52,6 +39,8 @@ import type { UserRole } from '@/lib/types/common';
 import { FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
 import { ROLES, getRoleInfo } from '@/constants/roles.constants';
 import { getApiErrorMessage, logApiError } from '@/lib/apiError';
+import { getMenuItemsByRole, getSelectedMenuKey, getRoleSlug } from '@/lib/navigation';
+import { getAntdLayoutThemeConfig } from '@/lib/antdTheme';
 
 const { Header, Sider, Content, Footer } = Layout;
 
@@ -298,207 +287,7 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
     window.location.href = '/login';
   };
 
-  const getMenuItems = () => {
-    const roleSlug = actualRole === ROLES.SUPER_ADMIN ? 'super-admin' : actualRole.toLowerCase();
-    const baseItems = [
-      {
-        key: 'dashboard',
-        icon: <DashboardOutlined />,
-        label: <Link href={`/${roleSlug}/dashboard`}>Dashboard</Link>,
-      },
-    ];
-
-    if (actualRole === ROLES.SUPER_ADMIN) {
-      return [
-        ...baseItems,
-        {
-          key: 'accounts',
-          icon: <TeamOutlined />,
-          label: <Link href="/super-admin/accounts">Quản lý tài khoản</Link>,
-        },
-        {
-          key: 'add-awards',
-          icon: <TrophyOutlined />,
-          label: <Link href="/super-admin/add-awards">Thêm khen thưởng</Link>,
-        },
-        {
-          key: 'system-logs',
-          icon: <FileTextOutlined />,
-          label: <Link href="/super-admin/system-logs">Nhật ký hệ thống</Link>,
-        },
-      ];
-    }
-
-    if (actualRole === ROLES.ADMIN) {
-      return [
-        ...baseItems,
-        {
-          key: 'accounts',
-          icon: <UserOutlined />,
-          label: <Link href="/admin/accounts">Quản lý tài khoản</Link>,
-        },
-        {
-          key: 'personnel',
-          icon: <TeamOutlined />,
-          label: <Link href="/admin/personnel">Quản lý quân nhân</Link>,
-        },
-        {
-          key: 'categories',
-          icon: <ApartmentOutlined />,
-          label: <Link href="/admin/categories">Quản lý cơ quan đơn vị</Link>,
-        },
-        {
-          key: 'proposals',
-          icon: <FileSyncOutlined />,
-          label: <Link href="/admin/proposals/review">Duyệt đề xuất</Link>,
-        },
-        {
-          key: 'decisions',
-          icon: <FileTextOutlined />,
-          label: <Link href="/admin/decisions">Quản lý quyết định</Link>,
-        },
-        {
-          key: 'awards',
-          icon: <FileDoneOutlined />,
-          label: <Link href="/admin/awards">Quản lý khen thưởng</Link>,
-        },
-        {
-          key: 'bulk-awards',
-          icon: <TrophyOutlined />,
-          label: <Link href="/admin/awards/bulk/create">Thêm khen thưởng</Link>,
-        },
-        {
-          key: 'adhoc-awards',
-          icon: <ContainerOutlined />,
-          label: <Link href="/admin/adhoc-awards">Khen thưởng đột xuất</Link>,
-        },
-        {
-          key: 'system-logs',
-          icon: <HistoryOutlined />,
-          label: <Link href="/admin/system-logs">Nhật ký hệ thống</Link>,
-        },
-      ];
-    }
-
-    if (actualRole === ROLES.MANAGER) {
-      return [
-        ...baseItems,
-        {
-          key: 'personnel',
-          icon: <TeamOutlined />,
-          label: <Link href="/manager/personnel">Quân nhân đơn vị</Link>,
-        },
-        {
-          key: 'proposals-list',
-          icon: <FileSyncOutlined />,
-          label: <Link href="/manager/proposals">Đề xuất của tôi</Link>,
-        },
-        {
-          key: 'awards',
-          icon: <FileTextOutlined />,
-          label: <Link href="/manager/awards">Khen thưởng quân nhân</Link>,
-        },
-        {
-          key: 'units',
-          icon: <ApartmentOutlined />,
-          label: <Link href="/manager/units">Khen thưởng đơn vị</Link>,
-        },
-        {
-          key: 'adhoc-awards',
-          icon: <TrophyOutlined />,
-          label: <Link href="/manager/adhoc-awards">Khen thưởng đột xuất</Link>,
-        },
-        {
-          key: 'profile',
-          icon: <SolutionOutlined />,
-          label: (
-            <Link href={personnelId ? `/manager/personnel/${personnelId}` : '/manager/dashboard'}>
-              Hồ sơ của tôi
-            </Link>
-          ),
-        },
-        {
-          key: 'profile-edit',
-          icon: <UserOutlined />,
-          label: <Link href="/manager/profile/edit">Thông tin cá nhân</Link>,
-        },
-        {
-          key: 'system-logs',
-          icon: <HistoryOutlined />,
-          label: <Link href="/manager/system-logs">Nhật ký hệ thống</Link>,
-        },
-      ];
-    }
-
-    if (actualRole === ROLES.USER) {
-      return [
-        ...baseItems,
-        {
-          key: 'profile',
-          icon: <SolutionOutlined />,
-          label: <Link href="/user/profile">Hồ sơ của tôi</Link>,
-        },
-        {
-          key: 'profile-edit',
-          icon: <UserOutlined />,
-          label: <Link href="/user/profile/edit">Thông tin cá nhân</Link>,
-        },
-      ];
-    }
-
-    return baseItems;
-  };
-
-  const getChangePasswordPath = () => {
-    const roleSlug =
-      actualRole === ROLES.SUPER_ADMIN ? 'super-admin' : (actualRole || 'user').toLowerCase();
-    return `/${roleSlug}/change-password`;
-  };
-
-  const getSelectedKey = () => {
-    if (!pathname) return 'dashboard';
-
-    // Priority-ordered: longer prefixes first to avoid false matches
-    const routeKeyMap: [string, string][] = [
-      ['/admin/awards/bulk', 'bulk-awards'],
-      ['/admin/awards', 'awards'],
-      ['/admin/adhoc-awards', 'adhoc-awards'],
-      ['/admin/personnel', 'personnel'],
-      ['/admin/categories', 'categories'],
-      ['/admin/proposals', 'proposals'],
-      ['/admin/decisions', 'decisions'],
-      ['/admin/accounts', 'accounts'],
-      ['/admin/system-logs', 'system-logs'],
-      ['/super-admin/accounts', 'accounts'],
-      ['/super-admin/add-awards', 'add-awards'],
-      ['/super-admin/system-logs', 'system-logs'],
-      ['/manager/profile/edit', 'profile-edit'],
-      ['/manager/proposals', 'proposals-list'],
-      ['/manager/awards', 'awards'],
-      ['/manager/units', 'units'],
-      ['/manager/adhoc-awards', 'adhoc-awards'],
-      ['/manager/system-logs', 'system-logs'],
-      ['/manager/personnel', 'personnel'],
-      ['/user/profile/edit', 'profile-edit'],
-      ['/user/profile', 'profile'],
-    ];
-
-    // Manager viewing own profile vs unit personnel
-    const managerPersonnelMatch = pathname.match(/^\/manager\/personnel\/([^/]+)/);
-    if (managerPersonnelMatch) {
-      return managerPersonnelMatch[1] === String(personnelId) ? 'profile' : 'personnel';
-    }
-
-    const match = routeKeyMap.find(([prefix]) => pathname.startsWith(prefix));
-    if (match) return match[1];
-
-    // Role root paths (e.g. /admin, /manager)
-    if (pathname.match(/^\/(admin|super-admin|manager|user)(\/dashboard)?$/)) {
-      return 'dashboard';
-    }
-
-    return 'dashboard';
-  };
+  const getChangePasswordPath = () => `/${getRoleSlug(actualRole)}/change-password`;
 
   const userMenuItems: MenuProps['items'] = [
     {
@@ -568,9 +357,9 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
       <Menu
         theme={isDark ? 'dark' : 'light'}
         mode="inline"
-        items={getMenuItems()}
+        items={getMenuItemsByRole(actualRole, personnelId)}
         className="flex-1"
-        selectedKeys={[getSelectedKey()]}
+        selectedKeys={[getSelectedMenuKey(pathname, personnelId)]}
         onClick={() => {
           if (isMobile) setMobileDrawerOpen(false);
         }}
@@ -584,35 +373,7 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
   return (
     <ConfigProvider
       renderEmpty={() => <Empty description="Không có dữ liệu" />}
-      theme={{
-        algorithm: isDark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
-        token: {
-          colorBgContainer: isDark ? '#1f2937' : '#ffffff',
-          colorText: isDark ? '#f3f4f6' : '#111827',
-          colorBorder: isDark ? '#4b5563' : '#d1d5db',
-          colorTextPlaceholder: isDark ? '#9ca3af' : '#6b7280',
-          borderRadius: 8,
-        },
-        components: {
-          Layout: {
-            headerBg: isDark ? '#1f2937' : '#ffffff',
-            bodyBg: isDark ? '#111827' : '#f9fafb',
-            footerBg: isDark ? '#1f2937' : '#ffffff',
-            siderBg: isDark ? '#1f2937' : '#ffffff',
-          },
-          Menu: {
-            darkItemBg: '#1f2937',
-            darkSubMenuItemBg: '#1f2937',
-          },
-          Dropdown: {
-            colorBgElevated: isDark ? '#1f2937' : '#ffffff',
-            controlItemBgHover: isDark ? '#374151' : '#f3f4f6',
-          },
-          Drawer: {
-            colorBgElevated: isDark ? '#1f2937' : '#ffffff',
-          },
-        },
-      }}
+      theme={getAntdLayoutThemeConfig(isDark)}
     >
       <App>
         {isLoggingOut && (

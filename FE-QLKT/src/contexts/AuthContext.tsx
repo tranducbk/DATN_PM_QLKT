@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import type { UserRole } from '@/lib/types/common';
+import { clearAuthStorage } from '@/lib/authStorage';
 
 interface AuthUser {
   id: string;
@@ -59,7 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // Both tokens expired — force re-login
         if (!isTokenValid(token) && !isTokenValid(refreshToken)) {
-          localStorage.clear();
+          clearAuthStorage();
           setUser(null);
           const publicPaths = ['/login', '/dev_zone'];
           if (!publicPaths.includes(window.location.pathname)) {
@@ -111,14 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(() => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('role');
-    localStorage.removeItem('username');
-    localStorage.removeItem('userId');
-    localStorage.removeItem('quan_nhan_id');
-    localStorage.removeItem('ho_ten');
-    localStorage.removeItem('don_vi_id');
+    clearAuthStorage();
     setUser(null);
   }, []);
 
