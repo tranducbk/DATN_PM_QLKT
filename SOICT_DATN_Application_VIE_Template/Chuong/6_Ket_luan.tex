@@ -1,0 +1,42 @@
+\documentclass[../DoAn.tex]{subfiles}
+\begin{document}
+
+\section{Kết luận}
+\label{section:6.1}
+
+Sau quá trình nghiên cứu, phân tích và xây dựng, đồ án đã hoàn thành phần mềm Quản lý Khen thưởng tại Học viện Khoa học Quân sự (PM QLKT) với các kết quả cụ thể như sau.
+
+\textbf{Về mặt nghiệp vụ}, hệ thống bao quát toàn bộ bảy nhóm khen thưởng đặc thù của môi trường quân sự: khen thưởng cá nhân hằng năm theo chuỗi CSTĐCS -- BKBTBQP -- CSTĐTQ -- BKTTCP, khen thưởng đơn vị hằng năm theo chuỗi ĐVQT -- BKBTBQP -- BKTTCP, niên hạn (Huy chương Chiến sĩ vẻ vang theo các mốc 10/15/20 năm), cống hiến (Huân chương Bảo vệ Tổ quốc dựa trên thời gian giữ chức vụ theo nhóm hệ số), kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN, Huy chương Quân kỳ quyết thắng (25 năm phục vụ) và thành tích nghiên cứu khoa học. Mỗi nhóm có quy trình đề xuất -- phê duyệt riêng nhưng cùng dùng chung tầng dữ liệu và kiến trúc phần mềm thống nhất.
+
+\textbf{Về mặt kỹ thuật}, hệ thống được hiện thực hoá theo kiến trúc phân tầng sáu lớp (Route $\rightarrow$ Middleware $\rightarrow$ Controller $\rightarrow$ Service $\rightarrow$ Repository $\rightarrow$ Prisma), với cơ sở dữ liệu PostgreSQL có 23 model chuẩn hoá, lớp xác thực JWT có cơ chế làm mới luân phiên, hệ thống ghi nhật ký kiểm toán đầy đủ qua middleware \texttt{auditLog}. Kho mã nguồn đi kèm 74 bộ kiểm thử với 870 ca kiểm thử đơn vị đạt 100\,\% thành công, phủ toàn bộ rule chuỗi cá nhân -- đơn vị, các kịch bản lỡ đợt, cửa sổ trượt và lifetime block.
+
+\textbf{Về đóng góp nổi bật}, đồ án đã trừu tượng hoá rule chuỗi danh hiệu thành đối tượng cấu hình \texttt{ChainAwardConfig} (số năm chu kỳ, các cờ tiền điều kiện, có yêu cầu NCKH hay không, lifetime hay non-lifetime) và đặt vào hai mảng \texttt{PERSONAL\_CHAIN\_AWARDS} / \texttt{UNIT\_CHAIN\_AWARDS}. Hàm xét duy nhất \texttt{checkChainEligibility} đọc cấu hình này --- thiết kế giúp việc thêm tier mới chỉ cần bổ sung phần tử vào mảng mà không phải sửa logic. Tương tự, bảy loại đề xuất đều tuân theo giao diện \texttt{ProposalStrategy} với một REGISTRY trung tâm, qua đó loại bỏ các nhánh \texttt{if/else} lớn từng tồn tại và mở đường cho việc bổ sung loại đề xuất mới chỉ trong một vài tệp riêng lẻ.
+
+\textbf{Về phương pháp luận}, đồ án được thực hiện theo quy trình phát triển phần mềm hiện đại: viết kiểm thử song song với mã nguồn, phát hiện và sửa lỗi rule trước khi đẩy vào nhánh chính, áp dụng các tài liệu pháp lý và nội bộ làm căn cứ cho yêu cầu nghiệp vụ. Các quyết định kỹ thuật quan trọng --- chọn Prisma thay vì Sequelize, áp dụng layered architecture có tầng Repository riêng, chia validation thành Joi (backend) và Zod (frontend) --- đều được phân tích trong các chương trước với lý do gắn liền với đặc thù của PM QLKT.
+
+Bên cạnh các kết quả đạt được, đồ án còn tồn tại một số hạn chế. Thứ nhất, phần triển khai mới dừng ở môi trường mạng nội bộ Học viện trên một máy chủ vật lý, chưa đánh giá được khả năng vận hành ở quy mô nhiều cơ sở. Thứ hai, các báo cáo thống kê hiện chủ yếu dạng bảng và biểu đồ tĩnh, chưa có công cụ phân tích so sánh giữa các đơn vị theo nhiều năm liên tiếp. Thứ ba, hệ thống chưa tích hợp với chữ ký số quân đội, do đó các quyết định khen thưởng vẫn cần tải lên dạng PDF đã ký bằng tay.
+
+Quá trình thực hiện đồ án giúp em hiểu sâu hơn về cách trừu tượng hoá quy tắc nghiệp vụ phức tạp thành đối tượng cấu hình thuần tuý, cách thiết kế kiến trúc phân tầng có Repository và lý do tách biệt nó khỏi tầng Service, cách viết kiểm thử bao phủ các kịch bản chu kỳ trượt, cũng như cách áp dụng các văn bản pháp lý và nội bộ vào thiết kế kỹ thuật.
+
+\section{Hướng phát triển}
+\label{section:6.2}
+
+Trên nền tảng đã xây dựng, đề xuất bảy hướng phát triển cho phiên bản kế tiếp.
+
+\textbf{(i) Mở rộng các danh hiệu cao hơn BKTTCP.} Hiện tại hệ thống dừng ở Bằng khen của Thủ tướng Chính phủ; phiên bản tiếp theo sẽ bổ sung Anh hùng Lực lượng Vũ trang nhân dân, Anh hùng Lao động và các danh hiệu nhà nước khác. Việc mở rộng này khả thi nhờ thiết kế cấu hình \texttt{ChainAwardConfig} đã có, chỉ cần bổ sung phần tử mới vào mảng cấu hình kèm hàm xét điều kiện tương ứng.
+
+\textbf{(ii) Tích hợp gợi ý thông minh dựa trên dữ liệu lịch sử.} Sau khi hệ thống tích luỹ đủ dữ liệu nhiều năm, có thể áp dụng các thuật toán phân cụm (clustering) hoặc luật kết hợp để gợi ý các quân nhân có khả năng đạt danh hiệu trong năm tới hoặc cảnh báo các trường hợp dấu hiệu sa sút thành tích. Mô hình có thể đặt trong một dịch vụ tách biệt dùng Python (scikit-learn hoặc PyTorch) và giao tiếp với backend Node.js qua REST hoặc gRPC.
+
+\textbf{(iii) Tích hợp ký số quân đội.} Bổ sung mô-đun ký số PDF quyết định khen thưởng theo chuẩn PKCS\#7 với chữ ký số do hệ thống PKI của Bộ Quốc phòng cấp. Khi đó, file PDF tải lên sẽ chứa chữ ký số hợp lệ, có thể xác thực ngược về cơ quan ký, loại bỏ nhu cầu ký giấy và lưu kho bản giấy.
+
+\textbf{(iv) Phát triển ứng dụng di động cho cấp User.} Phiên bản mobile (iOS + Android dùng React Native hoặc Flutter) dành riêng cho quân nhân, sĩ quan, học viên với chức năng tra cứu hồ sơ khen thưởng cá nhân, nhận thông báo đẩy về quyết định khen thưởng và xem các giải thích về chu kỳ chuỗi. Backend hiện tại đã có sẵn tầng REST API và xác thực JWT, nên việc kết nối ứng dụng di động không đòi hỏi thay đổi cốt lõi.
+
+\textbf{(v) Bảng điều khiển phân tích cấp Bộ Quốc phòng.} Mở rộng vai trò mới --- tạm gọi là \texttt{MOD\_ANALYST} --- với các bảng phân tích tổng hợp số liệu khen thưởng theo Học viện, theo loại danh hiệu, theo chu kỳ. Các báo cáo này có thể xuất file định dạng \texttt{.docx} theo mẫu chuẩn của Tổng cục Chính trị hoặc dạng dashboard tương tác (Recharts hoặc Chart.js).
+
+\textbf{(vi) Đăng nhập một lần (SSO) qua hệ thống xác thực thống nhất của Bộ Quốc phòng.} Hiện hệ thống đang dùng tài khoản nội bộ; phiên bản kế tiếp có thể tích hợp giao thức xác thực SAML 2.0 hoặc OpenID Connect với hệ thống danh tính chung của Bộ, giúp người dùng không phải nhớ thêm mật khẩu mới và tận dụng các chính sách bảo mật đã có.
+
+\textbf{(vii) Mở rộng đa ngôn ngữ phục vụ học viên quốc tế đào tạo tại Học viện.} Học viện Khoa học Quân sự thường xuyên tiếp nhận học viên quốc tế đến học tập, công tác và nghiên cứu theo các chương trình hợp tác quân sự song phương; nhóm học viên này có nhu cầu tra cứu hồ sơ khen thưởng cá nhân, theo dõi tiến trình các chu kỳ danh hiệu và nhận thông báo về quyết định liên quan tới mình ngay trong thời gian học tập tại Học viện. Tuy nhiên, hiện tại toàn bộ giao diện đang được trình bày bằng tiếng Việt, gây khó khăn cho các học viên chưa thông thạo ngôn ngữ. Phiên bản tiếp theo có thể bổ sung tiếng Anh và tiếng Trung qua khung quốc tế hoá \texttt{next-intl}, ưu tiên dịch trước các trang dành cho vai trò USER (hồ sơ cá nhân, lịch sử khen thưởng, thông báo, đổi mật khẩu) để học viên quốc tế tự phục vụ được mà không phải nhờ cán bộ phiên dịch trung gian.
+
+Các hướng phát triển trên được sắp xếp theo độ ưu tiên giảm dần từ (i) đến (vii). Trong đó hai hướng (i) và (iii) là khả thi và có giá trị nghiệp vụ rõ ràng nhất, có thể bắt tay vào trong sáu tháng kế tiếp; bốn hướng (ii), (iv), (v), (vi) cần thời gian dài hơn do phụ thuộc vào tích hợp với hệ thống bên ngoài; hướng (vii) phụ thuộc vào nhu cầu cụ thể của lãnh đạo Học viện.
+
+\end{document}

@@ -1,0 +1,15 @@
+\documentclass[../DoAn.tex]{subfiles}
+\begin{document}
+
+\begin{center}
+    \Large{\textbf{ABSTRACT}}\\
+\end{center}
+\vspace{1cm}
+
+The emulation and commendation work in units under the Ministry of National Defence is governed by the Law on Emulation and Commendation No. 06/2022/QH15 and its associated decrees, and is operationalised by internal directives such as Resolution No. 1658/NQ-QUTW (20 December 2022) of the Central Military Commission on science, technology and innovation, and Resolution No. 1405/NQ-DU (11 April 2023) of the Party Committee of the Military Science Academy. At the Academy, the personal annual commendation track alone comprises a three-tier chain of the Ministry of National Defence Certificate of Merit (BKBTBQP), the All-Forces Emulation Soldier title (CSTDTQ) and the Prime Minister's Certificate of Merit (BKTTCP), each with a different sliding-window cycle (2, 3 and 7 years) and several flag conditions to cross-check, making manual review on spreadsheets highly error-prone.
+
+This thesis develops a web-based information system that supports the Political Department of the Academy in managing the full lifecycle of seven commendation groups (personal annual, unit annual, length-of-service medals, contribution medals, commemorative medals, military flag medals and scientific achievements). The platform covers proposal creation, automatic chain-eligibility verification, approval, audit logging and decision document export. It aims to reduce the per-soldier eligibility check time from tens of minutes on spreadsheets to under one second, while keeping a complete audit trail for post-hoc verification.
+
+The system is deployed as a web application on the Academy's internal network (LAN). The frontend is built with Next.js 14 using the App Router; the backend is Express with TypeScript on PostgreSQL accessed through Prisma ORM. Chain-award rules are abstracted into \texttt{ChainAwardConfig} configuration objects so that new tiers can be added without modifying the eligibility logic. The deliverable comprises 23 data models, more than 870 unit-test cases covering personal and unit chain rules, and a four-level authorisation scheme adapted to military organisational specifics (SuperAdmin, Admin, Manager, User).
+
+\end{document}

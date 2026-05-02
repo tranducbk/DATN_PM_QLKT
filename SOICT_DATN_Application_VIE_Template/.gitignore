@@ -1,0 +1,29 @@
+# LaTeX auxiliary files - regenerated on every compile
+*.aux
+*.bbl
+*.blg
+*.lof
+*.lot
+*.log
+*.out
+*.run.xml
+*.toc
+*.bcf
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.idx
+*.ind
+*.ilg
+*.glo
+*.gls
+*.glg
+*.glsdefs
+*.acn
+*.acr
+*.alg
+*.ist
+*-blx.bib
+
+# macOS
+.DS_Store

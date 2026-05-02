@@ -1,0 +1,98 @@
+\documentclass[../DoAn.tex]{subfiles}
+\begin{document}
+
+Chương này giới thiệu các thành phần công nghệ chính được lựa chọn cho phần mềm Quản lý Khen thưởng (PM QLKT). Mỗi mục được trình bày theo bố cục thống nhất gồm ba phần: tổng quan ngắn gọn về công nghệ, đặc trưng kỹ thuật quan trọng và lý do lựa chọn trong ngữ cảnh cụ thể của đồ án. Cách trình bày này giúp người đọc thấy rõ động cơ của từng quyết định kỹ thuật thay vì chỉ liệt kê đặc điểm tổng quát.
+
+\section{Next.js 14 --- Khung phát triển frontend}
+\label{section:3.1}
+
+Next.js là một khung phát triển ứng dụng web do hãng Vercel phát triển trên nền React. Phiên bản 14 ra mắt tháng 11 năm 2023 đánh dấu việc App Router chính thức trở thành mô hình định tuyến mặc định, thay thế cho cấu trúc Pages Router ở các phiên bản trước \cite{nextjsdocs}. App Router cho phép tổ chức ứng dụng dưới dạng cây thư mục bên trong thư mục \texttt{app/}, mỗi thư mục con tương ứng với một đoạn URL và có thể chứa các tệp \texttt{page.tsx}, \texttt{layout.tsx}, \texttt{loading.tsx}, \texttt{error.tsx} để biểu diễn trạng thái tương ứng.
+
+Đặc trưng kỹ thuật đáng chú ý nhất ở App Router là khái niệm Server Components --- các thành phần React mặc định chạy phía máy chủ, có thể truy vấn cơ sở dữ liệu hoặc gọi API nội bộ trực tiếp trong hàm render mà không cần state hay effect. Các thành phần cần xử lý sự kiện, hooks hoặc thư viện DOM mới khai báo \texttt{'use client'} ở đầu tệp. Cách tách biệt rõ ràng này giảm khối lượng JavaScript gửi xuống trình duyệt và đơn giản hoá việc lấy dữ liệu trên trang chỉ đọc.
+
+Trong PM QLKT, App Router phù hợp với đặc thù phân vùng giao diện theo bốn vai trò người dùng. Các trang dành cho mỗi vai trò được đặt tại \texttt{app/super-admin/}, \texttt{app/admin/}, \texttt{app/manager/}, \texttt{app/user/}; mỗi nhánh có thể có \texttt{layout.tsx} riêng để áp các kiểm tra phân quyền tổng thể. Một ví dụ cụ thể là trang Bảng điều khiển dành cho ADMIN tại \texttt{app/admin/dashboard/page.tsx} có thể gọi trực tiếp hàm tổng hợp số liệu trên máy chủ rồi trả về HTML đã render, tránh việc gửi nhiều yêu cầu fetch nhỏ từ trình duyệt và rút ngắn thời gian hiển thị nội dung đầu tiên.
+
+\section{TypeScript và Express --- Nền tảng backend}
+\label{section:3.2}
+
+Express là khung phát triển HTTP tối giản trên nền Node.js, ra mắt từ năm 2010 và hiện vẫn nằm trong số các dự án mã nguồn mở phổ biến nhất của hệ sinh thái JavaScript \cite{expressdocs}. Tư tưởng chủ đạo của Express là chuỗi middleware: mỗi yêu cầu đi qua một dãy hàm có chữ ký \texttt{(req, res, next)}, mỗi hàm có thể thay đổi đối tượng yêu cầu hoặc kết thúc luồng. Điều này đặc biệt phù hợp với nhu cầu xác thực, ghi nhật ký và kiểm tra dữ liệu của PM QLKT.
+
+TypeScript được dùng song song với Express ở toàn bộ phần backend nhằm phát hiện lỗi tại thời điểm biên dịch. Cấu hình \texttt{tsconfig.json} bật \texttt{strictNullChecks} cho lớp Service và Repository nhưng nới lỏng cho lớp Controller (do tương tác trực tiếp với \texttt{req}/\texttt{res} Express vốn có nhiều trường tuỳ chọn). Các kiểu Prisma sinh tự động từ schema được nhập vào toàn bộ tầng Service, đảm bảo mọi truy vấn cơ sở dữ liệu đều có hỗ trợ gợi ý từ trình soạn thảo.
+
+Trong PM QLKT, đặc tính chuỗi middleware của Express được khai thác triệt để qua mẫu thiết kế năm tầng cố định: \texttt{verifyToken -> requireRole -> validate(schema) -> auditLog(options) -> controller.method}. Mỗi tầng đảm nhiệm một mối quan tâm độc lập (xác thực, phân quyền, kiểm tra dữ liệu, ghi nhật ký), cho phép tổ chức mã nguồn theo nguyên tắc đơn trách nhiệm và tái sử dụng giữa các route. Hàm phụ trợ \texttt{catchAsync} gói các handler bất đồng bộ để chuyển lỗi về middleware xử lý lỗi tập trung, loại bỏ nhu cầu viết \texttt{try/catch} lặp đi lặp lại trong từng controller.
+
+\section{PostgreSQL và Prisma ORM}
+\label{section:3.3}
+
+PostgreSQL là hệ quản trị cơ sở dữ liệu quan hệ mã nguồn mở với lịch sử phát triển từ năm 1986 và hiện được duy trì bởi cộng đồng PGDG \cite{pgdocs}. Hệ này được chọn do tính ổn định cao, tuân thủ chuẩn SQL chặt chẽ và hỗ trợ nhiều kiểu dữ liệu nâng cao như JSON, JSONB, mảng, kiểu liệt kê và kiểu thời gian có múi giờ --- tất cả đều được dùng trong PM QLKT.
+
+Prisma là một ORM thế hệ mới, không sinh code dạng kiểu Active Record mà sinh ra một Client typed an toàn từ tệp khai báo \texttt{schema.prisma} duy nhất \cite{prismadocs}. Mỗi thay đổi schema được áp dụng qua lệnh \texttt{prisma migrate dev} tạo ra các tệp SQL nằm dưới \texttt{prisma/migrations/}, có thể đẩy lên kho mã nguồn để theo dõi lịch sử. Prisma Client trả về các kiểu được suy luận từ schema, vì vậy mỗi truy vấn \texttt{findUnique}, \texttt{findMany}, \texttt{create} đều có hỗ trợ gợi ý đầy đủ ở thời điểm soạn mã.
+
+Trong PM QLKT, schema gồm 23 model với tổng cộng 577 dòng. Quy ước đặt tên tận dụng chỉ thị \texttt{@@map("snake\_case")} của Prisma để cho phép tên model trong code dùng \texttt{PascalCase} tiếng Việt (\texttt{QuanNhan}, \texttt{DanhHieuHangNam}, \texttt{HoSoCongHien}) trong khi tên bảng vật lý vẫn theo quy ước \texttt{snake\_case} của PostgreSQL. Ưu điểm của tổ chức này là code đọc tự nhiên với người Việt, đồng thời giữ được khả năng truy vấn trực tiếp bằng SQL cho các nhu cầu báo cáo phức tạp ngoài Prisma. Bảng \ref{tab:so-sanh-orm} so sánh ngắn gọn ba lựa chọn ORM phổ biến để làm rõ lý do chọn Prisma.
+
+\begin{table}[H]
+\centering
+\caption{So sánh ba ORM phổ biến trên Node.js}
+\label{tab:so-sanh-orm}
+\begin{tabular}{|p{4cm}|p{3cm}|p{3cm}|p{4cm}|}
+\hline
+\textbf{Tiêu chí} & \textbf{Sequelize} & \textbf{TypeORM} & \textbf{Prisma} \\ \hline
+Năm ra mắt & 2010 & 2016 & 2019 \\ \hline
+Kiểu định nghĩa schema & JavaScript / mô hình lớp & Decorator + lớp & DSL trong tệp \texttt{schema.prisma} \\ \hline
+Hỗ trợ TypeScript & Có nhưng cần khai báo bổ sung & Tốt & Sinh kiểu hoàn toàn tự động \\ \hline
+Migration & Có (kém trực quan) & Có & Sinh tự động và có thể đảo ngược \\ \hline
+Hiệu suất truy vấn & Trung bình & Trung bình & Tối ưu nhờ engine Rust \\ \hline
+Cộng đồng & Lớn nhưng đang chậm phát triển & Trung bình & Đang tăng nhanh \\ \hline
+Phù hợp cho dự án có nhiều quan hệ & Cần cấu hình thủ công & Cần decorator nhiều & Khai báo gọn, sinh truy vấn join hiệu quả \\ \hline
+\end{tabular}
+\end{table}
+
+Với 23 model và nhiều quan hệ N--N qua bảng trung gian (vd: \texttt{BangDeXuat <-> QuanNhan} qua \texttt{data\_danh\_hieu} JSONB hoặc qua \texttt{HoSoNienHan}), khả năng sinh truy vấn \texttt{include}, \texttt{select} của Prisma giúp giảm số dòng code ở tầng Repository so với việc viết câu lệnh SQL thủ công. Đây là lý do quyết định chọn Prisma cho PM QLKT.
+
+\section{Ant Design, Tailwind CSS và shadcn/ui --- Bộ giao diện ba lớp}
+\label{section:3.4}
+
+Frontend của PM QLKT sử dụng kết hợp ba thư viện giao diện ở các vai trò khác nhau. Ant Design là thư viện thành phần React do Alibaba phát triển \cite{antdesigndocs}, cung cấp các thành phần phức tạp đã hoàn thiện như \texttt{Table} có lọc và phân trang, \texttt{Form} tích hợp validation, \texttt{Select} đa lớp, \texttt{DatePicker} hỗ trợ múi giờ, \texttt{Modal} lồng nhau và \texttt{Notification}. Trong PM QLKT, Ant Design đảm nhiệm các form đề xuất nhiều bước, bảng danh sách quân nhân với cột động và các hộp thoại xác nhận phê duyệt.
+
+Tailwind CSS là khung CSS utility-first cho phép áp các lớp đơn lẻ trực tiếp trong JSX để biểu diễn bố cục, khoảng cách, màu sắc và đáp ứng nhiều kích cỡ màn hình \cite{tailwinddocs}. Tailwind không thay thế Ant Design mà bổ sung ở những vị trí cần điều chỉnh chi tiết bố cục mà các thành phần Ant Design chưa đáp ứng được, ví dụ căn lề tinh tế giữa các thẻ thông tin trên trang Bảng điều khiển, hoặc tổ chức lưới các thẻ huy chương theo hai cột trên màn hình lớn và một cột trên thiết bị di động.
+
+Shadcn/ui có vai trò khác biệt: đây không phải là gói npm cài đặt trực tiếp mà là một bộ sao chép mã nguồn thành phần dựa trên Radix UI. Lập trình viên dùng lệnh CLI để sao chép một thành phần (vd: \texttt{button}, \texttt{dropdown-menu}, \texttt{dialog}) vào thư mục \texttt{components/ui/} của dự án và sửa lại tự do. Cách tiếp cận này tránh tình trạng phụ thuộc vào phiên bản thư viện cứng và đặc biệt hữu ích cho các thành phần ít gặp như danh sách lệnh tổ hợp phím trong khu vực dành cho lập trình viên (DevZone) của hệ thống. Quy tắc sử dụng giữa ba thư viện được đồng thuận trong nhóm: Ant Design ưu tiên cho biểu mẫu và bảng nghiệp vụ, Tailwind cho bố cục và chỉnh sửa nhẹ, shadcn/ui cho các thành phần đặc thù cần kiểm soát trực tiếp mã nguồn.
+
+\section{Socket.IO --- Kênh thông báo thời gian thực}
+\label{section:3.5}
+
+Socket.IO là thư viện trừu tượng hoá giao thức WebSocket, hỗ trợ tự động chuyển sang giao thức HTTP long polling khi mạng giữa máy khách và máy chủ không cho phép kết nối WebSocket trực tiếp \cite{socketiodocs}. Thư viện cung cấp khái niệm ``phòng'' (room) cho phép phát thông điệp tới một nhóm kết nối được đặt nhãn, rất phù hợp với mô hình thông báo theo người dùng hoặc theo đơn vị.
+
+Trong PM QLKT, Socket.IO được dùng cho hai trường hợp cụ thể. Thứ nhất, khi một cán bộ ADMIN nhập một tệp Excel chứa hàng trăm bản ghi danh hiệu, máy chủ phát các sự kiện tiến độ theo từng phần trăm hoàn thành để giao diện cập nhật thanh tiến trình mà không phải thiết lập polling phía trình duyệt. Thứ hai, khi một đề xuất được phê duyệt, máy chủ phát thông điệp tới tất cả các kết nối thuộc vai trò MANAGER của đơn vị có quân nhân được duyệt; giao diện hiển thị thông báo xuất hiện ở góc màn hình mà không cần làm mới trang. Các kết nối được lập tức xác thực qua JWT đã có sẵn trong cookie HttpOnly, nhờ vậy logic xác thực không bị phân nhánh giữa REST và WebSocket.
+
+\section{JSON Web Token với cơ chế làm mới luân phiên}
+\label{section:3.6}
+
+Hệ thống áp dụng JWT theo chuẩn RFC 7519 \cite{rfc7519} cho cơ chế xác thực không trạng thái. Mỗi phiên đăng nhập tạo ra hai token: Access Token có thời hạn ngắn (15 phút) chứa định danh người dùng và mã vai trò, được gửi kèm mỗi yêu cầu HTTP qua header \texttt{Authorization}; Refresh Token có thời hạn dài hơn (7 ngày) lưu trong cookie HttpOnly chỉ dùng để cấp Access Token mới khi token hiện tại hết hạn.
+
+Cơ chế làm mới luân phiên (refresh token rotation) yêu cầu mỗi lần dùng Refresh Token, máy chủ sẽ phát hành đồng thời một Refresh Token mới và đánh dấu Refresh Token cũ hết hiệu lực. Cách làm này hạn chế nguy cơ một Refresh Token bị đánh cắp vẫn dùng được lâu dài: nếu kẻ tấn công và người dùng hợp pháp cùng dùng một Refresh Token thì lần làm mới thứ hai sẽ thất bại, máy chủ phát hiện bất thường và buộc người dùng đăng nhập lại. Mật khẩu trước khi lưu vào bảng \texttt{TaiKhoan} được băm bằng bcrypt với hệ số chi phí 10 \cite{bcrypt}, đảm bảo cân bằng giữa thời gian xử lý đăng nhập (vào khoảng 80 ms trên máy chủ phát triển) và độ khó tấn công vét cạn nếu cơ sở dữ liệu bị rò rỉ.
+
+\section{Joi và Zod --- Kiểm tra dữ liệu ở hai phía}
+\label{section:3.7}
+
+PM QLKT chia kiểm tra dữ liệu thành hai lớp với hai thư viện khác nhau, mỗi thư viện phù hợp với đặc thù của lớp tương ứng. Tại backend, mọi route nhận dữ liệu từ client đều đi qua middleware \texttt{validate(schema)} dùng Joi để kiểm tra \texttt{req.body}, \texttt{req.query} và \texttt{req.params} \cite{joidocs}. Joi cung cấp API định nghĩa schema theo phong cách lập trình hàm nối tiếp, gắn được thông điệp tiếng Việt cho từng lỗi và hỗ trợ tuỳ chọn \texttt{stripUnknown: true} để loại bỏ các trường không khai báo trong schema --- tránh việc client lén đẩy lên các trường ngoài ý muốn.
+
+Tại frontend, các form do Ant Design Form quản lý được xác thực bằng Zod thông qua thư viện trung gian \cite{zoddocs}. Zod có ưu điểm là tích hợp chặt với TypeScript: kiểu của giá trị form được suy luận trực tiếp từ schema (\texttt{type FormValues = z.infer<typeof formSchema>}), tránh việc duy trì hai khai báo song song giữa interface và schema. Việc sử dụng hai thư viện khác nhau ở hai phía thoạt nhìn có vẻ trùng lặp nhưng đáp ứng đúng vai trò: Zod tối ưu cho trải nghiệm soạn thảo trên frontend, còn Joi tích hợp tốt với chuỗi middleware Express ở backend. Quan trọng là logic xác thực không tin tưởng vào lớp frontend --- backend luôn kiểm tra lại dữ liệu trước khi ghi vào cơ sở dữ liệu.
+
+\section{Jest --- Khung kiểm thử đơn vị}
+\label{section:3.8}
+
+Jest là khung kiểm thử do Meta phát triển \cite{jestdocs}, có ưu điểm là cấu hình tối thiểu, hỗ trợ chế độ theo dõi (watch mode) chạy lại các bộ kiểm thử bị ảnh hưởng khi tệp nguồn thay đổi và có hệ thống trình giả (mock) tích hợp sẵn. Phiên bản dùng cho PM QLKT là Jest 29 kết hợp với \texttt{ts-jest} để chạy trực tiếp các tệp TypeScript mà không cần biên dịch trước.
+
+Tại thời điểm hoàn thiện đồ án, kho kiểm thử của PM QLKT gồm 74 bộ kiểm thử với 870 ca kiểm thử, tổ chức theo các thư mục \texttt{tests/services/}, \texttt{tests/scenarios/}, \texttt{tests/approve/}, \texttt{tests/submit/}, \texttt{tests/import/}, \texttt{tests/authz/}. Hai nhóm trọng yếu nhất là \texttt{eligibility-bkbqp-personal.test.ts}, \texttt{eligibility-cstdtq-personal.test.ts}, \texttt{eligibility-bkttcp-personal.test.ts} (cùng các phiên bản đơn vị) tập trung vào các kịch bản đa dạng của rule chuỗi: chu kỳ vừa đủ, chu kỳ thừa, lỡ đợt, BKBTBQP rơi ra ngoài cửa sổ trượt 3 năm, và trường hợp đặc biệt khi quân nhân chưa nhận đủ NCKH. Các trường hợp này được cố định trước trong tệp \texttt{errorMessages.ts} để đảm bảo bất kỳ sửa đổi nào trong logic chuỗi đều phải cập nhật song song giá trị mong đợi của ca kiểm thử, giúp tránh tình trạng test ``trôi'' theo code.
+
+\section{ExcelJS --- Công cụ nhập và xuất Excel}
+\label{section:3.9}
+
+ExcelJS là thư viện JavaScript cho phép đọc, ghi và thao tác workbook định dạng \texttt{.xlsx} ở phía máy chủ Node.js \cite{exceljsdocs}. Khác với các thư viện chỉ tạo CSV hoặc HTML giả lập Excel, ExcelJS hỗ trợ định dạng ô (font, màu nền, viền), khoá ô để tránh người dùng chỉnh sửa các cột hệ thống, công thức và đặc biệt là Data Validation rule cho phép tạo các danh sách thả xuống ngay trong tệp mẫu xuất ra.
+
+Trong PM QLKT, ExcelJS phục vụ hai mục đích đối xứng. Khi xuất tệp mẫu nhập liệu cho từng nhóm khen thưởng, máy chủ sinh workbook với các sheet riêng (\texttt{QuanNhan}, \texttt{DanhHieuHangNam}, \texttt{ThanhTichKhoaHoc}, ...), cài đặt cột cố định, áp Data Validation lên cột danh hiệu để chỉ chấp nhận các giá trị hợp lệ và đính kèm chú thích tiếng Việt giải thích từng cột. Khi nhập tệp Excel do người dùng tải lên, máy chủ đọc tuần tự từng dòng, đối chiếu với schema Joi và Prisma rồi đưa kết quả vào màn hình xem trước trước khi đưa vào cơ sở dữ liệu. Quy trình hai bước (xem trước rồi xác nhận) tận dụng đặc tính giao dịch của Prisma ở bước xác nhận để đảm bảo nguyên tử tính: nếu có bất kỳ dòng nào lỗi vào thời điểm ghi, toàn bộ thao tác sẽ được huỷ bỏ.
+
+\textbf{Kết chương.} Chương này đã giới thiệu chín nhóm công nghệ trọng yếu của PM QLKT cùng lý do lựa chọn từng nhóm trong ngữ cảnh đặc thù của đề tài. Frontend dùng Next.js 14 App Router cho phép server-side rendering theo từng vai trò; backend là Express + TypeScript theo kiến trúc middleware nối tiếp; cơ sở dữ liệu PostgreSQL truy cập qua Prisma ORM với 23 model. Các thư viện phụ trợ (Ant Design, Tailwind CSS, shadcn/ui, Socket.IO, JWT, Joi, Zod, Jest, ExcelJS) bổ sung các năng lực cụ thể cho biểu mẫu, thông báo realtime, xác thực hai phía, kiểm thử và xử lý Excel. Toàn bộ nền tảng công nghệ này đặt cơ sở cho phần thiết kế kiến trúc và triển khai chi tiết được trình bày ở chương tiếp theo.
+
+\end{document}

@@ -1,0 +1,357 @@
+\documentclass[../DoAn.tex]{subfiles}
+\begin{document}
+
+Chương này trình bày kết quả khảo sát hiện trạng công tác thi đua -- khen thưởng tại Học viện Khoa học Quân sự (HVKHQS), từ đó phân tích các yêu cầu chức năng và phi chức năng của phần mềm. Mục \ref{section:2.1} mô tả thực trạng và các nhóm khó khăn nổi bật. Mục \ref{section:2.2} đưa ra cấu trúc tác nhân và sơ đồ use case tổng quát cùng tám sơ đồ phân rã. Mục \ref{section:2.3} đặc tả chi tiết sáu use case trọng yếu nhất. Mục \ref{section:2.4} tổng hợp các yêu cầu phi chức năng về hiệu năng, bảo mật và tính nhất quán dữ liệu.
+
+\section{Khảo sát hiện trạng}
+\label{section:2.1}
+
+Trước khi triển khai phần mềm chuyên dụng, công tác thi đua -- khen thưởng tại Học viện Khoa học Quân sự được tổ chức xoay quanh ba nguồn dữ liệu chính: hồ sơ giấy lưu tại Phòng Chính trị, các tệp Microsoft Excel chia sẻ qua thư mục mạng nội bộ và sổ theo dõi tay của từng đơn vị. Trong các cuộc trao đổi với cán bộ phụ trách thi đua, nhóm thực hiện đồ án ghi nhận một số đặc điểm đáng chú ý.
+
+\textbf{Vai trò của các bên tham gia.} Cấp đề xuất đầu tiên thường là cán bộ chỉ huy đơn vị hoặc cán bộ chính trị cấp cơ quan, nắm danh sách quân nhân thuộc phạm vi quản lý và lập danh sách đề nghị theo từng năm hoặc theo các đợt đặc biệt. Cấp xét duyệt là Phòng Chính trị Học viện, kiểm tra điều kiện và lập tờ trình gửi Ban Giám đốc. Cấp ký quyết định là Giám đốc Học viện đối với các danh hiệu thuộc thẩm quyền và là cấp trên (Tổng cục II, Bộ Quốc phòng, Thủ tướng Chính phủ) đối với các danh hiệu vượt thẩm quyền. Quân nhân -- đối tượng được khen thưởng -- thường tiếp nhận thông tin một cách thụ động qua thông báo bằng văn bản hoặc bảng tin đơn vị.
+
+\textbf{Khối lượng dữ liệu.} Khi tổng hợp ngược lại quá khứ, một quân nhân thường có nhiều bản ghi danh hiệu thuộc các nhóm khác nhau: từ chuỗi danh hiệu hằng năm tích luỹ trong toàn bộ thời gian phục vụ, đến các huy chương niên hạn (10/15/20 năm), kỷ niệm chương, quân kỳ quyết thắng và các khen thưởng đột xuất. Tổng khối lượng bản ghi cho cán bộ trên 25 năm phục vụ lên tới 30--40 bản ghi mỗi quân nhân, nhân với quy mô vài nghìn cán bộ -- học viên -- sĩ quan, dữ liệu lịch sử cần lưu trữ vào khoảng vài trăm nghìn bản ghi.
+
+\textbf{Nhóm khó khăn nổi bật.} Bốn vấn đề được phản ánh nhiều nhất qua khảo sát là:
+
+\begin{enumerate}
+    \item Tra cứu lịch sử khen thưởng cá nhân tốn thời gian do phải mở nhiều tệp Excel.
+    \item Đối chiếu chuỗi danh hiệu hằng năm theo cửa sổ trượt khó vì rule có nhiều ngoại lệ (chu kỳ lặp lại, BKTTCP cá nhân là một lần duy nhất, BKBTBQP của chu kỳ trước rơi ra khỏi cửa sổ 3 năm khi xét CSTĐTQ chu kỳ mới).
+    \item Thiếu cơ chế kiểm tra trùng đề xuất khi nhiều cán bộ cùng phụ trách một đơn vị.
+    \item Nhật ký kiểm toán hầu như không có, dẫn tới khó truy hồi khi phát hiện sai sót.
+\end{enumerate}
+
+Từ kết quả khảo sát, các đặc thù nghiệp vụ trên đòi hỏi một hệ thống có khả năng (a) lưu trữ tập trung và liên kết được các loại bản ghi, (b) tự động kiểm tra điều kiện theo các quy tắc đã được mã hoá, (c) phân quyền theo cây tổ chức của Học viện và (d) sinh nhật ký kiểm toán cho mọi thao tác có khả năng làm thay đổi dữ liệu nghiệp vụ.
+
+\section{Tổng quan chức năng}
+\label{section:2.2}
+
+Phần này trình bày cấu trúc tác nhân và các nhóm chức năng chính của hệ thống thông qua sơ đồ use case tổng quát và các sơ đồ phân rã chi tiết.
+
+\subsection{Sơ đồ use case tổng quát}
+\label{subsection:2.2.1}
+
+Hệ thống có bốn nhóm tác nhân tương ứng với bốn cấp phân quyền nội bộ:
+
+\begin{itemize}
+    \item \textbf{SuperAdmin} đại diện cho bộ phận kỹ thuật và công nghệ thông tin. Nhóm này không tham gia trực tiếp vào nghiệp vụ xét khen thưởng mà tập trung vào quản trị hạ tầng, sao lưu -- khôi phục dữ liệu, theo dõi nhật ký an ninh và quản trị các tài khoản cấp quản trị.
+    \item \textbf{Admin} là cán bộ thuộc Phòng Chính trị Học viện. Nhóm này có toàn quyền nghiệp vụ: tạo và phê duyệt đề xuất, quản lý quân nhân -- đơn vị -- chức vụ, gắn số quyết định, tải lên tệp PDF quyết định và xuất các báo cáo.
+    \item \textbf{Manager} là cán bộ chỉ huy hoặc cán bộ chính trị cấp đơn vị, phụ trách lập đề xuất khen thưởng cho phạm vi đơn vị mình quản lý và theo dõi trạng thái phê duyệt. Manager có thể thao tác trên dữ liệu quân nhân thuộc đơn vị nhưng không thể chuyển quân nhân giữa các đơn vị (chức năng này chỉ thuộc Admin).
+    \item \textbf{User} là cán bộ -- học viên -- sĩ quan đăng nhập để tra cứu hồ sơ khen thưởng cá nhân, xem các chu kỳ chuỗi đang đến mốc đề nghị và nhận thông báo về kết quả phê duyệt.
+\end{itemize}
+
+Hệ thống cung cấp 15 nhóm chức năng chính: Đăng nhập, Quản lý tài khoản, Quản lý quân nhân, Quản lý đơn vị, Khen thưởng hằng năm, Khen thưởng niên hạn, Khen thưởng cống hiến, Khen thưởng thành tích khoa học, Khen thưởng đột xuất, Đề xuất khen thưởng, Kiểm tra điều kiện và gợi ý, Thông báo thời gian thực, Xem nhật ký hệ thống, Sao lưu và khôi phục, Báo cáo và thống kê. Mối quan hệ giữa từng tác nhân và các nhóm chức năng được thể hiện ở Hình \ref{fig:usecase-tongquat}.
+
+\begin{figure}[H]
+    \centering
+    % \includegraphics[width=0.9\textwidth]{Hinhve/Hinh-2-1-use-case-tong-quat.png}
+    \caption{Sơ đồ use case tổng quát hệ thống PM QLKT}
+    \label{fig:usecase-tongquat}
+\end{figure}
+
+\subsection{Phân rã: Quản lý quân nhân và lịch sử chức vụ}
+\label{subsection:2.2.2}
+
+Quản lý quân nhân là một trong những module tương tác cao nhất của hệ thống. Quân nhân là thực thể trung tâm liên kết tới gần như mọi bảng nghiệp vụ khác (danh hiệu hằng năm, niên hạn, cống hiến, thành tích khoa học, đột xuất, đề xuất). Phân rã chức năng gồm các use case con:
+
+\begin{itemize}
+    \item \textbf{Tạo mới quân nhân} --- chỉ Admin có quyền. Yêu cầu nhập tối thiểu họ tên, số CCCD, ngày sinh, giới tính, ngày nhập ngũ, đơn vị (CQĐV hoặc ĐVTT), chức vụ. Hệ thống kiểm tra trùng CCCD trước khi ghi vào cơ sở dữ liệu.
+    \item \textbf{Cập nhật thông tin} --- Admin sửa được toàn bộ; Manager chỉ sửa được các trường ngoại trừ đơn vị và CCCD; bản thân quân nhân (User) chỉ sửa được địa chỉ, số điện thoại, email.
+    \item \textbf{Chuyển đơn vị} --- chỉ Admin. Khi chuyển, hệ thống cập nhật số lượng quân nhân của đơn vị cũ (giảm 1) và đơn vị mới (tăng 1) trong cùng một transaction. Quan trọng là toàn bộ lịch sử khen thưởng được giữ nguyên --- không tạo bản ghi mới hay xoá bản ghi cũ.
+    \item \textbf{Quản lý lịch sử chức vụ} --- Admin nhập danh sách các giai đoạn quân nhân giữ chức vụ với hệ số tương ứng. Dữ liệu này là đầu vào cho thuật toán xét khen thưởng cống hiến (HCBVTQ).
+    \item \textbf{Nhập / xuất Excel} --- cho phép tải lên hoặc tải xuống danh sách quân nhân theo định dạng quy chuẩn. Thao tác nhập đi qua hai bước (xem trước, xác nhận) sẽ được mô tả chi tiết tại \ref{subsection:2.2.7}.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \caption{Sơ đồ use case phân rã chức năng Quản lý quân nhân}
+    \label{fig:usecase-quannhan}
+\end{figure}
+
+\subsection{Phân rã: Quản lý đơn vị và chức vụ}
+\label{subsection:2.2.3}
+
+Cấu trúc tổ chức của Học viện được mô hình hoá thành cây hai cấp. Bảng \texttt{CoQuanDonVi} (CQĐV) lưu các đơn vị cấp cha; bảng \texttt{DonViTrucThuoc} (ĐVTT) lưu các đơn vị con thuộc một CQĐV duy nhất. Khi nhập thông tin quân nhân, một trong hai trường \texttt{co\_quan\_don\_vi\_id} hoặc \texttt{don\_vi\_truc\_thuoc\_id} sẽ được điền --- không bao giờ điền cả hai cùng lúc.
+
+Module quản lý đơn vị bao gồm các use case con: tạo mới CQĐV, tạo mới ĐVTT thuộc một CQĐV cụ thể, cập nhật thông tin, xoá (chỉ thực hiện được khi không còn quân nhân nào thuộc đơn vị) và xem cây tổ chức dưới dạng tree-view trên giao diện. Bảng \texttt{ChucVu} quản lý danh mục chức vụ kèm hệ số \texttt{he\_so\_chuc\_vu} (giá trị từ 0.5 đến 1.2 tuỳ chức danh) và liên kết tới CQĐV hoặc ĐVTT mà chức vụ đó thuộc về. Hệ số chức vụ là dữ liệu đầu vào trực tiếp cho thuật toán tính tháng cống hiến theo nhóm hệ số 0.7 / 0.8 / 0.9--1.0.
+
+\begin{figure}[H]
+    \centering
+    \caption{Sơ đồ use case phân rã chức năng Quản lý đơn vị và chức vụ}
+    \label{fig:usecase-donvi}
+\end{figure}
+
+\subsection{Phân rã: Đề xuất khen thưởng theo bảy nhóm}
+\label{subsection:2.2.4}
+
+Đề xuất khen thưởng là điểm khởi đầu của mọi quy trình ghi nhận thành tích. Hệ thống hỗ trợ bảy loại đề xuất riêng biệt, mỗi loại có dữ liệu đầu vào và quy tắc xét điều kiện khác nhau:
+
+\begin{enumerate}
+    \item \textbf{Cá nhân hằng năm} (\texttt{CA\_NHAN\_HANG\_NAM}): danh hiệu CSTT, CSTĐCS, BKBTBQP, CSTĐTQ, BKTTCP cộng các cờ tương ứng và số quyết định cấp cao hơn.
+    \item \textbf{Đơn vị hằng năm} (\texttt{DON\_VI\_HANG\_NAM}): danh hiệu ĐVQT, ĐVTT cộng các cờ BKBTBQP / BKTTCP cấp đơn vị.
+    \item \textbf{Niên hạn} (\texttt{NIEN\_HAN}): Huy chương Chiến sĩ vẻ vang theo các mốc 10 / 15 / 20 năm phục vụ tích luỹ tới năm xét.
+    \item \textbf{Cống hiến} (\texttt{CONG\_HIEN}): Huân chương Bảo vệ Tổ quốc dựa trên thời gian giữ chức vụ thuộc các nhóm hệ số khác nhau.
+    \item \textbf{Kỷ niệm chương} (\texttt{KNC\_VSNXD\_QDNDVN}): Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN --- một lần duy nhất theo giới tính (nam 25 năm phục vụ, nữ 20 năm).
+    \item \textbf{Quân kỳ quyết thắng} (\texttt{HC\_QKQT}): Huy chương Quân kỳ quyết thắng cho cán bộ phục vụ đủ 25 năm.
+    \item \textbf{Thành tích khoa học} (\texttt{NCKH}): Khen thưởng đề tài khoa học hoặc sáng kiến kinh nghiệm.
+\end{enumerate}
+
+Tất cả bảy loại đều dùng chung một tầng dữ liệu là bảng \texttt{BangDeXuat} với các trường JSON \texttt{data\_danh\_hieu}, \texttt{data\_thanh\_tich}, \texttt{data\_nien\_han}, \texttt{data\_cong\_hien} để lưu chi tiết theo từng loại. Việc dùng JSON ở đây có chủ đích: cho phép schema linh hoạt theo từng loại đề xuất mà không phải tạo nhiều bảng riêng cho mỗi loại. Mỗi loại đề xuất được gắn với một đối tượng cài đặt giao diện \texttt{ProposalStrategy} chịu trách nhiệm xây dựng, kiểm tra và nhập dữ liệu; chi tiết được trình bày tại Chương \ref{chapter:Experiment}.
+
+Quy trình tạo đề xuất gồm ba bước trên giao diện: chọn loại đề xuất và năm/tháng $\rightarrow$ chọn quân nhân hoặc đơn vị $\rightarrow$ thiết lập danh hiệu cụ thể cho từng đối tượng. Bước hai có thể chọn nhiều quân nhân cùng lúc thông qua bộ lọc theo đơn vị, năm sinh, giới tính, mốc thời gian phục vụ.
+
+\begin{figure}[H]
+    \centering
+    \caption{Sơ đồ use case phân rã chức năng Đề xuất khen thưởng}
+    \label{fig:usecase-dexuat}
+\end{figure}
+
+\subsection{Phân rã: Chuỗi danh hiệu hằng năm cá nhân}
+\label{subsection:2.2.5}
+
+Đây là module nghiệp vụ phức tạp nhất của hệ thống do có quy tắc chuỗi với cửa sổ trượt và có một danh hiệu lifetime. Cấu hình chuỗi cá nhân gồm ba tier (BKBTBQP, CSTĐTQ, BKTTCP) tương ứng ba phần tử trong mảng \texttt{PERSONAL\_CHAIN\_AWARDS}:
+
+\begin{itemize}
+    \item \textbf{BKBTBQP} có chu kỳ 2 năm (yêu cầu 2 năm CSTĐCS liên tục), không yêu cầu cờ tiền điều kiện, có yêu cầu thành tích NCKH mỗi năm, không phải lifetime (có thể nhận lại sau mỗi chu kỳ 2 năm).
+    \item \textbf{CSTĐTQ} có chu kỳ 3 năm, yêu cầu đúng 1 BKBTBQP nằm trong cửa sổ trượt 3 năm gần nhất tính từ năm trước năm xét, yêu cầu NCKH mỗi năm, không phải lifetime.
+    \item \textbf{BKTTCP} có chu kỳ 7 năm, yêu cầu đúng 3 BKBTBQP và đúng 2 CSTĐTQ trong cửa sổ trượt 7 năm cuối, yêu cầu NCKH mỗi năm, \textbf{là lifetime} đối với cá nhân (mỗi quân nhân chỉ nhận một lần trong toàn bộ thời gian phục vụ).
+\end{itemize}
+
+Use case chính của module này là \textbf{Kiểm tra điều kiện và gợi ý}: hệ thống tự tính toán dựa trên dữ liệu lịch sử và sinh ra hai loại thông tin cho mỗi quân nhân: (a) danh sách các tier đủ điều kiện đề nghị trong năm hiện tại, kèm thông điệp giải thích; (b) số liệu cửa sổ trượt (số BKBTBQP đã có trong cửa sổ 3 năm hoặc 7 năm, số CSTĐTQ đã có trong cửa sổ 7 năm, độ dài chuỗi CSTĐCS hiện tại). Cán bộ Phòng Chính trị có thể tham khảo gợi ý này để chốt danh sách đề xuất.
+
+Use case phụ là \textbf{Tính lại tổng thể}: khi một bản ghi danh hiệu hằng năm cũ được chỉnh sửa hoặc xoá, hệ thống có thể chạy lại thuật toán cho toàn bộ quân nhân hoặc một quân nhân riêng lẻ, đảm bảo dữ liệu suy diễn (\texttt{HoSoHangNam}) luôn nhất quán với dữ liệu nguồn (\texttt{DanhHieuHangNam}).
+
+\begin{figure}[H]
+    \centering
+    \caption{Sơ đồ use case phân rã chức năng Chuỗi danh hiệu hằng năm cá nhân}
+    \label{fig:usecase-chuoi-canhan}
+\end{figure}
+
+\subsection{Phân rã: Chuỗi danh hiệu hằng năm đơn vị}
+\label{subsection:2.2.6}
+
+Chuỗi đơn vị có cấu trúc đơn giản hơn cá nhân do không có tier CSTĐTQ và không yêu cầu thành tích NCKH. Cấu hình \texttt{UNIT\_CHAIN\_AWARDS} chỉ gồm hai tier:
+
+\begin{itemize}
+    \item \textbf{BKBTBQP đơn vị} chu kỳ 2 năm, yêu cầu 2 năm ĐVQT liên tục, không có cờ tiền điều kiện, không phải lifetime.
+    \item \textbf{BKTTCP đơn vị} chu kỳ 7 năm, yêu cầu ít nhất 3 BKBTBQP đơn vị trong cửa sổ trượt 7 năm cuối, không phải lifetime (đơn vị có thể nhận lại sau mỗi chu kỳ 7 năm).
+\end{itemize}
+
+Khác biệt quan trọng với chuỗi cá nhân là điều kiện cờ ``ít nhất 3 BKBTBQP'' thay vì ``đúng 3 BKBTBQP''. Lý do là một đơn vị có thể nhận lại BKTTCP sau mỗi chu kỳ 7 năm, nên việc đếm cờ trong cửa sổ trượt cần linh hoạt hơn so với danh hiệu lifetime của cá nhân.
+
+\begin{figure}[H]
+    \centering
+    \caption{Sơ đồ use case phân rã chức năng Chuỗi danh hiệu hằng năm đơn vị}
+    \label{fig:usecase-chuoi-donvi}
+\end{figure}
+
+\subsection{Phân rã: Nhập và xuất dữ liệu Excel}
+\label{subsection:2.2.7}
+
+Học viện có lượng dữ liệu lịch sử lớn được lưu trên Excel trước khi triển khai phần mềm; do đó chức năng nhập Excel hàng loạt là cầu nối quan trọng giúp hệ thống tiếp nhận dữ liệu cũ mà không phải nhập tay từng bản ghi. Quy trình gồm bốn use case con:
+
+\begin{itemize}
+    \item \textbf{Tải tệp mẫu} --- hệ thống sinh tệp Excel có cấu trúc cột chuẩn theo từng loại nghiệp vụ (quân nhân, danh hiệu hằng năm, lịch sử chức vụ, niên hạn, ...) cùng các Data Validation rule cho phép chọn từ danh sách thả xuống ngay trong tệp.
+    \item \textbf{Xem trước} --- sau khi cán bộ điền dữ liệu và tải tệp lên, hệ thống đọc nội dung từng dòng, đối chiếu với schema Joi và các quy tắc nghiệp vụ, sau đó hiển thị kết quả gồm danh sách dòng hợp lệ và danh sách dòng có lỗi (kèm chỉ số dòng và mô tả lỗi). Bước này không ghi vào cơ sở dữ liệu.
+    \item \textbf{Xác nhận} --- cán bộ kiểm tra danh sách hợp lệ rồi xác nhận. Hệ thống mở một transaction Prisma, ghi tuần tự từng dòng; nếu xảy ra lỗi tại bất kỳ dòng nào, toàn bộ thao tác được hủy bỏ và cơ sở dữ liệu giữ nguyên trạng thái trước khi nhập.
+    \item \textbf{Xuất danh sách} --- cho phép xuất kết quả khen thưởng theo nhiều tiêu chí (theo năm, theo đơn vị, theo loại danh hiệu) ra tệp Excel có định dạng phù hợp với mẫu báo cáo nội bộ của Học viện.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \caption{Sơ đồ use case phân rã chức năng Nhập -- xuất Excel}
+    \label{fig:usecase-excel}
+\end{figure}
+
+\subsection{Phân rã: Quản trị hệ thống}
+\label{subsection:2.2.8}
+
+Module quản trị bao quát các chức năng nền tảng phục vụ vận hành hệ thống. Bao gồm:
+
+\begin{itemize}
+    \item \textbf{Quản lý tài khoản} --- SuperAdmin tạo tài khoản Admin; Admin tạo tài khoản Manager và User; mỗi tài khoản gắn với một quân nhân duy nhất qua khoá ngoại \texttt{quan\_nhan\_id}.
+    \item \textbf{Đặt lại mật khẩu} --- Admin có thể đặt lại mật khẩu cho Manager / User về giá trị mặc định.
+    \item \textbf{Nhật ký hệ thống} (\texttt{SystemLog}) --- ghi lại mọi thao tác thay đổi dữ liệu với metadata gồm thời điểm, người thực hiện, loại tài nguyên, mã định danh tài nguyên, mô tả thao tác và payload trước -- sau khi thay đổi.
+    \item \textbf{Sao lưu và khôi phục} --- SuperAdmin cấu hình lịch sao lưu định kỳ qua khu vực DevZone; hệ thống dùng \texttt{pg\_dump} sinh tệp SQL và lưu tại thư mục \texttt{backups/}. Thao tác khôi phục cũng được thực hiện qua giao diện này.
+    \item \textbf{Cấu hình hệ thống} (\texttt{SystemSetting}) --- bật/tắt các cờ tính năng, ví dụ \texttt{allow\_notify\_import} cho phép gửi thông báo khi nhập Excel hàng loạt.
+\end{itemize}
+
+Tất cả các thao tác trong module quản trị đều có lưu nhật ký riêng để đảm bảo trách nhiệm cá nhân và truy hồi.
+
+\begin{figure}[H]
+    \centering
+    \caption{Sơ đồ use case phân rã chức năng Quản trị hệ thống}
+    \label{fig:usecase-quantri}
+\end{figure}
+
+\subsection{Quy trình nghiệp vụ --- ba luồng quan trọng}
+\label{subsection:2.2.9}
+
+Bên cạnh sơ đồ use case, ba quy trình nghiệp vụ phức tạp nhất được mô hình hoá thêm bằng sơ đồ hoạt động (activity diagram) để làm rõ luồng xử lý từng bước.
+
+\textbf{Quy trình A --- Đề xuất $\rightarrow$ Phê duyệt một đợt khen thưởng.} Manager chọn loại đề xuất và năm xét, hệ thống lọc danh sách quân nhân/đơn vị thuộc phạm vi quản lý. Manager chọn các đối tượng đủ điều kiện, thiết lập danh hiệu cụ thể và bấm gửi đề xuất. Hệ thống lưu vào bảng \texttt{BangDeXuat} ở trạng thái \texttt{PENDING}, đồng thời gửi thông báo realtime tới các Admin. Admin mở danh sách đề xuất chờ duyệt, kiểm tra lại từng đối tượng, có thể chỉnh sửa danh hiệu trước khi phê duyệt. Khi phê duyệt, hệ thống mở transaction để (a) đổi trạng thái đề xuất sang \texttt{APPROVED}, (b) ghi các bản ghi danh hiệu/khen thưởng vào bảng tương ứng (như \texttt{DanhHieuHangNam}, \texttt{KhenThuongHCCSVV}, ...), (c) gắn số quyết định và đường dẫn tệp PDF, (d) ghi nhật ký kiểm toán, (e) gửi thông báo tới Manager đã đề xuất và (f) tính lại các hồ sơ suy diễn liên quan.
+
+\textbf{Quy trình B --- Tính điều kiện chuỗi cho một quân nhân.} Khi cán bộ truy cập trang hồ sơ của một quân nhân, hệ thống nạp toàn bộ bản ghi \texttt{DanhHieuHangNam} của quân nhân đó, sắp xếp giảm dần theo năm và chạy hàm \texttt{computeChainContext}. Hàm này tính ra ba chỉ số chính: (a) độ dài chuỗi CSTĐCS hiện tại (\texttt{streakCstdcs}), (b) năm gần nhất có cờ BKBTBQP / CSTĐTQ / BKTTCP, (c) số cờ trong cửa sổ trượt tương ứng (3 năm cho CSTĐTQ, 7 năm cho BKTTCP). Sau đó với mỗi tier trong \texttt{PERSONAL\_CHAIN\_AWARDS}, hàm \texttt{checkChainEligibility} đối chiếu số liệu thực tế với cấu hình tier và trả về kết quả \texttt{eligible: boolean} kèm thông điệp \texttt{reason} bằng tiếng Việt.
+
+\textbf{Quy trình C --- Nhập tệp Excel hàng loạt.} Cán bộ Admin tải lên tệp Excel chứa danh sách bản ghi cần nhập. Hệ thống đọc tệp ở backend, tách thành các sheet (vd: \texttt{QuanNhan}, \texttt{DanhHieuHangNam}, \texttt{ThanhTichKhoaHoc}) và đọc từng dòng. Mỗi dòng được kiểm tra qua schema Joi và các quy tắc nghiệp vụ liên quan (vd: CCCD không được trùng, đơn vị phải tồn tại). Các dòng hợp lệ và lỗi được tổng hợp vào kết quả \texttt{ImportPreview} trả về frontend. Cán bộ xem trước, đối chiếu, có thể quay lại sửa tệp Excel rồi tải lên lại. Khi xác nhận, backend mở transaction Prisma, ghi tuần tự các dòng hợp lệ; nếu có bất kỳ lỗi nào tại thời điểm ghi, transaction được rollback hoàn toàn.
+
+\section{Đặc tả use case chi tiết}
+\label{section:2.3}
+
+Phần này đặc tả sáu use case trọng yếu của hệ thống dưới dạng bảng theo template UML chuẩn. Cấu trúc mỗi bảng gồm sáu phần: định danh và tên, các tác nhân tham gia, tiền điều kiện cần thoả mãn trước khi thực hiện, luồng sự kiện chính theo từng bước, các luồng thay thế thường gặp và hậu điều kiện sau khi thực hiện thành công. Sáu use case được lựa chọn vì phản ánh đúng các nghiệp vụ phức tạp nhất và có nhiều tương tác giữa các module. Đặc tả đầy đủ các use case còn lại được trình bày tại Phụ lục \ref{appendix:usecase}.
+
+\begin{table}[H]
+\centering
+\caption{Đặc tả use case UC-01 Đăng nhập}
+\label{tab:uc01}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{3cm}|p{11.5cm}|}
+\hline
+\textbf{Mục} & \textbf{Nội dung} \\ \hline
+Tên & Đăng nhập hệ thống \\ \hline
+ID & UC-01 \\ \hline
+Tác nhân & SuperAdmin, Admin, Manager, User \\ \hline
+Tiền điều kiện & Người dùng đã có tài khoản hợp lệ trong bảng \texttt{TaiKhoan}; trình duyệt cho phép HttpOnly cookie. \\ \hline
+Luồng chính & (1) Người dùng truy cập trang \texttt{/login}. (2) Nhập tên đăng nhập và mật khẩu. (3) Bấm nút ``Đăng nhập''. (4) Hệ thống tra cứu tài khoản theo \texttt{username}, đối chiếu mật khẩu băm bằng bcrypt. (5) Hệ thống phát hành Access Token (15 phút) và Refresh Token (7 ngày), đặt vào HttpOnly cookie. (6) Chuyển hướng tới trang chủ tương ứng vai trò. \\ \hline
+Luồng thay thế & (4a) Tài khoản không tồn tại hoặc mật khẩu sai $\rightarrow$ hiển thị thông báo ``Tài khoản hoặc mật khẩu không đúng'' mà không tiết lộ vế nào sai. (4b) Tài khoản bị khoá $\rightarrow$ hiển thị ``Tài khoản đã bị tạm khoá, liên hệ quản trị viên''. (5a) Sau ba lần sai liên tiếp, áp giới hạn \texttt{rateLimiter} 5 phút cho địa chỉ IP. \\ \hline
+Hậu điều kiện & Phiên đăng nhập được thiết lập; mọi yêu cầu HTTP tiếp theo gửi kèm token được middleware \texttt{verifyToken} xác thực; nhật ký đăng nhập được ghi vào \texttt{SystemLog} với \texttt{action = LOGIN}. \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Đặc tả use case UC-02 Tạo mới quân nhân}
+\label{tab:uc02}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{3cm}|p{11.5cm}|}
+\hline
+\textbf{Mục} & \textbf{Nội dung} \\ \hline
+Tên & Tạo mới hồ sơ quân nhân \\ \hline
+ID & UC-02 \\ \hline
+Tác nhân & Admin \\ \hline
+Tiền điều kiện & Đã đăng nhập với vai trò Admin; cây tổ chức (CQĐV/ĐVTT) đã có dữ liệu. \\ \hline
+Luồng chính & (1) Admin truy cập ``Quản lý quân nhân'' $\rightarrow$ bấm ``Thêm mới''. (2) Điền các trường bắt buộc (họ tên, CCCD, ngày sinh, giới tính, ngày nhập ngũ, đơn vị, chức vụ). (3) Bấm ``Lưu''. (4) Frontend xác thực schema Zod; backend xác thực schema Joi. (5) Backend kiểm tra trùng CCCD trong bảng \texttt{QuanNhan}. (6) Ghi bản ghi mới và cập nhật bộ đếm \texttt{so\_luong} của đơn vị. (7) Trả về kết quả thành công, frontend cập nhật bảng danh sách. \\ \hline
+Luồng thay thế & (5a) CCCD đã tồn tại $\rightarrow$ backend trả về lỗi 409 với thông điệp ``Số CCCD đã tồn tại trong hệ thống''. (4a) Một trường bắt buộc bị thiếu $\rightarrow$ frontend chặn ngay tại form trước khi gọi API. (6a) Đơn vị được chọn không tồn tại (do bị xoá song song) $\rightarrow$ backend trả về lỗi 404 và rollback transaction. \\ \hline
+Hậu điều kiện & Bản ghi mới có mặt trong \texttt{QuanNhan}; số lượng quân nhân của đơn vị tăng 1; nhật ký \texttt{action = CREATE, resource = personnel} được ghi với payload chứa CCCD và họ tên. \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Đặc tả use case UC-03 Tạo đề xuất khen thưởng}
+\label{tab:uc03}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{3cm}|p{11.5cm}|}
+\hline
+\textbf{Mục} & \textbf{Nội dung} \\ \hline
+Tên & Tạo đề xuất khen thưởng cho một đợt \\ \hline
+ID & UC-03 \\ \hline
+Tác nhân & Admin, Manager \\ \hline
+Tiền điều kiện & Đã đăng nhập; có ít nhất một quân nhân thuộc phạm vi quản lý của Manager (nếu là Manager). \\ \hline
+Luồng chính & (1) Truy cập ``Đề xuất khen thưởng'' $\rightarrow$ ``Tạo đề xuất mới''. (2) Bước 1: chọn loại đề xuất (1 trong 7 loại) và nhập năm/tháng xét. (3) Bước 2: hệ thống lọc và hiển thị danh sách quân nhân hoặc đơn vị thuộc phạm vi quản lý phù hợp với loại đề xuất; người dùng tích chọn các đối tượng. (4) Bước 3: thiết lập danh hiệu cụ thể cho từng đối tượng (vd: chọn HCCSVV hạng Ba/Nhì/Nhất); hệ thống có thể tự gợi ý dựa trên dữ liệu lịch sử. (5) Tải lên các tệp đính kèm nếu có. (6) Bấm ``Gửi đề xuất''. (7) Backend xác thực dữ liệu, tạo bản ghi \texttt{BangDeXuat} ở trạng thái \texttt{PENDING} cùng các trường JSON tương ứng. (8) Phát thông báo realtime tới các Admin liên quan. \\ \hline
+Luồng thay thế & (4a) Có quân nhân không đủ điều kiện trong danh sách $\rightarrow$ hệ thống hiển thị cảnh báo nhưng vẫn cho phép gửi nếu Manager chấp nhận trách nhiệm. (3a) Manager chọn quân nhân ngoài phạm vi đơn vị $\rightarrow$ backend trả lỗi 403. (7a) Có lỗi mạng hoặc backend không phản hồi $\rightarrow$ frontend lưu nháp ở localStorage để người dùng không mất dữ liệu. \\ \hline
+Hậu điều kiện & Bản ghi \texttt{BangDeXuat} được tạo với trạng thái \texttt{PENDING}; thông báo realtime tới Admin; \texttt{SystemLog} ghi \texttt{action = CREATE, resource = proposals} cùng tóm tắt loại và số lượng đối tượng. \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Đặc tả use case UC-04 Phê duyệt đề xuất}
+\label{tab:uc04}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{3cm}|p{11.5cm}|}
+\hline
+\textbf{Mục} & \textbf{Nội dung} \\ \hline
+Tên & Phê duyệt một đề xuất khen thưởng \\ \hline
+ID & UC-04 \\ \hline
+Tác nhân & Admin \\ \hline
+Tiền điều kiện & Đề xuất đang ở trạng thái \texttt{PENDING}; Admin có quyền phê duyệt loại đề xuất tương ứng. \\ \hline
+Luồng chính & (1) Admin mở chi tiết đề xuất từ danh sách ``Chờ duyệt''. (2) Xem lại danh sách đối tượng và danh hiệu được đề xuất. (3) Có thể chỉnh sửa danh hiệu của một số đối tượng (vd: hạ từ Hạng Nhất xuống Hạng Nhì). (4) Nhập số quyết định và tải lên tệp PDF quyết định. (5) Bấm ``Phê duyệt''. (6) Backend mở transaction Prisma: chuyển trạng thái đề xuất sang \texttt{APPROVED}; ghi các bản ghi danh hiệu/khen thưởng vào bảng tương ứng; gắn số quyết định; tính lại hồ sơ suy diễn cho các quân nhân bị ảnh hưởng. (7) Phát thông báo realtime tới Manager đã đề xuất và các quân nhân được khen thưởng. (8) Ghi nhật ký với payload trước--sau khi thay đổi. \\ \hline
+Luồng thay thế & (5a) Đề xuất bị thay đổi bởi Admin khác cùng lúc $\rightarrow$ hệ thống dùng lock optimistic, trả về lỗi 409 và yêu cầu tải lại trước khi phê duyệt. (4a) Số quyết định trùng với một quyết định đã có trong \texttt{FileQuyetDinh} $\rightarrow$ backend cảnh báo nhưng cho phép tiếp tục nếu Admin xác nhận. (6a) Có lỗi tại bước ghi danh hiệu (vd: vi phạm rule lifetime BKTTCP) $\rightarrow$ toàn bộ transaction rollback, đề xuất giữ nguyên trạng thái \texttt{PENDING}. (5b) Admin từ chối thay vì phê duyệt $\rightarrow$ đổi trạng thái sang \texttt{REJECTED} kèm lý do, gửi thông báo tới Manager. \\ \hline
+Hậu điều kiện & Trạng thái đề xuất là \texttt{APPROVED} hoặc \texttt{REJECTED}; nếu \texttt{APPROVED}, các bản ghi khen thưởng tương ứng đã có mặt trong cơ sở dữ liệu; hồ sơ suy diễn được tính lại; thông báo đã gửi; nhật ký đầy đủ. \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Đặc tả use case UC-05 Kiểm tra điều kiện chuỗi và sinh gợi ý}
+\label{tab:uc05}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{3cm}|p{11.5cm}|}
+\hline
+\textbf{Mục} & \textbf{Nội dung} \\ \hline
+Tên & Tính lại hồ sơ hằng năm và sinh gợi ý đề nghị \\ \hline
+ID & UC-05 \\ \hline
+Tác nhân & Admin (kích hoạt chủ động); System (tự động sau mỗi lần phê duyệt). \\ \hline
+Tiền điều kiện & Quân nhân tồn tại; có ít nhất một bản ghi trong \texttt{DanhHieuHangNam}. \\ \hline
+Luồng chính & (1) Hệ thống truy vấn toàn bộ \texttt{DanhHieuHangNam} của quân nhân, sắp xếp giảm dần theo \texttt{nam}. (2) Gọi hàm \texttt{computeChainContext(rows, currentYear)} để dẫn xuất ngữ cảnh chuỗi. (3) Với mỗi tier trong \texttt{PERSONAL\_CHAIN\_AWARDS}, gọi \texttt{checkChainEligibility(tier, context, hasReceivedLifetime)}. Hàm trả về \texttt{\{ eligible, reason \}} bằng tiếng Việt. (4) Lưu kết quả vào bảng suy diễn \texttt{HoSoHangNam} (cập nhật hoặc tạo mới); ghi đè các trường \texttt{du\_dieu\_kien\_bkbqp}, \texttt{du\_dieu\_kien\_cstdtq}, \texttt{du\_dieu\_kien\_bkttcp}, \texttt{goi\_y}. (5) Trả về kết quả cho frontend hiển thị. \\ \hline
+Luồng thay thế & (3a) Quân nhân đã nhận BKTTCP $\rightarrow$ hàm trả về \texttt{eligible: false} kèm lý do ``Đã có BKTTCP. Phần mềm chưa hỗ trợ các danh hiệu cao hơn BKTTCP''. (3b) Chuỗi CSTĐCS chưa đủ chu kỳ $\rightarrow$ trả về thông điệp gợi ý số năm cần tích luỹ thêm. (3c) Năm hiện tại đúng vào mốc lỡ đợt $\rightarrow$ trả về thông điệp giải thích cách thức xét lại ở chu kỳ kế tiếp. \\ \hline
+Hậu điều kiện & \texttt{HoSoHangNam} của quân nhân có dữ liệu nhất quán với \texttt{DanhHieuHangNam}; trang hồ sơ cá nhân hiển thị các tier đủ điều kiện và thông điệp gợi ý chi tiết. \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Đặc tả use case UC-06 Nhập tệp Excel hàng loạt}
+\label{tab:uc06}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{3cm}|p{11.5cm}|}
+\hline
+\textbf{Mục} & \textbf{Nội dung} \\ \hline
+Tên & Nhập danh sách quân nhân hoặc danh hiệu hằng năm từ Excel \\ \hline
+ID & UC-06 \\ \hline
+Tác nhân & Admin \\ \hline
+Tiền điều kiện & Đã có tệp mẫu Excel tải xuống từ hệ thống và điền dữ liệu theo cấu trúc cột chuẩn. \\ \hline
+Luồng chính & (1) Admin truy cập ``Nhập Excel'' $\rightarrow$ chọn loại nghiệp vụ. (2) Tải lên tệp \texttt{.xlsx} qua form. (3) Backend đọc tệp bằng ExcelJS, kiểm tra tên các sheet, đọc tuần tự từng dòng. (4) Mỗi dòng được áp schema Joi và các quy tắc nghiệp vụ. (5) Tổng hợp kết quả thành đối tượng \texttt{\{ valid: [...], errors: [...] \}}. (6) Trả về frontend hiển thị bảng xem trước với chỉ số dòng, lỗi cụ thể, các dòng hợp lệ tô xanh. (7) Admin kiểm tra, nếu đồng ý thì bấm ``Xác nhận nhập''. (8) Backend mở transaction Prisma, ghi tuần tự các dòng \texttt{valid}. (9) Nếu mọi thao tác thành công, commit transaction và phát sự kiện realtime tổng kết. \\ \hline
+Luồng thay thế & (3a) Tệp không đúng định dạng \texttt{.xlsx} hoặc thiếu sheet bắt buộc $\rightarrow$ trả về lỗi 400 với mô tả cụ thể. (4a) Có dòng lỗi trong giai đoạn xem trước $\rightarrow$ admin có thể tải tệp xuống, sửa, tải lại --- không tiêu tốn thời gian transaction. (8a) Có lỗi xảy ra trong giai đoạn ghi $\rightarrow$ toàn bộ transaction rollback. \\ \hline
+Hậu điều kiện & Các bản ghi trong tệp được ghi vào cơ sở dữ liệu; nhật ký \texttt{action = IMPORT} được ghi với payload tổng kết số dòng thành công và số dòng lỗi; thông báo realtime gửi tới Admin khởi tạo. \\ \hline
+\end{tabular}
+\end{table}
+
+\section{Yêu cầu phi chức năng}
+\label{section:2.4}
+
+Bên cạnh các yêu cầu chức năng đã trình bày ở các mục trước, hệ thống cần đáp ứng một số yêu cầu phi chức năng để đảm bảo vận hành ổn định, an toàn và phù hợp với đặc thù môi trường quân sự. Các yêu cầu này được nhóm lại thành ba khía cạnh: hiệu năng và trải nghiệm người dùng, bảo mật, tính nhất quán dữ liệu.
+
+\subsection{Hiệu năng và trải nghiệm người dùng}
+\label{subsection:2.4.1}
+
+Hệ thống được thiết kế để vận hành ổn định trong môi trường mạng nội bộ Học viện với khoảng vài chục người dùng đồng thời ở thời điểm cao điểm (đợt xét khen thưởng cuối năm). Các tiêu chí định lượng được đặt ra như sau.
+
+Thời gian phản hồi của các trang chính (trang chủ, danh sách quân nhân, danh sách đề xuất) cần dưới hai giây ở điều kiện kết nối LAN bình thường. Các thao tác phức tạp như tính lại hồ sơ chuỗi cho một quân nhân cần dưới một giây; tính lại tổng thể cho 3000 quân nhân được phép kéo dài đến vài phút nhưng phải có thanh tiến trình hiển thị qua kênh Socket.IO.
+
+Bảng dữ liệu lớn (vd: danh sách toàn bộ quân nhân, danh sách khen thưởng theo năm) được phân trang phía máy chủ với mặc định 20 dòng/trang và giới hạn tối đa 100 dòng/trang. Frontend áp dụng kỹ thuật cập nhật lạc quan (optimistic UI): các thao tác cập nhật trạng thái thường gặp (đánh dấu đã đọc thông báo, tích chọn quân nhân vào đề xuất) thay đổi ngay trên giao diện trước khi backend trả về xác nhận, qua đó giảm cảm giác chờ đợi cho người dùng.
+
+Khu vực dữ liệu thường truy vấn nhưng ít thay đổi (cây CQĐV/ĐVTT, danh mục chức vụ, danh mục danh hiệu) được nạp một lần vào React Context và chia sẻ trong toàn bộ ứng dụng --- tránh việc mỗi component tự gọi API riêng dẫn tới yêu cầu trùng lặp.
+
+\subsection{Bảo mật}
+\label{subsection:2.4.2}
+
+Bảo mật là yêu cầu được ưu tiên cao nhất do hệ thống lưu trữ dữ liệu liên quan đến cán bộ và sĩ quan trong môi trường quân sự. Bảy nhóm biện pháp được áp dụng song song.
+
+\textbf{Thứ nhất --- Xác thực bằng JWT có Refresh rotation.} Mỗi phiên đăng nhập tạo ra cặp Access Token (15 phút) và Refresh Token (7 ngày) đặt trong HttpOnly cookie. Khi Access Token hết hạn, frontend gọi điểm cuối \texttt{/auth/refresh} để xin token mới; mỗi lần gọi điểm cuối này, backend phát hành Refresh Token mới và đánh dấu Refresh Token cũ hết hiệu lực. Cơ chế này hạn chế nguy cơ một Refresh Token bị đánh cắp vẫn dùng được lâu dài.
+
+\textbf{Thứ hai --- Băm mật khẩu bằng bcrypt với hệ số chi phí 10.} Mật khẩu trước khi lưu vào bảng \texttt{TaiKhoan} không bao giờ được lưu ở dạng văn bản thô. Hệ số 10 được chọn để cân bằng giữa thời gian xác thực (khoảng 80 ms trên máy chủ phát triển) và độ khó tấn công vét cạn nếu cơ sở dữ liệu bị rò rỉ \cite{bcrypt}.
+
+\textbf{Thứ ba --- Phân quyền bốn cấp qua middleware \texttt{requireRole}.} Mỗi route nhạy cảm đi qua middleware kiểm tra vai trò của người dùng có nằm trong danh sách cho phép hay không. Phân quyền không chỉ dừng ở vai trò mà còn ở phạm vi quản lý: Manager chỉ truy vấn được dữ liệu của các quân nhân thuộc đơn vị mình quản lý, kiểm soát qua middleware \texttt{unitFilter}.
+
+\textbf{Thứ tư --- Xác thực dữ liệu hai phía.} Frontend dùng Zod \cite{zoddocs} để xác thực ngay tại form, ngăn người dùng gửi đi dữ liệu sai định dạng. Backend dùng Joi \cite{joidocs} để xác thực lại tại điểm cuối; kể cả khi frontend bị bỏ qua (vd: tấn công gửi yêu cầu thẳng), backend vẫn từ chối dữ liệu không hợp lệ. Tuỳ chọn \texttt{stripUnknown: true} của Joi loại bỏ các trường ngoài schema để tránh người dùng đẩy lén các thuộc tính không được phép.
+
+\textbf{Thứ năm --- Bảo vệ tầng vận chuyển và tầng ứng dụng.} Toàn bộ kết nối tới server qua HTTPS (TLS 1.2 trở lên) khi triển khai sản xuất. Header bảo mật được áp đặt qua middleware Helmet (Content-Security-Policy, X-Frame-Options, X-Content-Type-Options). CORS cấu hình chặt chẽ chỉ cho phép tên miền của frontend chính. Rate limiter giới hạn 100 yêu cầu / IP / 15 phút cho các điểm cuối nhạy cảm như đăng nhập và đặt lại mật khẩu.
+
+\textbf{Thứ sáu --- Nhật ký kiểm toán đầy đủ.} Mọi thao tác có thể làm thay đổi dữ liệu nghiệp vụ (CREATE, UPDATE, DELETE, IMPORT, APPROVE, REJECT, LOGIN, LOGOUT, RESET\_PASSWORD) đều ghi vào bảng \texttt{SystemLog} với metadata gồm thời điểm, mã người thực hiện, vai trò, loại tài nguyên (\texttt{resource}), mã định danh tài nguyên (\texttt{resource\_id}) và mô tả tiếng Việt do hàm builder sinh tự động. Nhật ký liên quan đến \texttt{resource = backup} chỉ SuperAdmin xem được; các vai trò thấp hơn không thấy ngay cả tiêu đề.
+
+\textbf{Thứ bảy --- Sao lưu định kỳ và khôi phục.} Hệ thống tự động chạy \texttt{pg\_dump} theo lịch cấu hình (mặc định mỗi 24 giờ vào 02:00 sáng) và lưu tệp SQL vào thư mục \texttt{backups/}. Mỗi tệp có tên theo mẫu \texttt{YYYY-MM-DD\_HH-mm-ss.sql}. SuperAdmin có thể tải xuống, xoá hoặc khôi phục từ một tệp sao lưu cụ thể qua khu vực DevZone.
+
+\subsection{Tính nhất quán và chính xác của dữ liệu}
+\label{subsection:2.4.3}
+
+Trong nghiệp vụ khen thưởng, một sai lệch nhỏ giữa các bản ghi liên quan có thể dẫn tới quyết định sai (vd: bỏ sót quân nhân đủ điều kiện hoặc đề xuất nhầm chu kỳ). Vì vậy, tính nhất quán dữ liệu được đặt ngang hàng với bảo mật.
+
+\textbf{Giao dịch ACID cho mọi thao tác phức tạp.} Các thao tác đụng nhiều bảng được gói trong transaction Prisma. Phê duyệt một đề xuất chứa 50 quân nhân thực hiện 50 lần ghi \texttt{DanhHieuHangNam} cộng với cập nhật trạng thái đề xuất, ghi nhật ký, gắn quyết định --- toàn bộ trong một transaction để bảo đảm: hoặc tất cả thành công, hoặc cơ sở dữ liệu trở về trạng thái ban đầu nếu một phép ghi gặp lỗi.
+
+\textbf{Kiểm tra điều kiện chuỗi ở hai tầng.} Hàm \texttt{checkChainEligibility} được gọi cả trong hàm tính lại hồ sơ (\texttt{computeEligibilityFlags}) và trong hàm kiểm tra phê duyệt (\texttt{checkAwardEligibility}). Hai tầng phải khớp nhau: nếu có sự khác biệt, một phía sẽ chấp nhận đề xuất mà phía kia hiển thị ``không đủ điều kiện'' --- gây mất niềm tin của cán bộ vào hệ thống. Để bảo đảm điều này, cả hai hàm được kiểm thử bằng Jest với cùng một bộ kịch bản.
+
+\textbf{Tính lại hồ sơ suy diễn sau mỗi thay đổi nguồn.} Các bảng \texttt{HoSoHangNam}, \texttt{HoSoNienHan}, \texttt{HoSoCongHien} lưu các kết quả tính toán (cờ đủ điều kiện, gợi ý). Bất kỳ thao tác nào tạo, sửa hoặc xoá bản ghi nguồn đều kích hoạt hàm tính lại tương ứng. Việc này xảy ra tự động bên trong cùng transaction để đảm bảo dữ liệu suy diễn không bao giờ ``đi sau'' dữ liệu nguồn.
+
+\textbf{Tránh tham chiếu sai khoá ngoại.} Mọi quan hệ giữa các bảng đều được khai báo qua \texttt{@relation} của Prisma kèm chính sách \texttt{onDelete: Restrict} cho các quan hệ trọng yếu (vd: không cho xoá \texttt{QuanNhan} khi vẫn còn bản ghi \texttt{DanhHieuHangNam}). Đối với một số bảng phụ trợ ít quan trọng (vd: thông báo), chính sách \texttt{onDelete: Cascade} được áp để tự dọn sạch khi xoá đối tượng cha.
+
+\textbf{Kiểm tra tính duy nhất qua chỉ mục unique.} Các trường có yêu cầu duy nhất (\texttt{cccd} của quân nhân, \texttt{username} của tài khoản, tổ hợp \texttt{quan\_nhan\_id + nam} cho \texttt{DanhHieuHangNam}) đều được khai báo \texttt{@unique} ở schema. Khi vi phạm, Prisma trả về lỗi P2002 mà backend bắt và biến thành thông điệp tiếng Việt thân thiện (vd: ``Quân nhân này đã có bản ghi danh hiệu cho năm 2024, vui lòng chỉnh sửa thay vì tạo mới'').
+
+\textbf{Kết chương.} Chương này đã trình bày kết quả khảo sát hiện trạng và phân tích yêu cầu cho phần mềm PM QLKT. Bốn nhóm tác nhân với các quyền hạn khác biệt cùng 15 nhóm chức năng đã được mô hình hoá qua sơ đồ use case tổng quát và tám sơ đồ phân rã chi tiết. Sáu use case trọng yếu được đặc tả đầy đủ phục vụ giai đoạn thiết kế. Phần yêu cầu phi chức năng đặt ra ba khía cạnh: hiệu năng và trải nghiệm người dùng, bảo mật bảy lớp và tính nhất quán dữ liệu --- tất cả là kim chỉ nam cho các quyết định công nghệ và kiến trúc trong các chương tiếp theo.
+
+\end{document}

@@ -1,0 +1,23 @@
+\documentclass[../DoAn.tex]{subfiles}
+\begin{document}
+
+\begin{center}
+    \Large{\textbf{TÓM TẮT NỘI DUNG ĐỒ ÁN}}\\
+\end{center}
+\vspace{1cm}
+
+Công tác thi đua, khen thưởng tại các đơn vị quân đội tuân thủ Luật Thi đua, Khen thưởng số 06/2022/QH15. Tại Học viện Khoa học Quân sự, riêng nhóm khen thưởng cá nhân hằng năm bao gồm chuỗi ba cấp Bằng khen của Bộ trưởng Bộ Quốc phòng (BKBTBQP), Chiến sĩ thi đua toàn quân (CSTĐTQ) và Bằng khen của Thủ tướng Chính phủ (BKTTCP) --- mỗi cấp có chu kỳ trượt khác nhau (2, 3 và 7 năm) và yêu cầu đối chiếu nhiều cờ trong cửa sổ thời gian, làm cho việc xét chọn thủ công trên Excel dễ sai sót.
+
+Đồ án xây dựng phần mềm web hỗ trợ Phòng Chính trị Học viện quản lý toàn bộ vòng đời của bảy nhóm khen thưởng (cá nhân hằng năm, đơn vị hằng năm, niên hạn, cống hiến, kỷ niệm chương, quân kỳ quyết thắng, nghiên cứu khoa học), bao quát từ tạo đề xuất, kiểm tra điều kiện chuỗi tự động, phê duyệt, lưu vết tới xuất quyết định. Phần mềm hướng tới rút ngắn thời gian xét điều kiện từ vài chục phút trên Excel xuống dưới một giây cho mỗi quân nhân, đồng thời ghi nhật ký đầy đủ phục vụ kiểm tra hậu kiểm.
+
+Hệ thống được triển khai dưới dạng ứng dụng web vận hành trên mạng nội bộ (LAN) của Học viện, với phần frontend dùng Next.js 14 (App Router) và phần backend dùng Express + TypeScript trên cơ sở dữ liệu PostgreSQL truy cập qua Prisma ORM. Toàn bộ quy tắc xét chuỗi được trừu tượng hoá thành các đối tượng cấu hình \texttt{ChainAwardConfig} cho phép thêm tier mới mà không cần sửa mã nguồn xét điều kiện. Sản phẩm bao gồm 23 model dữ liệu, hơn 870 ca kiểm thử đơn vị (phủ rule chuỗi cá nhân và đơn vị) và 4 cấp phân quyền theo đặc thù quân sự (SuperAdmin, Admin, Manager, User).
+
+\begin{flushright}
+Sinh viên thực hiện\\
+\begin{tabular}{@{}c@{}}
+\textit{(Ký và ghi rõ họ tên)}\\[0.5cm]
+\textbf{Trần Anh Đức}
+\end{tabular}
+\end{flushright}
+
+\end{document}

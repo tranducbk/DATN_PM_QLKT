@@ -1,0 +1,69 @@
+\documentclass[../DoAn.tex]{subfiles}
+\begin{document}
+
+Chương này trình bày bối cảnh, sự cần thiết và mục tiêu của đồ án Xây dựng phần mềm Quản lý Khen thưởng tại Học viện Khoa học Quân sự (PM QLKT). Sau khi nêu vấn đề thực tiễn ở mục \ref{section:1.1}, mục \ref{section:1.2} xác định mục tiêu cùng phạm vi đề tài, mục \ref{section:1.3} trình bày định hướng giải pháp tổng quát; cuối chương, mục \ref{section:1.4} mô tả bố cục các chương còn lại của báo cáo.
+
+\section{Đặt vấn đề}
+\label{section:1.1}
+
+Công tác thi đua -- khen thưởng tại các đơn vị quân đội được điều chỉnh bởi Luật Thi đua, Khen thưởng số 06/2022/QH15 \cite{luat062022} cùng các nghị định và thông tư hướng dẫn. Trong khi nhiều cơ quan đã chuyển sang phần mềm điện tử, công tác xét khen thưởng tại Học viện Khoa học Quân sự (HVKHQS) hiện vẫn dựa chủ yếu trên các tệp Microsoft Excel chia sẻ qua mạng nội bộ kèm bản giấy ký xác nhận. Phương thức này phát sinh ba nhóm khó khăn cụ thể.
+
+Thứ nhất, hệ thống danh hiệu có yếu tố \textbf{chuỗi} với cửa sổ thời gian trượt phức tạp. Để xét Bằng khen của Bộ trưởng Bộ Quốc phòng (BKBTBQP), một quân nhân phải duy trì danh hiệu Chiến sĩ thi đua cơ sở (CSTĐCS) liên tục đủ hai năm. Xét Chiến sĩ thi đua toàn quân (CSTĐTQ) cần ba năm CSTĐCS liên tục, đồng thời có ít nhất một BKBTBQP trong cửa sổ ba năm cuối. Xét Bằng khen của Thủ tướng Chính phủ (BKTTCP) cần bảy năm CSTĐCS liên tục, đúng ba BKBTBQP và đúng hai CSTĐTQ trong cửa sổ bảy năm cuối, kèm yêu cầu mỗi năm có thành tích nghiên cứu khoa học. Khi rà soát thủ công, cán bộ phải tra chéo nhiều bảng tính để xác định một danh hiệu cũ còn nằm trong cửa sổ trượt hay đã rơi khỏi cửa sổ --- vừa chậm vừa dễ sai sót.
+
+Thứ hai, hệ thống khen thưởng tại Học viện gồm \textbf{bảy nhóm khen thưởng} với nghiệp vụ tách bạch: khen thưởng cá nhân hằng năm, khen thưởng đơn vị hằng năm, niên hạn (Huy chương Chiến sĩ vẻ vang theo mốc 10/15/20 năm phục vụ), cống hiến (Huân chương Bảo vệ Tổ quốc dựa trên thời gian giữ chức vụ theo từng nhóm hệ số), kỷ niệm chương (vì sự nghiệp xây dựng Quân đội nhân dân Việt Nam, một lần duy nhất theo giới tính), Huy chương Quân kỳ quyết thắng (25 năm phục vụ) và thành tích nghiên cứu khoa học. Mỗi nhóm có quy tắc đầu vào, mẫu quyết định và quy trình duyệt riêng, vì vậy duy trì bằng tệp tính khó đảm bảo nhất quán giữa các nhóm.
+
+Thứ ba, \textbf{dấu vết kiểm toán} của các thao tác trên Excel không được lưu lại. Khi một bản ghi bị chỉnh sửa hoặc xoá, không có cơ chế truy được người thực hiện, mốc thời gian và lý do --- gây khó khăn cho công tác hậu kiểm và đối chiếu khi cấp trên yêu cầu. Việc phân quyền truy cập tệp dùng chung cũng chỉ ở mức thư mục, không phản ánh được phân cấp thực tế của Học viện (cấp Phòng, cấp Khoa/Trung tâm, cá nhân quân nhân).
+
+Trước những hạn chế trên, việc xây dựng một phần mềm chuyên dụng cho công tác quản lý khen thưởng tại HVKHQS là cần thiết. Phần mềm phải đảm nhiệm được toàn bộ vòng đời nghiệp vụ, từ nhập dữ liệu lịch sử qua Excel, tự động kiểm tra điều kiện chuỗi, xử lý đề xuất -- phê duyệt cho đến xuất quyết định và lưu vết, đồng thời tuân thủ phân quyền nhiều cấp đặc thù môi trường quân sự.
+
+\textbf{đóng góp chính của đồ án} tập trung vào bốn khía cạnh kỹ thuật: (i) thiết kế kiến trúc phân tầng có lớp Repository tách khỏi Service; (ii) thuật toán xét chuỗi danh hiệu (BKBTBQP, CSTĐTQ, BKTTCP cá nhân; BKBTBQP, BKTTCP đơn vị) được trừu tượng hoá qua đối tượng cấu hình \texttt{ChainAwardConfig}; (iii) cơ chế đề xuất -- phê duyệt theo Strategy pattern cho bảy nhóm khen thưởng kèm nhật ký kiểm toán đầy đủ; (iv) bộ kiểm thử đơn vị gồm 870 ca phủ toàn bộ rule chuỗi và các kịch bản phê duyệt. Bốn khía cạnh này được trình bày chi tiết từ Chương \ref{chapter:Methodology} đến Chương \ref{chapter:SolutionAndContribution}.
+
+\section{Mục tiêu và phạm vi đề tài}
+\label{section:1.2}
+
+\textbf{Mục tiêu chính} của đồ án là xây dựng một hệ thống web hỗ trợ Phòng Chính trị Học viện Khoa học Quân sự thực hiện đầy đủ các nhiệm vụ sau:
+
+\begin{enumerate}
+    \item Quản lý danh sách quân nhân, đơn vị (theo cấu trúc cây Cơ quan đơn vị -- Đơn vị trực thuộc), chức vụ và lịch sử biến động chức vụ.
+    \item Cho phép cán bộ Phòng Chính trị tạo các đợt đề xuất khen thưởng cho cả bảy nhóm danh hiệu, hỗ trợ chọn nhanh nhiều quân nhân thông qua lọc theo đơn vị, năm, giới tính, mốc thời gian phục vụ.
+    \item Tự động kiểm tra điều kiện chuỗi (BKBTBQP, CSTĐTQ, BKTTCP đối với cá nhân; BKBTBQP và BKTTCP đối với đơn vị) và sinh thông điệp gợi ý dễ hiểu cho cán bộ.
+    \item Hỗ trợ quy trình phê duyệt nhiều bước, lưu file quyết định PDF kèm số quyết định, đồng thời ghi nhật ký kiểm toán toàn bộ thao tác mutate.
+    \item Cung cấp công cụ nhập dữ liệu lịch sử qua Excel có tiền kiểm và giao dịch (transaction) đảm bảo nguyên tử tính, cùng công cụ xuất danh sách khen thưởng theo nhiều tiêu chí.
+    \item Phân quyền theo bốn cấp tương ứng đặc thù tổ chức: SuperAdmin (bộ phận kỹ thuật và công nghệ thông tin, quản trị hạ tầng và an ninh hệ thống), Admin (Phòng Chính trị Học viện, toàn quyền nghiệp vụ), Manager (cán bộ chỉ huy đơn vị, đề xuất và quản lý quân nhân nội bộ), User (cán bộ -- học viên -- sĩ quan, tra cứu hồ sơ cá nhân).
+    \item Hỗ trợ sao lưu cơ sở dữ liệu định kỳ và quản lý nhật ký hệ thống.
+\end{enumerate}
+
+\textbf{Phạm vi đề tài} giới hạn ở các nhiệm vụ liên quan trực tiếp đến công tác xét khen thưởng. Phần mềm vận hành tập trung trên máy chủ của Học viện và được truy cập qua mạng nội bộ (LAN), không xuất bản ra Internet công cộng nhằm đáp ứng yêu cầu bảo mật đặc thù môi trường quân sự. Đồ án \textbf{không bao gồm} các nghiệp vụ sau: chế độ tiền lương và phụ cấp, hồ sơ y tế, đánh giá cán bộ định kỳ, các quy trình hành chính khác. Việc tích hợp với hệ thống quản lý nhân sự tổng thể của Bộ Quốc phòng (nếu có) cũng không nằm trong phạm vi, do hai khía cạnh đó vượt ngoài mục tiêu trọng tâm về khen thưởng.
+
+\section{Định hướng giải pháp}
+\label{section:1.3}
+
+Phần mềm được xây dựng theo mô hình client -- server với hai thành phần độc lập triển khai trên cùng một máy chủ vật lý hoặc tách máy.
+
+\begin{itemize}
+    \item \textbf{Frontend} dùng Next.js 14 với mô hình App Router \cite{nextjsdocs}, viết bằng TypeScript, sử dụng Ant Design làm thư viện thành phần chính, kết hợp Tailwind CSS cho bố cục linh hoạt và shadcn/ui cho các thành phần đặc biệt.
+    \item \textbf{Backend} dùng Express \cite{expressdocs} trên Node.js, viết bằng TypeScript, tổ chức theo kiến trúc phân tầng (Route $\rightarrow$ Middleware $\rightarrow$ Controller $\rightarrow$ Service $\rightarrow$ Repository $\rightarrow$ Prisma). Lớp Repository được tách riêng giúp giảm sự phụ thuộc trực tiếp vào Prisma Client trong tầng Service, tạo điều kiện thay thế ORM trong tương lai mà không phải viết lại logic nghiệp vụ.
+    \item \textbf{Cơ sở dữ liệu} chọn PostgreSQL \cite{pgdocs} truy cập qua Prisma ORM \cite{prismadocs}. Toàn bộ schema (23 model) đã được mô hình hoá trong tệp \texttt{schema.prisma} duy nhất với migration tự động.
+    \item \textbf{Xác thực và phân quyền} dùng cặp JSON Web Token \cite{rfc7519} (Access Token thời hạn ngắn + Refresh Token có rotation) lưu trữ tại HttpOnly cookie. Bốn vai trò được áp đặt qua middleware \texttt{requireRole} chạy trước mỗi endpoint nhạy cảm.
+    \item \textbf{Thông báo thời gian thực} sử dụng Socket.IO \cite{socketiodocs}, chủ yếu thông báo kết quả nhập Excel lớn, biến cố phê duyệt và xoá đề xuất cho người tạo đề xuất, đồng thời báo cho Phòng Chính trị khi có đề xuất mới.
+    \item \textbf{Kiểm thử} dùng Jest + ts-jest \cite{jestdocs}. Tổng cộng có 74 bộ kiểm thử đơn vị với 870 ca kiểm thử bao phủ rule chuỗi (cá nhân và đơn vị), kịch bản phê duyệt và xếp hạng huy chương.
+\end{itemize}
+
+Quy tắc chuỗi danh hiệu được trừu tượng hoá thành đối tượng cấu hình \texttt{ChainAwardConfig} (thuộc tính: mã danh hiệu, số năm chu kỳ, số cờ tiền điều kiện cần thiết, có yêu cầu nghiên cứu khoa học hay không, tính chất trọn đời hay lặp lại, tên cột cờ trong cơ sở dữ liệu, nhãn chuỗi). Hai hằng số \texttt{PERSONAL\_CHAIN\_AWARDS} và \texttt{UNIT\_CHAIN\_AWARDS} chứa danh sách cấu hình tương ứng cho cá nhân và đơn vị. Một hàm xét điều kiện duy nhất \texttt{checkChainEligibility} đọc các đối tượng này để kết luận, qua đó việc thêm tier mới chỉ cần bổ sung phần tử vào mảng cấu hình mà không phải sửa logic.
+
+\section{Bố cục đồ án}
+\label{section:1.4}
+
+Phần còn lại của báo cáo được tổ chức thành năm chương theo mô hình quen thuộc cho đồ án tốt nghiệp ngành Khoa học máy tính tại Trường Công nghệ Thông tin và Truyền thông -- Đại học Bách Khoa Hà Nội.
+
+Chương \ref{chapter:Related_works} trình bày kết quả khảo sát thực tế công tác khen thưởng tại Học viện Khoa học Quân sự, xác định các tác nhân tham gia hệ thống, mô tả tổng quan chức năng qua sơ đồ use case và các sơ đồ hoạt động cho những quy trình nghiệp vụ chính (đề xuất -- phê duyệt, kiểm tra điều kiện chuỗi, nhập Excel hàng loạt). Phần đặc tả chi tiết sáu use case trọng yếu được trình bày dưới dạng bảng. Cuối cùng, chương đưa ra các yêu cầu phi chức năng về hiệu năng, bảo mật và tính nhất quán.
+
+Chương \ref{chapter:Methodology} giới thiệu các thành phần công nghệ được lựa chọn cho dự án và lý do chọn từng thành phần trong ngữ cảnh PM QLKT, bao gồm Next.js 14 App Router, Express + TypeScript, PostgreSQL + Prisma, các thư viện giao diện (Ant Design, Tailwind, shadcn/ui), Socket.IO, JWT, Joi, Zod, Jest và ExcelJS.
+
+Chương \ref{chapter:Experiment} đi sâu vào kiến trúc phân tầng của hệ thống, sơ đồ gói cho frontend và backend, sơ đồ lớp cho năm module nghiệp vụ trọng yếu, các sơ đồ tuần tự cho luồng đăng nhập, tạo đề xuất, phê duyệt và tính lại điều kiện chuỗi, thiết kế cơ sở dữ liệu (ERD đầy đủ và mô tả schema), phần xây dựng thực tế kèm các đoạn mã minh hoạ, kết quả kiểm thử và hướng dẫn triển khai bằng PM2 và Nginx.
+
+Chương \ref{chapter:SolutionAndContribution} lần lượt phân tích năm điểm khác biệt mà sản phẩm mang lại so với phương thức thủ công hiện tại. Mỗi điểm trình bày theo cấu trúc thực trạng -- giải pháp -- kết quả đo lường định lượng được rút ra từ kiểm thử và dữ liệu mẫu.
+
+Chương \ref{chapter:conclusion} tổng kết các nhiệm vụ đã hoàn thành, các bài học rút ra sau quá trình thực hiện, đồng thời đề xuất bảy hướng phát triển cho phiên bản kế tiếp, bao gồm hỗ trợ các danh hiệu cao hơn BKTTCP, tích hợp ký số quyết định, xây dựng ứng dụng di động cho người dùng cấp USER và mở rộng khả năng phân tích dữ liệu cho cấp Bộ.
+
+\end{document}

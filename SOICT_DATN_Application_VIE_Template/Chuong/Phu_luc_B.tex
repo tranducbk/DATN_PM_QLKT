@@ -1,0 +1,94 @@
+\documentclass[../DoAn.tex]{subfiles}
+\begin{document}
+
+Phụ lục này bổ sung đặc tả chi tiết cho bốn use case quan trọng nhưng chưa được đặc tả đầy đủ trong phần nội dung chính (Chương \ref{chapter:Related_works} mới đặc tả sáu use case trọng yếu UC-01 đến UC-06). Bốn use case đặc tả thêm dưới đây bao gồm Quản lý đơn vị (UC-07), Sao lưu dữ liệu (UC-08), Quản lý tài khoản (UC-09) và Xem nhật ký hệ thống (UC-10).
+
+\section{Đặc tả use case ``Quản lý đơn vị (CQĐV / ĐVTT)''}
+\label{appendix:uc07}
+
+\begin{table}[H]
+\centering
+\caption{Đặc tả use case UC-07 Quản lý đơn vị}
+\label{tab:uc07}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{3cm}|p{11.5cm}|}
+\hline
+\textbf{Mục} & \textbf{Nội dung} \\ \hline
+Tên & Quản lý đơn vị (CQĐV / ĐVTT) \\ \hline
+ID & UC-07 \\ \hline
+Tác nhân & SuperAdmin (cấu hình hạ tầng), Admin (Phòng Chính trị quản trị nghiệp vụ) \\ \hline
+Tiền điều kiện & Đã đăng nhập với vai trò có quyền chỉnh sửa cây tổ chức. \\ \hline
+Luồng chính &
+(1) Thêm cơ quan đơn vị (CQĐV) cấp trên: chọn ``Thêm CQĐV'', nhập \texttt{ma\_don\_vi}, \texttt{ten\_don\_vi}; hệ thống xác thực \texttt{ma\_don\_vi} duy nhất rồi lưu vào bảng \texttt{CoQuanDonVi}. (2) Thêm đơn vị trực thuộc (ĐVTT): chọn CQĐV cha, nhập thông tin ĐVTT; hệ thống lưu vào \texttt{DonViTrucThuoc} với khoá ngoại \texttt{co\_quan\_don\_vi\_id}. (3) Quản lý chức vụ trong CQĐV/ĐVTT: thêm chức vụ với \texttt{ten\_chuc\_vu}, \texttt{is\_manager}, \texttt{he\_so\_chuc\_vu}; hệ thống lưu kèm ràng buộc duy nhất theo cặp đơn vị -- tên chức vụ. (4) Xem cây đơn vị kèm bộ đếm số quân nhân: hệ thống trả về cấu trúc cây với \texttt{so\_luong} đã được tự động cập nhật khi thêm/sửa/xoá quân nhân. \\ \hline
+Luồng thay thế &
+(1a) \texttt{ma\_don\_vi} đã tồn tại $\rightarrow$ 400 ``Mã đơn vị đã tồn tại''. (2a) CQĐV cha không tồn tại $\rightarrow$ 404. (Xoá CQĐV) Hệ thống cascade xoá tất cả ĐVTT, ChucVu, QuanNhan thuộc CQĐV theo \texttt{onDelete: Cascade} ở schema. \\ \hline
+Hậu điều kiện & Cấu trúc cây đơn vị được cập nhật; \texttt{so\_luong} chính xác; các quân nhân và chức vụ được liên kết đúng. \\ \hline
+\end{tabular}
+\end{table}
+
+\section{Đặc tả use case ``Sao lưu dữ liệu''}
+\label{appendix:uc08}
+
+\begin{table}[H]
+\centering
+\caption{Đặc tả use case UC-08 Sao lưu dữ liệu}
+\label{tab:uc08}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{3cm}|p{11.5cm}|}
+\hline
+\textbf{Mục} & \textbf{Nội dung} \\ \hline
+Tên & Sao lưu dữ liệu định kỳ và thủ công \\ \hline
+ID & UC-08 \\ \hline
+Tác nhân & SuperAdmin (qua DevZone), Cron task tự động \\ \hline
+Tiền điều kiện & Tính năng backup được bật (\texttt{SystemSetting.backup\_enabled = true}); SuperAdmin đã xác thực mật khẩu DevZone qua \texttt{POST /api/dev-zone/auth}. \\ \hline
+Luồng chính &
+(1) Cron job tự động: \texttt{node-cron} in-process khởi chạy theo \texttt{cron\_schedule} (mặc định \texttt{'0 1 1 * *'} --- 01:00 ngày 1 mỗi tháng); gọi \texttt{backup.service.ts.createBackup(\{ type: 'scheduled' \})}; đọc 21 bảng dữ liệu qua \texttt{Promise.all}; build chuỗi SQL \texttt{INSERT INTO ... VALUES (...)} cho từng row, escape JSON/string qua \texttt{quoteValue()}; \texttt{fs.writeFileSync(filePath, sqlLines.join('\textbackslash n'))} vào thư mục \texttt{backups/}; cập nhật \texttt{SystemSetting.backup\_last\_run = now ISO}; ghi \texttt{SystemLog} \texttt{resource = 'backup'} (chỉ SuperAdmin xem được); xoá file backup cũ hơn \texttt{backup\_retention\_days} (mặc định 15). (2) SuperAdmin trigger thủ công qua \texttt{POST /api/dev-zone/backup/trigger}, gọi \texttt{createBackup(\{ type: 'manual' \})} --- flow giống Cron. (3) Xem trạng thái: \texttt{GET /api/dev-zone/backup/status} trả về \texttt{\{ enabled, schedule, last\_run, next\_run, retention\_days, recent\_logs \}}. (4) Đổi lịch / bật-tắt: \texttt{PUT /api/dev-zone/backup/schedule} body \texttt{\{ enabled, schedule, retention\_days \}}; xác thực cú pháp cron, cập nhật \texttt{SystemSetting}, đăng ký lại \texttt{node-cron}. (5) Cleanup thủ công: \texttt{POST /api/dev-zone/backup/cleanup}, quét \texttt{backups/}, xoá file quá hạn. \\ \hline
+Luồng thay thế &
+(1a) \texttt{backup\_enabled = false} $\rightarrow$ cron skip silently, không sinh file. (1.4a) I/O fail (đầy ổ cứng / không có quyền) $\rightarrow$ ghi \texttt{SystemLog} \texttt{action = BACKUP\_FAILED}; không gửi notification (chỉ SuperAdmin xem được). (4a) Cú pháp cron không hợp lệ $\rightarrow$ trả 400, giữ schedule cũ. \\ \hline
+Hậu điều kiện & File \texttt{.sql} mới được lưu trong thư mục \texttt{backups/} của BE-QLKT. Restore phải thủ công qua \texttt{psql -d qlkt < backup.sql}. \\ \hline
+\end{tabular}
+\end{table}
+
+\section{Đặc tả use case ``Quản lý tài khoản''}
+\label{appendix:uc09}
+
+\begin{table}[H]
+\centering
+\caption{Đặc tả use case UC-09 Quản lý tài khoản}
+\label{tab:uc09}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{3cm}|p{11.5cm}|}
+\hline
+\textbf{Mục} & \textbf{Nội dung} \\ \hline
+Tên & Quản lý tài khoản người dùng \\ \hline
+ID & UC-09 \\ \hline
+Tác nhân & SuperAdmin, Admin (Phòng Chính trị) \\ \hline
+Tiền điều kiện & Đã đăng nhập với vai trò SuperAdmin hoặc Admin; route \texttt{/api/accounts} dùng middleware \texttt{requireAdmin}. \\ \hline
+Luồng chính &
+(1) Tạo tài khoản mới: chọn quân nhân, nhập \texttt{username} và \texttt{role}; hệ thống sinh password mặc định, băm bằng bcrypt, lưu \texttt{TaiKhoan} với khoá ngoại \texttt{quan\_nhan\_id}; trả password gốc một lần để người tạo chuyển cho người dùng. (2) Cập nhật role hoặc khoá tài khoản: sửa \texttt{role} hoặc bật/tắt \texttt{active}; \texttt{UPDATE TaiKhoan}, ghi log. (3) Reset mật khẩu: hệ thống sinh password mới, băm, lưu, trả về một lần. (4) Xoá tài khoản: xác nhận; \texttt{DELETE TaiKhoan}, các log liên quan giữ lại với \texttt{SetNull}. \\ \hline
+Luồng thay thế &
+(1a) Username đã tồn tại $\rightarrow$ 400 ``Username đã được sử dụng''. (1b) Quân nhân đã có tài khoản (ràng buộc 1-1) $\rightarrow$ 400. \\ \hline
+Hậu điều kiện & Tài khoản được tạo/cập nhật/xoá trong cơ sở dữ liệu; người dùng có thể đăng nhập với tài khoản mới. \\ \hline
+\end{tabular}
+\end{table}
+
+\section{Đặc tả use case ``Xem nhật ký hệ thống''}
+\label{appendix:uc10}
+
+\begin{table}[H]
+\centering
+\caption{Đặc tả use case UC-10 Xem nhật ký hệ thống}
+\label{tab:uc10}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{3cm}|p{11.5cm}|}
+\hline
+\textbf{Mục} & \textbf{Nội dung} \\ \hline
+Tên & Xem nhật ký hệ thống \\ \hline
+ID & UC-10 \\ \hline
+Tác nhân & SuperAdmin, Admin, Manager \\ \hline
+Tiền điều kiện & Đã đăng nhập với vai trò SuperAdmin, Admin hoặc Manager; route \texttt{/api/system-logs} dùng \texttt{requireManager}. Log có \texttt{resource = 'backup'} chỉ SuperAdmin xem được --- Admin và Manager bị filter trong \texttt{systemLogs.service.ts}. \\ \hline
+Luồng chính &
+(1) Truy cập trang ``Nhật ký hệ thống''; hệ thống hiển thị bảng log với cột: thời gian, người thực hiện, vai trò, action, resource, mô tả. (2) Áp dụng bộ lọc theo resource, action, người thực hiện, khoảng thời gian. (3) Hệ thống gọi \texttt{systemLogsService.getLogs(userRole, filters)} --- filter \texttt{resource = 'backup'} nếu role không phải SuperAdmin; Manager còn bị giới hạn theo phạm vi đơn vị qua \texttt{getManagerAccountIds}. (4) Trả về danh sách log đã phân trang. (5) Click vào một log để xem chi tiết \texttt{payload} (before/after JSON) trong modal. \\ \hline
+Luồng thay thế &
+(3a) Admin hoặc Manager cố xem log \texttt{resource = 'backup'} $\rightarrow$ tự động bị filter trong service, không thấy bản ghi nào. (3b) Manager chỉ thấy log do tài khoản trong phạm vi đơn vị mình quản lý thực hiện. \\ \hline
+Hậu điều kiện & Người dùng nắm được lịch sử hành động trong hệ thống, phục vụ công tác kiểm tra và truy vết. \\ \hline
+\end{tabular}
+\end{table}
+
+\end{document}
