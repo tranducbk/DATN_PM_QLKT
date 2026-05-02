@@ -23,3 +23,8 @@ node_modules
 *.fdb_latexmk
 *.bbl
 *.blg
+*.bcf
+*.lof
+*.lot
+*.run.xml
+*.synctex.gz
