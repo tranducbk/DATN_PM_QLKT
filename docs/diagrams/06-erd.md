@@ -48,7 +48,6 @@ erDiagram
 
     SystemLog ||--o{ ThongBao : "tạo từ log"
 
-    BangDeXuat ||--o{ FileQuyetDinh : "sinh ra (auto-create khi approve)"
     FileQuyetDinh ||--o{ DanhHieuHangNam : "FK so_quyet_dinh (4 cột: main + bkbqp + cstdtq + bkttcp)"
     FileQuyetDinh ||--o{ ThanhTichKhoaHoc : "FK so_quyet_dinh"
     FileQuyetDinh ||--o{ KhenThuongHCBVTQ : "FK so_quyet_dinh"
@@ -231,8 +230,11 @@ erDiagram
         int months_08
         int months_0910
         string hcbvtq_hang_ba_status
+        date hcbvtq_hang_ba_ngay
         string hcbvtq_hang_nhi_status
+        date hcbvtq_hang_nhi_ngay
         string hcbvtq_hang_nhat_status
+        date hcbvtq_hang_nhat_ngay
         string goi_y
     }
     HoSoHangNam {
@@ -261,6 +263,8 @@ erDiagram
         string description
         json payload
         string ip_address
+        string user_agent
+        timestamp createdAt
     }
     ThongBao {
         string id PK
@@ -270,8 +274,12 @@ erDiagram
         string title
         string message
         string resource
+        string tai_nguyen_id
+        string link
         boolean is_read
         string nhat_ky_he_thong_id FK
+        timestamp createdAt
+        timestamp readAt
     }
     BangDeXuat {
         string id PK
@@ -281,8 +289,8 @@ erDiagram
         string nguoi_duyet_id FK
         string loai_de_xuat
         int nam
-        int thang
-        string status
+        int thang "nullable bắt buộc với HCQKQT KNC"
+        string status "PENDING APPROVED REJECTED"
         json data_danh_hieu
         json data_thanh_tich
         json data_nien_han
@@ -290,6 +298,7 @@ erDiagram
         json files_attached
         string ghi_chu
         string rejection_reason
+        timestamp ngay_duyet
     }
     HoSoDonViHangNam {
         string id PK
@@ -338,9 +347,20 @@ erDiagram
     }
 ```
 
+**Composite uniques** (Mermaid không có syntax UK ghép, liệt kê dưới đây để đầy đủ):
+
+| Bảng | Composite unique | Mục đích |
+|---|---|---|
+| `ChucVu` | `(co_quan_don_vi_id, ten_chuc_vu)` + `(don_vi_truc_thuoc_id, ten_chuc_vu)` | Không trùng tên chức vụ trong cùng đơn vị |
+| `DanhHieuHangNam` | `(quan_nhan_id, nam)` | 1 quân nhân ↔ 1 record/năm |
+| `KhenThuongHCCSVV` | `(quan_nhan_id, danh_hieu)` | Mỗi hạng (Ba/Nhì/Nhất) tối đa 1 record/QN |
+| `HoSoDonViHangNam` | `(co_quan_don_vi_id, nam)` + `(don_vi_truc_thuoc_id, nam)` | 1 đơn vị ↔ 1 hồ sơ/năm |
+| `DanhHieuDonViHangNam` | `(co_quan_don_vi_id, nam)` + `(don_vi_truc_thuoc_id, nam)` | 1 đơn vị ↔ 1 danh hiệu/năm |
+
 **Ghi chú thiết kế** (giải đáp 2 bảng ban đầu trông như "đứng riêng"):
 
 - **`SystemSetting`** — bảng cấu hình toàn cục dạng key-value (`BACKUP_ENABLED`, `BACKUP_RETENTION_DAYS`, lịch cron…). Không liên kết entity nghiệp vụ là **chủ ý thiết kế** — đây là pattern chuẩn cho application config (tương tự `application_settings` của Django/Rails).
+- **`BangDeXuat` ↔ `FileQuyetDinh`** — **không có FK trực tiếp** ở DB level. `BangDeXuat.data_*` (JSON) chứa `so_quyet_dinh` được app-layer (`syncDecisionFiles` trong `decisionMappings.ts`) đảm bảo tồn tại trong `FileQuyetDinh` trước khi insert award rows. Liên kết "sinh ra khi approve" hoàn toàn ở tầng service, không phải FK.
 - **`FileQuyetDinh`** — liên kết qua **hard FK natural key** `so_quyet_dinh` (UK) tới 8 bảng khen thưởng (13 FK columns tổng) + payload JSON của `BangDeXuat` (`data_danh_hieu`, `data_thanh_tich`, `data_nien_han`, `data_cong_hien`) qua app-layer cascade. Thiết kế:
   1. `so_quyet_dinh` là số quyết định **do cơ quan ngoài** (BQP, TTCP, ĐVCT) ban hành — đã có ý nghĩa nghiệp vụ + `@unique` constraint trên `FileQuyetDinh.so_quyet_dinh`. Dùng làm **target column** cho FK natural-key thay vì surrogate `id`.
   2. **Hard FK** với `@relation(... onUpdate: Cascade, onDelete: Restrict)`:
@@ -509,8 +529,8 @@ erDiagram
     }
     KhenThuongHCBVTQ {
         string id PK
-        string quan_nhan_id FK
-        string danh_hieu "HCBVTQ_HANG_BA NHI NHAT"
+        string quan_nhan_id FK "unique 1 record per QN, mutate khi nâng hạng"
+        string danh_hieu "hạng hiện tại: HANG_BA NHI NHAT"
         int nam
         int thang
         string cap_bac
@@ -589,8 +609,11 @@ erDiagram
         int months_08
         int months_0910
         string hcbvtq_hang_ba_status
+        date hcbvtq_hang_ba_ngay
         string hcbvtq_hang_nhi_status
+        date hcbvtq_hang_nhi_ngay
         string hcbvtq_hang_nhat_status
+        date hcbvtq_hang_nhat_ngay
         string goi_y
     }
 ```
@@ -610,7 +633,6 @@ erDiagram
     TaiKhoan ||--o{ BangDeXuat : "duyệt"
     CoQuanDonVi ||--o{ BangDeXuat : "đơn vị tạo"
     DonViTrucThuoc ||--o{ BangDeXuat : "đơn vị tạo"
-    BangDeXuat ||--o{ FileQuyetDinh : "sinh ra"
     CoQuanDonVi ||--o{ DanhHieuDonViHangNam : "đạt theo năm"
     DonViTrucThuoc ||--o{ DanhHieuDonViHangNam : "đạt theo năm"
     CoQuanDonVi ||--o| HoSoDonViHangNam : "tổng hợp"
@@ -731,11 +753,11 @@ erDiagram
 | Module | Số bảng | Tham chiếu Prisma model |
 |---|---|---|
 | Hồ sơ quân nhân (C5.2) | 6 | CoQuanDonVi, DonViTrucThuoc, ChucVu, QuanNhan, LichSuChucVu, TaiKhoan |
-| Khen thưởng cá nhân hằng năm (C5.3) | 4 | DanhHieuHangNam, ThanhTichKhoaHoc, HoSoHangNam (+ QuanNhan) |
+| Khen thưởng cá nhân hằng năm (C5.3) | 3 | DanhHieuHangNam, ThanhTichKhoaHoc, HoSoHangNam |
 | 5 loại huân huy chương (C5.4) | 7 | KhenThuongHCBVTQ, KhenThuongHCCSVV, HCQKQT, KNC, KhenThuongDotXuat, HoSoNienHan, HoSoCongHien |
 | Đề xuất + Đơn vị (C5.5) | 4 | BangDeXuat, DanhHieuDonViHangNam, HoSoDonViHangNam, FileQuyetDinh |
 | Audit + Notification + Setting (C5.6) | 3 | SystemLog, ThongBao, SystemSetting |
-| **Tổng** | **23 model Prisma** (cộng QuanNhan dùng chung) | |
+| **Tổng** | **23 model Prisma** | (QuanNhan đã đếm trong C5.2, các module sau dùng chung không double-count) |
 
 → Báo cáo mẫu HRM có 14 bảng. PM QLKT của bạn có **23 bảng** — gấp 1.6 lần. Đây là một trong những điểm dễ defend "hệ thống nghiệp vụ phức tạp".
 

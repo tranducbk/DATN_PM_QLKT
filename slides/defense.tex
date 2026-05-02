@@ -1,0 +1,716 @@
+% =====================================================================
+% PM QLKT — Slides bảo vệ ĐATN (Beamer + xelatex)
+% =====================================================================
+% Build: xelatex defense.tex (chạy 2 lần để cập nhật cross-ref + TOC)
+% =====================================================================
+
+\documentclass[aspectratio=43,xcolor=table]{beamer}
+
+% --- Font + tiếng Việt ---
+\usepackage{fontspec}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,shapes.geometric}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{listings}
+
+% Vietnamese support
+\usepackage{polyglossia}
+\setdefaultlanguage{vietnamese}
+\setotherlanguage{english}
+\setmainfont{Arial}
+\setsansfont{Arial}
+\setmonofont{Menlo}
+
+% --- HUST color palette ---
+\definecolor{hustred}{RGB}{200,16,46}
+\definecolor{hustdark}{RGB}{138,12,32}
+\definecolor{hustlight}{RGB}{255,232,236}
+\definecolor{bgsoft}{RGB}{250,250,250}
+\definecolor{linecol}{RGB}{229,231,235}
+\definecolor{textmain}{RGB}{31,41,55}
+\definecolor{textmuted}{RGB}{107,114,128}
+
+% --- Beamer theme + tuỳ biến ---
+\usetheme{default}
+\usecolortheme[named=hustred]{structure}
+\useinnertheme{rectangles}
+\useoutertheme{infolines}
+
+% Tuỳ biến header/footer
+\setbeamercolor{title}{fg=hustred}
+\setbeamercolor{frametitle}{fg=white,bg=hustred}
+\setbeamercolor{section in head/foot}{fg=white,bg=hustdark}
+\setbeamercolor{subsection in head/foot}{fg=white,bg=hustred}
+\setbeamercolor{author in head/foot}{fg=white,bg=hustdark}
+\setbeamercolor{title in head/foot}{fg=white,bg=hustred}
+\setbeamercolor{date in head/foot}{fg=white,bg=hustdark}
+
+\setbeamercolor{block title}{fg=white,bg=hustred}
+\setbeamercolor{block body}{fg=textmain,bg=hustlight}
+\setbeamercolor{block title alerted}{fg=white,bg=hustdark}
+\setbeamercolor{block body alerted}{fg=textmain,bg=bgsoft}
+\setbeamercolor{block title example}{fg=white,bg=hustdark}
+\setbeamercolor{block body example}{fg=textmain,bg=bgsoft}
+
+\setbeamercolor{itemize item}{fg=hustred}
+\setbeamercolor{itemize subitem}{fg=hustdark}
+\setbeamertemplate{itemize item}[circle]
+\setbeamertemplate{itemize subitem}[triangle]
+
+% Frame title style
+\setbeamertemplate{frametitle}{%
+  \nointerlineskip%
+  \begin{beamercolorbox}[wd=\paperwidth,ht=2.5ex,dp=1ex,leftskip=0.3cm,rightskip=0.3cm]{frametitle}%
+    \strut\insertframetitle\strut%
+  \end{beamercolorbox}%
+}
+
+\setbeamertemplate{navigation symbols}{}
+
+% Caption "X / Y" thay vì page number
+\setbeamertemplate{footline}{%
+  \leavevmode%
+  \hbox{%
+    \begin{beamercolorbox}[wd=.4\paperwidth,ht=2.25ex,dp=1ex,center]{author in head/foot}%
+      \usebeamerfont{author in head/foot}\insertshortauthor%
+    \end{beamercolorbox}%
+    \begin{beamercolorbox}[wd=.45\paperwidth,ht=2.25ex,dp=1ex,center]{title in head/foot}%
+      \usebeamerfont{title in head/foot}PM QLKT --- ĐATN 2025/2026%
+    \end{beamercolorbox}%
+    \begin{beamercolorbox}[wd=.15\paperwidth,ht=2.25ex,dp=1ex,center]{date in head/foot}%
+      \usebeamerfont{date in head/foot}\insertframenumber{} / \inserttotalframenumber%
+    \end{beamercolorbox}}%
+}
+
+% --- Macros tiện dụng ---
+\newcommand{\highlight}[1]{\textcolor{hustred}{\textbf{#1}}}
+\newcommand{\hustpill}[1]{\colorbox{hustlight}{\textcolor{hustred}{\small #1}}}
+
+% Listings setup (nếu có code)
+\lstdefinestyle{tscode}{
+  basicstyle=\ttfamily\scriptsize\color{textmain},
+  keywordstyle=\color{hustred}\bfseries,
+  commentstyle=\color{textmuted},
+  stringstyle=\color{hustdark},
+  backgroundcolor=\color{bgsoft},
+  frame=single,
+  rulecolor=\color{linecol},
+  showstringspaces=false,
+  breaklines=true,
+  tabsize=2,
+}
+\lstset{style=tscode}
+
+% --- Metadata ---
+\title{Phần mềm Quản lý Khen thưởng}
+\subtitle{Tại Học viện Khoa học Quân sự}
+\author[Trần Anh Đức]{Sinh viên thực hiện: \textbf{Trần Anh Đức}\\Giảng viên hướng dẫn: \textbf{[Học hàm. Tên giảng viên]}}
+\institute[ĐHBKHN]{Trường Công nghệ Thông tin và Truyền thông --- Đại học Bách khoa Hà Nội}
+\date{Tháng 5/2026}
+
+% =====================================================================
+\begin{document}
+
+% --- Slide 1: Title ---
+{
+\setbeamertemplate{footline}{}
+\begin{frame}[plain]
+  \begin{center}
+    \vspace{0.5cm}
+    {\large \textcolor{hustdark}{ĐẠI HỌC BÁCH KHOA HÀ NỘI}}\\
+    {\small \textcolor{textmuted}{Trường Công nghệ Thông tin và Truyền thông}}\\[1.2cm]
+
+    {\Huge \textcolor{hustred}{\textbf{PHẦN MỀM QUẢN LÝ}}}\\[0.3cm]
+    {\Huge \textcolor{hustred}{\textbf{KHEN THƯỞNG}}}\\[0.5cm]
+
+    {\large Đồ án Tốt nghiệp Đại học --- Niên khóa 2025/2026}\\[1.5cm]
+
+    \begin{tabular}{rl}
+      \textbf{Sinh viên thực hiện} & : Trần Anh Đức \\
+      \textbf{Mã số sinh viên} & : [MSSV] \\
+      \textbf{Lớp} & : [Lớp] \\
+      \textbf{Giảng viên hướng dẫn} & : [Học hàm. Tên GVHD] \\
+    \end{tabular}\\[1cm]
+
+    {\small \textcolor{textmuted}{Hà Nội, tháng 5 năm 2026}}
+  \end{center}
+\end{frame}
+}
+
+% --- Slide 2: Nội dung trình bày ---
+\begin{frame}{Nội dung trình bày}
+  \begin{columns}[T,onlytextwidth]
+    \column{0.5\textwidth}
+    \textcolor{hustdark}{\textbf{Phần I --- Mở đầu}}
+    \begin{enumerate}
+      \item Mục tiêu của đồ án
+      \item Phân tích bài toán
+      \item Hệ thống danh hiệu khen thưởng
+      \item Logic chuỗi danh hiệu
+    \end{enumerate}
+    \vspace{0.3cm}
+    \textcolor{hustdark}{\textbf{Phần II --- Thiết kế}}
+    \begin{enumerate}\setcounter{enumi}{4}
+      \item Kiến trúc \& công nghệ
+      \item Cơ sở dữ liệu
+      \item Phân tích chức năng \& quy trình
+      \item Kiến trúc phần mềm
+    \end{enumerate}
+
+    \column{0.5\textwidth}
+    \textcolor{hustdark}{\textbf{Phần III --- Tính năng nổi bật}}
+    \begin{enumerate}\setcounter{enumi}{8}
+      \item Tự động xét điều kiện
+      \item Quy trình đề xuất \& ra quyết định
+      \item Nhập/xuất dữ liệu hàng loạt
+      \item Vận hành \& quản trị hệ thống
+    \end{enumerate}
+    \vspace{0.3cm}
+    \textcolor{hustdark}{\textbf{Phần IV --- Đánh giá \& Tổng kết}}
+    \begin{enumerate}\setcounter{enumi}{12}
+      \item Kiểm thử, hiệu năng, triển khai
+      \item Kết luận và hướng phát triển
+    \end{enumerate}
+  \end{columns}
+
+  \vspace{0.4cm}
+  \begin{block}{}
+    \centering Thời lượng trình bày: \highlight{13--14 phút}, sau đó là phần Hỏi \& Đáp với Hội đồng.
+  \end{block}
+\end{frame}
+
+% --- Slide 3: Mục tiêu của đồ án ---
+\begin{frame}{Mục tiêu của đồ án}
+  \begin{columns}[T,onlytextwidth]
+    \column{0.5\textwidth}
+    \textbf{Bối cảnh và động lực}
+    \begin{itemize}
+      \item Quy trình quản lý khen thưởng tại đơn vị quân đội hiện chủ yếu dựa trên \textbf{Excel và hồ sơ giấy}
+      \item Khó tra cứu lịch sử khen thưởng nhiều năm của cá nhân và đơn vị
+      \item \highlight{Quy định xét chuỗi danh hiệu phức tạp} (BKBQP, CSTĐTQ, BKTTCP) dễ gây sai sót khi tính thủ công
+      \item Yêu cầu vận hành trên \textbf{mạng nội bộ}, không phụ thuộc Internet
+    \end{itemize}
+
+    \column{0.5\textwidth}
+    \textbf{Mục tiêu cụ thể}
+    \begin{itemize}
+      \item Xây dựng phần mềm \textbf{quản lý 5 nhóm khen thưởng} (UC5--UC9) với 4 cấp vai trò
+      \item \textbf{Tự động hoá} xét điều kiện theo quy định hiện hành
+      \item Hỗ trợ quy trình \textbf{đề xuất $\to$ duyệt $\to$ ra quyết định}
+      \item Đảm bảo \textbf{truy vết và bảo mật} đầy đủ
+      \item \textbf{Triển khai được trên mạng nội bộ offline}
+    \end{itemize}
+    \vspace{0.2cm}
+    \begin{block}{Mục tiêu cốt lõi}
+      Giảm sai sót thủ công, tiết kiệm thời gian, đảm bảo đúng quy định.
+    \end{block}
+  \end{columns}
+\end{frame}
+
+% --- Slide 4: Phân tích bài toán — 6 nhóm thách thức ---
+\begin{frame}{Phân tích bài toán --- 6 nhóm thách thức}
+  \begin{columns}[T,onlytextwidth]
+    \column{0.5\textwidth}
+    \textbf{\textcolor{hustred}{Nghiệp vụ phức tạp}}\\
+    \small 5 nhóm khen thưởng (UC5--UC9), mỗi nhóm có quy định xét duyệt riêng\\[0.25cm]
+
+    \textbf{\textcolor{hustred}{Logic chuỗi danh hiệu}}\\
+    \small Cửa sổ trượt 3 năm và 7 năm; ràng buộc lifetime đối với BKTTCP cá nhân\\[0.25cm]
+
+    \textbf{\textcolor{hustred}{Phân quyền 4 cấp}}\\
+    \small SUPER\_ADMIN $>$ ADMIN $>$ MANAGER $>$ USER, dữ liệu giới hạn theo phạm vi đơn vị
+
+    \column{0.5\textwidth}
+    \textbf{\textcolor{hustred}{Thông báo thời gian thực}}\\
+    \small Cập nhật trạng thái duyệt đến người liên quan ngay tức thì\\[0.25cm]
+
+    \textbf{\textcolor{hustred}{Truy vết toàn diện}}\\
+    \small Mọi thao tác phải được ghi nhận để phục vụ kiểm tra nội bộ\\[0.25cm]
+
+    \textbf{\textcolor{hustred}{Triển khai offline}}\\
+    \small Hệ thống vận hành trong \textbf{mạng nội bộ}, không gọi dịch vụ ngoài
+  \end{columns}
+
+  \vspace{0.4cm}
+  \begin{block}{}
+    \centering Trọng tâm khó nhất là \highlight{logic chuỗi danh hiệu} --- sẽ trình bày chi tiết ở slide kế tiếp.
+  \end{block}
+\end{frame}
+
+% --- Slide 5: Hệ thống khen thưởng — 5 nhóm UC5–UC9 ---
+\begin{frame}{Hệ thống khen thưởng --- 5 nhóm UC5--UC9}
+  \scriptsize
+  \begin{tabularx}{\textwidth}{|c|>{\raggedright\arraybackslash}p{2.4cm}|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}p{2.6cm}|}
+    \hline
+    \rowcolor{hustred}\textcolor{white}{\textbf{UC}} & \textcolor{white}{\textbf{Nhóm khen thưởng}} & \textcolor{white}{\textbf{Phân rã chi tiết}} & \textcolor{white}{\textbf{Tiêu chí xét}} \\ \hline
+    \textbf{UC5} & \textbf{Khen thưởng hằng năm} & Cá nhân (CSTĐCS, CSTT, BKBQP, CSTĐTQ, BKTTCP) + Đơn vị (ĐVQT, ĐVTT, BKBQP, BKTTCP) & Theo năm \\ \hline
+    \textbf{UC6} & \textbf{Khen thưởng niên hạn} & HCCSVV (3 hạng), HCQKQT, KNC VSNXD QĐNDVN & Theo thời gian phục vụ \\ \hline
+    \textbf{UC7} & \textbf{Khen thưởng cống hiến} & HCBVTQ (3 hạng) & Cộng dồn 120 tháng \\ \hline
+    \textbf{UC8} & \textbf{Khen thưởng thành tích} & NCKH (Đề tài KH, Sáng kiến KH) & Theo công trình \\ \hline
+    \textbf{UC9} & \textbf{Khen thưởng đột xuất} & Theo sự kiện / chiến công cụ thể & Phi định kỳ \\ \hline
+  \end{tabularx}
+
+  \vspace{0.4cm}
+  \begin{block}{}
+    Mỗi nhóm UC được hiện thực bằng một hoặc nhiều \highlight{proposal type} trong code, dispatch qua \highlight{Strategy pattern} (Slide 12).
+  \end{block}
+\end{frame}
+
+% --- Slide 6: Chuỗi danh hiệu hằng năm — Logic cốt lõi ⭐ ---
+\begin{frame}{Chuỗi danh hiệu hằng năm --- Logic cốt lõi}
+  \begin{columns}[T,onlytextwidth]
+    \column{0.42\textwidth}
+    \textbf{Chuỗi cá nhân}
+    \begin{block}{}
+      \scriptsize
+      \texttt{CSTĐCS × 2 năm}\\
+      \quad$\downarrow$\\
+      \texttt{BKBQP (cycle 2y)}\\
+      \quad$\downarrow$ 3y + 1 BKBQP/3y\\
+      \texttt{CSTĐTQ (cycle 3y)}\\
+      \quad$\downarrow$ 7y + 3 BKBQP\\
+      \quad\quad + 2 CSTĐTQ + NCKH/năm\\
+      \texttt{BKTTCP \quad lifetime}
+    \end{block}
+
+    \textbf{Chuỗi đơn vị}
+    \begin{block}{}
+      \scriptsize
+      \texttt{ĐVQT × 2y $\to$ BKBQP $\to$\\7y + 3 BKBQP/7y $\to$ BKTTCP}\\
+      (đơn vị có thể nhận lặp lại)
+    \end{block}
+
+    \column{0.55\textwidth}
+    \textbf{Quy tắc đặc biệt}\\[0.2cm]
+
+    \begin{block}{Cửa sổ trượt 3y / 7y}
+      \footnotesize BKBQP của chu kỳ trước rơi ra $\to$ bắt buộc có BKBQP mới ở chu kỳ hiện tại
+    \end{block}
+
+    \begin{block}{Lifetime BKTTCP cá nhân}
+      \footnotesize Chỉ nhận một lần. Hệ thống chặn các đề xuất sau với thông báo cụ thể, do quy định chưa có danh hiệu cao hơn
+    \end{block}
+
+    \begin{block}{Lỡ đợt}
+      \footnotesize Chu kỳ vẫn tiếp tục đếm. Chu kỳ kế lại được xét, không yêu cầu đứt chuỗi CSTĐCS / ĐVQT
+    \end{block}
+  \end{columns}
+\end{frame}
+
+% --- Slide 7: Kiến trúc tổng quan ---
+\begin{frame}{Kiến trúc tổng quan hệ thống}
+  \centering
+  \begin{block}{Luồng dữ liệu chính}
+    \centering\Large
+    \textcolor{hustred}{\textbf{Browser}} $\xrightarrow{\text{HTTPS}}$
+    \textcolor{hustred}{\textbf{Frontend}} $\xrightarrow{\text{REST}}$
+    \textcolor{hustred}{\textbf{Backend}} $\xrightarrow{\text{Prisma}}$
+    \textcolor{hustred}{\textbf{PostgreSQL}}\\[0.3cm]
+    \small \textcolor{hustdark}{\textit{(WebSocket / Socket.IO --- thông báo real-time hai chiều giữa Browser và Backend)}}
+  \end{block}
+
+  \vspace{0.3cm}
+  \begin{columns}[T,onlytextwidth]
+    \column{0.33\textwidth}
+    \textbf{\textcolor{hustred}{Tầng giao diện}}\\
+    \small \textbf{Next.js 14}, Ant Design, TypeScript end-to-end
+    \column{0.33\textwidth}
+    \textbf{\textcolor{hustred}{Tầng ứng dụng}}\\
+    \small \textbf{Express} + Prisma ORM, layered Controller$\to$Service$\to$Repository
+    \column{0.33\textwidth}
+    \textbf{\textcolor{hustred}{Tầng dữ liệu}}\\
+    \small \textbf{PostgreSQL} + Socket.IO real-time, PM2 process manager
+  \end{columns}
+\end{frame}
+
+% --- Slide 8: Công nghệ sử dụng ---
+\begin{frame}{Công nghệ sử dụng --- Tech Stack}
+  \begin{columns}[T,onlytextwidth]
+    \column{0.5\textwidth}
+    \textcolor{hustred}{\textbf{Frontend}}
+    \begin{itemize}\small
+      \item \textbf{Next.js 14} (App Router) --- server components, file-based routing
+      \item \textbf{TypeScript} --- type safety toàn dự án
+      \item \textbf{Ant Design} --- component nghiệp vụ (Form, Table, DatePicker)
+      \item \textbf{Tailwind CSS + shadcn/ui} --- styling tuỳ biến
+      \item \textbf{Zod} --- schema validation chia sẻ giữa client và server
+      \item \textbf{Socket.IO client} --- nhận thông báo real-time
+    \end{itemize}
+
+    \column{0.5\textwidth}
+    \textcolor{hustred}{\textbf{Backend \& CSDL}}
+    \begin{itemize}\small
+      \item \textbf{Express + TypeScript} --- REST API
+      \item \textbf{Prisma ORM 6.x} --- type-safe queries, migration tự động
+      \item \textbf{PostgreSQL} --- RDBMS, transaction \texttt{SERIALIZABLE}
+      \item \textbf{Joi + Zod} --- validate hai tầng
+      \item \textbf{JWT 2 token} --- access + refresh
+      \item \textbf{bcrypt} --- hash password (10 rounds)
+    \end{itemize}
+  \end{columns}
+
+  \vspace{0.3cm}
+  \centering
+  \hustpill{Socket.IO} \hustpill{PM2} \hustpill{node-cron} \hustpill{ExcelJS} \hustpill{PDFKit} \hustpill{Local deploy}
+\end{frame}
+
+% --- Slide 9: Thiết kế CSDL ---
+\begin{frame}{Thiết kế cơ sở dữ liệu}
+  \begin{columns}[T,onlytextwidth]
+    \column{0.5\textwidth}
+    \textbf{Tổng quan}\\
+    \begin{block}{}
+      \centering {\Huge \textcolor{hustred}{\textbf{23}}}\\
+      bảng chính, FK đầy đủ\\
+      ID dạng CUID 25 ký tự
+    \end{block}
+
+    \textbf{Nhóm bảng}
+    \begin{itemize}\small
+      \item \textbf{Tổ chức} --- \texttt{QuanNhan}, \texttt{CoQuanDonVi}, \texttt{DonViTrucThuoc}, \texttt{ChucVu}
+      \item \textbf{Đề xuất \& Hồ sơ} --- \texttt{BangDeXuat}, \texttt{DanhHieuHangNam}, \texttt{HoSoNienHan}, \texttt{HoSoCongHien}
+      \item \textbf{Tài khoản} --- \texttt{TaiKhoan} (4 vai trò)
+      \item \textbf{Phụ trợ} --- \texttt{SystemLog}, \texttt{ThongBao}, \texttt{FileQuyetDinh}, \texttt{SystemSetting}
+    \end{itemize}
+
+    \column{0.5\textwidth}
+    \begin{block}{Điểm thiết kế đặc biệt}
+      \scriptsize
+      \texttt{FileQuyetDinh} liên kết với 8 bảng khen thưởng qua \textbf{hard FK natural-key} (\texttt{so\_quyet\_dinh}, không phải surrogate ID).\\[0.2cm]
+      Postgres tự cascade rename khi đổi số quyết định, đảm bảo tính toàn vẹn ở tầng database.
+    \end{block}
+
+    \textbf{Composite uniques}
+    \begin{itemize}\small
+      \item \texttt{DanhHieuHangNam(quan\_nhan\_id, nam)}
+      \item \texttt{KhenThuongHCCSVV(quan\_nhan\_id, danh\_hieu)}
+      \item \texttt{ChucVu(co\_quan\_don\_vi\_id, ten\_chuc\_vu)}
+    \end{itemize}
+  \end{columns}
+\end{frame}
+
+% --- Slide 10: Use-case Diagram ---
+\begin{frame}{Phân tích chức năng --- Use-case Diagram}
+  \begin{columns}[T,onlytextwidth]
+    \column{0.42\textwidth}
+    \textbf{Phân quyền theo vai trò}\\[0.2cm]
+    \scriptsize
+    \begin{tabular}{|>{\raggedright\arraybackslash}p{2.5cm}|>{\raggedright\arraybackslash}p{2.6cm}|}
+      \hline
+      \rowcolor{hustred}\textcolor{white}{\textbf{Vai trò}} & \textcolor{white}{\textbf{Phạm vi}} \\ \hline
+      \textbf{USER} & Cá nhân \\ \hline
+      \textbf{MANAGER} & Đơn vị quản lý \\ \hline
+      \textbf{ADMIN} & Toàn nghiệp vụ \\ \hline
+      \textbf{SUPER\_ADMIN} & Hệ thống + quản trị \\ \hline
+    \end{tabular}\\[0.3cm]
+
+    \begin{block}{Hai lớp phân quyền}
+      \scriptsize
+      Middleware \texttt{requireRole} chặn ở route + \texttt{unitFilter} giới hạn dữ liệu theo đơn vị --- hai lớp độc lập, dù bypass được lớp này thì lớp kia vẫn chặn.
+    \end{block}
+
+    \column{0.55\textwidth}
+    \textbf{Use-case chính theo vai trò}\\[0.2cm]
+    \scriptsize
+    \begin{tabular}{|>{\raggedright\arraybackslash}p{2cm}|>{\raggedright\arraybackslash}p{4cm}|}
+      \hline
+      \rowcolor{hustdark}\textcolor{white}{\textbf{Vai trò}} & \textcolor{white}{\textbf{Use-case chính}} \\ \hline
+      SUPER\_ADMIN & Quản trị hệ thống, Backup, Audit log toàn hệ \\ \hline
+      ADMIN & Duyệt đề xuất, Cấp số quyết định, Quản lý quân nhân \\ \hline
+      MANAGER & Tạo đề xuất, Xem hồ sơ đơn vị, Recalc 1 quân nhân \\ \hline
+      USER & Xem hồ sơ cá nhân, Nhận thông báo \\ \hline
+    \end{tabular}
+  \end{columns}
+\end{frame}
+
+% --- Slide 11: Activity Diagram quy trình duyệt ---
+\begin{frame}{Thiết kế hoạt động --- Quy trình duyệt đề xuất}
+  \begin{columns}[T,onlytextwidth]
+    \column{0.55\textwidth}
+    \textbf{Các bước chính}\\[0.2cm]
+    \footnotesize
+    \begin{enumerate}
+      \item USER tạo đề xuất (form / Excel)
+      \item MANAGER review cấp đơn vị
+      \item ADMIN kiểm tra điều kiện và cấp số quyết định
+      \item Sinh PDF, lưu file đính kèm
+      \item Cập nhật hồ sơ + thông báo + audit log
+    \end{enumerate}
+    \vspace{0.2cm}
+    \begin{block}{Tính nhất quán}
+      \scriptsize Bước 3--5 thực hiện trong \textbf{một transaction Prisma} bảo đảm tính nhất quán của dữ liệu.
+    \end{block}
+
+    \column{0.42\textwidth}
+    \begin{block}{Sơ đồ flow đơn giản}
+      \scriptsize\centering
+      \textbf{USER tạo đề xuất}\\
+      $\downarrow$\\
+      \textbf{MANAGER duyệt}\\
+      $\downarrow$\\
+      \textbf{ADMIN kiểm tra}\\
+      $\downarrow$\\
+      \textbf{Sinh PDF + lưu}\\
+      $\downarrow$\\
+      \textbf{Notif + audit log}
+    \end{block}
+  \end{columns}
+\end{frame}
+
+% --- Slide 12: Strategy Pattern ⭐ ---
+\begin{frame}[fragile]{Kiến trúc phần mềm --- Strategy Pattern}
+  \begin{columns}[T,onlytextwidth]
+    \column{0.5\textwidth}
+    \textbf{Vấn đề}\\
+    \scriptsize 5 nhóm UC5--UC9 hiện thực thành 7 proposal type, mỗi loại có logic submit/validate/import khác nhau $\to$ \texttt{if/else} sẽ tạo file 2000+ dòng, khó test và bảo trì.\\[0.3cm]
+
+    \textbf{Giải pháp}\\
+    \scriptsize Định nghĩa \textbf{interface chung}, mỗi loại 1 file riêng, dispatch qua \textbf{Registry}.
+
+    \begin{lstlisting}[basicstyle=\ttfamily\tiny\color{textmain}]
+interface ProposalStrategy {
+  buildSubmitPayload(data);
+  validateApprove(ctx);
+  importInTransaction(tx);
+  buildSuccessMessage(result);
+}
+    \end{lstlisting}
+
+    \column{0.5\textwidth}
+    \begin{block}{7 Strategy implementations}
+      \scriptsize\centering
+      \textbf{\textcolor{hustred}{ProposalStrategy}} \textit{(interface)}\\[0.2cm]
+      $\swarrow \quad \downarrow \quad \searrow$\\[0.2cm]
+      \begin{tabular}{ll}
+        caNhanHangNam & donViHangNam \\
+        nienHan & congHien \\
+        hcQkqt & knc \\
+        \multicolumn{2}{c}{nckh} \\
+      \end{tabular}
+    \end{block}
+
+    \begin{block}{DRY: singleMedalImporter}
+      \scriptsize HC\_QKQT và KNC chia sẻ helper để DRY 90\% logic chung.
+    \end{block}
+  \end{columns}
+\end{frame}
+
+% --- Slide 13: Tự động xét điều kiện ---
+\begin{frame}{Tự động xét điều kiện khen thưởng}
+  \begin{columns}[T,onlytextwidth]
+    \column{0.6\textwidth}
+    \textbf{Cách thức hoạt động}\\[0.2cm]
+
+    \begin{block}{Xét điều kiện hai lớp đồng bộ}
+      \scriptsize \texttt{computeEligibilityFlags} (recalc hồ sơ) và \texttt{checkAwardEligibility} (validate API) dùng chung helper lõi \texttt{chainEligibility} --- bảo đảm hiển thị và xét duyệt nhất quán.
+    \end{block}
+
+    \begin{block}{Gợi ý đề xuất tự động theo năm}
+      \scriptsize Hồ sơ hằng năm tự sinh \texttt{goi\_y} như \textit{``Đủ điều kiện đề nghị BKBQP năm 2026''} --- cán bộ chỉ cần xác nhận để tạo đề xuất.
+    \end{block}
+
+    \begin{block}{Recalc tự động khi có thay đổi}
+      \scriptsize Khi quân nhân nhận danh hiệu mới, đổi đơn vị hoặc cập nhật năm phục vụ --- hệ thống tính lại toàn bộ chuỗi và cập nhật trạng thái đủ/không đủ điều kiện.
+    \end{block}
+
+    \column{0.4\textwidth}
+    \begin{block}{Loại bỏ tính thủ công}
+      \scriptsize \centering Loại bỏ hoàn toàn việc \textbf{tính thủ công} các quy định phức tạp 2y / 3y / 7y.
+    \end{block}
+
+    \begin{block}{Lịch sử dạng timeline}
+      \scriptsize Hiển thị toàn bộ danh hiệu của một quân nhân theo trục thời gian --- dễ quan sát chuỗi BKBQP/CSTĐTQ/BKTTCP.
+    \end{block}
+  \end{columns}
+\end{frame}
+
+% --- Slide 14: Quy trình đề xuất + ra quyết định ---
+\begin{frame}{Quy trình đề xuất và ra quyết định}
+  \begin{columns}[T,onlytextwidth]
+    \column{0.55\textwidth}
+    \begin{block}{Form đề xuất theo từng nhóm UC}
+      \scriptsize Mỗi nhóm khen thưởng UC5--UC9 có form riêng. Schema \textbf{Zod chia sẻ giữa client và server} đảm bảo nhất quán.
+    \end{block}
+
+    \begin{block}{Workflow ba cấp duyệt}
+      \scriptsize USER $\to$ MANAGER cấp đơn vị $\to$ ADMIN cấp toàn nghiệp vụ. Mỗi bước có thể duyệt hoặc từ chối kèm lý do, gửi thông báo về người tạo.
+    \end{block}
+
+    \begin{block}{Cấp số quyết định tự động}
+      \scriptsize Sinh số quyết định theo định dạng và bộ đếm riêng cho từng năm --- đảm bảo không trùng lặp.
+    \end{block}
+
+    \begin{block}{Sinh PDF quyết định}
+      \scriptsize Áp dụng template theo từng loại danh hiệu, kết xuất PDF đính kèm vào đề xuất, lưu trữ tập trung trong thư mục \texttt{storage/}.
+    \end{block}
+
+    \column{0.4\textwidth}
+    \begin{block}{Bảo đảm toàn vẹn}
+      \scriptsize \centering Toàn bộ quy trình thực hiện trong \textbf{một transaction}, kèm \textbf{audit log} chi tiết và phát thông báo real-time.
+    \end{block}
+  \end{columns}
+\end{frame}
+
+% --- Slide 15: Import / Export Excel ---
+\begin{frame}{Nhập / Xuất dữ liệu hàng loạt qua Excel}
+  \begin{columns}[T,onlytextwidth]
+    \column{0.55\textwidth}
+    \textbf{Pattern hai bước an toàn}\\[0.2cm]
+    \begin{block}{Bước 1 --- Preview}
+      \scriptsize Parse file Excel, validate từng dòng (định dạng ngày, CCCD, mã quân nhân, mã đơn vị). Hiển thị bảng lỗi cụ thể trên giao diện trước khi commit.
+    \end{block}
+
+    \begin{block}{Bước 2 --- Confirm}
+      \scriptsize Cán bộ xác nhận dữ liệu đúng $\to$ ghi vào CSDL trong một transaction. Nếu một dòng lỗi, toàn bộ rollback.
+    \end{block}
+
+    \begin{block}{Template chuẩn có data validation}
+      \scriptsize Hệ thống sinh template Excel với dropdown (cấp bậc, đơn vị, danh hiệu), định dạng ngày tháng --- cán bộ điền theo mẫu, giảm sai sót.
+    \end{block}
+
+    \column{0.4\textwidth}
+    \begin{block}{Hiệu năng}
+      \scriptsize Áp dụng \textbf{batch query}: collect IDs $\to$ 1 query \texttt{findMany} $\to$ đẩy vào \texttt{Map} tra cứu O(1), tránh N+1 truy vấn.
+    \end{block}
+
+    \begin{block}{Hỗ trợ}
+      \scriptsize Import hàng loạt các nhóm UC5--UC8 qua Excel + Export báo cáo theo năm và đơn vị.
+    \end{block}
+  \end{columns}
+\end{frame}
+
+% --- Slide 16: Vận hành & Quản trị ---
+\begin{frame}{Vận hành \& Quản trị hệ thống}
+  \begin{columns}[T,onlytextwidth]
+    \column{0.33\textwidth}
+    \textbf{\textcolor{hustred}{Thông báo Real-time}}
+    \begin{block}{Socket.IO push}
+      \scriptsize Phát thông báo qua WebSocket theo room \texttt{user\_id} khi có sự kiện.
+    \end{block}
+    \begin{block}{Lưu lâu dài}
+      \scriptsize Đồng thời lưu vào bảng \texttt{ThongBao} để người dùng offline vẫn nhận sau khi đăng nhập.
+    \end{block}
+
+    \column{0.33\textwidth}
+    \textbf{\textcolor{hustred}{Audit Log}}
+    \begin{block}{Ghi nhận đầy đủ}
+      \scriptsize Middleware tự ghi: ai, làm gì, đối tượng nào, kèm IP và user-agent.
+    \end{block}
+    \begin{block}{Lọc đa chiều}
+      \scriptsize Tìm theo user / hành động / loại tài nguyên / khoảng thời gian.
+    \end{block}
+
+    \column{0.33\textwidth}
+    \textbf{\textcolor{hustred}{Backup \& DevZone}}
+    \begin{block}{Backup tự động}
+      \scriptsize Lập lịch qua \texttt{node-cron}, kết xuất file SQL vào \texttt{backups/}. Restore bằng \texttt{psql}.
+    \end{block}
+    \begin{block}{DevZone}
+      \scriptsize SUPER\_ADMIN bật/tắt schedule, trigger backup thủ công.
+    \end{block}
+  \end{columns}
+\end{frame}
+
+% --- Slide 17: Kiểm thử + Hiệu năng + Triển khai ⭐ ---
+\begin{frame}{Kiểm thử, Hiệu năng và Triển khai}
+  \begin{columns}[T,onlytextwidth]
+    \column{0.55\textwidth}
+    \textbf{Kiểm thử \& Hiệu năng}\\[0.2cm]
+
+    \begin{block}{}
+      \centering {\Huge \textcolor{hustred}{\textbf{74}}} file kiểm thử Jest, pass \textbf{100\%}
+    \end{block}
+
+    \begin{block}{}
+      \centering {\Large \textcolor{hustred}{\textbf{N+1 $\to$ 1}}} \\
+      Tối ưu \textbf{batch query} trong import Excel --- tránh round-trip lặp lại
+    \end{block}
+
+    \scriptsize\textbf{4 kịch bản nổi bật:}
+    \begin{enumerate}\scriptsize
+      \item \textbf{Race condition} --- 2 admin duyệt song song, chỉ 1 thắng
+      \item \textbf{BKTTCP eligibility} --- cửa sổ trượt 7y + lifetime
+      \item \textbf{Tampering} --- server vẫn ghi đúng dù admin sửa payload
+      \item \textbf{Vòng đời thực tế} --- quân nhân lên cấp danh hiệu
+    \end{enumerate}
+
+    \column{0.4\textwidth}
+    \textbf{Triển khai mạng nội bộ}\\[0.2cm]
+    \scriptsize
+    \begin{enumerate}
+      \item Cài \texttt{node\_modules} trên máy có Internet, chuyển sang máy nội bộ
+      \item Tạo CSDL PostgreSQL rỗng + cấu hình \texttt{.env}
+      \item \texttt{npm run setup} --- tạo bảng và SUPER\_ADMIN (idempotent)
+      \item \texttt{npm run serve} --- build + khởi chạy bằng PM2
+    \end{enumerate}
+
+    \begin{block}{PM2 production}
+      \scriptsize Auto-restart, RAM 500MB, log rotation. Hệ thống vận hành \textbf{hoàn toàn offline} sau khi cài đặt.
+    \end{block}
+  \end{columns}
+\end{frame}
+
+% --- Slide 18: Kết luận và Hướng phát triển ---
+\begin{frame}{Kết luận và hướng phát triển}
+  \begin{columns}[T,onlytextwidth]
+    \column{0.33\textwidth}
+    \textbf{\textcolor{hustred}{Đã đạt được}}
+    \begin{itemize}\scriptsize
+      \item Hoàn thành 5 nhóm khen thưởng (UC5--UC9), 4 vai trò
+      \item Tự động hoá toàn bộ quy trình xét duyệt
+      \item 74 file test bao phủ logic cốt lõi
+      \item Triển khai thực tế trên mạng nội bộ
+      \item Kiến trúc layered + Strategy rõ ràng
+    \end{itemize}
+
+    \begin{block}{}
+      \centering {\Large \textcolor{hustred}{$\sim$100k}} LOC tổng dự án
+    \end{block}
+
+    \column{0.33\textwidth}
+    \textbf{\textcolor{hustred}{Hạn chế}}
+    \begin{itemize}\scriptsize
+      \item BKTTCP cá nhân lifetime --- chưa hỗ trợ danh hiệu cao hơn
+      \item Chưa có module thống kê BI chi tiết
+      \item Chỉ chạy 1 instance --- chưa scale ngang
+      \item Ký số quyết định còn ở mức lưu file PDF, chưa tích hợp Smart Card
+    \end{itemize}
+
+    \column{0.33\textwidth}
+    \textbf{\textcolor{hustred}{Hướng phát triển}}
+    \begin{itemize}\scriptsize
+      \item Ứng dụng di động cho cấp duyệt nhanh
+      \item Module BI: biểu đồ xu hướng theo năm và đơn vị
+      \item Tích hợp ký số bằng \textbf{Smart Card / USB token}
+      \item Cluster mode + Redis adapter cho Socket.IO
+    \end{itemize}
+  \end{columns}
+
+  \vspace{0.3cm}
+  \begin{block}{}
+    \centering Phần mềm đã sẵn sàng \highlight{triển khai thử nghiệm tại đơn vị}, đáp ứng đầy đủ các mục tiêu đặt ra ban đầu.
+  \end{block}
+\end{frame}
+
+% --- Slide 19: Cảm ơn ---
+{
+\setbeamertemplate{footline}{}
+\begin{frame}[plain]
+  \begin{center}
+    \vspace{1.5cm}
+    {\Huge \textcolor{hustred}{\textbf{EM XIN TRÂN TRỌNG CẢM ƠN}}}\\[1cm]
+
+    {\Large Hội đồng đã lắng nghe phần trình bày}\\[1.5cm]
+
+    {\large Em rất mong nhận được \highlight{nhận xét và câu hỏi} từ Hội đồng}\\[2cm]
+
+    {\Huge \textcolor{hustred}{$\heartsuit$}}\\
+    {\Large \textcolor{hustdark}{Q\&A}}
+  \end{center}
+\end{frame}
+}
+
+\end{document}

@@ -3189,7 +3189,7 @@ Browser ⇄ Frontend (Next.js) ⇄ Backend (Express) ⇄ PostgreSQL
 + Socket.IO real-time + PM2 process manager
 <div class="size">Kích thước gợi ý: 800 × 380 px — vẽ bằng draw.io hoặc Excalidraw</div>
 </div>
-<div class="cols-3" style="margin-top:14px">
+<div class="cols-3">
 <div>
 <h3 id="%F0%9F%8E%A8-t%E1%BA%A7ng-giao-di%E1%BB%87n"><img class="emoji" draggable="false" alt="🎨" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@17.0.2/assets/svg/1f3a8.svg" data-marp-twemoji=""/> Tầng giao diện</h3>
 <p><strong>Next.js 14</strong>, Ant Design, TypeScript end-to-end</p>
@@ -3643,7 +3643,7 @@ section.feature h1::before {
 <li><strong>Zod</strong> — schema validation chia sẻ giữa client và server</li>
 <li><strong>Socket.IO client</strong> — nhận thông báo real-time</li>
 </ul>
-<div class="callout" style="font-size:0.82em">
+<div class="callout">
 ✓ <strong>Schema Zod dùng chung</strong> cho cả FE và BE — đảm bảo type-safe end-to-end và tránh lệch quy tắc validate.
 </div>
 </div>
@@ -3657,17 +3657,17 @@ section.feature h1::before {
 <li><strong>JWT 2 token</strong> — xác thực access + refresh</li>
 <li><strong>bcrypt</strong> — hash password (10 rounds)</li>
 </ul>
-<div class="callout" style="font-size:0.82em">
+<div class="callout">
 ✓ <strong>Prisma Client type-safe</strong>: kiểm tra kiểu ở thời điểm biên dịch.
 </div>
 </div>
 </div>
-<div class="cols-3" style="margin-top:8px">
+<div class="cols-3">
 <div><span class="pill">🔔 Socket.IO</span> Real-time push</div>
 <div><span class="pill">🚀 PM2</span> Process manager + auto-restart</div>
 <div><span class="pill">📅 node-cron</span> Backup tự động</div>
 </div>
-<div class="cols-3" style="margin-top:4px">
+<div class="cols-3">
 <div><span class="pill">📊 ExcelJS</span> Import/Export Excel</div>
 <div><span class="pill">📄 PDFKit</span> Sinh quyết định PDF</div>
 <div><span class="pill">🐳 Local deploy</span> Mạng nội bộ offline</div>
@@ -4587,7 +4587,7 @@ section.feature h1::before {
 </tr>
 </tbody>
 </table>
-<div class="callout" style="font-size:0.82em">
+<div class="callout">
 🔐 <strong>Hai lớp phân quyền</strong>: middleware <code>requireRole</code> chặn ở route + <code>unitFilter</code> giới hạn dữ liệu theo đơn vị.
 </div>
 </div>
@@ -5045,7 +5045,7 @@ USER tạo → MANAGER duyệt → ADMIN ký
 <div class="step"><span class="n">3</span>ADMIN kiểm tra điều kiện và cấp số quyết định</div>
 <div class="step"><span class="n">4</span>Sinh PDF, lưu file đính kèm</div>
 <div class="step"><span class="n">5</span>Cập nhật hồ sơ + thông báo + audit log</div>
-<div class="callout" style="font-size:0.82em">
+<div class="callout">
 ⚙️ Bước 3–5 thực hiện trong <strong>một transaction Prisma</strong> bảo đảm tính nhất quán.
 </div>
 </div>
@@ -5501,7 +5501,7 @@ Interface ProposalStrategy
 + Registry map
 <div class="size">Vẽ bằng draw.io / Mermaid<br />Kích thước gợi ý: 480 × 540 px</div>
 </div>
-<div class="callout" style="font-size:0.82em">
+<div class="callout">
 🔁 <code>HC_QKQT</code> và <code>KNC</code> chia sẻ helper <code>singleMedalImporter</code> để DRY.
 </div>
 </div>
@@ -5944,25 +5944,21 @@ section.feature h1::before {
 <div class="de"><code>computeEligibilityFlags</code> (recalc hồ sơ) và <code>checkAwardEligibility</code> (validate API) dùng chung helper lõi <code>chainEligibility</code> — bảo đảm hiển thị và xét duyệt nhất quán.</div>
 </div>
 <div class="feat">
-<div class="ti">💬 Gợi ý đề xuất tự động theo năm</div>
+<div class="ti">💬 Gợi ý đề xuất tự động</div>
 <div class="de">Hồ sơ hằng năm tự sinh <code>goi_y</code> như <em>"Đủ điều kiện đề nghị BKBQP năm 2026"</em> — cán bộ chỉ cần xác nhận để tạo đề xuất.</div>
 </div>
 <div class="feat">
-<div class="ti">⏱️ Recalc tự động khi có thay đổi</div>
-<div class="de">Khi quân nhân nhận danh hiệu mới, đổi đơn vị, hoặc cập nhật năm phục vụ — hệ thống tính lại toàn bộ chuỗi và cập nhật trạng thái đủ/không đủ điều kiện.</div>
-</div>
-<div class="feat">
-<div class="ti">📅 Lịch sử khen thưởng dạng timeline</div>
-<div class="de">Hiển thị toàn bộ danh hiệu của một quân nhân theo trục thời gian — dễ quan sát chuỗi BKBQP/CSTDTQ/BKTTCP.</div>
+<div class="ti">⏱️ Recalc + Timeline trực quan</div>
+<div class="de">Khi nhận danh hiệu mới, đổi đơn vị, đổi năm phục vụ — hệ thống tự tính lại toàn bộ chuỗi. Lịch sử hiển thị dạng <strong>timeline</strong> dễ quan sát chuỗi BKBQP/CSTDTQ/BKTTCP.</div>
 </div>
 </div>
 <div>
 <div class="img-box tall">
 <div class="label">🖼️ ẢNH: Trang hồ sơ + Timeline chuỗi danh hiệu</div>
 Hiển thị thông tin quân nhân, danh hiệu các năm, gợi ý đề xuất
-<div class="size">Kích thước gợi ý: 540 × 460 px</div>
+<div class="size">Kích thước gợi ý: 540 × 380 px</div>
 </div>
-<div class="callout" style="font-size:0.82em; margin-top:10px">
+<div class="callout">
 ✅ Loại bỏ hoàn toàn việc <strong>tính thủ công</strong> các quy định phức tạp 2y / 3y / 7y.
 </div>
 </div>
@@ -6401,29 +6397,25 @@ section.feature h1::before {
 <div>
 <h2 id="%C4%91%E1%BA%B7c-%C4%91i%E1%BB%83m-ch%C3%ADnh">Đặc điểm chính</h2>
 <div class="feat">
-<div class="ti">📝 Form đề xuất theo từng nhóm UC</div>
-<div class="de">Mỗi nhóm khen thưởng UC5–UC9 có form riêng với các trường nghiệp vụ phù hợp. Schema <strong>Zod chia sẻ giữa client và server</strong> đảm bảo nhất quán.</div>
+<div class="ti">📝 Form riêng theo từng nhóm UC</div>
+<div class="de">Mỗi nhóm khen thưởng UC5–UC9 có form với trường nghiệp vụ phù hợp. Schema <strong>Zod chia sẻ giữa client và server</strong> đảm bảo nhất quán hai phía.</div>
 </div>
 <div class="feat">
 <div class="ti">⛓️ Workflow ba cấp duyệt</div>
 <div class="de">USER → MANAGER cấp đơn vị → ADMIN cấp toàn nghiệp vụ. Mỗi bước có thể duyệt hoặc từ chối kèm lý do, gửi thông báo về người tạo.</div>
 </div>
 <div class="feat">
-<div class="ti">🔢 Cấp số quyết định tự động</div>
-<div class="de">Sinh số quyết định theo định dạng và bộ đếm riêng cho từng năm — đảm bảo không trùng lặp.</div>
-</div>
-<div class="feat">
-<div class="ti">📄 Sinh PDF quyết định ký số</div>
-<div class="de">Áp dụng template theo từng loại danh hiệu, kết xuất PDF đính kèm vào đề xuất, lưu trữ tập trung trong thư mục <code>storage/</code>.</div>
+<div class="ti">🔢 Cấp số + sinh PDF quyết định</div>
+<div class="de">Số quyết định sinh tự động theo bộ đếm năm (không trùng). PDF kết xuất từ template theo loại danh hiệu, đính kèm đề xuất, lưu trữ tập trung tại <code>storage/</code>.</div>
 </div>
 </div>
 <div>
 <div class="img-box tall">
 <div class="label">🖼️ ẢNH: Trang duyệt đề xuất + PDF quyết định</div>
 Bảng eligibility, danh sách đối tượng, bản xem trước PDF
-<div class="size">Kích thước gợi ý: 540 × 460 px</div>
+<div class="size">Kích thước gợi ý: 540 × 380 px</div>
 </div>
-<div class="callout" style="font-size:0.82em; margin-top:10px">
+<div class="callout">
 🔐 Toàn bộ quy trình thực hiện trong <strong>một transaction</strong>, kèm <strong>audit log</strong> chi tiết và phát thông báo real-time.
 </div>
 </div>
@@ -6860,31 +6852,27 @@ section.feature h1::before {
 <h1 id="nh%E1%BA%ADp--xu%E1%BA%A5t-d%E1%BB%AF-li%E1%BB%87u-h%C3%A0ng-lo%E1%BA%A1t-qua-excel">Nhập / Xuất dữ liệu hàng loạt qua Excel</h1>
 <div class="cols-2">
 <div>
-<h2 id="pattern-hai-b%C6%B0%E1%BB%9Bc-an-to%C3%A0n">Pattern hai bước an toàn</h2>
+<h2 id="quy-tr%C3%ACnh-hai-b%C6%B0%E1%BB%9Bc-c%C3%B3-rollback">Quy trình hai bước có rollback</h2>
 <div class="feat">
-<div class="ti">👁️ Bước 1 — Preview</div>
-<div class="de">Parse file Excel, validate từng dòng (định dạng ngày, CCCD, mã quân nhân, mã đơn vị). Hiển thị bảng lỗi cụ thể trên giao diện trước khi commit.</div>
+<div class="ti">👁️ Bước 1 — Preview & Validate</div>
+<div class="de">Parse file Excel, kiểm tra từng dòng (định dạng ngày, CCCD, mã quân nhân, mã đơn vị). Hiển thị bảng lỗi <strong>theo từng dòng</strong> trước khi cán bộ commit.</div>
 </div>
 <div class="feat">
-<div class="ti">✅ Bước 2 — Confirm</div>
-<div class="de">Cán bộ xác nhận dữ liệu đúng → ghi vào CSDL trong một transaction. Nếu một dòng lỗi, toàn bộ rollback.</div>
+<div class="ti">✅ Bước 2 — Confirm trong transaction</div>
+<div class="de">Sau xác nhận, ghi vào CSDL trong <strong>một transaction Prisma</strong>. Nếu bất kỳ dòng nào lỗi, toàn bộ <strong>rollback</strong> — đảm bảo dữ liệu nhất quán.</div>
 </div>
 <div class="feat">
-<div class="ti">📋 Template chuẩn có data validation</div>
-<div class="de">Hệ thống sinh template Excel với dropdown (cấp bậc, đơn vị, danh hiệu), định dạng ngày tháng — cán bộ điền theo mẫu, giảm sai sót.</div>
-</div>
-<div class="feat">
-<div class="ti">⚡ Hiệu năng cao</div>
-<div class="de">Áp dụng <strong>batch query</strong>: collect IDs → 1 query <code>findMany</code> → đẩy vào <code>Map</code>. Import 1000 dòng dưới 2 giây.</div>
+<div class="ti">📋 Template chuẩn + tối ưu batch</div>
+<div class="de">Sinh template Excel kèm dropdown (cấp bậc, đơn vị, danh hiệu). Áp dụng <strong>batch query</strong>: collect IDs → 1 lần <code>findMany</code> → import 1000 dòng dưới 2 giây.</div>
 </div>
 </div>
 <div>
 <div class="img-box tall">
 <div class="label">🖼️ ẢNH: Trang Preview Import Excel</div>
 Bảng dữ liệu, cột trạng thái Hợp lệ / Lỗi, thông báo lỗi từng dòng
-<div class="size">Kích thước gợi ý: 540 × 460 px</div>
+<div class="size">Kích thước gợi ý: 540 × 380 px</div>
 </div>
-<div class="callout" style="font-size:0.82em; margin-top:10px">
+<div class="callout">
 📤 Hỗ trợ <strong>Import hàng loạt</strong> các nhóm UC5–UC8 qua Excel + <strong>Export báo cáo</strong> theo năm và đơn vị.
 </div>
 </div>
@@ -7354,7 +7342,7 @@ section.feature h1::before {
 </div>
 </div>
 </div>
-<div class="img-box short" style="margin-top:12px">
+<div class="img-box short">
 <div class="label">🖼️ ẢNH: Notification panel + Audit log + DevZone</div>
 Có thể chèn 2–3 ảnh nhỏ ghép ngang
 <div class="size">Kích thước gợi ý: 800 × 200 px</div>
@@ -7811,11 +7799,11 @@ section.feature h1::before {
 <div class="step"><span class="n">2</span>Tạo CSDL PostgreSQL rỗng + cấu hình <code>.env</code></div>
 <div class="step"><span class="n">3</span><code>npm run setup</code> — tạo bảng và SUPER_ADMIN (idempotent)</div>
 <div class="step"><span class="n">4</span><code>npm run serve</code> — build + khởi chạy bằng PM2</div>
-<div class="metric" style="margin-top:10px">
+<div class="metric">
 <div class="num">PM2</div>
 <div class="label">Auto-restart, giới hạn RAM 500MB, log rotation</div>
 </div>
-<div class="callout" style="font-size:0.82em">
+<div class="callout">
 🌐 Hệ thống vận hành <strong>hoàn toàn offline</strong> sau khi cài đặt.
 </div>
 </div>
@@ -8259,7 +8247,7 @@ section.feature h1::before {
 <li>Triển khai thực tế trên mạng nội bộ</li>
 <li>Kiến trúc layered + Strategy rõ ràng</li>
 </ul>
-<div class="metric" style="margin-top:8px">
+<div class="metric">
 <div class="num">~100k</div>
 <div class="label">LOC tổng dự án (BE + FE)</div>
 </div>
@@ -8283,7 +8271,7 @@ section.feature h1::before {
 </ul>
 </div>
 </div>
-<div class="callout" style="margin-top:14px">
+<div class="callout">
 🎯 Phần mềm đã sẵn sàng <strong>triển khai thử nghiệm tại đơn vị</strong>, đáp ứng đầy đủ các mục tiêu đặt ra ban đầu.
 </div>
 <footer>© 2025/2026 — Đại học Bách khoa Hà Nội</footer>
@@ -8717,10 +8705,10 @@ section.feature h1::before {
 
 <h1 id="em-xin-tr%C3%A2n-tr%E1%BB%8Dng-c%E1%BA%A3m-%C6%A1n">EM XIN TRÂN TRỌNG CẢM ƠN</h1>
 <h2 id="h%E1%BB%99i-%C4%91%E1%BB%93ng-%C4%91%C3%A3-l%E1%BA%AFng-nghe-ph%E1%BA%A7n-tr%C3%ACnh-b%C3%A0y">Hội đồng đã lắng nghe phần trình bày</h2>
-<div class="meta" style="margin-top:40px">
+<div class="meta">
 <p>Em rất mong nhận được <strong>nhận xét và câu hỏi</strong> từ Hội đồng</p>
 </div>
-<div style="font-size:60px; margin-top:30px">🙏</div>
+<div>🙏</div>
 <footer>© 2025/2026 — Đại học Bách khoa Hà Nội</footer>
 </section>
 <script>!function(){"use strict";const t={h1:{proto:()=>HTMLHeadingElement,attrs:{role:"heading","aria-level":"1"},style:"display: block; font-size: 2em; margin-block-start: 0.67em; margin-block-end: 0.67em; margin-inline-start: 0px; margin-inline-end: 0px; font-weight: bold;"},h2:{proto:()=>HTMLHeadingElement,attrs:{role:"heading","aria-level":"2"},style:"display: block; font-size: 1.5em; margin-block-start: 0.83em; margin-block-end: 0.83em; margin-inline-start: 0px; margin-inline-end: 0px; font-weight: bold;"},h3:{proto:()=>HTMLHeadingElement,attrs:{role:"heading","aria-level":"3"},style:"display: block; font-size: 1.17em; margin-block-start: 1em; margin-block-end: 1em; margin-inline-start: 0px; margin-inline-end: 0px; font-weight: bold;"},h4:{proto:()=>HTMLHeadingElement,attrs:{role:"heading","aria-level":"4"},style:"display: block; margin-block-start: 1.33em; margin-block-end: 1.33em; margin-inline-start: 0px; margin-inline-end: 0px; font-weight: bold;"},h5:{proto:()=>HTMLHeadingElement,attrs:{role:"heading","aria-level":"5"},style:"display: block; font-size: 0.83em; margin-block-start: 1.67em; margin-block-end: 1.67em; margin-inline-start: 0px; margin-inline-end: 0px; font-weight: bold;"},h6:{proto:()=>HTMLHeadingElement,attrs:{role:"heading","aria-level":"6"},style:"display: block; font-size: 0.67em; margin-block-start: 2.33em; margin-block-end: 2.33em; margin-inline-start: 0px; margin-inline-end: 0px; font-weight: bold;"},span:{proto:()=>HTMLSpanElement},pre:{proto:()=>HTMLElement,style:"display: block; font-family: monospace; white-space: pre; margin: 1em 0; --marp-auto-scaling-white-space: pre;"}},e="data-marp-auto-scaling-wrapper",i="data-marp-auto-scaling-svg",n="data-marp-auto-scaling-container";class s extends HTMLElement{container;containerSize;containerObserver;svg;svgComputedStyle;svgPreserveAspectRatio="xMinYMid meet";wrapper;wrapperSize;wrapperObserver;constructor(){super();const t=t=>([e])=>{const{width:i,height:n}=e.contentRect;this[t]={width:i,height:n},this.updateSVGRect()};this.attachShadow({mode:"open"}),this.containerObserver=new ResizeObserver(t("containerSize")),this.wrapperObserver=new ResizeObserver((...e)=>{t("wrapperSize")(...e),this.flushSvgDisplay()})}static get observedAttributes(){return["data-downscale-only"]}connectedCallback(){this.shadowRoot.innerHTML=`\n<style>\n  svg[${i}] { display: block; width: 100%; height: auto; vertical-align: top; }\n  span[${n}] { display: table; white-space: var(--marp-auto-scaling-white-space, nowrap); width: max-content; }\n</style>\n<div ${e}>\n  <svg part="svg" ${i}>\n    <foreignObject><span ${n}><slot></slot></span></foreignObject>\n  </svg>\n</div>\n    `.split(/\n\s*/).join(""),this.wrapper=this.shadowRoot.querySelector(`div[${e}]`)??void 0;const t=this.svg;this.svg=this.wrapper?.querySelector(`svg[${i}]`)??void 0,this.svg!==t&&(this.svgComputedStyle=this.svg?window.getComputedStyle(this.svg):void 0),this.container=this.svg?.querySelector(`span[${n}]`)??void 0,this.observe()}disconnectedCallback(){this.svg=void 0,this.svgComputedStyle=void 0,this.wrapper=void 0,this.container=void 0,this.observe()}attributeChangedCallback(){this.observe()}flushSvgDisplay(){const{svg:t}=this;t&&(t.style.display="inline",requestAnimationFrame(()=>{t.style.display=""}))}observe(){this.containerObserver.disconnect(),this.wrapperObserver.disconnect(),this.wrapper&&this.wrapperObserver.observe(this.wrapper),this.container&&this.containerObserver.observe(this.container),this.svgComputedStyle&&this.observeSVGStyle(this.svgComputedStyle)}observeSVGStyle(t){const e=()=>{const i=(()=>{const e=t.getPropertyValue("--preserve-aspect-ratio");if(e)return e.trim();return`x${(({textAlign:t,direction:e})=>{if(t.endsWith("left"))return"Min";if(t.endsWith("right"))return"Max";if("start"===t||"end"===t){let i="rtl"===e;return"end"===t&&(i=!i),i?"Max":"Min"}return"Mid"})(t)}YMid meet`})();i!==this.svgPreserveAspectRatio&&(this.svgPreserveAspectRatio=i,this.updateSVGRect()),t===this.svgComputedStyle&&requestAnimationFrame(e)};e()}updateSVGRect(){let t=Math.ceil(this.containerSize?.width??0);const e=Math.ceil(this.containerSize?.height??0);void 0!==this.dataset.downscaleOnly&&(t=Math.max(t,this.wrapperSize?.width??0));const i=this.svg?.querySelector(":scope > foreignObject");if(i?.setAttribute("width",`${t}`),i?.setAttribute("height",`${e}`),this.svg&&(this.svg.setAttribute("viewBox",`0 0 ${t} ${e}`),this.svg.setAttribute("preserveAspectRatio",this.svgPreserveAspectRatio),this.svg.style.height=t<=0||e<=0?"0":""),this.container){const t=this.svgPreserveAspectRatio.toLowerCase();this.container.style.marginLeft=t.startsWith("xmid")||t.startsWith("xmax")?"auto":"0",this.container.style.marginRight=t.startsWith("xmi")?"auto":"0"}}}const r=(t,{attrs:e={},style:i})=>class extends t{constructor(...t){super(...t);for(const[t,i]of Object.entries(e))this.hasAttribute(t)||this.setAttribute(t,i);this._shadow()}static get observedAttributes(){return["data-auto-scaling"]}connectedCallback(){this._update()}attributeChangedCallback(){this._update()}_shadow(){if(!this.shadowRoot)try{this.attachShadow({mode:"open"})}catch(t){if(!(t instanceof Error&&"NotSupportedError"===t.name))throw t}return this.shadowRoot}_update(){const t=this._shadow();if(t){const e=i?`<style>:host { ${i} }</style>`:"";let n="<slot></slot>";const{autoScaling:s}=this.dataset;if(void 0!==s){n=`<marp-auto-scaling exportparts="svg:auto-scaling" ${"downscale-only"===s?"data-downscale-only":""}>${n}</marp-auto-scaling>`}t.innerHTML=e+n}}};let o;const a=Symbol(),l=()=>o??(o=!!document.createElement("div",{is:"marp-auto-scaling"}).outerHTML.startsWith("<div is"),o);let c;const d="marpitSVGPolyfill:setZoomFactor,",h=Symbol(),g=Symbol();const p=()=>{const t="Apple Computer, Inc."===navigator.vendor,e=t?[v]:[],i={then:e=>(t?(async()=>{if(void 0===c){const t=document.createElement("canvas");t.width=10,t.height=10;const e=t.getContext("2d"),i=new Image(10,10),n=new Promise(t=>{i.addEventListener("load",()=>t())});i.crossOrigin="anonymous",i.src="data:image/svg+xml;charset=utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2210%22%20height%3D%2210%22%20viewBox%3D%220%200%201%201%22%3E%3CforeignObject%20width%3D%221%22%20height%3D%221%22%20requiredExtensions%3D%22http%3A%2F%2Fwww.w3.org%2F1999%2Fxhtml%22%3E%3Cdiv%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F1999%2Fxhtml%22%20style%3D%22width%3A%201px%3B%20height%3A%201px%3B%20background%3A%20red%3B%20position%3A%20relative%22%3E%3C%2Fdiv%3E%3C%2FforeignObject%3E%3C%2Fsvg%3E",await n,e.drawImage(i,0,0),c=e.getImageData(5,5,1,1).data[3]<128}return c})().then(t=>{null==e||e(t?[v]:[])}):null==e||e([]),i)};return Object.assign(e,i)};let m,u;function v(t){const e="object"==typeof t&&t.target||document,i="object"==typeof t?t.zoom:t;window[g]||(Object.defineProperty(window,g,{configurable:!0,value:!0}),document.body.style.zoom=1.0001,document.body.offsetHeight,document.body.style.zoom=1,window.addEventListener("message",({data:t,origin:e})=>{if(e===window.origin)try{if(t&&"string"==typeof t&&t.startsWith(d)){const[,e]=t.split(","),i=Number.parseFloat(e);Number.isNaN(i)||(u=i)}}catch(t){console.error(t)}}));let n=!1;Array.from(e.querySelectorAll("svg[data-marpit-svg]"),t=>{var e,s,r,o;t.style.transform||(t.style.transform="translateZ(0)");const a=i||u||t.currentScale||1;m!==a&&(m=a,n=a);const l=t.getBoundingClientRect(),{length:c}=t.children;for(let i=0;i<c;i+=1){const n=t.children[i];if(n.getScreenCTM){const t=n.getScreenCTM();if(t){const i=null!==(s=null===(e=n.x)||void 0===e?void 0:e.baseVal.value)&&void 0!==s?s:0,c=null!==(o=null===(r=n.y)||void 0===r?void 0:r.baseVal.value)&&void 0!==o?o:0,d=n.children.length;for(let e=0;e<d;e+=1){const s=n.children[e];if("SECTION"===s.tagName){const{style:e}=s;e.transformOrigin||(e.transformOrigin=`${-i}px ${-c}px`),e.transform=`scale(${a}) matrix(${t.a}, ${t.b}, ${t.c}, ${t.d}, ${t.e-l.left}, ${t.f-l.top}) translateZ(0.0001px)`;break}}}}}}),!1!==n&&Array.from(e.querySelectorAll("iframe"),({contentWindow:t})=>{null==t||t.postMessage(`${d}${n}`,"null"===window.origin?"*":window.origin)})}function w({once:t=!1,target:e=document}={}){const i=function(t=document){if(t[h])return t[h];let e=!0;const i=()=>{e=!1,delete t[h]};Object.defineProperty(t,h,{configurable:!0,value:i});let n=[],s=!1;(async()=>{try{n=await p()}finally{s=!0}})();const r=()=>{for(const e of n)e({target:t});s&&0===n.length||e&&window.requestAnimationFrame(r)};return r(),i}(e);return t?(i(),()=>{}):i}m=1,u=void 0;const b=Symbol(),y=(e=document)=>{if("undefined"==typeof window)throw new Error("Marp Core's browser script is valid only in browser context.");if(((e=document)=>{const i=window[a];i||customElements.define("marp-auto-scaling",s);for(const n of Object.keys(t)){const s=`marp-${n}`,o=t[n].proto();l()&&o!==HTMLElement?i||customElements.define(s,r(o,{style:t[n].style}),{extends:n}):(i||customElements.define(s,r(HTMLElement,t[n])),e.querySelectorAll(`${n}[is="${s}"]`).forEach(t=>{t.outerHTML=t.outerHTML.replace(new RegExp(`^<${n}`,"i"),`<${s}`).replace(new RegExp(`</${n}>$`,"i"),`</${s}>`)}))}window[a]=!0})(e),e[b])return e[b];const i=w({target:e}),n=()=>{i(),delete e[b]},o=Object.assign(n,{cleanup:n,update:()=>y(e)});return Object.defineProperty(e,b,{configurable:!0,value:o}),o},f=document.currentScript;y(f?f.getRootNode():document)}();

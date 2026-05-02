@@ -197,8 +197,9 @@ flowchart LR
 
 **Phân quyền route**:
 - POST/DELETE/EXPORT (`/api/personnel`): `requireAdmin` → SUPER_ADMIN + ADMIN.
-- PUT `/api/personnel/:id`: `requireManager` → SUPER_ADMIN + ADMIN + MANAGER (MANAGER chỉ sửa quân nhân thuộc đơn vị quản lý).
-- GET list / detail: MANAGER xem được trong phạm vi đơn vị; USER chỉ xem hồ sơ của chính mình.
+- PUT `/api/personnel/:id`: `requireManager` → SUPER_ADMIN + ADMIN + MANAGER (MANAGER chỉ sửa quân nhân thuộc đơn vị quản lý). USER **không** sửa được hồ sơ.
+- GET list / detail: MANAGER xem được trong phạm vi đơn vị; USER chỉ xem hồ sơ của chính mình (route `/profile/me`).
+- `POST /check-contribution-eligibility`: `requireManager` → USER **không** gọi được.
 
 **Lưu ý**: Bảng `QuanNhan` hiện **không hỗ trợ Excel import** — chỉ thêm thủ công qua form (xem A3.2). Excel import chỉ áp dụng cho các loại khen thưởng (xem A1.7).
 
@@ -377,16 +378,16 @@ flowchart LR
     MG --- UC3
     MG --- UC4
     MG --- UC5
-    MG --- UC6
     MG --- UC7
 
-    US --- UC1
-    US --- UC2
     US --- UC3
     US --- UC4
 ```
 
-**Endpoints thực tế** (trong code): `routes/{tenureMedal,contributionMedal,commemorativeMedal,militaryFlag,scientificAchievement}.route.ts` đều có `/import/preview` + `/import/confirm`.
+**Endpoints thực tế + phân quyền** (trong code):
+- `routes/{tenureMedal,contributionMedal,commemorativeMedal,militaryFlag}.route.ts` cho `/import/preview` + `/import/confirm` đều dùng `requireAdmin` → MANAGER **không** import được 4 loại này (UC6 chỉ ADMIN trở lên).
+- `routes/scientificAchievement.route.ts` (NCKH) dùng `requireManager` cho `/template` + import → MANAGER có thể import NCKH (UC5+UC6 với MG vẫn áp dụng).
+- USER chỉ truy cập `/personnel/:personnel_id` của `military-flags` (UC3 — HCQKQT) và `commemorative-medals` (UC4 — KNC) — không xem trực tiếp HCCSVV (UC1) và HCBVTQ (UC2). Hồ sơ niên hạn / cống hiến của bản thân USER xem qua `/profile/me`, không qua các route này.
 
 **Lưu ý**: Khen thưởng đột xuất (DOT_XUAT) **không nằm trong sơ đồ này** vì có flow vận hành riêng — xem **A1.9** để biết chi tiết (ADMIN tạo trực tiếp, không qua duyệt 3 cấp, không có tính niên hạn).
 
@@ -414,6 +415,9 @@ flowchart LR
         UC12(Chỉnh sửa dữ liệu khi duyệt)
         UC13(Sinh quyết định và file)
         UC14(Xem lịch sử đề xuất)
+        UC15(Kiểm tra trùng đề xuất check-duplicate)
+        UC16(Xoá đề xuất DELETE proposals id)
+        UC17(Tải file đính kèm GET uploads filename)
 
         UC1 -.->|include| UC8
         UC2 -.->|include| UC8
@@ -422,6 +426,8 @@ flowchart LR
         UC5 -.->|include| UC8
         UC6 -.->|include| UC8
         UC7 -.->|include| UC8
+        UC1 -.->|include| UC15
+        UC2 -.->|include| UC15
         UC10 -.->|extend| UC12
         UC10 -.->|extend| UC13
     end
@@ -435,13 +441,20 @@ flowchart LR
     MG --- UC7
     MG --- UC9
     MG --- UC14
+    MG --- UC15
+    MG --- UC16
+    MG --- UC17
 
     AD --- UC10
     AD --- UC11
     AD --- UC12
     AD --- UC13
     AD --- UC14
+    AD --- UC16
+    AD --- UC17
 ```
+
+**UC16 (Xoá đề xuất)**: thêm trong commit gần đây (`6e27f06`). Xoá đề xuất ở trạng thái PENDING/REJECTED — APPROVED không được xoá để giữ lịch sử khen thưởng.
 
 **Đặc thù**: Đây là use case **trung tâm** của hệ thống. **7 loại đề xuất qua Strategy pattern** ở backend. Khen thưởng đột xuất (DOT_XUAT) có flow riêng — ADMIN tạo trực tiếp qua module `adhoc-awards`, không đi qua bảng `BangDeXuat` (xem A1.9 bên dưới).
 
@@ -501,6 +514,8 @@ flowchart LR
 
 ```mermaid
 flowchart LR
+    SA(((Quản trị viên)))
+    AD(((Phòng Chính trị)))
     SYSTEM(((Hệ thống auto)))
     MG(((Chỉ huy đơn vị)))
     US(((Người dùng)))
@@ -514,7 +529,8 @@ flowchart LR
         UC6(Kiểm tra 10 15 20 năm phục vụ HCCSVV)
         UC7(Kiểm tra điều kiện NCKH mỗi năm)
         UC8(Sinh gợi ý goi_y dạng văn bản)
-        UC9(Tính lại hồ sơ batch)
+        UC9(Tính lại hồ sơ batch recalculate-all)
+        UC10(Tính lại hồ sơ một quân nhân recalculate)
 
         UC1 -.->|include| UC3
         UC1 -.->|extend| UC4
@@ -525,14 +541,24 @@ flowchart LR
         UC9 -.->|include| UC5
         UC9 -.->|include| UC6
         UC9 -.->|include| UC8
+        UC10 -.->|include| UC1
+        UC10 -.->|include| UC5
+        UC10 -.->|include| UC6
     end
 
+    SA --- UC9
+    AD --- UC9
     SYSTEM --- UC9
     MG --- UC1
     MG --- UC2
     MG --- UC8
+    MG --- UC10
     US --- UC8
 ```
+
+**Phân quyền route**:
+- `POST /api/profiles/recalculate-all` (UC9 — batch toàn hệ thống): `requireAdmin` → chỉ SUPER_ADMIN + ADMIN. Cron có thể trigger nội bộ.
+- `POST /api/profiles/recalculate/:personnel_id` (UC10 — recalc 1 quân nhân): `requireManager` → SUPER_ADMIN + ADMIN + MANAGER.
 
 ---
 
@@ -552,28 +578,44 @@ flowchart LR
         UC4(Lọc thông báo theo loại)
         UC5(Click vào thông báo để mở chi tiết liên quan)
         UC6(Đếm số thông báo chưa đọc)
+        UC7(Xoá một thông báo DELETE id)
+        UC8(Xoá toàn bộ thông báo DELETE all)
 
         UC1 -.->|include| UC6
         UC2 -.->|extend| UC3
         UC2 -.->|extend| UC5
+        UC2 -.->|extend| UC7
+        UC2 -.->|extend| UC8
     end
 
     SA --- UC1
     SA --- UC2
+    SA --- UC7
+    SA --- UC8
     AD --- UC1
     AD --- UC2
     AD --- UC3
     AD --- UC4
     AD --- UC5
     AD --- UC6
+    AD --- UC7
+    AD --- UC8
     MG --- UC1
     MG --- UC2
     MG --- UC3
+    MG --- UC4
     MG --- UC5
+    MG --- UC7
+    MG --- UC8
     US --- UC1
     US --- UC2
     US --- UC3
+    US --- UC4
+    US --- UC7
+    US --- UC8
 ```
+
+**Phân quyền**: route `/api/notifications` chỉ yêu cầu `verifyToken` — mọi role đăng nhập đều xem/lọc/đánh dấu/xoá thông báo của chính mình.
 
 ---
 
@@ -593,8 +635,9 @@ flowchart LR
         UC5(Lọc theo action CREATE UPDATE DELETE)
         UC6(Lọc theo khoảng thời gian)
         UC7(Xem chi tiết payload before và after)
-        UC8(Xuất log ra Excel)
-        UC9(Xem log của resource backup chỉ SUPER_ADMIN)
+        UC8(Xem log của resource backup chỉ SUPER_ADMIN)
+        UC9(Xoá toàn bộ log DELETE all)
+        UC10(Xoá một log theo id)
 
         UC2 -.->|extend| UC3
         UC2 -.->|extend| UC4
@@ -611,6 +654,7 @@ flowchart LR
     SA --- UC7
     SA --- UC8
     SA --- UC9
+    SA --- UC10
 
     AD --- UC2
     AD --- UC3
@@ -618,6 +662,7 @@ flowchart LR
     AD --- UC5
     AD --- UC6
     AD --- UC7
+    AD --- UC10
 
     MG --- UC2
     MG --- UC3
@@ -628,12 +673,15 @@ flowchart LR
 ```
 
 **Phân quyền**: route `/api/system-logs` dùng `requireManager` → cả SUPER_ADMIN, ADMIN và MANAGER đều được xem nhật ký. Tuy nhiên service `systemLogs.service.ts` áp filter:
-- **UC9** — log có `resource: 'backup'` chỉ SUPER_ADMIN xem được; ADMIN và MANAGER bị filter loại bỏ hoàn toàn.
+- **UC8** — log có `resource: 'backup'` chỉ SUPER_ADMIN xem được; ADMIN và MANAGER bị filter loại bỏ hoàn toàn.
 - MANAGER còn bị giới hạn theo phạm vi đơn vị: chỉ thấy log do tài khoản trong các đơn vị mình quản lý thực hiện (qua `getManagerAccountIds`).
+- **UC9 / UC10** (xoá log) — yêu cầu `requireAdmin`. UC9 xoá toàn bộ chỉ SUPER_ADMIN.
+
+**Lưu ý**: phần mềm **chưa hỗ trợ xuất log ra Excel** — không có endpoint export trên `system-logs.route.ts`.
 
 ---
 
-## A1.13 — Use case phân rã: Sao lưu và khôi phục (Backup)
+## A1.13 — Use case phân rã: Sao lưu (Backup qua DevZone)
 
 ```mermaid
 flowchart LR
@@ -641,18 +689,22 @@ flowchart LR
     SYSTEM(((Cron auto)))
 
     subgraph SYS[Backup management]
-        UC1(Cấu hình lịch backup tự động)
-        UC2(Bật hoặc tắt schedule backup)
-        UC3(Backup thủ công ngay)
-        UC4(Tải file backup SQL)
-        UC5(Xóa file backup)
-        UC6(Xem danh sách file backup)
-        UC7(Backup tự động hằng ngày)
-        UC8(Khôi phục từ file backup)
-        UC9(Xem log backup)
+        UC1(Xác thực mật khẩu DevZone)
+        UC2(Cấu hình lịch backup PUT /backup/schedule)
+        UC3(Bật hoặc tắt schedule)
+        UC4(Trigger backup thủ công POST /backup/trigger)
+        UC5(Cleanup backup cũ POST /backup/cleanup)
+        UC6(Xem trạng thái backup GET /backup/status)
+        UC7(Backup tự động theo cron schedule)
+        UC8(Xem log backup qua system-logs filter resource backup)
 
-        UC7 -.->|extend| UC9
-        UC3 -.->|extend| UC9
+        UC2 -.->|include| UC1
+        UC3 -.->|include| UC1
+        UC4 -.->|include| UC1
+        UC5 -.->|include| UC1
+        UC6 -.->|include| UC1
+        UC7 -.->|extend| UC8
+        UC4 -.->|extend| UC8
     end
 
     SA --- UC1
@@ -662,14 +714,66 @@ flowchart LR
     SA --- UC5
     SA --- UC6
     SA --- UC8
-    SA --- UC9
 
     SYSTEM --- UC7
 ```
 
+**Phân quyền**: tất cả route `/api/dev-zone/backup/*` đều yêu cầu middleware `verifyDevPassword` (mật khẩu DevZone riêng, không dùng JWT). Trong thực tế chỉ SUPER_ADMIN biết mật khẩu này.
+
+**Khả năng chưa có**:
+- **Tải file backup qua HTTP** — phần mềm không expose endpoint download. SUPER_ADMIN phải SSH vào server lấy file `.sql` thủ công từ thư mục `BE-QLKT/backups/`.
+- **Xoá file riêng lẻ qua API** — chỉ có cleanup theo `retention_days`, không có DELETE từng file qua HTTP.
+- **Khôi phục từ file backup qua giao diện** — phải dùng `psql -d qlkt < backup.sql` thủ công trên server.
+
+→ Nếu báo cáo cần defend "tính năng đầy đủ", các UC trên đánh dấu là "phần mở rộng tương lai".
+
 ---
 
-> **Ghi chú**: Phần "DevZone" (công cụ admin nâng cao truy cập bằng password riêng) **không** được vẽ thành use case nghiệp vụ — đây là internal tool, không phải tính năng cho actor sử dụng hằng ngày, không cần đưa vào báo cáo.
+> **Ghi chú**: Phần "DevZone" (công cụ admin nâng cao truy cập bằng password riêng) là internal tool — A1.13 chỉ vẽ subset backup vì đây là feature có yếu tố nghiệp vụ. Các DevZone tool khác (cron trigger, recalculate-unit-count, feature toggle) thuộc dạng vận hành hệ thống, không đưa vào báo cáo.
+
+---
+
+## A1.15 — Use case phân rã: Quản lý quyết định khen thưởng (Decision)
+
+```mermaid
+flowchart LR
+    AD(((Phòng Chính trị)))
+    MG(((Chỉ huy đơn vị)))
+
+    subgraph SYS[Decision management]
+        UC1(Xem danh sách quyết định FileQuyetDinh)
+        UC2(Autocomplete tìm số quyết định khi nhập đề xuất)
+        UC3(Lấy danh sách năm có quyết định GET years)
+        UC4(Lấy danh sách loại khen thưởng có quyết định)
+        UC5(Tạo mới quyết định kèm upload PDF)
+        UC6(Cập nhật thông tin quyết định)
+        UC7(Đổi tên số quyết định cascade rename)
+        UC8(Xoá quyết định)
+        UC9(Lấy file PDF của quyết định download)
+        UC10(Xem các bản ghi đang tham chiếu quyết định findUsages)
+
+        UC5 -.->|include| UC9
+        UC7 -.->|include| UC10
+        UC8 -.->|include| UC10
+    end
+
+    AD --- UC1
+    AD --- UC2
+    AD --- UC3
+    AD --- UC4
+    AD --- UC5
+    AD --- UC6
+    AD --- UC7
+    AD --- UC8
+    AD --- UC9
+    AD --- UC10
+
+    MG --- UC1
+    MG --- UC2
+    MG --- UC9
+```
+
+**Đặc thù**: `FileQuyetDinh` là bảng độc lập với `BangDeXuat`, liên kết với 8 bảng khen thưởng qua hard FK natural-key `so_quyet_dinh` (xem ERD §C5.1). Cascade rename (UC7) thay đổi `so_quyet_dinh` → Postgres tự cascade 13 cột FK trên 8 bảng đích + app-layer cascade JSON payload `BangDeXuat.data_*` cùng transaction (`services/decision/cascadeRename.ts`).
 
 ---
 
@@ -728,12 +832,13 @@ flowchart LR
 | A1.5 | Hằng năm cá nhân (thuộc UC5) | 10 | ADMIN, MANAGER, USER |
 | A1.6 | Hằng năm đơn vị (thuộc UC5) | 7 | ADMIN, MANAGER |
 | A1.7 | Niên hạn / Cống hiến / Thành tích khoa học (UC6-UC8) | 7 (+ 5 sub) | ADMIN, MANAGER, USER |
-| A1.8 | Đề xuất khen thưởng (UC10) | 14 | MANAGER, ADMIN |
+| A1.8 | Đề xuất khen thưởng (UC10) | 17 | MANAGER, ADMIN |
 | A1.9 | Khen thưởng đột xuất (UC9 — flow riêng) | 9 | ADMIN, MANAGER, USER |
-| A1.10 | Eligibility engine (UC11) | 9 | System, MANAGER, USER |
-| A1.11 | Thông báo realtime (UC12) | 6 | 4 role |
-| A1.12 | Nhật ký hệ thống (UC13) | 9 | SUPER_ADMIN, ADMIN, MANAGER |
-| A1.13 | Backup (UC14) | 9 | SUPER_ADMIN, Cron |
+| A1.10 | Eligibility engine (UC11) | 10 | SUPER_ADMIN, ADMIN, System, MANAGER, USER |
+| A1.11 | Thông báo realtime (UC12) | 8 | 4 role |
+| A1.12 | Nhật ký hệ thống (UC13) | 10 | SUPER_ADMIN, ADMIN, MANAGER |
+| A1.13 | Backup qua DevZone (UC14) | 8 | SUPER_ADMIN, Cron |
 | A1.14 | Báo cáo thống kê (UC15) | 8 | ADMIN, MANAGER |
+| A1.15 | Quản lý quyết định (Decision) | 10 | ADMIN, MANAGER |
 
-**Tổng**: 1 sơ đồ tổng quát + 12 sơ đồ phân rã. DevZone không tính (internal tool).
+**Tổng**: 1 sơ đồ tổng quát + 14 sơ đồ phân rã. DevZone backup được tách riêng vì có yếu tố nghiệp vụ; các DevZone tool khác (cron trigger, recalc unit count, feature toggle) không đưa vào báo cáo.

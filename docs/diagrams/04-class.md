@@ -412,11 +412,14 @@ classDiagram
     }
 
     class AccountRepository {
-        +findByUsername(username) TaiKhoan
-        +findById(id) TaiKhoan
-        +create(data) TaiKhoan
-        +update(id, data) TaiKhoan
-        +delete(id) void
+        +findById(id, tx) TaiKhoan
+        +findUniqueRaw(args, tx) TaiKhoan
+        +create(data, tx) TaiKhoan
+        +createMany(data, tx) BatchPayload
+        +update(id, data, tx) TaiKhoan
+        +updateRaw(args, tx) TaiKhoan
+        +updateMany(where, data, tx) BatchPayload
+        +delete(id, tx) void
     }
 
     class VerifyTokenMiddleware {
@@ -509,12 +512,17 @@ classDiagram
 
     class AuditLogMiddleware {
         +auditLog(options) Middleware
-        +writeSystemLog(data) void
+        +createDescription(action, resource, payload) String
+        +getResourceId Map
+    }
+
+    class SystemLogHelper {
+        <<helper>>
+        +writeSystemLog(data) Promise~void~
     }
 
     class AuditLogHelpers {
         <<helper>>
-        +getResourceId(req) String
         +getLogDescription(action, resource, payload) String
         +RESOURCE_VI Map
     }
@@ -550,7 +558,8 @@ classDiagram
     ThongBao --> NotificationType : has type
     ThongBao --> SystemLog : optional ref
     AuditLogMiddleware --> AuditLogHelpers : uses
-    AuditLogMiddleware --> SystemLog : creates
+    AuditLogMiddleware --> SystemLogHelper : delegates DB write
+    SystemLogHelper --> SystemLog : creates
     NotificationService --> NotificationHelpers : uses
     NotificationService --> ThongBao : creates
     SystemLogsController --> SystemLogsService
@@ -569,6 +578,6 @@ classDiagram
 | C3.2 | Đề xuất khen thưởng | 11 | **Strategy pattern** (điểm bán) |
 | C3.3 | Eligibility module | 11 | **Single source of truth** chain rule |
 | C3.4 | Tài khoản phân quyền | 9 + 1 enum | Middleware chain |
-| C3.5 | Audit log + Notification | 9 + 2 enum | Cross-cutting concern |
+| C3.5 | Audit log + Notification | 10 + 2 enum | Cross-cutting concern |
 
 → Báo cáo mẫu HRM chỉ có **1 class diagram** đơn giản. PM QLKT có **5 class diagram** thể hiện được Strategy pattern + Repository pattern + chain eligibility — đủ chuyên sâu để defend.

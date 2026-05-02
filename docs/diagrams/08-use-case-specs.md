@@ -223,7 +223,7 @@
 
 | STT | Thực hiện | Hành động |
 |---|---|---|
-| 1 | Phòng Chính trị | Truy cập trang import của 1 trong các loại: HCCSVV, HCBVTQ, HCQKQT, KNC, NCKH, Khen thưởng đột xuất |
+| 1 | Phòng Chính trị | Truy cập trang import của 1 trong các loại: Danh hiệu hằng năm cá nhân, Danh hiệu đơn vị hằng năm, HCCSVV (niên hạn), HCBVTQ (cống hiến), HCQKQT, KNC, NCKH. Khen thưởng đột xuất nhập tay từng case, không có Excel import |
 | 1.1 | Phòng Chính trị | Chọn file Excel và bấm "Preview" |
 | 1.2 | Hệ thống | POST `/api/[loai]/import/preview` với multer parse file |
 | 1.3 | Hệ thống | `loadWorkbook()` + `getAndValidateWorksheet()` |
@@ -290,34 +290,43 @@
 
 | Tên ca sử dụng: Sao lưu dữ liệu | ID: UC-08 |
 |---|---|
-| **Tác nhân hệ thống** | Quản trị viên (thao tác thủ công), Cron task (auto theo lịch) |
-| **Tiền điều kiện** | Backup feature đã được bật trong `SystemSetting (cron_enabled = true)` |
+| **Tác nhân hệ thống** | SUPER_ADMIN (thao tác thủ công qua DevZone), Cron task (auto theo lịch) |
+| **Tiền điều kiện** | Backup feature đã được bật (`SystemSetting.backup_enabled = true`). SUPER_ADMIN đã xác thực mật khẩu DevZone qua `POST /api/dev-zone/auth` để có quyền gọi các endpoint dưới đây |
 | **Luồng sự kiện chính** | |
 
 | STT | Thực hiện | Hành động |
 |---|---|---|
-| 1 | Hệ thống (Cron) | Khởi chạy theo `cron_schedule` (mặc định '0 1 1 * *' — 1:00 AM ngày 1 mỗi tháng) |
+| 1 | Hệ thống (Cron) | `node-cron` in-process khởi chạy theo `cron_schedule` (mặc định `'0 1 1 * *'` — 1:00 AM ngày 1 mỗi tháng) |
 | 1.1 | Hệ thống | `backup.service.ts.createBackup({ type: 'scheduled' })` |
 | 1.2 | Hệ thống | Đọc 21 bảng dữ liệu qua `Promise.all` các repository |
 | 1.3 | Hệ thống | Build chuỗi SQL `INSERT INTO ... VALUES (...)` cho từng row, escape JSON / string qua helper `quoteValue()` |
-| 1.4 | Hệ thống | `fs.writeFileSync(filePath, sqlLines.join('\n'))` vào thư mục `backups/` |
+| 1.4 | Hệ thống | `fs.writeFileSync(filePath, sqlLines.join('\n'))` vào thư mục `backups/` (path tương đối với BE-QLKT) |
 | 1.5 | Hệ thống | Cập nhật `SystemSetting.backup_last_run = now ISO` |
 | 1.6 | Hệ thống | Ghi `SystemLog` resource = 'backup' (chỉ SUPER_ADMIN xem được) |
 | 1.7 | Hệ thống | Xóa file backup cũ hơn `backup_retention_days` (mặc định 15) |
-| 2 | Quản trị viên | Tải file backup |
-| 2.1 | Quản trị viên | GET `/api/backups` — xem danh sách file |
-| 2.2 | Quản trị viên | Click tải file → GET `/api/backups/:filename` |
-| 2.3 | Hệ thống | Trả file `.sql` qua `res.download()` |
+| 2 | SUPER_ADMIN | Trigger backup thủ công |
+| 2.1 | SUPER_ADMIN | `POST /api/dev-zone/backup/trigger` (qua DevZone middleware `verifyDevPassword`) |
+| 2.2 | Hệ thống | Gọi `createBackup({ type: 'manual' })` — flow giống bước 1.1-1.7 |
+| 3 | SUPER_ADMIN | Xem trạng thái backup |
+| 3.1 | SUPER_ADMIN | `GET /api/dev-zone/backup/status` |
+| 3.2 | Hệ thống | Trả về `{ enabled, schedule, last_run, next_run, retention_days, recent_logs }` (recent_logs lấy từ `SystemLog` filter resource='backup') |
+| 4 | SUPER_ADMIN | Đổi lịch / bật-tắt backup |
+| 4.1 | SUPER_ADMIN | `PUT /api/dev-zone/backup/schedule` body `{ enabled, schedule, retention_days }` |
+| 4.2 | Hệ thống | Validate cron syntax → cập nhật `SystemSetting`, register lại `node-cron` job |
+| 5 | SUPER_ADMIN | Cleanup backup cũ thủ công |
+| 5.1 | SUPER_ADMIN | `POST /api/dev-zone/backup/cleanup` |
+| 5.2 | Hệ thống | Quét `backups/`, xoá file > `retention_days`, trả về số file đã xoá |
 
 | **Luồng sự kiện thay thế** | |
 |---|---|
 
 | STT | Thực hiện | Hành động |
 |---|---|---|
-| 1a | Hệ thống | `cron_enabled = false` → Skip silently |
-| 1.4a | Hệ thống | I/O fail → Ghi log `BACKUP_FAILED`, không trigger thông báo cho ADMIN khác (chỉ SUPER_ADMIN xem được) |
+| 1a | Hệ thống | `backup_enabled = false` → cron skip silently, không sinh file |
+| 1.4a | Hệ thống | I/O fail (disk full / permission denied) → ghi `SystemLog` action `BACKUP_FAILED` resource='backup'; không gửi notification (chỉ SUPER_ADMIN xem được) |
+| 4.2a | Hệ thống | Cron syntax không hợp lệ → trả 400 BadRequest, giữ schedule cũ |
 
-| **Hậu điều kiện** | File `.sql` mới được lưu trong `backups/`. Có thể restore thủ công bằng cách import file SQL vào PostgreSQL |
+| **Hậu điều kiện** | File `.sql` mới được lưu trong thư mục `backups/` của BE-QLKT. Tải file phải SSH vào server hoặc dùng tool DB administration — phần mềm **chưa expose endpoint download** qua HTTP API. Restore phải thủ công bằng cách import file SQL vào PostgreSQL (`psql -d qlkt < backup.sql`) |
 
 ---
 

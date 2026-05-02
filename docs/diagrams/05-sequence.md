@@ -43,14 +43,14 @@ sequenceDiagram
     participant TB as ThongBao
 
     MGR->>Page: Chọn loại đề xuất, năm và quân nhân
-    Page->>Page: validate
+    Page->>Page: validate dữ liệu đầu vào
     Page->>Ctrl: yêu cầu tạo đề xuất
-    Ctrl->>Ctrl: kiểm tra điều kiện chuỗi cho từng quân nhân
+    Ctrl->>Ctrl: kiểm tra năm tháng và payload theo loại đề xuất
 
-    alt không đủ điều kiện
-        Ctrl-->>Page: Lỗi kèm danh sách quân nhân không đủ điều kiện
+    alt dữ liệu không hợp lệ
+        Ctrl-->>Page: Lỗi kèm chi tiết trường sai
         Page-->>MGR: Hiển thị thông báo lỗi
-    else đủ điều kiện
+    else dữ liệu hợp lệ
         Ctrl->>DX: Lưu đề xuất với trạng thái Chờ duyệt
         DX-->>Ctrl: thông tin đề xuất
         Ctrl->>TB: Tạo thông báo cho Phòng Chính trị
@@ -59,6 +59,8 @@ sequenceDiagram
         Page-->>MGR: Hiển thị thông báo gửi đề xuất thành công
     end
 ```
+
+**Lưu ý**: bước tạo đề xuất **không** chạy kiểm tra điều kiện chuỗi (BKBQP/CSTDTQ/BKTTCP) hay kiểm tra trùng lặp với khen thưởng đã có. Các kiểm tra đó chạy ở bước **phê duyệt** (xem C4.3) qua `runEligibilityChecks` + `runDuplicateChecks` để đảm bảo dữ liệu không bị "stale" giữa lúc Chỉ huy đơn vị tạo và Phòng Chính trị duyệt. Submit chỉ validate cấu trúc payload và năm/tháng hợp lệ.
 
 ---
 
@@ -85,11 +87,14 @@ sequenceDiagram
     ADM->>Page: Sửa số quyết định và đính kèm file PDF
     ADM->>Page: Phê duyệt đề xuất
     Page->>Ctrl: yêu cầu phê duyệt
-    Ctrl->>Ctrl: kiểm tra điều kiện và số quyết định
+    Ctrl->>Ctrl: kiểm tra trạng thái chưa duyệt và đúng tháng
+    Ctrl->>Ctrl: kiểm tra trùng lặp với khen thưởng đã có
+    Ctrl->>Ctrl: kiểm tra điều kiện chuỗi và niên hạn cống hiến
+    Ctrl->>Ctrl: kiểm tra hợp lệ số quyết định
 
     alt validate fail
-        Ctrl-->>Page: Lỗi
-        Page-->>ADM: Hiển thị lỗi
+        Ctrl-->>Page: Lỗi kèm danh sách quân nhân không đủ điều kiện
+        Page-->>ADM: Hiển thị lỗi để sửa lại
     else hợp lệ
         Ctrl->>KT: Lưu khen thưởng theo loại
         KT-->>Ctrl: đã lưu

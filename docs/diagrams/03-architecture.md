@@ -16,7 +16,7 @@ flowchart LR
         FENext[Next.js App Router]
         FEPages[Pages SSR + Client Components]
         FEComp[AntD + Tailwind + shadcn-ui]
-        FESocket[Socket.IO Client]
+        FESocket[Socket.IO Client - hooks/useSocket]
         FEApi[lib/api/apiClient]
     end
 
@@ -35,13 +35,8 @@ flowchart LR
     end
 
     subgraph DB[Cơ sở dữ liệu]
-        PG[(PostgreSQL 22 bảng)]
-        FS[/File system: uploads excel pdf backups sql/]
-    end
-
-    subgraph CRON[Cron Jobs]
-        BackupCron[Daily backup pg_dump]
-        RecalcCron[Recalc batch eligibility]
+        PG[(PostgreSQL 23 bảng)]
+        FS[/File system: uploads decisions backups sql/]
     end
 
     Browser <-->|HTTPS| FENext
@@ -58,12 +53,10 @@ flowchart LR
     Services --> Notif
     Notif --> SocketSrv
     Services --> FS
-    BackupCron --> PG
-    BackupCron --> FS
-    RecalcCron --> Services
+    Services -.node-cron in-process.-> Services
 ```
 
-**Điểm khác biệt với báo cáo mẫu**: Có thêm Socket.IO Server (realtime), Repository layer (decouple Prisma), Cron Jobs (backup + recalc), file system tách biệt.
+**Điểm khác biệt với báo cáo mẫu**: Có thêm Socket.IO Server (realtime), Repository layer (decouple Prisma), `node-cron` in-process cho backup tự động (chạy trong cùng Express process, kích hoạt qua DevZone API thay vì process scheduler riêng), file system tách biệt.
 
 ---
 
@@ -465,11 +458,10 @@ flowchart TB
 
     CHAIN --> CHAINELIG
     DANH --> CHAINELIG
-    CHAINELIG --> ANNUAL
-    CHAINELIG --> UNITELIG
+    ANNUAL --> CHAINELIG
+    UNITELIG --> CHAINELIG
     ANNUAL --> CONGHIEN
     ANNUAL --> SERVICEYR
-    UNITELIG --> CHAINELIG
     HCBVTQ --> CONTRIB
     SERVICEYR --> TENURE
     BULKVAL --> CHAINELIG

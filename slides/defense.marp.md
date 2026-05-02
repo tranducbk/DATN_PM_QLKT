@@ -659,18 +659,13 @@ Interface ProposalStrategy
 </div>
 
 <div class="feat">
-<div class="ti">💬 Gợi ý đề xuất tự động theo năm</div>
+<div class="ti">💬 Gợi ý đề xuất tự động</div>
 <div class="de">Hồ sơ hằng năm tự sinh <code>goi_y</code> như <em>"Đủ điều kiện đề nghị BKBQP năm 2026"</em> — cán bộ chỉ cần xác nhận để tạo đề xuất.</div>
 </div>
 
 <div class="feat">
-<div class="ti">⏱️ Recalc tự động khi có thay đổi</div>
-<div class="de">Khi quân nhân nhận danh hiệu mới, đổi đơn vị, hoặc cập nhật năm phục vụ — hệ thống tính lại toàn bộ chuỗi và cập nhật trạng thái đủ/không đủ điều kiện.</div>
-</div>
-
-<div class="feat">
-<div class="ti">📅 Lịch sử khen thưởng dạng timeline</div>
-<div class="de">Hiển thị toàn bộ danh hiệu của một quân nhân theo trục thời gian — dễ quan sát chuỗi BKBQP/CSTDTQ/BKTTCP.</div>
+<div class="ti">⏱️ Recalc + Timeline trực quan</div>
+<div class="de">Khi nhận danh hiệu mới, đổi đơn vị, đổi năm phục vụ — hệ thống tự tính lại toàn bộ chuỗi. Lịch sử hiển thị dạng <strong>timeline</strong> dễ quan sát chuỗi BKBQP/CSTDTQ/BKTTCP.</div>
 </div>
 
 </div>
@@ -679,7 +674,7 @@ Interface ProposalStrategy
 <div class="img-box tall">
 <div class="label">🖼️ ẢNH: Trang hồ sơ + Timeline chuỗi danh hiệu</div>
 Hiển thị thông tin quân nhân, danh hiệu các năm, gợi ý đề xuất
-<div class="size">Kích thước gợi ý: 540 × 460 px</div>
+<div class="size">Kích thước gợi ý: 540 × 380 px</div>
 </div>
 
 <div class="callout" style="font-size:0.82em; margin-top:10px">
@@ -701,8 +696,8 @@ Hiển thị thông tin quân nhân, danh hiệu các năm, gợi ý đề xuấ
 ## Đặc điểm chính
 
 <div class="feat">
-<div class="ti">📝 Form đề xuất theo từng nhóm UC</div>
-<div class="de">Mỗi nhóm khen thưởng UC5–UC9 có form riêng với các trường nghiệp vụ phù hợp. Schema <strong>Zod chia sẻ giữa client và server</strong> đảm bảo nhất quán.</div>
+<div class="ti">📝 Form riêng theo từng nhóm UC</div>
+<div class="de">Mỗi nhóm khen thưởng UC5–UC9 có form với trường nghiệp vụ phù hợp. Schema <strong>Zod chia sẻ giữa client và server</strong> đảm bảo nhất quán hai phía.</div>
 </div>
 
 <div class="feat">
@@ -711,13 +706,8 @@ Hiển thị thông tin quân nhân, danh hiệu các năm, gợi ý đề xuấ
 </div>
 
 <div class="feat">
-<div class="ti">🔢 Cấp số quyết định tự động</div>
-<div class="de">Sinh số quyết định theo định dạng và bộ đếm riêng cho từng năm — đảm bảo không trùng lặp.</div>
-</div>
-
-<div class="feat">
-<div class="ti">📄 Sinh PDF quyết định ký số</div>
-<div class="de">Áp dụng template theo từng loại danh hiệu, kết xuất PDF đính kèm vào đề xuất, lưu trữ tập trung trong thư mục <code>storage/</code>.</div>
+<div class="ti">🔢 Cấp số + sinh PDF quyết định</div>
+<div class="de">Số quyết định sinh tự động theo bộ đếm năm (không trùng). PDF kết xuất từ template theo loại danh hiệu, đính kèm đề xuất, lưu trữ tập trung tại <code>storage/</code>.</div>
 </div>
 
 </div>
@@ -726,7 +716,7 @@ Hiển thị thông tin quân nhân, danh hiệu các năm, gợi ý đề xuấ
 <div class="img-box tall">
 <div class="label">🖼️ ẢNH: Trang duyệt đề xuất + PDF quyết định</div>
 Bảng eligibility, danh sách đối tượng, bản xem trước PDF
-<div class="size">Kích thước gợi ý: 540 × 460 px</div>
+<div class="size">Kích thước gợi ý: 540 × 380 px</div>
 </div>
 
 <div class="callout" style="font-size:0.82em; margin-top:10px">
@@ -745,26 +735,21 @@ Bảng eligibility, danh sách đối tượng, bản xem trước PDF
 <div class="cols-2">
 <div>
 
-## Pattern hai bước an toàn
+## Quy trình hai bước có rollback
 
 <div class="feat">
-<div class="ti">👁️ Bước 1 — Preview</div>
-<div class="de">Parse file Excel, validate từng dòng (định dạng ngày, CCCD, mã quân nhân, mã đơn vị). Hiển thị bảng lỗi cụ thể trên giao diện trước khi commit.</div>
+<div class="ti">👁️ Bước 1 — Preview & Validate</div>
+<div class="de">Parse file Excel, kiểm tra từng dòng (định dạng ngày, CCCD, mã quân nhân, mã đơn vị). Hiển thị bảng lỗi <strong>theo từng dòng</strong> trước khi cán bộ commit.</div>
 </div>
 
 <div class="feat">
-<div class="ti">✅ Bước 2 — Confirm</div>
-<div class="de">Cán bộ xác nhận dữ liệu đúng → ghi vào CSDL trong một transaction. Nếu một dòng lỗi, toàn bộ rollback.</div>
+<div class="ti">✅ Bước 2 — Confirm trong transaction</div>
+<div class="de">Sau xác nhận, ghi vào CSDL trong <strong>một transaction Prisma</strong>. Nếu bất kỳ dòng nào lỗi, toàn bộ <strong>rollback</strong> — đảm bảo dữ liệu nhất quán.</div>
 </div>
 
 <div class="feat">
-<div class="ti">📋 Template chuẩn có data validation</div>
-<div class="de">Hệ thống sinh template Excel với dropdown (cấp bậc, đơn vị, danh hiệu), định dạng ngày tháng — cán bộ điền theo mẫu, giảm sai sót.</div>
-</div>
-
-<div class="feat">
-<div class="ti">⚡ Hiệu năng cao</div>
-<div class="de">Áp dụng <strong>batch query</strong>: collect IDs → 1 query <code>findMany</code> → đẩy vào <code>Map</code>. Import 1000 dòng dưới 2 giây.</div>
+<div class="ti">📋 Template chuẩn + tối ưu batch</div>
+<div class="de">Sinh template Excel kèm dropdown (cấp bậc, đơn vị, danh hiệu). Áp dụng <strong>batch query</strong>: collect IDs → 1 lần <code>findMany</code> → đẩy vào <code>Map</code> tra cứu O(1), tránh N+1 truy vấn.</div>
 </div>
 
 </div>
@@ -773,7 +758,7 @@ Bảng eligibility, danh sách đối tượng, bản xem trước PDF
 <div class="img-box tall">
 <div class="label">🖼️ ẢNH: Trang Preview Import Excel</div>
 Bảng dữ liệu, cột trạng thái Hợp lệ / Lỗi, thông báo lỗi từng dòng
-<div class="size">Kích thước gợi ý: 540 × 460 px</div>
+<div class="size">Kích thước gợi ý: 540 × 380 px</div>
 </div>
 
 <div class="callout" style="font-size:0.82em; margin-top:10px">
@@ -858,8 +843,8 @@ Có thể chèn 2–3 ảnh nhỏ ghép ngang
 </div>
 
 <div class="metric">
-<div class="num">< 2s</div>
-<div class="label">Import Excel <strong>1000 dòng</strong> nhờ batch query</div>
+<div class="num">N+1 → 1</div>
+<div class="label">Tối ưu <strong>batch query</strong> trong import Excel — tránh round-trip lặp lại</div>
 </div>
 
 ### 4 kịch bản nổi bật

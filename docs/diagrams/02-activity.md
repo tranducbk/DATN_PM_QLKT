@@ -95,36 +95,67 @@ flowchart TD
     M1[Chỉ huy đơn vị chọn loại đề xuất và năm]
     M2[Chọn quân nhân và đính kèm hồ sơ]
     M3[Gửi đề xuất]
-    S1[Kiểm tra điều kiện chuỗi]
-    D1{Đủ điều kiện?}
+    S1[Kiểm tra dữ liệu đầu vào năm tháng và payload]
+    D1{Hợp lệ?}
     S2[Lưu đề xuất trạng thái Chờ duyệt]
     S3[Gửi thông báo cho Phòng Chính trị]
 
     A1[Phòng Chính trị mở chi tiết đề xuất]
-    A2[Sửa số quyết định và đính kèm PDF nếu cần]
+    A2[Chỉnh sửa dữ liệu và số quyết định nếu cần]
+    A3[Đính kèm PDF quyết định nếu có]
     D2{Quyết định?}
-    A3[Phê duyệt]
-    A4[Từ chối với lý do]
-    S4[Lưu khen thưởng vào hồ sơ quân nhân]
-    S5[Cập nhật trạng thái Đã duyệt]
-    S6[Tính lại hồ sơ liên quan]
-    S7[Cập nhật trạng thái Từ chối]
-    S8[Gửi thông báo cho Chỉ huy đơn vị và Quân nhân]
+    A4[Phê duyệt]
+    A5[Từ chối với lý do]
+
+    S4[Kiểm tra trạng thái đề xuất chưa duyệt]
+    S5[Kiểm tra trùng lặp với khen thưởng đã có]
+    S6[Kiểm tra điều kiện chuỗi và niên hạn cống hiến]
+    S7[Kiểm tra hợp lệ số quyết định]
+    D3{Vượt qua tất cả?}
+    S8[Trả lỗi cho Phòng Chính trị xem]
+
+    S9[Tạo và lưu file PDF quyết định]
+    TX[/Bắt đầu giao dịch/]
+    S10[Tạo bản ghi FileQuyetDinh]
+    S11[Lưu khen thưởng vào hồ sơ quân nhân]
+    S12[Cập nhật trạng thái Đã duyệt với khoá lạc quan]
+    TXEND[/Kết thúc giao dịch/]
+    S13[Tính lại hồ sơ quân nhân và đơn vị liên quan]
+    S14[Ghi nhật ký nếu có dòng lỗi]
+    S15[Gửi thông báo cho Chỉ huy đơn vị và Quân nhân]
+
+    S16[Kiểm tra trạng thái chưa duyệt với khoá lạc quan]
+    D4{Đề xuất còn ở Chờ duyệt?}
+    S17[Cập nhật trạng thái Từ chối]
+    S18[Báo lỗi đã được duyệt hoặc từ chối từ trước]
+
     End([Kết thúc])
 
     Start --> M1 --> M2 --> M3 --> S1 --> D1
     D1 -- Không --> M2
-    D1 -- Có --> S2 --> S3 --> A1 --> A2 --> D2
-    D2 -- Phê duyệt --> A3 --> S4 --> S5 --> S6 --> S8 --> End
-    D2 -- Từ chối --> A4 --> S7 --> S8 --> End
+    D1 -- Có --> S2 --> S3 --> A1 --> A2 --> A3 --> D2
+    D2 -- Phê duyệt --> A4 --> S4 --> S5 --> S6 --> S7 --> D3
+    D3 -- Không --> S8 --> A2
+    D3 -- Có --> S9 --> TX --> S10 --> S11 --> S12 --> TXEND --> S13 --> S14 --> S15 --> End
+    D2 -- Từ chối --> A5 --> S16 --> D4
+    D4 -- Có --> S17 --> S15
+    D4 -- Không --> S18 --> End
 
     classDef mgr fill:#e6f7e6,stroke:#009900
     classDef adm fill:#fff4e6,stroke:#cc6600
     classDef system fill:#e6f0ff,stroke:#0066cc
+    classDef tx fill:#fff0f5,stroke:#cc3366,stroke-dasharray: 5 5
     class M1,M2,M3 mgr
-    class A1,A2,A3,A4 adm
-    class S1,S2,S3,S4,S5,S6,S7,S8 system
+    class A1,A2,A3,A4,A5 adm
+    class S1,S2,S3,S4,S5,S6,S7,S8,S9,S13,S14,S15,S16,S17,S18 system
+    class TX,TXEND,S10,S11,S12 tx
 ```
+
+**Ghi chú boundary giao dịch**: nhóm `S10 → S11 → S12` chạy trong cùng `prisma.$transaction()` — nếu bất kỳ bước nào fail, toàn bộ rollback (FileQuyetDinh không tạo, khen thưởng không lưu, status không đổi). Khoá lạc quan ở `S12` đảm bảo nếu ai đó duyệt/từ chối song song, chỉ 1 transaction commit thành công.
+
+**Pre-check trước khi vào giao dịch** (`S4 → S7`): chạy đầy đủ 4 lớp validate — trạng thái đề xuất, trùng lặp khen thưởng, điều kiện chuỗi/niên hạn/cống hiến, hợp lệ số quyết định. Nếu có lỗi → quay về cho Phòng Chính trị sửa, không vào giao dịch (tránh rollback tốn tài nguyên).
+
+**Ghi log** (`S14`): nhật ký lỗi import (nếu có dòng cá nhân lỗi trong khi tổng thể vẫn commit) ghi vào `SystemLog` resource = 'proposal' — fire-and-forget, không block flow.
 
 ---
 
@@ -245,7 +276,7 @@ flowchart TD
 | A3.1 | Đăng nhập | Người dùng + Hệ thống | 6 |
 | A3.2 | Thêm quân nhân | Phòng Chính trị + Hệ thống | 7 |
 | A3.3 | Import Excel khen thưởng | Phòng Chính trị + Hệ thống | 9 |
-| A3.4 | Tạo và duyệt đề xuất | 3 lane (Chỉ huy đơn vị + Phòng Chính trị + Hệ thống) | 14 |
+| A3.4 | Tạo và duyệt đề xuất | 3 lane (Chỉ huy đơn vị + Phòng Chính trị + Hệ thống) + boundary giao dịch | 25 |
 | A3.5 | Recalc điều kiện chuỗi | Hệ thống | 6 |
 | A3.6 | Quản lý đơn vị | Phòng Chính trị + Hệ thống | 6 |
 | A3.7 | 5 loại huân huy chương riêng | Chỉ huy đơn vị + Phòng Chính trị + Hệ thống | 9 |

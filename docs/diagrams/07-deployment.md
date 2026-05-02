@@ -23,16 +23,14 @@ flowchart TB
             NX[Nginx reverse proxy SSL termination port 443]
             subgraph PM2[PM2 cluster]
                 FE[Next.js process port 3000]
-                BE[Express API process port 5000]
-                CRON[Cron jobs: daily backup recalc batch]
+                BE[Express API process port 4000 + node-cron in-process]
             end
-            UPLOADS[/uploads excel pdf attachments/]
+            UPLOADS[/uploads decisions PDF/]
             BACKUPS[/backups daily sql/]
             NX --> FE
             NX --> BE
             BE --> UPLOADS
             BE --> BACKUPS
-            CRON --> BE
         end
 
         subgraph DBSRV[Máy chủ CSDL]
@@ -50,7 +48,7 @@ flowchart TB
     classDef db fill:#ffe6e6,stroke:#cc0000
 
     class PC,BR client
-    class NX,FE,BE,CRON,UPLOADS,BACKUPS server
+    class NX,FE,BE,UPLOADS,BACKUPS server
     class PG db
 ```
 
@@ -67,14 +65,13 @@ flowchart TB
 - **Nginx**: Reverse proxy + SSL termination (cấp cert nội bộ hoặc Let's Encrypt nếu domain public)
   - Public port 443 (HTTPS) + 80 (redirect)
   - Forward request `/` → Next.js (port 3000)
-  - Forward request `/api/*` và `/socket.io/*` → Express (port 5000)
+  - Forward request `/api/*` và `/socket.io/*` → Express (port 4000)
 - **PM2**: Process manager với `ecosystem.config.js` (file đã có ở root project)
-  - **Next.js process**: render UI, server components, route groups `app/{admin,manager,user}/*`
-  - **Express API process**: REST endpoints + Socket.IO server + audit log + notification
-  - **Cron jobs**: chạy bằng `node-cron` trong cùng process Express (hoặc tách thành process riêng nếu workload tăng)
-- **File system**:
-  - `uploads/`: Excel template, file đính kèm đề xuất, file PDF quyết định
-  - `backups/`: file SQL backup hằng ngày (giữ N ngày theo `SystemSetting.BACKUP_RETENTION_DAYS`)
+  - **Next.js process** (`fe-qlkt`): chạy `node_modules/.bin/next start`, port 3000, render UI + route groups `app/{admin,manager,user}/*`
+  - **Express API process** (`be-qlkt`): chạy `dist/index.js` (đã build từ TS), port 4000, REST + Socket.IO server + audit log + notification + `node-cron` in-process
+- **File system** (paths tương đối với BE-QLKT):
+  - `uploads/decisions/`: file PDF quyết định (multer disk storage). Excel import dùng `memoryStorage` không ghi đĩa.
+  - `backups/`: file SQL backup hằng ngày sinh bởi `backup.service.ts` qua `pg_dump` (giữ N ngày theo `SystemSetting.BACKUP_RETENTION_DAYS`)
 
 ### Máy chủ CSDL (DB Server)
 - **PostgreSQL 14+**: 23 bảng theo `prisma/schema.prisma`
@@ -134,7 +131,7 @@ flowchart LR
 
 ## C8.4 — Mô tả file `ecosystem.config.js` (PM2)
 
-Bạn đã có sẵn file này ở root. Trong báo cáo, có thể trích nội dung minh họa:
+Nội dung thực tế của file `ecosystem.config.js` ở root project:
 
 ```javascript
 module.exports = {
@@ -142,32 +139,42 @@ module.exports = {
     {
       name: 'be-qlkt',
       cwd: './BE-QLKT',
-      script: 'npm',
-      args: 'run start',
-      env: {
-        NODE_ENV: 'production',
-        PORT: 5000,
-      },
+      script: 'dist/index.js',
       instances: 1,
+      exec_mode: 'fork',
       autorestart: true,
-      max_memory_restart: '512M',
+      watch: false,
+      max_memory_restart: '500M',
+      env_file: './BE-QLKT/.env',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss',
+      out_file: './BE-QLKT/logs/out.log',
+      error_file: './BE-QLKT/logs/error.log',
+      merge_logs: true,
     },
     {
       name: 'fe-qlkt',
       cwd: './FE-QLKT',
-      script: 'npm',
-      args: 'run start',
-      env: {
-        NODE_ENV: 'production',
-        PORT: 3000,
-      },
+      script: 'node_modules/.bin/next',
+      args: 'start',
       instances: 1,
+      exec_mode: 'fork',
       autorestart: true,
-      max_memory_restart: '512M',
+      watch: false,
+      max_memory_restart: '500M',
+      env_file: './FE-QLKT/.env',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss',
+      out_file: './FE-QLKT/logs/out.log',
+      error_file: './FE-QLKT/logs/error.log',
+      merge_logs: true,
     },
   ],
 };
 ```
+
+**Đặc điểm**:
+- BE chạy file `dist/index.js` đã build (cần `npm run build` trước) — không phải `npm run start` để giảm overhead spawn shell.
+- FE gọi trực tiếp binary `next start` để PM2 quản lý process Next.js gốc, không qua npm wrapper.
+- Mỗi service đọc `.env` riêng từ thư mục con (`BE-QLKT/.env`, `FE-QLKT/.env`) — port BE mặc định `4000` (theo `BE-QLKT/src/configs/index.ts`), FE `3000`.
 
 Khởi động:
 ```bash
