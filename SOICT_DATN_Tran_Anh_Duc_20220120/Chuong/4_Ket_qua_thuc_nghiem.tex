@@ -199,8 +199,8 @@ Ràng buộc nghiệp vụ: chỉ một trong \texttt{co\_quan\_don\_vi\_id} và
 \texttt{status} & Enum & NOT NULL & PENDING, APPROVED, REJECTED \\ \hline
 \dbid{data_danh_hieu} & JSON & NULL & Dữ liệu chi tiết hằng năm \\ \hline
 \dbid{data_thanh_tich} & JSON & NULL & Dữ liệu thành tích NCKH \\ \hline
-\dbid{data_nien_han} & JSON & NULL & Dữ liệu niên hạn \\ \hline
-\dbid{data_cong_hien} & JSON & NULL & Dữ liệu cống hiến \\ \hline
+\dbid{data_nien_han} & JSON & NULL & Dữ liệu HCCSVV (cột DB giữ tên cũ) \\ \hline
+\dbid{data_cong_hien} & JSON & NULL & Dữ liệu HCBVTQ (cột DB giữ tên cũ) \\ \hline
 \dbid{files_attached} & JSON & NULL & Mảng file đính kèm \\ \hline
 \end{tabular}
 \end{table}
@@ -530,15 +530,15 @@ Bên cạnh kiểm thử đơn vị, các chức năng nghiệp vụ chính đư
 
 \begin{table}[H]
 \centering
-\caption{Kiểm thử chức năng Nhập Excel hàng loạt}
+\caption{Kiểm thử chức năng Nhập Excel hàng loạt cho danh hiệu hằng năm}
 \label{tab:kt-excel}
 \begin{tabular}{|c|p{4cm}|p{3.5cm}|p{4cm}|c|}
 \hline
 \textbf{STT} & \textbf{Chức năng} & \textbf{Đầu vào} & \textbf{Đầu ra mong muốn} & \textbf{KQ} \\ \hline
-1 & Nhập 50 quân nhân hợp lệ & Tệp đúng định dạng & 50 bản ghi được tạo & Đạt \\ \hline
-2 & Có dòng lỗi (trùng CCCD) & 1/50 dòng trùng & Xem trước hiển thị 49 valid + 1 error & Đạt \\ \hline
-3 & Xác nhận với dòng lỗi giả & Dữ liệu mới chen vào & Transaction rollback & Đạt \\ \hline
-4 & Tệp sai định dạng & Tệp .doc thay vì .xlsx & Trả 400 với mô tả lỗi & Đạt \\ \hline
+1 & Nhập 50 bản ghi CSTĐCS hợp lệ & Tệp \texttt{.xlsx} đúng mẫu & 50 bản ghi được tạo, ghi nhật ký kiểm toán & Đạt \\ \hline
+2 & Có dòng trùng (cùng quân nhân và năm) & 1/50 dòng trùng khoá & Xem trước hiển thị 49 valid + 1 error & Đạt \\ \hline
+3 & Confirm khi DB thay đổi giữa hai bước & Dữ liệu chen vào sau preview & Transaction rollback, không bản ghi nào được ghi & Đạt \\ \hline
+4 & Tệp sai định dạng & Tệp \texttt{.doc} thay vì \texttt{.xlsx} & Trả mã 400 kèm mô tả lỗi & Đạt \\ \hline
 \end{tabular}
 \end{table}
 
@@ -551,7 +551,7 @@ Bên cạnh kiểm thử đơn vị, các chức năng nghiệp vụ chính đư
 \textbf{STT} & \textbf{Chức năng} & \textbf{Đầu vào} & \textbf{Đầu ra mong muốn} & \textbf{KQ} \\ \hline
 1 & Thêm CQĐV mới & Tên + mã & Có trong cây & Đạt \\ \hline
 2 & Xoá ĐVTT có quân nhân & ĐVTT vẫn có người & Backend chặn xoá, trả 409 & Đạt \\ \hline
-3 & Sửa hệ số chức vụ & Đổi 0.8 $\rightarrow$ 0.9 & Lưu thành công, hồ sơ cống hiến tự cập nhật & Đạt \\ \hline
+3 & Sửa hệ số chức vụ & Đổi 0.8 $\rightarrow$ 0.9 & Lưu thành công, hồ sơ HCBVTQ tự cập nhật & Đạt \\ \hline
 \end{tabular}
 \end{table}
 

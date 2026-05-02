@@ -14,6 +14,7 @@
 \usepackage{amsbsy} % Hỗ trợ các kí hiệu in đậm
 \usepackage{times} % Chọn font Time New Romans
 \usepackage{array} % Tạo bảng array
+\usepackage{longtable} % Bảng dài tự động sang trang (dùng cho danh mục viết tắt)
 \usepackage{enumitem} % Cho phép thay đổi kí hiệu của list
 \usepackage{subfiles} % Chèn các file nhỏ, giúp chia các chapter ra nhiều file hơn
 \usepackage{titlesec} % Giúp chỉnh sửa các tiêu đề, đề mục như chương, phần,..
@@ -272,16 +273,8 @@
 \listoftables}
 % \phantomsection\addcontentsline{toc}{section}{\numberline {} DANH MỤC BẢNG BIỂU}
 
-\glsaddall 
- \renewcommand*{\glossaryname}{Danh sách thuật ngữ}
-\renewcommand*{\acronymname}{DANH MỤC THUẬT NGỮ VÀ TỪ VIẾT TẮT}
-\renewcommand*{\entryname}{Thuật ngữ}
-\renewcommand*{\descriptionname}{Ý nghĩa}
-\printnoidxglossaries
- %\phantomsection\addcontentsline{toc}{section}{\numberline {} DANH MỤC THUẬT NGỮ VÀ TỪ VIẾT TẮT}
-
-% \newpage
- %\subfile{chapters/0_5_Danh_muc_viet_tat.tex}
+\subfile{Chuong/0_5_Danh_muc_viet_tat.tex}
+\newpage
 
 % \newpage
 % \subfile{chapters/0_6_Thuat_ngu.tex}

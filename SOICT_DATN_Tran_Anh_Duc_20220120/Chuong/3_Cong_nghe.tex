@@ -1,8 +1,6 @@
 \documentclass[../DoAn.tex]{subfiles}
 \begin{document}
 
-Chương này giới thiệu các thành phần công nghệ chính được lựa chọn cho phần mềm Quản lý Khen thưởng (PM QLKT). Mỗi mục được trình bày theo bố cục thống nhất gồm ba phần: tổng quan ngắn gọn về công nghệ, đặc trưng kỹ thuật quan trọng và lý do lựa chọn trong ngữ cảnh cụ thể của đồ án. Cách trình bày này giúp người đọc thấy rõ động cơ của từng quyết định kỹ thuật thay vì chỉ liệt kê đặc điểm tổng quát.
-
 \section{Next.js 14 --- Khung phát triển frontend}
 \label{section:3.1}
 
@@ -92,7 +90,5 @@ Tại thời điểm hoàn thiện đồ án, kho kiểm thử của PM QLKT g�
 ExcelJS là thư viện JavaScript cho phép đọc, ghi và thao tác workbook định dạng \texttt{.xlsx} ở phía máy chủ Node.js \cite{exceljsdocs}. Khác với các thư viện chỉ tạo CSV hoặc HTML giả lập Excel, ExcelJS hỗ trợ định dạng ô (font, màu nền, viền), khoá ô để tránh người dùng chỉnh sửa các cột hệ thống, công thức và đặc biệt là Data Validation rule cho phép tạo các danh sách thả xuống ngay trong tệp mẫu xuất ra.
 
 Trong PM QLKT, ExcelJS phục vụ hai mục đích đối xứng. Khi xuất tệp mẫu nhập liệu cho từng nhóm khen thưởng, máy chủ sinh workbook với các sheet riêng (\texttt{QuanNhan}, \texttt{DanhHieuHangNam}, \texttt{ThanhTichKhoaHoc}, ...), cài đặt cột cố định, áp Data Validation lên cột danh hiệu để chỉ chấp nhận các giá trị hợp lệ và đính kèm chú thích tiếng Việt giải thích từng cột. Khi nhập tệp Excel do người dùng tải lên, máy chủ đọc tuần tự từng dòng, đối chiếu với schema Zod và các ràng buộc Prisma rồi đưa kết quả vào màn hình xem trước trước khi đưa vào cơ sở dữ liệu. Quy trình hai bước (xem trước rồi xác nhận) tận dụng đặc tính giao dịch của Prisma ở bước xác nhận để đảm bảo nguyên tử tính: nếu có bất kỳ dòng nào lỗi vào thời điểm ghi, toàn bộ thao tác sẽ được huỷ bỏ.
-
-\textbf{Kết chương.} Chương này đã giới thiệu chín nhóm công nghệ trọng yếu của PM QLKT cùng lý do lựa chọn từng nhóm trong ngữ cảnh đặc thù của đề tài. Frontend dùng Next.js 14 App Router cho phép server-side rendering theo từng vai trò; backend là Express + TypeScript theo kiến trúc middleware nối tiếp; cơ sở dữ liệu PostgreSQL truy cập qua Prisma ORM với 23 model. Các thư viện phụ trợ (Ant Design, Tailwind CSS, shadcn/ui, Socket.IO, JWT, Zod, Jest, ExcelJS) bổ sung các năng lực cụ thể cho biểu mẫu, thông báo realtime, xác thực hai phía, kiểm thử và xử lý Excel. Toàn bộ nền tảng công nghệ này đặt cơ sở cho phần thiết kế kiến trúc và triển khai chi tiết được trình bày ở chương tiếp theo.
 
 \end{document}

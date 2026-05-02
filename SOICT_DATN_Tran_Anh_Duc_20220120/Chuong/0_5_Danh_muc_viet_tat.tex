@@ -1,35 +1,53 @@
 \documentclass[../DoAn.tex]{subfiles}
 \begin{document}
-\begin{longtable}{l p{11cm}}
-	\hline
-	\textbf{Viết tắt} & \textbf{Ý nghĩa} \\ \hline
-	\textbf{API} & Giao diện lập trình ứng dụng \\
-	\textbf{BKBTBQP} & Bằng khen của Bộ trưởng Bộ Quốc phòng \\
-	\textbf{BKTTCP} & Bằng khen của Thủ tướng Chính phủ \\
-	\textbf{BQP} & Bộ Quốc phòng \\
-	\textbf{CQĐV} & Cơ quan đơn vị (cấp cha) \\
-	\textbf{CSDL} & Cơ sở dữ liệu \\
-	\textbf{CSTĐCS} & Chiến sĩ thi đua cơ sở \\
-	\textbf{CSTĐTQ} & Chiến sĩ thi đua toàn quân \\
-	\textbf{ĐATN} & Đồ án tốt nghiệp \\
-	\textbf{ĐVQT} & Đơn vị quyết thắng \\
-	\textbf{ĐVTT} & Đơn vị trực thuộc \\
-	\textbf{ERD} & Sơ đồ thực thể -- quan hệ \\
-	\textbf{HCBVTQ} & Huân chương Bảo vệ Tổ quốc \\
-	\textbf{HCCSVV} & Huy chương Chiến sĩ vẻ vang \\
-	\textbf{HCQKQT} & Huy chương Quân kỳ quyết thắng \\
-	\textbf{HTML} & Ngôn ngữ đánh dấu siêu văn bản \\
-	\textbf{HVKHQS} & Học viện Khoa học Quân sự \\
-	\textbf{JWT} & Mã thông báo web JSON \\
-	\textbf{KNC} & Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN \\
-	\textbf{LAN} & Mạng nội bộ \\
-	\textbf{NCKH} & Nghiên cứu khoa học \\
-	\textbf{ORM} & Ánh xạ đối tượng -- quan hệ \\
-	\textbf{QĐNDVN} & Quân đội Nhân dân Việt Nam \\
-	\textbf{QLKT} & Quản lý khen thưởng \\
-	\textbf{RBAC} & Kiểm soát truy cập theo vai trò \\
-	\textbf{SV} & Sinh viên \\
-	\hline
+
+\begin{center}
+    \Large{\textbf{DANH MỤC THUẬT NGỮ VÀ TỪ VIẾT TẮT}}
+\end{center}
+\vspace{0.6cm}
+
+\renewcommand{\arraystretch}{1.25}
+\begin{longtable}{|>{\centering\arraybackslash}p{3.2cm}|p{11cm}|}
+\hline
+\textbf{Viết tắt} & \multicolumn{1}{c|}{\textbf{Ý nghĩa}} \\ \hline
+\endfirsthead
+\hline
+\textbf{Viết tắt} & \multicolumn{1}{c|}{\textbf{Ý nghĩa}} \\ \hline
+\endhead
+\hline
+\endfoot
+\textbf{API}      & Application Programming Interface --- giao diện lập trình ứng dụng \\ \hline
+\textbf{BKBTBQP}  & Bằng khen của Bộ trưởng Bộ Quốc phòng \\ \hline
+\textbf{BKTTCP}   & Bằng khen của Thủ tướng Chính phủ \\ \hline
+\textbf{BQP}      & Bộ Quốc phòng \\ \hline
+\textbf{CCCD}     & Căn cước công dân \\ \hline
+\textbf{CQĐV}     & Cơ quan đơn vị (đơn vị cấp cha trong cây tổ chức) \\ \hline
+\textbf{CSDL}     & Cơ sở dữ liệu (Database) \\ \hline
+\textbf{CSTĐCS}   & Chiến sĩ thi đua cơ sở \\ \hline
+\textbf{CSTĐTQ}   & Chiến sĩ thi đua toàn quân \\ \hline
+\textbf{CSV}      & Comma-Separated Values --- định dạng tệp văn bản phân cách bằng dấu phẩy \\ \hline
+\textbf{ĐATN}     & Đồ án tốt nghiệp \\ \hline
+\textbf{ĐVQT}     & Đơn vị quyết thắng \\ \hline
+\textbf{ĐVTT}     & Đơn vị trực thuộc (đơn vị cấp con thuộc CQĐV) \\ \hline
+\textbf{ERD}      & Entity Relationship Diagram --- sơ đồ thực thể -- quan hệ \\ \hline
+\textbf{HCBVTQ}   & Huân chương Bảo vệ Tổ quốc (hạng Ba/Nhì/Nhất) \\ \hline
+\textbf{HCCSVV}   & Huy chương Chiến sĩ vẻ vang (hạng Ba/Nhì/Nhất theo mốc 10/15/20 năm phục vụ) \\ \hline
+\textbf{HCQKQT}   & Huy chương Quân kỳ quyết thắng (25 năm phục vụ) \\ \hline
+\textbf{HVKHQS}   & Học viện Khoa học Quân sự \\ \hline
+\textbf{JSON}     & JavaScript Object Notation --- định dạng dữ liệu trao đổi \\ \hline
+\textbf{JWT}      & JSON Web Token --- mã thông báo web JSON dùng cho xác thực \\ \hline
+\textbf{KNC}      & Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN \\ \hline
+\textbf{LAN}      & Local Area Network --- mạng nội bộ \\ \hline
+\textbf{NCKH}     & Nghiên cứu khoa học \\ \hline
+\textbf{ORM}      & Object-Relational Mapping --- ánh xạ đối tượng -- quan hệ \\ \hline
+\textbf{PDF}      & Portable Document Format --- định dạng tài liệu di động \\ \hline
+\textbf{PKCS}     & Public Key Cryptography Standards --- chuẩn mật mã khoá công khai \\ \hline
+\textbf{PKI}      & Public Key Infrastructure --- hạ tầng khoá công khai \\ \hline
+\textbf{PM QLKT}  & Phần mềm Quản lý Khen thưởng (tên đề tài) \\ \hline
+\textbf{QĐNDVN}   & Quân đội Nhân dân Việt Nam \\ \hline
+\textbf{RBAC}     & Role-Based Access Control --- kiểm soát truy cập theo vai trò \\ \hline
+\textbf{REST}     & Representational State Transfer --- kiểu kiến trúc dịch vụ web \\ \hline
+\textbf{SQL}      & Structured Query Language --- ngôn ngữ truy vấn có cấu trúc \\ \hline
 \end{longtable}
 
 \end{document}
