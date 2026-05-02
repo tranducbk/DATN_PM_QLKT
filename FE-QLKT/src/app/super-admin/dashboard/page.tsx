@@ -15,7 +15,6 @@ import {
   Typography,
   ConfigProvider,
   theme as antdTheme,
-  Spin,
   message,
 } from 'antd';
 import {
@@ -32,6 +31,7 @@ import Link from 'next/link';
 import { apiClient } from '@/lib/apiClient';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { useTheme } from '@/components/ThemeProvider';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { useAuth } from '@/contexts/AuthContext';
 import { ROLE_LABELS } from '@/constants/roles.constants';
 import { formatDateTime } from '@/lib/utils';
@@ -41,9 +41,7 @@ const SuperAdminDashboardCharts = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex min-h-[520px] items-center justify-center py-8">
-        <Spin size="large" />
-      </div>
+      <LoadingState size="md" className="min-h-[520px]" text="Đang tải biểu đồ..." />
     ),
   }
 );
@@ -193,11 +191,7 @@ export default function SuperAdminDashboard() {
   ];
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Spin size="large" />
-      </div>
-    );
+    return <LoadingState fullPage text="Đang tải thống kê..." />;
   }
 
   return (

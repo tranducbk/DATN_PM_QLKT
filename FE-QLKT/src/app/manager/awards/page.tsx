@@ -10,7 +10,6 @@ import {
   Space,
   Typography,
   Breadcrumb,
-  Spin,
   message,
   Tabs,
   Empty,
@@ -679,28 +678,27 @@ export default function ManagerAwardsPage() {
 
         {/* Awards Table */}
         <Card title={`Danh sách khen thưởng (${filteredAwards.length})`}>
-          <Spin spinning={loading} tip="Đang tải...">
-            {!loading && awards.length === 0 ? (
-              <Empty description="Chưa có dữ liệu khen thưởng" style={{ padding: '48px 0' }} />
-            ) : (
-              <Table
-                columns={columns.filter(col => {
-                  if (col.key === 'loai_khen_thuong' && activeTab !== 'NCKH') {
-                    return false;
-                  }
-                  return true;
-                })}
-                dataSource={filteredAwards}
-                rowKey="id"
-                pagination={{
-                  ...DEFAULT_ANTD_TABLE_PAGINATION,
-                  showTotal: total => `Tổng ${total} bản ghi`,
-                }}
-                bordered
-                scroll={{ x: 'max-content' }}
-              />
-            )}
-          </Spin>
+          {!loading && awards.length === 0 ? (
+            <Empty description="Chưa có dữ liệu khen thưởng" style={{ padding: '48px 0' }} />
+          ) : (
+            <Table
+              columns={columns.filter(col => {
+                if (col.key === 'loai_khen_thuong' && activeTab !== 'NCKH') {
+                  return false;
+                }
+                return true;
+              })}
+              dataSource={filteredAwards}
+              rowKey="id"
+              loading={loading}
+              pagination={{
+                ...DEFAULT_ANTD_TABLE_PAGINATION,
+                showTotal: total => `Tổng ${total} bản ghi`,
+              }}
+              bordered
+              scroll={{ x: 'max-content' }}
+            />
+          )}
         </Card>
       </>
     );

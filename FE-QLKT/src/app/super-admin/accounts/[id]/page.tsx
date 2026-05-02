@@ -14,7 +14,6 @@ import {
   theme as antdTheme,
   Modal,
   Alert,
-  Spin,
 } from 'antd';
 import { getApiErrorMessage } from '@/lib/apiError';
 
@@ -24,6 +23,7 @@ import { useParams } from 'next/navigation';
 import { apiClient } from '@/lib/apiClient';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { useTheme } from '@/components/ThemeProvider';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { ROLES, getRoleInfo } from '@/constants/roles.constants';
 
 const { Title } = Typography;
@@ -120,11 +120,7 @@ export default function AccountDetailPage() {
 
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Spin size="large" />
-      </div>
-    );
+    return <LoadingState fullPage text="Đang tải thông tin tài khoản..." />;
   }
 
   if (!account) {

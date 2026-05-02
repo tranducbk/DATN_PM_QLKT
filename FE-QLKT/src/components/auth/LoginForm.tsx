@@ -1,24 +1,54 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Form, Input, Button, Alert } from 'antd';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { apiClient } from '@/lib/apiClient';
-import { getApiErrorMessage } from '@/lib/apiError';
+import { getApiErrorMessage, getRetryAfterSeconds } from '@/lib/apiError';
 import { useAuth } from '@/contexts/AuthContext';
 import { ROLES } from '@/constants/roles.constants';
 import Image from 'next/image';
 import './LoginForm.css';
 
+function formatCooldown(seconds: number): string {
+  if (seconds < 60) return `${seconds} giây`;
+  const minutes = Math.floor(seconds / 60);
+  const remainSeconds = seconds % 60;
+  return remainSeconds > 0 ? `${minutes} phút ${remainSeconds} giây` : `${minutes} phút`;
+}
+
 export function LoginForm() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
   const router = useRouter();
   const { login } = useAuth();
 
+  useEffect(() => {
+    if (!cooldownUntil) return;
+    const tick = () => setNow(Date.now());
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [cooldownUntil]);
+
+  const cooldownSeconds = cooldownUntil
+    ? Math.max(0, Math.ceil((cooldownUntil - now) / 1000))
+    : 0;
+  const isCoolingDown = cooldownSeconds > 0;
+
+  useEffect(() => {
+    if (cooldownUntil && cooldownSeconds === 0) {
+      setCooldownUntil(null);
+      setError('');
+    }
+  }, [cooldownUntil, cooldownSeconds]);
+
   const handleLogin = async (values: { username: string; password: string }) => {
+    if (loading || isCoolingDown) return;
     setLoading(true);
     setError('');
 
@@ -58,6 +88,10 @@ export function LoginForm() {
         return;
       }
     } catch (err: unknown) {
+      const retrySeconds = getRetryAfterSeconds(err);
+      if (retrySeconds && retrySeconds > 0) {
+        setCooldownUntil(Date.now() + retrySeconds * 1000);
+      }
       const errorMessage =
         getApiErrorMessage(err) ||
         'Đăng nhập thất bại. Vui lòng kiểm tra lại tài khoản và mật khẩu.';
@@ -120,13 +154,17 @@ export function LoginForm() {
           </div>
 
           {/* Error Alert */}
-          {error && (
+          {(error || isCoolingDown) && (
             <Alert
-              message={error}
+              message={
+                isCoolingDown
+                  ? `Quá nhiều yêu cầu. Vui lòng thử lại sau ${formatCooldown(cooldownSeconds)}.`
+                  : error
+              }
               type="error"
               showIcon
               className="login-alert"
-              closable
+              closable={!isCoolingDown}
               onClose={() => setError('')}
             />
           )}
@@ -212,9 +250,14 @@ export function LoginForm() {
                 block
                 size="large"
                 loading={loading}
+                disabled={loading || isCoolingDown}
                 className="login-button"
               >
-                {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
+                {loading
+                  ? 'Đang đăng nhập...'
+                  : isCoolingDown
+                    ? `Thử lại sau ${formatCooldown(cooldownSeconds)}`
+                    : 'Đăng nhập'}
               </Button>
             </Form.Item>
           </Form>

@@ -12,7 +12,6 @@ import {
   Typography,
   Breadcrumb,
   message,
-  Spin,
   ConfigProvider,
   theme as antdTheme,
   Tag,
@@ -25,6 +24,7 @@ import {
 } from '@ant-design/icons';
 import { apiClient } from '@/lib/apiClient';
 import { useTheme } from '@/components/ThemeProvider';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 import type { PersonnelDetail, ServiceProfile } from '@/lib/types/personnelList';
@@ -256,10 +256,7 @@ export default function AdminMilitaryFlagPage() {
         {/* Table */}
         {loading ? (
           <Card>
-            <div style={{ textAlign: 'center', padding: '40px 0' }}>
-              <Spin size="large" />
-              <div style={{ marginTop: 16 }}>Đang tải dữ liệu...</div>
-            </div>
+            <LoadingState />
           </Card>
         ) : (
           <Card>

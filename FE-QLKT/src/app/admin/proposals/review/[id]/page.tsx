@@ -10,7 +10,6 @@ import {
   Typography,
   Breadcrumb,
   Space,
-  Spin,
   Empty,
   Modal,
   Input,
@@ -24,6 +23,7 @@ import {
 } from 'antd';
 import dayjs from 'dayjs';
 import { getApiErrorMessage } from '@/lib/apiError';
+import { LoadingState } from '@/components/shared/LoadingState';
 
 import {
   HomeOutlined,
@@ -581,23 +581,7 @@ export default function ProposalDetailPage() {
   };
 
   if (loading) {
-    return (
-      <div
-        style={{
-          padding: '24px',
-          textAlign: 'center',
-          minHeight: '400px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <Space>
-          <Spin indicator={<LoadingOutlined style={{ fontSize: 32 }} spin />} />
-          <span>Đang tải...</span>
-        </Space>
-      </div>
-    );
+    return <LoadingState className="min-h-[400px]" text="Đang tải đề xuất..." />;
   }
 
   if (!proposal) {

@@ -14,7 +14,12 @@
     "init-super-admin": "tsx src/scripts/initSuperAdmin.ts",
     "setup": "prisma db push && npm run init-super-admin",
     "format": "prettier --write \"src/**/*.ts\"",
-    "format:check": "prettier --check \"src/**/*.ts\""
+    "format:check": "prettier --check \"src/**/*.ts\"",
+    "seed:reset": "prisma db execute --file scripts/demo/00-reset-all.sql --schema prisma/schema.prisma",
+    "seed:ui": "prisma db execute --file scripts/demo/01-seed-data.sql --schema prisma/schema.prisma",
+    "seed:eligibility": "prisma db execute --file scripts/demo/02-seed-eligibility.sql --schema prisma/schema.prisma",
+    "seed:fresh": "npm run seed:reset && npm run seed:ui",
+    "seed:demo-passwords": "tsx scripts/demo/02-set-passwords.ts"
   },
   "license": "ISC",
   "dependencies": {

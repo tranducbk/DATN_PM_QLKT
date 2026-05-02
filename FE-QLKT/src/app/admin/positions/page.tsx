@@ -12,9 +12,9 @@ import {
   message,
   ConfigProvider,
   theme as antdTheme,
-  Spin,
 } from 'antd';
 import { useTheme } from '@/components/ThemeProvider';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { PositionForm } from '@/components/categories/PositionForm';
 import { PositionsTable, type PositionRow } from '@/components/categories/PositionsTable';
 import { apiClient } from '@/lib/apiClient';
@@ -78,11 +78,7 @@ export default function PositionsPage() {
   const regularPositions = positions.filter(p => !p.is_manager);
 
   if (loading && positions.length === 0) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Spin size="large" />
-      </div>
-    );
+    return <LoadingState fullPage text="Đang tải dữ liệu chức vụ..." />;
   }
 
   return (
@@ -214,13 +210,8 @@ export default function PositionsPage() {
         </div>
 
         {loading ? (
-          <Card style={{ textAlign: 'center', padding: '48px' }}>
-            <Space direction="vertical" size="large">
-              <Spin size="large" />
-              <Text type="secondary" style={{ fontSize: '18px', fontWeight: 500 }}>
-                Đang tải dữ liệu chức vụ...
-              </Text>
-            </Space>
+          <Card>
+            <LoadingState text="Đang tải dữ liệu chức vụ..." />
           </Card>
         ) : (
           <div>

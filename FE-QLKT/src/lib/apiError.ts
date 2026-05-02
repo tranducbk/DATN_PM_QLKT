@@ -18,6 +18,19 @@ export function getApiErrorMessage(error: unknown, fallback = 'Đã xảy ra l�
 }
 
 /**
+ * Extract retry-after seconds from a 429 axios error. Null nếu không phải 429
+ * hoặc không có header `retry-after`.
+ */
+export function getRetryAfterSeconds(error: unknown): number | null {
+  if (!error || typeof error !== 'object') return null;
+  const e = error as { response?: { status?: number; data?: { retryAfter?: number | null } } };
+  if (e.response?.status !== 429) return null;
+  const value = e.response?.data?.retryAfter;
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) return value;
+  return null;
+}
+
+/**
  * Ghi lỗi API để dễ tra cứu theo ngữ cảnh.
  * @param error - Giá trị từ `catch`
  * @param context - Ngữ cảnh log (vd. `MainLayout.loadNotifications`)

@@ -20,6 +20,7 @@ import { UnitsTable } from '@/components/categories/UnitsTable';
 import { PositionsTable, type PositionRow } from '@/components/categories/PositionsTable';
 import { apiClient } from '@/lib/apiClient';
 import { useTheme } from '@/components/ThemeProvider';
+import { LoadingState } from '@/components/shared/LoadingState';
 import Link from 'next/link';
 
 const { Title, Text } = Typography;
@@ -113,9 +114,7 @@ export default function CategoriesPage() {
   return (
     <ConfigProvider theme={{ algorithm: antdAlgorithm }}>
       {loading ? (
-        <div className="flex justify-center items-center min-h-screen">
-          <Spin size="large" />
-        </div>
+        <LoadingState fullPage text="Đang tải danh mục..." />
       ) : (
         <div style={{ padding: '24px' }}>
           {/* Breadcrumb */}

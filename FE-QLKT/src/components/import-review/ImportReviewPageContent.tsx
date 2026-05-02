@@ -10,7 +10,6 @@ import {
   Space,
   Typography,
   Breadcrumb,
-  Spin,
   message,
   Result,
 } from 'antd';
@@ -26,6 +25,7 @@ import {
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { DANH_HIEU_MAP } from '@/constants/danhHieu.constants';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { getApiErrorMessage, logApiError } from '@/lib/apiError';
 import { formatDate } from '@/lib/utils';
 import { DEFAULT_PAGE_SIZE, DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
@@ -333,18 +333,7 @@ export function ImportReviewPageContent({ config }: { config: ImportReviewConfig
   };
 
   if (loading) {
-    return (
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: 400,
-        }}
-      >
-        <Spin size="large" tip="Đang tải dữ liệu xem trước..." />
-      </div>
-    );
+    return <LoadingState className="min-h-[400px]" text="Đang tải dữ liệu xem trước..." />;
   }
 
   if (!previewData || (validCount === 0 && invalidCount === 0)) {

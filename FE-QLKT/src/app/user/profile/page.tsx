@@ -8,7 +8,6 @@ import {
   Typography,
   Tag,
   Breadcrumb,
-  Spin,
   Alert,
   message,
   ConfigProvider,
@@ -34,6 +33,7 @@ import { apiClient } from '@/lib/apiClient';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { formatDate } from '@/lib/utils';
 import { useTheme } from '@/components/ThemeProvider';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { MedalProgressCard } from '@/components/personnel/MedalProgressCard';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { useAuth } from '@/contexts/AuthContext';
@@ -188,11 +188,7 @@ export default function UserProfilePage() {
   const adhocColumns = makeAdhocColumns(handleOpenDecisionFile);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Spin size="large" />
-      </div>
-    );
+    return <LoadingState fullPage text="Đang tải hồ sơ..." />;
   }
 
   if (!personnelInfo) {

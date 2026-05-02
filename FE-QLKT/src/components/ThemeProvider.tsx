@@ -1,6 +1,10 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
+import { Spin } from 'antd';
+import { LoadingOutlined } from '@ant-design/icons';
+
+Spin.setDefaultIndicator(<LoadingOutlined style={{ fontSize: 28 }} spin />);
 
 type Theme = 'light' | 'dark';
 

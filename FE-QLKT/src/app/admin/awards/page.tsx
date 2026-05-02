@@ -10,7 +10,6 @@ import {
   Space,
   Typography,
   Breadcrumb,
-  Spin,
   message,
   Tabs,
   Popconfirm,
@@ -821,23 +820,22 @@ export default function AdminAwardsPage() {
 
         {/* Awards Table */}
         <Card title={`Danh sách khen thưởng (${filteredAwards.length})`}>
-          <Spin spinning={loading} tip="Đang tải...">
-            {!loading && awards.length === 0 ? (
-              <Empty description="Chưa có dữ liệu khen thưởng" style={{ padding: '48px 0' }} />
-            ) : (
-              <Table
-                columns={visibleColumns}
-                dataSource={filteredAwards}
-                rowKey="id"
-                scroll={{ x: 'max-content' }}
-                pagination={{
-                  ...DEFAULT_ANTD_TABLE_PAGINATION,
-                  showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} bản ghi`,
-                }}
-                bordered
-              />
-            )}
-          </Spin>
+          {!loading && awards.length === 0 ? (
+            <Empty description="Chưa có dữ liệu khen thưởng" style={{ padding: '48px 0' }} />
+          ) : (
+            <Table
+              columns={visibleColumns}
+              dataSource={filteredAwards}
+              rowKey="id"
+              loading={loading}
+              scroll={{ x: 'max-content' }}
+              pagination={{
+                ...DEFAULT_ANTD_TABLE_PAGINATION,
+                showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} bản ghi`,
+              }}
+              bordered
+            />
+          )}
         </Card>
       </>
     );

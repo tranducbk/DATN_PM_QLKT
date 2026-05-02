@@ -10,12 +10,12 @@ import {
   message,
   ConfigProvider,
   theme as antdTheme,
-  Spin,
   Space,
   Input,
   Select,
 } from 'antd';
 import { useTheme } from '@/components/ThemeProvider';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { HomeOutlined, FilterOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
 import { apiClient } from '@/lib/apiClient';
@@ -243,9 +243,7 @@ export default function ManagerUnitsPage() {
           algorithm: theme === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
         }}
       >
-        <div className="flex justify-center items-center min-h-screen">
-          <Spin size="large" />
-        </div>
+        <LoadingState fullPage text="Đang tải danh sách đơn vị..." />
       </ConfigProvider>
     );
   }
@@ -432,7 +430,7 @@ export default function ManagerUnitsPage() {
             </div>
           </Card>
           {awardsLoading ? (
-            <Spin size="large" />
+            <LoadingState />
           ) : (
             <Table<UnitAnnualAwardRow>
               columns={

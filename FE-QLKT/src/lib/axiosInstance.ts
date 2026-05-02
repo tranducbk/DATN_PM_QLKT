@@ -76,11 +76,15 @@ axiosInstance.interceptors.response.use(
       const baseMsg = error.response?.data?.message;
       const formatted = formatRateLimitMessage(baseMsg, retrySeconds);
       if (error.response?.data && typeof error.response.data === 'object') {
-        (error.response.data as { message?: string }).message = formatted;
+        const data = error.response.data as { message?: string; retryAfter?: number | null };
+        data.message = formatted;
+        data.retryAfter = retrySeconds;
       }
       if (!isAuthRequest && typeof window !== 'undefined') {
         window.dispatchEvent(
-          new CustomEvent('apiError', { detail: { message: formatted, status } })
+          new CustomEvent('apiError', {
+            detail: { message: formatted, status, retryAfter: retrySeconds },
+          })
         );
       }
       return Promise.reject(error);

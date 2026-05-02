@@ -473,7 +473,7 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
                           {
                             key: 'loading',
                             label: (
-                              <div className="text-center py-12 px-6 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg">
+                              <div className="text-center py-12 px-6 text-gray-600 dark:text-gray-300">
                                 <Spin size="large" className="mb-3" />
                                 <div className="text-sm font-medium">Đang tải thông báo...</div>
                               </div>

@@ -9,7 +9,6 @@ import {
   ConfigProvider,
   theme as antdTheme,
   Pagination,
-  Spin,
   Button,
   Popconfirm,
 } from 'antd';
@@ -19,6 +18,7 @@ import { LogsTable, LogEntry } from '@/components/system-logs/LogsTable';
 import { apiClient } from '@/lib/apiClient';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { useTheme } from '@/components/ThemeProvider';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { useDevZone } from '@/contexts/DevZoneContext';
 import type { SystemLogStats } from '@/lib/api/systemLogs';
 import { ROLE_LABELS } from '@/constants/roles.constants';
@@ -169,11 +169,7 @@ export function SystemLogsPageContent({ basePath }: SystemLogsPageContentProps) 
   };
 
   if (loading && logs.length === 0) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Spin size="large" />
-      </div>
-    );
+    return <LoadingState fullPage text="Đang tải nhật ký..." />;
   }
 
   const cardShadow =

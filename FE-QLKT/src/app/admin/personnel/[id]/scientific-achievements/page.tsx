@@ -12,12 +12,12 @@ import {
   Typography,
   Breadcrumb,
   message,
-  Spin,
   Empty,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { LeftOutlined, HomeOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/apiClient';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import type { PersonnelDetail } from '@/lib/types/personnelList';
 
@@ -185,10 +185,7 @@ export default function ScientificAchievementsPage() {
       {/* Table */}
       {loading ? (
         <Card>
-          <div style={{ textAlign: 'center', padding: '40px 0' }}>
-            <Spin size="large" />
-            <div style={{ marginTop: 16 }}>Đang tải dữ liệu...</div>
-          </div>
+          <LoadingState />
         </Card>
       ) : (
         <Card>

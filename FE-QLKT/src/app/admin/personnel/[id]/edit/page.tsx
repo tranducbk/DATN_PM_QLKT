@@ -12,12 +12,12 @@ import {
   message,
   Breadcrumb,
   ConfigProvider,
-  Spin,
 } from 'antd';
 import { ArrowLeftOutlined, SaveOutlined, HomeOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { useTheme } from '@/components/ThemeProvider';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { getAntdThemeConfig } from '@/lib/antdTheme';
 import { apiClient } from '@/lib/apiClient';
 import { getApiErrorMessage } from '@/lib/apiError';
@@ -335,9 +335,7 @@ export default function PersonnelEditPage() {
         />
 
         {loadingData ? (
-          <div className="flex justify-center items-center min-h-[400px]">
-            <Spin size="large" />
-          </div>
+          <LoadingState className="min-h-[400px]" />
         ) : (
           <>
             {/* Header */}

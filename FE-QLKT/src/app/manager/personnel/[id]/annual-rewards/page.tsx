@@ -12,7 +12,6 @@ import {
   Typography,
   Breadcrumb,
   message,
-  Spin,
   ConfigProvider,
   theme as antdTheme,
   Empty,
@@ -22,6 +21,7 @@ import { LeftOutlined, HomeOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/apiClient';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { useTheme } from '@/components/ThemeProvider';
+import { LoadingState } from '@/components/shared/LoadingState';
 import type { PersonnelDetail } from '@/lib/types/personnelList';
 import { renderAnnualAwards } from '@/lib/award/awardsHelper';
 
@@ -202,10 +202,7 @@ export default function ManagerAnnualRewardsPage() {
         {/* Table */}
         {loading ? (
           <Card>
-            <div style={{ textAlign: 'center', padding: '40px 0' }}>
-              <Spin size="large" />
-              <div style={{ marginTop: 16 }}>Đang tải dữ liệu...</div>
-            </div>
+            <LoadingState />
           </Card>
         ) : (
           <Card>

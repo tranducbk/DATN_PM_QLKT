@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, Spin, message, ConfigProvider, Tag, Breadcrumb } from 'antd';
+import { Card, message, ConfigProvider, Tag, Breadcrumb } from 'antd';
 import { UserOutlined, HomeOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { apiClient } from '@/lib/apiClient';
 import { formatDate } from '@/lib/utils';
 import { useTheme } from '@/components/ThemeProvider';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { getAntdThemeConfig } from '@/lib/antdTheme';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { getRoleInfo } from '@/constants/roles.constants';
@@ -78,11 +79,7 @@ export function ProfileViewForm({
   }, [loadPersonnelData]);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Spin size="large" tip="Đang tải thông tin..." />
-      </div>
-    );
+    return <LoadingState className="min-h-[400px]" text="Đang tải thông tin..." />;
   }
 
   if (!personnelData) {

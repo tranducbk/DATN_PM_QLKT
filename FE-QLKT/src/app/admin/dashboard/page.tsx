@@ -19,7 +19,6 @@ import {
   Row,
   Col,
   Skeleton,
-  Spin,
   message,
 } from 'antd';
 import {
@@ -37,6 +36,7 @@ import {
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useTheme } from '@/components/ThemeProvider';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/apiClient';
 import { getApiErrorMessage } from '@/lib/apiError';
@@ -52,9 +52,7 @@ import { THANH_TICH_KHOA_HOC_SHORT_LABELS } from '@/constants/danhHieu.constants
 const { Title } = Typography;
 
 const chartLoading = () => (
-  <div className="flex min-h-[220px] items-center justify-center py-6">
-    <Spin size="large" />
-  </div>
+  <LoadingState size="md" className="min-h-[220px]" text="Đang tải biểu đồ..." />
 );
 
 const ActionBarChart = dynamic(

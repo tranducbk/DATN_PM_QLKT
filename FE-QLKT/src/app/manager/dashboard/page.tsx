@@ -14,7 +14,6 @@ import {
   Row,
   Col,
   Skeleton,
-  Spin,
 } from 'antd';
 import {
   TeamOutlined,
@@ -33,6 +32,7 @@ import {
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useTheme } from '@/components/ThemeProvider';
+import { LoadingState } from '@/components/shared/LoadingState';
 import {
   StatCard,
   getStatCardPalette,
@@ -68,9 +68,7 @@ interface PersonnelByRank extends CountByKey { rank: string; }
 interface PersonnelByPosition extends CountByKey { positionName: string; }
 
 const chartLoading = () => (
-  <div className="flex min-h-[220px] items-center justify-center py-6">
-    <Spin size="large" />
-  </div>
+  <LoadingState size="md" className="min-h-[220px]" text="Đang tải biểu đồ..." />
 );
 
 const ActionBarChart = dynamic(

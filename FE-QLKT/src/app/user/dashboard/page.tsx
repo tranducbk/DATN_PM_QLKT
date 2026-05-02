@@ -6,7 +6,6 @@ import {
   Col,
   Space,
   Typography,
-  Spin,
   Alert,
   Descriptions,
   Progress,
@@ -41,6 +40,7 @@ import { apiClient } from '@/lib/apiClient';
 import { calculateServiceMonthsWithToday } from '@/lib/award/serviceTimeHelpers';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { useTheme } from '@/components/ThemeProvider';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
@@ -60,9 +60,7 @@ const UserDashboardPieChart = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-[280px] items-center justify-center">
-        <Spin size="large" />
-      </div>
+      <LoadingState size="md" className="min-h-[280px]" text="Đang tải biểu đồ..." />
     ),
   }
 );
@@ -159,18 +157,8 @@ export default function UserDashboard() {
           algorithm: isDark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
         }}
       >
-        <div
-          className={`flex items-center justify-center min-h-screen ${
-            isDark
-              ? 'bg-gradient-to-br from-gray-900 to-gray-800'
-              : 'bg-gradient-to-br from-blue-50 to-indigo-50'
-          }`}
-        >
-          <Space direction="vertical" align="center" size="large">
-            <Spin size="large" />
-            <Text type="secondary">Đang tải thông tin...</Text>
-          </Space>
-        </div>
+        <LoadingState fullPage text="Đang tải thông tin..." />
+
       </ConfigProvider>
     );
   }

@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, Input, DatePicker, Select, Button, Typography, Spin, Space } from 'antd';
+import { Card, Input, DatePicker, Select, Button, Typography, Space } from 'antd';
 import { SearchOutlined, ClearOutlined, CalendarOutlined, FilterOutlined } from '@ant-design/icons';
 import dayjs, { Dayjs } from 'dayjs';
 import 'dayjs/locale/vi';
 import type { SelectProps } from 'antd';
 import { apiClient } from '@/lib/apiClient';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { ROLE_LABELS, getActionLabel } from './constants';
 
 dayjs.locale('vi');
@@ -136,9 +137,7 @@ export function LogsFilter({ onFilterChange }: LogsFilterProps) {
       }
     >
       {loading ? (
-        <div className="flex justify-center py-8">
-          <Spin size="large" />
-        </div>
+        <LoadingState text="Đang tải bộ lọc..." />
       ) : (
         <>
           <div className="mb-4">

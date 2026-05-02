@@ -12,7 +12,6 @@ import {
   message,
   ConfigProvider,
   theme as antdTheme,
-  Spin,
   Pagination,
 } from 'antd';
 import { getApiErrorMessage } from '@/lib/apiError';
@@ -21,6 +20,7 @@ import {
   DEFAULT_ANTD_TABLE_PAGINATION,
 } from '@/constants/pagination.constants';
 import { useTheme } from '@/components/ThemeProvider';
+import { LoadingState } from '@/components/shared/LoadingState';
 import {
   SyncOutlined,
   HomeOutlined,
@@ -260,11 +260,7 @@ export default function ManagerPersonnelPage() {
     theme === 'dark' ? '0 1px 6px rgba(0, 0, 0, 0.35)' : '0 1px 4px rgba(0, 0, 0, 0.06)';
 
   if (loading && personnel.length === 0 && managerUnitId !== null) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Spin size="large" />
-      </div>
-    );
+    return <LoadingState fullPage text="Đang tải danh sách quân nhân..." />;
   }
 
   return (

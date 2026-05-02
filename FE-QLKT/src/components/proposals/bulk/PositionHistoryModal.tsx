@@ -1,6 +1,6 @@
 'use client';
 
-import { Modal, Table, Tag, Spin, Empty } from 'antd';
+import { Modal, Table, Tag, Empty } from 'antd';
 import { HistoryOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
@@ -151,20 +151,19 @@ export function PositionHistoryModal({
       width="min(900px, calc(100vw - 32px))"
       centered
     >
-      <Spin spinning={loading}>
-        {positionHistory && positionHistory.length > 0 ? (
-          <Table
-            columns={columns}
-            dataSource={positionHistory}
-            rowKey="id"
-            pagination={false}
-            size="small"
-            scroll={{ x: 'max-content' }}
-          />
-        ) : (
-          <Empty description="Chưa có dữ liệu lịch sử chức vụ" style={{ padding: '24px 0' }} />
-        )}
-      </Spin>
+      {!loading && (!positionHistory || positionHistory.length === 0) ? (
+        <Empty description="Chưa có dữ liệu lịch sử chức vụ" style={{ padding: '24px 0' }} />
+      ) : (
+        <Table
+          columns={columns}
+          dataSource={positionHistory}
+          rowKey="id"
+          loading={loading}
+          pagination={false}
+          size="small"
+          scroll={{ x: 'max-content' }}
+        />
+      )}
     </Modal>
   );
 }

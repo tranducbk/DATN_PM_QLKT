@@ -13,7 +13,6 @@ import {
   Descriptions,
   ConfigProvider,
   theme as antdTheme,
-  Spin,
 } from 'antd';
 import { ArrowLeftOutlined, HomeOutlined, PlusOutlined, EditOutlined } from '@ant-design/icons';
 import { UnitForm } from '@/components/categories/UnitForm';
@@ -24,6 +23,7 @@ import { apiClient } from '@/lib/apiClient';
 import type { UnitApiRow } from '@/lib/types/personnelList';
 import { calcUnitTotal } from '@/lib/utils';
 import { useTheme } from '@/components/ThemeProvider';
+import { LoadingState } from '@/components/shared/LoadingState';
 import Link from 'next/link';
 
 const { Title, Text } = Typography;
@@ -103,9 +103,7 @@ export default function UnitDetailPage() {
           algorithm: theme === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
         }}
       >
-        <div className="flex justify-center items-center min-h-screen">
-          <Spin size="large" />
-        </div>
+        <LoadingState fullPage text="Đang tải thông tin đơn vị..." />
       </ConfigProvider>
     );
   }

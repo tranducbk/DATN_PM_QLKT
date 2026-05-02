@@ -13,12 +13,12 @@ import {
   Breadcrumb,
   ConfigProvider,
   theme as antdTheme,
-  Spin,
 } from 'antd';
 import { ArrowLeftOutlined, SaveOutlined, HomeOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { useTheme } from '@/components/ThemeProvider';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { apiClient } from '@/lib/apiClient';
 import { getApiErrorMessage } from '@/lib/apiError';
 import dayjs from 'dayjs';
@@ -318,9 +318,7 @@ export default function ManagerPersonnelEditPage() {
         />
 
         {loadingData ? (
-          <div className="flex justify-center items-center min-h-[400px]">
-            <Spin size="large" />
-          </div>
+          <LoadingState className="min-h-[400px]" />
         ) : (
           <>
             {/* Header */}

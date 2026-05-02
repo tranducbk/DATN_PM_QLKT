@@ -218,13 +218,14 @@ export function PersonnelDetailView({ role }: PersonnelDetailViewProps) {
     );
   }
 
+  const taiKhoanUsername = personnel.TaiKhoan?.username ?? 'Chưa có tài khoản';
   const usernameValue =
-    role === 'admin' ? (
+    role === 'admin' && personnel.TaiKhoan ? (
       <Link href="/admin/accounts" className="text-blue-500 hover:underline">
-        {personnel.TaiKhoan!.username}
+        {taiKhoanUsername}
       </Link>
     ) : (
-      personnel.TaiKhoan!.username
+      <span className={personnel.TaiKhoan ? '' : 'text-gray-400 italic'}>{taiKhoanUsername}</span>
     );
 
   const tabItems = [

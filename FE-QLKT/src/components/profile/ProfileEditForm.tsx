@@ -8,7 +8,6 @@ import {
   Input,
   DatePicker,
   Button,
-  Spin,
   Alert,
   message,
   Divider,
@@ -32,6 +31,7 @@ import { apiClient } from '@/lib/apiClient';
 import { VietnamAddressCascader } from '@/components/shared/VietnamAddressCascader';
 import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
 import { useTheme } from '@/components/ThemeProvider';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { formatDate, capitalizeWords } from '@/lib/utils';
 import { getAntdThemeConfig } from '@/lib/antdTheme';
 import { getApiErrorMessage } from '@/lib/apiError';
@@ -325,11 +325,7 @@ export function ProfileEditForm({
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Spin size="large" tip="Đang tải thông tin..." />
-      </div>
-    );
+    return <LoadingState className="min-h-[400px]" text="Đang tải thông tin..." />;
   }
 
   if (!personnelData) {

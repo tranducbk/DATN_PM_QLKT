@@ -1,6 +1,6 @@
 'use client';
 
-import { Modal, Table, Tag, Spin, Empty } from 'antd';
+import { Modal, Table, Tag, Empty } from 'antd';
 import { HistoryOutlined } from '@ant-design/icons';
 import {
   PROPOSAL_STATUS,
@@ -104,23 +104,22 @@ export function ScientificAchievementHistoryModal({
       width="min(900px, calc(100vw - 32px))"
       centered
     >
-      <Spin spinning={loading}>
-        {achievements && achievements.length > 0 ? (
-          <Table
-            columns={columns}
-            dataSource={achievements}
-            rowKey="id"
-            pagination={false}
-            size="small"
-            scroll={{ x: 'max-content' }}
-          />
-        ) : (
-          <Empty
-            description="Chưa có dữ liệu lịch sử thành tích nghiên cứu khoa học"
-            style={{ padding: '24px 0' }}
-          />
-        )}
-      </Spin>
+      {!loading && (!achievements || achievements.length === 0) ? (
+        <Empty
+          description="Chưa có dữ liệu lịch sử thành tích nghiên cứu khoa học"
+          style={{ padding: '24px 0' }}
+        />
+      ) : (
+        <Table
+          columns={columns}
+          dataSource={achievements}
+          rowKey="id"
+          loading={loading}
+          pagination={false}
+          size="small"
+          scroll={{ x: 'max-content' }}
+        />
+      )}
     </Modal>
   );
 }
