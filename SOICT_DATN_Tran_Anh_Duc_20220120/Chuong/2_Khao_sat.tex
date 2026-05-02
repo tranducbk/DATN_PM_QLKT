@@ -35,7 +35,7 @@ Hệ thống có bốn nhóm tác nhân tương ứng với bốn cấp phân qu
 
 \begin{itemize}
     \item \textbf{SuperAdmin} đại diện cho bộ phận kỹ thuật và công nghệ thông tin. Nhóm này không tham gia trực tiếp vào nghiệp vụ xét khen thưởng mà tập trung vào quản trị hạ tầng, sao lưu -- khôi phục dữ liệu, theo dõi nhật ký an ninh và quản trị các tài khoản cấp quản trị.
-    \item \textbf{Admin} là cán bộ thuộc Phòng Chính trị Học viện. Nhóm này có toàn quyền nghiệp vụ: tạo và phê duyệt đề xuất, quản lý quân nhân -- đơn vị -- chức vụ, gắn số quyết định, tải lên tệp PDF quyết định và xuất các báo cáo.
+    \item \textbf{Admin} là cán bộ thuộc Phòng Chính trị Học viện. Nhóm này có toàn quyền nghiệp vụ: tạo và phê duyệt đề xuất, quản lý quân nhân, đơn vị, chức vụ, quản lý kho file PDF quyết định, gắn số quyết định cho đề xuất khi phê duyệt và xuất các báo cáo.
     \item \textbf{Manager} là cán bộ chỉ huy hoặc cán bộ chính trị cấp đơn vị, phụ trách lập đề xuất khen thưởng cho phạm vi đơn vị mình quản lý và theo dõi trạng thái phê duyệt. Manager có thể thao tác trên dữ liệu quân nhân thuộc đơn vị nhưng không thể chuyển quân nhân giữa các đơn vị (chức năng này chỉ thuộc Admin).
     \item \textbf{User} là cán bộ -- học viên -- sĩ quan đăng nhập để tra cứu hồ sơ khen thưởng cá nhân, xem các chu kỳ chuỗi đang đến mốc đề nghị và nhận thông báo về kết quả phê duyệt.
 \end{itemize}
@@ -344,7 +344,7 @@ Phần này đặc tả sáu use case trọng yếu của hệ thống. Mỗi us
  & 1. & Admin & Mở chi tiết đề xuất từ danh sách ``Chờ duyệt'' \\ \cline{2-4}
  & 2. & Admin & Xem lại danh sách đối tượng và danh hiệu \\ \cline{2-4}
  & 3. & Admin & Có thể chỉnh sửa danh hiệu (vd: hạ từ Hạng Nhất xuống Hạng Nhì) \\ \cline{2-4}
- & 4. & Admin & Nhập số quyết định và tải lên tệp PDF quyết định \\ \cline{2-4}
+ & 4. & Admin & Nhập số quyết định (file PDF đã được tải lên trước qua màn hình quản lý quyết định, đề xuất tham chiếu qua số quyết định) \\ \cline{2-4}
  & 5. & Admin & Bấm ``Phê duyệt'' \\ \cline{2-4}
  & 6. & Hệ thống & Mở giao dịch: chuyển trạng thái, ghi danh hiệu, gắn quyết định, tính lại hồ sơ suy diễn \\ \cline{2-4}
  & 7. & Hệ thống & Phát thông báo thời gian thực tới Manager đã đề xuất và các quân nhân được khen \\ \cline{2-4}
@@ -366,10 +366,9 @@ Phần này đặc tả sáu use case trọng yếu của hệ thống. Mỗi us
 \begin{tabular}{|c|p{3.5cm}|p{4.5cm}|c|p{2.5cm}|}
 \hline
 \textbf{STT} & \textbf{Trường dữ liệu} & \textbf{Mô tả} & \textbf{Bắt buộc} & \textbf{Ví dụ hợp lệ} \\ \hline
-1 & Số quyết định & Số quyết định khen thưởng & Có & 1234/QĐ-HV \\ \hline
-2 & Tệp PDF quyết định & Tệp PDF quyết định đã ký & Có & \texttt{qd-1234.pdf} \\ \hline
-3 & Điều chỉnh hạng & Điều chỉnh hạng cho từng đối tượng nếu cần & Không & Hạng Nhì \\ \hline
-4 & Lý do từ chối & Lý do nếu từ chối đề xuất & Khi từ chối & Chưa đủ thâm niên \\ \hline
+1 & Số quyết định & Số quyết định khen thưởng (tham chiếu file PDF đã tải lên trước) & Có & 1234/QĐ-HV \\ \hline
+2 & Điều chỉnh hạng & Điều chỉnh hạng cho từng đối tượng nếu cần & Không & Hạng Nhì \\ \hline
+3 & Lý do từ chối & Lý do nếu từ chối đề xuất & Khi từ chối & Chưa đủ thâm niên \\ \hline
 \end{tabular}
 \end{table}
 

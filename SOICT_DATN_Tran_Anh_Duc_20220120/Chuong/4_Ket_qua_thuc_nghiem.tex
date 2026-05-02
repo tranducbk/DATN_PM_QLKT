@@ -80,7 +80,7 @@ Khi người dùng truy cập trang hồ sơ một quân nhân, dòng chảy d�
 
 \begin{enumerate}
     \item \textbf{Route} \texttt{GET /api/personnel/:id/profile} (định nghĩa tại \texttt{routes/profile.route.ts}) tiếp nhận yêu cầu và đẩy qua chuỗi middleware \texttt{verifyToken -> requireAuth -> unitFilter}.
-    \item \textbf{Controller} \texttt{profileController.getAnnualProfile} (tại \texttt{controllers/profile.controller.ts}) đọc tham số \texttt{personnelId}, gọi service tương ứng, đóng gói kết quả vào \texttt{ResponseHelper.success}.
+    \item \textbf{Controller} \texttt{profileController.getAnnualProfile} (tại \texttt{controllers/profile.controller.ts}) đọc tham số \mbox{\texttt{personnelId}}, gọi service tương ứng, đóng gói kết quả vào \texttt{ResponseHelper.success}.
     \item \textbf{Service} \texttt{profileService.recalculateAnnualProfile} (tại \texttt{services/profile/annual.ts}) thực thi logic gồm: nạp danh sách \texttt{DanhHieuHangNam} qua repository, gọi \texttt{computeChainContext} để dẫn xuất ngữ cảnh chuỗi, lặp qua \texttt{PERSONAL\_CHAIN\_AWARDS} và gọi \texttt{checkChainEligibility} cho mỗi tier, ghi kết quả vào bảng suy diễn \texttt{HoSoHangNam}.
     \item \textbf{Eligibility module} \texttt{services/eligibility/chainEligibility.ts} chứa hàm \texttt{checkChainEligibility(config, context, hasReceivedLifetime)}: hàm thuần (pure function), không truy vấn cơ sở dữ liệu, dễ kiểm thử.
     \item \textbf{Repository} \texttt{repositories/danhHieuHangNam.repository.ts} cung cấp các phương thức \texttt{findManyByPersonnelId}, \texttt{findUniqueByPersonnelYearAward}.
@@ -161,116 +161,121 @@ Sáu bảng mô tả chi tiết schema sau đây được chọn vì là các b�
 \caption{Schema bảng \texttt{QuanNhan} (Personnel)}
 \label{tab:schema-quannhan}
 \small
-\renewcommand{\arraystretch}{1.15}
-\begin{tabular}{|p{4.2cm}|p{2.2cm}|p{2.8cm}|p{4.3cm}|}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{|p{3.8cm}|p{2.3cm}|p{3.5cm}|p{3.4cm}|}
 \hline
 \textbf{Cột} & \textbf{Kiểu} & \textbf{Ràng buộc} & \textbf{Mô tả} \\ \hline
-\texttt{id} & String (CUID) & PK & Khoá chính \\ \hline
-\texttt{cccd} & String(12) & UNIQUE, NOT NULL & Số căn cước công dân \\ \hline
-\dbid{ho_ten} & String & NOT NULL & Họ và tên đầy đủ \\ \hline
-\dbid{ngay_sinh} & DateTime & NULL & Ngày sinh \\ \hline
-\dbid{gioi_tinh} & Enum(NAM, NU) & NOT NULL & Giới tính \\ \hline
-\dbid{ngay_nhap_ngu} & DateTime & NULL & Ngày nhập ngũ \\ \hline
-\dbid{ngay_xuat_ngu} & DateTime & NULL & Ngày xuất ngũ (nếu đã rời) \\ \hline
-\dbid{cap_bac} & String & NULL & Cấp bậc hiện tại \\ \hline
-\dbid{co_quan_don_vi_id} & String & FK $\rightarrow$ CoQuanDonVi & Liên kết tới CQĐV \\ \hline
-\dbid{don_vi_truc_thuoc_id} & String & FK $\rightarrow$ DonViTrucThuoc & Liên kết tới ĐVTT \\ \hline
-\dbid{chuc_vu_id} & String & FK $\rightarrow$ ChucVu & Chức vụ hiện tại \\ \hline
-\texttt{createdAt} & Timestamptz & DEFAULT now() & Thời điểm tạo \\ \hline
+\texttt{id} & String & PK, CUID & Khoá chính \\ \hline
+\texttt{cccd} & VarChar(20) & UNIQUE, NULL & Số căn cước công dân \\ \hline
+\dbid{ho_ten} & VarChar(255) & NOT NULL & Họ và tên đầy đủ \\ \hline
+\dbid{ngay_sinh} & Date & NULL & Ngày sinh \\ \hline
+\dbid{gioi_tinh} & VarChar(10) & NULL & Giới tính (NAM, NU) \\ \hline
+\dbid{ngay_nhap_ngu} & Date & NULL & Ngày nhập ngũ \\ \hline
+\dbid{ngay_xuat_ngu} & Date & NULL & Ngày xuất ngũ (nếu đã rời) \\ \hline
+\dbid{cap_bac} & VarChar(50) & NULL & Cấp bậc hiện tại \\ \hline
+\dbid{co_quan_don_vi_id} & VarChar(30) & FK \mbox{$\rightarrow$ CoQuanDonVi} & Liên kết tới CQĐV \\ \hline
+\dbid{don_vi_truc_thuoc_id} & VarChar(30) & FK \mbox{$\rightarrow$ DonViTrucThuoc} & Liên kết tới ĐVTT \\ \hline
+\dbid{chuc_vu_id} & VarChar(30) & FK $\rightarrow$ ChucVu & Chức vụ hiện tại \\ \hline
+\texttt{createdAt} & Timestamp & DEFAULT now() & Thời điểm tạo \\ \hline
 \end{tabular}
 \end{table}
 
-Ràng buộc nghiệp vụ: chỉ một trong \texttt{co\_quan\_don\_vi\_id} và \texttt{don\_vi\_truc\_thuoc\_id} được điền. Khi cập nhật chuyển đơn vị, cần dùng transaction để cập nhật cả bộ đếm \texttt{so\_luong} của hai đơn vị liên quan.
+Ràng buộc nghiệp vụ: chỉ một trong \texttt{co\_quan\_don\_vi\_id} và \texttt{don\_vi\_truc\_thuoc\_id} được điền. Khi cập nhật chuyển đơn vị, cần dùng giao dịch để cập nhật cả bộ đếm \texttt{so\_luong} của hai đơn vị liên quan.
 
 \begin{table}[H]
 \centering
 \caption{Schema bảng \texttt{BangDeXuat} (Proposal)}
 \label{tab:schema-dexuat}
 \small
-\renewcommand{\arraystretch}{1.15}
-\begin{tabular}{|p{4.2cm}|p{2.2cm}|p{2.8cm}|p{4.3cm}|}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{|p{3.8cm}|p{2.3cm}|p{3.5cm}|p{3.4cm}|}
 \hline
 \textbf{Cột} & \textbf{Kiểu} & \textbf{Ràng buộc} & \textbf{Mô tả} \\ \hline
-\texttt{id} & String (CUID) & PK & \\ \hline
-\dbid{loai_de_xuat} & String & NOT NULL & Một trong 7 mã loại đề xuất \\ \hline
-\dbid{nguoi_de_xuat_id} & String & FK $\rightarrow$ TaiKhoan & Người tạo đề xuất \\ \hline
+\texttt{id} & String & PK, CUID & \\ \hline
+\dbid{loai_de_xuat} & VarChar(20) & NOT NULL & Một trong 7 mã loại đề xuất \\ \hline
+\dbid{nguoi_de_xuat_id} & VarChar(30) & FK $\rightarrow$ TaiKhoan & Người tạo đề xuất \\ \hline
 \texttt{nam} & Int & NOT NULL & Năm xét \\ \hline
 \texttt{thang} & Int & NULL & Tháng xét (chỉ với một số loại) \\ \hline
-\texttt{status} & Enum & NOT NULL & PENDING, APPROVED, REJECTED \\ \hline
+\texttt{status} & VarChar(20) & DEFAULT 'PENDING' & PENDING, APPROVED, REJECTED \\ \hline
 \dbid{data_danh_hieu} & JSON & NULL & Dữ liệu chi tiết hằng năm \\ \hline
 \dbid{data_thanh_tich} & JSON & NULL & Dữ liệu thành tích NCKH \\ \hline
-\dbid{data_nien_han} & JSON & NULL & Dữ liệu HCCSVV (cột DB giữ tên cũ) \\ \hline
-\dbid{data_cong_hien} & JSON & NULL & Dữ liệu HCBVTQ (cột DB giữ tên cũ) \\ \hline
+\dbid{data_nien_han} & JSON & NULL & Dữ liệu HCCSVV \\ \hline
+\dbid{data_cong_hien} & JSON & NULL & Dữ liệu HCBVTQ \\ \hline
 \dbid{files_attached} & JSON & NULL & Mảng file đính kèm \\ \hline
+\dbid{rejection_reason} & Text & NULL & Lý do từ chối (nếu có) \\ \hline
+\dbid{nguoi_duyet_id} & VarChar(30) & \mbox{FK $\rightarrow$ TaiKhoan, NULL} & Admin đã phê duyệt \\ \hline
+\dbid{ngay_duyet} & Timestamp & NULL & Ngày phê duyệt \\ \hline
 \end{tabular}
 \end{table}
 
-Việc dùng JSON cho 4 trường \texttt{data\_*} là chủ ý. Mỗi loại đề xuất có schema riêng nên việc tạo nhiều bảng trung gian sẽ phá vỡ tính đồng nhất của bảng \texttt{BangDeXuat}. JSON đủ để đảm bảo schema linh hoạt; xác thực schema được đảm nhiệm ở tầng Zod và \texttt{ProposalStrategy}.
+Việc dùng JSON cho 4 trường \texttt{data\_*} là chủ ý. Mỗi loại đề xuất có lược đồ con riêng nên việc tạo nhiều bảng trung gian sẽ phá vỡ tính đồng nhất của bảng \texttt{BangDeXuat}. JSON đủ để đảm bảo lược đồ linh hoạt; xác thực được đảm nhiệm ở tầng Zod và Strategy tương ứng từng loại.
 
 \begin{table}[H]
 \centering
 \caption{Schema bảng \texttt{DanhHieuHangNam} (Annual Award)}
 \label{tab:schema-dhhn}
 \small
-\renewcommand{\arraystretch}{1.15}
-\begin{tabular}{|p{4.5cm}|p{1.8cm}|p{2.8cm}|p{4.4cm}|}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{|p{3.8cm}|p{2.3cm}|p{3.5cm}|p{3.4cm}|}
 \hline
 \textbf{Cột} & \textbf{Kiểu} & \textbf{Ràng buộc} & \textbf{Mô tả} \\ \hline
-\texttt{id} & String (CUID) & PK & \\ \hline
-\dbid{quan_nhan_id} & String & FK $\rightarrow$ QuanNhan & \\ \hline
-\texttt{nam} & Int & UNIQUE(quan\_nhan\_id, nam) & Năm danh hiệu \\ \hline
-\dbid{danh_hieu} & String & NULL & Mã danh hiệu cơ bản \\ \hline
-\dbid{nhan_bkbqp} & Boolean & DEFAULT false & Cờ nhận BKBTBQP \\ \hline
-\dbid{so_quyet_dinh_bkbqp} & String & NULL & Số quyết định BKBTBQP \\ \hline
-\dbid{nhan_cstdtq} & Boolean & DEFAULT false & Cờ nhận CSTĐTQ \\ \hline
-\dbid{so_quyet_dinh_cstdtq} & String & NULL & \\ \hline
-\dbid{nhan_bkttcp} & Boolean & DEFAULT false & Cờ nhận BKTTCP \\ \hline
-\dbid{so_quyet_dinh_bkttcp} & String & NULL & \\ \hline
-\dbid{ghi_chu} & String & NULL & \\ \hline
+\texttt{id} & String & PK, CUID & \\ \hline
+\dbid{quan_nhan_id} & VarChar(30) & FK $\rightarrow$ QuanNhan & \\ \hline
+\texttt{nam} & Int & \mbox{UNIQUE (quan\_nhan\_id, nam)} & Năm xét danh hiệu \\ \hline
+\dbid{danh_hieu} & VarChar(20) & NULL & Mã danh hiệu cơ bản (CSTĐCS, CSTT) \\ \hline
+\dbid{nhan_bkbqp} & Boolean & DEFAULT false & Đã nhận BKBTBQP trong năm \\ \hline
+\dbid{so_quyet_dinh_bkbqp} & VarChar(100) & NULL & Số quyết định BKBTBQP \\ \hline
+\dbid{nhan_cstdtq} & Boolean & DEFAULT false & Đã nhận CSTĐTQ trong năm \\ \hline
+\dbid{so_quyet_dinh_cstdtq} & VarChar(100) & NULL & Số quyết định CSTĐTQ \\ \hline
+\dbid{nhan_bkttcp} & Boolean & DEFAULT false & Đã nhận BKTTCP trong năm \\ \hline
+\dbid{so_quyet_dinh_bkttcp} & VarChar(100) & NULL & Số quyết định BKTTCP \\ \hline
+\dbid{ghi_chu} & Text & NULL & Ghi chú bổ sung \\ \hline
 \end{tabular}
 \end{table}
 
-Ràng buộc duy nhất \texttt{(quan\_nhan\_id, nam)} đảm bảo mỗi quân nhân chỉ có một bản ghi cho một năm. Các cờ \texttt{nhan\_*} cho phép cộng dồn các tier chuỗi vào cùng năm.
+Ràng buộc duy nhất \texttt{(quan\_nhan\_id, nam)} đảm bảo mỗi quân nhân chỉ có một bản ghi cho một năm. Các trường \texttt{nhan\_*} cho phép cộng dồn các cấp danh hiệu chuỗi vào cùng năm.
 
 \begin{table}[H]
 \centering
 \caption{Schema bảng \texttt{LichSuChucVu} (Position History)}
 \label{tab:schema-lsc}
 \small
-\renewcommand{\arraystretch}{1.15}
-\begin{tabular}{|p{4.2cm}|p{2.2cm}|p{2.8cm}|p{4.3cm}|}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{|p{3.8cm}|p{2.3cm}|p{3.5cm}|p{3.4cm}|}
 \hline
 \textbf{Cột} & \textbf{Kiểu} & \textbf{Ràng buộc} & \textbf{Mô tả} \\ \hline
-\texttt{id} & String (CUID) & PK & \\ \hline
-\dbid{quan_nhan_id} & String & FK $\rightarrow$ QuanNhan & \\ \hline
-\dbid{chuc_vu_id} & String & FK $\rightarrow$ ChucVu & \\ \hline
-\dbid{ngay_bat_dau} & DateTime & NULL & Ngày bắt đầu giữ chức vụ \\ \hline
-\dbid{ngay_ket_thuc} & DateTime & NULL & NULL = đang giữ \\ \hline
-\dbid{he_so_chuc_vu} & Decimal(3,2) & NOT NULL & Hệ số chức vụ \\ \hline
-\dbid{so_thang} & Int & NOT NULL & Số tháng giữ chức vụ \\ \hline
+\texttt{id} & String & PK, CUID & \\ \hline
+\dbid{quan_nhan_id} & VarChar(30) & FK $\rightarrow$ QuanNhan & \\ \hline
+\dbid{chuc_vu_id} & VarChar(30) & FK $\rightarrow$ ChucVu & \\ \hline
+\dbid{ngay_bat_dau} & Date & NOT NULL & Ngày bắt đầu giữ chức vụ \\ \hline
+\dbid{ngay_ket_thuc} & Date & NULL & NULL = đang giữ \\ \hline
+\dbid{he_so_chuc_vu} & Float & DEFAULT 0 & Hệ số chức vụ (snapshot) \\ \hline
+\dbid{so_thang} & Int & NULL & Số tháng giữ chức vụ \\ \hline
 \end{tabular}
 \end{table}
 
-Trường \texttt{so\_thang} được tự động cập nhật bởi hàm \texttt{recalcPositionMonths} mỗi khi có thay đổi mốc thời gian.
+Trường \texttt{so\_thang} được tự động cập nhật bởi hàm tính lại số tháng mỗi khi có thay đổi mốc thời gian, phục vụ thuật toán xét HCBVTQ.
 
 \begin{table}[H]
 \centering
 \caption{Schema bảng \texttt{SystemLog} (Audit Log)}
 \label{tab:schema-syslog}
 \small
-\renewcommand{\arraystretch}{1.15}
-\begin{tabular}{|p{4.5cm}|p{1.8cm}|p{2.8cm}|p{4.4cm}|}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{|p{3.8cm}|p{2.3cm}|p{3.5cm}|p{3.4cm}|}
 \hline
 \textbf{Cột} & \textbf{Kiểu} & \textbf{Ràng buộc} & \textbf{Mô tả} \\ \hline
-\texttt{id} & String (CUID) & PK & \\ \hline
-\dbid{nguoi_thuc_hien_id} & String & FK $\rightarrow$ TaiKhoan, NULL & Có thể NULL trước đăng nhập \\ \hline
-\dbid{nguoi_thuc_hien_role} & String & NOT NULL & Snapshot vai trò \\ \hline
-\texttt{action} & String & NOT NULL & CREATE, UPDATE, DELETE, ... \\ \hline
-\texttt{resource} & String & NOT NULL & Loại tài nguyên \\ \hline
-\dbid{resource_id} & String & NULL & Mã định danh tài nguyên \\ \hline
-\texttt{description} & String & NOT NULL & Mô tả tiếng Việt \\ \hline
-\texttt{payload} & JSON & NULL & Trạng thái trước--sau \\ \hline
-\texttt{createdAt} & Timestamptz & DEFAULT now() & \\ \hline
+\texttt{id} & String & PK, CUID & \\ \hline
+\dbid{nguoi_thuc_hien_id} & VarChar(30) & \mbox{FK $\rightarrow$ TaiKhoan, NULL} & NULL với hành động hệ thống \\ \hline
+\dbid{actor_role} & VarChar(20) & NOT NULL & Vai trò tại thời điểm thao tác \\ \hline
+\texttt{action} & VarChar(50) & NOT NULL & CREATE, UPDATE, DELETE, ... \\ \hline
+\texttt{resource} & VarChar(50) & NOT NULL & Loại tài nguyên \\ \hline
+\dbid{tai_nguyen_id} & VarChar(30) & NULL & Mã định danh tài nguyên \\ \hline
+\texttt{description} & VarChar(500) & NOT NULL & Mô tả tiếng Việt \\ \hline
+\texttt{payload} & JSON & NULL & Dữ liệu trước, sau khi thay đổi \\ \hline
+\dbid{ip_address} & VarChar(45) & NULL & Địa chỉ IPv4/IPv6 \\ \hline
+\dbid{user_agent} & Text & NULL & Trình duyệt người dùng \\ \hline
+\texttt{createdAt} & Timestamp & DEFAULT now() & Thời điểm ghi log \\ \hline
 \end{tabular}
 \end{table}
 
@@ -279,18 +284,21 @@ Trường \texttt{so\_thang} được tự động cập nhật bởi hàm \text
 \caption{Schema bảng \texttt{HoSoHangNam} (Annual Profile, Derived)}
 \label{tab:schema-hsnn}
 \small
-\renewcommand{\arraystretch}{1.15}
-\begin{tabular}{|p{4.5cm}|p{1.8cm}|p{2.8cm}|p{4.4cm}|}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{|p{3.8cm}|p{2.3cm}|p{3.5cm}|p{3.4cm}|}
 \hline
 \textbf{Cột} & \textbf{Kiểu} & \textbf{Ràng buộc} & \textbf{Mô tả} \\ \hline
-\texttt{id} & String (CUID) & PK & \\ \hline
-\dbid{quan_nhan_id} & String & UNIQUE FK $\rightarrow$ QuanNhan & Mỗi quân nhân một bản ghi \\ \hline
-\dbid{cstdcs_lien_tuc} & Int & NOT NULL & Độ dài chuỗi CSTĐCS \\ \hline
-\dbid{du_dieu_kien_bkbqp} & Boolean & DEFAULT false & Cờ đủ điều kiện BKBTBQP \\ \hline
-\dbid{du_dieu_kien_cstdtq} & Boolean & DEFAULT false & \\ \hline
-\dbid{du_dieu_kien_bkttcp} & Boolean & DEFAULT false & \\ \hline
-\dbid{goi_y} & String & NULL & Thông điệp gợi ý tiếng Việt \\ \hline
-\dbid{last_recalc_at} & Timestamptz & DEFAULT now() & Thời điểm tính lại gần nhất \\ \hline
+\texttt{id} & String & PK, CUID & \\ \hline
+\dbid{quan_nhan_id} & VarChar(30) & \mbox{UNIQUE, FK $\rightarrow$ QuanNhan} & Mỗi quân nhân một bản ghi \\ \hline
+\dbid{cstdcs_lien_tuc} & Int & DEFAULT 0 & Độ dài chuỗi CSTĐCS hiện tại \\ \hline
+\dbid{nckh_lien_tuc} & Int & DEFAULT 0 & Số năm NCKH liên tục \\ \hline
+\dbid{bkbqp_lien_tuc} & Int & DEFAULT 0 & Năm liên tục từ lần BKBTBQP cuối \\ \hline
+\dbid{cstdtq_lien_tuc} & Int & DEFAULT 0 & Năm liên tục từ lần CSTĐTQ cuối \\ \hline
+\dbid{du_dieu_kien_bkbqp} & Boolean & DEFAULT false & Đủ điều kiện đề nghị BKBTBQP \\ \hline
+\dbid{du_dieu_kien_cstdtq} & Boolean & DEFAULT false & Đủ điều kiện đề nghị CSTĐTQ \\ \hline
+\dbid{du_dieu_kien_bkttcp} & Boolean & DEFAULT false & Đủ điều kiện đề nghị BKTTCP \\ \hline
+\dbid{goi_y} & Text & NULL & Thông điệp gợi ý tiếng Việt \\ \hline
+\texttt{updatedAt} & Timestamp & UPDATED & Thời điểm tính lại gần nhất \\ \hline
 \end{tabular}
 \end{table}
 
