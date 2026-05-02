@@ -8,11 +8,11 @@ Chương này trình bày kết quả khảo sát hiện trạng công tác thi 
 
 Trước khi triển khai phần mềm chuyên dụng, công tác thi đua -- khen thưởng tại Học viện Khoa học Quân sự được tổ chức xoay quanh ba nguồn dữ liệu chính: hồ sơ giấy lưu tại Phòng Chính trị, các tệp Microsoft Excel chia sẻ qua thư mục mạng nội bộ và sổ theo dõi tay của từng đơn vị. Trong các cuộc trao đổi với cán bộ phụ trách thi đua, nhóm thực hiện đồ án ghi nhận một số đặc điểm đáng chú ý.
 
-\textbf{Vai trò của các bên tham gia.} Cấp đề xuất đầu tiên thường là cán bộ chỉ huy đơn vị hoặc cán bộ chính trị cấp cơ quan, nắm danh sách quân nhân thuộc phạm vi quản lý và lập danh sách đề nghị theo từng năm hoặc theo các đợt đặc biệt. Cấp xét duyệt là Phòng Chính trị Học viện, kiểm tra điều kiện và lập tờ trình gửi Ban Giám đốc. Cấp ký quyết định là Giám đốc Học viện đối với các danh hiệu thuộc thẩm quyền và là cấp trên (Tổng cục II, Bộ Quốc phòng, Thủ tướng Chính phủ) đối với các danh hiệu vượt thẩm quyền. Quân nhân -- đối tượng được khen thưởng -- thường tiếp nhận thông tin một cách thụ động qua thông báo bằng văn bản hoặc bảng tin đơn vị.
+Cấp đề xuất đầu tiên thường là cán bộ chỉ huy đơn vị hoặc cán bộ chính trị cấp cơ quan, nắm danh sách quân nhân thuộc phạm vi quản lý và lập danh sách đề nghị theo từng năm hoặc theo các đợt đặc biệt. Cấp xét duyệt là Phòng Chính trị Học viện, kiểm tra điều kiện và lập tờ trình gửi Ban Giám đốc. Cấp ký quyết định là Giám đốc Học viện đối với các danh hiệu thuộc thẩm quyền và là cấp trên (Tổng cục II, Bộ Quốc phòng, Thủ tướng Chính phủ) đối với các danh hiệu vượt thẩm quyền. Quân nhân, đối tượng được khen thưởng, thường tiếp nhận thông tin một cách thụ động qua thông báo bằng văn bản hoặc bảng tin đơn vị.
 
-\textbf{Khối lượng dữ liệu.} Khi tổng hợp ngược lại quá khứ, một quân nhân thường có nhiều bản ghi danh hiệu thuộc các nhóm khác nhau: từ chuỗi danh hiệu hằng năm tích luỹ trong toàn bộ thời gian phục vụ, đến Huy chương Chiến sĩ vẻ vang (HCCSVV, 10/15/20 năm), Huân chương Bảo vệ Tổ quốc (HCBVTQ), Kỷ niệm chương, Huy chương Quân kỳ quyết thắng và các khen thưởng đột xuất. Tổng khối lượng bản ghi cho cán bộ trên 25 năm phục vụ lên tới 30--40 bản ghi mỗi quân nhân, nhân với quy mô vài nghìn cán bộ -- học viên -- sĩ quan, dữ liệu lịch sử cần lưu trữ vào khoảng vài trăm nghìn bản ghi.
+Khi tổng hợp ngược lại quá khứ, một quân nhân thường có nhiều bản ghi danh hiệu thuộc các nhóm khác nhau: từ chuỗi danh hiệu hằng năm tích luỹ trong toàn bộ thời gian phục vụ, đến Huy chương Chiến sĩ vẻ vang (HCCSVV, 10/15/20 năm), Huân chương Bảo vệ Tổ quốc (HCBVTQ), Kỷ niệm chương, Huy chương Quân kỳ quyết thắng và các khen thưởng đột xuất. Tổng khối lượng bản ghi cho cán bộ trên 25 năm phục vụ lên tới 30--40 bản ghi mỗi quân nhân, nhân với quy mô vài nghìn cán bộ, học viên, sĩ quan, dữ liệu lịch sử cần lưu trữ vào khoảng vài trăm nghìn bản ghi.
 
-\textbf{Nhóm khó khăn nổi bật.} Bốn vấn đề được phản ánh nhiều nhất qua khảo sát là:
+Bốn vấn đề được phản ánh nhiều nhất qua khảo sát là:
 
 \begin{enumerate}
     \item Tra cứu lịch sử khen thưởng cá nhân tốn thời gian do phải mở nhiều tệp Excel.
@@ -204,29 +204,26 @@ Phần này đặc tả sáu use case trọng yếu của hệ thống. Mỗi us
 \centering
 \caption{Đặc tả use case UC-01 Đăng nhập}
 \label{tab:uc01}
-\begin{tabular}{|>{\raggedright\arraybackslash}p{3.2cm}|p{11.3cm}|}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{|>{\centering\arraybackslash}p{3.2cm}|>{\centering\arraybackslash}p{0.8cm}|p{2.8cm}|p{6.4cm}|}
 \hline
-\textbf{Tên use case} & Đăng nhập hệ thống \\ \hline
-\textbf{Tác nhân} & SuperAdmin, Admin, Manager, User \\ \hline
-\textbf{Tiền điều kiện} & Người dùng đã có tài khoản hợp lệ; trình duyệt cho phép \texttt{localStorage}. \\ \hline
-\textbf{Luồng chính (Thành công)} &
-\begin{tabular}{@{}c|p{2.6cm}|p{6.5cm}@{}}
-\textbf{STT} & \textbf{Thực hiện bởi} & \textbf{Hành động} \\ \hline
-1. & Người dùng & Truy cập trang \texttt{/login} \\
-2. & Người dùng & Nhập tên đăng nhập và mật khẩu \\
-3. & Người dùng & Bấm nút ``Đăng nhập'' \\
-4. & Hệ thống & Đối chiếu mật khẩu băm bằng bcrypt \\
-5. & Hệ thống & Phát hành Access Token và Refresh Token \\
-6. & Hệ thống & Chuyển hướng tới trang chủ tương ứng vai trò \\
-\end{tabular} \\ \hline
-\textbf{Luồng thay thế} &
-\begin{tabular}{@{}c|p{2.6cm}|p{6.5cm}@{}}
-\textbf{STT} & \textbf{Thực hiện bởi} & \textbf{Hành động} \\ \hline
-4a. & Hệ thống & Báo ``Tài khoản hoặc mật khẩu không đúng'' \\
-4b. & Hệ thống & Báo ``Tài khoản đã bị tạm khoá, liên hệ quản trị viên'' \\
-5a. & Hệ thống & Sau ba lần sai liên tiếp, áp giới hạn 5 phút theo địa chỉ IP \\
-\end{tabular} \\ \hline
-\textbf{Hậu điều kiện} & Phiên đăng nhập được thiết lập; nhật ký đăng nhập được ghi với \texttt{action = LOGIN}. \\ \hline
+\textbf{Tên use case} & \multicolumn{3}{l|}{Đăng nhập hệ thống} \\ \hline
+\textbf{Tác nhân} & \multicolumn{3}{l|}{SuperAdmin, Admin, Manager, User} \\ \hline
+\textbf{Tiền điều kiện} & \multicolumn{3}{p{10.6cm}|}{Người dùng đã có tài khoản hợp lệ; trình duyệt cho phép \texttt{localStorage}.} \\ \hline
+\multirow{7}{*}{\parbox{3.2cm}{\centering\textbf{Luồng sự kiện chính}\\\textbf{(Thành công)}}}
+ & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
+ & 1. & Người dùng & Truy cập trang \texttt{/login} \\ \cline{2-4}
+ & 2. & Người dùng & Nhập tên đăng nhập và mật khẩu \\ \cline{2-4}
+ & 3. & Người dùng & Bấm nút ``Đăng nhập'' \\ \cline{2-4}
+ & 4. & Hệ thống & Đối chiếu mật khẩu băm bằng bcrypt \\ \cline{2-4}
+ & 5. & Hệ thống & Phát hành Access Token và Refresh Token \\ \cline{2-4}
+ & 6. & Hệ thống & Chuyển hướng tới trang chủ tương ứng vai trò \\ \hline
+\multirow{4}{*}{\textbf{Luồng sự kiện thay thế}}
+ & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
+ & 4a. & Hệ thống & Báo ``Tài khoản hoặc mật khẩu không đúng'' \\ \cline{2-4}
+ & 4b. & Hệ thống & Báo ``Tài khoản đã bị tạm khoá, liên hệ quản trị viên'' \\ \cline{2-4}
+ & 5a. & Hệ thống & Sau ba lần sai liên tiếp, áp giới hạn 5 phút theo địa chỉ IP \\ \hline
+\textbf{Hậu điều kiện} & \multicolumn{3}{p{10.6cm}|}{Phiên đăng nhập được thiết lập; nhật ký đăng nhập được ghi với \texttt{action = LOGIN}.} \\ \hline
 \end{tabular}
 \end{table}
 
@@ -246,30 +243,27 @@ Phần này đặc tả sáu use case trọng yếu của hệ thống. Mỗi us
 \centering
 \caption{Đặc tả use case UC-02 Tạo mới quân nhân}
 \label{tab:uc02}
-\begin{tabular}{|>{\raggedright\arraybackslash}p{3.2cm}|p{11.3cm}|}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{|>{\centering\arraybackslash}p{3.2cm}|>{\centering\arraybackslash}p{0.8cm}|p{2.8cm}|p{6.4cm}|}
 \hline
-\textbf{Tên use case} & Tạo mới hồ sơ quân nhân \\ \hline
-\textbf{Tác nhân} & Admin \\ \hline
-\textbf{Tiền điều kiện} & Đã đăng nhập với vai trò Admin; cây tổ chức (CQĐV/ĐVTT) đã có dữ liệu. \\ \hline
-\textbf{Luồng chính (Thành công)} &
-\begin{tabular}{@{}c|p{2.6cm}|p{6.5cm}@{}}
-\textbf{STT} & \textbf{Thực hiện bởi} & \textbf{Hành động} \\ \hline
-1. & Admin & Truy cập ``Quản lý quân nhân'' và bấm ``Thêm mới'' \\
-2. & Admin & Điền các trường bắt buộc trong biểu mẫu \\
-3. & Admin & Bấm ``Lưu'' \\
-4. & Hệ thống & Xác thực dữ liệu hai phía bằng schema thống nhất \\
-5. & Hệ thống & Kiểm tra trùng CCCD trong cơ sở dữ liệu \\
-6. & Hệ thống & Ghi bản ghi mới và tăng số lượng quân nhân của đơn vị \\
-7. & Hệ thống & Trả về kết quả thành công, cập nhật bảng danh sách \\
-\end{tabular} \\ \hline
-\textbf{Luồng thay thế} &
-\begin{tabular}{@{}c|p{2.6cm}|p{6.5cm}@{}}
-\textbf{STT} & \textbf{Thực hiện bởi} & \textbf{Hành động} \\ \hline
-4a. & Hệ thống & Có trường bắt buộc bị thiếu, chặn ngay tại biểu mẫu \\
-5a. & Hệ thống & CCCD đã tồn tại, trả lỗi ``Số CCCD đã tồn tại trong hệ thống'' \\
-6a. & Hệ thống & Đơn vị được chọn không tồn tại, trả lỗi và huỷ bỏ giao dịch \\
-\end{tabular} \\ \hline
-\textbf{Hậu điều kiện} & Bản ghi mới có trong bảng quân nhân; số lượng quân nhân của đơn vị tăng 1; nhật ký \texttt{action = CREATE, resource = personnel} được ghi đầy đủ. \\ \hline
+\textbf{Tên use case} & \multicolumn{3}{l|}{Tạo mới hồ sơ quân nhân} \\ \hline
+\textbf{Tác nhân} & \multicolumn{3}{l|}{Admin} \\ \hline
+\textbf{Tiền điều kiện} & \multicolumn{3}{p{10.6cm}|}{Đã đăng nhập với vai trò Admin; cây tổ chức (CQĐV/ĐVTT) đã có dữ liệu.} \\ \hline
+\multirow{8}{*}{\parbox{3.2cm}{\centering\textbf{Luồng sự kiện chính}\\\textbf{(Thành công)}}}
+ & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
+ & 1. & Admin & Truy cập ``Quản lý quân nhân'' và bấm ``Thêm mới'' \\ \cline{2-4}
+ & 2. & Admin & Điền các trường bắt buộc trong biểu mẫu \\ \cline{2-4}
+ & 3. & Admin & Bấm ``Lưu'' \\ \cline{2-4}
+ & 4. & Hệ thống & Xác thực dữ liệu hai phía bằng schema thống nhất \\ \cline{2-4}
+ & 5. & Hệ thống & Kiểm tra trùng CCCD trong cơ sở dữ liệu \\ \cline{2-4}
+ & 6. & Hệ thống & Ghi bản ghi mới và tăng số lượng quân nhân của đơn vị \\ \cline{2-4}
+ & 7. & Hệ thống & Trả về kết quả thành công, cập nhật bảng danh sách \\ \hline
+\multirow{4}{*}{\textbf{Luồng sự kiện thay thế}}
+ & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
+ & 4a. & Hệ thống & Có trường bắt buộc bị thiếu, chặn ngay tại biểu mẫu \\ \cline{2-4}
+ & 5a. & Hệ thống & CCCD đã tồn tại, trả lỗi ``Số CCCD đã tồn tại trong hệ thống'' \\ \cline{2-4}
+ & 6a. & Hệ thống & Đơn vị được chọn không tồn tại, trả lỗi và huỷ bỏ giao dịch \\ \hline
+\textbf{Hậu điều kiện} & \multicolumn{3}{p{10.6cm}|}{Bản ghi mới có trong bảng quân nhân; số lượng quân nhân của đơn vị tăng 1; nhật ký \texttt{action = CREATE, resource = personnel} được ghi đầy đủ.} \\ \hline
 \end{tabular}
 \end{table}
 
@@ -294,31 +288,28 @@ Phần này đặc tả sáu use case trọng yếu của hệ thống. Mỗi us
 \centering
 \caption{Đặc tả use case UC-03 Tạo đề xuất khen thưởng}
 \label{tab:uc03}
-\begin{tabular}{|>{\raggedright\arraybackslash}p{3.2cm}|p{11.3cm}|}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{|>{\centering\arraybackslash}p{3.2cm}|>{\centering\arraybackslash}p{0.8cm}|p{2.8cm}|p{6.4cm}|}
 \hline
-\textbf{Tên use case} & Tạo đề xuất khen thưởng cho một đợt \\ \hline
-\textbf{Tác nhân} & Admin, Manager \\ \hline
-\textbf{Tiền điều kiện} & Đã đăng nhập; có ít nhất một quân nhân thuộc phạm vi quản lý của Manager. \\ \hline
-\textbf{Luồng chính (Thành công)} &
-\begin{tabular}{@{}c|p{2.6cm}|p{6.5cm}@{}}
-\textbf{STT} & \textbf{Thực hiện bởi} & \textbf{Hành động} \\ \hline
-1. & Người dùng & Truy cập ``Đề xuất khen thưởng'' và bấm ``Tạo đề xuất mới'' \\
-2. & Người dùng & Bước 1: chọn loại đề xuất và năm/tháng xét \\
-3. & Hệ thống & Lọc và hiển thị danh sách quân nhân/đơn vị đủ điều kiện \\
-4. & Người dùng & Bước 2: tích chọn các đối tượng đề xuất \\
-5. & Người dùng & Bước 3: thiết lập danh hiệu cụ thể cho từng đối tượng \\
-6. & Người dùng & Tải lên các tệp đính kèm (nếu có) và bấm ``Gửi đề xuất'' \\
-7. & Hệ thống & Xác thực dữ liệu, tạo bản ghi đề xuất ở trạng thái chờ duyệt \\
-8. & Hệ thống & Phát thông báo thời gian thực tới các Admin liên quan \\
-\end{tabular} \\ \hline
-\textbf{Luồng thay thế} &
-\begin{tabular}{@{}c|p{2.6cm}|p{6.5cm}@{}}
-\textbf{STT} & \textbf{Thực hiện bởi} & \textbf{Hành động} \\ \hline
-4a. & Hệ thống & Có quân nhân chưa đủ điều kiện, hiển thị cảnh báo nhưng vẫn cho phép gửi nếu Manager xác nhận \\
-4b. & Hệ thống & Manager chọn quân nhân ngoài phạm vi đơn vị, từ chối với lỗi 403 \\
-7a. & Hệ thống & Có lỗi mạng, lưu nháp ở \texttt{localStorage} để không mất dữ liệu \\
-\end{tabular} \\ \hline
-\textbf{Hậu điều kiện} & Bản ghi đề xuất được tạo ở trạng thái chờ duyệt; thông báo đã gửi tới Admin; nhật ký \texttt{action = CREATE, resource = proposals} được ghi cùng tóm tắt loại và số lượng đối tượng. \\ \hline
+\textbf{Tên use case} & \multicolumn{3}{l|}{Tạo đề xuất khen thưởng cho một đợt} \\ \hline
+\textbf{Tác nhân} & \multicolumn{3}{l|}{Admin, Manager} \\ \hline
+\textbf{Tiền điều kiện} & \multicolumn{3}{p{10.6cm}|}{Đã đăng nhập; có ít nhất một quân nhân thuộc phạm vi quản lý của Manager.} \\ \hline
+\multirow{9}{*}{\parbox{3.2cm}{\centering\textbf{Luồng sự kiện chính}\\\textbf{(Thành công)}}}
+ & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
+ & 1. & Người dùng & Truy cập ``Đề xuất khen thưởng'' và bấm ``Tạo đề xuất mới'' \\ \cline{2-4}
+ & 2. & Người dùng & Bước 1: chọn loại đề xuất và năm/tháng xét \\ \cline{2-4}
+ & 3. & Hệ thống & Lọc và hiển thị danh sách quân nhân/đơn vị đủ điều kiện \\ \cline{2-4}
+ & 4. & Người dùng & Bước 2: tích chọn các đối tượng đề xuất \\ \cline{2-4}
+ & 5. & Người dùng & Bước 3: thiết lập danh hiệu cụ thể cho từng đối tượng \\ \cline{2-4}
+ & 6. & Người dùng & Tải lên các tệp đính kèm (nếu có) và bấm ``Gửi đề xuất'' \\ \cline{2-4}
+ & 7. & Hệ thống & Xác thực dữ liệu, tạo bản ghi đề xuất ở trạng thái chờ duyệt \\ \cline{2-4}
+ & 8. & Hệ thống & Phát thông báo thời gian thực tới các Admin liên quan \\ \hline
+\multirow{4}{*}{\textbf{Luồng sự kiện thay thế}}
+ & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
+ & 4a. & Hệ thống & Có quân nhân chưa đủ điều kiện, hiển thị cảnh báo nhưng vẫn cho phép gửi nếu Manager xác nhận \\ \cline{2-4}
+ & 4b. & Hệ thống & Manager chọn quân nhân ngoài phạm vi đơn vị, từ chối với lỗi 403 \\ \cline{2-4}
+ & 7a. & Hệ thống & Có lỗi mạng, lưu nháp ở \texttt{localStorage} để không mất dữ liệu \\ \hline
+\textbf{Hậu điều kiện} & \multicolumn{3}{p{10.6cm}|}{Bản ghi đề xuất được tạo ở trạng thái chờ duyệt; thông báo đã gửi tới Admin; nhật ký \texttt{action = CREATE, resource = proposals} được ghi cùng tóm tắt loại và số lượng đối tượng.} \\ \hline
 \end{tabular}
 \end{table}
 
@@ -342,32 +333,29 @@ Phần này đặc tả sáu use case trọng yếu của hệ thống. Mỗi us
 \centering
 \caption{Đặc tả use case UC-04 Phê duyệt đề xuất}
 \label{tab:uc04}
-\begin{tabular}{|>{\raggedright\arraybackslash}p{3.2cm}|p{11.3cm}|}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{|>{\centering\arraybackslash}p{3.2cm}|>{\centering\arraybackslash}p{0.8cm}|p{2.8cm}|p{6.4cm}|}
 \hline
-\textbf{Tên use case} & Phê duyệt một đề xuất khen thưởng \\ \hline
-\textbf{Tác nhân} & Admin \\ \hline
-\textbf{Tiền điều kiện} & Đề xuất đang ở trạng thái chờ duyệt; Admin có quyền phê duyệt loại đề xuất tương ứng. \\ \hline
-\textbf{Luồng chính (Thành công)} &
-\begin{tabular}{@{}c|p{2.6cm}|p{6.5cm}@{}}
-\textbf{STT} & \textbf{Thực hiện bởi} & \textbf{Hành động} \\ \hline
-1. & Admin & Mở chi tiết đề xuất từ danh sách ``Chờ duyệt'' \\
-2. & Admin & Xem lại danh sách đối tượng và danh hiệu \\
-3. & Admin & Có thể chỉnh sửa danh hiệu (vd: hạ từ Hạng Nhất xuống Hạng Nhì) \\
-4. & Admin & Nhập số quyết định và tải lên tệp PDF quyết định \\
-5. & Admin & Bấm ``Phê duyệt'' \\
-6. & Hệ thống & Mở giao dịch: chuyển trạng thái, ghi danh hiệu, gắn quyết định, tính lại hồ sơ suy diễn \\
-7. & Hệ thống & Phát thông báo thời gian thực tới Manager đã đề xuất và các quân nhân được khen \\
-8. & Hệ thống & Ghi nhật ký với dữ liệu trước -- sau khi thay đổi \\
-\end{tabular} \\ \hline
-\textbf{Luồng thay thế} &
-\begin{tabular}{@{}c|p{2.6cm}|p{6.5cm}@{}}
-\textbf{STT} & \textbf{Thực hiện bởi} & \textbf{Hành động} \\ \hline
-4a. & Hệ thống & Số quyết định trùng, cảnh báo nhưng cho phép tiếp tục nếu xác nhận \\
-5a. & Hệ thống & Đề xuất bị Admin khác sửa cùng lúc, trả lỗi 409 và yêu cầu tải lại \\
-5b. & Admin & Từ chối thay vì phê duyệt, đổi trạng thái sang ``Từ chối'' kèm lý do \\
-6a. & Hệ thống & Có lỗi tại bước ghi (vd: vi phạm quy tắc một lần duy nhất), huỷ toàn bộ giao dịch \\
-\end{tabular} \\ \hline
-\textbf{Hậu điều kiện} & Trạng thái đề xuất là ``Đã duyệt'' hoặc ``Từ chối''; nếu được duyệt, các bản ghi khen thưởng đã có trong cơ sở dữ liệu, hồ sơ suy diễn được tính lại, thông báo đã gửi, nhật ký đầy đủ. \\ \hline
+\textbf{Tên use case} & \multicolumn{3}{l|}{Phê duyệt một đề xuất khen thưởng} \\ \hline
+\textbf{Tác nhân} & \multicolumn{3}{l|}{Admin} \\ \hline
+\textbf{Tiền điều kiện} & \multicolumn{3}{p{10.6cm}|}{Đề xuất đang ở trạng thái chờ duyệt; Admin có quyền phê duyệt loại đề xuất tương ứng.} \\ \hline
+\multirow{9}{*}{\parbox{3.2cm}{\centering\textbf{Luồng sự kiện chính}\\\textbf{(Thành công)}}}
+ & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
+ & 1. & Admin & Mở chi tiết đề xuất từ danh sách ``Chờ duyệt'' \\ \cline{2-4}
+ & 2. & Admin & Xem lại danh sách đối tượng và danh hiệu \\ \cline{2-4}
+ & 3. & Admin & Có thể chỉnh sửa danh hiệu (vd: hạ từ Hạng Nhất xuống Hạng Nhì) \\ \cline{2-4}
+ & 4. & Admin & Nhập số quyết định và tải lên tệp PDF quyết định \\ \cline{2-4}
+ & 5. & Admin & Bấm ``Phê duyệt'' \\ \cline{2-4}
+ & 6. & Hệ thống & Mở giao dịch: chuyển trạng thái, ghi danh hiệu, gắn quyết định, tính lại hồ sơ suy diễn \\ \cline{2-4}
+ & 7. & Hệ thống & Phát thông báo thời gian thực tới Manager đã đề xuất và các quân nhân được khen \\ \cline{2-4}
+ & 8. & Hệ thống & Ghi nhật ký với dữ liệu trước, sau khi thay đổi \\ \hline
+\multirow{5}{*}{\textbf{Luồng sự kiện thay thế}}
+ & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
+ & 4a. & Hệ thống & Số quyết định trùng, cảnh báo nhưng cho phép tiếp tục nếu xác nhận \\ \cline{2-4}
+ & 5a. & Hệ thống & Đề xuất bị Admin khác sửa cùng lúc, trả lỗi 409 và yêu cầu tải lại \\ \cline{2-4}
+ & 5b. & Admin & Từ chối thay vì phê duyệt, đổi trạng thái sang ``Từ chối'' kèm lý do \\ \cline{2-4}
+ & 6a. & Hệ thống & Có lỗi tại bước ghi (vd: vi phạm quy tắc một lần duy nhất), huỷ toàn bộ giao dịch \\ \hline
+\textbf{Hậu điều kiện} & \multicolumn{3}{p{10.6cm}|}{Trạng thái đề xuất là ``Đã duyệt'' hoặc ``Từ chối''; nếu được duyệt, các bản ghi khen thưởng đã có trong cơ sở dữ liệu, hồ sơ suy diễn được tính lại, thông báo đã gửi, nhật ký đầy đủ.} \\ \hline
 \end{tabular}
 \end{table}
 
@@ -389,28 +377,25 @@ Phần này đặc tả sáu use case trọng yếu của hệ thống. Mỗi us
 \centering
 \caption{Đặc tả use case UC-05 Kiểm tra điều kiện chuỗi và sinh gợi ý}
 \label{tab:uc05}
-\begin{tabular}{|>{\raggedright\arraybackslash}p{3.2cm}|p{11.3cm}|}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{|>{\centering\arraybackslash}p{3.2cm}|>{\centering\arraybackslash}p{0.8cm}|p{2.8cm}|p{6.4cm}|}
 \hline
-\textbf{Tên use case} & Tính lại hồ sơ hằng năm và sinh gợi ý đề nghị \\ \hline
-\textbf{Tác nhân} & Admin (kích hoạt chủ động); Hệ thống (tự động sau mỗi lần phê duyệt). \\ \hline
-\textbf{Tiền điều kiện} & Quân nhân tồn tại; có ít nhất một bản ghi danh hiệu hằng năm. \\ \hline
-\textbf{Luồng chính (Thành công)} &
-\begin{tabular}{@{}c|p{2.6cm}|p{6.5cm}@{}}
-\textbf{STT} & \textbf{Thực hiện bởi} & \textbf{Hành động} \\ \hline
-1. & Hệ thống & Truy vấn toàn bộ danh hiệu hằng năm của quân nhân \\
-2. & Hệ thống & Dẫn xuất ngữ cảnh chuỗi (số năm, danh hiệu trong cửa sổ trượt) \\
-3. & Hệ thống & Với mỗi cấp danh hiệu, gọi hàm xét điều kiện \\
-4. & Hệ thống & Ghi kết quả vào bảng hồ sơ suy diễn \\
-5. & Hệ thống & Trả thông điệp gợi ý bằng tiếng Việt cho frontend hiển thị \\
-\end{tabular} \\ \hline
-\textbf{Luồng thay thế} &
-\begin{tabular}{@{}c|p{2.6cm}|p{6.5cm}@{}}
-\textbf{STT} & \textbf{Thực hiện bởi} & \textbf{Hành động} \\ \hline
-3a. & Hệ thống & Quân nhân đã nhận BKTTCP, trả về thông điệp ``Đã có BKTTCP'' \\
-3b. & Hệ thống & Chuỗi CSTĐCS chưa đủ chu kỳ, gợi ý số năm cần tích luỹ thêm \\
-3c. & Hệ thống & Năm hiện tại đúng vào mốc lỡ đợt, giải thích cách xét lại ở chu kỳ kế tiếp \\
-\end{tabular} \\ \hline
-\textbf{Hậu điều kiện} & Hồ sơ suy diễn nhất quán với dữ liệu nguồn; trang chi tiết quân nhân hiển thị các danh hiệu đủ điều kiện kèm thông điệp gợi ý. \\ \hline
+\textbf{Tên use case} & \multicolumn{3}{l|}{Tính lại hồ sơ hằng năm và sinh gợi ý đề nghị} \\ \hline
+\textbf{Tác nhân} & \multicolumn{3}{p{10.6cm}|}{Admin (kích hoạt chủ động); Hệ thống (tự động sau mỗi lần phê duyệt).} \\ \hline
+\textbf{Tiền điều kiện} & \multicolumn{3}{p{10.6cm}|}{Quân nhân tồn tại; có ít nhất một bản ghi danh hiệu hằng năm.} \\ \hline
+\multirow{6}{*}{\parbox{3.2cm}{\centering\textbf{Luồng sự kiện chính}\\\textbf{(Thành công)}}}
+ & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
+ & 1. & Hệ thống & Truy vấn toàn bộ danh hiệu hằng năm của quân nhân \\ \cline{2-4}
+ & 2. & Hệ thống & Dẫn xuất ngữ cảnh chuỗi (số năm, danh hiệu trong cửa sổ trượt) \\ \cline{2-4}
+ & 3. & Hệ thống & Với mỗi cấp danh hiệu, gọi hàm xét điều kiện \\ \cline{2-4}
+ & 4. & Hệ thống & Ghi kết quả vào bảng hồ sơ suy diễn \\ \cline{2-4}
+ & 5. & Hệ thống & Trả thông điệp gợi ý bằng tiếng Việt cho frontend hiển thị \\ \hline
+\multirow{4}{*}{\textbf{Luồng sự kiện thay thế}}
+ & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
+ & 3a. & Hệ thống & Quân nhân đã nhận BKTTCP, trả về thông điệp ``Đã có BKTTCP'' \\ \cline{2-4}
+ & 3b. & Hệ thống & Chuỗi CSTĐCS chưa đủ chu kỳ, gợi ý số năm cần tích luỹ thêm \\ \cline{2-4}
+ & 3c. & Hệ thống & Năm hiện tại đúng vào mốc lỡ đợt, giải thích cách xét lại ở chu kỳ kế tiếp \\ \hline
+\textbf{Hậu điều kiện} & \multicolumn{3}{p{10.6cm}|}{Hồ sơ suy diễn nhất quán với dữ liệu nguồn; trang chi tiết quân nhân hiển thị các danh hiệu đủ điều kiện kèm thông điệp gợi ý.} \\ \hline
 \end{tabular}
 \end{table}
 
@@ -418,31 +403,28 @@ Phần này đặc tả sáu use case trọng yếu của hệ thống. Mỗi us
 \centering
 \caption{Đặc tả use case UC-06 Nhập tệp Excel hàng loạt}
 \label{tab:uc06}
-\begin{tabular}{|>{\raggedright\arraybackslash}p{3.2cm}|p{11.3cm}|}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{|>{\centering\arraybackslash}p{3.2cm}|>{\centering\arraybackslash}p{0.8cm}|p{2.8cm}|p{6.4cm}|}
 \hline
-\textbf{Tên use case} & Nhập danh sách quân nhân hoặc danh hiệu hằng năm từ Excel \\ \hline
-\textbf{Tác nhân} & Admin \\ \hline
-\textbf{Tiền điều kiện} & Đã có tệp mẫu Excel tải xuống từ hệ thống và điền dữ liệu theo cấu trúc cột chuẩn. \\ \hline
-\textbf{Luồng chính (Thành công)} &
-\begin{tabular}{@{}c|p{2.6cm}|p{6.5cm}@{}}
-\textbf{STT} & \textbf{Thực hiện bởi} & \textbf{Hành động} \\ \hline
-1. & Admin & Truy cập ``Nhập Excel'' và chọn loại nghiệp vụ \\
-2. & Admin & Tải lên tệp \texttt{.xlsx} qua biểu mẫu \\
-3. & Hệ thống & Đọc tệp, kiểm tra cấu trúc và đọc tuần tự từng dòng \\
-4. & Hệ thống & Áp schema và quy tắc nghiệp vụ cho mỗi dòng \\
-5. & Hệ thống & Trả về bảng xem trước với các dòng hợp lệ và lỗi cụ thể \\
-6. & Admin & Kiểm tra danh sách lỗi, nếu đồng ý bấm ``Xác nhận nhập'' \\
-7. & Hệ thống & Mở giao dịch, ghi tuần tự các dòng hợp lệ \\
-8. & Hệ thống & Commit giao dịch và phát sự kiện thời gian thực tổng kết \\
-\end{tabular} \\ \hline
-\textbf{Luồng thay thế} &
-\begin{tabular}{@{}c|p{2.6cm}|p{6.5cm}@{}}
-\textbf{STT} & \textbf{Thực hiện bởi} & \textbf{Hành động} \\ \hline
-3a. & Hệ thống & Tệp sai định dạng hoặc thiếu sheet bắt buộc, trả lỗi 400 \\
-4a. & Admin & Có dòng lỗi ở bước xem trước, có thể tải tệp xuống sửa và tải lại \\
-7a. & Hệ thống & Có lỗi tại bước ghi, huỷ bỏ toàn bộ giao dịch \\
-\end{tabular} \\ \hline
-\textbf{Hậu điều kiện} & Các bản ghi trong tệp được ghi vào cơ sở dữ liệu; nhật ký \texttt{action = IMPORT} được ghi với tổng kết số dòng thành công và số dòng lỗi; thông báo thời gian thực gửi tới Admin. \\ \hline
+\textbf{Tên use case} & \multicolumn{3}{l|}{Nhập danh sách quân nhân hoặc danh hiệu hằng năm từ Excel} \\ \hline
+\textbf{Tác nhân} & \multicolumn{3}{l|}{Admin} \\ \hline
+\textbf{Tiền điều kiện} & \multicolumn{3}{p{10.6cm}|}{Đã có tệp mẫu Excel tải xuống từ hệ thống và điền dữ liệu theo cấu trúc cột chuẩn.} \\ \hline
+\multirow{9}{*}{\parbox{3.2cm}{\centering\textbf{Luồng sự kiện chính}\\\textbf{(Thành công)}}}
+ & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
+ & 1. & Admin & Truy cập ``Nhập Excel'' và chọn loại nghiệp vụ \\ \cline{2-4}
+ & 2. & Admin & Tải lên tệp \texttt{.xlsx} qua biểu mẫu \\ \cline{2-4}
+ & 3. & Hệ thống & Đọc tệp, kiểm tra cấu trúc và đọc tuần tự từng dòng \\ \cline{2-4}
+ & 4. & Hệ thống & Áp schema và quy tắc nghiệp vụ cho mỗi dòng \\ \cline{2-4}
+ & 5. & Hệ thống & Trả về bảng xem trước với các dòng hợp lệ và lỗi cụ thể \\ \cline{2-4}
+ & 6. & Admin & Kiểm tra danh sách lỗi, nếu đồng ý bấm ``Xác nhận nhập'' \\ \cline{2-4}
+ & 7. & Hệ thống & Mở giao dịch, ghi tuần tự các dòng hợp lệ \\ \cline{2-4}
+ & 8. & Hệ thống & Commit giao dịch và phát sự kiện thời gian thực tổng kết \\ \hline
+\multirow{4}{*}{\textbf{Luồng sự kiện thay thế}}
+ & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
+ & 3a. & Hệ thống & Tệp sai định dạng hoặc thiếu sheet bắt buộc, trả lỗi 400 \\ \cline{2-4}
+ & 4a. & Admin & Có dòng lỗi ở bước xem trước, có thể tải tệp xuống sửa và tải lại \\ \cline{2-4}
+ & 7a. & Hệ thống & Có lỗi tại bước ghi, huỷ bỏ toàn bộ giao dịch \\ \hline
+\textbf{Hậu điều kiện} & \multicolumn{3}{p{10.6cm}|}{Các bản ghi trong tệp được ghi vào cơ sở dữ liệu; nhật ký \texttt{action = IMPORT} được ghi với tổng kết số dòng thành công và số dòng lỗi; thông báo thời gian thực gửi tới Admin.} \\ \hline
 \end{tabular}
 \end{table}
 
