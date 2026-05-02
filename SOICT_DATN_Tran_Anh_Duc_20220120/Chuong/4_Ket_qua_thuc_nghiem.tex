@@ -63,7 +63,7 @@ Mã nguồn frontend được tổ chức bên trong thư mục \texttt{FE-QLKT/
 
 \subsubsection{Gói phía backend}
 
-Mã nguồn backend được tổ chức bên trong thư mục \texttt{BE-QLKT/src/} theo sáu lớp đã trình bày ở mục \ref{subsection:4.1.1}. Gói \texttt{routes/} định nghĩa các điểm cuối REST API, mỗi miền nghiệp vụ một tệp. Gói \texttt{middlewares/} chứa các tệp \texttt{auth.ts} (xác thực và phân quyền), \texttt{auditLog.ts} (ghi nhật ký mọi thao tác mutate), \texttt{unitFilter.ts} (lọc dữ liệu theo phạm vi đơn vị của Manager) và \texttt{validate.ts} (bọc Zod validation). Gói \texttt{controllers/} chứa các tệp điều hướng yêu cầu HTTP từ route tới service, được giữ mỏng (mỗi phương thức dưới 50 dòng mã). Gói \texttt{services/} chứa logic nghiệp vụ chính, được tách tiếp thành các thư mục con: \texttt{proposal/strategies/} cho strategy registry của bảy loại đề xuất, \texttt{eligibility/} cho hàm \texttt{chainEligibility} xét rule chuỗi cá nhân và đơn vị, \texttt{profile/annual.ts} cho logic chuỗi cá nhân và \texttt{profile/unit.ts} cho logic chuỗi đơn vị. Gói \texttt{repositories/} đóng gói toàn bộ truy cập Prisma, mỗi model một tệp \texttt{.repository.ts}. Gói \texttt{helpers/} chứa các tiện ích phụ trợ chia theo nhóm: \texttt{auditLog/}, \texttt{notification/}, \texttt{excel/}, \texttt{awardValidation/}. Gói \texttt{validations/} chứa các schema Zod cho từng route. Tệp \texttt{prisma/schema.prisma} ở cấp gốc của module backend định nghĩa toàn bộ 23 model.
+Mã nguồn backend được tổ chức bên trong thư mục \texttt{BE-QLKT/src/} theo sáu lớp đã trình bày ở mục \ref{subsection:4.1.1}. Gói \texttt{routes/} định nghĩa các điểm cuối REST API, mỗi miền nghiệp vụ một tệp. Gói \texttt{middlewares/} chứa các tệp \texttt{auth.ts} (xác thực và phân quyền), \texttt{auditLog.ts} (ghi nhật ký mọi thao tác làm thay đổi dữ liệu), \texttt{unitFilter.ts} (lọc dữ liệu theo phạm vi đơn vị của Manager) và \texttt{validate.ts} (bọc Zod validation). Gói \texttt{controllers/} chứa các tệp điều hướng yêu cầu HTTP từ route tới service, được giữ mỏng (mỗi phương thức dưới 50 dòng mã). Gói \texttt{services/} chứa logic nghiệp vụ chính, được tách tiếp thành các thư mục con: \texttt{proposal/strategies/} cho strategy registry của bảy loại đề xuất, \texttt{eligibility/} cho hàm \texttt{chainEligibility} xét quy tắc chuỗi cá nhân và đơn vị, \texttt{profile/annual.ts} cho logic chuỗi cá nhân và \texttt{profile/unit.ts} cho logic chuỗi đơn vị. Gói \texttt{repositories/} đóng gói toàn bộ truy cập Prisma, mỗi model một tệp \texttt{.repository.ts}. Gói \texttt{helpers/} chứa các tiện ích phụ trợ chia theo nhóm: \texttt{auditLog/}, \texttt{notification/}, \texttt{excel/}, \texttt{awardValidation/}. Gói \texttt{validations/} chứa các schema Zod cho từng route. Tệp \texttt{prisma/schema.prisma} ở cấp gốc của module backend định nghĩa toàn bộ 23 model.
 
 \begin{figure}[H]
     \centering
@@ -81,13 +81,13 @@ Khi người dùng truy cập trang hồ sơ một quân nhân, dòng chảy d�
 \begin{enumerate}
     \item \textbf{Route} \texttt{GET /api/personnel/:id/profile} (định nghĩa tại \texttt{routes/profile.route.ts}) tiếp nhận yêu cầu và đẩy qua chuỗi middleware \texttt{verifyToken -> requireAuth -> unitFilter}.
     \item \textbf{Controller} \texttt{profileController.getAnnualProfile} (tại \texttt{controllers/profile.controller.ts}) đọc tham số \mbox{\texttt{personnelId}}, gọi service tương ứng, đóng gói kết quả vào \texttt{ResponseHelper.success}.
-    \item \textbf{Service} \texttt{profileService.recalculateAnnualProfile} (tại \texttt{services/profile/annual.ts}) thực thi logic gồm: nạp danh sách \texttt{DanhHieuHangNam} qua repository, gọi \texttt{computeChainContext} để dẫn xuất ngữ cảnh chuỗi, lặp qua \texttt{PERSONAL\_CHAIN\_AWARDS} và gọi \texttt{checkChainEligibility} cho mỗi tier, ghi kết quả vào bảng suy diễn \texttt{HoSoHangNam}.
+    \item \textbf{Service} \texttt{profileService.recalculateAnnualProfile} (tại \texttt{services/profile/annual.ts}) thực thi logic gồm: nạp danh sách \texttt{DanhHieuHangNam} qua repository, gọi \texttt{computeChainContext} để dẫn xuất ngữ cảnh chuỗi, lặp qua \texttt{PERSONAL\_CHAIN\_AWARDS} và gọi \texttt{checkChainEligibility} cho mỗi cấp, ghi kết quả vào bảng suy diễn \texttt{HoSoHangNam}.
     \item \textbf{Eligibility module} \texttt{services/eligibility/chainEligibility.ts} chứa hàm \texttt{checkChainEligibility(config, context, hasReceivedLifetime)}: hàm thuần (pure function), không truy vấn cơ sở dữ liệu, dễ kiểm thử.
     \item \textbf{Repository} \texttt{repositories/danhHieuHangNam.repository.ts} cung cấp các phương thức \texttt{findManyByPersonnelId}, \texttt{findUniqueByPersonnelYearAward}.
     \item \textbf{Prisma Client} thực thi truy vấn SQL tới bảng \texttt{danh\_hieu\_hang\_nam}.
 \end{enumerate}
 
-Sự tách biệt giữa Service (logic nghiệp vụ) và Eligibility module (rule thuần) là chủ ý: Eligibility module có thể được kiểm thử với 100\,\% phủ rule mà không cần mock cơ sở dữ liệu. Service chỉ phụ trách điều phối (nạp dữ liệu, gọi quy tắc, ghi kết quả) nên cũng dễ kiểm thử với mock Repository.
+Sự tách biệt giữa Service (logic nghiệp vụ) và Eligibility module (quy tắc thuần) là chủ ý: Eligibility module có thể được kiểm thử với 100\,\% phủ quy tắc mà không cần mock cơ sở dữ liệu. Service chỉ phụ trách điều phối (nạp dữ liệu, gọi quy tắc, ghi kết quả) nên cũng dễ kiểm thử với mock Repository.
 
 \begin{figure}[H]
     \centering
@@ -100,7 +100,7 @@ Sự tách biệt giữa Service (logic nghiệp vụ) và Eligibility module (r
 
 Phần này trình bày sơ đồ lớp cho năm module nghiệp vụ chính. Mỗi sơ đồ chỉ ra các lớp/interface cốt lõi cùng các phương thức quan trọng và mối quan hệ.
 
-\textbf{Module xử lý chuỗi danh hiệu.} Trung tâm là interface \texttt{ChainAwardConfig} chứa cấu hình một tier chuỗi (mã danh hiệu, số năm chu kỳ, danh sách cờ tiền điều kiện, có yêu cầu NCKH hay không, có phải lifetime hay không, tên cột cờ trong cơ sở dữ liệu, nhãn chuỗi). Hai mảng cấu hình \texttt{PERSONAL\_CHAIN\_AWARDS} và \texttt{UNIT\_CHAIN\_AWARDS} chứa danh sách các tier tương ứng cho cá nhân và đơn vị. Hàm \texttt{checkChainEligibility(config, context, hasReceivedLifetime, flagsInWindow)} đọc cấu hình và đối chiếu với ngữ cảnh thực tế để trả về kết quả \texttt{EligibilityResult} gồm hai trường \texttt{eligible: boolean} và \texttt{reason: string}. Interface \texttt{ChainContext} đóng gói các chỉ số dẫn xuất từ lịch sử (độ dài chuỗi, năm gần nhất nhận từng tier, số cờ trong cửa sổ trượt).
+\textbf{Module xử lý chuỗi danh hiệu.} Trung tâm là interface \texttt{ChainAwardConfig} chứa cấu hình một cấp trong chuỗi (mã danh hiệu, số năm chu kỳ, danh sách cờ tiền điều kiện, có yêu cầu NCKH hay không, có phải danh hiệu một lần duy nhất hay không, tên cột cờ trong cơ sở dữ liệu, nhãn chuỗi). Hai mảng cấu hình \texttt{PERSONAL\_CHAIN\_AWARDS} và \texttt{UNIT\_CHAIN\_AWARDS} chứa danh sách các cấp tương ứng cho cá nhân và đơn vị. Hàm \texttt{checkChainEligibility(config, context, hasReceivedLifetime, flagsInWindow)} đọc cấu hình và đối chiếu với ngữ cảnh thực tế để trả về kết quả \texttt{EligibilityResult} gồm hai trường \texttt{eligible: boolean} và \texttt{reason: string}. Interface \texttt{ChainContext} đóng gói các chỉ số dẫn xuất từ lịch sử (độ dài chuỗi, năm gần nhất nhận từng cấp, số cờ trong cửa sổ trượt).
 
 \textbf{Module Strategy đề xuất.} Interface \texttt{ProposalStrategy} định nghĩa bốn phương thức bắt buộc cho mỗi loại đề xuất: \texttt{buildSubmitPayload}, \texttt{validateApprove}, \texttt{importInTransaction}, \texttt{buildSuccessMessage}. Bảy lớp triển khai (\texttt{caNhanHangNamStrategy}, \texttt{donViHangNamStrategy}, \texttt{nienHanStrategy}, \texttt{hcQkqtStrategy}, \texttt{kncStrategy}, \texttt{congHienStrategy}, \texttt{nckhStrategy}) đăng ký vào \texttt{REGISTRY} trong \texttt{services/proposal/strategies/index.ts}. Hai lớp single-medal (\texttt{hcQkqtStrategy} và \texttt{kncStrategy}) chia sẻ logic qua hàm trợ giúp \texttt{singleMedalImporter} để tránh trùng lặp.
 
@@ -129,7 +129,7 @@ Bảy luồng nghiệp vụ quan trọng nhất được mô hình hoá bằng s
 
 \textbf{Sequence 4.4: Tính lại điều kiện chuỗi cho một quân nhân.} FE gọi \texttt{GET /api/personnel/:id/annual-profile} $\rightarrow$ \texttt{profileController.getAnnualProfile} $\rightarrow$ \texttt{profileService.recalculateAnnualProfile} $\rightarrow$ \texttt{danhHieuHangNamRepository.findManyByPersonnelId} $\rightarrow$ \texttt{computeChainContext(rows, currentYear)} $\rightarrow$ vòng for qua \texttt{PERSONAL\_CHAIN\_AWARDS} gọi \texttt{checkChainEligibility} $\rightarrow$ \texttt{hoSoHangNamRepository.upsert} $\rightarrow$ trả kết quả.
 
-\textbf{Sequence 4.5: Nhập Excel hai bước.} Admin tải tệp $\rightarrow$ FE gọi \texttt{POST /api/annual-rewards/import/preview} $\rightarrow$ \texttt{excelHelper.loadWorkbook} $\rightarrow$ đọc từng trang tính $\rightarrow$ cho mỗi dòng: chạy schema Zod và rule nghiệp vụ $\rightarrow$ trả về \texttt{\{valid: [...], errors: [...]\}}. Admin xác nhận $\rightarrow$ FE gọi \texttt{POST /api/annual-rewards/import/confirm} $\rightarrow$ mở transaction $\rightarrow$ ghi tuần tự $\rightarrow$ commit hoặc rollback.
+\textbf{Sequence 4.5: Nhập Excel hai bước.} Admin tải tệp $\rightarrow$ FE gọi \texttt{POST /api/annual-rewards/import/preview} $\rightarrow$ \texttt{excelHelper.loadWorkbook} $\rightarrow$ đọc từng trang tính $\rightarrow$ cho mỗi dòng: chạy schema Zod và quy tắc nghiệp vụ $\rightarrow$ trả về \texttt{\{valid: [...], errors: [...]\}}. Admin xác nhận $\rightarrow$ FE gọi \texttt{POST /api/annual-rewards/import/confirm} $\rightarrow$ mở transaction $\rightarrow$ ghi tuần tự $\rightarrow$ commit hoặc rollback.
 
 \textbf{Sequence 4.6: Sao lưu định kỳ tự động.} Cron job nội bộ kích hoạt mỗi 24 giờ $\rightarrow$ \texttt{backupService.runScheduledBackup} $\rightarrow$ spawn child process \texttt{pg\_dump} $\rightarrow$ ghi tệp SQL vào \texttt{backups/YYYY-MM-DD\_HH-mm-ss.sql} $\rightarrow$ ghi nhật ký \texttt{action = CREATE, resource = backup}.
 
@@ -173,8 +173,8 @@ Sáu bảng mô tả chi tiết schema sau đây được chọn vì là các b�
 \dbid{ngay_nhap_ngu} & Date & NULL & Ngày nhập ngũ \\ \hline
 \dbid{ngay_xuat_ngu} & Date & NULL & Ngày xuất ngũ (nếu đã rời) \\ \hline
 \dbid{cap_bac} & VarChar(50) & NULL & Cấp bậc hiện tại \\ \hline
-\dbid{co_quan_don_vi_id} & VarChar(30) & FK \mbox{$\rightarrow$ CoQuanDonVi} & Liên kết tới CQĐV \\ \hline
-\dbid{don_vi_truc_thuoc_id} & VarChar(30) & FK \mbox{$\rightarrow$ DonViTrucThuoc} & Liên kết tới ĐVTT \\ \hline
+\dbid{co_quan_don_vi_id} & VarChar(30) & FK $\rightarrow$ CoQuanDonVi & Liên kết tới CQĐV \\ \hline
+\dbid{don_vi_truc_thuoc_id} & VarChar(30) & FK $\rightarrow$ DonViTrucThuoc & Liên kết tới ĐVTT \\ \hline
 \dbid{chuc_vu_id} & VarChar(30) & FK $\rightarrow$ ChucVu & Chức vụ hiện tại \\ \hline
 \texttt{createdAt} & Timestamp & DEFAULT now() & Thời điểm tạo \\ \hline
 \end{tabular}
@@ -203,7 +203,7 @@ Ràng buộc nghiệp vụ: chỉ một trong \texttt{co\_quan\_don\_vi\_id} và
 \dbid{data_cong_hien} & JSON & NULL & Dữ liệu HCBVTQ \\ \hline
 \dbid{files_attached} & JSON & NULL & Mảng file đính kèm \\ \hline
 \dbid{rejection_reason} & Text & NULL & Lý do từ chối (nếu có) \\ \hline
-\dbid{nguoi_duyet_id} & VarChar(30) & \mbox{FK $\rightarrow$ TaiKhoan, NULL} & Admin đã phê duyệt \\ \hline
+\dbid{nguoi_duyet_id} & VarChar(30) & FK $\rightarrow$ TaiKhoan, NULL & Admin đã phê duyệt \\ \hline
 \dbid{ngay_duyet} & Timestamp & NULL & Ngày phê duyệt \\ \hline
 \end{tabular}
 \end{table}
@@ -221,7 +221,7 @@ Việc dùng JSON cho 4 trường \texttt{data\_*} là chủ ý. Mỗi loại đ
 \textbf{Cột} & \textbf{Kiểu} & \textbf{Ràng buộc} & \textbf{Mô tả} \\ \hline
 \texttt{id} & String & PK, CUID & \\ \hline
 \dbid{quan_nhan_id} & VarChar(30) & FK $\rightarrow$ QuanNhan & \\ \hline
-\texttt{nam} & Int & \mbox{UNIQUE (quan\_nhan\_id, nam)} & Năm xét danh hiệu \\ \hline
+\texttt{nam} & Int & UNIQUE (quan\_nhan\_id, nam) & Năm xét danh hiệu \\ \hline
 \dbid{danh_hieu} & VarChar(20) & NULL & Mã danh hiệu cơ bản (CSTĐCS, CSTT) \\ \hline
 \dbid{nhan_bkbqp} & Boolean & DEFAULT false & Đã nhận BKBTBQP trong năm \\ \hline
 \dbid{so_quyet_dinh_bkbqp} & VarChar(100) & NULL & Số quyết định BKBTBQP \\ \hline
@@ -266,7 +266,7 @@ Trường \texttt{so\_thang} được tự động cập nhật bởi hàm tính
 \hline
 \textbf{Cột} & \textbf{Kiểu} & \textbf{Ràng buộc} & \textbf{Mô tả} \\ \hline
 \texttt{id} & String & PK, CUID & \\ \hline
-\dbid{nguoi_thuc_hien_id} & VarChar(30) & \mbox{FK $\rightarrow$ TaiKhoan, NULL} & NULL với hành động hệ thống \\ \hline
+\dbid{nguoi_thuc_hien_id} & VarChar(30) & FK $\rightarrow$ TaiKhoan, NULL & NULL với hành động hệ thống \\ \hline
 \dbid{actor_role} & VarChar(20) & NOT NULL & Vai trò tại thời điểm thao tác \\ \hline
 \texttt{action} & VarChar(50) & NOT NULL & CREATE, UPDATE, DELETE, ... \\ \hline
 \texttt{resource} & VarChar(50) & NOT NULL & Loại tài nguyên \\ \hline
@@ -289,7 +289,7 @@ Trường \texttt{so\_thang} được tự động cập nhật bởi hàm tính
 \hline
 \textbf{Cột} & \textbf{Kiểu} & \textbf{Ràng buộc} & \textbf{Mô tả} \\ \hline
 \texttt{id} & String & PK, CUID & \\ \hline
-\dbid{quan_nhan_id} & VarChar(30) & \mbox{UNIQUE, FK $\rightarrow$ QuanNhan} & Mỗi quân nhân một bản ghi \\ \hline
+\dbid{quan_nhan_id} & VarChar(30) & UNIQUE, FK $\rightarrow$ QuanNhan & Mỗi quân nhân một bản ghi \\ \hline
 \dbid{cstdcs_lien_tuc} & Int & DEFAULT 0 & Độ dài chuỗi CSTĐCS hiện tại \\ \hline
 \dbid{nckh_lien_tuc} & Int & DEFAULT 0 & Số năm NCKH liên tục \\ \hline
 \dbid{bkbqp_lien_tuc} & Int & DEFAULT 0 & Năm liên tục từ lần BKBTBQP cuối \\ \hline
@@ -368,7 +368,7 @@ Sản phẩm sử dụng tổng cộng 30 thư viện mã nguồn mở chia làm
 \end{tabular}
 \end{table}
 
-Môi trường phát triển sử dụng Visual Studio Code có cài extension Prisma, ESLint và Prettier; quản lý mã nguồn qua Git và GitHub; quản lý cơ sở dữ liệu trực quan qua Prisma Studio (lệnh \texttt{npx prisma studio}).
+Môi trường phát triển sử dụng Visual Studio Code có cài extension cho Prisma, ESLint và Prettier; quản lý mã nguồn qua Git và GitHub; quản lý cơ sở dữ liệu trực quan qua Prisma Studio (lệnh \texttt{npx prisma studio}).
 
 \subsection{Kết quả đạt được}
 \label{subsection:4.3.2}
@@ -411,13 +411,13 @@ Phần này trình bày các ảnh chụp màn hình tiêu biểu của sản ph
 
 Phần này mô tả ngắn gọn năm thành phần kỹ thuật trọng yếu của kho mã nguồn để người đọc nắm bắt cách thức tổ chức bên trong, không trích nguyên các đoạn mã chi tiết.
 
-\textbf{Hàm \texttt{computeChainContext} dẫn xuất ngữ cảnh chuỗi.} Đặt tại \texttt{BE-QLKT/src/services/profile/annual.ts}. Hàm nhận đầu vào gồm danh sách bản ghi \texttt{DanhHieuHangNam} của một quân nhân, độ dài chuỗi CSTĐCS hiện tại và năm xét. Đầu ra là đối tượng \texttt{ChainContext} chứa năm bắt đầu chuỗi, năm gần nhất nhận BKBTBQP/CSTĐTQ/BKTTCP nằm trong cửa sổ chuỗi, số năm CSTĐCS đã tích luỹ kể từ lần cuối nhận từng tier, và số chu kỳ đã bỏ lỡ. Hàm hoàn toàn thuần (không truy vấn cơ sở dữ liệu) nên dễ kiểm thử với 197 ca kiểm thử phủ các kịch bản từ chu kỳ vừa đủ tới lỡ nhiều chu kỳ.
+\textbf{Hàm \texttt{computeChainContext} dẫn xuất ngữ cảnh chuỗi.} Đặt tại \texttt{BE-QLKT/src/services/profile/annual.ts}. Hàm nhận đầu vào gồm danh sách bản ghi \texttt{DanhHieuHangNam} của một quân nhân, độ dài chuỗi CSTĐCS hiện tại và năm xét. Đầu ra là đối tượng \texttt{ChainContext} chứa năm bắt đầu chuỗi, năm gần nhất nhận BKBTBQP/CSTĐTQ/BKTTCP nằm trong cửa sổ chuỗi, số năm CSTĐCS đã tích luỹ kể từ lần cuối nhận từng cấp, và số chu kỳ đã bỏ lỡ. Hàm hoàn toàn thuần (không truy vấn cơ sở dữ liệu) nên dễ kiểm thử với 197 ca kiểm thử phủ các kịch bản từ chu kỳ vừa đủ tới lỡ nhiều chu kỳ.
 
 \textbf{Chuỗi middleware bảo mật năm tầng.} Tại tệp định nghĩa route, mỗi yêu cầu mutate đều phải đi qua tuần tự: \texttt{verifyToken} (xác thực Access Token), \texttt{checkRole} (phân quyền vai trò), \texttt{writeLimiter} (giới hạn tốc độ), middleware tải lên tệp đính kèm (\texttt{multer}), \texttt{auditLog} (ghi nhật ký) và sau đó mới đến controller. Mỗi middleware giải quyết một mối quan tâm độc lập và có thể tái sử dụng giữa các route, phản ánh đúng nguyên tắc đơn trách nhiệm.
 
 \textbf{Repository Pattern tách Prisma Client.} Mỗi repository (vd: \texttt{danhHieuHangNamRepository}) đóng gói các thao tác Prisma cụ thể qua các phương thức có tên nghiệp vụ (\texttt{findByPersonnelId}, \texttt{upsertByPersonnelYear}, \texttt{deleteManyByPersonnelId}). Mỗi phương thức nhận thêm tham số \texttt{tx} tuỳ chọn (kiểu \texttt{PrismaLike = prisma | Prisma.TransactionClient}) để có thể tham gia vào transaction do tầng Service mở. Cách thiết kế này cho phép Service mở \texttt{prisma.\$transaction(async tx => ...)} rồi truyền \texttt{tx} qua nhiều lời gọi repository, qua đó bảo đảm hoặc tất cả thao tác cùng thành công, hoặc tất cả cùng huỷ bỏ.
 
-\textbf{Hàm \texttt{checkChainEligibility} thực thi rule chuỗi.} Đặt tại \texttt{BE-QLKT/src/services/eligibility/chainEligibility.ts}. Hàm nhận cấu hình tier (\texttt{ChainAwardConfig}), ngữ cảnh chuỗi (\texttt{ChainStreaks}), cờ ``đã nhận'' (\texttt{hasReceived}) và bản đồ số cờ trong cửa sổ trượt (\texttt{FlagsInWindow}). Logic ba bước: kiểm tra block lifetime nếu là BKTTCP cá nhân và đã nhận, kiểm tra đủ chu kỳ (\texttt{streakLength} lớn hơn hoặc bằng \texttt{cycleYears} và là bội số của \texttt{cycleYears}), kiểm tra đủ cờ tiền điều kiện trong cửa sổ trượt, kiểm tra đủ thành tích NCKH nếu yêu cầu. Trả về \texttt{EligibilityResult \{ eligible, reason \}} với thông điệp tiếng Việt.
+\textbf{Hàm \texttt{checkChainEligibility} thực thi quy tắc chuỗi.} Đặt tại \texttt{BE-QLKT/src/services/eligibility/chainEligibility.ts}. Hàm nhận cấu hình cấp danh hiệu (\texttt{ChainAwardConfig}), ngữ cảnh chuỗi (\texttt{ChainStreaks}), cờ ``đã nhận'' (\texttt{hasReceived}) và bản đồ số cờ trong cửa sổ trượt (\texttt{FlagsInWindow}). Logic ba bước: kiểm tra chặn nhận lại nếu là BKTTCP cá nhân và đã nhận, kiểm tra đủ chu kỳ (\texttt{streakLength} lớn hơn hoặc bằng \texttt{cycleYears} và là bội số của \texttt{cycleYears}), kiểm tra đủ cờ tiền điều kiện trong cửa sổ trượt, kiểm tra đủ thành tích NCKH nếu yêu cầu. Trả về \texttt{EligibilityResult \{ eligible, reason \}} với thông điệp tiếng Việt.
 
 \textbf{Strategy registry cho bảy loại đề xuất.} Tại \texttt{BE-QLKT/src/services/proposal/strategies/index.ts}, đối tượng \texttt{REGISTRY} ánh xạ mỗi \texttt{ProposalType} sang một thực thể tuân theo giao diện \texttt{ProposalStrategy}. Bảy strategy được đăng ký gồm \texttt{caNhanHangNamStrategy}, \texttt{donViHangNamStrategy}, \texttt{nienHanStrategy}, \texttt{hcQkqtStrategy}, \texttt{kncStrategy}, \texttt{congHienStrategy}, \texttt{nckhStrategy}. Hàm \texttt{requireProposalStrategy(type)} trả về strategy tương ứng hoặc ném lỗi nếu chưa đăng ký. Khi bổ sung loại đề xuất mới trong tương lai, các bước cần làm chỉ gồm tạo tệp triển khai mới, thêm một dòng đăng ký vào \texttt{REGISTRY} và thêm khoá tương ứng vào hằng số \texttt{PROPOSAL\_TYPES}.
 
@@ -430,7 +430,7 @@ Phần này mô tả ngắn gọn năm thành phần kỹ thuật trọng yếu 
 Toàn bộ logic nghiệp vụ trọng yếu được phủ kiểm thử đơn vị bằng Jest 29 kết hợp với \texttt{ts-jest} để chạy trực tiếp tệp TypeScript. Các bộ kiểm thử được tổ chức theo nhóm chức năng tại thư mục \texttt{BE-QLKT/tests/}:
 
 \begin{itemize}
-    \item \texttt{tests/services/}: kiểm thử các service và rule eligibility (74\,\% tổng số ca kiểm thử).
+    \item \texttt{tests/services/}: kiểm thử các service và quy tắc xét điều kiện (74\,\% tổng số ca kiểm thử).
     \item \texttt{tests/scenarios/}: kiểm thử các kịch bản end-to-end ở tầng service (đề xuất $\rightarrow$ phê duyệt $\rightarrow$ tính lại).
     \item \texttt{tests/approve/}, \texttt{tests/submit/}, \texttt{tests/import/}: kiểm thử ba luồng nghiệp vụ chính theo từng loại đề xuất.
     \item \texttt{tests/authz/}: kiểm thử phân quyền và phạm vi truy cập của Manager.
@@ -452,8 +452,8 @@ Số ca thành công & 890 \\ \hline
 Số ca thất bại & 0 \\ \hline
 Số ca bỏ qua & 0 \\ \hline
 Tổng thời gian chạy & $\approx$ 8 giây \\ \hline
-Phạm vi phủ rule chuỗi cá nhân & 100\,\% (BKBTBQP + CSTĐTQ + BKTTCP) \\ \hline
-Phạm vi phủ rule chuỗi đơn vị & 100\,\% (BKBTBQP + BKTTCP cấp đơn vị) \\ \hline
+Phạm vi phủ quy tắc chuỗi cá nhân & 100\,\% (BKBTBQP + CSTĐTQ + BKTTCP) \\ \hline
+Phạm vi phủ quy tắc chuỗi đơn vị & 100\,\% (BKBTBQP + BKTTCP cấp đơn vị) \\ \hline
 \end{tabular}
 \end{table}
 
@@ -516,7 +516,7 @@ Bên cạnh kiểm thử đơn vị, các chức năng nghiệp vụ chính đư
 1 & Phê duyệt thông thường & Đề xuất hợp lệ & Trạng thái APPROVED, ghi vào bảng tương ứng & Đạt \\ \hline
 2 & Phê duyệt với chỉnh sửa danh hiệu & Hạ Hạng Nhất $\rightarrow$ Hạng Nhì & Lưu giá trị mới, ghi log & Đạt \\ \hline
 3 & Từ chối đề xuất & Bấm ``Từ chối'' & REJECTED, gửi thông báo Manager & Đạt \\ \hline
-4 & Vi phạm rule lifetime BKTTCP & Đề nghị BKTTCP cho người đã có & Transaction rollback & Đạt \\ \hline
+4 & Vi phạm quy tắc BKTTCP một lần duy nhất & Đề nghị BKTTCP cho người đã có & Giao dịch huỷ bỏ & Đạt \\ \hline
 5 & Hai Admin cùng phê duyệt & Hai phiên đồng thời & Chỉ một thành công, người sau nhận 409 & Đạt \\ \hline
 \end{tabular}
 \end{table}
@@ -529,7 +529,7 @@ Bên cạnh kiểm thử đơn vị, các chức năng nghiệp vụ chính đư
 \hline
 \textbf{STT} & \textbf{Chức năng} & \textbf{Đầu vào} & \textbf{Đầu ra mong muốn} & \textbf{KQ} \\ \hline
 1 & Quân nhân chưa nhận & 2 năm CSTĐCS liên tục & Đề nghị BKBTBQP, gợi ý giải thích & Đạt \\ \hline
-2 & Đã nhận BKTTCP (lifetime) & Đã có BKTTCP & Thông điệp ``Đã có BKTTCP. Phần mềm chưa hỗ trợ...'' & Đạt \\ \hline
+2 & Đã nhận BKTTCP (một lần duy nhất) & Đã có BKTTCP & Thông điệp ``Đã có BKTTCP. Phần mềm chưa hỗ trợ...'' & Đạt \\ \hline
 3 & Bỏ lỡ đợt & 5 năm CSTĐCS từ BKBTBQP cuối & \texttt{missedBkbqp = 2}, vẫn đề nghị BKBTBQP mới & Đạt \\ \hline
 4 & Cửa sổ trượt 3 năm CSTĐTQ & BKBTBQP của 4 năm trước & BKBTBQP đó không tính, yêu cầu mới & Đạt \\ \hline
 5 & Thiếu NCKH năm thứ 3 & 3 năm CSTĐCS, thiếu NCKH năm 2 & Không đủ, gợi ý cần NCKH & Đạt \\ \hline
@@ -545,7 +545,7 @@ Bên cạnh kiểm thử đơn vị, các chức năng nghiệp vụ chính đư
 \textbf{STT} & \textbf{Chức năng} & \textbf{Đầu vào} & \textbf{Đầu ra mong muốn} & \textbf{KQ} \\ \hline
 1 & Nhập 50 bản ghi CSTĐCS hợp lệ & Tệp \texttt{.xlsx} đúng mẫu & 50 bản ghi được tạo, ghi nhật ký kiểm toán & Đạt \\ \hline
 2 & Có dòng trùng (cùng quân nhân và năm) & 1/50 dòng trùng khoá & Xem trước hiển thị 49 valid + 1 error & Đạt \\ \hline
-3 & Confirm khi DB thay đổi giữa hai bước & Dữ liệu chen vào sau preview & Transaction rollback, không bản ghi nào được ghi & Đạt \\ \hline
+3 & Confirm khi DB thay đổi giữa hai bước & Dữ liệu chen vào sau preview & Giao dịch huỷ bỏ, không bản ghi nào được ghi & Đạt \\ \hline
 4 & Tệp sai định dạng & Tệp \texttt{.doc} thay vì \texttt{.xlsx} & Trả mã 400 kèm mô tả lỗi & Đạt \\ \hline
 \end{tabular}
 \end{table}
