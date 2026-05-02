@@ -10,7 +10,7 @@ Công tác thi đua, khen thưởng tại các đơn vị quân đội tuân th�
 
 Đồ án xây dựng phần mềm web hỗ trợ Phòng Chính trị Học viện quản lý toàn bộ vòng đời của bảy nhóm khen thưởng (cá nhân hằng năm, đơn vị hằng năm, Huy chương Chiến sĩ vẻ vang, Huân chương Bảo vệ Tổ quốc, Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN, Huy chương Quân kỳ quyết thắng, nghiên cứu khoa học), bao quát từ tạo đề xuất, kiểm tra điều kiện chuỗi tự động, phê duyệt, lưu vết tới xuất quyết định. Phần mềm hướng tới rút ngắn thời gian xét điều kiện từ vài chục phút trên Excel xuống dưới một giây cho mỗi quân nhân, đồng thời ghi nhật ký đầy đủ phục vụ kiểm tra hậu kiểm.
 
-Hệ thống được triển khai dưới dạng ứng dụng web vận hành trên mạng nội bộ (LAN) của Học viện, với phần frontend dùng Next.js 14 (App Router) và phần backend dùng Express + TypeScript trên cơ sở dữ liệu PostgreSQL truy cập qua Prisma ORM. Toàn bộ quy tắc xét chuỗi được trừu tượng hoá thành các đối tượng cấu hình \texttt{ChainAwardConfig} cho phép thêm tier mới mà không cần sửa mã nguồn xét điều kiện. Sản phẩm bao gồm 23 model dữ liệu, hơn 890 ca kiểm thử đơn vị (phủ rule chuỗi cá nhân và đơn vị) và 4 cấp phân quyền theo đặc thù quân sự (SuperAdmin, Admin, Manager, User).
+Hệ thống được triển khai dưới dạng ứng dụng web vận hành trên mạng nội bộ (LAN) của Học viện. Toàn bộ quy tắc xét chuỗi danh hiệu được đưa vào một bảng cấu hình tập trung, cho phép bổ sung danh hiệu mới mà không phải sửa lại logic xét điều kiện. Sản phẩm hỗ trợ 4 cấp phân quyền theo đặc thù quân sự (SuperAdmin, Admin, Manager, User) và đi kèm bộ kiểm thử với hơn 890 ca phủ toàn bộ quy tắc chuỗi cá nhân lẫn đơn vị, sẵn sàng triển khai thí điểm tại Phòng Chính trị Học viện.
 
 \begin{flushright}
 Sinh viên thực hiện\\

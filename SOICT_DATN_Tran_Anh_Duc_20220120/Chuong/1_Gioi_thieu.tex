@@ -23,8 +23,8 @@ Trước những hạn chế trên, việc xây dựng một phần mềm chuyê
     \item Quản lý danh sách quân nhân, đơn vị (theo cấu trúc cây Cơ quan đơn vị -- Đơn vị trực thuộc), chức vụ và lịch sử biến động chức vụ.
     \item Cho phép cán bộ Phòng Chính trị tạo các đợt đề xuất khen thưởng cho cả bảy nhóm danh hiệu, hỗ trợ chọn nhanh nhiều quân nhân thông qua lọc theo đơn vị, năm, giới tính, mốc thời gian phục vụ.
     \item Tự động kiểm tra điều kiện chuỗi (BKBTBQP, CSTĐTQ, BKTTCP đối với cá nhân; BKBTBQP và BKTTCP đối với đơn vị) và sinh thông điệp gợi ý dễ hiểu cho cán bộ.
-    \item Hỗ trợ quy trình phê duyệt nhiều bước, lưu file quyết định PDF kèm số quyết định, đồng thời ghi nhật ký kiểm toán toàn bộ thao tác mutate.
-    \item Cung cấp công cụ nhập dữ liệu lịch sử qua Excel có tiền kiểm và giao dịch (transaction) đảm bảo nguyên tử tính, cùng công cụ xuất danh sách khen thưởng theo nhiều tiêu chí.
+    \item Hỗ trợ quy trình phê duyệt nhiều bước, lưu file quyết định PDF kèm số quyết định, đồng thời ghi nhật ký kiểm toán toàn bộ thao tác làm thay đổi dữ liệu.
+    \item Cung cấp công cụ nhập dữ liệu lịch sử qua Excel theo cơ chế hai bước (xem trước rồi xác nhận) đảm bảo hoặc ghi toàn bộ, hoặc không ghi gì khi gặp lỗi, cùng công cụ xuất danh sách khen thưởng theo nhiều tiêu chí.
     \item Phân quyền theo bốn cấp tương ứng đặc thù tổ chức: SuperAdmin (bộ phận kỹ thuật và công nghệ thông tin, quản trị hạ tầng và an ninh hệ thống), Admin (Phòng Chính trị Học viện, toàn quyền nghiệp vụ), Manager (cán bộ chỉ huy đơn vị, đề xuất và quản lý quân nhân nội bộ), User (cán bộ -- học viên -- sĩ quan, tra cứu hồ sơ cá nhân).
     \item Hỗ trợ sao lưu cơ sở dữ liệu định kỳ và quản lý nhật ký hệ thống.
 \end{enumerate}
@@ -38,11 +38,11 @@ Phần mềm được xây dựng theo mô hình client -- server với hai thà
 
 \begin{itemize}
     \item \textbf{Frontend} dùng Next.js 14 với mô hình App Router \cite{nextjsdocs}, viết bằng TypeScript, sử dụng Ant Design làm thư viện thành phần chính, kết hợp Tailwind CSS cho bố cục linh hoạt và shadcn/ui cho các thành phần đặc biệt.
-    \item \textbf{Backend} dùng Express \cite{expressdocs} trên Node.js, viết bằng TypeScript, tổ chức theo kiến trúc phân tầng (Route $\rightarrow$ Middleware $\rightarrow$ Controller $\rightarrow$ Service $\rightarrow$ Repository $\rightarrow$ Prisma). Lớp Repository được tách riêng giúp giảm sự phụ thuộc trực tiếp vào Prisma Client trong tầng Service, tạo điều kiện thay thế ORM trong tương lai mà không phải viết lại logic nghiệp vụ.
-    \item \textbf{Cơ sở dữ liệu} chọn PostgreSQL \cite{pgdocs} truy cập qua Prisma ORM \cite{prismadocs}. Toàn bộ schema (23 model) đã được mô hình hoá trong tệp \texttt{schema.prisma} duy nhất với migration tự động.
-    \item \textbf{Xác thực và phân quyền} dùng cặp JSON Web Token \cite{rfc7519} (Access Token thời hạn ngắn 30 phút + Refresh Token 7 ngày có rotation) lưu trữ phía client tại \texttt{localStorage} và phía máy chủ tại cột \texttt{TaiKhoan.refreshToken} để có khả năng thu hồi. Bốn vai trò được áp đặt qua middleware \texttt{requireRole} chạy trước mỗi endpoint nhạy cảm.
+    \item \textbf{Backend} dùng Express \cite{expressdocs} trên Node.js, viết bằng TypeScript, tổ chức theo kiến trúc phân tầng để tách biệt rõ ràng giữa định tuyến, xử lý nghiệp vụ và truy cập dữ liệu.
+    \item \textbf{Cơ sở dữ liệu} chọn PostgreSQL \cite{pgdocs} truy cập qua Prisma ORM \cite{prismadocs}. Toàn bộ lược đồ dữ liệu được mô tả trong một tệp khai báo duy nhất kèm cơ chế di trú tự động.
+    \item \textbf{Xác thực và phân quyền} dùng cặp JSON Web Token \cite{rfc7519} với cơ chế làm mới luân phiên, kèm bốn vai trò nội bộ được kiểm tra trước mỗi yêu cầu nhạy cảm.
     \item \textbf{Thông báo thời gian thực} sử dụng Socket.IO \cite{socketiodocs}, chủ yếu thông báo kết quả nhập Excel lớn, biến cố phê duyệt và xoá đề xuất cho người tạo đề xuất, đồng thời báo cho Phòng Chính trị khi có đề xuất mới.
-    \item \textbf{Kiểm thử} dùng Jest + ts-jest \cite{jestdocs}. Tổng cộng có 75 bộ kiểm thử đơn vị với 890 ca kiểm thử bao phủ rule chuỗi (cá nhân và đơn vị), kịch bản phê duyệt và xếp hạng huy chương.
+    \item \textbf{Kiểm thử} dùng Jest + ts-jest \cite{jestdocs}. Tổng cộng có 75 bộ kiểm thử đơn vị với 890 ca kiểm thử bao phủ quy tắc chuỗi (cá nhân và đơn vị), kịch bản phê duyệt và xếp hạng huy chương.
 \end{itemize}
 
 \section{Bố cục đồ án}
