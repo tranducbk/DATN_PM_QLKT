@@ -71,7 +71,7 @@ Quản lý quân nhân là một trong những module tương tác cao nhất c�
 \subsection{Phân rã: Quản lý đơn vị và chức vụ}
 \label{subsection:2.2.3}
 
-Cấu trúc tổ chức của Học viện được mô hình hoá thành cây hai cấp. Bảng \texttt{CoQuanDonVi} (CQĐV) lưu các đơn vị cấp cha; bảng \texttt{DonViTrucThuoc} (ĐVTT) lưu các đơn vị con thuộc một CQĐV duy nhất. Khi nhập thông tin quân nhân, một trong hai trường \texttt{co\_quan\_don\_vi\_id} hoặc \texttt{don\_vi\_truc\_thuoc\_id} sẽ được điền --- không bao giờ điền cả hai cùng lúc.
+Cấu trúc tổ chức của Học viện được mô hình hoá thành cây hai cấp. Bảng \texttt{CoQuanDonVi} (CQĐV) lưu các đơn vị cấp cha; bảng \texttt{DonViTrucThuoc} (ĐVTT) lưu các đơn vị con thuộc một CQĐV duy nhất. Khi nhập thông tin quân nhân, một trong hai trường \texttt{co\_quan\_don\_vi\_id} hoặc \texttt{don\_vi\_truc\_thuoc\_id} sẽ được điền, không bao giờ điền cả hai cùng lúc.
 
 Module quản lý đơn vị bao gồm các use case con: tạo mới CQĐV, tạo mới ĐVTT thuộc một CQĐV cụ thể, cập nhật thông tin, xoá (chỉ thực hiện được khi không còn quân nhân nào thuộc đơn vị) và xem cây tổ chức dưới dạng tree-view trên giao diện. Bảng \texttt{ChucVu} quản lý danh mục chức vụ kèm hệ số \texttt{he\_so\_chuc\_vu} (giá trị từ 0.5 đến 1.2 tuỳ chức danh) và liên kết tới CQĐV hoặc ĐVTT mà chức vụ đó thuộc về. Hệ số chức vụ là dữ liệu đầu vào trực tiếp cho thuật toán tính tháng cống hiến theo nhóm hệ số 0.7 / 0.8 / 0.9--1.0.
 
@@ -316,14 +316,14 @@ Thời gian phản hồi của các trang chính (trang chủ, danh sách quân 
 
 Bảng dữ liệu lớn (vd: danh sách toàn bộ quân nhân, danh sách khen thưởng theo năm) được phân trang phía máy chủ với mặc định 20 dòng/trang và giới hạn tối đa 100 dòng/trang. Đối với các thao tác trạng thái thường gặp (đánh dấu đã đọc thông báo, tích chọn quân nhân vào đề xuất), giao diện cập nhật ngay trước khi máy chủ trả về xác nhận, qua đó giảm cảm giác chờ đợi cho người dùng.
 
-Khu vực dữ liệu thường truy vấn nhưng ít thay đổi (cây CQĐV/ĐVTT, danh mục chức vụ, danh mục danh hiệu) được nạp một lần vào React Context và chia sẻ trong toàn bộ ứng dụng --- tránh việc mỗi component tự gọi API riêng dẫn tới yêu cầu trùng lặp.
+Khu vực dữ liệu thường truy vấn nhưng ít thay đổi (cây CQĐV/ĐVTT, danh mục chức vụ, danh mục danh hiệu) được nạp một lần vào React Context và chia sẻ trong toàn bộ ứng dụng, tránh việc mỗi thành phần tự gọi API riêng dẫn tới yêu cầu trùng lặp.
 
 \subsection{Bảo mật}
 \label{subsection:2.4.2}
 
 Bảo mật là yêu cầu được ưu tiên cao nhất do hệ thống lưu trữ dữ liệu liên quan đến cán bộ và sĩ quan trong môi trường quân sự. Bảy nhóm biện pháp được áp dụng song song.
 
-\textbf{Thứ nhất --- Xác thực bằng JWT có cơ chế làm mới luân phiên.} Mỗi phiên đăng nhập tạo ra cặp Access Token (30 phút) và Refresh Token (7 ngày). Frontend lưu cả hai token vào \texttt{localStorage} và đính kèm Access Token vào header \texttt{Authorization: Bearer} ở mỗi yêu cầu. Backend còn lưu Refresh Token vào cột \texttt{TaiKhoan.refreshToken} của cơ sở dữ liệu để có khả năng thu hồi từ phía máy chủ --- middleware \texttt{verifyToken} kiểm tra cả chữ ký JWT và sự tồn tại của Refresh Token trong cơ sở dữ liệu, từ đó cho phép buộc đăng xuất bằng cách xoá cột này. Khi Access Token hết hạn, frontend gọi điểm cuối \texttt{/auth/refresh}; backend phát hành đồng thời cặp Access + Refresh Token mới và ghi đè Refresh Token cũ trong cơ sở dữ liệu, khiến mọi lần dùng Refresh Token cũ sau đó đều thất bại. Cơ chế này hạn chế nguy cơ một Refresh Token bị đánh cắp vẫn dùng được lâu dài.
+\textbf{Thứ nhất --- Xác thực bằng JWT có cơ chế làm mới luân phiên.} Mỗi phiên đăng nhập tạo ra cặp Access Token (30 phút) và Refresh Token (7 ngày). Frontend lưu cả hai token vào \texttt{localStorage} và đính kèm Access Token vào header \texttt{Authorization: Bearer} ở mỗi yêu cầu. Backend còn lưu Refresh Token vào cột \texttt{TaiKhoan.refreshToken} của cơ sở dữ liệu để có khả năng thu hồi từ phía máy chủ. Middleware \texttt{verifyToken} kiểm tra cả chữ ký JWT và sự tồn tại của Refresh Token trong cơ sở dữ liệu, từ đó cho phép buộc đăng xuất bằng cách xoá cột này. Khi Access Token hết hạn, frontend gọi điểm cuối \texttt{/auth/refresh}; backend phát hành đồng thời cặp Access + Refresh Token mới và ghi đè Refresh Token cũ trong cơ sở dữ liệu, khiến mọi lần dùng Refresh Token cũ sau đó đều thất bại. Cơ chế này hạn chế nguy cơ một Refresh Token bị đánh cắp vẫn dùng được lâu dài.
 
 \textbf{Thứ hai --- Băm mật khẩu bằng bcrypt với hệ số chi phí 10.} Mật khẩu trước khi lưu vào bảng \texttt{TaiKhoan} không bao giờ được lưu ở dạng văn bản thô. Hệ số 10 được chọn để cân bằng giữa thời gian xác thực (khoảng 80 ms trên máy chủ phát triển) và độ khó tấn công vét cạn nếu cơ sở dữ liệu bị rò rỉ \cite{bcrypt}.
 
@@ -342,9 +342,9 @@ Bảo mật là yêu cầu được ưu tiên cao nhất do hệ thống lưu tr
 
 Trong nghiệp vụ khen thưởng, một sai lệch nhỏ giữa các bản ghi liên quan có thể dẫn tới quyết định sai (vd: bỏ sót quân nhân đủ điều kiện hoặc đề xuất nhầm chu kỳ). Vì vậy, tính nhất quán dữ liệu được đặt ngang hàng với bảo mật.
 
-\textbf{Giao dịch ACID cho mọi thao tác phức tạp.} Các thao tác đụng nhiều bảng được gói trong transaction Prisma. Phê duyệt một đề xuất chứa 50 quân nhân thực hiện 50 lần ghi \texttt{DanhHieuHangNam} cộng với cập nhật trạng thái đề xuất, ghi nhật ký, gắn quyết định --- toàn bộ trong một transaction để bảo đảm: hoặc tất cả thành công, hoặc cơ sở dữ liệu trở về trạng thái ban đầu nếu một phép ghi gặp lỗi.
+\textbf{Giao dịch ACID cho mọi thao tác phức tạp.} Các thao tác đụng nhiều bảng được gói trong transaction Prisma. Phê duyệt một đề xuất chứa 50 quân nhân thực hiện 50 lần ghi \texttt{DanhHieuHangNam} cộng với cập nhật trạng thái đề xuất, ghi nhật ký, gắn quyết định; toàn bộ nằm trong một giao dịch để bảo đảm: hoặc tất cả thành công, hoặc cơ sở dữ liệu trở về trạng thái ban đầu nếu một phép ghi gặp lỗi.
 
-\textbf{Kiểm tra điều kiện chuỗi ở hai tầng.} Hàm \texttt{checkChainEligibility} được gọi cả trong hàm tính lại hồ sơ (\texttt{computeEligibilityFlags}) và trong hàm kiểm tra phê duyệt (\texttt{checkAwardEligibility}). Hai tầng phải khớp nhau: nếu có sự khác biệt, một phía sẽ chấp nhận đề xuất mà phía kia hiển thị ``không đủ điều kiện'' --- gây mất niềm tin của cán bộ vào hệ thống. Để bảo đảm điều này, cả hai hàm được kiểm thử bằng Jest với cùng một bộ kịch bản.
+\textbf{Kiểm tra điều kiện chuỗi ở hai tầng.} Hàm \texttt{checkChainEligibility} được gọi cả trong hàm tính lại hồ sơ (\texttt{computeEligibilityFlags}) và trong hàm kiểm tra phê duyệt (\texttt{checkAwardEligibility}). Hai tầng phải khớp nhau: nếu có sự khác biệt, một phía sẽ chấp nhận đề xuất mà phía kia hiển thị ``không đủ điều kiện'', gây mất niềm tin của cán bộ vào hệ thống. Để bảo đảm điều này, cả hai hàm được kiểm thử bằng Jest với cùng một bộ kịch bản.
 
 \textbf{Tính lại hồ sơ suy diễn sau mỗi thay đổi nguồn.} Các bảng \texttt{HoSoHangNam}, \texttt{HoSoNienHan}, \texttt{HoSoCongHien} lưu các kết quả tính toán (cờ đủ điều kiện, gợi ý). Bất kỳ thao tác nào tạo, sửa hoặc xoá bản ghi nguồn đều kích hoạt hàm tính lại tương ứng. Việc này xảy ra tự động bên trong cùng transaction để đảm bảo dữ liệu suy diễn không bao giờ ``đi sau'' dữ liệu nguồn.
 
@@ -352,6 +352,5 @@ Trong nghiệp vụ khen thưởng, một sai lệch nhỏ giữa các bản ghi
 
 \textbf{Kiểm tra tính duy nhất qua chỉ mục unique.} Các trường có yêu cầu duy nhất (\texttt{cccd} của quân nhân, \texttt{username} của tài khoản, tổ hợp \texttt{quan\_nhan\_id + nam} cho \texttt{DanhHieuHangNam}) đều được khai báo \texttt{@unique} ở schema. Khi vi phạm, Prisma trả về lỗi P2002 mà backend bắt và biến thành thông điệp tiếng Việt thân thiện (vd: ``Quân nhân này đã có bản ghi danh hiệu cho năm 2024, vui lòng chỉnh sửa thay vì tạo mới'').
 
-\textbf{Kết chương.} Chương này đã trình bày kết quả khảo sát hiện trạng và phân tích yêu cầu cho phần mềm PM QLKT. Bốn nhóm tác nhân với các quyền hạn khác biệt cùng 15 nhóm chức năng đã được mô hình hoá qua sơ đồ use case tổng quát và tám sơ đồ phân rã chi tiết. Sáu use case trọng yếu được đặc tả đầy đủ phục vụ giai đoạn thiết kế. Phần yêu cầu phi chức năng đặt ra ba khía cạnh: hiệu năng và trải nghiệm người dùng, bảo mật bảy lớp và tính nhất quán dữ liệu --- tất cả là kim chỉ nam cho các quyết định công nghệ và kiến trúc trong các chương tiếp theo.
 
 \end{document}

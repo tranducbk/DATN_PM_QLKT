@@ -11,7 +11,7 @@ Chương này trình bày toàn bộ quá trình từ thiết kế kiến trúc 
 
 Hệ thống áp dụng \textbf{kiến trúc phân tầng (layered architecture)} với sáu lớp xếp chồng từ ngoài vào trong: Route $\rightarrow$ Middleware $\rightarrow$ Controller $\rightarrow$ Service $\rightarrow$ Repository $\rightarrow$ Prisma Client. Mỗi lớp chỉ tương tác trực tiếp với lớp liền kề, không gọi nhảy lớp. Đây là biến thể mở rộng của mô hình MVC truyền thống, trong đó Service và Repository được tách riêng để rõ ràng hoá ranh giới giữa logic nghiệp vụ và truy cập dữ liệu.
 
-Việc tách lớp Repository khỏi lớp Service được áp dụng từ một lần tái cấu trúc lớn của dự án. Trước đó, Service gọi \texttt{prisma.danhHieuHangNam.findMany(...)} trực tiếp, dẫn tới việc viết kiểm thử đơn vị cho Service phải mock toàn bộ Prisma Client --- phức tạp và dễ tạo ra mock không chính xác. Sau khi tách, Service gọi qua giao diện \texttt{danhHieuHangNamRepository.findMany(...)}; kiểm thử đơn vị cho Service chỉ cần mock các phương thức của Repository, mã kiểm thử đơn giản hơn nhiều và phản ánh đúng hợp đồng giữa hai lớp.
+Việc tách lớp Repository khỏi lớp Service được áp dụng từ một lần tái cấu trúc lớn của dự án. Trước đó, Service gọi \texttt{prisma.danhHieuHangNam.findMany(...)} trực tiếp, dẫn tới việc viết kiểm thử đơn vị cho Service phải mock toàn bộ Prisma Client, vừa phức tạp vừa dễ tạo ra mock không chính xác. Sau khi tách, Service gọi qua giao diện \texttt{danhHieuHangNamRepository.findMany(...)}; kiểm thử đơn vị cho Service chỉ cần mock các phương thức của Repository, mã kiểm thử đơn giản hơn nhiều và phản ánh đúng hợp đồng giữa hai lớp.
 
 Lý do không chọn các kiến trúc khác:
 
@@ -63,7 +63,7 @@ Mã nguồn frontend được tổ chức bên trong thư mục \texttt{FE-QLKT/
 
 \subsubsection{Gói phía backend}
 
-Mã nguồn backend được tổ chức bên trong thư mục \texttt{BE-QLKT/src/} theo sáu lớp đã trình bày ở mục \ref{subsection:4.1.1}. Gói \texttt{routes/} định nghĩa các điểm cuối REST API, mỗi miền nghiệp vụ một tệp. Gói \texttt{middlewares/} chứa các tệp \texttt{auth.ts} (xác thực và phân quyền), \texttt{auditLog.ts} (ghi nhật ký mọi thao tác mutate), \texttt{unitFilter.ts} (lọc dữ liệu theo phạm vi đơn vị của Manager) và \texttt{validate.ts} (bọc Zod validation). Gói \texttt{controllers/} chứa các tệp điều hướng yêu cầu HTTP từ route tới service, được giữ mỏng (mỗi phương thức dưới 50 dòng mã). Gói \texttt{services/} chứa logic nghiệp vụ chính, được tách tiếp thành các thư mục con: \texttt{proposal/strategies/} cho strategy registry của bảy loại đề xuất, \texttt{eligibility/} cho hàm \texttt{chainEligibility} xét rule chuỗi cá nhân và đơn vị, \texttt{profile/annual.ts} cho logic chuỗi cá nhân và \texttt{profile/unit.ts} cho logic chuỗi đơn vị. Gói \texttt{repositories/} đóng gói toàn bộ truy cập Prisma --- mỗi model một tệp \texttt{.repository.ts}. Gói \texttt{helpers/} chứa các tiện ích phụ trợ chia theo nhóm: \texttt{auditLog/}, \texttt{notification/}, \texttt{excel/}, \texttt{awardValidation/}. Gói \texttt{validations/} chứa các schema Zod cho từng route. Tệp \texttt{prisma/schema.prisma} ở cấp gốc của module backend định nghĩa toàn bộ 23 model.
+Mã nguồn backend được tổ chức bên trong thư mục \texttt{BE-QLKT/src/} theo sáu lớp đã trình bày ở mục \ref{subsection:4.1.1}. Gói \texttt{routes/} định nghĩa các điểm cuối REST API, mỗi miền nghiệp vụ một tệp. Gói \texttt{middlewares/} chứa các tệp \texttt{auth.ts} (xác thực và phân quyền), \texttt{auditLog.ts} (ghi nhật ký mọi thao tác mutate), \texttt{unitFilter.ts} (lọc dữ liệu theo phạm vi đơn vị của Manager) và \texttt{validate.ts} (bọc Zod validation). Gói \texttt{controllers/} chứa các tệp điều hướng yêu cầu HTTP từ route tới service, được giữ mỏng (mỗi phương thức dưới 50 dòng mã). Gói \texttt{services/} chứa logic nghiệp vụ chính, được tách tiếp thành các thư mục con: \texttt{proposal/strategies/} cho strategy registry của bảy loại đề xuất, \texttt{eligibility/} cho hàm \texttt{chainEligibility} xét rule chuỗi cá nhân và đơn vị, \texttt{profile/annual.ts} cho logic chuỗi cá nhân và \texttt{profile/unit.ts} cho logic chuỗi đơn vị. Gói \texttt{repositories/} đóng gói toàn bộ truy cập Prisma, mỗi model một tệp \texttt{.repository.ts}. Gói \texttt{helpers/} chứa các tiện ích phụ trợ chia theo nhóm: \texttt{auditLog/}, \texttt{notification/}, \texttt{excel/}, \texttt{awardValidation/}. Gói \texttt{validations/} chứa các schema Zod cho từng route. Tệp \texttt{prisma/schema.prisma} ở cấp gốc của module backend định nghĩa toàn bộ 23 model.
 
 \begin{figure}[H]
     \centering
@@ -74,7 +74,7 @@ Mã nguồn backend được tổ chức bên trong thư mục \texttt{BE-QLKT/s
 \subsection{Thiết kế chi tiết gói nghiệp vụ Khen thưởng cá nhân hằng năm}
 \label{subsection:4.1.4}
 
-Để minh hoạ cách các tầng phối hợp với nhau trong một module nghiệp vụ cụ thể, phần này trình bày chi tiết module xử lý chuỗi danh hiệu hằng năm cá nhân --- module phức tạp nhất của hệ thống.
+Để minh hoạ cách các tầng phối hợp với nhau trong một module nghiệp vụ cụ thể, phần này trình bày chi tiết module xử lý chuỗi danh hiệu hằng năm cá nhân, là module phức tạp nhất của hệ thống.
 
 Khi người dùng truy cập trang hồ sơ một quân nhân, dòng chảy dữ liệu diễn ra như sau:
 
@@ -87,7 +87,7 @@ Khi người dùng truy cập trang hồ sơ một quân nhân, dòng chảy d�
     \item \textbf{Prisma Client} thực thi truy vấn SQL tới bảng \texttt{danh\_hieu\_hang\_nam}.
 \end{enumerate}
 
-Sự tách biệt giữa Service (logic nghiệp vụ) và Eligibility module (rule thuần) là chủ ý: Eligibility module có thể được kiểm thử với 100\,\% phủ rule mà không cần mock cơ sở dữ liệu. Service chỉ phụ trách điều phối --- nạp dữ liệu, gọi rule, ghi kết quả --- nên cũng dễ kiểm thử với mock Repository.
+Sự tách biệt giữa Service (logic nghiệp vụ) và Eligibility module (rule thuần) là chủ ý: Eligibility module có thể được kiểm thử với 100\,\% phủ rule mà không cần mock cơ sở dữ liệu. Service chỉ phụ trách điều phối (nạp dữ liệu, gọi quy tắc, ghi kết quả) nên cũng dễ kiểm thử với mock Repository.
 
 \begin{figure}[H]
     \centering
@@ -304,13 +304,13 @@ Toàn văn schema (618 dòng, 23 model) được tổ chức trong tệp \texttt
 
 Giao diện hệ thống được thiết kế trên cơ sở wireframe ASCII đơn giản trước khi triển khai bằng React + Ant Design. Sáu wireframe chính thể hiện bố cục các trang trọng tâm.
 
-\textbf{Trang chủ Admin} có cấu trúc ba khu vực: thanh điều hướng bên trái (cây CQĐV --- ĐVTT có thể thu gọn), khu vực dashboard ở giữa với bốn thẻ thống kê (tổng quân nhân, tổng đơn vị, đề xuất chờ duyệt, khen thưởng tháng này), khu vực phụ bên phải với danh sách thông báo realtime. Bố cục ba khu vực này được giữ nhất quán xuyên suốt các trang nghiệp vụ chính (Quản lý quân nhân, Quản lý đề xuất, Quản lý quyết định) để giảm chi phí học thuộc cho người dùng mới.
+\textbf{Trang chủ Admin} có cấu trúc ba khu vực: thanh điều hướng bên trái (cây CQĐV và ĐVTT có thể thu gọn), khu vực dashboard ở giữa với bốn thẻ thống kê (tổng quân nhân, tổng đơn vị, đề xuất chờ duyệt, khen thưởng tháng này), khu vực phụ bên phải với danh sách thông báo realtime. Bố cục ba khu vực này được giữ nhất quán xuyên suốt các trang nghiệp vụ chính (Quản lý quân nhân, Quản lý đề xuất, Quản lý quyết định) để giảm chi phí học thuộc cho người dùng mới.
 
 \textbf{Trang chi tiết quân nhân} chia thành các tab tương ứng các nhóm khen thưởng: Hằng năm, Niên hạn, Cống hiến, Quân kỳ, Kỷ niệm chương, NCKH, Đột xuất. Mỗi tab có bảng dữ liệu kèm thanh tiến trình hiển thị các chu kỳ đang đến mốc đề nghị (vd: ``BKBTBQP: 1/2 năm CSTĐCS đã tích luỹ''). Cách tiếp cận trực quan này giúp Manager nhanh chóng nhận biết quân nhân nào sắp đủ điều kiện.
 
 \textbf{Form tạo đề xuất} áp dụng mẫu nhiều bước (Multi-Step Wizard) ba bước. Bước 1: chọn loại đề xuất (radio button có icon đại diện cho từng nhóm) và năm/tháng. Bước 2: chọn quân nhân hoặc đơn vị từ bảng có lọc theo nhiều tiêu chí. Bước 3: thiết lập danh hiệu cụ thể cho từng đối tượng đã chọn, kèm gợi ý từ hệ thống. Người dùng có thể quay lại các bước trước mà không mất dữ liệu nhờ trạng thái được lưu ở Context.
 
-\textbf{Trang nhập Excel} chia hai phần: trên là vùng kéo thả tệp + nút tải xuống tệp mẫu; dưới là bảng xem trước với hai tab ``Hợp lệ'' và ``Lỗi'' --- tab Lỗi tô đỏ và liệt kê chỉ số dòng kèm mô tả cụ thể. Nút ``Xác nhận nhập'' chỉ kích hoạt khi có ít nhất một dòng hợp lệ.
+\textbf{Trang nhập Excel} chia hai phần: trên là vùng kéo thả tệp và nút tải xuống tệp mẫu; dưới là bảng xem trước với hai tab ``Hợp lệ'' và ``Lỗi'', trong đó tab Lỗi tô đỏ và liệt kê chỉ số dòng kèm mô tả cụ thể. Nút ``Xác nhận nhập'' chỉ kích hoạt khi có ít nhất một dòng hợp lệ.
 
 \textbf{Trang nhật ký hệ thống} dạng bảng có nhóm theo ngày. Bộ lọc ở đầu trang cho phép chọn vai trò người thực hiện, loại tài nguyên, hành động, khoảng thời gian. Mỗi dòng có thể mở rộng để xem \texttt{payload} JSON chi tiết.
 
@@ -403,11 +403,11 @@ Phần này trình bày các ảnh chụp màn hình tiêu biểu của sản ph
 
 Phần này mô tả ngắn gọn năm thành phần kỹ thuật trọng yếu của kho mã nguồn để người đọc nắm bắt cách thức tổ chức bên trong, không trích nguyên các đoạn mã chi tiết.
 
-\textbf{Hàm \texttt{computeChainContext} dẫn xuất ngữ cảnh chuỗi.} Đặt tại \texttt{BE-QLKT/src/services/profile/annual.ts}. Hàm nhận đầu vào gồm danh sách bản ghi \texttt{DanhHieuHangNam} của một quân nhân, độ dài chuỗi CSTĐCS hiện tại và năm xét. Đầu ra là đối tượng \texttt{ChainContext} chứa năm bắt đầu chuỗi, năm gần nhất nhận BKBTBQP/CSTĐTQ/BKTTCP nằm trong cửa sổ chuỗi, số năm CSTĐCS đã tích luỹ kể từ lần cuối nhận từng tier, và số chu kỳ đã bỏ lỡ. Hàm hoàn toàn thuần --- không truy vấn cơ sở dữ liệu --- nên dễ kiểm thử với 197 ca kiểm thử phủ các kịch bản từ chu kỳ vừa đủ tới lỡ nhiều chu kỳ.
+\textbf{Hàm \texttt{computeChainContext} dẫn xuất ngữ cảnh chuỗi.} Đặt tại \texttt{BE-QLKT/src/services/profile/annual.ts}. Hàm nhận đầu vào gồm danh sách bản ghi \texttt{DanhHieuHangNam} của một quân nhân, độ dài chuỗi CSTĐCS hiện tại và năm xét. Đầu ra là đối tượng \texttt{ChainContext} chứa năm bắt đầu chuỗi, năm gần nhất nhận BKBTBQP/CSTĐTQ/BKTTCP nằm trong cửa sổ chuỗi, số năm CSTĐCS đã tích luỹ kể từ lần cuối nhận từng tier, và số chu kỳ đã bỏ lỡ. Hàm hoàn toàn thuần (không truy vấn cơ sở dữ liệu) nên dễ kiểm thử với 197 ca kiểm thử phủ các kịch bản từ chu kỳ vừa đủ tới lỡ nhiều chu kỳ.
 
 \textbf{Chuỗi middleware bảo mật năm tầng.} Tại tệp định nghĩa route, mỗi yêu cầu mutate đều phải đi qua tuần tự: \texttt{verifyToken} (xác thực Access Token), \texttt{checkRole} (phân quyền vai trò), \texttt{writeLimiter} (giới hạn tốc độ), middleware tải lên tệp đính kèm (\texttt{multer}), \texttt{auditLog} (ghi nhật ký) và sau đó mới đến controller. Mỗi middleware giải quyết một mối quan tâm độc lập và có thể tái sử dụng giữa các route, phản ánh đúng nguyên tắc đơn trách nhiệm.
 
-\textbf{Repository Pattern tách Prisma Client.} Mỗi repository (vd: \texttt{danhHieuHangNamRepository}) đóng gói các thao tác Prisma cụ thể qua các phương thức có tên nghiệp vụ (\texttt{findByPersonnelId}, \texttt{upsertByPersonnelYear}, \texttt{deleteManyByPersonnelId}). Mỗi phương thức nhận thêm tham số \texttt{tx} tuỳ chọn (kiểu \texttt{PrismaLike = prisma | Prisma.TransactionClient}) để có thể tham gia vào transaction do tầng Service mở. Cách thiết kế này cho phép Service mở \texttt{prisma.\$transaction(async tx => ...)} rồi truyền \texttt{tx} qua nhiều lời gọi repository --- đảm bảo nguyên tử tính của các thao tác phức tạp.
+\textbf{Repository Pattern tách Prisma Client.} Mỗi repository (vd: \texttt{danhHieuHangNamRepository}) đóng gói các thao tác Prisma cụ thể qua các phương thức có tên nghiệp vụ (\texttt{findByPersonnelId}, \texttt{upsertByPersonnelYear}, \texttt{deleteManyByPersonnelId}). Mỗi phương thức nhận thêm tham số \texttt{tx} tuỳ chọn (kiểu \texttt{PrismaLike = prisma | Prisma.TransactionClient}) để có thể tham gia vào transaction do tầng Service mở. Cách thiết kế này cho phép Service mở \texttt{prisma.\$transaction(async tx => ...)} rồi truyền \texttt{tx} qua nhiều lời gọi repository, qua đó bảo đảm hoặc tất cả thao tác cùng thành công, hoặc tất cả cùng huỷ bỏ.
 
 \textbf{Hàm \texttt{checkChainEligibility} thực thi rule chuỗi.} Đặt tại \texttt{BE-QLKT/src/services/eligibility/chainEligibility.ts}. Hàm nhận cấu hình tier (\texttt{ChainAwardConfig}), ngữ cảnh chuỗi (\texttt{ChainStreaks}), cờ ``đã nhận'' (\texttt{hasReceived}) và bản đồ số cờ trong cửa sổ trượt (\texttt{FlagsInWindow}). Logic ba bước: kiểm tra block lifetime nếu là BKTTCP cá nhân và đã nhận, kiểm tra đủ chu kỳ (\texttt{streakLength} lớn hơn hoặc bằng \texttt{cycleYears} và là bội số của \texttt{cycleYears}), kiểm tra đủ cờ tiền điều kiện trong cửa sổ trượt, kiểm tra đủ thành tích NCKH nếu yêu cầu. Trả về \texttt{EligibilityResult \{ eligible, reason \}} với thông điệp tiếng Việt.
 
@@ -612,18 +612,18 @@ Các bước cài đặt trên máy phát triển cá nhân được trình bày
 
 \textbf{Bước 1.} Cài đặt phụ thuộc Node bằng lệnh \texttt{npm install} lần lượt trong hai thư mục \texttt{BE-QLKT} và \texttt{FE-QLKT}. Lệnh này tải các gói phụ thuộc liệt kê tại tệp \texttt{package.json} của mỗi module.
 
-\textbf{Bước 2.} Sao chép tệp cấu hình mẫu \texttt{.env.example} thành \texttt{.env} trong cả hai thư mục, sau đó chỉnh sửa các giá trị thiết yếu --- \texttt{DATABASE\_URL} cho chuỗi kết nối PostgreSQL, \texttt{JWT\_SECRET} cho khoá bí mật phát hành Access Token, \texttt{REFRESH\_SECRET} cho khoá phát hành Refresh Token, \texttt{CLIENT\_URL} cho địa chỉ frontend.
+\textbf{Bước 2.} Sao chép tệp cấu hình mẫu \texttt{.env.example} thành \texttt{.env} trong cả hai thư mục, sau đó chỉnh sửa các giá trị thiết yếu: \texttt{DATABASE\_URL} cho chuỗi kết nối PostgreSQL, \texttt{JWT\_SECRET} cho khoá bí mật phát hành Access Token, \texttt{REFRESH\_SECRET} cho khoá phát hành Refresh Token, \texttt{CLIENT\_URL} cho địa chỉ frontend.
 
 \textbf{Bước 3.} Khởi tạo cơ sở dữ liệu trong thư mục \texttt{BE-QLKT} bằng lệnh \texttt{npx prisma migrate dev} để áp dụng các tệp migration đã có; tiếp theo chạy lệnh \texttt{npm run init-super-admin} để tạo tài khoản SuperAdmin mặc định.
 
-\textbf{Bước 4.} Khởi chạy môi trường phát triển --- \texttt{npm run dev} ở \texttt{BE-QLKT} cho backend tại cổng 4000 và lệnh tương tự ở \texttt{FE-QLKT} cho frontend tại cổng 3000.
+\textbf{Bước 4.} Khởi chạy môi trường phát triển bằng \texttt{npm run dev} ở \texttt{BE-QLKT} cho backend tại cổng 4000 và lệnh tương tự ở \texttt{FE-QLKT} cho frontend tại cổng 3000.
 
 Sau bước 4, mở trình duyệt tới \url{http://localhost:3000} và đăng nhập bằng tài khoản SuperAdmin mặc định để bắt đầu cấu hình các đơn vị, chức vụ và tài khoản phụ trợ.
 
 \subsection{Triển khai sản xuất với PM2 và Nginx}
 \label{subsection:4.5.3}
 
-Trên máy chủ sản xuất, sản phẩm được vận hành bằng PM2 --- công cụ quản lý tiến trình hỗ trợ tự khởi động lại khi tiến trình bị dừng đột ngột, ghi log có thời gian và theo dõi tài nguyên hệ thống. Tệp \texttt{ecosystem.config.js} ở thư mục gốc của dự án khai báo hai tiến trình ứng dụng: \texttt{be-qlkt} chạy bản đã build (\texttt{dist/index.js}) trong thư mục \texttt{BE-QLKT} ở cổng 4000 và \texttt{fe-qlkt} chạy \texttt{next start} trong thư mục \texttt{FE-QLKT} ở cổng 3000. Cả hai tiến trình được đặt biến môi trường \texttt{NODE\_ENV} là \texttt{production}.
+Trên máy chủ sản xuất, sản phẩm được vận hành bằng PM2, một công cụ quản lý tiến trình hỗ trợ tự khởi động lại khi tiến trình bị dừng đột ngột, ghi log có thời gian và theo dõi tài nguyên hệ thống. Tệp \texttt{ecosystem.config.js} ở thư mục gốc của dự án khai báo hai tiến trình ứng dụng: \texttt{be-qlkt} chạy bản đã build (\texttt{dist/index.js}) trong thư mục \texttt{BE-QLKT} ở cổng 4000 và \texttt{fe-qlkt} chạy \texttt{next start} trong thư mục \texttt{FE-QLKT} ở cổng 3000. Cả hai tiến trình được đặt biến môi trường \texttt{NODE\_ENV} là \texttt{production}.
 
 Khởi chạy bằng lệnh \texttt{pm2 start ecosystem.config.js}, sau đó dùng \texttt{pm2 save} để ghi nhớ danh sách tiến trình đang chạy và \texttt{pm2 startup} để cấu hình tự khởi động khi máy chủ khởi động lại. Nginx được cấu hình làm reverse proxy: chuyển tiếp các yêu cầu có tiền tố \texttt{/api/*} tới cổng 4000 (backend), các yêu cầu còn lại tới cổng 3000 (frontend), đồng thời xử lý chứng chỉ TLS cho lớp HTTPS bên ngoài.
 
