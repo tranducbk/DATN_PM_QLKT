@@ -63,7 +63,7 @@ Mã nguồn frontend được tổ chức bên trong thư mục \texttt{FE-QLKT/
 
 \subsubsection{Gói phía backend}
 
-Mã nguồn backend được tổ chức bên trong thư mục \texttt{BE-QLKT/src/} theo sáu lớp đã trình bày ở mục \ref{subsection:4.1.1}. Gói \texttt{routes/} định nghĩa các điểm cuối REST API, mỗi miền nghiệp vụ một tệp. Gói \texttt{middlewares/} chứa các tệp \texttt{auth.ts} (xác thực và phân quyền), \texttt{auditLog.ts} (ghi nhật ký mọi thao tác mutate), \texttt{unitFilter.ts} (lọc dữ liệu theo phạm vi đơn vị của Manager) và \texttt{validate.ts} (bọc Joi validation). Gói \texttt{controllers/} chứa các tệp điều hướng yêu cầu HTTP từ route tới service, được giữ mỏng (mỗi phương thức dưới 50 dòng mã). Gói \texttt{services/} chứa logic nghiệp vụ chính, được tách tiếp thành các thư mục con: \texttt{proposal/strategies/} cho strategy registry của bảy loại đề xuất, \texttt{eligibility/} cho hàm \texttt{chainEligibility} xét rule chuỗi cá nhân và đơn vị, \texttt{profile/annual.ts} cho logic chuỗi cá nhân và \texttt{profile/unit.ts} cho logic chuỗi đơn vị. Gói \texttt{repositories/} đóng gói toàn bộ truy cập Prisma --- mỗi model một tệp \texttt{.repository.ts}. Gói \texttt{helpers/} chứa các tiện ích phụ trợ chia theo nhóm: \texttt{auditLog/}, \texttt{notification/}, \texttt{excel/}, \texttt{awardValidation/}. Gói \texttt{validations/} chứa các schema Joi cho từng route. Tệp \texttt{prisma/schema.prisma} ở cấp gốc của module backend định nghĩa toàn bộ 23 model.
+Mã nguồn backend được tổ chức bên trong thư mục \texttt{BE-QLKT/src/} theo sáu lớp đã trình bày ở mục \ref{subsection:4.1.1}. Gói \texttt{routes/} định nghĩa các điểm cuối REST API, mỗi miền nghiệp vụ một tệp. Gói \texttt{middlewares/} chứa các tệp \texttt{auth.ts} (xác thực và phân quyền), \texttt{auditLog.ts} (ghi nhật ký mọi thao tác mutate), \texttt{unitFilter.ts} (lọc dữ liệu theo phạm vi đơn vị của Manager) và \texttt{validate.ts} (bọc Zod validation). Gói \texttt{controllers/} chứa các tệp điều hướng yêu cầu HTTP từ route tới service, được giữ mỏng (mỗi phương thức dưới 50 dòng mã). Gói \texttt{services/} chứa logic nghiệp vụ chính, được tách tiếp thành các thư mục con: \texttt{proposal/strategies/} cho strategy registry của bảy loại đề xuất, \texttt{eligibility/} cho hàm \texttt{chainEligibility} xét rule chuỗi cá nhân và đơn vị, \texttt{profile/annual.ts} cho logic chuỗi cá nhân và \texttt{profile/unit.ts} cho logic chuỗi đơn vị. Gói \texttt{repositories/} đóng gói toàn bộ truy cập Prisma --- mỗi model một tệp \texttt{.repository.ts}. Gói \texttt{helpers/} chứa các tiện ích phụ trợ chia theo nhóm: \texttt{auditLog/}, \texttt{notification/}, \texttt{excel/}, \texttt{awardValidation/}. Gói \texttt{validations/} chứa các schema Zod cho từng route. Tệp \texttt{prisma/schema.prisma} ở cấp gốc của module backend định nghĩa toàn bộ 23 model.
 
 \begin{figure}[H]
     \centering
@@ -129,7 +129,7 @@ Bảy luồng nghiệp vụ quan trọng nhất được mô hình hoá bằng s
 
 \textbf{Sequence 4.4 --- Tính lại điều kiện chuỗi cho một quân nhân.} FE gọi \texttt{GET /api/personnel/:id/annual-profile} $\rightarrow$ \texttt{profileController.getAnnualProfile} $\rightarrow$ \texttt{profileService.recalculateAnnualProfile} $\rightarrow$ \texttt{danhHieuHangNamRepository.findManyByPersonnelId} $\rightarrow$ \texttt{computeChainContext(rows, currentYear)} $\rightarrow$ vòng for qua \texttt{PERSONAL\_CHAIN\_AWARDS} gọi \texttt{checkChainEligibility} $\rightarrow$ \texttt{hoSoHangNamRepository.upsert} $\rightarrow$ trả kết quả.
 
-\textbf{Sequence 4.5 --- Nhập Excel hai bước.} Admin tải tệp $\rightarrow$ FE gọi \texttt{POST /api/annual-rewards/import/preview} $\rightarrow$ \texttt{excelHelper.loadWorkbook} $\rightarrow$ đọc từng trang tính $\rightarrow$ cho mỗi dòng: chạy schema Joi và rule nghiệp vụ $\rightarrow$ trả về \texttt{\{valid: [...], errors: [...]\}}. Admin xác nhận $\rightarrow$ FE gọi \texttt{POST /api/annual-rewards/import/confirm} $\rightarrow$ mở transaction $\rightarrow$ ghi tuần tự $\rightarrow$ commit hoặc rollback.
+\textbf{Sequence 4.5 --- Nhập Excel hai bước.} Admin tải tệp $\rightarrow$ FE gọi \texttt{POST /api/annual-rewards/import/preview} $\rightarrow$ \texttt{excelHelper.loadWorkbook} $\rightarrow$ đọc từng trang tính $\rightarrow$ cho mỗi dòng: chạy schema Zod và rule nghiệp vụ $\rightarrow$ trả về \texttt{\{valid: [...], errors: [...]\}}. Admin xác nhận $\rightarrow$ FE gọi \texttt{POST /api/annual-rewards/import/confirm} $\rightarrow$ mở transaction $\rightarrow$ ghi tuần tự $\rightarrow$ commit hoặc rollback.
 
 \textbf{Sequence 4.6 --- Sao lưu định kỳ tự động.} Cron job nội bộ kích hoạt mỗi 24 giờ $\rightarrow$ \texttt{backupService.runScheduledBackup} $\rightarrow$ spawn child process \texttt{pg\_dump} $\rightarrow$ ghi tệp SQL vào \texttt{backups/YYYY-MM-DD\_HH-mm-ss.sql} $\rightarrow$ ghi nhật ký \texttt{action = CREATE, resource = backup}.
 
@@ -205,7 +205,7 @@ Ràng buộc nghiệp vụ: chỉ một trong \texttt{co\_quan\_don\_vi\_id} và
 \end{tabular}
 \end{table}
 
-Việc dùng JSON cho 4 trường \texttt{data\_*} là chủ ý. Mỗi loại đề xuất có schema riêng nên việc tạo nhiều bảng trung gian sẽ phá vỡ tính đồng nhất của bảng \texttt{BangDeXuat}. JSON đủ để đảm bảo schema linh hoạt; xác thực schema được đảm nhiệm ở tầng Joi và \texttt{ProposalStrategy}.
+Việc dùng JSON cho 4 trường \texttt{data\_*} là chủ ý. Mỗi loại đề xuất có schema riêng nên việc tạo nhiều bảng trung gian sẽ phá vỡ tính đồng nhất của bảng \texttt{BangDeXuat}. JSON đủ để đảm bảo schema linh hoạt; xác thực schema được đảm nhiệm ở tầng Zod và \texttt{ProposalStrategy}.
 
 \begin{table}[H]
 \centering
@@ -348,16 +348,15 @@ Sản phẩm sử dụng tổng cộng 30 thư viện mã nguồn mở chia làm
 8 & ORM & Prisma & 5.x \\ \hline
 9 & Xác thực JWT & jsonwebtoken & 9.x \\ \hline
 10 & Băm mật khẩu & bcrypt & 5.x \\ \hline
-11 & Kiểm tra dữ liệu BE & Joi & 17.x \\ \hline
-12 & Kiểm tra dữ liệu FE & Zod & 3.x \\ \hline
-13 & Thông báo realtime & Socket.IO & 4.x \\ \hline
-14 & Đọc/ghi Excel & ExcelJS & 4.x \\ \hline
-15 & Khung kiểm thử & Jest + ts-jest & 29.x \\ \hline
-16 & Quản lý tiến trình production & PM2 & 5.x \\ \hline
-17 & Header bảo mật HTTP & Helmet & 7.x \\ \hline
-18 & CORS & cors & 2.x \\ \hline
-19 & Giới hạn tốc độ & express-rate-limit & 7.x \\ \hline
-20 & Quản lý tệp tải lên & Multer & 1.x \\ \hline
+11 & Kiểm tra dữ liệu (BE + FE) & Zod & 4.x \\ \hline
+12 & Thông báo realtime & Socket.IO & 4.x \\ \hline
+13 & Đọc/ghi Excel & ExcelJS & 4.x \\ \hline
+14 & Khung kiểm thử & Jest + ts-jest & 29.x \\ \hline
+15 & Quản lý tiến trình production & PM2 & 5.x \\ \hline
+16 & Header bảo mật HTTP & Helmet & 8.x \\ \hline
+17 & CORS & cors & 2.x \\ \hline
+18 & Giới hạn tốc độ & express-rate-limit & 8.x \\ \hline
+19 & Quản lý tệp tải lên & Multer & 1.x \\ \hline
 \end{tabular}
 \end{table}
 

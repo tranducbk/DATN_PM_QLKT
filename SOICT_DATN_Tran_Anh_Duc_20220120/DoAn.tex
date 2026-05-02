@@ -70,6 +70,24 @@
 \setlength{\emergencystretch}{3em}
 \sloppy
 
+% Cấm ngắt giữa từ tiếng Anh phổ biến (mặc định LaTeX ngắt sai vị trí với
+% babel tiếng Việt, vd: "Repos-itory" thay vì "Re-pos-i-to-ry").
+\hyphenation{
+  Repository Repositories
+  Middleware Middlewares
+  Controller Controllers
+  Service Services
+  Prisma Express Helmet
+  Frontend Backend
+  Database TypeScript JavaScript
+  Socket Sequelize
+  PostgreSQL MongoDB
+  Schema
+  Strategy Strategies
+  Notification Notifications
+  Rotation Rotations
+}
+
 \DeclareUnicodeCharacter{2013}{--}
 \DeclareUnicodeCharacter{2014}{---}
 \DeclareUnicodeCharacter{2018}{`}
