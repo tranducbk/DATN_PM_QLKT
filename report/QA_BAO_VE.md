@@ -187,6 +187,312 @@
 | bcrypt | Hash password tài khoản | Adaptive cost (em dùng cost 10 = ~100 ms/hash) |
 | nodemailer | (Hiện chưa kích hoạt) gửi email reset password | Có sẵn để bật khi cần |
 
+### A.11 — Next.js 14 build sinh ra những file gì? Khác gì so với React + Vite?
+
+**Ngắn:** Next.js 14 chia ra 3 nhóm artifact: file dev sinh khi `next dev`, file build sinh khi `next build`, file type sinh tự động cho TypeScript. React + Vite chỉ có nhóm dev và build, không có generation cho route file-based.
+
+**Khi gõ `next dev` lần đầu:**
+- `next-env.d.ts` — file tự sinh ở root, khai báo type cho `*.module.css`, image import, env vars. **Đừng commit edit thủ công** — Next overwrite mỗi lần chạy.
+- `.next/cache/` — cache webpack/SWC để dev start nhanh hơn lần 2.
+- `.next/types/` (Next 13.2+) — type cho route handler, link href, dynamic param. Bật bằng `experimental.typedRoutes` để type-check tên route.
+
+**Khi gõ `next build`:**
+- `.next/server/` — code render trên server (RSC + route handler).
+- `.next/static/` — JS/CSS bundle gửi xuống browser, có content hash trong tên file.
+- `.next/standalone/` (nếu `output: 'standalone'` trong `next.config.js`) — bundle tự chứa Node modules, có thể `node server.js` chạy luôn.
+- `.next/build-manifest.json` + `app-build-manifest.json` — map route → JS chunk.
+
+**Em không có config `standalone`** ở project này → deploy qua PM2 với `npm start` (alias `next start`). `.next/` toàn bộ phải được copy lên server.
+
+**Khác React + Vite thuần:**
+| Việc | Next.js 14 | React + Vite |
+|---|---|---|
+| Routing | File-based (folder = route) | Phải tự setup `react-router` |
+| SSR/SSG/ISR | Tự động theo file `page.tsx` | Không có sẵn |
+| API endpoint | `app/api/.../route.ts` cùng repo | Phải BE riêng |
+| Image optimization | `next/image` resize on-demand | Phải tự xử lý |
+| Bundle analyzer | `@next/bundle-analyzer` | Phải tự setup |
+| Dev server | `next dev` (port 3000) | `vite` (port 5173) |
+
+**Em chọn Next.js dù không cần SSR vì:** routing file-based + middleware tự động + hỗ trợ Server Components về sau khi cần tối ưu bundle.
+
+**Phản biện:** "Em có dùng SSR/SSG không?" → "Hệ thống nội bộ cần đăng nhập, không có trang public → em dùng Client Components là chính. SSR chỉ giá trị khi có SEO public."
+
+### A.12 — App Router file conventions: page, layout, loading, error, ... — kể chi tiết
+
+**Ngắn:** Mỗi tên file đặc biệt trong `app/` có ngữ nghĩa cố định, Next.js tự render đúng vị trí. Em dùng 5 trong số đó cho project: `layout.tsx`, `page.tsx`, `error.tsx`, `not-found.tsx`, `loading.tsx`.
+
+**Bảng đầy đủ Next.js 14 hỗ trợ:**
+
+| File | Vai trò | Project em có |
+|---|---|---|
+| `layout.tsx` | UI bao quanh nhiều page con, không re-render khi navigate giữa con | ✓ `app/layout.tsx` (root) + `app/admin/layout.tsx` (sidebar admin) |
+| `page.tsx` | UI cho route đó, làm route public | ✓ tất cả route |
+| `loading.tsx` | UI hiển thị khi page con đang fetch (Suspense boundary tự động) | Chưa dùng |
+| `error.tsx` | Error boundary, catch lỗi từ page con | ✓ `app/error.tsx` |
+| `not-found.tsx` | Render khi `notFound()` được gọi hoặc route không match | ✓ `app/not-found.tsx` |
+| `template.tsx` | Như layout nhưng re-mount mỗi navigation | Chưa dùng |
+| `route.ts` | Route handler (REST endpoint thay vì UI) | Chưa dùng — em có BE Express riêng |
+| `default.tsx` | Fallback cho parallel route | Chưa dùng |
+
+**Quy ước folder:**
+- `app/(auth)/login/page.tsx` — group route, dấu `()` không vào URL → URL là `/login`. Em dùng để gom `login`, `change-password` mà không làm tăng path.
+- `app/admin/personnel/[id]/page.tsx` — dynamic param, `params.id` được Next inject vào prop của page.
+- `app/admin/personnel/[id]/edit/page.tsx` — nested route, URL là `/admin/personnel/abc123/edit`.
+
+**Render order:**
+```
+RootLayout (app/layout.tsx)
+  └ AdminLayout (app/admin/layout.tsx)
+      └ ErrorBoundary (app/error.tsx)
+          └ Suspense (loading.tsx nếu có)
+              └ Page (app/admin/personnel/[id]/page.tsx)
+```
+
+**Phản biện:** "Em không dùng `loading.tsx`?" → "Em dùng `<LoadingState>` shared component bên trong page, kiểm soát chi tiết hơn — nhưng đúng là `loading.tsx` chuẩn Next hơn, em sẽ chuyển đổi nếu có thời gian."
+
+### A.13 — Server Components vs Client Components — em dùng cái nào?
+
+**Ngắn:** Mặc định Next 14 App Router coi mọi component là Server Component. Em phải gắn `'use client'` ở đầu file để chuyển sang Client Component khi cần state/effect/event listener. Project em hầu hết là Client Component vì dùng Ant Design.
+
+**Server Component (mặc định):**
+- Render trên server, kết quả là HTML + RSC payload (không gửi JS xuống).
+- KHÔNG dùng được: `useState`, `useEffect`, `onClick`, browser API (`window`, `localStorage`).
+- Dùng được: async/await trực tiếp trong body, gọi DB/API ngay trong component.
+- Lợi ích: giảm bundle JS, fetch song song trên server, không leak secret xuống client.
+
+**Client Component (`'use client'`):**
+- Render bootstrap trên server (HTML đầu) + hydrate trên browser.
+- Dùng được hooks, event handler, browser API.
+- Bắt buộc cho: form, modal, animation, AntD component (vì AntD dùng `useContext`).
+
+**Project em:**
+- `'use client'` ở **đa số** page (do AntD `Form`, `Table`, `Modal` cần context).
+- Server Component **chỉ** dùng cho 2 layout root đơn giản (`app/layout.tsx`, `app/admin/layout.tsx`).
+- Trade-off: bundle to hơn nhưng DX (developer experience) đơn giản — không phải nhớ ranh giới.
+
+**Quy tắc thực dụng:**
+- Component có `useState`/`useEffect`/`onClick` → `'use client'`.
+- Component import AntD/Tailwind plugin có hook → `'use client'`.
+- Component chỉ render markup tĩnh + fetch dữ liệu → có thể Server Component.
+
+**Hạn chế trung thực:** "Em chưa khai thác hết Server Components — nếu chuyển 1 nửa số page sang RSC, bundle sẽ giảm thêm ~25 %."
+
+**Phản biện:** "Component cha là Server, con là Client truyền props — props phải serializable?" → "Đúng. Em không truyền function/JSX qua ranh giới này, chỉ truyền data thuần."
+
+### A.14 — Tailwind + PostCSS + shadcn/ui — config file gì, hoạt động ra sao?
+
+**Ngắn:** Tailwind sinh CSS theo class trong code (JIT). PostCSS là pipeline xử lý. shadcn/ui là CLI copy component vào repo, không phải npm package.
+
+**File cấu hình project em có:**
+- `tailwind.config.ts` — khai báo `content: ['./src/**/*.{ts,tsx}']` để Tailwind scan class từ code, `theme.extend` thêm color palette tùy biến, `darkMode: 'class'` bật dark mode qua class trên `<html>`.
+- `postcss.config.js` — chạy `tailwindcss` + `autoprefixer` plugin. Next.js đọc file này tự động khi build.
+- `src/app/globals.css` — import 3 directive `@tailwind base/components/utilities`. File này được import 1 lần ở `app/layout.tsx`.
+- `components.json` — config shadcn/ui CLI: alias `@/components`, style `default`, base color `slate`. CLI dùng nó khi gõ `npx shadcn@latest add button`.
+- `src/lib/utils.ts` — chứa `cn()` helper (clsx + tailwind-merge), shadcn/ui dùng để merge class có conflict.
+
+**Tailwind hoạt động:**
+1. `next dev` → PostCSS chạy.
+2. Tailwind plugin scan `content` glob, tìm class string (`text-red-500`, `flex`, ...) trong file `.tsx`.
+3. Sinh CSS chỉ chứa class được dùng → bundle CSS final ~20-30 KB cho project em (so với 3 MB nếu include hết Tailwind).
+
+**shadcn/ui khác AntD:**
+- AntD: import từ npm, version cố định, khó tùy biến sâu.
+- shadcn/ui: copy source code vào `src/components/ui/`, em sửa trực tiếp được. Dùng `kebab-case.tsx` là exception duy nhất trong project (tất cả component khác PascalCase).
+
+**Hạn chế:** Bundle CSS có overlap nhẹ giữa AntD reset và Tailwind preflight. Em đã thử disable preflight (`corePlugins.preflight: false`) — không đáng kể.
+
+**Phản biện:** "Sao không dùng styled-components hoặc emotion?" → "CSS-in-JS overhead runtime (~10-20 KB). Tailwind biên dịch lúc build, runtime cost = 0."
+
+### A.15 — TypeScript config: BE `strict: false`, FE strict — tại sao khác?
+
+**Ngắn:** BE em đặt `strict: false` để giảm friction khi viết Joi validation và Prisma query lồng. FE bật strict đầy đủ vì component cần type-safe để IDE refactor an toàn.
+
+**File config:**
+- `BE-QLKT/tsconfig.json`: `strict: false`, `strictNullChecks: false`, `target: ES2020`, `module: CommonJS`. Output không phải `.js` build (em dùng `tsx watch` ở dev và `tsc` ở production build vào `dist/`).
+- `FE-QLKT/tsconfig.json`: `strict: true`, `target: ES2017`, `module: esnext`, `moduleResolution: bundler`, `paths: { "@/*": ["./src/*"] }` cho path alias.
+
+**Lý do BE relax:**
+- Joi schema trả `unknown`, ép cast nhiều chỗ — `strictNullChecks` ép thêm `if (x !== undefined)` rườm rà.
+- Prisma `findUnique` trả `T | null`, đôi khi em chắc chắn record tồn tại (vừa create xong) → cast `!` hoặc destructure không null check là acceptable.
+- BE đã có Joi validation ở route → input đã được làm sạch, runtime safety không phụ thuộc TS strict.
+
+**Lý do FE strict:**
+- Component nhận props nhiều cấp lồng — strict null check cứu khỏi `Cannot read property 'x' of undefined` khi render.
+- Refactor tên field DB → IDE báo đỏ ngay nơi sai.
+
+**Trade-off em chấp nhận:** BE có ~5 chỗ `as any` (đã loại hết trong commit gần đây), FE chỉ có 0 sau khi cleanup.
+
+**Phản biện:** "Sao không bật strict cả 2?" → "Bật strict BE phải sửa ~80 chỗ liên quan đến Prisma null. Em ưu tiên tốc độ phát triển. Có thể bật dần qua flag `noUncheckedIndexedAccess` rồi mới đến full strict."
+
+### A.16 — Prisma CLI: `migrate dev` vs `db push` vs `generate` vs `migrate deploy` — khác gì?
+
+**Ngắn:** Bốn lệnh phục vụ vòng đời khác nhau: `generate` sinh client TS, `migrate dev` tạo migration file ở dev, `db push` đồng bộ schema không tạo migration, `migrate deploy` áp migration đã có ở production.
+
+**Vòng đời em đang dùng:**
+
+| Lệnh | Khi nào dùng | Hậu quả |
+|---|---|---|
+| `npx prisma generate` | Sau khi đổi `schema.prisma`, trước khi gõ code | Sinh `src/generated/prisma/` (em config custom output, không dùng `node_modules/.prisma` mặc định) |
+| `npx prisma migrate dev` | Dev: thêm/sửa cột | Sinh file `prisma/migrations/<timestamp>_<name>/migration.sql` + auto chạy + auto `generate` |
+| `npx prisma db push` | Dev: prototype nhanh, **không có data quan trọng** | Sync schema vào DB, **KHÔNG tạo migration file** — chỉ dùng nháp |
+| `npx prisma migrate deploy` | Production: áp tất cả migration chưa chạy | Đọc folder `prisma/migrations/`, chạy theo thứ tự, không tương tác |
+| `npx prisma migrate reset` | Dev: reset DB sạch | Drop + recreate + chạy lại tất cả migration + seed |
+| `npx prisma studio` | Dev: GUI xem/edit data | Mở web UI port 5555 |
+
+**Điểm em đã trả giá học:**
+- **Đổi tên cột có data → KHÔNG dùng `db push`** — `db push` sẽ DROP cột cũ + CREATE cột mới → mất hết data. Phải viết script `prisma.$executeRawUnsafe('ALTER TABLE x RENAME COLUMN old TO new')` trong `src/scripts/` trước, rồi mới `db push` để Prisma sync schema.
+- Em đã ghi rule này vào `BE-QLKT/CLAUDE.md` (AP-8) sau khi suýt mất data lần đầu.
+
+**Custom output:** `schema.prisma` của em có:
+```prisma
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+```
+→ Client sinh vào `src/generated/prisma/` thay vì `node_modules/@prisma/client`. Lý do: control version đi kèm code, không phụ thuộc reinstall.
+
+**Phản biện:** "Sinh client vào `src/generated/` thì có nên commit không?" → "Có, vì TS strict ở FE cần type, và CI nhanh hơn (không phải `prisma generate` lại). Trade-off là repo to hơn ~5 MB."
+
+### A.17 — ESLint, Prettier, husky/lint-staged — em setup thế nào?
+
+**Ngắn:** FE có ESLint + Prettier, BE chỉ có Prettier. Cả hai bên không có pre-commit hook (`husky/lint-staged`) — em phải nhớ chạy `npm run format` thủ công.
+
+**FE config:**
+- `.eslintrc.json` — ESLint legacy config, extends `next/core-web-vitals` + `prettier`, plugin `unused-imports` rule `no-unused-imports: error` để chặn import thừa.
+- `.prettierrc` — `semi: true, singleQuote: true, tabWidth: 2, printWidth: 100, trailingComma: 'es5', arrowParens: 'avoid'`.
+- Script: `npm run lint` (gọi `next lint`), `npm run format` (gọi `prettier --write`).
+
+**BE config:**
+- `.prettierrc` cùng convention với FE.
+- KHÔNG có `.eslintrc` — em rely vào `tsc --noEmit` (`npm run typecheck`) và Prettier để giữ chuẩn.
+- Script: `npm run typecheck`, `npm run format`.
+
+**Hạn chế trung thực:**
+- **Không có pre-commit hook** — nếu em quên chạy `format`, code messy có thể commit. Đây là tech debt em đã ghi vào `PROJECT_REVIEW.md` §LOW.
+- Có thể thêm `husky` + `lint-staged` chạy `prettier --write` + `tsc --noEmit` trên file staged để chặn commit lỗi format/type.
+
+**Phản biện:** "Sao không dùng Biome thay ESLint + Prettier?" → "Biome mới (1.0 cuối 2023), em chưa migrate vì project đã ổn định. Để hướng phát triển."
+
+### A.18 — PM2 ecosystem + Nginx reverse proxy — config thế nào?
+
+**Ngắn:** PM2 chạy BE Node.js (port 4000) và FE Next.js production server (port 3000) với auto-restart. Mỗi app có `ecosystem.config.js` riêng. Nginx đặt trước, terminate TLS, reverse proxy `/api/*` về BE và `/*` về FE.
+
+**`BE-QLKT/ecosystem.config.js` (rút gọn):**
+```js
+module.exports = {
+  apps: [{
+    name: 'be-qlkt',
+    script: 'dist/index.js',         // compiled từ tsc, KHÔNG dùng tsx production
+    instances: 1,
+    exec_mode: 'fork',
+    autorestart: true,
+    max_memory_restart: '500M',      // restart nếu RSS > 500 MB (chống memory leak)
+    env_file: '.env',
+    log_date_format: 'YYYY-MM-DD HH:mm:ss',
+    out_file: 'logs/out.log',
+    error_file: 'logs/error.log',
+  }],
+};
+```
+
+**`FE-QLKT/ecosystem.config.js`:** tương tự, `script: 'node_modules/.bin/next'` + `args: 'start'`.
+
+**Khởi động:** `pm2 start BE-QLKT/ecosystem.config.js && pm2 start FE-QLKT/ecosystem.config.js`. Lưu state: `pm2 save && pm2 startup` để tự khởi động lại sau reboot server.
+
+**Nginx (rút gọn):**
+```nginx
+server {
+  listen 80;
+  server_name qlkt.local;
+
+  client_max_body_size 50M;  # cho upload Excel/PDF lớn
+
+  location /api/ {
+    proxy_pass http://localhost:4000;
+    proxy_set_header Upgrade $http_upgrade;     # Socket.IO
+    proxy_set_header Connection "upgrade";
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  }
+
+  location /socket.io/ {
+    proxy_pass http://localhost:4000;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+  }
+
+  location / {
+    proxy_pass http://localhost:3000;
+  }
+}
+```
+
+**Vai trò Nginx:**
+- TLS termination (chứng chỉ self-signed cho LAN).
+- Static caching cho `/_next/static/*` (tăng tốc tải lần 2).
+- Buffer body upload — protect Node khỏi slowloris.
+- Single entry point → user chỉ thấy 1 origin, không gặp CORS.
+
+**Express phải `app.set('trust proxy', 1)`** để `req.ip` lấy đúng IP client từ header `X-Forwarded-For`.
+
+**Phản biện:** "Sao không dùng Caddy thay Nginx?" → "Caddy auto-HTTPS rất tiện cho public Internet, nhưng LAN nội bộ em đã có cert nội bộ, Nginx ổn định và phổ biến hơn ở Việt Nam."
+
+### A.19 — Logging, helmet, rate-limit, dotenv, cors — middleware Express còn lại
+
+**Ngắn:** 5 middleware chuẩn cho Express production. Em dùng tất cả ngoại trừ logging file thì rely vào `console.error` + system_logs DB thay vì winston.
+
+| Thư viện | Mục đích | Config trong code |
+|---|---|---|
+| `helmet` | Set 14 security header (CSP, HSTS, X-Frame, ...) | `app.use(helmet())` ở `index.ts` |
+| `cors` | Whitelist origin | `app.use(cors({ origin: ALLOWED_ORIGINS, credentials: true }))` |
+| `dotenv` | Load `.env` vào `process.env` | `import 'dotenv/config'` ở đầu `index.ts` |
+| `express-rate-limit` | Chặn DoS / brute force | `authLimiter` 30 req/5min, `writeLimiter` 30 req/15min — file `configs/rateLimiter.ts` |
+| `morgan` | Log HTTP request | **Em không dùng** — log qua `system_logs` DB cho audit, console output đủ ở dev |
+
+**Vì sao không dùng `winston` riêng?**
+- System log đã ghi vào DB (`system_logs` table) qua `writeSystemLog()` — có thể query/filter/visualize qua trang Admin.
+- PM2 đã tự ghi `logs/out.log` (stdout) và `logs/error.log` (stderr) — em chỉ cần `console.log` / `console.error` ở app code, PM2 capture lại.
+- Trade-off: PM2 không tự rotate file log → file có thể to dần. Cần thêm plugin `pm2-logrotate` (`pm2 install pm2-logrotate`) để rotate theo size hoặc thời gian. Đã ghi vào hướng phát triển.
+
+**Helmet tinh chỉnh** (`src/index.ts:40-44`):
+```ts
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+```
+- Đặt `crossOriginResourcePolicy: cross-origin` để FE (port 3000) load được file PDF/Excel served từ BE (port 4000) — mặc định helmet là `same-origin`.
+- Các header khác giữ default: HSTS (chỉ effect khi HTTPS), X-Frame-Options DENY, X-Content-Type-Options nosniff, X-XSS-Protection, ...
+- Đáng lẽ nên thêm `contentSecurityPolicy` nhưng AntD inject inline style → cần allow `'unsafe-inline'` cho `style-src`. Em chưa setup → ghi vào hướng phát triển.
+
+**Phản biện:** "Sao không bật full CSP?" → "AntD chưa hỗ trợ nonce-based CSP. Khi nào AntD v6 ra (đã có roadmap), em sẽ migrate. Hiện LAN nội bộ rủi ro XSS thấp."
+
+### A.20 — Thư viện FE phụ: dayjs, axios, chart.js, react-hook-form, react-pdf-viewer
+
+**Ngắn:** 5 thư viện FE phụ trợ. Mỗi cái thay thế phương án "to" hơn để giữ bundle nhỏ.
+
+| Thư viện | Mục đích | Thay cho |
+|---|---|---|
+| `dayjs` (~7 KB) | Format/parse date, locale tiếng Việt | `moment.js` (~70 KB), date-fns (~13 KB tree-shakable) |
+| `axios` | HTTP client với interceptor | `fetch` (phải tự wrap), TanStack Query (overkill cho CRUD đơn giản) |
+| `chart.js` + `react-chartjs-2` | Biểu đồ dashboard | `recharts` (phình bundle), `apache echarts` (overkill) |
+| `react-hook-form` + `@hookform/resolvers` | Form state + Zod validation | Formik (chậm hơn, mỗi keystroke re-render nhiều) |
+| `@react-pdf-viewer/core` | Xem PDF quyết định inline | `iframe src=...` (không có UI điều khiển), `pdf.js` thuần (phải tự build UI) |
+
+**Axios interceptor (`src/lib/axiosInstance.ts`):**
+- Request: tự gắn `Authorization: Bearer <accessToken>` từ localStorage.
+- Response: nếu 401 → tự gọi `/api/auth/refresh` → retry request gốc 1 lần. Nếu refresh cũng 401 → redirect `/login`.
+- Lý do dùng axios thay fetch: interceptor pattern cleaner, retry logic ngắn hơn 50 % so với fetch wrapper.
+
+**dayjs locale:**
+```ts
+import dayjs from 'dayjs';
+import 'dayjs/locale/vi';
+dayjs.locale('vi');  // → "tháng 5 năm 2026"
+```
+
+**Phản biện:** "Sao không dùng TanStack Query cho data fetching?" → "TanStack Query mạnh khi cần cache + invalidation phức tạp. Em chỉ có CRUD + form, custom hook `useFetch`/`useMutation` đủ — bundle gọn hơn ~30 KB."
+
 ---
 
 ## B. Kiến trúc và design pattern
@@ -194,7 +500,7 @@
 ### B.1 — Mô tả kiến trúc tổng thể trong 1 phút
 
 **Trả lời mẫu:**
-"Hệ thống chia thành ba tầng. Tầng frontend là Next.js 14 App Router chạy trên cổng 3000. Tầng backend là Express + TypeScript chạy trên cổng 5000, được tổ chức theo 6 lớp: Route → Middleware → Controller → Service → Repository → Prisma. Tầng dữ liệu là PostgreSQL 15. Hai bên FE và BE giao tiếp qua REST API và Socket.IO cho thông báo thời gian thực. Toàn bộ vận hành trên LAN của Học viện qua PM2 và Nginx reverse proxy."
+"Hệ thống chia thành ba tầng. Tầng frontend là Next.js 14 App Router chạy trên cổng 3000. Tầng backend là Express + TypeScript chạy trên cổng 4000, được tổ chức theo 6 lớp: Route → Middleware → Controller → Service → Repository → Prisma. Tầng dữ liệu là PostgreSQL 15. Hai bên FE và BE giao tiếp qua REST API và Socket.IO cho thông báo thời gian thực. Toàn bộ vận hành trên LAN của Học viện qua PM2 và Nginx reverse proxy."
 
 ### B.2 — Tại sao layered architecture mà không phải MVC pure?
 
@@ -1706,7 +2012,7 @@ Project em chủ yếu unit + service unit, có ~10 integration test trong `test
 2. `cd BE-QLKT && npm ci && npm run build && npx prisma migrate deploy`.
 3. `cd FE-QLKT && npm ci && npm run build`.
 4. `pm2 reload ecosystem.config.js` — zero-downtime reload.
-5. Kiểm tra health check: `curl http://localhost:5000/health`.
+5. Kiểm tra health check: `curl http://localhost:4000/health`.
 
 ### I.2 — Rollback nếu deploy lỗi
 
