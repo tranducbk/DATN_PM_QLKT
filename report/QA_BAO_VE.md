@@ -493,6 +493,517 @@ dayjs.locale('vi');  // → "tháng 5 năm 2026"
 
 **Phản biện:** "Sao không dùng TanStack Query cho data fetching?" → "TanStack Query mạnh khi cần cache + invalidation phức tạp. Em chỉ có CRUD + form, custom hook `useFetch`/`useMutation` đủ — bundle gọn hơn ~30 KB."
 
+### A.21 — Cơ chế 2 token (access + refresh) end-to-end — login → refresh → logout
+
+**Ngắn:** Hai token có vai trò khác nhau: access token đóng vai trò "vé vào cửa" mỗi request (ngắn, 30 phút), refresh token đóng vai trò "thẻ thành viên" để xin vé mới (dài, 7 ngày). Mỗi lần refresh, server sinh CẢ access lẫn refresh mới (rotation) → token cũ vô hiệu hoá ngay.
+
+**4 giai đoạn:**
+
+#### 1. Đăng nhập (`POST /api/auth/login`)
+
+```
+FE LoginForm                  BE auth.controller            BE auth.service                  DB
+     │                              │                              │                          │
+     │── { username, password } ──→ │                              │                          │
+     │                              │── login(input) ───────────→  │                          │
+     │                              │                              │── findUnique(username) →│
+     │                              │                              │←── account ─────────────│
+     │                              │                              │                          │
+     │                              │                  bcrypt.compare(password, hash)         │
+     │                              │                              │                          │
+     │                              │                  generateAccessToken({id, username,     │
+     │                              │                    role, quan_nhan_id}) — JWT_SECRET    │
+     │                              │                  generateRefreshToken({id, username})   │
+     │                              │                    — JWT_REFRESH_SECRET                 │
+     │                              │                              │                          │
+     │                              │                              │── update refreshToken ──→│
+     │                              │←── { accessToken,            │                          │
+     │                              │     refreshToken, user } ─── │                          │
+     │                              │                                                         │
+     │←── 200 + tokens + user ─────│                                                         │
+     │                                                                                       │
+   localStorage.setItem('accessToken', ...)                                                  │
+   localStorage.setItem('refreshToken', ...)
+   localStorage.setItem('role', 'username', 'userId', 'quan_nhan_id', 'ho_ten', 'don_vi_id')
+```
+
+File: `BE/src/services/auth.service.ts:35-95`, `FE/src/contexts/AuthContext.tsx:96-110`.
+
+**Vì sao lưu refresh trong DB?** Ý tưởng "stateless" của JWT thuần KHÔNG cho phép thu hồi. Em đánh đổi: thêm 1 cột `TaiKhoan.refreshToken` để có khả năng force-logout. Khi user đăng nhập từ thiết bị khác → ghi đè cột này → thiết bị cũ không refresh được nữa → bị đẩy ra.
+
+#### 2. Request bình thường
+
+```
+FE axios interceptor        BE Express                   BE verifyToken middleware            DB
+     │                            │                              │                              │
+   request.use((config) =>        │                              │                              │
+     config.headers.Authorization =                              │                              │
+     `Bearer ${localStorage.getItem('accessToken')}`)            │                              │
+     │                            │                              │                              │
+     │── GET /api/personnel ─────→│                              │                              │
+     │  Authorization: Bearer ... │── verifyToken(req,res,next)─→│                              │
+     │                            │                              │── jwt.verify(token,         │
+     │                            │                              │    JWT_SECRET) → payload    │
+     │                            │                              │                              │
+     │                            │                              │── findUnique(id, select:    │
+     │                            │                              │    refreshToken) ──────────→│
+     │                            │                              │←── { refreshToken: '…' } ──│
+     │                            │                              │                              │
+     │                            │                  if (!account.refreshToken) → 401          │
+     │                            │                              │                              │
+     │                            │                  req.user = payload                         │
+     │                            │                  next() — vào controller                    │
+     │                            │                              │                              │
+     │←── 200 + data ────────────│                              │                              │
+```
+
+File: `BE/src/middlewares/auth.ts:29-40`, `FE/src/lib/axiosInstance.ts:13-20`.
+
+**Tại sao check DB mỗi request?** Để có thể revoke. Trade-off: 1 query thêm/request (~1ms với index trên `id`). Đáng cho LAN nội bộ.
+
+#### 3. Access token hết hạn → refresh (`POST /api/auth/refresh`) — có rotation
+
+```
+FE axios interceptor                  BE auth.service                    DB
+     │                                       │                              │
+   response.use(null, async (error) => {     │                              │
+     if (status === 401 &&                   │                              │
+         !originalRequest._retry &&          │                              │
+         !isAuthRequest) {                   │                              │
+                                             │                              │
+       if (isRefreshing) {                   │                              │
+         // Concurrent — đẩy vào failedQueue,│                              │
+         // chờ refresh xong thì retry       │                              │
+         return new Promise((resolve, reject) => {                          │
+           failedQueue.push({ resolve, reject })                            │
+         })                                  │                              │
+       }                                     │                              │
+                                             │                              │
+       isRefreshing = true                   │                              │
+       const stored = localStorage.getItem('refreshToken')                  │
+                                             │                              │
+   ────│── POST /api/auth/refresh ─────────→ │                              │
+       │  { refreshToken: stored }           │                              │
+                                             │── refreshAccessToken() ────→ │
+                                             │   jwt.verify(refreshToken,                       │
+                                             │     JWT_REFRESH_SECRET)                          │
+                                             │                              │── findUnique(id) →│
+                                             │                              │←── account ──────│
+                                             │                                                  │
+                                             │  if (account.refreshToken !== refreshToken)      │
+                                             │    throw 401  ← chống dùng refresh cũ           │
+                                             │                                                  │
+                                             │  newAccessToken = generateAccessToken(...)       │
+                                             │  newRefreshToken = generateRefreshToken(...)     │
+                                             │                              │                   │
+                                             │                              │── update          │
+                                             │                              │   refreshToken →  │
+                                             │                              │   newRefreshToken │
+       │←── 200 { accessToken: new,           │                                                 │
+       │         refreshToken: new } ────────│                                                  │
+                                             │                                                  │
+   localStorage.setItem('accessToken', new)                                                     │
+   localStorage.setItem('refreshToken', new)                                                    │
+       processQueue(null, new)               │                                                  │
+       isRefreshing = false                  │                                                  │
+       originalRequest.headers.Authorization = `Bearer ${new}`                                  │
+       return axiosInstance(originalRequest)  ← retry request gốc                               │
+   }
+```
+
+File: `BE/src/services/auth.service.ts:111-138`, `FE/src/lib/axiosInstance.ts:58-180`.
+
+**Rotation:** Mỗi lần refresh, BE sinh CẢ accessToken VÀ refreshToken mới, ghi đè cột DB. Refresh token cũ không còn match → reuse refresh cũ = 401 ngay. Đây là OWASP recommended pattern.
+
+**Concurrent refresh:** Nếu 5 request 401 cùng lúc, chỉ 1 request đầu thực sự gọi `/auth/refresh`, 4 cái còn lại đứng `failedQueue` chờ → tránh sinh 5 cặp token.
+
+#### 4. Logout (`POST /api/auth/logout`)
+
+```
+FE                           BE auth.service                  DB
+ │                                  │                              │
+ │── POST /auth/logout ────────────→│                              │
+ │  { refreshToken }                │                              │
+ │                                  │── updateMany({ refreshToken },│
+ │                                  │   { refreshToken: null }) ──→│
+ │                                  │                              │
+ │←── 200 ─────────────────────────│                              │
+ │
+localStorage.clear()
+router.push('/login')
+```
+
+File: `BE/src/services/auth.service.ts:145-152`.
+
+**Logout chỉ xoá refresh token trong DB**, không invalidate access token đang còn 30 phút. Mitigate: middleware verifyToken check DB phát hiện `refreshToken: null` → 401 cho mọi request từ device đó NGAY LẬP TỨC.
+
+**Force logout cross-device:** Đăng nhập máy mới → server ghi đè `TaiKhoan.refreshToken`. Máy cũ access token expire sau ≤30min → gọi refresh → DB.refreshToken không match → 401 → FE forceLogout. Em còn emit Socket.IO `force_logout` event để máy cũ logout NGAY thay vì chờ 30 phút.
+
+**Bảng tổng kết 2 token:**
+
+| Tiêu chí | Access Token | Refresh Token |
+|---|---|---|
+| Secret | `JWT_SECRET` | `JWT_REFRESH_SECRET` (riêng) |
+| TTL | 30 phút | 7 ngày |
+| Payload | `{id, username, role, quan_nhan_id}` | `{id, username}` (tối giản) |
+| Lưu trong DB | KHÔNG | CÓ (cột `TaiKhoan.refreshToken`) |
+| Gửi mỗi request | CÓ (header Authorization) | KHÔNG (chỉ khi gọi refresh) |
+| Rotation khi refresh | Sinh mới | Sinh mới + ghi đè DB |
+| Có thể revoke server-side? | Gián tiếp (qua DB check) | Trực tiếp (set null) |
+| Lưu phía client | localStorage | localStorage |
+
+**Tại sao 2 token mà không phải 1?**
+
+Nếu chỉ 1 token TTL dài (vd 7 ngày): mỗi request gửi token này — nếu lộ qua log/MITM/XSS thì attacker có 7 ngày tự do → rủi ro lớn. TTL ngắn 30 phút thì user phải đăng nhập lại 48 lần/tuần → UX tệ.
+
+Tách 2 token giải quyết: access ngắn 30 phút (lộ thì rủi ro chỉ 30 phút), refresh dài 7 ngày NHƯNG chỉ gửi qua HTTPS lúc gọi refresh, không lộ qua mỗi request. Best of both worlds.
+
+**Hạn chế trung thực:**
+- Cả 2 token đều ở localStorage → vẫn dính XSS. Em dựa vào React auto-escape + không dùng `eval`/`dangerouslySetInnerHTML` chứa user input để hạn chế XSS.
+- Lý tưởng: refresh trong httpOnly cookie + CSRF token, access trong memory (không localStorage). Em chưa làm vì cần migrate cookie cross-origin (FE 3000 ↔ BE 4000 cần cấu hình `credentials: 'include'` + cookie SameSite). Ghi vào hướng phát triển.
+
+**Phản biện:**
+- "Refresh rotation rồi attacker bắt được refresh cũ thì sao?" → "Refresh cũ không match DB → 401 ngay. Nhưng attacker có thể bắt được refresh MỚI vừa cấp, dùng tiếp. Detection: nếu thấy refresh cũ được gửi sau khi đã rotate → coi đó là suspicious, force logout cả phiên (em chưa implement, ghi vào hướng phát triển)."
+- "Vì sao không dùng `iat`/`jti` để revoke từng access token riêng lẻ?" → "Cần Redis blacklist để check `jti` mỗi request — phức tạp hơn cách hiện tại (1 cột DB). Trade-off, em chọn đơn giản."
+- "Vì sao không dùng PASETO thay JWT?" → "PASETO an toàn hơn (không có `alg: none` attack), nhưng ecosystem Node.js chưa phổ biến bằng. Em chọn JWT cho dễ tìm tài liệu."
+
+### A.22 — Cơ chế ký JWT chi tiết — HS256 vs RS256, tại sao 2 secret riêng?
+
+**Ngắn:** Em dùng thuật toán HS256 (HMAC-SHA256) để ký JWT — symmetric, 1 secret cho cả ký lẫn verify. Hai loại token (access + refresh) ký bằng 2 secret KHÁC NHAU (`JWT_SECRET` và `JWT_REFRESH_SECRET`) để cô lập rủi ro: nếu 1 secret lộ thì chỉ 1 loại token bị compromise.
+
+**Cấu trúc JWT — 3 phần ngăn cách bởi dấu chấm:**
+
+```
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9 . eyJpZCI6ImNseHl6IiwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGUiOiJBRE1JTiIsInF1YW5fbmhhbl9pZCI6ImFiYyIsImlhdCI6MTcxNDU2NzIzNCwiZXhwIjoxNzE0NTY5MDM0fQ . X9k7JqRn8sV4tH6mP2cE3wY1bA5dF0gI
+└──────────────── header ────────────┘ └──────────────────────────────────── payload ─────────────────────────────────────────────────┘ └────── signature ──────┘
+        base64url-encoded                                                  base64url-encoded                                                  HMAC-SHA256(header+'.'+payload, secret)
+                                                                                                                                              rồi base64url
+```
+
+**Phần 1 — Header** (mặc định khi `jwt.sign(payload, secret)`):
+```json
+{ "alg": "HS256", "typ": "JWT" }
+```
+→ Báo cho phía verify biết dùng thuật toán gì để check chữ ký.
+
+**Phần 2 — Payload (claims) em đặt cho access token** (`auth.service.ts:35-41`):
+```json
+{
+  "id": "clxyz123",
+  "username": "admin",
+  "role": "ADMIN",
+  "quan_nhan_id": "abc456",
+  "iat": 1714567234,        // issued at — jsonwebtoken tự thêm
+  "exp": 1714569034         // expires at — tính từ expiresIn: '30m' → iat + 1800
+}
+```
+Refresh token payload tối giản hơn: chỉ `{id, username, iat, exp(7d)}` — giảm bề mặt rò rỉ thông tin role.
+
+**Phần 3 — Signature** (đây là phần ngăn user tự sửa payload):
+```
+signature = base64url(
+  HMAC_SHA256(
+    base64url(header) + '.' + base64url(payload),
+    JWT_SECRET  // 256-bit secret, đọc từ .env
+  )
+)
+```
+
+**Quá trình verify** (BE middleware `auth.ts:29` gọi `jwt.verify(token, JWT_SECRET)`):
+1. Split token bằng dấu `.` thành 3 phần.
+2. Decode header để biết `alg` (BE em hardcode chấp nhận chỉ HS256, chống attack `alg: none`).
+3. Tự tính lại `expectedSig = HMAC_SHA256(header+'.'+payload, JWT_SECRET)`.
+4. So sánh `expectedSig` với `signature` gửi lên — KHÁC nhau dù 1 byte → throw `JsonWebTokenError`.
+5. Nếu khớp → check `exp > now` — quá hạn → throw `TokenExpiredError`.
+6. Nếu cả 2 OK → return decoded payload.
+
+**Vì sao user không tự sửa được role thành ADMIN?**
+- User decode payload (base64url, không cần secret) → đổi `role: 'USER'` thành `role: 'ADMIN'` → re-encode → ghép lại signature CŨ.
+- BE recompute signature từ header+payload mới (đã sửa) → ra signature MỚI khác signature cũ user gửi → throw error.
+- Để forge thành công, user phải biết `JWT_SECRET` để compute signature đúng — bất khả thi nếu secret 256-bit random và lưu trong `.env` chmod 600.
+
+**HS256 vs RS256 — tại sao em chọn HS256?**
+
+| Tiêu chí | HS256 (em dùng) | RS256 |
+|---|---|---|
+| Loại key | Symmetric — 1 secret | Asymmetric — private key (sign) + public key (verify) |
+| Secret | 256-bit random string | RSA keypair 2048+ bit |
+| Tốc độ sign | ~0.05 ms | ~5 ms (chậm hơn ~100×) |
+| Tốc độ verify | ~0.05 ms | ~0.2 ms |
+| Phù hợp | Sign và verify ở cùng 1 service | Nhiều service verify, 1 service sign (microservices) |
+| Phân phối khoá | Chỉ 1 nơi cần secret | Public key có thể chia sẻ rộng |
+
+**Em chọn HS256 vì:**
+- BE chỉ là 1 monolith Express duy nhất — vừa sign (login/refresh) vừa verify (mỗi request) → không cần tách private/public.
+- HS256 nhanh hơn ~100× lúc sign → login/refresh response nhanh hơn vài ms.
+- Setup đơn giản: 1 secret trong `.env`, không cần generate keypair.
+
+**Vì sao 2 secret riêng cho access và refresh?**
+- **Defense in depth:** nếu `JWT_SECRET` lộ qua log/git accidentally → attacker forge access token, NHƯNG không forge được refresh token (cần `JWT_REFRESH_SECRET` khác). Khi user logout, refresh bị xoá DB → access forge cũng vô hiệu sau ≤30 phút (vì middleware check DB).
+- **Domain separation:** access dùng cho mọi request (bề mặt rộng), refresh chỉ dùng cho 1 endpoint `/auth/refresh` (bề mặt hẹp). Tách secret = nếu compromise xảy ra thì biết chính xác phải rotate secret nào.
+- **Code rõ ý:** đọc code thấy `JWT_SECRET` vs `JWT_REFRESH_SECRET` biết ngay token nào → tránh nhầm khi refactor.
+
+**Sinh secret an toàn:**
+```bash
+openssl rand -base64 48        # → 64-char base64 string ~ 384 bit entropy
+# hoặc:
+node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"
+```
+Em ghi vào `.env.example` hướng dẫn sinh secret, không commit value thật.
+
+**Hạn chế trung thực — secret rotation chưa làm:**
+- Nếu `JWT_SECRET` lộ, em chỉ có thể đổi giá trị mới + restart server → MỌI user đang đăng nhập bị 401 ngay (access token cũ ký bằng secret cũ → verify fail) → phải đăng nhập lại.
+- Lý tưởng: dual-secret window — chấp nhận token ký bằng `JWT_SECRET_OLD` trong 30 phút sau khi rotate, sau đó chỉ chấp nhận `JWT_SECRET_NEW`. Em ghi vào hướng phát triển.
+
+**Phản biện thường gặp:**
+- "JWT có vulnerable `alg: none` không?" → "`jsonwebtoken` library version 9+ mặc định KHÔNG chấp nhận `alg: none`. Em đang dùng v9.0.2."
+- "Secret 256-bit có đủ không?" → "Đủ. HMAC-SHA256 collision attack cần 2^128 phép tính → không khả thi với hardware hiện tại."
+- "Tại sao không dùng EdDSA (Ed25519) thay HS256?" → "EdDSA mới hơn nhưng `jsonwebtoken` chưa support trực tiếp, phải dùng `jose` library — em chưa migrate."
+
+### A.23 — Socket.IO luồng end-to-end — connect, auth, notification, reconnect, force logout
+
+**Ngắn:** FE dùng Socket.IO client kết nối tới BE qua port 4000 ngay sau khi đăng nhập. Token JWT được gửi qua `auth` handshake để xác thực 1 lần → mỗi user join vào "phòng riêng" `user_<id>` → BE service emit notification vào phòng đó → chỉ người dùng đó nhận.
+
+**Stack thư viện:**
+- BE: `socket.io` v4 (file `BE/src/utils/socketService.ts`)
+- FE: `socket.io-client` v4 (file `FE/src/hooks/useSocket.ts`)
+- Cả 2 nói chuyện qua giao thức Socket.IO (HTTP long-polling + WebSocket upgrade) trên cùng port 4000 với REST API.
+
+**Server bootstrap (`BE/src/index.ts`):**
+
+```ts
+import { createServer } from 'http';
+import { initSocket } from './utils/socketService';
+
+const httpServer = createServer(app);          // Express app + Socket.IO chia chung HTTP server
+initSocket(httpServer);                         // attach Socket.IO vào HTTP server
+httpServer.listen(PORT);                        // listen 1 port duy nhất
+```
+
+→ Cùng 1 port 4000 phục vụ cả `GET /api/personnel` (HTTP) lẫn `wss://host:4000/socket.io/?EIO=4&...` (WebSocket).
+
+**Init Socket.IO server (`socketService.ts:25-67`):**
+
+```ts
+io = new Server(httpServer, {
+  cors: { origin: allowCorsOrigin, credentials: true },
+  pingTimeout: 60000,        // sau 60s không nhận pong từ client → kill connection
+  pingInterval: 25000,       // 25s gửi ping 1 lần để giữ kết nối sống
+});
+
+// Middleware xác thực — chạy 1 lần khi handshake, không phải mỗi event
+io.use((socket, next) => {
+  const token = socket.handshake.auth.token;       // lấy token từ FE gửi trong `auth: { token }`
+  if (!token) return next(new Error('Không tìm thấy token'));
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET); // CÙNG secret như middleware HTTP
+    socket.user = decoded;                         // attach payload vào socket cho dùng sau
+    next();
+  } catch (error) {
+    if (error instanceof jwt.TokenExpiredError) {
+      return next(new Error('TOKEN_EXPIRED'));     // signal đặc biệt cho FE biết phải refresh
+    }
+    next(new Error('Token không hợp lệ'));
+  }
+});
+
+io.on('connection', (socket) => {
+  const userId = socket.user.id;
+  socket.join(`user_${userId}`);                   // mỗi user 1 room riêng theo id
+  socket.on('disconnect', () => socket.leave(`user_${userId}`));
+});
+```
+
+**Sequence diagram chi tiết:**
+
+#### Pha 1 — Connect và join room
+
+```
+FE useSocket hook              BE Socket.IO server                                 BE auth middleware
+       │                                │                                                  │
+   io(SOCKET_URL, {                     │                                                  │
+     auth: { token: <accessToken> },    │                                                  │
+     transports: ['websocket','polling'],                                                  │
+     reconnection: true,                │                                                  │
+     reconnectionAttempts: 10,          │                                                  │
+   })                                   │                                                  │
+       │                                │                                                  │
+       │── HTTP GET /socket.io/?EIO=4&transport=polling&t=... ───────────────────────────→│
+       │   (long-polling handshake)     │                                                  │
+       │                                │── io.use((socket, next) => verify) ─────────────→│
+       │                                │                                                  │
+       │                                │                       jwt.verify(token, JWT_SECRET)
+       │                                │                       → payload { id, username, role, quan_nhan_id, iat, exp }
+       │                                │                       socket.user = payload
+       │                                │                       next() — pass middleware
+       │                                │                                                  │
+       │                                │── io.on('connection', socket => …) ─────────────│
+       │                                │   socket.join(`user_${payload.id}`)              │
+       │                                │                                                  │
+       │←── 200 OK + sid (session id) ──│                                                  │
+       │                                │                                                  │
+       │── Upgrade: websocket ─────────→│                                                  │
+       │←── 101 Switching Protocols ────│                                                  │
+       │                                │                                                  │
+   socket.on('connect', ...)            │                                                  │
+   updateStatus('connected')            │                                                  │
+```
+
+#### Pha 2 — Server emit notification → FE nhận
+
+Ví dụ thực: Manager phê duyệt đề xuất → user người gửi nhận thông báo realtime.
+
+```
+BE proposal.service.approve()                BE socketService                            FE useSocket hook
+       │                                            │                                          │
+   const notification = await                       │                                          │
+     prisma.thongBao.create({ data: {               │                                          │
+       nguoi_nhan_id: proposal.nguoi_de_xuat_id,    │                                          │
+       loai: 'PROPOSAL_APPROVED',                   │                                          │
+       tieu_de: 'Đề xuất được duyệt',               │                                          │
+       noi_dung: '...'                              │                                          │
+     }})                                            │                                          │
+       │                                            │                                          │
+       │── emitNotificationToUser(                  │                                          │
+       │     proposal.nguoi_de_xuat_id,             │                                          │
+       │     notification) ────────────────────────→│                                          │
+       │                                            │                                          │
+       │                                  io.to(`user_${userId}`).emit(                       │
+       │                                    'new_notification', notification)                 │
+       │                                            │                                          │
+       │                                            │── WebSocket frame ─────────────────────→│
+       │                                            │   { event: 'new_notification',           │
+       │                                            │     data: { id, tieu_de, ... } }         │
+       │                                            │                                          │
+       │                                            │              socket.on('new_notification', n => onNotificationRef.current(n))
+       │                                            │                                          │
+       │                                            │              → React state setNotifications(prev => [n, ...prev])
+       │                                            │              → AntD message.info(n.tieu_de) toast
+       │                                            │              → badge số chưa đọc tăng 1
+```
+
+File: `BE/src/helpers/notification/helpers.ts:94, 104`, `BE/src/utils/socketService.ts:73-76` (`emitNotificationToUser`).
+
+**Vì sao dùng room `user_<id>` thay vì broadcast?**
+- Mỗi notification có người nhận cụ thể (`nguoi_nhan_id`). Broadcast → mọi user thấy → leak data.
+- Room cho phép gửi targeted: `io.to('user_X').emit(...)` chỉ tới socket trong room đó. Nếu user X có 2 tab mở (cùng login) → cả 2 tab đều nhận (vì 2 socket cùng join `user_X`).
+
+#### Pha 3 — Access token hết hạn giữa kết nối Socket.IO
+
+Đây là edge case quan trọng: socket đang connected, token expire (sau 30 phút) → server reject reconnect.
+
+```
+FE socket                       BE Socket.IO middleware                FE useSocket
+   │                                   │                                    │
+   (kết nối sống đã 30 phút)           │                                    │
+   ping/pong vẫn duy trì                │                                    │
+                                       │                                    │
+   (mạng rớt 1 giây — laptop sleep)    │                                    │
+   socket disconnected                  │                                    │
+                                       │                                    │
+   reconnection auto kick in           │                                    │
+   io reconnect with same auth.token   │                                    │
+   │── handshake với token cũ ────────→│                                    │
+                                       │── jwt.verify → TokenExpiredError ─→│
+                                       │← throw new Error('TOKEN_EXPIRED') ─│
+                                       │                                    │
+   socket.on('connect_error', err) ←─── err.message === 'TOKEN_EXPIRED'    │
+   if (err.message === 'TOKEN_EXPIRED') {                                   │
+     const stored = localStorage.getItem('refreshToken')                    │
+     const res = await axios.post('/api/auth/refresh', { refreshToken: stored })
+     const newToken = res.data.data.accessToken                             │
+     localStorage.setItem('accessToken', newToken)                          │
+     socket.auth.token = newToken                                           │
+     window.dispatchEvent(new CustomEvent('tokenRefreshed',                 │
+       { detail: { accessToken: newToken } }))    ← sync với axios interceptor
+     socket.connect()  ← retry handshake với token mới                      │
+   }
+   │── handshake với token mới ──────→│
+                                       │── jwt.verify OK → next() ─────────→│
+   socket.on('connect') ←─── reconnected                                    │
+```
+
+File: `FE/src/hooks/useSocket.ts:65-90`.
+
+**Custom event `tokenRefreshed`** đáng chú ý: Khi axios interceptor (REST flow) refresh token, nó dispatch event này → useSocket lắng nghe → update `socket.auth.token` luôn → khỏi phải refresh 2 lần (1 bởi axios, 1 bởi socket).
+
+#### Pha 4 — Force logout cross-device
+
+Tình huống: User đăng nhập máy A → đăng nhập máy B → máy A phải bị đẩy ra ngay.
+
+```
+Máy B login                     BE auth.service                        DB                    Máy A
+     │                                │                                  │                      │
+   POST /api/auth/login                                                  │                      │
+     │── { username, password } ────→│                                  │                      │
+     │                                │── login() ────────────────────────                      │
+     │                                │   newRefreshToken = ...           │                      │
+     │                                │── findFirstActiveSocket(user A's id)                    │
+     │                                │     từ Socket.IO io.sockets.adapter.rooms ─────────────│
+     │                                │                                  │                      │
+     │                                │── emitToUser(userId,             │                      │
+     │                                │     'force_logout',              │                      │
+     │                                │     { message: 'Tài khoản vừa đăng nhập từ thiết bị khác' })
+     │                                │                                  │                      │
+     │                                │                                  │── WS frame ─────────→│
+     │                                │                                  │   { event: 'force_logout', data: {…} }
+     │                                │                                  │                      │
+     │                                │                                  │      socket.on('force_logout', data => {
+     │                                │                                  │        onForceLogoutRef.current?.(data)
+     │                                │                                  │      })
+     │                                │                                  │      → AuthContext.logout()
+     │                                │                                  │      → localStorage.clear()
+     │                                │                                  │      → router.push('/login')
+     │                                │                                  │      → AntD modal "Tài khoản đã đăng nhập ở nơi khác"
+     │                                │                                  │                      │
+     │                                │── update TaiKhoan.refreshToken = newRefreshToken (B's) │
+     │                                │                                  │                      │
+     │←── 200 + tokens ──────────────│                                  │                      │
+```
+
+File: `BE/src/services/auth.service.ts` (login), `FE/src/hooks/useSocket.ts:90` (`socket.on('force_logout')`).
+
+**Ngay cả khi máy A offline lúc B login** (không nhận được force_logout): khi máy A online lại + access token expire + gọi refresh → BE thấy `account.refreshToken !== request.refreshToken` (vì đã bị B ghi đè) → 401 → axios interceptor force logout → cùng kết quả.
+
+#### Pha 5 — Disconnect
+
+```
+FE đóng tab / điều hướng           BE
+     │                                │
+   browser fires unload              │
+   socket emits disconnect           │
+   useSocket cleanup function:       │
+     socket.disconnect()             │
+     │── close frame ──────────────→│
+                                     │── io.on('disconnect', ...) ──→
+                                     │   socket.leave(`user_${userId}`)  ← tự động khi socket close
+```
+
+**Giao thức transport — vì sao có cả `websocket` và `polling`?**
+
+Socket.IO mặc định thử upgrade lên WebSocket sau khi handshake bằng HTTP polling. FE em config `transports: ['websocket', 'polling']` — thử WebSocket trước, fallback polling nếu LAN/firewall chặn.
+
+**Cấu hình reconnection (`useSocket.ts:48-54`):**
+```ts
+{
+  reconnection: true,
+  reconnectionDelay: 1000,            // delay đầu tiên 1s
+  reconnectionDelayMax: 5000,         // backoff tối đa 5s
+  reconnectionAttempts: 10,           // bỏ cuộc sau 10 lần thử
+}
+```
+
+→ Wifi rớt 30 giây? Socket.IO tự reconnect 10 lần với delay 1s, 1s, 2s, 4s, 5s, 5s, ... → tổng ~35 giây. Sau đó FE hiển thị badge "Disconnected" — user vẫn dùng REST được (chỉ mất realtime).
+
+**Hạn chế trung thực:**
+- Em chưa scale ngang Socket.IO. Nếu deploy 2 instance BE, room `user_X` ở instance 1 không thấy được user emit từ instance 2. Cần `socket.io-redis-adapter` để pub/sub event qua Redis. Đã ghi vào hướng phát triển.
+- Polling fallback nuốt nhiều CPU/memory hơn WebSocket. Trên LAN nội bộ Học viện, WebSocket luôn work → fallback hiếm khi kích hoạt.
+
+**Phản biện:**
+- "Sao không lưu auth token vào cookie httpOnly thay handshake `auth: {token}`?" → "Cookie tự gửi mỗi request, an toàn hơn localStorage, nhưng cross-origin (FE 3000 ↔ BE 4000) cần config phức tạp + CSRF token. Em chọn handshake auth cho đơn giản, chấp nhận rủi ro XSS."
+- "Vì sao verify token ở handshake mà không verify lại mỗi event?" → "Verify mỗi event tốn ~0.5 ms × hàng nghìn event/s → quá tốn. Token chỉ verify lúc connect; nếu user bị revoke giữa session → BE đóng connection bằng `socket.disconnect()` từ event handler `force_logout` flow."
+- "Có rate-limit Socket.IO event không?" → "Chưa. Socket.IO có thư viện `socket.io-rate-limiter` nhưng em chưa setup vì user nội bộ. Đã ghi hướng phát triển."
+
 ---
 
 ## B. Kiến trúc và design pattern
