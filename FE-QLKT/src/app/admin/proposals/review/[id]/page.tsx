@@ -36,7 +36,6 @@ import {
   DeleteOutlined,
   HistoryOutlined,
 } from '@ant-design/icons';
-import { EditableCell } from '@/components/shared/EditableCell';
 import { DecisionModal } from '@/components/decisions/DecisionModal';
 import { PersonnelRewardHistoryModal } from '@/components/proposals/bulk/PersonnelRewardHistoryModal';
 import { ServiceHistoryModal } from '@/components/proposals/bulk/ServiceHistoryModal';
@@ -56,7 +55,7 @@ import {
   type CongHienHeSoGroup,
   getDanhHieuName,
 } from '@/constants/danhHieu.constants';
-import { renderServiceTime } from '@/lib/award/serviceTimeHelpers';
+import { renderServiceTime, type ServiceTimeRow } from '@/lib/award/serviceTimeHelpers';
 import {
   PROPOSAL_REVIEW_CARD_TITLES,
   PROPOSAL_STATUS,
@@ -82,6 +81,8 @@ import {
   getDurationDisplay,
   parseJsonArray,
 } from './helpers';
+import { buildDonViHangNamColumns } from './columns/donViHangNam';
+import { buildThanhTichColumns } from './columns/thanhTich';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -101,7 +102,7 @@ export default function ProposalDetailPage() {
   const [positionHistoriesMap, setPositionHistoriesMap] = useState<
     Record<string, PositionHistoryEntry[]>
   >({});
-  const [personnelDetails, setPersonnelDetails] = useState<Record<string, unknown>>({});
+  const [personnelDetails, setPersonnelDetails] = useState<Record<string, ServiceTimeRow>>({});
   const [approving, setApproving] = useState(false);
   const [rejecting, setRejecting] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -152,7 +153,7 @@ export default function ProposalDetailPage() {
 
   const fetchPersonnelDetails = useCallback(async (danhHieuItems: DanhHieuItem[]) => {
     try {
-      const detailsMap: Record<string, unknown> = {};
+      const detailsMap: Record<string, ServiceTimeRow> = {};
 
       await Promise.all(
         danhHieuItems.map(async item => {
@@ -160,10 +161,9 @@ export default function ProposalDetailPage() {
             try {
               const personnelResponse = await apiClient.getPersonnelById(item.personnel_id);
               if (personnelResponse.success && personnelResponse.data) {
-                detailsMap[item.personnel_id] = personnelResponse.data;
+                detailsMap[item.personnel_id] = personnelResponse.data as ServiceTimeRow;
               }
-            } catch (error) {
-              // Ignore errors for individual personnel
+            } catch {
             }
           }
         })
@@ -690,7 +690,7 @@ export default function ProposalDetailPage() {
             width: 150,
             align: 'center' as const,
             render: (_: unknown, record: DanhHieuItem) => {
-              const person = personnelDetails[record.personnel_id ?? ''] as any;
+              const person = personnelDetails[record.personnel_id ?? ''];
               if (!person) return '';
               if (!record.thang) return <Text type="secondary">—</Text>;
               return renderServiceTime(person, record.nam, record.thang);
@@ -721,7 +721,7 @@ export default function ProposalDetailPage() {
             width: 150,
             align: 'center' as const,
             render: (_: unknown, record: DanhHieuItem) => {
-              const display = getDurationDisplay((record as any).thoi_gian_nhom_0_7);
+              const display = getDurationDisplay(record.thoi_gian_nhom_0_7);
               return display
                 ? display
                 : totalTimeByGroup(
@@ -736,7 +736,7 @@ export default function ProposalDetailPage() {
             width: 150,
             align: 'center' as const,
             render: (_: unknown, record: DanhHieuItem) => {
-              const display = getDurationDisplay((record as any).thoi_gian_nhom_0_8);
+              const display = getDurationDisplay(record.thoi_gian_nhom_0_8);
               return display
                 ? display
                 : totalTimeByGroup(
@@ -751,7 +751,7 @@ export default function ProposalDetailPage() {
             width: 150,
             align: 'center' as const,
             render: (_: unknown, record: DanhHieuItem) => {
-              const display = getDurationDisplay((record as any).thoi_gian_nhom_0_9_1_0);
+              const display = getDurationDisplay(record.thoi_gian_nhom_0_9_1_0);
               return display
                 ? display
                 : totalTimeByGroup(
@@ -936,300 +936,17 @@ export default function ProposalDetailPage() {
       column.key === 'so_quyet_dinh' ? [congHienThangNhanColumn, column] : [column]
     );
 
-  const donViHangNamColumns = [
-    {
-      title: 'STT',
-      key: 'stt',
-      width: 60,
-      align: 'center' as const,
-      render: (_: unknown, __: unknown, index: number) => index + 1,
-    },
-    {
-      title: 'Loại đơn vị',
-      key: 'loai_don_vi',
-      width: 150,
-      align: 'center' as const,
-      render: (_: unknown, record: DanhHieuItem) => {
-        const type =
-          record.don_vi_type ||
-          (record.co_quan_don_vi_cha ? 'DON_VI_TRUC_THUOC' : 'CO_QUAN_DON_VI');
-        return (
-          <div style={{ textAlign: 'center' }}>
-            <Tag color={type === 'CO_QUAN_DON_VI' ? 'blue' : 'green'}>
-              {type === 'CO_QUAN_DON_VI' ? 'Cơ quan đơn vị' : 'Đơn vị trực thuộc'}
-            </Tag>
-          </div>
-        );
-      },
-    },
-    {
-      title: 'Mã đơn vị',
-      dataIndex: 'ma_don_vi',
-      key: 'ma_don_vi',
-      width: 150,
-      align: 'center' as const,
-      render: (text: string) => (
-        <div style={{ textAlign: 'center' }}>
-          <Text code>{text || '-'}</Text>
-        </div>
-      ),
-    },
-    {
-      title: 'Tên đơn vị',
-      dataIndex: 'ten_don_vi',
-      key: 'ten_don_vi',
-      width: 250,
-      align: 'center' as const,
-      render: (text: string) => (
-        <div style={{ textAlign: 'center' }}>
-          <Text strong>{text || '-'}</Text>
-        </div>
-      ),
-    },
-    {
-      title: 'Năm',
-      dataIndex: 'nam',
-      key: 'nam',
-      width: 80,
-      align: 'center' as const,
-      render: (_: unknown, record: DanhHieuItem, index: number) => (
-        <div style={{ textAlign: 'center' }}>
-          <EditableCell
-            value={record.nam}
-            type="number"
-            onSave={val => updateDanhHieu(index, 'nam', parseInt(val))}
-            editable={proposal.status === PROPOSAL_STATUS.PENDING}
-          />
-        </div>
-      ),
-    },
-    {
-      title: 'Danh hiệu',
-      dataIndex: 'danh_hieu',
-      key: 'danh_hieu',
-      width: 200,
-      align: 'center' as const,
-      render: (_: unknown, record: DanhHieuItem, index: number) => {
-        const fullName = record.danh_hieu ? getDanhHieuName(record.danh_hieu) : null;
-        return (
-          <div style={{ textAlign: 'center' }}>
-            <Text>{fullName || '-'}</Text>
-          </div>
-        );
-      },
-    },
-    {
-      title: 'Số quyết định',
-      dataIndex: 'so_quyet_dinh',
-      key: 'so_quyet_dinh',
-      width: 180,
-      align: 'center' as const,
-      render: (_: unknown, record: DanhHieuItem, index: number) => {
-        // Check both so_quyet_dinh and legacy fields for backward compatibility
-        const soQuyetDinh =
-          record.so_quyet_dinh || record.so_quyet_dinh_bkbqp || record.so_quyet_dinh_cstdtq;
+  const donViHangNamColumns = buildDonViHangNamColumns({
+    proposalStatus: proposal.status,
+    updateDanhHieu,
+    handleOpenDecisionFile,
+    handleViewUnitHistory,
+  });
 
-        if (!soQuyetDinh || (typeof soQuyetDinh === 'string' && soQuyetDinh.trim() === '')) {
-          return (
-            <div style={{ textAlign: 'center' }}>
-              <span
-                style={{
-                  fontWeight: 400,
-                  fontStyle: 'italic',
-                  opacity: 0.6,
-                }}
-              >
-                Chưa có số quyết định
-              </span>
-            </div>
-          );
-        }
-
-        return (
-          <div style={{ textAlign: 'center' }}>
-            <a
-              onClick={e => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleOpenDecisionFile(soQuyetDinh);
-              }}
-              className="text-green-600 dark:text-green-400 font-medium underline cursor-pointer"
-            >
-              {soQuyetDinh}
-            </a>
-          </div>
-        );
-      },
-    },
-    {
-      title: 'Xem lịch sử khen thưởng',
-      key: 'history',
-      width: 180,
-      align: 'center' as const,
-      render: (_: unknown, record: DanhHieuItem) => (
-        <Button
-          type="link"
-          icon={<HistoryOutlined />}
-          size="small"
-          onClick={() => handleViewUnitHistory(record)}
-          disabled={!record.don_vi_id}
-        >
-          Xem lịch sử
-        </Button>
-      ),
-    },
-  ];
-
-  const thanhTichColumns = [
-    {
-      title: 'STT',
-      key: 'stt',
-      width: 60,
-      align: 'center' as const,
-      render: (_: unknown, __: unknown, index: number) => (
-        <div style={{ textAlign: 'center' }}>{index + 1}</div>
-      ),
-    },
-    {
-      title: 'Họ tên',
-      dataIndex: 'ho_ten',
-      key: 'ho_ten',
-      width: 250,
-      align: 'center' as const,
-      render: (text: string, record: ThanhTichItem) => {
-        const unitInfo = formatUnitInfo(record);
-
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <Text strong>{text}</Text>
-            {unitInfo && (
-              <Text type="secondary" style={{ fontSize: '12px', marginTop: '4px' }}>
-                {unitInfo}
-              </Text>
-            )}
-          </div>
-        );
-      },
-    },
-    {
-      title: 'Cấp bậc / Chức vụ',
-      key: 'cap_bac_chuc_vu',
-      width: 180,
-      align: 'center' as const,
-      render: (_: unknown, record: ThanhTichItem) => {
-        // Rank/position stored at proposal creation time (Step 3), not current personnel data
-        const capBac = record.cap_bac;
-        const chucVu = record.chuc_vu;
-
-        if (!capBac && !chucVu) {
-          return (
-            <div style={{ textAlign: 'center' }}>
-              <span style={{ fontStyle: 'italic', opacity: 0.6 }}>Chưa có dữ liệu</span>
-            </div>
-          );
-        }
-
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            {capBac && <Text strong>{capBac}</Text>}
-            {chucVu && (
-              <Text type="secondary" style={{ fontSize: '12px', marginTop: capBac ? '4px' : '0' }}>
-                {chucVu}
-              </Text>
-            )}
-          </div>
-        );
-      },
-    },
-    {
-      title: 'Năm',
-      dataIndex: 'nam',
-      key: 'nam',
-      width: 80,
-      align: 'center' as const,
-      render: (_: unknown, record: ThanhTichItem, index: number) => (
-        <div style={{ textAlign: 'center' }}>
-          <EditableCell
-            value={record.nam}
-            type="number"
-            onSave={val => updateThanhTich(index, 'nam', parseInt(val))}
-            editable={false}
-          />
-        </div>
-      ),
-    },
-    {
-      title: 'Loại',
-      dataIndex: 'loai',
-      key: 'loai',
-      width: 100,
-      align: 'center' as const,
-      render: (_: unknown, record: ThanhTichItem, index: number) => (
-        <div style={{ textAlign: 'center' }}>
-          <EditableCell
-            value={record.loai}
-            type="select"
-            options={[
-              { label: 'ĐTKH', value: 'DTKH' },
-              { label: 'SKKH', value: 'SKKH' },
-            ]}
-            onSave={val => updateThanhTich(index, 'loai', val)}
-            editable={false}
-          />
-        </div>
-      ),
-    },
-    {
-      title: 'Mô tả',
-      dataIndex: 'mo_ta',
-      key: 'mo_ta',
-      align: 'center' as const,
-      render: (_: unknown, record: ThanhTichItem, index: number) => (
-        <div style={{ textAlign: 'center' }}>
-          <EditableCell
-            value={record.mo_ta}
-            type="text"
-            onSave={val => updateThanhTich(index, 'mo_ta', val)}
-            editable={false}
-          />
-        </div>
-      ),
-    },
-    {
-      title: 'Số quyết định',
-      dataIndex: 'so_quyet_dinh',
-      key: 'so_quyet_dinh',
-      width: 180,
-      align: 'center' as const,
-      render: (_: unknown, record: ThanhTichItem, index: number) => {
-        const soQuyetDinh = record.so_quyet_dinh;
-        if (!soQuyetDinh || (typeof soQuyetDinh === 'string' && soQuyetDinh.trim() === '')) {
-          return (
-            <div style={{ textAlign: 'center' }}>
-              <span style={{ fontWeight: 400, fontStyle: 'italic', opacity: 0.6 }}>
-                Chưa có số quyết định
-              </span>
-            </div>
-          );
-        }
-
-        return (
-          <div style={{ textAlign: 'center' }}>
-            <a
-              onClick={e => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleOpenDecisionFile(soQuyetDinh);
-              }}
-              className="text-green-600 dark:text-green-400 font-medium underline cursor-pointer"
-            >
-              {soQuyetDinh}
-            </a>
-          </div>
-        );
-      },
-    },
-  ];
+  const thanhTichColumns = buildThanhTichColumns({
+    updateThanhTich,
+    handleOpenDecisionFile,
+  });
 
   const rowSelection = {
     selectedRowKeys,

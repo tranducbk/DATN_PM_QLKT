@@ -41,6 +41,7 @@ interface CreateDirectBody {
   quan_nhan_id?: string;
   danh_hieu?: string;
   nam?: number | string;
+  thang?: number | string;
   cap_bac?: string;
   chuc_vu?: string;
   so_quyet_dinh?: string;
@@ -179,7 +180,7 @@ class HCCSVVController {
 
   createDirect = catchAsync(async (req: Request, res: Response) => {
     const body = req.body as CreateDirectBody;
-    const { quan_nhan_id, danh_hieu, nam, cap_bac, chuc_vu, so_quyet_dinh, ghi_chu } = body;
+    const { quan_nhan_id, danh_hieu, nam, thang, cap_bac, chuc_vu, so_quyet_dinh, ghi_chu } = body;
     const adminUsername = getAdminUsername(req);
     if (!quan_nhan_id || !danh_hieu || !nam) {
       return ResponseHelper.badRequest(
@@ -191,8 +192,21 @@ class HCCSVVController {
     if (!Number.isInteger(yearNumber) || yearNumber <= 0) {
       return ResponseHelper.badRequest(res, 'Năm không hợp lệ');
     }
+    const monthNumber = thang === undefined ? undefined : Number(thang);
+    if (monthNumber !== undefined && (!Number.isInteger(monthNumber) || monthNumber < 1 || monthNumber > 12)) {
+      return ResponseHelper.badRequest(res, 'Tháng không hợp lệ (1-12)');
+    }
     const result = await hccsvvService.createDirect(
-      { quan_nhan_id, danh_hieu, nam: yearNumber, cap_bac, chuc_vu, so_quyet_dinh, ghi_chu },
+      {
+        quan_nhan_id,
+        danh_hieu,
+        nam: yearNumber,
+        thang: monthNumber,
+        cap_bac,
+        chuc_vu,
+        so_quyet_dinh,
+        ghi_chu,
+      },
       adminUsername
     );
     res.locals.createdId = result.id;

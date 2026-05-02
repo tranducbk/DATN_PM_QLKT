@@ -1,3 +1,5 @@
+import type { ContributionTimeAggregate } from '@/lib/types/proposal';
+
 export interface DanhHieuItem {
   personnel_id?: string;
   don_vi_id?: string;
@@ -24,6 +26,9 @@ export interface DanhHieuItem {
   ngay_nhan?: string | null;
   thang_nhan?: number | null;
   nam_nhan?: number | null;
+  thoi_gian_nhom_0_7?: ContributionTimeAggregate | null;
+  thoi_gian_nhom_0_8?: ContributionTimeAggregate | null;
+  thoi_gian_nhom_0_9_1_0?: ContributionTimeAggregate | null;
   co_quan_don_vi?: {
     id: string;
     ten_co_quan_don_vi: string;

@@ -1,3 +1,4 @@
+import type { Prisma } from '../generated/prisma';
 import { prisma } from '../models';
 import { quanNhanRepository } from '../repositories/quanNhan.repository';
 import { donViTrucThuocRepository } from '../repositories/unit.repository';
@@ -59,6 +60,17 @@ export interface HccsvvValidItem {
   so_quyet_dinh: string;
   ghi_chu: string | null;
   history: Array<{ nam: number; danh_hieu: string; so_quyet_dinh: string | null }>;
+}
+
+interface CreateDirectInput {
+  quan_nhan_id: string;
+  danh_hieu: string;
+  nam: number;
+  thang?: number;
+  cap_bac?: string | null;
+  chuc_vu?: string | null;
+  so_quyet_dinh?: string | null;
+  ghi_chu?: string | null;
 }
 
 class HCCSVVService {
@@ -780,10 +792,10 @@ class HCCSVVService {
    * @param {string} adminUsername - Username of admin creating the award
    * @returns {Promise<Object>}
    */
-  async createDirect(data, adminUsername = 'SuperAdmin') {
-    const { quan_nhan_id, danh_hieu, nam, cap_bac, chuc_vu, so_quyet_dinh, ghi_chu } = data;
+  async createDirect(data: CreateDirectInput, adminUsername = 'SuperAdmin') {
+    const { quan_nhan_id, danh_hieu, nam, thang, cap_bac, chuc_vu, so_quyet_dinh, ghi_chu } = data;
 
-    const validDanhHieu = Object.values(DANH_HIEU_HCCSVV);
+    const validDanhHieu = Object.values(DANH_HIEU_HCCSVV) as readonly string[];
     if (!validDanhHieu.includes(danh_hieu)) {
       throw new ValidationError(
         `Danh hiệu không hợp lệ. Chỉ chấp nhận: ${formatDanhHieuList(validDanhHieu)}`
@@ -817,24 +829,23 @@ class HCCSVVService {
       where: { quan_nhan_id: quan_nhan_id },
       select: { danh_hieu: true, nam: true },
     });
-    const orderError = validateHCCSVVRankOrder(danh_hieu, nam as number, existingRanks);
+    const orderError = validateHCCSVVRankOrder(danh_hieu, nam, existingRanks);
     if (orderError) {
       throw new ValidationError(`Quân nhân ${personnel.ho_ten}: ${orderError}`);
     }
 
-    // Create the award
-    const createData = {
-      QuanNhan: { connect: { id: quan_nhan_id as string } },
-      danh_hieu: danh_hieu as string,
-      nam: nam as number,
-      cap_bac: (cap_bac ?? personnel.cap_bac) as string,
-      chuc_vu: chuc_vu as string,
-      so_quyet_dinh: so_quyet_dinh as string,
-      ghi_chu: ghi_chu as string,
+    const createData: Prisma.KhenThuongHCCSVVUncheckedCreateInput = {
+      quan_nhan_id,
+      danh_hieu,
+      nam,
+      thang: thang ?? 12,
+      cap_bac: cap_bac ?? personnel.cap_bac ?? null,
+      chuc_vu: chuc_vu ?? null,
+      so_quyet_dinh: so_quyet_dinh ?? null,
+      ghi_chu: ghi_chu ?? null,
     };
     const createdRecord = await tenureMedalRepository.createRaw({
-      // Phase 1 refactor in progress: createData is missing `thang` (NOT NULL in schema). Loose cast preserves prior runtime behavior; remove once Phase 1 finalizes the shape.
-      data: createData as any,
+      data: createData,
       include: {
         QuanNhan: {
           select: {

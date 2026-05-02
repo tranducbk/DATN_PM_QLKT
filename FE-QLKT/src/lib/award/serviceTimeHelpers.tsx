@@ -12,7 +12,7 @@ type ServiceTimeSummary = {
   totalMonths: number;
 };
 
-type ServiceTimeRow = {
+export type ServiceTimeRow = {
   id: string;
   ngay_nhap_ngu?: DateInput;
   ngay_xuat_ngu?: DateInput;

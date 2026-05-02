@@ -10,6 +10,7 @@ interface MockResponse {
   getHeader: jest.Mock;
   removeHeader: jest.Mock;
   set: jest.Mock;
+  on: jest.Mock;
   statusCode?: number;
   body?: unknown;
 }
@@ -24,6 +25,7 @@ function makeRes(): MockResponse {
     getHeader: jest.fn(),
     removeHeader: jest.fn(),
     set: jest.fn(),
+    on: jest.fn(),
   };
   res.status.mockImplementation((code: number) => {
     res.statusCode = code;
@@ -86,18 +88,18 @@ async function hitLimiter(
   });
 }
 
-describe('authLimiter (login/auth endpoints — 10 req / 15min)', () => {
-  it('allows the first 10 requests from an IP', async () => {
+describe('authLimiter (login/auth endpoints — 30 req / 5min)', () => {
+  it('allows the first 30 requests from an IP', async () => {
     const ip = '10.0.0.1';
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 30; i++) {
       const result = await hitLimiter(authLimiter, ip);
       expect(result.allowed).toBe(true);
     }
   });
 
-  it('blocks the 11th request from the same IP within the window', async () => {
+  it('blocks the 31st request from the same IP within the window', async () => {
     const ip = '10.0.0.2';
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 30; i++) {
       await hitLimiter(authLimiter, ip);
     }
     const blocked = await hitLimiter(authLimiter, ip);
@@ -112,7 +114,7 @@ describe('authLimiter (login/auth endpoints — 10 req / 15min)', () => {
   it('counts each IP independently (IP A reaching limit does not affect IP B)', async () => {
     const ipA = '10.0.0.3';
     const ipB = '10.0.0.4';
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 30; i++) {
       await hitLimiter(authLimiter, ipA);
     }
     const aBlocked = await hitLimiter(authLimiter, ipA);

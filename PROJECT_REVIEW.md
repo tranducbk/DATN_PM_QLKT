@@ -289,3 +289,32 @@ Khi thêm loại khen thưởng mới, follow:
 8. FE: add slug + display name vào `FE/constants/danhHieu.constants.ts` (sau khi có shared package thì chỉ 1 chỗ)
 9. FE: add API functions vào `FE/lib/api/awards.ts`
 10. FE: add page route + Step2/Step3 component
+
+---
+
+## 8. Hotfixes — 2026-05-02
+
+Đợt review tổng thể (cấu trúc + chất lượng code BE/FE), kết quả:
+
+| # | Việc | Trạng thái | Evidence |
+|---|---|---|---|
+| H1 | Bỏ `as any` ở `BE/src/services/tenureMedal.service.ts:837` (createDirect HCCSVV) | DONE | Type chuyển sang `Prisma.KhenThuongHCCSVVUncheckedCreateInput`; thêm `interface CreateDirectInput`; thêm field `thang` (default 12) cho phù hợp schema. Controller forward `thang` optional. |
+| H2 | Bỏ 4 chỗ `as any` ở `FE/src/app/admin/proposals/review/[id]/page.tsx` (line 693/724/739/754 cũ) | DONE | Export `ServiceTimeRow` từ `lib/award/serviceTimeHelpers.tsx`; `personnelDetails` state typed `Record<string, ServiceTimeRow>`; thêm `thoi_gian_nhom_0_7/0_8/0_9_1_0` vào `DanhHieuItem`. |
+| H3 | Tạo `.env.example` cho FE (BE đã có sẵn) | DONE | `FE-QLKT/.env.example` chứa `NEXT_PUBLIC_BASE_URL`. |
+| H4 | Tách columns inline trong review page (1843 LOC) | PARTIAL | Tách `donViHangNamColumns` + `thanhTichColumns` thành `columns/donViHangNam.tsx` (157 LOC) + `columns/thanhTich.tsx` (166 LOC). Page giảm còn 1561 LOC. **Còn lại** `caNhanHangNamColumns` + `congHienColumns` chưa tách vì dependency vào `personnelDetails`, `positionHistoriesMap`, `congHienThangNhanColumn`, `totalTimeByGroup` — cần browser test rộng trước khi đụng. |
+
+**Verify state sau hotfixes:**
+- BE typecheck: clean
+- FE typecheck: clean
+- FE lint: clean (no warnings/errors)
+- BE jest: 888 pass / 2 fail — khớp baseline (2 fail trong `tests/auth/rate-limit.test.ts` không liên quan, có sẵn từ trước)
+
+**Còn pending (nằm ngoài đợt hotfix này):**
+- §3.1 duplicate `danhHieu.constants.ts` BE↔FE — chưa fix
+- §3.2 schema couple tên chuỗi (`nhan_bkbqp/cstdtq/bkttcp`) — chưa fix
+- §3.3 slug `tenure-medals` scattered — đã có `AWARD_SLUGS` constants, một số file đã dùng nhưng FE folder route Next.js vẫn cần
+- §3.4 display name VN hardcoded ở FE — chưa rà toàn bộ
+- §3.5 Step2/Step3 ~9k LOC duplicate — chưa fix
+- §5 cleanup 10 fallback thừa — chưa fix
+- CI workflow (`.github/workflows/test.yml`) — user yêu cầu skip
+
