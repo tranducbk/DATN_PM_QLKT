@@ -55,11 +55,11 @@ Hệ thống cung cấp 15 nhóm chức năng chính: Đăng nhập, Quản lý 
 Quản lý quân nhân là một trong những module tương tác cao nhất của hệ thống. Quân nhân là thực thể trung tâm liên kết tới gần như mọi bảng nghiệp vụ khác (danh hiệu hằng năm, HCCSVV, HCBVTQ, thành tích khoa học, đột xuất, đề xuất). Phân rã chức năng gồm các use case con:
 
 \begin{itemize}
-    \item \textbf{Tạo mới quân nhân} --- chỉ Admin có quyền. Yêu cầu nhập tối thiểu họ tên, số CCCD, ngày sinh, giới tính, ngày nhập ngũ, đơn vị (CQĐV hoặc ĐVTT), chức vụ. Hệ thống kiểm tra trùng CCCD trước khi ghi vào cơ sở dữ liệu.
-    \item \textbf{Cập nhật thông tin} --- Admin sửa được toàn bộ; Manager chỉ sửa được các trường ngoại trừ đơn vị và CCCD; bản thân quân nhân (User) chỉ sửa được địa chỉ, số điện thoại, email.
-    \item \textbf{Chuyển đơn vị} --- chỉ Admin. Khi chuyển, hệ thống cập nhật số lượng quân nhân của đơn vị cũ (giảm 1) và đơn vị mới (tăng 1) trong cùng một transaction. Quan trọng là toàn bộ lịch sử khen thưởng được giữ nguyên --- không tạo bản ghi mới hay xoá bản ghi cũ.
-    \item \textbf{Quản lý lịch sử chức vụ} --- Admin nhập danh sách các giai đoạn quân nhân giữ chức vụ với hệ số tương ứng. Dữ liệu này là đầu vào cho thuật toán xét khen thưởng HCBVTQ.
-    \item \textbf{Nhập / xuất Excel} --- cho phép tải lên hoặc tải xuống danh sách quân nhân theo định dạng quy chuẩn. Thao tác nhập đi qua hai bước (xem trước, xác nhận) sẽ được mô tả chi tiết tại \ref{subsection:2.2.7}.
+    \item \textbf{Tạo mới quân nhân}: chỉ Admin có quyền. Yêu cầu nhập tối thiểu họ tên, số CCCD, ngày sinh, giới tính, ngày nhập ngũ, đơn vị (CQĐV hoặc ĐVTT), chức vụ. Hệ thống kiểm tra trùng CCCD trước khi ghi vào cơ sở dữ liệu.
+    \item \textbf{Cập nhật thông tin}: Admin sửa được toàn bộ; Manager chỉ sửa được các trường ngoại trừ đơn vị và CCCD; bản thân quân nhân (User) chỉ sửa được địa chỉ, số điện thoại, email.
+    \item \textbf{Chuyển đơn vị}: chỉ Admin. Khi chuyển, hệ thống cập nhật số lượng quân nhân của đơn vị cũ (giảm 1) và đơn vị mới (tăng 1) trong cùng một transaction. Quan trọng là toàn bộ lịch sử khen thưởng được giữ nguyên, không tạo bản ghi mới hay xoá bản ghi cũ.
+    \item \textbf{Quản lý lịch sử chức vụ}: Admin nhập danh sách các giai đoạn quân nhân giữ chức vụ với hệ số tương ứng. Dữ liệu này là đầu vào cho thuật toán xét khen thưởng HCBVTQ.
+    \item \textbf{Nhập / xuất Excel}: cho phép tải lên hoặc tải xuống danh sách quân nhân theo định dạng quy chuẩn. Thao tác nhập đi qua hai bước (xem trước, xác nhận) sẽ được mô tả chi tiết tại \ref{subsection:2.2.7}.
 \end{itemize}
 
 \begin{figure}[H]
@@ -91,7 +91,7 @@ Module quản lý đơn vị bao gồm các use case con: tạo mới CQĐV, t�
     \item \textbf{Đơn vị hằng năm} (\texttt{DON\_VI\_HANG\_NAM}): danh hiệu ĐVQT, ĐVTT cộng các cờ BKBTBQP / BKTTCP cấp đơn vị.
     \item \textbf{HCCSVV} (\texttt{NIEN\_HAN}): Huy chương Chiến sĩ vẻ vang theo các mốc 10 / 15 / 20 năm phục vụ tích luỹ tới năm xét.
     \item \textbf{HCBVTQ} (\texttt{CONG\_HIEN}): Huân chương Bảo vệ Tổ quốc dựa trên thời gian giữ chức vụ thuộc các nhóm hệ số khác nhau.
-    \item \textbf{Kỷ niệm chương} (\texttt{KNC\_VSNXD\_QDNDVN}): Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN --- một lần duy nhất theo giới tính (nam 25 năm phục vụ, nữ 20 năm).
+    \item \textbf{Kỷ niệm chương} (\texttt{KNC\_VSNXD\_QDNDVN}): Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN, một lần duy nhất theo giới tính (nam 25 năm phục vụ, nữ 20 năm).
     \item \textbf{Quân kỳ quyết thắng} (\texttt{HC\_QKQT}): Huy chương Quân kỳ quyết thắng cho cán bộ phục vụ đủ 25 năm.
     \item \textbf{Thành tích khoa học} (\texttt{NCKH}): Khen thưởng đề tài khoa học hoặc sáng kiến kinh nghiệm.
 \end{enumerate}
@@ -151,10 +151,10 @@ Khác biệt quan trọng với chuỗi cá nhân là điều kiện ``ít nhấ
 Học viện có lượng dữ liệu lịch sử lớn được lưu trên Excel trước khi triển khai phần mềm; do đó chức năng nhập Excel hàng loạt là cầu nối quan trọng giúp hệ thống tiếp nhận dữ liệu cũ mà không phải nhập tay từng bản ghi. Quy trình gồm bốn use case con:
 
 \begin{itemize}
-    \item \textbf{Tải tệp mẫu} --- hệ thống sinh tệp Excel có cấu trúc cột chuẩn theo từng loại nghiệp vụ (quân nhân, danh hiệu hằng năm, lịch sử chức vụ, HCCSVV, ...) cùng các Data Validation rule cho phép chọn từ danh sách thả xuống ngay trong tệp.
-    \item \textbf{Xem trước} --- sau khi cán bộ điền dữ liệu và tải tệp lên, hệ thống đọc nội dung từng dòng, đối chiếu với schema Zod và các quy tắc nghiệp vụ, sau đó hiển thị kết quả gồm danh sách dòng hợp lệ và danh sách dòng có lỗi (kèm chỉ số dòng và mô tả lỗi). Bước này không ghi vào cơ sở dữ liệu.
-    \item \textbf{Xác nhận} --- cán bộ kiểm tra danh sách hợp lệ rồi xác nhận. Hệ thống mở một transaction Prisma, ghi tuần tự từng dòng; nếu xảy ra lỗi tại bất kỳ dòng nào, toàn bộ thao tác được hủy bỏ và cơ sở dữ liệu giữ nguyên trạng thái trước khi nhập.
-    \item \textbf{Xuất danh sách} --- cho phép xuất kết quả khen thưởng theo nhiều tiêu chí (theo năm, theo đơn vị, theo loại danh hiệu) ra tệp Excel có định dạng phù hợp với mẫu báo cáo nội bộ của Học viện.
+    \item \textbf{Tải tệp mẫu}: hệ thống sinh tệp Excel có cấu trúc cột chuẩn theo từng loại nghiệp vụ (quân nhân, danh hiệu hằng năm, lịch sử chức vụ, HCCSVV, ...) cùng các Data Validation rule cho phép chọn từ danh sách thả xuống ngay trong tệp.
+    \item \textbf{Xem trước}: sau khi cán bộ điền dữ liệu và tải tệp lên, hệ thống đọc nội dung từng dòng, đối chiếu với schema Zod và các quy tắc nghiệp vụ, sau đó hiển thị kết quả gồm danh sách dòng hợp lệ và danh sách dòng có lỗi (kèm chỉ số dòng và mô tả lỗi). Bước này không ghi vào cơ sở dữ liệu.
+    \item \textbf{Xác nhận}: cán bộ kiểm tra danh sách hợp lệ rồi xác nhận. Hệ thống mở một transaction Prisma, ghi tuần tự từng dòng; nếu xảy ra lỗi tại bất kỳ dòng nào, toàn bộ thao tác được hủy bỏ và cơ sở dữ liệu giữ nguyên trạng thái trước khi nhập.
+    \item \textbf{Xuất danh sách}: cho phép xuất kết quả khen thưởng theo nhiều tiêu chí (theo năm, theo đơn vị, theo loại danh hiệu) ra tệp Excel có định dạng phù hợp với mẫu báo cáo nội bộ của Học viện.
 \end{itemize}
 
 \begin{figure}[H]
@@ -169,11 +169,11 @@ Học viện có lượng dữ liệu lịch sử lớn được lưu trên Exce
 Module quản trị bao quát các chức năng nền tảng phục vụ vận hành hệ thống. Bao gồm:
 
 \begin{itemize}
-    \item \textbf{Quản lý tài khoản} --- SuperAdmin tạo tài khoản Admin; Admin tạo tài khoản Manager và User; mỗi tài khoản gắn với một quân nhân duy nhất qua khoá ngoại \texttt{quan\_nhan\_id}.
-    \item \textbf{Đặt lại mật khẩu} --- Admin có thể đặt lại mật khẩu cho Manager / User về giá trị mặc định.
-    \item \textbf{Nhật ký hệ thống} (\texttt{SystemLog}) --- ghi lại mọi thao tác thay đổi dữ liệu kèm thông tin gồm thời điểm, người thực hiện, loại tài nguyên, mã định danh tài nguyên, mô tả thao tác và dữ liệu trước -- sau khi thay đổi.
-    \item \textbf{Sao lưu và khôi phục} --- SuperAdmin cấu hình lịch sao lưu định kỳ qua khu vực DevZone; hệ thống dùng \texttt{pg\_dump} sinh tệp SQL và lưu tại thư mục \texttt{backups/}. Thao tác khôi phục cũng được thực hiện qua giao diện này.
-    \item \textbf{Cấu hình hệ thống} (\texttt{SystemSetting}) --- bật/tắt các cờ tính năng, ví dụ \texttt{allow\_notify\_import} cho phép gửi thông báo khi nhập Excel hàng loạt.
+    \item \textbf{Quản lý tài khoản}: SuperAdmin tạo tài khoản Admin; Admin tạo tài khoản Manager và User; mỗi tài khoản gắn với một quân nhân duy nhất qua khoá ngoại \texttt{quan\_nhan\_id}.
+    \item \textbf{Đặt lại mật khẩu}: Admin có thể đặt lại mật khẩu cho Manager / User về giá trị mặc định.
+    \item \textbf{Nhật ký hệ thống} (\texttt{SystemLog}): ghi lại mọi thao tác thay đổi dữ liệu kèm thông tin gồm thời điểm, người thực hiện, loại tài nguyên, mã định danh tài nguyên, mô tả thao tác và dữ liệu trước, sau khi thay đổi.
+    \item \textbf{Sao lưu và khôi phục}: SuperAdmin cấu hình lịch sao lưu định kỳ qua khu vực DevZone; hệ thống dùng \texttt{pg\_dump} sinh tệp SQL và lưu tại thư mục \texttt{backups/}. Thao tác khôi phục cũng được thực hiện qua giao diện này.
+    \item \textbf{Cấu hình hệ thống} (\texttt{SystemSetting}): bật/tắt các cờ tính năng, ví dụ \texttt{allow\_notify\_import} cho phép gửi thông báo khi nhập Excel hàng loạt.
 \end{itemize}
 
 Tất cả các thao tác trong module quản trị đều có lưu nhật ký riêng để đảm bảo trách nhiệm cá nhân và truy hồi.
@@ -189,11 +189,11 @@ Tất cả các thao tác trong module quản trị đều có lưu nhật ký r
 
 Bên cạnh sơ đồ use case, ba quy trình nghiệp vụ phức tạp nhất được mô hình hoá thêm bằng sơ đồ hoạt động (activity diagram) để làm rõ luồng xử lý từng bước.
 
-\textbf{Quy trình A --- Đề xuất $\rightarrow$ Phê duyệt một đợt khen thưởng.} Manager chọn loại đề xuất và năm xét, hệ thống lọc danh sách quân nhân/đơn vị thuộc phạm vi quản lý. Manager chọn các đối tượng đủ điều kiện, thiết lập danh hiệu cụ thể và bấm gửi đề xuất. Hệ thống lưu vào bảng \texttt{BangDeXuat} ở trạng thái \texttt{PENDING}, đồng thời gửi thông báo realtime tới các Admin. Admin mở danh sách đề xuất chờ duyệt, kiểm tra lại từng đối tượng, có thể chỉnh sửa danh hiệu trước khi phê duyệt. Khi phê duyệt, hệ thống mở transaction để (a) đổi trạng thái đề xuất sang \texttt{APPROVED}, (b) ghi các bản ghi danh hiệu/khen thưởng vào bảng tương ứng (như \texttt{DanhHieuHangNam}, \texttt{KhenThuongHCCSVV}, ...), (c) gắn số quyết định và đường dẫn tệp PDF, (d) ghi nhật ký kiểm toán, (e) gửi thông báo tới Manager đã đề xuất và (f) tính lại các hồ sơ suy diễn liên quan.
+\textbf{Quy trình A: Đề xuất $\rightarrow$ Phê duyệt một đợt khen thưởng.} Manager chọn loại đề xuất và năm xét, hệ thống lọc danh sách quân nhân/đơn vị thuộc phạm vi quản lý. Manager chọn các đối tượng đủ điều kiện, thiết lập danh hiệu cụ thể và bấm gửi đề xuất. Hệ thống lưu vào bảng \texttt{BangDeXuat} ở trạng thái \texttt{PENDING}, đồng thời gửi thông báo realtime tới các Admin. Admin mở danh sách đề xuất chờ duyệt, kiểm tra lại từng đối tượng, có thể chỉnh sửa danh hiệu trước khi phê duyệt. Khi phê duyệt, hệ thống mở transaction để (a) đổi trạng thái đề xuất sang \texttt{APPROVED}, (b) ghi các bản ghi danh hiệu/khen thưởng vào bảng tương ứng (như \texttt{DanhHieuHangNam}, \texttt{KhenThuongHCCSVV}, ...), (c) gắn số quyết định và đường dẫn tệp PDF, (d) ghi nhật ký kiểm toán, (e) gửi thông báo tới Manager đã đề xuất và (f) tính lại các hồ sơ suy diễn liên quan.
 
-\textbf{Quy trình B --- Tính điều kiện chuỗi cho một quân nhân.} Khi cán bộ truy cập trang hồ sơ của một quân nhân, hệ thống nạp toàn bộ bản ghi \texttt{DanhHieuHangNam} của quân nhân đó, sắp xếp giảm dần theo năm và chạy hàm \texttt{computeChainContext}. Hàm này tính ra ba chỉ số chính: (a) độ dài chuỗi CSTĐCS hiện tại (\texttt{streakCstdcs}), (b) năm gần nhất có cờ BKBTBQP / CSTĐTQ / BKTTCP, (c) số cờ trong cửa sổ trượt tương ứng (3 năm cho CSTĐTQ, 7 năm cho BKTTCP). Sau đó với mỗi tier trong \texttt{PERSONAL\_CHAIN\_AWARDS}, hàm \texttt{checkChainEligibility} đối chiếu số liệu thực tế với cấu hình tier và trả về kết quả \texttt{eligible: boolean} kèm thông điệp \texttt{reason} bằng tiếng Việt.
+\textbf{Quy trình B: Tính điều kiện chuỗi cho một quân nhân.} Khi cán bộ truy cập trang hồ sơ của một quân nhân, hệ thống nạp toàn bộ bản ghi \texttt{DanhHieuHangNam} của quân nhân đó, sắp xếp giảm dần theo năm và chạy hàm \texttt{computeChainContext}. Hàm này tính ra ba chỉ số chính: (a) độ dài chuỗi CSTĐCS hiện tại (\texttt{streakCstdcs}), (b) năm gần nhất có cờ BKBTBQP / CSTĐTQ / BKTTCP, (c) số cờ trong cửa sổ trượt tương ứng (3 năm cho CSTĐTQ, 7 năm cho BKTTCP). Sau đó với mỗi tier trong \texttt{PERSONAL\_CHAIN\_AWARDS}, hàm \texttt{checkChainEligibility} đối chiếu số liệu thực tế với cấu hình tier và trả về kết quả \texttt{eligible: boolean} kèm thông điệp \texttt{reason} bằng tiếng Việt.
 
-\textbf{Quy trình C --- Nhập tệp Excel hàng loạt.} Cán bộ Admin tải lên tệp Excel chứa danh sách bản ghi cần nhập. Hệ thống đọc tệp ở backend, tách thành các sheet (vd: \texttt{QuanNhan}, \texttt{DanhHieuHangNam}, \texttt{ThanhTichKhoaHoc}) và đọc từng dòng. Mỗi dòng được kiểm tra qua schema Zod và các quy tắc nghiệp vụ liên quan (vd: CCCD không được trùng, đơn vị phải tồn tại). Các dòng hợp lệ và lỗi được tổng hợp vào kết quả \texttt{ImportPreview} trả về frontend. Cán bộ xem trước, đối chiếu, có thể quay lại sửa tệp Excel rồi tải lên lại. Khi xác nhận, backend mở transaction Prisma, ghi tuần tự các dòng hợp lệ; nếu có bất kỳ lỗi nào tại thời điểm ghi, transaction được rollback hoàn toàn.
+\textbf{Quy trình C: Nhập tệp Excel hàng loạt.} Cán bộ Admin tải lên tệp Excel chứa danh sách bản ghi cần nhập. Hệ thống đọc tệp ở backend, tách thành các sheet (vd: \texttt{QuanNhan}, \texttt{DanhHieuHangNam}, \texttt{ThanhTichKhoaHoc}) và đọc từng dòng. Mỗi dòng được kiểm tra qua schema Zod và các quy tắc nghiệp vụ liên quan (vd: CCCD không được trùng, đơn vị phải tồn tại). Các dòng hợp lệ và lỗi được tổng hợp vào kết quả \texttt{ImportPreview} trả về frontend. Cán bộ xem trước, đối chiếu, có thể quay lại sửa tệp Excel rồi tải lên lại. Khi xác nhận, backend mở transaction Prisma, ghi tuần tự các dòng hợp lệ; nếu có bất kỳ lỗi nào tại thời điểm ghi, transaction được rollback hoàn toàn.
 
 \section{Đặc tả use case chi tiết}
 \label{section:2.3}
@@ -218,7 +218,7 @@ Phần này đặc tả sáu use case trọng yếu của hệ thống. Mỗi us
  & 4. & Hệ thống & Đối chiếu mật khẩu băm bằng bcrypt \\ \cline{2-4}
  & 5. & Hệ thống & Phát hành Access Token và Refresh Token \\ \cline{2-4}
  & 6. & Hệ thống & Chuyển hướng tới trang chủ tương ứng vai trò \\ \hline
-\multirow{4}{*}{\textbf{Luồng sự kiện thay thế}}
+\multirow{4}{*}{\parbox{3cm}{\centering\textbf{Luồng sự kiện}\\\textbf{thay thế}}}
  & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
  & 4a. & Hệ thống & Báo ``Tài khoản hoặc mật khẩu không đúng'' \\ \cline{2-4}
  & 4b. & Hệ thống & Báo ``Tài khoản đã bị tạm khoá, liên hệ quản trị viên'' \\ \cline{2-4}
@@ -258,7 +258,7 @@ Phần này đặc tả sáu use case trọng yếu của hệ thống. Mỗi us
  & 5. & Hệ thống & Kiểm tra trùng CCCD trong cơ sở dữ liệu \\ \cline{2-4}
  & 6. & Hệ thống & Ghi bản ghi mới và tăng số lượng quân nhân của đơn vị \\ \cline{2-4}
  & 7. & Hệ thống & Trả về kết quả thành công, cập nhật bảng danh sách \\ \hline
-\multirow{4}{*}{\textbf{Luồng sự kiện thay thế}}
+\multirow{4}{*}{\parbox{3cm}{\centering\textbf{Luồng sự kiện}\\\textbf{thay thế}}}
  & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
  & 4a. & Hệ thống & Có trường bắt buộc bị thiếu, chặn ngay tại biểu mẫu \\ \cline{2-4}
  & 5a. & Hệ thống & CCCD đã tồn tại, trả lỗi ``Số CCCD đã tồn tại trong hệ thống'' \\ \cline{2-4}
@@ -304,7 +304,7 @@ Phần này đặc tả sáu use case trọng yếu của hệ thống. Mỗi us
  & 6. & Người dùng & Tải lên các tệp đính kèm (nếu có) và bấm ``Gửi đề xuất'' \\ \cline{2-4}
  & 7. & Hệ thống & Xác thực dữ liệu, tạo bản ghi đề xuất ở trạng thái chờ duyệt \\ \cline{2-4}
  & 8. & Hệ thống & Phát thông báo thời gian thực tới các Admin liên quan \\ \hline
-\multirow{4}{*}{\textbf{Luồng sự kiện thay thế}}
+\multirow{4}{*}{\parbox{3cm}{\centering\textbf{Luồng sự kiện}\\\textbf{thay thế}}}
  & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
  & 4a. & Hệ thống & Có quân nhân chưa đủ điều kiện, hiển thị cảnh báo nhưng vẫn cho phép gửi nếu Manager xác nhận \\ \cline{2-4}
  & 4b. & Hệ thống & Manager chọn quân nhân ngoài phạm vi đơn vị, từ chối với lỗi 403 \\ \cline{2-4}
@@ -349,7 +349,7 @@ Phần này đặc tả sáu use case trọng yếu của hệ thống. Mỗi us
  & 6. & Hệ thống & Mở giao dịch: chuyển trạng thái, ghi danh hiệu, gắn quyết định, tính lại hồ sơ suy diễn \\ \cline{2-4}
  & 7. & Hệ thống & Phát thông báo thời gian thực tới Manager đã đề xuất và các quân nhân được khen \\ \cline{2-4}
  & 8. & Hệ thống & Ghi nhật ký với dữ liệu trước, sau khi thay đổi \\ \hline
-\multirow{5}{*}{\textbf{Luồng sự kiện thay thế}}
+\multirow{5}{*}{\parbox{3cm}{\centering\textbf{Luồng sự kiện}\\\textbf{thay thế}}}
  & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
  & 4a. & Hệ thống & Số quyết định trùng, cảnh báo nhưng cho phép tiếp tục nếu xác nhận \\ \cline{2-4}
  & 5a. & Hệ thống & Đề xuất bị Admin khác sửa cùng lúc, trả lỗi 409 và yêu cầu tải lại \\ \cline{2-4}
@@ -390,7 +390,7 @@ Phần này đặc tả sáu use case trọng yếu của hệ thống. Mỗi us
  & 3. & Hệ thống & Với mỗi cấp danh hiệu, gọi hàm xét điều kiện \\ \cline{2-4}
  & 4. & Hệ thống & Ghi kết quả vào bảng hồ sơ suy diễn \\ \cline{2-4}
  & 5. & Hệ thống & Trả thông điệp gợi ý bằng tiếng Việt cho frontend hiển thị \\ \hline
-\multirow{4}{*}{\textbf{Luồng sự kiện thay thế}}
+\multirow{4}{*}{\parbox{3cm}{\centering\textbf{Luồng sự kiện}\\\textbf{thay thế}}}
  & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
  & 3a. & Hệ thống & Quân nhân đã nhận BKTTCP, trả về thông điệp ``Đã có BKTTCP'' \\ \cline{2-4}
  & 3b. & Hệ thống & Chuỗi CSTĐCS chưa đủ chu kỳ, gợi ý số năm cần tích luỹ thêm \\ \cline{2-4}
@@ -419,7 +419,7 @@ Phần này đặc tả sáu use case trọng yếu của hệ thống. Mỗi us
  & 6. & Admin & Kiểm tra danh sách lỗi, nếu đồng ý bấm ``Xác nhận nhập'' \\ \cline{2-4}
  & 7. & Hệ thống & Mở giao dịch, ghi tuần tự các dòng hợp lệ \\ \cline{2-4}
  & 8. & Hệ thống & Commit giao dịch và phát sự kiện thời gian thực tổng kết \\ \hline
-\multirow{4}{*}{\textbf{Luồng sự kiện thay thế}}
+\multirow{4}{*}{\parbox{3cm}{\centering\textbf{Luồng sự kiện}\\\textbf{thay thế}}}
  & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
  & 3a. & Hệ thống & Tệp sai định dạng hoặc thiếu sheet bắt buộc, trả lỗi 400 \\ \cline{2-4}
  & 4a. & Admin & Có dòng lỗi ở bước xem trước, có thể tải tệp xuống sửa và tải lại \\ \cline{2-4}
@@ -461,19 +461,19 @@ Khu vực dữ liệu thường truy vấn nhưng ít thay đổi (cây CQĐV/Đ
 
 Bảo mật là yêu cầu được ưu tiên cao nhất do hệ thống lưu trữ dữ liệu liên quan đến cán bộ và sĩ quan trong môi trường quân sự. Bảy nhóm biện pháp được áp dụng song song.
 
-\textbf{Thứ nhất --- Xác thực bằng JWT có cơ chế làm mới luân phiên.} Mỗi phiên đăng nhập tạo ra cặp Access Token (30 phút) và Refresh Token (7 ngày). Frontend lưu cả hai token vào \texttt{localStorage} và đính kèm Access Token vào header \texttt{Authorization: Bearer} ở mỗi yêu cầu. Backend còn lưu Refresh Token vào cột \texttt{TaiKhoan.refreshToken} của cơ sở dữ liệu để có khả năng thu hồi từ phía máy chủ. Middleware \texttt{verifyToken} kiểm tra cả chữ ký JWT và sự tồn tại của Refresh Token trong cơ sở dữ liệu, từ đó cho phép buộc đăng xuất bằng cách xoá cột này. Khi Access Token hết hạn, frontend gọi điểm cuối \texttt{/auth/refresh}; backend phát hành đồng thời cặp Access + Refresh Token mới và ghi đè Refresh Token cũ trong cơ sở dữ liệu, khiến mọi lần dùng Refresh Token cũ sau đó đều thất bại. Cơ chế này hạn chế nguy cơ một Refresh Token bị đánh cắp vẫn dùng được lâu dài.
+\textbf{Thứ nhất: Xác thực bằng JWT có cơ chế làm mới luân phiên.} Mỗi phiên đăng nhập tạo ra cặp Access Token (30 phút) và Refresh Token (7 ngày). Frontend lưu cả hai token vào \texttt{localStorage} và đính kèm Access Token vào header \texttt{Authorization: Bearer} ở mỗi yêu cầu. Backend còn lưu Refresh Token vào cột \texttt{TaiKhoan.refreshToken} của cơ sở dữ liệu để có khả năng thu hồi từ phía máy chủ. Middleware \texttt{verifyToken} kiểm tra cả chữ ký JWT và sự tồn tại của Refresh Token trong cơ sở dữ liệu, từ đó cho phép buộc đăng xuất bằng cách xoá cột này. Khi Access Token hết hạn, frontend gọi điểm cuối \texttt{/auth/refresh}; backend phát hành đồng thời cặp Access + Refresh Token mới và ghi đè Refresh Token cũ trong cơ sở dữ liệu, khiến mọi lần dùng Refresh Token cũ sau đó đều thất bại. Cơ chế này hạn chế nguy cơ một Refresh Token bị đánh cắp vẫn dùng được lâu dài.
 
-\textbf{Thứ hai --- Băm mật khẩu bằng bcrypt với hệ số chi phí 10.} Mật khẩu trước khi lưu vào bảng \texttt{TaiKhoan} không bao giờ được lưu ở dạng văn bản thô. Hệ số 10 được chọn để cân bằng giữa thời gian xác thực (khoảng 80 ms trên máy chủ phát triển) và độ khó tấn công vét cạn nếu cơ sở dữ liệu bị rò rỉ \cite{bcrypt}.
+\textbf{Thứ hai: Băm mật khẩu bằng bcrypt với hệ số chi phí 10.} Mật khẩu trước khi lưu vào bảng \texttt{TaiKhoan} không bao giờ được lưu ở dạng văn bản thô. Hệ số 10 được chọn để cân bằng giữa thời gian xác thực (khoảng 80 ms trên máy chủ phát triển) và độ khó tấn công vét cạn nếu cơ sở dữ liệu bị rò rỉ \cite{bcrypt}.
 
-\textbf{Thứ ba --- Phân quyền bốn cấp qua middleware \texttt{requireRole}.} Mỗi route nhạy cảm đi qua middleware kiểm tra vai trò của người dùng có nằm trong danh sách cho phép hay không. Phân quyền không chỉ dừng ở vai trò mà còn ở phạm vi quản lý: Manager chỉ truy vấn được dữ liệu của các quân nhân thuộc đơn vị mình quản lý, kiểm soát qua middleware \texttt{unitFilter}.
+\textbf{Thứ ba: Phân quyền bốn cấp qua middleware \texttt{requireRole}.} Mỗi route nhạy cảm đi qua middleware kiểm tra vai trò của người dùng có nằm trong danh sách cho phép hay không. Phân quyền không chỉ dừng ở vai trò mà còn ở phạm vi quản lý: Manager chỉ truy vấn được dữ liệu của các quân nhân thuộc đơn vị mình quản lý, kiểm soát qua middleware \texttt{unitFilter}.
 
-\textbf{Thứ tư --- Xác thực dữ liệu hai phía bằng Zod.} Frontend dùng Zod \cite{zoddocs} để xác thực ngay tại form, ngăn người dùng gửi đi dữ liệu sai định dạng. Backend dùng cùng Zod để xác thực lại tại điểm cuối qua middleware \texttt{validate(schema)}; kể cả khi frontend bị bỏ qua (vd: tấn công gửi yêu cầu thẳng), backend vẫn từ chối dữ liệu không hợp lệ. Phương thức \texttt{.strict()} của Zod loại bỏ các trường ngoài schema để tránh người dùng đẩy lén các thuộc tính không được phép. Việc dùng cùng một thư viện ở hai phía giảm chi phí học, giảm trùng lặp khái niệm và mở đường cho việc trích xuất phần schema dùng chung sang gói chia sẻ trong tương lai.
+\textbf{Thứ tư: Xác thực dữ liệu hai phía bằng Zod.} Frontend dùng Zod \cite{zoddocs} để xác thực ngay tại form, ngăn người dùng gửi đi dữ liệu sai định dạng. Backend dùng cùng Zod để xác thực lại tại điểm cuối qua middleware \texttt{validate(schema)}; kể cả khi frontend bị bỏ qua (vd: tấn công gửi yêu cầu thẳng), backend vẫn từ chối dữ liệu không hợp lệ. Phương thức \texttt{.strict()} của Zod loại bỏ các trường ngoài schema để tránh người dùng đẩy lén các thuộc tính không được phép. Việc dùng cùng một thư viện ở hai phía giảm chi phí học, giảm trùng lặp khái niệm và mở đường cho việc trích xuất phần schema dùng chung sang gói chia sẻ trong tương lai.
 
-\textbf{Thứ năm --- Bảo vệ tầng vận chuyển và tầng ứng dụng.} Toàn bộ kết nối tới server qua HTTPS (TLS 1.2 trở lên) khi triển khai sản xuất. Header bảo mật được áp đặt qua middleware Helmet (Content-Security-Policy, X-Frame-Options, X-Content-Type-Options). CORS cấu hình chặt chẽ chỉ cho phép tên miền của frontend chính. Rate limiter chia hai cấp: \texttt{authLimiter} giới hạn 30 yêu cầu / IP / 5 phút cho các điểm cuối xác thực (đăng nhập, đặt lại mật khẩu) với chế độ \texttt{skipSuccessfulRequests} để không chặn nhầm người dùng hợp lệ; \texttt{writeLimiter} giới hạn 30 yêu cầu / IP / 15 phút cho các thao tác ghi nhạy cảm khác.
+\textbf{Thứ năm: Bảo vệ tầng vận chuyển và tầng ứng dụng.} Toàn bộ kết nối tới server qua HTTPS (TLS 1.2 trở lên) khi triển khai sản xuất. Header bảo mật được áp đặt qua middleware Helmet (Content-Security-Policy, X-Frame-Options, X-Content-Type-Options). CORS cấu hình chặt chẽ chỉ cho phép tên miền của frontend chính. Rate limiter chia hai cấp: \texttt{authLimiter} giới hạn 30 yêu cầu / IP / 5 phút cho các điểm cuối xác thực (đăng nhập, đặt lại mật khẩu) với chế độ \texttt{skipSuccessfulRequests} để không chặn nhầm người dùng hợp lệ; \texttt{writeLimiter} giới hạn 30 yêu cầu / IP / 15 phút cho các thao tác ghi nhạy cảm khác.
 
-\textbf{Thứ sáu --- Nhật ký kiểm toán đầy đủ.} Mọi thao tác có thể làm thay đổi dữ liệu nghiệp vụ (CREATE, UPDATE, DELETE, IMPORT, APPROVE, REJECT, LOGIN, LOGOUT, RESET\_PASSWORD) đều ghi vào bảng \texttt{SystemLog} với metadata gồm thời điểm, mã người thực hiện, vai trò, loại tài nguyên (\texttt{resource}), mã định danh tài nguyên (\texttt{resource\_id}) và mô tả tiếng Việt do hàm builder sinh tự động. Nhật ký liên quan đến \texttt{resource = backup} chỉ SuperAdmin xem được; các vai trò thấp hơn không thấy ngay cả tiêu đề.
+\textbf{Thứ sáu: Nhật ký kiểm toán đầy đủ.} Mọi thao tác có thể làm thay đổi dữ liệu nghiệp vụ (CREATE, UPDATE, DELETE, IMPORT, APPROVE, REJECT, LOGIN, LOGOUT, RESET\_PASSWORD) đều ghi vào bảng \texttt{SystemLog} với metadata gồm thời điểm, mã người thực hiện, vai trò, loại tài nguyên (\texttt{resource}), mã định danh tài nguyên (\texttt{resource\_id}) và mô tả tiếng Việt do hàm builder sinh tự động. Nhật ký liên quan đến \texttt{resource = backup} chỉ SuperAdmin xem được; các vai trò thấp hơn không thấy ngay cả tiêu đề.
 
-\textbf{Thứ bảy --- Sao lưu định kỳ và khôi phục.} Hệ thống tự động chạy \texttt{pg\_dump} theo lịch cấu hình (mặc định mỗi 24 giờ vào 02:00 sáng) và lưu tệp SQL vào thư mục \texttt{backups/}. Mỗi tệp có tên theo mẫu \texttt{YYYY-MM-DD\_HH-mm-ss.sql}. SuperAdmin có thể tải xuống, xoá hoặc khôi phục từ một tệp sao lưu cụ thể qua khu vực DevZone.
+\textbf{Thứ bảy: Sao lưu định kỳ và khôi phục.} Hệ thống tự động chạy \texttt{pg\_dump} theo lịch cấu hình (mặc định mỗi 24 giờ vào 02:00 sáng) và lưu tệp SQL vào thư mục \texttt{backups/}. Mỗi tệp có tên theo mẫu \texttt{YYYY-MM-DD\_HH-mm-ss.sql}. SuperAdmin có thể tải xuống, xoá hoặc khôi phục từ một tệp sao lưu cụ thể qua khu vực DevZone.
 
 \subsection{Tính nhất quán và chính xác của dữ liệu}
 \label{subsection:2.4.3}
