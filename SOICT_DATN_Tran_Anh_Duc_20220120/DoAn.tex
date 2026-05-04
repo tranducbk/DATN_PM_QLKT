@@ -228,8 +228,8 @@
 % ===================================================
 % \pagestyle{empty} % Header và footer rỗng
 \newpage
-\pagenumbering{roman} % Đánh số trang dạng La Mã cho phần đầu
-\pagestyle{plain} % dùng plain đã customise (page number giữa, không có rule)
+\pagenumbering{gobble} % Front matter (mục lục, danh mục) không đánh số trang
+\pagestyle{empty} % Header/footer rỗng cho toàn bộ front matter
 \renewcommand*\contentsname{MỤC LỤC}
 
 \titlecontents{chapter}
