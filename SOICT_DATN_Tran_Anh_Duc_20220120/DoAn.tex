@@ -110,7 +110,7 @@
 
 \fancypagestyle{plain}{%
 \fancyhf{} % clear all header and footer fields
-\fancyfoot[RO,RE]{\thepage} %RO=right odd, RE=right even
+\fancyfoot[C]{\thepage} % page number centered at bottom
 \renewcommand{\headrulewidth}{0pt}
 \renewcommand{\footrulewidth}{0pt}}
 
@@ -228,7 +228,8 @@
 % ===================================================
 % \pagestyle{empty} % Header và footer rỗng
 \newpage
-\pagenumbering{roman} % Xóa page numbering ở cuối trang
+\pagenumbering{roman} % Đánh số trang dạng La Mã cho phần đầu
+\pagestyle{plain} % dùng plain đã customise (page number giữa, không có rule)
 \renewcommand*\contentsname{MỤC LỤC}
 
 \titlecontents{chapter}
