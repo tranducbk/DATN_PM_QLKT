@@ -1,7 +1,7 @@
 \documentclass[../DoAn.tex]{subfiles}
 \begin{document}
 
-Chương này trình bày toàn bộ quá trình từ thiết kế kiến trúc đến triển khai sản phẩm. Mở đầu là phần mô tả lựa chọn kiến trúc tổng thể và các sơ đồ thiết kế chi tiết. Tiếp đó là kết quả xây dựng kèm các đoạn mã minh hoạ lấy trực tiếp từ kho mã nguồn của dự án. Khép lại chương là báo cáo kết quả kiểm thử và hướng dẫn triển khai.
+Chương này trình bày toàn bộ quá trình từ thiết kế kiến trúc đến triển khai sản phẩm. Mở đầu là phần mô tả lựa chọn kiến trúc tổng thể và các sơ đồ thiết kế chi tiết. Tiếp đó là kết quả xây dựng kèm các đoạn mã minh hoạ lấy trực tiếp từ kho mã nguồn của dự án. Khép lại chương là kết quả kiểm thử hộp đen các chức năng nghiệp vụ và hướng dẫn triển khai.
 
 \section{Thiết kế kiến trúc}
 \label{section:4.1}
@@ -11,7 +11,7 @@ Chương này trình bày toàn bộ quá trình từ thiết kế kiến trúc 
 
 Hệ thống áp dụng \textbf{kiến trúc phân tầng (layered architecture)} với sáu lớp xếp chồng từ ngoài vào trong: Route $\rightarrow$ Middleware $\rightarrow$ Controller $\rightarrow$ Service $\rightarrow$ Repository $\rightarrow$ Prisma Client. Mỗi lớp chỉ tương tác trực tiếp với lớp liền kề, không gọi nhảy lớp. Đây là biến thể mở rộng của mô hình MVC truyền thống, trong đó Service và Repository được tách riêng để rõ ràng hoá ranh giới giữa logic nghiệp vụ và truy cập dữ liệu.
 
-Việc tách lớp Repository khỏi lớp Service được áp dụng từ một lần tái cấu trúc lớn của dự án. Trước đó, Service gọi \texttt{prisma.danhHieuHangNam.findMany(...)} trực tiếp, dẫn tới việc viết kiểm thử đơn vị cho Service phải mock toàn bộ Prisma Client, vừa phức tạp vừa dễ tạo ra mock không chính xác. Sau khi tách, Service gọi qua giao diện \texttt{danhHieuHangNamRepository.findMany(...)}; kiểm thử đơn vị cho Service chỉ cần mock các phương thức của Repository, mã kiểm thử đơn giản hơn nhiều và phản ánh đúng hợp đồng giữa hai lớp.
+Việc tách lớp Repository khỏi lớp Service được áp dụng từ một lần tái cấu trúc lớn của dự án. Trước đó, Service gọi \texttt{prisma.danhHieuHangNam.findMany(...)} trực tiếp, ràng buộc chặt logic nghiệp vụ với Prisma Client. Sau khi tách, Service gọi qua giao diện \texttt{danhHieuHangNamRepository.findMany(...)}; ranh giới giữa logic nghiệp vụ và truy cập dữ liệu rõ ràng, dễ thay thế ORM trong tương lai mà không phải sửa lại logic.
 
 Lý do không chọn các kiến trúc khác:
 
@@ -82,12 +82,12 @@ Khi người dùng truy cập trang hồ sơ một quân nhân, dòng chảy d�
     \item \textbf{Route} \texttt{GET /api/personnel/:id/profile} (định nghĩa tại \texttt{routes/profile.route.ts}) tiếp nhận yêu cầu và đẩy qua chuỗi middleware \texttt{verifyToken -> requireAuth -> unitFilter}.
     \item \textbf{Controller} \texttt{profileController.getAnnualProfile} (tại \texttt{controllers/profile.controller.ts}) đọc tham số \mbox{\texttt{personnelId}}, gọi service tương ứng, đóng gói kết quả vào \texttt{ResponseHelper.success}.
     \item \textbf{Service} \texttt{profileService.recalculateAnnualProfile} (tại \texttt{services/profile/annual.ts}) thực thi logic gồm: nạp danh sách \texttt{DanhHieuHangNam} qua repository, gọi \texttt{computeChainContext} để dẫn xuất ngữ cảnh chuỗi, lặp qua \texttt{PERSONAL\_CHAIN\_AWARDS} và gọi \texttt{checkChainEligibility} cho mỗi cấp, ghi kết quả vào bảng suy diễn \texttt{HoSoHangNam}.
-    \item \textbf{Eligibility module} \texttt{services/eligibility/chainEligibility.ts} chứa hàm \texttt{checkChainEligibility(config, context, hasReceivedLifetime)}: hàm thuần (pure function), không truy vấn cơ sở dữ liệu, dễ kiểm thử.
+    \item \textbf{Eligibility module} \texttt{services/eligibility/chainEligibility.ts} chứa hàm \texttt{checkChainEligibility(config, context, hasReceivedLifetime)}: hàm thuần (pure function), không truy vấn cơ sở dữ liệu, dễ kiểm chứng với mọi bộ đầu vào.
     \item \textbf{Repository} \texttt{repositories/danhHieuHangNam.repository.ts} cung cấp các phương thức \texttt{findManyByPersonnelId}, \texttt{findUniqueByPersonnelYearAward}.
     \item \textbf{Prisma Client} thực thi truy vấn SQL tới bảng \texttt{danh\_hieu\_hang\_nam}.
 \end{enumerate}
 
-Sự tách biệt giữa Service (logic nghiệp vụ) và Eligibility module (quy tắc thuần) là chủ ý: Eligibility module có thể được kiểm thử với 100\,\% phủ quy tắc mà không cần mock cơ sở dữ liệu. Service chỉ phụ trách điều phối (nạp dữ liệu, gọi quy tắc, ghi kết quả) nên cũng dễ kiểm thử với mock Repository.
+Sự tách biệt giữa Service (logic nghiệp vụ) và Eligibility module (quy tắc thuần) là chủ ý: Eligibility module hoàn toàn thuần nên có thể kiểm chứng nhanh với mọi kịch bản đầu vào mà không cần kết nối cơ sở dữ liệu. Service chỉ phụ trách điều phối (nạp dữ liệu, gọi quy tắc, ghi kết quả) nên ranh giới rõ ràng, dễ bảo trì.
 
 \begin{figure}[H]
     \centering
@@ -359,7 +359,6 @@ Sản phẩm sử dụng tổng cộng 30 thư viện mã nguồn mở chia làm
 11 & Kiểm tra dữ liệu (BE + FE) & Zod & 4.x \\ \hline
 12 & Thông báo realtime & Socket.IO & 4.x \\ \hline
 13 & Đọc/ghi Excel & ExcelJS & 4.x \\ \hline
-14 & Khung kiểm thử & Jest + ts-jest & 29.x \\ \hline
 15 & Quản lý tiến trình production & PM2 & 5.x \\ \hline
 16 & Header bảo mật HTTP & Helmet & 8.x \\ \hline
 17 & CORS & cors & 2.x \\ \hline
@@ -387,7 +386,7 @@ Sau quá trình xây dựng, hệ thống đã hoàn thiện các chức năng c
     \item Thông báo realtime qua Socket.IO khi có đề xuất mới, được phê duyệt, bị từ chối, bị xoá hoặc nhập Excel hoàn tất.
 \end{itemize}
 
-Tổng quy mô mã nguồn xấp xỉ 35.000 dòng TypeScript chia đều giữa frontend và backend, cộng với 618 dòng \texttt{schema.prisma} và khoảng 7.500 dòng kiểm thử. Kho mã nguồn được quản lý theo monorepo với cấu trúc \texttt{BE-QLKT/} và \texttt{FE-QLKT/} ở mức root.
+Tổng quy mô mã nguồn xấp xỉ 35.000 dòng TypeScript chia đều giữa frontend và backend, cộng với 618 dòng \texttt{schema.prisma}. Kho mã nguồn được quản lý theo monorepo với cấu trúc \texttt{BE-QLKT/} và \texttt{FE-QLKT/} ở mức root.
 
 \subsection{Minh hoạ các chức năng chính}
 \label{subsection:4.3.3}
@@ -411,7 +410,7 @@ Phần này trình bày các ảnh chụp màn hình tiêu biểu của sản ph
 
 Phần này mô tả ngắn gọn năm thành phần kỹ thuật trọng yếu của kho mã nguồn để người đọc nắm bắt cách thức tổ chức bên trong, không trích nguyên các đoạn mã chi tiết.
 
-\textbf{Hàm \texttt{computeChainContext} dẫn xuất ngữ cảnh chuỗi.} Đặt tại \texttt{BE-QLKT/src/services/profile/annual.ts}. Hàm nhận đầu vào gồm danh sách bản ghi \texttt{DanhHieuHangNam} của một quân nhân, độ dài chuỗi CSTĐCS hiện tại và năm xét. Đầu ra là đối tượng \texttt{ChainContext} chứa năm bắt đầu chuỗi, năm gần nhất nhận BKBTBQP/CSTĐTQ/BKTTCP nằm trong cửa sổ chuỗi, số năm CSTĐCS đã tích luỹ kể từ lần cuối nhận từng cấp, và số chu kỳ đã bỏ lỡ. Hàm hoàn toàn thuần (không truy vấn cơ sở dữ liệu) nên dễ kiểm thử với 197 ca kiểm thử phủ các kịch bản từ chu kỳ vừa đủ tới lỡ nhiều chu kỳ.
+\textbf{Hàm \texttt{computeChainContext} dẫn xuất ngữ cảnh chuỗi.} Đặt tại \texttt{BE-QLKT/src/services/profile/annual.ts}. Hàm nhận đầu vào gồm danh sách bản ghi \texttt{DanhHieuHangNam} của một quân nhân, độ dài chuỗi CSTĐCS hiện tại và năm xét. Đầu ra là đối tượng \texttt{ChainContext} chứa năm bắt đầu chuỗi, năm gần nhất nhận BKBTBQP/CSTĐTQ/BKTTCP nằm trong cửa sổ chuỗi, số năm CSTĐCS đã tích luỹ kể từ lần cuối nhận từng cấp, và số chu kỳ đã bỏ lỡ. Hàm hoàn toàn thuần (không truy vấn cơ sở dữ liệu) nên đã được kiểm chứng thủ công với nhiều bộ dữ liệu mẫu phủ các kịch bản từ chu kỳ vừa đủ tới lỡ nhiều chu kỳ.
 
 \textbf{Chuỗi middleware bảo mật năm tầng.} Tại tệp định nghĩa route, mỗi yêu cầu mutate đều phải đi qua tuần tự: \texttt{verifyToken} (xác thực Access Token), \texttt{checkRole} (phân quyền vai trò), \texttt{writeLimiter} (giới hạn tốc độ), middleware tải lên tệp đính kèm (\texttt{multer}), \texttt{auditLog} (ghi nhật ký) và sau đó mới đến controller. Mỗi middleware giải quyết một mối quan tâm độc lập và có thể tái sử dụng giữa các route, phản ánh đúng nguyên tắc đơn trách nhiệm.
 
@@ -424,43 +423,10 @@ Phần này mô tả ngắn gọn năm thành phần kỹ thuật trọng yếu 
 \section{Kiểm thử}
 \label{section:4.4}
 
-\subsection{Kiểm thử đơn vị bằng Jest}
-\label{subsection:4.4.1}
-
-Toàn bộ logic nghiệp vụ trọng yếu được phủ kiểm thử đơn vị bằng Jest 29 kết hợp với \texttt{ts-jest} để chạy trực tiếp tệp TypeScript. Các bộ kiểm thử được tổ chức theo nhóm chức năng tại thư mục \texttt{BE-QLKT/tests/}:
-
-\begin{itemize}
-    \item \texttt{tests/services/}: kiểm thử các service và quy tắc xét điều kiện (74\,\% tổng số ca kiểm thử).
-    \item \texttt{tests/scenarios/}: kiểm thử các kịch bản end-to-end ở tầng service (đề xuất $\rightarrow$ phê duyệt $\rightarrow$ tính lại).
-    \item \texttt{tests/approve/}, \texttt{tests/submit/}, \texttt{tests/import/}: kiểm thử ba luồng nghiệp vụ chính theo từng loại đề xuất.
-    \item \texttt{tests/authz/}: kiểm thử phân quyền và phạm vi truy cập của Manager.
-    \item \texttt{tests/constants/}: kiểm thử tính nhất quán của các hằng số.
-\end{itemize}
-
-Tổng kết kết quả chạy gần nhất tại Bảng \ref{tab:tong-kiemthu}.
-
-\begin{table}[H]
-\centering
-\caption{Tổng kết kiểm thử đơn vị}
-\label{tab:tong-kiemthu}
-\begin{tabular}{|p{8cm}|p{6cm}|}
-\hline
-\textbf{Chỉ số} & \textbf{Giá trị} \\ \hline
-Tổng số bộ kiểm thử (test suite) & 75 \\ \hline
-Tổng số ca kiểm thử (test case) & 890 \\ \hline
-Số ca thành công & 890 \\ \hline
-Số ca thất bại & 0 \\ \hline
-Số ca bỏ qua & 0 \\ \hline
-Tổng thời gian chạy & $\approx$ 8 giây \\ \hline
-Phạm vi phủ quy tắc chuỗi cá nhân & 100\,\% (BKBTBQP + CSTĐTQ + BKTTCP) \\ \hline
-Phạm vi phủ quy tắc chuỗi đơn vị & 100\,\% (BKBTBQP + BKTTCP cấp đơn vị) \\ \hline
-\end{tabular}
-\end{table}
-
 \subsection{Kiểm thử hộp đen các chức năng nghiệp vụ}
 \label{subsection:4.4.2}
 
-Bên cạnh kiểm thử đơn vị, các chức năng nghiệp vụ chính được kiểm thử hộp đen thủ công thông qua giao diện. Tám bảng kiểm thử dưới đây tóm tắt kết quả.
+Các chức năng nghiệp vụ chính được kiểm thử hộp đen thủ công thông qua giao diện trên môi trường phát triển. Tám bảng kiểm thử dưới đây tóm tắt kết quả.
 
 \begin{table}[H]
 \centering
@@ -640,6 +606,5 @@ Khởi chạy bằng lệnh \texttt{pm2 start ecosystem.config.js}, sau đó dù
 
 Cron job hệ thống được cấu hình chạy lệnh \texttt{pg\_dump} mỗi 24 giờ vào lúc 02:00 sáng (giờ thấp điểm), lưu tệp SQL vào thư mục \texttt{backups/} với quy ước tên \texttt{YYYY-MM-DD\_HH-mm-ss.sql}. Các tệp cũ hơn 30 ngày được tự động xoá để tránh đầy ổ cứng. PM2 cung cấp lệnh \texttt{pm2 logs} cho phép xem log thời gian thực; đối với giám sát dài hạn, log được tổng hợp vào \texttt{/var/log/qlkt/} và có thể được tích hợp với các hệ thống giám sát tập trung của Học viện trong tương lai.
 
-\textbf{Kết chương.} Chương này đã trình bày toàn bộ quá trình từ thiết kế kiến trúc tới triển khai sản phẩm. Hệ thống dùng kiến trúc phân tầng sáu lớp với 23 model dữ liệu, được phủ kiểm thử bằng 890 ca Jest đạt 100\,\% thành công và đã thông qua kiểm thử hộp đen 8 nhóm chức năng cùng kiểm thử tương thích trên năm tổ hợp trình duyệt. Triển khai sản xuất dùng PM2 và Nginx trên máy chủ Linux nội bộ. Các điểm khác biệt nổi bật về mặt giải pháp được phân tích chi tiết ở chương tiếp theo.
 
 \end{document}

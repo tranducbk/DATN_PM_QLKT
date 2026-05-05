@@ -77,13 +77,6 @@ PM QLKT thống nhất dùng Zod \cite{zoddocs} làm thư viện kiểm tra dữ
 
 Tại frontend, các form do Ant Design Form quản lý được xác thực bằng Zod kết hợp với React Hook Form. Zod có ưu điểm tích hợp chặt với TypeScript: kiểu của giá trị form được suy luận trực tiếp từ schema (\texttt{type FormValues = z.infer<typeof formSchema>}), tránh phải duy trì hai khai báo song song giữa interface và schema. Việc dùng cùng một thư viện ở hai phía mang lại hai lợi ích cụ thể: thứ nhất, lập trình viên chỉ cần học một API thay vì hai; thứ hai, các đoạn schema tương tự (vd: ràng buộc CCCD 12 chữ số, năm trong khoảng hợp lệ) có thể được viết theo cùng một cú pháp ở cả hai phía, mở đường cho việc trích xuất phần dùng chung sang gói chia sẻ trong tương lai. Quan trọng là logic xác thực không tin tưởng vào lớp frontend; backend luôn kiểm tra lại dữ liệu trước khi ghi vào cơ sở dữ liệu.
 
-\section{Jest --- Khung kiểm thử đơn vị}
-\label{section:3.8}
-
-Jest là khung kiểm thử do Meta phát triển \cite{jestdocs}, có ưu điểm là cấu hình tối thiểu, hỗ trợ chế độ theo dõi (watch mode) chạy lại các bộ kiểm thử bị ảnh hưởng khi tệp nguồn thay đổi và có hệ thống trình giả (mock) tích hợp sẵn. Phiên bản dùng cho PM QLKT là Jest 29 kết hợp với \texttt{ts-jest} để chạy trực tiếp các tệp TypeScript mà không cần biên dịch trước.
-
-Tại thời điểm hoàn thiện đồ án, kho kiểm thử của PM QLKT gồm 75 bộ kiểm thử với 890 ca kiểm thử, tổ chức theo các thư mục \texttt{tests/services/}, \texttt{tests/scenarios/}, \texttt{tests/approve/}, \texttt{tests/submit/}, \texttt{tests/import/}, \texttt{tests/authz/}. Hai nhóm trọng yếu nhất là \texttt{eligibility-bkbqp-personal.test.ts}, \texttt{eligibility-cstdtq-personal.test.ts}, \texttt{eligibility-bkttcp-personal.test.ts} (cùng các phiên bản đơn vị) tập trung vào các kịch bản đa dạng của rule chuỗi: chu kỳ vừa đủ, chu kỳ thừa, lỡ đợt, BKBTBQP rơi ra ngoài cửa sổ trượt 3 năm, và trường hợp đặc biệt khi quân nhân chưa nhận đủ NCKH. Các trường hợp này được cố định trước trong tệp \texttt{errorMessages.ts} để đảm bảo bất kỳ sửa đổi nào trong logic chuỗi đều phải cập nhật song song giá trị mong đợi của ca kiểm thử, giúp tránh tình trạng test ``trôi'' theo code.
-
 \section{ExcelJS --- Công cụ nhập và xuất Excel}
 \label{section:3.9}
 

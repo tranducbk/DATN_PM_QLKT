@@ -42,7 +42,6 @@ Phần mềm được xây dựng theo mô hình client -- server với hai thà
     \item \textbf{Cơ sở dữ liệu} chọn PostgreSQL \cite{pgdocs} truy cập qua Prisma ORM \cite{prismadocs}. Toàn bộ lược đồ dữ liệu được mô tả trong một tệp khai báo duy nhất kèm cơ chế di trú tự động.
     \item \textbf{Xác thực và phân quyền} dùng cặp JSON Web Token \cite{rfc7519} với cơ chế làm mới luân phiên, kèm bốn vai trò nội bộ được kiểm tra trước mỗi yêu cầu nhạy cảm.
     \item \textbf{Thông báo thời gian thực} sử dụng Socket.IO \cite{socketiodocs}, chủ yếu thông báo kết quả nhập Excel lớn, biến cố phê duyệt và xoá đề xuất cho người tạo đề xuất, đồng thời báo cho Phòng Chính trị khi có đề xuất mới.
-    \item \textbf{Kiểm thử} dùng Jest + ts-jest \cite{jestdocs}. Tổng cộng có 75 bộ kiểm thử đơn vị với 890 ca kiểm thử bao phủ quy tắc chuỗi (cá nhân và đơn vị), kịch bản phê duyệt và xếp hạng huy chương.
 \end{itemize}
 
 \section{Bố cục đồ án}
@@ -53,7 +52,7 @@ Phần còn lại của báo cáo được tổ chức thành năm chương:
 \begin{itemize}
     \item Chương \ref{chapter:Related_works} -- khảo sát hiện trạng, sơ đồ use case, đặc tả các use case trọng yếu và yêu cầu phi chức năng.
     \item Chương \ref{chapter:Methodology} -- các thành phần công nghệ được chọn cùng lý do chọn trong ngữ cảnh PM QLKT.
-    \item Chương \ref{chapter:Experiment} -- kiến trúc phân tầng, thiết kế CSDL, sơ đồ gói/lớp/tuần tự, kết quả kiểm thử và hướng dẫn triển khai.
+    \item Chương \ref{chapter:Experiment} -- kiến trúc phân tầng, thiết kế CSDL, sơ đồ gói/lớp/tuần tự, kết quả kiểm thử thủ công và hướng dẫn triển khai.
     \item Chương \ref{chapter:SolutionAndContribution} -- năm đóng góp nổi bật, mỗi đóng góp gồm thực trạng, giải pháp và kết quả định lượng.
     \item Chương \ref{chapter:conclusion} -- tổng kết và đề xuất các hướng phát triển tiếp theo.
 \end{itemize}
