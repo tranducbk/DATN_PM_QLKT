@@ -35,7 +35,6 @@ import { writeSystemLog } from '../helpers/systemLogHelper';
 import { DEFAULT_PASSWORD } from '../configs';
 import { sanitizeRowData } from '../helpers/excel/excelHelper';
 import { calculateTenureMonthsWithDayPrecision } from '../helpers/serviceYearsHelper';
-import { PERSONNEL_EXPORT_COLUMNS } from '../constants/awardExcel.constants';
 
 type DateInput = Date | null;
 
@@ -747,39 +746,6 @@ class PersonnelService {
    * Exports all personnel data to an Excel buffer.
    * @returns Excel workbook buffer.
    */
-  async exportPersonnel() {
-    const personnel = await quanNhanRepository.findAllForExport();
-
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('QuanNhan');
-
-    worksheet.columns = [...PERSONNEL_EXPORT_COLUMNS];
-
-    // Keep CCCD as text to preserve leading zeros.
-    worksheet.getColumn(1).numFmt = '@';
-
-    personnel.forEach(p => {
-      worksheet.addRow(
-        sanitizeRowData({
-          cccd: p.cccd,
-          ho_ten: p.ho_ten,
-          ngay_sinh: p.ngay_sinh ? new Date(p.ngay_sinh).toISOString().slice(0, 10) : '',
-          ngay_nhap_ngu: p.ngay_nhap_ngu
-            ? new Date(p.ngay_nhap_ngu).toISOString().slice(0, 10)
-            : '',
-          ma_don_vi: (p.DonViTrucThuoc || p.CoQuanDonVi)?.ma_don_vi || '',
-          ten_don_vi: (p.DonViTrucThuoc || p.CoQuanDonVi)?.ten_don_vi || '',
-          ten_chuc_vu: p.ChucVu?.ten_chuc_vu || '',
-          is_manager: p.ChucVu?.is_manager ? 'TRUE' : 'FALSE',
-          he_so_chuc_vu: p.ChucVu?.he_so_chuc_vu || '',
-        })
-      );
-    });
-
-    const buffer = await workbook.xlsx.writeBuffer();
-    return buffer;
-  }
-
   /**
    * Checks contribution-award eligibility.
    * Returns personnel already awarded or currently pending approval.

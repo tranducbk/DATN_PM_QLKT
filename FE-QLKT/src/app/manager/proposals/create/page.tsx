@@ -73,10 +73,29 @@ import {
 
 const { Title, Paragraph, Text } = Typography;
 
+const PROPOSAL_DRAFT_KEY = 'manager_proposal_draft';
+
+interface ProposalDraft {
+  currentStep: number;
+  proposalType: ProposalType;
+  nam: number;
+  thang: number;
+  selectedPersonnelIds: string[];
+  selectedUnitIds: string[];
+  titleData: TitleDataItem[];
+  contributionProfiles: Record<string, ContributionProfile>;
+  proposalNote: string;
+}
+
 export default function CreateProposalPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
+
+  const hasMountedRef = React.useRef(false);
+  const isRestoringDraft = React.useRef(false);
+  // Prevents save effect from overwriting the existing draft with defaults on initial mount
+  const suppressNextSave = React.useRef(true);
 
   // Step 1: Proposal Type
   const [proposalType, setProposalType] = useState<ProposalType>(PROPOSAL_TYPES.CA_NHAN_HANG_NAM);
@@ -145,6 +164,7 @@ export default function CreateProposalPage() {
   const steps = getSteps();
 
   useEffect(() => {
+    if (!hasMountedRef.current) return;
     if (currentStep === 0) {
       setSelectedPersonnelIds([]);
       setSelectedUnitIds([]);
@@ -153,10 +173,12 @@ export default function CreateProposalPage() {
       setPersonnelDetails([]);
       setUnitDetails([]);
       setProposalNote('');
+      sessionStorage.removeItem(PROPOSAL_DRAFT_KEY);
     }
   }, [currentStep]);
 
   useEffect(() => {
+    if (!hasMountedRef.current || isRestoringDraft.current) return;
     setSelectedPersonnelIds([]);
     setSelectedUnitIds([]);
     setTitleData([]);
@@ -218,6 +240,68 @@ export default function CreateProposalPage() {
     fetchUnitDetails,
     fetchPersonnelDetails,
     loadContributionProfiles,
+  ]);
+
+  // Restore draft from sessionStorage on mount (client-only)
+  useEffect(() => {
+    hasMountedRef.current = true;
+    try {
+      const saved = sessionStorage.getItem(PROPOSAL_DRAFT_KEY);
+      if (!saved) return;
+      const draft = JSON.parse(saved) as ProposalDraft;
+      isRestoringDraft.current = true;
+      setCurrentStep(draft.currentStep ?? 0);
+      setProposalType(draft.proposalType ?? PROPOSAL_TYPES.CA_NHAN_HANG_NAM);
+      setNam(draft.nam ?? new Date().getFullYear());
+      setThang(draft.thang ?? new Date().getMonth() + 1);
+      setSelectedPersonnelIds(draft.selectedPersonnelIds ?? []);
+      setSelectedUnitIds(draft.selectedUnitIds ?? []);
+      setTitleData(draft.titleData ?? []);
+      setContributionProfiles(draft.contributionProfiles ?? {});
+      setProposalNote(draft.proposalNote ?? '');
+      // Reset flag after the re-render's effects have run
+      setTimeout(() => {
+        isRestoringDraft.current = false;
+      }, 100);
+    } catch {
+      sessionStorage.removeItem(PROPOSAL_DRAFT_KEY);
+    }
+  }, []);
+
+  // Save draft to sessionStorage whenever serializable state changes
+  useEffect(() => {
+    if (!hasMountedRef.current) return;
+    // Skip once after mount so restore effect's setState can take effect first
+    if (suppressNextSave.current) {
+      suppressNextSave.current = false;
+      return;
+    }
+    try {
+      const draft: ProposalDraft = {
+        currentStep,
+        proposalType,
+        nam,
+        thang,
+        selectedPersonnelIds,
+        selectedUnitIds,
+        titleData,
+        contributionProfiles,
+        proposalNote,
+      };
+      sessionStorage.setItem(PROPOSAL_DRAFT_KEY, JSON.stringify(draft));
+    } catch {
+      // sessionStorage unavailable or full
+    }
+  }, [
+    currentStep,
+    proposalType,
+    nam,
+    thang,
+    selectedPersonnelIds,
+    selectedUnitIds,
+    titleData,
+    contributionProfiles,
+    proposalNote,
   ]);
 
   const canProceedToNextStep = () =>
@@ -560,6 +644,8 @@ export default function CreateProposalPage() {
       }
 
       antMessage.success('Gửi đề xuất thành công! Chờ Quản trị viên phê duyệt.');
+
+      sessionStorage.removeItem(PROPOSAL_DRAFT_KEY);
 
       // Reset form
       setCurrentStep(0);

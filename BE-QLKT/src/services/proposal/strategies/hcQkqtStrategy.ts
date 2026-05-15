@@ -24,7 +24,7 @@ import {
   type NienHanInputItem,
 } from './nienHanPayloadHelper';
 
-class HcQkqtStrategy implements ProposalStrategy {
+class HcqkqtStrategy implements ProposalStrategy {
   readonly type = PROPOSAL_TYPES.HC_QKQT;
 
   async buildSubmitPayload(
@@ -117,4 +117,4 @@ class HcQkqtStrategy implements ProposalStrategy {
   }
 }
 
-export const hcQkqtStrategy = new HcQkqtStrategy();
+export const hcqkqtStrategy = new HcqkqtStrategy();

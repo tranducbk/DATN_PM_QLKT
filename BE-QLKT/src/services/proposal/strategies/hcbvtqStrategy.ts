@@ -89,7 +89,7 @@ function formatTime(totalMonths: number) {
   };
 }
 
-class CongHienStrategy implements ProposalStrategy {
+class HcbvtqStrategy implements ProposalStrategy {
   readonly type = PROPOSAL_TYPES.CONG_HIEN;
 
   async buildSubmitPayload(
@@ -206,7 +206,7 @@ class CongHienStrategy implements ProposalStrategy {
 
       const personnel = personnelMap.get(item.personnel_id);
       const hoTen =
-        personnel?.ho_ten || evalCtx.hoTenByPersonnel.get(item.personnel_id) || item.personnel_id;
+        personnel?.ho_ten || evalCtx.hoTenByPersonnel.get(item.personnel_id) || 'một quân nhân';
       const gioiTinh = evalCtx.genderByPersonnel.get(item.personnel_id) ?? null;
       const requiredMonths = requiredCongHienMonths(gioiTinh);
       const months: PositionMonthsByGroup = {
@@ -432,4 +432,4 @@ class CongHienStrategy implements ProposalStrategy {
   }
 }
 
-export const congHienStrategy = new CongHienStrategy();
+export const hcbvtqStrategy = new HcbvtqStrategy();

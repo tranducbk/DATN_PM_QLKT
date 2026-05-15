@@ -1,12 +1,12 @@
 import { PROPOSAL_TYPES, type ProposalType } from '../../../constants/proposalTypes.constants';
 import type { ProposalStrategy } from './proposalStrategy';
 import { nckhStrategy } from './nckhStrategy';
-import { hcQkqtStrategy } from './hcQkqtStrategy';
+import { hcqkqtStrategy } from './hcqkqtStrategy';
 import { kncStrategy } from './kncStrategy';
-import { nienHanStrategy } from './nienHanStrategy';
+import { hccsvvStrategy } from './hccsvvStrategy';
 import { donViHangNamStrategy } from './donViHangNamStrategy';
 import { caNhanHangNamStrategy } from './caNhanHangNamStrategy';
-import { congHienStrategy } from './congHienStrategy';
+import { hcbvtqStrategy } from './hcbvtqStrategy';
 
 /**
  * Registry of proposal-type strategies. DOT_XUAT is intentionally null:
@@ -17,10 +17,10 @@ import { congHienStrategy } from './congHienStrategy';
 const REGISTRY: Record<ProposalType, ProposalStrategy | null> = {
   [PROPOSAL_TYPES.CA_NHAN_HANG_NAM]: caNhanHangNamStrategy,
   [PROPOSAL_TYPES.DON_VI_HANG_NAM]: donViHangNamStrategy,
-  [PROPOSAL_TYPES.NIEN_HAN]: nienHanStrategy,
-  [PROPOSAL_TYPES.HC_QKQT]: hcQkqtStrategy,
+  [PROPOSAL_TYPES.NIEN_HAN]: hccsvvStrategy,
+  [PROPOSAL_TYPES.HC_QKQT]: hcqkqtStrategy,
   [PROPOSAL_TYPES.KNC_VSNXD_QDNDVN]: kncStrategy,
-  [PROPOSAL_TYPES.CONG_HIEN]: congHienStrategy,
+  [PROPOSAL_TYPES.CONG_HIEN]: hcbvtqStrategy,
   [PROPOSAL_TYPES.NCKH]: nckhStrategy,
   [PROPOSAL_TYPES.DOT_XUAT]: null,
 };

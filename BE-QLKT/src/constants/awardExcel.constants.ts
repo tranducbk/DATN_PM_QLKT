@@ -248,15 +248,3 @@ export const PROPOSAL_AWARDS_EXPORT_COLUMNS = [
   { header: 'CSTĐTQ', key: 'cstdtq', width: 10 },
   { header: 'Số QĐ CSTĐTQ', key: 'so_qd_cstdtq', width: 20 },
 ];
-
-export const PERSONNEL_EXPORT_COLUMNS = [
-  { header: 'CCCD', key: 'cccd', width: 18 },
-  { header: 'Họ tên', key: 'ho_ten', width: 28 },
-  { header: 'Ngày sinh (YYYY-MM-DD)', key: 'ngay_sinh', width: 20 },
-  { header: 'Ngày nhập ngũ (YYYY-MM-DD)', key: 'ngay_nhap_ngu', width: 24 },
-  { header: 'Mã đơn vị', key: 'ma_don_vi', width: 14 },
-  { header: 'Tên đơn vị', key: 'ten_don_vi', width: 24 },
-  { header: 'Tên chức vụ', key: 'ten_chuc_vu', width: 22 },
-  { header: 'Là chỉ huy (is_manager)', key: 'is_manager', width: 16 },
-  { header: 'Hệ số chức vụ', key: 'he_so_chuc_vu', width: 15 },
-];

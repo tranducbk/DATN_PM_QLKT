@@ -180,11 +180,11 @@ services/proposal/strategies/
 ├── index.ts                      # REGISTRY map
 ├── caNhanHangNamStrategy.ts
 ├── donViHangNamStrategy.ts
-├── nienHanStrategy.ts
-├── hcQkqtStrategy.ts             # Dùng singleMedalImporter helper
+├── hccsvvStrategy.ts
+├── hcqkqtStrategy.ts             # Dùng singleMedalImporter helper
 ├── kncStrategy.ts                # Dùng singleMedalImporter helper
 ├── nckhStrategy.ts
-├── congHienStrategy.ts
+├── hcbvtqStrategy.ts
 ├── singleMedalImporter.ts        # Shared logic cho HC_QKQT + KNC
 └── nienHanPayloadHelper.ts       # Shared payload builder
 ```
@@ -443,6 +443,32 @@ try {
 ```
 
 **Rule:** Catch block log technical (CUID, stack, Prisma error code) vào `console.error` hoặc `writeSystemLog`. Push message generic + tiếng Việt cho user qua `acc.errors`/`throw`.
+
+### AP-10: Thêm validation BE cho field mà FE không bao giờ gửi
+
+```typescript
+// ❌ BAD — thêm check thang_quyet_dinh mà không verify FE có gán không
+if (item.nam_quyet_dinh && (namNhan < item.nam_quyet_dinh ||
+  (item.thang_quyet_dinh && namNhan === item.nam_quyet_dinh && thangNhan < item.thang_quyet_dinh)
+)) { ... }
+// → item.thang_quyet_dinh luôn undefined vì FE (DecisionPayload) chỉ có `nam`, không có `thang`
+// → dead code, check không bao giờ trigger
+```
+
+```typescript
+// ✅ GOOD — trước khi thêm validation, grep FE xem field có được gán không
+// grep "thang_quyet_dinh" FE-QLKT/src/ → không kết quả → FE không gửi → không validate BE
+
+if (item.nam_quyet_dinh && namNhan < item.nam_quyet_dinh) { ... }
+// Chỉ validate những gì FE thực sự gửi lên
+```
+
+**Rule:** Trước khi thêm validation cho một field trong BE `importInTransaction` hoặc `buildSubmitPayload`, phải verify FE thực sự gán field đó vào payload. Kiểm tra theo thứ tự:
+1. `grep -rn "<field_name>" FE-QLKT/src/` — field có xuất hiện trong FE không?
+2. Nếu có, tìm chỗ FE gán vào object gửi đi (thường là `handleDecisionSuccess`, submit handler, hoặc `applyDecision`).
+3. Nếu FE không gán → field sẽ `undefined` ở BE → không thêm validation (dead code).
+
+Áp dụng đặc biệt khi "đồng bộ" validation giữa 2 strategy (vd: HCBVTQ có `thang_quyet_dinh` ≠ HCCSVV không có) — hai loại đề xuất có thể có FE khác nhau, không được copy-paste validation mù quáng.
 
 ## Anti-Patterns (FE)
 

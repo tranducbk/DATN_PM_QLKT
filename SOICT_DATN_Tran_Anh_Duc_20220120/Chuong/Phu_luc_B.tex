@@ -84,9 +84,9 @@ ID & UC-10 \\ \hline
 Tác nhân & SuperAdmin, Admin, Manager \\ \hline
 Tiền điều kiện & Đã đăng nhập với vai trò SuperAdmin, Admin hoặc Manager; route \texttt{/api/system-logs} dùng \texttt{requireManager}. Log có \texttt{resource = 'backup'} chỉ SuperAdmin xem được --- Admin và Manager bị filter trong \texttt{systemLogs.service.ts}. \\ \hline
 Luồng chính &
-(1) Truy cập trang ``Nhật ký hệ thống''; hệ thống hiển thị bảng log với cột: thời gian, người thực hiện, vai trò, action, resource, mô tả. (2) Áp dụng bộ lọc theo resource, action, người thực hiện, khoảng thời gian. (3) Hệ thống gọi \texttt{systemLogsService.getLogs(userRole, filters)} --- filter \texttt{resource = 'backup'} nếu role không phải SuperAdmin; Manager còn bị giới hạn theo phạm vi đơn vị qua \texttt{getManagerAccountIds}. (4) Trả về danh sách log đã phân trang. (5) Click vào một log để xem chi tiết \texttt{payload} (before/after JSON) trong modal. \\ \hline
+(1) Truy cập trang ``Nhật ký hệ thống''; hệ thống hiển thị bảng ghi với các cột: thời gian, người thực hiện, vai trò, loại hành động, nhóm chức năng, mô tả. (2) Áp dụng bộ lọc theo nhóm chức năng, loại hành động, người thực hiện, khoảng thời gian. (3) Hệ thống lọc kết quả theo vai trò: Manager chỉ thấy bản ghi thuộc phạm vi đơn vị mình quản lý; Admin và Manager không thấy nhật ký sao lưu (chỉ SuperAdmin mới xem được). (4) Trả về danh sách đã phân trang. (5) Nhấn vào một bản ghi để xem chi tiết nội dung thay đổi trước và sau trong hộp thoại. \\ \hline
 Luồng thay thế &
-(3a) Admin hoặc Manager cố xem log \texttt{resource = 'backup'} $\rightarrow$ tự động bị filter trong service, không thấy bản ghi nào. (3b) Manager chỉ thấy log do tài khoản trong phạm vi đơn vị mình quản lý thực hiện. \\ \hline
+(3a) Admin hoặc Manager cố xem nhật ký sao lưu $\rightarrow$ hệ thống tự động lọc bỏ, không hiển thị bản ghi nào. (3b) Manager chỉ thấy nhật ký do các tài khoản trong phạm vi đơn vị mình quản lý thực hiện. \\ \hline
 Hậu điều kiện & Người dùng nắm được lịch sử hành động trong hệ thống, phục vụ công tác kiểm tra và truy vết. \\ \hline
 \end{tabular}
 \end{table}

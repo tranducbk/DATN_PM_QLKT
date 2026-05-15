@@ -9,9 +9,9 @@
 ```mermaid
 sequenceDiagram
     actor User as Người dùng
-    participant Page as TrangDangNhap
-    participant Ctrl as TaiKhoanController
-    participant Acc as TaiKhoan
+    participant Page as TrangDangNhap [UI]
+    participant Ctrl as AuthController
+    participant Acc as TaiKhoan [DB]
 
     User->>Page: Nhập thông tin đăng nhập
     Page->>Page: validate
@@ -37,10 +37,10 @@ sequenceDiagram
 sequenceDiagram
     actor MGR as Chỉ huy đơn vị
     actor ADM as Phòng Chính trị
-    participant Page as TrangDeXuat
+    participant Page as TrangDeXuat [UI]
     participant Ctrl as DeXuatController
-    participant DX as DeXuat
-    participant TB as ThongBao
+    participant DX as DeXuat [DB]
+    participant TB as ThongBao [DB]
 
     MGR->>Page: Chọn loại đề xuất, năm và quân nhân
     Page->>Page: validate dữ liệu đầu vào
@@ -71,12 +71,12 @@ sequenceDiagram
     actor ADM as Phòng Chính trị
     actor MGR as Chỉ huy đơn vị
     actor QN as Quân nhân
-    participant Page as TrangChiTietDeXuat
+    participant Page as TrangChiTietDeXuat [UI]
     participant Ctrl as DeXuatController
-    participant DX as DeXuat
-    participant KT as KhenThuong
-    participant HS as HoSoQuanNhan
-    participant TB as ThongBao
+    participant DX as DeXuat [DB]
+    participant KT as KhenThuong [DB]
+    participant HS as HoSoQuanNhan [DB]
+    participant TB as ThongBao [DB]
 
     ADM->>Page: Mở chi tiết đề xuất
     Page->>Ctrl: lấy đề xuất theo id
@@ -89,7 +89,7 @@ sequenceDiagram
     Page->>Ctrl: yêu cầu phê duyệt
     Ctrl->>Ctrl: kiểm tra trạng thái chưa duyệt và đúng tháng
     Ctrl->>Ctrl: kiểm tra trùng lặp với khen thưởng đã có
-    Ctrl->>Ctrl: kiểm tra điều kiện chuỗi và niên hạn cống hiến
+    Ctrl->>Ctrl: kiểm tra điều kiện khen thưởng theo loại đề xuất
     Ctrl->>Ctrl: kiểm tra hợp lệ số quyết định
 
     alt validate fail
@@ -114,25 +114,25 @@ sequenceDiagram
 
 ---
 
-## C4.4 — Tuần tự tính lại điều kiện chuỗi (recalc)
+## C4.4 — Tuần tự tính lại điều kiện khen thưởng
 
 ```mermaid
 sequenceDiagram
-    participant Sys as Hệ thống
-    participant DH as DanhHieuHangNam
-    participant NCKH as ThanhTichKhoaHoc
-    participant HS as HoSoHangNam
+    participant Sys as Hệ thống [SV]
+    participant DH as DanhHieuHangNam [DB]
+    participant NCKH as ThanhTichKhoaHoc [DB]
+    participant HS as HoSoHangNam [DB]
 
     Sys->>DH: Lấy danh hiệu các năm của quân nhân
     DH-->>Sys: danh sách danh hiệu
     Sys->>NCKH: Lấy thành tích khoa học các năm
     NCKH-->>Sys: danh sách thành tích
 
-    Sys->>Sys: Tính chuỗi liên tục cho từng cấp BKBQP CSTDTQ BKTTCP
-    Sys->>Sys: Kiểm tra cycle và lifetime block
+    Sys->>Sys: Tính số năm liên tục cho từng cấp BKBQP CSTDTQ BKTTCP
+    Sys->>Sys: Kiểm tra điều kiện lặp lại theo chu kỳ và giới hạn BKTTCP
 
     alt đã nhận BKTTCP
-        Sys->>Sys: Áp lifetime block, đặt gợi ý chưa hỗ trợ cao hơn
+        Sys->>Sys: Chặn đề xuất, đặt gợi ý chưa hỗ trợ cao hơn
     else
         Sys->>Sys: Sinh gợi ý theo điều kiện hiện tại
     end
@@ -143,17 +143,17 @@ sequenceDiagram
 
 ---
 
-## C4.5 — Tuần tự import Excel danh sách khen thưởng
+## C4.5 — Tuần tự nhập danh sách khen thưởng từ Excel
 
 ```mermaid
 sequenceDiagram
     actor ADM as Phòng Chính trị
-    participant Page as TrangImport
+    participant Page as TrangImport [UI]
     participant Ctrl as KhenThuongController
-    participant Excel as Bộ xử lý Excel
-    participant QN as QuanNhan
-    participant KT as KhenThuong
-    participant HS as HoSoQuanNhan
+    participant Excel as Bộ xử lý Excel [SV]
+    participant QN as QuanNhan [DB]
+    participant KT as KhenThuong [DB]
+    participant HS as HoSoQuanNhan [DB]
 
     ADM->>Page: Chọn file Excel theo loại khen thưởng
     Page->>Ctrl: gửi file xem trước
@@ -165,14 +165,14 @@ sequenceDiagram
     Ctrl-->>Page: Bảng xem trước với dòng OK và dòng lỗi
     Page-->>ADM: Hiển thị bảng xem trước
 
-    ADM->>Page: Xác nhận import các dòng OK
-    Page->>Ctrl: xác nhận import
+    ADM->>Page: Xác nhận nhập các dòng hợp lệ
+    Page->>Ctrl: xác nhận nhập dữ liệu
     Ctrl->>KT: Lưu khen thưởng cho từng dòng
     KT-->>Ctrl: đã lưu
     Ctrl->>HS: Tính lại hồ sơ quân nhân liên quan
     HS-->>Ctrl: hồ sơ mới
     Ctrl-->>Page: Báo cáo số dòng thành công và thất bại
-    Page-->>ADM: Hiển thị kết quả import
+    Page-->>ADM: Hiển thị kết quả nhập dữ liệu
 ```
 
 ---
@@ -181,9 +181,9 @@ sequenceDiagram
 
 ```mermaid
 sequenceDiagram
-    participant Sys as Hệ thống
-    participant TB as ThongBao
-    participant Sock as Kênh Socket
+    participant Sys as Hệ thống [SV]
+    participant TB as ThongBao [DB]
+    participant Sock as Kênh Socket [SV]
     actor User as Người nhận
 
     Sys->>TB: Tạo thông báo cho người nhận
@@ -203,10 +203,10 @@ sequenceDiagram
     actor Actor as Người xóa
     actor MGR as Chỉ huy đơn vị
     actor ADM as Phòng Chính trị
-    participant Page as TrangDeXuat
+    participant Page as TrangDeXuat [UI]
     participant Ctrl as DeXuatController
-    participant DX as DeXuat
-    participant TB as ThongBao
+    participant DX as DeXuat [DB]
+    participant TB as ThongBao [DB]
 
     Actor->>Page: Chọn xóa đề xuất
     Page->>Page: xác nhận thao tác
@@ -239,12 +239,12 @@ sequenceDiagram
 
 ```mermaid
 sequenceDiagram
-    participant Cron as Lịch chạy tự động
-    participant Backup as DichVuSaoLuu
-    participant Setting as CauHinh
-    participant Repos as Các bảng dữ liệu
-    participant FS as Thư mục backups
-    participant Log as NhatKyHeThong
+    participant Cron as Lịch chạy tự động [Cron]
+    participant Backup as DichVuSaoLuu [SV]
+    participant Setting as CauHinh [DB]
+    participant Repos as Các bảng dữ liệu [DB]
+    participant FS as Thư mục backups [FS]
+    participant Log as NhatKyHeThong [DB]
     actor SA as Quản trị viên
 
     Cron->>Backup: Yêu cầu sao lưu định kỳ
@@ -276,7 +276,7 @@ sequenceDiagram
 
 | # | Sequence | Lifeline | Đặc điểm |
 |---|---|---|---|
-| C4.1 | Đăng nhập | 4 (Người dùng + TrangDangNhap + TaiKhoanController + TaiKhoan) | Có self-call validate + alt thành công thất bại |
+| C4.1 | Đăng nhập | 4 (Người dùng + TrangDangNhap + AuthController + TaiKhoan) | Có self-call validate + alt thành công thất bại |
 | C4.2 | Tạo đề xuất | 5 | Có alt eligibility + thông báo cho Phòng Chính trị |
 | C4.3 | Phê duyệt | 7 | 2 actor + alt validate + 2 thông báo (Chỉ huy đơn vị + Quân nhân) |
 | C4.4 | Recalc chuỗi | 4 | Background process, có alt lifetime block |
@@ -288,7 +288,7 @@ sequenceDiagram
 **Style nguyên tắc** (theo báo cáo mẫu):
 - Actor: tên Tiếng Việt nghiệp vụ ("Chỉ huy đơn vị", "Phòng Chính trị", "Quân nhân", "Người dùng")
 - Page: PascalCase tiếng Việt theo trang ("TrangDangNhap", "TrangDeXuat", "TrangChiTietDeXuat")
-- Controller: PascalCase + suffix Controller ("TaiKhoanController", "DeXuatController", "KhenThuongController")
+- Controller: PascalCase + suffix Controller ("AuthController", "DeXuatController", "KhenThuongController")
 - Entity: tên model nghiệp vụ ("TaiKhoan", "DeXuat", "KhenThuong", "HoSoQuanNhan", "ThongBao", "DanhHieuHangNam")
 - Message: ngắn gọn nghiệp vụ tiếng Việt, không reveal implementation (không nói `prisma.$transaction`, `bcrypt.compare`, `Joi validate`...)
 - `alt` cho nhánh thành công/thất bại, có nhãn rõ ràng

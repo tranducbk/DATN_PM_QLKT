@@ -71,7 +71,7 @@ flowchart TB
   - **Express API process** (`be-qlkt`): chạy `dist/index.js` (đã build từ TS), port 4000, REST + Socket.IO server + audit log + notification + `node-cron` in-process
 - **File system** (paths tương đối với BE-QLKT):
   - `uploads/decisions/`: file PDF quyết định (multer disk storage). Excel import dùng `memoryStorage` không ghi đĩa.
-  - `backups/`: file SQL backup hằng ngày sinh bởi `backup.service.ts` qua `pg_dump` (giữ N ngày theo `SystemSetting.BACKUP_RETENTION_DAYS`)
+  - `backups/`: file SQL backup sinh bởi `backup.service.ts` — đọc 21 bảng qua Prisma, build chuỗi `INSERT INTO ... VALUES (...)` tự động (không dùng `pg_dump`), giữ N ngày theo `SystemSetting.BACKUP_RETENTION_DAYS`
 
 ### Máy chủ CSDL (DB Server)
 - **PostgreSQL 14+**: 23 bảng theo `prisma/schema.prisma`

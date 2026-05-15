@@ -66,7 +66,6 @@ classDiagram
         +GET /api/personnel/:id
         +PUT /api/personnel/:id
         +DELETE /api/personnel/:id
-        +GET /api/personnel/export
         +POST /api/personnel/check-contribution-eligibility
     }
 
@@ -77,19 +76,17 @@ classDiagram
         +createPersonnel(req, res)
         +updatePersonnel(req, res)
         +deletePersonnel(req, res)
-        +exportPersonnel(req, res)
         +checkContributionEligibility(req, res)
     }
 
     class PersonnelService {
         -quanNhanRepository
         -unitRepository
-        +getPersonnel(filter, role, quanNhanId) PaginatedQuanNhan
+        +getPersonnel(page, limit, userRole, userQuanNhanId, filter) PaginatedQuanNhan
         +getPersonnelById(id, userRole, userQuanNhanId) QuanNhan
         +createPersonnel(data) QuanNhan
         +updatePersonnel(id, data, role) QuanNhan
         +deletePersonnel(id, userRole, userQuanNhanId) void
-        +exportPersonnel() QuanNhan[]
         +checkContributionEligibility(personnelIds) Result[]
     }
 
@@ -99,7 +96,7 @@ classDiagram
         +findByIdWithAccount(id, tx) QuanNhan
         +findIdByCccd(cccd, tx) String
         +findManyByIds(ids, tx) QuanNhan[]
-        +findAllForExport(tx) QuanNhan[]
+        +findMany(args, tx) QuanNhan[]
         +count(where, tx) Number
         +create(data, tx) QuanNhan
         +update(id, data, tx) QuanNhan
@@ -194,7 +191,7 @@ classDiagram
 
     class SingleMedalImporter {
         <<helper>>
-        +importSingleMedal(tx, payload, config) ImportResult
+        +importSingleMedal(items, ctx, acc, prismaTx, cfg) void
     }
 
     class ProposalService {
@@ -203,8 +200,9 @@ classDiagram
         +submitProposal(data, userId, role) BangDeXuat
         +approveProposal(id, editedData, adminId, decisions, pdfFiles) BangDeXuat
         +rejectProposal(id, reason, adminId) BangDeXuat
+        +deleteProposal(id, userId, role) void
         +getProposals(filters, role) PaginatedBangDeXuat
-        +getProposalById(id, role) BangDeXuat
+        +getProposalById(id, userId, role) BangDeXuat
     }
 
     class ProposalController {
@@ -296,7 +294,6 @@ classDiagram
         <<service>>
         +checkChainEligibility(award, streaks, hasReceived, flagsInWindow) EligibilityResult
         +buildInsufficientReason(award, streaks, flagsInWindow) String
-        +checkAwardEligibility(personnelId, year, danhHieu) Promise~EligibilityResult~
     }
 
     class AnnualProfileService {
@@ -304,11 +301,12 @@ classDiagram
         +lastFlagYearInChain(records, code) Number
         +computeChainContext(records, year) ChainContext
         +computeEligibilityFlags(personnel, ctx, awards, nckh) EligibilityFlags
+        +checkAwardEligibility(personnelId, year, danhHieu) Promise~EligibilityResult~
     }
 
     class UnitEligibilityService {
-        +recalculateUnitProfile(unitId) HoSoDonViHangNam
-        +checkUnitChainEligibility(unit, year, code) ChainEligibilityResult
+        +recalculateAnnualUnit(unitId, year) HoSoDonViHangNam
+        +checkUnitAwardEligibility(unitId, year, danhHieu) ChainEligibilityResult
     }
 
     class CongHienMonthsAggregator {
@@ -440,7 +438,7 @@ classDiagram
     AccountController --> AccountService
     AccountService --> AccountRepository
     AccountRepository --> TaiKhoan : manages
-    VerifyTokenMiddleware ..> AuthService : uses
+    VerifyTokenMiddleware ..> TaiKhoan : verifies JWT
     RequireRoleMiddleware ..> Role : checks
 ```
 
@@ -485,15 +483,19 @@ classDiagram
         CREATE
         UPDATE
         DELETE
-        LOGIN
-        LOGOUT
+        IMPORT
+        IMPORT_PREVIEW
+        EXPORT
         APPROVE
         REJECT
-        IMPORT
-        EXPORT
-        BACKUP_SUCCESS
-        BACKUP_FAILED
-        RECALC
+        LOGIN
+        LOGOUT
+        CHANGE_PASSWORD
+        RESET_PASSWORD
+        PROPOSE
+        RECALCULATE
+        BULK
+        BACKUP
     }
 
     class NotificationType {
@@ -531,27 +533,34 @@ classDiagram
         -notificationRepository
         -socketService
         +createNotification(data) ThongBao
-        +listForUser(userId, role) PaginatedThongBao
+        +createBulkNotifications(data) void
+        +getNotificationsByUserId(userId, role) PaginatedThongBao
         +markAsRead(id, userId) void
-        +countUnread(userId) Number
+        +getUnreadCount(userId) Number
     }
 
     class NotificationHelpers {
         <<helper>>
-        +buildAwardNotification(type, payload) NotificationData
-        +RESOURCE_TO_PROPOSAL_TYPE Map
+        +notifyManagersOnAwardAdded(payload) void
+        +notifyUsersOnAwardApproved(payload) void
+        +notifyOnAwardDeleted(payload) void
+        +notifyUserOnAchievementApproved(payload) void
     }
 
     class SystemLogsController {
         -systemLogsService
-        +list(req, res)
+        +getLogs(req, res)
+        +getActions(req, res)
         +getResources(req, res)
+        +deleteLogs(req, res)
     }
 
     class SystemLogsService {
         -systemLogRepository
-        +getLogs(userRole, filters) PaginatedSystemLog
+        +getLogs(params) PaginatedSystemLog
+        +getActions() String[]
         +getResources(userRole) Resource[]
+        +deleteLogs(ids) void
     }
 
     SystemLog --> AuditAction : has action

@@ -177,17 +177,6 @@ class PersonnelController {
     return ResponseHelper.success(res, { data: result, message: 'Xóa quân nhân thành công' });
   });
 
-  exportPersonnel = catchAsync(async (req: Request, res: Response) => {
-    const buffer = await personnelService.exportPersonnel();
-    const fileName = `quan_nhan_${new Date().toISOString().slice(0, 10)}.xlsx`;
-    res.setHeader(
-      'Content-Type',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    );
-    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-    return res.status(200).send(buffer);
-  });
-
   checkContributionEligibility = catchAsync(async (req: Request, res: Response) => {
     const body = req.body as CheckContributionEligibilityBody;
     const { personnel_ids: personnelIds } = body;

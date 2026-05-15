@@ -96,18 +96,6 @@ export const quanNhanRepository = {
     return tx.quanNhan.count({ where });
   },
 
-  /** Returns all personnel ordered for Excel export. */
-  findAllForExport(tx: PrismaLike = prisma) {
-    return tx.quanNhan.findMany({
-      include: personnelInclude,
-      orderBy: [
-        { co_quan_don_vi_id: 'asc' },
-        { don_vi_truc_thuoc_id: 'asc' },
-        { ho_ten: 'asc' },
-      ],
-    });
-  },
-
   findManyByIds(ids: string[], tx: PrismaLike = prisma) {
     return tx.quanNhan.findMany({ where: { id: { in: ids } } });
   },

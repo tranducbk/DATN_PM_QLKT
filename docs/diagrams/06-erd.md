@@ -635,8 +635,8 @@ erDiagram
     DonViTrucThuoc ||--o{ BangDeXuat : "đơn vị tạo"
     CoQuanDonVi ||--o{ DanhHieuDonViHangNam : "đạt theo năm"
     DonViTrucThuoc ||--o{ DanhHieuDonViHangNam : "đạt theo năm"
-    CoQuanDonVi ||--o| HoSoDonViHangNam : "tổng hợp"
-    DonViTrucThuoc ||--o| HoSoDonViHangNam : "tổng hợp"
+    CoQuanDonVi ||--o{ HoSoDonViHangNam : "tổng hợp"
+    DonViTrucThuoc ||--o{ HoSoDonViHangNam : "tổng hợp"
 
     BangDeXuat {
         string id PK
@@ -644,7 +644,7 @@ erDiagram
         string don_vi_truc_thuoc_id FK
         string nguoi_de_xuat_id FK
         string nguoi_duyet_id FK
-        string loai_de_xuat "CA_NHAN_HANG_NAM DON_VI_HANG_NAM NIEN_HAN CONG_HIEN HCQKQT KNC NCKH DOT_XUAT"
+        string loai_de_xuat "CA_NHAN_HANG_NAM DON_VI_HANG_NAM NIEN_HAN CONG_HIEN HCQKQT KNC NCKH"
         int nam
         int thang
         string status "PENDING APPROVED REJECTED"

@@ -2,12 +2,12 @@ import { prisma } from '../../../models';
 import { PROPOSAL_TYPES } from '../../../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../../../constants/proposalStatus.constants';
 import { ValidationError } from '../../../middlewares/errorHandler';
-import { nienHanStrategy } from '../strategies/nienHanStrategy';
-import { hcQkqtStrategy } from '../strategies/hcQkqtStrategy';
+import { hccsvvStrategy } from '../strategies/hccsvvStrategy';
+import { hcqkqtStrategy } from '../strategies/hcqkqtStrategy';
 import { kncStrategy } from '../strategies/kncStrategy';
 import { nckhStrategy } from '../strategies/nckhStrategy';
 import { donViHangNamStrategy } from '../strategies/donViHangNamStrategy';
-import { congHienStrategy } from '../strategies/congHienStrategy';
+import { hcbvtqStrategy } from '../strategies/hcbvtqStrategy';
 import { caNhanHangNamStrategy } from '../strategies/caNhanHangNamStrategy';
 import type {
   ProposalApproveContext,
@@ -80,7 +80,7 @@ export async function runImportTransaction(
           prismaTx
         );
       } else if (proposal.loai_de_xuat === PROPOSAL_TYPES.CONG_HIEN) {
-        await congHienStrategy.importInTransaction(
+        await hcbvtqStrategy.importInTransaction(
           { data_cong_hien: congHienData } as EditedProposalData,
           approveCtx,
           decisions,
@@ -104,7 +104,7 @@ export async function runImportTransaction(
         nienHanData &&
         nienHanData.length > 0
       ) {
-        await nienHanStrategy.importInTransaction(
+        await hccsvvStrategy.importInTransaction(
           { data_nien_han: nienHanData } as EditedProposalData,
           approveCtx,
           decisions,
@@ -118,7 +118,7 @@ export async function runImportTransaction(
         nienHanData &&
         nienHanData.length > 0
       ) {
-        await hcQkqtStrategy.importInTransaction(
+        await hcqkqtStrategy.importInTransaction(
           { data_nien_han: nienHanData } as EditedProposalData,
           approveCtx,
           decisions,

@@ -24,7 +24,7 @@ import {
   type NienHanInputItem,
 } from './nienHanPayloadHelper';
 
-class NienHanStrategy implements ProposalStrategy {
+class HccsvvStrategy implements ProposalStrategy {
   readonly type = PROPOSAL_TYPES.NIEN_HAN;
 
   async buildSubmitPayload(
@@ -80,7 +80,7 @@ class NienHanStrategy implements ProposalStrategy {
           const orderError = validateHCCSVVRankOrder(item.danh_hieu, ctx.nam, existing);
           if (orderError) {
             const personnel = personnelMap.get(item.personnel_id);
-            const hoTen = personnel?.ho_ten || item.personnel_id;
+            const hoTen = personnel?.ho_ten || 'một quân nhân';
             rankOrderErrors.push(`${hoTen}: ${orderError}`);
           }
         }
@@ -268,4 +268,4 @@ class NienHanStrategy implements ProposalStrategy {
   }
 }
 
-export const nienHanStrategy = new NienHanStrategy();
+export const hccsvvStrategy = new HccsvvStrategy();

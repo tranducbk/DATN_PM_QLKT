@@ -123,11 +123,11 @@ Bảy luồng nghiệp vụ quan trọng nhất được mô hình hoá bằng s
 
 \textbf{Sequence 4.1: Đăng nhập với refresh token rotation.} Người dùng nhập tên đăng nhập và mật khẩu $\rightarrow$ FE gọi \texttt{POST /auth/login} $\rightarrow$ \texttt{authController.login} $\rightarrow$ \texttt{authService.login} $\rightarrow$ \texttt{accountRepository.findByUsername} $\rightarrow$ \texttt{bcrypt.compare} $\rightarrow$ tạo Access + Refresh Token $\rightarrow$ lưu Refresh Token vào cột \texttt{TaiKhoan.refreshToken} $\rightarrow$ ghi \texttt{SystemLog} $\rightarrow$ trả cặp token cho FE để ghi vào \texttt{localStorage}.
 
-\textbf{Sequence 4.2: Tạo đề xuất.} Manager hoàn thành biểu mẫu ba bước $\rightarrow$ FE gọi \texttt{POST /api/proposals} $\rightarrow$ middleware chain $\rightarrow$ \texttt{proposalService.submitProposal} $\rightarrow$ \texttt{getProposalStrategy(type).buildSubmitPayload} $\rightarrow$ \texttt{proposalRepository.create} $\rightarrow$ phát Socket.IO event tới Admin $\rightarrow$ trả về đề xuất đã tạo.
+\textbf{Sequence 4.2: Tạo đề xuất.} Manager hoàn thành biểu mẫu năm bước $\rightarrow$ FE gọi \texttt{POST /api/proposals} $\rightarrow$ middleware chain $\rightarrow$ \texttt{proposalService.submitProposal} $\rightarrow$ \texttt{getProposalStrategy(type).buildSubmitPayload} $\rightarrow$ \texttt{proposalRepository.create} $\rightarrow$ phát Socket.IO event tới Admin $\rightarrow$ trả về đề xuất đã tạo.
 
 \textbf{Sequence 4.3: Phê duyệt đề xuất.} Admin mở chi tiết $\rightarrow$ bấm ``Phê duyệt'' $\rightarrow$ FE gọi \texttt{POST /api/proposals/:id/approve} $\rightarrow$ middleware chain $\rightarrow$ \texttt{approveProposal} mở transaction Prisma $\rightarrow$ \texttt{validation.preflight} $\rightarrow$ \texttt{strategy.validateApprove} $\rightarrow$ \texttt{decisionMappings.attach} $\rightarrow$ \texttt{strategy.importInTransaction} $\rightarrow$ cập nhật \texttt{BangDeXuat.status = APPROVED} $\rightarrow$ tính lại hồ sơ suy diễn $\rightarrow$ commit $\rightarrow$ \texttt{auditLog} $\rightarrow$ phát Socket.IO event.
 
-\textbf{Sequence 4.4: Tính lại điều kiện chuỗi cho một quân nhân.} FE gọi \texttt{GET /api/profiles/annual/:personnel\_id} $\rightarrow$ \texttt{profileController.getAnnualProfile} $\rightarrow$ \texttt{profileService.recalculateAnnualProfile} $\rightarrow$ \texttt{danhHieuRepository.findManyByPersonnelId} $\rightarrow$ \texttt{computeChainContext(rows, currentYear)} $\rightarrow$ vòng for qua \texttt{PERSONAL\_CHAIN\_AWARDS} gọi \texttt{checkChainEligibility} $\rightarrow$ \texttt{annualProfileRepository.upsert} $\rightarrow$ trả kết quả.
+\textbf{Sequence 4.4: Tính lại điều kiện khen thưởng hằng năm cho một quân nhân.} FE gọi \texttt{GET /api/profiles/annual/:personnel\_id} $\rightarrow$ \texttt{profileController.getAnnualProfile} $\rightarrow$ \texttt{profileService.recalculateAnnualProfile} $\rightarrow$ \texttt{danhHieuRepository.findManyByPersonnelId} $\rightarrow$ \texttt{computeChainContext(rows, currentYear)} $\rightarrow$ vòng for qua \texttt{PERSONAL\_CHAIN\_AWARDS} gọi \texttt{checkChainEligibility} $\rightarrow$ \texttt{annualProfileRepository.upsert} $\rightarrow$ trả kết quả.
 
 \textbf{Sequence 4.5: Nhập Excel hai bước.} Admin tải tệp $\rightarrow$ FE gọi \texttt{POST /api/annual-rewards/import/preview} $\rightarrow$ \texttt{excelHelper.loadWorkbook} $\rightarrow$ đọc từng trang tính $\rightarrow$ với mỗi dòng chạy schema Zod và quy tắc nghiệp vụ $\rightarrow$ trả về \texttt{\{valid: [\dots], errors: [\dots]\}}. Admin xác nhận $\rightarrow$ FE gọi \texttt{POST /api/annual-rewards/import/confirm} $\rightarrow$ mở transaction $\rightarrow$ ghi tuần tự $\rightarrow$ commit hoặc rollback.
 
@@ -316,7 +316,7 @@ Giao diện hệ thống được thiết kế trên cơ sở wireframe ASCII đ
 
 \textbf{Trang chi tiết quân nhân} chia thành các tab tương ứng các nhóm khen thưởng: Hằng năm, Niên hạn, Cống hiến, Quân kỳ, Kỷ niệm chương, NCKH, Đột xuất. Mỗi tab có bảng dữ liệu kèm thanh tiến trình hiển thị các chu kỳ đang đến mốc đề nghị (vd: ``BKBTBQP: 1/2 năm CSTĐCS đã tích luỹ''). Cách tiếp cận trực quan này giúp Manager nhanh chóng nhận biết quân nhân nào sắp đủ điều kiện.
 
-\textbf{Form tạo đề xuất} áp dụng mẫu nhiều bước (Multi-Step Wizard) ba bước. Bước 1: chọn loại đề xuất (radio button có icon đại diện cho từng nhóm) và năm/tháng. Bước 2: chọn quân nhân hoặc đơn vị từ bảng có lọc theo nhiều tiêu chí. Bước 3: thiết lập danh hiệu cụ thể cho từng đối tượng đã chọn, kèm gợi ý từ hệ thống. Người dùng có thể quay lại các bước trước mà không mất dữ liệu nhờ trạng thái được lưu ở Context.
+\textbf{Form tạo đề xuất} áp dụng mẫu nhiều bước (Multi-Step Wizard) năm bước. Bước 1: chọn loại đề xuất (radio button có icon đại diện cho từng nhóm) và năm/tháng. Bước 2: chọn quân nhân hoặc đơn vị từ bảng có lọc theo nhiều tiêu chí. Bước 3: thiết lập danh hiệu cụ thể cho từng đối tượng đã chọn, kèm gợi ý từ hệ thống. Bước 4: tải lên tệp đính kèm minh chứng. Bước 5: xem lại toàn bộ thông tin và gửi đề xuất. Người dùng có thể quay lại các bước trước mà không mất dữ liệu nhờ trạng thái được lưu vào \texttt{sessionStorage} của trình duyệt.
 
 \textbf{Trang nhập Excel} chia hai phần: trên là vùng kéo thả tệp và nút tải xuống tệp mẫu; dưới là bảng xem trước với hai tab ``Hợp lệ'' và ``Lỗi'', trong đó tab Lỗi tô đỏ và liệt kê chỉ số dòng kèm mô tả cụ thể. Nút ``Xác nhận nhập'' chỉ kích hoạt khi có ít nhất một dòng hợp lệ.
 
@@ -379,9 +379,9 @@ Sau quá trình xây dựng, hệ thống đã hoàn thiện các chức năng c
     \item Quản lý quân nhân: thêm -- sửa -- xoá -- nhập Excel -- xuất Excel; chuyển đơn vị giữ nguyên lịch sử khen thưởng; phân quyền theo phạm vi đơn vị cho Manager.
     \item Quản lý đơn vị (CQĐV và ĐVTT) và chức vụ: cây tổ chức hai cấp; tự cập nhật bộ đếm \texttt{so\_luong} khi quân nhân chuyển đơn vị.
     \item Quản lý lịch sử chức vụ: nhập danh sách giai đoạn giữ chức vụ với hệ số; tự tính \texttt{so\_thang} mỗi khi thay đổi mốc thời gian.
-    \item Đề xuất khen thưởng cho cả bảy loại với biểu mẫu ba bước; tự động gợi ý quân nhân đủ điều kiện theo từng loại.
+    \item Đề xuất khen thưởng cho cả bảy loại với biểu mẫu năm bước; tự động gợi ý quân nhân đủ điều kiện theo từng loại.
     \item Phê duyệt đề xuất với transaction, gắn số quyết định, tải lên PDF, ghi nhật ký đầy đủ trước--sau khi thay đổi.
-    \item Tính lại điều kiện chuỗi danh hiệu cá nhân và đơn vị tự động sau mỗi thay đổi nguồn; gợi ý đề nghị bằng tiếng Việt.
+    \item Tính lại điều kiện khen thưởng hằng năm cá nhân và đơn vị tự động sau mỗi thay đổi nguồn; gợi ý đề nghị bằng tiếng Việt.
     \item Nhập Excel hai bước (xem trước + xác nhận với transaction) cho cả bảy loại nghiệp vụ; xuất danh sách khen thưởng theo nhiều tiêu chí.
     \item Quản trị tài khoản bốn cấp; đặt lại mật khẩu; nhật ký kiểm toán; sao lưu định kỳ; khu vực DevZone cho SuperAdmin.
     \item Thông báo realtime qua Socket.IO khi có đề xuất mới, được phê duyệt, bị từ chối, bị xoá hoặc nhập Excel hoàn tất.
@@ -392,7 +392,7 @@ Tổng quy mô mã nguồn TypeScript khoảng 96.000 dòng (không tính dòng 
 \subsection{Minh hoạ các chức năng chính}
 \label{subsection:4.3.3}
 
-Phần này trình bày các ảnh chụp màn hình tiêu biểu của sản phẩm trong môi trường phát triển. Toàn bộ ảnh được chụp trên trình duyệt Chromium 120 ở độ phân giải 1920×1080, sau đó cắt khu vực có nội dung và lưu định dạng PNG. Các hình ảnh được chèn lần lượt theo các chức năng: màn hình đăng nhập, trang chủ Admin với bốn thẻ thống kê, danh sách quân nhân với bộ lọc, trang chi tiết quân nhân với bảy tab khen thưởng, lịch sử danh hiệu hằng năm với thanh tiến trình chuỗi, biểu mẫu ba bước tạo đề xuất, trang chờ duyệt và cửa sổ chi tiết phê duyệt, trang nhập Excel với bảng xem trước hai tab, trang nhật ký hệ thống có nhóm theo ngày, khu vực DevZone của SuperAdmin với danh sách bản sao lưu, và trang thông tin cá nhân vai trò User.
+Phần này trình bày các ảnh chụp màn hình tiêu biểu của sản phẩm trong môi trường phát triển. Toàn bộ ảnh được chụp trên trình duyệt Chromium 120 ở độ phân giải 1920×1080, sau đó cắt khu vực có nội dung và lưu định dạng PNG. Các hình ảnh được chèn lần lượt theo các chức năng: màn hình đăng nhập, trang chủ Admin với bốn thẻ thống kê, danh sách quân nhân với bộ lọc, trang chi tiết quân nhân với bảy tab khen thưởng, lịch sử danh hiệu hằng năm với thanh tiến trình danh hiệu hằng năm, biểu mẫu năm bước tạo đề xuất, trang chờ duyệt và cửa sổ chi tiết phê duyệt, trang nhập Excel với bảng xem trước hai tab, trang nhật ký hệ thống có nhóm theo ngày, khu vực DevZone của SuperAdmin với danh sách bản sao lưu, và trang thông tin cá nhân vai trò User.
 
 \begin{figure}[H]
     \centering
@@ -425,7 +425,7 @@ Phần này tóm tắt năm thành phần kỹ thuật trọng yếu của kho m
 \label{section:4.4}
 
 \subsection{Kiểm thử hộp đen các chức năng nghiệp vụ}
-\label{subsection:4.4.2}
+\label{subsection:4.4.1}
 
 Các chức năng nghiệp vụ chính được kiểm thử hộp đen thủ công thông qua giao diện trên môi trường phát triển. Tám bảng kiểm thử dưới đây tóm tắt kết quả.
 
@@ -469,7 +469,7 @@ Các chức năng nghiệp vụ chính được kiểm thử hộp đen thủ c�
 1 & Tạo đề xuất hợp lệ & 5 quân nhân, CSTĐCS & Đề xuất ở trạng thái PENDING & Đạt \\ \hline
 2 & Manager ngoài đơn vị & Quân nhân đơn vị khác & Backend trả 403 & Đạt \\ \hline
 3 & Quân nhân không đủ điều kiện & 1 năm CSTĐCS đề nghị BKBTBQP & Cảnh báo trước khi gửi & Đạt \\ \hline
-4 & Lưu nháp khi mất kết nối & Mất mạng giữa chừng & Khôi phục dữ liệu khi vào lại & Đạt \\ \hline
+4 & Lưu nháp khi tải lại trang & Reload trang giữa chừng & Dữ liệu giữ nguyên (loại, quân nhân, danh hiệu, ghi chú); xoá tự động sau khi gửi hoặc đóng tab & Đạt \\ \hline
 \end{tabular}
 \end{table}
 
@@ -490,7 +490,7 @@ Các chức năng nghiệp vụ chính được kiểm thử hộp đen thủ c�
 
 \begin{table}[H]
 \centering
-\caption{Kiểm thử chức năng Tính lại điều kiện chuỗi}
+\caption{Kiểm thử chức năng Tính lại điều kiện khen thưởng hằng năm}
 \label{tab:kt-tinhlai}
 \begin{tabular}{|c|p{4cm}|p{3.5cm}|p{4cm}|c|}
 \hline
@@ -545,7 +545,7 @@ Các chức năng nghiệp vụ chính được kiểm thử hộp đen thủ c�
 \end{table}
 
 \subsection{Kiểm thử tương thích trình duyệt}
-\label{subsection:4.4.3}
+\label{subsection:4.4.2}
 
 Hệ thống được kiểm thử trên năm tổ hợp hệ điều hành -- trình duyệt phổ biến.
 

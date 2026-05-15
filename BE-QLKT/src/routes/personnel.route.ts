@@ -80,23 +80,6 @@ router.put(
 );
 
 /**
- * @route   GET /api/personnel/export
- * @desc    Export all personnel data to Excel
- * @access  Private - ADMIN only
- */
-router.get(
-  '/export',
-  verifyToken,
-  requireAdmin,
-  auditLog({
-    action: AUDIT_ACTIONS.EXPORT,
-    resource: 'personnel',
-    getDescription: getLogDescription('personnel', 'EXPORT'),
-  }),
-  personnelController.exportPersonnel
-);
-
-/**
  * @route   DELETE /api/personnel/:id
  * @desc    Delete a personnel and all related records (cascade delete)
  *          Includes: TaiKhoan, LichSuChucVu, ThanhTichKhoaHoc, DanhHieuHangNam,

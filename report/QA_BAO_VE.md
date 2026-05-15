@@ -22,6 +22,7 @@
 - [M. Khả năng bảo trì và mở rộng kiến trúc](#m-khả-năng-bảo-trì-và-mở-rộng-kiến-trúc)
 - [N. Tổng hợp chống tấn công và đánh giá an toàn](#n-tổng-hợp-chống-tấn-công-và-đánh-giá-an-toàn)
 - [O. Truy vấn nâng cao và tối ưu cơ sở dữ liệu](#o-truy-vấn-nâng-cao-và-tối-ưu-cơ-sở-dữ-liệu)
+- [P. Phạm vi đề tài — đã làm và hướng phát triển](#p-phạm-vi-đề-tài--đã-làm-và-hướng-phát-triển)
 
 ---
 
@@ -174,7 +175,7 @@
 **Ngắn:** Jest tích hợp `ts-jest` chạy file `.ts` không cần build, mocking sẵn, cộng đồng lớn nhất cho Node.js backend. Vitest mới hơn, tốt cho FE Vite nhưng chưa cần đổi.
 
 **Chi tiết:**
-- 870 ca kiểm thử / 74 suite hiện chạy trong ~38 giây — chấp nhận được.
+- 890 ca kiểm thử / 75 suite hiện chạy trong ~38 giây — chấp nhận được.
 - Jest snapshot testing chưa dùng nhiều, chủ yếu unit test pure function.
 - `jest --coverage` sinh báo cáo HTML tại `coverage/lcov-report/index.html`, đạt > 85 % cho `services/profile`, `services/eligibility`, `services/proposal`.
 
@@ -2473,7 +2474,7 @@ Next.js tự code-split theo route. Bundle initial ~ 250 KB gzipped.
 **Trả lời:** Mục tiêu của em là cover 100 % rule logic phức tạp (chuỗi danh hiệu, eligibility), > 80 % service layer, ≥ 70 % overall.
 
 **Hiện tại:**
-- 870 test cases / 74 suites pass 100 %.
+- 890 test cases / 75 suites pass 100 %.
 - Coverage ≥ 85 % cho `services/profile`, `services/eligibility`, `services/proposal`.
 - Một số helper pure function 100 %.
 - Controller layer thấp hơn (~60 %) — em ưu tiên test logic hơn integration.
@@ -3954,7 +3955,7 @@ const [quanNhans, danhHieus, lichSus] = await Promise.all([
 
 - Prisma đánh dấu rõ breaking change trong CHANGELOG.
 - Em pin version trong `package.json` (`"prisma": "5.10.2"`, không dùng `^`).
-- Khi upgrade: đọc migration guide, chạy regression test (870 ca), sửa breaking nếu có.
+- Khi upgrade: đọc migration guide, chạy regression test (890 ca), sửa breaking nếu có.
 - Có thể giữ version cũ vài năm nếu Prisma vẫn hỗ trợ.
 
 ---
@@ -3990,4 +3991,107 @@ const [quanNhans, danhHieus, lichSus] = await Promise.all([
 
 ---
 
-**Chúc bạn bảo vệ thành công.** Hệ thống đã đầy đủ tính năng, có số đo định lượng rõ ràng, có audit log đầy đủ, có 870 test pass — đều là vũ khí mạnh khi hội đồng truy vấn. Khi đứng trước hội đồng, hít sâu, nói chậm, mắt nhìn vào người hỏi và đừng quên: **mọi thứ trong đồ án này em đã sống với 6 tháng — em là người hiểu nó nhất phòng**.
+## P. Phạm vi đề tài — đã làm và hướng phát triển
+
+### P.1 — Đề tài đã làm được những gì?
+
+**Ngắn (đọc thuộc — dùng mở đầu phần trình bày):**
+
+"Hệ thống quản lý khen thưởng cán bộ, chiến sĩ Quân đội gồm 5 nhóm chức năng chính: quản lý quân nhân — đơn vị — tài khoản, 7 loại khen thưởng theo quy chế, quy trình đề xuất và phê duyệt có kiểm tra điều kiện tự động, phân quyền 4 cấp vai trò, thống kê và sao lưu dữ liệu. Phần mềm được kiểm thử với 890 ca kiểm thử."
+
+**Chi tiết theo nhóm (dùng khi bị hỏi sâu):**
+
+| Nhóm | Nội dung đã hoàn thành |
+|---|---|
+| **Quân nhân & tổ chức** | CRUD quân nhân với import Excel hàng loạt; quản lý đơn vị 2 cấp (CQĐV → ĐVTT); quản lý chức vụ và lịch sử chức vụ; tính tự động niên hạn theo ngày nhập ngũ |
+| **7 loại khen thưởng** | Cá nhân hằng năm (5 danh hiệu: CSTDCS, CSTT, BKBQP, CSTDTQ, BKTTCP), Đơn vị hằng năm (ĐVQT/ĐVTT/BKBQP/BKTTCP), HCCSVV (3 hạng), HCQKQT, KNC VSNXD QĐNDVN, HCBVTQ (3 hạng), NCKH. Ngoài ra có **khen thưởng đột xuất** do ADMIN tạo trực tiếp (không qua pipeline đề xuất 3 bước) |
+| **Quy trình đề xuất** | 3 bước: soạn đề xuất → ADMIN phê duyệt + gắn số quyết định + upload PDF → tự động import vào hồ sơ. Có thể chỉnh sửa trước phê duyệt |
+| **Điều kiện tự động** | Kiểm tra chuỗi danh hiệu hằng năm (BKBQP mỗi 2 năm, CSTDTQ mỗi 3 năm, BKTTCP mỗi 7 năm); cửa sổ trượt; phát hiện lỡ đợt; hiển thị gợi ý danh hiệu tiếp theo |
+| **Phân quyền RBAC** | 4 vai trò: SUPER_ADMIN → ADMIN → MANAGER → USER; lọc dữ liệu theo đơn vị tự động |
+| **Thông báo real-time** | Socket.IO: ADMIN nhận thông báo khi có đề xuất mới; USER nhận khi đề xuất được duyệt/từ chối |
+| **Dashboard & xuất dữ liệu** | Thống kê tổng quan; xuất Excel danh hiệu hằng năm; tải PDF quyết định đã lưu |
+| **Vận hành nội bộ** | Sao lưu tự động theo lịch (SQL dump); audit log toàn bộ thao tác; JWT access/refresh + force-logout phiên cũ |
+| **Kiểm thử** | 890 ca kiểm thử Jest, 75 test suite, coverage > 85 % cho `services/profile`, `services/eligibility`, `services/proposal` |
+
+---
+
+### P.2 — Những gì chưa làm được và lý do?
+
+**Ngắn:** "Có 5 điểm còn hạn chế, chủ yếu do phạm vi đề tài tập trung vào nghiệp vụ cốt lõi của một đơn vị."
+
+**Chi tiết:**
+
+| Hạn chế | Lý do | Ảnh hưởng thực tế |
+|---|---|---|
+| **Danh hiệu cao hơn BKTTCP** (Anh hùng LLVT, Anh hùng Lao động) | Quy trình xét duyệt cấp Nhà nước, nằm ngoài thẩm quyền cấp đơn vị | Hiện hệ thống thông báo "chưa hỗ trợ, sẽ phát triển trong thời gian tới" khi quân nhân đã có BKTTCP |
+| **Cấu hình thời hạn đề xuất theo loại khen thưởng** | DevZone có toggle `allow_annual`, `allow_hccsvv`, ... nhưng các toggle này chỉ bật/tắt tính năng **import Excel hàng loạt** — không kiểm soát việc tạo đề xuất. Chưa có cơ chế SUPER_ADMIN định nghĩa "loại X chỉ được đề xuất trong khoảng tháng Y–Z" | MANAGER tự nhập `năm/tháng` đề xuất tự do — hệ thống không ngăn đề xuất "quá sớm" hay "quá muộn" so với chu kỳ xét khen của đơn vị |
+| **Phân cấp đơn vị nhiều tầng** | Hiện chỉ hỗ trợ 2 cấp (CQĐV → ĐVTT); nếu áp dụng cho Trung đoàn → Tiểu đoàn → Đại đội cần thêm cấp trong schema | MANAGER chỉ thấy dữ liệu đơn vị mình; cấp trên chưa có view tổng hợp nhiều đơn vị con |
+| **Xuất báo cáo tổng hợp dạng PDF/Word** | Hiện chỉ upload PDF quyết định từ ngoài vào; hệ thống chưa tự tạo được văn bản đề xuất theo mẫu | Cán bộ vẫn phải soạn văn bản tay, chỉ dùng phần mềm để lưu trữ và tra cứu |
+| **Nhập hàng loạt lịch sử chức vụ** | Lịch sử chức vụ hiện phải nhập từng dòng thủ công; chưa có template Excel import | Tốn thời gian khi khởi tạo dữ liệu ban đầu cho đơn vị nhiều quân nhân |
+
+---
+
+### P.3 — Hướng phát triển trong thời gian tới?
+
+**Ngắn (câu mở đầu):** "Em đề xuất 5 hướng phát triển tiếp theo, đều bám sát thực tế vận hành nội bộ."
+
+1. **Cấu hình thời hạn đề xuất theo loại khen thưởng** — thêm setting vào DevZone cho phép SUPER_ADMIN định nghĩa "loại X được mở đề xuất từ tháng Y đến tháng Z mỗi năm" (vd: danh hiệu hằng năm chỉ được đề xuất từ tháng 11–12). BE thêm validation trong `submit.ts` đọc setting này trước khi cho phép tạo đề xuất. Kiến trúc `settingsHelper` + DevZone sẵn sàng để mở rộng.
+
+2. **Hỗ trợ danh hiệu Anh hùng LLVT / Anh hùng Lao động** — nghiên cứu thêm quy trình xét duyệt cấp Quân khu/Bộ Quốc phòng, thêm loại đề xuất mới vào strategy registry mà không ảnh hưởng luồng hiện tại. Kiến trúc strategy pattern sẵn sàng cho extension này.
+
+2. **Mở rộng phân cấp đơn vị** — nếu triển khai rộng hơn (Tiểu đoàn, Đại đội), cần cho phép CQĐV có nhiều cấp con. Schema hiện tại có thể mở rộng bằng cách thêm `parent_id` đệ quy vào bảng đơn vị và cập nhật `unitFilter` middleware.
+
+3. **Xuất văn bản đề xuất theo mẫu** — dùng thư viện `docx` hoặc `pdfmake` để tự động tạo file Word/PDF theo mẫu biểu quân đội từ dữ liệu đề xuất đã lưu, giảm thao tác thủ công cho MANAGER.
+
+4. **Import hàng loạt lịch sử chức vụ bằng Excel** — mở rộng luồng import hiện có (đã có helper `loadWorkbook`, `batchQueryPersonnel`), thêm template và route mới, không cần thay đổi kiến trúc.
+
+---
+
+### P.4 — Câu hỏi hay gặp về phạm vi
+
+**"Phần mềm đã được dùng thực tế chưa?"**
+→ "Hiện đang ở giai đoạn thử nghiệm nội bộ, em đã demo với cán bộ phụ trách công tác khen thưởng và nhận phản hồi tích cực về luồng đề xuất và xét điều kiện tự động. Cần thêm giai đoạn nhập dữ liệu thực tế và đào tạo người dùng trước khi bàn giao chính thức."
+
+**"Nhiều người dùng cùng lúc thì hệ thống có chịu được không?"**
+→ "Phạm vi triển khai là mạng nội bộ một đơn vị, số người dùng đồng thời thực tế khoảng 10–30 người. Ở quy mô đó Express + PostgreSQL hoàn toàn đủ — em đã đo thử với `autocannon`, latency p99 dưới 200 ms với 50 concurrent requests. Bottleneck tiềm năng nhất là recalc eligibility hàng loạt khi có nhiều quân nhân; em đã xử lý bằng `Promise.all` batch query thay vì sequential, và recalc chỉ chạy sau khi phê duyệt đề xuất, không phải mỗi request xem hồ sơ."
+
+**"Nếu mở rộng áp dụng cho nhiều đơn vị trong toàn quân thì code phải sửa gì?"**
+→ "Có hai hướng. Hướng một: deploy nhiều instance độc lập (mỗi đơn vị một server nội bộ riêng) — không cần sửa code, phù hợp với mô hình mạng nội bộ tách biệt từng đơn vị. Hướng hai: thêm `tenant_id` vào schema để một instance phục vụ nhiều đơn vị — phức tạp hơn, cần sửa toàn bộ query filter và middleware. Với đặc thù bảo mật quân đội, hướng một thực tế hơn."
+
+**"CI/CD thì em có làm không?"**
+→ "Em có chạy test tự động (`jest`) và kiểm tra kiểu (`tsc --noEmit`) trước mỗi lần build — đây là phần quan trọng nhất của CI. Deploy thì chạy thủ công bằng PM2 trên máy chủ nội bộ vì không có CI server riêng trong phạm vi đề tài. Nếu đơn vị có server build nội bộ (Jenkins/Gitea CI), có thể tích hợp pipeline chạy test tự động trước khi kéo code mới lên máy chủ."
+
+**"Test Controller layer thì sao — coverage 60 % có đủ không?"**
+→ "Controller trong project này rất mỏng — trung bình 8–12 dòng, chỉ parse request rồi gọi service. Logic nghiệp vụ nằm hoàn toàn ở Service và Eligibility layer — đây là nơi em tập trung test với coverage > 85 %. Coverage Controller thấp hơn chấp nhận được vì nguy cơ bug ở đó gần như không có — nếu service đúng thì controller đúng."
+
+**"Nếu quy chế khen thưởng thay đổi — ví dụ rút ngắn số năm để được xét BKBQP — thì hệ thống phải sửa gì? Có nên làm giao diện để SUPER_ADMIN tự chỉnh không?"**
+
+→ "Đây là rủi ro bảo trì thực tế nhất của hệ thống. Em đã cố gắng tập trung tham số nghiệp vụ vào constants, nhưng mức độ thay đổi khác nhau rõ rệt theo từng loại.
+
+**Các loại chỉ cần sửa constant — ít rủi ro:**
+
+- *HCQKQT*: 1 dòng `HCQKQT_YEARS_REQUIRED = 25` trong `danhHieu.constants.ts`. Toàn bộ logic đọc từ đó, sửa xong chạy lại test là xong.
+- *KNC VSNXD QĐNDVN*: 2 dòng — `KNC_YEARS_REQUIRED_NAM = 25` và `KNC_YEARS_REQUIRED_NU = 20`. Quy chế có phân biệt Nam/Nữ nên tách 2 constant.
+- *Cá nhân hằng năm / Đơn vị hằng năm*: Chu kỳ (2/3/7 năm) và số cờ yêu cầu (3 BKBQP + 2 CSTDTQ cho BKTTCP) đều trong `chainAwards.constants.ts`. Sửa `cycleYears` hoặc `requiredFlags` là xong logic. **Tuy nhiên rủi ro ở test**: 890 test case có nhiều fixture dùng số năm cụ thể (quân nhân có 2 năm CSTDCS → đủ BKBQP). Nếu đổi thành 3 năm, phải rà lại fixture và assertion trong các test suite `eligibility-bkbqp`, `eligibility-cstdtq`, `eligibility-bkttcp`.
+
+**Trường hợp khó — HCBVTQ khi đổi nhóm hệ số:**
+
+Điều kiện HCBVTQ dựa trên tổng số tháng công tác chia theo nhóm hệ số chức vụ. Hiện có 3 nhóm: 0.7 / 0.8 / 0.9–1.0. Nếu quy chế đổi — ví dụ tách nhóm 0.9–1.0 thành 2 nhóm riêng (0.9 và 1.0), hoặc thêm nhóm 0.6 — thì **không phải chỉ sửa constant**. Phải thay đổi toàn bộ 4 tầng:
+
+1. **Constants** (`danhHieu.constants.ts`): thêm key mới vào `CONG_HIEN_HE_SO_GROUPS` và range tương ứng trong `CONG_HIEN_HE_SO_GROUP_RANGES`.
+2. **Service logic** (`aggregatePositionMonthsByGroup`): hàm này phân loại từng lịch sử chức vụ vào nhóm dựa trên hệ số — phải cập nhật để nhận diện nhóm mới.
+3. **Database schema**: mỗi nhóm có 1 cột JSON riêng trong bảng `KhenThuongHCBVTQ` (`thoi_gian_nhom_0_7`, `thoi_gian_nhom_0_8`, `thoi_gian_nhom_0_9_1_0`). Thêm nhóm → thêm cột → phải viết Prisma migration và ALTER TABLE. Hiện có khoảng 40 chỗ trong code tham chiếu tên cột nhóm này.
+4. **Dữ liệu đã lưu**: các đề xuất HCBVTQ đã phê duyệt lưu thời gian theo nhóm cũ. Dữ liệu đó không tự recalculate — cần script chạy lại `aggregatePositionMonthsByGroup` từ lịch sử chức vụ cho từng quân nhân và cập nhật lại cột.
+
+**Có nên làm giao diện để SUPER_ADMIN tự chỉnh thông số không?**
+
+Không nên, ít nhất với giai đoạn hiện tại. Lý do:
+- Các tham số này không đơn thuần là con số — chúng ảnh hưởng dây chuyền đến eligibility logic, test suite, và dữ liệu đã lưu. Cho admin tự chỉnh mà không chạy lại test là không có safety net.
+- Quy chế quân đội thay đổi rất hiếm (hàng năm hoặc ít hơn), ROI của giao diện cấu hình thấp so với chi phí làm đúng.
+- Trường hợp đổi nhóm hệ số HCBVTQ là thay đổi structural — không thể expose qua UI mà không có migration đi kèm.
+
+Giải pháp thực tế hơn là: document rõ quy trình bảo trì — 'khi quy chế thay đổi, developer sửa constants, chạy 890 test, nếu test fixture cần cập nhật thì cập nhật, rồi chạy script recalc nếu cần'. Chi phí thấp hơn nhiều so với làm giao diện cấu hình an toàn."
+
+---
+
+**Chúc bạn bảo vệ thành công.** Hệ thống đã đầy đủ tính năng, có số đo định lượng rõ ràng, có audit log đầy đủ, có 890 test pass — đều là vũ khí mạnh khi hội đồng truy vấn. Khi đứng trước hội đồng, hít sâu, nói chậm, mắt nhìn vào người hỏi và đừng quên: **mọi thứ trong đồ án này em đã sống với 6 tháng — em là người hiểu nó nhất phòng**.

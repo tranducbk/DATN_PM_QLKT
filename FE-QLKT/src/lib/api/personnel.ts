@@ -149,19 +149,4 @@ export async function deletePositionHistory(id: string): Promise<ApiResponse> {
   }
 }
 
-// Personnel Export/Import
-/**
- * exportPersonnel API wrapper.
- * @returns API response payload
- */
-export async function exportPersonnel(): Promise<Blob> {
-  try {
-    const res = await axiosInstance.get('/api/personnel/export', {
-      responseType: 'blob',
-    });
-    return res.data;
-  } catch (e: unknown) {
-    throw new Error(getApiErrorMessage(e));
-  }
-}
 

@@ -240,6 +240,17 @@ INSERT INTO "ThanhTichKhoaHoc" (id, quan_nhan_id, nam, loai, mo_ta, cap_bac, chu
   ('ttkh014_demo', 'qn006_demo', 2025, 'SKKH', 'Sáng kiến quản lý vật tư',                         'Thượng tá', 'Trưởng ban',   NULL, NULL,        NOW(), NOW()),
   ('ttkh015_demo', 'qn008_demo', 2025, 'DTKH', 'Đề tài hậu cần dã chiến',                          'Đại tá',    'Trưởng phòng', NULL, NULL,        NOW(), NOW());
 
+-- QN-004 (BKTTCP lifetime demo) cần NCKH mỗi năm 2018-2025 cho chuỗi hợp lệ
+INSERT INTO "ThanhTichKhoaHoc" (id, quan_nhan_id, nam, loai, mo_ta, cap_bac, chuc_vu, ghi_chu, so_quyet_dinh, "createdAt", "updatedAt") VALUES
+  ('ttkh018_demo', 'qn004_demo', 2018, 'SKKH', 'Sáng kiến cải tiến công tác tham mưu',              'Đại tá', 'Trưởng phòng', NULL, '22/QD-BTL', NOW(), NOW()),
+  ('ttkh019_demo', 'qn004_demo', 2019, 'DTKH', 'Đề tài về quản lý hành chính quân sự',              'Đại tá', 'Trưởng phòng', NULL, '22/QD-BTL', NOW(), NOW()),
+  ('ttkh034_demo', 'qn004_demo', 2020, 'SKKH', 'Sáng kiến tổ chức phân công nhiệm vụ tham mưu',     'Đại tá', 'Trưởng phòng', NULL, '22/QD-BTL', NOW(), NOW()),
+  ('ttkh035_demo', 'qn004_demo', 2021, 'DTKH', 'Đề tài đánh giá hiệu quả công tác hành chính',      'Đại tá', 'Trưởng phòng', NULL, '22/QD-BTL', NOW(), NOW()),
+  ('ttkh036_demo', 'qn004_demo', 2022, 'SKKH', 'Sáng kiến cải tiến biểu mẫu quản lý nhân sự',       'Đại tá', 'Trưởng phòng', NULL, '22/QD-BTL', NOW(), NOW()),
+  ('ttkh037_demo', 'qn004_demo', 2023, 'DTKH', 'Đề tài ứng dụng công nghệ trong công tác tham mưu', 'Đại tá', 'Trưởng phòng', NULL, '22/QD-BTL', NOW(), NOW()),
+  ('ttkh038_demo', 'qn004_demo', 2024, 'SKKH', 'Sáng kiến nâng cao chất lượng báo cáo định kỳ',     'Đại tá', 'Trưởng phòng', NULL, '22/QD-BTL', NOW(), NOW()),
+  ('ttkh039_demo', 'qn004_demo', 2025, 'DTKH', 'Đề tài tổng kết công tác tham mưu giai đoạn',       'Đại tá', 'Trưởng phòng', NULL, '22/QD-BTL', NOW(), NOW());
+
 -- -----------------------------------------------------------------
 -- 10. DanhHieuHangNam — chuỗi danh hiệu 5 năm gần nhất (2021-2025)
 -- -----------------------------------------------------------------
@@ -259,23 +270,25 @@ INSERT INTO "DanhHieuHangNam" (id, quan_nhan_id, nam, danh_hieu, cap_bac, chuc_v
   ('dhhn010_demo', 'qn002_demo', 2025, 'CSTDCS', 'Trung tá',  'Trưởng ban',     '12/QD-BTL', false, false, false, NOW(), NOW()),
 
 -- QN-003 Lê Quang Cường: 7 năm CSTDCS liên tục + 3 BKBQP + 2 CSTDTQ → eligible BKTTCP 2026
+-- BKBQP tại năm cstdcs_lien_tuc=2/4/6 (year=2021/2023/2025); CSTDTQ tại cstdcs=3/6 (year=2022/2025)
   ('dhhn011_demo', 'qn003_demo', 2019, 'CSTDCS', 'Trung tá',  'Trưởng phòng',   '12/QD-BTL', false, false, false, NOW(), NOW()),
-  ('dhhn012_demo', 'qn003_demo', 2020, 'CSTDCS', 'Trung tá',  'Trưởng phòng',   '15/QD-BTL', true,  false, false, NOW(), NOW()),
-  ('dhhn013_demo', 'qn003_demo', 2021, 'CSTDCS', 'Trung tá',  'Trưởng phòng',   '08/QD-TTg', false, true,  false, NOW(), NOW()),
-  ('dhhn014_demo', 'qn003_demo', 2022, 'CSTDCS', 'Thượng tá', 'Trưởng phòng',   '15/QD-BTL', true,  false, false, NOW(), NOW()),
-  ('dhhn015_demo', 'qn003_demo', 2023, 'CSTDCS', 'Thượng tá', 'Trưởng phòng',   '12/QD-BTL', false, false, false, NOW(), NOW()),
-  ('dhhn016_demo', 'qn003_demo', 2024, 'CSTDCS', 'Thượng tá', 'Trưởng phòng',   '08/QD-TTg', true,  true,  false, NOW(), NOW()),
-  ('dhhn017_demo', 'qn003_demo', 2025, 'CSTDCS', 'Thượng tá', 'Trưởng phòng',   '12/QD-BTL', false, false, false, NOW(), NOW()),
+  ('dhhn012_demo', 'qn003_demo', 2020, 'CSTDCS', 'Trung tá',  'Trưởng phòng',   '12/QD-BTL', false, false, false, NOW(), NOW()),
+  ('dhhn013_demo', 'qn003_demo', 2021, 'CSTDCS', 'Trung tá',  'Trưởng phòng',   '15/QD-BTL', true,  false, false, NOW(), NOW()),
+  ('dhhn014_demo', 'qn003_demo', 2022, 'CSTDCS', 'Thượng tá', 'Trưởng phòng',   '08/QD-TTg', false, true,  false, NOW(), NOW()),
+  ('dhhn015_demo', 'qn003_demo', 2023, 'CSTDCS', 'Thượng tá', 'Trưởng phòng',   '15/QD-BTL', true,  false, false, NOW(), NOW()),
+  ('dhhn016_demo', 'qn003_demo', 2024, 'CSTDCS', 'Thượng tá', 'Trưởng phòng',   '12/QD-BTL', false, false, false, NOW(), NOW()),
+  ('dhhn017_demo', 'qn003_demo', 2025, 'CSTDCS', 'Thượng tá', 'Trưởng phòng',   '08/QD-TTg', true,  true,  false, NOW(), NOW()),
 
--- QN-004 Phạm Đình Dũng: đã nhận BKTTCP năm 2024 → demo lifetime block
+-- QN-004 Phạm Đình Dũng: đã nhận BKTTCP năm 2025 → demo lifetime block
+-- Chain 2018-2025: BKBQP tại cstdcs=2/4/6 (2020/2022/2024); CSTDTQ tại cstdcs=3/6 (2021/2024); BKTTCP tại cstdcs=7 (2025)
   ('dhhn018_demo', 'qn004_demo', 2018, 'CSTDCS', 'Đại tá',    'Trưởng phòng',   '12/QD-BTL', false, false, false, NOW(), NOW()),
-  ('dhhn019_demo', 'qn004_demo', 2019, 'CSTDCS', 'Đại tá',    'Trưởng phòng',   '15/QD-BTL', true,  false, false, NOW(), NOW()),
-  ('dhhn020_demo', 'qn004_demo', 2020, 'CSTDCS', 'Đại tá',    'Trưởng phòng',   '08/QD-TTg', false, true,  false, NOW(), NOW()),
-  ('dhhn021_demo', 'qn004_demo', 2021, 'CSTDCS', 'Đại tá',    'Trưởng phòng',   '15/QD-BTL', true,  false, false, NOW(), NOW()),
-  ('dhhn022_demo', 'qn004_demo', 2022, 'CSTDCS', 'Đại tá',    'Trưởng phòng',   '12/QD-BTL', false, false, false, NOW(), NOW()),
-  ('dhhn023_demo', 'qn004_demo', 2023, 'CSTDCS', 'Đại tá',    'Trưởng phòng',   '08/QD-TTg', true,  true,  false, NOW(), NOW()),
-  ('dhhn024_demo', 'qn004_demo', 2024, 'CSTDCS', 'Đại tá',    'Trưởng phòng',   '03/QD-CTN', false, false, true,  NOW(), NOW()),
-  ('dhhn025_demo', 'qn004_demo', 2025, 'CSTDCS', 'Đại tá',    'Trưởng phòng',   '12/QD-BTL', false, false, false, NOW(), NOW()),
+  ('dhhn019_demo', 'qn004_demo', 2019, 'CSTDCS', 'Đại tá',    'Trưởng phòng',   '12/QD-BTL', false, false, false, NOW(), NOW()),
+  ('dhhn020_demo', 'qn004_demo', 2020, 'CSTDCS', 'Đại tá',    'Trưởng phòng',   '15/QD-BTL', true,  false, false, NOW(), NOW()),
+  ('dhhn021_demo', 'qn004_demo', 2021, 'CSTDCS', 'Đại tá',    'Trưởng phòng',   '08/QD-TTg', false, true,  false, NOW(), NOW()),
+  ('dhhn022_demo', 'qn004_demo', 2022, 'CSTDCS', 'Đại tá',    'Trưởng phòng',   '15/QD-BTL', true,  false, false, NOW(), NOW()),
+  ('dhhn023_demo', 'qn004_demo', 2023, 'CSTDCS', 'Đại tá',    'Trưởng phòng',   '12/QD-BTL', false, false, false, NOW(), NOW()),
+  ('dhhn024_demo', 'qn004_demo', 2024, 'CSTDCS', 'Đại tá',    'Trưởng phòng',   '08/QD-TTg', true,  true,  false, NOW(), NOW()),
+  ('dhhn025_demo', 'qn004_demo', 2025, 'CSTDCS', 'Đại tá',    'Trưởng phòng',   '03/QD-CTN', false, false, true,  NOW(), NOW()),
 
 -- QN-005 đến QN-009: dữ liệu CSTDCS rải rác, không tham gia chuỗi
   ('dhhn026_demo', 'qn005_demo', 2024, 'CSTDCS', 'Thượng tá', 'Trưởng ban',     '12/QD-BTL', false, false, false, NOW(), NOW()),
@@ -393,7 +406,7 @@ INSERT INTO "HoSoHangNam" (id, quan_nhan_id, tong_cstdcs, tong_nckh, cstdcs_lien
   -- QN-003: BKTTCP eligible 2026 — streak 7 + 3 BKBQP + 2 CSTDTQ + NCKH 7 năm
   ('hshn003_demo', 'qn003_demo', 7, 7, 7, 7, 3, 2, false, false, true,  'Đủ điều kiện đề nghị Bằng khen Thủ tướng năm 2026 (đủ chuỗi 7 năm với 3 BKBQP + 2 CSTDTQ + NCKH hằng năm)', NOW(), NOW()),
   -- QN-004: đã nhận BKTTCP — lifetime block toàn bộ chuỗi
-  ('hshn004_demo', 'qn004_demo', 8, 0, 8, 0, 0, 0, false, false, false, 'Đã có Bằng khen Thủ tướng. Phần mềm chưa hỗ trợ các danh hiệu cao hơn Bằng khen Thủ tướng, sẽ phát triển trong thời gian tới.', NOW(), NOW()),
+  ('hshn004_demo', 'qn004_demo', 8, 8, 8, 8, 3, 2, false, false, false, 'Đã có Bằng khen Thủ tướng. Phần mềm chưa hỗ trợ các danh hiệu cao hơn Bằng khen Thủ tướng, sẽ phát triển trong thời gian tới.', NOW(), NOW()),
   -- QN-005: đủ chuỗi CSTDCS nhưng thiếu NCKH → focus HCBVTQ
   ('hshn005_demo', 'qn005_demo', 2, 0, 2, 0, 0, 0, false, false, false, 'Đã đạt CSTDCS năm 2024+2025. Cần thêm NCKH liên tục 2 năm để đủ điều kiện BKBQP. Đồng thời đủ điều kiện đề nghị HCBVTQ Hạng Ba (xem hồ sơ cống hiến).', NOW(), NOW()),
   -- QN-006: đủ chuỗi nhưng thiếu NCKH → focus rank upgrade HCBVTQ
@@ -437,15 +450,15 @@ INSERT INTO "DanhHieuDonViHangNam" (id, co_quan_don_vi_id, nam, danh_hieu, so_qu
 
 -- ===== LỊCH SỬ 2024 — đã duyệt =====
 INSERT INTO "BangDeXuat" (id, co_quan_don_vi_id, don_vi_truc_thuoc_id, nguoi_de_xuat_id, loai_de_xuat, nam, thang, status, data_danh_hieu, nguoi_duyet_id, ngay_duyet, ghi_chu, "createdAt", "updatedAt") VALUES
-  ('bdx008_demo', 'cqdv01_demo', NULL, 'tk003_demo', 'CA_NHAN_HANG_NAM', 2024, NULL, 'APPROVED',
+  ('bdx008_demo', 'cqdv01_demo', NULL, 'tk003_demo', 'CA_NHAN_HANG_NAM', 2025, NULL, 'APPROVED',
     '[
       {"personnel_id":"qn003_demo","danh_hieu":"BKBQP","cap_bac":"Thượng tá","chuc_vu":"Trưởng phòng","so_quyet_dinh":"15/QD-BTL"},
       {"personnel_id":"qn002_demo","danh_hieu":"CSTDCS","cap_bac":"Trung tá","chuc_vu":"Trưởng ban","so_quyet_dinh":"15/QD-BTL"},
       {"personnel_id":"qn013_demo","danh_hieu":"CSTDCS","cap_bac":"Trung tá","chuc_vu":"Trưởng ban","so_quyet_dinh":"15/QD-BTL"}
     ]'::jsonb,
-    'tk002_demo', '2024-09-15 10:00:00',
-    'Đề xuất danh hiệu cá nhân hằng năm 2024 — Khoa Ngoại ngữ (3 quân nhân: 1 BKBQP + 2 CSTDCS)',
-    '2024-08-20 14:30:00', '2024-09-15 10:00:00');
+    'tk002_demo', '2025-09-15 10:00:00',
+    'Đề xuất danh hiệu cá nhân hằng năm 2025 — Khoa Ngoại ngữ (BKBQP cho Lê Quang Cường + CSTDCS)',
+    '2025-08-20 14:30:00', '2025-09-15 10:00:00');
 
 -- ===== LỊCH SỬ 2025 — REJECTED =====
 INSERT INTO "BangDeXuat" (id, co_quan_don_vi_id, don_vi_truc_thuoc_id, nguoi_de_xuat_id, loai_de_xuat, nam, thang, status, data_danh_hieu, nguoi_duyet_id, ngay_duyet, ghi_chu, "createdAt", "updatedAt") VALUES
@@ -593,8 +606,8 @@ INSERT INTO "SystemLog" (id, nguoi_thuc_hien_id, actor_role, action, resource, t
   ('sl041_demo', 'tk003_demo', 'MANAGER', 'CREATE', 'proposals', 'bdx005_demo', 'Tạo đề xuất khen thưởng: Cá nhân hằng năm (1 quân nhân, năm 2026)', NULL, '192.168.1.12', 'Mozilla/5.0', '2026-04-23 14:00:30'),
   ('sl042_demo', 'tk003_demo', 'MANAGER', 'CREATE', 'proposals', 'bdx006_demo', 'Tạo đề xuất khen thưởng: Huy chương Chiến sĩ vẻ vang (1 quân nhân, năm 2026)', NULL, '192.168.1.12', 'Mozilla/5.0', '2026-04-30 09:00:30'),
   ('sl043_demo', 'tk003_demo', 'MANAGER', 'CREATE', 'proposals', 'bdx007_demo', 'Tạo đề xuất khen thưởng: Huân chương Bảo vệ Tổ quốc (1 quân nhân, năm 2026)', NULL, '192.168.1.12', 'Mozilla/5.0', '2026-05-01 03:30:30'),
-  ('sl044_demo', 'tk003_demo', 'MANAGER', 'CREATE', 'proposals', 'bdx008_demo', 'Tạo đề xuất khen thưởng: Cá nhân hằng năm (1 quân nhân, năm 2024)', NULL, '192.168.1.12', 'Mozilla/5.0', '2024-08-20 14:30:30'),
-  ('sl045_demo', 'tk002_demo', 'ADMIN',   'APPROVE', 'proposals', 'bdx008_demo', 'Phê duyệt đề xuất Cá nhân hằng năm năm 2024 do Nguyễn Văn Bình đề xuất (Khoa Ngoại ngữ)', '{"so_quyet_dinh":"15/QD-BTL"}'::jsonb, '192.168.1.11', 'Mozilla/5.0', '2024-09-15 10:00:00'),
+  ('sl044_demo', 'tk003_demo', 'MANAGER', 'CREATE', 'proposals', 'bdx008_demo', 'Tạo đề xuất khen thưởng: Cá nhân hằng năm (3 quân nhân, năm 2025)', NULL, '192.168.1.12', 'Mozilla/5.0', '2025-08-20 14:30:30'),
+  ('sl045_demo', 'tk002_demo', 'ADMIN',   'APPROVE', 'proposals', 'bdx008_demo', 'Phê duyệt đề xuất Cá nhân hằng năm năm 2025 do Nguyễn Văn Bình đề xuất (Khoa Ngoại ngữ)', '{"so_quyet_dinh":"15/QD-BTL"}'::jsonb, '192.168.1.11', 'Mozilla/5.0', '2025-09-15 10:00:00'),
   ('sl046_demo', 'tk003_demo', 'MANAGER', 'CREATE', 'proposals', 'bdx009_demo', 'Tạo đề xuất khen thưởng: Thành tích Nghiên cứu khoa học (1 quân nhân, năm 2025)', NULL, '192.168.1.12', 'Mozilla/5.0', '2025-11-10 11:00:30'),
   ('sl047_demo', 'tk002_demo', 'ADMIN',   'APPROVE', 'proposals', 'bdx009_demo', 'Phê duyệt đề xuất Thành tích Nghiên cứu khoa học năm 2025 do Nguyễn Văn Bình đề xuất (Khoa Ngoại ngữ)', NULL, '192.168.1.11', 'Mozilla/5.0', '2025-12-20 09:30:00'),
   ('sl048_demo', 'tk003_demo', 'MANAGER', 'CREATE', 'proposals', 'bdx010_demo', 'Tạo đề xuất khen thưởng: Cá nhân hằng năm (1 quân nhân, năm 2025)', NULL, '192.168.1.12', 'Mozilla/5.0', '2025-12-01 09:00:30'),
@@ -646,7 +659,7 @@ INSERT INTO "ThongBao" (id, nguoi_nhan_id, recipient_role, type, title, message,
   ('tb006_demo', 'tk002_demo', 'ADMIN',   'PROPOSAL_SUBMITTED','Đề xuất khen thưởng mới',  'Nguyễn Văn Bình đã gửi đề xuất khen thưởng huy chương chiến sĩ vẻ vang', 'proposals', 'bdx006_demo', '/admin/proposals/review/bdx006_demo', false, NULL,         '2026-04-30 09:00:00'),
   ('tb007_demo', 'tk002_demo', 'ADMIN',   'PROPOSAL_SUBMITTED','Đề xuất khen thưởng mới',  'Nguyễn Văn Bình đã gửi đề xuất khen thưởng huân chương bảo vệ tổ quốc', 'proposals', 'bdx007_demo', '/admin/proposals/review/bdx007_demo', false, NULL,         '2026-05-01 03:30:00'),
   ('tb008_demo', 'tk002_demo', 'ADMIN',   'PROPOSAL_SUBMITTED','Đề xuất khen thưởng mới',  'Nguyễn Văn Bình đã gửi đề xuất khen thưởng cá nhân hằng năm', 'proposals', 'bdx005_demo', '/admin/proposals/review/bdx005_demo', false, 'sl023_demo', '2026-04-23 14:00:05'),
-  ('tb009_demo', 'tk003_demo', 'MANAGER', 'PROPOSAL_APPROVED', 'Đề xuất đã được phê duyệt', 'Đề xuất khen thưởng cá nhân hằng năm của bạn đã được Lê Quang Cường phê duyệt', 'proposals', 'bdx008_demo', '/manager/proposals/bdx008_demo', true,  NULL,         '2024-09-15 10:00:05'),
+  ('tb009_demo', 'tk003_demo', 'MANAGER', 'PROPOSAL_APPROVED', 'Đề xuất đã được phê duyệt', 'Đề xuất khen thưởng cá nhân hằng năm của bạn đã được Lê Quang Cường phê duyệt', 'proposals', 'bdx008_demo', '/manager/proposals/bdx008_demo', true,  NULL,         '2025-09-15 10:00:05'),
   ('tb010_demo', 'tk003_demo', 'MANAGER', 'PROPOSAL_APPROVED', 'Đề xuất đã được phê duyệt', 'Đề xuất khen thưởng thành tích nghiên cứu khoa học của bạn đã được Lê Quang Cường phê duyệt', 'proposals', 'bdx009_demo', '/manager/proposals/bdx009_demo', true,  NULL,         '2025-12-20 09:30:05'),
   ('tb011_demo', 'tk003_demo', 'MANAGER', 'PROPOSAL_REJECTED', 'Đề xuất bị từ chối',        'Đề xuất khen thưởng cá nhân hằng năm của bạn đã bị Lê Quang Cường từ chối. Lý do: Quân nhân chưa đủ 12 tháng phục vụ tại đơn vị', 'proposals', 'bdx010_demo', '/manager/proposals/bdx010_demo', false, NULL,         '2025-12-05 15:20:05'),
   ('tb012_demo', 'tk003_demo', 'MANAGER', 'PROPOSAL_DELETED',  'Đề xuất bị xoá',             'Đề xuất khen thưởng cá nhân hằng năm của bạn đã bị Lê Quang Cường xoá', 'proposals', NULL,           '/manager/proposals',                  false, 'sl020_demo', '2025-12-10 10:00:05'),
@@ -665,7 +678,7 @@ INSERT INTO "ThongBao" (id, nguoi_nhan_id, recipient_role, type, title, message,
 
   -- Notification PROPOSAL_SUBMITTED → ADMIN cho mỗi đề xuất
   ('tb030_demo', 'tk002_demo', 'ADMIN', 'PROPOSAL_SUBMITTED', 'Đề xuất khen thưởng mới', 'Nguyễn Văn Bình đã gửi đề xuất khen thưởng cá nhân hằng năm', 'proposals', 'bdx002_demo', '/admin/proposals/review/bdx002_demo', false, 'sl040_demo', '2026-04-25 11:00:30'),
-  ('tb031_demo', 'tk002_demo', 'ADMIN', 'PROPOSAL_SUBMITTED', 'Đề xuất khen thưởng mới', 'Nguyễn Văn Bình đã gửi đề xuất khen thưởng cá nhân hằng năm', 'proposals', 'bdx008_demo', '/admin/proposals/review/bdx008_demo', true,  'sl044_demo', '2024-08-20 14:31:00'),
+  ('tb031_demo', 'tk002_demo', 'ADMIN', 'PROPOSAL_SUBMITTED', 'Đề xuất khen thưởng mới', 'Nguyễn Văn Bình đã gửi đề xuất khen thưởng cá nhân hằng năm', 'proposals', 'bdx008_demo', '/admin/proposals/review/bdx008_demo', true,  'sl044_demo', '2025-08-20 14:31:00'),
   ('tb032_demo', 'tk002_demo', 'ADMIN', 'PROPOSAL_SUBMITTED', 'Đề xuất khen thưởng mới', 'Nguyễn Văn Bình đã gửi đề xuất khen thưởng thành tích nghiên cứu khoa học', 'proposals', 'bdx009_demo', '/admin/proposals/review/bdx009_demo', true,  'sl046_demo', '2025-11-10 11:01:00'),
   ('tb033_demo', 'tk002_demo', 'ADMIN', 'PROPOSAL_SUBMITTED', 'Đề xuất khen thưởng mới', 'Nguyễn Văn Bình đã gửi đề xuất khen thưởng cá nhân hằng năm', 'proposals', 'bdx010_demo', '/admin/proposals/review/bdx010_demo', true,  'sl048_demo', '2025-12-01 09:01:00'),
 

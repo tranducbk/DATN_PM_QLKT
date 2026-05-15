@@ -50,8 +50,6 @@ export const apiClient = {
   createPositionHistory: personnelApi.createPositionHistory,
   updatePositionHistory: personnelApi.updatePositionHistory,
   deletePositionHistory: personnelApi.deletePositionHistory,
-  exportPersonnel: personnelApi.exportPersonnel,
-
   // Units & Positions
   getUnits: unitsApi.getUnits,
   getMyUnits: unitsApi.getMyUnits,
