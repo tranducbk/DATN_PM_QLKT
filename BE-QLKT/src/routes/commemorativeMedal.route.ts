@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import commemorativeMedalController from '../controllers/commemorativeMedal.controller';
-import { verifyToken, checkRole, requireAdmin } from '../middlewares/auth';
+import { verifyToken, checkRole, requireAdminOnly } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
 import { ROLES } from '../constants/roles.constants';
@@ -17,7 +17,7 @@ const router = Router();
  * @desc    Download Excel template for commemorative medal import
  * @access  ADMIN
  */
-router.get('/template', verifyToken, requireAdmin, commemorativeMedalController.getTemplate);
+router.get('/template', verifyToken, requireAdminOnly, commemorativeMedalController.getTemplate);
 
 /**
  * @route   POST /api/commemorative-medals/import/preview
@@ -27,7 +27,7 @@ router.get('/template', verifyToken, requireAdmin, commemorativeMedalController.
 router.post(
   '/import/preview',
   verifyToken,
-  requireAdmin,
+  requireAdminOnly,
   upload.single('file'),
   commemorativeMedalController.previewImport
 );
@@ -40,7 +40,7 @@ router.post(
 router.post(
   '/import/confirm',
   verifyToken,
-  requireAdmin,
+  requireAdminOnly,
   validate(excelImportValidation.confirmImportCommemorativeMedal),
   commemorativeMedalController.confirmImport
 );
@@ -101,7 +101,7 @@ router.get(
 router.delete(
   '/:id',
   verifyToken,
-  requireAdmin,
+  requireAdminOnly,
   auditLog({
     action: AUDIT_ACTIONS.DELETE,
     resource: AWARD_SLUGS.COMMEMORATIVE_MEDALS,

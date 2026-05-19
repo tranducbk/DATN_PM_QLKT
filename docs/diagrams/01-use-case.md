@@ -19,8 +19,7 @@ flowchart LR
     MG(((Chỉ huy đơn vị)))
     US(((Người dùng)))
 
-    %% Actor generalization: mũi tên từ vai trò đặc biệt → vai trò tổng quát hơn
-    SA -.->|kế thừa| AD
+    %% Actor generalization: AD → MG → US (SA là vai trò hệ thống độc lập)
     AD -.->|kế thừa| MG
     MG -.->|kế thừa| US
 
@@ -29,64 +28,47 @@ flowchart LR
         UC2(Quản lý tài khoản)
         UC3(Quản lý quân nhân)
         UC4(Quản lý đơn vị)
-        UC5(Danh hiệu cá nhân hằng năm)
-        UC6(Khen thưởng đơn vị hằng năm)
-        UC7(Huy chương Chiến sĩ vẻ vang)
-        UC8(Huy chương Quân kỳ quyết thắng)
-        UC9(Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN)
-        UC10(Huân chương Bảo vệ Tổ quốc)
-        UC11(Thành tích khoa học)
-        UC12(Khen thưởng đột xuất)
-        UC13(Đề xuất khen thưởng)
-        UC14(Kiểm tra điều kiện và gợi ý)
-        UC15(Thông báo realtime)
-        UC16(Xem nhật ký hệ thống)
-        UC17(Sao lưu và khôi phục)
-        UC18(Báo cáo và thống kê)
+        UC5(Quản lý khen thưởng)
+        UC6(Đề xuất khen thưởng)
+        UC7(Kiểm tra điều kiện và gợi ý)
+        UC8(Thông báo realtime)
+        UC9(Xem nhật ký hệ thống)
+        UC10(Sao lưu và khôi phục)
+        UC11(Báo cáo và thống kê)
+        UC12(Sửa dữ liệu bỏ qua kiểm tra)
     end
 
-    %% US: use case gốc (tất cả vai trò trên kế thừa)
+    %% US: use case gốc (MG, AD kế thừa)
     US --- UC1
-    US --- UC14
-    US --- UC15
+    US --- UC7
+    US --- UC8
 
     %% MG: thêm những UC không có ở US
     MG --- UC3
     MG --- UC5
     MG --- UC6
-    MG --- UC7
-    MG --- UC8
     MG --- UC9
-    MG --- UC10
     MG --- UC11
-    MG --- UC12
-    MG --- UC13
-    MG --- UC16
-    MG --- UC18
 
     %% AD: thêm những UC không có ở MG
     AD --- UC2
     AD --- UC4
 
-    %% SA: thêm những UC không có ở AD
-    SA --- UC17
+    %% SA: vai trò hệ thống độc lập — không kế thừa AD
+    SA --- UC1
+    SA --- UC2
+    SA --- UC9
+    SA --- UC10
+    SA --- UC12
 ```
 
-**Quan hệ kế thừa actor**: Mũi tên đứt `SA → AD → MG → US` thể hiện quan hệ tổng quát hóa UML — vai trò đặc biệt hơn (ở trên) kế thừa toàn bộ use case của vai trò tổng quát hơn (ở dưới) và bổ sung thêm quyền riêng. Cụ thể: MANAGER có tất cả quyền của USER và thêm quyền quản lý đơn vị; ADMIN có tất cả quyền của MANAGER và thêm quyền phê duyệt / quản lý nhân sự; SUPER_ADMIN có tất cả quyền của ADMIN và thêm quyền backup / nhật ký hệ thống toàn bộ.
+**Quan hệ kế thừa actor**: `AD → MG → US` — ADMIN (Phòng Chính trị) kế thừa toàn bộ quyền MANAGER và bổ sung quản lý tài khoản + đơn vị; MANAGER kế thừa quyền USER và bổ sung quản lý nghiệp vụ khen thưởng.
 
-**Mô tả**: 4 actor truy cập hệ thống qua 18 nhóm chức năng. SUPER_ADMIN có quyền cao nhất (backup, xem log resource = 'backup'). ADMIN cùng SUPER_ADMIN quản lý tài khoản (cùng dùng `requireAdmin`). MANAGER có thể xem nhật ký hệ thống (route dùng `requireManager`) nhưng bị filter bỏ log backup. USER chủ yếu xem hồ sơ cá nhân và nhận thông báo.
+**SUPER_ADMIN là vai trò hệ thống độc lập**: KHÔNG kế thừa từ ADMIN. SA phụ trách quản trị hệ thống (tài khoản, sao lưu, nhật ký đầy đủ, sửa dữ liệu) và không tham gia luồng nghiệp vụ khen thưởng.
 
-**8 loại khen thưởng** (tên lấy từ `AWARD_LABELS` — mỗi loại có sơ đồ phân rã riêng):
-- **UC5** `ANNUAL_REWARDS` — Danh hiệu hằng năm cá nhân (CSTDCS / CSTT / BKBQP / CSTDTQ / BKTTCP). Xem A1.5.
-- **UC6** `UNIT_ANNUAL_AWARDS` — Khen thưởng đơn vị hằng năm (ĐVQT / ĐVTT / BKBQP đơn vị / BKTTCP đơn vị). Xem A1.6.
-- **UC7** `TENURE_MEDALS` — Huy chương Chiến sĩ vẻ vang, xét theo 10/15/20 năm phục vụ. Xem A1.7.
-- **UC8** `MILITARY_FLAG` — Huy chương Quân kỳ quyết thắng, xét theo 25 năm phục vụ. Xem A1.7.
-- **UC9** `COMMEMORATIVE_MEDALS` — Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN, xét theo 20/25 năm phục vụ. Xem A1.7.
-- **UC10** `CONTRIBUTION_MEDALS` — Huân chương Bảo vệ Tổ quốc, xét theo 120 tháng tích lũy hệ số chức vụ. Xem A1.7.
-- **UC11** `SCIENTIFIC_ACHIEVEMENTS` — Thành tích khoa học, gồm đề tài (ĐTKH) và sáng kiến khoa học (SKKH). Xem A1.7.
-- **UC12** `ADHOC_AWARDS` — Khen thưởng đột xuất theo sự kiện / chiến công, ADMIN tạo trực tiếp không qua flow đề xuất. Xem A1.9.
+**UC5 — Quản lý khen thưởng** gộp 8 nhóm nghiệp vụ (chi tiết ở sơ đồ phân rã A1.3 – A1.9): danh hiệu cá nhân hằng năm, khen thưởng đơn vị hằng năm, Huy chương Chiến sĩ vẻ vang, Huy chương Quân kỳ quyết thắng, Kỷ niệm chương, Huân chương Bảo vệ Tổ quốc, thành tích khoa học, khen thưởng đột xuất.
 
-> Sơ đồ tổng quan **không** vẽ quan hệ `<<include>>` / `<<extend>>` giữa các use case (notify realtime, audit log, eligibility check là side-effect). Quan hệ chi tiết mô tả trong từng sơ đồ phân rã A1.2 – A1.15.
+> Sơ đồ tổng quan **không** vẽ quan hệ `<<include>>` / `<<extend>>` giữa các use case. Quan hệ chi tiết mô tả trong từng sơ đồ phân rã A1.2 – A1.10.
 
 ---
 
@@ -131,7 +113,7 @@ flowchart LR
     AD --- UC8
 ```
 
-**Quyền**: route `/api/accounts` dùng middleware `requireAdmin` → cả SUPER_ADMIN (Quản trị viên) và ADMIN (Phòng Chính trị) đều có thể tạo / sửa / reset / xoá tài khoản.
+**Quyền**: route `/api/accounts` dùng middleware `requireAdmin` (SA + ADMIN) — đây là điểm giao thoa duy nhất giữa SA và ADMIN, vì quản lý tài khoản vừa là hệ thống vừa cần am hiểu cơ cấu tổ chức.
 
 ---
 
@@ -139,7 +121,6 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    SA(((Quản trị viên)))
     AD(((Phòng Chính trị)))
     MG(((Chỉ huy đơn vị)))
 
@@ -151,47 +132,26 @@ flowchart LR
         UC5(Tìm kiếm và lọc theo đơn vị)
         UC6(Chuyển đơn vị)
         UC7(Quản lý lịch sử chức vụ)
-        UC8(Quản lý đơn vị)
-        UC9(Quản lý thành tích nghiên cứu khoa học)
-        UC10(Kiểm tra điều kiện Huân chương Bảo vệ Tổ quốc)
 
         UC1 -.->|include| UC7
         UC2 -.->|extend| UC6
-        UC4 -.->|extend| UC10
     end
 
-    SA --- UC1
-    SA --- UC2
-    SA --- UC3
-    SA --- UC4
-    SA --- UC5
-    SA --- UC6
-    SA --- UC8
-    SA --- UC9
-    SA --- UC10
+    AD -->|«kế thừa»| MG
 
     AD --- UC1
-    AD --- UC2
     AD --- UC3
-    AD --- UC4
-    AD --- UC5
-    AD --- UC6
-    AD --- UC8
-    AD --- UC9
-    AD --- UC10
 
     MG --- UC2
     MG --- UC4
     MG --- UC5
     MG --- UC6
-    MG --- UC8
-    MG --- UC9
-    MG --- UC10
+    MG --- UC7
 ```
 
 **Phân quyền route**:
-- POST/DELETE (`/api/personnel`): `requireAdmin` → SUPER_ADMIN + ADMIN.
-- PUT `/api/personnel/:id`: `requireManager` → SUPER_ADMIN + ADMIN + MANAGER (MANAGER chỉ sửa quân nhân thuộc đơn vị quản lý). USER **không** sửa được hồ sơ.
+- POST/DELETE (`/api/personnel`): `requireAdminOnly` → chỉ ADMIN (Phòng Chính trị) — SA không tham gia nghiệp vụ.
+- PUT `/api/personnel/:id`: `requireManager` → ADMIN + MANAGER (MANAGER chỉ sửa quân nhân thuộc đơn vị quản lý). USER **không** sửa được hồ sơ.
 - GET list / detail: MANAGER xem được trong phạm vi đơn vị; USER chỉ xem hồ sơ của chính mình (route `/profile/me`).
 - `POST /check-contribution-eligibility`: `requireManager` → USER **không** gọi được.
 
@@ -218,7 +178,7 @@ flowchart LR
         UC9(Quản lý chức vụ trong đơn vị)
         UC10(Chuyển quân nhân giữa các đơn vị)
 
-        UC4 -.->|include| UC1
+        UC4 -.->|extend| UC1
         UC1 -.->|include| UC9
         UC10 -.->|extend| UC8
     end
@@ -254,15 +214,15 @@ flowchart LR
 
     subgraph SYS[Khen thưởng cá nhân hằng năm]
         UC1(Nhập danh hiệu CSTDCS hoặc CSTT theo năm)
-        UC2(Đánh dấu đã nhận BKBQP)
-        UC3(Đánh dấu đã nhận CSTDTQ)
-        UC4(Đánh dấu đã nhận BKTTCP)
-        UC5(Nhập số quyết định và ghi chú)
+        UC2(Ghi nhận danh hiệu BKBQP)
+        UC3(Ghi nhận danh hiệu CSTDTQ)
+        UC4(Ghi nhận danh hiệu BKTTCP)
+        UC5(Ghi số quyết định khen thưởng)
         UC6(Xem lịch sử danh hiệu hằng năm của quân nhân)
-        UC7(Tính lại điều kiện khen thưởng liên tiếp)
+        UC7(Cập nhật điều kiện chuỗi khen thưởng)
         UC8(Xem gợi ý khen thưởng)
-        UC9(Tải lên bảng danh hiệu hằng năm từ Excel)
-        UC10(Từ chối đề xuất khi quân nhân đã nhận BKTTCP)
+        UC9(Nhập danh sách danh hiệu hằng năm từ file Excel)
+        UC10(Ngăn đề xuất khi quân nhân đã nhận BKTTCP)
 
         UC2 -.->|include| UC5
         UC3 -.->|include| UC5
@@ -303,10 +263,10 @@ flowchart LR
 
     subgraph SYS[Khen thưởng đơn vị hằng năm]
         UC1(Nhập danh hiệu ĐVQT theo năm cho đơn vị)
-        UC2(Đánh dấu đơn vị nhận BKBQP)
-        UC3(Đánh dấu đơn vị nhận BKTTCP đơn vị)
-        UC4(Tính số năm Đơn vị Quyết thắng liên tục)
-        UC5(Tính điều kiện BK Tổng cục và BK Thủ tướng)
+        UC2(Ghi nhận đơn vị đạt BKBQP)
+        UC3(Ghi nhận đơn vị đạt BKTTCP)
+        UC4(Kiểm tra chuỗi Đơn vị Quyết thắng liên tục)
+        UC5(Kiểm tra điều kiện BKBQP và BKTTCP đơn vị)
         UC6(Xem hồ sơ đơn vị hằng năm)
         UC7(Đề xuất lại BKTTCP đơn vị sau khi hoàn thành chu kỳ)
 
@@ -512,7 +472,6 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    SA(((Quản trị viên)))
     AD(((Phòng Chính trị)))
     SYSTEM(((Hệ thống auto)))
     MG(((Chỉ huy đơn vị)))
@@ -527,8 +486,8 @@ flowchart LR
         UC6(Kiểm tra 10 15 20 năm phục vụ HCCSVV)
         UC7(Kiểm tra điều kiện nghiên cứu khoa học mỗi năm)
         UC8(Sinh gợi ý khen thưởng)
-        UC9(Tính lại toàn bộ hồ sơ khen thưởng)
-        UC10(Tính lại hồ sơ một quân nhân)
+        UC9(Tái tính hồ sơ toàn hệ thống)
+        UC10(Tái tính hồ sơ quân nhân)
 
         UC1 -.->|include| UC3
         UC1 -.->|extend| UC4
@@ -544,7 +503,6 @@ flowchart LR
         UC10 -.->|include| UC6
     end
 
-    SA --- UC9
     AD --- UC9
     SYSTEM --- UC9
     MG --- UC1
@@ -555,8 +513,8 @@ flowchart LR
 ```
 
 **Phân quyền route**:
-- `POST /api/profiles/recalculate-all` (UC9 — batch toàn hệ thống): `requireAdmin` → chỉ SUPER_ADMIN + ADMIN. Cron có thể trigger nội bộ.
-- `POST /api/profiles/recalculate/:personnel_id` (UC10 — recalc 1 quân nhân): `requireManager` → SUPER_ADMIN + ADMIN + MANAGER.
+- `POST /api/profiles/recalculate-all` (UC9 — batch toàn hệ thống): `requireAdminOnly` → chỉ ADMIN. Cron có thể trigger nội bộ.
+- `POST /api/profiles/recalculate/:personnel_id` (UC10 — recalc 1 quân nhân): `requireManager` → ADMIN + MANAGER.
 
 ---
 
@@ -564,7 +522,6 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    SA(((Quản trị viên)))
     AD(((Phòng Chính trị)))
     MG(((Chỉ huy đơn vị)))
     US(((Người dùng)))
@@ -572,7 +529,7 @@ flowchart LR
     subgraph SYS[Thông báo]
         UC1(Nhận thông báo realtime qua WebSocket)
         UC2(Xem danh sách thông báo)
-        UC3(Đánh dấu đã đọc)
+        UC3(Xác nhận đã đọc thông báo)
         UC4(Lọc thông báo theo loại)
         UC5(Click vào thông báo để mở chi tiết liên quan)
         UC6(Đếm số thông báo chưa đọc)
@@ -586,14 +543,6 @@ flowchart LR
         UC2 -.->|extend| UC8
     end
 
-    SA --- UC1
-    SA --- UC2
-    SA --- UC3
-    SA --- UC4
-    SA --- UC5
-    SA --- UC6
-    SA --- UC7
-    SA --- UC8
     AD --- UC1
     AD --- UC2
     AD --- UC3
@@ -607,17 +556,20 @@ flowchart LR
     MG --- UC3
     MG --- UC4
     MG --- UC5
+    MG --- UC6
     MG --- UC7
     MG --- UC8
     US --- UC1
     US --- UC2
     US --- UC3
     US --- UC4
+    US --- UC5
+    US --- UC6
     US --- UC7
     US --- UC8
 ```
 
-**Phân quyền**: route `/api/notifications` chỉ yêu cầu `verifyToken` — mọi role đăng nhập đều xem/lọc/đánh dấu/xoá thông báo của chính mình.
+**Phân quyền**: route `/api/notifications` chỉ yêu cầu `verifyToken` — ADMIN, MANAGER và USER đều xem/lọc/đánh dấu/xoá thông báo của chính mình. **SA không nhận thông báo nghiệp vụ** (hệ thống chỉ gửi đến ADMIN / MANAGER / USER theo luồng đề xuất, quân nhân, khen thưởng).
 
 ---
 
@@ -628,6 +580,7 @@ flowchart LR
     SA(((Quản trị viên)))
     AD(((Phòng Chính trị)))
     MG(((Chỉ huy đơn vị)))
+    SYSTEM(((Hệ thống auto)))
 
     subgraph SYS[Nhật ký hệ thống]
         UC1(Ghi nhật ký tự động khi có hành động)
@@ -648,6 +601,8 @@ flowchart LR
         UC2 -.->|extend| UC7
     end
 
+    SYSTEM --- UC1
+
     SA --- UC2
     SA --- UC3
     SA --- UC4
@@ -664,7 +619,6 @@ flowchart LR
     AD --- UC5
     AD --- UC6
     AD --- UC7
-    AD --- UC10
 
     MG --- UC2
     MG --- UC3
@@ -674,10 +628,10 @@ flowchart LR
     MG --- UC7
 ```
 
-**Phân quyền**: route `/api/system-logs` dùng `requireManager` → cả SUPER_ADMIN, ADMIN và MANAGER đều được xem nhật ký. Tuy nhiên service `systemLogs.service.ts` áp filter:
-- **UC8** — log có `resource: 'backup'` chỉ SUPER_ADMIN xem được; ADMIN và MANAGER bị filter loại bỏ hoàn toàn.
-- MANAGER còn bị giới hạn theo phạm vi đơn vị: chỉ thấy log do tài khoản trong các đơn vị mình quản lý thực hiện (qua `getManagerAccountIds`).
-- **UC9 / UC10** (xoá log) — yêu cầu `requireAdmin`. UC9 xoá toàn bộ chỉ SUPER_ADMIN.
+**Phân quyền**: route `/api/system-logs` (GET) dùng `requireManager` → SA, ADMIN và MANAGER đều xem được nhật ký. Service `systemLogs.service.ts` áp filter:
+- **UC8** — log có `resource: 'backup'` chỉ SA xem được; ADMIN và MANAGER bị filter loại bỏ hoàn toàn.
+- MANAGER bị giới hạn theo phạm vi đơn vị: chỉ thấy log do tài khoản trong các đơn vị mình quản lý thực hiện (qua `getManagerAccountIds`).
+- **UC9 / UC10** (xoá log) — `DELETE /api/system-logs` và `/all` dùng `requireSuperAdmin` → **chỉ SA** xoá được. ADMIN và MANAGER không có quyền xoá.
 
 **Lưu ý**: phần mềm **chưa hỗ trợ xuất log ra Excel** — không có endpoint export trên `system-logs.route.ts`.
 
@@ -827,17 +781,17 @@ flowchart LR
 
 | # | Sơ đồ | Số use case | Actor |
 |---|---|---|---|
-| A1.1 | Use case tổng quát | 18 | 4 |
+| A1.1 | Use case tổng quát | 12 | 4 |
 | A1.2 | Quản lý tài khoản | 8 | SUPER_ADMIN, ADMIN |
-| A1.3 | Quản lý quân nhân | 10 | SUPER_ADMIN, ADMIN, MANAGER |
+| A1.3 | Quản lý quân nhân | 7 | ADMIN, MANAGER |
 | A1.4 | Quản lý đơn vị | 10 | SUPER_ADMIN, ADMIN |
 | A1.5 | Danh hiệu cá nhân hằng năm (UC5) | 10 | ADMIN, MANAGER, USER |
 | A1.6 | Khen thưởng đơn vị hằng năm (UC6) | 7 | ADMIN, MANAGER |
 | A1.7 | UC7–UC11: HCCSVV / HCQKQT / KNC / HCBVTQ / NCKH | 7 (+ 5 sub) | ADMIN, MANAGER, USER |
 | A1.8 | Đề xuất khen thưởng (UC13) | 17 | MANAGER, ADMIN |
 | A1.9 | Khen thưởng đột xuất (UC12 — flow riêng) | 9 | ADMIN, MANAGER, USER |
-| A1.10 | Xét điều kiện khen thưởng (UC14) | 10 | SUPER_ADMIN, ADMIN, System, MANAGER, USER |
-| A1.11 | Thông báo realtime (UC15) | 8 | 4 role |
+| A1.10 | Xét điều kiện khen thưởng (UC14) | 10 | ADMIN, System, MANAGER, USER |
+| A1.11 | Thông báo realtime (UC15) | 8 | ADMIN, MANAGER, USER |
 | A1.12 | Nhật ký hệ thống (UC16) | 10 | SUPER_ADMIN, ADMIN, MANAGER |
 | A1.13 | Backup qua DevZone (UC17) | 8 | SUPER_ADMIN, Cron |
 | A1.14 | Báo cáo thống kê (UC18) | 8 | ADMIN, MANAGER |

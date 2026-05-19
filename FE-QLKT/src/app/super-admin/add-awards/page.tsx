@@ -210,7 +210,7 @@ export default function SuperAdminAddAwardsPage() {
         formData.append('ghi_chu', note.trim());
       }
 
-      const result = await apiClient.bulkCreateAwards(formData);
+      const result = await apiClient.bulkCreateAwardsBypass(formData);
 
       if (result.success) {
         const data = result.data || {};
@@ -231,7 +231,7 @@ export default function SuperAdminAddAwardsPage() {
         }
 
         setTimeout(() => {
-          router.push('/admin/awards');
+          router.push('/super-admin/dashboard');
         }, 1000);
       } else {
         throw new Error(result.message || 'Thêm khen thưởng thất bại');
@@ -646,7 +646,7 @@ export default function SuperAdminAddAwardsPage() {
             icon={<ArrowLeftOutlined />}
             onClick={() => {
               if (currentStep === 0) {
-                router.push('/admin/awards');
+                router.push('/super-admin/dashboard');
               } else {
                 setCurrentStep(0);
               }

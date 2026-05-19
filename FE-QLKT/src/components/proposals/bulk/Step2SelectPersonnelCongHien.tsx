@@ -875,6 +875,7 @@ export function Step2SelectPersonnelCongHien({
         rowKey="id"
         rowSelection={rowSelection}
         loading={loading || checkingEligibility}
+        scroll={{ x: 'max-content' }}
         rowClassName={record => {
           // Highlight rows missing gender or ineligible for award
           const missingGender =

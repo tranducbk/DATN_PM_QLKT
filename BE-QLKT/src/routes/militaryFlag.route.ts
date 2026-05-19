@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import militaryFlagController from '../controllers/militaryFlag.controller';
-import { verifyToken, checkRole, requireAdmin } from '../middlewares/auth';
+import { verifyToken, checkRole, requireAdminOnly } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
 import { ROLES } from '../constants/roles.constants';
@@ -17,7 +17,7 @@ const router = Router();
  * @desc    Download Excel template for Military Victory Flag (HC QKQT) import
  * @access  ADMIN
  */
-router.get('/template', verifyToken, requireAdmin, militaryFlagController.getTemplate);
+router.get('/template', verifyToken, requireAdminOnly, militaryFlagController.getTemplate);
 
 /**
  * @route   POST /api/military-flags/import/preview
@@ -27,7 +27,7 @@ router.get('/template', verifyToken, requireAdmin, militaryFlagController.getTem
 router.post(
   '/import/preview',
   verifyToken,
-  requireAdmin,
+  requireAdminOnly,
   upload.single('file'),
   militaryFlagController.previewImport
 );
@@ -40,7 +40,7 @@ router.post(
 router.post(
   '/import/confirm',
   verifyToken,
-  requireAdmin,
+  requireAdminOnly,
   validate(excelImportValidation.confirmImportMilitaryFlag),
   militaryFlagController.confirmImport
 );
@@ -101,7 +101,7 @@ router.get(
 router.delete(
   '/:id',
   verifyToken,
-  requireAdmin,
+  requireAdminOnly,
   auditLog({
     action: AUDIT_ACTIONS.DELETE,
     resource: AWARD_SLUGS.MILITARY_FLAG,

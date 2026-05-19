@@ -1,4 +1,6 @@
+import type { Response } from 'express';
 import { writeSystemLog } from '../../helpers/systemLogHelper';
+import { ROLES } from '../../constants/roles.constants';
 import type {
   ApproveProposalBody,
   NotifyContext,
@@ -58,6 +60,48 @@ export function parseApproveBody(
     file_pdf_nckh: files?.file_pdf_nckh?.[0],
   };
   return { editedData, decisions, pdfFiles };
+}
+
+/**
+ * Sends an Excel buffer as a file download response.
+ * @param res - Express response instance
+ * @param buffer - Excel file content (Buffer or ExcelJS Workbook output)
+ * @param filenamePrefix - Prefix used in the Content-Disposition filename
+ */
+export function sendExcelResponse(res: Response, buffer: unknown, filenamePrefix: string): void {
+  res.setHeader(
+    'Content-Type',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  );
+  res.setHeader(
+    'Content-Disposition',
+    `attachment; filename="${filenamePrefix}_${new Date().toISOString().slice(0, 10)}.xlsx"`
+  );
+  res.status(200).send(buffer);
+}
+
+/**
+ * Applies a MANAGER-role unit filter to the filters object in place.
+ * Returns 'forbidden' when the manager's unit cannot be resolved.
+ * @param user - Authenticated user
+ * @param filters - Mutable filter map to apply the unit restriction to
+ * @param getUserWithUnit - Resolver function that fetches the user's QuanNhan record
+ */
+export async function applyManagerUnitFilter(
+  user: { role: string; id: string },
+  filters: Record<string, unknown>,
+  getUserWithUnit: (id: string) => Promise<{
+    QuanNhan?: {
+      co_quan_don_vi_id?: string | null;
+      don_vi_truc_thuoc_id?: string | null;
+    } | null;
+  } | null>
+): Promise<'ok' | 'forbidden'> {
+  if (user.role !== ROLES.MANAGER) return 'ok';
+  const userWithUnit = await getUserWithUnit(user.id);
+  if (!userWithUnit?.QuanNhan) return 'forbidden';
+  filters.don_vi_id = managerUnitFilterId(userWithUnit.QuanNhan);
+  return 'ok';
 }
 
 /**

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import profileController from '../controllers/profile.controller';
-import { verifyToken, requireAdmin, requireManager, requireAuth } from '../middlewares/auth';
+import { verifyToken, requireAdminOnly, requireManager, requireAuth } from '../middlewares/auth';
 
 const router = Router();
 
@@ -58,14 +58,14 @@ router.post('/check-eligibility', verifyToken, requireManager, profileController
  * @desc    Recalculate award profiles for all personnel
  * @access  Private - ADMIN only
  */
-router.post('/recalculate-all', verifyToken, requireAdmin, profileController.recalculateAll);
+router.post('/recalculate-all', verifyToken, requireAdminOnly, profileController.recalculateAll);
 
 /**
  * @route   GET /api/profiles/tenure
  * @desc    List all HCCSVV tenure award profiles (admin view)
  * @access  Private - ADMIN only
  */
-router.get('/tenure', verifyToken, requireAdmin, profileController.getAllTenureProfiles);
+router.get('/tenure', verifyToken, requireAdminOnly, profileController.getAllTenureProfiles);
 
 /**
  * @route   PUT /api/profiles/tenure/:personnel_id
@@ -75,7 +75,7 @@ router.get('/tenure', verifyToken, requireAdmin, profileController.getAllTenureP
 router.put(
   '/tenure/:personnel_id',
   verifyToken,
-  requireAdmin,
+  requireAdminOnly,
   profileController.updateTenureProfile
 );
 

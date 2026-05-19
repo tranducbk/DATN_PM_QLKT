@@ -16,6 +16,7 @@ interface UnitsTableProps {
   showChildCount?: boolean;
   showPositionCount?: boolean;
   showPositionList?: boolean;
+  basePath?: string;
 }
 
 export function UnitsTable({
@@ -25,6 +26,7 @@ export function UnitsTable({
   showChildCount = true,
   showPositionCount = false,
   showPositionList = false,
+  basePath = '/admin/categories',
 }: UnitsTableProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -59,7 +61,7 @@ export function UnitsTable({
       dataIndex: 'ten_don_vi',
       key: 'ten_don_vi',
       width: 250,
-      align: 'left',
+      align: 'center',
       render: (text, record) => <strong>{text}</strong>,
     },
     {
@@ -124,7 +126,7 @@ export function UnitsTable({
           <Button
             type="primary"
             icon={<EyeOutlined />}
-            onClick={() => router.push(`/admin/categories/units/${record.id}`)}
+            onClick={() => router.push(`${basePath}/units/${record.id}`)}
           >
             Chi tiết
           </Button>

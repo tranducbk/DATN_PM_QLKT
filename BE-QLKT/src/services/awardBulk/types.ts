@@ -30,6 +30,8 @@ export interface BulkCreateContext {
   affectedPersonnelIds: Set<string>;
   affectedUnitIds: Set<string>;
   importedCount: { value: number };
+  /** SUPER_ADMIN data-correction path — skips personnel eligibility validation. */
+  bypassEligibility?: boolean;
 }
 
 export type CreateHandler = (ctx: BulkCreateContext) => Promise<void>;
@@ -45,4 +47,6 @@ export interface BulkCreateAwardsParams {
   ghiChu?: string | null;
   attachedFiles?: unknown[];
   adminId: string;
+  /** SUPER_ADMIN data-correction path — skips personnel eligibility validation. */
+  bypassEligibility?: boolean;
 }

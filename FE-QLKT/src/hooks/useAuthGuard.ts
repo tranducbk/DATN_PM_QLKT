@@ -21,10 +21,10 @@ const ROLE_DASHBOARD_MAP: Record<UserRole, string> = {
  * Thay thế logic auth check duplicate trong 4 layout files.
  * Kiểm tra authentication + authorization và redirect nếu không hợp lệ.
  *
- * @param requiredRole - Role yêu cầu để truy cập layout
+ * @param requiredRole - Role hoặc danh sách role được phép vào layout
  * @returns { isChecking } - true nếu đang check auth, dùng để render loading
  */
-export function useAuthGuard(requiredRole: UserRole) {
+export function useAuthGuard(requiredRole: UserRole | UserRole[]) {
   const router = useRouter();
   const { user, isLoading } = useAuth();
   const [isChecking, setIsChecking] = useState(true);
@@ -37,7 +37,8 @@ export function useAuthGuard(requiredRole: UserRole) {
       return;
     }
 
-    if (user.role !== requiredRole) {
+    const allowedRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+    if (!allowedRoles.includes(user.role)) {
       const redirectPath = ROLE_DASHBOARD_MAP[user.role] ?? '/login';
       router.push(redirectPath);
       return;

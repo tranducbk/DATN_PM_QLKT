@@ -76,6 +76,21 @@ describe('account.service - getAccounts', () => {
     );
     expect(exclude.role).toEqual({ not: ROLES.SUPER_ADMIN });
   });
+
+  it('Cho excludeSuperAdmin=false (SA call), Khi getAccounts, Thì where KHÔNG loại SUPER_ADMIN', async () => {
+    prismaMock.taiKhoan.findMany.mockResolvedValueOnce([]);
+    prismaMock.taiKhoan.count.mockResolvedValueOnce(0);
+
+    await accountService.getAccounts(1, 10, '', undefined, false);
+
+    const args = prismaMock.taiKhoan.findMany.mock.calls[0][0];
+    const andClauses = args.where.AND;
+    const exclude = andClauses.find(
+      (c: Record<string, unknown>) =>
+        c.role && typeof c.role === 'object' && 'not' in (c.role as object)
+    );
+    expect(exclude).toBeUndefined();
+  });
 });
 
 describe('account.service - createAccount', () => {

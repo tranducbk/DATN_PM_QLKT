@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import proposalController from '../controllers/proposal.controller';
-import { verifyToken, checkRole } from '../middlewares/auth';
+import { verifyToken, checkRole, requireAdminOnly } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
 import { ROLES } from '../constants/roles.constants';
@@ -112,7 +112,7 @@ router.get(
 router.post(
   '/:id/approve',
   verifyToken,
-  checkRole([ROLES.ADMIN]),
+  requireAdminOnly,
   writeLimiter,
   upload.fields([
     { name: 'file_pdf_ca_nhan_hang_nam', maxCount: 1 }, // CA_NHAN_HANG_NAM
@@ -139,7 +139,7 @@ router.post(
 router.post(
   '/:id/reject',
   verifyToken,
-  checkRole([ROLES.ADMIN]),
+  requireAdminOnly,
   auditLog({
     action: AUDIT_ACTIONS.REJECT,
     resource: 'proposals',

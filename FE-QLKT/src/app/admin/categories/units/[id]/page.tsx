@@ -7,14 +7,17 @@ import {
   Breadcrumb,
   Card,
   Tabs,
+  Table,
   Modal,
   Typography,
   message,
   Descriptions,
+  Empty,
   ConfigProvider,
   theme as antdTheme,
 } from 'antd';
-import { ArrowLeftOutlined, HomeOutlined, PlusOutlined, EditOutlined } from '@ant-design/icons';
+import type { ColumnsType } from 'antd/es/table';
+import { ArrowLeftOutlined, HomeOutlined, PlusOutlined, EditOutlined, EyeOutlined } from '@ant-design/icons';
 import { UnitForm } from '@/components/categories/UnitForm';
 import { UnitsTable } from '@/components/categories/UnitsTable';
 import { PositionForm } from '@/components/categories/PositionForm';
@@ -35,6 +38,16 @@ interface UnitDetail extends UnitApiRow {
   ChucVu?: PositionRow[];
 }
 
+interface PersonnelItem {
+  id: string;
+  ho_ten?: string | null;
+  cap_bac?: string | null;
+  co_quan_don_vi_id?: string | null;
+  don_vi_truc_thuoc_id?: string | null;
+  ChucVu?: { ten_chuc_vu?: string | null };
+  DonViTrucThuoc?: { ten_don_vi?: string | null };
+}
+
 export default function UnitDetailPage() {
   const { theme } = useTheme();
   const params = useParams();
@@ -43,6 +56,7 @@ export default function UnitDetailPage() {
 
   const [unit, setUnit] = useState<UnitDetail | null>(null);
   const [units, setUnits] = useState<UnitApiRow[]>([]);
+  const [personnel, setPersonnel] = useState<PersonnelItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogType, setDialogType] = useState<'unit' | 'position'>('unit');
@@ -52,19 +66,21 @@ export default function UnitDetailPage() {
   const loadUnitDetail = useCallback(async () => {
     try {
       setLoading(true);
-      const [unitRes, unitsRes] = await Promise.all([
+      const [unitRes, unitsRes, personnelRes] = await Promise.all([
         apiClient.getUnitById(unitId),
         apiClient.getUnits({ hierarchy: true }),
+        apiClient.getPersonnel({ unit_id: unitId, limit: 500 }),
       ]);
 
       if (unitRes.success) {
         setUnit(unitRes.data);
         setUnits(unitsRes.data || []);
+        setPersonnel((personnelRes.data || []) as PersonnelItem[]);
       } else {
         message.error(unitRes.message || 'Không thể tải thông tin đơn vị');
         router.push('/admin/categories');
       }
-    } catch (error) {
+    } catch {
       message.error('Không thể tải thông tin đơn vị');
       router.push('/admin/categories');
     } finally {
@@ -113,10 +129,7 @@ export default function UnitDetailPage() {
   }
 
   const childUnits = unit.DonViTrucThuoc || [];
-  const currentUnitFallback = {
-    id: unit.id,
-    ten_don_vi: unit.ten_don_vi,
-  };
+  const currentUnitFallback = { id: unit.id, ten_don_vi: unit.ten_don_vi };
 
   const currentUnitPositions = (unit.ChucVu || []).map((pos: any) => ({
     ...pos,
@@ -129,7 +142,6 @@ export default function UnitDetailPage() {
       ten_don_vi: child.ten_don_vi,
       CoQuanDonVi: child.CoQuanDonVi || currentUnitFallback,
     };
-
     return (child.ChucVu || []).map((pos: any) => ({
       ...pos,
       DonViTrucThuoc: pos.DonViTrucThuoc || {
@@ -137,16 +149,73 @@ export default function UnitDetailPage() {
         ten_don_vi: childFallback.ten_don_vi,
         CoQuanDonVi: childFallback.CoQuanDonVi,
       },
-      CoQuanDonVi: pos.CoQuanDonVi ||
-        childFallback.CoQuanDonVi || {
-          id: currentUnitFallback.id,
-          ten_don_vi: currentUnitFallback.ten_don_vi,
-        },
+      CoQuanDonVi: pos.CoQuanDonVi || childFallback.CoQuanDonVi || {
+        id: currentUnitFallback.id,
+        ten_don_vi: currentUnitFallback.ten_don_vi,
+      },
     }));
   });
 
   const positions = [...currentUnitPositions, ...childUnitPositions];
   const isDonViTrucThuoc = !!unit.co_quan_don_vi_id;
+
+  const personnelColumns: ColumnsType<PersonnelItem> = [
+    {
+      title: 'STT',
+      key: 'stt',
+      width: 52,
+      align: 'center',
+      render: (_v, _r, idx) => idx + 1,
+    },
+    {
+      title: 'Họ tên',
+      dataIndex: 'ho_ten',
+      key: 'ho_ten',
+      align: 'center',
+      render: v => v || '—',
+    },
+    {
+      title: 'Cấp bậc',
+      dataIndex: 'cap_bac',
+      key: 'cap_bac',
+      width: 140,
+      align: 'center',
+      render: v => v || '—',
+    },
+    {
+      title: 'Chức vụ',
+      key: 'chuc_vu',
+      width: 200,
+      align: 'center',
+      render: (_v, r) => r.ChucVu?.ten_chuc_vu || '—',
+    },
+    ...(!isDonViTrucThuoc
+      ? [
+          {
+            title: 'Đơn vị trực thuộc',
+            key: 'dvtt',
+            width: 180,
+            align: 'center' as const,
+            render: (_v: unknown, r: PersonnelItem) => r.DonViTrucThuoc?.ten_don_vi || '—',
+          } as ColumnsType<PersonnelItem>[number],
+        ]
+      : []),
+    {
+      title: '',
+      key: 'action',
+      width: 110,
+      align: 'center',
+      render: (_v, r) => (
+        <Button
+          size="small"
+          icon={<EyeOutlined />}
+          onClick={() => router.push(`/admin/personnel/${r.id}`)}
+        >
+          Chi tiết
+        </Button>
+      ),
+    },
+  ];
 
   return (
     <ConfigProvider
@@ -169,6 +238,17 @@ export default function UnitDetailPage() {
             {
               title: <Link href="/admin/categories">Quản lý cơ quan đơn vị</Link>,
             },
+            ...(isDonViTrucThuoc && unit.CoQuanDonVi
+              ? [
+                  {
+                    title: (
+                      <Link href={`/admin/categories/units/${unit.CoQuanDonVi.id}`}>
+                        {unit.CoQuanDonVi.ten_don_vi}
+                      </Link>
+                    ),
+                  },
+                ]
+              : []),
             {
               title: unit.ten_don_vi,
             },
@@ -190,11 +270,9 @@ export default function UnitDetailPage() {
             <Button
               icon={<ArrowLeftOutlined />}
               onClick={() => {
-                // Sub-unit: navigate back to parent unit detail page
                 if (isDonViTrucThuoc && unit.CoQuanDonVi?.id) {
                   router.push(`/admin/categories/units/${unit.CoQuanDonVi.id}`);
                 } else {
-                  // Parent unit: navigate back to categories list
                   router.push('/admin/categories');
                 }
               }}
@@ -245,7 +323,6 @@ export default function UnitDetailPage() {
                     <Descriptions.Item label="Số lượng quân nhân" span={1}>
                       {calcUnitTotal(unit)}
                     </Descriptions.Item>
-                    {/* Chỉ hiển thị "Cơ quan đơn vị" nếu đơn vị là đơn vị trực thuộc (có co_quan_don_vi_id) */}
                     {isDonViTrucThuoc && (
                       <Descriptions.Item label="Cơ quan đơn vị" span={1}>
                         {unit.CoQuanDonVi ? (
@@ -255,7 +332,6 @@ export default function UnitDetailPage() {
                         ) : null}
                       </Descriptions.Item>
                     )}
-                    {/* Chỉ hiển thị "Số đơn vị trực thuộc" nếu đơn vị là cơ quan đơn vị (không có co_quan_don_vi_id) */}
                     {!isDonViTrucThuoc && (
                       <Descriptions.Item label="Số đơn vị trực thuộc" span={1}>
                         {childUnits.length}
@@ -268,7 +344,29 @@ export default function UnitDetailPage() {
                 </Card>
               ),
             },
-            // Sub-unit tab is only shown for parent units (co_quan_don_vi) — sub-units cannot have children
+            {
+              key: 'personnel',
+              label: `Quân nhân (${personnel.length})`,
+              children: (
+                <Card>
+                  {personnel.length > 0 ? (
+                    <Table
+                      columns={personnelColumns}
+                      dataSource={personnel}
+                      rowKey="id"
+                      size="middle"
+                      pagination={{ pageSize: 20, showTotal: t => `Tổng ${t} quân nhân` }}
+                      scroll={{ x: 'max-content' }}
+                    />
+                  ) : (
+                    <div style={{ padding: '48px', textAlign: 'center' }}>
+                      <Empty description="Chưa có quân nhân nào" />
+                    </div>
+                  )}
+                </Card>
+              ),
+            },
+            // Sub-unit tab is only shown for parent units — sub-units cannot have children
             ...(!isDonViTrucThuoc
               ? [
                   {
@@ -382,9 +480,7 @@ export default function UnitDetailPage() {
               marginBottom: '24px',
               borderBottom: '1px solid #f0f0f0',
             },
-            body: {
-              paddingTop: '24px',
-            },
+            body: { paddingTop: '24px' },
           }}
         >
           {dialogType === 'unit' && (
@@ -395,7 +491,6 @@ export default function UnitDetailPage() {
               onClose={handleCloseDialog}
             />
           )}
-
           {dialogType === 'position' && (
             <PositionForm
               position={editingItem}

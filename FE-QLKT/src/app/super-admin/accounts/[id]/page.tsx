@@ -17,11 +17,11 @@ import {
 } from 'antd';
 import { getApiErrorMessage } from '@/lib/apiError';
 
-import { ArrowLeftOutlined, EditOutlined, ReloadOutlined, HomeOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, ReloadOutlined, HomeOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { apiClient } from '@/lib/apiClient';
-import { formatDate, formatDateTime } from '@/lib/utils';
+import { formatDateTime } from '@/lib/utils';
 import { useTheme } from '@/components/ThemeProvider';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { ROLES, getRoleInfo } from '@/constants/roles.constants';
@@ -34,26 +34,7 @@ interface AccountDetail {
   role: string;
   createdAt: string;
   updatedAt: string;
-  QuanNhan?: {
-    ho_ten?: string | null;
-    cccd?: string | null;
-    ngay_sinh?: string | null;
-    gioi_tinh?: string | null;
-    so_dien_thoai?: string | null;
-    cap_bac?: string | null;
-    que_quan_2_cap?: string | null;
-    que_quan_3_cap?: string | null;
-    tru_quan?: string | null;
-    cho_o_hien_nay?: string | null;
-    ngay_nhap_ngu?: string | null;
-    ngay_xuat_ngu?: string | null;
-    ngay_vao_dang?: string | null;
-    ngay_vao_dang_chinh_thuc?: string | null;
-    so_the_dang_vien?: string | null;
-    DonViTrucThuoc?: { ma_don_vi?: string; ten_don_vi?: string; CoQuanDonVi?: { ten_don_vi?: string } | null } | null;
-    CoQuanDonVi?: { ma_don_vi?: string; ten_don_vi?: string } | null;
-    ChucVu?: { ten_chuc_vu?: string } | null;
-  } | null;
+  QuanNhan?: { ho_ten?: string | null } | null;
 }
 
 export default function AccountDetailPage() {
@@ -161,11 +142,6 @@ export default function AccountDetailPage() {
             </Title>
           </div>
           <Space wrap>
-            <Link href={`/super-admin/accounts/${accountId}/edit`}>
-              <Button type="primary" icon={<EditOutlined />}>
-                Chỉnh sửa
-              </Button>
-            </Link>
             <Button icon={<ReloadOutlined />} loading={resetting} onClick={showResetConfirm}>
               Đặt lại mật khẩu
             </Button>
@@ -195,104 +171,22 @@ export default function AccountDetailPage() {
           </Descriptions>
         </Card>
 
-        {/* Personnel Information Card */}
+        {/* Personnel link indicator */}
         {account.QuanNhan && (
-          <Card title="Thông tin quân nhân liên kết" className="shadow-sm">
-            <Descriptions
-              bordered
-              column={1}
-              size="middle"
-              labelStyle={{ fontWeight: 600, width: '200px' }}
-              contentStyle={{ color: theme === 'dark' ? '#f3f4f6' : '#111827' }}
-            >
-              <Descriptions.Item label="Họ và tên">
-                {account.QuanNhan.ho_ten || '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="CCCD">{account.QuanNhan.cccd || '-'}</Descriptions.Item>
-              <Descriptions.Item label="Giới tính">
-                {account.QuanNhan.gioi_tinh === 'NAM'
-                  ? 'Nam'
-                  : account.QuanNhan.gioi_tinh === 'NU'
-                    ? 'Nữ'
-                    : '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Ngày sinh">
-                {account.QuanNhan.ngay_sinh ? formatDate(account.QuanNhan.ngay_sinh) : '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Số điện thoại">
-                {account.QuanNhan.so_dien_thoai || '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Cấp bậc">
-                {account.QuanNhan.cap_bac || '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Quê quán (2 cấp)">
-                {account.QuanNhan.que_quan_2_cap || '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Quê quán (3 cấp)">
-                {account.QuanNhan.que_quan_3_cap || '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Trú quán">
-                {account.QuanNhan.tru_quan || '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Chỗ ở hiện nay">
-                {account.QuanNhan.cho_o_hien_nay || '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Ngày nhập ngũ">
-                {account.QuanNhan.ngay_nhap_ngu ? formatDate(account.QuanNhan.ngay_nhap_ngu) : '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Ngày xuất ngũ">
-                {account.QuanNhan.ngay_xuat_ngu ? formatDate(account.QuanNhan.ngay_xuat_ngu) : '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Ngày vào Đảng">
-                {account.QuanNhan.ngay_vao_dang ? formatDate(account.QuanNhan.ngay_vao_dang) : '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Ngày vào Đảng chính thức">
-                {account.QuanNhan.ngay_vao_dang_chinh_thuc
-                  ? formatDate(account.QuanNhan.ngay_vao_dang_chinh_thuc)
-                  : '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Số thẻ Đảng viên">
-                {account.QuanNhan.so_the_dang_vien || '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Đơn vị trực thuộc">
-                {account.QuanNhan.DonViTrucThuoc ? (
-                  <>
-                    {account.QuanNhan.DonViTrucThuoc.ma_don_vi} -{' '}
-                    {account.QuanNhan.DonViTrucThuoc.ten_don_vi}
-                    {account.QuanNhan.DonViTrucThuoc.CoQuanDonVi && (
-                      <span className="text-gray-500 dark:text-gray-400 ml-2">
-                        ({account.QuanNhan.DonViTrucThuoc.CoQuanDonVi.ten_don_vi})
-                      </span>
-                    )}
-                  </>
-                ) : (
-                  '-'
-                )}
-              </Descriptions.Item>
-              <Descriptions.Item label="Cơ quan đơn vị">
-                {account.QuanNhan.CoQuanDonVi ? (
-                  <>
-                    {account.QuanNhan.CoQuanDonVi.ma_don_vi} -{' '}
-                    {account.QuanNhan.CoQuanDonVi.ten_don_vi}
-                  </>
-                ) : (
-                  '-'
-                )}
-              </Descriptions.Item>
-              <Descriptions.Item label="Chức vụ">
-                {account.QuanNhan.ChucVu?.ten_chuc_vu || '-'}
-              </Descriptions.Item>
-            </Descriptions>
-          </Card>
+          <Alert
+            type="info"
+            showIcon
+            message={`Liên kết quân nhân: ${account.QuanNhan.ho_ten || '—'}`}
+            className="shadow-sm"
+          />
         )}
 
-        {/* No Personnel Warning */}
         {!account.QuanNhan && account.role !== ROLES.SUPER_ADMIN && (
           <Alert
             type="warning"
             showIcon
             message="Chưa liên kết quân nhân"
-            description="Tài khoản này chưa được liên kết với quân nhân nào. Vui lòng liên kết tài khoản với quân nhân để sử dụng đầy đủ các chức năng của hệ thống."
+            description="Tài khoản này chưa được liên kết với quân nhân nào."
             className="shadow-sm"
           />
         )}

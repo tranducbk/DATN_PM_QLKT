@@ -237,9 +237,6 @@ export default function AccountsListPage() {
       align: 'center' as const,
       render: (value, record) => (
         <Space size="small" wrap>
-          <Link href={`/super-admin/accounts/${record.id}`}>
-            <Button size="small">Chi tiết</Button>
-          </Link>
           <Link href={`/super-admin/accounts/${record.id}/edit`}>
             <Button size="small" icon={<EditOutlined />} />
           </Link>

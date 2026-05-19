@@ -89,9 +89,11 @@ const checkRole = (allowedRoles: string[]) => {
 
 /** Middleware allowing only SUPER_ADMIN role. */
 const requireSuperAdmin = checkRole([ROLES.SUPER_ADMIN]);
-/** Middleware allowing SUPER_ADMIN and ADMIN roles. */
+/** Middleware allowing SUPER_ADMIN and ADMIN roles (shared system management). */
 const requireAdmin = checkRole([ROLES.SUPER_ADMIN, ROLES.ADMIN]);
+/** Middleware allowing only ADMIN role (business operations — excludes SUPER_ADMIN). */
+const requireAdminOnly = checkRole([ROLES.ADMIN]);
 /** Middleware allowing SUPER_ADMIN, ADMIN, and MANAGER roles. */
 const requireManager = checkRole([ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER]);
 
-export { verifyToken, requireAuth, requireSuperAdmin, requireAdmin, requireManager, checkRole };
+export { verifyToken, requireAuth, requireSuperAdmin, requireAdmin, requireAdminOnly, requireManager, checkRole };

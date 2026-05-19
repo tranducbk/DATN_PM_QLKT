@@ -308,6 +308,7 @@ export default function ProposalReviewPage() {
                   columns={columns}
                   dataSource={filteredProposals}
                   rowKey="id"
+                  scroll={{ x: 'max-content' }}
                   pagination={{
                     ...DEFAULT_ANTD_TABLE_PAGINATION,
                     pageSize,

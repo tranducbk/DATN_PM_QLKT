@@ -1,0 +1,12 @@
+package vn.qlkt.notification;
+
+public enum LoaiThongBao {
+    PROPOSAL_SUBMITTED,
+    PROPOSAL_APPROVED,
+    PROPOSAL_REJECTED,
+    PROPOSAL_DELETED,
+    AWARD_ADDED,
+    AWARD_DELETED,
+    PERSONNEL_ADDED,
+    PERSONNEL_TRANSFERRED;
+}

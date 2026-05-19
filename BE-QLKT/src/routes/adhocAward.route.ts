@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import adhocAwardController from '../controllers/adhocAward.controller';
-import { verifyToken, checkRole } from '../middlewares/auth';
+import { verifyToken, checkRole, requireAdminOnly } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
 import { ROLES } from '../constants/roles.constants';
@@ -50,7 +50,7 @@ router.get(
 router.get('/:id', checkRole([ROLES.ADMIN, ROLES.MANAGER]), adhocAwardController.getAdhocAwardById);
 
 // Routes accessible by ADMIN only (write operations)
-router.use(checkRole([ROLES.ADMIN]));
+router.use(requireAdminOnly);
 
 /**
  * @route   POST /api/adhoc-awards

@@ -305,6 +305,7 @@ export default function ManagerProposalsPage() {
           dataSource={filteredProposals}
           rowKey="id"
           loading={loading}
+          scroll={{ x: 'max-content' }}
           pagination={{
             ...DEFAULT_ANTD_TABLE_PAGINATION,
             pageSize,

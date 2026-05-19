@@ -21,7 +21,8 @@ import { useTheme } from '@/components/ThemeProvider';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { useDevZone } from '@/contexts/DevZoneContext';
 import type { SystemLogStats } from '@/lib/api/systemLogs';
-import { ROLE_LABELS } from '@/constants/roles.constants';
+import { ROLE_LABELS, ROLES } from '@/constants/roles.constants';
+import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 
 const { Title, Text } = Typography;
@@ -53,7 +54,8 @@ interface SystemLogsPageContentProps {
 export function SystemLogsPageContent({ basePath }: SystemLogsPageContentProps) {
   const { theme } = useTheme();
   const { features } = useDevZone();
-  const allowDeleteLogs = features.allow_delete_logs ?? false;
+  const { user } = useAuth();
+  const canDeleteLogs = (features.allow_delete_logs ?? false) && user?.role === ROLES.SUPER_ADMIN;
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [tableLoading, setTableLoading] = useState(false);
@@ -327,7 +329,7 @@ export function SystemLogsPageContent({ basePath }: SystemLogsPageContentProps) 
               >
                 Làm mới
               </Button>
-            {allowDeleteLogs && (
+            {canDeleteLogs && (
               <Popconfirm
                 title="Xoá nhật ký đã chọn?"
                 description={`Bạn có chắc muốn xoá ${selectedRowKeys.length} nhật ký?`}
@@ -353,8 +355,8 @@ export function SystemLogsPageContent({ basePath }: SystemLogsPageContentProps) 
             <LogsTable
               logs={logs}
               loading={loading || tableLoading}
-              selectedRowKeys={allowDeleteLogs ? selectedRowKeys : undefined}
-              onSelectionChange={allowDeleteLogs ? setSelectedRowKeys : undefined}
+              selectedRowKeys={canDeleteLogs ? selectedRowKeys : undefined}
+              onSelectionChange={canDeleteLogs ? setSelectedRowKeys : undefined}
             />
             {pagination.total > 0 && (
               <div

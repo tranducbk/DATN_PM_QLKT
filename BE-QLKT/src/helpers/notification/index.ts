@@ -11,6 +11,7 @@ import {
   notifyOnAwardDeleted,
   notifyUsersOnAwardApproved,
   notifyOnBulkAwardAdded,
+  notifyAdminsOnBulkBypass,
   notifyOnImport,
 } from './awards';
 import { notifyManagerOnPersonnelAdded, notifyOnPersonnelTransfer } from './personnel';
@@ -27,6 +28,7 @@ export {
   notifyOnAwardDeleted,
   notifyUsersOnAwardApproved,
   notifyOnBulkAwardAdded,
+  notifyAdminsOnBulkBypass,
   notifyOnImport,
   notifyManagerOnPersonnelAdded,
   notifyOnPersonnelTransfer,

@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import proposalController from '../controllers/proposal.controller';
 import awardBulkController from '../controllers/awardBulk.controller';
-import { verifyToken, checkRole, requireAdmin } from '../middlewares/auth';
+import { verifyToken, checkRole, requireAdminOnly, requireSuperAdmin } from '../middlewares/auth';
 import { validate } from '../middlewares/validate';
 import { auditLog } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
@@ -51,13 +51,13 @@ router.get(
 
 /**
  * @route   POST /api/awards/bulk
- * @desc    Bulk create awards with full validation
- * @access  ADMIN
+ * @desc    Bulk create awards with full eligibility validation
+ * @access  ADMIN only
  */
 router.post(
   '/bulk',
   verifyToken,
-  requireAdmin,
+  requireAdminOnly,
   bulkUpload.fields([{ name: 'attached_files', maxCount: 10 }]),
   validate(awardBulkValidation.bulkCreateAwards),
   auditLog({
@@ -99,6 +99,46 @@ router.post(
     },
   }),
   awardBulkController.bulkCreateAwards
+);
+
+/**
+ * @route   POST /api/awards/bulk-bypass
+ * @desc    Bulk create awards bypassing eligibility checks (data correction by SUPER_ADMIN)
+ * @access  SUPER_ADMIN only
+ */
+router.post(
+  '/bulk-bypass',
+  verifyToken,
+  requireSuperAdmin,
+  bulkUpload.fields([{ name: 'attached_files', maxCount: 10 }]),
+  validate(awardBulkValidation.bulkCreateAwards),
+  auditLog({
+    action: AUDIT_ACTIONS.BULK_BYPASS,
+    resource: 'awards',
+    getDescription: getLogDescription('awards', 'BULK_BYPASS'),
+    getResourceId: () => null,
+    getPayload: (req: Request, res: Response, responseData: unknown) => {
+      try {
+        const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
+        const result = (data as Record<string, unknown>)?.data || data || {};
+        const resultObj = result as Record<string, unknown>;
+        const files = req.files as Record<string, Express.Multer.File[]> | undefined;
+        return {
+          type: req.body?.type || '',
+          nam: req.body?.nam ?? null,
+          bypass: true,
+          imported_count: resultObj?.importedCount || 0,
+          error_count: resultObj?.errorCount || 0,
+          affected_personnel_ids: resultObj?.affectedPersonnelIds || [],
+          attached_files_count: files?.attached_files?.length || 0,
+        };
+      } catch (error) {
+        console.error('Failed to build bulk-bypass audit payload from request:', error);
+        return null;
+      }
+    },
+  }),
+  awardBulkController.bulkCreateAwardsBypass
 );
 
 export default router;

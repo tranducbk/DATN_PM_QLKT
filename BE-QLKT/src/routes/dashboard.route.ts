@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import dashboardController from '../controllers/dashboard.controller';
-import { verifyToken, requireSuperAdmin, requireAdmin, requireManager } from '../middlewares/auth';
+import { verifyToken, requireSuperAdmin, requireAdminOnly, requireManager } from '../middlewares/auth';
 
 const router = Router();
 
@@ -16,7 +16,7 @@ router.get('/statistics', verifyToken, requireSuperAdmin, dashboardController.ge
  * @desc    Get statistics for the Admin dashboard
  * @access  Private - ADMIN+ only
  */
-router.get('/statistics/admin', verifyToken, requireAdmin, dashboardController.getAdminStatistics);
+router.get('/statistics/admin', verifyToken, requireAdminOnly, dashboardController.getAdminStatistics);
 
 /**
  * @route   GET /api/dashboard/statistics/manager

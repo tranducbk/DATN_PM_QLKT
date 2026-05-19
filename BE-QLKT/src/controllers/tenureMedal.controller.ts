@@ -37,17 +37,6 @@ interface ExportToExcelQuery {
   [key: string]: unknown;
 }
 
-interface CreateDirectBody {
-  quan_nhan_id?: string;
-  danh_hieu?: string;
-  nam?: number | string;
-  thang?: number | string;
-  cap_bac?: string;
-  chuc_vu?: string;
-  so_quyet_dinh?: string;
-  ghi_chu?: string;
-}
-
 interface IdParams {
   id?: string;
 }
@@ -99,7 +88,7 @@ class HCCSVVController {
     const user = req.user!;
     const body = req.body as ConfirmImportBody;
     const { items } = body;
-    const result = await hccsvvService.confirmImport(items, user.id);
+    const result = await hccsvvService.confirmImport(items);
     await writeSystemLog({
       userId: user.id,
       userRole: user.role,
@@ -175,44 +164,6 @@ class HCCSVVController {
     return ResponseHelper.success(res, {
       message: `Lấy thống kê ${AWARD_LABEL} thành công`,
       data: statistics,
-    });
-  });
-
-  createDirect = catchAsync(async (req: Request, res: Response) => {
-    const body = req.body as CreateDirectBody;
-    const { quan_nhan_id, danh_hieu, nam, thang, cap_bac, chuc_vu, so_quyet_dinh, ghi_chu } = body;
-    const adminUsername = getAdminUsername(req);
-    if (!quan_nhan_id || !danh_hieu || !nam) {
-      return ResponseHelper.badRequest(
-        res,
-        'Thiếu thông tin bắt buộc: quân nhân, danh hiệu và năm'
-      );
-    }
-    const yearNumber = typeof nam === 'number' ? nam : Number(nam);
-    if (!Number.isInteger(yearNumber) || yearNumber <= 0) {
-      return ResponseHelper.badRequest(res, 'Năm không hợp lệ');
-    }
-    const monthNumber = thang === undefined ? undefined : Number(thang);
-    if (monthNumber !== undefined && (!Number.isInteger(monthNumber) || monthNumber < 1 || monthNumber > 12)) {
-      return ResponseHelper.badRequest(res, 'Tháng không hợp lệ (1-12)');
-    }
-    const result = await hccsvvService.createDirect(
-      {
-        quan_nhan_id,
-        danh_hieu,
-        nam: yearNumber,
-        thang: monthNumber,
-        cap_bac,
-        chuc_vu,
-        so_quyet_dinh,
-        ghi_chu,
-      },
-      adminUsername
-    );
-    res.locals.createdId = result.id;
-    return ResponseHelper.created(res, {
-      message: `Thêm khen thưởng ${AWARD_LABEL} thành công`,
-      data: result,
     });
   });
 

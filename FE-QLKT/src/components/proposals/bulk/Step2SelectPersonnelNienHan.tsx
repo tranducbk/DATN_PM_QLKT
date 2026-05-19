@@ -495,9 +495,14 @@ export function Step2SelectPersonnelNienHan({
         if (!eligibility) return <Text type="secondary">-</Text>;
 
         const serviceProfile = serviceProfilesMap[record.id];
-        const hasHangBa = serviceProfile?.hccsvv_hang_ba_status === ELIGIBILITY_STATUS.DA_NHAN;
-        const hasHangNhi = serviceProfile?.hccsvv_hang_nhi_status === ELIGIBILITY_STATUS.DA_NHAN;
-        const hasHangNhat = serviceProfile?.hccsvv_hang_nhat_status === ELIGIBILITY_STATUS.DA_NHAN;
+        // Without profile, falling through to hasHangBa=false branches misleads users
+        // (e.g. shows "Đủ hạng Ba" for a personnel who already received all ranks).
+        if (!serviceProfile) {
+          return <Text type="secondary">Đang tải...</Text>;
+        }
+        const hasHangBa = serviceProfile.hccsvv_hang_ba_status === ELIGIBILITY_STATUS.DA_NHAN;
+        const hasHangNhi = serviceProfile.hccsvv_hang_nhi_status === ELIGIBILITY_STATUS.DA_NHAN;
+        const hasHangNhat = serviceProfile.hccsvv_hang_nhat_status === ELIGIBILITY_STATUS.DA_NHAN;
 
         const { hangBa, hangNhi, hangNhat } = eligibility;
 
@@ -1038,6 +1043,7 @@ export function Step2SelectPersonnelNienHan({
         rowKey="id"
         rowSelection={rowSelection}
         loading={loading || checkingProfiles}
+        scroll={{ x: 'max-content' }}
         rowClassName={record => {
           // Highlight rows missing gender
           const missingGender =

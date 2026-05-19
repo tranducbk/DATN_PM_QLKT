@@ -5,7 +5,7 @@ import unitAnnualAwardController from '../controllers/unitAnnualAward.controller
 import {
   verifyToken,
   requireManager,
-  requireAdmin,
+  requireAdminOnly,
   checkRole,
 } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
@@ -214,7 +214,7 @@ router.post(
 router.post(
   '/:id/approve',
   verifyToken,
-  requireAdmin,
+  requireAdminOnly,
   auditLog({
     action: AUDIT_ACTIONS.APPROVE,
     resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
@@ -232,7 +232,7 @@ router.post(
 router.post(
   '/:id/reject',
   verifyToken,
-  requireAdmin,
+  requireAdminOnly,
   auditLog({
     action: AUDIT_ACTIONS.REJECT,
     resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
@@ -268,7 +268,7 @@ router.post(
 router.get(
   '/decision-files/:filename',
   verifyToken,
-  requireAdmin,
+  requireAdminOnly,
   (req: Request, res: Response) => {
     try {
       const filename = path.basename(String(req.params.filename ?? ''));

@@ -5,7 +5,7 @@ import annualRewardController from '../controllers/annualReward.controller';
 import {
   verifyToken,
   requireManager,
-  requireAdmin,
+  requireAdminOnly,
   checkRole,
 } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
@@ -84,12 +84,12 @@ router.post(
 /**
  * @route   PUT /api/annual-rewards/:id
  * @desc    Update an annual reward title
- * @access  Private - ADMIN and above
+ * @access  Private - ADMIN only
  */
 router.put(
   '/:id',
   verifyToken,
-  requireAdmin,
+  requireAdminOnly,
   validate(annualRewardValidation.updateAnnualReward),
   auditLog({
     action: AUDIT_ACTIONS.UPDATE,
@@ -108,7 +108,7 @@ router.put(
 router.delete(
   '/:id',
   verifyToken,
-  requireAdmin,
+  requireAdminOnly,
   auditLog({
     action: AUDIT_ACTIONS.DELETE,
     resource: AWARD_SLUGS.ANNUAL_REWARDS,
@@ -126,7 +126,7 @@ router.delete(
 router.post(
   '/check',
   verifyToken,
-  requireAdmin,
+  requireAdminOnly,
   validate(annualRewardValidation.checkAnnualRewards),
   annualRewardController.checkAnnualRewards
 );
@@ -139,7 +139,7 @@ router.post(
 router.post(
   '/bulk',
   verifyToken,
-  requireAdmin,
+  requireAdminOnly,
   pdfUpload.single('file_dinh_kem'),
   validate(annualRewardValidation.bulkCreate),
   auditLog({
@@ -159,7 +159,7 @@ router.post(
 router.post(
   '/import/preview',
   verifyToken,
-  requireAdmin,
+  requireAdminOnly,
   upload.single('file'),
   annualRewardController.previewImport
 );
@@ -172,7 +172,7 @@ router.post(
 router.post(
   '/import/confirm',
   verifyToken,
-  requireAdmin,
+  requireAdminOnly,
   validate(excelImportValidation.confirmImportAnnualReward),
   annualRewardController.confirmImport
 );

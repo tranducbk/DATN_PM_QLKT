@@ -519,3 +519,16 @@ export async function bulkCreateAwards(formData: FormData): Promise<ApiResponse>
     return { success: false, message: getApiErrorMessage(e) };
   }
 }
+
+export async function bulkCreateAwardsBypass(formData: FormData): Promise<ApiResponse> {
+  try {
+    const res = await axiosInstance.post('/api/awards/bulk-bypass', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return { success: res.data?.success, data: res.data?.data, message: res.data?.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
+  }
+}

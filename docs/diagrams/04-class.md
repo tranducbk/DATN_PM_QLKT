@@ -1,10 +1,18 @@
 # Sơ đồ Lớp (Class Diagrams)
 
-> Mermaid hỗ trợ `classDiagram` chuẩn UML. Các attribute được lấy đúng từ `prisma/schema.prisma` và method từ services thực tế trong code.
+> Mỗi module có 1 sơ đồ gồm Entity + Controller + Service + Enum. Tên thuộc tính và phương thức lấy đúng từ `prisma/schema.prisma` và source code TypeScript.
+>
+> **Astah import**: Java skeleton files đã tạo sẵn ở `astah-import/` — vào Astah: `Tools → Java → Import Java...` rồi chọn từng subfolder (`personnel/`, `account/`, `proposal/`, `award/`, `notification/`). Astah tự sinh class diagram, không phải vẽ thủ công.
+>
+> **Quy ước UML**:
+> - **Association** (`──>` liền): có composition field. Vd: `Controller → Service` (controller hold service singleton)
+> - **Dependency** (`..>` đứt): không có field, chỉ dùng qua method param/return. Vd: `Service → Entity` (service uses entity tạm thời qua repository singleton-imported)
+> - **Realization** (`..|>`): `class X implements Interface`. Vd: 7 ProposalStrategy concrete classes
+> - **Generalization** (`──|>` rỗng đầu mũi): `class X extends Y`. (Project không dùng)
 
 ---
 
-## C3.1 — Class diagram: module Quản lý quân nhân
+## C3.1 — Quản lý quân nhân
 
 ```mermaid
 classDiagram
@@ -22,6 +30,7 @@ classDiagram
         +Date ngay_nhap_ngu
         +Date ngay_xuat_ngu
         +Date ngay_vao_dang
+        +Date ngay_vao_dang_chinh_thuc
         +String so_the_dang_vien
         +String so_dien_thoai
         +String cap_bac
@@ -59,291 +68,33 @@ classDiagram
         NU
     }
 
-    class PersonnelRoute {
-        <<Route>>
-        +GET /api/personnel
-        +POST /api/personnel
-        +GET /api/personnel/:id
-        +PUT /api/personnel/:id
-        +DELETE /api/personnel/:id
-        +POST /api/personnel/check-contribution-eligibility
-    }
-
     class PersonnelController {
-        -personnelService
-        +getPersonnel(req, res)
-        +getPersonnelById(req, res)
-        +createPersonnel(req, res)
-        +updatePersonnel(req, res)
-        +deletePersonnel(req, res)
-        +checkContributionEligibility(req, res)
+        +getPersonnel()
+        +getPersonnelById()
+        +createPersonnel()
+        +updatePersonnel()
+        +deletePersonnel()
+        +checkContributionEligibility()
     }
 
     class PersonnelService {
-        -quanNhanRepository
-        -unitRepository
-        +getPersonnel(page, limit, userRole, userQuanNhanId, filter) PaginatedQuanNhan
-        +getPersonnelById(id, userRole, userQuanNhanId) QuanNhan
-        +createPersonnel(data) QuanNhan
-        +updatePersonnel(id, data, role) QuanNhan
-        +deletePersonnel(id, userRole, userQuanNhanId) void
-        +checkContributionEligibility(personnelIds) Result[]
-    }
-
-    class QuanNhanRepository {
-        +findById(id, tx) QuanNhan
-        +findByIdForDetail(id, tx) QuanNhanWithRelations
-        +findByIdWithAccount(id, tx) QuanNhan
-        +findIdByCccd(cccd, tx) String
-        +findManyByIds(ids, tx) QuanNhan[]
-        +findMany(args, tx) QuanNhan[]
-        +count(where, tx) Number
-        +create(data, tx) QuanNhan
-        +update(id, data, tx) QuanNhan
-        +delete(id, tx) void
-        +groupByCapBac(where, tx) Group[]
+        +getPersonnel(filters)
+        +getPersonnelById(id, userRole, userQuanNhanId)
+        +createPersonnel(data)
+        +updatePersonnel(id, data, role)
+        +deletePersonnel(id, userRole, userQuanNhanId)
+        +checkContributionEligibility(personnelIds)
     }
 
     QuanNhan --> CapBac : sử dụng
     QuanNhan --> GioiTinh : sử dụng
-    PersonnelRoute --> PersonnelController : routes to
-    PersonnelController --> PersonnelService : uses
-    PersonnelService --> QuanNhanRepository : uses
-    QuanNhanRepository --> QuanNhan : manages
+    PersonnelController --> PersonnelService : sử dụng
+    PersonnelService ..> QuanNhan : phụ thuộc
 ```
 
 ---
 
-## C3.2 — Class diagram: module Đề xuất khen thưởng (Strategy pattern)
-
-```mermaid
-classDiagram
-    class ProposalStrategy {
-        <<interface>>
-        +readonly type ProposalType
-        +buildSubmitPayload(titleData, ctx) Promise SubmitValidationResult
-        +validateApprove(editedData, ctx) Promise String[]
-        +importInTransaction(editedData, ctx, decisions, pdfPaths, acc, prismaTx) Promise void
-        +buildSuccessMessage(acc) String
-    }
-
-    class CaNhanHangNamStrategy {
-        +type CA_NHAN_HANG_NAM
-        +buildSubmitPayload()
-        +validateApprove()
-        +importInTransaction()
-        +buildSuccessMessage()
-    }
-
-    class DonViHangNamStrategy {
-        +type DON_VI_HANG_NAM
-        +buildSubmitPayload()
-        +validateApprove()
-        +importInTransaction()
-        +buildSuccessMessage()
-    }
-
-    class NienHanStrategy {
-        +type NIEN_HAN
-        +buildSubmitPayload()
-        +validateApprove()
-        +importInTransaction()
-        +buildSuccessMessage()
-    }
-
-    class CongHienStrategy {
-        +type CONG_HIEN
-        +buildSubmitPayload()
-        +validateApprove()
-        +importInTransaction()
-        +buildSuccessMessage()
-    }
-
-    class HcQkqtStrategy {
-        +type HC_QKQT
-        +buildSubmitPayload()
-        +validateApprove()
-        +importInTransaction()
-        +buildSuccessMessage()
-    }
-
-    class KncStrategy {
-        +type KNC_VSNXD_QDNDVN
-        +buildSubmitPayload()
-        +validateApprove()
-        +importInTransaction()
-        +buildSuccessMessage()
-    }
-
-    class NckhStrategy {
-        +type NCKH
-        +buildSubmitPayload()
-        +validateApprove()
-        +importInTransaction()
-        +buildSuccessMessage()
-    }
-
-    class StrategyRegistry {
-        -REGISTRY Record
-        +getProposalStrategy(type) ProposalStrategy
-        +requireProposalStrategy(type) ProposalStrategy
-    }
-
-    class SingleMedalImporter {
-        <<helper>>
-        +importSingleMedal(items, ctx, acc, prismaTx, cfg) void
-    }
-
-    class ProposalService {
-        -strategyRegistry
-        -proposalRepository
-        +submitProposal(data, userId, role) BangDeXuat
-        +approveProposal(id, editedData, adminId, decisions, pdfFiles) BangDeXuat
-        +rejectProposal(id, reason, adminId) BangDeXuat
-        +deleteProposal(id, userId, role) void
-        +getProposals(filters, role) PaginatedBangDeXuat
-        +getProposalById(id, userId, role) BangDeXuat
-    }
-
-    class ProposalController {
-        -proposalService
-        +submitProposal(req, res)
-        +approveProposal(req, res)
-        +rejectProposal(req, res)
-        +getProposals(req, res)
-        +getProposalById(req, res)
-        +deleteProposal(req, res)
-    }
-
-    ProposalStrategy <|.. CaNhanHangNamStrategy
-    ProposalStrategy <|.. DonViHangNamStrategy
-    ProposalStrategy <|.. NienHanStrategy
-    ProposalStrategy <|.. CongHienStrategy
-    ProposalStrategy <|.. HcQkqtStrategy
-    ProposalStrategy <|.. KncStrategy
-    ProposalStrategy <|.. NckhStrategy
-
-    StrategyRegistry --> ProposalStrategy : returns
-    HcQkqtStrategy ..> SingleMedalImporter : uses
-    KncStrategy ..> SingleMedalImporter : uses
-
-    ProposalController --> ProposalService
-    ProposalService --> StrategyRegistry : dispatch
-```
-
-**Điểm bán pattern (defend trong ĐATN)**:
-- 7 strategy đều implement interface `ProposalStrategy` với 4 method
-- `ProposalService` không biết về cụ thể từng loại — gọi qua `getStrategy(type)`
-- Thêm loại mới: thêm 1 file strategy + register vào REGISTRY, không sửa controller/service
-- 2 strategy "single-medal" (HC_QKQT + KNC) chia sẻ logic qua helper `SingleMedalImporter`
-
----
-
-## C3.3 — Class diagram: module Eligibility (chain rule)
-
-```mermaid
-classDiagram
-    class ChainAwardConfig {
-        +String code
-        +Number cycleYears
-        +RequiredFlag[] requiredFlags
-        +Boolean requiresNCKH
-        +Boolean isLifetime
-        +String flagColumn
-        +String streakLabel
-    }
-
-    class RequiredFlag {
-        +String code
-        +Number count
-    }
-
-    class PersonalChainAwards {
-        <<constant>>
-        +BKBQP ChainAwardConfig
-        +CSTDTQ ChainAwardConfig
-        +BKTTCP ChainAwardConfig
-    }
-
-    class UnitChainAwards {
-        <<constant>>
-        +BKBQP ChainAwardConfig
-        +BKTTCP ChainAwardConfig
-    }
-
-    class ChainContext {
-        +Number chainStartYear
-        +Number lastBkbqpYear
-        +Number lastCstdtqYear
-        +Number lastBkttcpYear
-        +Number streakSinceLastBkbqp
-        +Number streakSinceLastCstdtq
-        +Number streakSinceLastBkttcp
-        +Number missedBkbqp
-        +Number missedCstdtq
-    }
-
-    class ChainEligibilityResult {
-        +Boolean eligible
-        +String reason
-        +String code
-        +String suggestion
-    }
-
-    class ChainEligibility {
-        <<service>>
-        +checkChainEligibility(award, streaks, hasReceived, flagsInWindow) EligibilityResult
-        +buildInsufficientReason(award, streaks, flagsInWindow) String
-    }
-
-    class AnnualProfileService {
-        +recalculateAnnualProfile(quanNhanId) HoSoHangNam
-        +lastFlagYearInChain(records, code) Number
-        +computeChainContext(records, year) ChainContext
-        +computeEligibilityFlags(personnel, ctx, awards, nckh) EligibilityFlags
-        +checkAwardEligibility(personnelId, year, danhHieu) Promise~EligibilityResult~
-    }
-
-    class UnitEligibilityService {
-        +recalculateAnnualUnit(unitId, year) HoSoDonViHangNam
-        +checkUnitAwardEligibility(unitId, year, danhHieu) ChainEligibilityResult
-    }
-
-    class CongHienMonthsAggregator {
-        <<module>>
-        +classifyHeSoGroup(heSo) CongHienHeSoGroup
-        +sumMonthsByGroup(histories) PositionMonthsByGroup
-        +aggregatePositionMonthsByGroup(histories, cutoffDate) PositionMonthsByGroup
-    }
-
-    class ServiceYearsHelper {
-        <<module>>
-        +calculateServiceMonths(startDate, endDate) Number
-        +calculateCoveredMonthsByMonth(startDate, endDate) Number
-        +calculateTenureMonthsWithDayPrecision(startDate, endDate) Number
-        +recalcPositionMonths(histories, cutoffDate) PositionHistory[]
-        +buildCutoffDate(nam, thang) Date
-        +formatServiceDuration(totalMonths) String
-    }
-
-    PersonalChainAwards o-- ChainAwardConfig
-    UnitChainAwards o-- ChainAwardConfig
-    ChainAwardConfig o-- RequiredFlag
-    AnnualProfileService --> ChainEligibility : uses core
-    UnitEligibilityService --> ChainEligibility : uses core
-    AnnualProfileService --> ChainContext : computes
-    AnnualProfileService --> ServiceYearsHelper : uses
-    CongHienMonthsAggregator --> ServiceYearsHelper : uses
-    ChainEligibility --> ChainEligibilityResult : returns
-    ChainEligibility --> PersonalChainAwards : reads
-    ChainEligibility --> UnitChainAwards : reads
-```
-
-**Defend**: `ChainEligibility` là **single source of truth** cho rule chuỗi — cả personal (`AnnualProfileService`) và unit (`UnitEligibilityService`) đều gọi cùng một hàm `checkChainEligibility()`, đảm bảo logic không bị lệch giữa hai bên.
-
----
-
-## C3.4 — Class diagram: module Tài khoản và Phân quyền
+## C3.2 — Quản lý tài khoản và xác thực
 
 ```mermaid
 classDiagram
@@ -358,7 +109,7 @@ classDiagram
         +Date updatedAt
     }
 
-    class Role {
+    class VaiTro {
         <<enumeration>>
         SUPER_ADMIN
         ADMIN
@@ -366,102 +117,373 @@ classDiagram
         USER
     }
 
-    class AuthRoute {
-        +POST /api/auth/login
-        +POST /api/auth/refresh
-        +POST /api/auth/logout
-        +POST /api/auth/change-password
+    class AccountController {
+        +getAccounts()
+        +getAccountById()
+        +createAccount()
+        +updateAccount()
+        +resetPassword()
+        +deleteAccount()
     }
 
     class AuthController {
-        -authService
-        +login(req, res)
-        +refresh(req, res)
-        +logout(req, res)
-        +changePassword(req, res)
-    }
-
-    class AuthService {
-        -accountRepository
-        +login(username, password) LoginResult
-        +refreshAccessToken(refreshToken) TokenPair
-        +logout(refreshToken) Result
-        +changePassword(userId, oldPwd, newPwd) void
-    }
-
-    class AccountController {
-        -accountService
-        +getAccounts(req, res)
-        +getAccountById(req, res)
-        +createAccount(req, res)
-        +updateAccount(req, res)
-        +resetPassword(req, res)
-        +deleteAccount(req, res)
+        +login()
+        +refresh()
+        +logout()
+        +changePassword()
     }
 
     class AccountService {
-        -accountRepository
-        +getAccounts(filter, role) PaginatedTaiKhoan
-        +getAccountById(id) TaiKhoan
-        +createAccount(data) TaiKhoan
-        +updateAccount(id, data) TaiKhoan
-        +resetPassword(id) String
-        +deleteAccount(id) void
+        +getAccounts(page, limit, search, role, excludeSuperAdmin)
+        +getAccountById(id)
+        +createAccount(data)
+        +updateAccount(id, data)
+        +resetPassword(accountId)
+        +deleteAccount(id, forceDelete)
     }
 
-    class AccountRepository {
-        +findById(id, tx) TaiKhoan
-        +findUniqueRaw(args, tx) TaiKhoan
-        +create(data, tx) TaiKhoan
-        +createMany(data, tx) BatchPayload
-        +update(id, data, tx) TaiKhoan
-        +updateRaw(args, tx) TaiKhoan
-        +updateMany(where, data, tx) BatchPayload
-        +delete(id, tx) void
+    class AuthService {
+        +login(username, password)
+        +refreshAccessToken(refreshToken)
+        +logout(refreshToken)
+        +changePassword(userId, oldPassword, newPassword)
     }
 
-    class VerifyTokenMiddleware {
-        +verifyToken(req, res, next)
-    }
-
-    class RequireRoleMiddleware {
-        +requireSuperAdmin
-        +requireAdmin
-        +requireManager
-        +requireRole(roles)
-    }
-
-    TaiKhoan --> Role : has
-    AuthRoute --> AuthController
-    AuthController --> AuthService
-    AuthService --> AccountRepository
-    AccountController --> AccountService
-    AccountService --> AccountRepository
-    AccountRepository --> TaiKhoan : manages
-    VerifyTokenMiddleware ..> TaiKhoan : verifies JWT
-    RequireRoleMiddleware ..> Role : checks
+    TaiKhoan --> VaiTro : có
+    AccountController --> AccountService : sử dụng
+    AuthController --> AuthService : sử dụng
+    AccountService ..> TaiKhoan : phụ thuộc
+    AuthService ..> TaiKhoan : phụ thuộc
 ```
 
 ---
 
-## C3.5 — Class diagram: module Audit Log + Notification
+## C3.3 — Đề xuất khen thưởng
 
 ```mermaid
 classDiagram
-    class SystemLog {
+    class BangDeXuat {
         +String id
-        +String nguoi_thuc_hien_id
-        +String actor_role
-        +String action
-        +String resource
-        +String tai_nguyen_id
-        +String description
-        +Json payload
-        +String ip_address
-        +String user_agent
+        +String co_quan_don_vi_id
+        +String don_vi_truc_thuoc_id
+        +String nguoi_de_xuat_id
+        +String loai_de_xuat
+        +Int nam
+        +Int thang
+        +String status
+        +Json data_danh_hieu
+        +Json data_thanh_tich
+        +Json data_nien_han
+        +Json data_cong_hien
+        +Json files_attached
+        +String ghi_chu
+        +String rejection_reason
+        +String nguoi_duyet_id
+        +Date ngay_duyet
         +Date createdAt
+        +Date updatedAt
     }
 
+    class LoaiDeXuat {
+        <<enumeration>>
+        CA_NHAN_HANG_NAM
+        DON_VI_HANG_NAM
+        NIEN_HAN
+        CONG_HIEN
+        HC_QKQT
+        KNC_VSNXD_QDNDVN
+        NCKH
+    }
+
+    class TrangThaiDeXuat {
+        <<enumeration>>
+        PENDING
+        APPROVED
+        REJECTED
+    }
+
+    class ProposalController {
+        +submitProposal()
+        +getProposals()
+        +getProposalById()
+        +approveProposal()
+        +rejectProposal()
+        +deleteProposal()
+        +checkDuplicateAward()
+    }
+
+    class ProposalService {
+        +submitProposal(titleData, userId, type, nam)
+        +getProposals(userId, role, page, limit)
+        +getProposalById(id, userId, role)
+        +approveProposal(id, editedData, adminId)
+        +rejectProposal(id, reason, adminId)
+        +deleteProposal(id, userId, role)
+        +dispatchStrategy(type)
+    }
+
+    BangDeXuat --> LoaiDeXuat : có loại
+    BangDeXuat --> TrangThaiDeXuat : có trạng thái
+    ProposalController --> ProposalService : sử dụng
+    ProposalService ..> BangDeXuat : phụ thuộc
+```
+
+**Mở rộng — Strategy pattern cho 7 loại đề xuất**
+
+```mermaid
+classDiagram
+    class ProposalStrategy {
+        <<interface>>
+        +LoaiDeXuat type
+        +buildSubmitPayload(titleData, ctx)
+        +validateApprove(editedData, ctx)
+        +importInTransaction(editedData, ctx, decisions, pdfPaths, acc, tx)
+        +buildSuccessMessage(acc)
+    }
+
+    class CaNhanHangNamStrategy
+    class DonViHangNamStrategy
+    class HccsvvStrategy
+    class HcbvtqStrategy
+    class HcqkqtStrategy
+    class KncStrategy
+    class NckhStrategy
+
+    class SingleMedalImporter {
+        +importSingleMedal(items, ctx, acc, tx, cfg)
+    }
+
+    class ProposalStrategyRegistry {
+        +getProposalStrategy(type) ProposalStrategy
+        +requireProposalStrategy(type) ProposalStrategy
+    }
+
+    ProposalStrategy <|.. CaNhanHangNamStrategy
+    ProposalStrategy <|.. DonViHangNamStrategy
+    ProposalStrategy <|.. HccsvvStrategy
+    ProposalStrategy <|.. HcbvtqStrategy
+    ProposalStrategy <|.. HcqkqtStrategy
+    ProposalStrategy <|.. KncStrategy
+    ProposalStrategy <|.. NckhStrategy
+
+    HcqkqtStrategy ..> SingleMedalImporter : uses
+    KncStrategy ..> SingleMedalImporter : uses
+
+    ProposalStrategyRegistry --> ProposalStrategy : registers 7 strategies
+    ProposalService --> ProposalStrategyRegistry : dispatch theo loai_de_xuat
+```
+
+**Defend**:
+- 7 loại đề xuất đều implement chung interface `ProposalStrategy`. `ProposalService.approveProposal()` dispatch qua `ProposalStrategyRegistry.requireProposalStrategy(type).importInTransaction(...)`, không có if/else theo loại
+- Thêm loại mới chỉ cần tạo file strategy mới + register vào REGISTRY, không sửa controller/service (Open/Closed Principle)
+- 2 strategy `HcqkqtStrategy` + `KncStrategy` chia sẻ logic chung qua helper `SingleMedalImporter.importSingleMedal()` — tránh duplicate code cho 2 loại huy chương 1 hạng (HC_QKQT, KNC_VSNXD_QDNDVN)
+
+---
+
+## C3.4 — Quản lý khen thưởng (split theo controller thật)
+
+Trong code, "quản lý khen thưởng" gồm 7 controller riêng (annual, tenure, contribution, commemorative, militaryFlag, adhoc, awardBulk). Sơ đồ vẽ **3 controller nổi bật** để giữ độ rõ — các controller còn lại có cấu trúc tương tự.
+
+```mermaid
+classDiagram
+    class DanhHieuHangNam {
+        +String id
+        +String quan_nhan_id
+        +Int nam
+        +String danh_hieu
+        +String cap_bac
+        +String chuc_vu
+        +String ghi_chu
+        +String so_quyet_dinh
+        +Boolean nhan_bkbqp
+        +String so_quyet_dinh_bkbqp
+        +String ghi_chu_bkbqp
+        +Boolean nhan_cstdtq
+        +String so_quyet_dinh_cstdtq
+        +String ghi_chu_cstdtq
+        +Boolean nhan_bkttcp
+        +String so_quyet_dinh_bkttcp
+        +String ghi_chu_bkttcp
+        +Date createdAt
+        +Date updatedAt
+    }
+
+    class KhenThuongHCCSVV {
+        +String id
+        +String quan_nhan_id
+        +String danh_hieu
+        +Int nam
+        +Int thang
+        +String cap_bac
+        +String chuc_vu
+        +String ghi_chu
+        +String so_quyet_dinh
+        +Json thoi_gian
+        +Date createdAt
+        +Date updatedAt
+    }
+
+    class FileQuyetDinh {
+        +String id
+        +String so_quyet_dinh
+        +Int nam
+        +Date ngay_ky
+        +String nguoi_ky
+        +String file_path
+        +String loai_khen_thuong
+        +String ghi_chu
+        +Date createdAt
+        +Date updatedAt
+    }
+
+    class DanhHieuCaNhan {
+        <<enumeration>>
+        CSTT
+        CSTDCS
+        BKBQP
+        CSTDTQ
+        BKTTCP
+    }
+
+    class HangHCCSVV {
+        <<enumeration>>
+        HANG_BA
+        HANG_NHI
+        HANG_NHAT
+    }
+
+    class AnnualRewardController {
+        +getAnnualRewards()
+        +createAnnualReward()
+        +updateAnnualReward()
+        +deleteAnnualReward()
+        +checkAnnualRewards()
+        +bulkCreateAnnualRewards()
+        +getStatistics()
+        +exportToExcel()
+        +getTemplate()
+        +previewImport()
+        +confirmImport()
+    }
+
+    class AnnualRewardService {
+        +getAnnualRewardsList(page, limit)
+        +createAnnualReward(data)
+        +updateAnnualReward(id, data)
+        +deleteAnnualReward(id, adminUsername)
+        +checkAnnualRewards(personnelIds, nam, danhHieu)
+        +bulkCreateAnnualRewards(data)
+        +getStatistics()
+        +exportToExcel()
+        +exportTemplate(personnelIds)
+        +previewImport(buffer)
+        +confirmImport(validItems)
+    }
+
+    class HCCSVVController {
+        +getAll()
+        +deleteAward()
+        +getStatistics()
+        +exportToExcel()
+        +getTemplate()
+        +previewImport()
+        +confirmImport()
+    }
+
+    class HCCSVVService {
+        +getAll(page, limit)
+        +deleteAward(id)
+        +getStatistics()
+        +exportToExcel()
+        +exportTemplate(personnelIds)
+        +previewImport(buffer)
+        +confirmImport(validItems)
+    }
+
+    class AwardBulkController {
+        +bulkCreateAwards()
+        +bulkCreateAwardsBypass()
+    }
+
+    class AwardBulkService {
+        +bulkCreateAwards(type, nam, selectedPersonnel)
+        +checkDuplicateAwards(type, nam, titleData)
+        +checkDuplicateUnitAwards(nam, titleData)
+        +validatePersonnelConditions(type, selectedPersonnel)
+    }
+
+    class KhenThuongDotXuat {
+        +String id
+        +String loai
+        +String doi_tuong
+        +String quan_nhan_id
+        +String co_quan_don_vi_id
+        +String don_vi_truc_thuoc_id
+        +String hinh_thuc_khen_thuong
+        +Int nam
+        +String cap_bac
+        +String chuc_vu
+        +String ghi_chu
+        +String so_quyet_dinh
+        +Json files_dinh_kem
+        +Date createdAt
+        +Date updatedAt
+    }
+
+    class DoiTuongKhenThuong {
+        <<enumeration>>
+        CA_NHAN
+        TAP_THE
+    }
+
+    class AdhocAwardController {
+        +getAdhocAwards()
+        +getAdhocAwardById()
+        +createAdhocAward()
+        +updateAdhocAward()
+        +deleteAdhocAward()
+        +getAdhocAwardsByPersonnel()
+        +getAdhocAwardsByUnit()
+    }
+
+    class AdhocAwardService {
+        +getAdhocAwards(page, limit)
+        +getAdhocAwardById(id)
+        +createAdhocAward(adminId)
+        +updateAdhocAward(id, adminId)
+        +deleteAdhocAward(id, adminId)
+        +getAdhocAwardsByPersonnel(personnelId)
+        +getAdhocAwardsByUnit(unitId, unitType)
+    }
+
+    DanhHieuHangNam --> DanhHieuCaNhan : danh hiệu
+    KhenThuongHCCSVV --> HangHCCSVV : hạng
+    KhenThuongHCCSVV --> FileQuyetDinh : tham chiếu so_quyet_dinh
+    DanhHieuHangNam --> FileQuyetDinh : tham chiếu so_quyet_dinh
+    KhenThuongDotXuat --> DoiTuongKhenThuong : có đối tượng
+    KhenThuongDotXuat --> FileQuyetDinh : tham chiếu so_quyet_dinh
+    AnnualRewardController --> AnnualRewardService : sử dụng
+    HCCSVVController --> HCCSVVService : sử dụng
+    AwardBulkController --> AwardBulkService : sử dụng
+    AdhocAwardController --> AdhocAwardService : sử dụng
+    AnnualRewardService ..> DanhHieuHangNam : phụ thuộc
+    HCCSVVService ..> KhenThuongHCCSVV : phụ thuộc
+    AwardBulkService ..> DanhHieuHangNam : phụ thuộc
+    AwardBulkService ..> KhenThuongHCCSVV : phụ thuộc
+    AdhocAwardService ..> KhenThuongDotXuat : phụ thuộc
+```
+
+**Lưu ý**:
+- Project có 8 bảng khen thưởng + 8 controller tương ứng. Sơ đồ vẽ 4 controller nổi bật (`AnnualReward`, `HCCSVV`, `AwardBulk`, `AdhocAward`) — các controller còn lại (`ContributionMedal` cho HCBVTQ, `CommemorativeMedal` cho KNC, `MilitaryFlag` cho HCQKQT, `ScientificAchievement` cho NCKH) có cấu trúc tương tự `HCCSVVController`.
+- `AwardBulkService` là điểm sáng: có method `validatePersonnelConditions` được điều khiển bởi flag `bypassEligibility` (xem `bulkCreateAwardsBypass` controller method) — cho phép SA bỏ qua kiểm tra điều kiện để hiệu chỉnh dữ liệu lịch sử.
+- **`KhenThuongDotXuat` (khen thưởng đột xuất)** có flow khác biệt so với 7 loại khen thưởng nghiệp vụ chính: ADMIN tạo trực tiếp qua giao diện (không qua duyệt 3 cấp như đề xuất thường), hỗ trợ cả cá nhân và tập thể qua enum `DoiTuongKhenThuong`. Không có flow `submit → approve` mà chỉ có `create → update → delete` đơn giản.
+
+---
+
+## C3.5 — Thông báo và nhật ký hệ thống
+
+```mermaid
+classDiagram
     class ThongBao {
         +String id
         +String nguoi_nhan_id
@@ -478,115 +500,124 @@ classDiagram
         +Date readAt
     }
 
-    class AuditAction {
-        <<enumeration>>
-        CREATE
-        UPDATE
-        DELETE
-        IMPORT
-        IMPORT_PREVIEW
-        EXPORT
-        APPROVE
-        REJECT
-        LOGIN
-        LOGOUT
-        CHANGE_PASSWORD
-        RESET_PASSWORD
-        PROPOSE
-        RECALCULATE
-        BULK
-        BACKUP
+    class SystemLog {
+        +String id
+        +String nguoi_thuc_hien_id
+        +String actor_role
+        +String action
+        +String resource
+        +String tai_nguyen_id
+        +String description
+        +Json payload
+        +String ip_address
+        +String user_agent
+        +Date createdAt
     }
 
-    class NotificationType {
+    class LoaiThongBao {
         <<enumeration>>
         PROPOSAL_SUBMITTED
         PROPOSAL_APPROVED
         PROPOSAL_REJECTED
         PROPOSAL_DELETED
+        AWARD_ADDED
+        AWARD_DELETED
         PERSONNEL_ADDED
         PERSONNEL_TRANSFERRED
-        ACHIEVEMENT_APPROVED
-        AWARD_ADDED
-        AWARD_UPDATED
-        AWARD_DELETED
     }
 
-    class AuditLogMiddleware {
-        +auditLog(options) Middleware
-        +createDescription(action, resource, payload) String
-        +getResourceId Map
+    class LoaiNhatKy {
+        <<enumeration>>
+        CREATE
+        UPDATE
+        DELETE
+        APPROVE
+        REJECT
+        LOGIN
+        LOGOUT
+        IMPORT
+        EXPORT
+        BULK
+        BULK_BYPASS
+        BACKUP
     }
 
-    class SystemLogHelper {
-        <<helper>>
-        +writeSystemLog(data) Promise~void~
-    }
-
-    class AuditLogHelpers {
-        <<helper>>
-        +getLogDescription(action, resource, payload) String
-        +RESOURCE_VI Map
-    }
-
-    class NotificationService {
-        -notificationRepository
-        -socketService
-        +createNotification(data) ThongBao
-        +createBulkNotifications(data) void
-        +getNotificationsByUserId(userId, role) PaginatedThongBao
-        +markAsRead(id, userId) void
-        +getUnreadCount(userId) Number
-    }
-
-    class NotificationHelpers {
-        <<helper>>
-        +notifyManagersOnAwardAdded(payload) void
-        +notifyUsersOnAwardApproved(payload) void
-        +notifyOnAwardDeleted(payload) void
-        +notifyUserOnAchievementApproved(payload) void
+    class NotificationController {
+        +getNotifications()
+        +getUnreadCount()
+        +markAsRead()
+        +markAllAsRead()
+        +deleteNotification()
+        +deleteAllNotifications()
     }
 
     class SystemLogsController {
-        -systemLogsService
-        +getLogs(req, res)
-        +getActions(req, res)
-        +getResources(req, res)
-        +deleteLogs(req, res)
+        +getLogs()
+        +getActions()
+        +getResources()
+        +deleteLogs()
+        +deleteAllLogs()
+    }
+
+    class NotificationService {
+        +createNotification(data)
+        +createBulkNotifications(notifications)
+        +getNotificationsByUserId(userId)
+        +getUnreadCount(userId)
+        +markAsRead(notificationId, userId)
+        +markAllAsRead(userId)
+        +deleteNotification(notificationId, userId)
+        +deleteAllNotifications(userId)
     }
 
     class SystemLogsService {
-        -systemLogRepository
-        +getLogs(params) PaginatedSystemLog
-        +getActions() String[]
-        +getResources(userRole) Resource[]
-        +deleteLogs(ids) void
+        +getLogs(page, limit, userRole)
+        +getActions()
+        +getResources(userRole)
+        +deleteLogs(ids)
+        +deleteAllLogs(actorId, actorRole)
     }
 
-    SystemLog --> AuditAction : has action
-    ThongBao --> NotificationType : has type
-    ThongBao --> SystemLog : optional ref
-    AuditLogMiddleware --> AuditLogHelpers : uses
-    AuditLogMiddleware --> SystemLogHelper : delegates DB write
-    SystemLogHelper --> SystemLog : creates
-    NotificationService --> NotificationHelpers : uses
-    NotificationService --> ThongBao : creates
-    SystemLogsController --> SystemLogsService
-    SystemLogsService --> SystemLog : reads with role filter
+    ThongBao --> LoaiThongBao : có loại
+    ThongBao --> SystemLog : tham chiếu (optional)
+    SystemLog --> LoaiNhatKy : có loại
+    NotificationController --> NotificationService : sử dụng
+    SystemLogsController --> SystemLogsService : sử dụng
+    NotificationService ..> ThongBao : phụ thuộc
+    SystemLogsService ..> SystemLog : phụ thuộc
 ```
 
-**Đặc thù**: `SystemLogsService.getLogs()` có **filter theo role** — `resource: 'backup'` chỉ trả về cho `SUPER_ADMIN`. ADMIN và MANAGER không xem được log backup. Khác với HRM mẫu không có visibility filter.
+**Đặc thù SystemLog**: `SystemLogService.getLogs()` áp filter theo role — log có `resource = 'backup'` chỉ trả về cho `SUPER_ADMIN`. ADMIN/MANAGER không xem được log backup.
 
 ---
 
 ## Tổng kết
 
-| # | Sơ đồ | Số class | Pattern thể hiện |
+| # | Sơ đồ | Class chính | Enum |
 |---|---|---|---|
-| C3.1 | Quản lý quân nhân | 6 + 2 enum | Layered architecture |
-| C3.2 | Đề xuất khen thưởng | 11 | **Strategy pattern** (điểm bán) |
-| C3.3 | Eligibility module | 11 | **Single source of truth** chain rule |
-| C3.4 | Tài khoản phân quyền | 9 + 1 enum | Middleware chain |
-| C3.5 | Audit log + Notification | 10 + 2 enum | Cross-cutting concern |
+| C3.1 | Quản lý quân nhân | 3 (Entity + Controller + Service) | 2 (CapBac, GioiTinh) |
+| C3.2 | Tài khoản và xác thực | 5 (Entity + 2 Controller + 2 Service) | 1 (VaiTro) |
+| C3.3 | Đề xuất khen thưởng | 3 + Strategy pattern (8 class) | 2 (LoaiDeXuat, TrangThaiDeXuat) |
+| C3.4 | Quản lý khen thưởng | 12 (4 Entity + FileQuyetDinh + 4 Controller + 4 Service, split theo file thật) | 3 (DanhHieuCaNhan, HangHCCSVV, DoiTuongKhenThuong) |
+| C3.5 | Thông báo và nhật ký | 6 (2 Entity + 2 Controller + 2 Service) | 2 (LoaiThongBao, LoaiNhatKy) |
 
-→ Báo cáo mẫu HRM chỉ có **1 class diagram** đơn giản. PM QLKT có **5 class diagram** thể hiện được Strategy pattern + Repository pattern + chain eligibility — đủ chuyên sâu để defend.
+**Style nguyên tắc**:
+- **Entity**: tên model nghiệp vụ, attributes lấy từ `prisma/schema.prisma`
+- **Controller**: tên hàm khớp source code (`getPersonnel`, `submitProposal`, `approveProposal`...)
+- **Service**: tên hàm khớp source code, cùng tên với controller method tương ứng
+- **Enum**: `<<enumeration>>` với giá trị
+- **Quan hệ**: arrow `-->` với label tiếng Việt ("sử dụng", "truy cập", "có", "danh hiệu", "hạng")
+
+**Layer kiến trúc**:
+
+```
+Controller (HTTP req/res) → Service (business logic) → Entity (Prisma model)
+```
+
+Project có 2 layer ẩn không vẽ trong class diagram để giữ độ rõ:
+- **Route** — Express router (chỉ là config map URL → controller method)
+- **Repository** — thin wrapper quanh Prisma client (không có business logic)
+
+**Patterns đáng defend**:
+- **Strategy pattern** (C3.3): 7 loại đề xuất đều implement chung interface, dispatch qua REGISTRY — thêm loại mới không sửa code cũ (Open/Closed Principle)
+- **Filter theo role** (C3.5): `SystemLogService.getLogs()` filter `resource = 'backup'` chỉ cho SUPER_ADMIN — đảm bảo log nhạy cảm không lộ cho admin nghiệp vụ

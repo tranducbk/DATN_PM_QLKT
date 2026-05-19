@@ -475,6 +475,7 @@ export function Step2SelectUnits({
         rowKey="id"
         rowSelection={rowSelection}
         loading={loading}
+        scroll={{ x: 'max-content' }}
         pagination={{
           ...DEFAULT_ANTD_TABLE_PAGINATION,
           showTotal: total => `Tổng số ${total} đơn vị`,

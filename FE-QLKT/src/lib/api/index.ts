@@ -125,6 +125,7 @@ export const apiClient = {
   getAdhocAwardsByPersonnel: awardsApi.getAdhocAwardsByPersonnel,
   getAdhocAwardsByUnit: awardsApi.getAdhocAwardsByUnit,
   bulkCreateAwards: awardsApi.bulkCreateAwards,
+  bulkCreateAwardsBypass: awardsApi.bulkCreateAwardsBypass,
   previewAnnualRewardsImport: awardsApi.previewAnnualRewardsImport,
   confirmAnnualRewardsImport: awardsApi.confirmAnnualRewardsImport,
   previewUnitAnnualAwardsImport: awardsApi.previewUnitAnnualAwardsImport,

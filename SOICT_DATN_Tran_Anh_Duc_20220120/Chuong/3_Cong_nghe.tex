@@ -78,7 +78,7 @@ PM QLKT thống nhất dùng Zod \cite{zoddocs} làm thư viện xác thực d�
 Tại frontend, các biểu mẫu Ant Design Form được xác thực bằng Zod kết hợp React Hook Form. Zod tích hợp chặt với TypeScript: kiểu của giá trị form suy luận trực tiếp từ schema qua \texttt{type FormValues = z.infer<typeof formSchema>}, tránh duy trì song song interface và schema. Việc dùng chung một thư viện ở hai phía giảm chi phí học và cho phép viết các đoạn ràng buộc tương tự (vd: CCCD 12 chữ số, năm hợp lệ) bằng cùng một cú pháp, mở đường cho việc trích xuất schema dùng chung sang gói chia sẻ trong tương lai. Logic xác thực không tin tưởng tầng frontend: backend luôn kiểm tra lại dữ liệu trước khi ghi vào cơ sở dữ liệu.
 
 \section{ExcelJS --- Công cụ nhập và xuất Excel}
-\label{section:3.9}
+\label{section:3.8}
 
 ExcelJS \cite{exceljsdocs} là thư viện JavaScript cho phép đọc, ghi và thao tác workbook \texttt{.xlsx} phía máy chủ Node.js. Khác với các thư viện chỉ sinh CSV hay HTML giả lập Excel, ExcelJS hỗ trợ định dạng ô (font, màu nền, viền), khoá ô để chặn chỉnh sửa cột hệ thống, công thức, và quan trọng nhất là Data Validation cho phép tạo danh sách thả xuống ngay trong tệp mẫu xuất ra.
 

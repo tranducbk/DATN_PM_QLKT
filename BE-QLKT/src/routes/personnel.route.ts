@@ -1,6 +1,11 @@
 import { Router } from 'express';
 import personnelController from '../controllers/personnel.controller';
-import { verifyToken, requireAdmin, requireManager, requireAuth } from '../middlewares/auth';
+import {
+  verifyToken,
+  requireAdmin,
+  requireManager,
+  requireAuth,
+} from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
 import { validate } from '../middlewares/validate';
@@ -44,7 +49,7 @@ router.get('/:id', verifyToken, requireAuth, personnelController.getPersonnelByI
 /**
  * @route   POST /api/personnel
  * @desc    Create a new personnel record
- * @access  Private - ADMIN only
+ * @access  Private - SUPER_ADMIN + ADMIN (SA manages personnel records alongside ADMIN)
  */
 router.post(
   '/',
@@ -85,7 +90,7 @@ router.put(
  *          Includes: TaiKhoan, LichSuChucVu, ThanhTichKhoaHoc, DanhHieuHangNam,
  *          KhenThuongHCBVTQ, HuanChuongQuanKyQuyetThang, KyNiemChuongVSNXDQDNDVN,
  *          KhenThuongHCCSVV, KhenThuongDotXuat, HoSoNienHan, HoSoCongHien, HoSoHangNam
- * @access  Private - ADMIN only
+ * @access  Private - SUPER_ADMIN + ADMIN (SA needs cascade when deleting linked accounts)
  */
 router.delete(
   '/:id',

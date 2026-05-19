@@ -508,7 +508,6 @@ describe('tenureMedal.service - confirmImport', () => {
           history: [],
         },
       ],
-      'admin-1'
     );
 
     expect(result.imported).toBe(1);
@@ -549,7 +548,6 @@ describe('tenureMedal.service - confirmImport', () => {
             history: [],
           },
         ],
-        'admin-1'
       ),
       ValidationError,
       { startsWith: 'Nguyễn Văn A: đã có' }
@@ -581,7 +579,6 @@ describe('tenureMedal.service - confirmImport', () => {
           history: [],
         },
       ],
-      'admin-1'
     );
 
     expect(result.imported).toBe(1);
@@ -611,7 +608,6 @@ describe('tenureMedal.service - confirmImport', () => {
             history: [],
           },
         ],
-        'admin-1'
       ),
       ValidationError,
       /phải sau năm nhận Huy chương Chiến sĩ vẻ vang hạng Ba/

@@ -108,7 +108,6 @@ describe('tenureMedal.service - confirmImport (per-rank duplicate)', () => {
           history: [],
         },
       ],
-      'admin-id',
     );
 
     expect(result.imported).toBe(1);
@@ -138,7 +137,6 @@ describe('tenureMedal.service - confirmImport (per-rank duplicate)', () => {
             history: [],
           },
         ],
-        'admin-id',
       ),
       ValidationError,
       /hạng thấp hơn/,
@@ -178,101 +176,11 @@ describe('tenureMedal.service - confirmImport (pending proposal conflict)', () =
             history: [],
           },
         ],
-        'admin-id',
       ),
       ValidationError,
       /chờ duyệt/,
     );
     expect(prismaMock.khenThuongHCCSVV.upsert).not.toHaveBeenCalled();
-  });
-});
-
-describe('tenureMedal.service - createDirect', () => {
-  it('Cho personnel chưa có HCCSVV nào, Khi createDirect HANG_BA, Thì tạo record thành công', async () => {
-    const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-1' });
-    const personnel = makePersonnel({ unit: cqdv, id: 'qn-1', ho_ten: 'Nguyễn Văn A' });
-    prismaMock.quanNhan.findUnique.mockResolvedValueOnce(personnel);
-    prismaMock.khenThuongHCCSVV.findUnique.mockResolvedValueOnce(null);
-    prismaMock.khenThuongHCCSVV.findMany.mockResolvedValueOnce([]);
-    prismaMock.khenThuongHCCSVV.create.mockResolvedValueOnce({
-      id: 'hccsvv-new',
-      quan_nhan_id: 'qn-1',
-      danh_hieu: DANH_HIEU_HCCSVV.HANG_BA,
-      nam: 2020,
-    });
-
-    const result = await tenureMedalService.createDirect(
-      {
-        quan_nhan_id: 'qn-1',
-        danh_hieu: DANH_HIEU_HCCSVV.HANG_BA,
-        nam: 2020,
-        cap_bac: 'Đại uý',
-        chuc_vu: 'Trợ lý',
-        so_quyet_dinh: 'QD-001',
-        ghi_chu: null,
-      },
-      'SuperAdmin',
-    );
-
-    expect(result.id).toBe('hccsvv-new');
-    expect(prismaMock.khenThuongHCCSVV.create).toHaveBeenCalledTimes(1);
-  });
-
-  it('Cho danh hiệu không hợp lệ, Khi createDirect, Thì throw ValidationError "không hợp lệ"', async () => {
-    await expectError(
-      tenureMedalService.createDirect(
-        {
-          quan_nhan_id: 'qn-1',
-          danh_hieu: 'INVALID_DANH_HIEU',
-          nam: 2020,
-        },
-        'SuperAdmin',
-      ),
-      ValidationError,
-      /không hợp lệ/,
-    );
-    expect(prismaMock.khenThuongHCCSVV.create).not.toHaveBeenCalled();
-  });
-
-  it('Cho personnel không tồn tại, Khi createDirect, Thì throw NotFoundError', async () => {
-    prismaMock.quanNhan.findUnique.mockResolvedValueOnce(null);
-
-    await expectError(
-      tenureMedalService.createDirect(
-        {
-          quan_nhan_id: 'qn-missing',
-          danh_hieu: DANH_HIEU_HCCSVV.HANG_BA,
-          nam: 2020,
-        },
-        'SuperAdmin',
-      ),
-      NotFoundError,
-    );
-    expect(prismaMock.khenThuongHCCSVV.create).not.toHaveBeenCalled();
-  });
-
-  it('Cho personnel đã có cùng danh hiệu, Khi createDirect, Thì throw AppError "đã có"', async () => {
-    const personnel = makePersonnel({ id: 'qn-1', ho_ten: 'Nguyễn Văn A' });
-    prismaMock.quanNhan.findUnique.mockResolvedValueOnce(personnel);
-    prismaMock.khenThuongHCCSVV.findUnique.mockResolvedValueOnce({
-      id: 'hccsvv-existing',
-      quan_nhan_id: 'qn-1',
-      danh_hieu: DANH_HIEU_HCCSVV.HANG_BA,
-    });
-
-    await expectError(
-      tenureMedalService.createDirect(
-        {
-          quan_nhan_id: 'qn-1',
-          danh_hieu: DANH_HIEU_HCCSVV.HANG_BA,
-          nam: 2020,
-        },
-        'SuperAdmin',
-      ),
-      AppError,
-      /đã có/,
-    );
-    expect(prismaMock.khenThuongHCCSVV.create).not.toHaveBeenCalled();
   });
 });
 

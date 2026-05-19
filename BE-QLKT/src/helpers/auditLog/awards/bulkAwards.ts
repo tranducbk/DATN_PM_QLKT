@@ -14,11 +14,16 @@ const BULK_AUDIT_TYPE: Record<string, string> = {
   CONG_HIEN: 'Huân chương Bảo vệ Tổ quốc',
 };
 
-export const awards: Record<
-  string,
-  (req: Request, res: Response, responseData: unknown) => Promise<string>
-> = {
-  BULK: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
+/**
+ * Builds the standard "bulk award add" description.
+ * Used by both BULK (normal admin path) and BULK_BYPASS (SA data correction) — the
+ * BULK_BYPASS handler wraps this and prepends a "Sửa dữ liệu cũ" marker.
+ */
+async function buildBulkDescription(
+  req: Request,
+  res: Response,
+  responseData: unknown
+): Promise<string> {
     try {
       const data = parseResponseData(responseData);
       const result = asRecord(data?.data) || data || {};
@@ -142,10 +147,20 @@ export const awards: Record<
         description += `, Lỗi: ${errorCount}`;
       }
 
-      return description;
-    } catch (error) {
-      console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
-      return 'Thêm khen thưởng đồng loạt';
-    }
+    return description;
+  } catch (error) {
+    console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
+    return 'Thêm khen thưởng đồng loạt';
+  }
+}
+
+export const awards: Record<
+  string,
+  (req: Request, res: Response, responseData: unknown) => Promise<string>
+> = {
+  BULK: buildBulkDescription,
+  BULK_BYPASS: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
+    const base = await buildBulkDescription(req, res, responseData);
+    return `[Sửa dữ liệu cũ - bỏ qua kiểm tra] ${base}`;
   },
 };

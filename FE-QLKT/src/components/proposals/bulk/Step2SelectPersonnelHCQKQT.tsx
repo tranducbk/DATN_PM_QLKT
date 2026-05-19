@@ -768,6 +768,7 @@ export function Step2SelectPersonnelHCQKQT({
         rowKey="id"
         rowSelection={rowSelection}
         loading={loading || checkingReceived}
+        scroll={{ x: 'max-content' }}
         rowClassName={record => {
           // Highlight ineligible rows
           const eligibility = checkEligibleForHCQKQT(record);

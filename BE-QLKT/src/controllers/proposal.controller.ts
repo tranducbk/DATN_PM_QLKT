@@ -19,10 +19,12 @@ import { parsePagination } from '../helpers/paginationHelper';
 import { setFileSendHeaders } from '../helpers/file/fileResponseHeaders';
 import { resolveIdParam } from '../helpers/controllerHelper';
 import {
+  applyManagerUnitFilter,
   managerUnitFilterId,
   parseApproveBody,
   parseYearQuery,
   safeNotify,
+  sendExcelResponse,
 } from './proposal/helpers';
 import type {
   ApproveProposalBody,
@@ -96,7 +98,7 @@ class ProposalController {
       ghi_chu,
       parsedMonth
     );
-    await safeNotify(
+    void safeNotify(
       {
         userId: user.id,
         userRole: user.role,
@@ -165,7 +167,7 @@ class ProposalController {
       parsed.pdfFiles,
       body.ghi_chu || null
     );
-    await safeNotify(
+    void safeNotify(
       {
         userId: user.id,
         userRole: user.role,
@@ -175,7 +177,7 @@ class ProposalController {
       () => notificationHelper.notifyManagerOnProposalApproval(result.proposal, user)
     );
     if (result.affectedPersonnelIds?.length > 0) {
-      await safeNotify(
+      void safeNotify(
         {
           userId: user.id,
           userRole: user.role,
@@ -221,7 +223,7 @@ class ProposalController {
       return ResponseHelper.badRequest(res, 'Vui lòng nhập lý do từ chối');
     }
     const result = await proposalService.rejectProposal(String(id), rejectReason, user.id);
-    await safeNotify(
+    void safeNotify(
       {
         userId: user.id,
         userRole: user.role,
@@ -269,23 +271,10 @@ class ProposalController {
     if (don_vi_id) filters.don_vi_id = don_vi_id;
     if (nam) filters.nam = nam;
     if (danh_hieu) filters.danh_hieu = danh_hieu;
-    if (user.role === ROLES.MANAGER) {
-      const userWithUnit = await proposalService.getUserWithUnit(user.id);
-      if (!userWithUnit?.QuanNhan) {
-        return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
-      }
-      filters.don_vi_id = managerUnitFilterId(userWithUnit.QuanNhan);
-    }
+    const unitResult = await applyManagerUnitFilter(user, filters, id => proposalService.getUserWithUnit(id));
+    if (unitResult === 'forbidden') return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
     const buffer = await proposalService.exportAllAwardsExcel(filters);
-    res.setHeader(
-      'Content-Type',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    );
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="danh_sach_khen_thuong_${new Date().toISOString().slice(0, 10)}.xlsx"`
-    );
-    return res.status(200).send(buffer);
+    sendExcelResponse(res, buffer, 'danh_sach_khen_thuong');
   });
 
   deleteProposal = catchAsync(async (req: Request, res: Response) => {
@@ -309,7 +298,7 @@ class ProposalController {
         status: result.proposal.status,
       },
     });
-    await safeNotify(
+    void safeNotify(
       {
         userId: user.id,
         userRole: user.role,
@@ -406,15 +395,7 @@ class ProposalController {
 
   getHCCSVVTemplate = catchAsync(async (req: Request, res: Response) => {
     const buffer = await hccsvvService.exportTemplate();
-    res.setHeader(
-      'Content-Type',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    );
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="mau_nhap_hccsvv_${new Date().toISOString().slice(0, 10)}.xlsx"`
-    );
-    return res.status(200).send(buffer);
+    sendExcelResponse(res, buffer, 'mau_nhap_hccsvv');
   });
 
   getAllHCCSVV = catchAsync(async (req: Request, res: Response) => {
@@ -426,13 +407,8 @@ class ProposalController {
     if (don_vi_id) filters.don_vi_id = don_vi_id;
     if (nam) filters.nam = nam;
     if (danh_hieu) filters.danh_hieu = danh_hieu;
-    if (user.role === ROLES.MANAGER) {
-      const userWithUnit = await proposalService.getUserWithUnit(user.id);
-      if (!userWithUnit?.QuanNhan) {
-        return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
-      }
-      filters.don_vi_id = managerUnitFilterId(userWithUnit.QuanNhan);
-    }
+    const unitResult = await applyManagerUnitFilter(user, filters, id => proposalService.getUserWithUnit(id));
+    if (unitResult === 'forbidden') return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
     return ResponseHelper.success(res, {
       message: 'Lấy danh sách HCCSVV thành công',
       data: await hccsvvService.getAll(filters, page, limit),
@@ -447,23 +423,10 @@ class ProposalController {
     if (don_vi_id) filters.don_vi_id = don_vi_id;
     if (nam) filters.nam = nam;
     if (danh_hieu) filters.danh_hieu = danh_hieu;
-    if (user.role === ROLES.MANAGER) {
-      const userWithUnit = await proposalService.getUserWithUnit(user.id);
-      if (!userWithUnit?.QuanNhan) {
-        return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
-      }
-      filters.don_vi_id = managerUnitFilterId(userWithUnit.QuanNhan);
-    }
+    const unitResult = await applyManagerUnitFilter(user, filters, id => proposalService.getUserWithUnit(id));
+    if (unitResult === 'forbidden') return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
     const buffer = await hccsvvService.exportToExcel(filters);
-    res.setHeader(
-      'Content-Type',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    );
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="danh_sach_hccsvv_${new Date().toISOString().slice(0, 10)}.xlsx"`
-    );
-    return res.status(200).send(buffer);
+    sendExcelResponse(res, buffer, 'danh_sach_hccsvv');
   });
 
   getHCCSVVStatistics = catchAsync(async (req: Request, res: Response) => {
@@ -475,15 +438,7 @@ class ProposalController {
 
   getContributionAwardsTemplate = catchAsync(async (req: Request, res: Response) => {
     const buffer = await contributionAwardService.exportTemplate();
-    res.setHeader(
-      'Content-Type',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    );
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="mau_nhap_hcbvtq_${new Date().toISOString().slice(0, 10)}.xlsx"`
-    );
-    return res.status(200).send(buffer);
+    sendExcelResponse(res, buffer, 'mau_nhap_hcbvtq');
   });
 
   importContributionAwards = catchAsync(async (req: Request, res: Response) => {
@@ -510,13 +465,8 @@ class ProposalController {
     if (don_vi_id) filters.don_vi_id = don_vi_id;
     if (nam) filters.nam = nam;
     if (danh_hieu) filters.danh_hieu = danh_hieu;
-    if (user.role === ROLES.MANAGER) {
-      const userWithUnit = await proposalService.getUserWithUnit(user.id);
-      if (!userWithUnit?.QuanNhan) {
-        return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
-      }
-      filters.don_vi_id = managerUnitFilterId(userWithUnit.QuanNhan);
-    }
+    const unitResult = await applyManagerUnitFilter(user, filters, id => proposalService.getUserWithUnit(id));
+    if (unitResult === 'forbidden') return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
     return ResponseHelper.success(res, {
       message: 'Lấy danh sách HCBVTQ thành công',
       data: await contributionAwardService.getAll(filters, page, limit),
@@ -531,23 +481,10 @@ class ProposalController {
     if (don_vi_id) filters.don_vi_id = don_vi_id;
     if (nam) filters.nam = nam;
     if (danh_hieu) filters.danh_hieu = danh_hieu;
-    if (user.role === ROLES.MANAGER) {
-      const userWithUnit = await proposalService.getUserWithUnit(user.id);
-      if (!userWithUnit?.QuanNhan) {
-        return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
-      }
-      filters.don_vi_id = managerUnitFilterId(userWithUnit.QuanNhan);
-    }
+    const unitResult = await applyManagerUnitFilter(user, filters, id => proposalService.getUserWithUnit(id));
+    if (unitResult === 'forbidden') return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
     const buffer = await contributionAwardService.exportToExcel(filters);
-    res.setHeader(
-      'Content-Type',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    );
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="danh_sach_hcbvtq_${new Date().toISOString().slice(0, 10)}.xlsx"`
-    );
-    return res.status(200).send(buffer);
+    sendExcelResponse(res, buffer, 'danh_sach_hcbvtq');
   });
 
   getContributionAwardsStatistics = catchAsync(async (req: Request, res: Response) => {
@@ -559,15 +496,7 @@ class ProposalController {
 
   getCommemorativeMedalsTemplate = catchAsync(async (req: Request, res: Response) => {
     const buffer = await commemorativeMedalService.exportTemplate();
-    res.setHeader(
-      'Content-Type',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    );
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="mau_nhap_knc_vsnxd_qdndvn_${new Date().toISOString().slice(0, 10)}.xlsx"`
-    );
-    return res.status(200).send(buffer);
+    sendExcelResponse(res, buffer, 'mau_nhap_knc_vsnxd_qdndvn');
   });
 
   getAllCommemorativeMedals = catchAsync(async (req: Request, res: Response) => {
@@ -578,13 +507,8 @@ class ProposalController {
     const filters: Record<string, unknown> = {};
     if (don_vi_id) filters.don_vi_id = don_vi_id;
     if (nam) filters.nam = nam;
-    if (user.role === ROLES.MANAGER) {
-      const userWithUnit = await proposalService.getUserWithUnit(user.id);
-      if (!userWithUnit?.QuanNhan) {
-        return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
-      }
-      filters.don_vi_id = managerUnitFilterId(userWithUnit.QuanNhan);
-    }
+    const unitResult = await applyManagerUnitFilter(user, filters, id => proposalService.getUserWithUnit(id));
+    if (unitResult === 'forbidden') return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
     return ResponseHelper.success(res, {
       message: 'Lấy danh sách Kỷ niệm chương thành công',
       data: await commemorativeMedalService.getAll(filters, page, limit),
@@ -598,23 +522,10 @@ class ProposalController {
     const filters: Record<string, unknown> = {};
     if (don_vi_id) filters.don_vi_id = don_vi_id;
     if (nam) filters.nam = nam;
-    if (user.role === ROLES.MANAGER) {
-      const userWithUnit = await proposalService.getUserWithUnit(user.id);
-      if (!userWithUnit?.QuanNhan) {
-        return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
-      }
-      filters.don_vi_id = managerUnitFilterId(userWithUnit.QuanNhan);
-    }
+    const unitResult = await applyManagerUnitFilter(user, filters, id => proposalService.getUserWithUnit(id));
+    if (unitResult === 'forbidden') return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
     const buffer = await commemorativeMedalService.exportToExcel(filters);
-    res.setHeader(
-      'Content-Type',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    );
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="danh_sach_knc_vsnxd_${new Date().toISOString().slice(0, 10)}.xlsx"`
-    );
-    return res.status(200).send(buffer);
+    sendExcelResponse(res, buffer, 'danh_sach_knc_vsnxd');
   });
 
   getCommemorativeMedalsStatistics = catchAsync(async (req: Request, res: Response) => {
@@ -626,15 +537,7 @@ class ProposalController {
 
   getMilitaryFlagTemplate = catchAsync(async (req: Request, res: Response) => {
     const buffer = await militaryFlagService.exportTemplate();
-    res.setHeader(
-      'Content-Type',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    );
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="mau_nhap_hcqkqt_${new Date().toISOString().slice(0, 10)}.xlsx"`
-    );
-    return res.status(200).send(buffer);
+    sendExcelResponse(res, buffer, 'mau_nhap_hcqkqt');
   });
 
   getAllMilitaryFlag = catchAsync(async (req: Request, res: Response) => {
@@ -645,13 +548,8 @@ class ProposalController {
     const filters: Record<string, unknown> = {};
     if (don_vi_id) filters.don_vi_id = don_vi_id;
     if (nam) filters.nam = nam;
-    if (user.role === ROLES.MANAGER) {
-      const userWithUnit = await proposalService.getUserWithUnit(user.id);
-      if (!userWithUnit?.QuanNhan) {
-        return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
-      }
-      filters.don_vi_id = managerUnitFilterId(userWithUnit.QuanNhan);
-    }
+    const unitResult = await applyManagerUnitFilter(user, filters, id => proposalService.getUserWithUnit(id));
+    if (unitResult === 'forbidden') return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
     return ResponseHelper.success(res, {
       message: 'Lấy danh sách HCQKQT thành công',
       data: await militaryFlagService.getAll(filters, page, limit),
@@ -665,23 +563,10 @@ class ProposalController {
     const filters: Record<string, unknown> = {};
     if (don_vi_id) filters.don_vi_id = don_vi_id;
     if (nam) filters.nam = nam;
-    if (user.role === ROLES.MANAGER) {
-      const userWithUnit = await proposalService.getUserWithUnit(user.id);
-      if (!userWithUnit?.QuanNhan) {
-        return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
-      }
-      filters.don_vi_id = managerUnitFilterId(userWithUnit.QuanNhan);
-    }
+    const unitResult = await applyManagerUnitFilter(user, filters, id => proposalService.getUserWithUnit(id));
+    if (unitResult === 'forbidden') return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
     const buffer = await militaryFlagService.exportToExcel(filters);
-    res.setHeader(
-      'Content-Type',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    );
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="danh_sach_hcqkqt_${new Date().toISOString().slice(0, 10)}.xlsx"`
-    );
-    return res.status(200).send(buffer);
+    sendExcelResponse(res, buffer, 'danh_sach_hcqkqt');
   });
 
   getMilitaryFlagStatistics = catchAsync(async (req: Request, res: Response) => {

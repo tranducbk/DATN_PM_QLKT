@@ -46,6 +46,7 @@ class AwardBulkService {
     titleData,
     ghiChu,
     adminId,
+    bypassEligibility,
   }: BulkCreateAwardsParams) {
     const errors: string[] = [];
     const createdRecords: unknown[] = [];
@@ -78,7 +79,7 @@ class AwardBulkService {
       PROPOSAL_TYPES.NIEN_HAN,
       PROPOSAL_TYPES.HC_QKQT,
     ];
-    if (typesNeedingPersonnelValidation.includes(type as ProposalType)) {
+    if (!bypassEligibility && typesNeedingPersonnelValidation.includes(type as ProposalType)) {
       const validationErrors = await this.validatePersonnelConditions(type, selectedPersonnel);
       errors.push(...validationErrors);
     }
@@ -150,6 +151,7 @@ class AwardBulkService {
       affectedPersonnelIds,
       affectedUnitIds,
       importedCount: importedCountRef,
+      bypassEligibility,
     };
 
     const handler = CREATE_HANDLERS[type as ProposalType];
@@ -161,13 +163,14 @@ class AwardBulkService {
     await handler(ctx);
     importedCount = importedCountRef.value;
 
-    try {
-      const admin = await accountRepository.findUniqueRaw({
-        where: { id: adminId },
-        select: { username: true },
-      });
-
-      if (admin) {
+    // Fire-and-forget — notification errors must not block the bulk-award response.
+    void (async () => {
+      try {
+        const admin = await accountRepository.findUniqueRaw({
+          where: { id: adminId },
+          select: { username: true },
+        });
+        if (!admin) return;
         await notificationHelper.notifyOnBulkAwardAdded(
           Array.from(affectedPersonnelIds),
           selectedUnits || [],
@@ -176,14 +179,24 @@ class AwardBulkService {
           titleData,
           admin.username
         );
+        // SA bypass flow — also notify all ADMINs for forensic transparency
+        if (bypassEligibility) {
+          await notificationHelper.notifyAdminsOnBulkBypass(
+            Array.from(affectedPersonnelIds),
+            selectedUnits || [],
+            type,
+            nam,
+            admin.username
+          );
+        }
+      } catch (e) {
+        void writeSystemLog({
+          action: 'ERROR',
+          resource: 'award-bulk',
+          description: `Lỗi gửi thông báo thêm khen thưởng đồng loạt: ${e}`,
+        });
       }
-    } catch (e) {
-      void writeSystemLog({
-        action: 'ERROR',
-        resource: 'award-bulk',
-        description: `Lỗi gửi thông báo thêm khen thưởng đồng loạt: ${e}`,
-      });
-    }
+    })();
 
     const affectedCount = affectedPersonnelIds.size;
     const affectedUnitCount =

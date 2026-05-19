@@ -48,12 +48,14 @@ export function PositionsTable({ positions, onEdit, onRefresh }: PositionsTableP
       title: 'Tên Chức vụ',
       dataIndex: 'ten_chuc_vu',
       key: 'ten_chuc_vu',
+      align: 'center',
       render: text => <strong>{text}</strong>,
     },
     {
       title: 'Cơ quan đơn vị',
       key: 'co_quan_don_vi',
       width: 200,
+      align: 'center',
       render: (_, record) => {
         if (record.CoQuanDonVi) {
           return <span>{record.CoQuanDonVi.ten_don_vi}</span>;
@@ -68,6 +70,7 @@ export function PositionsTable({ positions, onEdit, onRefresh }: PositionsTableP
       title: 'Đơn vị trực thuộc',
       key: 'don_vi_truc_thuoc',
       width: 200,
+      align: 'center',
       render: (_, record) => {
         if (record.DonViTrucThuoc) {
           return <span>{record.DonViTrucThuoc.ten_don_vi}</span>;
@@ -80,6 +83,7 @@ export function PositionsTable({ positions, onEdit, onRefresh }: PositionsTableP
       dataIndex: 'is_manager',
       key: 'is_manager',
       width: 120,
+      align: 'center',
       render: (isManager, record) => {
         // Hide this column for sub-unit positions (DonViTrucThuoc)
         if (record.DonViTrucThuoc) {
@@ -93,13 +97,14 @@ export function PositionsTable({ positions, onEdit, onRefresh }: PositionsTableP
       dataIndex: 'he_so_chuc_vu',
       key: 'he_so_chuc_vu',
       width: 150,
+      align: 'center',
       render: value => parseFloat(value || 0).toFixed(2),
     },
     {
       title: 'Hành động',
       key: 'action',
       width: 180,
-      align: 'right',
+      align: 'center',
       render: (_, record) => (
         <Space size="small">
           <Button type="default" icon={<EditOutlined />} onClick={() => onEdit?.(record)}>

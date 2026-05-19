@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import systemLogsController from '../controllers/systemLogs.controller';
-import { verifyToken, requireAdmin, requireManager } from '../middlewares/auth';
+import { verifyToken, requireSuperAdmin, requireManager } from '../middlewares/auth';
 import { requireFeatureFlag } from '../helpers/settingsHelper';
 
 const router = Router();
@@ -29,12 +29,12 @@ router.get('/resources', verifyToken, requireManager, systemLogsController.getRe
 /**
  * @route   DELETE /api/system-logs
  * @desc    Delete system logs by ID list (requires DevZone allow_delete_logs flag)
- * @access  Private - ADMIN+ only
+ * @access  Private - SUPER_ADMIN only
  */
 router.delete(
   '/',
   verifyToken,
-  requireAdmin,
+  requireSuperAdmin,
   requireFeatureFlag('allow_delete_logs'),
   systemLogsController.deleteLogs
 );
@@ -42,12 +42,12 @@ router.delete(
 /**
  * @route   DELETE /api/system-logs/all
  * @desc    Delete all system logs (requires DevZone allow_delete_logs flag)
- * @access  Private - ADMIN+ only
+ * @access  Private - SUPER_ADMIN only
  */
 router.delete(
   '/all',
   verifyToken,
-  requireAdmin,
+  requireSuperAdmin,
   requireFeatureFlag('allow_delete_logs'),
   systemLogsController.deleteAllLogs
 );

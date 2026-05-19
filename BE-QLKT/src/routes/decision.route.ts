@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import decisionController from '../controllers/decision.controller';
-import { verifyToken, requireAdmin } from '../middlewares/auth';
+import { verifyToken, requireAdminOnly } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
 import { decisionUpload as upload } from '../configs/multer';
@@ -13,28 +13,28 @@ const router = Router();
  * @desc    List all award decisions (supports ?nam, ?loai_khen_thuong, ?search, pagination)
  * @access  Private - ADMIN and above
  */
-router.get('/', verifyToken, requireAdmin, decisionController.getAllDecisions);
+router.get('/', verifyToken, requireAdminOnly, decisionController.getAllDecisions);
 
 /**
  * @route   GET /api/decisions/autocomplete
  * @desc    Autocomplete search for decisions (?q, ?limit)
  * @access  Private - ADMIN and above
  */
-router.get('/autocomplete', verifyToken, requireAdmin, decisionController.autocomplete);
+router.get('/autocomplete', verifyToken, requireAdminOnly, decisionController.autocomplete);
 
 /**
  * @route   GET /api/decisions/years
  * @desc    List years that have decisions
  * @access  Private - ADMIN and above
  */
-router.get('/years', verifyToken, requireAdmin, decisionController.getAvailableYears);
+router.get('/years', verifyToken, requireAdminOnly, decisionController.getAvailableYears);
 
 /**
  * @route   GET /api/decisions/award-types
  * @desc    List available award types
  * @access  Private - ADMIN and above
  */
-router.get('/award-types', verifyToken, requireAdmin, decisionController.getAwardTypes);
+router.get('/award-types', verifyToken, requireAdminOnly, decisionController.getAwardTypes);
 
 /**
  * @route   GET /api/decisions/file-path/:soQuyetDinh
@@ -66,7 +66,7 @@ router.post('/file-paths', verifyToken, decisionController.getFilePaths);
 router.get(
   '/by-number/:soQuyetDinh',
   verifyToken,
-  requireAdmin,
+  requireAdminOnly,
   decisionController.getDecisionBySoQuyetDinh
 );
 
@@ -75,7 +75,7 @@ router.get(
  * @desc    Get decision details by ID
  * @access  Private - ADMIN and above
  */
-router.get('/:id', verifyToken, requireAdmin, decisionController.getDecisionById);
+router.get('/:id', verifyToken, requireAdminOnly, decisionController.getDecisionById);
 
 /**
  * @route   POST /api/decisions
@@ -85,7 +85,7 @@ router.get('/:id', verifyToken, requireAdmin, decisionController.getDecisionById
 router.post(
   '/',
   verifyToken,
-  requireAdmin,
+  requireAdminOnly,
   upload.single('file'),
   auditLog({
     action: AUDIT_ACTIONS.CREATE,
@@ -104,7 +104,7 @@ router.post(
 router.put(
   '/:id',
   verifyToken,
-  requireAdmin,
+  requireAdminOnly,
   upload.single('file'),
   auditLog({
     action: AUDIT_ACTIONS.UPDATE,
@@ -123,7 +123,7 @@ router.put(
 router.delete(
   '/:id',
   verifyToken,
-  requireAdmin,
+  requireAdminOnly,
   auditLog({
     action: AUDIT_ACTIONS.DELETE,
     resource: 'decisions',

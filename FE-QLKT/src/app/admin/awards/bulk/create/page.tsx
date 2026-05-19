@@ -33,7 +33,7 @@ import Link from 'next/link';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
 import { getDanhHieuName } from '@/constants/danhHieu.constants';
-import { PROPOSAL_TYPES, type ProposalType } from '@/constants/proposal.constants';
+import { PROPOSAL_TYPES, requiresProposalMonth, type ProposalType } from '@/constants/proposal.constants';
 import { PROPOSAL_TYPE_ICON_COMPONENTS } from '@/constants/proposalUi.constants';
 import { AWARD_TYPE_REGISTRY } from '@/constants/awardTypeRegistry.constants';
 import { Step2SelectPersonnelCaNhanHangNam } from '@/components/proposals/bulk/Step2SelectPersonnelCaNhanHangNam';
@@ -52,6 +52,7 @@ import {
   makeContributionColumns,
   fetchContributionProfiles,
 } from '@/lib/award/serviceTimeHelpers';
+import { buildReviewColumns } from '@/lib/proposal/reviewColumns';
 import type { AwardType, Personnel, ReviewRow } from './types';
 import {
   canProceedToNextStep as computeCanProceedToNextStep,
@@ -61,10 +62,29 @@ import {
 
 const { Title, Paragraph, Text } = Typography;
 
+const ADMIN_AWARD_DRAFT_KEY = 'admin_award_draft';
+
+interface AwardDraft {
+  currentStep: number;
+  awardType: AwardType;
+  nam: number;
+  thang?: number;
+  selectedPersonnelIds: string[];
+  selectedUnitIds: string[];
+  titleData: TitleDataItem[];
+  contributionProfiles: Record<string, ContributionProfile>;
+  note: string;
+  decisionDataMap: DecisionDataMap;
+}
+
 export default function BulkAddAwardsPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
+
+  const hasMountedRef = React.useRef(false);
+  const isRestoringDraft = React.useRef(false);
+  const suppressNextSave = React.useRef(true);
 
   // Step 1: Award Type
   const [awardType, setAwardType] = useState<AwardType>(PROPOSAL_TYPES.CA_NHAN_HANG_NAM);
@@ -144,6 +164,7 @@ export default function BulkAddAwardsPage() {
   }, [nam]);
 
   useEffect(() => {
+    if (!hasMountedRef.current) return;
     if (currentStep === 0) {
       setSelectedPersonnelIds([]);
       setSelectedUnitIds([]);
@@ -152,10 +173,12 @@ export default function BulkAddAwardsPage() {
       setUnitDetails([]);
       setNote('');
       setDecisionDataMap({});
+      sessionStorage.removeItem(ADMIN_AWARD_DRAFT_KEY);
     }
   }, [currentStep]);
 
   useEffect(() => {
+    if (!hasMountedRef.current || isRestoringDraft.current) return;
     setSelectedPersonnelIds([]);
     setSelectedUnitIds([]);
     setTitleData([]);
@@ -206,6 +229,69 @@ export default function BulkAddAwardsPage() {
       }
     }
   }, [currentStep, awardType, selectedUnitIds, selectedPersonnelIds, fetchUnitDetails, fetchPersonnelDetails, loadContributionProfiles]);
+
+  // Restore draft from sessionStorage on mount (client-only)
+  useEffect(() => {
+    hasMountedRef.current = true;
+    try {
+      const saved = sessionStorage.getItem(ADMIN_AWARD_DRAFT_KEY);
+      if (!saved) return;
+      const draft = JSON.parse(saved) as AwardDraft;
+      isRestoringDraft.current = true;
+      setCurrentStep(draft.currentStep ?? 0);
+      setAwardType(draft.awardType ?? PROPOSAL_TYPES.CA_NHAN_HANG_NAM);
+      setNam(draft.nam ?? new Date().getFullYear());
+      setThang(draft.thang ?? new Date().getMonth() + 1);
+      setSelectedPersonnelIds(draft.selectedPersonnelIds ?? []);
+      setSelectedUnitIds(draft.selectedUnitIds ?? []);
+      setTitleData(draft.titleData ?? []);
+      setContributionProfiles(draft.contributionProfiles ?? {});
+      setNote(draft.note ?? '');
+      setDecisionDataMap(draft.decisionDataMap ?? {});
+      setTimeout(() => {
+        isRestoringDraft.current = false;
+      }, 100);
+    } catch {
+      sessionStorage.removeItem(ADMIN_AWARD_DRAFT_KEY);
+    }
+  }, []);
+
+  // Save draft to sessionStorage whenever serializable state changes
+  useEffect(() => {
+    if (!hasMountedRef.current) return;
+    if (suppressNextSave.current) {
+      suppressNextSave.current = false;
+      return;
+    }
+    try {
+      const draft: AwardDraft = {
+        currentStep,
+        awardType,
+        nam,
+        ...(requiresProposalMonth(awardType) && { thang }),
+        selectedPersonnelIds,
+        selectedUnitIds,
+        titleData,
+        contributionProfiles,
+        note,
+        decisionDataMap,
+      };
+      sessionStorage.setItem(ADMIN_AWARD_DRAFT_KEY, JSON.stringify(draft));
+    } catch {
+      // sessionStorage unavailable or full
+    }
+  }, [
+    currentStep,
+    awardType,
+    nam,
+    thang,
+    selectedPersonnelIds,
+    selectedUnitIds,
+    titleData,
+    contributionProfiles,
+    note,
+    decisionDataMap,
+  ]);
 
   const canProceedToNextStep = () =>
     computeCanProceedToNextStep({
@@ -302,6 +388,7 @@ export default function BulkAddAwardsPage() {
         antMessage.success(result.message);
       }
 
+      sessionStorage.removeItem(ADMIN_AWARD_DRAFT_KEY);
       setTimeout(() => {
         router.push('/admin/awards');
       }, 1000);
@@ -499,163 +586,13 @@ export default function BulkAddAwardsPage() {
           });
         }
 
-        // Build table columns
-        const reviewColumns: ColumnsType<ReviewRow> = [];
-
-        if (awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
-          reviewColumns.push(
-            {
-              title: 'STT',
-              key: 'index',
-              width: 60,
-              align: 'center',
-              render: (_, __, index) => index + 1,
-            },
-            {
-              title: 'Loại đơn vị',
-              key: 'type',
-              width: 150,
-              align: 'center',
-              render: (_, record) => {
-                const type =
-                  record.co_quan_don_vi_id || record.CoQuanDonVi
-                    ? 'DON_VI_TRUC_THUOC'
-                    : 'CO_QUAN_DON_VI';
-                return (
-                  <Tag color={type === 'CO_QUAN_DON_VI' ? 'blue' : 'green'}>
-                    {type === 'CO_QUAN_DON_VI' ? 'Cơ quan đơn vị' : 'Đơn vị trực thuộc'}
-                  </Tag>
-                );
-              },
-            },
-            {
-              title: 'Mã đơn vị',
-              dataIndex: 'ma_don_vi',
-              key: 'ma_don_vi',
-              width: 150,
-              align: 'center',
-              render: (text: string) => <Text code>{text}</Text>,
-            },
-            {
-              title: 'Tên đơn vị',
-              dataIndex: 'ten_don_vi',
-              key: 'ten_don_vi',
-              width: 250,
-              align: 'center',
-              render: (text: string) => <Text strong>{text}</Text>,
-            }
-          );
-        } else {
-          reviewColumns.push(
-            {
-              title: 'STT',
-              key: 'index',
-              width: 60,
-              align: 'center',
-              render: (_, __, index) => index + 1,
-            },
-            {
-              title: 'Họ và tên',
-              dataIndex: 'ho_ten',
-              key: 'ho_ten',
-              width: 200,
-              align: 'center',
-              render: (text: string) => <Text strong>{text}</Text>,
-            },
-            {
-              title: 'Cấp bậc / Chức vụ',
-              key: 'cap_bac_chuc_vu',
-              width: 200,
-              align: 'center',
-              render: (_, record) => {
-                const capBac = record.cap_bac;
-                const chucVu = record.chuc_vu;
-                return (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <Text strong style={{ marginBottom: '4px' }}>
-                      {capBac || '-'}
-                    </Text>
-                    <Text type="secondary" style={{ fontSize: '12px' }}>
-                      {chucVu || '-'}
-                    </Text>
-                  </div>
-                );
-              },
-            }
-          );
-
-          if (
-            (
-              [
-                PROPOSAL_TYPES.NIEN_HAN,
-                PROPOSAL_TYPES.HC_QKQT,
-                PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
-              ] as string[]
-            ).includes(awardType)
-          ) {
-            reviewColumns.push({
-              title: 'Tổng thời gian',
-              key: 'tong_thoi_gian',
-              width: 150,
-              align: 'center' as const,
-              render: (_: unknown, record: ReviewRow) => renderServiceTime(record, nam, thang),
-            });
-          }
-
-          if (awardType === PROPOSAL_TYPES.CONG_HIEN) {
-            reviewColumns.push(
-              ...(makeContributionColumns(contributionProfiles) as ColumnsType<ReviewRow>)
-            );
-          }
-        }
-
-        // Add title/achievement columns
-        if (awardType === PROPOSAL_TYPES.NCKH) {
-          reviewColumns.push(
-            {
-              title: 'Loại',
-              dataIndex: 'loai',
-              key: 'loai',
-              width: 160,
-              align: 'center',
-              render: (loai: string) => (
-                <Tag color={loai === 'DTKH' ? 'blue' : 'green'}>
-                  {loai === 'DTKH' ? 'Đề tài khoa học' : 'Sáng kiến khoa học'}
-                </Tag>
-              ),
-            },
-            {
-              title: 'Mô tả',
-              dataIndex: 'mo_ta',
-              key: 'mo_ta',
-              align: 'center',
-              render: (_, record) => {
-                const moTa = titleData.find(
-                  t => String(t.personnel_id) === String(record.id)
-                )?.mo_ta;
-                return <Text>{moTa}</Text>;
-              },
-            }
-          );
-        } else {
-          reviewColumns.push({
-            title: 'Danh hiệu',
-            dataIndex: 'danh_hieu',
-            key: 'danh_hieu',
-            width: 250,
-            align: 'center',
-            render: (_, record) => {
-              const titleInfo = titleData.find(
-                t =>
-                  String(t.personnel_id) === String(record.id) ||
-                  String(t.don_vi_id) === String(record.id)
-              );
-              const danh_hieu = titleInfo?.danh_hieu;
-              const fullName = getDanhHieuName(danh_hieu);
-              return <Text>{fullName || '-'}</Text>;
-            },
-          });
-        }
+        const reviewColumns = buildReviewColumns<ReviewRow>(
+          awardType,
+          titleData,
+          nam,
+          thang,
+          contributionProfiles
+        );
 
         return (
           <div>
@@ -751,7 +688,7 @@ export default function BulkAddAwardsPage() {
         const decisionTableData =
           awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? unitDetails : personnelDetails;
 
-        const decisionColumns: ColumnsType<any> = [
+        const decisionColumns: ColumnsType<Personnel | UnitApiRow> = [
           {
             title: 'STT',
             key: 'index',
@@ -845,6 +782,7 @@ export default function BulkAddAwardsPage() {
                 pagination={false}
                 size="small"
                 bordered
+                scroll={{ x: 'max-content' }}
               />
             </Card>
           </div>
@@ -1034,6 +972,7 @@ export default function BulkAddAwardsPage() {
             icon={<ArrowLeftOutlined />}
             onClick={() => {
               if (currentStep === 0) {
+                sessionStorage.removeItem(ADMIN_AWARD_DRAFT_KEY);
                 router.push('/admin/awards');
               } else {
                 setCurrentStep(0);

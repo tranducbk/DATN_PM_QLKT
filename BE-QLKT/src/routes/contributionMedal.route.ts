@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import contributionAwardController from '../controllers/contributionMedal.controller';
-import { verifyToken, checkRole, requireAdmin } from '../middlewares/auth';
+import { verifyToken, checkRole, requireAdminOnly } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
 import { ROLES } from '../constants/roles.constants';
@@ -17,7 +17,7 @@ const router = Router();
  * @desc    Download Excel template for Contribution Award (HCBVTQ) import (supports ?personnel_ids=id1,id2)
  * @access  ADMIN
  */
-router.get('/template', verifyToken, requireAdmin, contributionAwardController.getTemplate);
+router.get('/template', verifyToken, requireAdminOnly, contributionAwardController.getTemplate);
 
 /**
  * @route   POST /api/contribution-medals/import/preview
@@ -27,7 +27,7 @@ router.get('/template', verifyToken, requireAdmin, contributionAwardController.g
 router.post(
   '/import/preview',
   verifyToken,
-  requireAdmin,
+  requireAdminOnly,
   upload.single('file'),
   contributionAwardController.previewImport
 );
@@ -40,7 +40,7 @@ router.post(
 router.post(
   '/import/confirm',
   verifyToken,
-  requireAdmin,
+  requireAdminOnly,
   validate(excelImportValidation.confirmImportContributionAward),
   contributionAwardController.confirmImport
 );
@@ -89,7 +89,7 @@ router.get(
 router.delete(
   '/:id',
   verifyToken,
-  requireAdmin,
+  requireAdminOnly,
   auditLog({
     action: AUDIT_ACTIONS.DELETE,
     resource: AWARD_SLUGS.CONTRIBUTION_MEDALS,

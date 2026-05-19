@@ -17,6 +17,7 @@ import {
 import { PlusOutlined, HomeOutlined } from '@ant-design/icons';
 import dynamic from 'next/dynamic';
 import { UnitsTable } from '@/components/categories/UnitsTable';
+import { UnitList } from '@/components/categories/UnitList';
 import { PositionsTable, type PositionRow } from '@/components/categories/PositionsTable';
 import { apiClient } from '@/lib/apiClient';
 import { useTheme } from '@/components/ThemeProvider';
@@ -35,7 +36,6 @@ const PositionForm = dynamic(
   { ssr: false, loading: () => <Spin /> }
 );
 
-/** Đơn vị từ getUnits (hierarchy). */
 interface CategoryUnitRow {
   id: string;
   ten_don_vi: string;
@@ -43,11 +43,20 @@ interface CategoryUnitRow {
   co_quan_don_vi_id?: string | null;
 }
 
+interface PersonnelItem {
+  id: string;
+  ho_ten?: string | null;
+  cap_bac?: string | null;
+  co_quan_don_vi_id?: string | null;
+  don_vi_truc_thuoc_id?: string | null;
+  ChucVu?: { ten_chuc_vu?: string | null };
+}
 
 export default function CategoriesPage() {
   const { theme } = useTheme();
   const [units, setUnits] = useState<CategoryUnitRow[]>([]);
   const [positions, setPositions] = useState<PositionRow[]>([]);
+  const [allPersonnel, setAllPersonnel] = useState<PersonnelItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogType, setDialogType] = useState<'unit' | 'position'>('unit');
@@ -55,7 +64,7 @@ export default function CategoriesPage() {
     null
   );
   const [selectedUnit, setSelectedUnit] = useState('ALL');
-  const [activeTab, setActiveTab] = useState('units');
+  const [activeTab, setActiveTab] = useState('tree');
 
   useEffect(() => {
     loadData();
@@ -64,12 +73,14 @@ export default function CategoriesPage() {
   async function loadData() {
     try {
       setLoading(true);
-      const [unitsRes, positionsRes] = await Promise.all([
-        apiClient.getUnits({ hierarchy: true }), // Only top-level parent units
+      const [unitsRes, positionsRes, personnelRes] = await Promise.all([
+        apiClient.getUnits({ hierarchy: true }),
         apiClient.getPositions(),
+        apiClient.getPersonnel({ limit: 500 }),
       ]);
       setUnits((unitsRes.data || []) as CategoryUnitRow[]);
       setPositions((positionsRes.data || []) as PositionRow[]);
+      setAllPersonnel((personnelRes.data || []) as PersonnelItem[]);
     } catch (error) {
       message.error('Không thể tải dữ liệu');
     } finally {
@@ -158,6 +169,13 @@ export default function CategoriesPage() {
             activeKey={activeTab}
             onChange={setActiveTab}
             items={[
+              {
+                key: 'tree',
+                label: 'Danh sách đơn vị',
+                children: (
+                  <UnitList units={units} allPersonnel={allPersonnel} />
+                ),
+              },
               {
                 key: 'units',
                 label: `Cơ quan đơn vị (${units.length})`,

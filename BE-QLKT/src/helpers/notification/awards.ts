@@ -589,6 +589,75 @@ async function notifyOnBulkAwardAdded(
 }
 
 /**
+ * Notifies ALL admins about a SUPER_ADMIN bypass action (data correction).
+ * Adds forensic transparency — admins see a notification flagging that historical
+ * data was inserted bypassing eligibility checks. Personnel + managers are notified
+ * separately via the standard `notifyOnBulkAwardAdded` flow.
+ *
+ * @param personnelIds - Affected personnel IDs (for count summary)
+ * @param unitIds - Affected unit IDs (for unit-type bypass)
+ * @param awardType - Proposal type (e.g. NIEN_HAN, HC_QKQT)
+ * @param nam - Award year
+ * @param saUsername - SUPER_ADMIN username triggering the bypass
+ * @returns Number of notifications dispatched
+ */
+async function notifyAdminsOnBulkBypass(
+  personnelIds: string[],
+  unitIds: string[],
+  awardType: string,
+  nam: number | string,
+  saUsername: string
+): Promise<number> {
+  try {
+    const admins = await accountRepository.findManyRaw({
+      where: { role: ROLES.ADMIN },
+      select: { id: true, role: true },
+    });
+    if (admins.length === 0) return 0;
+
+    const saDisplayName = await getDisplayName(saUsername);
+    const bulkAwardTypeMap: Record<string, string> = {
+      CA_NHAN_HANG_NAM: 'Danh hiệu hằng năm',
+      DON_VI_HANG_NAM: 'Danh hiệu đơn vị hằng năm',
+      NCKH: 'Thành tích khoa học',
+      NIEN_HAN: 'Huy chương Chiến sĩ vẻ vang',
+      HC_QKQT: 'Huy chương Quân kỳ quyết thắng',
+      KNC_VSNXD_QDNDVN: DANH_HIEU_MAP.KNC_VSNXD_QDNDVN,
+      CONG_HIEN: 'Huân chương Bảo vệ Tổ quốc',
+    };
+    const awardTypeName = bulkAwardTypeMap[awardType] || awardType;
+    const targetCount = personnelIds.length + unitIds.length;
+    const targetText =
+      awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM
+        ? `${unitIds.length} đơn vị`
+        : `${personnelIds.length} quân nhân`;
+
+    const message =
+      `${saDisplayName} đã sửa dữ liệu cũ (bỏ qua kiểm tra điều kiện): ${awardTypeName}` +
+      `${nam ? ` năm ${nam}` : ''} cho ${targetText}.`;
+
+    const notifications: NotificationInput[] = admins.map(admin => ({
+      nguoi_nhan_id: admin.id,
+      recipient_role: admin.role,
+      type: NOTIFICATION_TYPES.AWARD_ADDED,
+      title: 'Quản trị viên đã sửa dữ liệu khen thưởng',
+      message,
+      resource: RESOURCE_TYPES.AWARDS,
+      tai_nguyen_id: null,
+      link: `/admin/awards?nam=${nam}`,
+    }));
+
+    if (targetCount === 0) return 0;
+    await notificationRepository.createMany(notifications);
+    notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
+    return notifications.length;
+  } catch (error) {
+    console.error('NotificationAwards.notifyAdminsOnBulkBypass failed', { error });
+    return 0;
+  }
+}
+
+/**
  * Notifies unit managers after award imports when the feature flag is enabled.
  * @param adminId - Admin account ID that triggered import
  * @param awardResource - Award slug from `AWARD_SLUGS` (e.g. `AWARD_SLUGS.ANNUAL_REWARDS`)
@@ -719,5 +788,6 @@ export {
   notifyOnAwardDeleted,
   notifyUsersOnAwardApproved,
   notifyOnBulkAwardAdded,
+  notifyAdminsOnBulkBypass,
   notifyOnImport,
 };
