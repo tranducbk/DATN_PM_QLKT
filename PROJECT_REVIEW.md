@@ -318,3 +318,30 @@ Khi thêm loại khen thưởng mới, follow:
 - §5 cleanup 10 fallback thừa — chưa fix
 - CI workflow (`.github/workflows/test.yml`) — user yêu cầu skip
 
+---
+
+## 9. RBAC refactor — 2026-05-15
+
+Tách bạch system management (SA) khỏi business operations (ADMIN); SA có route data-correction riêng.
+
+| # | Việc | Trạng thái | Evidence |
+|---|---|---|---|
+| R1 | Thêm `requireAdminOnly` middleware (chỉ ADMIN, exclude SA) | DONE | `BE/src/middlewares/auth.ts:95`. JSDoc nói rõ "business operations — excludes SUPER_ADMIN". |
+| R2 | Chuyển ~17 route nghiệp vụ sang `requireAdminOnly` | DONE | annualReward / commemorativeMedal / contributionMedal / militaryFlag / tenureMedal / decision / position / profile / unit / unitAnnualAward / dashboard / awards. Personnel POST giữ `requireAdminOnly`; DELETE personnel revert về `requireAdmin` (SA cần cascade khi xoá account có linked QN). |
+| R3 | `DELETE /api/system-logs` → `requireSuperAdmin` | DONE | `BE/src/routes/systemLogs.route.ts:37,50`. FE `SystemLogsPageContent.tsx` gate nút xoá bằng `user.role === ROLES.SUPER_ADMIN && features.allow_delete_logs`. |
+| R4 | `POST /api/awards/bulk-bypass` (SA-only, bypass eligibility) | DONE | Route mới ở `awards.route.ts`; controller method `bulkCreateAwardsBypass`; service flag `bypassEligibility` skip `validatePersonnelConditions`. FE `super-admin/add-awards/page.tsx` gọi `bulkCreateAwardsBypass`. |
+| R5 | Use case diagram (`docs/diagrams/01-use-case.md`) — SA độc lập | DONE | Bỏ `SA -.->|kế thừa| AD`; thêm UC12 "Sửa dữ liệu bỏ qua kiểm tra"; cập nhật phân quyền A1.2/A1.3/A1.10/A1.12. |
+| R6 | Authz tests | DONE | `tests/authz/role-middleware.test.ts` (17 tests pin 4 middleware × 4 role); `tests/services/awardBulk-bypass.test.ts` (4 tests pin bypass flag behavior). |
+| R7 | Fix HCCSVV column hiển thị sai khi `serviceProfile` chưa load | DONE | `FE/src/components/proposals/bulk/Step2SelectPersonnelNienHan.tsx:497` — early return "Đang tải..." thay vì fall-through gây hiển thị "Đủ hạng Ba" khi thực tế đã nhận đủ. |
+
+**Verify state sau refactor:**
+- BE typecheck: clean
+- FE typecheck: clean
+- FE lint: clean
+- BE jest: 911 pass / 0 fail (77 suites)
+
+**Design rationale lưu lại:**
+- SA không kế thừa ADMIN: phản ánh thiết kế UI — SA chỉ có 4 page (dashboard, accounts, add-awards bypass, system-logs); không có UI nghiệp vụ. Tách bạch route giúp phòng cường quyền (SA không vô tình duyệt đề xuất nghiệp vụ).
+- `bypassEligibility` chỉ skip `validatePersonnelConditions` (service-years check). Handler-level checks (rank order HCCSVV, downgrade HCBVTQ) vẫn chạy → SA vẫn không thể tạo dữ liệu trái thứ tự hạng. Nếu cần bypass hoàn toàn cho data import lịch sử, mở rộng để handlers respect `ctx.bypassEligibility`.
+- DELETE personnel giữ `requireAdmin` (SA+ADMIN) là exception có chủ ý — phục vụ workflow xoá account cascade. Document ở route JSDoc.
+
