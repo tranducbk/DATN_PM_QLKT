@@ -377,6 +377,69 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
     expect(prismaMock.bangDeXuat.updateMany).not.toHaveBeenCalled();
   });
 
+  it('regression: duplicate check exclude chính proposal đang duyệt (không self-match)', async () => {
+    // Bug đã fix: checkDuplicateUnitAward query PENDING proposals mà không exclude proposalId
+    // hiện tại → đề xuất matches chính nó → ValidationError sai.
+    const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-self-match' });
+    const item = makeProposalItemDonVi({
+      unitKind: 'CQDV',
+      unitId: cqdv.id,
+      ten_don_vi: cqdv.ten_don_vi,
+      danh_hieu: DANH_HIEU_DON_VI_HANG_NAM.DVQT,
+      so_quyet_dinh: 'QD-SELF-1',
+    });
+    const proposal = makeProposal({
+      id: 'prop-self-match',
+      loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
+      nam: 2026,
+      nguoi_de_xuat_id: ADMIN_ID,
+      unit: cqdv,
+      data_danh_hieu: [item],
+    });
+
+    prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
+    prismaMock.quanNhan.findMany.mockResolvedValueOnce([]);
+    prismaMock.bangDeXuat.findMany.mockReset();
+    // Simulate real DB: chỉ có 1 proposal DON_VI_HANG_NAM PENDING năm này — chính là proposal đang duyệt.
+    // Nếu where filter exclude proposalId thì findMany này không bao giờ được tham chiếu trong duplicate check.
+    prismaMock.bangDeXuat.findMany.mockResolvedValue([]);
+    prismaMock.danhHieuDonViHangNam.findFirst.mockResolvedValueOnce(null);
+    prismaMock.danhHieuDonViHangNam.create.mockResolvedValueOnce(
+      makeUnitAnnualRecord({
+        unitId: cqdv.id,
+        unitKind: 'CQDV',
+        nam: 2026,
+        danh_hieu: DANH_HIEU_DON_VI_HANG_NAM.DVQT,
+        so_quyet_dinh: 'QD-SELF-1',
+      })
+    );
+    prismaMock.bangDeXuat.updateMany.mockResolvedValueOnce({ count: 1 });
+
+    await proposalService.approveProposal(
+      proposal.id,
+      {},
+      ADMIN_ID,
+      { so_quyet_dinh_don_vi_hang_nam: 'QD-SELF-1' },
+      {},
+      null
+    );
+
+    // Approve thành công, không throw duplicate error.
+    expect(prismaMock.bangDeXuat.updateMany).toHaveBeenCalledTimes(1);
+    expect(prismaMock.bangDeXuat.updateMany.mock.calls[0][0].data.status).toBe(
+      PROPOSAL_STATUS.APPROVED
+    );
+
+    // Locks in fix: duplicate check phải pass where.id = { not: proposalId }.
+    const duplicateCheckCall = prismaMock.bangDeXuat.findMany.mock.calls.find(
+      ([args]) =>
+        args?.where?.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM &&
+        args?.where?.status === PROPOSAL_STATUS.PENDING
+    );
+    expect(duplicateCheckCall).toBeDefined();
+    expect(duplicateCheckCall![0].where.id).toEqual({ not: proposal.id });
+  });
+
   it('bypass FE — reject khi đơn vị chưa đủ ĐK BKBQP đơn vị', async () => {
     // Given: item BKBQP nhưng eligibility đơn vị trả false
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-not-elig-bk' });

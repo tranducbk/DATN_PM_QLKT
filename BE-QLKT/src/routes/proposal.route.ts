@@ -121,6 +121,7 @@ router.post(
     { name: 'file_pdf_cong_hien', maxCount: 1 }, // CONG_HIEN
     { name: 'file_pdf_dot_xuat', maxCount: 1 }, // DOT_XUAT
     { name: 'file_pdf_nckh', maxCount: 1 }, // NCKH
+    { name: 'admin_attached_files' }, // Admin attachments — optional, no count limit
   ]),
   auditLog({
     action: AUDIT_ACTIONS.APPROVE,

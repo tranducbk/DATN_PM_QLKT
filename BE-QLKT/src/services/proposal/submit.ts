@@ -5,14 +5,11 @@ import {
 } from '../../constants/proposalTypes.constants';
 import { accountRepository } from '../../repositories/account.repository';
 import { proposalRepository } from '../../repositories/proposal.repository';
-import { promises as fs } from 'fs';
-import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
 import { NotFoundError, ValidationError } from '../../middlewares/errorHandler';
-import { sanitizeFilename } from './helpers';
 import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
 import type { Prisma } from '../../generated/prisma';
 import { getProposalStrategy } from './strategies';
+import { persistProposalAttachments } from './attachedFiles';
 
 /**
  * Creates a reward proposal with optional attachments.
@@ -92,45 +89,7 @@ async function submitProposal(
     throw new ValidationError('Thiếu tháng đề xuất. Loại đề xuất này bắt buộc nhập tháng (1-12).');
   }
 
-  const filesInfo: {
-    filename: string;
-    originalName: string;
-    size: number;
-    uploadedAt: string;
-  }[] = [];
-
-  if (attachedFiles && attachedFiles.length > 0) {
-    const storagePath = path.join(__dirname, '..', '..', '..', 'storage', 'proposals');
-    await fs.mkdir(storagePath, { recursive: true });
-
-    for (const file of attachedFiles) {
-      if (file && file.buffer) {
-        const rawName = file.originalname || 'file';
-        const decodedName = Buffer.isBuffer(rawName)
-          ? rawName.toString('utf8')
-          : Buffer.from(rawName, 'latin1').toString('utf8');
-        const sanitizedOriginalName = sanitizeFilename(decodedName);
-
-        // Use timestamp + short uuid to avoid filename collisions.
-        const timestamp = Date.now();
-        const uniqueId = uuidv4().slice(0, 8);
-        const fileExtension = path.extname(sanitizedOriginalName);
-        const baseFilename = path.basename(sanitizedOriginalName, fileExtension);
-        const savedFilename = `${timestamp}_${uniqueId}_${baseFilename}${fileExtension}`;
-
-        const filePath = path.join(storagePath, savedFilename);
-        await fs.writeFile(filePath, file.buffer);
-
-        // Keep original name for UI display.
-        filesInfo.push({
-          filename: savedFilename,
-          originalName: decodedName,
-          size: file.size,
-          uploadedAt: new Date().toISOString(),
-        });
-      }
-    }
-  }
+  const filesInfo = await persistProposalAttachments(attachedFiles);
 
   const strategy = getProposalStrategy(type);
   const strategyPayload = strategy
@@ -162,7 +121,7 @@ async function submitProposal(
     data_thanh_tich: dataThanhTich,
     data_nien_han: dataNienHan,
     data_cong_hien: dataCongHien,
-    files_attached: filesInfo.length > 0 ? (filesInfo as Prisma.InputJsonValue) : null,
+    files_attached: filesInfo.length > 0 ? (filesInfo as unknown as Prisma.InputJsonValue) : null,
     ghi_chu: ghiChu || null,
     ...(isCoQuanDonVi
       ? { co_quan_don_vi_id: donViId, don_vi_truc_thuoc_id: null }

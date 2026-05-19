@@ -12,6 +12,18 @@ import { ROLES } from '../../constants/roles.constants';
 import { PROPOSAL_TYPES, type ProposalType } from '../../constants/proposalTypes.constants';
 import { NotFoundError, ForbiddenError, ValidationError } from '../../middlewares/errorHandler';
 import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
+import type {
+  ProposalDanhHieuItem,
+  ProposalThanhTichItem,
+  ProposalNienHanItem,
+  ProposalCongHienItem,
+} from '../../types/proposal';
+
+type AnyProposalDataItem =
+  | ProposalDanhHieuItem
+  | ProposalThanhTichItem
+  | ProposalNienHanItem
+  | ProposalCongHienItem;
 
 /**
  * Fetches user with their associated QuanNhan and unit relations.
@@ -201,14 +213,13 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
     }
   }
 
-  // Ensure these are always arrays even if stored as null
   let dataDanhHieu = (
     Array.isArray(proposal.data_danh_hieu)
       ? proposal.data_danh_hieu
       : proposal.data_danh_hieu
         ? [proposal.data_danh_hieu]
         : []
-  ) as Record<string, any>[];
+  ) as ProposalDanhHieuItem[];
 
   let dataThanhTich = (
     Array.isArray(proposal.data_thanh_tich)
@@ -216,7 +227,7 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
       : proposal.data_thanh_tich
         ? [proposal.data_thanh_tich]
         : []
-  ) as Record<string, any>[];
+  ) as ProposalThanhTichItem[];
 
   let dataNienHan = (
     Array.isArray(proposal.data_nien_han)
@@ -224,7 +235,7 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
       : proposal.data_nien_han
         ? [proposal.data_nien_han]
         : []
-  ) as Record<string, any>[];
+  ) as ProposalNienHanItem[];
 
   let dataCongHien = (
     Array.isArray(proposal.data_cong_hien)
@@ -232,7 +243,7 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
       : proposal.data_cong_hien
         ? [proposal.data_cong_hien]
         : []
-  ) as Record<string, any>[];
+  ) as ProposalCongHienItem[];
 
   // Enrich stale records with latest personnel/unit data
   if (proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
@@ -291,7 +302,6 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
       ...dataCongHien.map(d => d.personnel_id).filter(Boolean),
     ];
 
-    // Init map before the loop to avoid undefined reference
     const personnelMap = {};
 
     if (allPersonnelIds.length > 0) {
@@ -340,10 +350,9 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
         personnelMap[p.id] = p;
       });
 
-      // Helper to enrich a data item with personnel info
-      const enrichItem = (item: Record<string, any>) => {
-        const personnel = personnelMap[item.personnel_id];
-        const enrichedItem: Record<string, any> = {
+      const enrichItem = <T extends AnyProposalDataItem>(item: T): T => {
+        const personnel = item.personnel_id ? personnelMap[item.personnel_id] : undefined;
+        const enrichedItem: T = {
           ...item,
           ho_ten: item.ho_ten || personnel?.ho_ten || '',
           nam: item.nam ?? proposal.createdAt.getFullYear(),
@@ -376,7 +385,6 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
         return enrichedItem;
       };
 
-      // Enrich all data arrays
       dataDanhHieu = dataDanhHieu.map(enrichItem);
       dataThanhTich = dataThanhTich.map(enrichItem);
       dataNienHan = dataNienHan.map(enrichItem);
@@ -416,8 +424,16 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
           danhHieuMap[personnelId].push(dh);
         });
 
-        dataDanhHieu = dataDanhHieu.map((item: Record<string, any>) => {
-          const dbRecords = (danhHieuMap[item.personnel_id] || []) as Record<string, any>[];
+        dataDanhHieu = dataDanhHieu.map((item: ProposalDanhHieuItem) => {
+          const personnelKey = item.personnel_id ?? '';
+          const dbRecords = (danhHieuMap[personnelKey] || []) as Array<{
+            danh_hieu: string;
+            nam: number;
+            so_quyet_dinh?: string | null;
+            file_quyet_dinh?: string | null;
+            file_quyet_dinh_bkbqp?: string | null;
+            file_quyet_dinh_cstdtq?: string | null;
+          }>;
           const matchingRecord = dbRecords.find(
             r => r.danh_hieu === item.danh_hieu && r.nam === item.nam
           );
@@ -584,6 +600,7 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
     data_nien_han: dataNienHan,
     data_cong_hien: dataCongHien,
     files_attached: proposal.files_attached || [],
+    files_attached_admin: proposal.files_attached_admin || [],
     ghi_chu: proposal.ghi_chu,
     rejection_reason: proposal.rejection_reason || null,
     nguoi_duyet: proposal.NguoiDuyet

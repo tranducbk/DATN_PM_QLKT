@@ -55,6 +55,11 @@ function filterSelectByLabel(input: string, option?: DefaultOptionType) {
   return label.toLowerCase().includes(input.toLowerCase());
 }
 
+function formatDonViDisplay(tenDonVi: string, coQuanTen: string | null): string {
+  if (!tenDonVi) return coQuanTen || '-';
+  return coQuanTen ? `${tenDonVi} (${coQuanTen})` : tenDonVi;
+}
+
 export default function PersonnelPage() {
   const { theme } = useTheme();
   const [personnel, setPersonnel] = useState<PersonnelListItem[]>([]);
@@ -127,9 +132,7 @@ export default function PersonnelPage() {
             donViTrucThuocRelation?.ten_don_vi || donViTrucThuocRelation?.ten || coQuanTen || null;
 
           const tenDonVi = donViTrucThuocRelation?.ten_don_vi || donViTrucThuocRelation?.ten || '';
-          const donViDisplay = tenDonVi
-            ? coQuanTen ? `${tenDonVi} (${coQuanTen})` : tenDonVi
-            : coQuanTen || '-';
+          const donViDisplay = formatDonViDisplay(tenDonVi, coQuanTen);
 
           const resolvedCoQuanId =
             p.co_quan_don_vi_id ||

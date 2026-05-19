@@ -127,7 +127,7 @@ async function collectDonViHangNamDuplicates(
   danhHieuData: ProposalDanhHieuItem[]
 ): Promise<string[]> {
   const errors: string[] = [];
-  const { proposalYear, proposalType } = ctx;
+  const { proposalId, proposalYear, proposalType } = ctx;
 
   const selectedDanhHieu = danhHieuData.map(item => item.danh_hieu).filter(Boolean);
   const validDonViDanhHieu = new Set<string>(Object.values(DANH_HIEU_DON_VI_HANG_NAM));
@@ -158,9 +158,13 @@ async function collectDonViHangNamDuplicates(
   const validUnitItems = danhHieuData.filter(item => item.don_vi_id && item.danh_hieu);
   const unitDuplicateErrors = await Promise.all(
     validUnitItems.map(item =>
-      checkDuplicateUnitAward(item.don_vi_id, proposalYear, item.danh_hieu, proposalType).then(r =>
-        r.exists ? `${item.ten_don_vi || 'Một đơn vị'}: ${r.message}` : null
-      )
+      checkDuplicateUnitAward(
+        item.don_vi_id,
+        proposalYear,
+        item.danh_hieu,
+        proposalType,
+        proposalId
+      ).then(r => (r.exists ? `${item.ten_don_vi || 'Một đơn vị'}: ${r.message}` : null))
     )
   );
   unitDuplicateErrors.filter(Boolean).forEach(err => errors.push(err as string));

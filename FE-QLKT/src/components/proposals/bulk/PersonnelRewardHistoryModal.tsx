@@ -4,6 +4,7 @@ import { Modal, Button, Descriptions, Tabs, Table, Tag, Typography, message } fr
 import { HistoryOutlined, DownloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { previewFileWithApi } from '@/lib/file/filePreview';
+import { getDanhHieuName } from '@/constants/danhHieu.constants';
 
 const { Text } = Typography;
 
@@ -88,13 +89,7 @@ export function PersonnelRewardHistoryModal({
       align: 'center',
       render: text => {
         if (!text) return <Text type="secondary">-</Text>;
-        const map: Record<string, string> = {
-          CSTDCS: 'Chiến sĩ thi đua cơ sở',
-          CSTT: 'Chiến sĩ tiên tiến',
-          BKBQP: 'Bằng khen Bộ Quốc phòng',
-          CSTDTQ: 'Chiến sĩ thi đua toàn quân',
-        };
-        return map[text] || text;
+        return getDanhHieuName(text);
       },
     },
     {

@@ -46,8 +46,6 @@
 % package content table
 \usepackage{tocbasic}
 
-\usepackage{blindtext}
-
 
 % ===================================================
 
@@ -63,9 +61,15 @@
 
 \input{Tu_viet_tat}
 
-% Cho phép xuống dòng tên cột DB dài trong bảng (vd: co_quan_don_vi_id)
-\newcommand{\dbid}[1]{\nolinkurl{#1}}
-\renewcommand{\UrlBreaks}{\do\_\do\.\do\/\do\:\do\-}
+% Tên cột DB trong bảng schema — monospace, ngắt dòng sát _ không thêm trắng
+\makeatletter
+\newcommand{\dbid}[1]{{\ttfamily\@db@split#1_\@nil}}
+\def\@db@split#1_#2\@nil{%
+  #1%
+  \ifx\@nil#2\@nil\else
+    \textunderscore\discretionary{}{}{}\@db@split#2\@nil
+  \fi}
+\makeatother
 
 % Cho phép LaTeX nới rộng khoảng cách để tránh tràn margin với \texttt{} dài
 \setlength{\emergencystretch}{3em}
@@ -114,15 +118,13 @@
 \renewcommand{\headrulewidth}{0pt}
 \renewcommand{\footrulewidth}{0pt}}
 
-\setlength{\headheight}{10pt}
+\setlength{\headheight}{18pt}
 
 \def \TITLE{Xây dựng phần mềm quản lý khen thưởng tại Học viện Khoa học Quân sự}
 \def \AUTHOR{Trần Anh Đức}
 
 % ===================================================
-\titleformat{\chapter}[hang]{\centering\bfseries}{CHƯƠNG \thechapter.\ }{0pt}{}[]
-
-\titleformat 
+\titleformat
     {\chapter} % command
     [hang] % shape
     {\centering\bfseries} % format
@@ -183,7 +185,7 @@
 	
 \usepackage[all]{hypcap} % Cho phép tham chiếu chính xác đến hình ảnh và bảng biểu
 
-\graphicspath{{figures/}{../figures/}} % Thư mục chứa các hình ảnh
+\graphicspath{{Hinhve/}{../Hinhve/}} % Thư mục chứa các hình ảnh
 
 \counterwithin{figure}{chapter} % Đánh số hình ảnh kèm theo chapter. Ví dụ: Hình 1.1, 1.2,..
 
@@ -212,28 +214,22 @@
 % \restoregeometry
 
 % ===================================================
-\pagenumbering{roman}
-% \pagestyle{empty} % Header và footer rỗng
-%\newpage
-%\subfile{chapters/0_1_subject.tex}
+\pagenumbering{gobble} % Front matter không đánh số trang
+\pagestyle{empty} % Header/footer rỗng cho toàn bộ front matter
 
 \newpage
-\pagenumbering{gobble}
 \subfile{Chuong/0_2a_Loi_cam_ket.tex}
 
 \newpage
-\pagenumbering{gobble}
 \subfile{Chuong/0_2_Loi_cam_on.tex}
 
 \newpage
-\pagenumbering{gobble}
 \subfile{Chuong/0_3_Tom_tat_noi_dung.tex}
 
-% ===================================================
-% \pagestyle{empty} % Header và footer rỗng
 \newpage
-\pagenumbering{gobble} % Front matter (mục lục, danh mục) không đánh số trang
-\pagestyle{empty} % Header/footer rỗng cho toàn bộ front matter
+\subfile{Chuong/0_4_Tom_tat_noi_dung_English.tex}
+
+% ===================================================
 \renewcommand*\contentsname{MỤC LỤC}
 
 \titlecontents{chapter}

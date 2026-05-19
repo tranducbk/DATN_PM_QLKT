@@ -2,10 +2,6 @@ import axiosInstance from '@/lib/axiosInstance';
 import { getApiErrorMessage } from '@/lib/apiError';
 import type { ApiResponse } from '@/lib/types/common';
 
-/**
- * getAnnualProfile API wrapper.
- * @returns API response payload
- */
 export async function getAnnualProfile(personnelId: string, year?: number): Promise<ApiResponse> {
   try {
     // If year is provided, API will auto-recalculate before returning
@@ -20,10 +16,6 @@ export async function getAnnualProfile(personnelId: string, year?: number): Prom
   }
 }
 
-/**
- * getTenureProfile API wrapper.
- * @returns API response payload
- */
 export async function getTenureProfile(personnelId: string): Promise<ApiResponse> {
   try {
     // Auto-recalculates on every call
@@ -35,10 +27,6 @@ export async function getTenureProfile(personnelId: string): Promise<ApiResponse
   }
 }
 
-/**
- * getContributionProfile API wrapper.
- * @returns API response payload
- */
 export async function getContributionProfile(personnelId: string): Promise<ApiResponse> {
   try {
     // Auto-recalculates on every call
@@ -51,18 +39,10 @@ export async function getContributionProfile(personnelId: string): Promise<ApiRe
 }
 
 // Deprecated: kept for backward compatibility
-/**
- * getServiceProfile API wrapper.
- * @returns API response payload
- */
 export async function getServiceProfile(personnelId: string): Promise<ApiResponse> {
   return getTenureProfile(personnelId);
 }
 
-/**
- * recalculateProfile API wrapper.
- * @returns API response payload
- */
 export async function recalculateProfile(personnelId: string, year?: number): Promise<ApiResponse> {
   try {
     const url = year
@@ -76,10 +56,6 @@ export async function recalculateProfile(personnelId: string, year?: number): Pr
 }
 
 
-/**
- * getAllServiceProfiles API wrapper.
- * @returns API response payload
- */
 export async function getAllServiceProfiles(): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get('/api/profiles/service');
@@ -89,10 +65,6 @@ export async function getAllServiceProfiles(): Promise<ApiResponse> {
   }
 }
 
-/**
- * updateServiceProfile API wrapper.
- * @returns API response payload
- */
 export async function updateServiceProfile(
   personnelId: string,
   updates: Record<string, unknown>

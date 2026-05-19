@@ -300,13 +300,15 @@ export async function checkDuplicateAward(
  * @param nam - Award year under review
  * @param danhHieu - Proposed unit-award code
  * @param proposalType - Expected unit annual proposal type
+ * @param excludeProposalId - Exclude current record during approve flow
  * @returns exists=true when a pending proposal or stored award blocks insert
  */
 export async function checkDuplicateUnitAward(
   donViId: string,
   nam: number,
   danhHieu: string,
-  proposalType: string
+  proposalType: string,
+  excludeProposalId: string | null = null
 ): Promise<DuplicateCheckResult> {
     if (proposalType === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
       const proposals = await proposalRepository.findManyRaw({
@@ -314,6 +316,7 @@ export async function checkDuplicateUnitAward(
           loai_de_xuat: PROPOSAL_TYPES.DON_VI_HANG_NAM,
           nam,
           status: PROPOSAL_STATUS.PENDING,
+          ...(excludeProposalId ? { id: { not: excludeProposalId } } : {}),
         },
       });
 

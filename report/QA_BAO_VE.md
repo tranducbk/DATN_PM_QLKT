@@ -106,19 +106,20 @@
 
 **Phản biện:** "PostgreSQL có nặng cho LAN nội bộ?" → "Một instance Postgres ăn ~150 MB RAM ở idle, hoàn toàn chạy được trên server 4 GB như em đề xuất."
 
-### A.5 — Tại sao tách Joi ở backend và Zod ở frontend?
+### A.5 — Tại sao chọn Zod cho cả backend và frontend?
 
-**Ngắn:** Joi tích hợp tốt với Express middleware có sẵn, Zod tích hợp tốt với React Hook Form và infer type cho TypeScript ở FE. Hai thư viện phục vụ hai môi trường khác nhau.
+**Ngắn:** Zod cho phép suy luận kiểu TypeScript trực tiếp từ schema (`z.infer<typeof schema>`), nên dùng cùng một thư viện ở cả hai phía giúp lập trình viên không phải học hai cú pháp khác nhau cho cùng một mục đích và mở đường để chia sẻ schema giữa BE/FE.
 
 **Chi tiết:**
-- **Joi (BE):** dùng trong middleware `validate.ts`, mỗi endpoint có schema riêng (vd: `accountValidation.create`). Joi có `stripUnknown: true` để loại bỏ field thừa do client gửi (chống mass assignment).
-- **Zod (FE):** infer kiểu trực tiếp từ schema → form data type-safe khi submit. Tích hợp `zodResolver` của React Hook Form rất ngắn.
-- Lý do **không dùng cùng 1 thư viện hai bên:**
-  - Zod ở Express phải qua wrapper, không có ecosystem đầy đủ cho async validation.
-  - Joi ở React phải tự viết resolver, infer type yếu.
-- **Hạn chế:** Schema bị duplicate ở 2 phía. Có thể dùng `tRPC` hoặc shared package nếu sau này monorepo.
+- **Zod ở BE:** dùng trong middleware `validate.ts` để kiểm tra `req.body`, `req.query`, `req.params`; mỗi endpoint có schema riêng (vd: `accountValidation.create`). `z.object()` mặc định strip các field ngoài schema (chống mass assignment) mà không cần option như `stripUnknown` của Joi.
+- **Zod ở FE:** infer kiểu trực tiếp từ schema → form data type-safe khi submit. Schema dùng trong Ant Design Form qua validator tuỳ chỉnh hoặc trong React Hook Form qua `zodResolver`.
+- Lý do **chọn Zod thay vì Joi** (lựa chọn ban đầu của em):
+  - Joi không có khả năng suy luận kiểu TypeScript — kết quả validate trả về `unknown`, ép phải cast hoặc khai báo type song song.
+  - Joi và Zod có cú pháp hoàn toàn khác nhau; nếu dùng Joi BE + Zod FE thì lập trình viên phải nhớ hai API cho cùng một thao tác (validate string, refine, transform...).
+  - Zod hỗ trợ async validation, refinement và transform đầy đủ, đủ dùng cho mọi rule nghiệp vụ của PM QLKT.
+- **Hạn chế hiện tại:** Schema vẫn được khai báo riêng ở BE và FE (chưa shared qua workspace package). Trong tương lai có thể tách thành package `shared/` để loại bỏ phần lặp này.
 
-**Phản biện:** "Sao không dùng class-validator như NestJS?" → "Em không dùng decorator để giữ tương thích với TS không có experimental flag."
+**Phản biện:** "Sao không dùng class-validator như NestJS?" → "Em không dùng decorator để giữ tương thích với TS không bật experimental flag, đồng thời để cú pháp schema BE giống hệt FE."
 
 ### A.6 — Tại sao JWT (access + refresh) chứ không phải session-based?
 
@@ -307,16 +308,16 @@ RootLayout (app/layout.tsx)
 
 ### A.15 — TypeScript config: BE `strict: false`, FE strict — tại sao khác?
 
-**Ngắn:** BE em đặt `strict: false` để giảm friction khi viết Joi validation và Prisma query lồng. FE bật strict đầy đủ vì component cần type-safe để IDE refactor an toàn.
+**Ngắn:** BE em đặt `strict: false` để giảm friction khi viết Prisma query lồng và cast Prisma JSON column. FE bật strict đầy đủ vì component cần type-safe để IDE refactor an toàn.
 
 **File config:**
 - `BE-QLKT/tsconfig.json`: `strict: false`, `strictNullChecks: false`, `target: ES2020`, `module: CommonJS`. Output không phải `.js` build (em dùng `tsx watch` ở dev và `tsc` ở production build vào `dist/`).
 - `FE-QLKT/tsconfig.json`: `strict: true`, `target: ES2017`, `module: esnext`, `moduleResolution: bundler`, `paths: { "@/*": ["./src/*"] }` cho path alias.
 
 **Lý do BE relax:**
-- Joi schema trả `unknown`, ép cast nhiều chỗ — `strictNullChecks` ép thêm `if (x !== undefined)` rườm rà.
 - Prisma `findUnique` trả `T | null`, đôi khi em chắc chắn record tồn tại (vừa create xong) → cast `!` hoặc destructure không null check là acceptable.
-- BE đã có Joi validation ở route → input đã được làm sạch, runtime safety không phụ thuộc TS strict.
+- Prisma JSON column (vd: `data_danh_hieu`) có kiểu `Prisma.JsonValue` — `strictNullChecks` ép thêm narrow rườm rà cho mỗi lần đọc field bên trong.
+- BE đã có Zod validation ở route → input đã được làm sạch, runtime safety không phụ thuộc TS strict.
 
 **Lý do FE strict:**
 - Component nhận props nhiều cấp lồng — strict null check cứu khỏi `Cannot read property 'x' of undefined` khi render.
@@ -1295,25 +1296,25 @@ res.download(safePath);
 
 ### C.9 — Privilege escalation: USER tự tăng role thành ADMIN
 
-**Ngắn:** Role nằm trong JWT chữ ký, chỉ server biết secret. User không sửa được payload mà giữ chữ ký valid. Ngay cả khi user gửi field `role` trong body, Joi `stripUnknown: true` loại bỏ.
+**Ngắn:** Role nằm trong JWT chữ ký, chỉ server biết secret. User không sửa được payload mà giữ chữ ký valid. Ngay cả khi user gửi field `role` trong body, Zod schema không khai báo field đó nên sẽ bị strip mặc định.
 
 **Bonus phòng:**
-- Endpoint update profile cá nhân không cho update field `role` (Joi schema chỉ liệt kê `ho_ten`, `email`).
+- Endpoint update profile cá nhân không cho update field `role` (Zod schema chỉ liệt kê `ho_ten`, `email`).
 - Endpoint update tài khoản (`PUT /api/accounts/:id`) chỉ cho `requireSuperAdmin`.
 
 ### C.10 — Mass assignment
 
-**Ngắn:** Tất cả Joi schema dùng `stripUnknown: true` để loại bỏ field thừa client gửi. Không bao giờ truyền `req.body` thẳng vào `prisma.create()`.
+**Ngắn:** Tất cả Zod schema dùng `z.object()` mặc định strip field ngoài khai báo. Không bao giờ truyền `req.body` thẳng vào `prisma.create()`.
 
 ```typescript
-// Joi config
-Joi.object({
-  ho_ten: Joi.string().required(),
-  email: Joi.string().email().optional(),
-}).options({ stripUnknown: true });
+// Zod config
+z.object({
+  ho_ten: z.string(),
+  email: z.string().email().optional(),
+});
 
 // User gửi { ho_ten: 'A', role: 'ADMIN', is_super: true }
-// → sau validate: { ho_ten: 'A' } — role và is_super bị strip
+// → sau parse: { ho_ten: 'A' } — role và is_super bị strip
 ```
 
 ### C.11 — Thông tin nhạy cảm trong response
@@ -2631,7 +2632,7 @@ Project em chủ yếu unit + service unit, có ~10 integration test trong `test
 
 ### J.9 — Validation BE bypass nếu attacker gọi trực tiếp API?
 
-**Trả lời:** Joi validate ở middleware, chạy TRƯỚC controller. Bypass FE không bypass được BE.
+**Trả lời:** Zod validate ở middleware, chạy TRƯỚC controller. Bypass FE không bypass được BE.
 
 ```typescript
 router.post('/', verifyToken, validate(schema), controller.create);
@@ -2660,7 +2661,7 @@ Nếu schema validate fail → response 400 ngay, controller không được g�
 
 **Cơ chế chống:**
 - `MAX_LIMIT = 100` trong `helpers/paginationHelper.ts` → service tự cap `limit` xuống 100.
-- Joi schema validate `limit: Joi.number().max(100)`.
+- Zod schema validate `limit: z.coerce.number().max(100)`.
 
 ### J.14 — User download file không có quyền
 
@@ -2836,7 +2837,7 @@ const ANH_HUNG_LLVT: ChainAwardConfig = {
    → thêm 1 dòng vào REGISTRY
    
 6. validations/proposal.validation.ts
-   → thêm Joi schema cho loại mới
+   → thêm Zod schema cho loại mới
    
 7. tests/services/eligibility-anh-hung-llvt-personal.test.ts (file mới)
    → 30-50 ca kiểm thử
@@ -3031,7 +3032,7 @@ Mỗi file giờ đảm nhận 1 concern, dễ test riêng, dễ tìm khi debug.
 - Giảm boilerplate `?? null` không cần thiết.
 
 **Bù lại:**
-- Joi validate input ở boundary → đảm bảo type runtime.
+- Zod validate input ở boundary → đảm bảo type runtime.
 - Test cases cover các trường hợp null/undefined.
 
 **Hạn chế thừa nhận:** `strict: true` sẽ bắt nhiều bug hơn ở compile time. Nếu rebuild project sẽ bật strict ngay từ đầu.
@@ -3103,9 +3104,9 @@ export const proposalService = new ProposalService();
 | 3 | **CSRF** (CWE-352) | JWT trong header `Authorization`, không cookie session → browser không tự gửi cross-origin | `middlewares/auth.ts` | Không |
 | 4 | **IDOR / BOLA** (CWE-639) | 3 lớp: `verifyToken` + `requireRole` + ownership check trong service; `unitFilter` lọc theo cây đơn vị cho MANAGER | `auth.ts`, `unitFilter.ts`, services | Thấp |
 | 5 | **Brute force password** (CWE-307) | `authLimiter` 10 req / 15 phút / IP; bcrypt cost 10 (~100 ms/lần thử) | `configs/rateLimiter.ts` | Trung bình (chưa account lockout) |
-| 6 | **Mass Assignment** (CWE-915) | Joi `stripUnknown: true` ở mọi endpoint; service không truyền `req.body` thẳng vào `prisma.create` | `middlewares/validate.ts` + `validations/` | Không |
+| 6 | **Mass Assignment** (CWE-915) | Zod `z.object()` mặc định strip field ngoài schema ở mọi endpoint; service không truyền `req.body` thẳng vào `prisma.create` | `middlewares/validate.ts` + `validations/` | Không |
 | 7 | **File upload độc** (CWE-434) | Multer whitelist extension + MIME + size 10 MB; lưu ngoài web root; check magic byte cho PDF | `configs/multer.ts` | Thấp (chưa scan virus) |
-| 8 | **Privilege escalation** (CWE-269) | Role trong JWT chữ ký HMAC, không sửa được client-side; Joi schema không cho update field `role` qua self-update | JWT + Joi | Không |
+| 8 | **Privilege escalation** (CWE-269) | Role trong JWT chữ ký HMAC, không sửa được client-side; Zod schema không cho update field `role` qua self-update | JWT + Zod | Không |
 | 9 | **Path traversal** (CWE-22) | File path từ DB chứ không từ user; `path.basename` strip mọi `../` | `decision.service.ts` download | Không |
 | 10 | **Missing auth** (CWE-306) | `verifyToken` middleware bắt buộc trước mọi route nghiệp vụ; không có endpoint nghiệp vụ public | Mọi `routes/*.ts` | Không |
 | 11 | **Sensitive Data Exposure** (CWE-200) | Prisma `select` whitelist field; không trả `password_hash`, `refreshToken`; CCCD ẩn cho USER | services + helpers | Thấp |
@@ -3987,7 +3988,7 @@ const [quanNhans, danhHieus, lichSus] = await Promise.all([
 
 ## Câu trả lời cho câu 20 — "Em sẽ làm khác gì?"
 
-"Có ba điều em sẽ làm khác. **Một**, em sẽ áp dụng Repository pattern ngay từ đầu thay vì tách sau khi service đã lớn — sẽ tiết kiệm 1 tuần refactor. **Hai**, em sẽ viết test cho Controller layer ngay từ đầu, không chỉ Service — coverage Controller hiện chỉ 60 %. **Ba**, em sẽ dùng `tRPC` hoặc shared schema package để tránh duplicate Joi/Zod giữa BE và FE. Tuy nhiên những điểm này không phải critical, em vẫn hài lòng với kiến trúc tổng thể đã chọn."
+"Có ba điều em sẽ làm khác. **Một**, em sẽ áp dụng Repository pattern ngay từ đầu thay vì tách sau khi service đã lớn — sẽ tiết kiệm 1 tuần refactor. **Hai**, em sẽ viết test cho Controller layer ngay từ đầu, không chỉ Service — coverage Controller hiện chỉ 60 %. **Ba**, em sẽ tách schema Zod ra một workspace package dùng chung giữa BE và FE ngay từ đầu (thay vì khai báo song song) để loại bỏ phần duplicate hiện tại. Tuy nhiên những điểm này không phải critical, em vẫn hài lòng với kiến trúc tổng thể đã chọn."
 
 ---
 

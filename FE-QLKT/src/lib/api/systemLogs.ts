@@ -12,10 +12,6 @@ export type SystemLogsResponse<T = unknown> = ApiResponse<T> & {
   stats?: SystemLogStats;
 };
 
-/**
- * getSystemLogs API wrapper.
- * @returns API response payload
- */
 export async function getSystemLogs(params?: Record<string, unknown>): Promise<SystemLogsResponse> {
   try {
     const res = await axiosInstance.get('/api/system-logs', { params });
@@ -25,10 +21,6 @@ export async function getSystemLogs(params?: Record<string, unknown>): Promise<S
   }
 }
 
-/**
- * getSystemLogActions API wrapper.
- * @returns API response payload
- */
 export async function getSystemLogActions(): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get('/api/system-logs/actions');
@@ -38,10 +30,6 @@ export async function getSystemLogActions(): Promise<ApiResponse> {
   }
 }
 
-/**
- * getSystemLogResources API wrapper.
- * @returns API response payload
- */
 export async function getSystemLogResources(): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get('/api/system-logs/resources');
@@ -51,10 +39,6 @@ export async function getSystemLogResources(): Promise<ApiResponse> {
   }
 }
 
-/**
- * deleteSystemLogs API wrapper.
- * @returns API response payload
- */
 export async function deleteSystemLogs(ids: string[]): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete('/api/system-logs', { data: { ids } });
@@ -64,10 +48,6 @@ export async function deleteSystemLogs(ids: string[]): Promise<ApiResponse> {
   }
 }
 
-/**
- * deleteAllSystemLogs API wrapper.
- * @returns API response payload
- */
 export async function deleteAllSystemLogs(): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete('/api/system-logs/all');

@@ -46,6 +46,7 @@ export interface ParsedApproveBody {
     so_quyet_dinh_nckh?: string;
   };
   pdfFiles: Record<string, Express.Multer.File | undefined>;
+  adminAttachedFiles: Express.Multer.File[];
 }
 
 export interface GetPdfFileParams {

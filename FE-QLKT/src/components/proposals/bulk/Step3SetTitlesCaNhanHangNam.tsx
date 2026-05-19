@@ -282,7 +282,7 @@ export function Step3SetTitlesCaNhanHangNam({
     return false;
   };
 
-  const updateTitle = async (id: string, field: string, value: any) => {
+  const updateTitle = async <K extends keyof TitleData>(id: string, field: K, value: TitleData[K]) => {
     if (field === 'danh_hieu' && value) {
       if (checkAlreadyReceived(id, value)) {
         const p = personnel.find(p => p.id === id);

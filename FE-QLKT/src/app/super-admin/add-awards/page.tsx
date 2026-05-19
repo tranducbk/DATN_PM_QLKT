@@ -66,21 +66,12 @@ export default function SuperAdminAddAwardsPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  // Step 1: Select Personnel
   const [nam, setNam] = useState(new Date().getFullYear());
   const [thang, setThang] = useState(new Date().getMonth() + 1);
   const [selectedPersonnelIds, setSelectedPersonnelIds] = useState<string[]>([]);
-
-  // Step 2: Set Titles
   const [titleData, setTitleData] = useState<any[]>([]);
-
-  // Step 3: Personnel details for review
   const [personnelDetails, setPersonnelDetails] = useState<Personnel[]>([]);
-
-  // Step 3: Note
   const [note, setNote] = useState<string>('');
-
-  // Step 4: Decision data
   const [decisionDataMap, setDecisionDataMap] = useState<
     Record<string, { so_quyet_dinh: string; decision?: any }>
   >({});
@@ -314,7 +305,6 @@ export default function SuperAdminAddAwardsPage() {
         );
 
       case 3: {
-        // Step 4: Review
         const reviewTableData = personnelDetails.map(p => {
           const titleInfo = titleData.find(t => String(t.personnel_id) === String(p.id));
           return {
@@ -431,7 +421,6 @@ export default function SuperAdminAddAwardsPage() {
       }
 
       case 4: {
-        // Step 5: Decision numbers
         const decisionColumns: ColumnsType<any> = [
           {
             title: 'STT',
@@ -529,7 +518,6 @@ export default function SuperAdminAddAwardsPage() {
       }
 
       case 5: {
-        // Step 6: Final confirm
         const finalColumns: ColumnsType<any> = [
           {
             title: 'STT',

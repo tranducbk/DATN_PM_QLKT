@@ -97,31 +97,18 @@ export default function CreateProposalPage() {
   // Prevents save effect from overwriting the existing draft with defaults on initial mount
   const suppressNextSave = React.useRef(true);
 
-  // Step 1: Proposal Type
   const [proposalType, setProposalType] = useState<ProposalType>(PROPOSAL_TYPES.CA_NHAN_HANG_NAM);
-
-  // Step 2: Select Personnel/Units
   const [nam, setNam] = useState(new Date().getFullYear());
   const [thang, setThang] = useState(new Date().getMonth() + 1);
   const [selectedPersonnelIds, setSelectedPersonnelIds] = useState<string[]>([]);
   const [selectedUnitIds, setSelectedUnitIds] = useState<string[]>([]);
-
-  // Step 3: Set Titles
   const [titleData, setTitleData] = useState<TitleDataItem[]>([]);
-
-  // HCBVTQ contribution profiles
   const [contributionProfiles, setContributionProfiles] = useState<
     Record<string, ContributionProfile>
   >({});
-
-  // Step 4: Upload Files
   const [attachedFiles, setAttachedFiles] = useState<UploadFile[]>([]);
-
-  // Step 5: Personnel/Unit details for review
   const [personnelDetails, setPersonnelDetails] = useState<Personnel[]>([]);
   const [unitDetails, setUnitDetails] = useState<UnitApiRow[]>([]);
-
-  // Step 5: Note
   const [proposalNote, setProposalNote] = useState<string>('');
 
   const getProposalReferenceEndDate = (): Date => computeProposalReferenceEndDate(nam, thang);

@@ -89,7 +89,7 @@ PM QLKT/
 - **List APIs**: Luôn dùng `ResponseHelper.paginated()` để trả `data` + `pagination.total` — kể cả khi chưa phân trang thật (default limit cao)
 - **Unit priority**: Khi xác định đơn vị của quân nhân, luôn ưu tiên `don_vi_truc_thuoc_id || co_quan_don_vi_id` (DVTT trước, CQDV sau — vì CQDV có thể là đơn vị cha)
 - **Unit count (`so_luong`)**: Khi thay đổi đơn vị quân nhân, dùng `if/else` (chỉ increment/decrement 1 đơn vị), không dùng 2 `if` riêng biệt (tránh đếm dư)
-- **Validation**: Joi schemas in `validations/` directory
+- **Validation**: Zod schemas in `validations/` directory
 - **Error classes**: `AppError`, `NotFoundError`, `ForbiddenError`
 - **Type declarations**: Khai báo `interface`/`type` ở đầu file (sau imports), không khai báo inline trong function body. Đặc biệt `req.body`, `req.query`, `req.params` phải được cast sang named interface/type — không dùng `req.body as { field?: string }` trực tiếp
 - **Fire-and-forget logs**: `writeSystemLog` trong catch block phải dùng `void writeSystemLog(...)` — không bỏ qua promise hoàn toàn
@@ -183,7 +183,7 @@ Khi có ≥ 4 nhánh `if/else` dispatch theo enum/type (vd: 7 loại đề xuấ
 ### DRY (Don't Repeat Yourself)
 - Magic numbers → extract vào `constants/` (vd: `MAX_EXCEL_ROWS`, `MIN_TEMPLATE_ROWS`)
 - Logic lặp 2+ lần → extract function
-- Joi schemas giống nhau → tạo base schema rồi extend
+- Zod schemas giống nhau → tạo base schema rồi `.extend()`
 - FE columns giống nhau → dùng factory functions với optional params
 - **Trước khi tạo helper/map mới**: BẮT BUỘC `grep` constants/ và lib/ tìm xem đã có chưa. Vd: định viết `Record<string, string> = { BKBQP: '...', CSTDTQ: '...' }` thì phải dùng `DANH_HIEU_MAP` / `getDanhHieuName()` từ `constants/danhHieu.constants.ts` thay vì duplicate.
 - **Khi extract helper từ page lớn**: kiểm tra `constants/`, `lib/`, `lib/award/`, `lib/proposal/` trước. Chỉ tạo helper local nếu không có sẵn.
@@ -195,9 +195,9 @@ Khi có ≥ 4 nhánh `if/else` dispatch theo enum/type (vd: 7 loại đề xuấ
 - Excel: dùng `loadWorkbook()` + `getAndValidateWorksheet()` từ helpers
 
 ### Security
-- Validate `req.body` bằng Joi trước khi pass vào service
+- Validate `req.body` bằng Zod trước khi pass vào service
 - Filter composition: dùng `AND` khi combine multiple where conditions, không overwrite
-- `stripUnknown: true` trong Joi để bỏ fields thừa
+- Zod object schema mặc định strip unknown keys — không dùng `.passthrough()` trừ khi thực sự cần
 
 ### User-facing error messages
 - **Không bao giờ leak technical ID** (CUID, UUID, internal field names) vào message hiển thị cho user.
@@ -219,7 +219,7 @@ Khi có ≥ 4 nhánh `if/else` dispatch theo enum/type (vd: 7 loại đề xuấ
 ### Khi thêm feature mới (Excel import/export)
 1. Define columns trong service, gọi `buildTemplate(config)` — không viết inline
 2. Preview import: dùng `loadWorkbook()` + `getAndValidateWorksheet()` + `batchQueryPersonnel()`
-3. Confirm import: dùng `runConfirmTransaction()` + Joi validation trên route
+3. Confirm import: dùng `runConfirmTransaction()` + Zod validation trên route
 4. Constants: thêm vào `excel.constants.ts`, không hardcode
 5. FE: dùng `createPreviewImport(url)` / `createConfirmImport(url)` factory
 

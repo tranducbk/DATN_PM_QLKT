@@ -268,6 +268,53 @@ describe('approveProposal — NIEN_HAN (HCCSVV)', () => {
     );
   });
 
+  it('regression: duplicate check exclude chính proposal đang duyệt (không self-match)', async () => {
+    const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-self-nh' });
+    const personnel = makePersonnel({
+      unit: cqdv,
+      id: 'qn-self-nh',
+      ho_ten: 'Nguyễn Self NH',
+      ngay_nhap_ngu: new Date('2010-01-01'),
+    });
+    const proposal = makeProposal({
+      id: 'p-nh-self',
+      loai: PROPOSAL_TYPES.NIEN_HAN,
+      nam: 2024,
+      thang: 6,
+      nguoi_de_xuat_id: ADMIN_ID,
+      unit: cqdv,
+      data_nien_han: [buildItem(personnel.id, DANH_HIEU_HCCSVV.HANG_BA)],
+    });
+
+    prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
+    prismaMock.quanNhan.findMany.mockResolvedValueOnce([{ id: personnel.id, ho_ten: personnel.ho_ten }]);
+    prismaMock.khenThuongHCCSVV.findFirst.mockResolvedValue(null);
+    prismaMock.bangDeXuat.findMany.mockResolvedValue([]);
+    prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
+      id: ADMIN_ID,
+      username: 'admin',
+      QuanNhan: { ho_ten: 'Admin' },
+    });
+    prismaMock.khenThuongHCCSVV.findMany.mockResolvedValueOnce([]);
+    prismaMock.quanNhan.findUnique.mockResolvedValueOnce(personnel);
+    prismaMock.khenThuongHCCSVV.upsert.mockResolvedValueOnce({});
+    prismaMock.hoSoNienHan.upsert.mockResolvedValueOnce({});
+    prismaMock.bangDeXuat.updateMany.mockResolvedValueOnce({ count: 1 });
+
+    await proposalService.approveProposal(proposal.id, {}, ADMIN_ID, {}, {}, null);
+
+    expect(prismaMock.bangDeXuat.updateMany.mock.calls[0][0].data.status).toBe(
+      PROPOSAL_STATUS.APPROVED
+    );
+    const dupCall = prismaMock.bangDeXuat.findMany.mock.calls.find(
+      ([args]) =>
+        args?.where?.loai_de_xuat === PROPOSAL_TYPES.NIEN_HAN &&
+        args?.where?.status === PROPOSAL_STATUS.PENDING
+    );
+    expect(dupCall).toBeDefined();
+    expect(dupCall![0].where.id).toEqual({ not: proposal.id });
+  });
+
   it('approve transaction rollback: missing personnel_id aggregates into ValidationError', async () => {
     const personnel = makePersonnel({
       id: 'qn-msg-nh',

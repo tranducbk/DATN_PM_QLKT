@@ -165,7 +165,8 @@ class ProposalController {
       user.id,
       parsed.decisions,
       parsed.pdfFiles,
-      body.ghi_chu || null
+      body.ghi_chu || null,
+      parsed.adminAttachedFiles
     );
     void safeNotify(
       {

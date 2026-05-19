@@ -6,7 +6,7 @@ Chương này trình bày kết quả khảo sát hiện trạng công tác thi 
 \section{Khảo sát hiện trạng}
 \label{section:2.1}
 
-Trước khi có phần mềm chuyên dụng, công tác thi đua -- khen thưởng tại HVKHQS dựa vào ba nguồn dữ liệu: hồ sơ giấy lưu tại Phòng Chính trị, các tệp Microsoft Excel chia sẻ qua thư mục mạng nội bộ và sổ theo dõi tay của từng đơn vị. Qua trao đổi với cán bộ phụ trách thi đua, nhóm thực hiện đồ án ghi nhận một số đặc điểm sau.
+Trước khi có phần mềm chuyên dụng, công tác thi đua -- khen thưởng tại HVKHQS dựa vào ba nguồn dữ liệu: hồ sơ giấy lưu tại Phòng Chính trị, các tệp Microsoft Excel chia sẻ qua thư mục mạng nội bộ và sổ theo dõi tay của từng đơn vị. Qua trao đổi với cán bộ phụ trách thi đua, tác giả đồ án ghi nhận một số đặc điểm sau.
 
 Cấp đề xuất đầu tiên là cán bộ chỉ huy đơn vị hoặc cán bộ chính trị cấp cơ quan, nắm danh sách quân nhân thuộc phạm vi quản lý và lập đề nghị theo từng năm hoặc theo các đợt đặc biệt. Cấp xét duyệt là Phòng Chính trị Học viện, kiểm tra điều kiện rồi lập tờ trình gửi Ban Giám đốc. Cấp ký quyết định là Giám đốc Học viện với các danh hiệu thuộc thẩm quyền, hoặc cấp trên (Tổng cục II, Bộ Quốc phòng, Thủ tướng Chính phủ) với các danh hiệu vượt thẩm quyền. Quân nhân được khen thưởng tiếp nhận thông tin thụ động qua văn bản hoặc bảng tin đơn vị.
 
@@ -205,11 +205,11 @@ Phần này đặc tả sáu use case trọng yếu của hệ thống. Mỗi us
 \caption{Đặc tả use case UC-01 Đăng nhập}
 \label{tab:uc01}
 \renewcommand{\arraystretch}{1.2}
-\begin{tabular}{|>{\centering\arraybackslash}p{3.2cm}|>{\centering\arraybackslash}p{0.8cm}|p{2.8cm}|p{6.4cm}|}
+\begin{tabular}{|>{\centering\arraybackslash}p{3.2cm}|>{\centering\arraybackslash}p{0.8cm}|p{2.8cm}|p{6.2cm}|}
 \hline
 \textbf{Tên use case} & \multicolumn{3}{l|}{Đăng nhập hệ thống} \\ \hline
 \textbf{Tác nhân} & \multicolumn{3}{l|}{SuperAdmin, Admin, Manager, User} \\ \hline
-\textbf{Tiền điều kiện} & \multicolumn{3}{p{10.6cm}|}{Người dùng đã có tài khoản hợp lệ; trình duyệt cho phép \texttt{localStorage}.} \\ \hline
+\textbf{Tiền điều kiện} & \multicolumn{3}{p{10.4cm}|}{Người dùng đã có tài khoản hợp lệ; trình duyệt cho phép \texttt{localStorage}.} \\ \hline
 \multirow{7}{*}{\parbox{3.2cm}{\centering\textbf{Luồng sự kiện chính}\\\textbf{(Thành công)}}}
  & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
  & 1. & Người dùng & Truy cập trang \texttt{/login} \\ \cline{2-4}
@@ -223,7 +223,7 @@ Phần này đặc tả sáu use case trọng yếu của hệ thống. Mỗi us
  & 4a. & Hệ thống & Báo ``Tài khoản hoặc mật khẩu không đúng'' \\ \cline{2-4}
  & 4b. & Hệ thống & Báo ``Tài khoản đã bị tạm khoá, liên hệ quản trị viên'' \\ \cline{2-4}
  & 5a. & Hệ thống & Vượt ngưỡng 30 yêu cầu đăng nhập thất bại / IP / 5 phút, từ chối tạm thời với mã 429 \\ \hline
-\textbf{Hậu điều kiện} & \multicolumn{3}{p{10.6cm}|}{Phiên đăng nhập được thiết lập; nhật ký đăng nhập được ghi với \texttt{action = LOGIN}.} \\ \hline
+\textbf{Hậu điều kiện} & \multicolumn{3}{p{10.4cm}|}{Phiên đăng nhập được thiết lập; nhật ký đăng nhập được ghi với \texttt{action = LOGIN}.} \\ \hline
 \end{tabular}
 \end{table}
 
@@ -231,7 +231,7 @@ Phần này đặc tả sáu use case trọng yếu của hệ thống. Mỗi us
 \centering
 \caption{Dữ liệu đầu vào cho chức năng đăng nhập}
 \label{tab:uc01-input}
-\begin{tabular}{|c|p{3.5cm}|p{4.5cm}|c|p{2.5cm}|}
+\begin{tabular}{|c|p{3.2cm}|p{4.3cm}|c|p{2.5cm}|}
 \hline
 \textbf{STT} & \textbf{Trường dữ liệu} & \textbf{Mô tả} & \textbf{Bắt buộc} & \textbf{Ví dụ hợp lệ} \\ \hline
 1 & Tên đăng nhập & Tên tài khoản đăng nhập & Có & \texttt{ducta} \\ \hline
@@ -244,11 +244,11 @@ Phần này đặc tả sáu use case trọng yếu của hệ thống. Mỗi us
 \caption{Đặc tả use case UC-02 Tạo mới quân nhân}
 \label{tab:uc02}
 \renewcommand{\arraystretch}{1.2}
-\begin{tabular}{|>{\centering\arraybackslash}p{3.2cm}|>{\centering\arraybackslash}p{0.8cm}|p{2.8cm}|p{6.4cm}|}
+\begin{tabular}{|>{\centering\arraybackslash}p{3.2cm}|>{\centering\arraybackslash}p{0.8cm}|p{2.8cm}|p{6.2cm}|}
 \hline
 \textbf{Tên use case} & \multicolumn{3}{l|}{Tạo mới hồ sơ quân nhân} \\ \hline
 \textbf{Tác nhân} & \multicolumn{3}{l|}{Admin} \\ \hline
-\textbf{Tiền điều kiện} & \multicolumn{3}{p{10.6cm}|}{Đã đăng nhập với vai trò Admin; cây tổ chức (CQĐV/ĐVTT) đã có dữ liệu.} \\ \hline
+\textbf{Tiền điều kiện} & \multicolumn{3}{p{10.4cm}|}{Đã đăng nhập với vai trò Admin; cây tổ chức (CQĐV/ĐVTT) đã có dữ liệu.} \\ \hline
 \multirow{8}{*}{\parbox{3.2cm}{\centering\textbf{Luồng sự kiện chính}\\\textbf{(Thành công)}}}
  & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
  & 1. & Admin & Truy cập ``Quản lý quân nhân'' và bấm ``Thêm mới'' \\ \cline{2-4}
@@ -263,7 +263,7 @@ Phần này đặc tả sáu use case trọng yếu của hệ thống. Mỗi us
  & 4a. & Hệ thống & Có trường bắt buộc bị thiếu, chặn ngay tại biểu mẫu \\ \cline{2-4}
  & 5a. & Hệ thống & CCCD đã tồn tại, trả lỗi ``Số CCCD đã tồn tại trong hệ thống'' \\ \cline{2-4}
  & 6a. & Hệ thống & Đơn vị được chọn không tồn tại, trả lỗi và huỷ bỏ giao dịch \\ \hline
-\textbf{Hậu điều kiện} & \multicolumn{3}{p{10.6cm}|}{Bản ghi mới có trong bảng quân nhân; số lượng quân nhân của đơn vị tăng 1; nhật ký \texttt{action = CREATE, resource = personnel} được ghi đầy đủ.} \\ \hline
+\textbf{Hậu điều kiện} & \multicolumn{3}{p{10.4cm}|}{Bản ghi mới có trong bảng quân nhân; số lượng quân nhân của đơn vị tăng 1; nhật ký \texttt{action = CREATE, resource = personnel} được ghi đầy đủ.} \\ \hline
 \end{tabular}
 \end{table}
 
@@ -271,7 +271,7 @@ Phần này đặc tả sáu use case trọng yếu của hệ thống. Mỗi us
 \centering
 \caption{Dữ liệu đầu vào cho chức năng tạo mới quân nhân}
 \label{tab:uc02-input}
-\begin{tabular}{|c|p{3.5cm}|p{4.5cm}|c|p{2.5cm}|}
+\begin{tabular}{|c|p{3.2cm}|p{4.3cm}|c|p{2.5cm}|}
 \hline
 \textbf{STT} & \textbf{Trường dữ liệu} & \textbf{Mô tả} & \textbf{Bắt buộc} & \textbf{Ví dụ hợp lệ} \\ \hline
 1 & Họ và tên & Họ tên đầy đủ của quân nhân & Có & Trần Anh Đức \\ \hline
@@ -289,11 +289,11 @@ Phần này đặc tả sáu use case trọng yếu của hệ thống. Mỗi us
 \caption{Đặc tả use case UC-03 Tạo đề xuất khen thưởng}
 \label{tab:uc03}
 \renewcommand{\arraystretch}{1.2}
-\begin{tabular}{|>{\centering\arraybackslash}p{3.2cm}|>{\centering\arraybackslash}p{0.8cm}|p{2.8cm}|p{6.4cm}|}
+\begin{tabular}{|>{\centering\arraybackslash}p{3.2cm}|>{\centering\arraybackslash}p{0.8cm}|p{2.8cm}|p{6.2cm}|}
 \hline
 \textbf{Tên use case} & \multicolumn{3}{l|}{Tạo đề xuất khen thưởng cho một đợt} \\ \hline
 \textbf{Tác nhân} & \multicolumn{3}{l|}{Admin, Manager} \\ \hline
-\textbf{Tiền điều kiện} & \multicolumn{3}{p{10.6cm}|}{Đã đăng nhập; có ít nhất một quân nhân thuộc phạm vi quản lý của Manager.} \\ \hline
+\textbf{Tiền điều kiện} & \multicolumn{3}{p{10.4cm}|}{Đã đăng nhập; có ít nhất một quân nhân thuộc phạm vi quản lý của Manager.} \\ \hline
 \multirow{9}{*}{\parbox{3.2cm}{\centering\textbf{Luồng sự kiện chính}\\\textbf{(Thành công)}}}
  & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
  & 1. & Người dùng & Truy cập ``Đề xuất khen thưởng'' và bấm ``Tạo đề xuất mới'' \\ \cline{2-4}
@@ -309,7 +309,7 @@ Phần này đặc tả sáu use case trọng yếu của hệ thống. Mỗi us
  & 4a. & Hệ thống & Có quân nhân chưa đủ điều kiện, hiển thị cảnh báo nhưng vẫn cho phép gửi nếu Manager xác nhận \\ \cline{2-4}
  & 4b. & Hệ thống & Manager chọn quân nhân ngoài phạm vi đơn vị, từ chối với lỗi 403 \\ \cline{2-4}
  & 7a. & Hệ thống & Có lỗi mạng, lưu nháp ở \texttt{localStorage} để không mất dữ liệu \\ \hline
-\textbf{Hậu điều kiện} & \multicolumn{3}{p{10.6cm}|}{Bản ghi đề xuất được tạo ở trạng thái chờ duyệt; thông báo đã gửi tới Admin; nhật ký \texttt{action = CREATE, resource = proposals} được ghi cùng tóm tắt loại và số lượng đối tượng.} \\ \hline
+\textbf{Hậu điều kiện} & \multicolumn{3}{p{10.4cm}|}{Bản ghi đề xuất được tạo ở trạng thái chờ duyệt; thông báo đã gửi tới Admin; nhật ký \texttt{action = CREATE, resource = proposals} được ghi cùng tóm tắt loại và số lượng đối tượng.} \\ \hline
 \end{tabular}
 \end{table}
 
@@ -317,7 +317,7 @@ Phần này đặc tả sáu use case trọng yếu của hệ thống. Mỗi us
 \centering
 \caption{Dữ liệu đầu vào cho chức năng tạo đề xuất khen thưởng}
 \label{tab:uc03-input}
-\begin{tabular}{|c|p{3.5cm}|p{4.5cm}|c|p{2.5cm}|}
+\begin{tabular}{|c|p{3.2cm}|p{4.3cm}|c|p{2.5cm}|}
 \hline
 \textbf{STT} & \textbf{Trường dữ liệu} & \textbf{Mô tả} & \textbf{Bắt buộc} & \textbf{Ví dụ hợp lệ} \\ \hline
 1 & Loại đề xuất & Một trong bảy nhóm khen thưởng & Có & CSTĐCS \\ \hline
@@ -334,11 +334,11 @@ Phần này đặc tả sáu use case trọng yếu của hệ thống. Mỗi us
 \caption{Đặc tả use case UC-04 Phê duyệt đề xuất}
 \label{tab:uc04}
 \renewcommand{\arraystretch}{1.2}
-\begin{tabular}{|>{\centering\arraybackslash}p{3.2cm}|>{\centering\arraybackslash}p{0.8cm}|p{2.8cm}|p{6.4cm}|}
+\begin{tabular}{|>{\centering\arraybackslash}p{3.2cm}|>{\centering\arraybackslash}p{0.8cm}|p{2.8cm}|p{6.2cm}|}
 \hline
 \textbf{Tên use case} & \multicolumn{3}{l|}{Phê duyệt một đề xuất khen thưởng} \\ \hline
 \textbf{Tác nhân} & \multicolumn{3}{l|}{Admin} \\ \hline
-\textbf{Tiền điều kiện} & \multicolumn{3}{p{10.6cm}|}{Đề xuất đang ở trạng thái chờ duyệt; Admin có quyền phê duyệt loại đề xuất tương ứng.} \\ \hline
+\textbf{Tiền điều kiện} & \multicolumn{3}{p{10.4cm}|}{Đề xuất đang ở trạng thái chờ duyệt; Admin có quyền phê duyệt loại đề xuất tương ứng.} \\ \hline
 \multirow{8}{*}{\parbox{3.2cm}{\centering\textbf{Luồng sự kiện chính}\\\textbf{(Thành công)}}}
  & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
  & 1. & Admin & Mở chi tiết đề xuất từ danh sách ``Chờ duyệt'' \\ \cline{2-4}
@@ -354,7 +354,7 @@ Phần này đặc tả sáu use case trọng yếu của hệ thống. Mỗi us
  & 4a. & Hệ thống & Số quyết định trùng, cảnh báo và yêu cầu xác nhận trước khi tiếp tục \\ \cline{2-4}
  & 5b. & Admin & Từ chối thay vì phê duyệt: trạng thái chuyển ``Từ chối'' kèm lý do \\ \cline{2-4}
  & 5c. & Hệ thống & Lỗi tại bước ghi (vd: vi phạm quy tắc một lần duy nhất), huỷ toàn bộ giao dịch \\ \hline
-\textbf{Hậu điều kiện} & \multicolumn{3}{p{10.6cm}|}{Trạng thái đề xuất là ``Đã duyệt'' hoặc ``Từ chối''; nếu được duyệt, các bản ghi khen thưởng đã có trong cơ sở dữ liệu, hồ sơ suy diễn được tính lại, thông báo đã gửi, nhật ký đầy đủ.} \\ \hline
+\textbf{Hậu điều kiện} & \multicolumn{3}{p{10.4cm}|}{Trạng thái đề xuất là ``Đã duyệt'' hoặc ``Từ chối''; nếu được duyệt, các bản ghi khen thưởng đã có trong cơ sở dữ liệu, hồ sơ suy diễn được tính lại, thông báo đã gửi, nhật ký đầy đủ.} \\ \hline
 \end{tabular}
 \end{table}
 
@@ -362,7 +362,7 @@ Phần này đặc tả sáu use case trọng yếu của hệ thống. Mỗi us
 \centering
 \caption{Dữ liệu đầu vào cho chức năng phê duyệt đề xuất}
 \label{tab:uc04-input}
-\begin{tabular}{|c|p{3.5cm}|p{4.5cm}|c|p{2.5cm}|}
+\begin{tabular}{|c|p{3.2cm}|p{4.3cm}|c|p{2.5cm}|}
 \hline
 \textbf{STT} & \textbf{Trường dữ liệu} & \textbf{Mô tả} & \textbf{Bắt buộc} & \textbf{Ví dụ hợp lệ} \\ \hline
 1 & Số quyết định & Số quyết định khen thưởng (tham chiếu PDF đã tải lên trước) & Có & 1234/QĐ-HV \\ \hline
@@ -376,11 +376,11 @@ Phần này đặc tả sáu use case trọng yếu của hệ thống. Mỗi us
 \caption{Đặc tả use case UC-05 Tính lại điều kiện khen thưởng và sinh gợi ý}
 \label{tab:uc05}
 \renewcommand{\arraystretch}{1.2}
-\begin{tabular}{|>{\centering\arraybackslash}p{3.2cm}|>{\centering\arraybackslash}p{0.8cm}|p{2.8cm}|p{6.4cm}|}
+\begin{tabular}{|>{\centering\arraybackslash}p{3.2cm}|>{\centering\arraybackslash}p{0.8cm}|p{2.8cm}|p{6.2cm}|}
 \hline
 \textbf{Tên use case} & \multicolumn{3}{l|}{Tính lại điều kiện khen thưởng hằng năm và sinh gợi ý} \\ \hline
-\textbf{Tác nhân} & \multicolumn{3}{p{10.6cm}|}{Admin, Manager (kích hoạt chủ động); Hệ thống (tự động sau mỗi lần phê duyệt).} \\ \hline
-\textbf{Tiền điều kiện} & \multicolumn{3}{p{10.6cm}|}{Quân nhân tồn tại; có ít nhất một bản ghi danh hiệu hằng năm.} \\ \hline
+\textbf{Tác nhân} & \multicolumn{3}{p{10.4cm}|}{Admin, Manager (kích hoạt chủ động); Hệ thống (tự động sau mỗi lần phê duyệt).} \\ \hline
+\textbf{Tiền điều kiện} & \multicolumn{3}{p{10.4cm}|}{Quân nhân tồn tại; có ít nhất một bản ghi danh hiệu hằng năm.} \\ \hline
 \multirow{6}{*}{\parbox{3.2cm}{\centering\textbf{Luồng sự kiện chính}\\\textbf{(Thành công)}}}
  & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
  & 1. & Hệ thống & Truy vấn toàn bộ danh hiệu hằng năm của quân nhân \\ \cline{2-4}
@@ -393,7 +393,7 @@ Phần này đặc tả sáu use case trọng yếu của hệ thống. Mỗi us
  & 3a. & Hệ thống & Quân nhân đã nhận BKTTCP, trả về thông điệp ``Đã có BKTTCP'' \\ \cline{2-4}
  & 3b. & Hệ thống & Số năm CSTĐCS liên tục chưa đủ chu kỳ, gợi ý số năm cần tích luỹ thêm \\ \cline{2-4}
  & 3c. & Hệ thống & Năm hiện tại đúng vào mốc lỡ đợt, giải thích cách xét lại ở chu kỳ kế tiếp \\ \hline
-\textbf{Hậu điều kiện} & \multicolumn{3}{p{10.6cm}|}{Hồ sơ suy diễn nhất quán với dữ liệu nguồn; trang chi tiết quân nhân hiển thị các danh hiệu đủ điều kiện kèm thông điệp gợi ý.} \\ \hline
+\textbf{Hậu điều kiện} & \multicolumn{3}{p{10.4cm}|}{Hồ sơ suy diễn nhất quán với dữ liệu nguồn; trang chi tiết quân nhân hiển thị các danh hiệu đủ điều kiện kèm thông điệp gợi ý.} \\ \hline
 \end{tabular}
 \end{table}
 
@@ -402,11 +402,11 @@ Phần này đặc tả sáu use case trọng yếu của hệ thống. Mỗi us
 \caption{Đặc tả use case UC-06 Nhập dữ liệu khen thưởng hàng loạt từ tệp Excel}
 \label{tab:uc06}
 \renewcommand{\arraystretch}{1.2}
-\begin{tabular}{|>{\centering\arraybackslash}p{3.2cm}|>{\centering\arraybackslash}p{0.8cm}|p{2.8cm}|p{6.4cm}|}
+\begin{tabular}{|>{\centering\arraybackslash}p{3.2cm}|>{\centering\arraybackslash}p{0.8cm}|p{2.8cm}|p{6.2cm}|}
 \hline
 \textbf{Tên use case} & \multicolumn{3}{l|}{Nhập dữ liệu khen thưởng hàng loạt từ tệp Excel} \\ \hline
 \textbf{Tác nhân} & \multicolumn{3}{l|}{Admin} \\ \hline
-\textbf{Tiền điều kiện} & \multicolumn{3}{p{10.6cm}|}{Đã có tệp mẫu tải xuống từ hệ thống và điền dữ liệu theo cấu trúc cột quy định.} \\ \hline
+\textbf{Tiền điều kiện} & \multicolumn{3}{p{10.4cm}|}{Đã có tệp mẫu tải xuống từ hệ thống và điền dữ liệu theo cấu trúc cột quy định.} \\ \hline
 \multirow{9}{*}{\parbox{3.2cm}{\centering\textbf{Luồng sự kiện chính}\\\textbf{(Thành công)}}}
  & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
  & 1. & Admin & Truy cập chức năng nhập tệp Excel và chọn loại nghiệp vụ \\ \cline{2-4}
@@ -422,7 +422,7 @@ Phần này đặc tả sáu use case trọng yếu của hệ thống. Mỗi us
  & 3a. & Hệ thống & Tệp sai định dạng hoặc thiếu trang tính bắt buộc, báo lỗi và dừng xử lý \\ \cline{2-4}
  & 4a. & Admin & Có dòng lỗi ở bước xem trước, có thể tải tệp xuống sửa và tải lại \\ \cline{2-4}
  & 7a. & Hệ thống & Có lỗi tại bước ghi, huỷ bỏ toàn bộ giao dịch và giữ nguyên dữ liệu cũ \\ \hline
-\textbf{Hậu điều kiện} & \multicolumn{3}{p{10.6cm}|}{Các bản ghi hợp lệ trong tệp được ghi vào cơ sở dữ liệu; nhật ký hành động được ghi với tổng kết số dòng thành công và số dòng lỗi; Admin nhận thông báo kết quả thời gian thực.} \\ \hline
+\textbf{Hậu điều kiện} & \multicolumn{3}{p{10.4cm}|}{Các bản ghi hợp lệ trong tệp được ghi vào cơ sở dữ liệu; nhật ký hành động được ghi với tổng kết số dòng thành công và số dòng lỗi; Admin nhận thông báo kết quả thời gian thực.} \\ \hline
 \end{tabular}
 \end{table}
 
@@ -430,7 +430,7 @@ Phần này đặc tả sáu use case trọng yếu của hệ thống. Mỗi us
 \centering
 \caption{Dữ liệu đầu vào cho chức năng nhập Excel hàng loạt}
 \label{tab:uc06-input}
-\begin{tabular}{|c|p{3.5cm}|p{4.5cm}|c|p{2.5cm}|}
+\begin{tabular}{|c|p{3.2cm}|p{4.3cm}|c|p{2.5cm}|}
 \hline
 \textbf{STT} & \textbf{Trường dữ liệu} & \textbf{Mô tả} & \textbf{Bắt buộc} & \textbf{Ví dụ hợp lệ} \\ \hline
 1 & Loại nghiệp vụ & Quân nhân, danh hiệu hằng năm, lịch sử chức vụ, ... & Có & Danh hiệu \\ \hline

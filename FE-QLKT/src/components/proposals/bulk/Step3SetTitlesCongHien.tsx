@@ -21,6 +21,8 @@ import {
   getContributionRequiredMonths,
   getHighestEligibleContributionMedal,
   getReferenceEndDate,
+  type PositionHistoryLike,
+  type CongHienGroup,
 } from '@/lib/award/contributionTimeHelper';
 
 const { Text } = Typography;
@@ -195,7 +197,7 @@ export function Step3SetTitlesCongHien({
     }
   };
 
-  const calculateTotalMonthsByGroup = (histories: any[], group: '0.7' | '0.8' | '0.9-1.0') => {
+  const calculateTotalMonthsByGroup = (histories: PositionHistoryLike[], group: CongHienGroup) => {
     if (!histories?.length) return 0;
     const referenceEndDate = getReferenceEndDate(nam, thang);
     return calculateContributionMonthsByGroup(histories, group, referenceEndDate);
@@ -208,7 +210,7 @@ export function Step3SetTitlesCongHien({
     return formatMonthsToText(totalMonths);
   };
 
-  const updateTitle = async (id: string, field: string, value: any) => {
+  const updateTitle = async <K extends keyof TitleData>(id: string, field: K, value: TitleData[K]) => {
     // danh_hieu is auto-set to the highest eligible rank — no manual validation needed
 
     const newData = [...titleData];

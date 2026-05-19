@@ -551,7 +551,7 @@ ORDER BY gio;
 
 ### Q3. "Tại sao bảng `BangDeXuat` lại có 4 cột JSON `data_*` thay vì tách bảng?"
 
-**Trả lời**: Bảy loại đề xuất có schema chi tiết khác nhau (cá nhân hằng năm cần `data_danh_hieu`, niên hạn cần `data_nien_han`, cống hiến cần `data_cong_hien`...). Nếu tách 7 bảng thì query "lấy tất cả đề xuất pending" phải UNION ALL 7 bảng — vừa rườm rà vừa chậm. Em chọn JSON để giữ schema linh hoạt; xác thực dữ liệu chi tiết được làm ở tầng Joi và `ProposalStrategy` của backend.
+**Trả lời**: Bảy loại đề xuất có schema chi tiết khác nhau (cá nhân hằng năm cần `data_danh_hieu`, niên hạn cần `data_nien_han`, cống hiến cần `data_cong_hien`...). Nếu tách 7 bảng thì query "lấy tất cả đề xuất pending" phải UNION ALL 7 bảng — vừa rườm rà vừa chậm. Em chọn JSON để giữ schema linh hoạt; xác thực dữ liệu chi tiết được làm ở tầng Zod và `ProposalStrategy` của backend.
 
 ### Q4. "Làm sao em đảm bảo `so_luong` của đơn vị luôn khớp với số quân nhân thực?"
 
@@ -567,7 +567,7 @@ ORDER BY gio;
 
 ### Q7. "Có chống SQL Injection không?"
 
-**Trả lời**: Có, chống mặc định ở 2 lớp: (1) **Joi validation** ở middleware kiểm tra kiểu/định dạng `req.body`, `req.query`, `req.params` — không hợp lệ thì trả 400 ngay; (2) **Prisma luôn dùng prepared statement** (parameterized query) — tham số được escape tự động, không thể inject SQL. Trường hợp `$queryRawUnsafe` (em chỉ dùng ở 1 script đổi tên cột) thì input là tên cột hard-code chứ không phải user input nên cũng an toàn.
+**Trả lời**: Có, chống mặc định ở 2 lớp: (1) **Zod validation** ở middleware kiểm tra kiểu/định dạng `req.body`, `req.query`, `req.params` — không hợp lệ thì trả 400 ngay; (2) **Prisma luôn dùng prepared statement** (parameterized query) — tham số được escape tự động, không thể inject SQL. Trường hợp `$queryRawUnsafe` (em chỉ dùng ở 1 script đổi tên cột) thì input là tên cột hard-code chứ không phải user input nên cũng an toàn.
 
 ### Q8. "Có chỗ nào em phải tối ưu performance đặc biệt không?"
 

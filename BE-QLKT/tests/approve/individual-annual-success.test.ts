@@ -340,6 +340,51 @@ describe('approveProposal — CA_NHAN_HANG_NAM (success paths)', () => {
     expect(upsertArgs.create.nhan_bkttcp).toBeUndefined();
   });
 
+  it('regression: duplicate check exclude chính proposal đang duyệt (không self-match)', async () => {
+    const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-self-cn' });
+    const personnel = makePersonnel({ unit: cqdv, id: 'qn-self-cn', ho_ten: 'Nguyễn Self CN' });
+    const item = makeProposalItemCaNhan({
+      personnel_id: personnel.id,
+      ho_ten: personnel.ho_ten,
+      danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS,
+      so_quyet_dinh: 'QD-SELF-CN-1',
+    });
+    const proposal = makeProposal({
+      id: 'prop-self-cn',
+      loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
+      status: PROPOSAL_STATUS.PENDING,
+      nam: 2024,
+      nguoi_de_xuat_id: ADMIN_ID,
+      unit: cqdv,
+      data_danh_hieu: [item],
+    });
+
+    prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
+    prismaMock.quanNhan.findMany.mockResolvedValueOnce([{ id: personnel.id, ho_ten: personnel.ho_ten }]);
+    prismaMock.danhHieuHangNam.findFirst.mockResolvedValue(null);
+    prismaMock.bangDeXuat.findMany.mockResolvedValue([]);
+    prismaMock.quanNhan.findUnique.mockResolvedValueOnce(personnel);
+    prismaMock.danhHieuHangNam.upsert.mockResolvedValueOnce(
+      makeAnnualRecord({
+        personnelId: personnel.id,
+        nam: 2024,
+        danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS,
+      })
+    );
+    prismaMock.bangDeXuat.updateMany.mockResolvedValueOnce({ count: 1 });
+
+    await proposalService.approveProposal(proposal.id, {}, ADMIN_ID, {}, {}, null);
+
+    expect(prismaMock.bangDeXuat.updateMany.mock.calls[0][0].data.status).toBe(
+      PROPOSAL_STATUS.APPROVED
+    );
+    const dupCall = prismaMock.bangDeXuat.findMany.mock.calls.find(
+      ([args]) => args?.where?.loai_de_xuat === PROPOSAL_TYPES.CA_NHAN_HANG_NAM
+    );
+    expect(dupCall).toBeDefined();
+    expect(dupCall![0].where.id).toEqual({ not: proposal.id });
+  });
+
   it('edge case: data_danh_hieu rỗng → bỏ qua mixed-group check, vẫn approve', async () => {
     // Given: đề xuất CA_NHAN_HANG_NAM rỗng — không có item để import
     const proposal = makeProposal({

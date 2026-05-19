@@ -485,7 +485,8 @@ model BangDeXuat {
   data_thanh_tich      Json? // Dữ liệu thành tích (JSON array) - cho HANG_NAM
   data_nien_han        Json? // Dữ liệu khen thưởng niên hạn (JSON array) - cho NIEN_HAN
   data_cong_hien       Json? // Dữ liệu khen thưởng cống hiến (JSON array) - cho CONG_HIEN
-  files_attached       Json? // Array các file đính kèm: [{ filename, originalName, size, uploadedAt }]
+  files_attached       Json? // Array các file đính kèm của Manager: [{ filename, originalName, size, uploadedAt }]
+  files_attached_admin Json? // Array các file đính kèm của Admin khi duyệt (optional): [{ filename, originalName, size, uploadedAt }]
   ghi_chu              String?   @db.Text // Ghi chú từ Manager hoặc Admin
   rejection_reason     String?   @db.Text // Lý do từ chối (nếu status = REJECTED)
   nguoi_duyet_id       String?   @db.VarChar(30) // ID tài khoản Admin phê duyệt

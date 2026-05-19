@@ -78,7 +78,7 @@ _(Ký và ghi rõ họ tên)_
   - 3.4 Ant Design + Tailwind CSS + shadcn/ui
   - 3.5 Socket.IO — Real-time
   - 3.6 JWT (Access + Refresh)
-  - 3.7 Joi & Zod — Validation hai phía
+  - 3.7 Zod — Validation hai phía thống nhất
   - 3.8 Jest — Khuôn khổ kiểm thử
   - 3.9 ExcelJS — Nhập/xuất Excel
 - [**Chương 4. Thiết kế, triển khai và đánh giá hệ thống**](#chương-4-thiết-kế-triển-khai-và-đánh-giá-hệ-thống)
@@ -223,7 +223,7 @@ Phần còn lại của báo cáo được tổ chức thành năm chương theo
 
 **Chương 2 — Khảo sát và phân tích yêu cầu** trình bày kết quả khảo sát thực tế công tác khen thưởng tại Học viện Khoa học Quân sự, xác định các tác nhân tham gia hệ thống, mô tả tổng quan chức năng qua sơ đồ use case và các sơ đồ hoạt động cho những quy trình nghiệp vụ chính (đề xuất – phê duyệt, kiểm tra điều kiện chuỗi, nhập Excel hàng loạt). Phần đặc tả chi tiết sáu use case trọng yếu được trình bày dưới dạng bảng. Cuối cùng, chương đưa ra các yêu cầu phi chức năng về hiệu năng, bảo mật và tính nhất quán.
 
-**Chương 3 — Công nghệ sử dụng** giới thiệu các thành phần công nghệ được lựa chọn cho dự án và lý do chọn từng thành phần trong ngữ cảnh PM QLKT, bao gồm Next.js 14 App Router, Express + TypeScript, PostgreSQL + Prisma, các thư viện giao diện (Ant Design, Tailwind, shadcn/ui), Socket.IO, JWT, Joi, Zod, Jest và ExcelJS.
+**Chương 3 — Công nghệ sử dụng** giới thiệu các thành phần công nghệ được lựa chọn cho dự án và lý do chọn từng thành phần trong ngữ cảnh PM QLKT, bao gồm Next.js 14 App Router, Express + TypeScript, PostgreSQL + Prisma, các thư viện giao diện (Ant Design, Tailwind, shadcn/ui), Socket.IO, JWT, Zod, Jest và ExcelJS.
 
 **Chương 4 — Thiết kế, triển khai và đánh giá hệ thống** đi sâu vào kiến trúc phân tầng của hệ thống, sơ đồ gói cho frontend và backend, sơ đồ lớp cho năm module nghiệp vụ trọng yếu, các sơ đồ tuần tự cho luồng đăng nhập, tạo đề xuất, phê duyệt và tính lại điều kiện chuỗi, thiết kế cơ sở dữ liệu (ERD đầy đủ và mô tả schema), phần xây dựng thực tế kèm các đoạn mã minh họa, kết quả kiểm thử và hướng dẫn triển khai bằng Docker hoặc PM2.
 
@@ -332,7 +332,7 @@ Khác biệt quan trọng với chuỗi cá nhân là điều kiện cờ "ít n
 Học viện có lượng dữ liệu lịch sử lớn được lưu trên Excel trước khi triển khai phần mềm; do đó chức năng nhập Excel hàng loạt là cầu nối quan trọng giúp hệ thống tiếp nhận dữ liệu cũ mà không phải nhập tay từng bản ghi. Quy trình gồm bốn use case con:
 
 - **Tải tệp mẫu** — hệ thống sinh tệp Excel có cấu trúc cột chuẩn theo từng loại nghiệp vụ (quân nhân, danh hiệu hằng năm, lịch sử chức vụ, niên hạn, ...) cùng các Data Validation rule cho phép chọn từ danh sách thả xuống ngay trong tệp.
-- **Xem trước** — sau khi cán bộ điền dữ liệu và tải tệp lên, hệ thống đọc nội dung từng dòng, đối chiếu với schema Joi và các quy tắc nghiệp vụ, sau đó hiển thị kết quả gồm danh sách dòng hợp lệ và danh sách dòng có lỗi (kèm chỉ số dòng và mô tả lỗi). Bước này không ghi vào cơ sở dữ liệu.
+- **Xem trước** — sau khi cán bộ điền dữ liệu và tải tệp lên, hệ thống đọc nội dung từng dòng, đối chiếu với schema Zod và các quy tắc nghiệp vụ, sau đó hiển thị kết quả gồm danh sách dòng hợp lệ và danh sách dòng có lỗi (kèm chỉ số dòng và mô tả lỗi). Bước này không ghi vào cơ sở dữ liệu.
 - **Xác nhận** — cán bộ kiểm tra danh sách hợp lệ rồi xác nhận. Hệ thống mở một transaction Prisma, ghi tuần tự từng dòng; nếu xảy ra lỗi tại bất kỳ dòng nào, toàn bộ thao tác được hủy bỏ và cơ sở dữ liệu giữ nguyên trạng thái trước khi nhập.
 - **Xuất danh sách** — cho phép xuất kết quả khen thưởng theo nhiều tiêu chí (theo năm, theo đơn vị, theo loại danh hiệu) ra tệp Excel có định dạng phù hợp với mẫu báo cáo nội bộ của Học viện.
 
@@ -360,7 +360,7 @@ Bên cạnh sơ đồ use case, ba quy trình nghiệp vụ phức tạp nhất 
 
 **Quy trình B — Tính điều kiện chuỗi cho một quân nhân** (Hình 2.16). Khi cán bộ truy cập trang hồ sơ của một quân nhân, hệ thống nạp toàn bộ bản ghi `DanhHieuHangNam` của quân nhân đó, sắp xếp giảm dần theo năm và chạy hàm `computeChainContext`. Hàm này tính ra ba chỉ số chính: (a) độ dài chuỗi CSTĐCS hiện tại (`streakCstdcs`), (b) năm gần nhất có cờ BKBTBQP / CSTĐTQ / BKTTCP, (c) số cờ trong cửa sổ trượt tương ứng (3 năm cho CSTĐTQ, 7 năm cho BKTTCP). Sau đó với mỗi tier trong `PERSONAL_CHAIN_AWARDS`, hàm `checkChainEligibility` đối chiếu số liệu thực tế với cấu hình tier và trả về kết quả `eligible: boolean` kèm thông điệp `reason` bằng tiếng Việt.
 
-**Quy trình C — Nhập tệp Excel hàng loạt** (Hình 2.17). Cán bộ Admin tải lên tệp Excel chứa danh sách bản ghi cần nhập. Hệ thống đọc tệp ở backend, tách thành các sheet (vd: `QuanNhan`, `DanhHieuHangNam`, `ThanhTichKhoaHoc`) và đọc từng dòng. Mỗi dòng được kiểm tra qua schema Joi và các quy tắc nghiệp vụ liên quan (vd: CCCD không được trùng, đơn vị phải tồn tại). Các dòng hợp lệ và lỗi được tổng hợp vào kết quả `ImportPreview` trả về frontend. Cán bộ xem trước, đối chiếu, có thể quay lại sửa tệp Excel rồi tải lên lại. Khi xác nhận, backend mở transaction Prisma, ghi tuần tự các dòng hợp lệ; nếu có bất kỳ lỗi nào tại thời điểm ghi, transaction được rollback hoàn toàn.
+**Quy trình C — Nhập tệp Excel hàng loạt** (Hình 2.17). Cán bộ Admin tải lên tệp Excel chứa danh sách bản ghi cần nhập. Hệ thống đọc tệp ở backend, tách thành các sheet (vd: `QuanNhan`, `DanhHieuHangNam`, `ThanhTichKhoaHoc`) và đọc từng dòng. Mỗi dòng được kiểm tra qua schema Zod và các quy tắc nghiệp vụ liên quan (vd: CCCD không được trùng, đơn vị phải tồn tại). Các dòng hợp lệ và lỗi được tổng hợp vào kết quả `ImportPreview` trả về frontend. Cán bộ xem trước, đối chiếu, có thể quay lại sửa tệp Excel rồi tải lên lại. Khi xác nhận, backend mở transaction Prisma, ghi tuần tự các dòng hợp lệ; nếu có bất kỳ lỗi nào tại thời điểm ghi, transaction được rollback hoàn toàn.
 
 ## 2.3 Đặc tả use case chi tiết
 
@@ -386,7 +386,7 @@ Phần này đặc tả sáu use case trọng yếu của hệ thống dưới d
 | ID | UC-02 |
 | Tác nhân | Admin |
 | Tiền điều kiện | Đã đăng nhập với vai trò Admin; cây tổ chức (CQĐV/ĐVTT) đã có dữ liệu. |
-| Luồng chính | (1) Admin truy cập "Quản lý quân nhân" → bấm "Thêm mới". (2) Điền các trường bắt buộc (họ tên, CCCD, ngày sinh, giới tính, ngày nhập ngũ, đơn vị, chức vụ). (3) Bấm "Lưu". (4) Frontend xác thực schema Zod; backend xác thực schema Joi. (5) Backend kiểm tra trùng CCCD trong bảng `QuanNhan`. (6) Ghi bản ghi mới và cập nhật bộ đếm `so_luong` của đơn vị. (7) Trả về kết quả thành công, frontend cập nhật bảng danh sách. |
+| Luồng chính | (1) Admin truy cập "Quản lý quân nhân" → bấm "Thêm mới". (2) Điền các trường bắt buộc (họ tên, CCCD, ngày sinh, giới tính, ngày nhập ngũ, đơn vị, chức vụ). (3) Bấm "Lưu". (4) Frontend xác thực schema Zod ở form; backend xác thực lại bằng schema Zod ở route. (5) Backend kiểm tra trùng CCCD trong bảng `QuanNhan`. (6) Ghi bản ghi mới và cập nhật bộ đếm `so_luong` của đơn vị. (7) Trả về kết quả thành công, frontend cập nhật bảng danh sách. |
 | Luồng thay thế | (5a) CCCD đã tồn tại → backend trả về lỗi 409 với message "Số CCCD đã tồn tại trong hệ thống". (4a) Một trường bắt buộc bị thiếu → frontend chặn ngay tại form trước khi gọi API. (6a) Đơn vị được chọn không tồn tại (do bị xoá song song) → backend trả về lỗi 404 và rollback transaction. |
 | Hậu điều kiện | Bản ghi mới có mặt trong `QuanNhan`; số lượng quân nhân của đơn vị tăng 1; nhật ký `action = CREATE, resource = personnel` được ghi với payload chứa CCCD và họ tên. |
 
@@ -434,7 +434,7 @@ Phần này đặc tả sáu use case trọng yếu của hệ thống dưới d
 | ID | UC-06 |
 | Tác nhân | Admin |
 | Tiền điều kiện | Đã có tệp mẫu Excel tải xuống từ hệ thống và điền dữ liệu theo cấu trúc cột chuẩn. |
-| Luồng chính | (1) Admin truy cập "Nhập Excel" → chọn loại nghiệp vụ (vd: "Danh hiệu hằng năm"). (2) Tải lên tệp `.xlsx` qua form. (3) Backend đọc tệp bằng ExcelJS, kiểm tra tên các sheet, đọc tuần tự từng dòng. (4) Mỗi dòng được áp schema Joi và các quy tắc nghiệp vụ (vd: CCCD tồn tại trong `QuanNhan`, năm hợp lệ, danh hiệu nằm trong danh mục cho phép). (5) Tổng hợp kết quả thành đối tượng `{ valid: [...], errors: [...] }`. (6) Trả về frontend hiển thị bảng xem trước với chỉ số dòng, lỗi cụ thể, các dòng hợp lệ tô xanh. (7) Admin kiểm tra, nếu đồng ý thì bấm "Xác nhận nhập". (8) Backend mở transaction Prisma, ghi tuần tự các dòng `valid`. (9) Nếu mọi thao tác thành công, commit transaction và phát sự kiện realtime tổng kết. |
+| Luồng chính | (1) Admin truy cập "Nhập Excel" → chọn loại nghiệp vụ (vd: "Danh hiệu hằng năm"). (2) Tải lên tệp `.xlsx` qua form. (3) Backend đọc tệp bằng ExcelJS, kiểm tra tên các sheet, đọc tuần tự từng dòng. (4) Mỗi dòng được áp schema Zod và các quy tắc nghiệp vụ (vd: CCCD tồn tại trong `QuanNhan`, năm hợp lệ, danh hiệu nằm trong danh mục cho phép). (5) Tổng hợp kết quả thành đối tượng `{ valid: [...], errors: [...] }`. (6) Trả về frontend hiển thị bảng xem trước với chỉ số dòng, lỗi cụ thể, các dòng hợp lệ tô xanh. (7) Admin kiểm tra, nếu đồng ý thì bấm "Xác nhận nhập". (8) Backend mở transaction Prisma, ghi tuần tự các dòng `valid`. (9) Nếu mọi thao tác thành công, commit transaction và phát sự kiện realtime tổng kết. |
 | Luồng thay thế | (3a) Tệp không đúng định dạng `.xlsx` hoặc thiếu sheet bắt buộc → trả về lỗi 400 với mô tả cụ thể. (4a) Có dòng lỗi trong giai đoạn xem trước → admin có thể tải tệp xuống, sửa, tải lại — không tiêu tốn thời gian transaction. (8a) Có lỗi xảy ra trong giai đoạn ghi (vd: trùng khoá unique do dữ liệu mới chen vào giữa hai bước) → toàn bộ transaction rollback, hệ thống trả về lỗi với chỉ số dòng gây lỗi. |
 | Hậu điều kiện | Các bản ghi trong tệp được ghi vào cơ sở dữ liệu; nhật ký `action = IMPORT` được ghi với payload tổng kết số dòng thành công và số dòng lỗi; thông báo realtime gửi tới Admin khởi tạo. |
 
@@ -462,7 +462,7 @@ Bảo mật là yêu cầu được ưu tiên cao nhất do hệ thống lưu tr
 
 **Thứ ba — Phân quyền bốn cấp qua middleware `requireRole`.** Mỗi route nhạy cảm đi qua middleware kiểm tra vai trò của người dùng có nằm trong danh sách cho phép hay không. Phân quyền không chỉ dừng ở vai trò mà còn ở phạm vi quản lý: Manager chỉ truy vấn được dữ liệu của các quân nhân thuộc đơn vị mình quản lý, kiểm soát qua middleware `unitFilter`.
 
-**Thứ tư — Xác thực dữ liệu hai phía.** Frontend dùng Zod để xác thực ngay tại form, ngăn người dùng gửi đi dữ liệu sai định dạng. Backend dùng Joi để xác thực lại tại điểm cuối; kể cả khi frontend bị bỏ qua (vd: tấn công gửi yêu cầu thẳng), backend vẫn từ chối dữ liệu không hợp lệ. Tuỳ chọn `stripUnknown: true` của Joi loại bỏ các trường ngoài schema để tránh người dùng đẩy lén các thuộc tính không được phép.
+**Thứ tư — Xác thực dữ liệu hai phía.** Cả frontend lẫn backend đều dùng Zod để xác thực, với schema khai báo theo cùng phong cách. Frontend xác thực ngay tại form, ngăn người dùng gửi đi dữ liệu sai định dạng; backend xác thực lại tại điểm cuối, kể cả khi frontend bị bỏ qua (vd: tấn công gửi yêu cầu thẳng), backend vẫn từ chối dữ liệu không hợp lệ. Cơ chế strip mặc định của `z.object()` loại bỏ các trường ngoài schema để tránh người dùng đẩy lén các thuộc tính không được phép.
 
 **Thứ năm — Bảo vệ tầng vận chuyển và tầng ứng dụng.** Toàn bộ kết nối tới server qua HTTPS (TLS 1.2 trở lên) khi triển khai sản xuất. Header bảo mật được áp đặt qua middleware Helmet (Content-Security-Policy, X-Frame-Options, X-Content-Type-Options). CORS cấu hình chặt chẽ chỉ cho phép tên miền của frontend chính. Rate limiter giới hạn 100 yêu cầu / IP / 15 phút cho các điểm cuối nhạy cảm như đăng nhập và đặt lại mật khẩu.
 
@@ -548,11 +548,11 @@ Hệ thống áp dụng JWT theo chuẩn RFC 7519 cho cơ chế xác thực khô
 
 Cơ chế làm mới luân phiên (refresh token rotation) yêu cầu mỗi lần dùng Refresh Token, máy chủ sẽ phát hành đồng thời một Refresh Token mới và đánh dấu Refresh Token cũ hết hiệu lực. Cách làm này hạn chế nguy cơ một Refresh Token bị đánh cắp vẫn dùng được lâu dài: nếu kẻ tấn công và người dùng hợp pháp cùng dùng một Refresh Token thì lần làm mới thứ hai sẽ thất bại, máy chủ phát hiện bất thường và buộc người dùng đăng nhập lại. Mật khẩu trước khi lưu vào bảng `TaiKhoan` được băm bằng bcrypt với hệ số chi phí (cost factor) 10, đảm bảo cân bằng giữa thời gian xử lý đăng nhập (vào khoảng 80 mili giây trên máy chủ phát triển) và độ khó tấn công vét cạn nếu cơ sở dữ liệu bị rò rỉ.
 
-## 3.7 Joi và Zod — kiểm tra dữ liệu ở hai phía
+## 3.7 Zod — kiểm tra dữ liệu thống nhất ở hai phía
 
-PM QLKT chia kiểm tra dữ liệu thành hai lớp với hai thư viện khác nhau, mỗi thư viện phù hợp với đặc thù của lớp tương ứng. Tại backend, mọi route nhận dữ liệu từ client đều đi qua middleware `validate(schema)` dùng Joi để kiểm tra `req.body`, `req.query` và `req.params`. Joi cung cấp API định nghĩa schema theo phong cách lập trình hàm nối tiếp (`Joi.object({ nam: Joi.number().integer().min(2000).max(2100).required() })`), gắn được thông điệp tiếng Việt cho từng lỗi và hỗ trợ tùy chọn `stripUnknown: true` để loại bỏ các trường không khai báo trong schema — tránh việc client lén đẩy lên các trường ngoài ý muốn.
+PM QLKT chọn Zod làm thư viện kiểm tra dữ liệu duy nhất cho cả backend lẫn frontend. Tại backend, mọi route nhận dữ liệu từ client đều đi qua middleware `validate(schema)` dùng Zod để kiểm tra `req.body`, `req.query` và `req.params`. Schema được khai báo theo phong cách lập trình hàm nối tiếp (`z.object({ nam: z.number().int().min(2000).max(2100) })`), gắn được thông điệp tiếng Việt cho từng lỗi qua tham số thứ hai và mặc định loại bỏ các trường không khai báo trong schema — tránh việc client lén đẩy lên các trường ngoài ý muốn. Tại frontend, các form do Ant Design Form quản lý được xác thực bằng cùng phong cách schema Zod, cho phép tái sử dụng kinh nghiệm và tránh việc lập trình viên phải học hai thư viện khác nhau cho cùng một mục đích.
 
-Tại frontend, các form do Ant Design Form quản lý được xác thực bằng Zod thông qua thư viện trung gian. Zod có ưu điểm là tích hợp chặt với TypeScript: kiểu của giá trị form được suy luận trực tiếp từ schema (`type FormValues = z.infer<typeof formSchema>`), tránh việc duy trì hai khai báo song song giữa interface và schema. Việc sử dụng hai thư viện khác nhau ở hai phía thoạt nhìn có vẻ trùng lắp nhưng đáp ứng đúng vai trò: Zod tối ưu cho trải nghiệm soạn thảo trên frontend, còn Joi tích hợp tốt với chuỗi middleware Express ở backend. Quan trọng là logic xác thực không tin tưởng vào lớp frontend — backend luôn kiểm tra lại dữ liệu trước khi ghi vào cơ sở dữ liệu.
+Lý do chọn Zod cho cả hai phía thay vì hai thư viện riêng (vd: Joi ở backend, Zod ở frontend) là khả năng suy luận kiểu của TypeScript: kiểu của giá trị sau khi xác thực được suy luận trực tiếp từ schema (`type FormValues = z.infer<typeof formSchema>`), tránh việc duy trì hai khai báo song song giữa interface và schema. Khi cần chia sẻ schema giữa hai phía (vd: schema một bản đề xuất), có thể đặt schema vào một module dùng chung mà không phải dịch giữa hai cú pháp. Quan trọng là logic xác thực không tin tưởng vào lớp frontend — backend luôn kiểm tra lại dữ liệu bằng schema của mình trước khi ghi vào cơ sở dữ liệu.
 
 ## 3.8 Jest — khung kiểm thử đơn vị
 
@@ -564,7 +564,7 @@ Tại thời điểm hoàn thiện đồ án, kho kiểm thử của PM QLKT g�
 
 ExcelJS là thư viện JavaScript cho phép đọc, ghi và thao tác workbook định dạng `.xlsx` ở phía máy chủ Node.js. Khác với các thư viện chỉ tạo CSV hoặc HTML giả lập Excel, ExcelJS hỗ trợ định dạng ô (font, màu nền, viền), khóa ô để tránh người dùng chỉnh sửa các cột hệ thống, công thức và đặc biệt là Data Validation rule cho phép tạo các danh sách thả xuống (dropdown) ngay trong tệp mẫu xuất ra.
 
-Trong PM QLKT, ExcelJS phục vụ hai mục đích đối xứng. Khi xuất tệp mẫu nhập liệu cho từng nhóm khen thưởng, máy chủ sinh workbook với các sheet riêng (`QuanNhan`, `DanhHieuHangNam`, `ThanhTichKhoaHoc`, ...), cài đặt cột cố định, áp Data Validation lên cột danh hiệu để chỉ chấp nhận các giá trị hợp lệ và đính kèm chú thích tiếng Việt giải thích từng cột. Khi nhập tệp Excel do người dùng tải lên, máy chủ đọc tuần tự từng dòng, đối chiếu với schema Joi và Prisma rồi đưa kết quả vào màn hình xem trước trước khi đưa vào cơ sở dữ liệu. Quy trình hai bước (xem trước rồi xác nhận) tận dụng đặc tính giao dịch của Prisma ở bước xác nhận để đảm bảo nguyên tử tính: nếu có bất kỳ dòng nào lỗi vào thời điểm ghi, toàn bộ thao tác sẽ được hủy bỏ.
+Trong PM QLKT, ExcelJS phục vụ hai mục đích đối xứng. Khi xuất tệp mẫu nhập liệu cho từng nhóm khen thưởng, máy chủ sinh workbook với các sheet riêng (`QuanNhan`, `DanhHieuHangNam`, `ThanhTichKhoaHoc`, ...), cài đặt cột cố định, áp Data Validation lên cột danh hiệu để chỉ chấp nhận các giá trị hợp lệ và đính kèm chú thích tiếng Việt giải thích từng cột. Khi nhập tệp Excel do người dùng tải lên, máy chủ đọc tuần tự từng dòng, đối chiếu với schema Zod và Prisma rồi đưa kết quả vào màn hình xem trước trước khi đưa vào cơ sở dữ liệu. Quy trình hai bước (xem trước rồi xác nhận) tận dụng đặc tính giao dịch của Prisma ở bước xác nhận để đảm bảo nguyên tử tính: nếu có bất kỳ dòng nào lỗi vào thời điểm ghi, toàn bộ thao tác sẽ được hủy bỏ.
 
 ---
 
@@ -608,7 +608,7 @@ Cấu trúc thư mục mã nguồn được tổ chức theo nguyên tắc đơn
 
 > **Hình 4.3**: Sơ đồ gói phía frontend — xem khối `C2.2` tại `docs/diagrams/03-architecture.md`.
 
-**b, Gói phía backend.** Mã nguồn backend được tổ chức bên trong thư mục `BE-QLKT/src/` theo sáu lớp đã trình bày ở mục 4.1.1. Gói `routes/` định nghĩa các điểm cuối REST API, mỗi miền nghiệp vụ một tệp. Gói `middlewares/` chứa các tệp `auth.ts` (xác thực và phân quyền), `auditLog.ts` (ghi nhật ký mọi thao tác mutate), `unitFilter.ts` (lọc dữ liệu theo phạm vi đơn vị của Manager) và `validate.ts` (bọc Joi validation). Gói `controllers/` chứa các tệp điều hướng yêu cầu HTTP từ route tới service, được giữ mỏng (mỗi phương thức dưới 50 dòng mã). Gói `services/` chứa logic nghiệp vụ chính, được tách tiếp thành các thư mục con: `proposal/strategies/` cho strategy registry của bảy loại đề xuất, `eligibility/` cho hàm `chainEligibility` xét rule chuỗi cá nhân và đơn vị, `profile/annual.ts` cho logic chuỗi cá nhân và `profile/unit.ts` cho logic chuỗi đơn vị. Gói `repositories/` đóng gói toàn bộ truy cập Prisma — mỗi model một tệp `.repository.ts`. Gói `helpers/` chứa các tiện ích phụ trợ chia theo nhóm: `auditLog/` cho các hàm sinh mô tả nhật ký theo từng tài nguyên, `notification/` cho hàm gửi thông báo realtime, `excel/` cho đọc và ghi tệp Excel qua ExcelJS, `awardValidation/` cho các quy tắc kiểm tra huy chương cao nhất. Gói `validations/` chứa các schema Joi cho từng route. Gói `constants/` chứa các hằng số dùng chung. Tệp `prisma/schema.prisma` ở cấp gốc của module backend định nghĩa toàn bộ 23 model.
+**b, Gói phía backend.** Mã nguồn backend được tổ chức bên trong thư mục `BE-QLKT/src/` theo sáu lớp đã trình bày ở mục 4.1.1. Gói `routes/` định nghĩa các điểm cuối REST API, mỗi miền nghiệp vụ một tệp. Gói `middlewares/` chứa các tệp `auth.ts` (xác thực và phân quyền), `auditLog.ts` (ghi nhật ký mọi thao tác mutate), `unitFilter.ts` (lọc dữ liệu theo phạm vi đơn vị của Manager) và `validate.ts` (bọc Zod validation). Gói `controllers/` chứa các tệp điều hướng yêu cầu HTTP từ route tới service, được giữ mỏng (mỗi phương thức dưới 50 dòng mã). Gói `services/` chứa logic nghiệp vụ chính, được tách tiếp thành các thư mục con: `proposal/strategies/` cho strategy registry của bảy loại đề xuất, `eligibility/` cho hàm `chainEligibility` xét rule chuỗi cá nhân và đơn vị, `profile/annual.ts` cho logic chuỗi cá nhân và `profile/unit.ts` cho logic chuỗi đơn vị. Gói `repositories/` đóng gói toàn bộ truy cập Prisma — mỗi model một tệp `.repository.ts`. Gói `helpers/` chứa các tiện ích phụ trợ chia theo nhóm: `auditLog/` cho các hàm sinh mô tả nhật ký theo từng tài nguyên, `notification/` cho hàm gửi thông báo realtime, `excel/` cho đọc và ghi tệp Excel qua ExcelJS, `awardValidation/` cho các quy tắc kiểm tra huy chương cao nhất. Gói `validations/` chứa các schema Zod cho từng route. Gói `constants/` chứa các hằng số dùng chung. Tệp `prisma/schema.prisma` ở cấp gốc của module backend định nghĩa toàn bộ 23 model.
 
 > **Hình 4.4**: Sơ đồ gói phía backend — xem khối `C2.1` tại `docs/diagrams/03-architecture.md`.
 
@@ -657,7 +657,7 @@ Bảy luồng nghiệp vụ quan trọng nhất được mô hình hoá bằng s
 
 **Sequence 4.4 — Tính lại điều kiện chuỗi cho một quân nhân** (Hình 4.16). FE gọi `GET /api/personnel/:id/annual-profile` → `profileController.getAnnualProfile` → `profileService.recalculateAnnualProfile` → `danhHieuHangNamRepository.findManyByPersonnelId` → `computeChainContext(rows, currentYear)` → vòng for qua `PERSONAL_CHAIN_AWARDS` gọi `checkChainEligibility` → `hoSoHangNamRepository.upsert` → trả kết quả gồm cờ đủ điều kiện và `goi_y` text.
 
-**Sequence 4.5 — Nhập Excel hai bước** (Hình 4.17). Admin tải tệp → FE gọi `POST /api/annual-rewards/import/preview` (multipart form-data) → `excelHelper.loadWorkbook` → đọc từng sheet → cho mỗi dòng: chạy schema Joi và rule nghiệp vụ → trả về `{valid: [...], errors: [...]}`. Admin xác nhận → FE gọi `POST /api/annual-rewards/import/confirm` với danh sách `valid` → mở transaction → ghi tuần tự → commit hoặc rollback.
+**Sequence 4.5 — Nhập Excel hai bước** (Hình 4.17). Admin tải tệp → FE gọi `POST /api/annual-rewards/import/preview` (multipart form-data) → `excelHelper.loadWorkbook` → đọc từng sheet → cho mỗi dòng: chạy schema Zod và rule nghiệp vụ → trả về `{valid: [...], errors: [...]}`. Admin xác nhận → FE gọi `POST /api/annual-rewards/import/confirm` với danh sách `valid` → mở transaction → ghi tuần tự → commit hoặc rollback.
 
 **Sequence 4.6 — Sao lưu định kỳ tự động** (Hình 4.18). Cron job nội bộ kích hoạt mỗi 24 giờ → `backupService.runScheduledBackup` → spawn child process `pg_dump` → ghi tệp SQL vào `backups/YYYY-MM-DD_HH-mm-ss.sql` → ghi nhật ký `action = CREATE, resource = backup` → SuperAdmin có thể xem qua DevZone.
 
@@ -710,7 +710,7 @@ Ràng buộc nghiệp vụ: chỉ một trong `co_quan_don_vi_id` và `don_vi_tr
 | `co_quan_don_vi_id` | String | FK → CoQuanDonVi | Phạm vi đề xuất (CQĐV) |
 | `don_vi_truc_thuoc_id` | String | FK → DonViTrucThuoc | Phạm vi đề xuất (ĐVTT) |
 
-Việc dùng JSON cho 4 trường `data_*` là chủ ý. Mỗi loại đề xuất có schema riêng nên việc tạo nhiều bảng trung gian sẽ phá vỡ tính đồng nhất của bảng `BangDeXuat`. JSON đủ để đảm bảo schema linh hoạt; xác thực schema được đảm nhiệm ở tầng Joi và `ProposalStrategy`.
+Việc dùng JSON cho 4 trường `data_*` là chủ ý. Mỗi loại đề xuất có schema riêng nên việc tạo nhiều bảng trung gian sẽ phá vỡ tính đồng nhất của bảng `BangDeXuat`. JSON đủ để đảm bảo schema linh hoạt; xác thực schema được đảm nhiệm ở tầng Zod và `ProposalStrategy`.
 
 **Bảng 4.3 — Schema bảng `DanhHieuHangNam` (Annual Award)**
 
@@ -821,7 +821,7 @@ Sản phẩm sử dụng tổng cộng 30 thư viện mã nguồn mở chia làm
 | 8 | ORM | Prisma | 5.x |
 | 9 | Xác thực JWT | jsonwebtoken | 9.x |
 | 10 | Băm mật khẩu | bcrypt | 5.x |
-| 11 | Kiểm tra dữ liệu BE | Joi | 17.x |
+| 11 | Kiểm tra dữ liệu BE | Zod | 4.x |
 | 12 | Kiểm tra dữ liệu FE | Zod | 3.x |
 | 13 | Thông báo realtime | Socket.IO | 4.x |
 | 14 | Đọc/ghi Excel | ExcelJS | 4.x |
@@ -1090,7 +1090,7 @@ Chương này phân tích năm điểm khác biệt mà sản phẩm mang lại 
 
 **Thực trạng.** Khi triển khai một hệ thống mới cho công tác đã có nhiều năm tích luỹ, vấn đề nan giải là cách di chuyển dữ liệu lịch sử từ các tệp Excel rời rạc sang cơ sở dữ liệu chuẩn hoá. Phương án nhập tay từng bản ghi không khả thi: với khoảng 50.000 bản ghi danh hiệu lịch sử và 15.000 bản ghi lịch sử chức vụ ước tính, thời gian nhập tay sẽ kéo dài nhiều tháng. Phương án viết script SQL trực tiếp lại mạo hiểm vì các tệp Excel không tuân thủ định dạng nhất quán — có tệp dùng tên đầy đủ "Bằng khen của Bộ trưởng Bộ Quốc phòng", có tệp dùng viết tắt "BKBTBQP", có tệp lẫn tiếng Anh, một số ô bị nhập sai chính tả CCCD do gõ nhầm.
 
-**Giải pháp.** Đồ án thiết kế quy trình nhập Excel hai bước thông minh. Bước "xem trước" đọc toàn bộ tệp, áp schema Joi và các quy tắc nghiệp vụ (CCCD tồn tại trong `QuanNhan`, năm hợp lệ, danh hiệu nằm trong danh mục cho phép sau khi chuẩn hoá viết tắt). Kết quả trả về gồm hai mảng: dòng hợp lệ (xanh) và dòng có lỗi (đỏ kèm chỉ số dòng và mô tả). Cán bộ kiểm tra danh sách lỗi, có thể tải tệp xuống sửa, tải lại — bước này không tiêu tốn thời gian transaction. Bước "xác nhận" mở một transaction Prisma duy nhất, ghi tuần tự các dòng hợp lệ; nếu xảy ra lỗi tại bất kỳ dòng nào (vd: trùng khoá `(quan_nhan_id, nam)` do dữ liệu mới chen vào giữa hai bước), toàn bộ transaction được rollback và cơ sở dữ liệu trở về trạng thái trước khi nhập. Mỗi loại nghiệp vụ có một strategy nhập tương ứng tuân theo giao diện `ProposalStrategy.importInTransaction`, đảm bảo tính nhất quán giữa các luồng.
+**Giải pháp.** Đồ án thiết kế quy trình nhập Excel hai bước thông minh. Bước "xem trước" đọc toàn bộ tệp, áp schema Zod và các quy tắc nghiệp vụ (CCCD tồn tại trong `QuanNhan`, năm hợp lệ, danh hiệu nằm trong danh mục cho phép sau khi chuẩn hoá viết tắt). Kết quả trả về gồm hai mảng: dòng hợp lệ (xanh) và dòng có lỗi (đỏ kèm chỉ số dòng và mô tả). Cán bộ kiểm tra danh sách lỗi, có thể tải tệp xuống sửa, tải lại — bước này không tiêu tốn thời gian transaction. Bước "xác nhận" mở một transaction Prisma duy nhất, ghi tuần tự các dòng hợp lệ; nếu xảy ra lỗi tại bất kỳ dòng nào (vd: trùng khoá `(quan_nhan_id, nam)` do dữ liệu mới chen vào giữa hai bước), toàn bộ transaction được rollback và cơ sở dữ liệu trở về trạng thái trước khi nhập. Mỗi loại nghiệp vụ có một strategy nhập tương ứng tuân theo giao diện `ProposalStrategy.importInTransaction`, đảm bảo tính nhất quán giữa các luồng.
 
 **Kết quả định lượng.** Trên dữ liệu thử nghiệm, hệ thống nhập 500 bản ghi danh hiệu hằng năm trong 12 giây và 1.000 bản ghi quân nhân với lịch sử chức vụ trong 28 giây. Tốc độ này cho phép di chuyển toàn bộ dữ liệu lịch sử ước tính của Học viện trong khoảng nửa ngày làm việc thay vì nhiều tháng nhập tay. Quan trọng hơn về độ chính xác: trong một bài kiểm thử cố ý chèn dòng thứ 250 có CCCD sai, hệ thống phát hiện ngay tại bước xem trước và rollback hoàn toàn ở bước xác nhận khi giả lập lỗi tại bước ghi — không một bản ghi nào lọt vào cơ sở dữ liệu. Đối với việc chuẩn hoá viết tắt, hàm `resolveDanhHieuCode` chấp nhận năm biến thể phổ biến cho mỗi danh hiệu (vd: BKBTBQP, "Bằng khen BQP", "Bằng khen của Bộ trưởng Bộ Quốc phòng", "BK BQP", "B/K BQP") và trả về mã chuẩn duy nhất, giảm thời gian dọn dẹp dữ liệu nguồn trước khi nhập.
 
@@ -1116,7 +1116,7 @@ Về mặt kỹ thuật, hệ thống được hiện thực hoá theo kiến tr
 
 Về đóng góp nổi bật, đồ án đã trừu tượng hoá rule chuỗi danh hiệu thành đối tượng cấu hình `ChainAwardConfig` (số năm chu kỳ, các cờ tiền điều kiện, có yêu cầu NCKH hay không, lifetime hay non-lifetime) và đặt vào hai mảng `PERSONAL_CHAIN_AWARDS` / `UNIT_CHAIN_AWARDS`. Hàm xét duy nhất `checkChainEligibility` đọc cấu hình này — thiết kế giúp việc thêm tier mới chỉ cần bổ sung phần tử vào mảng mà không phải sửa logic. Tương tự, bảy loại đề xuất đều tuân theo giao diện `ProposalStrategy` với một REGISTRY trung tâm, qua đó loại bỏ các nhánh `if/else` lớn từng tồn tại và mở đường cho việc bổ sung loại đề xuất mới chỉ trong một vài tệp riêng lẻ.
 
-Về phương pháp luận, đồ án được thực hiện theo quy trình phát triển phần mềm hiện đại: viết kiểm thử song song với mã nguồn, phát hiện và sửa lỗi rule trước khi đẩy vào nhánh chính, áp dụng các tài liệu pháp lý và nội bộ làm căn cứ cho yêu cầu nghiệp vụ. Các quyết định kỹ thuật quan trọng — chọn Prisma thay vì Sequelize, áp dụng layered architecture có tầng Repository riêng, chia validation thành Joi (backend) và Zod (frontend) — đều được phân tích trong các chương trước với lý do gắn liền với đặc thù của PM QLKT.
+Về phương pháp luận, đồ án được thực hiện theo quy trình phát triển phần mềm hiện đại: viết kiểm thử song song với mã nguồn, phát hiện và sửa lỗi rule trước khi đẩy vào nhánh chính, áp dụng các tài liệu pháp lý và nội bộ làm căn cứ cho yêu cầu nghiệp vụ. Các quyết định kỹ thuật quan trọng — chọn Prisma thay vì Sequelize, áp dụng layered architecture có tầng Repository riêng, thống nhất dùng Zod cho cả backend và frontend để chia sẻ phong cách schema và suy luận kiểu — đều được phân tích trong các chương trước với lý do gắn liền với đặc thù của PM QLKT.
 
 Bên cạnh các kết quả đạt được, đồ án còn tồn tại một số hạn chế. Thứ nhất, phần triển khai mới dừng ở môi trường mạng nội bộ Học viện trên một máy chủ vật lý, chưa đánh giá được khả năng vận hành ở quy mô nhiều cơ sở. Thứ hai, các báo cáo thống kê hiện chủ yếu dạng bảng và biểu đồ tĩnh, chưa có công cụ phân tích so sánh giữa các đơn vị theo nhiều năm liên tiếp. Thứ ba, hệ thống chưa tích hợp với chữ ký số quân đội, do đó các quyết định khen thưởng vẫn cần tải lên dạng PDF đã ký bằng tay.
 
@@ -1165,7 +1165,7 @@ Các hướng phát triển trên được sắp xếp theo độ ưu tiên gi�
 14. OpenJS Foundation, "Express.js Documentation," 2024. [Online]. Available: https://expressjs.com
 15. The PostgreSQL Global Development Group, "PostgreSQL 15 Documentation," 2023. [Online]. Available: https://www.postgresql.org/docs/15/
 16. Socket.IO Team, "Socket.IO Documentation v4," 2024. [Online]. Available: https://socket.io/docs/v4/
-17. Hapi.dev, "Joi Schema Validation Documentation," 2024. [Online]. Available: https://joi.dev
+17. Colin McDonnell, "Zod — TypeScript-first schema validation," 2024. [Online]. Available: https://zod.dev
 18. C. McKenzie, "Zod Documentation," 2024. [Online]. Available: https://zod.dev
 19. Ant Design Team, "Ant Design 5 Components Documentation," 2024. [Online]. Available: https://ant.design
 20. Adam Wathan et al., "Tailwind CSS Documentation," 2024. [Online]. Available: https://tailwindcss.com

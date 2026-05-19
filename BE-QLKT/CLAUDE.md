@@ -16,7 +16,7 @@ src/
 │   ├── errorHandler.ts      # Global error handler
 │   ├── auditLog.ts          # Audit logging middleware
 │   ├── unitFilter.ts        # Unit-based data filtering
-│   └── validate.ts          # Joi validation wrapper
+│   └── validate.ts          # Zod validation wrapper
 ├── helpers/
 │   ├── catchAsync.ts        # Async error wrapper for controllers
 │   ├── responseHelper.ts    # Standardized API responses
@@ -34,7 +34,7 @@ src/
 │   ├── excel/               # Excel template + import/export helpers
 │   ├── file/                # File handling helpers
 │   └── notification/        # Notification helpers by domain
-├── validations/             # Joi schemas (entityName.validation.ts)
+├── validations/             # Zod schemas (entityName.validation.ts)
 ├── constants/               # All use entityName.constants.ts pattern
 ├── types/
 │   ├── api.ts               # ApiResponse<T>, PaginatedData<T>, AuditLogOptions

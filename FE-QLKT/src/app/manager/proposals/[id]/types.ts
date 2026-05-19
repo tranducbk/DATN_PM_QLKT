@@ -126,6 +126,7 @@ export interface ProposalDetail {
   data_nien_han?: DanhHieuItem[];
   data_cong_hien?: DanhHieuItem[];
   files_attached: AttachedFile[];
+  files_attached_admin?: AttachedFile[];
   nguoi_duyet: ReviewerAccount | null;
   ngay_duyet: string | null;
   ghi_chu: string | null;

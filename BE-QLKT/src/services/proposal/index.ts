@@ -92,9 +92,18 @@ class ProposalService {
     adminId: string,
     decisions: Record<string, string | null>,
     pdfFiles: Record<string, MulterFile>,
-    ghiChu: string | null
+    ghiChu: string | null,
+    adminAttachedFiles: MulterFile[] = []
   ) {
-    return approve.approveProposal(proposalId, editedData, adminId, decisions, pdfFiles, ghiChu);
+    return approve.approveProposal(
+      proposalId,
+      editedData,
+      adminId,
+      decisions,
+      pdfFiles,
+      ghiChu,
+      adminAttachedFiles
+    );
   }
   async rejectProposal(proposalId: string, lyDo: string, adminId: string) {
     return approve.rejectProposal(proposalId, lyDo, adminId);

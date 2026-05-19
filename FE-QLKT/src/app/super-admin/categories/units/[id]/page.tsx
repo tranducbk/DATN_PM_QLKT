@@ -34,6 +34,19 @@ const { Title, Text } = Typography;
 const BASE_PATH = '/super-admin/categories';
 const PERSONNEL_BASE = '/admin/personnel';
 
+function getDialogTitle(
+  dialogType: 'unit' | 'position' | null,
+  editingItem: { id?: string; co_quan_don_vi_id?: string | null } | null
+): string {
+  if (dialogType === 'position') {
+    return editingItem?.id ? 'Chỉnh sửa Chức vụ' : 'Thêm Chức vụ mới';
+  }
+  if (!editingItem?.id) return 'Thêm Đơn vị trực thuộc';
+  return editingItem.co_quan_don_vi_id
+    ? 'Chỉnh sửa Đơn vị trực thuộc'
+    : 'Chỉnh sửa Cơ quan đơn vị';
+}
+
 interface UnitDetail extends UnitApiRow {
   co_quan_don_vi_id?: string | null;
   so_luong?: number;
@@ -341,13 +354,7 @@ export default function SAUnitDetailPage() {
           width={600}
           centered
           destroyOnClose
-          title={
-            dialogType === 'unit'
-              ? editingItem?.id
-                ? editingItem.co_quan_don_vi_id ? 'Chỉnh sửa Đơn vị trực thuộc' : 'Chỉnh sửa Cơ quan đơn vị'
-                : 'Thêm Đơn vị trực thuộc'
-              : editingItem?.id ? 'Chỉnh sửa Chức vụ' : 'Thêm Chức vụ mới'
-          }
+          title={getDialogTitle(dialogType, editingItem)}
           styles={{ header: { paddingBottom: '16px', marginBottom: '24px', borderBottom: '1px solid #f0f0f0' }, body: { paddingTop: '24px' } }}
         >
           {dialogType === 'unit' && (

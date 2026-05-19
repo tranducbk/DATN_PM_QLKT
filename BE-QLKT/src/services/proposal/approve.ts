@@ -24,6 +24,8 @@ import {
 } from './approve/validation';
 import { buildDecisionMappings, persistDecisionPdfs } from './approve/decisionMappings';
 import { runImportTransaction } from './approve/import';
+import { persistProposalAttachments, type AttachedFileInput } from './attachedFiles';
+import type { Prisma } from '../../generated/prisma';
 import type {
   AdminAccountId,
   DecisionInputMap,
@@ -250,7 +252,8 @@ async function approveProposal(
   adminId: AdminAccountId,
   decisions: DecisionInputMap = {},
   pdfFiles: Record<string, UploadedDecisionFile | undefined> = {},
-  ghiChu: string | null = null
+  ghiChu: string | null = null,
+  adminAttachedFiles: AttachedFileInput[] = []
 ) {
   const proposal = await loadApproveProposal(proposalId);
   if (!proposal) throw new NotFoundError('Đề xuất');
@@ -291,6 +294,8 @@ async function approveProposal(
   const { decisionMapping, specialDecisionMapping } = buildDecisionMappings(decisions, pdfPaths);
   const mappings: DecisionMappings = { decisionMapping, specialDecisionMapping, pdfPaths };
 
+  const adminFilesInfo = await persistProposalAttachments(adminAttachedFiles);
+
   const updateData: Record<string, unknown> = {
     status: PROPOSAL_STATUS.APPROVED,
     nguoi_duyet_id: adminId,
@@ -300,6 +305,9 @@ async function approveProposal(
     data_nien_han: nienHanData,
     data_cong_hien: congHienData,
     ...(ghiChu ? { ghi_chu: ghiChu } : {}),
+    ...(adminFilesInfo.length > 0
+      ? { files_attached_admin: adminFilesInfo as unknown as Prisma.InputJsonValue }
+      : {}),
   };
 
   const acc: ImportAccumulator = {

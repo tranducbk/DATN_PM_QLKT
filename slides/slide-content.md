@@ -185,7 +185,7 @@ flowchart LR
 **Lý do chọn**: Next.js có App Router routing rõ ràng theo thư mục, cộng đồng lớn. AntD đầy đủ component nghiệp vụ (Table có sort/filter sẵn, Form validation chuẩn) — tiết kiệm thời gian.
 
 **Kịch bản nói** (~45s):
-> "Phía client em dùng Next.js 14 với App Router để routing theo file system. UI dùng Ant Design vì có sẵn các component phức tạp như Table phân trang, Form validation. Tailwind dùng để custom style. Form validate hai lớp: Zod ở client cho UX nhanh, Joi ở server để bảo mật."
+> "Phía client em dùng Next.js 14 với App Router để routing theo file system. UI dùng Ant Design vì có sẵn các component phức tạp như Table phân trang, Form validation. Tailwind dùng để custom style. Form validate hai lớp đều dùng Zod: client cho UX nhanh, server để bảo mật — cùng một thư viện, cùng cú pháp schema."
 
 ---
 
@@ -197,7 +197,7 @@ flowchart LR
 - **Express + TypeScript**: REST API, middleware chain
 - **Prisma ORM 6.x**: type-safe queries, migration tự động
 - **PostgreSQL**: RDBMS, hỗ trợ transaction SERIALIZABLE
-- **Joi**: validate request body (server-side)
+- **Zod**: validate request body (server-side) — cùng thư viện với FE
 - **bcrypt**: hash password 10 rounds
 - **JWT**: xác thực 2 token (access ngắn + refresh dài)
 

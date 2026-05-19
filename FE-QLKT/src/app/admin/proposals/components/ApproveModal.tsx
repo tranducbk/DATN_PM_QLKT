@@ -229,7 +229,6 @@ export function ApproveModal({ visible, proposal, onClose, onSuccess }: ApproveM
     onClose();
   };
 
-  // Step 1: Review data
   const renderStep1 = () => {
     const columns: ColumnsType<any> = [
       {
@@ -276,7 +275,6 @@ export function ApproveModal({ visible, proposal, onClose, onSuccess }: ApproveM
     );
   };
 
-  // Step 2: Add decision
   const renderStep2 = () => {
     return (
       <div>

@@ -437,7 +437,7 @@ Khi cảm thấy hội đồng không còn câu hỏi:
 ## Nhóm 3 — Bảo mật
 
 **Q9. Phòng XSS, SQL injection thế nào?**
-> SQL injection: Prisma parameterized query toàn bộ, em không dùng `$queryRawUnsafe` với input từ user. XSS: React tự escape khi render, em không dùng `dangerouslySetInnerHTML`. Validate input qua Zod ở client và Joi ở server — reject bất kỳ field không có trong schema bằng `stripUnknown: true`.
+> SQL injection: Prisma parameterized query toàn bộ, em không dùng `$queryRawUnsafe` với input từ user. XSS: React tự escape khi render, em không dùng `dangerouslySetInnerHTML`. Validate input qua Zod ở cả client lẫn server — `z.object()` mặc định strip bất kỳ field nào không có trong schema để chống mass assignment.
 
 **Q10. Race condition em xử lý thế nào?**
 > Em dùng hai cơ chế. Thứ nhất là Prisma transaction `prisma.$transaction()` cho các luồng cần atomic. Thứ hai là **optimistic lock** — `updateMany` với điều kiện `status: 'PENDING'`, nếu count trả về 0 thì có người đã update trước, em throw conflict error. Test với `Promise.all` hai request duyệt song song, verify chỉ một thắng.

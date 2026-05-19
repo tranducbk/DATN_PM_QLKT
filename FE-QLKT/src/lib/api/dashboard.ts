@@ -2,10 +2,6 @@ import axiosInstance from '@/lib/axiosInstance';
 import { getApiErrorMessage } from '@/lib/apiError';
 import type { ApiResponse } from '@/lib/types/common';
 
-/**
- * getDashboardStatistics API wrapper.
- * @returns API response payload
- */
 export async function getDashboardStatistics(): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get('/api/dashboard/statistics');
@@ -15,10 +11,6 @@ export async function getDashboardStatistics(): Promise<ApiResponse> {
   }
 }
 
-/**
- * getAdminDashboardStatistics API wrapper.
- * @returns API response payload
- */
 export async function getAdminDashboardStatistics(): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get('/api/dashboard/statistics/admin');
@@ -28,10 +20,6 @@ export async function getAdminDashboardStatistics(): Promise<ApiResponse> {
   }
 }
 
-/**
- * getManagerDashboardStatistics API wrapper.
- * @returns API response payload
- */
 export async function getManagerDashboardStatistics(): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get('/api/dashboard/statistics/manager');

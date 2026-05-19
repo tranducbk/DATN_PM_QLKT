@@ -175,4 +175,51 @@ describe('approveProposal — HC_QKQT', () => {
       { startsWith: 'Phát hiện đề xuất trùng' }
     );
   });
+
+  it('regression: duplicate check exclude chính proposal đang duyệt (không self-match)', async () => {
+    const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-self-hcqkqt' });
+    const personnel = makePersonnel({
+      unit: cqdv,
+      id: 'qn-self-hcqkqt',
+      ho_ten: 'Nguyễn Self HCQKQT',
+      ngay_nhap_ngu: new Date('1994-01-01'),
+    });
+    const proposal = makeProposal({
+      id: 'p-hcqkqt-self',
+      loai: PROPOSAL_TYPES.HC_QKQT,
+      nam: 2024,
+      thang: 6,
+      nguoi_de_xuat_id: ADMIN_ID,
+      unit: cqdv,
+      data_nien_han: [buildItem(personnel.id)],
+    });
+
+    prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
+    prismaMock.quanNhan.findMany.mockResolvedValueOnce([{ id: personnel.id, ho_ten: personnel.ho_ten }]);
+    prismaMock.huanChuongQuanKyQuyetThang.findFirst.mockResolvedValue(null);
+    prismaMock.bangDeXuat.findMany.mockResolvedValue([]);
+    prismaMock.quanNhan.findMany.mockResolvedValueOnce([personnel]);
+    prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
+      id: ADMIN_ID,
+      username: 'admin',
+      QuanNhan: { ho_ten: 'Admin' },
+    });
+    prismaMock.quanNhan.findUnique.mockResolvedValueOnce(personnel);
+    prismaMock.huanChuongQuanKyQuyetThang.findUnique.mockResolvedValueOnce(null);
+    prismaMock.huanChuongQuanKyQuyetThang.create.mockResolvedValueOnce({});
+    prismaMock.bangDeXuat.updateMany.mockResolvedValueOnce({ count: 1 });
+
+    await proposalService.approveProposal(proposal.id, {}, ADMIN_ID, {}, {}, null);
+
+    expect(prismaMock.bangDeXuat.updateMany.mock.calls[0][0].data.status).toBe(
+      PROPOSAL_STATUS.APPROVED
+    );
+    const dupCall = prismaMock.bangDeXuat.findMany.mock.calls.find(
+      ([args]) =>
+        args?.where?.loai_de_xuat === PROPOSAL_TYPES.HC_QKQT &&
+        args?.where?.status === PROPOSAL_STATUS.PENDING
+    );
+    expect(dupCall).toBeDefined();
+    expect(dupCall![0].where.id).toEqual({ not: proposal.id });
+  });
 });

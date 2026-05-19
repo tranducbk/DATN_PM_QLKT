@@ -59,7 +59,8 @@ export function parseApproveBody(
     file_pdf_dot_xuat: files?.file_pdf_dot_xuat?.[0],
     file_pdf_nckh: files?.file_pdf_nckh?.[0],
   };
-  return { editedData, decisions, pdfFiles };
+  const adminAttachedFiles = files?.admin_attached_files ?? [];
+  return { editedData, decisions, pdfFiles, adminAttachedFiles };
 }
 
 /**

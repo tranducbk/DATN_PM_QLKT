@@ -86,36 +86,22 @@ export default function BulkAddAwardsPage() {
   const isRestoringDraft = React.useRef(false);
   const suppressNextSave = React.useRef(true);
 
-  // Step 1: Award Type
   const [awardType, setAwardType] = useState<AwardType>(PROPOSAL_TYPES.CA_NHAN_HANG_NAM);
-
-  // Step 2: Select Personnel/Units
   const [nam, setNam] = useState(new Date().getFullYear());
   const [thang, setThang] = useState(new Date().getMonth() + 1);
   const [selectedPersonnelIds, setSelectedPersonnelIds] = useState<string[]>([]);
   const [selectedUnitIds, setSelectedUnitIds] = useState<string[]>([]);
-
-  // Step 3: Set Titles
   const [titleData, setTitleData] = useState<TitleDataItem[]>([]);
-
-  // Step 4: Personnel/Unit details for review
   const [personnelDetails, setPersonnelDetails] = useState<Personnel[]>([]);
   const [unitDetails, setUnitDetails] = useState<UnitApiRow[]>([]);
-
-  // HCBVTQ contribution profiles (months_07, months_08, months_0910)
   const [contributionProfiles, setContributionProfiles] = useState<
     Record<string, ContributionProfile>
   >({});
-
-  // Step 5: Note
   const [note, setNote] = useState<string>('');
-
-  // Step 6: Decision data (so_quyet_dinh per personnel/unit)
   const [decisionDataMap, setDecisionDataMap] = useState<DecisionDataMap>({});
   const [decisionModalVisible, setDecisionModalVisible] = useState(false);
   const [selectedPersonnelForDecision, setSelectedPersonnelForDecision] = useState<string[]>([]);
 
-  // Award type config
   const renderAwardTypeIcon = (type: ProposalType) => {
     const Icon = PROPOSAL_TYPE_ICON_COMPONENTS[type];
     return Icon ? <Icon /> : <TrophyOutlined />;

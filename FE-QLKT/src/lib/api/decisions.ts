@@ -9,10 +9,6 @@ export type DecisionsPagination = {
   totalPages?: number;
 };
 
-/**
- * getDecisions API wrapper.
- * @returns API response payload
- */
 export async function getDecisions(params?: {
   nam?: number;
   loai_khen_thuong?: string;
@@ -32,10 +28,6 @@ export async function getDecisions(params?: {
   }
 }
 
-/**
- * autocompleteDecisions API wrapper.
- * @returns API response payload
- */
 export async function autocompleteDecisions(
   query: string,
   limit = 10,
@@ -51,10 +43,6 @@ export async function autocompleteDecisions(
   }
 }
 
-/**
- * getDecisionBySoQuyetDinh API wrapper.
- * @returns API response payload
- */
 export async function getDecisionBySoQuyetDinh(soQuyetDinh: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get(`/api/decisions/by-number/${soQuyetDinh}`);
@@ -64,10 +52,6 @@ export async function getDecisionBySoQuyetDinh(soQuyetDinh: string): Promise<Api
   }
 }
 
-/**
- * getDecisionById API wrapper.
- * @returns API response payload
- */
 export async function getDecisionById(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get(`/api/decisions/${id}`);
@@ -77,10 +61,6 @@ export async function getDecisionById(id: string): Promise<ApiResponse> {
   }
 }
 
-/**
- * createDecision API wrapper.
- * @returns API response payload
- */
 export async function createDecision(formData: FormData): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.post('/api/decisions', formData, {
@@ -92,10 +72,6 @@ export async function createDecision(formData: FormData): Promise<ApiResponse> {
   }
 }
 
-/**
- * updateDecision API wrapper.
- * @returns API response payload
- */
 export async function updateDecision(id: string, formData: FormData): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.put(`/api/decisions/${id}`, formData, {
@@ -107,10 +83,6 @@ export async function updateDecision(id: string, formData: FormData): Promise<Ap
   }
 }
 
-/**
- * deleteDecision API wrapper.
- * @returns API response payload
- */
 export async function deleteDecision(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete(`/api/decisions/${id}`);

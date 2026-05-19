@@ -113,14 +113,19 @@ const DANH_HIEU_OPTIONS: Record<string, string[]> = {
   HCBVTQ: ['HCBVTQ_HANG_NHAT', 'HCBVTQ_HANG_NHI', 'HCBVTQ_HANG_BA'],
 };
 
-const AWARD_TYPE_CONFIG: Record<
-  string,
-  {
-    fetch: (params: any) => Promise<any>;
-    export: (params: any) => Promise<Blob>;
-    exportFilename: string;
-  }
-> = {
+interface AwardTypeFetchResponse {
+  success: boolean;
+  data?: unknown[];
+  message?: string;
+}
+
+interface AwardTypeConfigEntry {
+  fetch: (params: Record<string, unknown>) => Promise<AwardTypeFetchResponse>;
+  export: (params: Record<string, unknown>) => Promise<Blob>;
+  exportFilename: string;
+}
+
+const AWARD_TYPE_CONFIG: Record<string, AwardTypeConfigEntry> = {
   CNHN: {
     fetch: apiClient.getAnnualRewards,
     export: apiClient.exportAnnualRewards,
@@ -169,7 +174,7 @@ export default function ManagerAwardsPage() {
         return;
       }
       setLoading(true);
-      const params: any = { limit: FETCH_ALL_LIMIT };
+      const params: Record<string, unknown> = { limit: FETCH_ALL_LIMIT };
 
       const config = AWARD_TYPE_CONFIG[activeTab];
       const result = await (config ?? AWARD_TYPE_CONFIG.CNHN).fetch(params);
@@ -178,7 +183,7 @@ export default function ManagerAwardsPage() {
         message.error(result.message || 'Không thể tải danh sách khen thưởng');
         return;
       }
-      setAwardsByTab(prev => ({ ...prev, [activeTab]: result.data ?? [] }));
+      setAwardsByTab(prev => ({ ...prev, [activeTab]: (result.data as Award[]) ?? [] }));
     } catch {
       message.error('Không thể tải danh sách khen thưởng');
     } finally {

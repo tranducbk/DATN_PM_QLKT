@@ -540,7 +540,6 @@ export async function previewImport(buffer: Buffer): Promise<PreviewResult> {
     }
     seenInFile.add(fileKey);
 
-    // Check duplicate in DB (using pre-fetched Map)
     const existingReward = rewardByKey.get(`${personnel.id}_${nam}`);
     if (existingReward && existingReward.danh_hieu === danh_hieu) {
       errors.push({
@@ -564,7 +563,6 @@ export async function previewImport(buffer: Buffer): Promise<PreviewResult> {
       continue;
     }
 
-    // Build history from pre-fetched data (last 5 records sorted by nam desc)
     const allRecords = rewardsByPersonnel.get(personnel.id) || [];
     const history = [...allRecords]
       .sort((a, b) => b.nam - a.nam)

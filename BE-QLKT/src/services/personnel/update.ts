@@ -120,7 +120,6 @@ export async function updatePersonnel(
         if (personnel.co_quan_don_vi_id === manager.co_quan_don_vi_id) {
           hasPermission = true;
         } else if (personnel.don_vi_truc_thuoc_id) {
-          // Check if personnel child unit belongs to manager parent unit.
           const donViTrucThuoc = await donViTrucThuocRepository.findCoQuanDonViIdById(
             personnel.don_vi_truc_thuoc_id
           );
@@ -134,7 +133,6 @@ export async function updatePersonnel(
         if (personnel.don_vi_truc_thuoc_id === manager.don_vi_truc_thuoc_id) {
           hasPermission = true;
         } else if (personnel.co_quan_don_vi_id) {
-          // Check if personnel parent unit matches manager parent unit.
           const managerDonViTrucThuoc = await donViTrucThuocRepository.findCoQuanDonViIdById(
             manager.don_vi_truc_thuoc_id
           );
@@ -379,7 +377,6 @@ export async function updatePersonnel(
     }
   }
 
-  // Return updated data with transfer details.
   return {
     ...updatedPersonnel,
     unitTransferInfo,

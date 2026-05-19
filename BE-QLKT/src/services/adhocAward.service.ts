@@ -5,19 +5,20 @@ import { quanNhanRepository } from '../repositories/quanNhan.repository';
 import { coQuanDonViRepository, donViTrucThuocRepository } from '../repositories/unit.repository';
 import { adhocAwardRepository } from '../repositories/adhocAward.repository';
 import { accountRepository } from '../repositories/account.repository';
-import { notificationRepository } from '../repositories/notification.repository';
-import { getDisplayName } from '../helpers/notification/helpers';
-import { NOTIFICATION_TYPES, RESOURCE_TYPES } from '../constants/notificationTypes.constants';
 import { ROLES } from '../constants/roles.constants';
 import { ADHOC_TYPE } from '../constants/adhocType.constants';
 import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 import { AWARD_LABELS } from '../constants/awardLabels.constants';
 import { ForbiddenError, NotFoundError } from '../middlewares/errorHandler';
-
-const AWARD_LABEL = AWARD_LABELS[AWARD_SLUGS.ADHOC_AWARDS];
-import { emitNotificationToUser } from '../utils/socketService';
 import type { KhenThuongDotXuat, Prisma } from '../generated/prisma';
 import { writeSystemLog } from '../helpers/systemLogHelper';
+import {
+  notifyOnAdhocAwardCreated,
+  notifyOnAdhocAwardUpdated,
+  notifyOnAdhocAwardDeleted,
+} from './adhocAward/notifications';
+
+const AWARD_LABEL = AWARD_LABELS[AWARD_SLUGS.ADHOC_AWARDS];
 
 interface UploadedFile {
   originalname: string;
@@ -76,17 +77,6 @@ interface GetAdhocAwardsParams {
   managerDonViTrucThuocId?: string;
 }
 
-interface NotificationData {
-  nguoi_nhan_id: string;
-  recipient_role: string;
-  type: string;
-  title: string;
-  message: string;
-  resource: string;
-  tai_nguyen_id: string;
-  link: string;
-}
-
 function parseAttachedFiles(json: Prisma.JsonValue | null): AttachedFileInfo[] {
   if (!json || !Array.isArray(json)) return [];
   return json as unknown as AttachedFileInfo[];
@@ -106,18 +96,6 @@ interface ManagerUnitFilterDvtt {
 type ManagerUnitFilter = ManagerUnitFilterCoQuan | ManagerUnitFilterDvtt;
 
 class AdhocAwardService {
-  /** Fetch all MANAGER accounts belonging to a given CQDV. */
-  private async fetchManagersByCoQuanId(coQuanId: string) {
-    return accountRepository.findManyRaw({
-      where: {
-        role: ROLES.MANAGER,
-        QuanNhan: { co_quan_don_vi_id: coQuanId },
-      },
-      select: { id: true, role: true },
-    });
-  }
-
-  /** Build and merge unit-scoped OR filter for manager visibility into `where`. */
   private applyManagerUnitFilter(
     where: Record<string, unknown>,
     hoTen: string | undefined,
@@ -271,123 +249,13 @@ class AdhocAwardService {
     } as Prisma.KhenThuongDotXuatUncheckedCreateInput);
 
     try {
-      await this.notifyOnAdhocAwardCreated(adhocAward, admin.username);
+      await notifyOnAdhocAwardCreated(adhocAward, admin.username);
     } catch (e) {
       console.error('notifyOnAdhocAwardCreated failed:', e);
       void writeSystemLog({ action: 'ERROR', resource: AWARD_SLUGS.ADHOC_AWARDS, description: `Lỗi gửi thông báo tạo ${AWARD_LABEL}: ${e}` });
     }
 
     return adhocAward;
-  }
-
-  async notifyOnAdhocAwardCreated(
-    adhocAward: Record<string, unknown>,
-    adminUsername: string
-  ): Promise<number> {
-    const notifications: NotificationData[] = [];
-    const adminDisplayName = await getDisplayName(adminUsername);
-
-    if (adhocAward.doi_tuong === ADHOC_TYPE.CA_NHAN && adhocAward.QuanNhan) {
-      const personnel = adhocAward.QuanNhan as Record<string, unknown>;
-      const awardName = adhocAward.hinh_thuc_khen_thuong as string;
-      const year = adhocAward.nam as number;
-
-      const cqdvId = personnel.co_quan_don_vi_id as string | null;
-      // Look up parent CQDV via DVTT if no direct CQDV link
-      const dvtt = personnel.DonViTrucThuoc as Record<string, unknown> | null;
-      const managerCqdvId = cqdvId || (dvtt?.co_quan_don_vi_id as string | null);
-
-      if (managerCqdvId) {
-        const managers = await this.fetchManagersByCoQuanId(managerCqdvId);
-
-        managers.forEach(manager => {
-          notifications.push({
-            nguoi_nhan_id: manager.id,
-            recipient_role: manager.role,
-            type: NOTIFICATION_TYPES.AWARD_ADDED,
-            title: 'Khen thưởng đột xuất mới',
-            message: `${adminDisplayName} đã thêm khen thưởng đột xuất "${awardName}" năm ${year} cho quân nhân ${personnel.ho_ten}`,
-            resource: RESOURCE_TYPES.AWARDS,
-            tai_nguyen_id: adhocAward.id as string,
-            link: `/manager/adhoc-awards`,
-          });
-        });
-      }
-
-      const personnelAccount = await accountRepository.findFirstRaw({
-        where: { quan_nhan_id: personnel.id as string },
-        select: { id: true, role: true },
-      });
-
-      if (personnelAccount) {
-        notifications.push({
-          nguoi_nhan_id: personnelAccount.id,
-          recipient_role: personnelAccount.role,
-          type: NOTIFICATION_TYPES.AWARD_ADDED,
-          title: 'Bạn được khen thưởng đột xuất',
-          message: `Bạn được khen thưởng "${awardName}" năm ${year}`,
-          resource: RESOURCE_TYPES.AWARDS,
-          tai_nguyen_id: adhocAward.id as string,
-          link: `/user/profile`,
-        });
-      }
-    } else if (adhocAward.doi_tuong === ADHOC_TYPE.TAP_THE) {
-      const awardName = adhocAward.hinh_thuc_khen_thuong as string;
-      const year = adhocAward.nam as number;
-      let unitName = '';
-
-      if (adhocAward.CoQuanDonVi) {
-        const coQuanDonVi = adhocAward.CoQuanDonVi as Record<string, unknown>;
-        unitName = coQuanDonVi.ten_don_vi as string;
-        const managers = await this.fetchManagersByCoQuanId(adhocAward.co_quan_don_vi_id as string);
-
-        managers.forEach(manager => {
-          notifications.push({
-            nguoi_nhan_id: manager.id,
-            recipient_role: manager.role,
-            type: NOTIFICATION_TYPES.AWARD_ADDED,
-            title: 'Đơn vị được khen thưởng đột xuất',
-            message: `${adminDisplayName} đã thêm khen thưởng đột xuất "${awardName}" năm ${year} cho đơn vị ${unitName}`,
-            resource: RESOURCE_TYPES.AWARDS,
-            tai_nguyen_id: adhocAward.id as string,
-            link: `/manager/adhoc-awards`,
-          });
-        });
-      } else if (adhocAward.DonViTrucThuoc) {
-        const donViTrucThuoc = adhocAward.DonViTrucThuoc as Record<string, unknown>;
-        unitName = donViTrucThuoc.ten_don_vi as string;
-        const parentUnitName = (donViTrucThuoc.CoQuanDonVi as Record<string, unknown> | null)
-          ?.ten_don_vi as string | undefined;
-
-        if (donViTrucThuoc.co_quan_don_vi_id) {
-          const parentManagers = await this.fetchManagersByCoQuanId(
-            donViTrucThuoc.co_quan_don_vi_id as string
-          );
-
-          parentManagers.forEach(manager => {
-            notifications.push({
-              nguoi_nhan_id: manager.id,
-              recipient_role: manager.role,
-              type: NOTIFICATION_TYPES.AWARD_ADDED,
-              title: 'Đơn vị trực thuộc được khen thưởng đột xuất',
-              message: `${adminDisplayName} đã thêm khen thưởng đột xuất "${awardName}" năm ${year} cho đơn vị ${unitName}${
-                parentUnitName ? ` (thuộc ${parentUnitName})` : ''
-              }`,
-              resource: RESOURCE_TYPES.AWARDS,
-              tai_nguyen_id: adhocAward.id as string,
-              link: `/manager/adhoc-awards`,
-            });
-          });
-        }
-      }
-    }
-
-    if (notifications.length > 0) {
-      await notificationRepository.createMany(notifications);
-      notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n as unknown as Record<string, unknown>));
-    }
-
-    return notifications.length;
   }
 
   async getAdhocAwards({
@@ -618,120 +486,13 @@ class AdhocAwardService {
     });
 
     try {
-      await this.notifyOnAdhocAwardUpdated(updated, admin.username);
+      await notifyOnAdhocAwardUpdated(updated, admin.username);
     } catch (e) {
       console.error('notifyOnAdhocAwardUpdated failed:', e);
       void writeSystemLog({ action: 'ERROR', resource: AWARD_SLUGS.ADHOC_AWARDS, description: `Lỗi gửi thông báo cập nhật ${AWARD_LABEL}: ${e}` });
     }
 
     return updated;
-  }
-
-  async notifyOnAdhocAwardUpdated(
-    adhocAward: Record<string, unknown>,
-    adminUsername: string
-  ): Promise<number> {
-    const notifications: NotificationData[] = [];
-    const adminDisplayName = await getDisplayName(adminUsername);
-    const awardName = adhocAward.hinh_thuc_khen_thuong as string;
-    const year = adhocAward.nam as number;
-
-    if (adhocAward.doi_tuong === ADHOC_TYPE.CA_NHAN && adhocAward.QuanNhan) {
-      const personnel = adhocAward.QuanNhan as Record<string, unknown>;
-
-      const cqdvId = personnel.co_quan_don_vi_id as string | null;
-      const dvtt = personnel.DonViTrucThuoc as Record<string, unknown> | null;
-      const managerCqdvId = cqdvId || (dvtt?.co_quan_don_vi_id as string | null);
-
-      if (managerCqdvId) {
-        const managers = await this.fetchManagersByCoQuanId(managerCqdvId);
-
-        managers.forEach(manager => {
-          notifications.push({
-            nguoi_nhan_id: manager.id,
-            recipient_role: manager.role,
-            type: NOTIFICATION_TYPES.AWARD_UPDATED,
-            title: 'Khen thưởng đột xuất đã được cập nhật',
-            message: `${adminDisplayName} đã cập nhật khen thưởng đột xuất "${awardName}" năm ${year} của quân nhân ${personnel.ho_ten}`,
-            resource: RESOURCE_TYPES.AWARDS,
-            tai_nguyen_id: adhocAward.id as string,
-            link: `/manager/adhoc-awards`,
-          });
-        });
-      }
-
-      const personnelAccount = await accountRepository.findFirstRaw({
-        where: { quan_nhan_id: personnel.id as string },
-        select: { id: true, role: true },
-      });
-
-      if (personnelAccount) {
-        notifications.push({
-          nguoi_nhan_id: personnelAccount.id,
-          recipient_role: personnelAccount.role,
-          type: NOTIFICATION_TYPES.AWARD_UPDATED,
-          title: 'Khen thưởng của bạn đã được cập nhật',
-          message: `Khen thưởng đột xuất "${awardName}" năm ${year} của bạn đã được cập nhật`,
-          resource: RESOURCE_TYPES.AWARDS,
-          tai_nguyen_id: adhocAward.id as string,
-          link: `/user/profile`,
-        });
-      }
-    } else if (adhocAward.doi_tuong === ADHOC_TYPE.TAP_THE) {
-      let unitName = '';
-
-      if (adhocAward.CoQuanDonVi) {
-        const coQuanDonVi = adhocAward.CoQuanDonVi as Record<string, unknown>;
-        unitName = coQuanDonVi.ten_don_vi as string;
-        const managers = await this.fetchManagersByCoQuanId(adhocAward.co_quan_don_vi_id as string);
-
-        managers.forEach(manager => {
-          notifications.push({
-            nguoi_nhan_id: manager.id,
-            recipient_role: manager.role,
-            type: NOTIFICATION_TYPES.AWARD_UPDATED,
-            title: 'Khen thưởng đơn vị đã được cập nhật',
-            message: `${adminDisplayName} đã cập nhật khen thưởng đột xuất "${awardName}" năm ${year} của đơn vị ${unitName}`,
-            resource: RESOURCE_TYPES.AWARDS,
-            tai_nguyen_id: adhocAward.id as string,
-            link: `/manager/adhoc-awards`,
-          });
-        });
-      } else if (adhocAward.DonViTrucThuoc) {
-        const donViTrucThuoc = adhocAward.DonViTrucThuoc as Record<string, unknown>;
-        unitName = donViTrucThuoc.ten_don_vi as string;
-        const parentUnitName = (donViTrucThuoc.CoQuanDonVi as Record<string, unknown> | null)
-          ?.ten_don_vi as string | undefined;
-
-        if (donViTrucThuoc.co_quan_don_vi_id) {
-          const parentManagers = await this.fetchManagersByCoQuanId(
-            donViTrucThuoc.co_quan_don_vi_id as string
-          );
-
-          parentManagers.forEach(manager => {
-            notifications.push({
-              nguoi_nhan_id: manager.id,
-              recipient_role: manager.role,
-              type: NOTIFICATION_TYPES.AWARD_UPDATED,
-              title: 'Khen thưởng đơn vị trực thuộc đã được cập nhật',
-              message: `${adminDisplayName} đã cập nhật khen thưởng đột xuất "${awardName}" năm ${year} của đơn vị ${unitName}${
-                parentUnitName ? ` (thuộc ${parentUnitName})` : ''
-              }`,
-              resource: RESOURCE_TYPES.AWARDS,
-              tai_nguyen_id: adhocAward.id as string,
-              link: `/manager/adhoc-awards`,
-            });
-          });
-        }
-      }
-    }
-
-    if (notifications.length > 0) {
-      await notificationRepository.createMany(notifications);
-      notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n as unknown as Record<string, unknown>));
-    }
-
-    return notifications.length;
   }
 
   async deleteAdhocAward(id: string, adminId: string): Promise<{ success: boolean }> {
@@ -779,120 +540,13 @@ class AdhocAwardService {
     await adhocAwardRepository.delete(id);
 
     try {
-      await this.notifyOnAdhocAwardDeleted(awardInfo, admin?.username || 'Admin');
+      await notifyOnAdhocAwardDeleted(awardInfo, admin?.username || 'Admin');
     } catch (error) {
       console.error('Failed to send adhoc-award deletion notifications:', error);
       void writeSystemLog({ action: 'ERROR', resource: AWARD_SLUGS.ADHOC_AWARDS, description: `Lỗi gửi thông báo xóa ${AWARD_LABEL}: ${error}` });
     }
 
     return { success: true };
-  }
-
-  async notifyOnAdhocAwardDeleted(
-    adhocAward: Record<string, unknown>,
-    adminUsername: string
-  ): Promise<number> {
-    const notifications: NotificationData[] = [];
-    const adminDisplayName = await getDisplayName(adminUsername);
-    const awardName = adhocAward.hinh_thuc_khen_thuong as string;
-    const year = adhocAward.nam as number;
-
-    if (adhocAward.doi_tuong === ADHOC_TYPE.CA_NHAN && adhocAward.QuanNhan) {
-      const personnel = adhocAward.QuanNhan as Record<string, unknown>;
-
-      const cqdvId = personnel.co_quan_don_vi_id as string | null;
-      const dvtt = personnel.DonViTrucThuoc as Record<string, unknown> | null;
-      const managerCqdvId = cqdvId || (dvtt?.co_quan_don_vi_id as string | null);
-
-      if (managerCqdvId) {
-        const managers = await this.fetchManagersByCoQuanId(managerCqdvId);
-
-        managers.forEach(manager => {
-          notifications.push({
-            nguoi_nhan_id: manager.id,
-            recipient_role: manager.role,
-            type: NOTIFICATION_TYPES.AWARD_DELETED,
-            title: 'Khen thưởng đột xuất đã bị xóa',
-            message: `${adminDisplayName} đã xóa khen thưởng đột xuất "${awardName}" năm ${year} của quân nhân ${personnel.ho_ten}`,
-            resource: RESOURCE_TYPES.AWARDS,
-            tai_nguyen_id: personnel.id as string,
-            link: `/manager/adhoc-awards`,
-          });
-        });
-      }
-
-      const personnelAccount = await accountRepository.findFirstRaw({
-        where: { quan_nhan_id: personnel.id as string },
-        select: { id: true, role: true },
-      });
-
-      if (personnelAccount) {
-        notifications.push({
-          nguoi_nhan_id: personnelAccount.id,
-          recipient_role: personnelAccount.role,
-          type: NOTIFICATION_TYPES.AWARD_DELETED,
-          title: 'Khen thưởng của bạn đã bị xóa',
-          message: `Khen thưởng đột xuất "${awardName}" năm ${year} của bạn đã bị xóa khỏi hệ thống`,
-          resource: RESOURCE_TYPES.AWARDS,
-          tai_nguyen_id: personnel.id as string,
-          link: `/user/profile`,
-        });
-      }
-    } else if (adhocAward.doi_tuong === ADHOC_TYPE.TAP_THE) {
-      let unitName = '';
-
-      if (adhocAward.CoQuanDonVi) {
-        const coQuanDonVi = adhocAward.CoQuanDonVi as Record<string, unknown>;
-        unitName = coQuanDonVi.ten_don_vi as string;
-        const managers = await this.fetchManagersByCoQuanId(adhocAward.co_quan_don_vi_id as string);
-
-        managers.forEach(manager => {
-          notifications.push({
-            nguoi_nhan_id: manager.id,
-            recipient_role: manager.role,
-            type: NOTIFICATION_TYPES.AWARD_DELETED,
-            title: 'Khen thưởng đơn vị đã bị xóa',
-            message: `${adminDisplayName} đã xóa khen thưởng đột xuất "${awardName}" năm ${year} của đơn vị ${unitName}`,
-            resource: RESOURCE_TYPES.AWARDS,
-            tai_nguyen_id: adhocAward.co_quan_don_vi_id as string,
-            link: `/manager/adhoc-awards`,
-          });
-        });
-      } else if (adhocAward.DonViTrucThuoc) {
-        const donViTrucThuoc = adhocAward.DonViTrucThuoc as Record<string, unknown>;
-        unitName = donViTrucThuoc.ten_don_vi as string;
-        const parentUnitName = (donViTrucThuoc.CoQuanDonVi as Record<string, unknown> | null)
-          ?.ten_don_vi as string | undefined;
-
-        if (donViTrucThuoc.co_quan_don_vi_id) {
-          const parentManagers = await this.fetchManagersByCoQuanId(
-            donViTrucThuoc.co_quan_don_vi_id as string
-          );
-
-          parentManagers.forEach(manager => {
-            notifications.push({
-              nguoi_nhan_id: manager.id,
-              recipient_role: manager.role,
-              type: NOTIFICATION_TYPES.AWARD_DELETED,
-              title: 'Khen thưởng đơn vị trực thuộc đã bị xóa',
-              message: `${adminDisplayName} đã xóa khen thưởng đột xuất "${awardName}" năm ${year} của đơn vị ${unitName}${
-                parentUnitName ? ` (thuộc ${parentUnitName})` : ''
-              }`,
-              resource: RESOURCE_TYPES.AWARDS,
-              tai_nguyen_id: adhocAward.don_vi_truc_thuoc_id as string,
-              link: `/manager/adhoc-awards`,
-            });
-          });
-        }
-      }
-    }
-
-    if (notifications.length > 0) {
-      await notificationRepository.createMany(notifications);
-      notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n as unknown as Record<string, unknown>));
-    }
-
-    return notifications.length;
   }
 
   async getAdhocAwardsByPersonnel(personnelId: string): Promise<KhenThuongDotXuat[]> {

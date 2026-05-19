@@ -20,7 +20,9 @@ import {
   Popconfirm,
   Tooltip,
   DatePicker,
+  Upload,
 } from 'antd';
+import type { UploadFile } from 'antd/es/upload/interface';
 import dayjs from 'dayjs';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { LoadingState } from '@/components/shared/LoadingState';
@@ -35,6 +37,7 @@ import {
   FileTextOutlined,
   DeleteOutlined,
   HistoryOutlined,
+  UploadOutlined,
 } from '@ant-design/icons';
 import { DecisionModal } from '@/components/decisions/DecisionModal';
 import { PersonnelRewardHistoryModal } from '@/components/proposals/bulk/PersonnelRewardHistoryModal';
@@ -106,6 +109,7 @@ export default function ProposalDetailPage() {
   const [approving, setApproving] = useState(false);
   const [rejecting, setRejecting] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [adminFileList, setAdminFileList] = useState<UploadFile[]>([]);
   const [messageAlert, setMessageAlert] = useState<{
     type: 'success' | 'error';
     text: string;
@@ -209,10 +213,14 @@ export default function ProposalDetailPage() {
         const parsedFilesAttached = parseJsonArray<NonNullable<ProposalDetail['files_attached']>[number]>(
           proposalResponse.data.files_attached
         );
+        const parsedFilesAttachedAdmin = parseJsonArray<
+          NonNullable<ProposalDetail['files_attached_admin']>[number]
+        >(proposalResponse.data.files_attached_admin);
 
         setProposal({
           ...proposalResponse.data,
           files_attached: parsedFilesAttached,
+          files_attached_admin: parsedFilesAttachedAdmin,
         });
 
         const parsedDanhHieu = parseJsonArray<DanhHieuItem>(proposalResponse.data.data_danh_hieu);
@@ -394,6 +402,13 @@ export default function ProposalDetailPage() {
           formData.append('data_nien_han', JSON.stringify(editedNienHan));
           formData.append('data_cong_hien', JSON.stringify(editedCongHien));
 
+          adminFileList.forEach(file => {
+            const raw = file.originFileObj;
+            if (raw instanceof File) {
+              formData.append('admin_attached_files', raw);
+            }
+          });
+
           const approveResponse = await apiClient.approveProposal(String(id), formData);
 
           if (approveResponse.success) {
@@ -418,6 +433,7 @@ export default function ProposalDetailPage() {
               message.success(successMessage);
             }
 
+            setAdminFileList([]);
             // Refresh data
             await fetchProposalDetail();
           } else {
@@ -1112,11 +1128,48 @@ export default function ProposalDetailPage() {
 
         {/* File đính kèm */}
         <Card title="File đính kèm" style={{ marginBottom: '24px' }}>
-          <FileAttachmentList
-            files={proposal.files_attached || []}
-            mode="server"
-            emptyText="Không có file đính kèm"
-          />
+          <div style={{ marginBottom: 16 }}>
+            <Text strong style={{ display: 'block', marginBottom: 8 }}>
+              File từ người đề xuất
+            </Text>
+            <FileAttachmentList
+              files={proposal.files_attached || []}
+              mode="server"
+              emptyText="Không có file đính kèm"
+            />
+          </div>
+
+          <div>
+            <Text strong style={{ display: 'block', marginBottom: 8 }}>
+              File đính kèm của Admin
+            </Text>
+            <FileAttachmentList
+              files={proposal.files_attached_admin || []}
+              mode="server"
+              emptyText="Chưa có file đính kèm từ Admin"
+            />
+            {proposal.status === PROPOSAL_STATUS.PENDING && (
+              <div style={{ marginTop: 12 }}>
+                <Upload
+                  multiple
+                  beforeUpload={() => false}
+                  fileList={adminFileList}
+                  onChange={({ fileList }) => setAdminFileList(fileList)}
+                  onRemove={file => {
+                    setAdminFileList(prev => prev.filter(f => f.uid !== file.uid));
+                    return true;
+                  }}
+                >
+                  <Button icon={<UploadOutlined />}>
+                    Đính kèm thêm file (không bắt buộc)
+                  </Button>
+                </Upload>
+                <Text type="secondary" style={{ display: 'block', marginTop: 8, fontSize: 12 }}>
+                  File sẽ được lưu khi bạn bấm "Phê duyệt".
+                </Text>
+              </div>
+            )}
+          </div>
         </Card>
 
         {proposal.loai_de_xuat === PROPOSAL_TYPES.NCKH && (

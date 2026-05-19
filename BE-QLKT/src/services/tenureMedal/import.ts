@@ -121,11 +121,9 @@ export async function previewImport(buffer: Buffer) {
   );
 
   const personnelMap = new Map(personnelList.map(p => [p.id, p]));
-  // Map<personnelId_danhHieu, record> for duplicate checking
   const hccsvvByKey = new Map(
     existingHCCSVVRecords.map(r => [`${r.quan_nhan_id}_${r.danh_hieu}`, r])
   );
-  // Map<personnelId, records[]> for history
   const hccsvvByPersonnel = new Map<string, typeof existingHCCSVVRecords>();
   for (const r of existingHCCSVVRecords) {
     const list = hccsvvByPersonnel.get(r.quan_nhan_id) || [];

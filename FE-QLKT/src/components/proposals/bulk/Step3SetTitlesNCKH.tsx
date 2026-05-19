@@ -145,7 +145,7 @@ export function Step3SetTitlesNCKH({
     }
   }, [selectedPersonnelIds, fetchPersonnelDetails, onTitleDataChange]);
 
-  const updateTitle = (id: string, field: string, value: any) => {
+  const updateTitle = <K extends keyof TitleData>(id: string, field: K, value: TitleData[K]) => {
     const newData = [...titleData];
     const index = newData.findIndex(d => d.personnel_id === id);
     if (index >= 0) {

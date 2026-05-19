@@ -138,6 +138,12 @@ export interface ProposalDetail {
     size?: number;
     uploadedAt?: string;
   }>;
+  files_attached_admin?: Array<{
+    filename: string;
+    originalName: string;
+    size?: number;
+    uploadedAt?: string;
+  }>;
   ghi_chu: string | null;
   nguoi_duyet: ReviewerAccount | null;
   ngay_duyet: string | null;

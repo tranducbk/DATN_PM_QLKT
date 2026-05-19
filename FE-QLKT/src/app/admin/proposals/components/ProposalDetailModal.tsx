@@ -44,6 +44,7 @@ interface Proposal {
   rejection_reason?: string;
   file_path?: string;
   files_attached?: { filename: string; originalName?: string; size?: number; uploadedAt?: string }[];
+  files_attached_admin?: { filename: string; originalName?: string; size?: number; uploadedAt?: string }[];
   ghi_chu?: string;
   NguoiDeXuat?: {
     QuanNhan?: {
@@ -274,9 +275,18 @@ export function ProposalDetailModal({
         {/* File attachment */}
         {proposal.files_attached && proposal.files_attached.length > 0 && (
           <div style={{ marginTop: 16 }}>
-            <Text strong>File đính kèm:</Text>
+            <Text strong>File đính kèm từ người đề xuất:</Text>
             <div style={{ marginTop: 8 }}>
               <FileAttachmentList files={proposal.files_attached} mode="server" />
+            </div>
+          </div>
+        )}
+
+        {proposal.files_attached_admin && proposal.files_attached_admin.length > 0 && (
+          <div style={{ marginTop: 16 }}>
+            <Text strong>File đính kèm từ Admin:</Text>
+            <div style={{ marginTop: 8 }}>
+              <FileAttachmentList files={proposal.files_attached_admin} mode="server" />
             </div>
           </div>
         )}

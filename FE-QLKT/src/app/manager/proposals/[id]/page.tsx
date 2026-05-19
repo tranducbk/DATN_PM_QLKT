@@ -53,6 +53,7 @@ import {
   CONG_HIEN_GROUP_COLUMNS,
   NIEN_HAN_STYLE_TYPES,
   DANH_HIEU_FALLBACK_TYPES,
+  THANG_DISPLAY_TYPES,
   getDurationDisplay,
   calculateTotalTimeByGroup,
 } from './helpers';
@@ -311,12 +312,7 @@ export default function ManagerProposalDetailPage() {
             </Descriptions.Item>
             <Descriptions.Item label="Năm đề xuất">
               <Text strong>{proposal.nam}</Text>
-              {[
-                PROPOSAL_TYPES.NIEN_HAN,
-                PROPOSAL_TYPES.HC_QKQT,
-                PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
-                PROPOSAL_TYPES.CONG_HIEN,
-              ].includes(proposal.loai_de_xuat as any) &&
+              {THANG_DISPLAY_TYPES.includes(proposal.loai_de_xuat) &&
                 proposal.thang && (
                   <Text type="secondary" style={{ marginLeft: 8 }}>
                     (Tháng {proposal.thang})
@@ -356,15 +352,7 @@ export default function ManagerProposalDetailPage() {
             )}
             {proposal.ngay_duyet && (
               <Descriptions.Item label="Thời gian cập nhật">
-                {(() => {
-                  const date = new Date(proposal.ngay_duyet);
-                  const hours = String(date.getHours()).padStart(2, '0');
-                  const minutes = String(date.getMinutes()).padStart(2, '0');
-                  const day = String(date.getDate()).padStart(2, '0');
-                  const month = String(date.getMonth() + 1).padStart(2, '0');
-                  const year = date.getFullYear();
-                  return `${hours}:${minutes} ${day}/${month}/${year}`;
-                })()}
+                {formatDateTime(proposal.ngay_duyet)}
               </Descriptions.Item>
             )}
             <Descriptions.Item label="Ghi chú" span={2}>
@@ -381,11 +369,28 @@ export default function ManagerProposalDetailPage() {
 
         {/* Attached Files */}
         <Card title="File đính kèm" className="shadow-sm">
-          <FileAttachmentList
-            files={proposal.files_attached || []}
-            mode="server"
-            emptyText="Không có file đính kèm"
-          />
+          <div style={{ marginBottom: 16 }}>
+            <Text strong style={{ display: 'block', marginBottom: 8 }}>
+              File bạn đã đính kèm
+            </Text>
+            <FileAttachmentList
+              files={proposal.files_attached || []}
+              mode="server"
+              emptyText="Không có file đính kèm"
+            />
+          </div>
+
+          {proposal.files_attached_admin && proposal.files_attached_admin.length > 0 && (
+            <div>
+              <Text strong style={{ display: 'block', marginBottom: 8 }}>
+                File đính kèm từ Admin
+              </Text>
+              <FileAttachmentList
+                files={proposal.files_attached_admin}
+                mode="server"
+              />
+            </div>
+          )}
         </Card>
 
         {proposal.loai_de_xuat === PROPOSAL_TYPES.NCKH && (
