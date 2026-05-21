@@ -260,67 +260,63 @@ export async function syncDecisionFiles(
   for (const soQuyetDinh of decisionsToSync) {
     if (!soQuyetDinh) continue;
     try {
-      const existing = await tx.fileQuyetDinh.findUnique({ where: { so_quyet_dinh: soQuyetDinh } });
+      let filePath: string | null | undefined = resolveDecisionFilePath(
+        proposalType,
+        soQuyetDinh,
+        decisions,
+        pdfPaths,
+        thanhTichData
+      );
 
-      if (!existing) {
-        let filePath: string | null | undefined = resolveDecisionFilePath(
-          proposalType,
-          soQuyetDinh,
-          decisions,
-          pdfPaths,
-          thanhTichData
+      if (!filePath) {
+        const matchingDanhHieu = danhHieuData.find(
+          d =>
+            d.so_quyet_dinh === soQuyetDinh ||
+            d.so_quyet_dinh_bkbqp === soQuyetDinh ||
+            d.so_quyet_dinh_cstdtq === soQuyetDinh ||
+            d.so_quyet_dinh_bkttcp === soQuyetDinh
         );
-
+        if (matchingDanhHieu) {
+          filePath =
+            matchingDanhHieu.file_quyet_dinh ||
+            matchingDanhHieu.file_quyet_dinh_bkbqp ||
+            matchingDanhHieu.file_quyet_dinh_cstdtq ||
+            matchingDanhHieu.file_quyet_dinh_bkttcp ||
+            null;
+        }
         if (!filePath) {
-          const matchingDanhHieu = danhHieuData.find(
-            d =>
-              d.so_quyet_dinh === soQuyetDinh ||
-              d.so_quyet_dinh_bkbqp === soQuyetDinh ||
-              d.so_quyet_dinh_cstdtq === soQuyetDinh ||
-              d.so_quyet_dinh_bkttcp === soQuyetDinh
-          );
-          if (matchingDanhHieu) {
-            filePath =
-              matchingDanhHieu.file_quyet_dinh ||
-              matchingDanhHieu.file_quyet_dinh_bkbqp ||
-              matchingDanhHieu.file_quyet_dinh_cstdtq ||
-              matchingDanhHieu.file_quyet_dinh_bkttcp ||
-              null;
-          }
-          if (!filePath) {
-            const matchingThanhTich = thanhTichData.find(t => t.so_quyet_dinh === soQuyetDinh);
-            if (matchingThanhTich && matchingThanhTich.file_quyet_dinh) {
-              filePath = matchingThanhTich.file_quyet_dinh;
-            }
+          const matchingThanhTich = thanhTichData.find(t => t.so_quyet_dinh === soQuyetDinh);
+          if (matchingThanhTich && matchingThanhTich.file_quyet_dinh) {
+            filePath = matchingThanhTich.file_quyet_dinh;
           }
         }
+      }
 
-        const loaiKhenThuong = proposal.loai_de_xuat || PROPOSAL_TYPES.CA_NHAN_HANG_NAM;
-        await tx.fileQuyetDinh.create({
-          data: {
-            so_quyet_dinh: soQuyetDinh,
-            nam: proposal.nam,
-            ngay_ky: ngayKy,
-            nguoi_ky: nguoiKy,
-            file_path: filePath,
-            loai_khen_thuong: loaiKhenThuong,
-            ghi_chu: `Tự động đồng bộ từ đề xuất ${proposalId}`,
-          },
+      const loaiKhenThuong = proposal.loai_de_xuat || PROPOSAL_TYPES.CA_NHAN_HANG_NAM;
+
+      // Atomic upsert avoids P2002 race when two admins approve proposals that share
+      // a so_quyet_dinh concurrently. update is intentionally a no-op so existing
+      // ngay_ky / nguoi_ky / ghi_chu from the original sync are preserved.
+      await tx.fileQuyetDinh.upsert({
+        where: { so_quyet_dinh: soQuyetDinh },
+        create: {
+          so_quyet_dinh: soQuyetDinh,
+          nam: proposal.nam,
+          ngay_ky: ngayKy,
+          nguoi_ky: nguoiKy,
+          file_path: filePath,
+          loai_khen_thuong: loaiKhenThuong,
+          ghi_chu: `Tự động đồng bộ từ đề xuất ${proposalId}`,
+        },
+        update: {},
+      });
+
+      // Backfill file_path only when the existing row left it null and we now have one
+      if (filePath) {
+        await tx.fileQuyetDinh.updateMany({
+          where: { so_quyet_dinh: soQuyetDinh, file_path: null },
+          data: { file_path: filePath },
         });
-      } else if (!existing.file_path) {
-        const filePath = resolveDecisionFilePath(
-          proposalType,
-          soQuyetDinh,
-          decisions,
-          pdfPaths,
-          thanhTichData
-        );
-        if (filePath) {
-          await tx.fileQuyetDinh.update({
-            where: { so_quyet_dinh: soQuyetDinh },
-            data: { file_path: filePath },
-          });
-        }
       }
     } catch (error) {
       void writeSystemLog({

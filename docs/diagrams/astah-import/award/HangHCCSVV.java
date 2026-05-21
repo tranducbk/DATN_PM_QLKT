@@ -1,7 +1,7 @@
 package vn.qlkt.award;
 
 public enum HangHCCSVV {
-    HANG_BA,
-    HANG_NHI,
-    HANG_NHAT;
+    HCCSVV_HANG_BA,
+    HCCSVV_HANG_NHI,
+    HCCSVV_HANG_NHAT;
 }

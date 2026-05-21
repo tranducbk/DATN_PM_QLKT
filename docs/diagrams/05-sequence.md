@@ -8,6 +8,20 @@
 > - `->>` không kèm reply ở sau — async push, fire-and-forget (vd: realtime notification)
 > - `create participant X` — khởi tạo instance X tại thời điểm đó (vd: Modal mount, Socket connect)
 > - `destroy X` — hủy instance X
+>
+> **Pattern `alt` + return (Astah convention)**:
+> Toàn bộ sơ đồ áp dụng pattern: **logic phân nhánh nằm trong `alt`**, **return nằm ngoài `alt`** với message dạng *"Kết quả (X hoặc Y)"*. Điều này phản ánh thực tế REST: controller xử lý nhánh thành công/thất bại bên trong, rồi trả về **một response duy nhất** cho client với payload hoặc error code khác nhau.
+> ```
+> alt nhánh hợp lệ
+>     Ctrl->>DB: thao tác ghi dữ liệu
+>     DB-->>Ctrl: kết quả
+> else nhánh lỗi
+>     Ctrl->>Ctrl: chuẩn bị thông báo lỗi
+> end
+> Ctrl-->>Page: Kết quả (thành công hoặc lỗi)   ← return DUY NHẤT sau alt
+> Page-->>User: Hiển thị thông báo tương ứng
+> ```
+> Notification fire-and-forget (`opt thành công` sau return) chạy **sau** khi đã trả response cho user — phản ánh `void safeNotify(...)` trong code: lỗi gửi notification không ảnh hưởng response chính.
 
 ---
 
@@ -21,19 +35,19 @@ sequenceDiagram
     participant Acc as TaiKhoan [DB]
 
     User->>Page: Nhập thông tin đăng nhập
-    Page->>Page: validate
+    Page->>Page: validate dữ liệu nhập
     Page->>Ctrl: yêu cầu đăng nhập
     Ctrl->>Acc: Lấy thông tin tài khoản
-    Acc-->>Ctrl: thông tin
-    Ctrl->>Ctrl: kiểm tra mật khẩu
+    Acc-->>Ctrl: thông tin tài khoản
 
-    alt thành công
-        Ctrl-->>Page: Thông tin tài khoản và token
-        Page-->>User: Thông báo thành công và điều hướng đến trang chính
-    else thất bại
-        Ctrl-->>Page: Lỗi sai tài khoản hoặc mật khẩu
-        Page-->>User: Hiển thị thông báo sai tài khoản hoặc mật khẩu
+    alt mật khẩu đúng
+        Ctrl->>Ctrl: tạo access token và refresh token
+    else mật khẩu sai hoặc tài khoản không tồn tại
+        Ctrl->>Ctrl: chuẩn bị thông báo lỗi
     end
+
+    Ctrl-->>Page: Kết quả (token hoặc lỗi)
+    Page-->>User: Điều hướng trang chính hoặc hiển thị lỗi
 ```
 
 ---
@@ -54,16 +68,18 @@ sequenceDiagram
     Page->>Ctrl: yêu cầu tạo đề xuất
     Ctrl->>Ctrl: kiểm tra năm tháng và payload theo loại đề xuất
 
-    alt dữ liệu không hợp lệ
-        Ctrl-->>Page: Lỗi kèm chi tiết trường sai
-        Page-->>MGR: Hiển thị thông báo lỗi
-    else dữ liệu hợp lệ
+    alt dữ liệu hợp lệ
         Ctrl->>DX: Lưu đề xuất với trạng thái Chờ duyệt
-        DX-->>Ctrl: thông tin đề xuất
-        Ctrl-->>Page: Đã tạo đề xuất thành công
-        Page-->>MGR: Hiển thị thông báo gửi đề xuất thành công
+        DX-->>Ctrl: thông tin đề xuất đã lưu
+    else dữ liệu không hợp lệ
+        Ctrl->>Ctrl: chuẩn bị thông báo lỗi kèm trường sai
+    end
 
-        Note over Ctrl,TB: Notification fire-and-forget — không chặn response cho Chỉ huy đơn vị
+    Ctrl-->>Page: Kết quả (đề xuất đã tạo hoặc lỗi)
+    Page-->>MGR: Hiển thị thông báo thành công hoặc lỗi
+
+    Note over Ctrl,TB: Notification fire-and-forget — chạy sau response, chỉ khi tạo thành công
+    opt tạo thành công
         Ctrl->>TB: Tạo thông báo cho Phòng Chính trị
         TB-->>Ctrl: đã lưu
         TB->>ADM: Đẩy thông báo có đề xuất mới
@@ -87,7 +103,7 @@ sequenceDiagram
     participant Ctrl as DeXuatController
     participant DX as DeXuat [DB]
     participant KT as KhenThuong [DB]
-    participant HS as HoSoQuanNhan [DB]
+    participant HS as HoSoHangNam / HoSoNienHan / HoSoCongHien [DB]
     participant TB as ThongBao [DB]
 
     ADM->>Page: Mở chi tiết đề xuất
@@ -105,21 +121,22 @@ sequenceDiagram
     Ctrl->>Ctrl: kiểm tra điều kiện khen thưởng theo loại đề xuất
     Ctrl->>Ctrl: kiểm tra hợp lệ số quyết định
 
-    alt validate fail
-        Ctrl-->>Page: Lỗi kèm danh sách quân nhân không đủ điều kiện
-        Page-->>ADM: Hiển thị lỗi để sửa lại
-    else hợp lệ
+    alt validate pass
         Ctrl->>KT: Lưu khen thưởng theo loại
         KT-->>Ctrl: đã lưu
         Ctrl->>DX: Cập nhật trạng thái Đã duyệt
         DX-->>Ctrl: đã cập nhật
-        Ctrl->>HS: Tính lại hồ sơ quân nhân liên quan
+        Ctrl->>HS: Tính lại hồ sơ tương ứng (Hằng năm / Niên hạn / Cống hiến)
         HS-->>Ctrl: hồ sơ mới
+    else validate fail
+        Ctrl->>Ctrl: chuẩn bị danh sách quân nhân không đủ điều kiện
+    end
 
-        Ctrl-->>Page: Phê duyệt thành công
-        Page-->>ADM: Hiển thị thông báo phê duyệt thành công
+    Ctrl-->>Page: Kết quả (phê duyệt thành công hoặc lỗi)
+    Page-->>ADM: Hiển thị thông báo thành công hoặc lỗi
 
-        Note over Ctrl,TB: Notification fire-and-forget — chạy nền sau khi đã trả response
+    Note over Ctrl,TB: Notification fire-and-forget — chỉ chạy khi phê duyệt thành công
+    opt phê duyệt thành công
         Ctrl->>TB: Tạo thông báo cho Chỉ huy đơn vị
         TB-->>Ctrl: đã lưu
         TB->>MGR: Đẩy thông báo đề xuất đã được duyệt
@@ -130,8 +147,9 @@ sequenceDiagram
 ```
 
 **Lưu ý**:
-1. Toàn bộ block trong `alt hợp lệ` chạy trong **một transaction Prisma** (`prisma.$transaction`) — nếu bất kỳ insert nào fail, toàn bộ rollback, đề xuất giữ trạng thái PENDING. Diagram giản lược không vẽ transaction frame để giữ độ rõ.
-2. Reply cho Phòng Chính trị (`Phê duyệt thành công`) **trả về trước** khi notification chạy — admin nhận response ngay, không phải đợi gửi thông báo cho Chỉ huy đơn vị / Quân nhân xong.
+1. Toàn bộ block trong `alt validate pass` chạy trong **một transaction Prisma** (`prisma.$transaction` — `services/proposal/approve/import.ts:51`). Nếu bất kỳ insert nào fail, toàn bộ rollback, đề xuất giữ trạng thái PENDING. Diagram giản lược không vẽ transaction frame để giữ độ rõ.
+2. Reply cho Phòng Chính trị **trả về trước** khi notification chạy — admin nhận response ngay (`void safeNotify` trong `proposal.controller.ts:171–195`).
+3. **Tên model hồ sơ** tùy loại đề xuất: `HoSoHangNam` cho danh hiệu BKBQP/CSTDTQ/BKTTCP, `HoSoNienHan` cho HCCSVV, `HoSoCongHien` cho HCBVTQ — không gộp vào một bảng "HoSoQuanNhan".
 
 ---
 
@@ -149,16 +167,16 @@ sequenceDiagram
     Sys->>NCKH: Lấy thành tích khoa học các năm
     NCKH-->>Sys: danh sách thành tích
 
-    Sys->>Sys: Tính số năm liên tục cho từng cấp BKBQP CSTDTQ BKTTCP
+    Sys->>Sys: Tính số năm liên tục cho từng cấp BKBQP / CSTDTQ / BKTTCP
     Sys->>Sys: Kiểm tra điều kiện lặp lại theo chu kỳ và giới hạn BKTTCP
 
-    alt đã nhận BKTTCP
-        Sys->>Sys: Chặn đề xuất, đặt gợi ý chưa hỗ trợ cao hơn
-    else
+    alt đã nhận BKTTCP (lifetime block)
+        Sys->>Sys: Đặt gợi ý chưa hỗ trợ danh hiệu cao hơn
+    else chưa đạt giới hạn lifetime
         Sys->>Sys: Sinh gợi ý theo điều kiện hiện tại
     end
 
-    Sys->>HS: Cập nhật ba cờ điều kiện và gợi ý
+    Sys->>HS: Cập nhật ba cờ điều kiện và gợi ý vào HoSoHangNam
     HS-->>Sys: hồ sơ đã cập nhật
 ```
 
@@ -176,25 +194,42 @@ sequenceDiagram
     participant KT as KhenThuong [DB]
     participant HS as HoSoQuanNhan [DB]
 
+    Note over ADM,Page: Giai đoạn 1 — Xem trước
     ADM->>Page: Chọn file Excel theo loại khen thưởng
     Page->>Ctrl: gửi file xem trước
     Ctrl->>Excel: Đọc và kiểm tra cấu trúc file
     Excel-->>Ctrl: dữ liệu từng dòng
     Ctrl->>QN: Tìm quân nhân theo CCCD
     QN-->>Ctrl: danh sách quân nhân khớp
-    Ctrl->>Ctrl: Kiểm tra điều kiện cho từng dòng
-    Ctrl-->>Page: Bảng xem trước với dòng OK và dòng lỗi
-    Page-->>ADM: Hiển thị bảng xem trước
+    Ctrl->>Ctrl: validate điều kiện từng dòng (dòng OK / dòng lỗi)
 
+    alt file hợp lệ (có ít nhất một dòng OK)
+        Ctrl->>Ctrl: build bảng preview phân loại
+    else file lỗi cấu trúc
+        Ctrl->>Ctrl: chuẩn bị message lỗi cấu trúc
+    end
+
+    Ctrl-->>Page: Kết quả xem trước (bảng phân loại hoặc lỗi)
+    Page-->>ADM: Hiển thị bảng preview hoặc lỗi
+
+    Note over ADM,Page: Giai đoạn 2 — Xác nhận lưu
     ADM->>Page: Xác nhận nhập các dòng hợp lệ
     Page->>Ctrl: xác nhận nhập dữ liệu
-    Ctrl->>KT: Lưu khen thưởng cho từng dòng
-    KT-->>Ctrl: đã lưu
-    Ctrl->>HS: Tính lại hồ sơ quân nhân liên quan
-    HS-->>Ctrl: hồ sơ mới
-    Ctrl-->>Page: Báo cáo số dòng thành công và thất bại
+
+    alt có dòng hợp lệ để lưu
+        Ctrl->>KT: Lưu khen thưởng cho từng dòng (trong transaction)
+        KT-->>Ctrl: đã lưu
+        Ctrl->>HS: Tính lại hồ sơ quân nhân liên quan
+        HS-->>Ctrl: hồ sơ mới
+    else không có dòng hợp lệ
+        Ctrl->>Ctrl: chuẩn bị message không có gì để lưu
+    end
+
+    Ctrl-->>Page: Kết quả (số dòng thành công / thất bại hoặc lỗi)
     Page-->>ADM: Hiển thị kết quả nhập dữ liệu
 ```
+
+**Lưu ý**: hai giai đoạn Preview / Confirm là **2 endpoint REST riêng biệt** — `POST /import/preview` và `POST /import/confirm` (định nghĩa ở `routes/{tenureMedal,contributionMedal,commemorativeMedal,militaryFlag,annualReward,unitAnnualAward,scientificAchievement}.route.ts`). Preview chỉ validate + trả bảng phân loại, không ghi DB. Confirm ghi DB trong transaction sau khi ADM xác nhận. State giữa 2 lần gọi không lưu phía server — FE giữ file/data tạm và gửi lại ở Confirm.
 
 ---
 
@@ -208,27 +243,35 @@ sequenceDiagram
     participant Sys as Nghiệp vụ phát thông báo [SV]
     participant TB as ThongBao [DB]
 
-    Note over Page,Server: Sau khi đăng nhập thành công
+    Note over Page,Server: Giai đoạn 1 — Sau khi đăng nhập thành công
     create participant Sock as :SocketClient [UI]
     Page->>Sock: khởi tạo socket với token
-    Sock->>Server: handshake
-    Server-->>Sock: connected
-    Sock->>Server: subscribe kênh theo người nhận
+    Sock->>Server: handshake với JWT
 
-    Note over Sys,Server: Khi có sự kiện nghiệp vụ (vd: phê duyệt đề xuất)
+    alt token hợp lệ
+        Server->>Server: join room user_{userId}
+    else token hết hạn hoặc sai
+        Server->>Server: chuẩn bị disconnect
+    end
+
+    Server-->>Sock: Kết quả handshake (connected hoặc disconnect)
+
+    Note over Sys,Server: Giai đoạn 2 — Khi có sự kiện nghiệp vụ (vd: phê duyệt đề xuất)
     Sys->>TB: Tạo thông báo cho người nhận
     TB-->>Sys: đã lưu
-    Sys->>Server: Phát sự kiện tới người nhận
-    Server->>Sock: Đẩy realtime
+    Sys->>Server: Phát sự kiện tới room user_{recipientId}
+    Server->>Sock: Đẩy event realtime
     Sock->>Page: cập nhật badge và toast
     Page-->>User: Hiển thị thông báo
 
-    User->>Page: Click thông báo và đánh dấu đã đọc
+    Note over User,TB: Giai đoạn 3 — User đánh dấu đã đọc
+    User->>Page: Click thông báo
     Page->>Server: Cập nhật trạng thái đã đọc
-    Server->>TB: Update đã đọc
+    Server->>TB: Update is_read = true
     TB-->>Server: đã cập nhật
+    Server-->>Page: Kết quả cập nhật
 
-    Note over Page,Sock: Khi đăng xuất hoặc đóng tab
+    Note over Page,Sock: Giai đoạn 4 — Đăng xuất hoặc đóng tab
     Page->>Sock: yêu cầu ngắt kết nối
     Sock->>Server: ngắt kết nối
     destroy Sock
@@ -255,16 +298,18 @@ sequenceDiagram
     Page->>Ctrl: yêu cầu xóa đề xuất
     Ctrl->>DX: tìm đề xuất theo id
 
-    alt không tồn tại hoặc đã duyệt
-        Ctrl-->>Page: Lỗi không thể xóa
-        Page-->>Actor: Hiển thị thông báo lỗi
-    else hợp lệ
+    alt trạng thái PENDING (cho phép xóa)
         Ctrl->>DX: Xóa đề xuất
         DX-->>Ctrl: đã xóa
-        Ctrl-->>Page: Đã xóa thành công
-        Page-->>Actor: Hiển thị thông báo xóa thành công
+    else không tồn tại hoặc đã APPROVED / REJECTED
+        Ctrl->>Ctrl: chuẩn bị message không thể xóa
+    end
 
-        Note over Ctrl,TB: Notification fire-and-forget
+    Ctrl-->>Page: Kết quả (đã xóa hoặc lỗi)
+    Page-->>Actor: Hiển thị thông báo thành công hoặc lỗi
+
+    Note over Ctrl,TB: Notification fire-and-forget — chỉ chạy khi xóa thành công
+    opt xóa thành công
         Ctrl->>TB: Tạo thông báo cho Phòng Chính trị (trừ người xóa)
         TB-->>Ctrl: đã lưu
         TB->>ADM: Đẩy thông báo đề xuất bị xóa
@@ -292,7 +337,7 @@ sequenceDiagram
     participant FS as Thư mục backups [FS]
     participant Log as NhatKyHeThong [DB]
 
-    Note over SA,Ctrl: Bật lịch sao lưu tự động
+    Note over SA,Ctrl: Giai đoạn 1 — Bật lịch sao lưu tự động
     SA->>Page: Bật "Sao lưu tự động"
     Page->>Ctrl: yêu cầu bật lịch
     Ctrl->>Setting: Lưu cron_enabled = true
@@ -302,15 +347,13 @@ sequenceDiagram
     Ctrl-->>Page: đã bật
     Page-->>SA: Hiển thị trạng thái đã bật
 
-    Note over Cron,Backup: Khi đến mốc cron (vd: 01h ngày 1 hằng tháng)
+    Note over Cron,Backup: Giai đoạn 2 — Khi đến mốc cron (vd: 01h ngày 1 hằng tháng)
     loop Mỗi chu kỳ cron
         Cron->>Backup: Yêu cầu sao lưu định kỳ
         Backup->>Setting: Kiểm tra cấu hình bật sao lưu
+        Setting-->>Backup: trạng thái cron_enabled
 
-        alt sao lưu bị tắt
-            Setting-->>Backup: tắt
-            Backup-->>Cron: Bỏ qua
-        else bật
+        alt sao lưu đang bật
             Backup->>Repos: Đọc toàn bộ dữ liệu các bảng nghiệp vụ
             Repos-->>Backup: dữ liệu
             Backup->>Backup: Tạo nội dung file SQL
@@ -319,10 +362,14 @@ sequenceDiagram
             Backup->>Setting: Cập nhật thời điểm sao lưu gần nhất
             Backup->>Log: Ghi nhật ký sao lưu thành công
             Backup->>FS: Xóa file cũ vượt thời hạn lưu trữ
+        else sao lưu bị tắt
+            Backup->>Backup: chuẩn bị message bỏ qua
         end
+
+        Backup-->>Cron: Kết quả chu kỳ (đã sao lưu hoặc bỏ qua)
     end
 
-    Note over SA,Cron: Tắt lịch
+    Note over SA,Cron: Giai đoạn 3 — Tắt lịch
     SA->>Page: Tắt "Sao lưu tự động"
     Page->>Ctrl: yêu cầu tắt lịch
     Ctrl->>Cron: dừng task
@@ -331,7 +378,7 @@ sequenceDiagram
     Ctrl-->>Page: đã tắt
     Page-->>SA: Hiển thị trạng thái đã tắt
 
-    Note over SA,Log: Xem nhật ký
+    Note over SA,Log: Giai đoạn 4 — Xem nhật ký
     SA->>Log: Xem nhật ký sao lưu
     Log-->>SA: Danh sách lần sao lưu
 ```
@@ -373,31 +420,37 @@ sequenceDiagram
     Modal->>Ctrl: yêu cầu tạo khen thưởng đột xuất
     Ctrl->>Ctrl: kiểm tra cấu trúc dữ liệu và loại đối tượng
 
-    alt validate fail
-        Ctrl-->>Modal: Lỗi kèm chi tiết trường sai
-        Modal-->>ADM: Hiển thị lỗi sửa lại
-    else hợp lệ
+    alt validate pass
         Ctrl->>FS: Lưu file quyết định
         FS-->>Ctrl: đường dẫn file
         Ctrl->>KT: Lưu khen thưởng đột xuất
         KT-->>Ctrl: đã lưu
+    else validate fail
+        Ctrl->>Ctrl: chuẩn bị message lỗi kèm trường sai
+    end
 
-        Ctrl-->>Modal: Tạo thành công
+    Ctrl-->>Modal: Kết quả (tạo thành công hoặc lỗi)
+
+    alt tạo thành công
         Modal->>Page: thông báo thành công
         Page->>Modal: đóng modal
         destroy Modal
         Page->>Page: refresh danh sách
         Page-->>ADM: Hiển thị "Đã thêm" và danh sách mới
+    else lỗi
+        Modal-->>ADM: Hiển thị lỗi để sửa lại
+    end
 
-        Note over Ctrl,TB: Notification fire-and-forget
-        alt khen thưởng cá nhân
+    Note over Ctrl,TB: Notification fire-and-forget — chỉ chạy khi tạo thành công, branching theo doi_tuong trong notifications.ts
+    opt tạo thành công
+        alt khen thưởng cá nhân (doi_tuong = CA_NHAN)
             Ctrl->>TB: Tạo thông báo cho Quân nhân nhận khen thưởng
             TB-->>Ctrl: đã lưu
             TB->>QN: Đẩy thông báo nhận khen thưởng đột xuất
             Ctrl->>TB: Tạo thông báo cho Chỉ huy đơn vị của Quân nhân
             TB-->>Ctrl: đã lưu
             TB->>MGR: Đẩy thông báo quân nhân trong đơn vị được khen thưởng
-        else khen thưởng tập thể (đơn vị)
+        else khen thưởng tập thể (doi_tuong = TAP_THE)
             Ctrl->>TB: Tạo thông báo cho Chỉ huy đơn vị
             TB-->>Ctrl: đã lưu
             TB->>MGR: Đẩy thông báo đơn vị được khen thưởng đột xuất
@@ -417,21 +470,21 @@ sequenceDiagram
 
 | # | Sequence | Lifeline | Đặc điểm |
 |---|---|---|---|
-| C4.1 | Đăng nhập | 4 (Người dùng + TrangDangNhap + AuthController + TaiKhoan) | Có self-call validate + alt thành công/thất bại |
-| C4.2 | Tạo đề xuất | 6 | alt validate + notification fire-and-forget sau response |
-| C4.3 | Phê duyệt | 8 | 3 actor + alt validate + 2 cặp create-push thông báo |
-| C4.4 | Recalc chuỗi | 4 | Background process, có alt lifetime block |
-| C4.5 | Import Excel | 6 | 2 bước Preview/Confirm |
-| C4.6 | Thông báo realtime | 6 | **`«create»/destroy` SocketClient** theo session login |
-| C4.7 | Xóa đề xuất | 7 | 3 actor + alt validate + opt thông báo cho người đề xuất |
-| C4.8 | Sao lưu dữ liệu | 9 | **`«create»/destroy` ScheduledTask** + loop cron |
-| C4.9 | Thêm khen thưởng đột xuất | 9 | **`«create»/destroy` Modal** + alt cá nhân/tập thể |
+| C4.1 | Đăng nhập | 4 (Người dùng + TrangDangNhap + AuthController + TaiKhoan) | alt logic + return ngoài alt |
+| C4.2 | Tạo đề xuất | 6 | alt validate + return + opt notification |
+| C4.3 | Phê duyệt | 8 | 3 actor + alt transaction + opt notification (2 nhánh) |
+| C4.4 | Recalc chuỗi | 4 | Background process, alt lifetime block + return cập nhật hồ sơ |
+| C4.5 | Import Excel | 6 | **2 endpoint REST riêng** Preview / Confirm — mỗi giai đoạn có alt + return |
+| C4.6 | Thông báo realtime | 6 | **`«create»/destroy` SocketClient** + 4 giai đoạn handshake/push/read/disconnect |
+| C4.7 | Xóa đề xuất | 7 | 3 actor + alt PENDING-only + opt notification phân nhánh role |
+| C4.8 | Sao lưu dữ liệu | 9 | **`«create»/destroy` ScheduledTask** + loop cron với alt enable/disable |
+| C4.9 | Thêm khen thưởng đột xuất | 9 | **`«create»/destroy` Modal** + alt validate + opt notification phân nhánh CA_NHAN/TAP_THE |
 
 **Style nguyên tắc** (theo báo cáo mẫu):
 - Actor: tên Tiếng Việt nghiệp vụ ("Chỉ huy đơn vị", "Phòng Chính trị", "Quân nhân", "Người dùng")
 - Page: PascalCase tiếng Việt theo trang ("TrangDangNhap", "TrangDeXuat", "TrangChiTietDeXuat", "TrangKhenThuongDotXuat")
 - Controller: PascalCase + suffix Controller ("AuthController", "DeXuatController", "KhenThuongController", "KhenThuongDotXuatController", "DevZoneController")
-- Entity: tên model nghiệp vụ ("TaiKhoan", "DeXuat", "KhenThuong", "KhenThuongDotXuat", "HoSoQuanNhan", "ThongBao", "DanhHieuHangNam")
+- Entity: tên model nghiệp vụ ("TaiKhoan", "DeXuat", "KhenThuong", "KhenThuongDotXuat", "HoSoHangNam", "HoSoNienHan", "HoSoCongHien", "ThongBao", "DanhHieuHangNam")
 - Message: ngắn gọn nghiệp vụ tiếng Việt, không reveal implementation (không nói `prisma.$transaction`, `bcrypt.compare`, `Joi validate`...)
 - `alt` cho nhánh thành công/thất bại, có nhãn rõ ràng
 - `opt` cho điều kiện optional (vd: chỉ chạy khi điều kiện cụ thể)

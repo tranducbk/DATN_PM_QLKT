@@ -2,6 +2,9 @@ package vn.qlkt.personnel;
 
 import java.util.Date;
 import java.util.Map;
+import vn.qlkt.unit.CoQuanDonVi;
+import vn.qlkt.unit.DonViTrucThuoc;
+import vn.qlkt.unit.ChucVu;
 
 public class QuanNhan {
     private String id;
@@ -22,8 +25,11 @@ public class QuanNhan {
     private String so_dien_thoai;
     private CapBac cap_bac;
     private String co_quan_don_vi_id;
+    private CoQuanDonVi coQuanDonVi;
     private String don_vi_truc_thuoc_id;
+    private DonViTrucThuoc donViTrucThuoc;
     private String chuc_vu_id;
+    private ChucVu chucVu;
     private Date createdAt;
     private Date updatedAt;
 }
