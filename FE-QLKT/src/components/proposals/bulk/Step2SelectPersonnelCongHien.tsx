@@ -18,10 +18,7 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import { formatDate } from '@/lib/utils';
 import { apiClient } from '@/lib/apiClient';
 import { GENDER } from '@/constants/gender.constants';
-import {
-  DEFAULT_ANTD_TABLE_PAGINATION,
-  FETCH_ALL_LIMIT,
-} from '@/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { ExcelImportSection } from './ExcelImportSection';
 import { usePersonnelList } from './usePersonnelList';
 import {

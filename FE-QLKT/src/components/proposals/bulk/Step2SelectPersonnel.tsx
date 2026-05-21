@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect } from 'react';
 import { Table, Input, Select, Space, Alert, Typography, InputNumber, Empty } from 'antd';
 import { SearchOutlined, TeamOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';

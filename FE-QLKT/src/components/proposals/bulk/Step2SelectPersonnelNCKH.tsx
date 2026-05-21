@@ -10,7 +10,6 @@ import {
   Typography,
   InputNumber,
   Empty,
-  message,
 } from 'antd';
 import { SearchOutlined, TeamOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
