@@ -1165,7 +1165,7 @@ export default function ProposalDetailPage() {
                   </Button>
                 </Upload>
                 <Text type="secondary" style={{ display: 'block', marginTop: 8, fontSize: 12 }}>
-                  File sẽ được lưu khi bạn bấm "Phê duyệt".
+                  File sẽ được lưu khi bạn bấm &quot;Phê duyệt&quot;.
                 </Text>
               </div>
             )}

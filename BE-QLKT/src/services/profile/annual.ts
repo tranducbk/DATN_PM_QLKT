@@ -8,8 +8,8 @@ import { annualProfileRepository } from '../../repositories/annualProfile.reposi
 import { writeSystemLog } from '../../helpers/systemLogHelper';
 import { NotFoundError } from '../../middlewares/errorHandler';
 import { DANH_HIEU_CA_NHAN_BANG_KHEN, DANH_HIEU_CA_NHAN_HANG_NAM, getDanhHieuName } from '../../constants/danhHieu.constants';
-import { PERSONAL_CHAIN_AWARDS, findChainAwardConfig } from '../../constants/chainAwards.constants';
-import { checkChainEligibility, type EligibilityResult, type FlagsInWindow } from '../eligibility/chainEligibility';
+import { type EligibilityResult } from '../eligibility/chainEligibility';
+import { evaluatePersonalChain } from '../eligibility/personalChainEvaluator';
 import type { AnnualStreakResult, ChainContext, NCKHYearsResult, RecalculateResult, SpecialCaseResult } from './types';
 
 /**
@@ -133,20 +133,6 @@ export function countBKBQPInStreak(danhHieuList: DanhHieuHangNam[], year: number
  * @param year - Evaluation anchor year
  * @returns Number of CSTDTQ steps in the active chain
  */
-/**
- * Counts records with flag = true within N years back from year-1.
- */
-export function countFlagInRange(
-  danhHieuList: Array<Record<string, unknown> & { nam: number }>,
-  year: number,
-  rangeYears: number,
-  flagKey: string
-): number {
-  const endYear = year - 1;
-  const startYear = endYear - rangeYears + 1;
-  return danhHieuList.filter(r => r[flagKey] === true && r.nam >= startYear && r.nam <= endYear).length;
-}
-
 /**
  * Đếm tổng số lần nhận CSTDTQ trong chuỗi CSTDCS liên tục.
  */
@@ -345,31 +331,14 @@ export function computeEligibilityFlags(
   year: number
 ) {
   const { cstdcs_lien_tuc, nckh_lien_tuc } = streaks;
-  const hasEnoughNCKH = nckh_lien_tuc >= cstdcs_lien_tuc;
-  const ctx = computeChainContext(danhHieuList, cstdcs_lien_tuc, year);
-
-  const du_dieu_kien_bkbqp =
-    ctx.streakSinceLastBkbqp >= 2 &&
-    ctx.streakSinceLastBkbqp % 2 === 0 &&
-    hasEnoughNCKH;
-
-  const bkbqpIn3Years = countFlagInRange(danhHieuList, year, 3, 'nhan_bkbqp');
-  const du_dieu_kien_cstdtq =
-    cstdcs_lien_tuc >= 3 && cstdcs_lien_tuc % 3 === 0 &&
-    bkbqpIn3Years >= 1 && hasEnoughNCKH;
-
-  const hasReceivedBKTTCP = danhHieuList.some(r => r.nhan_bkttcp === true);
-  const bkbqpIn7Years = countFlagInRange(danhHieuList, year, 7, 'nhan_bkbqp');
-  const cstdtqIn7Years = countFlagInRange(danhHieuList, year, 7, 'nhan_cstdtq');
-  const du_dieu_kien_bkttcp =
-    !hasReceivedBKTTCP &&
-    cstdcs_lien_tuc >= 7 &&
-    cstdcs_lien_tuc % 7 === 0 &&
-    bkbqpIn7Years === 3 &&
-    cstdtqIn7Years === 2 &&
-    hasEnoughNCKH;
-
-  return { du_dieu_kien_bkbqp, du_dieu_kien_cstdtq, du_dieu_kien_bkttcp };
+  return {
+    du_dieu_kien_bkbqp: evaluatePersonalChain(
+      DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP, danhHieuList, year, cstdcs_lien_tuc, nckh_lien_tuc).eligible,
+    du_dieu_kien_cstdtq: evaluatePersonalChain(
+      DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ, danhHieuList, year, cstdcs_lien_tuc, nckh_lien_tuc).eligible,
+    du_dieu_kien_bkttcp: evaluatePersonalChain(
+      DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP, danhHieuList, year, cstdcs_lien_tuc, nckh_lien_tuc).eligible,
+  };
 }
 
 /**
@@ -475,9 +444,6 @@ export async function checkAwardEligibility(personnelId: string, year: number, d
     return { eligible: true, reason: '' };
   }
 
-  const config = findChainAwardConfig(PERSONAL_CHAIN_AWARDS, danhHieu);
-  if (!config) return { eligible: true, reason: '' };
-
   let streaks;
   try {
     streaks = await computeAnnualStreaks(personnelId, year);
@@ -488,40 +454,13 @@ export async function checkAwardEligibility(personnelId: string, year: number, d
     throw error;
   }
 
-  const { cstdcs_lien_tuc, nckh_lien_tuc, danhHieuList } = streaks;
-
-  // Always window prerequisite-flag counts to the cycle length (3y CSTDTQ, 7y BKTTCP).
-  // A streak past the cycle boundary cannot retro-claim flags from earlier cycles.
-  const flagsInWindow: FlagsInWindow = {};
-  config.requiredFlags.forEach(f => {
-    flagsInWindow[f.code] = countFlagInRange(
-      danhHieuList,
-      year,
-      config.cycleYears,
-      flagColumnFor(f.code)
-    );
-  });
-
-  const hasReceived = config.isLifetime
-    ? danhHieuList.some((dh: DanhHieuHangNam) => (dh as unknown as Record<string, unknown>)[config.flagColumn] === true)
-    : false;
-
-  return checkChainEligibility(
-    config,
-    { streakLength: cstdcs_lien_tuc, nckhStreak: nckh_lien_tuc },
-    hasReceived,
-    flagsInWindow
+  return evaluatePersonalChain(
+    danhHieu,
+    streaks.danhHieuList as Array<Record<string, unknown> & { nam: number }>,
+    year,
+    streaks.cstdcs_lien_tuc,
+    streaks.nckh_lien_tuc
   );
-}
-
-/** Maps a chain award code to its boolean flag column on `DanhHieuHangNam`. */
-function flagColumnFor(code: string): string {
-  const map: Record<string, string> = {
-    [DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP]: 'nhan_bkbqp',
-    [DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ]: 'nhan_cstdtq',
-    [DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP]: 'nhan_bkttcp',
-  };
-  return map[code] ?? '';
 }
 
 /**

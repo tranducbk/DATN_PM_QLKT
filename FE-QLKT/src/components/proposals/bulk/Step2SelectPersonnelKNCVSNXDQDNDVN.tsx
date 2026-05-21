@@ -18,8 +18,9 @@ import type { ColumnsType } from 'antd/es/table';
 import { formatDate } from '@/lib/utils';
 import { apiClient } from '@/lib/apiClient';
 import { calculateTotalMonths } from './serviceDuration';
+import { usePersonnelList } from './usePersonnelList';
 import type { Step2Personnel as Personnel } from './types';
-import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { ExcelImportSection } from './ExcelImportSection';
 import {
@@ -65,10 +66,16 @@ export function Step2SelectPersonnelKNCVSNXDQDNDVN({
   onNextStep,
   isManager = false,
 }: Step2SelectPersonnelKNCVSNXDQDNDVNProps) {
-  const [loading, setLoading] = useState(false);
-  const [personnel, setPersonnel] = useState<Personnel[]>([]);
-  const [searchText, setSearchText] = useState('');
-  const [unitFilter, setUnitFilter] = useState<string>('ALL');
+  const {
+    personnel,
+    loading,
+    searchText,
+    setSearchText,
+    unitFilter,
+    setUnitFilter,
+    units,
+    filteredPersonnel,
+  } = usePersonnelList({ warnWhenEmpty: true });
   const NOW = new Date();
   const CURRENT_YEAR = NOW.getFullYear();
   const CURRENT_MONTH = NOW.getMonth() + 1;
@@ -77,10 +84,6 @@ export function Step2SelectPersonnelKNCVSNXDQDNDVN({
   const [alreadyReceivedMap, setAlreadyReceivedMap] = useState<Record<string, boolean>>({});
   const [receivedReasonMap, setReceivedReasonMap] = useState<Record<string, string>>({});
   const [checkingReceived, setCheckingReceived] = useState(false);
-
-  useEffect(() => {
-    fetchPersonnel();
-  }, []);
 
   useEffect(() => {
     setLocalNam(nam);
@@ -130,58 +133,6 @@ export function Step2SelectPersonnelKNCVSNXDQDNDVN({
       checkAlreadyReceived();
     }
   }, [personnel, checkAlreadyReceived]);
-
-  const fetchPersonnel = async () => {
-    try {
-      setLoading(true);
-      const response = await apiClient.getPersonnel({
-        page: 1,
-        limit: FETCH_ALL_LIMIT,
-      });
-
-      if (response.success) {
-        const personnelData = response.data ?? [];
-        setPersonnel(personnelData);
-        if (personnelData.length === 0) {
-          message.warning('Không có quân nhân nào trong đơn vị của bạn.');
-        }
-      } else {
-        message.error(response.message || 'Không thể lấy danh sách quân nhân');
-      }
-    } catch (error: unknown) {
-      message.error(
-        getApiErrorMessage(error) || 'Lỗi khi tải danh sách quân nhân'
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const units = Array.from(
-    new Set(
-      personnel.map(p => {
-        if (p.DonViTrucThuoc) {
-          return `${p.DonViTrucThuoc.id}|${p.DonViTrucThuoc.ten_don_vi}`;
-        } else if (p.CoQuanDonVi) {
-          return `${p.CoQuanDonVi.id}|${p.CoQuanDonVi.ten_don_vi}`;
-        }
-        return '';
-      })
-    )
-  ).filter(Boolean);
-
-  const filteredPersonnel = personnel.filter(p => {
-    const matchesSearch =
-      searchText === '' || p.ho_ten.toLowerCase().includes(searchText.toLowerCase());
-
-    const matchesUnit =
-      !unitFilter ||
-      unitFilter === 'ALL' ||
-      p.don_vi_truc_thuoc_id === unitFilter.split('|')[0] ||
-      p.co_quan_don_vi_id === unitFilter.split('|')[0];
-
-    return matchesSearch && matchesUnit;
-  });
 
   const refDate = new Date(localNam ?? CURRENT_YEAR, localThang, 0);
 

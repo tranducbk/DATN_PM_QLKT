@@ -24,6 +24,7 @@ import { useTheme } from '@/components/ThemeProvider';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
+import { AWARD_TAB_LABELS } from '@/constants/danhHieu.constants';
 import type { PersonnelDetail } from '@/lib/types/personnelList';
 
 const { Title, Paragraph } = Typography;
@@ -71,7 +72,7 @@ export default function ManagerMilitaryFlagPage() {
             mappedFlags.push({
               id: item.id,
               type: 'HCQKQT',
-              name: 'Huy chương Quân kỳ quyết thắng',
+              name: AWARD_TAB_LABELS.HCQKQT,
               nam: item.nam,
               cap_bac: item.cap_bac,
               chuc_vu: item.chuc_vu,

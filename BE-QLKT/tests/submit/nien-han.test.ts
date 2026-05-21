@@ -7,7 +7,7 @@ import { ValidationError } from '../../src/middlewares/errorHandler';
 import { PROPOSAL_TYPES } from '../../src/constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../../src/constants/proposalStatus.constants';
 import {
-  DANH_HIEU_CA_NHAN_KHAC,
+  DANH_HIEU_DAC_BIET,
   DANH_HIEU_HCCSVV,
 } from '../../src/constants/danhHieu.constants';
 import {
@@ -135,7 +135,7 @@ describe('proposal.submit - NIEN_HAN', () => {
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([target]);
 
     await expectError(
-      callSubmit([{ personnel_id: target.id, danh_hieu: DANH_HIEU_CA_NHAN_KHAC.HC_QKQT }]),
+      callSubmit([{ personnel_id: target.id, danh_hieu: DANH_HIEU_DAC_BIET.HC_QKQT }]),
       ValidationError,
       { startsWith: NIEN_HAN_INVALID_DANH_HIEU_PREFIX }
     );

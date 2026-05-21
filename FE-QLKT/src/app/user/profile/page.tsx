@@ -484,7 +484,7 @@ export default function UserProfilePage() {
                   <Col xs={24} md={8}>
                     <Card size="small">
                       <Statistic
-                        title="Bằng khen của Bộ trưởng Bộ Quốc phòng"
+                        title={DANH_HIEU_MAP[DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP]}
                         value={0}
                         valueStyle={{ fontSize: '14px' }}
                         valueRender={() => (
@@ -498,7 +498,7 @@ export default function UserProfilePage() {
                   <Col xs={24} md={8}>
                     <Card size="small">
                       <Statistic
-                        title="Bằng khen của Thủ tướng Chính phủ"
+                        title={DANH_HIEU_MAP[DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP]}
                         value={0}
                         valueStyle={{ fontSize: '14px' }}
                         valueRender={() => (

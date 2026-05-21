@@ -4,7 +4,7 @@
 \section{Đặt vấn đề}
 \label{section:1.1}
 
-Công tác thi đua -- khen thưởng trong các đơn vị quân đội thực hiện theo Luật Thi đua, Khen thưởng số 06/2022/QH15 \cite{luat062022} cùng các nghị định, thông tư hướng dẫn. Trong khi nhiều cơ quan đã số hoá công tác này, Học viện Khoa học Quân sự (HVKHQS) vẫn dựa chủ yếu vào các tệp Microsoft Excel chia sẻ qua mạng nội bộ kèm bản giấy ký xác nhận. Phương thức này gặp ba nhóm khó khăn.
+Công tác thi đua -- khen thưởng trong các đơn vị quân đội thực hiện theo Luật Thi đua, Khen thưởng số 06/2022/QH15 \cite{luat062022} cùng các nghị định, thông tư hướng dẫn. Trong khi nhiều cơ quan đã số hoá công tác này, Học viện Khoa học Quân sự (HVKHQS) vẫn dựa chủ yếu vào các tệp Microsoft Excel chia sẻ qua mạng nội bộ kèm bản giấy ký xác nhận. Phương thức này bộc lộ ba nhóm hạn chế cốt lõi sau đây, được phân tích chi tiết hơn dưới dạng bốn vấn đề khảo sát cụ thể tại Mục~\ref{section:2.1}.
 
 Thứ nhất, hệ thống danh hiệu có cấu trúc chuỗi và khung xét lùi theo từng năm. Để đề nghị Bằng khen của Bộ trưởng Bộ Quốc phòng (BKBTBQP), quân nhân phải duy trì Chiến sĩ thi đua cơ sở (CSTĐCS) liên tục đủ hai năm. Chiến sĩ thi đua toàn quân (CSTĐTQ) yêu cầu ba năm CSTĐCS liên tục cộng ít nhất một BKBTBQP trong ba năm gần nhất. Bằng khen của Thủ tướng Chính phủ (BKTTCP) yêu cầu bảy năm CSTĐCS liên tục, đúng ba BKBTBQP và đúng hai CSTĐTQ trong bảy năm gần nhất, kèm thành tích nghiên cứu khoa học mỗi năm. Khi rà soát thủ công, cán bộ phải tra chéo nhiều bảng tính để xác định một danh hiệu cũ còn nằm trong khung xét hiện tại hay đã rơi ngoài; quy trình vừa chậm, vừa dễ bỏ sót.
 
@@ -17,16 +17,14 @@ Trước những hạn chế đó, Học viện cần một phần mềm chuyên
 \section{Mục tiêu và phạm vi đề tài}
 \label{section:1.2}
 
-\textbf{Mục tiêu chính} của đồ án là xây dựng một hệ thống web hỗ trợ Phòng Chính trị Học viện Khoa học Quân sự thực hiện đầy đủ các nhiệm vụ sau:
+\textbf{Mục tiêu chính} của đồ án là xây dựng một hệ thống web hỗ trợ Phòng Chính trị Học viện Khoa học Quân sự thực hiện đầy đủ các nhóm nhiệm vụ sau:
 
 \begin{enumerate}
-    \item Quản lý danh sách quân nhân, đơn vị (theo cấu trúc cây Cơ quan đơn vị -- Đơn vị trực thuộc), chức vụ và lịch sử biến động chức vụ.
-    \item Cho phép cán bộ Phòng Chính trị tạo các đợt đề xuất khen thưởng cho cả bảy nhóm danh hiệu, hỗ trợ chọn nhanh nhiều quân nhân thông qua lọc theo đơn vị, năm, giới tính, mốc thời gian phục vụ.
-    \item Tự động kiểm tra điều kiện chuỗi (BKBTBQP, CSTĐTQ, BKTTCP đối với cá nhân; BKBTBQP và BKTTCP đối với đơn vị) và sinh thông điệp gợi ý dễ hiểu cho cán bộ.
-    \item Hỗ trợ quy trình phê duyệt nhiều bước, lưu file quyết định PDF kèm số quyết định, đồng thời ghi nhật ký kiểm toán toàn bộ thao tác làm thay đổi dữ liệu.
-    \item Cung cấp công cụ nhập dữ liệu lịch sử qua Excel theo cơ chế hai bước (xem trước rồi xác nhận) đảm bảo hoặc ghi toàn bộ, hoặc không ghi gì khi gặp lỗi, cùng công cụ xuất danh sách khen thưởng theo nhiều tiêu chí.
-    \item Phân quyền theo bốn cấp tương ứng đặc thù tổ chức: SuperAdmin (bộ phận kỹ thuật và công nghệ thông tin, quản trị hạ tầng và an ninh hệ thống), Admin (Phòng Chính trị Học viện, toàn quyền nghiệp vụ), Manager (cán bộ chỉ huy đơn vị, đề xuất và quản lý quân nhân nội bộ), User (cán bộ -- học viên -- sĩ quan, tra cứu hồ sơ cá nhân).
-    \item Hỗ trợ sao lưu cơ sở dữ liệu định kỳ và quản lý nhật ký hệ thống.
+    \item \textbf{Quản lý danh mục lõi}: quân nhân, đơn vị theo cấu trúc cây Cơ quan đơn vị -- Đơn vị trực thuộc, chức vụ và lịch sử biến động chức vụ.
+    \item \textbf{Đề xuất và phê duyệt khen thưởng}: tạo đợt đề xuất cho cả bảy nhóm danh hiệu với bộ lọc nhanh theo đơn vị/năm/giới tính/mốc phục vụ; quy trình phê duyệt nhiều bước, lưu tệp PDF quyết định kèm số quyết định.
+    \item \textbf{Tự động hoá nghiệp vụ}: kiểm tra điều kiện chuỗi (BKBTBQP, CSTĐTQ, BKTTCP đối với cá nhân; BKBTBQP và BKTTCP đối với đơn vị), sinh thông điệp gợi ý tiếng Việt, nhập Excel lịch sử theo cơ chế hai bước (xem trước -- xác nhận) đảm bảo nguyên tắc all-or-nothing, xuất danh sách theo nhiều tiêu chí.
+    \item \textbf{Bảo mật và truy hồi}: phân quyền theo bốn cấp tương ứng đặc thù tổ chức (SuperAdmin -- quản trị hạ tầng, Admin -- toàn quyền nghiệp vụ tại Phòng Chính trị, Manager -- đề xuất trong đơn vị, User -- tra cứu hồ sơ cá nhân) cùng nhật ký kiểm toán toàn bộ thao tác làm thay đổi dữ liệu.
+    \item \textbf{Vận hành}: sao lưu cơ sở dữ liệu định kỳ và quản lý nhật ký hệ thống.
 \end{enumerate}
 
 \textbf{Phạm vi đề tài} giới hạn trong các nhiệm vụ trực tiếp phục vụ công tác xét khen thưởng. Phần mềm vận hành tập trung trên máy chủ của Học viện, truy cập qua mạng nội bộ và không xuất bản ra Internet công cộng để đáp ứng yêu cầu bảo mật quân sự. Đồ án không bao gồm các nghiệp vụ tiền lương -- phụ cấp, hồ sơ y tế, đánh giá cán bộ định kỳ và các quy trình hành chính khác. Việc tích hợp với hệ thống quản lý nhân sự tổng thể của Bộ Quốc phòng cũng nằm ngoài phạm vi do vượt khỏi trọng tâm khen thưởng.

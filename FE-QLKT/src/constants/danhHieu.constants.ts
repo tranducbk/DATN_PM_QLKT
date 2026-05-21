@@ -1,5 +1,16 @@
 /**
- * Single Source of Truth cho tất cả mapping danh hiệu khen thưởng.
+ * SYNC NOTICE — Core danh hieu codes are shared with `BE-QLKT/src/constants/danhHieu.constants.ts`.
+ *
+ * Shared (must stay value-identical with BE):
+ *   DANH_HIEU_CA_NHAN_HANG_NAM, DANH_HIEU_DON_VI_HANG_NAM,
+ *   DANH_HIEU_HCCSVV, DANH_HIEU_HCBVTQ, DANH_HIEU_DAC_BIET,
+ *   DANH_HIEU_MAP, CONG_HIEN_HE_SO_GROUPS, CONG_HIEN_HE_SO_RANGES.
+ *
+ * FE-only utilities (intentionally not shared): THANH_TICH_KHOA_HOC*,
+ *   AWARD_TAB_LABELS, AWARD_TYPE_MAP, DANH_HIEU_OPTIONS, CONG_HIEN_BASE_REQUIRED_MONTHS.
+ *
+ * BE-only utilities live in the BE copy (Excel parsing, NCKH label-to-code resolver,
+ * HCBVTQ_RANK_KEYS). When adding a NEW shared code, update BOTH files in the same commit.
  */
 
 export const DANH_HIEU_CA_NHAN_HANG_NAM = {

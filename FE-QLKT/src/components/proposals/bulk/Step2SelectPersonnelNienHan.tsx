@@ -18,8 +18,9 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import { formatDate } from '@/lib/utils';
 import { apiClient } from '@/lib/apiClient';
 import { calculateTotalMonths } from './serviceDuration';
+import { usePersonnelList } from './usePersonnelList';
 import type { Step2Personnel as Personnel } from './types';
-import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 import { HCCSVV_YEARS_HANG_BA, HCCSVV_YEARS_HANG_NHI, HCCSVV_YEARS_HANG_NHAT, AWARD_TAB_LABELS } from '@/constants/danhHieu.constants';
@@ -35,21 +36,14 @@ import type {
 } from './types';
 import type { TitleDataItem } from '@/lib/types/proposal';
 
+import {
+  HCCSVV_RANK_LABEL as RANK_LABEL,
+  formatMonthsRemaining,
+  type HCCSVVRank,
+  type NienHanEligibility,
+} from './nienHanHelpers';
+
 const { Text } = Typography;
-
-type HCCSVVRank = 'HCCSVV_HANG_BA' | 'HCCSVV_HANG_NHI' | 'HCCSVV_HANG_NHAT';
-
-interface NienHanEligibility {
-  eligible: boolean;
-  reason?: string;
-  suggestedRank?: HCCSVVRank;
-}
-
-const RANK_LABEL: Record<HCCSVVRank, string> = {
-  HCCSVV_HANG_BA: 'hạng Ba',
-  HCCSVV_HANG_NHI: 'hạng Nhì',
-  HCCSVV_HANG_NHAT: 'hạng Nhất',
-};
 
 interface Step2SelectPersonnelNienHanProps {
   selectedPersonnelIds: string[];
@@ -64,12 +58,6 @@ interface Step2SelectPersonnelNienHanProps {
   isManager?: boolean;
 }
 
-function formatMonthsRemaining(years: number, months: number): string {
-  if (years > 0 && months > 0) return `${years} năm ${months} tháng`;
-  if (years > 0) return `${years} năm`;
-  return `${months} tháng`;
-}
-
 export function Step2SelectPersonnelNienHan({
   selectedPersonnelIds,
   onPersonnelChange,
@@ -82,11 +70,17 @@ export function Step2SelectPersonnelNienHan({
   bypassEligibility = false,
   isManager = false,
 }: Step2SelectPersonnelNienHanProps) {
-  const [loading, setLoading] = useState(false);
+  const {
+    personnel,
+    loading,
+    searchText,
+    setSearchText,
+    unitFilter,
+    setUnitFilter,
+    units,
+    filteredPersonnel,
+  } = usePersonnelList();
   const [checkingProfiles, setCheckingProfiles] = useState(false);
-  const [personnel, setPersonnel] = useState<Personnel[]>([]);
-  const [searchText, setSearchText] = useState('');
-  const [unitFilter, setUnitFilter] = useState<string>('ALL');
   const NOW = new Date();
   const CURRENT_YEAR = NOW.getFullYear();
   const CURRENT_MONTH = NOW.getMonth() + 1;
@@ -96,9 +90,11 @@ export function Step2SelectPersonnelNienHan({
   const [serviceProfilesMap, setServiceProfilesMap] = useState<Record<string, any>>({});
 
   useEffect(() => {
-    fetchPersonnel();
+    if (personnel.length > 0) {
+      fetchServiceProfiles(personnel);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [personnel]);
 
   useEffect(() => {
     setLocalNam(nam);
@@ -122,29 +118,6 @@ export function Step2SelectPersonnelNienHan({
     // canProposeNextRank reads serviceProfilesMap/localNam/localThang already in deps
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bypassEligibility, selectedPersonnelIds, personnel, serviceProfilesMap, localNam, localThang, onPersonnelChange]);
-
-  const fetchPersonnel = async () => {
-    try {
-      setLoading(true);
-      const response = await apiClient.getPersonnel({
-        page: 1,
-        limit: FETCH_ALL_LIMIT,
-      });
-
-      if (response.success) {
-        const personnelData = response.data ?? [];
-        setPersonnel(personnelData);
-
-        if (personnelData.length > 0) {
-          await fetchServiceProfiles(personnelData);
-        }
-      }
-    } catch (error: unknown) {
-      message.error(getApiErrorMessage(error));
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const fetchServiceProfiles = async (personnelList: Personnel[]) => {
     try {
@@ -174,32 +147,6 @@ export function Step2SelectPersonnelNienHan({
       setCheckingProfiles(false);
     }
   };
-
-  const units = Array.from(
-    new Set(
-      personnel.map(p => {
-        if (p.DonViTrucThuoc) {
-          return `${p.DonViTrucThuoc.id}|${p.DonViTrucThuoc.ten_don_vi}`;
-        } else if (p.CoQuanDonVi) {
-          return `${p.CoQuanDonVi.id}|${p.CoQuanDonVi.ten_don_vi}`;
-        }
-        return '';
-      })
-    )
-  ).filter(Boolean);
-
-  const filteredPersonnel = personnel.filter(p => {
-    const matchesSearch =
-      searchText === '' || p.ho_ten.toLowerCase().includes(searchText.toLowerCase());
-
-    const matchesUnit =
-      !unitFilter ||
-      unitFilter === 'ALL' ||
-      p.don_vi_truc_thuoc_id === unitFilter.split('|')[0] ||
-      p.co_quan_don_vi_id === unitFilter.split('|')[0];
-
-    return matchesSearch && matchesUnit;
-  });
 
   /** Checks whether service time meets HCCSVV eligibility thresholds. */
   const checkHCCSVVEligibility = (record: Personnel) => {

@@ -1,14 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Table, Input, Select, Space, Typography, InputNumber, Empty, message } from 'antd';
+import { Table, Input, Select, Space, Typography, InputNumber, Empty } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/apiClient';
-import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { formatDate } from '@/lib/utils';
 import { ExcelImportSection } from './ExcelImportSection';
+import { usePersonnelList } from './usePersonnelList';
 import * as XLSX from 'xlsx';
 import { DANH_HIEU_CA_NHAN_HANG_NAM } from '@/constants/danhHieu.constants';
 import type {
@@ -42,39 +43,22 @@ export function Step2SelectPersonnelCaNhanHangNam({
   onNextStep,
   isManager = false,
 }: Step2SelectPersonnelCaNhanHangNamProps) {
-  const [loading, setLoading] = useState(false);
-  const [personnel, setPersonnel] = useState<Personnel[]>([]);
-  const [searchText, setSearchText] = useState('');
-  const [unitFilter, setUnitFilter] = useState<string>('ALL');
+  const {
+    personnel,
+    loading,
+    searchText,
+    setSearchText,
+    unitFilter,
+    setUnitFilter,
+    units,
+    filteredPersonnel,
+  } = usePersonnelList();
   const CURRENT_YEAR = new Date().getFullYear();
   const [localNam, setLocalNam] = useState<number | null>(nam);
 
   useEffect(() => {
-    fetchPersonnel();
-  }, []);
-
-  useEffect(() => {
     setLocalNam(nam);
   }, [nam]);
-
-  const fetchPersonnel = async () => {
-    try {
-      setLoading(true);
-      const response = await apiClient.getPersonnel({
-        page: 1,
-        limit: FETCH_ALL_LIMIT,
-      });
-
-      if (response.success) {
-        const personnelData = response.data ?? [];
-        setPersonnel(personnelData);
-      }
-    } catch (error: unknown) {
-      message.error(getApiErrorMessage(error));
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleLocalExcelProcess = async (
     file: File
@@ -256,31 +240,6 @@ export function Step2SelectPersonnelCaNhanHangNam({
     }
   };
 
-  const units = Array.from(
-    new Set(
-      personnel.map(p => {
-        if (p.DonViTrucThuoc) {
-          return `${p.DonViTrucThuoc.id}|${p.DonViTrucThuoc.ten_don_vi}`;
-        } else if (p.CoQuanDonVi) {
-          return `${p.CoQuanDonVi.id}|${p.CoQuanDonVi.ten_don_vi}`;
-        }
-        return '';
-      })
-    )
-  ).filter(Boolean);
-
-  const filteredPersonnel = personnel.filter(p => {
-    const matchesSearch =
-      searchText === '' || p.ho_ten.toLowerCase().includes(searchText.toLowerCase());
-
-    const matchesUnit =
-      !unitFilter ||
-      unitFilter === 'ALL' ||
-      p.don_vi_truc_thuoc_id === unitFilter.split('|')[0] ||
-      p.co_quan_don_vi_id === unitFilter.split('|')[0];
-
-    return matchesSearch && matchesUnit;
-  });
 
   const columns: ColumnsType<Personnel> = [
     {

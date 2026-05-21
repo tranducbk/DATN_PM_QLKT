@@ -1,7 +1,7 @@
 import { PROPOSAL_TYPES } from '../../../constants/proposalTypes.constants';
 import {
   HCQKQT_YEARS_REQUIRED,
-  DANH_HIEU_CA_NHAN_KHAC,
+  DANH_HIEU_DAC_BIET,
 } from '../../../constants/danhHieu.constants';
 import {
   batchEvaluateServiceYears,
@@ -92,7 +92,7 @@ class HcqkqtStrategy implements ProposalStrategy {
     await importSingleMedal(nienHanData, ctx, acc, prismaTx, {
       medalLabel: 'Huân chương Quân kỳ quyết thắng',
       logTag: 'HC_QKQT',
-      decisionKey: DANH_HIEU_CA_NHAN_KHAC.HC_QKQT,
+      decisionKey: DANH_HIEU_DAC_BIET.HC_QKQT,
       upsert: async (tx, quanNhanId, writeData) => {
         const data = writeData as unknown as Prisma.HuanChuongQuanKyQuyetThangUpdateInput;
         const existing = await tx.huanChuongQuanKyQuyetThang.findUnique({
