@@ -33,6 +33,7 @@ import {
 } from '@/lib/award/awardsHelper';
 import {
   AWARD_TAB_DANH_HIEU,
+  AWARD_TAB_LABELS,
   DANH_HIEU_CA_NHAN_HANG_NAM,
   type AwardType,
 } from '@/constants/danhHieu.constants';
@@ -651,34 +652,13 @@ export default function AdminAwardsPage() {
         onChange={key => setActiveTab(key as AwardType)}
         size="large"
         items={[
-          {
-            key: 'CNHN',
-            label: 'Khen thưởng cá nhân hằng năm',
-          },
-          {
-            key: 'DVHN',
-            label: 'Khen thưởng đơn vị hằng năm',
-          },
-          {
-            key: 'HCCSVV',
-            label: 'Huy chương Chiến sĩ vẻ vang',
-          },
-          {
-            key: 'HCBVTQ',
-            label: 'Huân chương Bảo vệ Tổ quốc',
-          },
-          {
-            key: 'KNC_VSNXD_QDNDVN',
-            label: 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
-          },
-          {
-            key: 'HCQKQT',
-            label: 'Huy chương Quân kỳ quyết thắng',
-          },
-          {
-            key: 'NCKH',
-            label: 'Thành tích Nghiên cứu khoa học',
-          },
+          { key: 'CNHN', label: AWARD_TAB_LABELS.CNHN },
+          { key: 'DVHN', label: AWARD_TAB_LABELS.DVHN },
+          { key: 'HCCSVV', label: AWARD_TAB_LABELS.HCCSVV },
+          { key: 'HCBVTQ', label: AWARD_TAB_LABELS.HCBVTQ },
+          { key: 'KNC_VSNXD_QDNDVN', label: AWARD_TAB_LABELS.KNC_VSNXD_QDNDVN },
+          { key: 'HCQKQT', label: AWARD_TAB_LABELS.HCQKQT },
+          { key: 'NCKH', label: AWARD_TAB_LABELS.NCKH },
         ]}
       />
       {renderAwardContent()}

@@ -1,5 +1,27 @@
 import type { ProposalType } from './proposalTypes.constants';
 
+/**
+ * SYNC NOTICE — Core danh hieu codes are shared with `FE-QLKT/src/constants/danhHieu.constants.ts`.
+ *
+ * The following exports MUST stay value-identical between BE and FE:
+ *   - DANH_HIEU_CA_NHAN_HANG_NAM, DANH_HIEU_DON_VI_HANG_NAM (key set; FE may omit BE-only unit aliases)
+ *   - DANH_HIEU_HCCSVV, DANH_HIEU_HCBVTQ
+ *   - DANH_HIEU_DAC_BIET
+ *   - DANH_HIEU_MAP (display labels; full list)
+ *   - CONG_HIEN_HE_SO_GROUPS, CONG_HIEN_HE_SO_RANGES
+ *
+ * Side-only exports (intentionally not shared):
+ *   - BE-only: DANH_HIEU_NCKH (uses Vietnamese labels as values for Excel parsing),
+ *              NCKH_LABEL_TO_CODE, resolveNckhCode, buildDanhHieuExcelOptions,
+ *              resolveDanhHieuCode, HCBVTQ_RANK_KEYS, formatDanhHieuList
+ *   - FE-only: THANH_TICH_KHOA_HOC (codes-as-values for FE enum-style),
+ *              THANH_TICH_KHOA_HOC_SHORT_LABELS / FULL_LABELS,
+ *              AWARD_TAB_LABELS, AWARD_TYPE_MAP, LOAI_KHEN_THUONG_OPTIONS,
+ *              DANH_HIEU_OPTIONS, CONG_HIEN_BASE_REQUIRED_MONTHS
+ *
+ * When adding a NEW shared code (e.g. a new tier), update BOTH files in the same commit.
+ */
+
 export const DANH_HIEU_CA_NHAN_HANG_NAM = {
   CSTDCS: 'CSTDCS',
   CSTT: 'CSTT',
@@ -53,7 +75,7 @@ export const HCBVTQ_RANK_KEYS = {
 
 export type HcbvtqRankKey = (typeof HCBVTQ_RANK_KEYS)[keyof typeof HCBVTQ_RANK_KEYS];
 
-export const DANH_HIEU_CA_NHAN_KHAC = {
+export const DANH_HIEU_DAC_BIET = {
   HC_QKQT: 'HC_QKQT',
   KNC_VSNXD_QDNDVN: 'KNC_VSNXD_QDNDVN',
 } as const;

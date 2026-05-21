@@ -178,14 +178,11 @@ export default function ManagerUnitsPage() {
       },
       {
         value: DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP,
-        label:
-          DANH_HIEU_MAP[DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP] ||
-          'Bằng khen của Bộ trưởng Bộ Quốc phòng',
+        label: DANH_HIEU_MAP[DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP],
       },
       {
         value: DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP,
-        label:
-          DANH_HIEU_MAP[DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP] || 'Bằng khen Thủ tướng Chính phủ',
+        label: DANH_HIEU_MAP[DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP],
       },
     ];
   }, []);

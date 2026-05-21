@@ -27,6 +27,7 @@ import { useTheme } from '@/components/ThemeProvider';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
+import { AWARD_TAB_LABELS } from '@/constants/danhHieu.constants';
 import { FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
 import type { PersonnelDetail } from '@/lib/types/personnelList';
 
@@ -84,7 +85,7 @@ export default function AdminServiceRewardsPage() {
             mappedRewards.push({
               id: award.id,
               type: 'HCCSVV',
-              name: 'Huy chương Chiến sĩ vẻ vang',
+              name: AWARD_TAB_LABELS.HCCSVV,
               nam: award.nam,
               cap_bac: award.cap_bac,
               chuc_vu: award.chuc_vu,

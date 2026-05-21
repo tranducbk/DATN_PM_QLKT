@@ -6,7 +6,7 @@ import proposalService from '../../src/services/proposal';
 import { ValidationError } from '../../src/middlewares/errorHandler';
 import { PROPOSAL_TYPES } from '../../src/constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../../src/constants/proposalStatus.constants';
-import { DANH_HIEU_CA_NHAN_KHAC } from '../../src/constants/danhHieu.constants';
+import { DANH_HIEU_DAC_BIET } from '../../src/constants/danhHieu.constants';
 import { APPROVE_MISSING_MONTH_ERROR, KNC_MISSING_GENDER } from '../helpers/errorMessages';
 
 afterEach(() => {
@@ -18,7 +18,7 @@ const ADMIN_ID = 'acc-admin-1';
 function buildItem(personnelId: string, override: Record<string, unknown> = {}) {
   return {
     personnel_id: personnelId,
-    danh_hieu: DANH_HIEU_CA_NHAN_KHAC.KNC_VSNXD_QDNDVN,
+    danh_hieu: DANH_HIEU_DAC_BIET.KNC_VSNXD_QDNDVN,
     nam_nhan: 2024,
     thang_nhan: 6,
     so_quyet_dinh: 'QD-KNC-1',

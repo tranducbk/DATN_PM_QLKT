@@ -27,6 +27,7 @@ import {
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { formatDate } from '@/lib/utils';
 import {
+  AWARD_TAB_LABELS,
   DANH_HIEU_CA_NHAN_HANG_NAM,
   DANH_HIEU_DAC_BIET,
   type AwardType,
@@ -456,7 +457,7 @@ export default function ManagerAwardsPage() {
 
         // Military flag — if record exists, default title is HC_QKQT
         if (activeTab === 'HCQKQT') {
-          const danhHieu = DANH_HIEU_MAP[DANH_HIEU_DAC_BIET.HC_QKQT] || 'Huy chương Quân kỳ quyết thắng';
+          const danhHieu = DANH_HIEU_MAP[DANH_HIEU_DAC_BIET.HC_QKQT];
           return (
             <div style={COLUMN_STYLES.container}>
               <Text strong>{danhHieu}</Text>
@@ -532,30 +533,12 @@ export default function ManagerAwardsPage() {
         onChange={key => setActiveTab(key as AwardType)}
         size="large"
         items={[
-          {
-            key: 'CNHN',
-            label: 'Khen thưởng cá nhân hằng năm',
-          },
-          {
-            key: 'HCCSVV',
-            label: 'Huy chương Chiến sĩ vẻ vang',
-          },
-          {
-            key: 'HCBVTQ',
-            label: 'Huân chương Bảo vệ Tổ quốc',
-          },
-          {
-            key: 'KNC_VSNXD_QDNDVN',
-            label: 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
-          },
-          {
-            key: 'HCQKQT',
-            label: 'Huy chương Quân kỳ quyết thắng',
-          },
-          {
-            key: 'NCKH',
-            label: 'Thành tích Nghiên cứu khoa học',
-          },
+          { key: 'CNHN', label: AWARD_TAB_LABELS.CNHN },
+          { key: 'HCCSVV', label: AWARD_TAB_LABELS.HCCSVV },
+          { key: 'HCBVTQ', label: AWARD_TAB_LABELS.HCBVTQ },
+          { key: 'KNC_VSNXD_QDNDVN', label: AWARD_TAB_LABELS.KNC_VSNXD_QDNDVN },
+          { key: 'HCQKQT', label: AWARD_TAB_LABELS.HCQKQT },
+          { key: 'NCKH', label: AWARD_TAB_LABELS.NCKH },
         ]}
       />
       {renderAwardContent()}
