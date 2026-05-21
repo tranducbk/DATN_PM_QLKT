@@ -24,6 +24,33 @@ import {
   type NienHanInputItem,
 } from './nienHanPayloadHelper';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  HC_QKQT STRATEGY — Huân chương Quân kỳ Quyết Thắng
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  ĐIỀU KIỆN nhận:
+ *    - Sĩ quan, quân nhân chuyên nghiệp đã phục vụ ≥ 25 năm.
+ *    - KHÔNG phân biệt nam/nữ (khác KNC).
+ *
+ *  TÍNH CHẤT:
+ *    - LIFETIME — quân nhân chỉ nhận 1 lần (bảng huanChuongQuanKyQuyetThang
+ *      có unique trên quan_nhan_id).
+ *
+ *  KIẾN TRÚC chia sẻ với KNC:
+ *    - Cùng dùng `serviceYearsEligibility` để check số năm.
+ *    - Cùng dùng `singleMedalImporter` template để import.
+ *    - 90% logic identical → DRY thông qua shared helpers.
+ *
+ *  KHÁC BIỆT DUY NHẤT vs KNC:
+ *    - Bảng đích: huanChuongQuanKyQuyetThang (vs kyNiemChuongVSNXDQDNDVN).
+ *    - Ngưỡng: 25 năm cố định (vs 25/20 theo gender).
+ *    - Validate: KHÔNG cần check gender (skip MISSING_GENDER).
+ *
+ *  FE PAYLOAD: dùng `data_nien_han` chung — strategy phân biệt qua field
+ *  `loai_de_xuat` ở proposal cha.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
 class HcqkqtStrategy implements ProposalStrategy {
   readonly type = PROPOSAL_TYPES.HC_QKQT;
 

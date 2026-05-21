@@ -1,3 +1,34 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  SCIENTIFIC ACHIEVEMENT SERVICE — CRUD + Excel I/O cho NCKH
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  NCKH = Thành tích Nghiên cứu Khoa học hàng năm.
+ *  KHÁC khen thưởng khác: KHÔNG phải huân chương, mà là THÀNH TÍCH ghi
+ *  nhận hàng năm (đề tài, sáng kiến, công bố).
+ *
+ *  UNIQUE TUPLE: (quan_nhan_id, nam, mo_ta)
+ *  - 1 quân nhân nhiều thành tích/năm (vd: 2 đề tài cấp đơn vị).
+ *  - Nhưng 2 thành tích trùng mô tả + năm = trùng → reject.
+ *  - App-layer check + DB không có composite unique (nên thêm).
+ *
+ *  ROLE TRONG CHUỖI DANH HIỆU:
+ *  - NCKH là PREREQUISITE cho BKBQP/CSTDTQ/BKTTCP cá nhân.
+ *  - Eligibility yêu cầu "NCKH mỗi năm trong chuỗi CSTDCS".
+ *  - Recalc annual profile sau khi insert NCKH → cập nhật `nckh_lien_tuc`
+ *    + flag du_dieu_kien_* (xem profile/annual.ts).
+ *
+ *  EXCEL TEMPLATE format:
+ *  - CCCD | Năm | Loại đề tài | Mô tả | Cấp bậc | Chức vụ | Số QĐ
+ *  - `loai` = enum (DE_TAI_CAP_BO, SANG_KIEN_DON_VI, ...).
+ *  - `mo_ta` = free text (search dễ duplicate).
+ *
+ *  IMPORT TRIGGER PROFILE RECALC:
+ *  Sau bulk import, loop trigger safeRecalculateAnnualProfile để cập
+ *  nhật chuỗi danh hiệu của tất cả quân nhân bị ảnh hưởng.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import { prisma } from '../models';
 import { quanNhanRepository } from '../repositories/quanNhan.repository';
 import { scientificAchievementRepository } from '../repositories/scientificAchievement.repository';

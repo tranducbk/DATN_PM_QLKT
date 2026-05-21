@@ -68,6 +68,56 @@ function monthsAgo(n: number): Date {
 
 type ManagerPersonnel = { don_vi_truc_thuoc_id: string | null; co_quan_don_vi_id: string | null };
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  DASHBOARD SERVICE — aggregation query phức tạp cho 3 role
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  3 DASHBOARD KHÁC NHAU theo role:
+ *      SUPER_ADMIN → getStatistics: thống kê hệ thống (account, log, ...).
+ *      ADMIN       → getAdminStatistics: thống kê khen thưởng toàn hệ thống.
+ *      MANAGER     → getManagerStatistics: thống kê khen thưởng đơn vị mình.
+ *
+ *  KỸ THUẬT TRUY VẤN QUAN TRỌNG:
+ *
+ *  ① PROMISE.ALL — parallel queries:
+ *     9-15 query chạy song song thay vì sequential. Tiết kiệm latency:
+ *         Sequential: 15 × 50ms = 750ms
+ *         Parallel:   max(50ms × 15) = ~50ms (limited by DB connection pool)
+ *
+ *  ② PRISMA groupBy + _count:
+ *     `accountRepository.groupByRole()` → SELECT role, COUNT(id) GROUP BY role.
+ *     Trả về [{ role: 'ADMIN', _count: { id: 5 } }, ...].
+ *     KHÔNG load full record vào RAM — chỉ aggregate ở DB.
+ *
+ *  ③ JS-SIDE AGGREGATION cho time series:
+ *     Prisma không hỗ trợ trực tiếp GROUP BY DATE(createdAt) cross-DB.
+ *     Strategy: query raw records (chỉ select createdAt) → group ở JS.
+ *         `countByDate(records)` → Map<dateStr, count>
+ *         `buildStats(getLastNDays(7), countMap, 'date')` → fill 0 cho ngày
+ *         không có data → chart không bị gap.
+ *
+ *  ④ ARRAY FILL ZERO (buildStats):
+ *     Nếu ngày X không có activity, groupBy trả về missing key. Chart cần
+ *     đủ 7 ngày liên tiếp → fill 0 explicit. KHÔNG bỏ qua ngày trống.
+ *
+ *  ⑤ UNIT HIERARCHY FILTER cho MANAGER:
+ *     Manager chỉ thấy đơn vị mình → query phải filter:
+ *         WHERE co_quan_don_vi_id = X
+ *         OR don_vi_truc_thuoc_id IN (children of X)
+ *     Logic dispatcher giống unitFilter middleware → DRY qua helper riêng.
+ *
+ *  ⑥ daysAgo HELPER:
+ *     daysAgo(30) → new Date trừ 30 ngày → dùng làm gte filter cho
+ *     "thống kê 30 ngày gần nhất". Không index column nào → query chậm
+ *     với DB lớn; nếu cần tối ưu, thêm index trên (createdAt).
+ *
+ *  PERFORMANCE FUTURE:
+ *  - Khi DB > 100k record: cân nhắc materialized view hoặc cron job tính
+ *    sẵn vào bảng "DashboardSnapshot" → query 1 dòng thay vì 9 aggregate.
+ *  - Cache Redis 5 phút cho dashboard cao tải.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
 class DashboardService {
   /**
    * Returns general statistics for SUPER_ADMIN.

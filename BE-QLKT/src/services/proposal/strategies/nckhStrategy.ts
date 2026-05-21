@@ -4,6 +4,42 @@ import { scientificAchievementRepository } from '../../../repositories/scientifi
 import { PROPOSAL_TYPES } from '../../../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../../../constants/proposalStatus.constants';
 import { resolveNckhCode } from '../../../constants/danhHieu.constants';
+
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  NCKH STRATEGY — Nghiên cứu Khoa học (Thành tích khoa học hàng năm)
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  KHÁC BIỆT BẢN CHẤT vs các loại khen thưởng khác:
+ *  NCKH KHÔNG phải "khen thưởng" mà là "thành tích" được ghi nhận hàng
+ *  năm để PHỤC VỤ điều kiện chuỗi danh hiệu (BKBQP/CSTDTQ/BKTTCP cá
+ *  nhân cần "NCKH liên tục mỗi năm trong chuỗi CSTDCS").
+ *
+ *  KEY DUPLICATE UNIQUE TUPLE: (personnel_id, nam, mo_ta)
+ *  - 1 quân nhân có thể có NHIỀU thành tích cùng năm (vd: 2 đề tài).
+ *  - Nhưng 2 thành tích cùng nội dung mô tả thì coi là trùng → reject.
+ *  - Vì vậy duplicate check ở approve dùng key composite này (xem
+ *    `collectNckhDuplicates` trong approve/validation.ts).
+ *
+ *  STORAGE: bảng ThanhTichKhoaHoc (KHÔNG phải DanhHieuHangNam).
+ *  - Mỗi record = 1 thành tích cụ thể (đề tài, sáng kiến, công bố).
+ *  - `loai` = phân loại (vd: 'DE_TAI_CAP_BO', 'SANG_KIEN_DON_VI', ...).
+ *  - `mo_ta` = nội dung tự do.
+ *
+ *  FE PAYLOAD: dùng `data_thanh_tich` (riêng, không chia sẻ).
+ *
+ *  TÍNH CHẤT KHÔNG CHUỖI:
+ *  - Mỗi năm = 1 đề xuất NCKH riêng (không phải chuỗi).
+ *  - KHÔNG có upgrade rule như HCCSVV, KHÔNG có lifetime như HCQKQT.
+ *  - Có thể nhận lặp lại không giới hạn miễn không trùng mô tả/năm.
+ *
+ *  ALWAYS-RUN trong approve transaction:
+ *  Khác các strategy khác (chỉ chạy khi loai_de_xuat match), NCKH
+ *  importInTransaction CHẠY LUÔN nếu `data_thanh_tich` có data — kể cả
+ *  proposal type chính là CA_NHAN_HANG_NAM (vì NCKH có thể đi kèm).
+ *  Xem `runImportTransaction` line ~145.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
 import type { EditedProposalData } from '../../../types/proposal';
 import type {
   ProposalStrategy,

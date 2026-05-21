@@ -67,6 +67,58 @@ interface PaginatedAccounts {
   };
 }
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  ACCOUNT SERVICE — quản lý tài khoản (ATTT critical)
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  ATTT POINTS QUAN TRỌNG:
+ *
+ *  ① BCRYPT HASH với cost factor = 10:
+ *     - bcrypt.hash(password, 10) → 2^10 = 1024 iteration.
+ *     - Trade-off: 10 đủ chậm (≈100ms) để chống brute force, đủ nhanh
+ *       để không block server khi nhiều user login đồng thời.
+ *     - 2026 best practice là 12+ → có thể tăng khi server mạnh hơn.
+ *     - LƯU Ý: bcrypt tự sinh salt → mỗi hash khác nhau dù cùng password
+ *       → ngăn rainbow table attack.
+ *
+ *  ② STORE password_hash (KHÔNG password plain):
+ *     - DB schema field tên `password_hash` để rõ ý đồ (không bao giờ
+ *       chứa plain text).
+ *     - Compare qua bcrypt.compare (constant-time) → KHÔNG dùng `===`
+ *       (vulnerable to timing attack).
+ *
+ *  ③ password_hash EXCLUDED trong tất cả response + backup:
+ *     - findManyRaw + select KHÔNG include password_hash trừ login flow.
+ *     - Backup service exclude field này.
+ *     - JSON serializer: nếu chuyển model toàn bộ ra response → MASK.
+ *
+ *  ④ DEFAULT_PASSWORD khi admin tạo tài khoản mới:
+ *     - User phải ĐỔI ngay khi login đầu tiên (force flag trong DB).
+ *     - Default password chung không leak qua API → chỉ admin biết.
+ *
+ *  ⑤ validatePassword RULE:
+ *     - Tối thiểu 8 ký tự (yêu cầu cơ bản).
+ *     - KHÔNG check complexity (chữ hoa, ký tự đặc biệt) — quá ngặt với
+ *       user lớn tuổi trong môi trường quân đội. Trade-off UX.
+ *
+ *  ⑥ ROLE HIERARCHY trong getAccounts:
+ *     - excludeSuperAdmin=true → ADMIN không thấy SUPER_ADMIN list
+ *       (chống enumerate role cao hơn).
+ *     - SUPER_ADMIN tự quản lý qua DevZone, không qua endpoint thường.
+ *
+ *  ⑦ REFRESH TOKEN INVALIDATION khi đổi password:
+ *     - Update password → set refreshToken = null → buộc đăng nhập lại
+ *       trên TẤT CẢ thiết bị.
+ *     - Lý do: nếu password bị leak/đổi, mọi session cũ phải invalidate.
+ *
+ *  QUAN HỆ với QuanNhan:
+ *  - 1 TaiKhoan = 1 QuanNhan (1-1, nullable nếu là tài khoản admin
+ *    không phải quân nhân).
+ *  - quan_nhan_id = NULL → tài khoản hệ thống (SUPER_ADMIN, ADMIN).
+ *  - quan_nhan_id != NULL → tài khoản quân nhân (MANAGER, USER).
+ * ════════════════════════════════════════════════════════════════════════════
+ */
 class AccountService {
   async getAccounts(
     page: number | string = 1,

@@ -11,6 +11,27 @@ import type {
   UnitInfoSource,
 } from './types';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  HELPERS cho trang admin/proposals/review/[id]/page.tsx (pure functions)
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  Pattern co-located: page.tsx import từ helpers.ts thay vì inline.
+ *  Lý do: page.tsx > 1400 dòng → tách phần tính toán ra để dễ test +
+ *  dễ đọc JSX. Tất cả hàm ở đây PHẢI là pure (không gọi API, không set
+ *  state) — nếu cần side-effect thì giữ trong page component.
+ *
+ *  CÁC HÀM CHÍNH:
+ *  - calculateTotalTimeByGroup: BE-FE parity với eligibility/congHienMonths
+ *    Aggregator.ts. FE phải tính lại để hiển thị real-time khi Admin sửa
+ *    data trước khi duyệt (không thể chỉ dựa vào số đã lưu).
+ *  - parseJsonArray: defensive JSON parse — BE trả về có thể đã là array
+ *    (Prisma JSON column) hoặc string (legacy). Phải handle cả 2 case.
+ *  - collectMissingDecisions: collect lỗi "thiếu số quyết định" trên TẤT
+ *    CẢ items để hiển thị 1 modal duy nhất thay vì pop nhiều toast.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 /**
  * Sums service months that fall into a specific he_so_chuc_vu group, then formats
  * the result as "X năm Y tháng" (or "—" when the group has no time).
@@ -67,6 +88,20 @@ export function getDurationDisplay(value: unknown): string | null {
   return null;
 }
 
+/**
+ * Defensive JSON array parser — không bao giờ throw, luôn trả [] khi fail.
+ *
+ *  3 case input:
+ *    ① Array sẵn → return as-is (BE trả Prisma JSON column kiểu native).
+ *    ② String JSON → parse + verify là array.
+ *    ③ null/undefined/object/non-array string → return [].
+ *
+ *  Lý do KHÔNG dùng JSON.parse trực tiếp:
+ *    - Throw SyntaxError khi input không hợp lệ → crash render.
+ *    - parse "abc" hay {} ra non-array → caller .map() sẽ TypeError.
+ *  Wrap try/catch + Array.isArray guard giúp UI không bao giờ crash vì
+ *  data dirty từ BE.
+ */
 export function parseJsonArray<T>(value: unknown): T[] {
   if (Array.isArray(value)) return value as T[];
   if (value && typeof value === 'string') {
@@ -97,6 +132,22 @@ interface CollectMissingDecisionsInput {
   editedCongHien: DanhHieuItem[];
 }
 
+/**
+ * Aggregate tất cả lỗi "thiếu số quyết định" từ 4 array data thành 1 list.
+ *
+ *  TẠI SAO DÙNG PATTERN AGGREGATE (thay vì fail fast):
+ *  - Trải nghiệm UX: hiển thị MỘT modal "Có 5 mục thiếu" tốt hơn pop 5
+ *    toast liên tiếp hoặc throw lỗi đầu tiên rồi dừng.
+ *  - Admin có thể fix nhiều mục trong 1 lần thay vì click duyệt → fail
+ *    → fix → duyệt → fail → ...
+ *
+ *  LOGIC RIÊNG CHO TỪNG LOẠI:
+ *  - danh_hieu CÁ NHÂN: phải có 1 trong 4 field (so_quyet_dinh chính +
+ *    3 special flag BKBQP/CSTDTQ/BKTTCP) — vì 1 row có thể là CSTDCS + flag.
+ *  - thanh_tich (NCKH): chỉ cần so_quyet_dinh.
+ *  - nien_han + cong_hien: thêm check thang_nhan/nam_nhan (loại này có
+ *    thể nhận quyết định ở năm khác năm đề xuất, phải khai báo đầy đủ).
+ */
 export function collectMissingDecisions(input: CollectMissingDecisionsInput): string[] {
   const { loaiDeXuat, editedDanhHieu, editedThanhTich, editedNienHan, editedCongHien } = input;
   const missingDecisions: string[] = [];

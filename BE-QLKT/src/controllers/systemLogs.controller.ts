@@ -1,3 +1,9 @@
+/*
+ * SYSTEM LOGS CONTROLLER — viewer audit log.
+ * Filter by action/resource/date/role. Visibility 3-tier (MANAGER/ADMIN/SUPER).
+ * Resource='backup' chỉ SUPER_ADMIN xem (ATTT).
+ */
+
 import { Request, Response } from 'express';
 import systemLogsService from '../services/systemLogs.service';
 import ResponseHelper from '../helpers/responseHelper';

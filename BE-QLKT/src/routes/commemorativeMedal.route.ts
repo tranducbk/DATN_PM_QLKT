@@ -1,3 +1,9 @@
+/*
+ * COMMEMORATIVE MEDAL ROUTE — KNC VSNXD QĐNDVN.
+ * CRUD + Excel. Lifetime 1 record/personnel.
+ * Eligibility: Nam ≥25 năm, Nữ ≥20 năm (gender-aware threshold).
+ */
+
 import { Router } from 'express';
 import commemorativeMedalController from '../controllers/commemorativeMedal.controller';
 import { verifyToken, checkRole, requireAdminOnly } from '../middlewares/auth';

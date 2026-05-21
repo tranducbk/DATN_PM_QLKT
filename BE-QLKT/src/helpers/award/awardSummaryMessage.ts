@@ -1,5 +1,43 @@
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  AWARD SUMMARY MESSAGE — build message kết quả sau import/approve
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  Sau khi approve/bulk create xong, FE hiển thị message dạng:
+ *      "Đã thêm thành công 100 danh hiệu cho 50 quân nhân, 2 lỗi"
+ *
+ *  HÀM NÀY BUILD MESSAGE Ở BE thay vì FE vì:
+ *  1. Logic message tiếng Việt phức tạp (số ít/số nhiều, có/không lỗi).
+ *  2. Caller FE chỉ cần render thẳng → không reinvent logic ở 5 chỗ.
+ *  3. Đảm bảo consistency: cùng 1 wording dùng cho tất cả entry point.
+ *
+ *  CÁC TRƯỜNG HỢP:
+ *  ① importedCount > 0 && errorCount > 0 → "Đã thêm X, Y lỗi"
+ *  ② importedCount > 0 && errorCount === 0 → "Đã thêm X"
+ *  ③ importedCount === 0 && errorCount > 0 → "Có Y lỗi khi xử lý"
+ *  ④ importedCount === 0 && errorCount === 0 → "Không có dữ liệu"
+ *
+ *  PHÂN BIỆT theo proposal type:
+ *  - DON_VI_HANG_NAM → "X danh hiệu cho Y đơn vị"
+ *  - Còn lại        → "X danh hiệu cho Y quân nhân"
+ *  - NCKH           → "X thành tích cho Y quân nhân"
+ *  - NIEN_HAN/...   → "X huân chương cho Y quân nhân"
+ *
+ *  Tách buildBulk... và buildApprove... vì:
+ *  - Bulk có 1 import count.
+ *  - Approve có 3 import count (danh_hieu + thanh_tich + nien_han) →
+ *    cần biết loại nào active để format.
+ *
+ *  IMPORT STRING-BUILD vs FE TEMPLATE:
+ *  Tại sao không gửi structured data { count, errors } cho FE format:
+ *  - FE phải dispatch theo type → duplicate logic.
+ *  - Khó test (test FE phải render component).
+ *  - String message dễ assertion trong jest BE.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 interface BuildBulkAwardSummaryParams {
   type: string;
   importedCount: number;

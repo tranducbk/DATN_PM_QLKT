@@ -1,3 +1,25 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  UNIT HELPER — resolve đơn vị (CQDV/DVTT) + build FK fields
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  resolveUnit(unitId): tự xác định ID thuộc CQDV hay DVTT bằng cách
+ *  query cả 2 bảng. Lý do:
+ *  - Caller có 1 ID nhưng KHÔNG biết loại đơn vị (vd: import Excel).
+ *
+ *  buildUnitIdFields(unit): tạo { co_quan_don_vi_id, don_vi_truc_thuoc_id }
+ *  với 1 field set, 1 field null. Dùng cho insert Prisma.
+ *
+ *  PATTERN UNIT FK trong DB:
+ *  Mọi bảng có FK đơn vị đều có 2 field cùng lúc (1 NULL):
+ *      QuanNhan, DanhHieuDonViHangNam, HoSoDonViHangNam, BangDeXuat...
+ *
+ *  Trade-off vs polymorphic FK:
+ *  - Polymorphic: 1 field nhưng mất referential integrity.
+ *  - 2 nullable: FK constraint mạnh, JOIN rõ ràng. → Chọn 2 nullable.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import { coQuanDonViRepository, donViTrucThuocRepository } from '../repositories/unit.repository';
 import { NotFoundError } from '../middlewares/errorHandler';
 

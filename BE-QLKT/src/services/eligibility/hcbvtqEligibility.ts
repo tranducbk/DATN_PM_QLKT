@@ -1,5 +1,44 @@
 import { quanNhanRepository } from '../../repositories/quanNhan.repository';
 import { positionHistoryRepository } from '../../repositories/positionHistory.repository';
+
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  HCBVTQ ELIGIBILITY — eligibility chi tiết Huân chương Bảo vệ Tổ quốc
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  3 HẠNG (theo độ khó tăng dần):
+ *      HANG_BA  → tổng tháng (tất cả nhóm hệ số)
+ *      HANG_NHI → chỉ tháng nhóm 0.8 + 0.9-1.0 (giữ chức vụ trung-cao)
+ *      HANG_NHAT→ chỉ tháng nhóm 0.9-1.0      (giữ chức vụ cao nhất)
+ *
+ *  THUẬT TOÁN CHỌN HẠNG (cumulativeMonthsForRank):
+ *  Quân nhân có 3 nhóm tháng (vd: m07=120, m08=72, m0910=36):
+ *      Cho Hạng Ba:   xét 120 + 72 + 36 = 228 tháng
+ *      Cho Hạng Nhì:  xét 72 + 36 = 108 tháng (loại 0.7)
+ *      Cho Hạng Nhất: xét 36 tháng (chỉ 0.9-1.0)
+ *
+ *  Lý do: Hạng càng cao càng yêu cầu THỜI GIAN GIỮ CHỨC CAO. Quân nhân
+ *  cả đời chỉ làm chức nhỏ → có thể được Hạng Ba (đủ tổng), nhưng
+ *  KHÔNG đủ Hạng Nhất (không đủ tháng ở chức cao).
+ *
+ *  NGƯỠNG (gender-aware):
+ *      CONG_HIEN_BASE_REQUIRED_MONTHS  = 120 tháng (nam, 10 năm)
+ *      CONG_HIEN_FEMALE_REQUIRED_MONTHS = 80 tháng (nữ, ưu đãi 40 tháng)
+ *
+ *  PURE FUNCTION DESIGN:
+ *      - `evaluateHCBVTQRank`: pure (input: rank + months + gender, không DB).
+ *      - `loadHCBVTQEvaluationContext`: chỉ 2 BATCH QUERY (qua Promise.all):
+ *          ① quanNhan findMany {id: in} → lấy gender + ho_ten
+ *          ② positionHistory findMany {quan_nhan_id: in} → lấy tất cả lịch sử
+ *        → KHÔNG bao giờ N+1 query trong loop (xem AP-3 in BE/CLAUDE.md).
+ *
+ *  CUTOFF DATE:
+ *      `aggregatePositionMonthsByGroup` recalc tháng đến `cutoffDate`
+ *      (thường = ngày cuối tháng đề xuất). Row đang giữ (ngay_ket_thuc=null)
+ *      được tính `diff(cutoff, ngay_bat_dau)` thay vì so_thang đã lưu —
+ *      đảm bảo số tháng đúng tại thời điểm xét.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
 import {
   CONG_HIEN_BASE_REQUIRED_MONTHS,
   CONG_HIEN_FEMALE_REQUIRED_MONTHS,

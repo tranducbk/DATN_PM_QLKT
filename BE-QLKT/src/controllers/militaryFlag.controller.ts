@@ -1,3 +1,8 @@
+/*
+ * MILITARY FLAG CONTROLLER — HC_QKQT CRUD + Excel.
+ * Lifetime 1 record/personnel. Eligibility ≥25 năm phục vụ.
+ */
+
 import { Request, Response } from 'express';
 import militaryFlagService, { ConfirmImportItem } from '../services/militaryFlag.service';
 import { ROLES } from '../constants/roles.constants';

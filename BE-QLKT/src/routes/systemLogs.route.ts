@@ -1,3 +1,10 @@
+/*
+ * SYSTEM LOGS ROUTE — audit log viewer.
+ * READ-ONLY: MANAGER thấy log đơn vị mình; ADMIN thấy thêm SYSTEM;
+ * SUPER_ADMIN thấy tất cả + log resource='backup'.
+ * Visibility filter ở service layer (xem systemLogs.service.ts).
+ */
+
 import { Router } from 'express';
 import systemLogsController from '../controllers/systemLogs.controller';
 import { verifyToken, requireSuperAdmin, requireManager } from '../middlewares/auth';

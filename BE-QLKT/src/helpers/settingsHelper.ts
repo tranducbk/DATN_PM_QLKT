@@ -1,3 +1,28 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  SETTINGS HELPER — feature flags + system config (runtime configurable)
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  WHY DB-STORED SETTINGS thay vì env var:
+ *  - Env var đổi cần restart server.
+ *  - DB-stored: SUPER_ADMIN đổi qua DevZone UI → áp dụng ngay không restart.
+ *  - Lý tưởng cho: feature flags, schedule cron, threshold.
+ *
+ *  PATTERN GET/SET:
+ *  - getSetting(key): read từ bảng SystemSetting.
+ *  - setSetting(key, value): upsert vào DB.
+ *  - isFeatureEnabled(key): boolean check tiện cho code logic.
+ *
+ *  FEATURE FLAG MIDDLEWARE:
+ *  Wrap route: requireFeature('experimental_x') → tắt feature tạm thời.
+ *
+ *  SECURITY:
+ *  - SET endpoint chỉ SUPER_ADMIN dùng được.
+ *  - Setting key whitelisted (không cho add arbitrary key qua API).
+ *  - Setting value KHÔNG eval/exec — chỉ primitive.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import { Request, Response, NextFunction } from 'express';
 import { systemSettingRepository } from '../repositories/systemSetting.repository';
 

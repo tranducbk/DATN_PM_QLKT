@@ -3,6 +3,41 @@ import {
   DANH_HIEU_CA_NHAN_HANG_NAM,
 } from '../../constants/danhHieu.constants';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  DECISION NUMBER VALIDATION — kiểm tra mỗi danh hiệu phải có số QĐ
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  BUSINESS RULE:
+ *  Mọi khen thưởng PHẢI có số quyết định (so_quyet_dinh) — đây là căn cứ
+ *  pháp lý + truy xuất hồ sơ giấy. Nếu thiếu → không cho phép approve.
+ *
+ *  4 FIELD CẦN VALIDATE TRONG 1 ROW DanhHieuHangNam:
+ *  - so_quyet_dinh        ← khi danh_hieu được set (CSTT/CSTDCS, ...)
+ *  - so_quyet_dinh_bkbqp  ← khi nhan_bkbqp = true
+ *  - so_quyet_dinh_cstdtq ← khi nhan_cstdtq = true
+ *  - so_quyet_dinh_bkttcp ← khi nhan_bkttcp = true
+ *
+ *  ĐẶC THÙ: 1 row có thể có 1-4 danh hiệu cùng năm (vd: CSTDCS năm 2024
+ *  kèm nhan_bkbqp=true). Mỗi danh hiệu cần SỐ QĐ RIÊNG — vì quyết định
+ *  cấp BKBQP do BQP ký, quyết định CSTDCS do đơn vị ký → khác nhau.
+ *
+ *  PATTERN PER-FIELD CHECK:
+ *  Loop từng field flag → nếu flag=true mà số QĐ blank → push lỗi với
+ *  tên danh hiệu cụ thể (giúp UI hiển thị "Thiếu số QĐ cho CSTDCS").
+ *
+ *  USAGE:
+ *  - Approve flow: gọi cho từng item trong data_danh_hieu → aggregate errors.
+ *  - FE: collectMissingDecisions client-side (xem helpers.ts FE) cũng dùng
+ *    pattern tương tự → 1 modal hiển thị tất cả lỗi.
+ *
+ *  WHY tách helper (không inline trong strategy):
+ *  - Cá nhân và đơn vị đều cần check → DRY.
+ *  - Test unit dễ (pure function, no DB).
+ *  - Message tiếng Việt consistent qua getDanhHieuName.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 export interface DecisionNumberPayload {
   danh_hieu?: string | null;
   so_quyet_dinh?: string | null;

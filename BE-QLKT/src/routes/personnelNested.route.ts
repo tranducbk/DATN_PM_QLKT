@@ -1,3 +1,12 @@
+/*
+ * PERSONNEL NESTED ROUTE — /api/personnel/:personnelId/* sub-resources.
+ * - /annual-rewards — list khen thưởng hàng năm của quân nhân này
+ * - /scientific-achievements — NCKH
+ * - /position-history — lịch sử chức vụ
+ * - /tenure-medals, /contribution-medals, ...
+ * Mount với mergeParams={true} để controller access :personnelId.
+ */
+
 import { Router, Request, Response, NextFunction } from 'express';
 import annualRewardController from '../controllers/annualReward.controller';
 import positionHistoryController from '../controllers/positionHistory.controller';

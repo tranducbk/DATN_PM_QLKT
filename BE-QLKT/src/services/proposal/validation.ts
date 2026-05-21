@@ -107,6 +107,22 @@ export async function checkDuplicateAward(
   excludeProposalId: string | null = null
 ): Promise<DuplicateCheckResult> {
     if (proposalType === PROPOSAL_TYPES.CA_NHAN_HANG_NAM) {
+      // ─── RACE WINDOW NOTE ─────────────────────────────────────────
+      // Check duplicate ở app layer KHÔNG đảm bảo race-safe 100%:
+      //   T1: findFirst → null (chưa có)
+      //   T2: findFirst → null (cũng chưa có, vì T1 chưa commit)
+      //   T1: insert
+      //   T2: insert → CÓ THỂ tạo 2 record cùng key
+      //
+      // Mitigation 1 (đã có): DB level UNIQUE constraint trên
+      //   DanhHieuHangNam (quan_nhan_id, nam) → 1 trong 2 insert sẽ
+      //   throw P2002 → service catch và trả lỗi friendly.
+      //
+      // Mitigation 2 (hiện không dùng): SELECT FOR UPDATE để lock row
+      //   trước insert. Overkill cho scale hiện tại.
+      //
+      // → App-layer check chính là để TRẢ MESSAGE RÕ RÀNG cho 99% case;
+      // DB constraint là safety net cho race còn lại 1%.
       const isBangKhen = DANH_HIEU_CA_NHAN_BANG_KHEN.has(danhHieu);
       const whereClause = isBangKhen
         ? {

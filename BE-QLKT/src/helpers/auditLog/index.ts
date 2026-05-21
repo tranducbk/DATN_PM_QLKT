@@ -1,3 +1,34 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  AUDIT LOG DESCRIPTION BUILDERS — barrel theo domain
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  Mỗi domain (accounts/auth/awards/decisions/personnel/proposals/units)
+ *  có file riêng build description tiếng Việt cho audit log entry.
+ *
+ *  Vd cho proposals:
+ *      CREATE  → "Nộp đề xuất khen thưởng cá nhân hàng năm cho 5 quân nhân"
+ *      APPROVE → "Phê duyệt đề xuất ID 123 - Đơn vị Hệ 1"
+ *      REJECT  → "Từ chối đề xuất ID 123 - Lý do: ..."
+ *
+ *  USAGE TỪ ROUTE:
+ *      router.post('/', ...,
+ *        auditLog({
+ *          action: 'CREATE',
+ *          resource: 'proposals',
+ *          getDescription: getLogDescription('proposals', 'CREATE'),
+ *          getResourceId: getResourceId.fromResponse(),
+ *        }),
+ *        handler
+ *      );
+ *
+ *  Middleware sau response success → gọi getDescription(req, res) →
+ *  build text tiếng Việt → writeSystemLog.
+ *
+ *  KEY DESIGN: description tiếng Việt giúp SUPER_ADMIN review log dễ hiểu.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import { Request, Response } from 'express';
 
 import { AWARD_SLUGS } from '../../constants/awardSlugs.constants';

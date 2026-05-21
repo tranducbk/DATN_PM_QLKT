@@ -37,6 +37,46 @@ class AwardBulkService {
   validatePersonnelConditions = validatePersonnelConditions;
   calculateThoiGian = calculateThoiGian;
 
+  /*
+   * ═══════════════════════════════════════════════════════════════════════
+   *  BULK CREATE AWARDS — ADMIN tạo khen thưởng hàng loạt (bypass đề xuất)
+   * ═══════════════════════════════════════════════════════════════════════
+   *
+   *  KHÁC VỚI APPROVE FLOW:
+   *  - Approve flow: Manager nộp đề xuất → Admin duyệt → import (qua bảng
+   *    BangDeXuat trung gian, có audit trail).
+   *  - Bulk flow:    Admin trực tiếp tạo khen thưởng, KHÔNG qua đề xuất.
+   *                  Dùng cho: import lịch sử cũ, tạo khen thưởng đột xuất
+   *                  hàng loạt, fix data sai.
+   *
+   *  WHY hai flow:
+   *  Bulk nhanh + linh hoạt cho ADMIN nhưng KHÔNG có quy trình kiểm soát
+   *  như approve. Vì vậy chỉ ADMIN/SUPER_ADMIN dùng được (xem route guard).
+   *
+   *  3 LỚP VALIDATION (trước khi insert):
+   *  1. checkDuplicateAwards/UnitAwards: trùng cá nhân/đơn vị + năm + danh
+   *     hiệu trong DB.
+   *  2. validatePersonnelConditions: đủ điều kiện eligibility (chuỗi
+   *     CSTDCS, thâm niên, ...). Có flag bypassEligibility cho admin
+   *     muốn override (vd: import data cũ).
+   *  3. (per-handler validation trong CREATE_HANDLERS dispatch).
+   *
+   *  DISPATCH HANDLER PATTERN (CREATE_HANDLERS map):
+   *  Khác Strategy pattern (object instance), đây là FUNCTION MAP:
+   *      { CA_NHAN_HANG_NAM: createCaNhanHangNam, ... }
+   *  Dispatch: const handler = CREATE_HANDLERS[type]; handler(items, ctx).
+   *  Đơn giản hơn strategy vì bulk không cần submit/approve phase tách biệt.
+   *
+   *  PARALLEL CREATE:
+   *  Handler dùng prisma.$transaction([createMany, ...]) → atomic.
+   *  Nếu BẤT KỲ item fail → rollback tất cả. Bulk operation "all-or-nothing".
+   *
+   *  NOTIFICATION FAN-OUT:
+   *  Sau khi tạo thành công, notify từng quân nhân được khen thưởng. Dùng
+   *  Promise.all để gửi song song (fire-and-forget — fail noti không
+   *  rollback award).
+   * ═══════════════════════════════════════════════════════════════════════
+   */
   async bulkCreateAwards({
     type,
     nam,

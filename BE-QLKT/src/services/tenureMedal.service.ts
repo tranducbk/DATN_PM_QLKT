@@ -1,3 +1,28 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  TENURE MEDAL SERVICE — CRUD + Excel I/O cho HCCSVV (Huy chương CSVV)
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  TRÁCH NHIỆM:
+ *  - CRUD record KhenThuongHCCSVV.
+ *  - Excel template export (mẫu) + import (preview + confirm).
+ *  - Trigger recalc profile/tenure.ts sau insert/update/delete.
+ *
+ *  RANK ORDER VALIDATION (xem helpers/awardValidation/tenureMedalRankOrder.ts):
+ *  - Hạng Nhì → phải đã có Hạng Ba với năm < year.
+ *  - Hạng Nhất → phải đã có Hạng Ba + Hạng Nhì.
+ *
+ *  EXCEL IMPORT FLOW — 2-STEP (preview + confirm):
+ *  ① previewImport: parse + validate → trả {valid, invalid, summary}.
+ *  ② confirmImport: user confirm → ghi DB trong transaction.
+ *  Lý do tách: user review lỗi trước khi commit + atomic confirm.
+ *
+ *  RECALC SAU IMPORT:
+ *  Bulk import → loop trigger safeRecalculateTenureProfile cho từng quân
+ *  nhân. Trade-off: chậm với 100+ row. NÊN tối ưu batch recalc.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import ExcelJS from 'exceljs';
 import { tenureMedalRepository } from '../repositories/tenureMedal.repository';
 import { donViTrucThuocRepository } from '../repositories/unit.repository';

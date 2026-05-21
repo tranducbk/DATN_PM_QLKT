@@ -1,5 +1,61 @@
 import type { DateInput } from '@/lib/types/common';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  BULK PROPOSAL WIZARD — 3-STEP PATTERN cho 7 loại đề xuất
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  WIZARD FLOW (Manager nộp đề xuất hàng loạt):
+ *
+ *      ┌──── STEP 1 ────┐   ┌──── STEP 2 ────┐   ┌──── STEP 3 ────┐
+ *      │ Chọn loại      │ → │ Chọn quân nhân │ → │ Gán danh hiệu  │
+ *      │ + năm + tháng  │   │ (hoặc đơn vị)  │   │ + ghi chú      │
+ *      └────────────────┘   └────────────────┘   └────────────────┘
+ *                                                         │
+ *                                                         ▼
+ *                                                  ┌──── SUBMIT ────┐
+ *                                                  │ POST /api/proposals
+ *                                                  └────────────────┘
+ *
+ *  KIẾN TRÚC FILES (đã refactor để tách per-type):
+ *
+ *      Step2SelectPersonnel.tsx           ← base (CA_NHAN_HANG_NAM default)
+ *      Step2SelectPersonnelCaNhanHangNam  ← override để show streak CSTDCS
+ *      Step2SelectPersonnelCongHien       ← show số tháng giữ chức
+ *      Step2SelectPersonnelHCQKQT         ← show ngày nhập ngũ + số năm
+ *      Step2SelectPersonnelKNCVSNXDQDNDVN ← show giới + năm phục vụ
+ *      Step2SelectPersonnelNCKH           ← show số NCKH đã có
+ *      Step2SelectPersonnelNienHan        ← show 3 hạng HCCSVV đã nhận
+ *      Step2SelectUnits                   ← cho DON_VI_HANG_NAM (đơn vị)
+ *
+ *      Step3SetTitles.tsx                 ← base (gán danh hiệu cá nhân)
+ *      Step3SetTitles<Type>.tsx           ← override per-type với column riêng
+ *
+ *  WHY TÁCH 7 FILE thay vì 1 component có if/else:
+ *  - Mỗi loại có cột bảng KHÁC NHAU (HCCSVV cần hiển thị 3 hạng đã có,
+ *    KNC cần giới tính, ...). Inline switch case sẽ làm component phình
+ *    to (1500+ dòng).
+ *  - Test/develop song song: 7 dev có thể edit 7 file không conflict.
+ *  - Future-proof: thêm loại mới chỉ tạo file mới + thêm route, không
+ *    đụng các loại cũ.
+ *
+ *  SHARED via `types.ts` (file này) + `serviceDuration.ts`:
+ *  - Step2Personnel interface chung (id, ho_ten, cccd, ...) → 7 file
+ *    cùng dùng → đổi field 1 chỗ áp dụng cả 7.
+ *  - serviceDuration helper tính số năm/tháng phục vụ → DRY.
+ *
+ *  HISTORY MODAL (re-usable):
+ *  Khi user click 1 quân nhân ở Step2 → mở modal xem lịch sử:
+ *  - PersonnelRewardHistoryModal: tất cả khen thưởng đã nhận.
+ *  - PositionHistoryModal:        lịch sử chức vụ + nhóm hệ số.
+ *  - ServiceHistoryModal:         lịch sử đơn vị (chuyển đơn vị qua đâu).
+ *  - ScientificAchievementHistoryModal: lịch sử NCKH.
+ *  - UnitAnnualAwardHistoryModal: với đơn vị (cho DON_VI_HANG_NAM).
+ *  → Re-use cho cả Manager (xem trước khi đề xuất) lẫn Admin (xem trước
+ *    khi duyệt).
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 /** Personnel record shape used by Step2 personnel-selection components. */
 export interface Step2Personnel {
   id: string;

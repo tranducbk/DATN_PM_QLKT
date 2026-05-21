@@ -1,3 +1,20 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  DECISION FILE HELPER — query file PDF của số quyết định
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  WRAPPER quanh decisionFileRepository:
+ *  - Lookup file_path từ so_quyet_dinh.
+ *  - Trả null thay vì throw nếu không tìm thấy.
+ *
+ *  DÙNG TRONG:
+ *  - Admin click "Xem QĐ" → resolve path → res.sendFile.
+ *  - Export Excel có cột link QĐ.
+ *
+ *  PERFORMANCE: 1 query/decision. Cải thiện: batch findMany với {in:[]}.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import { FileQuyetDinh } from '../../generated/prisma';
 import { decisionFileRepository } from '../../repositories/decisionFile.repository';
 

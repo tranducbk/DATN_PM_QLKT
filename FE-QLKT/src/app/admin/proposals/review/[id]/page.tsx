@@ -340,6 +340,24 @@ export default function ProposalDetailPage() {
     }
   };
 
+  // ═══════════════════════════════════════════════════════════════════════
+  //  APPROVE FLOW (FE) — 3 GIAI ĐOẠN
+  // ═══════════════════════════════════════════════════════════════════════
+  //  ① PRE-VALIDATE (client-side): collect tất cả mục thiếu số quyết định
+  //     → show modal warning với tối đa 10 mục đầu + "... và X mục khác".
+  //     KHÔNG gọi API nếu thiếu → tiết kiệm round-trip + UX rõ ràng.
+  //  ② CONFIRM MODAL: bắt user xác nhận lần cuối (vì approve = ghi DB).
+  //  ③ MULTIPART UPLOAD: build FormData chứa data JSON + file PDF admin.
+  //     - JSON.stringify từng array editedData → BE re-parse trong
+  //       parseApproveBody.
+  //     - File admin lặp append với cùng key 'admin_attached_files' →
+  //       multer parse thành mảng (xem route config).
+  //  ④ XỬ LÝ RESPONSE 2 NHÁNH:
+  //     - errors[].length > 0: import THÀNH CÔNG MỘT PHẦN → toast warning
+  //       + alert chi tiết (5 lỗi đầu).
+  //     - errors rỗng: full success → toast success.
+  //  ⑤ Refresh data sau khi xong để hiện trạng thái APPROVED.
+  // ═══════════════════════════════════════════════════════════════════════
   const handleApprove = async () => {
     if (!proposal) return;
     const missingDecisions = collectMissingDecisions({
@@ -396,12 +414,18 @@ export default function ProposalDetailPage() {
           setApproving(true);
           setMessageAlert(null);
 
+          // Build multipart/form-data: BE multer + parseApproveBody phân
+          // biệt JSON text field và file binary qua field name.
           const formData = new FormData();
           formData.append('data_danh_hieu', JSON.stringify(editedDanhHieu));
           formData.append('data_thanh_tich', JSON.stringify(editedThanhTich));
           formData.append('data_nien_han', JSON.stringify(editedNienHan));
           formData.append('data_cong_hien', JSON.stringify(editedCongHien));
 
+          // Append nhiều file cùng key → multer.fields() parse thành array
+          // (xem route config: { name: 'admin_attached_files' } không có
+          // maxCount → unlimited). Lọc originFileObj vì Antd Upload có
+          // thể có item bị cancel/error chỉ có metadata, không có file.
           adminFileList.forEach(file => {
             const raw = file.originFileObj;
             if (raw instanceof File) {
@@ -458,11 +482,19 @@ export default function ProposalDetailPage() {
     if (decisionModalType === 'danh_hieu') {
       const loaiDeXuat = proposal?.loai_de_xuat;
 
+      // ─── BULK DECISION ASSIGNMENT ─────────────────────────────────
+      // Admin tick nhiều dòng → bấm "Gán số QĐ" → modal lấy số QĐ →
+      // áp dụng cho TẤT CẢ dòng đã tick trong 1 lần update state.
+      //
+      // Set<string> dùng cho O(1) lookup thay vì array.includes O(n) →
+      // với 100+ items chênh lệch đáng kể (Quadratic vs Linear).
+      //
+      // FE luôn gán `so_quyet_dinh` chung; BE strategy tự map sang
+      // field cụ thể (so_quyet_dinh_bkbqp, _cstdtq, ...) theo danh_hieu.
+      // Lý do: tránh FE phải biết business rule mapping.
       const selectedSet = new Set(selectedRowKeys.map(String));
       const applyDecision = (item: DanhHieuItem, index: number) => {
         if (!selectedSet.has(String(index))) return item;
-
-        // FE luôn gán so_quyet_dinh chung, BE tự map theo danh_hieu
         return {
           ...item,
           so_quyet_dinh: decision.so_quyet_dinh,
@@ -470,6 +502,9 @@ export default function ProposalDetailPage() {
         };
       };
 
+      // Dispatch sang state array đúng theo loại đề xuất. Mỗi loại lưu
+      // vào field DB khác nhau (data_nien_han / data_cong_hien /
+      // data_danh_hieu) — phải tách state để map đúng.
       if (
         loaiDeXuat === PROPOSAL_TYPES.NIEN_HAN ||
         loaiDeXuat === PROPOSAL_TYPES.HC_QKQT ||

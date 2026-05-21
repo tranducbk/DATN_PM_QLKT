@@ -1,3 +1,22 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  useToast — shadcn/ui toast notification system
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  PATTERN:
+ *  - Reducer-based state (single source qua module-level state).
+ *  - Component subscribe qua useToast() → re-render khi state đổi.
+ *  - Trigger qua toast(...) function (KHÔNG cần hook để fire).
+ *
+ *  WHY shadcn toast (không dùng Antd message):
+ *  - Antd `message` chỉ quick toast, không có action button.
+ *  - shadcn Toast hỗ trợ rich content + action button (Undo, ...).
+ *  - Codebase mix: Antd message cho simple, useToast cho complex.
+ *
+ *  ⚠️ Module-level state KHÔNG SSR-safe. Hiện chỉ dùng client-side.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import * as React from 'react';
 
 export type ToasterToast = {

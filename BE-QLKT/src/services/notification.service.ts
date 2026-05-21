@@ -31,6 +31,52 @@ interface NotificationListResult {
   totalPages: number;
 }
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  NOTIFICATION SERVICE — fan-out + real-time push
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  KIẾN TRÚC 2 LAYER (persist + push):
+ *
+ *  ① PERSIST (DB):
+ *     INSERT vào bảng ThongBao → user có thể xem lại lịch sử thông báo
+ *     khi offline lúc đó hoặc reload trang.
+ *
+ *  ② PUSH (Socket.IO):
+ *     Sau khi insert thành công → emitNotificationToUser(recipient_id, ...)
+ *     → user đang online thấy badge tăng + dropdown update real-time.
+ *
+ *  WHY HAI LAYER (không chỉ push):
+ *  - Socket có thể fail (network drop, server restart) → mất notification.
+ *  - User logout/offline khi event xảy ra → cần lưu để xem sau.
+ *  - Audit trail: ai được noti gì, lúc nào.
+ *
+ *  PATTERN FAN-OUT (createBulkNotifications):
+ *  Khi 1 event ảnh hưởng nhiều user (vd: ADMIN duyệt đề xuất có 50 quân
+ *  nhân được khen thưởng → 50 noti gửi đi):
+ *    - createMany trong 1 query duy nhất thay vì 50 createOne.
+ *    - Sau đó loop emit qua socket (50 lần emit là rẻ — chỉ là gửi
+ *      message qua TCP đã connect).
+ *
+ *  KEY DESIGN:
+ *  - `tai_nguyen_id` (resource_id) + `resource`: link tới record gốc
+ *    (đề xuất, khen thưởng, ...). FE click noti → router.push(link).
+ *  - `nhat_ky_he_thong_id`: link tới audit log entry → SUPER_ADMIN trace
+ *    được ai trigger noti này.
+ *  - `recipient_role`: redundant với recipient_id nhưng giúp query "tất
+ *    cả noti gửi cho role X" nhanh hơn (vd: thông báo system tới tất cả
+ *    MANAGER).
+ *
+ *  FIRE-AND-FORGET KHI EMIT:
+ *  emitNotificationToUser KHÔNG await — socket emit là non-blocking.
+ *  Nếu fail → noti vẫn còn trong DB, user sẽ thấy khi reload.
+ *
+ *  WHY KHÔNG dùng message queue (RabbitMQ/Kafka):
+ *  - Scale hiện tại không cần (vài chục noti/giây max).
+ *  - Trade-off: thêm dependency + deploy phức tạp.
+ *  - Khi scale lên (vài nghìn user) NÊN migrate sang queue.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
 class NotificationService {
   async createNotification(data: CreateNotificationData): Promise<ThongBao> {
     const {

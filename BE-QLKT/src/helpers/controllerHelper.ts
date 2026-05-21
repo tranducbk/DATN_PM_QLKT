@@ -1,3 +1,31 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  CONTROLLER HELPER — utility cross-cutting cho nhiều controller
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  CHỨC NĂNG CHÍNH:
+ *
+ *  ① buildManagerQuanNhanFilter:
+ *     Build Prisma where clause cho MANAGER: lọc quân nhân thuộc đơn vị
+ *     mình quản lý (CQDV + tất cả DVTT con).
+ *     Dùng trong: getPersonnel, getAwards, getDanhHieuHangNam, ...
+ *
+ *  ② resolveIdParam:
+ *     Express route param có thể là string | string[] (nếu user gửi
+ *     ?id=1&id=2). Helper này normalize về single string.
+ *
+ *  WHY tách helper:
+ *  - Logic này lặp ở 5-7 controller → DRY.
+ *  - Đảm bảo MANAGER không bao giờ thấy data ngoài đơn vị (consistent
+ *    security check).
+ *
+ *  PERFORMANCE:
+ *  - buildManagerQuanNhanFilter query 2 bảng (QuanNhan + DonViTrucThuoc).
+ *  - Cache lý tưởng theo request (req.user.unitFilter) — đã có middleware
+ *    unitFilter.ts handle.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import { Request } from 'express';
 import { quanNhanRepository } from '../repositories/quanNhan.repository';
 import { donViTrucThuocRepository } from '../repositories/unit.repository';

@@ -1,3 +1,9 @@
+/*
+ * UNIT CONTROLLER — đơn vị 2 cấp CRUD.
+ * Method: getAllUnits, getAllSubUnits, getById, create, update, delete.
+ * Hierarchy mode: ?hierarchy=true → trả về tree CQDV + DVTT con.
+ */
+
 import { Request, Response } from 'express';
 import unitService from '../services/unit.service';
 import { normalizeParam, parsePagination } from '../helpers/paginationHelper';

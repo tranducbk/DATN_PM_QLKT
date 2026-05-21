@@ -1,3 +1,11 @@
+/*
+ * DECISION ROUTE — quản lý số quyết định (FileQuyetDinh).
+ * - GET /autocomplete?q=... — search prefix cho approve UI.
+ * - GET /:so_quyet_dinh/file — serve PDF (cần auth).
+ * - POST / — tạo decision record + upload PDF (multipart).
+ * - Cascade rename: đổi số QĐ → update tất cả FK trong award tables.
+ */
+
 import { Router } from 'express';
 import decisionController from '../controllers/decision.controller';
 import { verifyToken, requireAdminOnly } from '../middlewares/auth';

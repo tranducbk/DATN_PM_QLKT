@@ -1,3 +1,9 @@
+/*
+ * POSITION HISTORY CONTROLLER — lịch sử chức vụ CRUD.
+ * Insert/update có overlap validation (xem service.isOverlapping).
+ * Sau mỗi thay đổi → trigger contribution profile recalc (HCBVTQ).
+ */
+
 import { Request, Response } from 'express';
 import positionHistoryService from '../services/positionHistory.service';
 import profileService from '../services/profile.service';

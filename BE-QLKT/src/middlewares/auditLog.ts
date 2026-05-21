@@ -3,6 +3,45 @@ import { systemLogRepository } from '../repositories/systemLog.repository';
 
 import type { AuditLogOptions } from '../types/api';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  AUDIT LOG MIDDLEWARE — ghi log mọi action quan trọng (compliance)
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  KỸ THUẬT MONKEY-PATCH res.json:
+ *  Wrap res.json để intercept response trước khi gửi client:
+ *    1. Restore res.json về bản gốc (chống recursion).
+ *    2. Check response.success === true → mới log (không log fail).
+ *    3. Call original json để gửi response cho client.
+ *    4. Fire-and-forget ghi log vào DB (không await → không làm chậm response).
+ *
+ *  WHY KHÔNG dùng res.on('finish')?
+ *  - finish event chạy sau khi response đã gửi → không lấy được body data.
+ *  - Cần body để extract resourceId (vd: id của record vừa tạo).
+ *
+ *  REDACT SENSITIVE FIELDS:
+ *  Trước khi lưu DB, đệ quy redact các field nhạy cảm (password, cccd,
+ *  refreshToken, ...). Audit log có thể bị SUPER_ADMIN đọc → tuyệt đối
+ *  không lưu plain password ngay cả trong log.
+ *
+ *  FIRE-AND-FORGET:
+ *  systemLogRepository.create() KHÔNG await → response không bị block bởi
+ *  ghi log. Trade-off: nếu DB log fail thì silently mất 1 entry (chấp
+ *  nhận được — log là phụ trợ, không thể block business operation).
+ *
+ *  RESOURCE ID EXTRACTION (multi-strategy):
+ *  - getResourceId.fromParams('id')   → req.params.id (DELETE /x/:id)
+ *  - getResourceId.fromResponse()      → response.data.id (POST tạo mới)
+ *  - getResourceId.fromBody('xxx')     → req.body.xxx
+ *  → Route definition chọn chiến lược phù hợp.
+ *
+ *  DESCRIPTION BUILDER:
+ *  Mỗi domain có function build description tiếng Việt (xem helpers/auditLog/).
+ *  Vd: 'Phê duyệt đề xuất khen thưởng cá nhân hàng năm năm 2024 cho 5 quân nhân'.
+ *  Tốt hơn raw "APPROVE proposals" vì SUPER_ADMIN review log dễ hiểu.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 const SENSITIVE_FIELDS = ['password', 'password_hash', 'refreshToken', 'cccd', 'oldPassword', 'newPassword', 'confirmPassword'];
 
 const DISPLAY_NAME_FIELDS = ['username', 'ho_ten', 'ten_don_vi', 'ten_chuc_vu'];

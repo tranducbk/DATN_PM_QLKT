@@ -335,6 +335,19 @@ class HcbvtqStrategy implements ProposalStrategy {
           where: { quan_nhan_id: quanNhan.id },
         });
 
+        // ───────────────────────────────────────────────────────────────
+        //  HCBVTQ = HUÂN CHƯƠNG MỘT-LẦN-LIFETIME, CHỈ CHO UPGRADE
+        // ───────────────────────────────────────────────────────────────
+        //  Quân nhân chỉ được giữ DUY NHẤT 1 record HCBVTQ trong đời.
+        //  Khi đã có rồi:
+        //    - Đề xuất hạng CAO HƠN (vd: đã có Hạng Ba, đề xuất Hạng Nhì)
+        //      → UPDATE record cũ thành hạng mới.
+        //    - Đề xuất hạng BẰNG hoặc THẤP HƠN → REJECT (vô nghĩa).
+        //
+        //  Thứ tự rank: HANG_BA(1) < HANG_NHI(2) < HANG_NHAT(3).
+        //  Logic upgrade: newRank > existingRank → cho phép update.
+        //                 newRank ≤ existingRank → push error, skip.
+        // ───────────────────────────────────────────────────────────────
         if (existingCongHien) {
           const rankOrder: Record<string, number> = {
             [DANH_HIEU_HCBVTQ.HANG_BA]: 1,
@@ -344,6 +357,10 @@ class HcbvtqStrategy implements ProposalStrategy {
           const existingRank = rankOrder[existingCongHien.danh_hieu] || 0;
           const newRank = rankOrder[item.danh_hieu] || 0;
           if (newRank > existingRank) {
+            // UPGRADE PATH: thay record cũ bằng record mới (cao hơn).
+            // Lưu lại 3 nhóm tháng tại thời điểm duyệt (snapshot) — KHÔNG
+            // recompute sau, vì khi quân nhân thăng chức tiếp record này
+            // vẫn cần giữ nguyên số tháng tại thời điểm trao huân chương.
             await prismaTx.khenThuongHCBVTQ.update({
               where: { id: existingCongHien.id },
               data: {

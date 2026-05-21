@@ -3,6 +3,52 @@ import { Request } from 'express';
 import path from 'path';
 import fs from 'fs';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  MULTER CONFIG — upload file an toàn (MIME filter + size limit + storage)
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  2 LOẠI STORAGE:
+ *
+ *  ① memoryStorage: file vào RAM (Buffer), KHÔNG ghi disk.
+ *     - Dùng cho: Excel import (parse rồi vứt), proposal attachment
+ *       (service tự quyết định lưu đâu).
+ *     - Ưu: nhanh, không orphan file khi request fail.
+ *     - Nhược: tốn RAM. Nếu user upload file 100MB × 10 request đồng thời
+ *       = 1GB RAM. Vì vậy limit 10MB/file + rate limiter ở route.
+ *
+ *  ② diskStorage: file ghi thẳng vào disk khi receive.
+ *     - Dùng cho: decision PDF (đã biết chắc cần lưu lâu dài).
+ *     - Ưu: tiết kiệm RAM cho file lớn.
+ *     - Nhược: nếu request fail giữa chừng → orphan file trên disk.
+ *
+ *  MIME FILTER (defence in depth):
+ *  - Whitelist MIME → reject mọi loại không listed (vd: .exe, .sh, .html).
+ *  - Tuy nhiên MIME có thể fake — không tin tưởng 100%. Lý do dùng filter
+ *    vẫn là chặn 95% case + báo user sớm trước khi file vào RAM.
+ *  - Bảo mật thật phải dựa thêm: (a) size limit, (b) không serve file
+ *    inline cho domain chính (XSS risk), (c) sandbox antivirus nếu cần.
+ *
+ *  SIZE LIMIT (10MB / 50MB):
+ *  - 10MB: đủ cho Excel báo cáo ~5000 dòng + PDF quyết định.
+ *  - 50MB: adhoc award có ảnh resolution cao.
+ *  - LƯU Ý: multer throw 'LIMIT_FILE_SIZE' nếu vượt → errorHandler
+ *    bắt và trả 413 Payload Too Large.
+ *
+ *  ENCODING latin1 → utf8 (decisionUpload):
+ *  - Browser POST multipart sometimes mã hoá filename theo latin1 (RFC
+ *    2616 default). Tên file tiếng Việt "Quyết định.pdf" sẽ bị hỏng
+ *    thành "Quyết định.pdf" nếu không re-decode.
+ *  - Fix: Buffer.from(name, 'latin1').toString('utf8') khôi phục đúng.
+ *
+ *  FILENAME DEDUPLICATION (decisionUpload):
+ *  - Race condition: 2 user upload cùng tên file đồng thời → file ghi đè.
+ *  - Walk-counter "(1)", "(2)", ... append vào trước extension để dedupe.
+ *  - LƯU Ý: chưa race-safe 100% (fs.existsSync + write không atomic).
+ *    Production nên dùng UUID/timestamp prefix thay vì counter.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 /** Creates a reusable fileFilter that checks against a list of allowed MIME types. */
 function createFileFilter(allowedMimes: string[], errorMessage: string) {
   return (req: Request, file: Express.Multer.File, cb: FileFilterCallback): void => {

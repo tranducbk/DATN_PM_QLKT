@@ -1,3 +1,10 @@
+/*
+ * ANNUAL REWARD ROUTE — CRUD khen thưởng hàng năm cá nhân (DanhHieuHangNam).
+ * Bao gồm: list, get-by-id, create, update, delete, statistics, history.
+ * Excel: /template, /import, /export.
+ * Mỗi quân nhân chỉ 1 row/năm (upsert by quan_nhan_id + nam unique).
+ */
+
 import { Router, Request, Response } from 'express';
 import path from 'path';
 import fs from 'fs';

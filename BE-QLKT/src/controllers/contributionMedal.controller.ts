@@ -1,3 +1,9 @@
+/*
+ * CONTRIBUTION MEDAL CONTROLLER — HCBVTQ CRUD + Excel.
+ * Upgrade-only rule. Gender-aware threshold.
+ * Recalc profile/contribution.ts sau insert/update.
+ */
+
 import { Request, Response } from 'express';
 import contributionAwardService from '../services/contributionMedal.service';
 import { ROLES } from '../constants/roles.constants';

@@ -8,6 +8,46 @@ import { GENDER } from '../../constants/gender.constants';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 import { calculateServiceMonths, formatServiceDuration } from '../../helpers/serviceYearsHelper';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  SERVICE YEARS ELIGIBILITY — eligibility theo SỐ NĂM PHỤC VỤ
+ *  (dùng chung cho HC_QKQT và KNC_VSNXD_QDNDVN)
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  CẢ 2 LOẠI HUÂN CHƯƠNG đều xét trên cùng tiêu chí cơ bản:
+ *  "Quân nhân đã phục vụ ≥ N năm trong quân ngũ" (lifetime, 1 lần).
+ *
+ *  NGƯỠNG (constants):
+ *      HCQKQT_YEARS_REQUIRED = 25 năm  (Huân chương Quân kỳ Quyết thắng,
+ *                                       sĩ quan — không phân biệt nam/nữ)
+ *      KNC_YEARS_REQUIRED_NAM = 25 năm (Kỷ niệm chương vì sự nghiệp xây
+ *                                       dựng QĐNDVN — nam giới)
+ *      KNC_YEARS_REQUIRED_NU  = 20 năm (KNC — nữ giới, ưu đãi giới)
+ *
+ *  CÔNG THỨC:
+ *      totalMonths = monthsBetween(ngay_nhap_ngu, ngay_xuat_ngu ?? refDate)
+ *      eligible    = totalMonths >= requiredYears * 12
+ *
+ *      refDate = ngày tham chiếu (thường = ngày cuối tháng đề xuất).
+ *      Quân nhân chưa xuất ngũ (ngay_xuat_ngu=null) → tính đến refDate.
+ *      Quân nhân đã xuất ngũ → tính đến ngày xuất ngũ (đóng băng số tháng).
+ *
+ *  PHÂN BIỆT REASON CODE (cho i18n + format message):
+ *      NOT_FOUND        → personnel không tồn tại trong DB (sai data)
+ *      MISSING_GENDER   → KNC bắt buộc giới tính (vì threshold khác nhau);
+ *                         HC_QKQT bỏ qua check này
+ *      MISSING_NHAP_NGU → thiếu ngày nhập ngũ (không thể tính số tháng)
+ *      NOT_ENOUGH_YEARS → service time < threshold
+ *
+ *  PURE FUNCTION DESIGN:
+ *  evaluateServiceYears KHÔNG query DB — caller (strategy) phải load
+ *  personnel + truyền vào. Lý do:
+ *    - Test dễ (chỉ cần inject fixture).
+ *    - Caller có thể batch load nhiều personnel cùng lúc (Promise.all
+ *      hoặc findMany({in: [...]})) thay vì N+1 query trong loop.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 export type ServiceYearsProposalType = 'HC_QKQT' | 'KNC_VSNXD_QDNDVN';
 
 /** Vietnamese display label per proposal type — used in unified error messages. */

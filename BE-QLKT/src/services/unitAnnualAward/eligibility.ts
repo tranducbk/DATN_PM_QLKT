@@ -12,6 +12,41 @@ import { checkChainEligibility, type FlagsInWindow } from '../eligibility/chainE
 import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
 import { resolveUnit, buildUnitIdFields } from '../../helpers/unitHelper';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  UNIT ANNUAL ELIGIBILITY — chuỗi danh hiệu ĐƠN VỊ (BKBQP/BKTTCP đơn vị)
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  PARITY VỚI CÁ NHÂN (xem `services/profile/annual.ts`):
+ *
+ *      Cá nhân (`annual.ts`)                  ↔  Đơn vị (file này)
+ *      ───────────────────────────────────────────────────────────
+ *      calculateContinuousCSTDCS              ↔  calculateContinuousYears (ĐVQT)
+ *      countBKBQPInStreak (xét nhan_bkbqp)    ↔  countBKBQPInStreak (đơn vị)
+ *      countCSTDTQInStreak                    ↔  KHÔNG CÓ (đơn vị không CSTDTQ)
+ *      computeChainContext                    ↔  recalculateAnnualUnit (inline)
+ *      computeEligibilityFlags                ↔  checkUnitAwardEligibility
+ *
+ *  KHÁC BIỆT QUAN TRỌNG:
+ *  ① 2 cấp đơn vị (CoQuanDonVi vs DonViTrucThuoc) → mọi query phải dùng
+ *     OR clause: `[{co_quan_don_vi_id: donViId}, {don_vi_truc_thuoc_id: donViId}]`
+ *     để match cả 2 loại FK trong cùng bảng DanhHieuDonViHangNam.
+ *  ② Đơn vị KHÔNG có CSTDTQ trung gian → chuỗi chỉ 2 mức:
+ *        ĐVQT (cơ bản, đếm streak) → BKBQP (chu kỳ 2y) → BKTTCP (chu kỳ 7y)
+ *  ③ Đơn vị KHÔNG có NCKH → bỏ qua check NCKH liên tục.
+ *  ④ BKTTCP đơn vị KHÔNG lifetime → nhận lặp lại mỗi 7y (xem
+ *     chainAwards.constants.ts: UNIT_CHAIN_AWARDS).
+ *  ⑤ Tất cả các hàm đều ASYNC (cá nhân pure sync) vì đơn vị phải query
+ *     bảng nhỏ hơn, không cache pre-load như cá nhân.
+ *
+ *  RECALC FLOW (recalculateAnnualUnit):
+ *  - Trigger sau khi approve đề xuất DON_VI_HANG_NAM.
+ *  - Tính: dvqt_lien_tuc, bkbqp_in_streak, du_dieu_kien_bkbqp_unit,
+ *    du_dieu_kien_bkttcp_unit, goi_y (text gợi ý cho FE).
+ *  - Upsert vào bảng UnitAnnualProfile (1 record/đơn vị/năm).
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 export async function calculateContinuousYears(donViId: string, year: number) {
   year = Number(year);
   const records = await danhHieuDonViHangNamRepository.findMany({

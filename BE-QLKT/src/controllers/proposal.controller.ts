@@ -202,6 +202,16 @@ class ProposalController {
   getPdfFile = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as GetPdfFileParams;
     const filename = decodeURIComponent(resolveIdParam(params.filename || ''));
+
+    // ─── PATH TRAVERSAL GUARD ───────────────────────────────────────
+    // Tấn công kinh điển: filename = "../../../etc/passwd" → service
+    // sẽ join với storage path → leak system file. Block 3 ký tự nguy hiểm:
+    //   • ".." → parent dir
+    //   • "/"  → unix path separator
+    //   • "\\" → windows path separator (an toàn trên cả 2 nền tảng)
+    // QUAN TRỌNG: phải check SAU decodeURIComponent — kẻ tấn công có thể
+    // bypass guard nếu check trước bằng cách gửi URL-encoded "%2E%2E%2F"
+    // (giải mã = "../").
     if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
       return ResponseHelper.badRequest(res, 'Tên file không hợp lệ');
     }

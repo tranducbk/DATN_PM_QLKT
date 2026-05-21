@@ -1,3 +1,10 @@
+/*
+ * PERSONNEL ROUTE — quân nhân (QuanNhan).
+ * READ: MANAGER+ (manager filter theo đơn vị).
+ * WRITE: ADMIN+ (tạo/sửa/xoá).
+ * Excel import/export riêng endpoint: /import, /export, /template.
+ */
+
 import { Router } from 'express';
 import personnelController from '../controllers/personnel.controller';
 import {

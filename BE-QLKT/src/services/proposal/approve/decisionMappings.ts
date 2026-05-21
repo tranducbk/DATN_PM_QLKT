@@ -106,7 +106,26 @@ export async function persistDecisionPdfs(
   return pdfPaths;
 }
 
-/** Builds award/title -> decision metadata maps used during DB import. */
+/**
+ * ╔══════════════════════════════════════════════════════════════════════╗
+ * ║  DECISION MAPPING — gán so_quyet_dinh + file PDF cho từng danh hiệu  ║
+ * ╠══════════════════════════════════════════════════════════════════════╣
+ * ║  Trên UI duyệt, Admin chỉ nhập 1 số quyết định CHUNG cho mỗi loại    ║
+ * ║  đề xuất (vd: `so_quyet_dinh_ca_nhan_hang_nam`). Nhưng khi import    ║
+ * ║  vào DB, mỗi danh hiệu cần biết "QĐ của mình" để gán vào field      ║
+ * ║  riêng. Hàm này build 2 map để strategy tra cứu:                     ║
+ * ║                                                                       ║
+ * ║  ① decisionMapping: cho danh hiệu CHÍNH (mỗi quân nhân 1 dòng       ║
+ * ║     trong DanhHieuHangNam — vd CSTDCS, ĐVQT, HCCSVV...). Tất cả     ║
+ * ║     dùng chung 1 file PDF.                                            ║
+ * ║                                                                       ║
+ * ║  ② specialDecisionMapping: cho 3 flag BKBQP/CSTDTQ/BKTTCP. Khác    ║
+ * ║     biệt: flag này NẰM TRÊN CÙNG row với danh hiệu chính (vd: 1    ║
+ * ║     row CSTDCS năm 2024 có thể có nhan_bkbqp=true). Vì vậy 3 flag  ║
+ * ║     dùng MAP RIÊNG để strategy ghi vào field so_quyet_dinh_bkbqp,  ║
+ * ║     so_quyet_dinh_cstdtq, so_quyet_dinh_bkttcp tương ứng.            ║
+ * ╚══════════════════════════════════════════════════════════════════════╝
+ */
 export function buildDecisionMappings(
   decisions: DecisionInputMap,
   pdfPaths: Record<string, string | undefined>
@@ -215,7 +234,28 @@ function resolveDecisionFilePath(
   return null;
 }
 
-/** Synchronizes used decision numbers + paths into the FileQuyetDinh registry. */
+/**
+ * SYNC FILE QUYẾT ĐỊNH — đồng bộ tất cả số QĐ được dùng trong đề xuất vào
+ * bảng FileQuyetDinh (registry trung tâm).
+ *
+ *  TẠI SAO CẦN SYNC?
+ *  Các bảng award (DanhHieuHangNam, KhenThuongHCCSVV, ...) có FK trỏ tới
+ *  FileQuyetDinh.so_quyet_dinh. Nếu một số QĐ chưa từng tồn tại trong
+ *  registry → INSERT award sẽ FK violation.
+ *
+ *  THUẬT TOÁN (chạy TRONG transaction, TRƯỚC khi import award):
+ *  1. Gom tất cả số QĐ xuất hiện trong (item.so_quyet_dinh,
+ *     item.so_quyet_dinh_bkbqp/cstdtq/bkttcp, decisions.so_quyet_dinh_*)
+ *     vào 1 Set để dedupe.
+ *  2. Với mỗi số QĐ:
+ *     - Nếu chưa có trong FileQuyetDinh → CREATE (kèm file_path nếu Admin
+ *       đã upload PDF; nếu không thì null — file sẽ upload sau).
+ *     - Nếu đã có nhưng file_path null + lần này có PDF → UPDATE để gắn
+ *       file_path mới (lazy population).
+ *  3. Best-effort: nếu lỗi 1 số QĐ → log + skip, không throw rollback.
+ *     Lý do: race condition (2 đề xuất song song cùng tạo cùng QĐ) là
+ *     bình thường, không phải lỗi nghiêm trọng.
+ */
 export async function syncDecisionFiles(
   ctx: ProposalContext,
   danhHieuData: ProposalDanhHieuItem[],
@@ -257,6 +297,17 @@ export async function syncDecisionFiles(
 
   const proposalType = proposal.loai_de_xuat as ProposalType;
 
+  // ─── RACE-AWARE: idempotent sync ────────────────────────────────
+  // 2 đề xuất song song cùng dùng 1 số quyết định "123/QĐ-X" mới:
+  //   Proposal A: findUnique → null → create (commit)
+  //   Proposal B: findUnique → null (đọc trước A commit?) → create → P2002!
+  //
+  // try/catch ngoài bắt P2002 → log + skip (KHÔNG throw để không
+  // rollback toàn bộ approve transaction). Record đã được tạo bởi A,
+  // FK insert sau đó vẫn pass.
+  //
+  // Nếu cần atomicity hơn nữa: chuyển sang `upsert` thay vì
+  // findUnique+create, hoặc dùng SELECT FOR UPDATE.
   for (const soQuyetDinh of decisionsToSync) {
     if (!soQuyetDinh) continue;
     try {

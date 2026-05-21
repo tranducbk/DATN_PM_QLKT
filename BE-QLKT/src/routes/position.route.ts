@@ -1,3 +1,9 @@
+/*
+ * POSITION ROUTE — master data chức vụ (ChucVu) + hệ số.
+ * READ: ALL authenticated. WRITE: ADMIN+.
+ * Đổi hệ số → ảnh hưởng eligibility HCBVTQ (trigger recalc).
+ */
+
 import { Router } from 'express';
 import positionController from '../controllers/position.controller';
 import { verifyToken, requireAdmin, requireManager } from '../middlewares/auth';

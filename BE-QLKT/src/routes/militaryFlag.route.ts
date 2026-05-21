@@ -1,3 +1,9 @@
+/*
+ * MILITARY FLAG ROUTE — HC_QKQT (Huân chương Quân kỳ Quyết thắng).
+ * CRUD + Excel. Lifetime 1 record/personnel.
+ * Eligibility: ≥25 năm phục vụ, không phân biệt giới.
+ */
+
 import { Router } from 'express';
 import militaryFlagController from '../controllers/militaryFlag.controller';
 import { verifyToken, checkRole, requireAdminOnly } from '../middlewares/auth';

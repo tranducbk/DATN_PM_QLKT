@@ -1,0 +1,474 @@
+Table "BangDeXuat" {
+  id varchar(30) [pk, not null]
+  co_quan_don_vi_id varchar(30)
+  don_vi_truc_thuoc_id varchar(30)
+  nguoi_de_xuat_id varchar(30) [not null]
+  loai_de_xuat varchar(20) [not null]
+  nam integer [not null]
+  thang integer
+  status varchar(20) [not null, default: 'PENDING']
+  data_danh_hieu jsonb
+  data_thanh_tich jsonb
+  data_nien_han jsonb
+  data_cong_hien jsonb
+  files_attached jsonb
+  ghi_chu text
+  rejection_reason text
+  nguoi_duyet_id varchar(30)
+  ngay_duyet timestamp
+  createdAt timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updatedAt timestamp [not null]
+}
+
+Table "ChucVu" {
+  id varchar(30) [pk, not null]
+  co_quan_don_vi_id varchar(30)
+  don_vi_truc_thuoc_id varchar(30)
+  ten_chuc_vu varchar(255) [not null]
+  is_manager boolean [not null, default: false]
+  he_so_chuc_vu "numeric(10,2)" [not null, default: 0]
+  createdAt timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updatedAt timestamp [not null]
+
+  Indexes {
+    (co_quan_don_vi_id, ten_chuc_vu) [unique]
+    (don_vi_truc_thuoc_id, ten_chuc_vu) [unique]
+  }
+}
+
+Table "CoQuanDonVi" {
+  id varchar(30) [pk, not null]
+  ma_don_vi varchar(50) [not null, unique]
+  ten_don_vi varchar(255) [not null]
+  so_luong integer [not null, default: 0]
+  createdAt timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updatedAt timestamp [not null]
+}
+
+Table "DanhHieuDonViHangNam" {
+  id varchar(30) [pk, not null]
+  co_quan_don_vi_id varchar(30)
+  don_vi_truc_thuoc_id varchar(30)
+  nam integer [not null]
+  danh_hieu varchar(50)
+  so_quyet_dinh varchar(100)
+  nhan_bkbqp boolean [not null, default: false]
+  so_quyet_dinh_bkbqp varchar(100)
+  ghi_chu_bkbqp text
+  nhan_bkttcp boolean [not null, default: false]
+  so_quyet_dinh_bkttcp varchar(100)
+  ghi_chu_bkttcp text
+  status varchar(20) [not null, default: 'PENDING']
+  nguoi_tao_id varchar(30) [not null]
+  nguoi_duyet_id varchar(30)
+  ngay_duyet timestamp
+  ghi_chu text
+  createdAt timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updatedAt timestamp [not null]
+
+  Indexes {
+    (co_quan_don_vi_id, nam) [unique]
+    (don_vi_truc_thuoc_id, nam) [unique]
+    so_quyet_dinh_bkbqp [name: "DanhHieuDonViHangNam_so_quyet_dinh_bkbqp_idx"]
+    so_quyet_dinh_bkttcp [name: "DanhHieuDonViHangNam_so_quyet_dinh_bkttcp_idx"]
+    so_quyet_dinh [name: "DanhHieuDonViHangNam_so_quyet_dinh_idx"]
+  }
+}
+
+Table "DanhHieuHangNam" {
+  id varchar(30) [pk, not null]
+  quan_nhan_id varchar(30) [not null]
+  nam integer [not null]
+  danh_hieu varchar(20)
+  cap_bac varchar(50)
+  chuc_vu varchar(255)
+  ghi_chu text
+  so_quyet_dinh varchar(100)
+  nhan_bkbqp boolean [not null, default: false]
+  so_quyet_dinh_bkbqp varchar(100)
+  ghi_chu_bkbqp text
+  nhan_cstdtq boolean [not null, default: false]
+  so_quyet_dinh_cstdtq varchar(100)
+  ghi_chu_cstdtq text
+  nhan_bkttcp boolean [not null, default: false]
+  so_quyet_dinh_bkttcp varchar(100)
+  ghi_chu_bkttcp text
+  createdAt timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updatedAt timestamp [not null]
+
+  Indexes {
+    (quan_nhan_id, nam) [unique]
+    so_quyet_dinh_bkbqp [name: "DanhHieuHangNam_so_quyet_dinh_bkbqp_idx"]
+    so_quyet_dinh_bkttcp [name: "DanhHieuHangNam_so_quyet_dinh_bkttcp_idx"]
+    so_quyet_dinh_cstdtq [name: "DanhHieuHangNam_so_quyet_dinh_cstdtq_idx"]
+    so_quyet_dinh [name: "DanhHieuHangNam_so_quyet_dinh_idx"]
+  }
+}
+
+Table "DonViTrucThuoc" {
+  id varchar(30) [pk, not null]
+  co_quan_don_vi_id varchar(30) [not null]
+  ma_don_vi varchar(50) [not null, unique]
+  ten_don_vi varchar(255) [not null]
+  so_luong integer [not null, default: 0]
+  createdAt timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updatedAt timestamp [not null]
+}
+
+Table "FileQuyetDinh" {
+  id varchar(30) [pk, not null]
+  so_quyet_dinh varchar(100) [not null, unique]
+  nam integer [not null]
+  ngay_ky date [not null]
+  nguoi_ky varchar(255) [not null]
+  file_path varchar(500)
+  loai_khen_thuong varchar(50)
+  ghi_chu text
+  createdAt timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updatedAt timestamp [not null]
+}
+
+Table "HoSoCongHien" {
+  id varchar(30) [pk, not null]
+  quan_nhan_id varchar(30) [not null, unique]
+  hcbvtq_total_months integer [not null, default: 0]
+  months_07 integer [not null, default: 0]
+  months_08 integer [not null, default: 0]
+  months_0910 integer [not null, default: 0]
+  hcbvtq_hang_ba_status varchar(20) [not null, default: 'CHUA_DU']
+  hcbvtq_hang_ba_ngay date
+  hcbvtq_hang_nhi_status varchar(20) [not null, default: 'CHUA_DU']
+  hcbvtq_hang_nhi_ngay date
+  hcbvtq_hang_nhat_status varchar(20) [not null, default: 'CHUA_DU']
+  hcbvtq_hang_nhat_ngay date
+  goi_y text
+  createdAt timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updatedAt timestamp [not null]
+}
+
+Table "HoSoDonViHangNam" {
+  id varchar(30) [pk, not null]
+  co_quan_don_vi_id varchar(30)
+  don_vi_truc_thuoc_id varchar(30)
+  nam integer [not null]
+  tong_dvqt integer [not null, default: 0]
+  tong_dvqt_json jsonb
+  dvqt_lien_tuc integer [not null, default: 0]
+  du_dieu_kien_bk_tong_cuc boolean [not null, default: false]
+  du_dieu_kien_bk_thu_tuong boolean [not null, default: false]
+  goi_y text
+  createdAt timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updatedAt timestamp [not null]
+
+  Indexes {
+    (co_quan_don_vi_id, nam) [unique]
+    (don_vi_truc_thuoc_id, nam) [unique]
+  }
+}
+
+Table "HoSoHangNam" {
+  id varchar(30) [pk, not null]
+  quan_nhan_id varchar(30) [not null, unique]
+  tong_cstdcs integer [not null, default: 0]
+  tong_nckh integer [not null, default: 0]
+  tong_cstdcs_json jsonb
+  tong_nckh_json jsonb
+  cstdcs_lien_tuc integer [not null, default: 0]
+  nckh_lien_tuc integer [not null, default: 0]
+  bkbqp_lien_tuc integer [not null, default: 0]
+  cstdtq_lien_tuc integer [not null, default: 0]
+  du_dieu_kien_bkbqp boolean [not null, default: false]
+  du_dieu_kien_cstdtq boolean [not null, default: false]
+  du_dieu_kien_bkttcp boolean [not null, default: false]
+  goi_y text
+  createdAt timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updatedAt timestamp [not null]
+
+}
+
+Table "HoSoNienHan" {
+  id varchar(30) [pk, not null]
+  quan_nhan_id varchar(30) [not null, unique]
+  hccsvv_hang_ba_status varchar(20) [not null, default: 'CHUA_DU']
+  hccsvv_hang_ba_ngay date
+  hccsvv_hang_nhi_status varchar(20) [not null, default: 'CHUA_DU']
+  hccsvv_hang_nhi_ngay date
+  hccsvv_hang_nhat_status varchar(20) [not null, default: 'CHUA_DU']
+  hccsvv_hang_nhat_ngay date
+  goi_y text
+  createdAt timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updatedAt timestamp [not null]
+
+}
+
+Table "HuanChuongQuanKyQuyetThang" {
+  id varchar(30) [pk, not null]
+  quan_nhan_id varchar(30) [not null, unique]
+  nam integer [not null]
+  thang integer [not null]
+  cap_bac varchar(50)
+  chuc_vu varchar(255)
+  ghi_chu text
+  so_quyet_dinh varchar(100)
+  thoi_gian jsonb
+  createdAt timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updatedAt timestamp [not null]
+
+  Indexes {
+    so_quyet_dinh [name: "HuanChuongQuanKyQuyetThang_so_quyet_dinh_idx"]
+  }
+}
+
+Table "KhenThuongDotXuat" {
+  id varchar(30) [pk, not null]
+  loai varchar(30) [not null, default: 'KHEN_THUONG_DOT_XUAT']
+  doi_tuong varchar(20) [not null, default: 'CA_NHAN']
+  quan_nhan_id varchar(30)
+  co_quan_don_vi_id varchar(30)
+  don_vi_truc_thuoc_id varchar(30)
+  hinh_thuc_khen_thuong varchar(255) [not null]
+  nam integer [not null]
+  cap_bac varchar(50)
+  chuc_vu varchar(255)
+  ghi_chu text
+  so_quyet_dinh varchar(100)
+  files_dinh_kem jsonb
+  createdAt timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updatedAt timestamp [not null]
+
+  Indexes {
+    so_quyet_dinh [name: "KhenThuongDotXuat_so_quyet_dinh_idx"]
+  }
+}
+
+Table "KhenThuongHCBVTQ" {
+  id varchar(30) [pk, not null]
+  quan_nhan_id varchar(30) [not null, unique]
+  danh_hieu varchar(20) [not null]
+  nam integer [not null]
+  thang integer [not null]
+  cap_bac varchar(50)
+  chuc_vu varchar(255)
+  ghi_chu text
+  so_quyet_dinh varchar(100)
+  thoi_gian_nhom_0_7 jsonb
+  thoi_gian_nhom_0_8 jsonb
+  thoi_gian_nhom_0_9_1_0 jsonb
+  createdAt timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updatedAt timestamp [not null]
+
+  Indexes {
+    so_quyet_dinh [name: "KhenThuongHCBVTQ_so_quyet_dinh_idx"]
+  }
+}
+
+Table "KhenThuongHCCSVV" {
+  id varchar(30) [pk, not null]
+  quan_nhan_id varchar(30) [not null]
+  danh_hieu varchar(20) [not null]
+  nam integer [not null]
+  thang integer [not null]
+  cap_bac varchar(50)
+  chuc_vu varchar(255)
+  ghi_chu text
+  so_quyet_dinh varchar(100)
+  thoi_gian jsonb
+  createdAt timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updatedAt timestamp [not null]
+
+  Indexes {
+    (quan_nhan_id, danh_hieu) [unique]
+    so_quyet_dinh [name: "KhenThuongHCCSVV_so_quyet_dinh_idx"]
+  }
+}
+
+Table "KyNiemChuongVSNXDQDNDVN" {
+  id varchar(30) [pk, not null]
+  quan_nhan_id varchar(30) [not null, unique]
+  nam integer [not null]
+  thang integer [not null]
+  cap_bac varchar(50)
+  chuc_vu varchar(255)
+  ghi_chu text
+  so_quyet_dinh varchar(100)
+  thoi_gian jsonb
+  createdAt timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updatedAt timestamp [not null]
+
+  Indexes {
+    so_quyet_dinh [name: "KyNiemChuongVSNXDQDNDVN_so_quyet_dinh_idx"]
+  }
+}
+
+Table "LichSuChucVu" {
+  id varchar(30) [pk, not null]
+  quan_nhan_id varchar(30) [not null]
+  chuc_vu_id varchar(30) [not null]
+  he_so_chuc_vu "double precision" [not null, default: 0]
+  ngay_bat_dau date [not null]
+  ngay_ket_thuc date
+  so_thang integer
+  createdAt timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updatedAt timestamp [not null]
+}
+
+Table "QuanNhan" {
+  id varchar(30) [pk, not null]
+  cccd varchar(20) [unique]
+  ho_ten varchar(255) [not null]
+  gioi_tinh varchar(10)
+  ngay_sinh date
+  que_quan_2_cap varchar(255)
+  que_quan_3_cap varchar(255)
+  tru_quan varchar(255)
+  cho_o_hien_nay varchar(255)
+  co_quan_don_vi jsonb
+  ngay_nhap_ngu date
+  ngay_xuat_ngu date
+  ngay_vao_dang date
+  ngay_vao_dang_chinh_thuc date
+  so_the_dang_vien varchar(50)
+  so_dien_thoai varchar(20)
+  cap_bac varchar(50)
+  co_quan_don_vi_id varchar(30)
+  don_vi_truc_thuoc_id varchar(30)
+  chuc_vu_id varchar(30) [not null]
+  createdAt timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updatedAt timestamp [not null]
+
+  Indexes {
+    co_quan_don_vi_id [name: "QuanNhan_co_quan_don_vi_id_idx"]
+  }
+}
+
+Table "SystemLog" {
+  id varchar(30) [pk, not null]
+  nguoi_thuc_hien_id varchar(30)
+  actor_role varchar(20) [not null]
+  action varchar(50) [not null]
+  resource varchar(50) [not null]
+  tai_nguyen_id varchar(30)
+  description varchar(500) [not null]
+  payload jsonb
+  ip_address varchar(45)
+  user_agent text
+  createdAt timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table "SystemSetting" {
+  id varchar(30) [pk, not null]
+  key varchar(100) [not null, unique]
+  value text [not null]
+  updatedAt timestamp [not null]
+}
+
+Table "TaiKhoan" {
+  id varchar(30) [pk, not null]
+  quan_nhan_id varchar(30) [unique]
+  username varchar(100) [not null, unique]
+  password_hash varchar(255) [not null]
+  role varchar(20) [not null]
+  refreshToken text
+  createdAt timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updatedAt timestamp [not null]
+}
+
+Table "ThanhTichKhoaHoc" {
+  id varchar(30) [pk, not null]
+  quan_nhan_id varchar(30) [not null]
+  nam integer [not null]
+  loai varchar(10) [not null]
+  mo_ta varchar(500) [not null]
+  cap_bac varchar(50)
+  chuc_vu varchar(255)
+  ghi_chu text
+  so_quyet_dinh varchar(100)
+  createdAt timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updatedAt timestamp [not null]
+
+  Indexes {
+    so_quyet_dinh [name: "ThanhTichKhoaHoc_so_quyet_dinh_idx"]
+  }
+}
+
+Table "ThongBao" {
+  id varchar(30) [pk, not null]
+  nguoi_nhan_id varchar(30)
+  recipient_role varchar(20) [not null]
+  type varchar(50) [not null]
+  title varchar(255) [not null]
+  message varchar(500) [not null]
+  resource varchar(50)
+  tai_nguyen_id varchar(30)
+  link varchar(255)
+  is_read boolean [not null, default: false]
+  nhat_ky_he_thong_id varchar(30)
+  createdAt timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  readAt timestamp
+}
+
+// Foreign key relationships
+Ref: "BangDeXuat".co_quan_don_vi_id > "CoQuanDonVi".id [update: cascade, delete: cascade]
+Ref: "BangDeXuat".don_vi_truc_thuoc_id > "DonViTrucThuoc".id [update: cascade, delete: cascade]
+Ref: "BangDeXuat".nguoi_de_xuat_id > "TaiKhoan".id [update: cascade, delete: cascade]
+Ref: "BangDeXuat".nguoi_duyet_id > "TaiKhoan".id [update: cascade, delete: set null]
+
+Ref: "ChucVu".co_quan_don_vi_id > "CoQuanDonVi".id [update: cascade, delete: cascade]
+Ref: "ChucVu".don_vi_truc_thuoc_id > "DonViTrucThuoc".id [update: cascade, delete: cascade]
+
+Ref: "DanhHieuDonViHangNam".co_quan_don_vi_id > "CoQuanDonVi".id [update: cascade, delete: cascade]
+Ref: "DanhHieuDonViHangNam".don_vi_truc_thuoc_id > "DonViTrucThuoc".id [update: cascade, delete: cascade]
+Ref: "DanhHieuDonViHangNam".so_quyet_dinh_bkbqp > "FileQuyetDinh".so_quyet_dinh [update: cascade, delete: restrict]
+Ref: "DanhHieuDonViHangNam".so_quyet_dinh_bkttcp > "FileQuyetDinh".so_quyet_dinh [update: cascade, delete: restrict]
+Ref: "DanhHieuDonViHangNam".so_quyet_dinh > "FileQuyetDinh".so_quyet_dinh [update: cascade, delete: restrict]
+
+Ref: "DanhHieuHangNam".quan_nhan_id > "QuanNhan".id [update: cascade, delete: cascade]
+Ref: "DanhHieuHangNam".so_quyet_dinh_bkbqp > "FileQuyetDinh".so_quyet_dinh [update: cascade, delete: restrict]
+Ref: "DanhHieuHangNam".so_quyet_dinh_bkttcp > "FileQuyetDinh".so_quyet_dinh [update: cascade, delete: restrict]
+Ref: "DanhHieuHangNam".so_quyet_dinh_cstdtq > "FileQuyetDinh".so_quyet_dinh [update: cascade, delete: restrict]
+Ref: "DanhHieuHangNam".so_quyet_dinh > "FileQuyetDinh".so_quyet_dinh [update: cascade, delete: restrict]
+
+Ref: "DonViTrucThuoc".co_quan_don_vi_id > "CoQuanDonVi".id [update: cascade, delete: cascade]
+
+Ref: "HoSoCongHien".quan_nhan_id > "QuanNhan".id [update: cascade, delete: cascade]
+
+Ref: "HoSoDonViHangNam".co_quan_don_vi_id > "CoQuanDonVi".id [update: cascade, delete: cascade]
+Ref: "HoSoDonViHangNam".don_vi_truc_thuoc_id > "DonViTrucThuoc".id [update: cascade, delete: cascade]
+
+Ref: "HoSoHangNam".quan_nhan_id > "QuanNhan".id [update: cascade, delete: cascade]
+
+Ref: "HoSoNienHan".quan_nhan_id > "QuanNhan".id [update: cascade, delete: cascade]
+
+Ref: "HuanChuongQuanKyQuyetThang".quan_nhan_id > "QuanNhan".id [update: cascade, delete: cascade]
+Ref: "HuanChuongQuanKyQuyetThang".so_quyet_dinh > "FileQuyetDinh".so_quyet_dinh [update: cascade, delete: restrict]
+
+Ref: "KhenThuongDotXuat".co_quan_don_vi_id > "CoQuanDonVi".id [update: cascade, delete: cascade]
+Ref: "KhenThuongDotXuat".don_vi_truc_thuoc_id > "DonViTrucThuoc".id [update: cascade, delete: cascade]
+Ref: "KhenThuongDotXuat".quan_nhan_id > "QuanNhan".id [update: cascade, delete: cascade]
+Ref: "KhenThuongDotXuat".so_quyet_dinh > "FileQuyetDinh".so_quyet_dinh [update: cascade, delete: restrict]
+
+Ref: "KhenThuongHCBVTQ".quan_nhan_id > "QuanNhan".id [update: cascade, delete: cascade]
+Ref: "KhenThuongHCBVTQ".so_quyet_dinh > "FileQuyetDinh".so_quyet_dinh [update: cascade, delete: restrict]
+
+Ref: "KhenThuongHCCSVV".quan_nhan_id > "QuanNhan".id [update: cascade, delete: cascade]
+Ref: "KhenThuongHCCSVV".so_quyet_dinh > "FileQuyetDinh".so_quyet_dinh [update: cascade, delete: restrict]
+
+Ref: "KyNiemChuongVSNXDQDNDVN".quan_nhan_id > "QuanNhan".id [update: cascade, delete: cascade]
+Ref: "KyNiemChuongVSNXDQDNDVN".so_quyet_dinh > "FileQuyetDinh".so_quyet_dinh [update: cascade, delete: restrict]
+
+Ref: "LichSuChucVu".chuc_vu_id > "ChucVu".id [update: cascade, delete: cascade]
+Ref: "LichSuChucVu".quan_nhan_id > "QuanNhan".id [update: cascade, delete: cascade]
+
+Ref: "QuanNhan".chuc_vu_id > "ChucVu".id [update: cascade, delete: restrict]
+Ref: "QuanNhan".co_quan_don_vi_id > "CoQuanDonVi".id [update: cascade, delete: cascade]
+Ref: "QuanNhan".don_vi_truc_thuoc_id > "DonViTrucThuoc".id [update: cascade, delete: cascade]
+
+Ref: "SystemLog".nguoi_thuc_hien_id > "TaiKhoan".id [update: cascade, delete: set null]
+
+Ref: "TaiKhoan".quan_nhan_id > "QuanNhan".id [update: cascade, delete: cascade]
+
+Ref: "ThanhTichKhoaHoc".quan_nhan_id > "QuanNhan".id [update: cascade, delete: cascade]
+Ref: "ThanhTichKhoaHoc".so_quyet_dinh > "FileQuyetDinh".so_quyet_dinh [update: cascade, delete: restrict]
+
+Ref: "ThongBao".nguoi_nhan_id > "TaiKhoan".id [update: cascade, delete: cascade]
+Ref: "ThongBao".nhat_ky_he_thong_id > "SystemLog".id [update: cascade, delete: set null]

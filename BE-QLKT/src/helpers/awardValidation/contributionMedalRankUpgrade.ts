@@ -1,5 +1,23 @@
 import { DANH_HIEU_HCBVTQ, getDanhHieuName } from '../../constants/danhHieu.constants';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  HCBVTQ RANK UPGRADE VALIDATION — chỉ cho phép upgrade (newRank > old)
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  KHÁC HCCSVV (rank order tuần tự):
+ *  - HCCSVV: 3 hạng RIÊNG BIỆT — nhận TUẦN TỰ (3 record).
+ *  - HCBVTQ: 1 record DUY NHẤT per personnel — chỉ UPGRADE rank.
+ *
+ *  RULE:
+ *  - Đã có Hạng Ba → đề xuất Hạng Nhì → OK (upgrade).
+ *  - Đã có Hạng Nhì → đề xuất Hạng Ba → REJECT (không downgrade).
+ *  - Đã có Hạng Nhất → đề xuất bất kỳ → REJECT (đã max).
+ *
+ *  RANK_ORDER: index 0 (Hạng Ba) < 1 (Hạng Nhì) < 2 (Hạng Nhất).
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 const RANK_ORDER = [
   DANH_HIEU_HCBVTQ.HANG_BA,
   DANH_HIEU_HCBVTQ.HANG_NHI,

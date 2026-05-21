@@ -1,5 +1,34 @@
 import { systemLogRepository } from '../repositories/systemLog.repository';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  SYSTEM LOG HELPER — writeSystemLog (audit trail entry point)
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  WRAPPER quanh systemLogRepository.create để:
+ *  - Default field defaults (userRole, action).
+ *  - Sanitize payload (loại bỏ field nhạy cảm trước khi serialize).
+ *  - Catch lỗi silent — log fail KHÔNG được throw làm crash app.
+ *
+ *  USAGE PATTERN — FIRE-AND-FORGET:
+ *      void writeSystemLog({ userId, action: 'CREATE', resource: 'x', ... });
+ *  Dùng `void` để TypeScript không warn về promise floating, nhưng vẫn
+ *  KHÔNG await → không block.
+ *
+ *  ALWAYS LOG (operations ghi DB):
+ *  - CREATE, UPDATE, DELETE, APPROVE, REJECT, IMPORT, EXPORT, BACKUP.
+ *
+ *  KHÔNG LOG (read-only):
+ *  - GET requests → quá nhiều, tốn dung lượng, không có giá trị audit.
+ *
+ *  AUDIT MIDDLEWARE TỰ GỌI:
+ *  Middleware `auditLog` đã tự call writeSystemLog sau response success.
+ *  Service chỉ gọi trực tiếp khi:
+ *  - Catch lỗi cần log (action='ERROR').
+ *  - Fire-and-forget log từ background job.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 interface WriteSystemLogParams {
   userId?: string;
   userRole?: string;

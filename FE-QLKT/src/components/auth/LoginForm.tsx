@@ -1,5 +1,28 @@
 'use client';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  LOGIN FORM — entry point auth, role-based redirect (ATTT)
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  FLOW:
+ *  1. User nhập username + password → submit.
+ *  2. POST /api/auth/login → BE verify bcrypt + cấp token pair.
+ *  3. Lưu accessToken + refreshToken qua AuthContext.login.
+ *  4. Redirect dashboard theo role.
+ *
+ *  ATTT — POINTS QUAN TRỌNG:
+ *  ① BE message chung "Tên đăng nhập hoặc mật khẩu không đúng" → attacker
+ *     không enumerate được tài khoản.
+ *  ② Rate limit 429: parse retryAfter → hiển thị "Thử lại sau X giây".
+ *  ③ Force change password: nếu must_change_password → redirect /change-password.
+ *  ④ KHÔNG ghi password vào console.log dù trong dev mode.
+ *  ⑤ autoComplete="current-password" → browser pwd manager đúng category.
+ *
+ *  EDGE CASE: đã login → useEffect redirect dashboard luôn (tránh login lần 2).
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import { useEffect, useState } from 'react';
 import { Form, Input, Button, Alert } from 'antd';
 import { useRouter } from 'next/navigation';

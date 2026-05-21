@@ -18,6 +18,56 @@ interface UpdateUnitData {
   co_quan_don_vi_id?: string;
 }
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  UNIT SERVICE — quản lý đơn vị 2 cấp (CQDV ⟶ DVTT)
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  PHÂN CẤP:
+ *      CoQuanDonVi (CQDV)        ← cấp 1 (vd: Học viện, Tổng cục)
+ *        └── DonViTrucThuoc      ← cấp 2 (vd: Hệ 1, Khoa 2, Phòng A)
+ *
+ *  KHÔNG hỗ trợ cấp 3 (đơn vị con của đơn vị trực thuộc) — đủ cho cấu
+ *  trúc quân đội cấp Học viện hiện tại.
+ *
+ *  MA_DON_VI UNIQUE GLOBAL:
+ *  - ma_don_vi của CQDV và DVTT KHÔNG được trùng nhau (mã đơn vị duy
+ *    nhất trên toàn hệ thống).
+ *  - Khi create/update phải check CẢ 2 bảng:
+ *      coQuanDonViRepository.findByMaDonVi(ma) → existing CQDV?
+ *      donViTrucThuocRepository.findByMaDonVi(ma) → existing DVTT?
+ *    Tồn tại ở cả 2 → reject.
+ *
+ *  HIERARCHY MODE (getAllUnits):
+ *  - hierarchy=true → trả về tree { ...cqdv, children: [dvtt1, dvtt2] }
+ *    Phục vụ sidebar nav + Tree component Ant Design.
+ *  - hierarchy=false → trả về flat list pagination.
+ *  - Trade-off: tree query phải JOIN N+1 (1 query CQDV + N query DVTT).
+ *    Optimize: dùng `include: { DonViTrucThuoc: true }` để Prisma làm
+ *    JOIN trong 1 query (đã implement).
+ *
+ *  SORTED BY ma_don_vi:
+ *  - Frontend hiển thị theo thứ tự logical (H1, H2, H3, ...).
+ *  - localeCompare đảm bảo sort đúng "H10" sau "H9" (KHÔNG dùng default
+ *    JS sort, sẽ ra "H1, H10, H2" do compare chuỗi alphabet).
+ *
+ *  SO_LUONG — DENORMALIZED COUNTER:
+ *  - Field `so_luong` lưu số quân nhân thuộc đơn vị.
+ *  - Mỗi lần thêm/xoá QuanNhan, service phải update counter này.
+ *  - Trade-off: phải maintain consistency vs gain performance khi hiển
+ *    thị "Hệ 1 (250 quân nhân)" trên list.
+ *  - ALTERNATIVE: COUNT(*) WHERE don_vi_id=X chạy mỗi list query — chậm
+ *    với DB lớn.
+ *
+ *  PARENT-CHILD CASCADE:
+ *  - Xoá CQDV → cascade xoá tất cả DVTT con + tất cả QuanNhan thuộc CQDV
+ *    + cascade xuống TaiKhoan + DanhHieu... → ĐẶC BIỆT NGUY HIỂM.
+ *  - Trước khi xoá, service NÊN check (chưa implement đầy đủ):
+ *      a. CQDV có DVTT con không? → reject nếu có.
+ *      b. CQDV có QuanNhan không? → reject nếu có.
+ *    User phải xoá thủ công từng cấp con trước.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
 class UnitService {
   async getAllUnits(options: { hierarchy?: boolean; page?: number; limit?: number } = {}) {
     const { hierarchy = false, page = 1, limit = 20 } = options;

@@ -1,3 +1,23 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  ZOD SCHEMAS — validation schemas dùng cho FE form
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  WHY ZOD:
+ *  - Type-safe: z.infer<typeof Schema> → TS biết shape data sau validate.
+ *  - Reusable: 1 schema dùng cho cả Create + Update form (.partial()).
+ *  - Composable: extend, omit, pick → tránh duplicate.
+ *
+ *  BACKEND-FRONTEND PARITY:
+ *  Schema FE PHẢI sync với Joi/Zod schema BE — vì user có thể bypass FE
+ *  validate (curl/Postman). FE validate chỉ là UX, BE validate là truth.
+ *  Trade-off: duplicate logic ở 2 nơi → maintenance overhead.
+ *
+ *  VIETNAMESE MESSAGE:
+ *  z.string().min(1, 'Vui lòng nhập ...') → hiển thị thẳng cho user.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import { z } from 'zod';
 import { ROLES } from '@/constants/roles.constants';
 import { USER_ROLE_VALUES } from './types/common';

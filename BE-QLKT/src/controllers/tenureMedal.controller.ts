@@ -1,3 +1,8 @@
+/*
+ * TENURE MEDAL CONTROLLER — HCCSVV CRUD + Excel.
+ * Rank order validation (Ba → Nhì → Nhất). Trigger profile/tenure.ts recalc.
+ */
+
 import { Request, Response } from 'express';
 import hccsvvService, { HccsvvValidItem } from '../services/tenureMedal.service';
 import { ROLES } from '../constants/roles.constants';

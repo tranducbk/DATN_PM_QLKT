@@ -1,3 +1,31 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  POSITION SERVICE — master data Chức vụ (ChucVu)
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  ChucVu là MASTER DATA — định nghĩa các chức vụ trong đơn vị với
+ *  HỆ SỐ chuẩn (he_so_chuc_vu, vd: Trợ lý = 0.7, Phó phòng = 0.85, ...).
+ *
+ *  QUAN HỆ:
+ *      ChucVu (master) ← LichSuChucVu (lịch sử bổ nhiệm) → QuanNhan
+ *
+ *  TẠI SAO TÁCH MASTER:
+ *  - Hệ số 1 chức vụ áp dụng nhất quán cho mọi quân nhân giữ chức đó.
+ *  - Đổi hệ số 1 chức vụ → tự áp dụng cho tất cả quân nhân (recalc lại).
+ *  - Tránh duplicate "hệ số" trên mỗi row LichSuChucVu.
+ *
+ *  PHẠM VI:
+ *  ChucVu thuộc CoQuanDonVi (có FK co_quan_don_vi_id). Mỗi cơ quan có
+ *  danh sách chức vụ riêng (vd: "Giám đốc Học viện" chỉ ở Học viện).
+ *
+ *  IMPACT khi đổi he_so_chuc_vu:
+ *  - LichSuChucVu vẫn giữ nguyên record nhưng aggregation tháng theo
+ *    nhóm hệ số sẽ ra số khác → ảnh hưởng eligibility HCBVTQ.
+ *  - Nên trigger recalc profile/contribution cho tất cả quân nhân từng
+ *    giữ chức vụ này (chưa implement bulk recalc).
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import { quanNhanRepository } from '../repositories/quanNhan.repository';
 import { coQuanDonViRepository, donViTrucThuocRepository } from '../repositories/unit.repository';
 import { positionRepository } from '../repositories/position.repository';

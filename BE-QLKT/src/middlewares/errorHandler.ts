@@ -1,5 +1,41 @@
 import { Request, Response, NextFunction } from 'express';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  GLOBAL ERROR HANDLER — quy tập tất cả error về 1 chỗ + map HTTP status
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  HIERARCHY:
+ *      AppError (base)             → statusCode tuỳ ý, isOperational=true
+ *        ├─ NotFoundError          → 404
+ *        ├─ ForbiddenError         → 403
+ *        └─ ValidationError        → 400
+ *
+ *  WHY isOperational FLAG:
+ *  - Operational (true): lỗi BIẾT TRƯỚC từ business rule (user gửi sai data,
+ *    không quyền, ...). KHÔNG cần alert oncall.
+ *  - Programmer (false): bug code (null pointer, type error, ...). Cần log
+ *    full stack + alert.
+ *  → errorHandler phân biệt để quyết định log level + có gửi Sentry không.
+ *
+ *  FLOW của catchAsync (xem helpers/catchAsync.ts):
+ *  Controller wrap với catchAsync → mọi throw/reject inside được forward
+ *  tới errorHandler qua next(err). Express auto-call middleware có
+ *  signature 4 arg (err, req, res, next) → đây.
+ *
+ *  TRÁNH LEAK INTERNALS:
+ *  - Production: trả message + statusCode, KHÔNG trả stack trace.
+ *  - Dev: trả thêm stack để debug nhanh.
+ *  - Prisma error code (P2002 unique, P2003 FK, ...) được map sang
+ *    Vietnamese message thân thiện, không expose tên column/index.
+ *
+ *  FAIL-OPEN vs FAIL-CLOSED:
+ *  Default 500 nếu không nhận diện được error → FAIL-CLOSED (refuse
+ *  request, không trả data). Tuyệt đối KHÔNG fallback trả 200 + empty
+ *  data — sẽ ẩn bug.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 /**
  * Base application error with HTTP status support.
  */

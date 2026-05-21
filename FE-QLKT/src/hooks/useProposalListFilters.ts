@@ -1,3 +1,24 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  useProposalListFilters — state hook cho filter bar danh sách đề xuất
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  TRÁCH NHIỆM:
+ *  - Quản lý state filter (loại, năm, status, đơn vị).
+ *  - Compute danh sách option khả dụng (chỉ hiện year có data).
+ *  - Apply filter → filteredRows.
+ *
+ *  WHY HOOK: tách logic filter khỏi component → reusable cho 2 page.
+ *
+ *  AVAILABLE OPTIONS DERIVED:
+ *  - Năm = unique years có trong data hiện tại.
+ *  - Loại = unique types trong data.
+ *  → User không filter ra empty list.
+ *
+ *  PERFORMANCE: useMemo cache filteredRows + availableOptions.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import { useCallback, useMemo, useState } from 'react';
 import type { ProposalListFilterRow } from '@/lib/proposal/proposalListFilters';
 import {

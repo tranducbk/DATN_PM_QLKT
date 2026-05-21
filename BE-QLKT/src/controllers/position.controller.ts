@@ -1,3 +1,8 @@
+/*
+ * POSITION CONTROLLER — master data ChucVu CRUD.
+ * Đổi hệ số → eligibility HCBVTQ thay đổi → cần bulk recalc.
+ */
+
 import { Request, Response } from 'express';
 import positionService from '../services/position.service';
 import { normalizeParam } from '../helpers/paginationHelper';

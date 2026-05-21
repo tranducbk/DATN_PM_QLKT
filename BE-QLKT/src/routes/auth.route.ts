@@ -1,3 +1,18 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  AUTH ROUTE — login / refresh / logout / change-password
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  MIDDLEWARE CHAIN:
+ *  authLimiter → validate(schema) → authController.method → auditLog
+ *
+ *  ENDPOINT PUBLIC (KHÔNG verifyToken): /login, /refresh
+ *  ENDPOINT AUTHENTICATED: /logout, /change-password
+ *
+ *  RATE LIMIT trên TẤT CẢ endpoint auth → chống brute force.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import { Router } from 'express';
 import authController from '../controllers/auth.controller';
 import { verifyToken } from '../middlewares/auth';

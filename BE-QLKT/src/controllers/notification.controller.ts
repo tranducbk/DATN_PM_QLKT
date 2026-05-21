@@ -1,3 +1,9 @@
+/*
+ * NOTIFICATION CONTROLLER — list noti của user, mark-as-read, count.
+ * User chỉ xem noti của mình (filter qua req.user.id).
+ * Method: getNotifications, getUnreadCount, markAsRead, markAllAsRead, deleteAll.
+ */
+
 import { Request, Response } from 'express';
 import notificationService from '../services/notification.service';
 import { parsePagination, normalizeParam } from '../helpers/paginationHelper';

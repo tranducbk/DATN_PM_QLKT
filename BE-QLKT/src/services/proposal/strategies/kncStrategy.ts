@@ -21,6 +21,34 @@ import {
   type NienHanInputItem,
 } from './nienHanPayloadHelper';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  KNC STRATEGY — Kỷ niệm chương Vì Sự nghiệp Xây dựng QĐNDVN
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  ĐIỀU KIỆN nhận:
+ *    - Nam: ≥ 25 năm phục vụ.
+ *    - Nữ: ≥ 20 năm phục vụ.
+ *  → Khác HC_QKQT ở 1 điểm DUY NHẤT: ưu đãi 5 năm cho nữ giới.
+ *
+ *  TÍNH CHẤT:
+ *    - LIFETIME — quân nhân chỉ nhận 1 lần (bảng kyNiemChuongVSNXDQDNDVN
+ *      có unique index trên quan_nhan_id).
+ *    - Duplicate check ở approve sẽ block nếu đã có record.
+ *
+ *  FLOW:
+ *    Submit:   batchEvaluateServiceYears → check 25/20 năm theo gender →
+ *              build payload data_nien_han với so_thang_phuc_vu.
+ *    Approve:  reuse `singleMedalImporter` (template method) với
+ *              decisionKey='KNC_VSNXD_QDNDVN' và callback upsert vào bảng
+ *              kyNiemChuongVSNXDQDNDVN.
+ *
+ *  VÌ SAO DÙNG `data_nien_han` (KHÔNG phải `data_danh_hieu`):
+ *  KNC + HC_QKQT + HCCSVV chia sẻ field này vì cùng cấu trúc dữ liệu
+ *  (1 row = 1 personnel + 1 huân chương + năm/tháng nhận). Tiết kiệm
+ *  cột DB và logic shared (xem `nienHanPayloadHelper`).
+ * ════════════════════════════════════════════════════════════════════════════
+ */
 class KncStrategy implements ProposalStrategy {
   readonly type = PROPOSAL_TYPES.KNC_VSNXD_QDNDVN;
 

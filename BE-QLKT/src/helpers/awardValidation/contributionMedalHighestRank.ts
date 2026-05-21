@@ -1,3 +1,29 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  HCBVTQ HIGHEST RANK VALIDATION — đảm bảo trao đúng rank cao nhất
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  BUSINESS RULE:
+ *  Quân nhân đủ điều kiện hạng cao hơn → KHÔNG cho trao hạng thấp hơn.
+ *  Vd: Đủ tháng cho Hạng Nhất → đề xuất Hạng Nhì = REJECT.
+ *
+ *  Lý do: huân chương lifetime, 1 lần. Nếu trao Hạng Nhì rồi không thể
+ *  upgrade lên Nhất (rank upgrade chỉ từ thấp → cao). → Phải trao đúng
+ *  HẠNG CAO NHẤT có thể từ đầu.
+ *
+ *  THUẬT TOÁN:
+ *  1. Tính cumulative months theo từng rank (xem hcbvtqEligibility.ts).
+ *  2. Tìm rank cao nhất đủ điều kiện (Hạng Nhất → Nhì → Ba).
+ *  3. Nếu rank đề xuất < rank cao nhất đủ → REJECT với message
+ *    "Quân nhân đủ điều kiện Hạng X, không thể nhận Hạng Y".
+ *
+ *  KHÁC `contributionMedalRankUpgrade` (chỉ check upgrade):
+ *  - rankUpgrade: chặn DOWNGRADE từ rank đã có sang rank thấp hơn.
+ *  - highestRank: chặn trao THẤP HƠN MỨC CÓ THỂ ĐẠT (kể cả lần đầu).
+ *  → 2 check khác nhau, cần cả 2 để đảm bảo trao đúng.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import {
   CONG_HIEN_HE_SO_GROUPS,
   DANH_HIEU_HCBVTQ,

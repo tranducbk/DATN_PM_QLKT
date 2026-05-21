@@ -126,21 +126,46 @@ async function collectDonViHangNamDuplicates(
   ctx: ProposalContext,
   danhHieuData: ProposalDanhHieuItem[]
 ): Promise<string[]> {
+  // ─────────────────────────────────────────────────────────────────────
+  //  DUPLICATE CHECK CHO DON_VI_HANG_NAM (4 lớp, fail fast theo thứ tự)
+  // ─────────────────────────────────────────────────────────────────────
+  //  Lớp 1: VALID DANH HIỆU
+  //         Chỉ ĐVQT/ĐVTT/BKBQP/BKTTCP được phép cho proposal type này.
+  //  Lớp 2: DUPLICATE TRONG PAYLOAD
+  //         Cùng 1 đơn vị có 2 row danh hiệu → reject ngay (bypass FE).
+  //  Lớp 3: MIXED GROUP
+  //         Không cho lẫn (ĐVQT + BKBQP) trong 1 đề xuất — vì 2 nhóm này
+  //         chạy 2 cycle khác nhau, phải tách đề xuất.
+  //  Lớp 4: DB EXISTING
+  //         Cho từng item check DB xem đã có đề xuất/award trùng key
+  //         (đơn vị + năm + danh hiệu).
+  //
+  //  IMPORTANT — Bug đã fix (regression test ở `unit-annual.test.ts:381`):
+  //  Phải truyền `proposalId` xuống `checkDuplicateUnitAward` để exclude
+  //  CHÍNH proposal đang duyệt khi query PENDING list — nếu không sẽ
+  //  self-match và throw "Đơn vị đã có đề xuất ..." sai lầm.
+  // ─────────────────────────────────────────────────────────────────────
   const errors: string[] = [];
   const { proposalId, proposalYear, proposalType } = ctx;
 
+  // Lớp 1: validate danh hiệu hợp lệ.
   const selectedDanhHieu = danhHieuData.map(item => item.danh_hieu).filter(Boolean);
   const validDonViDanhHieu = new Set<string>(Object.values(DANH_HIEU_DON_VI_HANG_NAM));
   const invalidDanhHieu = findInvalidDanhHieu(selectedDanhHieu, validDonViDanhHieu);
   if (invalidDanhHieu.length > 0) {
     throw new ValidationError(`${INVALID_DANH_HIEU_ERROR}\n${invalidDanhHieu.join(', ')}`);
   }
+
+  // Lớp 2: dedupe trong payload (cùng don_vi + danh_hieu trùng).
   const duplicatePayloadItems = collectDuplicateDonViPayload(danhHieuData);
   if (duplicatePayloadItems.length > 0) {
     throw new ValidationError(
       `${DUPLICATE_IN_PAYLOAD_ERROR}\n${duplicatePayloadItems.join('\n')}`
     );
   }
+
+  // Lớp 3: chặn mix group ĐVQT/ĐVTT (danh hiệu cơ bản) với BKBQP/BKTTCP
+  // (Bằng khen) trong cùng 1 đề xuất.
   const donViSet: ReadonlySet<string> = new Set([
     DANH_HIEU_DON_VI_HANG_NAM.DVQT,
     DANH_HIEU_DON_VI_HANG_NAM.DVTT,
@@ -155,6 +180,8 @@ async function collectDonViHangNamDuplicates(
     throw new ValidationError(MIXED_DON_VI_HANG_NAM_ERROR);
   }
 
+  // Lớp 4: DB check song song (Promise.all) để giảm latency khi có nhiều
+  // item. Mỗi check độc lập theo (don_vi_id, năm, danh_hieu).
   const validUnitItems = danhHieuData.filter(item => item.don_vi_id && item.danh_hieu);
   const unitDuplicateErrors = await Promise.all(
     validUnitItems.map(item =>
@@ -163,7 +190,7 @@ async function collectDonViHangNamDuplicates(
         proposalYear,
         item.danh_hieu,
         proposalType,
-        proposalId
+        proposalId // ← EXCLUDE chính đề xuất đang duyệt (fix self-match bug)
       ).then(r => (r.exists ? `${item.ten_don_vi || 'Một đơn vị'}: ${r.message}` : null))
     )
   );

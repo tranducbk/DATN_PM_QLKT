@@ -5,6 +5,41 @@ import { accountRepository } from '../repositories/account.repository';
 import { JwtUser } from '../types/express';
 import { JWT_SECRET } from '../configs';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  AUTH MIDDLEWARE — JWT verify + DB session check + role-based access
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  CƠ CHẾ 2 LỚP (defence in depth):
+ *
+ *  Lớp 1 — JWT verify (stateless):
+ *      jwt.verify() kiểm tra signature + expiry với JWT_SECRET. Nếu token
+ *      bị giả mạo hoặc hết hạn → throw → 401. Đây là check NHANH, không
+ *      cần touch DB → giảm load cho mỗi request.
+ *
+ *  Lớp 2 — DB session check (stateful):
+ *      Sau khi JWT valid, query bảng TaiKhoan xem account.refreshToken có
+ *      tồn tại không. Nếu null = đã logout server-side hoặc bị admin
+ *      revoke → 401. Đây là check CHẬM (1 query DB) nhưng cho phép:
+ *        • Invalidate session bằng cách clear refreshToken (logout, ban).
+ *        • Force re-login khi đổi password.
+ *      Pure JWT (chỉ lớp 1) sẽ không làm được điều này vì token có hiệu
+ *      lực đến hết expiry, không thể "rút lại".
+ *
+ *  ROLE HIERARCHY (không phải inheritance, chỉ là set membership):
+ *      SUPER_ADMIN > ADMIN > MANAGER > USER
+ *      requireSuperAdmin   = [SUPER_ADMIN]                       (chỉ 1 role)
+ *      requireAdmin        = [SUPER_ADMIN, ADMIN]                (quản trị)
+ *      requireAdminOnly    = [ADMIN]                             (business op)
+ *      requireManager      = [SUPER_ADMIN, ADMIN, MANAGER]       (nghiệp vụ)
+ *
+ *      LƯU Ý: requireAdminOnly KHÔNG bao gồm SUPER_ADMIN — vì SUPER_ADMIN
+ *      chỉ làm quản trị hệ thống (account, đơn vị, log), không tham gia
+ *      nghiệp vụ khen thưởng. Tránh super-admin can thiệp data nghiệp vụ
+ *      (audit trail không rõ).
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 /**
  * Verifies JWT access token and attaches decoded user to request.
  * @param req - Express request
@@ -13,8 +48,13 @@ import { JWT_SECRET } from '../configs';
  * @returns Promise resolved when auth check finishes
  */
 const verifyToken = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  // Header có thể đến với key 'authorization' (lowercase, chuẩn HTTP) hoặc
+  // 'Authorization' (Pascal-case, một số client tự đặt). Express bình thường
+  // normalize về lowercase nhưng cẩn thận double-check vẫn an toàn.
   const authHeader = (req.headers.authorization || req.headers.Authorization) as string | undefined;
 
+  // Chỉ chấp nhận format "Bearer <token>". Không hỗ trợ token qua cookie
+  // hay query string — tránh CSRF + token leak qua URL/access log.
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     res.status(401).json({
       success: false,
@@ -23,11 +63,19 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction): Pro
     return;
   }
 
-  const token = authHeader.substring(7);
+  const token = authHeader.substring(7); // bỏ "Bearer " (7 ký tự)
 
   try {
+    // ─── LỚP 1: verify signature + expiry (stateless) ───
+    // jwt.verify throw nếu: signature sai (token bị giả mạo), expired,
+    // malformed, hoặc dùng wrong algorithm. KHÔNG chấp nhận "none" algo
+    // (jsonwebtoken mặc định chặn — đã có CVE về vụ này năm 2015).
     const decoded = jwt.verify(token, JWT_SECRET) as JwtUser;
 
+    // ─── LỚP 2: DB session check (stateful) ───
+    // Chỉ query field cần thiết (refreshToken) — KHÔNG select * để tránh
+    // leak password hash hay PII vào memory. refreshToken=null nghĩa là
+    // session đã bị invalidate (user logout, admin reset password, ...).
     const account = await accountRepository.findUniqueRaw({
       where: { id: decoded.id },
       select: { refreshToken: true },
@@ -41,9 +89,14 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction): Pro
       return;
     }
 
+    // Attach decoded payload (id, username, role) vào req.user để các
+    // middleware/controller phía sau dùng. KHÔNG attach refresh_token
+    // hay password hash — chỉ những field user đã trust.
     req.user = decoded;
     next();
   } catch (err) {
+    // Phân biệt 2 case để FE quyết định: expired → refresh, invalid →
+    // logout luôn (không cố refresh được).
     if (err instanceof Error && err.name === 'TokenExpiredError') {
       res.status(401).json({
         success: false,

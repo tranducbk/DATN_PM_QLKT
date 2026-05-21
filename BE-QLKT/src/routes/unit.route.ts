@@ -1,3 +1,9 @@
+/*
+ * UNIT ROUTE — đơn vị 2 cấp (CoQuanDonVi → DonViTrucThuoc).
+ * READ: ALL authenticated. WRITE (CUD): ADMIN+.
+ * Endpoint: /api/units, /api/units/:id, /api/units/hierarchy
+ */
+
 import { Router } from 'express';
 import unitController from '../controllers/unit.controller';
 import { verifyToken, requireAdmin, requireManager } from '../middlewares/auth';

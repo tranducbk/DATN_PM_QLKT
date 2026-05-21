@@ -1,3 +1,12 @@
+/*
+ * AWARDS ROUTE — list khen thưởng đã duyệt + bulk create + duplicate check.
+ * Endpoint chính:
+ *   GET / — list (manager unit filter)
+ *   POST /bulk — bulk create (ADMIN bypass đề xuất, xem awardBulk.service.ts)
+ *   GET /check-duplicate, /check-duplicate-batch
+ * Khác /api/proposals (đề xuất chưa duyệt) — đây là dữ liệu đã import.
+ */
+
 import { Router, Request, Response } from 'express';
 import proposalController from '../controllers/proposal.controller';
 import awardBulkController from '../controllers/awardBulk.controller';

@@ -3,6 +3,59 @@ import { io } from 'socket.io-client';
 import type { Socket } from 'socket.io-client';
 import axiosInstance from '@/lib/axiosInstance';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  useSocket HOOK — Socket.IO client với auto-reconnect + token refresh
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  3 KỸ THUẬT QUAN TRỌNG:
+ *
+ *  ① CALLBACK REF (onNotificationRef.current = onNotification):
+ *     Pattern này tránh socket bị disconnect+reconnect mỗi lần component
+ *     re-render. Vì sao?
+ *       - Nếu put onNotification vào useEffect deps → mỗi render component
+ *         tạo callback mới → deps thay đổi → effect cleanup + re-run →
+ *         disconnect socket → reconnect (rất tốn tài nguyên + miss event).
+ *       - Dùng ref: gán callback mới vào ref.current mỗi render, nhưng
+ *         socket handler chỉ tham chiếu `onNotificationRef.current(n)` →
+ *         luôn gọi version mới nhất MÀ KHÔNG cần restart socket.
+ *     Đây là kỹ thuật "stale closure escape" rất phổ biến trong React hooks.
+ *
+ *  ② AUTO RECONNECT (Socket.IO built-in):
+ *     reconnectionAttempts: 10  → thử lại 10 lần
+ *     reconnectionDelay: 1s     → khởi đầu 1 giây
+ *     reconnectionDelayMax: 5s  → cap tối đa 5 giây (exponential backoff)
+ *     Nếu sau 10 lần fail → status='disconnected' vĩnh viễn, user phải
+ *     refresh trang. Không retry vô hạn → tránh DoS server.
+ *
+ *  ③ TOKEN REFRESH KHI SOCKET 'TOKEN_EXPIRED':
+ *     Khi access token hết hạn giữa session, socket connect_error trả về
+ *     code 'TOKEN_EXPIRED' (xem `socketService.ts` backend).
+ *     Flow:
+ *       a. Gọi /api/auth/refresh để lấy access mới.
+ *       b. Update localStorage.
+ *       c. Update socket.auth.token = newToken.
+ *       d. Dispatch 'tokenRefreshed' event để AuthContext + axios cùng update.
+ *       e. socket.connect() để retry kết nối với token mới.
+ *
+ *  ④ EVENT BUS 'tokenRefreshed':
+ *     Listener: nếu axios interceptor refresh token TRƯỚC (vì có API call
+ *     fail 401 sớm hơn) → emit event → socket update auth.token sẵn cho
+ *     lần connect tiếp theo. Đồng bộ token giữa 2 channel (HTTP + WS).
+ *
+ *  TRANSPORTS ['websocket', 'polling']:
+ *  Thử WebSocket trước (nhanh); fall back về long-polling nếu firewall
+ *  chặn WS (vd: corporate proxy). Polling chậm hơn nhưng đảm bảo connect.
+ *
+ *  CLEANUP TRONG return của useEffect:
+ *  - removeEventListener 'tokenRefreshed' để tránh leak.
+ *  - socket.disconnect() để giải phóng connection slot.
+ *  - Reset socketRef.current = null.
+ *  → Khi component unmount (vd: user logout, đổi route), không để socket
+ *    "zombie" tiêu thụ tài nguyên.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 const SOCKET_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:4000';
 
 export type SocketConnectionStatus = 'connecting' | 'connected' | 'disconnected';

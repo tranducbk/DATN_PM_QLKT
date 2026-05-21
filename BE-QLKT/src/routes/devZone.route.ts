@@ -1,3 +1,11 @@
+/*
+ * DEV ZONE ROUTE — admin tools ẩn cho SUPER_ADMIN.
+ * Bao gồm: recalculate-all profiles, backup DB, restore, feature flag,
+ * reset password by username, system maintenance.
+ * BẢO MẬT: cần DEV_ZONE_PASSWORD (mid-tier check sau verifyToken).
+ * Endpoint không xuất hiện trong sidebar, chỉ truy cập qua URL /dev_zone.
+ */
+
 import { Router, Request, Response, NextFunction } from 'express';
 import profileService from '../services/profile.service';
 import unitAnnualAwardService from '../services/unitAnnualAward.service';

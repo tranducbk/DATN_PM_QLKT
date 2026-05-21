@@ -1,3 +1,9 @@
+/*
+ * TENURE MEDAL ROUTE — HCCSVV (Huy chương Chiến sĩ Vẻ Vang).
+ * CRUD + Excel import/export. 3 hạng Ba/Nhì/Nhất, mỗi hạng 1 record.
+ * Rank order validation: phải có hạng thấp hơn trước.
+ */
+
 import { Router } from 'express';
 import hccsvvController from '../controllers/tenureMedal.controller';
 import { verifyToken, checkRole, requireAdminOnly } from '../middlewares/auth';

@@ -2,6 +2,61 @@ import axios, { AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
 import { BASE_URL } from '@/configs';
 import { clearAuthStorage } from '@/lib/authStorage';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  AXIOS INSTANCE — interceptor đa năng (auth, refresh, rate limit)
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  3 LAYER INTERCEPTOR:
+ *
+ *  ① REQUEST: attach Bearer token nếu KHÔNG có cookie (fallback localStorage).
+ *     Cookie httpOnly an toàn hơn nhưng FE không đọc được → cần fallback
+ *     để dev/test ở môi trường không có cookie.
+ *
+ *  ② RESPONSE 429 (rate limit): parse Retry-After header, format message
+ *     thân thiện ("thử lại sau 30 giây / 2 phút"), KHÔNG auto-retry (window
+ *     rate limit là phút → retry loop = burn quota).
+ *
+ *  ③ RESPONSE 401 (token expired): tự động refresh + retry request gốc.
+ *     Đây là phần PHỨC TẠP NHẤT — xem chi tiết bên dưới.
+ *
+ *  ─── REFRESH TOKEN FLOW (race-safe) ─────────────────────────────────────
+ *
+ *  VẤN ĐỀ: nhiều request song song cùng nhận 401:
+ *      req1 → 401 → trigger refresh
+ *      req2 → 401 → trigger refresh (TRÙNG — refresh 2 lần lãng phí)
+ *      req3 → 401 → trigger refresh (lại trùng)
+ *
+ *  GIẢI PHÁP: SINGLE-FLIGHT pattern qua biến module-scope:
+ *      let isRefreshing = false;
+ *      let failedQueue = [];
+ *
+ *  Flow:
+ *      1. req1 nhận 401 → set isRefreshing=true → gọi /refresh.
+ *      2. req2 nhận 401 → isRefreshing=true → enqueue {resolve, reject}.
+ *      3. req3 nhận 401 → isRefreshing=true → enqueue.
+ *      4. /refresh trả về:
+ *         - Success: processQueue(null, newToken) → req2, req3 resume với
+ *                    token mới, retry request gốc.
+ *         - Fail: processQueue(err, null) → req2, req3 reject → forceLogout.
+ *      5. set isRefreshing=false.
+ *
+ *  `_retry: true` flag chống infinite loop: nếu sau refresh request retry
+ *  VẪN nhận 401 → KHÔNG refresh nữa → reject thẳng.
+ *
+ *  ─── EDGE CASES ─────────────────────────────────────────────────────────
+ *
+ *  - URL '/api/auth/login' và '/refresh' SKIP refresh logic (đang login
+ *    thì refresh làm gì).
+ *  - URL '/api/dev-zone' SKIP refresh (dev tool, không cần auto-refresh).
+ *  - Refresh request CHÍNH NÓ nhận 401 → forceLogout ngay (refresh token
+ *    đã hết hạn / không hợp lệ).
+ *
+ *  - SSR (typeof window === 'undefined'): không có window/localStorage →
+ *    skip token attach + skip forceLogout (Next.js server-side render).
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 const axiosInstance = axios.create({
   baseURL: BASE_URL,
   withCredentials: true,

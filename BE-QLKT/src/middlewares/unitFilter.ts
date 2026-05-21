@@ -3,6 +3,51 @@ import { quanNhanRepository } from '../repositories/quanNhan.repository';
 import { donViTrucThuocRepository } from '../repositories/unit.repository';
 import { ROLES } from '../constants/roles.constants';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  UNIT FILTER MIDDLEWARE — row-level security cho MANAGER role
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  VẤN ĐỀ:
+ *  MANAGER (chỉ huy đơn vị) chỉ được xem/thao tác data của ĐƠN VỊ MÌNH:
+ *    - Danh sách quân nhân trong đơn vị.
+ *    - Đề xuất do unit mình nộp.
+ *    - Khen thưởng của unit mình.
+ *  KHÔNG được leak data của unit khác (compliance + nội bộ).
+ *
+ *  GIẢI PHÁP:
+ *  Middleware attach `req.unitFilter` chứa thông tin đơn vị của manager.
+ *  Service sau khi nhận filter sẽ append vào WHERE clause của Prisma:
+ *      where: { ..., quan_nhan_id: { in: [...allowedPersonnelIds] } }
+ *  hoặc
+ *      where: { ..., co_quan_don_vi_id: managerUnitId }
+ *
+ *  PHÂN CẤP ĐƠN VỊ:
+ *  - CoQuanDonVi (CQDV): đơn vị "mẹ" (vd: "Học viện").
+ *  - DonViTrucThuoc (DVTT): đơn vị con trực thuộc (vd: "Hệ 1").
+ *  - Quan hệ: 1 CQDV có N DVTT.
+ *
+ *  RULE QUYỀN XEM:
+ *  - Manager của CQDV → xem ĐƯỢC tất cả DVTT con + chính CQDV.
+ *  - Manager của DVTT → CHỈ xem DVTT đó (không xem CQDV mẹ).
+ *
+ *  Vì vậy `getPersonnelInUnit` có 2 nhánh:
+ *  - isCoQuanDonVi=true  → query: WHERE co_quan_don_vi_id=X OR don_vi_truc_thuoc_id IN (children of X)
+ *  - isCoQuanDonVi=false → query: WHERE don_vi_truc_thuoc_id=X
+ *
+ *  PERFORMANCE:
+ *  - Middleware chạy mỗi request → có 2 query DB (lấy unitInfo + danh sách
+ *    personnel trong unit). Với manager có nhiều DVTT, query 2 hơi nặng.
+ *  - Tối ưu: cache theo session (5 phút) nếu cần. Hiện chưa cache vì
+ *    số manager ít + đơn vị ít thay đổi.
+ *
+ *  ROLE OTHER THAN MANAGER:
+ *  - SUPER_ADMIN, ADMIN: xem tất cả → req.unitFilter = null (không filter).
+ *  - USER (quân nhân): chỉ xem CHÍNH MÌNH → filter ở service riêng, không
+ *    qua middleware này.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 interface UnitInfo {
   don_vi_id: string;
   isCoQuanDonVi: boolean;

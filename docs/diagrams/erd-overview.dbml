@@ -1,0 +1,233 @@
+// PM QLKT - ERD tổng quan (chỉ tên bảng + quan hệ)
+// Render: https://dbdiagram.io → New Diagram → paste this file
+
+// =============================================================
+// Tổ chức
+// =============================================================
+
+Table "CoQuanDonVi" {
+  id varchar [pk]
+}
+
+Table "DonViTrucThuoc" {
+  id varchar [pk]
+  co_quan_don_vi_id varchar
+}
+
+Table "ChucVu" {
+  id varchar [pk]
+  co_quan_don_vi_id varchar
+  don_vi_truc_thuoc_id varchar
+}
+
+// =============================================================
+// Nhân sự + Tài khoản
+// =============================================================
+
+Table "QuanNhan" {
+  id varchar [pk]
+  co_quan_don_vi_id varchar
+  don_vi_truc_thuoc_id varchar
+  chuc_vu_id varchar
+}
+
+Table "TaiKhoan" {
+  id varchar [pk]
+  quan_nhan_id varchar [unique]
+}
+
+Table "LichSuChucVu" {
+  id varchar [pk]
+  quan_nhan_id varchar
+  chuc_vu_id varchar
+}
+
+// =============================================================
+// Khen thưởng cá nhân
+// =============================================================
+
+Table "ThanhTichKhoaHoc" {
+  id varchar [pk]
+  quan_nhan_id varchar
+  so_quyet_dinh varchar
+}
+
+Table "DanhHieuHangNam" {
+  id varchar [pk]
+  quan_nhan_id varchar
+  so_quyet_dinh varchar
+  so_quyet_dinh_bkbqp varchar
+  so_quyet_dinh_cstdtq varchar
+  so_quyet_dinh_bkttcp varchar
+}
+
+Table "KhenThuongHCCSVV" {
+  id varchar [pk]
+  quan_nhan_id varchar
+  so_quyet_dinh varchar
+}
+
+Table "KhenThuongHCBVTQ" {
+  id varchar [pk]
+  quan_nhan_id varchar [unique]
+  so_quyet_dinh varchar
+}
+
+Table "HuanChuongQuanKyQuyetThang" {
+  id varchar [pk]
+  quan_nhan_id varchar [unique]
+  so_quyet_dinh varchar
+}
+
+Table "KyNiemChuongVSNXDQDNDVN" {
+  id varchar [pk]
+  quan_nhan_id varchar [unique]
+  so_quyet_dinh varchar
+}
+
+// =============================================================
+// Hồ sơ tổng hợp cá nhân
+// =============================================================
+
+Table "HoSoHangNam" {
+  id varchar [pk]
+  quan_nhan_id varchar [unique]
+}
+
+Table "HoSoNienHan" {
+  id varchar [pk]
+  quan_nhan_id varchar [unique]
+}
+
+Table "HoSoCongHien" {
+  id varchar [pk]
+  quan_nhan_id varchar [unique]
+}
+
+// =============================================================
+// Khen thưởng đơn vị + Đột xuất
+// =============================================================
+
+Table "HoSoDonViHangNam" {
+  id varchar [pk]
+  co_quan_don_vi_id varchar
+  don_vi_truc_thuoc_id varchar
+}
+
+Table "DanhHieuDonViHangNam" {
+  id varchar [pk]
+  co_quan_don_vi_id varchar
+  don_vi_truc_thuoc_id varchar
+  so_quyet_dinh varchar
+  so_quyet_dinh_bkbqp varchar
+  so_quyet_dinh_bkttcp varchar
+}
+
+Table "KhenThuongDotXuat" {
+  id varchar [pk]
+  quan_nhan_id varchar
+  co_quan_don_vi_id varchar
+  don_vi_truc_thuoc_id varchar
+  so_quyet_dinh varchar
+}
+
+// =============================================================
+// Đề xuất + Quyết định
+// =============================================================
+
+Table "BangDeXuat" {
+  id varchar [pk]
+  co_quan_don_vi_id varchar
+  don_vi_truc_thuoc_id varchar
+  nguoi_de_xuat_id varchar
+  nguoi_duyet_id varchar
+}
+
+Table "FileQuyetDinh" {
+  id varchar [pk]
+  so_quyet_dinh varchar [unique]
+}
+
+// =============================================================
+// Hệ thống
+// =============================================================
+
+Table "SystemLog" {
+  id varchar [pk]
+  nguoi_thuc_hien_id varchar
+}
+
+Table "ThongBao" {
+  id varchar [pk]
+  nguoi_nhan_id varchar
+}
+
+Table "SystemSetting" {
+  id varchar [pk]
+}
+
+// =============================================================
+// Quan hệ
+// =============================================================
+
+// Tổ chức
+Ref: "DonViTrucThuoc".co_quan_don_vi_id > "CoQuanDonVi".id
+Ref: "ChucVu".co_quan_don_vi_id > "CoQuanDonVi".id
+Ref: "ChucVu".don_vi_truc_thuoc_id > "DonViTrucThuoc".id
+
+// Nhân sự
+Ref: "QuanNhan".co_quan_don_vi_id > "CoQuanDonVi".id
+Ref: "QuanNhan".don_vi_truc_thuoc_id > "DonViTrucThuoc".id
+Ref: "QuanNhan".chuc_vu_id > "ChucVu".id
+Ref: "TaiKhoan".quan_nhan_id - "QuanNhan".id
+Ref: "LichSuChucVu".quan_nhan_id > "QuanNhan".id
+Ref: "LichSuChucVu".chuc_vu_id > "ChucVu".id
+
+// Khen thưởng cá nhân
+Ref: "ThanhTichKhoaHoc".quan_nhan_id > "QuanNhan".id
+Ref: "DanhHieuHangNam".quan_nhan_id > "QuanNhan".id
+Ref: "KhenThuongHCCSVV".quan_nhan_id > "QuanNhan".id
+Ref: "KhenThuongHCBVTQ".quan_nhan_id - "QuanNhan".id
+Ref: "HuanChuongQuanKyQuyetThang".quan_nhan_id - "QuanNhan".id
+Ref: "KyNiemChuongVSNXDQDNDVN".quan_nhan_id - "QuanNhan".id
+
+// Hồ sơ tổng hợp cá nhân
+Ref: "HoSoHangNam".quan_nhan_id - "QuanNhan".id
+Ref: "HoSoNienHan".quan_nhan_id - "QuanNhan".id
+Ref: "HoSoCongHien".quan_nhan_id - "QuanNhan".id
+
+// Khen thưởng đơn vị
+Ref: "HoSoDonViHangNam".co_quan_don_vi_id > "CoQuanDonVi".id
+Ref: "HoSoDonViHangNam".don_vi_truc_thuoc_id > "DonViTrucThuoc".id
+Ref: "DanhHieuDonViHangNam".co_quan_don_vi_id > "CoQuanDonVi".id
+Ref: "DanhHieuDonViHangNam".don_vi_truc_thuoc_id > "DonViTrucThuoc".id
+
+// Khen thưởng đột xuất (polymorphic — 1 trong 3)
+Ref: "KhenThuongDotXuat".quan_nhan_id > "QuanNhan".id
+Ref: "KhenThuongDotXuat".co_quan_don_vi_id > "CoQuanDonVi".id
+Ref: "KhenThuongDotXuat".don_vi_truc_thuoc_id > "DonViTrucThuoc".id
+
+// FK so_quyet_dinh → FileQuyetDinh (15 quan hệ)
+Ref: "ThanhTichKhoaHoc".so_quyet_dinh > "FileQuyetDinh".so_quyet_dinh
+Ref: "DanhHieuHangNam".so_quyet_dinh > "FileQuyetDinh".so_quyet_dinh
+Ref: "DanhHieuHangNam".so_quyet_dinh_bkbqp > "FileQuyetDinh".so_quyet_dinh
+Ref: "DanhHieuHangNam".so_quyet_dinh_cstdtq > "FileQuyetDinh".so_quyet_dinh
+Ref: "DanhHieuHangNam".so_quyet_dinh_bkttcp > "FileQuyetDinh".so_quyet_dinh
+Ref: "KhenThuongHCCSVV".so_quyet_dinh > "FileQuyetDinh".so_quyet_dinh
+Ref: "KhenThuongHCBVTQ".so_quyet_dinh > "FileQuyetDinh".so_quyet_dinh
+Ref: "HuanChuongQuanKyQuyetThang".so_quyet_dinh > "FileQuyetDinh".so_quyet_dinh
+Ref: "KyNiemChuongVSNXDQDNDVN".so_quyet_dinh > "FileQuyetDinh".so_quyet_dinh
+Ref: "KhenThuongDotXuat".so_quyet_dinh > "FileQuyetDinh".so_quyet_dinh
+Ref: "DanhHieuDonViHangNam".so_quyet_dinh > "FileQuyetDinh".so_quyet_dinh
+Ref: "DanhHieuDonViHangNam".so_quyet_dinh_bkbqp > "FileQuyetDinh".so_quyet_dinh
+Ref: "DanhHieuDonViHangNam".so_quyet_dinh_bkttcp > "FileQuyetDinh".so_quyet_dinh
+
+// Đề xuất
+Ref: "BangDeXuat".co_quan_don_vi_id > "CoQuanDonVi".id
+Ref: "BangDeXuat".don_vi_truc_thuoc_id > "DonViTrucThuoc".id
+Ref: "BangDeXuat".nguoi_de_xuat_id > "TaiKhoan".id
+Ref: "BangDeXuat".nguoi_duyet_id > "TaiKhoan".id
+
+// Hệ thống
+Ref: "SystemLog".nguoi_thuc_hien_id > "TaiKhoan".id
+Ref: "ThongBao".nguoi_nhan_id > "TaiKhoan".id

@@ -1,3 +1,30 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  CONTRIBUTION MEDAL SERVICE — CRUD + Excel I/O cho HCBVTQ
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  HCBVTQ = Huân chương Bảo vệ Tổ quốc (3 hạng Nhất/Nhì/Ba).
+ *
+ *  KHÁC HCCSVV:
+ *  - HCCSVV: 3 record riêng (mỗi hạng 1 row).
+ *  - HCBVTQ: 1 record duy nhất per personnel, UPGRADE bằng UPDATE
+ *    (xem hcbvtqStrategy.ts).
+ *
+ *  RANK UPGRADE LOGIC (khi import từ Excel):
+ *  - Nếu quân nhân đã có HCBVTQ:
+ *      newRank > existingRank → UPDATE record cũ thành rank mới.
+ *      newRank ≤ existingRank → REJECT (vô nghĩa, không downgrade).
+ *
+ *  ELIGIBILITY CHECK trước khi insert:
+ *  - Query positionHistory → tính số tháng theo 3 nhóm hệ số (0.7/0.8/0.9-1.0).
+ *  - Compare với threshold theo giới tính (120 nam / 80 nữ).
+ *  - Hạng cao yêu cầu tháng nhóm cao (xem hcbvtqEligibility.ts).
+ *
+ *  EXCEL IMPORT: 2-step preview + confirm (giống tenure).
+ *  RECALC: trigger profile/contribution.ts sau mỗi insert.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import { prisma } from '../models';
 import { quanNhanRepository } from '../repositories/quanNhan.repository';
 import { donViTrucThuocRepository } from '../repositories/unit.repository';

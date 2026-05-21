@@ -1,3 +1,27 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  MILITARY FLAG SERVICE — CRUD + Excel I/O cho HC_QKQT
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  HC_QKQT = Huân chương Quân kỳ Quyết thắng.
+ *
+ *  ĐIỀU KIỆN:
+ *  - Sĩ quan/QNCN đủ 25 năm phục vụ.
+ *  - LIFETIME — 1 quân nhân chỉ nhận 1 lần (unique trên quan_nhan_id).
+ *  - Không phân biệt giới tính (khác KNC).
+ *
+ *  ELIGIBILITY:
+ *  Dùng `serviceYearsEligibility.evaluateServiceYears` để check thâm niên.
+ *  Throw nếu chưa đủ 25 năm hoặc thiếu ngay_nhap_ngu.
+ *
+ *  EXCEL IMPORT: 2-step preview + confirm. Validate CCCD + năm nhận
+ *  trước khi commit.
+ *
+ *  RECALC: không có hồ sơ riêng cho HC_QKQT (1 record = đủ, không cần
+ *  profile aggregate). FE query trực tiếp khi cần.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import { prisma } from '../models';
 import { quanNhanRepository } from '../repositories/quanNhan.repository';
 import { donViTrucThuocRepository } from '../repositories/unit.repository';

@@ -1,3 +1,9 @@
+/*
+ * NCKH CONTROLLER — Thành tích Nghiên cứu Khoa học.
+ * CRUD + Excel preview/confirm. Insert tự trigger annual profile recalc.
+ * Duplicate check: (personnel_id, nam, mo_ta) composite.
+ */
+
 import { Request, Response } from 'express';
 import scientificAchievementService, { ConfirmImportItem } from '../services/scientificAchievement.service';
 import profileService from '../services/profile.service';

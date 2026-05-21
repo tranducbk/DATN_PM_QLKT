@@ -1,3 +1,9 @@
+/*
+ * COMMEMORATIVE MEDAL CONTROLLER — KNC VSNXD QĐNDVN CRUD + Excel.
+ * Lifetime. Gender-aware (Nam 25y / Nữ 20y).
+ * Bắt buộc gioi_tinh trong validation (threshold khác nhau).
+ */
+
 import { Request, Response } from 'express';
 import commemorativeMedalService, { CommemorativeMedalValidItem } from '../services/commemorativeMedal.service';
 import { ROLES } from '../constants/roles.constants';

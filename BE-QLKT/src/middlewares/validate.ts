@@ -1,3 +1,30 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  VALIDATE MIDDLEWARE — wrap Zod schema thành Express middleware
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  USAGE:
+ *      router.post('/x', validate(xValidation.create), xController.create);
+ *      router.get('/y', validate(ySchema, 'query'), yController.list);
+ *
+ *  3 SOURCE có thể validate:
+ *  - 'body' (default): req.body (POST/PUT data).
+ *  - 'query': req.query (GET filter params).
+ *  - 'params': req.params (URL :id, :slug).
+ *
+ *  SUCCESS PATH: ghi đè req[source] = parsed data (đã strip unknown +
+ *  coerce type). Controller dùng req.body với full type safety.
+ *
+ *  ERROR PATH: trả 400 + message + errors array. Tất cả issue được gộp
+ *  để FE hiển thị nhiều lỗi cùng lúc (không fail-fast first error).
+ *
+ *  ATTT:
+ *  - Zod stripUnknown mặc định → field không trong schema bị bỏ (chống
+ *    mass assignment).
+ *  - Type coercion an toàn: z.number() từ "123" string → 123 number.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 import { ZodType } from 'zod';
 

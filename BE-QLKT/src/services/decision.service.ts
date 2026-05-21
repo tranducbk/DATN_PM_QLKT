@@ -64,6 +64,54 @@ interface UpdateDecisionData {
   ghi_chu?: string | null;
 }
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  DECISION SERVICE — quản lý số quyết định (so_quyet_dinh) — REGISTRY
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  BUSINESS RULE:
+ *  Mỗi khen thưởng PHẢI có số quyết định (so_quyet_dinh) — căn cứ pháp lý.
+ *  Số QĐ là string format: "123/QĐ-HV" (số/QĐ-Cơ quan ban hành).
+ *  Bảng FileQuyetDinh đóng vai trò REGISTRY trung tâm:
+ *
+ *      FileQuyetDinh {
+ *        so_quyet_dinh    UNIQUE  ← key
+ *        nam              INT     ← năm ban hành
+ *        ngay_ky          DATE    ← ngày ký
+ *        nguoi_ky         STRING  ← người ký
+ *        file_path        STRING? ← path PDF (nullable, có thể upload sau)
+ *        loai_khen_thuong STRING  ← loại khen thưởng (HCCSVV, ĐVQT, ...)
+ *      }
+ *
+ *  UNIQUE CONSTRAINT trên so_quyet_dinh:
+ *  - 1 số QĐ chỉ ghi 1 lần. Lý do: trong giấy tờ thật, 1 số QĐ = 1 văn
+ *    bản ký bởi 1 cấp có thẩm quyền tại 1 thời điểm.
+ *  - Insert trùng → Prisma throw P2002 → service trả message thân thiện.
+ *
+ *  TRUY VẤN SEARCH (case-insensitive prefix):
+ *  - `contains` + `mode: 'insensitive'` → SELECT ... WHERE so_quyet_dinh
+ *    ILIKE '%search%'.
+ *  - PostgreSQL ILIKE chậm hơn LIKE → cần index `idx_so_quyet_dinh_lower`
+ *    cho production (chưa add).
+ *  - Autocomplete API trả top 10 → tránh load toàn bộ list về FE.
+ *
+ *  RELATION:
+ *  - 1 FileQuyetDinh → N award records (DanhHieuHangNam, KhenThuongHCCSVV,
+ *    KhenThuongHCBVTQ, ...). FK trỏ qua so_quyet_dinh (KHÔNG dùng id) —
+ *    để giữ tính semantic + dễ search/export.
+ *  - syncDecisionFiles trong approve flow auto-tạo FileQuyetDinh nếu chưa
+ *    có (xem `approve/decisionMappings.ts`).
+ *
+ *  PDF UPLOAD pattern:
+ *  - file_path nullable → tạo decision trước, upload PDF sau cũng được.
+ *  - Lazy population: khi user upload PDF lần đầu, update field.
+ *  - Một QĐ chỉ có 1 PDF (không hỗ trợ multiple versions).
+ *
+ *  HISTORY-AWARE DELETE:
+ *  Xoá FileQuyetDinh trong khi có award reference → FK violation. Service
+ *  check trước khi xoá: nếu có >0 award đang tham chiếu → reject.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
 class DecisionService {
   async getAllDecisions(
     filters: DecisionFilters = {},

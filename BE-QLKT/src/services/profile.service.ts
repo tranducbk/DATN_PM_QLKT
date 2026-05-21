@@ -39,6 +39,43 @@ import {
   calculateHCBVTQ,
 } from './profile/contribution';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  PROFILE SERVICE — FACADE cho 3 hồ sơ riêng biệt (annual/tenure/contribution)
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  Mỗi quân nhân có 3 hồ sơ độc lập (tách bảng DB):
+ *
+ *      ① HoSoHangNam     (annual)       — chuỗi CSTDCS + BKBQP/CSTDTQ/BKTTCP
+ *      ② HoSoNienHan     (tenure)       — 3 hạng HCCSVV theo năm phục vụ
+ *      ③ HoSoCongHien    (contribution) — 3 hạng HCBVTQ theo nhóm tháng
+ *
+ *  WHY tách 3 bảng (không gộp 1):
+ *  - 3 nghiệp vụ độc lập, recalc trigger khác nhau.
+ *  - Schema fields khác nhau (annual có streak counters, tenure có dates,
+ *    contribution có month buckets).
+ *  - Index riêng → query nhanh.
+ *  - Dễ migrate từng phần khi thay đổi rule 1 loại.
+ *
+ *  WHY FACADE PATTERN (file này):
+ *  - Caller chỉ cần `profileService.recalculateAnnualProfile(qnId)` thay
+ *    vì biết tới `services/profile/annual.ts`.
+ *  - Inject mock dễ trong test (jest.spyOn(profileService, 'X')).
+ *  - Cho phép swap implementation sau này không breaking caller.
+ *
+ *  TRIGGER POINTS recalc:
+ *  - Sau approve đề xuất CA_NHAN_HANG_NAM → recalculateAnnualProfile
+ *  - Sau approve NIEN_HAN/HC_QKQT/KNC → recalculateTenureProfile
+ *  - Sau approve CONG_HIEN → recalculateContributionProfile
+ *  - Sau thay đổi LichSuChucVu (chức vụ) → recalculateContributionProfile
+ *  - Cron / DevZone trigger → recalculateAll (3 loại + tất cả quân nhân)
+ *
+ *  Xem từng file con `services/profile/` để hiểu thuật toán chi tiết:
+ *  - annual.ts:      chuỗi CSTDCS + chain context + cycle eligibility
+ *  - tenure.ts:      HCCSVV rank by enlistment year + N
+ *  - contribution.ts: HCBVTQ rank by cumulative months in he_so group
+ * ════════════════════════════════════════════════════════════════════════════
+ */
 class ProfileService {
   /**
    * Loads or creates the annual profile with unit and position context.

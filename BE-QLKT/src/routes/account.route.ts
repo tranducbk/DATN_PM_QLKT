@@ -1,3 +1,9 @@
+/*
+ * ACCOUNT ROUTE — quản lý tài khoản. SUPER_ADMIN only.
+ * Chain: verifyToken → requireSuperAdmin → validate → controller → auditLog.
+ * Bao gồm: list, create, update, delete, reset password, toggle active.
+ */
+
 import { Router, Request } from 'express';
 import accountController from '../controllers/account.controller';
 import { verifyToken, requireAdmin } from '../middlewares/auth';

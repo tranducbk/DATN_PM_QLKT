@@ -38,6 +38,41 @@ import {
  * @param {number} limit - Page size
  * @returns {Promise<Object>} Award list payload
  */
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  UNIFIED AWARDS QUERY — truy vấn khen thưởng cá nhân hàng năm + đơn vị
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  Hàm `getAllAwards` query danh hiệu trên bảng DanhHieuHangNam (cá nhân).
+ *  KHÔNG bao gồm:
+ *  - HCCSVV (bảng KhenThuongHCCSVV — endpoint riêng)
+ *  - HCBVTQ (bảng KhenThuongHCBVTQ — endpoint riêng)
+ *  - HC_QKQT, KNC (bảng riêng)
+ *
+ *  Lý do tách:
+ *  - DanhHieuHangNam có 4 danh hiệu cùng row (1 cá nhân/1 năm = 1 row,
+ *    nhiều flag CSTDCS/BKBQP/...). Query trả về row + post-process.
+ *  - Các huân chương khác là 1 record/quân nhân/đời (lifetime), schema
+ *    khác biệt → query riêng dễ filter hơn.
+ *
+ *  FILTER OPTIONS:
+ *  - don_vi_id: tìm tất cả khen thưởng của quân nhân thuộc đơn vị X.
+ *    Cần JOIN qua bảng QuanNhan để lấy unit info.
+ *  - nam: lọc theo năm.
+ *  - danh_hieu: lọc theo mã danh hiệu cụ thể.
+ *
+ *  PERFORMANCE:
+ *  - Index trên (quan_nhan_id, nam) đảm bảo query nhanh.
+ *  - JOIN QuanNhan có index trên đơn vị.
+ *  - Pagination MAX_LIMIT=100 ở route level chống DoS.
+ *
+ *  POST-PROCESS:
+ *  Trả về kết quả dạng FLATTEN — 1 row có 4 flag → expand thành 4 records
+ *  riêng nếu cần hiển thị từng danh hiệu trên bảng. Hiện implementation
+ *  chọn cách KHÔNG flatten (trả nguyên row + flags) để FE quyết định
+ *  render thế nào.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
 async function getAllAwards(
   filters: Record<string, unknown> = {},
   page: number = 1,

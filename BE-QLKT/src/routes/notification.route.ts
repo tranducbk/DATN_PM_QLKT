@@ -1,3 +1,9 @@
+/*
+ * NOTIFICATION ROUTE — list + mark-as-read + delete thông báo.
+ * User chỉ thấy noti của chính mình (filter qua req.user.id).
+ * Endpoint: /, /unread-count, /:id/read, /read-all, /:id (DELETE).
+ */
+
 import { Router } from 'express';
 import notificationController from '../controllers/notification.controller';
 import { verifyToken } from '../middlewares/auth';

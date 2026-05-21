@@ -1,3 +1,20 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  AWARDS HELPER (FE) — render utilities cho danh sách khen thưởng
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  CHỨC NĂNG:
+ *  - Render column "Hành động" với Popconfirm + Delete button.
+ *  - Render badge danh hiệu với màu (CSTDCS xanh, BKBQP đỏ...).
+ *
+ *  PATTERN COLUMN FACTORY:
+ *  Vì 5 trang khen thưởng (CSTDCS/HCCSVV/HCBVTQ/HC_QKQT/KNC) có cột
+ *  giống nhau → tách factory function để DRY.
+ *
+ *  WHY .tsx: export JSX (button, popconfirm) — bắt buộc .tsx.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import { Button, Popconfirm, Typography } from 'antd';
 import { DeleteOutlined } from '@ant-design/icons';
 import type { CSSProperties } from 'react';

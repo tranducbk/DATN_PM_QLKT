@@ -1,3 +1,9 @@
+/*
+ * DASHBOARD CONTROLLER — thin wrapper. Method tách theo role.
+ * getStatistics (SUPER_ADMIN), getAdminStatistics (ADMIN), getManagerStatistics.
+ * Aggregation logic ở service (Promise.all 9-15 queries).
+ */
+
 import { Request, Response } from 'express';
 import dashboardService from '../services/dashboard.service';
 import ResponseHelper from '../helpers/responseHelper';

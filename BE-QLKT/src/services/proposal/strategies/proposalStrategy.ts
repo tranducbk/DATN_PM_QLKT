@@ -2,6 +2,46 @@ import type { BangDeXuat, Prisma } from '../../../generated/prisma';
 import type { ProposalType } from '../../../constants/proposalTypes.constants';
 import type { EditedProposalData } from '../../../types/proposal';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  STRATEGY PATTERN — 1 interface, 7 implementation cho 7 loại đề xuất
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  WHY STRATEGY PATTERN (vì sao không dùng if/else)?
+ *
+ *  Trước refactor: `approve.ts` có chuỗi if/else dài ~2000 dòng dispatch
+ *  theo `loai_de_xuat`, mỗi nhánh inline logic riêng. Vấn đề:
+ *    ① Khó thêm loại mới — phải sửa nhiều chỗ.
+ *    ② Test khó — phải mock toàn bộ dispatcher.
+ *    ③ Vi phạm Open/Closed Principle — mỗi lần thay đổi 1 loại đều phải
+ *       sửa file chính.
+ *
+ *  Sau refactor: mỗi loại = 1 file `<type>Strategy.ts` implement interface
+ *  `ProposalStrategy`. Dispatcher chỉ làm 1 việc: `getStrategy(type).X(...)`.
+ *
+ *  CÁCH HOẠT ĐỘNG:
+ *    ┌─────────────────────┐    type    ┌─────────────────────┐
+ *    │  proposalService    │ ─────────► │  REGISTRY (index)   │
+ *    └─────────────────────┘            └─────────────────────┘
+ *              │                                  │
+ *              │ strategy.method(...)             │ returns
+ *              ▼                                  ▼
+ *    ┌─────────────────────┐            ┌─────────────────────┐
+ *    │  ProposalStrategy   │ ◄──────────│  <type>Strategy.ts  │
+ *    │  (interface)        │  implement │  (implementation)   │
+ *    └─────────────────────┘            └─────────────────────┘
+ *
+ *  4 METHOD CHÍNH (xem bên dưới):
+ *    1. buildSubmitPayload — chuẩn hoá data khi Manager nộp đề xuất.
+ *    2. validateApprove    — pre-flight check trước khi Admin duyệt.
+ *    3. importInTransaction— ghi vào bảng đích (DanhHieuHangNam, ...).
+ *    4. buildSuccessMessage— message hiển thị sau khi duyệt thành công.
+ *
+ *  REGISTRY (`strategies/index.ts`): map ProposalType → instance singleton.
+ *  Dispatcher gọi `getStrategy(type)` để lấy instance đúng — không if/else.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 export type DecisionInfo = { so_quyet_dinh?: string | null; file_pdf?: string | null };
 export interface ApproveDecisionMappings {
   decisionMapping: Record<string, DecisionInfo>;

@@ -157,6 +157,48 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
   const [latestNotification, setLatestNotification] = useState<SocketNotificationPayload | null>(
     null
   );
+  /*
+   * ═══════════════════════════════════════════════════════════════════════
+   *  MAIN LAYOUT — app shell với sidebar nav + notification real-time
+   * ═══════════════════════════════════════════════════════════════════════
+   *
+   *  Component này là PARENT cho tất cả page bên trong dashboard. Trách
+   *  nhiệm:
+   *  ① Sidebar navigation menu theo role (lấy từ `lib/navigation.tsx`).
+   *  ② Header với:
+   *     - User info + logout button
+   *     - Theme toggle (dark/light)
+   *     - Notification badge (số chưa đọc)
+   *     - Notification dropdown (10 thông báo gần nhất)
+   *  ③ Socket.IO subscribe cho real-time:
+   *     - new_notification: push vào list + tăng badge.
+   *     - force_logout: modal warn + đăng xuất.
+   *  ④ Connection status indicator (xanh/đỏ chấm bên cạnh badge).
+   *
+   *  STATE FLOW (notification):
+   *      Server emit 'new_notification' ─┐
+   *                                       ▼
+   *      useSocket callback → handleNewNotification
+   *                                       │
+   *                            ┌──────────┴──────────┐
+   *                            ▼                     ▼
+   *                    setNotifications(...)  setNotificationCount(+1)
+   *
+   *  Khi user mở dropdown:
+   *      Mark as read → API call → reload list + count.
+   *
+   *  POLLING vs SOCKET:
+   *  - Socket: realtime, tốn ít resource (subscribe push).
+   *  - Polling: dùng làm FALLBACK khi socket disconnect (chưa implement
+   *    polling fallback, hiện chỉ socket — risk: socket mất kết nối user
+   *    sẽ miss notification cho tới khi reconnect).
+   *
+   *  TOKEN PASSING vào useSocket:
+   *  accessToken lấy từ localStorage (1 lần khi mount). Khi token refresh,
+   *  axiosInstance emit 'tokenRefreshed' → useSocket tự update socket.auth.
+   *  MainLayout KHÔNG cần re-render với token mới (useSocket xử lý).
+   * ═══════════════════════════════════════════════════════════════════════
+   */
   const router = useRouter();
   const pathname = usePathname();
   const { theme, toggle } = useTheme();

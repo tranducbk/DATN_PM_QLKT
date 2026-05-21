@@ -2,6 +2,53 @@ import { message } from 'antd';
 import { getApiErrorMessage } from '@/lib/apiError';
 import axiosInstance from '@/lib/axiosInstance';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  FILE PREVIEW — preview file PDF/ảnh có xác thực JWT (auth-aware blob)
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  VẤN ĐỀ:
+ *  File quyết định PDF nằm sau auth (chỉ MANAGER/ADMIN xem được). KHÔNG
+ *  thể đơn giản:
+ *      <iframe src="/api/proposals/uploads/123.pdf" />
+ *  vì iframe KHÔNG gửi kèm Authorization header → server reject 401.
+ *
+ *  GIẢI PHÁP — BLOB URL PATTERN:
+ *  1. Dùng axiosInstance (có interceptor attach Bearer token) fetch file
+ *     với `responseType: 'blob'` → trả về binary Blob trong JS memory.
+ *  2. Wrap Blob thành object URL: `URL.createObjectURL(blob)` → tạo
+ *     URL dạng `blob:http://localhost:3000/xxx-yyy-zzz` (chỉ tab hiện
+ *     tại đọc được, không gửi qua mạng).
+ *  3. Mở blob URL trong tab mới: browser render PDF/ảnh natively, không
+ *     cần header (URL trỏ vào memory cục bộ).
+ *  4. revokeObjectURL sau khi xong → giải phóng memory.
+ *
+ *  3 NHÁNH RENDER:
+ *  - PDF        → openPdfWithViewer (iframe + toolbar custom: download, print)
+ *  - Ảnh        → window.open(blobUrl) (browser native viewer)
+ *  - Khác (doc) → downloadBlob (force download — browser không preview được)
+ *
+ *  MEMORY LEAK WARNING:
+ *  URL.createObjectURL KHÔNG tự garbage collect — phải gọi
+ *  URL.revokeObjectURL khi không cần. Hiện tại revoke ngay sau khi gán
+ *  vào link (downloadBlob). Với PDF/ảnh mở tab mới, KHÔNG revoke vì tab
+ *  cần URL còn sống — chấp nhận leak (browser tự cleanup khi tab close).
+ *
+ *  MIME TYPE — quan trọng cho preview:
+ *  Backend trả Content-Type qua header, nhưng axios sometimes mất khi
+ *  chuyển sang blob. Tự build MIME từ extension để đảm bảo browser hiểu
+ *  đúng (PDF cần 'application/pdf', không phải 'application/octet-stream'
+ *  → octet-stream sẽ download thay vì preview).
+ *
+ *  SECURITY NOTE:
+ *  - Blob URL chỉ valid trong tab tạo ra nó → không thể share link.
+ *  - Bị XSS: attacker có thể inject code đọc blob nhưng vẫn cần auth
+ *    token → 2 lớp bảo vệ.
+ *  - File preview INLINE (Content-Disposition: inline) NHƯNG chỉ vào URL
+ *    blob (origin local) → không thể attack 3rd-party site qua URL leak.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 // File extensions that can be previewed directly in browser.
 const PREVIEWABLE_EXTENSIONS = ['pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'];
 

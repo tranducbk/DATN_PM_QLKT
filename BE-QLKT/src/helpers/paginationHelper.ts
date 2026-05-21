@@ -1,3 +1,19 @@
+/*
+ * PAGINATION HELPER — guard chống "list all rows" DoS.
+ *
+ *  MAX_LIMIT = 100 là HARD CAP: dù FE gửi ?limit=999999, server vẫn cap
+ *  về 100. Lý do:
+ *    - Tránh response 100MB+ làm sập memory.
+ *    - Tránh DB query block lâu (Prisma LIMIT 999999 trên bảng 1M row
+ *      vẫn nhanh, nhưng serialize JSON về client mới là bottleneck).
+ *    - FE cố tình hay vô tình gửi limit lớn (vd: export Excel) PHẢI
+ *      dùng endpoint riêng (vd: /export) chứ không qua list API.
+ *
+ *  PHÒNG NGỪA NEGATIVE/NaN:
+ *    - page < 1 → reset về 1 (Prisma không hỗ trợ offset âm).
+ *    - limit < 1 → reset về DEFAULT (tránh OFFSET 0 LIMIT 0 = trả empty).
+ *    - parseInt('abc') = NaN → fallback DEFAULT.
+ */
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;

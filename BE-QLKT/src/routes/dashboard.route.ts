@@ -1,3 +1,9 @@
+/*
+ * DASHBOARD ROUTE — thống kê per-role.
+ * /admin/statistics, /manager/statistics, /super-admin/statistics.
+ * Promise.all aggregations + JS-side time series (xem dashboard.service.ts).
+ */
+
 import { Router } from 'express';
 import dashboardController from '../controllers/dashboard.controller';
 import { verifyToken, requireSuperAdmin, requireAdminOnly, requireManager } from '../middlewares/auth';

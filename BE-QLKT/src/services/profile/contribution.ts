@@ -223,6 +223,26 @@ export async function recalculateContributionProfile(personnelId: string): Promi
  * @param rank - Medal tier label used in `goiY` text
  * @returns Status, optional milestone date, and Vietnamese guidance string
  */
+/**
+ * ╔══════════════════════════════════════════════════════════════════════╗
+ * ║  CONTRIBUTION PROFILE — recalc trạng thái 3 hạng HCBVTQ              ║
+ * ╠══════════════════════════════════════════════════════════════════════╣
+ * ║  KHÁC HCCSVV ở chỗ tính theo SỐ THÁNG NHÓM HỆ SỐ thay vì số năm     ║
+ * ║  phục vụ thuần. Caller phải truyền vào (totalMonths, requiredMonths)║
+ * ║  đã được tính trước bằng `cumulativeMonthsForRank` + `requiredCong-  ║
+ * ║  HienMonths` (xem hcbvtqEligibility.ts).                            ║
+ * ║                                                                       ║
+ * ║  HÀM NÀY KHÔNG XÉT giới tính trực tiếp — đã gói vào requiredMonths  ║
+ * ║  (caller phải truyền 80 cho nữ / 120 cho nam). Lý do: pure function ║
+ * ║  → unit test inject threshold trực tiếp.                            ║
+ * ║                                                                       ║
+ * ║  GOI_Y TEXT theo 2 trường hợp:                                       ║
+ * ║   - Đủ: "Đã công tác X năm" (round down)                            ║
+ * ║   - Chưa: "Còn Y năm Z tháng nữa" (chia 12)                         ║
+ * ║                                                                       ║
+ * ║  ADMIN OVERRIDE: tương tự HCCSVV — preserve DA_NHAN khi recalc.     ║
+ * ╚══════════════════════════════════════════════════════════════════════╝
+ */
 export function calculateHCBVTQ(
   totalMonths: number,
   requiredMonths: number,

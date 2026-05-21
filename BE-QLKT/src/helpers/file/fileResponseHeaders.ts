@@ -1,3 +1,21 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  FILE RESPONSE HEADERS — set Content-Type + Content-Disposition
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  CONTENT-DISPOSITION:
+ *  - 'inline' → browser preview (PDF iframe).
+ *  - 'attachment' → force download dialog.
+ *
+ *  ENCODE filename (encodeURIComponent):
+ *  Tên file tiếng Việt có dấu/space → encode để header HTTP valid.
+ *  Vd: "Quyết định.pdf" → "Quy%E1%BA%BFt%20%C4%91%E1%BB%8Bnh.pdf".
+ *
+ *  ⚠️ ATTT: filename phải qua path traversal check Ở CONTROLLER trước
+ *  khi đến đây — helper này chỉ set header, không validate.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import path from 'path';
 import type { Response } from 'express';
 

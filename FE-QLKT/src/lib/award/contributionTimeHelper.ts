@@ -1,3 +1,19 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  CONTRIBUTION TIME HELPER (FE) — format thời gian HCBVTQ cho UI
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  Format số tháng phục vụ theo 3 nhóm hệ số (0.7/0.8/0.9-1.0) thành
+ *  text "X năm Y tháng" hiển thị.
+ *
+ *  PARITY VỚI BE:
+ *  Logic compute đã ở BE (`congHienMonthsAggregator.ts`). FE chỉ format
+ *  hiển thị. KHÔNG tự tính ở FE → tránh lệch eligibility check.
+ *
+ *  GENDER-AWARE: Nam 120 tháng / Nữ 80 tháng.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import {
   CONG_HIEN_BASE_REQUIRED_MONTHS,
   CONG_HIEN_FEMALE_REQUIRED_MONTHS,

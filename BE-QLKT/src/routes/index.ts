@@ -1,3 +1,38 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  ROUTES INDEX — gộp tất cả route module + mount prefix /api/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  ROUTE NAMESPACES (groups):
+ *  1. /api/auth/*         — login, refresh, logout (anon access đầu login)
+ *  2. /api/accounts/*     — quản lý account (SUPER_ADMIN)
+ *  3. /api/units/*        — đơn vị + chức vụ (ADMIN)
+ *  4. /api/personnel/*    — quân nhân (ADMIN/MANAGER)
+ *  5. /api/annual-rewards, /api/scientific-achievements — input data
+ *  6. /api/proposals/*    — đề xuất khen thưởng (MANAGER/ADMIN)
+ *  7. /api/decisions/*    — số quyết định
+ *  8. /api/awards/*       — danh sách khen thưởng đã duyệt
+ *  9. /api/profiles/*     — hồ sơ tính eligibility
+ * 10. /api/dashboard/*    — thống kê
+ * 11. /api/notifications/* — thông báo real-time
+ * 12. /api/dev-zone/*     — admin tools ẩn (SUPER_ADMIN only)
+ *
+ *  THỨ TỰ MOUNT QUAN TRỌNG (Express match by order):
+ *  - /api/awards/units/annual ĐẶT TRƯỚC /api/awards → tránh
+ *    awards route bắt nhầm path "units/annual".
+ *  - /api/personnel/:id/* (nested) đặt sau /api/personnel để Express
+ *    match đúng prefix trước.
+ *
+ *  404 HANDLER (router.use('*')):
+ *  Bắt mọi request không match route trên → trả 404 JSON chuẩn.
+ *  Phải đặt CUỐI cùng, sau khi mount tất cả route khác.
+ *
+ *  HEALTH CHECK:
+ *  /health không có auth → load balancer + monitoring tool dùng để check
+ *  server alive. Trả 200 + timestamp.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import { Router, Request, Response } from 'express';
 import authRoute from './auth.route';
 import accountRoute from './account.route';

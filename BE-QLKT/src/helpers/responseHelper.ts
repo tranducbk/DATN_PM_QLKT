@@ -1,5 +1,52 @@
 import { Response } from 'express';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  RESPONSE HELPER — chuẩn hoá format JSON trả về cho FE
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  TẤT CẢ API response THEO 1 SCHEMA:
+ *      {
+ *        success: boolean,   ← true cho 2xx, false cho 4xx/5xx
+ *        message: string,    ← tiếng Việt, hiển thị trực tiếp được
+ *        data?: any,         ← payload (nullable)
+ *        pagination?: { total, page, limit, totalPages }  ← cho list
+ *        warning?: string    ← non-fatal warning (vd: import có lỗi item)
+ *      }
+ *
+ *  WHY chuẩn hoá:
+ *  - FE chỉ cần check `response.success` → biết thành công hay không.
+ *  - Message luôn ở `response.message` → axios interceptor extract dễ.
+ *  - apiClient không cần map response từng endpoint khác nhau.
+ *
+ *  METHOD MAP TO HTTP STATUS:
+ *      success(...)        → 200 OK (read, action thành công)
+ *      created(...)        → 201 Created (vừa insert record mới)
+ *      paginated(...)      → 200 OK + pagination metadata
+ *      badRequest(msg)     → 400 (validate fail, business rule violation)
+ *      unauthorized(msg)   → 401 (auth fail)
+ *      forbidden(msg)      → 403 (auth OK nhưng không quyền)
+ *      notFound(msg)       → 404 (record không tồn tại)
+ *      conflict(msg)       → 409 (duplicate, optimistic lock)
+ *      error(msg)          → 500 (server error, throw không catch được)
+ *
+ *  WARNING vs ERROR:
+ *  - error: fail hoàn toàn → success=false, không có data.
+ *  - warning: thành công CHÍNH NHƯNG có lỗi phụ (vd: import 100 record
+ *    thành công, 5 record lỗi → success=true, data=100, warning='5 errors').
+ *
+ *  PAGINATION FORMAT (consistent):
+ *      data:       array trực tiếp (KHÔNG nested vào data.items)
+ *      pagination: { total, page, limit, totalPages } ở top level
+ *  → FE table component dùng pagination này trực tiếp.
+ *
+ *  WHY KHÔNG dùng res.json() raw:
+ *  - Anti-pattern AP-7 (xem BE-QLKT/CLAUDE.md).
+ *  - Quên field nào → FE break.
+ *  - Hardcode statusCode rải khắp controller → khó maintain.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 interface SuccessOptions {
   data?: unknown;
   message?: string;

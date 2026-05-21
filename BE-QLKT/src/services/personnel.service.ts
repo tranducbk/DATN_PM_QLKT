@@ -32,6 +32,59 @@ import type { UpdatePersonnelInput } from './personnel/update';
 
 const HCBVTQ_LABEL = AWARD_LABELS[AWARD_SLUGS.CONTRIBUTION_MEDALS];
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  PERSONNEL SERVICE — quân nhân (QuanNhan) — core nghiệp vụ
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  ENTITY trung tâm — TẤT CẢ khen thưởng đều ref tới QuanNhan.id qua FK.
+ *
+ *  CCCD = UNIQUE constraint (PII + business key):
+ *  - 1 CCCD chỉ tồn tại 1 QuanNhan (mỗi công dân chỉ 1 căn cước).
+ *  - Insert trùng CCCD → Prisma throw P2002 → service trả message
+ *    "Quân nhân với CCCD này đã tồn tại".
+ *  - parseCCCD chuẩn hoá pad zero trước khi check duplicate (tránh "123"
+ *    và "000000000123" coi là 2 CCCD khác).
+ *
+ *  USERNAME = CCCD (default):
+ *  - Khi admin tạo quân nhân, account.username AUTO = cccd.
+ *  - Dễ nhớ + chống tạo trùng username (vì CCCD đã unique).
+ *  - User đầu tiên login với password mặc định → buộc đổi.
+ *
+ *  UNIT ID dual field:
+ *      QuanNhan có 2 field FK:
+ *        co_quan_don_vi_id     (CQDV — cơ quan/đơn vị mẹ)
+ *        don_vi_truc_thuoc_id  (DVTT — đơn vị trực thuộc)
+ *      Chỉ 1 trong 2 được set (mutually exclusive — quân nhân thuộc CQDV
+ *      hoặc DVTT, không cả hai). DVTT thuộc CQDV qua FK riêng.
+ *
+ *      Khi lấy "đơn vị của quân nhân" → DVTT ưu tiên hơn CQDV (DVTT là
+ *      con cụ thể hơn, CQDV là cha):
+ *        const donViId = qn.don_vi_truc_thuoc_id ?? qn.co_quan_don_vi_id;
+ *
+ *  SO_LUONG AUTO-MAINTAIN:
+ *      CoQuanDonVi.so_luong + DonViTrucThuoc.so_luong = số quân nhân
+ *      trong đơn vị (denormalized counter để query nhanh).
+ *      Mỗi khi:
+ *        - Tạo QuanNhan          → tăng so_luong của đơn vị tương ứng.
+ *        - Xoá QuanNhan          → giảm so_luong.
+ *        - Đổi đơn vị QuanNhan   → giảm đơn vị cũ + tăng đơn vị mới.
+ *      Implementation: trong transaction để đảm bảo atomic.
+ *      Pattern dùng `if/else` (KHÔNG 2 if riêng biệt) — xem CLAUDE.md
+ *      mục Unit count để tránh đếm dư.
+ *
+ *  MANAGER UNIT FILTER:
+ *  - getAllPersonnel với MANAGER role → filter chỉ trả quân nhân thuộc
+ *    đơn vị manager mình. Logic ở `helpers/controllerHelper.ts`.
+ *  - Manager CQDV thấy: chính mình + tất cả DVTT con + quân nhân DVTT.
+ *  - Manager DVTT thấy: chỉ DVTT mình + quân nhân DVTT.
+ *
+ *  CASCADE DELETE chú ý:
+ *  - Xoá QuanNhan → cascade delete TaiKhoan, DanhHieuHangNam, ... liên
+ *    quan (FK onDelete: Cascade). RỦI RO: mất audit trail.
+ *  - Tốt hơn: soft delete (flag `is_deleted`) — chưa implement.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
 class PersonnelService {
   parseCCCD(value) {
     return parseCCCD(value);

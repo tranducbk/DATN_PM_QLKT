@@ -6,6 +6,51 @@ import { ROLES } from '../constants/roles.constants';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { isFeatureEnabled } from '../helpers/settingsHelper';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  SYSTEM LOGS SERVICE — audit log visibility theo role (ATTT)
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  3-TIER ACCESS CONTROL cho audit log:
+ *
+ *      MANAGER     → chỉ thấy log của USER + MANAGER cùng đơn vị mình
+ *      ADMIN       → thấy thêm log của ADMIN và SYSTEM
+ *      SUPER_ADMIN → thấy tất cả role + log resource='backup'
+ *
+ *  ATTT — RESOURCE-LEVEL RESTRICTION (resource='backup'):
+ *  Log backup (CREATE/DELETE/RESTORE) chứa thông tin nhạy cảm về DB
+ *  topology + tần suất backup → CHỈ SUPER_ADMIN xem được. Nếu kẻ tấn
+ *  công có quyền ADMIN, vẫn không thể đoán được lịch backup để timing
+ *  attack (vd: tấn công ngay trước backup để rollback).
+ *
+ *  IMPLEMENTATION FILTER:
+ *  - userRole !== SUPER_ADMIN → thêm where.resource = { not: 'backup' }.
+ *  - Nếu user explicit filter resource='backup' + không phải SUPER_ADMIN
+ *    → trả về EMPTY (không leak qua message error).
+ *
+ *  UNIT-SCOPED VIEW cho MANAGER:
+ *  Manager xem log thì chỉ thấy action của user trong đơn vị mình.
+ *  Implementation: getManagerAccountIds → query tất cả TaiKhoan có
+ *  quan_nhan_id thuộc đơn vị manager → filter where.user_id IN list.
+ *
+ *  WHY VISIBILITY MATRIX HARDCODE:
+ *  Role hierarchy ít thay đổi, hardcode rõ ràng hơn config trong DB.
+ *  Khi thêm role mới (vd: AUDITOR) → update file này + audit log helper.
+ *
+ *  PAGINATION + STATS:
+ *  getLogs trả về { logs, total, stats: {create, update, delete} } —
+ *  stats là COUNT per action để hiển thị badge "5 tạo / 3 sửa" ở UI.
+ *  Cần 4 query: findMany + count + 3 count theo action → Promise.all.
+ *
+ *  WHY KHÔNG log GET request:
+ *  - GET không gây side effect → audit không cần.
+ *  - Log GET tốn dung lượng (mỗi user mỗi giây 1 request → triệu log/ngày).
+ *  - Trade-off: không truy được "ai xem data gì". Nếu cần compliance
+ *    cao hơn (vd: GDPR + healthcare), phải bật log GET cho resource
+ *    nhạy cảm (CCCD, ...).
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 /** Roles visible at each level (SYSTEM events visible to ADMIN and above) */
 const VISIBLE_ROLES: Record<string, string[]> = {
   [ROLES.MANAGER]: [ROLES.USER, ROLES.MANAGER],

@@ -1,3 +1,10 @@
+/*
+ * ADHOC AWARD ROUTE — khen thưởng đột xuất (KhenThuongDotXuat).
+ * ADMIN only — không qua đề xuất, tạo trực tiếp.
+ * Multipart upload (ảnh + doc + xls) — adhocAwardUpload multer 50MB limit.
+ * Đối tượng: cá nhân HOẶC đơn vị (mutually exclusive).
+ */
+
 import { Router } from 'express';
 import adhocAwardController from '../controllers/adhocAward.controller';
 import { verifyToken, checkRole, requireAdminOnly } from '../middlewares/auth';

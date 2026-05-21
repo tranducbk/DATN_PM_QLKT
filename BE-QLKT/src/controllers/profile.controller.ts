@@ -1,3 +1,9 @@
+/*
+ * PROFILE CONTROLLER — read-only API hồ sơ + recalc trigger.
+ * 3 loại hồ sơ: annual (CSTDCS chain), tenure (HCCSVV), contribution (HCBVTQ).
+ * Recalc endpoint chỉ ADMIN dùng được (đôi khi cần force refresh).
+ */
+
 import { Request, Response } from 'express';
 import profileService from '../services/profile.service';
 import unitAnnualAwardService from '../services/unitAnnualAward.service';

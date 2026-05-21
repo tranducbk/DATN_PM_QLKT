@@ -10,6 +10,51 @@ import type {
 } from './proposalStrategy';
 import { formatQuanNhanLabel } from './quanNhanLabel';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  SINGLE MEDAL IMPORTER — TEMPLATE METHOD PATTERN cho HC_QKQT & KNC
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  WHY EXTRACT THÀNH HELPER?
+ *  HC_QKQT và KNC có 90% logic giống nhau:
+ *    - "Một huân chương trên đời" (one record per personnel, lifetime).
+ *    - Cần ngay_nhap_ngu để tính số tháng phục vụ.
+ *    - Validate năm/tháng nhận >= năm/tháng đề xuất.
+ *    - Validate năm nhận >= năm quyết định.
+ *    - Lưu thoi_gian JSON snapshot tại thời điểm trao.
+ *
+ *  Chỉ khác:
+ *    - HC_QKQT: ghi vào bảng huanChuongQuanKyQuyetThang.
+ *    - KNC:     ghi vào bảng kyNiemChuongVSNXDQDNDVN.
+ *
+ *  TEMPLATE METHOD:
+ *  - Phần KHUNG (validate + tính toán) ở helper này.
+ *  - Phần KHÁC BIỆT (upsert vào bảng nào) inject qua callback `cfg.upsert`.
+ *  → Strategy con (hcqkqtStrategy, kncStrategy) chỉ cần định nghĩa callback.
+ *
+ *  VALIDATION CHAIN (4 lớp, fail-fast vào acc.errors):
+ *    ① personnel_id tồn tại
+ *    ② personnel exist trong DB (chưa bị xoá)
+ *    ③ nam_nhan + thang_nhan hợp lệ (1-12)
+ *    ④ nam/thang_nhan >= nam/thang đề xuất (không cho nhận retro)
+ *    ⑤ nam_nhan >= nam_quyet_dinh (nhận sau khi quyết định ký)
+ *
+ *  THOI_GIAN SNAPSHOT:
+ *  Lưu JSON { total_months, years, months, display } TẠI THỜI ĐIỂM TRAO.
+ *  Lý do snapshot thay vì compute on-the-fly:
+ *    - Trao huân chương là sự kiện cố định trong quá khứ.
+ *    - Quân nhân thăng chức/chuyển đơn vị về sau KHÔNG ảnh hưởng thông tin
+ *      "lúc trao đã bao nhiêu năm phục vụ".
+ *    - Tránh tính lại mỗi lần render → tiết kiệm.
+ *
+ *  EDGE CASE personnel chưa xuất ngũ:
+ *  ngayKetThuc fallback = new Date(namNhan, thangNhan, 0) = ngày cuối
+ *  tháng nhận. Vì sao day=0: trong JS Date, `new Date(year, month, 0)`
+ *  trả về ngày cuối của THÁNG TRƯỚC (month là 0-indexed nhưng day=0
+ *  rollback 1 ngày). Vd: new Date(2024, 6, 0) = 30/06/2024 (cuối tháng 6).
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 interface SingleMedalConfig {
   /** Logical medal name shown in error messages (e.g. "Huân chương Quân kỳ quyết thắng"). */
   medalLabel: string;

@@ -1,3 +1,55 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  SERVICE YEARS HELPER — date math cho thâm niên + thời gian giữ chức
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  3 BIẾN THỂ TÍNH SỐ THÁNG (chọn cẩn thận theo nghiệp vụ):
+ *
+ *  ① calculateServiceMonths — "calendar month" diff (KHÔNG xét ngày):
+ *     (year_end - year_start) * 12 + (month_end - month_start)
+ *     Vd: 15/03/2020 → 02/06/2025 = (2025-2020)*12 + (5-2) = 63 tháng
+ *     (tính từ 15/03 đến 02/06 = chưa đủ 63 tháng theo ngày, nhưng business
+ *      rule quân đội tính theo tháng dương lịch → coi như đủ).
+ *     → DÙNG cho: thâm niên tổng (HC_QKQT, KNC) — đơn giản, ưu đãi user.
+ *
+ *  ② calculateCoveredMonthsByMonth — giống ① nhưng có guard NaN/inverted:
+ *     → DÙNG cho: aggregate position history (recalcPositionMonths).
+ *
+ *  ③ calculateTenureMonthsWithDayPrecision — diff CÓ xét ngày:
+ *     Nếu end.day < start.day → trừ 1 tháng (chưa đủ ngày).
+ *     Vd: 15/03/2020 → 02/06/2025 = 62 tháng (vì 02 < 15).
+ *     → DÙNG cho: tính thời gian giữ chức vụ chi tiết (vd HCBVTQ phải
+ *       chính xác từng ngày để upgrade rank đúng thời điểm).
+ *
+ *  WHY tách 3 hàm (không gộp 1):
+ *  Nghiệp vụ quân đội mỗi loại huân chương có định nghĩa "đủ N tháng"
+ *  khác nhau. Gộp 1 hàm sẽ phải truyền flag `dayPrecision: boolean` →
+ *  dễ nhầm. Tách rõ tên → caller chọn đúng intent.
+ *
+ *  TIMEZONE TRAP:
+ *  - `new Date()` trả về local timezone của server.
+ *  - `new Date('2020-03-15')` parse là UTC midnight → có thể bị shift về
+ *    14/03 hoặc 16/03 tuỳ timezone server.
+ *  - Hiện tại CHẤP NHẬN vì cả startDate lẫn endDate đều shift cùng chiều
+ *    → diff không đổi. NHƯNG nếu deploy multi-region, NÊN dùng UTC date
+ *    helpers (Date.UTC) để tránh edge case.
+ *
+ *  RECALC POSITION MONTHS (recalcPositionMonths):
+ *  Chức vụ "đang giữ" (ngay_ket_thuc=null) cần tính tới CUTOFF, không
+ *  phải tới `new Date()`. Lý do: khi xét eligibility tại thời điểm đề
+ *  xuất (vd: tháng 06/2024), không được tính thời gian giữ chức sau đó
+ *  → đảm bảo đúng tại thời điểm trao huân chương.
+ *  Edge case: position closed nhưng end > cutoff (vd: bổ nhiệm tới 2030
+ *  nhưng xét tại 2024) → cap về cutoff luôn.
+ *
+ *  BUILD CUTOFF (buildCutoffDate):
+ *  `new Date(year, month, 0)` = ngày 0 của tháng `month` → tương đương
+ *  ngày cuối của tháng `month - 1` (do JS Date wrap).
+ *  Vd: buildCutoffDate(2024, 6) = new Date(2024, 6, 0) = 30/06/2024.
+ *  Đây là "cuối tháng đề xuất" (proposal.nam + proposal.thang).
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 /**
  * Calculates the number of complete months between two dates.
  * Uses calendar-aware month arithmetic (consistent with all award eligibility checks).
@@ -12,8 +64,10 @@ export function calculateServiceMonths(
   const start = new Date(startDate);
   const end = endDate ? new Date(endDate) : new Date();
 
+  // Calendar diff: (Δyear * 12) + Δmonth. Bỏ qua ngày → ưu đãi user
+  // (vd: 15/03 → 02/04 = 1 tháng đầy đủ).
   const months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
-  return Math.max(0, months);
+  return Math.max(0, months); // guard âm khi end < start
 }
 
 /**

@@ -1,3 +1,9 @@
+/*
+ * PERSONNEL CONTROLLER — quân nhân CRUD + Excel + transfer đơn vị.
+ * MANAGER chỉ xem được data đơn vị mình (filter qua middleware/unitFilter).
+ * Method: getAll, getById, create, update, delete, transfer, import, export.
+ */
+
 import { Request, Response } from 'express';
 import personnelService from '../services/personnel.service';
 import { parsePagination } from '../helpers/paginationHelper';

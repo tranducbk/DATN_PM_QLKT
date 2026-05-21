@@ -1,3 +1,25 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  REPOSITORY PATTERN — wrapper quanh Prisma client
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  WHY REPOSITORY LAYER:
+ *  - Tách concern: service = business logic, repository = DB access.
+ *  - Easy mock trong test (mock 1 repo method, không mock toàn Prisma).
+ *  - Centralized query: đổi DB chỉ sửa repository.
+ *  - Domain methods rõ ý đồ hơn raw query.
+ *
+ *  TRANSACTION SUPPORT:
+ *  Method nhận optional `tx?: Prisma.TransactionClient` để dùng trong
+ *  $transaction. Null → dùng prisma client mặc định.
+ *
+ *  ⚠️ ATTT cho account:
+ *  - findById KHÔNG select password_hash mặc định.
+ *  - Chỉ login flow mới select để bcrypt.compare.
+ *  - Mọi response API KHÔNG include password_hash.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import type { Prisma } from '../generated/prisma';
 import { prisma } from '../models';
 

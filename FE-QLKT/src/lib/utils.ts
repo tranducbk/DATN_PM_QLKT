@@ -1,3 +1,28 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  UTILS — utility chia sẻ giữa các component FE
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  cn (className): merge Tailwind classes thông minh:
+ *    cn('px-2 py-1', condition && 'bg-red-500', 'px-4')
+ *  → twMerge dedupe conflicts (px-2 + px-4 → px-4 thắng).
+ *  → clsx hỗ trợ conditional (false/null bị skip).
+ *
+ *  formatDate / formatDateTime:
+ *  - Chuẩn hoá DD/MM/YYYY (Vietnamese locale).
+ *  - Accept Date | string | null | undefined.
+ *  - null/invalid → trả "—" (visual placeholder, không crash).
+ *
+ *  WHY dayjs (không native Date):
+ *  - API ngắn gọn, bundle 2KB.
+ *  - Deterministic format → SSR-safe trong Next.js (không hydration mismatch).
+ *
+ *  RULE (xem CLAUDE.md AP-FE-2):
+ *  TUYỆT ĐỐI không inline `new Date().toLocaleDateString()` hay
+ *  `x?.split('T')[0]` — luôn dùng formatDate/formatDateTime.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import dayjs from 'dayjs';

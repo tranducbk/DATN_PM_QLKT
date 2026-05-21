@@ -133,6 +133,42 @@ const buildInsertBlock = (table: string, records: Record<string, unknown>[]): st
 const buildTimestamp = (date: Date): string =>
   date.toISOString().replace(/[-:]/g, '').replace('T', '_').slice(0, 15);
 
+/*
+ * ╔══════════════════════════════════════════════════════════════════════════╗
+ * ║  BACKUP SERVICE — sao lưu DB ra file SQL plain-text                     ║
+ * ╠══════════════════════════════════════════════════════════════════════════╣
+ * ║  CHIẾN LƯỢC LOGICAL BACKUP (KHÔNG dùng pg_dump):                        ║
+ * ║    - Đọc tất cả bảng nghiệp vụ qua Prisma (Promise.all parallel).       ║
+ * ║    - Generate INSERT statements + TRUNCATE prefix → file .sql độc lập. ║
+ * ║    - Có thể restore bằng `psql < backup.sql` từ máy bất kỳ.             ║
+ * ║                                                                          ║
+ * ║  VÌ SAO KHÔNG dùng pg_dump:                                              ║
+ * ║    + Đỡ phụ thuộc binary postgres trên container Node.                  ║
+ * ║    + Kiểm soát được EXCLUDE field nhạy cảm (password_hash).             ║
+ * ║    + Format đơn giản, dễ đọc/sửa thủ công khi cần.                      ║
+ * ║                                                                          ║
+ * ║  ĐIỂM NHẠY CẢM BẢO MẬT:                                                 ║
+ * ║    ① EXCLUDE password_hash + refreshToken trong TaiKhoan select.        ║
+ * ║       → Restore xong PHẢI reset password tất cả user. File backup       ║
+ * ║         dù bị leak vẫn không lộ password.                                ║
+ * ║    ② File backup chỉ SUPER_ADMIN download được (route guard).           ║
+ * ║    ③ Log mọi thao tác (CREATE/DELETE/RESTORE) vào systemLog với         ║
+ * ║       resource='backup' — chỉ SUPER_ADMIN xem được (xem core.ts filter).║
+ * ║                                                                          ║
+ * ║  THỨ TỰ INSERT QUAN TRỌNG:                                              ║
+ * ║    - TRUNCATE bảng theo TRUNCATE_ORDER (đảo ngược dependency).         ║
+ * ║    - INSERT theo thứ tự FK: parent trước, child sau.                    ║
+ * ║      Vd: CoQuanDonVi → DonViTrucThuoc → QuanNhan → TaiKhoan → ...      ║
+ * ║      Đảo thứ tự sẽ FK violation khi restore.                            ║
+ * ║                                                                          ║
+ * ║  PERFORMANCE — Promise.all toàn bộ table đọc song song:                ║
+ * ║    - 21 query chạy parallel thay vì sequential.                         ║
+ * ║    - Tổng thời gian ≈ table chậm nhất (thường BangDeXuat hoặc          ║
+ * ║      DanhHieuHangNam — record nhiều).                                    ║
+ * ║    - Memory: load toàn bộ DB vào RAM cùng lúc → DB lớn (>100k record)  ║
+ * ║      nên chuyển sang streaming/cursor để không OOM.                     ║
+ * ╚══════════════════════════════════════════════════════════════════════════╝
+ */
 class BackupService {
   /**
    * Creates a full SQL backup of all business data tables.

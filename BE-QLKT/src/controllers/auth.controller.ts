@@ -1,3 +1,9 @@
+/*
+ * AUTH CONTROLLER — thin wrapper. Dispatch sang authService.
+ * Method: login, refreshToken, logout, changePassword, getCurrentUser.
+ * Tất cả wrap catchAsync để forward error → errorHandler.
+ */
+
 import { Request, Response } from 'express';
 import authService from '../services/auth.service';
 import ResponseHelper from '../helpers/responseHelper';

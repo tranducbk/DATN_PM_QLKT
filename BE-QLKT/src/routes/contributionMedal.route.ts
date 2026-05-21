@@ -1,3 +1,9 @@
+/*
+ * CONTRIBUTION MEDAL ROUTE — HCBVTQ (Huân chương Bảo vệ Tổ quốc).
+ * CRUD + Excel. Lifetime 1 record/personnel, chỉ cho UPGRADE rank.
+ * Gender-aware threshold (Nam 120 / Nữ 80 tháng).
+ */
+
 import { Router } from 'express';
 import contributionAwardController from '../controllers/contributionMedal.controller';
 import { verifyToken, checkRole, requireAdminOnly } from '../middlewares/auth';

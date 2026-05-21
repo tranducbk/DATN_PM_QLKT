@@ -1,3 +1,26 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  COMMEMORATIVE MEDAL SERVICE — CRUD + Excel I/O cho KNC VSNXD QĐNDVN
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  KNC = Kỷ niệm chương Vì Sự nghiệp Xây dựng QĐNDVN.
+ *
+ *  ĐIỀU KIỆN GENDER-AWARE:
+ *  - Nam: ≥ 25 năm phục vụ
+ *  - Nữ: ≥ 20 năm phục vụ (ưu đãi 5 năm)
+ *  - LIFETIME — 1 quân nhân chỉ nhận 1 lần.
+ *
+ *  CHIA SẺ logic với HC_QKQT:
+ *  - Cùng dùng `serviceYearsEligibility` để check thâm niên (singleton helper).
+ *  - Cùng dùng `singleMedalImporter` template trong approve flow.
+ *  - Service riêng vì bảng đích khác (KyNiemChuongVSNXDQDNDVN).
+ *
+ *  VALIDATION ADDITIONAL:
+ *  - gioi_tinh bắt buộc (vì threshold khác nhau).
+ *  - Thiếu giới tính → reject với reason 'MISSING_GENDER'.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import { prisma } from '../models';
 import { quanNhanRepository } from '../repositories/quanNhan.repository';
 import { donViTrucThuocRepository } from '../repositories/unit.repository';

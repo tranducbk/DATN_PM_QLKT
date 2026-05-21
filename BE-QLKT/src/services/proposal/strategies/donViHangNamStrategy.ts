@@ -96,6 +96,47 @@ async function buildDonViPayload(
   );
 }
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  DON_VI_HANG_NAM STRATEGY — Danh hiệu đơn vị hàng năm
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  ĐỐI TƯỢNG: đơn vị (CoQuanDonVi hoặc DonViTrucThuoc), KHÔNG phải cá nhân.
+ *
+ *  2 NHÓM DANH HIỆU đơn vị (xem DANH_HIEU_DON_VI_HANG_NAM):
+ *
+ *    NHÓM "CƠ BẢN" (1 năm 1 lần, mutual exclusive):
+ *      ĐVQT  = Đơn vị Quyết thắng         (mức cao, là điều kiện chuỗi)
+ *      ĐVTT  = Đơn vị Tiên tiến           (mức thấp)
+ *      → Tương đương CSTDCS/CSTT bên cá nhân.
+ *
+ *    NHÓM "CHUỖI" (đơn vị có 2 chu kỳ, KHÔNG có CSTDTQ):
+ *      BKBQP đơn vị  (chu kỳ 2y ĐVQT)
+ *      BKTTCP đơn vị (chu kỳ 7y + 3 BKBQP trong 7y cuối)
+ *      → Khác cá nhân:
+ *        - KHÔNG có CSTDTQ đơn vị (cấp trung không tồn tại).
+ *        - KHÔNG có NCKH (đơn vị không tự nghiên cứu).
+ *        - BKTTCP đơn vị KHÔNG lifetime → nhận lặp lại sau mỗi 7y.
+ *
+ *  DON_VI_ID TYPE — quan trọng:
+ *      Một đề xuất có thể chứa items thuộc 2 loại đơn vị khác nhau:
+ *        - CoQuanDonVi (cơ quan/đơn vị mẹ)
+ *        - DonViTrucThuoc (đơn vị trực thuộc)
+ *      Mỗi item có field `don_vi_type` để strategy biết update bảng nào.
+ *      Import sẽ ghi vào DanhHieuDonViHangNam với 1 trong 2 FK:
+ *        co_quan_don_vi_id    (nếu don_vi_type='CO_QUAN_DON_VI')
+ *        don_vi_truc_thuoc_id (nếu don_vi_type='DON_VI_TRUC_THUOC')
+ *
+ *  DUPLICATE CHECK SELF-MATCH (xem `approve/validation.ts:160` & test
+ *  `unit-annual.test.ts:381`):
+ *      Khi approve, phải truyền `proposalId` xuống checkDuplicateUnitAward
+ *      để exclude chính đề xuất đang duyệt — nếu không sẽ self-match.
+ *
+ *  FE PAYLOAD: dùng `data_danh_hieu` (chia sẻ với CA_NHAN_HANG_NAM).
+ *  Mỗi item có thêm field `don_vi_id`, `don_vi_type`, `ten_don_vi`,
+ *  `co_quan_don_vi_cha` để strategy enrich trong submit.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
 class DonViHangNamStrategy implements ProposalStrategy {
   readonly type = PROPOSAL_TYPES.DON_VI_HANG_NAM;
 

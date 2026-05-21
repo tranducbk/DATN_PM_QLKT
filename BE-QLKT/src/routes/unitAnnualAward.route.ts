@@ -1,3 +1,10 @@
+/*
+ * UNIT ANNUAL AWARD ROUTE — danh hiệu đơn vị hàng năm.
+ * /api/awards/units/annual — mount TRƯỚC /api/awards để tránh conflict.
+ * Bao gồm: list, propose, approve, reject, upsert, recalculate, history.
+ * Chuỗi đơn vị: ĐVQT → BKBQP đơn vị → BKTTCP đơn vị (xem unitAnnualAward/eligibility.ts).
+ */
+
 import { Router, Request, Response } from 'express';
 import path from 'path';
 import fs from 'fs';

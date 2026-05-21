@@ -1,3 +1,22 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  DOWNLOAD DECISION FILE — tải file PDF quyết định với auth
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  FLOW:
+ *  1. Tra cứu so_quyet_dinh → lấy filename từ FileQuyetDinh.
+ *  2. previewFileWithApi → axios fetch blob (auth Bearer) → open viewer.
+ *
+ *  WHY 2-step lookup:
+ *  - User biết số QĐ ("123/QĐ-HV"), không biết filename lưu.
+ *  - Backend filename random (timestamp+uuid) chống collision.
+ *  - Helper hide complexity.
+ *
+ *  ATTT: filename qua /api/proposals/uploads/:filename, server có path
+ *  traversal guard (xem proposal.controller.ts:getPdfFile).
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import { message } from 'antd';
 import { apiClient } from '@/lib/apiClient';
 import { getApiErrorMessage } from '@/lib/apiError';

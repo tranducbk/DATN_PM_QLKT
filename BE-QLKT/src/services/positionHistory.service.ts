@@ -26,6 +26,53 @@ interface OverlapWarning {
   nextPositionStartDate: string;
 }
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  POSITION HISTORY SERVICE — lịch sử chức vụ + tính tháng giữ
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  IMPORTANCE: lịch sử chức vụ là INPUT cốt lõi cho:
+ *  - HCBVTQ eligibility (tính tổng tháng theo 3 nhóm hệ số).
+ *  - Hồ sơ profile.contribution.ts.
+ *  - Báo cáo thâm niên giữ chức.
+ *
+ *  STRUCTURE:
+ *  - Mỗi quân nhân có N record LichSuChucVu (1 record = 1 chức vụ + khoảng
+ *    thời gian + hệ số).
+ *  - ngay_ket_thuc = null → đang giữ chức (open interval).
+ *
+ *  CORE LOGIC trong file này:
+ *
+ *  ① isOverlapping — chống đè chồng chức vụ:
+ *     Quân nhân KHÔNG được giữ 2 chức vụ cùng lúc. Khi insert/update,
+ *     check interval mới có overlap với interval cũ không.
+ *     Truth table:
+ *       Cả 2 open  → overlap (vô lý: giữ 2 chức cùng lúc mãi mãi).
+ *       1 open + 1 closed → overlap khi closed.end >= open.start.
+ *       Cả 2 closed → overlap khi start1 < end2 && start2 < end1
+ *         (classic interval overlap).
+ *
+ *  ② Auto-close previous position (suggestedEndDate):
+ *     Khi tạo chức vụ mới, gợi ý đóng chức vụ trước đó:
+ *       suggestedEndDate = new_position.start - 1 day
+ *     User có thể accept để FE auto-fill ngay_ket_thuc cho row cũ.
+ *
+ *  ③ Recalc so_thang sau mỗi thay đổi:
+ *     Service trigger recalc thông qua `safeRecalculateContribution`
+ *     để cập nhật profile HCBVTQ (vì tháng giữ chức thay đổi).
+ *
+ *  WHY moment.js thay vì native Date:
+ *  - Phép so sánh interval (isSameOrAfter, isBefore) viết ngắn gọn hơn.
+ *  - Date math edge case (end of month, leap year) moment xử lý đúng.
+ *  - Trade-off: bundle size lớn; production NÊN migrate sang date-fns
+ *    hoặc dayjs (đã dùng trên FE).
+ *
+ *  TRIGGER PROFILE RECALC:
+ *  Sau khi insert/update/delete position history → MUST gọi
+ *  safeRecalculateContribution(personnelId) để đồng bộ hồ sơ HCBVTQ.
+ *  Nếu skip → eligibility check ở approve sẽ dùng data cũ → bug.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
 class PositionHistoryService {
   isOverlapping(
     start1: moment.Moment | Date | string,

@@ -1,3 +1,34 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  API ERROR EXTRACTION — chuẩn hoá error từ axios/fetch/Error về string
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  3 LOẠI ERROR có thể bắt được:
+ *  ① AxiosError với response (server trả 4xx/5xx + body JSON):
+ *       error.response.data.message  ← BE chuẩn (xem ResponseHelper.error)
+ *       error.response.data.error    ← legacy
+ *  ② AxiosError không có response (network fail, timeout):
+ *       error.message = 'Network Error' / 'timeout of 30000ms exceeded'
+ *  ③ Error thường (throw new Error(...)):
+ *       error.message
+ *  ④ String (throw 'message'):
+ *       error trực tiếp
+ *
+ *  FALLBACK CHAIN:
+ *  response.data.message → response.data.error → error.message → string →
+ *  fallback default. Đảm bảo không bao giờ trả undefined/empty.
+ *
+ *  CONSOLE.ERROR luôn được log (raw error) → dev có thể inspect đầy đủ
+ *  (stack, response headers) trong DevTools, nhưng user chỉ thấy message
+ *  tiếng Việt friendly.
+ *
+ *  RETRY-AFTER (429):
+ *  Backend gửi `retryAfter` (giây) trong response body của 429 (xem
+ *  axiosInstance.ts response interceptor). FE component dùng để hiển thị
+ *  countdown "Thử lại sau X giây" thay vì disable button vô thời hạn.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 /**
  * Extract user-facing message from axios/fetch/Error and log raw error to console for debugging.
  */

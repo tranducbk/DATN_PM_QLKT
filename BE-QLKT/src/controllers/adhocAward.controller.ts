@@ -1,3 +1,9 @@
+/*
+ * ADHOC AWARD CONTROLLER — khen thưởng đột xuất.
+ * Multipart upload (ảnh + doc + xls 50MB). ADMIN only.
+ * Method: CRUD + downloadFile cho từng attachment.
+ */
+
 import { Request, Response } from 'express';
 import adhocAwardService from '../services/adhocAward.service';
 import { ROLES } from '../constants/roles.constants';

@@ -69,6 +69,45 @@ async function loadPersonnelMap(personnelIds: string[]): Promise<Map<string, CaN
   return new Map(rows.map(r => [r.id, r as CaNhanPersonnelRow]));
 }
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  CA_NHAN_HANG_NAM STRATEGY — Danh hiệu cá nhân hàng năm
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  4 NHÓM DANH HIỆU trong loại này (xem DANH_HIEU_CA_NHAN_HANG_NAM):
+ *
+ *    NHÓM "CƠ BẢN" (1 năm 1 lần, MUTUAL EXCLUSIVE):
+ *      CSTT   = Chiến sĩ Tiên tiến         (mức thấp)
+ *      CSTDCS = Chiến sĩ Thi đua Cơ sở     (mức cao, là điều kiện chuỗi)
+ *      → Quân nhân 1 NĂM CHỈ NHẬN ĐƯỢC 1 trong 2 (không thể vừa CSTT vừa
+ *        CSTDCS). Validation đã có ở approve/validation.ts (Lớp 3 mixed).
+ *
+ *    NHÓM "CHUỖI" (3 flag trên cùng row DanhHieuHangNam):
+ *      BKBQP   (chu kỳ 2y)  →  flag nhan_bkbqp + so_quyet_dinh_bkbqp
+ *      CSTDTQ  (chu kỳ 3y)  →  flag nhan_cstdtq + so_quyet_dinh_cstdtq
+ *      BKTTCP  (chu kỳ 7y)  →  flag nhan_bkttcp + so_quyet_dinh_bkttcp
+ *      → Đây KHÔNG phải danh hiệu cơ bản; nó là FLAG đi kèm CSTDCS năm đó.
+ *        1 row có thể vừa danh_hieu='CSTDCS' vừa nhan_bkbqp=true.
+ *      → Logic eligibility ở chainEligibility.ts (đã comment).
+ *
+ *  CẤU TRÚC DB (DanhHieuHangNam):
+ *      (quan_nhan_id, nam) UNIQUE — 1 row/năm/quân nhân.
+ *      Vì vậy strategy dùng UPSERT thay vì CREATE: update row tồn tại
+ *      nếu có (vd: đã có CSTDCS, giờ add flag BKBQP → cộng dồn vào row
+ *      sẵn có, KHÔNG tạo row mới).
+ *
+ *  FLOW:
+ *    Submit:   buildSubmitPayload → check eligibility chuỗi qua
+ *              `profile.service.checkAwardEligibility` (đảm bảo người nộp
+ *              không bypass FE).
+ *    Approve:  importInTransaction → upsert DanhHieuHangNam với 3 field
+ *              flag tương ứng. Decision number map qua decisionMappings
+ *              (chính) + specialDecisionMapping (3 flag).
+ *
+ *  FE PAYLOAD: dùng `data_danh_hieu` (chia sẻ với DON_VI_HANG_NAM,
+ *  phân biệt qua loai_de_xuat ở proposal).
+ * ════════════════════════════════════════════════════════════════════════════
+ */
 class CaNhanHangNamStrategy implements ProposalStrategy {
   readonly type = PROPOSAL_TYPES.CA_NHAN_HANG_NAM;
 

@@ -1,3 +1,9 @@
+/*
+ * ANNUAL REWARD CONTROLLER — CRUD khen thưởng hàng năm (CSTDCS, CSTT...).
+ * Excel: previewImport + confirmImport pattern.
+ * Sau insert/update/delete → trigger profile recalc (annual.ts).
+ */
+
 import { Request, Response } from 'express';
 import annualRewardService from '../services/annualReward.service';
 import profileService from '../services/profile.service';

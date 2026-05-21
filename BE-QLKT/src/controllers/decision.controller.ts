@@ -1,3 +1,9 @@
+/*
+ * DECISION CONTROLLER — quản lý số quyết định.
+ * Method: getAll (paginated), autocomplete (search prefix), create + upload PDF,
+ * update, delete, rename (cascade FK update), getFile (serve PDF).
+ */
+
 import { Request, Response } from 'express';
 import decisionService from '../services/decision.service';
 import { parsePagination, normalizeParam } from '../helpers/paginationHelper';

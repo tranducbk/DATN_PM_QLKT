@@ -1,3 +1,10 @@
+/*
+ * POSITION HISTORY ROUTE — lịch sử chức vụ quân nhân.
+ * CRUD. Insert tự auto-close chức vụ trước (gợi ý suggestedEndDate).
+ * Validate overlap (không cho 2 chức vụ cùng lúc).
+ * Recalc HCBVTQ profile sau mỗi thay đổi (số tháng nhóm hệ số đổi).
+ */
+
 import { Router } from 'express';
 import positionHistoryController from '../controllers/positionHistory.controller';
 import { verifyToken, requireManager, requireAuth } from '../middlewares/auth';

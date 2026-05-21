@@ -73,6 +73,29 @@ export function calculateEligibilityDate(ngayNhapNgu: Date | null | undefined, s
  * @param hangName - Tier label
  * @returns Status, optional milestone date, and Vietnamese guidance string
  */
+/**
+ * ╔══════════════════════════════════════════════════════════════════════╗
+ * ║  TENURE PROFILE — recalc trạng thái 3 hạng HCCSVV cho 1 quân nhân    ║
+ * ╠══════════════════════════════════════════════════════════════════════╣
+ * ║  3 TIER:  Hạng Ba (15y) → Hạng Nhì (25y) → Hạng Nhất (30y)         ║
+ * ║                                                                       ║
+ * ║  3 STATE cho mỗi tier:                                                ║
+ * ║    DA_NHAN     — đã có record trong khenThuongHCCSVV                 ║
+ * ║    DU_DIEU_KIEN— ngày hôm nay >= eligibility_date (ngay_nhap_ngu+N)  ║
+ * ║    CHUA_DU     — còn thiếu thời gian + tính số tháng còn lại         ║
+ * ║                                                                       ║
+ * ║  KHÁC NHAU vs eligibility ở chỗ tính NGÀY ĐỦ ĐIỀU KIỆN cụ thể (dùng ║
+ * ║  setFullYear + N) — để FE hiển thị "Dự kiến đủ điều kiện X/Y/Z".    ║
+ * ║                                                                       ║
+ * ║  GOI_Y TEXT:                                                          ║
+ * ║  BE build text tiếng Việt sẵn (không để FE format) để giữ            ║
+ * ║  consistency message giữa các module + dễ test assertion.            ║
+ * ║                                                                       ║
+ * ║  ADMIN OVERRIDE (Case 13):                                            ║
+ * ║  Admin có thể manually set status='DA_NHAN' qua DevZone (vd: import  ║
+ * ║  data cũ chưa có quyết định). Logic respect override này.            ║
+ * ╚══════════════════════════════════════════════════════════════════════╝
+ */
 export function calculateHCCSVV(
   ngayNhapNgu: Date | null | undefined,
   soNam: number,

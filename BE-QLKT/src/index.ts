@@ -1,3 +1,25 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  SERVER ENTRYPOINT — bootstrap Express + Socket.IO + middleware chain
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  BOOTSTRAP ORDER:
+ *  1. Express app + HTTP server.
+ *  2. Middleware: cors, body parser, cookie parser.
+ *  3. Mount routes (api/*).
+ *  4. errorHandler middleware (CUỐI cùng — bắt mọi throw).
+ *  5. Init Socket.IO + attach handshake auth.
+ *  6. Listen PORT.
+ *
+ *  ORDER QUAN TRỌNG:
+ *  - cors PHẢI trước routes (handle preflight OPTIONS).
+ *  - errorHandler PHẢI cuối (Express 4 bắt error qua signature 4 arg).
+ *  - 404 handler trong router/index.ts mount cuối các route.
+ *
+ *  HEALTH CHECK /health: load balancer ping được không cần token.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import { createServer } from 'http';
 import express from 'express';
 import cors from 'cors';

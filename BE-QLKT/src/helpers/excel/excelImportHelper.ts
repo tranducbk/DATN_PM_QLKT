@@ -2,6 +2,48 @@ import ExcelJS from 'exceljs';
 import { ValidationError } from '../../middlewares/errorHandler';
 import { MAX_EXCEL_ROWS } from '../../constants/excel.constants';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  EXCEL IMPORT HELPERS — load + validate + parse cell an toàn về memory
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  RỦI RO MEMORY của Excel import:
+ *
+ *  1. PARSE TOÀN BỘ WORKBOOK VÀO RAM:
+ *     ExcelJS load file XLSX bằng cách giải nén ZIP + parse XML → object
+ *     tree trong memory. File 10MB → object ~50-100MB (XML phồng to).
+ *     Vì vậy multer limit 10MB là HỢP LÝ; vượt sẽ OOM container.
+ *
+ *  2. MAX_EXCEL_ROWS hard limit:
+ *     File hợp lệ MIME XLSX nhưng kẻ tấn công có thể tạo file 1 cell
+ *     duy nhất "expand" tới hàng triệu row (zip bomb logic). Check
+ *     rowCount NGAY sau load để fail fast → reject trước khi loop parse.
+ *     MAX_EXCEL_ROWS hiện = 5000 (đủ cho 1 đơn vị 1 năm; lớn hơn nên
+ *     tách file).
+ *
+ *  3. STREAMING vs BUFFER:
+ *     ExcelJS có API streaming (workbook.xlsx.createInputStream) đỡ
+ *     tốn RAM hơn, NHƯNG khó dùng với multer memoryStorage. Hiện tại
+ *     dùng buffer-load vì:
+ *       - File < 10MB không cần streaming.
+ *       - Streaming khó random-access cell (nhiều validation cần).
+ *     Khi DB > 1M record + import vài chục MB, NÊN chuyển sang stream.
+ *
+ *  4. BATCH QUERY pattern (xem `batchQueryPersonnel` ở dưới):
+ *     Anti-pattern: loop từng row → query DB → N+1 queries.
+ *     Cách đúng: collect tất cả personnel_id → 1 query findMany({in: [...]})
+ *     → build Map → loop validate.
+ *     Tiết kiệm latency lẫn DB connection pool.
+ *
+ *  CELL PARSING:
+ *  - ExcelJS trả value với type động: string | number | Date | object
+ *    (vd: object cho cell có formula = { formula, result }).
+ *  - getCellString / getCellNumber chuẩn hoá về primitive + handle null.
+ *  - Date: ExcelJS auto-parse "DD/MM/YYYY" thành Date object nếu format
+ *    cell là date; KHÔNG dùng new Date(string) tự build (lỗi timezone).
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 type CellValue = string | number | null | undefined;
 
 export interface PreviewItem {

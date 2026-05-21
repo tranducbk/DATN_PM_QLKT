@@ -1,8 +1,45 @@
-/**
- * Socket service for Socket.IO connections.
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  SOCKET.IO SERVICE — real-time notification + force_logout
+ * ════════════════════════════════════════════════════════════════════════════
  *
- * Each authenticated user joins a private room by user ID.
- * Backend emits events to that room for real-time updates.
+ *  KIẾN TRÚC ROOM-PER-USER:
+ *
+ *      ┌──────────────┐
+ *      │  User A      │ ──── socket.io connection ──── joins "user_<A.id>"
+ *      └──────────────┘
+ *      ┌──────────────┐
+ *      │  User B      │ ──── socket.io connection ──── joins "user_<B.id>"
+ *      └──────────────┘
+ *
+ *  Service muốn gửi thông báo đến user X → io.to(`user_${X.id}`).emit(...)
+ *  Socket.IO tự broadcast tới tất cả socket connection có join room đó
+ *  (mỗi user có thể mở nhiều tab/device cùng lúc → nhiều socket cùng
+ *  room → tất cả đều nhận).
+ *
+ *  AUTH FLOW (handshake middleware io.use):
+ *  1. Client connect kèm token trong handshake.auth.token (KHÔNG dùng
+ *     header Authorization vì Socket.IO không hỗ trợ chuẩn).
+ *  2. Verify JWT với JWT_SECRET (giống REST auth middleware).
+ *  3. Decoded payload attach vào socket.user → handler sau biết user nào.
+ *  4. Verify FAIL → reject connection ngay (callback err).
+ *  5. Trả mã 'TOKEN_EXPIRED' riêng → FE biết refresh token rồi reconnect
+ *     (thay vì redirect login như case invalid).
+ *
+ *  CORS + KEEP-ALIVE:
+ *  - cors.origin: dùng chung whitelist với REST API.
+ *  - pingTimeout 60s + pingInterval 25s: heartbeat duy trì kết nối.
+ *    Nếu client mất mạng > 60s → server coi như disconnect → cleanup room.
+ *
+ *  SINGLETON `io`:
+ *  Module-level `let io` để các service khác (notification, auth) import
+ *  `emitToUser` mà không cần inject. Init 1 lần ở entrypoint (index.ts).
+ *
+ *  EVENT QUAN TRỌNG:
+ *  - 'new_notification': push thông báo đề xuất duyệt/từ chối, ...
+ *  - 'force_logout': khi user login mới, đẩy tab cũ ra (single session).
+ *  - 'recalc_done': khi BE recalc xong profile, refresh data trên FE.
+ * ════════════════════════════════════════════════════════════════════════════
  */
 
 import { Server, Socket } from 'socket.io';

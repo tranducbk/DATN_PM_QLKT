@@ -1,3 +1,9 @@
+/*
+ * ACCOUNT CONTROLLER — quản lý tài khoản. SUPER_ADMIN only.
+ * Bao gồm: CRUD, resetPassword, toggleActive, getMe (chính user).
+ * Validation Joi ở route, thin dispatch ở đây.
+ */
+
 import { Request, Response } from 'express';
 import accountService from '../services/account.service';
 import { ROLES, Role } from '../constants/roles.constants';

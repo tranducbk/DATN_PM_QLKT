@@ -1,3 +1,10 @@
+/*
+ * PROFILE ROUTE — read-only API hồ sơ cá nhân + đơn vị.
+ * 3 profile type: annual, tenure, contribution.
+ * /annual/:personnelId, /tenure/:personnelId, /contribution/:personnelId.
+ * Recalc endpoint: POST /recalc/:type/:id (ADMIN).
+ */
+
 import { Router } from 'express';
 import profileController from '../controllers/profile.controller';
 import { verifyToken, requireAdminOnly, requireManager, requireAuth } from '../middlewares/auth';

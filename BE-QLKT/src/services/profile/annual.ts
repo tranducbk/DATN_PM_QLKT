@@ -72,17 +72,27 @@ export async function getAnnualProfile(personnelId: string) {
  * @returns Streak length; non-`CSTDCS` years in the sequence stop the count
  */
 export function calculateContinuousCSTDCS(danhHieuList: DanhHieuHangNam[], year: number): number {
+  // THUẬT TOÁN đếm streak CSTDCS liên tục lùi từ (year - 1):
+  //
+  //   1. Sort giảm dần theo năm → duyệt từ năm gần nhất trước.
+  //   2. Lọc bỏ records >= year (chỉ xét quá khứ + năm liền trước).
+  //   3. Walk: nếu năm tiếp theo không liên tiếp (gap) HOẶC không phải CSTDCS
+  //      → DỪNG. Đây là điểm "break the chain".
+  //
+  // Vd: year=2026, records [2025 CSTDCS, 2024 CSTDCS, 2022 CSTDCS]
+  //     → đếm 2025 (OK), 2024 (OK), tới 2023 thì record là 2022 (gap) → break
+  //     → streak = 2 (chứ không phải 3, vì 2023 trống = đứt chuỗi)
   let count = 0;
   const sortedRewards = [...danhHieuList].sort((a, b) => b.nam - a.nam);
   const filteredRewards = sortedRewards.filter(r => r.nam <= year - 1);
   let currentYear = year - 1;
   for (const reward of filteredRewards) {
-    if (reward.nam !== currentYear) break;
+    if (reward.nam !== currentYear) break; // gap năm → đứt chuỗi
     if (reward.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS) {
       count++;
       currentYear--;
     } else {
-      break;
+      break; // năm có award khác CSTDCS → đứt chuỗi
     }
   }
 
@@ -192,11 +202,33 @@ export function computeChainContext(
   cstdcsLienTuc: number,
   year: number
 ): ChainContext {
+  // ─────────────────────────────────────────────────────────────────────
+  //  TÍNH "CHAIN CONTEXT" — bối cảnh chuỗi danh hiệu (KHÔNG lưu DB)
+  // ─────────────────────────────────────────────────────────────────────
+  //  Vì BKBQP/CSTDTQ/BKTTCP có thể nhận LẶP LẠI theo chu kỳ, ta cần biết:
+  //    - chainStartYear:    năm bắt đầu chuỗi CSTDCS hiện tại.
+  //    - lastBkbqpYear:     năm gần nhất nhận BKBQP trong chuỗi (null=chưa).
+  //    - streakSinceLastX:  bao nhiêu năm CSTDCS đã trôi qua kể từ X.
+  //    - missedX:           lỡ bao nhiêu chu kỳ X mà chưa đề xuất.
+  //
+  //  Vd: cstdcsLienTuc=5, year=2026, đã nhận BKBQP năm 2023:
+  //      chainStartYear = 2026 - 5 = 2021
+  //      lastBkbqpYear = 2023
+  //      streakSinceLastBkbqp = 2026 - 2023 - 1 = 2  (năm 2024, 2025)
+  //      missedBkbqp = floor((2-1)/2) = 0  (chưa đến chu kỳ kế)
+  //
+  //  Nếu cstdcsLienTuc=7, year=2028, BKBQP gần nhất 2023:
+  //      streakSinceLastBkbqp = 2028 - 2023 - 1 = 4  (2024-2027)
+  //      missedBkbqp = floor((4-1)/2) = 1  (đã lỡ 1 chu kỳ năm 2025)
+  // ─────────────────────────────────────────────────────────────────────
+
   const chainStartYear = year - cstdcsLienTuc;
   const lastBkbqpYear = lastFlagYearInChain(danhHieuList, 'nhan_bkbqp', chainStartYear, year);
   const lastCstdtqYear = lastFlagYearInChain(danhHieuList, 'nhan_cstdtq', chainStartYear, year);
   const lastBkttcpYear = lastFlagYearInChain(danhHieuList, 'nhan_bkttcp', chainStartYear, year);
 
+  // Nếu chưa nhận flag → coi như chuỗi từ đầu (cstdcsLienTuc năm).
+  // Nếu đã nhận → tính từ năm sau khi nhận đến (year - 1).
   const streakSinceLastBkbqp =
     lastBkbqpYear !== null ? year - lastBkbqpYear - 1 : cstdcsLienTuc;
   const streakSinceLastCstdtq =
@@ -204,6 +236,9 @@ export function computeChainContext(
   const streakSinceLastBkttcp =
     lastBkttcpYear !== null ? year - lastBkttcpYear - 1 : cstdcsLienTuc;
 
+  // Đếm số chu kỳ đã LỠ (đến hạn mà không đề xuất).
+  // Công thức: streakSinceLast >= cycleYears thì đã có chu kỳ chưa dùng.
+  // floor((streak - 1) / cycle) cho ra số chu kỳ trọn vẹn đã trôi qua.
   const missedBkbqp = streakSinceLastBkbqp >= 2 ? Math.floor((streakSinceLastBkbqp - 1) / 2) : 0;
   const missedCstdtq = streakSinceLastCstdtq >= 3 ? Math.floor((streakSinceLastCstdtq - 1) / 3) : 0;
 
@@ -344,20 +379,47 @@ export function computeEligibilityFlags(
   danhHieuList: Array<Record<string, unknown> & { nam: number }>,
   year: number
 ) {
+  // ───────────────────────────────────────────────────────────────────
+  //  TÍNH 3 FLAG ĐỦ ĐIỀU KIỆN: BKBQP / CSTDTQ / BKTTCP (cá nhân)
+  // ───────────────────────────────────────────────────────────────────
+  //  Hàm này chạy khi recalc profile của 1 quân nhân. Kết quả lưu vào
+  //  bảng HoSoHangNam và FE hiển thị badge "Đủ ĐK ...".
+  //
+  //  Quan trọng: hàm này phải KHỚP với checkAwardEligibility (validate
+  //  khi approve đề xuất). Nếu lệch → recalc nói "đủ" mà approve báo
+  //  "không đủ" hoặc ngược lại → bug nhức nhối.
+  // ───────────────────────────────────────────────────────────────────
   const { cstdcs_lien_tuc, nckh_lien_tuc } = streaks;
+
+  // NCKH liên tục mỗi năm trong suốt chuỗi CSTDCS.
   const hasEnoughNCKH = nckh_lien_tuc >= cstdcs_lien_tuc;
   const ctx = computeChainContext(danhHieuList, cstdcs_lien_tuc, year);
 
+  // ─── BKBQP (chu kỳ 2 năm) ───
+  // Dùng `streakSinceLastBkbqp` (chuỗi từ lần nhận BKBQP gần nhất) thay
+  // vì `cstdcs_lien_tuc` (toàn chuỗi). Vì sao? Vì có thể đã nhận BKBQP
+  // năm 2022, đến 2026 lại đủ. Toàn chuỗi có thể là 6, nhưng từ lần
+  // nhận trước là 3 → chưa đến chu kỳ (cần 2, 4, 6 ...). 6 thì OK.
   const du_dieu_kien_bkbqp =
     ctx.streakSinceLastBkbqp >= 2 &&
     ctx.streakSinceLastBkbqp % 2 === 0 &&
     hasEnoughNCKH;
 
+  // ─── CSTDTQ (chu kỳ 3 năm + 1 BKBQP trong cửa sổ 3y cuối) ───
+  // Dùng `cstdcs_lien_tuc` (KHÔNG dùng streakSinceLastCstdtq) — đây là
+  // ngoại lệ duy nhất, vì rule yêu cầu BKBQP nằm trong 3 năm cuối tính
+  // đến năm xét. Cửa sổ trượt 3y bắt buộc BKBQP mới ở chu kỳ hiện tại.
   const bkbqpIn3Years = countFlagInRange(danhHieuList, year, 3, 'nhan_bkbqp');
   const du_dieu_kien_cstdtq =
     cstdcs_lien_tuc >= 3 && cstdcs_lien_tuc % 3 === 0 &&
     bkbqpIn3Years >= 1 && hasEnoughNCKH;
 
+  // ─── BKTTCP cá nhân (chu kỳ 7 năm + 3 BKBQP + 2 CSTDTQ) ───
+  // LIFETIME: đã nhận 1 lần → block vĩnh viễn (hasReceivedBKTTCP).
+  // STRICT EQUALITY: `bkbqpIn7Years === 3` và `cstdtqIn7Years === 2`
+  // (KHÔNG dùng >=) vì lifetime — phải chính xác 3 BKBQP + 2 CSTDTQ
+  // trong 7 năm để khớp với business rule. Nếu nhiều hơn → bất thường
+  // (đã có gì đó sai, không cho nhận BKTTCP).
   const hasReceivedBKTTCP = danhHieuList.some(r => r.nhan_bkttcp === true);
   const bkbqpIn7Years = countFlagInRange(danhHieuList, year, 7, 'nhan_bkbqp');
   const cstdtqIn7Years = countFlagInRange(danhHieuList, year, 7, 'nhan_cstdtq');

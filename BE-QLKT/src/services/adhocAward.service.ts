@@ -1,3 +1,35 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  ADHOC AWARD SERVICE — khen thưởng đột xuất (KhenThuongDotXuat)
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  BUSINESS RULE:
+ *  Khen thưởng đột xuất KHÔNG đi qua quy trình đề xuất (Manager → Admin
+ *  duyệt). Admin trực tiếp tạo khi có sự kiện đột xuất (vd: cứu người,
+ *  hoàn thành nhiệm vụ đặc biệt).
+ *
+ *  ĐẶC THÙ:
+ *  - Đối tượng: cá nhân HOẶC đơn vị (mutually exclusive).
+ *  - Không có chuỗi/cấp bậc → 1 record độc lập.
+ *  - Có thể attach nhiều file (ảnh + tài liệu).
+ *  - Loại khen thưởng tự do (free text danh hieu).
+ *
+ *  WHY tách khỏi proposal flow:
+ *  - Tính chất "đột xuất" cần xử lý nhanh, không qua duyệt nhiều bước.
+ *  - Strategy pattern không apply (không có chuỗi, không có eligibility check).
+ *  - File attachment đa dạng (ảnh, PDF, Word) — khác PDF quyết định.
+ *
+ *  ATTT — UPLOAD FILE:
+ *  - multer adhocAwardUpload accept ảnh + doc + xls (xem configs/multer.ts).
+ *  - Limit 50MB/file (lớn hơn 10MB của proposal vì có ảnh).
+ *  - Lưu vào storage/adhoc-awards/ với filename sanitized.
+ *  - File path trong DB → KHÔNG expose raw path cho FE (qua URL có auth).
+ *
+ *  NOTIFICATION:
+ *  Sau khi tạo, notify đối tượng được khen + manager đơn vị qua socket.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import path from 'path';
 import fs from 'fs/promises';
 import { prisma } from '../models';
