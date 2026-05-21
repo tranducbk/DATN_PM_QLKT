@@ -10,6 +10,8 @@ Khác biệt kỹ thuật chính của App Router là Server Components: thành 
 
 Đặc thù phân vùng theo bốn vai trò người dùng của PM QLKT khớp tự nhiên với App Router: các trang đặt lần lượt dưới \texttt{app/super-admin/}, \texttt{app/admin/}, \texttt{app/manager/}, \texttt{app/user/}; mỗi nhánh có \texttt{layout.tsx} riêng để áp các kiểm tra phân quyền chung. Trang Bảng điều khiển dành cho Admin tại \texttt{app/admin/dashboard/page.tsx} có thể gọi trực tiếp hàm tổng hợp số liệu phía máy chủ và trả về HTML đã render, tránh nhiều yêu cầu fetch nhỏ từ trình duyệt và rút ngắn thời gian hiển thị nội dung đầu tiên.
 
+Đồ án đã cân nhắc hai phương án thay thế. Remix có mô hình data loader đơn giản hơn nhưng cộng đồng và hệ sinh thái plugin nhỏ hơn rõ rệt, đồng thời thiếu công cụ tách bundle theo route trưởng thành như Next.js. SvelteKit có hiệu năng runtime tốt nhưng buộc đội ngũ học thêm framework view mới ngoài React, trong khi Ant Design -- thư viện UI chủ lực của hệ thống -- mặc định phục vụ React. Vì vậy Next.js được chọn để tận dụng hệ sinh thái React sẵn có và mô hình Server Components mà không phải đánh đổi thư viện UI.
+
 \section{TypeScript và Express --- Nền tảng backend}
 \label{section:3.2}
 
@@ -18,6 +20,8 @@ Express là khung HTTP tối giản trên nền Node.js, ra mắt từ năm 2010
 TypeScript được dùng song song với Express ở toàn bộ backend để phát hiện lỗi từ thời điểm biên dịch. Cấu hình \texttt{tsconfig.json} đặt ở chế độ nới lỏng (\texttt{strict: false}, \texttt{strictNullChecks: false}) nhằm dung hoà giữa độ chặt của kiểu và ergonomics khi tương tác với các đối tượng có nhiều trường tuỳ chọn của Express. Bù lại, các kiểu Prisma sinh tự động từ schema được sử dụng xuyên suốt tầng Service và Repository, giữ tính nhất quán với cơ sở dữ liệu nhờ trình soạn thảo gợi ý đầy đủ.
 
 Đặc tính chuỗi middleware được khai thác qua một mẫu năm tầng cố định cho route nhạy cảm: \texttt{verifyToken -> checkRole -> validate(schema) -> auditLog(options) -> controller.method}. Mỗi tầng đảm nhiệm một mối quan tâm độc lập -- xác thực, phân quyền, kiểm tra dữ liệu, ghi nhật ký -- cho phép tái sử dụng giữa các route. Hàm \texttt{catchAsync} gói handler bất đồng bộ để chuyển lỗi sang middleware xử lý lỗi tập trung, tránh viết lặp \texttt{try/catch} ở mỗi controller.
+
+Hai phương án backend khác cũng được cân nhắc. Fastify nhanh hơn Express khoảng 20\,\% qua benchmark độc lập nhưng dùng schema-based validation gắn cứng với JSON Schema, gây trùng lặp với Zod đã chọn cho frontend (Mục~\ref{section:3.7}). NestJS cung cấp kiến trúc module hoá rõ ràng với decorator nhưng buộc đội ngũ học framework opinion-heavy và tăng số lượng abstraction (Module, Provider, Guard) -- chi phí học không tương xứng với quy mô một đồ án 23 model. Express được chọn vì middleware chain đủ linh hoạt cho mẫu năm tầng nói trên, hệ sinh thái plugin dày (Helmet, express-rate-limit, multer đều được dùng), và dễ refactor sang Fastify hoặc NestJS sau này nếu nhu cầu thay đổi.
 
 \section{PostgreSQL và Prisma ORM}
 \label{section:3.3}
