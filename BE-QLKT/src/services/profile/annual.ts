@@ -396,6 +396,8 @@ export async function recalculateAnnualProfile(personnelId: string, year: number
     goi_y = `Phần mềm chưa hỗ trợ khen thưởng cao hơn ${labelBKTTCP}, sẽ phát triển trong thời gian tới.`;
   } else if (du_dieu_kien_bkttcp) {
     goi_y = `Đã đủ điều kiện đề nghị xét ${labelBKTTCP}.`;
+  } else if (du_dieu_kien_cstdtq && du_dieu_kien_bkbqp) {
+    goi_y = `Đã đủ điều kiện đề nghị xét ${labelBKBQP} và ${labelCSTDTQ}.`;
   } else if (du_dieu_kien_cstdtq) {
     goi_y = `Đã đủ điều kiện đề nghị xét ${labelCSTDTQ}.`;
   } else if (du_dieu_kien_bkbqp) {

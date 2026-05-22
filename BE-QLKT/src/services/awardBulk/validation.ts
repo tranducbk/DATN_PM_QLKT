@@ -181,14 +181,6 @@ export async function checkDuplicateUnitAwards(
           continue;
         }
       }
-      if (isDv && (existing.nhan_bkbqp || existing.nhan_bkttcp)) {
-        duplicateErrors.push(`Đơn vị đã có BK năm ${nam}, không thể thêm ${getDanhHieuName(danhHieu)}`);
-        continue;
-      }
-      if (isBk && existing.danh_hieu && DANH_HIEU_DON_VI_CO_BAN.has(existing.danh_hieu)) {
-        duplicateErrors.push(`Đơn vị đã có ${getDanhHieuName(existing.danh_hieu)} năm ${nam}, không thể thêm ${getDanhHieuName(danhHieu)}`);
-        continue;
-      }
     }
   }
 

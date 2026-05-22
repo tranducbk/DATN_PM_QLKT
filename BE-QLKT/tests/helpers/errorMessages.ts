@@ -375,6 +375,8 @@ export const suggestionMessages = {
   personalEligibleBkttcp: 'Đã đủ điều kiện đề nghị xét Bằng khen của Thủ tướng Chính phủ.',
   personalEligibleCstdtq: 'Đã đủ điều kiện đề nghị xét Chiến sĩ thi đua toàn quân.',
   personalEligibleBkbqp: 'Đã đủ điều kiện đề nghị xét Bằng khen của Bộ trưởng Bộ Quốc phòng.',
+  personalEligibleBkbqpAndCstdtq:
+    'Đã đủ điều kiện đề nghị xét Bằng khen của Bộ trưởng Bộ Quốc phòng và Chiến sĩ thi đua toàn quân.',
   personalNotEligible:
     'Chưa đủ điều kiện đề nghị xét Bằng khen của Bộ trưởng Bộ Quốc phòng hoặc Chiến sĩ thi đua toàn quân.',
   personalUnsupported:

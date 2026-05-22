@@ -212,11 +212,15 @@ class DonViHangNamStrategy implements ProposalStrategy {
         const isBkbqp = item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP || !!item.nhan_bkbqp;
         const isBkttcp =
           item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP || !!item.nhan_bkttcp;
+        // Unit BKBQP/BKTTCP proposals carry the decision in `so_quyet_dinh` (not the `_bkbqp/_bkttcp`
+        // variants used by personal items), so fall back to it when the item's danh_hieu IS the chain code.
         const soQuyetDinhBKBQP =
           item.so_quyet_dinh_bkbqp ||
+          (item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP ? item.so_quyet_dinh : null) ||
           (isBkbqp ? (specialDecisionMapping.BKBQP?.so_quyet_dinh ?? null) : null);
         const soQuyetDinhBKTTCP =
           item.so_quyet_dinh_bkttcp ||
+          (item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP ? item.so_quyet_dinh : null) ||
           (isBkttcp ? (specialDecisionMapping.BKTTCP?.so_quyet_dinh ?? null) : null);
 
         const whereCondition = {
