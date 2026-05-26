@@ -1,5 +1,4 @@
 import type { Prisma } from '../../generated/prisma';
-import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
 import type {
   ProposalDanhHieuItem,
   ProposalThanhTichItem,
@@ -23,7 +22,7 @@ const DANH_HIEU_KEYS = [
 
 const SINGLE_KEY = ['so_quyet_dinh'] as const;
 
-interface PendingProposalRow {
+interface ProposalRow {
   id: string;
   data_danh_hieu: Prisma.JsonValue | null;
   data_thanh_tich: Prisma.JsonValue | null;
@@ -32,13 +31,15 @@ interface PendingProposalRow {
 }
 
 /**
- * Cascade rename so_quyet_dinh across pending proposal payloads (JSON columns only).
- * Award tables (relational columns) are auto-updated by Postgres ON UPDATE CASCADE
- * via FileQuyetDinh hard FK — no app-level update needed for those.
+ * Cascade rename so_quyet_dinh across all proposal payloads (JSON columns only),
+ * regardless of status. Award tables (relational columns) are auto-updated by
+ * Postgres ON UPDATE CASCADE via FileQuyetDinh hard FK — no app-level update needed.
+ * Approved/Rejected JSON snapshots are also rewritten so UI views stay consistent
+ * across proposal detail and award table list.
  * @param tx - Prisma transaction client
  * @param oldSqd - Trimmed old so_quyet_dinh value
  * @param newSqd - Trimmed new so_quyet_dinh value
- * @returns Count of pending proposal rows scanned and updated
+ * @returns Count of proposal rows scanned and updated
  */
 export async function cascadeRenameSoQuyetDinh(
   tx: Tx,
@@ -57,8 +58,7 @@ async function renameInProposalPayloads(
   oldSqd: string,
   newSqd: string
 ): Promise<{ scanned: number; updated: number }> {
-  const pending = (await tx.bangDeXuat.findMany({
-    where: { status: PROPOSAL_STATUS.PENDING },
+  const proposals = (await tx.bangDeXuat.findMany({
     select: {
       id: true,
       data_danh_hieu: true,
@@ -66,10 +66,10 @@ async function renameInProposalPayloads(
       data_nien_han: true,
       data_cong_hien: true,
     },
-  })) as PendingProposalRow[];
+  })) as ProposalRow[];
 
   let updated = 0;
-  for (const row of pending) {
+  for (const row of proposals) {
     const updates: Prisma.BangDeXuatUpdateInput = {};
     let rowChanged = false;
 
@@ -103,7 +103,7 @@ async function renameInProposalPayloads(
     updated++;
   }
 
-  return { scanned: pending.length, updated };
+  return { scanned: proposals.length, updated };
 }
 
 type ProposalItem =

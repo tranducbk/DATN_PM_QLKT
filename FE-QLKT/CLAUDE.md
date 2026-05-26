@@ -1,6 +1,6 @@
 # FE-QLKT Frontend
 
-Next.js 14 (App Router) + TypeScript + Ant Design + Tailwind CSS + shadcn/ui
+Next.js 14 (App Router) + TypeScript + Ant Design + Tailwind CSS
 
 ## Structure
 
@@ -17,7 +17,6 @@ src/
 │   ├── error.tsx, not-found.tsx  # Error boundaries
 │   └── globals.css               # Tailwind directives + custom CSS
 ├── components/
-│   ├── ui/                       # shadcn/ui primitives (kebab-case, DO NOT modify)
 │   ├── shared/                   # Cross-cutting reusable components
 │   ├── auth/                     # Auth components (PascalCase)
 │   ├── accounts/                 # Account CRUD

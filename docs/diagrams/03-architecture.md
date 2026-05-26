@@ -15,7 +15,7 @@ flowchart LR
     subgraph FE[Frontend Next.js 14]
         FENext[Next.js App Router]
         FEPages[Pages SSR + Client Components]
-        FEComp[AntD + Tailwind + shadcn-ui]
+        FEComp[AntD + Tailwind CSS]
         FESocket[Socket.IO Client - hooks/useSocket]
         FEApi[lib/api/apiClient]
     end
@@ -195,7 +195,6 @@ flowchart TB
             CSHARE[shared]
             CSA[super-admin]
             CSL[system-logs]
-            CUI[ui shadcn]
             CMAIN[MainLayout.tsx + ThemeProvider.tsx]
         end
 

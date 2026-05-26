@@ -75,7 +75,7 @@ _(Ký và ghi rõ họ tên)_
   - 3.1 Next.js 14 — Framework frontend
   - 3.2 TypeScript + Express — Backend
   - 3.3 PostgreSQL + Prisma ORM
-  - 3.4 Ant Design + Tailwind CSS + shadcn/ui
+  - 3.4 Ant Design + Tailwind CSS
   - 3.5 Socket.IO — Real-time
   - 3.6 JWT (Access + Refresh)
   - 3.7 Zod — Validation hai phía thống nhất
@@ -208,7 +208,7 @@ Trước những hạn chế trên, việc xây dựng một phần mềm chuyê
 
 Phần mềm được xây dựng theo mô hình client – server với hai thành phần độc lập triển khai trên cùng một máy chủ vật lý hoặc tách máy.
 
-- **Frontend** dùng Next.js 14 với mô hình App Router, viết bằng TypeScript, sử dụng Ant Design làm thư viện thành phần chính, kết hợp Tailwind CSS cho bố cục linh hoạt và shadcn/ui cho các thành phần đặc biệt.
+- **Frontend** dùng Next.js 14 với mô hình App Router, viết bằng TypeScript, sử dụng Ant Design làm thư viện thành phần chính, kết hợp Tailwind CSS cho bố cục linh hoạt.
 - **Backend** dùng Express trên Node.js, viết bằng TypeScript, tổ chức theo kiến trúc phân tầng (Route → Middleware → Controller → Service → Repository → Prisma). Lớp Repository được tách riêng giúp giảm sự phụ thuộc trực tiếp vào Prisma Client trong tầng Service, tạo điều kiện thay thế ORM trong tương lai mà không phải viết lại logic nghiệp vụ.
 - **Cơ sở dữ liệu** chọn PostgreSQL truy cập qua Prisma ORM. Toàn bộ schema (23 model) đã được mô hình hóa trong tệp `schema.prisma` duy nhất với migration tự động.
 - **Xác thực và phân quyền** dùng cặp JSON Web Token (Access Token thời hạn ngắn + Refresh Token có rotation) lưu trữ tại HttpOnly cookie. Bốn vai trò được áp đặt qua middleware `requireRole` chạy trước mỗi endpoint nhạy cảm.
@@ -223,7 +223,7 @@ Phần còn lại của báo cáo được tổ chức thành năm chương theo
 
 **Chương 2 — Khảo sát và phân tích yêu cầu** trình bày kết quả khảo sát thực tế công tác khen thưởng tại Học viện Khoa học Quân sự, xác định các tác nhân tham gia hệ thống, mô tả tổng quan chức năng qua sơ đồ use case và các sơ đồ hoạt động cho những quy trình nghiệp vụ chính (đề xuất – phê duyệt, kiểm tra điều kiện chuỗi, nhập Excel hàng loạt). Phần đặc tả chi tiết sáu use case trọng yếu được trình bày dưới dạng bảng. Cuối cùng, chương đưa ra các yêu cầu phi chức năng về hiệu năng, bảo mật và tính nhất quán.
 
-**Chương 3 — Công nghệ sử dụng** giới thiệu các thành phần công nghệ được lựa chọn cho dự án và lý do chọn từng thành phần trong ngữ cảnh PM QLKT, bao gồm Next.js 14 App Router, Express + TypeScript, PostgreSQL + Prisma, các thư viện giao diện (Ant Design, Tailwind, shadcn/ui), Socket.IO, JWT, Zod, Jest và ExcelJS.
+**Chương 3 — Công nghệ sử dụng** giới thiệu các thành phần công nghệ được lựa chọn cho dự án và lý do chọn từng thành phần trong ngữ cảnh PM QLKT, bao gồm Next.js 14 App Router, Express + TypeScript, PostgreSQL + Prisma, các thư viện giao diện (Ant Design, Tailwind CSS), Socket.IO, JWT, Zod, Jest và ExcelJS.
 
 **Chương 4 — Thiết kế, triển khai và đánh giá hệ thống** đi sâu vào kiến trúc phân tầng của hệ thống, sơ đồ gói cho frontend và backend, sơ đồ lớp cho năm module nghiệp vụ trọng yếu, các sơ đồ tuần tự cho luồng đăng nhập, tạo đề xuất, phê duyệt và tính lại điều kiện chuỗi, thiết kế cơ sở dữ liệu (ERD đầy đủ và mô tả schema), phần xây dựng thực tế kèm các đoạn mã minh họa, kết quả kiểm thử và hướng dẫn triển khai bằng Docker hoặc PM2.
 
@@ -528,13 +528,11 @@ Trong PM QLKT, schema gồm 23 model với tổng cộng 577 dòng. Quy ước �
 
 Với 23 model và nhiều quan hệ N–N qua bảng trung gian (vd: `BangDeXuat ↔ QuanNhan` qua `data_danh_hieu` JSONB hoặc qua `HoSoNienHan`), khả năng sinh truy vấn `include`, `select` của Prisma giúp giảm số dòng code ở tầng Repository so với việc viết câu lệnh SQL thủ công. Đây là lý do quyết định chọn Prisma cho PM QLKT.
 
-## 3.4 Ant Design, Tailwind CSS và shadcn/ui — bộ giao diện ba lớp
+## 3.4 Ant Design và Tailwind CSS — bộ giao diện hai lớp
 
-Frontend của PM QLKT sử dụng kết hợp ba thư viện giao diện ở các vai trò khác nhau. Ant Design là thư viện thành phần React do Alibaba phát triển, cung cấp các thành phần phức tạp đã hoàn thiện như `Table` có lọc và phân trang, `Form` tích hợp validation, `Select` đa lớp, `DatePicker` hỗ trợ múi giờ, `Modal` lồng nhau và `Notification`. Trong PM QLKT, Ant Design đảm nhiệm các form đề xuất nhiều bước, bảng danh sách quân nhân với cột động và các hộp thoại xác nhận phê duyệt.
+Frontend của PM QLKT sử dụng kết hợp hai thư viện giao diện ở các vai trò khác nhau. Ant Design là thư viện thành phần React do Alibaba phát triển, cung cấp các thành phần phức tạp đã hoàn thiện như `Table` có lọc và phân trang, `Form` tích hợp validation, `Select` đa lớp với tìm kiếm, `DatePicker` hỗ trợ múi giờ, `Modal` lồng nhau, `Dropdown`, `Tag` và `Notification`. Trong PM QLKT, Ant Design đảm nhiệm toàn bộ các form đề xuất nhiều bước, bảng danh sách quân nhân với cột động, các hộp thoại xác nhận phê duyệt và menu thao tác hàng.
 
-Tailwind CSS là khung CSS utility-first cho phép áp các lớp đơn lẻ trực tiếp trong JSX để biểu diễn bố cục, khoảng cách, màu sắc và đáp ứng nhiều kích cỡ màn hình. Tailwind không thay thế Ant Design mà bổ sung ở những vị trí cần điều chỉnh chi tiết bố cục mà các thành phần Ant Design chưa đáp ứng được, ví dụ căn lề tinh tế giữa các thẻ thông tin trên trang Bảng điều khiển, hoặc tổ chức lưới các thẻ huy chương theo hai cột trên màn hình lớn và một cột trên thiết bị di động.
-
-Shadcn/ui có vai trò khác biệt: đây không phải là gói npm cài đặt trực tiếp mà là một bộ sao chép mã nguồn thành phần dựa trên Radix UI. Lập trình viên dùng lệnh CLI để sao chép một thành phần (ví dụ `button`, `dropdown-menu`, `dialog`) vào thư mục `components/ui/` của dự án và sửa lại tự do. Cách tiếp cận này tránh tình trạng phụ thuộc vào phiên bản thư viện cứng và đặc biệt hữu ích cho các thành phần ít gặp như danh sách lệnh tổ hợp phím trong khu vực dành cho lập trình viên (DevZone) của hệ thống. Quy tắc sử dụng giữa ba thư viện được đồng thuận trong nhóm: Ant Design ưu tiên cho biểu mẫu và bảng nghiệp vụ, Tailwind cho bố cục và chỉnh sửa nhẹ, shadcn/ui cho các thành phần đặc thù cần kiểm soát trực tiếp mã nguồn.
+Tailwind CSS là khung CSS utility-first cho phép áp các lớp đơn lẻ trực tiếp trong JSX để biểu diễn bố cục, khoảng cách, màu sắc và đáp ứng nhiều kích cỡ màn hình. Tailwind không thay thế Ant Design mà bổ sung ở những vị trí cần điều chỉnh chi tiết bố cục mà các thành phần Ant Design chưa đáp ứng được, ví dụ căn lề tinh tế giữa các thẻ thông tin trên trang Bảng điều khiển, hoặc tổ chức lưới các thẻ huy chương theo hai cột trên màn hình lớn và một cột trên thiết bị di động. Quy tắc sử dụng được đồng thuận trong nhóm: Ant Design ưu tiên cho biểu mẫu, bảng và thoại nghiệp vụ; Tailwind cho bố cục, khoảng cách và chỉnh sửa nhẹ. Cách phân chia này giảm số thư viện UI mà nhóm phải bảo trì, đồng bộ phong cách thiết kế trên toàn bộ ứng dụng và tránh dual-stack khi cùng một loại thành phần được hiện thực bằng nhiều thư viện khác nhau.
 
 ## 3.5 Socket.IO — kênh thông báo thời gian thực
 
@@ -814,23 +812,22 @@ Sản phẩm sử dụng tổng cộng 30 thư viện mã nguồn mở chia làm
 | 1 | Khung phát triển frontend | Next.js | 14.x |
 | 2 | Thư viện thành phần UI | Ant Design | 5.x |
 | 3 | Khung CSS utility | Tailwind CSS | 3.x |
-| 4 | Bộ thành phần đặc thù | shadcn/ui (Radix UI) | 1.x |
-| 5 | Khung phát triển backend | Express | 4.x |
-| 6 | Ngôn ngữ kiểu tĩnh | TypeScript | 5.x |
-| 7 | Hệ quản trị CSDL | PostgreSQL | 15 |
-| 8 | ORM | Prisma | 5.x |
-| 9 | Xác thực JWT | jsonwebtoken | 9.x |
-| 10 | Băm mật khẩu | bcrypt | 5.x |
-| 11 | Kiểm tra dữ liệu BE | Zod | 4.x |
-| 12 | Kiểm tra dữ liệu FE | Zod | 3.x |
-| 13 | Thông báo realtime | Socket.IO | 4.x |
-| 14 | Đọc/ghi Excel | ExcelJS | 4.x |
-| 15 | Khung kiểm thử | Jest + ts-jest | 29.x |
-| 16 | Quản lý tiến trình production | PM2 | 5.x |
-| 17 | Header bảo mật HTTP | Helmet | 7.x |
-| 18 | CORS | cors | 2.x |
-| 19 | Giới hạn tốc độ | express-rate-limit | 7.x |
-| 20 | Quản lý tệp tải lên | Multer | 1.x |
+| 4 | Khung phát triển backend | Express | 4.x |
+| 5 | Ngôn ngữ kiểu tĩnh | TypeScript | 5.x |
+| 6 | Hệ quản trị CSDL | PostgreSQL | 15 |
+| 7 | ORM | Prisma | 5.x |
+| 8 | Xác thực JWT | jsonwebtoken | 9.x |
+| 9 | Băm mật khẩu | bcrypt | 5.x |
+| 10 | Kiểm tra dữ liệu BE | Zod | 4.x |
+| 11 | Kiểm tra dữ liệu FE | Zod | 3.x |
+| 12 | Thông báo realtime | Socket.IO | 4.x |
+| 13 | Đọc/ghi Excel | ExcelJS | 4.x |
+| 14 | Khung kiểm thử | Jest + ts-jest | 29.x |
+| 15 | Quản lý tiến trình production | PM2 | 5.x |
+| 16 | Header bảo mật HTTP | Helmet | 7.x |
+| 17 | CORS | cors | 2.x |
+| 18 | Giới hạn tốc độ | express-rate-limit | 7.x |
+| 19 | Quản lý tệp tải lên | Multer | 1.x |
 
 Môi trường phát triển sử dụng Visual Studio Code có cài extension Prisma, ESLint và Prettier; quản lý mã nguồn qua Git và GitHub; quản lý cơ sở dữ liệu trực quan qua Prisma Studio (lệnh `npx prisma studio`).
 

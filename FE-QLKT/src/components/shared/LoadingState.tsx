@@ -1,6 +1,6 @@
 'use client';
 
-import { Loader2 } from 'lucide-react';
+import { Spin } from 'antd';
 import { cn } from '@/lib/utils';
 
 type LoadingSize = 'sm' | 'md' | 'lg';
@@ -12,10 +12,10 @@ interface LoadingStateProps {
   fullPage?: boolean;
 }
 
-const ICON_SIZE: Record<LoadingSize, string> = {
-  sm: 'h-6 w-6',
-  md: 'h-10 w-10',
-  lg: 'h-14 w-14',
+const SPIN_SIZE: Record<LoadingSize, 'small' | 'default' | 'large'> = {
+  sm: 'small',
+  md: 'default',
+  lg: 'large',
 };
 
 export function LoadingState({
@@ -27,14 +27,12 @@ export function LoadingState({
   return (
     <div
       className={cn(
-        'flex w-full flex-col items-center justify-center',
+        'flex w-full flex-col items-center justify-center gap-4',
         fullPage ? 'min-h-screen' : 'min-h-[200px]',
         className
       )}
     >
-      <Loader2
-        className={cn(ICON_SIZE[size], 'animate-spin text-blue-500 dark:text-blue-400 mb-4')}
-      />
+      <Spin size={SPIN_SIZE[size]} />
       <p className="text-gray-600 dark:text-gray-400">{text}</p>
     </div>
   );

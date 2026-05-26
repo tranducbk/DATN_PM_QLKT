@@ -158,16 +158,15 @@
 
 **Phản biện:** "Sao không Pusher/Ably?" → "Phải gửi data ra Internet, vi phạm chính sách bảo mật LAN nội bộ."
 
-### A.8 — Ant Design + Tailwind CSS + shadcn/ui — tại sao 3 thư viện UI?
+### A.8 — Ant Design + Tailwind CSS — tại sao kết hợp 2 thư viện UI?
 
-**Ngắn:** Ba thư viện phục vụ ba mục đích khác nhau, không trùng lặp: Ant Design cho component nghiệp vụ phức tạp (Form, Table, Modal), Tailwind cho spacing/layout, shadcn/ui cho component mở rộng cần tuỳ biến sâu.
+**Ngắn:** Hai thư viện phục vụ hai mục đích khác nhau, không trùng lặp: Ant Design cho component nghiệp vụ phức tạp (Form, Table, Modal, Dropdown), Tailwind CSS cho spacing/layout/responsive — không động đến logic component.
 
 **Chi tiết:**
-- **Ant Design:** form validation tích hợp, table có pagination/sort/filter sẵn, locale tiếng Việt — rút ngắn 50 % code so với tự build.
-- **Tailwind:** dùng cho layout grid, spacing margin/padding, responsive — không động đến component logic.
-- **shadcn/ui:** dùng cho 2–3 component đặc biệt (vd: command palette `Cmd+K`, advanced popover) mà Ant Design không có.
+- **Ant Design:** form validation tích hợp, table có pagination/sort/filter sẵn, locale tiếng Việt — rút ngắn ~50 % code so với tự build component.
+- **Tailwind:** dùng cho layout grid, spacing margin/padding, flex/responsive — chỉnh các vị trí mà Ant Design chưa đáp ứng được (vd: bố cục thẻ huy chương 2 cột trên desktop, 1 cột trên mobile).
 
-**Hạn chế:** Bundle CSS có thể overlap. Em đã purge Tailwind theo content và import từng component AntD theo nhu cầu (`import { Table } from 'antd'`).
+**Hạn chế:** Bundle CSS có thể overlap nhẹ. Em đã purge Tailwind theo content và import từng component AntD theo nhu cầu (`import { Table } from 'antd'`).
 
 **Phản biện:** "Có thể chỉ dùng Tailwind + Headless UI?" → "Có, nhưng phải tự xây Form, Table — tốn 4–6 tuần thêm."
 
@@ -282,27 +281,22 @@ RootLayout (app/layout.tsx)
 
 **Phản biện:** "Component cha là Server, con là Client truyền props — props phải serializable?" → "Đúng. Em không truyền function/JSX qua ranh giới này, chỉ truyền data thuần."
 
-### A.14 — Tailwind + PostCSS + shadcn/ui — config file gì, hoạt động ra sao?
+### A.14 — Tailwind CSS + PostCSS — config file gì, hoạt động ra sao?
 
-**Ngắn:** Tailwind sinh CSS theo class trong code (JIT). PostCSS là pipeline xử lý. shadcn/ui là CLI copy component vào repo, không phải npm package.
+**Ngắn:** Tailwind sinh CSS theo class trong code (JIT — Just-In-Time). PostCSS là pipeline xử lý plugin CSS.
 
 **File cấu hình project em có:**
-- `tailwind.config.ts` — khai báo `content: ['./src/**/*.{ts,tsx}']` để Tailwind scan class từ code, `theme.extend` thêm color palette tùy biến, `darkMode: 'class'` bật dark mode qua class trên `<html>`.
+- `tailwind.config.js` — khai báo `content: ['./src/**/*.{ts,tsx}']` để Tailwind scan class từ code, `theme.extend` thêm color palette tùy biến, `darkMode: 'class'` bật dark mode qua class trên `<html>`.
 - `postcss.config.js` — chạy `tailwindcss` + `autoprefixer` plugin. Next.js đọc file này tự động khi build.
 - `src/app/globals.css` — import 3 directive `@tailwind base/components/utilities`. File này được import 1 lần ở `app/layout.tsx`.
-- `components.json` — config shadcn/ui CLI: alias `@/components`, style `default`, base color `slate`. CLI dùng nó khi gõ `npx shadcn@latest add button`.
-- `src/lib/utils.ts` — chứa `cn()` helper (clsx + tailwind-merge), shadcn/ui dùng để merge class có conflict.
+- `src/lib/utils.ts` — chứa `cn()` helper (clsx + tailwind-merge) để merge các class Tailwind có thể conflict (vd: `cn('p-4', isActive && 'p-2')` ra `p-2` đúng).
 
 **Tailwind hoạt động:**
 1. `next dev` → PostCSS chạy.
 2. Tailwind plugin scan `content` glob, tìm class string (`text-red-500`, `flex`, ...) trong file `.tsx`.
 3. Sinh CSS chỉ chứa class được dùng → bundle CSS final ~20-30 KB cho project em (so với 3 MB nếu include hết Tailwind).
 
-**shadcn/ui khác AntD:**
-- AntD: import từ npm, version cố định, khó tùy biến sâu.
-- shadcn/ui: copy source code vào `src/components/ui/`, em sửa trực tiếp được. Dùng `kebab-case.tsx` là exception duy nhất trong project (tất cả component khác PascalCase).
-
-**Hạn chế:** Bundle CSS có overlap nhẹ giữa AntD reset và Tailwind preflight. Em đã thử disable preflight (`corePlugins.preflight: false`) — không đáng kể.
+**Hạn chế:** Bundle CSS có overlap nhẹ giữa AntD reset và Tailwind preflight. Em đã thử disable preflight (`corePlugins.preflight: false`) — không đáng kể về kích thước nhưng AntD style ưu tiên hơn nếu xảy ra xung đột.
 
 **Phản biện:** "Sao không dùng styled-components hoặc emotion?" → "CSS-in-JS overhead runtime (~10-20 KB). Tailwind biên dịch lúc build, runtime cost = 0."
 
@@ -469,17 +463,18 @@ app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
 **Phản biện:** "Sao không bật full CSP?" → "AntD chưa hỗ trợ nonce-based CSP. Khi nào AntD v6 ra (đã có roadmap), em sẽ migrate. Hiện LAN nội bộ rủi ro XSS thấp."
 
-### A.20 — Thư viện FE phụ: dayjs, axios, chart.js, react-hook-form, react-pdf-viewer
+### A.20 — Thư viện FE phụ: dayjs, axios, chart.js, react-pdf-viewer
 
-**Ngắn:** 5 thư viện FE phụ trợ. Mỗi cái thay thế phương án "to" hơn để giữ bundle nhỏ.
+**Ngắn:** 4 thư viện FE phụ trợ. Mỗi cái thay thế phương án "to" hơn để giữ bundle nhỏ.
 
 | Thư viện | Mục đích | Thay cho |
 |---|---|---|
 | `dayjs` (~7 KB) | Format/parse date, locale tiếng Việt | `moment.js` (~70 KB), date-fns (~13 KB tree-shakable) |
 | `axios` | HTTP client với interceptor | `fetch` (phải tự wrap), TanStack Query (overkill cho CRUD đơn giản) |
 | `chart.js` + `react-chartjs-2` | Biểu đồ dashboard | `recharts` (phình bundle), `apache echarts` (overkill) |
-| `react-hook-form` + `@hookform/resolvers` | Form state + Zod validation | Formik (chậm hơn, mỗi keystroke re-render nhiều) |
 | `@react-pdf-viewer/core` | Xem PDF quyết định inline | `iframe src=...` (không có UI điều khiển), `pdf.js` thuần (phải tự build UI) |
+
+Form state dùng `Form.useForm()` của Ant Design (built-in, không cần thư viện ngoài), validation gọi `zodSchema.safeParse()` trong handler rồi map lỗi qua `form.setFields()`.
 
 **Axios interceptor (`src/lib/axiosInstance.ts`):**
 - Request: tự gắn `Authorization: Bearer <accessToken>` từ localStorage.
@@ -2922,6 +2917,44 @@ const ANH_HUNG_LLVT: ChainAwardConfig = {
 **Trả lời mẫu:**
 "Câu hỏi này khá rộng. Em xin trả lời trong phạm vi project — [trả lời phần em biết]. Phần [phần khác] vượt ngoài phạm vi đồ án, em sẽ tìm hiểu thêm."
 
+### L.7 — Khi bị hỏi "em có dùng AI (ChatGPT, Claude, Copilot...) để làm đồ án không?"
+
+**Nguyên tắc cốt lõi:**
+
+1. **Trung thực** — đừng phủ nhận. Hội đồng có thể test bằng cách yêu cầu giải thích chi tiết bất kỳ file/function nào. Nói dối, bị bắt thóp = mất credibility nặng hơn nhiều.
+2. **Định vị AI là công cụ, không phải tác giả** — như IDE, autocomplete, hoặc senior code reviewer.
+3. **Khẳng định ownership** — mọi quyết định kiến trúc + business logic + trade-off đều của em.
+4. **Demonstrate hiểu code** — sẵn sàng giải thích bất kỳ dòng nào.
+
+**Trả lời mẫu (kịch bản chuẩn):**
+
+> "Vâng, em có dùng AI như công cụ hỗ trợ — chủ yếu cho 3 việc: (1) generate boilerplate code lặp lại (vd: CRUD controller skeleton, Zod schema, Excel column config), (2) review pattern và gợi ý refactor khi em thấy code dài hoặc lặp, (3) viết test fixtures và unit test cases edge case mà em chưa nghĩ ra. Em coi AI giống IDE thông minh hơn — giúp em viết nhanh hơn nhưng không quyết định thay em.
+>
+> Tất cả quyết định kiến trúc (chọn Next.js + Express + Prisma, layered + repository pattern, strategy pattern cho 7 loại đề xuất), business logic (rule chuỗi danh hiệu BKBQP/CSTĐTQ/BKTTCP, cửa sổ trượt 3/7 năm, lifetime block cho BKTTCP cá nhân), và trade-off thiết kế (vd: FK string vs id, cascade rename scope) đều em hiểu sâu — em đã viết spec và prompt cụ thể cho AI dựa trên ngữ cảnh nghiệp vụ quân đội. Em sẵn sàng giải thích bất kỳ dòng code nào trong repo, dù do em viết tay hay AI hỗ trợ generate."
+
+**Follow-up trả lời sẵn:**
+
+| Hội đồng có thể hỏi | Trả lời |
+|---|---|
+| "AI viết bao nhiêu phần trăm?" | "Em không đo cụ thể được vì em sửa nhiều sau khi AI generate. Nhưng có thể nói: AI hỗ trợ ~30-40% boilerplate (form CRUD lặp, test fixture, Excel config), còn 60-70% còn lại — gồm toàn bộ business logic (eligibility, chain awards), schema design, và security middleware — em viết hoặc heavily edit. Quan trọng hơn: em hiểu hết." |
+| "Vậy có gì là của riêng em?" | "Domain knowledge và kiến trúc tổng thể. AI không biết về Luật Thi đua Khen thưởng 06/2022/QH15, không biết về rule chuỗi danh hiệu trong quân đội, không biết về thứ tự duyệt 4 cấp (USER → MANAGER → ADMIN → SUPER_ADMIN), không biết về workflow Phòng Chính trị Học viện. Em phải research luật + interview hướng dẫn + viết spec rồi mới prompt được AI để generate đúng." |
+| "Nếu AI bảo dùng cách A, em có biết khi nào A sai không?" | "Có. Em đã gặp tình huống AI suggest dùng pattern không phù hợp — ví dụ AI hay dùng default export cho React component nhưng em rule là named export (đã ghi trong CLAUDE.md của project). Em luôn `typecheck + jest + browser test` trước khi commit. Em đã reject nhiều code AI generate vì không đúng convention." |
+| "Em có biết tự code không, hay phải dựa AI?" | "Em biết tự code. AI giúp em làm nhanh hơn, nhưng nếu mất AI thì em vẫn build được — chỉ chậm hơn. Em đã viết tay nhiều phần khi cần precision (vd: cascade rename, transaction logic, audit log middleware). Em coi AI như Stack Overflow + IntelliSense thông minh hơn — không thay thế việc học và hiểu." |
+| "Theo em AI có làm giảm giá trị đồ án không?" | "Em nghĩ không — vì giá trị đồ án nằm ở: (1) hiểu nghiệp vụ + research luật, (2) thiết kế kiến trúc + chọn trade-off, (3) đảm bảo correctness + security + maintainability, (4) viết test cover được edge case, (5) deploy + vận hành thực tế. AI không làm được những phần này — nó chỉ tăng tốc gõ code. Industry hiện tại (GitHub Copilot, Cursor) cũng vậy: AI là công cụ, dev senior vẫn cần để guide nó." |
+
+**Tuyệt đối tránh:**
+
+- ❌ "Em không dùng AI" — risk fact-check lớn, mất credibility hoàn toàn nếu bị bắt thóp.
+- ❌ "AI làm hết, em chỉ ghép" — mất ownership, hội đồng có thể fail.
+- ❌ Lảng tránh / đánh trống lảng — giống như đang giấu.
+- ❌ Phòng thủ quá đà ("nhưng em hiểu hết...") trước khi được hỏi follow-up — có vẻ guilty.
+
+**Tone khuyên dùng:** Bình thản, tự tin, coi như chuyện đương nhiên (vì đúng là chuyện đương nhiên ở industry hiện tại). Đừng xin lỗi vì dùng AI — không có gì sai để xin lỗi.
+
+**Chốt câu hỏi (nếu hội đồng vẫn truy):**
+
+> "Em xin được khẳng định: dù em có dùng AI hỗ trợ hay không, em đã đầu tư đủ thời gian để hiểu mọi quyết định kỹ thuật trong project này. Em sẵn sàng được hội đồng test bằng cách hỏi chi tiết bất kỳ file, function, hay design decision nào — em sẽ giải thích được lý do và defend được trade-off."
+
 ---
 
 ## M. Khả năng bảo trì và mở rộng kiến trúc
@@ -4034,7 +4067,102 @@ id String @id @default(cuid()) @db.VarChar(30)
 
 **CUID2 (mới hơn) còn an toàn hơn:** thêm entropy, không leak server identity. Có thể migrate sau.
 
-### O.32 — Prisma sinh SQL kém hiệu quả — fix thế nào?
+### O.32 — FK award tables trỏ tới `FileQuyetDinh.so_quyet_dinh` (string) thay vì `id` (cuid) — đánh đổi gì?
+
+**Thiết kế hiện tại:** 8 bảng award (`ThanhTichKhoaHoc`, `DanhHieuHangNam`, `KhenThuongHCBVTQ`, `HuanChuongQuanKyQuyetThang`, `KyNiemChuongVSNXDQDNDVN`, `KhenThuongHCCSVV`, `KhenThuongDotXuat`, `DanhHieuDonViHangNam`) — tổng 13 FK relations — đều trỏ tới `FileQuyetDinh.so_quyet_dinh` (business identifier), không phải `FileQuyetDinh.id` (surrogate cuid).
+
+```prisma
+model ThanhTichKhoaHoc {
+  so_quyet_dinh String? @db.VarChar(100)
+  FileQuyetDinh FileQuyetDinh? @relation(
+    fields: [so_quyet_dinh],
+    references: [so_quyet_dinh],    // → string, không phải id
+    onUpdate: Cascade,
+    onDelete: Restrict
+  )
+}
+```
+
+**Pros (lý do giữ thiết kế):**
+
+| Điểm | Diễn giải |
+|---|---|
+| Số QĐ là natural business identifier | Mỗi QĐ chỉ có 1 số duy nhất theo luật ban hành — có thuộc tính "stable enough" |
+| Hiển thị không cần JOIN | `record.so_quyet_dinh` đã đủ cho UI; không cần `include: { FileQuyetDinh }` |
+| JSON proposal payload đồng bộ với relational | `data_danh_hieu: [{ so_quyet_dinh: 'QD-123' }]` cùng kiểu với cột relational — không cần lookup id khi build payload |
+| ON UPDATE CASCADE xử lý rename tự động | Postgres tự update tất cả award rows khi rename — code không phải biết |
+| Debug DB dễ | `SELECT * FROM ThanhTichKhoaHoc` đọc thấy "QD-123/2026" thay vì "cmphxxx" |
+
+**Cons (nhược điểm thật sự):**
+
+| Vấn đề | Hệ quả |
+|---|---|
+| Anti-pattern phổ biến (FK to mutable business key) | Trái standard practice — FK nên trỏ surrogate immutable |
+| Rename cost O(refs) | DB cascade quét 8 bảng + 10 FK constraints; app phải chạy `cascadeRename.ts` rewrite JSON tất cả proposal (PENDING + APPROVED + REJECTED) để UI nhất quán |
+| Index lớn hơn | `@db.VarChar(100)` vs `@db.VarChar(30)` cuid — index disk + memory footprint cao hơn ~3x |
+| FK validation chậm hơn marginal | String comparison vs cuid comparison |
+| Khó multi-tenant trong tương lai | Nếu cần đồng QĐ trùng số ở 2 tenant khác nhau → unique constraint global breaks |
+| Khó versioning QĐ | Nếu cần lịch sử các phiên bản QĐ → cần id stable làm version chain |
+
+**Alternative design (surrogate id FK):**
+
+```prisma
+model ThanhTichKhoaHoc {
+  file_quyet_dinh_id String? @db.VarChar(30)
+  FileQuyetDinh FileQuyetDinh? @relation(
+    fields: [file_quyet_dinh_id],
+    references: [id],               // → cuid immutable
+    onDelete: Restrict
+  )
+}
+```
+
+- Read: `include: { FileQuyetDinh: { select: { so_quyet_dinh, file_path } } }` → `record.FileQuyetDinh.so_quyet_dinh`
+- Rename: 1 UPDATE row trong `FileQuyetDinh`, JOIN reads tự thấy số mới — không cascade
+- Code: bỏ được `cascadeRename.ts` cho award tables (vẫn cần cho proposal JSON nếu JSON giữ string)
+
+**Vì sao không refactor về surrogate id?**
+
+1. **Scale hiện tại**: ~hàng trăm QĐ, vài nghìn award rows → cost cascade rename = miligiây, không phải hot path
+2. **Tần suất rename thấp**: chỉ khi fix typo lúc tạo mới — QĐ đã ban hành không bao giờ đổi số
+3. **Refactor scope quá rộng**: 59 file BE + 52 file FE + 48 file test + 1 migration + docs → 160+ file → risk:reward không cân với benefit "cleaner code"
+4. **Đã có test coverage**: `tests/approve/decisionMappings.test.ts`, `tests/scenarios/*` đã cover cascade rename + concurrent approve — refactor sẽ phá hết, viết lại tốn công
+5. **Code gốc behavior đúng**: đáp ứng đầy đủ rename số QĐ, thay file_path, restrict delete khi còn ref — không có bug user-facing
+
+**Phạm vi cascade JSON proposal — tại sao quét cả APPROVED/REJECTED, không chỉ PENDING?**
+
+`cascadeRename.ts` rewrite JSON trên **mọi proposal status**, không filter theo PENDING. Lý do:
+
+1. **UI consistency là ưu tiên**: `ProposalDetailModal` đọc số QĐ từ `proposal.data_danh_hieu` (JSON snapshot); `personnel/[id]/annual-rewards` đọc từ `DanhHieuHangNam.so_quyet_dinh` (FK đã cascade). Nếu chỉ rewrite PENDING, user xem 1 proposal APPROVED sẽ thấy số QĐ cũ trong khi award list hiển thị số mới — confused.
+2. **Audit không bị mất**: lịch sử rename đã được ghi đầy đủ trong `system_logs` (resource = `decisions`, action = `UPDATE`, có old/new value qua audit middleware). JSON snapshot không phải single source of truth cho audit.
+3. **Domain quân đội ưu tiên consistency**: user (Admin Phòng Chính trị) không phân biệt "snapshot lúc submit" vs "state hiện tại"; họ chỉ thấy 2 view cùng entity → expect cùng giá trị.
+4. **Cost vẫn nhỏ**: scale ĐATN có ~vài trăm proposal max, scan + rewrite mất < 200ms tổng.
+
+```typescript
+// services/decision/cascadeRename.ts
+const proposals = await tx.bangDeXuat.findMany({
+  // không có where filter — quét mọi status
+  select: { id, data_danh_hieu, data_thanh_tich, data_nien_han, data_cong_hien },
+});
+// rewrite từng row nếu chứa oldSqd
+```
+
+**Khi nào nên refactor (tiêu chí cụ thể):**
+
+- Award rows > 10k → cascade rename lock contention thấy được
+- Cần multi-tenant (khác đơn vị có cùng số QĐ)
+- Cần file version chain (QĐ này từng dùng file A, sau replace bằng file B — muốn keep history)
+- Audit yêu cầu immutable trail cho FK references
+
+**Đáp khi hội đồng hỏi "tại sao không dùng id làm FK?":**
+
+> "Đây là trade-off em đã cân nhắc. Em chọn string FK vì 3 lý do: (1) số quyết định là natural business identifier — mỗi QĐ chỉ có 1 số duy nhất theo luật, (2) JSON payload proposal cũng lưu string nên đồng bộ, (3) cost cascade rename ở scale ĐATN không đáng kể. Em thừa nhận theo standard practice nên FK trỏ surrogate id immutable — em đã đánh giá refactor sẽ đụng hơn 160 file. Lợi ích chính là rename O(1) thay vì O(refs), nhưng ở scale này không justify được effort. Em ghi nhận trong hướng phát triển: nếu hệ thống mở rộng quá ngưỡng (>10k award rows, multi-tenant, file versioning) thì sẽ migrate."
+
+**Phòng câu phản biện:** *"Nếu một ngày luật đổi format số QĐ — tất cả award phải update theo, có scalable không?"*
+
+> "ON UPDATE CASCADE tự xử lý ở DB level, không cần code app. Với mỗi QĐ có ~vài award rows, rename 1 QĐ = vài UPDATE — miligiây. Nếu cần batch rename hàng loạt theo format mới, em sẽ viết script SQL chạy ngoài giờ cao điểm, tốn vài giây. Bottleneck thực sự là `cascadeRename.ts` cho JSON proposal — phần này quét toàn bộ `BangDeXuat` (mọi status, để UI nhất quán giữa proposal detail và award list); ở scale này còn rất nhanh nhưng nếu cần optimize có thể thêm `WHERE data_*::text LIKE '%' || oldSqd || '%'` filter trước."
+
+### O.33 — Prisma sinh SQL kém hiệu quả — fix thế nào?
 
 **Triệu chứng:** Query Prisma chậm, EXPLAIN cho thấy SQL Prisma sinh ra dùng nhiều JOIN không cần.
 
@@ -4062,7 +4190,7 @@ const [quanNhans, danhHieus, lichSus] = await Promise.all([
 ]);
 ```
 
-### O.33 — Migration với data transformation phức tạp (zero downtime)
+### O.34 — Migration với data transformation phức tạp (zero downtime)
 
 **Tình huống:** Đổi `cap_bac String` thành `cap_bac_id String FK` referencing bảng mới `CapBac`.
 
@@ -4074,7 +4202,7 @@ const [quanNhans, danhHieus, lichSus] = await Promise.all([
 
 **Trong project:** Em có scenario tương tự khi rename `so_quyet_dinh` thành hard FK với `FileQuyetDinh` (commit `29f741f`) — dùng raw SQL `ALTER TABLE ... RENAME COLUMN` để giữ data, sau đó `db push`.
 
-### O.34 — Backup chiến lược chuyên sâu
+### O.35 — Backup chiến lược chuyên sâu
 
 | Cấp | Công cụ | Đặc điểm |
 |---|---|---|
@@ -4088,7 +4216,7 @@ const [quanNhans, danhHieus, lichSus] = await Promise.all([
 - pg_dump hằng ngày (logical, dễ migrate).
 - Test restore mỗi tháng.
 
-### O.35 — Prisma version 6 breaking change — em xử lý sao?
+### O.36 — Prisma version 6 breaking change — em xử lý sao?
 
 - Prisma đánh dấu rõ breaking change trong CHANGELOG.
 - Em pin version trong `package.json` (`"prisma": "5.10.2"`, không dùng `^`).
