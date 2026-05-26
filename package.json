@@ -7,6 +7,8 @@
     "install:be": "cd BE-QLKT && npm install",
     "install:fe": "cd FE-QLKT && npm install",
     "install:all": "npm run install:be && npm run install:fe",
+    "dev-fe": "cd FE-QLKT && npm run dev",
+    "dev-be": "cd BE-QLKT && npm run dev",
     "build:be": "cd BE-QLKT && npm run build",
     "build:fe": "cd FE-QLKT && npm run build",
     "build": "npm run build:be && npm run build:fe",
