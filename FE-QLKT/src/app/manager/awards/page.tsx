@@ -23,6 +23,7 @@ import {
   renderDecision,
   renderAnnualAwards,
   getLoaiKhenThuong,
+  matchesDanhHieuSelection,
 } from '@/lib/award/awardsHelper';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { formatDate } from '@/lib/utils';
@@ -284,23 +285,8 @@ export default function ManagerAwardsPage() {
         if (!name.includes(nameFilter)) return false;
       }
 
-      if (danhHieuFilter) {
-        if (['CNHN', 'HCCSVV', 'HCBVTQ'].includes(activeTab)) {
-          if (activeTab === 'CNHN') {
-            const isBKBQP =
-              danhHieuFilter === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP && record.nhan_bkbqp === true;
-            const isCSTDTQ =
-              danhHieuFilter === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ && record.nhan_cstdtq === true;
-            const isBKTTCP =
-              danhHieuFilter === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP && record.nhan_bkttcp === true;
-
-            if (!isBKBQP && !isCSTDTQ && !isBKTTCP && record.danh_hieu !== danhHieuFilter) {
-              return false;
-            }
-          } else if (record.danh_hieu !== danhHieuFilter) {
-            return false;
-          }
-        }
+      if (danhHieuFilter && ['CNHN', 'HCCSVV', 'HCBVTQ'].includes(activeTab)) {
+        if (!matchesDanhHieuSelection(record, danhHieuFilter)) return false;
       }
 
       // Scientific topic filter

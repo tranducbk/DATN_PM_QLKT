@@ -9,9 +9,12 @@ import { ROLES } from '../constants/roles.constants';
 import { ADHOC_TYPE } from '../constants/adhocType.constants';
 import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 import { AWARD_LABELS } from '../constants/awardLabels.constants';
-import { ForbiddenError, NotFoundError } from '../middlewares/errorHandler';
+import { ForbiddenError, NotFoundError, ValidationError } from '../middlewares/errorHandler';
 import type { KhenThuongDotXuat, Prisma } from '../generated/prisma';
 import { writeSystemLog } from '../helpers/systemLogHelper';
+import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
+import decisionService from './decision.service';
+import { sanitizeFilename } from './proposal/helpers';
 import {
   notifyOnAdhocAwardCreated,
   notifyOnAdhocAwardUpdated,
@@ -48,6 +51,10 @@ interface CreateAdhocAwardParams {
   position?: string | null;
   note?: string | null;
   decisionNumber?: string | null;
+  decisionYear?: number;
+  signDate?: string;
+  signer?: string;
+  decisionFile?: UploadedFile;
   attachedFiles?: UploadedFile[];
 }
 
@@ -148,6 +155,71 @@ class AdhocAwardService {
     }
   }
 
+  private async persistDecisionFile(file: UploadedFile): Promise<string> {
+    const uploadsDir = path.join(__dirname, '..', '..', 'uploads', 'decisions');
+    await fs.mkdir(uploadsDir, { recursive: true });
+
+    let decodedName = file.originalname;
+    try {
+      decodedName = Buffer.from(file.originalname, 'latin1').toString('utf8');
+    } catch (error) {
+      console.error('Failed to decode decision file name during adhoc-award create:', error);
+    }
+
+    const sanitized = sanitizeFilename(decodedName);
+    const ext = path.extname(sanitized);
+    const baseName = path.basename(sanitized, ext);
+    let filename = sanitized;
+    let counter = 1;
+    while (
+      await fs
+        .access(path.join(uploadsDir, filename))
+        .then(() => true)
+        .catch(() => false)
+    ) {
+      filename = `${baseName}(${counter})${ext}`;
+      counter++;
+    }
+
+    await fs.writeFile(path.join(uploadsDir, filename), file.buffer);
+    return `uploads/decisions/${filename}`;
+  }
+
+  // FK so_quyet_dinh references FileQuyetDinh — a new decision number must have a row first
+  private async ensureDecisionRecord({
+    decisionNumber,
+    decisionYear,
+    signDate,
+    signer,
+    decisionFile,
+  }: Pick<
+    CreateAdhocAwardParams,
+    'decisionNumber' | 'decisionYear' | 'signDate' | 'signer' | 'decisionFile'
+  >): Promise<void> {
+    const soQuyetDinh = decisionNumber?.trim();
+    if (!soQuyetDinh) return;
+
+    const existing = await decisionService.getDecisionBySoQuyetDinh(soQuyetDinh);
+    if (existing) return;
+
+    if (!decisionYear || !signDate || !signer?.trim()) {
+      throw new ValidationError(
+        'Quyết định mới cần đầy đủ năm, ngày ký và người ký quyết định'
+      );
+    }
+
+    const filePath = decisionFile?.buffer ? await this.persistDecisionFile(decisionFile) : null;
+
+    await decisionService.createDecision({
+      so_quyet_dinh: soQuyetDinh,
+      nam: decisionYear,
+      ngay_ky: new Date(signDate),
+      nguoi_ky: signer.trim(),
+      file_path: filePath,
+      loai_khen_thuong: PROPOSAL_TYPES.DOT_XUAT,
+    });
+  }
+
   async createAdhocAward({
     adminId,
     type,
@@ -160,6 +232,10 @@ class AdhocAwardService {
     position,
     note,
     decisionNumber,
+    decisionYear,
+    signDate,
+    signer,
+    decisionFile,
     attachedFiles,
   }: CreateAdhocAwardParams): Promise<KhenThuongDotXuat> {
     const admin = await accountRepository.findUniqueRaw({
@@ -228,6 +304,8 @@ class AdhocAwardService {
         });
       }
     }
+
+    await this.ensureDecisionRecord({ decisionNumber, decisionYear, signDate, signer, decisionFile });
 
     const adhocAward = await adhocAwardRepository.create({
       loai: 'KHEN_THUONG_DOT_XUAT',

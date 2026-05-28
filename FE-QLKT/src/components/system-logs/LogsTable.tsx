@@ -111,8 +111,9 @@ export function LogsTable({ logs, loading, selectedRowKeys, onSelectionChange }:
         </span>
       ),
       key: 'details',
+      width: 420,
       render: (_value, log) => (
-        <div className="whitespace-normal break-words min-w-0 text-sm text-gray-600 dark:text-gray-400">
+        <div className="whitespace-normal break-words text-sm leading-relaxed">
           {log.details || log.description || '-'}
         </div>
       ),

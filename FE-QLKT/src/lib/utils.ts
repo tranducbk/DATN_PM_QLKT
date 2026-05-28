@@ -120,3 +120,17 @@ export function capitalizeWords(value: string): string {
     .map(word => (word ? word.charAt(0).toUpperCase() + word.slice(1) : word))
     .join(' ');
 }
+
+/**
+ * Formats a byte count into a human-readable size string.
+ * @param bytes - File size in bytes
+ * @returns Localized size string (e.g., "1,2 MB"), or empty string when size is unknown
+ */
+export function formatFileSize(bytes?: number): string {
+  if (!bytes || bytes <= 0) return '';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+  const value = bytes / Math.pow(1024, exponent);
+  const rounded = exponent === 0 ? value : Math.round(value * 10) / 10;
+  return `${rounded.toLocaleString('vi-VN')} ${units[exponent]}`;
+}

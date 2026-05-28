@@ -68,21 +68,31 @@ export const bulkCreateAwards = z
     type: z.enum(Object.values(PROPOSAL_TYPES) as [string, ...string[]], {
       message: 'type là bắt buộc',
     }),
-    nam: z
+    // Multipart/form-data delivers every field as a string — coerce numeric inputs.
+    nam: z.coerce
       .number({ message: 'nam là bắt buộc' })
       .int()
       .min(YEAR_MIN)
       .max(YEAR_MAX),
     thang: z
-      .union([
+      .preprocess(
+        val => {
+          if (val === '' || val === null || val === undefined || val === 'null' || val === 'undefined') {
+            return undefined;
+          }
+          if (typeof val === 'string') {
+            const parsed = Number(val);
+            return Number.isNaN(parsed) ? val : parsed;
+          }
+          return val;
+        },
         z
           .number({ message: 'thang phải là số nguyên 1-12' })
           .int('thang phải là số nguyên 1-12')
           .min(1, 'thang phải từ 1 đến 12')
-          .max(12, 'thang phải từ 1 đến 12'),
-        z.literal(''),
-        z.null(),
-      ])
+          .max(12, 'thang phải từ 1 đến 12')
+          .optional()
+      )
       .optional(),
 
     selected_personnel: optionalStringArrayField,
@@ -133,7 +143,7 @@ export const bulkCreateAwards = z
       PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
       PROPOSAL_TYPES.CONG_HIEN,
     ];
-    if (typesNeedingThang.includes(type) && (value.thang == null || value.thang === '')) {
+    if (typesNeedingThang.includes(type) && value.thang == null) {
       ctx.addIssue({
         code: 'custom',
         path: ['thang'],

@@ -18,6 +18,9 @@ interface CreateAdhocAwardBody {
   position?: string;
   note?: string;
   decisionNumber?: string;
+  decisionYear?: unknown;
+  signDate?: string;
+  signer?: string;
 }
 
 interface GetAdhocAwardsQuery {
@@ -72,6 +75,9 @@ class AdhocAwardController {
       position,
       note,
       decisionNumber,
+      decisionYear,
+      signDate,
+      signer,
     } = body;
 
     if (!type || !Object.values(ADHOC_TYPE).includes(type)) {
@@ -95,6 +101,7 @@ class AdhocAwardController {
 
     const files = req.files as Record<string, Express.Multer.File[]> | undefined;
     const attachedFiles = files?.attachedFiles || [];
+    const decisionFile = files?.decisionFiles?.[0];
 
     const result = await adhocAwardService.createAdhocAward({
       adminId,
@@ -108,6 +115,10 @@ class AdhocAwardController {
       position,
       note,
       decisionNumber,
+      decisionYear: decisionYear != null && decisionYear !== '' ? parseInt(String(decisionYear), 10) : undefined,
+      signDate,
+      signer,
+      decisionFile,
       attachedFiles,
     });
 

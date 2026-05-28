@@ -311,3 +311,52 @@ export const getLoaiKhenThuong = (danhHieu: string | null): string => {
   if (!danhHieu) return '-';
   return getLoaiKhenThuongByDanhHieu(danhHieu);
 };
+
+interface DanhHieuMatchRecord {
+  danh_hieu?: string | null;
+  nhan_bkbqp?: boolean;
+  nhan_cstdtq?: boolean;
+  nhan_bkttcp?: boolean;
+}
+
+/**
+ * Checks whether an award record matches a selected danh hieu.
+ * Chain awards (BKBQP/CSTDTQ/BKTTCP) live in boolean columns while base titles
+ * (CSTDCS, ĐVQT, HCCSVV ranks, ...) live in `danh_hieu`. Records without the
+ * chain flags simply fall through to the `danh_hieu` comparison.
+ * @param record - Award record carrying `danh_hieu` and optional chain flags
+ * @param selectedDanhHieu - Danh hieu code chosen in the filter
+ * @returns True when the record should be kept by the filter
+ */
+export const matchesDanhHieuSelection = (
+  record: DanhHieuMatchRecord,
+  selectedDanhHieu: string
+): boolean => {
+  if (selectedDanhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP && record.nhan_bkbqp) return true;
+  if (selectedDanhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ && record.nhan_cstdtq) return true;
+  if (selectedDanhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP && record.nhan_bkttcp) return true;
+  return record.danh_hieu === selectedDanhHieu;
+};
+
+interface UnitNameRecord {
+  DonViTrucThuoc?: {
+    ten_don_vi?: string | null;
+    CoQuanDonVi?: { ten_don_vi?: string | null };
+  } | null;
+  CoQuanDonVi?: { ten_don_vi?: string | null } | null;
+}
+
+/**
+ * Builds a space-joined searchable string of a unit's own name plus its parent
+ * unit names, matching what the unit award rows display ("name" + "Thuộc: parent").
+ * @param record - Unit award record with DonViTrucThuoc / CoQuanDonVi relations
+ * @returns Lowercase-friendly concatenation of all related unit names
+ */
+export const buildUnitSearchText = (record: UnitNameRecord): string =>
+  [
+    record.DonViTrucThuoc?.ten_don_vi,
+    record.DonViTrucThuoc?.CoQuanDonVi?.ten_don_vi,
+    record.CoQuanDonVi?.ten_don_vi,
+  ]
+    .filter(Boolean)
+    .join(' ');
