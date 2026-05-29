@@ -680,6 +680,30 @@ class CommemorativeMedalService {
       personnelId,
     };
   }
+
+  /**
+   * Checks whether a personnel already holds KNC VSNXD QDNDVN or has a pending proposal for it.
+   * @param personnelId - Personnel ID
+   * @returns `{ alreadyReceived, reason, award?/proposal? }`
+   */
+  async checkAlreadyReceived(personnelId: string) {
+    const existingAward = await commemorativeMedalRepository.findUniqueRaw({
+      where: { quan_nhan_id: personnelId },
+    });
+    if (existingAward) return { alreadyReceived: true, reason: 'Đã nhận', award: existingAward };
+
+    const pendingProposal = await proposalRepository.findFirstRaw({
+      where: {
+        loai_de_xuat: PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
+        status: PROPOSAL_STATUS.PENDING,
+        data_nien_han: { array_contains: [{ personnel_id: personnelId }] },
+      },
+    });
+    if (pendingProposal)
+      return { alreadyReceived: true, reason: 'Đang chờ duyệt', proposal: pendingProposal };
+
+    return { alreadyReceived: false, reason: null };
+  }
 }
 
 export default new CommemorativeMedalService();

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import positionHistoryController from '../controllers/positionHistory.controller';
-import { verifyToken, requireManager, requireAuth } from '../middlewares/auth';
+import { verifyToken, requireManager } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
@@ -12,7 +12,7 @@ const router = Router();
  * @desc    List position history entries (?personnel_id to filter)
  * @access  Private - All authenticated users
  */
-router.get('/', verifyToken, requireAuth, positionHistoryController.getPositionHistory);
+router.get('/', verifyToken, positionHistoryController.getPositionHistory);
 
 /**
  * @route   POST /api/position-history

@@ -3,7 +3,7 @@ import annualRewardController from '../controllers/annualReward.controller';
 import positionHistoryController from '../controllers/positionHistory.controller';
 import scientificAchievementController from '../controllers/scientificAchievement.controller';
 import profileController from '../controllers/profile.controller';
-import { verifyToken, requireManager, requireAuth } from '../middlewares/auth';
+import { verifyToken, requireManager } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
@@ -24,7 +24,6 @@ const router = Router({ mergeParams: true });
 router.get(
   '/annual-rewards',
   verifyToken,
-  requireAuth,
   (req: Request, res: Response, next: NextFunction) => {
     // Convert nested route to query param format
     req.query.personnel_id = req.params.personnelId;
@@ -62,7 +61,6 @@ router.post(
 router.get(
   '/position-history',
   verifyToken,
-  requireAuth,
   (req: Request, res: Response, next: NextFunction) => {
     // Convert nested route to query param format
     req.query.personnel_id = req.params.personnelId;
@@ -136,7 +134,6 @@ router.delete(
 router.get(
   '/scientific-achievements',
   verifyToken,
-  requireAuth,
   (req: Request, res: Response, next: NextFunction) => {
     // Convert nested route to query param format
     req.query.personnel_id = req.params.personnelId;
@@ -168,7 +165,6 @@ router.post(
 router.get(
   '/profile',
   verifyToken,
-  requireAuth,
   (req: Request, res: Response, next: NextFunction) => {
     // Convert nested route param to match profile controller expectation
     req.params.personnel_id = req.params.personnelId;

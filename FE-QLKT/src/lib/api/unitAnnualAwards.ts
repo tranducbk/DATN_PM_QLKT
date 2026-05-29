@@ -10,7 +10,7 @@ export async function getUnitAnnualAwards(params?: {
   danh_hieu?: string;
 }): Promise<ApiResponse> {
   try {
-    const res = await axiosInstance.get('/api/awards/units/annual', { params });
+    const res = await axiosInstance.get('/api/unit-annual-awards', { params });
     return { success: res.data?.success, data: res.data?.data, pagination: res.data?.pagination };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
@@ -24,7 +24,7 @@ export async function getUnitAnnualAwardsByUnit(
   try {
     const params: Record<string, string | number> = { don_vi_id: donViId, limit: FETCH_ALL_LIMIT };
     if (year) params.year = year;
-    const res = await axiosInstance.get('/api/awards/units/annual/history', { params });
+    const res = await axiosInstance.get('/api/unit-annual-awards/history', { params });
     return {
       success: res.data?.success,
       data: res.data?.data,
@@ -36,7 +36,7 @@ export async function getUnitAnnualAwardsByUnit(
 
 export async function getUnitAnnualAwardsTemplate(params?: Record<string, string>): Promise<Blob> {
   try {
-    const res = await axiosInstance.get('/api/awards/units/annual/template', {
+    const res = await axiosInstance.get('/api/unit-annual-awards/template', {
       params,
       responseType: 'blob',
     });
@@ -50,7 +50,7 @@ export async function importUnitAnnualAwards(file: File): Promise<ApiResponse> {
   try {
     const formData = new FormData();
     formData.append('file', file);
-    const res = await axiosInstance.post('/api/awards/units/annual/import', formData, {
+    const res = await axiosInstance.post('/api/unit-annual-awards/import', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -66,7 +66,7 @@ export async function exportUnitAnnualAwards(params?: {
   danh_hieu?: string;
 }): Promise<Blob> {
   try {
-    const res = await axiosInstance.get('/api/awards/units/annual/export', {
+    const res = await axiosInstance.get('/api/unit-annual-awards/export', {
       params,
       responseType: 'blob',
     });
@@ -79,8 +79,8 @@ export async function exportUnitAnnualAwards(params?: {
 export async function deleteUnitAnnualAward(id: string, awardType?: string): Promise<ApiResponse> {
   try {
     const url = awardType
-      ? `/api/awards/units/annual/${id}?awardType=${encodeURIComponent(awardType)}`
-      : `/api/awards/units/annual/${id}`;
+      ? `/api/unit-annual-awards/${id}?awardType=${encodeURIComponent(awardType)}`
+      : `/api/unit-annual-awards/${id}`;
     const res = await axiosInstance.delete(url);
     return { success: res.data?.success, data: res.data?.data };
   } catch (e: unknown) {
@@ -91,8 +91,8 @@ export async function deleteUnitAnnualAward(id: string, awardType?: string): Pro
 export async function getUnitAnnualProfile(donViId: string, year?: number): Promise<ApiResponse> {
   try {
     const url = year
-      ? `/api/awards/units/annual/profile/${donViId}?year=${year}`
-      : `/api/awards/units/annual/profile/${donViId}`;
+      ? `/api/unit-annual-awards/profile/${donViId}?year=${year}`
+      : `/api/unit-annual-awards/profile/${donViId}`;
 
     const res = await axiosInstance.get(url);
     return { success: res.data?.success, data: res.data?.data };
@@ -121,5 +121,5 @@ function createConfirmImport(url: string) {
   };
 }
 
-export const previewUnitAnnualAwardsImport = createPreviewImport('/api/awards/units/annual/import/preview');
-export const confirmUnitAnnualAwardsImport = createConfirmImport('/api/awards/units/annual/import/confirm');
+export const previewUnitAnnualAwardsImport = createPreviewImport('/api/unit-annual-awards/import/preview');
+export const confirmUnitAnnualAwardsImport = createConfirmImport('/api/unit-annual-awards/import/confirm');

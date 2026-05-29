@@ -4,13 +4,11 @@ import fs from 'fs';
 import annualRewardController from '../controllers/annualReward.controller';
 import {
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   requireAdminOnly,
-  checkRole,
 } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
-import { ROLES } from '../constants/roles.constants';
 import {
   excelUpload as upload,
   pdfDecisionUpload as pdfUpload,
@@ -33,33 +31,9 @@ const router = Router();
 router.get(
   '/',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   validate(annualRewardValidation.getAnnualRewardsQuery, 'query'),
   annualRewardController.getAnnualRewards
-);
-
-/**
- * @route   GET /api/annual-rewards/check-hcqkqt/:personnelId
- * @desc    Check if a personnel has already received HC QKQT
- * @access  Private - ADMIN, MANAGER
- */
-router.get(
-  '/check-hcqkqt/:personnelId',
-  verifyToken,
-  requireManager,
-  annualRewardController.checkAlreadyReceivedHCQKQT
-);
-
-/**
- * @route   GET /api/annual-rewards/check-knc-vsnxd/:personnelId
- * @desc    Check if a personnel has already received KNC VSNXD QDNDVN
- * @access  Private - ADMIN, MANAGER
- */
-router.get(
-  '/check-knc-vsnxd/:personnelId',
-  verifyToken,
-  requireManager,
-  annualRewardController.checkAlreadyReceivedKNCVSNXDQDNDVN
 );
 
 /**
@@ -70,7 +44,7 @@ router.get(
 router.post(
   '/',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   validate(annualRewardValidation.createAnnualReward),
   auditLog({
     action: AUDIT_ACTIONS.CREATE,
@@ -103,7 +77,7 @@ router.put(
 /**
  * @route   DELETE /api/annual-rewards/:id
  * @desc    Delete an annual reward title
- * @access  Private - ADMIN and above
+ * @access  Private - ADMIN only
  */
 router.delete(
   '/:id',
@@ -121,7 +95,7 @@ router.delete(
 /**
  * @route   POST /api/annual-rewards/check
  * @desc    Validate annual rewards before bulk operations
- * @access  Private - ADMIN and above
+ * @access  Private - ADMIN only
  */
 router.post(
   '/check',
@@ -134,7 +108,7 @@ router.post(
 /**
  * @route   POST /api/annual-rewards/bulk
  * @desc    Bulk create annual reward titles
- * @access  Private - ADMIN and above
+ * @access  Private - ADMIN only
  */
 router.post(
   '/bulk',
@@ -154,7 +128,7 @@ router.post(
 /**
  * @route   POST /api/annual-rewards/import/preview
  * @desc    Preview annual reward import from Excel — validate only, no DB write
- * @access  Private - ADMIN and above
+ * @access  Private - ADMIN only
  */
 router.post(
   '/import/preview',
@@ -167,7 +141,7 @@ router.post(
 /**
  * @route   POST /api/annual-rewards/import/confirm
  * @desc    Confirm annual reward import — persist validated data to DB
- * @access  Private - ADMIN and above
+ * @access  Private - ADMIN only
  */
 router.post(
   '/import/confirm',
@@ -185,7 +159,7 @@ router.post(
 router.post(
   '/import',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   upload.single('file'),
   auditLog({
     action: AUDIT_ACTIONS.IMPORT,
@@ -201,7 +175,7 @@ router.post(
  * @desc    Download Excel template for annual reward import
  * @access  Private - ADMIN, MANAGER
  */
-router.get('/template', verifyToken, requireManager, annualRewardController.getTemplate);
+router.get('/template', verifyToken, requireAdminOrManager, annualRewardController.getTemplate);
 
 /**
  * @route   GET /api/annual-rewards/export
@@ -211,7 +185,7 @@ router.get('/template', verifyToken, requireManager, annualRewardController.getT
 router.get(
   '/export',
   verifyToken,
-  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
+  requireAdminOrManager,
   validate(annualRewardValidation.exportAnnualRewardsQuery, 'query'),
   annualRewardController.exportToExcel
 );
@@ -224,7 +198,7 @@ router.get(
 router.get(
   '/statistics',
   verifyToken,
-  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
+  requireAdminOrManager,
   validate(annualRewardValidation.getAnnualRewardsStatisticsQuery, 'query'),
   annualRewardController.getStatistics
 );

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import scientificAchievementController from '../controllers/scientificAchievement.controller';
-import { verifyToken, requireManager } from '../middlewares/auth';
+import { verifyToken, requireAdminOrManager } from '../middlewares/auth';
 import { excelUpload as upload } from '../configs/multer';
 import { validate } from '../middlewares/validate';
 import { scientificAchievementValidation, excelImportValidation } from '../validations';
@@ -15,7 +15,7 @@ const router = Router();
 router.get(
   '/',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   validate(scientificAchievementValidation.getAchievementsQuery, 'query'),
   scientificAchievementController.getAchievements
 );
@@ -28,7 +28,7 @@ router.get(
 router.get(
   '/export',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   validate(scientificAchievementValidation.exportAchievementsQuery, 'query'),
   scientificAchievementController.exportToExcel
 );
@@ -38,7 +38,7 @@ router.get(
  * @desc    Download Excel template for scientific achievement import
  * @access  Private - ADMIN, MANAGER
  */
-router.get('/template', verifyToken, requireManager, scientificAchievementController.getTemplate);
+router.get('/template', verifyToken, requireAdminOrManager, scientificAchievementController.getTemplate);
 
 /**
  * @route   POST /api/scientific-achievements/import/preview
@@ -48,7 +48,7 @@ router.get('/template', verifyToken, requireManager, scientificAchievementContro
 router.post(
   '/import/preview',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   upload.single('file'),
   scientificAchievementController.previewImport
 );
@@ -61,7 +61,7 @@ router.post(
 router.post(
   '/import/confirm',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   validate(excelImportValidation.confirmImportScientificAchievement),
   scientificAchievementController.confirmImport
 );
@@ -74,7 +74,7 @@ router.post(
 router.post(
   '/',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   validate(scientificAchievementValidation.createAchievement),
   scientificAchievementController.createAchievement
 );
@@ -87,7 +87,7 @@ router.post(
 router.put(
   '/:id',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   validate(scientificAchievementValidation.updateAchievement),
   scientificAchievementController.updateAchievement
 );
@@ -97,6 +97,6 @@ router.put(
  * @desc    Delete a scientific achievement record
  * @access  Private - ADMIN, MANAGER
  */
-router.delete('/:id', verifyToken, requireManager, scientificAchievementController.deleteAchievement);
+router.delete('/:id', verifyToken, requireAdminOrManager, scientificAchievementController.deleteAchievement);
 
 export default router;

@@ -8,8 +8,6 @@ import {
   checkAnnualRewards,
   bulkCreateAnnualRewards,
   getStatistics,
-  checkAlreadyReceivedHCQKQT,
-  checkAlreadyReceivedKNCVSNXDQDNDVN,
   getAnnualRewardsList,
 } from './annualReward/crud';
 import {
@@ -104,14 +102,6 @@ class AnnualRewardService {
     byNam: { nam: number; count: number }[];
   }> {
     return getStatistics(filters);
-  }
-
-  async checkAlreadyReceivedHCQKQT(personnelId: string) {
-    return checkAlreadyReceivedHCQKQT(personnelId);
-  }
-
-  async checkAlreadyReceivedKNCVSNXDQDNDVN(personnelId: string) {
-    return checkAlreadyReceivedKNCVSNXDQDNDVN(personnelId);
   }
 
   async getAnnualRewardsList(params: {

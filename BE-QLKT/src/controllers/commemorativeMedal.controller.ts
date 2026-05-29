@@ -219,6 +219,14 @@ class CommemorativeMedalController {
     const result = await commemorativeMedalService.deleteAward(String(id), adminUsername);
     return ResponseHelper.success(res, { message: result.message });
   });
+
+  checkReceived = catchAsync(async (req: Request, res: Response) => {
+    const params = req.params as GetByPersonnelIdParams;
+    const { personnel_id } = params;
+    if (!personnel_id) return ResponseHelper.badRequest(res, 'Thiếu mã quân nhân');
+    const data = await commemorativeMedalService.checkAlreadyReceived(personnel_id);
+    return ResponseHelper.success(res, { data, message: `Kiểm tra ${AWARD_LABEL} thành công` });
+  });
 }
 
 export default new CommemorativeMedalController();

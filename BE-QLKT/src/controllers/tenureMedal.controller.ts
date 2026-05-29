@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import hccsvvService, { HccsvvValidItem } from '../services/tenureMedal.service';
+import tenureMedalService, { HccsvvValidItem } from '../services/tenureMedal.service';
 import { ROLES } from '../constants/roles.constants';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { parsePersonnelIdsFromQuery, getManagerUnitFilter, getAdminUsername } from '../helpers/controllerHelper';
@@ -41,7 +41,7 @@ interface IdParams {
   id?: string;
 }
 
-class HCCSVVController {
+class TenureMedalController {
   getTemplate = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as GetTemplateQuery;
     const personnelIds = parsePersonnelIdsFromQuery(query);
@@ -51,7 +51,7 @@ class HCCSVVController {
         Object.assign(repeatMap, JSON.parse(query.repeat_map));
       } catch (e) { console.error('Invalid repeat_map JSON:', e); }
     }
-    const workbook = await hccsvvService.exportTemplate(personnelIds, repeatMap);
+    const workbook = await tenureMedalService.exportTemplate(personnelIds, repeatMap);
     const buffer = await workbook.xlsx.writeBuffer();
     const fileName = `mau_nhap_hccsvv_${new Date().toISOString().slice(0, 10)}.xlsx`;
     res.setHeader(
@@ -68,7 +68,7 @@ class HCCSVVController {
     if (!file) {
       return ResponseHelper.badRequest(res, 'Vui lòng upload file Excel');
     }
-    const result = await hccsvvService.previewImport(file.buffer);
+    const result = await tenureMedalService.previewImport(file.buffer);
     await writeSystemLog({
       userId: user.id,
       userRole: user.role,
@@ -88,7 +88,7 @@ class HCCSVVController {
     const user = req.user!;
     const body = req.body as ConfirmImportBody;
     const { items } = body;
-    const result = await hccsvvService.confirmImport(items);
+    const result = await tenureMedalService.confirmImport(items);
     await writeSystemLog({
       userId: user.id,
       userRole: user.role,
@@ -98,7 +98,7 @@ class HCCSVVController {
       payload: { imported: result.imported || items.length },
     });
     const personnelIds = items.map((i: { personnel_id: string }) => i.personnel_id);
-    notifyOnImport(user.id, AWARD_SLUGS.TENURE_MEDALS, result.imported || items.length, personnelIds).catch((e) => { console.error('[hccsvv] notifyOnImport failed:', e); });
+    notifyOnImport(user.id, AWARD_SLUGS.TENURE_MEDALS, result.imported || items.length, personnelIds).catch((e) => { console.error('[tenure-medals] notifyOnImport failed:', e); });
     return ResponseHelper.success(res, { message: 'Thao tác thành công', data: result });
   });
 
@@ -122,7 +122,7 @@ class HCCSVVController {
       filters.don_vi_id = managerUnit.don_vi_id;
       if (managerUnit.isCoQuanDonVi) filters.include_sub_units = true;
     }
-    const result = await hccsvvService.getAll(filters, page, limit);
+    const result = await tenureMedalService.getAll(filters, page, limit);
     return ResponseHelper.paginated(res, {
       data: result.data,
       total: result.pagination.total,
@@ -149,7 +149,7 @@ class HCCSVVController {
       filters.don_vi_id = managerUnit.don_vi_id;
       if (managerUnit.isCoQuanDonVi) filters.include_sub_units = true;
     }
-    const buffer = await hccsvvService.exportToExcel(filters);
+    const buffer = await tenureMedalService.exportToExcel(filters);
     const fileName = `danh_sach_hccsvv_${new Date().toISOString().slice(0, 10)}.xlsx`;
     res.setHeader(
       'Content-Type',
@@ -160,7 +160,7 @@ class HCCSVVController {
   });
 
   getStatistics = catchAsync(async (req: Request, res: Response) => {
-    const statistics = await hccsvvService.getStatistics();
+    const statistics = await tenureMedalService.getStatistics();
     return ResponseHelper.success(res, {
       message: `Lấy thống kê ${AWARD_LABEL} thành công`,
       data: statistics,
@@ -171,9 +171,9 @@ class HCCSVVController {
     const params = req.params as IdParams;
     const { id } = params;
     const adminUsername = getAdminUsername(req);
-    const result = await hccsvvService.deleteAward(String(id), adminUsername);
+    const result = await tenureMedalService.deleteAward(String(id), adminUsername);
     return ResponseHelper.success(res, { message: result.message });
   });
 }
 
-export default new HCCSVVController();
+export default new TenureMedalController();

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import militaryFlagController from '../controllers/militaryFlag.controller';
-import { verifyToken, checkRole, requireAdminOnly } from '../middlewares/auth';
+import { verifyToken, checkRole, requireAdminOrManager, requireAdminOnly } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
 import { ROLES } from '../constants/roles.constants';
@@ -53,7 +53,7 @@ router.post(
 router.get(
   '/',
   verifyToken,
-  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
+  requireAdminOrManager,
   militaryFlagController.getAll
 );
 
@@ -65,7 +65,7 @@ router.get(
 router.get(
   '/export',
   verifyToken,
-  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
+  requireAdminOrManager,
   militaryFlagController.exportToExcel
 );
 
@@ -77,7 +77,7 @@ router.get(
 router.get(
   '/statistics',
   verifyToken,
-  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
+  requireAdminOrManager,
   militaryFlagController.getStatistics
 );
 
@@ -91,6 +91,18 @@ router.get(
   verifyToken,
   checkRole([ROLES.ADMIN, ROLES.MANAGER, ROLES.USER]),
   militaryFlagController.getByPersonnelId
+);
+
+/**
+ * @route   GET /api/military-flags/check-received/:personnel_id
+ * @desc    Check whether a personnel already received HC QKQT (or has a pending proposal)
+ * @access  ADMIN, MANAGER
+ */
+router.get(
+  '/check-received/:personnel_id',
+  verifyToken,
+  requireAdminOrManager,
+  militaryFlagController.checkReceived
 );
 
 /**

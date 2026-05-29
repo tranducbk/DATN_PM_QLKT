@@ -4,7 +4,6 @@ import {
   verifyToken,
   requireAdmin,
   requireManager,
-  requireAuth,
 } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
@@ -44,7 +43,7 @@ router.post(
  * @desc    Get personnel details by ID
  * @access  Private - ADMIN, MANAGER, USER (own record only)
  */
-router.get('/:id', verifyToken, requireAuth, personnelController.getPersonnelById);
+router.get('/:id', verifyToken, personnelController.getPersonnelById);
 
 /**
  * @route   POST /api/personnel

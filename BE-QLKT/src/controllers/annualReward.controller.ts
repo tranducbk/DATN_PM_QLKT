@@ -60,10 +60,6 @@ interface IdParams {
   id?: string;
 }
 
-interface PersonnelIdParams {
-  personnelId?: string;
-}
-
 interface CheckAnnualRewardsBody {
   personnel_ids?: string[];
   nam?: number;
@@ -364,22 +360,6 @@ class AnnualRewardController {
       data: result,
       message: 'Import danh hiệu hằng năm hoàn tất',
     });
-  });
-
-  checkAlreadyReceivedHCQKQT = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as PersonnelIdParams;
-    const personnelId = normalizeParam(params.personnelId);
-    if (!personnelId) return ResponseHelper.badRequest(res, 'Thiếu personnelId');
-    const data = await annualRewardService.checkAlreadyReceivedHCQKQT(personnelId);
-    return ResponseHelper.success(res, { data, message: 'Kiểm tra HCQKQT thành công' });
-  });
-
-  checkAlreadyReceivedKNCVSNXDQDNDVN = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as PersonnelIdParams;
-    const personnelId = normalizeParam(params.personnelId);
-    if (!personnelId) return ResponseHelper.badRequest(res, 'Thiếu personnelId');
-    const data = await annualRewardService.checkAlreadyReceivedKNCVSNXDQDNDVN(personnelId);
-    return ResponseHelper.success(res, { data, message: 'Kiểm tra KNC VSNXD QDNDVN thành công' });
   });
 
   getTemplate = catchAsync(async (req: Request, res: Response) => {
