@@ -64,12 +64,13 @@ processQueue(null, newToken);  // unblock tất cả request chờ
 
 ## 4. SO_LUONG COUNTER — Atomic Increment
 
-**Vị trí:** `services/personnel/unitCount.ts`
+**Vị trí:** `services/personnel/unitCount.ts` (`adjustUnitCount` orchestrate)
+→ `repositories/unit.repository.ts` (atomic op thật).
 
 **Vấn đề:** Lost update khi 2 admin cùng thêm quân nhân vào 1 đơn vị.
 
-**Giải pháp:** Prisma `{ increment: 1 }` → SQL `SET so_luong = so_luong + 1`
-→ DB row-level lock đảm bảo atomic.
+**Giải pháp:** Prisma `{ increment: 1 }` / `{ decrement: 1 }` → SQL
+`SET so_luong = so_luong + 1` → DB row-level lock đảm bảo atomic.
 
 ## 5. LOGIN — Force Logout Cũ
 
@@ -97,9 +98,9 @@ danh hiệu).
 **Giải pháp:**
 - Check duplicate trước insert.
 - Có race window: cả 2 check thấy "không trùng" → cả 2 insert.
-- **Mitigation:** unique constraint ở DB level (vd: `DanhHieuHangNam` có
-  unique `(quan_nhan_id, nam)`) → 1 trong 2 insert sẽ throw P2002.
-- Service bắt P2002 → return validation error.
+- **Mitigation:** unique constraint ở DB level (`DanhHieuHangNam` có
+  `@@unique([quan_nhan_id, nam])`) → nếu lọt race, insert thứ hai throw
+  P2002 → đề xuất đó fail, không tạo được bản ghi trùng (DB safety net).
 
 ## 7. DECISION FILE SYNC — Idempotent Insert
 
@@ -124,8 +125,8 @@ chính proposal đang duyệt → đề xuất match chính nó → throw sai.
 
 **Fix:** Thêm param `excludeProposalId` + `where.id: { not: proposalId }`.
 
-**Test lock-in:** `tests/approve/unit-annual.test.ts:381` — verify
-`bangDeXuat.findMany` được gọi với `id: { not }` clause.
+**Test lock-in:** `tests/approve/unit-annual.test.ts:440` — verify
+`bangDeXuat.findMany` được gọi với `id: { not: proposal.id }` clause.
 
 ## 9. PROFILE RECALC — Fire-and-Forget
 
@@ -164,9 +165,10 @@ nếu cần.
 **Vấn đề:** 2 đề xuất NCKH trùng (personnel_id, năm, mô tả).
 
 **Giải pháp:** Check duplicate qua `(quan_nhan_id, nam, mo_ta)` composite key
-trong `approve/validation.ts:collectNckhDuplicates`. Bảng
-`ScientificAchievement` không có unique constraint trên 3 field này
-(chỉ ở app layer) — đây là điểm có thể siết thêm bằng DB unique.
+trong `approve/validation.ts:collectNckhDuplicates`. Model Prisma
+`ThanhTichKhoaHoc` chỉ có `@@index([quan_nhan_id, nam])`, KHÔNG có unique
+constraint trên 3 field này (chỉ check ở app layer) — đây là điểm có thể siết
+thêm bằng DB unique.
 
 ## 13. BULK APPROVE — All-or-Nothing Transaction
 
@@ -175,8 +177,9 @@ trong `approve/validation.ts:collectNckhDuplicates`. Bảng
 **Vấn đề:** 1 đề xuất có 100 items → import 50 thành công, item 51 lỗi → DB
 mất tính nhất quán.
 
-**Giải pháp:** Wrap toàn bộ trong `prisma.$transaction` với timeout 60s.
-Bất kỳ throw nào → rollback tất cả 50 inserts trước đó.
+**Giải pháp:** Wrap toàn bộ trong `prisma.$transaction` với timeout 180s
+(`PROPOSAL_APPROVE_TX_TIMEOUT_MS = 180000` — đủ cho batch cuối năm ~300+
+quân nhân). Bất kỳ throw nào → rollback tất cả 50 inserts trước đó.
 
 ## 14. FILE UPLOAD — Collision-Free Filename
 
