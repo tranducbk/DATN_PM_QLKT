@@ -248,13 +248,14 @@ function resolveDecisionFilePath(
  *     item.so_quyet_dinh_bkbqp/cstdtq/bkttcp, decisions.so_quyet_dinh_*)
  *     vào 1 Set để dedupe.
  *  2. Với mỗi số QĐ:
- *     - Nếu chưa có trong FileQuyetDinh → CREATE (kèm file_path nếu Admin
- *       đã upload PDF; nếu không thì null — file sẽ upload sau).
+ *     - upsert create-if-absent (kèm file_path nếu Admin đã upload PDF;
+ *       nếu không thì null — file sẽ upload sau). upsert đảm bảo 2 đề
+ *       xuất song song cùng tạo 1 số QĐ không đụng P2002 ở mức DB.
  *     - Nếu đã có nhưng file_path null + lần này có PDF → UPDATE để gắn
- *       file_path mới (lazy population).
+ *       file_path mới (lazy population, không ghi đè path đã có).
  *  3. Best-effort: nếu lỗi 1 số QĐ → log + skip, không throw rollback.
- *     Lý do: race condition (2 đề xuất song song cùng tạo cùng QĐ) là
- *     bình thường, không phải lỗi nghiêm trọng.
+ *     Lý do: sync là idempotent — row đã tồn tại thì FK vẫn pass, lỗi
+ *     transient không nên kéo cả approve transaction rollback.
  */
 export async function syncDecisionFiles(
   ctx: ProposalContext,
@@ -297,81 +298,68 @@ export async function syncDecisionFiles(
 
   const proposalType = proposal.loai_de_xuat as ProposalType;
 
-  // ─── RACE-AWARE: idempotent sync ────────────────────────────────
-  // 2 đề xuất song song cùng dùng 1 số quyết định "123/QĐ-X" mới:
-  //   Proposal A: findUnique → null → create (commit)
-  //   Proposal B: findUnique → null (đọc trước A commit?) → create → P2002!
-  //
-  // try/catch ngoài bắt P2002 → log + skip (KHÔNG throw để không
-  // rollback toàn bộ approve transaction). Record đã được tạo bởi A,
-  // FK insert sau đó vẫn pass.
-  //
-  // Nếu cần atomicity hơn nữa: chuyển sang `upsert` thay vì
-  // findUnique+create, hoặc dùng SELECT FOR UPDATE.
+  // RACE-AWARE: 2 đề xuất song song cùng dùng 1 số QĐ mới "123/QĐ-X" →
+  // cả hai cùng định tạo. upsert (create-if-absent, update no-op) khiến
+  // đề xuất sau không throw P2002 ở mức DB: nếu row đã được tạo, nhánh
+  // update chạy thay cho insert → FK của insert award sau đó vẫn pass.
+  // Backfill file_path qua updateMany WHERE file_path: null — atomic,
+  // không read-then-write race, không ghi đè path đã có. try/catch giữ
+  // lại như best-effort cho lỗi transient — không throw để khỏi rollback.
   for (const soQuyetDinh of decisionsToSync) {
     if (!soQuyetDinh) continue;
     try {
-      const existing = await tx.fileQuyetDinh.findUnique({ where: { so_quyet_dinh: soQuyetDinh } });
+      let filePath: string | null | undefined = resolveDecisionFilePath(
+        proposalType,
+        soQuyetDinh,
+        decisions,
+        pdfPaths,
+        thanhTichData
+      );
 
-      if (!existing) {
-        let filePath: string | null | undefined = resolveDecisionFilePath(
-          proposalType,
-          soQuyetDinh,
-          decisions,
-          pdfPaths,
-          thanhTichData
+      if (!filePath) {
+        const matchingDanhHieu = danhHieuData.find(
+          d =>
+            d.so_quyet_dinh === soQuyetDinh ||
+            d.so_quyet_dinh_bkbqp === soQuyetDinh ||
+            d.so_quyet_dinh_cstdtq === soQuyetDinh ||
+            d.so_quyet_dinh_bkttcp === soQuyetDinh
         );
-
+        if (matchingDanhHieu) {
+          filePath =
+            matchingDanhHieu.file_quyet_dinh ||
+            matchingDanhHieu.file_quyet_dinh_bkbqp ||
+            matchingDanhHieu.file_quyet_dinh_cstdtq ||
+            matchingDanhHieu.file_quyet_dinh_bkttcp ||
+            null;
+        }
         if (!filePath) {
-          const matchingDanhHieu = danhHieuData.find(
-            d =>
-              d.so_quyet_dinh === soQuyetDinh ||
-              d.so_quyet_dinh_bkbqp === soQuyetDinh ||
-              d.so_quyet_dinh_cstdtq === soQuyetDinh ||
-              d.so_quyet_dinh_bkttcp === soQuyetDinh
-          );
-          if (matchingDanhHieu) {
-            filePath =
-              matchingDanhHieu.file_quyet_dinh ||
-              matchingDanhHieu.file_quyet_dinh_bkbqp ||
-              matchingDanhHieu.file_quyet_dinh_cstdtq ||
-              matchingDanhHieu.file_quyet_dinh_bkttcp ||
-              null;
-          }
-          if (!filePath) {
-            const matchingThanhTich = thanhTichData.find(t => t.so_quyet_dinh === soQuyetDinh);
-            if (matchingThanhTich && matchingThanhTich.file_quyet_dinh) {
-              filePath = matchingThanhTich.file_quyet_dinh;
-            }
+          const matchingThanhTich = thanhTichData.find(t => t.so_quyet_dinh === soQuyetDinh);
+          if (matchingThanhTich && matchingThanhTich.file_quyet_dinh) {
+            filePath = matchingThanhTich.file_quyet_dinh;
           }
         }
+      }
 
-        const loaiKhenThuong = proposal.loai_de_xuat || PROPOSAL_TYPES.CA_NHAN_HANG_NAM;
-        await tx.fileQuyetDinh.create({
-          data: {
-            so_quyet_dinh: soQuyetDinh,
-            nam: proposal.nam,
-            ngay_ky: ngayKy,
-            nguoi_ky: nguoiKy,
-            file_path: filePath,
-            loai_khen_thuong: loaiKhenThuong,
-            ghi_chu: `Tự động đồng bộ từ đề xuất ${proposalId}`,
-          },
+      const loaiKhenThuong = proposal.loai_de_xuat || PROPOSAL_TYPES.CA_NHAN_HANG_NAM;
+      await tx.fileQuyetDinh.upsert({
+        where: { so_quyet_dinh: soQuyetDinh },
+        create: {
+          so_quyet_dinh: soQuyetDinh,
+          nam: proposal.nam,
+          ngay_ky: ngayKy,
+          nguoi_ky: nguoiKy,
+          file_path: filePath,
+          loai_khen_thuong: loaiKhenThuong,
+          ghi_chu: `Tự động đồng bộ từ đề xuất ${proposalId}`,
+        },
+        update: {},
+      });
+
+      if (filePath) {
+        await tx.fileQuyetDinh.updateMany({
+          where: { so_quyet_dinh: soQuyetDinh, file_path: null },
+          data: { file_path: filePath },
         });
-      } else if (!existing.file_path) {
-        const filePath = resolveDecisionFilePath(
-          proposalType,
-          soQuyetDinh,
-          decisions,
-          pdfPaths,
-          thanhTichData
-        );
-        if (filePath) {
-          await tx.fileQuyetDinh.update({
-            where: { so_quyet_dinh: soQuyetDinh },
-            data: { file_path: filePath },
-          });
-        }
       }
     } catch (error) {
       void writeSystemLog({

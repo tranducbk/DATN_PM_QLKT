@@ -108,9 +108,12 @@ danh hiệu).
 **Vấn đề:** 2 đề xuất cùng dùng 1 số quyết định → sync 2 lần → unique violation.
 
 **Giải pháp:**
-- Check `findUnique({so_quyet_dinh})` trước.
-- Nếu existed → skip create (idempotent).
-- Best-effort: nếu race vẫn xảy ra (P2002) → log + skip, không throw.
+- `upsert({where: {so_quyet_dinh}, create, update: {}})` — create-if-absent
+  atomic ở mức DB: nếu đề xuất song song đã tạo, nhánh update no-op thay vì
+  throw P2002. FK của insert award sau đó vẫn trỏ được vào row.
+- Lazy file_path: chỉ UPDATE khi row đã có nhưng `file_path` null (không ghi
+  đè path sẵn có).
+- Best-effort: try/catch giữ lại cho lỗi transient khác → log + skip, không throw.
 
 ## 8. PROPOSAL DUPLICATE CHECK — Self-Match Bug (đã fix)
 
@@ -190,6 +193,7 @@ Bất kỳ throw nào → rollback tất cả 50 inserts trước đó.
 
 1. **NCKH unique constraint chưa ở DB level** — nên thêm composite unique.
 2. **Profile recalc** chạy nhiều lần khi bulk approve → có thể debounce/queue.
-3. **Decision sync** vẫn race với insert award nếu syncDecisionFiles fail.
+3. **Decision sync** đã dùng `upsert` (atomic create-if-absent) — không còn
+   race P2002 ở bước tạo; nhánh lazy file_path UPDATE vẫn last-write-wins.
 4. **Backup** dùng `Promise.all` load full DB vào RAM → OOM với DB lớn.
 5. **Excel import** parse toàn bộ vào RAM, không streaming.
