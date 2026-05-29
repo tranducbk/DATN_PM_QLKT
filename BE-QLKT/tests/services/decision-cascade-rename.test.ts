@@ -5,7 +5,6 @@ import {
 } from '../../src/services/decision/cascadeRename';
 import decisionService from '../../src/services/decision.service';
 import { AppError, NotFoundError, ValidationError } from '../../src/middlewares/errorHandler';
-import { PROPOSAL_STATUS } from '../../src/constants/proposalStatus.constants';
 import { PROPOSAL_TYPES } from '../../src/constants/proposalTypes.constants';
 
 const OLD_SQD = '111/QĐ-BQP';
@@ -39,8 +38,8 @@ function makeDecision(overrides: Partial<DecisionRowFixture> = {}): DecisionRowF
   };
 }
 
-describe('cascadeRenameSoQuyetDinh — JSON columns trên BangDeXuat PENDING', () => {
-  it('Cho data_danh_hieu chứa số cũ Khi cascade Thì update đúng row PENDING + replace tất cả cột chain', async () => {
+describe('cascadeRenameSoQuyetDinh — JSON columns trên BangDeXuat (mọi status)', () => {
+  it('Cho data_danh_hieu chứa số cũ Khi cascade Thì update đúng row + replace tất cả cột chain', async () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([
       {
         id: 'bdx-1',
@@ -60,7 +59,6 @@ describe('cascadeRenameSoQuyetDinh — JSON columns trên BangDeXuat PENDING', (
     const summary = await cascadeRenameSoQuyetDinh(prismaMock as never, OLD_SQD, NEW_SQD);
 
     expect(prismaMock.bangDeXuat.findMany).toHaveBeenCalledWith({
-      where: { status: PROPOSAL_STATUS.PENDING },
       select: {
         id: true,
         data_danh_hieu: true,
@@ -122,7 +120,7 @@ describe('cascadeRenameSoQuyetDinh — JSON columns trên BangDeXuat PENDING', (
     expect(updateArg.data.data_danh_hieu).toBeUndefined();
   });
 
-  it('Cho proposal PENDING không chứa số cũ Khi cascade Thì không gọi update', async () => {
+  it('Cho proposal không chứa số cũ Khi cascade Thì không gọi update', async () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([
       {
         id: 'bdx-3',
@@ -174,7 +172,7 @@ describe('cascadeRenameSoQuyetDinh — JSON columns trên BangDeXuat PENDING', (
     expect(summary.proposalsUpdated).toBe(0);
   });
 
-  it('Cho 3 proposals PENDING (1 trúng + 2 trượt) Khi cascade Thì chỉ update 1 + đếm scanned=3, updated=1', async () => {
+  it('Cho 3 proposals (1 trúng + 2 trượt) Khi cascade Thì chỉ update 1 + đếm scanned=3, updated=1', async () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([
       {
         id: 'bdx-hit',
@@ -210,24 +208,52 @@ describe('cascadeRenameSoQuyetDinh — JSON columns trên BangDeXuat PENDING', (
     expect(summary.proposalsUpdated).toBe(1);
   });
 
-  it('Cho cascade Khi query proposals Thì filter status=PENDING (không quét APPROVED/REJECTED)', async () => {
+  it('Cho cascade Khi query proposals Thì quét mọi status (không filter PENDING)', async () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([] as never);
 
     await cascadeRenameSoQuyetDinh(prismaMock as never, OLD_SQD, NEW_SQD);
 
-    expect(prismaMock.bangDeXuat.findMany).toHaveBeenCalledWith({
-      where: { status: PROPOSAL_STATUS.PENDING },
-      select: {
-        id: true,
-        data_danh_hieu: true,
-        data_thanh_tich: true,
-        data_nien_han: true,
-        data_cong_hien: true,
-      },
+    const findManyArg = prismaMock.bangDeXuat.findMany.mock.calls[0][0] as {
+      where?: unknown;
+      select: unknown;
+    };
+    expect(findManyArg.where).toBeUndefined();
+    expect(findManyArg.select).toEqual({
+      id: true,
+      data_danh_hieu: true,
+      data_thanh_tich: true,
+      data_nien_han: true,
+      data_cong_hien: true,
     });
   });
 
-  it('Cho cascade Khi không tìm thấy proposal PENDING Thì proposalsScanned=0, proposalsUpdated=0', async () => {
+  it('Cho cascade quét proposals APPROVED + REJECTED Khi có số cũ Thì cũng rewrite JSON', async () => {
+    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([
+      {
+        id: 'bdx-approved',
+        data_danh_hieu: [{ personnel_id: 'p1', so_quyet_dinh: OLD_SQD }],
+        data_thanh_tich: null,
+        data_nien_han: null,
+        data_cong_hien: null,
+      },
+      {
+        id: 'bdx-rejected',
+        data_danh_hieu: [{ personnel_id: 'p2', so_quyet_dinh: OLD_SQD }],
+        data_thanh_tich: null,
+        data_nien_han: null,
+        data_cong_hien: null,
+      },
+    ] as never);
+    prismaMock.bangDeXuat.update.mockResolvedValue({ id: 'bdx-x' } as never);
+
+    const summary = await cascadeRenameSoQuyetDinh(prismaMock as never, OLD_SQD, NEW_SQD);
+
+    expect(prismaMock.bangDeXuat.update).toHaveBeenCalledTimes(2);
+    expect(summary.proposalsScanned).toBe(2);
+    expect(summary.proposalsUpdated).toBe(2);
+  });
+
+  it('Cho cascade Khi không tìm thấy proposal nào Thì proposalsScanned=0, proposalsUpdated=0', async () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([] as never);
 
     const summary = await cascadeRenameSoQuyetDinh(prismaMock as never, OLD_SQD, NEW_SQD);

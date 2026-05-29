@@ -18,11 +18,9 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import { formatDate } from '@/lib/utils';
 import { apiClient } from '@/lib/apiClient';
 import { GENDER } from '@/constants/gender.constants';
-import {
-  DEFAULT_ANTD_TABLE_PAGINATION,
-  FETCH_ALL_LIMIT,
-} from '@/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { ExcelImportSection } from './ExcelImportSection';
+import { usePersonnelList } from './usePersonnelList';
 import {
   PROPOSAL_MONTH_OPTIONS,
   PROPOSAL_STATUS,
@@ -83,20 +81,22 @@ export function Step2SelectPersonnelCongHien({
   onNextStep,
   isManager = false,
 }: Step2SelectPersonnelCongHienProps) {
-  const [loading, setLoading] = useState(false);
+  const {
+    personnel,
+    loading,
+    searchText,
+    setSearchText,
+    unitFilter,
+    setUnitFilter,
+    units,
+    filteredPersonnel,
+  } = usePersonnelList();
   const [checkingEligibility, setCheckingEligibility] = useState(false);
-  const [personnel, setPersonnel] = useState<Personnel[]>([]);
-  const [searchText, setSearchText] = useState('');
-  const [unitFilter, setUnitFilter] = useState<string>('ALL');
   const [positionHistoriesMap, setPositionHistoriesMap] = useState<Record<string, PositionHistoryLike[]>>({});
   const CURRENT_YEAR = new Date().getFullYear();
   const [localNam, setLocalNam] = useState<number | null>(nam);
   const [localThang, setLocalThang] = useState<number>(thang ?? new Date().getMonth() + 1);
   const [ineligiblePersonnel, setIneligiblePersonnel] = useState<IneligiblePersonnel[]>([]);
-
-  useEffect(() => {
-    fetchPersonnel();
-  }, []);
 
   useEffect(() => {
     if (personnel.length > 0) {
@@ -109,25 +109,6 @@ export function Step2SelectPersonnelCongHien({
   useEffect(() => {
     setLocalNam(nam);
   }, [nam]);
-
-  const fetchPersonnel = async () => {
-    try {
-      setLoading(true);
-      const response = await apiClient.getPersonnel({
-        page: 1,
-        limit: FETCH_ALL_LIMIT,
-      });
-
-      if (response.success) {
-        const personnelData = response.data ?? [];
-        setPersonnel(personnelData);
-      }
-    } catch (error: unknown) {
-      message.error(getApiErrorMessage(error));
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const fetchPositionHistories = async (personnelList: Personnel[]) => {
     try {
@@ -193,32 +174,6 @@ export function Step2SelectPersonnelCongHien({
     const months0910 = getTotalMonthsByGroup(personnelId, '0.9-1.0');
     return getHighestEligibleContributionMedal(months07, months08, months0910, requiredMonths);
   };
-
-  const units = Array.from(
-    new Set(
-      personnel.map(p => {
-        if (p.DonViTrucThuoc) {
-          return `${p.DonViTrucThuoc.id}|${p.DonViTrucThuoc.ten_don_vi}`;
-        } else if (p.CoQuanDonVi) {
-          return `${p.CoQuanDonVi.id}|${p.CoQuanDonVi.ten_don_vi}`;
-        }
-        return '';
-      })
-    )
-  ).filter(Boolean);
-
-  const filteredPersonnel = personnel.filter(p => {
-    const matchesSearch =
-      searchText === '' || p.ho_ten.toLowerCase().includes(searchText.toLowerCase());
-
-    const matchesUnit =
-      !unitFilter ||
-      unitFilter === 'ALL' ||
-      p.don_vi_truc_thuoc_id === unitFilter.split('|')[0] ||
-      p.co_quan_don_vi_id === unitFilter.split('|')[0];
-
-    return matchesSearch && matchesUnit;
-  });
 
   // Sort priority: 0=eligible, 1=pending, 2=already received, 3=ineligible
   const getSortPriority = (record: Personnel): number => {

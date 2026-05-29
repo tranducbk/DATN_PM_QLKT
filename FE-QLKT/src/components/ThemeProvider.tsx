@@ -1,8 +1,9 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
-import { Spin } from 'antd';
+import { ConfigProvider, Spin } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
+import { getRootAntdThemeConfig } from '@/lib/antdTheme';
 
 Spin.setDefaultIndicator(<LoadingOutlined style={{ fontSize: 28 }} spin />);
 
@@ -62,7 +63,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     return null;
   }
 
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+  return (
+    <ThemeContext.Provider value={value}>
+      <ConfigProvider theme={getRootAntdThemeConfig(isDark)}>{children}</ConfigProvider>
+    </ThemeContext.Provider>
+  );
 }
 
 export function useTheme(): ThemeContextType {

@@ -1,38 +1,25 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Trash2 } from 'lucide-react';
+import { Table, Button, Dropdown, Modal, App, Tag } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import type { MenuProps } from 'antd';
+import { MoreOutlined, DeleteOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/apiClient';
-import { App } from 'antd';
 import { formatDate } from '@/lib/utils';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { getRoleInfo } from '@/constants/roles.constants';
+
+interface AccountRow {
+  id: string;
+  username: string;
+  personnel_name?: string;
+  role: string;
+  createdAt: string;
+}
 
 interface AccountsTableProps {
-  accounts: any[];
-  onEdit?: (account: any) => void;
+  accounts: AccountRow[];
+  onEdit?: (account: AccountRow) => void;
   onRefresh?: () => void;
 }
 
@@ -49,81 +36,86 @@ export function AccountsTable({ accounts, onEdit, onRefresh }: AccountsTableProp
       message.success('Xóa tài khoản thành công');
       onRefresh?.();
       setDeleteId(null);
-    } catch (error) {
+    } catch {
       message.error('Có lỗi xảy ra khi xóa');
     } finally {
       setLoading(false);
     }
   };
 
+  const buildMenuItems = (account: AccountRow): MenuProps['items'] => [
+    { key: 'edit', label: 'Sửa', onClick: () => onEdit?.(account) },
+    { key: 'reset', label: 'Đặt lại mật khẩu' },
+    {
+      key: 'delete',
+      label: 'Xóa',
+      danger: true,
+      icon: <DeleteOutlined />,
+      onClick: () => setDeleteId(account.id),
+    },
+  ];
+
+  const columns: ColumnsType<AccountRow> = [
+    {
+      title: 'Tên đăng nhập',
+      dataIndex: 'username',
+      key: 'username',
+      render: (value: string) => <span className="font-medium">{value}</span>,
+    },
+    {
+      title: 'Họ tên Quân nhân',
+      dataIndex: 'personnel_name',
+      key: 'personnel_name',
+    },
+    {
+      title: 'Vai trò',
+      dataIndex: 'role',
+      key: 'role',
+      render: (role: string) => <Tag color={getRoleInfo(role).color}>{getRoleInfo(role).label}</Tag>,
+    },
+    {
+      title: 'Ngày tạo',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      render: (value: string) => formatDate(value),
+    },
+    {
+      title: 'Hành động',
+      key: 'actions',
+      width: 100,
+      render: (_v, account) => (
+        <Dropdown menu={{ items: buildMenuItems(account) }} trigger={['click']} placement="bottomRight">
+          <Button type="text" icon={<MoreOutlined />} />
+        </Dropdown>
+      ),
+    },
+  ];
+
   return (
     <>
       <div className="min-w-0 max-w-full border rounded-lg">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Tên đăng nhập</TableHead>
-              <TableHead>Họ tên Quân nhân</TableHead>
-              <TableHead>Vai trò</TableHead>
-              <TableHead>Ngày tạo</TableHead>
-              <TableHead className="w-12">Hành động</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {accounts.map(account => (
-              <TableRow key={account.id}>
-                <TableCell className="font-medium">{account.username}</TableCell>
-                <TableCell>{account.personnel_name}</TableCell>
-                <TableCell>
-                  <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">
-                    {account.role}
-                  </span>
-                </TableCell>
-                <TableCell>{formatDate(account.createdAt)}</TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onEdit?.(account)}>Sửa</DropdownMenuItem>
-                      <DropdownMenuItem>Đặt lại mật khẩu</DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="text-red-600"
-                        onClick={() => setDeleteId(account.id)}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Xóa
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <Table<AccountRow>
+          rowKey="id"
+          columns={columns}
+          dataSource={accounts}
+          pagination={false}
+          size="middle"
+          locale={{ emptyText: 'Không có dữ liệu' }}
+        />
       </div>
 
-      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
-            <AlertDialogDescription>
-              Bạn có chắc chắn muốn xóa tài khoản này? Hành động này không thể hoàn tác.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogCancel>Hủy</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={handleDelete}
-            disabled={loading}
-            className="bg-red-600 hover:bg-red-700"
-          >
-            {loading ? 'Đang xóa...' : 'Xóa'}
-          </AlertDialogAction>
-        </AlertDialogContent>
-      </AlertDialog>
+      <Modal
+        open={!!deleteId}
+        title="Xác nhận xóa"
+        onCancel={() => setDeleteId(null)}
+        onOk={handleDelete}
+        confirmLoading={loading}
+        okText="Xóa"
+        cancelText="Hủy"
+        okButtonProps={{ danger: true }}
+      >
+        <p>Bạn có chắc chắn muốn xóa tài khoản này? Hành động này không thể hoàn tác.</p>
+      </Modal>
     </>
   );
 }

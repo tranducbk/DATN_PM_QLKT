@@ -29,7 +29,7 @@ cd BE-QLKT && npx prisma db push        # Sync schema (dev only, no migration fi
 
 ```
 PM QLKT/
-├── FE-QLKT/          # Next.js 14 (App Router) + Ant Design + Tailwind + shadcn/ui
+├── FE-QLKT/          # Next.js 14 (App Router) + Ant Design + Tailwind
 └── BE-QLKT/          # Express + TypeScript + Prisma + PostgreSQL
 ```
 
@@ -64,7 +64,6 @@ PM QLKT/
 | BE Service | camelCase.service.ts | `account.service.ts` |
 | BE Route | camelCase.route.ts | `account.route.ts` |
 | BE Validation | camelCase.validation.ts | `account.validation.ts` |
-| shadcn/ui components | kebab-case.tsx (exception) | `button.tsx`, `dropdown-menu.tsx` |
 
 ### Code Naming
 - Constants: `UPPER_SNAKE_CASE` with `as const` (`ROLES`, `ELIGIBILITY_STATUS`)

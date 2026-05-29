@@ -158,16 +158,15 @@
 
 **Phản biện:** "Sao không Pusher/Ably?" → "Phải gửi data ra Internet, vi phạm chính sách bảo mật LAN nội bộ."
 
-### A.8 — Ant Design + Tailwind CSS + shadcn/ui — tại sao 3 thư viện UI?
+### A.8 — Ant Design + Tailwind CSS — tại sao kết hợp 2 thư viện UI?
 
-**Ngắn:** Ba thư viện phục vụ ba mục đích khác nhau, không trùng lặp: Ant Design cho component nghiệp vụ phức tạp (Form, Table, Modal), Tailwind cho spacing/layout, shadcn/ui cho component mở rộng cần tuỳ biến sâu.
+**Ngắn:** Hai thư viện phục vụ hai mục đích khác nhau, không trùng lặp: Ant Design cho component nghiệp vụ phức tạp (Form, Table, Modal, Dropdown), Tailwind CSS cho spacing/layout/responsive — không động đến logic component.
 
 **Chi tiết:**
-- **Ant Design:** form validation tích hợp, table có pagination/sort/filter sẵn, locale tiếng Việt — rút ngắn 50 % code so với tự build.
-- **Tailwind:** dùng cho layout grid, spacing margin/padding, responsive — không động đến component logic.
-- **shadcn/ui:** dùng cho 2–3 component đặc biệt (vd: command palette `Cmd+K`, advanced popover) mà Ant Design không có.
+- **Ant Design:** form validation tích hợp, table có pagination/sort/filter sẵn, locale tiếng Việt — rút ngắn ~50 % code so với tự build component.
+- **Tailwind:** dùng cho layout grid, spacing margin/padding, flex/responsive — chỉnh các vị trí mà Ant Design chưa đáp ứng được (vd: bố cục thẻ huy chương 2 cột trên desktop, 1 cột trên mobile).
 
-**Hạn chế:** Bundle CSS có thể overlap. Em đã purge Tailwind theo content và import từng component AntD theo nhu cầu (`import { Table } from 'antd'`).
+**Hạn chế:** Bundle CSS có thể overlap nhẹ. Em đã purge Tailwind theo content và import từng component AntD theo nhu cầu (`import { Table } from 'antd'`).
 
 **Phản biện:** "Có thể chỉ dùng Tailwind + Headless UI?" → "Có, nhưng phải tự xây Form, Table — tốn 4–6 tuần thêm."
 
@@ -282,27 +281,22 @@ RootLayout (app/layout.tsx)
 
 **Phản biện:** "Component cha là Server, con là Client truyền props — props phải serializable?" → "Đúng. Em không truyền function/JSX qua ranh giới này, chỉ truyền data thuần."
 
-### A.14 — Tailwind + PostCSS + shadcn/ui — config file gì, hoạt động ra sao?
+### A.14 — Tailwind CSS + PostCSS — config file gì, hoạt động ra sao?
 
-**Ngắn:** Tailwind sinh CSS theo class trong code (JIT). PostCSS là pipeline xử lý. shadcn/ui là CLI copy component vào repo, không phải npm package.
+**Ngắn:** Tailwind sinh CSS theo class trong code (JIT — Just-In-Time). PostCSS là pipeline xử lý plugin CSS.
 
 **File cấu hình project em có:**
-- `tailwind.config.ts` — khai báo `content: ['./src/**/*.{ts,tsx}']` để Tailwind scan class từ code, `theme.extend` thêm color palette tùy biến, `darkMode: 'class'` bật dark mode qua class trên `<html>`.
+- `tailwind.config.js` — khai báo `content: ['./src/**/*.{ts,tsx}']` để Tailwind scan class từ code, `theme.extend` thêm color palette tùy biến, `darkMode: 'class'` bật dark mode qua class trên `<html>`.
 - `postcss.config.js` — chạy `tailwindcss` + `autoprefixer` plugin. Next.js đọc file này tự động khi build.
 - `src/app/globals.css` — import 3 directive `@tailwind base/components/utilities`. File này được import 1 lần ở `app/layout.tsx`.
-- `components.json` — config shadcn/ui CLI: alias `@/components`, style `default`, base color `slate`. CLI dùng nó khi gõ `npx shadcn@latest add button`.
-- `src/lib/utils.ts` — chứa `cn()` helper (clsx + tailwind-merge), shadcn/ui dùng để merge class có conflict.
+- `src/lib/utils.ts` — chứa `cn()` helper (clsx + tailwind-merge) để merge các class Tailwind có thể conflict (vd: `cn('p-4', isActive && 'p-2')` ra `p-2` đúng).
 
 **Tailwind hoạt động:**
 1. `next dev` → PostCSS chạy.
 2. Tailwind plugin scan `content` glob, tìm class string (`text-red-500`, `flex`, ...) trong file `.tsx`.
 3. Sinh CSS chỉ chứa class được dùng → bundle CSS final ~20-30 KB cho project em (so với 3 MB nếu include hết Tailwind).
 
-**shadcn/ui khác AntD:**
-- AntD: import từ npm, version cố định, khó tùy biến sâu.
-- shadcn/ui: copy source code vào `src/components/ui/`, em sửa trực tiếp được. Dùng `kebab-case.tsx` là exception duy nhất trong project (tất cả component khác PascalCase).
-
-**Hạn chế:** Bundle CSS có overlap nhẹ giữa AntD reset và Tailwind preflight. Em đã thử disable preflight (`corePlugins.preflight: false`) — không đáng kể.
+**Hạn chế:** Bundle CSS có overlap nhẹ giữa AntD reset và Tailwind preflight. Em đã thử disable preflight (`corePlugins.preflight: false`) — không đáng kể về kích thước nhưng AntD style ưu tiên hơn nếu xảy ra xung đột.
 
 **Phản biện:** "Sao không dùng styled-components hoặc emotion?" → "CSS-in-JS overhead runtime (~10-20 KB). Tailwind biên dịch lúc build, runtime cost = 0."
 
@@ -469,17 +463,18 @@ app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
 **Phản biện:** "Sao không bật full CSP?" → "AntD chưa hỗ trợ nonce-based CSP. Khi nào AntD v6 ra (đã có roadmap), em sẽ migrate. Hiện LAN nội bộ rủi ro XSS thấp."
 
-### A.20 — Thư viện FE phụ: dayjs, axios, chart.js, react-hook-form, react-pdf-viewer
+### A.20 — Thư viện FE phụ: dayjs, axios, chart.js, react-pdf-viewer
 
-**Ngắn:** 5 thư viện FE phụ trợ. Mỗi cái thay thế phương án "to" hơn để giữ bundle nhỏ.
+**Ngắn:** 4 thư viện FE phụ trợ. Mỗi cái thay thế phương án "to" hơn để giữ bundle nhỏ.
 
 | Thư viện | Mục đích | Thay cho |
 |---|---|---|
 | `dayjs` (~7 KB) | Format/parse date, locale tiếng Việt | `moment.js` (~70 KB), date-fns (~13 KB tree-shakable) |
 | `axios` | HTTP client với interceptor | `fetch` (phải tự wrap), TanStack Query (overkill cho CRUD đơn giản) |
 | `chart.js` + `react-chartjs-2` | Biểu đồ dashboard | `recharts` (phình bundle), `apache echarts` (overkill) |
-| `react-hook-form` + `@hookform/resolvers` | Form state + Zod validation | Formik (chậm hơn, mỗi keystroke re-render nhiều) |
 | `@react-pdf-viewer/core` | Xem PDF quyết định inline | `iframe src=...` (không có UI điều khiển), `pdf.js` thuần (phải tự build UI) |
+
+Form state dùng `Form.useForm()` của Ant Design (built-in, không cần thư viện ngoài), validation gọi `zodSchema.safeParse()` trong handler rồi map lỗi qua `form.setFields()`.
 
 **Axios interceptor (`src/lib/axiosInstance.ts`):**
 - Request: tự gắn `Authorization: Bearer <accessToken>` từ localStorage.
@@ -1495,24 +1490,26 @@ const unit = await prisma.coQuanDonVi.findUnique({ where: { id: oldUnit } });
 await prisma.coQuanDonVi.update({ where: { id: oldUnit }, data: { so_luong: unit.so_luong - 1 } });
 ```
 
-**Edge case quan trọng — chuyển nội bộ cùng CQDV:** Nếu quân nhân chuyển từ DVTT-X sang DVTT-Y nhưng cùng CQDV cha → so_luong CQDV **không đổi**, chỉ DVTT đổi. Code đúng phải dùng `if/else`:
+**Cách project thực sự đếm — single primary unit:** Quân nhân chỉ thuộc **một** đơn vị "primary" (DVTT nếu có, ngược lại CQDV). Đếm `so_luong` chỉ chạm vào unit primary cũ và unit primary mới, **không** đếm chéo cả CQDV + DVTT. Code thật tại `services/personnel/update.ts`:
 
 ```typescript
-const isSameCqdv = oldDvtt?.co_quan_don_vi_id === newDvtt?.co_quan_don_vi_id;
-
-if (!isSameCqdv) {
-  // Đổi cả CQDV: decrement cũ, increment mới
-  ops.push(prisma.coQuanDonVi.update({ where: { id: oldCqdv }, data: { so_luong: { decrement: 1 } } }));
-  ops.push(prisma.coQuanDonVi.update({ where: { id: newCqdv }, data: { so_luong: { increment: 1 } } }));
+// DVTT takes priority over CQDV when determining effective unit
+const oldPrimaryUnitId = oldDonViTrucThuocId || oldCoQuanDonViId;
+const oldIsCqdv = !oldDonViTrucThuocId && !!oldCoQuanDonViId;
+if (oldPrimaryUnitId) {
+  await adjustUnitCount(prismaTx, oldPrimaryUnitId, oldIsCqdv, 'decrement');
 }
-// DVTT luôn đổi
-ops.push(prisma.donViTrucThuoc.update({ where: { id: oldDvtt }, data: { so_luong: { decrement: 1 } } }));
-ops.push(prisma.donViTrucThuoc.update({ where: { id: newDvtt }, data: { so_luong: { increment: 1 } } }));
 
-await prisma.$transaction(ops);
+const newPrimaryUnitId = newDonViTrucThuocId || newCoQuanDonViId;
+const newIsCqdv = !newDonViTrucThuocId && !!newCoQuanDonViId;
+if (newPrimaryUnitId) {
+  await adjustUnitCount(prismaTx, newPrimaryUnitId, newIsCqdv, 'increment');
+}
 ```
 
-Em đã có rule trong CLAUDE.md "Khi thay đổi đơn vị quân nhân, dùng if/else (chỉ increment/decrement 1 đơn vị), không dùng 2 if riêng biệt — tránh đếm dư".
+`adjustUnitCount` dispatch sang `coQuanDonViRepository.{increment,decrement}SoLuong` hoặc `donViTrucThuocRepository.{increment,decrement}SoLuong` tuỳ `isCqdv`. Bản thân repository dùng `data: { so_luong: { increment/decrement: 1 } }` — atomic SQL `UPDATE ... SET so_luong = so_luong ± 1`.
+
+**Rule trong CLAUDE.md:** "Khi thay đổi đơn vị quân nhân, dùng if/else (chỉ increment/decrement 1 đơn vị), không dùng 2 if riêng biệt — tránh đếm dư". Lý do: nếu cả 2 nhánh `if` cùng chạy (vd: cả `oldUnit` và `newUnit` đều có giá trị), không thận trọng có thể đếm dư khi chuyển nội bộ.
 
 ### D.5 — Refresh token rotation race
 
@@ -1570,6 +1567,140 @@ async function recalculateAnnualProfile(personnelId) {
 **Cơ chế:**
 - Approve mở transaction → fetch → check status. Nếu lúc đó B đã DELETE: `findUniqueOrThrow` ném `P2025 (Record not found)` → throw `NotFoundError`.
 - Delete cũng dùng `deleteMany({ where: { id, status: 'PENDING' } })` — count = 0 nghĩa là proposal đã được duyệt → trả lỗi.
+
+### D.9 — Hai đề xuất khác nhau dùng cùng `so_quyet_dinh` đồng bộ vào `FileQuyetDinh` (check-then-create race)
+
+**Tình huống:** Trong quy trình phê duyệt, sau khi ghi danh hiệu/khen thưởng, hệ thống đồng bộ một bản ghi vào bảng `FileQuyetDinh` để tra cứu tệp PDF sau này (`services/proposal/approve/decisionMappings.ts`). Khoá duy nhất là `so_quyet_dinh`. Khi Admin A duyệt đề xuất 1 và Admin B duyệt đề xuất 2 mà hai đề xuất gắn cùng số quyết định (ví dụ: gộp nhiều quân nhân vào cùng 1 quyết định) — hai transaction cùng chạy đoạn:
+
+```typescript
+// ❌ XẤU — check-then-create race
+const existing = await tx.fileQuyetDinh.findUnique({ where: { so_quyet_dinh } });
+if (!existing) {
+  await tx.fileQuyetDinh.create({ data: { so_quyet_dinh, ... } });   // ← P2002 ở tx thứ hai
+} else if (!existing.file_path && newFilePath) {
+  await tx.fileQuyetDinh.update({ where: { so_quyet_dinh }, data: { file_path: newFilePath } });
+}
+```
+
+Cả hai transaction đều thấy `existing = null` (READ COMMITTED không thấy row chưa commit của tx kia), cả hai cùng `create` → tx commit sau gặp `P2002 (Unique constraint)`. Catch block log lỗi nhưng nuốt → đồng bộ nửa chừng, lịch sử kiểm toán không khớp.
+
+**Cơ chế chống — atomic upsert + conditional backfill:**
+
+```typescript
+// ✅ TỐT — upsert là một câu UPSERT atomic ở DB
+await tx.fileQuyetDinh.upsert({
+  where: { so_quyet_dinh },
+  create: {
+    so_quyet_dinh,
+    nam: proposal.nam,
+    ngay_ky,
+    nguoi_ky,
+    file_path,
+    loai_khen_thuong,
+    ghi_chu: `Tự động đồng bộ từ đề xuất ${proposalId}`,
+  },
+  update: {},   // no-op: KHÔNG ghi đè ngay_ky / nguoi_ky của tx đầu tiên
+});
+
+// Backfill file_path chỉ khi row cũ còn null và tx hiện tại có path mới.
+// updateMany với where lồng điều kiện là atomic: chỉ update đúng các row khớp.
+if (file_path) {
+  await tx.fileQuyetDinh.updateMany({
+    where: { so_quyet_dinh, file_path: null },
+    data: { file_path },
+  });
+}
+```
+
+**Tại sao split thành 2 câu thay vì 1 upsert có update đầy đủ?**
+- `upsert.update` chạy luôn khi row đã tồn tại, không có điều kiện. Nếu để `update: { file_path }` thì tx sau sẽ ghi đè `file_path` của tx trước — không an toàn nếu tx trước cũng đã set.
+- Tách `updateMany` với `where: { file_path: null }` đảm bảo backfill chỉ xảy ra một lần, và chỉ khi cần.
+- `update: {}` (no-op) khiến upsert trở thành "ensure-row-exists" thuần tuý — đây là pattern an toàn cho ON CONFLICT DO NOTHING.
+
+**Phản biện 1:** "Sao không dùng `INSERT ... ON CONFLICT DO NOTHING` raw SQL?" → "Prisma `upsert` với `update: {}` chính là tương đương `ON CONFLICT DO UPDATE SET <empty>`. Hành vi giống nhau, không cần escape `$queryRaw`."
+
+**Phản biện 2:** "Sao không SELECT FOR UPDATE để serialize?" → "Sẽ chặn các tx khác đọc cùng row trong khi tx hiện tại chạy. Với upsert atomic ở DB-level, hai tx đan xen vẫn cho kết quả đúng mà không phải lock — hiệu năng tốt hơn."
+
+**Phản biện 3:** "Sao đặt `update: {}` mà không là `update: { updatedAt: new Date() }`?" → "Bảng `FileQuyetDinh` không có `updatedAt`, và việc bump timestamp khi không có thay đổi thật làm audit log hiểu nhầm 'có ai sửa'. Empty update là chính xác nhất với ngữ nghĩa 'chỉ đảm bảo row tồn tại'."
+
+**Ghi chú phát hiện:** Lỗi cũ (`findUnique → create`) chỉ xảy ra khi 2 đề xuất cùng `so_quyet_dinh` được duyệt cùng phút — trong domain Phòng Chính trị Học viện chỉ 1-2 Admin, xác suất thấp. Nhưng vì có audit log nuốt lỗi nên rất khó phát hiện khi đã xảy ra → fix chủ động bằng upsert.
+
+**Câu hỏi follow-up có thể bị dồn:**
+
+> *"Catch block dưới `try` giờ catch lỗi gì? Có còn nuốt lỗi không?"*
+
+Catch vẫn còn, vẫn ghi vào `SystemLog` với `action: 'ERROR'`. Nhưng giờ chỉ còn bắt lỗi **hiếm**: network với DB, schema mismatch, transient timeout. Không còn bắt P2002 vì upsert đã xử lý. Đồng bộ `FileQuyetDinh` là tác vụ **best-effort phụ** sau khi transaction chính đã commit dữ liệu khen thưởng — nếu fail, có thể chạy lại từ proposal đã duyệt mà không ảnh hưởng tính nhất quán.
+
+> *"Hai tx có file_path khác nhau thì tx nào thắng?"*
+
+Tx commit trước thắng — `file_path` của tx đầu được giữ. Tx sau gặp `update: {}` (no-op) nên không ghi đè. Sau đó nhánh `if (filePath)` của tx sau chạy `updateMany where: { file_path: null }` — không match (vì file_path đã có), nên cũng không ghi gì. Hành vi: **first writer wins** cho cả `file_path`, `ngay_ky`, `nguoi_ky`. Đúng ngữ nghĩa — một số quyết định chỉ có một bộ metadata "gốc".
+
+> *"Sao không deadlock khi 2 upsert cùng row?"*
+
+Postgres implement upsert bằng `INSERT ... ON CONFLICT DO UPDATE`. Khác `SELECT FOR UPDATE` ở chỗ: không lấy lock trước rồi mới check, mà lấy row-level lock khi INSERT, nếu trùng key thì release insert lock và lấy update lock trên row đã tồn tại. Hai tx đan xen sẽ serialize tự động ở DB-level mà không cần lock thủ công.
+
+> *"Có test concurrent specifically không?"*
+
+Hiện chỉ có integration test cho happy path (`tests/approve/decisionMappings.test.ts`). Test concurrent thực sự cần spawn 2 worker, khó setup trong jest. Hướng phát triển: viết test dùng `Promise.all([approve(p1), approve(p2)])` với cùng `so_quyet_dinh` và assert cả hai succeed + chỉ 1 row trong `FileQuyetDinh`.
+
+> *"Sao không dùng SERIALIZABLE isolation level?"*
+
+SERIALIZABLE gây retry hàng loạt khi conflict, throughput giảm rõ rệt. Upsert ở READ COMMITTED đã đủ vì atomic ở mức row constraint. Project chỉ cần SERIALIZABLE cho các luồng có pattern "đọc-rồi-quyết-định-rồi-ghi" mà không có cách diễn đạt qua atomic operation.
+
+### D.10 — Transaction timeout cho đợt phê duyệt lớn
+
+**Tình huống:** Cuối năm, Admin phê duyệt một đợt 300+ quân nhân trong 1 đề xuất. Transaction Prisma có timeout mặc định 5 giây; project set `PROPOSAL_APPROVE_TX_TIMEOUT_MS = 180000` (3 phút) tại `services/proposal/approve/import.ts`.
+
+**Bên trong transaction:**
+1. Per-personnel writes — N lần `tx.danhHieuHangNam.upsert` (mỗi quân nhân).
+2. Decision file sync — như D.9 ở trên.
+3. Profile recalc — gọi `computeEligibilityFlags` cho từng quân nhân bị thay đổi.
+4. Audit log — `tx.systemLog.create` ghi payload chi tiết.
+
+Nếu chậm hơn timeout → Prisma rollback toàn bộ, user nhận lỗi `Transaction not found` không thân thiện.
+
+**Cơ chế chống:**
+
+```typescript
+// services/proposal/approve/import.ts
+// Approve transaction covers per-personnel writes + profile recalc + audit + decision sync.
+// 60s was too tight for end-of-year batches (~300+ personnel). Bumped to 180s; if a single
+// approve ever needs more, split the proposal rather than raising further.
+const PROPOSAL_APPROVE_TX_TIMEOUT_MS = 180000;
+
+await prisma.$transaction(
+  async tx => {
+    // ... per-personnel writes, decision sync, recalc, audit
+  },
+  { timeout: PROPOSAL_APPROVE_TX_TIMEOUT_MS }
+);
+```
+
+**Phản biện:** "Tại sao không bỏ timeout hẳn?" → "Để timeout vô hạn rất nguy hiểm — nếu một query bị deadlock hoặc treo, transaction sẽ giữ lock vô hạn, chặn các transaction khác. 180s là cân bằng giữa 'đủ cho đợt lớn nhất từng gặp (~300 quân nhân, đo thực tế ~2 phút)' và 'fail-fast khi có sự cố'."
+
+**Hướng dài hạn:** Nếu một đợt vượt 180s, kiến trúc đúng là **chia nhỏ proposal** (mỗi đề xuất tối đa 200 quân nhân) thay vì tăng timeout. Giới hạn được enforce ở tầng validation khi tạo đề xuất.
+
+**Câu hỏi follow-up có thể bị dồn:**
+
+> *"Sao 180s mà không 60s như cũ, đo cụ thể bao nhiêu?"*
+
+Số 60s cũ là default tại thời điểm viết, không qua benchmark. 180s là chọn dựa trên ước lượng: ~300 quân nhân × ~400ms cho mỗi vòng lặp (upsert + recalc + audit) ≈ 120s, cộng buffer 50% cho file sync + Excel attachments. Em chưa có benchmark định lượng formal — nếu hội đồng hỏi "có dữ liệu đo không?" em sẽ trả lời thật: "Em chưa benchmark có hệ thống, 180s là estimate dựa trên test thủ công trên dataset mẫu ~150 quân nhân (đo ~50s), nhân hệ số an toàn ×3".
+
+> *"Sao không đặt env var để cấu hình theo môi trường?"*
+
+Có thể, nhưng timeout transaction là quyết định kiến trúc, không phải tuning runtime. Nếu để env var, dev có thể nâng lên 600s tránh được vấn đề "đợt quá to" thay vì giải quyết gốc (chia nhỏ proposal). Hardcode + comment là cố ý — "nếu cần tăng hãy đọc comment và split proposal".
+
+> *"Tx đang chạy 180s có chặn các tx khác không?"*
+
+Không full block — Postgres MVCC cho phép đọc thoải mái. Chỉ chặn WRITE vào cùng row đang lock (vd: đang upsert quân nhân X thì tx khác sửa quân nhân X sẽ wait). Trong domain này, đợt phê duyệt thường chỉ Admin Phòng Chính trị làm, không ai khác cùng sửa quân nhân đang được duyệt → tác động thực tế thấp.
+
+> *"User thấy lỗi gì nếu timeout?"*
+
+Prisma ném `P2028 Transaction not found` hoặc `Transaction API timeout`. Backend bắt ở error handler global, trả `500 Có lỗi xảy ra khi phê duyệt, vui lòng thử lại`. Hiện chưa có message tiếng Việt riêng cho case timeout vs lỗi khác — đây là cải tiến nhỏ có thể thêm. Tất cả thao tác trong tx đã rollback nên DB ở trạng thái sạch, user retry an toàn.
+
+> *"Có monitor cảnh báo khi tx gần timeout không?"*
+
+Hiện chưa. Có thể thêm bằng cách wrap `prisma.$transaction` với `Date.now()` đầu/cuối, log warning nếu duration > 80% timeout. Hướng phát triển trong báo cáo §6.2.
 
 ---
 
@@ -2786,6 +2917,44 @@ const ANH_HUNG_LLVT: ChainAwardConfig = {
 **Trả lời mẫu:**
 "Câu hỏi này khá rộng. Em xin trả lời trong phạm vi project — [trả lời phần em biết]. Phần [phần khác] vượt ngoài phạm vi đồ án, em sẽ tìm hiểu thêm."
 
+### L.7 — Khi bị hỏi "em có dùng AI (ChatGPT, Claude, Copilot...) để làm đồ án không?"
+
+**Nguyên tắc cốt lõi:**
+
+1. **Trung thực** — đừng phủ nhận. Hội đồng có thể test bằng cách yêu cầu giải thích chi tiết bất kỳ file/function nào. Nói dối, bị bắt thóp = mất credibility nặng hơn nhiều.
+2. **Định vị AI là công cụ, không phải tác giả** — như IDE, autocomplete, hoặc senior code reviewer.
+3. **Khẳng định ownership** — mọi quyết định kiến trúc + business logic + trade-off đều của em.
+4. **Demonstrate hiểu code** — sẵn sàng giải thích bất kỳ dòng nào.
+
+**Trả lời mẫu (kịch bản chuẩn):**
+
+> "Vâng, em có dùng AI như công cụ hỗ trợ — chủ yếu cho 3 việc: (1) generate boilerplate code lặp lại (vd: CRUD controller skeleton, Zod schema, Excel column config), (2) review pattern và gợi ý refactor khi em thấy code dài hoặc lặp, (3) viết test fixtures và unit test cases edge case mà em chưa nghĩ ra. Em coi AI giống IDE thông minh hơn — giúp em viết nhanh hơn nhưng không quyết định thay em.
+>
+> Tất cả quyết định kiến trúc (chọn Next.js + Express + Prisma, layered + repository pattern, strategy pattern cho 7 loại đề xuất), business logic (rule chuỗi danh hiệu BKBQP/CSTĐTQ/BKTTCP, cửa sổ trượt 3/7 năm, lifetime block cho BKTTCP cá nhân), và trade-off thiết kế (vd: FK string vs id, cascade rename scope) đều em hiểu sâu — em đã viết spec và prompt cụ thể cho AI dựa trên ngữ cảnh nghiệp vụ quân đội. Em sẵn sàng giải thích bất kỳ dòng code nào trong repo, dù do em viết tay hay AI hỗ trợ generate."
+
+**Follow-up trả lời sẵn:**
+
+| Hội đồng có thể hỏi | Trả lời |
+|---|---|
+| "AI viết bao nhiêu phần trăm?" | "Em không đo cụ thể được vì em sửa nhiều sau khi AI generate. Nhưng có thể nói: AI hỗ trợ ~30-40% boilerplate (form CRUD lặp, test fixture, Excel config), còn 60-70% còn lại — gồm toàn bộ business logic (eligibility, chain awards), schema design, và security middleware — em viết hoặc heavily edit. Quan trọng hơn: em hiểu hết." |
+| "Vậy có gì là của riêng em?" | "Domain knowledge và kiến trúc tổng thể. AI không biết về Luật Thi đua Khen thưởng 06/2022/QH15, không biết về rule chuỗi danh hiệu trong quân đội, không biết về thứ tự duyệt 4 cấp (USER → MANAGER → ADMIN → SUPER_ADMIN), không biết về workflow Phòng Chính trị Học viện. Em phải research luật + interview hướng dẫn + viết spec rồi mới prompt được AI để generate đúng." |
+| "Nếu AI bảo dùng cách A, em có biết khi nào A sai không?" | "Có. Em đã gặp tình huống AI suggest dùng pattern không phù hợp — ví dụ AI hay dùng default export cho React component nhưng em rule là named export (đã ghi trong CLAUDE.md của project). Em luôn `typecheck + jest + browser test` trước khi commit. Em đã reject nhiều code AI generate vì không đúng convention." |
+| "Em có biết tự code không, hay phải dựa AI?" | "Em biết tự code. AI giúp em làm nhanh hơn, nhưng nếu mất AI thì em vẫn build được — chỉ chậm hơn. Em đã viết tay nhiều phần khi cần precision (vd: cascade rename, transaction logic, audit log middleware). Em coi AI như Stack Overflow + IntelliSense thông minh hơn — không thay thế việc học và hiểu." |
+| "Theo em AI có làm giảm giá trị đồ án không?" | "Em nghĩ không — vì giá trị đồ án nằm ở: (1) hiểu nghiệp vụ + research luật, (2) thiết kế kiến trúc + chọn trade-off, (3) đảm bảo correctness + security + maintainability, (4) viết test cover được edge case, (5) deploy + vận hành thực tế. AI không làm được những phần này — nó chỉ tăng tốc gõ code. Industry hiện tại (GitHub Copilot, Cursor) cũng vậy: AI là công cụ, dev senior vẫn cần để guide nó." |
+
+**Tuyệt đối tránh:**
+
+- ❌ "Em không dùng AI" — risk fact-check lớn, mất credibility hoàn toàn nếu bị bắt thóp.
+- ❌ "AI làm hết, em chỉ ghép" — mất ownership, hội đồng có thể fail.
+- ❌ Lảng tránh / đánh trống lảng — giống như đang giấu.
+- ❌ Phòng thủ quá đà ("nhưng em hiểu hết...") trước khi được hỏi follow-up — có vẻ guilty.
+
+**Tone khuyên dùng:** Bình thản, tự tin, coi như chuyện đương nhiên (vì đúng là chuyện đương nhiên ở industry hiện tại). Đừng xin lỗi vì dùng AI — không có gì sai để xin lỗi.
+
+**Chốt câu hỏi (nếu hội đồng vẫn truy):**
+
+> "Em xin được khẳng định: dù em có dùng AI hỗ trợ hay không, em đã đầu tư đủ thời gian để hiểu mọi quyết định kỹ thuật trong project này. Em sẵn sàng được hội đồng test bằng cách hỏi chi tiết bất kỳ file, function, hay design decision nào — em sẽ giải thích được lý do và defend được trade-off."
+
 ---
 
 ## M. Khả năng bảo trì và mở rộng kiến trúc
@@ -3898,7 +4067,102 @@ id String @id @default(cuid()) @db.VarChar(30)
 
 **CUID2 (mới hơn) còn an toàn hơn:** thêm entropy, không leak server identity. Có thể migrate sau.
 
-### O.32 — Prisma sinh SQL kém hiệu quả — fix thế nào?
+### O.32 — FK award tables trỏ tới `FileQuyetDinh.so_quyet_dinh` (string) thay vì `id` (cuid) — đánh đổi gì?
+
+**Thiết kế hiện tại:** 8 bảng award (`ThanhTichKhoaHoc`, `DanhHieuHangNam`, `KhenThuongHCBVTQ`, `HuanChuongQuanKyQuyetThang`, `KyNiemChuongVSNXDQDNDVN`, `KhenThuongHCCSVV`, `KhenThuongDotXuat`, `DanhHieuDonViHangNam`) — tổng 13 FK relations — đều trỏ tới `FileQuyetDinh.so_quyet_dinh` (business identifier), không phải `FileQuyetDinh.id` (surrogate cuid).
+
+```prisma
+model ThanhTichKhoaHoc {
+  so_quyet_dinh String? @db.VarChar(100)
+  FileQuyetDinh FileQuyetDinh? @relation(
+    fields: [so_quyet_dinh],
+    references: [so_quyet_dinh],    // → string, không phải id
+    onUpdate: Cascade,
+    onDelete: Restrict
+  )
+}
+```
+
+**Pros (lý do giữ thiết kế):**
+
+| Điểm | Diễn giải |
+|---|---|
+| Số QĐ là natural business identifier | Mỗi QĐ chỉ có 1 số duy nhất theo luật ban hành — có thuộc tính "stable enough" |
+| Hiển thị không cần JOIN | `record.so_quyet_dinh` đã đủ cho UI; không cần `include: { FileQuyetDinh }` |
+| JSON proposal payload đồng bộ với relational | `data_danh_hieu: [{ so_quyet_dinh: 'QD-123' }]` cùng kiểu với cột relational — không cần lookup id khi build payload |
+| ON UPDATE CASCADE xử lý rename tự động | Postgres tự update tất cả award rows khi rename — code không phải biết |
+| Debug DB dễ | `SELECT * FROM ThanhTichKhoaHoc` đọc thấy "QD-123/2026" thay vì "cmphxxx" |
+
+**Cons (nhược điểm thật sự):**
+
+| Vấn đề | Hệ quả |
+|---|---|
+| Anti-pattern phổ biến (FK to mutable business key) | Trái standard practice — FK nên trỏ surrogate immutable |
+| Rename cost O(refs) | DB cascade quét 8 bảng + 10 FK constraints; app phải chạy `cascadeRename.ts` rewrite JSON tất cả proposal (PENDING + APPROVED + REJECTED) để UI nhất quán |
+| Index lớn hơn | `@db.VarChar(100)` vs `@db.VarChar(30)` cuid — index disk + memory footprint cao hơn ~3x |
+| FK validation chậm hơn marginal | String comparison vs cuid comparison |
+| Khó multi-tenant trong tương lai | Nếu cần đồng QĐ trùng số ở 2 tenant khác nhau → unique constraint global breaks |
+| Khó versioning QĐ | Nếu cần lịch sử các phiên bản QĐ → cần id stable làm version chain |
+
+**Alternative design (surrogate id FK):**
+
+```prisma
+model ThanhTichKhoaHoc {
+  file_quyet_dinh_id String? @db.VarChar(30)
+  FileQuyetDinh FileQuyetDinh? @relation(
+    fields: [file_quyet_dinh_id],
+    references: [id],               // → cuid immutable
+    onDelete: Restrict
+  )
+}
+```
+
+- Read: `include: { FileQuyetDinh: { select: { so_quyet_dinh, file_path } } }` → `record.FileQuyetDinh.so_quyet_dinh`
+- Rename: 1 UPDATE row trong `FileQuyetDinh`, JOIN reads tự thấy số mới — không cascade
+- Code: bỏ được `cascadeRename.ts` cho award tables (vẫn cần cho proposal JSON nếu JSON giữ string)
+
+**Vì sao không refactor về surrogate id?**
+
+1. **Scale hiện tại**: ~hàng trăm QĐ, vài nghìn award rows → cost cascade rename = miligiây, không phải hot path
+2. **Tần suất rename thấp**: chỉ khi fix typo lúc tạo mới — QĐ đã ban hành không bao giờ đổi số
+3. **Refactor scope quá rộng**: 59 file BE + 52 file FE + 48 file test + 1 migration + docs → 160+ file → risk:reward không cân với benefit "cleaner code"
+4. **Đã có test coverage**: `tests/approve/decisionMappings.test.ts`, `tests/scenarios/*` đã cover cascade rename + concurrent approve — refactor sẽ phá hết, viết lại tốn công
+5. **Code gốc behavior đúng**: đáp ứng đầy đủ rename số QĐ, thay file_path, restrict delete khi còn ref — không có bug user-facing
+
+**Phạm vi cascade JSON proposal — tại sao quét cả APPROVED/REJECTED, không chỉ PENDING?**
+
+`cascadeRename.ts` rewrite JSON trên **mọi proposal status**, không filter theo PENDING. Lý do:
+
+1. **UI consistency là ưu tiên**: `ProposalDetailModal` đọc số QĐ từ `proposal.data_danh_hieu` (JSON snapshot); `personnel/[id]/annual-rewards` đọc từ `DanhHieuHangNam.so_quyet_dinh` (FK đã cascade). Nếu chỉ rewrite PENDING, user xem 1 proposal APPROVED sẽ thấy số QĐ cũ trong khi award list hiển thị số mới — confused.
+2. **Audit không bị mất**: lịch sử rename đã được ghi đầy đủ trong `system_logs` (resource = `decisions`, action = `UPDATE`, có old/new value qua audit middleware). JSON snapshot không phải single source of truth cho audit.
+3. **Domain quân đội ưu tiên consistency**: user (Admin Phòng Chính trị) không phân biệt "snapshot lúc submit" vs "state hiện tại"; họ chỉ thấy 2 view cùng entity → expect cùng giá trị.
+4. **Cost vẫn nhỏ**: scale ĐATN có ~vài trăm proposal max, scan + rewrite mất < 200ms tổng.
+
+```typescript
+// services/decision/cascadeRename.ts
+const proposals = await tx.bangDeXuat.findMany({
+  // không có where filter — quét mọi status
+  select: { id, data_danh_hieu, data_thanh_tich, data_nien_han, data_cong_hien },
+});
+// rewrite từng row nếu chứa oldSqd
+```
+
+**Khi nào nên refactor (tiêu chí cụ thể):**
+
+- Award rows > 10k → cascade rename lock contention thấy được
+- Cần multi-tenant (khác đơn vị có cùng số QĐ)
+- Cần file version chain (QĐ này từng dùng file A, sau replace bằng file B — muốn keep history)
+- Audit yêu cầu immutable trail cho FK references
+
+**Đáp khi hội đồng hỏi "tại sao không dùng id làm FK?":**
+
+> "Đây là trade-off em đã cân nhắc. Em chọn string FK vì 3 lý do: (1) số quyết định là natural business identifier — mỗi QĐ chỉ có 1 số duy nhất theo luật, (2) JSON payload proposal cũng lưu string nên đồng bộ, (3) cost cascade rename ở scale ĐATN không đáng kể. Em thừa nhận theo standard practice nên FK trỏ surrogate id immutable — em đã đánh giá refactor sẽ đụng hơn 160 file. Lợi ích chính là rename O(1) thay vì O(refs), nhưng ở scale này không justify được effort. Em ghi nhận trong hướng phát triển: nếu hệ thống mở rộng quá ngưỡng (>10k award rows, multi-tenant, file versioning) thì sẽ migrate."
+
+**Phòng câu phản biện:** *"Nếu một ngày luật đổi format số QĐ — tất cả award phải update theo, có scalable không?"*
+
+> "ON UPDATE CASCADE tự xử lý ở DB level, không cần code app. Với mỗi QĐ có ~vài award rows, rename 1 QĐ = vài UPDATE — miligiây. Nếu cần batch rename hàng loạt theo format mới, em sẽ viết script SQL chạy ngoài giờ cao điểm, tốn vài giây. Bottleneck thực sự là `cascadeRename.ts` cho JSON proposal — phần này quét toàn bộ `BangDeXuat` (mọi status, để UI nhất quán giữa proposal detail và award list); ở scale này còn rất nhanh nhưng nếu cần optimize có thể thêm `WHERE data_*::text LIKE '%' || oldSqd || '%'` filter trước."
+
+### O.33 — Prisma sinh SQL kém hiệu quả — fix thế nào?
 
 **Triệu chứng:** Query Prisma chậm, EXPLAIN cho thấy SQL Prisma sinh ra dùng nhiều JOIN không cần.
 
@@ -3926,7 +4190,7 @@ const [quanNhans, danhHieus, lichSus] = await Promise.all([
 ]);
 ```
 
-### O.33 — Migration với data transformation phức tạp (zero downtime)
+### O.34 — Migration với data transformation phức tạp (zero downtime)
 
 **Tình huống:** Đổi `cap_bac String` thành `cap_bac_id String FK` referencing bảng mới `CapBac`.
 
@@ -3938,7 +4202,7 @@ const [quanNhans, danhHieus, lichSus] = await Promise.all([
 
 **Trong project:** Em có scenario tương tự khi rename `so_quyet_dinh` thành hard FK với `FileQuyetDinh` (commit `29f741f`) — dùng raw SQL `ALTER TABLE ... RENAME COLUMN` để giữ data, sau đó `db push`.
 
-### O.34 — Backup chiến lược chuyên sâu
+### O.35 — Backup chiến lược chuyên sâu
 
 | Cấp | Công cụ | Đặc điểm |
 |---|---|---|
@@ -3952,7 +4216,7 @@ const [quanNhans, danhHieus, lichSus] = await Promise.all([
 - pg_dump hằng ngày (logical, dễ migrate).
 - Test restore mỗi tháng.
 
-### O.35 — Prisma version 6 breaking change — em xử lý sao?
+### O.36 — Prisma version 6 breaking change — em xử lý sao?
 
 - Prisma đánh dấu rõ breaking change trong CHANGELOG.
 - Em pin version trong `package.json` (`"prisma": "5.10.2"`, không dùng `^`).
@@ -4096,3 +4360,290 @@ Giải pháp thực tế hơn là: document rõ quy trình bảo trì — 'khi q
 ---
 
 **Chúc bạn bảo vệ thành công.** Hệ thống đã đầy đủ tính năng, có số đo định lượng rõ ràng, có audit log đầy đủ, có 890 test pass — đều là vũ khí mạnh khi hội đồng truy vấn. Khi đứng trước hội đồng, hít sâu, nói chậm, mắt nhìn vào người hỏi và đừng quên: **mọi thứ trong đồ án này em đã sống với 6 tháng — em là người hiểu nó nhất phòng**.
+
+---
+
+## Q. Mô phỏng phản biện hội đồng (3 vai chuyên gia)
+
+Phụ lục này giả lập câu hỏi từ 3 giáo sư phản biện theo 3 chuyên ngành: Phần mềm/Kiến trúc web, Cơ sở dữ liệu, An toàn thông tin. Mỗi câu kèm "bẫy" (lý do hội đồng hỏi) và mẫu trả lời "đỉnh" để học luồng. Không cần đọc thuộc lòng — đọc để biết hướng phòng thủ.
+
+### Q.A. Giáo sư Phần mềm — Kiến trúc
+
+#### Q.A.1 — "Em chọn layered architecture 6 lớp, nhưng dự án chỉ có 1 sinh viên và 23 model — không phải overengineering sao? Tại sao không pure MVC?"
+
+**Bẫy**: hỏi để xem em có hiểu trade-off hay chỉ học vẹt pattern.
+
+**Trả lời:**
+"Em đồng ý câu hỏi hợp lý. Em chọn 6 lớp vì 2 lý do cụ thể, không phải vì pattern đẹp.
+
+Thứ nhất, **Repository tách khỏi Service** là quyết định em đưa ra **giữa kỳ**, không phải đầu kỳ. Ban đầu service gọi `prisma.danhHieuHangNam.findMany(...)` trực tiếp. Khi viết test cho rule chuỗi, em phát hiện mỗi test phải mock toàn bộ Prisma client — rất nặng. Tách Repository xong, test chỉ mock `danhHieuRepository.findManyByPersonnelId()` — interface nhỏ hơn nhiều, test viết nhanh hơn. Lợi ích đo được, không chỉ lý thuyết.
+
+Thứ hai, **Middleware tách khỏi Controller** xuất phát từ nhu cầu đa dạng route: route public (login) khác route admin-only khác route manager với unit-filter. Nếu để chung trong controller, sẽ lặp `if (req.user.role !== 'ADMIN') ...` ở 94 route mutate. Middleware chain `verifyToken → requireRole → validate → auditLog → controller` giúp em chỉ viết controller cho phần business, các concern khác declarative.
+
+Em **đã loại bỏ Clean Architecture đầy đủ** (Use Case Layer + Entity Layer + Adapter) vì với 23 model, Use Case Layer sẽ trùng lặp gần như hoàn toàn với Service — chỉ thêm boilerplate không có lợi ích. Đây là chỗ em nghĩ ranh giới overengineering nằm."
+
+#### Q.A.2 — "Strategy pattern cho 7 loại đề xuất — nếu chỉ thêm 1 loại mới mỗi 2 năm, có cần Strategy không? `switch case` 7 nhánh chẳng phải đơn giản hơn?"
+
+**Trả lời:**
+"Em có 2 lý do thực dụng để chọn Strategy:
+
+(1) **`switch` 7 nhánh xuất hiện ở 4 chỗ** — `submitProposal`, `approveProposal`, `importExcel`, `buildSuccessMessage`. Nếu để switch, mỗi lần thêm danh hiệu mới phải sửa 4 hàm. Lỡ quên 1 chỗ → bug silent. Với Strategy registry, thêm 1 file `nckhStrategy.ts` + 1 dòng vào REGISTRY, TypeScript ép em implement đủ 4 method interface.
+
+(2) **Logic riêng từng loại quá khác nhau** — HC_QKQT và KNC là 'single-medal' (lifetime), CA_NHAN_HANG_NAM là chuỗi 3 cấp với cycle, HCCSVV là theo mốc 10/15/20 năm. Switch lồng if/else cho 7 nhánh khác nhau sẽ đẻ ra 1 hàm 600+ dòng — không test được unit.
+
+Em thừa nhận trade-off: nếu chỉ 2-3 loại, Strategy là over-design. Em chọn ngưỡng từ 4 loại trở lên + 3+ chỗ dispatch. Với 7 loại × 4 chỗ = 28 nhánh dispatch — Strategy ROI rõ ràng."
+
+#### Q.A.3 — "Tại sao em không viết unit test cho Frontend? 0 test FE là điểm trừ lớn."
+
+**Bẫy**: thừa nhận hay đổ lỗi.
+
+**Trả lời:**
+"Em thừa nhận đây là hạn chế của đồ án.
+
+Nguyên nhân thật: thời gian. Trong 4 tháng làm đồ án 1 mình, em ưu tiên (1) BE service test cho rule chuỗi danh hiệu — đây là logic phức tạp nhất, sai là sai quyết định khen thưởng; (2) integration test cho 7 strategy đề xuất; (3) kiểm thử thủ công FE qua giao diện. Kết quả: BE có 79 test file / 926 case pass, FE chỉ test tay.
+
+Hậu quả: mỗi lần em sửa code FE, phải click lại toàn bộ luồng — tốn thời gian và dễ miss regression. Nếu hệ thống vào production và team mở rộng, đây là nợ kỹ thuật phải trả trước.
+
+Hướng phát triển em đã viết trong báo cáo: setup Jest + React Testing Library cho FE, mục tiêu coverage 70% cho component logic-heavy (form đề xuất nhiều bước, bảng review). Em chưa làm vì đây là 1-2 tuần effort, không đủ thời gian."
+
+*Nếu hội đồng vặn tiếp "tại sao biết hạn chế mà không sắp xếp thời gian":* "Em đánh giá đúng vs sai logic nghiệp vụ là priority cao hơn UI regression — sai logic là duyệt khen thưởng nhầm, sai UI là khó dùng nhưng dữ liệu vẫn đúng. Em chấp nhận trade-off này, biết rằng nếu có thêm 1 tuần, em sẽ dồn vào FE test."
+
+### Q.B. Giáo sư Cơ sở dữ liệu
+
+#### Q.B.1 — "23 model trong 1 schema, em có làm normalization đúng 3NF không? Hay có denormalize cố ý?"
+
+**Trả lời:**
+"Em có cả 2 — phần lớn 3NF, một số denormalize cố ý.
+
+**Tuân 3NF nghiêm:** `QuanNhan`, `CoQuanDonVi`, `DonViTrucThuoc`, `ChucVu`, `LichSuChucVu` — chuẩn quan hệ, không có transitive dependency.
+
+**Denormalize cố ý có 3 chỗ:**
+
+(1) **Bảng `HoSoHangNam`, `HoSoNienHan`, `HoSoCongHien`** — gọi là 'derived tables'. Mỗi row tính từ dữ liệu nguồn (`DanhHieuHangNam`, `LichSuChucVu`, `ThanhTichKhoaHoc`). Vi phạm 3NF (có thể tính lại từ nguồn), nhưng em lưu vì 2 lý do: (a) tính tới 47ms/quân nhân — nhân 1.247 quân nhân là quá chậm cho mỗi request list; (b) FE cần lọc theo `du_dieu_kien_bkbqp = true` — query trên bảng suy diễn nhanh hơn rebuild context cho mỗi row.
+
+Đánh đổi: phải đảm bảo `HoSoHangNam` luôn đồng bộ với nguồn. Em làm bằng cách: mọi mutate trên `DanhHieuHangNam` đều trigger `recalculateAnnualProfile(personnelId)` trong cùng transaction. Hàm này idempotent — chạy nhiều lần cho cùng kết quả.
+
+(2) **`he_so_chuc_vu` lưu snapshot trong `LichSuChucVu`** thay vì chỉ FK. Vì hệ số chức vụ có thể đổi theo thời gian (vd: 'Trợ lý' năm 2020 hệ số 0.8, năm 2025 đổi thành 0.9), nhưng đợt phục vụ năm 2020 vẫn phải tính theo 0.8. Lưu snapshot tránh phải maintain bảng `LichSuHeSo` riêng.
+
+(3) **`BangDeXuat.data_danh_hieu` là JSON** — vi phạm 1NF strict. Lý do: 7 loại đề xuất có lược đồ chi tiết rất khác nhau, tạo 7 bảng trung gian sẽ phá tính đồng nhất khi query 'pending proposals'. JSON đủ vì validation đã làm ở tầng Zod + Strategy."
+
+#### Q.B.2 — "Schema có index không? Index nào em chủ động tạo, index nào để Prisma tự sinh?"
+
+**Trả lời:**
+"Index tự sinh từ Prisma: tất cả `@id` (CUID primary key), tất cả `@unique` (vd: `cccd`, `username`), và mọi FK đều có index ngầm.
+
+Index em **chủ động** thêm dựa trên query pattern thật:
+
+- `@@unique([quan_nhan_id, nam])` trên `DanhHieuHangNam` — vừa là constraint nghiệp vụ vừa là composite index cho query 'danh hiệu của quân nhân X năm Y'.
+- `@@index([resource, createdAt])` trên `SystemLog` — query nhật ký lọc theo resource + sort theo thời gian là pattern dashboard chính.
+- `@@index([status])` trên `BangDeXuat` — list 'pending proposals' là endpoint hot nhất của Admin.
+- `@@index([loai_de_xuat, nam])` trên `BangDeXuat` — báo cáo cuối năm theo loại.
+
+Em **chưa làm**: chưa có Explain Analyze cụ thể trên slow query. Hiện dataset thử nghiệm ~1.200 quân nhân, query đều dưới 100ms nên chưa có nhu cầu. Khi production có 10k+ quân nhân, em sẽ chạy `EXPLAIN ANALYZE` trên endpoint chậm để xác định index thiếu."
+
+*Câu hỏi vặn:* "Sao không thêm sẵn index cho mọi cột thường where?"
+
+"Index không miễn phí: mỗi insert/update phải cập nhật B-tree. Với bảng `DanhHieuHangNam` (insert hàng loạt khi import Excel), thêm index thừa sẽ chậm import. Em theo nguyên tắc 'add index khi có evidence', không speculative."
+
+#### Q.B.3 — "Em dùng transaction cho approve, nhưng nếu transaction chạy 180 giây thì tất cả connection khác bị chặn không? Có connection pool không?"
+
+**Trả lời:**
+"Câu hỏi tốt, em phân tách 2 vấn đề.
+
+(1) **Connection pool**: Prisma có pool mặc định. Số connection = `max(num_cpus × 2 + 1, 1)` — máy chủ 2 core của em là 5 connection. Một transaction chiếm 1 connection trong 180s nghĩa là còn 4 cho user khác — vẫn dùng được hệ thống, không 'sập'.
+
+(2) **Lock**: PostgreSQL dùng MVCC — đọc không bao giờ block. Transaction approve chỉ giữ row-level lock trên các row đang ghi (DanhHieuHangNam của ~300 quân nhân được duyệt, BangDeXuat đó, FileQuyetDinh đồng bộ). Các tx khác đọc bất kỳ row nào — không bị chặn. Chỉ tx khác muốn UPDATE/DELETE đúng các row đang lock mới phải wait.
+
+Trong domain Phòng Chính trị: Admin đang duyệt một đợt, không có người khác cùng sửa quân nhân đó cùng lúc. Risk thực tế thấp.
+
+Nếu hội đồng hỏi: '180s là tự chọn hay đo?' — xem trả lời tại D.10 trong tài liệu này."
+
+#### Q.B.4 — "Backup chạy `INSERT INTO ... VALUES` 21 bảng nối chuỗi — sao không dùng `pg_dump`?"
+
+**Bẫy**: hỏi vì `pg_dump` là chuẩn industry.
+
+**Trả lời:**
+"Em chọn raw INSERT script vì 3 lý do:
+
+(1) **Không phụ thuộc `pg_dump` binary** trên máy production. Service backend chạy bằng Node.js, gọi `pg_dump` qua child process là thêm dependency runtime — nếu PostgreSQL update version, `pg_dump` cũng phải update đồng bộ. Code tự sinh INSERT chỉ phụ thuộc Prisma Client em đã ship cùng app.
+
+(2) **Cho phép selective backup** — em chỉ backup 21 bảng nghiệp vụ, bỏ qua `_prisma_migrations`, `SystemLog` cũ hơn N ngày. `pg_dump` lấy toàn bộ schema; em phải post-process strip ra.
+
+(3) **Backup script đọc được cho người**. Lúc demo có thể mở `.sql` thấy data — `pg_dump` xuất binary dump (`-Fc`) thì không.
+
+Em **thừa nhận hạn chế**: format INSERT chậm hơn `COPY` cho dataset lớn; restore phải dùng `psql` ngoài hệ thống — không có UI restore one-click. Nếu production scale lên, em sẽ chuyển sang `pg_dump -Fc` + script wrapper. Hiện tại với dataset 4.2MB/backup, raw INSERT đủ nhanh.
+
+**Quan trọng nhất** — em **escape `'` thành `''`** đúng chuẩn SQL string. Đây là điểm em làm cẩn thận để chống SQL injection chính trong dữ liệu (vd: tên có dấu nháy 'D'arcy)."
+
+### Q.C. Giáo sư An toàn thông tin
+
+#### Q.C.1 — "Em lưu Access Token trong `localStorage`. XSS là rủi ro lớn — sao không dùng `httpOnly cookie`?"
+
+**Bẫy**: trade-off quan trọng nhất của JWT-based auth.
+
+**Trả lời:**
+"Em đã cân nhắc kỹ trade-off này — chọn `localStorage` cố ý.
+
+**`httpOnly cookie` chống XSS** vì JS không đọc được cookie. **Nhưng** mở ra CSRF — request từ tab khác đến cùng origin tự động đính cookie. Để chống CSRF phải thêm CSRF token, double-submit, hoặc SameSite=Strict.
+
+**`localStorage` chống CSRF** (JS phải chủ động đọc), nhưng XSS đọc được.
+
+Em chọn `localStorage` + biện pháp **chống XSS chủ động**:
+1. React mặc định escape mọi text node — không có `dangerouslySetInnerHTML` ở đâu trong code (em đã grep).
+2. Helmet middleware set `Content-Security-Policy` chặn inline script.
+3. Mọi input đi qua Zod validation — chặn payload độc hại từ form.
+
+Lý do thật quan trọng nhất: hệ thống chạy **mạng nội bộ Học viện**, không expose ra Internet. Vector tấn công chính không phải hacker XSS qua iframe — mà là user cài extension độc hoặc máy có malware. Cả 2 case này `httpOnly cookie` cũng không cứu được (malware đọc memory được).
+
+**Nếu hệ thống deploy public Internet**, em sẽ đổi sang `httpOnly` + CSRF token. Hiện tại với context quân sự mạng nội bộ, `localStorage` đơn giản hơn, không phải mang chi phí CSRF protection."
+
+#### Q.C.2 — "Em cho phép user upload PDF làm quyết định. Nếu user upload `.exe` đổi đuôi thành `.pdf` thì sao?"
+
+**Trả lời:**
+"Em có nhiều lớp chống:
+
+(1) **Multer config** ở `configs/multer.ts` — `fileFilter` check MIME type `application/pdf`. Trình duyệt gửi MIME từ extension nên có thể giả mạo. Đây chỉ là lớp đầu.
+
+(2) **Magic bytes check** ở backend — đọc 4 byte đầu file, PDF thật bắt đầu bằng `%PDF` (`0x25 0x50 0x44 0x46`). Nếu không khớp → reject.
+
+(3) **Lưu vào folder riêng `uploads/decisions/`** không nằm trong static serve của Next.js. Khi user request file qua `/api/decisions/:id/download`, backend kiểm tra quyền + stream file. **Không bao giờ** serve file user upload qua URL trực tiếp — tránh trường hợp file `.html` được render bởi trình duyệt khi click link.
+
+(4) **Filename sanitization** — em strip path component (`../`), giữ chỉ ký tự `[a-zA-Z0-9._-]`. Tên lưu DB là tên đã sanitize + suffix timestamp tránh trùng.
+
+**Em thừa nhận hạn chế**: chưa scan virus với ClamAV. Với scope quân sự, đây là phải có nếu deploy thật. Em đã ghi vào hướng phát triển: tích hợp ClamAV trước khi accept file."
+
+#### Q.C.3 — "Audit log của em có ghi mọi thao tác. Admin có thể xoá audit log của chính mình không?"
+
+**Trả lời:**
+"Không. Em thiết kế cố ý ngăn việc này:
+
+Route `DELETE /api/system-logs` chỉ áp middleware `requireSuperAdmin`. Admin (vai trò khác SuperAdmin) gọi sẽ bị chặn ngay ở middleware, trả 403.
+
+Lý do tách 2 vai trò: Admin có toàn quyền nghiệp vụ (tạo/duyệt/xoá đề xuất, quản lý quân nhân), nhưng **không có quyền chạm vào nhật ký kiểm toán**. SuperAdmin chỉ quản trị hạ tầng (account, backup) — không tham gia luồng nghiệp vụ. Hai vai này tách bạch cố ý để không một người duy nhất vừa thao tác vừa che dấu vết.
+
+Còn 1 đặc thù: `resource = 'backup'` chỉ SuperAdmin xem được. Admin query system-logs **không thấy** các bản ghi backup — filter ngay ở tầng service, không phải UI hide. Mục đích: ngăn Admin biết khi nào SuperAdmin chạy backup → khó canh thời điểm.
+
+**Phản biện em chuẩn bị**: nếu SuperAdmin muốn xoá log của chính mình thì sao? — Đúng, đây là điểm yếu. Trong hệ thống enterprise thật, audit log phải write-only (append-only), thậm chí lưu sang hệ thống riêng (vd: SIEM). Hiện tại em chưa có, chấp nhận limit này vì scope đồ án và SuperAdmin là bộ phận kỹ thuật có quy chế riêng."
+
+#### Q.C.4 — "JWT của em ký bằng HS256 (symmetric). Sao không RS256 (asymmetric)?"
+
+**Trả lời:**
+"HS256 và RS256 đều secure khi setup đúng. Em chọn HS256 vì:
+
+(1) **Chỉ 1 service verify token** — backend Express của em. RS256 (private sign, public verify) có lợi khi có nhiều microservice verify nhưng không sign. Em chỉ có 1 monolith → HS256 đủ.
+
+(2) **Implementation đơn giản hơn** — 1 secret env var (`JWT_SECRET`) thay vì cặp keypair phải sinh + lưu trữ + rotate.
+
+(3) **Hiệu năng tốt hơn** — HMAC nhanh hơn RSA verify nhiều lần. Mỗi request có verify 1 token, hệ thống chục user concurrent thì khác biệt nhỏ, nhưng vẫn là điểm cộng.
+
+**Em làm cẩn thận**: dùng **2 secret khác nhau** cho Access Token và Refresh Token (`JWT_SECRET` vs `JWT_REFRESH_SECRET`). Nếu attacker lấy được Access Token JWT secret từ memory dump, không tự ký được Refresh Token để chiếm phiên dài hạn. Đây là defense-in-depth.
+
+**Khi nào em chuyển sang RS256**: nếu hệ thống mở rộng thành multi-tenant cho Bộ Quốc phòng (hướng phát triển iii), khi đó các tenant verify token độc lập, RS256 public key phân phối an toàn hơn rotate symmetric secret."
+
+### Q.D. Câu khoai — vòng 2
+
+#### Q.D.1 — "Em nói code 96.000 dòng TypeScript. Em viết tay hết hay dùng AI?"
+
+**Bẫy**: nói dối là tự sát; nói thật sai cách cũng bị trừ.
+
+**Trả lời thẳng:**
+"Em dùng AI assistant trong quá trình code, cụ thể là Claude. Em coi đó là công cụ như IDE autocomplete nâng cao.
+
+Cách em dùng: em thiết kế kiến trúc, viết schema, vạch rule nghiệp vụ chuỗi danh hiệu — phần cần hiểu domain quân sự AI không biết. AI hỗ trợ em ở phần boilerplate: viết Zod schema từ TypeScript interface, sinh test case từ describe block, refactor pattern lặp.
+
+Em **luôn đọc và hiểu mọi dòng code AI sinh** trước khi commit. Khi AI suggest sai (vd: dùng `prisma.X` trực tiếp trong service mà em đã có repository), em sửa lại theo convention của project — em viết `CLAUDE.md` chính là để áp ràng buộc này.
+
+Bằng chứng em hiểu code: hội đồng có thể yêu cầu em mở bất kỳ file nào, em giải thích từng đoạn được. Em đặc biệt hiểu sâu phần rule chuỗi danh hiệu (`checkChainEligibility`, `computeChainContext`) vì phần đó AI không hiểu domain — em phải viết spec rõ trước rồi mới guide AI implement.
+
+Em không xem việc dùng AI là gian lận — giống như sinh viên trước đây dùng Stack Overflow, IntelliSense, ChatGPT để học. Quan trọng là sản phẩm có chạy đúng, em có hiểu, có maintain được. Cả 3 em đều OK."
+
+#### Q.D.2 — "PROJECT_REVIEW.md của em flag 'logic eligibility trùng 2 chỗ — semantic divergence risk'. Sao không fix đi mà còn flag?"
+
+**Bẫy**: hỏi để xem em có biết tại sao không fix.
+
+**Trả lời:**
+"Đây là rủi ro em nhận diện ra cuối kỳ — `computeEligibilityFlags` (chạy khi recalc profile) và `checkAwardEligibility` (chạy khi validate approve) thực hiện cùng một rule core. Nếu logic 2 hàm drift, một phía cho phép, phía kia từ chối → bug khó debug.
+
+Lý do em chưa refactor:
+
+(1) **Cả 2 hàm hiện tại đều gọi `chainEligibility.checkChainEligibility` chung** — đã extract phần core. Phần riêng chỉ là `computeEligibilityFlags` áp dụng lifetime block cho personal BKTTCP (kiểm tra `hasReceivedBKTTCP` flag riêng). Đây là edge case nhỏ, không phải logic chính.
+
+(2) **Refactor sâu hơn cần extract `EligibilityRuleEngine` class** — risk cao vì rule chuỗi danh hiệu là phần test phủ kỹ nhất (15+ test file). Sửa wrong sẽ break 50+ test case. Em ưu tiên ổn định trước demo, gắn flag để team sau (nếu có) refactor đúng cách.
+
+(3) **Test em viết phủ chéo 2 hàm** — `tests/services/eligibility-*.test.ts` test `chainEligibility.checkChainEligibility` (core), `tests/approve/*.test.ts` test luồng `checkAwardEligibility` (wrapper). Nếu drift xảy ra, ít nhất một bộ test sẽ fail.
+
+Đây là quyết định em đưa ra cố ý — chấp nhận technical debt được track, hơn là refactor vội làm break test."
+
+#### Q.D.3 — "Em demo trên dataset bao nhiêu? Đã test với dữ liệu thật chưa?"
+
+**Trả lời thẳng:**
+"Dataset demo của em là **dữ liệu mô phỏng**, không phải dữ liệu thật từ Học viện. Em không có quyền truy cập dữ liệu quân nhân thật vì lý do bảo mật.
+
+Em xây dataset mô phỏng dựa trên:
+- Cấu trúc cây tổ chức của Học viện (10 CQDV, ~40 DVTT, dựa trên thông tin công khai)
+- Phân bố tuổi quân nhân theo nhóm hệ số 0.7/0.8/0.9-1.0
+- ~1.247 quân nhân ảo với lịch sử khen thưởng giả định 5-25 năm
+- 50 hồ sơ chứa các kịch bản edge case của rule chuỗi (lỡ 1 chu kỳ, lỡ nhiều chu kỳ, đã có BKTTCP, chuyển đơn vị giữa năm)
+
+Em đã trao đổi với cán bộ phụ trách thi đua tại Học viện qua phỏng vấn nghiệp vụ. Kết quả phỏng vấn vào báo cáo §2.1 — ước tính tỷ lệ bỏ sót 15-20%, thời gian xét 1 quân nhân 20-30 phút, là từ cán bộ nói trực tiếp.
+
+**Em không thể claim 'đã test với dữ liệu thật'** — nếu hội đồng hỏi, em trả lời thật như trên. Hướng phát triển ngay: pilot deploy ở Phòng Chính trị với dữ liệu thật 50-100 quân nhân để validate edge case từ thực tế."
+
+#### Q.D.4 — "Backup `.sql` chứa toàn bộ dữ liệu nhạy cảm (CCCD, hồ sơ cán bộ). Em lưu ở `backups/` — ai có thể đọc folder này?"
+
+**Trả lời:**
+"Backups lưu tại `BE-QLKT/backups/` thuộc filesystem của user chạy PM2 (thường là user `qlkt` deploy). Quyền filesystem **chỉ user đó read/write**, group/others không có quyền — em set `chmod 700` cho folder.
+
+SuperAdmin **không truy cập file system trực tiếp** — phải qua DevZone UI (`/api/backups/:id/download`) có auth + role check. File path trong DB là internal, không expose ra ngoài API.
+
+**Em thừa nhận điểm yếu**: backup `.sql` là plaintext. Nếu disk bị compromise (vd: SuperAdmin laptop bị mất, hacker SSH vào server), backup là 'treasure'. 
+
+**Cải tiến đã ghi vào hướng phát triển**: 
+- Mã hoá backup bằng AES-256 với key lưu ở vault (Hashicorp Vault hoặc OS keyring), không lưu cùng file.
+- Off-site backup: gửi backup mã hoá lên kho lưu trữ khác (NAS Học viện, không cùng máy chủ ứng dụng).
+
+Hiện tại trong scope đồ án, em mới làm backup local + retention 15 ngày + restrict access. Cho production thật phải làm thêm encryption + off-site."
+
+#### Q.D.5 — "Em verify quyền `requireManager` để Manager chỉ thấy quân nhân thuộc cây đơn vị mình. Em verify này thế nào — middleware kiểm role hay query có filter?"
+
+**Trả lời:**
+"Em làm **cả 2 lớp** — đây là defense-in-depth quan trọng:
+
+**Lớp 1 — Middleware `unitFilter`**: chạy sau `verifyToken`, đọc `req.user.id`, query cây đơn vị Manager phụ trách (từ field `co_quan_don_vi_id` và `don_vi_truc_thuoc_id` của tài khoản). Gán vào `req.unitScope = { cqdvIds: [...], dvttIds: [...] }`.
+
+**Lớp 2 — Service query**: mọi method service nhận `unitScope` từ controller, ép vào `where` clause:
+```typescript
+where: {
+  AND: [
+    userFilter,  // input filter từ user
+    {
+      OR: [
+        { co_quan_don_vi_id: { in: unitScope.cqdvIds } },
+        { don_vi_truc_thuoc_id: { in: unitScope.dvttIds } },
+      ]
+    }
+  ]
+}
+```
+
+**Tại sao 2 lớp?** Nếu chỉ middleware: developer tương lai có thể quên gắn `unitScope` vào query, query lấy tất cả → IDOR. Service ép filter là 'fail-secure' — nếu thiếu `unitScope`, query sẽ trả mảng rỗng (an toàn hơn lấy tất cả).
+
+**Em test**: trong `tests/authz/` có test case Manager A query quân nhân của đơn vị B → 0 row trả về, dù endpoint không có middleware role check nào khác.
+
+**Hạn chế em thừa nhận**: Admin route không apply `unitFilter` (Admin xem tất cả) — đúng business rule nhưng có nghĩa là: nếu Admin bị compromise, attacker thấy toàn bộ data. Mitigation: Admin có MFA bắt buộc (chưa implement, hướng phát triển)."
+
+### Q.E. Mẫu trả lời "không biết"
+
+#### Q.E.1 — "Em có biết Postgres `vacuum` chạy thế nào khi `updateMany` batch lớn không?"
+
+**Trả lời mẫu khi không chắc:**
+"Em hiểu cơ bản: Postgres MVCC giữ row cũ sau UPDATE để các transaction cũ đọc được, `vacuum` (hoặc autovacuum) sau đó dọn dead tuple. Với `updateMany` 300 row, sẽ tạo 300 dead tuple, autovacuum sẽ chạy khi vượt ngưỡng `autovacuum_vacuum_scale_factor`.
+
+Tuy nhiên em **không tự tin về tuning chi tiết** — chưa cấu hình autovacuum threshold cho app này, dùng default Postgres. Trong đồ án em chưa gặp vấn đề performance từ bloat. Nếu thầy cô có gợi ý cụ thể em rất muốn nghe để tìm hiểu thêm."
+
+---
+
+**Nguyên tắc trả lời "không biết":**
+1. **Thừa nhận thẳng** — không vòng vo, không giả vờ.
+2. **Show what you DO know** — kể phần kiến thức nền tảng có liên quan.
+3. **Đặt câu hỏi ngược lại** — "Thầy cô có gợi ý cụ thể không?" — biến từ chỗ bị dồn thành cơ hội học. Hội đồng đánh giá cao sinh viên tò mò hơn sinh viên giả vờ biết.

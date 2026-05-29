@@ -1,19 +1,11 @@
 'use client';
 
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Eye } from 'lucide-react';
+import { Table, Button } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import { EyeOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { formatDate } from '@/lib/utils';
 
-/** Dữ liệu một dòng quân nhân cho bảng (tối thiểu các field đang render). */
 export interface PersonnelTableRow {
   id: string;
   ho_ten?: string | null;
@@ -30,7 +22,6 @@ export interface PersonnelTableRow {
 
 interface PersonnelTableProps {
   personnel: PersonnelTableRow[];
-  /** Offset STT khi phân trang server (vd: (page - 1) * pageSize). Mặc định 0. */
   sttOffset?: number;
   onEdit?: (p: PersonnelTableRow) => void;
   onRefresh?: () => void;
@@ -45,87 +36,89 @@ export function PersonnelTable({
   readOnly = false,
   viewLinkPrefix = '/admin/personnel',
 }: PersonnelTableProps) {
+  const columns: ColumnsType<PersonnelTableRow> = [
+    {
+      title: 'STT',
+      key: 'stt',
+      width: 80,
+      align: 'center',
+      render: (_v, _r, index) => <span className="font-medium">{sttOffset + index + 1}</span>,
+    },
+    {
+      title: 'Họ tên',
+      key: 'ho_ten',
+      width: 160,
+      align: 'center',
+      render: (_v, p) => (
+        <div className="flex flex-col">
+          <span className="font-medium">{p.ho_ten}</span>
+          {p.ngay_sinh && (
+            <span className="text-xs text-gray-500 mt-1">{formatDate(p.ngay_sinh)}</span>
+          )}
+        </div>
+      ),
+    },
+    {
+      title: 'Cơ quan đơn vị',
+      key: 'cqdv',
+      width: 200,
+      align: 'center',
+      render: (_v, p) =>
+        p.DonViTrucThuoc?.CoQuanDonVi?.ten_don_vi || p.CoQuanDonVi?.ten_don_vi || '-',
+    },
+    {
+      title: 'Đơn vị trực thuộc',
+      key: 'dvtt',
+      width: 200,
+      align: 'center',
+      render: (_v, p) => p.DonViTrucThuoc?.ten_don_vi || '-',
+    },
+    {
+      title: 'Cấp bậc',
+      dataIndex: 'cap_bac',
+      key: 'cap_bac',
+      width: 140,
+      align: 'center',
+      render: (value: string | null | undefined) => value || '-',
+    },
+    {
+      title: 'Chức vụ',
+      key: 'chuc_vu',
+      width: 180,
+      align: 'center',
+      render: (_v, p) => p.ChucVu?.ten_chuc_vu || p.ten_chuc_vu || '-',
+    },
+    {
+      title: 'Hành động',
+      key: 'actions',
+      width: 150,
+      align: 'right',
+      render: (_v, p) =>
+        readOnly ? (
+          <Button size="small" icon={<EyeOutlined />} onClick={() => onEdit?.(p)}>
+            Xem
+          </Button>
+        ) : (
+          <Link href={`${viewLinkPrefix}/${p.id}`}>
+            <Button size="small" icon={<EyeOutlined />}>
+              Xem
+            </Button>
+          </Link>
+        ),
+    },
+  ];
+
   return (
-    <>
-      <div className="min-w-0 max-w-full">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[80px] text-center">STT</TableHead>
-              <TableHead className="w-[140px] text-center">Họ tên</TableHead>
-              <TableHead className="w-[180px] text-center">Cơ quan đơn vị</TableHead>
-              <TableHead className="w-[180px] text-center">Đơn vị trực thuộc</TableHead>
-              <TableHead className="w-[140px] text-center">Cấp bậc</TableHead>
-              <TableHead className="w-[160px] text-center">Chức vụ</TableHead>
-              <TableHead className="w-[150px] text-center">Hành động</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {personnel.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground h-24">
-                  Không có dữ liệu
-                </TableCell>
-              </TableRow>
-            ) : (
-              personnel.map((p, index) => {
-                const coQuanDonViName =
-                  p.DonViTrucThuoc?.CoQuanDonVi?.ten_don_vi || p.CoQuanDonVi?.ten_don_vi || '-';
-
-                const donViTrucThuocName = p.DonViTrucThuoc?.ten_don_vi || '-';
-
-                return (
-                  <TableRow key={p.id}>
-                    <TableCell className="font-medium text-center">{sttOffset + index + 1}</TableCell>
-                    <TableCell className="text-center">
-                      <div className="flex flex-col">
-                        <span className="font-medium">{p.ho_ten}</span>
-                        {p.ngay_sinh && (
-                          <span className="text-xs text-muted-foreground mt-1">
-                            {formatDate(p.ngay_sinh)}
-                          </span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">{coQuanDonViName}</TableCell>
-                    <TableCell className="text-center">{donViTrucThuocName}</TableCell>
-                    <TableCell className="text-center">{p.cap_bac || '-'}</TableCell>
-                    <TableCell className="text-center">
-                      {p.ChucVu?.ten_chuc_vu || p.ten_chuc_vu || '-'}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex gap-2 justify-end">
-                        {readOnly ? (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => onEdit?.(p)}
-                            className="hover:bg-blue-50 hover:border-blue-500 hover:text-blue-600 dark:hover:bg-blue-900/20"
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            Xem
-                          </Button>
-                        ) : (
-                          <Link href={`${viewLinkPrefix}/${p.id}`}>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="hover:bg-blue-50 hover:border-blue-500 hover:text-blue-600 dark:hover:bg-blue-900/20"
-                            >
-                              <Eye className="h-4 w-4 mr-1" />
-                              Xem
-                            </Button>
-                          </Link>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
-      </div>
-    </>
+    <div className="min-w-0 max-w-full">
+      <Table<PersonnelTableRow>
+        rowKey="id"
+        columns={columns}
+        dataSource={personnel}
+        pagination={false}
+        size="middle"
+        locale={{ emptyText: 'Không có dữ liệu' }}
+        scroll={{ x: 'max-content' }}
+      />
+    </div>
   );
 }

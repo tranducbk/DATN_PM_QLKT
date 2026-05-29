@@ -461,7 +461,7 @@ Browser ⇄ Frontend (Next.js) ⇄ Backend (Express) ⇄ PostgreSQL
 - **Next.js 14** (App Router) — server components, file-based routing
 - **TypeScript** — type safety toàn dự án
 - **Ant Design** — component nghiệp vụ (Form, Table, DatePicker)
-- **Tailwind CSS + shadcn/ui** — styling tùy biến
+- **Tailwind CSS** — styling tùy biến cho layout, spacing
 - **Zod** — schema validation chia sẻ giữa client và server
 - **Socket.IO client** — nhận thông báo real-time
 

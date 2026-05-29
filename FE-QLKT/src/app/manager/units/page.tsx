@@ -20,7 +20,12 @@ import { HomeOutlined, FilterOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
 import { apiClient } from '@/lib/apiClient';
 import { DEFAULT_PAGE_SIZE, DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
-import { renderAnnualAwards, DANH_HIEU_MAP } from '@/lib/award/awardsHelper';
+import {
+  renderAnnualAwards,
+  DANH_HIEU_MAP,
+  matchesDanhHieuSelection,
+  buildUnitSearchText,
+} from '@/lib/award/awardsHelper';
 import {
   DANH_HIEU_CA_NHAN_HANG_NAM,
   DANH_HIEU_DON_VI_HANG_NAM,
@@ -178,14 +183,11 @@ export default function ManagerUnitsPage() {
       },
       {
         value: DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP,
-        label:
-          DANH_HIEU_MAP[DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP] ||
-          'Bằng khen của Bộ trưởng Bộ Quốc phòng',
+        label: DANH_HIEU_MAP[DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP],
       },
       {
         value: DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP,
-        label:
-          DANH_HIEU_MAP[DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP] || 'Bằng khen Thủ tướng Chính phủ',
+        label: DANH_HIEU_MAP[DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP],
       },
     ];
   }, []);
@@ -198,24 +200,12 @@ export default function ManagerUnitsPage() {
     return allAwards.filter(record => {
       if (yearFilter && String(record.nam) !== yearFilter) return false;
 
-      if (nameFilter) {
-        const name =
-          record?.DonViTrucThuoc?.ten_don_vi?.toLowerCase() ||
-          record?.CoQuanDonVi?.ten_don_vi?.toLowerCase() ||
-          '';
-        if (!name.includes(nameFilter)) return false;
+      if (nameFilter && !buildUnitSearchText(record).toLowerCase().includes(nameFilter)) {
+        return false;
       }
 
-      if (danhHieuFilter) {
-        // BKBQP and BKTTCP are boolean fields; ĐVQT and ĐVTT use the danh_hieu string
-        const isBKBQP =
-          danhHieuFilter === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP && record.nhan_bkbqp === true;
-        const isBKTTCP =
-          danhHieuFilter === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP && record.nhan_bkttcp === true;
-
-        if (!isBKBQP && !isBKTTCP && record.danh_hieu !== danhHieuFilter) {
-          return false;
-        }
+      if (danhHieuFilter && !matchesDanhHieuSelection(record, danhHieuFilter)) {
+        return false;
       }
 
       return true;

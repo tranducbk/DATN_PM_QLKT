@@ -30,10 +30,12 @@ import {
   collectPersonalAwards,
   collectUnitAwards,
   renderAwardDeleteButtons,
+  matchesDanhHieuSelection,
+  buildUnitSearchText,
 } from '@/lib/award/awardsHelper';
 import {
   AWARD_TAB_DANH_HIEU,
-  DANH_HIEU_CA_NHAN_HANG_NAM,
+  AWARD_TAB_LABELS,
   type AwardType,
 } from '@/constants/danhHieu.constants';
 
@@ -115,7 +117,7 @@ const TABS_WITH_NESTED_QUAN_NHAN = new Set<AwardType>([
 ]);
 
 const TABS_WITH_DANH_HIEU_FILTER = new Set<AwardType>(['CNHN', 'DVHN', 'HCCSVV', 'HCBVTQ']);
-const TABS_WITH_DIRECT_DANH_HIEU_FILTER = new Set<AwardType>(['DVHN', 'HCCSVV', 'HCBVTQ']);
+
 interface AwardTypeFetchParams {
   limit?: number;
   page?: number;
@@ -236,41 +238,18 @@ export default function AdminAwardsPage() {
 
   const getPersonName = (record: AwardTableRow) => record.QuanNhan?.ho_ten || record.ho_ten || '';
 
-  const getUnitName = (record: AwardTableRow) =>
-    record.DonViTrucThuoc?.ten_don_vi ||
-    record.CoQuanDonVi?.ten_don_vi ||
-    record.don_vi_truc_thuoc ||
-    record.co_quan_don_vi ||
-    record.don_vi ||
-    '';
-
   const matchesNameFilter = useCallback(
     (record: AwardTableRow, normalizedNameFilter: string): boolean => {
       if (!normalizedNameFilter) return true;
-      if (activeTab === 'DVHN') {
-        return getUnitName(record).toLowerCase().includes(normalizedNameFilter);
-      }
-      return getPersonName(record).toLowerCase().includes(normalizedNameFilter);
+      const haystack = activeTab === 'DVHN' ? buildUnitSearchText(record) : getPersonName(record);
+      return haystack.toLowerCase().includes(normalizedNameFilter);
     },
     [activeTab]
   );
 
   const matchesDanhHieuFilter = useCallback((record: AwardTableRow, selectedDanhHieu: string): boolean => {
     if (!selectedDanhHieu || !TABS_WITH_DANH_HIEU_FILTER.has(activeTab)) return true;
-    if (activeTab === 'CNHN') {
-      const isBKBQP =
-        selectedDanhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP && Boolean(record.nhan_bkbqp);
-      const isCSTDTQ =
-        selectedDanhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ && Boolean(record.nhan_cstdtq);
-      const isBKTTCP =
-        selectedDanhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP && Boolean(record.nhan_bkttcp);
-      if (isBKBQP || isCSTDTQ || isBKTTCP) return true;
-      return record.danh_hieu === selectedDanhHieu;
-    }
-    if (TABS_WITH_DIRECT_DANH_HIEU_FILTER.has(activeTab)) {
-      return record.danh_hieu === selectedDanhHieu;
-    }
-    return true;
+    return matchesDanhHieuSelection(record, selectedDanhHieu);
   }, [activeTab]);
 
   const resolvePersonnelDisplay = (record: AwardTableRow): PersonnelDisplay => {
@@ -651,34 +630,13 @@ export default function AdminAwardsPage() {
         onChange={key => setActiveTab(key as AwardType)}
         size="large"
         items={[
-          {
-            key: 'CNHN',
-            label: 'Khen thưởng cá nhân hằng năm',
-          },
-          {
-            key: 'DVHN',
-            label: 'Khen thưởng đơn vị hằng năm',
-          },
-          {
-            key: 'HCCSVV',
-            label: 'Huy chương Chiến sĩ vẻ vang',
-          },
-          {
-            key: 'HCBVTQ',
-            label: 'Huân chương Bảo vệ Tổ quốc',
-          },
-          {
-            key: 'KNC_VSNXD_QDNDVN',
-            label: 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
-          },
-          {
-            key: 'HCQKQT',
-            label: 'Huy chương Quân kỳ quyết thắng',
-          },
-          {
-            key: 'NCKH',
-            label: 'Thành tích Nghiên cứu khoa học',
-          },
+          { key: 'CNHN', label: AWARD_TAB_LABELS.CNHN },
+          { key: 'DVHN', label: AWARD_TAB_LABELS.DVHN },
+          { key: 'HCCSVV', label: AWARD_TAB_LABELS.HCCSVV },
+          { key: 'HCBVTQ', label: AWARD_TAB_LABELS.HCBVTQ },
+          { key: 'KNC_VSNXD_QDNDVN', label: AWARD_TAB_LABELS.KNC_VSNXD_QDNDVN },
+          { key: 'HCQKQT', label: AWARD_TAB_LABELS.HCQKQT },
+          { key: 'NCKH', label: AWARD_TAB_LABELS.NCKH },
         ]}
       />
       {renderAwardContent()}
@@ -732,27 +690,25 @@ export default function AdminAwardsPage() {
                 ]}
               />
             </div>
-            {activeTab !== 'DVHN' && (
-              <div
-                style={{
-                  flex: '1 1 200px',
-                  minWidth: '200px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                }}
-              >
-                <Text strong style={{ display: 'block', marginBottom: '8px' }}>
-                  Tìm kiếm theo họ tên
-                </Text>
-                <Input
-                  placeholder="Nhập tên để tìm kiếm"
-                  value={filters.ho_ten}
-                  onChange={e => handleFilterChange('ho_ten', e.target.value)}
-                  allowClear
-                  size="large"
-                />
-              </div>
-            )}
+            <div
+              style={{
+                flex: '1 1 200px',
+                minWidth: '200px',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              <Text strong style={{ display: 'block', marginBottom: '8px' }}>
+                {activeTab === 'DVHN' ? 'Tìm kiếm theo tên đơn vị' : 'Tìm kiếm theo họ tên'}
+              </Text>
+              <Input
+                placeholder={activeTab === 'DVHN' ? 'Nhập tên đơn vị để tìm kiếm' : 'Nhập tên để tìm kiếm'}
+                value={filters.ho_ten}
+                onChange={e => handleFilterChange('ho_ten', e.target.value)}
+                allowClear
+                size="large"
+              />
+            </div>
             {TABS_WITH_DANH_HIEU_FILTER.has(activeTab) && (
               <div
                 style={{

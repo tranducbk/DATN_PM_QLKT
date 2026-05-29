@@ -115,10 +115,11 @@ flowchart LR
         D1{Hợp lệ?}
         S2[Lưu đề xuất trạng thái Chờ duyệt]
         S3[Thông báo cho Phòng Chính trị]
-        S4[Kiểm tra điều kiện và trùng lặp]
-        D3{Vượt qua tất cả?}
+        S4a[Kiểm tra trùng lặp với khen thưởng đã có]
+        S4b[Kiểm tra điều kiện khen thưởng theo loại]
+        D3{Vượt qua cả hai?}
         S5[Trả lỗi cho chỉnh sửa]
-        S6[Lưu khen thưởng và cập nhật hồ sơ]
+        S6[Lưu khen thưởng và cập nhật hồ sơ trong transaction]
         S7[Tính lại hồ sơ và gửi thông báo kết quả]
         S8[Cập nhật trạng thái Từ chối]
         End([Kết thúc])
@@ -127,13 +128,15 @@ flowchart LR
     Start --> M1 --> M2 --> M3 --> S1 --> D1
     D1 -- Không --> M2
     D1 -- Có --> S2 --> S3 --> A1 --> A2 --> A3 --> D2
-    D2 -- Phê duyệt --> A4 --> S4 --> D3
+    D2 -- Phê duyệt --> A4 --> S4a --> S4b --> D3
     D3 -- Không --> S5 --> A2
     D3 -- Có --> S6 --> S7 --> End
     D2 -- Từ chối --> A5 --> S8 --> S7
 ```
 
-**Ghi chú**: Bước `S6` bao gồm một giao dịch DB nguyên tử — tạo FileQuyetDinh, lưu khen thưởng, cập nhật trạng thái đề xuất. Khoá lạc quan đảm bảo chỉ một yêu cầu phê duyệt thành công khi có race condition.
+**Ghi chú**:
+1. Thứ tự kiểm tra ở bước duyệt: **trùng lặp trước** (`runDuplicateChecks`) rồi **điều kiện** (`runEligibilityChecks`) — khớp `services/proposal/approve.ts:289–291`. Nếu trùng lặp → fail luôn, không cần check điều kiện.
+2. Bước `S6` bao gồm một giao dịch DB nguyên tử (`prisma.$transaction` ở `approve/import.ts:51`) — tạo `FileQuyetDinh`, lưu khen thưởng, cập nhật trạng thái đề xuất. Khoá lạc quan đảm bảo chỉ một yêu cầu phê duyệt thành công khi có race condition.
 
 ---
 
@@ -206,7 +209,8 @@ flowchart LR
     end
     subgraph HeTHong["Hệ thống"]
         direction TB
-        S1[Kiểm tra điều kiện theo loại]
+        S0[Gợi ý đủ điều kiện từ hồ sơ đã tính sẵn]
+        S1[Kiểm tra điều kiện theo loại khi duyệt]
         D1{Đủ điều kiện?}
         S2[Báo chưa đủ điều kiện]
         S3[Lưu đề xuất chờ duyệt]
@@ -215,12 +219,16 @@ flowchart LR
         End([Kết thúc])
     end
 
-    Start --> A1 --> S1 --> D1
+    Start --> A1 --> S0 --> A3 --> S3 --> A4 --> S1 --> D1
     D1 -- Không --> S2 --> End
-    D1 -- Có --> A3 --> S3 --> A4 --> S4 --> S5 --> End
+    D1 -- Có --> S4 --> S5 --> End
 ```
 
 **Áp dụng cho**: Huy chương Chiến sĩ Vẻ vang, Huân chương Bảo vệ Tổ quốc, Huân chương Quân kỳ Quyết thắng, Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN, thành tích nghiên cứu khoa học.
+
+**Ghi chú thứ tự kiểm tra**:
+- **S0 — Gợi ý ở bước form**: FE đọc cờ `du_dieu_kien_*` và `goi_y` từ `HoSoNienHan`/`HoSoCongHien` đã được tính sẵn (qua C4.4) để **hiển thị** đủ/chưa đủ — đây là gợi ý UX, **không chặn cứng** việc gửi đề xuất.
+- **S1 — Kiểm tra thực sự ở bước duyệt**: Khi Phòng Chính trị phê duyệt, BE chạy `runEligibilityChecks` để xác nhận lại (xem C4.3). Sở dĩ check 2 lần vì dữ liệu có thể "stale" giữa lúc MGR tạo và ADM duyệt — đây là single source of truth.
 
 ---
 
@@ -259,10 +267,10 @@ flowchart LR
 | A3.1 | Đăng nhập | Người dùng · Hệ thống | 7 |
 | A3.2 | Thêm quân nhân | Phòng Chính trị · Hệ thống | 9 |
 | A3.3 | Nhập danh sách khen thưởng từ Excel | Phòng Chính trị · Hệ thống | 10 |
-| A3.4 | Tạo và duyệt đề xuất | Chỉ huy đơn vị · Phòng Chính trị · Hệ thống | 18 |
+| A3.4 | Tạo và duyệt đề xuất | Chỉ huy đơn vị · Phòng Chính trị · Hệ thống | 19 |
 | A3.5 | Tính lại điều kiện khen thưởng | Hệ thống | 7 |
 | A3.6 | Quản lý đơn vị | Phòng Chính trị · Hệ thống | 7 |
-| A3.7 | Huân huy chương theo loại | Chỉ huy đơn vị · Phòng Chính trị · Hệ thống | 9 |
+| A3.7 | Huân huy chương theo loại | Chỉ huy đơn vị · Phòng Chính trị · Hệ thống | 10 |
 | A3.8 | Sao lưu định kỳ | Hệ thống | 9 |
 
 **Quy ước vẽ**:

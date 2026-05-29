@@ -75,6 +75,7 @@ describe('adhocAward.service - createAdhocAward', () => {
     // Cho
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce(DOT_XUAT_makeAdminAccount());
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(DOT_XUAT_makePersonnelRecord());
+    prismaMock.fileQuyetDinh.findUnique.mockResolvedValueOnce({ so_quyet_dinh: 'QD-DX-2024' });
     prismaMock.khenThuongDotXuat.create.mockResolvedValueOnce(DOT_XUAT_makeAdhocRecord());
     prismaMock.taiKhoan.findMany.mockResolvedValueOnce([]);
     prismaMock.taiKhoan.findFirst.mockResolvedValueOnce(null);
@@ -97,6 +98,59 @@ describe('adhocAward.service - createAdhocAward', () => {
     expect(createCall.data.so_quyet_dinh).toBe('QD-DX-2024');
     expect(createCall.data.quan_nhan_id).toBe('qn-dx-1');
     expect(createCall.data.doi_tuong).toBe(ADHOC_TYPE.CA_NHAN);
+  });
+
+  it('Số quyết định mới + đầy đủ metadata → tạo FileQuyetDinh trước rồi tạo award', async () => {
+    // Cho
+    prismaMock.taiKhoan.findUnique.mockResolvedValueOnce(DOT_XUAT_makeAdminAccount());
+    prismaMock.quanNhan.findUnique.mockResolvedValueOnce(DOT_XUAT_makePersonnelRecord());
+    prismaMock.fileQuyetDinh.findUnique.mockResolvedValueOnce(null);
+    prismaMock.fileQuyetDinh.create.mockResolvedValueOnce({ id: 'fqd-1', so_quyet_dinh: 'QD-DX-2025' });
+    prismaMock.khenThuongDotXuat.create.mockResolvedValueOnce(
+      DOT_XUAT_makeAdhocRecord({ so_quyet_dinh: 'QD-DX-2025' })
+    );
+    prismaMock.taiKhoan.findMany.mockResolvedValueOnce([]);
+    prismaMock.taiKhoan.findFirst.mockResolvedValueOnce(null);
+
+    // Khi
+    await adhocAwardService.createAdhocAward({
+      adminId: 'acc-admin-dx',
+      type: ADHOC_TYPE.CA_NHAN,
+      year: 2025,
+      awardForm: 'Khen thưởng đột xuất B',
+      personnelId: 'qn-dx-1',
+      decisionNumber: 'QD-DX-2025',
+      decisionYear: 2025,
+      signDate: '2025-03-10',
+      signer: 'Trung tướng Nguyễn Văn A',
+    });
+
+    // Thì
+    const decisionCreateCall = prismaMock.fileQuyetDinh.create.mock.calls[0][0] as {
+      data: Record<string, unknown>;
+    };
+    expect(decisionCreateCall.data.so_quyet_dinh).toBe('QD-DX-2025');
+    expect(decisionCreateCall.data.nguoi_ky).toBe('Trung tướng Nguyễn Văn A');
+    expect(prismaMock.fileQuyetDinh.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('Số quyết định mới nhưng thiếu metadata → ValidationError', async () => {
+    // Cho
+    prismaMock.taiKhoan.findUnique.mockResolvedValueOnce(DOT_XUAT_makeAdminAccount());
+    prismaMock.quanNhan.findUnique.mockResolvedValueOnce(DOT_XUAT_makePersonnelRecord());
+    prismaMock.fileQuyetDinh.findUnique.mockResolvedValueOnce(null);
+
+    // Khi / Thì
+    await expect(
+      adhocAwardService.createAdhocAward({
+        adminId: 'acc-admin-dx',
+        type: ADHOC_TYPE.CA_NHAN,
+        year: 2025,
+        awardForm: 'Khen thưởng đột xuất B',
+        personnelId: 'qn-dx-1',
+        decisionNumber: 'QD-DX-MOI',
+      })
+    ).rejects.toThrow('Quyết định mới cần đầy đủ năm, ngày ký và người ký');
   });
 
   it('Non-admin role gọi create → ForbiddenError', async () => {

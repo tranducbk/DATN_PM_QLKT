@@ -1,15 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Table, Input, Select, Space, Alert, Typography, InputNumber, Empty, message } from 'antd';
+import { Table, Input, Select, Space, Alert, Typography, InputNumber, Empty } from 'antd';
 import { SearchOutlined, TeamOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { apiClient } from '@/lib/apiClient';
-import { getApiErrorMessage } from '@/lib/apiError';
-import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { formatDate } from '@/lib/utils';
 import type { DateInput } from '@/lib/types/common';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
+import { usePersonnelList } from './usePersonnelList';
 import type { Step2Personnel as Personnel } from './types';
 
 const { Text } = Typography;
@@ -29,64 +27,16 @@ export function Step2SelectPersonnel({
   onNamChange,
   proposalType,
 }: Step2SelectPersonnelProps) {
-  const [loading, setLoading] = useState(false);
-  const [personnel, setPersonnel] = useState<Personnel[]>([]);
-  const [searchText, setSearchText] = useState('');
-  const [unitFilter, setUnitFilter] = useState<string>('ALL');
-
-  // Fetch all personnel from manager's units
-  useEffect(() => {
-    fetchPersonnel();
-  }, []);
-
-  const fetchPersonnel = async () => {
-    try {
-      setLoading(true);
-      const response = await apiClient.getPersonnel({
-        page: 1,
-        limit: FETCH_ALL_LIMIT,
-      });
-
-      if (response.success) {
-        const personnelData = response.data || [];
-        setPersonnel(personnelData);
-      }
-    } catch (error: unknown) {
-      message.error(getApiErrorMessage(error));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Get unique units for filter
-  const units = Array.from(
-    new Set(
-      personnel.map(p => {
-        if (p.DonViTrucThuoc) {
-          return `${p.DonViTrucThuoc.id}|${p.DonViTrucThuoc.ten_don_vi}`;
-        } else if (p.CoQuanDonVi) {
-          return `${p.CoQuanDonVi.id}|${p.CoQuanDonVi.ten_don_vi}`;
-        }
-        return '';
-      })
-    )
-  ).filter(Boolean);
-
-  // Filter personnel
-  const filteredPersonnel = personnel.filter(p => {
-    // Search filter
-    const matchesSearch =
-      searchText === '' || p.ho_ten.toLowerCase().includes(searchText.toLowerCase());
-
-    // Unit filter
-    const matchesUnit =
-      !unitFilter ||
-      unitFilter === 'ALL' ||
-      p.don_vi_truc_thuoc_id === unitFilter.split('|')[0] ||
-      p.co_quan_don_vi_id === unitFilter.split('|')[0];
-
-    return matchesSearch && matchesUnit;
-  });
+  const {
+    personnel,
+    loading,
+    searchText,
+    setSearchText,
+    unitFilter,
+    setUnitFilter,
+    units,
+    filteredPersonnel,
+  } = usePersonnelList();
 
   const columns: ColumnsType<Personnel> = [
     {

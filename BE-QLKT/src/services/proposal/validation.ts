@@ -395,21 +395,6 @@ export async function checkDuplicateUnitAward(
             };
           }
         }
-
-        // Unit DV title vs unit BK flags are mutually exclusive for a single year row.
-        if (isDv && (existingAward.nhan_bkbqp || existingAward.nhan_bkttcp)) {
-          const existingBk = existingAward.nhan_bkbqp ? DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP : DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP;
-          return {
-            exists: true,
-            message: `Đơn vị đã có ${getDanhHieuName(existingBk)} năm ${nam}, không thể thêm ${getDanhHieuName(danhHieu)}`,
-          };
-        }
-        if (isBk && existingAward.danh_hieu && DANH_HIEU_DON_VI_CO_BAN.has(existingAward.danh_hieu)) {
-          return {
-            exists: true,
-            message: `Đơn vị đã có danh hiệu ${getDanhHieuName(existingAward.danh_hieu)} năm ${nam}, không thể thêm ${getDanhHieuName(danhHieu)}`,
-          };
-        }
       }
     }
 

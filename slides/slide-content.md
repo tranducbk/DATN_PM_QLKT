@@ -178,7 +178,7 @@ flowchart LR
 - **Next.js 14** (App Router): server components, file-based routing
 - **TypeScript**: type safety toàn dự án
 - **Ant Design**: component library — Form, Table, DatePicker, Modal
-- **Tailwind CSS + shadcn/ui**: styling tuỳ biến
+- **Tailwind CSS**: styling tuỳ biến cho layout, spacing
 - **Zod**: schema validation cho form
 - **Socket.IO client**: nhận thông báo real-time
 

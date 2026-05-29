@@ -6,7 +6,7 @@ import proposalService from '../../src/services/proposal';
 import { ValidationError } from '../../src/middlewares/errorHandler';
 import { PROPOSAL_TYPES } from '../../src/constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../../src/constants/proposalStatus.constants';
-import { DANH_HIEU_CA_NHAN_KHAC } from '../../src/constants/danhHieu.constants';
+import { DANH_HIEU_DAC_BIET } from '../../src/constants/danhHieu.constants';
 import {
   SUBMIT_MISSING_MONTH_ERROR,
   KNC_INVALID_DANH_HIEU_PREFIX,
@@ -64,7 +64,7 @@ describe('proposal.submit - KNC_VSNXD_QDNDVN', () => {
       NguoiDeXuat: { id: 'acc-mgr-1', username: 'admin', QuanNhan: null },
     });
 
-    await callSubmit([{ personnel_id: target.id, danh_hieu: DANH_HIEU_CA_NHAN_KHAC.KNC_VSNXD_QDNDVN }]);
+    await callSubmit([{ personnel_id: target.id, danh_hieu: DANH_HIEU_DAC_BIET.KNC_VSNXD_QDNDVN }]);
 
     expect(prismaMock.bangDeXuat.create).toHaveBeenCalledTimes(1);
   });
@@ -89,7 +89,7 @@ describe('proposal.submit - KNC_VSNXD_QDNDVN', () => {
       NguoiDeXuat: { id: 'acc-mgr-1', username: 'admin', QuanNhan: null },
     });
 
-    await callSubmit([{ personnel_id: target.id, danh_hieu: DANH_HIEU_CA_NHAN_KHAC.KNC_VSNXD_QDNDVN }]);
+    await callSubmit([{ personnel_id: target.id, danh_hieu: DANH_HIEU_DAC_BIET.KNC_VSNXD_QDNDVN }]);
     expect(prismaMock.bangDeXuat.create).toHaveBeenCalledTimes(1);
   });
 
@@ -105,7 +105,7 @@ describe('proposal.submit - KNC_VSNXD_QDNDVN', () => {
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([target]);
 
     await expectError(
-      callSubmit([{ personnel_id: target.id, danh_hieu: DANH_HIEU_CA_NHAN_KHAC.KNC_VSNXD_QDNDVN }]),
+      callSubmit([{ personnel_id: target.id, danh_hieu: DANH_HIEU_DAC_BIET.KNC_VSNXD_QDNDVN }]),
       ValidationError,
       { startsWith: KNC_SUBMIT_INELIGIBLE_PREFIX }
     );
@@ -123,7 +123,7 @@ describe('proposal.submit - KNC_VSNXD_QDNDVN', () => {
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([target]);
 
     await expectError(
-      callSubmit([{ personnel_id: target.id, danh_hieu: DANH_HIEU_CA_NHAN_KHAC.KNC_VSNXD_QDNDVN }]),
+      callSubmit([{ personnel_id: target.id, danh_hieu: DANH_HIEU_DAC_BIET.KNC_VSNXD_QDNDVN }]),
       ValidationError,
       { startsWith: KNC_SUBMIT_INELIGIBLE_PREFIX }
     );
@@ -143,7 +143,7 @@ describe('proposal.submit - KNC_VSNXD_QDNDVN', () => {
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([target]);
 
     await expectError(
-      callSubmit([{ personnel_id: target.id, danh_hieu: DANH_HIEU_CA_NHAN_KHAC.KNC_VSNXD_QDNDVN }]),
+      callSubmit([{ personnel_id: target.id, danh_hieu: DANH_HIEU_DAC_BIET.KNC_VSNXD_QDNDVN }]),
       ValidationError,
       { startsWith: KNC_SUBMIT_INELIGIBLE_PREFIX }
     );
@@ -155,7 +155,7 @@ describe('proposal.submit - KNC_VSNXD_QDNDVN', () => {
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([target]);
 
     await expectError(
-      callSubmit([{ personnel_id: target.id, danh_hieu: DANH_HIEU_CA_NHAN_KHAC.HC_QKQT }]),
+      callSubmit([{ personnel_id: target.id, danh_hieu: DANH_HIEU_DAC_BIET.HC_QKQT }]),
       ValidationError,
       { startsWith: KNC_INVALID_DANH_HIEU_PREFIX }
     );
@@ -172,7 +172,7 @@ describe('proposal.submit - KNC_VSNXD_QDNDVN', () => {
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([target]);
 
     await expectError(
-      callSubmit([{ personnel_id: target.id, danh_hieu: DANH_HIEU_CA_NHAN_KHAC.KNC_VSNXD_QDNDVN }], null),
+      callSubmit([{ personnel_id: target.id, danh_hieu: DANH_HIEU_DAC_BIET.KNC_VSNXD_QDNDVN }], null),
       ValidationError,
       SUBMIT_MISSING_MONTH_ERROR
     );

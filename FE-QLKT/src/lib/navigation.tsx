@@ -30,7 +30,6 @@ const ROUTE_KEY_MAP: ReadonlyArray<readonly [string, string]> = [
   ['/super-admin/categories', 'categories'],
   ['/super-admin/add-awards', 'add-awards'],
   ['/super-admin/system-logs', 'system-logs'],
-  ['/manager/profile/edit', 'profile-edit'],
   ['/manager/proposals', 'proposals-list'],
   ['/manager/awards', 'awards'],
   ['/manager/units', 'units'],
@@ -183,11 +182,6 @@ export function getMenuItemsByRole(
             Hồ sơ của tôi
           </Link>
         ),
-      },
-      {
-        key: 'profile-edit',
-        icon: <UserOutlined />,
-        label: <Link href="/manager/profile/edit">Thông tin cá nhân</Link>,
       },
       {
         key: 'system-logs',

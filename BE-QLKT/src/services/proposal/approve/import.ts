@@ -29,9 +29,10 @@ import type {
   EditedProposalData,
 } from '../../../types/proposal';
 
-// 60s — đủ cho đề xuất lớn (vài trăm quân nhân) trên Postgres.
-// Nếu vượt → throw PrismaClientKnownRequestError P2028.
-const PROPOSAL_APPROVE_TX_TIMEOUT_MS = 60000;
+// Approve transaction covers per-personnel writes + profile recalc + audit + decision sync.
+// 60s was too tight for end-of-year batches (~300+ personnel). Bumped to 180s; if a single
+// approve ever needs more, split the proposal rather than raising further.
+const PROPOSAL_APPROVE_TX_TIMEOUT_MS = 180000;
 
 /**
  * ╔══════════════════════════════════════════════════════════════════════════╗

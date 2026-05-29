@@ -2,11 +2,21 @@
 
 > **Render**: Copy block `mermaid` vào https://mermaid.live hoặc dùng VSCode Mermaid Preview extension. Để xuất PNG/SVG cho báo cáo, dùng `mermaid.live` → Export.
 >
-> **Lưu ý**: Mermaid không có syntax UML use case "thuần", nên ở đây dùng `flowchart LR` với:
+> **Lưu ý**: Mermaid `flowchart` không hỗ trợ notation UML use case thuần, nên dùng quy ước xấp xỉ:
 > - Actor: hình `(((Tên Actor)))` (oval đôi)
 > - Use case: hình `(Tên use case)` (oval)
 > - Hệ thống: gói `subgraph`
-> - `<<extend>>` / `<<include>>`: cạnh nét đứt `-.->`
+> - `<<extend>>` / `<<include>>`: cạnh nét đứt `-.->`, mũi tên đi từ **UC nguồn (extension / base)** đến **UC đích (base / inclusion)** theo đúng chuẩn UML 2.5:
+>   - `A -.->|include| B` đọc là *"A bao gộp B"* — A luôn kích hoạt B.
+>   - `A -.->|extend| B` đọc là *"A mở rộng B"* — A là phần mở rộng, B là base; A có thể chèn vào B tại extension point.
+> - Generalization actor: cạnh nét liền `-->` kèm nhãn `«generalization»` (vì Mermaid không vẽ được mũi tên rỗng UML).
+>
+> **Mức UC theo Cockburn** (áp dụng trong toàn bộ tài liệu):
+> - **User-goal level** (mặc định, không đánh dấu): UC đem lại giá trị nghiệp vụ độc lập cho actor — ví dụ *Tạo đề xuất khen thưởng*, *Phê duyệt đề xuất*.
+> - **`«subfunction»`** (đánh dấu trong stereotype): UC mức thấp hơn dùng làm bước phụ trợ — ví dụ *Xem danh sách X*, *Tìm kiếm và lọc X*, *Xem chi tiết Y*. Các UC dạng này xuất hiện ở hầu hết module nhưng **không vẽ stereotype trên từng UC** để tránh nhiễu — tham chiếu danh sách dưới đây.
+> - **`«module CRUD»`** (đánh dấu trong tên UC): UC đại diện cho gói 4 sub-operation Thêm/Sửa/Xoá/Xem trên cùng entity — chỉ dùng ở A1.7 nơi có 5 loại khen thưởng cùng pattern.
+>
+> **Các UC mặc định mức `«subfunction»`** (không lặp đánh dấu trong sơ đồ): Xem danh sách (A1.2 UC6, A1.3 UC4, A1.7 UC1–5 sub, A1.8 UC14, A1.11 UC2, A1.12 UC2, A1.15 UC1), Tìm kiếm và lọc (A1.2 UC7, A1.3 UC5, A1.11 UC4, A1.12 UC3–UC6, A1.15 UC3–UC4), Xem chi tiết (A1.3 UC4, A1.7 UC1–5 sub, A1.9 UC8, A1.12 UC7).
 
 ---
 
@@ -20,8 +30,8 @@ flowchart LR
     US(((Người dùng)))
 
     %% Actor generalization: AD → MG → US (SA là vai trò hệ thống độc lập)
-    AD -.->|kế thừa| MG
-    MG -.->|kế thừa| US
+    AD -->|«generalization»| MG
+    MG -->|«generalization»| US
 
     subgraph SYS[Hệ thống Quản lý Khen thưởng]
         UC1(Đăng nhập)
@@ -35,7 +45,8 @@ flowchart LR
         UC9(Xem nhật ký hệ thống)
         UC10(Sao lưu và khôi phục)
         UC11(Báo cáo và thống kê)
-        UC12(Sửa dữ liệu bỏ qua kiểm tra)
+        UC12(Chỉnh sửa dữ liệu ở chế độ DevZone)
+        UC13(Quản lý quyết định khen thưởng)
     end
 
     %% US: use case gốc (MG, AD kế thừa)
@@ -49,6 +60,7 @@ flowchart LR
     MG --- UC6
     MG --- UC9
     MG --- UC11
+    MG --- UC13
 
     %% AD: thêm những UC không có ở MG
     AD --- UC2
@@ -90,8 +102,8 @@ flowchart LR
         UC8(Liên kết tài khoản với quân nhân)
 
         UC1 -.->|include| UC5
-        UC1 -.->|extend| UC8
-        UC2 -.->|extend| UC5
+        UC8 -.->|extend| UC1
+        UC5 -.->|extend| UC2
     end
 
     SA --- UC1
@@ -134,10 +146,10 @@ flowchart LR
         UC7(Quản lý lịch sử chức vụ)
 
         UC1 -.->|include| UC7
-        UC2 -.->|extend| UC6
+        UC6 -.->|extend| UC2
     end
 
-    AD -->|«kế thừa»| MG
+    AD -->|«generalization»| MG
 
     AD --- UC1
     AD --- UC3
@@ -150,8 +162,8 @@ flowchart LR
 ```
 
 **Phân quyền route**:
-- POST/DELETE (`/api/personnel`): `requireAdmin` → SUPER_ADMIN + ADMIN.
-- PUT `/api/personnel/:id`: `requireManager` → SA + ADMIN + MANAGER (MANAGER chỉ sửa quân nhân thuộc đơn vị quản lý). USER **không** sửa được hồ sơ.
+- POST/DELETE (`/api/personnel`): `requireAdminOnly` → chỉ ADMIN (Phòng Chính trị) — SA không tham gia nghiệp vụ.
+- PUT `/api/personnel/:id`: `requireManager` → ADMIN + MANAGER (MANAGER chỉ sửa quân nhân thuộc đơn vị quản lý). USER **không** sửa được hồ sơ.
 - GET list / detail: MANAGER xem được trong phạm vi đơn vị; USER chỉ xem hồ sơ của chính mình (route `/profile/me`).
 - `POST /check-contribution-eligibility`: `requireManager` → USER **không** gọi được.
 
@@ -179,8 +191,8 @@ flowchart LR
         UC10(Chuyển quân nhân giữa các đơn vị)
 
         UC4 -.->|extend| UC1
-        UC1 -.->|include| UC9
-        UC10 -.->|extend| UC8
+        UC9 -.->|extend| UC1
+        UC10 -.->|include| UC8
     end
 
     SA --- UC1
@@ -194,23 +206,17 @@ flowchart LR
     SA --- UC9
     SA --- UC10
 
-    AD --- UC1
-    AD --- UC2
-    AD --- UC3
     AD --- UC4
     AD --- UC5
-    AD --- UC6
     AD --- UC7
     AD --- UC8
     AD --- UC9
     AD --- UC10
 ```
 
-**Phân quyền route**: `unit.route.ts` — GET dùng `requireManager` (SA + ADMIN + MANAGER xem cây đơn vị); POST/PUT/DELETE dùng `requireAdmin` (SA + ADMIN). CQDV và DVTT phân biệt qua field `loai_don_vi`, dùng chung route nên ADMIN có toàn quyền CRUD trên cả hai cấp.
-
 ---
 
-## A1.5 — Use case phân rã: Quản lý khen thưởng cá nhân hằng năm (CSTT / CSTDCS / BKBQP / CSTDTQ / BKTTCP)
+## A1.5 — Use case phân rã: Quản lý khen thưởng cá nhân hằng năm (chuỗi BKBQP / CSTDTQ / BKTTCP)
 
 ```mermaid
 flowchart LR
@@ -219,57 +225,54 @@ flowchart LR
     US(((Người dùng)))
 
     subgraph SYS[Khen thưởng cá nhân hằng năm]
-        UC1(Thêm danh hiệu cá nhân hằng năm)
-        UC2(Nhập danh hiệu từ file Excel)
-        UC3(Đề xuất danh hiệu cá nhân hằng năm)
-        UC4(Phê duyệt đề xuất danh hiệu cá nhân hằng năm)
-        UC5(Ghi số quyết định + file đính kèm)
-        UC6(Kiểm tra điều kiện đề xuất)
-        UC7(Chặn nếu đã nhận BKTTCP)
-        UC8(Xem hồ sơ hằng năm và gợi ý)
-        UC9(Xem lịch sử danh hiệu)
+        UC1(Nhập danh hiệu CSTDCS hoặc CSTT theo năm)
+        UC2(Ghi nhận danh hiệu BKBQP)
+        UC3(Ghi nhận danh hiệu CSTDTQ)
+        UC4(Ghi nhận danh hiệu BKTTCP)
+        UC5(Ghi số quyết định khen thưởng)
+        UC6(Xem lịch sử danh hiệu hằng năm)
+        UC7(Cập nhật điều kiện chuỗi khen thưởng)
+        UC8(Xem gợi ý khen thưởng)
+        UC9(Nhập danh sách danh hiệu hằng năm từ file Excel)
+        UC10(Chặn đề xuất sau khi đã nhận BKTTCP)
 
+        UC2 -.->|include| UC5
+        UC3 -.->|include| UC5
         UC4 -.->|include| UC5
-        UC3 -.->|include| UC6
-        UC4 -.->|include| UC6
-        UC3 -.->|extend| UC7
+        UC1 -.->|include| UC7
+        UC2 -.->|include| UC7
+        UC3 -.->|include| UC7
+        UC4 -.->|include| UC7
+        UC4 -.->|include| UC10
     end
 
     AD --- UC1
     AD --- UC2
     AD --- UC3
     AD --- UC4
-    AD --- UC8
+    AD --- UC5
     AD --- UC9
 
     MG --- UC1
-    MG --- UC2
-    MG --- UC3
+    MG --- UC6
+    MG --- UC7
     MG --- UC8
-    MG --- UC9
 
+    US --- UC6
     US --- UC8
-    US --- UC9
 ```
 
-**Đọc sơ đồ:**
+**Đặc thù**: UC10 — sau khi quân nhân đã nhận BKTTCP, hệ thống từ chối mọi đề xuất thêm với message "Đã có BKTTCP. Phần mềm chưa hỗ trợ các danh hiệu cao hơn..."
 
-- **5 danh hiệu hỗ trợ**: CSTT, CSTDCS, BKBQP, CSTDTQ, BKTTCP. CSTT/CSTDCS lưu vào cột `danh_hieu`; BKBQP/CSTDTQ/BKTTCP lưu thành flag boolean trên dòng `DanhHieuHangNam` của năm đó (đi kèm `danh_hieu='CSTDCS'`).
-- **UC1, UC2**: Phòng Chính trị hoặc Chỉ huy đơn vị thêm danh hiệu vào hệ thống (thêm từng bản ghi hoặc nhập hàng loạt từ file Excel), không đi qua quy trình đề xuất — dùng để cập nhật kết quả thi đua sau khi đã có quyết định ngoài phần mềm.
-- **UC3, UC4**: Đề xuất và phê duyệt qua `BangDeXuat` (strategy `CA_NHAN_HANG_NAM`). Cùng một strategy xử lý cả 5 danh hiệu, khác nhau ở payload và điều kiện đầu vào.
-- **UC5 (include)**: mọi phê duyệt bắt buộc ghi số quyết định + file PDF.
-- **UC6 (include)**: kiểm tra điều kiện cho **mọi** đề xuất; tập rule khác nhau theo danh hiệu — CSTT/CSTDCS chỉ kiểm tra cơ bản (năm hợp lệ, không trùng, không vừa CSTT vừa CSTDCS cùng năm, quân nhân/đơn vị hợp lệ); BKBQP/CSTDTQ/BKTTCP kiểm tra thêm điều kiện chuỗi (streak CSTDCS, flag chu kỳ trước, NCKH mỗi năm, cửa sổ trượt 3y/7y — `chainEligibility.ts`).
-- **UC7 (extend)**: kích hoạt khi đề xuất BKTTCP và quân nhân đã từng nhận BKTTCP → chặn với message "Đã có BKTTCP, chưa hỗ trợ danh hiệu cao hơn".
-- **UC8**: gợi ý tự động từ `recalculateAnnualProfile()` — Manager biết quân nhân nào đủ điều kiện đề xuất.
-- **UC9**: tra cứu lịch sử danh hiệu.
+**Scope UC6 (Xem lịch sử)**: UC6 có 2 phạm vi dữ liệu tách biệt:
+- **MANAGER**: xem lịch sử của quân nhân thuộc đơn vị quản lý (qua `getUnitScopedPersonnel`).
+- **USER**: chỉ xem lịch sử của **chính mình** qua route `/profile/me` (không xem được quân nhân khác).
 
-**Đã loại bỏ:**
-- ~~"Ghi nhận BKBQP/CSTDTQ/BKTTCP"~~ — không phải UC user, đây là **side-effect** của UC4 (phê duyệt) khi system lưu vào DB.
-- ~~"Cập nhật điều kiện chuỗi khen thưởng"~~ — không phải UC user, đây là `recalculateAnnualProfile()` chạy **auto** sau approve, không có nút riêng. Đã merge vào UC6 (kiểm tra) và UC8 (xem gợi ý) — đây mới là phần user nhìn thấy.
+Hai trường hợp chia sẻ cùng UC vì hành vi (đọc danh sách `DanhHieuHangNam`) đồng nhất, chỉ khác filter scope ở backend — không tách thành 2 UC riêng để tránh phình sơ đồ.
 
 ---
 
-## A1.6 — Use case phân rã: Quản lý khen thưởng đơn vị hằng năm (ĐVQT / ĐVTT / BKBQP / BKTTCP)
+## A1.6 — Use case phân rã: Quản lý khen thưởng đơn vị hằng năm
 
 ```mermaid
 flowchart LR
@@ -277,254 +280,93 @@ flowchart LR
     MG(((Chỉ huy đơn vị)))
 
     subgraph SYS[Khen thưởng đơn vị hằng năm]
-        UC1(Thêm danh hiệu đơn vị hằng năm)
-        UC2(Nhập danh hiệu từ file Excel)
-        UC3(Đề xuất danh hiệu đơn vị hằng năm)
-        UC4(Phê duyệt đề xuất danh hiệu đơn vị hằng năm)
-        UC5(Ghi số quyết định + file đính kèm)
-        UC6(Kiểm tra điều kiện đề xuất)
-        UC7(Xem hồ sơ đơn vị hằng năm)
-        UC8(Xem lịch sử danh hiệu đơn vị)
+        UC1(Nhập danh hiệu ĐVQT theo năm cho đơn vị)
+        UC2(Ghi nhận đơn vị đạt BKBQP)
+        UC3(Ghi nhận đơn vị đạt BKTTCP)
+        UC4(Kiểm tra chuỗi Đơn vị Quyết thắng liên tục)
+        UC5(Kiểm tra điều kiện BKBQP và BKTTCP đơn vị)
+        UC6(Xem hồ sơ đơn vị hằng năm)
+        UC7(Đề xuất lại BKTTCP đơn vị sau khi hoàn thành chu kỳ)
 
-        UC4 -.->|include| UC5
-        UC3 -.->|include| UC6
-        UC4 -.->|include| UC6
+        UC1 -.->|include| UC4
+        UC2 -.->|include| UC5
+        UC7 -.->|extend| UC2
+        UC7 -.->|extend| UC3
     end
 
     AD --- UC1
     AD --- UC2
+    AD --- UC3
+    AD --- UC6
+    MG --- UC1
+    MG --- UC4
+    MG --- UC5
+    MG --- UC6
+```
+
+**Khác personal**: BKTTCP đơn vị `isLifetime: false` — đơn vị có thể nhận BKTTCP lặp lại sau mỗi 7 năm (cycle repeat). Personal BKTTCP `isLifetime: true` chỉ nhận 1 lần.
+
+---
+
+## A1.7 — Use case phân rã: HCCSVV / HCBVTQ / HCQKQT / KNC / NCKH
+
+```mermaid
+flowchart LR
+    AD(((Phòng Chính trị)))
+    MG(((Chỉ huy đơn vị)))
+    US(((Người dùng)))
+
+    subgraph SYS[Huân huy chương và thành tích khoa học]
+        UC1("Ghi nhận Huy chương Chiến sĩ Vẻ vang
+        «module CRUD»")
+        UC2("Ghi nhận Huân chương Bảo vệ Tổ quốc
+        «module CRUD»")
+        UC3("Ghi nhận Huân chương Quân kỳ Quyết thắng
+        «module CRUD»")
+        UC4("Ghi nhận Kỷ niệm chương VSNXD QĐNDVN
+        «module CRUD»")
+        UC5("Ghi nhận thành tích nghiên cứu khoa học
+        «module CRUD»")
+        UC6(Nhập danh sách từ file Excel)
+        UC7(Xuất Excel báo cáo)
+
+        UC6 -.->|include| UC1
+        UC6 -.->|include| UC2
+        UC6 -.->|include| UC3
+        UC6 -.->|include| UC4
+        UC6 -.->|include| UC5
+    end
+
+    AD --- UC1
+    AD --- UC2
+    AD --- UC3
     AD --- UC4
-    AD --- UC8
+    AD --- UC5
+    AD --- UC6
+    AD --- UC7
 
     MG --- UC1
     MG --- UC2
     MG --- UC3
-    MG --- UC7
-    MG --- UC8
-```
-
-**Đọc sơ đồ:**
-
-- **4 danh hiệu hỗ trợ**: ĐVQT (Đơn vị Quyết thắng), ĐVTT (Đơn vị Tiên tiến), BKBQP, BKTTCP. ĐVQT/ĐVTT lưu vào cột `danh_hieu`; BKBQP/BKTTCP lưu thành flag boolean trên dòng `DanhHieuDonViHangNam` của năm đó (đi kèm `danh_hieu='ĐVQT'`).
-- **UC1, UC2**: thêm danh hiệu trực tiếp (từng bản ghi hoặc nhập hàng loạt từ Excel), không qua quy trình đề xuất.
-- **UC3, UC4**: đề xuất và phê duyệt qua `BangDeXuat` (strategy `DON_VI_HANG_NAM`). Cùng strategy xử lý cả 4 danh hiệu, khác nhau ở payload và điều kiện.
-- **UC5 (include)**: mọi phê duyệt bắt buộc ghi số quyết định + file PDF.
-- **UC6 (include)**: kiểm tra điều kiện đề xuất; rule khác nhau theo danh hiệu — ĐVQT/ĐVTT chỉ kiểm tra cơ bản (năm, không trùng, không vừa ĐVQT vừa ĐVTT cùng năm); BKBQP/BKTTCP kiểm tra thêm điều kiện chuỗi (streak ĐVQT, flag chu kỳ trước, cửa sổ trượt 7y cho BKTTCP — `chainEligibility.ts`).
-- **UC7**: xem hồ sơ tổng hợp đơn vị theo năm + gợi ý đề xuất.
-- **UC8**: tra cứu lịch sử danh hiệu đơn vị.
-
-**Khác cá nhân**: đơn vị **không có CSTDTQ** và **không kiểm tra NCKH**. BKTTCP đơn vị `isLifetime: false` — đơn vị có thể nhận BKTTCP lặp lại sau mỗi 7 năm (cycle repeat), khác BKTTCP cá nhân `isLifetime: true` chỉ nhận 1 lần.
-
----
-
-## A1.7 — Use case phân rã: Huân/huy chương cá nhân và thành tích khoa học
-
-A1.7 gồm **5 sơ đồ con**, mỗi loại khen thưởng/thành tích 1 sơ đồ:
-
-- **A1.7.1** — Huy chương Chiến sĩ Vẻ vang (HCCSVV)
-- **A1.7.2** — Huân chương Bảo vệ Tổ quốc (HCBVTQ)
-- **A1.7.3** — Huân chương Quân kỳ Quyết thắng (HCQKQT)
-- **A1.7.4** — Kỷ niệm chương VSNXD QĐNDVN (KNC)
-- **A1.7.5** — Thành tích Nghiên cứu Khoa học (NCKH)
-
-Cả 5 sơ đồ chia sẻ cùng cấu trúc 7 UC (Thêm / Excel / Đề xuất / Phê duyệt / Đính kèm Quyết định + file PDF / Kiểm tra điều kiện / Xem hồ sơ), khác nhau ở **điều kiện xét duyệt** đặc thù theo loại. UC5 (đính kèm Quyết định) được include từ UC4 (phê duyệt); UC6 (kiểm tra điều kiện) được include từ cả UC3 và UC4.
-
-**Phân quyền chung cho cả 5 loại**:
-- **ADMIN**: làm đầy đủ vòng đời (thêm, nhập Excel, đề xuất, phê duyệt).
-- **MANAGER**: chỉ tạo đề xuất + xem hồ sơ.
-- **USER**: xem hồ sơ khen thưởng / thành tích của bản thân (tất cả 5 loại) qua `/profile/tenure`, `/profile/contribution` hoặc các route nested `/personnel/:personnel_id/...`.
-
-> **Lưu ý**: Khen thưởng đột xuất (DOT_XUAT) có flow riêng — xem **A1.9**. Chi tiết flow đề xuất + phê duyệt chung cho mọi loại xem **A1.8**.
-
----
-
-### A1.7.1 — Huy chương Chiến sĩ Vẻ vang (HCCSVV)
-
-```mermaid
-flowchart LR
-    AD(((Phòng Chính trị)))
-    MG(((Chỉ huy đơn vị)))
-    US(((Người dùng)))
-
-    subgraph SYS[HCCSVV — Niên hạn 10 / 15 / 20 năm phục vụ]
-        UC1(Thêm HCCSVV cho quân nhân)
-        UC2(Nhập HCCSVV hàng loạt từ Excel)
-        UC3(Tạo đề xuất HCCSVV)
-        UC4(Xem xét và phê duyệt đề xuất HCCSVV)
-        UC5(Đính kèm Quyết định và file PDF khi phê duyệt)
-        UC6(Kiểm tra điều kiện 10 / 15 / 20 năm phục vụ)
-        UC7(Xem hồ sơ HCCSVV và lịch sử)
-
-        UC4 -.->|include| UC5
-        UC3 -.->|include| UC6
-        UC4 -.->|include| UC6
-    end
-
-    AD --- UC1
-    AD --- UC2
-    AD --- UC3
-    AD --- UC4
-    AD --- UC7
-
-    MG --- UC3
+    MG --- UC4
+    MG --- UC5
+    MG --- UC6
     MG --- UC7
 
-    US --- UC7
+    US --- UC3
+    US --- UC4
 ```
 
-**Strategy**: `hccsvvStrategy` · **Bảng đích**: `KhenThuongHCCSVV` (3 hạng Ba/Nhì/Nhất, validate thứ tự hạng). · **USER**: xem hồ sơ HCCSVV của bản thân qua `/profile/tenure/:personnel_id`.
+**Lưu ý phạm vi UC**: các quy tắc tính niên hạn (10/15/20 năm phục vụ HCCSVV, 120 tháng tích lũy HCBVTQ, thời điểm tính HCQKQT từ ngày nhập ngũ, 20/25 năm KNC, phân loại đề tài NCKH) **không vẽ thành sub-UC** vì đây là **business rule** thuộc domain layer, không phải hành vi mà actor invoke. Chi tiết rule được đặc tả trong báo cáo §5.1 và mô-đun `services/eligibility/` (BE). Xem activity diagram §A2 để biết flow áp dụng rule.
 
----
+**Module CRUD**: UC1–UC5 được đánh dấu `«module CRUD»` — mỗi UC gói 4 sub-operation (Thêm / Sửa / Xoá / Xem) thao tác trên cùng entity. Lý do không tách thành 20 UC riêng: (a) tránh phình sơ đồ với CRUD lặp giống nhau ở 5 loại, (b) flow và phân quyền của 4 sub-op trong cùng module là đồng nhất. Đặc tả từng sub-op chi tiết trong `08-use-case-specs.md`.
 
-### A1.7.2 — Huân chương Bảo vệ Tổ quốc (HCBVTQ)
+**Endpoints thực tế + phân quyền** (trong code):
+- `routes/{tenureMedal,contributionMedal,commemorativeMedal,militaryFlag}.route.ts` cho `/import/preview` + `/import/confirm` đều dùng `requireAdmin` → MANAGER **không** import được UC1–UC4 qua UC6.
+- `routes/scientificAchievement.route.ts` (NCKH) dùng `requireManager` cho `/template` + import → MANAGER có thể import NCKH (UC5+UC6 với MG vẫn áp dụng).
+- USER chỉ truy cập `/personnel/:personnel_id` của `military-flags` (UC3 — HCQKQT) và `commemorative-medals` (UC4 — KNC) — không xem trực tiếp HCCSVV (UC1) và HCBVTQ (UC2). Hồ sơ niên hạn / cống hiến của bản thân USER xem qua `/profile/me`, không qua các route này.
 
-```mermaid
-flowchart LR
-    AD(((Phòng Chính trị)))
-    MG(((Chỉ huy đơn vị)))
-    US(((Người dùng)))
-
-    subgraph SYS[HCBVTQ — Tích lũy 120 tháng theo hệ số chức vụ]
-        UC1(Thêm HCBVTQ cho quân nhân)
-        UC2(Nhập HCBVTQ hàng loạt từ Excel)
-        UC3(Tạo đề xuất HCBVTQ)
-        UC4(Xem xét và phê duyệt đề xuất HCBVTQ)
-        UC5(Đính kèm Quyết định và file PDF khi phê duyệt)
-        UC6(Kiểm tra điều kiện 120 tháng tích lũy theo hệ số chức vụ)
-        UC7(Xem hồ sơ HCBVTQ và lịch sử)
-
-        UC4 -.->|include| UC5
-        UC3 -.->|include| UC6
-        UC4 -.->|include| UC6
-    end
-
-    AD --- UC1
-    AD --- UC2
-    AD --- UC3
-    AD --- UC4
-    AD --- UC7
-
-    MG --- UC3
-    MG --- UC7
-
-    US --- UC7
-```
-
-**Strategy**: `hcbvtqStrategy` · **Bảng đích**: `KhenThuongHCBVTQ` (tích lũy theo lịch sử chức vụ × hệ số). · **USER**: xem hồ sơ HCBVTQ của bản thân qua `/profile/contribution/:personnel_id`.
-
----
-
-### A1.7.3 — Huân chương Quân kỳ Quyết thắng (HCQKQT)
-
-```mermaid
-flowchart LR
-    AD(((Phòng Chính trị)))
-    MG(((Chỉ huy đơn vị)))
-    US(((Người dùng)))
-
-    subgraph SYS[HCQKQT — Tính từ ngày nhập ngũ]
-        UC1(Thêm HCQKQT cho quân nhân)
-        UC2(Nhập HCQKQT hàng loạt từ Excel)
-        UC3(Tạo đề xuất HCQKQT)
-        UC4(Xem xét và phê duyệt đề xuất HCQKQT)
-        UC5(Đính kèm Quyết định và file PDF khi phê duyệt)
-        UC6(Kiểm tra điều kiện thời gian phục vụ từ ngày nhập ngũ)
-        UC7(Xem hồ sơ HCQKQT và lịch sử)
-
-        UC4 -.->|include| UC5
-        UC3 -.->|include| UC6
-        UC4 -.->|include| UC6
-    end
-
-    AD --- UC1
-    AD --- UC2
-    AD --- UC3
-    AD --- UC4
-    AD --- UC7
-
-    MG --- UC3
-    MG --- UC7
-
-    US --- UC7
-```
-
-**Strategy**: `hcqkqtStrategy` · **Bảng đích**: `KhenThuongHCQKQT` (1 lần / quân nhân). · **USER**: tra cứu HCQKQT của bản thân qua `/personnel/:personnel_id`.
-
----
-
-### A1.7.4 — Kỷ niệm chương VSNXD QĐNDVN (KNC)
-
-```mermaid
-flowchart LR
-    AD(((Phòng Chính trị)))
-    MG(((Chỉ huy đơn vị)))
-    US(((Người dùng)))
-
-    subgraph SYS[KNC VSNXD QĐNDVN — 20 năm nữ / 25 năm nam đến ngày xuất ngũ]
-        UC1(Thêm KNC cho quân nhân)
-        UC2(Nhập KNC hàng loạt từ Excel)
-        UC3(Tạo đề xuất KNC)
-        UC4(Xem xét và phê duyệt đề xuất KNC)
-        UC5(Đính kèm Quyết định và file PDF khi phê duyệt)
-        UC6(Kiểm tra điều kiện 20 năm nữ / 25 năm nam đến ngày xuất ngũ)
-        UC7(Xem hồ sơ KNC và lịch sử)
-
-        UC4 -.->|include| UC5
-        UC3 -.->|include| UC6
-        UC4 -.->|include| UC6
-    end
-
-    AD --- UC1
-    AD --- UC2
-    AD --- UC3
-    AD --- UC4
-    AD --- UC7
-
-    MG --- UC3
-    MG --- UC7
-
-    US --- UC7
-```
-
-**Strategy**: `kncStrategy` · **Bảng đích**: `KhenThuongKNC` (1 lần / quân nhân, gắn với ngày xuất ngũ). · **USER**: tra cứu KNC của bản thân qua `/personnel/:personnel_id`.
-
----
-
-### A1.7.5 — Thành tích Nghiên cứu Khoa học (NCKH)
-
-```mermaid
-flowchart LR
-    AD(((Phòng Chính trị)))
-    MG(((Chỉ huy đơn vị)))
-    US(((Người dùng)))
-
-    subgraph SYS[NCKH — Đề tài khoa học và sáng kiến]
-        UC1(Thêm thành tích NCKH cho quân nhân)
-        UC2(Nhập NCKH hàng loạt từ Excel)
-        UC3(Tạo đề xuất NCKH)
-        UC4(Xem xét và phê duyệt đề xuất NCKH)
-        UC5(Đính kèm Quyết định và file PDF khi phê duyệt)
-        UC6(Phân loại đề tài hoặc sáng kiến khoa học)
-        UC7(Xem hồ sơ NCKH và lịch sử theo năm)
-
-        UC4 -.->|include| UC5
-        UC3 -.->|include| UC6
-        UC4 -.->|include| UC6
-    end
-
-    AD --- UC1
-    AD --- UC2
-    AD --- UC3
-    AD --- UC4
-    AD --- UC7
-
-    MG --- UC3
-    MG --- UC7
-
-    US --- UC7
-```
-
-**Strategy**: `nckhStrategy` · **Bảng đích**: `ThanhTichNCKH` (unique key `personnel_id + năm + mô tả`). · NCKH ghi nhận theo năm, ảnh hưởng đến chuỗi BKBQP/CSTDTQ/BKTTCP cá nhân (xem A1.5). · **USER**: xem NCKH của bản thân qua `/personnel/:personnel_id/scientific-achievements`.
+**Lưu ý**: Khen thưởng đột xuất (DOT_XUAT) **không nằm trong sơ đồ này** vì có flow vận hành riêng — xem **A1.9** để biết chi tiết (ADMIN tạo trực tiếp, không qua duyệt 3 cấp, không có tính niên hạn).
 
 ---
 
@@ -555,17 +397,17 @@ flowchart LR
         UC16(Xoá đề xuất)
         UC17(Tải xuống file đính kèm)
 
-        UC1 -.->|include| UC8
-        UC2 -.->|include| UC8
-        UC3 -.->|include| UC8
-        UC4 -.->|include| UC8
-        UC5 -.->|include| UC8
-        UC6 -.->|include| UC8
-        UC7 -.->|include| UC8
+        UC8 -.->|extend| UC1
+        UC8 -.->|extend| UC2
+        UC8 -.->|extend| UC3
+        UC8 -.->|extend| UC4
+        UC8 -.->|extend| UC5
+        UC8 -.->|extend| UC6
+        UC8 -.->|extend| UC7
         UC1 -.->|include| UC15
         UC2 -.->|include| UC15
-        UC10 -.->|extend| UC12
-        UC10 -.->|extend| UC13
+        UC12 -.->|extend| UC10
+        UC10 -.->|include| UC13
     end
 
     MG --- UC1
@@ -617,12 +459,12 @@ flowchart LR
         UC8(Xem chi tiết một khen thưởng)
         UC9(Phát thông báo cho người liên quan)
 
-        UC1 -.->|include| UC5
-        UC2 -.->|include| UC5
+        UC5 -.->|extend| UC1
+        UC5 -.->|extend| UC2
         UC1 -.->|include| UC9
         UC2 -.->|include| UC9
-        UC6 -.->|extend| UC1
-        UC6 -.->|extend| UC2
+        UC6 -.->|include| UC1
+        UC6 -.->|include| UC2
     end
 
     AD --- UC1
@@ -661,7 +503,7 @@ flowchart LR
         UC1(Xét điều kiện cá nhân BKBQP CSTDTQ BKTTCP)
         UC2(Xét điều kiện đơn vị BKBQP BKTTCP)
         UC3(Kiểm tra điều kiện đề xuất lại theo chu kỳ)
-        UC4(Ngăn đề xuất khi đã nhận BKTTCP)
+        UC4(Chặn đề xuất sau khi đã nhận BKTTCP)
         UC5(Kiểm tra 120 tháng tích lũy HCBVTQ)
         UC6(Kiểm tra 10 15 20 năm phục vụ HCCSVV)
         UC7(Kiểm tra điều kiện nghiên cứu khoa học mỗi năm)
@@ -670,7 +512,7 @@ flowchart LR
         UC10(Tái tính hồ sơ quân nhân)
 
         UC1 -.->|include| UC3
-        UC1 -.->|extend| UC4
+        UC4 -.->|extend| UC1
         UC1 -.->|include| UC7
         UC2 -.->|include| UC3
         UC9 -.->|include| UC1
@@ -717,10 +559,10 @@ flowchart LR
         UC8(Xoá toàn bộ thông báo)
 
         UC1 -.->|include| UC6
-        UC2 -.->|extend| UC3
-        UC2 -.->|extend| UC5
-        UC2 -.->|extend| UC7
-        UC2 -.->|extend| UC8
+        UC3 -.->|extend| UC2
+        UC5 -.->|extend| UC2
+        UC7 -.->|extend| UC2
+        UC8 -.->|extend| UC2
     end
 
     AD --- UC1
@@ -774,11 +616,11 @@ flowchart LR
         UC9(Xoá toàn bộ nhật ký)
         UC10(Xoá một bản ghi nhật ký)
 
-        UC2 -.->|extend| UC3
-        UC2 -.->|extend| UC4
-        UC2 -.->|extend| UC5
-        UC2 -.->|extend| UC6
-        UC2 -.->|extend| UC7
+        UC3 -.->|extend| UC2
+        UC4 -.->|extend| UC2
+        UC5 -.->|extend| UC2
+        UC6 -.->|extend| UC2
+        UC7 -.->|extend| UC2
     end
 
     SYSTEM --- UC1
@@ -839,8 +681,6 @@ flowchart LR
         UC4 -.->|include| UC1
         UC5 -.->|include| UC1
         UC6 -.->|include| UC1
-        UC7 -.->|extend| UC8
-        UC4 -.->|extend| UC8
     end
 
     SA --- UC1
@@ -888,7 +728,7 @@ flowchart LR
         UC9(Tải xuống file PDF quyết định)
         UC10(Xem khen thưởng liên kết với quyết định)
 
-        UC5 -.->|extend| UC9
+        UC9 -.->|extend| UC5
         UC7 -.->|include| UC10
         UC8 -.->|include| UC10
     end
@@ -905,10 +745,9 @@ flowchart LR
     AD --- UC10
 
     MG --- UC1
+    MG --- UC2
     MG --- UC9
 ```
-
-**Phân quyền**: `decision.route.ts` — toàn bộ ghi (POST/PUT/DELETE) và list/autocomplete dùng `requireAdminOnly` → **chỉ ADMIN**. Riêng `/file-path/:`, `/download/:`, `/file-paths` chỉ cần `verifyToken` nên MANAGER (và mọi role đã đăng nhập) tải được file PDF khi biết số quyết định. MANAGER **không** gọi được autocomplete số quyết định (UC2).
 
 **Đặc thù**: `FileQuyetDinh` là bảng độc lập với `BangDeXuat`, liên kết với 8 bảng khen thưởng qua hard FK natural-key `so_quyet_dinh` (xem ERD §C5.1). Cascade rename (UC7) thay đổi `so_quyet_dinh` → Postgres tự cascade 13 cột FK trên 8 bảng đích + app-layer cascade JSON payload `BangDeXuat.data_*` cùng transaction (`services/decision/cascadeRename.ts`).
 
@@ -927,14 +766,16 @@ flowchart LR
         UC3(Thống kê theo đơn vị)
         UC4(Thống kê quân nhân đủ điều kiện chưa nhận)
         UC5(Biểu đồ tổng hợp dashboard)
-        UC6(Xuất báo cáo Excel theo từng loại khen thưởng)
+        UC6(Xuất báo cáo Excel)
+        UC7(Xuất báo cáo PDF)
+        UC8(So sánh thành tích khen thưởng giữa các quân nhân)
 
         UC5 -.->|include| UC1
         UC5 -.->|include| UC2
         UC5 -.->|include| UC3
-        UC1 -.->|extend| UC6
-        UC2 -.->|extend| UC6
-        UC3 -.->|extend| UC6
+        UC6 -.->|extend| UC1
+        UC6 -.->|extend| UC2
+        UC6 -.->|extend| UC3
     end
 
     AD --- UC1
@@ -943,15 +784,16 @@ flowchart LR
     AD --- UC4
     AD --- UC5
     AD --- UC6
+    AD --- UC7
+    AD --- UC8
 
     MG --- UC1
     MG --- UC2
     MG --- UC3
     MG --- UC4
     MG --- UC5
+    MG --- UC8
 ```
-
-**Lưu ý**: UC6 (Xuất Excel) hiện chỉ có ở từng module khen thưởng (HCCSVV, HCBVTQ, HCQKQT, KNC, NCKH, danh hiệu hằng năm) — chưa có endpoint export tổng hợp. **Xuất báo cáo PDF** và **So sánh thành tích giữa các quân nhân** là phần mở rộng tương lai — chưa cài đặt trong phần mềm hiện tại.
 
 ---
 
@@ -959,20 +801,20 @@ flowchart LR
 
 | # | Sơ đồ | Số use case | Actor |
 |---|---|---|---|
-| A1.1 | Use case tổng quát | 12 | 4 |
+| A1.1 | Use case tổng quát | 13 | 4 |
 | A1.2 | Quản lý tài khoản | 8 | SUPER_ADMIN, ADMIN |
 | A1.3 | Quản lý quân nhân | 7 | ADMIN, MANAGER |
 | A1.4 | Quản lý đơn vị | 10 | SUPER_ADMIN, ADMIN |
-| A1.5 | Danh hiệu cá nhân hằng năm (UC5) | 9 | ADMIN, MANAGER, USER |
-| A1.6 | Khen thưởng đơn vị hằng năm (UC6) | 8 | ADMIN, MANAGER |
-| A1.7 | Huân/huy chương cá nhân và NCKH (5 sơ đồ con A1.7.1 → A1.7.5) | 7 × 5 = 35 | ADMIN, MANAGER, USER |
+| A1.5 | Danh hiệu cá nhân hằng năm (UC5) | 10 | ADMIN, MANAGER, USER |
+| A1.6 | Khen thưởng đơn vị hằng năm (UC6) | 7 | ADMIN, MANAGER |
+| A1.7 | UC7–UC11: HCCSVV / HCQKQT / KNC / HCBVTQ / NCKH | 7 | ADMIN, MANAGER, USER |
 | A1.8 | Đề xuất khen thưởng (UC13) | 17 | MANAGER, ADMIN |
 | A1.9 | Khen thưởng đột xuất (UC12 — flow riêng) | 9 | ADMIN, MANAGER, USER |
 | A1.10 | Xét điều kiện khen thưởng (UC14) | 10 | ADMIN, System, MANAGER, USER |
 | A1.11 | Thông báo realtime (UC15) | 8 | ADMIN, MANAGER, USER |
 | A1.12 | Nhật ký hệ thống (UC16) | 10 | SUPER_ADMIN, ADMIN, MANAGER |
 | A1.13 | Backup qua DevZone (UC17) | 8 | SUPER_ADMIN, Cron |
-| A1.14 | Báo cáo thống kê (UC18) | 6 | ADMIN, MANAGER |
+| A1.14 | Báo cáo thống kê (UC18) | 8 | ADMIN, MANAGER |
 | A1.15 | Quản lý quyết định (Decision) | 10 | ADMIN, MANAGER |
 
 **Tổng**: 1 sơ đồ tổng quát + 14 sơ đồ phân rã. DevZone backup được tách riêng vì có yếu tố nghiệp vụ; các DevZone tool khác (cron trigger, recalc unit count, feature toggle) không đưa vào báo cáo.

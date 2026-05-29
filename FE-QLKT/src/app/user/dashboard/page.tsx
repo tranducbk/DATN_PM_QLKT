@@ -44,7 +44,7 @@ import { LoadingState } from '@/components/shared/LoadingState';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
-import { DANH_HIEU_CA_NHAN_HANG_NAM } from '@/constants/danhHieu.constants';
+import { DANH_HIEU_CA_NHAN_HANG_NAM, DANH_HIEU_MAP } from '@/constants/danhHieu.constants';
 import { ROLE_LABELS } from '@/constants/roles.constants';
 import type {
   PersonnelDetail,
@@ -411,30 +411,12 @@ export default function UserDashboard() {
                         : annualProfile?.tong_nckh || 0;
 
                       const chartData = [
-                        {
-                          label: 'Bằng khen của Thủ tướng Chính phủ',
-                          value: danhHieuCounts.BKTTCP,
-                        },
-                        {
-                          label: 'Chiến sĩ thi đua toàn quân',
-                          value: danhHieuCounts.CSTDTQ,
-                        },
-                        {
-                          label: 'Bằng khen của Bộ trưởng Bộ Quốc phòng',
-                          value: danhHieuCounts.BKBQP,
-                        },
-                        {
-                          label: 'Chiến sĩ thi đua cơ sở',
-                          value: danhHieuCounts.CSTDCS,
-                        },
-                        {
-                          label: 'Chiến sĩ tiên tiến',
-                          value: danhHieuCounts.CSTT,
-                        },
-                        {
-                          label: 'Thành tích Nghiên cứu khoa học',
-                          value: tongNCKH,
-                        },
+                        { label: DANH_HIEU_MAP[DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP], value: danhHieuCounts.BKTTCP },
+                        { label: DANH_HIEU_MAP[DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ], value: danhHieuCounts.CSTDTQ },
+                        { label: DANH_HIEU_MAP[DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP], value: danhHieuCounts.BKBQP },
+                        { label: DANH_HIEU_MAP[DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS], value: danhHieuCounts.CSTDCS },
+                        { label: DANH_HIEU_MAP[DANH_HIEU_CA_NHAN_HANG_NAM.CSTT], value: danhHieuCounts.CSTT },
+                        { label: 'Thành tích Nghiên cứu khoa học', value: tongNCKH },
                       ].filter(item => item.value > 0);
 
                       const total = chartData.reduce((sum, item) => sum + item.value, 0);

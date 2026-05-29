@@ -155,54 +155,61 @@ export default function ProposalDetailPage() {
   const [historyPositionList, setHistoryPositionList] = useState<any[]>([]);
   const [historyUnitAwards, setHistoryUnitAwards] = useState<UnitAnnualAwards | null>(null);
 
-  const fetchPersonnelDetails = useCallback(async (danhHieuItems: DanhHieuItem[]) => {
-    try {
-      const detailsMap: Record<string, ServiceTimeRow> = {};
+  const fetchPersonnelDetails = useCallback(
+    async (danhHieuItems: DanhHieuItem[]) => {
+      try {
+        const detailsMap: Record<string, ServiceTimeRow> = {};
 
-      await Promise.all(
-        danhHieuItems.map(async item => {
-          if (item.personnel_id) {
-            try {
-              const personnelResponse = await apiClient.getPersonnelById(item.personnel_id);
-              if (personnelResponse.success && personnelResponse.data) {
-                detailsMap[item.personnel_id] = personnelResponse.data as ServiceTimeRow;
-              }
-            } catch {
+        await Promise.all(
+          danhHieuItems.map(async item => {
+            if (item.personnel_id) {
+              try {
+                const personnelResponse = await apiClient.getPersonnelById(item.personnel_id);
+                if (personnelResponse.success && personnelResponse.data) {
+                  detailsMap[item.personnel_id] = personnelResponse.data as ServiceTimeRow;
+                }
+              } catch {}
             }
-          }
-        })
-      );
+          })
+        );
 
-      setPersonnelDetails(detailsMap);
-    } catch (error) {
-      message.error(getApiErrorMessage(error));
-    }
-  }, [message]);
+        setPersonnelDetails(detailsMap);
+      } catch (error) {
+        message.error(getApiErrorMessage(error));
+      }
+    },
+    [message]
+  );
 
-  const fetchPositionHistories = useCallback(async (danhHieuItems: DanhHieuItem[]) => {
-    try {
-      const historiesMap: Record<string, PositionHistoryEntry[]> = {};
+  const fetchPositionHistories = useCallback(
+    async (danhHieuItems: DanhHieuItem[]) => {
+      try {
+        const historiesMap: Record<string, PositionHistoryEntry[]> = {};
 
-      await Promise.all(
-        danhHieuItems.map(async item => {
-          if (item.personnel_id) {
-            try {
-              const positionHistoryResponse = await apiClient.getPositionHistory(item.personnel_id);
-              if (positionHistoryResponse.success && positionHistoryResponse.data) {
-                historiesMap[item.personnel_id] = positionHistoryResponse.data;
+        await Promise.all(
+          danhHieuItems.map(async item => {
+            if (item.personnel_id) {
+              try {
+                const positionHistoryResponse = await apiClient.getPositionHistory(
+                  item.personnel_id
+                );
+                if (positionHistoryResponse.success && positionHistoryResponse.data) {
+                  historiesMap[item.personnel_id] = positionHistoryResponse.data;
+                }
+              } catch (error) {
+                historiesMap[item.personnel_id] = [];
               }
-            } catch (error) {
-              historiesMap[item.personnel_id] = [];
             }
-          }
-        })
-      );
+          })
+        );
 
-      setPositionHistoriesMap(historiesMap);
-    } catch (error) {
-      message.error(getApiErrorMessage(error));
-    }
-  }, [message]);
+        setPositionHistoriesMap(historiesMap);
+      } catch (error) {
+        message.error(getApiErrorMessage(error));
+      }
+    },
+    [message]
+  );
 
   const fetchProposalDetail = useCallback(async () => {
     try {
@@ -210,9 +217,9 @@ export default function ProposalDetailPage() {
       const proposalResponse = await apiClient.getProposalById(String(id));
 
       if (proposalResponse.success && proposalResponse.data) {
-        const parsedFilesAttached = parseJsonArray<NonNullable<ProposalDetail['files_attached']>[number]>(
-          proposalResponse.data.files_attached
-        );
+        const parsedFilesAttached = parseJsonArray<
+          NonNullable<ProposalDetail['files_attached']>[number]
+        >(proposalResponse.data.files_attached);
         const parsedFilesAttachedAdmin = parseJsonArray<
           NonNullable<ProposalDetail['files_attached_admin']>[number]
         >(proposalResponse.data.files_attached_admin);
@@ -224,7 +231,9 @@ export default function ProposalDetailPage() {
         });
 
         const parsedDanhHieu = parseJsonArray<DanhHieuItem>(proposalResponse.data.data_danh_hieu);
-        const parsedThanhTich = parseJsonArray<ThanhTichItem>(proposalResponse.data.data_thanh_tich);
+        const parsedThanhTich = parseJsonArray<ThanhTichItem>(
+          proposalResponse.data.data_thanh_tich
+        );
         const parsedNienHan = parseJsonArray<DanhHieuItem>(proposalResponse.data.data_nien_han);
         const parsedCongHien = parseJsonArray<DanhHieuItem>(proposalResponse.data.data_cong_hien);
 
@@ -775,10 +784,7 @@ export default function ProposalDetailPage() {
               const display = getDurationDisplay(record.thoi_gian_nhom_0_7);
               return display
                 ? display
-                : totalTimeByGroup(
-                    record.personnel_id ?? '',
-                    CONG_HIEN_HE_SO_GROUPS.LEVEL_07
-                  );
+                : totalTimeByGroup(record.personnel_id ?? '', CONG_HIEN_HE_SO_GROUPS.LEVEL_07);
             },
           },
           {
@@ -790,10 +796,7 @@ export default function ProposalDetailPage() {
               const display = getDurationDisplay(record.thoi_gian_nhom_0_8);
               return display
                 ? display
-                : totalTimeByGroup(
-                    record.personnel_id ?? '',
-                    CONG_HIEN_HE_SO_GROUPS.LEVEL_08
-                  );
+                : totalTimeByGroup(record.personnel_id ?? '', CONG_HIEN_HE_SO_GROUPS.LEVEL_08);
             },
           },
           {
@@ -805,10 +808,7 @@ export default function ProposalDetailPage() {
               const display = getDurationDisplay(record.thoi_gian_nhom_0_9_1_0);
               return display
                 ? display
-                : totalTimeByGroup(
-                    record.personnel_id ?? '',
-                    CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10
-                  );
+                : totalTimeByGroup(record.personnel_id ?? '', CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10);
             },
           },
         ]
@@ -908,9 +908,10 @@ export default function ProposalDetailPage() {
       },
     },
     {
-      title: proposal?.loai_de_xuat === PROPOSAL_TYPES.CONG_HIEN
-        ? 'Xem lịch sử chức vụ'
-        : 'Xem lịch sử khen thưởng',
+      title:
+        proposal?.loai_de_xuat === PROPOSAL_TYPES.CONG_HIEN
+          ? 'Xem lịch sử chức vụ'
+          : 'Xem lịch sử khen thưởng',
       key: 'history',
       width: 180,
       align: 'center' as const,
@@ -1176,12 +1177,12 @@ export default function ProposalDetailPage() {
 
           <div>
             <Text strong style={{ display: 'block', marginBottom: 8 }}>
-              File đính kèm của Admin
+              File đính kèm của người duyệt
             </Text>
             <FileAttachmentList
               files={proposal.files_attached_admin || []}
               mode="server"
-              emptyText="Chưa có file đính kèm từ Admin"
+              emptyText="Không có file đính kèm"
             />
             {proposal.status === PROPOSAL_STATUS.PENDING && (
               <div style={{ marginTop: 12 }}>
@@ -1195,12 +1196,10 @@ export default function ProposalDetailPage() {
                     return true;
                   }}
                 >
-                  <Button icon={<UploadOutlined />}>
-                    Đính kèm thêm file (không bắt buộc)
-                  </Button>
+                  <Button icon={<UploadOutlined />}>Đính kèm thêm file (không bắt buộc)</Button>
                 </Upload>
                 <Text type="secondary" style={{ display: 'block', marginTop: 8, fontSize: 12 }}>
-                  File sẽ được lưu khi bạn bấm "Phê duyệt".
+                  File sẽ được lưu khi bạn bấm &quot;Phê duyệt&quot;.
                 </Text>
               </div>
             )}
@@ -1504,9 +1503,7 @@ export default function ProposalDetailPage() {
                   columns={
                     proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM
                       ? donViHangNamColumns
-                      : caNhanHangNamColumns.filter(
-                          col => col.key !== 'thang_nhan_nien_han'
-                        )
+                      : caNhanHangNamColumns.filter(col => col.key !== 'thang_nhan_nien_han')
                   }
                   dataSource={editedDanhHieu}
                   rowKey={(_, index) => index ?? 0}

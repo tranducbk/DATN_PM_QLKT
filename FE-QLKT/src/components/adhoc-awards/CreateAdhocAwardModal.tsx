@@ -25,12 +25,13 @@ import dayjs from 'dayjs';
 import {
   FileOutlined,
   DownloadOutlined,
-  UploadOutlined,
+  CloudUploadOutlined,
+  DeleteOutlined,
 } from '@ant-design/icons';
-import type { UploadFile } from 'antd';
+import type { UploadFile, UploadProps } from 'antd';
 import { apiClient } from '@/lib/apiClient';
-import { formatDate, capitalizeWords } from '@/lib/utils';
-import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
+import { formatDate, capitalizeWords, formatFileSize } from '@/lib/utils';
+import { MODAL_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 import type {
   Personnel,
@@ -63,12 +64,13 @@ export function CreateAdhocAwardModal({
   const [submitting, setSubmitting] = useState(false);
   const [createFormData, setCreateFormData] = useState<CreateFormData>(INITIAL_CREATE_FORM);
   const [createAttachedFileList, setCreateAttachedFileList] = useState<UploadFile[]>([]);
+  const [createDecisionFileList, setCreateDecisionFileList] = useState<UploadFile[]>([]);
   const [personnelFilters, setPersonnelFilters] = useState({
     coQuanId: '',
     donViId: '',
     searchName: '',
   });
-  const [unitFilters, setUnitFilters] = useState({ type: 'ALL' });
+  const [unitFilters, setUnitFilters] = useState({ type: 'ALL', searchName: '' });
 
   const [decisionOptions, setDecisionOptions] = useState<{ value: string; label: string }[]>([]);
   const [searchingDecision, setSearchingDecision] = useState(false);
@@ -110,6 +112,7 @@ export function CreateAdhocAwardModal({
       if (res.success && res.data) {
         const decision = res.data;
         setSelectedDecision(decision);
+        setCreateDecisionFileList([]);
         setCreateFormData(prev => ({
           ...prev,
           decisionNumber: decision.so_quyet_dinh,
@@ -127,10 +130,11 @@ export function CreateAdhocAwardModal({
   const handleClose = () => {
     setCreateFormData(INITIAL_CREATE_FORM);
     setCreateAttachedFileList([]);
+    setCreateDecisionFileList([]);
     setSelectedDecision(null);
     setDecisionOptions([]);
     setPersonnelFilters({ coQuanId: '', donViId: '', searchName: '' });
-    setUnitFilters({ type: 'ALL' });
+    setUnitFilters({ type: 'ALL', searchName: '' });
     onClose();
   };
 
@@ -172,6 +176,13 @@ export function CreateAdhocAwardModal({
           message.error('Vui lòng nhập số quyết định');
           return false;
         }
+        if (
+          !selectedDecision &&
+          (!createFormData.signDate || !createFormData.signer?.trim())
+        ) {
+          message.error('Quyết định mới: vui lòng nhập ngày ký và người ký quyết định');
+          return false;
+        }
         return true;
       default:
         return true;
@@ -179,7 +190,9 @@ export function CreateAdhocAwardModal({
   };
 
   const handleCreateSubmit = async () => {
-    const { type, awardForm, year, personnelIds, unitIds, decisionNumber, note } = createFormData;
+    const { type, awardForm, year, personnelIds, unitIds, decisionNumber, note, decisionYear, signDate, signer } =
+      createFormData;
+    const decisionFile = createDecisionFileList[0]?.originFileObj;
 
     if (!awardForm || !year) {
       message.error('Vui lòng điền đầy đủ thông tin bắt buộc');
@@ -237,6 +250,13 @@ export function CreateAdhocAwardModal({
         if (note) formData.append('note', note);
         if (decisionNumber) formData.append('decisionNumber', decisionNumber);
 
+        if (!selectedDecision && decisionNumber) {
+          formData.append('decisionYear', decisionYear.toString());
+          if (signDate) formData.append('signDate', signDate);
+          if (signer) formData.append('signer', signer);
+          if (decisionFile) formData.append('decisionFiles', decisionFile);
+        }
+
         createAttachedFileList.forEach(file => {
           if (file.originFileObj) {
             formData.append('attachedFiles', file.originFileObj);
@@ -276,8 +296,73 @@ export function CreateAdhocAwardModal({
   const filteredUnits = [...units, ...subUnits].filter(u => {
     if (unitFilters.type === 'CO_QUAN' && subUnits.some(s => s.id === u.id)) return false;
     if (unitFilters.type === 'DON_VI' && units.some(s => s.id === u.id)) return false;
+    if (
+      unitFilters.searchName &&
+      !u.ten_don_vi.toLowerCase().includes(unitFilters.searchName.toLowerCase())
+    )
+      return false;
     return true;
   });
+
+  const renderUploadItem: UploadProps['itemRender'] = (_originNode, file, _fileList, actions) => {
+    const size = formatFileSize(file.size);
+    return (
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          marginTop: 8,
+          padding: '8px 12px',
+          borderRadius: 8,
+          border: '1px solid var(--ant-color-border-secondary)',
+          background: 'var(--ant-color-fill-quaternary)',
+        }}
+      >
+        <FileOutlined className="text-blue-500 dark:text-blue-400" style={{ flexShrink: 0 }} />
+        <span
+          title={file.name}
+          style={{
+            flex: 1,
+            minWidth: 0,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {file.name}
+        </span>
+        {size && (
+          <Text type="secondary" style={{ fontSize: 12, flexShrink: 0 }}>
+            {size}
+          </Text>
+        )}
+        <Button
+          type="text"
+          size="small"
+          danger
+          icon={<DeleteOutlined />}
+          onClick={() => actions.remove()}
+          aria-label={`Xóa ${file.name}`}
+          style={{ flexShrink: 0 }}
+        />
+      </div>
+    );
+  };
+
+  const renderDropzoneContent = (hint: string) => (
+    <div style={{ padding: '6px 8px' }}>
+      <CloudUploadOutlined
+        style={{ fontSize: 30, color: 'var(--ant-color-primary)' }}
+      />
+      <div style={{ marginTop: 8, fontWeight: 500 }}>
+        Kéo thả file vào đây, hoặc <span style={{ color: 'var(--ant-color-primary)' }}>bấm để chọn</span>
+      </div>
+      <Text type="secondary" style={{ fontSize: 12 }}>
+        {hint}
+      </Text>
+    </div>
+  );
 
   const renderCreateStep = () => {
     const { currentStep, type } = createFormData;
@@ -364,6 +449,8 @@ export function CreateAdhocAwardModal({
                       })
                     }
                     allowClear
+                    showSearch
+                    optionFilterProp="children"
                     placeholder="Chọn cơ quan đơn vị"
                   >
                     {units.map(unit => (
@@ -383,6 +470,8 @@ export function CreateAdhocAwardModal({
                     }
                     disabled={!personnelFilters.coQuanId}
                     allowClear
+                    showSearch
+                    optionFilterProp="children"
                     placeholder="Chọn đơn vị trực thuộc"
                   >
                     {subUnits
@@ -467,7 +556,7 @@ export function CreateAdhocAwardModal({
               ]}
               dataSource={filteredPersonnel}
               rowKey="id"
-              pagination={{ ...DEFAULT_ANTD_TABLE_PAGINATION }}
+              pagination={{ ...MODAL_TABLE_PAGINATION }}
               scroll={{ y: 300 }}
               size="small"
             />
@@ -558,12 +647,23 @@ export function CreateAdhocAwardModal({
                 <Select
                   style={{ width: '100%' }}
                   value={unitFilters.type}
-                  onChange={value => setUnitFilters({ type: value })}
+                  onChange={value => setUnitFilters({ ...unitFilters, type: value })}
                 >
                   <Select.Option value="ALL">Tất cả</Select.Option>
                   <Select.Option value="CO_QUAN">Cơ quan đơn vị</Select.Option>
                   <Select.Option value="DON_VI">Đơn vị trực thuộc</Select.Option>
                 </Select>
+              </div>
+              <div>
+                <Text style={{ display: 'block', marginBottom: 4 }}>Tìm kiếm theo tên</Text>
+                <Input
+                  value={unitFilters.searchName}
+                  onChange={e =>
+                    setUnitFilters({ ...unitFilters, searchName: e.target.value })
+                  }
+                  placeholder="Nhập tên đơn vị"
+                  allowClear
+                />
               </div>
             </Space>
             <Table
@@ -590,7 +690,7 @@ export function CreateAdhocAwardModal({
               ]}
               dataSource={filteredUnits}
               rowKey="id"
-              pagination={{ ...DEFAULT_ANTD_TABLE_PAGINATION }}
+              pagination={{ ...MODAL_TABLE_PAGINATION }}
               scroll={{ y: 300 }}
               size="small"
             />
@@ -599,27 +699,23 @@ export function CreateAdhocAwardModal({
 
       case 2:
         return (
-          <div>
+          <div style={{ maxWidth: 560, margin: '0 auto' }}>
             <div style={{ marginBottom: 12 }}>
               <Text strong style={{ display: 'block', marginBottom: 4 }}>
                 Tải file đính kèm
               </Text>
               <Text type="secondary">Tải lên các file đính kèm (không bắt buộc)</Text>
             </div>
-            <Upload
+            <Upload.Dragger
               fileList={createAttachedFileList}
               onChange={({ fileList }) => setCreateAttachedFileList(fileList)}
               beforeUpload={() => false}
               multiple
               accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+              itemRender={renderUploadItem}
             >
-              <Button icon={<UploadOutlined />} size="large" style={{ width: '100%' }}>
-                Chọn file đính kèm
-              </Button>
-            </Upload>
-            <Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
-              Hỗ trợ: PDF, Word, Excel, hình ảnh. Tối đa 10 file.
-            </Text>
+              {renderDropzoneContent('PDF, Word, Excel, hình ảnh · tối đa 10 file')}
+            </Upload.Dragger>
           </div>
         );
 
@@ -745,6 +841,27 @@ export function CreateAdhocAwardModal({
                 disabled={!!selectedDecision}
               />
             </div>
+
+            {!selectedDecision && (
+              <div>
+                <Text style={{ display: 'block', marginBottom: 4 }}>File quyết định</Text>
+                <Text type="secondary" style={{ display: 'block', marginBottom: 8, fontSize: 12 }}>
+                  Tải lên bản scan quyết định để lưu vào hệ thống (không bắt buộc)
+                </Text>
+                <div style={{ maxWidth: 560 }}>
+                  <Upload.Dragger
+                    fileList={createDecisionFileList}
+                    onChange={({ fileList }) => setCreateDecisionFileList(fileList.slice(-1))}
+                    beforeUpload={() => false}
+                    maxCount={1}
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    itemRender={renderUploadItem}
+                  >
+                    {renderDropzoneContent('PDF, Word, hình ảnh · 1 file')}
+                  </Upload.Dragger>
+                </div>
+              </div>
+            )}
           </Space>
         );
 
@@ -903,6 +1020,7 @@ export function CreateAdhocAwardModal({
       destroyOnClose
       centered
       maskClosable={false}
+      style={{ maxWidth: '94vw' }}
       styles={{
         body: {
           maxHeight: 'calc(100vh - 200px)',

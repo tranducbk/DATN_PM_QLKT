@@ -18,11 +18,17 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import { formatDate } from '@/lib/utils';
 import { apiClient } from '@/lib/apiClient';
 import { calculateTotalMonths } from './serviceDuration';
+import { usePersonnelList } from './usePersonnelList';
 import type { Step2Personnel as Personnel } from './types';
-import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
-import { HCCSVV_YEARS_HANG_BA, HCCSVV_YEARS_HANG_NHI, HCCSVV_YEARS_HANG_NHAT, AWARD_TAB_LABELS } from '@/constants/danhHieu.constants';
+import {
+  HCCSVV_YEARS_HANG_BA,
+  HCCSVV_YEARS_HANG_NHI,
+  HCCSVV_YEARS_HANG_NHAT,
+  AWARD_TAB_LABELS,
+} from '@/constants/danhHieu.constants';
 import { GENDER } from '@/constants/gender.constants';
 import { ExcelImportSection } from './ExcelImportSection';
 import * as XLSX from 'xlsx';
@@ -35,21 +41,15 @@ import type {
 } from './types';
 import type { TitleDataItem } from '@/lib/types/proposal';
 
+import {
+  formatMonthsRemaining,
+  computeHCCSVVTimeBreakdown,
+  evaluateNienHanProposalEligibility,
+  getNienHanSortPriority,
+  type NienHanEligibility,
+} from './nienHanHelpers';
+
 const { Text } = Typography;
-
-type HCCSVVRank = 'HCCSVV_HANG_BA' | 'HCCSVV_HANG_NHI' | 'HCCSVV_HANG_NHAT';
-
-interface NienHanEligibility {
-  eligible: boolean;
-  reason?: string;
-  suggestedRank?: HCCSVVRank;
-}
-
-const RANK_LABEL: Record<HCCSVVRank, string> = {
-  HCCSVV_HANG_BA: 'hạng Ba',
-  HCCSVV_HANG_NHI: 'hạng Nhì',
-  HCCSVV_HANG_NHAT: 'hạng Nhất',
-};
 
 interface Step2SelectPersonnelNienHanProps {
   selectedPersonnelIds: string[];
@@ -64,12 +64,6 @@ interface Step2SelectPersonnelNienHanProps {
   isManager?: boolean;
 }
 
-function formatMonthsRemaining(years: number, months: number): string {
-  if (years > 0 && months > 0) return `${years} năm ${months} tháng`;
-  if (years > 0) return `${years} năm`;
-  return `${months} tháng`;
-}
-
 export function Step2SelectPersonnelNienHan({
   selectedPersonnelIds,
   onPersonnelChange,
@@ -82,11 +76,17 @@ export function Step2SelectPersonnelNienHan({
   bypassEligibility = false,
   isManager = false,
 }: Step2SelectPersonnelNienHanProps) {
-  const [loading, setLoading] = useState(false);
+  const {
+    personnel,
+    loading,
+    searchText,
+    setSearchText,
+    unitFilter,
+    setUnitFilter,
+    units,
+    filteredPersonnel,
+  } = usePersonnelList();
   const [checkingProfiles, setCheckingProfiles] = useState(false);
-  const [personnel, setPersonnel] = useState<Personnel[]>([]);
-  const [searchText, setSearchText] = useState('');
-  const [unitFilter, setUnitFilter] = useState<string>('ALL');
   const NOW = new Date();
   const CURRENT_YEAR = NOW.getFullYear();
   const CURRENT_MONTH = NOW.getMonth() + 1;
@@ -96,9 +96,11 @@ export function Step2SelectPersonnelNienHan({
   const [serviceProfilesMap, setServiceProfilesMap] = useState<Record<string, any>>({});
 
   useEffect(() => {
-    fetchPersonnel();
+    if (personnel.length > 0) {
+      fetchServiceProfiles(personnel);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [personnel]);
 
   useEffect(() => {
     setLocalNam(nam);
@@ -122,29 +124,6 @@ export function Step2SelectPersonnelNienHan({
     // canProposeNextRank reads serviceProfilesMap/localNam/localThang already in deps
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bypassEligibility, selectedPersonnelIds, personnel, serviceProfilesMap, localNam, localThang, onPersonnelChange]);
-
-  const fetchPersonnel = async () => {
-    try {
-      setLoading(true);
-      const response = await apiClient.getPersonnel({
-        page: 1,
-        limit: FETCH_ALL_LIMIT,
-      });
-
-      if (response.success) {
-        const personnelData = response.data ?? [];
-        setPersonnel(personnelData);
-
-        if (personnelData.length > 0) {
-          await fetchServiceProfiles(personnelData);
-        }
-      }
-    } catch (error: unknown) {
-      message.error(getApiErrorMessage(error));
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const fetchServiceProfiles = async (personnelList: Personnel[]) => {
     try {
@@ -175,185 +154,29 @@ export function Step2SelectPersonnelNienHan({
     }
   };
 
-  const units = Array.from(
-    new Set(
-      personnel.map(p => {
-        if (p.DonViTrucThuoc) {
-          return `${p.DonViTrucThuoc.id}|${p.DonViTrucThuoc.ten_don_vi}`;
-        } else if (p.CoQuanDonVi) {
-          return `${p.CoQuanDonVi.id}|${p.CoQuanDonVi.ten_don_vi}`;
-        }
-        return '';
-      })
-    )
-  ).filter(Boolean);
+  const proposalYearOrCurrent = () => localNam ?? new Date().getFullYear();
 
-  const filteredPersonnel = personnel.filter(p => {
-    const matchesSearch =
-      searchText === '' || p.ho_ten.toLowerCase().includes(searchText.toLowerCase());
+  const checkHCCSVVEligibility = (record: Personnel) =>
+    computeHCCSVVTimeBreakdown(record, proposalYearOrCurrent(), localThang);
 
-    const matchesUnit =
-      !unitFilter ||
-      unitFilter === 'ALL' ||
-      p.don_vi_truc_thuoc_id === unitFilter.split('|')[0] ||
-      p.co_quan_don_vi_id === unitFilter.split('|')[0];
-
-    return matchesSearch && matchesUnit;
-  });
-
-  /** Checks whether service time meets HCCSVV eligibility thresholds. */
-  const checkHCCSVVEligibility = (record: Personnel) => {
-    if (!record.ngay_nhap_ngu) return null;
-
-    const result = calculateTotalMonths(record.ngay_nhap_ngu, record.ngay_xuat_ngu);
-    if (!result) return null;
-
-    const totalYears = result.years;
-    const startDate =
-      typeof record.ngay_nhap_ngu === 'string'
-        ? new Date(record.ngay_nhap_ngu)
-        : record.ngay_nhap_ngu;
-
-    const eligibilityDateBa = new Date(startDate);
-    eligibilityDateBa.setFullYear(eligibilityDateBa.getFullYear() + HCCSVV_YEARS_HANG_BA);
-
-    const eligibilityDateNhi = new Date(startDate);
-    eligibilityDateNhi.setFullYear(eligibilityDateNhi.getFullYear() + HCCSVV_YEARS_HANG_NHI);
-
-    const eligibilityDateNhat = new Date(startDate);
-    eligibilityDateNhat.setFullYear(eligibilityDateNhat.getFullYear() + HCCSVV_YEARS_HANG_NHAT);
-
-    const proposalYear = localNam ?? new Date().getFullYear();
-    const refDate = new Date(proposalYear, localThang, 0);
-
-    const monthsUntil = (target: Date): number => {
-      const total = (target.getFullYear() - refDate.getFullYear()) * 12 + (target.getMonth() - refDate.getMonth());
-      return Math.max(0, total);
-    };
-
-    const remainingBa = monthsUntil(eligibilityDateBa);
-    const remainingNhi = monthsUntil(eligibilityDateNhi);
-    const remainingNhat = monthsUntil(eligibilityDateNhat);
-
-    return {
-      hangBa: {
-        eligible: refDate >= eligibilityDateBa,
-        yearsNeeded: Math.floor(remainingBa / 12),
-        monthsNeeded: remainingBa % 12,
-        totalYears,
-      },
-      hangNhi: {
-        eligible: refDate >= eligibilityDateNhi,
-        yearsNeeded: Math.floor(remainingNhi / 12),
-        monthsNeeded: remainingNhi % 12,
-        totalYears,
-      },
-      hangNhat: {
-        eligible: refDate >= eligibilityDateNhat,
-        yearsNeeded: Math.floor(remainingNhat / 12),
-        monthsNeeded: remainingNhat % 12,
-        totalYears,
-      },
-    };
-  };
-
-  /** Returns full eligibility info (reason + suggested rank) for the next HCCSVV rank. */
-  const getNienHanProposalEligibility = (record: Personnel): NienHanEligibility => {
-    if (!record.gioi_tinh || (record.gioi_tinh !== 'NAM' && record.gioi_tinh !== 'NU')) {
-      return { eligible: false, reason: 'Quân nhân chưa cập nhật giới tính' };
-    }
-    if (!record.ngay_nhap_ngu) {
-      return { eligible: false, reason: 'Quân nhân chưa cập nhật ngày nhập ngũ' };
-    }
-
-    const eligibility = checkHCCSVVEligibility(record);
-    if (!eligibility) {
-      return { eligible: false, reason: 'Không đủ dữ liệu để đánh giá' };
-    }
-
-    const serviceProfile = serviceProfilesMap[record.id];
-    const hasHangBa = serviceProfile?.hccsvv_hang_ba_status === ELIGIBILITY_STATUS.DA_NHAN;
-    const hasHangNhi = serviceProfile?.hccsvv_hang_nhi_status === ELIGIBILITY_STATUS.DA_NHAN;
-    const hasHangNhat = serviceProfile?.hccsvv_hang_nhat_status === ELIGIBILITY_STATUS.DA_NHAN;
-
-    if (hasHangNhat) {
-      return { eligible: false, reason: `Đã nhận đủ tất cả hạng ${AWARD_TAB_LABELS.HCCSVV}` };
-    }
-
-    const namNhan = serviceProfile?.hccsvv_nam_nhan as
-      | Record<string, { nam?: number | null }>
-      | undefined;
-
-    let targetRank: HCCSVVRank;
-    let targetTimeOk: boolean;
-    let yearsThreshold: number;
-    let timeRemaining: { yearsNeeded: number; monthsNeeded: number };
-    let lowerRankYear: number | null = null;
-    let lowerRankName = '';
-
-    if (!hasHangBa) {
-      targetRank = 'HCCSVV_HANG_BA';
-      targetTimeOk = eligibility.hangBa.eligible;
-      yearsThreshold = HCCSVV_YEARS_HANG_BA;
-      timeRemaining = eligibility.hangBa;
-    } else if (!hasHangNhi) {
-      targetRank = 'HCCSVV_HANG_NHI';
-      targetTimeOk = eligibility.hangNhi.eligible;
-      yearsThreshold = HCCSVV_YEARS_HANG_NHI;
-      timeRemaining = eligibility.hangNhi;
-      lowerRankYear = namNhan?.HCCSVV_HANG_BA?.nam ?? null;
-      lowerRankName = 'hạng Ba';
-    } else {
-      targetRank = 'HCCSVV_HANG_NHAT';
-      targetTimeOk = eligibility.hangNhat.eligible;
-      yearsThreshold = HCCSVV_YEARS_HANG_NHAT;
-      timeRemaining = eligibility.hangNhat;
-      lowerRankYear = namNhan?.HCCSVV_HANG_NHI?.nam ?? null;
-      lowerRankName = 'hạng Nhì';
-    }
-
-    const targetLabel = RANK_LABEL[targetRank];
-
-    if (!targetTimeOk) {
-      return {
-        eligible: false,
-        reason: `Chưa đủ ${yearsThreshold} năm để đề xuất ${targetLabel}. Còn ${formatMonthsRemaining(timeRemaining.yearsNeeded, timeRemaining.monthsNeeded)}.`,
-        suggestedRank: targetRank,
-      };
-    }
-
-    const proposalYear = localNam ?? new Date().getFullYear();
-    if (lowerRankYear != null && proposalYear <= lowerRankYear) {
-      return {
-        eligible: false,
-        reason: `Năm đề xuất ${targetLabel} (${proposalYear}) phải sau năm đã nhận ${lowerRankName} (${lowerRankYear}). Vui lòng chọn năm đề xuất sau ${lowerRankYear}.`,
-        suggestedRank: targetRank,
-      };
-    }
-
-    return { eligible: true, suggestedRank: targetRank };
-  };
+  const getNienHanProposalEligibility = (record: Personnel): NienHanEligibility =>
+    evaluateNienHanProposalEligibility(
+      record,
+      proposalYearOrCurrent(),
+      localThang,
+      serviceProfilesMap[record.id]
+    );
 
   const canProposeNextRank = (record: Personnel) =>
     getNienHanProposalEligibility(record).eligible;
 
-  // Sort priority: 0=eligible for next rank, 2=received all ranks, 3=ineligible
-  const getSortPriority = (record: Personnel): number => {
-    const missingGender =
-      !record.gioi_tinh || (record.gioi_tinh !== 'NAM' && record.gioi_tinh !== 'NU');
-    if (missingGender) return 3;
-
-    if (!record.ngay_nhap_ngu) return 3;
-
-    const serviceProfile = serviceProfilesMap[record.id];
-    const hasHangNhat = serviceProfile?.hccsvv_hang_nhat_status === ELIGIBILITY_STATUS.DA_NHAN;
-
-    if (hasHangNhat) return 2;
-
-    if (canProposeNextRank(record)) return 0;
-
-    return 3; // ineligible
-  };
+  const getSortPriority = (record: Personnel): number =>
+    getNienHanSortPriority(
+      record,
+      proposalYearOrCurrent(),
+      localThang,
+      serviceProfilesMap[record.id]
+    );
 
   // Sort: eligible → all ranks received → ineligible
   const sortedPersonnel = [...filteredPersonnel].sort((a, b) => {
@@ -573,7 +396,10 @@ export function Step2SelectPersonnelNienHan({
                 Đã nhận hạng Ba
               </Text>
               <Text type="warning" style={{ fontSize: '11px' }}>
-                Còn {formatMonthsRemaining(hangNhi.yearsNeeded, hangNhi.monthsNeeded)} nữa (hạng Nhì)
+                Chưa đủ {HCCSVV_YEARS_HANG_NHI} năm (hạng Nhì)
+              </Text>
+              <Text type="secondary" style={{ fontSize: '11px' }}>
+                Còn {formatMonthsRemaining(hangNhi.yearsNeeded, hangNhi.monthsNeeded)}
               </Text>
             </div>
           );
@@ -618,7 +444,10 @@ export function Step2SelectPersonnelNienHan({
                 Đã nhận hạng Nhì
               </Text>
               <Text type="warning" style={{ fontSize: '11px' }}>
-                Còn {formatMonthsRemaining(hangNhat.yearsNeeded, hangNhat.monthsNeeded)} nữa (hạng Nhất)
+                Chưa đủ {HCCSVV_YEARS_HANG_NHAT} năm (hạng Nhất)
+              </Text>
+              <Text type="secondary" style={{ fontSize: '11px' }}>
+                Còn {formatMonthsRemaining(hangNhat.yearsNeeded, hangNhat.monthsNeeded)}
               </Text>
             </div>
           );

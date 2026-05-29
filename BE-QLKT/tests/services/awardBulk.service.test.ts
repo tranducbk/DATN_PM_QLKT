@@ -4,7 +4,7 @@ import unitAnnualAwardService from '../../src/services/unitAnnualAward.service';
 import { PROPOSAL_TYPES } from '../../src/constants/proposalTypes.constants';
 import {
   DANH_HIEU_CA_NHAN_HANG_NAM,
-  DANH_HIEU_CA_NHAN_KHAC,
+  DANH_HIEU_DAC_BIET,
   DANH_HIEU_DON_VI_HANG_NAM,
   DANH_HIEU_HCCSVV,
   DANH_HIEU_HCBVTQ,
@@ -93,7 +93,7 @@ describe('awardBulk.service - checkDuplicateAwards (cá nhân)', () => {
     const errors = await awardBulkService.checkDuplicateAwards(
       PROPOSAL_TYPES.HC_QKQT,
       2024,
-      [{ personnel_id: personnelA.id, danh_hieu: DANH_HIEU_CA_NHAN_KHAC.HC_QKQT }]
+      [{ personnel_id: personnelA.id, danh_hieu: DANH_HIEU_DAC_BIET.HC_QKQT }]
     );
 
     // Thì: bị chặn vì personnel đã có huân chương
@@ -112,7 +112,7 @@ describe('awardBulk.service - checkDuplicateAwards (cá nhân)', () => {
     const errors = await awardBulkService.checkDuplicateAwards(
       PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
       2024,
-      [{ personnel_id: personnelA.id, danh_hieu: DANH_HIEU_CA_NHAN_KHAC.KNC_VSNXD_QDNDVN }]
+      [{ personnel_id: personnelA.id, danh_hieu: DANH_HIEU_DAC_BIET.KNC_VSNXD_QDNDVN }]
     );
 
     expect(errors).toHaveLength(1);

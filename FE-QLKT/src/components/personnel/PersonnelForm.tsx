@@ -1,40 +1,43 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { Form, Input, Select, Button, App } from 'antd';
 import type { z } from 'zod';
-import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { personnelFormSchema } from '@/lib/schemas';
 import { apiClient } from '@/lib/apiClient';
 import { capitalizeWords } from '@/lib/utils';
-import { App } from 'antd';
 import { getApiErrorMessage } from '@/lib/apiError';
 
 type PersonnelFormValues = z.infer<typeof personnelFormSchema>;
 
+interface UnitOption {
+  id: string | number;
+  ten_don_vi?: string | null;
+  ma_don_vi?: string | null;
+}
+
+interface PositionOption {
+  id: string | number;
+  ten_chuc_vu?: string | null;
+}
+
+interface PersonnelInput {
+  id?: string;
+  cccd?: string | null;
+  ho_ten?: string | null;
+  co_quan_don_vi_id?: string | number | null;
+  don_vi_truc_thuoc_id?: string | number | null;
+  chuc_vu_id?: string | number | null;
+  ngay_nhap_ngu?: string | null;
+  ngay_sinh?: string | null;
+}
+
 interface PersonnelFormProps {
-  personnel?: any;
-  coQuanDonViList?: any[];
-  donViTrucThuocList?: any[];
-  positions?: any[];
-  onSuccess?: (data?: any) => void;
+  personnel?: PersonnelInput;
+  coQuanDonViList?: UnitOption[];
+  donViTrucThuocList?: UnitOption[];
+  positions?: PositionOption[];
+  onSuccess?: (data: PersonnelFormValues) => void;
   onClose?: () => void;
   readOnly?: boolean;
 }
@@ -48,23 +51,21 @@ export function PersonnelForm({
   onClose,
   readOnly = false,
 }: PersonnelFormProps) {
+  const [form] = Form.useForm<PersonnelFormValues>();
   const [loading, setLoading] = useState(false);
   const { message } = App.useApp();
 
-  const form = useForm<PersonnelFormValues>({
-    resolver: zodResolver(personnelFormSchema),
-    defaultValues: {
-      cccd: personnel?.cccd || '',
-      ho_ten: personnel?.ho_ten || '',
-      co_quan_don_vi_id: personnel?.co_quan_don_vi_id?.toString() || '',
-      don_vi_truc_thuoc_id: personnel?.don_vi_truc_thuoc_id?.toString() || '',
-      chuc_vu_id: personnel?.chuc_vu_id?.toString() || '',
-      ngay_nhap_ngu: personnel?.ngay_nhap_ngu || '',
-      ngay_sinh: personnel?.ngay_sinh || '',
-    },
-  });
+  const initialValues: PersonnelFormValues = {
+    cccd: personnel?.cccd ?? '',
+    ho_ten: personnel?.ho_ten ?? '',
+    co_quan_don_vi_id: personnel?.co_quan_don_vi_id?.toString() ?? '',
+    don_vi_truc_thuoc_id: personnel?.don_vi_truc_thuoc_id?.toString() ?? '',
+    chuc_vu_id: personnel?.chuc_vu_id?.toString() ?? '',
+    ngay_nhap_ngu: personnel?.ngay_nhap_ngu ?? '',
+    ngay_sinh: personnel?.ngay_sinh ?? '',
+  };
 
-  async function onSubmit(values: PersonnelFormValues) {
+  const handleFinish = async (values: PersonnelFormValues) => {
     try {
       setLoading(true);
       const result = personnel?.id
@@ -72,194 +73,132 @@ export function PersonnelForm({
         : await apiClient.createPersonnel(values);
 
       if (!result.success) {
-        message.error(result.message || `Có lỗi xảy ra khi ${personnel?.id ? 'cập nhật' : 'tạo'} quân nhân`);
+        message.error(
+          result.message || `Có lỗi xảy ra khi ${personnel?.id ? 'cập nhật' : 'tạo'} quân nhân`
+        );
         return;
       }
       message.success(`${personnel?.id ? 'Cập nhật' : 'Tạo'} quân nhân thành công`);
       onSuccess?.(values);
     } catch (error: unknown) {
-      const errorMessage =
-        getApiErrorMessage(error, 'Có lỗi xảy ra');
-
-      message.error(errorMessage);
+      message.error(getApiErrorMessage(error, 'Có lỗi xảy ra'));
     } finally {
       setLoading(false);
     }
-  }
-
-  const submitLabel = loading ? 'Đang xử lý...' : personnel ? 'Cập nhật' : 'Tạo mới';
+  };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="cccd"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>CCCD</FormLabel>
-              <FormControl>
-                <Input placeholder="Nhập CCCD" {...field} disabled={readOnly} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+    <Form<PersonnelFormValues>
+      form={form}
+      layout="vertical"
+      initialValues={initialValues}
+      onFinish={handleFinish}
+      disabled={readOnly}
+    >
+      <Form.Item
+        label="CCCD"
+        name="cccd"
+        rules={[
+          { required: true, message: 'CCCD là bắt buộc' },
+          { min: 9, message: 'CCCD phải có ít nhất 9 ký tự' },
+        ]}
+      >
+        <Input placeholder="Nhập CCCD" />
+      </Form.Item>
 
-        <FormField
-          control={form.control}
-          name="ho_ten"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Họ tên</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="Nhập họ tên"
-                  {...field}
-                  disabled={readOnly}
-                  onChange={e => field.onChange(capitalizeWords(e.target.value))}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+      <Form.Item
+        label="Họ tên"
+        name="ho_ten"
+        rules={[{ required: true, message: 'Họ tên là bắt buộc' }]}
+      >
+        <Input
+          placeholder="Nhập họ tên"
+          onChange={e => form.setFieldValue('ho_ten', capitalizeWords(e.target.value))}
         />
+      </Form.Item>
 
-        <FormField
-          control={form.control}
-          name="ngay_sinh"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Ngày sinh</FormLabel>
-              <FormControl>
-                <Input type="date" {...field} disabled={readOnly} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+      <Form.Item label="Ngày sinh" name="ngay_sinh">
+        <Input type="date" />
+      </Form.Item>
+
+      <Form.Item
+        label="Cơ quan đơn vị"
+        name="co_quan_don_vi_id"
+        rules={[
+          {
+            validator: () =>
+              form.getFieldValue('co_quan_don_vi_id') || form.getFieldValue('don_vi_truc_thuoc_id')
+                ? Promise.resolve()
+                : Promise.reject(new Error('Vui lòng chọn cơ quan đơn vị hoặc đơn vị trực thuộc')),
+          },
+        ]}
+      >
+        <Select
+          placeholder="Chọn cơ quan đơn vị"
+          allowClear
+          onChange={value => {
+            if (value) form.setFieldValue('don_vi_truc_thuoc_id', '');
+          }}
+          options={coQuanDonViList.map(unit => ({
+            value: unit.id.toString(),
+            label: `${unit.ten_don_vi || ''} (${unit.ma_don_vi || ''})`,
+          }))}
         />
+      </Form.Item>
 
-        <FormField
-          control={form.control}
-          name="co_quan_don_vi_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Cơ quan đơn vị</FormLabel>
-              <Select
-                onValueChange={value => {
-                  field.onChange(value);
-                  form.setValue('don_vi_truc_thuoc_id', '');
-                }}
-                value={field.value}
-                disabled={readOnly}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Chọn cơ quan đơn vị" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {coQuanDonViList.map(unit => (
-                    <SelectItem key={unit.id} value={unit.id.toString()}>
-                      {unit.ten_don_vi} ({unit.ma_don_vi})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
+      <Form.Item label="Đơn vị trực thuộc" name="don_vi_truc_thuoc_id">
+        <Select
+          placeholder="Chọn đơn vị trực thuộc"
+          allowClear
+          onChange={value => {
+            if (value) form.setFieldValue('co_quan_don_vi_id', '');
+            form.validateFields(['co_quan_don_vi_id']).catch(() => {});
+          }}
+          options={donViTrucThuocList.map(unit => ({
+            value: unit.id.toString(),
+            label: `${unit.ten_don_vi || ''} (${unit.ma_don_vi || ''})`,
+          }))}
         />
+      </Form.Item>
 
-        <FormField
-          control={form.control}
-          name="don_vi_truc_thuoc_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Đơn vị trực thuộc</FormLabel>
-              <Select
-                onValueChange={value => {
-                  field.onChange(value);
-                  form.setValue('co_quan_don_vi_id', '');
-                }}
-                value={field.value}
-                disabled={readOnly}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Chọn đơn vị trực thuộc" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {donViTrucThuocList.map(unit => (
-                    <SelectItem key={unit.id} value={unit.id.toString()}>
-                      {unit.ten_don_vi} ({unit.ma_don_vi})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
+      <Form.Item
+        label="Chức vụ"
+        name="chuc_vu_id"
+        rules={[{ required: true, message: 'Chức vụ là bắt buộc' }]}
+      >
+        <Select
+          placeholder="Chọn chức vụ"
+          options={positions.map(pos => ({
+            value: pos.id.toString(),
+            label: pos.ten_chuc_vu || '',
+          }))}
         />
+      </Form.Item>
 
-        <FormField
-          control={form.control}
-          name="chuc_vu_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Chức vụ</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value} disabled={readOnly}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Chọn chức vụ" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {positions.map(pos => (
-                    <SelectItem key={pos.id} value={pos.id.toString()}>
-                      {pos.ten_chuc_vu}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      <Form.Item
+        label="Ngày nhập ngũ"
+        name="ngay_nhap_ngu"
+        rules={[{ required: true, message: 'Ngày nhập ngũ là bắt buộc' }]}
+      >
+        <Input type="date" />
+      </Form.Item>
 
-        <FormField
-          control={form.control}
-          name="ngay_nhap_ngu"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Ngày nhập ngũ</FormLabel>
-              <FormControl>
-                <Input type="date" {...field} disabled={readOnly} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {!readOnly && (
-          <div className="flex gap-2 justify-end pt-4">
-            <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+      <div className="flex gap-2 justify-end pt-4">
+        {readOnly ? (
+          <Button disabled={false} onClick={onClose}>
+            Đóng
+          </Button>
+        ) : (
+          <>
+            <Button onClick={onClose} disabled={loading}>
               Hủy
             </Button>
-            <Button type="submit" disabled={loading}>
-              {submitLabel}
+            <Button type="primary" htmlType="submit" loading={loading}>
+              {personnel ? 'Cập nhật' : 'Tạo mới'}
             </Button>
-          </div>
+          </>
         )}
-        {readOnly && (
-          <div className="flex gap-2 justify-end pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Đóng
-            </Button>
-          </div>
-        )}
-      </form>
+      </div>
     </Form>
   );
 }

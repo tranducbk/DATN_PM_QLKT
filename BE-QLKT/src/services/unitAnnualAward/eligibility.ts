@@ -8,7 +8,11 @@ import {
   DANH_HIEU_DON_VI_BANG_KHEN,
 } from '../../constants/danhHieu.constants';
 import { UNIT_CHAIN_AWARDS, findChainAwardConfig } from '../../constants/chainAwards.constants';
-import { checkChainEligibility, type FlagsInWindow } from '../eligibility/chainEligibility';
+import {
+  checkChainEligibility,
+  type FlagsInWindow,
+  type EligibilityResult,
+} from '../eligibility/chainEligibility';
 import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
 import { resolveUnit, buildUnitIdFields } from '../../helpers/unitHelper';
 
@@ -136,6 +140,34 @@ export function buildSuggestion(
   return `Chưa đủ điều kiện đề nghị xét ${tenBKBQP}.`;
 }
 
+/**
+ * Shared unit chain-award rule engine. Both `recalculateAnnualUnit` and the
+ * proposal-time `checkUnitAwardEligibility` call this so the two paths cannot
+ * diverge on cycle semantics — mirrors `evaluatePersonalChain`. Cycle uses raw
+ * `dvqt_lien_tuc % cycleYears` (the streak does not reset after an award).
+ * @param code - Unit award code (BKBQP / BKTTCP)
+ * @param dvqtLienTuc - Continuous ĐVQT streak ending at year-1
+ * @param flagsInWindow - Counts of prerequisite flags within the cycle window
+ * @param hasReceived - Whether already received (lifetime awards only)
+ * @returns Eligibility result + reason
+ */
+export function evaluateUnitChain(
+  code: string,
+  dvqtLienTuc: number,
+  flagsInWindow: FlagsInWindow,
+  hasReceived = false
+): EligibilityResult {
+  const config = findChainAwardConfig(UNIT_CHAIN_AWARDS, code);
+  if (!config) return { eligible: true, reason: '' };
+
+  return checkChainEligibility(
+    config,
+    { streakLength: dvqtLienTuc, nckhStreak: 0 },
+    hasReceived,
+    flagsInWindow
+  );
+}
+
 export async function checkUnitAwardEligibility(donViId: string, year: number, danhHieu: string) {
   year = Number(year);
   if (!DANH_HIEU_DON_VI_BANG_KHEN.has(danhHieu)) {
@@ -164,28 +196,7 @@ export async function checkUnitAwardEligibility(donViId: string, year: number, d
     hasReceived = lifetimeCount > 0;
   }
 
-  return checkChainEligibility(
-    config,
-    { streakLength: dvqtLienTuc, nckhStreak: 0 },
-    hasReceived,
-    flagsInWindow
-  );
-}
-
-/** Latest year ≤ year-1 in the current ĐVQT chain where `flagKey` is true; null when none. */
-function lastUnitFlagYearInChain(
-  rows: Array<{ nam: number; nhan_bkbqp?: boolean | null; nhan_bkttcp?: boolean | null }>,
-  flagKey: 'nhan_bkbqp' | 'nhan_bkttcp',
-  chainStartYear: number,
-  year: number
-): number | null {
-  let max = -1;
-  for (const r of rows) {
-    if (r[flagKey] === true && r.nam >= chainStartYear && r.nam <= year - 1 && r.nam > max) {
-      max = r.nam;
-    }
-  }
-  return max < 0 ? null : max;
+  return evaluateUnitChain(danhHieu, dvqtLienTuc, flagsInWindow, hasReceived);
 }
 
 export async function recalculateAnnualUnit(donViId: string, year: number | null = null) {
@@ -205,24 +216,20 @@ export async function recalculateAnnualUnit(donViId: string, year: number | null
     calculateContinuousYears(donViId, targetYear),
   ]);
 
-  const chainStartYear = targetYear - dvqtLienTuc;
-  const lastBkbqpYear = lastUnitFlagYearInChain(danhHieuList, 'nhan_bkbqp', chainStartYear, targetYear);
-  const lastBkttcpYear = lastUnitFlagYearInChain(danhHieuList, 'nhan_bkttcp', chainStartYear, targetYear);
-  const streakSinceLastBkbqp =
-    lastBkbqpYear !== null ? targetYear - lastBkbqpYear - 1 : dvqtLienTuc;
-  const streakSinceLastBkttcp =
-    lastBkttcpYear !== null ? targetYear - lastBkttcpYear - 1 : dvqtLienTuc;
-
   const bkbqpInLast7Years = danhHieuList.filter(
     r => r.nhan_bkbqp === true && r.nam >= targetYear - 7 && r.nam <= targetYear - 1
   ).length;
 
-  const du_dieu_kien_bk_tong_cuc =
-    streakSinceLastBkbqp >= 2 && streakSinceLastBkbqp % 2 === 0;
-  const du_dieu_kien_bk_thu_tuong =
-    streakSinceLastBkttcp >= 7 &&
-    streakSinceLastBkttcp % 7 === 0 &&
-    bkbqpInLast7Years >= 3;
+  const du_dieu_kien_bk_tong_cuc = evaluateUnitChain(
+    DANH_HIEU_DON_VI_HANG_NAM.BKBQP,
+    dvqtLienTuc,
+    {}
+  ).eligible;
+  const du_dieu_kien_bk_thu_tuong = evaluateUnitChain(
+    DANH_HIEU_DON_VI_HANG_NAM.BKTTCP,
+    dvqtLienTuc,
+    { [DANH_HIEU_DON_VI_HANG_NAM.BKBQP]: bkbqpInLast7Years }
+  ).eligible;
 
   const goi_y = buildSuggestion(du_dieu_kien_bk_tong_cuc, du_dieu_kien_bk_thu_tuong);
 

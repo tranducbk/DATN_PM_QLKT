@@ -8,8 +8,8 @@ import { annualProfileRepository } from '../../repositories/annualProfile.reposi
 import { writeSystemLog } from '../../helpers/systemLogHelper';
 import { NotFoundError } from '../../middlewares/errorHandler';
 import { DANH_HIEU_CA_NHAN_BANG_KHEN, DANH_HIEU_CA_NHAN_HANG_NAM, getDanhHieuName } from '../../constants/danhHieu.constants';
-import { PERSONAL_CHAIN_AWARDS, findChainAwardConfig } from '../../constants/chainAwards.constants';
-import { checkChainEligibility, type EligibilityResult, type FlagsInWindow } from '../eligibility/chainEligibility';
+import { type EligibilityResult } from '../eligibility/chainEligibility';
+import { evaluatePersonalChain } from '../eligibility/personalChainEvaluator';
 import type { AnnualStreakResult, ChainContext, NCKHYearsResult, RecalculateResult, SpecialCaseResult } from './types';
 
 /**
@@ -143,20 +143,6 @@ export function countBKBQPInStreak(danhHieuList: DanhHieuHangNam[], year: number
  * @param year - Evaluation anchor year
  * @returns Number of CSTDTQ steps in the active chain
  */
-/**
- * Counts records with flag = true within N years back from year-1.
- */
-export function countFlagInRange(
-  danhHieuList: Array<Record<string, unknown> & { nam: number }>,
-  year: number,
-  rangeYears: number,
-  flagKey: string
-): number {
-  const endYear = year - 1;
-  const startYear = endYear - rangeYears + 1;
-  return danhHieuList.filter(r => r[flagKey] === true && r.nam >= startYear && r.nam <= endYear).length;
-}
-
 /**
  * Đếm tổng số lần nhận CSTDTQ trong chuỗi CSTDCS liên tục.
  */
@@ -390,48 +376,18 @@ export function computeEligibilityFlags(
   //  "không đủ" hoặc ngược lại → bug nhức nhối.
   // ───────────────────────────────────────────────────────────────────
   const { cstdcs_lien_tuc, nckh_lien_tuc } = streaks;
-
-  // NCKH liên tục mỗi năm trong suốt chuỗi CSTDCS.
-  const hasEnoughNCKH = nckh_lien_tuc >= cstdcs_lien_tuc;
-  const ctx = computeChainContext(danhHieuList, cstdcs_lien_tuc, year);
-
-  // ─── BKBQP (chu kỳ 2 năm) ───
-  // Dùng `streakSinceLastBkbqp` (chuỗi từ lần nhận BKBQP gần nhất) thay
-  // vì `cstdcs_lien_tuc` (toàn chuỗi). Vì sao? Vì có thể đã nhận BKBQP
-  // năm 2022, đến 2026 lại đủ. Toàn chuỗi có thể là 6, nhưng từ lần
-  // nhận trước là 3 → chưa đến chu kỳ (cần 2, 4, 6 ...). 6 thì OK.
-  const du_dieu_kien_bkbqp =
-    ctx.streakSinceLastBkbqp >= 2 &&
-    ctx.streakSinceLastBkbqp % 2 === 0 &&
-    hasEnoughNCKH;
-
-  // ─── CSTDTQ (chu kỳ 3 năm + 1 BKBQP trong cửa sổ 3y cuối) ───
-  // Dùng `cstdcs_lien_tuc` (KHÔNG dùng streakSinceLastCstdtq) — đây là
-  // ngoại lệ duy nhất, vì rule yêu cầu BKBQP nằm trong 3 năm cuối tính
-  // đến năm xét. Cửa sổ trượt 3y bắt buộc BKBQP mới ở chu kỳ hiện tại.
-  const bkbqpIn3Years = countFlagInRange(danhHieuList, year, 3, 'nhan_bkbqp');
-  const du_dieu_kien_cstdtq =
-    cstdcs_lien_tuc >= 3 && cstdcs_lien_tuc % 3 === 0 &&
-    bkbqpIn3Years >= 1 && hasEnoughNCKH;
-
-  // ─── BKTTCP cá nhân (chu kỳ 7 năm + 3 BKBQP + 2 CSTDTQ) ───
-  // LIFETIME: đã nhận 1 lần → block vĩnh viễn (hasReceivedBKTTCP).
-  // STRICT EQUALITY: `bkbqpIn7Years === 3` và `cstdtqIn7Years === 2`
-  // (KHÔNG dùng >=) vì lifetime — phải chính xác 3 BKBQP + 2 CSTDTQ
-  // trong 7 năm để khớp với business rule. Nếu nhiều hơn → bất thường
-  // (đã có gì đó sai, không cho nhận BKTTCP).
-  const hasReceivedBKTTCP = danhHieuList.some(r => r.nhan_bkttcp === true);
-  const bkbqpIn7Years = countFlagInRange(danhHieuList, year, 7, 'nhan_bkbqp');
-  const cstdtqIn7Years = countFlagInRange(danhHieuList, year, 7, 'nhan_cstdtq');
-  const du_dieu_kien_bkttcp =
-    !hasReceivedBKTTCP &&
-    cstdcs_lien_tuc >= 7 &&
-    cstdcs_lien_tuc % 7 === 0 &&
-    bkbqpIn7Years === 3 &&
-    cstdtqIn7Years === 2 &&
-    hasEnoughNCKH;
-
-  return { du_dieu_kien_bkbqp, du_dieu_kien_cstdtq, du_dieu_kien_bkttcp };
+  // Uỷ quyền cho engine chung evaluatePersonalChain (BKBQP chu kỳ 2y /
+  // CSTDTQ 3y + BKBQP trong 3y cuối / BKTTCP 7y lifetime + 3 BKBQP + 2
+  // CSTDTQ). Cùng engine với checkChainEligibility nên recalc ↔ approve
+  // luôn khớp — không còn nhân bản công thức chu kỳ ở 2 nơi.
+  return {
+    du_dieu_kien_bkbqp: evaluatePersonalChain(
+      DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP, danhHieuList, year, cstdcs_lien_tuc, nckh_lien_tuc).eligible,
+    du_dieu_kien_cstdtq: evaluatePersonalChain(
+      DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ, danhHieuList, year, cstdcs_lien_tuc, nckh_lien_tuc).eligible,
+    du_dieu_kien_bkttcp: evaluatePersonalChain(
+      DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP, danhHieuList, year, cstdcs_lien_tuc, nckh_lien_tuc).eligible,
+  };
 }
 
 /**
@@ -489,6 +445,8 @@ export async function recalculateAnnualProfile(personnelId: string, year: number
     goi_y = `Phần mềm chưa hỗ trợ khen thưởng cao hơn ${labelBKTTCP}, sẽ phát triển trong thời gian tới.`;
   } else if (du_dieu_kien_bkttcp) {
     goi_y = `Đã đủ điều kiện đề nghị xét ${labelBKTTCP}.`;
+  } else if (du_dieu_kien_cstdtq && du_dieu_kien_bkbqp) {
+    goi_y = `Đã đủ điều kiện đề nghị xét ${labelBKBQP} và ${labelCSTDTQ}.`;
   } else if (du_dieu_kien_cstdtq) {
     goi_y = `Đã đủ điều kiện đề nghị xét ${labelCSTDTQ}.`;
   } else if (du_dieu_kien_bkbqp) {
@@ -537,9 +495,6 @@ export async function checkAwardEligibility(personnelId: string, year: number, d
     return { eligible: true, reason: '' };
   }
 
-  const config = findChainAwardConfig(PERSONAL_CHAIN_AWARDS, danhHieu);
-  if (!config) return { eligible: true, reason: '' };
-
   let streaks;
   try {
     streaks = await computeAnnualStreaks(personnelId, year);
@@ -550,40 +505,13 @@ export async function checkAwardEligibility(personnelId: string, year: number, d
     throw error;
   }
 
-  const { cstdcs_lien_tuc, nckh_lien_tuc, danhHieuList } = streaks;
-
-  // Always window prerequisite-flag counts to the cycle length (3y CSTDTQ, 7y BKTTCP).
-  // A streak past the cycle boundary cannot retro-claim flags from earlier cycles.
-  const flagsInWindow: FlagsInWindow = {};
-  config.requiredFlags.forEach(f => {
-    flagsInWindow[f.code] = countFlagInRange(
-      danhHieuList,
-      year,
-      config.cycleYears,
-      flagColumnFor(f.code)
-    );
-  });
-
-  const hasReceived = config.isLifetime
-    ? danhHieuList.some((dh: DanhHieuHangNam) => (dh as unknown as Record<string, unknown>)[config.flagColumn] === true)
-    : false;
-
-  return checkChainEligibility(
-    config,
-    { streakLength: cstdcs_lien_tuc, nckhStreak: nckh_lien_tuc },
-    hasReceived,
-    flagsInWindow
+  return evaluatePersonalChain(
+    danhHieu,
+    streaks.danhHieuList as Array<Record<string, unknown> & { nam: number }>,
+    year,
+    streaks.cstdcs_lien_tuc,
+    streaks.nckh_lien_tuc
   );
-}
-
-/** Maps a chain award code to its boolean flag column on `DanhHieuHangNam`. */
-function flagColumnFor(code: string): string {
-  const map: Record<string, string> = {
-    [DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP]: 'nhan_bkbqp',
-    [DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ]: 'nhan_cstdtq',
-    [DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP]: 'nhan_bkttcp',
-  };
-  return map[code] ?? '';
 }
 
 /**

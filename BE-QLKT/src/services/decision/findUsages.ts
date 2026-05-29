@@ -1,5 +1,15 @@
-import { prisma } from '../../models';
 import { PROPOSAL_STATUS, type ProposalStatus } from '../../constants/proposalStatus.constants';
+import { adhocAwardRepository } from '../../repositories/adhocAward.repository';
+import { commemorativeMedalRepository } from '../../repositories/commemorativeMedal.repository';
+import { contributionMedalRepository } from '../../repositories/contributionMedal.repository';
+import {
+  danhHieuDonViHangNamRepository,
+  danhHieuHangNamRepository,
+} from '../../repositories/danhHieu.repository';
+import { militaryFlagRepository } from '../../repositories/militaryFlag.repository';
+import { proposalRepository } from '../../repositories/proposal.repository';
+import { scientificAchievementRepository } from '../../repositories/scientificAchievement.repository';
+import { tenureMedalRepository } from '../../repositories/tenureMedal.repository';
 
 export interface DecisionUsageSummary {
   inUse: boolean;
@@ -60,19 +70,19 @@ export async function findDecisionUsages(
     danhHieuDonViHangNamBkbqp,
     danhHieuDonViHangNamBkttcp,
   ] = await Promise.all([
-    prisma.thanhTichKhoaHoc.count({ where: filter }),
-    prisma.danhHieuHangNam.count({ where: filter }),
-    prisma.danhHieuHangNam.count({ where: { so_quyet_dinh_bkbqp: soQuyetDinh } }),
-    prisma.danhHieuHangNam.count({ where: { so_quyet_dinh_cstdtq: soQuyetDinh } }),
-    prisma.danhHieuHangNam.count({ where: { so_quyet_dinh_bkttcp: soQuyetDinh } }),
-    prisma.khenThuongHCBVTQ.count({ where: filter }),
-    prisma.huanChuongQuanKyQuyetThang.count({ where: filter }),
-    prisma.kyNiemChuongVSNXDQDNDVN.count({ where: filter }),
-    prisma.khenThuongHCCSVV.count({ where: filter }),
-    prisma.khenThuongDotXuat.count({ where: filter }),
-    prisma.danhHieuDonViHangNam.count({ where: filter }),
-    prisma.danhHieuDonViHangNam.count({ where: { so_quyet_dinh_bkbqp: soQuyetDinh } }),
-    prisma.danhHieuDonViHangNam.count({ where: { so_quyet_dinh_bkttcp: soQuyetDinh } }),
+    scientificAchievementRepository.count(filter),
+    danhHieuHangNamRepository.count({ where: filter }),
+    danhHieuHangNamRepository.count({ where: { so_quyet_dinh_bkbqp: soQuyetDinh } }),
+    danhHieuHangNamRepository.count({ where: { so_quyet_dinh_cstdtq: soQuyetDinh } }),
+    danhHieuHangNamRepository.count({ where: { so_quyet_dinh_bkttcp: soQuyetDinh } }),
+    contributionMedalRepository.count(filter),
+    militaryFlagRepository.count(filter),
+    commemorativeMedalRepository.count(filter),
+    tenureMedalRepository.count(filter),
+    adhocAwardRepository.count(filter),
+    danhHieuDonViHangNamRepository.count({ where: filter }),
+    danhHieuDonViHangNamRepository.count({ where: { so_quyet_dinh_bkbqp: soQuyetDinh } }),
+    danhHieuDonViHangNamRepository.count({ where: { so_quyet_dinh_bkttcp: soQuyetDinh } }),
   ]);
 
   const proposalsByStatus = await findProposalsReferencingByStatus(soQuyetDinh);
@@ -108,7 +118,7 @@ export async function findDecisionUsages(
 async function findProposalsReferencingByStatus(
   soQuyetDinh: string
 ): Promise<DecisionUsageSummary['proposalsByStatus']> {
-  const allProposals = await prisma.bangDeXuat.findMany({
+  const allProposals = await proposalRepository.findManyRaw({
     select: {
       id: true,
       status: true,

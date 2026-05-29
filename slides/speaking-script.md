@@ -156,7 +156,7 @@
 
 **[Lời văn]**:
 
-> Phía Frontend, em dùng Next.js 14 với App Router để routing theo file system. Component library là Ant Design — em chọn vì có sẵn các component nghiệp vụ phức tạp như Table phân trang, Form validation chuẩn, DatePicker tiếng Việt. Tailwind CSS và shadcn/ui dùng cho phần style tuỳ biến. Validate dùng Zod, schema được chia sẻ giữa client và server để đảm bảo nhất quán.
+> Phía Frontend, em dùng Next.js 14 với App Router để routing theo file system. Component library là Ant Design — em chọn vì có sẵn các component nghiệp vụ phức tạp như Table phân trang, Form validation chuẩn, DatePicker tiếng Việt. Tailwind CSS dùng cho phần style tuỳ biến. Validate dùng Zod, schema được chia sẻ giữa client và server để đảm bảo nhất quán.
 >
 > Phía Backend, em dùng Express với TypeScript, ORM là Prisma 6.x. Em chọn Prisma vì nó sinh ra TypeScript Client thực tế trong build, có autocomplete và compile-time check toàn diện — an toàn hơn các ORM dùng decorator. Database PostgreSQL hỗ trợ transaction SERIALIZABLE cần thiết cho test race condition. Xác thực dùng JWT hai token — access token ngắn để giảm rủi ro nếu lộ, refresh token dài để người dùng không phải đăng nhập lại liên tục.
 >

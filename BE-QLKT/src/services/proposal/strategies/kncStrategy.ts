@@ -1,5 +1,5 @@
 import { PROPOSAL_TYPES } from '../../../constants/proposalTypes.constants';
-import { DANH_HIEU_CA_NHAN_KHAC } from '../../../constants/danhHieu.constants';
+import { DANH_HIEU_DAC_BIET } from '../../../constants/danhHieu.constants';
 import {
   batchEvaluateServiceYears,
   buildServiceYearsErrorMessage,
@@ -118,7 +118,7 @@ class KncStrategy implements ProposalStrategy {
     await importSingleMedal(nienHanData, ctx, acc, prismaTx, {
       medalLabel: 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
       logTag: 'KNC',
-      decisionKey: DANH_HIEU_CA_NHAN_KHAC.KNC_VSNXD_QDNDVN,
+      decisionKey: DANH_HIEU_DAC_BIET.KNC_VSNXD_QDNDVN,
       upsert: async (tx, quanNhanId, writeData) => {
         const data = writeData as unknown as Prisma.KyNiemChuongVSNXDQDNDVNUpdateInput;
         const existing = await tx.kyNiemChuongVSNXDQDNDVN.findUnique({

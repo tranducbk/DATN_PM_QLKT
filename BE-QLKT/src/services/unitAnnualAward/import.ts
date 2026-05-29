@@ -85,21 +85,6 @@ export function checkUnitDuplicate(
       );
     }
   }
-
-  if (isDv && (existingAward.nhan_bkbqp || existingAward.nhan_bkttcp)) {
-    const existingBk = existingAward.nhan_bkbqp
-      ? DANH_HIEU_DON_VI_HANG_NAM.BKBQP
-      : DANH_HIEU_DON_VI_HANG_NAM.BKTTCP;
-    throw new ValidationError(
-      `Đơn vị đã có ${getDanhHieuName(existingBk)} năm ${nam}, không thể thêm ${getDanhHieuName(danhHieu)}`
-    );
-  }
-
-  if (isBk && existingAward.danh_hieu && DANH_HIEU_DON_VI_CO_BAN.has(existingAward.danh_hieu)) {
-    throw new ValidationError(
-      `Đơn vị đã có danh hiệu ${getDanhHieuName(existingAward.danh_hieu)} năm ${nam}, không thể thêm ${getDanhHieuName(danhHieu)}`
-    );
-  }
 }
 
 export async function previewImport(buffer: Buffer, deps: UnitAnnualAwardDeps = defaultDeps) {
@@ -506,26 +491,6 @@ export async function confirmImport(validItems: UnitAnnualAwardValidItem[], admi
           );
           continue;
         }
-      }
-
-      if (isDv && (existingAward.nhan_bkbqp || existingAward.nhan_bkttcp)) {
-        const existingBk = existingAward.nhan_bkbqp
-          ? DANH_HIEU_DON_VI_HANG_NAM.BKBQP
-          : DANH_HIEU_DON_VI_HANG_NAM.BKTTCP;
-        duplicateErrors.push(
-          `Đơn vị đã có ${getDanhHieuName(existingBk)} năm ${nam}, không thể thêm ${getDanhHieuName(danhHieu)}`
-        );
-        continue;
-      }
-      if (
-        isBk &&
-        existingAward.danh_hieu &&
-        DANH_HIEU_DON_VI_CO_BAN.has(existingAward.danh_hieu)
-      ) {
-        duplicateErrors.push(
-          `Đơn vị đã có danh hiệu ${getDanhHieuName(existingAward.danh_hieu)} năm ${nam}, không thể thêm ${getDanhHieuName(danhHieu)}`
-        );
-        continue;
       }
     }
   }

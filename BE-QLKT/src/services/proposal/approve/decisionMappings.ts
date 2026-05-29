@@ -7,7 +7,7 @@ import {
 } from '../../../constants/proposalTypes.constants';
 import {
   DANH_HIEU_CA_NHAN_HANG_NAM,
-  DANH_HIEU_CA_NHAN_KHAC,
+  DANH_HIEU_DAC_BIET,
   DANH_HIEU_DON_VI_HANG_NAM,
   DANH_HIEU_HCCSVV,
 } from '../../../constants/danhHieu.constants';
@@ -162,11 +162,11 @@ export function buildDecisionMappings(
       so_quyet_dinh: decisions.so_quyet_dinh_nien_han,
       file_pdf: pdfPaths.file_pdf_nien_han,
     },
-    [DANH_HIEU_CA_NHAN_KHAC.HC_QKQT]: {
+    [DANH_HIEU_DAC_BIET.HC_QKQT]: {
       so_quyet_dinh: decisions.so_quyet_dinh_nien_han,
       file_pdf: pdfPaths.file_pdf_nien_han,
     },
-    [DANH_HIEU_CA_NHAN_KHAC.KNC_VSNXD_QDNDVN]: {
+    [DANH_HIEU_DAC_BIET.KNC_VSNXD_QDNDVN]: {
       so_quyet_dinh: decisions.so_quyet_dinh_nien_han,
       file_pdf: pdfPaths.file_pdf_nien_han,
     },

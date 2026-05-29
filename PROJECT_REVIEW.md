@@ -320,7 +320,117 @@ Khi thêm loại khen thưởng mới, follow:
 
 ---
 
-## 9. RBAC refactor — 2026-05-15
+## 9. §4.1 RESOLVED — 2026-05-21 (user confirmed rule)
+
+**Status:** DONE. User xác nhận rule "BKBQP cứ đủ 2y CSTDCS là eligible năm 3 nhận" → `cstdcs_lien_tuc % cycleYears === 0` là rule đúng. `streakSinceLastBkbqp` có off-by-one bug.
+
+**Fix:**
+- Tạo `services/eligibility/personalChainEvaluator.ts` với `evaluatePersonalChain(code, danhHieuList, year, cstdcs_lien_tuc, nckh_lien_tuc)`.
+- Refactor `computeEligibilityFlags` (recalc) và `checkAwardEligibility` (API check) cùng gọi qua helper → không thể disagree.
+- Cleanup unused `findChainAwardConfig` import + `countFlagInRange` private function.
+- Tests: 918/918 pass (không có test nào assert hành vi buggy cũ).
+
+(Original finding kept below for history.)
+
+---
+
+## 9 (history). §4.1 finding — 2026-05-21
+
+`computeEligibilityFlags` (annual.ts:342) và `checkAwardEligibility` (annual.ts:473) hiện DÙNG STREAK KHÁC NHAU cho BKBQP eligibility:
+
+- `computeEligibilityFlags`: `ctx.streakSinceLastBkbqp >= 2 && % 2 === 0` (streak từ lần nhận BKBQP gần nhất)
+- `checkAwardEligibility`: gọi `checkChainEligibility` với `streakLength = cstdcs_lien_tuc` (total streak)
+
+**Divergence case:** quân nhân CSTDCS streak=6 năm, nhận BKBQP năm 4. Tại năm 6:
+- `cstdcs_lien_tuc = 6` → `6 % 2 = 0` → checkAwardEligibility eligible ✓
+- `streakSinceLastBkbqp = 1` → `1 >= 2` false → computeEligibilityFlags NOT eligible ✗
+
+→ FE (đọc `du_dieu_kien_bkbqp` từ profile) hiển thị "chưa đủ", nhưng BE submit chấp nhận.
+
+**Tests hiện tại (chainCycleScenarios.test.ts) không cover case này** — tất cả test case nhận BKBQP cách đây ≥ 2 năm nên cả 2 hàm đều agree.
+
+**Cần user quyết định:**
+1. Đâu là rule đúng theo nghiệp vụ? `cstdcs_lien_tuc % cycleYears` (CLAUDE.md "Cycle repeats mỗi cycleYears") hay `streakSinceLastBkbqp` (lỡ đợt nghiêm ngặt)?
+2. Sau khi quyết, unify 2 hàm và thêm test cho edge case.
+
+Không tự ý unify trong cleanup pass vì có thể đổi behavior người dùng đang dựa vào.
+
+---
+
+## 10. §3.1 PARTIAL — 2026-05-21 (user: "cần đồng bộ")
+
+**Status:** PARTIAL — name sync done, full workspace deferred.
+
+**Done:**
+- Rename BE `DANH_HIEU_CA_NHAN_KHAC` → `DANH_HIEU_DAC_BIET` để khớp FE (4 src file + 8 test file updated).
+- Thêm JSDoc "SYNC NOTICE" block ở đầu cả 2 file `danhHieu.constants.ts` (BE + FE) liệt kê: shared exports (phải value-identical), BE-only utilities (Excel parsing), FE-only utilities (UI display).
+
+**Intentional differences** (KHÔNG sync, vì serve mục đích khác):
+- `DANH_HIEU_NCKH` (BE) vs `THANH_TICH_KHOA_HOC` (FE) — BE dùng labels-as-values cho Excel parsing, FE dùng codes-as-values cho enum-style.
+- BE-only: `buildDanhHieuExcelOptions`, `resolveNckhCode`, `resolveDanhHieuCode`, `HCBVTQ_RANK_KEYS`, `formatDanhHieuList`, `NCKH_LABEL_TO_CODE`.
+- FE-only: `AWARD_TAB_LABELS`, `AWARD_TYPE_MAP`, `LOAI_KHEN_THUONG_OPTIONS`, `DANH_HIEU_OPTIONS`, `THANH_TICH_KHOA_HOC_SHORT_LABELS/FULL_LABELS`, `CONG_HIEN_BASE_REQUIRED_MONTHS`/`FEMALE`.
+- BE-only unit aliases `DANH_HIEU_DON_VI_HANG_NAM.{BKBQP, BKTTCP}` — BE cần validate proposal data DB-side, FE không reference.
+- `getDanhHieuName` empty fallback: BE `'Chưa có dữ liệu'`, FE `'-'` (UX vs log).
+
+**Deferred — workspace migration:**
+- Setup `/shared/` npm workspace với constants chia sẻ + tsconfig path mapping cho BE+FE còn ≥1 ngày work + breaking change risk (Next.js transpile, jest moduleNameMapper, Prisma generate path).
+- Hiện trạng "duplicated nhưng có JSDoc warning" là an toàn ngắn hạn. Khi codebase ổn định, follow-up PR có thể setup workspace properly.
+
+(Original finding kept below for history.)
+
+---
+
+## 10 (history). §3.1 finding — 2026-05-21
+
+`BE/constants/danhHieu.constants.ts` (266 LOC) và `FE/constants/danhHieu.constants.ts` (280 LOC) KHÔNG còn bit-identical:
+
+- FE đổi tên `DANH_HIEU_CA_NHAN_KHAC` → `DANH_HIEU_DAC_BIET`
+- BE có `HCBVTQ_RANK_KEYS` const + type, FE không
+- BE có `BKBQP`/`BKTTCP` alias trong `DANH_HIEU_CA_NHAN_HANG_NAM`, FE không
+- FE thêm `CONG_HIEN_BASE_REQUIRED_MONTHS` + female-derived const, BE không
+- Cấu trúc top-of-file khác nhau (FE có JSDoc banner)
+
+→ Trước khi tạo shared workspace package, phải reconcile drift: 1 source of truth phải tồn tại trước khi extract. Mỗi khác biệt cần quyết định business:
+- `DANH_HIEU_DAC_BIET` vs `DANH_HIEU_CA_NHAN_KHAC` — tên nào là chuẩn?
+- Aliases `BKBQP`/`BKTTCP` ở BE — có cần thiết khi đã có `DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP`?
+- `CONG_HIEN_BASE_REQUIRED_MONTHS` ở FE — BE đang lấy từ đâu cho rule check?
+- `HCBVTQ_RANK_KEYS` ở BE — FE rule check rank có pattern khác?
+
+**Cách làm đúng (1+ ngày):**
+1. Lập bảng so sánh từng export name + value
+2. User quyết định canonical version cho mỗi
+3. Sync 1 chiều BE→FE (hoặc ngược lại) để bit-identical lần nữa
+4. Sau đó tạo `shared/constants/` workspace, BE+FE import qua tsconfig path
+5. Update CI/build pipeline
+
+---
+
+## 11. Cleanup pass — 2026-05-21
+
+| # | Việc | Trạng thái | Evidence |
+|---|---|---|---|
+| C1 | Fix case-sensitivity bug `hcQkqtStrategy.ts` → `hcqkqtStrategy.ts` | DONE | Jest baseline tăng từ 30 failed suites → 0 failed, 663 → 918 tests pass. |
+| C2 | §5 — clean fallback thừa | DONE | Phần lớn đã fix trong commit "clean code" gần đây. Còn lại: `auditLog/auth.ts` bỏ `\|\| FALLBACK.UNKNOWN` dead code cho LOGIN/LOGOUT/CHANGE_PASSWORD. |
+| C3 | §3.3 — centralize award slugs | DONE (prior) | `AWARD_SLUGS` đã dùng 152 chỗ, `awardSlugs.constants.ts` BE+FE. |
+| C4 | §4.4 — gộp audit + notification resource map | DONE (prior) | `awardResource.constants.ts` merge `RESOURCE_VI` + `RESOURCE_TO_PROPOSAL_TYPE`. |
+| C5 | §3.4 — replace hardcoded display names | DONE | Awards page tabs (admin+manager), personnel detail (military-flag, tenure-medals × 2 role), dashboard chart labels, user profile, manager/units page → dùng `AWARD_TAB_LABELS` / `DANH_HIEU_MAP`. |
+| C6 | §4.1 — extract EligibilityRuleEngine | BLOCKED | Phát hiện semantic divergence giữa `computeEligibilityFlags` (streakSinceLastBkbqp) và `checkAwardEligibility` (cstdcs_lien_tuc). Cần user quyết business rule. Chi tiết §9. |
+| C7 | §3.1 — shared constants workspace | BLOCKED | BE/FE constants đã drift, cần reconcile trước. Chi tiết §10. |
+| C8 | §3.2 — normalize chain flag schema | DEFERRED | Migration với data live, cần dedicated session + staging test. |
+| C9 | §4.2 — split Step2SelectPersonnelNienHan | PARTIAL | Extract types + pure helpers (`HCCSVVRank`, `RANK_LABEL`, `formatMonthsRemaining`) sang `nienHanHelpers.ts`. LOC 1099 → 1086. Phần columns/JSX cần browser test, defer. |
+| C10 | §3.5 — Step2/3 extract shared hooks | DEFERRED | Cross-7 loại refactor, ≥1 ngày, cần browser test. |
+
+**Verify state sau cleanup pass:**
+- BE typecheck: clean
+- BE jest: 918 tests pass / 78 suites (tăng từ 911 baseline ban đầu trước H1-H4 do C1 fix case bug)
+- FE typecheck: clean
+- FE lint: pre-existing react/no-unescaped-entities ở `admin/proposals/review/[id]/page.tsx:1168` (không liên quan)
+
+**Cleanup pass summary:** 5 items DONE (C1, C2, C3, C4, C5), 2 BLOCKED chờ user decision (C6 rule semantic, C7 drift reconcile), 2 DEFERRED cần dedicated session (C8 schema migrate, C10 hooks), 1 PARTIAL (C9 types-only extract).
+
+---
+
+## 12. RBAC refactor — 2026-05-15
 
 Tách bạch system management (SA) khỏi business operations (ADMIN); SA có route data-correction riêng.
 

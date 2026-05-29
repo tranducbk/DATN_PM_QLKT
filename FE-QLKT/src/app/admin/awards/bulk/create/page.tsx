@@ -336,7 +336,9 @@ export default function BulkAddAwardsPage() {
       const formData = new FormData();
       formData.append('type', awardType);
       formData.append('nam', String(nam));
-      formData.append('thang', String(thang));
+      if (requiresProposalMonth(awardType)) {
+        formData.append('thang', String(thang));
+      }
 
       if (awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
         formData.append('selected_units', JSON.stringify(selectedUnitIds));
