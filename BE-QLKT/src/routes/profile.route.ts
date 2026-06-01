@@ -7,7 +7,11 @@
 
 import { Router } from 'express';
 import profileController from '../controllers/profile.controller';
-import { verifyToken, requireAdminOnly, requireManager, requireAuth } from '../middlewares/auth';
+import { verifyToken, requireAdminOnly, requireManager } from '../middlewares/auth';
+import { auditLog, getResourceId } from '../middlewares/auditLog';
+import { getLogDescription } from '../helpers/auditLog';
+import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 
 const router = Router();
 
@@ -17,7 +21,7 @@ const router = Router();
  *          Query: ?year=2025 (auto-recalculates before returning when year is provided)
  * @access  Private - ADMIN, MANAGER, USER
  */
-router.get('/annual/:personnel_id', verifyToken, requireAuth, profileController.getAnnualProfile);
+router.get('/annual/:personnel_id', verifyToken, profileController.getAnnualProfile);
 
 /**
  * @route   GET /api/profiles/tenure/:personnel_id
@@ -25,7 +29,7 @@ router.get('/annual/:personnel_id', verifyToken, requireAuth, profileController.
  *          Auto-recalculates on every request
  * @access  Private - ADMIN, MANAGER, USER
  */
-router.get('/tenure/:personnel_id', verifyToken, requireAuth, profileController.getTenureProfile);
+router.get('/tenure/:personnel_id', verifyToken, profileController.getTenureProfile);
 
 /**
  * @route   GET /api/profiles/contribution/:personnel_id
@@ -36,7 +40,6 @@ router.get('/tenure/:personnel_id', verifyToken, requireAuth, profileController.
 router.get(
   '/contribution/:personnel_id',
   verifyToken,
-  requireAuth,
   profileController.getContributionProfile
 );
 
@@ -83,6 +86,12 @@ router.put(
   '/tenure/:personnel_id',
   verifyToken,
   requireAdminOnly,
+  auditLog({
+    action: AUDIT_ACTIONS.UPDATE,
+    resource: AWARD_SLUGS.TENURE_MEDALS,
+    getDescription: getLogDescription(AWARD_SLUGS.TENURE_MEDALS, 'UPDATE'),
+    getResourceId: getResourceId.fromParams('personnel_id'),
+  }),
   profileController.updateTenureProfile
 );
 

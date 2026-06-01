@@ -374,6 +374,10 @@ export async function remove(
 ) {
   const danhHieu = await danhHieuDonViHangNamRepository.findUnique({
     where: { id: String(id) },
+    include: {
+      CoQuanDonVi: { select: { ten_don_vi: true } },
+      DonViTrucThuoc: { select: { ten_don_vi: true } },
+    },
   });
 
   if (!danhHieu) {
@@ -436,14 +440,14 @@ export async function remove(
     }
 
     await deps.recalculateAnnualUnit(donViId, danhHieu.nam);
-    return true;
+    return danhHieu;
   }
 
   await danhHieuDonViHangNamRepository.delete(String(id));
 
   await deps.recalculateAnnualUnit(donViId, danhHieu.nam);
 
-  return true;
+  return danhHieu;
 }
 
 export async function getAnnualUnit(donViId: string, year: number) {

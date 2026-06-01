@@ -67,6 +67,17 @@ export const tenureMedalRepository = {
     return tx.khenThuongHCCSVV.update({ where: { id }, data });
   },
 
+  upsertRaw<T extends Prisma.KhenThuongHCCSVVUpsertArgs>(
+    args: Prisma.SelectSubset<T, Prisma.KhenThuongHCCSVVUpsertArgs>,
+    tx: PrismaLike = prisma
+  ) {
+    return tx.khenThuongHCCSVV.upsert(args);
+  },
+
+  deleteMany(where: Prisma.KhenThuongHCCSVVWhereInput, tx: PrismaLike = prisma) {
+    return tx.khenThuongHCCSVV.deleteMany({ where });
+  },
+
   delete(id: string, tx: PrismaLike = prisma) {
     return tx.khenThuongHCCSVV.delete({ where: { id } });
   },

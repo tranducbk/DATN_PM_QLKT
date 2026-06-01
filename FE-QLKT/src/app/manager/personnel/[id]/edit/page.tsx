@@ -87,7 +87,9 @@ const formatAddressInput = (input: string): string => {
         /[a-zA-ZàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđĐ]/i
       );
       if (idx === -1) return word;
-      return word.substring(0, idx) + word[idx].toUpperCase() + word.substring(idx + 1).toLowerCase();
+      return (
+        word.substring(0, idx) + word[idx].toUpperCase() + word.substring(idx + 1).toLowerCase()
+      );
     };
 
     if (adminLength > 0) {
@@ -213,7 +215,9 @@ export default function ManagerPersonnelEditPage() {
 
     if (isManagerPersonnel) {
       if (selectedCoQuanDonViId) {
-        filtered = positions.filter((p: ManagerPositionRow) => p.co_quan_don_vi_id === selectedCoQuanDonViId);
+        filtered = positions.filter(
+          (p: ManagerPositionRow) => p.co_quan_don_vi_id === selectedCoQuanDonViId
+        );
       }
     } else {
       if (selectedDonViTrucThuocId) {
@@ -224,7 +228,10 @@ export default function ManagerPersonnelEditPage() {
     }
 
     // Always include the currently assigned position even if it no longer matches the filter
-    if (currentPositionId && !filtered.find((p: ManagerPositionRow) => p.id === currentPositionId)) {
+    if (
+      currentPositionId &&
+      !filtered.find((p: ManagerPositionRow) => p.id === currentPositionId)
+    ) {
       const currentPosition = positions.find((p: ManagerPositionRow) => p.id === currentPositionId);
       if (currentPosition) {
         filtered = [currentPosition, ...filtered];
@@ -289,9 +296,7 @@ export default function ManagerPersonnelEditPage() {
         message.success('Cập nhật quân nhân thành công');
         router.push(`/manager/personnel/${personnelId}`);
       } else {
-        message.error(
-          (response as { message?: string }).message || 'Lỗi khi cập nhật quân nhân'
-        );
+        message.error((response as { message?: string }).message || 'Lỗi khi cập nhật quân nhân');
       }
     } catch (error: unknown) {
       message.error(getApiErrorMessage(error, 'Lỗi khi cập nhật quân nhân'));
@@ -310,7 +315,13 @@ export default function ManagerPersonnelEditPage() {
         {/* Breadcrumb */}
         <Breadcrumb
           items={[
-            { title: <Link href="/manager/dashboard"><HomeOutlined /></Link> },
+            {
+              title: (
+                <Link href="/manager/dashboard">
+                  <HomeOutlined />
+                </Link>
+              ),
+            },
             { title: <Link href="/manager/personnel">Quân nhân</Link> },
             { title: <Link href={`/manager/personnel/${personnelId}`}>#{personnelId}</Link> },
             { title: 'Chỉnh sửa' },
@@ -543,7 +554,10 @@ export default function ManagerPersonnelEditPage() {
                 </Title>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Manager không thể thay đổi đơn vị */}
-                  <Form.Item label="Đơn vị" tooltip="Chỉ Admin mới có thể thay đổi đơn vị">
+                  <Form.Item
+                    label="Đơn vị"
+                    tooltip="Chỉ Phòng Chính trị mới có thể thay đổi đơn vị"
+                  >
                     <Input size="large" value={currentUnitName} disabled placeholder="Đơn vị" />
                   </Form.Item>
 
@@ -558,8 +572,16 @@ export default function ManagerPersonnelEditPage() {
                   </Form.Item>
 
                   {isManagerPersonnel ? (
-                    <Form.Item label="Chức vụ" tooltip="Chỉ Admin mới có thể thay đổi chức vụ">
-                      <Input size="large" value={currentPositionName} disabled placeholder="Chức vụ" />
+                    <Form.Item
+                      label="Chức vụ"
+                      tooltip="Chỉ Phòng Chính trị mới có thể thay đổi chức vụ"
+                    >
+                      <Input
+                        size="large"
+                        value={currentPositionName}
+                        disabled
+                        placeholder="Chức vụ"
+                      />
                     </Form.Item>
                   ) : (
                     <Form.Item

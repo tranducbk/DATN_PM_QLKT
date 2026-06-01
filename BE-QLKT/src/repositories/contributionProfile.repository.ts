@@ -41,4 +41,8 @@ export const contributionProfileRepository = {
       create: data,
     });
   },
+
+  deleteMany(where: Prisma.HoSoCongHienWhereInput, tx: PrismaLike = prisma) {
+    return tx.hoSoCongHien.deleteMany({ where });
+  },
 };

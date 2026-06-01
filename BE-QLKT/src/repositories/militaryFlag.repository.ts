@@ -41,10 +41,7 @@ export const militaryFlagRepository = {
     return tx.huanChuongQuanKyQuyetThang.count({ where });
   },
 
-  create(
-    data: Prisma.HuanChuongQuanKyQuyetThangUncheckedCreateInput,
-    tx: PrismaLike = prisma
-  ) {
+  create(data: Prisma.HuanChuongQuanKyQuyetThangUncheckedCreateInput, tx: PrismaLike = prisma) {
     return tx.huanChuongQuanKyQuyetThang.create({ data });
   },
 
@@ -54,6 +51,17 @@ export const militaryFlagRepository = {
     tx: PrismaLike = prisma
   ) {
     return tx.huanChuongQuanKyQuyetThang.update({ where: { id }, data });
+  },
+
+  upsertRaw<T extends Prisma.HuanChuongQuanKyQuyetThangUpsertArgs>(
+    args: Prisma.SelectSubset<T, Prisma.HuanChuongQuanKyQuyetThangUpsertArgs>,
+    tx: PrismaLike = prisma
+  ) {
+    return tx.huanChuongQuanKyQuyetThang.upsert(args);
+  },
+
+  deleteMany(where: Prisma.HuanChuongQuanKyQuyetThangWhereInput, tx: PrismaLike = prisma) {
+    return tx.huanChuongQuanKyQuyetThang.deleteMany({ where });
   },
 
   delete(id: string, tx: PrismaLike = prisma) {

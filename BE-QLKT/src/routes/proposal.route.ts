@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import proposalController from '../controllers/proposal.controller';
-import { verifyToken, checkRole, requireAdminOnly } from '../middlewares/auth';
+import { verifyToken, checkRole, requireAdminOrManager, requireAdminOnly } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
 import { ROLES } from '../constants/roles.constants';
@@ -18,7 +18,7 @@ const router = Router();
 router.post(
   '/',
   verifyToken,
-  checkRole([ROLES.MANAGER, ROLES.ADMIN]),
+  requireAdminOrManager,
   writeLimiter,
   upload.fields([
     { name: 'attached_files' }, // No file count limit
@@ -40,7 +40,7 @@ router.post(
 router.get(
   '/check-duplicate',
   verifyToken,
-  checkRole([ROLES.MANAGER, ROLES.ADMIN]),
+  requireAdminOrManager,
   proposalController.checkDuplicateAward
 );
 
@@ -52,7 +52,7 @@ router.get(
 router.get(
   '/check-duplicate-unit',
   verifyToken,
-  checkRole([ROLES.MANAGER, ROLES.ADMIN]),
+  requireAdminOrManager,
   proposalController.checkDuplicateUnitAward
 );
 
@@ -64,7 +64,7 @@ router.get(
 router.post(
   '/check-duplicate-batch',
   verifyToken,
-  checkRole([ROLES.MANAGER, ROLES.ADMIN]),
+  requireAdminOrManager,
   proposalController.checkDuplicateBatch
 );
 
@@ -76,7 +76,7 @@ router.post(
 router.post(
   '/check-duplicate-unit-batch',
   verifyToken,
-  checkRole([ROLES.MANAGER, ROLES.ADMIN]),
+  requireAdminOrManager,
   proposalController.checkDuplicateUnitBatch
 );
 
@@ -88,7 +88,7 @@ router.post(
 router.get(
   '/',
   verifyToken,
-  checkRole([ROLES.MANAGER, ROLES.ADMIN]),
+  requireAdminOrManager,
   proposalController.getProposals
 );
 
@@ -100,7 +100,7 @@ router.get(
 router.get(
   '/:id',
   verifyToken,
-  checkRole([ROLES.MANAGER, ROLES.ADMIN]),
+  requireAdminOrManager,
   proposalController.getProposalById
 );
 
@@ -170,7 +170,7 @@ router.get(
 router.delete(
   '/:id',
   verifyToken,
-  checkRole([ROLES.MANAGER, ROLES.ADMIN]),
+  requireAdminOrManager,
   auditLog({
     action: AUDIT_ACTIONS.DELETE,
     resource: 'proposals',

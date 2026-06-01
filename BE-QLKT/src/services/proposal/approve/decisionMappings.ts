@@ -1,10 +1,8 @@
 import { decisionFileRepository } from '../../../repositories/decisionFile.repository';
+import { accountRepository } from '../../../repositories/account.repository';
 import { promises as fs } from 'fs';
 import path from 'path';
-import {
-  PROPOSAL_TYPES,
-  type ProposalType,
-} from '../../../constants/proposalTypes.constants';
+import { PROPOSAL_TYPES, type ProposalType } from '../../../constants/proposalTypes.constants';
 import {
   DANH_HIEU_CA_NHAN_HANG_NAM,
   DANH_HIEU_DAC_BIET,
@@ -13,10 +11,7 @@ import {
 } from '../../../constants/danhHieu.constants';
 import { writeSystemLog } from '../../../helpers/systemLogHelper';
 import { sanitizeFilename } from '../helpers';
-import type {
-  ProposalDanhHieuItem,
-  ProposalThanhTichItem,
-} from '../../../types/proposal';
+import type { ProposalDanhHieuItem, ProposalThanhTichItem } from '../../../types/proposal';
 import type {
   DecisionInfo,
   DecisionInputMap,
@@ -106,26 +101,7 @@ export async function persistDecisionPdfs(
   return pdfPaths;
 }
 
-/**
- * ╔══════════════════════════════════════════════════════════════════════╗
- * ║  DECISION MAPPING — gán so_quyet_dinh + file PDF cho từng danh hiệu  ║
- * ╠══════════════════════════════════════════════════════════════════════╣
- * ║  Trên UI duyệt, Admin chỉ nhập 1 số quyết định CHUNG cho mỗi loại    ║
- * ║  đề xuất (vd: `so_quyet_dinh_ca_nhan_hang_nam`). Nhưng khi import    ║
- * ║  vào DB, mỗi danh hiệu cần biết "QĐ của mình" để gán vào field      ║
- * ║  riêng. Hàm này build 2 map để strategy tra cứu:                     ║
- * ║                                                                       ║
- * ║  ① decisionMapping: cho danh hiệu CHÍNH (mỗi quân nhân 1 dòng       ║
- * ║     trong DanhHieuHangNam — vd CSTDCS, ĐVQT, HCCSVV...). Tất cả     ║
- * ║     dùng chung 1 file PDF.                                            ║
- * ║                                                                       ║
- * ║  ② specialDecisionMapping: cho 3 flag BKBQP/CSTDTQ/BKTTCP. Khác    ║
- * ║     biệt: flag này NẰM TRÊN CÙNG row với danh hiệu chính (vd: 1    ║
- * ║     row CSTDCS năm 2024 có thể có nhan_bkbqp=true). Vì vậy 3 flag  ║
- * ║     dùng MAP RIÊNG để strategy ghi vào field so_quyet_dinh_bkbqp,  ║
- * ║     so_quyet_dinh_cstdtq, so_quyet_dinh_bkttcp tương ứng.            ║
- * ╚══════════════════════════════════════════════════════════════════════╝
- */
+/** Builds award/title -> decision metadata maps used during DB import. */
 export function buildDecisionMappings(
   decisions: DecisionInputMap,
   pdfPaths: Record<string, string | undefined>
@@ -210,7 +186,10 @@ function resolveDecisionFilePath(
   ) {
     return pdfPaths.file_pdf_don_vi_hang_nam;
   }
-  if (proposalType === PROPOSAL_TYPES.NIEN_HAN && decisions.so_quyet_dinh_nien_han === soQuyetDinh) {
+  if (
+    proposalType === PROPOSAL_TYPES.NIEN_HAN &&
+    decisions.so_quyet_dinh_nien_han === soQuyetDinh
+  ) {
     return pdfPaths.file_pdf_nien_han;
   }
   if (
@@ -219,7 +198,10 @@ function resolveDecisionFilePath(
   ) {
     return pdfPaths.file_pdf_cong_hien;
   }
-  if (proposalType === PROPOSAL_TYPES.DOT_XUAT && decisions.so_quyet_dinh_dot_xuat === soQuyetDinh) {
+  if (
+    proposalType === PROPOSAL_TYPES.DOT_XUAT &&
+    decisions.so_quyet_dinh_dot_xuat === soQuyetDinh
+  ) {
     return pdfPaths.file_pdf_dot_xuat;
   }
   if (proposalType === PROPOSAL_TYPES.NCKH) {
@@ -234,29 +216,7 @@ function resolveDecisionFilePath(
   return null;
 }
 
-/**
- * SYNC FILE QUYẾT ĐỊNH — đồng bộ tất cả số QĐ được dùng trong đề xuất vào
- * bảng FileQuyetDinh (registry trung tâm).
- *
- *  TẠI SAO CẦN SYNC?
- *  Các bảng award (DanhHieuHangNam, KhenThuongHCCSVV, ...) có FK trỏ tới
- *  FileQuyetDinh.so_quyet_dinh. Nếu một số QĐ chưa từng tồn tại trong
- *  registry → INSERT award sẽ FK violation.
- *
- *  THUẬT TOÁN (chạy TRONG transaction, TRƯỚC khi import award):
- *  1. Gom tất cả số QĐ xuất hiện trong (item.so_quyet_dinh,
- *     item.so_quyet_dinh_bkbqp/cstdtq/bkttcp, decisions.so_quyet_dinh_*)
- *     vào 1 Set để dedupe.
- *  2. Với mỗi số QĐ:
- *     - upsert create-if-absent (kèm file_path nếu Admin đã upload PDF;
- *       nếu không thì null — file sẽ upload sau). upsert đảm bảo 2 đề
- *       xuất song song cùng tạo 1 số QĐ không đụng P2002 ở mức DB.
- *     - Nếu đã có nhưng file_path null + lần này có PDF → UPDATE để gắn
- *       file_path mới (lazy population, không ghi đè path đã có).
- *  3. Best-effort: nếu lỗi 1 số QĐ → log + skip, không throw rollback.
- *     Lý do: sync là idempotent — row đã tồn tại thì FK vẫn pass, lỗi
- *     transient không nên kéo cả approve transaction rollback.
- */
+/** Synchronizes used decision numbers + paths into the FileQuyetDinh registry. */
 export async function syncDecisionFiles(
   ctx: ProposalContext,
   danhHieuData: ProposalDanhHieuItem[],
@@ -286,10 +246,13 @@ export async function syncDecisionFiles(
   if (decisions.so_quyet_dinh_dot_xuat) decisionsToSync.add(decisions.so_quyet_dinh_dot_xuat);
   if (decisions.so_quyet_dinh_nckh) decisionsToSync.add(decisions.so_quyet_dinh_nckh);
 
-  const adminInfo = await tx.taiKhoan.findUnique({
-    where: { id: adminId },
-    include: { QuanNhan: { select: { ho_ten: true } } },
-  });
+  const adminInfo = await accountRepository.findUniqueRaw(
+    {
+      where: { id: adminId },
+      include: { QuanNhan: { select: { ho_ten: true } } },
+    },
+    tx
+  );
   const ngayKy = new Date();
   const nguoiKy =
     (adminInfo as { QuanNhan?: { ho_ten?: string | null }; username?: string })?.QuanNhan?.ho_ten ||
@@ -298,13 +261,6 @@ export async function syncDecisionFiles(
 
   const proposalType = proposal.loai_de_xuat as ProposalType;
 
-  // RACE-AWARE: 2 đề xuất song song cùng dùng 1 số QĐ mới "123/QĐ-X" →
-  // cả hai cùng định tạo. upsert (create-if-absent, update no-op) khiến
-  // đề xuất sau không throw P2002 ở mức DB: nếu row đã được tạo, nhánh
-  // update chạy thay cho insert → FK của insert award sau đó vẫn pass.
-  // Backfill file_path qua updateMany WHERE file_path: null — atomic,
-  // không read-then-write race, không ghi đè path đã có. try/catch giữ
-  // lại như best-effort cho lỗi transient — không throw để khỏi rollback.
   for (const soQuyetDinh of decisionsToSync) {
     if (!soQuyetDinh) continue;
     try {
@@ -341,25 +297,34 @@ export async function syncDecisionFiles(
       }
 
       const loaiKhenThuong = proposal.loai_de_xuat || PROPOSAL_TYPES.CA_NHAN_HANG_NAM;
-      await tx.fileQuyetDinh.upsert({
-        where: { so_quyet_dinh: soQuyetDinh },
-        create: {
-          so_quyet_dinh: soQuyetDinh,
-          nam: proposal.nam,
-          ngay_ky: ngayKy,
-          nguoi_ky: nguoiKy,
-          file_path: filePath,
-          loai_khen_thuong: loaiKhenThuong,
-          ghi_chu: `Tự động đồng bộ từ đề xuất ${proposalId}`,
-        },
-        update: {},
-      });
 
+      // Atomic upsert avoids P2002 race when two admins approve proposals that share
+      // a so_quyet_dinh concurrently. update is intentionally a no-op so existing
+      // ngay_ky / nguoi_ky / ghi_chu from the original sync are preserved.
+      await decisionFileRepository.upsertRaw(
+        {
+          where: { so_quyet_dinh: soQuyetDinh },
+          create: {
+            so_quyet_dinh: soQuyetDinh,
+            nam: proposal.nam,
+            ngay_ky: ngayKy,
+            nguoi_ky: nguoiKy,
+            file_path: filePath,
+            loai_khen_thuong: loaiKhenThuong,
+            ghi_chu: `Tự động đồng bộ từ đề xuất ${proposalId}`,
+          },
+          update: {},
+        },
+        tx
+      );
+
+      // Backfill file_path only when the existing row left it null and we now have one
       if (filePath) {
-        await tx.fileQuyetDinh.updateMany({
-          where: { so_quyet_dinh: soQuyetDinh, file_path: null },
-          data: { file_path: filePath },
-        });
+        await decisionFileRepository.updateMany(
+          { so_quyet_dinh: soQuyetDinh, file_path: null },
+          { file_path: filePath },
+          tx
+        );
       }
     } catch (error) {
       void writeSystemLog({

@@ -6,10 +6,9 @@
 
 import { Router } from 'express';
 import contributionAwardController from '../controllers/contributionMedal.controller';
-import { verifyToken, checkRole, requireAdminOnly } from '../middlewares/auth';
+import { verifyToken, requireAdminOrManager, requireAdminOnly } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
-import { ROLES } from '../constants/roles.constants';
 import { excelUpload as upload } from '../configs/multer';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
@@ -59,7 +58,7 @@ router.post(
 router.get(
   '/',
   verifyToken,
-  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
+  requireAdminOrManager,
   contributionAwardController.getAll
 );
 
@@ -71,7 +70,7 @@ router.get(
 router.get(
   '/export',
   verifyToken,
-  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
+  requireAdminOrManager,
   contributionAwardController.exportToExcel
 );
 
@@ -83,7 +82,7 @@ router.get(
 router.get(
   '/statistics',
   verifyToken,
-  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
+  requireAdminOrManager,
   contributionAwardController.getStatistics
 );
 

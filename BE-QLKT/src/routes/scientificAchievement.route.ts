@@ -1,13 +1,6 @@
-/*
- * NCKH ROUTE — Thành tích Nghiên cứu Khoa học hàng năm.
- * CRUD + Excel import/export. Unique key: (personnel_id, nam, mo_ta).
- * Recalc annual profile sau insert (vì ảnh hưởng chuỗi BKBQP/CSTDTQ/BKTTCP).
- */
-
 import { Router } from 'express';
 import scientificAchievementController from '../controllers/scientificAchievement.controller';
-import { verifyToken, checkRole, requireAdminOnly } from '../middlewares/auth';
-import { ROLES } from '../constants/roles.constants';
+import { verifyToken, requireAdminOrManager, requireAdminOnly } from '../middlewares/auth';
 import { excelUpload as upload } from '../configs/multer';
 import { validate } from '../middlewares/validate';
 import { scientificAchievementValidation, excelImportValidation } from '../validations';
@@ -17,12 +10,12 @@ const router = Router();
 /**
  * @route   GET /api/scientific-achievements
  * @desc    List scientific achievements with filters and pagination
- * @access  ADMIN, MANAGER
+ * @access  Private - ADMIN, MANAGER
  */
 router.get(
   '/',
   verifyToken,
-  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
+  requireAdminOrManager,
   validate(scientificAchievementValidation.getAchievementsQuery, 'query'),
   scientificAchievementController.getAchievements
 );
@@ -30,12 +23,12 @@ router.get(
 /**
  * @route   GET /api/scientific-achievements/export
  * @desc    Export scientific achievements to Excel
- * @access  ADMIN, MANAGER
+ * @access  Private - ADMIN, MANAGER
  */
 router.get(
   '/export',
   verifyToken,
-  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
+  requireAdminOrManager,
   validate(scientificAchievementValidation.exportAchievementsQuery, 'query'),
   scientificAchievementController.exportToExcel
 );
@@ -43,14 +36,14 @@ router.get(
 /**
  * @route   GET /api/scientific-achievements/template
  * @desc    Download Excel template for scientific achievement import
- * @access  ADMIN
+ * @access  Private - ADMIN, MANAGER
  */
-router.get('/template', verifyToken, requireAdminOnly, scientificAchievementController.getTemplate);
+router.get('/template', verifyToken, requireAdminOrManager, scientificAchievementController.getTemplate);
 
 /**
  * @route   POST /api/scientific-achievements/import/preview
  * @desc    Preview scientific achievement import — validate only, no DB write
- * @access  ADMIN
+ * @access  Private - ADMIN only (Excel import is ADMIN-only)
  */
 router.post(
   '/import/preview',
@@ -63,7 +56,7 @@ router.post(
 /**
  * @route   POST /api/scientific-achievements/import/confirm
  * @desc    Confirm scientific achievement import — persist validated data to DB
- * @access  ADMIN
+ * @access  Private - ADMIN only (Excel import is ADMIN-only)
  */
 router.post(
   '/import/confirm',
@@ -76,12 +69,12 @@ router.post(
 /**
  * @route   POST /api/scientific-achievements
  * @desc    Create a scientific achievement record
- * @access  ADMIN
+ * @access  Private - ADMIN, MANAGER
  */
 router.post(
   '/',
   verifyToken,
-  requireAdminOnly,
+  requireAdminOrManager,
   validate(scientificAchievementValidation.createAchievement),
   scientificAchievementController.createAchievement
 );
@@ -89,12 +82,12 @@ router.post(
 /**
  * @route   PUT /api/scientific-achievements/:id
  * @desc    Update a scientific achievement record
- * @access  ADMIN
+ * @access  Private - ADMIN, MANAGER
  */
 router.put(
   '/:id',
   verifyToken,
-  requireAdminOnly,
+  requireAdminOrManager,
   validate(scientificAchievementValidation.updateAchievement),
   scientificAchievementController.updateAchievement
 );
@@ -102,8 +95,8 @@ router.put(
 /**
  * @route   DELETE /api/scientific-achievements/:id
  * @desc    Delete a scientific achievement record
- * @access  ADMIN
+ * @access  Private - ADMIN, MANAGER
  */
-router.delete('/:id', verifyToken, requireAdminOnly, scientificAchievementController.deleteAchievement);
+router.delete('/:id', verifyToken, requireAdminOrManager, scientificAchievementController.deleteAchievement);
 
 export default router;

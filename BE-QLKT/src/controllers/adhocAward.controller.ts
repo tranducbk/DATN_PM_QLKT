@@ -241,9 +241,12 @@ class AdhocAwardController {
     }
     const adminId = user.id;
 
-    await adhocAwardService.deleteAdhocAward(id, adminId);
+    const result = await adhocAwardService.deleteAdhocAward(id, adminId);
 
-    return ResponseHelper.success(res, { message: 'Xóa khen thưởng đột xuất thành công' });
+    return ResponseHelper.success(res, {
+      message: 'Xóa khen thưởng đột xuất thành công',
+      data: result.award,
+    });
   });
 
   getAdhocAwardsByPersonnel = catchAsync(async (req: Request, res: Response) => {

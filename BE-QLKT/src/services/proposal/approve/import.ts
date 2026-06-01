@@ -1,4 +1,5 @@
 import { prisma } from '../../../models';
+import { proposalRepository } from '../../../repositories/proposal.repository';
 import { PROPOSAL_TYPES } from '../../../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../../../constants/proposalStatus.constants';
 import { ValidationError } from '../../../middlewares/errorHandler';
@@ -35,28 +36,7 @@ import type {
 const PROPOSAL_APPROVE_TX_TIMEOUT_MS = 180000;
 
 /**
- * ╔══════════════════════════════════════════════════════════════════════════╗
- * ║  TRANSACTION ORCHESTRATOR — atomic import của 1 đề xuất khen thưởng     ║
- * ╠══════════════════════════════════════════════════════════════════════════╣
- * ║  Wrap toàn bộ insert/update vào 1 Prisma $transaction. Nếu BẤT KỲ       ║
- * ║  bước nào throw → Postgres rollback toàn bộ → giữ DB consistent.        ║
- * ║                                                                          ║
- * ║  THỨ TỰ QUAN TRỌNG bên trong transaction:                               ║
- * ║    ① syncDecisionFiles — tạo row FileQuyetDinh TRƯỚC.                  ║
- * ║       Lý do: award rows (DanhHieuHangNam, ...) có FK trỏ đến            ║
- * ║       FileQuyetDinh.id → nếu không sync trước sẽ FK violation.          ║
- * ║    ② dispatch strategy chính theo loai_de_xuat:                         ║
- * ║       - DON_VI_HANG_NAM → danhHieu đơn vị                              ║
- * ║       - CONG_HIEN → HCBVTQ (cống hiến)                                 ║
- * ║       - mặc định → CA_NHAN_HANG_NAM (danhHieu cá nhân)                 ║
- * ║    ③ dispatch strategy phụ cho NIEN_HAN/HC_QKQT/KNC (chia sẻ field      ║
- * ║       `data_nien_han`).                                                  ║
- * ║    ④ NCKH strategy LUÔN chạy (dữ liệu khoa học có thể đi kèm bất kỳ    ║
- * ║       loại đề xuất nào nếu data_thanh_tich không rỗng).                 ║
- * ║    ⑤ Tổng kết acc.errors — nếu có lỗi item-level thì FAIL transaction. ║
- * ║    ⑥ updateMany với where { status: PENDING } — OPTIMISTIC LOCKING:    ║
- * ║       nếu admin khác đã duyệt cùng đề xuất → count=0 → throw race.     ║
- * ╚══════════════════════════════════════════════════════════════════════════╝
+ * Runs all per-type imports inside a single transaction and finalizes proposal status.
  */
 export async function runImportTransaction(
   ctx: ProposalContext,
@@ -175,23 +155,17 @@ export async function runImportTransaction(
         prismaTx
       );
 
-      // Tổng kiểm acc.errors — nếu strategy nào collect được lỗi item-
-      // level thì throw để rollback toàn bộ. Approve là all-or-nothing:
-      // không cho approve một phần (nhiều item) rồi sót item lỗi.
       if (acc.errors.length > 0) {
         throw new ValidationError(
           `Không thể phê duyệt đề xuất do có ${acc.errors.length} lỗi khi thêm khen thưởng:\n${acc.errors.join('\n')}`
         );
       }
 
-      // OPTIMISTIC LOCKING — chỉ update khi status vẫn là PENDING.
-      // Race condition: 2 admin cùng bấm "Phê duyệt" → admin sau sẽ
-      // có count=0 (vì admin trước đã đổi status thành APPROVED).
-      // Throw để rollback hết transaction → DB không bị double-import.
-      const updateResult = await prismaTx.bangDeXuat.updateMany({
-        where: { id: proposalId, status: PROPOSAL_STATUS.PENDING },
-        data: updateData,
-      });
+      const updateResult = await proposalRepository.updateMany(
+        { id: proposalId, status: PROPOSAL_STATUS.PENDING },
+        updateData,
+        prismaTx
+      );
       if (updateResult.count === 0) {
         throw new ValidationError(
           'Đề xuất đã bị thay đổi bởi người khác. Vui lòng tải lại trang và thử lại.'

@@ -13,8 +13,9 @@
 | [`plagiarism-warnings.md`](./plagiarism-warnings.md) | Cảnh báo trùng lặp với báo cáo mẫu + checklist trước nộp | — |
 | [`01-use-case.md`](./01-use-case.md) | Sơ đồ Use Case (tổng quát + 13 phân rã) | 14 |
 | [`02-activity.md`](./02-activity.md) | Sơ đồ hoạt động / quy trình nghiệp vụ (swimlane) | 9 |
-| [`03-architecture.md`](./03-architecture.md) | Kiến trúc tổng thể, Layered architecture, Package diagram, Strategy pattern | 7 |
-| [`04-class.md`](./04-class.md) | Class diagram cho 5 module chính | 5 |
+| [`03-architecture.md`](./03-architecture.md) | Sơ đồ gói: Client, Server, chi tiết Quản lý quân nhân | 3 |
+| [`03b-architecture.md`](./03b-architecture.md) | Kiến trúc tổng thể + Layered + 2 module chi tiết (Strategy, Eligibility) | 4 |
+| [`04-class.md`](./04-class.md) | Class diagram (3 sơ đồ gọn: tổ chức, đề xuất+Strategy, khen thưởng+hồ sơ) | 3 |
 | [`05-sequence.md`](./05-sequence.md) | Sequence diagram cho 7 luồng quan trọng | 7 |
 | [`06-erd.md`](./06-erd.md) | ERD tổng thể + 5 ERD phân module + data dictionary | 6 |
 | [`07-deployment.md`](./07-deployment.md) | Deployment diagram + Docker Compose + PM2 config | 4 |
@@ -49,7 +50,7 @@ mmdc -i 01-use-case.md -o use-case.png
 |---|---|---|
 | Chương 2 — Khảo sát & Phân tích yêu cầu | A1.1 → A1.14 (use case), A3.1 → A3.9 (activity) | `01-use-case.md`, `02-activity.md` |
 | Chương 3 — Công nghệ sử dụng | (chỉ có bảng so sánh, không sơ đồ Mermaid) | — |
-| Chương 4 — Thiết kế, triển khai & đánh giá | C1.1 → C1.3 (kiến trúc), C2.1 → C2.4 (package), C3.1 → C3.5 (class), C4.1 → C4.7 (sequence), C5.1 → C5.6 (ERD), C8.1 (deployment) | `03-architecture.md`, `04-class.md`, `05-sequence.md`, `06-erd.md`, `07-deployment.md` |
+| Chương 4 — Thiết kế, triển khai & đánh giá | 3 sơ đồ gói (`03-architecture.md`), C1.1/C1.2/C2.3/C2.4 (kiến trúc + module, `03b-architecture.md`), C3.1 → C3.3 (class), C4.1 → C4.7 (sequence), C5.1 → C5.6 (ERD), C8.1 (deployment) | `03-architecture.md`, `03b-architecture.md`, `04-class.md`, `05-sequence.md`, `06-erd.md`, `07-deployment.md` |
 | Chương 5 — Giải pháp & Đóng góp | (tham chiếu sơ đồ chương 4, không vẽ thêm) | — |
 | Chương 6 — Kết luận & Hướng phát triển | (không có sơ đồ) | — |
 
@@ -65,12 +66,12 @@ Khi đưa vào báo cáo Word/LaTeX, đánh số lại theo quy chuẩn HUST:
 | A3.1 → A3.9 | Hình 2.15 → Hình 2.23 |
 | C1.1 → C1.3 | Hình 4.1 → Hình 4.3 |
 | C2.1 → C2.4 | Hình 4.4 → Hình 4.7 |
-| C3.1 → C3.5 | Hình 4.8 → Hình 4.12 |
-| C4.1 → C4.7 | Hình 4.13 → Hình 4.19 |
-| C5.1 → C5.6 | Hình 4.20 → Hình 4.25 |
-| C8.1 | Hình 4.26 |
+| C3.1 → C3.3 | Hình 4.8 → Hình 4.10 |
+| C4.1 → C4.7 | Hình 4.11 → Hình 4.17 |
+| C5.1 → C5.6 | Hình 4.18 → Hình 4.23 |
+| C8.1 | Hình 4.24 |
 
-→ Tổng ~26 hình ở Chương 4 (gấp đôi báo cáo mẫu HRM).
+→ Tổng ~24 hình ở Chương 4.
 
 ---
 

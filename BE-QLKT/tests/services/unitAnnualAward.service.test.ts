@@ -269,7 +269,7 @@ describe('unitAnnualAward.service - remove', () => {
     prismaMock.danhHieuDonViHangNam.delete.mockResolvedValueOnce(existing);
 
     const result = await unitAnnualAwardService.remove(existing.id);
-    expect(result).toBe(true);
+    expect(result).toMatchObject({ id: existing.id });
     expect(prismaMock.danhHieuDonViHangNam.delete).toHaveBeenCalledWith({
       where: { id: existing.id },
     });

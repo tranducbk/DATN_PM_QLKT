@@ -31,7 +31,7 @@
 | 1 | Người dùng | Truy cập trang đăng nhập `/login` |
 | 1.1 | Hệ thống | Hiển thị form đăng nhập với hai trường username và mật khẩu |
 | 1.2 | Người dùng | Nhập thông tin đăng nhập và bấm "Đăng nhập" |
-| 1.3 | Hệ thống | Validate dữ liệu form (Joi schema) |
+| 1.3 | Hệ thống | Validate dữ liệu form (Zod schema) |
 | 1.4 | Hệ thống | Tìm tài khoản theo username trong bảng `TaiKhoan` |
 | 1.5 | Hệ thống | So sánh password với `password_hash` bằng `bcrypt.compare()` |
 | 1.6 | Hệ thống | Sinh `accessToken` (15 phút) và `refreshToken` (7 ngày) bằng JWT |
@@ -57,8 +57,8 @@
 
 | Tên ca sử dụng: Quản lý quân nhân | ID: UC-02 |
 |---|---|
-| **Tác nhân hệ thống** | Quản trị viên (SUPER_ADMIN — tạo/sửa/xoá/xuất Excel), Phòng Chính trị (ADMIN — tạo/sửa/xoá/xuất Excel), Chỉ huy đơn vị (MANAGER — chỉ xem + cập nhật quân nhân thuộc đơn vị mình), Người dùng (USER — chỉ xem hồ sơ cá nhân) |
-| **Tiền điều kiện** | Đã đăng nhập. Tạo / xoá / xuất Excel yêu cầu role SUPER_ADMIN hoặc ADMIN (`requireAdmin`). Cập nhật yêu cầu role SUPER_ADMIN, ADMIN hoặc MANAGER (`requireManager`); MANAGER chỉ được sửa quân nhân thuộc đơn vị quản lý |
+| **Tác nhân hệ thống** | Quản trị viên (SUPER_ADMIN — tạo/sửa/xoá), Phòng Chính trị (ADMIN — tạo/sửa/xoá), Chỉ huy đơn vị (MANAGER — chỉ xem + cập nhật quân nhân thuộc đơn vị mình), Người dùng (USER — chỉ xem hồ sơ cá nhân) |
+| **Tiền điều kiện** | Đã đăng nhập. Tạo / xoá yêu cầu role SUPER_ADMIN hoặc ADMIN (`requireAdmin`). Cập nhật yêu cầu role SUPER_ADMIN, ADMIN hoặc MANAGER (`requireManager`); MANAGER chỉ được sửa quân nhân thuộc đơn vị quản lý |
 | **Luồng sự kiện chính** | |
 
 | STT | Thực hiện | Hành động |
@@ -67,7 +67,7 @@
 | 1.1 | Quản trị viên / Phòng Chính trị | Chọn "Thêm quân nhân" |
 | 1.2 | Hệ thống | Hiển thị form thêm quân nhân với các trường (CCCD, họ tên, giới tính, ngày sinh, đơn vị, chức vụ, cấp bậc, ngày nhập ngũ, ...) |
 | 1.3 | Quản trị viên / Phòng Chính trị | Nhập thông tin và chọn lưu |
-| 1.4 | Hệ thống | Validate Joi (CCCD đúng định dạng, đơn vị tồn tại, chức vụ tồn tại) |
+| 1.4 | Hệ thống | Validate Zod (CCCD đúng định dạng, đơn vị tồn tại, chức vụ tồn tại) |
 | 1.5 | Hệ thống | Lưu `QuanNhan` + tạo bản ghi `LichSuChucVu` đầu tiên |
 | 1.6 | Hệ thống | Tăng `so_luong` của CQDV/DVTT, tạo các hồ sơ rỗng (`HoSoNienHan`, `HoSoCongHien`, `HoSoHangNam`) |
 | 1.7 | Hệ thống | Ghi SystemLog action CREATE và thông báo thành công |
@@ -94,6 +94,8 @@
 | 2.6a | Hệ thống | Cập nhật fail → Trả 400 |
 | 2.6b | Quản trị viên / Phòng Chính trị / Chỉ huy đơn vị | Sửa lại dữ liệu |
 | 2.6c | Hệ thống | MANAGER cập nhật quân nhân ngoài phạm vi đơn vị quản lý → Trả 403 Forbidden |
+| 2.6d | Hệ thống | MANAGER chuyển quân nhân sang đơn vị khác → Trả 403 Forbidden (chuyển đơn vị là ADMIN-only) |
+| 2.6e | Hệ thống | MANAGER đổi chức vụ hiện tại của quân nhân → Trả 403 Forbidden (đổi chức vụ là ADMIN-only) |
 
 | **Hậu điều kiện** | Bảng `QuanNhan` được cập nhật. `so_luong` của các đơn vị liên quan được điều chỉnh chính xác. Các hồ sơ con (`HoSoNienHan`, `HoSoCongHien`, `HoSoHangNam`) được khởi tạo cho quân nhân mới |
 
@@ -116,7 +118,7 @@
 | 1.4 | Chỉ huy đơn vị | Chọn các quân nhân cần đề xuất |
 | 1.5 | Hệ thống | Hiển thị Step 3: nhập số quyết định, ghi chú, đính kèm file |
 | 1.6 | Chỉ huy đơn vị | Nhập thông tin và bấm "Gửi đề xuất" |
-| 1.7 | Hệ thống | Validate Joi schema, parse `title_data` JSON |
+| 1.7 | Hệ thống | Validate Zod schema, parse `title_data` JSON |
 | 1.8 | Hệ thống | Lưu file đính kèm vào `storage/proposals/` |
 | 1.9 | Hệ thống | Lấy strategy qua `getProposalStrategy('CA_NHAN_HANG_NAM')` |
 | 1.10 | Hệ thống | Strategy gọi `checkChainEligibility` cho từng quân nhân |
@@ -227,7 +229,7 @@
 | 1.1 | Phòng Chính trị | Chọn file Excel và bấm "Preview" |
 | 1.2 | Hệ thống | POST `/api/[loai]/import/preview` với multer parse file |
 | 1.3 | Hệ thống | `loadWorkbook()` + `getAndValidateWorksheet()` |
-| 1.4 | Hệ thống | Parse từng dòng thành object, validate Joi |
+| 1.4 | Hệ thống | Parse từng dòng thành object, validate Zod |
 | 1.5 | Hệ thống | `quanNhanRepository.findManyByCccd(cccdList)` để link với quân nhân |
 | 1.6 | Hệ thống | Kiểm tra điều kiện theo loại (`checkChainEligibility` / `checkServiceYears` / `checkContributionMonths`) |
 | 1.7 | Hệ thống | Trả về bảng preview với dòng OK + dòng lỗi kèm reason |
@@ -296,7 +298,7 @@
 
 | STT | Thực hiện | Hành động |
 |---|---|---|
-| 1 | Hệ thống (Cron) | `node-cron` in-process khởi chạy theo `cron_schedule` (mặc định `'0 1 1 * *'` — 1:00 AM ngày 1 mỗi tháng) |
+| 1 | Hệ thống (Cron) | `node-cron` in-process khởi chạy theo `backup_cron` (mặc định `'0 2 * * *'` — 2:00 AM hằng ngày) |
 | 1.1 | Hệ thống | `backup.service.ts.createBackup({ type: 'scheduled' })` |
 | 1.2 | Hệ thống | Đọc 21 bảng dữ liệu qua `Promise.all` các repository |
 | 1.3 | Hệ thống | Build chuỗi SQL `INSERT INTO ... VALUES (...)` cho từng row, escape JSON / string qua helper `quoteValue()` |

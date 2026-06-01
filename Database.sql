@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS public."BangDeXuat"
     ngay_duyet timestamp(0) without time zone,
     "createdAt" timestamp(0) without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" timestamp(0) without time zone NOT NULL,
+    files_attached_admin jsonb,
     CONSTRAINT "BangDeXuat_pkey" PRIMARY KEY (id)
 );
 
@@ -34,7 +35,7 @@ CREATE TABLE IF NOT EXISTS public."ChucVu"
     don_vi_truc_thuoc_id character varying(30) COLLATE pg_catalog."default",
     ten_chuc_vu character varying(255) COLLATE pg_catalog."default" NOT NULL,
     is_manager boolean NOT NULL DEFAULT false,
-    he_so_chuc_vu numeric(10, 2) NOT NULL DEFAULT 0,
+    he_so_chuc_vu double precision NOT NULL DEFAULT 0,
     "createdAt" timestamp(0) without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" timestamp(0) without time zone NOT NULL,
     CONSTRAINT "ChucVu_pkey" PRIMARY KEY (id)
@@ -399,6 +400,19 @@ CREATE TABLE IF NOT EXISTS public."ThongBao"
     "createdAt" timestamp(0) without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "readAt" timestamp(0) without time zone,
     CONSTRAINT "ThongBao_pkey" PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS public._prisma_migrations
+(
+    id character varying(36) COLLATE pg_catalog."default" NOT NULL,
+    checksum character varying(64) COLLATE pg_catalog."default" NOT NULL,
+    finished_at timestamp with time zone,
+    migration_name character varying(255) COLLATE pg_catalog."default" NOT NULL,
+    logs text COLLATE pg_catalog."default",
+    rolled_back_at timestamp with time zone,
+    started_at timestamp with time zone NOT NULL DEFAULT now(),
+    applied_steps_count integer NOT NULL DEFAULT 0,
+    CONSTRAINT _prisma_migrations_pkey PRIMARY KEY (id)
 );
 
 ALTER TABLE IF EXISTS public."BangDeXuat"

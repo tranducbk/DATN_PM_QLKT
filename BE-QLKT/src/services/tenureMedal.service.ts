@@ -241,7 +241,14 @@ class HCCSVVService {
     const award = await tenureMedalRepository.findUniqueRaw({
       where: { id },
       include: {
-        QuanNhan: true,
+        QuanNhan: {
+          select: {
+            id: true,
+            ho_ten: true,
+            co_quan_don_vi_id: true,
+            don_vi_truc_thuoc_id: true,
+          },
+        },
       },
     });
 
@@ -280,6 +287,7 @@ class HCCSVVService {
     return {
       message: `Xóa khen thưởng ${AWARD_LABEL} thành công`,
       personnelId,
+      award,
     };
   }
 }

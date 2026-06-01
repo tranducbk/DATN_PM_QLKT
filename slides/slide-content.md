@@ -196,7 +196,7 @@ flowchart LR
 **Nội dung**:
 - **Express + TypeScript**: REST API, middleware chain
 - **Prisma ORM 6.x**: type-safe queries, migration tự động
-- **PostgreSQL**: RDBMS, hỗ trợ transaction SERIALIZABLE
+- **PostgreSQL**: RDBMS, transaction (Prisma $transaction) + cập nhật có điều kiện updateMany (compare-and-set trên status) chống race condition; không đặt isolation level riêng (mặc định READ COMMITTED)
 - **Zod**: validate request body (server-side) — cùng thư viện với FE
 - **bcrypt**: hash password 10 rounds
 - **JWT**: xác thực 2 token (access ngắn + refresh dài)
@@ -212,7 +212,7 @@ Route → Middleware → Controller → Service → Repository → Prisma → Po
 - PostgreSQL hỗ trợ transaction tốt cho race condition
 
 **Kịch bản nói** (~50s):
-> "Backend dùng Express với TypeScript. ORM em chọn Prisma vì sinh code client type-safe — viết code có autocomplete và compile-time check, an toàn hơn TypeORM. Database PostgreSQL có hỗ trợ isolation level SERIALIZABLE cần cho test race condition. Kiến trúc layered 5 tầng tách biệt rõ ràng: route, controller, service, repository, ORM."
+> "Backend dùng Express với TypeScript. ORM em chọn Prisma vì sinh code client type-safe — viết code có autocomplete và compile-time check, an toàn hơn TypeORM. Database PostgreSQL; chống race condition em dùng Prisma $transaction kết hợp updateMany có điều kiện (compare-and-set trên status), không đặt isolation level riêng (mặc định READ COMMITTED). Kiến trúc layered 5 tầng tách biệt rõ ràng: route, controller, service, repository, ORM."
 
 ---
 
@@ -405,7 +405,7 @@ classDiagram
 
 | Test | Hiệu năng | Triển khai |
 |---|---|---|
-| **74 test files** | Import 1000 dòng Excel < 2s | PM2 fork mode |
+| **80 test files** | Import 1000 dòng Excel < 2s | PM2 fork mode |
 | Pass 100% | Batch query thay N+1 | Mạng nội bộ offline |
 | Coverage chuỗi danh hiệu | `Promise.all` query song song | Auto-restart + backup |
 | Coverage security/race | DB index migration | `npm run setup` 1 lệnh |
@@ -417,7 +417,7 @@ classDiagram
 4. **Real-life vòng đời** — quân nhân qua nhiều năm, lên cấp danh hiệu
 
 **Kịch bản nói** (~75s):
-> "Em viết 74 file test, bao phủ logic chuỗi danh hiệu, eligibility, race condition và security. 4 test tiêu biểu: thứ nhất là race condition khi 2 admin duyệt song song cùng đề xuất, em dùng Prisma transaction SERIALIZABLE để chỉ 1 request thắng. Thứ hai là eligibility BKTTCP với cửa sổ trượt 7 năm. Thứ ba là tampering — em test các trường hợp admin cố sửa payload bypass validate FE. Thứ tư là kịch bản end-to-end vòng đời 1 quân nhân qua nhiều năm.
+> "Em viết 80 file test, bao phủ logic chuỗi danh hiệu, eligibility, race condition và security. 4 test tiêu biểu: thứ nhất là race condition khi 2 admin duyệt song song cùng đề xuất, em dùng Prisma $transaction kết hợp updateMany có điều kiện (compare-and-set trên status) để chỉ 1 request thắng. Thứ hai là eligibility BKTTCP với cửa sổ trượt 7 năm. Thứ ba là tampering — em test các trường hợp admin cố sửa payload bypass validate FE. Thứ tư là kịch bản end-to-end vòng đời 1 quân nhân qua nhiều năm.
 > Về hiệu năng, em tối ưu import Excel 1000 dòng dưới 2 giây nhờ batch query. Về triển khai, hệ thống chạy PM2 trong mạng nội bộ, không cần internet, deploy chỉ 1 lệnh `npm run setup`."
 
 ---
@@ -430,9 +430,9 @@ classDiagram
 
 *Kết quả đạt được*:
 - Hoàn thành đầy đủ 8 loại đề xuất, 4 vai trò, đầy đủ tính năng quản lý
-- 74 file test đảm bảo độ tin cậy
+- 80 file test đảm bảo độ tin cậy
 - Triển khai thành công môi trường mạng nội bộ
-- ~40k LOC backend + ~59k LOC frontend, kiến trúc layered rõ ràng
+- ~40k LOC backend (src, không tính Prisma client generated) + ~58k LOC frontend ≈ ~98k LOC tổng, kiến trúc layered rõ ràng
 
 *Hạn chế*:
 - BKTTCP cá nhân đang là lifetime — chưa hỗ trợ danh hiệu cao hơn
@@ -446,7 +446,7 @@ classDiagram
 - Cluster mode + Redis adapter cho Socket.IO khi cần scale
 
 **Kịch bản nói** (~75s):
-> "Tổng kết, em đã hoàn thành các mục tiêu đề ra. Hệ thống hỗ trợ đủ 8 loại đề xuất, có 74 file test bao phủ các kịch bản khó, đã triển khai thực tế trên mạng nội bộ. Một số hạn chế em nhận thấy: chưa có module BI thống kê chi tiết, chưa scale ngang. Hướng phát triển tiếp theo gồm app mobile, tích hợp ký số bằng Smart Card, và mở rộng cluster khi cần."
+> "Tổng kết, em đã hoàn thành các mục tiêu đề ra. Hệ thống hỗ trợ đủ 8 loại đề xuất, có 80 file test bao phủ các kịch bản khó, đã triển khai thực tế trên mạng nội bộ. Một số hạn chế em nhận thấy: chưa có module BI thống kê chi tiết, chưa scale ngang. Hướng phát triển tiếp theo gồm app mobile, tích hợp ký số bằng Smart Card, và mở rộng cluster khi cần."
 
 ---
 
@@ -471,7 +471,7 @@ classDiagram
 > A: Prisma sinh ra TypeScript Client thực tế trong quá trình build → autocomplete và type-check ở compile time toàn diện. TypeORM dùng decorator + reflection chỉ check 1 chiều, dễ lệch type.
 
 **Q2**: Race condition em xử lý sao?
-> A: Prisma transaction với isolation level SERIALIZABLE. Test bằng `Promise.all` 2 request duyệt song song, verify chỉ 1 thắng còn 1 fail với constraint violation.
+> A: Prisma $transaction kết hợp updateMany có điều kiện (compare-and-set trên status), không đặt isolation level riêng (mặc định READ COMMITTED). Test bằng `Promise.all` 2 request duyệt song song, verify chỉ 1 thắng còn 1 fail với constraint violation.
 
 **Q3**: Sao chọn JWT 2 token (access + refresh)?
 > A: Access TTL ngắn để giảm rủi ro nếu lộ. Refresh TTL dài để user không phải login lại. Khi access hết hạn, FE dùng refresh xin access mới mà không cần login.

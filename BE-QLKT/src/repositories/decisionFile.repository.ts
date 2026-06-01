@@ -49,6 +49,21 @@ export const decisionFileRepository = {
     return tx.fileQuyetDinh.update({ where: { id }, data });
   },
 
+  updateMany(
+    where: Prisma.FileQuyetDinhWhereInput,
+    data: Prisma.FileQuyetDinhUncheckedUpdateManyInput,
+    tx: PrismaLike = prisma
+  ) {
+    return tx.fileQuyetDinh.updateMany({ where, data });
+  },
+
+  upsertRaw<T extends Prisma.FileQuyetDinhUpsertArgs>(
+    args: Prisma.SelectSubset<T, Prisma.FileQuyetDinhUpsertArgs>,
+    tx: PrismaLike = prisma
+  ) {
+    return tx.fileQuyetDinh.upsert(args);
+  },
+
   delete(id: string, tx: PrismaLike = prisma) {
     return tx.fileQuyetDinh.delete({ where: { id } });
   },

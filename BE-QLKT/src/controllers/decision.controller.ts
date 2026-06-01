@@ -187,7 +187,7 @@ class DecisionController {
     if (!id) return ResponseHelper.badRequest(res, 'Thiếu id');
 
     const result = await decisionService.deleteDecision(id);
-    return ResponseHelper.success(res, { message: result.message });
+    return ResponseHelper.success(res, { message: result.message, data: result.decision });
   });
 
   getAvailableYears = catchAsync(async (req: Request, res: Response) => {

@@ -11,7 +11,6 @@ import {
   verifyToken,
   requireAdmin,
   requireManager,
-  requireAuth,
 } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
@@ -51,7 +50,7 @@ router.post(
  * @desc    Get personnel details by ID
  * @access  Private - ADMIN, MANAGER, USER (own record only)
  */
-router.get('/:id', verifyToken, requireAuth, personnelController.getPersonnelById);
+router.get('/:id', verifyToken, personnelController.getPersonnelById);
 
 /**
  * @route   POST /api/personnel
@@ -74,8 +73,8 @@ router.post(
 
 /**
  * @route   PUT /api/personnel/:id
- * @desc    Update a personnel record (unit transfer, position change)
- * @access  Private - ADMIN, MANAGER (own unit), USER (own record only)
+ * @desc    Update a personnel record (position change; unit transfer is ADMIN-only)
+ * @access  Private - ADMIN (incl. unit transfer), MANAGER (own unit, no transfer), USER (own record only)
  */
 router.put(
   '/:id',

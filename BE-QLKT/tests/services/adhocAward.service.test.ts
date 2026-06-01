@@ -284,7 +284,7 @@ describe('adhocAward.service - deleteAdhocAward', () => {
     const result = await adhocAwardService.deleteAdhocAward('adh-1', 'acc-admin-dx');
 
     // Thì
-    expect(result).toEqual({ success: true });
+    expect(result).toMatchObject({ success: true });
     expect(prismaMock.khenThuongDotXuat.delete).toHaveBeenCalledWith({ where: { id: 'adh-1' } });
   });
 

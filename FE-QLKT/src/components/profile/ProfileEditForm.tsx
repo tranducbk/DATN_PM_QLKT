@@ -32,7 +32,7 @@ import { VietnamAddressCascader } from '@/components/shared/VietnamAddressCascad
 import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
 import { useTheme } from '@/components/ThemeProvider';
 import { LoadingState } from '@/components/shared/LoadingState';
-import { formatDate, capitalizeWords } from '@/lib/utils';
+import { formatDate, capitalizeWords, formatHeSoChucVu } from '@/lib/utils';
 import { getAntdThemeConfig } from '@/lib/antdTheme';
 import { getApiErrorMessage } from '@/lib/apiError';
 import { ROLES, getRoleInfo } from '@/constants/roles.constants';
@@ -475,9 +475,7 @@ export function ProfileEditForm({
                         { label: 'Chức vụ', value: personnelData.ChucVu?.ten_chuc_vu || '-' },
                         {
                           label: 'Hệ số chức vụ',
-                          value: personnelData.ChucVu?.he_so_chuc_vu
-                            ? Number(personnelData.ChucVu.he_so_chuc_vu).toFixed(2)
-                            : '-',
+                          value: formatHeSoChucVu(personnelData.ChucVu?.he_so_chuc_vu),
                         },
                       ].map(item => (
                         <tr

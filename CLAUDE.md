@@ -82,7 +82,7 @@ PM QLKT/
 
 ### Backend
 - **Layered**: Route → Middleware → Controller → Service → Prisma
-- **Middleware chain**: `verifyToken → requireRole → validate(schema) → auditLog(options) → controller.method`
+- **Middleware chain**: `verifyToken → requireAdmin (or other checkRole guard) → validate(schema) → auditLog(options) → controller.method`
 - **Async errors**: Wrap controllers with `catchAsync()` helper
 - **Responses**: Always use `ResponseHelper.success()`, `.created()`, `.paginated()`, `.badRequest()`, `.notFound()`, etc.
 - **List APIs**: Luôn dùng `ResponseHelper.paginated()` để trả `data` + `pagination.total` — kể cả khi chưa phân trang thật (default limit cao)
@@ -256,6 +256,8 @@ Khi có ≥ 4 nhánh `if/else` dispatch theo enum/type (vd: 7 loại đề xuấ
 ## Documentation sync (báo cáo ĐATN)
 
 **Rule:** code is the single source of truth — báo cáo/slide/diagram bám theo code, không ngược lại. Khi sửa code làm thay đổi thứ mà tài liệu đang mô tả (port, script name, dependency, kiến trúc, schema, route, eligibility rule, số liệu test, UC behavior), **bắt buộc** mở file liên quan dưới đây và update đồng bộ trong cùng commit. Refactor thuần nội bộ (rename biến, extract helper, chia file) không cần đồng bộ doc.
+
+> **⚠️ Báo cáo chính giờ là bản LaTeX** tại `SOICT_DATN_Tran_Anh_Duc_20220120/` (`DoAn.tex` + `Chuong/*.tex`). `report/BAO_CAO.md` **đã ngừng dùng** — KHÔNG sync vào nó nữa. Bảng dưới đây nhắc `report/BAO_CAO.md` chỉ còn để tham chiếu lịch sử; thay bằng `Chuong/*.tex` tương ứng: §2 khảo sát → `2_Khao_sat.tex`, §3 công nghệ → `3_Cong_nghe.tex`, §4 thiết kế/triển khai/kiểm thử → `4_Ket_qua_thuc_nghiem.tex`, §5 đóng góp → `5_Giai_phap_dong_gop.tex`, kết luận/hướng phát triển → `6_Ket_luan.tex`.
 
 ### Doc index — file nào chứa gì
 

@@ -69,54 +69,42 @@ router.use('/api/auth', authRoute);
 // 2. Account Management (SUPER_ADMIN)
 router.use('/api/accounts', accountRoute);
 
-// 3. Master Data Management (ADMIN)
+// 3. Master Data Management (units, positions)
 router.use('/api/units', unitRoute);
 router.use('/api/positions', positionRoute);
-
-// Sub-units
 router.get('/api/sub-units', verifyToken, requireAdmin, unitController.getAllSubUnits);
 
 // 4. Personnel Management
 router.use('/api/personnel', personnelRoute);
 router.use('/api/personnel/:personnelId', personnelNestedRoute);
-
-// 5. Reward Management (Input)
-router.use('/api/annual-rewards', annualRewardRoute);
-router.use('/api/scientific-achievements', scientificAchievementRoute);
 router.use('/api/position-history', positionHistoryRoute);
 
-// Proposal Management
-router.use('/api/proposals', proposalRoute);
-
-// Decision Management
-router.use('/api/decisions', decisionRoute);
-
-// Unit Annual Awards — must come before /api/awards
-router.use('/api/awards/units/annual', unitAnnualAwardRoute);
-
-// 5.3. Specialized Award Types
+// 5. Award Management — 7 award types, all mounted top-level for a uniform convention
+router.use('/api/annual-rewards', annualRewardRoute);
+router.use('/api/unit-annual-awards', unitAnnualAwardRoute);
 router.use('/api/tenure-medals', tenureMedalRoute);
 router.use('/api/contribution-medals', contributionMedalRoute);
 router.use('/api/commemorative-medals', commemorativeMedalRoute);
 router.use('/api/military-flags', militaryFlagRoute);
-
-// Awards Management
+router.use('/api/scientific-achievements', scientificAchievementRoute);
 router.use('/api/awards', awardsRoute);
-
-// Ad-hoc Awards (ADMIN only)
 router.use('/api/adhoc-awards', adhocAwardRoute);
 
-// 6. Profile & Calculation (Output)
+// 6. Proposal & Decision Management
+router.use('/api/proposals', proposalRoute);
+router.use('/api/decisions', decisionRoute);
+
+// 7. Profile & Calculation (Output)
 router.use('/api/profiles', profileRoute);
 router.use('/api/system-logs', systemLogsRoute);
 
-// 7. Dashboard Statistics
+// 8. Dashboard Statistics
 router.use('/api/dashboard', dashboardRoute);
 
-// 7. Notifications
+// 9. Notifications
 router.use('/api/notifications', notificationRoute);
 
-// 8. Dev Zone (hidden)
+// 10. Dev Zone (hidden)
 router.use('/api/dev-zone', devZoneRoute);
 
 // Health check endpoint

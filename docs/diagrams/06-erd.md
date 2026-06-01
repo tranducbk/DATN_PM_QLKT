@@ -78,7 +78,7 @@ erDiagram
         string don_vi_truc_thuoc_id FK
         string ten_chuc_vu
         boolean is_manager
-        decimal he_so_chuc_vu
+        float he_so_chuc_vu
         timestamp createdAt
         timestamp updatedAt
     }
@@ -408,7 +408,7 @@ erDiagram
         string don_vi_truc_thuoc_id FK
         string ten_chuc_vu
         boolean is_manager
-        decimal he_so_chuc_vu
+        float he_so_chuc_vu
         timestamp createdAt
         timestamp updatedAt
     }
@@ -644,7 +644,7 @@ erDiagram
         string don_vi_truc_thuoc_id FK
         string nguoi_de_xuat_id FK
         string nguoi_duyet_id FK
-        string loai_de_xuat "CA_NHAN_HANG_NAM DON_VI_HANG_NAM NIEN_HAN CONG_HIEN HCQKQT KNC NCKH"
+        string loai_de_xuat "CA_NHAN_HANG_NAM DON_VI_HANG_NAM NIEN_HAN CONG_HIEN HC_QKQT KNC_VSNXD_QDNDVN NCKH DOT_XUAT"
         int nam
         int thang
         string status "PENDING APPROVED REJECTED"

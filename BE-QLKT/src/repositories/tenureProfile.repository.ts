@@ -48,4 +48,8 @@ export const tenureProfileRepository = {
       create: data,
     });
   },
+
+  deleteMany(where: Prisma.HoSoNienHanWhereInput, tx: PrismaLike = prisma) {
+    return tx.hoSoNienHan.deleteMany({ where });
+  },
 };

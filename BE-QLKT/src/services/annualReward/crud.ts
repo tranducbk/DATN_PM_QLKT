@@ -1,8 +1,6 @@
 import { prisma } from '../../models';
 import { danhHieuHangNamRepository } from '../../repositories/danhHieu.repository';
 import { quanNhanRepository } from '../../repositories/quanNhan.repository';
-import { militaryFlagRepository } from '../../repositories/militaryFlag.repository';
-import { commemorativeMedalRepository } from '../../repositories/commemorativeMedal.repository';
 import { proposalRepository } from '../../repositories/proposal.repository';
 import * as notificationHelper from '../../helpers/notification';
 import { safeRecalculateAnnualProfile } from '../../helpers/profileRecalcHelper';
@@ -264,21 +262,26 @@ export async function deleteAnnualReward(
 ): Promise<{
   message: string;
   personnelId: string;
-  personnel: QuanNhan | null;
   reward: DanhHieuHangNam;
 }> {
   const reward = (await danhHieuHangNamRepository.findUnique({
     where: { id },
     include: {
       QuanNhan: {
-        include: {
-          CoQuanDonVi: true,
-          DonViTrucThuoc: true,
+        select: {
+          id: true,
+          ho_ten: true,
+          co_quan_don_vi_id: true,
+          don_vi_truc_thuoc_id: true,
         },
       },
     },
   })) as Prisma.DanhHieuHangNamGetPayload<{
-    include: { QuanNhan: { include: { CoQuanDonVi: true; DonViTrucThuoc: true } } };
+    include: {
+      QuanNhan: {
+        select: { id: true; ho_ten: true; co_quan_don_vi_id: true; don_vi_truc_thuoc_id: true };
+      };
+    };
   }> | null;
 
   if (!reward) {
@@ -379,7 +382,6 @@ export async function deleteAnnualReward(
     return {
       message: `Đã xóa ${getDanhHieuName(awardType)}.`,
       personnelId,
-      personnel,
       reward,
     };
   }
@@ -406,7 +408,6 @@ export async function deleteAnnualReward(
   return {
     message: `Đã xóa ${AWARD_LABEL}.`,
     personnelId,
-    personnel,
     reward,
   };
 }
@@ -570,54 +571,6 @@ export async function getStatistics(filters: StatisticsFilters = {}): Promise<{
     byDanhHieu: Object.values(byDanhHieu),
     byNam: Object.values(byNam).sort((a, b) => b.nam - a.nam),
   };
-}
-
-/**
- * Checks if a personnel has already received or has a pending HC_QKQT award.
- * @param personnelId - Personnel ID
- * @returns Check result with alreadyReceived flag and reason
- */
-export async function checkAlreadyReceivedHCQKQT(personnelId: string) {
-  const existingAward = await militaryFlagRepository.findUniqueRaw({
-    where: { quan_nhan_id: personnelId },
-  });
-  if (existingAward) return { alreadyReceived: true, reason: 'Đã nhận', award: existingAward };
-
-  const pendingProposal = await proposalRepository.findFirstRaw({
-    where: {
-      loai_de_xuat: PROPOSAL_TYPES.HC_QKQT,
-      status: PROPOSAL_STATUS.PENDING,
-      data_nien_han: { array_contains: [{ personnel_id: personnelId }] },
-    },
-  });
-  if (pendingProposal)
-    return { alreadyReceived: true, reason: 'Đang chờ duyệt', proposal: pendingProposal };
-
-  return { alreadyReceived: false, reason: null };
-}
-
-/**
- * Checks if a personnel has already received or has a pending KNC_VSNXD_QDNDVN award.
- * @param personnelId - Personnel ID
- * @returns Check result with alreadyReceived flag and reason
- */
-export async function checkAlreadyReceivedKNCVSNXDQDNDVN(personnelId: string) {
-  const existingAward = await commemorativeMedalRepository.findUniqueRaw({
-    where: { quan_nhan_id: personnelId },
-  });
-  if (existingAward) return { alreadyReceived: true, reason: 'Đã nhận', award: existingAward };
-
-  const pendingProposal = await proposalRepository.findFirstRaw({
-    where: {
-      loai_de_xuat: PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
-      status: PROPOSAL_STATUS.PENDING,
-      data_nien_han: { array_contains: [{ personnel_id: personnelId }] },
-    },
-  });
-  if (pendingProposal)
-    return { alreadyReceived: true, reason: 'Đang chờ duyệt', proposal: pendingProposal };
-
-  return { alreadyReceived: false, reason: null };
 }
 
 /**

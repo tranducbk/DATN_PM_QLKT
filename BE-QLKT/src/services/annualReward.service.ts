@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs';
-import type { DanhHieuHangNam, QuanNhan } from '../generated/prisma';
+import type { DanhHieuHangNam } from '../generated/prisma';
 import {
   getAnnualRewards,
   createAnnualReward,
@@ -8,8 +8,6 @@ import {
   checkAnnualRewards,
   bulkCreateAnnualRewards,
   getStatistics,
-  checkAlreadyReceivedHCQKQT,
-  checkAlreadyReceivedKNCVSNXDQDNDVN,
   getAnnualRewardsList,
 } from './annualReward/crud';
 import {
@@ -50,7 +48,6 @@ class AnnualRewardService {
   ): Promise<{
     message: string;
     personnelId: string;
-    personnel: QuanNhan | null;
     reward: DanhHieuHangNam;
   }> {
     return deleteAnnualReward(id, adminUsername, awardType);
@@ -104,14 +101,6 @@ class AnnualRewardService {
     byNam: { nam: number; count: number }[];
   }> {
     return getStatistics(filters);
-  }
-
-  async checkAlreadyReceivedHCQKQT(personnelId: string) {
-    return checkAlreadyReceivedHCQKQT(personnelId);
-  }
-
-  async checkAlreadyReceivedKNCVSNXDQDNDVN(personnelId: string) {
-    return checkAlreadyReceivedKNCVSNXDQDNDVN(personnelId);
   }
 
   async getAnnualRewardsList(params: {

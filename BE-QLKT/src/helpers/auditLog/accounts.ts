@@ -88,7 +88,6 @@ const accounts: Record<
     return description;
   },
   DELETE: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
-    const accountId = normalizeParam(req.params?.id);
     let username = '';
     let hoTen = '';
 
@@ -98,24 +97,6 @@ const accounts: Record<
       hoTen = data?.data?.QuanNhan?.ho_ten || data?.data?.ho_ten || '';
     } catch (error) {
       console.error('[auditLog/accounts:DELETE] failed to parse response data:', error);
-    }
-
-    if ((!username || !hoTen) && accountId) {
-      try {
-        const account = (await accountRepository.findUniqueRaw({
-          where: { id: accountId },
-          select: {
-            username: true,
-            QuanNhan: { select: { ho_ten: true } },
-          },
-        })) as TaiKhoanHoTenSelect | null;
-        if (account) {
-          username = username || account.username;
-          hoTen = hoTen || account.QuanNhan?.ho_ten || '';
-        }
-      } catch (error) {
-        console.error('[auditLog/accounts:DELETE] failed to load account fallback:', error);
-      }
     }
 
     if (hoTen && username) {

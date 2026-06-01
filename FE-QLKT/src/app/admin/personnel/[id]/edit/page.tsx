@@ -26,12 +26,7 @@ import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
 import { useAuth } from '@/contexts/AuthContext';
 import { ROLES } from '@/constants/roles.constants';
 import { VietnamAddressCascader } from '@/components/shared/VietnamAddressCascader';
-import type {
-  PersonnelDetail,
-  UnitOptionRow,
-  ManagerPositionRow,
-} from '@/lib/types/personnelList';
-
+import type { PersonnelDetail, UnitOptionRow, ManagerPositionRow } from '@/lib/types/personnelList';
 
 const { Title } = Typography;
 
@@ -90,7 +85,9 @@ const formatAddressInput = (input: string): string => {
         /[a-zA-ZàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđĐ]/i
       );
       if (idx === -1) return word;
-      return word.substring(0, idx) + word[idx].toUpperCase() + word.substring(idx + 1).toLowerCase();
+      return (
+        word.substring(0, idx) + word[idx].toUpperCase() + word.substring(idx + 1).toLowerCase()
+      );
     };
 
     if (adminLength > 0) {
@@ -139,7 +136,9 @@ export default function PersonnelEditPage() {
           apiClient.getPositions(),
         ]);
 
-        const coQuanList = (coQuanRes?.data || []).filter((unit: UnitOptionRow) => !unit.co_quan_don_vi_id);
+        const coQuanList = (coQuanRes?.data || []).filter(
+          (unit: UnitOptionRow) => !unit.co_quan_don_vi_id
+        );
         const donViList = donViTrucThuocRes?.data || [];
         const allPositions = positionsRes?.data || [];
 
@@ -228,7 +227,9 @@ export default function PersonnelEditPage() {
 
     if (isManagerPersonnel) {
       if (selectedCoQuanDonViId) {
-        filtered = positions.filter((p: ManagerPositionRow) => p.co_quan_don_vi_id === selectedCoQuanDonViId);
+        filtered = positions.filter(
+          (p: ManagerPositionRow) => p.co_quan_don_vi_id === selectedCoQuanDonViId
+        );
       }
     } else {
       if (selectedDonViTrucThuocId) {
@@ -239,7 +240,10 @@ export default function PersonnelEditPage() {
     }
 
     // Always include the currently assigned position even if it no longer matches the filter
-    if (currentPositionId && !filtered.find((p: ManagerPositionRow) => p.id === currentPositionId)) {
+    if (
+      currentPositionId &&
+      !filtered.find((p: ManagerPositionRow) => p.id === currentPositionId)
+    ) {
       const currentPosition = positions.find((p: ManagerPositionRow) => p.id === currentPositionId);
       if (currentPosition) {
         filtered = [currentPosition, ...filtered];
@@ -310,9 +314,7 @@ export default function PersonnelEditPage() {
         message.success('Cập nhật quân nhân thành công');
         router.push(`/admin/personnel/${personnelId}`);
       } else {
-        message.error(
-          (response as { message?: string }).message || 'Lỗi khi cập nhật quân nhân'
-        );
+        message.error((response as { message?: string }).message || 'Lỗi khi cập nhật quân nhân');
       }
     } catch (error: unknown) {
       message.error(getApiErrorMessage(error, 'Lỗi khi cập nhật quân nhân'));
@@ -327,7 +329,13 @@ export default function PersonnelEditPage() {
         {/* Breadcrumb */}
         <Breadcrumb
           items={[
-            { title: <Link href="/admin/dashboard"><HomeOutlined /></Link> },
+            {
+              title: (
+                <Link href="/admin/dashboard">
+                  <HomeOutlined />
+                </Link>
+              ),
+            },
             { title: <Link href="/admin/personnel">Quân nhân</Link> },
             { title: <Link href={`/admin/personnel/${personnelId}`}>{personnel?.ho_ten}</Link> },
             { title: 'Chỉnh sửa' },
@@ -394,11 +402,7 @@ export default function PersonnelEditPage() {
                     </Select>
                   </Form.Item>
 
-                  <Form.Item
-                    name="ngay_sinh"
-                    label="Ngày sinh"
-                    rules={[{ required: false }]}
-                  >
+                  <Form.Item name="ngay_sinh" label="Ngày sinh" rules={[{ required: false }]}>
                     <DatePicker
                       placeholder="Chọn ngày sinh"
                       format="DD/MM/YYYY"
@@ -534,7 +538,10 @@ export default function PersonnelEditPage() {
                 </Title>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {currentUserRole === ROLES.MANAGER ? (
-                    <Form.Item label="Đơn vị" tooltip="Chỉ Admin mới có thể thay đổi đơn vị">
+                    <Form.Item
+                      label="Đơn vị"
+                      tooltip="Chỉ Phòng Chính trị mới có thể thay đổi đơn vị"
+                    >
                       <Input value={currentUnitName} disabled placeholder="Đơn vị" />
                     </Form.Item>
                   ) : (
@@ -598,7 +605,8 @@ export default function PersonnelEditPage() {
                           >
                             {donViTrucThuocList
                               .filter(
-                                (unit: UnitOptionRow) => unit.co_quan_don_vi_id === selectedCoQuanDonViId
+                                (unit: UnitOptionRow) =>
+                                  unit.co_quan_don_vi_id === selectedCoQuanDonViId
                               )
                               .map((unit: UnitOptionRow) => (
                                 <Select.Option key={unit.id} value={unit.id}>

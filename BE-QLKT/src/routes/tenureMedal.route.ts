@@ -5,11 +5,10 @@
  */
 
 import { Router } from 'express';
-import hccsvvController from '../controllers/tenureMedal.controller';
-import { verifyToken, checkRole, requireAdminOnly } from '../middlewares/auth';
+import tenureMedalController from '../controllers/tenureMedal.controller';
+import { verifyToken, requireAdminOrManager, requireAdminOnly } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
-import { ROLES } from '../constants/roles.constants';
 import { excelUpload as upload } from '../configs/multer';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
@@ -23,7 +22,7 @@ const router = Router();
  * @desc    Download Excel template for Valiant Soldier Medal (HCCSVV) import
  * @access  ADMIN
  */
-router.get('/template', verifyToken, requireAdminOnly, hccsvvController.getTemplate);
+router.get('/template', verifyToken, requireAdminOnly, tenureMedalController.getTemplate);
 
 /**
  * @route   POST /api/tenure-medals/import/preview
@@ -35,7 +34,7 @@ router.post(
   verifyToken,
   requireAdminOnly,
   upload.single('file'),
-  hccsvvController.previewImport
+  tenureMedalController.previewImport
 );
 
 /**
@@ -48,7 +47,7 @@ router.post(
   verifyToken,
   requireAdminOnly,
   validate(excelImportValidation.confirmImportHccsvv),
-  hccsvvController.confirmImport
+  tenureMedalController.confirmImport
 );
 
 /**
@@ -56,7 +55,7 @@ router.post(
  * @desc    List HCCSVV medals (Admin: all units, Manager: own unit)
  * @access  ADMIN, MANAGER
  */
-router.get('/', verifyToken, checkRole([ROLES.ADMIN, ROLES.MANAGER]), hccsvvController.getAll);
+router.get('/', verifyToken, requireAdminOrManager, tenureMedalController.getAll);
 
 /**
  * @route   GET /api/tenure-medals/export
@@ -66,8 +65,8 @@ router.get('/', verifyToken, checkRole([ROLES.ADMIN, ROLES.MANAGER]), hccsvvCont
 router.get(
   '/export',
   verifyToken,
-  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
-  hccsvvController.exportToExcel
+  requireAdminOrManager,
+  tenureMedalController.exportToExcel
 );
 
 /**
@@ -78,8 +77,8 @@ router.get(
 router.get(
   '/statistics',
   verifyToken,
-  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
-  hccsvvController.getStatistics
+  requireAdminOrManager,
+  tenureMedalController.getStatistics
 );
 
 /**
@@ -97,7 +96,7 @@ router.delete(
     getDescription: getLogDescription(AWARD_SLUGS.TENURE_MEDALS, 'DELETE'),
     getResourceId: getResourceId.fromParams('id'),
   }),
-  hccsvvController.deleteAward
+  tenureMedalController.deleteAward
 );
 
 export default router;

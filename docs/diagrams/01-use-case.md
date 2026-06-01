@@ -154,16 +154,18 @@ flowchart LR
     AD --- UC1
     AD --- UC3
 
+    AD --- UC6
+
     MG --- UC2
     MG --- UC4
     MG --- UC5
-    MG --- UC6
     MG --- UC7
 ```
 
 **Phân quyền route**:
-- POST/DELETE (`/api/personnel`): `requireAdminOnly` → chỉ ADMIN (Phòng Chính trị) — SA không tham gia nghiệp vụ.
-- PUT `/api/personnel/:id`: `requireManager` → ADMIN + MANAGER (MANAGER chỉ sửa quân nhân thuộc đơn vị quản lý). USER **không** sửa được hồ sơ.
+- POST/DELETE (`/api/personnel`): `requireAdmin` → SUPER_ADMIN + ADMIN.
+- PUT `/api/personnel/:id`: `requireManager` → ADMIN + MANAGER (MANAGER chỉ sửa thông tin chung quân nhân thuộc đơn vị mình; **không được chuyển đơn vị và không được đổi chức vụ** — hai việc này ADMIN-only, enforce trong `personnel/update.ts`). USER **không** sửa được hồ sơ.
+- Lịch sử chức vụ (`/api/personnel/:id/...` nested): `requireManager` — nhưng khi **thêm**, MANAGER chỉ được thêm giai đoạn **đã kết thúc** (bắt buộc có ngày kết thúc); giai đoạn hiện tại đang mở là ADMIN-only (enforce trong `positionHistory.service.ts`).
 - GET list / detail: MANAGER xem được trong phạm vi đơn vị; USER chỉ xem hồ sơ của chính mình (route `/profile/me`).
 - `POST /check-contribution-eligibility`: `requireManager` → USER **không** gọi được.
 
@@ -362,8 +364,7 @@ flowchart LR
 **Module CRUD**: UC1–UC5 được đánh dấu `«module CRUD»` — mỗi UC gói 4 sub-operation (Thêm / Sửa / Xoá / Xem) thao tác trên cùng entity. Lý do không tách thành 20 UC riêng: (a) tránh phình sơ đồ với CRUD lặp giống nhau ở 5 loại, (b) flow và phân quyền của 4 sub-op trong cùng module là đồng nhất. Đặc tả từng sub-op chi tiết trong `08-use-case-specs.md`.
 
 **Endpoints thực tế + phân quyền** (trong code):
-- `routes/{tenureMedal,contributionMedal,commemorativeMedal,militaryFlag}.route.ts` cho `/import/preview` + `/import/confirm` đều dùng `requireAdmin` → MANAGER **không** import được UC1–UC4 qua UC6.
-- `routes/scientificAchievement.route.ts` (NCKH) dùng `requireManager` cho `/template` + import → MANAGER có thể import NCKH (UC5+UC6 với MG vẫn áp dụng).
+- `routes/{tenureMedal,contributionMedal,commemorativeMedal,militaryFlag,scientificAchievement,annualReward,unitAnnualAward}.route.ts` cho `/import/preview` + `/import/confirm` (+ `/import`) đều dùng `requireAdminOnly` → **Excel import là ADMIN-only**, MANAGER **không** import được loại nào (kể cả NCKH và khen thưởng đơn vị hằng năm). MANAGER vẫn `/template` ở một số route nhưng không thực hiện import.
 - USER chỉ truy cập `/personnel/:personnel_id` của `military-flags` (UC3 — HCQKQT) và `commemorative-medals` (UC4 — KNC) — không xem trực tiếp HCCSVV (UC1) và HCBVTQ (UC2). Hồ sơ niên hạn / cống hiến của bản thân USER xem qua `/profile/me`, không qua các route này.
 
 **Lưu ý**: Khen thưởng đột xuất (DOT_XUAT) **không nằm trong sơ đồ này** vì có flow vận hành riêng — xem **A1.9** để biết chi tiết (ADMIN tạo trực tiếp, không qua duyệt 3 cấp, không có tính niên hạn).
@@ -434,7 +435,7 @@ flowchart LR
     US --- UC17
 ```
 
-**UC16 (Xoá đề xuất)**: thêm trong commit gần đây (`6e27f06`). Xoá đề xuất ở trạng thái PENDING/REJECTED — APPROVED không được xoá để giữ lịch sử khen thưởng.
+**UC16 (Xoá đề xuất)**: thêm trong commit gần đây (`6e27f06`). Xoá đề xuất chỉ khi ở trạng thái PENDING (chờ duyệt) — APPROVED/REJECTED không được xoá để giữ lịch sử khen thưởng.
 
 **Đặc thù**: Đây là use case **trung tâm** của hệ thống. **7 loại đề xuất qua Strategy pattern** ở backend. Khen thưởng đột xuất (DOT_XUAT) có flow riêng — ADMIN tạo trực tiếp qua module `adhoc-awards`, không đi qua bảng `BangDeXuat` (xem A1.9 bên dưới).
 
@@ -477,8 +478,6 @@ flowchart LR
 
     MG --- UC7
     MG --- UC8
-
-    US --- UC8
 ```
 
 **Đặc thù**: Khác biệt so với A1.8 (Đề xuất khen thưởng):
@@ -486,7 +485,7 @@ flowchart LR
 - **Không qua bảng `BangDeXuat`**: ghi thẳng vào bảng riêng `KhenThuongDotXuat`.
 - **Không dùng Strategy pattern**: có service riêng `adhocAward.service.ts` với logic tách biệt.
 - **Lý do thiết kế**: khen thưởng đột xuất xảy ra theo sự kiện / chiến công cụ thể, cần ghi nhận tức thì, không phù hợp với quy trình duyệt nhiều bước.
-- **Phân quyền**: ADMIN tạo / sửa / xoá. MANAGER + USER chỉ xem theo phạm vi (đơn vị / cá nhân).
+- **Phân quyền**: ADMIN tạo / sửa / xoá. ADMIN + MANAGER xem theo phạm vi (USER không truy cập khen thưởng đột xuất).
 
 ---
 

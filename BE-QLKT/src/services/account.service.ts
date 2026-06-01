@@ -5,6 +5,7 @@ import { coQuanDonViRepository, donViTrucThuocRepository } from '../repositories
 import { accountRepository } from '../repositories/account.repository';
 import { proposalRepository } from '../repositories/proposal.repository';
 import { positionRepository } from '../repositories/position.repository';
+import { positionHistoryRepository } from '../repositories/positionHistory.repository';
 import { DEFAULT_PASSWORD } from '../configs';
 import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
@@ -291,7 +292,10 @@ class AccountService {
     if (personnel_id) {
       const [personnel, existingPersonnelAccount] = await Promise.all([
         quanNhanRepository.findIdById(personnel_id),
-        accountRepository.findUniqueRaw({ where: { quan_nhan_id: personnel_id }, select: { id: true } }),
+        accountRepository.findUniqueRaw({
+          where: { quan_nhan_id: personnel_id },
+          select: { id: true },
+        }),
       ]);
 
       if (!personnel) {
@@ -327,9 +331,7 @@ class AccountService {
       }
 
       const [coQuanDonVi, donViTrucThuoc] = await Promise.all([
-        co_quan_don_vi_id
-          ? coQuanDonViRepository.findIdById(co_quan_don_vi_id)
-          : null,
+        co_quan_don_vi_id ? coQuanDonViRepository.findIdById(co_quan_don_vi_id) : null,
         don_vi_truc_thuoc_id
           ? donViTrucThuocRepository.findIdAndParentById(don_vi_truc_thuoc_id)
           : null,
@@ -387,8 +389,8 @@ class AccountService {
 
     const newAccount = await prisma.$transaction(async prismaTx => {
       if (personnelDataForCreate) {
-        const newPersonnel = await prismaTx.quanNhan.create({
-          data: {
+        const newPersonnel = await quanNhanRepository.create(
+          {
             cccd: null,
             ho_ten: username,
             chuc_vu_id: chuc_vu_id!,
@@ -397,11 +399,12 @@ class AccountService {
             co_quan_don_vi_id: co_quan_don_vi_id || null,
             don_vi_truc_thuoc_id: don_vi_truc_thuoc_id || null,
           },
-        });
+          prismaTx
+        );
         finalPersonnelId = newPersonnel.id;
 
-        await prismaTx.lichSuChucVu.create({
-          data: {
+        await positionHistoryRepository.create(
+          {
             quan_nhan_id: newPersonnel.id,
             chuc_vu_id: chuc_vu_id!,
             he_so_chuc_vu: heSoChucVu,
@@ -409,7 +412,8 @@ class AccountService {
             ngay_ket_thuc: null,
             so_thang: null,
           },
-        });
+          prismaTx
+        );
 
         // DVTT takes priority — only increment CQDV when no DVTT (avoid double-counting)
         if (don_vi_truc_thuoc_id) {
@@ -419,15 +423,18 @@ class AccountService {
         }
       }
 
-      return prismaTx.taiKhoan.create({
-        data: {
-          quan_nhan_id: finalPersonnelId || null,
-          username,
-          password_hash: hashedPassword,
-          role,
+      return accountRepository.createRaw(
+        {
+          data: {
+            quan_nhan_id: finalPersonnelId || null,
+            username,
+            password_hash: hashedPassword,
+            role,
+          },
+          include: ACCOUNT_QUAN_NHAN_INCLUDE,
         },
-        include: ACCOUNT_QUAN_NHAN_INCLUDE,
-      });
+        prismaTx
+      );
     });
 
     return {
@@ -510,7 +517,12 @@ class AccountService {
   async deleteAccount(
     id: string,
     forceDelete: boolean = false
-  ): Promise<{ message: string; deletedProposals?: number }> {
+  ): Promise<{
+    message: string;
+    deletedProposals?: number;
+    username?: string;
+    ho_ten?: string | null;
+  }> {
     const account = await accountRepository.findUniqueRaw({
       where: { id },
       include: {
@@ -528,7 +540,7 @@ class AccountService {
 
     if (!account.QuanNhan) {
       await accountRepository.delete(id);
-      return { message: 'Xóa tài khoản thành công' };
+      return { message: 'Xóa tài khoản thành công', username: account.username, ho_ten: null };
     }
 
     let deletedProposals = 0;
@@ -602,25 +614,22 @@ class AccountService {
             (!dataThanhTich || dataThanhTich.length === 0);
 
           if (isEmpty) {
-            await prismaTx.bangDeXuat.delete({
-              where: { id: proposal.id },
-            });
+            await proposalRepository.delete(proposal.id, prismaTx);
             deletedProposals++;
           } else {
-            await prismaTx.bangDeXuat.update({
-              where: { id: proposal.id },
-              data: {
+            await proposalRepository.update(
+              proposal.id,
+              {
                 data_danh_hieu: (dataDanhHieu as Prisma.InputJsonValue) || [],
                 data_nien_han: (dataNienHan as Prisma.InputJsonValue) || [],
               },
-            });
+              prismaTx
+            );
           }
         }
       }
 
-      await prismaTx.taiKhoan.delete({
-        where: { id },
-      });
+      await accountRepository.delete(id, prismaTx);
 
       await quanNhanRepository.delete(personnelId, prismaTx);
 
@@ -642,6 +651,8 @@ class AccountService {
     return {
       message: 'Xóa tài khoản và toàn bộ dữ liệu liên quan thành công',
       deletedProposals,
+      username: account.username,
+      ho_ten: account.QuanNhan.ho_ten,
     };
   }
 

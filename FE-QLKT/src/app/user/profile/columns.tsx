@@ -1,4 +1,4 @@
-import { calculateDuration, formatDate } from '@/lib/utils';
+import { calculateDuration, formatDate, formatHeSoChucVu } from '@/lib/utils';
 import { PROPOSAL_STATUS, getProposalStatusLabel } from '@/constants/proposal.constants';
 import type {
   ScientificAchievementRow,
@@ -118,7 +118,8 @@ export function makePositionHistoryColumns() {
       key: 'he_so_chuc_vu',
       width: 130,
       align: 'center' as const,
-      render: (chucVu: PositionHistoryRow['ChucVu']) => chucVu?.he_so_chuc_vu || 'N/A',
+      render: (chucVu: PositionHistoryRow['ChucVu']) =>
+        formatHeSoChucVu(chucVu?.he_so_chuc_vu, 'N/A'),
     },
     {
       title: 'Ngày bắt đầu',

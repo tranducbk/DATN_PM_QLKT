@@ -70,7 +70,7 @@ npm run init-super-admin
 npm run dev
 ```
 
-Server sẽ chạy tại `http://localhost:5000`
+Server sẽ chạy tại `http://localhost:4000`
 
 ## 📝 Environment Variables
 
@@ -85,7 +85,7 @@ JWT_SECRET="your-secret-key-here"
 JWT_REFRESH_SECRET="your-refresh-secret-here"
 
 # Server
-PORT=5000
+PORT=4000
 NODE_ENV=development
 
 # Email (nếu có)
@@ -98,7 +98,7 @@ EMAIL_PASS=your-password
 ## 🔧 Scripts
 
 ```bash
-npm run dev              # Chạy development server (nodemon)
+npm run dev              # Chạy development server (tsx watch)
 npm start                # Chạy production server
 npm run init-super-admin # Khởi tạo Super Admin account
 ```
@@ -128,7 +128,7 @@ npx prisma migrate reset
 
 Hệ thống sử dụng JWT với 2 loại token:
 
-- **Access Token**: Hết hạn sau 15 phút
+- **Access Token**: Hết hạn sau 30 phút
 - **Refresh Token**: Hết hạn sau 7 ngày
 
 ### API Endpoints
@@ -148,7 +148,7 @@ Hệ thống sử dụng JWT với 2 loại token:
 
 ## 📚 API Documentation
 
-Xem chi tiết API tại: [QLKT.md](../Document/QLKT.md)
+Xem chi tiết kiến trúc + sơ đồ tại: [docs/diagrams](../docs/diagrams) và [báo cáo](../report/BAO_CAO.md)
 
 ## 🔍 Middleware
 

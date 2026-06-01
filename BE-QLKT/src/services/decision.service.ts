@@ -4,10 +4,7 @@ import { prisma } from '../models';
 import { decisionFileRepository } from '../repositories/decisionFile.repository';
 import { AppError, NotFoundError, ValidationError } from '../middlewares/errorHandler';
 import type { FileQuyetDinh, Prisma } from '../generated/prisma';
-import {
-  cascadeRenameSoQuyetDinh,
-  type CascadeRenameSummary,
-} from './decision/cascadeRename';
+import { cascadeRenameSoQuyetDinh, type CascadeRenameSummary } from './decision/cascadeRename';
 import { findDecisionUsages, formatUsageError } from './decision/findUsages';
 
 export type UpdateDecisionResult = FileQuyetDinh & {
@@ -297,7 +294,7 @@ class DecisionService {
           error: null,
         };
       } catch (error) {
-   console.error('Failed to access decision file on disk:', error);
+        console.error('Failed to access decision file on disk:', error);
         return {
           success: false,
           filePath: null,
@@ -428,7 +425,7 @@ class DecisionService {
       }
     }
 
-    const updateData: Prisma.FileQuyetDinhUpdateInput = {};
+    const updateData: Prisma.FileQuyetDinhUncheckedUpdateInput = {};
     if (newSqd !== undefined) updateData.so_quyet_dinh = newSqd;
     if (nam !== undefined) updateData.nam = parseInt(String(nam));
     if (ngay_ky !== undefined) updateData.ngay_ky = new Date(ngay_ky);
@@ -438,7 +435,7 @@ class DecisionService {
     if (ghi_chu !== undefined) updateData.ghi_chu = ghi_chu;
 
     const { decision, cascade } = await prisma.$transaction(async tx => {
-      const updated = await tx.fileQuyetDinh.update({ where: { id }, data: updateData });
+      const updated = await decisionFileRepository.update(id, updateData, tx);
       const cascadeSummary = willRename
         ? await cascadeRenameSoQuyetDinh(tx, oldSqd, newSqd!)
         : null;
@@ -448,7 +445,7 @@ class DecisionService {
     return { ...decision, cascade };
   }
 
-  async deleteDecision(id: string): Promise<{ message: string }> {
+  async deleteDecision(id: string): Promise<{ message: string; decision: FileQuyetDinh }> {
     const existingDecision = await decisionFileRepository.findUniqueRaw({
       where: { id },
     });
@@ -464,7 +461,7 @@ class DecisionService {
 
     await decisionFileRepository.delete(id);
 
-    return { message: 'Xóa quyết định thành công' };
+    return { message: 'Xóa quyết định thành công', decision: existingDecision };
   }
 
   async getAvailableYears(): Promise<number[]> {

@@ -485,7 +485,7 @@ sequenceDiagram
 - Page: PascalCase tiếng Việt theo trang ("TrangDangNhap", "TrangDeXuat", "TrangChiTietDeXuat", "TrangKhenThuongDotXuat")
 - Controller: PascalCase + suffix Controller ("AuthController", "DeXuatController", "KhenThuongController", "KhenThuongDotXuatController", "DevZoneController")
 - Entity: tên model nghiệp vụ ("TaiKhoan", "DeXuat", "KhenThuong", "KhenThuongDotXuat", "HoSoHangNam", "HoSoNienHan", "HoSoCongHien", "ThongBao", "DanhHieuHangNam")
-- Message: ngắn gọn nghiệp vụ tiếng Việt, không reveal implementation (không nói `prisma.$transaction`, `bcrypt.compare`, `Joi validate`...)
+- Message: ngắn gọn nghiệp vụ tiếng Việt, không reveal implementation (không nói `prisma.$transaction`, `bcrypt.compare`, `Zod validate`...)
 - `alt` cho nhánh thành công/thất bại, có nhãn rõ ràng
 - `opt` cho điều kiện optional (vd: chỉ chạy khi điều kiện cụ thể)
 - `loop` cho chu kỳ lặp (vd: cron tick, for each personnel)

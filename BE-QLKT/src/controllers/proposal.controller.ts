@@ -13,8 +13,6 @@ import {
 } from '../constants/proposalTypes.constants';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
-import { writeSystemLog } from '../helpers/systemLogHelper';
-import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { parsePagination } from '../helpers/paginationHelper';
 import { setFileSendHeaders } from '../helpers/file/fileResponseHeaders';
 import { resolveIdParam } from '../helpers/controllerHelper';
@@ -296,19 +294,6 @@ class ProposalController {
       return ResponseHelper.badRequest(res, 'ID đề xuất không hợp lệ');
     }
     const result = await proposalService.deleteProposal(id, user.id, user.role);
-    await writeSystemLog({
-      userId: user.id,
-      userRole: user.role,
-      action: AUDIT_ACTIONS.DELETE,
-      resource: 'proposals',
-      resourceId: id,
-      description: `Xóa đề xuất khen thưởng ID ${id} - Đơn vị: ${result.proposal.don_vi}`,
-      payload: {
-        proposal_id: id,
-        don_vi: result.proposal.don_vi,
-        status: result.proposal.status,
-      },
-    });
     void safeNotify(
       {
         userId: user.id,

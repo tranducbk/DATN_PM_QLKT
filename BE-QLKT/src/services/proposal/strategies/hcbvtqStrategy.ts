@@ -1,5 +1,7 @@
 import { quanNhanRepository } from '../../../repositories/quanNhan.repository';
 import { positionHistoryRepository } from '../../../repositories/positionHistory.repository';
+import { contributionMedalRepository } from '../../../repositories/contributionMedal.repository';
+import { contributionProfileRepository } from '../../../repositories/contributionProfile.repository';
 import { PROPOSAL_TYPES } from '../../../constants/proposalTypes.constants';
 import {
   CONG_HIEN_HE_SO_GROUPS,
@@ -9,10 +11,7 @@ import {
 import { ELIGIBILITY_STATUS } from '../../../constants/eligibilityStatus.constants';
 import { GENDER } from '../../../constants/gender.constants';
 import { writeSystemLog } from '../../../helpers/systemLogHelper';
-import {
-  buildCutoffDate,
-  formatServiceDuration,
-} from '../../../helpers/serviceYearsHelper';
+import { buildCutoffDate, formatServiceDuration } from '../../../helpers/serviceYearsHelper';
 import { validateHCBVTQHighestRank } from '../../../helpers/awardValidation/contributionMedalHighestRank';
 import { formatQuanNhanLabel } from './quanNhanLabel';
 import {
@@ -47,14 +46,12 @@ interface CongHienPersonnelRow {
   id: string;
   ho_ten: string | null;
   CoQuanDonVi: { id: string; ten_don_vi: string; ma_don_vi: string } | null;
-  DonViTrucThuoc:
-    | {
-        id: string;
-        ten_don_vi: string;
-        ma_don_vi: string;
-        CoQuanDonVi: { id: string; ten_don_vi: string; ma_don_vi: string } | null;
-      }
-    | null;
+  DonViTrucThuoc: {
+    id: string;
+    ten_don_vi: string;
+    ma_don_vi: string;
+    CoQuanDonVi: { id: string; ten_don_vi: string; ma_don_vi: string } | null;
+  } | null;
 }
 
 async function loadPersonnelMap(
@@ -97,9 +94,7 @@ class HcbvtqStrategy implements ProposalStrategy {
     ctx: ProposalSubmitContext
   ): Promise<SubmitValidationResult> {
     const items = (titleData ?? []) as CongHienInputItem[];
-    const personnelIds = items
-      .map(i => i.personnel_id)
-      .filter((id): id is string => Boolean(id));
+    const personnelIds = items.map(i => i.personnel_id).filter((id): id is string => Boolean(id));
     const personnelMap = await loadPersonnelMap(personnelIds);
 
     const cutoffDate = buildCutoffDate(ctx.nam, ctx.thang);
@@ -192,9 +187,7 @@ class HcbvtqStrategy implements ProposalStrategy {
       return { errors, payload: { data_cong_hien: dataCongHien } };
     }
 
-    const evalIds = dataCongHien
-      .map(i => i.personnel_id)
-      .filter((id): id is string => Boolean(id));
+    const evalIds = dataCongHien.map(i => i.personnel_id).filter((id): id is string => Boolean(id));
     if (evalIds.length === 0) {
       return { errors, payload: { data_cong_hien: dataCongHien } };
     }
@@ -288,8 +281,7 @@ class HcbvtqStrategy implements ProposalStrategy {
           continue;
         }
 
-        const soQuyetDinhDanhHieu =
-          item.so_quyet_dinh || decisions.so_quyet_dinh_cong_hien || null;
+        const soQuyetDinhDanhHieu = item.so_quyet_dinh || decisions.so_quyet_dinh_cong_hien || null;
         const namNhan = item.nam_nhan;
         const thangNhan = item.thang_nhan;
 
@@ -331,23 +323,11 @@ class HcbvtqStrategy implements ProposalStrategy {
         const thoiGianNhom0_8 = item.thoi_gian_nhom_0_8 || null;
         const thoiGianNhom0_9_1_0 = item.thoi_gian_nhom_0_9_1_0 || null;
 
-        const existingCongHien = await prismaTx.khenThuongHCBVTQ.findUnique({
-          where: { quan_nhan_id: quanNhan.id },
-        });
+        const existingCongHien = await contributionMedalRepository.findUniqueRaw(
+          { where: { quan_nhan_id: quanNhan.id } },
+          prismaTx
+        );
 
-        // ───────────────────────────────────────────────────────────────
-        //  HCBVTQ = HUÂN CHƯƠNG MỘT-LẦN-LIFETIME, CHỈ CHO UPGRADE
-        // ───────────────────────────────────────────────────────────────
-        //  Quân nhân chỉ được giữ DUY NHẤT 1 record HCBVTQ trong đời.
-        //  Khi đã có rồi:
-        //    - Đề xuất hạng CAO HƠN (vd: đã có Hạng Ba, đề xuất Hạng Nhì)
-        //      → UPDATE record cũ thành hạng mới.
-        //    - Đề xuất hạng BẰNG hoặc THẤP HƠN → REJECT (vô nghĩa).
-        //
-        //  Thứ tự rank: HANG_BA(1) < HANG_NHI(2) < HANG_NHAT(3).
-        //  Logic upgrade: newRank > existingRank → cho phép update.
-        //                 newRank ≤ existingRank → push error, skip.
-        // ───────────────────────────────────────────────────────────────
         if (existingCongHien) {
           const rankOrder: Record<string, number> = {
             [DANH_HIEU_HCBVTQ.HANG_BA]: 1,
@@ -357,13 +337,9 @@ class HcbvtqStrategy implements ProposalStrategy {
           const existingRank = rankOrder[existingCongHien.danh_hieu] || 0;
           const newRank = rankOrder[item.danh_hieu] || 0;
           if (newRank > existingRank) {
-            // UPGRADE PATH: thay record cũ bằng record mới (cao hơn).
-            // Lưu lại 3 nhóm tháng tại thời điểm duyệt (snapshot) — KHÔNG
-            // recompute sau, vì khi quân nhân thăng chức tiếp record này
-            // vẫn cần giữ nguyên số tháng tại thời điểm trao huân chương.
-            await prismaTx.khenThuongHCBVTQ.update({
-              where: { id: existingCongHien.id },
-              data: {
+            await contributionMedalRepository.update(
+              existingCongHien.id,
+              {
                 danh_hieu: item.danh_hieu,
                 nam: namNhan,
                 thang: thangNhan,
@@ -375,7 +351,8 @@ class HcbvtqStrategy implements ProposalStrategy {
                 thoi_gian_nhom_0_8: thoiGianNhom0_8,
                 thoi_gian_nhom_0_9_1_0: thoiGianNhom0_9_1_0,
               },
-            });
+              prismaTx
+            );
             acc.importedDanhHieu++;
             acc.affectedPersonnelIds.add(quanNhan.id);
           } else {
@@ -388,8 +365,8 @@ class HcbvtqStrategy implements ProposalStrategy {
             continue;
           }
         } else {
-          await prismaTx.khenThuongHCBVTQ.create({
-            data: {
+          await contributionMedalRepository.create(
+            {
               quan_nhan_id: quanNhan.id,
               danh_hieu: item.danh_hieu,
               nam: namNhan,
@@ -402,7 +379,8 @@ class HcbvtqStrategy implements ProposalStrategy {
               thoi_gian_nhom_0_8: thoiGianNhom0_8,
               thoi_gian_nhom_0_9_1_0: thoiGianNhom0_9_1_0,
             },
-          });
+            prismaTx
+          );
           acc.importedDanhHieu++;
           acc.affectedPersonnelIds.add(quanNhan.id);
         }
@@ -428,11 +406,12 @@ class HcbvtqStrategy implements ProposalStrategy {
             [profileFields.status]: ELIGIBILITY_STATUS.DA_NHAN,
             [profileFields.ngay]: ngayNhan,
           };
-          await prismaTx.hoSoCongHien.upsert({
-            where: { quan_nhan_id: quanNhan.id },
-            update: profileUpdate,
-            create: { quan_nhan_id: quanNhan.id, hcbvtq_total_months: 0, ...profileUpdate },
-          });
+          await contributionProfileRepository.upsert(
+            quanNhan.id,
+            { quan_nhan_id: quanNhan.id, hcbvtq_total_months: 0, ...profileUpdate },
+            profileUpdate,
+            prismaTx
+          );
         }
       } catch (error) {
         console.error('[approveProposal] HCBVTQ error:', {

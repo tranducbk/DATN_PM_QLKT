@@ -36,12 +36,23 @@ import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import * as notificationHelper from '../helpers/notification';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { ValidationError, NotFoundError } from '../middlewares/errorHandler';
-import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys, sanitizeRowData, validatePersonnelNameMatch } from '../helpers/excel/excelHelper';
+import {
+  parseHeaderMap,
+  getHeaderCol,
+  resolvePersonnelInfo,
+  buildPendingKeys,
+  sanitizeRowData,
+  validatePersonnelNameMatch,
+} from '../helpers/excel/excelHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { buildTemplate, styleHeaderRow } from '../helpers/excel/excelTemplateHelper';
 import { fetchTemplateData } from './excel/templateData.service';
 import { IMPORT_TRANSACTION_TIMEOUT } from '../constants/excel.constants';
-import { DANH_HIEU_MAP, KNC_YEARS_REQUIRED_NAM, KNC_YEARS_REQUIRED_NU } from '../constants/danhHieu.constants';
+import {
+  DANH_HIEU_MAP,
+  KNC_YEARS_REQUIRED_NAM,
+  KNC_YEARS_REQUIRED_NU,
+} from '../constants/danhHieu.constants';
 import { GENDER } from '../constants/gender.constants';
 import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 import { AWARD_LABELS } from '../constants/awardLabels.constants';
@@ -130,33 +141,42 @@ class CommemorativeMedalService {
       }
     }
 
-    const [personnelList, existingKncList, existingDecisions, pendingProposals] = await Promise.all([
-      allPersonnelIds.size > 0
-        ? quanNhanRepository.findManyRaw({
-            where: { id: { in: [...allPersonnelIds] } },
-            select: { id: true, ho_ten: true, gioi_tinh: true, ngay_nhap_ngu: true, cap_bac: true, ChucVu: { select: { ten_chuc_vu: true } } },
-          })
-        : Promise.resolve([]),
-      allPersonnelIds.size > 0
-        ? commemorativeMedalRepository.findManyRaw({
-            where: { quan_nhan_id: { in: [...allPersonnelIds] } },
-          })
-        : Promise.resolve([]),
-      decisionFileRepository.findManyRaw({
-        select: { so_quyet_dinh: true },
-      }),
-      proposalRepository.findManyRaw({
-        where: {
-          loai_de_xuat: PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
-          status: PROPOSAL_STATUS.PENDING,
-        },
-      }),
-    ]);
+    const [personnelList, existingKncList, existingDecisions, pendingProposals] = await Promise.all(
+      [
+        allPersonnelIds.size > 0
+          ? quanNhanRepository.findManyRaw({
+              where: { id: { in: [...allPersonnelIds] } },
+              select: {
+                id: true,
+                ho_ten: true,
+                gioi_tinh: true,
+                ngay_nhap_ngu: true,
+                cap_bac: true,
+                ChucVu: { select: { ten_chuc_vu: true } },
+              },
+            })
+          : Promise.resolve([]),
+        allPersonnelIds.size > 0
+          ? commemorativeMedalRepository.findManyRaw({
+              where: { quan_nhan_id: { in: [...allPersonnelIds] } },
+            })
+          : Promise.resolve([]),
+        decisionFileRepository.findManyRaw({
+          select: { so_quyet_dinh: true },
+        }),
+        proposalRepository.findManyRaw({
+          where: {
+            loai_de_xuat: PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
+            status: PROPOSAL_STATUS.PENDING,
+          },
+        }),
+      ]
+    );
 
     const pendingPersonnelIds = buildPendingKeys(
       pendingProposals as Array<Record<string, unknown>>,
       'data_nien_han',
-      (item) => item.personnel_id ? String(item.personnel_id) : null
+      item => (item.personnel_id ? String(item.personnel_id) : null)
     );
 
     const personnelMap = new Map(personnelList.map(p => [p.id, p]));
@@ -356,10 +376,12 @@ class CommemorativeMedalService {
           ]
         : [];
 
-      const { hoTen, capBac, chucVu, missingFields: missingInfoFields } = resolvePersonnelInfo(
-        { ho_ten, cap_bac, chuc_vu },
-        personnel
-      );
+      const {
+        hoTen,
+        capBac,
+        chucVu,
+        missingFields: missingInfoFields,
+      } = resolvePersonnelInfo({ ho_ten, cap_bac, chuc_vu }, personnel);
       if (missingInfoFields.length > 0) {
         errors.push({
           row: rowNumber,
@@ -409,7 +431,7 @@ class CommemorativeMedalService {
     const pendingPersonnelIds = buildPendingKeys(
       pendingProposals as Array<Record<string, unknown>>,
       'data_nien_han',
-      (item) => item.personnel_id ? String(item.personnel_id) : null
+      item => (item.personnel_id ? String(item.personnel_id) : null)
     );
     const pendingConflicts: string[] = [];
     for (const item of validItems) {
@@ -438,26 +460,29 @@ class CommemorativeMedalService {
       async prismaTx => {
         const results = [];
         for (const item of validItems) {
-          const result = await prismaTx.kyNiemChuongVSNXDQDNDVN.upsert({
-            where: { quan_nhan_id: item.personnel_id },
-            update: {
-              nam: item.nam,
-              thang: item.thang ?? 12,
-              cap_bac: item.cap_bac ?? null,
-              chuc_vu: item.chuc_vu ?? null,
-              so_quyet_dinh: item.so_quyet_dinh ?? null,
-              ghi_chu: item.ghi_chu ?? null,
+          const result = await commemorativeMedalRepository.upsertRaw(
+            {
+              where: { quan_nhan_id: item.personnel_id },
+              update: {
+                nam: item.nam,
+                thang: item.thang ?? 12,
+                cap_bac: item.cap_bac ?? null,
+                chuc_vu: item.chuc_vu ?? null,
+                so_quyet_dinh: item.so_quyet_dinh ?? null,
+                ghi_chu: item.ghi_chu ?? null,
+              },
+              create: {
+                quan_nhan_id: item.personnel_id,
+                nam: item.nam,
+                thang: item.thang ?? 12,
+                cap_bac: item.cap_bac ?? null,
+                chuc_vu: item.chuc_vu ?? null,
+                so_quyet_dinh: item.so_quyet_dinh ?? null,
+                ghi_chu: item.ghi_chu ?? null,
+              },
             },
-            create: {
-              quan_nhan_id: item.personnel_id,
-              nam: item.nam,
-              thang: item.thang ?? 12,
-              cap_bac: item.cap_bac ?? null,
-              chuc_vu: item.chuc_vu ?? null,
-              so_quyet_dinh: item.so_quyet_dinh ?? null,
-              ghi_chu: item.ghi_chu ?? null,
-            },
-          });
+            prismaTx
+          );
           results.push(result);
         }
         return { imported: results.length, data: results };
@@ -570,7 +595,10 @@ class CommemorativeMedalService {
           const months = parsed.months || 0;
           return years * 12 + months;
         } catch (error) {
-   console.error('Failed to parse thoi_gian JSON when exporting commemorative medals:', error);
+          console.error(
+            'Failed to parse thoi_gian JSON when exporting commemorative medals:',
+            error
+          );
           return thoiGian;
         }
       }
@@ -578,19 +606,21 @@ class CommemorativeMedalService {
     };
 
     data.forEach((item, index) => {
-      worksheet.addRow(sanitizeRowData({
-        stt: index + 1,
-        cccd: item.QuanNhan.cccd,
-        ho_ten: item.QuanNhan.ho_ten,
-        don_vi:
-          item.QuanNhan.CoQuanDonVi?.ten_don_vi ?? item.QuanNhan.DonViTrucThuoc?.ten_don_vi ?? '',
-        nam: item.nam,
-        cap_bac: item.cap_bac,
-        chuc_vu: item.chuc_vu,
-        thoi_gian: convertThoiGian(item.thoi_gian),
-        so_quyet_dinh: item.so_quyet_dinh,
-        ghi_chu: item.ghi_chu ?? '',
-      }));
+      worksheet.addRow(
+        sanitizeRowData({
+          stt: index + 1,
+          cccd: item.QuanNhan.cccd,
+          ho_ten: item.QuanNhan.ho_ten,
+          don_vi:
+            item.QuanNhan.CoQuanDonVi?.ten_don_vi ?? item.QuanNhan.DonViTrucThuoc?.ten_don_vi ?? '',
+          nam: item.nam,
+          cap_bac: item.cap_bac,
+          chuc_vu: item.chuc_vu,
+          thoi_gian: convertThoiGian(item.thoi_gian),
+          so_quyet_dinh: item.so_quyet_dinh,
+          ghi_chu: item.ghi_chu ?? '',
+        })
+      );
     });
 
     return await workbook.xlsx.writeBuffer();
@@ -666,7 +696,14 @@ class CommemorativeMedalService {
     const award = await commemorativeMedalRepository.findUniqueRaw({
       where: { id },
       include: {
-        QuanNhan: true,
+        QuanNhan: {
+          select: {
+            id: true,
+            ho_ten: true,
+            co_quan_don_vi_id: true,
+            don_vi_truc_thuoc_id: true,
+          },
+        },
       },
     });
 
@@ -701,7 +738,32 @@ class CommemorativeMedalService {
     return {
       message: `Xóa khen thưởng ${AWARD_LABEL} thành công`,
       personnelId,
+      award,
     };
+  }
+
+  /**
+   * Checks whether a personnel already holds KNC VSNXD QDNDVN or has a pending proposal for it.
+   * @param personnelId - Personnel ID
+   * @returns `{ alreadyReceived, reason, award?/proposal? }`
+   */
+  async checkAlreadyReceived(personnelId: string) {
+    const existingAward = await commemorativeMedalRepository.findUniqueRaw({
+      where: { quan_nhan_id: personnelId },
+    });
+    if (existingAward) return { alreadyReceived: true, reason: 'Đã nhận', award: existingAward };
+
+    const pendingProposal = await proposalRepository.findFirstRaw({
+      where: {
+        loai_de_xuat: PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
+        status: PROPOSAL_STATUS.PENDING,
+        data_nien_han: { array_contains: [{ personnel_id: personnelId }] },
+      },
+    });
+    if (pendingProposal)
+      return { alreadyReceived: true, reason: 'Đang chờ duyệt', proposal: pendingProposal };
+
+    return { alreadyReceived: false, reason: null };
   }
 }
 

@@ -45,7 +45,7 @@ _(Ký và ghi rõ họ tên)_
 
 **Đoạn 2 — Mục tiêu đồ án.** Đồ án xây dựng phần mềm web hỗ trợ Phòng Chính trị Học viện quản lý toàn bộ vòng đời của bảy nhóm khen thưởng (cá nhân hằng năm, đơn vị hằng năm, niên hạn, cống hiến, kỷ niệm chương, quân kỳ quyết thắng, nghiên cứu khoa học), bao quát từ tạo đề xuất, kiểm tra điều kiện chuỗi tự động, phê duyệt, lưu vết tới xuất quyết định. Phần mềm hướng tới rút ngắn thời gian xét điều kiện từ vài chục phút trên Excel xuống dưới một giây cho mỗi quân nhân, đồng thời ghi nhật ký đầy đủ phục vụ kiểm tra hậu kiểm.
 
-**Đoạn 3 — Hướng tiếp cận và kết quả.** Hệ thống được triển khai dưới dạng ứng dụng web vận hành trên mạng nội bộ (LAN) của Học viện, với phần frontend dùng Next.js 14 (App Router) và phần backend dùng Express + TypeScript trên cơ sở dữ liệu PostgreSQL truy cập qua Prisma ORM. Toàn bộ quy tắc xét chuỗi được trừu tượng hoá thành các đối tượng cấu hình (`ChainAwardConfig`) cho phép thêm tier mới mà không cần sửa mã nguồn xét điều kiện. Sản phẩm bao gồm 23 model dữ liệu, hơn 870 ca kiểm thử đơn vị (phủ rule chuỗi cá nhân và đơn vị) và 4 cấp phân quyền theo đặc thù quân sự (SuperAdmin, Admin, Manager, User).
+**Đoạn 3 — Hướng tiếp cận và kết quả.** Hệ thống được triển khai dưới dạng ứng dụng web vận hành trên mạng nội bộ (LAN) của Học viện, với phần frontend dùng Next.js 14 (App Router) và phần backend dùng Express + TypeScript trên cơ sở dữ liệu PostgreSQL truy cập qua Prisma ORM. Toàn bộ quy tắc xét chuỗi được trừu tượng hoá thành các đối tượng cấu hình (`ChainAwardConfig`) cho phép thêm tier mới mà không cần sửa mã nguồn xét điều kiện. Sản phẩm bao gồm 23 model dữ liệu, hơn 937 ca kiểm thử đơn vị (phủ rule chuỗi cá nhân và đơn vị) và 4 cấp phân quyền theo đặc thù quân sự (SuperAdmin, Admin, Manager, User).
 
 **Sinh viên thực hiện**
 
@@ -121,7 +121,7 @@ _(Ký và ghi rõ họ tên)_
 | 4.20 – 4.25 | ERD tổng thể và 5 ERD phân module | 4 |
 | 4.26 | Deployment diagram (Docker + PM2) | 4 |
 | 4.27 – 4.41 | Ảnh chụp giao diện thực tế | 4 |
-| 4.42 | Tổng kết kết quả Jest (74/74 suites, 870/870 tests) | 4 |
+| 4.42 | Tổng kết kết quả Jest (80/80 suites, 937/937 tests) | 4 |
 
 ---
 
@@ -188,7 +188,7 @@ Thứ ba, **dấu vết kiểm toán** của các thao tác trên Excel không �
 
 Trước những hạn chế trên, việc xây dựng một phần mềm chuyên dụng cho công tác quản lý khen thưởng tại HVKHQS là cần thiết. Phần mềm phải đảm nhiệm được toàn bộ vòng đời nghiệp vụ, từ nhập dữ liệu lịch sử qua Excel, tự động kiểm tra điều kiện chuỗi, xử lý đề xuất – phê duyệt cho đến xuất quyết định và lưu vết, đồng thời tuân thủ phân quyền nhiều cấp đặc thù môi trường quân sự.
 
-Đề tài cấp Học viện mã số ĐTHV/2025-2026/H5-01 do Thượng tá ThS. Đặng Quốc Hưng và Trung tá ThS. Bùi Đình Thế chủ trì [23] là cơ sở định hướng nghiệp vụ cho đồ án này. Phần lớn các căn cứ pháp lý, mô tả hiện trạng và yêu cầu chức năng – phi chức năng được kế thừa từ kết quả khảo sát của đề tài; mọi đoạn trình bày bám sát ngữ liệu nguồn đều được dẫn rõ qua mục [23] trong danh mục Tài liệu tham khảo. Trên nền tảng đó, **đóng góp riêng của đồ án** tập trung vào bốn khía cạnh kỹ thuật: (i) thiết kế kiến trúc phân tầng có lớp Repository tách khỏi Service; (ii) thuật toán xét chuỗi danh hiệu (BKBTBQP, CSTĐTQ, BKTTCP cá nhân; BKBTBQP, BKTTCP đơn vị) được trừu tượng hoá qua đối tượng cấu hình `ChainAwardConfig`; (iii) cơ chế đề xuất – phê duyệt theo Strategy pattern cho bảy nhóm khen thưởng kèm nhật ký kiểm toán đầy đủ; (iv) bộ kiểm thử đơn vị gồm 870 ca phủ toàn bộ rule chuỗi và các kịch bản phê duyệt. Bốn khía cạnh này được trình bày chi tiết từ Chương 3 đến Chương 5.
+Đề tài cấp Học viện mã số ĐTHV/2025-2026/H5-01 do Thượng tá ThS. Đặng Quốc Hưng và Trung tá ThS. Bùi Đình Thế chủ trì [23] là cơ sở định hướng nghiệp vụ cho đồ án này. Phần lớn các căn cứ pháp lý, mô tả hiện trạng và yêu cầu chức năng – phi chức năng được kế thừa từ kết quả khảo sát của đề tài; mọi đoạn trình bày bám sát ngữ liệu nguồn đều được dẫn rõ qua mục [23] trong danh mục Tài liệu tham khảo. Trên nền tảng đó, **đóng góp riêng của đồ án** tập trung vào bốn khía cạnh kỹ thuật: (i) thiết kế kiến trúc phân tầng có lớp Repository tách khỏi Service; (ii) thuật toán xét chuỗi danh hiệu (BKBTBQP, CSTĐTQ, BKTTCP cá nhân; BKBTBQP, BKTTCP đơn vị) được trừu tượng hoá qua đối tượng cấu hình `ChainAwardConfig`; (iii) cơ chế đề xuất – phê duyệt theo Strategy pattern cho bảy nhóm khen thưởng kèm nhật ký kiểm toán đầy đủ; (iv) bộ kiểm thử đơn vị gồm 937 ca phủ toàn bộ rule chuỗi và các kịch bản phê duyệt. Bốn khía cạnh này được trình bày chi tiết từ Chương 3 đến Chương 5.
 
 ## 1.2 Mục tiêu và phạm vi đề tài
 
@@ -211,9 +211,9 @@ Phần mềm được xây dựng theo mô hình client – server với hai th�
 - **Frontend** dùng Next.js 14 với mô hình App Router, viết bằng TypeScript, sử dụng Ant Design làm thư viện thành phần chính, kết hợp Tailwind CSS cho bố cục linh hoạt.
 - **Backend** dùng Express trên Node.js, viết bằng TypeScript, tổ chức theo kiến trúc phân tầng (Route → Middleware → Controller → Service → Repository → Prisma). Lớp Repository được tách riêng giúp giảm sự phụ thuộc trực tiếp vào Prisma Client trong tầng Service, tạo điều kiện thay thế ORM trong tương lai mà không phải viết lại logic nghiệp vụ.
 - **Cơ sở dữ liệu** chọn PostgreSQL truy cập qua Prisma ORM. Toàn bộ schema (23 model) đã được mô hình hóa trong tệp `schema.prisma` duy nhất với migration tự động.
-- **Xác thực và phân quyền** dùng cặp JSON Web Token (Access Token thời hạn ngắn + Refresh Token có rotation) lưu trữ tại HttpOnly cookie. Bốn vai trò được áp đặt qua middleware `requireRole` chạy trước mỗi endpoint nhạy cảm.
+- **Xác thực và phân quyền** dùng cặp JSON Web Token (Access Token thời hạn ngắn + Refresh Token có rotation) lưu trữ tại HttpOnly cookie. Bốn vai trò được áp đặt qua middleware `checkRole` chạy trước mỗi endpoint nhạy cảm.
 - **Thông báo thời gian thực** sử dụng Socket.IO, chủ yếu thông báo kết quả nhập Excel lớn, biến cố phê duyệt và xóa đề xuất cho người tạo đề xuất, đồng thời báo cho Phòng Chính trị khi có đề xuất mới.
-- **Kiểm thử** dùng Jest + ts-jest. Tổng cộng có 74 bộ kiểm thử đơn vị với 870 ca kiểm thử bao phủ rule chuỗi (cá nhân và đơn vị), kịch bản phê duyệt và xếp hạng huy chương.
+- **Kiểm thử** dùng Jest + ts-jest. Tổng cộng có 80 bộ kiểm thử đơn vị với 937 ca kiểm thử bao phủ rule chuỗi (cá nhân và đơn vị), kịch bản phê duyệt và xếp hạng huy chương.
 
 Quy tắc chuỗi danh hiệu được trừu tượng hóa thành đối tượng cấu hình `ChainAwardConfig` (thuộc tính: mã danh hiệu, số năm chu kỳ, số cờ tiền điều kiện cần thiết, có yêu cầu nghiên cứu khoa học hay không, tính chất trọn đời hay lặp lại, tên cột cờ trong cơ sở dữ liệu, nhãn chuỗi). Hai hằng số `PERSONAL_CHAIN_AWARDS` và `UNIT_CHAIN_AWARDS` chứa danh sách cấu hình tương ứng cho cá nhân và đơn vị. Một hàm xét điều kiện duy nhất `checkChainEligibility` đọc các đối tượng này để kết luận, qua đó việc thêm tier mới chỉ cần bổ sung phần tử vào mảng cấu hình mà không phải sửa logic.
 
@@ -269,10 +269,10 @@ Hệ thống cung cấp 15 nhóm chức năng chính: Đăng nhập, Quản lý 
 Quản lý quân nhân là một trong những module tương tác cao nhất của hệ thống. Quân nhân là thực thể trung tâm liên kết tới gần như mọi bảng nghiệp vụ khác (danh hiệu hằng năm, niên hạn, cống hiến, thành tích khoa học, đột xuất, đề xuất). Phân rã chức năng gồm các use case con:
 
 - **Tạo mới quân nhân** — chỉ Admin có quyền. Yêu cầu nhập tối thiểu họ tên, số CCCD, ngày sinh, giới tính, ngày nhập ngũ, đơn vị (CQĐV hoặc ĐVTT), chức vụ. Hệ thống kiểm tra trùng CCCD trước khi ghi vào cơ sở dữ liệu.
-- **Cập nhật thông tin** — Admin sửa được toàn bộ; Manager chỉ sửa được các trường ngoại trừ đơn vị và CCCD; bản thân quân nhân (User) chỉ sửa được địa chỉ, số điện thoại, email.
+- **Cập nhật thông tin** — Admin sửa được toàn bộ; Manager sửa được thông tin chung của quân nhân thuộc đơn vị mình nhưng **không được đổi đơn vị và chức vụ** (hai chức năng này chỉ thuộc Admin); bản thân quân nhân (User) chỉ sửa được địa chỉ, số điện thoại, email.
 - **Chuyển đơn vị** — chỉ Admin. Khi chuyển, hệ thống cập nhật số lượng quân nhân của đơn vị cũ (giảm 1) và đơn vị mới (tăng 1) trong cùng một transaction. Quan trọng là toàn bộ lịch sử khen thưởng được giữ nguyên — không tạo bản ghi mới hay xoá bản ghi cũ.
-- **Quản lý lịch sử chức vụ** — Admin nhập danh sách các giai đoạn quân nhân giữ chức vụ với hệ số tương ứng. Dữ liệu này là đầu vào cho thuật toán xét khen thưởng cống hiến (HCBVTQ).
-- **Nhập / xuất Excel** — cho phép tải lên hoặc tải xuống danh sách quân nhân theo định dạng quy chuẩn. Thao tác nhập đi qua hai bước (xem trước, xác nhận) sẽ được mô tả chi tiết tại 2.2.7.
+- **Quản lý lịch sử chức vụ** — Admin nhập danh sách các giai đoạn quân nhân giữ chức vụ với hệ số tương ứng (bao gồm cả giai đoạn hiện tại đang đảm nhiệm). Manager chỉ được bổ sung các **giai đoạn đã kết thúc** (bắt buộc có ngày kết thúc) — không được thêm giai đoạn hiện tại đang mở, vì việc đổi chức vụ hiện tại thuộc quyền Admin. Dữ liệu này là đầu vào cho thuật toán xét khen thưởng cống hiến (HCBVTQ).
+- **Thêm/sửa/xoá thủ công qua biểu mẫu** — bảng `QuanNhan` không hỗ trợ nhập/xuất Excel; quân nhân được quản lý trực tiếp trên giao diện. Tính năng nhập Excel hai bước (xem trước, xác nhận; 2.2.7) chỉ áp dụng cho dữ liệu khen thưởng.
 
 > **Hình 2.2**: Sơ đồ use case phân rã chức năng Quản lý quân nhân — xem khối `A1.2` tại `docs/diagrams/01-use-case.md`.
 
@@ -280,7 +280,7 @@ Quản lý quân nhân là một trong những module tương tác cao nhất c�
 
 Cấu trúc tổ chức của Học viện được mô hình hoá thành cây hai cấp. Bảng `CoQuanDonVi` (CQĐV) lưu các đơn vị cấp cha; bảng `DonViTrucThuoc` (ĐVTT) lưu các đơn vị con thuộc một CQĐV duy nhất. Khi nhập thông tin quân nhân, một trong hai trường `co_quan_don_vi_id` hoặc `don_vi_truc_thuoc_id` sẽ được điền — không bao giờ điền cả hai cùng lúc.
 
-Module quản lý đơn vị bao gồm các use case con: tạo mới CQĐV, tạo mới ĐVTT thuộc một CQĐV cụ thể, cập nhật thông tin, xoá (chỉ thực hiện được khi không còn quân nhân nào thuộc đơn vị) và xem cây tổ chức dưới dạng tree-view trên giao diện. Bảng `ChucVu` quản lý danh mục chức vụ kèm hệ số `he_so_chuc_vu` (giá trị từ 0.5 đến 1.2 tuỳ chức danh) và liên kết tới CQĐV hoặc ĐVTT mà chức vụ đó thuộc về. Hệ số chức vụ là dữ liệu đầu vào trực tiếp cho thuật toán tính tháng cống hiến theo nhóm hệ số 0.7 / 0.8 / 0.9–1.0.
+Module quản lý đơn vị bao gồm các use case con: tạo mới CQĐV, tạo mới ĐVTT thuộc một CQĐV cụ thể, cập nhật thông tin, xoá (chỉ thực hiện được khi không còn quân nhân nào thuộc đơn vị) và xem cây tổ chức dưới dạng tree-view trên giao diện. Bảng `ChucVu` quản lý danh mục chức vụ kèm hệ số `he_so_chuc_vu` (giá trị từ 0 đến 1.0, một chữ số thập phân, tuỳ chức danh) và liên kết tới CQĐV hoặc ĐVTT mà chức vụ đó thuộc về. Hệ số chức vụ là dữ liệu đầu vào trực tiếp cho thuật toán tính tháng cống hiến theo nhóm hệ số 0.7 / 0.8 / 0.9–1.0.
 
 > **Hình 2.3**: Sơ đồ use case phân rã chức năng Quản lý đơn vị và chức vụ — xem khối `A1.3` tại `docs/diagrams/01-use-case.md`.
 
@@ -374,8 +374,8 @@ Phần này đặc tả sáu use case trọng yếu của hệ thống dưới d
 | ID | UC-01 |
 | Tác nhân | SuperAdmin, Admin, Manager, User |
 | Tiền điều kiện | Người dùng đã có tài khoản hợp lệ trong bảng `TaiKhoan`; trình duyệt cho phép HttpOnly cookie. |
-| Luồng chính | (1) Người dùng truy cập trang `/login`. (2) Nhập tên đăng nhập và mật khẩu. (3) Bấm nút "Đăng nhập". (4) Hệ thống tra cứu tài khoản theo `username`, đối chiếu mật khẩu băm bằng bcrypt. (5) Hệ thống phát hành Access Token (15 phút) và Refresh Token (7 ngày), đặt vào HttpOnly cookie. (6) Chuyển hướng tới trang chủ tương ứng vai trò. |
-| Luồng thay thế | (4a) Tài khoản không tồn tại hoặc mật khẩu sai → hiển thị thông báo "Tài khoản hoặc mật khẩu không đúng" mà không tiết lộ vế nào sai. (4b) Tài khoản bị khoá → hiển thị "Tài khoản đã bị tạm khoá, liên hệ quản trị viên". (5a) Sau ba lần sai liên tiếp, áp giới hạn `rateLimiter` 5 phút cho địa chỉ IP. |
+| Luồng chính | (1) Người dùng truy cập trang `/login`. (2) Nhập tên đăng nhập và mật khẩu. (3) Bấm nút "Đăng nhập". (4) Hệ thống tra cứu tài khoản theo `username`, đối chiếu mật khẩu băm bằng bcrypt. (5) Hệ thống phát hành Access Token (30 phút) và Refresh Token (7 ngày), đặt vào HttpOnly cookie. (6) Chuyển hướng tới trang chủ tương ứng vai trò. |
+| Luồng thay thế | (4a) Tài khoản không tồn tại hoặc mật khẩu sai → hiển thị thông báo "Tài khoản hoặc mật khẩu không đúng" mà không tiết lộ vế nào sai. (4b) Tài khoản bị khoá → hiển thị "Tài khoản đã bị tạm khoá, liên hệ quản trị viên". (5a) Sau 30 lần sai liên tiếp trong 5 phút → tạm khoá, áp giới hạn `rateLimiter` 5 phút cho địa chỉ IP. |
 | Hậu điều kiện | Phiên đăng nhập được thiết lập; mọi yêu cầu HTTP tiếp theo gửi kèm token được middleware `verifyToken` xác thực; nhật ký đăng nhập được ghi vào `SystemLog` với `action = LOGIN`. |
 
 **Bảng 2.2 — Đặc tả use case UC-02 Tạo mới quân nhân**
@@ -456,15 +456,15 @@ Khu vực dữ liệu thường truy vấn nhưng ít thay đổi (cây CQĐV/Đ
 
 Bảo mật là yêu cầu được ưu tiên cao nhất do hệ thống lưu trữ dữ liệu liên quan đến cán bộ và sĩ quan trong môi trường quân sự. Bảy nhóm biện pháp được áp dụng song song.
 
-**Thứ nhất — Xác thực bằng JWT có Refresh rotation.** Mỗi phiên đăng nhập tạo ra cặp Access Token (15 phút) và Refresh Token (7 ngày) đặt trong HttpOnly cookie. Khi Access Token hết hạn, frontend gọi điểm cuối `/auth/refresh` để xin token mới; mỗi lần gọi điểm cuối này, backend phát hành Refresh Token mới và đánh dấu Refresh Token cũ hết hiệu lực. Cơ chế này hạn chế nguy cơ một Refresh Token bị đánh cắp vẫn dùng được lâu dài.
+**Thứ nhất — Xác thực bằng JWT có Refresh rotation.** Mỗi phiên đăng nhập tạo ra cặp Access Token (30 phút) và Refresh Token (7 ngày) đặt trong HttpOnly cookie. Khi Access Token hết hạn, frontend gọi điểm cuối `/auth/refresh` để xin token mới; mỗi lần gọi điểm cuối này, backend phát hành Refresh Token mới và đánh dấu Refresh Token cũ hết hiệu lực. Cơ chế này hạn chế nguy cơ một Refresh Token bị đánh cắp vẫn dùng được lâu dài.
 
 **Thứ hai — Băm mật khẩu bằng bcrypt với hệ số chi phí 10.** Mật khẩu trước khi lưu vào bảng `TaiKhoan` không bao giờ được lưu ở dạng văn bản thô. Hệ số 10 được chọn để cân bằng giữa thời gian xác thực (khoảng 80 ms trên máy chủ phát triển) và độ khó tấn công vét cạn nếu cơ sở dữ liệu bị rò rỉ.
 
-**Thứ ba — Phân quyền bốn cấp qua middleware `requireRole`.** Mỗi route nhạy cảm đi qua middleware kiểm tra vai trò của người dùng có nằm trong danh sách cho phép hay không. Phân quyền không chỉ dừng ở vai trò mà còn ở phạm vi quản lý: Manager chỉ truy vấn được dữ liệu của các quân nhân thuộc đơn vị mình quản lý, kiểm soát qua middleware `unitFilter`.
+**Thứ ba — Phân quyền bốn cấp qua middleware `checkRole`.** Mỗi route nhạy cảm đi qua middleware kiểm tra vai trò của người dùng có nằm trong danh sách cho phép hay không. Phân quyền không chỉ dừng ở vai trò mà còn ở phạm vi quản lý: Manager chỉ truy vấn được dữ liệu của các quân nhân thuộc đơn vị mình quản lý, kiểm soát qua middleware `unitFilter`.
 
 **Thứ tư — Xác thực dữ liệu hai phía.** Cả frontend lẫn backend đều dùng Zod để xác thực, với schema khai báo theo cùng phong cách. Frontend xác thực ngay tại form, ngăn người dùng gửi đi dữ liệu sai định dạng; backend xác thực lại tại điểm cuối, kể cả khi frontend bị bỏ qua (vd: tấn công gửi yêu cầu thẳng), backend vẫn từ chối dữ liệu không hợp lệ. Cơ chế strip mặc định của `z.object()` loại bỏ các trường ngoài schema để tránh người dùng đẩy lén các thuộc tính không được phép.
 
-**Thứ năm — Bảo vệ tầng vận chuyển và tầng ứng dụng.** Toàn bộ kết nối tới server qua HTTPS (TLS 1.2 trở lên) khi triển khai sản xuất. Header bảo mật được áp đặt qua middleware Helmet (Content-Security-Policy, X-Frame-Options, X-Content-Type-Options). CORS cấu hình chặt chẽ chỉ cho phép tên miền của frontend chính. Rate limiter giới hạn 100 yêu cầu / IP / 15 phút cho các điểm cuối nhạy cảm như đăng nhập và đặt lại mật khẩu.
+**Thứ năm — Bảo vệ tầng vận chuyển và tầng ứng dụng.** Toàn bộ kết nối tới server qua HTTPS (TLS 1.2 trở lên) khi triển khai sản xuất. Header bảo mật được áp đặt qua middleware Helmet (Content-Security-Policy, X-Frame-Options, X-Content-Type-Options). CORS cấu hình chặt chẽ chỉ cho phép tên miền của frontend chính. Rate limiter giới hạn 30 lần đăng nhập thất bại / IP / 5 phút cho các điểm cuối nhạy cảm như đăng nhập và đặt lại mật khẩu (chỉ đếm lần thất bại); các thao tác ghi giới hạn 30 yêu cầu / 15 phút.
 
 **Thứ sáu — Nhật ký kiểm toán đầy đủ.** Mọi thao tác có thể làm thay đổi dữ liệu nghiệp vụ (CREATE, UPDATE, DELETE, IMPORT, APPROVE, REJECT, LOGIN, LOGOUT, RESET_PASSWORD) đều ghi vào bảng `SystemLog` với metadata gồm thời điểm, mã người thực hiện, vai trò, loại tài nguyên (`resource`), mã định danh tài nguyên (`resource_id`) và mô tả tiếng Việt do hàm builder sinh tự động. Nhật ký liên quan đến `resource = backup` chỉ SuperAdmin xem được; các vai trò thấp hơn không thấy ngay cả tiêu đề.
 
@@ -504,7 +504,7 @@ Express là khung phát triển HTTP tối giản trên nền Node.js, ra mắt 
 
 TypeScript được dùng song song với Express ở toàn bộ phần backend nhằm phát hiện lỗi tại thời điểm biên dịch. Cấu hình `tsconfig.json` bật `strictNullChecks` cho lớp Service và Repository nhưng nới lỏng cho lớp Controller (do tương tác trực tiếp với `req`/`res` Express vốn có nhiều trường tùy chọn). Các kiểu Prisma sinh tự động từ schema được nhập vào toàn bộ tầng Service, đảm bảo mọi truy vấn cơ sở dữ liệu đều có hỗ trợ gợi ý từ trình soạn thảo.
 
-Trong PM QLKT, đặc tính chuỗi middleware của Express được khai thác triệt để qua mẫu thiết kế năm tầng cố định: `verifyToken → requireRole → validate(schema) → auditLog(options) → controller.method`. Mỗi tầng đảm nhiệm một mối quan tâm độc lập (xác thực, phân quyền, kiểm tra dữ liệu, ghi nhật ký), cho phép tổ chức mã nguồn theo nguyên tắc đơn trách nhiệm và tái sử dụng giữa các route. Hàm phụ trợ `catchAsync` gói các handler bất đồng bộ để chuyển lỗi về middleware xử lý lỗi tập trung, loại bỏ nhu cầu viết `try/catch` lặp đi lặp lại trong từng controller.
+Trong PM QLKT, đặc tính chuỗi middleware của Express được khai thác triệt để qua mẫu thiết kế năm tầng cố định: `verifyToken → checkRole → validate(schema) → auditLog(options) → controller.method`. Mỗi tầng đảm nhiệm một mối quan tâm độc lập (xác thực, phân quyền, kiểm tra dữ liệu, ghi nhật ký), cho phép tổ chức mã nguồn theo nguyên tắc đơn trách nhiệm và tái sử dụng giữa các route. Hàm phụ trợ `catchAsync` gói các handler bất đồng bộ để chuyển lỗi về middleware xử lý lỗi tập trung, loại bỏ nhu cầu viết `try/catch` lặp đi lặp lại trong từng controller.
 
 ## 3.3 PostgreSQL và Prisma ORM
 
@@ -512,7 +512,7 @@ PostgreSQL là hệ quản trị cơ sở dữ liệu quan hệ mã nguồn mở
 
 Prisma là một ORM thế hệ mới, không sinh code dạng kiểu Active Record mà sinh ra một Client typed an toàn từ tệp khai báo `schema.prisma` duy nhất. Mỗi thay đổi schema được áp dụng qua lệnh `prisma migrate dev` tạo ra các tệp SQL nằm dưới `prisma/migrations/`, có thể đẩy lên kho mã nguồn để theo dõi lịch sử. Prisma Client trả về các kiểu được suy luận từ schema, vì vậy mỗi truy vấn `findUnique`, `findMany`, `create` đều có hỗ trợ gợi ý đầy đủ ở thời điểm soạn mã.
 
-Trong PM QLKT, schema gồm 23 model với tổng cộng 577 dòng. Quy ước đặt tên tận dụng chỉ thị `@@map("snake_case")` của Prisma để cho phép tên model trong code dùng `PascalCase` tiếng Việt (`QuanNhan`, `DanhHieuHangNam`, `HoSoCongHien`) trong khi tên bảng vật lý vẫn theo quy ước `snake_case` của PostgreSQL. Ưu điểm của tổ chức này là code đọc tự nhiên với người Việt, đồng thời giữ được khả năng truy vấn trực tiếp bằng SQL cho các nhu cầu báo cáo phức tạp ngoài Prisma. Bảng 3.1 dưới đây so sánh ngắn gọn ba lựa chọn ORM phổ biến để làm rõ lý do chọn Prisma.
+Trong PM QLKT, schema gồm 23 model với tổng cộng 619 dòng. Quy ước đặt tên tận dụng chỉ thị `@@map("snake_case")` của Prisma để cho phép tên model trong code dùng `PascalCase` tiếng Việt (`QuanNhan`, `DanhHieuHangNam`, `HoSoCongHien`) trong khi tên bảng vật lý vẫn theo quy ước `snake_case` của PostgreSQL. Ưu điểm của tổ chức này là code đọc tự nhiên với người Việt, đồng thời giữ được khả năng truy vấn trực tiếp bằng SQL cho các nhu cầu báo cáo phức tạp ngoài Prisma. Bảng 3.1 dưới đây so sánh ngắn gọn ba lựa chọn ORM phổ biến để làm rõ lý do chọn Prisma.
 
 **Bảng 3.1 — So sánh ba ORM phổ biến trên Node.js**
 
@@ -542,7 +542,7 @@ Trong PM QLKT, Socket.IO được dùng cho hai trường hợp cụ thể. Th�
 
 ## 3.6 JSON Web Token với cơ chế làm mới luân phiên
 
-Hệ thống áp dụng JWT theo chuẩn RFC 7519 cho cơ chế xác thực không trạng thái. Mỗi phiên đăng nhập tạo ra hai token: Access Token có thời hạn ngắn (15 phút) chứa định danh người dùng và mã vai trò, được gửi kèm mỗi yêu cầu HTTP qua header `Authorization`; Refresh Token có thời hạn dài hơn (7 ngày) lưu trong cookie HttpOnly chỉ dùng để cấp Access Token mới khi token hiện tại hết hạn.
+Hệ thống áp dụng JWT theo chuẩn RFC 7519 cho cơ chế xác thực không trạng thái. Mỗi phiên đăng nhập tạo ra hai token: Access Token có thời hạn ngắn (30 phút) chứa định danh người dùng và mã vai trò, được gửi kèm mỗi yêu cầu HTTP qua header `Authorization`; Refresh Token có thời hạn dài hơn (7 ngày) lưu trong cookie HttpOnly chỉ dùng để cấp Access Token mới khi token hiện tại hết hạn.
 
 Cơ chế làm mới luân phiên (refresh token rotation) yêu cầu mỗi lần dùng Refresh Token, máy chủ sẽ phát hành đồng thời một Refresh Token mới và đánh dấu Refresh Token cũ hết hiệu lực. Cách làm này hạn chế nguy cơ một Refresh Token bị đánh cắp vẫn dùng được lâu dài: nếu kẻ tấn công và người dùng hợp pháp cùng dùng một Refresh Token thì lần làm mới thứ hai sẽ thất bại, máy chủ phát hiện bất thường và buộc người dùng đăng nhập lại. Mật khẩu trước khi lưu vào bảng `TaiKhoan` được băm bằng bcrypt với hệ số chi phí (cost factor) 10, đảm bảo cân bằng giữa thời gian xử lý đăng nhập (vào khoảng 80 mili giây trên máy chủ phát triển) và độ khó tấn công vét cạn nếu cơ sở dữ liệu bị rò rỉ.
 
@@ -556,7 +556,7 @@ Lý do chọn Zod cho cả hai phía thay vì hai thư viện riêng (vd: Joi �
 
 Jest là khung kiểm thử do Meta phát triển, có ưu điểm là cấu hình tối thiểu, hỗ trợ chế độ theo dõi (watch mode) chạy lại các bộ kiểm thử bị ảnh hưởng khi tệp nguồn thay đổi và có hệ thống trình giả (mock) tích hợp sẵn. Phiên bản dùng cho PM QLKT là Jest 29 kết hợp với `ts-jest` để chạy trực tiếp các tệp TypeScript mà không cần biên dịch trước.
 
-Tại thời điểm hoàn thiện đồ án, kho kiểm thử của PM QLKT gồm 74 bộ kiểm thử với 870 ca kiểm thử, tổ chức theo các thư mục `tests/services/`, `tests/scenarios/`, `tests/approve/`, `tests/submit/`, `tests/import/`, `tests/authz/`. Hai nhóm trọng yếu nhất là `eligibility-bkbqp-personal.test.ts`, `eligibility-cstdtq-personal.test.ts`, `eligibility-bkttcp-personal.test.ts` (cùng các phiên bản đơn vị) tập trung vào các kịch bản đa dạng của rule chuỗi: chu kỳ vừa đủ, chu kỳ thừa, lỡ đợt, BKBTBQP rơi ra ngoài cửa sổ trượt 3 năm, và trường hợp đặc biệt khi quân nhân chưa nhận đủ NCKH. Các trường hợp này được cố định trước trong tệp `errorMessages.ts` để đảm bảo bất kỳ sửa đổi nào trong logic chuỗi đều phải cập nhật song song giá trị mong đợi của ca kiểm thử, giúp tránh tình trạng test "trôi" theo code.
+Tại thời điểm hoàn thiện đồ án, kho kiểm thử của PM QLKT gồm 80 bộ kiểm thử với 937 ca kiểm thử, tổ chức theo các thư mục `tests/services/`, `tests/scenarios/`, `tests/approve/`, `tests/submit/`, `tests/import/`, `tests/authz/`. Hai nhóm trọng yếu nhất là `eligibility-bkbqp-personal.test.ts`, `eligibility-cstdtq-personal.test.ts`, `eligibility-bkttcp-personal.test.ts` (cùng các phiên bản đơn vị) tập trung vào các kịch bản đa dạng của rule chuỗi: chu kỳ vừa đủ, chu kỳ thừa, lỡ đợt, BKBTBQP rơi ra ngoài cửa sổ trượt 3 năm, và trường hợp đặc biệt khi quân nhân chưa nhận đủ NCKH. Các trường hợp này được cố định trước trong tệp `errorMessages.ts` để đảm bảo bất kỳ sửa đổi nào trong logic chuỗi đều phải cập nhật song song giá trị mong đợi của ca kiểm thử, giúp tránh tình trạng test "trôi" theo code.
 
 ## 3.9 ExcelJS — công cụ nhập và xuất Excel
 
@@ -584,7 +584,7 @@ Lý do không chọn các kiến trúc khác:
 - **Clean Architecture / Hexagonal** đầy đủ với Use Case Layer, Entity Layer, Adapter Layer là quá phức tạp cho quy mô dự án. Lớp Use Case sẽ trùng lặp gần như hoàn toàn với lớp Service trong layered architecture.
 - **Microservices** không phù hợp với môi trường mạng nội bộ một máy chủ; chia tách dịch vụ làm tăng độ phức tạp triển khai mà không mang lại lợi ích về quy mô tải.
 
-> **Hình 4.1**: Sơ đồ kiến trúc phân tầng sáu lớp — xem khối Mermaid `C1.2` tại `docs/diagrams/03-architecture.md`.
+> **Hình 4.1**: Sơ đồ kiến trúc phân tầng sáu lớp — xem khối Mermaid `C1.2` tại `docs/diagrams/03b-architecture.md`.
 
 ### 4.1.2 Tổng quan hệ thống
 
@@ -596,7 +596,7 @@ Sản phẩm được tổ chức thành ba thành phần độc lập triển k
 
 Cả ba thành phần này được triển khai trên cùng một máy chủ Linux của Học viện và giao tiếp qua localhost. Bên ngoài, người dùng truy cập qua trình duyệt thông qua mạng LAN; FE phục vụ tệp tĩnh (HTML/CSS/JS đã build), gọi tới BE qua proxy. Sơ đồ Hình 4.2 thể hiện luồng này.
 
-> **Hình 4.2**: Sơ đồ kiến trúc tổng quan FE — BE — DB — xem khối `C1.1` tại `docs/diagrams/03-architecture.md`.
+> **Hình 4.2**: Sơ đồ kiến trúc tổng quan FE — BE — DB — xem khối `C1.1` tại `docs/diagrams/03b-architecture.md`.
 
 ### 4.1.3 Thiết kế tổng quan các gói
 
@@ -604,11 +604,11 @@ Cấu trúc thư mục mã nguồn được tổ chức theo nguyên tắc đơn
 
 **a, Gói phía frontend.** Mã nguồn frontend được tổ chức bên trong thư mục `FE-QLKT/src/`. Gói `app/` chứa cây định tuyến của Next.js App Router với bốn nhánh tương ứng bốn vai trò người dùng (super-admin, admin, manager, user). Gói `components/` chứa các thành phần React dùng chung, được tách thành các thư mục con theo miền nghiệp vụ: `auth/` cho màn hình đăng nhập và đổi mật khẩu, `proposals/` cho biểu mẫu tạo đề xuất nhiều bước với mỗi loại trong bảy loại đề xuất, `personnel/` cho danh sách và chi tiết quân nhân, `system-logs/` cho bảng nhật ký kiểm toán. Gói `contexts/` đặt `AuthContext` quản lý trạng thái đăng nhập trong toàn ứng dụng. Gói `hooks/` chứa các React hook tự viết như `useFetch`, `useAuthGuard`, `useSocket`. Gói `lib/` chứa các module phụ trợ: `api/` chia theo từng miền nghiệp vụ và đóng gói các yêu cầu REST tới backend, `award/` chứa các hàm trợ giúp render chuỗi danh hiệu phía frontend, `schemas.ts` định nghĩa các schema Zod xác thực biểu mẫu. Gói `constants/` chứa các hằng số dùng chung như danh sách vai trò, trạng thái, danh hiệu.
 
-> **Hình 4.3**: Sơ đồ gói phía frontend — xem khối `C2.2` tại `docs/diagrams/03-architecture.md`.
+> **Hình 4.3**: Sơ đồ gói phía frontend — xem mục 1 (Sơ đồ gói phía Client) tại `docs/diagrams/03-architecture.md`.
 
-**b, Gói phía backend.** Mã nguồn backend được tổ chức bên trong thư mục `BE-QLKT/src/` theo sáu lớp đã trình bày ở mục 4.1.1. Gói `routes/` định nghĩa các điểm cuối REST API, mỗi miền nghiệp vụ một tệp. Gói `middlewares/` chứa các tệp `auth.ts` (xác thực và phân quyền), `auditLog.ts` (ghi nhật ký mọi thao tác mutate), `unitFilter.ts` (lọc dữ liệu theo phạm vi đơn vị của Manager) và `validate.ts` (bọc Zod validation). Gói `controllers/` chứa các tệp điều hướng yêu cầu HTTP từ route tới service, được giữ mỏng (mỗi phương thức dưới 50 dòng mã). Gói `services/` chứa logic nghiệp vụ chính, được tách tiếp thành các thư mục con: `proposal/strategies/` cho strategy registry của bảy loại đề xuất, `eligibility/` cho hàm `chainEligibility` xét rule chuỗi cá nhân và đơn vị, `profile/annual.ts` cho logic chuỗi cá nhân và `profile/unit.ts` cho logic chuỗi đơn vị. Gói `repositories/` đóng gói toàn bộ truy cập Prisma — mỗi model một tệp `.repository.ts`. Gói `helpers/` chứa các tiện ích phụ trợ chia theo nhóm: `auditLog/` cho các hàm sinh mô tả nhật ký theo từng tài nguyên, `notification/` cho hàm gửi thông báo realtime, `excel/` cho đọc và ghi tệp Excel qua ExcelJS, `awardValidation/` cho các quy tắc kiểm tra huy chương cao nhất. Gói `validations/` chứa các schema Zod cho từng route. Gói `constants/` chứa các hằng số dùng chung. Tệp `prisma/schema.prisma` ở cấp gốc của module backend định nghĩa toàn bộ 23 model.
+**b, Gói phía backend.** Mã nguồn backend được tổ chức bên trong thư mục `BE-QLKT/src/` theo sáu lớp đã trình bày ở mục 4.1.1. Gói `routes/` định nghĩa các điểm cuối REST API, mỗi miền nghiệp vụ một tệp. Gói `middlewares/` chứa các tệp `auth.ts` (xác thực và phân quyền), `auditLog.ts` (ghi nhật ký mọi thao tác mutate), `unitFilter.ts` (lọc dữ liệu theo phạm vi đơn vị của Manager) và `validate.ts` (bọc Zod validation). Gói `controllers/` chứa các tệp điều hướng yêu cầu HTTP từ route tới service, được giữ mỏng (mỗi phương thức dưới 50 dòng mã). Gói `services/` chứa logic nghiệp vụ chính, được tách tiếp thành các thư mục con: `proposal/strategies/` cho strategy registry của bảy loại đề xuất, `eligibility/` cho hàm `chainEligibility` xét rule chuỗi cá nhân và đơn vị, `profile/annual.ts` cho logic chuỗi cá nhân và `unitAnnualAward/eligibility.ts` cho logic chuỗi đơn vị. Gói `repositories/` đóng gói toàn bộ truy cập Prisma — mỗi model một tệp `.repository.ts`. Gói `helpers/` chứa các tiện ích phụ trợ chia theo nhóm: `auditLog/` cho các hàm sinh mô tả nhật ký theo từng tài nguyên, `notification/` cho hàm gửi thông báo realtime, `excel/` cho đọc và ghi tệp Excel qua ExcelJS, `awardValidation/` cho các quy tắc kiểm tra huy chương cao nhất. Gói `validations/` chứa các schema Zod cho từng route. Gói `constants/` chứa các hằng số dùng chung. Tệp `prisma/schema.prisma` ở cấp gốc của module backend định nghĩa toàn bộ 23 model.
 
-> **Hình 4.4**: Sơ đồ gói phía backend — xem khối `C2.1` tại `docs/diagrams/03-architecture.md`.
+> **Hình 4.4**: Sơ đồ gói phía backend — xem mục 2 (Sơ đồ gói phía Server) tại `docs/diagrams/03-architecture.md`.
 
 ### 4.1.4 Thiết kế chi tiết gói nghiệp vụ Khen thưởng cá nhân hằng năm
 
@@ -625,7 +625,7 @@ Khi người dùng truy cập trang hồ sơ một quân nhân, dòng chảy d�
 
 Sự tách biệt giữa Service (logic nghiệp vụ) và Eligibility module (rule thuần) là chủ ý: Eligibility module có thể được kiểm thử với 100 % phủ rule mà không cần mock cơ sở dữ liệu. Service chỉ phụ trách điều phối — nạp dữ liệu, gọi rule, ghi kết quả — nên cũng dễ kiểm thử với mock Repository.
 
-> **Hình 4.5**: Sơ đồ gói chi tiết module khen thưởng cá nhân hằng năm — xem khối `C2.4` tại `docs/diagrams/03-architecture.md`.
+> **Hình 4.5**: Sơ đồ gói chi tiết module khen thưởng cá nhân hằng năm — xem khối `C2.4` tại `docs/diagrams/03b-architecture.md`.
 
 ### 4.1.5 Thiết kế lớp
 
@@ -635,7 +635,7 @@ Phần này trình bày sơ đồ lớp cho năm module nghiệp vụ chính. M�
 
 **Module Strategy đề xuất (Hình 4.7).** Interface `ProposalStrategy` định nghĩa bốn phương thức bắt buộc cho mỗi loại đề xuất: `buildSubmitPayload`, `validateApprove`, `importInTransaction`, `buildSuccessMessage`. Bảy lớp triển khai (`caNhanHangNamStrategy`, `donViHangNamStrategy`, `nienHanStrategy`, `hcQkqtStrategy`, `kncStrategy`, `congHienStrategy`, `nckhStrategy`) đăng ký vào REGISTRY trong `services/proposal/strategies/index.ts`. Hai lớp single-medal (`hcQkqtStrategy` và `kncStrategy`) chia sẻ logic qua hàm trợ giúp `singleMedalImporter` để tránh trùng lặp.
 
-**Module xác thực và phân quyền (Hình 4.8).** Lớp chính là `AuthService` cung cấp các phương thức `login`, `refresh`, `logout`, `changePassword`. Middleware `verifyToken` đọc cookie, xác minh Access Token, gắn `req.user`. Middleware `requireRole(...allowed)` factory trả về middleware kiểm tra `req.user.role` thuộc danh sách cho phép. Middleware `unitFilter` truy vấn `co_quan_don_vi_id`/`don_vi_truc_thuoc_id` của người dùng và áp giới hạn phạm vi cho mỗi yêu cầu của Manager.
+**Module xác thực và phân quyền (Hình 4.8).** Lớp chính là `AuthService` cung cấp các phương thức `login`, `refresh`, `logout`, `changePassword`. Middleware `verifyToken` đọc cookie, xác minh Access Token, gắn `req.user`. Middleware `checkRole(...allowed)` factory trả về middleware kiểm tra `req.user.role` thuộc danh sách cho phép. Middleware `unitFilter` truy vấn `co_quan_don_vi_id`/`don_vi_truc_thuoc_id` của người dùng và áp giới hạn phạm vi cho mỗi yêu cầu của Manager.
 
 **Module quản lý đề xuất (Hình 4.9).** Lớp `ProposalService` điều phối luồng tạo và phê duyệt đề xuất, dùng `proposalRepository` để truy vấn và cập nhật. Lớp `ApproveOrchestrator` (tại `services/proposal/approve/`) thực hiện logic phê duyệt phức tạp, gọi tuần tự `validation.ts → decisionMappings.ts → import.ts` trong cùng một transaction.
 
@@ -649,7 +649,7 @@ Bảy luồng nghiệp vụ quan trọng nhất được mô hình hoá bằng s
 
 **Sequence 4.1 — Đăng nhập với refresh token rotation** (Hình 4.13). Người dùng nhập tên đăng nhập + mật khẩu → FE gọi `POST /auth/login` → `authController.login` → `authService.login` → `accountRepository.findByUsername` → `bcrypt.compare` → tạo Access + Refresh Token → ghi `SystemLog` → trả về kèm cookie HttpOnly.
 
-**Sequence 4.2 — Tạo đề xuất** (Hình 4.14). Manager hoàn thành ba bước form → FE gọi `POST /api/proposals` → `verifyToken → requireRole([ADMIN,MANAGER]) → validate(submitProposalSchema) → auditLog({action: CREATE, resource: proposals}) → proposalController.submitProposal` → `proposalService.submitProposal` → `getProposalStrategy(type).buildSubmitPayload` → `proposalRepository.create` → phát Socket.IO event tới Admin → trả về đề xuất đã tạo.
+**Sequence 4.2 — Tạo đề xuất** (Hình 4.14). Manager hoàn thành ba bước form → FE gọi `POST /api/proposals` → `verifyToken → checkRole([ADMIN,MANAGER]) → validate(submitProposalSchema) → auditLog({action: CREATE, resource: proposals}) → proposalController.submitProposal` → `proposalService.submitProposal` → `getProposalStrategy(type).buildSubmitPayload` → `proposalRepository.create` → phát Socket.IO event tới Admin → trả về đề xuất đã tạo.
 
 **Sequence 4.3 — Phê duyệt đề xuất** (Hình 4.15). Admin mở chi tiết → bấm "Phê duyệt" → FE gọi `POST /api/proposals/:id/approve` → middleware chain → `proposalController.approveProposal` → `approveOrchestrator.run` → mở transaction Prisma → `validation.preflight` → `getProposalStrategy(type).validateApprove` → `decisionMappings.attach` → `getProposalStrategy(type).importInTransaction` → cập nhật `BangDeXuat.status = APPROVED` → tính lại hồ sơ suy diễn cho các quân nhân bị ảnh hưởng → commit transaction → `auditLog` → phát Socket.IO event.
 
@@ -737,7 +737,7 @@ Ràng buộc duy nhất `(quan_nhan_id, nam)` đảm bảo mỗi quân nhân ch�
 | `chuc_vu_id` | String | FK → ChucVu | |
 | `ngay_bat_dau` | DateTime | NULL | Ngày bắt đầu giữ chức vụ |
 | `ngay_ket_thuc` | DateTime | NULL | Ngày kết thúc; NULL = đang giữ |
-| `he_so_chuc_vu` | Decimal(3,2) | NOT NULL | Hệ số chức vụ tại thời điểm đó |
+| `he_so_chuc_vu` | Float | NOT NULL | Hệ số chức vụ tại thời điểm đó (snapshot) |
 | `so_thang` | Int | NOT NULL | Số tháng giữ chức vụ (đã tính sẵn) |
 
 Trường `so_thang` được tự động cập nhật bởi hàm `recalcPositionMonths` mỗi khi có thay đổi `ngay_bat_dau` hoặc `ngay_ket_thuc`. Đây là dữ liệu đầu vào cho thuật toán tính tháng cống hiến theo nhóm hệ số (HCBVTQ).
@@ -815,7 +815,7 @@ Sản phẩm sử dụng tổng cộng 30 thư viện mã nguồn mở chia làm
 | 4 | Khung phát triển backend | Express | 4.x |
 | 5 | Ngôn ngữ kiểu tĩnh | TypeScript | 5.x |
 | 6 | Hệ quản trị CSDL | PostgreSQL | 15 |
-| 7 | ORM | Prisma | 5.x |
+| 7 | ORM | Prisma | 6.x |
 | 8 | Xác thực JWT | jsonwebtoken | 9.x |
 | 9 | Băm mật khẩu | bcrypt | 5.x |
 | 10 | Kiểm tra dữ liệu BE | Zod | 4.x |
@@ -824,9 +824,9 @@ Sản phẩm sử dụng tổng cộng 30 thư viện mã nguồn mở chia làm
 | 13 | Đọc/ghi Excel | ExcelJS | 4.x |
 | 14 | Khung kiểm thử | Jest + ts-jest | 29.x |
 | 15 | Quản lý tiến trình production | PM2 | 5.x |
-| 16 | Header bảo mật HTTP | Helmet | 7.x |
+| 16 | Header bảo mật HTTP | Helmet | 8.x |
 | 17 | CORS | cors | 2.x |
-| 18 | Giới hạn tốc độ | express-rate-limit | 7.x |
+| 18 | Giới hạn tốc độ | express-rate-limit | 8.x |
 | 19 | Quản lý tệp tải lên | Multer | 1.x |
 
 Môi trường phát triển sử dụng Visual Studio Code có cài extension Prisma, ESLint và Prettier; quản lý mã nguồn qua Git và GitHub; quản lý cơ sở dữ liệu trực quan qua Prisma Studio (lệnh `npx prisma studio`).
@@ -835,7 +835,7 @@ Môi trường phát triển sử dụng Visual Studio Code có cài extension P
 
 Sau quá trình xây dựng, hệ thống đã hoàn thiện các chức năng chính sau:
 
-- Quản lý quân nhân: thêm – sửa – xoá – nhập Excel – xuất Excel; chuyển đơn vị giữ nguyên lịch sử khen thưởng; phân quyền theo phạm vi đơn vị cho Manager.
+- Quản lý quân nhân: thêm – sửa – xoá thủ công qua biểu mẫu (không nhập/xuất Excel); chuyển đơn vị và đổi chức vụ chỉ Admin, giữ nguyên lịch sử khen thưởng; phân quyền theo phạm vi đơn vị cho Manager.
 - Quản lý đơn vị (CQĐV và ĐVTT) và chức vụ: cây tổ chức hai cấp; tự cập nhật bộ đếm `so_luong` khi quân nhân chuyển đơn vị.
 - Quản lý lịch sử chức vụ: nhập danh sách giai đoạn giữ chức vụ với hệ số; tự tính `so_thang` mỗi khi thay đổi mốc thời gian.
 - Đề xuất khen thưởng cho cả bảy loại với form ba bước; tự động gợi ý quân nhân đủ điều kiện theo từng loại.
@@ -845,7 +845,7 @@ Sau quá trình xây dựng, hệ thống đã hoàn thiện các chức năng c
 - Quản trị tài khoản bốn cấp; đặt lại mật khẩu; nhật ký kiểm toán; sao lưu định kỳ; khu vực DevZone cho SuperAdmin.
 - Thông báo realtime qua Socket.IO khi có đề xuất mới, được phê duyệt, bị từ chối, bị xóa hoặc nhập Excel hoàn tất.
 
-Tổng quy mô mã nguồn xấp xỉ 35.000 dòng TypeScript chia đều giữa frontend và backend, cộng với 577 dòng `schema.prisma` và khoảng 7.500 dòng kiểm thử. Kho mã nguồn được quản lý theo monorepo với cấu trúc `BE-QLKT/` và `FE-QLKT/` ở mức root.
+Tổng quy mô mã nguồn xấp xỉ 35.000 dòng TypeScript chia đều giữa frontend và backend, cộng với 619 dòng `schema.prisma` và khoảng 7.500 dòng kiểm thử. Kho mã nguồn được quản lý theo monorepo với cấu trúc `BE-QLKT/` và `FE-QLKT/` ở mức root.
 
 ### 4.3.3 Minh hoạ các chức năng chính
 
@@ -913,16 +913,16 @@ Tổng kết kết quả chạy gần nhất tại Bảng 4.8.
 
 | Chỉ số | Giá trị |
 |---|---|
-| Tổng số bộ kiểm thử (test suite) | 74 |
-| Tổng số ca kiểm thử (test case) | 870 |
-| Số ca thành công | 870 |
+| Tổng số bộ kiểm thử (test suite) | 80 |
+| Tổng số ca kiểm thử (test case) | 937 |
+| Số ca thành công | 937 |
 | Số ca thất bại | 0 |
 | Số ca bỏ qua | 0 |
 | Tổng thời gian chạy | ≈ 8 giây |
 | Phạm vi phủ rule chuỗi cá nhân | 100 % (BKBTBQP + CSTĐTQ + BKTTCP) |
 | Phạm vi phủ rule chuỗi đơn vị | 100 % (BKBTBQP + BKTTCP cấp đơn vị) |
 
-> **Hình 4.42**: Đầu ra terminal khi chạy `npx jest --silent` — hiển thị "Test Suites: 74 passed, 74 total — Tests: 870 passed, 870 total".
+> **Hình 4.42**: Đầu ra terminal khi chạy `npx jest --silent` — hiển thị "Test Suites: 80 passed, 80 total — Tests: 937 passed, 937 total".
 
 ### 4.4.2 Kiểm thử hộp đen các chức năng nghiệp vụ
 
@@ -935,7 +935,7 @@ Bên cạnh kiểm thử đơn vị, các chức năng nghiệp vụ chính đư
 | 1 | Đăng nhập đúng | username = admin01, password = đúng | Chuyển hướng tới trang chủ Admin | Đạt |
 | 2 | Sai mật khẩu | username = admin01, password = sai | Hiển thị "Tài khoản hoặc mật khẩu không đúng" | Đạt |
 | 3 | Tài khoản không tồn tại | username = noexist | Hiển thị thông báo chung không lộ thông tin | Đạt |
-| 4 | Sai 5 lần liên tiếp | Sai liên tiếp 5 lần | Khoá đăng nhập 5 phút từ IP đó | Đạt |
+| 4 | 30 lần sai liên tiếp trong 5 phút → tạm khoá | Sai liên tiếp 30 lần trong 5 phút | Khoá đăng nhập 5 phút từ IP đó | Đạt |
 | 5 | Refresh token | Access Token hết hạn | Tự động xin token mới và tiếp tục thao tác | Đạt |
 
 **Bảng 4.10 — Kiểm thử chức năng Quản lý quân nhân**
@@ -1065,7 +1065,7 @@ Chương này phân tích năm điểm khác biệt mà sản phẩm mang lại 
 
 **Giải pháp.** Đồ án trừu tượng hoá rule chuỗi thành đối tượng cấu hình `ChainAwardConfig` chứa năm tham số định lượng (mã danh hiệu, số năm chu kỳ, danh sách cờ tiền điều kiện kèm số lượng yêu cầu, có yêu cầu NCKH hay không, có phải lifetime hay không). Hai mảng `PERSONAL_CHAIN_AWARDS` và `UNIT_CHAIN_AWARDS` chứa danh sách cấu hình tương ứng cho cá nhân và đơn vị. Một hàm thuần `checkChainEligibility` đọc cấu hình, ngữ cảnh chuỗi (do `computeChainContext` dẫn xuất) và trả về kết quả `{ eligible, reason }`. Toàn bộ logic tập trung trong khoảng 80 dòng mã, được kiểm thử với 197 ca kiểm thử riêng phủ tất cả các kịch bản: chu kỳ vừa đủ, chu kỳ thừa, lỡ đợt một chu kỳ, lỡ nhiều chu kỳ, BKBTBQP rơi ra ngoài cửa sổ trượt 3 năm khi xét CSTĐTQ chu kỳ mới, lifetime block sau khi nhận BKTTCP.
 
-**Kết quả định lượng.** Trên môi trường phát triển, một lần gọi `recalculateAnnualProfile(personnelId)` cho một quân nhân có 15 năm lịch sử mất trung bình 47 mili giây (đo bằng `console.time` trong 100 lần chạy). So với 20 phút thủ công, tỷ lệ rút gọn vượt 25.000 lần. Quan trọng hơn về mặt độ chính xác: trong bộ kiểm thử 870 ca, không có ca nào sai. Khi kiểm thử ngược với 50 hồ sơ giả định lấy từ dữ liệu mẫu, hệ thống phát hiện đúng 100% trường hợp đủ điều kiện và đúng 100% trường hợp lỡ đợt cần đề nghị ở chu kỳ kế tiếp. Đáng chú ý, ba kịch bản phức tạp ban đầu khiến cán bộ thử nghiệm bối rối khi tính tay (cửa sổ trượt 3 năm có BKBTBQP từ chu kỳ trước, chuỗi 5 năm sau khi đã nhận BKTTCP, lỡ một đợt CSTĐTQ giữa chuỗi) đều được hệ thống xử lý chính xác mà không cần can thiệp.
+**Kết quả định lượng.** Trên môi trường phát triển, một lần gọi `recalculateAnnualProfile(personnelId)` cho một quân nhân có 15 năm lịch sử mất trung bình 47 mili giây (đo bằng `console.time` trong 100 lần chạy). So với 20 phút thủ công, tỷ lệ rút gọn vượt 25.000 lần. Quan trọng hơn về mặt độ chính xác: trong bộ kiểm thử 937 ca, không có ca nào sai. Khi kiểm thử ngược với 50 hồ sơ giả định lấy từ dữ liệu mẫu, hệ thống phát hiện đúng 100% trường hợp đủ điều kiện và đúng 100% trường hợp lỡ đợt cần đề nghị ở chu kỳ kế tiếp. Đáng chú ý, ba kịch bản phức tạp ban đầu khiến cán bộ thử nghiệm bối rối khi tính tay (cửa sổ trượt 3 năm có BKBTBQP từ chu kỳ trước, chuỗi 5 năm sau khi đã nhận BKTTCP, lỡ một đợt CSTĐTQ giữa chuỗi) đều được hệ thống xử lý chính xác mà không cần can thiệp.
 
 ## 5.2 Quy trình đề xuất – phê duyệt số hoá kèm nhật ký kiểm toán
 
@@ -1089,7 +1089,7 @@ Chương này phân tích năm điểm khác biệt mà sản phẩm mang lại 
 
 **Giải pháp.** Đồ án thiết kế quy trình nhập Excel hai bước thông minh. Bước "xem trước" đọc toàn bộ tệp, áp schema Zod và các quy tắc nghiệp vụ (CCCD tồn tại trong `QuanNhan`, năm hợp lệ, danh hiệu nằm trong danh mục cho phép sau khi chuẩn hoá viết tắt). Kết quả trả về gồm hai mảng: dòng hợp lệ (xanh) và dòng có lỗi (đỏ kèm chỉ số dòng và mô tả). Cán bộ kiểm tra danh sách lỗi, có thể tải tệp xuống sửa, tải lại — bước này không tiêu tốn thời gian transaction. Bước "xác nhận" mở một transaction Prisma duy nhất, ghi tuần tự các dòng hợp lệ; nếu xảy ra lỗi tại bất kỳ dòng nào (vd: trùng khoá `(quan_nhan_id, nam)` do dữ liệu mới chen vào giữa hai bước), toàn bộ transaction được rollback và cơ sở dữ liệu trở về trạng thái trước khi nhập. Mỗi loại nghiệp vụ có một strategy nhập tương ứng tuân theo giao diện `ProposalStrategy.importInTransaction`, đảm bảo tính nhất quán giữa các luồng.
 
-**Kết quả định lượng.** Trên dữ liệu thử nghiệm, hệ thống nhập 500 bản ghi danh hiệu hằng năm trong 12 giây và 1.000 bản ghi quân nhân với lịch sử chức vụ trong 28 giây. Tốc độ này cho phép di chuyển toàn bộ dữ liệu lịch sử ước tính của Học viện trong khoảng nửa ngày làm việc thay vì nhiều tháng nhập tay. Quan trọng hơn về độ chính xác: trong một bài kiểm thử cố ý chèn dòng thứ 250 có CCCD sai, hệ thống phát hiện ngay tại bước xem trước và rollback hoàn toàn ở bước xác nhận khi giả lập lỗi tại bước ghi — không một bản ghi nào lọt vào cơ sở dữ liệu. Đối với việc chuẩn hoá viết tắt, hàm `resolveDanhHieuCode` chấp nhận năm biến thể phổ biến cho mỗi danh hiệu (vd: BKBTBQP, "Bằng khen BQP", "Bằng khen của Bộ trưởng Bộ Quốc phòng", "BK BQP", "B/K BQP") và trả về mã chuẩn duy nhất, giảm thời gian dọn dẹp dữ liệu nguồn trước khi nhập.
+**Kết quả định lượng.** Trên dữ liệu thử nghiệm, hệ thống nhập 500 bản ghi danh hiệu hằng năm trong 12 giây. Tốc độ này cho phép di chuyển toàn bộ dữ liệu lịch sử khen thưởng ước tính của Học viện trong khoảng nửa ngày làm việc thay vì nhiều tháng nhập tay. Quan trọng hơn về độ chính xác: trong một bài kiểm thử cố ý chèn dòng thứ 250 có CCCD sai, hệ thống phát hiện ngay tại bước xem trước và rollback hoàn toàn ở bước xác nhận khi giả lập lỗi tại bước ghi — không một bản ghi nào lọt vào cơ sở dữ liệu. Đối với việc chuẩn hoá viết tắt, hàm `resolveDanhHieuCode` chấp nhận năm biến thể phổ biến cho mỗi danh hiệu (vd: BKBTBQP, "Bằng khen BQP", "Bằng khen của Bộ trưởng Bộ Quốc phòng", "BK BQP", "B/K BQP") và trả về mã chuẩn duy nhất, giảm thời gian dọn dẹp dữ liệu nguồn trước khi nhập.
 
 ## 5.5 Phân quyền theo cây đơn vị, kiểm toán đầy đủ và sao lưu định kỳ
 
@@ -1097,7 +1097,7 @@ Chương này phân tích năm điểm khác biệt mà sản phẩm mang lại 
 
 **Giải pháp.** Hệ thống áp dụng kiểm soát truy cập theo vai trò (RBAC) bốn cấp với nguyên tắc đặc quyền tối thiểu. SuperAdmin chỉ phụ trách hạ tầng, không tham gia nghiệp vụ; Admin có toàn quyền nghiệp vụ trên Học viện; Manager chỉ thấy dữ liệu thuộc cây đơn vị mình quản lý qua middleware `unitFilter`; User chỉ xem hồ sơ cá nhân. Đặc biệt, một số tài nguyên nhạy cảm có cơ chế ẩn theo vai trò: tài nguyên `resource = backup` chỉ SuperAdmin xem được trong nhật ký — Admin truy cập vẫn không thấy ngay cả tiêu đề thao tác. Mọi thao tác mutate đều đi qua middleware `auditLog` ghi vào bảng `SystemLog` với `payload` chi tiết. Sao lưu được tự động hoá qua cron job nội bộ chạy `pg_dump` mỗi 24 giờ vào lúc 02:00 sáng, lưu tệp SQL có thời gian thật vào thư mục `backups/`.
 
-**Kết quả định lượng.** Trên kho mã nguồn, đếm số route được bảo vệ bằng cả `verifyToken` và `requireRole`/`checkRole` cho thấy 100% các route mutate (tổng cộng 78 route) đều có ít nhất hai middleware này. 100% các thao tác mutate đều ghi nhật ký — kiểm chứng qua bộ kiểm thử `tests/authz/` chạy 124 ca kiểm thử phân quyền, tất cả pass. Cơ chế ẩn `resource = backup` được kiểm thử bằng hai bộ test riêng biệt: SuperAdmin truy cập thấy đủ; Admin truy cập trả về danh sách rỗng cho lọc resource đó. Sao lưu tự động đã chạy ổn định liên tục bốn tuần trên môi trường thử nghiệm, sinh 28 tệp `.sql` với kích thước trung bình 4.2 MB mỗi tệp, không một lần nào bị bỏ lỡ. Tệp cũ hơn 30 ngày được tự động xoá để tránh đầy ổ cứng. Khôi phục từ tệp sao lưu thử nghiệm mất 14 giây cho dữ liệu kích thước hiện tại — đủ nhanh để dùng trong tình huống khẩn cấp.
+**Kết quả định lượng.** Trên kho mã nguồn, đếm số route được bảo vệ bằng cả `verifyToken` và `checkRole` cho thấy 100% các route mutate (tổng cộng 78 route) đều có ít nhất hai middleware này. 100% các thao tác mutate đều ghi nhật ký — kiểm chứng qua bộ kiểm thử `tests/authz/` chạy 38 ca kiểm thử phân quyền, tất cả pass. Cơ chế ẩn `resource = backup` được kiểm thử bằng hai bộ test riêng biệt: SuperAdmin truy cập thấy đủ; Admin truy cập trả về danh sách rỗng cho lọc resource đó. Sao lưu tự động đã chạy ổn định liên tục bốn tuần trên môi trường thử nghiệm, sinh 28 tệp `.sql` với kích thước trung bình 4.2 MB mỗi tệp, không một lần nào bị bỏ lỡ. Tệp cũ hơn 30 ngày được tự động xoá để tránh đầy ổ cứng. Khôi phục từ tệp sao lưu thử nghiệm mất 14 giây cho dữ liệu kích thước hiện tại — đủ nhanh để dùng trong tình huống khẩn cấp.
 
 ---
 
@@ -1109,7 +1109,7 @@ Sau quá trình nghiên cứu, phân tích và xây dựng, đồ án đã hoàn
 
 Về mặt nghiệp vụ, hệ thống bao quát toàn bộ bảy nhóm khen thưởng đặc thù của môi trường quân sự: khen thưởng cá nhân hằng năm theo chuỗi CSTĐCS – BKBTBQP – CSTĐTQ – BKTTCP, khen thưởng đơn vị hằng năm theo chuỗi ĐVQT – BKBTBQP – BKTTCP, niên hạn (Huy chương Chiến sĩ vẻ vang theo các mốc 10/15/20 năm), cống hiến (Huân chương Bảo vệ Tổ quốc dựa trên thời gian giữ chức vụ theo nhóm hệ số), kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN, Huy chương Quân kỳ quyết thắng (25 năm phục vụ) và thành tích nghiên cứu khoa học. Mỗi nhóm có quy trình đề xuất – phê duyệt riêng nhưng cùng dùng chung tầng dữ liệu và kiến trúc phần mềm thống nhất.
 
-Về mặt kỹ thuật, hệ thống được hiện thực hoá theo kiến trúc phân tầng sáu lớp (Route → Middleware → Controller → Service → Repository → Prisma), với cơ sở dữ liệu PostgreSQL có 23 model chuẩn hoá, lớp xác thực JWT có cơ chế làm mới luân phiên, hệ thống ghi nhật ký kiểm toán đầy đủ qua middleware `auditLog`. Kho mã nguồn đi kèm 74 bộ kiểm thử với 870 ca kiểm thử đơn vị đạt 100 % thành công, phủ toàn bộ rule chuỗi cá nhân – đơn vị, các kịch bản lỡ đợt, cửa sổ trượt và lifetime block.
+Về mặt kỹ thuật, hệ thống được hiện thực hoá theo kiến trúc phân tầng sáu lớp (Route → Middleware → Controller → Service → Repository → Prisma), với cơ sở dữ liệu PostgreSQL có 23 model chuẩn hoá, lớp xác thực JWT có cơ chế làm mới luân phiên, hệ thống ghi nhật ký kiểm toán đầy đủ qua middleware `auditLog`. Kho mã nguồn đi kèm 80 bộ kiểm thử với 937 ca kiểm thử đơn vị đạt 100 % thành công, phủ toàn bộ rule chuỗi cá nhân – đơn vị, các kịch bản lỡ đợt, cửa sổ trượt và lifetime block.
 
 Về đóng góp nổi bật, đồ án đã trừu tượng hoá rule chuỗi danh hiệu thành đối tượng cấu hình `ChainAwardConfig` (số năm chu kỳ, các cờ tiền điều kiện, có yêu cầu NCKH hay không, lifetime hay non-lifetime) và đặt vào hai mảng `PERSONAL_CHAIN_AWARDS` / `UNIT_CHAIN_AWARDS`. Hàm xét duy nhất `checkChainEligibility` đọc cấu hình này — thiết kế giúp việc thêm tier mới chỉ cần bổ sung phần tử vào mảng mà không phải sửa logic. Tương tự, bảy loại đề xuất đều tuân theo giao diện `ProposalStrategy` với một REGISTRY trung tâm, qua đó loại bỏ các nhánh `if/else` lớn từng tồn tại và mở đường cho việc bổ sung loại đề xuất mới chỉ trong một vài tệp riêng lẻ.
 
@@ -1176,7 +1176,7 @@ Các hướng phát triển trên được sắp xếp theo độ ưu tiên gi�
 
 # Phụ lục A. Toàn văn schema cơ sở dữ liệu
 
-Phụ lục này trình bày nguyên văn tệp `BE-QLKT/prisma/schema.prisma` (618 dòng, 23 model dữ liệu cùng hai generator). Tệp được giữ là **một nguồn duy nhất** mô tả lược đồ cơ sở dữ liệu PostgreSQL của hệ thống; mọi thao tác `npx prisma migrate dev` hay `npx prisma db push` đều bám sát tệp này. Ở bản LaTeX, có thể thay đoạn dưới bằng lệnh `\lstinputlisting[language=Prisma]{../BE-QLKT/prisma/schema.prisma}` để Prisma được tô màu cú pháp tự động.
+Phụ lục này trình bày nguyên văn tệp `BE-QLKT/prisma/schema.prisma` (619 dòng, 23 model dữ liệu cùng hai generator). Tệp được giữ là **một nguồn duy nhất** mô tả lược đồ cơ sở dữ liệu PostgreSQL của hệ thống; mọi thao tác `npx prisma migrate dev` hay `npx prisma db push` đều bám sát tệp này. Ở bản LaTeX, có thể thay đoạn dưới bằng lệnh `\lstinputlisting[language=Prisma]{../BE-QLKT/prisma/schema.prisma}` để Prisma được tô màu cú pháp tự động.
 
 ```prisma
 generator client {
@@ -1237,7 +1237,7 @@ model ChucVu {
   don_vi_truc_thuoc_id String?  @db.VarChar(30)
   ten_chuc_vu          String   @db.VarChar(255)
   is_manager           Boolean  @default(false)
-  he_so_chuc_vu        Decimal  @default(0) @db.Decimal(10, 2)
+  he_so_chuc_vu        Float    @default(0)
   createdAt            DateTime @default(now()) @db.Timestamp(0)
   updatedAt            DateTime @updatedAt @db.Timestamp(0)
 
@@ -1599,13 +1599,13 @@ generator erd {
 }
 ```
 
-> **Lưu ý:** Để giữ phụ lục gọn, các bảng khen thưởng output (model 9–13: `KhenThuongHCBVTQ`, `HuanChuongQuanKyQuyetThang`, `KyNiemChuongVSNXDQDNDVN`, `KhenThuongHCCSVV`, `KhenThuongDotXuat`) và hai bảng đơn vị hằng năm (model 20–21: `HoSoDonViHangNam`, `DanhHieuDonViHangNam`) chỉ trình bày bằng ghi chú lược đồ. Khi convert sang LaTeX, lệnh `\lstinputlisting{schema.prisma}` sẽ tự chèn nguyên văn 618 dòng kèm tô màu cú pháp Prisma.
+> **Lưu ý:** Để giữ phụ lục gọn, các bảng khen thưởng output (model 9–13: `KhenThuongHCBVTQ`, `HuanChuongQuanKyQuyetThang`, `KyNiemChuongVSNXDQDNDVN`, `KhenThuongHCCSVV`, `KhenThuongDotXuat`) và hai bảng đơn vị hằng năm (model 20–21: `HoSoDonViHangNam`, `DanhHieuDonViHangNam`) chỉ trình bày bằng ghi chú lược đồ. Khi convert sang LaTeX, lệnh `\lstinputlisting{schema.prisma}` sẽ tự chèn nguyên văn 619 dòng kèm tô màu cú pháp Prisma.
 
 ---
 
 # Phụ lục B. Danh sách điểm cuối API
 
-Phụ lục này tổng hợp các nhóm điểm cuối (endpoint) đã đăng ký trong `BE-QLKT/src/routes/index.ts`. Toàn bộ API của hệ thống đều dùng tiền tố `/api`, mỗi route nghiệp vụ đi qua trục middleware tiêu chuẩn `verifyToken → requireRole → validate → auditLog → controller`. Tổng số 175 điểm cuối được phân thành 24 nhóm theo file route, trình bày dưới dạng bảng tổng hợp gồm tiền tố nhóm, vai trò tối thiểu được phép truy cập, số điểm cuối và mục đích.
+Phụ lục này tổng hợp các nhóm điểm cuối (endpoint) đã đăng ký trong `BE-QLKT/src/routes/index.ts`. Toàn bộ API của hệ thống đều dùng tiền tố `/api`, mỗi route nghiệp vụ đi qua trục middleware tiêu chuẩn `verifyToken → checkRole → validate → auditLog → controller`. Tổng số 175 điểm cuối được phân thành 24 nhóm theo file route, trình bày dưới dạng bảng tổng hợp gồm tiền tố nhóm, vai trò tối thiểu được phép truy cập, số điểm cuối và mục đích.
 
 | # | Nhóm tiền tố | Tệp route | Vai trò tối thiểu | Số điểm cuối | Mục đích |
 |---|---|---|---|---|---|
@@ -1697,7 +1697,7 @@ Phụ lục này hướng dẫn các thao tác cơ bản theo bốn vai trò ng�
 
 # Phụ lục D. Báo cáo kết quả kiểm thử
 
-Phụ lục này tổng kết kết quả chạy bộ kiểm thử đơn vị bằng lệnh `npx jest --silent` trên kho mã nguồn `BE-QLKT/`. Tổng cộng 75 tệp `.test.ts` (74 bộ kiểm thử (test suite) hoạt động + 1 tệp setup môi trường `env.setup.ts`), bao gồm 870 ca kiểm thử (test case) đạt tỉ lệ thành công 100 %. Bảng D.1 phân nhóm các bộ kiểm thử theo thư mục con của `BE-QLKT/tests/`.
+Phụ lục này tổng kết kết quả chạy bộ kiểm thử đơn vị bằng lệnh `npx jest --silent` trên kho mã nguồn `BE-QLKT/`. Tổng cộng 81 tệp `.test.ts` (80 bộ kiểm thử (test suite) hoạt động + 1 tệp setup môi trường `env.setup.ts`), bao gồm 937 ca kiểm thử (test case) đạt tỉ lệ thành công 100 %. Bảng D.1 phân nhóm các bộ kiểm thử theo thư mục con của `BE-QLKT/tests/`.
 
 **Bảng D.1 — Tổng hợp kết quả kiểm thử theo nhóm chức năng**
 
@@ -1718,7 +1718,7 @@ Phụ lục này tổng kết kết quả chạy bộ kiểm thử đơn vị b�
 | 13 | `tests/authz` | Phân quyền theo vai trò; `unitFilter`; ẩn `resource = backup` | 5 | ≈ 65 | Pass 100 % |
 | 14 | `tests/helpers` | Hàm tiện ích: medal ranking, build description, format date | 3 | ≈ 50 | Pass 100 % |
 | 15 | `tests/constants` | Tính nhất quán giữa `chainAwards.constants.ts` và rule | 1 | ≈ 30 | Pass 100 % |
-| | **Tổng** | | **74 bộ kiểm thử** | **870 ca kiểm thử** | **Pass 100 %** |
+| | **Tổng** | | **80 bộ kiểm thử** | **937 ca kiểm thử** | **Pass 100 %** |
 
 > *Cột "Số ca kiểm thử (tham khảo)" thể hiện phân bổ ước tính tại thời điểm khoá báo cáo; con số chính xác có thể thay đổi nhẹ khi bổ sung ca kiểm thử mới. Chạy lệnh `npx jest --listTests --json | jq 'length'` để đếm chính xác bộ kiểm thử và `npx jest --silent` cho con số ca kiểm thử cập nhật.*
 
@@ -1737,8 +1737,8 @@ PASS  tests/import/personalAnnualImport.test.ts
 PASS  tests/authz/managerUnitFilter.test.ts
 ...
 
-Test Suites: 74 passed, 74 total
-Tests:       870 passed, 870 total
+Test Suites: 80 passed, 80 total
+Tests:       937 passed, 937 total
 Snapshots:   0 total
 Time:        38.214 s
 Ran all test suites.

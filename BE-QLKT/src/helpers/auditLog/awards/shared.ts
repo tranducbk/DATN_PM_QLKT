@@ -3,12 +3,7 @@ import { prisma } from '../../../models';
 import { Request, Response } from 'express';
 import { queryPersonnelName, getFileName } from '../constants';
 import { getDanhHieuName } from '../../../constants/danhHieu.constants';
-import { AWARD_SLUGS } from '../../../constants/awardSlugs.constants';
 import { AWARD_LABELS } from '../../../constants/awardLabels.constants';
-import { tenureMedalRepository } from '../../../repositories/tenureMedal.repository';
-import { commemorativeMedalRepository } from '../../../repositories/commemorativeMedal.repository';
-import { militaryFlagRepository } from '../../../repositories/militaryFlag.repository';
-import { contributionMedalRepository } from '../../../repositories/contributionMedal.repository';
 
 /** Normalizes route/query ID values (Express can pass string or string[]). */
 export function routeParamId(v: string | string[] | undefined | null): string | null {
@@ -28,24 +23,10 @@ export type KhenThuongDotXuatWithAuditRels = Prisma.KhenThuongDotXuatGetPayload<
   };
 }>;
 
-export type AwardModelAccessor = {
-  findUnique: (args: {
-    where: { id: string };
-    include: { QuanNhan: { select: { ho_ten: true } } };
-  }) => Promise<{
-    quan_nhan_id: string;
-    nam: number;
-    danh_hieu?: string;
-    QuanNhan?: { ho_ten: string } | null;
-  } | null>;
-};
-
-/** Prisma model accessor keyed by resource slug */
-export const AWARD_PRISMA_MODEL: Record<string, AwardModelAccessor> = {
-  [AWARD_SLUGS.TENURE_MEDALS]: { findUnique: args => tenureMedalRepository.findUniqueRaw(args) },
-  [AWARD_SLUGS.COMMEMORATIVE_MEDALS]: { findUnique: args => commemorativeMedalRepository.findUniqueRaw(args) },
-  [AWARD_SLUGS.MILITARY_FLAG]: { findUnique: args => militaryFlagRepository.findUniqueRaw(args) },
-  [AWARD_SLUGS.CONTRIBUTION_MEDALS]: { findUnique: args => contributionMedalRepository.findUniqueRaw(args) },
+type AwardModelRecord = {
+  QuanNhan?: { ho_ten?: string | null } | null;
+  nam?: number | null;
+  danh_hieu?: string | null;
 };
 
 export function buildAwardTypeHelpers(
@@ -55,7 +36,6 @@ export function buildAwardTypeHelpers(
   (req: Request, res: Response, responseData: unknown) => string | Promise<string>
 > {
   const typeName = AWARD_LABELS[resource as keyof typeof AWARD_LABELS] || resource;
-  const model = AWARD_PRISMA_MODEL[resource];
 
   /** Uses specific rank names when available, otherwise falls back to type label. */
   const getAwardLabel = (danhHieu?: string) => {
@@ -88,26 +68,20 @@ export function buildAwardTypeHelpers(
     },
 
     DELETE: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
-      const awardId = routeParamId(req.params?.id);
-
       let hoTen = '';
       let nam = '';
       let danhHieu = '';
 
-      if (awardId && model) {
-        try {
-          const record = await model.findUnique({
-            where: { id: awardId },
-            include: { QuanNhan: { select: { ho_ten: true } } },
-          });
-          if (record) {
-            hoTen = record.QuanNhan?.ho_ten || '';
-            nam = String(record.nam ?? '');
-            danhHieu = record.danh_hieu || '';
-          }
-        } catch (error) {
-          console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
+      try {
+        const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
+        const record = (data as { data?: AwardModelRecord } | null)?.data;
+        if (record) {
+          hoTen = record.QuanNhan?.ho_ten || '';
+          nam = record.nam != null ? String(record.nam) : '';
+          danhHieu = record.danh_hieu || '';
         }
+      } catch (error) {
+        console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
       }
 
       if (hoTen) {

@@ -6,7 +6,7 @@
 
 import { Router } from 'express';
 import commemorativeMedalController from '../controllers/commemorativeMedal.controller';
-import { verifyToken, checkRole, requireAdminOnly } from '../middlewares/auth';
+import { verifyToken, checkRole, requireAdminOrManager, requireAdminOnly } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
 import { ROLES } from '../constants/roles.constants';
@@ -59,7 +59,7 @@ router.post(
 router.get(
   '/',
   verifyToken,
-  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
+  requireAdminOrManager,
   commemorativeMedalController.getAll
 );
 
@@ -71,7 +71,7 @@ router.get(
 router.get(
   '/export',
   verifyToken,
-  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
+  requireAdminOrManager,
   commemorativeMedalController.exportToExcel
 );
 
@@ -83,7 +83,7 @@ router.get(
 router.get(
   '/statistics',
   verifyToken,
-  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
+  requireAdminOrManager,
   commemorativeMedalController.getStatistics
 );
 
@@ -97,6 +97,18 @@ router.get(
   verifyToken,
   checkRole([ROLES.ADMIN, ROLES.MANAGER, ROLES.USER]),
   commemorativeMedalController.getByPersonnelId
+);
+
+/**
+ * @route   GET /api/commemorative-medals/check-received/:personnel_id
+ * @desc    Check whether a personnel already received KNC VSNXD QDNDVN (or has a pending proposal)
+ * @access  ADMIN, MANAGER
+ */
+router.get(
+  '/check-received/:personnel_id',
+  verifyToken,
+  requireAdminOrManager,
+  commemorativeMedalController.checkReceived
 );
 
 /**

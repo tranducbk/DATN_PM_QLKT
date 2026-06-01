@@ -54,7 +54,7 @@ export async function importAnnualRewards(file: File): Promise<ApiResponse> {
 
 export async function checkHCQKQT(personnelId: string): Promise<ApiResponse> {
   try {
-    const res = await axiosInstance.get(`/api/annual-rewards/check-hcqkqt/${personnelId}`);
+    const res = await axiosInstance.get(`/api/military-flags/check-received/${personnelId}`);
     return { success: res.data?.success, data: res.data?.data };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
@@ -63,7 +63,7 @@ export async function checkHCQKQT(personnelId: string): Promise<ApiResponse> {
 
 export async function checkKNCVSNXDQDNDVN(personnelId: string): Promise<ApiResponse> {
   try {
-    const res = await axiosInstance.get(`/api/annual-rewards/check-knc-vsnxd/${personnelId}`);
+    const res = await axiosInstance.get(`/api/commemorative-medals/check-received/${personnelId}`);
     return { success: res.data?.success, data: res.data?.data };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };

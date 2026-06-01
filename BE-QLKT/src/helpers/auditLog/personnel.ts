@@ -103,8 +103,7 @@ const personnel: Record<
       return `Cập nhật thông tin quân nhân: ${hoTen}`;
     }
   },
-  DELETE: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
-    const personnelId = normalizeParam(req.params?.id);
+  DELETE: (req: Request, res: Response, responseData: unknown): string => {
     let hoTen = '';
 
     try {
@@ -112,18 +111,6 @@ const personnel: Record<
       hoTen = data?.data?.ho_ten || '';
     } catch (e) {
       // Ignore
-    }
-
-    if (!hoTen && personnelId) {
-      try {
-        const personnelRecord = await quanNhanRepository.findUniqueRaw({
-          where: { id: personnelId },
-          select: { ho_ten: true },
-        });
-        hoTen = personnelRecord?.ho_ten || '';
-      } catch (error) {
-        // Ignore
-      }
     }
 
     if (hoTen) {
@@ -308,50 +295,15 @@ const positionHistory: Record<
     return description;
   },
   DELETE: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
-    const historyId = req.params?.id || null;
-
     const parsedData = parseResponseData(responseData);
     const result = asRecord(parsedData?.data) || parsedData;
 
     const quanNhanD = asRecord(result?.QuanNhan);
     const chucVuD = asRecord(result?.ChucVu) as ChucVuWithUnit | null;
 
-    let hoTen = (quanNhanD?.ho_ten as string) || '';
-    let tenChucVu = (chucVuD?.ten_chuc_vu as string) || '';
-    let tenDonVi = getUnitNameFromChucVu(chucVuD);
-
-    if ((!hoTen || !tenChucVu) && historyId) {
-      await withPrisma(async prisma => {
-        const history = await positionHistoryRepository.findUniqueRaw({
-          where: { id: historyId as string },
-          include: {
-            QuanNhan: { select: { ho_ten: true } },
-            ChucVu: {
-              include: {
-                CoQuanDonVi: { select: { ten_don_vi: true } },
-                DonViTrucThuoc: {
-                  include: {
-                    CoQuanDonVi: { select: { ten_don_vi: true } },
-                  },
-                },
-              },
-            },
-          },
-        }, prisma);
-
-        if (history) {
-          if (!hoTen && history.QuanNhan?.ho_ten) {
-            hoTen = history.QuanNhan.ho_ten;
-          }
-          if (!tenChucVu && history.ChucVu?.ten_chuc_vu) {
-            tenChucVu = history.ChucVu.ten_chuc_vu;
-          }
-          if (!tenDonVi) {
-            tenDonVi = getUnitNameFromChucVu(history.ChucVu);
-          }
-        }
-      });
-    }
+    const hoTen = (quanNhanD?.ho_ten as string) || '';
+    const tenChucVu = (chucVuD?.ten_chuc_vu as string) || '';
+    const tenDonVi = getUnitNameFromChucVu(chucVuD);
 
     let description = 'Xóa lịch sử chức vụ';
     if (hoTen) {
@@ -442,8 +394,6 @@ const scientificAchievements: Record<
     }${nam ? ` (Năm ${nam})` : ''}`;
   },
   DELETE: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
-    const achievementId = normalizeParam(req.params?.id);
-
     let hoTen = '';
     let loai = '';
     let moTa = '';
@@ -462,22 +412,6 @@ const scientificAchievements: Record<
       }
     } catch (e) {
       // Ignore parse error
-    }
-
-    if ((!hoTen || !loai) && achievementId) {
-      try {
-        const achievementRecord = (await scientificAchievementRepository.findUniqueRaw({
-          where: { id: achievementId },
-          include: { QuanNhan: { select: { ho_ten: true } } },
-        })) as ThanhTichKhoaHocWithHoTen | null;
-        if (achievementRecord) {
-          hoTen = achievementRecord.QuanNhan?.ho_ten || hoTen;
-          loai = achievementRecord.loai || loai;
-          moTa = achievementRecord.mo_ta || moTa;
-        }
-      } catch (error) {
-        // Ignore error
-      }
     }
 
     const loaiName = ACHIEVEMENT_TYPE_NAMES[loai] || loai || FALLBACK.UNKNOWN;

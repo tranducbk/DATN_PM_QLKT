@@ -56,6 +56,17 @@ export const contributionMedalRepository = {
     return tx.khenThuongHCBVTQ.update({ where: { id }, data });
   },
 
+  upsertRaw<T extends Prisma.KhenThuongHCBVTQUpsertArgs>(
+    args: Prisma.SelectSubset<T, Prisma.KhenThuongHCBVTQUpsertArgs>,
+    tx: PrismaLike = prisma
+  ) {
+    return tx.khenThuongHCBVTQ.upsert(args);
+  },
+
+  deleteMany(where: Prisma.KhenThuongHCBVTQWhereInput, tx: PrismaLike = prisma) {
+    return tx.khenThuongHCBVTQ.deleteMany({ where });
+  },
+
   delete(id: string, tx: PrismaLike = prisma) {
     return tx.khenThuongHCBVTQ.delete({ where: { id } });
   },

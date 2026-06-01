@@ -232,11 +232,11 @@ createPersonnel = catchAsync(async (req: Request, res: Response) => {
   return ResponseHelper.created(res, { data: personnel });
 });
 
-// services/personnel.service.ts — business logic ở đây
+// services/personnel.service.ts — business logic gọi qua repository
 async create(data: CreatePersonnelData) {
-  const existing = await prisma.quanNhan.findFirst({ where: { cccd: data.cccd } });
+  const existing = await quanNhanRepository.findIdByCccd(data.cccd);
   if (existing) throw new ValidationError('CCCD đã tồn tại');
-  return prisma.quanNhan.create({ data });
+  return quanNhanRepository.create(data);
 }
 ```
 

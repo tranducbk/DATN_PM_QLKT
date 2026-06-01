@@ -231,7 +231,15 @@ class MilitaryFlagController {
     const { id } = params;
     const adminUsername = getAdminUsername(req);
     const result = await militaryFlagService.deleteAward(id, adminUsername);
-    return ResponseHelper.success(res, { message: result.message });
+    return ResponseHelper.success(res, { message: result.message, data: result.award });
+  });
+
+  checkReceived = catchAsync(async (req: Request, res: Response) => {
+    const params = req.params as GetByPersonnelIdParams;
+    const { personnel_id } = params;
+    if (!personnel_id) return ResponseHelper.badRequest(res, 'Thiếu mã quân nhân');
+    const data = await militaryFlagService.checkAlreadyReceived(personnel_id);
+    return ResponseHelper.success(res, { data, message: `Kiểm tra ${AWARD_LABEL} thành công` });
   });
 }
 

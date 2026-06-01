@@ -521,10 +521,7 @@ export async function confirmImport(validItems: HccsvvValidItem[]) {
   for (const item of sortedItems) {
     const dbList = existingByPersonnel.get(item.personnel_id) || [];
     const batchList = accumulated.get(item.personnel_id) || [];
-    const orderError = validateHCCSVVRankOrder(item.danh_hieu, item.nam, [
-      ...dbList,
-      ...batchList,
-    ]);
+    const orderError = validateHCCSVVRankOrder(item.danh_hieu, item.nam, [...dbList, ...batchList]);
     if (orderError) {
       orderConflicts.push(`${item.ho_ten}: ${orderError}`);
     } else {
@@ -540,32 +537,35 @@ export async function confirmImport(validItems: HccsvvValidItem[]) {
     async prismaTx => {
       const results = [];
       for (const item of validItems) {
-        const result = await prismaTx.khenThuongHCCSVV.upsert({
-          where: {
-            quan_nhan_id_danh_hieu: {
+        const result = await tenureMedalRepository.upsertRaw(
+          {
+            where: {
+              quan_nhan_id_danh_hieu: {
+                quan_nhan_id: item.personnel_id,
+                danh_hieu: item.danh_hieu,
+              },
+            },
+            update: {
+              nam: item.nam,
+              thang: item.thang ?? 12,
+              cap_bac: item.cap_bac ?? null,
+              chuc_vu: item.chuc_vu ?? null,
+              so_quyet_dinh: item.so_quyet_dinh ?? null,
+              ghi_chu: item.ghi_chu ?? null,
+            },
+            create: {
               quan_nhan_id: item.personnel_id,
               danh_hieu: item.danh_hieu,
+              nam: item.nam,
+              thang: item.thang ?? 12,
+              cap_bac: item.cap_bac ?? null,
+              chuc_vu: item.chuc_vu ?? null,
+              so_quyet_dinh: item.so_quyet_dinh ?? null,
+              ghi_chu: item.ghi_chu ?? null,
             },
           },
-          update: {
-            nam: item.nam,
-            thang: item.thang ?? 12,
-            cap_bac: item.cap_bac ?? null,
-            chuc_vu: item.chuc_vu ?? null,
-            so_quyet_dinh: item.so_quyet_dinh ?? null,
-            ghi_chu: item.ghi_chu ?? null,
-          },
-          create: {
-            quan_nhan_id: item.personnel_id,
-            danh_hieu: item.danh_hieu,
-            nam: item.nam,
-            thang: item.thang ?? 12,
-            cap_bac: item.cap_bac ?? null,
-            chuc_vu: item.chuc_vu ?? null,
-            so_quyet_dinh: item.so_quyet_dinh ?? null,
-            ghi_chu: item.ghi_chu ?? null,
-          },
-        });
+          prismaTx
+        );
         results.push(result);
       }
       return { imported: results.length, data: results };
