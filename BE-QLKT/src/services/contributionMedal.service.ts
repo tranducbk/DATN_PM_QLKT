@@ -10,9 +10,23 @@ import ExcelJS from 'exceljs';
 import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excel/excelImportHelper';
 import profileService from './profile.service';
 import * as notificationHelper from '../helpers/notification';
-import { getDanhHieuName, formatDanhHieuList, resolveDanhHieuCode, DANH_HIEU_HCBVTQ, CONG_HIEN_BASE_REQUIRED_MONTHS, CONG_HIEN_FEMALE_REQUIRED_MONTHS } from '../constants/danhHieu.constants';
+import {
+  getDanhHieuName,
+  formatDanhHieuList,
+  resolveDanhHieuCode,
+  DANH_HIEU_HCBVTQ,
+  CONG_HIEN_BASE_REQUIRED_MONTHS,
+  CONG_HIEN_FEMALE_REQUIRED_MONTHS,
+} from '../constants/danhHieu.constants';
 import { ValidationError, NotFoundError } from '../middlewares/errorHandler';
-import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys, sanitizeRowData, validatePersonnelNameMatch } from '../helpers/excel/excelHelper';
+import {
+  parseHeaderMap,
+  getHeaderCol,
+  resolvePersonnelInfo,
+  buildPendingKeys,
+  sanitizeRowData,
+  validatePersonnelNameMatch,
+} from '../helpers/excel/excelHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { buildTemplate, styleHeaderRow } from '../helpers/excel/excelTemplateHelper';
 import { fetchTemplateData } from './excel/templateData.service';
@@ -25,7 +39,10 @@ import { AWARD_LABELS } from '../constants/awardLabels.constants';
 
 const AWARD_LABEL = AWARD_LABELS[AWARD_SLUGS.CONTRIBUTION_MEDALS];
 import { calculateTenureMonthsWithDayPrecision } from '../helpers/serviceYearsHelper';
-import { validateHCBVTQHighestRank, type PositionMonthsByGroup } from '../helpers/awardValidation/contributionMedalHighestRank';
+import {
+  validateHCBVTQHighestRank,
+  type PositionMonthsByGroup,
+} from '../helpers/awardValidation/contributionMedalHighestRank';
 import { CONG_HIEN_HE_SO_GROUPS } from '../constants/danhHieu.constants';
 import {
   AWARD_EXCEL_SHEETS,
@@ -116,32 +133,43 @@ class ContributionAwardService {
       }
     }
 
-    const [personnelList, existingAwardsList, allPositionHistories, existingDecisions, pendingProposals] =
-      await Promise.all([
-        allPersonnelIds.size > 0
-          ? quanNhanRepository.findManyRaw({
-              where: { id: { in: [...allPersonnelIds] } },
-              select: { id: true, ho_ten: true, gioi_tinh: true, cap_bac: true, ChucVu: { select: { ten_chuc_vu: true } } },
-            })
-          : Promise.resolve([]),
-        allPersonnelIds.size > 0
-          ? contributionMedalRepository.findManyRaw({
-              where: { quan_nhan_id: { in: [...allPersonnelIds] } },
-            })
-          : Promise.resolve([]),
-        allPersonnelIds.size > 0
-          ? positionHistoryRepository.findManyRaw({
-              where: { quan_nhan_id: { in: [...allPersonnelIds] } },
-              include: { ChucVu: { select: { he_so_chuc_vu: true } } },
-            })
-          : Promise.resolve([]),
-        decisionFileRepository.findManyRaw({
-          select: { so_quyet_dinh: true },
-        }),
-        proposalRepository.findManyRaw({
-          where: { loai_de_xuat: PROPOSAL_TYPES.CONG_HIEN, status: PROPOSAL_STATUS.PENDING },
-        }),
-      ]);
+    const [
+      personnelList,
+      existingAwardsList,
+      allPositionHistories,
+      existingDecisions,
+      pendingProposals,
+    ] = await Promise.all([
+      allPersonnelIds.size > 0
+        ? quanNhanRepository.findManyRaw({
+            where: { id: { in: [...allPersonnelIds] } },
+            select: {
+              id: true,
+              ho_ten: true,
+              gioi_tinh: true,
+              cap_bac: true,
+              ChucVu: { select: { ten_chuc_vu: true } },
+            },
+          })
+        : Promise.resolve([]),
+      allPersonnelIds.size > 0
+        ? contributionMedalRepository.findManyRaw({
+            where: { quan_nhan_id: { in: [...allPersonnelIds] } },
+          })
+        : Promise.resolve([]),
+      allPersonnelIds.size > 0
+        ? positionHistoryRepository.findManyRaw({
+            where: { quan_nhan_id: { in: [...allPersonnelIds] } },
+            include: { ChucVu: { select: { he_so_chuc_vu: true } } },
+          })
+        : Promise.resolve([]),
+      decisionFileRepository.findManyRaw({
+        select: { so_quyet_dinh: true },
+      }),
+      proposalRepository.findManyRaw({
+        where: { loai_de_xuat: PROPOSAL_TYPES.CONG_HIEN, status: PROPOSAL_STATUS.PENDING },
+      }),
+    ]);
 
     const personnelMap = new Map(personnelList.map(p => [p.id, p]));
     const existingAwardsMap = new Map(existingAwardsList.map(a => [a.quan_nhan_id, a]));
@@ -156,7 +184,7 @@ class ContributionAwardService {
     const pendingPersonnelIds = buildPendingKeys(
       pendingProposals as Array<Record<string, unknown>>,
       'data_cong_hien',
-      (item) => item.personnel_id ? String(item.personnel_id) : null
+      item => (item.personnel_id ? String(item.personnel_id) : null)
     );
 
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
@@ -229,7 +257,13 @@ class ContributionAwardService {
 
       const nameMismatch = validatePersonnelNameMatch(ho_ten, personnel.ho_ten);
       if (nameMismatch) {
-        errors.push({ row: rowNumber, ho_ten, nam: namVal, danh_hieu: danh_hieu_raw, message: nameMismatch });
+        errors.push({
+          row: rowNumber,
+          ho_ten,
+          nam: namVal,
+          danh_hieu: danh_hieu_raw,
+          message: nameMismatch,
+        });
         continue;
       }
 
@@ -362,7 +396,9 @@ class ContributionAwardService {
       const months0_9_1_0 = getTotalMonths(CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10);
 
       const isFemale = personnel.gioi_tinh === GENDER.FEMALE;
-      const baseMonths = isFemale ? CONG_HIEN_FEMALE_REQUIRED_MONTHS : CONG_HIEN_BASE_REQUIRED_MONTHS;
+      const baseMonths = isFemale
+        ? CONG_HIEN_FEMALE_REQUIRED_MONTHS
+        : CONG_HIEN_BASE_REQUIRED_MONTHS;
 
       let eligible = false;
       if (danh_hieu === DANH_HIEU_HCBVTQ.HANG_NHAT) {
@@ -405,10 +441,12 @@ class ContributionAwardService {
 
       const history: { nam: number; danh_hieu: string; so_quyet_dinh: string | null }[] = [];
 
-      const { hoTen, capBac, chucVu, missingFields: missingInfoFields } = resolvePersonnelInfo(
-        { ho_ten, cap_bac, chuc_vu },
-        personnel
-      );
+      const {
+        hoTen,
+        capBac,
+        chucVu,
+        missingFields: missingInfoFields,
+      } = resolvePersonnelInfo({ ho_ten, cap_bac, chuc_vu }, personnel);
       if (missingInfoFields.length > 0) {
         errors.push({
           row: rowNumber,
@@ -459,7 +497,7 @@ class ContributionAwardService {
     const pendingPersonnelIds = buildPendingKeys(
       pendingProposals as Array<Record<string, unknown>>,
       'data_cong_hien',
-      (item) => item.personnel_id ? String(item.personnel_id) : null
+      item => (item.personnel_id ? String(item.personnel_id) : null)
     );
     const pendingConflicts: string[] = [];
     for (const item of validItems) {
@@ -524,12 +562,23 @@ class ContributionAwardService {
     const downgradeErrors: string[] = [];
     for (const item of validItems) {
       const months: PositionMonthsByGroup = {
-        [CONG_HIEN_HE_SO_GROUPS.LEVEL_07]: getMonths(item.personnel_id, CONG_HIEN_HE_SO_GROUPS.LEVEL_07),
-        [CONG_HIEN_HE_SO_GROUPS.LEVEL_08]: getMonths(item.personnel_id, CONG_HIEN_HE_SO_GROUPS.LEVEL_08),
-        [CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10]: getMonths(item.personnel_id, CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10),
+        [CONG_HIEN_HE_SO_GROUPS.LEVEL_07]: getMonths(
+          item.personnel_id,
+          CONG_HIEN_HE_SO_GROUPS.LEVEL_07
+        ),
+        [CONG_HIEN_HE_SO_GROUPS.LEVEL_08]: getMonths(
+          item.personnel_id,
+          CONG_HIEN_HE_SO_GROUPS.LEVEL_08
+        ),
+        [CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10]: getMonths(
+          item.personnel_id,
+          CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10
+        ),
       };
       const isFemale = genderMap.get(item.personnel_id) === GENDER.FEMALE;
-      const requiredMonths = isFemale ? CONG_HIEN_FEMALE_REQUIRED_MONTHS : CONG_HIEN_BASE_REQUIRED_MONTHS;
+      const requiredMonths = isFemale
+        ? CONG_HIEN_FEMALE_REQUIRED_MONTHS
+        : CONG_HIEN_BASE_REQUIRED_MONTHS;
       const downgradeError = validateHCBVTQHighestRank(item.danh_hieu, months, requiredMonths);
       if (downgradeError) {
         downgradeErrors.push(`${item.ho_ten}: ${downgradeError}`);
@@ -543,8 +592,8 @@ class ContributionAwardService {
       async prismaTx => {
         const results = [];
         for (const item of validItems) {
-          const result = await prismaTx.khenThuongHCBVTQ.create({
-            data: {
+          const result = await contributionMedalRepository.create(
+            {
               quan_nhan_id: item.personnel_id,
               danh_hieu: item.danh_hieu,
               nam: item.nam,
@@ -554,7 +603,8 @@ class ContributionAwardService {
               so_quyet_dinh: item.so_quyet_dinh ?? null,
               ghi_chu: item.ghi_chu ?? null,
             },
-          });
+            prismaTx
+          );
           results.push(result);
         }
         return { imported: results.length, data: results };
@@ -566,11 +616,7 @@ class ContributionAwardService {
   /**
    * Get all Contribution Awards with filters and pagination
    */
-  async getAll(
-    filters: Record<string, unknown> = {},
-    page: number = 1,
-    limit: number = 50
-  ) {
+  async getAll(filters: Record<string, unknown> = {}, page: number = 1, limit: number = 50) {
     const where: Record<string, unknown> = {};
 
     const quanNhanFilter: Record<string, unknown> = {};
@@ -676,7 +722,10 @@ class ContributionAwardService {
           const months = parsed.months ?? 0;
           return years * 12 + months;
         } catch (error) {
-   console.error('Failed to parse thoi_gian JSON when exporting contribution medals:', error);
+          console.error(
+            'Failed to parse thoi_gian JSON when exporting contribution medals:',
+            error
+          );
           return thoiGian;
         }
       }
@@ -684,23 +733,27 @@ class ContributionAwardService {
     };
 
     data.forEach((item, index) => {
-      worksheet.addRow(sanitizeRowData({
-        stt: index + 1,
-        id: item.QuanNhan?.id ?? '',
-        cccd: item.QuanNhan?.cccd ?? '',
-        ho_ten: item.QuanNhan?.ho_ten ?? '',
-        cap_bac: item.cap_bac ?? '',
-        chuc_vu: item.chuc_vu ?? '',
-        don_vi:
-          item.QuanNhan?.CoQuanDonVi?.ten_don_vi ?? item.QuanNhan?.DonViTrucThuoc?.ten_don_vi ?? '',
-        nam: item.nam,
-        danh_hieu: getDanhHieuName(item.danh_hieu),
-        thoi_gian_nhom_0_7: convertThoiGian(item.thoi_gian_nhom_0_7),
-        thoi_gian_nhom_0_8: convertThoiGian(item.thoi_gian_nhom_0_8),
-        thoi_gian_nhom_0_9_1_0: convertThoiGian(item.thoi_gian_nhom_0_9_1_0),
-        so_quyet_dinh: item.so_quyet_dinh ?? '',
-        ghi_chu: item.ghi_chu ?? '',
-      }));
+      worksheet.addRow(
+        sanitizeRowData({
+          stt: index + 1,
+          id: item.QuanNhan?.id ?? '',
+          cccd: item.QuanNhan?.cccd ?? '',
+          ho_ten: item.QuanNhan?.ho_ten ?? '',
+          cap_bac: item.cap_bac ?? '',
+          chuc_vu: item.chuc_vu ?? '',
+          don_vi:
+            item.QuanNhan?.CoQuanDonVi?.ten_don_vi ??
+            item.QuanNhan?.DonViTrucThuoc?.ten_don_vi ??
+            '',
+          nam: item.nam,
+          danh_hieu: getDanhHieuName(item.danh_hieu),
+          thoi_gian_nhom_0_7: convertThoiGian(item.thoi_gian_nhom_0_7),
+          thoi_gian_nhom_0_8: convertThoiGian(item.thoi_gian_nhom_0_8),
+          thoi_gian_nhom_0_9_1_0: convertThoiGian(item.thoi_gian_nhom_0_9_1_0),
+          so_quyet_dinh: item.so_quyet_dinh ?? '',
+          ghi_chu: item.ghi_chu ?? '',
+        })
+      );
     });
 
     return await workbook.xlsx.writeBuffer();
@@ -749,7 +802,14 @@ class ContributionAwardService {
     const award = await contributionMedalRepository.findUniqueRaw({
       where: { id },
       include: {
-        QuanNhan: true,
+        QuanNhan: {
+          select: {
+            id: true,
+            ho_ten: true,
+            co_quan_don_vi_id: true,
+            don_vi_truc_thuoc_id: true,
+          },
+        },
       },
     });
 
@@ -788,6 +848,7 @@ class ContributionAwardService {
     return {
       message: `Xóa khen thưởng ${AWARD_LABEL} thành công`,
       personnelId,
+      award,
     };
   }
 }

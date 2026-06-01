@@ -1,4 +1,5 @@
 import { prisma } from '../../../models';
+import { proposalRepository } from '../../../repositories/proposal.repository';
 import { PROPOSAL_TYPES } from '../../../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../../../constants/proposalStatus.constants';
 import { ValidationError } from '../../../middlewares/errorHandler';
@@ -160,10 +161,11 @@ export async function runImportTransaction(
         );
       }
 
-      const updateResult = await prismaTx.bangDeXuat.updateMany({
-        where: { id: proposalId, status: PROPOSAL_STATUS.PENDING },
-        data: updateData,
-      });
+      const updateResult = await proposalRepository.updateMany(
+        { id: proposalId, status: PROPOSAL_STATUS.PENDING },
+        updateData,
+        prismaTx
+      );
       if (updateResult.count === 0) {
         throw new ValidationError(
           'Đề xuất đã bị thay đổi bởi người khác. Vui lòng tải lại trang và thử lại.'

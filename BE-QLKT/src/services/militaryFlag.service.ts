@@ -11,7 +11,14 @@ import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excel/excelImp
 import * as notificationHelper from '../helpers/notification';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { ValidationError, NotFoundError } from '../middlewares/errorHandler';
-import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, buildPendingKeys, sanitizeRowData, validatePersonnelNameMatch } from '../helpers/excel/excelHelper';
+import {
+  parseHeaderMap,
+  getHeaderCol,
+  resolvePersonnelInfo,
+  buildPendingKeys,
+  sanitizeRowData,
+  validatePersonnelNameMatch,
+} from '../helpers/excel/excelHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { buildTemplate, styleHeaderRow } from '../helpers/excel/excelTemplateHelper';
 import { fetchTemplateData } from './excel/templateData.service';
@@ -110,33 +117,40 @@ class MilitaryFlagService {
       }
     }
 
-    const [personnelList, existingAwardsList, existingDecisions, pendingProposals] = await Promise.all([
-      allPersonnelIds.size > 0
-        ? quanNhanRepository.findManyRaw({
-            where: { id: { in: [...allPersonnelIds] } },
-            select: { id: true, ho_ten: true, cap_bac: true, ngay_nhap_ngu: true, ChucVu: { select: { ten_chuc_vu: true } } },
-          })
-        : Promise.resolve([]),
-      allPersonnelIds.size > 0
-        ? militaryFlagRepository.findManyRaw({
-            where: { quan_nhan_id: { in: [...allPersonnelIds] } },
-          })
-        : Promise.resolve([]),
-      decisionFileRepository.findManyRaw({
-        select: { so_quyet_dinh: true },
-      }),
-      proposalRepository.findManyRaw({
-        where: {
-          loai_de_xuat: PROPOSAL_TYPES.HC_QKQT,
-          status: PROPOSAL_STATUS.PENDING,
-        },
-      }),
-    ]);
+    const [personnelList, existingAwardsList, existingDecisions, pendingProposals] =
+      await Promise.all([
+        allPersonnelIds.size > 0
+          ? quanNhanRepository.findManyRaw({
+              where: { id: { in: [...allPersonnelIds] } },
+              select: {
+                id: true,
+                ho_ten: true,
+                cap_bac: true,
+                ngay_nhap_ngu: true,
+                ChucVu: { select: { ten_chuc_vu: true } },
+              },
+            })
+          : Promise.resolve([]),
+        allPersonnelIds.size > 0
+          ? militaryFlagRepository.findManyRaw({
+              where: { quan_nhan_id: { in: [...allPersonnelIds] } },
+            })
+          : Promise.resolve([]),
+        decisionFileRepository.findManyRaw({
+          select: { so_quyet_dinh: true },
+        }),
+        proposalRepository.findManyRaw({
+          where: {
+            loai_de_xuat: PROPOSAL_TYPES.HC_QKQT,
+            status: PROPOSAL_STATUS.PENDING,
+          },
+        }),
+      ]);
 
     const pendingPersonnelIds = buildPendingKeys(
       pendingProposals as Array<Record<string, unknown>>,
       'data_nien_han',
-      (item) => item.personnel_id as string
+      item => item.personnel_id as string
     );
 
     const personnelMap = new Map(personnelList.map(p => [p.id, p]));
@@ -302,10 +316,12 @@ class MilitaryFlagService {
         ? [{ nam: existingAward.nam, so_quyet_dinh: existingAward.so_quyet_dinh }]
         : [];
 
-      const { hoTen, capBac, chucVu, missingFields: missingInfoFields } = resolvePersonnelInfo(
-        { ho_ten, cap_bac, chuc_vu },
-        personnel
-      );
+      const {
+        hoTen,
+        capBac,
+        chucVu,
+        missingFields: missingInfoFields,
+      } = resolvePersonnelInfo({ ho_ten, cap_bac, chuc_vu }, personnel);
       if (missingInfoFields.length > 0) {
         errors.push({
           row: rowNumber,
@@ -350,7 +366,7 @@ class MilitaryFlagService {
     const pendingPersonnelIds = buildPendingKeys(
       pendingProposals as Array<Record<string, unknown>>,
       'data_nien_han',
-      (item) => item.personnel_id as string
+      item => item.personnel_id as string
     );
     const pendingConflicts: string[] = [];
     for (const item of validItems) {
@@ -366,9 +382,7 @@ class MilitaryFlagService {
     const conflicts: string[] = [];
     for (const item of validItems) {
       if (existingSet.has(item.personnel_id)) {
-        conflicts.push(
-          `${item.ho_ten}: đã có Huy chương Quân kỳ quyết thắng trên hệ thống`
-        );
+        conflicts.push(`${item.ho_ten}: đã có Huy chương Quân kỳ quyết thắng trên hệ thống`);
       }
     }
     if (conflicts.length > 0) {
@@ -379,26 +393,29 @@ class MilitaryFlagService {
       async prismaTx => {
         const results = [];
         for (const item of validItems) {
-          const result = await prismaTx.huanChuongQuanKyQuyetThang.upsert({
-            where: { quan_nhan_id: item.personnel_id },
-            update: {
-              nam: item.nam,
-              thang: item.thang ?? 12,
-              cap_bac: item.cap_bac ?? null,
-              chuc_vu: item.chuc_vu ?? null,
-              so_quyet_dinh: item.so_quyet_dinh ?? null,
-              ghi_chu: item.ghi_chu ?? null,
+          const result = await militaryFlagRepository.upsertRaw(
+            {
+              where: { quan_nhan_id: item.personnel_id },
+              update: {
+                nam: item.nam,
+                thang: item.thang ?? 12,
+                cap_bac: item.cap_bac ?? null,
+                chuc_vu: item.chuc_vu ?? null,
+                so_quyet_dinh: item.so_quyet_dinh ?? null,
+                ghi_chu: item.ghi_chu ?? null,
+              },
+              create: {
+                quan_nhan_id: item.personnel_id,
+                nam: item.nam,
+                thang: item.thang ?? 12,
+                cap_bac: item.cap_bac ?? null,
+                chuc_vu: item.chuc_vu ?? null,
+                so_quyet_dinh: item.so_quyet_dinh ?? null,
+                ghi_chu: item.ghi_chu ?? null,
+              },
             },
-            create: {
-              quan_nhan_id: item.personnel_id,
-              nam: item.nam,
-              thang: item.thang ?? 12,
-              cap_bac: item.cap_bac ?? null,
-              chuc_vu: item.chuc_vu ?? null,
-              so_quyet_dinh: item.so_quyet_dinh ?? null,
-              ghi_chu: item.ghi_chu ?? null,
-            },
-          });
+            prismaTx
+          );
           results.push(result);
         }
         return { imported: results.length, data: results };
@@ -422,11 +439,7 @@ class MilitaryFlagService {
     });
   }
 
-  async getAll(
-    filters: MilitaryFlagFilters = {},
-    page: number = 1,
-    limit: number = 50
-  ) {
+  async getAll(filters: MilitaryFlagFilters = {}, page: number = 1, limit: number = 50) {
     const where: Record<string, unknown> = {};
 
     const quanNhanFilter: Record<string, unknown> = {};
@@ -508,18 +521,22 @@ class MilitaryFlagService {
     styleHeaderRow(worksheet);
 
     data.forEach((item, index) => {
-      worksheet.addRow(sanitizeRowData({
-        stt: index + 1,
-        id: item.quan_nhan_id,
-        ho_ten: item.QuanNhan?.ho_ten ?? '',
-        cap_bac: item.cap_bac ?? '',
-        chuc_vu: item.chuc_vu ?? '',
-        nam: item.nam,
-        so_quyet_dinh: item.so_quyet_dinh ?? '',
-        ghi_chu: item.ghi_chu ?? '',
-        don_vi:
-          item.QuanNhan?.CoQuanDonVi?.ten_don_vi ?? item.QuanNhan?.DonViTrucThuoc?.ten_don_vi ?? '',
-      }));
+      worksheet.addRow(
+        sanitizeRowData({
+          stt: index + 1,
+          id: item.quan_nhan_id,
+          ho_ten: item.QuanNhan?.ho_ten ?? '',
+          cap_bac: item.cap_bac ?? '',
+          chuc_vu: item.chuc_vu ?? '',
+          nam: item.nam,
+          so_quyet_dinh: item.so_quyet_dinh ?? '',
+          ghi_chu: item.ghi_chu ?? '',
+          don_vi:
+            item.QuanNhan?.CoQuanDonVi?.ten_don_vi ??
+            item.QuanNhan?.DonViTrucThuoc?.ten_don_vi ??
+            '',
+        })
+      );
     });
 
     return await workbook.xlsx.writeBuffer();
@@ -577,7 +594,14 @@ class MilitaryFlagService {
     const award = await militaryFlagRepository.findUniqueRaw({
       where: { id },
       include: {
-        QuanNhan: true,
+        QuanNhan: {
+          select: {
+            id: true,
+            ho_ten: true,
+            co_quan_don_vi_id: true,
+            don_vi_truc_thuoc_id: true,
+          },
+        },
       },
     });
 
@@ -604,6 +628,7 @@ class MilitaryFlagService {
     return {
       message: `Xóa khen thưởng ${AWARD_LABEL} thành công`,
       personnelId,
+      award,
     };
   }
 

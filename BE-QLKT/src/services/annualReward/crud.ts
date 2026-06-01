@@ -262,21 +262,26 @@ export async function deleteAnnualReward(
 ): Promise<{
   message: string;
   personnelId: string;
-  personnel: QuanNhan | null;
   reward: DanhHieuHangNam;
 }> {
   const reward = (await danhHieuHangNamRepository.findUnique({
     where: { id },
     include: {
       QuanNhan: {
-        include: {
-          CoQuanDonVi: true,
-          DonViTrucThuoc: true,
+        select: {
+          id: true,
+          ho_ten: true,
+          co_quan_don_vi_id: true,
+          don_vi_truc_thuoc_id: true,
         },
       },
     },
   })) as Prisma.DanhHieuHangNamGetPayload<{
-    include: { QuanNhan: { include: { CoQuanDonVi: true; DonViTrucThuoc: true } } };
+    include: {
+      QuanNhan: {
+        select: { id: true; ho_ten: true; co_quan_don_vi_id: true; don_vi_truc_thuoc_id: true };
+      };
+    };
   }> | null;
 
   if (!reward) {
@@ -377,7 +382,6 @@ export async function deleteAnnualReward(
     return {
       message: `Đã xóa ${getDanhHieuName(awardType)}.`,
       personnelId,
-      personnel,
       reward,
     };
   }
@@ -404,7 +408,6 @@ export async function deleteAnnualReward(
   return {
     message: `Đã xóa ${AWARD_LABEL}.`,
     personnelId,
-    personnel,
     reward,
   };
 }

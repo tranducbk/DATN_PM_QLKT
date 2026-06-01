@@ -41,6 +41,13 @@ export const accountRepository = {
     return tx.taiKhoan.create({ data });
   },
 
+  createRaw<T extends Prisma.TaiKhoanCreateArgs>(
+    args: Prisma.SelectSubset<T, Prisma.TaiKhoanCreateArgs>,
+    tx: PrismaLike = prisma
+  ) {
+    return tx.taiKhoan.create(args);
+  },
+
   createMany(data: Prisma.TaiKhoanCreateManyInput[], tx: PrismaLike = prisma) {
     return tx.taiKhoan.createMany({ data });
   },
@@ -56,7 +63,11 @@ export const accountRepository = {
     return tx.taiKhoan.update(args);
   },
 
-  updateMany(where: Prisma.TaiKhoanWhereInput, data: Prisma.TaiKhoanUncheckedUpdateManyInput, tx: PrismaLike = prisma) {
+  updateMany(
+    where: Prisma.TaiKhoanWhereInput,
+    data: Prisma.TaiKhoanUncheckedUpdateManyInput,
+    tx: PrismaLike = prisma
+  ) {
     return tx.taiKhoan.updateMany({ where, data });
   },
 

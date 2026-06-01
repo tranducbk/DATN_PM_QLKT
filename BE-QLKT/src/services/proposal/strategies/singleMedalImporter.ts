@@ -1,14 +1,8 @@
-import {
-  calculateServiceMonths,
-  formatServiceDuration,
-} from '../../../helpers/serviceYearsHelper';
+import { calculateServiceMonths, formatServiceDuration } from '../../../helpers/serviceYearsHelper';
 import type { ProposalNienHanItem } from '../../../types/proposal';
-import type {
-  ProposalApproveContext,
-  ImportAccumulator,
-  PrismaTx,
-} from './proposalStrategy';
+import type { ProposalApproveContext, ImportAccumulator, PrismaTx } from './proposalStrategy';
 import { formatQuanNhanLabel } from './quanNhanLabel';
+import { quanNhanRepository } from '../../../repositories/quanNhan.repository';
 
 interface SingleMedalConfig {
   /** Logical medal name shown in error messages (e.g. "Huân chương Quân kỳ quyết thắng"). */
@@ -61,7 +55,10 @@ export async function importSingleMedal(
         acc.errors.push(`Thiếu thông tin quân nhân khi xử lý ${cfg.medalLabel}.`);
         continue;
       }
-      const quanNhan = await prismaTx.quanNhan.findUnique({ where: { id: item.personnel_id } });
+      const quanNhan = await quanNhanRepository.findUniqueRaw(
+        { where: { id: item.personnel_id } },
+        prismaTx
+      );
       if (!quanNhan) {
         acc.errors.push(
           `Không tìm thấy thông tin quân nhân khi xử lý ${cfg.medalLabel}. ` +
@@ -76,9 +73,7 @@ export async function importSingleMedal(
       const thangNhan = item.thang_nhan;
 
       if (!namNhan || !thangNhan || thangNhan < 1 || thangNhan > 12) {
-        acc.errors.push(
-          `${formatQuanNhanLabel(quanNhan)} thiếu tháng/năm nhận ${cfg.medalLabel}`
-        );
+        acc.errors.push(`${formatQuanNhanLabel(quanNhan)} thiếu tháng/năm nhận ${cfg.medalLabel}`);
         continue;
       }
       if (

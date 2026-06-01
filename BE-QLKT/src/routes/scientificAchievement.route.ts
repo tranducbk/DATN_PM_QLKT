@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import scientificAchievementController from '../controllers/scientificAchievement.controller';
-import { verifyToken, requireAdminOrManager } from '../middlewares/auth';
+import { verifyToken, requireAdminOrManager, requireAdminOnly } from '../middlewares/auth';
 import { excelUpload as upload } from '../configs/multer';
 import { validate } from '../middlewares/validate';
 import { scientificAchievementValidation, excelImportValidation } from '../validations';
@@ -43,12 +43,12 @@ router.get('/template', verifyToken, requireAdminOrManager, scientificAchievemen
 /**
  * @route   POST /api/scientific-achievements/import/preview
  * @desc    Preview scientific achievement import — validate only, no DB write
- * @access  Private - ADMIN, MANAGER
+ * @access  Private - ADMIN only (Excel import is ADMIN-only)
  */
 router.post(
   '/import/preview',
   verifyToken,
-  requireAdminOrManager,
+  requireAdminOnly,
   upload.single('file'),
   scientificAchievementController.previewImport
 );
@@ -56,12 +56,12 @@ router.post(
 /**
  * @route   POST /api/scientific-achievements/import/confirm
  * @desc    Confirm scientific achievement import — persist validated data to DB
- * @access  Private - ADMIN, MANAGER
+ * @access  Private - ADMIN only (Excel import is ADMIN-only)
  */
 router.post(
   '/import/confirm',
   verifyToken,
-  requireAdminOrManager,
+  requireAdminOnly,
   validate(excelImportValidation.confirmImportScientificAchievement),
   scientificAchievementController.confirmImport
 );

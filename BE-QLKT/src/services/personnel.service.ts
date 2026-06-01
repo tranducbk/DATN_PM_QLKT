@@ -7,10 +7,15 @@ import { accountRepository } from '../repositories/account.repository';
 import { proposalRepository } from '../repositories/proposal.repository';
 import { positionRepository } from '../repositories/position.repository';
 import { positionHistoryRepository } from '../repositories/positionHistory.repository';
-import {
-  coQuanDonViRepository,
-  donViTrucThuocRepository,
-} from '../repositories/unit.repository';
+import { scientificAchievementRepository } from '../repositories/scientificAchievement.repository';
+import { militaryFlagRepository } from '../repositories/militaryFlag.repository';
+import { commemorativeMedalRepository } from '../repositories/commemorativeMedal.repository';
+import { tenureMedalRepository } from '../repositories/tenureMedal.repository';
+import { adhocAwardRepository } from '../repositories/adhocAward.repository';
+import { tenureProfileRepository } from '../repositories/tenureProfile.repository';
+import { contributionProfileRepository } from '../repositories/contributionProfile.repository';
+import { annualProfileRepository } from '../repositories/annualProfile.repository';
+import { coQuanDonViRepository, donViTrucThuocRepository } from '../repositories/unit.repository';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 import { AWARD_LABELS } from '../constants/awardLabels.constants';
@@ -216,10 +221,13 @@ class PersonnelService {
       const newPersonnel = await quanNhanRepository.create(personnelData, prismaTx);
 
       // Load position coefficient for initial history row.
-      const chucVu = await positionRepository.findUniqueRaw({
-        where: { id: position_id },
-        select: { he_so_chuc_vu: true },
-      }, prismaTx);
+      const chucVu = await positionRepository.findUniqueRaw(
+        {
+          where: { id: position_id },
+          select: { he_so_chuc_vu: true },
+        },
+        prismaTx
+      );
 
       // Create initial LichSuChucVu record.
       const ngayBatDau = new Date();
@@ -236,14 +244,15 @@ class PersonnelService {
       );
 
       // Create linked account.
-      const account = await prismaTx.taiKhoan.create({
-        data: {
+      const account = await accountRepository.create(
+        {
           username,
           password_hash: hashedPassword,
           role: role,
           quan_nhan_id: newPersonnel.id,
         },
-      });
+        prismaTx
+      );
 
       await adjustUnitCount(prismaTx, unit_id, isCoQuanDonVi, 'increment');
 
@@ -306,65 +315,21 @@ class PersonnelService {
 
     // Use transaction for full cascade delete.
     await prisma.$transaction(async prismaTx => {
-      // Delete linked account.
       if (personnel.TaiKhoan) {
-        await prismaTx.taiKhoan.delete({
-          where: { id: personnel.TaiKhoan.id },
-        });
+        await accountRepository.delete(personnel.TaiKhoan.id, prismaTx);
       }
 
-      // Delete position history.
-      await prismaTx.lichSuChucVu.deleteMany({
-        where: { quan_nhan_id: id },
-      });
-
-      // Delete scientific achievements.
-      await prismaTx.thanhTichKhoaHoc.deleteMany({
-        where: { quan_nhan_id: id },
-      });
-
-      // Delete annual titles.
+      await positionHistoryRepository.deleteMany({ quan_nhan_id: id }, prismaTx);
+      await scientificAchievementRepository.deleteMany({ quan_nhan_id: id }, prismaTx);
       await danhHieuHangNamRepository.deleteManyByPersonnelId(id, prismaTx);
-
-      // Delete contribution awards.
-      await prismaTx.khenThuongHCBVTQ.deleteMany({
-        where: { quan_nhan_id: id },
-      });
-
-      // Delete HC_QKQT awards.
-      await prismaTx.huanChuongQuanKyQuyetThang.deleteMany({
-        where: { quan_nhan_id: id },
-      });
-
-      // Delete KNC_VSNXD_QDNDVN awards.
-      await prismaTx.kyNiemChuongVSNXDQDNDVN.deleteMany({
-        where: { quan_nhan_id: id },
-      });
-
-      // Delete HCCSVV awards.
-      await prismaTx.khenThuongHCCSVV.deleteMany({
-        where: { quan_nhan_id: id },
-      });
-
-      // Delete ad-hoc awards.
-      await prismaTx.khenThuongDotXuat.deleteMany({
-        where: { quan_nhan_id: id },
-      });
-
-      // Delete tenure profiles.
-      await prismaTx.hoSoNienHan.deleteMany({
-        where: { quan_nhan_id: id },
-      });
-
-      // Delete contribution profiles.
-      await prismaTx.hoSoCongHien.deleteMany({
-        where: { quan_nhan_id: id },
-      });
-
-      // Delete annual profiles.
-      await prismaTx.hoSoHangNam.deleteMany({
-        where: { quan_nhan_id: id },
-      });
+      await contributionMedalRepository.deleteMany({ quan_nhan_id: id }, prismaTx);
+      await militaryFlagRepository.deleteMany({ quan_nhan_id: id }, prismaTx);
+      await commemorativeMedalRepository.deleteMany({ quan_nhan_id: id }, prismaTx);
+      await tenureMedalRepository.deleteMany({ quan_nhan_id: id }, prismaTx);
+      await adhocAwardRepository.deleteMany({ quan_nhan_id: id }, prismaTx);
+      await tenureProfileRepository.deleteMany({ quan_nhan_id: id }, prismaTx);
+      await contributionProfileRepository.deleteMany({ quan_nhan_id: id }, prismaTx);
+      await annualProfileRepository.deleteMany({ quan_nhan_id: id }, prismaTx);
 
       // Delete personnel row.
       await quanNhanRepository.delete(String(id), prismaTx);

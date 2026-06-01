@@ -184,7 +184,14 @@ class ScientificAchievementService {
     const achievement = await scientificAchievementRepository.findUniqueRaw({
       where: { id },
       include: {
-        QuanNhan: true,
+        QuanNhan: {
+          select: {
+            id: true,
+            ho_ten: true,
+            co_quan_don_vi_id: true,
+            don_vi_truc_thuoc_id: true,
+          },
+        },
       },
     });
 
@@ -217,6 +224,7 @@ class ScientificAchievementService {
     return {
       message: 'Xóa thành tích thành công',
       personnelId,
+      achievement,
     };
   }
 

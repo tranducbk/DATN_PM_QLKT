@@ -262,7 +262,7 @@ class AnnualRewardController {
     const awardType = normalizeParam(query.awardType) || null;
     const adminUsername = getAdminUsername(req);
     const result = await annualRewardService.deleteAnnualReward(id, adminUsername, awardType);
-    return ResponseHelper.success(res, { message: result.message });
+    return ResponseHelper.success(res, { message: result.message, data: result.reward });
   });
 
   checkAnnualRewards = catchAsync(async (req: Request, res: Response) => {

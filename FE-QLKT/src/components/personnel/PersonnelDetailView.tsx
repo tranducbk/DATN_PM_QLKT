@@ -35,7 +35,7 @@ import { useTheme } from '@/components/ThemeProvider';
 import { MedalProgressCard } from '@/components/personnel/MedalProgressCard';
 import { getAntdThemeConfig } from '@/lib/antdTheme';
 import { apiClient } from '@/lib/apiClient';
-import { formatDate } from '@/lib/utils';
+import { formatDate, formatHeSoChucVu } from '@/lib/utils';
 import { getReceivedMonthYearText } from '@/lib/award/medalDisplay';
 import styles from './personnel-detail.module.css';
 import { ROLES, getRoleInfo } from '@/constants/roles.constants';
@@ -295,9 +295,7 @@ export function PersonnelDetailView({ role }: PersonnelDetailViewProps) {
                 { label: 'Chức vụ', value: personnel.ChucVu?.ten_chuc_vu || '-' },
                 {
                   label: 'Hệ số chức vụ',
-                  value: personnel.ChucVu?.he_so_chuc_vu
-                    ? Number(personnel.ChucVu.he_so_chuc_vu).toFixed(2)
-                    : '-',
+                  value: formatHeSoChucVu(personnel.ChucVu?.he_so_chuc_vu),
                 },
               ]}
             />

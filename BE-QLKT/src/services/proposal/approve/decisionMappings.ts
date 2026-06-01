@@ -1,10 +1,8 @@
 import { decisionFileRepository } from '../../../repositories/decisionFile.repository';
+import { accountRepository } from '../../../repositories/account.repository';
 import { promises as fs } from 'fs';
 import path from 'path';
-import {
-  PROPOSAL_TYPES,
-  type ProposalType,
-} from '../../../constants/proposalTypes.constants';
+import { PROPOSAL_TYPES, type ProposalType } from '../../../constants/proposalTypes.constants';
 import {
   DANH_HIEU_CA_NHAN_HANG_NAM,
   DANH_HIEU_DAC_BIET,
@@ -13,10 +11,7 @@ import {
 } from '../../../constants/danhHieu.constants';
 import { writeSystemLog } from '../../../helpers/systemLogHelper';
 import { sanitizeFilename } from '../helpers';
-import type {
-  ProposalDanhHieuItem,
-  ProposalThanhTichItem,
-} from '../../../types/proposal';
+import type { ProposalDanhHieuItem, ProposalThanhTichItem } from '../../../types/proposal';
 import type {
   DecisionInfo,
   DecisionInputMap,
@@ -191,7 +186,10 @@ function resolveDecisionFilePath(
   ) {
     return pdfPaths.file_pdf_don_vi_hang_nam;
   }
-  if (proposalType === PROPOSAL_TYPES.NIEN_HAN && decisions.so_quyet_dinh_nien_han === soQuyetDinh) {
+  if (
+    proposalType === PROPOSAL_TYPES.NIEN_HAN &&
+    decisions.so_quyet_dinh_nien_han === soQuyetDinh
+  ) {
     return pdfPaths.file_pdf_nien_han;
   }
   if (
@@ -200,7 +198,10 @@ function resolveDecisionFilePath(
   ) {
     return pdfPaths.file_pdf_cong_hien;
   }
-  if (proposalType === PROPOSAL_TYPES.DOT_XUAT && decisions.so_quyet_dinh_dot_xuat === soQuyetDinh) {
+  if (
+    proposalType === PROPOSAL_TYPES.DOT_XUAT &&
+    decisions.so_quyet_dinh_dot_xuat === soQuyetDinh
+  ) {
     return pdfPaths.file_pdf_dot_xuat;
   }
   if (proposalType === PROPOSAL_TYPES.NCKH) {
@@ -245,10 +246,13 @@ export async function syncDecisionFiles(
   if (decisions.so_quyet_dinh_dot_xuat) decisionsToSync.add(decisions.so_quyet_dinh_dot_xuat);
   if (decisions.so_quyet_dinh_nckh) decisionsToSync.add(decisions.so_quyet_dinh_nckh);
 
-  const adminInfo = await tx.taiKhoan.findUnique({
-    where: { id: adminId },
-    include: { QuanNhan: { select: { ho_ten: true } } },
-  });
+  const adminInfo = await accountRepository.findUniqueRaw(
+    {
+      where: { id: adminId },
+      include: { QuanNhan: { select: { ho_ten: true } } },
+    },
+    tx
+  );
   const ngayKy = new Date();
   const nguoiKy =
     (adminInfo as { QuanNhan?: { ho_ten?: string | null }; username?: string })?.QuanNhan?.ho_ten ||
@@ -297,26 +301,30 @@ export async function syncDecisionFiles(
       // Atomic upsert avoids P2002 race when two admins approve proposals that share
       // a so_quyet_dinh concurrently. update is intentionally a no-op so existing
       // ngay_ky / nguoi_ky / ghi_chu from the original sync are preserved.
-      await tx.fileQuyetDinh.upsert({
-        where: { so_quyet_dinh: soQuyetDinh },
-        create: {
-          so_quyet_dinh: soQuyetDinh,
-          nam: proposal.nam,
-          ngay_ky: ngayKy,
-          nguoi_ky: nguoiKy,
-          file_path: filePath,
-          loai_khen_thuong: loaiKhenThuong,
-          ghi_chu: `Tự động đồng bộ từ đề xuất ${proposalId}`,
+      await decisionFileRepository.upsertRaw(
+        {
+          where: { so_quyet_dinh: soQuyetDinh },
+          create: {
+            so_quyet_dinh: soQuyetDinh,
+            nam: proposal.nam,
+            ngay_ky: ngayKy,
+            nguoi_ky: nguoiKy,
+            file_path: filePath,
+            loai_khen_thuong: loaiKhenThuong,
+            ghi_chu: `Tự động đồng bộ từ đề xuất ${proposalId}`,
+          },
+          update: {},
         },
-        update: {},
-      });
+        tx
+      );
 
       // Backfill file_path only when the existing row left it null and we now have one
       if (filePath) {
-        await tx.fileQuyetDinh.updateMany({
-          where: { so_quyet_dinh: soQuyetDinh, file_path: null },
-          data: { file_path: filePath },
-        });
+        await decisionFileRepository.updateMany(
+          { so_quyet_dinh: soQuyetDinh, file_path: null },
+          { file_path: filePath },
+          tx
+        );
       }
     } catch (error) {
       void writeSystemLog({

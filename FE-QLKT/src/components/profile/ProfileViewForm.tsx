@@ -6,7 +6,7 @@ import { Card, message, ConfigProvider, Tag, Breadcrumb } from 'antd';
 import { UserOutlined, HomeOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { apiClient } from '@/lib/apiClient';
-import { formatDate } from '@/lib/utils';
+import { formatDate, formatHeSoChucVu } from '@/lib/utils';
 import { useTheme } from '@/components/ThemeProvider';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { getAntdThemeConfig } from '@/lib/antdTheme';
@@ -236,9 +236,7 @@ export function ProfileViewForm({
                       { label: 'Chức vụ', value: personnelData.ChucVu?.ten_chuc_vu || '-' },
                       {
                         label: 'Hệ số chức vụ',
-                        value: personnelData.ChucVu?.he_so_chuc_vu
-                          ? Number(personnelData.ChucVu.he_so_chuc_vu).toFixed(2)
-                          : '-',
+                        value: formatHeSoChucVu(personnelData.ChucVu?.he_so_chuc_vu),
                       },
                     ].map(item => (
                       <tr

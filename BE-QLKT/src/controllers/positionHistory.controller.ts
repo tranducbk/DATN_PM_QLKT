@@ -64,12 +64,15 @@ class PositionHistoryController {
         'Vui lòng nhập đầy đủ: quân nhân, chức vụ và ngày bắt đầu'
       );
     }
-    const result = await positionHistoryService.createPositionHistory({
-      personnel_id,
-      chuc_vu_id,
-      ngay_bat_dau,
-      ngay_ket_thuc,
-    });
+    const result = await positionHistoryService.createPositionHistory(
+      {
+        personnel_id,
+        chuc_vu_id,
+        ngay_bat_dau,
+        ngay_ket_thuc,
+      },
+      req.user?.role
+    );
     try {
       await profileService.recalculateAnnualProfile(personnel_id);
     } catch (recalcError) {
@@ -121,7 +124,10 @@ class PositionHistoryController {
         void writeSystemLog({ action: 'ERROR', resource: 'profiles', description: `Lỗi tính lại hồ sơ hằng năm sau khi xóa chức vụ: ${recalcError}` });
       }
     }
-    return ResponseHelper.success(res, { message: result.message, data: { id } });
+    return ResponseHelper.success(res, {
+      message: result.message,
+      data: { id, QuanNhan: result.QuanNhan, ChucVu: result.ChucVu },
+    });
   });
 }
 

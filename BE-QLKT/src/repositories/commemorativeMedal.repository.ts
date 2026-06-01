@@ -53,6 +53,17 @@ export const commemorativeMedalRepository = {
     return tx.kyNiemChuongVSNXDQDNDVN.update({ where: { id }, data });
   },
 
+  upsertRaw<T extends Prisma.KyNiemChuongVSNXDQDNDVNUpsertArgs>(
+    args: Prisma.SelectSubset<T, Prisma.KyNiemChuongVSNXDQDNDVNUpsertArgs>,
+    tx: PrismaLike = prisma
+  ) {
+    return tx.kyNiemChuongVSNXDQDNDVN.upsert(args);
+  },
+
+  deleteMany(where: Prisma.KyNiemChuongVSNXDQDNDVNWhereInput, tx: PrismaLike = prisma) {
+    return tx.kyNiemChuongVSNXDQDNDVN.deleteMany({ where });
+  },
+
   delete(id: string, tx: PrismaLike = prisma) {
     return tx.kyNiemChuongVSNXDQDNDVN.delete({ where: { id } });
   },

@@ -144,6 +144,7 @@
 \begin{frame}{Nội dung trình bày}
   \begin{columns}[T,onlytextwidth]
     \column{0.5\textwidth}
+    \small
     \textcolor{hustdark}{\textbf{Phần I --- Mở đầu}}
     \begin{enumerate}
       \item Mục tiêu của đồ án
@@ -151,7 +152,7 @@
       \item Hệ thống danh hiệu khen thưởng
       \item Logic chuỗi danh hiệu
     \end{enumerate}
-    \vspace{0.3cm}
+    \vspace{0.1cm}
     \textcolor{hustdark}{\textbf{Phần II --- Thiết kế}}
     \begin{enumerate}\setcounter{enumi}{4}
       \item Kiến trúc \& công nghệ
@@ -161,6 +162,7 @@
     \end{enumerate}
 
     \column{0.5\textwidth}
+    \small
     \textcolor{hustdark}{\textbf{Phần III --- Tính năng nổi bật}}
     \begin{enumerate}\setcounter{enumi}{8}
       \item Tự động xét điều kiện
@@ -168,7 +170,7 @@
       \item Nhập/xuất dữ liệu hàng loạt
       \item Vận hành \& quản trị hệ thống
     \end{enumerate}
-    \vspace{0.3cm}
+    \vspace{0.1cm}
     \textcolor{hustdark}{\textbf{Phần IV --- Đánh giá \& Tổng kết}}
     \begin{enumerate}\setcounter{enumi}{12}
       \item Kiểm thử, hiệu năng, triển khai
@@ -176,9 +178,9 @@
     \end{enumerate}
   \end{columns}
 
-  \vspace{0.4cm}
+  \vspace{0.15cm}
   \begin{block}{}
-    \centering Thời lượng trình bày: \highlight{13--14 phút}, sau đó là phần Hỏi \& Đáp với Hội đồng.
+    \centering\small Thời lượng trình bày: \highlight{13--14 phút}, sau đó là phần Hỏi \& Đáp với Hội đồng.
   \end{block}
 \end{frame}
 
@@ -197,7 +199,7 @@
     \column{0.5\textwidth}
     \textbf{Mục tiêu cụ thể}
     \begin{itemize}\small
-      \item Quản lý \textbf{5 nhóm khen thưởng} (UC5--UC9) với 4 cấp vai trò
+      \item Quản lý \textbf{5 nhóm khen thưởng} với 4 cấp vai trò
       \item \textbf{Tự động hoá} xét điều kiện theo quy định hiện hành
       \item Hỗ trợ \textbf{đề xuất $\to$ duyệt $\to$ ra quyết định}
       \item Đảm bảo \textbf{truy vết và bảo mật} đầy đủ
@@ -233,22 +235,22 @@
   \end{block}
 \end{frame}
 
-% --- Slide 5: Hệ thống khen thưởng — 5 nhóm UC5–UC9 ---
-\begin{frame}{Hệ thống khen thưởng --- 5 nhóm UC5--UC9}
+% --- Slide 5: Hệ thống khen thưởng — 5 nhóm chính ---
+\begin{frame}{Hệ thống khen thưởng --- 5 nhóm chính}
   \scriptsize
-  \begin{tabularx}{\textwidth}{|c|>{\raggedright\arraybackslash}p{2.4cm}|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}p{2.6cm}|}
+  \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{2.8cm}|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}p{2.6cm}|}
     \hline
-    \rowcolor{hustred}\textcolor{white}{\textbf{UC}} & \textcolor{white}{\textbf{Nhóm khen thưởng}} & \textcolor{white}{\textbf{Phân rã chi tiết}} & \textcolor{white}{\textbf{Tiêu chí xét}} \\ \hline
-    \textbf{UC5} & \textbf{Khen thưởng hằng năm} & Cá nhân (CSTĐCS, CSTT, BKBQP, CSTĐTQ, BKTTCP) + Đơn vị (ĐVQT, ĐVTT, BKBQP, BKTTCP) & Theo năm \\ \hline
-    \textbf{UC6} & \textbf{Khen thưởng niên hạn} & HCCSVV (3 hạng), HCQKQT, KNC VSNXD QĐNDVN & Theo thời gian phục vụ \\ \hline
-    \textbf{UC7} & \textbf{Khen thưởng cống hiến} & HCBVTQ (3 hạng) & Cộng dồn 120 tháng \\ \hline
-    \textbf{UC8} & \textbf{Khen thưởng thành tích} & NCKH (Đề tài KH, Sáng kiến KH) & Theo công trình \\ \hline
-    \textbf{UC9} & \textbf{Khen thưởng đột xuất} & Theo sự kiện / chiến công cụ thể & Phi định kỳ \\ \hline
+    \rowcolor{hustred}\textcolor{white}{\textbf{Nhóm khen thưởng}} & \textcolor{white}{\textbf{Phân rã chi tiết}} & \textcolor{white}{\textbf{Tiêu chí xét}} \\ \hline
+    \textbf{Khen thưởng hằng năm} & Cá nhân (CSTĐCS, CSTT, BKBQP, CSTĐTQ, BKTTCP) + Đơn vị (ĐVQT, ĐVTT, BKBQP, BKTTCP) & Theo năm \\ \hline
+    \textbf{Khen thưởng niên hạn} & HCCSVV (3 hạng), HCQKQT, KNC VSNXD QĐNDVN & Theo thời gian phục vụ \\ \hline
+    \textbf{Khen thưởng cống hiến} & HCBVTQ (3 hạng) & Cộng dồn 120 tháng \\ \hline
+    \textbf{Khen thưởng thành tích} & NCKH (Đề tài KH, Sáng kiến KH) & Theo công trình \\ \hline
+    \textbf{Khen thưởng đột xuất} & Theo sự kiện / chiến công cụ thể & Phi định kỳ \\ \hline
   \end{tabularx}
 
   \vspace{0.4cm}
   \begin{block}{}
-    Mỗi nhóm UC được hiện thực bằng một hoặc nhiều \highlight{proposal type} trong code, dispatch qua \highlight{Strategy pattern} (Slide 13).
+    Mỗi nhóm được hiện thực bằng một hoặc nhiều \highlight{proposal type} trong code, dispatch qua \highlight{Strategy pattern} (Slide 13).
   \end{block}
 \end{frame}
 
@@ -297,7 +299,7 @@
     \draw[hustdark, very thick] (8.05, 0.5) -- (bk.south);
   \end{tikzpicture}
 
-  \vspace{0.25cm}
+  \vspace{0.1cm}
 
   % ===== ĐƠN VỊ lane =====
   \begin{flushleft}\hspace{0.2cm}\textbf{\textcolor{hustdark}{Đơn vị}} \textit{\scriptsize(ĐVQT liên tục; không CSTĐTQ, không bắt buộc NCKH, BKTTCP lặp lại)}\end{flushleft}
@@ -333,9 +335,9 @@
     \draw[hustdark, very thick] (8.05, 0.5) -- (ubk.south);
   \end{tikzpicture}
 
-  \vspace{0.1cm}
+  \vspace{-0.1cm}
   \scriptsize\centering
-  \textcolor{hustdark}{\textbf{Lỡ đợt:}} chưa đề xuất ở năm đến mốc (vd Năm 2) $\to$ chu kỳ vẫn đếm tiếp $\to$ Năm 4 lại được xét, không phải khôi phục chuỗi từ đầu.
+  \textcolor{hustdark}{\textbf{Lỡ đợt:}} bỏ lỡ năm đến mốc thì chu kỳ vẫn đếm tiếp, chu kỳ sau vẫn được xét.
 \end{frame}
 
 % --- Slide 7: Các loại khen thưởng còn lại — niên hạn + 1-lần + cống hiến ⭐ ---
@@ -453,7 +455,7 @@
     \begin{itemize}\small
       \item \textbf{Express + TypeScript} --- REST API
       \item \textbf{Prisma ORM} --- type-safe queries, migration tự động
-      \item \textbf{PostgreSQL} --- RDBMS, transaction \texttt{SERIALIZABLE}
+      \item \textbf{PostgreSQL} --- RDBMS, giao dịch ACID đa bảng
       \item \textbf{Zod} --- validate hai tầng (BE + FE) cùng phong cách schema
       \item \textbf{JWT 2 token} --- access + refresh
       \item \textbf{bcrypt} --- hash password
@@ -471,13 +473,11 @@
     \column{0.5\textwidth}
     \textbf{Tổng quan}\\
     \begin{block}{}
-      \centering {\Huge \textcolor{hustred}{\textbf{23}}}\\
-      bảng chính, FK đầy đủ\\
-      ID dạng CUID 25 ký tự
+      \centering {\LARGE \textcolor{hustred}{\textbf{23}}} bảng chính, FK đầy đủ, ID dạng CUID 25 ký tự
     \end{block}
 
     \textbf{Nhóm bảng}
-    \begin{itemize}\small
+    \begin{itemize}\scriptsize
       \item \textbf{Tổ chức} --- \texttt{QuanNhan}, \texttt{CoQuanDonVi}, \texttt{DonViTrucThuoc}, \texttt{ChucVu}
       \item \textbf{Đề xuất \& Hồ sơ} --- \texttt{BangDeXuat}, \texttt{DanhHieuHangNam}, \texttt{HoSoNienHan}, \texttt{HoSoCongHien}
       \item \textbf{Tài khoản} --- \texttt{TaiKhoan} (4 vai trò)
@@ -541,9 +541,9 @@
     \textbf{Các bước chính}\\[0.2cm]
     \footnotesize
     \begin{enumerate}
-      \item USER tạo đề xuất (form hoặc Excel)
-      \item MANAGER duyệt cấp đơn vị
-      \item ADMIN kiểm tra điều kiện và cấp số quyết định
+      \item MANAGER tạo đề xuất qua biểu mẫu năm bước
+      \item Hệ thống kiểm tra điều kiện, cảnh báo trùng đề xuất
+      \item ADMIN đối chiếu, cấp số quyết định và phê duyệt
       \item Sinh PDF, lưu file đính kèm
       \item Cập nhật hồ sơ, gửi thông báo, ghi nhật ký
     \end{enumerate}
@@ -555,11 +555,9 @@
     \column{0.42\textwidth}
     \begin{block}{Sơ đồ flow đơn giản}
       \scriptsize\centering
-      \textbf{USER tạo đề xuất}\\
+      \textbf{MANAGER tạo đề xuất}\\
       $\downarrow$\\
-      \textbf{MANAGER duyệt}\\
-      $\downarrow$\\
-      \textbf{ADMIN kiểm tra}\\
+      \textbf{ADMIN duyệt + cấp số QĐ}\\
       $\downarrow$\\
       \textbf{Sinh PDF + lưu}\\
       $\downarrow$\\
@@ -573,7 +571,7 @@
   \begin{columns}[T,onlytextwidth]
     \column{0.5\textwidth}
     \textbf{Vấn đề}\\
-    \scriptsize 5 nhóm UC5--UC9 hiện thực thành 7 proposal type, mỗi loại có logic submit/validate/import khác nhau $\to$ \texttt{if/else} sẽ tạo file 2000+ dòng, khó test và bảo trì.\\[0.3cm]
+    \scriptsize 5 nhóm khen thưởng hiện thực thành 7 proposal type, mỗi loại có logic submit/validate/import khác nhau $\to$ \texttt{if/else} sẽ tạo file 2000+ dòng, khó test và bảo trì.\\[0.3cm]
 
     \textbf{Giải pháp}\\
     \scriptsize Định nghĩa \textbf{interface chung}, mỗi loại 1 file riêng, dispatch qua \textbf{Registry}.
@@ -639,12 +637,12 @@ interface ProposalStrategy {
 \begin{frame}{Quy trình đề xuất và ra quyết định}
   \begin{columns}[T,onlytextwidth]
     \column{0.55\textwidth}
-    \begin{block}{Form đề xuất theo từng nhóm UC}
-      \scriptsize Mỗi nhóm UC5--UC9 có form riêng. Schema \textbf{Zod chia sẻ giữa client và server} đảm bảo nhất quán.
+    \begin{block}{Form đề xuất theo từng nhóm}
+      \scriptsize Mỗi nhóm khen thưởng có form riêng. Schema \textbf{Zod chia sẻ giữa client và server} đảm bảo nhất quán.
     \end{block}
 
-    \begin{block}{Workflow ba cấp duyệt}
-      \scriptsize USER $\to$ MANAGER (cấp đơn vị) $\to$ ADMIN (cấp toàn nghiệp vụ). Mỗi bước có thể duyệt hoặc từ chối kèm lý do, thông báo về người tạo.
+    \begin{block}{Workflow đề xuất --- phê duyệt}
+      \scriptsize MANAGER tạo đề xuất (cấp đơn vị) $\to$ ADMIN phê duyệt (cấp toàn nghiệp vụ). Admin có thể duyệt hoặc từ chối kèm lý do, gửi thông báo về người đề xuất.
     \end{block}
 
     \begin{block}{Cấp số quyết định + Sinh PDF}
@@ -681,7 +679,7 @@ interface ProposalStrategy {
     \end{block}
 
     \begin{block}{Hỗ trợ}
-      \scriptsize Import hàng loạt các nhóm UC5--UC8 qua Excel + Export báo cáo theo năm và đơn vị.
+      \scriptsize Import hàng loạt dữ liệu các nhóm khen thưởng qua Excel + Export báo cáo theo năm và đơn vị.
     \end{block}
   \end{columns}
 \end{frame}
@@ -725,7 +723,7 @@ interface ProposalStrategy {
     \textbf{Kiểm thử \& Hiệu năng}\\[0.2cm]
 
     \begin{block}{}
-      \centering {\LARGE \textcolor{hustred}{\textbf{79}}} file kiểm thử Jest, pass \textbf{100\%} \quad $|$ \quad {\large \textcolor{hustred}{\textbf{N+1 $\to$ 1}}} batch query Excel
+      \centering {\LARGE \textcolor{hustred}{\textbf{4}}} kịch bản kiểm thử nghiệp vụ trọng yếu \quad $|$ \quad {\large \textcolor{hustred}{\textbf{N+1 $\to$ 1}}} batch query Excel
     \end{block}
 
     \scriptsize\textbf{4 kịch bản nổi bật:}
@@ -758,9 +756,9 @@ interface ProposalStrategy {
     \column{0.33\textwidth}
     \textbf{\textcolor{hustred}{Đã đạt được}}
     \begin{itemize}\scriptsize
-      \item Hoàn thành 5 nhóm khen thưởng UC5--UC9, 4 vai trò
+      \item Hoàn thành 5 nhóm khen thưởng, 4 vai trò
       \item Tự động hoá quy trình xét duyệt
-      \item 79 file test, pass 100\%
+      \item Kiểm thử kỹ các kịch bản nghiệp vụ trọng yếu
       \item Triển khai trên mạng nội bộ
       \item Layered + Strategy pattern
     \end{itemize}

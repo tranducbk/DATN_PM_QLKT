@@ -573,7 +573,10 @@ class AdhocAwardService {
     return updated;
   }
 
-  async deleteAdhocAward(id: string, adminId: string): Promise<{ success: boolean }> {
+  async deleteAdhocAward(
+    id: string,
+    adminId: string
+  ): Promise<{ success: boolean; award: KhenThuongDotXuat }> {
     const admin = await accountRepository.findUniqueRaw({
       where: { id: adminId },
     });
@@ -582,9 +585,12 @@ class AdhocAwardService {
       where: { id },
       include: {
         QuanNhan: {
-          include: {
-            CoQuanDonVi: true,
-            DonViTrucThuoc: true,
+          select: {
+            id: true,
+            ho_ten: true,
+            co_quan_don_vi_id: true,
+            don_vi_truc_thuoc_id: true,
+            DonViTrucThuoc: { select: { co_quan_don_vi_id: true } },
           },
         },
         CoQuanDonVi: true,
@@ -624,7 +630,7 @@ class AdhocAwardService {
       void writeSystemLog({ action: 'ERROR', resource: AWARD_SLUGS.ADHOC_AWARDS, description: `Lỗi gửi thông báo xóa ${AWARD_LABEL}: ${error}` });
     }
 
-    return { success: true };
+    return { success: true, award: awardInfo };
   }
 
   async getAdhocAwardsByPersonnel(personnelId: string): Promise<KhenThuongDotXuat[]> {

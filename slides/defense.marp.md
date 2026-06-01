@@ -476,7 +476,7 @@ Browser ⇄ Frontend (Next.js) ⇄ Backend (Express) ⇄ PostgreSQL
 
 - **Express + TypeScript** — REST API
 - **Prisma ORM 6.x** — type-safe queries, migration tự động
-- **PostgreSQL** — RDBMS, transaction `SERIALIZABLE`
+- **PostgreSQL** — RDBMS, transaction + CAS chống race
 - **Zod** — validate request body, schema dùng chung với FE
 - **JWT 2 token** — xác thực access + refresh
 - **bcrypt** — hash password (10 rounds)
@@ -838,7 +838,7 @@ Có thể chèn 2–3 ảnh nhỏ ghép ngang
 ## Kiểm thử & Hiệu năng
 
 <div class="metric">
-<div class="num">74</div>
+<div class="num">80</div>
 <div class="label">file kiểm thử Jest, pass <strong>100%</strong></div>
 </div>
 
@@ -848,7 +848,7 @@ Có thể chèn 2–3 ảnh nhỏ ghép ngang
 </div>
 
 ### 4 kịch bản nổi bật
-<div class="step"><span class="n">1</span><strong>Race condition</strong> — 2 quản trị duyệt song song, chỉ 1 thành công (Prisma SERIALIZABLE)</div>
+<div class="step"><span class="n">1</span><strong>Race condition</strong> — 2 quản trị duyệt song song, chỉ 1 thành công (transaction + CAS chống race)</div>
 <div class="step"><span class="n">2</span><strong>BKTTCP eligibility</strong> — cửa sổ trượt 7y + lifetime</div>
 <div class="step"><span class="n">3</span><strong>Tampering</strong> — server vẫn ghi đúng dù admin sửa payload</div>
 <div class="step"><span class="n">4</span><strong>Vòng đời thực tế</strong> — quân nhân lên cấp danh hiệu</div>
@@ -885,13 +885,13 @@ Có thể chèn 2–3 ảnh nhỏ ghép ngang
 ### ✅ Đã đạt được
 - Hoàn thành 5 nhóm khen thưởng (UC5–UC9), 4 vai trò
 - Tự động hóa toàn bộ quy trình xét duyệt
-- 74 file test bao phủ logic cốt lõi
+- 80 file test bao phủ logic cốt lõi
 - Triển khai thực tế trên mạng nội bộ
 - Kiến trúc layered + Strategy rõ ràng
 
 <div class="metric" style="margin-top:8px">
-<div class="num">~100k</div>
-<div class="label">LOC tổng dự án (BE + FE)</div>
+<div class="num">~98k</div>
+<div class="label">LOC tổng (~40k BE + ~58k FE)</div>
 </div>
 
 </div>

@@ -58,7 +58,7 @@ model ChucVu {
   don_vi_truc_thuoc_id String?  @db.VarChar(30) // ID đơn vị trực thuộc (nullable)
   ten_chuc_vu          String   @db.VarChar(255)
   is_manager           Boolean  @default(false)
-  he_so_chuc_vu        Decimal  @default(0) @db.Decimal(10, 2) // Hệ số chức vụ
+  he_so_chuc_vu        Float    @default(0) // Hệ số chức vụ (1 chữ số thập phân, rule ở validation)
   createdAt            DateTime @default(now()) @db.Timestamp(0)
   updatedAt            DateTime @updatedAt @db.Timestamp(0)
 

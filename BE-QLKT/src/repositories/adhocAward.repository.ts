@@ -48,6 +48,10 @@ export const adhocAwardRepository = {
     return tx.khenThuongDotXuat.update(args);
   },
 
+  deleteMany(where: Prisma.KhenThuongDotXuatWhereInput, tx: PrismaLike = prisma) {
+    return tx.khenThuongDotXuat.deleteMany({ where });
+  },
+
   delete(id: string, tx: PrismaLike = prisma) {
     return tx.khenThuongDotXuat.delete({ where: { id } });
   },

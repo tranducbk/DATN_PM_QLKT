@@ -226,7 +226,7 @@ class MilitaryFlagController {
     const { id } = params;
     const adminUsername = getAdminUsername(req);
     const result = await militaryFlagService.deleteAward(id, adminUsername);
-    return ResponseHelper.success(res, { message: result.message });
+    return ResponseHelper.success(res, { message: result.message, data: result.award });
   });
 
   checkReceived = catchAsync(async (req: Request, res: Response) => {

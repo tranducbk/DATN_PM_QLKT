@@ -37,6 +37,18 @@
 \usepackage{xurl}
 \usepackage{outlines}
 
+% Giảm khoảng trắng quanh hình/bảng (tránh khoảng trống lớn khi ảnh không vừa cuối trang)
+% raggedbottom: không giãn khoảng cách dọc để căn đáy trang (twoside mặc định flushbottom gây khoảng trống lớn quanh hình/bảng)
+\raggedbottom
+\setlength{\intextsep}{6pt plus 2pt minus 2pt}
+\setlength{\textfloatsep}{8pt plus 2pt minus 2pt}
+\setlength{\floatsep}{6pt plus 2pt minus 2pt}
+\setlength{\abovecaptionskip}{4pt}
+\setlength{\belowcaptionskip}{2pt}
+% Hạn chế dòng mồ côi (widow/orphan) đầu/cuối trang
+\widowpenalty=10000
+\clubpenalty=10000
+
 \usepackage[nonumberlist, nopostdot, nogroupskip, acronym]{glossaries}
 \usepackage{glossary-superragged}
 \setglossarystyle{superraggedheaderborder}
@@ -210,7 +222,6 @@
 \begin{document}
 % \newgeometry{top=2cm, bottom=2cm, left=2cm, right=2cm}
 \subfile{Bia} % Phần bìa
-\subfile{Bia_lot} % Phần bìa
 % \restoregeometry
 
 % ===================================================
@@ -218,16 +229,10 @@
 \pagestyle{empty} % Header/footer rỗng cho toàn bộ front matter
 
 \newpage
-\subfile{Chuong/0_2a_Loi_cam_ket.tex}
-
-\newpage
 \subfile{Chuong/0_2_Loi_cam_on.tex}
 
 \newpage
 \subfile{Chuong/0_3_Tom_tat_noi_dung.tex}
-
-\newpage
-\subfile{Chuong/0_4_Tom_tat_noi_dung_English.tex}
 
 % ===================================================
 \renewcommand*\contentsname{MỤC LỤC}
@@ -341,23 +346,4 @@
 \printbibliography
 \phantomsection\addcontentsline{toc}{chapter}{TÀI LIỆU THAM KHẢO}
 
-\appendixpage
-\appendices
-\addappheadtotoc
-
-% \chapter*{PHỤ LỤC} %Kết luận và hướng phát triển}
-
-%\mainmatter
-\titleformat{\chapter}[hang]{\centering\bfseries}{ \thechapter.\ }{0pt}{}[]
-\titlespacing*{\chapter}{0pt}{-20pt}{20pt}
-
-\titlecontents{chapter}
-    [0.0cm]             % left margin
-    {\bfseries\vspace{0.3cm}}                  % above code
-    {{\bfseries{\scshape} \thecontentslabel.\ }} % numbered format
-    {}         % unnumbered format
-    {\titlerule*[0.3pc]{.}\contentspage}         % filler-page-format, e.g dots
-\chapter{ĐẶC TẢ USE CASE BỔ SUNG}
-\label{appendix:usecase}
-\subfile{Chuong/Phu_luc_B}
 \end{document}

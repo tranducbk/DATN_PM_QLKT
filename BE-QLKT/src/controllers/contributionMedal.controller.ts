@@ -193,7 +193,7 @@ class ContributionAwardController {
     const { id } = params;
     const adminUsername = getAdminUsername(req);
     const result = await contributionAwardService.deleteAward(String(id), adminUsername);
-    return ResponseHelper.success(res, { message: result.message });
+    return ResponseHelper.success(res, { message: result.message, data: result.award });
   });
 }
 

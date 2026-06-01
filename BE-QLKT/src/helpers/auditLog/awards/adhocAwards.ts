@@ -136,7 +136,6 @@ export const adhocAwards: Record<
     return description;
   },
   DELETE: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
-    const awardId = routeParamId(req.params?.id);
     let awardForm: string = FALLBACK.UNKNOWN;
     let hoTen = '';
     let tenDonVi = '';
@@ -159,33 +158,6 @@ export const adhocAwards: Record<
     } catch (error) {
       console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
       // best-effort — audit description must not throw
-    }
-
-    if (!hoTen && !tenDonVi && awardId) {
-      try {
-        const award = (await adhocAwardRepository.findUniqueRaw({
-          where: { id: awardId },
-          include: {
-            QuanNhan: { select: { ho_ten: true } },
-            CoQuanDonVi: { select: { ten_don_vi: true } },
-            DonViTrucThuoc: { select: { ten_don_vi: true } },
-          },
-        })) as KhenThuongDotXuatWithAuditRels | null;
-
-        if (award) {
-          awardForm = award.hinh_thuc_khen_thuong || awardForm;
-          if (award.QuanNhan?.ho_ten) {
-            hoTen = award.QuanNhan.ho_ten;
-          } else if (award.CoQuanDonVi?.ten_don_vi) {
-            tenDonVi = award.CoQuanDonVi.ten_don_vi;
-          } else if (award.DonViTrucThuoc?.ten_don_vi) {
-            tenDonVi = award.DonViTrucThuoc.ten_don_vi;
-          }
-        }
-      } catch (error) {
-        console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
-        // best-effort — audit description must not throw
-      }
     }
 
     let description = `Xóa khen thưởng đột xuất: ${awardForm}`;

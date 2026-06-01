@@ -165,7 +165,7 @@ class ScientificAchievementController {
     }
     const adminUsername = getAdminUsername(req);
     const result = await scientificAchievementService.deleteAchievement(id, adminUsername);
-    return ResponseHelper.success(res, { message: result.message });
+    return ResponseHelper.success(res, { message: result.message, data: result.achievement });
   });
 
   exportToExcel = catchAsync(async (req: Request, res: Response) => {

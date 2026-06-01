@@ -3,7 +3,11 @@ import { quanNhanRepository } from '../../repositories/quanNhan.repository';
 import { tenureMedalRepository } from '../../repositories/tenureMedal.repository';
 import { contributionMedalRepository } from '../../repositories/contributionMedal.repository';
 import { positionHistoryRepository } from '../../repositories/positionHistory.repository';
-import { calculateServiceMonths, formatServiceDuration, buildCutoffDate } from '../../helpers/serviceYearsHelper';
+import {
+  calculateServiceMonths,
+  formatServiceDuration,
+  buildCutoffDate,
+} from '../../helpers/serviceYearsHelper';
 import annualRewardService from '../annualReward.service';
 import unitAnnualAwardService from '../unitAnnualAward.service';
 import scientificAchievementService from '../scientificAchievement.service';
@@ -18,11 +22,11 @@ import { GENDER } from '../../constants/gender.constants';
 import { NotFoundError } from '../../middlewares/errorHandler';
 import { validateHCCSVVRankOrder } from '../../helpers/awardValidation/tenureMedalRankOrder';
 import { validateHCBVTQRankUpgrade } from '../../helpers/awardValidation/contributionMedalRankUpgrade';
-import { validateHCBVTQHighestRank, type PositionMonthsByGroup } from '../../helpers/awardValidation/contributionMedalHighestRank';
 import {
-  evaluateHCBVTQRank,
-  requiredCongHienMonths,
-} from '../eligibility/hcbvtqEligibility';
+  validateHCBVTQHighestRank,
+  type PositionMonthsByGroup,
+} from '../../helpers/awardValidation/contributionMedalHighestRank';
+import { evaluateHCBVTQRank, requiredCongHienMonths } from '../eligibility/hcbvtqEligibility';
 import { aggregatePositionMonthsByGroup } from '../eligibility/congHienMonthsAggregator';
 import type { QuanNhan, Prisma } from '../../generated/prisma';
 import type { ServiceTimeJson } from '../../types/proposal';
@@ -51,7 +55,13 @@ export function calculateThoiGian(quanNhan: QuanNhan): ServiceTimeJson | null {
 /** Upsert medal awards in a single transaction for one-time or keyed-by-danh-hieu medal types. */
 async function bulkUpsertMedalAward(
   // Prisma's per-model upsert args differ by table — caller passes a concrete delegate; loose typing here keeps the helper generic.
-  model: { upsert: (args: { where: Record<string, unknown>; create: Record<string, unknown>; update: Record<string, unknown> }) => Promise<unknown> },
+  model: {
+    upsert: (args: {
+      where: Record<string, unknown>;
+      create: Record<string, unknown>;
+      update: Record<string, unknown>;
+    }) => Promise<unknown>;
+  },
   buildWhere: (personnelId: string, danhHieu: string) => Record<string, unknown>,
   titleData: TitleDataItem[],
   personnelMap: Map<string, QuanNhan>,
@@ -345,9 +355,18 @@ async function handleCongHien(ctx: BulkCreateContext): Promise<void> {
     const gioiTinh = info && info.gioi_tinh;
 
     const months: PositionMonthsByGroup = {
-      [CONG_HIEN_HE_SO_GROUPS.LEVEL_07]: getTotalMonthsByGroup(item.personnel_id, CONG_HIEN_HE_SO_GROUPS.LEVEL_07),
-      [CONG_HIEN_HE_SO_GROUPS.LEVEL_08]: getTotalMonthsByGroup(item.personnel_id, CONG_HIEN_HE_SO_GROUPS.LEVEL_08),
-      [CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10]: getTotalMonthsByGroup(item.personnel_id, CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10),
+      [CONG_HIEN_HE_SO_GROUPS.LEVEL_07]: getTotalMonthsByGroup(
+        item.personnel_id,
+        CONG_HIEN_HE_SO_GROUPS.LEVEL_07
+      ),
+      [CONG_HIEN_HE_SO_GROUPS.LEVEL_08]: getTotalMonthsByGroup(
+        item.personnel_id,
+        CONG_HIEN_HE_SO_GROUPS.LEVEL_08
+      ),
+      [CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10]: getTotalMonthsByGroup(
+        item.personnel_id,
+        CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10
+      ),
     };
     const result = evaluateHCBVTQRank(item.danh_hieu, months, gioiTinh);
 
@@ -374,17 +393,13 @@ async function handleCongHien(ctx: BulkCreateContext): Promise<void> {
   // Defensive guard: even if checkDuplicateAwards already blocked existing HCBVTQ
   // owners, re-query and refuse downgrades/dupes here so the upsert below cannot
   // silently overwrite a higher rank (e.g. HANG_NHAT -> HANG_BA).
-  const hcbvtqPersonnelIds = eligibleTitleData
-    .map(it => it.personnel_id)
-    .filter(Boolean);
+  const hcbvtqPersonnelIds = eligibleTitleData.map(it => it.personnel_id).filter(Boolean);
   if (hcbvtqPersonnelIds.length > 0) {
     const existingHCBVTQ = await contributionMedalRepository.findManyRaw({
       where: { quan_nhan_id: { in: hcbvtqPersonnelIds } },
       select: { quan_nhan_id: true, danh_hieu: true },
     });
-    const existingRankMap = new Map(
-      existingHCBVTQ.map(r => [r.quan_nhan_id, r.danh_hieu])
-    );
+    const existingRankMap = new Map(existingHCBVTQ.map(r => [r.quan_nhan_id, r.danh_hieu]));
     const guardedTitleData: TitleDataItem[] = [];
     for (const item of eligibleTitleData) {
       const existingRank = existingRankMap.get(item.personnel_id);
@@ -408,9 +423,18 @@ async function handleCongHien(ctx: BulkCreateContext): Promise<void> {
       continue;
     }
     const months: PositionMonthsByGroup = {
-      [CONG_HIEN_HE_SO_GROUPS.LEVEL_07]: getTotalMonthsByGroup(item.personnel_id, CONG_HIEN_HE_SO_GROUPS.LEVEL_07),
-      [CONG_HIEN_HE_SO_GROUPS.LEVEL_08]: getTotalMonthsByGroup(item.personnel_id, CONG_HIEN_HE_SO_GROUPS.LEVEL_08),
-      [CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10]: getTotalMonthsByGroup(item.personnel_id, CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10),
+      [CONG_HIEN_HE_SO_GROUPS.LEVEL_07]: getTotalMonthsByGroup(
+        item.personnel_id,
+        CONG_HIEN_HE_SO_GROUPS.LEVEL_07
+      ),
+      [CONG_HIEN_HE_SO_GROUPS.LEVEL_08]: getTotalMonthsByGroup(
+        item.personnel_id,
+        CONG_HIEN_HE_SO_GROUPS.LEVEL_08
+      ),
+      [CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10]: getTotalMonthsByGroup(
+        item.personnel_id,
+        CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10
+      ),
     };
     const info = personnelGenderMap.get(item.personnel_id);
     const requiredMonths = requiredCongHienMonths(info?.gioi_tinh ?? null);
@@ -431,34 +455,37 @@ async function handleCongHien(ctx: BulkCreateContext): Promise<void> {
 
   await prisma.$transaction(async prismaTx => {
     for (const item of eligibleTitleData) {
-      await prismaTx.khenThuongHCBVTQ.upsert({
-        where: { quan_nhan_id: item.personnel_id },
-        create: {
-          quan_nhan_id: item.personnel_id,
-          danh_hieu: item.danh_hieu,
-          nam,
-          thang: thang as number,
-          cap_bac: item.cap_bac || null,
-          chuc_vu: item.chuc_vu || null,
-          ghi_chu: ghiChu || null,
-          so_quyet_dinh: item.so_quyet_dinh || null,
-          thoi_gian_nhom_0_7: item.thoi_gian_nhom_0_7 || undefined,
-          thoi_gian_nhom_0_8: item.thoi_gian_nhom_0_8 || undefined,
-          thoi_gian_nhom_0_9_1_0: item.thoi_gian_nhom_0_9_1_0 || undefined,
-        } as Prisma.KhenThuongHCBVTQUncheckedCreateInput,
-        update: {
-          danh_hieu: item.danh_hieu,
-          nam,
-          thang: thang as number,
-          cap_bac: item.cap_bac || null,
-          chuc_vu: item.chuc_vu || null,
-          ghi_chu: ghiChu || null,
-          so_quyet_dinh: item.so_quyet_dinh || null,
-          thoi_gian_nhom_0_7: (item.thoi_gian_nhom_0_7 ?? null) as Prisma.InputJsonValue,
-          thoi_gian_nhom_0_8: (item.thoi_gian_nhom_0_8 ?? null) as Prisma.InputJsonValue,
-          thoi_gian_nhom_0_9_1_0: (item.thoi_gian_nhom_0_9_1_0 ?? null) as Prisma.InputJsonValue,
+      await contributionMedalRepository.upsertRaw(
+        {
+          where: { quan_nhan_id: item.personnel_id },
+          create: {
+            quan_nhan_id: item.personnel_id,
+            danh_hieu: item.danh_hieu,
+            nam,
+            thang: thang as number,
+            cap_bac: item.cap_bac || null,
+            chuc_vu: item.chuc_vu || null,
+            ghi_chu: ghiChu || null,
+            so_quyet_dinh: item.so_quyet_dinh || null,
+            thoi_gian_nhom_0_7: item.thoi_gian_nhom_0_7 || undefined,
+            thoi_gian_nhom_0_8: item.thoi_gian_nhom_0_8 || undefined,
+            thoi_gian_nhom_0_9_1_0: item.thoi_gian_nhom_0_9_1_0 || undefined,
+          } as Prisma.KhenThuongHCBVTQUncheckedCreateInput,
+          update: {
+            danh_hieu: item.danh_hieu,
+            nam,
+            thang: thang as number,
+            cap_bac: item.cap_bac || null,
+            chuc_vu: item.chuc_vu || null,
+            ghi_chu: ghiChu || null,
+            so_quyet_dinh: item.so_quyet_dinh || null,
+            thoi_gian_nhom_0_7: (item.thoi_gian_nhom_0_7 ?? null) as Prisma.InputJsonValue,
+            thoi_gian_nhom_0_8: (item.thoi_gian_nhom_0_8 ?? null) as Prisma.InputJsonValue,
+            thoi_gian_nhom_0_9_1_0: (item.thoi_gian_nhom_0_9_1_0 ?? null) as Prisma.InputJsonValue,
+          },
         },
-      });
+        prismaTx
+      );
 
       ctx.importedCount.value++;
       ctx.affectedPersonnelIds.add(item.personnel_id);

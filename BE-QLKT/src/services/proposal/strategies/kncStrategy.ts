@@ -5,6 +5,7 @@ import {
   buildServiceYearsErrorMessage,
 } from '../../eligibility/serviceYearsEligibility';
 import { importSingleMedal } from './singleMedalImporter';
+import { commemorativeMedalRepository } from '../../../repositories/commemorativeMedal.repository';
 import type { Prisma } from '../../../generated/prisma';
 import type { EditedProposalData, ProposalNienHanItem } from '../../../types/proposal';
 import type {
@@ -29,9 +30,7 @@ class KncStrategy implements ProposalStrategy {
     ctx: ProposalSubmitContext
   ): Promise<SubmitValidationResult> {
     const items = (titleData ?? []) as NienHanInputItem[];
-    const personnelIds = items
-      .map(i => i.personnel_id)
-      .filter((id): id is string => Boolean(id));
+    const personnelIds = items.map(i => i.personnel_id).filter((id): id is string => Boolean(id));
     const personnelMap = await loadNienHanPersonnelMap(personnelIds);
 
     const dataNienHan = items.map(item =>
@@ -56,7 +55,11 @@ class KncStrategy implements ProposalStrategy {
 
     const evalIds = dataNienHan.map(i => i.personnel_id).filter((id): id is string => Boolean(id));
     if (evalIds.length > 0) {
-      const results = await batchEvaluateServiceYears(evalIds, PROPOSAL_TYPES.KNC_VSNXD_QDNDVN, new Date());
+      const results = await batchEvaluateServiceYears(
+        evalIds,
+        PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
+        new Date()
+      );
       const lines = results
         .map(r => buildServiceYearsErrorMessage(r, PROPOSAL_TYPES.KNC_VSNXD_QDNDVN))
         .filter((m): m is string => m !== null);
@@ -92,19 +95,21 @@ class KncStrategy implements ProposalStrategy {
       logTag: 'KNC',
       decisionKey: DANH_HIEU_DAC_BIET.KNC_VSNXD_QDNDVN,
       upsert: async (tx, quanNhanId, writeData) => {
-        const data = writeData as unknown as Prisma.KyNiemChuongVSNXDQDNDVNUpdateInput;
-        const existing = await tx.kyNiemChuongVSNXDQDNDVN.findUnique({
-          where: { quan_nhan_id: quanNhanId },
-        });
+        const data = writeData as unknown as Prisma.KyNiemChuongVSNXDQDNDVNUncheckedUpdateInput;
+        const existing = await commemorativeMedalRepository.findUniqueRaw(
+          { where: { quan_nhan_id: quanNhanId } },
+          tx
+        );
         if (existing) {
-          await tx.kyNiemChuongVSNXDQDNDVN.update({
-            where: { id: existing.id },
-            data,
-          });
+          await commemorativeMedalRepository.update(existing.id, data, tx);
         } else {
-          await tx.kyNiemChuongVSNXDQDNDVN.create({
-            data: { ...data, quan_nhan_id: quanNhanId } as Prisma.KyNiemChuongVSNXDQDNDVNUncheckedCreateInput,
-          });
+          await commemorativeMedalRepository.create(
+            {
+              ...data,
+              quan_nhan_id: quanNhanId,
+            } as Prisma.KyNiemChuongVSNXDQDNDVNUncheckedCreateInput,
+            tx
+          );
         }
       },
     });

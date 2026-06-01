@@ -120,26 +120,13 @@ const positions: Record<
     return description;
   },
   DELETE: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
-    const positionId = req.params?.id;
     const ngayHienTai = formatDate(new Date());
 
     const parsedData = parseResponseData(responseData);
     const position = asRecord(parsedData?.data) || parsedData;
 
-    let tenChucVu = (position?.ten_chuc_vu as string) || '';
-    let tenDonVi = getUnitNameFromChucVu(position as ChucVuWithUnit | null);
-
-    if ((!tenChucVu || !tenDonVi) && positionId) {
-      await withPrisma(async prisma => {
-        const positionInfo = await queryPositionInfo(positionId as string, prisma);
-        if (!tenChucVu) {
-          tenChucVu = positionInfo.tenChucVu;
-        }
-        if (!tenDonVi) {
-          tenDonVi = positionInfo.tenDonVi;
-        }
-      });
-    }
+    const tenChucVu = (position?.ten_chuc_vu as string) || '';
+    const tenDonVi = getUnitNameFromChucVu(position as ChucVuWithUnit | null);
 
     let description = 'Xóa chức vụ';
     if (tenChucVu) {

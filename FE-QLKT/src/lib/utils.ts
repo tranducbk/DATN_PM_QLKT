@@ -134,3 +134,15 @@ export function formatFileSize(bytes?: number): string {
   const rounded = exponent === 0 ? value : Math.round(value * 10) / 10;
   return `${rounded.toLocaleString('vi-VN')} ${units[exponent]}`;
 }
+
+/**
+ * Format hệ số chức vụ về 1 chữ số thập phân (rule: khoảng 0–1, 1 chữ số).
+ * @param value - Giá trị he_so_chuc_vu thô (number, chuỗi số, hoặc nullish)
+ * @param fallback - Text trả về khi giá trị nullish/rỗng (mặc định '-')
+ * @returns Chuỗi đã format, vd '0.7', '1.0', hoặc fallback
+ */
+export function formatHeSoChucVu(value?: number | string | null, fallback = '-'): string {
+  if (value === null || value === undefined || value === '') return fallback;
+  const num = Number(value);
+  return Number.isNaN(num) ? fallback : num.toFixed(1);
+}

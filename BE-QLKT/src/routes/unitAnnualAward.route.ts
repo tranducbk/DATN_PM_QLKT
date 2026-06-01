@@ -43,12 +43,12 @@ router.get('/template', verifyToken, requireAdminOrManager, unitAnnualAwardContr
 /**
  * @route   POST /api/unit-annual-awards/import/preview
  * @desc    Preview unit annual award import — validate only, no DB write
- * @access  ADMIN, MANAGER
+ * @access  ADMIN only (Excel import is ADMIN-only)
  */
 router.post(
   '/import/preview',
   verifyToken,
-  requireAdminOrManager,
+  requireAdminOnly,
   upload.single('file'),
   unitAnnualAwardController.previewImport
 );
@@ -56,12 +56,12 @@ router.post(
 /**
  * @route   POST /api/unit-annual-awards/import/confirm
  * @desc    Confirm unit annual award import — persist validated data to DB
- * @access  ADMIN, MANAGER
+ * @access  ADMIN only (Excel import is ADMIN-only)
  */
 router.post(
   '/import/confirm',
   verifyToken,
-  requireAdminOrManager,
+  requireAdminOnly,
   validate(excelImportValidation.confirmImportUnitAnnualAward),
   unitAnnualAwardController.confirmImport
 );
@@ -69,12 +69,12 @@ router.post(
 /**
  * @route   POST /api/unit-annual-awards/import
  * @desc    Import unit annual awards from Excel (legacy direct import)
- * @access  ADMIN, MANAGER
+ * @access  ADMIN only (Excel import is ADMIN-only)
  */
 router.post(
   '/import',
   verifyToken,
-  requireAdminOrManager,
+  requireAdminOnly,
   upload.single('file'),
   auditLog({
     action: AUDIT_ACTIONS.IMPORT,

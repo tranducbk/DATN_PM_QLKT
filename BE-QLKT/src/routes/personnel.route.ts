@@ -66,8 +66,8 @@ router.post(
 
 /**
  * @route   PUT /api/personnel/:id
- * @desc    Update a personnel record (unit transfer, position change)
- * @access  Private - ADMIN, MANAGER (own unit), USER (own record only)
+ * @desc    Update a personnel record (position change; unit transfer is ADMIN-only)
+ * @access  Private - ADMIN (incl. unit transfer), MANAGER (own unit, no transfer), USER (own record only)
  */
 router.put(
   '/:id',

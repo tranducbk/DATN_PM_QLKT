@@ -201,8 +201,8 @@ class UnitAnnualAwardController {
     const params = req.params as IdParams;
     const query = req.query as { awardType?: string };
     const awardType = typeof query.awardType === 'string' ? query.awardType.trim() || null : null;
-    await service.remove(String(params.id), awardType);
-    return ResponseHelper.success(res, { data: true, message: 'Đã xóa bản ghi' });
+    const record = await service.remove(String(params.id), awardType);
+    return ResponseHelper.success(res, { data: record, message: 'Đã xóa bản ghi' });
   });
 
   getUnitAnnualAwards = catchAsync(async (req: Request, res: Response) => {

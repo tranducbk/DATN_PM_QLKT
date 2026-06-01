@@ -328,7 +328,7 @@ Sau khi tính xong, ghi kết quả vào bảng cache.
 prisma.hoSoHangNam.upsert({
   where:  { quan_nhan_id: personnelId },
   create: { quan_nhan_id, cstdcs_lien_tuc, du_dieu_kien_bkbqp, du_dieu_kien_cstdtq, du_dieu_kien_bkttcp, goi_y },
-  update: { cstdcs_lien_tuc, du_dieu_kien_bkbqp, du_dieu_kien_cstdtq, du_dieu_kien_bkttcp, goi_y, last_recalc_at: new Date() },
+  update: { cstdcs_lien_tuc, du_dieu_kien_bkbqp, du_dieu_kien_cstdtq, du_dieu_kien_bkttcp, goi_y },
 });
 ```
 
@@ -340,8 +340,7 @@ ON CONFLICT (quan_nhan_id)
 DO UPDATE SET
   cstdcs_lien_tuc      = EXCLUDED.cstdcs_lien_tuc,
   du_dieu_kien_bkbqp   = EXCLUDED.du_dieu_kien_bkbqp,
-  ...
-  last_recalc_at       = NOW();
+  ...;
 ```
 
 **Note**: `quan_nhan_id` có ràng buộc UNIQUE (1-1 với `QuanNhan`) — vì là bảng suy diễn.
@@ -365,7 +364,7 @@ await prisma.$transaction(async (tx) => {
   // (1) Chuyển trạng thái
   await tx.bangDeXuat.update({
     where: { id: proposalId },
-    data:  { status: 'APPROVED', approved_at: new Date() },
+    data:  { status: 'APPROVED', ngay_duyet: new Date() },
   });
 
   // (2) Ghi từng danh hiệu
@@ -377,8 +376,8 @@ await prisma.$transaction(async (tx) => {
     });
   }
 
-  // (3) Gắn quyết định
-  await tx.fileQuyetDinh.create({ data: { so_quyet_dinh, file_path, proposal_id: proposalId } });
+  // (3) Gắn quyết định — FileQuyetDinh liên kết với danh hiệu qua so_quyet_dinh (không có proposal_id FK)
+  await tx.fileQuyetDinh.create({ data: { so_quyet_dinh, file_path, nam, ngay_ky, nguoi_ky } });
 
   // (4) Ghi log
   await tx.systemLog.create({ data: { action: 'APPROVE', resource: 'proposals', payload: { before, after } } });
@@ -395,13 +394,13 @@ await prisma.$transaction(async (tx) => {
 BEGIN;
 
 -- (1)
-UPDATE BangDeXuat SET status = 'APPROVED', approved_at = NOW() WHERE id = $1;
+UPDATE BangDeXuat SET status = 'APPROVED', ngay_duyet = NOW() WHERE id = $1;
 
 -- (2) — N lần INSERT/UPDATE
 INSERT INTO DanhHieuHangNam (...) VALUES (...) ON CONFLICT (...) DO UPDATE SET ...;
 
--- (3)
-INSERT INTO FileQuyetDinh (so_quyet_dinh, file_path, proposal_id) VALUES (...);
+-- (3) FileQuyetDinh liên kết với danh hiệu qua so_quyet_dinh, không có proposal_id FK
+INSERT INTO FileQuyetDinh (so_quyet_dinh, file_path, nam, ngay_ky, nguoi_ky) VALUES (...);
 
 -- (4)
 INSERT INTO SystemLog (action, resource, payload) VALUES ('APPROVE', 'proposals', '{...}'::jsonb);
@@ -425,10 +424,10 @@ COMMIT;
 prisma.systemLog.create({
   data: {
     nguoi_thuc_hien_id: req.user.id,
-    nguoi_thuc_hien_role: req.user.role,
+    actor_role: req.user.role,
     action: 'UPDATE',
     resource: 'personnel',
-    resource_id: personnelId,
+    tai_nguyen_id: personnelId,
     description: `Cập nhật quân nhân ${ho_ten}`,
     payload: { before: oldData, after: newData },  // JSONB column
   },
@@ -438,8 +437,8 @@ prisma.systemLog.create({
 **SQL tương đương**
 ```sql
 INSERT INTO SystemLog (
-  id, nguoi_thuc_hien_id, nguoi_thuc_hien_role,
-  action, resource, resource_id, description, payload, createdAt
+  id, nguoi_thuc_hien_id, actor_role,
+  action, resource, tai_nguyen_id, description, payload, createdAt
 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, NOW());
 ```
 
@@ -740,13 +739,13 @@ LIMIT 20;
 
 **SQL** (audit/security review)
 ```sql
-SELECT s.resource_id AS quan_nhan_id, q.ho_ten, COUNT(*) AS so_lan_thay_doi
+SELECT s.tai_nguyen_id AS quan_nhan_id, q.ho_ten, COUNT(*) AS so_lan_thay_doi
 FROM SystemLog s
-LEFT JOIN QuanNhan q ON q.id = s.resource_id
+LEFT JOIN QuanNhan q ON q.id = s.tai_nguyen_id
 WHERE s.resource = 'personnel'
   AND s.action IN ('UPDATE', 'DELETE')
   AND s.createdAt >= NOW() - INTERVAL '30 days'
-GROUP BY s.resource_id, q.ho_ten
+GROUP BY s.tai_nguyen_id, q.ho_ten
 HAVING COUNT(*) >= 5
 ORDER BY so_lan_thay_doi DESC;
 ```
@@ -982,7 +981,7 @@ DATABASE_URL=postgresql://user:pass@localhost:5432/qlkt?connection_limit=10&pool
 ```ts
 const updated = await prisma.bangDeXuat.updateMany({
   where: { id: proposalId, status: 'PENDING' },   // CAS condition
-  data:  { status: 'APPROVED', approved_at: new Date() },
+  data:  { status: 'APPROVED', ngay_duyet: new Date() },
 });
 if (updated.count === 0) {
   throw new ConflictError('Đề xuất đã được xử lý, vui lòng tải lại trang');
@@ -992,12 +991,12 @@ if (updated.count === 0) {
 **SQL**
 ```sql
 -- Admin A chạy trước:
-UPDATE BangDeXuat SET status = 'APPROVED', approved_at = NOW()
+UPDATE BangDeXuat SET status = 'APPROVED', ngay_duyet = NOW()
 WHERE id = $1 AND status = 'PENDING';
 -- Postgres trả: UPDATE 1
 
 -- Admin B chạy sau (status đã là APPROVED):
-UPDATE BangDeXuat SET status = 'APPROVED', approved_at = NOW()
+UPDATE BangDeXuat SET status = 'APPROVED', ngay_duyet = NOW()
 WHERE id = $1 AND status = 'PENDING';
 -- Postgres trả: UPDATE 0  → backend throw 409
 ```
@@ -1243,11 +1242,11 @@ COMMIT;
 **Detect replay từ log**:
 ```sql
 -- Tìm request duplicate (2 APPROVE cùng resource trong < 1 giây)
-SELECT resource_id, COUNT(*), MIN(createdAt), MAX(createdAt)
+SELECT tai_nguyen_id, COUNT(*), MIN(createdAt), MAX(createdAt)
 FROM SystemLog
 WHERE action = 'APPROVE'
   AND createdAt >= NOW() - INTERVAL '1 day'
-GROUP BY resource_id
+GROUP BY tai_nguyen_id
 HAVING COUNT(*) > 1
    AND EXTRACT(EPOCH FROM MAX(createdAt) - MIN(createdAt)) < 1;
 ```
@@ -1262,9 +1261,7 @@ HAVING COUNT(*) > 1
 ```prisma
 model BangDeXuat {
   // ...
-  @@index([status, nam])             // composite index
-  @@index([loai_de_xuat])
-  @@index([nguoi_de_xuat_id])
+  @@index([status, loai_de_xuat])    // composite index
 }
 
 model SystemLog {
@@ -1282,8 +1279,8 @@ model DanhHieuHangNam {
 
 **SQL DDL tương đương** (sinh trong migration.sql)
 ```sql
-CREATE INDEX "BangDeXuat_status_nam_idx"
-  ON "BangDeXuat"(status, nam);
+CREATE INDEX "BangDeXuat_status_loai_de_xuat_idx"
+  ON "BangDeXuat"(status, loai_de_xuat);
 
 CREATE INDEX "SystemLog_createdAt_desc_idx"
   ON "SystemLog"(createdAt DESC);

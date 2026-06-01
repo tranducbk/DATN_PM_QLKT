@@ -5,6 +5,7 @@ import { Table, Button, Space, Tag, Popconfirm, message, Empty } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/apiClient';
+import { formatHeSoChucVu } from '@/lib/utils';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 
 export interface PositionRow {
@@ -98,7 +99,7 @@ export function PositionsTable({ positions, onEdit, onRefresh }: PositionsTableP
       key: 'he_so_chuc_vu',
       width: 150,
       align: 'center',
-      render: value => parseFloat(value || 0).toFixed(2),
+      render: value => formatHeSoChucVu(value, '0.0'),
     },
     {
       title: 'Hành động',

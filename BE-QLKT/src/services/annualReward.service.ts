@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs';
-import type { DanhHieuHangNam, QuanNhan } from '../generated/prisma';
+import type { DanhHieuHangNam } from '../generated/prisma';
 import {
   getAnnualRewards,
   createAnnualReward,
@@ -48,7 +48,6 @@ class AnnualRewardService {
   ): Promise<{
     message: string;
     personnelId: string;
-    personnel: QuanNhan | null;
     reward: DanhHieuHangNam;
   }> {
     return deleteAnnualReward(id, adminUsername, awardType);

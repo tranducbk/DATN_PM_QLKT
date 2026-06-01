@@ -9,7 +9,7 @@
 | **Tổng thời lượng** | 13–14 phút (chừa ~10–15 phút Q&A) |
 | **Nhịp đọc** | 130–140 từ/phút (~2,2 từ/giây). Chậm rãi, ngắt câu rõ |
 | **Xưng hô** | "Em" / "Hội đồng" hoặc "thầy/cô". Trang trọng, không "tôi", không "các bạn" |
-| **Số liệu** | Đọc dạng chữ ("hai mươi ba bảng", "bảy mươi tư file"), không đọc số kiểu kỹ thuật |
+| **Số liệu** | Đọc dạng chữ ("hai mươi ba bảng", "tám mươi file"), không đọc số kiểu kỹ thuật |
 
 ## Cấu trúc mỗi slide
 
@@ -158,7 +158,7 @@
 
 > Phía Frontend, em dùng Next.js 14 với App Router để routing theo file system. Component library là Ant Design — em chọn vì có sẵn các component nghiệp vụ phức tạp như Table phân trang, Form validation chuẩn, DatePicker tiếng Việt. Tailwind CSS dùng cho phần style tuỳ biến. Validate dùng Zod, schema được chia sẻ giữa client và server để đảm bảo nhất quán.
 >
-> Phía Backend, em dùng Express với TypeScript, ORM là Prisma 6.x. Em chọn Prisma vì nó sinh ra TypeScript Client thực tế trong build, có autocomplete và compile-time check toàn diện — an toàn hơn các ORM dùng decorator. Database PostgreSQL hỗ trợ transaction SERIALIZABLE cần thiết cho test race condition. Xác thực dùng JWT hai token — access token ngắn để giảm rủi ro nếu lộ, refresh token dài để người dùng không phải đăng nhập lại liên tục.
+> Phía Backend, em dùng Express với TypeScript, ORM là Prisma 6.x. Em chọn Prisma vì nó sinh ra TypeScript Client thực tế trong build, có autocomplete và compile-time check toàn diện — an toàn hơn các ORM dùng decorator. Chống race condition khi duyệt đề xuất, em dùng Prisma $transaction kết hợp cập nhật có điều kiện updateMany (compare-and-set trên trạng thái), không đặt isolation level riêng — mặc định READ COMMITTED. Xác thực dùng JWT hai token — access token ngắn để giảm rủi ro nếu lộ, refresh token dài để người dùng không phải đăng nhập lại liên tục.
 >
 > Các thư viện phụ trợ gồm Socket.IO cho real-time, PM2 quản lý process, node-cron lập lịch backup, ExcelJS cho import export, và PDFKit để sinh quyết định PDF.
 
@@ -296,7 +296,7 @@
 
 **[Lời văn]**:
 
-> Về kiểm thử, em viết **bảy mươi tư file test** với Jest, pass **một trăm phần trăm**. Em xin nhấn mạnh **bốn kịch bản tiêu biểu** trong các bộ test em viết.
+> Về kiểm thử, em viết **tám mươi file test** với Jest, pass **một trăm phần trăm**. Em xin nhấn mạnh **bốn kịch bản tiêu biểu** trong các bộ test em viết.
 >
 > [nhìn slide] Thứ nhất là **race condition** — em mô phỏng hai cán bộ Phòng Chính trị duyệt song song cùng một đề xuất. Nhờ transaction kết hợp khoá lạc quan, chỉ một request thắng, request còn lại bị từ chối với thông báo rõ ràng. [ngừng]
 >
@@ -320,7 +320,7 @@
 
 **[Lời văn]**:
 
-> [nhìn slide] Để **tổng kết**, đồ án của em đã hoàn thành các mục tiêu đặt ra ban đầu: hỗ trợ đầy đủ **năm nhóm khen thưởng** UC5 đến UC9, **bốn vai trò** phân quyền, có **bảy mươi tư** file kiểm thử bao phủ các kịch bản khó, và đã triển khai chạy được trên mạng nội bộ. Tổng dự án khoảng **một trăm nghìn** dòng code với kiến trúc layered và Strategy pattern rõ ràng. [ngừng]
+> [nhìn slide] Để **tổng kết**, đồ án của em đã hoàn thành các mục tiêu đặt ra ban đầu: hỗ trợ đầy đủ **năm nhóm khen thưởng** UC5 đến UC9, **bốn vai trò** phân quyền, có **tám mươi** file kiểm thử bao phủ các kịch bản khó, và đã triển khai chạy được trên mạng nội bộ. Tổng dự án khoảng **chín mươi tám nghìn** dòng code (khoảng bốn mươi nghìn backend và năm mươi tám nghìn frontend) với kiến trúc layered và Strategy pattern rõ ràng. [ngừng]
 >
 > Em cũng nhận thấy **một số hạn chế** cần thẳng thắn đề cập. Thứ nhất, Bằng khen Thủ tướng cá nhân đang là lifetime — hệ thống chưa hỗ trợ danh hiệu cao hơn vì luật hiện hành chưa có quy định. Thứ hai, chưa có module thống kê dạng BI chi tiết, mới chỉ có dashboard cơ bản. Thứ ba, chỉ chạy một instance PM2 — chưa scale ngang được. Thứ tư, việc ký quyết định mới ở mức lưu file PDF, chưa tích hợp ký số bằng Smart Card. [ngừng]
 >
@@ -418,7 +418,7 @@ Khi cảm thấy hội đồng không còn câu hỏi:
 > Session cần lưu state ở server, gây khó khi scale ngang. JWT stateless. Em chọn hai token: access TTL ngắn — mười lăm phút — để giảm rủi ro nếu lộ; refresh token TTL bảy ngày để người dùng không phải đăng nhập lại liên tục. Khi access hết hạn, FE gọi `/refresh` để xin token mới mà không cần login lại.
 
 **Q4. Tại sao PostgreSQL chứ không dùng MySQL?**
-> PostgreSQL hỗ trợ isolation level SERIALIZABLE đầy đủ — em cần cho test race condition. Nó cũng hỗ trợ JSONB column native — em dùng cho payload đề xuất linh hoạt theo loại. Ngoài ra, kiểu dữ liệu phong phú hơn MySQL như array, ENUM thực sự, và type safety tốt hơn.
+> PostgreSQL hỗ trợ transaction tốt — em chống race condition bằng Prisma $transaction kết hợp updateMany có điều kiện (compare-and-set trên trạng thái), không đặt isolation level riêng (mặc định READ COMMITTED). Nó cũng hỗ trợ JSONB column native — em dùng cho payload đề xuất linh hoạt theo loại. Ngoài ra, kiểu dữ liệu phong phú hơn MySQL như array, ENUM thực sự, và type safety tốt hơn.
 
 ## Nhóm 2 — Thiết kế kiến trúc
 
@@ -459,8 +459,8 @@ Khi cảm thấy hội đồng không còn câu hỏi:
 **Q15. Nếu PM2 process chết trong khi đang import Excel thì sao?**
 > Import Excel thực thi trong **một transaction Prisma**, nên nếu process chết giữa chừng, transaction tự rollback ở DB, không có dữ liệu nửa vời. Khi PM2 auto-restart, hệ thống quay về trạng thái nhất quán. Cán bộ chỉ cần upload file lại.
 
-**Q16. Số liệu test 74 file có thật không?**
-> Em chạy `npx jest --listTests | wc -l` trước khi báo cáo, kết quả đúng bảy mươi tư file. Em có thể demo trực tiếp trên máy nếu thầy/cô muốn xem.
+**Q16. Số liệu test 80 file có thật không?**
+> Em chạy `npx jest --listTests | wc -l` trước khi báo cáo, kết quả đúng tám mươi file. Em có thể demo trực tiếp trên máy nếu thầy/cô muốn xem.
 
 ## Nhóm 5 — Nghiệp vụ
 
@@ -538,9 +538,9 @@ Khi cảm thấy hội đồng không còn câu hỏi:
 │ S14 (55s) Form Zod share + 3 cấp duyệt + cấp số + PDF      │
 │ S15 (50s) Excel: Preview → Confirm + batch query (no N+1)  │
 │ S16 (50s) Notif Socket / Audit log / Backup cron + DevZone │
-│ S17 (65s)⭐ 74 test pass 100% — race + chain + tampering +  │
+│ S17 (65s)⭐ 80 test pass 100% — race + chain + tampering +  │
 │         e2e + deploy 4 bước                                │
-│ S18 (55s) Đạt: 5 nhóm + 4 role + 74 test + 100k LOC        │
+│ S18 (55s) Đạt: 5 nhóm + 4 role + 80 test + 98k LOC         │
 │         Hạn chế: lifetime + BI + scale + ký số             │
 │         HP: mobile + BI + Smart Card + cluster             │
 │ S19 (20s) Cảm ơn GVHD + Hội đồng                           │
@@ -551,9 +551,9 @@ Khi cảm thấy hội đồng không còn câu hỏi:
 
 **Số liệu phải nhớ chính xác**:
 - 23 bảng — CSDL
-- 74 file test — pass 100%
+- 80 file test — pass 100%
 - 7 loại đề xuất — Strategy
-- ~100k LOC — tổng dự án
+- ~98k LOC — tổng (~40k BE + ~58k FE)
 - 4 vai trò: SUPER_ADMIN > ADMIN > MANAGER > USER
 - 5 nhóm UC5-UC9
 - Cửa sổ trượt: 3 năm cho CSTDTQ, 7 năm cho BKTTCP
@@ -584,7 +584,7 @@ Khi cảm thấy hội đồng không còn câu hỏi:
 
 ## D.4 — Hội đồng yêu cầu chứng minh số liệu
 
-> "Em xin phép chạy lệnh để Hội đồng xác nhận ạ" → mở terminal, chạy `npx jest --listTests | wc -l` (cho 74 test) hoặc `git ls-files | xargs wc -l` (cho LOC).
+> "Em xin phép chạy lệnh để Hội đồng xác nhận ạ" → mở terminal, chạy `npx jest --listTests | wc -l` (cho 80 test) hoặc `git ls-files | xargs wc -l` (cho LOC).
 
 → Chuẩn bị trước các lệnh kiểm tra số liệu trong file `verify-stats.sh` hoặc memo riêng.
 

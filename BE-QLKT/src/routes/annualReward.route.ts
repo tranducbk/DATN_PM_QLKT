@@ -154,12 +154,12 @@ router.post(
 /**
  * @route   POST /api/annual-rewards/import
  * @desc    Import annual rewards from Excel (legacy direct import)
- * @access  Private - ADMIN, MANAGER
+ * @access  Private - ADMIN only (Excel import is ADMIN-only)
  */
 router.post(
   '/import',
   verifyToken,
-  requireAdminOrManager,
+  requireAdminOnly,
   upload.single('file'),
   auditLog({
     action: AUDIT_ACTIONS.IMPORT,

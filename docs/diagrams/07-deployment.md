@@ -76,7 +76,7 @@ flowchart TB
 ### Máy chủ CSDL (DB Server)
 - **PostgreSQL 14+**: 23 bảng theo `prisma/schema.prisma`
 - Có thể deploy cùng máy với App Server (single-node) hoặc tách máy riêng (cluster) tùy quy mô
-- Backup file `.sql` được lưu trên App Server qua `pg_dump`
+- Backup file `.sql` được sinh bằng cách tự build chuỗi `INSERT INTO` (không dùng `pg_dump`), lưu trên App Server
 
 ### Mạng
 - **HTTPS port 443**: kết nối client ↔ Nginx

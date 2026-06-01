@@ -1,14 +1,13 @@
 import { prisma } from '../../../models';
 import { tenureMedalRepository } from '../../../repositories/tenureMedal.repository';
+import { quanNhanRepository } from '../../../repositories/quanNhan.repository';
+import { tenureProfileRepository } from '../../../repositories/tenureProfile.repository';
 import { PROPOSAL_TYPES } from '../../../constants/proposalTypes.constants';
 import { DANH_HIEU_HCCSVV } from '../../../constants/danhHieu.constants';
 import { ELIGIBILITY_STATUS } from '../../../constants/eligibilityStatus.constants';
 import { validateHCCSVVRankOrder } from '../../../helpers/awardValidation/tenureMedalRankOrder';
 import { formatQuanNhanLabel } from './quanNhanLabel';
-import {
-  calculateServiceMonths,
-  formatServiceDuration,
-} from '../../../helpers/serviceYearsHelper';
+import { calculateServiceMonths, formatServiceDuration } from '../../../helpers/serviceYearsHelper';
 import type { EditedProposalData, ProposalNienHanItem } from '../../../types/proposal';
 import type {
   ProposalStrategy,
@@ -32,9 +31,7 @@ class HccsvvStrategy implements ProposalStrategy {
     ctx: ProposalSubmitContext
   ): Promise<SubmitValidationResult> {
     const items = (titleData ?? []) as NienHanInputItem[];
-    const personnelIds = items
-      .map(i => i.personnel_id)
-      .filter((id): id is string => Boolean(id));
+    const personnelIds = items.map(i => i.personnel_id).filter((id): id is string => Boolean(id));
     const personnelMap = await loadNienHanPersonnelMap(personnelIds);
 
     const dataNienHan = items.map(item =>
@@ -117,10 +114,13 @@ class HccsvvStrategy implements ProposalStrategy {
     const proposalMonth = ctx.proposalMonth;
 
     const personnelIds = nienHanData.map(it => it.personnel_id).filter(Boolean) as string[];
-    const existingForOrder = await prismaTx.khenThuongHCCSVV.findMany({
-      where: { quan_nhan_id: { in: personnelIds } },
-      select: { quan_nhan_id: true, danh_hieu: true, nam: true },
-    });
+    const existingForOrder = await tenureMedalRepository.findManyRaw(
+      {
+        where: { quan_nhan_id: { in: personnelIds } },
+        select: { quan_nhan_id: true, danh_hieu: true, nam: true },
+      },
+      prismaTx
+    );
     const existingByPersonnel = new Map<string, { danh_hieu: string; nam: number }[]>();
     for (const r of existingForOrder) {
       const list = existingByPersonnel.get(r.quan_nhan_id) || [];
@@ -136,7 +136,10 @@ class HccsvvStrategy implements ProposalStrategy {
           acc.errors.push('Thiếu thông tin quân nhân khi xử lý Huy chương Chiến sĩ vẻ vang.');
           continue;
         }
-        const quanNhan = await prismaTx.quanNhan.findUnique({ where: { id: item.personnel_id } });
+        const quanNhan = await quanNhanRepository.findUniqueRaw(
+          { where: { id: item.personnel_id } },
+          prismaTx
+        );
         if (!quanNhan) {
           acc.errors.push(
             'Không tìm thấy thông tin quân nhân khi xử lý Huy chương Chiến sĩ vẻ vang. ' +
@@ -157,9 +160,7 @@ class HccsvvStrategy implements ProposalStrategy {
         const namNhan = item.nam_nhan;
         const thangNhan = item.thang_nhan;
         if (!namNhan || !thangNhan || thangNhan < 1 || thangNhan > 12) {
-          acc.errors.push(
-            `${formatQuanNhanLabel(quanNhan)} thiếu tháng/năm nhận huy chương`
-          );
+          acc.errors.push(`${formatQuanNhanLabel(quanNhan)} thiếu tháng/năm nhận huy chương`);
           continue;
         }
         if (
@@ -217,13 +218,16 @@ class HccsvvStrategy implements ProposalStrategy {
           thoi_gian: thoiGian,
         };
 
-        await prismaTx.khenThuongHCCSVV.upsert({
-          where: {
-            quan_nhan_id_danh_hieu: { quan_nhan_id: quanNhan.id, danh_hieu: item.danh_hieu },
+        await tenureMedalRepository.upsertRaw(
+          {
+            where: {
+              quan_nhan_id_danh_hieu: { quan_nhan_id: quanNhan.id, danh_hieu: item.danh_hieu },
+            },
+            update: awardData,
+            create: { quan_nhan_id: quanNhan.id, danh_hieu: item.danh_hieu, ...awardData },
           },
-          update: awardData,
-          create: { quan_nhan_id: quanNhan.id, danh_hieu: item.danh_hieu, ...awardData },
-        });
+          prismaTx
+        );
 
         const ngayNhan = new Date(Date.UTC(namNhan, thangNhan - 1, 1));
         const PROFILE_FIELDS: Record<string, { status: string; ngay: string }> = {
@@ -245,11 +249,12 @@ class HccsvvStrategy implements ProposalStrategy {
           [fields.status]: ELIGIBILITY_STATUS.DA_NHAN,
           [fields.ngay]: ngayNhan,
         };
-        await prismaTx.hoSoNienHan.upsert({
-          where: { quan_nhan_id: quanNhan.id },
-          update: profileUpdate,
-          create: { quan_nhan_id: quanNhan.id, ...profileUpdate },
-        });
+        await tenureProfileRepository.upsert(
+          quanNhan.id,
+          { quan_nhan_id: quanNhan.id, ...profileUpdate },
+          profileUpdate,
+          prismaTx
+        );
 
         acc.importedNienHan++;
         acc.affectedPersonnelIds.add(quanNhan.id);

@@ -36,7 +36,7 @@ src/
 │   └── ThemeProvider.tsx
 ├── contexts/
 │   └── AuthContext.tsx           # Auth state (user, login, logout)
-├── hooks/                        # useFetch, useAuthGuard, useSocket, useMobile, useToast
+├── hooks/                        # useFetch, useAuthGuard, useSocket, useMobile, useProposalListFilters
 ├── lib/
 │   ├── api/                      # API modules by domain (auth, accounts, personnel,
 │   │                             #   awards, annualAwards, unitAnnualAwards, adhocAwards,

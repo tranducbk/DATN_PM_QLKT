@@ -2,8 +2,14 @@ import { quanNhanRepository } from '../repositories/quanNhan.repository';
 import { positionRepository } from '../repositories/position.repository';
 import { positionHistoryRepository } from '../repositories/positionHistory.repository';
 import moment from 'moment';
-import { AppError, NotFoundError, ValidationError } from '../middlewares/errorHandler';
+import {
+  AppError,
+  NotFoundError,
+  ValidationError,
+  ForbiddenError,
+} from '../middlewares/errorHandler';
 import { calculateTenureMonthsWithDayPrecision } from '../helpers/serviceYearsHelper';
+import { ROLES } from '../constants/roles.constants';
 
 interface CreatePositionHistoryData {
   personnel_id: string;
@@ -102,12 +108,20 @@ class PositionHistoryService {
     return updatedHistory;
   }
 
-  async createPositionHistory(data: CreatePositionHistoryData) {
+  async createPositionHistory(data: CreatePositionHistoryData, userRole?: string) {
     if (!data) {
       throw new ValidationError('Dữ liệu không hợp lệ');
     }
 
     const { personnel_id, chuc_vu_id, ngay_bat_dau, ngay_ket_thuc, he_so_chuc_vu } = data;
+
+    // MANAGER may only backfill closed (past) position history; the current/open-ended
+    // entry reflects the active position, which only ADMIN can set.
+    if (userRole === ROLES.MANAGER && !ngay_ket_thuc) {
+      throw new ForbiddenError(
+        'Vui lòng nhập ngày kết thúc — chỉ được thêm giai đoạn chức vụ đã kết thúc. Giai đoạn đang đảm nhiệm do Phòng Chính trị cập nhật.'
+      );
+    }
 
     if (!personnel_id) {
       throw new ValidationError('ID quân nhân là bắt buộc');
@@ -370,8 +384,22 @@ class PositionHistoryService {
   }
 
   async deletePositionHistory(id: string) {
+    // Fetch with relations before delete — audit log runs after deletion and can no longer query the row
     const history = await positionHistoryRepository.findUniqueRaw({
       where: { id },
+      include: {
+        QuanNhan: { select: { ho_ten: true } },
+        ChucVu: {
+          include: {
+            CoQuanDonVi: { select: { ten_don_vi: true } },
+            DonViTrucThuoc: {
+              include: {
+                CoQuanDonVi: { select: { ten_don_vi: true } },
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!history) {
@@ -380,7 +408,12 @@ class PositionHistoryService {
 
     await positionHistoryRepository.delete(id);
 
-    return { message: 'Xóa lịch sử chức vụ thành công', quan_nhan_id: history.quan_nhan_id };
+    return {
+      message: 'Xóa lịch sử chức vụ thành công',
+      quan_nhan_id: history.quan_nhan_id,
+      QuanNhan: history.QuanNhan,
+      ChucVu: history.ChucVu,
+    };
   }
 }
 

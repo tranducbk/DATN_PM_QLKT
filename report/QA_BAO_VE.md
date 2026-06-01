@@ -101,7 +101,7 @@
 - MySQL cũng tốt nhưng PostgreSQL có:
   - JSONB index (em dùng cho `co_quan_don_vi` trong `QuanNhan` và `payload` trong `SystemLog`).
   - `RETURNING` clause sau `INSERT/UPDATE/DELETE` (Prisma đã tự dùng).
-  - `pg_dump` tích hợp sẵn cho sao lưu (em dùng trong `backup.service.ts`).
+  - tự sinh chuỗi `INSERT INTO ... VALUES` trong `backup.service.ts` (không dùng `pg_dump`).
   - Foreign key `ON UPDATE CASCADE` chặt chẽ hơn MySQL.
 
 **Phản biện:** "PostgreSQL có nặng cho LAN nội bộ?" → "Một instance Postgres ăn ~150 MB RAM ở idle, hoàn toàn chạy được trên server 4 GB như em đề xuất."
@@ -175,7 +175,7 @@
 **Ngắn:** Jest tích hợp `ts-jest` chạy file `.ts` không cần build, mocking sẵn, cộng đồng lớn nhất cho Node.js backend. Vitest mới hơn, tốt cho FE Vite nhưng chưa cần đổi.
 
 **Chi tiết:**
-- 890 ca kiểm thử / 75 suite hiện chạy trong ~38 giây — chấp nhận được.
+- 937 ca kiểm thử / 80 file hiện chạy trong ~7 giây — chấp nhận được.
 - Jest snapshot testing chưa dùng nhiều, chủ yếu unit test pure function.
 - `jest --coverage` sinh báo cáo HTML tại `coverage/lcov-report/index.html`, đạt > 85 % cho `services/profile`, `services/eligibility`, `services/proposal`.
 
@@ -1196,7 +1196,7 @@ Em chỉ dùng `$queryRawUnsafe` ở đúng 1 chỗ trong `scripts/renameColumn.
 - **Reflected XSS:** error message từ server dạng "Không tìm thấy `<input>`" → React escape khi render trong `<Alert>`.
 - **DOM-based XSS:** em không có chỗ nào `eval()`, `innerHTML =`, hay `new Function()` từ user input.
 
-**Header bảo vệ thêm:** em đặt `helmet()` trong `app.ts` để set `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Content-Security-Policy` mặc định.
+**Header bảo vệ thêm:** em đặt `helmet()` trong `index.ts` để set `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`. `helmet()` bật mặc định nhưng CSP chưa được cấu hình riêng.
 
 ### C.4 — CSRF (Cross-Site Request Forgery)
 
@@ -1211,15 +1211,16 @@ Em chỉ dùng `$queryRawUnsafe` ở đúng 1 chỗ trong `scripts/renameColumn.
 
 ### C.5 — Brute force password
 
-**Ngắn:** `authLimiter` chặn 10 request / 15 phút / IP cho `/api/auth/login`. Sau 10 lần sai, IP đó bị reject 429 Too Many Requests trong 15 phút.
+**Ngắn:** `authLimiter` chặn sau 30 lần đăng nhập THẤT BẠI trong 5 phút / IP cho `/api/auth/login` (chỉ đếm lần thất bại) → 429 Too Many Requests.
 
 **Code thật:**
 ```typescript
 // configs/rateLimiter.ts
 export const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  message: { success: false, message: 'Quá nhiều yêu cầu, vui lòng thử lại sau 15 phút' },
+  windowMs: 5 * 60 * 1000,
+  max: 30,
+  message: { success: false, message: 'Quá nhiều yêu cầu, thử lại sau ít phút.' },
+  skipSuccessfulRequests: true,
 });
 ```
 
@@ -1315,13 +1316,13 @@ z.object({
 ### C.11 — Thông tin nhạy cảm trong response
 
 - Không trả `password_hash` — Prisma `select: { id, username, role }` không kèm `password_hash`.
-- Không trả refreshToken cho client (lưu trong DB và HttpOnly cookie cho FE thôi).
+- refreshToken được trả về trong body JSON khi đăng nhập (không dùng HttpOnly cookie); FE lưu ở client và gửi kèm khi gọi `/refresh`.
 - Không trả CCCD đầy đủ cho USER — chỉ ADMIN/MANAGER xem được.
 
 ### C.12 — DoS attack
 
 **Đa lớp:**
-- `express-rate-limit`: 100 request / 15 phút / IP cho route công khai; 30 / 15 phút cho write endpoint.
+- `express-rate-limit`: `authLimiter` (30 request thất bại / 5 phút / IP cho route auth, chỉ đếm request lỗi); `writeLimiter` (30 request / 15 phút / IP cho write endpoint).
 - `body-parser` limit JSON 10 MB → tránh JSON bomb.
 - File upload limit 10 MB.
 - Pagination forced: `MAX_LIMIT = 100` records/trang → không trả nhầm 100k records.
@@ -1336,21 +1337,25 @@ z.object({
 - `X-Frame-Options: DENY` (chống clickjacking)
 - `Strict-Transport-Security` (HSTS) — bật khi có HTTPS
 - `X-XSS-Protection: 1; mode=block`
-- `Content-Security-Policy: default-src 'self'`
+- CSP: `helmet()` bật mặc định nhưng CSP chưa được cấu hình riêng.
 
 ### C.14 — CORS cấu hình thế nào?
 
 ```typescript
-// configs/cors.ts
-export const corsOptions: CorsOptions = {
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-};
+// configs/cors.ts — đọc whitelist từ process.env.ALLOWED_ORIGINS (comma-separated),
+// mặc định 'http://localhost:3000,http://localhost:3001'
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+  : ['http://localhost:3000', 'http://localhost:3001'];
+
+export function allowCorsOrigin(origin, callback) {
+  if (!origin) return callback(null, true);
+  if (allowedOrigins.includes(origin)) callback(null, true);
+  else callback(new Error('Not allowed by CORS'));
+}
 ```
 
-Whitelist 1 origin duy nhất → không cho domain khác gọi API.
+Whitelist nhiều origin qua `ALLOWED_ORIGINS` → chỉ domain trong whitelist mới gọi được API.
 
 ### C.15 — Audit log: ghi gì, không ghi gì?
 
@@ -1393,21 +1398,21 @@ if (userRole !== ROLES.SUPER_ADMIN) {
 **Cơ chế chống:**
 1. **Transaction Prisma:** mở `prisma.$transaction(async tx => { ... })`.
 2. **Re-fetch trong transaction với lock:** `tx.bangDeXuat.findUnique({ where: { id }, ... })` — Postgres mặc định READ COMMITTED, hai transaction đều đọc thấy `status = PENDING`.
-3. **Kiểm tra status:** `if (proposal.status !== 'PENDING') throw new ConflictError('Đã được duyệt')`.
+3. **Kiểm tra status:** `if (proposal.status !== 'PENDING') throw new ValidationError('Đã được duyệt')`.
 4. **Update có điều kiện:** `tx.bangDeXuat.updateMany({ where: { id, status: 'PENDING' }, data: { status: 'APPROVED' } })` — nếu trả về `count: 0` nghĩa là transaction kia đã update trước → throw conflict.
 
 ```typescript
 await prisma.$transaction(async tx => {
   const proposal = await tx.bangDeXuat.findUniqueOrThrow({ where: { id } });
   if (proposal.status !== PROPOSAL_STATUS.PENDING) {
-    throw new ConflictError('Đề xuất đã được xử lý');
+    throw new ValidationError('Đề xuất đã được xử lý');
   }
   const updated = await tx.bangDeXuat.updateMany({
     where: { id, status: PROPOSAL_STATUS.PENDING },
     data: { status: PROPOSAL_STATUS.APPROVED, nguoi_duyet_id, ngay_duyet: new Date() },
   });
   if (updated.count === 0) {
-    throw new ConflictError('Đề xuất vừa được người khác xử lý');
+    throw new ValidationError('Đề xuất vừa được người khác xử lý');
   }
   // ... gắn số quyết định, ghi nhật ký
 });
@@ -1424,7 +1429,7 @@ try {
   return await prisma.taiKhoan.create({ data });
 } catch (error) {
   if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-    throw new ConflictError('Username đã tồn tại');
+    throw new ValidationError('Username đã tồn tại');
   }
   throw error;
 }
@@ -1532,7 +1537,7 @@ async function runBackup() {
   if (isRunning) return;
   isRunning = true;
   try {
-    await execPromise('pg_dump ...');
+    await buildBackupSql(); // tự build INSERT (raw SQL text)
   } finally {
     isRunning = false;
   }
@@ -1621,7 +1626,7 @@ if (file_path) {
 
 **Phản biện 2:** "Sao không SELECT FOR UPDATE để serialize?" → "Sẽ chặn các tx khác đọc cùng row trong khi tx hiện tại chạy. Với upsert atomic ở DB-level, hai tx đan xen vẫn cho kết quả đúng mà không phải lock — hiệu năng tốt hơn."
 
-**Phản biện 3:** "Sao đặt `update: {}` mà không là `update: { updatedAt: new Date() }`?" → "Bảng `FileQuyetDinh` không có `updatedAt`, và việc bump timestamp khi không có thay đổi thật làm audit log hiểu nhầm 'có ai sửa'. Empty update là chính xác nhất với ngữ nghĩa 'chỉ đảm bảo row tồn tại'."
+**Phản biện 3:** "Sao đặt `update: {}` mà không là `update: { updatedAt: new Date() }`?" → "Việc bump timestamp khi không có thay đổi thật làm audit log hiểu nhầm 'có ai sửa'. Empty update là chính xác nhất với ngữ nghĩa 'chỉ đảm bảo row tồn tại'."
 
 **Ghi chú phát hiện:** Lỗi cũ (`findUnique → create`) chỉ xảy ra khi 2 đề xuất cùng `so_quyet_dinh` được duyệt cùng phút — trong domain Phòng Chính trị Học viện chỉ 1-2 Admin, xác suất thấp. Nhưng vì có audit log nuốt lỗi nên rất khó phát hiện khi đã xảy ra → fix chủ động bằng upsert.
 
@@ -1772,14 +1777,14 @@ Hàm `computeChainContext(danhHieus, currentYear)` đọc tất cả `DanhHieuHa
 
 ### E.8 — Test case cho rule chuỗi
 
-Có 197 ca kiểm thử riêng cho phần này, phân bổ:
-- `eligibility-bkbqp-personal.test.ts` — 95 ca: vừa đủ chu kỳ, lỡ chu kỳ, lặp chu kỳ, NCKH thiếu, NCKH có nhưng CSTĐCS đứt.
-- `eligibility-cstdtq-personal.test.ts` — 80 ca: cửa sổ trượt 3 năm có/không có BKBQP, BKBQP rơi khỏi cửa sổ.
-- `eligibility-bkttcp-personal.test.ts` — 60 ca: lifetime block, đếm `=== 3` BKBQP và `=== 2` CSTĐTQ strict.
-- `eligibility-bkbqp-unit.test.ts` — 50 ca: ĐVQT 2 năm.
-- `eligibility-bkttcp-unit.test.ts` — 45 ca: cửa sổ trượt 7 năm, non-lifetime.
-- `chainContext.test.ts` — 30 ca: derive context.
-- `chainCycleScenarios.test.ts` — 80 ca: scenarios tổng hợp.
+Tổng cộng 937 ca kiểm thử, trong đó các test suite riêng cho rule chuỗi danh hiệu gồm:
+- `eligibility-bkbqp-personal.test.ts`: vừa đủ chu kỳ, lỡ chu kỳ, lặp chu kỳ, NCKH thiếu, NCKH có nhưng CSTĐCS đứt.
+- `eligibility-cstdtq-personal.test.ts`: cửa sổ trượt 3 năm có/không có BKBQP, BKBQP rơi khỏi cửa sổ.
+- `eligibility-bkttcp-personal.test.ts`: lifetime block, đếm `=== 3` BKBQP và `=== 2` CSTĐTQ strict.
+- `eligibility-bkbqp-unit.test.ts`: ĐVQT 2 năm.
+- `eligibility-bkttcp-unit.test.ts`: cửa sổ trượt 7 năm, non-lifetime.
+- `chainContext.test.ts`: derive context.
+- `chainCycleScenarios.test.ts`: scenarios tổng hợp.
 
 ---
 
@@ -2066,7 +2071,7 @@ const result = await prisma.bangDeXuat.updateMany({
   where: { id, status: 'PENDING' },
   data: { status: 'APPROVED', nguoi_duyet_id, ngay_duyet: new Date() },
 });
-if (result.count === 0) throw new ConflictError('Đã được người khác xử lý');
+if (result.count === 0) throw new ValidationError('Đã được người khác xử lý');
 ```
 
 **SQL:**
@@ -2112,7 +2117,7 @@ await prisma.$transaction([
 ```typescript
 await prisma.$transaction(async tx => {
   const proposal = await tx.bangDeXuat.findUnique({ where: { id } });
-  if (proposal.status !== 'PENDING') throw new ConflictError();
+  if (proposal.status !== 'PENDING') throw new ValidationError();
   await tx.bangDeXuat.update({ where: { id }, data: { status: 'APPROVED' } });
   await tx.danhHieuHangNam.createMany({ data: rows });
   await tx.systemLog.create({ data: logEntry });
@@ -2606,7 +2611,7 @@ Next.js tự code-split theo route. Bundle initial ~ 250 KB gzipped.
 **Trả lời:** Mục tiêu của em là cover 100 % rule logic phức tạp (chuỗi danh hiệu, eligibility), > 80 % service layer, ≥ 70 % overall.
 
 **Hiện tại:**
-- 890 test cases / 75 suites pass 100 %.
+- 937 test cases / 80 file pass 100 %.
 - Coverage ≥ 85 % cho `services/profile`, `services/eligibility`, `services/proposal`.
 - Một số helper pure function 100 %.
 - Controller layer thấp hơn (~60 %) — em ưu tiên test logic hơn integration.
@@ -2662,21 +2667,21 @@ Project em chủ yếu unit + service unit, có ~10 integration test trong `test
 
 1. Backup DB ngay trước migrate (cron tự chạy 2:00 sáng + manual trigger qua DevZone).
 2. `pm2 reload --revert` để quay lại version cũ.
-3. Nếu migrate đã chạy → restore DB từ backup `pg_dump` (~14 giây cho dataset hiện tại).
+3. Nếu migrate đã chạy → restore DB từ backup (tự build INSERT, raw SQL text) (~14 giây cho dataset hiện tại).
 
 ### I.3 — Monitor production
 
 **Hiện tại:**
 - PM2 monitor (`pm2 logs`, `pm2 monit`).
-- Error log ghi vào `BE-QLKT/logs/error.log` qua winston.
+- PM2 bắt stdout/stderr (không dùng winston — winston không phải dependency).
 - System log trong DB cho audit.
 
 **Hướng phát triển:** Sentry cho error tracking, Grafana + Prometheus cho metrics.
 
 ### I.4 — Backup chiến lược
 
-- **Cron tự động:** 02:00 sáng hằng ngày. Lưu vào `backups/<timestamp>.sql` (SQL text format từ `pg_dump --format=plain`).
-- **Retention:** 30 ngày. File cũ tự xóa qua `cleanup` cron.
+- **Cron tự động:** 02:00 sáng hằng ngày. Lưu vào `backups/<timestamp>.sql` (tự build INSERT, raw SQL text).
+- **Retention:** 15 ngày (mặc định). File cũ tự xóa qua `cleanup` cron.
 - **Manual trigger:** SUPER_ADMIN qua DevZone.
 - **Test restore:** thử khôi phục mỗi tháng 1 lần, mất ~14 giây cho dataset hiện tại.
 
@@ -3269,10 +3274,10 @@ export const proposalService = new ProposalService();
 | # | Kiểu tấn công (OWASP/CWE) | Cơ chế chống trong project | Tệp xử lý chính | Còn rủi ro? |
 |---|---|---|---|---|
 | 1 | **SQL Injection** (CWE-89) | Prisma parameterize tự động; không dùng `$queryRawUnsafe` cho input từ user | `models/index.ts` + mọi service | Không |
-| 2 | **XSS** (CWE-79) | React escape mọi `{value}`; không có `dangerouslySetInnerHTML` cho user input; helmet headers | FE components + `app.ts` helmet | Thấp |
+| 2 | **XSS** (CWE-79) | React escape mọi `{value}`; không có `dangerouslySetInnerHTML` cho user input; helmet headers | FE components + `index.ts` helmet | Thấp |
 | 3 | **CSRF** (CWE-352) | JWT trong header `Authorization`, không cookie session → browser không tự gửi cross-origin | `middlewares/auth.ts` | Không |
 | 4 | **IDOR / BOLA** (CWE-639) | 3 lớp: `verifyToken` + `requireRole` + ownership check trong service; `unitFilter` lọc theo cây đơn vị cho MANAGER | `auth.ts`, `unitFilter.ts`, services | Thấp |
-| 5 | **Brute force password** (CWE-307) | `authLimiter` 10 req / 15 phút / IP; bcrypt cost 10 (~100 ms/lần thử) | `configs/rateLimiter.ts` | Trung bình (chưa account lockout) |
+| 5 | **Brute force password** (CWE-307) | `authLimiter` 30 lần đăng nhập thất bại / 5 phút / IP (chỉ đếm lần thất bại); bcrypt cost 10 (~100 ms/lần thử) | `configs/rateLimiter.ts` | Trung bình (chưa account lockout) |
 | 6 | **Mass Assignment** (CWE-915) | Zod `z.object()` mặc định strip field ngoài schema ở mọi endpoint; service không truyền `req.body` thẳng vào `prisma.create` | `middlewares/validate.ts` + `validations/` | Không |
 | 7 | **File upload độc** (CWE-434) | Multer whitelist extension + MIME + size 10 MB; lưu ngoài web root; check magic byte cho PDF | `configs/multer.ts` | Thấp (chưa scan virus) |
 | 8 | **Privilege escalation** (CWE-269) | Role trong JWT chữ ký HMAC, không sửa được client-side; Zod schema không cho update field `role` qua self-update | JWT + Zod | Không |
@@ -3281,7 +3286,7 @@ export const proposalService = new ProposalService();
 | 11 | **Sensitive Data Exposure** (CWE-200) | Prisma `select` whitelist field; không trả `password_hash`, `refreshToken`; CCCD ẩn cho USER | services + helpers | Thấp |
 | 12 | **Insecure Deserialization** (CWE-502) | Không có deserialize từ user input (không dùng `JSON.parse` lên payload nhạy cảm); JWT verify chữ ký trước khi đọc | `auth.ts` | Không |
 | 13 | **DoS / Resource exhaustion** (CWE-400) | Rate limit, body limit 10 MB, MAX_LIMIT 100 records, file size 10 MB | rateLimiter, paginationHelper | Trung bình (DDoS layer 4 không chống) |
-| 14 | **Clickjacking** (CWE-1021) | helmet `X-Frame-Options: DENY` | `app.ts` | Không |
+| 14 | **Clickjacking** (CWE-1021) | helmet `X-Frame-Options: DENY` | `index.ts` | Không |
 | 15 | **Insufficient logging** (CWE-778) | Audit log mọi mutate, ghi `actor_role`, `payload`, `ip_address`, `user_agent` | `middlewares/auditLog.ts` | Thấp (chưa log failed auth) |
 
 ### N.3 — Tự tay tấn công hệ thống — em đã thử những gì?
@@ -3292,7 +3297,7 @@ export const proposalService = new ProposalService();
 |---|---|---|
 | SQLi vào search box "ho_ten=' OR 1=1 --" | Postman manual | Bị Prisma escape, trả về 0 record (tìm tên = chuỗi đó) |
 | XSS payload `<script>alert(1)</script>` vào ghi chú | UI nhập tay | Render thành text, không execute |
-| Đăng nhập sai 11 lần | Postman lặp | Lần 11 nhận 429 Too Many Requests |
+| Đăng nhập sai 31 lần trong 5 phút | Postman lặp | Lần 31 nhận 429 Too Many Requests (chỉ đếm lần thất bại) |
 | USER call `GET /api/personnel/<other_id>` | Postman với JWT của USER | 403 Forbidden |
 | MANAGER call `GET /api/personnel?co_quan_don_vi_id=<other_unit>` | Postman | unitFilter lọc, trả 0 record |
 | Tự sửa JWT đổi `role` thành ADMIN | jwt.io tool, decode + re-sign sai key | `jwt.verify` fail → 401 |
@@ -3345,7 +3350,7 @@ export const proposalService = new ProposalService();
 ### N.7 — Backup file bị copy ra ngoài — rủi ro?
 
 **Trả lời:**
-- Backup `pg_dump` ở dạng SQL plain text.
+- Backup tự build INSERT, lưu file `.sql` text.
 - Chứa **tất cả data** + password hash bcrypt.
 - Attacker copy được → có thể brute password offline.
 
@@ -3403,7 +3408,7 @@ export const proposalService = new ProposalService();
 **Hiện tại qua `helmet()`:**
 ```typescript
 import helmet from 'helmet';
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 ```
 
 Helmet mặc định set:
@@ -3411,8 +3416,9 @@ Helmet mặc định set:
 - `X-Content-Type-Options: nosniff`
 - `X-Frame-Options: DENY`
 - `X-XSS-Protection: 0` (disabled vì gây bug ở browser cũ)
-- `Content-Security-Policy: default-src 'self'`
 - `Referrer-Policy: no-referrer`
+
+`helmet()` bật mặc định nhưng CSP chưa được cấu hình riêng.
 
 **Có thể cải thiện:**
 - CSP nonce-based thay vì `'self'` cho strict hơn.
@@ -3936,7 +3942,7 @@ const updated = await prisma.quanNhan.updateMany({
   data: { ...newData, version: clientVersion + 1 },
 });
 if (updated.count === 0) {
-  throw new ConflictError('Bản ghi vừa được người khác sửa, vui lòng tải lại.');
+  throw new ValidationError('Bản ghi vừa được người khác sửa, vui lòng tải lại.');
 }
 ```
 
@@ -4206,7 +4212,7 @@ const [quanNhans, danhHieus, lichSus] = await Promise.all([
 
 | Cấp | Công cụ | Đặc điểm |
 |---|---|---|
-| **Logical** | `pg_dump` | SQL text, dễ restore từng phần, chậm cho DB lớn. Em dùng. |
+| **Logical** | `pg_dump` | SQL text, dễ restore từng phần, chậm cho DB lớn. (Project hiện không dùng pg_dump; tự sinh INSERT.) |
 | **Physical** | `pg_basebackup` | Snapshot file system, nhanh, restore toàn bộ. |
 | **WAL archiving** | `archive_command` | Continuous backup → point-in-time recovery (PITR). |
 
@@ -4219,8 +4225,8 @@ const [quanNhans, danhHieus, lichSus] = await Promise.all([
 ### O.36 — Prisma version 6 breaking change — em xử lý sao?
 
 - Prisma đánh dấu rõ breaking change trong CHANGELOG.
-- Em pin version trong `package.json` (`"prisma": "5.10.2"`, không dùng `^`).
-- Khi upgrade: đọc migration guide, chạy regression test (890 ca), sửa breaking nếu có.
+- Em khai báo version trong `package.json` (`"@prisma/client": "^6.17.1"`, `"prisma": "^6.17.1"` — Prisma 6, dùng caret `^`).
+- Khi upgrade: đọc migration guide, chạy regression test (937 ca), sửa breaking nếu có.
 - Có thể giữ version cũ vài năm nếu Prisma vẫn hỗ trợ.
 
 ---
@@ -4243,7 +4249,7 @@ const [quanNhans, danhHieus, lichSus] = await Promise.all([
 14. Logging có bao gồm password không? (Trả lời: KHÔNG)
 15. Nếu admin xoá nhầm 100 quân nhân — recovery thế nào?
 16. Có rate-limit cho download file không?
-17. CORS đặt `*` không? (Trả lời: KHÔNG, whitelist 1 origin)
+17. CORS đặt `*` không? (Trả lời: KHÔNG, whitelist nhiều origin qua `ALLOWED_ORIGINS`)
 18. Đo performance bằng tool gì? (Có thể dùng `autocannon`, `wrk` cho load test)
 19. CI/CD có không? (Hiện chưa, đề xuất GitHub Actions tương lai)
 20. Nếu được làm lại, em sẽ thay đổi gì? (Câu hỏi đánh giá tự phản tỉnh — có sẵn câu trả lời)
@@ -4262,7 +4268,7 @@ const [quanNhans, danhHieus, lichSus] = await Promise.all([
 
 **Ngắn (đọc thuộc — dùng mở đầu phần trình bày):**
 
-"Hệ thống quản lý khen thưởng cán bộ, chiến sĩ Quân đội gồm 5 nhóm chức năng chính: quản lý quân nhân — đơn vị — tài khoản, 7 loại khen thưởng theo quy chế, quy trình đề xuất và phê duyệt có kiểm tra điều kiện tự động, phân quyền 4 cấp vai trò, thống kê và sao lưu dữ liệu. Phần mềm được kiểm thử với 890 ca kiểm thử."
+"Hệ thống quản lý khen thưởng cán bộ, chiến sĩ Quân đội gồm 5 nhóm chức năng chính: quản lý quân nhân — đơn vị — tài khoản, 7 loại khen thưởng theo quy chế, quy trình đề xuất và phê duyệt có kiểm tra điều kiện tự động, phân quyền 4 cấp vai trò, thống kê và sao lưu dữ liệu. Phần mềm được kiểm thử với 937 ca kiểm thử."
 
 **Chi tiết theo nhóm (dùng khi bị hỏi sâu):**
 
@@ -4276,7 +4282,7 @@ const [quanNhans, danhHieus, lichSus] = await Promise.all([
 | **Thông báo real-time** | Socket.IO: ADMIN nhận thông báo khi có đề xuất mới; USER nhận khi đề xuất được duyệt/từ chối |
 | **Dashboard & xuất dữ liệu** | Thống kê tổng quan; xuất Excel danh hiệu hằng năm; tải PDF quyết định đã lưu |
 | **Vận hành nội bộ** | Sao lưu tự động theo lịch (SQL dump); audit log toàn bộ thao tác; JWT access/refresh + force-logout phiên cũ |
-| **Kiểm thử** | 890 ca kiểm thử Jest, 75 test suite, coverage > 85 % cho `services/profile`, `services/eligibility`, `services/proposal` |
+| **Kiểm thử** | 937 ca kiểm thử Jest, 80 test file, coverage > 85 % cho `services/profile`, `services/eligibility`, `services/proposal` |
 
 ---
 
@@ -4337,7 +4343,7 @@ const [quanNhans, danhHieus, lichSus] = await Promise.all([
 
 - *HCQKQT*: 1 dòng `HCQKQT_YEARS_REQUIRED = 25` trong `danhHieu.constants.ts`. Toàn bộ logic đọc từ đó, sửa xong chạy lại test là xong.
 - *KNC VSNXD QĐNDVN*: 2 dòng — `KNC_YEARS_REQUIRED_NAM = 25` và `KNC_YEARS_REQUIRED_NU = 20`. Quy chế có phân biệt Nam/Nữ nên tách 2 constant.
-- *Cá nhân hằng năm / Đơn vị hằng năm*: Chu kỳ (2/3/7 năm) và số cờ yêu cầu (3 BKBQP + 2 CSTDTQ cho BKTTCP) đều trong `chainAwards.constants.ts`. Sửa `cycleYears` hoặc `requiredFlags` là xong logic. **Tuy nhiên rủi ro ở test**: 890 test case có nhiều fixture dùng số năm cụ thể (quân nhân có 2 năm CSTDCS → đủ BKBQP). Nếu đổi thành 3 năm, phải rà lại fixture và assertion trong các test suite `eligibility-bkbqp`, `eligibility-cstdtq`, `eligibility-bkttcp`.
+- *Cá nhân hằng năm / Đơn vị hằng năm*: Chu kỳ (2/3/7 năm) và số cờ yêu cầu (3 BKBQP + 2 CSTDTQ cho BKTTCP) đều trong `chainAwards.constants.ts`. Sửa `cycleYears` hoặc `requiredFlags` là xong logic. **Tuy nhiên rủi ro ở test**: 937 test case có nhiều fixture dùng số năm cụ thể (quân nhân có 2 năm CSTDCS → đủ BKBQP). Nếu đổi thành 3 năm, phải rà lại fixture và assertion trong các test suite `eligibility-bkbqp`, `eligibility-cstdtq`, `eligibility-bkttcp`.
 
 **Trường hợp khó — HCBVTQ khi đổi nhóm hệ số:**
 
@@ -4355,11 +4361,11 @@ Không nên, ít nhất với giai đoạn hiện tại. Lý do:
 - Quy chế quân đội thay đổi rất hiếm (hàng năm hoặc ít hơn), ROI của giao diện cấu hình thấp so với chi phí làm đúng.
 - Trường hợp đổi nhóm hệ số HCBVTQ là thay đổi structural — không thể expose qua UI mà không có migration đi kèm.
 
-Giải pháp thực tế hơn là: document rõ quy trình bảo trì — 'khi quy chế thay đổi, developer sửa constants, chạy 890 test, nếu test fixture cần cập nhật thì cập nhật, rồi chạy script recalc nếu cần'. Chi phí thấp hơn nhiều so với làm giao diện cấu hình an toàn."
+Giải pháp thực tế hơn là: document rõ quy trình bảo trì — 'khi quy chế thay đổi, developer sửa constants, chạy 937 test, nếu test fixture cần cập nhật thì cập nhật, rồi chạy script recalc nếu cần'. Chi phí thấp hơn nhiều so với làm giao diện cấu hình an toàn."
 
 ---
 
-**Chúc bạn bảo vệ thành công.** Hệ thống đã đầy đủ tính năng, có số đo định lượng rõ ràng, có audit log đầy đủ, có 890 test pass — đều là vũ khí mạnh khi hội đồng truy vấn. Khi đứng trước hội đồng, hít sâu, nói chậm, mắt nhìn vào người hỏi và đừng quên: **mọi thứ trong đồ án này em đã sống với 6 tháng — em là người hiểu nó nhất phòng**.
+**Chúc bạn bảo vệ thành công.** Hệ thống đã đầy đủ tính năng, có số đo định lượng rõ ràng, có audit log đầy đủ, có 937 test pass — đều là vũ khí mạnh khi hội đồng truy vấn. Khi đứng trước hội đồng, hít sâu, nói chậm, mắt nhìn vào người hỏi và đừng quên: **mọi thứ trong đồ án này em đã sống với 6 tháng — em là người hiểu nó nhất phòng**.
 
 ---
 
@@ -4400,7 +4406,7 @@ Em thừa nhận trade-off: nếu chỉ 2-3 loại, Strategy là over-design. Em
 **Trả lời:**
 "Em thừa nhận đây là hạn chế của đồ án.
 
-Nguyên nhân thật: thời gian. Trong 4 tháng làm đồ án 1 mình, em ưu tiên (1) BE service test cho rule chuỗi danh hiệu — đây là logic phức tạp nhất, sai là sai quyết định khen thưởng; (2) integration test cho 7 strategy đề xuất; (3) kiểm thử thủ công FE qua giao diện. Kết quả: BE có 79 test file / 926 case pass, FE chỉ test tay.
+Nguyên nhân thật: thời gian. Trong 4 tháng làm đồ án 1 mình, em ưu tiên (1) BE service test cho rule chuỗi danh hiệu — đây là logic phức tạp nhất, sai là sai quyết định khen thưởng; (2) integration test cho 7 strategy đề xuất; (3) kiểm thử thủ công FE qua giao diện. Kết quả: BE có 80 test file / 937 case pass, FE chỉ test tay.
 
 Hậu quả: mỗi lần em sửa code FE, phải click lại toàn bộ luồng — tốn thời gian và dễ miss regression. Nếu hệ thống vào production và team mở rộng, đây là nợ kỹ thuật phải trả trước.
 
@@ -4436,8 +4442,7 @@ Index em **chủ động** thêm dựa trên query pattern thật:
 
 - `@@unique([quan_nhan_id, nam])` trên `DanhHieuHangNam` — vừa là constraint nghiệp vụ vừa là composite index cho query 'danh hiệu của quân nhân X năm Y'.
 - `@@index([resource, createdAt])` trên `SystemLog` — query nhật ký lọc theo resource + sort theo thời gian là pattern dashboard chính.
-- `@@index([status])` trên `BangDeXuat` — list 'pending proposals' là endpoint hot nhất của Admin.
-- `@@index([loai_de_xuat, nam])` trên `BangDeXuat` — báo cáo cuối năm theo loại.
+- `@@index([status, loai_de_xuat])` trên `BangDeXuat` — list 'pending proposals' theo loại là endpoint hot nhất của Admin.
 
 Em **chưa làm**: chưa có Explain Analyze cụ thể trên slow query. Hiện dataset thử nghiệm ~1.200 quân nhân, query đều dưới 100ms nên chưa có nhu cầu. Khi production có 10k+ quân nhân, em sẽ chạy `EXPLAIN ANALYZE` trên endpoint chậm để xác định index thiếu."
 
@@ -4490,7 +4495,7 @@ Em **thừa nhận hạn chế**: format INSERT chậm hơn `COPY` cho dataset l
 
 Em chọn `localStorage` + biện pháp **chống XSS chủ động**:
 1. React mặc định escape mọi text node — không có `dangerouslySetInnerHTML` ở đâu trong code (em đã grep).
-2. Helmet middleware set `Content-Security-Policy` chặn inline script.
+2. Helmet middleware (`helmet()` bật mặc định) set các header bảo vệ — CSP chưa được cấu hình riêng (hướng phát triển).
 3. Mọi input đi qua Zod validation — chặn payload độc hại từ form.
 
 Lý do thật quan trọng nhất: hệ thống chạy **mạng nội bộ Học viện**, không expose ra Internet. Vector tấn công chính không phải hacker XSS qua iframe — mà là user cài extension độc hoặc máy có malware. Cả 2 case này `httpOnly cookie` cũng không cứu được (malware đọc memory được).
@@ -4609,24 +4614,19 @@ Hiện tại trong scope đồ án, em mới làm backup local + retention 15 ng
 **Trả lời:**
 "Em làm **cả 2 lớp** — đây là defense-in-depth quan trọng:
 
-**Lớp 1 — Middleware `unitFilter`**: chạy sau `verifyToken`, đọc `req.user.id`, query cây đơn vị Manager phụ trách (từ field `co_quan_don_vi_id` và `don_vi_truc_thuoc_id` của tài khoản). Gán vào `req.unitScope = { cqdvIds: [...], dvttIds: [...] }`.
+**Lớp 1 — Middleware `unitFilter`** (`middlewares/unitFilter.ts`): chạy sau `verifyToken`, đọc `req.user.id`, query cây đơn vị Manager phụ trách (từ field `co_quan_don_vi_id` và `don_vi_truc_thuoc_id` của tài khoản) rồi tính danh sách quân nhân thuộc cây. Gán vào `req.unitFilter = { ...unitInfo, personnelIds: [...] }`.
 
-**Lớp 2 — Service query**: mọi method service nhận `unitScope` từ controller, ép vào `where` clause:
+**Lớp 2 — Service query**: mọi method service nhận `unitFilter` từ controller, intersect trên `personnelIds` trong `where` clause:
 ```typescript
 where: {
   AND: [
     userFilter,  // input filter từ user
-    {
-      OR: [
-        { co_quan_don_vi_id: { in: unitScope.cqdvIds } },
-        { don_vi_truc_thuoc_id: { in: unitScope.dvttIds } },
-      ]
-    }
+    { id: { in: req.unitFilter.personnelIds } },
   ]
 }
 ```
 
-**Tại sao 2 lớp?** Nếu chỉ middleware: developer tương lai có thể quên gắn `unitScope` vào query, query lấy tất cả → IDOR. Service ép filter là 'fail-secure' — nếu thiếu `unitScope`, query sẽ trả mảng rỗng (an toàn hơn lấy tất cả).
+**Tại sao 2 lớp?** Nếu chỉ middleware: developer tương lai có thể quên gắn `unitFilter` vào query, query lấy tất cả → IDOR. Service ép filter là 'fail-secure' — nếu thiếu `unitFilter`, query sẽ trả mảng rỗng (an toàn hơn lấy tất cả).
 
 **Em test**: trong `tests/authz/` có test case Manager A query quân nhân của đơn vị B → 0 row trả về, dù endpoint không có middleware role check nào khác.
 

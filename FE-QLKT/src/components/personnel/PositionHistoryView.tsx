@@ -36,7 +36,7 @@ import {
 } from '@ant-design/icons';
 import { apiClient } from '@/lib/apiClient';
 import { getApiErrorMessage } from '@/lib/apiError';
-import { calculateDuration, formatDate } from '@/lib/utils';
+import { calculateDuration, formatDate, formatHeSoChucVu } from '@/lib/utils';
 import { useTheme } from '@/components/ThemeProvider';
 import dayjs from 'dayjs';
 import type { PersonnelDetail } from '@/lib/types/personnelList';
@@ -318,8 +318,7 @@ export function PositionHistoryView({ role }: PositionHistoryViewProps) {
       key: 'he_so_chuc_vu',
       width: 120,
       align: 'center',
-      render: (value: number) =>
-        value !== null && value !== undefined ? Number(value).toFixed(2) : '-',
+      render: (value: number) => formatHeSoChucVu(value),
     },
     {
       title: 'Thời gian',
@@ -533,7 +532,9 @@ export function PositionHistoryView({ role }: PositionHistoryViewProps) {
                         : pos.DonViTrucThuoc.ten_don_vi
                       : '');
 
-                  const heSo = pos.he_so_chuc_vu ? ` (HS: ${pos.he_so_chuc_vu})` : '';
+                  const heSo = pos.he_so_chuc_vu
+                    ? ` (HS: ${formatHeSoChucVu(pos.he_so_chuc_vu)})`
+                    : '';
                   const displayText = unitName
                     ? `${pos.ten_chuc_vu} - ${unitName}${heSo}`
                     : `${pos.ten_chuc_vu}${heSo}`;

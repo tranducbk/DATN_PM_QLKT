@@ -94,7 +94,6 @@ export const unitAnnualAwards: Record<
   },
 
   DELETE: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
-    const rewardId = routeParamId(req.params?.id);
     let tenDonVi = '';
     let danhHieu = '';
     let nam = '';
@@ -109,27 +108,6 @@ export const unitAnnualAwards: Record<
     } catch (error) {
       console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
       // best-effort — audit description must not throw
-    }
-
-    if ((!tenDonVi || !danhHieu) && rewardId) {
-      try {
-        const record = (await danhHieuDonViHangNamRepository.findUnique({
-          where: { id: rewardId },
-          include: {
-            CoQuanDonVi: { select: { ten_don_vi: true } },
-            DonViTrucThuoc: { select: { ten_don_vi: true } },
-          },
-        })) as DanhHieuDonViWithUnit;
-        if (record) {
-          tenDonVi =
-            tenDonVi || record.CoQuanDonVi?.ten_don_vi || record.DonViTrucThuoc?.ten_don_vi || '';
-          danhHieu = danhHieu || record.danh_hieu || '';
-          nam = nam || String(record.nam ?? '');
-        }
-      } catch (error) {
-        console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
-        // best-effort — audit description must not throw
-      }
     }
 
     const danhHieuName = getDanhHieuName(danhHieu);

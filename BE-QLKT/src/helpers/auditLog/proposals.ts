@@ -288,27 +288,12 @@ const proposals: Record<
     return `Từ chối đề xuất (không xác định được thông tin)${reason ? ` - Lý do: ${reason}` : ''}`;
   },
   DELETE: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
-    const proposalId = normalizeParam(req.params?.id);
-
     let proposal: ParsedProposal | null = null;
     try {
       const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
       proposal = data?.data?.proposal || data?.proposal || data?.data;
     } catch (e) {
       // Ignore parse error
-    }
-
-    if (!proposal && proposalId) {
-      try {
-        proposal = await proposalRepository.findUniqueRaw({
-          where: { id: proposalId },
-          include: {
-            NguoiDeXuat: {
-              include: { QuanNhan: true },
-            },
-          },
-        });
-      } catch (e) { console.error('auditLog/proposals fetch failed:', e); }
     }
 
     if (proposal) {

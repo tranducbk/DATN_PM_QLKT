@@ -1,4 +1,5 @@
 import type { Prisma } from '../../generated/prisma';
+import { proposalRepository } from '../../repositories/proposal.repository';
 import type {
   ProposalDanhHieuItem,
   ProposalThanhTichItem,
@@ -58,19 +59,22 @@ async function renameInProposalPayloads(
   oldSqd: string,
   newSqd: string
 ): Promise<{ scanned: number; updated: number }> {
-  const proposals = (await tx.bangDeXuat.findMany({
-    select: {
-      id: true,
-      data_danh_hieu: true,
-      data_thanh_tich: true,
-      data_nien_han: true,
-      data_cong_hien: true,
+  const proposals = (await proposalRepository.findManyRaw(
+    {
+      select: {
+        id: true,
+        data_danh_hieu: true,
+        data_thanh_tich: true,
+        data_nien_han: true,
+        data_cong_hien: true,
+      },
     },
-  })) as ProposalRow[];
+    tx
+  )) as ProposalRow[];
 
   let updated = 0;
   for (const row of proposals) {
-    const updates: Prisma.BangDeXuatUpdateInput = {};
+    const updates: Prisma.BangDeXuatUncheckedUpdateInput = {};
     let rowChanged = false;
 
     const dh = renameItems(row.data_danh_hieu, DANH_HIEU_KEYS, oldSqd, newSqd);
@@ -99,7 +103,7 @@ async function renameInProposalPayloads(
 
     if (!rowChanged) continue;
 
-    await tx.bangDeXuat.update({ where: { id: row.id }, data: updates });
+    await proposalRepository.update(row.id, updates, tx);
     updated++;
   }
 

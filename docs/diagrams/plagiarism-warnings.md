@@ -55,7 +55,7 @@ Chỉ cần khác **nội dung từng cell** — vốn đã khác hoàn toàn (H
 ### 2.2. Yêu cầu phi chức năng (bảo mật)
 Báo cáo mẫu liệt kê 6 mục: JWT, Bcrypt, ORM-Sequelize, DOMPurify, Backup, Audit log.
 
-→ Của bạn (đề xuất): JWT (access + refresh), Bcrypt cost 10, **Joi validation** (không phải Sequelize — bạn dùng Prisma), **Helmet + CORS**, **Rate limiter**, **Audit log với resource visibility theo role** (đặc biệt `backup` chỉ SUPER_ADMIN xem được — cái này HRM mẫu không có), **Daily backup tự động qua cron**.
+→ Của bạn (đề xuất): JWT (access + refresh), Bcrypt cost 10, **Zod validation** (không phải Sequelize — bạn dùng Prisma), **Helmet + CORS**, **Rate limiter**, **Audit log với resource visibility theo role** (đặc biệt `backup` chỉ SUPER_ADMIN xem được — cái này HRM mẫu không có), **Daily backup tự động qua cron**.
 
 → Khác về: 6 → 7 mục, 1 mục khác (Helmet/CORS thay DOMPurify), nhấn mạnh visibility-by-role là điểm riêng.
 

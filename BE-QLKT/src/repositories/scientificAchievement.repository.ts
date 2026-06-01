@@ -49,6 +49,10 @@ export const scientificAchievementRepository = {
     return tx.thanhTichKhoaHoc.update({ where: { id }, data });
   },
 
+  deleteMany(where: Prisma.ThanhTichKhoaHocWhereInput, tx: PrismaLike = prisma) {
+    return tx.thanhTichKhoaHoc.deleteMany({ where });
+  },
+
   delete(id: string, tx: PrismaLike = prisma) {
     return tx.thanhTichKhoaHoc.delete({ where: { id } });
   },

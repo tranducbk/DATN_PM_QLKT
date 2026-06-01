@@ -29,14 +29,12 @@ interface NckhPersonnelRow {
   id: string;
   ho_ten: string | null;
   CoQuanDonVi: { id: string; ten_don_vi: string; ma_don_vi: string } | null;
-  DonViTrucThuoc:
-    | {
-        id: string;
-        ten_don_vi: string;
-        ma_don_vi: string;
-        CoQuanDonVi: { id: string; ten_don_vi: string; ma_don_vi: string } | null;
-      }
-    | null;
+  DonViTrucThuoc: {
+    id: string;
+    ten_don_vi: string;
+    ma_don_vi: string;
+    CoQuanDonVi: { id: string; ten_don_vi: string; ma_don_vi: string } | null;
+  } | null;
 }
 
 async function loadPersonnelMap(personnelIds: string[]): Promise<Map<string, NckhPersonnelRow>> {
@@ -68,9 +66,7 @@ class NckhStrategy implements ProposalStrategy {
     ctx: ProposalSubmitContext
   ): Promise<SubmitValidationResult> {
     const items = (titleData ?? []) as NckhInputItem[];
-    const personnelIds = items
-      .map(i => i.personnel_id)
-      .filter((id): id is string => Boolean(id));
+    const personnelIds = items.map(i => i.personnel_id).filter((id): id is string => Boolean(id));
     const personnelMap = await loadPersonnelMap(personnelIds);
 
     const dataThanhTich = items.map(item => {
@@ -193,8 +189,8 @@ class NckhStrategy implements ProposalStrategy {
           acc.errors.push(`Thành tích của ${hoTen} thiếu mô tả.`);
           continue;
         }
-        await prismaTx.thanhTichKhoaHoc.create({
-          data: {
+        await scientificAchievementRepository.create(
+          {
             quan_nhan_id: quanNhan.id,
             nam: parseInt(String(item.nam), 10),
             loai: loaiCode,
@@ -204,7 +200,8 @@ class NckhStrategy implements ProposalStrategy {
             ghi_chu: item.ghi_chu || null,
             so_quyet_dinh: item.so_quyet_dinh || null,
           },
-        });
+          prismaTx
+        );
         acc.importedThanhTich++;
         acc.affectedPersonnelIds.add(quanNhan.id);
       } catch (error) {

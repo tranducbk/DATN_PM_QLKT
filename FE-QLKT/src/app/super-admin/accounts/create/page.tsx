@@ -41,12 +41,6 @@ export default function CreateAccountPage() {
           </Title>
         </div>
 
-        <Alert
-          type="info"
-          showIcon
-          message="Sau khi tạo tài khoản, Admin sẽ quản lý chi tiết thông tin quân nhân."
-        />
-
         <Card bordered className="shadow-sm">
           <AccountCreateForm />
         </Card>

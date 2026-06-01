@@ -41,4 +41,8 @@ export const annualProfileRepository = {
       create: data,
     });
   },
+
+  deleteMany(where: Prisma.HoSoHangNamWhereInput, tx: PrismaLike = prisma) {
+    return tx.hoSoHangNam.deleteMany({ where });
+  },
 };

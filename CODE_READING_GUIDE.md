@@ -61,7 +61,7 @@ Tìm code theo role: mỗi role có thư mục riêng trong FE.
 | MANAGER | `FE-QLKT/src/app/manager/` | Tạo đề xuất, xem khen thưởng đơn vị mình |
 | USER | `FE-QLKT/src/app/user/` | Xem hồ sơ cá nhân, nhận thông báo |
 
-BE phân quyền qua middleware `requireRole` trong route file:
+BE phân quyền qua factory `checkRole` (trong route file dùng các named guard `requireAdmin` / `requireManager` / `requireAdminOnly` / `requireSuperAdmin` / `requireAdminOrManager`):
 ```ts
 router.post('/', verifyToken, requireAdmin, ...)
 ```
@@ -76,7 +76,7 @@ Ví dụ: "Khi MANAGER tạo đề xuất khen thưởng cá nhân hằng năm, 
 2. **API call**: `apiClient.submitProposal()` trong `FE-QLKT/src/lib/api/proposals.ts`
 3. **HTTP** → `POST /api/proposals`
 4. **Route**: `BE-QLKT/src/routes/proposal.route.ts` — middleware chain `verifyToken → requireManager → validate(schema)`
-5. **Validation**: `BE-QLKT/src/validations/proposal.validation.ts` — Zod schema
+5. **Validation**: `BE-QLKT/src/routes/proposal.route.ts` áp `validate()` với Zod schema dùng chung từ `BE-QLKT/src/validations/helpers/` (áp theo từng strategy — không có 1 file `proposal.validation.ts` duy nhất)
 6. **Controller**: `BE-QLKT/src/controllers/proposal.controller.ts` — gọi service
 7. **Service**: `BE-QLKT/src/services/proposal/submit.ts` — orchestration
 8. **Strategy dispatch**: `BE-QLKT/src/services/proposal/strategies/index.ts` — REGISTRY chọn `caNhanHangNamStrategy.ts` theo `loai_de_xuat`
@@ -97,7 +97,7 @@ Ví dụ: "Khi MANAGER tạo đề xuất khen thưởng cá nhân hằng năm, 
 |---|---|---|---|
 | `CA_NHAN_HANG_NAM` | Khen thưởng cá nhân hằng năm | `proposal/strategies/caNhanHangNamStrategy.ts` | `services/annualReward/*` |
 | `DON_VI_HANG_NAM` | Khen thưởng đơn vị hằng năm | `proposal/strategies/donViHangNamStrategy.ts` | `services/unitAnnualAward/*` |
-| `NIEN_HAN` | Huân chương niên hạn | `proposal/strategies/nienHanStrategy.ts` (tenure-medals) | `services/tenureMedal/*` |
+| `NIEN_HAN` | Huân chương niên hạn | `proposal/strategies/hccsvvStrategy.ts` (tenure-medals) | `services/tenureMedal/*` |
 | `CONG_HIEN` | Huân chương cống hiến | `proposal/strategies/hcbvtqStrategy.ts` | `services/contributionMedal.service.ts` |
 | `KNC_VSNXD_QDNDVN` | Huy chương kỷ niệm | `proposal/strategies/kncStrategy.ts` | `services/commemorativeMedal.service.ts` |
 | `HC_QKQT` | Huân chương Quân kỳ quyết thắng | `proposal/strategies/hcqkqtStrategy.ts` | `services/militaryFlag.service.ts` |
@@ -111,10 +111,10 @@ Dispatch: `proposal/strategies/index.ts` map `loai_de_xuat` → strategy. Không
 
 Đây là logic phức tạp nhất + được test kỹ nhất:
 
-- **Config-driven**: `BE-QLKT/src/services/eligibility/chainAwardConfig.ts` chứa `PERSONAL_CHAIN_AWARDS` + `UNIT_CHAIN_AWARDS`
+- **Config-driven**: `BE-QLKT/src/constants/chainAwards.constants.ts` chứa `PERSONAL_CHAIN_AWARDS` + `UNIT_CHAIN_AWARDS`
 - **Core logic**: `BE-QLKT/src/services/eligibility/chainEligibility.ts` (hàm `checkChainEligibility`)
 - **Context helper**: `BE-QLKT/src/services/profile/annual.ts` — `computeChainContext` tính chuỗi liên tục, cửa sổ trượt, etc
-- **Tests**: `BE-QLKT/tests/services/eligibility-{bkbqp,cstdtq,bkttcp}-{personal,unit}.test.ts`
+- **Tests**: `BE-QLKT/tests/services/eligibility-{bkbqp,cstdtq,bkttcp}-personal.test.ts` (cá nhân) + `eligibility-{bkbqp,bkttcp}-unit.test.ts` (đơn vị — không có CSTDTQ)
 
 Quy tắc chu kỳ — đọc `CLAUDE.md` §Architecture mục "Chain cycle semantics" để hiểu BKBQP 2y, CSTDTQ 3y, BKTTCP 7y, lifetime block, cửa sổ trượt.
 
@@ -127,7 +127,7 @@ Quy tắc chu kỳ — đọc `CLAUDE.md` §Architecture mục "Chain cycle sema
 | Một API endpoint | `grep -rn "POST '/api/<path>'" BE-QLKT/src/routes/` |
 | Component theo tên | `find FE-QLKT/src/components -name "<Name>*.tsx"` |
 | Hằng số (vd: DANH_HIEU_MAP) | `BE-QLKT/src/constants/` hoặc `FE-QLKT/src/constants/` |
-| Schema validation 1 endpoint | `BE-QLKT/src/validations/<entity>.validation.ts` |
+| Schema validation 1 endpoint | `BE-QLKT/src/validations/<entity>.validation.ts` (proposal: Zod schema dùng chung ở `validations/helpers/`, áp qua `validate()` trong `routes/proposal.route.ts`) |
 | Audit log description builder | `BE-QLKT/src/helpers/auditLog/<domain>.ts` |
 | Notification message builder | `BE-QLKT/src/helpers/notification/<domain>.ts` |
 | Strategy của 1 loại đề xuất | `BE-QLKT/src/services/proposal/strategies/<type>Strategy.ts` |
@@ -176,7 +176,7 @@ Biết pattern → đoán được tên file → không cần grep.
 Đây là câu hỏi rất hay khi bảo vệ — "Hệ thống có dễ mở rộng không?":
 
 1. Thêm constant `<type>` vào `BE-QLKT/src/constants/proposalTypes.constants.ts`
-2. Thêm schema Zod vào `BE-QLKT/src/validations/proposal.validation.ts`
+2. Thêm schema Zod dùng chung vào `BE-QLKT/src/validations/helpers/` và áp qua `validate()` trong `BE-QLKT/src/routes/proposal.route.ts`
 3. Tạo Strategy file `BE-QLKT/src/services/proposal/strategies/<type>Strategy.ts` implement `ProposalStrategy` interface
 4. Đăng ký vào REGISTRY ở `BE-QLKT/src/services/proposal/strategies/index.ts`
 5. Thêm migration Prisma nếu cần bảng riêng (vd: NCKH có bảng `ThanhTichKhoaHoc`)
@@ -223,6 +223,6 @@ Test thường rõ ràng hơn doc. Khi không hiểu một rule:
 
 1. Tìm test có tên gần nhất: `BE-QLKT/tests/services/eligibility-*.test.ts`
 2. Đọc `describe`/`it` block name → hiểu rule đang kiểm tra gì
-3. Đọc `errorMessages.ts` trong cùng folder → các message đã chốt
+3. Đọc `BE-QLKT/tests/helpers/errorMessages.ts` → các message đã chốt
 
 Vd để hiểu rule BKBQP cá nhân: mở `tests/services/eligibility-bkbqp-personal.test.ts`, đọc 20-30 `it()` đầu tiên là nắm được toàn bộ rule.

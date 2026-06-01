@@ -1,8 +1,5 @@
 import { PROPOSAL_TYPES } from '../../../constants/proposalTypes.constants';
-import {
-  HCQKQT_YEARS_REQUIRED,
-  DANH_HIEU_DAC_BIET,
-} from '../../../constants/danhHieu.constants';
+import { HCQKQT_YEARS_REQUIRED, DANH_HIEU_DAC_BIET } from '../../../constants/danhHieu.constants';
 import {
   batchEvaluateServiceYears,
   buildServiceYearsErrorMessage,
@@ -18,6 +15,7 @@ import type {
   SubmitValidationResult,
 } from './proposalStrategy';
 import { importSingleMedal } from './singleMedalImporter';
+import { militaryFlagRepository } from '../../../repositories/militaryFlag.repository';
 import {
   loadNienHanPersonnelMap,
   buildNienHanPayloadItem,
@@ -32,9 +30,7 @@ class HcqkqtStrategy implements ProposalStrategy {
     ctx: ProposalSubmitContext
   ): Promise<SubmitValidationResult> {
     const items = (titleData ?? []) as NienHanInputItem[];
-    const personnelIds = items
-      .map(i => i.personnel_id)
-      .filter((id): id is string => Boolean(id));
+    const personnelIds = items.map(i => i.personnel_id).filter((id): id is string => Boolean(id));
     const personnelMap = await loadNienHanPersonnelMap(personnelIds);
 
     const dataNienHan = items.map(item =>
@@ -94,19 +90,21 @@ class HcqkqtStrategy implements ProposalStrategy {
       logTag: 'HC_QKQT',
       decisionKey: DANH_HIEU_DAC_BIET.HC_QKQT,
       upsert: async (tx, quanNhanId, writeData) => {
-        const data = writeData as unknown as Prisma.HuanChuongQuanKyQuyetThangUpdateInput;
-        const existing = await tx.huanChuongQuanKyQuyetThang.findUnique({
-          where: { quan_nhan_id: quanNhanId },
-        });
+        const data = writeData as unknown as Prisma.HuanChuongQuanKyQuyetThangUncheckedUpdateInput;
+        const existing = await militaryFlagRepository.findUniqueRaw(
+          { where: { quan_nhan_id: quanNhanId } },
+          tx
+        );
         if (existing) {
-          await tx.huanChuongQuanKyQuyetThang.update({
-            where: { id: existing.id },
-            data,
-          });
+          await militaryFlagRepository.update(existing.id, data, tx);
         } else {
-          await tx.huanChuongQuanKyQuyetThang.create({
-            data: { ...data, quan_nhan_id: quanNhanId } as Prisma.HuanChuongQuanKyQuyetThangUncheckedCreateInput,
-          });
+          await militaryFlagRepository.create(
+            {
+              ...data,
+              quan_nhan_id: quanNhanId,
+            } as Prisma.HuanChuongQuanKyQuyetThangUncheckedCreateInput,
+            tx
+          );
         }
       },
     });

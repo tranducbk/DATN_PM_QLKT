@@ -251,6 +251,23 @@ export async function updatePersonnel(
     updateData.don_vi_truc_thuoc_id = personnel.don_vi_truc_thuoc_id;
   }
 
+  // Only ADMIN/SUPER_ADMIN may transfer a personnel to another unit or change their current position;
+  // MANAGER edits other info within their own unit only.
+  if (userRole === ROLES.MANAGER) {
+    const coQuanChanged =
+      updateData.co_quan_don_vi_id !== undefined &&
+      updateData.co_quan_don_vi_id !== personnel.co_quan_don_vi_id;
+    const donViChanged =
+      updateData.don_vi_truc_thuoc_id !== undefined &&
+      updateData.don_vi_truc_thuoc_id !== personnel.don_vi_truc_thuoc_id;
+    if (coQuanChanged || donViChanged) {
+      throw new ForbiddenError('Chỉ Phòng chính trị mới được chuyển đơn vị của quân nhân');
+    }
+    if (positionId !== undefined && positionId !== personnel.chuc_vu_id) {
+      throw new ForbiddenError('Chỉ Phòng chính trị mới được thay đổi chức vụ của quân nhân');
+    }
+  }
+
   // Use transaction to keep all writes consistent.
   const { updatedPersonnel, unitTransferInfo } = await prisma.$transaction(async prismaTx => {
     const txUpdatedPersonnel = await quanNhanRepository.update(String(id), updateData, prismaTx);
@@ -259,33 +276,40 @@ export async function updatePersonnel(
     if (positionId && positionId !== personnel.chuc_vu_id) {
       const today = new Date();
 
-      const oldHistories = await prismaTx.lichSuChucVu.findMany({
-        where: {
-          quan_nhan_id: id,
-          ngay_ket_thuc: null,
+      const oldHistories = await positionHistoryRepository.findManyRaw(
+        {
+          where: {
+            quan_nhan_id: id,
+            ngay_ket_thuc: null,
+          },
         },
-      });
+        prismaTx
+      );
 
       for (const oldHistory of oldHistories) {
         const ngayBatDauOld = new Date(oldHistory.ngay_bat_dau);
         const soThangOld = calculateTenureMonthsWithDayPrecision(ngayBatDauOld, today);
 
-        await prismaTx.lichSuChucVu.update({
-          where: { id: oldHistory.id },
-          data: {
+        await positionHistoryRepository.update(
+          oldHistory.id,
+          {
             ngay_ket_thuc: today,
             so_thang: soThangOld,
           },
-        });
+          prismaTx
+        );
       }
 
-      const newChucVu = await prismaTx.chucVu.findUnique({
-        where: { id: positionId },
-        select: { he_so_chuc_vu: true },
-      });
+      const newChucVu = await positionRepository.findUniqueRaw(
+        {
+          where: { id: positionId },
+          select: { he_so_chuc_vu: true },
+        },
+        prismaTx
+      );
 
-      await prismaTx.lichSuChucVu.create({
-        data: {
+      await positionHistoryRepository.create(
+        {
           quan_nhan_id: id,
           chuc_vu_id: positionId,
           he_so_chuc_vu: Number(newChucVu?.he_so_chuc_vu ?? 0),
@@ -293,7 +317,8 @@ export async function updatePersonnel(
           ngay_ket_thuc: null,
           so_thang: null,
         },
-      });
+        prismaTx
+      );
     }
 
     let txUnitTransferInfo = null;
@@ -319,7 +344,11 @@ export async function updatePersonnel(
           ? await coQuanDonViRepository.findNameById(oldPrimaryUnitId, prismaTx)
           : await donViTrucThuocRepository.findNameById(oldPrimaryUnitId, prismaTx);
         if (oldUnit) {
-          oldUnitInfo = { id: oldUnit.id, ten_don_vi: oldUnit.ten_don_vi, isCoQuanDonVi: oldIsCqdv };
+          oldUnitInfo = {
+            id: oldUnit.id,
+            ten_don_vi: oldUnit.ten_don_vi,
+            isCoQuanDonVi: oldIsCqdv,
+          };
           await adjustUnitCount(prismaTx, oldPrimaryUnitId, oldIsCqdv, 'decrement');
         }
       }
@@ -331,7 +360,11 @@ export async function updatePersonnel(
           ? await coQuanDonViRepository.findNameById(newPrimaryUnitId, prismaTx)
           : await donViTrucThuocRepository.findNameById(newPrimaryUnitId, prismaTx);
         if (newUnit) {
-          newUnitInfo = { id: newUnit.id, ten_don_vi: newUnit.ten_don_vi, isCoQuanDonVi: newIsCqdv };
+          newUnitInfo = {
+            id: newUnit.id,
+            ten_don_vi: newUnit.ten_don_vi,
+            isCoQuanDonVi: newIsCqdv,
+          };
           await adjustUnitCount(prismaTx, newPrimaryUnitId, newIsCqdv, 'increment');
         }
       }

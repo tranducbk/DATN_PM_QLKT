@@ -1,420 +1,565 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import Image from 'next/image';
-import { TrophyOutlined, SafetyOutlined, TeamOutlined, BarChartOutlined } from '@ant-design/icons';
+import { useRouter } from 'next/navigation';
+import {
+  ApartmentOutlined,
+  ArrowRightOutlined,
+  AuditOutlined,
+  BarChartOutlined,
+  CrownOutlined,
+  ExperimentOutlined,
+  FileDoneOutlined,
+  FileProtectOutlined,
+  FlagOutlined,
+  SafetyCertificateOutlined,
+  SafetyOutlined,
+  SendOutlined,
+  SolutionOutlined,
+  StarOutlined,
+  TeamOutlined,
+  TrophyOutlined,
+} from '@ant-design/icons';
 import { useAuth } from '@/contexts/AuthContext';
 import { ROLES } from '@/constants/roles.constants';
+import { cn } from '@/lib/utils';
 
-const TYPING_TEXTS = [
-  'Quản lý danh hiệu thi đua',
-  'Đề xuất khen thưởng trực tuyến',
-  'Phê duyệt nhiều cấp tự động',
-  'Xuất báo cáo thống kê Excel',
+const DASHBOARD_BY_ROLE: Record<string, string> = {
+  [ROLES.SUPER_ADMIN]: '/super-admin/dashboard',
+  [ROLES.ADMIN]: '/admin/dashboard',
+  [ROLES.MANAGER]: '/manager/dashboard',
+  [ROLES.USER]: '/user/dashboard',
+};
+
+const CAPABILITIES = [
+  {
+    icon: <TeamOutlined />,
+    title: 'Hồ sơ quân nhân tập trung',
+    desc: 'Thông tin cá nhân, cấp bậc, chức vụ và lịch sử công tác quản lý trên một nền tảng.',
+  },
+  {
+    icon: <FileProtectOutlined />,
+    title: 'Đề xuất và xét duyệt nhiều cấp',
+    desc: 'Luồng phê duyệt theo phân quyền, kiểm tra điều kiện và cảnh báo trùng lặp tự động.',
+  },
+  {
+    icon: <AuditOutlined />,
+    title: 'Quyết định và nhật ký hoạt động',
+    desc: 'Ban hành quyết định khen thưởng, ghi nhật ký thao tác minh bạch theo từng tài khoản.',
+  },
+  {
+    icon: <BarChartOutlined />,
+    title: 'Thống kê và báo cáo',
+    desc: 'Theo dõi tiến độ xử lý, tổng hợp số liệu và xuất báo cáo Excel theo đơn vị.',
+  },
 ];
 
-function TypingText() {
-  const [displayText, setDisplayText] = useState('');
-  const [textIndex, setTextIndex] = useState(0);
-  const [isDeleting, setIsDeleting] = useState(false);
+const AWARD_TYPES = [
+  {
+    icon: <StarOutlined />,
+    name: 'Khen thưởng cá nhân hằng năm',
+    desc: 'Danh hiệu CSTT, CSTĐCS, BKBQP, CSTĐTQ, BKTTCP.',
+  },
+  {
+    icon: <ApartmentOutlined />,
+    name: 'Khen thưởng đơn vị hằng năm',
+    desc: 'Danh hiệu ĐVTT, ĐVQT, BKBQP, BKTTCP.',
+  },
+  {
+    icon: <TrophyOutlined />,
+    name: 'Huy chương Chiến sĩ vẻ vang',
+    desc: 'Ba hạng Ba, Nhì, Nhất theo niên hạn phục vụ.',
+  },
+  {
+    icon: <SafetyOutlined />,
+    name: 'Huân chương Bảo vệ Tổ quốc',
+    desc: 'Ba hạng Ba, Nhì, Nhất ghi nhận quá trình cống hiến.',
+  },
+  {
+    icon: <FlagOutlined />,
+    name: 'Huy chương Quân kỳ quyết thắng',
+    desc: 'Yêu cầu đủ 25 năm phục vụ trong QĐNDVN.',
+  },
+  {
+    icon: <CrownOutlined />,
+    name: 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
+    desc: 'Đủ 25 năm với nam, 20 năm với nữ phục vụ trong QĐNDVN.',
+  },
+  {
+    icon: <ExperimentOutlined />,
+    name: 'Thành tích nghiên cứu khoa học',
+    desc: 'Đề tài khoa học và sáng kiến khoa học.',
+  },
+];
+
+const WORKFLOW_STEPS = [
+  {
+    icon: <SendOutlined />,
+    title: 'Tạo đề xuất',
+    desc: 'Đơn vị lập đề xuất khen thưởng cho cá nhân hoặc tập thể.',
+  },
+  {
+    icon: <SafetyCertificateOutlined />,
+    title: 'Kiểm tra điều kiện',
+    desc: 'Hệ thống tự động đối chiếu chuỗi danh hiệu và cảnh báo trùng lặp.',
+  },
+  {
+    icon: <SolutionOutlined />,
+    title: 'Phê duyệt nhiều cấp',
+    desc: 'Luồng xét duyệt theo phân quyền từ đơn vị đến quản trị.',
+  },
+  {
+    icon: <FileDoneOutlined />,
+    title: 'Ra quyết định',
+    desc: 'Ban hành quyết định và lưu hồ sơ khen thưởng đầy đủ.',
+  },
+];
+
+const HEADLINE_PHRASES = ['danh hiệu thi đua', 'khen thưởng các cấp', 'thành tích khoa học'];
+
+const TRUST_STATS = [
+  { value: '7', label: 'Hình thức khen thưởng' },
+  { value: '4', label: 'Cấp phê duyệt' },
+  { value: '4', label: 'Vai trò phân quyền' },
+  { value: 'Realtime', label: 'Thông báo tức thì' },
+];
+
+function Reveal({ children, delay = 0 }: { children: ReactNode; delay?: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [shown, setShown] = useState(false);
 
   useEffect(() => {
-    const currentFullText = TYPING_TEXTS[textIndex];
-    const speed = isDeleting ? 30 : 60;
-
-    if (!isDeleting && displayText === currentFullText) {
-      const timeout = setTimeout(() => setIsDeleting(true), 2000);
-      return () => clearTimeout(timeout);
-    }
-
-    if (isDeleting && displayText === '') {
-      setIsDeleting(false);
-      setTextIndex((prev) => (prev + 1) % TYPING_TEXTS.length);
-      return;
-    }
-
-    const timeout = setTimeout(() => {
-      setDisplayText(
-        isDeleting
-          ? currentFullText.substring(0, displayText.length - 1)
-          : currentFullText.substring(0, displayText.length + 1),
-      );
-    }, speed);
-
-    return () => clearTimeout(timeout);
-  }, [displayText, textIndex, isDeleting]);
+    const node = ref.current;
+    if (!node) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShown(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.15 }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
 
   return (
-    <span className="text-shimmer font-semibold">
-      {displayText}
-      <span className="inline-block w-[2px] h-[1.1em] bg-cyan-400 ml-1 align-middle animate-pulse" />
+    <div
+      ref={ref}
+      className={`reveal${shown ? ' reveal-in' : ''}`}
+      style={{ transitionDelay: `${delay}ms` }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function TypingHeadline({ phrases }: { phrases: string[] }) {
+  const [text, setText] = useState(phrases[0]);
+  const [idx, setIdx] = useState(0);
+  const [deleting, setDeleting] = useState(false);
+  const [reduce, setReduce] = useState(false);
+
+  useEffect(() => {
+    setReduce(window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  }, []);
+
+  useEffect(() => {
+    if (reduce) return;
+    const full = phrases[idx];
+    if (!deleting && text === full) {
+      const timeout = setTimeout(() => setDeleting(true), 1800);
+      return () => clearTimeout(timeout);
+    }
+    if (deleting && text === '') {
+      setDeleting(false);
+      setIdx(prev => (prev + 1) % phrases.length);
+      return;
+    }
+    const timeout = setTimeout(
+      () => setText(deleting ? full.slice(0, text.length - 1) : full.slice(0, text.length + 1)),
+      deleting ? 38 : 78
+    );
+    return () => clearTimeout(timeout);
+  }, [text, idx, deleting, reduce, phrases]);
+
+  return (
+    <span className="text-amber-400">
+      {text}
+      {!reduce && (
+        <span className="ml-1 inline-block h-[0.8em] w-[3px] translate-y-[0.06em] animate-pulse rounded-sm bg-amber-400 align-baseline" />
+      )}
     </span>
   );
 }
 
-function FloatingShapes() {
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {/* Glowing orbs */}
-      <div className="absolute top-[10%] left-[5%] w-80 h-80 rounded-full bg-blue-500/15 animate-glow-pulse" />
-      <div className="absolute bottom-[10%] right-[10%] w-96 h-96 rounded-full bg-indigo-500/10 animate-glow-pulse" style={{ animationDelay: '2s' }} />
-      <div className="absolute top-[50%] left-[40%] w-64 h-64 rounded-full bg-cyan-500/8 animate-glow-pulse" style={{ animationDelay: '3s' }} />
+function CountUp({ target, duration = 1300 }: { target: number; duration?: number }) {
+  const [value, setValue] = useState(0);
+  const ref = useRef<HTMLSpanElement>(null);
+  const started = useRef(false);
 
-      {/* Floating geometric shapes */}
-      <div className="absolute top-[15%] right-[20%] w-20 h-20 rounded-2xl border border-white/10 bg-white/[0.03] rotate-12 animate-float-slow" />
-      <div className="absolute top-[60%] left-[8%] w-16 h-16 rounded-full border border-white/[0.08] bg-white/[0.02] animate-float-medium" />
-      <div className="absolute bottom-[25%] right-[15%] w-24 h-24 rounded-3xl border border-blue-400/10 bg-blue-400/[0.03] -rotate-12 animate-float-slow" style={{ animationDelay: '3s' }} />
-      <div className="absolute top-[35%] left-[25%] w-12 h-12 rounded-lg border border-cyan-400/10 bg-cyan-400/[0.03] rotate-45 animate-float-fast" />
-      <div className="absolute bottom-[40%] left-[55%] w-14 h-14 rounded-xl border border-white/[0.06] bg-white/[0.02] rotate-6 animate-drift" />
-      <div className="absolute top-[75%] right-[35%] w-10 h-10 rounded-full border border-indigo-400/10 bg-indigo-400/[0.02] animate-float-medium" style={{ animationDelay: '1s' }} />
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setValue(target);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting || started.current) return;
+        started.current = true;
+        const start = performance.now();
+        const tick = (now: number) => {
+          const progress = Math.min((now - start) / duration, 1);
+          const eased = 1 - Math.pow(1 - progress, 3);
+          setValue(Math.round(eased * target));
+          if (progress < 1) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+        observer.disconnect();
+      },
+      { threshold: 0.6 }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [target, duration]);
 
-      {/* Thin decorative lines */}
-      <div className="absolute top-[20%] left-[15%] w-32 h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent rotate-[30deg] animate-float-slow" style={{ animationDelay: '2s' }} />
-      <div className="absolute bottom-[30%] right-[25%] w-40 h-[1px] bg-gradient-to-r from-transparent via-blue-400/10 to-transparent -rotate-[20deg] animate-float-medium" style={{ animationDelay: '4s' }} />
-    </div>
-  );
+  return <span ref={ref}>{value}</span>;
 }
 
 export default function HomePage() {
   const router = useRouter();
   const { user, isLoading } = useAuth();
-
   const isLoggedIn = !!user;
+
+  const [scrolled, setScrolled] = useState(false);
+  const navSentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const node = navSentinelRef.current;
+    if (!node) return;
+    const observer = new IntersectionObserver(([entry]) => setScrolled(!entry.isIntersecting), {
+      threshold: 0,
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
 
   const handleRedirect = () => {
     if (!user) {
       router.push('/login');
       return;
     }
-
-    switch (user.role) {
-      case ROLES.SUPER_ADMIN:
-        router.push('/super-admin/dashboard');
-        break;
-      case ROLES.ADMIN:
-        router.push('/admin/dashboard');
-        break;
-      case ROLES.MANAGER:
-        router.push('/manager/dashboard');
-        break;
-      case ROLES.USER:
-        router.push('/user/dashboard');
-        break;
-      default:
-        router.push('/login');
-    }
+    router.push(DASHBOARD_BY_ROLE[user.role] ?? '/login');
   };
+
+  const primaryLabel = isLoggedIn ? 'Vào hệ thống' : 'Đăng nhập';
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950">
-        <div className="relative">
-          <div className="w-16 h-16 border-4 border-blue-400/30 rounded-full animate-spin border-t-blue-400" />
-        </div>
+      <div className="flex min-h-[100dvh] items-center justify-center bg-slate-950">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-amber-400/30 border-t-amber-400" />
       </div>
     );
   }
 
-  const features = [
-    {
-      icon: <TeamOutlined style={{ fontSize: 28 }} />,
-      title: 'Quản lý hồ sơ quân nhân',
-      desc: 'Quản lý thông tin cá nhân, cấp bậc, chức vụ và lịch sử công tác tập trung.',
-    },
-    {
-      icon: <TrophyOutlined style={{ fontSize: 28 }} />,
-      title: 'Khen thưởng đa hình thức',
-      desc: '7 loại khen thưởng: hằng năm, cống hiến, huân chương, cờ thi đua, NCKH.',
-    },
-    {
-      icon: <SafetyOutlined style={{ fontSize: 28 }} />,
-      title: 'Đề xuất & phê duyệt',
-      desc: 'Luồng phê duyệt nhiều cấp, kiểm tra điều kiện tự động, cảnh báo trùng lặp.',
-    },
-    {
-      icon: <BarChartOutlined style={{ fontSize: 28 }} />,
-      title: 'Thống kê & báo cáo',
-      desc: 'Dashboard trực quan, xuất báo cáo Excel, theo dõi tiến độ xử lý.',
-    },
-  ];
-
   return (
-    <div className="min-h-screen relative overflow-hidden font-heading">
-      {/* Background Image */}
+    <div className="landing-page relative min-h-[100dvh] overflow-hidden bg-slate-950 font-heading text-slate-100">
+      <div className="fixed inset-0 z-0">
+        <Image
+          src="/BG%20HVKHQS.jpg"
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          quality={90}
+          className="object-cover"
+        />
+        <div className="absolute inset-0 bg-slate-950/22" />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/10 via-transparent to-slate-950/15" />
+      </div>
+      <div className="pointer-events-none fixed inset-0 z-0 bg-grid-faint opacity-50" />
+      <div className="animate-glow-breathe pointer-events-none absolute -top-40 right-0 h-[440px] w-[440px] rounded-full bg-amber-500/[0.06] blur-[150px]" />
       <div
-        className="absolute inset-0"
-        style={{
-          backgroundImage: 'url("/BG%20HVKHQS.jpg")',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundAttachment: 'fixed',
-        }}
+        className="animate-glow-breathe pointer-events-none absolute top-[38%] -left-40 h-[480px] w-[480px] rounded-full bg-sky-500/[0.09] blur-[150px]"
+        style={{ animationDelay: '2.5s' }}
       />
-      {/* Dark overlay with gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-950/85 via-blue-950/80 to-slate-950/90" />
+      <div
+        className="animate-glow-breathe pointer-events-none absolute bottom-[6%] right-[10%] h-[440px] w-[440px] rounded-full bg-amber-500/[0.08] blur-[150px]"
+        style={{ animationDelay: '4s' }}
+      />
 
-      {/* Floating shapes & glowing orbs */}
-      <FloatingShapes />
-
-      {/* Header */}
-      <header className="relative z-20 animate-slide-up">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 py-5 flex items-center justify-between">
+      <div ref={navSentinelRef} className="absolute top-0 h-px w-full" />
+      <header className="fixed inset-x-0 top-0 z-50 px-4">
+        <div
+          className={cn(
+            'pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-slate-950/80 to-transparent transition-opacity duration-300',
+            scrolled ? 'opacity-0' : 'opacity-100'
+          )}
+        />
+        <div
+          className={cn(
+            'relative mx-auto flex items-center justify-between rounded-full transition-all duration-300',
+            scrolled
+              ? 'mt-3 max-w-5xl bg-slate-950/85 px-5 py-2.5 shadow-xl shadow-black/40 ring-1 ring-white/[0.06] backdrop-blur-xl'
+              : 'h-[72px] max-w-7xl px-2 lg:px-4'
+          )}
+        >
           <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="absolute -inset-1 bg-white/15 rounded-xl blur-md" />
-              <Image
-                src="/logo-msa.png"
-                alt="Logo Học viện Khoa học Quân sự"
-                width={44}
-                height={44}
-                className="relative rounded-xl"
-                priority
-              />
-            </div>
-            <div className="hidden sm:block">
-              <p className="text-white font-bold text-sm leading-tight tracking-wide">
+            <Image
+              src="/logo-msa.png"
+              alt="Logo Học viện Khoa học Quân sự"
+              width={40}
+              height={40}
+              className="rounded-lg"
+              priority
+            />
+            <div className="hidden leading-tight sm:block">
+              <p className="text-sm font-bold tracking-wide text-white">
                 HỌC VIỆN KHOA HỌC QUÂN SỰ
               </p>
-              <p className="text-blue-300/60 text-s leading-tight">Bộ Quốc phòng</p>
+              <p className="text-xs text-slate-400">Bộ Quốc phòng</p>
             </div>
           </div>
           <button
             onClick={handleRedirect}
-            className="glass px-5 py-2.5 rounded-xl text-sm font-semibold text-white hover:bg-white/15 transition-all"
+            className="rounded-lg border border-white/15 bg-white/5 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/10 active:translate-y-px"
           >
-            {isLoggedIn ? 'Vào Dashboard' : 'Đăng nhập'}
+            {primaryLabel}
           </button>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 pt-12 lg:pt-20 pb-16 lg:pb-24">
-        <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
-          {/* Left - Text */}
-          <div className="flex-1 text-center lg:text-left">
-            <div className="animate-slide-up">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass mb-6">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-blue-200 text-sm font-medium">Phiên bản 1.0</span>
-              </div>
-            </div>
+      <section className="relative z-10 overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-slate-950/75 via-slate-950/20 to-transparent" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(50%_55%_at_72%_30%,rgba(251,191,36,0.06),transparent_65%)]" />
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white leading-[1.1] mb-6 tracking-tight animate-slide-up-delay-1">
-              Hệ thống
-              <br />
-              <span className="text-shimmer">
-                Quản lý khen thưởng
+        <div className="relative mx-auto flex min-h-[100dvh] max-w-7xl items-center px-6 pb-32 pt-28 lg:px-8 lg:pt-32">
+          <div className="max-w-3xl animate-slide-up">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-amber-400/25 bg-amber-400/[0.1] px-4 py-1.5 backdrop-blur-sm">
+              <SafetyCertificateOutlined className="text-sm text-amber-400" />
+              <span className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-300">
+                Hệ thống nghiệp vụ nội bộ
               </span>
-            </h1>
-
-            <p className="text-base lg:text-xl text-blue-100/60 leading-relaxed max-w-xl mx-auto lg:mx-0 mb-4 animate-slide-up-delay-2">
-              Giải pháp số hóa toàn diện cho công tác quản lý khen thưởng, danh hiệu thi đua và thành
-              tích khoa học tại Học viện Khoa học Quân sự.
-            </p>
-
-            {/* Typing animation */}
-            <div className="h-8 mb-8 animate-slide-up-delay-2 flex items-center justify-center lg:justify-start">
-              <TypingText />
             </div>
-
-            <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start animate-slide-up-delay-3">
+            <h1 className="text-5xl font-extrabold leading-[1.08] tracking-tight text-white drop-shadow-[0_2px_24px_rgba(0,0,0,0.5)] lg:text-7xl">
+              Quản lý khen thưởng
+              <br />
+              và <TypingHeadline phrases={HEADLINE_PHRASES} />
+            </h1>
+            <p className="mt-6 max-w-xl text-pretty text-base leading-relaxed text-slate-200 lg:text-lg">
+              Số hóa quy trình đề xuất, xét duyệt và quyết định khen thưởng tại{' '}
+              <span className="whitespace-nowrap">Học viện Khoa học Quân sự</span>.
+            </p>
+            <div className="mt-9 flex flex-col gap-4 sm:flex-row sm:items-center">
               <button
                 onClick={handleRedirect}
-                className="w-full sm:w-auto px-8 py-4 rounded-xl font-semibold text-white bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 transition-all shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:-translate-y-0.5 flex items-center justify-center gap-3"
+                className="cta-shimmer group inline-flex items-center justify-center gap-2 rounded-lg bg-amber-400 px-7 py-3.5 text-sm font-bold text-slate-950 shadow-lg shadow-amber-500/20 transition-all hover:bg-amber-300 hover:shadow-amber-500/30 active:translate-y-px"
               >
-                {isLoggedIn ? 'Vào Dashboard' : 'Đăng nhập ngay'}
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17 8l4 4m0 0l-4 4m4-4H3"
-                  />
-                </svg>
+                {primaryLabel}
+                <ArrowRightOutlined className="transition-transform group-hover:translate-x-0.5" />
               </button>
               <a
-                href="#features"
-                className="w-full sm:w-auto px-8 py-4 rounded-xl font-semibold text-blue-300 glass hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+                href="#nang-luc"
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/20 bg-white/5 px-7 py-3.5 text-sm font-semibold text-slate-100 backdrop-blur-sm transition-colors hover:border-white/35 hover:bg-white/10"
               >
                 Tìm hiểu thêm
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
               </a>
-            </div>
-
-            {/* Stats */}
-            <div className="flex items-center justify-center lg:justify-start gap-8 mt-10 pt-10 border-t border-white/10 animate-slide-up-delay-4">
-              {[
-                { value: '7', label: 'Loại khen thưởng' },
-                { value: '4', label: 'Cấp phê duyệt' },
-                { value: '24/7', label: 'Truy cập mọi lúc' },
-              ].map((stat, index) => (
-                <div key={index} className="text-center lg:text-left">
-                  <div className="text-2xl lg:text-3xl font-bold text-white">{stat.value}</div>
-                  <div className="text-blue-300/50 text-sm mt-1">{stat.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Right - Glass CTA Card */}
-          <div className="w-full max-w-md lg:max-w-sm xl:max-w-md flex-shrink-0 animate-slide-up-delay-2">
-            <div className="relative group">
-              {/* Glow behind card */}
-              <div className="absolute -inset-2 bg-gradient-to-r from-blue-500/20 via-cyan-500/15 to-indigo-500/20 rounded-3xl blur-2xl group-hover:blur-3xl transition-all duration-500 opacity-60 group-hover:opacity-80" />
-              <div className="relative glass-card rounded-3xl p-8">
-                <div className="text-center mb-8">
-                  <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 mb-5 shadow-lg shadow-blue-500/15 border border-white/10">
-                    <Image
-                      src="/logo-msa.png"
-                      alt="Logo"
-                      width={52}
-                      height={52}
-                      className="rounded-lg drop-shadow-lg"
-                    />
-                  </div>
-                  <h2 className="text-2xl font-bold text-white mb-2">
-                    {isLoggedIn ? 'Chào mừng trở lại!' : 'Bắt đầu ngay'}
-                  </h2>
-                  <p className="text-blue-200/60 text-sm">
-                    {isLoggedIn
-                      ? 'Bạn đã đăng nhập thành công'
-                      : 'Đăng nhập để truy cập hệ thống quản lý khen thưởng'}
-                  </p>
-                </div>
-
-                <button
-                  onClick={handleRedirect}
-                  className="w-full py-3.5 px-6 rounded-xl font-semibold text-white bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 transition-all shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 flex items-center justify-center gap-2"
-                >
-                  {isLoggedIn ? 'Vào Dashboard' : 'Đăng nhập'}
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17 8l4 4m0 0l-4 4m4-4H3"
-                    />
-                  </svg>
-                </button>
-              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Marquee Ticker */}
-      <div className="relative z-10 border-y border-white/[0.06] overflow-hidden py-5">
-        <div className="flex animate-marquee whitespace-nowrap">
-          {[...Array(2)].map((_, setIdx) => (
-            <div key={setIdx} className="flex items-center gap-8 px-4">
-              {[
-                'Quản lý khen thưởng tập trung',
-                'Luồng phê duyệt nhiều cấp',
-                'Thông báo thời gian thực',
-                'Nhập / Xuất Excel',
-                'Phân quyền 4 vai trò',
-                '7 loại khen thưởng',
-                'Kiểm tra điều kiện tự động',
-                'Theo dõi lịch sử đề xuất',
-              ].map((text, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 flex-shrink-0" />
-                  <span className="text-blue-200/60 text-sm font-medium">{text}</span>
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Features Section */}
-      <section id="features" className="relative z-10">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 py-16 lg:py-24">
-          <div className="text-center mb-12 lg:mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">Tính năng nổi bật</h2>
-            <p className="text-blue-200/50 text-base max-w-2xl mx-auto">
-              Hệ thống được thiết kế chuyên biệt cho công tác thi đua khen thưởng trong môi trường quân
-              đội.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {features.map((feature, index) => (
-              <div
-                key={index}
-                className="group relative glass rounded-2xl p-6 hover:bg-white/[0.08] hover:border-white/20 transition-all duration-300 hover:-translate-y-1"
-              >
-                {/* Hover glow */}
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500/0 to-cyan-500/0 group-hover:from-blue-500/5 group-hover:to-cyan-500/5 transition-all duration-300" />
-                <div className="relative">
-                  <div className="w-12 h-12 rounded-xl glass flex items-center justify-center text-blue-400 mb-4 group-hover:scale-110 group-hover:text-cyan-400 transition-all duration-300">
-                    {feature.icon}
+      <div className="relative z-10 bg-slate-950/85">
+        <div className="pointer-events-none absolute inset-x-0 -top-44 h-44 bg-gradient-to-b from-transparent to-slate-950/85" />
+        <section className="relative border-y border-white/10 backdrop-blur-md">
+          <div className="mx-auto grid max-w-7xl grid-cols-2 divide-white/10 px-6 py-10 sm:divide-x lg:grid-cols-4 lg:px-8">
+            {TRUST_STATS.map((stat, i) => (
+              <div key={stat.label} className="px-2 py-3 text-center sm:px-6">
+                <Reveal delay={i * 90}>
+                  <div className="text-3xl font-bold text-amber-400 lg:text-4xl">
+                    {/^\d+$/.test(stat.value) ? (
+                      <CountUp target={Number(stat.value)} />
+                    ) : (
+                      stat.value
+                    )}
                   </div>
-                  <h3 className="text-white font-semibold text-base mb-2">{feature.title}</h3>
-                  <p className="text-blue-200/50 text-sm leading-relaxed">{feature.desc}</p>
-                </div>
+                  <div className="mt-1 text-sm text-slate-400">{stat.label}</div>
+                </Reveal>
               </div>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Info Section */}
-      <section className="relative z-10 border-t border-white/[0.06]">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 py-16 lg:py-20">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 lg:gap-16">
-            <div className="md:col-span-2">
-              <h3 className="text-white font-bold text-xl mb-4">Về hệ thống quản lý khen thưởng</h3>
-              <p className="text-blue-200/50 leading-relaxed mb-6">
-                Hệ thống quản lý khen thưởng là giải pháp công nghệ hiện đại được phát triển phục vụ
-                công tác thi đua khen thưởng tại Học viện Khoa học Quân sự. Hệ thống hỗ trợ số hóa toàn
-                bộ quy trình từ đề xuất, xét duyệt đến ra quyết định khen thưởng, đảm bảo tính minh
-                bạch, chính xác và hiệu quả.
+        <section
+          id="nang-luc"
+          className="relative z-10 mx-auto max-w-7xl px-6 py-20 lg:px-8 lg:py-28"
+        >
+          <div className="grid gap-12 lg:grid-cols-[0.9fr_1.4fr] lg:gap-16">
+            <div className="lg:sticky lg:top-24 lg:self-start">
+              <p className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-amber-400">
+                Năng lực hệ thống
               </p>
-              <div className="flex flex-wrap gap-6 lg:gap-10">
-                {[
-                  { value: '4 vai trò', sub: 'Phân quyền chi tiết' },
-                  { value: '100%', sub: 'Bảo mật dữ liệu' },
-                  { value: 'Realtime', sub: 'Thông báo tức thì' },
-                ].map((item, i) => (
-                  <div key={i} className="glass rounded-xl px-5 py-4">
-                    <div className="text-xl font-bold text-white">{item.value}</div>
-                    <div className="text-blue-300/50 text-sm mt-1">{item.sub}</div>
-                  </div>
-                ))}
-              </div>
+              <h2 className="text-3xl font-bold leading-tight text-white lg:text-4xl">
+                Một nền tảng cho toàn bộ công tác thi đua khen thưởng
+              </h2>
+              <p className="mt-5 max-w-md leading-relaxed text-slate-400">
+                Thiết kế riêng cho môi trường quân đội, bám sát quy trình nghiệp vụ từ hồ sơ đến
+                quyết định.
+              </p>
+              <button
+                onClick={handleRedirect}
+                className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-amber-400 transition-colors hover:text-amber-300"
+              >
+                Bắt đầu sử dụng
+                <ArrowRightOutlined />
+              </button>
             </div>
 
-            <div>
-              <h3 className="text-white font-bold text-xl mb-4">Liên hệ</h3>
-              <div className="space-y-3 text-blue-200/50 text-sm">
-                <p>Học viện Khoa học Quân sự</p>
-                <p>322E Lê Trọng Tấn, Thanh Xuân, Hà Nội</p>
-                <p>Email: support@hvkhqs.edu.vn</p>
-                <p>Hotline: (+84) 12345678</p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {CAPABILITIES.map((cap, i) => (
+                <Reveal key={cap.title} delay={i * 80}>
+                  <div className="group h-full rounded-2xl border border-white/10 bg-gradient-to-b from-slate-800/75 to-slate-900/80 p-6 shadow-lg shadow-black/30 transition-all hover:-translate-y-1 hover:border-amber-400/40 hover:shadow-amber-500/10">
+                    <span className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-amber-400/10 text-xl text-amber-400 transition-colors group-hover:bg-amber-400/20">
+                      {cap.icon}
+                    </span>
+                    <h3 className="text-lg font-semibold text-white">{cap.title}</h3>
+                    <p className="mt-2 leading-relaxed text-slate-400">{cap.desc}</p>
+                  </div>
+                </Reveal>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="relative z-10 border-t border-white/[0.06] bg-white/[0.02]">
+          <div className="mx-auto max-w-7xl px-6 py-20 lg:px-8 lg:py-24">
+            <div className="mb-12 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <div className="flex items-center gap-3">
+                  <TrophyOutlined className="text-2xl text-amber-400" />
+                  <h2 className="text-3xl font-bold text-white lg:text-4xl">
+                    Bảy hình thức khen thưởng
+                  </h2>
+                </div>
+                <p className="mt-4 max-w-2xl leading-relaxed text-slate-400">
+                  Hỗ trợ đầy đủ khen thưởng cá nhân và đơn vị, kèm kiểm tra điều kiện theo chuỗi
+                  danh hiệu.
+                </p>
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {AWARD_TYPES.map((type, i) => (
+                <Reveal key={type.name} delay={(i % 4) * 70}>
+                  <div
+                    onMouseMove={e => {
+                      const t = e.currentTarget;
+                      const r = t.getBoundingClientRect();
+                      t.style.setProperty('--mx', `${e.clientX - r.left}px`);
+                      t.style.setProperty('--my', `${e.clientY - r.top}px`);
+                    }}
+                    className="spotlight group relative h-full overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-slate-800/75 to-slate-900/80 p-6 shadow-lg shadow-black/30 transition-all hover:-translate-y-1 hover:border-amber-400/40 hover:shadow-amber-500/10"
+                  >
+                    <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-amber-400/[0.06] blur-2xl transition-opacity group-hover:bg-amber-400/15" />
+                    <span className="relative mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-amber-400/10 text-xl text-amber-400">
+                      {type.icon}
+                    </span>
+                    <h3 className="relative text-base font-semibold text-white">{type.name}</h3>
+                    <p className="relative mt-2 text-sm leading-relaxed text-slate-400">
+                      {type.desc}
+                    </p>
+                  </div>
+                </Reveal>
+              ))}
+              <Reveal delay={210}>
+                <button
+                  onClick={handleRedirect}
+                  className="group flex h-full w-full flex-col justify-between rounded-2xl border border-amber-400/30 bg-gradient-to-br from-amber-400/15 to-amber-400/[0.03] p-6 text-left transition-all hover:-translate-y-1 hover:from-amber-400/25"
+                >
+                  <CrownOutlined className="text-2xl text-amber-400" />
+                  <span className="mt-6 inline-flex items-center gap-2 text-base font-bold text-white">
+                    Khám phá toàn bộ
+                    <ArrowRightOutlined className="text-amber-400 transition-transform group-hover:translate-x-0.5" />
+                  </span>
+                </button>
+              </Reveal>
+            </div>
+          </div>
+        </section>
+
+        <section className="relative z-10 mx-auto max-w-7xl px-6 py-20 lg:px-8 lg:py-24">
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-amber-400">
+              Quy trình khép kín
+            </p>
+            <h2 className="text-3xl font-bold text-white lg:text-4xl">Từ đề xuất đến quyết định</h2>
+          </div>
+          <div className="mt-14 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {WORKFLOW_STEPS.map((step, i) => (
+              <Reveal key={step.title} delay={i * 90}>
+                <div className="relative h-full rounded-2xl border border-white/10 bg-gradient-to-b from-slate-800/75 to-slate-900/80 p-6 shadow-lg shadow-black/30 transition-all hover:-translate-y-1 hover:border-amber-400/30">
+                  <span className="absolute right-5 top-5 text-5xl font-extrabold text-amber-300/50">
+                    {i + 1}
+                  </span>
+                  <span className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-amber-400/10 text-xl text-amber-400">
+                    {step.icon}
+                  </span>
+                  <h3 className="text-lg font-semibold text-white">{step.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-slate-400">{step.desc}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </section>
+
+        <section className="relative z-10 border-t border-white/[0.06]">
+          <div className="mx-auto max-w-7xl px-6 py-20 lg:px-8 lg:py-24">
+            <div className="overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900/80 to-slate-950">
+              <div className="grid gap-10 p-8 md:grid-cols-3 lg:gap-16 lg:p-12">
+                <div className="md:col-span-2">
+                  <h2 className="text-2xl font-bold text-white lg:text-3xl">Về hệ thống</h2>
+                  <p className="mt-5 max-w-2xl leading-relaxed text-slate-400">
+                    Giải pháp công nghệ phục vụ công tác thi đua khen thưởng tại Học viện Khoa học
+                    Quân sự, số hóa toàn bộ quy trình từ đề xuất, xét duyệt đến ra quyết định, bảo
+                    đảm tính minh bạch và chính xác.
+                  </p>
+                  <div className="mt-8 flex flex-wrap gap-3">
+                    <span className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-200">
+                      Bảo mật dữ liệu
+                    </span>
+                    <span className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-200">
+                      Nhật ký thao tác
+                    </span>
+                    <span className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-200">
+                      Sao lưu định kỳ
+                    </span>
+                  </div>
+                </div>
+                <div className="md:border-l md:border-white/10 md:pl-10 lg:pl-16">
+                  <h3 className="text-lg font-bold text-white">Liên hệ</h3>
+                  <div className="mt-4 space-y-2 text-sm leading-relaxed text-slate-400">
+                    <p>Học viện Khoa học Quân sự</p>
+                    <p>322E Lê Trọng Tấn, Thanh Xuân, Hà Nội</p>
+                    <p>Email: support@hvkhqs.edu.vn</p>
+                    <p>Hotline: (+84) 24 6328 1853</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Footer */}
-      <footer className="relative z-10 border-t border-white/[0.06]">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-blue-300/40 text-sm">
-            © 2026 Học viện Khoa học Quân sự. Bản quyền thuộc về HVKHQS.
-          </p>
-          <p className="text-blue-300/30 text-s">Phát triển bởi Sinh viên CNTT - HVKHQS</p>
-        </div>
-      </footer>
+        <footer className="relative z-10 border-t border-white/[0.06]">
+          <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-6 py-6 text-sm text-slate-500 sm:flex-row lg:px-8">
+            <p>© 2026 Học viện Khoa học Quân sự. Bản quyền thuộc về HVKHQS.</p>
+            <p>Phát triển bởi Sinh viên CNTT - HVKHQS</p>
+          </div>
+        </footer>
+      </div>
     </div>
   );
 }
