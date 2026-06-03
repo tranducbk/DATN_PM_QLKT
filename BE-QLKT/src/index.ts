@@ -2,6 +2,7 @@ import { createServer } from 'http';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import 'dotenv/config';
 import { PORT } from './configs';
 import { allowCorsOrigin } from './configs/cors';
@@ -44,6 +45,7 @@ app.use(
 );
 
 app.use(express.json({ limit: '10mb' }));
+app.use(cookieParser());
 
 // Test Prisma connection
 async function testDatabaseConnection() {

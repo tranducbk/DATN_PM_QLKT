@@ -289,9 +289,9 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setIsLoggingOut(true);
-    authLogout();
+    await authLogout();
     window.location.href = '/login';
   };
 

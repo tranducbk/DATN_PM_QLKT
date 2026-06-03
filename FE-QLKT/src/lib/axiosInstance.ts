@@ -120,25 +120,13 @@ axiosInstance.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const storedRefresh = localStorage.getItem('refreshToken');
-        if (!storedRefresh) {
-          isRefreshing = false;
-          processQueue(new Error('No refresh token'), null);
-          forceLogout();
-          return Promise.reject(new Error('No refresh token'));
-        }
+        // Refresh token lives in an httpOnly cookie sent automatically (withCredentials).
+        const refreshResponse = await axiosInstance.post('/api/auth/refresh');
 
-        const refreshResponse = await axiosInstance.post('/api/auth/refresh', {
-          refreshToken: storedRefresh,
-        });
-
-        const { accessToken: newAccessToken, refreshToken: newRefreshToken } = extractTokens(
-          refreshResponse.data
-        );
+        const { accessToken: newAccessToken } = extractTokens(refreshResponse.data);
 
         if (newAccessToken) {
           localStorage.setItem('accessToken', newAccessToken);
-          if (newRefreshToken) localStorage.setItem('refreshToken', newRefreshToken);
 
           window.dispatchEvent(
             new CustomEvent('tokenRefreshed', { detail: { accessToken: newAccessToken } })

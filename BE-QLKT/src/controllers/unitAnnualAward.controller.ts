@@ -45,6 +45,23 @@ interface RecalculateBody {
   nam?: number;
 }
 
+interface UpsertBody {
+  don_vi_id?: string;
+  nam?: number;
+  danh_hieu?: string;
+  so_quyet_dinh?: string;
+  ghi_chu?: string;
+  nguoi_tao_id?: string;
+}
+
+interface ProposeBody {
+  don_vi_id?: string;
+  nam?: number;
+  danh_hieu?: string;
+  ghi_chu?: string;
+  nguoi_tao_id?: string;
+}
+
 interface GetUnitAnnualAwardsQuery {
   don_vi_id?: string;
 }
@@ -129,7 +146,7 @@ class UnitAnnualAwardController {
 
   upsert = catchAsync(async (req: Request, res: Response) => {
     const user = req.user;
-    const body = req.body || {};
+    const body = req.body as UpsertBody;
     const data = await service.upsert({
       don_vi_id: body.don_vi_id,
       nam: body.nam,
@@ -146,7 +163,7 @@ class UnitAnnualAwardController {
 
   propose = catchAsync(async (req: Request, res: Response) => {
     const user = req.user;
-    const body = req.body || {};
+    const body = req.body as ProposeBody;
     const data = await service.propose({
       don_vi_id: body.don_vi_id,
       nam: body.nam,

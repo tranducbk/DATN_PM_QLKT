@@ -68,7 +68,7 @@ router.post(
     getPayload: (req: Request, res: Response, responseData: unknown) => {
       try {
         const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
-        const result = (data as Record<string, unknown>)?.data || data || {};
+        const result = (data as Record<string, unknown>)?.data || {};
 
         // Validate middleware already coerces fields (e.g. JSON strings to arrays).
         const type = req.body?.type || '';
@@ -120,7 +120,7 @@ router.post(
     getPayload: (req: Request, res: Response, responseData: unknown) => {
       try {
         const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
-        const result = (data as Record<string, unknown>)?.data || data || {};
+        const result = (data as Record<string, unknown>)?.data || {};
         const resultObj = result as Record<string, unknown>;
         const files = req.files as Record<string, Express.Multer.File[]> | undefined;
         return {

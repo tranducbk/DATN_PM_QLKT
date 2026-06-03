@@ -56,8 +56,8 @@ export function ChangePasswordView({ dashboardHref }: ChangePasswordViewProps) {
         return;
       }
       message.success('Đổi mật khẩu thành công. Đang chuyển về trang đăng nhập...');
-      setTimeout(() => {
-        logout();
+      setTimeout(async () => {
+        await logout();
         window.location.href = '/login';
       }, 1500);
     } catch (error: unknown) {

@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { accountRepository } from '../repositories/account.repository';
-import { JWT_SECRET, JWT_REFRESH_SECRET } from '../configs';
+import { JWT_SECRET, JWT_REFRESH_SECRET, REFRESH_TOKEN_TTL } from '../configs';
 import { AppError, NotFoundError, ValidationError } from '../middlewares/errorHandler';
 import { emitToUser } from '../utils/socketService';
 interface LoginResult {
@@ -44,7 +44,7 @@ class AuthService {
     return jwt.sign(
       { id: account.id, username: account.username },
       JWT_REFRESH_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: REFRESH_TOKEN_TTL }
     );
   }
 

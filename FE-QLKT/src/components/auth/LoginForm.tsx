@@ -58,11 +58,10 @@ export function LoginForm() {
       if (response.success && response.data) {
         const payload = response.data;
         const accessToken = payload.accessToken || payload.token;
-        const refreshToken = payload.refreshToken;
         const user = payload.user || {};
         const role = user.role;
 
-        login(accessToken || '', refreshToken || '', {
+        login(accessToken || '', {
           id: user.id || '',
           username: user.username || user.ten_dang_nhap || '',
           role: user.role,

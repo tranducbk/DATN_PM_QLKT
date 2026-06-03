@@ -13,7 +13,7 @@ import { JWT_SECRET } from '../configs';
  * @returns Promise resolved when auth check finishes
  */
 const verifyToken = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  const authHeader = (req.headers.authorization || req.headers.Authorization) as string | undefined;
+  const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     res.status(401).json({

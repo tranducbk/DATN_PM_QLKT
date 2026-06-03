@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import type { UserRole } from '@/lib/types/common';
 import { clearAuthStorage } from '@/lib/authStorage';
+import axiosInstance from '@/lib/axiosInstance';
 
 interface AuthUser {
   id: string;
@@ -17,8 +18,8 @@ interface AuthContextType {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (token: string, refreshToken: string, user: AuthUser) => void;
-  logout: () => void;
+  login: (token: string, user: AuthUser) => void;
+  logout: () => Promise<void>;
   updateUser: (user: Partial<AuthUser>) => void;
 }
 
@@ -47,37 +48,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const loadAuth = () => {
-      try {
-        const token = localStorage.getItem('accessToken');
-        const refreshToken = localStorage.getItem('refreshToken');
-        const role = localStorage.getItem('role') as UserRole | null;
-        const username = localStorage.getItem('username');
-        const userId = localStorage.getItem('userId');
-        const quanNhanId = localStorage.getItem('quan_nhan_id');
-        const hoTen = localStorage.getItem('ho_ten');
-        const donViId = localStorage.getItem('don_vi_id');
+    const applyUserFromStorage = (): boolean => {
+      const role = localStorage.getItem('role') as UserRole | null;
+      const userId = localStorage.getItem('userId');
+      if (!role || !userId) return false;
+      setUser({
+        id: userId,
+        username: localStorage.getItem('username') || '',
+        role,
+        quan_nhan_id: localStorage.getItem('quan_nhan_id') || undefined,
+        ho_ten: localStorage.getItem('ho_ten') || undefined,
+        don_vi_id: localStorage.getItem('don_vi_id') || undefined,
+      });
+      return true;
+    };
 
-        // Both tokens expired — force re-login
-        if (!isTokenValid(token) && !isTokenValid(refreshToken)) {
-          clearAuthStorage();
-          setUser(null);
-          const publicPaths = ['/login', '/dev_zone'];
-          if (!publicPaths.includes(window.location.pathname)) {
-            window.location.href = '/login';
+    const loadAuth = async () => {
+      try {
+        const publicPaths = ['/login', '/dev_zone'];
+        const onPublicPath = publicPaths.includes(window.location.pathname);
+        const token = localStorage.getItem('accessToken');
+
+        if (isTokenValid(token) && applyUserFromStorage()) return;
+
+        // Access expired/missing — only the httpOnly refresh cookie can revive the session.
+        // Skip on public paths (and when no prior session) to avoid a needless /refresh + redirect.
+        if (!onPublicPath && localStorage.getItem('userId')) {
+          try {
+            const res = await axiosInstance.post('/api/auth/refresh');
+            const newAccess = res.data?.data?.accessToken as string | undefined;
+            if (newAccess) {
+              localStorage.setItem('accessToken', newAccess);
+              if (applyUserFromStorage()) return;
+            }
+          } catch {
+            // refresh failed (no/expired cookie) — fall through to logout
           }
-          return;
         }
 
-        if (token && role && userId) {
-          setUser({
-            id: userId,
-            username: username || '',
-            role,
-            quan_nhan_id: quanNhanId || undefined,
-            ho_ten: hoTen || undefined,
-            don_vi_id: donViId || undefined,
-          });
+        clearAuthStorage();
+        setUser(null);
+        if (!onPublicPath) {
+          window.location.href = '/login';
         }
       } catch {
         // localStorage not available (SSR)
@@ -93,9 +105,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('tokenRefreshed', handleTokenRefreshed);
   }, []);
 
-  const login = useCallback((token: string, refreshToken: string, userData: AuthUser) => {
+  const login = useCallback((token: string, userData: AuthUser) => {
     localStorage.setItem('accessToken', token);
-    localStorage.setItem('refreshToken', refreshToken);
     localStorage.setItem('role', userData.role);
     localStorage.setItem('username', userData.username);
     localStorage.setItem('userId', userData.id);
@@ -111,7 +122,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(userData);
   }, []);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    try {
+      await axiosInstance.post('/api/auth/logout');
+    } catch {
+      // best-effort: clear client state even if the server call fails
+    }
     clearAuthStorage();
     setUser(null);
   }, []);

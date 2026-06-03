@@ -2,14 +2,12 @@ import { Request, Response } from 'express';
 import authService from '../services/auth.service';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
+import { AppError } from '../middlewares/errorHandler';
+import { getRefreshCookieOptions, getRefreshClearOptions, REFRESH_COOKIE_NAME } from '../configs';
 
 interface LoginBody {
   username?: string;
   password?: string;
-}
-
-interface RefreshTokenBody {
-  refreshToken?: string;
 }
 
 interface ChangePasswordBody {
@@ -26,32 +24,32 @@ class AuthController {
       return ResponseHelper.badRequest(res, 'Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu');
     }
 
-    const result = await authService.login(username, password);
-    return ResponseHelper.success(res, { data: result, message: 'Đăng nhập thành công' });
+    const { refreshToken, ...rest } = await authService.login(username, password);
+    res.cookie(REFRESH_COOKIE_NAME, refreshToken, getRefreshCookieOptions());
+    return ResponseHelper.success(res, { data: rest, message: 'Đăng nhập thành công' });
   });
 
   refresh = catchAsync(async (req: Request, res: Response) => {
-    const body = req.body as RefreshTokenBody;
-    const { refreshToken } = body;
+    const refreshToken = req.cookies?.[REFRESH_COOKIE_NAME];
 
     if (!refreshToken) {
-      return ResponseHelper.badRequest(res, 'Refresh token không được cung cấp');
+      throw new AppError('Refresh token không được cung cấp', 401);
     }
 
-    const result = await authService.refreshAccessToken(refreshToken);
-    return ResponseHelper.success(res, { data: result, message: 'Làm mới token thành công' });
+    const { refreshToken: newRefreshToken, ...rest } =
+      await authService.refreshAccessToken(refreshToken);
+    res.cookie(REFRESH_COOKIE_NAME, newRefreshToken, getRefreshCookieOptions());
+    return ResponseHelper.success(res, { data: rest, message: 'Làm mới token thành công' });
   });
 
   logout = catchAsync(async (req: Request, res: Response) => {
-    const body = req.body as RefreshTokenBody;
-    const { refreshToken } = body;
+    const refreshToken = req.cookies?.[REFRESH_COOKIE_NAME];
 
-    if (!refreshToken) {
-      return ResponseHelper.badRequest(res, 'Refresh token không được cung cấp');
+    if (refreshToken) {
+      await authService.logout(refreshToken);
     }
-
-    const result = await authService.logout(refreshToken);
-    return ResponseHelper.success(res, { message: result.message });
+    res.clearCookie(REFRESH_COOKIE_NAME, getRefreshClearOptions());
+    return ResponseHelper.success(res, { message: 'Đăng xuất thành công' });
   });
 
   changePassword = catchAsync(async (req: Request, res: Response) => {

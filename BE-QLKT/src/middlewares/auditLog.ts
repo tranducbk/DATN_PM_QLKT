@@ -134,7 +134,7 @@ const createDescription = {
 const getResourceId = {
   fromParams: (paramName: string) => (req: Request) => {
     const value = req.params?.[paramName];
-    return Array.isArray(value) ? value[0] || null : value || null;
+    return (Array.isArray(value) ? value[0] : value) || null;
   },
   fromResponse: () => (req: Request, res: Response, responseData: unknown) => {
     const data = parseResponse(responseData);

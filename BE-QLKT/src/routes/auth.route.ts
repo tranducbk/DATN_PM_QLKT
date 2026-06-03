@@ -29,10 +29,10 @@ router.post(
 
 /**
  * @route   POST /api/auth/refresh
- * @desc    Refresh access token using a valid refresh token
+ * @desc    Refresh access token using the httpOnly refresh cookie
  * @access  Public
  */
-router.post('/refresh', authLimiter, validate(authValidation.refreshToken), authController.refresh);
+router.post('/refresh', authLimiter, authController.refresh);
 
 /**
  * @route   POST /api/auth/logout
