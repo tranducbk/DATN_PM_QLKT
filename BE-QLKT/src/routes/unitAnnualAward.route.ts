@@ -134,13 +134,15 @@ router.get('/:id', verifyToken, requireAdminOrManager, unitAnnualAwardController
 
 /**
  * @route   POST /api/unit-annual-awards
- * @desc    Create a unit annual award
- * @access  ADMIN, MANAGER
+ * @desc    Create a unit annual award (direct entry of an already-approved award)
+ * @access  ADMIN only
  */
+// Direct entry writes status APPROVED, bypassing propose->approve — restricted to ADMIN
 router.post(
   '/',
   verifyToken,
-  requireAdminOrManager,
+  requireAdminOnly,
+  validate(unitAnnualAwardValidation.upsertUnitAnnualAward),
   auditLog({
     action: AUDIT_ACTIONS.CREATE,
     resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
@@ -152,13 +154,14 @@ router.post(
 
 /**
  * @route   PUT /api/unit-annual-awards/:id
- * @desc    Update a unit annual award
- * @access  ADMIN, MANAGER
+ * @desc    Update a unit annual award (direct entry of an already-approved award)
+ * @access  ADMIN only
  */
 router.put(
   '/:id',
   verifyToken,
-  requireAdminOrManager,
+  requireAdminOnly,
+  validate(unitAnnualAwardValidation.upsertUnitAnnualAward),
   auditLog({
     action: AUDIT_ACTIONS.UPDATE,
     resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
@@ -195,6 +198,7 @@ router.post(
   '/propose',
   verifyToken,
   requireAdminOrManager,
+  validate(unitAnnualAwardValidation.proposeUnitAnnualAward),
   auditLog({
     action: AUDIT_ACTIONS.PROPOSE,
     resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,

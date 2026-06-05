@@ -599,7 +599,7 @@ export function Step3SetTitlesCaNhanHangNam({
         }}
       />
 
-      {/* Modal xem danh hiệu và NCKH */}
+      {/* Modal to view awards and NCKH */}
       <Modal
         title={
           <span>

@@ -1162,9 +1162,28 @@ const attachUnitFilter = async (req, res, next) => {
 };
 ```
 
+**Ownership check dùng chung — `personnelService.assertCanViewPersonnel`:** Để tránh lặp logic ở nhiều endpoint, em gom kiểm tra quyền xem hồ sơ của một quân nhân vào một hàm dùng chung. ADMIN/SUPER_ADMIN xem tất cả; USER chỉ xem đúng `quan_nhan_id` của mình; MANAGER chỉ xem quân nhân trong cây đơn vị (CQDV cha + các đơn vị trực thuộc con). Hàm này được gọi ở `getPersonnelById`, ở 3 endpoint `GET /api/profiles/{annual,tenure,contribution}/:id`, và ở các nested route `GET /api/personnel/:id/{annual-rewards,position-history,scientific-achievements}` (qua middleware `requireCanViewPersonnel`).
+
+```typescript
+// services/personnel.service.ts
+async assertCanViewPersonnel(personnelId, userRole, userQuanNhanId, preloadedTarget?) {
+  if (userRole === ROLES.SUPER_ADMIN || userRole === ROLES.ADMIN) return;
+  if (userRole === ROLES.USER) {
+    if (userQuanNhanId !== personnelId) throw new ForbiddenError('Bạn không có quyền xem thông tin này');
+    return;
+  }
+  if (userRole === ROLES.MANAGER && userQuanNhanId) {
+    const target = preloadedTarget ?? (await quanNhanRepository.findUnitScope(personnelId));
+    const manager = await quanNhanRepository.findUnitScope(userQuanNhanId);
+    // ... cho phép nếu target thuộc CQDV của manager HOẶC một đơn vị trực thuộc con
+  }
+}
+```
+
 **Phản biện thường gặp:**
 - "Nếu MANAGER tự đổi `req.unitFilter` được không?" → "Không. Middleware tính từ `req.user.quan_nhan_id`, mà `req.user` được decode từ JWT chữ ký bằng `JWT_SECRET`. Sửa JWT phải biết secret server."
 - "Tự sửa JWT bằng cách đổi `role` thành ADMIN?" → "JWT có chữ ký HMAC; sửa payload không update chữ ký → `jwt.verify` fail."
+- "Endpoint hồ sơ `/api/profiles/*` chỉ có `verifyToken`, sao đủ?" → "Role guard nằm ở tầng service qua `assertCanViewPersonnel` chứ không phải ở route, vì cùng một endpoint phục vụ cả USER (xem mình), MANAGER (xem đơn vị) và ADMIN (xem tất cả) — phân quyền theo dữ liệu nên phải check trong service, không thể chặn cứng bằng `requireRole` ở route."
 
 ### C.2 — SQL Injection: làm sao chống?
 
@@ -1194,7 +1213,15 @@ Em chỉ dùng `$queryRawUnsafe` ở đúng 1 chỗ trong `scripts/renameColumn.
 **Chi tiết:**
 - **Stored XSS:** ai đó nhập `<script>alert(1)</script>` vào trường ghi chú → React render thành text literal, không execute.
 - **Reflected XSS:** error message từ server dạng "Không tìm thấy `<input>`" → React escape khi render trong `<Alert>`.
-- **DOM-based XSS:** em không có chỗ nào `eval()`, `innerHTML =`, hay `new Function()` từ user input.
+- **DOM-based XSS:** em không dùng `eval()`, `new Function()`, hay gán `innerHTML` từ input người dùng. Chỗ duy nhất sinh HTML thủ công là cửa sổ xem trước PDF (`lib/file/filePreview.ts`) dùng `newWindow.document.write(...)`. Tại đây tên file (lấy từ **số quyết định** do người dùng nhập) được escape trước khi nội suy: hàm `escapeHtml()` cho phần markup (`<title>`, tên file), và `JSON.stringify` + chặn `</script>` (hàm `toJsString()`) cho phần nhúng trong `<script>`.
+
+```typescript
+// lib/file/filePreview.ts — escape trước khi document.write
+const safeFilename = escapeHtml(filename);               // & < > " '
+// trong <script>: link.download = ${toJsString(filename)}  // JSON.stringify + </>
+```
+
+> **Lưu ý khi bảo vệ:** đây là một lỗi DOM-XSS thật em tìm ra khi tự rà soát (số quyết định kiểu `</title><img src=x onerror=...>` sẽ chạy mã trong tab xem PDF) và đã vá. Xem thêm mục **C.17**.
 
 **Header bảo vệ thêm:** em đặt `helmet()` trong `index.ts` để set `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`. `helmet()` bật mặc định nhưng CSP chưa được cấu hình riêng.
 
@@ -1386,6 +1413,33 @@ if (userRole !== ROLES.SUPER_ADMIN) {
 **Lý do:** môi trường LAN nội bộ, người dùng có thể đến gặp ADMIN. Tránh phải chạy mail server trong LAN cô lập.
 
 **Hướng phát triển:** thêm flow OTP qua SMS quân sự nội bộ.
+
+### C.17 — Em có tự rà soát bảo mật không? Tìm và sửa được lỗi gì?
+
+**Đây là câu rất "ăn điểm" nếu trả lời được cụ thể.** Em đã chạy một đợt tự đánh giá code (security self-review) và phát hiện, vá 4 nhóm vấn đề. Mỗi vấn đề em nêu được: lỗi là gì, kịch bản khai thác, và cách sửa.
+
+**1) DOM-based XSS ở cửa sổ xem trước PDF (`lib/file/filePreview.ts`).**
+- *Lỗi:* tên file (bắt nguồn từ **số quyết định** người dùng nhập) được nội suy thẳng vào HTML qua `document.write` — cả trong `<title>`, thẻ hiển thị tên, và bên trong `<script>` (`link.download = '...'`).
+- *Khai thác:* tạo quyết định với số kiểu `</title><img src=x onerror=alert(document.cookie)>` → ai bấm "xem file" sẽ chạy mã lạ trong tab mới, đọc được `accessToken` ở `localStorage`.
+- *Sửa:* thêm `escapeHtml()` cho phần markup và `toJsString()` (JSON.stringify + chặn chuỗi `</script>`) cho phần trong `<script>`; gộp hàm xem PDF trùng lặp ở `downloadDecisionFile.ts` về dùng chung một hàm đã escape.
+
+**2) IDOR ở các endpoint hồ sơ (`/api/profiles/*` và nested `/api/personnel/:id/*`).**
+- *Lỗi:* 3 endpoint `GET /api/profiles/{annual,tenure,contribution}/:id` và các nested GET (`annual-rewards`, `position-history`, `scientific-achievements`) chỉ có `verifyToken`, service không kiểm quyền sở hữu.
+- *Khai thác:* một USER gọi `GET /api/profiles/annual/<id_người_khác>` đọc được toàn bộ hồ sơ khen thưởng (gồm số quyết định BKBQP/CSTDTQ/BKTTCP) của bất kỳ ai.
+- *Sửa:* gom kiểm tra quyền vào hàm dùng chung `assertCanViewPersonnel` (USER xem mình, MANAGER theo cây đơn vị, ADMIN xem tất cả) và gọi ở cả controller hồ sơ lẫn middleware `requireCanViewPersonnel` cho nested route. Xem **C.1**.
+
+**3) Phân quyền + bỏ qua quy trình duyệt ở khen thưởng đơn vị (`/api/unit-annual-awards`).**
+- *Lỗi:* endpoint direct-entry `upsert` (POST `/`, PUT `/:id`) ghi thẳng bản ghi `status = APPROVED` và mở cho cả MANAGER, không validate, không giới hạn `don_vi_id` theo đơn vị của MANAGER → MANAGER có thể tạo khen thưởng đã-duyệt cho đơn vị bất kỳ, bỏ qua bước admin duyệt.
+- *Sửa:* `upsert` chuyển về **ADMIN-only** (direct-entry là thao tác của admin) + thêm Zod validation. `propose` (tạo bản ghi PENDING) giữ cho MANAGER nhưng thêm kiểm tra phạm vi đơn vị (`assertCanManageUnit`) + Zod. Luồng đề xuất thật của người dùng đi qua `/api/proposals` nên thay đổi này không ảnh hưởng FE.
+
+**4) Xác định đơn vị của quân nhân không nhất quán (DVTT vs CQDV).**
+- *Bối cảnh:* quân nhân ở đơn vị trực thuộc (DVTT) được lưu **cả hai** khóa `co_quan_don_vi_id` (đơn vị cha) lẫn `don_vi_truc_thuoc_id`. Vài chỗ xác định "đơn vị của chính quân nhân" lại ưu tiên CQDV (`co_quan_don_vi_id || don_vi_truc_thuoc_id`) nên luôn trả về đơn vị cha.
+- *Sửa có chọn lọc:* ở chỗ nhận diện đơn vị **của chính quân nhân** (phát hiện chuyển đơn vị `personnel/update.ts`) đổi sang DVTT-first; ở bộ lọc theo `don_vi_id` (`proposal/awards.ts`) đổi sang khớp **một trong hai** khóa để đúng cho cả lọc theo CQDV lẫn DVTT. **Giữ nguyên** các chỗ xác định phạm vi/thông báo cho MANAGER, vì MANAGER quản ở cấp CQDV (quản cả đơn vị con) nên CQDV-first ở đó là đúng thiết kế — đây là điểm dễ sửa sai nếu "đảo" đồng loạt.
+
+**Câu chốt:** "Em xem việc tự tìm lỗi của chính mình là một phần của quy trình. 4 vấn đề trên đều đã vá, có kiểm chứng bằng `typecheck` + bộ test (937 test BE pass) và rà soát thủ công."
+
+**Phản biện thường gặp:**
+- "Còn lỗ hổng nào chưa vá không?" → "Em ghi nhận access token nằm ở `localStorage` (đánh đổi đã biết khi refresh token ở httpOnly cookie) và mật khẩu DevZone lưu base64 ở sessionStorage — em xếp vào hướng cải thiện, không phải lỗ hổng leo thang quyền vì BE re-validate mỗi request."
 
 ---
 

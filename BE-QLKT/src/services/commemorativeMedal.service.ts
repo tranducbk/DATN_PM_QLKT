@@ -704,7 +704,7 @@ class CommemorativeMedalService {
         adminUsername
       );
     } catch (notifyError) {
-      writeSystemLog({
+      void writeSystemLog({
         action: 'ERROR',
         resource: AWARD_SLUGS.COMMEMORATIVE_MEDALS,
         resourceId: id,

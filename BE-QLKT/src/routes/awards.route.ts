@@ -8,6 +8,7 @@ import { getLogDescription } from '../helpers/auditLog';
 import { ROLES } from '../constants/roles.constants';
 import { bulkUpload } from '../configs/multer';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { RESOURCE_SLUGS } from '../constants/resourceSlugs.constants';
 import { awardBulkValidation } from '../validations';
 
 const router = Router();
@@ -62,8 +63,8 @@ router.post(
   validate(awardBulkValidation.bulkCreateAwards),
   auditLog({
     action: AUDIT_ACTIONS.BULK,
-    resource: 'awards',
-    getDescription: getLogDescription('awards', 'BULK'),
+    resource: RESOURCE_SLUGS.AWARDS,
+    getDescription: getLogDescription(RESOURCE_SLUGS.AWARDS, 'BULK'),
     getResourceId: () => null,
     getPayload: (req: Request, res: Response, responseData: unknown) => {
       try {
@@ -114,8 +115,8 @@ router.post(
   validate(awardBulkValidation.bulkCreateAwards),
   auditLog({
     action: AUDIT_ACTIONS.BULK_BYPASS,
-    resource: 'awards',
-    getDescription: getLogDescription('awards', 'BULK_BYPASS'),
+    resource: RESOURCE_SLUGS.AWARDS,
+    getDescription: getLogDescription(RESOURCE_SLUGS.AWARDS, 'BULK_BYPASS'),
     getResourceId: () => null,
     getPayload: (req: Request, res: Response, responseData: unknown) => {
       try {

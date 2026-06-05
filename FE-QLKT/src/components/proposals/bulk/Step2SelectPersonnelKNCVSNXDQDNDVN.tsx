@@ -706,7 +706,7 @@ export function Step2SelectPersonnelKNCVSNXDQDNDVN({
         </Text>
       </div>
 
-      {/* Cảnh báo về quân nhân không đủ điều kiện */}
+      {/* Warning for ineligible personnel */}
       {(() => {
         const ineligiblePersonnel = filteredPersonnel.filter(
           p => !checkEligibleForKNCVSNXDQDNDVN(p).eligible

@@ -170,6 +170,8 @@ class UnitAnnualAwardController {
       danh_hieu: body.danh_hieu,
       ghi_chu: body.ghi_chu,
       nguoi_tao_id: user?.id || body.nguoi_tao_id,
+      userRole: user?.role,
+      userQuanNhanId: user?.quan_nhan_id,
     });
     return ResponseHelper.created(res, {
       data,
@@ -316,7 +318,13 @@ class UnitAnnualAwardController {
     if (query.repeat_map) {
       try {
         Object.assign(repeatMap, JSON.parse(query.repeat_map));
-      } catch (e) { console.error('Invalid repeat_map JSON:', e); }
+      } catch (e) {
+        void writeSystemLog({
+          action: 'ERROR',
+          resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
+          description: `Dữ liệu repeat_map (${AWARD_LABEL}) không hợp lệ: ${e}`,
+        });
+      }
     }
     const workbook = await service.exportTemplate(unitIds, repeatMap);
     res.setHeader(

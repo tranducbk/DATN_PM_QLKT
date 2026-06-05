@@ -1,7 +1,10 @@
 import type { Prisma } from '../../generated/prisma';
 import { prisma } from '../../models';
 import { danhHieuDonViHangNamRepository } from '../../repositories/danhHieu.repository';
-import { coQuanDonViRepository, donViTrucThuocRepository } from '../../repositories/unit.repository';
+import {
+  coQuanDonViRepository,
+  donViTrucThuocRepository,
+} from '../../repositories/unit.repository';
 import { decisionFileRepository } from '../../repositories/decisionFile.repository';
 import { proposalRepository } from '../../repositories/proposal.repository';
 import { loadWorkbook, getAndValidateWorksheet } from '../../helpers/excel/excelImportHelper';
@@ -16,11 +19,11 @@ import {
 } from '../../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
+import { parseBooleanValue } from '../../helpers/excel/excelHelper';
 import {
-  parseHeaderMap,
-  getHeaderCol,
-  parseBooleanValue,
-} from '../../helpers/excel/excelHelper';
+  parseUnitAnnualRewardImport,
+  buildUnitLookupMaps,
+} from '../../helpers/excel/unitAnnualRewardImportHelper';
 import { NotFoundError, ValidationError } from '../../middlewares/errorHandler';
 import { validateDecisionNumbers } from '../eligibility/decisionNumberValidation';
 import { IMPORT_TRANSACTION_TIMEOUT } from '../../constants/excel.constants';
@@ -87,34 +90,24 @@ export function checkUnitDuplicate(
   }
 }
 
-export async function previewImport(buffer: Buffer, deps: UnitAnnualAwardDeps = defaultDeps) {
+export async function previewImport(buffer: Buffer) {
   const workbook = await loadWorkbook(buffer);
   const worksheet = getAndValidateWorksheet(workbook, {
     excludeSheetNames: ['_CapBac', '_QuyetDinh'],
   });
 
-  const headerMap = parseHeaderMap(worksheet);
-
-  const idCol = getHeaderCol(headerMap, ['id', 'unit_id']);
-  const maDonViCol = getHeaderCol(headerMap, ['ma_don_vi', 'ma_donvi', 'ma', 'madonvi']);
-  const tenDonViCol = getHeaderCol(headerMap, ['ten_don_vi', 'ten_donvi', 'ten', 'tendonvi']);
-  const namCol = getHeaderCol(headerMap, ['nam', 'year']);
-  const danhHieuCol = getHeaderCol(headerMap, ['danh_hieu', 'danhhieu', 'danh_hiu', 'danhieu']);
-  const soQuyetDinhCol = getHeaderCol(headerMap, [
-    'so_quyet_dinh',
-    'soquyetdinh',
-    'so_qd',
-    'soqd',
-  ]);
-  const ghiChuCol = getHeaderCol(headerMap, ['ghi_chu', 'ghichu', 'ghi_ch', 'ghich']);
-  const bkbqpCol = getHeaderCol(headerMap, ['bkbqp', 'nhan_bkbqp', 'bkbqp_khong_dien']);
-  const bkttcpCol = getHeaderCol(headerMap, ['bkttcp', 'nhan_bkttcp', 'bkttcp_khong_dien']);
-
-  if (!maDonViCol || !namCol || !danhHieuCol) {
-    throw new ValidationError(
-      `Thiếu cột bắt buộc: Mã đơn vị, Năm, Danh hiệu. Tìm thấy headers: ${Object.keys(headerMap).join(', ')}`
-    );
-  }
+  const { columns, maDonViList } = parseUnitAnnualRewardImport(worksheet);
+  const {
+    idCol,
+    maDonViCol,
+    tenDonViCol,
+    namCol,
+    danhHieuCol,
+    soQuyetDinhCol,
+    ghiChuCol,
+    bkbqpCol,
+    bkttcpCol,
+  } = columns;
 
   if (worksheet.name === AWARD_EXCEL_SHEETS.ANNUAL_PERSONAL) {
     throw new ValidationError(
@@ -122,7 +115,7 @@ export async function previewImport(buffer: Buffer, deps: UnitAnnualAwardDeps = 
     );
   }
 
-  const validDanhHieu = Object.values(DANH_HIEU_DON_VI_HANG_NAM) as string[];
+  const validDanhHieu = DANH_HIEU_DON_VI_CO_BAN;
   const errors = [];
   const valid = [];
   let total = 0;
@@ -134,24 +127,17 @@ export async function previewImport(buffer: Buffer, deps: UnitAnnualAwardDeps = 
   });
   const validDecisionNumbers = new Set(existingDecisions.map(d => d.so_quyet_dinh));
 
-  const allMaDonVi = new Set<string>();
-  for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
-    const row = worksheet.getRow(rowNumber);
-    const maDonViVal = maDonViCol ? String(row.getCell(maDonViCol).value || '').trim() : '';
-    if (maDonViVal) allMaDonVi.add(maDonViVal);
-  }
-
   const [coQuanDonViList, donViTrucThuocList] = await Promise.all([
     coQuanDonViRepository.findManyRaw({
-      where: { ma_don_vi: { in: [...allMaDonVi] } },
+      where: { ma_don_vi: { in: maDonViList } },
     }),
     donViTrucThuocRepository.findManyRaw({
-      where: { ma_don_vi: { in: [...allMaDonVi] } },
+      where: { ma_don_vi: { in: maDonViList } },
     }),
   ]);
 
-  const coQuanDonViMap = new Map(coQuanDonViList.map(u => [u.ma_don_vi, u]));
-  const donViTrucThuocMap = new Map(donViTrucThuocList.map(u => [u.ma_don_vi, u]));
+  const { coQuanDonViByMa: coQuanDonViMap, donViTrucThuocByMa: donViTrucThuocMap } =
+    buildUnitLookupMaps(coQuanDonViList, donViTrucThuocList);
 
   const allUnitIds = new Set<string>();
   for (const u of coQuanDonViList) allUnitIds.add(u.id);
@@ -278,14 +264,14 @@ export async function previewImport(buffer: Buffer, deps: UnitAnnualAwardDeps = 
     }
 
     const danhHieu = danhHieuRaw.toUpperCase();
-    if (!validDanhHieu.includes(danhHieu)) {
+    if (!validDanhHieu.has(danhHieu)) {
       errors.push({
         row: rowNumber,
         ten_don_vi: tenDonVi,
         ma_don_vi: maDonVi,
         nam,
         danh_hieu: danhHieuRaw,
-        message: `Danh hiệu "${danhHieuRaw}" không hợp lệ. Chỉ chấp nhận: ${formatDanhHieuList(validDanhHieu)}`,
+        message: `Danh hiệu "${danhHieuRaw}" không hợp lệ. Chỉ chấp nhận: ${formatDanhHieuList([...validDanhHieu])}`,
       });
       continue;
     }
@@ -358,25 +344,6 @@ export async function previewImport(buffer: Buffer, deps: UnitAnnualAwardDeps = 
         message: `Đã có danh hiệu ${existingAward.danh_hieu} năm ${nam} trên hệ thống`,
       });
       continue;
-    }
-
-    if (danhHieu === DANH_HIEU_DON_VI_HANG_NAM.BKTTCP) {
-      const eligibility = await deps.checkUnitAwardEligibility(
-        unitId,
-        nam,
-        DANH_HIEU_DON_VI_HANG_NAM.BKTTCP
-      );
-      if (!eligibility.eligible) {
-        errors.push({
-          row: rowNumber,
-          ten_don_vi: unitName,
-          ma_don_vi: maDonVi,
-          nam,
-          danh_hieu: danhHieu,
-          message: eligibility.reason,
-        });
-        continue;
-      }
     }
 
     const history = [...unitAwards]
@@ -568,14 +535,17 @@ export async function confirmImport(validItems: UnitAnnualAwardValidItem[], admi
             : { don_vi_truc_thuoc_id: item.unit_id }),
         };
 
-        const result = await danhHieuDonViHangNamRepository.upsert({
-          where: upsertWhere,
-          update: {
-            danh_hieu: finalDanhHieu,
-            ...sharedData,
+        const result = await danhHieuDonViHangNamRepository.upsert(
+          {
+            where: upsertWhere,
+            update: {
+              danh_hieu: finalDanhHieu,
+              ...sharedData,
+            },
+            create: createData,
           },
-          create: createData,
-        }, prismaTx);
+          prismaTx
+        );
         results.push(result);
       }
       return { imported: results.length, data: results };

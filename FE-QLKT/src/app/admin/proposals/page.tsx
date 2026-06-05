@@ -523,7 +523,7 @@ export default function AdminProposalsPage() {
         </>
       )}
 
-      {/* Decision Modal - Sử dụng lại modal đã có */}
+      {/* Decision Modal - reuse the existing modal */}
       <DecisionModal
         visible={decisionModalVisible}
         onClose={() => {

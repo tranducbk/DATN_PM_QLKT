@@ -5,6 +5,7 @@ import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
 import { decisionUpload as upload } from '../configs/multer';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { RESOURCE_SLUGS } from '../constants/resourceSlugs.constants';
 
 const router = Router();
 
@@ -89,8 +90,8 @@ router.post(
   upload.single('file'),
   auditLog({
     action: AUDIT_ACTIONS.CREATE,
-    resource: 'decisions',
-    getDescription: getLogDescription('decisions', 'CREATE'),
+    resource: RESOURCE_SLUGS.DECISIONS,
+    getDescription: getLogDescription(RESOURCE_SLUGS.DECISIONS, 'CREATE'),
     getResourceId: getResourceId.fromResponse(),
   }),
   decisionController.createDecision
@@ -108,8 +109,8 @@ router.put(
   upload.single('file'),
   auditLog({
     action: AUDIT_ACTIONS.UPDATE,
-    resource: 'decisions',
-    getDescription: getLogDescription('decisions', 'UPDATE'),
+    resource: RESOURCE_SLUGS.DECISIONS,
+    getDescription: getLogDescription(RESOURCE_SLUGS.DECISIONS, 'UPDATE'),
     getResourceId: getResourceId.fromParams('id'),
   }),
   decisionController.updateDecision
@@ -126,8 +127,8 @@ router.delete(
   requireAdminOnly,
   auditLog({
     action: AUDIT_ACTIONS.DELETE,
-    resource: 'decisions',
-    getDescription: getLogDescription('decisions', 'DELETE'),
+    resource: RESOURCE_SLUGS.DECISIONS,
+    getDescription: getLogDescription(RESOURCE_SLUGS.DECISIONS, 'DELETE'),
     getResourceId: getResourceId.fromParams('id'),
   }),
   decisionController.deleteDecision

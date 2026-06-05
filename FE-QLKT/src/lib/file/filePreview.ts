@@ -66,19 +66,44 @@ function downloadBlob(blob: Blob, filename: string): void {
 }
 
 /**
+ * Escapes a string for safe interpolation into HTML markup.
+ * @param value - Raw string (may contain user-controlled content)
+ * @returns HTML-escaped string
+ */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
+ * Encodes a string as a JS string literal safe to embed inside a <script> block.
+ * @param value - Raw string
+ * @returns Quoted JS literal with `<`/`>` neutralized so `</script>` cannot break out
+ */
+function toJsString(value: string): string {
+  return JSON.stringify(value).replace(/</g, '\\u003c').replace(/>/g, '\\u003e');
+}
+
+/**
  * Opens a custom PDF viewer window with file toolbar.
  * @param blobUrl - Object URL of PDF blob
- * @param filename - Display file name
+ * @param filename - Display file name (user-controlled, escaped before render)
  * @returns Nothing
  */
-function openPdfWithViewer(blobUrl: string, filename: string): void {
+export function openPdfWithViewer(blobUrl: string, filename: string): void {
+  // filename comes from user-entered decision numbers — escape to prevent DOM XSS
+  const safeFilename = escapeHtml(filename);
   const newWindow = window.open('', '_blank');
   if (newWindow) {
     newWindow.document.write(`
       <!DOCTYPE html>
       <html>
       <head>
-        <title>${filename}</title>
+        <title>${safeFilename}</title>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body {
@@ -138,7 +163,7 @@ function openPdfWithViewer(blobUrl: string, filename: string): void {
       </head>
       <body>
         <div class="toolbar">
-          <span class="filename">📄 ${filename}</span>
+          <span class="filename">📄 ${safeFilename}</span>
           <button class="btn" onclick="downloadFile()">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -154,8 +179,8 @@ function openPdfWithViewer(blobUrl: string, filename: string): void {
         <script>
           function downloadFile() {
             const link = document.createElement('a');
-            link.href = '${blobUrl}';
-            link.download = '${filename}';
+            link.href = ${toJsString(blobUrl)};
+            link.download = ${toJsString(filename)};
             link.click();
           }
         </script>

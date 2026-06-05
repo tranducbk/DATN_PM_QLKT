@@ -56,7 +56,7 @@ class MilitaryFlagController {
       try {
         Object.assign(repeatMap, JSON.parse(query.repeat_map));
       } catch (e) {
-        writeSystemLog({
+        void writeSystemLog({
           action: 'ERROR',
           resource: AWARD_SLUGS.MILITARY_FLAG,
           description: `Dữ liệu repeat_map (${AWARD_LABEL}) không hợp lệ: ${e}`,
@@ -112,7 +112,7 @@ class MilitaryFlagController {
     const personnelIds = items.map((i: { personnel_id: string }) => i.personnel_id);
     notifyOnImport(user.id, AWARD_SLUGS.MILITARY_FLAG, result.imported ?? items.length, personnelIds).catch(
       e =>
-        writeSystemLog({
+        void writeSystemLog({
           action: 'ERROR',
           resource: AWARD_SLUGS.MILITARY_FLAG,
           description: `Lỗi gửi thông báo import ${AWARD_LABEL}: ${e}`,

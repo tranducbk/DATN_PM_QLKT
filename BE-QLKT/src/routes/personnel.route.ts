@@ -10,6 +10,7 @@ import { getLogDescription } from '../helpers/auditLog';
 import { validate } from '../middlewares/validate';
 import { personnelValidation } from '../validations';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { RESOURCE_SLUGS } from '../constants/resourceSlugs.constants';
 
 const router = Router();
 
@@ -57,8 +58,8 @@ router.post(
   validate(personnelValidation.createPersonnel),
   auditLog({
     action: AUDIT_ACTIONS.CREATE,
-    resource: 'personnel',
-    getDescription: getLogDescription('personnel', 'CREATE'),
+    resource: RESOURCE_SLUGS.PERSONNEL,
+    getDescription: getLogDescription(RESOURCE_SLUGS.PERSONNEL, 'CREATE'),
     getResourceId: getResourceId.fromResponse(),
   }),
   personnelController.createPersonnel
@@ -76,8 +77,8 @@ router.put(
   validate(personnelValidation.updatePersonnel),
   auditLog({
     action: AUDIT_ACTIONS.UPDATE,
-    resource: 'personnel',
-    getDescription: getLogDescription('personnel', 'UPDATE'),
+    resource: RESOURCE_SLUGS.PERSONNEL,
+    getDescription: getLogDescription(RESOURCE_SLUGS.PERSONNEL, 'UPDATE'),
     getResourceId: getResourceId.fromParams('id'),
   }),
   personnelController.updatePersonnel
@@ -97,8 +98,8 @@ router.delete(
   requireAdmin,
   auditLog({
     action: AUDIT_ACTIONS.DELETE,
-    resource: 'personnel',
-    getDescription: getLogDescription('personnel', 'DELETE'),
+    resource: RESOURCE_SLUGS.PERSONNEL,
+    getDescription: getLogDescription(RESOURCE_SLUGS.PERSONNEL, 'DELETE'),
     getResourceId: getResourceId.fromParams('id'),
   }),
   personnelController.deletePersonnel

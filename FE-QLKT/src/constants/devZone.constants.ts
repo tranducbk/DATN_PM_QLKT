@@ -19,7 +19,7 @@ export const CRON_PRESETS = [
   { label: 'Tùy chỉnh', value: 'custom' },
 ] as const;
 
-/** Danh sách loại khen thưởng cho toggle bật/tắt */
+/** Award types for the enable/disable toggle. */
 export const AWARD_TYPE_OPTIONS = [
   {
     key: 'annual',

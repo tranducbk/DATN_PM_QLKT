@@ -6,6 +6,7 @@ import { getLogDescription } from '../helpers/auditLog';
 import { validate } from '../middlewares/validate';
 import { unitValidation } from '../validations';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { RESOURCE_SLUGS } from '../constants/resourceSlugs.constants';
 
 const router = Router();
 
@@ -42,8 +43,8 @@ router.post(
   validate(unitValidation.createUnit),
   auditLog({
     action: AUDIT_ACTIONS.CREATE,
-    resource: 'units',
-    getDescription: getLogDescription('units', 'CREATE'),
+    resource: RESOURCE_SLUGS.UNITS,
+    getDescription: getLogDescription(RESOURCE_SLUGS.UNITS, 'CREATE'),
     getResourceId: getResourceId.fromResponse(),
   }),
   unitController.createUnit
@@ -61,8 +62,8 @@ router.put(
   validate(unitValidation.updateUnit),
   auditLog({
     action: AUDIT_ACTIONS.UPDATE,
-    resource: 'units',
-    getDescription: getLogDescription('units', 'UPDATE'),
+    resource: RESOURCE_SLUGS.UNITS,
+    getDescription: getLogDescription(RESOURCE_SLUGS.UNITS, 'UPDATE'),
     getResourceId: getResourceId.fromParams('id'),
   }),
   unitController.updateUnit
@@ -79,8 +80,8 @@ router.delete(
   requireAdmin,
   auditLog({
     action: AUDIT_ACTIONS.DELETE,
-    resource: 'units',
-    getDescription: getLogDescription('units', 'DELETE'),
+    resource: RESOURCE_SLUGS.UNITS,
+    getDescription: getLogDescription(RESOURCE_SLUGS.UNITS, 'DELETE'),
     getResourceId: getResourceId.fromParams('id'),
   }),
   unitController.deleteUnit

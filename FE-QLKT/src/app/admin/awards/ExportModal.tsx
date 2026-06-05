@@ -270,7 +270,7 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
       destroyOnClose
     >
       <Space direction="vertical" size="middle" style={{ width: '100%', marginTop: 16 }}>
-        {/* Khoảng năm */}
+        {/* Year range */}
         <div>
           <Text strong style={{ display: 'block', marginBottom: 8 }}>
             Khoảng thời gian
@@ -299,7 +299,7 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
           </Text>
         </div>
 
-        {/* Đơn vị */}
+        {/* Unit */}
         {hasUnitFilter && (
           <div>
             <Text strong style={{ display: 'block', marginBottom: 8 }}>
@@ -318,7 +318,7 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
           </div>
         )}
 
-        {/* Chọn quân nhân (cho tab cá nhân) */}
+        {/* Personnel selection (individual tab) */}
         {isIndividualTab && donViId && (
           <div>
             <Text strong style={{ display: 'block', marginBottom: 8 }}>
@@ -344,7 +344,7 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
           </div>
         )}
 
-        {/* Chọn đơn vị (cho tab đơn vị) */}
+        {/* Unit selection (unit tab) */}
         {isUnitTab && units.length > 0 && (
           <div>
             <Text strong style={{ display: 'block', marginBottom: 8 }}>
@@ -369,7 +369,7 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
           </div>
         )}
 
-        {/* Danh hiệu */}
+        {/* Award title */}
         {hasDanhHieuFilter && (
           <div>
             <Text strong style={{ display: 'block', marginBottom: 8 }}>
@@ -389,7 +389,7 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
           </div>
         )}
 
-        {/* Loại thành tích khoa học */}
+        {/* Scientific achievement type */}
         {activeTab === 'NCKH' && (
           <div>
             <Text strong style={{ display: 'block', marginBottom: 8 }}>

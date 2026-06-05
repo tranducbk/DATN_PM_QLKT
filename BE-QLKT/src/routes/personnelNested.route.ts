@@ -3,13 +3,39 @@ import annualRewardController from '../controllers/annualReward.controller';
 import positionHistoryController from '../controllers/positionHistory.controller';
 import scientificAchievementController from '../controllers/scientificAchievement.controller';
 import profileController from '../controllers/profile.controller';
+import personnelService from '../services/personnel.service';
 import { verifyToken, requireManager } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
+import { RESOURCE_SLUGS } from '../constants/resourceSlugs.constants';
 
 const router = Router({ mergeParams: true });
+
+/**
+ * Authorizes read access to a personnel's nested resources (USER own-only, MANAGER unit-scoped).
+ * @param req - Express request
+ * @param res - Express response
+ * @param next - Express next function
+ * @returns Promise resolved after the scope check passes or rejects
+ */
+const requireCanViewPersonnel = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    await personnelService.assertCanViewPersonnel(
+      String(req.params.personnelId),
+      req.user?.role,
+      req.user?.quan_nhan_id
+    );
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
 
 /**
  * Nested routes for /api/personnel/:personnelId/*
@@ -24,6 +50,7 @@ const router = Router({ mergeParams: true });
 router.get(
   '/annual-rewards',
   verifyToken,
+  requireCanViewPersonnel,
   (req: Request, res: Response, next: NextFunction) => {
     // Convert nested route to query param format
     req.query.personnel_id = req.params.personnelId;
@@ -61,6 +88,7 @@ router.post(
 router.get(
   '/position-history',
   verifyToken,
+  requireCanViewPersonnel,
   (req: Request, res: Response, next: NextFunction) => {
     // Convert nested route to query param format
     req.query.personnel_id = req.params.personnelId;
@@ -79,8 +107,8 @@ router.post(
   requireManager,
   auditLog({
     action: AUDIT_ACTIONS.CREATE,
-    resource: 'position-history',
-    getDescription: getLogDescription('position-history', 'CREATE'),
+    resource: RESOURCE_SLUGS.POSITION_HISTORY,
+    getDescription: getLogDescription(RESOURCE_SLUGS.POSITION_HISTORY, 'CREATE'),
     getResourceId: getResourceId.fromResponse(),
   }),
   (req: Request, res: Response, next: NextFunction) => {
@@ -101,8 +129,8 @@ router.put(
   requireManager,
   auditLog({
     action: AUDIT_ACTIONS.UPDATE,
-    resource: 'position-history',
-    getDescription: getLogDescription('position-history', 'UPDATE'),
+    resource: RESOURCE_SLUGS.POSITION_HISTORY,
+    getDescription: getLogDescription(RESOURCE_SLUGS.POSITION_HISTORY, 'UPDATE'),
     getResourceId: getResourceId.fromParams('id'),
   }),
   positionHistoryController.updatePositionHistory
@@ -119,8 +147,8 @@ router.delete(
   requireManager,
   auditLog({
     action: AUDIT_ACTIONS.DELETE,
-    resource: 'position-history',
-    getDescription: getLogDescription('position-history', 'DELETE'),
+    resource: RESOURCE_SLUGS.POSITION_HISTORY,
+    getDescription: getLogDescription(RESOURCE_SLUGS.POSITION_HISTORY, 'DELETE'),
     getResourceId: getResourceId.fromParams('id'),
   }),
   positionHistoryController.deletePositionHistory
@@ -134,6 +162,7 @@ router.delete(
 router.get(
   '/scientific-achievements',
   verifyToken,
+  requireCanViewPersonnel,
   (req: Request, res: Response, next: NextFunction) => {
     // Convert nested route to query param format
     req.query.personnel_id = req.params.personnelId;

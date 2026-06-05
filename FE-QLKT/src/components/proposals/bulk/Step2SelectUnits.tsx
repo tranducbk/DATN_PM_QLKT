@@ -371,7 +371,7 @@ export function Step2SelectUnits({
         style={{ marginBottom: 24 }}
       />
 
-      {/* Upload Excel Section - chỉ hiện cho admin */}
+      {/* Upload Excel section - admin only */}
       {!isManager && (
         <>
           <ExcelImportSection

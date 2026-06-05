@@ -753,7 +753,7 @@ export function Step2SelectPersonnelCongHien({
         </Text>
       </div>
 
-      {/* Cảnh báo về quân nhân chưa có giới tính và không đủ điều kiện */}
+      {/* Warning for personnel missing gender and not eligible */}
       {(() => {
         const missingGenderCount = filteredPersonnel.filter(
           p => !p.gioi_tinh || (p.gioi_tinh !== 'NAM' && p.gioi_tinh !== 'NU')

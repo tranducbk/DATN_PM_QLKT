@@ -648,7 +648,7 @@ export default function BulkAddAwardsPage() {
               />
             </Card>
 
-            {/* Chỉ hiển thị trường ghi chú nếu loại khen thưởng hỗ trợ lưu ghi chú */}
+            {/* Only show the note field if the award type supports saving notes */}
             {canShowNote && (
               <Card
                 title={

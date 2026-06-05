@@ -7,6 +7,7 @@ import { writeLimiter } from '../configs/rateLimiter';
 import { validate } from '../middlewares/validate';
 import { accountValidation } from '../validations';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { RESOURCE_SLUGS } from '../constants/resourceSlugs.constants';
 
 const router = Router();
 
@@ -43,8 +44,8 @@ router.post(
   validate(accountValidation.createAccount),
   auditLog({
     action: AUDIT_ACTIONS.CREATE,
-    resource: 'accounts',
-    getDescription: getLogDescription('accounts', 'CREATE'),
+    resource: RESOURCE_SLUGS.ACCOUNTS,
+    getDescription: getLogDescription(RESOURCE_SLUGS.ACCOUNTS, 'CREATE'),
     getResourceId: getResourceId.fromResponse(),
   }),
   accountController.createAccount
@@ -62,8 +63,8 @@ router.put(
   validate(accountValidation.updateAccount),
   auditLog({
     action: AUDIT_ACTIONS.UPDATE,
-    resource: 'accounts',
-    getDescription: getLogDescription('accounts', 'UPDATE'),
+    resource: RESOURCE_SLUGS.ACCOUNTS,
+    getDescription: getLogDescription(RESOURCE_SLUGS.ACCOUNTS, 'UPDATE'),
     getResourceId: getResourceId.fromParams('id'),
   }),
   accountController.updateAccount
@@ -81,8 +82,8 @@ router.post(
   validate(accountValidation.resetPassword),
   auditLog({
     action: AUDIT_ACTIONS.RESET_PASSWORD,
-    resource: 'accounts',
-    getDescription: getLogDescription('accounts', 'RESET_PASSWORD'),
+    resource: RESOURCE_SLUGS.ACCOUNTS,
+    getDescription: getLogDescription(RESOURCE_SLUGS.ACCOUNTS, 'RESET_PASSWORD'),
     getResourceId: (req: Request) => req.body.account_id || null,
   }),
   accountController.resetPassword
@@ -100,8 +101,8 @@ router.delete(
   writeLimiter,
   auditLog({
     action: AUDIT_ACTIONS.DELETE,
-    resource: 'accounts',
-    getDescription: getLogDescription('accounts', 'DELETE'),
+    resource: RESOURCE_SLUGS.ACCOUNTS,
+    getDescription: getLogDescription(RESOURCE_SLUGS.ACCOUNTS, 'DELETE'),
     getResourceId: getResourceId.fromParams('id'),
   }),
   accountController.deleteAccount

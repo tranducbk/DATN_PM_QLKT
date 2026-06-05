@@ -37,7 +37,10 @@ import { ROLE_LABELS } from '@/constants/roles.constants';
 import { formatDateTime } from '@/lib/utils';
 
 const SuperAdminDashboardCharts = dynamic(
-  () => import('@/components/super-admin/SuperAdminDashboardCharts'),
+  () =>
+    import('@/components/super-admin/SuperAdminDashboardCharts').then(
+      mod => mod.SuperAdminDashboardCharts
+    ),
   {
     ssr: false,
     loading: () => (

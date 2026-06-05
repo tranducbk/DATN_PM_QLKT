@@ -4,6 +4,7 @@ import { verifyToken, requireManager } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { RESOURCE_SLUGS } from '../constants/resourceSlugs.constants';
 
 const router = Router();
 
@@ -25,8 +26,8 @@ router.post(
   requireManager,
   auditLog({
     action: AUDIT_ACTIONS.CREATE,
-    resource: 'position-history',
-    getDescription: getLogDescription('position-history', 'CREATE'),
+    resource: RESOURCE_SLUGS.POSITION_HISTORY,
+    getDescription: getLogDescription(RESOURCE_SLUGS.POSITION_HISTORY, 'CREATE'),
     getResourceId: getResourceId.fromResponse(),
   }),
   positionHistoryController.createPositionHistory
@@ -43,8 +44,8 @@ router.put(
   requireManager,
   auditLog({
     action: AUDIT_ACTIONS.UPDATE,
-    resource: 'position-history',
-    getDescription: getLogDescription('position-history', 'UPDATE'),
+    resource: RESOURCE_SLUGS.POSITION_HISTORY,
+    getDescription: getLogDescription(RESOURCE_SLUGS.POSITION_HISTORY, 'UPDATE'),
     getResourceId: getResourceId.fromParams('id'),
   }),
   positionHistoryController.updatePositionHistory
@@ -61,8 +62,8 @@ router.delete(
   requireManager,
   auditLog({
     action: AUDIT_ACTIONS.DELETE,
-    resource: 'position-history',
-    getDescription: getLogDescription('position-history', 'DELETE'),
+    resource: RESOURCE_SLUGS.POSITION_HISTORY,
+    getDescription: getLogDescription(RESOURCE_SLUGS.POSITION_HISTORY, 'DELETE'),
     getResourceId: getResourceId.fromParams('id'),
   }),
   positionHistoryController.deletePositionHistory

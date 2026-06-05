@@ -43,6 +43,7 @@ import { getApiErrorMessage } from '@/lib/apiError';
 import { formatDateTime } from '@/lib/utils';
 import {
   isProposalType,
+  PROPOSAL_STATUS,
   PROPOSAL_STATUS_LABELS,
   PROPOSAL_TYPE_LABELS,
 } from '@/constants/proposal.constants';
@@ -108,7 +109,7 @@ export default function AdminDashboard() {
           const proposalsByStatus = statisticsRes.data.proposalsByStatus || [];
           const rejectedProposals =
             proposalsByStatus.find(
-              (p: { status: string; count: number }) => p.status === 'REJECTED'
+              (p: { status: string; count: number }) => p.status === PROPOSAL_STATUS.REJECTED
             )?.count || 0;
           setStats({
             totalPersonnel: statisticsRes.data.totalPersonnel || 0,

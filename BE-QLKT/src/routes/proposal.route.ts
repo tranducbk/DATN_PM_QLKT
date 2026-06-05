@@ -7,6 +7,7 @@ import { ROLES } from '../constants/roles.constants';
 import { writeLimiter } from '../configs/rateLimiter';
 import { documentUpload as upload } from '../configs/multer';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { RESOURCE_SLUGS } from '../constants/resourceSlugs.constants';
 
 const router = Router();
 
@@ -25,8 +26,8 @@ router.post(
   ]),
   auditLog({
     action: AUDIT_ACTIONS.CREATE,
-    resource: 'proposals',
-    getDescription: getLogDescription('proposals', 'CREATE'),
+    resource: RESOURCE_SLUGS.PROPOSALS,
+    getDescription: getLogDescription(RESOURCE_SLUGS.PROPOSALS, 'CREATE'),
     getResourceId: getResourceId.fromResponse(),
   }),
   proposalController.submitProposal
@@ -125,8 +126,8 @@ router.post(
   ]),
   auditLog({
     action: AUDIT_ACTIONS.APPROVE,
-    resource: 'proposals',
-    getDescription: getLogDescription('proposals', 'APPROVE'),
+    resource: RESOURCE_SLUGS.PROPOSALS,
+    getDescription: getLogDescription(RESOURCE_SLUGS.PROPOSALS, 'APPROVE'),
     getResourceId: getResourceId.fromParams('id'),
   }),
   proposalController.approveProposal
@@ -143,8 +144,8 @@ router.post(
   requireAdminOnly,
   auditLog({
     action: AUDIT_ACTIONS.REJECT,
-    resource: 'proposals',
-    getDescription: getLogDescription('proposals', 'REJECT'),
+    resource: RESOURCE_SLUGS.PROPOSALS,
+    getDescription: getLogDescription(RESOURCE_SLUGS.PROPOSALS, 'REJECT'),
     getResourceId: getResourceId.fromParams('id'),
   }),
   proposalController.rejectProposal
@@ -173,8 +174,8 @@ router.delete(
   requireAdminOrManager,
   auditLog({
     action: AUDIT_ACTIONS.DELETE,
-    resource: 'proposals',
-    getDescription: getLogDescription('proposals', 'DELETE'),
+    resource: RESOURCE_SLUGS.PROPOSALS,
+    getDescription: getLogDescription(RESOURCE_SLUGS.PROPOSALS, 'DELETE'),
     getResourceId: getResourceId.fromParams('id'),
   }),
   proposalController.deleteProposal

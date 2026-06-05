@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import profileService from '../services/profile.service';
 import unitAnnualAwardService from '../services/unitAnnualAward.service';
+import personnelService from '../services/personnel.service';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 import { ADHOC_TYPE } from '../constants/adhocType.constants';
@@ -35,6 +36,7 @@ class ProfileController {
     const query = req.query as YearQuery;
     const { personnel_id } = params;
     const { year } = query;
+    await personnelService.assertCanViewPersonnel(personnel_id, req.user?.role, req.user?.quan_nhan_id);
     const yearNumber = year ? parseInt(year, 10) : null;
     if (yearNumber) await profileService.recalculateAnnualProfile(personnel_id, yearNumber);
     const result = await profileService.getAnnualProfile(personnel_id);
@@ -47,6 +49,7 @@ class ProfileController {
   getTenureProfile = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as PersonnelIdParams;
     const { personnel_id } = params;
+    await personnelService.assertCanViewPersonnel(personnel_id, req.user?.role, req.user?.quan_nhan_id);
     await profileService.recalculateTenureProfile(personnel_id);
     const result = await profileService.getTenureProfile(personnel_id);
     return ResponseHelper.success(res, {
@@ -58,6 +61,7 @@ class ProfileController {
   getContributionProfile = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as PersonnelIdParams;
     const { personnel_id } = params;
+    await personnelService.assertCanViewPersonnel(personnel_id, req.user?.role, req.user?.quan_nhan_id);
     await profileService.recalculateContributionProfile(personnel_id);
     const result = await profileService.getContributionProfile(personnel_id);
     return ResponseHelper.success(res, {

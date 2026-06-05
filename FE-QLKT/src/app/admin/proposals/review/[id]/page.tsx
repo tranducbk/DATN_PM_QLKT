@@ -471,7 +471,7 @@ export default function ProposalDetailPage() {
       const applyDecision = (item: DanhHieuItem, index: number) => {
         if (!selectedSet.has(String(index))) return item;
 
-        // FE luôn gán so_quyet_dinh chung, BE tự map theo danh_hieu
+        // FE always sets the shared so_quyet_dinh; BE maps it per danh_hieu
         return {
           ...item,
           so_quyet_dinh: decision.so_quyet_dinh,
@@ -621,8 +621,6 @@ export default function ProposalDetailPage() {
       </div>
     );
   }
-
-  // COLUMNS CHO TỪNG LOẠI ĐỀ XUẤT
 
   const caNhanHangNamColumns = [
     {
@@ -1098,7 +1096,7 @@ export default function ProposalDetailPage() {
           </div>
         </Card>
 
-        {/* Ghi chú */}
+        {/* Note */}
         <Card title="Ghi chú" style={{ marginBottom: '24px' }}>
           <div
             style={{
@@ -1127,7 +1125,7 @@ export default function ProposalDetailPage() {
           </div>
         </Card>
 
-        {/* File đính kèm */}
+        {/* Attachments */}
         <Card title="File đính kèm" style={{ marginBottom: '24px' }}>
           <div style={{ marginBottom: 16 }}>
             <Text strong style={{ display: 'block', marginBottom: 8 }}>

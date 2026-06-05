@@ -119,6 +119,36 @@ export function calculateHCCSVV(
 }
 
 /**
+ * Computes a higher HCCSVV tier only when the prerequisite lower tier is received.
+ * @param prerequisiteMet - Whether the lower tier is already DA_NHAN
+ * @param ngayNhapNgu - Enlistment date
+ * @param soNam - Required years for this tier
+ * @param currentStatus - Current tier status
+ * @param hangName - Tier label
+ * @param existingNgay - Approval date to preserve when already received
+ * @returns Tier eligibility snapshot, or a blank CHUA_DU snapshot when the prerequisite is unmet
+ */
+function computeNextTier(
+  prerequisiteMet: boolean,
+  ngayNhapNgu: Date | null | undefined,
+  soNam: number,
+  currentStatus: string,
+  hangName: string,
+  existingNgay: Date | null | undefined
+): HCCSVVCalcResult {
+  if (!prerequisiteMet) {
+    return { status: ELIGIBILITY_STATUS.CHUA_DU, ngay: null, goiY: '' };
+  }
+
+  const tier = calculateHCCSVV(ngayNhapNgu, soNam, currentStatus, hangName);
+  // Preserve the approval date entered by admins; do not recompute it here.
+  if (tier.status === ELIGIBILITY_STATUS.DA_NHAN && existingNgay) {
+    tier.ngay = existingNgay;
+  }
+  return tier;
+}
+
+/**
  * Recomputes HCCSVV tier statuses and hints on `ho_so_nien_han` from `khen_thuong_hccsvv` (tenure medals only).
  * @param personnelId - Personnel ID
  * @returns Success message for admin flows
@@ -179,44 +209,24 @@ export async function recalculateTenureProfile(personnelId: string): Promise<{ m
     }
 
     // Rank 2 requires Rank 3 to already be received (DA_NHAN), not just eligible
-    let hccsvvNhi;
-    if (newProfile.hccsvv_hang_ba_status === ELIGIBILITY_STATUS.DA_NHAN) {
-      hccsvvNhi = calculateHCCSVV(
-        personnel.ngay_nhap_ngu,
-        15,
-        newProfile.hccsvv_hang_nhi_status || ELIGIBILITY_STATUS.CHUA_DU,
-        'Nhì'
-      );
-      if (hccsvvNhi.status === ELIGIBILITY_STATUS.DA_NHAN && existingProfile?.hccsvv_hang_nhi_ngay) {
-        hccsvvNhi.ngay = existingProfile.hccsvv_hang_nhi_ngay;
-      }
-    } else {
-      hccsvvNhi = {
-        status: ELIGIBILITY_STATUS.CHUA_DU,
-        ngay: null,
-        goiY: '',
-      };
-    }
+    const hccsvvNhi = computeNextTier(
+      newProfile.hccsvv_hang_ba_status === ELIGIBILITY_STATUS.DA_NHAN,
+      personnel.ngay_nhap_ngu,
+      15,
+      newProfile.hccsvv_hang_nhi_status || ELIGIBILITY_STATUS.CHUA_DU,
+      'Nhì',
+      existingProfile?.hccsvv_hang_nhi_ngay
+    );
 
     // Rank 1 requires Rank 2 to already be received (DA_NHAN)
-    let hccsvvNhat;
-    if (newProfile.hccsvv_hang_nhi_status === ELIGIBILITY_STATUS.DA_NHAN) {
-      hccsvvNhat = calculateHCCSVV(
-        personnel.ngay_nhap_ngu,
-        20,
-        newProfile.hccsvv_hang_nhat_status || ELIGIBILITY_STATUS.CHUA_DU,
-        'Nhất'
-      );
-      if (hccsvvNhat.status === ELIGIBILITY_STATUS.DA_NHAN && existingProfile?.hccsvv_hang_nhat_ngay) {
-        hccsvvNhat.ngay = existingProfile.hccsvv_hang_nhat_ngay;
-      }
-    } else {
-      hccsvvNhat = {
-        status: ELIGIBILITY_STATUS.CHUA_DU,
-        ngay: null,
-        goiY: '',
-      };
-    }
+    const hccsvvNhat = computeNextTier(
+      newProfile.hccsvv_hang_nhi_status === ELIGIBILITY_STATUS.DA_NHAN,
+      personnel.ngay_nhap_ngu,
+      20,
+      newProfile.hccsvv_hang_nhat_status || ELIGIBILITY_STATUS.CHUA_DU,
+      'Nhất',
+      existingProfile?.hccsvv_hang_nhat_ngay
+    );
 
     const goiYList = [];
     if (hccsvvBa.goiY) goiYList.push(hccsvvBa.goiY);

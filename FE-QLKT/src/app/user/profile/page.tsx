@@ -208,7 +208,7 @@ export default function UserProfilePage() {
       label: 'Hồ sơ khen thưởng',
       children: (
         <div className="space-y-6">
-          {/* Hồ sơ khen thưởng niên hạn */}
+          {/* Tenure-medal award profile */}
           {(serviceProfile || militaryFlag || commemorationMedals) && (
             <Card
               title={
@@ -400,7 +400,7 @@ export default function UserProfilePage() {
             </Card>
           )}
 
-          {/* Hồ sơ Hằng năm */}
+          {/* Annual profile */}
           {annualProfile && (
             <Card
               title={
@@ -410,7 +410,7 @@ export default function UserProfilePage() {
               }
               size="small"
             >
-              {/* Thống kê */}
+              {/* Statistics */}
               <div className="mb-6">
                 <Text strong className="text-base">
                   Thống kê
@@ -460,7 +460,7 @@ export default function UserProfilePage() {
                 </Row>
               </div>
 
-              {/* Điều kiện */}
+              {/* Eligibility */}
               <div>
                 <Text strong className="text-base">
                   Điều kiện khen thưởng

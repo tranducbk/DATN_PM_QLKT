@@ -990,7 +990,7 @@ describe('annualReward.service - deleteAnnualReward (granular)', () => {
   });
 
   it('gọi recalc profile sau khi xóa granular', async () => {
-    const profileMock = require('../../src/helpers/profileRecalcHelper')
+    const profileMock = require('../../src/services/profile/annual')
       .safeRecalculateAnnualProfile as jest.Mock;
     profileMock.mockClear();
     const personnel = makePersonnel({ id: 'qn-del-10' });

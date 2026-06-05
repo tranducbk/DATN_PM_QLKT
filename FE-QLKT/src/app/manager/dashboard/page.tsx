@@ -43,6 +43,7 @@ import { apiClient } from '@/lib/apiClient';
 import { formatDateTime } from '@/lib/utils';
 import {
   isProposalType,
+  PROPOSAL_STATUS,
   PROPOSAL_STATUS_LABELS,
   PROPOSAL_TYPE_LABELS,
 } from '@/constants/proposal.constants';
@@ -143,7 +144,7 @@ export default function ManagerDashboard() {
           );
           const pendingProposals =
             statisticsRes.data.proposalsByStatus?.find(
-              (p: { status: string; count: number }) => p.status === 'PENDING'
+              (p: { status: string; count: number }) => p.status === PROPOSAL_STATUS.PENDING
             )?.count || 0;
           setStats({
             totalPersonnel,

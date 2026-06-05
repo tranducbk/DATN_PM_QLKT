@@ -63,7 +63,13 @@ class ContributionAwardController {
     if (query.repeat_map) {
       try {
         Object.assign(repeatMap, JSON.parse(query.repeat_map));
-      } catch (e) { console.error('Invalid repeat_map JSON:', e); }
+      } catch (e) {
+        void writeSystemLog({
+          action: 'ERROR',
+          resource: AWARD_SLUGS.CONTRIBUTION_MEDALS,
+          description: `Dữ liệu repeat_map (${AWARD_LABEL}) không hợp lệ: ${e}`,
+        });
+      }
     }
 
     const workbook = await contributionAwardService.exportTemplate(personnelIds, repeatMap);

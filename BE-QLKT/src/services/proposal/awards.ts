@@ -66,7 +66,9 @@ async function getAllAwards(
   let filteredAwards = awards;
   if (don_vi_id) {
     filteredAwards = awards.filter(
-      a => (a.QuanNhan.co_quan_don_vi_id || a.QuanNhan.don_vi_truc_thuoc_id) === don_vi_id
+      a =>
+        a.QuanNhan.don_vi_truc_thuoc_id === don_vi_id ||
+        a.QuanNhan.co_quan_don_vi_id === don_vi_id
     );
   }
 
@@ -136,7 +138,9 @@ async function exportAllAwardsExcel(filters: Record<string, unknown> = {}) {
   let filteredAwards = awards;
   if (don_vi_id) {
     filteredAwards = awards.filter(
-      a => (a.QuanNhan.co_quan_don_vi_id || a.QuanNhan.don_vi_truc_thuoc_id) === don_vi_id
+      a =>
+        a.QuanNhan.don_vi_truc_thuoc_id === don_vi_id ||
+        a.QuanNhan.co_quan_don_vi_id === don_vi_id
     );
   }
 

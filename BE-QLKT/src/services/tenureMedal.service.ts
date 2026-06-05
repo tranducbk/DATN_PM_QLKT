@@ -240,7 +240,7 @@ class HCCSVVService {
     try {
       await profileService.recalculateTenureProfile(personnelId);
     } catch (recalcError) {
-      writeSystemLog({
+      void writeSystemLog({
         action: 'ERROR',
         resource: AWARD_SLUGS.TENURE_MEDALS,
         resourceId: id,
@@ -251,7 +251,7 @@ class HCCSVVService {
     try {
       await notificationHelper.notifyOnAwardDeleted(award, personnel, 'HCCSVV', adminUsername);
     } catch (notifyError) {
-      writeSystemLog({
+      void writeSystemLog({
         action: 'ERROR',
         resource: AWARD_SLUGS.TENURE_MEDALS,
         resourceId: id,

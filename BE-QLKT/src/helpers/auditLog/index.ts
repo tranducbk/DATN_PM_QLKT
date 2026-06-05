@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 
 import { AWARD_SLUGS } from '../../constants/awardSlugs.constants';
+import { RESOURCE_SLUGS } from '../../constants/resourceSlugs.constants';
 import { AWARD_RESOURCE } from '../../constants/awardResource.constants';
 import { auth } from './auth';
 import { accounts } from './accounts';
@@ -26,18 +27,18 @@ type LogDescriptionFn = (
 ) => string | Promise<string>;
 
 const createLogDescription: Record<string, Record<string, LogDescriptionFn>> = {
-  proposals,
+  [RESOURCE_SLUGS.PROPOSALS]: proposals,
   [AWARD_SLUGS.ANNUAL_REWARDS]: annualRewards,
-  'position-history': positionHistory,
-  accounts,
-  personnel,
-  units,
-  positions,
-  decisions,
+  [RESOURCE_SLUGS.POSITION_HISTORY]: positionHistory,
+  [RESOURCE_SLUGS.ACCOUNTS]: accounts,
+  [RESOURCE_SLUGS.PERSONNEL]: personnel,
+  [RESOURCE_SLUGS.UNITS]: units,
+  [RESOURCE_SLUGS.POSITIONS]: positions,
+  [RESOURCE_SLUGS.DECISIONS]: decisions,
   [AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS]: scientificAchievements,
-  auth,
+  [RESOURCE_SLUGS.AUTH]: auth,
   [AWARD_SLUGS.ADHOC_AWARDS]: adhocAwards,
-  awards,
+  [RESOURCE_SLUGS.AWARDS]: awards,
   [AWARD_SLUGS.TENURE_MEDALS]: tenureMedals,
   [AWARD_SLUGS.COMMEMORATIVE_MEDALS]: commemorativeMedals,
   [AWARD_SLUGS.MILITARY_FLAG]: militaryFlag,
@@ -62,15 +63,15 @@ const ACTION_VI: Record<string, string> = {
   CHANGE_PASSWORD: 'Đổi mật khẩu',
 };
 const RESOURCE_VI: Record<string, string> = {
-  accounts: 'tài khoản',
-  personnel: 'quân nhân',
-  units: 'đơn vị',
-  positions: 'chức vụ',
-  proposals: 'đề xuất',
-  decisions: 'quyết định',
-  profiles: 'hồ sơ',
-  'position-history': 'lịch sử chức vụ',
-  awards: 'khen thưởng',
+  [RESOURCE_SLUGS.ACCOUNTS]: 'tài khoản',
+  [RESOURCE_SLUGS.PERSONNEL]: 'quân nhân',
+  [RESOURCE_SLUGS.UNITS]: 'đơn vị',
+  [RESOURCE_SLUGS.POSITIONS]: 'chức vụ',
+  [RESOURCE_SLUGS.PROPOSALS]: 'đề xuất',
+  [RESOURCE_SLUGS.DECISIONS]: 'quyết định',
+  [RESOURCE_SLUGS.PROFILES]: 'hồ sơ',
+  [RESOURCE_SLUGS.POSITION_HISTORY]: 'lịch sử chức vụ',
+  [RESOURCE_SLUGS.AWARDS]: 'khen thưởng',
   [AWARD_SLUGS.ANNUAL_REWARDS]: AWARD_RESOURCE[AWARD_SLUGS.ANNUAL_REWARDS].vi,
   [AWARD_SLUGS.UNIT_ANNUAL_AWARDS]: AWARD_RESOURCE[AWARD_SLUGS.UNIT_ANNUAL_AWARDS].vi,
   [AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS]: AWARD_RESOURCE[AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS].vi,

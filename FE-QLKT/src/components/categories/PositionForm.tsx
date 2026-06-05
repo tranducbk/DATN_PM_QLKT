@@ -177,15 +177,15 @@ export function PositionForm({ position, units = [], onSuccess, onClose }: Posit
         <Input type="number" placeholder="Nhập hệ số chức vụ (VD: 1.0)" step="0.1" min="0" max="1" />
       </Form.Item>
 
-      {/* Chỉ hiển thị checkbox "Là Chỉ huy?" cho CƠ QUAN ĐƠN VỊ */}
-      {/* Đơn vị trực thuộc KHÔNG có chỉ huy, luôn là false */}
+      {/* Show the "Is commander?" checkbox only for AGENCY UNITS.
+          Subordinate units have no commander, always false. */}
       {!isDonViTrucThuoc && (
         <Form.Item name="is_manager" valuePropName="checked">
           <Checkbox>Là Chỉ huy?</Checkbox>
         </Form.Item>
       )}
 
-      {/* Hiển thị thông báo nếu là đơn vị trực thuộc */}
+      {/* Show a notice for subordinate units */}
       {isDonViTrucThuoc && (
         <Form.Item>
           <Text type="secondary" style={{ fontSize: '13px' }}>

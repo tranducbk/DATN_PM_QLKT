@@ -137,7 +137,7 @@ export const LOAI_DE_XUAT_MAP: Record<string, string> = {
   NCKH: 'Thành tích Nghiên cứu khoa học',
 };
 
-/** Options cho dropdown loại khen thưởng (dùng chung cho decisions page, modal, v.v.) */
+/** Award-type dropdown options shared across the decisions page, modals, etc. */
 export const LOAI_KHEN_THUONG_OPTIONS = Object.entries(LOAI_DE_XUAT_MAP).map(([value, label]) => ({
   label,
   value,

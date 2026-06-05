@@ -354,7 +354,7 @@ export default function ManagerPersonnelEditPage() {
                 autoComplete="off"
                 requiredMark="optional"
               >
-                {/* Thông tin cơ bản */}
+                {/* Basic info */}
                 <Title level={5} className="!mb-4 !mt-0 border-b pb-2">
                   Thông tin cơ bản
                 </Title>
@@ -429,7 +429,7 @@ export default function ManagerPersonnelEditPage() {
                   </Form.Item>
                 </div>
 
-                {/* Địa chỉ */}
+                {/* Address */}
                 <Title level={5} className="!mb-4 !mt-0 border-b pb-2">
                   Thông tin địa chỉ
                 </Title>
@@ -482,12 +482,12 @@ export default function ManagerPersonnelEditPage() {
                   </Form.Item>
                 </div>
 
-                {/* Thông tin đơn vị và chức vụ */}
+                {/* Unit and position info */}
                 <Title level={5} className="!mb-4 !mt-0 border-b pb-2">
                   Thông tin đơn vị & chức vụ
                 </Title>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  {/* Nghề nghiệp quân đội */}
+                  {/* Military service */}
                   <Form.Item
                     name="ngay_nhap_ngu"
                     label="Ngày nhập ngũ"
@@ -513,7 +513,7 @@ export default function ManagerPersonnelEditPage() {
                   </Form.Item>
                 </div>
 
-                {/* Thông tin Đảng */}
+                {/* Party info */}
                 <Title level={5} className="!mb-4 !mt-0 border-b pb-2">
                   Thông tin Đảng
                 </Title>
@@ -548,12 +548,12 @@ export default function ManagerPersonnelEditPage() {
                   </Form.Item>
                 </div>
 
-                {/* Phân công công tác */}
+                {/* Work assignment */}
                 <Title level={5} className="!mb-4 !mt-0 border-b pb-2">
                   Phân công công tác
                 </Title>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Manager không thể thay đổi đơn vị */}
+                  {/* Manager cannot change the unit */}
                   <Form.Item
                     label="Đơn vị"
                     tooltip="Chỉ Phòng Chính trị mới có thể thay đổi đơn vị"

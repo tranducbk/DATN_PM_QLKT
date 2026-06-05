@@ -9,6 +9,7 @@ import { SETTING_DEFAULTS, AWARD_TYPES, SYSTEM_FEATURES } from '../constants/dev
 import { getSetting, setSetting, getSettings } from '../helpers/settingsHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { RESOURCE_SLUGS } from '../constants/resourceSlugs.constants';
 import { authLimiter } from '../configs/rateLimiter';
 import { DEV_ZONE_PASSWORD } from '../configs';
 import { systemSettingRepository } from '../repositories/systemSetting.repository';
@@ -62,7 +63,7 @@ const runCronJob = async () => {
       userId: 'SYSTEM',
       userRole: 'SYSTEM',
       action: AUDIT_ACTIONS.RECALCULATE,
-      resource: 'profiles',
+      resource: RESOURCE_SLUGS.PROFILES,
       description: `Cron job tính toán hồ sơ: cá nhân ${personnelResult.success} thành công (${totalErrors} lỗi), đơn vị ${unitRecalculated} bản ghi, quân số ${unitCountUpdated} đơn vị cập nhật`,
       payload: {
         personnelSuccess: personnelResult.success,
@@ -202,6 +203,19 @@ router.get('/status', verifyDevPassword, async (req: Request, res: Response) => 
   const storedLastRun = await getSetting('cron_last_run', null);
   const storedLastResult = await getSetting('cron_last_result', null);
 
+  let parsedLastResult = lastCronResult;
+  if (storedLastResult) {
+    try {
+      parsedLastResult = JSON.parse(storedLastResult);
+    } catch (e) {
+      void writeSystemLog({
+        action: 'ERROR',
+        resource: 'dev-zone',
+        description: `Dữ liệu cron_last_result không hợp lệ: ${e}`,
+      });
+    }
+  }
+
   res.json({
     success: true,
     data: {
@@ -209,7 +223,7 @@ router.get('/status', verifyDevPassword, async (req: Request, res: Response) => 
         enabled: cronEnabled,
         schedule: cronSchedule,
         lastRun: storedLastRun || lastCronRun,
-        lastResult: storedLastResult ? JSON.parse(storedLastResult) : lastCronResult,
+        lastResult: parsedLastResult,
       },
       features: await getFeatures(),
       server: {
@@ -234,7 +248,7 @@ router.post('/cron/trigger', verifyDevPassword, async (req: Request, res: Respon
       userId: 'SYSTEM',
       userRole: 'SYSTEM',
       action: AUDIT_ACTIONS.RECALCULATE,
-      resource: 'profiles',
+      resource: RESOURCE_SLUGS.PROFILES,
       description: `Tính toán lại hồ sơ: ${result.success} thành công, ${result.errors || 0} lỗi (trigger thủ công)`,
       payload: { success: result.success, errors: result.errors || 0 },
     });
@@ -290,7 +304,7 @@ router.post('/recalculate-unit-count', verifyDevPassword, async (req: Request, r
       userId: 'SYSTEM',
       userRole: 'SYSTEM',
       action: AUDIT_ACTIONS.RECALCULATE,
-      resource: 'units',
+      resource: RESOURCE_SLUGS.UNITS,
       description: `Tính lại quân số đơn vị: ${updated} đơn vị đã cập nhật`,
       payload: { updated },
     });

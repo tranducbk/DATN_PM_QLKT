@@ -385,7 +385,7 @@ export default function UserDashboard() {
                       </Text>
                     </Divider>
 
-                    {/* Biểu đồ tổng các danh hiệu đã nhận */}
+                    {/* Chart of all received awards */}
                     {(() => {
                       const danhHieuCounts: Record<string, number> = {
                         CSTDCS: 0,
@@ -495,7 +495,7 @@ export default function UserDashboard() {
                       </Text>
                     </Divider>
 
-                    {/* HCCSVV - hạng Ba */}
+                    {/* HCCSVV - third class */}
                     <div>
                       <div className="flex justify-between items-center mb-2">
                         <Text strong>hạng Ba (120 tháng)</Text>
@@ -528,7 +528,7 @@ export default function UserDashboard() {
                       />
                     </div>
 
-                    {/* HCCSVV - hạng Nhì */}
+                    {/* HCCSVV - second class */}
                     <div>
                       <div className="flex justify-between items-center mb-2">
                         <Text strong>hạng Nhì (180 tháng)</Text>
@@ -561,7 +561,7 @@ export default function UserDashboard() {
                       />
                     </div>
 
-                    {/* HCCSVV - hạng Nhất */}
+                    {/* HCCSVV - first class */}
                     <div>
                       <div className="flex justify-between items-center mb-2">
                         <Text strong>hạng Nhất (240 tháng)</Text>
@@ -656,7 +656,7 @@ export default function UserDashboard() {
 
                       return (
                         <>
-                          {/* HCBVTQ - hạng Ba */}
+                          {/* HCBVTQ - third class */}
                           <div>
                             <div className="flex justify-between items-center mb-2">
                               <Text strong>hạng Ba ({targetMonths} tháng)</Text>
@@ -694,7 +694,7 @@ export default function UserDashboard() {
                             </Text>
                           </div>
 
-                          {/* HCBVTQ - hạng Nhì */}
+                          {/* HCBVTQ - second class */}
                           <div>
                             <div className="flex justify-between items-center mb-2">
                               <Text strong>hạng Nhì ({targetMonths} tháng)</Text>
@@ -732,7 +732,7 @@ export default function UserDashboard() {
                             </Text>
                           </div>
 
-                          {/* HCBVTQ - hạng Nhất */}
+                          {/* HCBVTQ - first class */}
                           <div>
                             <div className="flex justify-between items-center mb-2">
                               <Text strong>hạng Nhất ({targetMonths} tháng)</Text>

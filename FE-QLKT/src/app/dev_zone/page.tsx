@@ -599,7 +599,7 @@ export default function DevZonePage() {
               ))}
             </div>
 
-            {/* Tính toán lại */}
+            {/* Recalculation */}
             <div className="dz-card">
               <div className="dz-card-title">
                 <ReloadOutlined />
@@ -760,7 +760,7 @@ export default function DevZonePage() {
               )}
             </div>
 
-            {/* Tiện ích */}
+            {/* Utilities */}
             <div className="dz-card">
               <div className="dz-card-title">
                 <ToolOutlined />

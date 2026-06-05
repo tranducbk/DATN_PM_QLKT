@@ -9,6 +9,7 @@ import {
   getDanhHieuName,
 } from '../../../constants/danhHieu.constants';
 import { ELIGIBILITY_STATUS } from '../../../constants/eligibilityStatus.constants';
+import { RESOURCE_SLUGS } from '../../../constants/resourceSlugs.constants';
 import { GENDER } from '../../../constants/gender.constants';
 import { writeSystemLog } from '../../../helpers/systemLogHelper';
 import { buildCutoffDate, formatServiceDuration } from '../../../helpers/serviceYearsHelper';
@@ -158,7 +159,7 @@ class HcbvtqStrategy implements ProposalStrategy {
           });
           void writeSystemLog({
             action: 'ERROR',
-            resource: 'proposals',
+            resource: RESOURCE_SLUGS.PROPOSALS,
             description: `[Tạo đề xuất] Lỗi lấy lịch sử chức vụ quân nhân ${item.personnel_id}: ${(error as Error).message}`,
           });
           return baseData;

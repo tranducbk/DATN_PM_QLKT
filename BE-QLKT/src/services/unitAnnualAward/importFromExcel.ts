@@ -1,6 +1,9 @@
 import type { Prisma } from '../../generated/prisma';
 import { danhHieuDonViHangNamRepository } from '../../repositories/danhHieu.repository';
-import { coQuanDonViRepository, donViTrucThuocRepository } from '../../repositories/unit.repository';
+import {
+  coQuanDonViRepository,
+  donViTrucThuocRepository,
+} from '../../repositories/unit.repository';
 import { proposalRepository } from '../../repositories/proposal.repository';
 import { loadWorkbook } from '../../helpers/excel/excelImportHelper';
 import {
@@ -9,10 +12,11 @@ import {
 } from '../../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
+import { getHeaderCol } from '../../helpers/excel/excelHelper';
 import {
-  parseHeaderMap,
-  getHeaderCol,
-} from '../../helpers/excel/excelHelper';
+  parseUnitAnnualRewardImport,
+  buildUnitLookupMaps,
+} from '../../helpers/excel/unitAnnualRewardImportHelper';
 import { NotFoundError, ValidationError } from '../../middlewares/errorHandler';
 import { AWARD_EXCEL_SHEETS } from '../../constants/awardExcel.constants';
 import type { UnitAnnualAwardDeps } from './types';
@@ -34,32 +38,9 @@ export async function importFromExcel(
     throw new ValidationError('File Excel không hợp lệ hoặc không tìm thấy sheet dữ liệu');
   }
 
-  const headerMap = parseHeaderMap(worksheet);
-
-  const maDonViCol = getHeaderCol(headerMap, ['ma_don_vi', 'ma_donvi', 'ma', 'madonvi']);
-  const namCol = getHeaderCol(headerMap, ['nam', 'year', 'năm']);
-  const danhHieuCol = getHeaderCol(headerMap, ['danh_hieu', 'danhhieu', 'danh_hiu', 'danhieu']);
-  const soQuyetDinhCol = getHeaderCol(headerMap, [
-    'so_quyet_dinh',
-    'soquyetdinh',
-    'so_qd',
-    'soqd',
-  ]);
-  const ghiChuCol = getHeaderCol(headerMap, ['ghi_chu', 'ghichu', 'ghi_ch', 'ghich']);
-  const bkbqpCol = getHeaderCol(headerMap, ['nhan_bkbqp', 'bkbqp']);
-  const soQdBkbqpCol = getHeaderCol(headerMap, [
-    'so_quyet_dinh_bkbqp',
-    'so_qd_bkbqp',
-    'soqdbkbqp',
-  ]);
-
-  if (!maDonViCol || !namCol || !danhHieuCol) {
-    throw new ValidationError(
-      `Thiếu cột bắt buộc: Mã đơn vị, Năm, Danh hiệu. Tìm thấy headers: ${Object.keys(
-        headerMap
-      ).join(', ')}`
-    );
-  }
+  const { headerMap, columns, maDonViList, allYears } = parseUnitAnnualRewardImport(worksheet);
+  const { maDonViCol, namCol, danhHieuCol, soQuyetDinhCol, ghiChuCol, bkbqpCol, soQdBkbqpCol } =
+    columns;
 
   const hoTenCheck = getHeaderCol(headerMap, ['ho_va_ten', 'ho_ten', 'hoten', 'hovaten']);
   const capBacCheck = getHeaderCol(headerMap, ['cap_bac', 'capbac']);
@@ -74,23 +55,14 @@ export async function importFromExcel(
   let total = 0;
   const selectedUnitIds = [];
 
-  const allMaDonVi = new Set<string>();
-  const allYears = new Set<number>();
-  for (let i = 2; i <= worksheet.rowCount; i++) {
-    const row = worksheet.getRow(i);
-    const maDonVi = maDonViCol ? String(row.getCell(maDonViCol).value || '').trim() : '';
-    const namVal = namCol ? row.getCell(namCol).value : null;
-    if (maDonVi) allMaDonVi.add(maDonVi);
-    const parsedNam = parseInt(String(namVal), 10);
-    if (!isNaN(parsedNam)) allYears.add(parsedNam);
-  }
-
   const [coQuanDonViList, donViTrucThuocList] = await Promise.all([
-    coQuanDonViRepository.findManyRaw({ where: { ma_don_vi: { in: [...allMaDonVi] } } }),
-    donViTrucThuocRepository.findManyRaw({ where: { ma_don_vi: { in: [...allMaDonVi] } } }),
+    coQuanDonViRepository.findManyRaw({ where: { ma_don_vi: { in: maDonViList } } }),
+    donViTrucThuocRepository.findManyRaw({ where: { ma_don_vi: { in: maDonViList } } }),
   ]);
-  const coQuanDonViByMa = new Map(coQuanDonViList.map(u => [u.ma_don_vi, u] as const));
-  const donViTrucThuocByMa = new Map(donViTrucThuocList.map(u => [u.ma_don_vi, u] as const));
+  const { coQuanDonViByMa, donViTrucThuocByMa } = buildUnitLookupMaps(
+    coQuanDonViList,
+    donViTrucThuocList
+  );
 
   const allCQDVIds = coQuanDonViList.map(u => u.id);
   const allDVTTIds = donViTrucThuocList.map(u => u.id);
@@ -104,7 +76,7 @@ export async function importFromExcel(
               { don_vi_truc_thuoc_id: { in: allDVTTIds } },
             ],
           },
-          { nam: { in: [...allYears] } },
+          { nam: { in: allYears } },
         ],
       },
       select: {
@@ -119,7 +91,7 @@ export async function importFromExcel(
     proposalRepository.findManyRaw({
       where: {
         loai_de_xuat: PROPOSAL_TYPES.DON_VI_HANG_NAM,
-        nam: { in: [...allYears] },
+        nam: { in: allYears },
         status: PROPOSAL_STATUS.PENDING,
       },
     }),
@@ -217,8 +189,8 @@ export async function importFromExcel(
         const finalDhDvtt = isBkDvtt ? null : danhHieu;
         const dvttIsBkbqp = danhHieu === DANH_HIEU_DON_VI_HANG_NAM.BKBQP || nhanBkbqp;
         const dvttIsBkttcp = danhHieu === DANH_HIEU_DON_VI_HANG_NAM.BKTTCP;
-        const dvttSoQdBkbqp = dvttIsBkbqp ? (soQdBkbqp || soQuyetDinh || null) : null;
-        const dvttSoQdBkttcp = dvttIsBkttcp ? (soQuyetDinh || null) : null;
+        const dvttSoQdBkbqp = dvttIsBkbqp ? soQdBkbqp || soQuyetDinh || null : null;
+        const dvttSoQdBkttcp = dvttIsBkttcp ? soQuyetDinh || null : null;
 
         const award = await danhHieuDonViHangNamRepository.upsert({
           where: {
@@ -231,8 +203,8 @@ export async function importFromExcel(
             don_vi_truc_thuoc_id: donViTrucThuoc.id,
             nam,
             danh_hieu: finalDhDvtt,
-            so_quyet_dinh: isBkDvtt ? null : (soQuyetDinh || null),
-            ghi_chu: isBkDvtt ? null : (ghiChu || null),
+            so_quyet_dinh: isBkDvtt ? null : soQuyetDinh || null,
+            ghi_chu: isBkDvtt ? null : ghiChu || null,
             nhan_bkbqp: dvttIsBkbqp,
             so_quyet_dinh_bkbqp: dvttSoQdBkbqp,
             ...(dvttIsBkbqp && ghiChu && { ghi_chu_bkbqp: ghiChu }),
@@ -244,9 +216,17 @@ export async function importFromExcel(
           },
           update: {
             ...(isBkDvtt ? {} : { danh_hieu: finalDhDvtt, so_quyet_dinh: soQuyetDinh || null }),
-            ...(isBkDvtt ? {} : (ghiChu ? { ghi_chu: ghiChu } : {})),
-            ...(dvttIsBkbqp && { nhan_bkbqp: true, so_quyet_dinh_bkbqp: dvttSoQdBkbqp, ...(ghiChu && { ghi_chu_bkbqp: ghiChu }) }),
-            ...(dvttIsBkttcp && { nhan_bkttcp: true, so_quyet_dinh_bkttcp: dvttSoQdBkttcp, ...(ghiChu && { ghi_chu_bkttcp: ghiChu }) }),
+            ...(isBkDvtt ? {} : ghiChu ? { ghi_chu: ghiChu } : {}),
+            ...(dvttIsBkbqp && {
+              nhan_bkbqp: true,
+              so_quyet_dinh_bkbqp: dvttSoQdBkbqp,
+              ...(ghiChu && { ghi_chu_bkbqp: ghiChu }),
+            }),
+            ...(dvttIsBkttcp && {
+              nhan_bkttcp: true,
+              so_quyet_dinh_bkttcp: dvttSoQdBkttcp,
+              ...(ghiChu && { ghi_chu_bkttcp: ghiChu }),
+            }),
           },
         });
         imported.push(award);
@@ -273,8 +253,8 @@ export async function importFromExcel(
         const finalDhCqdv = isBkCqdv ? null : danhHieu;
         const cqdvIsBkbqp = danhHieu === DANH_HIEU_DON_VI_HANG_NAM.BKBQP || nhanBkbqp;
         const cqdvIsBkttcp = danhHieu === DANH_HIEU_DON_VI_HANG_NAM.BKTTCP;
-        const cqdvSoQdBkbqp = cqdvIsBkbqp ? (soQdBkbqp || soQuyetDinh || null) : null;
-        const cqdvSoQdBkttcp = cqdvIsBkttcp ? (soQuyetDinh || null) : null;
+        const cqdvSoQdBkbqp = cqdvIsBkbqp ? soQdBkbqp || soQuyetDinh || null : null;
+        const cqdvSoQdBkttcp = cqdvIsBkttcp ? soQuyetDinh || null : null;
 
         const award = await danhHieuDonViHangNamRepository.upsert({
           where: {
@@ -287,8 +267,8 @@ export async function importFromExcel(
             co_quan_don_vi_id: donVi.id,
             nam,
             danh_hieu: finalDhCqdv,
-            so_quyet_dinh: isBkCqdv ? null : (soQuyetDinh || null),
-            ghi_chu: isBkCqdv ? null : (ghiChu || null),
+            so_quyet_dinh: isBkCqdv ? null : soQuyetDinh || null,
+            ghi_chu: isBkCqdv ? null : ghiChu || null,
             nhan_bkbqp: cqdvIsBkbqp,
             so_quyet_dinh_bkbqp: cqdvSoQdBkbqp,
             ...(cqdvIsBkbqp && ghiChu && { ghi_chu_bkbqp: ghiChu }),
@@ -300,9 +280,17 @@ export async function importFromExcel(
           },
           update: {
             ...(isBkCqdv ? {} : { danh_hieu: finalDhCqdv, so_quyet_dinh: soQuyetDinh || null }),
-            ...(isBkCqdv ? {} : (ghiChu ? { ghi_chu: ghiChu } : {})),
-            ...(cqdvIsBkbqp && { nhan_bkbqp: true, so_quyet_dinh_bkbqp: cqdvSoQdBkbqp, ...(ghiChu && { ghi_chu_bkbqp: ghiChu }) }),
-            ...(cqdvIsBkttcp && { nhan_bkttcp: true, so_quyet_dinh_bkttcp: cqdvSoQdBkttcp, ...(ghiChu && { ghi_chu_bkttcp: ghiChu }) }),
+            ...(isBkCqdv ? {} : ghiChu ? { ghi_chu: ghiChu } : {}),
+            ...(cqdvIsBkbqp && {
+              nhan_bkbqp: true,
+              so_quyet_dinh_bkbqp: cqdvSoQdBkbqp,
+              ...(ghiChu && { ghi_chu_bkbqp: ghiChu }),
+            }),
+            ...(cqdvIsBkttcp && {
+              nhan_bkttcp: true,
+              so_quyet_dinh_bkttcp: cqdvSoQdBkttcp,
+              ...(ghiChu && { ghi_chu_bkttcp: ghiChu }),
+            }),
           },
         });
         imported.push(award);

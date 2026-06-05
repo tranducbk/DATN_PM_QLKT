@@ -691,7 +691,7 @@ export function Step2SelectPersonnelHCQKQT({
         </Text>
       </div>
 
-      {/* Cảnh báo về quân nhân không đủ điều kiện */}
+      {/* Warning for ineligible personnel */}
       {(() => {
         const ineligiblePersonnel = filteredPersonnel.filter(
           p => !checkEligibleForHCQKQT(p).eligible

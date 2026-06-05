@@ -590,7 +590,7 @@ export function ProfileEditForm({
           )}
 
           <Form form={form} layout="vertical" onFinish={handleSubmit} size="large">
-            {/* Thông tin cơ bản */}
+            {/* Basic info */}
             <Divider orientation="left">
               <span className="text-lg font-semibold flex items-center gap-2">
                 <UserOutlined className="text-blue-500" />
@@ -669,7 +669,7 @@ export function ProfileEditForm({
               </Form.Item>
             </div>
 
-            {/* Thông tin địa chỉ */}
+            {/* Address info */}
             <Divider orientation="left">
               <span className="text-lg font-semibold flex items-center gap-2">
                 <EnvironmentOutlined className="text-green-500" />
@@ -728,7 +728,7 @@ export function ProfileEditForm({
               </Form.Item>
             </div>
 
-            {/* Thông tin công tác */}
+            {/* Work info */}
             <Divider orientation="left">
               <span className="text-lg font-semibold flex items-center gap-2">
                 <BankOutlined className="text-purple-500" />
@@ -823,7 +823,7 @@ export function ProfileEditForm({
               </Form.Item>
             </div>
 
-            {/* Thông tin Đảng */}
+            {/* Party info */}
             <Divider orientation="left">
               <span className="text-lg font-semibold flex items-center gap-2">
                 <TeamOutlined className="text-red-500" />

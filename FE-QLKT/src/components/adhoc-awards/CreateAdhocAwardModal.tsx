@@ -40,6 +40,7 @@ import type {
   DecisionAutocompleteRow,
 } from './types';
 import { INITIAL_CREATE_FORM, RANK_OPTIONS } from './types';
+import { BASE_URL } from '@/configs';
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -755,9 +756,8 @@ export function CreateAdhocAwardModal({
                     size="small"
                     icon={<DownloadOutlined />}
                     onClick={() => {
-                      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
                       const link = document.createElement('a');
-                      link.href = `${baseUrl}/${selectedDecision.file_path}`;
+                      link.href = `${BASE_URL}/${selectedDecision.file_path}`;
                       link.download = selectedDecision.file_path?.split('/').pop() || 'file';
                       link.target = '_blank';
                       document.body.appendChild(link);

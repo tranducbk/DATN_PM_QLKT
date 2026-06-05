@@ -62,15 +62,12 @@ export function useSocket(
 
     socket.on('connect_error', async (err: Error) => {
       if (err.message === 'TOKEN_EXPIRED') {
-        const storedRefresh = localStorage.getItem('refreshToken');
-        if (!storedRefresh) return;
         try {
-          const res = await axiosInstance.post('/api/auth/refresh', { refreshToken: storedRefresh });
+          // Refresh token lives in an httpOnly cookie sent automatically (withCredentials)
+          const res = await axiosInstance.post('/api/auth/refresh');
           const newToken = res.data?.data?.accessToken;
           if (newToken) {
             localStorage.setItem('accessToken', newToken);
-            const newRefresh = res.data?.data?.refreshToken;
-            if (newRefresh) localStorage.setItem('refreshToken', newRefresh);
             (socket.auth as Record<string, string>).token = newToken;
             window.dispatchEvent(new CustomEvent('tokenRefreshed', { detail: { accessToken: newToken } }));
             socket.connect();

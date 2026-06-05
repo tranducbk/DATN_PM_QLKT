@@ -564,7 +564,7 @@ export default function ManagerAdhocAwardsPage() {
               </Descriptions>
             </Card>
 
-            {/* File đính kèm */}
+            {/* Attachments */}
             {detailAward.files_dinh_kem && detailAward.files_dinh_kem.length > 0 && (
               <Card size="small" title={`File đính kèm (${detailAward.files_dinh_kem.length})`}>
                 <List

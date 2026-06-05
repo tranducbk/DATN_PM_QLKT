@@ -837,7 +837,7 @@ export function Step2SelectPersonnelNienHan({
         </Text>
       </div>
 
-      {/* Cảnh báo về quân nhân chưa có giới tính hoặc ngày nhập ngũ */}
+      {/* Warning for personnel missing gender or enlistment date */}
       {(() => {
         const missingGenderCount = filteredPersonnel.filter(
           p => !p.gioi_tinh || (p.gioi_tinh !== 'NAM' && p.gioi_tinh !== 'NU')

@@ -13,6 +13,7 @@ import {
 } from '../constants/danhHieu.constants';
 import { PROPOSAL_TYPES, type ProposalType } from '../constants/proposalTypes.constants';
 import { ROLES } from '../constants/roles.constants';
+import { RESOURCE_SLUGS } from '../constants/resourceSlugs.constants';
 import { AppError, ValidationError } from '../middlewares/errorHandler';
 import type { QuanNhan } from '../generated/prisma';
 import { TYPES_WITH_PERSONNEL_DUP } from './awardBulk/dispatchTables';
@@ -214,7 +215,7 @@ class AwardBulkService {
         userId: adminId,
         userRole: ROLES.ADMIN,
         action: 'ERROR',
-        resource: 'awards',
+        resource: RESOURCE_SLUGS.AWARDS,
         description: `[Thêm khen thưởng đồng loạt] ${LOAI_DE_XUAT_MAP[type as keyof typeof LOAI_DE_XUAT_MAP] || type} năm ${nam}: ${importedCount} thành công, ${errors.length} lỗi. Chi tiết: ${errors.join('; ')}`,
       });
     }

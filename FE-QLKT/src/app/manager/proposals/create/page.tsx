@@ -657,7 +657,7 @@ export default function CreateProposalPage() {
               style={{ marginBottom: 24 }}
             />
 
-            {/* Upload file đính kèm */}
+            {/* Attachment upload */}
             <Upload.Dragger
               fileList={attachedFiles}
               onChange={({ fileList }) => setAttachedFiles(fileList)}
@@ -758,7 +758,7 @@ export default function CreateProposalPage() {
               </Descriptions>
             </Card>
 
-            {/* File đính kèm */}
+            {/* Attachments */}
             {attachedFiles.length > 0 && (
               <Card title="File đính kèm" style={{ marginTop: 16, marginBottom: 16 }}>
                 <FileAttachmentList files={attachedFiles} mode="local" />
@@ -823,7 +823,7 @@ export default function CreateProposalPage() {
               />
             </Card>
 
-            {/* Ghi chú */}
+            {/* Note */}
             <Card
               title={
                 <Space>
