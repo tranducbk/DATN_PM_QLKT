@@ -9,7 +9,3 @@ export const changePassword = z.object({
   oldPassword: z.string().min(1, 'Mật khẩu hiện tại là bắt buộc'),
   newPassword: z.string().min(8, 'Mật khẩu mới phải có ít nhất 8 ký tự'),
 });
-
-export const refreshToken = z.object({
-  refreshToken: z.string().min(1, 'Refresh token là bắt buộc'),
-});

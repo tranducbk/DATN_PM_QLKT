@@ -4,7 +4,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import 'dotenv/config';
-import { PORT } from './configs';
+import { PORT, warnInsecureCookieConfig } from './configs';
 import { allowCorsOrigin } from './configs/cors';
 import { prisma } from './models';
 import { errorHandler, notFoundHandler } from './middlewares/errorHandler';
@@ -69,6 +69,8 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 initSocket(httpServer);
+
+warnInsecureCookieConfig();
 
 httpServer.listen(PORT, () => {
   console.log(`🚀 Server đang chạy trên cổng ${PORT}`);

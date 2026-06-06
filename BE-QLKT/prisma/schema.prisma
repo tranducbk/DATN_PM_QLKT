@@ -127,6 +127,7 @@ model TaiKhoan {
   password_hash String   @db.VarChar(255)
   role          String   @db.VarChar(20) // SUPER_ADMIN, ADMIN, MANAGER, USER
   refreshToken  String?  @db.Text
+  prevRefreshToken String? @db.Text // previous token, accepted within a short grace window
   createdAt     DateTime @default(now()) @db.Timestamp(0)
   updatedAt     DateTime @updatedAt @db.Timestamp(0)
 

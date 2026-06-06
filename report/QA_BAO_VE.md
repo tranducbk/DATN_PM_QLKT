@@ -126,22 +126,23 @@
 **Ngắn:** Server stateless dễ scale ngang khi sau này deploy nhiều instance; refresh token rotation cho phép thu hồi session từ server mà không cần Redis.
 
 **Chi tiết theo code thật (`auth.service.ts`):**
-- **Access token:** 30 phút, ký bằng `JWT_SECRET`, payload chứa `id`, `username`, `role`, `quan_nhan_id`.
-- **Refresh token:** 7 ngày, ký bằng `JWT_REFRESH_SECRET` riêng, payload chỉ `id` và `username` để giảm bề mặt rò rỉ.
-- **Lưu trữ refresh:** lưu `refreshToken` trong cột `TaiKhoan.refreshToken` → mỗi tài khoản chỉ có 1 phiên hoạt động cùng lúc. Đăng nhập mới sẽ ghi đè và `emitToUser('force_logout')` cho session cũ.
-- **Verify access:** middleware `verifyToken` check JWT chữ ký + so sánh có refreshToken trong DB → nếu admin xoá refreshToken thì access token đang còn hạn cũng bị từ chối.
+- **Access token:** 30 phút, ký HS256 bằng `JWT_SECRET`, payload `id`, `username`, `role`, `quan_nhan_id`. Mọi `jwt.verify` pin `algorithms:['HS256']`.
+- **Refresh token:** 2 ngày, ký HS256 bằng `JWT_REFRESH_SECRET` riêng, payload tối thiểu `id`, `username`. Gửi qua **httpOnly + Secure cookie** (path `/api/auth`) — JS/XSS không đọc được.
+- **Lưu trữ + rotation:** cột `TaiKhoan.refreshToken` (+ `prevRefreshToken`). Mỗi lần refresh **xoay token** (token cũ thành `prevRefreshToken`). **Single-session**: đăng nhập mới ghi đè token + `emitToUser('force_logout')` → 1 tài khoản chỉ 1 phiên sống.
+- **Grace window (15s):** nếu nhiều tab/socket refresh **cùng lúc**, token vừa-xoay (`prevRefreshToken`) vẫn được chấp nhận trong 15s và **trả lại token hiện hành** (idempotent) → không bị đăng xuất oan. Grace suy từ `iat` của token hiện hành, không cần cột thời gian riêng.
+- **Verify access:** `verifyToken` check chữ ký + **đọc role tươi từ DB** (đổi quyền có hiệu lực ngay) + so có `refreshToken` trong DB → logout/đổi mật khẩu là access token chết ngay.
 
 **Yếu điểm trung thực:**
-- JWT không thể thu hồi chỉ access token — em mitigate bằng cách check DB mỗi request (đã đánh đổi 1 query mỗi request lấy khả năng revoke).
-- Nếu access token bị lộ trong 30 phút → kẻ tấn công vẫn dùng được. Cách giảm: rút expire xuống 15 phút.
+- 1 query DB/request để check session — đánh đổi stateless lấy khả năng revoke (chấp nhận ở quy mô LAN).
+- Access token lộ trong ≤30 phút vẫn dùng được; giảm bằng rút expire.
+- Single-column nên không "phát hiện trộm refresh token" mạnh như mô hình token-family theo thiết bị; với LAN + httpOnly cookie thì rủi ro thấp, để ở hướng phát triển.
 
 **Token leak qua đâu — phòng thế nào:**
-- **Log:** Express middleware chặn log header `Authorization` trong access log (winston format custom).
-- **Network:** LAN nội bộ → traffic không qua Internet → MITM khó. Khi nâng HTTPS với cert nội bộ, JWT trên đường dây được mã hoá TLS.
-- **Browser DevTools:** User vẫn thấy JWT trong Network tab — đây là rủi ro của mọi app dùng JWT. Mitigate: short expire + refresh rotation.
-- **localStorage XSS:** XSS đọc được localStorage. Em chống bằng React tự escape + không dùng eval — XSS gần như không thực hiện được.
+- **Network:** LAN nội bộ → MITM khó; nâng HTTPS thì TLS mã hoá đường truyền.
+- **Refresh token:** httpOnly cookie → JS/XSS không đọc được.
+- **Access token (localStorage):** XSS đọc được — đã vá lỗ DOM-XSS ở PDF viewer (C.3); access token ngắn hạn giảm thiệt hại.
 
-**Phản biện:** "Lưu refreshToken trong DB là làm mất ưu điểm stateless?" → "Đúng, đây là đánh đổi giữa scaling và khả năng revoke. Em chọn revoke vì project chạy LAN, không cần scale ngang."
+**Phản biện:** "Sao không multi-device như hệ thống lớn?" → "Em cố ý ép **single-session** để 1 tài khoản = 1 người thao tác, phục vụ truy vết trách nhiệm. Multi-device (token-family theo thiết bị) để ở hướng phát triển."
 
 ### A.7 — Tại sao Socket.IO mà không phải WebSocket native hay SSE?
 
@@ -492,7 +493,7 @@ dayjs.locale('vi');  // → "tháng 5 năm 2026"
 
 ### A.21 — Cơ chế 2 token (access + refresh) end-to-end — login → refresh → logout
 
-**Ngắn:** Hai token có vai trò khác nhau: access token đóng vai trò "vé vào cửa" mỗi request (ngắn, 30 phút), refresh token đóng vai trò "thẻ thành viên" để xin vé mới (dài, 7 ngày). Mỗi lần refresh, server sinh CẢ access lẫn refresh mới (rotation) → token cũ vô hiệu hoá ngay.
+**Ngắn:** Hai token có vai trò khác nhau: access token là "vé vào cửa" mỗi request (ngắn, 30 phút, ở localStorage), refresh token là "thẻ thành viên" để xin vé mới (2 ngày, trong **httpOnly cookie**). Mỗi lần refresh, server **xoay** token (token cũ giữ làm `prevRefreshToken` cho cửa sổ grace ngắn) → token cũ ngừng hiệu lực, nhưng tha thứ refresh đồng thời trong grace để khỏi đăng xuất oan.
 
 **4 giai đoạn:**
 
@@ -513,20 +514,19 @@ FE LoginForm                  BE auth.controller            BE auth.service     
      │                              │                  generateRefreshToken({id, username})   │
      │                              │                    — JWT_REFRESH_SECRET                 │
      │                              │                              │                          │
-     │                              │                              │── update refreshToken ──→│
-     │                              │←── { accessToken,            │                          │
-     │                              │     refreshToken, user } ─── │                          │
-     │                              │                                                         │
-     │←── 200 + tokens + user ─────│                                                         │
+     │                              │                              │── update {refreshToken,  ──→│
+     │                              │     prevRefreshToken:null}   │                          │
+     │                              │   set-cookie refreshToken (httpOnly)                    │
+     │                              │←── { accessToken, user } ─── │                          │
+     │←── 200 + accessToken + user │  (+ Set-Cookie: refreshToken)                            │
      │                                                                                       │
-   localStorage.setItem('accessToken', ...)                                                  │
-   localStorage.setItem('refreshToken', ...)
+   localStorage.setItem('accessToken', ...)   // refresh token KHÔNG vào localStorage         │
    localStorage.setItem('role', 'username', 'userId', 'quan_nhan_id', 'ho_ten', 'don_vi_id')
 ```
 
-File: `BE/src/services/auth.service.ts:35-95`, `FE/src/contexts/AuthContext.tsx:96-110`.
+File: `BE/src/services/auth.service.ts` (`login`), `FE/src/contexts/AuthContext.tsx`.
 
-**Vì sao lưu refresh trong DB?** Ý tưởng "stateless" của JWT thuần KHÔNG cho phép thu hồi. Em đánh đổi: thêm 1 cột `TaiKhoan.refreshToken` để có khả năng force-logout. Khi user đăng nhập từ thiết bị khác → ghi đè cột này → thiết bị cũ không refresh được nữa → bị đẩy ra.
+**Vì sao lưu refresh trong DB?** JWT thuần KHÔNG thu hồi được. Em đánh đổi: lưu token ở cột `TaiKhoan.refreshToken` (+ `prevRefreshToken` cho grace) để force-logout được. Đăng nhập thiết bị khác → ghi đè cột này (single-session) → thiết bị cũ refresh không khớp → bị đẩy ra.
 
 #### 2. Request bình thường
 
@@ -543,12 +543,12 @@ FE axios interceptor        BE Express                   BE verifyToken middlewa
      │                            │                              │    JWT_SECRET) → payload    │
      │                            │                              │                              │
      │                            │                              │── findUnique(id, select:    │
-     │                            │                              │    refreshToken) ──────────→│
-     │                            │                              │←── { refreshToken: '…' } ──│
+     │                            │                              │  refreshToken,role,qnId) ──→│
+     │                            │                              │←── { refreshToken, role }──│
      │                            │                              │                              │
      │                            │                  if (!account.refreshToken) → 401          │
      │                            │                              │                              │
-     │                            │                  req.user = payload                         │
+     │                            │   req.user = { ...payload, role: account.role } // role DB  │
      │                            │                  next() — vào controller                    │
      │                            │                              │                              │
      │←── 200 + data ────────────│                              │                              │
@@ -577,30 +577,22 @@ FE axios interceptor                  BE auth.service                    DB
        }                                     │                              │
                                              │                              │
        isRefreshing = true                   │                              │
-       const stored = localStorage.getItem('refreshToken')                  │
                                              │                              │
-   ────│── POST /api/auth/refresh ─────────→ │                              │
-       │  { refreshToken: stored }           │                              │
+   ────│── POST /api/auth/refresh ─────────→ │  (refresh token tự gửi qua cookie, no body)     │
                                              │── refreshAccessToken() ────→ │
                                              │   jwt.verify(refreshToken,                       │
-                                             │     JWT_REFRESH_SECRET)                          │
+                                             │     JWT_REFRESH_SECRET, HS256)                   │
                                              │                              │── findUnique(id) →│
                                              │                              │←── account ──────│
                                              │                                                  │
-                                             │  if (account.refreshToken !== refreshToken)      │
-                                             │    throw 401  ← chống dùng refresh cũ           │
+                                             │  if RT === refreshToken → xoay (updateMany có    │
+                                             │     điều kiện, prev = RT cũ)                      │
+                                             │  else if RT === prevRefreshToken && trong grace  │
+                                             │     → trả lại token hiện hành (idempotent)        │
+                                             │  else → 401                                       │
+       │←── 200 { accessToken: new } ────────│  (+ Set-Cookie: refreshToken mới)                │
                                              │                                                  │
-                                             │  newAccessToken = generateAccessToken(...)       │
-                                             │  newRefreshToken = generateRefreshToken(...)     │
-                                             │                              │                   │
-                                             │                              │── update          │
-                                             │                              │   refreshToken →  │
-                                             │                              │   newRefreshToken │
-       │←── 200 { accessToken: new,           │                                                 │
-       │         refreshToken: new } ────────│                                                  │
-                                             │                                                  │
-   localStorage.setItem('accessToken', new)                                                     │
-   localStorage.setItem('refreshToken', new)                                                    │
+   localStorage.setItem('accessToken', new)   // refresh token ở cookie, FE không đụng          │
        processQueue(null, new)               │                                                  │
        isRefreshing = false                  │                                                  │
        originalRequest.headers.Authorization = `Bearer ${new}`                                  │
@@ -610,50 +602,49 @@ FE axios interceptor                  BE auth.service                    DB
 
 File: `BE/src/services/auth.service.ts:111-138`, `FE/src/lib/axiosInstance.ts:58-180`.
 
-**Rotation:** Mỗi lần refresh, BE sinh CẢ accessToken VÀ refreshToken mới, ghi đè cột DB. Refresh token cũ không còn match → reuse refresh cũ = 401 ngay. Đây là OWASP recommended pattern.
+**Rotation + grace:** mỗi refresh xoay token (token cũ → `prevRefreshToken`). Xoay dùng **updateMany có điều kiện** (`where refreshToken = tokenĐangCầm`) nên hai refresh đua nhau chỉ một bên thắng, bên thua đọc lại + trả token hiện hành → không token mồ côi, không đăng xuất oan. Token đã xoay (`prevRefreshToken`) replay **trong grace 15s** (suy từ `iat` token hiện hành) thì được trả lại token hiện hành; ngoài grace → 401.
 
-**Concurrent refresh:** Nếu 5 request 401 cùng lúc, chỉ 1 request đầu thực sự gọi `/auth/refresh`, 4 cái còn lại đứng `failedQueue` chờ → tránh sinh 5 cặp token.
+**Concurrent refresh:** FE còn single-flight (`isRefreshing` + `failedQueue`) để gộp nhiều 401 cùng lúc trong 1 tab; cộng với conditional-update + grace ở BE → an toàn cả khi đa tab/socket.
 
 #### 4. Logout (`POST /api/auth/logout`)
 
 ```
 FE                           BE auth.service                  DB
  │                                  │                              │
- │── POST /auth/logout ────────────→│                              │
- │  { refreshToken }                │                              │
+ │── POST /auth/logout ────────────→│  (refresh token qua cookie)  │
  │                                  │── updateMany({ refreshToken },│
- │                                  │   { refreshToken: null }) ──→│
- │                                  │                              │
- │←── 200 ─────────────────────────│                              │
+ │                                  │   { refreshToken:null,        │
+ │                                  │     prevRefreshToken:null })─→│
+ │←── 200, clearCookie ────────────│                              │
  │
 localStorage.clear()
 router.push('/login')
 ```
 
-File: `BE/src/services/auth.service.ts:145-152`.
+File: `BE/src/services/auth.service.ts` (`logout`).
 
-**Logout chỉ xoá refresh token trong DB**, không invalidate access token đang còn 30 phút. Mitigate: middleware verifyToken check DB phát hiện `refreshToken: null` → 401 cho mọi request từ device đó NGAY LẬP TỨC.
+**Logout xoá `refreshToken` + `prevRefreshToken` trong DB** + clearCookie; access token đang còn 30 phút bị chặn ngay vì `verifyToken` thấy `refreshToken: null` → 401.
 
-**Force logout cross-device:** Đăng nhập máy mới → server ghi đè `TaiKhoan.refreshToken`. Máy cũ access token expire sau ≤30min → gọi refresh → DB.refreshToken không match → 401 → FE forceLogout. Em còn emit Socket.IO `force_logout` event để máy cũ logout NGAY thay vì chờ 30 phút.
+**Force logout cross-device:** Đăng nhập máy mới → ghi đè `TaiKhoan.refreshToken`. Máy cũ refresh → token không khớp (không phải current, không phải prev) → 401 → FE forceLogout; đồng thời emit Socket.IO `force_logout` để máy cũ logout NGAY.
 
 **Bảng tổng kết 2 token:**
 
 | Tiêu chí | Access Token | Refresh Token |
 |---|---|---|
 | Secret | `JWT_SECRET` | `JWT_REFRESH_SECRET` (riêng) |
-| TTL | 30 phút | 7 ngày |
+| TTL | 30 phút | 2 ngày |
 | Payload | `{id, username, role, quan_nhan_id}` | `{id, username}` (tối giản) |
-| Lưu trong DB | KHÔNG | CÓ (cột `TaiKhoan.refreshToken`) |
+| Lưu trong DB | KHÔNG | CÓ (`TaiKhoan.refreshToken` + `prevRefreshToken`) |
 | Gửi mỗi request | CÓ (header Authorization) | KHÔNG (chỉ khi gọi refresh) |
-| Rotation khi refresh | Sinh mới | Sinh mới + ghi đè DB |
+| Rotation khi refresh | Sinh mới | Xoay (single-use) + grace 15s |
 | Có thể revoke server-side? | Gián tiếp (qua DB check) | Trực tiếp (set null) |
-| Lưu phía client | localStorage | localStorage |
+| Lưu phía client | localStorage | **httpOnly cookie** |
 
 **Tại sao 2 token mà không phải 1?**
 
-Nếu chỉ 1 token TTL dài (vd 7 ngày): mỗi request gửi token này — nếu lộ qua log/MITM/XSS thì attacker có 7 ngày tự do → rủi ro lớn. TTL ngắn 30 phút thì user phải đăng nhập lại 48 lần/tuần → UX tệ.
+Nếu chỉ 1 token TTL dài (vd 2 ngày): mỗi request gửi token này — nếu lộ qua log/MITM/XSS thì attacker có 2 ngày tự do → rủi ro lớn. TTL ngắn 30 phút thì user phải đăng nhập lại liên tục → UX tệ.
 
-Tách 2 token giải quyết: access ngắn 30 phút (lộ thì rủi ro chỉ 30 phút), refresh dài 7 ngày NHƯNG chỉ gửi qua HTTPS lúc gọi refresh, không lộ qua mỗi request. Best of both worlds.
+Tách 2 token giải quyết: access ngắn 30 phút (lộ thì rủi ro chỉ 30 phút), refresh 2 ngày NHƯNG nằm trong **httpOnly cookie** và chỉ gửi khi gọi `/api/auth/refresh`, không lộ qua mỗi request. Best of both worlds.
 
 **Hạn chế trung thực:**
 - Cả 2 token đều ở localStorage → vẫn dính XSS. Em dựa vào React auto-escape + không dùng `eval`/`dangerouslySetInnerHTML` chứa user input để hạn chế XSS.

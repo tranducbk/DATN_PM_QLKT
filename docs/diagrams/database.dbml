@@ -89,6 +89,7 @@ Table TaiKhoan {
   password_hash varchar(255) [not null]
   role varchar(20) [not null, note: 'SUPER_ADMIN | ADMIN | MANAGER | USER']
   refreshToken text
+  prevRefreshToken text [note: 'token trước đó, chấp nhận trong cửa sổ grace ngắn']
   createdAt timestamp [not null]
   updatedAt timestamp [not null]
 }

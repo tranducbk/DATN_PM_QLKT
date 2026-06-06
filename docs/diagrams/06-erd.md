@@ -111,6 +111,7 @@ erDiagram
         string password_hash
         string role
         string refreshToken
+        string prevRefreshToken
     }
     LichSuChucVu {
         string id PK

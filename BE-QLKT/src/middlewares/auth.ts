@@ -26,11 +26,11 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction): Pro
   const token = authHeader.substring(7);
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as JwtUser;
+    const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }) as JwtUser;
 
     const account = await accountRepository.findUniqueRaw({
       where: { id: decoded.id },
-      select: { refreshToken: true },
+      select: { refreshToken: true, role: true, quan_nhan_id: true },
     });
 
     if (!account || !account.refreshToken) {
@@ -41,7 +41,12 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction): Pro
       return;
     }
 
-    req.user = decoded;
+    // Trust role/quan_nhan_id from DB, not the token — reflects role changes immediately.
+    req.user = {
+      ...decoded,
+      role: account.role as JwtUser['role'],
+      quan_nhan_id: account.quan_nhan_id ?? undefined,
+    };
     next();
   } catch (err) {
     if (err instanceof Error && err.name === 'TokenExpiredError') {
