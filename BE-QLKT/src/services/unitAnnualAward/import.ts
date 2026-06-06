@@ -24,71 +24,11 @@ import {
   parseUnitAnnualRewardImport,
   buildUnitLookupMaps,
 } from '../../helpers/excel/unitAnnualRewardImportHelper';
-import { NotFoundError, ValidationError } from '../../middlewares/errorHandler';
+import { ValidationError } from '../../middlewares/errorHandler';
 import { validateDecisionNumbers } from '../eligibility/decisionNumberValidation';
 import { IMPORT_TRANSACTION_TIMEOUT } from '../../constants/excel.constants';
 import { AWARD_EXCEL_SHEETS } from '../../constants/awardExcel.constants';
-import type { UnitAnnualAwardDeps, UnitAnnualAwardValidItem } from './types';
-import { checkUnitAwardEligibility as defaultCheckUnitAwardEligibility } from './eligibility';
-
-export const defaultDeps: UnitAnnualAwardDeps = {
-  recalculateAnnualUnit: async () => undefined,
-  checkUnitAwardEligibility: defaultCheckUnitAwardEligibility,
-  getSubUnits: async () => [],
-};
-
-/** Inline duplicate check using pre-fetched maps — replaces per-row checkDuplicateUnitAward calls. */
-export function checkUnitDuplicate(
-  unitId: string,
-  nam: number,
-  danhHieu: string,
-  existingAwardByUnitYear: Map<
-    string,
-    { danh_hieu: string | null; nhan_bkbqp: boolean; nhan_bkttcp: boolean }
-  >,
-  proposalsByYear: Map<number, Array<{ data_danh_hieu: any }>>
-): void {
-  const proposalsForYear = proposalsByYear.get(nam) ?? [];
-  const hasPendingProposal = proposalsForYear.some(p => {
-    const data = (p.data_danh_hieu as Array<Record<string, unknown>>) ?? [];
-    return data.some(item => item.don_vi_id === unitId && item.danh_hieu === danhHieu);
-  });
-  if (hasPendingProposal) {
-    throw new ValidationError(
-      `Đơn vị đã có đề xuất danh hiệu ${getDanhHieuName(danhHieu)} cho năm ${nam}`
-    );
-  }
-
-  const existingAward = existingAwardByUnitYear.get(`${unitId}_${nam}`);
-  if (!existingAward) return;
-
-  const isDv = DANH_HIEU_DON_VI_CO_BAN.has(danhHieu);
-  const isBk = DANH_HIEU_DON_VI_BANG_KHEN.has(danhHieu);
-
-  if (isDv && existingAward.danh_hieu) {
-    if (existingAward.danh_hieu === danhHieu) {
-      throw new ValidationError(
-        `Đơn vị đã có danh hiệu ${getDanhHieuName(danhHieu)} năm ${nam} trên hệ thống`
-      );
-    }
-    throw new ValidationError(
-      `Đơn vị đã có danh hiệu ${getDanhHieuName(existingAward.danh_hieu)} năm ${nam}, không thể thêm ${getDanhHieuName(danhHieu)}`
-    );
-  }
-
-  if (isBk) {
-    if (danhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP && existingAward.nhan_bkbqp) {
-      throw new ValidationError(
-        `Đơn vị đã có ${getDanhHieuName(danhHieu)} năm ${nam} trên hệ thống`
-      );
-    }
-    if (danhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP && existingAward.nhan_bkttcp) {
-      throw new ValidationError(
-        `Đơn vị đã có ${getDanhHieuName(danhHieu)} năm ${nam} trên hệ thống`
-      );
-    }
-  }
-}
+import type { UnitAnnualAwardValidItem } from './types';
 
 export async function previewImport(buffer: Buffer) {
   const workbook = await loadWorkbook(buffer);
@@ -553,5 +493,3 @@ export async function confirmImport(validItems: UnitAnnualAwardValidItem[], admi
     { timeout: IMPORT_TRANSACTION_TIMEOUT }
   );
 }
-
-export { importFromExcel } from './importFromExcel';

@@ -9,7 +9,7 @@ Chương này trình bày quá trình từ thiết kế kiến trúc đến tri�
 \subsection{Lựa chọn kiến trúc phần mềm}
 \label{subsection:4.1.1}
 
-Hệ thống áp dụng \textbf{kiến trúc phân tầng (layered architecture)} với sáu lớp từ ngoài vào trong: Route $\rightarrow$ Middleware $\rightarrow$ Controller $\rightarrow$ Service $\rightarrow$ Repository $\rightarrow$ Prisma Client. Mỗi lớp chỉ tương tác với lớp liền kề, không gọi nhảy lớp. Đây \textbf{không phải mô hình MVC thuần}: backend là API thuần, không có tầng View (giao diện do frontend Next.js đảm nhiệm như một tầng client tách biệt), đồng thời bổ sung hai tầng Service và Repository theo mẫu Controller--Service--Repository để tách bạch rõ logic nghiệp vụ và truy cập dữ liệu \cite{fowler2002poeaa,bass2021architecture}.
+Hệ thống áp dụng \textbf{kiến trúc phân tầng (Layered Architecture)} \cite{fowler2002poeaa,bass2021architecture} gồm bốn tầng từ trên xuống: \textbf{tầng trình bày} (Presentation) $\rightarrow$ \textbf{tầng nghiệp vụ} (Business) $\rightarrow$ \textbf{tầng truy cập dữ liệu} (Persistence) $\rightarrow$ \textbf{tầng dữ liệu} (Database). Trong cài đặt cụ thể, tầng trình bày được tổ chức nội bộ thành Route, Middleware và Controller; tầng nghiệp vụ là các Service; tầng truy cập dữ liệu gồm Repository và Prisma Client; tầng dữ liệu là PostgreSQL. Mỗi tầng chỉ tương tác với tầng liền kề, không gọi nhảy tầng. Đây \textbf{không phải mô hình MVC thuần}: backend là API thuần, không có tầng View (giao diện do frontend Next.js đảm nhiệm như một tầng client tách biệt), đồng thời bổ sung tầng Service và Repository theo mẫu Controller--Service--Repository để tách bạch rõ logic nghiệp vụ và truy cập dữ liệu.
 
 Lớp Repository được tách khỏi Service trong một lần tái cấu trúc lớn của dự án. Trước đó, Service gọi trực tiếp \texttt{prisma.danhHieuHangNam.findMany(\dots)}, ràng buộc logic nghiệp vụ vào Prisma Client. Sau khi tách, Service gọi qua \texttt{danhHieuHangNamRepository.findMany(\dots)}: ranh giới rõ ràng, có thể thay thế ORM trong tương lai mà không phải sửa logic.
 
@@ -23,8 +23,8 @@ Các kiến trúc khác đã được cân nhắc nhưng không được chọn:
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{LayeredArchitecture}
-    \caption{Sơ đồ kiến trúc phân tầng sáu lớp}
+    \includegraphics[width=0.62\textwidth]{KienTrucPhanTang}
+    \caption{Sơ đồ kiến trúc phân tầng (Layered Architecture) bốn tầng}
     \label{fig:kientruc-phantang}
 \end{figure}
 
@@ -39,7 +39,7 @@ Sản phẩm được tổ chức thành ba thành phần độc lập triển k
     \item \textbf{Cơ sở dữ liệu}: PostgreSQL chạy trong tiến trình riêng. Backend kết nối qua Prisma Client, không cho phép FE truy cập trực tiếp.
 \end{itemize}
 
-Cả ba thành phần này được triển khai trên cùng một máy chủ Linux của Học viện và giao tiếp qua localhost. Bên ngoài, người dùng truy cập qua trình duyệt thông qua mạng LAN; FE phục vụ tệp tĩnh (HTML, CSS, JS đã được biên dịch), gọi tới BE qua proxy.
+Cả ba thành phần này được triển khai trên cùng một máy chủ Linux của Học viện và giao tiếp qua localhost. Bên ngoài, người dùng truy cập qua trình duyệt thông qua mạng LAN; FE phục vụ giao diện, còn trình duyệt gọi trực tiếp tới BE qua REST API và Socket.IO.
 
 \subsection{Thiết kế tổng quan các gói}
 \label{subsection:4.1.3}
@@ -59,7 +59,7 @@ Mã nguồn frontend được tổ chức bên trong thư mục \texttt{FE-QLKT/
 
 \subsubsection{Gói phía backend}
 
-Mã nguồn backend được tổ chức bên trong thư mục \texttt{BE-QLKT/src/} theo sáu lớp đã trình bày ở mục \ref{subsection:4.1.1}. Gói \texttt{routes/} định nghĩa các điểm cuối REST API, mỗi miền nghiệp vụ một tệp. Gói \texttt{middlewares/} chứa các tệp \texttt{auth.ts} (xác thực và phân quyền), \texttt{auditLog.ts} (ghi nhật ký mọi thao tác làm thay đổi dữ liệu), \texttt{unitFilter.ts} (lọc dữ liệu theo phạm vi đơn vị của Manager) và \texttt{validate.ts} (bọc Zod validation). Gói \texttt{controllers/} chứa các tệp điều hướng yêu cầu HTTP từ route tới service, được giữ mỏng (mỗi phương thức dưới 50 dòng mã). Gói \texttt{services/} chứa logic nghiệp vụ chính, được tách tiếp thành các thư mục con: \texttt{proposal/strategies/} cho strategy registry của bảy loại đề xuất, \texttt{eligibility/} cho hàm \texttt{chainEligibility} xét quy tắc chuỗi cá nhân và đơn vị, \texttt{profile/annual.ts} cho logic chuỗi cá nhân và \texttt{profile/unit.ts} cho logic chuỗi đơn vị. Gói \texttt{repositories/} đóng gói toàn bộ truy cập Prisma, mỗi model một tệp \texttt{.repository.ts}. Gói \texttt{helpers/} chứa các tiện ích phụ trợ chia theo nhóm: \texttt{auditLog/}, \texttt{notification/}, \texttt{excel/}, \texttt{awardValidation/}. Gói \texttt{validations/} chứa các schema Zod cho từng route. Tệp \texttt{prisma/schema.prisma} ở cấp gốc của module backend định nghĩa toàn bộ 23 model.
+Mã nguồn backend được tổ chức bên trong thư mục \texttt{BE-QLKT/src/} theo các tầng kiến trúc đã trình bày ở mục \ref{subsection:4.1.1}. Gói \texttt{routes/} định nghĩa các điểm cuối REST API, mỗi miền nghiệp vụ một tệp. Gói \texttt{middlewares/} chứa các tệp \texttt{auth.ts} (xác thực và phân quyền), \texttt{auditLog.ts} (ghi nhật ký mọi thao tác làm thay đổi dữ liệu), \texttt{unitFilter.ts} (lọc dữ liệu theo phạm vi đơn vị của Manager) và \texttt{validate.ts} (bọc Zod validation). Gói \texttt{controllers/} chứa các tệp điều hướng yêu cầu HTTP từ route tới service, được giữ mỏng (mỗi phương thức dưới 50 dòng mã). Gói \texttt{services/} chứa logic nghiệp vụ chính, được tách tiếp thành các thư mục con: \texttt{proposal/strategies/} cho strategy registry của bảy loại đề xuất, \texttt{eligibility/} cho hàm \texttt{chainEligibility} xét quy tắc chuỗi cá nhân và đơn vị, \texttt{profile/annual.ts} cho logic chuỗi cá nhân và \texttt{profile/unit.ts} cho logic chuỗi đơn vị. Gói \texttt{repositories/} đóng gói toàn bộ truy cập Prisma, mỗi model một tệp \texttt{.repository.ts}. Gói \texttt{helpers/} chứa các tiện ích phụ trợ chia theo nhóm: \texttt{auditLog/}, \texttt{notification/}, \texttt{excel/}, \texttt{awardValidation/}. Gói \texttt{validations/} chứa các schema Zod cho từng route. Tệp \texttt{prisma/schema.prisma} ở cấp gốc của module backend định nghĩa toàn bộ 23 model.
 
 \begin{figure}[H]
     \centering
@@ -71,12 +71,19 @@ Mã nguồn backend được tổ chức bên trong thư mục \texttt{BE-QLKT/s
 \subsection{Thiết kế chi tiết gói nghiệp vụ Khen thưởng cá nhân hằng năm}
 \label{subsection:4.1.4}
 
-Để minh hoạ cách các tầng phối hợp trong một module nghiệp vụ cụ thể, phần này phân tích module chuỗi danh hiệu hằng năm cá nhân, module phức tạp nhất hệ thống.
+Để minh hoạ cách các tầng phối hợp trong một module nghiệp vụ cụ thể, phần này phân tích module chuỗi danh hiệu hằng năm cá nhân, module phức tạp nhất hệ thống. Sơ đồ chi tiết các gói thành phần và quan hệ phụ thuộc của module được trình bày ở Hình~\ref{fig:goi-chi-tiet-hangnam}.
 
-Khi người dùng truy cập trang hồ sơ một quân nhân, dòng dữ liệu đi qua sáu tầng:
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{so-do-goi-cnhn}
+    \caption{Sơ đồ chi tiết gói nghiệp vụ Khen thưởng cá nhân hằng năm}
+    \label{fig:goi-chi-tiet-hangnam}
+\end{figure}
+
+Khi người dùng truy cập trang hồ sơ một quân nhân, dòng dữ liệu đi qua các tầng theo thứ tự:
 
 \begin{enumerate}
-    \item \textbf{Route} \texttt{GET /api/profiles/annual/:personnel\_id} (định nghĩa tại \texttt{routes/profile.route.ts}) tiếp nhận yêu cầu và đi qua chuỗi middleware \texttt{verifyToken -> requireAuth}.
+    \item \textbf{Route} \texttt{GET /api/profiles/annual/:personnel\_id} (định nghĩa tại \texttt{routes/profile.route.ts}) tiếp nhận yêu cầu, đi qua middleware \texttt{verifyToken}; quyền xem hồ sơ của chính mình được kiểm ở tầng service nên route không cần guard theo vai trò.
     \item \textbf{Controller} \texttt{profileController.getAnnualProfile} (tại \texttt{controllers/profile.controller.ts}) đọc tham số \texttt{personnel\_id}, gọi service tương ứng, gói kết quả qua \texttt{ResponseHelper.success}.
     \item \textbf{Service} \texttt{profileService.recalculateAnnualProfile} (tại \texttt{services/profile/annual.ts}) thực thi logic: nạp danh sách \texttt{DanhHieuHangNam} qua repository, gọi \texttt{computeChainContext} để dẫn xuất ngữ cảnh chuỗi, lặp qua \texttt{PERSONAL\_CHAIN\_AWARDS} và gọi \texttt{checkChainEligibility} cho mỗi cấp, ghi kết quả vào bảng suy diễn \texttt{HoSoHangNam}.
     \item \textbf{Eligibility module} \texttt{services/eligibility/chainEligibility.ts} chứa hàm \texttt{checkChainEligibility(config, context, hasReceivedLifetime)} là hàm thuần, không truy vấn cơ sở dữ liệu, dễ kiểm chứng với mọi bộ đầu vào.
@@ -85,6 +92,30 @@ Khi người dùng truy cập trang hồ sơ một quân nhân, dòng dữ liệ
 \end{enumerate}
 
 Việc tách Service (logic nghiệp vụ) khỏi Eligibility module (quy tắc thuần) là chủ ý: module quy tắc hoàn toàn thuần nên có thể kiểm chứng với mọi kịch bản đầu vào mà không cần kết nối cơ sở dữ liệu, còn Service chỉ điều phối (nạp dữ liệu, gọi quy tắc, ghi kết quả). Ranh giới rõ ràng, dễ bảo trì.
+
+\subsection{Thiết kế chi tiết gói nghiệp vụ Khen thưởng đơn vị hằng năm}
+\label{subsection:goi-chi-tiet-donvi}
+
+Gói khen thưởng đơn vị hằng năm có cấu trúc tầng tương tự gói cá nhân, được trình bày ở Hình~\ref{fig:goi-chi-tiet-donvi}. Điểm khác biệt nằm ở phân quyền và dữ liệu nghiệp vụ, không nằm ở kiến trúc.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{so-do-goi-dvhn}
+    \caption{Sơ đồ chi tiết gói nghiệp vụ Khen thưởng đơn vị hằng năm}
+    \label{fig:goi-chi-tiet-donvi}
+\end{figure}
+
+Dòng dữ liệu khi tính lại điều kiện khen thưởng cho một đơn vị đi qua các tầng:
+
+\begin{enumerate}
+    \item \textbf{Route} (tại \texttt{routes/unitAnnualAward.route.ts}) đi qua middleware \texttt{verifyToken} và \texttt{requireAdminOrManager} --- khác với gói cá nhân, khen thưởng đơn vị chỉ Admin/Manager được thao tác nên route chặn vai trò ngay từ đầu.
+    \item \textbf{Controller} \texttt{unitAnnualAwardController} chuyển yêu cầu tới service.
+    \item \textbf{Service} \texttt{unitAnnualAwardService} (lớp facade) uỷ thác cho module \texttt{services/unitAnnualAward/eligibility.ts}: nạp danh sách \texttt{DanhHieuDonViHangNam} qua repository, đếm số năm Đơn vị Quyết thắng liên tục, rồi gọi quy tắc chuỗi và ghi kết quả vào bảng suy diễn \texttt{HoSoDonViHangNam}.
+    \item \textbf{Eligibility module} \texttt{services/eligibility/unitChainEvaluator.ts} bọc hàm chung \texttt{checkChainEligibility} với bộ cấu hình \texttt{UNIT\_CHAIN\_AWARDS}.
+    \item \textbf{Repository} \texttt{danhHieuDonViHangNamRepository} và \texttt{unitAnnualProfileRepository} đóng gói truy cập Prisma tới hai bảng \texttt{danh\_hieu\_don\_vi\_hang\_nam} và \texttt{ho\_so\_don\_vi\_hang\_nam}.
+\end{enumerate}
+
+Điểm thiết kế đáng chú ý là cả hai gói (cá nhân và đơn vị) cùng dùng chung hàm thuần \texttt{checkChainEligibility} ở tầng \texttt{eligibility/}, chỉ khác bộ cấu hình (\texttt{PERSONAL\_CHAIN\_AWARDS} so với \texttt{UNIT\_CHAIN\_AWARDS}). Nhờ vậy, quy tắc xét chuỗi danh hiệu được mô tả một chỗ duy nhất, hai luồng không thể lệch nhau, và việc bổ sung danh hiệu mới chỉ cần thêm cấu hình. Khác biệt nghiệp vụ thể hiện rõ trên sơ đồ: gói cá nhân có thêm bảng \texttt{ThanhTichKhoaHoc} (yêu cầu nghiên cứu khoa học mỗi năm) và lấy dữ liệu theo từng quân nhân, trong khi gói đơn vị không xét nghiên cứu khoa học.
 
 \subsection{Thiết kế lớp}
 \label{subsection:4.1.5}
@@ -327,7 +358,7 @@ Giao diện hệ thống được phác thảo bằng wireframe trước khi tri
     \label{fig:wf-login}
 \end{figure}
 
-\textbf{Trang chủ Admin} (Hình~\ref{fig:wf-dashboard}) có cấu trúc ba khu vực: thanh điều hướng bên trái (cây cơ quan đơn vị và đơn vị trực thuộc có thể thu gọn), khu vực dashboard ở giữa với bốn thẻ thống kê (tổng quân nhân, tổng đơn vị, đề xuất chờ duyệt, khen thưởng tháng này) cùng các biểu đồ phân bố, khu vực phụ bên phải với danh sách thông báo realtime. Bố cục ba khu vực này được giữ nhất quán xuyên suốt các trang nghiệp vụ chính (Quản lý quân nhân, Quản lý đề xuất, Quản lý quyết định) để giảm thời gian làm quen cho người dùng mới.
+\textbf{Trang chủ Admin} (Hình~\ref{fig:wf-dashboard}) có cấu trúc ba khu vực: thanh điều hướng bên trái (cây cơ quan đơn vị và đơn vị trực thuộc có thể thu gọn), khu vực dashboard ở giữa với bốn thẻ thống kê (tổng quân nhân, tổng đơn vị, đề xuất chờ duyệt, khen thưởng tháng này) cùng các biểu đồ phân bố, khu vực phụ bên phải với danh sách thông báo thời gian thực. Bố cục ba khu vực này được giữ nhất quán xuyên suốt các trang nghiệp vụ chính (Quản lý quân nhân, Quản lý đề xuất, Quản lý quyết định) để giảm thời gian làm quen cho người dùng mới.
 
 \begin{figure}[H]
     \centering
@@ -407,19 +438,18 @@ Sản phẩm dùng các thư viện mã nguồn mở liệt kê tại Bảng \re
 \begin{tabular}{|c|p{6cm}|p{4.5cm}|c|}
 \hline
 \textbf{STT} & \textbf{Mục đích} & \textbf{Thư viện / Công cụ} & \textbf{Phiên bản} \\ \hline
-1 & Khung phát triển frontend & Next.js & 14.x \\ \hline
+1 & Khung phát triển giao diện người dùng & Next.js & 14.x \\ \hline
 2 & Thư viện thành phần UI & Ant Design & 5.x \\ \hline
 3 & Khung CSS utility & Tailwind CSS & 3.x \\ \hline
-4 & Bộ thành phần đặc thù & shadcn/ui (Radix UI) & 1.x \\ \hline
-5 & Khung phát triển backend & Express & 4.x \\ \hline
-6 & Ngôn ngữ kiểu tĩnh & TypeScript & 5.x \\ \hline
-7 & Hệ quản trị CSDL & PostgreSQL & 15 \\ \hline
-8 & ORM & Prisma & 6.x \\ \hline
-9 & Xác thực JWT & jsonwebtoken & 9.x \\ \hline
-10 & Băm mật khẩu & bcrypt & 5.x \\ \hline
-11 & Xác thực dữ liệu (BE + FE) & Zod & 4.x \\ \hline
-12 & Thông báo thời gian thực & Socket.IO & 4.x \\ \hline
-13 & Đọc / ghi Excel & ExcelJS & 4.x \\ \hline
+4 & Khung phát triển phía máy chủ & Express & 4.x \\ \hline
+5 & Ngôn ngữ kiểu tĩnh & TypeScript & 5.x \\ \hline
+6 & Hệ quản trị CSDL & PostgreSQL & 15 \\ \hline
+7 & ORM & Prisma & 6.x \\ \hline
+8 & Xác thực JWT & jsonwebtoken & 9.x \\ \hline
+9 & Băm mật khẩu & bcrypt & 5.x \\ \hline
+10 & Xác thực dữ liệu (BE + FE) & Zod & 4.x \\ \hline
+11 & Thông báo thời gian thực & Socket.IO & 4.x \\ \hline
+12 & Đọc / ghi Excel & ExcelJS & 4.x \\ \hline
 14 & Lập lịch nội bộ & node-cron & 4.x \\ \hline
 15 & Quản lý tiến trình production & PM2 & 5.x \\ \hline
 16 & Header bảo mật HTTP & Helmet & 8.x \\ \hline
@@ -445,7 +475,7 @@ Sau quá trình xây dựng, hệ thống đã hoàn thiện các chức năng c
     \item Tính lại điều kiện khen thưởng hằng năm cá nhân và đơn vị tự động sau mỗi thay đổi nguồn; gợi ý đề nghị bằng tiếng Việt.
     \item Nhập Excel hai bước (xem trước và xác nhận với giao dịch) cho cả bảy loại nghiệp vụ; xuất danh sách khen thưởng theo nhiều tiêu chí.
     \item Quản trị tài khoản bốn cấp; đặt lại mật khẩu; nhật ký hệ thống; sao lưu định kỳ; khu vực DevZone cho SuperAdmin.
-    \item Thông báo realtime qua Socket.IO khi có đề xuất mới, được phê duyệt, bị từ chối, bị xoá hoặc nhập Excel hoàn tất.
+    \item Thông báo thời gian thực qua Socket.IO khi có đề xuất mới, được phê duyệt, bị từ chối, bị xoá hoặc nhập Excel hoàn tất.
 \end{itemize}
 
 Tổng quy mô mã nguồn TypeScript khoảng 96.000 dòng (không tính dòng trống và bình luận), chia thành 38.000 dòng phía backend và 58.000 dòng phía frontend, cộng với 618 dòng \texttt{schema.prisma}. Kho mã nguồn quản lý theo monorepo với hai thư mục \texttt{BE-QLKT/} và \texttt{FE-QLKT/} ở mức gốc.
@@ -677,7 +707,7 @@ Phần này trình bày các ảnh chụp màn hình tiêu biểu của sản ph
 
 \subsubsection{Vai trò Người dùng (User)}
 
-\textbf{Trang chủ Người dùng} (Hình~\ref{fig:ui-user-dashboard}) hiển thị hồ sơ cá nhân của quân nhân đăng nhập: các thẻ thống kê cá nhân (tổng CSTĐCS, NCKH, CSTĐCS liên tục, số tháng cống hiến), thông tin cá nhân và tóm tắt hồ sơ điều kiện hằng năm và niên hạn kèm gợi ý. \textbf{Hồ sơ danh hiệu cá nhân hằng năm} (Hình~\ref{fig:ui-user-annual}) trình bày thanh tiến trình tổng hợp và dòng thời gian chuỗi danh hiệu theo năm (CSTĐCS $\rightarrow$ BKBQP $\rightarrow$ CSTĐTQ $\rightarrow$ BK Thủ tướng Chính phủ).
+\textbf{Trang chủ Người dùng} (Hình~\ref{fig:ui-user-dashboard}) hiển thị hồ sơ cá nhân của quân nhân đăng nhập: các thẻ thống kê cá nhân (tổng CSTĐCS, NCKH, CSTĐCS liên tục, số tháng cống hiến), thông tin cá nhân và tóm tắt hồ sơ điều kiện hằng năm và niên hạn kèm gợi ý. \textbf{Hồ sơ danh hiệu cá nhân hằng năm} (Hình~\ref{fig:ui-user-annual}) trình bày thanh tiến trình tổng hợp và dòng thời gian chuỗi danh hiệu theo năm (CSTĐCS $\rightarrow$ BKBTBQP $\rightarrow$ CSTĐTQ $\rightarrow$ BKTTCP).
 
 \begin{figure}[H]
     \centering
@@ -865,7 +895,7 @@ Hệ thống có thể triển khai trên một máy chủ Linux duy nhất vớ
     \item RAM: 4 GB (khuyến nghị 8 GB cho môi trường vài chục người dùng).
     \item Ổ cứng: 50 GB SSD cho dữ liệu và bản sao lưu.
     \item Hệ điều hành: Ubuntu Server 22.04 LTS hoặc Debian 12.
-    \item Phần mềm phụ thuộc: Node.js 20 LTS, PostgreSQL 15, Nginx 1.24 (làm reverse proxy).
+    \item Phần mềm phụ thuộc: Node.js 20 LTS, PostgreSQL 15.
 \end{itemize}
 
 \subsection{Hướng dẫn triển khai môi trường phát triển}
@@ -883,12 +913,12 @@ Các bước cài đặt trên máy phát triển cá nhân được trình bày
 
 Sau bước 4, mở trình duyệt tới \url{http://localhost:3000} và đăng nhập bằng tài khoản SuperAdmin mặc định để bắt đầu cấu hình các đơn vị, chức vụ và tài khoản phụ trợ.
 
-\subsection{Triển khai sản xuất với PM2 và Nginx}
+\subsection{Triển khai sản xuất với PM2}
 \label{subsection:4.5.3}
 
 Trên máy chủ sản xuất, sản phẩm được vận hành bằng PM2, một công cụ quản lý tiến trình hỗ trợ tự khởi động lại khi tiến trình bị dừng đột ngột, ghi log có thời gian và theo dõi tài nguyên hệ thống. Tệp \texttt{ecosystem.config.js} ở thư mục gốc của dự án khai báo hai tiến trình ứng dụng: \texttt{be-qlkt} chạy bản đã build (\texttt{dist/index.js}) trong thư mục \texttt{BE-QLKT} ở cổng 4000 và \texttt{fe-qlkt} chạy \texttt{next start} trong thư mục \texttt{FE-QLKT} ở cổng 3000. Cả hai tiến trình được đặt biến môi trường \texttt{NODE\_ENV} là \texttt{production}.
 
-Khởi chạy bằng lệnh \texttt{pm2 start ecosystem.config.js}, sau đó dùng \texttt{pm2 save} để ghi nhớ danh sách tiến trình đang chạy và \texttt{pm2 startup} để cấu hình tự khởi động khi máy chủ khởi động lại. Nginx được cấu hình làm reverse proxy: chuyển tiếp các yêu cầu có tiền tố \texttt{/api/*} tới cổng 4000 (backend), các yêu cầu còn lại tới cổng 3000 (frontend), đồng thời xử lý chứng chỉ TLS cho lớp HTTPS bên ngoài.
+Khởi chạy bằng lệnh \texttt{pm2 start ecosystem.config.js}, sau đó dùng \texttt{pm2 save} để ghi nhớ danh sách tiến trình đang chạy và \texttt{pm2 startup} để cấu hình tự khởi động khi máy chủ khởi động lại. Người dùng trong mạng nội bộ truy cập giao diện do tiến trình frontend phục vụ ở cổng 3000; trình duyệt gọi trực tiếp tới backend ở cổng 4000 qua REST API và Socket.IO.
 
 \subsection{Sao lưu và giám sát}
 \label{subsection:4.5.4}

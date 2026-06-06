@@ -74,9 +74,6 @@ class UnitAnnualAwardService {
   confirmImport(validItems: UnitAnnualAwardValidItem[], adminId: string) {
     return importHelpers.confirmImport(validItems, adminId);
   }
-  importFromExcel(buffer: Buffer, adminId: string) {
-    return importHelpers.importFromExcel(buffer, adminId, this);
-  }
 }
 
 export default new UnitAnnualAwardService();

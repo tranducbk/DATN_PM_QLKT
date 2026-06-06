@@ -2,17 +2,10 @@ import { Router, Request, Response } from 'express';
 import path from 'path';
 import fs from 'fs';
 import unitAnnualAwardController from '../controllers/unitAnnualAward.controller';
-import {
-  verifyToken,
-  requireAdminOrManager,
-  requireAdminOnly,
-} from '../middlewares/auth';
+import { verifyToken, requireAdminOrManager, requireAdminOnly } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
-import {
-  excelUpload as upload,
-  decisionUploadDir as uploadDir,
-} from '../configs/multer';
+import { excelUpload as upload, decisionUploadDir as uploadDir } from '../configs/multer';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 import { validate } from '../middlewares/validate';
@@ -67,25 +60,6 @@ router.post(
 );
 
 /**
- * @route   POST /api/unit-annual-awards/import
- * @desc    Import unit annual awards from Excel (legacy direct import)
- * @access  ADMIN only (Excel import is ADMIN-only)
- */
-router.post(
-  '/import',
-  verifyToken,
-  requireAdminOnly,
-  upload.single('file'),
-  auditLog({
-    action: AUDIT_ACTIONS.IMPORT,
-    resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
-    getDescription: getLogDescription(AWARD_SLUGS.UNIT_ANNUAL_AWARDS, 'IMPORT'),
-    getResourceId: () => null,
-  }),
-  unitAnnualAwardController.importFromExcel
-);
-
-/**
  * @route   GET /api/unit-annual-awards/export
  * @desc    Export unit annual awards to Excel
  * @access  ADMIN, MANAGER
@@ -116,14 +90,24 @@ router.get(
  * @desc    List all award history for a unit
  * @access  ADMIN, MANAGER
  */
-router.get('/history', verifyToken, requireAdminOrManager, unitAnnualAwardController.getUnitAnnualAwards);
+router.get(
+  '/history',
+  verifyToken,
+  requireAdminOrManager,
+  unitAnnualAwardController.getUnitAnnualAwards
+);
 
 /**
  * @route   GET /api/unit-annual-awards/profile/:don_vi_id
  * @desc    Get annual award profile for a unit (computed summary)
  * @access  ADMIN, MANAGER
  */
-router.get('/profile/:don_vi_id', verifyToken, requireAdminOrManager, unitAnnualAwardController.getUnitAnnualProfile);
+router.get(
+  '/profile/:don_vi_id',
+  verifyToken,
+  requireAdminOrManager,
+  unitAnnualAwardController.getUnitAnnualProfile
+);
 
 /**
  * @route   GET /api/unit-annual-awards/:id

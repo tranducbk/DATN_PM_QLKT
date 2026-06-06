@@ -231,11 +231,7 @@ class UnitAnnualAwardController {
     if (!don_vi_id) {
       return ResponseHelper.badRequest(res, 'Thiếu thông tin đơn vị');
     }
-    const result = await service.getUnitAnnualAwards(
-      don_vi_id,
-      user?.role,
-      user?.quan_nhan_id
-    );
+    const result = await service.getUnitAnnualAwards(don_vi_id, user?.role, user?.quan_nhan_id);
     return ResponseHelper.success(res, {
       message: 'Lấy lịch sử khen thưởng đơn vị thành công',
       data: result,
@@ -254,7 +250,10 @@ class UnitAnnualAwardController {
     if (yearNumber && !Number.isNaN(yearNumber)) {
       await service.recalculateAnnualUnit(don_vi_id, yearNumber);
     }
-    const result = await service.getAnnualUnit(don_vi_id, yearNumber && !Number.isNaN(yearNumber) ? yearNumber : new Date().getFullYear());
+    const result = await service.getAnnualUnit(
+      don_vi_id,
+      yearNumber && !Number.isNaN(yearNumber) ? yearNumber : new Date().getFullYear()
+    );
     return ResponseHelper.success(res, {
       message: 'Lấy hồ sơ hằng năm đơn vị thành công',
       data: result,
@@ -275,7 +274,9 @@ class UnitAnnualAwardController {
       resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
       description: `Tải lên file "${file.originalname ? Buffer.from(file.originalname, 'latin1').toString('utf8') : 'Excel'}" để review ${AWARD_LABEL}: ${result.valid?.length || 0} hợp lệ, ${result.errors?.length || 0} lỗi`,
       payload: {
-        filename: file.originalname ? Buffer.from(file.originalname, 'latin1').toString('utf8') : undefined,
+        filename: file.originalname
+          ? Buffer.from(file.originalname, 'latin1').toString('utf8')
+          : undefined,
         total: result.total,
         errors: result.errors?.length || 0,
       },
@@ -300,7 +301,15 @@ class UnitAnnualAwardController {
       payload: { imported: result.imported ?? items.length },
     });
     const unitIds = items.map((i: { unit_id: string }) => i.unit_id);
-    notifyOnImport(user.id, AWARD_SLUGS.UNIT_ANNUAL_AWARDS, result.imported ?? items.length, [], unitIds).catch((e) => { console.error('[unit-annual-awards] notifyOnImport failed:', e); });
+    notifyOnImport(
+      user.id,
+      AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
+      result.imported ?? items.length,
+      [],
+      unitIds
+    ).catch(e => {
+      console.error('[unit-annual-awards] notifyOnImport failed:', e);
+    });
     return ResponseHelper.success(res, { data: result, message: 'Thao tác thành công' });
   });
 
@@ -337,19 +346,6 @@ class UnitAnnualAwardController {
     );
     const buffer = await workbook.xlsx.writeBuffer();
     return res.send(buffer);
-  });
-
-  importFromExcel = catchAsync(async (req: Request, res: Response) => {
-    const user = req.user!;
-    const file = req.file;
-    if (!file) {
-      return ResponseHelper.badRequest(res, 'Vui lòng upload file Excel');
-    }
-    const result = await service.importFromExcel(file.buffer, user.id);
-    return ResponseHelper.success(res, {
-      message: `Đã thêm thành công ${result.imported}/${result.total} bản ghi`,
-      data: result,
-    });
   });
 
   exportToExcel = catchAsync(async (req: Request, res: Response) => {

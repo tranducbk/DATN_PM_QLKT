@@ -113,7 +113,6 @@ export const apiClient = {
   getUnitAnnualAwards: awardsApi.getUnitAnnualAwards,
   getUnitAnnualAwardsByUnit: awardsApi.getUnitAnnualAwardsByUnit,
   getUnitAnnualAwardsTemplate: awardsApi.getUnitAnnualAwardsTemplate,
-  importUnitAnnualAwards: awardsApi.importUnitAnnualAwards,
   exportUnitAnnualAwards: awardsApi.exportUnitAnnualAwards,
   deleteUnitAnnualAward: awardsApi.deleteUnitAnnualAward,
   getUnitAnnualProfile: awardsApi.getUnitAnnualProfile,

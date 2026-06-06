@@ -377,7 +377,6 @@ export function Step2SelectUnits({
           <ExcelImportSection
             awardType="DON_VI_HANG_NAM"
             downloadTemplate={apiClient.getUnitAnnualAwardsTemplate}
-            importFile={apiClient.importUnitAnnualAwards}
             templateFileName="mau_import_don_vi_hang_nam"
             onImportSuccess={handleImportSuccess}
             selectedPersonnelIds={selectedUnitIds}

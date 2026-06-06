@@ -1,7 +1,7 @@
 \documentclass[../DoAn.tex]{subfiles}
 \begin{document}
 
-\section{Next.js 14 --- Khung phát triển frontend}
+\section{Next.js 14 -- Khung phát triển giao diện người dùng}
 \label{section:3.1}
 
 Next.js là khung phát triển ứng dụng web do Vercel phát hành trên nền React. Phiên bản 14 ra mắt tháng 11 năm 2023 đưa App Router lên thành mô hình định tuyến mặc định thay cho Pages Router của các phiên bản trước \cite{nextjsdocs}. App Router tổ chức ứng dụng dưới dạng cây thư mục trong \texttt{app/}: mỗi thư mục con ánh xạ thành một đoạn URL và có thể chứa các tệp \texttt{page.tsx}, \texttt{layout.tsx}, \texttt{loading.tsx}, \texttt{error.tsx} biểu diễn các trạng thái tương ứng.
@@ -12,7 +12,7 @@ Khác biệt kỹ thuật chính của App Router là Server Components: thành 
 
 Đồ án đã cân nhắc hai phương án thay thế. Remix có mô hình data loader đơn giản hơn nhưng cộng đồng và hệ sinh thái plugin nhỏ hơn rõ rệt, đồng thời thiếu công cụ tách bundle theo route trưởng thành như Next.js. SvelteKit có hiệu năng runtime tốt nhưng buộc đội ngũ học thêm framework view mới ngoài React, trong khi Ant Design, thư viện UI chủ lực của hệ thống, mặc định phục vụ React. Vì vậy Next.js được chọn để tận dụng hệ sinh thái React sẵn có và mô hình Server Components mà không phải đánh đổi thư viện UI.
 
-\section{TypeScript và Express --- Nền tảng backend}
+\section{TypeScript và Express -- Nền tảng phía máy chủ}
 \label{section:3.2}
 
 Express là khung HTTP tối giản trên nền Node.js, ra mắt từ năm 2010 và đến nay vẫn là một trong những dự án mã nguồn mở phổ biến nhất hệ sinh thái JavaScript \cite{expressdocs}. Tư tưởng chủ đạo là chuỗi middleware: mỗi yêu cầu đi qua một dãy hàm có chữ ký \texttt{(req, res, next)}, mỗi hàm hoặc thay đổi đối tượng yêu cầu hoặc kết thúc luồng. Mô hình này phù hợp với nhu cầu xác thực, ghi nhật ký và kiểm tra dữ liệu của PM QLKT.
@@ -51,16 +51,16 @@ Phù hợp cho dự án có nhiều quan hệ & Cần cấu hình thủ công & 
 
 Với 23 model và nhiều quan hệ phức tạp (vd: \texttt{BangDeXuat <-> QuanNhan} qua trường \texttt{data\_danh\_hieu} JSONB hoặc qua \texttt{HoSoNienHan}), khả năng sinh truy vấn \texttt{include}, \texttt{select} của Prisma giảm rõ rệt khối lượng mã ở tầng Repository so với SQL viết tay. Đây là lý do trọng yếu để PM QLKT chọn Prisma.
 
-\section{Ant Design, Tailwind CSS và shadcn/ui --- Bộ giao diện ba lớp}
+\section{Ant Design và Tailwind CSS -- Bộ giao diện}
 \label{section:3.4}
 
-Frontend của PM QLKT kết hợp ba thư viện giao diện ở ba vai trò khác nhau. Ant Design là thư viện thành phần React do Alibaba phát hành \cite{antdesigndocs}, cung cấp nhiều thành phần phức tạp đã hoàn thiện như \texttt{Table} có lọc và phân trang, \texttt{Form} tích hợp xác thực, \texttt{Select} đa lớp, \texttt{DatePicker} hỗ trợ múi giờ, \texttt{Modal} lồng nhau và \texttt{Notification}. Đây là thư viện chủ lực của hệ thống: các biểu mẫu đề xuất nhiều bước, bảng danh sách quân nhân có cột động và các hộp thoại xác nhận phê duyệt đều dùng Ant Design.
+Frontend của PM QLKT kết hợp hai thư viện giao diện ở hai vai trò khác nhau. Ant Design là thư viện thành phần React do Alibaba phát hành \cite{antdesigndocs}, cung cấp nhiều thành phần phức tạp đã hoàn thiện như \texttt{Table} có lọc và phân trang, \texttt{Form} tích hợp xác thực, \texttt{Select} đa lớp, \texttt{DatePicker} hỗ trợ múi giờ, \texttt{Modal} lồng nhau và \texttt{Notification}. Đây là thư viện chủ lực của hệ thống: các biểu mẫu đề xuất nhiều bước, bảng danh sách quân nhân có cột động và các hộp thoại xác nhận phê duyệt đều dùng Ant Design.
 
 Tailwind CSS là khung CSS utility-first \cite{tailwinddocs} cho phép áp các lớp đơn lẻ trực tiếp trong JSX để mô tả bố cục, khoảng cách, màu sắc và đáp ứng nhiều kích cỡ màn hình. Tailwind không thay thế Ant Design mà bổ sung tại những điểm cần tinh chỉnh bố cục ngoài phạm vi của các thành phần dựng sẵn, ví dụ căn lề giữa các thẻ thống kê trên Bảng điều khiển, hay xếp lưới hai cột trên màn hình lớn và một cột trên thiết bị di động.
 
-Shadcn/ui có cách phân phối khác biệt: không phải gói npm mà là bộ mã nguồn thành phần dựa trên Radix UI. Lập trình viên dùng CLI để sao chép thành phần (vd: \texttt{button}, \texttt{dropdown-menu}, \texttt{dialog}) vào \texttt{components/ui/} rồi sửa tự do. Cách tiếp cận này loại bỏ ràng buộc phiên bản thư viện và đặc biệt hữu ích cho các thành phần ít gặp như danh sách lệnh tổ hợp phím trong khu vực dành cho lập trình viên (DevZone). Quy ước nội bộ: Ant Design cho biểu mẫu và bảng nghiệp vụ, Tailwind cho bố cục và chỉnh sửa nhẹ, shadcn/ui cho thành phần đặc thù cần kiểm soát mã nguồn.
+Để quản lý các lớp Tailwind theo điều kiện, hệ thống dùng tiện ích \texttt{cn()} kết hợp \texttt{clsx} và \texttt{tailwind-merge}, giúp gộp và khử trùng lặp lớp CSS khi dựng thành phần. Quy ước nội bộ là Ant Design cho biểu mẫu và bảng nghiệp vụ, còn Tailwind cho bố cục và tinh chỉnh giao diện ngoài phạm vi của các thành phần dựng sẵn.
 
-\section{Socket.IO --- Kênh thông báo thời gian thực}
+\section{Socket.IO -- Kênh thông báo thời gian thực}
 \label{section:3.5}
 
 Socket.IO trừu tượng hoá giao thức WebSocket và tự động chuyển sang HTTP long polling khi mạng giữa máy khách và máy chủ không cho phép kết nối WebSocket trực tiếp \cite{socketiodocs}. Thư viện cung cấp khái niệm ``phòng'' (room) cho phép phát thông điệp tới một nhóm kết nối được gán nhãn, phù hợp với mô hình thông báo theo người dùng hoặc theo đơn vị.
@@ -74,14 +74,14 @@ Hệ thống áp dụng JWT theo chuẩn RFC 7519 \cite{rfc7519} cho xác thực
 
 Cơ chế làm mới luân phiên (refresh token rotation) phát hành đồng thời cặp Access + Refresh Token mới ở mỗi lần làm mới và ghi đè cột \texttt{refreshToken}; lần dùng Refresh Token cũ sau đó đều bị từ chối vì không còn khớp với giá trị trong cơ sở dữ liệu. Khi Refresh Token bị đánh cắp, chỉ bên dùng token đầu tiên thực hiện được lần làm mới, bên dùng token sau đó sẽ thất bại dù là kẻ tấn công hay người dùng hợp pháp. Đồng thời quản trị viên có thể buộc đăng xuất bằng cách xoá cột \texttt{refreshToken}. Hai khoá bí mật riêng biệt cho hai loại token theo nguyên tắc phòng thủ nhiều lớp: nếu một khoá bị lộ, chỉ một loại token bị ảnh hưởng. Mật khẩu trước khi lưu vào \texttt{TaiKhoan} được băm bằng bcrypt với hệ số chi phí 10 \cite{bcrypt}. Hệ số này cân bằng giữa thời gian xác thực, khoảng 80\,ms trên máy chủ phát triển, và độ khó vét cạn nếu cơ sở dữ liệu bị rò rỉ.
 
-\section{Zod --- Kiểm tra dữ liệu ở hai phía}
+\section{Zod -- Kiểm tra hợp lệ dữ liệu hai phía}
 \label{section:3.7}
 
 PM QLKT thống nhất dùng Zod \cite{zoddocs} làm thư viện xác thực dữ liệu cho cả backend lẫn frontend, thay vì tách Joi cho backend và Zod cho frontend như nhiều dự án Express truyền thống. Tại backend, mọi route nhận dữ liệu từ client đều đi qua middleware \texttt{validate(schema)} dùng \texttt{ZodType} để kiểm tra \texttt{req.body}, \texttt{req.query} và \texttt{req.params}; schema tập trung tại \texttt{src/validations/}, mỗi miền nghiệp vụ một tệp \texttt{*.validation.ts}. Phương thức \texttt{.strict()} của Zod từ chối những trường không khai báo trong schema, ngăn người dùng đẩy lên các thuộc tính ngoài ý muốn.
 
 Tại frontend, các biểu mẫu Ant Design Form được xác thực bằng Zod kết hợp React Hook Form. Zod tích hợp chặt với TypeScript: kiểu của giá trị form suy luận trực tiếp từ schema qua \texttt{type FormValues = z.infer<typeof formSchema>}, tránh duy trì song song interface và schema. Việc dùng chung một thư viện ở hai phía giảm chi phí học và cho phép viết các đoạn ràng buộc tương tự (vd: CCCD 12 chữ số, năm hợp lệ) bằng cùng một cú pháp, mở đường cho việc trích xuất schema dùng chung sang gói chia sẻ trong tương lai. Logic xác thực không tin tưởng tầng frontend: backend luôn kiểm tra lại dữ liệu trước khi ghi vào cơ sở dữ liệu.
 
-\section{ExcelJS --- Công cụ nhập và xuất Excel}
+\section{ExcelJS -- Công cụ nhập và xuất Excel}
 \label{section:3.8}
 
 ExcelJS \cite{exceljsdocs} là thư viện JavaScript cho phép đọc, ghi và thao tác workbook \texttt{.xlsx} phía máy chủ Node.js. Khác với các thư viện chỉ sinh CSV hay HTML giả lập Excel, ExcelJS hỗ trợ định dạng ô (font, màu nền, viền), khoá ô để chặn chỉnh sửa cột hệ thống, công thức, và quan trọng nhất là Data Validation cho phép tạo danh sách thả xuống ngay trong tệp mẫu xuất ra.

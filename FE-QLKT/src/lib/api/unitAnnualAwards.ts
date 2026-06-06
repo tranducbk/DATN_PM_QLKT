@@ -46,21 +46,6 @@ export async function getUnitAnnualAwardsTemplate(params?: Record<string, string
   }
 }
 
-export async function importUnitAnnualAwards(file: File): Promise<ApiResponse> {
-  try {
-    const formData = new FormData();
-    formData.append('file', file);
-    const res = await axiosInstance.post('/api/unit-annual-awards/import', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return { success: res.data?.success, data: res.data?.data, message: res.data?.message };
-  } catch (e: unknown) {
-    return { success: false, message: getApiErrorMessage(e) };
-  }
-}
-
 export async function exportUnitAnnualAwards(params?: {
   nam?: number;
   danh_hieu?: string;
