@@ -9,22 +9,22 @@ Chương này trình bày quá trình từ thiết kế kiến trúc đến tri�
 \subsection{Lựa chọn kiến trúc phần mềm}
 \label{subsection:4.1.1}
 
-Hệ thống áp dụng \textbf{kiến trúc phân tầng (Layered Architecture)} \cite{fowler2002poeaa,bass2021architecture} gồm bốn tầng từ trên xuống: \textbf{tầng trình bày} (Presentation) $\rightarrow$ \textbf{tầng nghiệp vụ} (Business) $\rightarrow$ \textbf{tầng truy cập dữ liệu} (Persistence) $\rightarrow$ \textbf{tầng dữ liệu} (Database). Trong cài đặt cụ thể, tầng trình bày được tổ chức nội bộ thành Route, Middleware và Controller; tầng nghiệp vụ là các Service; tầng truy cập dữ liệu gồm Repository và Prisma Client; tầng dữ liệu là PostgreSQL. Mỗi tầng chỉ tương tác với tầng liền kề, không gọi nhảy tầng. Đây \textbf{không phải mô hình MVC thuần}: backend là API thuần, không có tầng View (giao diện do frontend Next.js đảm nhiệm như một tầng client tách biệt), đồng thời bổ sung tầng Service và Repository theo mẫu Controller--Service--Repository để tách bạch rõ logic nghiệp vụ và truy cập dữ liệu.
+Hệ thống áp dụng \textbf{kiến trúc phân tầng (Layered Architecture)} \cite{fowler2002poeaa,bass2021architecture} gồm bốn tầng từ trên xuống: \textbf{tầng trình bày} (Presentation) $\rightarrow$ \textbf{tầng nghiệp vụ} (Business) $\rightarrow$ \textbf{tầng truy cập dữ liệu} (Persistence) $\rightarrow$ \textbf{tầng dữ liệu} (Database). Trong cài đặt cụ thể, tầng trình bày được tổ chức nội bộ thành Route, Middleware và Controller; tầng nghiệp vụ là các Service; tầng truy cập dữ liệu gồm Repository và Prisma Client; tầng dữ liệu là PostgreSQL. Mỗi tầng chỉ tương tác với tầng liền kề, không truy cập vượt tầng (Hình~\ref{fig:kientruc-phantang}). Đây \textbf{không phải mô hình MVC thuần}: backend là API thuần, không có tầng View (giao diện do frontend Next.js đảm nhiệm như một tầng client tách biệt), đồng thời bổ sung tầng Service và Repository theo mẫu Controller--Service--Repository để tách bạch rõ logic nghiệp vụ và truy cập dữ liệu.
 
 Lớp Repository được tách khỏi Service trong một lần tái cấu trúc lớn của dự án. Trước đó, Service gọi trực tiếp \texttt{prisma.danhHieuHangNam.findMany(\dots)}, ràng buộc logic nghiệp vụ vào Prisma Client. Sau khi tách, Service gọi qua \texttt{danhHieuHangNamRepository.findMany(\dots)}: ranh giới rõ ràng, có thể thay thế ORM trong tương lai mà không phải sửa logic.
 
 Các kiến trúc khác đã được cân nhắc nhưng không được chọn:
 
 \begin{itemize}
-    \item \textbf{Pure MVC} thiếu khái niệm Repository nên Service vừa chứa logic nghiệp vụ vừa thực hiện truy vấn, vi phạm nguyên tắc đơn trách nhiệm với một dự án có 23 model và nhiều quan hệ phức tạp như PM QLKT.
+    \item \textbf{MVC thuần} không quy định rõ tầng Service và Repository. Với một dự án có 23 model và nhiều quan hệ nghiệp vụ phức tạp như PM QLKT, nếu chỉ tổ chức theo MVC đơn giản thì logic nghiệp vụ và truy cập dữ liệu dễ bị trộn lẫn trong Controller hoặc Service, gây khó bảo trì và kiểm thử.
     \item \textbf{Clean Architecture / Hexagonal} đầy đủ với Use Case Layer, Entity Layer, Adapter Layer quá nặng cho quy mô dự án; lớp Use Case sẽ trùng lặp gần như hoàn toàn với Service trong kiến trúc phân tầng.
     \item \textbf{Microservices} không phù hợp với môi trường mạng nội bộ một máy chủ; chia tách dịch vụ chỉ làm tăng độ phức tạp triển khai mà không mang lại lợi ích về khả năng chịu tải.
 \end{itemize}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.62\textwidth]{KienTrucPhanTang}
-    \caption{Sơ đồ kiến trúc phân tầng (Layered Architecture) bốn tầng}
+    \includegraphics[width=\textwidth]{KienTrucPhanTang}
+    \caption{Sơ đồ kiến trúc phân tầng (Layered Architecture) bốn tầng phía backend}
     \label{fig:kientruc-phantang}
 \end{figure}
 
@@ -48,35 +48,35 @@ Cấu trúc thư mục mã nguồn được tổ chức theo nguyên tắc đơn
 
 \subsubsection{Gói phía frontend}
 
-Mã nguồn frontend được tổ chức bên trong thư mục \texttt{FE-QLKT/src/}. Gói \texttt{app/} chứa cây định tuyến của Next.js App Router với bốn nhánh tương ứng bốn vai trò người dùng (super-admin, admin, manager, user). Gói \texttt{components/} chứa các thành phần React dùng chung, được tách thành các thư mục con theo miền nghiệp vụ: \texttt{auth/} cho màn hình đăng nhập và đổi mật khẩu, \texttt{proposals/} cho biểu mẫu tạo đề xuất nhiều bước với mỗi loại trong bảy loại đề xuất, \texttt{personnel/} cho danh sách và chi tiết quân nhân, \texttt{system-logs/} cho bảng nhật ký hệ thống. Gói \texttt{contexts/} đặt \texttt{AuthContext} quản lý trạng thái đăng nhập trong toàn ứng dụng. Gói \texttt{hooks/} chứa các React hook tự viết như \texttt{useFetch}, \texttt{useAuthGuard}, \texttt{useSocket}. Gói \texttt{lib/} chứa các module phụ trợ: \texttt{api/} chia theo từng miền nghiệp vụ và đóng gói các yêu cầu REST tới backend, \texttt{award/} chứa các hàm trợ giúp render chuỗi danh hiệu phía frontend, \texttt{schemas.ts} định nghĩa các schema Zod xác thực biểu mẫu. Gói \texttt{constants/} chứa các hằng số dùng chung như danh sách vai trò, trạng thái, danh hiệu.
+Mã nguồn frontend được tổ chức bên trong thư mục \texttt{FE-QLKT/src/}. Gói \texttt{app/} chứa cây định tuyến của Next.js App Router với bốn nhánh tương ứng bốn vai trò người dùng (super-admin, admin, manager, user). Gói \texttt{components/} chứa các thành phần React dùng chung, được tách thành các thư mục con theo miền nghiệp vụ: \texttt{auth/} cho màn hình đăng nhập và đổi mật khẩu, \texttt{proposals/} cho biểu mẫu tạo đề xuất nhiều bước với mỗi loại trong bảy loại đề xuất, \texttt{personnel/} cho danh sách và chi tiết quân nhân, \texttt{system-logs/} cho bảng nhật ký hệ thống. Gói \texttt{contexts/} đặt \texttt{AuthContext} quản lý trạng thái đăng nhập trong toàn ứng dụng. Gói \texttt{hooks/} chứa các React hook tự viết như \texttt{useFetch}, \texttt{useAuthGuard}, \texttt{useSocket}. Gói \texttt{lib/} chứa các module phụ trợ: \texttt{api/} chia theo từng miền nghiệp vụ và đóng gói các yêu cầu REST tới backend, \texttt{award/} chứa các hàm trợ giúp render chuỗi danh hiệu phía frontend, \texttt{schemas.ts} định nghĩa các schema Zod xác thực biểu mẫu. Gói \texttt{constants/} chứa các hằng số dùng chung như danh sách vai trò, trạng thái, danh hiệu. Cấu trúc gói phía frontend được thể hiện ở Hình~\ref{fig:goi-frontend}.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.9\textwidth]{goi-fe}
-    \caption{Sơ đồ gói phía frontend}
+    \includegraphics[width=\textwidth,height=0.9\textheight,keepaspectratio]{goi-fe}
+    \caption{Biểu đồ gói phía frontend}
     \label{fig:goi-frontend}
 \end{figure}
 
 \subsubsection{Gói phía backend}
 
-Mã nguồn backend được tổ chức bên trong thư mục \texttt{BE-QLKT/src/} theo các tầng kiến trúc đã trình bày ở mục \ref{subsection:4.1.1}. Gói \texttt{routes/} định nghĩa các điểm cuối REST API, mỗi miền nghiệp vụ một tệp. Gói \texttt{middlewares/} chứa các tệp \texttt{auth.ts} (xác thực và phân quyền), \texttt{auditLog.ts} (ghi nhật ký mọi thao tác làm thay đổi dữ liệu), \texttt{unitFilter.ts} (lọc dữ liệu theo phạm vi đơn vị của Manager) và \texttt{validate.ts} (bọc Zod validation). Gói \texttt{controllers/} chứa các tệp điều hướng yêu cầu HTTP từ route tới service, được giữ mỏng (mỗi phương thức dưới 50 dòng mã). Gói \texttt{services/} chứa logic nghiệp vụ chính, được tách tiếp thành các thư mục con: \texttt{proposal/strategies/} cho strategy registry của bảy loại đề xuất, \texttt{eligibility/} cho hàm \texttt{chainEligibility} xét quy tắc chuỗi cá nhân và đơn vị, \texttt{profile/annual.ts} cho logic chuỗi cá nhân và \texttt{profile/unit.ts} cho logic chuỗi đơn vị. Gói \texttt{repositories/} đóng gói toàn bộ truy cập Prisma, mỗi model một tệp \texttt{.repository.ts}. Gói \texttt{helpers/} chứa các tiện ích phụ trợ chia theo nhóm: \texttt{auditLog/}, \texttt{notification/}, \texttt{excel/}, \texttt{awardValidation/}. Gói \texttt{validations/} chứa các schema Zod cho từng route. Tệp \texttt{prisma/schema.prisma} ở cấp gốc của module backend định nghĩa toàn bộ 23 model.
+Mã nguồn backend được tổ chức bên trong thư mục \texttt{BE-QLKT/src/} theo các tầng kiến trúc đã trình bày ở mục~\ref{subsection:4.1.1}. Gói \texttt{routes/} định nghĩa các điểm cuối REST API, mỗi miền nghiệp vụ một tệp. Gói \texttt{middlewares/} chứa các tệp \texttt{auth.ts} (xác thực và phân quyền), \texttt{auditLog.ts} (ghi nhật ký mọi thao tác làm thay đổi dữ liệu), \texttt{unitFilter.ts} (lọc dữ liệu theo phạm vi đơn vị của Chỉ huy đơn vị) và \texttt{validate.ts} (bọc Zod validation). Gói \texttt{controllers/} chứa các tệp điều hướng yêu cầu HTTP từ route tới service, được giữ mỏng (mỗi phương thức dưới 50 dòng mã). Gói \texttt{services/} chứa logic nghiệp vụ chính, được tách tiếp thành các thư mục con: \texttt{proposal/strategies/} cho strategy registry của bảy loại đề xuất, \texttt{eligibility/} cho hàm \texttt{chainEligibility} xét quy tắc chuỗi cá nhân và đơn vị, \texttt{profile/annual.ts} cho logic chuỗi cá nhân và \texttt{profile/unit.ts} cho logic chuỗi đơn vị. Gói \texttt{repositories/} đóng gói toàn bộ truy cập Prisma, mỗi model một tệp \texttt{.repository.ts}. Gói \texttt{helpers/} chứa các tiện ích phụ trợ chia theo nhóm: \texttt{auditLog/}, \texttt{notification/}, \texttt{excel/}, \texttt{awardValidation/}. Gói \texttt{validations/} chứa các schema Zod cho từng route. Tệp \texttt{prisma/schema.prisma} ở cấp gốc của module backend định nghĩa toàn bộ 23 model. Cấu trúc gói phía backend được thể hiện ở Hình~\ref{fig:goi-backend}.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.9\textwidth]{goi-be}
-    \caption{Sơ đồ gói phía backend}
+    \includegraphics[width=\textwidth,height=0.9\textheight,keepaspectratio]{goi-be}
+    \caption{Biểu đồ gói phía backend}
     \label{fig:goi-backend}
 \end{figure}
 
-\subsection{Thiết kế chi tiết gói nghiệp vụ Khen thưởng cá nhân hằng năm}
+\subsection{Thiết kế chi tiết gói nghiệp vụ khen thưởng cá nhân hằng năm}
 \label{subsection:4.1.4}
 
-Để minh hoạ cách các tầng phối hợp trong một module nghiệp vụ cụ thể, phần này phân tích module chuỗi danh hiệu hằng năm cá nhân, module phức tạp nhất hệ thống. Sơ đồ chi tiết các gói thành phần và quan hệ phụ thuộc của module được trình bày ở Hình~\ref{fig:goi-chi-tiet-hangnam}.
+Để minh hoạ cách các tầng phối hợp trong một module nghiệp vụ cụ thể, phần này phân tích module chuỗi danh hiệu hằng năm cá nhân, module phức tạp nhất hệ thống. Biểu đồ chi tiết các gói thành phần và quan hệ phụ thuộc của module được trình bày ở Hình~\ref{fig:goi-chi-tiet-hangnam}.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth]{so-do-goi-cnhn}
-    \caption{Sơ đồ chi tiết gói nghiệp vụ Khen thưởng cá nhân hằng năm}
+    \includegraphics[width=\textwidth,height=0.9\textheight,keepaspectratio]{so-do-goi-cnhn}
+    \caption{Biểu đồ chi tiết gói nghiệp vụ khen thưởng cá nhân hằng năm}
     \label{fig:goi-chi-tiet-hangnam}
 \end{figure}
 
@@ -93,22 +93,22 @@ Khi người dùng truy cập trang hồ sơ một quân nhân, dòng dữ liệ
 
 Việc tách Service (logic nghiệp vụ) khỏi Eligibility module (quy tắc thuần) là chủ ý: module quy tắc hoàn toàn thuần nên có thể kiểm chứng với mọi kịch bản đầu vào mà không cần kết nối cơ sở dữ liệu, còn Service chỉ điều phối (nạp dữ liệu, gọi quy tắc, ghi kết quả). Ranh giới rõ ràng, dễ bảo trì.
 
-\subsection{Thiết kế chi tiết gói nghiệp vụ Khen thưởng đơn vị hằng năm}
+\subsection{Thiết kế chi tiết gói nghiệp vụ khen thưởng đơn vị hằng năm}
 \label{subsection:goi-chi-tiet-donvi}
 
 Gói khen thưởng đơn vị hằng năm có cấu trúc tầng tương tự gói cá nhân, được trình bày ở Hình~\ref{fig:goi-chi-tiet-donvi}. Điểm khác biệt nằm ở phân quyền và dữ liệu nghiệp vụ, không nằm ở kiến trúc.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth]{so-do-goi-dvhn}
-    \caption{Sơ đồ chi tiết gói nghiệp vụ Khen thưởng đơn vị hằng năm}
+    \includegraphics[width=\textwidth,height=0.9\textheight,keepaspectratio]{so-do-goi-dvhn}
+    \caption{Biểu đồ chi tiết gói nghiệp vụ khen thưởng đơn vị hằng năm}
     \label{fig:goi-chi-tiet-donvi}
 \end{figure}
 
 Dòng dữ liệu khi tính lại điều kiện khen thưởng cho một đơn vị đi qua các tầng:
 
 \begin{enumerate}
-    \item \textbf{Route} (tại \texttt{routes/unitAnnualAward.route.ts}) đi qua middleware \texttt{verifyToken} và \texttt{requireAdminOrManager} --- khác với gói cá nhân, khen thưởng đơn vị chỉ Admin/Manager được thao tác nên route chặn vai trò ngay từ đầu.
+    \item \textbf{Route} (tại \texttt{routes/unitAnnualAward.route.ts}) đi qua middleware \texttt{verifyToken} và \texttt{requireAdminOrManager} --- khác với gói cá nhân, khen thưởng đơn vị chỉ Cán bộ Phòng Chính trị/Chỉ huy đơn vị được thao tác nên route chặn vai trò ngay từ đầu.
     \item \textbf{Controller} \texttt{unitAnnualAwardController} chuyển yêu cầu tới service.
     \item \textbf{Service} \texttt{unitAnnualAwardService} (lớp facade) uỷ thác cho module \texttt{services/unitAnnualAward/eligibility.ts}: nạp danh sách \texttt{DanhHieuDonViHangNam} qua repository, đếm số năm Đơn vị Quyết thắng liên tục, rồi gọi quy tắc chuỗi và ghi kết quả vào bảng suy diễn \texttt{HoSoDonViHangNam}.
     \item \textbf{Eligibility module} \texttt{services/eligibility/unitChainEvaluator.ts} bọc hàm chung \texttt{checkChainEligibility} với bộ cấu hình \texttt{UNIT\_CHAIN\_AWARDS}.
@@ -120,85 +120,166 @@ Dòng dữ liệu khi tính lại điều kiện khen thưởng cho một đơn 
 \subsection{Thiết kế lớp}
 \label{subsection:4.1.5}
 
-Phần này trình bày sơ đồ lớp cho năm module nghiệp vụ chính. Mỗi sơ đồ chỉ ra các lớp/interface cốt lõi cùng các phương thức quan trọng và mối quan hệ.
+Phần này trình bày biểu đồ lớp cho module đề xuất khen thưởng (Hình~\ref{fig:lop-dexuat}) --- module nghiệp vụ phức tạp và tiêu biểu nhất của hệ thống, đồng thời minh hoạ rõ một quyết định thiết kế đáng chú ý là việc áp dụng mẫu thiết kế Strategy. Biểu đồ chỉ ra các lớp và interface cốt lõi cùng các phương thức quan trọng và mối quan hệ giữa chúng.
 
-\textbf{Module xử lý chuỗi danh hiệu.} Trung tâm là interface \texttt{ChainAwardConfig} mô tả cấu hình một cấp trong chuỗi: mã danh hiệu, số năm chu kỳ, danh sách cờ tiền điều kiện, yêu cầu NCKH, có phải danh hiệu một lần duy nhất hay không, tên cột cờ trong cơ sở dữ liệu, nhãn chuỗi. Hai mảng cấu hình \texttt{PERSONAL\_CHAIN\_AWARDS} và \texttt{UNIT\_CHAIN\_AWARDS} chứa các cấp tương ứng cho cá nhân và đơn vị. Hàm \texttt{checkChainEligibility(config, context, hasReceivedLifetime, flagsInWindow)} đọc cấu hình, đối chiếu với ngữ cảnh thực tế và trả về \texttt{EligibilityResult \{ eligible: boolean, reason: string \}}. Interface \texttt{ChainContext} đóng gói các chỉ số dẫn xuất từ lịch sử: độ dài chuỗi, năm gần nhất nhận từng cấp, số cờ tiền điều kiện trong khung xét.
-
-\textbf{Module Strategy đề xuất.} Interface \texttt{ProposalStrategy} áp dụng mẫu thiết kế Strategy \cite{gof1994patterns}, định nghĩa bốn phương thức bắt buộc cho mỗi loại đề xuất: \texttt{buildSubmitPayload}, \texttt{validateApprove}, \texttt{importInTransaction}, \texttt{buildSuccessMessage}. Bảy lớp triển khai (\texttt{caNhanHangNamStrategy}, \texttt{donViHangNamStrategy}, \texttt{hccsvvStrategy}, \texttt{hcqkqtStrategy}, \texttt{kncStrategy}, \texttt{hcbvtqStrategy}, \texttt{nckhStrategy}) đăng ký vào \texttt{REGISTRY} trong \texttt{services/proposal/strategies/index.ts}. Hai lớp single-medal (\texttt{hcqkqtStrategy} và \texttt{kncStrategy}) chia sẻ logic qua hàm trợ giúp \texttt{singleMedalImporter} để tránh trùng lặp.
-
-\textbf{Module xác thực và phân quyền.} Lớp chính là \texttt{AuthService} cung cấp các phương thức \texttt{login}, \texttt{refresh}, \texttt{logout}, \texttt{changePassword}. Middleware \texttt{verifyToken} đọc header \texttt{Authorization: Bearer}, xác minh Access Token, gắn \texttt{req.user}. Middleware \texttt{requireRole(...allowed)} factory trả về middleware kiểm tra \texttt{req.user.role} thuộc danh sách cho phép. Middleware \texttt{unitFilter} truy vấn \texttt{co\_quan\_don\_vi\_id}/\texttt{don\_vi\_truc\_thuoc\_id} của người dùng và áp giới hạn phạm vi cho mỗi yêu cầu của Manager.
-
-\textbf{Module quản lý đề xuất.} \texttt{ProposalService} điều phối luồng tạo và phê duyệt đề xuất, dùng \texttt{proposalRepository} để truy vấn và cập nhật. Hàm \texttt{approveProposal} tại \texttt{services/proposal/approve.ts} đảm nhiệm logic phê duyệt phức tạp; nó gọi tuần tự các module phụ \texttt{approve/validation.ts} (tiền kiểm), \texttt{approve/decisionMappings.ts} (gắn quyết định) và \texttt{approve/import.ts} (ghi dữ liệu) bên trong cùng một giao dịch (transaction) Prisma.
-
-\textbf{Module nhập và xuất Excel.} Bao gồm các hàm trợ giúp dùng chung (\texttt{loadWorkbook}, \texttt{getAndValidateWorksheet}, \texttt{parseHeaderMap}, \texttt{sanitizeRowData}) và các strategy chuyên biệt cho từng loại nghiệp vụ. Mỗi strategy có hai phương thức \texttt{previewImport} (chỉ kiểm tra) và \texttt{confirmImport} (mở giao dịch ghi).
+Interface \texttt{ProposalStrategy} áp dụng mẫu thiết kế Strategy \cite{gof1994patterns}, định nghĩa bốn phương thức bắt buộc cho mỗi loại đề xuất: \texttt{buildSubmitPayload}, \texttt{validateApprove}, \texttt{importInTransaction}, \texttt{buildSuccessMessage}. Bảy lớp triển khai (\texttt{caNhanHangNamStrategy}, \texttt{donViHangNamStrategy}, \texttt{hccsvvStrategy}, \texttt{hcqkqtStrategy}, \texttt{kncStrategy}, \texttt{hcbvtqStrategy}, \texttt{nckhStrategy}) đăng ký vào \texttt{REGISTRY} trong \texttt{services/proposal/strategies/index.ts}. Hai lớp single-medal (\texttt{hcqkqtStrategy} và \texttt{kncStrategy}) chia sẻ logic qua hàm trợ giúp \texttt{singleMedalImporter} để tránh trùng lặp. Lớp \texttt{ProposalService} điều phối luồng tạo và phê duyệt đề xuất: nó chọn strategy phù hợp qua \texttt{ProposalStrategyRegistry} và truy cập dữ liệu qua \texttt{proposalRepository}.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth]{lop-to-chuc}
-    \caption{Sơ đồ lớp module Tổ chức, Quân nhân và Tài khoản}
-    \label{fig:lop-modules}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=\textwidth]{lop-de-xuat}
-    \caption{Sơ đồ lớp module Đề xuất khen thưởng (mẫu Strategy)}
+    \includegraphics[width=\textwidth,height=0.9\textheight,keepaspectratio]{lop-de-xuat}
+    \caption{Biểu đồ lớp module đề xuất khen thưởng (mẫu Strategy)}
     \label{fig:lop-dexuat}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=\textwidth]{lop-khen-thuong}
-    \caption{Sơ đồ lớp module Khen thưởng, Hồ sơ điều kiện và Quyết định}
-    \label{fig:lop-khenthuong}
 \end{figure}
 
 \subsection{Biểu đồ tuần tự}
 \label{subsection:4.1.6}
 
-Hai luồng nghiệp vụ phức tạp và tiêu biểu nhất là tạo đề xuất và phê duyệt khen thưởng. Cả hai được mô hình hoá bằng sơ đồ tuần tự (sequence diagram), thể hiện tương tác giữa các đối tượng theo thời gian.
+Hai luồng nghiệp vụ phức tạp và tiêu biểu nhất là tạo đề xuất và phê duyệt khen thưởng. Cả hai được mô hình hoá bằng biểu đồ tuần tự (sequence diagram), thể hiện tương tác giữa các đối tượng theo thời gian.
 
-\textbf{Luồng tạo đề xuất} (Hình~\ref{fig:tuantu-dexuat}): Manager hoàn thành biểu mẫu năm bước $\rightarrow$ FE gọi \texttt{POST /api/proposals} $\rightarrow$ chuỗi middleware $\rightarrow$ \texttt{proposalService.submitProposal} $\rightarrow$ \texttt{getProposalStrategy(type).buildSubmitPayload} $\rightarrow$ \texttt{proposalRepository.create} $\rightarrow$ phát sự kiện Socket.IO tới Admin $\rightarrow$ trả về đề xuất đã tạo.
+\textbf{Luồng tạo đề xuất} (Hình~\ref{fig:tuantu-dexuat}): Chỉ huy đơn vị hoàn thành biểu mẫu năm bước $\rightarrow$ frontend gửi yêu cầu HTTP \texttt{POST /api/proposals} $\rightarrow$ chuỗi middleware $\rightarrow$ \texttt{proposalService.submitProposal} $\rightarrow$ \texttt{getProposalStrategy(type).buildSubmitPayload} $\rightarrow$ \texttt{proposalRepository.create} $\rightarrow$ phát sự kiện Socket.IO tới Cán bộ Phòng Chính trị $\rightarrow$ trả về đề xuất đã tạo.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.95\textwidth]{seq-de-xuat}
-    \caption{Sơ đồ tuần tự luồng Đề xuất khen thưởng}
+    \includegraphics[width=\textwidth,height=0.9\textheight,keepaspectratio]{seq-de-xuat}
+    \caption{Biểu đồ tuần tự luồng đề xuất khen thưởng}
     \label{fig:tuantu-dexuat}
 \end{figure}
 
-\textbf{Luồng phê duyệt đề xuất} (Hình~\ref{fig:tuantu-pheduyet}): Admin mở chi tiết đề xuất $\rightarrow$ bấm ``Phê duyệt'' $\rightarrow$ FE gọi \texttt{POST /api/proposals/:id/approve} $\rightarrow$ chuỗi middleware $\rightarrow$ \texttt{approveProposal} mở giao dịch Prisma $\rightarrow$ \texttt{validation.preflight} $\rightarrow$ \texttt{strategy.validateApprove} $\rightarrow$ \texttt{decisionMappings.attach} $\rightarrow$ \texttt{strategy.importInTransaction} $\rightarrow$ cập nhật \texttt{BangDeXuat.status = APPROVED} $\rightarrow$ tính lại hồ sơ suy diễn $\rightarrow$ commit $\rightarrow$ ghi nhật ký hệ thống $\rightarrow$ phát sự kiện Socket.IO.
+\textbf{Luồng phê duyệt đề xuất} (Hình~\ref{fig:tuantu-pheduyet}): Cán bộ Phòng Chính trị mở chi tiết đề xuất $\rightarrow$ bấm ``Phê duyệt'' $\rightarrow$ frontend gửi yêu cầu HTTP \texttt{POST /api/proposals/:id/approve} $\rightarrow$ chuỗi middleware $\rightarrow$ \texttt{approveProposal} chạy tiền kiểm (\texttt{validation.preflight}, \texttt{strategy.validateApprove}, kiểm tra trùng lặp và số quyết định) $\rightarrow$ \texttt{decisionMappings.attach} $\rightarrow$ mở giao dịch Prisma gồm \texttt{strategy.importInTransaction} và cập nhật \texttt{BangDeXuat.status = APPROVED} $\rightarrow$ commit $\rightarrow$ tính lại hồ sơ suy diễn $\rightarrow$ ghi nhật ký hệ thống $\rightarrow$ phát sự kiện Socket.IO.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.95\textwidth]{seq-phe-duyet}
-    \caption{Sơ đồ tuần tự luồng Phê duyệt khen thưởng}
+    \includegraphics[width=\textwidth,height=0.9\textheight,keepaspectratio]{seq-phe-duyet}
+    \caption{Biểu đồ tuần tự luồng phê duyệt khen thưởng}
     \label{fig:tuantu-pheduyet}
 \end{figure}
 
 \subsection{Thiết kế cơ sở dữ liệu}
 \label{subsection:4.1.7}
 
-Cơ sở dữ liệu được mô hình hoá thành 23 model trong tệp \texttt{prisma/schema.prisma}. Hình \ref{fig:erd-tongthe} là sơ đồ ERD tổng thể của hệ thống.
+Cơ sở dữ liệu được mô hình hoá thành \textbf{23 bảng} trong tệp \texttt{prisma/schema.prisma}, liên kết với nhau qua \textbf{47 khoá ngoại}, kèm 13 ràng buộc duy nhất đơn cột và 8 ràng buộc duy nhất tổ hợp. Lược đồ được trình bày theo hai mức. Mức thứ nhất là sơ đồ danh mục liệt kê đầy đủ cấu trúc cột của cả 23 bảng, lược bỏ các đường quan hệ để cho cái nhìn tổng thể về thực thể (Hình~\ref{fig:erd-danhmuc}); các quan hệ khoá ngoại được trình bày chi tiết ở các nhóm dữ liệu tiếp theo. Mức thứ hai gồm sáu sơ đồ nhóm dữ liệu tách theo nghiệp vụ, mỗi sơ đồ chỉ giữ các bảng và quan hệ thuộc nhóm đó để đường khoá ngoại hiện rõ. Cách phân rã này theo nguyên tắc mỗi sơ đồ con chỉ chứa khoảng năm đến mười bảng nhằm bảo đảm tính đọc được.
+
+\begin{figure}[p]
+    \centering
+    \includegraphics[width=\textwidth,height=0.92\textheight,keepaspectratio]{Database/erd-0-tat-ca-bang.png}
+    \caption{Tổng quan các bảng trong cơ sở dữ liệu}
+    \label{fig:erd-danhmuc}
+\end{figure}
+
+Do cơ sở dữ liệu của hệ thống gồm nhiều bảng và nhiều quan hệ khoá ngoại, báo cáo không trình bày toàn bộ quan hệ trong một ERD duy nhất. Thay vào đó, lược đồ được chia thành các nhóm dữ liệu theo nghiệp vụ để mỗi sơ đồ chỉ thể hiện một phần quan hệ có liên quan chặt chẽ với nhau.
+
+\textbf{Nhóm dữ liệu Tổ chức, Quân nhân và Tài khoản} (Hình~\ref{fig:erd-tochuc}) gồm sáu bảng \texttt{CoQuanDonVi}, \texttt{DonViTrucThuoc}, \texttt{ChucVu}, \texttt{QuanNhan}, \texttt{LichSuChucVu}, \texttt{TaiKhoan} với chín khoá ngoại. Cơ quan đơn vị là đơn vị cha của đơn vị trực thuộc. Mỗi quân nhân gắn với một chức vụ hiện tại và tối đa một tài khoản đăng nhập. Bảng \texttt{LichSuChucVu} ghi lại quá trình giữ chức vụ, phục vụ tính thời gian cống hiến.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{DB}
-    \caption{Sơ đồ ERD tổng thể của 23 model}
-    \label{fig:erd-tongthe}
+    \includegraphics[width=\textwidth,height=0.9\textheight,keepaspectratio]{Database/erd-1-to-chuc.png}
+    \caption{ERD nhóm dữ liệu tổ chức, quân nhân và tài khoản}
+    \label{fig:erd-tochuc}
 \end{figure}
 
-Sơ đồ ERD tổng thể bao quát toàn bộ 23 bảng với các quan hệ khoá ngoại chính. Có thể nhận diện ba ``trục'' chính: (1) trục tổ chức gồm \texttt{CoQuanDonVi}, \texttt{DonViTrucThuoc}, \texttt{ChucVu}, \texttt{LichSuChucVu}; (2) trục quân nhân gồm \texttt{QuanNhan}, \texttt{TaiKhoan}; (3) trục khen thưởng gồm \texttt{BangDeXuat}, \texttt{DanhHieuHangNam}, \texttt{KhenThuongHCCSVV}, \texttt{HuanChuongQuanKyQuyetThang}, \texttt{KyNiemChuongVSNXDQDNDVN}, \texttt{KhenThuongHCBVTQ}, \texttt{KhenThuongDotXuat}, \texttt{ThanhTichKhoaHoc}. Các bảng suy diễn \texttt{HoSoHangNam}, \texttt{HoSoNienHan}, \texttt{HoSoCongHien}, \texttt{HoSoDonViHangNam} chứa kết quả tính toán mà hệ thống tự động cập nhật lại sau mỗi thay đổi nguồn.
+\textbf{Nhóm dữ liệu đề xuất khen thưởng} (Hình~\ref{fig:erd-dexuat}) lấy bảng \texttt{BangDeXuat} làm trung tâm với bốn khoá ngoại trỏ tới đơn vị nộp đề xuất, tài khoản người đề xuất và tài khoản người duyệt. Dữ liệu chi tiết của từng loại đề xuất được lưu trong các cột JSON, giúp bảng giữ tính đồng nhất mà không phát sinh nhiều bảng trung gian.
 
-Sáu bảng mô tả chi tiết schema sau đây được chọn vì là các bảng trọng yếu nhất, sử dụng nhiều cấu trúc dữ liệu phức tạp (JSON, mảng, kiểu thời gian).
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth,height=0.9\textheight,keepaspectratio]{Database/erd-2-de-xuat.png}
+    \caption{ERD nhóm dữ liệu đề xuất khen thưởng}
+    \label{fig:erd-dexuat}
+\end{figure}
+
+\textbf{Nhóm dữ liệu khen thưởng và hồ sơ cá nhân} (Hình~\ref{fig:erd-ktcn}) gồm mười bảng khen thưởng và hồ sơ điều kiện có quan hệ trực tiếp với \texttt{QuanNhan} qua mười hai khoá ngoại. Ba bảng \texttt{HoSoNienHan}, \texttt{HoSoCongHien}, \texttt{HoSoHangNam} là bảng suy diễn, mỗi quân nhân tương ứng với một bản ghi, lưu kết quả tính điều kiện được hệ thống cập nhật lại sau mỗi thay đổi nguồn.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth,height=0.9\textheight,keepaspectratio]{Database/erd-3-khen-thuong-ca-nhan.png}
+    \caption{ERD nhóm dữ liệu khen thưởng và hồ sơ cá nhân}
+    \label{fig:erd-ktcn}
+\end{figure}
+
+\textbf{Nhóm dữ liệu khen thưởng và hồ sơ đơn vị} (Hình~\ref{fig:erd-ktdv}) gồm \texttt{DanhHieuDonViHangNam} và \texttt{HoSoDonViHangNam} với sáu khoá ngoại. Mỗi bảng liên kết tới cả cơ quan đơn vị lẫn đơn vị trực thuộc tuỳ cấp của đối tượng được khen; riêng \texttt{DanhHieuDonViHangNam} còn tham chiếu tới tài khoản người tạo và tài khoản người duyệt đề nghị.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth,height=0.9\textheight,keepaspectratio]{Database/erd-4-don-vi.png}
+    \caption{ERD nhóm dữ liệu khen thưởng và hồ sơ đơn vị}
+    \label{fig:erd-ktdv}
+\end{figure}
+
+\textbf{Nhóm dữ liệu Quyết định} (Hình~\ref{fig:erd-qd}) tách riêng bảng \texttt{FileQuyetDinh} làm tâm điểm; tám bảng khen thưởng tham chiếu tới cột \texttt{so\_quyet\_dinh} của bảng này qua mười ba khoá ngoại. Việc khoá ngoại trỏ tới cột \texttt{so\_quyet\_dinh}, một cột UNIQUE, thay vì khoá chính \texttt{id} là chủ ý: nhờ \texttt{ON UPDATE CASCADE}, khi sửa số quyết định thì thay đổi tự lan truyền sang mọi bảng khen thưởng liên quan.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth,height=0.9\textheight,keepaspectratio]{Database/erd-5-quyet-dinh.png}
+    \caption{ERD nhóm dữ liệu quyết định khen thưởng}
+    \label{fig:erd-qd}
+\end{figure}
+
+\textbf{Nhóm dữ liệu Hệ thống} (Hình~\ref{fig:erd-hethong}) gồm \texttt{SystemLog}, \texttt{ThongBao} và \texttt{SystemSetting}. Nhật ký hệ thống ghi lại mọi thao tác; thông báo gửi tới tài khoản người nhận và có thể tham chiếu ngược về bản ghi nhật ký đã sinh ra nó.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth,height=0.9\textheight,keepaspectratio]{Database/erd-6-he-thong.png}
+    \caption{ERD nhóm dữ liệu nhật ký, thông báo và cấu hình hệ thống}
+    \label{fig:erd-hethong}
+\end{figure}
+
+Toàn bộ 23 bảng đều dùng khoá chính \dbid{id} kiểu chuỗi sinh tự động theo chuẩn CUID. Phần dưới tóm tắt vai trò, các thuộc tính chính và quan hệ khoá ngoại của từng bảng, sắp xếp theo sáu nhóm dữ liệu đã trình bày.
+
+\textbf{Nhóm dữ liệu Tổ chức, Quân nhân và Tài khoản.}
+\begin{itemize}
+    \item \texttt{CoQuanDonVi} --- cơ quan/đơn vị cấp trên. Thuộc tính chính: \dbid{ma_don_vi} (duy nhất), \dbid{ten_don_vi}, \dbid{so_luong}. Quan hệ: được đơn vị trực thuộc, chức vụ, quân nhân và các bảng khen thưởng đơn vị tham chiếu.
+    \item \texttt{DonViTrucThuoc} --- đơn vị trực thuộc cơ quan. Thuộc tính chính: \dbid{ma_don_vi} (duy nhất), \dbid{ten_don_vi}, \dbid{so_luong}. Quan hệ: thuộc một \texttt{CoQuanDonVi}; được chức vụ, quân nhân và các bảng khen thưởng đơn vị tham chiếu.
+    \item \texttt{ChucVu} --- chức vụ trong đơn vị. Thuộc tính chính: \dbid{ten_chuc_vu}, \dbid{is_manager}, \dbid{he_so_chuc_vu}. Quan hệ: thuộc cơ quan hoặc đơn vị trực thuộc; được \texttt{QuanNhan} và \texttt{LichSuChucVu} tham chiếu; duy nhất theo cặp đơn vị và tên chức vụ.
+    \item \texttt{QuanNhan} --- hồ sơ quân nhân. Thuộc tính chính: \dbid{cccd} (duy nhất), \dbid{ho_ten}, \dbid{cap_bac}, \dbid{ngay_nhap_ngu}. Quan hệ: gắn một chức vụ và một đơn vị; là tâm của hầu hết bảng khen thưởng, hồ sơ điều kiện và tài khoản.
+    \item \texttt{LichSuChucVu} --- lịch sử giữ chức vụ của quân nhân. Thuộc tính chính: \dbid{ngay_bat_dau}, \dbid{ngay_ket_thuc}, \dbid{so_thang}. Quan hệ: tham chiếu \texttt{QuanNhan} và \texttt{ChucVu}; phục vụ tính thời gian cống hiến.
+    \item \texttt{TaiKhoan} --- tài khoản đăng nhập. Thuộc tính chính: \dbid{username} (duy nhất), \dbid{password_hash}, \dbid{role}, \dbid{refreshToken}. Quan hệ: gắn tối đa một \texttt{QuanNhan}; được đề xuất (người lập, người duyệt), nhật ký và thông báo tham chiếu.
+\end{itemize}
+
+\textbf{Nhóm dữ liệu đề xuất khen thưởng.}
+\begin{itemize}
+    \item \texttt{BangDeXuat} --- đề xuất khen thưởng đang chờ duyệt. Thuộc tính chính: \dbid{loai_de_xuat}, \dbid{nam}, \dbid{status}, cùng bốn cột JSON \dbid{data_danh_hieu}, \dbid{data_thanh_tich}, \dbid{data_nien_han}, \dbid{data_cong_hien}. Quan hệ: tham chiếu đơn vị nộp, tài khoản người đề xuất và tài khoản người duyệt.
+\end{itemize}
+
+\textbf{Nhóm dữ liệu khen thưởng và hồ sơ cá nhân.}
+\begin{itemize}
+    \item \texttt{DanhHieuHangNam} --- danh hiệu thi đua hằng năm và các cấp danh hiệu chuỗi. Thuộc tính chính: \dbid{nam}, \dbid{danh_hieu}, các cờ \dbid{nhan_bkbqp}, \dbid{nhan_cstdtq}, \dbid{nhan_bkttcp} kèm số quyết định tương ứng. Quan hệ: tham chiếu \texttt{QuanNhan} và bốn lần tới \texttt{FileQuyetDinh}; duy nhất theo cặp quân nhân và năm.
+    \item \texttt{ThanhTichKhoaHoc} --- thành tích nghiên cứu khoa học. Thuộc tính chính: \dbid{nam}, \dbid{loai} (đề tài hoặc sáng kiến), \dbid{mo_ta}. Quan hệ: tham chiếu \texttt{QuanNhan} và \texttt{FileQuyetDinh}.
+    \item \texttt{KhenThuongHCCSVV} --- Huy chương Chiến sĩ vẻ vang theo niên hạn. Thuộc tính chính: \dbid{danh_hieu} (hạng), \dbid{nam}, \dbid{thang}, \dbid{thoi_gian} kiểu JSON. Quan hệ: tham chiếu \texttt{QuanNhan} và \texttt{FileQuyetDinh}; duy nhất theo cặp quân nhân và hạng.
+    \item \texttt{KhenThuongHCBVTQ} --- Huân chương Bảo vệ Tổ quốc theo cống hiến. Thuộc tính chính: \dbid{danh_hieu}, \dbid{nam}, ba cột thời gian theo nhóm hệ số kiểu JSON. Quan hệ: tham chiếu \texttt{QuanNhan} theo quan hệ một--một và \texttt{FileQuyetDinh}.
+    \item \texttt{HuanChuongQuanKyQuyetThang} --- Huy chương Quân kỳ quyết thắng. Thuộc tính chính: \dbid{nam}, \dbid{thang}, \dbid{thoi_gian}. Quan hệ: tham chiếu \texttt{QuanNhan} theo quan hệ một--một và \texttt{FileQuyetDinh}.
+    \item \texttt{KyNiemChuongVSNXDQDNDVN} --- Kỷ niệm chương Vì sự nghiệp xây dựng Quân đội nhân dân Việt Nam. Thuộc tính chính: \dbid{nam}, \dbid{thang}, \dbid{thoi_gian}. Quan hệ: tham chiếu \texttt{QuanNhan} theo quan hệ một--một và \texttt{FileQuyetDinh}.
+    \item \texttt{KhenThuongDotXuat} --- khen thưởng đột xuất cho cá nhân hoặc tập thể. Thuộc tính chính: \dbid{doi_tuong} (cá nhân hoặc tập thể), \dbid{hinh_thuc_khen_thuong}, \dbid{nam}, \dbid{files_dinh_kem}. Quan hệ: tham chiếu \texttt{QuanNhan} hoặc đơn vị, và \texttt{FileQuyetDinh}.
+    \item \texttt{HoSoNienHan} --- hồ sơ điều kiện HCCSVV, dạng suy diễn. Thuộc tính chính: ba cặp trạng thái và ngày đạt theo từng hạng, \dbid{goi_y}. Quan hệ: tham chiếu \texttt{QuanNhan} theo quan hệ một--một.
+    \item \texttt{HoSoCongHien} --- hồ sơ điều kiện HCBVTQ, dạng suy diễn. Thuộc tính chính: \dbid{hcbvtq_total_months}, các cột tháng theo nhóm hệ số, trạng thái theo từng hạng. Quan hệ: tham chiếu \texttt{QuanNhan} theo quan hệ một--một.
+    \item \texttt{HoSoHangNam} --- hồ sơ điều kiện chuỗi danh hiệu hằng năm, dạng suy diễn. Thuộc tính chính: các bộ đếm liên tục \dbid{cstdcs_lien_tuc}, \dbid{bkbqp_lien_tuc}, \dbid{cstdtq_lien_tuc} và các cờ đủ điều kiện đề nghị, \dbid{goi_y}. Quan hệ: tham chiếu \texttt{QuanNhan} theo quan hệ một--một.
+\end{itemize}
+
+\textbf{Nhóm dữ liệu khen thưởng và hồ sơ đơn vị.}
+\begin{itemize}
+    \item \texttt{DanhHieuDonViHangNam} --- danh hiệu thi đua của đơn vị. Thuộc tính chính: \dbid{nam}, \dbid{danh_hieu}, các cờ \dbid{nhan_bkbqp}, \dbid{nhan_bkttcp}, \dbid{status}, \dbid{nguoi_tao_id}. Quan hệ: tham chiếu đơn vị và ba lần tới \texttt{FileQuyetDinh}; duy nhất theo cặp đơn vị và năm.
+    \item \texttt{HoSoDonViHangNam} --- hồ sơ điều kiện khen thưởng đơn vị, dạng suy diễn. Thuộc tính chính: \dbid{tong_dvqt}, \dbid{dvqt_lien_tuc}, các cờ \dbid{du_dieu_kien_bk_tong_cuc}, \dbid{du_dieu_kien_bk_thu_tuong}. Quan hệ: tham chiếu đơn vị; duy nhất theo cặp đơn vị và năm.
+\end{itemize}
+
+\textbf{Nhóm dữ liệu Quyết định.}
+\begin{itemize}
+    \item \texttt{FileQuyetDinh} --- hồ sơ quyết định khen thưởng. Thuộc tính chính: \dbid{so_quyet_dinh} (duy nhất), \dbid{nam}, \dbid{ngay_ky}, \dbid{nguoi_ky}, \dbid{file_path}. Quan hệ: được tám bảng khen thưởng tham chiếu qua cột \dbid{so_quyet_dinh}, tổng cộng 13 khoá ngoại.
+\end{itemize}
+
+\textbf{Nhóm dữ liệu Hệ thống.}
+\begin{itemize}
+    \item \texttt{SystemLog} --- nhật ký kiểm toán mọi thao tác. Thuộc tính chính: \dbid{actor_role}, \dbid{action}, \dbid{resource}, \dbid{payload} kiểu JSON, \dbid{ip_address}. Quan hệ: tham chiếu \texttt{TaiKhoan}; được \texttt{ThongBao} tham chiếu.
+    \item \texttt{ThongBao} --- thông báo thời gian thực. Thuộc tính chính: \dbid{type}, \dbid{title}, \dbid{message}, \dbid{is_read}, \dbid{recipient_role}. Quan hệ: tham chiếu \texttt{TaiKhoan} (người nhận) và \texttt{SystemLog}.
+    \item \texttt{SystemSetting} --- cấu hình hệ thống dạng khoá--giá trị. Thuộc tính chính: \dbid{key} (duy nhất), \dbid{value}. Quan hệ: độc lập, không có khoá ngoại.
+\end{itemize}
+
+Sáu bảng mô tả chi tiết schema sau đây được chọn vì là các bảng trọng yếu nhất, sử dụng nhiều cấu trúc dữ liệu phức tạp như JSON và kiểu thời gian.
 
 \begin{table}[H]
 \centering
 \caption{Schema bảng \texttt{QuanNhan} (Personnel)}
 \label{tab:schema-quannhan}
-\small
-\renewcommand{\arraystretch}{1.2}
-\begin{tabular}{|p{3.8cm}|p{2.3cm}|p{3.5cm}|p{3.4cm}|}
+\footnotesize
+\renewcommand{\arraystretch}{1.3}
+\setlength{\tabcolsep}{4pt}\begin{tabular}{|R{4.6cm}|R{2.2cm}|R{3.7cm}|R{2.8cm}|}
 \hline
 \textbf{Cột} & \textbf{Kiểu} & \textbf{Ràng buộc} & \textbf{Mô tả} \\ \hline
 \texttt{id} & String & PK, CUID & Khoá chính \\ \hline
@@ -223,9 +304,9 @@ Ràng buộc nghiệp vụ: chỉ một trong \texttt{co\_quan\_don\_vi\_id} và
 \centering
 \caption{Schema bảng \texttt{BangDeXuat} (Proposal)}
 \label{tab:schema-dexuat}
-\small
-\renewcommand{\arraystretch}{1.2}
-\begin{tabular}{|p{3.8cm}|p{2.3cm}|p{3.5cm}|p{3.4cm}|}
+\footnotesize
+\renewcommand{\arraystretch}{1.3}
+\setlength{\tabcolsep}{4pt}\begin{tabular}{|R{4.6cm}|R{2.2cm}|R{3.7cm}|R{2.8cm}|}
 \hline
 \textbf{Cột} & \textbf{Kiểu} & \textbf{Ràng buộc} & \textbf{Mô tả} \\ \hline
 \texttt{id} & String & PK, CUID & \\ \hline
@@ -251,9 +332,9 @@ Việc dùng JSON cho 4 trường \texttt{data\_*} là chủ ý. Mỗi loại đ
 \centering
 \caption{Schema bảng \texttt{DanhHieuHangNam} (Annual Award)}
 \label{tab:schema-dhhn}
-\small
-\renewcommand{\arraystretch}{1.2}
-\begin{tabular}{|p{3.8cm}|p{2.3cm}|p{3.5cm}|p{3.4cm}|}
+\footnotesize
+\renewcommand{\arraystretch}{1.3}
+\setlength{\tabcolsep}{4pt}\begin{tabular}{|R{4.6cm}|R{2.2cm}|R{3.7cm}|R{2.8cm}|}
 \hline
 \textbf{Cột} & \textbf{Kiểu} & \textbf{Ràng buộc} & \textbf{Mô tả} \\ \hline
 \texttt{id} & String & PK, CUID & \\ \hline
@@ -276,9 +357,9 @@ Ràng buộc duy nhất \texttt{(quan\_nhan\_id, nam)} đảm bảo mỗi quân 
 \centering
 \caption{Schema bảng \texttt{LichSuChucVu} (Position History)}
 \label{tab:schema-lsc}
-\small
-\renewcommand{\arraystretch}{1.2}
-\begin{tabular}{|p{3.8cm}|p{2.3cm}|p{3.5cm}|p{3.4cm}|}
+\footnotesize
+\renewcommand{\arraystretch}{1.3}
+\setlength{\tabcolsep}{4pt}\begin{tabular}{|R{4.6cm}|R{2.2cm}|R{3.7cm}|R{2.8cm}|}
 \hline
 \textbf{Cột} & \textbf{Kiểu} & \textbf{Ràng buộc} & \textbf{Mô tả} \\ \hline
 \texttt{id} & String & PK, CUID & \\ \hline
@@ -297,9 +378,9 @@ Hàm tính lại số tháng tự động cập nhật trường \texttt{so\_tha
 \centering
 \caption{Schema bảng \texttt{SystemLog} (Audit Log)}
 \label{tab:schema-syslog}
-\small
-\renewcommand{\arraystretch}{1.2}
-\begin{tabular}{|p{3.8cm}|p{2.3cm}|p{3.5cm}|p{3.4cm}|}
+\footnotesize
+\renewcommand{\arraystretch}{1.3}
+\setlength{\tabcolsep}{4pt}\begin{tabular}{|R{4.6cm}|R{2.2cm}|R{3.7cm}|R{2.8cm}|}
 \hline
 \textbf{Cột} & \textbf{Kiểu} & \textbf{Ràng buộc} & \textbf{Mô tả} \\ \hline
 \texttt{id} & String & PK, CUID & \\ \hline
@@ -320,9 +401,9 @@ Hàm tính lại số tháng tự động cập nhật trường \texttt{so\_tha
 \centering
 \caption{Schema bảng \texttt{HoSoHangNam} (Annual Profile, Derived)}
 \label{tab:schema-hsnn}
-\small
-\renewcommand{\arraystretch}{1.2}
-\begin{tabular}{|p{3.8cm}|p{2.3cm}|p{3.5cm}|p{3.4cm}|}
+\footnotesize
+\renewcommand{\arraystretch}{1.3}
+\setlength{\tabcolsep}{4pt}\begin{tabular}{|R{4.6cm}|R{2.2cm}|R{3.7cm}|R{2.8cm}|}
 \hline
 \textbf{Cột} & \textbf{Kiểu} & \textbf{Ràng buộc} & \textbf{Mô tả} \\ \hline
 \texttt{id} & String & PK, CUID & \\ \hline
@@ -339,7 +420,7 @@ Hàm tính lại số tháng tự động cập nhật trường \texttt{so\_tha
 \end{tabular}
 \end{table}
 
-Toàn văn schema (618 dòng, 23 model) được tổ chức trong tệp \texttt{BE-QLKT/prisma/schema.prisma} của kho mã nguồn dự án.
+Toàn văn schema (624 dòng, 23 model) được tổ chức trong tệp \texttt{BE-QLKT/prisma/schema.prisma} của kho mã nguồn dự án.
 
 \section{Thiết kế chi tiết}
 \label{section:4.2}
@@ -358,12 +439,12 @@ Giao diện hệ thống được phác thảo bằng wireframe trước khi tri
     \label{fig:wf-login}
 \end{figure}
 
-\textbf{Trang chủ Admin} (Hình~\ref{fig:wf-dashboard}) có cấu trúc ba khu vực: thanh điều hướng bên trái (cây cơ quan đơn vị và đơn vị trực thuộc có thể thu gọn), khu vực dashboard ở giữa với bốn thẻ thống kê (tổng quân nhân, tổng đơn vị, đề xuất chờ duyệt, khen thưởng tháng này) cùng các biểu đồ phân bố, khu vực phụ bên phải với danh sách thông báo thời gian thực. Bố cục ba khu vực này được giữ nhất quán xuyên suốt các trang nghiệp vụ chính (Quản lý quân nhân, Quản lý đề xuất, Quản lý quyết định) để giảm thời gian làm quen cho người dùng mới.
+\textbf{Trang chủ Cán bộ Phòng Chính trị} (Hình~\ref{fig:wf-dashboard}) có cấu trúc ba khu vực: thanh điều hướng bên trái (cây cơ quan đơn vị và đơn vị trực thuộc có thể thu gọn), khu vực dashboard ở giữa với bốn thẻ thống kê (tổng quân nhân, tổng đơn vị, đề xuất chờ duyệt, khen thưởng tháng này) cùng các biểu đồ phân bố, khu vực phụ bên phải với danh sách thông báo thời gian thực. Bố cục ba khu vực này được giữ nhất quán xuyên suốt các trang nghiệp vụ chính (Quản lý quân nhân, Quản lý đề xuất, Quản lý quyết định) để giảm thời gian làm quen cho người dùng mới.
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.85\textwidth]{wireframe/wireframe-dashboard}
-    \caption{Wireframe trang chủ Admin với bốn thẻ thống kê và các biểu đồ}
+    \caption{Wireframe trang chủ Cán bộ Phòng Chính trị với bốn thẻ thống kê và các biểu đồ}
     \label{fig:wf-dashboard}
 \end{figure}
 
@@ -376,12 +457,12 @@ Giao diện hệ thống được phác thảo bằng wireframe trước khi tri
     \label{fig:wf-personnel-list}
 \end{figure}
 
-\textbf{Trang chi tiết quân nhân} (Hình~\ref{fig:wf-personnel-detail}) hiển thị thông tin định danh ở đầu (ảnh đại diện, họ tên, mã và vai trò) và chia phần thân thành các tab tương ứng các nhóm khen thưởng: Hằng năm, Niên hạn, Cống hiến, Quân kỳ, Kỷ niệm chương, NCKH, Đột xuất. Mỗi tab có bảng dữ liệu kèm thanh tiến trình hiển thị các chu kỳ đang đến mốc đề nghị (ví dụ ``BKBTBQP: 1/2 năm CSTĐCS đã tích luỹ''). Cách tiếp cận trực quan này giúp Manager nhanh chóng nhận biết quân nhân nào sắp đủ điều kiện.
+\textbf{Trang chi tiết quân nhân} (Hình~\ref{fig:wf-personnel-detail}) hiển thị thông tin định danh ở đầu (ảnh đại diện, họ tên, mã và vai trò) và chia phần thân thành các tab tương ứng các nhóm khen thưởng: Hằng năm, Niên hạn, Cống hiến, Quân kỳ, Kỷ niệm chương, NCKH, Đột xuất. Mỗi tab có bảng dữ liệu kèm thanh tiến trình hiển thị các chu kỳ đang đến mốc đề nghị (ví dụ ``BKBTBQP: 1/2 năm CSTĐCS đã tích luỹ''). Cách tiếp cận trực quan này giúp Chỉ huy đơn vị nhanh chóng nhận biết quân nhân nào sắp đủ điều kiện.
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.85\textwidth]{wireframe/wireframe-personnel-detail}
-    \caption{Wireframe trang chi tiết quân nhân với các tab khen thưởng}
+    \caption{Wireframe trang chi tiết quân nhân với các thẻ khen thưởng}
     \label{fig:wf-personnel-detail}
 \end{figure}
 
@@ -467,18 +548,16 @@ Môi trường phát triển dùng Visual Studio Code với extension Prisma, ES
 Sau quá trình xây dựng, hệ thống đã hoàn thiện các chức năng chính sau:
 
 \begin{itemize}
-    \item Quản lý quân nhân: thêm, sửa, xoá thủ công qua biểu mẫu (không nhập/xuất Excel); chuyển đơn vị và đổi chức vụ chỉ Admin, giữ nguyên lịch sử khen thưởng; phân quyền theo phạm vi đơn vị cho Manager.
+    \item Quản lý quân nhân: thêm, sửa, xoá thủ công qua biểu mẫu (không nhập/xuất Excel); chuyển đơn vị và đổi chức vụ chỉ Cán bộ Phòng Chính trị, giữ nguyên lịch sử khen thưởng; phân quyền theo phạm vi đơn vị cho Chỉ huy đơn vị.
     \item Quản lý đơn vị (cơ quan đơn vị và đơn vị trực thuộc) và chức vụ: cây tổ chức hai cấp; tự cập nhật bộ đếm \texttt{so\_luong} khi quân nhân chuyển đơn vị.
     \item Quản lý lịch sử chức vụ: nhập danh sách giai đoạn giữ chức vụ với hệ số; tự tính \texttt{so\_thang} mỗi khi thay đổi mốc thời gian.
     \item Đề xuất khen thưởng cho cả bảy loại với biểu mẫu năm bước; tự động gợi ý quân nhân đủ điều kiện theo từng loại.
     \item Phê duyệt đề xuất với giao dịch, gắn số quyết định, tải lên PDF, ghi nhật ký đầy đủ trạng thái trước và sau khi thay đổi.
     \item Tính lại điều kiện khen thưởng hằng năm cá nhân và đơn vị tự động sau mỗi thay đổi nguồn; gợi ý đề nghị bằng tiếng Việt.
     \item Nhập Excel hai bước (xem trước và xác nhận với giao dịch) cho cả bảy loại nghiệp vụ; xuất danh sách khen thưởng theo nhiều tiêu chí.
-    \item Quản trị tài khoản bốn cấp; đặt lại mật khẩu; nhật ký hệ thống; sao lưu định kỳ; khu vực DevZone cho SuperAdmin.
+    \item Quản trị tài khoản bốn cấp; đặt lại mật khẩu; nhật ký hệ thống; sao lưu định kỳ; khu vực DevZone cho Quản trị hệ thống.
     \item Thông báo thời gian thực qua Socket.IO khi có đề xuất mới, được phê duyệt, bị từ chối, bị xoá hoặc nhập Excel hoàn tất.
 \end{itemize}
-
-Tổng quy mô mã nguồn TypeScript khoảng 96.000 dòng (không tính dòng trống và bình luận), chia thành 38.000 dòng phía backend và 58.000 dòng phía frontend, cộng với 618 dòng \texttt{schema.prisma}. Kho mã nguồn quản lý theo monorepo với hai thư mục \texttt{BE-QLKT/} và \texttt{FE-QLKT/} ở mức gốc.
 
 \subsection{Minh hoạ các chức năng chính}
 \label{subsection:4.3.3}
@@ -503,14 +582,14 @@ Phần này trình bày các ảnh chụp màn hình tiêu biểu của sản ph
     \label{fig:ui-login}
 \end{figure}
 
-\subsubsection{Vai trò Quản trị viên (SuperAdmin)}
+\subsubsection{Vai trò quản trị viên (SuperAdmin)}
 
 \textbf{Trang chủ Quản trị viên} (Hình~\ref{fig:ui-sa-dashboard}) tổng hợp toàn hệ thống với bốn thẻ thống kê (tổng tài khoản, tài khoản mới trong 30 ngày, hoạt động trong 7 ngày, tổng nhật ký) cùng các biểu đồ phân bố vai trò, hoạt động hệ thống và top hành động phổ biến.
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.92\textwidth]{UI/03-superadmin-dashboard}
-    \caption{Trang chủ vai trò Quản trị viên}
+    \caption{Trang chủ vai trò quản trị viên}
     \label{fig:ui-sa-dashboard}
 \end{figure}
 
@@ -555,14 +634,14 @@ Phần này trình bày các ảnh chụp màn hình tiêu biểu của sản ph
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.92\textwidth]{UI/07-admin-chi-tiet-quan-nhan-thong-tin}
-    \caption{Chi tiết quân nhân -- tab Thông tin cơ bản}
+    \caption{Chi tiết quân nhân, thẻ Thông tin cơ bản}
     \label{fig:ui-admin-personnel-info}
 \end{figure}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.92\textwidth]{UI/08-admin-chi-tiet-quan-nhan-ho-so-khen-thuong}
-    \caption{Chi tiết quân nhân -- tab Hồ sơ khen thưởng với thanh tiến trình điều kiện}
+    \caption{Chi tiết quân nhân, thẻ Hồ sơ khen thưởng với thanh tiến trình điều kiện}
     \label{fig:ui-admin-personnel-award}
 \end{figure}
 
@@ -639,14 +718,14 @@ Phần này trình bày các ảnh chụp màn hình tiêu biểu của sản ph
     \label{fig:ui-admin-logs}
 \end{figure}
 
-\subsubsection{Vai trò Chỉ huy đơn vị (Manager)}
+\subsubsection{Vai trò chỉ huy đơn vị (Manager)}
 
 \textbf{Trang chủ Chỉ huy đơn vị} (Hình~\ref{fig:ui-manager-dashboard}) giới hạn dữ liệu trong phạm vi đơn vị quản lý, với năm thẻ thống kê (quân số, tổng CSTĐCS, tổng NCKH, khen thưởng, đề xuất chờ duyệt) và các biểu đồ khen thưởng, đề xuất, NCKH.
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.92\textwidth]{UI/28-manager-dashboard}
-    \caption{Trang chủ vai trò Chỉ huy đơn vị}
+    \caption{Trang chủ vai trò chỉ huy đơn vị}
     \label{fig:ui-manager-dashboard}
 \end{figure}
 
@@ -662,14 +741,14 @@ Phần này trình bày các ảnh chụp màn hình tiêu biểu của sản ph
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.92\textwidth]{UI/19-manager-tao-de-xuat-b1-chon-loai}
-    \caption{Tạo đề xuất -- Bước 1: chọn loại khen thưởng}
+    \caption{Tạo đề xuất, bước 1: chọn loại khen thưởng}
     \label{fig:ui-manager-proposal-b1}
 \end{figure}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.92\textwidth]{UI/20-manager-tao-de-xuat-b2-chon-quan-nhan}
-    \caption{Tạo đề xuất -- Bước 2: chọn quân nhân}
+    \caption{Tạo đề xuất, bước 2: chọn quân nhân}
     \label{fig:ui-manager-proposal-b2}
 \end{figure}
 
@@ -696,23 +775,23 @@ Phần này trình bày các ảnh chụp màn hình tiêu biểu của sản ph
     \label{fig:ui-manager-nckh}
 \end{figure}
 
-\textbf{Chi tiết quân nhân -- tab Quản lý chi tiết} (Hình~\ref{fig:ui-manager-personnel-manage}) tập hợp các lối tắt quản lý theo lưới: lịch sử chức vụ, danh hiệu hằng năm, NCKH và các huân chương, huy chương, kỷ niệm chương.
+\textbf{Chi tiết quân nhân, tabquản lý chi tiết} (Hình~\ref{fig:ui-manager-personnel-manage}) tập hợp các lối tắt quản lý theo lưới: lịch sử chức vụ, danh hiệu hằng năm, NCKH và các huân chương, huy chương, kỷ niệm chương.
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.92\textwidth]{UI/24-manager-chi-tiet-quan-nhan-quan-ly}
-    \caption{Chi tiết quân nhân -- tab Quản lý chi tiết}
+    \caption{Chi tiết quân nhân, thẻ Quản lý chi tiết}
     \label{fig:ui-manager-personnel-manage}
 \end{figure}
 
-\subsubsection{Vai trò Người dùng (User)}
+\subsubsection{Vai trò người dùng (User)}
 
 \textbf{Trang chủ Người dùng} (Hình~\ref{fig:ui-user-dashboard}) hiển thị hồ sơ cá nhân của quân nhân đăng nhập: các thẻ thống kê cá nhân (tổng CSTĐCS, NCKH, CSTĐCS liên tục, số tháng cống hiến), thông tin cá nhân và tóm tắt hồ sơ điều kiện hằng năm và niên hạn kèm gợi ý. \textbf{Hồ sơ danh hiệu cá nhân hằng năm} (Hình~\ref{fig:ui-user-annual}) trình bày thanh tiến trình tổng hợp và dòng thời gian chuỗi danh hiệu theo năm (CSTĐCS $\rightarrow$ BKBTBQP $\rightarrow$ CSTĐTQ $\rightarrow$ BKTTCP).
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.92\textwidth]{UI/25-user-dashboard}
-    \caption{Trang chủ vai trò Người dùng}
+    \caption{Trang chủ vai trò người dùng}
     \label{fig:ui-user-dashboard}
 \end{figure}
 
@@ -748,116 +827,116 @@ Các chức năng nghiệp vụ chính được kiểm thử hộp đen thủ c�
 
 \begin{table}[H]
 \centering
-\caption{Kiểm thử chức năng Đăng nhập}
+\caption{Kiểm thử chức năng đăng nhập}
 \label{tab:kt-dangnhap}
-\begin{tabular}{|c|p{3.8cm}|p{3.3cm}|p{3.8cm}|c|}
+\setlength{\tabcolsep}{4pt}\renewcommand{\arraystretch}{1.25}\begin{tabular}{|c|R{3.2cm}|R{3.3cm}|R{4.5cm}|c|}
 \hline
 \textbf{STT} & \textbf{Chức năng} & \textbf{Đầu vào} & \textbf{Đầu ra mong muốn} & \textbf{Kết quả} \\ \hline
-1 & Đăng nhập đúng & username + password đúng & Chuyển hướng tới trang chủ Admin & Đạt \\ \hline
-2 & Sai mật khẩu & username đúng + password sai & Thông báo chung không tiết lộ trường nào sai & Đạt \\ \hline
-3 & Tài khoản không tồn tại & username = noexist & Thông báo chung không lộ thông tin & Đạt \\ \hline
-4 & Vượt rate limit \texttt{authLimiter} & Vượt 30 yêu cầu thất bại / IP / 5 phút & Trả mã 429, từ chối tạm thời & Đạt \\ \hline
-5 & Refresh token & Access Token hết hạn & Tự động xin token mới & Đạt \\ \hline
+1 & Đăng nhập hợp lệ & Tên đăng nhập và mật khẩu đúng & Chuyển hướng tới trang chủ quản trị viên & Đạt \\ \hline
+2 & Sai mật khẩu & Tên đăng nhập đúng, mật khẩu sai & Thông báo chung, không tiết lộ trường nào sai & Đạt \\ \hline
+3 & Tài khoản không tồn tại & Tên đăng nhập không có trong hệ thống & Thông báo chung, không lộ thông tin & Đạt \\ \hline
+4 & Vượt giới hạn đăng nhập sai & Gửi quá số lần đăng nhập sai cho phép & Tạm thời từ chối yêu cầu đăng nhập & Đạt \\ \hline
+5 & Làm mới phiên đăng nhập & Phiên đăng nhập hết hạn & Hệ thống tự động cấp phiên mới & Đạt \\ \hline
 \end{tabular}
 \end{table}
 
 \begin{table}[H]
 \centering
-\caption{Kiểm thử chức năng Quản lý quân nhân}
+\caption{Kiểm thử chức năng quản lý quân nhân}
 \label{tab:kt-quannhan}
-\begin{tabular}{|c|p{3.8cm}|p{3.3cm}|p{3.8cm}|c|}
+\setlength{\tabcolsep}{4pt}\renewcommand{\arraystretch}{1.25}\begin{tabular}{|c|R{3.2cm}|R{3.3cm}|R{4.5cm}|c|}
 \hline
 \textbf{STT} & \textbf{Chức năng} & \textbf{Đầu vào} & \textbf{Đầu ra mong muốn} & \textbf{Kết quả} \\ \hline
-1 & Thêm mới hợp lệ & Đầy đủ trường & Bản ghi mới có trong danh sách & Đạt \\ \hline
-2 & Trùng CCCD & CCCD đã tồn tại & Hiển thị lỗi ``Số CCCD đã tồn tại'' & Đạt \\ \hline
-3 & Thiếu trường bắt buộc & Để trống \texttt{ho\_ten} & Form chặn tại frontend & Đạt \\ \hline
-4 & Sửa thông tin & Đổi \texttt{cap\_bac} & Lưu thành công & Đạt \\ \hline
-5 & Chuyển đơn vị & Chọn đơn vị mới & Lịch sử khen thưởng giữ nguyên, bộ đếm cập nhật & Đạt \\ \hline
+1 & Thêm mới hợp lệ & Nhập đầy đủ thông tin & Bản ghi mới xuất hiện trong danh sách & Đạt \\ \hline
+2 & Trùng CCCD & Nhập CCCD đã tồn tại & Hiển thị lỗi ``CCCD đã tồn tại trong hệ thống'' & Đạt \\ \hline
+3 & Thiếu trường bắt buộc & Bỏ trống họ tên & Biểu mẫu chặn gửi và báo lỗi & Đạt \\ \hline
+4 & Sửa thông tin & Thay đổi cấp bậc & Lưu thành công & Đạt \\ \hline
+5 & Chuyển đơn vị & Chọn đơn vị mới & Lịch sử khen thưởng giữ nguyên, số lượng quân nhân của đơn vị được cập nhật & Đạt \\ \hline
 \end{tabular}
 \end{table}
 
 \begin{table}[H]
 \centering
-\caption{Kiểm thử chức năng Đề xuất khen thưởng}
+\caption{Kiểm thử chức năng đề xuất khen thưởng}
 \label{tab:kt-dexuat}
-\begin{tabular}{|c|p{3.8cm}|p{3.3cm}|p{3.8cm}|c|}
+\setlength{\tabcolsep}{4pt}\renewcommand{\arraystretch}{1.25}\begin{tabular}{|c|R{3.2cm}|R{3.3cm}|R{4.5cm}|c|}
 \hline
 \textbf{STT} & \textbf{Chức năng} & \textbf{Đầu vào} & \textbf{Đầu ra mong muốn} & \textbf{Kết quả} \\ \hline
-1 & Tạo đề xuất hợp lệ & 5 quân nhân, CSTĐCS & Đề xuất ở trạng thái PENDING & Đạt \\ \hline
-2 & Manager ngoài đơn vị & Quân nhân đơn vị khác & Backend trả 403 & Đạt \\ \hline
-3 & Quân nhân không đủ điều kiện & 1 năm CSTĐCS đề nghị BKBTBQP & Cảnh báo trước khi gửi & Đạt \\ \hline
-4 & Lưu nháp khi tải lại trang & Reload trang giữa chừng & Dữ liệu giữ nguyên (loại, quân nhân, danh hiệu, ghi chú); xoá tự động sau khi gửi hoặc đóng tab & Đạt \\ \hline
+1 & Tạo đề xuất hợp lệ & Chọn 5 quân nhân đủ điều kiện & Đề xuất ở trạng thái chờ duyệt & Đạt \\ \hline
+2 & Đề xuất quân nhân ngoài đơn vị phụ trách & Chọn quân nhân thuộc đơn vị khác & Hệ thống từ chối vì không đủ quyền & Đạt \\ \hline
+3 & Quân nhân chưa đủ điều kiện & Mới 1 năm CSTĐCS nhưng đề nghị BKBTBQP & Cảnh báo trước khi gửi & Đạt \\ \hline
+4 & Lưu nháp khi tải lại trang & Tải lại trang giữa chừng & Dữ liệu nhập dở được giữ nguyên và tự xoá sau khi gửi hoặc đóng trang & Đạt \\ \hline
 \end{tabular}
 \end{table}
 
 \begin{table}[H]
 \centering
-\caption{Kiểm thử chức năng Phê duyệt đề xuất}
+\caption{Kiểm thử chức năng phê duyệt đề xuất}
 \label{tab:kt-pheduyet}
-\begin{tabular}{|c|p{3.8cm}|p{3.3cm}|p{3.8cm}|c|}
+\setlength{\tabcolsep}{4pt}\renewcommand{\arraystretch}{1.25}\begin{tabular}{|c|R{3.2cm}|R{3.3cm}|R{4.5cm}|c|}
 \hline
 \textbf{STT} & \textbf{Chức năng} & \textbf{Đầu vào} & \textbf{Đầu ra mong muốn} & \textbf{Kết quả} \\ \hline
-1 & Phê duyệt thông thường & Đề xuất hợp lệ & Trạng thái APPROVED, ghi vào bảng tương ứng & Đạt \\ \hline
-2 & Phê duyệt kèm gắn quyết định & Số quyết định + tháng -- năm nhận & Đề xuất gắn quyết định, FE quân nhân hiển thị đúng dữ liệu & Đạt \\ \hline
-3 & Từ chối đề xuất & Bấm ``Từ chối'' kèm lý do & REJECTED, gửi thông báo Manager & Đạt \\ \hline
-4 & Vi phạm quy tắc BKTTCP một lần duy nhất & Đề nghị BKTTCP cho người đã có & Giao dịch huỷ bỏ & Đạt \\ \hline
-5 & Hai Admin cùng phê duyệt & Hai phiên đồng thời & Chỉ một thành công, người sau nhận 409 & Đạt \\ \hline
+1 & Phê duyệt thông thường & Đề xuất hợp lệ & Đề xuất chuyển trạng thái đã duyệt và lưu vào hồ sơ khen thưởng & Đạt \\ \hline
+2 & Phê duyệt kèm gắn quyết định & Số quyết định, tháng và năm nhận & Đề xuất được gắn quyết định, hồ sơ quân nhân hiển thị đúng dữ liệu & Đạt \\ \hline
+3 & Từ chối đề xuất & Bấm ``Từ chối'' kèm lý do & Đề xuất chuyển trạng thái bị từ chối, gửi thông báo cho Chỉ huy đơn vị & Đạt \\ \hline
+4 & Đề nghị trùng BKTTCP & Đề nghị BKTTCP cho người đã có & Hệ thống chặn và huỷ bỏ thao tác & Đạt \\ \hline
+5 & Hai cán bộ cùng phê duyệt & Hai phiên đồng thời & Chỉ một thành công, người sau bị từ chối do xung đột & Đạt \\ \hline
 \end{tabular}
 \end{table}
 
 \begin{table}[H]
 \centering
-\caption{Kiểm thử chức năng Tính lại điều kiện khen thưởng hằng năm}
+\caption{Kiểm thử chức năng tính lại điều kiện khen thưởng hằng năm}
 \label{tab:kt-tinhlai}
-\begin{tabular}{|c|p{3.8cm}|p{3.3cm}|p{3.8cm}|c|}
+\setlength{\tabcolsep}{4pt}\renewcommand{\arraystretch}{1.25}\begin{tabular}{|c|R{3.2cm}|R{3.3cm}|R{4.5cm}|c|}
 \hline
 \textbf{STT} & \textbf{Chức năng} & \textbf{Đầu vào} & \textbf{Đầu ra mong muốn} & \textbf{Kết quả} \\ \hline
-1 & Quân nhân chưa nhận & 2 năm CSTĐCS liên tục & Đề nghị BKBTBQP, gợi ý giải thích & Đạt \\ \hline
-2 & Đã nhận BKTTCP (một lần duy nhất) & Đã có BKTTCP & Thông điệp ``Đã có BKTTCP. Phần mềm chưa hỗ trợ...'' & Đạt \\ \hline
-3 & Bỏ lỡ đợt & 5 năm CSTĐCS từ BKBTBQP cuối & \texttt{missedBkbqp = 2}, vẫn đề nghị BKBTBQP mới & Đạt \\ \hline
-4 & Khung 3 năm CSTĐTQ & BKBTBQP cách 4 năm & BKBTBQP đó không tính, yêu cầu mới & Đạt \\ \hline
-5 & Thiếu NCKH năm thứ 3 & 3 năm CSTĐCS, thiếu NCKH năm 2 & Không đủ, gợi ý cần NCKH & Đạt \\ \hline
+1 & Quân nhân chưa nhận & 2 năm CSTĐCS liên tục & Hệ thống đề nghị BKBTBQP kèm lời giải thích & Đạt \\ \hline
+2 & Đã nhận BKTTCP & Quân nhân đã có BKTTCP & Hiển thị thông báo đã có BKTTCP và chưa hỗ trợ danh hiệu cao hơn & Đạt \\ \hline
+3 & Bỏ lỡ đợt đề nghị & 5 năm CSTĐCS kể từ BKBTBQP gần nhất & Vẫn đề nghị BKBTBQP mới dù đã lỡ 2 đợt & Đạt \\ \hline
+4 & Cửa sổ xét 3 năm của CSTĐTQ & BKBTBQP đã nhận cách 4 năm & BKBTBQP đó không được tính, yêu cầu BKBTBQP mới & Đạt \\ \hline
+5 & Thiếu nghiên cứu khoa học & 3 năm CSTĐCS nhưng thiếu một năm NCKH & Chưa đủ điều kiện, gợi ý cần bổ sung nghiên cứu khoa học & Đạt \\ \hline
 \end{tabular}
 \end{table}
 
 \begin{table}[H]
 \centering
-\caption{Kiểm thử chức năng Nhập Excel hàng loạt cho danh hiệu hằng năm}
+\caption{Kiểm thử chức năng nhập Excel hàng loạt cho danh hiệu hằng năm}
 \label{tab:kt-excel}
-\begin{tabular}{|c|p{3.8cm}|p{3.3cm}|p{3.8cm}|c|}
+\setlength{\tabcolsep}{4pt}\renewcommand{\arraystretch}{1.25}\begin{tabular}{|c|R{3.2cm}|R{3.3cm}|R{4.5cm}|c|}
 \hline
 \textbf{STT} & \textbf{Chức năng} & \textbf{Đầu vào} & \textbf{Đầu ra mong muốn} & \textbf{Kết quả} \\ \hline
-1 & Nhập 50 bản ghi CSTĐCS hợp lệ & Tệp \texttt{.xlsx} đúng mẫu & 50 bản ghi được tạo, ghi nhật ký hệ thống & Đạt \\ \hline
-2 & Có dòng trùng (cùng quân nhân và năm) & 1/50 dòng trùng khoá & Xem trước hiển thị 49 valid + 1 error & Đạt \\ \hline
-3 & Confirm khi DB thay đổi giữa hai bước & Dữ liệu chen vào sau preview & Giao dịch huỷ bỏ, không bản ghi nào được ghi & Đạt \\ \hline
-4 & Tệp sai định dạng & Tệp \texttt{.doc} thay vì \texttt{.xlsx} & Trả mã 400 kèm mô tả lỗi & Đạt \\ \hline
+1 & Nhập 50 bản ghi hợp lệ & Tệp Excel đúng mẫu & Tạo đủ 50 bản ghi và ghi nhật ký hệ thống & Đạt \\ \hline
+2 & Có dòng trùng dữ liệu & Một dòng trùng cùng quân nhân và năm & Bản xem trước báo 49 dòng hợp lệ và 1 dòng lỗi & Đạt \\ \hline
+3 & Dữ liệu thay đổi giữa hai bước & Có bản ghi chen vào sau khi xem trước & Huỷ bỏ toàn bộ, không ghi bản ghi nào & Đạt \\ \hline
+4 & Tệp sai định dạng & Tải lên tệp không phải Excel & Hệ thống báo lỗi định dạng tệp & Đạt \\ \hline
 \end{tabular}
 \end{table}
 
 \begin{table}[H]
 \centering
-\caption{Kiểm thử chức năng Quản lý đơn vị và chức vụ}
+\caption{Kiểm thử chức năng quản lý đơn vị và chức vụ}
 \label{tab:kt-donvi}
-\begin{tabular}{|c|p{3.8cm}|p{3.3cm}|p{3.8cm}|c|}
+\setlength{\tabcolsep}{4pt}\renewcommand{\arraystretch}{1.25}\begin{tabular}{|c|R{3.2cm}|R{3.3cm}|R{4.5cm}|c|}
 \hline
 \textbf{STT} & \textbf{Chức năng} & \textbf{Đầu vào} & \textbf{Đầu ra mong muốn} & \textbf{Kết quả} \\ \hline
-1 & Thêm cơ quan đơn vị mới & Tên + mã & Có trong cây & Đạt \\ \hline
-2 & Xoá đơn vị trực thuộc có quân nhân & Đơn vị trực thuộc vẫn có người & Backend chặn xoá, trả 409 & Đạt \\ \hline
-3 & Sửa hệ số chức vụ & Đổi 0{,}8 $\rightarrow$ 0{,}9 & Lưu thành công, hồ sơ HCBVTQ tự cập nhật & Đạt \\ \hline
+1 & Thêm cơ quan đơn vị mới & Nhập tên và mã đơn vị hợp lệ & Đơn vị mới xuất hiện trong cây tổ chức & Đạt \\ \hline
+2 & Xoá đơn vị trực thuộc có quân nhân & Chọn đơn vị trực thuộc vẫn còn quân nhân & Hệ thống từ chối xoá và báo lỗi ràng buộc dữ liệu & Đạt \\ \hline
+3 & Sửa hệ số chức vụ & Thay đổi hệ số từ 0{,}8 sang 0{,}9 & Lưu thành công, hồ sơ HCBVTQ được cập nhật & Đạt \\ \hline
 \end{tabular}
 \end{table}
 
 \begin{table}[H]
 \centering
-\caption{Kiểm thử chức năng Quản trị (sao lưu, nhật ký)}
+\caption{Kiểm thử chức năng quản trị (sao lưu, nhật ký)}
 \label{tab:kt-quantri}
-\begin{tabular}{|c|p{3.8cm}|p{3.3cm}|p{3.8cm}|c|}
+\setlength{\tabcolsep}{4pt}\renewcommand{\arraystretch}{1.25}\begin{tabular}{|c|R{3.2cm}|R{3.3cm}|R{4.5cm}|c|}
 \hline
 \textbf{STT} & \textbf{Chức năng} & \textbf{Đầu vào} & \textbf{Đầu ra mong muốn} & \textbf{Kết quả} \\ \hline
-1 & Sao lưu thủ công & Bấm ``Sao lưu ngay'' & Tệp .sql mới trong \texttt{backups/} & Đạt \\ \hline
-2 & Manager xem nhật ký backup & Mở trang nhật ký & Không thấy mục \texttt{resource = backup} & Đạt \\ \hline
-3 & Đổi lịch sao lưu & 24h $\rightarrow$ 12h & Backup tự chạy theo lịch mới & Đạt \\ \hline
-4 & Khôi phục từ tệp sao lưu & Chọn tệp + xác nhận & DB trở về trạng thái lưu trữ & Đạt \\ \hline
+1 & Sao lưu thủ công & Chọn ``Sao lưu ngay'' & Tạo tệp sao lưu mới & Đạt \\ \hline
+2 & Phân quyền xem nhật ký sao lưu & Chỉ huy đơn vị mở trang nhật ký & Không hiển thị các bản ghi nhật ký sao lưu & Đạt \\ \hline
+3 & Đổi lịch sao lưu & Đổi chu kỳ từ 24 giờ sang 12 giờ & Hệ thống tự sao lưu theo lịch mới & Đạt \\ \hline
+4 & Khôi phục từ tệp sao lưu & Chọn tệp và xác nhận & Cơ sở dữ liệu được khôi phục về trạng thái của bản sao lưu & Đạt \\ \hline
 \end{tabular}
 \end{table}
 
@@ -907,11 +986,11 @@ Các bước cài đặt trên máy phát triển cá nhân được trình bày
 
 \textbf{Bước 2.} Sao chép tệp cấu hình mẫu \texttt{.env.example} thành \texttt{.env} trong cả hai thư mục, rồi chỉnh các giá trị thiết yếu: \texttt{DATABASE\_URL} cho chuỗi kết nối PostgreSQL, \texttt{JWT\_SECRET} cho khoá phát hành Access Token, \texttt{JWT\_REFRESH\_SECRET} cho khoá phát hành Refresh Token, \texttt{CLIENT\_URL} cho địa chỉ frontend.
 
-\textbf{Bước 3.} Khởi tạo cơ sở dữ liệu trong thư mục \texttt{BE-QLKT} bằng lệnh \texttt{npx prisma migrate dev} để áp dụng các tệp migration đã có; tiếp theo chạy lệnh \texttt{npm run init-super-admin} để tạo tài khoản SuperAdmin mặc định.
+\textbf{Bước 3.} Khởi tạo cơ sở dữ liệu trong thư mục \texttt{BE-QLKT} bằng lệnh \texttt{npx prisma migrate dev} để áp dụng các tệp migration đã có; tiếp theo chạy lệnh \texttt{npm run init-super-admin} để tạo tài khoản Quản trị hệ thống mặc định.
 
 \textbf{Bước 4.} Khởi chạy môi trường phát triển bằng \texttt{npm run dev} ở \texttt{BE-QLKT} cho backend tại cổng 4000 và lệnh tương tự ở \texttt{FE-QLKT} cho frontend tại cổng 3000.
 
-Sau bước 4, mở trình duyệt tới \url{http://localhost:3000} và đăng nhập bằng tài khoản SuperAdmin mặc định để bắt đầu cấu hình các đơn vị, chức vụ và tài khoản phụ trợ.
+Sau bước 4, mở trình duyệt tới \url{http://localhost:3000} và đăng nhập bằng tài khoản Quản trị hệ thống mặc định để bắt đầu cấu hình các đơn vị, chức vụ và tài khoản phụ trợ.
 
 \subsection{Triển khai sản xuất với PM2}
 \label{subsection:4.5.3}
@@ -923,7 +1002,10 @@ Khởi chạy bằng lệnh \texttt{pm2 start ecosystem.config.js}, sau đó dù
 \subsection{Sao lưu và giám sát}
 \label{subsection:4.5.4}
 
-Tác vụ sao lưu chạy bên trong tiến trình backend qua \texttt{node-cron}, lịch và trạng thái cấu hình ngay trong DevZone. Lịch mặc định là \texttt{0 1 1 * *} (01:00 ngày 1 hằng tháng); cho mỗi lần chạy, dịch vụ đọc 21 bảng dữ liệu, ghép chuỗi câu lệnh \texttt{INSERT INTO \dots} đã escape rồi ghi tệp vào \texttt{backups/YYYY-MM-DD\_HH-mm-ss.sql}. Các tệp cũ vượt \texttt{backup\_retention\_days} (mặc định 15) được tự động xoá ở bước cleanup. PM2 cung cấp \texttt{pm2 logs} để xem log thời gian thực; với giám sát dài hạn, log gom vào \texttt{/var/log/qlkt/} và có thể tích hợp với hệ thống giám sát tập trung của Học viện trong tương lai.
+Tác vụ sao lưu chạy bên trong tiến trình backend qua \texttt{node-cron}, lịch và trạng thái cấu hình ngay trong DevZone. Lịch mặc định là \texttt{0 2 * * *} (02:00 hằng ngày); cho mỗi lần chạy, dịch vụ đọc 21 bảng dữ liệu, ghép chuỗi câu lệnh \texttt{INSERT INTO \dots} đã escape rồi ghi tệp vào \texttt{backups/backup\_YYYYMMDD\_HHmmss\_loai.sql}. Các tệp cũ vượt \texttt{backup\_retention\_days} (mặc định 15) được tự động xoá ở bước cleanup. PM2 cung cấp \texttt{pm2 logs} để xem log thời gian thực; với giám sát dài hạn, log gom vào \texttt{/var/log/qlkt/} và có thể tích hợp với hệ thống giám sát tập trung của Học viện trong tương lai.
 
+\section*{Kết chương}
+
+Chương này đã trình bày kiến trúc phân tầng, thiết kế gói, thiết kế lớp, thiết kế cơ sở dữ liệu, thiết kế giao diện, kết quả xây dựng, kết quả kiểm thử hộp đen các chức năng nghiệp vụ và phương án triển khai của hệ thống. Các kết quả này cho thấy phần mềm đã hiện thực hoá đầy đủ những yêu cầu chức năng và phi chức năng đặt ra ở Chương~\ref{chapter:Related_works}. Chương tiếp theo đi sâu phân tích những đóng góp nổi bật của đồ án.
 
 \end{document}

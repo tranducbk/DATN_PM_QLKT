@@ -14,7 +14,7 @@ import {
   theme as antdTheme,
   Pagination,
 } from 'antd';
-import { getApiErrorMessage } from '@/lib/apiError';
+import { getApiErrorMessage } from '@/lib/http/apiError';
 import {
   DEFAULT_PAGE_SIZE,
   DEFAULT_ANTD_TABLE_PAGINATION,
@@ -31,7 +31,7 @@ import {
 } from '@ant-design/icons';
 import { PersonnelTable } from '@/components/personnel/PersonnelTable';
 import { PersonnelForm } from '@/components/personnel/PersonnelForm';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import { personnelFormSchema } from '@/lib/schemas';
 import type { z } from 'zod';
 import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';

@@ -23,6 +23,8 @@
 - [N. Tổng hợp chống tấn công và đánh giá an toàn](#n-tổng-hợp-chống-tấn-công-và-đánh-giá-an-toàn)
 - [O. Truy vấn nâng cao và tối ưu cơ sở dữ liệu](#o-truy-vấn-nâng-cao-và-tối-ưu-cơ-sở-dữ-liệu)
 - [P. Phạm vi đề tài — đã làm và hướng phát triển](#p-phạm-vi-đề-tài--đã-làm-và-hướng-phát-triển)
+- [Q. Mô phỏng phản biện hội đồng (3 vai chuyên gia)](#q-mô-phỏng-phản-biện-hội-đồng-3-vai-chuyên-gia)
+- [R. Câu hỏi vặn về sơ đồ và thiết kế cơ sở dữ liệu](#r-câu-hỏi-vặn-về-sơ-đồ-và-thiết-kế-cơ-sở-dữ-liệu)
 
 ---
 
@@ -176,7 +178,7 @@
 **Ngắn:** Jest tích hợp `ts-jest` chạy file `.ts` không cần build, mocking sẵn, cộng đồng lớn nhất cho Node.js backend. Vitest mới hơn, tốt cho FE Vite nhưng chưa cần đổi.
 
 **Chi tiết:**
-- 937 ca kiểm thử / 80 file hiện chạy trong ~7 giây — chấp nhận được.
+- 946 ca kiểm thử / 81 file hiện chạy trong khoảng 20 giây — chấp nhận được.
 - Jest snapshot testing chưa dùng nhiều, chủ yếu unit test pure function.
 - `jest --coverage` sinh báo cáo HTML tại `coverage/lcov-report/index.html`, đạt > 85 % cho `services/profile`, `services/eligibility`, `services/proposal`.
 
@@ -459,25 +461,26 @@ server {
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 ```
 - Đặt `crossOriginResourcePolicy: cross-origin` để FE (port 3000) load được file PDF/Excel served từ BE (port 4000) — mặc định helmet là `same-origin`.
-- Các header khác giữ default: HSTS (chỉ effect khi HTTPS), X-Frame-Options DENY, X-Content-Type-Options nosniff, X-XSS-Protection, ...
+- Các header khác giữ default của helmet: HSTS (chỉ effect khi HTTPS), X-Frame-Options SAMEORIGIN, X-Content-Type-Options nosniff, X-XSS-Protection 0 (helmet v8 cố ý tắt header lỗi thời này), ...
 - Đáng lẽ nên thêm `contentSecurityPolicy` nhưng AntD inject inline style → cần allow `'unsafe-inline'` cho `style-src`. Em chưa setup → ghi vào hướng phát triển.
 
 **Phản biện:** "Sao không bật full CSP?" → "AntD chưa hỗ trợ nonce-based CSP. Khi nào AntD v6 ra (đã có roadmap), em sẽ migrate. Hiện LAN nội bộ rủi ro XSS thấp."
 
-### A.20 — Thư viện FE phụ: dayjs, axios, chart.js, react-pdf-viewer
+### A.20 — Thư viện FE phụ: dayjs, axios, chart.js (và cách xem PDF)
 
-**Ngắn:** 4 thư viện FE phụ trợ. Mỗi cái thay thế phương án "to" hơn để giữ bundle nhỏ.
+**Ngắn:** 3 thư viện FE phụ trợ. Mỗi cái thay thế phương án "to" hơn để giữ bundle nhỏ.
 
 | Thư viện | Mục đích | Thay cho |
 |---|---|---|
 | `dayjs` (~7 KB) | Format/parse date, locale tiếng Việt | `moment.js` (~70 KB), date-fns (~13 KB tree-shakable) |
 | `axios` | HTTP client với interceptor | `fetch` (phải tự wrap), TanStack Query (overkill cho CRUD đơn giản) |
 | `chart.js` + `react-chartjs-2` | Biểu đồ dashboard | `recharts` (phình bundle), `apache echarts` (overkill) |
-| `@react-pdf-viewer/core` | Xem PDF quyết định inline | `iframe src=...` (không có UI điều khiển), `pdf.js` thuần (phải tự build UI) |
+
+Việc xem PDF quyết định **không dùng thư viện ngoài**: hàm `openPdfWithViewer` trong `lib/file/filePreview.ts` mở tệp ở tab mới bằng thẻ `<embed>`, tận dụng trình xem PDF có sẵn của trình duyệt nên không tốn thêm bundle.
 
 Form state dùng `Form.useForm()` của Ant Design (built-in, không cần thư viện ngoài), validation gọi `zodSchema.safeParse()` trong handler rồi map lỗi qua `form.setFields()`.
 
-**Axios interceptor (`src/lib/axiosInstance.ts`):**
+**Axios interceptor (`src/lib/http/axiosInstance.ts`):**
 - Request: tự gắn `Authorization: Bearer <accessToken>` từ localStorage.
 - Response: nếu 401 → tự gọi `/api/auth/refresh` → retry request gốc 1 lần. Nếu refresh cũng 401 → redirect `/login`.
 - Lý do dùng axios thay fetch: interceptor pattern cleaner, retry logic ngắn hơn 50 % so với fetch wrapper.
@@ -554,7 +557,7 @@ FE axios interceptor        BE Express                   BE verifyToken middlewa
      │←── 200 + data ────────────│                              │                              │
 ```
 
-File: `BE/src/middlewares/auth.ts:29-40`, `FE/src/lib/axiosInstance.ts:13-20`.
+File: `BE/src/middlewares/auth.ts:29-40`, `FE/src/lib/http/axiosInstance.ts:13-20`.
 
 **Tại sao check DB mỗi request?** Để có thể revoke. Trade-off: 1 query thêm/request (~1ms với index trên `id`). Đáng cho LAN nội bộ.
 
@@ -600,7 +603,7 @@ FE axios interceptor                  BE auth.service                    DB
    }
 ```
 
-File: `BE/src/services/auth.service.ts:111-138`, `FE/src/lib/axiosInstance.ts:58-180`.
+File: `BE/src/services/auth.service.ts:111-138`, `FE/src/lib/http/axiosInstance.ts:58-180`.
 
 **Rotation + grace:** mỗi refresh xoay token (token cũ → `prevRefreshToken`). Xoay dùng **updateMany có điều kiện** (`where refreshToken = tokenĐangCầm`) nên hai refresh đua nhau chỉ một bên thắng, bên thua đọc lại + trả token hiện hành → không token mồ côi, không đăng xuất oan. Token đã xoay (`prevRefreshToken`) replay **trong grace 15s** (suy từ `iat` token hiện hành) thì được trả lại token hiện hành; ngoài grace → 401.
 
@@ -685,7 +688,7 @@ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9 . eyJpZCI6ImNseHl6IiwidXNlcm5hbWUiOiJhZG1pb
   "exp": 1714569034         // expires at — tính từ expiresIn: '30m' → iat + 1800
 }
 ```
-Refresh token payload tối giản hơn: chỉ `{id, username, iat, exp(7d)}` — giảm bề mặt rò rỉ thông tin role.
+Refresh token payload tối giản hơn: chỉ `{id, username, iat, exp(2d)}` — giảm bề mặt rò rỉ thông tin role.
 
 **Phần 3 — Signature** (đây là phần ngăn user tự sửa payload):
 ```
@@ -897,8 +900,8 @@ FE socket                       BE Socket.IO middleware                FE useSoc
                                        │                                    │
    socket.on('connect_error', err) ←─── err.message === 'TOKEN_EXPIRED'    │
    if (err.message === 'TOKEN_EXPIRED') {                                   │
-     const stored = localStorage.getItem('refreshToken')                    │
-     const res = await axios.post('/api/auth/refresh', { refreshToken: stored })
+     // refresh token tự gửi qua HttpOnly cookie, không lấy từ localStorage │
+     const res = await axios.post('/api/auth/refresh')                      │
      const newToken = res.data.data.accessToken                             │
      localStorage.setItem('accessToken', newToken)                          │
      socket.auth.token = newToken                                           │
@@ -1026,7 +1029,7 @@ Socket.IO mặc định thử upgrade lên WebSocket sau khi handshake bằng HT
 
 ### B.4 — Strategy Pattern cho 7 loại đề xuất — kể chi tiết
 
-**Ngắn:** Mỗi loại đề xuất có 1 class implement interface `ProposalStrategy` với 4 method chuẩn (`buildSubmitPayload`, `validateApprove`, `importInTransaction`, `buildSuccessMessage`). Một REGISTRY map enum loại → instance. Caller dispatch qua `getStrategy(type).method(...)`.
+**Ngắn:** Mỗi loại đề xuất có 1 class implement interface `ProposalStrategy` với 4 method chuẩn (`buildSubmitPayload`, `validateApprove`, `importInTransaction`, `buildSuccessMessage`). Một REGISTRY map enum loại → instance. Caller dispatch qua `requireProposalStrategy(type).method(...)`.
 
 **Chi tiết code:**
 
@@ -1040,19 +1043,21 @@ export interface ProposalStrategy {
 }
 
 // services/proposal/strategies/index.ts
-const REGISTRY: Record<ProposalType, ProposalStrategy> = {
-  CA_NHAN_HANG_NAM: caNhanHangNamStrategy,
-  DON_VI_HANG_NAM: donViHangNamStrategy,
-  NIEN_HAN: nienHanStrategy,
-  HC_QKQT: hcQkqtStrategy,
-  KNC: kncStrategy,
-  CONG_HIEN: congHienStrategy,
-  NCKH: nckhStrategy,
+// DOT_XUAT = null vì khen thưởng đột xuất do Admin tạo trực tiếp, không qua luồng duyệt đề xuất
+const REGISTRY: Record<ProposalType, ProposalStrategy | null> = {
+  [PROPOSAL_TYPES.CA_NHAN_HANG_NAM]: caNhanHangNamStrategy,
+  [PROPOSAL_TYPES.DON_VI_HANG_NAM]: donViHangNamStrategy,
+  [PROPOSAL_TYPES.NIEN_HAN]: hccsvvStrategy,        // niên hạn → HCCSVV
+  [PROPOSAL_TYPES.HC_QKQT]: hcqkqtStrategy,
+  [PROPOSAL_TYPES.KNC_VSNXD_QDNDVN]: kncStrategy,
+  [PROPOSAL_TYPES.CONG_HIEN]: hcbvtqStrategy,       // cống hiến → HCBVTQ
+  [PROPOSAL_TYPES.NCKH]: nckhStrategy,
+  [PROPOSAL_TYPES.DOT_XUAT]: null,
 };
 
-export function getStrategy(type: ProposalType): ProposalStrategy {
+export function requireProposalStrategy(type: ProposalType): ProposalStrategy {
   const strategy = REGISTRY[type];
-  if (!strategy) throw new Error(`Không có strategy cho loại đề xuất ${type}`);
+  if (!strategy) throw new Error(`No strategy registered for proposal type: ${type}`);
   return strategy;
 }
 ```
@@ -1091,6 +1096,17 @@ Em viết sẵn 9 anti-pattern trong `BE-QLKT/CLAUDE.md` từ AP-1 đến AP-9:
 - AP-7: Response không qua `ResponseHelper`.
 - AP-8: `prisma db push` cho cột có data → mất data.
 - AP-9: Catch error rồi đẩy detail kỹ thuật vào message cho user.
+
+### B.7 — Kiến trúc tầng là quan hệ một chiều hay hai chiều?
+
+**Ngắn:** Về **quan hệ phụ thuộc** thì một chiều: tầng trên gọi tầng dưới, tầng dưới không biết tới tầng trên. Đó là nguyên tắc cốt lõi của layered architecture, vẽ ngược là vi phạm phân tầng. Còn **dữ liệu trả về** và **thông báo real-time** thì có đi lên lúc chạy, nhưng đó không phải quan hệ phụ thuộc nên không vẽ trên sơ đồ kiến trúc.
+
+**Chi tiết:** cần tách rõ hai khái niệm bị nhầm lẫn.
+- **Phụ thuộc (cái sơ đồ kiến trúc biểu diễn)**: mũi tên một chiều xuống Presentation → Business → Persistence → Data. Tầng dưới gọi ngược lên tầng trên gọi là *layering violation* — lỗi thiết kế. Hệ của em theo *strict layering*: mỗi tầng chỉ tương tác tầng liền kề.
+- **Dữ liệu trả về lúc chạy**: Controller gọi Service, Service trả kết quả lên lại. Dữ liệu đi lên nhưng Service không phụ thuộc Controller — đây chỉ là giá trị trả về của lời gọi, không phải mũi tên phụ thuộc.
+- **Thông báo real-time (Socket.IO)**: backend đẩy thông báo lên frontend, rõ ràng là giao tiếp đi lên. Nhưng nó không tạo phụ thuộc ngược, vì bản chất là **cơ chế sự kiện (Observer)**: backend phát sự kiện qua một kênh hạ tầng (socket service), còn frontend là một tier riêng tự kết nối và lắng nghe. Backend không hề tham chiếu tới frontend, nên quan hệ phụ thuộc vẫn xuôi.
+
+**Phản biện thường gặp:** "Thế Socket.IO đẩy thông báo lên client chẳng phải chiều ngược à?" → "Đó là giao tiếp theo cơ chế sự kiện: backend phát sự kiện qua socket service chứ không gọi hay phụ thuộc trực tiếp vào client; client là một tier riêng tự lắng nghe. Quan hệ phụ thuộc vẫn một chiều, nên sơ đồ kiến trúc vẽ một chiều là đúng. Nếu hội đồng muốn thấy chiều dữ liệu trả về thì nằm ở sơ đồ tuần tự."
 
 ---
 
@@ -1193,7 +1209,7 @@ await prisma.$queryRaw`SELECT * FROM "QuanNhan" WHERE id = ${userId}`;
 await prisma.$queryRawUnsafe(`SELECT * FROM "QuanNhan" WHERE id = '${userId}'`);
 ```
 
-Em chỉ dùng `$queryRawUnsafe` ở đúng 1 chỗ trong `scripts/renameColumn.ts` — chạy local một lần để rename column, không nhận input từ user.
+Em chỉ dùng `$executeRawUnsafe` trong vài script migration thủ công ở `src/scripts/` (đổi tên cột, thêm cột) — chạy local một lần, không nhận input từ người dùng.
 
 **Phản biện:** "Validate input có cần thiết khi đã có Prisma?" → "Có, vì validation còn để chặn business rule (vd: năm phải 1900-2100), không chỉ chống SQLi."
 
@@ -1214,18 +1230,17 @@ const safeFilename = escapeHtml(filename);               // & < > " '
 
 > **Lưu ý khi bảo vệ:** đây là một lỗi DOM-XSS thật em tìm ra khi tự rà soát (số quyết định kiểu `</title><img src=x onerror=...>` sẽ chạy mã trong tab xem PDF) và đã vá. Xem thêm mục **C.17**.
 
-**Header bảo vệ thêm:** em đặt `helmet()` trong `index.ts` để set `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`. `helmet()` bật mặc định nhưng CSP chưa được cấu hình riêng.
+**Header bảo vệ thêm:** em đặt `helmet()` trong `index.ts`, set `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, `Cross-Origin-Resource-Policy: cross-origin`. `helmet()` bật theo mặc định; CSP chưa được cấu hình riêng.
 
 ### C.4 — CSRF (Cross-Site Request Forgery)
 
-**Ngắn:** Em dùng JWT trong header `Authorization: Bearer <token>` thay vì cookie. Browser không tự gửi header `Authorization` cho cross-origin request → CSRF không lợi dụng được.
+**Ngắn:** Access token đi trong header `Authorization: Bearer` (không phải cookie) nên trình duyệt không tự đính vào request cross-origin → các API thao tác không bị CSRF. Refresh token nằm trong HttpOnly cookie và trình duyệt tự gửi, nhưng endpoint `/refresh` chỉ cấp access token mới trả trong body mà attacker cross-origin không đọc được.
 
 **Chi tiết:**
-- Nếu lưu JWT trong localStorage: kẻ tấn công không đọc được vì same-origin policy.
-- Nếu lưu trong cookie HttpOnly: phải bật `SameSite=Strict` để chống CSRF.
-- Em chọn header → tránh hoàn toàn CSRF.
+- Access token lưu ở localStorage, JS chủ động gắn vào header mỗi request → request cross-site không có header này nên không mạo danh được.
+- Refresh token lưu ở HttpOnly cookie với `SameSite=lax` → hạn chế cookie bị gửi trong ngữ cảnh cross-site; và vì kết quả refresh trả trong body, attacker cross-origin không đọc được access token mới.
 
-**Trade-off:** XSS sẽ đọc được localStorage. Em mitigate bằng React tự escape + không dùng eval — XSS gần như không thực hiện được.
+**Trade-off:** XSS có thể đọc access token ở localStorage (ngắn hạn, 30 phút); bù lại refresh token nằm trong HttpOnly cookie nên XSS không trộm được. Em giảm rủi ro XSS bằng React tự escape + không dùng eval.
 
 ### C.5 — Brute force password
 
@@ -1292,7 +1307,7 @@ export const pdfDecisionUpload = multer({
 
 Dùng helper `createFileFilter` thay vì inline → không lặp logic ở 6 multer config khác nhau (DRY).
 
-**Phản biện:** "MIME type có thể bị giả?" → "Đúng. Em check thêm magic byte 4 byte đầu cho PDF (`%PDF-`) ở service. Chưa check magic byte cho .xlsx — sẽ bổ sung."
+**Phản biện:** "MIME type có thể bị giả?" → "Đúng, đây là điểm yếu em thừa nhận. Hiện backend **chưa** kiểm magic byte (4 byte đầu `%PDF`) — chỉ dựa vào MIME + giới hạn dung lượng + không serve file qua URL tĩnh. Kiểm magic byte là lớp em đã ghi vào hướng phát triển."
 
 ### C.8 — Path traversal trên API tải file PDF
 
@@ -1300,7 +1315,7 @@ Dùng helper `createFileFilter` thay vì inline → không lặp logic ở 6 mul
 
 ```typescript
 // services/decision.service.ts
-const decision = await fileQuyetDinhRepository.findBySoQuyetDinh(soQuyetDinh);
+const decision = await decisionFileRepository.findUniqueRaw({ where: { so_quyet_dinh: soQuyetDinh } });
 if (!decision?.file_path) throw new NotFoundError('File quyết định không tồn tại');
 const safePath = path.join(__dirname, '../../uploads', path.basename(decision.file_path));
 res.download(safePath);
@@ -1313,8 +1328,8 @@ res.download(safePath);
 **Ngắn:** Role nằm trong JWT chữ ký, chỉ server biết secret. User không sửa được payload mà giữ chữ ký valid. Ngay cả khi user gửi field `role` trong body, Zod schema không khai báo field đó nên sẽ bị strip mặc định.
 
 **Bonus phòng:**
-- Endpoint update profile cá nhân không cho update field `role` (Zod schema chỉ liệt kê `ho_ten`, `email`).
-- Endpoint update tài khoản (`PUT /api/accounts/:id`) chỉ cho `requireSuperAdmin`.
+- Các Zod schema cập nhật không khai báo field `role`, nên dù client gửi `role` cũng bị strip — không tự nâng quyền được.
+- Endpoint cập nhật tài khoản (`PUT /api/accounts/:id`) yêu cầu `requireAdmin` (SUPER_ADMIN hoặc ADMIN).
 
 ### C.10 — Mass assignment
 
@@ -1334,7 +1349,7 @@ z.object({
 ### C.11 — Thông tin nhạy cảm trong response
 
 - Không trả `password_hash` — Prisma `select: { id, username, role }` không kèm `password_hash`.
-- refreshToken được trả về trong body JSON khi đăng nhập (không dùng HttpOnly cookie); FE lưu ở client và gửi kèm khi gọi `/refresh`.
+- Refresh token **không** trả trong body mà được set vào **HttpOnly cookie** (`res.cookie(..., { httpOnly: true })`) — JS phía client không đọc được nên XSS khó đánh cắp; FE chỉ giữ access token ở localStorage.
 - Không trả CCCD đầy đủ cho USER — chỉ ADMIN/MANAGER xem được.
 
 ### C.12 — DoS attack
@@ -1352,9 +1367,10 @@ z.object({
 
 `helmet()` middleware đặt:
 - `X-Content-Type-Options: nosniff`
-- `X-Frame-Options: DENY` (chống clickjacking)
+- `X-Frame-Options: SAMEORIGIN` (chống clickjacking)
 - `Strict-Transport-Security` (HSTS) — bật khi có HTTPS
-- `X-XSS-Protection: 1; mode=block`
+- `X-XSS-Protection: 0` — helmet v8 cố ý tắt header lỗi thời này (trình duyệt hiện đại dựa vào CSP thay vì bộ lọc XSS cũ)
+- `Cross-Origin-Resource-Policy: cross-origin`
 - CSP: `helmet()` bật mặc định nhưng CSP chưa được cấu hình riêng.
 
 ### C.14 — CORS cấu hình thế nào?
@@ -1399,7 +1415,7 @@ if (userRole !== ROLES.SUPER_ADMIN) {
 
 ### C.16 — Reset password / quên mật khẩu
 
-**Hiện tại:** chưa có flow self-service reset. SUPER_ADMIN/ADMIN dùng endpoint `POST /api/accounts/reset-password` (gửi `username` trong body) để reset thủ công.
+**Hiện tại:** chưa có flow self-service reset. SUPER_ADMIN/ADMIN dùng endpoint `POST /api/accounts/reset-password` (gửi `account_id` trong body) để reset thủ công.
 
 **Lý do:** môi trường LAN nội bộ, người dùng có thể đến gặp ADMIN. Tránh phải chạy mail server trong LAN cô lập.
 
@@ -1427,7 +1443,7 @@ if (userRole !== ROLES.SUPER_ADMIN) {
 - *Bối cảnh:* quân nhân ở đơn vị trực thuộc (DVTT) được lưu **cả hai** khóa `co_quan_don_vi_id` (đơn vị cha) lẫn `don_vi_truc_thuoc_id`. Vài chỗ xác định "đơn vị của chính quân nhân" lại ưu tiên CQDV (`co_quan_don_vi_id || don_vi_truc_thuoc_id`) nên luôn trả về đơn vị cha.
 - *Sửa có chọn lọc:* ở chỗ nhận diện đơn vị **của chính quân nhân** (phát hiện chuyển đơn vị `personnel/update.ts`) đổi sang DVTT-first; ở bộ lọc theo `don_vi_id` (`proposal/awards.ts`) đổi sang khớp **một trong hai** khóa để đúng cho cả lọc theo CQDV lẫn DVTT. **Giữ nguyên** các chỗ xác định phạm vi/thông báo cho MANAGER, vì MANAGER quản ở cấp CQDV (quản cả đơn vị con) nên CQDV-first ở đó là đúng thiết kế — đây là điểm dễ sửa sai nếu "đảo" đồng loạt.
 
-**Câu chốt:** "Em xem việc tự tìm lỗi của chính mình là một phần của quy trình. 4 vấn đề trên đều đã vá, có kiểm chứng bằng `typecheck` + bộ test (937 test BE pass) và rà soát thủ công."
+**Câu chốt:** "Em xem việc tự tìm lỗi của chính mình là một phần của quy trình. 4 vấn đề trên đều đã vá, có kiểm chứng bằng `typecheck` + bộ test (946 test BE pass) và rà soát thủ công."
 
 **Phản biện thường gặp:**
 - "Còn lỗ hổng nào chưa vá không?" → "Em ghi nhận access token nằm ở `localStorage` (đánh đổi đã biết khi refresh token ở httpOnly cookie) và mật khẩu DevZone lưu base64 ở sessionStorage — em xếp vào hướng cải thiện, không phải lỗ hổng leo thang quyền vì BE re-validate mỗi request."
@@ -1568,28 +1584,15 @@ if (newPrimaryUnitId) {
 **Cơ chế trong project:**
 - `accountRepository.update(id, { refreshToken: newToken })` là atomic UPDATE.
 - Nếu request 2 đến sau request 1: refreshToken ghi đè → request 1 còn dùng được token mới? Không, vì client chỉ giữ token cuối cùng nhận.
-- Server không reject token cũ cho đến khi expire (7 ngày) — đây là rủi ro.
+- Token cũ ngừng hiệu lực ngay sau khi xoay; chỉ token vừa bị thay (lưu ở cột `prevRefreshToken`) còn được chấp nhận trong **cửa sổ grace 15 giây** (`REFRESH_GRACE_MS`) để tha thứ các refresh đồng thời do retry, tránh đăng xuất oan.
 
-**Cải tiến đã ghi vào hướng phát triển:** sliding window rotation với grace period 30s + blacklist.
+**Hạn chế còn lại:** chưa có blacklist token bị thu hồi trước hạn; nếu cần thu hồi tức thì (nghi lộ token) thì phải thêm danh sách đen — đã ghi vào hướng phát triển.
 
 ### D.6 — Backup chạy trùng
 
-**Cơ chế:** Cron `backup.service.ts` dùng singleton flag trong process. Nếu cron tích hoạt khi job trước đang chạy → skip.
+**Cơ chế thật:** Backup được lập lịch bằng `node-cron` trong `routes/devZone.route.ts` (`cron.schedule(...)` gọi `backupService.createBackup`). Mỗi lần backup ghi ra một file `.sql` đặt tên kèm thời điểm nên hai lần chạy không ghi đè nhau.
 
-```typescript
-let isRunning = false;
-async function runBackup() {
-  if (isRunning) return;
-  isRunning = true;
-  try {
-    await buildBackupSql(); // tự build INSERT (raw SQL text)
-  } finally {
-    isRunning = false;
-  }
-}
-```
-
-**Hạn chế:** flag chỉ trong 1 process. PM2 cluster mode sẽ có nhiều process → cần Redis lock. Hiện em chạy `pm2 ... -i 1` (single instance).
+**Hạn chế (em thừa nhận):** hiện **chưa có** cờ chống chạy trùng kiểu `isRunning` — nếu một lần backup chạy lâu hơn chu kỳ cron thì về lý thuyết có thể chồng lấn. Em chạy `pm2 ... -i 1` (single instance) và chu kỳ backup thưa nên thực tế chưa xảy ra; thêm cờ singleton hoặc khoá là việc nên bổ sung.
 
 ### D.7 — Recalc trùng lặp gây sai dữ liệu
 
@@ -1822,7 +1825,7 @@ Hàm `computeChainContext(danhHieus, currentYear)` đọc tất cả `DanhHieuHa
 
 ### E.8 — Test case cho rule chuỗi
 
-Tổng cộng 937 ca kiểm thử, trong đó các test suite riêng cho rule chuỗi danh hiệu gồm:
+Tổng cộng 946 ca kiểm thử, trong đó các test suite riêng cho rule chuỗi danh hiệu gồm:
 - `eligibility-bkbqp-personal.test.ts`: vừa đủ chu kỳ, lỡ chu kỳ, lặp chu kỳ, NCKH thiếu, NCKH có nhưng CSTĐCS đứt.
 - `eligibility-cstdtq-personal.test.ts`: cửa sổ trượt 3 năm có/không có BKBQP, BKBQP rơi khỏi cửa sổ.
 - `eligibility-bkttcp-personal.test.ts`: lifetime block, đếm `=== 3` BKBQP và `=== 2` CSTĐTQ strict.
@@ -2656,25 +2659,31 @@ Next.js tự code-split theo route. Bundle initial ~ 250 KB gzipped.
 **Trả lời:** Mục tiêu của em là cover 100 % rule logic phức tạp (chuỗi danh hiệu, eligibility), > 80 % service layer, ≥ 70 % overall.
 
 **Hiện tại:**
-- 937 test cases / 80 file pass 100 %.
+- 946 test cases / 81 file pass 100 %.
 - Coverage ≥ 85 % cho `services/profile`, `services/eligibility`, `services/proposal`.
 - Một số helper pure function 100 %.
 - Controller layer thấp hơn (~60 %) — em ưu tiên test logic hơn integration.
 
 ### H.2 — Mock Prisma thế nào?
 
+Em tự viết mock (không dùng thư viện ngoài) trong `tests/helpers/prismaMock.ts`: tạo `jest.fn()` cho từng method (`findUnique`, `findMany`, `create`, `update`, `$transaction`...) của từng model, rồi `jest.mock('../../src/models')` để thay `prisma`. `tests/setup.ts` gọi `resetPrismaMock()` trong `beforeEach` để dọn state.
+
 ```typescript
+// tests/helpers/prismaMock.ts (rút gọn)
+export const prismaMock = buildPrismaMock();          // jest.fn() cho mọi model/method
+jest.mock('../../src/models', () => ({ prisma: prismaMock }));
+
+export function resetPrismaMock() {                    // dọn mọi mock + reset $transaction
+  for (const model of PRISMA_MODELS)
+    for (const method of PRISMA_METHODS) prismaMock[model][method].mockReset();
+  // ...reset $transaction về callback mặc định
+}
+
 // tests/setup.ts
-import { mockDeep, mockReset } from 'jest-mock-extended';
-import { PrismaClient } from '../src/generated/prisma';
-
-export const prismaMock = mockDeep<PrismaClient>();
-jest.mock('../src/models', () => ({ prisma: prismaMock }));
-
-beforeEach(() => mockReset(prismaMock));
+beforeEach(() => resetPrismaMock());
 
 // Trong test
-prismaMock.quanNhan.findMany.mockResolvedValue([{ id: '1', ho_ten: 'A' }] as any);
+prismaMock.quanNhan.findMany.mockResolvedValueOnce([{ id: '1', ho_ten: 'A' }] as any);
 ```
 
 ### H.3 — Khác giữa unit test và integration test
@@ -2732,7 +2741,7 @@ Project em chủ yếu unit + service unit, có ~10 integration test trong `test
 
 ### I.5 — Khi server crash
 
-1. PM2 auto-restart 3 lần liên tục (config `max_restarts: 3, restart_delay: 5000`).
+1. PM2 tự khởi động lại tiến trình (`autorestart: true` trong `ecosystem.config.js`); nếu vượt `max_memory_restart: 500M` cũng restart.
 2. Nếu vẫn crash: log Slack/Telegram (chưa setup).
 3. Health check Nginx report 502 → tạm hiển thị trang "Hệ thống đang bảo trì".
 
@@ -2832,9 +2841,9 @@ Nếu schema validate fail → response 400 ngay, controller không được g�
 
 ### J.12 — Time zone — server và client khác nhau
 
-**Hiện tại:** PostgreSQL lưu `Timestamp(0)` không kèm timezone. Server giả định Asia/Ho_Chi_Minh (UTC+7).
+**Hiện tại:** PostgreSQL lưu `Timestamp(0)` không kèm timezone. Server và DB chạy cùng một máy nên cùng múi giờ Asia/Ho_Chi_Minh (UTC+7).
 
-**Vấn đề:** Nếu server đặt ở múi khác → sai. Em set `TZ=Asia/Ho_Chi_Minh` trong `ecosystem.config.js` để đảm bảo nhất quán.
+**Vấn đề:** Nếu sau này tách server sang múi giờ khác thì cần đặt biến môi trường `TZ=Asia/Ho_Chi_Minh` cho tiến trình Node để nhất quán — hiện em chưa cấu hình cứng biến này.
 
 **Cải tiến tương lai:** Đổi sang `Timestamptz` (with time zone) để rõ ràng.
 
@@ -2850,7 +2859,7 @@ Nếu schema validate fail → response 400 ngay, controller không được g�
 
 ```typescript
 async downloadDecision(soQuyetDinh, user) {
-  const decision = await fileQuyetDinhRepository.findBySoQuyetDinh(soQuyetDinh);
+  const decision = await decisionFileRepository.findUniqueRaw({ where: { so_quyet_dinh: soQuyetDinh } });
   if (!decision) throw new NotFoundError();
   if (user.role === 'USER' && !await isMyOwnDecision(user.quan_nhan_id, decision)) {
     throw new ForbiddenError('Bạn không có quyền tải file này');
@@ -2905,7 +2914,9 @@ const ANH_HUNG_LLVT: ChainAwardConfig = {
   code: 'ANH_HUNG_LLVT',
   cycleYears: 0,  // không cycle
   isLifetime: true,
-  prerequisites: [{ code: 'BKTTCP', count: 1 }],
+  requiredFlags: [{ code: 'BKTTCP', count: 1 }],
+  flagColumn: 'nhan_anh_hung_llvt',
+  streakLabel: 'Anh hùng LLVT',
   requiresNCKH: true,
   // ... thêm tiêu chí phức tạp khác
 };
@@ -3020,7 +3031,7 @@ const ANH_HUNG_LLVT: ChainAwardConfig = {
 | **Tách lớp rõ** | 6 lớp Route → Middleware → Controller → Service → Repository → Prisma; mỗi lớp 1 thư mục riêng | `ls BE-QLKT/src/` thấy 6 folder tương ứng |
 | **Phụ thuộc đơn hướng** | Controller chỉ import service, service chỉ import repository, repository chỉ import prisma | `grep "from '../models'"` trong `controllers/` ra 0 kết quả (anti-pattern AP-1) |
 | **File ≤ 500 LOC** | 95 % file đạt; file vượt được tách (vd: `proposal/approve.ts` từ 2001 LOC → 480 LOC + 4 sub-file) | `find src/services -name "*.ts" -exec wc -l {} \;` |
-| **Test coverage ≥ 85 %** | `services/profile`, `services/eligibility`, `services/proposal` đạt; controller ~60 % | `npm run test:coverage` |
+| **Test coverage ≥ 85 %** | `services/profile`, `services/eligibility`, `services/proposal` đạt; controller ~60 % | `npx jest --coverage` |
 | **Tài liệu quy ước** | Root `CLAUDE.md` + `BE-QLKT/CLAUDE.md` + `FE-QLKT/CLAUDE.md` ghi rõ naming convention, anti-pattern, pattern bắt buộc | Mở 3 file đó |
 
 **Phản biện:** "5 chỉ số đó có chuẩn công nghiệp nào không?" → "Em tham khảo từ Clean Code (Robert Martin) và bộ chỉ số Sonar (cyclomatic complexity, code duplication, nesting depth) — đã ghi vào `BE-QLKT/CLAUDE.md` thành 9 anti-pattern bắt buộc tránh."
@@ -3041,7 +3052,9 @@ const ANH_HUNG_LLVT: ChainAwardConfig = {
        code: 'ANH_HUNG_LLVT',
        cycleYears: 0,                    // không cycle
        isLifetime: true,                 // 1 lần duy nhất
-       prerequisites: [{ code: 'BKTTCP', count: 1 }],
+       requiredFlags: [{ code: 'BKTTCP', count: 1 }],
+       flagColumn: 'nhan_anh_hung_llvt',
+       streakLabel: 'Anh hùng LLVT',
        requiresNCKH: true,
      }
    
@@ -3123,11 +3136,11 @@ TRƯỚC:
 services/proposal/approve.ts (2001 LOC) — chứa hết validation, mapping, import dispatch
 
 SAU:
-services/proposal/approve.ts (480 LOC) — orchestration: parse → validate → map → import → log
-services/proposal/approve/types.ts (50 LOC) — shared interface
-services/proposal/approve/validation.ts (380 LOC) — pre-flight check
-services/proposal/approve/decisionMappings.ts (240 LOC) — decision metadata + PDF persist
-services/proposal/approve/import.ts (320 LOC) — transaction import dispatch
+services/proposal/approve.ts (402 LOC) — orchestration: parse → validate → map → import → log
+services/proposal/approve/types.ts (69 LOC) — shared interface
+services/proposal/approve/validation.ts (499 LOC) — pre-flight check
+services/proposal/approve/decisionMappings.ts (339 LOC) — decision metadata + PDF persist
+services/proposal/approve/import.ts (177 LOC) — transaction import dispatch
 ```
 
 Mỗi file giờ đảm nhận 1 concern, dễ test riêng, dễ tìm khi debug.
@@ -3324,14 +3337,14 @@ export const proposalService = new ProposalService();
 | 4 | **IDOR / BOLA** (CWE-639) | 3 lớp: `verifyToken` + `requireRole` + ownership check trong service; `unitFilter` lọc theo cây đơn vị cho MANAGER | `auth.ts`, `unitFilter.ts`, services | Thấp |
 | 5 | **Brute force password** (CWE-307) | `authLimiter` 30 lần đăng nhập thất bại / 5 phút / IP (chỉ đếm lần thất bại); bcrypt cost 10 (~100 ms/lần thử) | `configs/rateLimiter.ts` | Trung bình (chưa account lockout) |
 | 6 | **Mass Assignment** (CWE-915) | Zod `z.object()` mặc định strip field ngoài schema ở mọi endpoint; service không truyền `req.body` thẳng vào `prisma.create` | `middlewares/validate.ts` + `validations/` | Không |
-| 7 | **File upload độc** (CWE-434) | Multer whitelist extension + MIME + size 10 MB; lưu ngoài web root; check magic byte cho PDF | `configs/multer.ts` | Thấp (chưa scan virus) |
+| 7 | **File upload độc** (CWE-434) | Multer check MIME + giới hạn dung lượng; lưu ngoài web root; không serve qua URL tĩnh | `configs/multer.ts` | Trung bình (chưa kiểm magic byte, chưa scan virus) |
 | 8 | **Privilege escalation** (CWE-269) | Role trong JWT chữ ký HMAC, không sửa được client-side; Zod schema không cho update field `role` qua self-update | JWT + Zod | Không |
 | 9 | **Path traversal** (CWE-22) | File path từ DB chứ không từ user; `path.basename` strip mọi `../` | `decision.service.ts` download | Không |
 | 10 | **Missing auth** (CWE-306) | `verifyToken` middleware bắt buộc trước mọi route nghiệp vụ; không có endpoint nghiệp vụ public | Mọi `routes/*.ts` | Không |
 | 11 | **Sensitive Data Exposure** (CWE-200) | Prisma `select` whitelist field; không trả `password_hash`, `refreshToken`; CCCD ẩn cho USER | services + helpers | Thấp |
 | 12 | **Insecure Deserialization** (CWE-502) | Không có deserialize từ user input (không dùng `JSON.parse` lên payload nhạy cảm); JWT verify chữ ký trước khi đọc | `auth.ts` | Không |
 | 13 | **DoS / Resource exhaustion** (CWE-400) | Rate limit, body limit 10 MB, MAX_LIMIT 100 records, file size 10 MB | rateLimiter, paginationHelper | Trung bình (DDoS layer 4 không chống) |
-| 14 | **Clickjacking** (CWE-1021) | helmet `X-Frame-Options: DENY` | `index.ts` | Không |
+| 14 | **Clickjacking** (CWE-1021) | helmet `X-Frame-Options: SAMEORIGIN` | `index.ts` | Không |
 | 15 | **Insufficient logging** (CWE-778) | Audit log mọi mutate, ghi `actor_role`, `payload`, `ip_address`, `user_agent` | `middlewares/auditLog.ts` | Thấp (chưa log failed auth) |
 
 ### N.3 — Tự tay tấn công hệ thống — em đã thử những gì?
@@ -3459,8 +3472,8 @@ app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 Helmet mặc định set:
 - `Strict-Transport-Security` (HSTS)
 - `X-Content-Type-Options: nosniff`
-- `X-Frame-Options: DENY`
-- `X-XSS-Protection: 0` (disabled vì gây bug ở browser cũ)
+- `X-Frame-Options: SAMEORIGIN`
+- `X-XSS-Protection: 0` (helmet v8 cố ý tắt header lỗi thời này)
 - `Referrer-Policy: no-referrer`
 
 `helmet()` bật mặc định nhưng CSP chưa được cấu hình riêng.
@@ -4271,7 +4284,7 @@ const [quanNhans, danhHieus, lichSus] = await Promise.all([
 
 - Prisma đánh dấu rõ breaking change trong CHANGELOG.
 - Em khai báo version trong `package.json` (`"@prisma/client": "^6.17.1"`, `"prisma": "^6.17.1"` — Prisma 6, dùng caret `^`).
-- Khi upgrade: đọc migration guide, chạy regression test (937 ca), sửa breaking nếu có.
+- Khi upgrade: đọc migration guide, chạy regression test (946 ca), sửa breaking nếu có.
 - Có thể giữ version cũ vài năm nếu Prisma vẫn hỗ trợ.
 
 ---
@@ -4313,7 +4326,7 @@ const [quanNhans, danhHieus, lichSus] = await Promise.all([
 
 **Ngắn (đọc thuộc — dùng mở đầu phần trình bày):**
 
-"Hệ thống quản lý khen thưởng cán bộ, chiến sĩ Quân đội gồm 5 nhóm chức năng chính: quản lý quân nhân — đơn vị — tài khoản, 7 loại khen thưởng theo quy chế, quy trình đề xuất và phê duyệt có kiểm tra điều kiện tự động, phân quyền 4 cấp vai trò, thống kê và sao lưu dữ liệu. Phần mềm được kiểm thử với 937 ca kiểm thử."
+"Hệ thống quản lý khen thưởng cán bộ, chiến sĩ Quân đội gồm 5 nhóm chức năng chính: quản lý quân nhân — đơn vị — tài khoản, 7 loại khen thưởng theo quy chế, quy trình đề xuất và phê duyệt có kiểm tra điều kiện tự động, phân quyền 4 cấp vai trò, thống kê và sao lưu dữ liệu. Phần mềm được kiểm thử với 946 ca kiểm thử."
 
 **Chi tiết theo nhóm (dùng khi bị hỏi sâu):**
 
@@ -4327,7 +4340,7 @@ const [quanNhans, danhHieus, lichSus] = await Promise.all([
 | **Thông báo real-time** | Socket.IO: ADMIN nhận thông báo khi có đề xuất mới; USER nhận khi đề xuất được duyệt/từ chối |
 | **Dashboard & xuất dữ liệu** | Thống kê tổng quan; xuất Excel danh hiệu hằng năm; tải PDF quyết định đã lưu |
 | **Vận hành nội bộ** | Sao lưu tự động theo lịch (SQL dump); audit log toàn bộ thao tác; JWT access/refresh + force-logout phiên cũ |
-| **Kiểm thử** | 937 ca kiểm thử Jest, 80 test file, coverage > 85 % cho `services/profile`, `services/eligibility`, `services/proposal` |
+| **Kiểm thử** | 946 ca kiểm thử Jest, 81 test file, coverage > 85 % cho `services/profile`, `services/eligibility`, `services/proposal` |
 
 ---
 
@@ -4388,7 +4401,7 @@ const [quanNhans, danhHieus, lichSus] = await Promise.all([
 
 - *HCQKQT*: 1 dòng `HCQKQT_YEARS_REQUIRED = 25` trong `danhHieu.constants.ts`. Toàn bộ logic đọc từ đó, sửa xong chạy lại test là xong.
 - *KNC VSNXD QĐNDVN*: 2 dòng — `KNC_YEARS_REQUIRED_NAM = 25` và `KNC_YEARS_REQUIRED_NU = 20`. Quy chế có phân biệt Nam/Nữ nên tách 2 constant.
-- *Cá nhân hằng năm / Đơn vị hằng năm*: Chu kỳ (2/3/7 năm) và số cờ yêu cầu (3 BKBQP + 2 CSTDTQ cho BKTTCP) đều trong `chainAwards.constants.ts`. Sửa `cycleYears` hoặc `requiredFlags` là xong logic. **Tuy nhiên rủi ro ở test**: 937 test case có nhiều fixture dùng số năm cụ thể (quân nhân có 2 năm CSTDCS → đủ BKBQP). Nếu đổi thành 3 năm, phải rà lại fixture và assertion trong các test suite `eligibility-bkbqp`, `eligibility-cstdtq`, `eligibility-bkttcp`.
+- *Cá nhân hằng năm / Đơn vị hằng năm*: Chu kỳ (2/3/7 năm) và số cờ yêu cầu (3 BKBQP + 2 CSTDTQ cho BKTTCP) đều trong `chainAwards.constants.ts`. Sửa `cycleYears` hoặc `requiredFlags` là xong logic. **Tuy nhiên rủi ro ở test**: 946 test case có nhiều fixture dùng số năm cụ thể (quân nhân có 2 năm CSTDCS → đủ BKBQP). Nếu đổi thành 3 năm, phải rà lại fixture và assertion trong các test suite `eligibility-bkbqp`, `eligibility-cstdtq`, `eligibility-bkttcp`.
 
 **Trường hợp khó — HCBVTQ khi đổi nhóm hệ số:**
 
@@ -4406,11 +4419,11 @@ Không nên, ít nhất với giai đoạn hiện tại. Lý do:
 - Quy chế quân đội thay đổi rất hiếm (hàng năm hoặc ít hơn), ROI của giao diện cấu hình thấp so với chi phí làm đúng.
 - Trường hợp đổi nhóm hệ số HCBVTQ là thay đổi structural — không thể expose qua UI mà không có migration đi kèm.
 
-Giải pháp thực tế hơn là: document rõ quy trình bảo trì — 'khi quy chế thay đổi, developer sửa constants, chạy 937 test, nếu test fixture cần cập nhật thì cập nhật, rồi chạy script recalc nếu cần'. Chi phí thấp hơn nhiều so với làm giao diện cấu hình an toàn."
+Giải pháp thực tế hơn là: document rõ quy trình bảo trì — 'khi quy chế thay đổi, developer sửa constants, chạy 946 test, nếu test fixture cần cập nhật thì cập nhật, rồi chạy script recalc nếu cần'. Chi phí thấp hơn nhiều so với làm giao diện cấu hình an toàn."
 
 ---
 
-**Chúc bạn bảo vệ thành công.** Hệ thống đã đầy đủ tính năng, có số đo định lượng rõ ràng, có audit log đầy đủ, có 937 test pass — đều là vũ khí mạnh khi hội đồng truy vấn. Khi đứng trước hội đồng, hít sâu, nói chậm, mắt nhìn vào người hỏi và đừng quên: **mọi thứ trong đồ án này em đã sống với 6 tháng — em là người hiểu nó nhất phòng**.
+**Chúc bạn bảo vệ thành công.** Hệ thống đã đầy đủ tính năng, có số đo định lượng rõ ràng, có audit log đầy đủ, có 946 test pass — đều là vũ khí mạnh khi hội đồng truy vấn. Khi đứng trước hội đồng, hít sâu, nói chậm, mắt nhìn vào người hỏi và đừng quên: **mọi thứ trong đồ án này em đã sống với 6 tháng — em là người hiểu nó nhất phòng**.
 
 ---
 
@@ -4451,7 +4464,7 @@ Em thừa nhận trade-off: nếu chỉ 2-3 loại, Strategy là over-design. Em
 **Trả lời:**
 "Em thừa nhận đây là hạn chế của đồ án.
 
-Nguyên nhân thật: thời gian. Trong 4 tháng làm đồ án 1 mình, em ưu tiên (1) BE service test cho rule chuỗi danh hiệu — đây là logic phức tạp nhất, sai là sai quyết định khen thưởng; (2) integration test cho 7 strategy đề xuất; (3) kiểm thử thủ công FE qua giao diện. Kết quả: BE có 80 test file / 937 case pass, FE chỉ test tay.
+Nguyên nhân thật: thời gian. Trong 4 tháng làm đồ án 1 mình, em ưu tiên (1) BE service test cho rule chuỗi danh hiệu — đây là logic phức tạp nhất, sai là sai quyết định khen thưởng; (2) integration test cho 7 strategy đề xuất; (3) kiểm thử thủ công FE qua giao diện. Kết quả: BE có 81 test file / 946 case pass, FE chỉ test tay.
 
 Hậu quả: mỗi lần em sửa code FE, phải click lại toàn bộ luồng — tốn thời gian và dễ miss regression. Nếu hệ thống vào production và team mở rộng, đây là nợ kỹ thuật phải trả trước.
 
@@ -4532,13 +4545,12 @@ Em **thừa nhận hạn chế**: format INSERT chậm hơn `COPY` cho dataset l
 **Bẫy**: trade-off quan trọng nhất của JWT-based auth.
 
 **Trả lời:**
-"Em đã cân nhắc kỹ trade-off này — chọn `localStorage` cố ý.
+"Em dùng cách **kết hợp**, không dồn hết token vào một chỗ:
 
-**`httpOnly cookie` chống XSS** vì JS không đọc được cookie. **Nhưng** mở ra CSRF — request từ tab khác đến cùng origin tự động đính cookie. Để chống CSRF phải thêm CSRF token, double-submit, hoặc SameSite=Strict.
+- **Access token** (ngắn hạn, 30 phút) ở `localStorage` — JS chủ động gắn vào header `Authorization`, nên không bị gửi tự động trong request cross-site (tránh CSRF).
+- **Refresh token** ở **HttpOnly cookie** — JS không đọc được nên XSS không trộm được; bù lại endpoint `/refresh` có thể bị gọi cross-site, nhưng chỉ cấp access token mới trả trong body mà attacker không đọc được, kèm `SameSite=lax` để giảm rủi ro.
 
-**`localStorage` chống CSRF** (JS phải chủ động đọc), nhưng XSS đọc được.
-
-Em chọn `localStorage` + biện pháp **chống XSS chủ động**:
+Với access token ở localStorage, em chống XSS chủ động:
 1. React mặc định escape mọi text node — không có `dangerouslySetInnerHTML` ở đâu trong code (em đã grep).
 2. Helmet middleware (`helmet()` bật mặc định) set các header bảo vệ — CSP chưa được cấu hình riêng (hướng phát triển).
 3. Mọi input đi qua Zod validation — chặn payload độc hại từ form.
@@ -4550,17 +4562,13 @@ Lý do thật quan trọng nhất: hệ thống chạy **mạng nội bộ Học
 #### Q.C.2 — "Em cho phép user upload PDF làm quyết định. Nếu user upload `.exe` đổi đuôi thành `.pdf` thì sao?"
 
 **Trả lời:**
-"Em có nhiều lớp chống:
+"Em có vài lớp chống, và xin nói thẳng giới hạn hiện tại:
 
-(1) **Multer config** ở `configs/multer.ts` — `fileFilter` check MIME type `application/pdf`. Trình duyệt gửi MIME từ extension nên có thể giả mạo. Đây chỉ là lớp đầu.
+(1) **Multer config** ở `configs/multer.ts` — `fileFilter` check MIME type `application/pdf` và giới hạn dung lượng. Trình duyệt gửi MIME từ extension nên có thể giả mạo. Đây là lớp đầu, và hiện là lớp kiểm tra nội dung **duy nhất** ở backend.
 
-(2) **Magic bytes check** ở backend — đọc 4 byte đầu file, PDF thật bắt đầu bằng `%PDF` (`0x25 0x50 0x44 0x46`). Nếu không khớp → reject.
+(2) **Lưu vào folder riêng** ngoài thư mục static serve. Khi user request file qua API tải quyết định, backend kiểm tra quyền rồi mới stream file (tra theo `so_quyet_dinh` từ DB, dùng `path.basename`); **không** serve file upload qua URL tĩnh trực tiếp — tránh file `.html` bị trình duyệt render khi click link. File lưu kèm timestamp/counter để tránh trùng tên.
 
-(3) **Lưu vào folder riêng `uploads/decisions/`** không nằm trong static serve của Next.js. Khi user request file qua `/api/decisions/:id/download`, backend kiểm tra quyền + stream file. **Không bao giờ** serve file user upload qua URL trực tiếp — tránh trường hợp file `.html` được render bởi trình duyệt khi click link.
-
-(4) **Filename sanitization** — em strip path component (`../`), giữ chỉ ký tự `[a-zA-Z0-9._-]`. Tên lưu DB là tên đã sanitize + suffix timestamp tránh trùng.
-
-**Em thừa nhận hạn chế**: chưa scan virus với ClamAV. Với scope quân sự, đây là phải có nếu deploy thật. Em đã ghi vào hướng phát triển: tích hợp ClamAV trước khi accept file."
+**Em thừa nhận hạn chế thẳng thắn**: hiện backend **chưa** kiểm magic bytes (đọc 4 byte đầu `%PDF`) và **chưa** sanitize tên file bằng whitelist ký tự — đây là 2 lớp em *nên* bổ sung. Cũng chưa scan virus với ClamAV. Với scope quân sự mạng nội bộ thì rủi ro thấp, nhưng nếu deploy rộng thì cả 3 lớp này là phải có. Em đã ghi vào hướng phát triển."
 
 #### Q.C.3 — "Audit log của em có ghi mọi thao tác. Admin có thể xoá audit log của chính mình không?"
 
@@ -4692,3 +4700,83 @@ Tuy nhiên em **không tự tin về tuning chi tiết** — chưa cấu hình a
 1. **Thừa nhận thẳng** — không vòng vo, không giả vờ.
 2. **Show what you DO know** — kể phần kiến thức nền tảng có liên quan.
 3. **Đặt câu hỏi ngược lại** — "Thầy cô có gợi ý cụ thể không?" — biến từ chỗ bị dồn thành cơ hội học. Hội đồng đánh giá cao sinh viên tò mò hơn sinh viên giả vờ biết.
+
+---
+
+## R. Câu hỏi vặn về sơ đồ và thiết kế cơ sở dữ liệu
+
+### R.1 — Sao chia ERD thành nhiều sơ đồ nhỏ? Nối lại có mất quan hệ nào không?
+
+**Ngắn:** Em chia theo nhóm nghiệp vụ để mỗi sơ đồ chỉ còn năm đến mười bảng cho dễ đọc, đây là kỹ thuật subject area chuẩn. Không mất quan hệ nào: tổng 47 khoá ngoại được chia đúng vào sáu sơ đồ, mỗi khoá ngoại xuất hiện đúng một lần.
+
+**Chi tiết:**
+- Số khoá ngoại theo từng nhóm cộng lại bằng tổng của toàn lược đồ: 9 + 4 + 12 + 6 + 13 + 3 = 47.
+- Bảng xuất hiện ở nhiều nhóm được vẽ dạng neo, chỉ hiện tên và khoá để gắn đường; cấu trúc đầy đủ của bảng đó nằm ở sơ đồ nhà của nó và ở sơ đồ danh mục toàn bộ 23 bảng.
+- Cách chứng minh không sót: lấy hợp của tập khoá ngoại trên sáu sơ đồ rồi đối chiếu với danh sách quan hệ trong schema Prisma. Cả ba con số đều bằng 47.
+
+**Phản biện:** "Sao không vẽ một ERD tổng cho dễ kiểm?" → "Vẽ 47 đường trên 23 bảng sẽ thành mạng nhện không đọc được. Chuẩn công nghiệp cho lược đồ nhiều bảng là chia subject area kèm bảng từ điển dữ liệu, không nhồi tất cả vào một hình."
+
+### R.2 — Bảng chỉ hiện một hai cột trong sơ đồ — bảng đó thiếu cột à?
+
+**Ngắn:** Không. Đó là bảng neo, chỉ vẽ tên và khoá để thể hiện đường liên kết. Bảng đó được vẽ đầy đủ cột ở sơ đồ nhà của nó và ở sơ đồ danh mục. Mỗi bảng được vẽ đầy đủ ít nhất một nơi.
+
+### R.3 — Người đề xuất sao lại là 0..1? Đề xuất phải có người đề xuất chứ?
+
+**Ngắn:** Đúng, người đề xuất là bắt buộc nên bội số phải là một, không phải 0..1. Cột `nguoi_de_xuat_id` khai báo NOT NULL. Cái 0..1 là của người duyệt, vì đề xuất lúc mới nộp chưa có người duyệt.
+
+**Chi tiết:**
+- `nguoi_de_xuat_id` NOT NULL nên mỗi đề xuất gắn đúng một tài khoản người đề xuất, bội số phía tài khoản là một.
+- `nguoi_duyet_id` nullable nên là 0..1: khi `status = PENDING` chưa có người duyệt, sau khi duyệt mới điền.
+- Ở danh hiệu đơn vị cũng vậy: `nguoi_tao_id` NOT NULL nên là một, `nguoi_duyet_id` nullable nên 0..1.
+
+**Phản biện:** "Nhìn sơ đồ thấy hai đường giống nhau?" → "Hai đường cùng đi từ bảng tài khoản nên dễ nhầm. Dấu hiệu phân biệt là nhãn NOT NULL trên cột: `nguoi_de_xuat_id` có NOT NULL nên bắt buộc, `nguoi_duyet_id` không có nên tuỳ chọn."
+
+### R.4 — Bội số lúc 1, lúc 0..1, lúc nhiều — không nhất quán?
+
+**Ngắn:** Nhất quán theo đúng ràng buộc cột. Khoá ngoại NOT NULL cho bội số một, nullable cho 0..1, UNIQUE cho quan hệ một–một. Em không cào bằng vì làm vậy sẽ sai mô hình.
+
+| Tính chất cột FK | Bội số | Ví dụ |
+|---|---|---|
+| NOT NULL | cha = **1** bắt buộc | `chuc_vu_id` → mỗi quân nhân có đúng một chức vụ |
+| nullable | cha = **0..1** | `co_quan_don_vi_id` của quân nhân có thể null |
+| UNIQUE | **một–một** | quân nhân — tài khoản, quân nhân — các hồ sơ điều kiện |
+
+### R.5 — Khoá ngoại trỏ tới cột `so_quyet_dinh` kiểu chuỗi thay vì khoá chính `id` — sai nguyên tắc?
+
+**Ngắn:** Không sai. PostgreSQL cho phép khoá ngoại trỏ tới bất kỳ cột UNIQUE nào. Em chọn `so_quyet_dinh` để tận dụng `ON UPDATE CASCADE`: khi sửa số quyết định thì thay đổi tự lan truyền sang mọi bảng khen thưởng đang tham chiếu.
+
+**Phản biện:** "Trỏ vào `id` thì sạch hơn?" → "Đúng về chuẩn mực, nhưng khi đó đổi số quyết định phải cập nhật tay nhiều bảng. Em ưu tiên toàn vẹn tự động cho thao tác hay xảy ra này."
+
+### R.6 — Cột số quyết định cho phép NULL nên quan hệ là 0..1 — vậy có khen thưởng mồ côi không quyết định?
+
+**Ngắn:** Có, và là chủ ý. Khen thưởng được nhập trước, số quyết định gắn sau khi duyệt và có file quyết định. Bội số 0..1 phía quyết định phản ánh đúng giai đoạn chưa gắn quyết định.
+
+### R.7 — Các bảng `HoSo*` là dữ liệu suy diễn, sao không tính trực tiếp mà phải lưu?
+
+**Ngắn:** Em lưu kết quả tính điều kiện để tra cứu nhanh và hiển thị gợi ý danh hiệu tiếp theo. Hàm tính lại là idempotent, chạy lại sau mỗi thay đổi nguồn nên dữ liệu luôn đồng bộ. Đây là đánh đổi giữa tốc độ đọc và việc phải đồng bộ khi ghi.
+
+**Phản biện:** "Lỡ quên gọi tính lại thì sai?" → "Em gọi tính lại tập trung ở các điểm ghi dữ liệu nguồn và có test idempotent. Rủi ro là phải nhớ gọi ở mọi chỗ ghi mới, em đã ghi vào lưu ý bảo trì."
+
+### R.8 — Dùng JSON cho `data_*`, `thoi_gian`, `tong_*_json` có phá vỡ chuẩn hoá không?
+
+**Ngắn:** Có chủ ý, chỉ cho dữ liệu không cần truy vấn hay join. Mỗi loại đề xuất có lược đồ con riêng nên gom vào JSON giữ được tính đồng nhất của bảng và tránh sinh nhiều bảng trung gian. Việc xác thực do tầng Zod và Strategy đảm nhiệm. Phần cần truy vấn như năm, loại, trạng thái vẫn là cột thường có index.
+
+### R.9 — `QuanNhan` có cả cột JSON `co_quan_don_vi` lẫn khoá ngoại `co_quan_don_vi_id` — trùng lặp dữ liệu?
+
+**Ngắn:** Em thừa nhận đây là điểm dư thừa. Khoá ngoại là quan hệ đơn vị hiện hành, còn cột JSON là ảnh chụp thông tin đơn vị phục vụ hiển thị nhanh. Hợp nhất hai cái là việc nên làm, em đã ghi vào hướng phát triển.
+
+### R.10 — Sao tách bảy bảng khen thưởng riêng mà không gộp một bảng với cột phân loại?
+
+**Ngắn:** Mỗi loại có cấu trúc và quy tắc khác hẳn. HCBVTQ có ba nhóm tháng theo hệ số, HCCSVV có hạng, chuỗi danh hiệu hằng năm có các cờ tiền điều kiện. Gộp một bảng sẽ sinh rất nhiều cột NULL và một cột phân loại phức tạp. Tách bảng cho mô hình rõ ràng, mẫu Strategy xử lý đồng nhất ở tầng nghiệp vụ.
+
+### R.11 — Quan hệ một–một như quân nhân — tài khoản, quân nhân — hồ sơ hằng năm sao không gộp vào bảng quân nhân?
+
+**Ngắn:** Em tách theo trách nhiệm. Tài khoản là phần xác thực, có thể không tồn tại với quân nhân không cần đăng nhập nên để riêng và cho phép null. Các bảng hồ sơ là dữ liệu suy diễn, tách ra để việc tính lại không đụng vào bảng gốc quân nhân.
+
+### R.12 — Xoá một quân nhân thì dữ liệu liên quan xử lý thế nào?
+
+**Ngắn:** Phần lớn khoá ngoại đặt `ON DELETE CASCADE` nên xoá quân nhân kéo theo xoá hồ sơ và khen thưởng của họ. Riêng khoá ngoại tới `FileQuyetDinh` đặt `RESTRICT` để không xoá nhầm quyết định đang được tham chiếu, và `chuc_vu_id` đặt `RESTRICT` để không xoá chức vụ đang có người giữ.
+
+### R.13 — Gần đây mới thêm khoá ngoại `nguoi_tao_id`, `nguoi_duyet_id` cho danh hiệu đơn vị — trước đó toàn vẹn dữ liệu thế nào?
+
+**Ngắn:** Ban đầu hai cột này lưu dạng chuỗi không ràng buộc. Em đã bổ sung `@relation` để chúng thành khoá ngoại thật, đồng bộ với cách bảng đề xuất đã làm, nhằm chặn việc tạo bản ghi trỏ tới tài khoản không tồn tại. Sau thay đổi này lược đồ có 47 khoá ngoại.

@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { Form, AutoComplete, Input, Button, Space, Select, Checkbox, message, Typography } from 'antd';
-import { apiClient } from '@/lib/apiClient';
-import { getApiErrorMessage } from '@/lib/apiError';
+import { apiClient } from '@/lib/http/apiClient';
+import { getApiErrorMessage } from '@/lib/http/apiError';
 import { capitalizeFirst } from '@/lib/utils';
 
 const { Text } = Typography;

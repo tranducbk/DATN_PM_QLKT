@@ -30,7 +30,7 @@ import {
   DownloadOutlined,
 } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { previewFileWithApi } from '@/lib/file/filePreview';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';

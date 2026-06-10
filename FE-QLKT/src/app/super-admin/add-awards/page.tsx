@@ -18,7 +18,7 @@ import {
   Input,
   Empty,
 } from 'antd';
-import { getApiErrorMessage } from '@/lib/apiError';
+import { getApiErrorMessage } from '@/lib/http/apiError';
 
 import {
   HomeOutlined,
@@ -32,7 +32,7 @@ import {
 } from '@ant-design/icons';
 import Link from 'next/link';
 import type { ColumnsType } from 'antd/es/table';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import { getDanhHieuName } from '@/constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 import { Step2SelectPersonnelNienHan } from '@/components/proposals/bulk/Step2SelectPersonnelNienHan';

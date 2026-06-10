@@ -15,7 +15,7 @@ import {
   theme as antdTheme,
   Divider,
 } from 'antd';
-import { getApiErrorMessage } from '@/lib/apiError';
+import { getApiErrorMessage } from '@/lib/http/apiError';
 import {
   LockOutlined,
   SafetyOutlined,
@@ -24,7 +24,7 @@ import {
   InfoCircleOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import { useTheme } from '@/components/ThemeProvider';
 import { useAuth } from '@/contexts/AuthContext';
 import { PasswordStrengthIndicator } from '@/components/auth/PasswordStrengthIndicator';

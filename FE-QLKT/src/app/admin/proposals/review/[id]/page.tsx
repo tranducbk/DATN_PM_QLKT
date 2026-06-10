@@ -24,7 +24,7 @@ import {
 } from 'antd';
 import type { UploadFile } from 'antd/es/upload/interface';
 import dayjs from 'dayjs';
-import { getApiErrorMessage } from '@/lib/apiError';
+import { getApiErrorMessage } from '@/lib/http/apiError';
 import { LoadingState } from '@/components/shared/LoadingState';
 
 import {
@@ -48,7 +48,7 @@ import {
   type UnitAnnualAwards,
 } from '@/components/proposals/bulk/UnitAnnualAwardHistoryModal';
 import { formatDateTime } from '@/lib/utils';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { FileAttachmentList } from '@/components/proposals/FileAttachmentList';
 import { ProposalStatusTag } from '@/components/proposals/ProposalStatusTag';

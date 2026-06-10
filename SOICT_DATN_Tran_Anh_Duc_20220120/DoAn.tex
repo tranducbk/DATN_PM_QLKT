@@ -21,6 +21,7 @@
 \usepackage{titletoc}
 \usepackage{chngcntr} % Dùng để thiết lập lại cách đánh số caption,..
 \usepackage{pdflscape} % Đưa các bảng có kích thước đặt theo chiều ngang giấy
+\usepackage{rotating} % sidewaysfigure: xoay ngang sơ đồ ERD lớn để phóng to
 \usepackage{afterpage}
 \usepackage[ruled,vlined]{algorithm2e}  % Hỗ trợ viết các giải thuật
 \usepackage{capt-of} % Cho phép sử dụng caption lớn đối với landscape page
@@ -83,9 +84,19 @@
   \fi}
 \makeatother
 
+% Cột bảng ragged-right, chặn ngắt giữa từ tiếng Anh (pass-word) nhưng vẫn cho
+% phép ngắt ở dấu _ của \dbid (tránh tên cột dài chờm sang cột bên)
+\newcolumntype{R}[1]{>{\raggedright\arraybackslash\hyphenpenalty=10000}p{#1}}
+
 % Cho phép LaTeX nới rộng khoảng cách để tránh tràn margin với \texttt{} dài
 \setlength{\emergencystretch}{3em}
 \sloppy
+
+% Tắt hoàn toàn việc tự chèn gạch nối khi ngắt dòng: tiếng Việt đơn âm tiết
+% không bao giờ được tách giữa từ, và babel/vietnam hay ngắt sai từ tiếng Anh.
+% Khoảng cách dư do không ngắt được \sloppy + \emergencystretch hấp thụ.
+\hyphenpenalty=10000
+\exhyphenpenalty=10000
 
 % Cấm ngắt giữa từ tiếng Anh phổ biến (mặc định LaTeX ngắt sai vị trí với
 % babel tiếng Việt, vd: "Repos-itory" thay vì "Re-pos-i-to-ry").
@@ -288,9 +299,6 @@
 \subfile{Chuong/0_5_Danh_muc_viet_tat.tex}
 
 \clearpage
-\subfile{Chuong/0_6_Thuat_ngu.tex}
-
-\clearpage
 \pagenumbering{arabic}
 
 \pagestyle{fancy}
@@ -318,7 +326,7 @@
 
 \newpage
 %\pagestyle{fancy} % Áp dụng header và footer
-\chapter{PHÂN TÍCH THIẾT KẾ, TRIỂN KHAI VÀ ĐÁNH GIÁ HỆ THỐNG}
+\chapter[THIẾT KẾ, TRIỂN KHAI VÀ ĐÁNH GIÁ]{THIẾT KẾ, TRIỂN KHAI VÀ ĐÁNH GIÁ HỆ THỐNG}
 \label{chapter:Experiment}
 \subfile{Chuong/4_Ket_qua_thuc_nghiem}
 

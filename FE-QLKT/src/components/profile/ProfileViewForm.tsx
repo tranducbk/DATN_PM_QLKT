@@ -5,12 +5,12 @@ import { useRouter } from 'next/navigation';
 import { Card, message, ConfigProvider, Tag, Breadcrumb } from 'antd';
 import { UserOutlined, HomeOutlined } from '@ant-design/icons';
 import Link from 'next/link';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import { formatDate, formatHeSoChucVu } from '@/lib/utils';
 import { useTheme } from '@/components/ThemeProvider';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { getAntdThemeConfig } from '@/lib/antdTheme';
-import { getApiErrorMessage } from '@/lib/apiError';
+import { getApiErrorMessage } from '@/lib/http/apiError';
 import { getRoleInfo } from '@/constants/roles.constants';
 import type { PersonnelDetail } from '@/lib/types/personnelList';
 

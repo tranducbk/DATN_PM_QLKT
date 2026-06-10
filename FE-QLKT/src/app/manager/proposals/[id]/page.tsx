@@ -15,7 +15,7 @@ import {
   Table,
   ConfigProvider,
 } from 'antd';
-import { getApiErrorMessage } from '@/lib/apiError';
+import { getApiErrorMessage } from '@/lib/http/apiError';
 
 import {
   HomeOutlined,
@@ -28,7 +28,7 @@ import {
 } from '@ant-design/icons';
 import { formatDateTime } from '@/lib/utils';
 import Link from 'next/link';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { FileAttachmentList } from '@/components/proposals/FileAttachmentList';
 import { useTheme } from '@/components/ThemeProvider';

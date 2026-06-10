@@ -14,9 +14,9 @@ import {
 } from 'antd';
 import { SearchOutlined, TeamOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { getApiErrorMessage } from '@/lib/apiError';
+import { getApiErrorMessage } from '@/lib/http/apiError';
 import { formatDate } from '@/lib/utils';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import { calculateTotalMonths } from './serviceDuration';
 import { usePersonnelList } from './usePersonnelList';
 import type { Step2Personnel as Personnel } from './types';

@@ -34,8 +34,8 @@ import {
   HomeOutlined,
   InfoCircleOutlined,
 } from '@ant-design/icons';
-import { apiClient } from '@/lib/apiClient';
-import { getApiErrorMessage } from '@/lib/apiError';
+import { apiClient } from '@/lib/http/apiClient';
+import { getApiErrorMessage } from '@/lib/http/apiError';
 import { calculateDuration, formatDate, formatHeSoChucVu } from '@/lib/utils';
 import { useTheme } from '@/components/ThemeProvider';
 import dayjs from 'dayjs';

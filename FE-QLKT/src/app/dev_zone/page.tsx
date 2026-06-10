@@ -28,8 +28,8 @@ import {
 } from '@ant-design/icons';
 import Image from 'next/image';
 import { isAxiosError } from 'axios';
-import axiosInstance from '@/lib/axiosInstance';
-import { getApiErrorMessage } from '@/lib/apiError';
+import axiosInstance from '@/lib/http/axiosInstance';
+import { getApiErrorMessage } from '@/lib/http/apiError';
 import {
   DEV_ZONE_API,
   DEV_SESSION_KEY,

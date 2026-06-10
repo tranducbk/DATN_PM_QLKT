@@ -17,7 +17,7 @@ import { useTheme } from '@/components/ThemeProvider';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { PositionForm } from '@/components/categories/PositionForm';
 import { PositionsTable, type PositionRow } from '@/components/categories/PositionsTable';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import {
   PlusOutlined,
   HomeOutlined,

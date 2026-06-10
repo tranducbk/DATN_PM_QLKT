@@ -15,7 +15,7 @@ import {
   ConfigProvider,
   theme as antdTheme,
 } from 'antd';
-import { getApiErrorMessage } from '@/lib/apiError';
+import { getApiErrorMessage } from '@/lib/http/apiError';
 
 import {
   FileTextOutlined,
@@ -36,7 +36,7 @@ import {
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useState, useEffect } from 'react';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import { calculateServiceMonthsWithToday } from '@/lib/award/serviceTimeHelpers';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { useTheme } from '@/components/ThemeProvider';

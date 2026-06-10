@@ -1,6 +1,6 @@
 import axios, { AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
 import { BASE_URL } from '@/configs';
-import { clearAuthStorage } from '@/lib/authStorage';
+import { clearAuthStorage } from '@/lib/http/authStorage';
 
 const axiosInstance = axios.create({
   baseURL: BASE_URL,

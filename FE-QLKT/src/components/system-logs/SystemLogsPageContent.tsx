@@ -15,7 +15,7 @@ import {
 import { FileTextOutlined, FundOutlined, HomeOutlined, DeleteOutlined, ReloadOutlined } from '@ant-design/icons';
 import { LogsFilter, LogsFilterValues } from '@/components/system-logs/LogsFilter';
 import { LogsTable, LogEntry } from '@/components/system-logs/LogsTable';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { useTheme } from '@/components/ThemeProvider';
 import { LoadingState } from '@/components/shared/LoadingState';

@@ -16,7 +16,7 @@ import {
 } from 'antd';
 import type { TableColumnsType } from 'antd';
 import { FilterOutlined, HomeOutlined } from '@ant-design/icons';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import {
   DANH_HIEU_MAP,
   COLUMN_STYLES,

@@ -17,7 +17,7 @@ import {
   theme as antdTheme,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { getApiErrorMessage } from '@/lib/apiError';
+import { getApiErrorMessage } from '@/lib/http/apiError';
 import { DEFAULT_PAGE_SIZE, DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 
 import {
@@ -29,7 +29,7 @@ import {
   HomeOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import { useTheme } from '@/components/ThemeProvider';
 import { ROLES, getRoleInfo, roleSelectOptions } from '@/constants/roles.constants';
 import { formatDateTime } from '@/lib/utils';

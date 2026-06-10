@@ -17,7 +17,7 @@ import {
   Divider,
   Spin,
 } from 'antd';
-import { getApiErrorMessage } from '@/lib/apiError';
+import { getApiErrorMessage } from '@/lib/http/apiError';
 import {
   ArrowLeftOutlined,
   EditOutlined,
@@ -34,7 +34,7 @@ import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useTheme } from '@/components/ThemeProvider';
 import { MedalProgressCard } from '@/components/personnel/MedalProgressCard';
 import { getAntdThemeConfig } from '@/lib/antdTheme';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import { formatDate, formatHeSoChucVu } from '@/lib/utils';
 import { getReceivedMonthYearText } from '@/lib/award/medalDisplay';
 import styles from './personnel-detail.module.css';

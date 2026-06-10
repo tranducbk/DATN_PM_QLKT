@@ -2,8 +2,8 @@
 
 import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import type { UserRole } from '@/lib/types/common';
-import { clearAuthStorage } from '@/lib/authStorage';
-import axiosInstance from '@/lib/axiosInstance';
+import { clearAuthStorage } from '@/lib/http/authStorage';
+import axiosInstance from '@/lib/http/axiosInstance';
 
 interface AuthUser {
   id: string;

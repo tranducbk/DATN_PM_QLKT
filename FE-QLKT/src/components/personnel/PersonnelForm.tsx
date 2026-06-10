@@ -4,9 +4,9 @@ import { useState } from 'react';
 import { Form, Input, Select, Button, App } from 'antd';
 import type { z } from 'zod';
 import { personnelFormSchema } from '@/lib/schemas';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import { capitalizeWords } from '@/lib/utils';
-import { getApiErrorMessage } from '@/lib/apiError';
+import { getApiErrorMessage } from '@/lib/http/apiError';
 
 type PersonnelFormValues = z.infer<typeof personnelFormSchema>;
 

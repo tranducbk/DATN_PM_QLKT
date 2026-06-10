@@ -7,7 +7,7 @@ import { DownloadOutlined, UploadOutlined, CloudUploadOutlined } from '@ant-desi
 const { Text } = Typography;
 
 import { useRouter } from 'next/navigation';
-import { getApiErrorMessage } from '@/lib/apiError';
+import { getApiErrorMessage } from '@/lib/http/apiError';
 import { useDevZoneFeature } from '@/contexts/DevZoneContext';
 
 interface ExcelImportSectionProps {

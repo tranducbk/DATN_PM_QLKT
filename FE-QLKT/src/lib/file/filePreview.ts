@@ -1,6 +1,6 @@
 import { message } from 'antd';
-import { getApiErrorMessage } from '@/lib/apiError';
-import axiosInstance from '@/lib/axiosInstance';
+import { getApiErrorMessage } from '@/lib/http/apiError';
+import axiosInstance from '@/lib/http/axiosInstance';
 
 // File extensions that can be previewed directly in browser.
 const PREVIEWABLE_EXTENSIONS = ['pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'];

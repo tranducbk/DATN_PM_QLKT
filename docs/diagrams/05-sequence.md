@@ -60,21 +60,27 @@ sequenceDiagram
     actor ADM as Phòng Chính trị
     participant Page as TrangDeXuat [UI]
     participant Ctrl as DeXuatController
+    participant Svc as DeXuatService
+    participant Strat as DeXuatStrategy
     participant DX as DeXuat [DB]
     participant TB as ThongBao [DB]
 
     MGR->>Page: Chọn loại đề xuất, năm và quân nhân
     Page->>Page: validate dữ liệu đầu vào
     Page->>Ctrl: yêu cầu tạo đề xuất
-    Ctrl->>Ctrl: kiểm tra năm tháng và payload theo loại đề xuất
+    Ctrl->>Svc: tạo đề xuất theo loại
+    Svc->>Svc: kiểm tra năm tháng và quyền theo loại đề xuất
 
     alt dữ liệu hợp lệ
-        Ctrl->>DX: Lưu đề xuất với trạng thái Chờ duyệt
-        DX-->>Ctrl: thông tin đề xuất đã lưu
+        Svc->>Strat: dựng dữ liệu đề xuất theo loại
+        Strat-->>Svc: payload đề xuất
+        Svc->>DX: Lưu đề xuất với trạng thái Chờ duyệt
+        DX-->>Svc: thông tin đề xuất đã lưu
     else dữ liệu không hợp lệ
-        Ctrl->>Ctrl: chuẩn bị thông báo lỗi kèm trường sai
+        Svc->>Svc: chuẩn bị thông báo lỗi kèm trường sai
     end
 
+    Svc-->>Ctrl: Kết quả tạo đề xuất
     Ctrl-->>Page: Kết quả (đề xuất đã tạo hoặc lỗi)
     Page-->>MGR: Hiển thị thông báo thành công hoặc lỗi
 
@@ -87,8 +93,9 @@ sequenceDiagram
 ```
 
 **Lưu ý**:
-1. Bước tạo đề xuất **không** chạy kiểm tra điều kiện chuỗi (BKBQP/CSTDTQ/BKTTCP) hay kiểm tra trùng lặp với khen thưởng đã có. Các kiểm tra đó chạy ở bước **phê duyệt** (xem C4.3) qua `runEligibilityChecks` + `runDuplicateChecks` để đảm bảo dữ liệu không bị "stale" giữa lúc Chỉ huy đơn vị tạo và Phòng Chính trị duyệt. Submit chỉ validate cấu trúc payload và năm/tháng hợp lệ.
-2. Reply cho Chỉ huy đơn vị **trả về trước** khi notification chạy — vì notification là side-effect fire-and-forget (`void safeNotify` trong code), lỗi gửi thông báo không ảnh hưởng việc tạo đề xuất.
+1. **Tầng phân lớp**: `DeXuatController` uỷ thác cho `DeXuatService.submitProposal`, service gọi `DeXuatStrategy.buildSubmitPayload` để **dựng payload theo từng loại đề xuất** rồi mới lưu. Map code: `submit.ts` → `getProposalStrategy(type).buildSubmitPayload` (`services/proposal/strategies/`).
+2. Bước tạo đề xuất **không** chạy kiểm tra điều kiện chuỗi (BKBQP/CSTDTQ/BKTTCP) hay kiểm tra trùng lặp với khen thưởng đã có. Các kiểm tra đó chạy ở bước **phê duyệt** (xem C4.3) qua `runEligibilityChecks` + `runDuplicateChecks` để đảm bảo dữ liệu không bị "stale" giữa lúc Chỉ huy đơn vị tạo và Phòng Chính trị duyệt. Submit chỉ validate cấu trúc payload và năm/tháng hợp lệ.
+3. Reply cho Chỉ huy đơn vị **trả về trước** khi notification chạy — vì notification là side-effect fire-and-forget (`void safeNotify` trong code), lỗi gửi thông báo không ảnh hưởng việc tạo đề xuất.
 
 ---
 
@@ -101,6 +108,8 @@ sequenceDiagram
     actor QN as Quân nhân
     participant Page as TrangChiTietDeXuat [UI]
     participant Ctrl as DeXuatController
+    participant Svc as DeXuatService
+    participant Strat as DeXuatStrategy
     participant DX as DeXuat [DB]
     participant KT as KhenThuong [DB]
     participant HS as HoSoHangNam / HoSoNienHan / HoSoCongHien [DB]
@@ -108,31 +117,36 @@ sequenceDiagram
 
     ADM->>Page: Mở chi tiết đề xuất
     Page->>Ctrl: lấy đề xuất theo id
-    Ctrl->>DX: tìm theo id
-    DX-->>Ctrl: thông tin đề xuất
+    Ctrl->>Svc: lấy chi tiết đề xuất
+    Svc->>DX: tìm theo id
+    DX-->>Svc: thông tin đề xuất
+    Svc-->>Ctrl: chi tiết đề xuất
     Ctrl-->>Page: Chi tiết đề xuất
     Page-->>ADM: Hiển thị chi tiết
 
-    ADM->>Page: Sửa số quyết định và đính kèm file PDF
-    ADM->>Page: Phê duyệt đề xuất
+    ADM->>Page: Sửa số quyết định, đính kèm PDF rồi Phê duyệt
     Page->>Ctrl: yêu cầu phê duyệt
-    Ctrl->>Ctrl: kiểm tra trạng thái chưa duyệt và đúng tháng
-    Ctrl->>Ctrl: kiểm tra trùng lặp với khen thưởng đã có
-    Ctrl->>Ctrl: kiểm tra điều kiện khen thưởng theo loại đề xuất
-    Ctrl->>Ctrl: kiểm tra hợp lệ số quyết định
+    Ctrl->>Svc: phê duyệt đề xuất theo id
+    Svc->>Svc: kiểm tra trạng thái, trùng lặp, điều kiện, số quyết định
 
     alt validate pass
-        Ctrl->>KT: Lưu khen thưởng theo loại
-        KT-->>Ctrl: đã lưu
-        Ctrl->>DX: Cập nhật trạng thái Đã duyệt
-        DX-->>Ctrl: đã cập nhật
-        Ctrl->>HS: Tính lại hồ sơ tương ứng (Hằng năm / Niên hạn / Cống hiến)
-        HS-->>Ctrl: hồ sơ mới
+        rect rgb(234, 240, 252)
+            Note over Svc,DX: Một giao dịch (transaction) — hoặc tất cả thành công, hoặc hoàn tác
+            Svc->>Strat: ghi khen thưởng theo loại đề xuất
+            Strat->>KT: Lưu khen thưởng
+            KT-->>Strat: đã lưu
+            Strat-->>Svc: hoàn tất ghi
+            Svc->>DX: Cập nhật trạng thái Đã duyệt
+            DX-->>Svc: đã cập nhật
+        end
+        Svc->>HS: Tính lại hồ sơ tương ứng (sau transaction)
+        HS-->>Svc: hồ sơ mới
     else validate fail
-        Ctrl->>Ctrl: chuẩn bị danh sách quân nhân không đủ điều kiện
+        Svc->>Svc: chuẩn bị danh sách quân nhân không đủ điều kiện
     end
 
-    Ctrl-->>Page: Kết quả (phê duyệt thành công hoặc lỗi)
+    Svc-->>Ctrl: Kết quả phê duyệt
+    Ctrl-->>Page: Kết quả (thành công hoặc lỗi)
     Page-->>ADM: Hiển thị thông báo thành công hoặc lỗi
 
     Note over Ctrl,TB: Notification fire-and-forget — chỉ chạy khi phê duyệt thành công
@@ -146,10 +160,11 @@ sequenceDiagram
     end
 ```
 
-**Lưu ý**:
-1. Toàn bộ block trong `alt validate pass` chạy trong **một transaction Prisma** (`prisma.$transaction` — `services/proposal/approve/import.ts:51`). Nếu bất kỳ insert nào fail, toàn bộ rollback, đề xuất giữ trạng thái PENDING. Diagram giản lược không vẽ transaction frame để giữ độ rõ.
-2. Reply cho Phòng Chính trị **trả về trước** khi notification chạy — admin nhận response ngay (`void safeNotify` trong `proposal.controller.ts:171–195`).
-3. **Tên model hồ sơ** tùy loại đề xuất: `HoSoHangNam` cho danh hiệu BKBQP/CSTDTQ/BKTTCP, `HoSoNienHan` cho HCCSVV, `HoSoCongHien` cho HCBVTQ — không gộp vào một bảng "HoSoQuanNhan".
+**Lưu ý** (bản chi tiết — vẽ rõ tầng Service/Strategy + transaction):
+1. **Tầng phân lớp**: khác bản giản lược (Controller ghi thẳng Entity), bản này vẽ rõ **`DeXuatService`** điều phối và **`DeXuatStrategy`** ghi khen thưởng theo từng loại đề xuất — đúng kiến trúc Controller→Service→Strategy→Repository và mẫu Strategy mà báo cáo nhấn mạnh. Map code: `proposalService.approveProposal` (`services/proposal/approve.ts`) gọi `getProposalStrategy(type).importInTransaction` (`services/proposal/strategies/`).
+2. **Khung `rect` = ranh giới transaction**: phần "Lưu khen thưởng" + "Cập nhật trạng thái Đã duyệt" chạy trong **một `prisma.$transaction`** (`approve/import.ts:51`) — all-or-nothing; nếu một insert fail thì rollback toàn bộ, đề xuất giữ trạng thái PENDING. Bước **tính lại hồ sơ** đặt **ngoài** khung vì code recalc *sau* khi transaction commit.
+3. Reply cho Phòng Chính trị **trả về trước** khi notification chạy — admin nhận response ngay (`void safeNotify` trong `proposal.controller.ts:171–195`).
+4. **Tên model hồ sơ** tùy loại đề xuất: `HoSoHangNam` cho danh hiệu BKBQP/CSTDTQ/BKTTCP, `HoSoNienHan` cho HCCSVV, `HoSoCongHien` cho HCBVTQ — không gộp vào một bảng "HoSoQuanNhan".
 
 ---
 
@@ -471,8 +486,8 @@ sequenceDiagram
 | # | Sequence | Lifeline | Đặc điểm |
 |---|---|---|---|
 | C4.1 | Đăng nhập | 4 (Người dùng + TrangDangNhap + AuthController + TaiKhoan) | alt logic + return ngoài alt |
-| C4.2 | Tạo đề xuất | 6 | alt validate + return + opt notification |
-| C4.3 | Phê duyệt | 8 | 3 actor + alt transaction + opt notification (2 nhánh) |
+| C4.2 | Tạo đề xuất | 8 | **bản chi tiết**: thêm tầng Service + Strategy (buildSubmitPayload theo loại); alt validate + opt notification |
+| C4.3 | Phê duyệt | 11 | **bản chi tiết**: thêm tầng Service + Strategy + khung `rect` transaction; recalc ngoài transaction; opt notification 2 nhánh |
 | C4.4 | Recalc chuỗi | 4 | Background process, alt lifetime block + return cập nhật hồ sơ |
 | C4.5 | Import Excel | 6 | **2 endpoint REST riêng** Preview / Confirm — mỗi giai đoạn có alt + return |
 | C4.6 | Thông báo realtime | 6 | **`«create»/destroy` SocketClient** + 4 giai đoạn handshake/push/read/disconnect |

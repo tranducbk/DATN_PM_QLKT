@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import { DANH_HIEU_SHORT_MAP, DANH_HIEU_COLORS } from '@/constants/danhHieu.constants';
 import {
   ImportReviewPageContent,

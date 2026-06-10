@@ -1,6 +1,6 @@
 import { message } from 'antd';
-import { apiClient } from '@/lib/apiClient';
-import { getApiErrorMessage } from '@/lib/apiError';
+import { apiClient } from '@/lib/http/apiClient';
+import { getApiErrorMessage } from '@/lib/http/apiError';
 import { openPdfWithViewer } from '@/lib/file/filePreview';
 
 /**

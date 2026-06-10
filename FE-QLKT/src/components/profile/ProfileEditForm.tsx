@@ -27,14 +27,14 @@ import {
   EditOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import { VietnamAddressCascader } from '@/components/shared/VietnamAddressCascader';
 import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
 import { useTheme } from '@/components/ThemeProvider';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { formatDate, capitalizeWords, formatHeSoChucVu } from '@/lib/utils';
 import { getAntdThemeConfig } from '@/lib/antdTheme';
-import { getApiErrorMessage } from '@/lib/apiError';
+import { getApiErrorMessage } from '@/lib/http/apiError';
 import { ROLES, getRoleInfo } from '@/constants/roles.constants';
 import type { PersonnelDetail } from '@/lib/types/personnelList';
 

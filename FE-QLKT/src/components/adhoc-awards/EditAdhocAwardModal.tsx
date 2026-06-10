@@ -23,7 +23,7 @@ import {
   UploadOutlined,
 } from '@ant-design/icons';
 import type { UploadFile } from 'antd';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import { formatDate } from '@/lib/utils';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 import type { AdhocAward, EditFormData, DecisionAutocompleteRow } from './types';

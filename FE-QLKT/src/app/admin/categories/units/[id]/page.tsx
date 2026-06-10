@@ -22,7 +22,7 @@ import { UnitForm } from '@/components/categories/UnitForm';
 import { UnitsTable } from '@/components/categories/UnitsTable';
 import { PositionForm } from '@/components/categories/PositionForm';
 import { PositionsTable, type PositionRow } from '@/components/categories/PositionsTable';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import type { UnitApiRow } from '@/lib/types/personnelList';
 import { calcUnitTotal } from '@/lib/utils';
 import { useTheme } from '@/components/ThemeProvider';

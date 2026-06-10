@@ -19,7 +19,7 @@ import {
 } from 'antd';
 import type { TableColumnsType } from 'antd';
 import { LeftOutlined, HomeOutlined } from '@ant-design/icons';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import { useTheme } from '@/components/ThemeProvider';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';

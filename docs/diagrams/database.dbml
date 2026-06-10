@@ -8,14 +8,14 @@
 
 Project PM_QLKT {
   database_type: 'PostgreSQL'
-  Note: 'Phần mềm Quản lý Khen thưởng — 23 bảng, 45 khóa ngoại.'
+  Note: 'Phần mềm Quản lý Khen thưởng — 23 bảng, 47 khóa ngoại, 13 UNIQUE đơn + 8 UNIQUE tổ hợp.'
 }
 
 // ───────────────────────── C3.1 — Tổ chức, Quân nhân & Tài khoản ─────────────────────────
 
 Table CoQuanDonVi {
   id varchar(30) [pk]
-  ma_don_vi varchar(50) [not null]
+  ma_don_vi varchar(50) [not null, unique]
   ten_don_vi varchar(255) [not null]
   so_luong int [not null, default: 0]
   createdAt timestamp [not null]
@@ -26,7 +26,7 @@ Table CoQuanDonVi {
 Table DonViTrucThuoc {
   id varchar(30) [pk]
   co_quan_don_vi_id varchar(30) [not null]
-  ma_don_vi varchar(50) [not null]
+  ma_don_vi varchar(50) [not null, unique]
   ten_don_vi varchar(255) [not null]
   so_luong int [not null, default: 0]
   createdAt timestamp [not null]
@@ -43,11 +43,16 @@ Table ChucVu {
   he_so_chuc_vu float [not null, default: 0]
   createdAt timestamp [not null]
   updatedAt timestamp [not null]
+
+  Indexes {
+    (co_quan_don_vi_id, ten_chuc_vu) [unique]
+    (don_vi_truc_thuoc_id, ten_chuc_vu) [unique]
+  }
 }
 
 Table QuanNhan {
   id varchar(30) [pk]
-  cccd varchar(20)
+  cccd varchar(20) [unique]
   ho_ten varchar(255) [not null]
   gioi_tinh varchar(10)
   ngay_sinh date
@@ -154,6 +159,10 @@ Table DanhHieuHangNam {
   ghi_chu_bkttcp text
   createdAt timestamp [not null]
   updatedAt timestamp [not null]
+
+  Indexes {
+    (quan_nhan_id, nam) [unique]
+  }
 }
 
 Table DanhHieuDonViHangNam {
@@ -176,6 +185,11 @@ Table DanhHieuDonViHangNam {
   ghi_chu text
   createdAt timestamp [not null]
   updatedAt timestamp [not null]
+
+  Indexes {
+    (co_quan_don_vi_id, nam) [unique]
+    (don_vi_truc_thuoc_id, nam) [unique]
+  }
 }
 
 Table ThanhTichKhoaHoc {
@@ -205,6 +219,10 @@ Table KhenThuongHCCSVV {
   thoi_gian jsonb
   createdAt timestamp [not null]
   updatedAt timestamp [not null]
+
+  Indexes {
+    (quan_nhan_id, danh_hieu) [unique]
+  }
 }
 
 Table KhenThuongHCBVTQ {
@@ -334,6 +352,11 @@ Table HoSoDonViHangNam {
   goi_y text
   createdAt timestamp [not null]
   updatedAt timestamp [not null]
+
+  Indexes {
+    (co_quan_don_vi_id, nam) [unique]
+    (don_vi_truc_thuoc_id, nam) [unique]
+  }
 }
 
 // ───────────────────────── Hệ thống (log, thông báo, cấu hình) ─────────────────────────
@@ -445,6 +468,8 @@ Ref: KhenThuongDotXuat.don_vi_truc_thuoc_id > DonViTrucThuoc.id [delete: cascade
 // Khen thưởng đơn vị
 Ref: DanhHieuDonViHangNam.co_quan_don_vi_id > CoQuanDonVi.id [delete: cascade]
 Ref: DanhHieuDonViHangNam.don_vi_truc_thuoc_id > DonViTrucThuoc.id [delete: cascade]
+Ref: DanhHieuDonViHangNam.nguoi_tao_id > TaiKhoan.id [delete: cascade]
+Ref: DanhHieuDonViHangNam.nguoi_duyet_id > TaiKhoan.id [delete: set null]
 
 // Hồ sơ điều kiện
 Ref: HoSoNienHan.quan_nhan_id > QuanNhan.id [delete: cascade]

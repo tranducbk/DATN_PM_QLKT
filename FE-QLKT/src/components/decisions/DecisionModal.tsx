@@ -14,11 +14,11 @@ import {
   Spin,
   Tag,
 } from 'antd';
-import { getApiErrorMessage } from '@/lib/apiError';
+import { getApiErrorMessage } from '@/lib/http/apiError';
 import { UploadOutlined, FileTextOutlined, DeleteOutlined } from '@ant-design/icons';
 import type { UploadFile } from 'antd/es/upload/interface';
 import dayjs from 'dayjs';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import { LOAI_KHEN_THUONG_OPTIONS } from '@/constants/danhHieu.constants';
 import { formatDate, capitalizeWords } from '@/lib/utils';
 

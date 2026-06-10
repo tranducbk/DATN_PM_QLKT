@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import { Modal, Select, InputNumber, Space, Typography, Table, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { DownloadOutlined } from '@ant-design/icons';
-import { apiClient } from '@/lib/apiClient';
-import { getApiErrorMessage } from '@/lib/apiError';
+import { apiClient } from '@/lib/http/apiClient';
+import { getApiErrorMessage } from '@/lib/http/apiError';
 import { DANH_HIEU_MAP } from '@/lib/award/awardsHelper';
 import {
   AWARD_TAB_LABELS,

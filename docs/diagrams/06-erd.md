@@ -44,6 +44,8 @@ erDiagram
     TaiKhoan ||--o{ SystemLog : "thực hiện"
     TaiKhoan ||--o{ BangDeXuat : "đề xuất"
     TaiKhoan ||--o{ BangDeXuat : "duyệt"
+    TaiKhoan ||--o{ DanhHieuDonViHangNam : "đơn vị tạo"
+    TaiKhoan ||--o{ DanhHieuDonViHangNam : "đơn vị duyệt"
     TaiKhoan ||--o{ ThongBao : "nhận"
 
     SystemLog ||--o{ ThongBao : "tạo từ log"
@@ -636,6 +638,7 @@ erDiagram
     DonViTrucThuoc ||--o{ BangDeXuat : "đơn vị tạo"
     CoQuanDonVi ||--o{ DanhHieuDonViHangNam : "đạt theo năm"
     DonViTrucThuoc ||--o{ DanhHieuDonViHangNam : "đạt theo năm"
+    TaiKhoan ||--o{ DanhHieuDonViHangNam : "tạo / duyệt"
     CoQuanDonVi ||--o{ HoSoDonViHangNam : "tổng hợp"
     DonViTrucThuoc ||--o{ HoSoDonViHangNam : "tổng hợp"
 

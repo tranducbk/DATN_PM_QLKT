@@ -39,7 +39,7 @@ import {
   type StatCardColor,
 } from '@/components/dashboard/StatCard';
 import { useAuth } from '@/contexts/AuthContext';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import { formatDateTime } from '@/lib/utils';
 import {
   isProposalType,

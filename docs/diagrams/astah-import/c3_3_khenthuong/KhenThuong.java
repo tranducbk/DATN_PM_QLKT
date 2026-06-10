@@ -238,7 +238,7 @@ class UnitAnnualAwardService {
     public DanhHieuDonViHangNam upsert(Object data) { return null; }
     public DanhHieuDonViHangNam approve(String id, Object ctx) { return null; }
     public DanhHieuDonViHangNam reject(String id, String reason) { return null; }
-    public HoSoDonViHangNam getUnitAnnualProfile(String unitId) { return null; }
+    public HoSoDonViHangNam getAnnualUnit(String donViId, Integer year) { return null; }
     public Object recalculate(String unitId) { return null; }
     public void remove(String id) { }
 }
@@ -254,4 +254,45 @@ class UnitAnnualAwardController {
     public void getUnitAnnualProfile() { }
     public void recalculate() { }
     public void remove() { }
+}
+
+class DanhHieuHangNamRepository {
+    private DanhHieuHangNam danhHieuHangNam;
+    public DanhHieuHangNam findById(String id) { return null; }
+    public DanhHieuHangNam findByPersonnelId(String quanNhanId) { return null; }
+    public DanhHieuHangNam findByPersonnelAndYear(String quanNhanId, Integer nam) { return null; }
+    public DanhHieuHangNam create(Object data) { return null; }
+    public DanhHieuHangNam update(String id, Object data) { return null; }
+    public DanhHieuHangNam upsertByPersonnelYear(String quanNhanId, Integer nam, Object data) { return null; }
+    public void delete(String id) { }
+}
+
+class AnnualRewardService {
+    private DanhHieuHangNamRepository danhHieuHangNamRepository;
+    private ProfileService profileService;
+    public DanhHieuHangNam getAnnualRewards(String personnelId) { return null; }
+    public DanhHieuHangNam createAnnualReward(Object data) { return null; }
+    public DanhHieuHangNam updateAnnualReward(String id, Object data) { return null; }
+    public void deleteAnnualReward(String id) { }
+    public Object checkAnnualRewards(String personnelId, Integer year) { return null; }
+    public Object bulkCreateAnnualRewards(Object data) { return null; }
+    public Object previewImport(Object buffer) { return null; }
+    public Object confirmImport(Object validItems) { return null; }
+    public Object exportToExcel(Object filters) { return null; }
+    public Object getStatistics(Object filters) { return null; }
+}
+
+class AnnualRewardController {
+    private AnnualRewardService annualRewardService;
+    public void getAnnualRewards() { }
+    public void createAnnualReward() { }
+    public void updateAnnualReward() { }
+    public void deleteAnnualReward() { }
+    public void checkAnnualRewards() { }
+    public void bulkCreateAnnualRewards() { }
+    public void previewImport() { }
+    public void confirmImport() { }
+    public void getTemplate() { }
+    public void exportToExcel() { }
+    public void getStatistics() { }
 }

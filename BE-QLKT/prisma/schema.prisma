@@ -137,6 +137,8 @@ model TaiKhoan {
   DeXuatDaGui   BangDeXuat[] @relation("NguoiDeXuat")
   DeXuatDaDuyet BangDeXuat[] @relation("NguoiDuyet")
   ThongBao      ThongBao[]   @relation("NguoiNhan") // Thông báo nhận được
+  DanhHieuDonViDaTao   DanhHieuDonViHangNam[] @relation("DonViNguoiTao")
+  DanhHieuDonViDaDuyet DanhHieuDonViHangNam[] @relation("DonViNguoiDuyet")
 
   @@map("TaiKhoan")
 }
@@ -559,6 +561,8 @@ model DanhHieuDonViHangNam {
   FileQuyetDinhMain   FileQuyetDinh?  @relation("DanhHieuDonViHangNam_so_quyet_dinh", fields: [so_quyet_dinh], references: [so_quyet_dinh], onUpdate: Cascade, onDelete: Restrict)
   FileQuyetDinhBkbqp  FileQuyetDinh?  @relation("DanhHieuDonViHangNam_so_quyet_dinh_bkbqp", fields: [so_quyet_dinh_bkbqp], references: [so_quyet_dinh], onUpdate: Cascade, onDelete: Restrict)
   FileQuyetDinhBkttcp FileQuyetDinh?  @relation("DanhHieuDonViHangNam_so_quyet_dinh_bkttcp", fields: [so_quyet_dinh_bkttcp], references: [so_quyet_dinh], onUpdate: Cascade, onDelete: Restrict)
+  NguoiTao            TaiKhoan        @relation("DonViNguoiTao", fields: [nguoi_tao_id], references: [id], onDelete: Cascade)
+  NguoiDuyet          TaiKhoan?       @relation("DonViNguoiDuyet", fields: [nguoi_duyet_id], references: [id], onDelete: SetNull)
 
   @@unique([co_quan_don_vi_id, nam], name: "unique_co_quan_don_vi_nam_dh")
   @@unique([don_vi_truc_thuoc_id, nam], name: "unique_don_vi_truc_thuoc_nam_dh")
