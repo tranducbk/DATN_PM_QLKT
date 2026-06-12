@@ -33,7 +33,7 @@ const { Text } = Typography;
 
 const CSTDCS_DANH_HIEU_LABELS: Record<string, string> = {
   CSTDCS: 'Chiến sĩ thi đua cơ sở',
-  CSTT: 'Chiến sĩ thi đua',
+  CSTT: 'Chiến sĩ tiên tiến',
 };
 
 const NCKH_LOAI_LABELS: Record<string, string> = {

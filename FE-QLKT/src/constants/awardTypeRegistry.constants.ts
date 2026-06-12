@@ -108,11 +108,3 @@ export const AWARD_TYPE_REGISTRY: Record<ProposalType, AwardTypeMetadata> = {
     isUnitAward: false,
   },
 };
-
-/**
- * @param type - Award type code
- * @returns Metadata entry; throws if registry entry missing (compile-time guarantee via Record).
- */
-export function getAwardTypeMetadata(type: ProposalType): AwardTypeMetadata {
-  return AWARD_TYPE_REGISTRY[type];
-}

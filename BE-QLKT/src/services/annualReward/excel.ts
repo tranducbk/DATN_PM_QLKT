@@ -1,4 +1,3 @@
-import { prisma } from '../../models';
 import { danhHieuHangNamRepository } from '../../repositories/danhHieu.repository';
 import ExcelJS from 'exceljs';
 import {

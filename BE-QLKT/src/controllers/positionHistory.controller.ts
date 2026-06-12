@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import positionHistoryService from '../services/positionHistory.service';
 import profileService from '../services/profile.service';
+import personnelService from '../services/personnel.service';
 import { normalizeParam } from '../helpers/paginationHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
@@ -40,6 +41,7 @@ class PositionHistoryController {
     if (!personnel_id) {
       return ResponseHelper.badRequest(res, 'Thiếu thông tin quân nhân');
     }
+    await personnelService.assertCanViewPersonnel(personnel_id, req.user?.role, req.user?.quan_nhan_id);
     if (recalculate === 'true') {
       try {
         await profileService.recalculateContributionProfile(personnel_id);

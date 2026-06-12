@@ -100,8 +100,6 @@ const requireAdmin = checkRole([ROLES.SUPER_ADMIN, ROLES.ADMIN]);
 const requireAdminOnly = checkRole([ROLES.ADMIN]);
 /** Middleware allowing SUPER_ADMIN, ADMIN, and MANAGER roles. */
 const requireManager = checkRole([ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER]);
-/** Middleware allowing ADMIN and MANAGER (business operations — excludes SUPER_ADMIN). */
-const requireAdminOrManager = checkRole([ROLES.ADMIN, ROLES.MANAGER]);
 
 export {
   verifyToken,
@@ -110,6 +108,5 @@ export {
   requireAdmin,
   requireAdminOnly,
   requireManager,
-  requireAdminOrManager,
   checkRole,
 };

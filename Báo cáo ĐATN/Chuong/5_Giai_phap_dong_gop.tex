@@ -1,0 +1,94 @@
+\documentclass[../DoAn.tex]{subfiles}
+\begin{document}
+
+Chương này phân tích năm điểm khác biệt sản phẩm mang lại so với phương thức quản lý thủ công. Mỗi điểm trình bày theo cấu trúc thực trạng, giải pháp và kết quả đạt được. Các kết quả được kiểm chứng thủ công trên dữ liệu mẫu mô phỏng.
+
+\section{Tự động hoá kiểm tra điều kiện chuỗi danh hiệu}
+\label{section:5.1}
+
+\subsection*{Thực trạng}
+Để xét điều kiện đề nghị Bằng khen của Bộ trưởng Bộ Quốc phòng cho một quân nhân, cán bộ Phòng Chính trị phải mở tệp Word lịch sử danh hiệu của quân nhân, tìm các dòng có cờ CSTĐCS trong hai năm gần nhất. Với CSTĐTQ, công việc khó hơn vì phải đếm số BKBTBQP rơi vào cửa sổ ba năm cuối. Đây là con số dễ tính nhầm khi quân nhân từng nhận BKBTBQP qua nhiều chu kỳ. Với BKTTCP, cán bộ phải đếm đúng ba BKBTBQP và đúng hai CSTĐTQ trong cửa sổ bảy năm cuối. Ngoài ra, ở cả ba cấp BKBTBQP, CSTĐTQ và BKTTCP còn phải xác nhận mỗi năm trong khung xét tương ứng đều có thành tích NCKH. Với một quân nhân có lịch sử lâu năm, việc xét điều kiện theo cách thủ công kéo dài và dễ bỏ sót, nhất là khi phải đối chiếu chéo nhiều tệp khác nhau.
+
+\subsection*{Giải pháp}
+Đồ án trừu tượng hoá quy tắc chuỗi thành cấu hình \texttt{ChainAwardConfig} với năm tham số: mã danh hiệu, số năm chu kỳ, danh sách cờ tiền điều kiện kèm số lượng yêu cầu, có yêu cầu NCKH hay không, có phải danh hiệu một lần duy nhất hay không. Hai mảng \texttt{PERSONAL\_CHAIN\_AWARDS} và \texttt{UNIT\_CHAIN\_AWARDS} chứa danh sách cấu hình cho cá nhân và đơn vị. Hàm thuần \texttt{checkChainEligibility} đọc cấu hình và ngữ cảnh chuỗi (do \texttt{computeChainContext} dẫn xuất) rồi trả về \texttt{\{ eligible, reason \}}. Toàn bộ logic tập trung trong khoảng 80 dòng mã, đã được kiểm chứng thủ công với các kịch bản: chu kỳ vừa đủ, chu kỳ thừa, lỡ một chu kỳ, lỡ nhiều chu kỳ, BKBTBQP rơi ngoài khung 3 năm gần nhất khi xét CSTĐTQ chu kỳ mới, và chặn nhận lại với danh hiệu một lần duy nhất sau khi đã có BKTTCP.
+
+Bảng~\ref{tab:chain-config} tóm tắt cấu hình của năm cấp danh hiệu trong hai gói. Chỉ với năm tham số, mỗi dòng cấu hình mô tả trọn vẹn quy tắc xét của một cấp; việc bổ sung một danh hiệu mới do đó chỉ là thêm một phần tử vào mảng cấu hình mà không phải sửa hàm xét điều kiện.
+
+\begin{table}[H]
+\centering
+\caption[Cấu hình chuỗi danh hiệu]{Cấu hình chuỗi danh hiệu (\texttt{ChainAwardConfig}) cho cá nhân và đơn vị}
+\label{tab:chain-config}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{|R{2.6cm}|>{\centering\arraybackslash}p{1.6cm}|R{3.4cm}|>{\centering\arraybackslash}p{1.5cm}|>{\centering\arraybackslash}p{1.6cm}|}
+\hline
+\textbf{Danh hiệu} & \textbf{Chu kỳ (năm)} & \textbf{Cờ tiền điều kiện} & \textbf{Yêu cầu NCKH} & \textbf{Một lần duy nhất} \\ \hline
+\multicolumn{5}{|l|}{\textit{Gói cá nhân}} \\ \hline
+BKBTBQP & 2 & (không) & Có & Không \\ \hline
+CSTĐTQ & 3 & 1 BKBTBQP & Có & Không \\ \hline
+BKTTCP & 7 & 3 BKBTBQP và 2 CSTĐTQ & Có & Có \\ \hline
+\multicolumn{5}{|l|}{\textit{Gói đơn vị}} \\ \hline
+BKBTBQP & 2 & (không) & Không & Không \\ \hline
+BKTTCP & 7 & 3 BKBTBQP & Không & Không \\ \hline
+\end{tabular}
+\end{table}
+
+\subsection*{Kết quả đạt được}
+Việc tự động hoá giúp thời gian xét điều kiện cho mỗi quân nhân giảm từ vài chục phút rà soát thủ công xuống gần như tức thời. Khi kiểm chứng trên các hồ sơ mẫu mô phỏng nhiều kịch bản chuỗi danh hiệu khác nhau, hệ thống xác định đúng các trường hợp đủ điều kiện cũng như các trường hợp lỡ đợt cần đề nghị ở chu kỳ kế tiếp. Đáng chú ý, những tình huống dễ gây nhầm lẫn khi tính tay, chẳng hạn một danh hiệu của chu kỳ trước đã rơi ngoài khung xét hiện tại, đều được hệ thống xử lý chính xác.
+
+\section{Số hoá quy trình đề xuất, phê duyệt và lưu vết thao tác}
+\label{section:5.2}
+
+\subsection*{Thực trạng}
+Quy trình truyền thống có ba bước đều dựa trên giấy: cán bộ đơn vị lập danh sách đề nghị bằng văn bản $\rightarrow$ trình Phòng Chính trị tệp Word kèm bản giấy ký xác nhận $\rightarrow$ Phòng Chính trị tổng hợp, đối chiếu, lập tờ trình lên Ban Giám đốc $\rightarrow$ Ban Giám đốc phê duyệt và chuyển trở lại đơn vị. Mỗi bước mất một đến ba ngày do phải in, ký, chuyển công văn và đối chiếu thủ công; một đợt xét thường kéo dài năm tới mười ngày làm việc kể từ khi đơn vị lập danh sách đến khi có quyết định chính thức. Quan trọng hơn, các chỉnh sửa giữa chừng như điều chỉnh hạng huy chương hay bỏ một quân nhân khỏi danh sách chỉ để lại dấu vết viết tay trên bản nháp giấy. Hệ quả là không thể xác định ai đã thực hiện thay đổi và vì sao.
+
+\subsection*{Giải pháp}
+Đề xuất được mô hình hoá thành thực thể \texttt{BangDeXuat} với ba trạng thái \texttt{PENDING}, \texttt{APPROVED}, \texttt{REJECTED}. Bảy loại đề xuất tuân theo cùng giao diện \texttt{ProposalStrategy} với bốn phương thức chuẩn (\texttt{buildSubmitPayload}, \texttt{validateApprove}, \texttt{importInTransaction}, \texttt{buildSuccessMessage}). Phê duyệt đi qua hàm \texttt{approveProposal} (tại \texttt{services/proposal/approve.ts}): trước hết tiền kiểm điều kiện và số quyết định, sau đó mở một transaction Prisma gồm việc ghi danh hiệu/khen thưởng vào bảng nghiệp vụ, gắn số quyết định và cập nhật trạng thái đề xuất; sau khi transaction commit, hệ thống tính lại các hồ sơ suy diễn liên quan và ghi nhật ký kèm \texttt{payload} chứa trạng thái trước và sau khi thay đổi. Hằng số \texttt{AUDIT\_ACTIONS} chuẩn hoá 18 mã hành động được ghi vào \texttt{SystemLog} qua middleware \texttt{auditLog}, gồm \texttt{CREATE}, \texttt{UPDATE}, \texttt{DELETE}, \texttt{IMPORT}, \texttt{IMPORT\_PREVIEW}, \texttt{EXPORT}, \texttt{APPROVE}, \texttt{REJECT}, \texttt{PROPOSE}, \texttt{RECALCULATE}, \texttt{BULK}, \texttt{BULK\_BYPASS}, \texttt{BACKUP}, \texttt{BACKUP\_FAILED}, \texttt{LOGIN}, \texttt{LOGOUT}, \texttt{CHANGE\_PASSWORD}, \texttt{RESET\_PASSWORD}.
+
+\subsection*{Kết quả đạt được}
+Quy trình đề xuất và phê duyệt số hoá giúp rút ngắn đáng kể thời gian xử lý một đợt xét, từ nhiều ngày luân chuyển công văn giấy tờ xuống còn trong ngày. Mọi thao tác phê duyệt đều được ghi nhật ký đầy đủ kèm trạng thái trước và sau khi thay đổi, cho phép truy vết toàn bộ lịch sử của một đề xuất. Khi một đề xuất bị từ chối rồi được đề nghị lại, chuỗi thao tác từ chối, tạo mới và phê duyệt được liên kết với nhau qua mã đề xuất gốc, kèm thông tin về người thực hiện, thời điểm và lý do. Khả năng truy vết toàn bộ này vượt quá những gì phương thức giấy tờ truyền thống có thể cung cấp.
+
+\section{Tính lại tổng thể và gợi ý đề nghị chủ động}
+\label{section:5.3}
+
+\subsection*{Thực trạng}
+Trong quy trình thủ công, xác định ``ai đủ điều kiện'' cho một đợt xét khen thưởng phụ thuộc vào trí nhớ và kinh nghiệm của cán bộ phụ trách. Đơn vị thường chỉ rà soát những quân nhân tự đề xuất hoặc được lãnh đạo đơn vị nhắc tên, dẫn tới bỏ sót những quân nhân đủ điều kiện nhưng không nằm trong tầm chú ý. Theo phản hồi từ cán bộ phụ trách thi đua trong quá trình khảo sát, tỷ lệ bỏ sót trong các đợt xét HCCSVV là không nhỏ, đặc biệt với quân nhân chuyển đơn vị giữa chừng, khi các mốc 10/15/20 năm rơi vào năm chuyển đơn vị và dễ bị bỏ sót.
+
+\subsection*{Giải pháp}
+Hệ thống cung cấp hai cơ chế hỗ trợ chủ động. Thứ nhất, sau mỗi thao tác làm thay đổi dữ liệu nguồn (thêm/sửa/xoá \texttt{DanhHieuHangNam}, \texttt{LichSuChucVu}, \texttt{ThanhTichKhoaHoc}), hệ thống tự động gọi hàm tính lại cho quân nhân bị ảnh hưởng, giữ \texttt{HoSoHangNam} đồng bộ với dữ liệu nguồn. Thứ hai, điểm cuối \texttt{POST /api/profiles/recalculate-all} cho phép Cán bộ Phòng Chính trị kích hoạt tính lại toàn bộ quân nhân đang phục vụ, thường thực hiện vào đầu năm trước các đợt xét. Sau khi tính lại, trang chi tiết quân nhân hiển thị thanh tiến trình chu kỳ (vd: ``BKBTBQP: 1/2 năm CSTĐCS đã tích luỹ'') kèm nội dung gợi ý bằng tiếng Việt sinh tự động. Chỉ huy đơn vị mở danh sách quân nhân thuộc đơn vị mình, lọc theo cờ \texttt{du\_dieu\_kien\_*} để có ngay danh sách đề nghị.
+
+\subsection*{Kết quả đạt được}
+Cơ chế tính lại tự động và gợi ý chủ động giúp phát hiện những quân nhân đủ điều kiện nhưng dễ bị bỏ sót trong rà soát thủ công. Trên dữ liệu thử nghiệm mô phỏng, hệ thống tự động chỉ ra một số quân nhân đủ điều kiện nhưng chưa từng được đưa vào danh sách đề nghị theo phương thức cũ, phù hợp với lo ngại về tỷ lệ bỏ sót đã nêu. Chức năng cảnh báo niên hạn cũng tự động gắn cờ những quân nhân sắp đến mốc 10/15/20 năm, giảm nhu cầu rà soát thủ công theo ngày nhập ngũ. Lệnh tính lại toàn bộ chạy đủ nhanh để Cán bộ Phòng Chính trị kích hoạt trực tiếp khi cần, không phải đặt lịch ban đêm.
+
+\section{Nhập liệu Excel hàng loạt có giao dịch và tiền kiểm}
+\label{section:5.4}
+
+\subsection*{Thực trạng}
+Khi đưa hệ thống mới vào một công tác đã có nhiều năm tích luỹ, bài toán nan giải là di chuyển dữ liệu lịch sử từ các tệp Word và bản giấy rời rạc sang cơ sở dữ liệu chuẩn hoá. Nhập tay từng bản ghi không khả thi: với khoảng 50.000 bản ghi danh hiệu và 15.000 bản ghi lịch sử chức vụ ước tính, thời gian sẽ kéo dài nhiều tháng. Việc sử dụng script SQL trực tiếp tiềm ẩn nhiều rủi ro về tính toàn vẹn dữ liệu vì các tệp Word không thống nhất định dạng: có tệp dùng tên đầy đủ ``Bằng khen của Bộ trưởng Bộ Quốc phòng'', có tệp dùng viết tắt ``BKBTBQP'', có tệp lẫn tiếng Anh; một số ô CCCD bị gõ sai chính tả.
+
+\subsection*{Giải pháp}
+Đồ án xây dựng quy trình nhập Excel hai bước. Bước ``xem trước'' đọc toàn bộ tệp, áp schema Zod cùng các quy tắc nghiệp vụ như CCCD tồn tại trong \texttt{QuanNhan}, năm hợp lệ, danh hiệu nằm trong danh mục cho phép sau khi chuẩn hoá viết tắt. Sau đó bước này trả về hai mảng: dòng hợp lệ và dòng lỗi (kèm chỉ số dòng và mô tả). Cán bộ rà soát lỗi, tải tệp xuống sửa, tải lại; bước này chưa ghi thay đổi vào cơ sở dữ liệu. Bước ``xác nhận'' mở một transaction Prisma duy nhất, ghi tuần tự các dòng hợp lệ; nếu lỗi xảy ra tại bất kỳ dòng nào (vd: trùng khoá \texttt{(quan\_nhan\_id, nam)} do dữ liệu mới phát sinh trong khoảng giữa bước xem trước và bước xác nhận), toàn bộ transaction được rollback và cơ sở dữ liệu trở về trạng thái trước khi nhập. Mỗi loại nghiệp vụ có một strategy nhập tương ứng tuân giao diện \texttt{ProposalStrategy.importInTransaction}, giữ tính nhất quán giữa các luồng.
+
+\subsection*{Kết quả đạt được}
+Quy trình nhập hai bước cho phép di chuyển khối dữ liệu lịch sử lớn của Học viện trong thời gian ngắn thay vì nhiều tháng nhập tay. Cơ chế xem trước phát hiện sớm các dòng sai trước khi ghi, còn cơ chế giao dịch đảm bảo nếu có lỗi ở bất kỳ dòng nào thì toàn bộ lần nhập được hoàn tác và không bản ghi nào lọt vào cơ sở dữ liệu ở trạng thái dở dang. Hàm \texttt{resolveDanhHieuCode} chấp nhận nhiều biến thể viết tắt của cùng một danh hiệu rồi quy về một mã chuẩn duy nhất, giảm đáng kể khối lượng dọn dẹp dữ liệu nguồn trước khi nhập.
+
+\section{Phân quyền theo cây đơn vị, nhật ký đầy đủ và sao lưu định kỳ}
+\label{section:5.5}
+
+\subsection*{Thực trạng}
+Trên các tệp Word chia sẻ qua thư mục mạng, kiểm soát truy cập chỉ đạt đến mức cấp thư mục: hoặc có toàn quyền truy cập, hoặc không có quyền truy cập dữ liệu. Với một Học viện gồm nhiều cơ quan, đơn vị có cấp bậc nhạy cảm khác nhau, sự thiếu phân quyền chi tiết tạo rủi ro: cán bộ một đơn vị có thể vô tình hoặc cố ý xem dữ liệu của đơn vị khác; hoặc tệ hơn, có thể chỉnh sửa dữ liệu mà không để lại dấu vết. Sao lưu dữ liệu cũng phụ thuộc vào kỷ luật cá nhân, không có cơ chế tự động đảm bảo có bản sao lưu hằng ngày sẵn sàng để khôi phục.
+
+\subsection*{Giải pháp}
+Cơ chế kỹ thuật chung, gồm bốn middleware RBAC, ẩn \texttt{resource = backup}, sao lưu \texttt{node-cron} và nhật ký hệ thống, đã được trình bày tại Mục~\ref{subsection:2.4.2}. Mục này tập trung vào những lựa chọn thiết kế mang tính đóng góp cụ thể của đồ án.
+
+Thứ nhất, mô hình RBAC \cite{sandhu1996rbac} được chia thành \emph{bốn} middleware thay vì một middleware tổng quát: \texttt{requireSuperAdmin}, \texttt{requireAdmin}, \texttt{requireAdminOnly} và \texttt{requireManager}. Việc tách \texttt{requireAdminOnly} (loại Quản trị hệ thống khỏi luồng nghiệp vụ) giúp giữ ranh giới rõ giữa hạ tầng và nghiệp vụ: Quản trị hệ thống có toàn quyền hệ thống nhưng không phê duyệt được khen thưởng, hạn chế nhầm lẫn giữa vai trò quản trị hạ tầng và vai trò xử lý nghiệp vụ. Thứ hai, phạm vi dữ liệu của Chỉ huy đơn vị được giới hạn qua \texttt{unitFilter}. Truy vấn của Chỉ huy đơn vị luôn được thu hẹp về cây đơn vị quản lý, không phải kiểm thủ công ở từng route. Thứ ba, tuyến đặc biệt \texttt{POST /api/awards/bulk-bypass} cho phép Quản trị hệ thống sửa dữ liệu khen thưởng cũ mà bỏ qua kiểm tra điều kiện, phục vụ di trú dữ liệu lịch sử và rà soát về sau. Mỗi lần gọi đều ghi nhật ký mã \texttt{BULK\_BYPASS} riêng và gửi thông báo thời gian thực tới toàn bộ Cán bộ Phòng Chính trị để minh bạch hoá thao tác bỏ qua kiểm soát.
+
+\subsection*{Kết quả đạt được}
+Mọi điểm cuối API có thực hiện thay đổi dữ liệu đều được bảo vệ bằng \texttt{verifyToken} kết hợp một trong bốn middleware phân quyền nêu trên. Toàn bộ thao tác làm thay đổi dữ liệu đều được ghi nhật ký và đã được kiểm chứng thủ công với các kịch bản truy cập theo bốn vai trò. Cơ chế ẩn nhật ký sao lưu cũng được kiểm chứng: Quản trị hệ thống xem được đầy đủ, còn Cán bộ Phòng Chính trị nhận danh sách rỗng khi lọc theo loại tài nguyên đó.
+
+Về sao lưu, lịch định kỳ chạy ổn định trong suốt quá trình thử nghiệm, tự động sinh các tệp \texttt{.sql} và dọn các bản cũ vượt số ngày lưu trữ đã cấu hình mà không bỏ lỡ lần nào. Việc khôi phục từ bản sao lưu hoàn tất nhanh chóng, có thể đáp ứng yêu cầu khôi phục trong phạm vi thử nghiệm.
+
+\section*{Kết chương}
+
+Chương này đã phân tích các đóng góp nổi bật của đồ án theo cấu trúc thực trạng, giải pháp và kết quả, gồm cơ chế xét điều kiện chuỗi danh hiệu thống nhất cho cá nhân và đơn vị, việc hợp nhất bảy nhóm khen thưởng vào một quy trình chung, lớp nhật ký hệ thống ghi vết toàn bộ thao tác và cơ chế phân quyền bốn cấp. Những đóng góp này được tổng kết cùng các hướng phát triển tiếp theo ở chương kết luận.
+
+\end{document}

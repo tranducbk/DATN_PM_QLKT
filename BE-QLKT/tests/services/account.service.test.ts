@@ -258,7 +258,7 @@ describe('account.service - updateAccount', () => {
 });
 
 describe('account.service - deleteAccount', () => {
-  it('Cho account không gắn quân nhân, Khi deleteAccount, Thì xoá thành công', async () => {
+  it('Cho account cấp thấp hơn, Khi deleteAccount, Thì xoá thành công', async () => {
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       id: 'acc-1',
       role: ROLES.ADMIN,
@@ -266,13 +266,28 @@ describe('account.service - deleteAccount', () => {
     });
     prismaMock.taiKhoan.delete.mockResolvedValueOnce({ id: 'acc-1' });
 
-    const result = await accountService.deleteAccount('acc-1');
+    const result = await accountService.deleteAccount('acc-1', false, ROLES.SUPER_ADMIN);
 
     expect(result.message).toContain('thành công');
     expect(prismaMock.taiKhoan.delete).toHaveBeenCalledWith({ where: { id: 'acc-1' } });
   });
 
-  it('Cho account SUPER_ADMIN, Khi deleteAccount, Thì throw ForbiddenError', async () => {
+  it('Cho account ngang quyền (ADMIN xóa ADMIN), Khi deleteAccount, Thì throw ForbiddenError', async () => {
+    prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
+      id: 'acc-admin',
+      role: ROLES.ADMIN,
+      QuanNhan: null,
+    });
+
+    await expectError(
+      accountService.deleteAccount('acc-admin', false, ROLES.ADMIN),
+      ForbiddenError,
+      /cấp thấp hơn/,
+    );
+    expect(prismaMock.taiKhoan.delete).not.toHaveBeenCalled();
+  });
+
+  it('Cho account SUPER_ADMIN (kể cả SUPER_ADMIN thực hiện), Khi deleteAccount, Thì throw ForbiddenError', async () => {
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       id: 'acc-super',
       role: ROLES.SUPER_ADMIN,
@@ -280,9 +295,9 @@ describe('account.service - deleteAccount', () => {
     });
 
     await expectError(
-      accountService.deleteAccount('acc-super'),
+      accountService.deleteAccount('acc-super', false, ROLES.SUPER_ADMIN),
       ForbiddenError,
-      /SUPER_ADMIN/,
+      /cấp thấp hơn/,
     );
   });
 
@@ -297,7 +312,7 @@ describe('account.service - deleteAccount', () => {
     ]);
 
     await expectError(
-      accountService.deleteAccount('acc-1', false),
+      accountService.deleteAccount('acc-1', false, ROLES.ADMIN),
       ValidationError,
       /chờ duyệt/,
     );

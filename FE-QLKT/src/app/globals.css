@@ -221,12 +221,12 @@
 /* Tô màu dòng quân nhân không đủ điều kiện (đã nhận hoặc đang chờ duyệt) */
 .ant-table-tbody > tr.row-ineligible > td {
   background-color: #f5f5f5 !important;
-  opacity: 0.7;
+  color: #8c8c8c !important;
 }
 
 .dark .ant-table-tbody > tr.row-ineligible > td {
   background-color: #2a2a2a !important;
-  opacity: 0.7;
+  color: #8a8a8a !important;
 }
 
 .ant-table-tbody > tr.row-ineligible:hover > td {
@@ -240,12 +240,12 @@
 /* Tô màu dòng quân nhân không đủ điều kiện chung */
 .ant-table-tbody > tr.row-not-eligible > td {
   background-color: #fff7e6 !important;
-  opacity: 0.7;
+  color: #8c8c8c !important;
 }
 
 .dark .ant-table-tbody > tr.row-not-eligible > td {
-  background-color: #3d3d1f !important;
-  opacity: 0.7;
+  background-color: #33321d !important;
+  color: #8a8a8a !important;
 }
 
 .ant-table-tbody > tr.row-not-eligible:hover > td {
@@ -385,6 +385,41 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(0.269 0 0);
   --sidebar-ring: oklch(0.439 0 0);
+}
+
+/* Chrome paints autofilled inputs with its own light background, breaking the theme.
+   Repaint via an inset box-shadow matching the Ant Design input tokens (antdTheme.ts). */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+  box-shadow: 0 0 0 1000px #ffffff inset !important;
+  -webkit-text-fill-color: #111827 !important;
+  caret-color: #111827 !important;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus,
+.dark input:-webkit-autofill:active,
+.dark textarea:-webkit-autofill,
+.dark textarea:-webkit-autofill:hover,
+.dark textarea:-webkit-autofill:focus,
+.dark select:-webkit-autofill,
+.dark select:-webkit-autofill:hover,
+.dark select:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #1f2937 inset !important;
+  box-shadow: 0 0 0 1000px #1f2937 inset !important;
+  -webkit-text-fill-color: #f3f4f6 !important;
+  caret-color: #f3f4f6 !important;
 }
 
 @layer base {
@@ -2528,28 +2563,6 @@ button[class*='bg-primary']:hover:not(:disabled) {
 .delete-proposal-button:active .anticon,
 .delete-proposal-button:active span {
   color: #fff !important;
-}
-
-/* Summary stats - 5 columns equal width */
-@media (min-width: 768px) {
-  .summary-stat-col {
-    flex: 1 1 20% !important;
-    max-width: 20% !important;
-  }
-}
-
-@media (max-width: 767px) {
-  .summary-stat-col {
-    flex: 1 1 50% !important;
-    max-width: 50% !important;
-  }
-}
-
-@media (max-width: 575px) {
-  .summary-stat-col {
-    flex: 1 1 100% !important;
-    max-width: 100% !important;
-  }
 }
 
 /* Notification pulse animation */

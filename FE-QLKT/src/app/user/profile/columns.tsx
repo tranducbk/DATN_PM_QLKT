@@ -1,10 +1,7 @@
+import { Tag } from 'antd';
 import { calculateDuration, formatDate, formatHeSoChucVu } from '@/lib/utils';
-import { PROPOSAL_STATUS, getProposalStatusLabel } from '@/constants/proposal.constants';
-import type {
-  ScientificAchievementRow,
-  PositionHistoryRow,
-  AdhocAwardRow,
-} from './types';
+import { THANH_TICH_KHOA_HOC_FULL_LABELS } from '@/constants/danhHieu.constants';
+import type { ScientificAchievementRow, PositionHistoryRow, AdhocAwardRow } from './types';
 
 function renderDecisionLink(
   text: string,
@@ -49,16 +46,21 @@ export function makeScientificColumns(onOpenDecision: (so: string) => void) {
       title: 'Loại',
       dataIndex: 'loai',
       key: 'loai',
-      width: 120,
-      align: 'center' as const,
-      render: (text: string) => text || '-',
+      width: 170,
+      align: 'left' as const,
+      render: (text: string) => {
+        if (!text) return '-';
+        const label = THANH_TICH_KHOA_HOC_FULL_LABELS[text] || text;
+        const isSangKien = text === 'SKKH' || text === 'Sáng kiến khoa học';
+        return <Tag color={isSangKien ? 'purple' : 'geekblue'}>{label}</Tag>;
+      },
     },
     {
       title: 'Mô tả',
       dataIndex: 'mo_ta',
       key: 'mo_ta',
       minWidth: 200,
-      align: 'center' as const,
+      align: 'left' as const,
       ellipsis: { showTitle: false },
       render: (text: string) => (
         <span title={text} style={{ display: 'block', maxWidth: '100%' }}>
@@ -73,23 +75,6 @@ export function makeScientificColumns(onOpenDecision: (so: string) => void) {
       width: 150,
       align: 'center' as const,
       render: (text: string) => renderDecisionLink(text, onOpenDecision),
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      key: 'status',
-      width: 120,
-      align: 'center' as const,
-      render: (text: string) => {
-        const label = getProposalStatusLabel(text);
-        if (text === PROPOSAL_STATUS.APPROVED) {
-          return <span className="text-green-600 dark:text-green-400">{label}</span>;
-        }
-        if (text === PROPOSAL_STATUS.REJECTED) {
-          return <span className="text-red-500 dark:text-red-400">{label}</span>;
-        }
-        return <span className="text-amber-500 dark:text-amber-400">{label}</span>;
-      },
     },
   ];
 }
@@ -109,7 +94,7 @@ export function makePositionHistoryColumns() {
       dataIndex: 'ChucVu',
       key: 'ChucVu',
       width: 200,
-      align: 'center' as const,
+      align: 'left' as const,
       render: (chucVu: PositionHistoryRow['ChucVu']) => chucVu?.ten_chuc_vu || 'N/A',
     },
     {
@@ -165,7 +150,7 @@ export function makeAdhocColumns(onOpenDecision: (so: string) => void) {
       dataIndex: 'hinh_thuc_khen_thuong',
       key: 'hinh_thuc_khen_thuong',
       width: 200,
-      align: 'center' as const,
+      align: 'left' as const,
       ellipsis: { showTitle: false },
       render: (text: string) => (
         <span title={text} style={{ display: 'block', maxWidth: '100%' }}>
@@ -194,7 +179,7 @@ export function makeAdhocColumns(onOpenDecision: (so: string) => void) {
       dataIndex: 'chuc_vu',
       key: 'chuc_vu',
       width: 150,
-      align: 'center' as const,
+      align: 'left' as const,
       ellipsis: { showTitle: false },
       render: (text: string) => (
         <span title={text} style={{ display: 'block', maxWidth: '100%' }}>

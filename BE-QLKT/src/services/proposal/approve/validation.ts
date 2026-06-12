@@ -1,4 +1,3 @@
-import { prisma } from '../../../models';
 import { scientificAchievementRepository } from '../../../repositories/scientificAchievement.repository';
 import { buildCutoffDate, formatServiceDuration } from '../../../helpers/serviceYearsHelper';
 import { PROPOSAL_TYPES } from '../../../constants/proposalTypes.constants';

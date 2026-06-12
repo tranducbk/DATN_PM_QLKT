@@ -1,4 +1,3 @@
-import { prisma } from '../../models';
 import { danhHieuHangNamRepository, danhHieuDonViHangNamRepository } from '../../repositories/danhHieu.repository';
 import { tenureMedalRepository } from '../../repositories/tenureMedal.repository';
 import { militaryFlagRepository } from '../../repositories/militaryFlag.repository';

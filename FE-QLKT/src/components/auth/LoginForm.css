@@ -430,12 +430,16 @@
   margin-top: 0.25rem;
 }
 
-/* Autofill Styles */
-.login-input input:-webkit-autofill,
-.login-input input:-webkit-autofill:hover,
-.login-input input:-webkit-autofill:focus {
+/* Autofill on the glass card: the .login-form ancestor keeps this above the global
+   autofill rule (globals.css) so the translucent backdrop survives in dark mode too. */
+.login-form .login-input input:-webkit-autofill,
+.login-form .login-input input:-webkit-autofill:hover,
+.login-form .login-input input:-webkit-autofill:focus,
+.login-form .login-input input:-webkit-autofill:active {
   -webkit-text-fill-color: #fff !important;
+  caret-color: #fff !important;
   -webkit-box-shadow: 0 0 0 1000px rgba(255, 255, 255, 0.05) inset !important;
+  box-shadow: 0 0 0 1000px rgba(255, 255, 255, 0.05) inset !important;
   transition: background-color 5000s ease-in-out 0s;
 }
 

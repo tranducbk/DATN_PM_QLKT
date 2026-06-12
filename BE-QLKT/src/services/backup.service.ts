@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-import { prisma } from '../models';
 import { danhHieuHangNamRepository, danhHieuDonViHangNamRepository } from '../repositories/danhHieu.repository';
 import { contributionMedalRepository } from '../repositories/contributionMedal.repository';
 import { tenureMedalRepository } from '../repositories/tenureMedal.repository';

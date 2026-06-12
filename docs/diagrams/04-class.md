@@ -315,7 +315,6 @@ classDiagram
     }
     class ProposalStrategyRegistry {
         +getProposalStrategy(type)
-        +requireProposalStrategy(type)
     }
     class CaNhanHangNamStrategy
     class DonViHangNamStrategy

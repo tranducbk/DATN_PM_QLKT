@@ -289,7 +289,6 @@ export default function BulkAddAwardsPage() {
       decisionDataMap,
     });
 
-  // Handle next step
   const handleNext = async () => {
     if (canProceedToNextStep()) {
       setCurrentStep(currentStep + 1);
@@ -312,7 +311,6 @@ export default function BulkAddAwardsPage() {
     }
   };
 
-  // Handle previous step
   const handlePrev = () => {
     if (currentStep == 2) {
       setTitleData([]);
@@ -387,7 +385,6 @@ export default function BulkAddAwardsPage() {
     }
   };
 
-  // Render step content
   const renderStepContent = () => {
     switch (currentStep) {
       case 0: // Step 1: Choose Type
@@ -916,7 +913,6 @@ export default function BulkAddAwardsPage() {
     }
   };
 
-  // Handle decision modal success
   const handleDecisionSuccess = (
     decision: { id?: string; so_quyet_dinh: string; nam: number }
   ) => {
@@ -985,7 +981,7 @@ export default function BulkAddAwardsPage() {
       </Card>
 
       {/* Step Content */}
-      <Card style={{ marginBottom: 24, minHeight: 400 }}>{renderStepContent()}</Card>
+      <Card style={{ marginBottom: 24 }}>{renderStepContent()}</Card>
 
       {/* Navigation */}
       <Card>

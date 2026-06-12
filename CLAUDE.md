@@ -257,16 +257,16 @@ Khi có ≥ 4 nhánh `if/else` dispatch theo enum/type (vd: 7 loại đề xuấ
 
 **Rule:** code is the single source of truth — báo cáo/slide/diagram bám theo code, không ngược lại. Khi sửa code làm thay đổi thứ mà tài liệu đang mô tả (port, script name, dependency, kiến trúc, schema, route, eligibility rule, số liệu test, UC behavior), **bắt buộc** mở file liên quan dưới đây và update đồng bộ trong cùng commit. Refactor thuần nội bộ (rename biến, extract helper, chia file) không cần đồng bộ doc.
 
-> **⚠️ Báo cáo chính giờ là bản LaTeX** tại `SOICT_DATN_Tran_Anh_Duc_20220120/` (`DoAn.tex` + `Chuong/*.tex`). `report/BAO_CAO.md` **đã ngừng dùng** — KHÔNG sync vào nó nữa. Bảng dưới đây nhắc `report/BAO_CAO.md` chỉ còn để tham chiếu lịch sử; thay bằng `Chuong/*.tex` tương ứng: §2 khảo sát → `2_Khao_sat.tex`, §3 công nghệ → `3_Cong_nghe.tex`, §4 thiết kế/triển khai/kiểm thử → `4_Ket_qua_thuc_nghiem.tex`, §5 đóng góp → `5_Giai_phap_dong_gop.tex`, kết luận/hướng phát triển → `6_Ket_luan.tex`.
+> **⚠️ Báo cáo chính giờ là bản LaTeX** tại `SOICT_DATN_Tran_Anh_Duc_20220120/` (`DoAn.tex` + `Chuong/*.tex`). `docs/report/BAO_CAO.md` **đã ngừng dùng** — KHÔNG sync vào nó nữa. Bảng dưới đây nhắc `docs/report/BAO_CAO.md` chỉ còn để tham chiếu lịch sử; thay bằng `Chuong/*.tex` tương ứng: §2 khảo sát → `2_Khao_sat.tex`, §3 công nghệ → `3_Cong_nghe.tex`, §4 thiết kế/triển khai/kiểm thử → `4_Ket_qua_thuc_nghiem.tex`, §5 đóng góp → `5_Giai_phap_dong_gop.tex`, kết luận/hướng phát triển → `6_Ket_luan.tex`.
 
 ### Doc index — file nào chứa gì
 
 | File | Nội dung | Khi nào động vào |
 |---|---|---|
-| `report/BAO_CAO.md` | Báo cáo chính 5 chương (giới thiệu / khảo sát yêu cầu / công nghệ / thiết kế-triển khai / đóng góp). §4.5 chứa hướng dẫn cài đặt + deploy (port, script, pm2, nginx). §4.1.7 chứa thiết kế DB | Đổi behavior người dùng/admin nhìn thấy, đổi tech, đổi số liệu |
-| `slides/defense.marp.md` | Source slides Marp — 11 slide chính | Đổi tech stack, kiến trúc, demo flow, số test |
-| `slides/defense.html` | Slides đã render từ `defense.marp.md` | Re-render mỗi khi marp.md đổi |
-| `slides/slide-content.md` | Bản nháp text dài cho slide (lời nói) | Đổi nội dung slides chính |
+| `docs/report/BAO_CAO.md` | Báo cáo chính 5 chương (giới thiệu / khảo sát yêu cầu / công nghệ / thiết kế-triển khai / đóng góp). §4.5 chứa hướng dẫn cài đặt + deploy (port, script, pm2, nginx). §4.1.7 chứa thiết kế DB | Đổi behavior người dùng/admin nhìn thấy, đổi tech, đổi số liệu |
+| `docs/slides/defense.marp.md` | Source slides Marp — 11 slide chính | Đổi tech stack, kiến trúc, demo flow, số test |
+| `docs/slides/defense.html` | Slides đã render từ `defense.marp.md` | Re-render mỗi khi marp.md đổi |
+| `docs/slides/slide-content.md` | Bản nháp text dài cho slide (lời nói) | Đổi nội dung slides chính |
 | `docs/diagrams/01-use-case.md` | Use case tổng + 8 phân rã | Thêm UC mới, đổi role/permission |
 | `docs/diagrams/02-activity.md` | Activity diagram — quy trình duyệt đề xuất | Đổi proposal flow / state |
 | `docs/diagrams/03-architecture.md` | Sơ đồ kiến trúc layers | Đổi cấu trúc folder/layer |
@@ -277,9 +277,9 @@ Khi có ≥ 4 nhánh `if/else` dispatch theo enum/type (vd: 7 loại đề xuấ
 | `docs/diagrams/08-use-case-specs.md` | Đặc tả chi tiết UC (precondition, flow, postcondition) | Đổi UC behavior cụ thể |
 | `docs/diagrams/plagiarism-warnings.md` | Cảnh báo trùng lặp với báo cáo mẫu HUST | Khi viết phần dễ trùng |
 | `docs/diagrams/README.md` | Mục lục thư mục diagrams + hướng dẫn render | Thêm sơ đồ mới |
-| `PLAN_BAO_CAO.md` | Kế hoạch viết báo cáo (timeline, todo) | Đổi scope/timeline báo cáo |
-| `SAMPLE_REPORT_OUTLINE.md` | Phân tích báo cáo mẫu HUST 2024.2 — chỉ tham khảo cấu trúc, không sửa | (read-only) |
-| `PROJECT_REVIEW.md` | Code review priority list (CRITICAL §3 / MEDIUM §4 / LOW §5) | Đánh dấu DONE/PARTIAL khi fix xong, thêm issue mới phát hiện |
+| `docs/PLAN_BAO_CAO.md` | Kế hoạch viết báo cáo (timeline, todo) | Đổi scope/timeline báo cáo |
+| `docs/SAMPLE_REPORT_OUTLINE.md` | Phân tích báo cáo mẫu HUST 2024.2 — chỉ tham khảo cấu trúc, không sửa | (read-only) |
+| `docs/PROJECT_REVIEW.md` | Code review priority list (CRITICAL §3 / MEDIUM §4 / LOW §5) | Đánh dấu DONE/PARTIAL khi fix xong, thêm issue mới phát hiện |
 | `BE-QLKT/CLAUDE.md` | Rule BE-specific (anti-pattern AP-1 → AP-9, eligibility, repository pattern) | Đổi BE convention/architecture |
 | `FE-QLKT/CLAUDE.md` | Rule FE-specific | Đổi FE convention/architecture |
 
@@ -287,12 +287,12 @@ Khi có ≥ 4 nhánh `if/else` dispatch theo enum/type (vd: 7 loại đề xuấ
 
 | Loại thay đổi | File phải check |
 |---|---|
-| Đổi port BE/FE, đổi script `npm run *`, dependency mới (vd: Joi → Zod) | `report/BAO_CAO.md` §3.x (công nghệ) + §4.5 (cài đặt + deploy) · `docs/diagrams/07-deployment.md` · `slides/defense.marp.md` (slide tech stack + deployment) |
-| Đổi `schema.prisma` (model, field, FK) | `docs/diagrams/06-erd.md` · `report/BAO_CAO.md` §4.1.7 |
-| Thêm/sửa UC, đổi role permission | `docs/diagrams/01-use-case.md` + `08-use-case-specs.md` · `report/BAO_CAO.md` §2.2 + §2.3 |
-| Đổi proposal flow / approve flow | `docs/diagrams/02-activity.md` + `05-sequence.md` · `report/BAO_CAO.md` §5.2 · slide "Quy trình đề xuất" |
-| Đổi eligibility rule chuỗi danh hiệu | `BE-QLKT/CLAUDE.md` §Chain awards · `report/BAO_CAO.md` §5.1 · slide "Chuỗi danh hiệu" |
-| Đổi tech stack (lib, framework version) | `report/BAO_CAO.md` Chương 3 · `slides/defense.marp.md` §Tech Stack |
-| Đổi số test / coverage / số liệu kpi | `report/BAO_CAO.md` §4.4 + §5.x (kết quả định lượng) · slide "Kiểm thử" |
-| Refactor lớn (split file, extract module, đổi layer) | `report/BAO_CAO.md` §4.1 · `docs/diagrams/03-architecture.md` + `04-class.md` |
-| Fix issue trong PROJECT_REVIEW.md | Đánh dấu trạng thái mới (DONE/PARTIAL) ngay trong file đó kèm 1 dòng evidence |
+| Đổi port BE/FE, đổi script `npm run *`, dependency mới (vd: Joi → Zod) | `docs/report/BAO_CAO.md` §3.x (công nghệ) + §4.5 (cài đặt + deploy) · `docs/diagrams/07-deployment.md` · `docs/slides/defense.marp.md` (slide tech stack + deployment) |
+| Đổi `schema.prisma` (model, field, FK) | `docs/diagrams/06-erd.md` · `docs/report/BAO_CAO.md` §4.1.7 |
+| Thêm/sửa UC, đổi role permission | `docs/diagrams/01-use-case.md` + `08-use-case-specs.md` · `docs/report/BAO_CAO.md` §2.2 + §2.3 |
+| Đổi proposal flow / approve flow | `docs/diagrams/02-activity.md` + `05-sequence.md` · `docs/report/BAO_CAO.md` §5.2 · slide "Quy trình đề xuất" |
+| Đổi eligibility rule chuỗi danh hiệu | `BE-QLKT/CLAUDE.md` §Chain awards · `docs/report/BAO_CAO.md` §5.1 · slide "Chuỗi danh hiệu" |
+| Đổi tech stack (lib, framework version) | `docs/report/BAO_CAO.md` Chương 3 · `docs/slides/defense.marp.md` §Tech Stack |
+| Đổi số test / coverage / số liệu kpi | `docs/report/BAO_CAO.md` §4.4 + §5.x (kết quả định lượng) · slide "Kiểm thử" |
+| Refactor lớn (split file, extract module, đổi layer) | `docs/report/BAO_CAO.md` §4.1 · `docs/diagrams/03-architecture.md` + `04-class.md` |
+| Fix issue trong docs/PROJECT_REVIEW.md | Đánh dấu trạng thái mới (DONE/PARTIAL) ngay trong file đó kèm 1 dòng evidence |

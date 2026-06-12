@@ -11,6 +11,7 @@ import {
   AWARD_TAB_LABELS,
   AWARD_TAB_DANH_HIEU,
   AWARD_TAB_FILENAME,
+  AWARD_TAB_META,
   INDIVIDUAL_AWARD_TABS,
   type AwardType,
 } from '@/constants/danhHieu.constants';
@@ -116,7 +117,7 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
     setSelectedPersonnelIds([]);
   }, [donViId, open, activeTab]);
 
-  const hasDanhHieuFilter = ['CNHN', 'DVHN', 'HCCSVV', 'HCBVTQ'].includes(activeTab);
+  const hasDanhHieuFilter = AWARD_TAB_META[activeTab].hasDanhHieuFilter;
   const hasUnitFilter = activeTab !== 'DVHN'; // DVHN tab exports all units — no unit filter needed
   const isIndividualTab = INDIVIDUAL_AWARD_TABS.includes(activeTab);
   const isUnitTab = activeTab === 'DVHN';
@@ -170,7 +171,6 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
       const exportFn = exportFnMap[activeTab] ?? apiClient.exportAwards.bind(apiClient);
       const blob = await exportFn(params);
 
-      // Build filename
       const baseFilename = AWARD_TAB_FILENAME[activeTab] ?? 'khen_thuong';
       const yearSuffix =
         tuNam && denNam && tuNam !== denNam

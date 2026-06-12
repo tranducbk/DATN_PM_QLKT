@@ -32,6 +32,7 @@ import Link from 'next/link';
 import { apiClient } from '@/lib/http/apiClient';
 import { useTheme } from '@/components/ThemeProvider';
 import { ROLES, getRoleInfo, roleSelectOptions } from '@/constants/roles.constants';
+import { useDebounce } from '@/hooks/useDebounce';
 import { formatDateTime } from '@/lib/utils';
 
 const { Title } = Typography;
@@ -56,7 +57,7 @@ export default function AccountsListPage() {
   const [accounts, setAccounts] = useState<SuperAdminAccountRow[]>([]);
   const [pagination, setPagination] = useState({ current: 1, pageSize: DEFAULT_PAGE_SIZE, total: 0 });
   const [searchText, setSearchText] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const debouncedSearch = useDebounce(searchText).trim();
   const [roleFilter, setRoleFilter] = useState<string | undefined>(undefined);
 
   const fetchAccounts = async (page = 1, pageSize = DEFAULT_PAGE_SIZE, search = '', role?: string) => {
@@ -118,12 +119,6 @@ export default function AccountsListPage() {
     }
   };
 
-  const handleSearch = () => {
-    const newSearch = searchText.trim();
-    setDebouncedSearch(newSearch);
-    fetchAccounts(1, pagination.pageSize, newSearch, roleFilter);
-  };
-
   const handleTableChange = (pag: { current?: number; pageSize?: number }) => {
     setTableLoading(true);
     fetchAccounts(
@@ -136,13 +131,12 @@ export default function AccountsListPage() {
 
   const handleRoleFilterChange = (value: string | undefined) => {
     setRoleFilter(value);
-    fetchAccounts(1, pagination.pageSize, debouncedSearch, value);
   };
 
   useEffect(() => {
-    fetchAccounts(1, 10);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only run on mount
-  }, []);
+    fetchAccounts(1, pagination.pageSize, debouncedSearch, roleFilter);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- auto-search on keyword/role change
+  }, [debouncedSearch, roleFilter]);
 
   const columns: ColumnsType<SuperAdminAccountRow> = [
     {
@@ -240,20 +234,22 @@ export default function AccountsListPage() {
           <Link href={`/super-admin/accounts/${record.id}/edit`}>
             <Button size="small" icon={<EditOutlined />} />
           </Link>
-          <Popconfirm
-            title="Xác nhận xóa?"
-            description={
-              record.quan_nhan_id
-                ? 'Xóa tài khoản và toàn bộ dữ liệu quân nhân liên quan?'
-                : 'Bạn có chắc muốn xóa tài khoản này?'
-            }
-            onConfirm={() => handleDelete(record)}
-            okText="Xóa"
-            cancelText="Hủy"
-            okButtonProps={{ danger: true }}
-          >
-            <Button size="small" danger icon={<DeleteOutlined />} />
-          </Popconfirm>
+          {record.role !== ROLES.SUPER_ADMIN && (
+            <Popconfirm
+              title="Xác nhận xóa?"
+              description={
+                record.quan_nhan_id
+                  ? 'Xóa tài khoản và toàn bộ dữ liệu quân nhân liên quan?'
+                  : 'Bạn có chắc muốn xóa tài khoản này?'
+              }
+              onConfirm={() => handleDelete(record)}
+              okText="Xóa"
+              cancelText="Hủy"
+              okButtonProps={{ danger: true }}
+            >
+              <Button size="small" danger icon={<DeleteOutlined />} />
+            </Popconfirm>
+          )}
         </Space>
       ),
     },
@@ -291,7 +287,7 @@ export default function AccountsListPage() {
                 prefix={<SearchOutlined />}
                 value={searchText}
                 onChange={e => setSearchText(e.target.value)}
-                onPressEnter={handleSearch}
+                allowClear
                 style={{ width: 320 }}
               />
               <Select
@@ -302,16 +298,11 @@ export default function AccountsListPage() {
                 style={{ width: 200 }}
                 options={roleSelectOptions([ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER, ROLES.USER])}
               />
-              <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
-                Tìm kiếm
-              </Button>
               <Button
                 icon={<ReloadOutlined />}
                 onClick={() => {
                   setSearchText('');
-                  setDebouncedSearch('');
                   setRoleFilter(undefined);
-                  fetchAccounts(1, pagination.pageSize);
                 }}
               >
                 Làm mới

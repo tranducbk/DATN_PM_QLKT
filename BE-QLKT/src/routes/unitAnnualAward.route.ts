@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import path from 'path';
 import fs from 'fs';
 import unitAnnualAwardController from '../controllers/unitAnnualAward.controller';
-import { verifyToken, requireAdminOrManager, requireAdminOnly } from '../middlewares/auth';
+import { verifyToken, requireManager, requireAdminOnly } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
 import { excelUpload as upload, decisionUploadDir as uploadDir } from '../configs/multer';
@@ -21,7 +21,7 @@ const router = Router();
 router.get(
   '/',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   validate(unitAnnualAwardValidation.listUnitAnnualAwardsQuery, 'query'),
   unitAnnualAwardController.list
 );
@@ -31,7 +31,7 @@ router.get(
  * @desc    Download Excel template for unit annual award import
  * @access  ADMIN, MANAGER
  */
-router.get('/template', verifyToken, requireAdminOrManager, unitAnnualAwardController.getTemplate);
+router.get('/template', verifyToken, requireManager, unitAnnualAwardController.getTemplate);
 
 /**
  * @route   POST /api/unit-annual-awards/import/preview
@@ -67,7 +67,7 @@ router.post(
 router.get(
   '/export',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   validate(unitAnnualAwardValidation.exportUnitAnnualAwardsQuery, 'query'),
   unitAnnualAwardController.exportToExcel
 );
@@ -80,7 +80,7 @@ router.get(
 router.get(
   '/statistics',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   validate(unitAnnualAwardValidation.getUnitAnnualAwardsStatisticsQuery, 'query'),
   unitAnnualAwardController.getStatistics
 );
@@ -93,7 +93,7 @@ router.get(
 router.get(
   '/history',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   unitAnnualAwardController.getUnitAnnualAwards
 );
 
@@ -105,7 +105,7 @@ router.get(
 router.get(
   '/profile/:don_vi_id',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   unitAnnualAwardController.getUnitAnnualProfile
 );
 
@@ -114,7 +114,7 @@ router.get(
  * @desc    Get unit annual award details by ID
  * @access  ADMIN, MANAGER
  */
-router.get('/:id', verifyToken, requireAdminOrManager, unitAnnualAwardController.getById);
+router.get('/:id', verifyToken, requireManager, unitAnnualAwardController.getById);
 
 /**
  * @route   POST /api/unit-annual-awards
@@ -163,7 +163,7 @@ router.put(
 router.delete(
   '/:id',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   auditLog({
     action: AUDIT_ACTIONS.DELETE,
     resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
@@ -181,7 +181,7 @@ router.delete(
 router.post(
   '/propose',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   validate(unitAnnualAwardValidation.proposeUnitAnnualAward),
   auditLog({
     action: AUDIT_ACTIONS.PROPOSE,
@@ -236,7 +236,7 @@ router.post(
 router.post(
   '/recalculate',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   auditLog({
     action: AUDIT_ACTIONS.RECALCULATE,
     resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,

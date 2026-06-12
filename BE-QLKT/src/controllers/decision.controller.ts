@@ -3,7 +3,6 @@ import decisionService from '../services/decision.service';
 import { parsePagination, normalizeParam } from '../helpers/paginationHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
-import { setFileSendHeaders } from '../helpers/file/fileResponseHeaders';
 
 interface GetAllDecisionsQuery {
   nam?: number;
@@ -75,11 +74,7 @@ class DecisionController {
     const { q, limit = 10, loai_khen_thuong } = query;
     if (!q) return ResponseHelper.badRequest(res, 'Vui lòng nhập từ khóa tìm kiếm (q)');
 
-    const decisions = await decisionService.autocomplete(
-      q,
-      Number(limit),
-      loai_khen_thuong
-    );
+    const decisions = await decisionService.autocomplete(q, Number(limit), loai_khen_thuong);
     return ResponseHelper.success(res, {
       data: decisions,
       message: 'Tìm kiếm quyết định thành công',
@@ -222,29 +217,6 @@ class DecisionController {
     }
     const result = await decisionService.getFilePathsBySoQuyetDinhs(soQuyetDinhs);
     return ResponseHelper.success(res, { data: result, message: 'Lấy file paths thành công' });
-  });
-
-  downloadDecisionFile = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as SoQuyetDinhParams;
-    const raw = normalizeParam(params.soQuyetDinh);
-    if (!raw) return ResponseHelper.badRequest(res, 'Thiếu soQuyetDinh');
-
-    const decodedSoQuyetDinh = decodeURIComponent(raw);
-    if (
-      decodedSoQuyetDinh.includes('..') ||
-      decodedSoQuyetDinh.includes('/') ||
-      decodedSoQuyetDinh.includes('\\')
-    ) {
-      return ResponseHelper.badRequest(res, 'Tên file không hợp lệ');
-    }
-
-    const result = await decisionService.getDecisionFileForDownload(decodedSoQuyetDinh);
-    if (!result.success) {
-      return ResponseHelper.notFound(res, result.error ?? 'Không tìm thấy file quyết định');
-    }
-
-    setFileSendHeaders(res, result.filename, 'attachment');
-    return res.sendFile(result.filePath);
   });
 }
 

@@ -79,8 +79,8 @@ export function evaluateServiceYears(
     };
   }
   if (proposalType === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN) {
-    const g = personnel.gioi_tinh;
-    if (!g || (g !== GENDER.MALE && g !== GENDER.FEMALE)) {
+    const gender = personnel.gioi_tinh;
+    if (!gender || (gender !== GENDER.MALE && gender !== GENDER.FEMALE)) {
       return {
         personnelId,
         hoTen: personnel.ho_ten,

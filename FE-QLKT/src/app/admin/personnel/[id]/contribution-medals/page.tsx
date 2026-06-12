@@ -28,6 +28,7 @@ import { LoadingState } from '@/components/shared/LoadingState';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 import { FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
+import { getRankLabel } from '@/constants/danhHieu.constants';
 import type { PersonnelDetail } from '@/lib/types/personnelList';
 
 const { Title, Paragraph } = Typography;
@@ -79,13 +80,7 @@ export default function AdminContributionMedalsPage() {
           const awardPersonnelId = award.quan_nhan_id || award.QuanNhan?.id;
           if (awardPersonnelId === personnelId) {
             const danhHieu = award.danh_hieu || '';
-            const rank = danhHieu.includes('HANG_NHAT')
-              ? 'hạng Nhất'
-              : danhHieu.includes('HANG_NHI')
-                ? 'hạng Nhì'
-                : danhHieu.includes('HANG_BA')
-                  ? 'hạng Ba'
-                  : '';
+            const rank = getRankLabel(danhHieu);
 
             mappedAwards.push({
               id: award.id,

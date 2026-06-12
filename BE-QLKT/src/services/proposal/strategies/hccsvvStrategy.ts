@@ -1,4 +1,3 @@
-import { prisma } from '../../../models';
 import { tenureMedalRepository } from '../../../repositories/tenureMedal.repository';
 import { quanNhanRepository } from '../../../repositories/quanNhan.repository';
 import { tenureProfileRepository } from '../../../repositories/tenureProfile.repository';
@@ -6,7 +5,7 @@ import { PROPOSAL_TYPES } from '../../../constants/proposalTypes.constants';
 import { DANH_HIEU_HCCSVV } from '../../../constants/danhHieu.constants';
 import { ELIGIBILITY_STATUS } from '../../../constants/eligibilityStatus.constants';
 import { validateHCCSVVRankOrder } from '../../../helpers/awardValidation/tenureMedalRankOrder';
-import { formatQuanNhanLabel } from './quanNhanLabel';
+import { formatPersonnelLabel } from './personnelLabel';
 import { calculateServiceMonths, formatServiceDuration } from '../../../helpers/serviceYearsHelper';
 import type { EditedProposalData, ProposalNienHanItem } from '../../../types/proposal';
 import type {
@@ -18,7 +17,7 @@ import type {
   SubmitValidationResult,
 } from './proposalStrategy';
 import {
-  loadNienHanPersonnelMap,
+  loadPersonnelWithUnitsMap,
   buildNienHanPayloadItem,
   type NienHanInputItem,
 } from './nienHanPayloadHelper';
@@ -32,7 +31,7 @@ class HccsvvStrategy implements ProposalStrategy {
   ): Promise<SubmitValidationResult> {
     const items = (titleData ?? []) as NienHanInputItem[];
     const personnelIds = items.map(i => i.personnel_id).filter((id): id is string => Boolean(id));
-    const personnelMap = await loadNienHanPersonnelMap(personnelIds);
+    const personnelMap = await loadPersonnelWithUnitsMap(personnelIds);
 
     const dataNienHan = items.map(item =>
       buildNienHanPayloadItem(
@@ -136,11 +135,11 @@ class HccsvvStrategy implements ProposalStrategy {
           acc.errors.push('Thiếu thông tin quân nhân khi xử lý Huy chương Chiến sĩ vẻ vang.');
           continue;
         }
-        const quanNhan = await quanNhanRepository.findUniqueRaw(
+        const personnel = await quanNhanRepository.findUniqueRaw(
           { where: { id: item.personnel_id } },
           prismaTx
         );
-        if (!quanNhan) {
+        if (!personnel) {
           acc.errors.push(
             'Không tìm thấy thông tin quân nhân khi xử lý Huy chương Chiến sĩ vẻ vang. ' +
               'Quân nhân có thể đã bị xoá khỏi hệ thống — vui lòng tải lại đề xuất.'
@@ -149,7 +148,7 @@ class HccsvvStrategy implements ProposalStrategy {
         }
         if (!item.danh_hieu) {
           acc.errors.push(
-            `${formatQuanNhanLabel(quanNhan)} chưa chọn hạng Huy chương Chiến sĩ vẻ vang.`
+            `${formatPersonnelLabel(personnel)} chưa chọn hạng Huy chương Chiến sĩ vẻ vang.`
           );
           continue;
         }
@@ -160,7 +159,7 @@ class HccsvvStrategy implements ProposalStrategy {
         const namNhan = item.nam_nhan;
         const thangNhan = item.thang_nhan;
         if (!namNhan || !thangNhan || thangNhan < 1 || thangNhan > 12) {
-          acc.errors.push(`${formatQuanNhanLabel(quanNhan)} thiếu tháng/năm nhận huy chương`);
+          acc.errors.push(`${formatPersonnelLabel(personnel)} thiếu tháng/năm nhận huy chương`);
           continue;
         }
         if (
@@ -168,13 +167,13 @@ class HccsvvStrategy implements ProposalStrategy {
           (proposalMonth != null && namNhan === proposalYear && thangNhan < proposalMonth)
         ) {
           acc.errors.push(
-            `${formatQuanNhanLabel(quanNhan)}: tháng/năm nhận (${thangNhan}/${namNhan}) không được trước tháng/năm đề xuất (${proposalMonth ?? '--'}/${proposalYear})`
+            `${formatPersonnelLabel(personnel)}: tháng/năm nhận (${thangNhan}/${namNhan}) không được trước tháng/năm đề xuất (${proposalMonth ?? '--'}/${proposalYear})`
           );
           continue;
         }
         if (item.nam_quyet_dinh && namNhan < item.nam_quyet_dinh) {
           acc.errors.push(
-            `${formatQuanNhanLabel(quanNhan)}: năm nhận (${namNhan}) không được trước năm quyết định (${item.nam_quyet_dinh})`
+            `${formatPersonnelLabel(personnel)}: năm nhận (${namNhan}) không được trước năm quyết định (${item.nam_quyet_dinh})`
           );
           continue;
         }
@@ -182,10 +181,10 @@ class HccsvvStrategy implements ProposalStrategy {
         const orderError = validateHCCSVVRankOrder(
           item.danh_hieu,
           namNhan,
-          existingByPersonnel.get(quanNhan.id) || []
+          existingByPersonnel.get(personnel.id) || []
         );
         if (orderError) {
-          acc.errors.push(`${formatQuanNhanLabel(quanNhan)}: ${orderError}`);
+          acc.errors.push(`${formatPersonnelLabel(personnel)}: ${orderError}`);
           continue;
         }
 
@@ -195,11 +194,11 @@ class HccsvvStrategy implements ProposalStrategy {
           months: number;
           display: string;
         } | null = null;
-        if (quanNhan.ngay_nhap_ngu) {
-          const ngayKetThuc = quanNhan.ngay_xuat_ngu
-            ? new Date(quanNhan.ngay_xuat_ngu)
+        if (personnel.ngay_nhap_ngu) {
+          const ngayKetThuc = personnel.ngay_xuat_ngu
+            ? new Date(personnel.ngay_xuat_ngu)
             : new Date(namNhan, thangNhan, 0);
-          const months = calculateServiceMonths(new Date(quanNhan.ngay_nhap_ngu), ngayKetThuc);
+          const months = calculateServiceMonths(new Date(personnel.ngay_nhap_ngu), ngayKetThuc);
           thoiGian = {
             total_months: months,
             years: Math.floor(months / 12),
@@ -221,10 +220,10 @@ class HccsvvStrategy implements ProposalStrategy {
         await tenureMedalRepository.upsertRaw(
           {
             where: {
-              quan_nhan_id_danh_hieu: { quan_nhan_id: quanNhan.id, danh_hieu: item.danh_hieu },
+              quan_nhan_id_danh_hieu: { quan_nhan_id: personnel.id, danh_hieu: item.danh_hieu },
             },
             update: awardData,
-            create: { quan_nhan_id: quanNhan.id, danh_hieu: item.danh_hieu, ...awardData },
+            create: { quan_nhan_id: personnel.id, danh_hieu: item.danh_hieu, ...awardData },
           },
           prismaTx
         );
@@ -250,14 +249,14 @@ class HccsvvStrategy implements ProposalStrategy {
           [fields.ngay]: ngayNhan,
         };
         await tenureProfileRepository.upsert(
-          quanNhan.id,
-          { quan_nhan_id: quanNhan.id, ...profileUpdate },
+          personnel.id,
+          { quan_nhan_id: personnel.id, ...profileUpdate },
           profileUpdate,
           prismaTx
         );
 
         acc.importedNienHan++;
-        acc.affectedPersonnelIds.add(quanNhan.id);
+        acc.affectedPersonnelIds.add(personnel.id);
       } catch (error) {
         console.error('[approveProposal] HCCSVV error:', {
           personnel_id: item.personnel_id,

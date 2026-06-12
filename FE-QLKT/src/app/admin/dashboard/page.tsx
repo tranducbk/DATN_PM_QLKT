@@ -255,7 +255,7 @@ export default function AdminDashboard() {
             <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
               <Col xs={24} lg={8}>
                 <PieChart
-                  data={chartData.scientificAchievementsByType.map((item: any) => ({
+                  data={chartData.scientificAchievementsByType.map((item: { type: string; count: number }) => ({
                     label: THANH_TICH_KHOA_HOC_SHORT_LABELS[item.type] || item.type,
                     value: item.count,
                   }))}
@@ -274,7 +274,7 @@ export default function AdminDashboard() {
               </Col>
               <Col xs={24} lg={8}>
                 <ActionBarChart
-                  data={chartData.proposalsByStatus.map((item: any) => ({
+                  data={chartData.proposalsByStatus.map((item: { status: string; count: number }) => ({
                     action: item.status,
                     count: item.count,
                   }))}
@@ -288,7 +288,7 @@ export default function AdminDashboard() {
             <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
               <Col xs={24} lg={12}>
                 <ActivityLineChart
-                  data={chartData.scientificAchievementsByMonth.map((item: any) => ({
+                  data={chartData.scientificAchievementsByMonth.map((item: { month: string; count: number }) => ({
                     date: item.month,
                     count: item.count,
                   }))}
@@ -299,7 +299,7 @@ export default function AdminDashboard() {
               </Col>
               <Col xs={24} lg={12}>
                 <ActionBarChart
-                  data={chartData.proposalsByType.map((item: any) => ({
+                  data={chartData.proposalsByType.map((item: { type: string; count: number }) => ({
                     action: item.type,
                     count: item.count,
                   }))}

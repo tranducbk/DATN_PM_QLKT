@@ -1,9 +1,10 @@
 'use client';
 
-import { Collapse, Table, Button, Tag, Typography, Empty, Space } from 'antd';
+import { Collapse, Table, Button, Tag, Typography, Space } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { ApartmentOutlined, TeamOutlined, EyeOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
+import { EmptyState } from '@/components/shared/EmptyState';
 
 const { Text } = Typography;
 
@@ -37,7 +38,10 @@ interface UnitListProps {
   basePath?: string;
 }
 
-function personnelColumns(router: ReturnType<typeof useRouter>): ColumnsType<PersonnelItem> {
+function personnelColumns(
+  router: ReturnType<typeof useRouter>,
+  roleBase: string
+): ColumnsType<PersonnelItem> {
   return [
     {
       title: 'STT',
@@ -77,7 +81,7 @@ function personnelColumns(router: ReturnType<typeof useRouter>): ColumnsType<Per
         <Button
           size="small"
           icon={<EyeOutlined />}
-          onClick={() => router.push(`/admin/personnel/${r.id}`)}
+          onClick={() => router.push(`${roleBase}/personnel/${r.id}`)}
         >
           Chi tiết
         </Button>
@@ -86,21 +90,23 @@ function personnelColumns(router: ReturnType<typeof useRouter>): ColumnsType<Per
   ];
 }
 
-function PersonnelTable({ personnel }: { personnel: PersonnelItem[] }) {
+function PersonnelTable({
+  personnel,
+  roleBase,
+}: {
+  personnel: PersonnelItem[];
+  roleBase: string;
+}) {
   const router = useRouter();
 
   if (personnel.length === 0) {
-    return (
-      <div style={{ padding: '16px 0' }}>
-        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Chưa có quân nhân" />
-      </div>
-    );
+    return <EmptyState compact description="Chưa có quân nhân nào" />;
   }
 
   return (
     <Table
       size="small"
-      columns={personnelColumns(router)}
+      columns={personnelColumns(router, roleBase)}
       dataSource={personnel}
       rowKey="id"
       pagination={false}
@@ -113,10 +119,12 @@ function SubUnitPanel({
   dvtt,
   personnel,
   basePath,
+  roleBase,
 }: {
   dvtt: DonViTrucThuocRow;
   personnel: PersonnelItem[];
   basePath: string;
+  roleBase: string;
 }) {
   const router = useRouter();
   const count = personnel.length;
@@ -157,7 +165,7 @@ function SubUnitPanel({
               Chi tiết
             </Button>
           ),
-          children: <PersonnelTable personnel={personnel} />,
+          children: <PersonnelTable personnel={personnel} roleBase={roleBase} />,
         },
       ]}
     />
@@ -166,9 +174,10 @@ function SubUnitPanel({
 
 export function UnitList({ units, allPersonnel, basePath = '/admin/categories' }: UnitListProps) {
   const router = useRouter();
+  const roleBase = `/${basePath.split('/').filter(Boolean)[0] || 'admin'}`;
 
   if (units.length === 0) {
-    return <Empty description="Chưa có đơn vị nào" />;
+    return <EmptyState description="Chưa có đơn vị nào" />;
   }
 
   const personnelByCqdv = (cqdvId: string) =>
@@ -224,7 +233,7 @@ export function UnitList({ units, allPersonnel, basePath = '/admin/categories' }
                   Quân nhân trực thuộc cơ quan
                 </Text>
               )}
-              <PersonnelTable personnel={directPersonnel} />
+              <PersonnelTable personnel={directPersonnel} roleBase={roleBase} />
             </div>
           )}
 
@@ -234,11 +243,12 @@ export function UnitList({ units, allPersonnel, basePath = '/admin/categories' }
               dvtt={dvtt}
               personnel={personnelByDvtt(dvtt.id)}
               basePath={basePath}
+              roleBase={roleBase}
             />
           ))}
 
           {directPersonnel.length === 0 && subUnits.length === 0 && (
-            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Chưa có quân nhân" />
+            <EmptyState compact description="Chưa có quân nhân nào" />
           )}
         </div>
       ),

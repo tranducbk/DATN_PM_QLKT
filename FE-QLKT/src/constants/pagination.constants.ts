@@ -26,3 +26,6 @@ export const MODAL_TABLE_PAGINATION: TablePaginationConfig = {
 export const MODAL_TABLE_PREVIEW_PAGE_SIZE = 5;
 
 export const FETCH_ALL_LIMIT = 1000;
+
+/** Max proposals fetched per list view (client-side filters/paginates the result). */
+export const PROPOSAL_LIST_LIMIT = 100;

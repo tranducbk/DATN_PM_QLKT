@@ -109,22 +109,6 @@ export async function getDecisionFilePath(soQuyetDinh: string): Promise<ApiRespo
 }
 
 /**
- * Downloads decision file by decision number.
- * Backend resolves the file path and returns binary content.
- * @param soQuyetDinh - Decision number
- * @returns File blob from API response
- */
-export async function downloadDecisionFile(soQuyetDinh: string): Promise<Blob> {
-  const res = await axiosInstance.get(
-    `/api/decisions/download/${encodeURIComponent(soQuyetDinh)}`,
-    {
-      responseType: 'blob',
-    }
-  );
-  return res.data;
-}
-
-/**
  * Gets decision file paths for multiple decision numbers.
  * @param soQuyetDinhs - Decision number list
  * @returns API response keyed by decision number

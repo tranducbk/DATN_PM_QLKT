@@ -17,7 +17,7 @@ import type {
 import { importSingleMedal } from './singleMedalImporter';
 import { militaryFlagRepository } from '../../../repositories/militaryFlag.repository';
 import {
-  loadNienHanPersonnelMap,
+  loadPersonnelWithUnitsMap,
   buildNienHanPayloadItem,
   type NienHanInputItem,
 } from './nienHanPayloadHelper';
@@ -31,7 +31,7 @@ class HcqkqtStrategy implements ProposalStrategy {
   ): Promise<SubmitValidationResult> {
     const items = (titleData ?? []) as NienHanInputItem[];
     const personnelIds = items.map(i => i.personnel_id).filter((id): id is string => Boolean(id));
-    const personnelMap = await loadNienHanPersonnelMap(personnelIds);
+    const personnelMap = await loadPersonnelWithUnitsMap(personnelIds);
 
     const dataNienHan = items.map(item =>
       buildNienHanPayloadItem(
@@ -89,10 +89,10 @@ class HcqkqtStrategy implements ProposalStrategy {
       medalLabel: 'Huân chương Quân kỳ quyết thắng',
       logTag: 'HC_QKQT',
       decisionKey: DANH_HIEU_DAC_BIET.HC_QKQT,
-      upsert: async (tx, quanNhanId, writeData) => {
+      upsert: async (tx, personnelId, writeData) => {
         const data = writeData as unknown as Prisma.HuanChuongQuanKyQuyetThangUncheckedUpdateInput;
         const existing = await militaryFlagRepository.findUniqueRaw(
-          { where: { quan_nhan_id: quanNhanId } },
+          { where: { quan_nhan_id: personnelId } },
           tx
         );
         if (existing) {
@@ -101,7 +101,7 @@ class HcqkqtStrategy implements ProposalStrategy {
           await militaryFlagRepository.create(
             {
               ...data,
-              quan_nhan_id: quanNhanId,
+              quan_nhan_id: personnelId,
             } as Prisma.HuanChuongQuanKyQuyetThangUncheckedCreateInput,
             tx
           );

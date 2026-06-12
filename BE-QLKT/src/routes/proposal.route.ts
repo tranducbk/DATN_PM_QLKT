@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import proposalController from '../controllers/proposal.controller';
-import { verifyToken, checkRole, requireAdminOrManager, requireAdminOnly } from '../middlewares/auth';
+import { verifyToken, checkRole, requireManager, requireAdminOnly } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
 import { ROLES } from '../constants/roles.constants';
@@ -19,7 +19,7 @@ const router = Router();
 router.post(
   '/',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   writeLimiter,
   upload.fields([
     { name: 'attached_files' }, // No file count limit
@@ -41,7 +41,7 @@ router.post(
 router.get(
   '/check-duplicate',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   proposalController.checkDuplicateAward
 );
 
@@ -53,7 +53,7 @@ router.get(
 router.get(
   '/check-duplicate-unit',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   proposalController.checkDuplicateUnitAward
 );
 
@@ -65,7 +65,7 @@ router.get(
 router.post(
   '/check-duplicate-batch',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   proposalController.checkDuplicateBatch
 );
 
@@ -77,7 +77,7 @@ router.post(
 router.post(
   '/check-duplicate-unit-batch',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   proposalController.checkDuplicateUnitBatch
 );
 
@@ -89,7 +89,7 @@ router.post(
 router.get(
   '/',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   proposalController.getProposals
 );
 
@@ -101,7 +101,7 @@ router.get(
 router.get(
   '/:id',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   proposalController.getProposalById
 );
 
@@ -171,7 +171,7 @@ router.get(
 router.delete(
   '/:id',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   auditLog({
     action: AUDIT_ACTIONS.DELETE,
     resource: RESOURCE_SLUGS.PROPOSALS,

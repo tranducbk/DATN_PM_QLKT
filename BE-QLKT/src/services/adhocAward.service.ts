@@ -1,6 +1,5 @@
 import path from 'path';
 import fs from 'fs/promises';
-import { prisma } from '../models';
 import { quanNhanRepository } from '../repositories/quanNhan.repository';
 import { coQuanDonViRepository, donViTrucThuocRepository } from '../repositories/unit.repository';
 import { adhocAwardRepository } from '../repositories/adhocAward.repository';

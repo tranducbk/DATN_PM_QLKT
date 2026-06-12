@@ -1,5 +1,4 @@
 import type { Prisma } from '../../generated/prisma';
-import { prisma } from '../../models';
 import { danhHieuDonViHangNamRepository } from '../../repositories/danhHieu.repository';
 import { quanNhanRepository } from '../../repositories/quanNhan.repository';
 import { coQuanDonViRepository, donViTrucThuocRepository } from '../../repositories/unit.repository';

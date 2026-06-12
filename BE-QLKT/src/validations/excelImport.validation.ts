@@ -1,12 +1,13 @@
 import { z } from 'zod';
+import { YEAR_MIN, YEAR_MAX } from '../constants/validation.constants';
 
 const personnelImportItemBase = {
   personnel_id: z.string().trim().min(1, 'ID quân nhân là bắt buộc'),
   nam: z
     .number({ message: 'Năm là bắt buộc' })
     .int('Năm phải là số nguyên')
-    .min(1900, 'Năm phải từ 1900 đến 2100')
-    .max(2100, 'Năm phải từ 1900 đến 2100'),
+    .min(YEAR_MIN, 'Năm phải từ 1900 đến 2100')
+    .max(YEAR_MAX, 'Năm phải từ 1900 đến 2100'),
   cap_bac: z.string().trim().nullable().optional(),
   chuc_vu: z.string().trim().nullable().optional(),
   so_quyet_dinh: z.string().trim().nullable().optional(),
@@ -66,8 +67,8 @@ export const confirmImportUnitAnnualAward = wrapItemsSchema(
     nam: z
       .number({ message: 'Năm là bắt buộc' })
       .int('Năm phải là số nguyên')
-      .min(1900, 'Năm phải từ 1900 đến 2100')
-      .max(2100, 'Năm phải từ 1900 đến 2100'),
+      .min(YEAR_MIN, 'Năm phải từ 1900 đến 2100')
+      .max(YEAR_MAX, 'Năm phải từ 1900 đến 2100'),
     danh_hieu: z.string().trim().min(1, 'Danh hiệu là bắt buộc'),
     so_quyet_dinh: z.string().trim().nullable().optional(),
     ghi_chu: z.string().trim().nullable().optional(),

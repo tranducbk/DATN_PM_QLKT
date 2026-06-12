@@ -659,7 +659,7 @@ export default function SuperAdminAddAwardsPage() {
       </Card>
 
       {/* Step Content */}
-      <Card style={{ marginBottom: 24, minHeight: 400 }}>{renderStepContent()}</Card>
+      <Card style={{ marginBottom: 24 }}>{renderStepContent()}</Card>
 
       {/* Navigation */}
       <Card>

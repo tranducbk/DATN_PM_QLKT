@@ -7,6 +7,7 @@
 ## Mục lục
 
 - [0. Chiến thuật trả lời hội đồng](#0-chiến-thuật-trả-lời-hội-đồng)
+- [📖 Giải thích thuật ngữ — đọc trước khi học](#giải-thích-thuật-ngữ-đọc-trước-khi-học)
 - [A. Công nghệ và lý do chọn](#a-công-nghệ-và-lý-do-chọn)
 - [B. Kiến trúc và design pattern](#b-kiến-trúc-và-design-pattern)
 - [C. Bảo mật ứng dụng web](#c-bảo-mật-ứng-dụng-web)
@@ -25,6 +26,7 @@
 - [P. Phạm vi đề tài — đã làm và hướng phát triển](#p-phạm-vi-đề-tài--đã-làm-và-hướng-phát-triển)
 - [Q. Mô phỏng phản biện hội đồng (3 vai chuyên gia)](#q-mô-phỏng-phản-biện-hội-đồng-3-vai-chuyên-gia)
 - [R. Câu hỏi vặn về sơ đồ và thiết kế cơ sở dữ liệu](#r-câu-hỏi-vặn-về-sơ-đồ-và-thiết-kế-cơ-sở-dữ-liệu)
+- [S. Câu hỏi quan trọng bổ sung — giải thích dễ hiểu](#s-câu-hỏi-quan-trọng-bổ-sung-giải-thích-dễ-hiểu)
 
 ---
 
@@ -41,6 +43,69 @@
 - Khi bí, kéo hội đồng về phần em làm tốt: "Để em lấy ví dụ cụ thể từ module X trong project…"
 - Đừng cãi quá 1 vòng. Hội đồng đúng → ghi nhận luôn: "Đúng ạ, em sẽ ghi vào hướng phát triển."
 - Câu hỏi mở rộng không có trong đồ án → trả lời "trên lý thuyết" rồi chốt "em có thể bổ sung sau khi có thời gian thử nghiệm."
+
+---
+
+## Giải thích thuật ngữ (đọc trước khi học)
+
+> Mục này giải thích các từ chuyên ngành xuất hiện trong toàn bộ tài liệu, bằng lời thường + ví dụ đời thực. Đọc qua một lượt; gặp từ lạ ở mục khác thì quay lại đây tra. Mục tiêu: đọc tài liệu không bị "rối chữ".
+
+### Nhóm 1 — Đăng nhập & xác thực
+
+- **JWT (JSON Web Token)** — tấm "thẻ ra vào" dạng chuỗi ký tự, server cấp sau khi đăng nhập. Trong thẻ ghi sẵn "bạn là ai, vai trò gì" và có **chữ ký** của server. Mỗi request sau đó đính kèm thẻ này để server biết bạn là ai mà không phải hỏi lại mật khẩu.
+- **Chữ ký số (HMAC / HS256)** — cách "đóng dấu" lên thẻ bằng một chuỗi bí mật chỉ server biết (`JWT_SECRET`). Ai sửa nội dung thẻ thì dấu sẽ sai → server phát hiện ngay. Giống con dấu đỏ: photo ra thì dấu không còn "thật".
+- **Access token** — thẻ ra vào **ngắn hạn** (vài phút–vài chục phút), dùng cho mọi request. Hết hạn nhanh để nếu bị lộ cũng ít thiệt hại.
+- **Refresh token** — "vé gia hạn" **dài hạn**. Khi access token hết hạn, đưa vé này ra để xin thẻ mới mà không phải đăng nhập lại.
+- **Token rotation (xoay vòng)** — mỗi lần dùng vé gia hạn, server cấp vé mới và **hủy vé cũ**. Nếu kẻ gian dùng lại vé cũ → bị phát hiện.
+- **Hash / salt / bcrypt** — mật khẩu KHÔNG lưu nguyên văn. *hash* = "băm" mật khẩu thành chuỗi không đảo ngược được. *salt* = thêm một chuỗi ngẫu nhiên riêng cho mỗi người trước khi băm, để 2 người trùng mật khẩu vẫn ra kết quả khác nhau. *bcrypt* = thuật toán băm cố tình chạy chậm để chống dò.
+- **Stateless (không trạng thái)** — server không "nhớ" ai đang đăng nhập; mọi thông tin nằm trong thẻ JWT người dùng cầm. Ngược với *session* (server lưu danh sách người đang đăng nhập).
+
+### Nhóm 2 — Các kiểu tấn công web
+
+- **IDOR** — đổi số ID trên URL để xem dữ liệu người khác. VD đang ở `/api/personnel/123` (của mình) sửa thành `/124`. Chống bằng kiểm tra "dữ liệu này có thuộc về bạn không".
+- **XSS** — chèn đoạn mã JavaScript độc vào trang (vd nhập `<script>…` vào ô tên) để chạy trên trình duyệt nạn nhân. React tự "khử" nên mặc định an toàn.
+- **CSRF** — lừa trình duyệt bạn tự gửi request bạn không hề muốn (vì trình duyệt tự đính kèm cookie). Dùng token trong header thay vì cookie thì miễn nhiễm.
+- **SQL Injection** — chèn câu lệnh SQL vào ô nhập để thao túng database. Prisma tự "tham số hóa" nên chống sẵn.
+- **Path traversal** — dùng `../` trong tên file để "leo" ra ngoài thư mục cho phép, đọc file hệ thống.
+- **Privilege escalation (leo thang đặc quyền)** — người cấp thấp tìm cách tự nâng mình thành cấp cao (vd USER tự đổi thành ADMIN).
+- **Mass assignment** — gửi kèm field thừa trong request để ghi đè trường lẽ ra không được sửa (vd gửi thêm `role: ADMIN`). Chống bằng chỉ nhận đúng field cho phép.
+- **Brute force** — thử mật khẩu hàng loạt tới khi trúng. Chống bằng giới hạn số lần (rate limit).
+- **DoS / DDoS** — dội lượng request khổng lồ để làm sập hệ thống.
+
+### Nhóm 3 — Kiến trúc & mẫu thiết kế
+
+- **Kiến trúc phân tầng (layered)** — chia code thành các tầng rõ ràng, mỗi tầng một việc: **Route** (định nghĩa đường dẫn) → **Middleware** (trạm kiểm soát) → **Controller** (lễ tân nhận request, trả kết quả) → **Service** (bộ não xử lý nghiệp vụ) → **Repository** (thủ kho nói chuyện với DB). Như dây chuyền: mỗi khâu một nhiệm vụ, dễ sửa, dễ test.
+- **Middleware** — các "trạm kiểm soát" request phải đi qua trước khi tới đích: trạm kiểm thẻ (`verifyToken`), trạm kiểm vai trò (`requireAdmin`), trạm kiểm dữ liệu (`validate`).
+- **ORM / Prisma** — công cụ thao tác database bằng code thay vì viết SQL tay. VD `prisma.quanNhan.findMany()` thay cho `SELECT * FROM quan_nhan`.
+- **Strategy pattern (mẫu chiến lược)** — khi có nhiều "loại" xử lý gần giống nhau (7 loại đề xuất khen thưởng), thay vì `if/else` dài, định nghĩa 1 "khuôn" chung rồi mỗi loại viết 1 file riêng theo khuôn. Thêm loại mới = thêm 1 file, không sửa chỗ cũ.
+- **Repository pattern** — gói mọi câu lệnh DB vào 1 lớp riêng; phần còn lại không gọi thẳng DB. Đổi query chỉ sửa 1 chỗ.
+- **Validation / Zod** — kiểm tra dữ liệu gửi lên có đúng định dạng không (năm phải là số, tên không rỗng…) trước khi xử lý. Zod là thư viện làm việc này.
+- **Defense-in-depth (phòng thủ nhiều lớp)** — không tin một lớp bảo vệ duy nhất. VD vừa khóa nút ở giao diện, vừa kiểm lại ở server — vì kẻ tấn công có thể bỏ qua giao diện gọi thẳng API.
+
+### Nhóm 4 — Cơ sở dữ liệu & xử lý đồng thời
+
+- **Transaction (giao dịch)** — gộp nhiều thao tác DB thành 1 khối "được ăn cả, ngã về không": hoặc tất cả thành công, hoặc tất cả hủy. Như chuyển khoản: trừ tiền A và cộng tiền B phải cùng thành công.
+- **ACID** — 4 tính chất đảm bảo transaction đáng tin: Atomic (trọn vẹn), Consistent (nhất quán), Isolated (cô lập), Durable (bền vững).
+- **Race condition (tranh chấp)** — 2 thao tác chạy gần như cùng lúc, đan xen nhau gây kết quả sai. VD 2 người cùng bấm duyệt 1 đề xuất một lúc.
+- **Khóa lạc quan / bi quan (optimistic / pessimistic lock)** — *lạc quan*: cứ làm, lúc ghi mới kiểm "có ai sửa trước mình không?", có thì hủy. *bi quan*: khóa bản ghi trước, người khác phải chờ.
+- **N+1 query** — lỗi hiệu năng: thay vì lấy gộp 1 lần, lại query trong vòng lặp (1 query lấy danh sách + N query lấy chi tiết từng cái). Sửa bằng lấy gộp.
+- **Index (chỉ mục)** — "mục lục" của bảng DB giúp tìm nhanh, như mục lục cuối sách giúp tra trang mà không lật từng trang.
+- **Chuẩn hóa / 3NF (normalization)** — sắp xếp bảng để không lưu trùng dữ liệu (tên đơn vị lưu 1 chỗ, chỗ khác chỉ trỏ tới).
+- **JSONB** — kiểu dữ liệu của PostgreSQL cho phép lưu cả khối JSON vào 1 cột mà vẫn truy vấn được bên trong.
+- **CUID / UUID** — các kiểu "mã định danh" duy nhất cho mỗi bản ghi (thay cho số thứ tự 1, 2, 3), khó đoán hơn số tuần tự.
+- **Phân trang / cursor (pagination)** — chia kết quả thành từng trang. *cursor* = "lấy tiếp từ sau bản ghi X" (nhanh hơn nhảy trang khi dữ liệu lớn).
+- **Eager loading** — lấy luôn dữ liệu liên quan trong 1 lần (quân nhân kèm đơn vị, chức vụ) thay vì lấy lẻ từng cái.
+- **Connection pool** — "hồ" các kết nối DB dùng lại, tránh mở/đóng kết nối liên tục (tốn kém).
+
+### Nhóm 5 — Riêng của hệ thống khen thưởng
+
+- **Eligibility (đủ điều kiện)** — quân nhân/đơn vị có thỏa điều kiện nhận một danh hiệu hay không.
+- **Recalc (tính lại hồ sơ)** — chạy lại phép tính để cập nhật trạng thái đủ điều kiện sau khi dữ liệu đổi.
+- **Chu kỳ vs trọn đời (cycle vs lifetime)** — *chu kỳ*: danh hiệu lặp lại sau mỗi N năm (BKBQP mỗi 2 năm…). *trọn đời*: nhận 1 lần duy nhất cả đời (BKTTCP cá nhân).
+- **Cửa sổ trượt (sliding window)** — chỉ đếm trong N năm gần nhất; năm cũ "rơi ra" khi thời gian trôi.
+- **Audit log (nhật ký thao tác)** — ghi lại ai làm gì, lúc nào (tạo/sửa/xóa) để truy vết.
+- **Realtime / Socket.IO** — đẩy thông báo tới người dùng ngay lập tức, không cần F5 (vd có đề xuất mới).
+- **Debounce** — chờ người dùng ngừng gõ một nhịp (vd 0.4 giây) rồi mới chạy tìm kiếm, tránh chạy lại liên tục theo từng phím.
 
 ---
 
@@ -998,6 +1063,59 @@ Socket.IO mặc định thử upgrade lên WebSocket sau khi handshake bằng HT
 ---
 
 ## B. Kiến trúc và design pattern
+
+### B.0 — Bản đồ code: thư mục nào ở đâu, làm gì, chứa gì
+
+> Phần này để khi hội đồng hỏi "code của em tổ chức thế nào?", "chỗ này nằm ở file nào?" thì trả lời được ngay. Số trong ngoặc là số file thực tế.
+
+**Backend — `BE-QLKT/src/` (253 file TypeScript), xếp theo dây chuyền xử lý 1 request:**
+
+| Thư mục | Vai trò (lời thường) | Chứa gì / ví dụ |
+|---|---|---|
+| `routes/` (24) | **Bảng chỉ đường** — khai báo URL nào gọi hàm nào, gắn sẵn chuỗi "trạm kiểm soát" | `account.route.ts`, `proposal.route.ts` |
+| `middlewares/` (5) | **Các trạm kiểm soát** request phải qua | `auth.ts` (kiểm thẻ JWT + vai trò), `validate.ts` (kiểm dữ liệu Zod), `unitFilter.ts` (lọc theo cây đơn vị), `auditLog.ts` (ghi nhật ký), `errorHandler.ts` (bắt lỗi tập trung) |
+| `controllers/` (23) | **Lễ tân** — nhận request, gọi service, trả kết quả; mỏng, không chứa logic | `account.controller.ts` |
+| `services/` (84) | **Bộ não** — toàn bộ nghiệp vụ. Mảng phức tạp tách sub-folder riêng | `account.service.ts`; sub-folder: `proposal/` (duyệt đề xuất), `eligibility/` (tính đủ điều kiện danh hiệu), `profile/` (hồ sơ), `annualReward/`, `unitAnnualAward/`, `decision/`, `excel/`… |
+| `repositories/` (21) | **Thủ kho** — nơi **duy nhất** gọi thẳng database (Prisma) | `quanNhan.repository.ts`, `account.repository.ts` |
+| `helpers/` (42) | **Hàm phụ thuần** (không đụng DB), dùng lại nhiều nơi | file lẻ (`catchAsync`, `responseHelper`, `paginationHelper`) + sub-folder `auditLog/`, `notification/`, `excel/`, `award/`, `file/` |
+| `validations/` (13) | **Mẫu kiểm dữ liệu** đầu vào (Zod) | `account.validation.ts` |
+| `constants/` (18) | **Hằng số** dùng chung | `roles.constants.ts` (vai trò + `ROLE_RANK`), trạng thái, danh hiệu |
+| `models/` (1) | Khởi tạo **1 kết nối Prisma** dùng chung | `index.ts` |
+| `generated/` (7) | Code Prisma **tự sinh** — không sửa tay | (Prisma client) |
+| `configs/` (4) | Cấu hình | CORS, multer (upload file), rate limiter |
+| `utils/` (1) | Tiện ích hệ thống | `socketService.ts` (thông báo realtime Socket.IO) |
+| `scripts/` (4) | Script chạy tay | tạo SUPER_ADMIN đầu tiên, đổi tên cột DB an toàn |
+| `types/` (4) | Kiểu TypeScript dùng chung | `api.ts` (định dạng response) |
+
+Ngoài `src/`: `prisma/schema.prisma` = nơi định nghĩa **23 bảng** database.
+
+**Frontend — `FE-QLKT/src/` (238 file):**
+
+| Thư mục | Vai trò | Chứa gì |
+|---|---|---|
+| `app/` (106) | **Các trang** (Next.js App Router), chia theo vai trò | `admin/`, `manager/`, `user/`, `super-admin/`, `(auth)/` (đăng nhập, đổi mật khẩu), `dev_zone/`; mỗi trang là 1 file `page.tsx` |
+| `components/` (72) | **Khối giao diện dùng lại**, chia theo nghiệp vụ | `accounts/`, `personnel/`, `proposals/`, `categories/`, `decisions/`, `shared/` (dùng chung: `LoadingState`, `EmptyState`)… |
+| `lib/` (38) | **Tiện ích & gọi API** | `api/` (gọi API theo domain), `http/` (`apiClient`, axios), `utils.ts` (`formatDate`…), `schemas.ts` (Zod cho form), `award/`, `proposal/`, `types/` |
+| `hooks/` (6) | **Hook React** | `useFetch`, `useAuthGuard`, `useSocket`, `useMobile`, `useDebounce` |
+| `contexts/` (2) | **Trạng thái toàn cục** | `AuthContext` (ai đang đăng nhập) |
+| `constants/` (13) | Hằng số FE | `roles.constants.ts`, `danhHieu.constants.ts` |
+| `configs/` (1) | Cấu hình môi trường | URL API… |
+
+**Một request đi qua đâu — ví dụ "Duyệt đề xuất":**
+
+`PATCH /api/proposals/:id/approve` → **route** (`proposal.route.ts`) → **middleware** `verifyToken` (kiểm thẻ) → `requireAdmin` (kiểm vai trò) → `validate` (kiểm dữ liệu) → `auditLog` (ghi nhật ký) → **controller** (lấy dữ liệu từ request) → **service** `proposal/approve.ts` (logic: kiểm trùng, kiểm đủ điều kiện, gói trong 1 transaction) → **repository** (ghi DB qua Prisma) → **database**. Kết quả đi ngược ra ngoài qua `ResponseHelper` cho đúng định dạng `{ success, data, message }`.
+
+**Tra nhanh — muốn sửa X thì mở file nào:**
+
+| Muốn làm | Mở |
+|---|---|
+| Sửa luật đủ điều kiện danh hiệu (chuỗi BKBQP/CSTĐTQ/BKTTCP) | `BE/src/services/eligibility/` + `services/profile/annual.ts` |
+| Thêm 1 loại đề xuất khen thưởng mới | `BE/src/services/proposal/strategies/` (thêm 1 file) + `strategies/index.ts` |
+| Đổi quyền (ai gọi được) của 1 API | `BE/src/routes/*.route.ts` (sửa chuỗi middleware) |
+| Đổi quy tắc kiểm dữ liệu đầu vào | `BE/src/validations/*.validation.ts` |
+| Sửa giao diện 1 trang | `FE/src/app/<vai trò>/<tính năng>/page.tsx` |
+| Thêm/sửa 1 lời gọi API ở frontend | `FE/src/lib/api/<domain>.ts` |
+| Đổi cấu trúc bảng database | `BE/prisma/schema.prisma` |
 
 ### B.1 — Mô tả kiến trúc tổng thể trong 1 phút
 
@@ -4780,3 +4898,59 @@ Tuy nhiên em **không tự tin về tuning chi tiết** — chưa cấu hình a
 ### R.13 — Gần đây mới thêm khoá ngoại `nguoi_tao_id`, `nguoi_duyet_id` cho danh hiệu đơn vị — trước đó toàn vẹn dữ liệu thế nào?
 
 **Ngắn:** Ban đầu hai cột này lưu dạng chuỗi không ràng buộc. Em đã bổ sung `@relation` để chúng thành khoá ngoại thật, đồng bộ với cách bảng đề xuất đã làm, nhằm chặn việc tạo bản ghi trỏ tới tài khoản không tồn tại. Sau thay đổi này lược đồ có 47 khoá ngoại.
+
+---
+
+## S. Câu hỏi quan trọng bổ sung (giải thích dễ hiểu)
+
+> Mục này (1) bổ sung phần **phân quyền quản lý tài khoản** chưa có ở các mục trên, và (2) tổng hợp những câu **gần như chắc chắn bị hỏi**, trả lời bằng lời thường. Thuật ngữ lạ xem mục "Giải thích thuật ngữ" ở đầu tài liệu.
+
+### S.1 — Ai được xóa tài khoản? ADMIN xóa được ADMIN khác không?
+
+**Ngắn:** Mỗi người chỉ xóa được tài khoản có **cấp thấp hơn mình**. Bậc quyền từ cao xuống thấp: SUPER_ADMIN (Quản trị viên) > ADMIN (Phòng Chính trị) > MANAGER (Chỉ huy đơn vị) > USER (Người dùng).
+
+**Cụ thể:**
+- SUPER_ADMIN xóa được ADMIN, Chỉ huy đơn vị, Người dùng — **không** xóa được SUPER_ADMIN nào (kể cả chính mình).
+- ADMIN xóa được Chỉ huy đơn vị và Người dùng — **không** xóa được ADMIN khác hay SUPER_ADMIN.
+- Tóm lại: **không xóa ngang quyền, không xóa cấp trên** → tự động bảo vệ cả tài khoản quản trị cao nhất.
+
+**Vì sao thiết kế vậy:** tránh hai người cùng cấp "xử" lẫn nhau, và tránh xóa mất tài khoản quản trị cao nhất khiến không ai quản được hệ thống.
+
+**Làm thế nào (1 câu kỹ thuật):** mỗi vai trò có một "bậc" số (`ROLE_RANK`); một hàm dùng chung `canManageRole(người_thực_hiện, tài_khoản_bị_xóa)` chỉ cho phép khi bậc người thực hiện **lớn hơn** bậc tài khoản kia. Vi phạm thì báo: *"Bạn chỉ có thể xóa tài khoản có cấp thấp hơn mình."* (`constants/roles.constants.ts`, `services/account.service.ts`).
+
+### S.2 — SUPER_ADMIN tự đổi vai trò mình thành Admin được không?
+
+**Ngắn:** Không. Hệ thống **chặn việc tự thay đổi vai trò của chính mình**.
+
+**Vì sao quan trọng:** nếu SUPER_ADMIN lỡ tay hạ vai trò mình xuống Admin, họ **mất ngay** quyền quản trị cao nhất và có thể tự khóa mình khỏi các chức năng — không ai cứu được.
+
+**Chặn ở 2 tầng (defense-in-depth — phòng thủ nhiều lớp):**
+1. **Giao diện (FE):** khi sửa chính tài khoản mình, ô "Vai trò" bị khóa, kèm dòng nhắc "Không thể thay đổi vai trò của chính mình".
+2. **Máy chủ (BE):** dù có người bỏ qua giao diện và gọi thẳng API, server vẫn kiểm "tài khoản đang sửa == chính mình" và vai trò mới khác vai trò cũ → từ chối: *"Bạn không thể thay đổi vai trò của chính mình."*
+
+**Tại sao phải chặn cả 2 tầng:** khóa nút ở giao diện chỉ là cho tiện mắt; kẻ tấn công có thể gọi thẳng API bỏ qua giao diện, nên **server mới là chốt chặn thật**. (Có test tự động `tests/authz/account-update-self-role.test.ts` kiểm điều này.)
+
+**Phản biện có thể gặp:** "SUPER_ADMIN có sửa được vai trò của một SUPER_ADMIN *khác* không?" → "Hiện tại có (em chỉ chặn tự sửa mình). Nếu hội đồng yêu cầu chặt hơn, em có thể mở rộng luật 'không sửa ngang quyền' cho cả tài khoản khác — đây là việc nhỏ vì đã có sẵn hàm `canManageRole`."
+
+### S.3 — Những câu gần như chắc chắn bị hỏi — trả lời siêu gọn, dễ hiểu
+
+> Học thuộc cột phải; cần chi tiết thì mở mục trong ngoặc.
+
+| Câu hỏi | Trả lời 2 câu, lời thường |
+|---|---|
+| Đăng nhập hoạt động thế nào? | Nhập user/mật khẩu → server cấp 2 "thẻ": thẻ ngắn hạn để dùng hằng ngày, vé dài hạn để xin thẻ mới khi hết hạn. Mỗi request sau đính kèm thẻ ngắn. *(A.21)* |
+| Mật khẩu lưu thế nào? | Không lưu nguyên văn — "băm" 1 chiều bằng bcrypt cộng chuỗi ngẫu nhiên riêng từng người. Lộ cả database cũng không đọc ngược ra mật khẩu. *(C.6)* |
+| Người này xem được hồ sơ người khác không? | Không. Người dùng chỉ xem hồ sơ mình; Chỉ huy chỉ xem quân nhân đơn vị mình; Admin xem tất cả — kiểm ngay trong tầng xử lý, không tin URL. *(C.1)* |
+| Chống chèn lệnh SQL thế nào? | Prisma tự "tham số hóa" mọi truy vấn (tách dữ liệu khỏi câu lệnh) nên không thể chèn lệnh. *(C.2)* |
+| 2 người cùng duyệt 1 đề xuất một lúc thì sao? | Gói thao tác trong 1 transaction và kiểm trạng thái; người sau bị báo "đề xuất đã được duyệt rồi". *(D.1)* |
+| Vì sao 7 loại khen thưởng tách 7 file? | Mỗi loại điều kiện khác nhau; tách ra để thêm/sửa 1 loại không đụng loại khác (Strategy pattern). *(B.4)* |
+| Hệ thống chịu bao nhiêu người? | Quy mô nội bộ học viện (vài chục–vài trăm người dùng), không phải mạng xã hội triệu người — nên kiến trúc 1 server là đủ. *(G.1)* |
+| Có kiểm thử (test) không? | Có khoảng 945 test tự động ở backend cho phần nghiệp vụ quan trọng (điều kiện danh hiệu, phân quyền…). Frontend chưa có test tự động — đã ghi vào hướng phát triển. *(H.1)* |
+| Sao lưu (backup) dữ liệu thế nào? | Sinh file SQL định kỳ; chỉ SUPER_ADMIN tải/xóa được, nhật ký backup cũng chỉ SUPER_ADMIN xem. *(I.4)* |
+| Có dùng AI để code không? | Có dùng AI hỗ trợ, nhưng em hiểu và kiểm soát toàn bộ code, tự sửa bug và viết test — trả lời trung thực, không chối. *(L.7)* |
+
+### S.4 — Vì sao ô tìm kiếm không có nút "Tìm kiếm"?
+
+**Ngắn:** Em chuẩn hóa toàn bộ ô tìm kiếm theo kiểu **gõ xong tự ra kết quả** thay vì bắt bấm nút — cho nhất quán và đỡ thao tác.
+
+**Debounce là gì:** chờ người dùng ngừng gõ khoảng 0.4 giây rồi mới chạy tìm, tránh gọi server liên tục theo từng phím. Em gom logic này vào một hook dùng chung `useDebounce` để mọi trang hành xử giống nhau (đồng bộ trải nghiệm). Các ô lọc dữ liệu đã tải sẵn thì lọc ngay tại trình duyệt, không cần gọi server.

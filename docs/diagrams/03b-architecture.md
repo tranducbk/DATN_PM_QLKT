@@ -137,7 +137,7 @@ flowchart TB
             S7[nckhStrategy]
             HELP[singleMedalImporter shared logic for HCQKQT and KNC]
             HELP2[nienHanPayloadHelper]
-            HELP3[quanNhanLabel]
+            HELP3[personnelLabel]
         end
     end
 

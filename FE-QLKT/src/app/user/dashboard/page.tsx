@@ -59,9 +59,7 @@ const UserDashboardPieChart = dynamic(
   () => import('@/components/charts/PieChart').then(mod => ({ default: mod.PieChart })),
   {
     ssr: false,
-    loading: () => (
-      <LoadingState size="md" className="min-h-[280px]" text="Đang tải biểu đồ..." />
-    ),
+    loading: () => <LoadingState size="md" className="min-h-[280px]" text="Đang tải biểu đồ..." />,
   }
 );
 
@@ -141,6 +139,10 @@ export default function UserDashboard() {
     personnelInfo?.ngay_xuat_ngu ?? null
   );
   const serviceYears = Math.floor(serviceMonths / 12);
+  const contributionMonths =
+    (contributionProfile?.months_07 || 0) +
+    (contributionProfile?.months_08 || 0) +
+    (contributionProfile?.months_0910 || 0);
 
   // Calculate progress for medals
   const getProgressData = (status: string, current: number, target: number) => {
@@ -158,7 +160,6 @@ export default function UserDashboard() {
         }}
       >
         <LoadingState fullPage text="Đang tải thông tin..." />
-
       </ConfigProvider>
     );
   }
@@ -181,10 +182,7 @@ export default function UserDashboard() {
           <Card
             style={{
               borderRadius: '12px',
-              boxShadow:
-                isDark
-                  ? '0 4px 16px rgba(0, 0, 0, 0.4)'
-                  : '0 4px 16px rgba(0, 0, 0, 0.1)',
+              boxShadow: isDark ? '0 4px 16px rgba(0, 0, 0, 0.4)' : '0 4px 16px rgba(0, 0, 0, 0.1)',
               overflow: 'hidden',
               border: 'none',
             }}
@@ -192,10 +190,9 @@ export default function UserDashboard() {
           >
             <div
               style={{
-                background:
-                  isDark
-                    ? 'linear-gradient(135deg, #1e3a8a 0%, #312e81 100%)'
-                    : 'linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)',
+                background: isDark
+                  ? 'linear-gradient(135deg, #1e3a8a 0%, #312e81 100%)'
+                  : 'linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)',
                 padding: '32px',
                 color: '#ffffff',
               }}
@@ -262,35 +259,76 @@ export default function UserDashboard() {
               label="Tổng CSTDCS"
               value={annualProfile?.tong_cstdcs || 0}
               isDark={isDark}
-              darkColors={{ iconBg: '#1e3a8a', iconShadow: '0 1px 3px rgba(59, 130, 246, 0.3)', iconColor: '#60a5fa' }}
-              lightColors={{ iconBg: '#e6f0ff', iconShadow: '0 1px 3px rgba(59, 130, 246, 0.2)', iconColor: '#2563eb' }}
+              darkColors={{
+                iconBg: '#1e3a8a',
+                iconShadow: '0 1px 3px rgba(59, 130, 246, 0.3)',
+                iconColor: '#60a5fa',
+              }}
+              lightColors={{
+                iconBg: '#e6f0ff',
+                iconShadow: '0 1px 3px rgba(59, 130, 246, 0.2)',
+                iconColor: '#2563eb',
+              }}
             />
 
             <StatCard
               icon={<ExperimentOutlined />}
               label="Tổng NCKH"
-              value={Array.isArray(annualProfile?.tong_nckh) ? annualProfile.tong_nckh.length : annualProfile?.tong_nckh || 0}
+              value={
+                Array.isArray(annualProfile?.tong_nckh)
+                  ? annualProfile.tong_nckh.length
+                  : annualProfile?.tong_nckh || 0
+              }
               isDark={isDark}
-              darkColors={{ iconBg: '#0b3d2e', iconShadow: '0 1px 3px rgba(16, 185, 129, 0.3)', iconColor: '#34d399' }}
-              lightColors={{ iconBg: '#e8f5e9', iconShadow: '0 1px 3px rgba(16, 185, 129, 0.2)', iconColor: '#059669' }}
+              darkColors={{
+                iconBg: '#0b3d2e',
+                iconShadow: '0 1px 3px rgba(16, 185, 129, 0.3)',
+                iconColor: '#34d399',
+              }}
+              lightColors={{
+                iconBg: '#e8f5e9',
+                iconShadow: '0 1px 3px rgba(16, 185, 129, 0.2)',
+                iconColor: '#059669',
+              }}
             />
 
             <StatCard
               icon={<TrophyOutlined />}
               label="CSTDCS liên tục"
-              value={<>{annualProfile?.cstdcs_lien_tuc || 0} <span style={{ fontSize: '24px', marginLeft: '4px' }}>năm</span></>}
+              value={
+                <>
+                  {annualProfile?.cstdcs_lien_tuc || 0}{' '}
+                  <span style={{ fontSize: '24px', marginLeft: '4px' }}>năm</span>
+                </>
+              }
               isDark={isDark}
-              darkColors={{ iconBg: '#78350f', iconShadow: '0 1px 3px rgba(234, 179, 8, 0.3)', iconColor: '#fbbf24' }}
-              lightColors={{ iconBg: '#fef9c3', iconShadow: '0 1px 3px rgba(234, 179, 8, 0.2)', iconColor: '#d97706' }}
+              darkColors={{
+                iconBg: '#78350f',
+                iconShadow: '0 1px 3px rgba(234, 179, 8, 0.3)',
+                iconColor: '#fbbf24',
+              }}
+              lightColors={{
+                iconBg: '#fef9c3',
+                iconShadow: '0 1px 3px rgba(234, 179, 8, 0.2)',
+                iconColor: '#d97706',
+              }}
             />
 
             <StatCard
               icon={<ClockCircleOutlined />}
               label="Tháng cống hiến"
-              value={`${serviceMonths} tháng`}
+              value={`${contributionMonths} tháng`}
               isDark={isDark}
-              darkColors={{ iconBg: '#3b0764', iconShadow: '0 1px 3px rgba(139, 92, 246, 0.3)', iconColor: '#a78bfa' }}
-              lightColors={{ iconBg: '#f3e8ff', iconShadow: '0 1px 3px rgba(139, 92, 246, 0.2)', iconColor: '#7c3aed' }}
+              darkColors={{
+                iconBg: '#3b0764',
+                iconShadow: '0 1px 3px rgba(139, 92, 246, 0.3)',
+                iconColor: '#a78bfa',
+              }}
+              lightColors={{
+                iconBg: '#f3e8ff',
+                iconShadow: '0 1px 3px rgba(139, 92, 246, 0.2)',
+                iconColor: '#7c3aed',
+              }}
             />
           </div>
 
@@ -372,9 +410,7 @@ export default function UserDashboard() {
                         showIcon
                         icon={<BulbOutlined />}
                         className={
-                          isDark
-                            ? 'border-blue-700 bg-blue-900/30'
-                            : 'border-blue-200 bg-blue-50'
+                          isDark ? 'border-blue-700 bg-blue-900/30' : 'border-blue-200 bg-blue-50'
                         }
                       />
                     )}
@@ -411,11 +447,26 @@ export default function UserDashboard() {
                         : annualProfile?.tong_nckh || 0;
 
                       const chartData = [
-                        { label: DANH_HIEU_MAP[DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP], value: danhHieuCounts.BKTTCP },
-                        { label: DANH_HIEU_MAP[DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ], value: danhHieuCounts.CSTDTQ },
-                        { label: DANH_HIEU_MAP[DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP], value: danhHieuCounts.BKBQP },
-                        { label: DANH_HIEU_MAP[DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS], value: danhHieuCounts.CSTDCS },
-                        { label: DANH_HIEU_MAP[DANH_HIEU_CA_NHAN_HANG_NAM.CSTT], value: danhHieuCounts.CSTT },
+                        {
+                          label: DANH_HIEU_MAP[DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP],
+                          value: danhHieuCounts.BKTTCP,
+                        },
+                        {
+                          label: DANH_HIEU_MAP[DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ],
+                          value: danhHieuCounts.CSTDTQ,
+                        },
+                        {
+                          label: DANH_HIEU_MAP[DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP],
+                          value: danhHieuCounts.BKBQP,
+                        },
+                        {
+                          label: DANH_HIEU_MAP[DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS],
+                          value: danhHieuCounts.CSTDCS,
+                        },
+                        {
+                          label: DANH_HIEU_MAP[DANH_HIEU_CA_NHAN_HANG_NAM.CSTT],
+                          value: danhHieuCounts.CSTT,
+                        },
                         { label: 'Thành tích Nghiên cứu khoa học', value: tongNCKH },
                       ].filter(item => item.value > 0);
 
@@ -627,9 +678,7 @@ export default function UserDashboard() {
                         showIcon
                         icon={<BulbOutlined />}
                         className={
-                          isDark
-                            ? 'border-blue-700 bg-blue-900/30'
-                            : 'border-blue-200 bg-blue-50'
+                          isDark ? 'border-blue-700 bg-blue-900/30' : 'border-blue-200 bg-blue-50'
                         }
                       />
                     )}

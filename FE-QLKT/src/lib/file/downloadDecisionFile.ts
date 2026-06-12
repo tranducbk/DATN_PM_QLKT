@@ -1,43 +1,22 @@
 import { message } from 'antd';
-import { apiClient } from '@/lib/http/apiClient';
-import { getApiErrorMessage } from '@/lib/http/apiError';
-import { openPdfWithViewer } from '@/lib/file/filePreview';
+import { getDecisionFilePath } from '@/lib/api/decisions';
+import { BASE_URL } from '@/configs';
 
 /**
- * Opens a decision file in the PDF viewer window, resolved by decision number.
+ * Opens a decision file in a new tab via its public static URL, resolved by decision
+ * number. The browser shows it in its native PDF viewer with the real path and real
+ * filename, so downloading from there keeps the correct name.
  * @param soQuyetDinh - Decision number
- * @returns Promise resolved when the viewer opens or an error is shown
+ * @returns Promise resolved when the file opens or an error is shown
  */
 export async function downloadDecisionFile(soQuyetDinh: string): Promise<void> {
-  try {
-    message.loading({ content: 'Đang tải file...', key: 'preview' });
-
-    const blob = await apiClient.downloadDecisionFile(soQuyetDinh);
-    const filename = `${soQuyetDinh}.pdf`;
-
-    const blobUrl = window.URL.createObjectURL(blob);
-
-    message.destroy('preview');
-
-    openPdfWithViewer(blobUrl, filename);
-  } catch (error: unknown) {
-    const ax = error as { response?: { data?: unknown } };
-
-    // Handle JSON error response embedded in a blob
-    if (ax.response?.data instanceof Blob) {
-      try {
-        const text = await (ax.response.data as Blob).text();
-        const errorData = JSON.parse(text);
-        message.error({
-          content: errorData.message || 'Lỗi khi mở file quyết định',
-          key: 'preview',
-        });
-      } catch {
-        message.error({ content: 'Lỗi khi mở file quyết định', key: 'preview' });
-      }
-    } else {
-      const errorMessage = getApiErrorMessage(error, 'Lỗi khi mở file quyết định');
-      message.error({ content: errorMessage, key: 'preview' });
-    }
+  const res = await getDecisionFilePath(soQuyetDinh);
+  const filePath = (res.data as { file_path?: string } | undefined)?.file_path;
+  if (!res.success || !filePath) {
+    message.error(res.message || 'Không tìm thấy file quyết định');
+    return;
   }
+  // Encode each path segment (spaces, Vietnamese chars) but keep the slashes.
+  const url = `${BASE_URL}/${filePath.replace(/^\/+/, '').split('/').map(encodeURIComponent).join('/')}`;
+  window.open(url, '_blank');
 }

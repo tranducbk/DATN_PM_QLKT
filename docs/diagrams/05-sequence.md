@@ -161,8 +161,8 @@ sequenceDiagram
 ```
 
 **Lưu ý** (bản chi tiết — vẽ rõ tầng Service/Strategy + transaction):
-1. **Tầng phân lớp**: khác bản giản lược (Controller ghi thẳng Entity), bản này vẽ rõ **`DeXuatService`** điều phối và **`DeXuatStrategy`** ghi khen thưởng theo từng loại đề xuất — đúng kiến trúc Controller→Service→Strategy→Repository và mẫu Strategy mà báo cáo nhấn mạnh. Map code: `proposalService.approveProposal` (`services/proposal/approve.ts`) gọi `getProposalStrategy(type).importInTransaction` (`services/proposal/strategies/`).
-2. **Khung `rect` = ranh giới transaction**: phần "Lưu khen thưởng" + "Cập nhật trạng thái Đã duyệt" chạy trong **một `prisma.$transaction`** (`approve/import.ts:51`) — all-or-nothing; nếu một insert fail thì rollback toàn bộ, đề xuất giữ trạng thái PENDING. Bước **tính lại hồ sơ** đặt **ngoài** khung vì code recalc *sau* khi transaction commit.
+1. **Tầng phân lớp**: khác bản giản lược (Controller ghi thẳng Entity), bản này vẽ rõ **`DeXuatService`** điều phối và **`DeXuatStrategy`** ghi khen thưởng theo từng loại đề xuất — đúng kiến trúc Controller→Service→Strategy→Repository và mẫu Strategy mà báo cáo nhấn mạnh. Map code: `proposalService.approveProposal` (`services/proposal/approve.ts`) gọi `runImportTransaction` (`approve/import.ts`), dispatch `strategy.importInTransaction()` theo loại đề xuất (`services/proposal/strategies/`).
+2. **Khung `rect` = ranh giới transaction**: phần "Lưu khen thưởng" + "Cập nhật trạng thái Đã duyệt" chạy trong **một `prisma.$transaction`** (`approve/import.ts:64`) — all-or-nothing; nếu một insert fail thì rollback toàn bộ, đề xuất giữ trạng thái PENDING. Bước **tính lại hồ sơ** đặt **ngoài** khung vì code recalc *sau* khi transaction commit.
 3. Reply cho Phòng Chính trị **trả về trước** khi notification chạy — admin nhận response ngay (`void safeNotify` trong `proposal.controller.ts:171–195`).
 4. **Tên model hồ sơ** tùy loại đề xuất: `HoSoHangNam` cho danh hiệu BKBQP/CSTDTQ/BKTTCP, `HoSoNienHan` cho HCCSVV, `HoSoCongHien` cho HCBVTQ — không gộp vào một bảng "HoSoQuanNhan".
 

@@ -1,5 +1,3 @@
-import fs from 'fs/promises';
-import path from 'path';
 import { prisma } from '../models';
 import { decisionFileRepository } from '../repositories/decisionFile.repository';
 import { AppError, NotFoundError, ValidationError } from '../middlewares/errorHandler';
@@ -31,13 +29,6 @@ interface FilePathResult {
   success: boolean;
   file_path: string | null;
   decision: FileQuyetDinh | null;
-  error: string | null;
-}
-
-interface FileDownloadResult {
-  success: boolean;
-  filePath: string | null;
-  filename: string | null;
   error: string | null;
 }
 
@@ -191,74 +182,6 @@ class DecisionService {
         success: false,
         file_path: null,
         decision: null,
-        error: error instanceof Error ? error.message : 'Có lỗi xảy ra khi lấy file quyết định',
-      };
-    }
-  }
-
-  async getDecisionFileForDownload(soQuyetDinh: string): Promise<FileDownloadResult> {
-    try {
-      if (!soQuyetDinh || soQuyetDinh.trim() === '') {
-        return {
-          success: false,
-          filePath: null,
-          filename: null,
-          error: 'Số quyết định không được để trống',
-        };
-      }
-
-      const decision = await decisionFileRepository.findUniqueRaw({
-        where: { so_quyet_dinh: soQuyetDinh.trim() },
-      });
-
-      if (!decision) {
-        return {
-          success: false,
-          filePath: null,
-          filename: null,
-          error: 'Không tìm thấy quyết định với số này',
-        };
-      }
-
-      if (!decision.file_path) {
-        return {
-          success: false,
-          filePath: null,
-          filename: null,
-          error: 'Quyết định này chưa có file đính kèm',
-        };
-      }
-
-      let filePath = decision.file_path;
-
-      if (!path.isAbsolute(filePath)) {
-        filePath = path.join(__dirname, '..', '..', filePath);
-      }
-
-      try {
-        await fs.access(filePath);
-        const filename = path.basename(filePath);
-
-        return {
-          success: true,
-          filePath: filePath,
-          filename: filename,
-          error: null,
-        };
-      } catch (error) {
-        console.error('Failed to access decision file on disk:', error);
-        return {
-          success: false,
-          filePath: null,
-          filename: null,
-          error: 'File không tồn tại trong hệ thống',
-        };
-      }
-    } catch (error: unknown) {
-      return {
-        success: false,
-        filePath: null,
-        filename: null,
         error: error instanceof Error ? error.message : 'Có lỗi xảy ra khi lấy file quyết định',
       };
     }

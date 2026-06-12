@@ -20,6 +20,3 @@ export function useMobile(breakpoint = 768) {
 
   return isMobile;
 }
-
-// Alias kept for compatibility with existing imports.
-export const useIsMobile = useMobile;

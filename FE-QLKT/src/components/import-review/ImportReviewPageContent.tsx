@@ -184,14 +184,6 @@ export function makeGhiChuColumn(): ColumnsType<PreviewItem>[number] {
   };
 }
 
-export function makeCapBacColumn(): ColumnsType<PreviewItem>[number] {
-  return makeCapBacChucVuColumn();
-}
-
-export function makeChucVuColumn(): ColumnsType<PreviewItem>[number] {
-  return { title: 'Chức vụ', dataIndex: 'chuc_vu', width: 0 };
-}
-
 export function makeCapBacChucVuColumn(width = 160): ColumnsType<PreviewItem>[number] {
   return {
     title: 'Cấp bậc / Chức vụ',

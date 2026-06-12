@@ -34,19 +34,4 @@ export function getProposalStrategy(type: ProposalType): ProposalStrategy | null
   return REGISTRY[type] ?? null;
 }
 
-/**
- * Returns the strategy for a proposal type or throws when missing. Use only
- * at sites that have verified registration (post-migration callers).
- * @param type - PROPOSAL_TYPES value
- * @returns Strategy instance
- * @throws Error - When no strategy is registered
- */
-export function requireProposalStrategy(type: ProposalType): ProposalStrategy {
-  const strategy = REGISTRY[type];
-  if (!strategy) {
-    throw new Error(`No strategy registered for proposal type: ${type}`);
-  }
-  return strategy;
-}
-
 export type { ProposalStrategy } from './proposalStrategy';

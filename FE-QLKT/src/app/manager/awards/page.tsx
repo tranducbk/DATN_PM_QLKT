@@ -1,21 +1,9 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import {
-  Card,
-  Button,
-  Input,
-  Select,
-  Table,
-  Space,
-  Typography,
-  Breadcrumb,
-  message,
-  Tabs,
-  Empty,
-} from 'antd';
+import { Card, Table, Typography, Breadcrumb, message, Tabs, Empty } from 'antd';
 import type { TableColumnsType } from 'antd';
-import { FilterOutlined, HomeOutlined } from '@ant-design/icons';
+import { HomeOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/http/apiClient';
 import {
   DANH_HIEU_MAP,
@@ -29,14 +17,14 @@ import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { formatDate } from '@/lib/utils';
 import {
   AWARD_TAB_LABELS,
+  AWARD_TAB_META,
   DANH_HIEU_CA_NHAN_HANG_NAM,
   DANH_HIEU_DAC_BIET,
   type AwardType,
 } from '@/constants/danhHieu.constants';
-import {
-  DEFAULT_ANTD_TABLE_PAGINATION,
-  FETCH_ALL_LIMIT,
-} from '@/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
+import { useDebounce } from '@/hooks/useDebounce';
+import { AwardsFilterBar } from '@/components/awards/AwardsFilterBar';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -94,15 +82,6 @@ const INITIAL_FILTERS: AwardFilters = {
   danh_hieu: '',
   de_tai: '',
 };
-
-const TABS_WITH_DANH_HIEU_FILTER = new Set<AwardType>(['CNHN', 'HCCSVV', 'HCBVTQ']);
-const TABS_WITH_NESTED_QUAN_NHAN = new Set<AwardType>([
-  'NCKH',
-  'HCQKQT',
-  'HCBVTQ',
-  'HCCSVV',
-  'KNC_VSNXD_QDNDVN',
-]);
 
 const DANH_HIEU_OPTIONS: Record<string, string[]> = {
   CNHN: [
@@ -165,7 +144,7 @@ export default function ManagerAwardsPage() {
   const [awardsByTab, setAwardsByTab] = useState<Partial<Record<AwardType, Award[]>>>({});
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<AwardFilters>(INITIAL_FILTERS);
-  const [debouncedFilters, setDebouncedFilters] = useState(filters);
+  const debouncedFilters = useDebounce(filters);
   const awards = useMemo(() => awardsByTab[activeTab] ?? [], [awardsByTab, activeTab]);
 
   const fetchAwards = useCallback(async () => {
@@ -201,11 +180,6 @@ export default function ManagerAwardsPage() {
     setFilters(INITIAL_FILTERS);
   }, [activeTab]);
 
-  useEffect(() => {
-    const id = setTimeout(() => setDebouncedFilters(filters), 300);
-    return () => clearTimeout(id);
-  }, [filters]);
-
   const handleFilterChange = (key: keyof AwardFilters, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
@@ -218,7 +192,7 @@ export default function ManagerAwardsPage() {
 
   const resolvePersonnelDisplay = (record: AwardRow) => {
     const isAnnualTab = activeTab === 'CNHN';
-    const hasNestedQuanNhan = TABS_WITH_NESTED_QUAN_NHAN.has(activeTab);
+    const hasNestedQuanNhan = AWARD_TAB_META[activeTab].hasNestedQuanNhan;
 
     const hoTen = hasNestedQuanNhan
       ? record.QuanNhan?.ho_ten
@@ -234,8 +208,10 @@ export default function ManagerAwardsPage() {
 
     const unitInfo: string[] = [];
     if (hasNestedQuanNhan || (isAnnualTab && record.QuanNhan)) {
-      if (record.QuanNhan?.DonViTrucThuoc?.ten_don_vi) unitInfo.push(record.QuanNhan.DonViTrucThuoc.ten_don_vi);
-      if (record.QuanNhan?.CoQuanDonVi?.ten_don_vi) unitInfo.push(record.QuanNhan.CoQuanDonVi.ten_don_vi);
+      if (record.QuanNhan?.DonViTrucThuoc?.ten_don_vi)
+        unitInfo.push(record.QuanNhan.DonViTrucThuoc.ten_don_vi);
+      if (record.QuanNhan?.CoQuanDonVi?.ten_don_vi)
+        unitInfo.push(record.QuanNhan.CoQuanDonVi.ten_don_vi);
     } else if (isAnnualTab) {
       if (record.don_vi_truc_thuoc) unitInfo.push(record.don_vi_truc_thuoc);
       if (record.co_quan_don_vi) unitInfo.push(record.co_quan_don_vi);
@@ -285,7 +261,7 @@ export default function ManagerAwardsPage() {
         if (!name.includes(nameFilter)) return false;
       }
 
-      if (danhHieuFilter && ['CNHN', 'HCCSVV', 'HCBVTQ'].includes(activeTab)) {
+      if (danhHieuFilter && AWARD_TAB_META[activeTab].hasDanhHieuFilter) {
         if (!matchesDanhHieuSelection(record, danhHieuFilter)) return false;
       }
 
@@ -360,12 +336,12 @@ export default function ManagerAwardsPage() {
       },
     },
     {
-      title: (['HCCSVV', 'HCBVTQ', 'HCQKQT', 'KNC_VSNXD_QDNDVN'] as AwardType[]).includes(activeTab) ? 'Thời gian nhận' : 'Năm nhận',
+      title: AWARD_TAB_META[activeTab].hasThangNhan ? 'Thời gian nhận' : 'Năm nhận',
       key: 'nam',
-      width: (['HCCSVV', 'HCBVTQ', 'HCQKQT', 'KNC_VSNXD_QDNDVN'] as AwardType[]).includes(activeTab) ? 120 : 70,
+      width: AWARD_TAB_META[activeTab].hasThangNhan ? 120 : 70,
       align: 'center',
       render: (_: unknown, record: AwardRow) => {
-        if ((['HCCSVV', 'HCBVTQ', 'HCQKQT', 'KNC_VSNXD_QDNDVN'] as AwardType[]).includes(activeTab) && record.thang) {
+        if (AWARD_TAB_META[activeTab].hasThangNhan && record.thang) {
           return <Text strong>{`${String(record.thang).padStart(2, '0')}/${record.nam}`}</Text>;
         }
         return <Text strong>{record.nam}</Text>;
@@ -427,7 +403,9 @@ export default function ManagerAwardsPage() {
 
         // Commemoration medals — if record exists, default title is KNC
         if (activeTab === 'KNC_VSNXD_QDNDVN') {
-          const danhHieu = DANH_HIEU_MAP[DANH_HIEU_DAC_BIET.KNC_VSNXD_QDNDVN] || 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN';
+          const danhHieu =
+            DANH_HIEU_MAP[DANH_HIEU_DAC_BIET.KNC_VSNXD_QDNDVN] ||
+            'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN';
           return (
             <div style={COLUMN_STYLES.container}>
               <Text strong>{danhHieu}</Text>
@@ -463,7 +441,11 @@ export default function ManagerAwardsPage() {
           return (
             <div style={COLUMN_STYLES.container}>
               <Text>{fullName}</Text>
-              {record.ghi_chu && <Text type="secondary" style={COLUMN_STYLES.noteText}>{record.ghi_chu}</Text>}
+              {record.ghi_chu && (
+                <Text type="secondary" style={COLUMN_STYLES.noteText}>
+                  {record.ghi_chu}
+                </Text>
+              )}
               {renderDecision(record.so_quyet_dinh, handleDownloadDecision)}
             </div>
           );
@@ -475,7 +457,11 @@ export default function ManagerAwardsPage() {
           return (
             <div style={COLUMN_STYLES.container}>
               <Text>{fullName}</Text>
-              {record.ghi_chu && <Text type="secondary" style={COLUMN_STYLES.noteText}>{record.ghi_chu}</Text>}
+              {record.ghi_chu && (
+                <Text type="secondary" style={COLUMN_STYLES.noteText}>
+                  {record.ghi_chu}
+                </Text>
+              )}
               {renderDecision(record.so_quyet_dinh, handleDownloadDecision)}
             </div>
           );
@@ -534,121 +520,18 @@ export default function ManagerAwardsPage() {
   function renderAwardContent() {
     return (
       <>
-        {/* Filters */}
-        <Card
-          title={
-            <Space>
-              <FilterOutlined />
-              Bộ lọc
-            </Space>
-          }
-          style={{ marginBottom: '24px' }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: '16px',
-              alignItems: 'flex-end',
-            }}
-          >
-            <div style={{ flex: '0 0 180px', display: 'flex', flexDirection: 'column' }}>
-              <Text strong style={{ display: 'block', marginBottom: '8px' }}>
-                Năm
-              </Text>
-              <Select
-                placeholder="Tất cả các năm"
-                value={filters.nam === '' ? '' : filters.nam || undefined}
-                onChange={value => handleFilterChange('nam', value || '')}
-                allowClear
-                size="large"
-                style={{ width: '100%' }}
-                options={[
-                  { value: '', label: 'Tất cả các năm' },
-                  ...availableYears.map(year => ({
-                    value: String(year),
-                    label: String(year),
-                  })),
-                ]}
-              />
-            </div>
-            <div
-              style={{
-                flex: '1 1 200px',
-                minWidth: '200px',
-                display: 'flex',
-                flexDirection: 'column',
-              }}
-            >
-              <Text strong style={{ display: 'block', marginBottom: '8px' }}>
-                Tìm kiếm theo họ tên
-              </Text>
-              <Input
-                placeholder="Nhập tên để tìm kiếm"
-                value={filters.ho_ten}
-                onChange={e => handleFilterChange('ho_ten', e.target.value)}
-                allowClear
-                size="large"
-              />
-            </div>
-            {TABS_WITH_DANH_HIEU_FILTER.has(activeTab) && (
-              <div
-                style={{
-                  flex: '1 1 250px',
-                  minWidth: '250px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                }}
-              >
-                <Text strong style={{ display: 'block', marginBottom: '8px' }}>
-                  Danh hiệu
-                </Text>
-                <Select
-                  allowClear
-                  showSearch
-                  optionFilterProp="label"
-                  style={{ width: '100%' }}
-                  placeholder={activeTab === 'CNHN' ? 'Chọn danh hiệu cá nhân' : 'Chọn danh hiệu'}
-                  value={filters.danh_hieu === '' ? '' : filters.danh_hieu || undefined}
-                  onChange={value => handleFilterChange('danh_hieu', value || '')}
-                  options={danhHieuOptions}
-                  size="large"
-                />
-              </div>
-            )}
-            {activeTab === 'NCKH' && (
-              <div
-                style={{
-                  flex: '1 1 200px',
-                  minWidth: '200px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                }}
-              >
-                <Text strong style={{ display: 'block', marginBottom: '8px' }}>
-                  Đề tài
-                </Text>
-                <Input
-                  placeholder="Nhập đề tài / mô tả"
-                  value={filters.de_tai}
-                  onChange={e => handleFilterChange('de_tai', e.target.value)}
-                  allowClear
-                  size="large"
-                />
-              </div>
-            )}
-            <div style={{ flex: '0 0 auto', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ height: '22px', marginBottom: '8px' }}></div>
-              <Button
-                size="large"
-                onClick={() => setFilters(INITIAL_FILTERS)}
-                icon={null}
-              >
-                Xóa bộ lọc
-              </Button>
-            </div>
-          </div>
-        </Card>
+        <AwardsFilterBar
+          filters={filters}
+          availableYears={availableYears}
+          danhHieuOptions={danhHieuOptions}
+          showDanhHieuFilter={AWARD_TAB_META[activeTab].hasDanhHieuFilter}
+          showTopicFilter={activeTab === 'NCKH'}
+          searchLabel={AWARD_TAB_META[activeTab].searchLabel}
+          searchPlaceholder={AWARD_TAB_META[activeTab].searchPlaceholder}
+          danhHieuPlaceholder={AWARD_TAB_META[activeTab].danhHieuPlaceholder}
+          onFilterChange={handleFilterChange}
+          onReset={() => setFilters(INITIAL_FILTERS)}
+        />
 
         {/* Awards Table */}
         <Card title={`Danh sách khen thưởng (${filteredAwards.length})`}>

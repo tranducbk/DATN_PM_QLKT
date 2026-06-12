@@ -189,7 +189,6 @@ export const apiClient = {
   updateDecision: decisionsApi.updateDecision,
   deleteDecision: decisionsApi.deleteDecision,
   getDecisionFilePath: decisionsApi.getDecisionFilePath,
-  downloadDecisionFile: decisionsApi.downloadDecisionFile,
   getDecisionFilePaths: decisionsApi.getDecisionFilePaths,
 
   // System Logs

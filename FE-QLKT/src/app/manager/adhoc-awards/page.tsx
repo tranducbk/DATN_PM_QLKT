@@ -34,6 +34,7 @@ import { apiClient } from '@/lib/http/apiClient';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { previewFileWithApi } from '@/lib/file/filePreview';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
+import { useDebounce } from '@/hooks/useDebounce';
 
 const { Title, Text } = Typography;
 
@@ -151,12 +152,10 @@ export default function ManagerAdhocAwardsPage() {
     return years;
   }, [awards]);
 
+  const debouncedSearch = useDebounce(searchDraft);
   useEffect(() => {
-    const handler = setTimeout(() => {
-      setTableFilters(prev => ({ ...prev, searchText: searchDraft }));
-    }, 1000);
-    return () => clearTimeout(handler);
-  }, [searchDraft]);
+    setTableFilters(prev => ({ ...prev, searchText: debouncedSearch }));
+  }, [debouncedSearch]);
 
   // FILTERED TABLE DATA
   const filteredAwards = useMemo(() => {

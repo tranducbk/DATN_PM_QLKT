@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "jest",
+    "test:integration": "jest --config jest.integration.config.ts",
     "build": "tsc && cp -r src/generated dist/generated",
     "typecheck": "tsc --noEmit",
     "start": "node dist/index.js",
@@ -19,7 +20,11 @@
     "seed:ui": "prisma db execute --file scripts/demo/01-seed-data.sql --schema prisma/schema.prisma",
     "seed:eligibility": "prisma db execute --file scripts/demo/02-seed-eligibility.sql --schema prisma/schema.prisma",
     "seed:fresh": "npm run seed:reset && npm run seed:ui",
-    "seed:demo-passwords": "tsx scripts/demo/02-set-passwords.ts"
+    "seed:demo-passwords": "tsx scripts/demo/02-set-passwords.ts",
+    "seed:base": "tsx scripts/demo/seed-base.ts",
+    "seed:decisions": "tsx scripts/demo/seed-decisions.ts",
+    "seed:all": "npm run seed:base && npm run seed:decisions",
+    "audit:seed": "tsx scripts/demo/audit-seed.ts"
   },
   "license": "ISC",
   "dependencies": {
@@ -61,8 +66,10 @@
     "@types/node-cron": "^3.0.11",
     "@types/nodemailer": "^7.0.11",
     "@types/uuid": "^10.0.0",
+    "@types/supertest": "^6.0.2",
     "jest": "^30.3.0",
     "nodemon": "^3.0.3",
+    "supertest": "^7.0.0",
     "prettier": "^3.8.1",
     "prisma-erd-generator": "^2.1.0",
     "ts-jest": "^29.4.9",

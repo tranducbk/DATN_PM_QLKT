@@ -3,10 +3,7 @@ import { prismaMock } from '../helpers/prismaMock';
 import { makeUnit, makePersonnel } from '../helpers/fixtures';
 import { ROLES } from '../../src/constants/roles.constants';
 import { PROPOSAL_TYPES } from '../../src/constants/proposalTypes.constants';
-import {
-  buildManagerQuanNhanFilter,
-  getManagerUnitContext,
-} from '../../src/helpers/controllerHelper';
+import { buildManagerQuanNhanFilter } from '../../src/helpers/controllerHelper';
 import { getProposals, getProposalById } from '../../src/services/proposal/core';
 import {
   PROPOSAL_NOT_FOUND_ERROR,
@@ -309,24 +306,5 @@ describe('authz/manager-scope - touchpoint sanity', () => {
     // Kết quả
     expect(acc.accountId).toBe('acc-mgr-1');
     expect(acc.coQuanDonViId).toBe('cqdv-x');
-  });
-
-  it('getManagerUnitContext (CQDV) trả về include_sub_units=true + sub_unit_ids', async () => {
-    // Cho trước
-    prismaMock.quanNhan.findUnique.mockResolvedValueOnce({
-      co_quan_don_vi_id: 'cqdv-9',
-      don_vi_truc_thuoc_id: null,
-    });
-    prismaMock.donViTrucThuoc.findMany.mockResolvedValueOnce([{ id: 'dvtt-99' }]);
-
-    // Khi
-    const ctx = await getManagerUnitContext(AUTHZ_makeRequest(ROLES.MANAGER));
-
-    // Kết quả
-    expect(ctx).toEqual({
-      don_vi_id: 'cqdv-9',
-      include_sub_units: true,
-      sub_unit_ids: ['dvtt-99'],
-    });
   });
 });

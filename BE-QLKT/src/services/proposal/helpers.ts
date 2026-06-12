@@ -5,13 +5,6 @@ import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
 import { DANH_HIEU_NCKH, DANH_HIEU_CA_NHAN_HANG_NAM } from '../../constants/danhHieu.constants';
 import type { Row, Worksheet, CellValue } from 'exceljs';
 
-export const SHEET_NAMES = {
-  QUAN_NHAN: 'QuanNhan',
-  DANH_HIEU_HANG_NAM: 'DanhHieuHangNam',
-  THANH_TICH_KHOA_HOC: 'ThanhTichKhoaHoc',
-  NIEN_HAN: 'NienHan',
-} as const;
-
 export const CELL_INDICES = {
   CCCD: 1,
   HO_TEN: 2,

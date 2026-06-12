@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs';
-import { donViTrucThuocRepository } from '../repositories/unit.repository';
+import { buildMedalListWhere } from '../helpers/unitHelper';
 import { contributionMedalRepository } from '../repositories/contributionMedal.repository';
 import { accountRepository } from '../repositories/account.repository';
 import profileService from './profile.service';
@@ -79,47 +79,7 @@ class ContributionAwardService {
    * @returns Awards data with pagination metadata
    */
   async getAll(filters: Record<string, unknown> = {}, page: number = 1, limit: number = 50) {
-    const where: Record<string, unknown> = {};
-
-    const quanNhanFilter: Record<string, unknown> = {};
-    if (filters.ho_ten) {
-      quanNhanFilter.ho_ten = { contains: filters.ho_ten, mode: 'insensitive' };
-    }
-
-    if (filters.don_vi_id) {
-      if (filters.include_sub_units) {
-        // include_sub_units: expand filter to all DVTT under the parent unit
-        const donViTrucThuocIds = await donViTrucThuocRepository.findIdsByCoQuanDonViId(
-          String(filters.don_vi_id)
-        );
-        const donViTrucThuocIdList = donViTrucThuocIds.map(d => d.id);
-        where.QuanNhan = {
-          ...quanNhanFilter,
-          OR: [
-            { co_quan_don_vi_id: filters.don_vi_id },
-            { don_vi_truc_thuoc_id: { in: donViTrucThuocIdList } },
-          ],
-        };
-      } else {
-        where.QuanNhan = {
-          ...quanNhanFilter,
-          OR: [
-            { co_quan_don_vi_id: filters.don_vi_id },
-            { don_vi_truc_thuoc_id: filters.don_vi_id },
-          ],
-        };
-      }
-    } else if (Object.keys(quanNhanFilter).length > 0) {
-      where.QuanNhan = quanNhanFilter;
-    }
-
-    if (filters.nam) {
-      where.nam = parseInt(String(filters.nam), 10);
-    }
-
-    if (filters.danh_hieu) {
-      where.danh_hieu = filters.danh_hieu;
-    }
+    const where = await buildMedalListWhere(filters);
 
     const [data, total] = await Promise.all([
       contributionMedalRepository.findManyRaw({

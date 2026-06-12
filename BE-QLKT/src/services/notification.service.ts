@@ -1,4 +1,3 @@
-import { prisma } from '../models';
 import { emitNotificationToUser } from '../utils/socketService';
 import type { ThongBao, Prisma } from '../generated/prisma';
 import { NotFoundError } from '../middlewares/errorHandler';

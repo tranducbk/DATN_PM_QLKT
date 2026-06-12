@@ -28,11 +28,12 @@ import { calcUnitTotal } from '@/lib/utils';
 import { useTheme } from '@/components/ThemeProvider';
 import { LoadingState } from '@/components/shared/LoadingState';
 import Link from 'next/link';
+import { DEFAULT_PAGE_SIZE } from '@/constants/pagination.constants';
 
 const { Title, Text } = Typography;
 
 const BASE_PATH = '/super-admin/categories';
-const PERSONNEL_BASE = '/admin/personnel';
+const PERSONNEL_BASE = '/super-admin/personnel';
 
 function getDialogTitle(
   dialogType: 'unit' | 'position' | null,
@@ -279,7 +280,7 @@ export default function SAUnitDetailPage() {
                       dataSource={personnel}
                       rowKey="id"
                       size="middle"
-                      pagination={{ pageSize: 20, showTotal: t => `Tổng ${t} quân nhân` }}
+                      pagination={{ pageSize: DEFAULT_PAGE_SIZE, showTotal: t => `Tổng ${t} quân nhân` }}
                       scroll={{ x: 'max-content' }}
                     />
                   ) : (

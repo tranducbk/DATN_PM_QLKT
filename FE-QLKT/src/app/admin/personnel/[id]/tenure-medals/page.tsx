@@ -27,7 +27,7 @@ import { useTheme } from '@/components/ThemeProvider';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
-import { AWARD_TAB_LABELS } from '@/constants/danhHieu.constants';
+import { AWARD_TAB_LABELS, getRankLabel } from '@/constants/danhHieu.constants';
 import { FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
 import type { PersonnelDetail } from '@/lib/types/personnelList';
 
@@ -80,7 +80,7 @@ export default function AdminServiceRewardsPage() {
         tenureRes.data.forEach((award: any) => {
           if (award.quan_nhan_id === personnelId || award.QuanNhan?.id === personnelId) {
             const danhHieu = award.danh_hieu || '';
-            const rank = danhHieu.includes('HANG_NHAT') ? 'hạng Nhất' : danhHieu.includes('HANG_NHI') ? 'hạng Nhì' : danhHieu.includes('HANG_BA') ? 'hạng Ba' : '';
+            const rank = getRankLabel(danhHieu);
 
             mappedRewards.push({
               id: award.id,

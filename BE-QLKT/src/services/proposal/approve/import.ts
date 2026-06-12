@@ -1,6 +1,6 @@
 import { prisma } from '../../../models';
 import { proposalRepository } from '../../../repositories/proposal.repository';
-import { PROPOSAL_TYPES } from '../../../constants/proposalTypes.constants';
+import { PROPOSAL_TYPES, type ProposalType } from '../../../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../../../constants/proposalStatus.constants';
 import { ValidationError } from '../../../middlewares/errorHandler';
 import { hccsvvStrategy } from '../strategies/hccsvvStrategy';
@@ -14,6 +14,7 @@ import type {
   ProposalApproveContext,
   ImportAccumulator as StrategyImportAccumulator,
   ApproveDecisionMappings,
+  ProposalStrategy,
 } from '../strategies/proposalStrategy';
 import { syncDecisionFiles } from './decisionMappings';
 import type {
@@ -34,6 +35,14 @@ import type {
 // 60s was too tight for end-of-year batches (~300+ personnel). Bumped to 180s; if a single
 // approve ever needs more, split the proposal rather than raising further.
 const PROPOSAL_APPROVE_TX_TIMEOUT_MS = 180000;
+
+// Tenure-family proposals import their medal rows (data_nien_han) via a dedicated strategy
+// on top of the primary danh-hieu import. Other types have no entry here.
+const NIEN_HAN_MEDAL_STRATEGY: Partial<Record<ProposalType, ProposalStrategy>> = {
+  [PROPOSAL_TYPES.NIEN_HAN]: hccsvvStrategy,
+  [PROPOSAL_TYPES.HC_QKQT]: hcqkqtStrategy,
+  [PROPOSAL_TYPES.KNC_VSNXD_QDNDVN]: kncStrategy,
+};
 
 /**
  * Runs all per-type imports inside a single transaction and finalizes proposal status.
@@ -74,86 +83,41 @@ export async function runImportTransaction(
       // FileQuyetDinh rows must exist before award rows can reference them via hard FK.
       await syncDecisionFiles(ctx, danhHieuData, thanhTichData, decisions, pdfPaths, prismaTx);
 
+      const runStrategyImport = (strategy: ProposalStrategy, editedData: EditedProposalData) =>
+        strategy.importInTransaction(
+          editedData,
+          approveCtx,
+          decisions,
+          pdfPaths,
+          acc as StrategyImportAccumulator,
+          prismaTx
+        );
+
+      // Primary danh-hieu/cong-hien import is selected by proposal type.
       if (proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
-        await donViHangNamStrategy.importInTransaction(
-          { data_danh_hieu: danhHieuData } as EditedProposalData,
-          approveCtx,
-          decisions,
-          pdfPaths,
-          acc as StrategyImportAccumulator,
-          prismaTx
-        );
+        await runStrategyImport(donViHangNamStrategy, {
+          data_danh_hieu: danhHieuData,
+        } as EditedProposalData);
       } else if (proposal.loai_de_xuat === PROPOSAL_TYPES.CONG_HIEN) {
-        await hcbvtqStrategy.importInTransaction(
-          { data_cong_hien: congHienData } as EditedProposalData,
-          approveCtx,
-          decisions,
-          pdfPaths,
-          acc as StrategyImportAccumulator,
-          prismaTx
-        );
+        await runStrategyImport(hcbvtqStrategy, {
+          data_cong_hien: congHienData,
+        } as EditedProposalData);
       } else {
-        await caNhanHangNamStrategy.importInTransaction(
-          { data_danh_hieu: danhHieuData } as EditedProposalData,
-          approveCtx,
-          decisions,
-          pdfPaths,
-          acc as StrategyImportAccumulator,
-          prismaTx
-        );
+        await runStrategyImport(caNhanHangNamStrategy, {
+          data_danh_hieu: danhHieuData,
+        } as EditedProposalData);
       }
 
-      if (
-        proposal.loai_de_xuat === PROPOSAL_TYPES.NIEN_HAN &&
-        nienHanData &&
-        nienHanData.length > 0
-      ) {
-        await hccsvvStrategy.importInTransaction(
-          { data_nien_han: nienHanData } as EditedProposalData,
-          approveCtx,
-          decisions,
-          pdfPaths,
-          acc as StrategyImportAccumulator,
-          prismaTx
-        );
-      }
-      if (
-        proposal.loai_de_xuat === PROPOSAL_TYPES.HC_QKQT &&
-        nienHanData &&
-        nienHanData.length > 0
-      ) {
-        await hcqkqtStrategy.importInTransaction(
-          { data_nien_han: nienHanData } as EditedProposalData,
-          approveCtx,
-          decisions,
-          pdfPaths,
-          acc as StrategyImportAccumulator,
-          prismaTx
-        );
-      }
-      if (
-        proposal.loai_de_xuat === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN &&
-        nienHanData &&
-        nienHanData.length > 0
-      ) {
-        await kncStrategy.importInTransaction(
-          { data_nien_han: nienHanData } as EditedProposalData,
-          approveCtx,
-          decisions,
-          pdfPaths,
-          acc as StrategyImportAccumulator,
-          prismaTx
-        );
+      // Tenure-family proposals additionally import their medal rows from data_nien_han.
+      const medalStrategy = NIEN_HAN_MEDAL_STRATEGY[proposal.loai_de_xuat as ProposalType];
+      if (medalStrategy && nienHanData && nienHanData.length > 0) {
+        await runStrategyImport(medalStrategy, { data_nien_han: nienHanData } as EditedProposalData);
       }
 
-      await nckhStrategy.importInTransaction(
-        { data_thanh_tich: thanhTichData } as EditedProposalData,
-        approveCtx,
-        decisions,
-        pdfPaths,
-        acc as StrategyImportAccumulator,
-        prismaTx
-      );
+      // NCKH achievements may accompany any proposal type.
+      await runStrategyImport(nckhStrategy, {
+        data_thanh_tich: thanhTichData,
+      } as EditedProposalData);
 
       if (acc.errors.length > 0) {
         throw new ValidationError(

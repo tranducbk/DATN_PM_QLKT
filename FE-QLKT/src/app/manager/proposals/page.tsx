@@ -20,6 +20,7 @@ import { getApiErrorMessage } from '@/lib/http/apiError';
 import {
   DEFAULT_PAGE_SIZE,
   DEFAULT_ANTD_TABLE_PAGINATION,
+  PROPOSAL_LIST_LIMIT,
 } from '@/constants/pagination.constants';
 import { formatDateTime } from '@/lib/utils';
 
@@ -86,7 +87,7 @@ export default function ManagerProposalsPage() {
   const fetchProposals = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.getProposals({ limit: 100 });
+      const response = await apiClient.getProposals({ limit: PROPOSAL_LIST_LIMIT });
 
       if (response.success) {
         setProposals(response.data ?? []);

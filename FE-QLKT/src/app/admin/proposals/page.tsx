@@ -43,7 +43,10 @@ import { ProposalDetailModal } from './components/ProposalDetailModal';
 import { RejectModal } from './components/RejectModal';
 import { ApproveModal } from './components/ApproveModal';
 import { DecisionModal } from '@/components/decisions/DecisionModal';
-import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
+import {
+  DEFAULT_ANTD_TABLE_PAGINATION,
+  PROPOSAL_LIST_LIMIT,
+} from '@/constants/pagination.constants';
 
 const { Title, Text } = Typography;
 
@@ -100,7 +103,7 @@ export default function AdminProposalsPage() {
       const response = await apiClient.getProposals({
         status: activeTab,
         page: 1,
-        limit: 100,
+        limit: PROPOSAL_LIST_LIMIT,
       });
 
       if (response.success) {
@@ -138,19 +141,16 @@ export default function AdminProposalsPage() {
     return matchesSearch && matchesYear && matchesType;
   });
 
-  // Handle view detail
   const handleViewDetail = (proposal: Proposal) => {
     setSelectedProposal(proposal);
     setDetailModalVisible(true);
   };
 
-  // Handle reject
   const handleReject = (proposal: Proposal) => {
     setSelectedProposal(proposal);
     setRejectModalVisible(true);
   };
 
-  // Handle approve
   const handleApprove = (proposal: Proposal) => {
     setSelectedProposal(proposal);
     setApproveModalVisible(true);

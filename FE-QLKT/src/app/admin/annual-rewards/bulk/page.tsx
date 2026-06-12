@@ -412,7 +412,6 @@ export default function BulkAddAnnualRewardsPage() {
                 prefix={<SearchOutlined />}
                 value={searchText}
                 onChange={e => setSearchText(e.target.value)}
-                onPressEnter={() => {}}
                 size="large"
                 allowClear
                 style={{ width: '100%' }}

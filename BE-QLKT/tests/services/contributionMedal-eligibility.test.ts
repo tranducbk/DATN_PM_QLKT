@@ -1,10 +1,10 @@
 import {
   classifyHCBVTQRank,
   cumulativeMonthsForRank,
-  emptyMonthsByGroup,
   evaluateHCBVTQRank,
   requiredCongHienMonths,
 } from '../../src/services/eligibility/hcbvtqEligibility';
+import type { PositionMonthsByGroup } from '../../src/services/eligibility/congHienMonthsAggregator';
 import {
   CONG_HIEN_BASE_REQUIRED_MONTHS,
   CONG_HIEN_FEMALE_REQUIRED_MONTHS,
@@ -13,6 +13,12 @@ import {
   HCBVTQ_RANK_KEYS,
 } from '../../src/constants/danhHieu.constants';
 import { GENDER } from '../../src/constants/gender.constants';
+
+const emptyMonthsByGroup = (): PositionMonthsByGroup => ({
+  [CONG_HIEN_HE_SO_GROUPS.LEVEL_07]: 0,
+  [CONG_HIEN_HE_SO_GROUPS.LEVEL_08]: 0,
+  [CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10]: 0,
+});
 
 describe('requiredCongHienMonths', () => {
   it('returns female threshold (80) for FEMALE', () => {
@@ -120,14 +126,5 @@ describe('evaluateHCBVTQRank', () => {
     const result = evaluateHCBVTQRank('SOMETHING_ELSE', emptyMonthsByGroup(), GENDER.MALE);
     expect(result.rank).toBeNull();
     expect(result.eligible).toBe(false);
-  });
-});
-
-describe('emptyMonthsByGroup', () => {
-  it('returns zeros across all groups', () => {
-    const m = emptyMonthsByGroup();
-    expect(m[CONG_HIEN_HE_SO_GROUPS.LEVEL_07]).toBe(0);
-    expect(m[CONG_HIEN_HE_SO_GROUPS.LEVEL_08]).toBe(0);
-    expect(m[CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10]).toBe(0);
   });
 });

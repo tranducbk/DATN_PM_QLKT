@@ -45,13 +45,6 @@ router.get('/award-types', verifyToken, requireAdminOnly, decisionController.get
 router.get('/file-path/:soQuyetDinh', verifyToken, decisionController.getFilePath);
 
 /**
- * @route   GET /api/decisions/download/:soQuyetDinh
- * @desc    Download decision file by decision number
- * @access  Private - All authenticated users
- */
-router.get('/download/:soQuyetDinh', verifyToken, decisionController.downloadDecisionFile);
-
-/**
  * @route   POST /api/decisions/file-paths
  * @desc    Get file paths for multiple decision numbers
  * @access  Private - All authenticated users

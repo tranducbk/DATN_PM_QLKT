@@ -22,15 +22,19 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { apiClient } from '@/lib/http/apiClient';
 import { useTheme } from '@/components/ThemeProvider';
-import { ROLES } from '@/constants/roles.constants';
+import { useAuth } from '@/contexts/AuthContext';
+import { ROLES, roleSelectOptions } from '@/constants/roles.constants';
 
 const { Title } = Typography;
-const { Option } = Select;
+
+const ROLE_OPTIONS = roleSelectOptions([ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER, ROLES.USER]);
 
 export default function AccountEditPage() {
   const { theme } = useTheme();
+  const { user } = useAuth();
   const params = useParams();
   const accountId = params?.id as string;
+  const isOwnAccount = !!user?.id && user.id === accountId;
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [fetchLoading, setFetchLoading] = useState(true);
@@ -161,13 +165,13 @@ export default function AccountEditPage() {
               name="role"
               label="Vai trò"
               rules={[{ required: true, message: 'Vui lòng chọn vai trò' }]}
+              help={isOwnAccount ? 'Không thể thay đổi vai trò của chính mình' : undefined}
             >
-              <Select placeholder="Chọn vai trò">
-                <Option value={ROLES.SUPER_ADMIN}>Super Admin</Option>
-                <Option value={ROLES.ADMIN}>Admin</Option>
-                <Option value={ROLES.MANAGER}>Quản lý</Option>
-                <Option value={ROLES.USER}>Người dùng</Option>
-              </Select>
+              <Select
+                placeholder="Chọn vai trò"
+                disabled={isOwnAccount}
+                options={ROLE_OPTIONS}
+              />
             </Form.Item>
 
             <Form.Item>

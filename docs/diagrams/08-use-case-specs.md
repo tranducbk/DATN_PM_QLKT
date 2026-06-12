@@ -156,7 +156,7 @@
 | 1.3 | Phòng Chính trị | Bấm "Phê duyệt" |
 | 1.4 | Hệ thống | Controller parse body qua `parseApproveBody`, gọi `proposalService.approveProposal()` |
 | 1.5 | Hệ thống | `validateApproveContext` kiểm tra status, duplicate, decision number |
-| 1.6 | Hệ thống | Lấy strategy qua `requireProposalStrategy(loai_de_xuat)`, gọi `strategy.validateApprove()` |
+| 1.6 | Hệ thống | Kiểm tra đủ điều kiện qua `runEligibilityChecks` (chuỗi danh hiệu, ngưỡng phục vụ) — `approve/validation.ts` |
 | 1.7 | Hệ thống | Build mappings cho số quyết định + PDF |
 | 1.8 | Hệ thống | Mở `prisma.$transaction`, gọi `strategy.importInTransaction()` |
 | 1.9 | Hệ thống | Strategy INSERT bản ghi vào bảng award tương ứng (`DanhHieuHangNam`, `KhenThuongHCBVTQ`, ...) và set flag `nhan_bkbqp / cstdtq / bkttcp` |
@@ -193,7 +193,7 @@
 
 | STT | Thực hiện | Hành động |
 |---|---|---|
-| 1 | Hệ thống | Gọi `recalculateAnnualProfile(quanNhanId)` từ profile/annual.ts |
+| 1 | Hệ thống | Gọi `recalculateAnnualProfile(personnelId)` từ profile/annual.ts |
 | 1.1 | Hệ thống | Lấy toàn bộ `DanhHieuHangNam` của quân nhân (theo năm tăng dần) |
 | 1.2 | Hệ thống | Lấy toàn bộ `ThanhTichKhoaHoc` của quân nhân |
 | 1.3 | Hệ thống | Tính `lastFlagYearInChain(records, BKBQP/CSTDTQ/BKTTCP)` |
