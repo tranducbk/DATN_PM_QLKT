@@ -3,20 +3,18 @@ import { getDecisionFilePath } from '@/lib/api/decisions';
 import { BASE_URL } from '@/configs';
 
 /**
- * Opens a decision file in a new tab via its public static URL, resolved by decision
- * number. The browser shows it in its native PDF viewer with the real path and real
- * filename, so downloading from there keeps the correct name.
+ * Opens a decision file in a new tab via a short-lived signed URL, resolved by
+ * decision number. The browser shows it in its native PDF viewer with the real
+ * filename; the link expires after a few minutes and rejects tampered URLs.
  * @param soQuyetDinh - Decision number
  * @returns Promise resolved when the file opens or an error is shown
  */
 export async function downloadDecisionFile(soQuyetDinh: string): Promise<void> {
   const res = await getDecisionFilePath(soQuyetDinh);
-  const filePath = (res.data as { file_path?: string } | undefined)?.file_path;
-  if (!res.success || !filePath) {
+  const viewUrl = (res.data as { view_url?: string } | undefined)?.view_url;
+  if (!res.success || !viewUrl) {
     message.error(res.message || 'Không tìm thấy file quyết định');
     return;
   }
-  // Encode each path segment (spaces, Vietnamese chars) but keep the slashes.
-  const url = `${BASE_URL}/${filePath.replace(/^\/+/, '').split('/').map(encodeURIComponent).join('/')}`;
-  window.open(url, '_blank');
+  window.open(`${BASE_URL}${viewUrl}`, '_blank');
 }

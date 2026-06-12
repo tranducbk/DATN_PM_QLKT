@@ -39,7 +39,7 @@ Sản phẩm được tổ chức thành ba thành phần độc lập triển k
     \item \textbf{Cơ sở dữ liệu}: PostgreSQL chạy trong tiến trình riêng. Backend kết nối qua Prisma Client, không cho phép FE truy cập trực tiếp.
 \end{itemize}
 
-Cả ba thành phần này được triển khai trên cùng một máy chủ Linux của Học viện và giao tiếp qua localhost. Bên ngoài, người dùng truy cập qua trình duyệt thông qua mạng LAN; FE phục vụ giao diện, còn trình duyệt gọi trực tiếp tới BE qua REST API và Socket.IO.
+Cả ba thành phần này được triển khai trên cùng một máy chủ Windows Server của Học viện và giao tiếp qua localhost. Bên ngoài, người dùng truy cập qua trình duyệt thông qua mạng LAN; FE phục vụ giao diện, còn trình duyệt gọi trực tiếp tới BE qua REST API và Socket.IO.
 
 \subsection{Thiết kế tổng quan các gói}
 \label{subsection:4.1.3}
@@ -874,7 +874,7 @@ Các chức năng nghiệp vụ chính được kiểm thử hộp đen thủ c�
 \textbf{STT} & \textbf{Chức năng} & \textbf{Đầu vào} & \textbf{Đầu ra mong muốn} & \textbf{Kết quả} \\ \hline
 1 & Tạo đề xuất hợp lệ & Chọn 5 quân nhân đủ điều kiện & Đề xuất ở trạng thái chờ duyệt & Đạt \\ \hline
 2 & Đề xuất quân nhân ngoài đơn vị phụ trách & Chọn quân nhân thuộc đơn vị khác & Hệ thống từ chối vì không đủ quyền & Đạt \\ \hline
-3 & Quân nhân chưa đủ điều kiện & Mới 1 năm CSTĐCS nhưng đề nghị BKBTBQP & Cảnh báo trước khi gửi & Đạt \\ \hline
+3 & Quân nhân chưa đủ điều kiện & Đề nghị BKBTBQP cho quân nhân mới 1 năm CSTĐCS & Danh hiệu chưa đủ điều kiện bị loại khỏi danh sách chọn; nếu cố gửi qua API, backend từ chối kèm lý do & Đạt \\ \hline
 4 & Lưu nháp khi tải lại trang & Tải lại trang giữa chừng & Dữ liệu nhập dở được giữ nguyên và tự xoá sau khi gửi hoặc đóng trang & Đạt \\ \hline
 \end{tabular}
 \end{table}
@@ -932,7 +932,7 @@ Các chức năng nghiệp vụ chính được kiểm thử hộp đen thủ c�
 \textbf{STT} & \textbf{Chức năng} & \textbf{Đầu vào} & \textbf{Đầu ra mong muốn} & \textbf{Kết quả} \\ \hline
 1 & Thêm cơ quan đơn vị mới & Nhập tên và mã đơn vị hợp lệ & Đơn vị mới xuất hiện trong cây tổ chức & Đạt \\ \hline
 2 & Xoá đơn vị trực thuộc có quân nhân & Chọn đơn vị trực thuộc vẫn còn quân nhân & Hệ thống từ chối xoá và báo lỗi ràng buộc dữ liệu & Đạt \\ \hline
-3 & Sửa hệ số chức vụ & Thay đổi hệ số từ 0{,}8 sang 0{,}9 & Lưu thành công, hồ sơ HCBVTQ được cập nhật & Đạt \\ \hline
+3 & Sửa hệ số chức vụ & Thay đổi hệ số từ 0{,}8 sang 0{,}9 & Lưu hệ số mới thành công; áp dụng cho bản ghi lịch sử chức vụ tạo sau đó & Đạt \\ \hline
 \end{tabular}
 \end{table}
 
@@ -946,7 +946,6 @@ Các chức năng nghiệp vụ chính được kiểm thử hộp đen thủ c�
 1 & Sao lưu thủ công & Chọn ``Sao lưu ngay'' & Tạo tệp sao lưu mới & Đạt \\ \hline
 2 & Phân quyền xem nhật ký sao lưu & Chỉ huy đơn vị mở trang nhật ký & Không hiển thị các bản ghi nhật ký sao lưu & Đạt \\ \hline
 3 & Đổi lịch sao lưu & Đổi chu kỳ từ 24 giờ sang 12 giờ & Hệ thống tự sao lưu theo lịch mới & Đạt \\ \hline
-4 & Khôi phục từ tệp sao lưu & Chọn tệp và xác nhận & Cơ sở dữ liệu được khôi phục về trạng thái của bản sao lưu & Đạt \\ \hline
 \end{tabular}
 \end{table}
 
@@ -980,13 +979,13 @@ Mac mini M4 2024 & Apple M4, RAM 16 GB, màn hình ngoài 23,8 inch FHD & macOS 
 \subsection{Yêu cầu phần cứng và phần mềm}
 \label{subsection:4.5.1}
 
-Hệ thống được thiết kế để triển khai trên một máy chủ Linux đơn lẻ, yêu cầu cấu hình phần cứng và phần mềm tối thiểu như sau:
+Hệ thống được thiết kế để triển khai trên một máy chủ Windows Server đơn lẻ, yêu cầu cấu hình phần cứng và phần mềm tối thiểu như sau:
 
 \begin{itemize}
     \item CPU: 2 nhân, 2{,}0 GHz trở lên.
     \item RAM: 4 GB (khuyến nghị 8 GB cho môi trường vài chục người dùng).
     \item Ổ cứng: 50 GB SSD cho dữ liệu và bản sao lưu.
-    \item Hệ điều hành: Ubuntu Server 22.04 LTS hoặc Debian 12.
+    \item Hệ điều hành: Windows Server 2019 hoặc Windows Server 2022.
     \item Phần mềm phụ thuộc: Node.js 20 LTS, PostgreSQL 15.
 \end{itemize}
 
@@ -1010,12 +1009,12 @@ Sau bước 4, mở trình duyệt tới \url{http://localhost:3000} và đăng 
 
 Trên máy chủ sản xuất, sản phẩm được vận hành bằng PM2, một công cụ quản lý tiến trình hỗ trợ tự khởi động lại khi tiến trình bị dừng đột ngột, ghi log có thời gian và theo dõi tài nguyên hệ thống. Tệp \texttt{ecosystem.config.js} ở thư mục gốc của dự án khai báo hai tiến trình ứng dụng: \texttt{be-qlkt} chạy bản đã build (\texttt{dist/index.js}) trong thư mục \texttt{BE-QLKT} ở cổng 4000 và \texttt{fe-qlkt} chạy \texttt{next start} trong thư mục \texttt{FE-QLKT} ở cổng 3000. Cả hai tiến trình được đặt biến môi trường \texttt{NODE\_ENV} là \texttt{production}.
 
-Khởi chạy bằng lệnh \texttt{pm2 start ecosystem.config.js}, sau đó dùng \texttt{pm2 save} để ghi nhớ danh sách tiến trình đang chạy và \texttt{pm2 startup} để cấu hình tự khởi động khi máy chủ khởi động lại. Người dùng trong mạng nội bộ truy cập giao diện do tiến trình frontend phục vụ ở cổng 3000; trình duyệt gọi trực tiếp tới backend ở cổng 4000 qua REST API và Socket.IO.
+Khởi chạy bằng lệnh \texttt{pm2 start ecosystem.config.js}, sau đó dùng \texttt{pm2 save} để ghi nhớ danh sách tiến trình đang chạy. Để PM2 tự khởi động cùng máy chủ Windows, cài gói \texttt{pm2-windows-startup} và chạy \texttt{pm2-startup install}, đăng ký PM2 như một tác vụ khởi động của Windows. Người dùng trong mạng nội bộ truy cập giao diện do tiến trình frontend phục vụ ở cổng 3000; trình duyệt gọi trực tiếp tới backend ở cổng 4000 qua REST API và Socket.IO.
 
 \subsection{Sao lưu và giám sát}
 \label{subsection:4.5.4}
 
-Tác vụ sao lưu chạy bên trong tiến trình backend qua \texttt{node-cron}, lịch và trạng thái cấu hình ngay trong DevZone. Lịch mặc định là \texttt{0 2 * * *} (02:00 hằng ngày); cho mỗi lần chạy, dịch vụ đọc 21 bảng dữ liệu, ghép chuỗi câu lệnh \texttt{INSERT INTO \dots} đã escape rồi ghi tệp vào \texttt{backups/backup\_YYYYMMDD\_HHmmss\_loai.sql}. Các tệp cũ vượt \texttt{backup\_retention\_days} (mặc định 15) được tự động xoá ở bước cleanup. PM2 cung cấp \texttt{pm2 logs} để xem log thời gian thực; với giám sát dài hạn, log gom vào \texttt{/var/log/qlkt/} và có thể tích hợp với hệ thống giám sát tập trung của Học viện trong tương lai.
+Tác vụ sao lưu chạy bên trong tiến trình backend qua \texttt{node-cron}, lịch và trạng thái cấu hình ngay trong DevZone. Lịch mặc định là \texttt{0 2 * * *} (02:00 hằng ngày); cho mỗi lần chạy, dịch vụ đọc 21 bảng dữ liệu, ghép chuỗi câu lệnh \texttt{INSERT INTO \dots} đã escape rồi ghi tệp vào \texttt{backups/backup\_YYYYMMDD\_HHmmss\_loai.sql}. Các tệp cũ vượt \texttt{backup\_retention\_days} (mặc định 15) được tự động xoá ở bước cleanup. PM2 cung cấp \texttt{pm2 logs} để xem log thời gian thực; với giám sát dài hạn, log được gom trong thư mục \texttt{logs} của PM2 và có thể tích hợp với hệ thống giám sát tập trung của Học viện trong tương lai.
 
 \section*{Kết chương}
 

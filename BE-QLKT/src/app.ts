@@ -1,5 +1,4 @@
 import 'dotenv/config';
-import path from 'path';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -42,11 +41,6 @@ export function createApp() {
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
   app.use(express.json({ limit: '10mb' }));
   app.use(cookieParser());
-
-  // Serve award files (decisions, adhoc-awards) at a stable public URL so the browser
-  // opens them in its native PDF viewer with the real path + filename. Backups live
-  // outside uploads/, so they stay private.
-  app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
   app.use(routes);
 

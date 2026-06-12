@@ -18,7 +18,7 @@ flowchart TB
     subgraph LAN[Mạng nội bộ Học viện]
         direction TB
 
-        subgraph SERVER[Máy chủ ứng dụng Linux Ubuntu 22.04 LTS]
+        subgraph SERVER[Máy chủ ứng dụng Windows Server 2022]
             direction TB
             NX[Nginx reverse proxy SSL termination port 443]
             subgraph PM2[PM2 cluster]
@@ -61,7 +61,7 @@ flowchart TB
 - **Trình duyệt**: Khuyến nghị Chrome 120+, Edge 120+, Firefox 120+ (hỗ trợ ES2020 + WebSocket)
 
 ### Máy chủ ứng dụng (App Server)
-- **OS**: Ubuntu 22.04 LTS (giả định)
+- **OS**: Windows Server 2022 (giả định)
 - **Nginx**: Reverse proxy + SSL termination (cấp cert nội bộ hoặc Let's Encrypt nếu domain public)
   - Public port 443 (HTTPS) + 80 (redirect)
   - Forward request `/` → Next.js (port 3000)
@@ -180,7 +180,7 @@ Khởi động:
 ```bash
 pm2 start ecosystem.config.js
 pm2 save
-pm2 startup     # tự khởi động khi reboot máy
+pm2-startup install     # cài pm2-windows-startup để tự khởi động khi reboot (Windows)
 ```
 
 ---

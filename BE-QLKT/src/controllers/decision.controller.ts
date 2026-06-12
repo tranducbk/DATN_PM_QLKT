@@ -3,6 +3,7 @@ import decisionService from '../services/decision.service';
 import { parsePagination, normalizeParam } from '../helpers/paginationHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
+import { buildSignedFileUrl } from '../helpers/file/signedFileUrl';
 
 interface GetAllDecisionsQuery {
   nam?: number;
@@ -204,7 +205,11 @@ class DecisionController {
         .json({ success: false, message: result.error, data: result.decision });
     }
     return ResponseHelper.success(res, {
-      data: { file_path: result.file_path, decision: result.decision },
+      data: {
+        file_path: result.file_path,
+        view_url: result.file_path ? buildSignedFileUrl(result.file_path) : null,
+        decision: result.decision,
+      },
       message: 'Lấy file path thành công',
     });
   });
