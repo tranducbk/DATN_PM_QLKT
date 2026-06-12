@@ -14,6 +14,26 @@ import { type EligibilityResult } from '../eligibility/chainEligibility';
 import { evaluatePersonalChain } from '../eligibility/personalChainEvaluator';
 import type { AnnualStreakResult, ChainContext, NCKHYearsResult, RecalculateResult, SpecialCaseResult } from './types';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  ANNUAL PROFILE (cá nhân) — tính hồ sơ danh hiệu hằng năm + ngữ cảnh chuỗi
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  HoSoHangNam là bản TỔNG HỢP suy ra từ bảng DanhHieuHangNam (mỗi năm 1 dòng
+ *  CSTDCS/CSTT...). KHÔNG nhập tay — luôn recalc lại từ dữ liệu gốc để khỏi lệch.
+ *
+ *  Vai trò file:
+ *  - getAnnualProfile: load (hoặc tạo mới rỗng) hồ sơ + ngữ cảnh đơn vị/chức vụ.
+ *  - computeChainContext / streak: ĐẾM chuỗi CSTDCS liên tục, NCKH liên tục, số
+ *    BKBQP/CSTDTQ trong cửa sổ trượt → chuẩn bị số liệu cho checkChainEligibility.
+ *  - recalculateAnnualProfile: tính lại du_dieu_kien_* + goi_y rồi UPSERT vào
+ *    HoSoHangNam. Gọi sau mỗi lần thêm/sửa/xoá danh hiệu.
+ *
+ *  Logic chuỗi (BKBQP/CSTDTQ/BKTTCP) nằm ở eligibility/* — file này chỉ query +
+ *  đếm rồi gọi evaluatePersonalChain (giữ 1 nguồn rule duy nhất).
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 /**
  * Loads or creates the annual profile with unit and position context.
  * @param personnelId - Personnel ID
@@ -26,6 +46,15 @@ export async function getAnnualProfile(personnelId: string) {
     throw new NotFoundError('Quân nhân');
   }
 
+  // Load hồ sơ + kèm đơn vị (CQĐV/ĐVTT) + chức vụ trong 1 query (Prisma include = JOIN).
+  // SQL minh hoạ:
+  //   SELECT h.*, q.*, cq.ten_don_vi, dv.ten_don_vi, cv.ten_chuc_vu
+  //     FROM "HoSoHangNam" h
+  //     JOIN      "QuanNhan"        q  ON h.quan_nhan_id        = q.id
+  //     LEFT JOIN "CoQuanDonVi"     cq ON q.co_quan_don_vi_id   = cq.id
+  //     LEFT JOIN "DonViTrucThuoc"  dv ON q.don_vi_truc_thuoc_id = dv.id
+  //     LEFT JOIN "ChucVu"          cv ON q.chuc_vu_id          = cv.id
+  //     WHERE h.quan_nhan_id = $personnelId;
   let profile = await annualProfileRepository.findUniqueRaw({
     where: { quan_nhan_id: personnelId },
     include: {
@@ -472,6 +501,11 @@ export async function recalculateAnnualProfile(personnelId: string, year: number
     goi_y,
   };
 
+  // UPSERT hồ sơ: chưa có → INSERT, đã có → UPDATE (idempotent, recalc bao nhiêu lần
+  // cũng ra 1 dòng/quân nhân). SQL minh hoạ:
+  //   INSERT INTO "HoSoHangNam" (quan_nhan_id, cstdcs_lien_tuc, du_dieu_kien_bkbqp, ..., goi_y)
+  //     VALUES ($qnId, ...)
+  //     ON CONFLICT (quan_nhan_id) DO UPDATE SET cstdcs_lien_tuc = EXCLUDED.cstdcs_lien_tuc, ...;
   const hoSoHangNam = await annualProfileRepository.upsert(
     personnelId,
     { quan_nhan_id: personnelId, ...profileData },
@@ -542,6 +576,10 @@ export async function checkAwardEligibility(personnelId: string, year: number, d
  * @returns Aggregate counts and per-personnel error list
  */
 export async function recalculateAll(): Promise<RecalculateResult> {
+  // Lấy id + tên TẤT CẢ quân nhân (select gọn để khỏi kéo cả hàng nặng).
+  // SQL minh hoạ:  SELECT id, ho_ten FROM "QuanNhan";
+  // Sau đó recalc tuần tự từng người (best-effort: 1 người lỗi không chặn cả lô —
+  // gom vào errors). KHÔNG gói transaction vì là job tổng, không cần all-or-nothing.
   const allPersonnel = await quanNhanRepository.findManyRaw({
     select: { id: true, ho_ten: true },
   });

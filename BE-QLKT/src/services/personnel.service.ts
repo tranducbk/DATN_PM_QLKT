@@ -290,11 +290,20 @@ class PersonnelService {
       personnelData.don_vi_truc_thuoc_id = unit_id;
     }
 
-    // Hash password outside transaction to reduce lock duration.
+    // Hash password NGOÀI transaction để giảm thời gian giữ lock (bcrypt chậm ~100ms,
+    // không nên giữ row-lock trong lúc băm).
     const defaultPassword = DEFAULT_PASSWORD || 'Hvkhqs@123';
     const hashedPassword = await bcrypt.hash(defaultPassword, 10);
 
-    // Wrap all writes in one transaction for consistency.
+    // ─── TRANSACTION: tạo quân nhân (form "Thêm quân nhân" — CCCD nhập ngay) ───
+    // Đây là luồng cccd-first (username = CCCD), khác account.service (account-first,
+    // cccd điền sau). 4 thao tác nguyên tử, throw bất kỳ → Prisma rollback hết.
+    // SQL minh hoạ:
+    //   INSERT INTO "QuanNhan"     (cccd, ho_ten, chuc_vu_id, ngay_nhap_ngu, ...) VALUES ($cccd, $cccd, ...);
+    //   SELECT he_so_chuc_vu FROM "ChucVu" WHERE id = $position;   -- hệ số cho dòng lịch sử
+    //   INSERT INTO "LichSuChucVu" (quan_nhan_id, chuc_vu_id, he_so_chuc_vu, ngay_bat_dau) VALUES (...);
+    //   INSERT INTO "TaiKhoan"     (username, password_hash, role, quan_nhan_id) VALUES ($cccd, ...);
+    //   UPDATE "CoQuanDonVi" | "DonViTrucThuoc" SET so_luong = so_luong + 1 WHERE id = $unit;
     const result = await prisma.$transaction(async prismaTx => {
       const newPersonnel = await quanNhanRepository.create(personnelData, prismaTx);
 

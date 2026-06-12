@@ -44,8 +44,27 @@ const NIEN_HAN_MEDAL_STRATEGY: Partial<Record<ProposalType, ProposalStrategy>> =
   [PROPOSAL_TYPES.KNC_VSNXD_QDNDVN]: kncStrategy,
 };
 
-/**
- * Runs all per-type imports inside a single transaction and finalizes proposal status.
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  APPROVE TRANSACTION — duyệt đề xuất = ghi NHIỀU BẢNG nguyên tử (all-or-nothing)
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  Toàn bộ nằm trong 1 prisma.$transaction → thành công HẾT hoặc rollback HẾT
+ *  (không có trạng thái "duyệt một nửa": vd đã insert khen thưởng nhưng đề xuất
+ *  vẫn PENDING). Bất kỳ throw nào bên trong → Prisma tự ROLLBACK mọi INSERT/UPDATE.
+ *
+ *  CÁC BƯỚC (theo thứ tự, vì có ràng buộc FK + nghiệp vụ):
+ *  1. syncDecisionFiles: tạo/ghi FileQuyetDinh TRƯỚC — bảng khen thưởng tham chiếu
+ *     so_quyet_dinh qua hard FK, insert award trước sẽ vi phạm khoá ngoại.
+ *  2. importInTransaction theo strategy ứng loại đề xuất (đơn vị / cống hiến /
+ *     cá nhân) — mỗi strategy INSERT vào bảng khen thưởng của nó.
+ *  3. Loại "niên hạn" (HCCSVV/HCQKQT/KNC) → import thêm bản ghi huân chương.
+ *  4. NCKH (thành tích KH) có thể kèm bất kỳ loại nào → import thêm.
+ *  5. Có lỗi tích luỹ (acc.errors) → throw → rollback (không duyệt nửa vời).
+ *  6. Chốt status bằng OPTIMISTIC LOCK (xem comment trong hàm).
+ *
+ *  Tham số chính: ctx (proposal + admin + năm), *Data (các mảng đã admin chỉnh),
+ *  decisions/mappings/pdfPaths (số QĐ + file đính kèm), acc (gom kết quả + lỗi).
  */
 export async function runImportTransaction(
   ctx: ProposalContext,
@@ -125,6 +144,13 @@ export async function runImportTransaction(
         );
       }
 
+      // OPTIMISTIC LOCK: chỉ chốt nếu đề xuất VẪN còn PENDING. Nếu 2 admin cùng
+      // bấm duyệt: người đầu đổi status → người sau updateMany khớp 0 dòng
+      // (count=0) → throw → rollback cả transaction (không duyệt 2 lần / ghi đè).
+      // SQL minh hoạ:
+      //   UPDATE "BangDeXuat" SET status = 'APPROVED', ...
+      //     WHERE id = $proposalId AND status = 'PENDING';
+      //   -- count = số dòng khớp; = 0 ⇒ status đã bị người khác đổi trước đó.
       const updateResult = await proposalRepository.updateMany(
         { id: proposalId, status: PROPOSAL_STATUS.PENDING },
         updateData,

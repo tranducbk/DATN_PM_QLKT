@@ -387,6 +387,18 @@ class AccountService {
 
     const hashedPassword = await bcrypt.hash(finalPassword, 10);
 
+    // ─── TRANSACTION: tạo tài khoản + (nếu MANAGER/USER chưa gắn quân nhân) tự sinh hồ sơ ───
+    // Một bộ 4 thao tác phải đi cùng nhau, gói trong 1 transaction để không lệch
+    // dữ liệu (vd có TaiKhoan nhưng thiếu QuanNhan, hoặc so_luong đếm sai khi 1
+    // bước fail). Bất kỳ throw nào → Prisma ROLLBACK toàn bộ.
+    // SQL minh hoạ (nhánh có personnelDataForCreate):
+    //   INSERT INTO "QuanNhan"     (cccd, ho_ten, chuc_vu_id, ...) VALUES (NULL, $username, ...);
+    //     -- cccd=NULL: tạo trước, CCCD điền sau khi cập nhật hồ sơ
+    //   INSERT INTO "LichSuChucVu" (quan_nhan_id, chuc_vu_id, he_so_chuc_vu, ngay_bat_dau)
+    //     VALUES ($qnId, $chucVu, $heSo, NOW());          -- mốc giữ chức hiện tại
+    //   UPDATE "DonViTrucThuoc" SET so_luong = so_luong + 1 WHERE id = $dvtt;
+    //     -- hoặc "CoQuanDonVi" nếu không có ĐVTT (ưu tiên ĐVTT, tránh đếm 2 lần)
+    //   INSERT INTO "TaiKhoan"     (quan_nhan_id, username, password_hash, role) VALUES (...);
     const newAccount = await prisma.$transaction(async prismaTx => {
       if (personnelDataForCreate) {
         const newPersonnel = await quanNhanRepository.create(

@@ -426,6 +426,15 @@ export async function confirmImport(validItems: UnitAnnualAwardValidItem[], admi
     throw new ValidationError(decisionErrors.join('\n'));
   }
 
+  // ─── TRANSACTION CONFIRM: UPSERT danh hiệu đơn vị theo lô ───
+  // Khoá UPSERT = (đơn vị, năm): CQĐV dùng unique (co_quan_don_vi_id, nam),
+  // ĐVTT dùng (don_vi_truc_thuoc_id, nam) → cùng đơn vị+năm thì gộp 1 dòng
+  // (BKBQP/BKTTCP set cờ nhan_* trên chính dòng đó, không tạo dòng riêng).
+  // SQL minh hoạ:
+  //   INSERT INTO "DanhHieuDonViHangNam" (co_quan_don_vi_id|don_vi_truc_thuoc_id, nam, danh_hieu, ...)
+  //     VALUES (...)
+  //     ON CONFLICT (don_vi_truc_thuoc_id, nam) DO UPDATE SET nhan_bkbqp = TRUE, so_quyet_dinh_bkbqp = ...;
+  // Bọc transaction → cả lô import nguyên tử.
   return await prisma.$transaction(
     async prismaTx => {
       const results = [];

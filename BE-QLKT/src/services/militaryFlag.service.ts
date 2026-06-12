@@ -131,6 +131,10 @@ class MilitaryFlagService {
     const seenInFile = new Set<string>();
     const currentYear = new Date().getFullYear();
 
+    // ─── BATCH QUERY (tránh N+1) ───────────────────────────────────
+    // Gom TẤT CẢ id quân nhân trong file vào 1 Set TRƯỚC, rồi query đúng
+    // 1 lần với `WHERE id IN (...)`. Nếu query trong vòng lặp từng dòng
+    // → N truy vấn riêng lẻ (file 500 dòng = 500 round-trip DB → rất chậm).
     const allPersonnelIds = new Set<string>();
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
       const row = worksheet.getRow(rowNumber);
@@ -141,6 +145,16 @@ class MilitaryFlagService {
       }
     }
 
+    // 4 truy vấn ĐỘC LẬP → chạy song song bằng Promise.all (tổng thời gian
+    // = query chậm nhất, không phải tổng). SQL minh hoạ tương ứng:
+    //   1) SELECT q.id, q.ho_ten, q.cap_bac, q.ngay_nhap_ngu, c.ten_chuc_vu
+    //        FROM "QuanNhan" q LEFT JOIN "ChucVu" c ON q.chuc_vu_id = c.id
+    //        WHERE q.id IN ('id1','id2', ...);          -- quân nhân có trong file
+    //   2) SELECT * FROM "HuanChuongQuanKyQuyetThang"
+    //        WHERE quan_nhan_id IN ('id1','id2', ...);   -- ai đã có HC QKQT (chặn cấp trùng)
+    //   3) SELECT so_quyet_dinh FROM "FileQuyetDinh";    -- tập số QĐ hợp lệ để đối chiếu
+    //   4) SELECT * FROM "BangDeXuat"
+    //        WHERE loai_de_xuat = 'HC_QKQT' AND status = 'PENDING'; -- đang chờ duyệt (chặn trùng)
     const [personnelList, existingAwardsList, existingDecisions, pendingProposals] =
       await Promise.all([
         allPersonnelIds.size > 0
@@ -177,6 +191,8 @@ class MilitaryFlagService {
       item => item.personnel_id as string
     );
 
+    // List → Map/Set để vòng lặp validate bên dưới tra O(1) mỗi dòng
+    // (thay vì .find()/.includes() O(n) mỗi dòng → tránh tổng O(n²) cho cả file).
     const personnelMap = new Map(personnelList.map(p => [p.id, p]));
     const existingAwardsMap = new Map(existingAwardsList.map(a => [a.quan_nhan_id, a]));
     const validDecisionNumbers = new Set(existingDecisions.map(d => d.so_quyet_dinh));

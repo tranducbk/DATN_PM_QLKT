@@ -45,6 +45,13 @@ import type {
 async function resolveAnnualRewardImportContext(buffer: Buffer): Promise<AnnualRewardImportContext> {
   const parsed = await parseAnnualRewardImport(buffer);
 
+  // Batch query (tránh N+1): gom id từ file rồi 2 query song song theo `IN (...)`,
+  // thay vì query từng dòng. SQL minh hoạ:
+  //   SELECT q.*, c.ten_chuc_vu FROM "QuanNhan" q
+  //     LEFT JOIN "ChucVu" c ON q.chuc_vu_id = c.id
+  //     WHERE q.id IN ('id1','id2', ...);            -- quân nhân có trong file
+  //   SELECT * FROM "DanhHieuHangNam"
+  //     WHERE quan_nhan_id IN ('id1','id2', ...);     -- danh hiệu đã có (đối chiếu trùng năm)
   const [personnelList, existingRewards] = await Promise.all([
     quanNhanRepository.findManyRaw({
       where: { id: { in: parsed.personnelIds } },
@@ -225,6 +232,14 @@ export async function importFromExcelBuffer(buffer: Buffer): Promise<ImportResul
     });
   }
 
+  // ─── TRANSACTION CONFIRM IMPORT: ghi cả lô trong 1 transaction ───
+  // Lặp từng dòng đã validate: chưa có (key quan_nhan_id+nam) → INSERT, đã có → UPDATE.
+  // Bọc transaction để cả file import "tất cả hoặc không gì" — lỗi giữa chừng không
+  // để lại nửa danh sách (rollback hết). SQL minh hoạ mỗi dòng:
+  //   -- dòng mới:
+  //   INSERT INTO "DanhHieuHangNam" (quan_nhan_id, nam, danh_hieu, cap_bac, ...) VALUES (...);
+  //   -- dòng đã tồn tại (cùng quan_nhan_id + nam):
+  //   UPDATE "DanhHieuHangNam" SET danh_hieu = $dh, cap_bac = $cb, ... WHERE id = $existingId;
   const { created, updated } = await prisma.$transaction(
     async prismaTx => {
       const txCreated: string[] = [];

@@ -52,7 +52,24 @@ export function calculateThoiGian(quanNhan: QuanNhan): ServiceTimeJson | null {
   };
 }
 
-/** Upsert medal awards in a single transaction for one-time or keyed-by-danh-hieu medal types. */
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  BULK UPSERT MEDAL — cấp hàng loạt huân chương (idempotent qua UPSERT)
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  UPSERT = INSERT nếu chưa có, UPDATE nếu đã có (xác định bởi `buildWhere`).
+ *  Dùng cho huân chương kiểu "1 bản ghi/người" (vd HCBVTQ — nâng hạng = update)
+ *  hoặc khoá theo danh-hiệu+năm → cấp lại KHÔNG tạo dòng trùng (idempotent).
+ *
+ *  SQL minh hoạ (Prisma upsert → INSERT ... ON CONFLICT):
+ *    INSERT INTO <bảng_huân_chương> (quan_nhan_id, nam, cap_bac, so_quyet_dinh, ...)
+ *      VALUES (...)
+ *      ON CONFLICT (<khoá từ buildWhere — vd quan_nhan_id [, danh_hieu, nam]>)
+ *      DO UPDATE SET cap_bac = EXCLUDED.cap_bac, so_quyet_dinh = EXCLUDED.so_quyet_dinh, ...;
+ *
+ *  Caller bọc cả vòng lặp trong 1 transaction → cả lô cấp cùng lúc hoặc rollback
+ *  hết (không cấp được nửa danh sách).
+ */
 async function bulkUpsertMedalAward(
   // Prisma's per-model upsert args differ by table — caller passes a concrete delegate; loose typing here keeps the helper generic.
   model: {
@@ -96,6 +113,8 @@ async function bulkUpsertMedalAward(
     };
     if (thang != null) baseData.thang = thang;
 
+    // UPSERT từng người: where khớp → UPDATE (nâng hạng / cấp lại), không khớp
+    // → INSERT mới. create và update cùng dùng baseData → kết quả luôn nhất quán.
     await model.upsert({
       where,
       create: baseData,

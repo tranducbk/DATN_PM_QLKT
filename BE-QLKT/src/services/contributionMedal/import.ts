@@ -527,6 +527,12 @@ export async function confirmImport(validItems: ContributionAwardValidItem[]) {
     throw new ValidationError(downgradeErrors.join('; '));
   }
 
+  // ─── TRANSACTION CONFIRM: INSERT HCBVTQ theo lô ───
+  // validItems đã qua validation (chặn trùng + chặn HẠ hạng — xem contributionMedalRankUpgrade),
+  // nên ở đây chỉ INSERT từng dòng trong 1 transaction → cả lô nguyên tử.
+  // SQL minh hoạ:
+  //   INSERT INTO "KhenThuongHCBVTQ" (quan_nhan_id, danh_hieu, nam, thang, cap_bac, so_quyet_dinh, ...)
+  //     VALUES (...);
   return await prisma.$transaction(
     async prismaTx => {
       const results = [];

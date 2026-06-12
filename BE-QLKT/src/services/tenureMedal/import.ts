@@ -533,6 +533,13 @@ export async function confirmImport(validItems: HccsvvValidItem[]) {
     throw new ValidationError(orderConflicts.join('; '));
   }
 
+  // ─── TRANSACTION CONFIRM: UPSERT HCCSVV theo lô ───
+  // Khoá UPSERT = (quan_nhan_id, danh_hieu): mỗi người mỗi hạng (Ba/Nhì/Nhất) 1 dòng,
+  // import lại cùng hạng → UPDATE (không tạo trùng). SQL minh hoạ:
+  //   INSERT INTO "KhenThuongHCCSVV" (quan_nhan_id, danh_hieu, nam, thang, ...)
+  //     VALUES (...)
+  //     ON CONFLICT (quan_nhan_id, danh_hieu) DO UPDATE SET nam = $nam, so_quyet_dinh = ...;
+  // Bọc transaction → cả file import nguyên tử (lỗi giữa chừng rollback hết).
   return await prisma.$transaction(
     async prismaTx => {
       const results = [];
