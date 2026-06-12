@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Form, Input, Select, Button, message, Typography } from 'antd';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { ROLES, roleSelectOptions } from '@/constants/roles.constants';
-import { getApiErrorMessage } from '@/lib/apiError';
+import { getApiErrorMessage } from '@/lib/http/apiError';
 import type { ManagerPositionRow, UnitApiRow } from '@/lib/types/personnelList';
 
 const { Text } = Typography;

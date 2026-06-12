@@ -22,6 +22,7 @@ import { authLimiter } from '../configs/rateLimiter';
 import { validate } from '../middlewares/validate';
 import { authValidation } from '../validations';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { RESOURCE_SLUGS } from '../constants/resourceSlugs.constants';
 
 const router = Router();
 
@@ -36,18 +37,18 @@ router.post(
   validate(authValidation.login),
   auditLog({
     action: AUDIT_ACTIONS.LOGIN,
-    resource: 'auth',
-    getDescription: getLogDescription('auth', 'LOGIN'),
+    resource: RESOURCE_SLUGS.AUTH,
+    getDescription: getLogDescription(RESOURCE_SLUGS.AUTH, 'LOGIN'),
   }),
   authController.login
 );
 
 /**
  * @route   POST /api/auth/refresh
- * @desc    Refresh access token using a valid refresh token
+ * @desc    Refresh access token using the httpOnly refresh cookie
  * @access  Public
  */
-router.post('/refresh', authLimiter, validate(authValidation.refreshToken), authController.refresh);
+router.post('/refresh', authLimiter, authController.refresh);
 
 /**
  * @route   POST /api/auth/logout
@@ -58,8 +59,8 @@ router.post(
   '/logout',
   auditLog({
     action: AUDIT_ACTIONS.LOGOUT,
-    resource: 'auth',
-    getDescription: getLogDescription('auth', 'LOGOUT'),
+    resource: RESOURCE_SLUGS.AUTH,
+    getDescription: getLogDescription(RESOURCE_SLUGS.AUTH, 'LOGOUT'),
   }),
   authController.logout
 );
@@ -76,8 +77,8 @@ router.post(
   validate(authValidation.changePassword),
   auditLog({
     action: AUDIT_ACTIONS.CHANGE_PASSWORD,
-    resource: 'auth',
-    getDescription: getLogDescription('auth', 'CHANGE_PASSWORD'),
+    resource: RESOURCE_SLUGS.AUTH,
+    getDescription: getLogDescription(RESOURCE_SLUGS.AUTH, 'CHANGE_PASSWORD'),
   }),
   authController.changePassword
 );

@@ -6,7 +6,7 @@
 
 import { Router } from 'express';
 import militaryFlagController from '../controllers/militaryFlag.controller';
-import { verifyToken, checkRole, requireAdminOrManager, requireAdminOnly } from '../middlewares/auth';
+import { verifyToken, checkRole, requireManager, requireAdminOnly } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
 import { ROLES } from '../constants/roles.constants';
@@ -59,7 +59,7 @@ router.post(
 router.get(
   '/',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   militaryFlagController.getAll
 );
 
@@ -71,7 +71,7 @@ router.get(
 router.get(
   '/export',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   militaryFlagController.exportToExcel
 );
 
@@ -83,7 +83,7 @@ router.get(
 router.get(
   '/statistics',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   militaryFlagController.getStatistics
 );
 
@@ -107,7 +107,7 @@ router.get(
 router.get(
   '/check-received/:personnel_id',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   militaryFlagController.checkReceived
 );
 

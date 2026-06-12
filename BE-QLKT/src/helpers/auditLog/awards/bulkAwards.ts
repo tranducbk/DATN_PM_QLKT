@@ -26,7 +26,7 @@ async function buildBulkDescription(
 ): Promise<string> {
     try {
       const data = parseResponseData(responseData);
-      const result = asRecord(data?.data) || data || {};
+      const result = asRecord(data?.data) || {};
 
       const type = req.body?.type || '';
       const nam = req.body?.nam || '';

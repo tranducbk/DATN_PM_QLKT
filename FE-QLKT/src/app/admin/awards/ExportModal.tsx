@@ -4,13 +4,14 @@ import { useState, useEffect } from 'react';
 import { Modal, Select, InputNumber, Space, Typography, Table, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { DownloadOutlined } from '@ant-design/icons';
-import { apiClient } from '@/lib/apiClient';
-import { getApiErrorMessage } from '@/lib/apiError';
+import { apiClient } from '@/lib/http/apiClient';
+import { getApiErrorMessage } from '@/lib/http/apiError';
 import { DANH_HIEU_MAP } from '@/lib/award/awardsHelper';
 import {
   AWARD_TAB_LABELS,
   AWARD_TAB_DANH_HIEU,
   AWARD_TAB_FILENAME,
+  AWARD_TAB_META,
   INDIVIDUAL_AWARD_TABS,
   type AwardType,
 } from '@/constants/danhHieu.constants';
@@ -116,7 +117,7 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
     setSelectedPersonnelIds([]);
   }, [donViId, open, activeTab]);
 
-  const hasDanhHieuFilter = ['CNHN', 'DVHN', 'HCCSVV', 'HCBVTQ'].includes(activeTab);
+  const hasDanhHieuFilter = AWARD_TAB_META[activeTab].hasDanhHieuFilter;
   const hasUnitFilter = activeTab !== 'DVHN'; // DVHN tab exports all units — no unit filter needed
   const isIndividualTab = INDIVIDUAL_AWARD_TABS.includes(activeTab);
   const isUnitTab = activeTab === 'DVHN';
@@ -170,7 +171,6 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
       const exportFn = exportFnMap[activeTab] ?? apiClient.exportAwards.bind(apiClient);
       const blob = await exportFn(params);
 
-      // Build filename
       const baseFilename = AWARD_TAB_FILENAME[activeTab] ?? 'khen_thuong';
       const yearSuffix =
         tuNam && denNam && tuNam !== denNam
@@ -270,7 +270,7 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
       destroyOnClose
     >
       <Space direction="vertical" size="middle" style={{ width: '100%', marginTop: 16 }}>
-        {/* Khoảng năm */}
+        {/* Year range */}
         <div>
           <Text strong style={{ display: 'block', marginBottom: 8 }}>
             Khoảng thời gian
@@ -299,7 +299,7 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
           </Text>
         </div>
 
-        {/* Đơn vị */}
+        {/* Unit */}
         {hasUnitFilter && (
           <div>
             <Text strong style={{ display: 'block', marginBottom: 8 }}>
@@ -318,7 +318,7 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
           </div>
         )}
 
-        {/* Chọn quân nhân (cho tab cá nhân) */}
+        {/* Personnel selection (individual tab) */}
         {isIndividualTab && donViId && (
           <div>
             <Text strong style={{ display: 'block', marginBottom: 8 }}>
@@ -344,7 +344,7 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
           </div>
         )}
 
-        {/* Chọn đơn vị (cho tab đơn vị) */}
+        {/* Unit selection (unit tab) */}
         {isUnitTab && units.length > 0 && (
           <div>
             <Text strong style={{ display: 'block', marginBottom: 8 }}>
@@ -369,7 +369,7 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
           </div>
         )}
 
-        {/* Danh hiệu */}
+        {/* Award title */}
         {hasDanhHieuFilter && (
           <div>
             <Text strong style={{ display: 'block', marginBottom: 8 }}>
@@ -389,7 +389,7 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
           </div>
         )}
 
-        {/* Loại thành tích khoa học */}
+        {/* Scientific achievement type */}
         {activeTab === 'NCKH' && (
           <div>
             <Text strong style={{ display: 'block', marginBottom: 8 }}>

@@ -135,8 +135,8 @@ flowchart LR
 ```
 
 **Ghi chú**:
-1. Thứ tự kiểm tra ở bước duyệt: **trùng lặp trước** (`runDuplicateChecks`) rồi **điều kiện** (`runEligibilityChecks`) — khớp `services/proposal/approve.ts:289–291`. Nếu trùng lặp → fail luôn, không cần check điều kiện.
-2. Bước `S6` bao gồm một giao dịch DB nguyên tử (`prisma.$transaction` ở `approve/import.ts:51`) — tạo `FileQuyetDinh`, lưu khen thưởng, cập nhật trạng thái đề xuất. Khoá lạc quan đảm bảo chỉ một yêu cầu phê duyệt thành công khi có race condition.
+1. Thứ tự kiểm tra ở bước duyệt: **trùng lặp trước** (`runDuplicateChecks`) rồi **điều kiện** (`runEligibilityChecks`) — khớp `services/proposal/approve.ts:290–292`. Nếu trùng lặp → fail luôn, không cần check điều kiện.
+2. Bước `S6` bao gồm một giao dịch DB nguyên tử (`prisma.$transaction` ở `approve/import.ts:64`) — tạo `FileQuyetDinh`, lưu khen thưởng, cập nhật trạng thái đề xuất. Khoá lạc quan đảm bảo chỉ một yêu cầu phê duyệt thành công khi có race condition.
 
 ---
 

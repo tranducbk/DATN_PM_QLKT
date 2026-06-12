@@ -6,7 +6,6 @@ import {
   getUnitNameFromUnitId,
   queryPositionInfo,
   withPrisma,
-  formatDate,
   asRecord,
 } from './constants';
 import type { ChucVuWithUnit } from './constants';
@@ -64,12 +63,11 @@ const positions: Record<
   CREATE: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
     const tenChucVu = req.body?.ten_chuc_vu || FALLBACK.NO_POSITION;
     const unitId = req.body?.unit_id || null;
-    const ngayHienTai = formatDate(new Date());
 
     const parsedData = parseResponseData(responseData);
     const position = asRecord(parsedData?.data) || parsedData;
 
-    let finalTenChucVu = (position?.ten_chuc_vu as string) || tenChucVu;
+    const finalTenChucVu = (position?.ten_chuc_vu as string) || tenChucVu;
     let tenDonVi = getUnitNameFromChucVu(position as ChucVuWithUnit | null);
 
     if (!tenDonVi && unitId) {
@@ -80,17 +78,13 @@ const positions: Record<
 
     let description = `Tạo chức vụ: ${finalTenChucVu}`;
     if (tenDonVi) {
-      description += ` (${tenDonVi})`;
-    }
-    if (ngayHienTai) {
-      description += ` - Ngày: ${ngayHienTai}`;
+      description += `\n- Đơn vị: ${tenDonVi}`;
     }
     return description;
   },
   UPDATE: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
     const positionId = req.params?.id;
     const tenChucVu = req.body?.ten_chuc_vu || null;
-    const ngayHienTai = formatDate(new Date());
 
     const parsedData = parseResponseData(responseData);
     const position = asRecord(parsedData?.data) || parsedData;
@@ -112,16 +106,11 @@ const positions: Record<
 
     let description = `Cập nhật chức vụ: ${finalTenChucVu || FALLBACK.NO_POSITION}`;
     if (tenDonVi) {
-      description += ` (${tenDonVi})`;
-    }
-    if (ngayHienTai) {
-      description += ` - Ngày: ${ngayHienTai}`;
+      description += `\n- Đơn vị: ${tenDonVi}`;
     }
     return description;
   },
   DELETE: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
-    const ngayHienTai = formatDate(new Date());
-
     const parsedData = parseResponseData(responseData);
     const position = asRecord(parsedData?.data) || parsedData;
 
@@ -132,13 +121,10 @@ const positions: Record<
     if (tenChucVu) {
       description += `: ${tenChucVu}`;
       if (tenDonVi) {
-        description += ` (${tenDonVi})`;
+        description += `\n- Đơn vị: ${tenDonVi}`;
       }
     } else {
       description += ` (không xác định được thông tin)`;
-    }
-    if (ngayHienTai) {
-      description += ` - Ngày: ${ngayHienTai}`;
     }
 
     return description;

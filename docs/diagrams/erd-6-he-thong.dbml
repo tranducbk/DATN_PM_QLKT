@@ -1,0 +1,49 @@
+// ERD con — Hệ thống (Nhật ký · Thông báo · Cấu hình).
+Project erd_he_thong { database_type: 'PostgreSQL' }
+
+Table TaiKhoan {
+  id varchar(30) [pk]
+  username varchar(100)
+  Note: 'stub — chi tiết ở ERD-1'
+}
+
+Table SystemLog {
+  id varchar(30) [pk]
+  nguoi_thuc_hien_id varchar(30)
+  actor_role varchar(20) [not null]
+  action varchar(50) [not null]
+  resource varchar(50) [not null]
+  tai_nguyen_id varchar(30)
+  description varchar(500) [not null]
+  payload jsonb
+  ip_address varchar(45)
+  user_agent text
+  createdAt timestamp [not null]
+}
+
+Table ThongBao {
+  id varchar(30) [pk]
+  nguoi_nhan_id varchar(30)
+  recipient_role varchar(20) [not null]
+  type varchar(50) [not null]
+  title varchar(255) [not null]
+  message varchar(500) [not null]
+  resource varchar(50)
+  tai_nguyen_id varchar(30)
+  link varchar(255)
+  is_read boolean [not null, default: false]
+  nhat_ky_he_thong_id varchar(30)
+  createdAt timestamp [not null]
+  readAt timestamp
+}
+
+Table SystemSetting {
+  id varchar(30) [pk]
+  key varchar(100) [not null, unique]
+  value text [not null]
+  updatedAt timestamp [not null]
+}
+
+Ref: SystemLog.nguoi_thuc_hien_id > TaiKhoan.id [delete: set null]
+Ref: ThongBao.nguoi_nhan_id > TaiKhoan.id [delete: cascade]
+Ref: ThongBao.nhat_ky_he_thong_id > SystemLog.id [delete: set null]

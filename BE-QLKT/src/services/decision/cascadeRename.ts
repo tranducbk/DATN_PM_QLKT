@@ -77,27 +77,27 @@ async function renameInProposalPayloads(
     const updates: Prisma.BangDeXuatUncheckedUpdateInput = {};
     let rowChanged = false;
 
-    const dh = renameItems(row.data_danh_hieu, DANH_HIEU_KEYS, oldSqd, newSqd);
-    if (dh.changed) {
-      updates.data_danh_hieu = dh.next as Prisma.InputJsonValue;
+    const danhHieuRename = renameItems(row.data_danh_hieu, DANH_HIEU_KEYS, oldSqd, newSqd);
+    if (danhHieuRename.changed) {
+      updates.data_danh_hieu = danhHieuRename.next as Prisma.InputJsonValue;
       rowChanged = true;
     }
 
-    const tt = renameItems(row.data_thanh_tich, SINGLE_KEY, oldSqd, newSqd);
-    if (tt.changed) {
-      updates.data_thanh_tich = tt.next as Prisma.InputJsonValue;
+    const thanhTichRename = renameItems(row.data_thanh_tich, SINGLE_KEY, oldSqd, newSqd);
+    if (thanhTichRename.changed) {
+      updates.data_thanh_tich = thanhTichRename.next as Prisma.InputJsonValue;
       rowChanged = true;
     }
 
-    const nh = renameItems(row.data_nien_han, SINGLE_KEY, oldSqd, newSqd);
-    if (nh.changed) {
-      updates.data_nien_han = nh.next as Prisma.InputJsonValue;
+    const nienHanRename = renameItems(row.data_nien_han, SINGLE_KEY, oldSqd, newSqd);
+    if (nienHanRename.changed) {
+      updates.data_nien_han = nienHanRename.next as Prisma.InputJsonValue;
       rowChanged = true;
     }
 
-    const ch = renameItems(row.data_cong_hien, SINGLE_KEY, oldSqd, newSqd);
-    if (ch.changed) {
-      updates.data_cong_hien = ch.next as Prisma.InputJsonValue;
+    const congHienRename = renameItems(row.data_cong_hien, SINGLE_KEY, oldSqd, newSqd);
+    if (congHienRename.changed) {
+      updates.data_cong_hien = congHienRename.next as Prisma.InputJsonValue;
       rowChanged = true;
     }
 

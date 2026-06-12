@@ -26,7 +26,7 @@ import {
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { useTheme } from '@/components/ThemeProvider';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { ROLES, ROLE_LABELS, ROLE_COLORS, roleSelectOptions } from '@/constants/roles.constants';
 

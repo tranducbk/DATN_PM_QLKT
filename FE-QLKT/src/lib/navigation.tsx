@@ -27,6 +27,7 @@ const ROUTE_KEY_MAP: ReadonlyArray<readonly [string, string]> = [
   ['/admin/accounts', 'accounts'],
   ['/admin/system-logs', 'system-logs'],
   ['/super-admin/accounts', 'accounts'],
+  ['/super-admin/personnel', 'personnel'],
   ['/super-admin/categories', 'categories'],
   ['/super-admin/add-awards', 'add-awards'],
   ['/super-admin/system-logs', 'system-logs'],
@@ -75,7 +76,7 @@ export function getMenuItemsByRole(
       {
         key: 'personnel',
         icon: <TeamOutlined />,
-        label: <Link href="/admin/personnel">Quản lý quân nhân</Link>,
+        label: <Link href="/super-admin/personnel">Quản lý quân nhân</Link>,
       },
       {
         key: 'categories',

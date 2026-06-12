@@ -796,6 +796,28 @@ flowchart LR
 
 ---
 
+## A1.16 — Use case phân rã: Nhập và xuất dữ liệu Excel
+
+```mermaid
+flowchart LR
+    AD(((Phòng Chính trị)))
+    subgraph SYS[Nhập và xuất dữ liệu Excel]
+        UC1(Tải tệp mẫu Excel theo loại nghiệp vụ)
+        UC2(Xem trước và kiểm tra dữ liệu nhập)
+        UC3(Xác nhận nhập vào cơ sở dữ liệu)
+        UC4(Xuất danh sách khen thưởng ra Excel)
+        UC3 -.->|include| UC2
+    end
+    AD --- UC1
+    AD --- UC2
+    AD --- UC3
+    AD --- UC4
+```
+
+**Ghi chú**: nhập/xuất Excel là chức năng cấp Admin (Phòng Chính trị). Bước Xác nhận `include` Xem trước — phải xem trước hợp lệ mới được ghi vào CSDL trong một transaction (all-or-nothing).
+
+---
+
 ## Tổng kết
 
 | # | Sơ đồ | Số use case | Actor |

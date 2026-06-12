@@ -199,6 +199,14 @@ class AccountController {
           );
         }
       }
+
+      // Block self-demotion: changing your own role would revoke your current privileges mid-session.
+      if (id === user?.id) {
+        const ownAccount = await accountService.getAccountById(id);
+        if (String(ownAccount.role) !== role) {
+          return ResponseHelper.forbidden(res, 'Bạn không thể thay đổi vai trò của chính mình.');
+        }
+      }
       updateData.role = role;
     }
 
@@ -219,7 +227,7 @@ class AccountController {
     if (!account_id) {
       return ResponseHelper.badRequest(res, 'Vui lòng cung cấp thông tin tài khoản');
     }
-    const result = await accountService.resetPassword(account_id);
+    const result = await accountService.resetPassword(account_id, req.user?.role);
     return ResponseHelper.success(res, { message: result.message });
   });
 
@@ -231,7 +239,7 @@ class AccountController {
       return ResponseHelper.badRequest(res, 'Thiếu id tài khoản');
     }
     const forceDelete = query.force === 'true' || query.force === '1';
-    const result = await accountService.deleteAccount(id, forceDelete);
+    const result = await accountService.deleteAccount(id, forceDelete, req.user?.role);
     return ResponseHelper.success(res, { data: result, message: result.message });
   });
 }

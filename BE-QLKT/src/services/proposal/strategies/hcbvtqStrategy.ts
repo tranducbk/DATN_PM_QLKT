@@ -9,11 +9,12 @@ import {
   getDanhHieuName,
 } from '../../../constants/danhHieu.constants';
 import { ELIGIBILITY_STATUS } from '../../../constants/eligibilityStatus.constants';
+import { RESOURCE_SLUGS } from '../../../constants/resourceSlugs.constants';
 import { GENDER } from '../../../constants/gender.constants';
 import { writeSystemLog } from '../../../helpers/systemLogHelper';
 import { buildCutoffDate, formatServiceDuration } from '../../../helpers/serviceYearsHelper';
 import { validateHCBVTQHighestRank } from '../../../helpers/awardValidation/contributionMedalHighestRank';
-import { formatQuanNhanLabel } from './quanNhanLabel';
+import { formatPersonnelLabel } from './personnelLabel';
 import {
   aggregatePositionMonthsByGroup,
   type PositionMonthsByGroup,
@@ -158,7 +159,7 @@ class HcbvtqStrategy implements ProposalStrategy {
           });
           void writeSystemLog({
             action: 'ERROR',
-            resource: 'proposals',
+            resource: RESOURCE_SLUGS.PROPOSALS,
             description: `[Tạo đề xuất] Lỗi lấy lịch sử chức vụ quân nhân ${item.personnel_id}: ${(error as Error).message}`,
           });
           return baseData;
@@ -269,11 +270,11 @@ class HcbvtqStrategy implements ProposalStrategy {
           acc.errors.push('Thiếu thông tin quân nhân khi xử lý Huân chương Bảo vệ Tổ quốc.');
           continue;
         }
-        const quanNhan = await quanNhanRepository.findUniqueRaw(
+        const personnel = await quanNhanRepository.findUniqueRaw(
           { where: { id: item.personnel_id }, select: { id: true, ho_ten: true } },
           prismaTx
         );
-        if (!quanNhan) {
+        if (!personnel) {
           acc.errors.push(
             'Không tìm thấy thông tin quân nhân khi xử lý Huân chương Bảo vệ Tổ quốc. ' +
               'Quân nhân có thể đã bị xoá khỏi hệ thống — vui lòng tải lại đề xuất.'
@@ -287,7 +288,7 @@ class HcbvtqStrategy implements ProposalStrategy {
 
         if (!namNhan || !thangNhan || thangNhan < 1 || thangNhan > 12) {
           acc.errors.push(
-            `${formatQuanNhanLabel(quanNhan)} thiếu tháng/năm nhận Huân chương Bảo vệ Tổ quốc`
+            `${formatPersonnelLabel(personnel)} thiếu tháng/năm nhận Huân chương Bảo vệ Tổ quốc`
           );
           continue;
         }
@@ -296,7 +297,7 @@ class HcbvtqStrategy implements ProposalStrategy {
           (proposalMonth != null && namNhan === proposalYear && thangNhan < proposalMonth)
         ) {
           acc.errors.push(
-            `${formatQuanNhanLabel(quanNhan)}: tháng/năm nhận (${thangNhan}/${namNhan}) không được trước tháng/năm đề xuất (${proposalMonth ?? '--'}/${proposalYear})`
+            `${formatPersonnelLabel(personnel)}: tháng/năm nhận (${thangNhan}/${namNhan}) không được trước tháng/năm đề xuất (${proposalMonth ?? '--'}/${proposalYear})`
           );
           continue;
         }
@@ -308,13 +309,13 @@ class HcbvtqStrategy implements ProposalStrategy {
             (thangQuyetDinh && namNhan === namQuyetDinh && thangNhan < thangQuyetDinh))
         ) {
           acc.errors.push(
-            `${formatQuanNhanLabel(quanNhan)}: tháng/năm nhận (${thangNhan}/${namNhan}) không được trước tháng/năm quyết định (${thangQuyetDinh ?? '--'}/${namQuyetDinh})`
+            `${formatPersonnelLabel(personnel)}: tháng/năm nhận (${thangNhan}/${namNhan}) không được trước tháng/năm quyết định (${thangQuyetDinh ?? '--'}/${namQuyetDinh})`
           );
           continue;
         }
         if (!item.danh_hieu) {
           acc.errors.push(
-            `${formatQuanNhanLabel(quanNhan)} chưa chọn hạng Huân chương Bảo vệ Tổ quốc.`
+            `${formatPersonnelLabel(personnel)} chưa chọn hạng Huân chương Bảo vệ Tổ quốc.`
           );
           continue;
         }
@@ -324,7 +325,7 @@ class HcbvtqStrategy implements ProposalStrategy {
         const thoiGianNhom0_9_1_0 = item.thoi_gian_nhom_0_9_1_0 || null;
 
         const existingCongHien = await contributionMedalRepository.findUniqueRaw(
-          { where: { quan_nhan_id: quanNhan.id } },
+          { where: { quan_nhan_id: personnel.id } },
           prismaTx
         );
 
@@ -354,12 +355,12 @@ class HcbvtqStrategy implements ProposalStrategy {
               prismaTx
             );
             acc.importedDanhHieu++;
-            acc.affectedPersonnelIds.add(quanNhan.id);
+            acc.affectedPersonnelIds.add(personnel.id);
           } else {
             const existingDanhHieuName = getDanhHieuName(existingCongHien.danh_hieu);
             const newDanhHieuName = getDanhHieuName(item.danh_hieu);
             acc.errors.push(
-              `Quân nhân "${quanNhan.ho_ten}" đã có Huân chương Bảo vệ Tổ quốc "${existingDanhHieuName}" (năm ${existingCongHien.nam}). ` +
+              `Quân nhân "${personnel.ho_ten}" đã có Huân chương Bảo vệ Tổ quốc "${existingDanhHieuName}" (năm ${existingCongHien.nam}). ` +
                 `Không thể lưu danh hiệu "${newDanhHieuName}" vì hạng thấp hơn hoặc bằng.`
             );
             continue;
@@ -367,7 +368,7 @@ class HcbvtqStrategy implements ProposalStrategy {
         } else {
           await contributionMedalRepository.create(
             {
-              quan_nhan_id: quanNhan.id,
+              quan_nhan_id: personnel.id,
               danh_hieu: item.danh_hieu,
               nam: namNhan,
               thang: thangNhan,
@@ -382,7 +383,7 @@ class HcbvtqStrategy implements ProposalStrategy {
             prismaTx
           );
           acc.importedDanhHieu++;
-          acc.affectedPersonnelIds.add(quanNhan.id);
+          acc.affectedPersonnelIds.add(personnel.id);
         }
 
         const ngayNhan = new Date(Date.UTC(namNhan, thangNhan - 1, 1));
@@ -407,8 +408,8 @@ class HcbvtqStrategy implements ProposalStrategy {
             [profileFields.ngay]: ngayNhan,
           };
           await contributionProfileRepository.upsert(
-            quanNhan.id,
-            { quan_nhan_id: quanNhan.id, hcbvtq_total_months: 0, ...profileUpdate },
+            personnel.id,
+            { quan_nhan_id: personnel.id, hcbvtq_total_months: 0, ...profileUpdate },
             profileUpdate,
             prismaTx
           );

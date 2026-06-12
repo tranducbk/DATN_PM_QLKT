@@ -61,9 +61,7 @@ const proposals: Record<
         nam = proposal.nam || req.body?.nam || '';
         donVi = proposal.don_vi || '';
       }
-    } catch (e) {
-      // Ignore parse error
-    }
+    } catch {}
 
     if (soLuong === 0) {
       const titleData = req.body?.title_data;
@@ -71,9 +69,7 @@ const proposals: Record<
         try {
           const parsed = typeof titleData === 'string' ? JSON.parse(titleData) : titleData;
           soLuong = Array.isArray(parsed) ? parsed.length : 0;
-        } catch (e) {
-          // Ignore parse error
-        }
+        } catch {}
       }
       nam = req.body?.nam || '';
     }
@@ -218,9 +214,7 @@ const proposals: Record<
     try {
       const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
       proposal = data?.data?.proposal || data?.proposal || data?.data;
-    } catch (e) {
-      // Ignore parse error
-    }
+    } catch {}
 
     if (!proposal && proposalId) {
       try {
@@ -292,9 +286,7 @@ const proposals: Record<
     try {
       const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
       proposal = data?.data?.proposal || data?.proposal || data?.data;
-    } catch (e) {
-      // Ignore parse error
-    }
+    } catch {}
 
     if (proposal) {
       const typeName = getLoaiDeXuatName(proposal.loai_de_xuat || '');

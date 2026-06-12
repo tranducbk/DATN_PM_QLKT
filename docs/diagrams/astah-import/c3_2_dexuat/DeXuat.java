@@ -24,6 +24,7 @@ class BangDeXuat {
     private String data_cong_hien;
     private String files_attached;
     private String files_attached_admin;
+    private String ghi_chu;
     private String rejection_reason;
     private String nguoi_duyet_id;
     private Date ngay_duyet;
@@ -96,7 +97,6 @@ class SingleMedalImporter {
 
 class ProposalStrategyRegistry {
     public ProposalStrategy getProposalStrategy(LoaiDeXuat type) { return null; }
-    public ProposalStrategy requireProposalStrategy(LoaiDeXuat type) { return null; }
 }
 
 class ProposalRepository {

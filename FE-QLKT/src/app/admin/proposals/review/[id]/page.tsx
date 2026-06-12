@@ -24,7 +24,7 @@ import {
 } from 'antd';
 import type { UploadFile } from 'antd/es/upload/interface';
 import dayjs from 'dayjs';
-import { getApiErrorMessage } from '@/lib/apiError';
+import { getApiErrorMessage } from '@/lib/http/apiError';
 import { LoadingState } from '@/components/shared/LoadingState';
 
 import {
@@ -48,7 +48,7 @@ import {
   type UnitAnnualAwards,
 } from '@/components/proposals/bulk/UnitAnnualAwardHistoryModal';
 import { formatDateTime } from '@/lib/utils';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { FileAttachmentList } from '@/components/proposals/FileAttachmentList';
 import { ProposalStatusTag } from '@/components/proposals/ProposalStatusTag';
@@ -657,8 +657,6 @@ export default function ProposalDetailPage() {
     );
   }
 
-  // COLUMNS CHO TỪNG LOẠI ĐỀ XUẤT
-
   const caNhanHangNamColumns = [
     {
       title: 'STT',
@@ -1133,7 +1131,7 @@ export default function ProposalDetailPage() {
           </div>
         </Card>
 
-        {/* Ghi chú */}
+        {/* Note */}
         <Card title="Ghi chú" style={{ marginBottom: '24px' }}>
           <div
             style={{
@@ -1162,7 +1160,7 @@ export default function ProposalDetailPage() {
           </div>
         </Card>
 
-        {/* File đính kèm */}
+        {/* Attachments */}
         <Card title="File đính kèm" style={{ marginBottom: '24px' }}>
           <div style={{ marginBottom: 16 }}>
             <Text strong style={{ display: 'block', marginBottom: 8 }}>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, ReactNode } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Card,
   Tabs,
@@ -18,23 +18,15 @@ import {
   Empty,
 } from 'antd';
 import { getAntdThemeConfig } from '@/lib/antdTheme';
-import {
-  TrophyOutlined,
-  StarOutlined,
-  UserOutlined,
-  SafetyOutlined,
-  CrownOutlined,
-  FireOutlined,
-  FileTextOutlined,
-  HomeOutlined,
-} from '@ant-design/icons';
+import { TrophyOutlined, UserOutlined, SafetyOutlined, HomeOutlined } from '@ant-design/icons';
 import Link from 'next/link';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { formatDate } from '@/lib/utils';
 import { useTheme } from '@/components/ThemeProvider';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { MedalProgressCard } from '@/components/personnel/MedalProgressCard';
+import { AnnualTitleTimeline } from '@/components/profile/AnnualTitleTimeline';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -63,11 +55,7 @@ import type {
   AdhocAwardRow,
 } from './types';
 import { calculateYearsOfService, formatYearsAndMonths } from './helpers';
-import {
-  makeScientificColumns,
-  makePositionHistoryColumns,
-  makeAdhocColumns,
-} from './columns';
+import { makeScientificColumns, makePositionHistoryColumns, makeAdhocColumns } from './columns';
 
 const { Title, Text } = Typography;
 
@@ -78,7 +66,9 @@ export default function UserProfilePage() {
   const [, setPersonnelId] = useState<string | null>(null);
   const [personnelInfo, setPersonnelInfo] = useState<PersonnelDetail | null>(null);
   const [annualRewards, setAnnualRewards] = useState<AnnualRewardRow[]>([]);
-  const [scientificAchievements, setScientificAchievements] = useState<ScientificAchievementRow[]>([]);
+  const [scientificAchievements, setScientificAchievements] = useState<ScientificAchievementRow[]>(
+    []
+  );
   const [positionHistory, setPositionHistory] = useState<PositionHistoryRow[]>([]);
   const [adhocAwards, setAdhocAwards] = useState<AdhocAwardRow[]>([]);
   const [serviceProfile, setServiceProfile] = useState<ServiceProfile | null>(null);
@@ -208,7 +198,7 @@ export default function UserProfilePage() {
       label: 'Hồ sơ khen thưởng',
       children: (
         <div className="space-y-6">
-          {/* Hồ sơ khen thưởng niên hạn */}
+          {/* Tenure-medal award profile */}
           {(serviceProfile || militaryFlag || commemorationMedals) && (
             <Card
               title={
@@ -378,9 +368,7 @@ export default function UserProfilePage() {
                       title="hạng Nhì"
                       value={0}
                       valueStyle={{ fontSize: '14px' }}
-                      valueRender={() =>
-                        getStatusTag(contributionProfile?.hcbvtq_hang_nhi_status)
-                      }
+                      valueRender={() => getStatusTag(contributionProfile?.hcbvtq_hang_nhi_status)}
                     />
                   </Card>
                 </Col>
@@ -390,9 +378,7 @@ export default function UserProfilePage() {
                       title="hạng Nhất"
                       value={0}
                       valueStyle={{ fontSize: '14px' }}
-                      valueRender={() =>
-                        getStatusTag(contributionProfile?.hcbvtq_hang_nhat_status)
-                      }
+                      valueRender={() => getStatusTag(contributionProfile?.hcbvtq_hang_nhat_status)}
                     />
                   </Card>
                 </Col>
@@ -400,7 +386,7 @@ export default function UserProfilePage() {
             </Card>
           )}
 
-          {/* Hồ sơ Hằng năm */}
+          {/* Annual profile */}
           {annualProfile && (
             <Card
               title={
@@ -410,7 +396,7 @@ export default function UserProfilePage() {
               }
               size="small"
             >
-              {/* Thống kê */}
+              {/* Statistics */}
               <div className="mb-6">
                 <Text strong className="text-base">
                   Thống kê
@@ -460,7 +446,7 @@ export default function UserProfilePage() {
                 </Row>
               </div>
 
-              {/* Điều kiện */}
+              {/* Eligibility */}
               <div>
                 <Text strong className="text-base">
                   Điều kiện khen thưởng
@@ -530,534 +516,11 @@ export default function UserProfilePage() {
       key: '2',
       label: 'Danh hiệu cá nhân hằng năm',
       children: (
-        <div className="space-y-4">
-          {annualRewards.length === 0 ? (
-            <Empty
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description={
-                <span className="text-gray-500 dark:text-gray-400">
-                  Chưa có dữ liệu danh hiệu hằng năm
-                </span>
-              }
-              style={{ padding: '60px 0' }}
-            />
-          ) : (
-            <div className="space-y-5">
-              {/* Summary Stats */}
-              <Row
-                gutter={[16, 16]}
-                className="mb-6"
-                style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'stretch' }}
-              >
-                <Col
-                  xs={24}
-                  sm={12}
-                  style={{ flex: '1 1 20%', minWidth: 0 }}
-                  className="summary-stat-col flex"
-                >
-                  <Card
-                    size="small"
-                    className="text-center h-full w-full"
-                    style={{
-                      background: isDark
-                        ? 'linear-gradient(135deg, #1e3a5f 0%, #1e293b 100%)'
-                        : 'linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%)',
-                      border: 'none',
-                    }}
-                  >
-                    <Statistic
-                      title={
-                        <span
-                          style={{
-                            color: isDark ? '#93c5fd' : '#1e40af',
-                            minHeight: '44px',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            textAlign: 'center',
-                          }}
-                        >
-                          Tổng số năm
-                        </span>
-                      }
-                      value={
-                        Object.keys(
-                          annualRewards.reduce((acc: Record<number, AnnualRewardRow[]>, r: AnnualRewardRow) => {
-                            if (!acc[r.nam]) acc[r.nam] = [];
-                            acc[r.nam].push(r);
-                            return acc;
-                          }, {})
-                        ).length
-                      }
-                      valueStyle={{ color: isDark ? '#60a5fa' : '#2563eb', fontWeight: 700 }}
-                    />
-                  </Card>
-                </Col>
-                <Col
-                  xs={24}
-                  sm={12}
-                  style={{ flex: '1 1 20%', minWidth: 0 }}
-                  className="summary-stat-col flex"
-                >
-                  <Card
-                    size="small"
-                    className="text-center h-full w-full"
-                    style={{
-                      background: isDark
-                        ? 'linear-gradient(135deg, #134e4a 0%, #1e293b 100%)'
-                        : 'linear-gradient(135deg, #d1fae5 0%, #ecfdf5 100%)',
-                      border: 'none',
-                    }}
-                  >
-                    <Statistic
-                      title={
-                        <span
-                          style={{
-                            color: isDark ? '#6ee7b7' : '#047857',
-                            minHeight: '44px',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            textAlign: 'center',
-                          }}
-                        >
-                          CSTĐ Cơ sở
-                        </span>
-                      }
-                      value={
-                        annualRewards.filter(
-                          (r: AnnualRewardRow) =>
-                            r.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS
-                        ).length
-                      }
-                      valueStyle={{ color: isDark ? '#34d399' : '#059669', fontWeight: 700 }}
-                    />
-                  </Card>
-                </Col>
-                <Col
-                  xs={24}
-                  sm={12}
-                  style={{ flex: '1 1 20%', minWidth: 0 }}
-                  className="summary-stat-col flex"
-                >
-                  <Card
-                    size="small"
-                    className="text-center h-full w-full"
-                    style={{
-                      background: isDark
-                        ? 'linear-gradient(135deg, #713f12 0%, #1e293b 100%)'
-                        : 'linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%)',
-                      border: 'none',
-                    }}
-                  >
-                    <Statistic
-                      title={
-                        <span
-                          style={{
-                            color: isDark ? '#fcd34d' : '#b45309',
-                            minHeight: '44px',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            textAlign: 'center',
-                          }}
-                        >
-                          Bằng khen của Bộ trưởng BQP
-                        </span>
-                      }
-                      value={annualRewards.filter((r: AnnualRewardRow) => r.nhan_bkbqp).length}
-                      valueStyle={{ color: isDark ? '#fbbf24' : '#d97706', fontWeight: 700 }}
-                    />
-                  </Card>
-                </Col>
-                <Col
-                  xs={24}
-                  sm={12}
-                  style={{ flex: '1 1 20%', minWidth: 0 }}
-                  className="summary-stat-col flex"
-                >
-                  <Card
-                    size="small"
-                    className="text-center h-full w-full"
-                    style={{
-                      background: isDark
-                        ? 'linear-gradient(135deg, #7c2d12 0%, #1e293b 100%)'
-                        : 'linear-gradient(135deg, #fed7aa 0%, #fff7ed 100%)',
-                      border: 'none',
-                    }}
-                  >
-                    <Statistic
-                      title={
-                        <span
-                          style={{
-                            color: isDark ? '#fb923c' : '#c2410c',
-                            minHeight: '44px',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            textAlign: 'center',
-                          }}
-                        >
-                          CSTĐ Toàn quân
-                        </span>
-                      }
-                      value={annualRewards.filter((r: AnnualRewardRow) => r.nhan_cstdtq).length}
-                      valueStyle={{ color: isDark ? '#fb923c' : '#ea580c', fontWeight: 700 }}
-                    />
-                  </Card>
-                </Col>
-                <Col
-                  xs={24}
-                  sm={12}
-                  style={{ flex: '1 1 20%', minWidth: 0 }}
-                  className="summary-stat-col flex"
-                >
-                  <Card
-                    size="small"
-                    className="text-center h-full w-full"
-                    style={{
-                      background: isDark
-                        ? 'linear-gradient(135deg, #78350f 0%, #1e293b 100%)'
-                        : 'linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%)',
-                      border: 'none',
-                    }}
-                  >
-                    <Statistic
-                      title={
-                        <span
-                          style={{
-                            color: isDark ? '#fcd34d' : '#b45309',
-                            minHeight: '44px',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            textAlign: 'center',
-                          }}
-                        >
-                          BK của Thủ tướng Chính phủ
-                        </span>
-                      }
-                      value={annualRewards.filter((r: AnnualRewardRow) => r.nhan_bkttcp).length}
-                      valueStyle={{ color: isDark ? '#fbbf24' : '#d97706', fontWeight: 700 }}
-                    />
-                  </Card>
-                </Col>
-              </Row>
-
-              {/* Timeline View */}
-              <div className="relative">
-                {/* Timeline line */}
-                <div
-                  className="absolute left-6 top-0 bottom-0 w-0.5"
-                  style={{
-                    backgroundColor: isDark ? '#374151' : '#e5e7eb',
-                    marginLeft: '7px',
-                  }}
-                />
-
-                {Object.entries(
-                  annualRewards.reduce((acc: Record<number, AnnualRewardRow[]>, reward: AnnualRewardRow) => {
-                    const year = reward.nam;
-                    if (!acc[year]) {
-                      acc[year] = [];
-                    }
-                    acc[year].push(reward);
-                    return acc;
-                  }, {})
-                )
-                  .sort(([a], [b]) => Number(b) - Number(a))
-                  .map(([year, rewards]: [string, AnnualRewardRow[]]) => (
-                    <div key={year} className="relative pl-16 pb-6">
-                      {/* Year marker */}
-                      <div
-                        className="absolute left-0 flex items-center justify-center w-14 h-14 rounded-full shadow-lg"
-                        style={{
-                          background: isDark
-                            ? 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)'
-                            : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                          top: '0px',
-                        }}
-                      >
-                        <span className="text-white font-bold text-lg">{year}</span>
-                      </div>
-
-                      {/* Year content card */}
-                      <Card
-                        size="small"
-                        className="shadow-md hover:shadow-lg transition-shadow duration-300 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
-                      >
-                        <div className="space-y-4">
-                          {rewards.flatMap((reward: AnnualRewardRow) => {
-                            const items: ReactNode[] = [];
-
-                            if (reward.danh_hieu) {
-                              const danhHieuConfig = {
-                                CSTDCS: {
-                                  text: 'Chiến sĩ thi đua cơ sở',
-                                  icon: <StarOutlined />,
-                                  color: isDark ? '#34d399' : '#059669',
-                                  bgColor: isDark
-                                    ? 'rgba(52, 211, 153, 0.1)'
-                                    : 'rgba(5, 150, 105, 0.1)',
-                                  borderColor: isDark ? '#10b981' : '#059669',
-                                },
-                                CSTT: {
-                                  text: 'Chiến sĩ tiên tiến',
-                                  icon: <FireOutlined />,
-                                  color: isDark ? '#60a5fa' : '#2563eb',
-                                  bgColor: isDark
-                                    ? 'rgba(96, 165, 250, 0.1)'
-                                    : 'rgba(37, 99, 235, 0.1)',
-                                  borderColor: isDark ? '#3b82f6' : '#2563eb',
-                                },
-                              };
-
-                              const config = danhHieuConfig[
-                                reward.danh_hieu as keyof typeof danhHieuConfig
-                              ] || {
-                                text: reward.danh_hieu,
-                                icon: <TrophyOutlined />,
-                                color: isDark ? '#9ca3af' : '#6b7280',
-                                bgColor: isDark
-                                  ? 'rgba(156, 163, 175, 0.1)'
-                                  : 'rgba(107, 114, 128, 0.1)',
-                                borderColor: isDark ? '#6b7280' : '#9ca3af',
-                              };
-
-                              items.push(
-                                <div
-                                  key={`${reward.id}-danh-hieu`}
-                                  className="flex items-start gap-3 p-3 rounded-lg transition-all hover:scale-[1.01]"
-                                  style={{
-                                    background: config.bgColor,
-                                    border: `1px solid ${config.borderColor}`,
-                                  }}
-                                >
-                                  <div
-                                    className="flex items-center justify-center w-10 h-10 rounded-full flex-shrink-0"
-                                    style={{
-                                      backgroundColor: config.color,
-                                      color: '#fff',
-                                    }}
-                                  >
-                                    {config.icon}
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <div
-                                      className="font-semibold text-base"
-                                      style={{ color: config.color }}
-                                    >
-                                      {config.text}
-                                    </div>
-                                    {reward.so_quyet_dinh && reward.so_quyet_dinh.trim() !== '' && (
-                                      <div
-                                        className="flex items-center gap-1.5 mt-1"
-                                        style={{
-                                          color: isDark ? '#9ca3af' : '#6b7280',
-                                          fontSize: '13px',
-                                        }}
-                                      >
-                                        <FileTextOutlined style={{ fontSize: '12px' }} />
-                                        <span>Số QĐ: </span>
-                                        <a
-                                          onClick={e => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            handleOpenDecisionFile(reward.so_quyet_dinh!);
-                                          }}
-                                          className="hover:underline text-green-600 dark:text-green-400 cursor-pointer"
-                                        >
-                                          {reward.so_quyet_dinh}
-                                        </a>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            }
-
-                            if (
-                              reward.nhan_bkbqp &&
-                              reward.so_quyet_dinh_bkbqp &&
-                              reward.so_quyet_dinh_bkbqp.trim() !== ''
-                            ) {
-                              items.push(
-                                <div
-                                  key={`${reward.id}-bkbqp`}
-                                  className="flex items-start gap-3 p-3 rounded-lg transition-all hover:scale-[1.01]"
-                                  style={{
-                                    background: isDark
-                                      ? 'rgba(251, 191, 36, 0.1)'
-                                      : 'rgba(217, 119, 6, 0.1)',
-                                    border: `1px solid ${isDark ? '#f59e0b' : '#d97706'}`,
-                                  }}
-                                >
-                                  <div
-                                    className="flex items-center justify-center w-10 h-10 rounded-full flex-shrink-0"
-                                    style={{
-                                      backgroundColor: isDark ? '#f59e0b' : '#d97706',
-                                      color: '#fff',
-                                    }}
-                                  >
-                                    <CrownOutlined />
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <div
-                                      className="font-semibold text-base"
-                                      style={{ color: isDark ? '#fbbf24' : '#b45309' }}
-                                    >
-                                      Bằng khen của Bộ trưởng Bộ Quốc phòng
-                                    </div>
-                                    <div
-                                      className="flex items-center gap-1.5 mt-1"
-                                      style={{
-                                        color: isDark ? '#9ca3af' : '#6b7280',
-                                        fontSize: '13px',
-                                      }}
-                                    >
-                                      <FileTextOutlined style={{ fontSize: '12px' }} />
-                                      <span>Số QĐ: </span>
-                                      <a
-                                        onClick={e => {
-                                          e.preventDefault();
-                                          e.stopPropagation();
-                                          handleOpenDecisionFile(reward.so_quyet_dinh_bkbqp!);
-                                        }}
-                                        className="hover:underline text-green-600 dark:text-green-400 cursor-pointer"
-                                      >
-                                        {reward.so_quyet_dinh_bkbqp}
-                                      </a>
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            }
-
-                            if (
-                              reward.nhan_cstdtq &&
-                              reward.so_quyet_dinh_cstdtq &&
-                              reward.so_quyet_dinh_cstdtq.trim() !== ''
-                            ) {
-                              items.push(
-                                <div
-                                  key={`${reward.id}-cstdtq`}
-                                  className="flex items-start gap-3 p-3 rounded-lg transition-all hover:scale-[1.01]"
-                                  style={{
-                                    background: isDark
-                                      ? 'rgba(251, 146, 60, 0.1)'
-                                      : 'rgba(234, 88, 12, 0.1)',
-                                    border: `1px solid ${isDark ? '#fb923c' : '#ea580c'}`,
-                                  }}
-                                >
-                                  <div
-                                    className="flex items-center justify-center w-10 h-10 rounded-full flex-shrink-0"
-                                    style={{
-                                      backgroundColor: isDark ? '#fb923c' : '#ea580c',
-                                      color: '#fff',
-                                    }}
-                                  >
-                                    <TrophyOutlined />
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <div
-                                      className="font-semibold text-base"
-                                      style={{ color: isDark ? '#fb923c' : '#c2410c' }}
-                                    >
-                                      Chiến sĩ thi đua Toàn quân
-                                    </div>
-                                    <div
-                                      className="flex items-center gap-1.5 mt-1"
-                                      style={{
-                                        color: isDark ? '#9ca3af' : '#6b7280',
-                                        fontSize: '13px',
-                                      }}
-                                    >
-                                      <FileTextOutlined style={{ fontSize: '12px' }} />
-                                      <span>Số QĐ: </span>
-                                      <a
-                                        onClick={e => {
-                                          e.preventDefault();
-                                          e.stopPropagation();
-                                          handleOpenDecisionFile(reward.so_quyet_dinh_cstdtq!);
-                                        }}
-                                        className="hover:underline text-green-600 dark:text-green-400 cursor-pointer"
-                                      >
-                                        {reward.so_quyet_dinh_cstdtq}
-                                      </a>
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            }
-
-                            if (
-                              reward.nhan_bkttcp &&
-                              reward.so_quyet_dinh_bkttcp &&
-                              reward.so_quyet_dinh_bkttcp.trim() !== ''
-                            ) {
-                              items.push(
-                                <div
-                                  key={`${reward.id}-bkttcp`}
-                                  className="flex items-start gap-3 p-3 rounded-lg transition-all hover:scale-[1.01]"
-                                  style={{
-                                    background: isDark
-                                      ? 'rgba(251, 191, 36, 0.1)'
-                                      : 'rgba(217, 119, 6, 0.1)',
-                                    border: `1px solid ${isDark ? '#f59e0b' : '#d97706'}`,
-                                  }}
-                                >
-                                  <div
-                                    className="flex items-center justify-center w-10 h-10 rounded-full flex-shrink-0"
-                                    style={{
-                                      backgroundColor: isDark ? '#f59e0b' : '#d97706',
-                                      color: '#fff',
-                                    }}
-                                  >
-                                    <CrownOutlined />
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <div
-                                      className="font-semibold text-base"
-                                      style={{ color: isDark ? '#fbbf24' : '#b45309' }}
-                                    >
-                                      Bằng khen của Thủ tướng Chính phủ
-                                    </div>
-                                    <div
-                                      className="flex items-center gap-1.5 mt-1"
-                                      style={{
-                                        color: isDark ? '#9ca3af' : '#6b7280',
-                                        fontSize: '13px',
-                                      }}
-                                    >
-                                      <FileTextOutlined style={{ fontSize: '12px' }} />
-                                      <span>Số QĐ: </span>
-                                      <a
-                                        onClick={e => {
-                                          e.preventDefault();
-                                          e.stopPropagation();
-                                          handleOpenDecisionFile(reward.so_quyet_dinh_bkttcp!);
-                                        }}
-                                        className="hover:underline text-green-600 dark:text-green-400 cursor-pointer"
-                                      >
-                                        {reward.so_quyet_dinh_bkttcp}
-                                      </a>
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            }
-
-                            // Highest-tier chain awards first: BKTTCP → CSTDTQ → BKBQP → base title.
-                            return items.reverse();
-                          })}
-                        </div>
-                      </Card>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          )}
-        </div>
+        <AnnualTitleTimeline
+          rewards={annualRewards}
+          isDark={isDark}
+          onOpenDecision={handleOpenDecisionFile}
+        />
       ),
     },
     {
@@ -1065,9 +528,6 @@ export default function UserProfilePage() {
       label: 'Thành tích Nghiên cứu khoa học',
       children: (
         <div className="space-y-4">
-          <div className="mb-4">
-            <Text strong>Tổng số: {scientificAchievements.length}</Text>
-          </div>
           <Table
             dataSource={scientificAchievements}
             columns={scientificColumns}
@@ -1077,7 +537,6 @@ export default function UserProfilePage() {
               showTotal: total => `Tổng ${total} bản ghi`,
             }}
             scroll={{ x: 'max-content' }}
-            bordered
             size="middle"
             locale={{
               emptyText: (
@@ -1101,9 +560,6 @@ export default function UserProfilePage() {
       label: 'Lịch sử chức vụ',
       children: (
         <div className="space-y-4">
-          <div className="mb-4">
-            <Text strong>Tổng số: {positionHistory.length}</Text>
-          </div>
           <Table
             dataSource={positionHistory}
             columns={positionHistoryColumns}
@@ -1113,7 +569,6 @@ export default function UserProfilePage() {
               showTotal: total => `Tổng ${total} bản ghi`,
             }}
             scroll={{ x: 'max-content' }}
-            bordered
             size="middle"
             locale={{
               emptyText: (
@@ -1137,9 +592,6 @@ export default function UserProfilePage() {
       label: 'Khen thưởng đột xuất',
       children: (
         <div className="space-y-4">
-          <div className="mb-4">
-            <Text strong>Tổng số: {adhocAwards.length}</Text>
-          </div>
           <Table
             dataSource={adhocAwards}
             columns={adhocColumns}
@@ -1149,7 +601,6 @@ export default function UserProfilePage() {
               showTotal: total => `Tổng ${total} bản ghi`,
             }}
             scroll={{ x: 'max-content' }}
-            bordered
             size="middle"
             locale={{
               emptyText: (

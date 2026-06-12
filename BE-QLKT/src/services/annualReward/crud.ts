@@ -1,9 +1,8 @@
-import { prisma } from '../../models';
 import { danhHieuHangNamRepository } from '../../repositories/danhHieu.repository';
 import { quanNhanRepository } from '../../repositories/quanNhan.repository';
 import { proposalRepository } from '../../repositories/proposal.repository';
 import * as notificationHelper from '../../helpers/notification';
-import { safeRecalculateAnnualProfile } from '../../helpers/profileRecalcHelper';
+import { safeRecalculateAnnualProfile } from '../profile/annual';
 import {
   formatDanhHieuList,
   getDanhHieuName,
@@ -398,7 +397,7 @@ export async function deleteAnnualReward(
       adminUsername
     );
   } catch (e) {
-    writeSystemLog({
+    void writeSystemLog({
       action: 'ERROR',
       resource: AWARD_SLUGS.ANNUAL_REWARDS,
       description: `Lỗi gửi thông báo xóa ${AWARD_LABEL}: ${e}`,

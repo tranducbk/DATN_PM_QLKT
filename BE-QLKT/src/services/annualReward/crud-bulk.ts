@@ -2,7 +2,7 @@ import { prisma } from '../../models';
 import { danhHieuHangNamRepository } from '../../repositories/danhHieu.repository';
 import { quanNhanRepository } from '../../repositories/quanNhan.repository';
 import { proposalRepository } from '../../repositories/proposal.repository';
-import { safeRecalculateAnnualProfile } from '../../helpers/profileRecalcHelper';
+import { safeRecalculateAnnualProfile } from '../profile/annual';
 import {
   formatDanhHieuList,
   getDanhHieuName,

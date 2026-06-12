@@ -7,7 +7,7 @@ import { proposalRepository } from '../repositories/proposal.repository';
 import { positionRepository } from '../repositories/position.repository';
 import { positionHistoryRepository } from '../repositories/positionHistory.repository';
 import { DEFAULT_PASSWORD } from '../configs';
-import { ROLES } from '../constants/roles.constants';
+import { ROLES, canManageRole } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import {
   AppError,
@@ -493,14 +493,19 @@ class AccountService {
     };
   }
 
-  async resetPassword(accountId: string): Promise<{ message: string }> {
+  async resetPassword(accountId: string, callerRole?: string): Promise<{ message: string }> {
     const account = await accountRepository.findUniqueRaw({
       where: { id: accountId },
-      select: { id: true },
+      select: { id: true, role: true },
     });
 
     if (!account) {
       throw new NotFoundError('Tài khoản');
+    }
+
+    // ADMIN must not reset passwords of ADMIN/SUPER_ADMIN accounts (privilege escalation).
+    if (callerRole === ROLES.ADMIN && account.role !== ROLES.MANAGER && account.role !== ROLES.USER) {
+      throw new ForbiddenError('Không có quyền đặt lại mật khẩu cho tài khoản này');
     }
 
     const defaultPassword = DEFAULT_PASSWORD;
@@ -516,7 +521,8 @@ class AccountService {
 
   async deleteAccount(
     id: string,
-    forceDelete: boolean = false
+    forceDelete: boolean = false,
+    actorRole?: string
   ): Promise<{
     message: string;
     deletedProposals?: number;
@@ -534,8 +540,8 @@ class AccountService {
       throw new NotFoundError('Tài khoản');
     }
 
-    if (account.role === ROLES.SUPER_ADMIN) {
-      throw new ForbiddenError('Không thể xóa tài khoản SUPER_ADMIN');
+    if (!canManageRole(actorRole, account.role)) {
+      throw new ForbiddenError('Bạn chỉ có thể xóa tài khoản có cấp thấp hơn mình.');
     }
 
     if (!account.QuanNhan) {

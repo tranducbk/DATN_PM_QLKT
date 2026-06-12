@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import type { ColumnsType } from 'antd/es/table';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import {
   ImportReviewPageContent,
   type PreviewItem,

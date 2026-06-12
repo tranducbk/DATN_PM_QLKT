@@ -19,7 +19,7 @@ import {
   Input,
   Empty,
 } from 'antd';
-import { getApiErrorMessage } from '@/lib/apiError';
+import { getApiErrorMessage } from '@/lib/http/apiError';
 
 import {
   UploadOutlined,
@@ -32,7 +32,7 @@ import {
 } from '@ant-design/icons';
 import Link from 'next/link';
 import type { UploadFile } from 'antd/es/upload/interface';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import {
   DANH_HIEU_CA_NHAN_HANG_NAM,
   DANH_HIEU_DON_VI_HANG_NAM,
@@ -657,7 +657,7 @@ export default function CreateProposalPage() {
               style={{ marginBottom: 24 }}
             />
 
-            {/* Upload file đính kèm */}
+            {/* Attachment upload */}
             <Upload.Dragger
               fileList={attachedFiles}
               onChange={({ fileList }) => setAttachedFiles(fileList)}
@@ -758,7 +758,7 @@ export default function CreateProposalPage() {
               </Descriptions>
             </Card>
 
-            {/* File đính kèm */}
+            {/* Attachments */}
             {attachedFiles.length > 0 && (
               <Card title="File đính kèm" style={{ marginTop: 16, marginBottom: 16 }}>
                 <FileAttachmentList files={attachedFiles} mode="local" />
@@ -823,7 +823,7 @@ export default function CreateProposalPage() {
               />
             </Card>
 
-            {/* Ghi chú */}
+            {/* Note */}
             <Card
               title={
                 <Space>
@@ -900,7 +900,7 @@ export default function CreateProposalPage() {
       </Card>
 
       {/* Step Content */}
-      <Card style={{ marginBottom: 24, minHeight: 400 }}>{renderStepContent()}</Card>
+      <Card style={{ marginBottom: 24 }}>{renderStepContent()}</Card>
 
       {/* Navigation */}
       <Card>

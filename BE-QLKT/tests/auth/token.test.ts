@@ -79,6 +79,8 @@ describe('verifyToken middleware', () => {
     const token = signToken(payload);
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       refreshToken: 'rt-existing',
+      role: ROLES.ADMIN,
+      quan_nhan_id: 'qn-1',
     });
 
     const req = makeReq(`Bearer ${token}`);
@@ -89,6 +91,23 @@ describe('verifyToken middleware', () => {
     expect(next).toHaveBeenCalledTimes(1);
     expect(req.user).toMatchObject(payload);
     expect(res.statusCode).toBeUndefined();
+  });
+
+  it('uses the DB role even when the token carries a stale (higher) role', async () => {
+    const token = signToken({ id: 'acc-1', username: 'u', role: ROLES.ADMIN });
+    prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
+      refreshToken: 'rt-existing',
+      role: ROLES.USER,
+      quan_nhan_id: 'qn-1',
+    });
+
+    const req = makeReq(`Bearer ${token}`);
+    const res = makeRes();
+
+    await verifyToken(req, res as unknown as Response, next);
+
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(req.user?.role).toBe(ROLES.USER);
   });
 
   it('refuses request when token is expired', async () => {

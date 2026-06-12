@@ -1,5 +1,4 @@
 import type { Prisma } from '../../generated/prisma';
-import { prisma } from '../../models';
 import { danhHieuDonViHangNamRepository } from '../../repositories/danhHieu.repository';
 import { quanNhanRepository } from '../../repositories/quanNhan.repository';
 import { coQuanDonViRepository, donViTrucThuocRepository } from '../../repositories/unit.repository';
@@ -25,12 +24,46 @@ const defaultDeps: UnitAnnualAwardDeps = {
   getSubUnits: async () => [],
 };
 
+/**
+ * Ensures a MANAGER may only act on a unit within their own parent organization.
+ * @param donViId - Target unit ID
+ * @param userRole - Requesting user's role
+ * @param userQuanNhanId - Requesting user's personnel ID
+ * @returns Nothing
+ * @throws ForbiddenError - When a MANAGER targets a unit outside their scope
+ * @throws NotFoundError - When the unit or the requesting user cannot be found
+ */
+async function assertCanManageUnit(donViId: string, userRole?: string, userQuanNhanId?: string) {
+  if (userRole === ROLES.ADMIN || userRole === ROLES.SUPER_ADMIN || !userRole) {
+    return;
+  }
+  if (userRole !== ROLES.MANAGER || !userQuanNhanId) {
+    throw new ForbiddenError('Không có quyền thực hiện thao tác này');
+  }
+
+  const donVi =
+    (await coQuanDonViRepository.findById(donViId)) ||
+    (await donViTrucThuocRepository.findById(donViId));
+  if (!donVi) throw new NotFoundError('Đơn vị');
+
+  const user = await quanNhanRepository.findUnitScope(userQuanNhanId);
+  if (!user) throw new NotFoundError('Thông tin người dùng');
+
+  const targetCoQuanId =
+    'co_quan_don_vi_id' in donVi && donVi.co_quan_don_vi_id ? donVi.co_quan_don_vi_id : donVi.id;
+  if (!user.co_quan_don_vi_id || user.co_quan_don_vi_id !== targetCoQuanId) {
+    throw new ForbiddenError('Không có quyền đề xuất khen thưởng cho đơn vị này');
+  }
+}
+
 export async function propose(
-  { don_vi_id, nam, danh_hieu, ghi_chu, nguoi_tao_id },
+  { don_vi_id, nam, danh_hieu, ghi_chu, nguoi_tao_id, userRole, userQuanNhanId },
   deps: UnitAnnualAwardDeps = defaultDeps
 ) {
   const year = Number(nam);
   const unitId = don_vi_id;
+
+  await assertCanManageUnit(unitId, userRole, userQuanNhanId);
 
   const { isCoQuanDonVi } = await resolveUnit(unitId);
 

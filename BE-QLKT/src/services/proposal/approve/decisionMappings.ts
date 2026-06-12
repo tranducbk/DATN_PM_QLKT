@@ -9,6 +9,7 @@ import {
   DANH_HIEU_DON_VI_HANG_NAM,
   DANH_HIEU_HCCSVV,
 } from '../../../constants/danhHieu.constants';
+import { RESOURCE_SLUGS } from '../../../constants/resourceSlugs.constants';
 import { writeSystemLog } from '../../../helpers/systemLogHelper';
 import { sanitizeFilename } from '../helpers';
 import type { ProposalDanhHieuItem, ProposalThanhTichItem } from '../../../types/proposal';
@@ -329,7 +330,7 @@ export async function syncDecisionFiles(
     } catch (error) {
       void writeSystemLog({
         action: 'ERROR',
-        resource: 'proposals',
+        resource: RESOURCE_SLUGS.PROPOSALS,
         description: 'ProposalApprove.syncDecisionFiles failed',
         payload: { proposalId, soQuyetDinh, error },
       });

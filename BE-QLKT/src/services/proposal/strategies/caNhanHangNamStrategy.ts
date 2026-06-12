@@ -37,14 +37,12 @@ interface CaNhanPersonnelRow {
   ho_ten: string | null;
   don_vi_truc_thuoc_id: string | null;
   CoQuanDonVi: { id: string; ten_don_vi: string; ma_don_vi: string } | null;
-  DonViTrucThuoc:
-    | {
-        id: string;
-        ten_don_vi: string;
-        ma_don_vi: string;
-        CoQuanDonVi: { id: string; ten_don_vi: string; ma_don_vi: string } | null;
-      }
-    | null;
+  DonViTrucThuoc: {
+    id: string;
+    ten_don_vi: string;
+    ma_don_vi: string;
+    CoQuanDonVi: { id: string; ten_don_vi: string; ma_don_vi: string } | null;
+  } | null;
 }
 
 async function loadPersonnelMap(personnelIds: string[]): Promise<Map<string, CaNhanPersonnelRow>> {
@@ -116,9 +114,7 @@ class CaNhanHangNamStrategy implements ProposalStrategy {
     ctx: ProposalSubmitContext
   ): Promise<SubmitValidationResult> {
     const items = (titleData ?? []) as CaNhanInputItem[];
-    const personnelIds = items
-      .map(i => i.personnel_id)
-      .filter((id): id is string => Boolean(id));
+    const personnelIds = items.map(i => i.personnel_id).filter((id): id is string => Boolean(id));
     const personnelMap = await loadPersonnelMap(personnelIds);
 
     const dataDanhHieu = items.map(item => {
@@ -266,8 +262,8 @@ class CaNhanHangNamStrategy implements ProposalStrategy {
           acc.errors.push('Thiếu thông tin quân nhân khi lưu danh hiệu.');
           continue;
         }
-        const quanNhan = await quanNhanRepository.findIdById(item.personnel_id, prismaTx);
-        if (!quanNhan) {
+        const personnel = await quanNhanRepository.findIdById(item.personnel_id, prismaTx);
+        if (!personnel) {
           acc.errors.push(
             'Không tìm thấy thông tin quân nhân khi lưu danh hiệu. ' +
               'Quân nhân có thể đã bị xoá khỏi hệ thống — vui lòng tải lại đề xuất.'
@@ -292,8 +288,7 @@ class CaNhanHangNamStrategy implements ProposalStrategy {
         ) => {
           let nhan = (item[flagKey] as boolean | null | undefined) || isMatch;
           let soQD =
-            (item[qdKey] as string | null | undefined) ||
-            (isMatch ? item.so_quyet_dinh : null);
+            (item[qdKey] as string | null | undefined) || (isMatch ? item.so_quyet_dinh : null);
           let filePdf =
             (item[fileKey] as string | null | undefined) ||
             (isMatch ? (item.file_quyet_dinh as string | null | undefined) : null);
@@ -357,14 +352,17 @@ class CaNhanHangNamStrategy implements ProposalStrategy {
           if (note) data.ghi_chu_bkttcp = note;
         }
 
-        await danhHieuHangNamRepository.upsertRaw({
-          where: { quan_nhan_id_nam: { quan_nhan_id: quanNhan.id, nam: namNhan } },
-          update: { ...data },
-          create: { quan_nhan_id: quanNhan.id, nam: namNhan, ...data },
-        }, prismaTx);
+        await danhHieuHangNamRepository.upsertRaw(
+          {
+            where: { quan_nhan_id_nam: { quan_nhan_id: personnel.id, nam: namNhan } },
+            update: { ...data },
+            create: { quan_nhan_id: personnel.id, nam: namNhan, ...data },
+          },
+          prismaTx
+        );
 
         acc.importedDanhHieu++;
-        acc.affectedPersonnelIds.add(quanNhan.id);
+        acc.affectedPersonnelIds.add(personnel.id);
       } catch (error) {
         console.error('[approveProposal] danh hieu error:', {
           personnel_id: item.personnel_id,

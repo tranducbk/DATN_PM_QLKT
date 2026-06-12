@@ -238,7 +238,7 @@ class ScientificAchievementService {
     try {
       await profileService.recalculateAnnualProfile(personnelId);
     } catch (error) {
-      writeSystemLog({ action: 'ERROR', resource: AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS, description: `Lỗi tính lại hồ sơ hằng năm sau khi xóa ${AWARD_LABEL}: ${error}` });
+      void writeSystemLog({ action: 'ERROR', resource: AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS, description: `Lỗi tính lại hồ sơ hằng năm sau khi xóa ${AWARD_LABEL}: ${error}` });
     }
 
     try {
@@ -249,7 +249,7 @@ class ScientificAchievementService {
         adminUsername
       );
     } catch (error) {
-      writeSystemLog({ action: 'ERROR', resource: AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS, description: `Lỗi gửi thông báo xóa ${AWARD_LABEL}: ${error}` });
+      void writeSystemLog({ action: 'ERROR', resource: AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS, description: `Lỗi gửi thông báo xóa ${AWARD_LABEL}: ${error}` });
     }
 
     return {

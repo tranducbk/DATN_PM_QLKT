@@ -14,11 +14,8 @@ import {
   theme as antdTheme,
   Pagination,
 } from 'antd';
-import { getApiErrorMessage } from '@/lib/apiError';
-import {
-  DEFAULT_PAGE_SIZE,
-  DEFAULT_ANTD_TABLE_PAGINATION,
-} from '@/constants/pagination.constants';
+import { getApiErrorMessage } from '@/lib/http/apiError';
+import { DEFAULT_PAGE_SIZE, DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { useTheme } from '@/components/ThemeProvider';
 import { LoadingState } from '@/components/shared/LoadingState';
 import {
@@ -31,7 +28,7 @@ import {
 } from '@ant-design/icons';
 import { PersonnelTable } from '@/components/personnel/PersonnelTable';
 import { PersonnelForm } from '@/components/personnel/PersonnelForm';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import { personnelFormSchema } from '@/lib/schemas';
 import type { z } from 'zod';
 import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
@@ -63,7 +60,6 @@ export default function ManagerPersonnelPage() {
   const [pagination, setPagination] = useState({
     page: 1,
     limit: DEFAULT_PAGE_SIZE,
-    total: 0,
   });
   const [managerUnitId, setManagerUnitId] = useState<string | null>(null);
 
@@ -98,9 +94,7 @@ export default function ManagerPersonnelPage() {
       setLoading(true);
       const [personnelRes, positionsRes, unitsRes] = await Promise.all([
         apiClient.getPersonnel({
-          page: pagination.page,
-          limit: pagination.limit,
-          search: searchTerm,
+          limit: 10000,
           unit_id: managerUnitId ?? undefined,
         }),
         apiClient.getPositions(),
@@ -108,13 +102,7 @@ export default function ManagerPersonnelPage() {
       ]);
 
       if (personnelRes.success) {
-        const data = personnelRes.data;
-        const personnelList = (data || []) as PersonnelListItem[];
-        setPersonnel(personnelList);
-        setPagination(prev => ({
-          ...prev,
-          total: personnelList.length,
-        }));
+        setPersonnel((personnelRes.data || []) as PersonnelListItem[]);
       }
 
       if (positionsRes.success) {
@@ -124,18 +112,22 @@ export default function ManagerPersonnelPage() {
       if (unitsRes.success) {
         setUnits((unitsRes.data || []) as UnitOptionRow[]);
       }
-    } catch (error) {
+    } catch {
       message.error('Không thể tải dữ liệu quân nhân.');
     } finally {
       setLoading(false);
     }
-  }, [managerUnitId, pagination.page, pagination.limit, searchTerm]);
+  }, [managerUnitId]);
 
   useEffect(() => {
     if (managerUnitId !== null) {
       loadData();
     }
-  }, [managerUnitId, pagination.page, pagination.limit, loadData]);
+  }, [managerUnitId, loadData]);
+
+  useEffect(() => {
+    setPagination(prev => ({ ...prev, page: 1 }));
+  }, [searchTerm, selectedPosition, selectedCapBac]);
 
   const handlePageChange = useCallback((page: number) => {
     setPagination(prev => ({ ...prev, page }));
@@ -227,7 +219,12 @@ export default function ManagerPersonnelPage() {
       return 0;
     });
 
-  const totalPersonnel = pagination.total;
+  const totalPersonnel = personnel.length;
+  const filteredTotal = filteredPersonnel.length;
+  const pagedPersonnel = filteredPersonnel.slice(
+    (pagination.page - 1) * pagination.limit,
+    pagination.page * pagination.limit
+  );
 
   const totalSubUnits = units.filter(u => {
     if (u.id === managerUnitId) {
@@ -519,7 +516,7 @@ export default function ManagerPersonnelPage() {
         ) : (
           <Card style={{ padding: 0, marginBottom: '24px' }}>
             <PersonnelTable
-              personnel={filteredPersonnel}
+              personnel={pagedPersonnel}
               sttOffset={(pagination.page - 1) * pagination.limit}
               onEdit={handleOpenDialog}
               onRefresh={loadData}
@@ -530,12 +527,12 @@ export default function ManagerPersonnelPage() {
         )}
 
         {/* Pagination */}
-        {pagination.total > 0 && (
+        {filteredTotal > 0 && (
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
             <Pagination
               current={pagination.page}
               pageSize={pagination.limit}
-              total={pagination.total}
+              total={filteredTotal}
               showSizeChanger
               showQuickJumper
               showLessItems

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import scientificAchievementController from '../controllers/scientificAchievement.controller';
-import { verifyToken, requireAdminOrManager, requireAdminOnly } from '../middlewares/auth';
+import { verifyToken, requireManager, requireAdminOnly } from '../middlewares/auth';
 import { excelUpload as upload } from '../configs/multer';
 import { validate } from '../middlewares/validate';
 import { scientificAchievementValidation, excelImportValidation } from '../validations';
@@ -15,7 +15,7 @@ const router = Router();
 router.get(
   '/',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   validate(scientificAchievementValidation.getAchievementsQuery, 'query'),
   scientificAchievementController.getAchievements
 );
@@ -28,7 +28,7 @@ router.get(
 router.get(
   '/export',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   validate(scientificAchievementValidation.exportAchievementsQuery, 'query'),
   scientificAchievementController.exportToExcel
 );
@@ -38,7 +38,7 @@ router.get(
  * @desc    Download Excel template for scientific achievement import
  * @access  Private - ADMIN, MANAGER
  */
-router.get('/template', verifyToken, requireAdminOrManager, scientificAchievementController.getTemplate);
+router.get('/template', verifyToken, requireManager, scientificAchievementController.getTemplate);
 
 /**
  * @route   POST /api/scientific-achievements/import/preview
@@ -74,7 +74,7 @@ router.post(
 router.post(
   '/',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   validate(scientificAchievementValidation.createAchievement),
   scientificAchievementController.createAchievement
 );
@@ -87,7 +87,7 @@ router.post(
 router.put(
   '/:id',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   validate(scientificAchievementValidation.updateAchievement),
   scientificAchievementController.updateAchievement
 );
@@ -97,6 +97,6 @@ router.put(
  * @desc    Delete a scientific achievement record
  * @access  Private - ADMIN, MANAGER
  */
-router.delete('/:id', verifyToken, requireAdminOrManager, scientificAchievementController.deleteAchievement);
+router.delete('/:id', verifyToken, requireManager, scientificAchievementController.deleteAchievement);
 
 export default router;

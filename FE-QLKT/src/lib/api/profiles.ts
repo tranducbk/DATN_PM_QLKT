@@ -1,5 +1,5 @@
-import axiosInstance from '@/lib/axiosInstance';
-import { getApiErrorMessage } from '@/lib/apiError';
+import axiosInstance from '@/lib/http/axiosInstance';
+import { getApiErrorMessage } from '@/lib/http/apiError';
 import type { ApiResponse } from '@/lib/types/common';
 
 export async function getAnnualProfile(personnelId: string, year?: number): Promise<ApiResponse> {

@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-import { prisma } from '../models';
 import { danhHieuHangNamRepository, danhHieuDonViHangNamRepository } from '../repositories/danhHieu.repository';
 import { contributionMedalRepository } from '../repositories/contributionMedal.repository';
 import { tenureMedalRepository } from '../repositories/tenureMedal.repository';
@@ -307,7 +306,19 @@ class BackupService {
       `COMMIT;`,
     ];
 
-    fs.writeFileSync(filePath, lines.join('\n'), 'utf8');
+    try {
+      fs.writeFileSync(filePath, lines.join('\n'), 'utf8');
+    } catch (error) {
+      void writeSystemLog({
+        userId: options.userId,
+        userRole: 'SYSTEM',
+        action: AUDIT_ACTIONS.BACKUP_FAILED,
+        resource: 'backup',
+        description: `Sao lưu thất bại khi ghi tệp ${filename}: ${(error as Error).message}`,
+        payload: { filename, type: options.type, error: (error as Error).message },
+      });
+      throw error;
+    }
 
     const sizeKB = Math.round(fs.statSync(filePath).size / 1024);
 

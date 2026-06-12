@@ -18,8 +18,9 @@ import { useTheme } from '@/components/ThemeProvider';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { HomeOutlined, FilterOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import { DEFAULT_PAGE_SIZE, DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
+import { useDebounce } from '@/hooks/useDebounce';
 import {
   renderAnnualAwards,
   DANH_HIEU_MAP,
@@ -73,13 +74,13 @@ export default function ManagerUnitsPage() {
   const [allAwards, setAllAwards] = useState<UnitAnnualAwardRow[]>([]);
   const [awardsLoading, setAwardsLoading] = useState(false);
   const [unitSearch, setUnitSearch] = useState('');
-  const [debouncedUnitSearch, setDebouncedUnitSearch] = useState('');
   const [filters, setFilters] = useState({
     nam: '',
     ten_don_vi: '',
     danh_hieu: '',
   });
-  const [debouncedFilters, setDebouncedFilters] = useState(filters);
+  const debouncedUnitSearch = useDebounce(unitSearch).trim().toLowerCase();
+  const debouncedFilters = useDebounce(filters);
   const [awardsPageSize, setAwardsPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [unitsPageSize, setUnitsPageSize] = useState(DEFAULT_PAGE_SIZE);
 
@@ -119,16 +120,6 @@ export default function ManagerUnitsPage() {
       setAwardsLoading(false);
     }
   };
-
-  useEffect(() => {
-    const id = setTimeout(() => setDebouncedFilters(filters), 300);
-    return () => clearTimeout(id);
-  }, [filters]);
-
-  useEffect(() => {
-    const id = setTimeout(() => setDebouncedUnitSearch(unitSearch.trim().toLowerCase()), 300);
-    return () => clearTimeout(id);
-  }, [unitSearch]);
 
   const handleOpenDecisionFile = async (soQuyetDinh: string) => {
     await downloadDecisionFile(soQuyetDinh);

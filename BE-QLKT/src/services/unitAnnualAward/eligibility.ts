@@ -1,4 +1,3 @@
-import { prisma } from '../../models';
 import { danhHieuDonViHangNamRepository } from '../../repositories/danhHieu.repository';
 import { unitAnnualProfileRepository } from '../../repositories/unitAnnualProfile.repository';
 import {
@@ -7,12 +6,8 @@ import {
   DANH_HIEU_DON_VI_CO_BAN,
   DANH_HIEU_DON_VI_BANG_KHEN,
 } from '../../constants/danhHieu.constants';
-import { UNIT_CHAIN_AWARDS, findChainAwardConfig } from '../../constants/chainAwards.constants';
-import {
-  checkChainEligibility,
-  type FlagsInWindow,
-  type EligibilityResult,
-} from '../eligibility/chainEligibility';
+import { type FlagsInWindow } from '../eligibility/chainEligibility';
+import { evaluateUnitChain, getUnitChainConfig } from '../eligibility/unitChainEvaluator';
 import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
 import { resolveUnit, buildUnitIdFields } from '../../helpers/unitHelper';
 
@@ -140,41 +135,13 @@ export function buildSuggestion(
   return `Chưa đủ điều kiện đề nghị xét ${tenBKBQP}.`;
 }
 
-/**
- * Shared unit chain-award rule engine. Both `recalculateAnnualUnit` and the
- * proposal-time `checkUnitAwardEligibility` call this so the two paths cannot
- * diverge on cycle semantics — mirrors `evaluatePersonalChain`. Cycle uses raw
- * `dvqt_lien_tuc % cycleYears` (the streak does not reset after an award).
- * @param code - Unit award code (BKBQP / BKTTCP)
- * @param dvqtLienTuc - Continuous ĐVQT streak ending at year-1
- * @param flagsInWindow - Counts of prerequisite flags within the cycle window
- * @param hasReceived - Whether already received (lifetime awards only)
- * @returns Eligibility result + reason
- */
-export function evaluateUnitChain(
-  code: string,
-  dvqtLienTuc: number,
-  flagsInWindow: FlagsInWindow,
-  hasReceived = false
-): EligibilityResult {
-  const config = findChainAwardConfig(UNIT_CHAIN_AWARDS, code);
-  if (!config) return { eligible: true, reason: '' };
-
-  return checkChainEligibility(
-    config,
-    { streakLength: dvqtLienTuc, nckhStreak: 0 },
-    hasReceived,
-    flagsInWindow
-  );
-}
-
 export async function checkUnitAwardEligibility(donViId: string, year: number, danhHieu: string) {
   year = Number(year);
   if (!DANH_HIEU_DON_VI_BANG_KHEN.has(danhHieu)) {
     return { eligible: true, reason: '' };
   }
 
-  const config = findChainAwardConfig(UNIT_CHAIN_AWARDS, danhHieu);
+  const config = getUnitChainConfig(danhHieu);
   if (!config) return { eligible: true, reason: '' };
 
   const dvqtLienTuc = await calculateContinuousYears(donViId, year);

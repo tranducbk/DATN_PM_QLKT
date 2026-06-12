@@ -59,6 +59,7 @@ import militaryFlagRoute from './militaryFlag.route';
 import unitController from '../controllers/unit.controller';
 import { verifyToken, requireAdmin } from '../middlewares/auth';
 import devZoneRoute from './devZone.route';
+import fileRoute from './file.route';
 
 const router = Router();
 
@@ -93,6 +94,9 @@ router.use('/api/adhoc-awards', adhocAwardRoute);
 // 6. Proposal & Decision Management
 router.use('/api/proposals', proposalRoute);
 router.use('/api/decisions', decisionRoute);
+
+// Internal file serving via short-lived signed URLs (no static public exposure)
+router.use('/api/files', fileRoute);
 
 // 7. Profile & Calculation (Output)
 router.use('/api/profiles', profileRoute);

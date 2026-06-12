@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { Form, Input, Button, Space, message, Select, Typography } from 'antd';
-import { apiClient } from '@/lib/apiClient';
-import { getApiErrorMessage } from '@/lib/apiError';
+import { apiClient } from '@/lib/http/apiClient';
+import { getApiErrorMessage } from '@/lib/http/apiError';
 
 const { Text } = Typography;
 
@@ -123,9 +123,9 @@ export function UnitForm({ unit, units = [], onSuccess, onClose }: UnitFormProps
         />
       </Form.Item>
 
-      {/* Chỉ hiển thị field Cơ quan đơn vị khi SỬA đơn vị (có id) và đơn vị đó có co_quan_don_vi_id */}
-      {/* Khi TẠO MỚI ở trang categories: không hiển thị (chỉ tạo cơ quan đơn vị) */}
-      {/* Khi TẠO MỚI ở trang chi tiết: hiển thị thông tin cơ quan đơn vị (read-only) */}
+      {/* Show the agency-unit field only when EDITING a unit (has id) that has a co_quan_don_vi_id.
+          On CREATE from the categories page: hidden (only creating an agency unit).
+          On CREATE from the detail page: agency unit info shown read-only. */}
       {unit?.id && unit?.co_quan_don_vi_id && (
         <Form.Item
           label="Cơ quan đơn vị"
@@ -150,7 +150,7 @@ export function UnitForm({ unit, units = [], onSuccess, onClose }: UnitFormProps
         </Form.Item>
       )}
 
-      {/* Hiển thị thông tin cơ quan đơn vị nếu đang tạo đơn vị trực thuộc (có co_quan_don_vi_id nhưng chưa có id) */}
+      {/* Show agency-unit info when creating a subordinate unit (has co_quan_don_vi_id but no id yet) */}
       {unit && unit.co_quan_don_vi_id && !unit.id && (
         <Form.Item label="Cơ quan đơn vị">
           <Text type="secondary">

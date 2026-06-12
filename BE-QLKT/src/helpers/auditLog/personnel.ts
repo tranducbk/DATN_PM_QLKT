@@ -109,9 +109,7 @@ const personnel: Record<
     try {
       const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
       hoTen = data?.data?.ho_ten || '';
-    } catch (e) {
-      // Ignore
-    }
+    } catch {}
 
     if (hoTen) {
       return `Xóa quân nhân: ${hoTen}`;
@@ -134,9 +132,7 @@ const personnel: Record<
           failCount > 0 ? `, ${failCount} thất bại` : ''
         })`;
       }
-    } catch (e) {
-      // Ignore parse error
-    }
+    } catch {}
 
     return `Import quân nhân từ file: ${fileName}`;
   },
@@ -345,9 +341,7 @@ const scientificAchievements: Record<
           select: { ho_ten: true },
         });
         hoTen = personnelRecord?.ho_ten || '';
-      } catch (error) {
-        // Ignore error
-      }
+      } catch {}
     }
 
     try {
@@ -356,9 +350,7 @@ const scientificAchievements: Record<
       if (achievement?.QuanNhan?.ho_ten) {
         hoTen = achievement.QuanNhan.ho_ten;
       }
-    } catch (e) {
-      // Ignore parse error
-    }
+    } catch {}
 
     return `Tạo thành tích khoa học: ${loaiName}${hoTen ? ` cho quân nhân ${hoTen}` : ''}${
       moTa ? ` - ${moTa}` : ''
@@ -385,9 +377,7 @@ const scientificAchievements: Record<
         })) as ThanhTichKhoaHocWithHoTen | null;
         hoTen = achievementRecord?.QuanNhan?.ho_ten || '';
       }
-    } catch (e) {
-      // Ignore parse error
-    }
+    } catch {}
 
     return `Cập nhật thành tích khoa học: ${loaiName}${hoTen ? ` cho quân nhân ${hoTen}` : ''}${
       moTa ? ` - ${moTa}` : ''
@@ -410,9 +400,7 @@ const scientificAchievements: Record<
       if (achievement?.mo_ta) {
         moTa = achievement.mo_ta;
       }
-    } catch (e) {
-      // Ignore parse error
-    }
+    } catch {}
 
     const loaiName = ACHIEVEMENT_TYPE_NAMES[loai] || loai || FALLBACK.UNKNOWN;
 

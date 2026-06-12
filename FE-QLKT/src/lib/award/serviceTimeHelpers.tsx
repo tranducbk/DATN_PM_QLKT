@@ -2,7 +2,7 @@ import { Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { DateInput } from '@/lib/types/common';
 import type { ContributionProfile } from '@/lib/types/personnelList';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 
 const { Text } = Typography;
 

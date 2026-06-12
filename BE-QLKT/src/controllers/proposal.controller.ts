@@ -6,6 +6,7 @@ import commemorativeMedalService from '../services/commemorativeMedal.service';
 import militaryFlagService from '../services/militaryFlag.service';
 import * as notificationHelper from '../helpers/notification';
 import { ROLES } from '../constants/roles.constants';
+import { RESOURCE_SLUGS } from '../constants/resourceSlugs.constants';
 import {
   PROPOSAL_TYPES,
   requiresProposalMonth,
@@ -73,7 +74,7 @@ class ProposalController {
     let titleDataParsed;
     try {
       titleDataParsed = typeof title_data === 'string' ? JSON.parse(title_data) : title_data;
-    } catch (e) {
+    } catch {
       return ResponseHelper.badRequest(res, 'Dữ liệu title_data không hợp lệ');
     }
     const files = req.files as Record<string, Express.Multer.File[]> | undefined;
@@ -100,7 +101,7 @@ class ProposalController {
       {
         userId: user.id,
         userRole: user.role,
-        resource: 'proposals',
+        resource: RESOURCE_SLUGS.PROPOSALS,
         description: 'Lỗi gửi thông báo cho Admin khi nộp đề xuất',
       },
       () => notificationHelper.notifyAdminsOnProposalSubmission(result.proposal, user)
@@ -170,7 +171,7 @@ class ProposalController {
       {
         userId: user.id,
         userRole: user.role,
-        resource: 'proposals',
+        resource: RESOURCE_SLUGS.PROPOSALS,
         description: 'Lỗi gửi thông báo cho Manager khi duyệt đề xuất',
       },
       () => notificationHelper.notifyManagerOnProposalApproval(result.proposal, user)
@@ -180,7 +181,7 @@ class ProposalController {
         {
           userId: user.id,
           userRole: user.role,
-          resource: 'proposals',
+          resource: RESOURCE_SLUGS.PROPOSALS,
           description: 'Lỗi gửi thông báo cho quân nhân khi duyệt khen thưởng',
         },
         () =>
@@ -236,7 +237,7 @@ class ProposalController {
       {
         userId: user.id,
         userRole: user.role,
-        resource: 'proposals',
+        resource: RESOURCE_SLUGS.PROPOSALS,
         description: 'Lỗi gửi thông báo cho Manager khi từ chối đề xuất',
       },
       () => notificationHelper.notifyManagerOnProposalRejection(result.proposal, user, rejectReason)
@@ -298,7 +299,7 @@ class ProposalController {
       {
         userId: user.id,
         userRole: user.role,
-        resource: 'proposals',
+        resource: RESOURCE_SLUGS.PROPOSALS,
         description: 'Lỗi gửi thông báo khi xóa đề xuất',
       },
       () =>

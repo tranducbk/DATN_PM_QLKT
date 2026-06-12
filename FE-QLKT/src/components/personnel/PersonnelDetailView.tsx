@@ -17,7 +17,7 @@ import {
   Divider,
   Spin,
 } from 'antd';
-import { getApiErrorMessage } from '@/lib/apiError';
+import { getApiErrorMessage } from '@/lib/http/apiError';
 import {
   ArrowLeftOutlined,
   EditOutlined,
@@ -34,8 +34,9 @@ import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useTheme } from '@/components/ThemeProvider';
 import { MedalProgressCard } from '@/components/personnel/MedalProgressCard';
 import { getAntdThemeConfig } from '@/lib/antdTheme';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import { formatDate, formatHeSoChucVu } from '@/lib/utils';
+import { calculateYearsOfService, convertMonthsToYearsAndMonths } from '@/lib/serviceTime';
 import { getReceivedMonthYearText } from '@/lib/award/medalDisplay';
 import styles from './personnel-detail.module.css';
 import { ROLES, getRoleInfo } from '@/constants/roles.constants';
@@ -60,18 +61,20 @@ import {
 } from '@/constants/danhHieu.constants';
 
 interface PersonnelDetailViewProps {
-  role: 'admin' | 'manager';
+  role: 'admin' | 'manager' | 'super-admin';
+  /** Show only the personal-info tab — used by SUPER_ADMIN (account management, not award management). */
+  infoOnly?: boolean;
 }
 
 const { Title, Text } = Typography;
 
-export function PersonnelDetailView({ role }: PersonnelDetailViewProps) {
+export function PersonnelDetailView({ role, infoOnly = false }: PersonnelDetailViewProps) {
   const { isDark } = useTheme();
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
   const personnelId = params?.id as string;
-  const activeTab = searchParams?.get('tab') || '1';
+  const activeTab = infoOnly ? '1' : searchParams?.get('tab') || '1';
   const { user } = useAuth();
   const basePath = `/${role}`;
 
@@ -88,41 +91,31 @@ export function PersonnelDetailView({ role }: PersonnelDetailViewProps) {
       const current_year = new Date().getFullYear();
       try {
         setLoading(true);
-        const [personnelRes, serviceRes, annualRes, contributionRes, militaryRes, commRes] =
-          await Promise.all([
-            apiClient.getPersonnelById(personnelId),
-            apiClient.getServiceProfile(personnelId),
-            apiClient.getAnnualProfile(personnelId, current_year),
-            apiClient.getContributionProfile(personnelId),
-            apiClient.getMilitaryFlagByPersonnel(personnelId),
-            apiClient.getCommemorationMedalsByPersonnel(personnelId),
-          ]);
 
+        const personnelRes = await apiClient.getPersonnelById(personnelId);
         if (personnelRes.success) {
           setPersonnel(personnelRes.data);
         } else {
           message.error(personnelRes.message || 'Lỗi khi lấy thông tin quân nhân');
         }
 
-        if (serviceRes.success) {
-          setServiceProfile(serviceRes.data);
-        }
+        // Award profiles back only the award tabs — skip them in info-only mode (e.g. SUPER_ADMIN),
+        // whose role has no access to the award endpoints anyway (they return 403).
+        if (infoOnly) return;
 
-        if (annualRes.success) {
-          setAnnualProfile(annualRes.data);
-        }
+        const [serviceRes, annualRes, contributionRes, militaryRes, commRes] = await Promise.all([
+          apiClient.getServiceProfile(personnelId),
+          apiClient.getAnnualProfile(personnelId, current_year),
+          apiClient.getContributionProfile(personnelId),
+          apiClient.getMilitaryFlagByPersonnel(personnelId),
+          apiClient.getCommemorationMedalsByPersonnel(personnelId),
+        ]);
 
-        if (contributionRes.success) {
-          setContributionProfile(contributionRes.data);
-        }
-
-        if (militaryRes.success) {
-          setMilitaryFlag(militaryRes.data);
-        }
-
-        if (commRes.success) {
-          setCommemorationMedals(commRes.data);
-        }
+        if (serviceRes.success) setServiceProfile(serviceRes.data);
+        if (annualRes.success) setAnnualProfile(annualRes.data);
+        if (contributionRes.success) setContributionProfile(contributionRes.data);
+        if (militaryRes.success) setMilitaryFlag(militaryRes.data);
+        if (commRes.success) setCommemorationMedals(commRes.data);
       } catch (error: unknown) {
         message.error(getApiErrorMessage(error, 'Lỗi khi lấy thông tin'));
       } finally {
@@ -133,7 +126,7 @@ export function PersonnelDetailView({ role }: PersonnelDetailViewProps) {
     if (personnelId) {
       fetchData();
     }
-  }, [personnelId]);
+  }, [personnelId, infoOnly]);
 
   const getStatusTag = (status: string | undefined) => {
     const s =
@@ -141,23 +134,9 @@ export function PersonnelDetailView({ role }: PersonnelDetailViewProps) {
     return <Tag color={s.color}>{s.label}</Tag>;
   };
 
-  const calculateYearsOfService = (ngayNhapNgu: string) => {
-    if (!ngayNhapNgu) return 0;
-    const now = new Date();
-    const nhapNgu = new Date(ngayNhapNgu);
-    const months =
-      (now.getFullYear() - nhapNgu.getFullYear()) * 12 + now.getMonth() - nhapNgu.getMonth();
-    return Math.floor(Math.max(0, months) / 12);
-  };
-
-  const convertMonthsToYearsAndMonths = (totalMonths: number) => {
-    const years = Math.floor(totalMonths / 12);
-    const months = totalMonths % 12;
-    return { years, months };
-  };
-
   const canEdit =
     role === 'admin' ||
+    role === 'super-admin' ||
     user?.quan_nhan_id === personnelId ||
     personnel?.TaiKhoan?.role === ROLES.USER;
 
@@ -218,14 +197,14 @@ export function PersonnelDetailView({ role }: PersonnelDetailViewProps) {
     );
   }
 
-  const taiKhoanUsername = personnel.TaiKhoan?.username ?? 'Chưa có tài khoản';
+  const accountUsername = personnel.TaiKhoan?.username ?? 'Chưa có tài khoản';
   const usernameValue =
     role === 'admin' && personnel.TaiKhoan ? (
       <Link href="/admin/accounts" className="text-blue-500 hover:underline">
-        {taiKhoanUsername}
+        {accountUsername}
       </Link>
     ) : (
-      <span className={personnel.TaiKhoan ? '' : 'text-gray-400 italic'}>{taiKhoanUsername}</span>
+      <span className={personnel.TaiKhoan ? '' : 'text-gray-400 italic'}>{accountUsername}</span>
     );
 
   const tabItems = [
@@ -898,7 +877,7 @@ export function PersonnelDetailView({ role }: PersonnelDetailViewProps) {
               router.push(`${basePath}/personnel/${personnelId}?tab=${key}`);
             }}
             className={`${styles.personnelTabs} ${isDark ? styles.dark : styles.light}`}
-            items={tabItems}
+            items={infoOnly ? tabItems.filter(t => t.key === '1') : tabItems}
             tabBarGutter={32}
             centered
             tabBarStyle={{ marginBottom: 24 }}

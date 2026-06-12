@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "jest",
+    "test:integration": "jest --config jest.integration.config.ts",
     "build": "tsc && cp -r src/generated dist/generated",
     "typecheck": "tsc --noEmit",
     "start": "node dist/index.js",
@@ -19,13 +20,18 @@
     "seed:ui": "prisma db execute --file scripts/demo/01-seed-data.sql --schema prisma/schema.prisma",
     "seed:eligibility": "prisma db execute --file scripts/demo/02-seed-eligibility.sql --schema prisma/schema.prisma",
     "seed:fresh": "npm run seed:reset && npm run seed:ui",
-    "seed:demo-passwords": "tsx scripts/demo/02-set-passwords.ts"
+    "seed:demo-passwords": "tsx scripts/demo/02-set-passwords.ts",
+    "seed:base": "tsx scripts/demo/seed-base.ts",
+    "seed:decisions": "tsx scripts/demo/seed-decisions.ts",
+    "seed:all": "npm run seed:base && npm run seed:decisions",
+    "audit:seed": "tsx scripts/demo/audit-seed.ts"
   },
   "license": "ISC",
   "dependencies": {
     "@prisma/client": "^6.17.1",
     "bcrypt": "^5.1.1",
     "body-parser": "^1.20.2",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "docx": "^8.5.0",
     "dotenv": "^16.4.4",
@@ -50,6 +56,7 @@
   "devDependencies": {
     "@mermaid-js/mermaid-cli": "^11.12.0",
     "@types/bcrypt": "^6.0.0",
+    "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",
@@ -59,8 +66,10 @@
     "@types/node-cron": "^3.0.11",
     "@types/nodemailer": "^7.0.11",
     "@types/uuid": "^10.0.0",
+    "@types/supertest": "^6.0.2",
     "jest": "^30.3.0",
     "nodemon": "^3.0.3",
+    "supertest": "^7.0.0",
     "prettier": "^3.8.1",
     "prisma-erd-generator": "^2.1.0",
     "ts-jest": "^29.4.9",

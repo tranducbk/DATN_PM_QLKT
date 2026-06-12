@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Table, Button, Space, Popconfirm, message, Empty } from 'antd';
+import { Table, Button, Space, Popconfirm, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
+import { EmptyState } from '@/components/shared/EmptyState';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { calcUnitTotal } from '@/lib/utils';
 
@@ -167,7 +168,7 @@ export function UnitsTable({
       }}
       scroll={{ x: 'max-content' }}
       locale={{
-        emptyText: <Empty description="Không có dữ liệu" />,
+        emptyText: <EmptyState description="Chưa có đơn vị nào" />,
       }}
     />
   );

@@ -15,13 +15,14 @@ import {
   Popconfirm,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { getApiErrorMessage } from '@/lib/apiError';
+import { getApiErrorMessage } from '@/lib/http/apiError';
 
 import { HomeOutlined, EyeOutlined, LoadingOutlined, DeleteOutlined } from '@ant-design/icons';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import {
   DEFAULT_PAGE_SIZE,
   DEFAULT_ANTD_TABLE_PAGINATION,
+  PROPOSAL_LIST_LIMIT,
 } from '@/constants/pagination.constants';
 import { formatDateTime } from '@/lib/utils';
 import { message } from 'antd';
@@ -76,7 +77,7 @@ export default function ProposalReviewPage() {
   const fetchProposals = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.getProposals({ page: 1, limit: 100 });
+      const response = await apiClient.getProposals({ page: 1, limit: PROPOSAL_LIST_LIMIT });
 
       if (response.success) {
         setProposals(response.data ?? []);

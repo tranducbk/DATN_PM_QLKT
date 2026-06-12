@@ -2,7 +2,7 @@
   "name": "pm-qlkt",
   "version": "1.0.0",
   "private": true,
-  "description": "PM QLKT - root orchestrator for BE-QLKT + FE-QLKT",
+  "description": "PM QLKT",
   "scripts": {
     "install:be": "cd BE-QLKT && npm install",
     "install:fe": "cd FE-QLKT && npm install",
@@ -21,7 +21,10 @@
     "status": "pm2 list",
     "deploy": "npm run build && npm run restart",
     "typecheck": "cd BE-QLKT && npm run typecheck && cd ../FE-QLKT && npm run typecheck",
-    "test": "cd BE-QLKT && npx jest"
+    "test": "cd BE-QLKT && npx jest",
+    "doc:build": "cd SOICT_DATN_Tran_Anh_Duc_20220120 && latexmk",
+    "doc:watch": "cd SOICT_DATN_Tran_Anh_Duc_20220120 && latexmk -pvc",
+    "doc:clean": "cd SOICT_DATN_Tran_Anh_Duc_20220120 && latexmk -c"
   },
   "devDependencies": {
     "pm2": "^5.4.0"

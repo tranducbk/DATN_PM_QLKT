@@ -1,0 +1,97 @@
+// ERD con C3.1 — Tổ chức · Quân nhân · Tài khoản (6 bảng, tự chứa)
+// Trích từ database.dbml (master). Import lẻ vào dbdiagram.io để render sạch.
+Project erd_to_chuc { database_type: 'PostgreSQL' }
+
+Table CoQuanDonVi {
+  id varchar(30) [pk]
+  ma_don_vi varchar(50) [not null, unique]
+  ten_don_vi varchar(255) [not null]
+  so_luong int [not null, default: 0]
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table DonViTrucThuoc {
+  id varchar(30) [pk]
+  co_quan_don_vi_id varchar(30) [not null]
+  ma_don_vi varchar(50) [not null, unique]
+  ten_don_vi varchar(255) [not null]
+  so_luong int [not null, default: 0]
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table ChucVu {
+  id varchar(30) [pk]
+  co_quan_don_vi_id varchar(30)
+  don_vi_truc_thuoc_id varchar(30)
+  ten_chuc_vu varchar(255) [not null]
+  is_manager boolean [not null, default: false]
+  he_so_chuc_vu float [not null, default: 0]
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+
+  Indexes {
+    (co_quan_don_vi_id, ten_chuc_vu) [unique]
+    (don_vi_truc_thuoc_id, ten_chuc_vu) [unique]
+  }
+}
+
+Table QuanNhan {
+  id varchar(30) [pk]
+  cccd varchar(20) [unique]
+  ho_ten varchar(255) [not null]
+  gioi_tinh varchar(10)
+  ngay_sinh date
+  que_quan_2_cap varchar(255)
+  que_quan_3_cap varchar(255)
+  tru_quan varchar(255)
+  cho_o_hien_nay varchar(255)
+  co_quan_don_vi jsonb
+  ngay_nhap_ngu date
+  ngay_xuat_ngu date
+  ngay_vao_dang date
+  ngay_vao_dang_chinh_thuc date
+  so_the_dang_vien varchar(50)
+  so_dien_thoai varchar(20)
+  cap_bac varchar(50)
+  co_quan_don_vi_id varchar(30)
+  don_vi_truc_thuoc_id varchar(30)
+  chuc_vu_id varchar(30) [not null]
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table LichSuChucVu {
+  id varchar(30) [pk]
+  quan_nhan_id varchar(30) [not null]
+  chuc_vu_id varchar(30) [not null]
+  he_so_chuc_vu float [not null, default: 0]
+  ngay_bat_dau date [not null]
+  ngay_ket_thuc date
+  so_thang int
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table TaiKhoan {
+  id varchar(30) [pk]
+  quan_nhan_id varchar(30) [unique]
+  username varchar(100) [not null, unique]
+  password_hash varchar(255) [not null]
+  role varchar(20) [not null, note: 'SUPER_ADMIN | ADMIN | MANAGER | USER']
+  refreshToken text
+  prevRefreshToken text
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Ref: DonViTrucThuoc.co_quan_don_vi_id > CoQuanDonVi.id [delete: cascade]
+Ref: ChucVu.co_quan_don_vi_id > CoQuanDonVi.id [delete: cascade]
+Ref: ChucVu.don_vi_truc_thuoc_id > DonViTrucThuoc.id [delete: cascade]
+Ref: QuanNhan.chuc_vu_id > ChucVu.id [delete: restrict]
+Ref: QuanNhan.co_quan_don_vi_id > CoQuanDonVi.id [delete: cascade]
+Ref: QuanNhan.don_vi_truc_thuoc_id > DonViTrucThuoc.id [delete: cascade]
+Ref: LichSuChucVu.quan_nhan_id > QuanNhan.id [delete: cascade]
+Ref: LichSuChucVu.chuc_vu_id > ChucVu.id [delete: cascade]
+Ref: TaiKhoan.quan_nhan_id > QuanNhan.id [delete: cascade]

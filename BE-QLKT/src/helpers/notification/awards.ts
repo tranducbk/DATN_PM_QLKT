@@ -15,7 +15,6 @@ import { isFeatureEnabled } from '../settingsHelper';
 import { accountRepository } from '../../repositories/account.repository';
 import { notificationRepository } from '../../repositories/notification.repository';
 import { quanNhanRepository } from '../../repositories/quanNhan.repository';
-import { coQuanDonViRepository, donViTrucThuocRepository } from '../../repositories/unit.repository';
 
 interface AchievementInfo {
   id: string;

@@ -9,17 +9,10 @@ import { Router, Request, Response } from 'express';
 import path from 'path';
 import fs from 'fs';
 import unitAnnualAwardController from '../controllers/unitAnnualAward.controller';
-import {
-  verifyToken,
-  requireAdminOrManager,
-  requireAdminOnly,
-} from '../middlewares/auth';
+import { verifyToken, requireManager, requireAdminOnly } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
-import {
-  excelUpload as upload,
-  decisionUploadDir as uploadDir,
-} from '../configs/multer';
+import { excelUpload as upload, decisionUploadDir as uploadDir } from '../configs/multer';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 import { validate } from '../middlewares/validate';
@@ -35,7 +28,7 @@ const router = Router();
 router.get(
   '/',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   validate(unitAnnualAwardValidation.listUnitAnnualAwardsQuery, 'query'),
   unitAnnualAwardController.list
 );
@@ -45,7 +38,7 @@ router.get(
  * @desc    Download Excel template for unit annual award import
  * @access  ADMIN, MANAGER
  */
-router.get('/template', verifyToken, requireAdminOrManager, unitAnnualAwardController.getTemplate);
+router.get('/template', verifyToken, requireManager, unitAnnualAwardController.getTemplate);
 
 /**
  * @route   POST /api/unit-annual-awards/import/preview
@@ -74,25 +67,6 @@ router.post(
 );
 
 /**
- * @route   POST /api/unit-annual-awards/import
- * @desc    Import unit annual awards from Excel (legacy direct import)
- * @access  ADMIN only (Excel import is ADMIN-only)
- */
-router.post(
-  '/import',
-  verifyToken,
-  requireAdminOnly,
-  upload.single('file'),
-  auditLog({
-    action: AUDIT_ACTIONS.IMPORT,
-    resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
-    getDescription: getLogDescription(AWARD_SLUGS.UNIT_ANNUAL_AWARDS, 'IMPORT'),
-    getResourceId: () => null,
-  }),
-  unitAnnualAwardController.importFromExcel
-);
-
-/**
  * @route   GET /api/unit-annual-awards/export
  * @desc    Export unit annual awards to Excel
  * @access  ADMIN, MANAGER
@@ -100,7 +74,7 @@ router.post(
 router.get(
   '/export',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   validate(unitAnnualAwardValidation.exportUnitAnnualAwardsQuery, 'query'),
   unitAnnualAwardController.exportToExcel
 );
@@ -113,7 +87,7 @@ router.get(
 router.get(
   '/statistics',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   validate(unitAnnualAwardValidation.getUnitAnnualAwardsStatisticsQuery, 'query'),
   unitAnnualAwardController.getStatistics
 );
@@ -123,31 +97,43 @@ router.get(
  * @desc    List all award history for a unit
  * @access  ADMIN, MANAGER
  */
-router.get('/history', verifyToken, requireAdminOrManager, unitAnnualAwardController.getUnitAnnualAwards);
+router.get(
+  '/history',
+  verifyToken,
+  requireManager,
+  unitAnnualAwardController.getUnitAnnualAwards
+);
 
 /**
  * @route   GET /api/unit-annual-awards/profile/:don_vi_id
  * @desc    Get annual award profile for a unit (computed summary)
  * @access  ADMIN, MANAGER
  */
-router.get('/profile/:don_vi_id', verifyToken, requireAdminOrManager, unitAnnualAwardController.getUnitAnnualProfile);
+router.get(
+  '/profile/:don_vi_id',
+  verifyToken,
+  requireManager,
+  unitAnnualAwardController.getUnitAnnualProfile
+);
 
 /**
  * @route   GET /api/unit-annual-awards/:id
  * @desc    Get unit annual award details by ID
  * @access  ADMIN, MANAGER
  */
-router.get('/:id', verifyToken, requireAdminOrManager, unitAnnualAwardController.getById);
+router.get('/:id', verifyToken, requireManager, unitAnnualAwardController.getById);
 
 /**
  * @route   POST /api/unit-annual-awards
- * @desc    Create a unit annual award
- * @access  ADMIN, MANAGER
+ * @desc    Create a unit annual award (direct entry of an already-approved award)
+ * @access  ADMIN only
  */
+// Direct entry writes status APPROVED, bypassing propose->approve — restricted to ADMIN
 router.post(
   '/',
   verifyToken,
-  requireAdminOrManager,
+  requireAdminOnly,
+  validate(unitAnnualAwardValidation.upsertUnitAnnualAward),
   auditLog({
     action: AUDIT_ACTIONS.CREATE,
     resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
@@ -159,13 +145,14 @@ router.post(
 
 /**
  * @route   PUT /api/unit-annual-awards/:id
- * @desc    Update a unit annual award
- * @access  ADMIN, MANAGER
+ * @desc    Update a unit annual award (direct entry of an already-approved award)
+ * @access  ADMIN only
  */
 router.put(
   '/:id',
   verifyToken,
-  requireAdminOrManager,
+  requireAdminOnly,
+  validate(unitAnnualAwardValidation.upsertUnitAnnualAward),
   auditLog({
     action: AUDIT_ACTIONS.UPDATE,
     resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
@@ -183,7 +170,7 @@ router.put(
 router.delete(
   '/:id',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   auditLog({
     action: AUDIT_ACTIONS.DELETE,
     resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
@@ -201,7 +188,8 @@ router.delete(
 router.post(
   '/propose',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
+  validate(unitAnnualAwardValidation.proposeUnitAnnualAward),
   auditLog({
     action: AUDIT_ACTIONS.PROPOSE,
     resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
@@ -255,7 +243,7 @@ router.post(
 router.post(
   '/recalculate',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   auditLog({
     action: AUDIT_ACTIONS.RECALCULATE,
     resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,

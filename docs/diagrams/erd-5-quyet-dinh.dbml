@@ -1,0 +1,167 @@
+// ERD con — LIÊN KẾT QUYẾT ĐỊNH (hub FileQuyetDinh) — ĐẦY ĐỦ cột.
+// 13 FK qua so_quyet_dinh. Các cột quan_nhan_id/đơn vị hiện ra nhưng KHÔNG nối
+// (quan hệ đó nằm ở ERD-3/ERD-4) để sơ đồ này chỉ tập trung vào liên kết quyết định.
+Project erd_quyet_dinh { database_type: 'PostgreSQL' }
+
+Table FileQuyetDinh {
+  id varchar(30) [pk]
+  so_quyet_dinh varchar(100) [not null, unique]
+  nam int [not null]
+  ngay_ky date [not null]
+  nguoi_ky varchar(255) [not null]
+  file_path varchar(500)
+  loai_khen_thuong varchar(50)
+  ghi_chu text
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table DanhHieuHangNam {
+  id varchar(30) [pk]
+  quan_nhan_id varchar(30) [not null]
+  nam int [not null]
+  danh_hieu varchar(20)
+  cap_bac varchar(50)
+  chuc_vu varchar(255)
+  ghi_chu text
+  so_quyet_dinh varchar(100)
+  nhan_bkbqp boolean [not null, default: false]
+  so_quyet_dinh_bkbqp varchar(100)
+  ghi_chu_bkbqp text
+  nhan_cstdtq boolean [not null, default: false]
+  so_quyet_dinh_cstdtq varchar(100)
+  ghi_chu_cstdtq text
+  nhan_bkttcp boolean [not null, default: false]
+  so_quyet_dinh_bkttcp varchar(100)
+  ghi_chu_bkttcp text
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table DanhHieuDonViHangNam {
+  id varchar(30) [pk]
+  co_quan_don_vi_id varchar(30)
+  don_vi_truc_thuoc_id varchar(30)
+  nam int [not null]
+  danh_hieu varchar(50)
+  so_quyet_dinh varchar(100)
+  nhan_bkbqp boolean [not null, default: false]
+  so_quyet_dinh_bkbqp varchar(100)
+  ghi_chu_bkbqp text
+  nhan_bkttcp boolean [not null, default: false]
+  so_quyet_dinh_bkttcp varchar(100)
+  ghi_chu_bkttcp text
+  status varchar(20) [not null, default: 'PENDING']
+  nguoi_tao_id varchar(30) [not null]
+  nguoi_duyet_id varchar(30)
+  ngay_duyet timestamp
+  ghi_chu text
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table ThanhTichKhoaHoc {
+  id varchar(30) [pk]
+  quan_nhan_id varchar(30) [not null]
+  nam int [not null]
+  loai varchar(10) [not null]
+  mo_ta varchar(500) [not null]
+  cap_bac varchar(50)
+  chuc_vu varchar(255)
+  ghi_chu text
+  so_quyet_dinh varchar(100)
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table KhenThuongHCCSVV {
+  id varchar(30) [pk]
+  quan_nhan_id varchar(30) [not null]
+  danh_hieu varchar(20) [not null]
+  nam int [not null]
+  thang int [not null]
+  cap_bac varchar(50)
+  chuc_vu varchar(255)
+  ghi_chu text
+  so_quyet_dinh varchar(100)
+  thoi_gian jsonb
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table KhenThuongHCBVTQ {
+  id varchar(30) [pk]
+  quan_nhan_id varchar(30) [not null, unique]
+  danh_hieu varchar(20) [not null]
+  nam int [not null]
+  thang int [not null]
+  cap_bac varchar(50)
+  chuc_vu varchar(255)
+  ghi_chu text
+  so_quyet_dinh varchar(100)
+  thoi_gian_nhom_0_7 jsonb
+  thoi_gian_nhom_0_8 jsonb
+  thoi_gian_nhom_0_9_1_0 jsonb
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table HuanChuongQuanKyQuyetThang {
+  id varchar(30) [pk]
+  quan_nhan_id varchar(30) [not null, unique]
+  nam int [not null]
+  thang int [not null]
+  cap_bac varchar(50)
+  chuc_vu varchar(255)
+  ghi_chu text
+  so_quyet_dinh varchar(100)
+  thoi_gian jsonb
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table KyNiemChuongVSNXDQDNDVN {
+  id varchar(30) [pk]
+  quan_nhan_id varchar(30) [not null, unique]
+  nam int [not null]
+  thang int [not null]
+  cap_bac varchar(50)
+  chuc_vu varchar(255)
+  ghi_chu text
+  so_quyet_dinh varchar(100)
+  thoi_gian jsonb
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Table KhenThuongDotXuat {
+  id varchar(30) [pk]
+  loai varchar(30) [not null, default: 'KHEN_THUONG_DOT_XUAT']
+  doi_tuong varchar(20) [not null, default: 'CA_NHAN']
+  quan_nhan_id varchar(30)
+  co_quan_don_vi_id varchar(30)
+  don_vi_truc_thuoc_id varchar(30)
+  hinh_thuc_khen_thuong varchar(255) [not null]
+  nam int [not null]
+  cap_bac varchar(50)
+  chuc_vu varchar(255)
+  ghi_chu text
+  so_quyet_dinh varchar(100)
+  files_dinh_kem jsonb
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+}
+
+Ref: DanhHieuHangNam.so_quyet_dinh > FileQuyetDinh.so_quyet_dinh [update: cascade, delete: restrict]
+Ref: DanhHieuHangNam.so_quyet_dinh_bkbqp > FileQuyetDinh.so_quyet_dinh [update: cascade, delete: restrict]
+Ref: DanhHieuHangNam.so_quyet_dinh_cstdtq > FileQuyetDinh.so_quyet_dinh [update: cascade, delete: restrict]
+Ref: DanhHieuHangNam.so_quyet_dinh_bkttcp > FileQuyetDinh.so_quyet_dinh [update: cascade, delete: restrict]
+Ref: DanhHieuDonViHangNam.so_quyet_dinh > FileQuyetDinh.so_quyet_dinh [update: cascade, delete: restrict]
+Ref: DanhHieuDonViHangNam.so_quyet_dinh_bkbqp > FileQuyetDinh.so_quyet_dinh [update: cascade, delete: restrict]
+Ref: DanhHieuDonViHangNam.so_quyet_dinh_bkttcp > FileQuyetDinh.so_quyet_dinh [update: cascade, delete: restrict]
+Ref: ThanhTichKhoaHoc.so_quyet_dinh > FileQuyetDinh.so_quyet_dinh [update: cascade, delete: restrict]
+Ref: KhenThuongHCCSVV.so_quyet_dinh > FileQuyetDinh.so_quyet_dinh [update: cascade, delete: restrict]
+Ref: KhenThuongHCBVTQ.so_quyet_dinh > FileQuyetDinh.so_quyet_dinh [update: cascade, delete: restrict]
+Ref: HuanChuongQuanKyQuyetThang.so_quyet_dinh > FileQuyetDinh.so_quyet_dinh [update: cascade, delete: restrict]
+Ref: KyNiemChuongVSNXDQDNDVN.so_quyet_dinh > FileQuyetDinh.so_quyet_dinh [update: cascade, delete: restrict]
+Ref: KhenThuongDotXuat.so_quyet_dinh > FileQuyetDinh.so_quyet_dinh [update: cascade, delete: restrict]

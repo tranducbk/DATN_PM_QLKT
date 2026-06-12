@@ -27,8 +27,8 @@ import { useEffect, useState } from 'react';
 import { Form, Input, Button, Alert } from 'antd';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { apiClient } from '@/lib/apiClient';
-import { getApiErrorMessage, getRetryAfterSeconds } from '@/lib/apiError';
+import { apiClient } from '@/lib/http/apiClient';
+import { getApiErrorMessage, getRetryAfterSeconds } from '@/lib/http/apiError';
 import { useAuth } from '@/contexts/AuthContext';
 import { ROLES } from '@/constants/roles.constants';
 import Image from 'next/image';
@@ -81,11 +81,10 @@ export function LoginForm() {
       if (response.success && response.data) {
         const payload = response.data;
         const accessToken = payload.accessToken || payload.token;
-        const refreshToken = payload.refreshToken;
         const user = payload.user || {};
         const role = user.role;
 
-        login(accessToken || '', refreshToken || '', {
+        login(accessToken || '', {
           id: user.id || '',
           username: user.username || user.ten_dang_nhap || '',
           role: user.role,

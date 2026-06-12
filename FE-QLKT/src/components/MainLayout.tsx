@@ -38,7 +38,7 @@ import { formatDate } from '@/lib/utils';
 import type { UserRole } from '@/lib/types/common';
 import { FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
 import { ROLES, getRoleInfo } from '@/constants/roles.constants';
-import { getApiErrorMessage, logApiError } from '@/lib/apiError';
+import { getApiErrorMessage, logApiError } from '@/lib/http/apiError';
 import { getMenuItemsByRole, getSelectedMenuKey, getRoleSlug } from '@/lib/navigation';
 import { getAntdLayoutThemeConfig } from '@/lib/antdTheme';
 
@@ -331,9 +331,9 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setIsLoggingOut(true);
-    authLogout();
+    await authLogout();
     window.location.href = '/login';
   };
 

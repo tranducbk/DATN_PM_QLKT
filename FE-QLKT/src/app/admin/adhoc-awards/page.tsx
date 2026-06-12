@@ -29,7 +29,7 @@ import {
   FilterOutlined,
 } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { CreateAdhocAwardModal } from '@/components/adhoc-awards/CreateAdhocAwardModal';

@@ -11,7 +11,7 @@ import fs from 'fs';
 import annualRewardController from '../controllers/annualReward.controller';
 import {
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   requireAdminOnly,
 } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
@@ -38,7 +38,7 @@ const router = Router();
 router.get(
   '/',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   validate(annualRewardValidation.getAnnualRewardsQuery, 'query'),
   annualRewardController.getAnnualRewards
 );
@@ -51,7 +51,7 @@ router.get(
 router.post(
   '/',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   validate(annualRewardValidation.createAnnualReward),
   auditLog({
     action: AUDIT_ACTIONS.CREATE,
@@ -182,7 +182,7 @@ router.post(
  * @desc    Download Excel template for annual reward import
  * @access  Private - ADMIN, MANAGER
  */
-router.get('/template', verifyToken, requireAdminOrManager, annualRewardController.getTemplate);
+router.get('/template', verifyToken, requireManager, annualRewardController.getTemplate);
 
 /**
  * @route   GET /api/annual-rewards/export
@@ -192,7 +192,7 @@ router.get('/template', verifyToken, requireAdminOrManager, annualRewardControll
 router.get(
   '/export',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   validate(annualRewardValidation.exportAnnualRewardsQuery, 'query'),
   annualRewardController.exportToExcel
 );
@@ -205,7 +205,7 @@ router.get(
 router.get(
   '/statistics',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   validate(annualRewardValidation.getAnnualRewardsStatisticsQuery, 'query'),
   annualRewardController.getStatistics
 );

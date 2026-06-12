@@ -17,7 +17,7 @@ import {
 } from 'antd';
 import { EditOutlined, HistoryOutlined, EyeOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import { PersonnelRewardHistoryModal } from './PersonnelRewardHistoryModal';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { formatDate } from '@/lib/utils';
@@ -33,7 +33,7 @@ const { Text } = Typography;
 
 const CSTDCS_DANH_HIEU_LABELS: Record<string, string> = {
   CSTDCS: 'Chiến sĩ thi đua cơ sở',
-  CSTT: 'Chiến sĩ thi đua',
+  CSTT: 'Chiến sĩ tiên tiến',
 };
 
 const NCKH_LOAI_LABELS: Record<string, string> = {
@@ -599,7 +599,7 @@ export function Step3SetTitlesCaNhanHangNam({
         }}
       />
 
-      {/* Modal xem danh hiệu và NCKH */}
+      {/* Modal to view awards and NCKH */}
       <Modal
         title={
           <span>

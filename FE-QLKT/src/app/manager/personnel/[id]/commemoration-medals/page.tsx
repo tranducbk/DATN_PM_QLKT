@@ -20,7 +20,7 @@ import {
 } from 'antd';
 import type { TableColumnsType } from 'antd';
 import { LeftOutlined, HomeOutlined } from '@ant-design/icons';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import { useTheme } from '@/components/ThemeProvider';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';

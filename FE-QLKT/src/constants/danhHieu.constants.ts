@@ -137,7 +137,7 @@ export const LOAI_DE_XUAT_MAP: Record<string, string> = {
   NCKH: 'Thành tích Nghiên cứu khoa học',
 };
 
-/** Options cho dropdown loại khen thưởng (dùng chung cho decisions page, modal, v.v.) */
+/** Award-type dropdown options shared across the decisions page, modals, etc. */
 export const LOAI_KHEN_THUONG_OPTIONS = Object.entries(LOAI_DE_XUAT_MAP).map(([value, label]) => ({
   label,
   value,
@@ -171,21 +171,24 @@ export function getDanhHieuName(danhHieu: string | null | undefined): string {
 }
 
 /**
+ * @param danhHieu - Mã danh hiệu (vd HCCSVV_HANG_NHAT)
+ * @returns Nhãn hạng tiếng Việt ('hạng Nhất'/'hạng Nhì'/'hạng Ba') hoặc '' nếu không có hạng
+ */
+export function getRankLabel(danhHieu: string | null | undefined): string {
+  if (!danhHieu) return '';
+  if (danhHieu.includes('HANG_NHAT')) return 'hạng Nhất';
+  if (danhHieu.includes('HANG_NHI')) return 'hạng Nhì';
+  if (danhHieu.includes('HANG_BA')) return 'hạng Ba';
+  return '';
+}
+
+/**
  * @param loaiDeXuat - Mã loại đề xuất
  * @returns Tên tiếng Việt hoặc mã gốc nếu không tìm thấy
  */
 export function getLoaiDeXuatName(loaiDeXuat: string | null | undefined): string {
   if (!loaiDeXuat) return EMPTY_LABEL;
   return LOAI_DE_XUAT_MAP[loaiDeXuat] || loaiDeXuat;
-}
-
-/**
- * @param awardType - Mã loại khen thưởng
- * @returns Tên tiếng Việt hoặc mã gốc nếu không tìm thấy
- */
-export function getAwardTypeName(awardType: string | null | undefined): string {
-  if (!awardType) return EMPTY_LABEL;
-  return AWARD_TYPE_MAP[awardType] || awardType;
 }
 
 export type AwardType =
@@ -225,6 +228,81 @@ export const AWARD_TAB_FILENAME: Record<string, string> = {
   HCQKQT: 'hc_quan_ky_quyet_thang',
   NCKH: 'thanh_tich_khoa_hoc',
   KTDX: 'khen_thuong_dot_xuat',
+};
+
+interface AwardTabMeta {
+  searchLabel: string;
+  searchPlaceholder: string;
+  danhHieuPlaceholder: string;
+  hasNestedQuanNhan: boolean;
+  hasDanhHieuFilter: boolean;
+  hasThangNhan: boolean;
+}
+
+const SEARCH_BY_PERSON = {
+  searchLabel: 'Tìm kiếm theo họ tên',
+  searchPlaceholder: 'Nhập tên để tìm kiếm',
+};
+
+/** Per-tab metadata for the awards management screens — single source instead of scattered `activeTab ===` ternaries/Sets. */
+export const AWARD_TAB_META: Record<AwardType, AwardTabMeta> = {
+  CNHN: {
+    ...SEARCH_BY_PERSON,
+    danhHieuPlaceholder: 'Chọn danh hiệu cá nhân',
+    hasNestedQuanNhan: false,
+    hasDanhHieuFilter: true,
+    hasThangNhan: false,
+  },
+  DVHN: {
+    searchLabel: 'Tìm kiếm theo tên đơn vị',
+    searchPlaceholder: 'Nhập tên đơn vị để tìm kiếm',
+    danhHieuPlaceholder: 'Chọn danh hiệu đơn vị',
+    hasNestedQuanNhan: false,
+    hasDanhHieuFilter: true,
+    hasThangNhan: false,
+  },
+  HCCSVV: {
+    ...SEARCH_BY_PERSON,
+    danhHieuPlaceholder: 'Chọn danh hiệu',
+    hasNestedQuanNhan: true,
+    hasDanhHieuFilter: true,
+    hasThangNhan: true,
+  },
+  HCBVTQ: {
+    ...SEARCH_BY_PERSON,
+    danhHieuPlaceholder: 'Chọn danh hiệu',
+    hasNestedQuanNhan: true,
+    hasDanhHieuFilter: true,
+    hasThangNhan: true,
+  },
+  KNC_VSNXD_QDNDVN: {
+    ...SEARCH_BY_PERSON,
+    danhHieuPlaceholder: 'Chọn danh hiệu',
+    hasNestedQuanNhan: true,
+    hasDanhHieuFilter: false,
+    hasThangNhan: true,
+  },
+  HCQKQT: {
+    ...SEARCH_BY_PERSON,
+    danhHieuPlaceholder: 'Chọn danh hiệu',
+    hasNestedQuanNhan: true,
+    hasDanhHieuFilter: false,
+    hasThangNhan: true,
+  },
+  NCKH: {
+    ...SEARCH_BY_PERSON,
+    danhHieuPlaceholder: 'Chọn danh hiệu',
+    hasNestedQuanNhan: true,
+    hasDanhHieuFilter: false,
+    hasThangNhan: false,
+  },
+  KTDX: {
+    ...SEARCH_BY_PERSON,
+    danhHieuPlaceholder: 'Chọn danh hiệu',
+    hasNestedQuanNhan: false,
+    hasDanhHieuFilter: false,
+    hasThangNhan: false,
+  },
 };
 
 export const DANH_HIEU_COLORS: Record<string, string> = {

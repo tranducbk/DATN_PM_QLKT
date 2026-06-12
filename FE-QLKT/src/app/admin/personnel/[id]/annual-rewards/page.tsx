@@ -19,7 +19,7 @@ import {
   LeftOutlined,
   HomeOutlined,
 } from '@ant-design/icons';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import type { PersonnelDetail } from '@/lib/types/personnelList';

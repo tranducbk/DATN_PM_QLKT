@@ -62,10 +62,10 @@ const dispatchBulk = async (
   });
 
   if (result.data.errorCount > 0 && result.data.importedCount === 0) {
-    return res.status(400).json({
-      success: false,
+    return ResponseHelper.error(res, {
       message: result.message,
-      data: result.data,
+      statusCode: 400,
+      details: result.data,
     });
   }
 

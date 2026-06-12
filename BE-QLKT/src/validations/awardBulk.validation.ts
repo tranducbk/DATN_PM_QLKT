@@ -1,13 +1,11 @@
 import { z } from 'zod';
+import { YEAR_MIN, YEAR_MAX } from '../constants/validation.constants';
 import { PROPOSAL_TYPES, type ProposalType } from '../constants/proposalTypes.constants';
 import {
   addChainSqdIssues,
   PERSONAL_CHAIN_SQD_PAIRS,
   UNIT_CHAIN_SQD_PAIRS,
 } from './helpers/chainAwardSqd';
-
-const YEAR_MIN = 1900;
-const YEAR_MAX = 2100;
 
 function parseJsonStringArray(value: unknown): string[] | null {
   if (value === null || value === undefined) return null;
@@ -38,9 +36,7 @@ function parseJsonTitleData(value: unknown): Array<Record<string, unknown>> | nu
     try {
       const parsed = JSON.parse(value);
       if (!Array.isArray(parsed)) return null;
-      return parsed.every(
-        (v: unknown) => typeof v === 'object' && v !== null && !Array.isArray(v)
-      )
+      return parsed.every((v: unknown) => typeof v === 'object' && v !== null && !Array.isArray(v))
         ? (parsed as Array<Record<string, unknown>>)
         : null;
     } catch (error) {
@@ -69,15 +65,17 @@ export const bulkCreateAwards = z
       message: 'type là bắt buộc',
     }),
     // Multipart/form-data delivers every field as a string — coerce numeric inputs.
-    nam: z.coerce
-      .number({ message: 'nam là bắt buộc' })
-      .int()
-      .min(YEAR_MIN)
-      .max(YEAR_MAX),
+    nam: z.coerce.number({ message: 'nam là bắt buộc' }).int().min(YEAR_MIN).max(YEAR_MAX),
     thang: z
       .preprocess(
         val => {
-          if (val === '' || val === null || val === undefined || val === 'null' || val === 'undefined') {
+          if (
+            val === '' ||
+            val === null ||
+            val === undefined ||
+            val === 'null' ||
+            val === 'undefined'
+          ) {
             return undefined;
           }
           if (typeof val === 'string') {

@@ -144,7 +144,6 @@ export const apiClient = {
   getUnitAnnualAwards: awardsApi.getUnitAnnualAwards,
   getUnitAnnualAwardsByUnit: awardsApi.getUnitAnnualAwardsByUnit,
   getUnitAnnualAwardsTemplate: awardsApi.getUnitAnnualAwardsTemplate,
-  importUnitAnnualAwards: awardsApi.importUnitAnnualAwards,
   exportUnitAnnualAwards: awardsApi.exportUnitAnnualAwards,
   deleteUnitAnnualAward: awardsApi.deleteUnitAnnualAward,
   getUnitAnnualProfile: awardsApi.getUnitAnnualProfile,
@@ -221,7 +220,6 @@ export const apiClient = {
   updateDecision: decisionsApi.updateDecision,
   deleteDecision: decisionsApi.deleteDecision,
   getDecisionFilePath: decisionsApi.getDecisionFilePath,
-  downloadDecisionFile: decisionsApi.downloadDecisionFile,
   getDecisionFilePaths: decisionsApi.getDecisionFilePaths,
 
   // System Logs

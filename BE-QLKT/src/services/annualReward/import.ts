@@ -3,7 +3,7 @@ import { danhHieuHangNamRepository } from '../../repositories/danhHieu.repositor
 import { quanNhanRepository } from '../../repositories/quanNhan.repository';
 import { proposalRepository } from '../../repositories/proposal.repository';
 import { decisionFileRepository } from '../../repositories/decisionFile.repository';
-import { safeRecalculateAnnualProfile } from '../../helpers/profileRecalcHelper';
+import { safeRecalculateAnnualProfile } from '../profile/annual';
 import {
   parseAnnualRewardImport,
   buildAnnualRewardBatchMaps,
@@ -305,7 +305,7 @@ export async function importFromExcelBuffer(buffer: Buffer): Promise<ImportResul
   }
 
   const imported = created.length + updated.length;
-  writeSystemLog({
+  void writeSystemLog({
     action: 'IMPORT',
     resource: AWARD_SLUGS.ANNUAL_REWARDS,
     description: `[Import ${AWARD_LABEL}] Hoàn tất: ${imported}/${total} thành công, ${errors.length} lỗi`,

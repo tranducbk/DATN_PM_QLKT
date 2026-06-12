@@ -48,10 +48,7 @@ import { JWT_SECRET } from '../configs';
  * @returns Promise resolved when auth check finishes
  */
 const verifyToken = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  // Header có thể đến với key 'authorization' (lowercase, chuẩn HTTP) hoặc
-  // 'Authorization' (Pascal-case, một số client tự đặt). Express bình thường
-  // normalize về lowercase nhưng cẩn thận double-check vẫn an toàn.
-  const authHeader = (req.headers.authorization || req.headers.Authorization) as string | undefined;
+  const authHeader = req.headers.authorization;
 
   // Chỉ chấp nhận format "Bearer <token>". Không hỗ trợ token qua cookie
   // hay query string — tránh CSRF + token leak qua URL/access log.
@@ -66,11 +63,8 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction): Pro
   const token = authHeader.substring(7); // bỏ "Bearer " (7 ký tự)
 
   try {
-    // ─── LỚP 1: verify signature + expiry (stateless) ───
-    // jwt.verify throw nếu: signature sai (token bị giả mạo), expired,
-    // malformed, hoặc dùng wrong algorithm. KHÔNG chấp nhận "none" algo
-    // (jsonwebtoken mặc định chặn — đã có CVE về vụ này năm 2015).
-    const decoded = jwt.verify(token, JWT_SECRET) as JwtUser;
+    // ─── LỚP 1: verify signature + expiry — chốt HS256 chặn algorithm-confusion ───
+    const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }) as JwtUser;
 
     // ─── LỚP 2: DB session check (stateful) ───
     // Chỉ query field cần thiết (refreshToken) — KHÔNG select * để tránh
@@ -78,7 +72,7 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction): Pro
     // session đã bị invalidate (user logout, admin reset password, ...).
     const account = await accountRepository.findUniqueRaw({
       where: { id: decoded.id },
-      select: { refreshToken: true },
+      select: { refreshToken: true, role: true, quan_nhan_id: true },
     });
 
     if (!account || !account.refreshToken) {
@@ -89,10 +83,12 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction): Pro
       return;
     }
 
-    // Attach decoded payload (id, username, role) vào req.user để các
-    // middleware/controller phía sau dùng. KHÔNG attach refresh_token
-    // hay password hash — chỉ những field user đã trust.
-    req.user = decoded;
+    // Trust role/quan_nhan_id from DB, not the token — reflects role changes immediately.
+    req.user = {
+      ...decoded,
+      role: account.role as JwtUser['role'],
+      quan_nhan_id: account.quan_nhan_id ?? undefined,
+    };
     next();
   } catch (err) {
     // Phân biệt 2 case để FE quyết định: expired → refresh, invalid →
@@ -148,8 +144,6 @@ const requireAdmin = checkRole([ROLES.SUPER_ADMIN, ROLES.ADMIN]);
 const requireAdminOnly = checkRole([ROLES.ADMIN]);
 /** Middleware allowing SUPER_ADMIN, ADMIN, and MANAGER roles. */
 const requireManager = checkRole([ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER]);
-/** Middleware allowing ADMIN and MANAGER (business operations — excludes SUPER_ADMIN). */
-const requireAdminOrManager = checkRole([ROLES.ADMIN, ROLES.MANAGER]);
 
 export {
   verifyToken,
@@ -158,6 +152,5 @@ export {
   requireAdmin,
   requireAdminOnly,
   requireManager,
-  requireAdminOrManager,
   checkRole,
 };

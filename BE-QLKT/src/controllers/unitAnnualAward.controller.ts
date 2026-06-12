@@ -45,6 +45,23 @@ interface RecalculateBody {
   nam?: number;
 }
 
+interface UpsertBody {
+  don_vi_id?: string;
+  nam?: number;
+  danh_hieu?: string;
+  so_quyet_dinh?: string;
+  ghi_chu?: string;
+  nguoi_tao_id?: string;
+}
+
+interface ProposeBody {
+  don_vi_id?: string;
+  nam?: number;
+  danh_hieu?: string;
+  ghi_chu?: string;
+  nguoi_tao_id?: string;
+}
+
 interface GetUnitAnnualAwardsQuery {
   don_vi_id?: string;
 }
@@ -129,7 +146,7 @@ class UnitAnnualAwardController {
 
   upsert = catchAsync(async (req: Request, res: Response) => {
     const user = req.user;
-    const body = req.body || {};
+    const body = req.body as UpsertBody;
     const data = await service.upsert({
       don_vi_id: body.don_vi_id,
       nam: body.nam,
@@ -146,13 +163,15 @@ class UnitAnnualAwardController {
 
   propose = catchAsync(async (req: Request, res: Response) => {
     const user = req.user;
-    const body = req.body || {};
+    const body = req.body as ProposeBody;
     const data = await service.propose({
       don_vi_id: body.don_vi_id,
       nam: body.nam,
       danh_hieu: body.danh_hieu,
       ghi_chu: body.ghi_chu,
       nguoi_tao_id: user?.id || body.nguoi_tao_id,
+      userRole: user?.role,
+      userQuanNhanId: user?.quan_nhan_id,
     });
     return ResponseHelper.created(res, {
       data,
@@ -212,11 +231,7 @@ class UnitAnnualAwardController {
     if (!don_vi_id) {
       return ResponseHelper.badRequest(res, 'Thiếu thông tin đơn vị');
     }
-    const result = await service.getUnitAnnualAwards(
-      don_vi_id,
-      user?.role,
-      user?.quan_nhan_id
-    );
+    const result = await service.getUnitAnnualAwards(don_vi_id, user?.role, user?.quan_nhan_id);
     return ResponseHelper.success(res, {
       message: 'Lấy lịch sử khen thưởng đơn vị thành công',
       data: result,
@@ -235,7 +250,10 @@ class UnitAnnualAwardController {
     if (yearNumber && !Number.isNaN(yearNumber)) {
       await service.recalculateAnnualUnit(don_vi_id, yearNumber);
     }
-    const result = await service.getAnnualUnit(don_vi_id, yearNumber && !Number.isNaN(yearNumber) ? yearNumber : new Date().getFullYear());
+    const result = await service.getAnnualUnit(
+      don_vi_id,
+      yearNumber && !Number.isNaN(yearNumber) ? yearNumber : new Date().getFullYear()
+    );
     return ResponseHelper.success(res, {
       message: 'Lấy hồ sơ hằng năm đơn vị thành công',
       data: result,
@@ -256,7 +274,9 @@ class UnitAnnualAwardController {
       resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
       description: `Tải lên file "${file.originalname ? Buffer.from(file.originalname, 'latin1').toString('utf8') : 'Excel'}" để review ${AWARD_LABEL}: ${result.valid?.length || 0} hợp lệ, ${result.errors?.length || 0} lỗi`,
       payload: {
-        filename: file.originalname ? Buffer.from(file.originalname, 'latin1').toString('utf8') : undefined,
+        filename: file.originalname
+          ? Buffer.from(file.originalname, 'latin1').toString('utf8')
+          : undefined,
         total: result.total,
         errors: result.errors?.length || 0,
       },
@@ -281,7 +301,15 @@ class UnitAnnualAwardController {
       payload: { imported: result.imported ?? items.length },
     });
     const unitIds = items.map((i: { unit_id: string }) => i.unit_id);
-    notifyOnImport(user.id, AWARD_SLUGS.UNIT_ANNUAL_AWARDS, result.imported ?? items.length, [], unitIds).catch((e) => { console.error('[unit-annual-awards] notifyOnImport failed:', e); });
+    notifyOnImport(
+      user.id,
+      AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
+      result.imported ?? items.length,
+      [],
+      unitIds
+    ).catch(e => {
+      console.error('[unit-annual-awards] notifyOnImport failed:', e);
+    });
     return ResponseHelper.success(res, { data: result, message: 'Thao tác thành công' });
   });
 
@@ -299,7 +327,13 @@ class UnitAnnualAwardController {
     if (query.repeat_map) {
       try {
         Object.assign(repeatMap, JSON.parse(query.repeat_map));
-      } catch (e) { console.error('Invalid repeat_map JSON:', e); }
+      } catch (e) {
+        void writeSystemLog({
+          action: 'ERROR',
+          resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
+          description: `Dữ liệu repeat_map (${AWARD_LABEL}) không hợp lệ: ${e}`,
+        });
+      }
     }
     const workbook = await service.exportTemplate(unitIds, repeatMap);
     res.setHeader(
@@ -312,19 +346,6 @@ class UnitAnnualAwardController {
     );
     const buffer = await workbook.xlsx.writeBuffer();
     return res.send(buffer);
-  });
-
-  importFromExcel = catchAsync(async (req: Request, res: Response) => {
-    const user = req.user!;
-    const file = req.file;
-    if (!file) {
-      return ResponseHelper.badRequest(res, 'Vui lòng upload file Excel');
-    }
-    const result = await service.importFromExcel(file.buffer, user.id);
-    return ResponseHelper.success(res, {
-      message: `Đã thêm thành công ${result.imported}/${result.total} bản ghi`,
-      data: result,
-    });
   });
 
   exportToExcel = catchAsync(async (req: Request, res: Response) => {

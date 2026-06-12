@@ -1,0 +1,73 @@
+// ERD con C3.3b — Khen thưởng & hồ sơ ĐƠN VỊ (ĐẦY ĐỦ cột).
+// Bỏ FK qua so_quyet_dinh (xem ERD-5). ĐơnVị vẽ dạng stub.
+Project erd_kt_don_vi { database_type: 'PostgreSQL' }
+
+Table CoQuanDonVi {
+  id varchar(30) [pk]
+  ten_don_vi varchar(255)
+  Note: 'stub — chi tiết ở ERD-1'
+}
+Table DonViTrucThuoc {
+  id varchar(30) [pk]
+  ten_don_vi varchar(255)
+  Note: 'stub — chi tiết ở ERD-1'
+}
+Table TaiKhoan {
+  id varchar(30) [pk]
+  username varchar(100)
+  Note: 'stub — chi tiết ở ERD-6'
+}
+
+Table DanhHieuDonViHangNam {
+  id varchar(30) [pk]
+  co_quan_don_vi_id varchar(30)
+  don_vi_truc_thuoc_id varchar(30)
+  nam int [not null]
+  danh_hieu varchar(50)
+  so_quyet_dinh varchar(100)
+  nhan_bkbqp boolean [not null, default: false]
+  so_quyet_dinh_bkbqp varchar(100)
+  ghi_chu_bkbqp text
+  nhan_bkttcp boolean [not null, default: false]
+  so_quyet_dinh_bkttcp varchar(100)
+  ghi_chu_bkttcp text
+  status varchar(20) [not null, default: 'PENDING']
+  nguoi_tao_id varchar(30) [not null]
+  nguoi_duyet_id varchar(30)
+  ngay_duyet timestamp
+  ghi_chu text
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+
+  Indexes {
+    (co_quan_don_vi_id, nam) [unique]
+    (don_vi_truc_thuoc_id, nam) [unique]
+  }
+}
+
+Table HoSoDonViHangNam {
+  id varchar(30) [pk]
+  co_quan_don_vi_id varchar(30)
+  don_vi_truc_thuoc_id varchar(30)
+  nam int [not null]
+  tong_dvqt int [not null, default: 0]
+  tong_dvqt_json jsonb
+  dvqt_lien_tuc int [not null, default: 0]
+  du_dieu_kien_bk_tong_cuc boolean [not null, default: false]
+  du_dieu_kien_bk_thu_tuong boolean [not null, default: false]
+  goi_y text
+  createdAt timestamp [not null]
+  updatedAt timestamp [not null]
+
+  Indexes {
+    (co_quan_don_vi_id, nam) [unique]
+    (don_vi_truc_thuoc_id, nam) [unique]
+  }
+}
+
+Ref: DanhHieuDonViHangNam.co_quan_don_vi_id > CoQuanDonVi.id [delete: cascade]
+Ref: DanhHieuDonViHangNam.don_vi_truc_thuoc_id > DonViTrucThuoc.id [delete: cascade]
+Ref: DanhHieuDonViHangNam.nguoi_tao_id > TaiKhoan.id [delete: cascade]
+Ref: DanhHieuDonViHangNam.nguoi_duyet_id > TaiKhoan.id [delete: set null]
+Ref: HoSoDonViHangNam.co_quan_don_vi_id > CoQuanDonVi.id [delete: cascade]
+Ref: HoSoDonViHangNam.don_vi_truc_thuoc_id > DonViTrucThuoc.id [delete: cascade]

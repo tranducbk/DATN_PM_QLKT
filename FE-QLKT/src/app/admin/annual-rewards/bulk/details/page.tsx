@@ -27,7 +27,7 @@ import {
   FileTextOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { DANH_HIEU_MAP } from '@/lib/award/awardsHelper';

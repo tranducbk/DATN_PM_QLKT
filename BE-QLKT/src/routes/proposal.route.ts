@@ -1,12 +1,13 @@
 import { Router } from 'express';
 import proposalController from '../controllers/proposal.controller';
-import { verifyToken, checkRole, requireAdminOrManager, requireAdminOnly } from '../middlewares/auth';
+import { verifyToken, checkRole, requireManager, requireAdminOnly } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
 import { ROLES } from '../constants/roles.constants';
 import { writeLimiter } from '../configs/rateLimiter';
 import { documentUpload as upload } from '../configs/multer';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { RESOURCE_SLUGS } from '../constants/resourceSlugs.constants';
 
 const router = Router();
 
@@ -18,15 +19,15 @@ const router = Router();
 router.post(
   '/',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   writeLimiter,
   upload.fields([
     { name: 'attached_files' }, // No file count limit
   ]),
   auditLog({
     action: AUDIT_ACTIONS.CREATE,
-    resource: 'proposals',
-    getDescription: getLogDescription('proposals', 'CREATE'),
+    resource: RESOURCE_SLUGS.PROPOSALS,
+    getDescription: getLogDescription(RESOURCE_SLUGS.PROPOSALS, 'CREATE'),
     getResourceId: getResourceId.fromResponse(),
   }),
   proposalController.submitProposal
@@ -40,7 +41,7 @@ router.post(
 router.get(
   '/check-duplicate',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   proposalController.checkDuplicateAward
 );
 
@@ -52,7 +53,7 @@ router.get(
 router.get(
   '/check-duplicate-unit',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   proposalController.checkDuplicateUnitAward
 );
 
@@ -64,7 +65,7 @@ router.get(
 router.post(
   '/check-duplicate-batch',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   proposalController.checkDuplicateBatch
 );
 
@@ -76,7 +77,7 @@ router.post(
 router.post(
   '/check-duplicate-unit-batch',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   proposalController.checkDuplicateUnitBatch
 );
 
@@ -88,7 +89,7 @@ router.post(
 router.get(
   '/',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   proposalController.getProposals
 );
 
@@ -100,7 +101,7 @@ router.get(
 router.get(
   '/:id',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   proposalController.getProposalById
 );
 
@@ -125,8 +126,8 @@ router.post(
   ]),
   auditLog({
     action: AUDIT_ACTIONS.APPROVE,
-    resource: 'proposals',
-    getDescription: getLogDescription('proposals', 'APPROVE'),
+    resource: RESOURCE_SLUGS.PROPOSALS,
+    getDescription: getLogDescription(RESOURCE_SLUGS.PROPOSALS, 'APPROVE'),
     getResourceId: getResourceId.fromParams('id'),
   }),
   proposalController.approveProposal
@@ -143,8 +144,8 @@ router.post(
   requireAdminOnly,
   auditLog({
     action: AUDIT_ACTIONS.REJECT,
-    resource: 'proposals',
-    getDescription: getLogDescription('proposals', 'REJECT'),
+    resource: RESOURCE_SLUGS.PROPOSALS,
+    getDescription: getLogDescription(RESOURCE_SLUGS.PROPOSALS, 'REJECT'),
     getResourceId: getResourceId.fromParams('id'),
   }),
   proposalController.rejectProposal
@@ -170,11 +171,11 @@ router.get(
 router.delete(
   '/:id',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   auditLog({
     action: AUDIT_ACTIONS.DELETE,
-    resource: 'proposals',
-    getDescription: getLogDescription('proposals', 'DELETE'),
+    resource: RESOURCE_SLUGS.PROPOSALS,
+    getDescription: getLogDescription(RESOURCE_SLUGS.PROPOSALS, 'DELETE'),
     getResourceId: getResourceId.fromParams('id'),
   }),
   proposalController.deleteProposal

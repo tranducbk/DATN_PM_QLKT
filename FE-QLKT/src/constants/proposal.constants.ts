@@ -29,12 +29,6 @@ export function getProposalStatusLabel(status: string | undefined | null): strin
   return PROPOSAL_STATUS_LABELS[status] || status;
 }
 
-export const PROPOSAL_STATUS_BADGE_COLORS: Record<string, string> = {
-  [PROPOSAL_STATUS.PENDING]: 'gold',
-  [PROPOSAL_STATUS.APPROVED]: 'green',
-  [PROPOSAL_STATUS.REJECTED]: 'red',
-};
-
 export const PROPOSAL_TYPES_REQUIRING_MONTH = new Set<ProposalType>(
   Object.values(AWARD_TYPE_REGISTRY)
     .filter(meta => meta.requiresMonth)

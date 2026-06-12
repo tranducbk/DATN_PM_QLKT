@@ -17,7 +17,7 @@ import type {
   SubmitValidationResult,
 } from './proposalStrategy';
 import {
-  loadNienHanPersonnelMap,
+  loadPersonnelWithUnitsMap,
   buildNienHanPayloadItem,
   type NienHanInputItem,
 } from './nienHanPayloadHelper';
@@ -59,7 +59,7 @@ class KncStrategy implements ProposalStrategy {
   ): Promise<SubmitValidationResult> {
     const items = (titleData ?? []) as NienHanInputItem[];
     const personnelIds = items.map(i => i.personnel_id).filter((id): id is string => Boolean(id));
-    const personnelMap = await loadNienHanPersonnelMap(personnelIds);
+    const personnelMap = await loadPersonnelWithUnitsMap(personnelIds);
 
     const dataNienHan = items.map(item =>
       buildNienHanPayloadItem(
@@ -122,10 +122,10 @@ class KncStrategy implements ProposalStrategy {
       medalLabel: 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
       logTag: 'KNC',
       decisionKey: DANH_HIEU_DAC_BIET.KNC_VSNXD_QDNDVN,
-      upsert: async (tx, quanNhanId, writeData) => {
+      upsert: async (tx, personnelId, writeData) => {
         const data = writeData as unknown as Prisma.KyNiemChuongVSNXDQDNDVNUncheckedUpdateInput;
         const existing = await commemorativeMedalRepository.findUniqueRaw(
-          { where: { quan_nhan_id: quanNhanId } },
+          { where: { quan_nhan_id: personnelId } },
           tx
         );
         if (existing) {
@@ -134,7 +134,7 @@ class KncStrategy implements ProposalStrategy {
           await commemorativeMedalRepository.create(
             {
               ...data,
-              quan_nhan_id: quanNhanId,
+              quan_nhan_id: personnelId,
             } as Prisma.KyNiemChuongVSNXDQDNDVNUncheckedCreateInput,
             tx
           );

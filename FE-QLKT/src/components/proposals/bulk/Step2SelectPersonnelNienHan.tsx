@@ -14,9 +14,9 @@ import {
 } from 'antd';
 import { SearchOutlined, TeamOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { getApiErrorMessage } from '@/lib/apiError';
+import { getApiErrorMessage } from '@/lib/http/apiError';
 import { formatDate } from '@/lib/utils';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import { calculateTotalMonths } from './serviceDuration';
 import { usePersonnelList } from './usePersonnelList';
 import type { Step2Personnel as Personnel } from './types';
@@ -837,7 +837,7 @@ export function Step2SelectPersonnelNienHan({
         </Text>
       </div>
 
-      {/* Cảnh báo về quân nhân chưa có giới tính hoặc ngày nhập ngũ */}
+      {/* Warning for personnel missing gender or enlistment date */}
       {(() => {
         const missingGenderCount = filteredPersonnel.filter(
           p => !p.gioi_tinh || (p.gioi_tinh !== 'NAM' && p.gioi_tinh !== 'NU')

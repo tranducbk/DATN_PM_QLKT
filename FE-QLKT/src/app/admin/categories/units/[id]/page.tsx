@@ -22,12 +22,13 @@ import { UnitForm } from '@/components/categories/UnitForm';
 import { UnitsTable } from '@/components/categories/UnitsTable';
 import { PositionForm } from '@/components/categories/PositionForm';
 import { PositionsTable, type PositionRow } from '@/components/categories/PositionsTable';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import type { UnitApiRow } from '@/lib/types/personnelList';
 import { calcUnitTotal } from '@/lib/utils';
 import { useTheme } from '@/components/ThemeProvider';
 import { LoadingState } from '@/components/shared/LoadingState';
 import Link from 'next/link';
+import { DEFAULT_PAGE_SIZE } from '@/constants/pagination.constants';
 
 const { Title, Text } = Typography;
 
@@ -355,7 +356,7 @@ export default function UnitDetailPage() {
                       dataSource={personnel}
                       rowKey="id"
                       size="middle"
-                      pagination={{ pageSize: 20, showTotal: t => `Tổng ${t} quân nhân` }}
+                      pagination={{ pageSize: DEFAULT_PAGE_SIZE, showTotal: t => `Tổng ${t} quân nhân` }}
                       scroll={{ x: 'max-content' }}
                     />
                   ) : (

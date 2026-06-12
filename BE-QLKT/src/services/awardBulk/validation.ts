@@ -11,6 +11,7 @@ import {
 } from '../../constants/danhHieu.constants';
 import { PROPOSAL_TYPES, type ProposalType } from '../../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
+import { RESOURCE_SLUGS } from '../../constants/resourceSlugs.constants';
 import { ValidationError } from '../../middlewares/errorHandler';
 import {
   getProposalDataField,
@@ -219,7 +220,7 @@ export function throwValidationErrors(
   void writeSystemLog({
     userId: adminId,
     action: 'ERROR',
-    resource: 'awards',
+    resource: RESOURCE_SLUGS.AWARDS,
     description: `[Thêm khen thưởng đồng loạt] ${LOAI_DE_XUAT_MAP[type as keyof typeof LOAI_DE_XUAT_MAP] || type} năm ${nam} — Validation thất bại: ${errors.join('; ')}`,
   });
   throw new ValidationError(`Phát hiện lỗi validation:\n${errors.join('\n')}`);

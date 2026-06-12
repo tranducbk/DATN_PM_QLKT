@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { message } from 'antd';
-import { getApiErrorMessage } from '@/lib/apiError';
+import { getApiErrorMessage } from '@/lib/http/apiError';
 
 interface FetchState<T> {
   data: T | null;

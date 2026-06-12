@@ -4,8 +4,6 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Card,
   Button,
-  Input,
-  Select,
   Table,
   Space,
   Typography,
@@ -15,11 +13,11 @@ import {
   Popconfirm,
   Empty,
 } from 'antd';
-import { getApiErrorMessage } from '@/lib/apiError';
+import { getApiErrorMessage } from '@/lib/http/apiError';
 
 import type { TableColumnsType } from 'antd';
-import { DownloadOutlined, FilterOutlined, HomeOutlined, DeleteOutlined } from '@ant-design/icons';
-import { apiClient } from '@/lib/apiClient';
+import { DownloadOutlined, HomeOutlined, DeleteOutlined } from '@ant-design/icons';
+import { apiClient } from '@/lib/http/apiClient';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import {
   DANH_HIEU_MAP,
@@ -36,14 +34,14 @@ import {
 import {
   AWARD_TAB_DANH_HIEU,
   AWARD_TAB_LABELS,
+  AWARD_TAB_META,
   type AwardType,
 } from '@/constants/danhHieu.constants';
 
 import { ExportModal } from './ExportModal';
-import {
-  DEFAULT_ANTD_TABLE_PAGINATION,
-  FETCH_ALL_LIMIT,
-} from '@/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
+import { useDebounce } from '@/hooks/useDebounce';
+import { AwardsFilterBar } from '@/components/awards/AwardsFilterBar';
 import { formatDate } from '@/lib/utils';
 
 const { Title, Paragraph, Text } = Typography;
@@ -108,16 +106,6 @@ const INITIAL_FILTERS: AwardFilters = {
   de_tai: '',
 };
 
-const TABS_WITH_NESTED_QUAN_NHAN = new Set<AwardType>([
-  'NCKH',
-  'HCQKQT',
-  'HCBVTQ',
-  'HCCSVV',
-  'KNC_VSNXD_QDNDVN',
-]);
-
-const TABS_WITH_DANH_HIEU_FILTER = new Set<AwardType>(['CNHN', 'DVHN', 'HCCSVV', 'HCBVTQ']);
-
 interface AwardTypeFetchParams {
   limit?: number;
   page?: number;
@@ -163,7 +151,7 @@ export default function AdminAwardsPage() {
   const [loading, setLoading] = useState(true);
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [filters, setFilters] = useState<AwardFilters>(INITIAL_FILTERS);
-  const [debouncedFilters, setDebouncedFilters] = useState(filters);
+  const debouncedFilters = useDebounce(filters);
   const [deleting, setDeleting] = useState<{ id: string; awardType?: string } | null>(null);
   const awards = useMemo(() => awardsByTab[activeTab] ?? [], [awardsByTab, activeTab]);
 
@@ -199,11 +187,6 @@ export default function AdminAwardsPage() {
   useEffect(() => {
     setFilters(INITIAL_FILTERS);
   }, [activeTab]);
-
-  useEffect(() => {
-    const id = setTimeout(() => setDebouncedFilters(filters), 300);
-    return () => clearTimeout(id);
-  }, [filters]);
 
   const handleFilterChange = (key: keyof AwardFilters, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -247,14 +230,17 @@ export default function AdminAwardsPage() {
     [activeTab]
   );
 
-  const matchesDanhHieuFilter = useCallback((record: AwardTableRow, selectedDanhHieu: string): boolean => {
-    if (!selectedDanhHieu || !TABS_WITH_DANH_HIEU_FILTER.has(activeTab)) return true;
-    return matchesDanhHieuSelection(record, selectedDanhHieu);
-  }, [activeTab]);
+  const matchesDanhHieuFilter = useCallback(
+    (record: AwardTableRow, selectedDanhHieu: string): boolean => {
+      if (!selectedDanhHieu || !AWARD_TAB_META[activeTab].hasDanhHieuFilter) return true;
+      return matchesDanhHieuSelection(record, selectedDanhHieu);
+    },
+    [activeTab]
+  );
 
   const resolvePersonnelDisplay = (record: AwardTableRow): PersonnelDisplay => {
     const isAnnualTab = activeTab === 'CNHN';
-    const hasNestedQuanNhan = TABS_WITH_NESTED_QUAN_NHAN.has(activeTab);
+    const hasNestedQuanNhan = AWARD_TAB_META[activeTab].hasNestedQuanNhan;
     const hoTen = hasNestedQuanNhan
       ? record.QuanNhan?.ho_ten
       : isAnnualTab
@@ -285,7 +271,11 @@ export default function AdminAwardsPage() {
 
     return {
       displayName:
-        activeTab === 'DVHN' ? (unitInfo.length ? unitInfo.join(', ') : record.don_vi || '-') : hoTen || '-',
+        activeTab === 'DVHN'
+          ? unitInfo.length
+            ? unitInfo.join(', ')
+            : record.don_vi || '-'
+          : hoTen || '-',
       unitInfoText: unitInfo.length > 0 ? unitInfo.join(', ') : record.don_vi || '',
       parentUnit,
       ngaySinh: hasNestedQuanNhan
@@ -339,240 +329,241 @@ export default function AdminAwardsPage() {
     });
   }, [awards, debouncedFilters, activeTab, matchesNameFilter, matchesDanhHieuFilter]);
 
-  const TABS_WITH_THANG_NHAN = new Set<AwardType>(['HCCSVV', 'HCBVTQ', 'HCQKQT', 'KNC_VSNXD_QDNDVN']);
+  const columns: TableColumnsType<AwardTableRow> = useMemo(
+    () => [
+      {
+        title: 'STT',
+        key: 'index',
+        width: 60,
+        align: 'center',
+        render: (_, __, index) => index + 1,
+      },
+      {
+        title: activeTab === 'DVHN' ? 'Tên đơn vị' : 'Họ tên',
+        dataIndex: 'ho_ten',
+        key: 'ho_ten',
+        width: 200,
+        align: 'center',
+        render: (_text: string, record: AwardTableRow) => {
+          const { displayName, unitInfoText, parentUnit } = resolvePersonnelDisplay(record);
 
-  const columns: TableColumnsType<AwardTableRow> = useMemo(() => [
-    {
-      title: 'STT',
-      key: 'index',
-      width: 60,
-      align: 'center',
-      render: (_, __, index) => index + 1,
-    },
-    {
-      title: activeTab === 'DVHN' ? 'Tên đơn vị' : 'Họ tên',
-      dataIndex: 'ho_ten',
-      key: 'ho_ten',
-      width: 200,
-      align: 'center',
-      render: (_text: string, record: AwardTableRow) => {
-        const { displayName, unitInfoText, parentUnit } = resolvePersonnelDisplay(record);
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <Text strong>{displayName}</Text>
+              {activeTab === 'DVHN' && parentUnit && (
+                <Text type="secondary" style={{ fontSize: '12px', marginTop: '4px' }}>
+                  Thuộc: {parentUnit}
+                </Text>
+              )}
+              {activeTab !== 'DVHN' && unitInfoText && (
+                <Text type="secondary" style={{ fontSize: '12px', marginTop: '4px' }}>
+                  {unitInfoText}
+                </Text>
+              )}
+            </div>
+          );
+        },
+      },
+      {
+        title: 'Ngày sinh',
+        key: 'ngay_sinh',
+        width: 110,
+        align: 'center',
+        render: (_: unknown, record: AwardTableRow) => {
+          const { ngaySinh } = resolvePersonnelDisplay(record);
+          return <Text>{formatDate(ngaySinh)}</Text>;
+        },
+      },
+      {
+        title: 'Cấp bậc / Chức vụ',
+        key: 'cap_bac_chuc_vu',
+        width: 140,
+        align: 'center',
+        render: (_: unknown, record: AwardTableRow) => {
+          const capBac = record.cap_bac;
+          const chucVu = record.chuc_vu;
 
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <Text strong>{displayName}</Text>
-            {activeTab === 'DVHN' && parentUnit && (
-              <Text type="secondary" style={{ fontSize: '12px', marginTop: '4px' }}>
-                Thuộc: {parentUnit}
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <Text strong style={{ marginBottom: '4px' }}>
+                {capBac || '-'}
               </Text>
-            )}
-            {activeTab !== 'DVHN' && unitInfoText && (
-              <Text type="secondary" style={{ fontSize: '12px', marginTop: '4px' }}>
-                {unitInfoText}
+              <Text type="secondary" style={{ fontSize: '12px' }}>
+                {chucVu || '-'}
               </Text>
-            )}
-          </div>
-        );
-      },
-    },
-    {
-      title: 'Ngày sinh',
-      key: 'ngay_sinh',
-      width: 110,
-      align: 'center',
-      render: (_: unknown, record: AwardTableRow) => {
-        const { ngaySinh } = resolvePersonnelDisplay(record);
-        return <Text>{formatDate(ngaySinh)}</Text>;
-      },
-    },
-    {
-      title: 'Cấp bậc / Chức vụ',
-      key: 'cap_bac_chuc_vu',
-      width: 140,
-      align: 'center',
-      render: (_: unknown, record: AwardTableRow) => {
-        const capBac = record.cap_bac;
-        const chucVu = record.chuc_vu;
-
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <Text strong style={{ marginBottom: '4px' }}>
-              {capBac || '-'}
-            </Text>
-            <Text type="secondary" style={{ fontSize: '12px' }}>
-              {chucVu || '-'}
-            </Text>
-          </div>
-        );
-      },
-    },
-    {
-      title: TABS_WITH_THANG_NHAN.has(activeTab) ? 'Thời gian nhận' : 'Năm nhận',
-      key: 'nam',
-      width: TABS_WITH_THANG_NHAN.has(activeTab) ? 120 : 70,
-      align: 'center',
-      render: (_: unknown, record: AwardTableRow) => {
-        if (TABS_WITH_THANG_NHAN.has(activeTab) && record.thang) {
-          return <Text strong>{`${String(record.thang).padStart(2, '0')}/${record.nam}`}</Text>;
-        }
-        return <Text strong>{record.nam}</Text>;
-      },
-    },
-    {
-      title: activeTab === 'NCKH' ? 'Loại thành tích' : 'Loại khen thưởng',
-      key: 'loai_khen_thuong',
-      width: 140,
-      align: 'center',
-      render: (_: unknown, record: AwardTableRow) => {
-        // Only visible on the NCKH tab (filtered below)
-        const loaiMap: Record<string, string> = {
-          DTKH: 'Đề tài khoa học',
-          SKKH: 'Sáng kiến khoa học',
-        };
-        const loai = record.loai ?? '';
-        return <Text>{loaiMap[loai] || loai || '-'}</Text>;
-      },
-    },
-    {
-      title:
-        activeTab === 'NCKH'
-          ? 'Mô tả'
-          : activeTab === 'HCQKQT' || activeTab === 'KNC_VSNXD_QDNDVN'
-            ? 'Số quyết định / Ghi chú'
-            : 'Danh hiệu',
-      dataIndex: activeTab === 'NCKH' ? 'mo_ta' : 'danh_hieu',
-      key: activeTab === 'NCKH' ? 'mo_ta' : 'danh_hieu',
-      width: 300,
-      align: 'center',
-      render: (text: string | null, record: AwardTableRow) => {
-        // Scientific achievements
-        if (activeTab === 'NCKH') {
-          return (
-            <div style={COLUMN_STYLES.container}>
-              <Text>{text || '-'}</Text>
-              {renderDecision(record.so_quyet_dinh, handleDownloadDecision)}
-              {record.ghi_chu && (
-                <Text type="secondary" style={COLUMN_STYLES.noteText}>
-                  {record.ghi_chu}
-                </Text>
-              )}
             </div>
           );
-        }
-
-        // Commemoration medals
-        if (activeTab === 'KNC_VSNXD_QDNDVN') {
-          const hasData = record.so_quyet_dinh || record.ghi_chu;
-          return (
-            <div style={COLUMN_STYLES.container}>
-              {renderDecision(record.so_quyet_dinh, handleDownloadDecision)}
-              {record.ghi_chu && (
-                <Text type="secondary" style={COLUMN_STYLES.noteText}>
-                  {record.ghi_chu}
-                </Text>
-              )}
-              {!hasData && <Text>-</Text>}
-            </div>
-          );
-        }
-
-        // Military flag
-        if (activeTab === 'HCQKQT') {
-          return (
-            <div style={COLUMN_STYLES.container}>
-              {renderDecision(record.so_quyet_dinh, handleDownloadDecision)}
-              {record.ghi_chu && (
-                <Text type="secondary" style={COLUMN_STYLES.noteText}>
-                  {record.ghi_chu}
-                </Text>
-              )}
-              {!record.so_quyet_dinh && !record.ghi_chu && <Text>-</Text>}
-            </div>
-          );
-        }
-
-        // Contribution awards
-        if (activeTab === 'HCBVTQ') {
-          const fullName = text ? DANH_HIEU_MAP[text] || text : '-';
-          return (
-            <div style={COLUMN_STYLES.container}>
-              <Text>{fullName}</Text>
-              {renderDecision(record.so_quyet_dinh, handleDownloadDecision)}
-              {record.ghi_chu && (
-                <Text type="secondary" style={COLUMN_STYLES.noteText}>
-                  {record.ghi_chu}
-                </Text>
-              )}
-            </div>
-          );
-        }
-
-        // HCCSVV awards
-        if (activeTab === 'HCCSVV') {
-          const fullName = text ? DANH_HIEU_MAP[text] || text : '-';
-          return (
-            <div style={COLUMN_STYLES.container}>
-              <Text>{fullName}</Text>
-              {renderDecision(record.so_quyet_dinh, handleDownloadDecision)}
-              {record.ghi_chu && (
-                <Text type="secondary" style={COLUMN_STYLES.noteText}>
-                  {record.ghi_chu}
-                </Text>
-              )}
-            </div>
-          );
-        }
-
-        if (activeTab === 'DVHN') {
-          return renderUnitAnnualAwards(text, record, { onDownload: handleDownloadDecision });
-        }
-
-        return renderAnnualAwards(text, record, { onDownload: handleDownloadDecision });
+        },
       },
-    },
-    {
-      title: 'Thao tác',
-      key: 'action',
-      width: 130,
-      align: 'center',
-      fixed: 'right',
-      render: (_: unknown, record: AwardTableRow) => {
-        if (activeTab === 'CNHN') {
-          const awards = collectPersonalAwards(record);
-          return renderAwardDeleteButtons(awards, (awardCode, awardLabel) =>
-            handleDeleteAward(record.id, awardCode, awardLabel)
-          );
-        }
-        if (activeTab === 'DVHN') {
-          const awards = collectUnitAwards(record);
-          return renderAwardDeleteButtons(awards, (awardCode, awardLabel) =>
-            handleDeleteAward(record.id, awardCode, awardLabel)
-          );
-        }
-        return (
-          <Popconfirm
-            title="Xóa khen thưởng"
-            description="Bạn có chắc chắn muốn xóa khen thưởng này? Thao tác này không thể hoàn tác. Lưu ý: Đề xuất khen thưởng sẽ không bị xóa."
-            onConfirm={() => handleDeleteAward(record.id)}
-            okText="Xóa"
-            cancelText="Hủy"
-            okButtonProps={{ danger: true }}
-          >
-            <Button
-              type="text"
-              danger
-              icon={<DeleteOutlined />}
-              loading={deleting?.id === record.id && !deleting?.awardType}
-              size="small"
+      {
+        title: AWARD_TAB_META[activeTab].hasThangNhan ? 'Thời gian nhận' : 'Năm nhận',
+        key: 'nam',
+        width: AWARD_TAB_META[activeTab].hasThangNhan ? 120 : 70,
+        align: 'center',
+        render: (_: unknown, record: AwardTableRow) => {
+          if (AWARD_TAB_META[activeTab].hasThangNhan && record.thang) {
+            return <Text strong>{`${String(record.thang).padStart(2, '0')}/${record.nam}`}</Text>;
+          }
+          return <Text strong>{record.nam}</Text>;
+        },
+      },
+      {
+        title: activeTab === 'NCKH' ? 'Loại thành tích' : 'Loại khen thưởng',
+        key: 'loai_khen_thuong',
+        width: 140,
+        align: 'center',
+        render: (_: unknown, record: AwardTableRow) => {
+          // Only visible on the NCKH tab (filtered below)
+          const loaiMap: Record<string, string> = {
+            DTKH: 'Đề tài khoa học',
+            SKKH: 'Sáng kiến khoa học',
+          };
+          const loai = record.loai ?? '';
+          return <Text>{loaiMap[loai] || loai || '-'}</Text>;
+        },
+      },
+      {
+        title:
+          activeTab === 'NCKH'
+            ? 'Mô tả'
+            : activeTab === 'HCQKQT' || activeTab === 'KNC_VSNXD_QDNDVN'
+              ? 'Số quyết định / Ghi chú'
+              : 'Danh hiệu',
+        dataIndex: activeTab === 'NCKH' ? 'mo_ta' : 'danh_hieu',
+        key: activeTab === 'NCKH' ? 'mo_ta' : 'danh_hieu',
+        width: 300,
+        align: 'center',
+        render: (text: string | null, record: AwardTableRow) => {
+          // Scientific achievements
+          if (activeTab === 'NCKH') {
+            return (
+              <div style={COLUMN_STYLES.container}>
+                <Text>{text || '-'}</Text>
+                {renderDecision(record.so_quyet_dinh, handleDownloadDecision)}
+                {record.ghi_chu && (
+                  <Text type="secondary" style={COLUMN_STYLES.noteText}>
+                    {record.ghi_chu}
+                  </Text>
+                )}
+              </div>
+            );
+          }
+
+          // Commemoration medals
+          if (activeTab === 'KNC_VSNXD_QDNDVN') {
+            const hasData = record.so_quyet_dinh || record.ghi_chu;
+            return (
+              <div style={COLUMN_STYLES.container}>
+                {renderDecision(record.so_quyet_dinh, handleDownloadDecision)}
+                {record.ghi_chu && (
+                  <Text type="secondary" style={COLUMN_STYLES.noteText}>
+                    {record.ghi_chu}
+                  </Text>
+                )}
+                {!hasData && <Text>-</Text>}
+              </div>
+            );
+          }
+
+          // Military flag
+          if (activeTab === 'HCQKQT') {
+            return (
+              <div style={COLUMN_STYLES.container}>
+                {renderDecision(record.so_quyet_dinh, handleDownloadDecision)}
+                {record.ghi_chu && (
+                  <Text type="secondary" style={COLUMN_STYLES.noteText}>
+                    {record.ghi_chu}
+                  </Text>
+                )}
+                {!record.so_quyet_dinh && !record.ghi_chu && <Text>-</Text>}
+              </div>
+            );
+          }
+
+          // Contribution awards
+          if (activeTab === 'HCBVTQ') {
+            const fullName = text ? DANH_HIEU_MAP[text] || text : '-';
+            return (
+              <div style={COLUMN_STYLES.container}>
+                <Text>{fullName}</Text>
+                {renderDecision(record.so_quyet_dinh, handleDownloadDecision)}
+                {record.ghi_chu && (
+                  <Text type="secondary" style={COLUMN_STYLES.noteText}>
+                    {record.ghi_chu}
+                  </Text>
+                )}
+              </div>
+            );
+          }
+
+          // HCCSVV awards
+          if (activeTab === 'HCCSVV') {
+            const fullName = text ? DANH_HIEU_MAP[text] || text : '-';
+            return (
+              <div style={COLUMN_STYLES.container}>
+                <Text>{fullName}</Text>
+                {renderDecision(record.so_quyet_dinh, handleDownloadDecision)}
+                {record.ghi_chu && (
+                  <Text type="secondary" style={COLUMN_STYLES.noteText}>
+                    {record.ghi_chu}
+                  </Text>
+                )}
+              </div>
+            );
+          }
+
+          if (activeTab === 'DVHN') {
+            return renderUnitAnnualAwards(text, record, { onDownload: handleDownloadDecision });
+          }
+
+          return renderAnnualAwards(text, record, { onDownload: handleDownloadDecision });
+        },
+      },
+      {
+        title: 'Thao tác',
+        key: 'action',
+        width: 130,
+        align: 'center',
+        fixed: 'right',
+        render: (_: unknown, record: AwardTableRow) => {
+          if (activeTab === 'CNHN') {
+            const awards = collectPersonalAwards(record);
+            return renderAwardDeleteButtons(awards, (awardCode, awardLabel) =>
+              handleDeleteAward(record.id, awardCode, awardLabel)
+            );
+          }
+          if (activeTab === 'DVHN') {
+            const awards = collectUnitAwards(record);
+            return renderAwardDeleteButtons(awards, (awardCode, awardLabel) =>
+              handleDeleteAward(record.id, awardCode, awardLabel)
+            );
+          }
+          return (
+            <Popconfirm
+              title="Xóa khen thưởng"
+              description="Bạn có chắc chắn muốn xóa khen thưởng này? Thao tác này không thể hoàn tác. Lưu ý: Đề xuất khen thưởng sẽ không bị xóa."
+              onConfirm={() => handleDeleteAward(record.id)}
+              okText="Xóa"
+              cancelText="Hủy"
+              okButtonProps={{ danger: true }}
             >
-              Xóa
-            </Button>
-          </Popconfirm>
-        );
+              <Button
+                type="text"
+                danger
+                icon={<DeleteOutlined />}
+                loading={deleting?.id === record.id && !deleting?.awardType}
+                size="small"
+              >
+                Xóa
+              </Button>
+            </Popconfirm>
+          );
+        },
       },
-    },
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [activeTab, deleting]);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    ],
+    [activeTab, deleting]
+  );
 
   const visibleColumns = useMemo(
     () =>
@@ -652,127 +643,18 @@ export default function AdminAwardsPage() {
   function renderAwardContent() {
     return (
       <>
-        {/* Filters */}
-        <Card
-          title={
-            <Space>
-              <FilterOutlined />
-              Bộ lọc
-            </Space>
-          }
-          style={{ marginBottom: '24px' }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: '16px',
-              alignItems: 'flex-end',
-            }}
-          >
-            <div style={{ flex: '0 0 180px', display: 'flex', flexDirection: 'column' }}>
-              <Text strong style={{ display: 'block', marginBottom: '8px' }}>
-                Năm
-              </Text>
-              <Select
-                placeholder="Tất cả các năm"
-                value={filters.nam === '' ? '' : filters.nam || undefined}
-                onChange={value => handleFilterChange('nam', value || '')}
-                allowClear
-                size="large"
-                style={{ width: '100%' }}
-                options={[
-                  { value: '', label: 'Tất cả các năm' },
-                  ...availableYears.map(year => ({
-                    value: String(year),
-                    label: String(year),
-                  })),
-                ]}
-              />
-            </div>
-            <div
-              style={{
-                flex: '1 1 200px',
-                minWidth: '200px',
-                display: 'flex',
-                flexDirection: 'column',
-              }}
-            >
-              <Text strong style={{ display: 'block', marginBottom: '8px' }}>
-                {activeTab === 'DVHN' ? 'Tìm kiếm theo tên đơn vị' : 'Tìm kiếm theo họ tên'}
-              </Text>
-              <Input
-                placeholder={activeTab === 'DVHN' ? 'Nhập tên đơn vị để tìm kiếm' : 'Nhập tên để tìm kiếm'}
-                value={filters.ho_ten}
-                onChange={e => handleFilterChange('ho_ten', e.target.value)}
-                allowClear
-                size="large"
-              />
-            </div>
-            {TABS_WITH_DANH_HIEU_FILTER.has(activeTab) && (
-              <div
-                style={{
-                  flex: '1 1 250px',
-                  minWidth: '250px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                }}
-              >
-                <Text strong style={{ display: 'block', marginBottom: '8px' }}>
-                  Danh hiệu
-                </Text>
-                <Select
-                  allowClear
-                  showSearch
-                  optionFilterProp="label"
-                  style={{ width: '100%' }}
-                  placeholder={
-                    activeTab === 'DVHN'
-                      ? 'Chọn danh hiệu đơn vị'
-                      : activeTab === 'CNHN'
-                        ? 'Chọn danh hiệu cá nhân'
-                        : 'Chọn danh hiệu'
-                  }
-                  value={filters.danh_hieu === '' ? '' : filters.danh_hieu || undefined}
-                  onChange={value => handleFilterChange('danh_hieu', value || '')}
-                  options={danhHieuOptions}
-                  size="large"
-                />
-              </div>
-            )}
-            {activeTab === 'NCKH' && (
-              <div
-                style={{
-                  flex: '1 1 200px',
-                  minWidth: '200px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                }}
-              >
-                <Text strong style={{ display: 'block', marginBottom: '8px' }}>
-                  Đề tài
-                </Text>
-                <Input
-                  placeholder="Nhập đề tài / mô tả"
-                  value={filters.de_tai}
-                  onChange={e => handleFilterChange('de_tai', e.target.value)}
-                  allowClear
-                  size="large"
-                />
-              </div>
-            )}
-            <div style={{ flex: '0 0 auto', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ height: '22px', marginBottom: '8px' }}></div>
-              <Button
-                size="large"
-                onClick={() => setFilters(INITIAL_FILTERS)}
-                icon={null}
-              >
-                Xóa bộ lọc
-              </Button>
-            </div>
-          </div>
-        </Card>
+        <AwardsFilterBar
+          filters={filters}
+          availableYears={availableYears}
+          danhHieuOptions={danhHieuOptions}
+          showDanhHieuFilter={AWARD_TAB_META[activeTab].hasDanhHieuFilter}
+          showTopicFilter={activeTab === 'NCKH'}
+          searchLabel={AWARD_TAB_META[activeTab].searchLabel}
+          searchPlaceholder={AWARD_TAB_META[activeTab].searchPlaceholder}
+          danhHieuPlaceholder={AWARD_TAB_META[activeTab].danhHieuPlaceholder}
+          onFilterChange={handleFilterChange}
+          onReset={() => setFilters(INITIAL_FILTERS)}
+        />
 
         {/* Awards Table */}
         <Card title={`Danh sách khen thưởng (${filteredAwards.length})`}>

@@ -7,10 +7,12 @@
 import { Request, Response } from 'express';
 import positionHistoryService from '../services/positionHistory.service';
 import profileService from '../services/profile.service';
+import personnelService from '../services/personnel.service';
 import { normalizeParam } from '../helpers/paginationHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 import { writeSystemLog } from '../helpers/systemLogHelper';
+import { RESOURCE_SLUGS } from '../constants/resourceSlugs.constants';
 
 interface GetPositionHistoryQuery {
   personnel_id?: string;
@@ -45,11 +47,12 @@ class PositionHistoryController {
     if (!personnel_id) {
       return ResponseHelper.badRequest(res, 'Thiếu thông tin quân nhân');
     }
+    await personnelService.assertCanViewPersonnel(personnel_id, req.user?.role, req.user?.quan_nhan_id);
     if (recalculate === 'true') {
       try {
         await profileService.recalculateContributionProfile(personnel_id);
       } catch (recalcError) {
-        void writeSystemLog({ action: 'ERROR', resource: 'profiles', description: `Lỗi tính lại hồ sơ khen thưởng cống hiến: ${recalcError}` });
+        void writeSystemLog({ action: 'ERROR', resource: RESOURCE_SLUGS.PROFILES, description: `Lỗi tính lại hồ sơ khen thưởng cống hiến: ${recalcError}` });
       }
     }
     const result = await positionHistoryService.getPositionHistory(personnel_id);
@@ -82,7 +85,7 @@ class PositionHistoryController {
     try {
       await profileService.recalculateAnnualProfile(personnel_id);
     } catch (recalcError) {
-      void writeSystemLog({ action: 'ERROR', resource: 'profiles', description: `Lỗi tính lại hồ sơ hằng năm sau khi thêm chức vụ: ${recalcError}` });
+      void writeSystemLog({ action: 'ERROR', resource: RESOURCE_SLUGS.PROFILES, description: `Lỗi tính lại hồ sơ hằng năm sau khi thêm chức vụ: ${recalcError}` });
     }
     return ResponseHelper.created(res, {
       message: 'Thêm lịch sử chức vụ thành công',
@@ -107,7 +110,7 @@ class PositionHistoryController {
       const personnelId = result.data?.quan_nhan_id;
       if (personnelId) await profileService.recalculateAnnualProfile(personnelId);
     } catch (recalcError) {
-      void writeSystemLog({ action: 'ERROR', resource: 'profiles', description: `Lỗi tính lại hồ sơ hằng năm sau khi cập nhật chức vụ: ${recalcError}` });
+      void writeSystemLog({ action: 'ERROR', resource: RESOURCE_SLUGS.PROFILES, description: `Lỗi tính lại hồ sơ hằng năm sau khi cập nhật chức vụ: ${recalcError}` });
     }
     return ResponseHelper.success(res, {
       message: 'Cập nhật lịch sử chức vụ thành công',
@@ -127,7 +130,7 @@ class PositionHistoryController {
       try {
         await profileService.recalculateAnnualProfile(result.quan_nhan_id);
       } catch (recalcError) {
-        void writeSystemLog({ action: 'ERROR', resource: 'profiles', description: `Lỗi tính lại hồ sơ hằng năm sau khi xóa chức vụ: ${recalcError}` });
+        void writeSystemLog({ action: 'ERROR', resource: RESOURCE_SLUGS.PROFILES, description: `Lỗi tính lại hồ sơ hằng năm sau khi xóa chức vụ: ${recalcError}` });
       }
     }
     return ResponseHelper.success(res, {

@@ -69,13 +69,10 @@ class UnitAnnualAwardService {
   }
 
   previewImport(buffer: Buffer) {
-    return importHelpers.previewImport(buffer, this);
+    return importHelpers.previewImport(buffer);
   }
   confirmImport(validItems: UnitAnnualAwardValidItem[], adminId: string) {
     return importHelpers.confirmImport(validItems, adminId);
-  }
-  importFromExcel(buffer: Buffer, adminId: string) {
-    return importHelpers.importFromExcel(buffer, adminId, this);
   }
 }
 

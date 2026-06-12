@@ -16,16 +16,17 @@ import {
   Popconfirm,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { getApiErrorMessage } from '@/lib/apiError';
+import { getApiErrorMessage } from '@/lib/http/apiError';
 import {
   DEFAULT_PAGE_SIZE,
   DEFAULT_ANTD_TABLE_PAGINATION,
+  PROPOSAL_LIST_LIMIT,
 } from '@/constants/pagination.constants';
 import { formatDateTime } from '@/lib/utils';
 
 import { HomeOutlined, EyeOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import Link from 'next/link';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import {
   PROPOSAL_STATUS,
   PROPOSAL_TYPES,
@@ -86,7 +87,7 @@ export default function ManagerProposalsPage() {
   const fetchProposals = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.getProposals({ limit: 100 });
+      const response = await apiClient.getProposals({ limit: PROPOSAL_LIST_LIMIT });
 
       if (response.success) {
         setProposals(response.data ?? []);

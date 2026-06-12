@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { message } from 'antd';
-import { apiClient } from '@/lib/apiClient';
-import { getApiErrorMessage } from '@/lib/apiError';
+import { apiClient } from '@/lib/http/apiClient';
+import { getApiErrorMessage } from '@/lib/http/apiError';
 import { FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
 import type { Step2Personnel } from './types';
 

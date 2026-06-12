@@ -35,7 +35,7 @@ interface SuperAdminDashboardChartsProps {
   theme: string;
 }
 
-export default function SuperAdminDashboardCharts({
+export function SuperAdminDashboardCharts({
   chartData,
   theme,
 }: SuperAdminDashboardChartsProps) {

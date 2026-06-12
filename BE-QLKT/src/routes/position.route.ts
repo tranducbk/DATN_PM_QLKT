@@ -12,6 +12,7 @@ import { getLogDescription } from '../helpers/auditLog';
 import { validate } from '../middlewares/validate';
 import { positionValidation } from '../validations';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { RESOURCE_SLUGS } from '../constants/resourceSlugs.constants';
 
 const router = Router();
 
@@ -34,8 +35,8 @@ router.post(
   validate(positionValidation.createPosition),
   auditLog({
     action: AUDIT_ACTIONS.CREATE,
-    resource: 'positions',
-    getDescription: getLogDescription('positions', 'CREATE'),
+    resource: RESOURCE_SLUGS.POSITIONS,
+    getDescription: getLogDescription(RESOURCE_SLUGS.POSITIONS, 'CREATE'),
     getResourceId: getResourceId.fromResponse(),
   }),
   positionController.createPosition
@@ -53,8 +54,8 @@ router.put(
   validate(positionValidation.updatePosition),
   auditLog({
     action: AUDIT_ACTIONS.UPDATE,
-    resource: 'positions',
-    getDescription: getLogDescription('positions', 'UPDATE'),
+    resource: RESOURCE_SLUGS.POSITIONS,
+    getDescription: getLogDescription(RESOURCE_SLUGS.POSITIONS, 'UPDATE'),
     getResourceId: getResourceId.fromParams('id'),
   }),
   positionController.updatePosition
@@ -71,8 +72,8 @@ router.delete(
   requireAdmin,
   auditLog({
     action: AUDIT_ACTIONS.DELETE,
-    resource: 'positions',
-    getDescription: getLogDescription('positions', 'DELETE'),
+    resource: RESOURCE_SLUGS.POSITIONS,
+    getDescription: getLogDescription(RESOURCE_SLUGS.POSITIONS, 'DELETE'),
     getResourceId: getResourceId.fromParams('id'),
   }),
   positionController.deletePosition

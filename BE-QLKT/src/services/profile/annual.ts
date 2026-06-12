@@ -8,6 +8,8 @@ import { annualProfileRepository } from '../../repositories/annualProfile.reposi
 import { writeSystemLog } from '../../helpers/systemLogHelper';
 import { NotFoundError } from '../../middlewares/errorHandler';
 import { DANH_HIEU_CA_NHAN_BANG_KHEN, DANH_HIEU_CA_NHAN_HANG_NAM, getDanhHieuName } from '../../constants/danhHieu.constants';
+import { RESOURCE_SLUGS } from '../../constants/resourceSlugs.constants';
+import { AWARD_SLUGS } from '../../constants/awardSlugs.constants';
 import { type EligibilityResult } from '../eligibility/chainEligibility';
 import { evaluatePersonalChain } from '../eligibility/personalChainEvaluator';
 import type { AnnualStreakResult, ChainContext, NCKHYearsResult, RecalculateResult, SpecialCaseResult } from './types';
@@ -484,6 +486,27 @@ export async function recalculateAnnualProfile(personnelId: string, year: number
 }
 
 /**
+ * Recalculates the annual profile, swallowing errors so the caller's main flow is not interrupted.
+ * @param personnelId - Personnel ID to recalculate
+ * @param resource - Resource slug for the error system-log entry
+ * @returns Nothing
+ */
+export async function safeRecalculateAnnualProfile(
+  personnelId: string,
+  resource: string = AWARD_SLUGS.ANNUAL_REWARDS
+): Promise<void> {
+  try {
+    await recalculateAnnualProfile(personnelId);
+  } catch (e) {
+    void writeSystemLog({
+      action: 'ERROR',
+      resource,
+      description: `Lỗi tính lại hồ sơ hằng năm: ${e}`,
+    });
+  }
+}
+
+/**
  * Chain eligibility for BKBQP / CSTDTQ / BKTTCP (proposal submit, approval, import preview).
  * @param personnelId - Personnel ID
  * @param year - Proposal year under validation
@@ -523,9 +546,9 @@ export async function recalculateAll(): Promise<RecalculateResult> {
     select: { id: true, ho_ten: true },
   });
 
-  writeSystemLog({
+  void writeSystemLog({
     action: 'RECALCULATE',
-    resource: 'profiles',
+    resource: RESOURCE_SLUGS.PROFILES,
     description: `[Recalculate] Bắt đầu tính toán cho ${allPersonnel.length} quân nhân`,
   });
 
@@ -542,18 +565,18 @@ export async function recalculateAll(): Promise<RecalculateResult> {
         hoTen: personnel.ho_ten,
         error: error.message,
       });
-      writeSystemLog({
+      void writeSystemLog({
         action: 'ERROR',
-        resource: 'profiles',
+        resource: RESOURCE_SLUGS.PROFILES,
         resourceId: personnel.id,
         description: `[Recalculate] Lỗi: ${personnel.ho_ten} (${personnel.id}) — ${error.message}`,
       });
     }
   }
 
-  writeSystemLog({
+  void writeSystemLog({
     action: 'RECALCULATE',
-    resource: 'profiles',
+    resource: RESOURCE_SLUGS.PROFILES,
     description: `[Recalculate] Hoàn tất: ${successCount} thành công, ${errors.length} lỗi`,
     payload: errors.length > 0 ? { errors } : null,
   });

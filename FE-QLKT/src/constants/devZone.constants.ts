@@ -19,7 +19,7 @@ export const CRON_PRESETS = [
   { label: 'Tùy chỉnh', value: 'custom' },
 ] as const;
 
-/** Danh sách loại khen thưởng cho toggle bật/tắt */
+/** Award types for the enable/disable toggle. */
 export const AWARD_TYPE_OPTIONS = [
   {
     key: 'annual',
@@ -93,6 +93,3 @@ export const BACKUP_CRON_PRESETS = [
   { label: 'Ngày 1 hàng tháng lúc 02:00', value: '0 2 1 * *' },
   { label: 'Tùy chỉnh', value: 'custom' },
 ] as const;
-
-/** Cron schedule mặc định */
-export const DEFAULT_CRON_SCHEDULE = '0 1 1 * *';

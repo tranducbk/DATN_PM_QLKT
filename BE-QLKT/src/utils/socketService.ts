@@ -76,7 +76,7 @@ function initSocket(httpServer: HttpServer): Server {
       return next(new Error('Không tìm thấy token'));
     }
     try {
-      const decoded = jwt.verify(token, JWT_SECRET) as DecodedToken;
+      const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }) as DecodedToken;
       (socket as Socket & { user: DecodedToken }).user = decoded;
       next();
     } catch (error) {

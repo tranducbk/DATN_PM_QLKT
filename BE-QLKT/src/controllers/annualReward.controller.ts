@@ -376,7 +376,13 @@ class AnnualRewardController {
       try {
         const parsed = JSON.parse(query.repeat_map);
         Object.assign(repeatMap, parsed);
-      } catch (e) { console.error('Invalid repeat_map JSON:', e); }
+      } catch (e) {
+        void writeSystemLog({
+          action: 'ERROR',
+          resource: AWARD_SLUGS.ANNUAL_REWARDS,
+          description: `Dữ liệu repeat_map (${AWARD_LABEL}) không hợp lệ: ${e}`,
+        });
+      }
     }
 
     const workbook = await annualRewardService.exportTemplate(personnelIds, repeatMap);

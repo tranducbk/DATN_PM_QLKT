@@ -1,7 +1,7 @@
 import { calculateServiceMonths, formatServiceDuration } from '../../../helpers/serviceYearsHelper';
 import type { ProposalNienHanItem } from '../../../types/proposal';
 import type { ProposalApproveContext, ImportAccumulator, PrismaTx } from './proposalStrategy';
-import { formatQuanNhanLabel } from './quanNhanLabel';
+import { formatPersonnelLabel } from './personnelLabel';
 import { quanNhanRepository } from '../../../repositories/quanNhan.repository';
 
 /*
@@ -62,7 +62,7 @@ interface SingleMedalConfig {
    */
   upsert: (
     prismaTx: PrismaTx,
-    quanNhanId: string,
+    personnelId: string,
     writeData: SingleMedalWriteData
   ) => Promise<void>;
 }
@@ -100,11 +100,11 @@ export async function importSingleMedal(
         acc.errors.push(`Thiếu thông tin quân nhân khi xử lý ${cfg.medalLabel}.`);
         continue;
       }
-      const quanNhan = await quanNhanRepository.findUniqueRaw(
+      const personnel = await quanNhanRepository.findUniqueRaw(
         { where: { id: item.personnel_id } },
         prismaTx
       );
-      if (!quanNhan) {
+      if (!personnel) {
         acc.errors.push(
           `Không tìm thấy thông tin quân nhân khi xử lý ${cfg.medalLabel}. ` +
             `Quân nhân có thể đã bị xoá khỏi hệ thống — vui lòng tải lại đề xuất.`
@@ -118,7 +118,9 @@ export async function importSingleMedal(
       const thangNhan = item.thang_nhan;
 
       if (!namNhan || !thangNhan || thangNhan < 1 || thangNhan > 12) {
-        acc.errors.push(`${formatQuanNhanLabel(quanNhan)} thiếu tháng/năm nhận ${cfg.medalLabel}`);
+        acc.errors.push(
+          `${formatPersonnelLabel(personnel)} thiếu tháng/năm nhận ${cfg.medalLabel}`
+        );
         continue;
       }
       if (
@@ -126,23 +128,23 @@ export async function importSingleMedal(
         (proposalMonth != null && namNhan === proposalYear && thangNhan < proposalMonth)
       ) {
         acc.errors.push(
-          `${formatQuanNhanLabel(quanNhan)}: tháng/năm nhận (${thangNhan}/${namNhan}) không được trước tháng/năm đề xuất (${proposalMonth ?? '--'}/${proposalYear})`
+          `${formatPersonnelLabel(personnel)}: tháng/năm nhận (${thangNhan}/${namNhan}) không được trước tháng/năm đề xuất (${proposalMonth ?? '--'}/${proposalYear})`
         );
         continue;
       }
       if (item.nam_quyet_dinh && namNhan < item.nam_quyet_dinh) {
         acc.errors.push(
-          `${formatQuanNhanLabel(quanNhan)}: năm nhận (${namNhan}) không được trước năm quyết định (${item.nam_quyet_dinh})`
+          `${formatPersonnelLabel(personnel)}: năm nhận (${namNhan}) không được trước năm quyết định (${item.nam_quyet_dinh})`
         );
         continue;
       }
 
       let thoiGian: Record<string, unknown> | null = null;
-      if (quanNhan.ngay_nhap_ngu) {
-        const ngayKetThuc = quanNhan.ngay_xuat_ngu
-          ? new Date(quanNhan.ngay_xuat_ngu)
+      if (personnel.ngay_nhap_ngu) {
+        const ngayKetThuc = personnel.ngay_xuat_ngu
+          ? new Date(personnel.ngay_xuat_ngu)
           : new Date(namNhan, thangNhan, 0);
-        const months = calculateServiceMonths(new Date(quanNhan.ngay_nhap_ngu), ngayKetThuc);
+        const months = calculateServiceMonths(new Date(personnel.ngay_nhap_ngu), ngayKetThuc);
         thoiGian = {
           total_months: months,
           years: Math.floor(months / 12),
@@ -151,7 +153,7 @@ export async function importSingleMedal(
         };
       }
 
-      await cfg.upsert(prismaTx, quanNhan.id, {
+      await cfg.upsert(prismaTx, personnel.id, {
         nam: namNhan,
         thang: thangNhan,
         cap_bac: item.cap_bac || null,
@@ -162,7 +164,7 @@ export async function importSingleMedal(
       });
 
       acc.importedNienHan++;
-      acc.affectedPersonnelIds.add(quanNhan.id);
+      acc.affectedPersonnelIds.add(personnel.id);
     } catch (error) {
       console.error(`[approveProposal] ${cfg.logTag} error:`, {
         personnel_id: item.personnel_id,

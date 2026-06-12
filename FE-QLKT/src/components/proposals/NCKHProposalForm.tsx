@@ -228,7 +228,7 @@ export function NCKHProposalForm({
         }}
       />
 
-      {/* Modal thêm/sửa */}
+      {/* Add/edit modal */}
       <Modal
         title={
           <Space>

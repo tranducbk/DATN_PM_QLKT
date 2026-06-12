@@ -641,7 +641,7 @@ class MilitaryFlagService {
     try {
       await notificationHelper.notifyOnAwardDeleted(award, personnel, 'HCQKQT', adminUsername);
     } catch (error) {
-      writeSystemLog({
+      void writeSystemLog({
         action: 'ERROR',
         resource: AWARD_SLUGS.MILITARY_FLAG,
         resourceId: id,

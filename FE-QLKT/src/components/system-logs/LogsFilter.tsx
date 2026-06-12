@@ -6,7 +6,8 @@ import { SearchOutlined, ClearOutlined, CalendarOutlined, FilterOutlined } from 
 import dayjs, { Dayjs } from 'dayjs';
 import 'dayjs/locale/vi';
 import type { SelectProps } from 'antd';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
+import { useDebounce } from '@/hooks/useDebounce';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { ROLE_LABELS, getActionLabel } from './constants';
 
@@ -54,22 +55,17 @@ export function LogsFilter({ onFilterChange }: LogsFilterProps) {
       .finally(() => setLoading(false));
   }, []);
 
+  const debouncedSearch = useDebounce(search);
   useEffect(() => {
-    const timeout = setTimeout(
-      () => {
-        onFilterChange({
-          search: search.trim() || undefined,
-          startDate: startDate?.toISOString(),
-          endDate: endDate?.toISOString(),
-          actorRole,
-          action,
-        });
-      },
-      search ? 300 : 0
-    );
-    return () => clearTimeout(timeout);
+    onFilterChange({
+      search: debouncedSearch.trim() || undefined,
+      startDate: startDate?.toISOString(),
+      endDate: endDate?.toISOString(),
+      actorRole,
+      action,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- onFilterChange is stable from parent
-  }, [search, startDate, endDate, actorRole, action]);
+  }, [debouncedSearch, startDate, endDate, actorRole, action]);
 
   const handleReset = () => {
     setSearch('');

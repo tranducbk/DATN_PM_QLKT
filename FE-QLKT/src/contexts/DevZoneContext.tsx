@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import axiosInstance from '@/lib/axiosInstance';
+import axiosInstance from '@/lib/http/axiosInstance';
 import { AWARD_TYPE_TO_ALLOW } from '@/constants/danhHieu.constants';
 
 interface DevZoneContextValue {

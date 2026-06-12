@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Table, Button, Space, Tag, Popconfirm, message, Empty } from 'antd';
+import { Table, Button, Space, Tag, Popconfirm, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import { formatHeSoChucVu } from '@/lib/utils';
+import { EmptyState } from '@/components/shared/EmptyState';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 
 export interface PositionRow {
@@ -145,7 +146,7 @@ export function PositionsTable({ positions, onEdit, onRefresh }: PositionsTableP
       }}
       scroll={{ x: 'max-content' }}
       locale={{
-        emptyText: <Empty description="Không có dữ liệu" />,
+        emptyText: <EmptyState description="Chưa có chức vụ nào" />,
       }}
     />
   );

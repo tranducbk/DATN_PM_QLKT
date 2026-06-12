@@ -5,7 +5,7 @@ import { Table, Button, Dropdown, Modal, App, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { MenuProps } from 'antd';
 import { MoreOutlined, DeleteOutlined } from '@ant-design/icons';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import { formatDate } from '@/lib/utils';
 import { getRoleInfo } from '@/constants/roles.constants';
 

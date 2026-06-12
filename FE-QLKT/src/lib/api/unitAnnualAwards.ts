@@ -1,5 +1,5 @@
-import axiosInstance from '@/lib/axiosInstance';
-import { getApiErrorMessage } from '@/lib/apiError';
+import axiosInstance from '@/lib/http/axiosInstance';
+import { getApiErrorMessage } from '@/lib/http/apiError';
 import type { ApiResponse } from '@/lib/types/common';
 import { FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
 
@@ -43,21 +43,6 @@ export async function getUnitAnnualAwardsTemplate(params?: Record<string, string
     return res.data;
   } catch (e: unknown) {
     throw new Error(getApiErrorMessage(e));
-  }
-}
-
-export async function importUnitAnnualAwards(file: File): Promise<ApiResponse> {
-  try {
-    const formData = new FormData();
-    formData.append('file', file);
-    const res = await axiosInstance.post('/api/unit-annual-awards/import', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return { success: res.data?.success, data: res.data?.data, message: res.data?.message };
-  } catch (e: unknown) {
-    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 

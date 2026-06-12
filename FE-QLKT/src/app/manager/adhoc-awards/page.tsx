@@ -30,10 +30,11 @@ import {
   DownloadOutlined,
 } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { previewFileWithApi } from '@/lib/file/filePreview';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
+import { useDebounce } from '@/hooks/useDebounce';
 
 const { Title, Text } = Typography;
 
@@ -151,12 +152,10 @@ export default function ManagerAdhocAwardsPage() {
     return years;
   }, [awards]);
 
+  const debouncedSearch = useDebounce(searchDraft);
   useEffect(() => {
-    const handler = setTimeout(() => {
-      setTableFilters(prev => ({ ...prev, searchText: searchDraft }));
-    }, 1000);
-    return () => clearTimeout(handler);
-  }, [searchDraft]);
+    setTableFilters(prev => ({ ...prev, searchText: debouncedSearch }));
+  }, [debouncedSearch]);
 
   // FILTERED TABLE DATA
   const filteredAwards = useMemo(() => {
@@ -564,7 +563,7 @@ export default function ManagerAdhocAwardsPage() {
               </Descriptions>
             </Card>
 
-            {/* File đính kèm */}
+            {/* Attachments */}
             {detailAward.files_dinh_kem && detailAward.files_dinh_kem.length > 0 && (
               <Card size="small" title={`File đính kèm (${detailAward.files_dinh_kem.length})`}>
                 <List

@@ -10,6 +10,7 @@ import unitAnnualAwardService from '../unitAnnualAward.service';
 import { NotFoundError, ValidationError } from '../../middlewares/errorHandler';
 import { buildApproveSummaryMessage } from '../../helpers/award/awardSummaryMessage';
 import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
+import { RESOURCE_SLUGS } from '../../constants/resourceSlugs.constants';
 import { writeSystemLog } from '../../helpers/systemLogHelper';
 import type {
   ProposalDanhHieuItem,
@@ -186,7 +187,7 @@ function logImportErrors(
   void writeSystemLog({
     userId: adminId,
     action: 'ERROR',
-    resource: 'proposals',
+    resource: RESOURCE_SLUGS.PROPOSALS,
     resourceId: proposalId,
     description: `[Phê duyệt đề xuất] ${proposal.loai_de_xuat} năm ${proposal.nam}: ${errors.length} lỗi. Chi tiết: ${errors.join('; ')}`,
   });

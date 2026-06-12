@@ -315,7 +315,6 @@ classDiagram
     }
     class ProposalStrategyRegistry {
         +getProposalStrategy(type)
-        +requireProposalStrategy(type)
     }
     class CaNhanHangNamStrategy
     class DonViHangNamStrategy
@@ -543,6 +542,15 @@ classDiagram
         +update(id, data)
         +delete(id)
     }
+    class DanhHieuHangNamRepository {
+        +findById(id)
+        +findByPersonnelId(quanNhanId)
+        +findByPersonnelAndYear(quanNhanId, nam)
+        +create(data)
+        +update(id, data)
+        +upsertByPersonnelYear(quanNhanId, nam, data)
+        +delete(id)
+    }
 
     class UnitAnnualAwardService {
         +list(filter)
@@ -550,7 +558,7 @@ classDiagram
         +upsert(data)
         +approve(id, ctx)
         +reject(id, reason)
-        +getUnitAnnualProfile(unitId)
+        +getAnnualUnit(donViId, year)
         +recalculate(unitId)
         +remove(id)
     }
@@ -564,6 +572,32 @@ classDiagram
         +getUnitAnnualProfile()
         +recalculate()
         +remove()
+    }
+
+    class AnnualRewardService {
+        +getAnnualRewards(personnelId)
+        +createAnnualReward(data)
+        +updateAnnualReward(id, data)
+        +deleteAnnualReward(id)
+        +checkAnnualRewards(personnelId, year)
+        +bulkCreateAnnualRewards(data)
+        +previewImport(buffer)
+        +confirmImport(validItems)
+        +exportToExcel(filters)
+        +getStatistics(filters)
+    }
+    class AnnualRewardController {
+        +getAnnualRewards()
+        +createAnnualReward()
+        +updateAnnualReward()
+        +deleteAnnualReward()
+        +checkAnnualRewards()
+        +bulkCreateAnnualRewards()
+        +previewImport()
+        +confirmImport()
+        +getTemplate()
+        +exportToExcel()
+        +getStatistics()
     }
 
     ProfileController --> ProfileService
@@ -583,6 +617,10 @@ classDiagram
     UnitAnnualAwardService --> UnitAnnualProfileRepository
     DanhHieuDonViHangNamRepository --> DanhHieuDonViHangNam
     UnitAnnualProfileRepository --> HoSoDonViHangNam
+    AnnualRewardController --> AnnualRewardService
+    AnnualRewardService --> DanhHieuHangNamRepository
+    AnnualRewardService --> ProfileService
+    DanhHieuHangNamRepository --> DanhHieuHangNam
     HoSoNienHan --> TrangThaiHoSo
     HoSoCongHien --> TrangThaiHoSo
     DecisionService --> DecisionFileRepository
@@ -615,7 +653,7 @@ classDiagram
 |---|---|---|---|---|
 | C3.1 | Tổ chức, Quân nhân & Tài khoản | 24 (6 Controller + 6 Service + 6 Repository + 6 Entity) | 1 (VaiTro) | 4 tầng Controller→Service→Repository→Entity, Unit priority DVTT > CQDV, JWT access+refresh |
 | C3.2 | Đề xuất + Strategy pattern | 14 | 2 (LoaiDeXuat, TrangThaiDeXuat) | **Strategy + Open/Closed**, submit≠approve, ProposalRepository |
-| C3.3 | Khen thưởng + Hồ sơ + Quyết định | 26 (3 Controller + 3 Service + 6 Repository + 13 Entity) | 1 (TrangThaiHoSo) | HoSo cá nhân (ProfileService) ≠ HoSo đơn vị (UnitAnnualAwardService); FileQuyetDinh hub đủ 8 bảng |
+| C3.3 | Khen thưởng + Hồ sơ + Quyết định | 29 (4 Controller + 4 Service + 7 Repository + 13 Entity) | 1 (TrangThaiHoSo) | HoSo cá nhân (ProfileService) ≠ HoSo đơn vị (UnitAnnualAwardService); FileQuyetDinh hub đủ 8 bảng; khen thưởng cá nhân (AnnualReward) đối xứng với đơn vị (UnitAnnualAward) |
 
 **Layer kiến trúc**: `Controller (HTTP) → Service (business logic) → Entity (Prisma model)`; cross-cutting qua Strategy / Helper.
 

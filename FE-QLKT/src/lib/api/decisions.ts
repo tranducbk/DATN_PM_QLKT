@@ -1,5 +1,5 @@
-import axiosInstance from '@/lib/axiosInstance';
-import { getApiErrorMessage } from '@/lib/apiError';
+import axiosInstance from '@/lib/http/axiosInstance';
+import { getApiErrorMessage } from '@/lib/http/apiError';
 import type { ApiResponse } from '@/lib/types/common';
 
 export type DecisionsPagination = {
@@ -106,22 +106,6 @@ export async function getDecisionFilePath(soQuyetDinh: string): Promise<ApiRespo
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
-}
-
-/**
- * Downloads decision file by decision number.
- * Backend resolves the file path and returns binary content.
- * @param soQuyetDinh - Decision number
- * @returns File blob from API response
- */
-export async function downloadDecisionFile(soQuyetDinh: string): Promise<Blob> {
-  const res = await axiosInstance.get(
-    `/api/decisions/download/${encodeURIComponent(soQuyetDinh)}`,
-    {
-      responseType: 'blob',
-    }
-  );
-  return res.data;
 }
 
 /**

@@ -26,7 +26,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { DANH_HIEU_MAP } from '@/constants/danhHieu.constants';
 import { LoadingState } from '@/components/shared/LoadingState';
-import { getApiErrorMessage, logApiError } from '@/lib/apiError';
+import { getApiErrorMessage, logApiError } from '@/lib/http/apiError';
 import { formatDate } from '@/lib/utils';
 import { DEFAULT_PAGE_SIZE, DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 
@@ -182,14 +182,6 @@ export function makeGhiChuColumn(): ColumnsType<PreviewItem>[number] {
     dataIndex: 'ghi_chu',
     render: renderText,
   };
-}
-
-export function makeCapBacColumn(): ColumnsType<PreviewItem>[number] {
-  return makeCapBacChucVuColumn();
-}
-
-export function makeChucVuColumn(): ColumnsType<PreviewItem>[number] {
-  return { title: 'Chức vụ', dataIndex: 'chuc_vu', width: 0 };
 }
 
 export function makeCapBacChucVuColumn(width = 160): ColumnsType<PreviewItem>[number] {

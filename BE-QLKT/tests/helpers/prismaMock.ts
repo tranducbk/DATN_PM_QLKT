@@ -128,7 +128,9 @@ jest.mock('../../src/models', () => ({
 }));
 
 // Silence the recalcAnnualProfile side effect — every reward write triggers it.
-jest.mock('../../src/helpers/profileRecalcHelper', () => ({
+// Keep all other real exports; only stub the side-effect wrapper.
+jest.mock('../../src/services/profile/annual', () => ({
+  ...jest.requireActual('../../src/services/profile/annual'),
   safeRecalculateAnnualProfile: jest.fn().mockResolvedValue(undefined),
 }));
 

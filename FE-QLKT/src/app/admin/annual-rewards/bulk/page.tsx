@@ -30,7 +30,7 @@ import {
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
 
 const { Title, Text } = Typography;
@@ -412,7 +412,6 @@ export default function BulkAddAnnualRewardsPage() {
                 prefix={<SearchOutlined />}
                 value={searchText}
                 onChange={e => setSearchText(e.target.value)}
-                onPressEnter={() => {}}
                 size="large"
                 allowClear
                 style={{ width: '100%' }}

@@ -1,9 +1,10 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { accountRepository } from '../repositories/account.repository';
-import { JWT_SECRET, JWT_REFRESH_SECRET } from '../configs';
+import { JWT_SECRET, JWT_REFRESH_SECRET, REFRESH_TOKEN_TTL, REFRESH_GRACE_MS } from '../configs';
 import { AppError, NotFoundError, ValidationError } from '../middlewares/errorHandler';
 import { emitToUser } from '../utils/socketService';
+
 interface LoginResult {
   accessToken: string;
   refreshToken: string;
@@ -77,16 +78,23 @@ interface JwtPayload {
  *  KHÔNG bao giờ trả password_hash về client; KHÔNG so sánh bằng `===`.
  * ════════════════════════════════════════════════════════════════════════════
  */
+interface AccountForToken {
+  id: string;
+  username: string;
+  role: string;
+  quan_nhan_id: string | null;
+}
+
 class AuthService {
   /**
    * Sinh access token JWT — sống 30 phút, chứa đủ payload cho authz.
    * Role nằm trong token → middleware checkRole không cần query DB.
    */
-  private generateAccessToken(account: { id: string; username: string; role: string; quan_nhan_id: string | null }): string {
+  private generateAccessToken(account: AccountForToken): string {
     return jwt.sign(
       { id: account.id, username: account.username, role: account.role, quan_nhan_id: account.quan_nhan_id },
       JWT_SECRET,
-      { expiresIn: '30m' }
+      { expiresIn: '30m', algorithm: 'HS256' }
     );
   }
 
@@ -96,11 +104,10 @@ class AuthService {
    * refresh sẽ re-query DB để lấy role mới.
    */
   private generateRefreshToken(account: { id: string; username: string }): string {
-    return jwt.sign(
-      { id: account.id, username: account.username },
-      JWT_REFRESH_SECRET,
-      { expiresIn: '7d' }
-    );
+    return jwt.sign({ id: account.id, username: account.username }, JWT_REFRESH_SECRET, {
+      expiresIn: REFRESH_TOKEN_TTL,
+      algorithm: 'HS256',
+    });
   }
 
   async login(username: string, password: string): Promise<LoginResult> {
@@ -110,11 +117,7 @@ class AuthService {
         QuanNhan: {
           include: {
             CoQuanDonVi: true,
-            DonViTrucThuoc: {
-              include: {
-                CoQuanDonVi: true,
-              },
-            },
+            DonViTrucThuoc: { include: { CoQuanDonVi: true } },
             ChucVu: true,
           },
         },
@@ -150,29 +153,25 @@ class AuthService {
       message: 'Tài khoản của bạn đã được đăng nhập ở nơi khác.',
     });
 
-    await accountRepository.update(account.id, {
-      refreshToken,
-    });
+    await accountRepository.update(account.id, { refreshToken, prevRefreshToken: null });
 
     const quanNhan = account.QuanNhan;
     const donVi = quanNhan?.DonViTrucThuoc || quanNhan?.CoQuanDonVi;
     const donViId = quanNhan?.don_vi_truc_thuoc_id || quanNhan?.co_quan_don_vi_id;
 
-    const userInfo = {
-      id: account.id,
-      username: account.username,
-      role: account.role,
-      quan_nhan_id: account.quan_nhan_id,
-      ho_ten: quanNhan?.ho_ten || null,
-      don_vi: donVi?.ten_don_vi || null,
-      don_vi_id: donViId || null,
-      chuc_vu: quanNhan?.ChucVu?.ten_chuc_vu || null,
-    };
-
     return {
       accessToken,
       refreshToken,
-      user: userInfo,
+      user: {
+        id: account.id,
+        username: account.username,
+        role: account.role,
+        quan_nhan_id: account.quan_nhan_id,
+        ho_ten: quanNhan?.ho_ten || null,
+        don_vi: donVi?.ten_don_vi || null,
+        don_vi_id: donViId || null,
+        chuc_vu: quanNhan?.ChucVu?.ten_chuc_vu || null,
+      },
     };
   }
 
@@ -198,40 +197,58 @@ class AuthService {
    *    login, không cố retry.
    */
   async refreshAccessToken(refreshToken: string): Promise<TokenPair> {
+    if (!refreshToken) {
+      throw new AppError('Refresh token không được cung cấp', 401);
+    }
+
+    let decoded: JwtPayload;
     try {
-      if (!refreshToken) {
-        throw new AppError('Refresh token không được cung cấp', 401);
-      }
-
-      const decoded = jwt.verify(refreshToken, JWT_REFRESH_SECRET) as JwtPayload;
-
-      const account = await accountRepository.findById(decoded.id);
-
-      // Reuse detection: nếu refresh trong DB khác refresh client gửi →
-      // token đã bị rotate (hoặc bị steal + dùng trước) → reject.
-      if (!account || account.refreshToken !== refreshToken) {
-        throw new AppError('Refresh token không hợp lệ', 401);
-      }
-
-      const newAccessToken = this.generateAccessToken(account);
-      const newRefreshToken = this.generateRefreshToken(account);
-
-      // Atomic rotation: invalidate refresh cũ bằng cách ghi đè refresh mới.
-      await accountRepository.update(account.id, { refreshToken: newRefreshToken });
-
-      return {
-        accessToken: newAccessToken,
-        refreshToken: newRefreshToken,
-      };
+      decoded = jwt.verify(refreshToken, JWT_REFRESH_SECRET, { algorithms: ['HS256'] }) as JwtPayload;
     } catch (error: unknown) {
       if (error instanceof Error && error.name === 'TokenExpiredError') {
         throw new AppError('Refresh token đã hết hạn. Vui lòng đăng nhập lại.', 401);
       }
-      if (error instanceof Error && error.name === 'JsonWebTokenError') {
+      throw new AppError('Refresh token không hợp lệ', 401);
+    }
+
+    const account = await accountRepository.findById(decoded.id);
+    if (!account || !account.refreshToken) {
+      throw new AppError('Refresh token không hợp lệ', 401);
+    }
+
+    // Current token → rotate: keep the consumed one as prev for the grace window.
+    // Conditional update guards against concurrent rotation: only one request flips the
+    // token; the loser re-reads and returns the winner's token (no orphaned token → no logout).
+    if (refreshToken === account.refreshToken) {
+      const newRefreshToken = this.generateRefreshToken(account);
+      const updated = await accountRepository.updateMany(
+        { id: account.id, refreshToken },
+        { refreshToken: newRefreshToken, prevRefreshToken: refreshToken }
+      );
+      if (updated.count === 0) {
+        const fresh = await accountRepository.findById(account.id);
+        if (fresh?.refreshToken) {
+          return { accessToken: this.generateAccessToken(account), refreshToken: fresh.refreshToken };
+        }
         throw new AppError('Refresh token không hợp lệ', 401);
       }
-      throw error;
+      return { accessToken: this.generateAccessToken(account), refreshToken: newRefreshToken };
     }
+
+    // Just-rotated token replayed by a lagging tab/socket → within grace, hand back the
+    // current token (idempotent) instead of logging out.
+    if (refreshToken === account.prevRefreshToken && this.isWithinGrace(account.refreshToken)) {
+      return { accessToken: this.generateAccessToken(account), refreshToken: account.refreshToken };
+    }
+
+    throw new AppError('Refresh token không hợp lệ', 401);
+  }
+
+  /** Whether the current refresh token was issued within the grace window. */
+  private isWithinGrace(currentRefreshToken: string): boolean {
+    const decoded = jwt.decode(currentRefreshToken) as { iat?: number } | null;
+    if (!decoded?.iat) return false;
+    return Date.now() - decoded.iat * 1000 <= REFRESH_GRACE_MS;
   }
 
   async logout(refreshToken: string): Promise<{ message: string }> {
@@ -239,7 +256,10 @@ class AuthService {
       throw new AppError('Refresh token không được cung cấp', 401);
     }
 
-    await accountRepository.updateMany({ refreshToken }, { refreshToken: null });
+    await accountRepository.updateMany(
+      { refreshToken },
+      { refreshToken: null, prevRefreshToken: null }
+    );
 
     return { message: 'Đăng xuất thành công' };
   }
@@ -269,6 +289,7 @@ class AuthService {
     await accountRepository.update(userId, {
       password_hash: hashedPassword,
       refreshToken: null,
+      prevRefreshToken: null,
     });
 
     return { message: 'Đổi mật khẩu thành công. Vui lòng đăng nhập lại.' };

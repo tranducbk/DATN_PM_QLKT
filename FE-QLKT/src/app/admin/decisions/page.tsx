@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Card,
   Table,
@@ -18,7 +18,7 @@ import {
   Descriptions,
   Empty,
 } from 'antd';
-import { getApiErrorMessage } from '@/lib/apiError';
+import { getApiErrorMessage } from '@/lib/http/apiError';
 import {
   HomeOutlined,
   PlusOutlined,
@@ -29,9 +29,10 @@ import {
   FileTextOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { DEFAULT_PAGE_SIZE, DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
+import { useDebounce } from '@/hooks/useDebounce';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { LOAI_KHEN_THUONG_OPTIONS, getLoaiDeXuatName } from '@/constants/danhHieu.constants';
 import dayjs from 'dayjs';
@@ -70,22 +71,13 @@ export default function AdminDecisionsPage() {
     total: 0,
   });
   const [searchText, setSearchText] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const debouncedSearch = useDebounce(searchText);
   const [yearFilter, setYearFilter] = useState<number | null>(null);
   const [typeFilter, setTypeFilter] = useState<string>('ALL');
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedDecision, setSelectedDecision] = useState<Decision | null>(null);
   const [decisionModalVisible, setDecisionModalVisible] = useState(false);
   const [editingDecision, setEditingDecision] = useState<Decision | null>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
-
-  useEffect(() => {
-    debounceRef.current = setTimeout(() => {
-      setDebouncedSearch(searchText);
-    }, 400);
-    return () => clearTimeout(debounceRef.current);
-  }, [searchText]);
-
   const fetchDecisions = useCallback(async () => {
     try {
       setLoading(true);
@@ -319,39 +311,64 @@ export default function AdminDecisionsPage() {
         </div>
 
         {/* Filters */}
-        <Space style={{ marginBottom: 16 }} wrap>
-          <Input
-            placeholder="Tìm kiếm số quyết định, người ký..."
-            prefix={<SearchOutlined />}
-            value={searchText}
-            onChange={e => setSearchText(e.target.value)}
-            style={{ width: 300 }}
-            allowClear
-          />
-          <InputNumber
-            placeholder="Nhập năm"
-            value={yearFilter}
-            onChange={value => setYearFilter(value || null)}
-            style={{ width: 150 }}
-            min={1900}
-            max={2100}
-            controls={false}
-          />
-          <Select
-            placeholder="Chọn loại khen thưởng"
-            value={typeFilter}
-            onChange={setTypeFilter}
-            style={{ width: 200 }}
-            allowClear
-          >
-            <Select.Option value="ALL">Tất cả loại</Select.Option>
-            {LOAI_KHEN_THUONG_OPTIONS.map(option => (
-              <Select.Option key={option.value} value={option.value}>
-                {option.label}
-              </Select.Option>
-            ))}
-          </Select>
-        </Space>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gap: 16,
+            marginBottom: 16,
+          }}
+        >
+          <div>
+            <Text type="secondary" style={{ marginBottom: 8, display: 'block' }}>
+              Tìm kiếm
+            </Text>
+            <Input
+              placeholder="Tìm kiếm số quyết định, người ký..."
+              prefix={<SearchOutlined />}
+              value={searchText}
+              onChange={e => setSearchText(e.target.value)}
+              size="large"
+              allowClear
+              style={{ width: '100%' }}
+            />
+          </div>
+          <div>
+            <Text type="secondary" style={{ marginBottom: 8, display: 'block' }}>
+              Năm
+            </Text>
+            <InputNumber
+              placeholder="Nhập năm"
+              value={yearFilter}
+              onChange={value => setYearFilter(value || null)}
+              size="large"
+              min={1900}
+              max={2100}
+              controls={false}
+              style={{ width: '100%' }}
+            />
+          </div>
+          <div>
+            <Text type="secondary" style={{ marginBottom: 8, display: 'block' }}>
+              Loại khen thưởng
+            </Text>
+            <Select
+              placeholder="Chọn loại khen thưởng"
+              value={typeFilter}
+              onChange={setTypeFilter}
+              size="large"
+              allowClear
+              style={{ width: '100%' }}
+            >
+              <Select.Option value="ALL">Tất cả loại</Select.Option>
+              {LOAI_KHEN_THUONG_OPTIONS.map(option => (
+                <Select.Option key={option.value} value={option.value}>
+                  {option.label}
+                </Select.Option>
+              ))}
+            </Select>
+          </div>
+        </div>
 
         {/* Table */}
         <Table

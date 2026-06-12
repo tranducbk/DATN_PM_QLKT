@@ -6,8 +6,8 @@ import { EditOutlined, HistoryOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { formatDate } from '@/lib/utils';
-import { apiClient } from '@/lib/apiClient';
-import { getApiErrorMessage } from '@/lib/apiError';
+import { apiClient } from '@/lib/http/apiClient';
+import { getApiErrorMessage } from '@/lib/http/apiError';
 import { PositionHistoryModal } from './PositionHistoryModal';
 import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
 import {

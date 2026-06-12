@@ -179,7 +179,9 @@ class SystemLogsService {
             },
           },
         },
-        orderBy: { createdAt: 'desc' },
+        // createdAt is second-precision; CUID id (time-sortable) breaks ties so logs
+        // created within the same second still display in true creation order.
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       }),
       systemLogRepository.count(where),
       systemLogRepository.count({ ...where, action: { contains: 'CREATE' } }),

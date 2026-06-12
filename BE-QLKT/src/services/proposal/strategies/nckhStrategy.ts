@@ -1,4 +1,3 @@
-import { prisma } from '../../../models';
 import { quanNhanRepository } from '../../../repositories/quanNhan.repository';
 import { scientificAchievementRepository } from '../../../repositories/scientificAchievement.repository';
 import { PROPOSAL_TYPES } from '../../../constants/proposalTypes.constants';
@@ -200,18 +199,18 @@ class NckhStrategy implements ProposalStrategy {
           acc.errors.push('Thiếu thông tin quân nhân khi lưu thành tích khoa học.');
           continue;
         }
-        const quanNhan = await quanNhanRepository.findUniqueRaw(
+        const personnel = await quanNhanRepository.findUniqueRaw(
           { where: { id: item.personnel_id }, select: { id: true, ho_ten: true } },
           prismaTx
         );
-        if (!quanNhan) {
+        if (!personnel) {
           acc.errors.push(
             'Không tìm thấy thông tin quân nhân khi lưu thành tích khoa học. ' +
               'Quân nhân có thể đã bị xoá khỏi hệ thống — vui lòng tải lại đề xuất.'
           );
           continue;
         }
-        const hoTen = quanNhan.ho_ten || 'một quân nhân';
+        const hoTen = personnel.ho_ten || 'một quân nhân';
         if (!item.nam) {
           acc.errors.push(`Thành tích của ${hoTen} thiếu năm.`);
           continue;
@@ -227,7 +226,7 @@ class NckhStrategy implements ProposalStrategy {
         }
         await scientificAchievementRepository.create(
           {
-            quan_nhan_id: quanNhan.id,
+            quan_nhan_id: personnel.id,
             nam: parseInt(String(item.nam), 10),
             loai: loaiCode,
             mo_ta: item.mo_ta.trim(),
@@ -239,7 +238,7 @@ class NckhStrategy implements ProposalStrategy {
           prismaTx
         );
         acc.importedThanhTich++;
-        acc.affectedPersonnelIds.add(quanNhan.id);
+        acc.affectedPersonnelIds.add(personnel.id);
       } catch (error) {
         console.error('[approveProposal] NCKH error:', {
           personnel_id: item.personnel_id,

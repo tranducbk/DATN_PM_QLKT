@@ -13,7 +13,7 @@ export interface NienHanInputItem {
   chuc_vu?: string | null;
 }
 
-interface NienHanPersonnelRow {
+interface PersonnelWithUnitsRow {
   id: string;
   ho_ten: string | null;
   ngay_nhap_ngu: Date | null;
@@ -34,9 +34,9 @@ interface NienHanPersonnelRow {
  * @param personnelIds - QuanNhan ids referenced in the proposal items
  * @returns Map keyed by personnel id
  */
-export async function loadNienHanPersonnelMap(
+export async function loadPersonnelWithUnitsMap(
   personnelIds: string[]
-): Promise<Map<string, NienHanPersonnelRow>> {
+): Promise<Map<string, PersonnelWithUnitsRow>> {
   if (personnelIds.length === 0) return new Map();
   const rows = await quanNhanRepository.findManyRaw({
     where: { id: { in: personnelIds } },
@@ -56,7 +56,7 @@ export async function loadNienHanPersonnelMap(
       },
     },
   });
-  return new Map(rows.map(r => [r.id, r as NienHanPersonnelRow]));
+  return new Map(rows.map(r => [r.id, r as PersonnelWithUnitsRow]));
 }
 
 /**
@@ -70,7 +70,7 @@ export async function loadNienHanPersonnelMap(
  */
 export function buildNienHanPayloadItem(
   item: NienHanInputItem,
-  personnel: NienHanPersonnelRow | undefined,
+  personnel: PersonnelWithUnitsRow | undefined,
   nam: number,
   thang: number | null
 ) {

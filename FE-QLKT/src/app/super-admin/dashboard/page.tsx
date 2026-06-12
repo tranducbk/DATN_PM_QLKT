@@ -28,8 +28,8 @@ import {
   CheckCircleOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
-import { apiClient } from '@/lib/apiClient';
-import { getApiErrorMessage } from '@/lib/apiError';
+import { apiClient } from '@/lib/http/apiClient';
+import { getApiErrorMessage } from '@/lib/http/apiError';
 import { useTheme } from '@/components/ThemeProvider';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { useAuth } from '@/contexts/AuthContext';
@@ -37,7 +37,10 @@ import { ROLE_LABELS } from '@/constants/roles.constants';
 import { formatDateTime } from '@/lib/utils';
 
 const SuperAdminDashboardCharts = dynamic(
-  () => import('@/components/super-admin/SuperAdminDashboardCharts'),
+  () =>
+    import('@/components/super-admin/SuperAdminDashboardCharts').then(
+      mod => mod.SuperAdminDashboardCharts
+    ),
   {
     ssr: false,
     loading: () => (

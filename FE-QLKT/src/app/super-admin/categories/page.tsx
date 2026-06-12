@@ -19,7 +19,7 @@ import dynamic from 'next/dynamic';
 import { UnitsTable } from '@/components/categories/UnitsTable';
 import { UnitList } from '@/components/categories/UnitList';
 import { PositionsTable, type PositionRow } from '@/components/categories/PositionsTable';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient } from '@/lib/http/apiClient';
 import { useTheme } from '@/components/ThemeProvider';
 import { LoadingState } from '@/components/shared/LoadingState';
 import Link from 'next/link';

@@ -1,7 +1,7 @@
 # Sơ đồ gói (Package Diagram)
 
-> Notation UML chuẩn: package có tab, dependency nét đứt (`..>`). 3 sơ đồ: gói phía Client, gói phía Server, và gói chi tiết một chức năng.
-> Nguồn: `package-client.puml`, `package-server.puml`, `package-detail-personnel.puml`. Render bằng PlantUML extension (VS Code) hoặc `plantuml docs/diagrams/*.puml`.
+> Notation UML chuẩn: package có tab, dependency nét đứt (`..>`). 4 sơ đồ: gói phía Client, gói phía Server, gói chi tiết quản lý quân nhân, và gói chi tiết khen thưởng cá nhân hằng năm.
+> Nguồn: `package-client.puml`, `package-server.puml`, `package-detail-personnel.puml`, `package-detail-annual.puml`. Render bằng PlantUML extension (VS Code) hoặc `plantuml docs/diagrams/*.puml`.
 
 ---
 
@@ -115,3 +115,56 @@ pform ..> papi
 ```
 
 > Bố cục 3 tầng `Page → Component → API`: trang gọi component, component gọi `apiClient`. `PersonnelFormPage` dùng chung cho tạo + sửa.
+
+## 4. Sơ đồ gói chi tiết — Khen thưởng cá nhân hằng năm
+
+```plantuml
+@startuml package-detail-annual
+skinparam monochrome true
+skinparam shadowing false
+skinparam linetype ortho
+skinparam nodesep 25
+skinparam ranksep 45
+left to right direction
+title Thiết kế chi tiết gói nghiệp vụ Khen thưởng cá nhân hằng năm
+
+package "Routes" as routes {
+  rectangle "profile.route.ts" as proute
+}
+package "Middlewares" as mw {
+  rectangle "verifyToken" as vt
+  rectangle "requireAuth" as ra
+}
+package "Controllers" as ctrl {
+  rectangle "profileController\n.getAnnualProfile" as pc
+}
+package "Services" as svc {
+  rectangle "profileService\n.recalculateAnnualProfile" as ps
+  rectangle "computeChainContext" as ccc
+}
+package "Eligibility" as elig {
+  rectangle "checkChainEligibility\n(ham thuan)" as cce
+}
+package "Constants" as cons {
+  rectangle "PERSONAL_CHAIN_AWARDS" as pca
+}
+package "Repositories" as repo {
+  rectangle "danhHieu.repository.ts" as dr
+}
+package "Models" as models {
+  database "danh_hieu_hang_nam" as tbl
+}
+
+proute ..> vt
+proute ..> ra
+proute ..> pc
+pc ..> ps
+ps ..> ccc
+ps ..> cce
+cce ..> pca
+ps ..> dr
+dr ..> tbl
+@enduml
+```
+
+> Luồng 6 tầng `Route → Controller → Service → Eligibility → Repository → Models`. `checkChainEligibility` là hàm thuần đọc cấu hình `PERSONAL_CHAIN_AWARDS`, tách khỏi Service để dễ kiểm chứng.

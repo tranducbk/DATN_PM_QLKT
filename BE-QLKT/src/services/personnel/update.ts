@@ -8,6 +8,7 @@ import {
   donViTrucThuocRepository,
 } from '../../repositories/unit.repository';
 import { ROLES } from '../../constants/roles.constants';
+import { RESOURCE_SLUGS } from '../../constants/resourceSlugs.constants';
 import { GENDER } from '../../constants/gender.constants';
 import { NotFoundError, ValidationError, ForbiddenError } from '../../middlewares/errorHandler';
 import profileService from '../profile.service';
@@ -160,7 +161,7 @@ export async function updatePersonnel(
     }
   }
 
-  const currentUnitId = personnel.co_quan_don_vi_id || personnel.don_vi_truc_thuoc_id;
+  const currentUnitId = personnel.don_vi_truc_thuoc_id || personnel.co_quan_don_vi_id;
   if (unitId && unitId !== currentUnitId) {
     const [coQuanDonVi, donViTrucThuoc] = await Promise.all([
       coQuanDonViRepository.findIdById(unitId),
@@ -387,7 +388,7 @@ export async function updatePersonnel(
   } catch (recalcError) {
     void writeSystemLog({
       action: 'ERROR',
-      resource: 'personnel',
+      resource: RESOURCE_SLUGS.PERSONNEL,
       description: `Lỗi tính lại hồ sơ hằng năm quân nhân ${id}: ${recalcError}`,
     });
   }
@@ -404,7 +405,7 @@ export async function updatePersonnel(
     } catch (notifError) {
       void writeSystemLog({
         action: 'ERROR',
-        resource: 'personnel',
+        resource: RESOURCE_SLUGS.PERSONNEL,
         description: `Lỗi gửi thông báo chuyển đơn vị quân nhân ${id}: ${notifError}`,
       });
     }

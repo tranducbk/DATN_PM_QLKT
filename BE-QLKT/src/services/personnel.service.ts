@@ -168,6 +168,57 @@ class PersonnelService {
     };
   }
 
+  /**
+   * Enforces that the requesting user may view the given personnel's data.
+   * @param personnelId - Target personnel ID
+   * @param userRole - Requesting user's role
+   * @param userQuanNhanId - Requesting user's own personnel ID
+   * @param preloadedTarget - Target unit foreign keys when already loaded (skips a query)
+   * @returns Nothing
+   * @throws NotFoundError - When the target personnel does not exist
+   * @throws ForbiddenError - When a USER targets another personnel or a MANAGER targets out-of-unit personnel
+   */
+  async assertCanViewPersonnel(
+    personnelId: string,
+    userRole?: string,
+    userQuanNhanId?: string,
+    preloadedTarget?: { co_quan_don_vi_id: string | null; don_vi_truc_thuoc_id: string | null }
+  ): Promise<void> {
+    if (userRole === ROLES.SUPER_ADMIN || userRole === ROLES.ADMIN) {
+      return;
+    }
+
+    if (userRole === ROLES.USER) {
+      if (userQuanNhanId !== personnelId) {
+        throw new ForbiddenError('Bạn không có quyền xem thông tin này');
+      }
+      return;
+    }
+
+    if (userRole === ROLES.MANAGER && userQuanNhanId) {
+      const target = preloadedTarget ?? (await quanNhanRepository.findUnitScope(personnelId));
+      if (!target) {
+        throw new NotFoundError('Quân nhân');
+      }
+
+      const manager = await quanNhanRepository.findUnitScope(userQuanNhanId);
+      if (manager && manager.co_quan_don_vi_id) {
+        const donViTrucThuocList = await donViTrucThuocRepository.findIdsByCoQuanDonViId(
+          manager.co_quan_don_vi_id
+        );
+        const donViTrucThuocIds = donViTrucThuocList.map(dv => dv.id);
+
+        const isInCoQuanDonVi = target.co_quan_don_vi_id === manager.co_quan_don_vi_id;
+        const isInDonViTrucThuoc =
+          target.don_vi_truc_thuoc_id && donViTrucThuocIds.includes(target.don_vi_truc_thuoc_id);
+
+        if (!isInCoQuanDonVi && !isInDonViTrucThuoc) {
+          throw new ForbiddenError('Bạn không có quyền xem thông tin quân nhân ngoài đơn vị');
+        }
+      }
+    }
+  }
+
   /** Returns one personnel record by id. */
   async getPersonnelById(id, userRole, userQuanNhanId) {
     const personnel = await quanNhanRepository.findByIdForDetail(String(id));
@@ -176,33 +227,7 @@ class PersonnelService {
       throw new NotFoundError('Quân nhân');
     }
 
-    // USER can only view their own profile.
-    if (userRole === ROLES.USER && userQuanNhanId !== id) {
-      throw new ForbiddenError('Bạn không có quyền xem thông tin này');
-    }
-
-    // MANAGER can only view personnel in their unit scope.
-    if (userRole === ROLES.MANAGER && userQuanNhanId) {
-      const manager = await quanNhanRepository.findUnitScope(userQuanNhanId);
-
-      if (manager && manager.co_quan_don_vi_id) {
-        // Load all child units of manager's parent unit.
-        const donViTrucThuocList = await donViTrucThuocRepository.findIdsByCoQuanDonViId(
-          manager.co_quan_don_vi_id
-        );
-        const donViTrucThuocIds = donViTrucThuocList.map(dv => dv.id);
-
-        // Allow if personnel belongs to parent unit or any child unit.
-        const isInCoQuanDonVi = personnel.co_quan_don_vi_id === manager.co_quan_don_vi_id;
-        const isInDonViTrucThuoc =
-          personnel.don_vi_truc_thuoc_id &&
-          donViTrucThuocIds.includes(personnel.don_vi_truc_thuoc_id);
-
-        if (!isInCoQuanDonVi && !isInDonViTrucThuoc) {
-          throw new ForbiddenError('Bạn không có quyền xem thông tin quân nhân ngoài đơn vị');
-        }
-      }
-    }
+    await this.assertCanViewPersonnel(String(id), userRole, userQuanNhanId, personnel);
 
     return personnel;
   }
@@ -282,7 +307,6 @@ class PersonnelService {
         prismaTx
       );
 
-      // Create initial LichSuChucVu record.
       const ngayBatDau = new Date();
       await positionHistoryRepository.create(
         {
@@ -296,7 +320,6 @@ class PersonnelService {
         prismaTx
       );
 
-      // Create linked account.
       const account = await accountRepository.create(
         {
           username,
@@ -309,7 +332,6 @@ class PersonnelService {
 
       await adjustUnitCount(prismaTx, unit_id, isCoQuanDonVi, 'increment');
 
-      // Return personnel with account data.
       return {
         ...newPersonnel,
         TaiKhoan: {
@@ -384,7 +406,6 @@ class PersonnelService {
       await contributionProfileRepository.deleteMany({ quan_nhan_id: id }, prismaTx);
       await annualProfileRepository.deleteMany({ quan_nhan_id: id }, prismaTx);
 
-      // Delete personnel row.
       await quanNhanRepository.delete(String(id), prismaTx);
 
       if (unitId) {

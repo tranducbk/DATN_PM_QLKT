@@ -6,7 +6,7 @@
 
 import { Router } from 'express';
 import contributionAwardController from '../controllers/contributionMedal.controller';
-import { verifyToken, requireAdminOrManager, requireAdminOnly } from '../middlewares/auth';
+import { verifyToken, requireManager, requireAdminOnly } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
 import { excelUpload as upload } from '../configs/multer';
@@ -58,7 +58,7 @@ router.post(
 router.get(
   '/',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   contributionAwardController.getAll
 );
 
@@ -70,7 +70,7 @@ router.get(
 router.get(
   '/export',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   contributionAwardController.exportToExcel
 );
 
@@ -82,7 +82,7 @@ router.get(
 router.get(
   '/statistics',
   verifyToken,
-  requireAdminOrManager,
+  requireManager,
   contributionAwardController.getStatistics
 );
 

@@ -69,15 +69,6 @@ export interface HCBVTQEvaluationContext {
   hoTenByPersonnel: Map<string, string>;
 }
 
-/** Empty months bucket used as fallback when a personnel has no recorded history. */
-export function emptyMonthsByGroup(): PositionMonthsByGroup {
-  return {
-    [CONG_HIEN_HE_SO_GROUPS.LEVEL_07]: 0,
-    [CONG_HIEN_HE_SO_GROUPS.LEVEL_08]: 0,
-    [CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10]: 0,
-  };
-}
-
 /**
  * Returns the gender-aware required-month threshold for HCBVTQ eligibility.
  * @param gioiTinh - Personnel gender (GENDER.MALE / GENDER.FEMALE / null)

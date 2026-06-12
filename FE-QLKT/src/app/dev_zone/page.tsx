@@ -28,8 +28,8 @@ import {
 } from '@ant-design/icons';
 import Image from 'next/image';
 import { isAxiosError } from 'axios';
-import axiosInstance from '@/lib/axiosInstance';
-import { getApiErrorMessage } from '@/lib/apiError';
+import axiosInstance from '@/lib/http/axiosInstance';
+import { getApiErrorMessage } from '@/lib/http/apiError';
 import {
   DEV_ZONE_API,
   DEV_SESSION_KEY,
@@ -599,7 +599,7 @@ export default function DevZonePage() {
               ))}
             </div>
 
-            {/* Tính toán lại */}
+            {/* Recalculation */}
             <div className="dz-card">
               <div className="dz-card-title">
                 <ReloadOutlined />
@@ -760,7 +760,7 @@ export default function DevZonePage() {
               )}
             </div>
 
-            {/* Tiện ích */}
+            {/* Utilities */}
             <div className="dz-card">
               <div className="dz-card-title">
                 <ToolOutlined />
