@@ -59,10 +59,16 @@ class HccsvvStrategy implements ProposalStrategy {
         .map(i => i.personnel_id)
         .filter((id): id is string => Boolean(id));
       if (evalIds.length > 0) {
+        // Batch query HCCSVV đã có của những người trong đề xuất, để kiểm tra
+        // THỨ TỰ HẠNG: phải Ba → Nhì → Nhất, không nhảy cóc / không cấp ngược.
+        // SQL minh hoạ:
+        //   SELECT quan_nhan_id, danh_hieu, nam FROM "KhenThuongHCCSVV"
+        //     WHERE quan_nhan_id IN ('id1','id2', ...);
         const existingHCCSVV = await tenureMedalRepository.findManyRaw({
           where: { quan_nhan_id: { in: evalIds } },
           select: { quan_nhan_id: true, danh_hieu: true, nam: true },
         });
+        // Gom thành Map quan_nhan_id → [danh hiệu đã có] để tra O(1) trong vòng lặp.
         const hccsvvByPersonnel = new Map<string, { danh_hieu: string; nam: number }[]>();
         for (const r of existingHCCSVV) {
           const list = hccsvvByPersonnel.get(r.quan_nhan_id) || [];

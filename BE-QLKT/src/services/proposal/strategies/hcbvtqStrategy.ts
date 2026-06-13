@@ -136,6 +136,10 @@ class HcbvtqStrategy implements ProposalStrategy {
 
         if (!item.personnel_id) return baseData;
         try {
+          // Lấy TOÀN BỘ lịch sử chức vụ để tính SỐ THÁNG CỐNG HIẾN theo từng NHÓM
+          // HỆ SỐ — cơ sở xét hạng HCBVTQ. SQL minh hoạ:
+          //   SELECT he_so_chuc_vu, so_thang, ngay_bat_dau, ngay_ket_thuc
+          //     FROM "LichSuChucVu" WHERE quan_nhan_id = $personnelId;
           const histories = await positionHistoryRepository.findManyRaw({
             where: { quan_nhan_id: item.personnel_id },
             select: {
@@ -145,6 +149,12 @@ class HcbvtqStrategy implements ProposalStrategy {
               ngay_ket_thuc: true,
             },
           });
+          // Gộp tháng theo NHÓM HỆ SỐ: mỗi đoạn giữ chức cộng số tháng
+          // (ngay_bat_dau → min(ngay_ket_thuc, cutoffDate)) vào nhóm theo he_so_chuc_vu:
+          //   he_so 0.9-1.0 → nhóm cao  (đủ tháng ⇒ hạng Nhất)
+          //   he_so 0.8     → nhóm giữa (⇒ Nhì)
+          //   he_so 0.7     → nhóm thấp (⇒ Ba)
+          // cutoffDate = mốc chốt (vd cuối năm xét) để không tính tháng "tương lai".
           const monthsByGroup = aggregatePositionMonthsByGroup(histories, cutoffDate);
           return {
             ...baseData,

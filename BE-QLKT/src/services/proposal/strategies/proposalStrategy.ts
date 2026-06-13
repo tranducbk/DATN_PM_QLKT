@@ -19,6 +19,15 @@ import type { EditedProposalData } from '../../../types/proposal';
  *  Sau refactor: mỗi loại = 1 file `<type>Strategy.ts` implement interface
  *  `ProposalStrategy`. Dispatcher chỉ làm 1 việc: `getStrategy(type).X(...)`.
  *
+ *  ⚠️ IMPLEMENTS ≠ EXTENDS (điểm hay nhầm):
+ *    • `implements` (ở đây): interface KHÔNG có code, chỉ là HỢP ĐỒNG (danh sách
+ *      method bắt buộc). Mỗi `class XxxStrategy implements ProposalStrategy` phải
+ *      TỰ VIẾT ĐẦY ĐỦ cả 4 method — không có code "cha" nào chảy xuống để dùng lại.
+ *    • `extends` (kế thừa class): con nhận CODE của cha + override 1 phần. KHÔNG
+ *      dùng ở đây vì 7 loại logic khác hẳn, không có "hành vi cha" chung.
+ *    • Trùng logic → tách HELPER gọi chung (composition), KHÔNG kế thừa. Vd
+ *      HcqkqtStrategy + KncStrategy đều gọi `importSingleMedal(...)`.
+ *
  *  CÁCH HOẠT ĐỘNG:
  *    ┌─────────────────────┐    type    ┌─────────────────────┐
  *    │  proposalService    │ ─────────► │  REGISTRY (index)   │

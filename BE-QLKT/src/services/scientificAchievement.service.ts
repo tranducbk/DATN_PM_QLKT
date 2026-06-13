@@ -591,6 +591,25 @@ class ScientificAchievementService {
   }
 
   async confirmImport(validItems: ConfirmImportItem[], adminId: string) {
+    // ─── TRANSACTION CONFIRM: ghi lô thành tích NCKH NGUYÊN TỬ ──────────────────
+    // prisma.$transaction gom nhiều lệnh ghi thành 1 đơn vị "tất cả hoặc không":
+    //   • Mở:        BEGIN;
+    //   • Bên trong: chạy lần lượt các lệnh — LƯU Ý dùng `prismaTx` (client của
+    //                transaction), KHÔNG dùng `prisma` gốc, nếu không lệnh đó nằm
+    //                NGOÀI transaction → không được rollback chung.
+    //   • Không lỗi: COMMIT  → mọi INSERT có hiệu lực cùng lúc.
+    //   • Có throw:  ROLLBACK → huỷ HẾT, DB như chưa chạy gì.
+    // ⇒ Import 100 dòng mà dòng 50 ném lỗi → 49 dòng trước cũng bị huỷ (không để
+    //   lại dữ liệu nửa vời). Đây là tính ATOMICITY (A trong ACID).
+    //
+    // SQL minh hoạ (tương đương):
+    //   BEGIN;
+    //     INSERT INTO "ThanhTichKhoaHoc" (quan_nhan_id, nam, loai, mo_ta, ...) VALUES (...);
+    //     INSERT INTO "ThanhTichKhoaHoc" (...);   -- lặp cho từng dòng validItems
+    //   COMMIT;                                    -- hoặc ROLLBACK nếu có exception
+    //
+    // timeout (IMPORT_TRANSACTION_TIMEOUT): lô quá lớn chạy quá lâu → Prisma tự
+    // rollback để không giữ lock vô hạn làm nghẽn các request khác.
     return await prisma.$transaction(
       async prismaTx => {
         const results = [];

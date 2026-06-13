@@ -161,6 +161,10 @@ export async function updatePersonnel(
     }
   }
 
+  // DVTT-first (con → cha): 1 quân nhân có thể set CẢ ĐVTT (Ban) lẫn CQĐV (Phòng cha).
+  // Lấy đơn vị THẤP NHẤT/cụ thể nhất họ thực sự thuộc về → để khi đổi đơn vị bên dưới
+  // chỉ tăng/giảm so_luong đúng 1 đơn vị (Ban), tránh đếm nhầm/đếm trùng lên Phòng.
+  // ⚠️ Ngược với scope/notification (CQĐV-first) — đừng flip đồng loạt mọi `||`.
   const currentUnitId = personnel.don_vi_truc_thuoc_id || personnel.co_quan_don_vi_id;
   if (unitId && unitId !== currentUnitId) {
     const [coQuanDonVi, donViTrucThuoc] = await Promise.all([

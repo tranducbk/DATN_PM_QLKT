@@ -50,6 +50,15 @@ async function submitProposal(
   ghiChu: string | null = null,
   thang: number | null
 ) {
+  // Lấy tài khoản + quân nhân + đơn vị của NGƯỜI NỘP (Manager) trong 1 query
+  // (Prisma include = chuỗi JOIN) để biết đề xuất thuộc đơn vị nào. SQL minh hoạ:
+  //   SELECT t.*, q.*, cq.ten_don_vi, dv.ten_don_vi, dvcq.ten_don_vi
+  //     FROM "TaiKhoan" t
+  //     JOIN      "QuanNhan"       q    ON t.quan_nhan_id        = q.id
+  //     LEFT JOIN "CoQuanDonVi"    cq   ON q.co_quan_don_vi_id   = cq.id
+  //     LEFT JOIN "DonViTrucThuoc" dv   ON q.don_vi_truc_thuoc_id = dv.id
+  //     LEFT JOIN "CoQuanDonVi"    dvcq ON dv.co_quan_don_vi_id  = dvcq.id   -- CQĐV cha của ĐVTT
+  //     WHERE t.id = $userId;
   const user = await accountRepository.findUniqueRaw({
     where: { id: userId },
     include: {
