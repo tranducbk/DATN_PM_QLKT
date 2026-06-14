@@ -48,6 +48,14 @@ import { resolveUnit, buildUnitIdFields } from '../../helpers/unitHelper';
 
 export async function calculateContinuousYears(donViId: string, year: number) {
   year = Number(year);
+  // Lấy các năm đơn vị ĐẠT ĐVQT (Đơn vị Quyết thắng), mới nhất trước, để đếm
+  // CHUỖI LIÊN TỤC tính đến year-1. OR(...) vì donViId có thể là CQĐV hoặc ĐVTT.
+  // SQL minh hoạ:
+  //   SELECT nam, danh_hieu FROM "DanhHieuDonViHangNam"
+  //     WHERE (co_quan_don_vi_id = $donVi OR don_vi_truc_thuoc_id = $donVi)
+  //       AND nam <= $year - 1 AND danh_hieu = 'DVQT'
+  //     ORDER BY nam DESC;
+  // Vòng lặp dưới dừng NGAY khi gặp năm bị "đứt" (r.nam !== current) → độ dài chuỗi.
   const records = await danhHieuDonViHangNamRepository.findMany({
     where: {
       OR: [{ co_quan_don_vi_id: donViId }, { don_vi_truc_thuoc_id: donViId }],
@@ -72,6 +80,12 @@ export async function countBKBQPInStreak(donViId: string, year: number, dvqtStre
   year = Number(year);
   const streak = dvqtStreak ?? (await calculateContinuousYears(donViId, year));
   const startYear = year - 1 - streak + 1;
+  // Đếm số BKBQP đơn vị TRONG CỬA SỔ chuỗi ĐVQT (startYear → year-1) — BKBQP cũ
+  // ngoài cửa sổ tự rơi ra, buộc phải có BKBQP mới ở chu kỳ hiện tại. SQL minh hoạ:
+  //   SELECT COUNT(*) FROM "DanhHieuDonViHangNam"
+  //     WHERE (co_quan_don_vi_id = $donVi OR don_vi_truc_thuoc_id = $donVi)
+  //       AND nam BETWEEN $startYear AND $year - 1
+  //       AND nhan_bkbqp = TRUE;
   const count = await danhHieuDonViHangNamRepository.count({
     where: {
       OR: [{ co_quan_don_vi_id: donViId }, { don_vi_truc_thuoc_id: donViId }],

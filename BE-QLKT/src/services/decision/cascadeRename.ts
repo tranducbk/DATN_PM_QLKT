@@ -31,6 +31,27 @@ interface ProposalRow {
   data_cong_hien: Prisma.JsonValue | null;
 }
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  CASCADE RENAME số quyết định — đổi số QĐ ở MỌI nơi đang dùng
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  Đổi 1 số QĐ (vd "12/QĐ" → "15/QĐ") cần đồng bộ ở 2 NHÓM, theo 2 CÁCH khác nhau:
+ *
+ *  ① BẢNG KHEN THƯỞNG (cột QUAN HỆ so_quyet_dinh) → TỰ ĐỘNG, KHÔNG cần code.
+ *     FK tới "FileQuyetDinh"(so_quyet_dinh) khai báo ON UPDATE CASCADE, nên chỉ cần:
+ *        UPDATE "FileQuyetDinh" SET so_quyet_dinh = '15/QĐ' WHERE so_quyet_dinh = '12/QĐ';
+ *     → Postgres TỰ cập nhật so_quyet_dinh ở "DanhHieuHangNam", "KhenThuongHCCSVV",
+ *       "KhenThuongHCBVTQ", "HuanChuongQuanKyQuyetThang", ... (mọi bảng tham chiếu).
+ *
+ *  ② PAYLOAD ĐỀ XUẤT (cột JSON data_danh_hieu/_thanh_tich/_nien_han/_cong_hien)
+ *     → PHẢI sửa BẰNG CODE (hàm này). Vì số QĐ nằm BÊN TRONG chuỗi JSON, không phải
+ *     cột quan hệ, nên FK cascade KHÔNG chạm tới. Quét từng đề xuất, thay trong JSON.
+ *
+ *  Cả 2 nằm trong transaction đổi tên QĐ → đồng bộ hoặc rollback hết.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 /**
  * Cascade rename so_quyet_dinh across all proposal payloads (JSON columns only),
  * regardless of status. Award tables (relational columns) are auto-updated by
@@ -59,6 +80,10 @@ async function renameInProposalPayloads(
   oldSqd: string,
   newSqd: string
 ): Promise<{ scanned: number; updated: number }> {
+  // Quét MỌI đề xuất (mọi status) để sửa số QĐ nằm TRONG JSON payload.
+  // SQL minh hoạ:
+  //   SELECT id, data_danh_hieu, data_thanh_tich, data_nien_han, data_cong_hien
+  //     FROM "BangDeXuat";
   const proposals = (await proposalRepository.findManyRaw(
     {
       select: {
