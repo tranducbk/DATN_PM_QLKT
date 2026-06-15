@@ -30,6 +30,17 @@ import { IMPORT_TRANSACTION_TIMEOUT } from '../../constants/excel.constants';
 import { AWARD_EXCEL_SHEETS } from '../../constants/awardExcel.constants';
 import type { UnitAnnualAwardValidItem } from './types';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  UNIT ANNUAL IMPORT — preview (validate) + confirm (ghi DB) cho khen thưởng ĐƠN VỊ
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  Cùng khung 2-bước như cá nhân, nhưng định danh bằng MÃ ĐƠN VỊ (ma_don_vi):
+ *  parse gom mã → query CQDV + DVTT theo mã (buildUnitLookupMaps) → tra đơn vị
+ *  cho từng dòng. Cờ BKBQP/BKTTCP đơn vị cũng không import qua Excel (như cá nhân).
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 export async function previewImport(buffer: Buffer) {
   const workbook = await loadWorkbook(buffer);
   const worksheet = getAndValidateWorksheet(workbook, {
@@ -67,6 +78,8 @@ export async function previewImport(buffer: Buffer) {
   });
   const validDecisionNumbers = new Set(existingDecisions.map(d => d.so_quyet_dinh));
 
+  // Mã đơn vị có thể là CQDV hoặc DVTT → query SONG SONG cả 2 bảng theo `IN (mã)`
+  // (batch, tránh N+1) rồi buildUnitLookupMaps để tra cứu khi validate từng dòng.
   const [coQuanDonViList, donViTrucThuocList] = await Promise.all([
     coQuanDonViRepository.findManyRaw({
       where: { ma_don_vi: { in: maDonViList } },

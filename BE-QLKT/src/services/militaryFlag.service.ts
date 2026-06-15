@@ -102,6 +102,10 @@ interface MilitaryFlagFilters {
 }
 
 class MilitaryFlagService {
+  /*
+   * HC QKQT IMPORT — preview (validate) + confirm (ghi DB). 1 hạng duy nhất, mỗi
+   * quân nhân nhận 1 lần (lifetime) → confirm có check trùng để chặn cấp lại.
+   */
   async previewImport(buffer: Buffer) {
     const workbook = await loadWorkbook(buffer);
     const worksheet = getAndValidateWorksheet(workbook, {
@@ -464,6 +468,8 @@ class MilitaryFlagService {
     );
   }
 
+  // HC QKQT cũng 1 hạng duy nhất → không dropdown danh hiệu, 1 cột điền ('K').
+  // Cùng khuôn template chung qua buildTemplate.
   async exportTemplate(personnelIds: string[] = [], repeatMap: Record<string, number> = {}) {
     const { personnelList, decisionNumbers } = await fetchTemplateData({
       personnelIds,
@@ -550,6 +556,7 @@ class MilitaryFlagService {
     };
   }
 
+  // Export HC QKQT theo khuôn chung (getAll → addRow + sanitize → Workbook).
   async exportToExcel(filters: MilitaryFlagFilters = {}) {
     const { data } = await this.getAll(filters, 1, 10000);
 

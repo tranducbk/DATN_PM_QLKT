@@ -30,7 +30,10 @@ export async function fetchPersonnelForTemplate(
     },
   });
 
-  // `IN` does not preserve input order — reorder to the selected sequence so STT/rows match the modal.
+  // `WHERE id IN (...)` trả về theo thứ tự DB (thường là PK), KHÔNG theo thứ tự
+  // mình truyền. Nếu để nguyên thì STT trong file mẫu lệch so với thứ tự admin
+  // chọn ở modal. Cách sửa: index records vào Map theo id rồi map lại đúng
+  // personnelIds. Vd truyền ['c','a','b'] → DB trả [a,b,c] → reorder về [c,a,b].
   const byId = new Map(records.map(r => [r.id, r]));
   return personnelIds.map(id => byId.get(id)).filter(Boolean) as PersonnelTemplateRecord[];
 }
@@ -78,6 +81,9 @@ export async function fetchTemplateData(
 ): Promise<TemplateDataBundle> {
   const { personnelIds = [], loaiKhenThuong, includeDecision = true } = input;
 
+  // 2 query độc lập (quân nhân + số QĐ) → chạy SONG SONG bằng Promise.all thay
+  // vì await tuần tự, cắt đôi latency. Loại không cần dropdown số QĐ thì truyền
+  // includeDecision=false → thay query bằng Promise.resolve([]) (khỏi đụng DB).
   const [personnelList, decisionNumbers] = await Promise.all([
     fetchPersonnelForTemplate(personnelIds),
     includeDecision ? fetchDecisionsForTemplate(loaiKhenThuong) : Promise.resolve([]),

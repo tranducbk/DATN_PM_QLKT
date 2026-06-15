@@ -472,6 +472,11 @@ export async function getCommemorationMedalsByPersonnel(personnelId: string): Pr
   }
 }
 
+// Factory cho luồng import 2 bước — 6+ loại khen thưởng dùng chung, chỉ khác URL:
+// • PREVIEW gửi FILE qua multipart/form-data (BE parse + validate, không ghi DB).
+// • CONFIRM gửi JSON { items } (dòng admin đã chọn) → BE ghi DB.
+// Tách factory để khỏi lặp boilerplate FormData/post cho từng loại.
+
 /** Create a preview-import function for a given endpoint. */
 function createPreviewImport(url: string) {
   return async (file: File): Promise<ApiResponse> => {

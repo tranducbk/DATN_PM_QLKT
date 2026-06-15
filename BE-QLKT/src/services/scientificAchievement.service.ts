@@ -259,6 +259,9 @@ class ScientificAchievementService {
     };
   }
 
+  // NCKH là THÀNH TÍCH nghiên cứu (không phải khen thưởng) nên filter theo `loai`
+  // (DTKH/SKKH) thay vì `danh_hieu`. Khung export y hệt các loại khác: build where
+  // tăng dần → query → addRow + sanitizeRowData → return Workbook (controller lo HTTP).
   async exportToExcel(filters: ExportFilters = {}) {
     const { nam, loai, don_vi_id } = filters;
 
@@ -295,6 +298,8 @@ class ScientificAchievementService {
 
     achievements.forEach((achievement, index) => {
       const quanNhan = achievement.QuanNhan;
+      // Tên đơn vị hiển thị ưu tiên DVTT (đơn vị cụ thể của quân nhân) rồi mới CQDV.
+      // cap_bac/chuc_vu ưu tiên giá trị lưu tại bản ghi thành tích, fallback hồ sơ.
       const donVi = quanNhan?.DonViTrucThuoc?.ten_don_vi ?? quanNhan?.CoQuanDonVi?.ten_don_vi ?? '';
 
       worksheet.addRow(sanitizeRowData({
@@ -315,6 +320,9 @@ class ScientificAchievementService {
     return workbook;
   }
 
+  // Template NCKH dùng chung buildTemplate như personal. Không truyền danhHieuOptions
+  // (NCKH chọn loại qua cột riêng trong NCKH_TEMPLATE_COLUMNS, không phải dropdown
+  // danh hiệu), nhưng vẫn lấy decisionNumbers để gắn dropdown số QĐ.
   async generateTemplate(personnelIds: string[] = [], repeatMap: Record<string, number> = {}) {
     const { personnelList, decisionNumbers } = await fetchTemplateData({
       personnelIds,
@@ -329,6 +337,11 @@ class ScientificAchievementService {
     });
   }
 
+  /*
+   * NCKH IMPORT — preview (validate) + confirm (ghi DB). Là THÀNH TÍCH (DTKH/SKKH),
+   * 1 quân nhân có NHIỀU thành tích/năm (khác khen thưởng 1 record/năm) → không
+   * chặn trùng theo (id, năm), chỉ validate loại + mô tả + số QĐ.
+   */
   async previewImport(buffer: Buffer) {
     const workbook = await loadWorkbook(buffer);
     const worksheet = getAndValidateWorksheet(workbook, { sheetName: AWARD_EXCEL_SHEETS.NCKH });

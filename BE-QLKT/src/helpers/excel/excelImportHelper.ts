@@ -145,6 +145,9 @@ function getCellString(row: ExcelJS.Row, col: number): string {
 function getCellNumber(row: ExcelJS.Row, col: number): number | null {
   const value = row.getCell(col).value;
   if (value === null || value === undefined) return null;
+  // ExcelJS trả number trực tiếp nếu cell là số; còn lại (text, hoặc object
+  // {formula,result}) ép qua String→parseFloat. Number.isFinite loại NaN/Infinity
+  // → cell không phải số trả null thay vì giá trị rác.
   const num = typeof value === 'number' ? value : parseFloat(String(value).trim());
   return Number.isFinite(num) ? num : null;
 }

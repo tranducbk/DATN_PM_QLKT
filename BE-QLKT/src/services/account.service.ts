@@ -665,6 +665,9 @@ class AccountService {
       }
     }
 
+    // Đổi vai trò → quyền hạn thay đổi, nhưng JWT cũ vẫn còn hiệu lực tới khi hết
+    // hạn. Đẩy 'force_logout' qua socket buộc session cũ đăng nhập lại để nhận
+    // token mang role mới (tránh dùng quyền cũ sau khi đã bị đổi).
     if (roleChanging) {
       emitToUser(id, 'force_logout', {
         message: 'Vai trò tài khoản của bạn vừa được thay đổi. Vui lòng đăng nhập lại.',

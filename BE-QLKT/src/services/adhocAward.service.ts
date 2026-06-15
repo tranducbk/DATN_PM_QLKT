@@ -22,8 +22,10 @@
  *  ATTT — UPLOAD FILE:
  *  - multer adhocAwardUpload accept ảnh + doc + xls (xem configs/multer.ts).
  *  - Limit 50MB/file (lớn hơn 10MB của proposal vì có ảnh).
- *  - Lưu vào storage/adhoc-awards/ với filename sanitized.
- *  - File path trong DB → KHÔNG expose raw path cho FE (qua URL có auth).
+ *  - File QĐ → uploads/decisions/ (dedup tên "(1)(2)", persistDecisionFile).
+ *  - File đính kèm → storage/proposals/ (tên <timestamp>_<sanitized>).
+ *  - DB chỉ lưu metadata (đường dẫn tương đối) trong JSON files_dinh_kem;
+ *    FE xem qua signed URL, không chạm đường dẫn thật.
  *
  *  NOTIFICATION:
  *  Sau khi tạo, notify đối tượng được khen + manager đơn vị qua socket.
@@ -202,6 +204,8 @@ class AdhocAwardService {
     const baseName = path.basename(sanitized, ext);
     let filename = sanitized;
     let counter = 1;
+    // Giữ tên gốc cho dễ nhận biết; trùng thì thêm "(1)(2)" tránh ghi đè file
+    // QĐ khác cùng tên (giống decisionUpload — xem configs/multer.ts).
     while (
       await fs
         .access(path.join(uploadsDir, filename))
@@ -311,6 +315,8 @@ class AdhocAwardService {
       await fs.mkdir(attachedDir, { recursive: true });
 
       for (const file of attachedFiles) {
+        // Prefix timestamp → tên file vật lý không đụng nhau giữa các lần
+        // upload; tên gốc (decodedName) vẫn giữ trong DB để hiển thị.
         const timestamp = Date.now();
         let decodedName = file.originalname;
         try {

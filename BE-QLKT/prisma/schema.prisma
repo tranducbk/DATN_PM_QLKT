@@ -575,6 +575,10 @@ model DanhHieuDonViHangNam {
 }
 
 // 22. Bảng File Quyết định
+// Registry trung tâm cho số quyết định: 8 bảng khen thưởng FK tới đây qua
+// so_quyet_dinh. file_path lưu đường dẫn tương đối tới PDF (không lưu binary);
+// nhiều danh hiệu có thể dùng chung 1 số QĐ → chỉ 1 file. Sync khi duyệt đề
+// xuất qua decisionMappings.syncDecisionFiles.
 model FileQuyetDinh {
   id               String   @id @default(cuid()) @db.VarChar(30)
   so_quyet_dinh    String   @unique @db.VarChar(100) // Số quyết định (unique)

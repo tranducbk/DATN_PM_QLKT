@@ -63,6 +63,8 @@ class ContributionAwardService {
    * @param repeatMap - Map of personnel id to repeat count for pre-fill rows
    * @returns Excel workbook buffer
    */
+  // HCBVTQ (cống hiến) cùng khuôn template chung qua buildTemplate (giống HCCSVV):
+  // dropdown 3 hạng + 3 cột điền. Chỉ khác hằng số cột/option đặc thù loại này.
   async exportTemplate(personnelIds: string[] = [], repeatMap: Record<string, number> = {}) {
     const { personnelList, decisionNumbers } = await fetchTemplateData({
       personnelIds,
@@ -147,6 +149,9 @@ class ContributionAwardService {
    * @param filters - Optional filters applied before export
    * @returns Excel workbook buffer
    */
+  // Export dữ liệu: tái dùng getAll như HCCSVV. Riêng HCBVTQ có cột "thời gian
+  // cống hiến" lưu dạng object {years, months} → convertThoiGian quy về tổng tháng
+  // trước khi ghi cell (Excel không hiển thị object).
   async exportToExcel(filters: Record<string, unknown> = {}) {
     const { data } = await this.getAll(filters, 1, 10000);
 

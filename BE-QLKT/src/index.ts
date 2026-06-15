@@ -44,6 +44,8 @@ testDatabaseConnection();
 
 // Cron schedule managed by devZone.route.ts (reads from system_settings table)
 
+// Gắn Socket.IO vào CÙNG httpServer của Express (chung 1 port) → real-time
+// notification + force_logout. Phải init trước khi server.listen() bên dưới.
 initSocket(httpServer);
 
 warnInsecureCookieConfig();

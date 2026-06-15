@@ -226,6 +226,9 @@ export function ImportReviewPageContent({ config }: { config: ImportReviewConfig
     pageSize: DEFAULT_PAGE_SIZE,
   });
 
+  // Nguồn dữ liệu trang review = sessionStorage (do ExcelImportSection ghi sau khi
+  // preview). Gắn __key (index) cho mỗi dòng làm rowKey ổn định cho Table +
+  // rowSelection. Mặc định TICK SẴN toàn bộ dòng hợp lệ để admin xác nhận nhanh.
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem(config.sessionStorageKey);
@@ -297,6 +300,8 @@ export function ImportReviewPageContent({ config }: { config: ImportReviewConfig
       return;
     }
 
+    // Map các key đã tick → item gốc, lọc null, và XOÁ __key (field FE nội bộ)
+    // trước khi gửi BE — BE không cần biết tới __key, tránh lọt field thừa.
     const selectedItems = selectedRowKeys
       .map(key => previewData.valid.find(r => r.__key === key))
       .filter((r): r is PreviewItem => r != null)
@@ -312,6 +317,7 @@ export function ImportReviewPageContent({ config }: { config: ImportReviewConfig
 
       if (result?.success) {
         message.success(config.successMessage(selectedItems.length));
+        // Ghi DB xong → dọn sessionStorage (tránh dùng lại dữ liệu cũ) rồi rời trang.
         sessionStorage.removeItem(config.sessionStorageKey);
         router.push('/admin/awards');
       } else {

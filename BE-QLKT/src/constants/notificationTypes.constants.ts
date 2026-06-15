@@ -1,3 +1,18 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  NOTIFICATION CONSTANTS — danh mục loại thông báo + loại tài nguyên
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  NOTIFICATION_TYPES: enum mã loại noti. Lưu vào cột `type` của ThongBao và
+ *  gửi xuống FE để chọn icon + điều hướng phù hợp khi user click.
+ *
+ *  RESOURCE_TYPES: loại tài nguyên gốc mà noti trỏ tới (đề xuất, khen thưởng,
+ *  quân nhân, ...). Kết hợp với `tai_nguyen_id` để FE dựng link đến đúng trang.
+ *
+ *  `as const` để giữ literal type → tránh hardcode chuỗi rải rác (xem AP-6).
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 export const NOTIFICATION_TYPES = {
   PROPOSAL_SUBMITTED: 'PROPOSAL_SUBMITTED',
   PROPOSAL_APPROVED: 'PROPOSAL_APPROVED',

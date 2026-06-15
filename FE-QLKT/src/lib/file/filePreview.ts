@@ -1,3 +1,21 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  FILE PREVIEW — mở file đính kèm bằng signed URL ngắn hạn
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  FLOW:
+ *  1. Map đường dẫn API cũ (/api/proposals/uploads/<file>) → đường dẫn storage
+ *     thật (storage/proposals/<file>) mà BE whitelist.
+ *  2. Gọi /api/files/sign (kèm token) → nhận signed URL hạn 5 phút.
+ *  3. window.open(signed URL) → browser tự render PDF/ảnh ở tab mới.
+ *
+ *  WHY không link thẳng tới file:
+ *  - BE không serve static; phải qua signed URL có chữ ký + hạn dùng.
+ *  - Tab mới không gửi được Bearer token → credential nằm trong URL ký sẵn.
+ *  - FE không cần biết file lưu vật lý ở đâu, không lộ đường dẫn thật.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import { message } from 'antd';
 import { signFileUrl } from '@/lib/api/files';
 import { BASE_URL } from '@/configs';

@@ -168,6 +168,8 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
         HCQKQT: apiClient.exportMilitaryFlag.bind(apiClient),
         NCKH: apiClient.exportScientificAchievements.bind(apiClient),
       };
+      // Chọn hàm export theo tab đang mở (mỗi loại khen thưởng 1 endpoint riêng);
+      // không khớp thì fallback về export chung. Hàm trả về Blob (bytes .xlsx).
       const exportFn = exportFnMap[activeTab] ?? apiClient.exportAwards.bind(apiClient);
       const blob = await exportFn(params);
 
@@ -181,6 +183,13 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
               ? `_${denNam}`
               : '';
 
+      // Tải Blob về máy bằng "thẻ <a> ảo" — không có API download trực tiếp:
+      // 1. createObjectURL: tạo URL tạm trỏ vào Blob trong RAM (blob:http://...).
+      // 2. Tạo thẻ <a download="tên.xlsx"> trỏ vào URL đó, gắn vào DOM.
+      // 3. .click() lập trình → trình duyệt tải file với đúng tên ở thuộc tính download.
+      //    Vd tên: danh_sach_ca_nhan_hang_nam_2025_2026-06-15.xlsx
+      // 4. revokeObjectURL: GIẢI PHÓNG URL tạm (nếu không sẽ rò rỉ RAM giữ Blob).
+      // 5. removeChild: gỡ thẻ <a> ảo khỏi DOM cho sạch.
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

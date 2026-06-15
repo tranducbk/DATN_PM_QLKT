@@ -311,6 +311,9 @@ class AnnualRewardController {
     });
   });
 
+  // PREVIEW: nhận file (multer memoryStorage → req.file.buffer trong RAM), gọi
+  // service validate (không ghi DB), ghi audit IMPORT_PREVIEW rồi trả {valid, errors}.
+  // originalname re-decode latin1→utf8 vì tên file tiếng Việt bị multipart mã hoá hỏng.
   previewImport = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
     const file = req.file;
@@ -332,6 +335,9 @@ class AnnualRewardController {
     return ResponseHelper.success(res, { data: result, message: 'Thao tác thành công' });
   });
 
+  // CONFIRM: nhận JSON { items } (dòng admin đã chọn ở preview) — KHÔNG upload lại
+  // file. Route đã validate() Zod trước; service re-validate + ghi DB trong transaction.
+  // Sau khi ghi xong → notifyOnImport fire-and-forget (catch riêng, không chặn response).
   confirmImport = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
     const body = req.body as ConfirmImportBody;
@@ -371,12 +377,15 @@ class AnnualRewardController {
   getTemplate = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as GetTemplateQuery;
     const personnelIds = parsePersonnelIdsFromQuery(query);
+    // repeat_map = JSON dạng { quanNhanId: số_dòng } → prefill nhiều dòng cho 1 người
+    // (khen thưởng nhiều năm). FE đẩy lên dưới dạng chuỗi nên phải JSON.parse.
     const repeatMap: Record<string, number> = {};
     if (query.repeat_map) {
       try {
         const parsed = JSON.parse(query.repeat_map);
         Object.assign(repeatMap, parsed);
       } catch (e) {
+        // JSON hỏng → bỏ qua repeat_map (vẫn xuất template 1 dòng/người), chỉ ghi log.
         void writeSystemLog({
           action: 'ERROR',
           resource: AWARD_SLUGS.ANNUAL_REWARDS,
@@ -386,16 +395,23 @@ class AnnualRewardController {
     }
 
     const workbook = await annualRewardService.exportTemplate(personnelIds, repeatMap);
+    // writeBuffer() serialize cây object Workbook (trong RAM) → Buffer nhị phân
+    // .xlsx (thực chất là 1 file ZIP chứa các XML). Đây là bước "đóng gói" cuối.
     const buffer = await workbook.xlsx.writeBuffer();
 
+    // Content-Type = MIME chuẩn của .xlsx → trình duyệt/Excel nhận đúng định dạng.
     res.setHeader(
       'Content-Type',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     );
+    // Content-Disposition 'attachment' → trình duyệt BẬT hộp thoại tải về thay vì
+    // mở inline. filename gợi ý tên + ngày, vd: mau_nhap_ca_nhan_hang_nam_2026-06-15.xlsx
     res.setHeader(
       'Content-Disposition',
       `attachment; filename="mau_nhap_ca_nhan_hang_nam_${new Date().toISOString().slice(0, 10)}.xlsx"`
     );
+    // send(buffer): gửi nguyên bytes về client (KHÔNG dùng ResponseHelper JSON —
+    // đây là binary download, không phải payload { success, data }).
     return res.status(200).send(buffer);
   });
 
@@ -405,6 +421,8 @@ class AnnualRewardController {
     const user = req.user;
     const { nam, danh_hieu, don_vi_id } = query;
     const role = user?.role;
+    // Đơn vị của user lấy theo CQDV trước, DVTT sau — MANAGER thường quản ở cấp
+    // CQDV (đơn vị cha), nên ưu tiên CQDV khi xác định phạm vi được xem.
     const userUnitId = user?.co_quan_don_vi_id ?? user?.don_vi_truc_thuoc_id;
 
     const filters: Record<string, unknown> = {
@@ -418,11 +436,16 @@ class AnnualRewardController {
       filters.personnel_ids = parsedPersonnelIds;
     }
 
+    // BẢO MẬT — chặn vượt quyền: MANAGER chỉ được xuất dữ liệu đơn vị mình. Dù FE
+    // gửi don_vi_id khác, ở đây GHI ĐÈ về đơn vị của chính MANAGER. ADMIN/SUPER_ADMIN
+    // không vào nhánh này → xuất theo filter tự chọn (kể cả toàn bộ).
     if (role === ROLES.MANAGER && userUnitId) {
       filters.don_vi_id = userUnitId;
     }
 
     const workbook = await annualRewardService.exportToExcel(filters);
+    // Đóng gói + tải về giống hệt getTemplate (xem giải thích writeBuffer / header
+    // ở trên): chỉ khác tên file là "danh_sach_..." vì đây là dữ liệu, không phải mẫu.
     res.setHeader(
       'Content-Type',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'

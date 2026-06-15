@@ -1,6 +1,21 @@
 import type { Prisma } from '../generated/prisma';
 import { prisma } from '../models';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  SYSTEM LOG REPOSITORY — lớp truy cập DB cho bảng system_logs
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  Repo mỏng, chỉ wrap Prisma client cho model SystemLog (create/findMany/
+ *  count/delete...). KHÔNG chứa business logic — việc lọc theo role, build
+ *  where, phân trang nằm ở systemLogs.service.ts.
+ *
+ *  Mọi method nhận tham số `tx` (mặc định = prisma) để có thể chạy trong
+ *  transaction: truyền `Prisma.TransactionClient` khi cần ghi log cùng một
+ *  transaction với thao tác nghiệp vụ (atomic — log và data cùng commit/rollback).
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 type PrismaLike = typeof prisma | Prisma.TransactionClient;
 
 export const systemLogRepository = {

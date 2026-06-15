@@ -32,6 +32,9 @@ class SystemLogsController {
     const pageNum = Number(page);
     const limitNum = Number(limit);
 
+    // Truyền role + quan_nhan_id của người gọi xuống service để service tự lọc
+    // log theo phạm vi (visibility matrix + ẩn backup + unit-scope cho MANAGER).
+    // Controller KHÔNG tự lọc — mọi quyết định bảo mật nằm ở service.
     const result = await systemLogsService.getLogs({
       page: pageNum,
       limit: limitNum,
@@ -45,6 +48,7 @@ class SystemLogsController {
       quanNhanId: currentUser.quan_nhan_id,
     });
 
+    // service trả null khi role không có quyền xem log (vd: USER) → 403.
     if (!result) {
       return ResponseHelper.forbidden(res, 'Không có quyền xem nhật ký hệ thống');
     }
@@ -65,6 +69,7 @@ class SystemLogsController {
   });
 
   getResources = catchAsync(async (req: Request, res: Response) => {
+    // Truyền role để service ẩn resource 'backup' với role thấp hơn SUPER_ADMIN.
     const data = await systemLogsService.getResources(req.user!.role);
     return ResponseHelper.success(res, { message: 'Lấy danh sách tài nguyên thành công', data });
   });

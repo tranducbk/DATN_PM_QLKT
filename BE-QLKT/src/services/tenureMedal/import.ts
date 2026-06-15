@@ -29,6 +29,18 @@ import { validateHCCSVVRankOrder } from '../../helpers/awardValidation/tenureMed
 import { calculateServiceMonths, formatServiceDuration } from '../../helpers/serviceYearsHelper';
 import type { HccsvvValidItem } from './types';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  HCCSVV (niên hạn) IMPORT — preview (validate) + confirm (ghi DB)
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  Cùng khung 2-bước. Đặc thù HCCSVV: 3 hạng Ba → Nhì → Nhất nhận tuần tự theo
+ *  niên hạn, KHÔNG nhảy bậc/trùng → confirm sort theo hạng rồi check orderConflicts.
+ *  previewImport auto-pick sheet (loại trừ sheet kỹ thuật) nhưng vẫn chặn nhầm
+ *  file cá nhân (ANNUAL_PERSONAL) ngay sau khi đọc.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 /**
  * Preview HCCSVV import: validates Excel data without saving to DB.
  * @param buffer - Raw Excel file buffer
@@ -36,6 +48,7 @@ import type { HccsvvValidItem } from './types';
  */
 export async function previewImport(buffer: Buffer) {
   const workbook = await loadWorkbook(buffer);
+  // Auto-pick sheet dữ liệu, bỏ qua 2 sheet kỹ thuật (_CapBac/_QuyetDinh) dùng cho dropdown.
   const worksheet = getAndValidateWorksheet(workbook, {
     excludeSheetNames: ['_CapBac', '_QuyetDinh'],
   });
@@ -515,6 +528,10 @@ export async function confirmImport(validItems: HccsvvValidItem[]) {
     list.push({ danh_hieu: r.danh_hieu, nam: r.nam });
     existingByPersonnel.set(r.quan_nhan_id, list);
   }
+  // Order check tuần tự: sort theo năm rồi duyệt, mỗi người tích luỹ dần các hạng
+  // đã có (DB + các dòng trước trong cùng lô) → validateHCCSVVRankOrder đảm bảo
+  // nhận đúng thứ tự Ba→Nhì→Nhất, không nhảy bậc. Phải gộp cả batchList vì trong
+  // 1 file có thể nhập nhiều hạng cho cùng người — xét lẫn nhau, không chỉ với DB.
   const orderConflicts: string[] = [];
   const sortedItems = [...validItems].sort((a, b) => a.nam - b.nam);
   const accumulated = new Map<string, { danh_hieu: string; nam: number }[]>();

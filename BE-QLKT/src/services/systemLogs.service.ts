@@ -58,10 +58,14 @@ const VISIBLE_ROLES: Record<string, string[]> = {
   [ROLES.SUPER_ADMIN]: [ROLES.USER, ROLES.MANAGER, ROLES.ADMIN, ROLES.SUPER_ADMIN, 'SYSTEM'],
 };
 
+// Trả về danh sách ID tài khoản thuộc phạm vi đơn vị của MANAGER, dùng để giới
+// hạn log mà MANAGER được xem (chỉ thấy hành động của người trong đơn vị mình).
 async function getManagerAccountIds(quanNhanId: string): Promise<string[]> {
   const manager = await quanNhanRepository.findUnitScope(quanNhanId);
   if (!manager) return [];
 
+  // Manager thường ở cấp CQDV → phạm vi gồm cả CQDV đó VÀ mọi DVTT con bên dưới.
+  // Nếu không có CQDV mà chỉ có DVTT → phạm vi gói gọn trong đúng DVTT đó.
   const unitFilter = manager.co_quan_don_vi_id
     ? {
         OR: [
@@ -120,10 +124,12 @@ class SystemLogsService {
     const { page, limit, search, action, resource, startDate, endDate, actorRole, userRole, quanNhanId } = params;
 
     const visibleRoles = VISIBLE_ROLES[userRole];
-    if (!visibleRoles) return null;
+    if (!visibleRoles) return null; // role không nằm trong matrix (vd: USER) → cấm xem
 
     const where: Record<string, any> = {};
 
+    // Nếu user lọc theo 1 role cụ thể VÀ role đó nằm trong phạm vi được thấy → lọc đúng role đó.
+    // Ngược lại (không lọc, hoặc lọc role ngoài phạm vi) → giới hạn về toàn bộ role được phép thấy.
     if (actorRole && visibleRoles.includes(actorRole)) {
       where.actor_role = actorRole;
     } else {
@@ -135,6 +141,9 @@ class SystemLogsService {
       where.nguoi_thuc_hien_id = { in: accountIds };
     }
 
+    // Quyền xem log lỗi (action='ERROR') bật/tắt theo role qua DevZone setting
+    // (vd: allow_view_errors_admin). Nếu không được phép: luôn ẩn ERROR, kể cả khi
+    // user cố lọc action='ERROR' (rơi vào nhánh `{ not: 'ERROR' }`).
     const roleKey = userRole.toLowerCase();
     const canViewErrors = await isFeatureEnabled(`allow_view_errors_${roleKey}`);
     if (!canViewErrors) {
@@ -145,7 +154,13 @@ class SystemLogsService {
 
     if (search) where.description = { contains: search, mode: 'insensitive' };
 
-    // Backup logs are restricted to SUPER_ADMIN only
+    // ATTT: log resource='backup' CHỈ SUPER_ADMIN được xem (xem header file).
+    // Với role thấp hơn:
+    //   - lọc resource='backup' → trả EMPTY ngay, KHÔNG báo lỗi (tránh leak sự
+    //     tồn tại của loại log backup qua message từ chối).
+    //   - lọc resource khác → giữ nguyên filter của user.
+    //   - không lọc resource → mặc định loại bỏ mọi log backup khỏi kết quả.
+    // SUPER_ADMIN không bị chặn, chỉ áp filter resource nếu họ tự chọn.
     if (userRole !== ROLES.SUPER_ADMIN) {
       if (resource) {
         if (resource === 'backup') return { logs: [], total: 0, stats: { create: 0, delete: 0, update: 0 } };
@@ -211,6 +226,8 @@ class SystemLogsService {
    * @returns List of resource strings visible to that role
    */
   async getResources(userRole: string) {
+    // Phải lọc 'backup' cùng quy tắc như getLogs — nếu không, dropdown filter
+    // ở UI sẽ vô tình hé lộ resource 'backup' cho ADMIN/MANAGER (leak ATTT).
     const where = userRole !== ROLES.SUPER_ADMIN ? { resource: { not: 'backup' } } : {};
     const resources = await systemLogRepository.findManyRaw({
       select: { resource: true },

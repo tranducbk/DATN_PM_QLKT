@@ -126,6 +126,8 @@ class DecisionController {
     }
 
     const ngayKyDate = typeof ngay_ky === 'string' ? new Date(ngay_ky) : ngay_ky;
+    // decisionUpload (diskStorage) đã ghi file xuống disk; chỉ lưu lại đường
+    // dẫn tương đối để dựng signed URL khi xem, không lưu binary vào DB.
     const file_path = file ? `uploads/decisions/${file.filename}` : null;
     const decision = await decisionService.createDecision({
       so_quyet_dinh,
@@ -210,6 +212,8 @@ class DecisionController {
         .status(result.decision ? 200 : 404)
         .json({ success: false, message: result.error, data: result.decision });
     }
+    // Trả signed view_url (hạn 5 phút) thay vì để FE tự ghép link tới file —
+    // FE không bao giờ chạm đường dẫn thật, link lộ ra cũng tự hết hạn.
     return ResponseHelper.success(res, {
       data: {
         file_path: result.file_path,

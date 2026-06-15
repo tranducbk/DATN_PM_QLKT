@@ -1,3 +1,17 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  NOTIFICATION REPOSITORY — lớp Prisma cho bảng ThongBao (notifications)
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  Gom toàn bộ thao tác DB của bảng thông báo về một chỗ → service không gọi
+ *  prisma trực tiếp, dễ test và đổi truy vấn (xem CLAUDE.md AP-1).
+ *
+ *  Mỗi method nhận tham số `tx` (mặc định = prisma global): cho phép chạy
+ *  trong transaction khi caller cần ghi noti chung transaction với business
+ *  operation; nếu không truyền thì dùng prisma client thường.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import type { Prisma } from '../generated/prisma';
 import { prisma } from '../models';
 

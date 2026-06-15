@@ -2,6 +2,32 @@ import crypto from 'crypto';
 import path from 'path';
 import { JWT_SECRET } from '../../configs';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  SIGNED FILE URL — phục vụ file nội bộ an toàn không cần token trong URL
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  BÀI TOÁN:
+ *  - Hệ thống KHÔNG dùng express.static → mọi file phải qua API có kiểm soát.
+ *  - Nhưng để browser mở PDF/ảnh ở tab mới (native viewer) thì request đi
+ *    thẳng từ <a>/window.open → KHÔNG gắn được header Authorization.
+ *  - Nhúng JWT vào URL thì token sống lâu, dễ lộ qua history/log/referrer.
+ *
+ *  GIẢI PHÁP — signed URL ngắn hạn:
+ *  - Chữ ký = HMAC-SHA256(JWT_SECRET, "path:exp:downloadName").
+ *  - URL tự nó là credential, hết hạn sau 5 phút (SIGNED_URL_TTL_MS).
+ *  - Sửa path/exp/name → chữ ký sai → 403. Không đoán được chữ ký vì không
+ *    biết JWT_SECRET.
+ *
+ *  3 LỚP PHÒNG THỦ (verifySignedFileUrl + isAllowedFilePath):
+ *  ① Hết hạn: now > exp → reject (link cũ vô dụng).
+ *  ② Chữ ký: so khớp bằng crypto.timingSafeEqual → chống timing attack (so
+ *     sánh byte thường rò rỉ thời gian → đoán dần chữ ký).
+ *  ③ Whitelist thư mục: chỉ 3 folder hợp lệ + chặn ".." → path traversal
+ *     không escape ra ngoài storage được (vd "../../.env").
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 const SIGNED_URL_TTL_MS = 5 * 60 * 1000;
 const PROJECT_ROOT = path.join(__dirname, '..', '..', '..');
 

@@ -1,3 +1,21 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  NOTIFICATION BUILDER — QUÂN NHÂN (personnel)
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  Builder thông báo cho các thay đổi về quân nhân do Admin thực hiện:
+ *  - notifyManagerOnPersonnelAdded : thêm quân nhân mới  → báo MANAGER đơn vị.
+ *  - notifyOnPersonnelTransfer     : chuyển quân nhân sang đơn vị khác.
+ *
+ *  Điểm phức tạp nằm ở CHUYỂN ĐƠN VỊ — phải quy mọi đơn vị về CQDV (cấp mà
+ *  MANAGER quản lý) rồi mới quyết định báo ai:
+ *  - Cùng CQDV (chỉ đổi DVTT bên trong): chỉ báo MANAGER của CQDV đó 1 lần.
+ *  - Khác CQDV: báo MANAGER đơn vị MỚI ("chuyển đến") và MANAGER đơn vị CŨ
+ *    ("chuyển đi"), tránh báo trùng nếu một người quản cả hai.
+ *  Ngoài MANAGER, luôn báo cho chính quân nhân (nếu có tài khoản).
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import {
   NOTIFICATION_TYPES,
   RESOURCE_TYPES,
@@ -28,6 +46,8 @@ interface NotificationInput {
   [key: string]: unknown;
 }
 
+// Admin thêm quân nhân mới → báo MANAGER quản lý CQDV của quân nhân đó.
+// personnel.don_vi_id ở đây mang nghĩa CQDV (cấp mà MANAGER phụ trách).
 async function notifyManagerOnPersonnelAdded(
   personnel: PersonnelBasicInfo,
   adminUsername: string
@@ -76,6 +96,8 @@ interface UnitInfo {
   isCoQuanDonVi: boolean;
 }
 
+// Admin chuyển quân nhân giữa các đơn vị. So sánh CQDV cũ/mới để quyết định
+// kịch bản thông báo, rồi luôn báo thêm cho chính quân nhân.
 async function notifyOnPersonnelTransfer(
   personnel: PersonnelBasicInfo,
   oldUnit: UnitInfo | null,
@@ -86,6 +108,8 @@ async function notifyOnPersonnelTransfer(
     const notifications: NotificationInput[] = [];
     const adminDisplayName = await getDisplayName(adminUsername);
 
+    // Quy mọi đơn vị (kể cả DVTT) về id của CQDV cha — vì MANAGER quản ở cấp
+    // CQDV. Nếu đơn vị đã là CQDV thì dùng luôn id của nó.
     const getCoQuanDonViId = async (unitInfo: UnitInfo | null): Promise<string | null> => {
       if (!unitInfo || !unitInfo.id) return null;
 
@@ -100,10 +124,12 @@ async function notifyOnPersonnelTransfer(
     const oldCoQuanDonViId = await getCoQuanDonViId(oldUnit);
     const newCoQuanDonViId = await getCoQuanDonViId(newUnit);
 
+    // Cùng CQDV nghĩa là chỉ đổi DVTT bên trong → MANAGER vẫn là người đó.
     const isSameCoQuanDonVi =
       oldCoQuanDonViId && newCoQuanDonViId && oldCoQuanDonViId === newCoQuanDonViId;
 
     if (isSameCoQuanDonVi) {
+      // Chuyển nội bộ trong cùng CQDV: chỉ cần báo MANAGER của CQDV đó một lần.
       const managers = await accountRepository.findManyRaw({
         where: {
           role: ROLES.MANAGER,
@@ -130,6 +156,8 @@ async function notifyOnPersonnelTransfer(
         });
       });
     } else {
+      // Khác CQDV: báo riêng MANAGER đơn vị mới ("chuyển đến") và đơn vị cũ
+      // ("chuyển đi") với nội dung khác nhau.
       if (newCoQuanDonViId) {
         const newUnitManagers = await accountRepository.findManyRaw({
           where: {
@@ -173,6 +201,8 @@ async function notifyOnPersonnelTransfer(
         });
 
         oldUnitManagers.forEach(manager => {
+          // Một MANAGER có thể quản cả CQDV cũ lẫn mới → tránh báo trùng:
+          // nếu đã được báo ở nhánh "chuyển đến" thì không báo lại "chuyển đi".
           const alreadyNotified = notifications.some(
             (n: NotificationInput) => n.nguoi_nhan_id === manager.id
           );
@@ -192,6 +222,8 @@ async function notifyOnPersonnelTransfer(
       }
     }
 
+    // Luôn báo cho chính quân nhân (nếu có tài khoản), bất kể cùng hay khác
+    // CQDV — đây là người trực tiếp bị ảnh hưởng bởi việc chuyển đơn vị.
     const personnelAccount = await accountRepository.findFirstRaw({
       where: {
         quan_nhan_id: personnel.id,

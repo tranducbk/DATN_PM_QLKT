@@ -1,3 +1,28 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  NOTIFICATION BUILDER — THÊM KHEN THƯỞNG HÀNG LOẠT (bulk add)
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  Khi Admin thêm trực tiếp khen thưởng cho NHIỀU quân nhân và/hoặc NHIỀU đơn
+ *  vị cùng lúc (không qua quy trình đề xuất). File chỉ có 1 hàm public
+ *  notifyOnBulkAwardAdded, xử lý 2 nhánh độc lập:
+ *
+ *  1) Nhánh CÁ NHÂN (personnelIds): với mỗi quân nhân →
+ *     - báo chính họ (liệt kê tên các danh hiệu vừa nhận),
+ *     - báo MANAGER quản lý đơn vị của họ (gộp 1 lần/đơn vị).
+ *  2) Nhánh ĐƠN VỊ (unitIds, chỉ với DON_VI_HANG_NAM) → báo MANAGER của đơn vị.
+ *
+ *  TỐI ƯU HIỆU NĂNG (nhánh cá nhân): thay vì query MANAGER trong vòng lặp từng
+ *  quân nhân (N+1), hàm gom toàn bộ đơn vị → query MANAGER MỘT lần → dựng Map
+ *  donViId → managers để tra cứu trong loop. Đồng thời dedupe để mỗi MANAGER
+ *  chỉ nhận 1 thông báo dù quản lý nhiều quân nhân được thêm.
+ *
+ *  titleData chứa chi tiết danh hiệu theo từng quân nhân/đơn vị; getDanhHieuName
+ *  đổi mã danh hiệu sang tên tiếng Việt. Toàn bộ bọc try/catch trả 0 khi lỗi vì
+ *  thông báo là tác vụ phụ, không được chặn thao tác thêm khen thưởng.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import {
   NOTIFICATION_TYPES,
   RESOURCE_TYPES,
@@ -116,6 +141,10 @@ export async function notifyOnBulkAwardAdded(
         const personnel = account.QuanNhan;
         if (!personnel) continue;
 
+        // Lọc các dòng titleData thuộc riêng quân nhân này rồi dựng tên hiển
+        // thị của từng danh hiệu. Tên field nguồn khác nhau theo loại đề xuất:
+        // NCKH lấy `loai`, các loại còn lại lấy `danh_hieu`; HC_QKQT/KNC tên
+        // danh hiệu suy trực tiếp từ loại đề xuất.
         const userAwards: string[] = [];
         const userTitleData = titleData.filter(
           (item: TitleDataItem) => item.personnel_id === personnel.id
@@ -164,6 +193,9 @@ export async function notifyOnBulkAwardAdded(
               : `/user/dashboard`,
         });
 
+        // Báo MANAGER của đơn vị (CQDV ưu tiên, DVTT dự phòng) qua Map đã dựng
+        // sẵn. Dedupe: nếu MANAGER này đã có thông báo (do quản nhiều quân nhân
+        // trong cùng lô) thì không thêm nữa.
         const donViId = personnel.co_quan_don_vi_id || personnel.don_vi_truc_thuoc_id;
         if (donViId) {
           const managers = managersByDonVi.get(donViId) ?? [];
@@ -191,8 +223,11 @@ export async function notifyOnBulkAwardAdded(
       }
     }
 
+    // Nhánh khen thưởng ĐƠN VỊ: chỉ áp dụng cho danh hiệu đơn vị hằng năm.
     if (unitIds && unitIds.length > 0 && awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
       for (const unitId of unitIds) {
+        // unitId có thể là DVTT hoặc CQDV — tra song song cả hai bảng rồi lấy
+        // bản tìm được (DVTT ưu tiên vì đó là đơn vị cụ thể hơn).
         const [donViTrucThuoc, coQuanDonVi] = await Promise.all([
           donViTrucThuocRepository.findUniqueRaw({
             where: { id: unitId },
@@ -206,6 +241,8 @@ export async function notifyOnBulkAwardAdded(
         const donVi = donViTrucThuoc ?? coQuanDonVi;
 
         if (!donVi) continue;
+        // Suy ra id CQDV để tìm MANAGER: nếu là DVTT lấy co_quan_don_vi_id cha;
+        // nếu bản thân đã là CQDV thì dùng chính id của nó.
         const coQuanDonViId =
           'co_quan_don_vi_id' in donVi ? (donVi.co_quan_don_vi_id ?? donVi.id) : donVi.id;
 
@@ -225,6 +262,8 @@ export async function notifyOnBulkAwardAdded(
           },
         });
 
+        // Tìm tên danh hiệu cụ thể của đơn vị này; nếu không có thì message bên
+        // dưới fallback về nhãn loại khen thưởng chung (awardTypeName).
         const unitTitleData = titleData.find((item: TitleDataItem) => item.don_vi_id === unitId);
         const danhHieu = unitTitleData?.danh_hieu ? getDanhHieuName(unitTitleData.danh_hieu) : '';
 

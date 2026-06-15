@@ -90,6 +90,8 @@ class NotificationService {
       system_log_id,
     } = data;
 
+    // Bước ① — lưu DB trước. Tên cột DB là tiếng Việt (nguoi_nhan_id,
+    // tai_nguyen_id, ...) nên phải map từ field tiếng Anh của input sang.
     const notification = await notificationRepository.create({
       nguoi_nhan_id: recipient_id,
       recipient_role,
@@ -102,6 +104,8 @@ class NotificationService {
       nhat_ky_he_thong_id: system_log_id,
     });
 
+    // Bước ② — chỉ push real-time khi noti có người nhận cụ thể.
+    // recipient_id = null nghĩa là noti theo role (không nhắm 1 user) → bỏ qua emit.
     if (recipient_id) {
       emitNotificationToUser(recipient_id, notification as unknown as Record<string, unknown>);
     }
@@ -124,10 +128,13 @@ class NotificationService {
     const { page = 1, limit = 20, isRead, type } = filters;
     const skip = (page - 1) * limit;
 
+    // Luôn khóa theo userId → user chỉ thấy noti gửi cho chính mình.
     const where: Prisma.ThongBaoWhereInput = {
       nguoi_nhan_id: userId,
     };
 
+    // Filter optional: chỉ thêm điều kiện khi FE truyền. isRead phân biệt
+    // false (chưa đọc) với undefined (không lọc) nên dùng !== undefined.
     if (isRead !== undefined) {
       where.is_read = isRead;
     }
@@ -136,6 +143,7 @@ class NotificationService {
       where.type = type;
     }
 
+    // Lấy trang dữ liệu + đếm tổng song song (2 query độc lập) để giảm latency.
     const [notifications, total] = await Promise.all([
       notificationRepository.findManyRaw({
         skip: Number(skip),
@@ -176,6 +184,9 @@ class NotificationService {
   }
 
   async markAsRead(notificationId: string, userId: string): Promise<ThongBao> {
+    // Query kèm nguoi_nhan_id để chặn user đánh dấu noti của người khác.
+    // Không tìm thấy → có thể noti không tồn tại HOẶC không thuộc user này;
+    // cả hai đều trả NotFound (không lộ sự tồn tại của noti người khác).
     const notification = await notificationRepository.findManyRaw({
       where: {
         id: notificationId,
@@ -197,6 +208,8 @@ class NotificationService {
   }
 
   async markAllAsRead(userId: string): Promise<Prisma.BatchPayload> {
+    // Chỉ update các noti CHƯA đọc của user → tránh ghi đè readAt cũ
+    // và giảm số dòng phải update (đã đọc rồi thì bỏ qua).
     const result = await notificationRepository.updateMany(
       {
         nguoi_nhan_id: userId,
@@ -234,6 +247,8 @@ class NotificationService {
     return { message: `Đã xóa ${result.count} thông báo`, deleted: result.count };
   }
 
+  // Dọn rác định kỳ: xóa noti ĐÃ đọc và đọc cách đây > 30 ngày, tránh
+  // bảng phình mãi. Noti chưa đọc luôn giữ lại dù cũ đến đâu.
   async cleanupOldNotifications(): Promise<Prisma.BatchPayload> {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);

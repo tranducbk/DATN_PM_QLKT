@@ -42,6 +42,29 @@ import type {
   ConfirmImportItem,
 } from './types';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  ANNUAL REWARD IMPORT — 2 flow: PREVIEW (chỉ validate) + CONFIRM (ghi DB)
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  Vì sao tách 2 bước? Import hàng loạt rủi ro cao — tách để admin THẤY TRƯỚC kết
+ *  quả validate (dòng nào hợp lệ/lỗi vì sao) rồi mới chọn dòng để ghi:
+ *
+ *   • previewImport(buffer): đọc file → validate TỪNG dòng → trả {valid[], errors[]}.
+ *     KHÔNG ghi DB. FE lưu kết quả vào sessionStorage, render bảng review.
+ *   • confirmImport(validItems): nhận lại dòng admin đã chọn → RE-VALIDATE (dữ liệu
+ *     có thể đổi giữa 2 bước) → ghi trong transaction (all-or-nothing).
+ *   • importFromExcelBuffer(buffer): đường import 1-bước (validate + ghi luôn),
+ *     dùng cho luồng cũ/không cần review.
+ *
+ *  Cả 3 dùng chung resolveAnnualRewardImportContext để parse + batch-query 1 lần.
+ *  THỨ TỰ validate (preview): file rỗng → cờ chuỗi → thiếu field → ID có thật →
+ *  tên khớp → năm hợp lệ → danh hiệu hợp lệ → số QĐ tồn tại → trùng trong file →
+ *  trùng DB → đang chờ duyệt. Mỗi lỗi `continue` sang dòng kế (gom hết lỗi, không
+ *  dừng ở lỗi đầu) để admin sửa 1 lần.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 async function resolveAnnualRewardImportContext(buffer: Buffer): Promise<AnnualRewardImportContext> {
   const parsed = await parseAnnualRewardImport(buffer);
 
@@ -411,6 +434,9 @@ export async function previewImport(buffer: Buffer): Promise<PreviewResult> {
 
     total++;
 
+    // Cờ chuỗi BKBQP/CSTDTQ/BKTTCP cố ý KHÔNG cho import qua Excel — chúng cần số
+    // QĐ riêng + ràng buộc điều kiện chuỗi phức tạp, bắt nhập trên màn hình để
+    // validate đúng. Phát hiện cờ bật trong file → báo lỗi dòng đó ngay.
     if (parseBooleanValue(bkbqpRaw)) {
       errors.push({
         row: rowNumber,
@@ -658,6 +684,9 @@ export async function confirmImport(
     'data_danh_hieu',
     (item, proposal) => (item.personnel_id ? `${item.personnel_id}_${proposal.nam}` : null)
   );
+  // RE-VALIDATE ở confirm (không tin dữ liệu preview): giữa lúc admin xem preview
+  // và bấm xác nhận, người khác có thể đã tạo đề xuất chờ duyệt cho cùng quân
+  // nhân+năm → chặn ghi đè. Gom hết xung đột rồi throw 1 lần (không ghi nửa vời).
   const pendingConflicts: string[] = [];
   for (const item of validItems) {
     if (pendingKeys.has(`${item.personnel_id}_${item.nam}`)) {
@@ -714,6 +743,10 @@ export async function confirmImport(
     throw new ValidationError(decisionErrors.join('\n'));
   }
 
+  // Ghi cả lô trong 1 transaction (all-or-nothing). upsertRaw theo unique key
+  // (quan_nhan_id, nam): chưa có → create, đã có → update. Mỗi item suy ra cờ
+  // chuỗi từ danh_hieu (BKBQP/CSTDTQ/BKTTCP) và spread điều kiện số QĐ tương ứng;
+  // danh hiệu dạng "bằng khen" thì danh_hieu lưu null (chỉ set cờ + số QĐ riêng).
   return await prisma.$transaction(
     async prismaTx => {
       const results: DanhHieuHangNam[] = [];

@@ -24,12 +24,16 @@ class NotificationController {
   getNotifications = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as GetNotificationsQuery;
     const { page, limit } = parsePagination(query);
+    // req.user do verifyToken middleware gắn vào → luôn truyền user.id xuống
+    // service để mọi user chỉ truy vấn được noti của chính mình.
     const currentUser = req.user!;
     const { isRead, type } = query;
 
     const result = await notificationService.getNotificationsByUserId(currentUser.id, {
       page,
       limit,
+      // Query string luôn là string → quy đổi 'true'/'false' sang boolean,
+      // giữ undefined khi FE không truyền (không lọc theo trạng thái đọc).
       isRead: isRead !== undefined ? isRead === 'true' : undefined,
       type,
     });

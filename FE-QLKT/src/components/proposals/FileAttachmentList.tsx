@@ -35,6 +35,8 @@ function isServerFile(file: ServerFile | LocalFile): file is ServerFile {
 
 function getDisplayName(file: ServerFile | LocalFile): string {
   if (isServerFile(file)) {
+    // Tên gốc có thể đã bị encode (%E1%BA%BF...) khi lưu — decode để hiển thị
+    // tiếng Việt; bọc try/catch vì chuỗi "%" không hợp lệ sẽ làm decode throw.
     const name = file.originalName || file.originalname || file.filename || '';
     try {
       return name.includes('%') ? decodeURIComponent(name) : name;
@@ -47,9 +49,12 @@ function getDisplayName(file: ServerFile | LocalFile): string {
 
 function handleView(file: ServerFile | LocalFile) {
   if (isServerFile(file)) {
+    // File đã lưu trên server → mở qua signed URL (không lộ đường dẫn thật).
     const displayName = file.originalName || file.originalname || file.filename || 'document.pdf';
     previewFileWithApi(`/api/proposals/uploads/${file.filename}`, displayName);
   } else if (file.originFileObj) {
+    // File vừa chọn, chưa upload → xem trực tiếp bằng blob URL trong RAM, revoke
+    // sau 1s để giải phóng bộ nhớ (đủ thời gian tab mới load xong).
     const url = URL.createObjectURL(file.originFileObj);
     window.open(url, '_blank');
     setTimeout(() => URL.revokeObjectURL(url), 1000);

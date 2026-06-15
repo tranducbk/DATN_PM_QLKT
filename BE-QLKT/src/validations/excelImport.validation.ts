@@ -1,6 +1,27 @@
 import { z } from 'zod';
 import { YEAR_MIN, YEAR_MAX } from '../constants/validation.constants';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  EXCEL IMPORT VALIDATION — Zod schema cho bước CONFIRM (route validate())
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  Đây là chốt chặn ở RANH GIỚI HTTP cho bước confirmImport: body { items: [...] }
+ *  do FE gửi lên (KHÔNG phải file — file đã được parse ở bước preview). Validate
+ *  shape trước khi vào service → service không phải tự kiểm kiểu dữ liệu thô.
+ *
+ *  Tái dùng qua composition (DRY):
+ *   • personnelImportItemBase: field chung mọi loại cá nhân (id, năm, cấp/chức...).
+ *   • wrapItemsSchema(x): bọc thành { items: array(x).min(1) } — schema chung cho
+ *     mọi endpoint confirm, chỉ khác phần item bên trong.
+ *   • Loại có danh hiệu → .extend danh_hieu; KNC/HCQKQT 1 hạng → dùng base trơn;
+ *     NCKH thêm loai+mo_ta; đơn vị dùng unit_id thay personnel_id.
+ *
+ *  LƯU Ý: Zod object mặc định STRIP key lạ → field FE thừa bị loại tự động, không
+ *  cần .passthrough (đúng rule security: không nhận field ngoài schema).
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 const personnelImportItemBase = {
   personnel_id: z.string().trim().min(1, 'ID quân nhân là bắt buộc'),
   nam: z

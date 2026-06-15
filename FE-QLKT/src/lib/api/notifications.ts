@@ -1,3 +1,25 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  API NOTIFICATIONS — lớp wrapper gọi API thông báo của FE
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  Mỗi hàm bọc 1 endpoint REST của BE (/api/notifications/*), trả về kiểu
+ *  thống nhất ApiResponse<T>. Các hàm:
+ *    - getNotifications:            lấy danh sách (có phân trang + lọc đã đọc/loại)
+ *    - getUnreadNotificationCount:  đếm số thông báo chưa đọc (badge ở chuông)
+ *    - markNotificationAsRead:      đánh dấu 1 thông báo đã đọc
+ *    - markAllNotificationsAsRead:  đánh dấu tất cả đã đọc
+ *    - deleteNotification:          xóa 1 thông báo
+ *    - deleteAllNotifications:      xóa tất cả thông báo
+ *
+ *  Mọi hàm theo cùng pattern try/catch: thành công trả {success, data, ...};
+ *  lỗi thì nuốt exception và trả {success:false, message} với message tiếng
+ *  Việt đã chuẩn hóa qua getApiErrorMessage — caller không cần tự try/catch,
+ *  chỉ cần kiểm tra res.success. Vì sao thống nhất shape thay vì throw? Để
+ *  component gọi xử lý lỗi đồng nhất (hiện message.error) mà không vỡ UI.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import axiosInstance from '@/lib/http/axiosInstance';
 import { getApiErrorMessage } from '@/lib/http/apiError';
 import type { ApiResponse } from '@/lib/types/common';

@@ -27,6 +27,25 @@ import {
   UNIT_ANNUAL_TEMPLATE_COLUMNS,
 } from '../../constants/awardExcel.constants';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  UNIT ANNUAL AWARD — EXCEL EXPORT (khen thưởng ĐƠN VỊ hằng năm)
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  Giống personal (annualReward/excel.ts) ở khung 2 path template/data, NHƯNG có
+ *  2 khác biệt đáng chú ý:
+ *
+ *   ① exportTemplate TỰ DỰNG template inline (set fill/dropdown/border tay) thay
+ *      vì gọi buildTemplate() như personal. Đây là pattern cũ trùng lặp — nếu
+ *      refactor sau này nên gộp về buildTemplate cho nhất quán. Hiện giữ nguyên
+ *      vì cột đơn vị (ma_don_vi/ten_don_vi) khác personnel.
+ *
+ *   ② exportToExcel + getStatistics có ROLE-SCOPING: MANAGER chỉ được xuất/thống
+ *      kê đơn vị MÌNH quản lý; ADMIN thấy tất cả. Đây là chốt bảo mật dữ liệu —
+ *      KHÔNG để manager xuất chéo đơn vị khác.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 export async function exportTemplate(
   unitIds: string[] = [],
   repeatMap: Record<string, number> = {}
@@ -67,6 +86,10 @@ export async function exportTemplate(
     orderBy: { nam: 'desc' },
   });
   const decisionList = existingDecisions.map(d => d.so_quyet_dinh).filter(Boolean);
+  // Dropdown số QĐ: chọn inline vs sheet ẩn theo độ dài list (giống logic
+  // createDecisionValidation bên helper, ở đây viết tay vì path tự dựng template).
+  // List ngắn → nhúng "a,b,c"; list dài vượt giới hạn ký tự Excel → đổ sang sheet
+  // ẩn _QuyetDinh rồi trỏ range.
   let soQdValidation = null;
   if (decisionList.length > 0) {
     const formulaStr = decisionList.join(',');
@@ -90,6 +113,8 @@ export async function exportTemplate(
   }
 
   if (unitIds && unitIds.length > 0) {
+    // Đơn vị nằm ở 2 bảng khác nhau (CQDV cấp trên, DVTT cấp dưới) → query cả 2
+    // theo id rồi gộp vào 1 Map để tra cứu thống nhất. unitType đánh dấu nguồn.
     const coQuanDonVis = await coQuanDonViRepository.findManyRaw({
       where: { id: { in: unitIds } },
     });
@@ -178,6 +203,13 @@ export async function exportTemplate(
   return workbook;
 }
 
+/**
+ * Exports approved unit annual awards, scoped to the caller's role.
+ * @param filters - Optional year / title filters
+ * @param userRole - Caller role (ADMIN sees all, MANAGER sees own unit only)
+ * @param userQuanNhanId - Caller personnel id, used to resolve manager's unit
+ * @returns Workbook with one row per matching unit award
+ */
 export async function exportToExcel(
   filters: Record<string, any> = {},
   userRole: string,
@@ -185,10 +217,14 @@ export async function exportToExcel(
 ) {
   const { nam, danh_hieu } = filters;
 
+  // Chỉ xuất bản ghi ĐÃ DUYỆT (status APPROVED) — không lộ đề xuất đang chờ.
   const where: Record<string, any> = { status: PROPOSAL_STATUS.APPROVED };
   if (nam) where.nam = nam;
   if (danh_hieu) where.danh_hieu = danh_hieu;
 
+  // ROLE-SCOPING: MANAGER bị ép thêm điều kiện đơn vị của chính mình → dù FE gửi
+  // filter gì cũng KHÔNG xuất được đơn vị khác. ADMIN bỏ qua block này (thấy hết).
+  // Tra đơn vị của manager qua findUnitScope; ưu tiên CQDV (cấp cao hơn) trước DVTT.
   if (userRole === ROLES.MANAGER && userQuanNhanId) {
     const user = await quanNhanRepository.findUnitScope(userQuanNhanId);
 
@@ -264,6 +300,9 @@ export async function getStatistics(
     where,
   });
 
+  // Đếm theo danh hiệu bằng reduce: gặp key lần đầu → khởi tạo {danh_hieu, count:0},
+  // sau đó count++. Vd [DVQT, DVQT, DVTT] → { DVQT:{count:2}, DVTT:{count:1} }.
+  // Gom trong app (không GROUP BY ở DB) vì số bản ghi nhỏ + cần cả 2 chiều thống kê.
   const byDanhHieu = awards.reduce((acc, award) => {
     const key = award.danh_hieu;
     if (!acc[key]) {

@@ -34,6 +34,19 @@ import {
 } from '../../helpers/awardValidation/contributionMedalHighestRank';
 import type { ContributionAwardValidItem } from './types';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  HCBVTQ (cống hiến) IMPORT — preview (validate) + confirm (ghi DB)
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  Cùng khung 2-bước như annualReward, NHƯNG đặc thù HCBVTQ:
+ *   • 3 hạng Ba → Nhì → Nhất, nhận theo thứ tự, KHÔNG được nhảy/hạ bậc → confirm
+ *     có downgrade check (xem block downgradeErrors).
+ *   • Điều kiện dựa trên THỜI GIAN CỐNG HIẾN (cần lịch sử chức vụ) → preview phải
+ *     query position history để tính, không chỉ đọc file.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 /**
  * Previews HCBVTQ import from Excel (validation only, no DB writes).
  * @param buffer - Raw Excel file buffer
@@ -41,6 +54,8 @@ import type { ContributionAwardValidItem } from './types';
  */
 export async function previewImport(buffer: Buffer) {
   const workbook = await loadWorkbook(buffer);
+  // sheetName cố định (không auto-pick) → ép admin dùng đúng mẫu HCBVTQ, tránh
+  // nhầm sheet loại khác.
   const worksheet = getAndValidateWorksheet(workbook, {
     sheetName: AWARD_EXCEL_SHEETS.HCBVTQ,
   });
@@ -504,6 +519,9 @@ export async function confirmImport(validItems: ContributionAwardValidItem[]) {
     });
     return total;
   };
+  // Downgrade check: HCBVTQ xét theo thời gian giữ chức vụ ở từng nhóm hệ số
+  // (LEVEL_07/08/09_10). Tính tổng tháng mỗi nhóm rồi đối chiếu ngưỡng yêu cầu
+  // (nữ có ngưỡng riêng) → chặn nhập hạng cao hơn mức thời gian cho phép.
   const downgradeErrors: string[] = [];
   for (const item of validItems) {
     const months: PositionMonthsByGroup = {

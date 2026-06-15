@@ -4,16 +4,17 @@
  * ════════════════════════════════════════════════════════════════════════════
  *
  *  FLOW:
- *  1. Tra cứu so_quyet_dinh → lấy filename từ FileQuyetDinh.
- *  2. previewFileWithApi → axios fetch blob (auth Bearer) → open viewer.
+ *  1. Tra cứu so_quyet_dinh → BE lookup FileQuyetDinh, trả về view_url đã ký
+ *     sẵn (signed URL hạn 5 phút) nếu quyết định có file đính kèm.
+ *  2. window.open(view_url) → browser render PDF ở tab mới.
  *
- *  WHY 2-step lookup:
- *  - User biết số QĐ ("123/QĐ-HV"), không biết filename lưu.
- *  - Backend filename random (timestamp+uuid) chống collision.
- *  - Helper hide complexity.
+ *  WHY tra cứu theo số QĐ (không truyền filename):
+ *  - User biết số QĐ ("123/QĐ-HV"), không biết tên file lưu trên server.
+ *  - Tên file do BE đặt ngẫu nhiên (dedup/timestamp) → FE không đoán được.
+ *  - BE tập trung logic lookup + ký URL; FE chỉ cần mở link.
  *
- *  ATTT: filename qua /api/proposals/uploads/:filename, server có path
- *  traversal guard (xem proposal.controller.ts:getPdfFile).
+ *  ATTT: view_url là signed URL (HMAC + hạn dùng) tới /api/files/view —
+ *  không lộ token, không lộ đường dẫn thật, sửa URL là hỏng chữ ký.
  * ════════════════════════════════════════════════════════════════════════════
  */
 

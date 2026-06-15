@@ -138,6 +138,9 @@ export function useSocket(
         }
         return;
       }
+      // Lỗi connect khác (không phải hết hạn token): có thể axios interceptor đã
+      // refresh token ở 1 API call khác → đồng bộ lại token mới nhất từ localStorage
+      // để lần socket auto-reconnect sau gửi đúng token, tránh lặp lại connect_error.
       const latestToken = localStorage.getItem('accessToken');
       if (latestToken && latestToken !== tokenRef.current) {
         tokenRef.current = latestToken;
@@ -147,6 +150,9 @@ export function useSocket(
     socket.on('new_notification', n => onNotificationRef.current(n));
     socket.on('force_logout', (data: { message: string }) => onForceLogoutRef.current?.(data));
 
+    // Chiều ngược lại với flow TOKEN_EXPIRED ở trên: khi axios refresh token TRƯỚC
+    // (do 1 API call HTTP fail 401 sớm hơn socket), nó dispatch 'tokenRefreshed' →
+    // ở đây cập nhật token cho socket và chủ động connect lại nếu đang rớt kết nối.
     const handleTokenRefreshed = (e: Event) => {
       const newToken = (e as CustomEvent).detail?.accessToken;
       if (newToken) {

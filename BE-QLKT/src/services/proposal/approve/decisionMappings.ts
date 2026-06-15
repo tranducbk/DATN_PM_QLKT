@@ -21,6 +21,34 @@ import type {
   UploadedDecisionFile,
 } from './types';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  DECISION MAPPINGS — lưu PDF quyết định + đồng bộ vào registry khi duyệt
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  3 BƯỚC khi Admin duyệt đề xuất có PDF quyết định:
+ *
+ *  ① persistDecisionPdfs: ghi PDF xuống uploads/decisions/.
+ *     - REUSE: nếu số QĐ đã có file_path trong DB → dùng lại, KHÔNG ghi thêm
+ *       bản sao (nhiều danh hiệu cùng 1 số QĐ chỉ cần 1 file).
+ *     - Dedup tên trùng bằng counter "(1)(2)" + decode latin1→utf8.
+ *
+ *  ② buildDecisionMappings: map mỗi danh hiệu (CSTT, DVQT, HCCSVV, ...) →
+ *     { so_quyet_dinh, file_pdf } để bước import ghi vào bảng khen thưởng.
+ *     BKBQP/CSTDTQ/BKTTCP tách riêng (specialDecisionMapping) vì là flag phụ
+ *     của danh hiệu hằng năm, không phải danh hiệu chính.
+ *
+ *  ③ syncDecisionFiles: gom mọi số QĐ đã dùng → upsert vào FileQuyetDinh
+ *     (registry trung tâm). Dùng upsert ATOMIC (update là no-op) để tránh
+ *     P2002 khi 2 admin duyệt 2 đề xuất chung 1 số QĐ đồng thời, đồng thời
+ *     giữ nguyên ngay_ky/nguoi_ky của lần sync đầu.
+ *
+ *  ⚠️ Ghi file (bước ①) chạy TRƯỚC $transaction; còn syncDecisionFiles ghi
+ *     DB trong transaction (nhận tx). File orphan nếu transaction rollback —
+ *     xem trade-off ở attachedFiles.ts.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 /**
  * Persists uploaded decision PDFs and returns a key -> file path map.
  * Re-uses existing file paths when a decision number already has a stored PDF.

@@ -54,6 +54,9 @@ class HCCSVVService {
   /**
    * Export template Excel for HCCSVV import
    */
+  // HCCSVV (niên hạn) theo đúng khuôn export chung qua buildTemplate. Khác biệt:
+  // dropdown danh hiệu là 3 hạng Ba/Nhì/Nhất (HCCSVV_TEMPLATE_OPTIONS) và có 3
+  // cột admin điền ('J','K','L') thay vì 2.
   async exportTemplate(personnelIds: string[] = [], repeatMap: Record<string, number> = {}) {
     const { personnelList, decisionNumbers } = await fetchTemplateData({
       personnelIds,
@@ -130,6 +133,9 @@ class HCCSVVService {
   /**
    * Export HCCSVV to Excel
    */
+  // Tái dùng this.getAll (đã sẵn logic filter + join QuanNhan) thay vì viết lại
+  // where — limit 10000 để lấy trọn cho báo cáo. LƯU Ý: hàm này trả thẳng BUFFER
+  // (tự gọi writeBuffer ở cuối), khác annualReward trả Workbook để controller gói.
   async exportToExcel(filters: Record<string, unknown> = {}) {
     const { data } = await this.getAll(filters, 1, 10000);
 

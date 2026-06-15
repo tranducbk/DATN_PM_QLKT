@@ -84,6 +84,8 @@ class CommemorativeMedalService {
    * Export template Excel for Commemorative Medal (KNC VSNXD) import
    * Pre-filled with selected personnel
    */
+  // KNC là kỷ niệm chương 1 hạng duy nhất → KHÔNG có danhHieuOptions (không cần
+  // dropdown danh hiệu) và chỉ 1 cột admin điền ('K'). Phần còn lại theo khuôn chung.
   async exportTemplate(personnelIds: string[] = [], repeatMap: Record<string, number> = {}) {
     const { personnelList, decisionNumbers } = await fetchTemplateData({
       personnelIds,
@@ -99,6 +101,15 @@ class CommemorativeMedalService {
     });
   }
 
+  /*
+   * ──────────────────────────────────────────────────────────────────────────
+   *  KNC IMPORT — preview (validate) + confirm (ghi DB)
+   *  Đặc thù KNC: kỷ niệm chương 1 HẠNG DUY NHẤT, mỗi quân nhân nhận 1 lần. Có
+   *  thêm cột THÁNG (thang) ngoài năm. Preview đọc trực tiếp trong service (không
+   *  tách parse helper riêng như cá nhân/đơn vị) vì cấu trúc cột đơn giản.
+   * ──────────────────────────────────────────────────────────────────────────
+   */
+
   /**
    * Previews KNC VSNXD import from Excel (validation only, no DB writes).
    * Returns valid rows with history and detailed validation errors.
@@ -107,7 +118,7 @@ class CommemorativeMedalService {
     const workbook = await loadWorkbook(buffer);
     const worksheet = getAndValidateWorksheet(workbook, { sheetName: AWARD_EXCEL_SHEETS.KNC });
 
-    // Header map
+    // Map header linh hoạt qua getHeaderCol (mỗi field thử nhiều biến thể tên cột).
     const headerMap = parseHeaderMap(worksheet);
 
     const idCol = getHeaderCol(headerMap, ['id', 'ma_quan_nhan', 'personnel_id']);
@@ -173,6 +184,10 @@ class CommemorativeMedalService {
       ]
     );
 
+    // KNC đọc từ cột 'data_nien_han' — KHÔNG phải lẫn logic niên hạn. KNC + HC_QKQT
+    // + HCCSVV cùng cấu trúc (1 dòng = 1 quân nhân + 1 chương + năm/tháng) nên CHIA
+    // SẺ chung cột JSON này (schema chỉ có data_danh_hieu/nien_han/cong_hien). Đề
+    // xuất ở đây đã lọc loai_de_xuat = KNC nên data lấy ra chắc chắn là của KNC.
     const pendingPersonnelIds = buildPendingKeys(
       pendingProposals as Array<Record<string, unknown>>,
       'data_nien_han',
@@ -428,6 +443,8 @@ class CommemorativeMedalService {
       }),
     ]);
 
+    // 'data_nien_han' = cột JSON dùng chung cho KNC/HC_QKQT/HCCSVV (cùng cấu trúc),
+    // không phải logic niên hạn. Query đã lọc loai_de_xuat = KNC.
     const pendingPersonnelIds = buildPendingKeys(
       pendingProposals as Array<Record<string, unknown>>,
       'data_nien_han',
@@ -569,6 +586,7 @@ class CommemorativeMedalService {
   /**
    * Export Commemorative Medals to Excel
    */
+  // Export KNC theo đúng khuôn chung (getAll → addRow + sanitize → Workbook).
   async exportToExcel(filters: Record<string, unknown> = {}) {
     const { data } = await this.getAll(filters, 1, 10000);
 
@@ -753,6 +771,8 @@ class CommemorativeMedalService {
     });
     if (existingAward) return { alreadyReceived: true, reason: 'Đã nhận', award: existingAward };
 
+    // loai_de_xuat = KNC khoá đúng loại; data_nien_han là cột JSON chia sẻ (xem
+    // ghi chú ở previewImport). array_contains tìm đề xuất chứa quân nhân này.
     const pendingProposal = await proposalRepository.findFirstRaw({
       where: {
         loai_de_xuat: PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,

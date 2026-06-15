@@ -1,3 +1,26 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  NOTIFICATION BUILDER — ĐỀ XUẤT KHEN THƯỞNG (proposals)
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  Builder thông báo theo VÒNG ĐỜI đề xuất khen thưởng. Quy trình: MANAGER tạo
+ *  và gửi đề xuất → ADMIN duyệt hoặc từ chối. File này báo đúng người ở từng
+ *  bước, dùng formatProposalType() để dựng nhãn loại đề xuất tiếng Việt.
+ *
+ *  AI NHẬN Ở TỪNG BƯỚC:
+ *  - notifyAdminsOnProposalSubmission : MANAGER gửi đề xuất  → báo TẤT CẢ ADMIN
+ *    (admin nào cũng có thể vào duyệt).
+ *  - notifyManagerOnProposalApproval  : ADMIN duyệt          → báo người đề xuất.
+ *  - notifyManagerOnProposalRejection : ADMIN từ chối        → báo người đề xuất
+ *    kèm lý do từ chối.
+ *  - notifyOnProposalDeletion         : đề xuất bị xóa        → báo các ADMIN KHÁC
+ *    (trừ người xóa) + người đề xuất (nếu khác người xóa).
+ *
+ *  Ở các bước duyệt/từ chối chỉ có 1 người nhận (người đề xuất) nên dùng
+ *  create + emit trực tiếp; các bước fan-out nhiều người dùng createMany.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import {
   NOTIFICATION_TYPES,
   RESOURCE_TYPES,
@@ -34,6 +57,8 @@ interface ProposalDeletionActor {
   role: string;
 }
 
+// MANAGER gửi đề xuất → báo cho TẤT CẢ ADMIN vì bất kỳ admin nào cũng có thể
+// vào duyệt. Link dẫn thẳng tới màn review đề xuất đó.
 async function notifyAdminsOnProposalSubmission(
   proposal: ProposalNotifyInfo,
   submitter: { username: string }
@@ -70,6 +95,8 @@ async function notifyAdminsOnProposalSubmission(
   return notifications.length;
 }
 
+// ADMIN duyệt đề xuất → báo riêng cho người đã đề xuất (MANAGER).
+// Đề xuất không có người đề xuất (vd hệ thống tạo) thì bỏ qua.
 async function notifyManagerOnProposalApproval(
   proposal: ProposalNotifyInfo,
   approver: { username: string }
@@ -94,6 +121,8 @@ async function notifyManagerOnProposalApproval(
   return notification;
 }
 
+// ADMIN từ chối đề xuất → báo người đề xuất kèm lý do để họ biết sửa gì.
+// Thiếu lý do thì điền câu mặc định cho rõ ràng với người nhận.
 async function notifyManagerOnProposalRejection(
   proposal: ProposalNotifyInfo,
   rejector: { username: string },
@@ -119,6 +148,8 @@ async function notifyManagerOnProposalRejection(
   return notification;
 }
 
+// Đề xuất bị xóa → báo các ADMIN KHÁC (loại trừ người vừa xóa) để minh bạch,
+// và báo cả người đề xuất nếu họ không phải người xóa.
 async function notifyOnProposalDeletion(
   proposal: ProposalNotifyInfo,
   actor: ProposalDeletionActor
@@ -126,6 +157,7 @@ async function notifyOnProposalDeletion(
   const proposalTypeName = formatProposalType(proposal.loai_de_xuat);
   const actorDisplayName = await getDisplayName(actor.username);
 
+  // id: { not: actor.id } — không tự gửi thông báo cho chính người thực hiện xóa.
   const admins = await accountRepository.findManyRaw({
     where: {
       role: ROLES.ADMIN,
@@ -145,6 +177,7 @@ async function notifyOnProposalDeletion(
     link: `/admin/proposals`,
   }));
 
+  // Người đề xuất chỉ được báo khi họ KHÔNG phải người tự xóa đề xuất của mình.
   if (proposal.nguoi_de_xuat_id && proposal.nguoi_de_xuat_id !== actor.id) {
     const proposer = await accountRepository.findUniqueRaw({
       where: { id: proposal.nguoi_de_xuat_id },

@@ -433,6 +433,8 @@ export default function CreateProposalPage() {
         formData.append('ghi_chu', proposalNote.trim());
       }
 
+      // Append nhiều file cùng key 'attached_files' → multer.fields() gom thành
+      // mảng req.files; originFileObj là File gốc (chỉ có khi user vừa chọn).
       if (attachedFiles.length > 0) {
         attachedFiles.forEach(file => {
           if (file.originFileObj) {
@@ -652,7 +654,8 @@ export default function CreateProposalPage() {
               style={{ marginBottom: 24 }}
             />
 
-            {/* Attachment upload */}
+            {/* beforeUpload trả false → chặn Ant auto-upload, chỉ giữ file trong
+                fileList; file gửi thủ công qua FormData lúc submit */}
             <Upload.Dragger
               fileList={attachedFiles}
               onChange={({ fileList }) => setAttachedFiles(fileList)}
