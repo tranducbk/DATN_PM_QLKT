@@ -37,11 +37,10 @@ export function buildAwardTypeHelpers(
 > {
   const typeName = AWARD_LABELS[resource as keyof typeof AWARD_LABELS] || resource;
 
-  /** Uses specific rank names when available, otherwise falls back to type label. */
+  /** Uses the specific rank label, or the award type label when no danh hieu is given. */
   const getAwardLabel = (danhHieu?: string) => {
     if (!danhHieu) return typeName;
-    const name = getDanhHieuName(danhHieu);
-    return name !== 'Chưa có dữ liệu' ? name : typeName;
+    return getDanhHieuName(danhHieu);
   };
 
   return {

@@ -18,8 +18,9 @@ import { formatDate } from '@/lib/utils';
 import {
   AWARD_TAB_LABELS,
   AWARD_TAB_META,
-  DANH_HIEU_CA_NHAN_HANG_NAM,
+  AWARD_TAB_DANH_HIEU,
   DANH_HIEU_DAC_BIET,
+  THANH_TICH_KHOA_HOC_SHORT_LABELS,
   type AwardType,
 } from '@/constants/danhHieu.constants';
 import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
@@ -81,17 +82,6 @@ const INITIAL_FILTERS: AwardFilters = {
   ho_ten: '',
   danh_hieu: '',
   de_tai: '',
-};
-
-const DANH_HIEU_OPTIONS: Record<string, string[]> = {
-  CNHN: [
-    DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS,
-    DANH_HIEU_CA_NHAN_HANG_NAM.CSTT,
-    DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP,
-    DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ,
-  ],
-  HCCSVV: ['HCCSVV_HANG_NHAT', 'HCCSVV_HANG_NHI', 'HCCSVV_HANG_BA'],
-  HCBVTQ: ['HCBVTQ_HANG_NHAT', 'HCBVTQ_HANG_NHI', 'HCBVTQ_HANG_BA'],
 };
 
 interface AwardTypeFetchResponse {
@@ -226,7 +216,7 @@ export default function ManagerAwardsPage() {
   };
 
   const danhHieuOptions = useMemo(() => {
-    const options = DANH_HIEU_OPTIONS[activeTab] || [];
+    const options = AWARD_TAB_DANH_HIEU[activeTab] || [];
     return [
       { value: '', label: 'Tất cả danh hiệu' },
       ...options.map(value => ({
@@ -354,12 +344,8 @@ export default function ManagerAwardsPage() {
       align: 'center',
       render: (_: unknown, record: AwardRow) => {
         if (activeTab === 'NCKH') {
-          const loaiMap: Record<string, string> = {
-            DTKH: 'ĐTKH',
-            SKKH: 'SKKH',
-          };
           const loai = record.loai ?? '';
-          return <Text>{loaiMap[loai] || loai || '-'}</Text>;
+          return <Text>{THANH_TICH_KHOA_HOC_SHORT_LABELS[loai] || loai || '-'}</Text>;
         }
         if (activeTab === 'HCQKQT' || activeTab === 'HCCSVV' || activeTab === 'KNC_VSNXD_QDNDVN') {
           const thanhTich = record.thoi_gian?.display || '-';

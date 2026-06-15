@@ -207,7 +207,7 @@ class CommemorativeMedalService {
           row: rowNumber,
           ho_ten,
           nam: namVal,
-          message: `Không tìm thấy quân nhân với ID ${personnelId}`,
+          message: `Không tìm thấy quân nhân tương ứng với mã trong file.`,
         });
         continue;
       }
@@ -556,7 +556,6 @@ class CommemorativeMedalService {
 
     styleHeaderRow(worksheet);
 
-    // Convert {years, months} object to total months
     const convertThoiGian = thoiGian => {
       if (!thoiGian) return '';
       if (typeof thoiGian === 'object') {
@@ -591,6 +590,7 @@ class CommemorativeMedalService {
           don_vi:
             item.QuanNhan.CoQuanDonVi?.ten_don_vi ?? item.QuanNhan.DonViTrucThuoc?.ten_don_vi ?? '',
           nam: item.nam,
+          thang: item.thang,
           cap_bac: item.cap_bac,
           chuc_vu: item.chuc_vu,
           thoi_gian: convertThoiGian(item.thoi_gian),

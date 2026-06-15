@@ -2,17 +2,7 @@ import { Request, Response } from 'express';
 import { parseResponseData, asRecord } from '../constants';
 import { getDanhHieuName } from '../../../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../../../constants/proposalTypes.constants';
-
-/** Bulk create body `type` → wording in audit description. */
-const BULK_AUDIT_TYPE: Record<string, string> = {
-  CA_NHAN_HANG_NAM: 'Danh hiệu cá nhân hằng năm',
-  DON_VI_HANG_NAM: 'Danh hiệu đơn vị hằng năm',
-  NCKH: 'Thành tích Nghiên cứu khoa học',
-  NIEN_HAN: 'Huy chương Chiến sĩ vẻ vang',
-  HC_QKQT: 'Huy chương Quân kỳ quyết thắng',
-  KNC_VSNXD_QDNDVN: 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
-  CONG_HIEN: 'Huân chương Bảo vệ Tổ quốc',
-};
+import { getAwardLabelByProposalType } from '../../../constants/awardResource.constants';
 
 /**
  * Builds the standard "bulk award add" description.
@@ -65,7 +55,7 @@ async function buildBulkDescription(
         }
       }
 
-      const typeName = BULK_AUDIT_TYPE[type] || type || 'Khen thưởng';
+      const typeName = getAwardLabelByProposalType(type) || 'Khen thưởng';
 
       const importedCount = (result?.importedCount as number) || 0;
       const errorCount = (result?.errorCount as number) || 0;

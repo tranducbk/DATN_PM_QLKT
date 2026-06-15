@@ -72,7 +72,6 @@ export function Step3SetTitlesHCQKQT({
       const personnelData = responses.filter(r => r.success).map(r => r.data);
       setPersonnel(personnelData);
 
-      // Initialize title data if empty
       if (titleData.length === 0) {
         const initialData = personnelData.map((p: Personnel) => ({
           personnel_id: p.id,
@@ -334,7 +333,6 @@ export function Step3SetTitlesHCQKQT({
           selectedRowKeys: selectedPersonnelIds,
           onChange: (selectedRowKeys: React.Key[]) => {
             onPersonnelChange(selectedRowKeys as string[]);
-            // Remove title data for deselected personnel
             const newTitleData = titleData.filter(d =>
               (selectedRowKeys as string[]).includes(d.personnel_id || '')
             );

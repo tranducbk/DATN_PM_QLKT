@@ -14,13 +14,9 @@ export const NOTIFICATION_TYPES = {
   AWARD_DELETED: 'AWARD_DELETED',
 } as const;
 
-export type NotificationType = (typeof NOTIFICATION_TYPES)[keyof typeof NOTIFICATION_TYPES];
-
 export const RESOURCE_TYPES = {
   PERSONNEL: 'personnel',
   PROPOSALS: 'proposals',
   ACHIEVEMENTS: 'achievements',
   AWARDS: 'awards',
 } as const;
-
-export type ResourceType = (typeof RESOURCE_TYPES)[keyof typeof RESOURCE_TYPES];

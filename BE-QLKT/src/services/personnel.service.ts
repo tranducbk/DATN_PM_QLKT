@@ -219,7 +219,6 @@ class PersonnelService {
       throw new ValidationError('Username (CCCD) đã tồn tại trong hệ thống tài khoản');
     }
 
-    // Set unit foreign keys based on unit type.
     const isCoQuanDonVi = !!coQuanDonVi;
     let personnelData: Prisma.QuanNhanUncheckedCreateInput = {
       cccd,

@@ -4,6 +4,7 @@ import { Modal, Table, Tag, Spin, Descriptions, Empty, Typography } from 'antd';
 import { HistoryOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
+import { getDanhHieuName } from '@/constants/danhHieu.constants';
 
 const { Text } = Typography;
 
@@ -72,11 +73,7 @@ export function UnitAnnualAwardHistoryModal({
       align: 'center',
       render: (text: string | null) => {
         if (!text) return <Text type="secondary">-</Text>;
-        const map: Record<string, string> = {
-          ĐVQT: 'Đơn vị quyết thắng',
-          ĐVTT: 'Đơn vị tiên tiến',
-        };
-        return map[text] || text;
+        return getDanhHieuName(text);
       },
     },
     {

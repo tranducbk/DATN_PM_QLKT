@@ -213,7 +213,12 @@ describe('account.service - createAccount', () => {
 
 describe('account.service - updateAccount', () => {
   it('Cho update role, Khi updateAccount, Thì gọi prisma.update với role mới', async () => {
-    prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({ id: 'acc-1' });
+    prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
+      id: 'acc-1',
+      role: ROLES.USER,
+      quan_nhan_id: 'qn-1',
+      QuanNhan: null,
+    });
     prismaMock.taiKhoan.update.mockResolvedValueOnce({
       id: 'acc-1',
       username: 'u1',
@@ -227,6 +232,36 @@ describe('account.service - updateAccount', () => {
     expect(result.role).toBe(ROLES.MANAGER);
     const args = prismaMock.taiKhoan.update.mock.calls[0][0];
     expect(args.data.role).toBe(ROLES.MANAGER);
+  });
+
+  it('Cho tài khoản gắn quân nhân đổi sang ADMIN, Khi updateAccount, Thì throw ValidationError (chặn bắc cầu)', async () => {
+    prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
+      id: 'acc-1',
+      role: ROLES.MANAGER,
+      quan_nhan_id: 'qn-1',
+      QuanNhan: null,
+    });
+
+    await expectError(
+      accountService.updateAccount('acc-1', { role: ROLES.ADMIN }),
+      ValidationError,
+      /Chỉ huy đơn vị và Người dùng/,
+    );
+  });
+
+  it('Cho tài khoản quản trị đổi sang MANAGER, Khi updateAccount, Thì throw ValidationError (chặn bắc cầu)', async () => {
+    prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
+      id: 'acc-1',
+      role: ROLES.ADMIN,
+      quan_nhan_id: null,
+      QuanNhan: null,
+    });
+
+    await expectError(
+      accountService.updateAccount('acc-1', { role: ROLES.MANAGER }),
+      ValidationError,
+      /Quản trị viên và Cán bộ Phòng Chính trị/,
+    );
   });
 
   it('Cho update password mới, Khi updateAccount, Thì password được hash và lưu', async () => {
@@ -254,6 +289,155 @@ describe('account.service - updateAccount', () => {
       NotFoundError,
     );
     expect(prismaMock.taiKhoan.update).not.toHaveBeenCalled();
+  });
+
+  it('Cho USER→MANAGER không kèm Cơ quan đơn vị, Khi updateAccount, Thì throw ValidationError', async () => {
+    prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
+      id: 'acc-1',
+      role: ROLES.USER,
+      quan_nhan_id: 'qn-1',
+      QuanNhan: {
+        id: 'qn-1',
+        chuc_vu_id: 'cv-1',
+        co_quan_don_vi_id: 'cqdv-1',
+        don_vi_truc_thuoc_id: 'dvtt-1',
+      },
+    });
+
+    await expectError(
+      accountService.updateAccount('acc-1', { role: ROLES.MANAGER }),
+      ValidationError,
+      /Cơ quan đơn vị/,
+    );
+    expect(prismaMock.taiKhoan.update).not.toHaveBeenCalled();
+  });
+
+  it('Cho nâng MANAGER nhưng chọn Đơn vị trực thuộc, Khi updateAccount, Thì throw ValidationError', async () => {
+    prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
+      id: 'acc-1',
+      role: ROLES.USER,
+      quan_nhan_id: 'qn-1',
+      QuanNhan: {
+        id: 'qn-1',
+        chuc_vu_id: 'cv-1',
+        co_quan_don_vi_id: 'cqdv-1',
+        don_vi_truc_thuoc_id: 'dvtt-1',
+      },
+    });
+
+    await expectError(
+      accountService.updateAccount('acc-1', {
+        role: ROLES.MANAGER,
+        co_quan_don_vi_id: 'cqdv-1',
+        don_vi_truc_thuoc_id: 'dvtt-1',
+        chuc_vu_id: 'cv-1',
+      }),
+      ValidationError,
+      /Đơn vị trực thuộc/,
+    );
+    expect(prismaMock.taiKhoan.update).not.toHaveBeenCalled();
+  });
+
+  it('Cho hạ MANAGER→USER không kèm đủ đơn vị, Khi updateAccount, Thì throw ValidationError', async () => {
+    prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
+      id: 'acc-1',
+      role: ROLES.MANAGER,
+      quan_nhan_id: 'qn-1',
+      QuanNhan: {
+        id: 'qn-1',
+        chuc_vu_id: 'cv-1',
+        co_quan_don_vi_id: 'cqdv-1',
+        don_vi_truc_thuoc_id: null,
+      },
+    });
+
+    await expectError(
+      accountService.updateAccount('acc-1', {
+        role: ROLES.USER,
+        co_quan_don_vi_id: 'cqdv-1',
+        chuc_vu_id: 'cv-1',
+      }),
+      ValidationError,
+      /đầy đủ/,
+    );
+    expect(prismaMock.taiKhoan.update).not.toHaveBeenCalled();
+  });
+
+  it('Cho reassign đơn vị nhưng thiếu chức vụ, Khi updateAccount, Thì throw ValidationError', async () => {
+    prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
+      id: 'acc-1',
+      role: ROLES.USER,
+      quan_nhan_id: 'qn-1',
+      QuanNhan: {
+        id: 'qn-1',
+        chuc_vu_id: 'cv-1',
+        co_quan_don_vi_id: 'cqdv-1',
+        don_vi_truc_thuoc_id: 'dvtt-1',
+      },
+    });
+
+    await expectError(
+      accountService.updateAccount('acc-1', {
+        role: ROLES.USER,
+        co_quan_don_vi_id: 'cqdv-1',
+        don_vi_truc_thuoc_id: 'dvtt-1',
+      }),
+      ValidationError,
+      /chức vụ/,
+    );
+    expect(prismaMock.taiKhoan.update).not.toHaveBeenCalled();
+  });
+
+  it('Cho USER→MANAGER hợp lệ, Khi updateAccount, Thì xoá Đơn vị trực thuộc và chỉnh so_luong', async () => {
+    prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
+      id: 'acc-1',
+      role: ROLES.USER,
+      quan_nhan_id: 'qn-1',
+      QuanNhan: {
+        id: 'qn-1',
+        chuc_vu_id: 'cv-old',
+        co_quan_don_vi_id: 'cqdv-1',
+        don_vi_truc_thuoc_id: 'dvtt-1',
+      },
+    });
+    prismaMock.coQuanDonVi.findUnique.mockResolvedValueOnce({ id: 'cqdv-1' });
+    prismaMock.chucVu.findUnique.mockResolvedValue({ is_manager: true, he_so_chuc_vu: 5 });
+    prismaMock.lichSuChucVu.findMany.mockResolvedValueOnce([]);
+    prismaMock.lichSuChucVu.create.mockResolvedValueOnce({});
+    prismaMock.quanNhan.update.mockResolvedValueOnce({ id: 'qn-1' });
+    prismaMock.donViTrucThuoc.update.mockResolvedValueOnce({});
+    prismaMock.coQuanDonVi.update.mockResolvedValueOnce({});
+    prismaMock.taiKhoan.update.mockResolvedValueOnce({
+      id: 'acc-1',
+      username: 'u1',
+      role: ROLES.MANAGER,
+      quan_nhan_id: 'qn-1',
+      QuanNhan: {
+        ho_ten: 'A',
+        ChucVu: { ten_chuc_vu: 'Trưởng phòng' },
+        CoQuanDonVi: { ten_don_vi: 'Phòng A' },
+        DonViTrucThuoc: null,
+      },
+    });
+
+    const result = await accountService.updateAccount('acc-1', {
+      role: ROLES.MANAGER,
+      co_quan_don_vi_id: 'cqdv-1',
+      chuc_vu_id: 'cv-mgr',
+    });
+
+    expect(result.role).toBe(ROLES.MANAGER);
+    const qnArgs = prismaMock.quanNhan.update.mock.calls[0][0];
+    expect(qnArgs.data.don_vi_truc_thuoc_id).toBeNull();
+    expect(qnArgs.data.co_quan_don_vi_id).toBe('cqdv-1');
+    expect(prismaMock.donViTrucThuoc.update).toHaveBeenCalledWith({
+      where: { id: 'dvtt-1' },
+      data: { so_luong: { decrement: 1 } },
+    });
+    expect(prismaMock.coQuanDonVi.update).toHaveBeenCalledWith({
+      where: { id: 'cqdv-1' },
+      data: { so_luong: { increment: 1 } },
+    });
   });
 });
 

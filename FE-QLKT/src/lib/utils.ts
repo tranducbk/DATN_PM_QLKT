@@ -32,20 +32,20 @@ export function calculateDuration(startDate: DatePoint, endDate?: DatePoint): st
     months--;
   }
 
-  // Ensure non-negative result.
   months = Math.max(0, months);
 
   const years = Math.floor(months / 12);
   const remainingMonths = months % 12;
 
-  // For periods under one month, display day count.
+  // For periods under one month, show whole calendar days so a same-day period reads as "0 ngày"
+  // whether it is closed (end = that date) or still open (end = now).
   if (months === 0) {
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+    const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+    const diffDays = Math.round((endDay.getTime() - startDay.getTime()) / (1000 * 60 * 60 * 24));
     return `${diffDays} ngày`;
   }
 
-  // Display years and months.
   if (years > 0 && remainingMonths > 0) {
     return `${years} năm ${remainingMonths} tháng`;
   } else if (years > 0) {

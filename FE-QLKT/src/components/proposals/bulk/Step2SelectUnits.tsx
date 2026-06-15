@@ -143,7 +143,6 @@ export function Step2SelectUnits({
     setLocalNam(nam);
   }, [nam]);
 
-  // Filter units
   const filteredUnits = units.filter(unit => {
     // Search filter
     const matchesSearch =
@@ -223,7 +222,6 @@ export function Step2SelectUnits({
           dataRows.forEach((row: ExcelRow, index: number) => {
             const rowNumber = index + 2; // +2: skip header + 0-based index
 
-            // Validate required fields
             const maDonVi = row[0]?.toString().trim();
             const tenDonVi = row[1]?.toString().trim();
             const nam = row[2]?.toString().trim();
@@ -272,7 +270,6 @@ export function Step2SelectUnits({
             });
           });
 
-          // Remove duplicates from unit IDs
           const uniqueUnitIds = Array.from(new Set(processedUnitIds));
 
           try {
@@ -327,7 +324,6 @@ export function Step2SelectUnits({
       onUnitChange(result.selectedUnitIds);
     }
 
-    // Update titleData through parent callback if available
     const importedTitles = result.titleData ?? [];
     if (importedTitles.length > 0 && onTitleDataChange) {
       onTitleDataChange(importedTitles as TitleDataItem[]);

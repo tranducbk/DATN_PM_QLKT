@@ -94,7 +94,6 @@ export function ProposalDetailModal({
     text: proposal.status || '-',
   };
 
-  // Get title data
   const titleData: ProposalTitleDataRow[] =
     proposal.title_data || proposal.data_danh_hieu || [];
   const personnelCount = proposal.selected_personnel?.length || titleData.length || 0;
@@ -177,7 +176,6 @@ export function ProposalDetailModal({
     });
   }
 
-  // Add appropriate columns based on proposal type
   if (proposal.loai_de_xuat === PROPOSAL_TYPES.NCKH) {
     columns.push(
       {

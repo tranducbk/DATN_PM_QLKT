@@ -3,18 +3,18 @@
 import { ReactNode } from 'react';
 import Image from 'next/image';
 import { Empty } from 'antd';
-import { TrophyOutlined, FileTextOutlined, CalendarOutlined } from '@ant-design/icons';
+import { TrophyOutlined, FileTextOutlined } from '@ant-design/icons';
 import { DANH_HIEU_CA_NHAN_HANG_NAM, DANH_HIEU_MAP } from '@/constants/danhHieu.constants';
 import { AWARD_ICONS } from '@/constants/awardIcons.constants';
 import type { AnnualRewardRow } from '@/app/user/profile/types';
 
-type TierKey = 'TONG' | 'CSTDCS' | 'CSTT' | 'BKBQP' | 'CSTDTQ' | 'BKTTCP' | 'FALLBACK';
+type TierKey = 'CSTDCS' | 'CSTT' | 'BKBQP' | 'CSTDTQ' | 'BKTTCP' | 'FALLBACK';
 
 interface TierStyle {
   label: string;
   accent: string;
   soft: string;
-  /** Line-icon fallback, only for tiers without a PNG (TONG, FALLBACK). */
+  /** Line-icon fallback, only for tiers without a PNG (FALLBACK). */
   icon?: ReactNode;
 }
 
@@ -32,7 +32,6 @@ interface AnnualTitleTimelineProps {
 }
 
 const TIER_RANK: Record<TierKey, number> = {
-  TONG: 0,
   FALLBACK: 0,
   CSTDCS: 1,
   CSTT: 1,
@@ -41,7 +40,7 @@ const TIER_RANK: Record<TierKey, number> = {
   BKTTCP: 4,
 };
 
-const STAT_KEYS: TierKey[] = ['TONG', 'CSTDCS', 'BKBQP', 'CSTDTQ', 'BKTTCP'];
+const STAT_KEYS: TierKey[] = ['CSTDCS', 'CSTT', 'BKBQP', 'CSTDTQ', 'BKTTCP'];
 
 const TIER_ICON_SRC: Partial<Record<TierKey, string>> = {
   CSTDCS: AWARD_ICONS.CSTDCS,
@@ -76,12 +75,6 @@ function renderTierIcon(
 function buildTierStyles(isDark: boolean): Record<TierKey, TierStyle> {
   if (isDark) {
     return {
-      TONG: {
-        label: 'Tổng số năm',
-        icon: <CalendarOutlined />,
-        accent: '#60a5fa',
-        soft: 'rgba(96,165,250,0.14)',
-      },
       CSTDCS: { label: 'CSTĐ Cơ sở', accent: '#34d399', soft: 'rgba(52,211,153,0.14)' },
       CSTT: { label: 'Chiến sĩ tiên tiến', accent: '#38bdf8', soft: 'rgba(56,189,248,0.14)' },
       BKBQP: { label: 'BK Bộ trưởng BQP', accent: '#fbbf24', soft: 'rgba(251,191,36,0.14)' },
@@ -96,12 +89,6 @@ function buildTierStyles(isDark: boolean): Record<TierKey, TierStyle> {
     };
   }
   return {
-    TONG: {
-      label: 'Tổng số năm',
-      icon: <CalendarOutlined />,
-      accent: '#2563eb',
-      soft: 'rgba(37,99,235,0.08)',
-    },
     CSTDCS: { label: 'CSTĐ Cơ sở', accent: '#059669', soft: 'rgba(5,150,105,0.08)' },
     CSTT: { label: 'Chiến sĩ tiên tiến', accent: '#0284c7', soft: 'rgba(2,132,199,0.08)' },
     BKBQP: { label: 'BK Bộ trưởng BQP', accent: '#d97706', soft: 'rgba(217,119,6,0.10)' },
@@ -207,9 +194,16 @@ export function AnnualTitleTimeline({ rewards, isDark, onOpenDecision }: AnnualT
   const panelBorder = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(15,23,42,0.07)';
   const tileBg = isDark ? 'rgba(255,255,255,0.05)' : '#ffffff';
   const tileBorder = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.08)';
+  // Award icons are fixed multi-colour PNGs; a tier-accent chip behind them clashes. Use a
+  // neutral chip so the icon reads cleanly — tier identity still comes from the number/label/rail.
+  const iconChipBg = isDark ? 'rgba(255,255,255,0.08)' : '#f1f5f9';
+  const iconChipBorder = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(15,23,42,0.08)';
+  // Titles/numbers/QĐ stay neutral so they don't clash with the fixed gold icons; tier identity
+  // is carried only by the structural accents (year node, panel left border).
+  const textStrong = isDark ? '#e5e7eb' : '#1f2937';
+  const qdChipBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(15,23,42,0.04)';
 
   const counts: Record<TierKey, number> = {
-    TONG: new Set(rewards.map(r => r.nam)).size,
     CSTDCS: rewards.filter(r => r.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS).length,
     CSTT: rewards.filter(r => r.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTT).length,
     BKBQP: rewards.filter(r => r.nhan_bkbqp).length,
@@ -225,7 +219,6 @@ export function AnnualTitleTimeline({ rewards, isDark, onOpenDecision }: AnnualT
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {STAT_KEYS.map(key => {
           const s = tier[key];
-          const isLead = key === 'TONG';
           return (
             <div
               key={key}
@@ -234,14 +227,14 @@ export function AnnualTitleTimeline({ rewards, isDark, onOpenDecision }: AnnualT
             >
               <span
                 className="flex h-12 w-12 items-center justify-center rounded-xl"
-                style={{ background: `${s.accent}26`, border: `1px solid ${s.accent}40` }}
+                style={{ background: iconChipBg, border: `1px solid ${iconChipBorder}` }}
               >
                 {renderTierIcon(key, s.icon, s.accent, 30)}
               </span>
               <div className="flex flex-col items-center gap-1">
                 <span
                   className="font-bold leading-none"
-                  style={{ color: s.accent, fontSize: isLead ? 32 : 28 }}
+                  style={{ color: textStrong, fontSize: 28 }}
                 >
                   {counts[key]}
                 </span>
@@ -277,8 +270,12 @@ export function AnnualTitleTimeline({ rewards, isDark, onOpenDecision }: AnnualT
                 </div>
 
                 <div
-                  className="overflow-hidden rounded-2xl"
-                  style={{ background: panelBg, border: `1px solid ${panelBorder}` }}
+                  className="overflow-hidden rounded-2xl transition-shadow duration-200 hover:shadow-md"
+                  style={{
+                    background: panelBg,
+                    border: `1px solid ${panelBorder}`,
+                    borderLeft: `3px solid ${node.accent}`,
+                  }}
                 >
                   {entries.map((entry, index) => {
                     const es = tier[entry.tier];
@@ -292,14 +289,11 @@ export function AnnualTitleTimeline({ rewards, isDark, onOpenDecision }: AnnualT
                         <div className="flex min-w-0 items-center gap-3">
                           <span
                             className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl"
-                            style={{
-                              background: `${es.accent}1f`,
-                              border: `1px solid ${es.accent}3a`,
-                            }}
+                            style={{ background: iconChipBg, border: `1px solid ${iconChipBorder}` }}
                           >
                             {renderTierIcon(entry.tier, es.icon, es.accent, 38)}
                           </span>
-                          <span className="truncate font-semibold" style={{ color: es.accent }}>
+                          <span className="truncate font-semibold" style={{ color: textStrong }}>
                             {entry.label}
                           </span>
                         </div>
@@ -310,8 +304,8 @@ export function AnnualTitleTimeline({ rewards, isDark, onOpenDecision }: AnnualT
                               e.stopPropagation();
                               onOpenDecision(entry.soQuyetDinh!);
                             }}
-                            className="flex flex-shrink-0 cursor-pointer items-center gap-1.5 text-[13px] font-medium hover:underline"
-                            style={{ color: es.accent }}
+                            className="flex flex-shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1 text-[13px] font-medium transition-opacity hover:opacity-80"
+                            style={{ color: textStrong, background: qdChipBg }}
                           >
                             <FileTextOutlined style={{ fontSize: 12 }} />
                             <span style={{ color: muted }}>Số QĐ:</span>

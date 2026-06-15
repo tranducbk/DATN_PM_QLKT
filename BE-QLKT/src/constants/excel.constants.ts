@@ -9,7 +9,7 @@ export const IMPORT_TRANSACTION_TIMEOUT = 30000;
 
 export const EXPORT_FETCH_LIMIT = 10_000;
 
-export const CAP_BAC_OPTIONS = [
+const CAP_BAC_OPTIONS = [
   'Binh nhì',
   'Binh nhất',
   'Hạ sĩ',

@@ -198,14 +198,17 @@ export function buildDanhHieuExcelOptions(
   return `"${labels.join(',')}"`;
 }
 
+/** Display fallback for a danh hieu / proposal type code that is null or empty. */
+export const UNKNOWN_LABEL = 'Chưa xác định';
+
 /**
  * Returns the display label for danh_hieu.
  * @param danhHieu - Raw code from persistence or UI
- * @returns Display label, fallback text, or original code
+ * @returns Display label, UNKNOWN_LABEL when empty, or the original code when unmapped
  */
 export function getDanhHieuName(danhHieu: string | null | undefined): string {
-  if (!danhHieu) return 'Chưa có dữ liệu';
-  return DANH_HIEU_MAP[danhHieu] || danhHieu;
+  if (!danhHieu) return UNKNOWN_LABEL;
+  return DANH_HIEU_MAP[danhHieu] ?? danhHieu;
 }
 
 /**
@@ -223,8 +226,8 @@ export function formatDanhHieuList(codes: readonly string[]): string {
  * @returns Display string or literal fallback
  */
 export function getLoaiDeXuatName(loaiDeXuat: string | null | undefined): string {
-  if (!loaiDeXuat) return 'Chưa xác định';
-  return LOAI_DE_XUAT_MAP[loaiDeXuat as ProposalType] || loaiDeXuat;
+  if (!loaiDeXuat) return UNKNOWN_LABEL;
+  return LOAI_DE_XUAT_MAP[loaiDeXuat as ProposalType] ?? loaiDeXuat;
 }
 
 /** Years of service required for each HCCSVV rank. */

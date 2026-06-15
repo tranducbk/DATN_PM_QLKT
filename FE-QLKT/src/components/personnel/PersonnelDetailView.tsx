@@ -50,8 +50,9 @@ import type {
 import { useAuth } from '@/contexts/AuthContext';
 import {
   ELIGIBILITY_STATUS,
-  ELIGIBILITY_STATUS_MAP,
+  getEligibilityStatusMeta,
 } from '@/constants/eligibilityStatus.constants';
+import { GENDER } from '@/constants/gender.constants';
 import {
   DANH_HIEU_MAP,
   AWARD_TAB_LABELS,
@@ -129,8 +130,7 @@ export function PersonnelDetailView({ role, infoOnly = false }: PersonnelDetailV
   }, [personnelId, infoOnly]);
 
   const getStatusTag = (status: string | undefined) => {
-    const s =
-      ELIGIBILITY_STATUS_MAP[status ?? ''] || ELIGIBILITY_STATUS_MAP[ELIGIBILITY_STATUS.CHUA_DU];
+    const s = getEligibilityStatusMeta(status);
     return <Tag color={s.color}>{s.label}</Tag>;
   };
 
@@ -224,9 +224,9 @@ export function PersonnelDetailView({ role, infoOnly = false }: PersonnelDetailV
                 {
                   label: 'Giới tính',
                   value:
-                    personnel.gioi_tinh === 'NAM'
+                    personnel.gioi_tinh === GENDER.MALE
                       ? 'Nam'
-                      : personnel.gioi_tinh === 'NU'
+                      : personnel.gioi_tinh === GENDER.FEMALE
                         ? 'Nữ'
                         : '-',
                 },
@@ -401,7 +401,7 @@ export function PersonnelDetailView({ role, infoOnly = false }: PersonnelDetailV
                       hasReceived={!!commemorationMedals?.hasReceived}
                       receivedAt={getReceivedMonthYearText(commemorationMedals)}
                       yearsRequired={
-                        personnel.gioi_tinh === 'NAM'
+                        personnel.gioi_tinh === GENDER.MALE
                           ? KNC_YEARS_REQUIRED_NAM
                           : KNC_YEARS_REQUIRED_NU
                       }

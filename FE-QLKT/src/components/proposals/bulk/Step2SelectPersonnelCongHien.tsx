@@ -17,10 +17,17 @@ import type { ColumnsType } from 'antd/es/table';
 import { getApiErrorMessage } from '@/lib/http/apiError';
 import { formatDate } from '@/lib/utils';
 import { apiClient } from '@/lib/http/apiClient';
-import { GENDER } from '@/constants/gender.constants';
+import { isMissingGender } from '@/constants/gender.constants';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { ExcelImportSection } from './ExcelImportSection';
 import { usePersonnelList } from './usePersonnelList';
+import {
+  sttColumn,
+  hoTenWithUnitColumn,
+  ngaySinhColumn,
+  capBacChucVuColumn,
+  gioiTinhColumn,
+} from './step2Columns';
 import {
   PROPOSAL_MONTH_OPTIONS,
   PROPOSAL_STATUS,
@@ -185,7 +192,7 @@ export function Step2SelectPersonnelCongHien({
     }
 
     const missingGender =
-      !record.gioi_tinh || (record.gioi_tinh !== 'NAM' && record.gioi_tinh !== 'NU');
+      isMissingGender(record.gioi_tinh);
     if (missingGender) return 3;
 
     const highestAward = getHighestEligibleAward(record.id);
@@ -200,81 +207,11 @@ export function Step2SelectPersonnelCongHien({
   });
 
   const columns: ColumnsType<Personnel> = [
-    {
-      title: 'STT',
-      key: 'index',
-      width: 60,
-      align: 'center',
-      render: (_, __, index) => index + 1,
-    },
-    {
-      title: 'Họ và tên',
-      dataIndex: 'ho_ten',
-      key: 'ho_ten',
-      width: 200,
-      align: 'center',
-      render: (text: string, record) => {
-        const coQuan = record.DonViTrucThuoc?.CoQuanDonVi || record.CoQuanDonVi;
-        const donViTrucThuoc = record.DonViTrucThuoc;
-
-        const donViDisplay: string | null = donViTrucThuoc?.ten_don_vi
-          ? coQuan?.ten_don_vi
-            ? `${donViTrucThuoc.ten_don_vi} (${coQuan.ten_don_vi})`
-            : donViTrucThuoc.ten_don_vi
-          : coQuan?.ten_don_vi || null;
-
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <Text strong>{text}</Text>
-            {donViDisplay && (
-              <Text type="secondary" style={{ fontSize: '12px', marginTop: 4 }}>
-                {donViDisplay}
-              </Text>
-            )}
-          </div>
-        );
-      },
-    },
-    {
-      title: 'Ngày sinh',
-      dataIndex: 'ngay_sinh',
-      key: 'ngay_sinh',
-      width: 140,
-      align: 'center',
-      render: (date: string | undefined | null) => (date ? formatDate(date) : '-'),
-    },
-    {
-      title: 'Cấp bậc / Chức vụ',
-      key: 'cap_bac_chuc_vu',
-      width: 180,
-      align: 'center',
-      render: (_, record) => {
-        const capBac = record.cap_bac;
-        const chucVu = record.ChucVu?.ten_chuc_vu;
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <Text strong style={{ marginBottom: '4px' }}>
-              {capBac || '-'}
-            </Text>
-            <Text type="secondary" style={{ fontSize: '12px' }}>
-              {chucVu || '-'}
-            </Text>
-          </div>
-        );
-      },
-    },
-    {
-      title: 'Giới tính',
-      key: 'gioi_tinh',
-      width: 120,
-      align: 'center',
-      render: (_, record) => {
-        if (!record.gioi_tinh) {
-          return <Text type="danger">Chưa cập nhật</Text>;
-        }
-        return <Text>{record.gioi_tinh === GENDER.MALE ? 'Nam' : 'Nữ'}</Text>;
-      },
-    },
+    sttColumn,
+    hoTenWithUnitColumn,
+    ngaySinhColumn,
+    capBacChucVuColumn,
+    gioiTinhColumn,
     {
       title: 'Tổng thời gian (0.7)',
       key: 'total_time_0_7',
@@ -337,7 +274,7 @@ export function Step2SelectPersonnelCongHien({
         }
 
         const missingGender =
-          !record.gioi_tinh || (record.gioi_tinh !== 'NAM' && record.gioi_tinh !== 'NU');
+          isMissingGender(record.gioi_tinh);
         if (missingGender) {
           return (
             <Text type="danger" strong>
@@ -349,14 +286,9 @@ export function Step2SelectPersonnelCongHien({
         // Highest award the personnel currently qualifies for
         const highestAward = getHighestEligibleAward(record.id);
         if (highestAward) {
-          const awardLabels: Record<string, string> = {
-            HCBVTQ_HANG_NHAT: 'HCBVTQ hạng Nhất',
-            HCBVTQ_HANG_NHI: 'HCBVTQ hạng Nhì',
-            HCBVTQ_HANG_BA: 'HCBVTQ hạng Ba',
-          };
           return (
             <Text type="success" strong>
-              {awardLabels[highestAward]}
+              {DANH_HIEU_SHORT_MAP[highestAward]}
             </Text>
           );
         } else {
@@ -395,7 +327,6 @@ export function Step2SelectPersonnelCongHien({
           dataRows.forEach((row: ExcelRow, index: number) => {
             const rowNumber = index + 2; // +2: skip header + 0-based index
 
-            // Validate required fields
             const hoTen = row[0]?.toString().trim();
             const ngaySinh = row[1]?.toString().trim();
             const nam = row[2]?.toString().trim();
@@ -448,7 +379,6 @@ export function Step2SelectPersonnelCongHien({
             });
           });
 
-          // Remove duplicates from personnel IDs
           const uniquePersonnelIds = Array.from(new Set(processedPersonnelIds));
 
           try {
@@ -522,7 +452,6 @@ export function Step2SelectPersonnelCongHien({
 
         onTitleDataChange?.(titleData);
 
-        // Update nam from imported data if available
         if (result.titleData[0].nam) {
           onNamChange(result.titleData[0].nam);
         }
@@ -543,7 +472,7 @@ export function Step2SelectPersonnelCongHien({
     }
 
     const missingGender =
-      !record.gioi_tinh || (record.gioi_tinh !== 'NAM' && record.gioi_tinh !== 'NU');
+      isMissingGender(record.gioi_tinh);
     if (missingGender) {
       return 'Quân nhân này chưa cập nhật giới tính. Vui lòng cập nhật trước khi đề xuất.';
     }
@@ -655,24 +584,6 @@ export function Step2SelectPersonnelCongHien({
       )}
 
       <Space style={{ marginBottom: 16 }} size="middle" wrap>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Text strong>Tháng: </Text>
-          <Select
-            value={localThang}
-            onChange={val => {
-              setLocalThang(val);
-              onThangChange?.(val);
-            }}
-            style={{ width: 120 }}
-            size="large"
-          >
-            {PROPOSAL_MONTH_OPTIONS.map(m => (
-              <Select.Option key={m} value={m}>
-                Tháng {m}
-              </Select.Option>
-            ))}
-          </Select>
-        </div>
         <div>
           <Text strong>Năm đề xuất: </Text>
           <InputNumber
@@ -715,6 +626,24 @@ export function Step2SelectPersonnelCongHien({
             keyboard={true}
           />
         </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Text strong>Tháng: </Text>
+          <Select
+            value={localThang}
+            onChange={val => {
+              setLocalThang(val);
+              onThangChange?.(val);
+            }}
+            style={{ width: 120 }}
+            size="large"
+          >
+            {PROPOSAL_MONTH_OPTIONS.map(m => (
+              <Select.Option key={m} value={m}>
+                Tháng {m}
+              </Select.Option>
+            ))}
+          </Select>
+        </div>
 
         <Input
           placeholder="Tìm theo tên"
@@ -756,7 +685,7 @@ export function Step2SelectPersonnelCongHien({
       {/* Warning for personnel missing gender and not eligible */}
       {(() => {
         const missingGenderCount = filteredPersonnel.filter(
-          p => !p.gioi_tinh || (p.gioi_tinh !== 'NAM' && p.gioi_tinh !== 'NU')
+          p => isMissingGender(p.gioi_tinh)
         ).length;
 
         const ineligibleCount = filteredPersonnel.filter(p =>
@@ -774,7 +703,7 @@ export function Step2SelectPersonnelCongHien({
         ).length;
 
         const notEligibleCount = filteredPersonnel.filter(p => {
-          const missingGender = !p.gioi_tinh || (p.gioi_tinh !== 'NAM' && p.gioi_tinh !== 'NU');
+          const missingGender = isMissingGender(p.gioi_tinh);
           const ineligible = ineligiblePersonnel.some(i => i.personnelId === p.id);
           if (missingGender || ineligible) return false;
           return !getHighestEligibleAward(p.id);
@@ -834,7 +763,7 @@ export function Step2SelectPersonnelCongHien({
         rowClassName={record => {
           // Highlight rows missing gender or ineligible for award
           const missingGender =
-            !record.gioi_tinh || (record.gioi_tinh !== 'NAM' && record.gioi_tinh !== 'NU');
+            isMissingGender(record.gioi_tinh);
           const ineligible = ineligiblePersonnel.some(i => i.personnelId === record.id);
           const notEligible = !getHighestEligibleAward(record.id);
 

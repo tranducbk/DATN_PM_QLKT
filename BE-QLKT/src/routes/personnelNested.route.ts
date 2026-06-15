@@ -52,7 +52,6 @@ router.get(
   verifyToken,
   requireCanViewPersonnel,
   (req: Request, res: Response, next: NextFunction) => {
-    // Convert nested route to query param format
     req.query.personnel_id = req.params.personnelId;
     annualRewardController.getAnnualRewards(req, res, next);
   }
@@ -90,7 +89,6 @@ router.get(
   verifyToken,
   requireCanViewPersonnel,
   (req: Request, res: Response, next: NextFunction) => {
-    // Convert nested route to query param format
     req.query.personnel_id = req.params.personnelId;
     positionHistoryController.getPositionHistory(req, res, next);
   }
@@ -164,7 +162,6 @@ router.get(
   verifyToken,
   requireCanViewPersonnel,
   (req: Request, res: Response, next: NextFunction) => {
-    // Convert nested route to query param format
     req.query.personnel_id = req.params.personnelId;
     scientificAchievementController.getAchievements(req, res, next);
   }

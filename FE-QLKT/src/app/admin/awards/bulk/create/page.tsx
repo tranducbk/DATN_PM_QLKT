@@ -819,7 +819,6 @@ export default function BulkAddAwardsPage() {
           );
         }
 
-        // Add columns based on award type
         if (awardType === PROPOSAL_TYPES.NCKH) {
           finalColumns.push(
             {
@@ -833,7 +832,7 @@ export default function BulkAddAwardsPage() {
                 const loai = titleInfo?.loai;
                 return (
                   <Tag color={loai === 'DTKH' ? 'blue' : 'green'}>
-                    {loai === 'DTKH' ? 'Đề tài khoa học' : 'Sáng kiến khoa học'}
+                    {getDanhHieuName(loai)}
                   </Tag>
                 );
               },

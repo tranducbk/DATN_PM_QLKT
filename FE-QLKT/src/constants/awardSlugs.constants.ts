@@ -13,5 +13,3 @@ export const AWARD_SLUGS = {
   SCIENTIFIC_ACHIEVEMENTS: 'scientific-achievements',
   ADHOC_AWARDS: 'adhoc-awards',
 } as const;
-
-export type AwardSlug = (typeof AWARD_SLUGS)[keyof typeof AWARD_SLUGS];

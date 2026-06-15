@@ -17,8 +17,17 @@ import type { ColumnsType } from 'antd/es/table';
 import { getApiErrorMessage } from '@/lib/http/apiError';
 import { formatDate } from '@/lib/utils';
 import { apiClient } from '@/lib/http/apiClient';
-import { calculateTotalMonths } from './serviceDuration';
 import { usePersonnelList } from './usePersonnelList';
+import {
+  sttColumn,
+  hoTenWithUnitColumn,
+  ngaySinhColumn,
+  capBacChucVuColumn,
+  gioiTinhColumn,
+  ngayNhapNguColumn,
+  ngayXuatNguColumn,
+  tongThangColumn,
+} from './step2Columns';
 import type { Step2Personnel as Personnel } from './types';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
@@ -29,7 +38,7 @@ import {
   HCCSVV_YEARS_HANG_NHAT,
   AWARD_TAB_LABELS,
 } from '@/constants/danhHieu.constants';
-import { GENDER } from '@/constants/gender.constants';
+import { isMissingGender } from '@/constants/gender.constants';
 import { ExcelImportSection } from './ExcelImportSection';
 import * as XLSX from 'xlsx';
 import type {
@@ -184,130 +193,14 @@ export function Step2SelectPersonnelNienHan({
   });
 
   const columns: ColumnsType<Personnel> = [
-    {
-      title: 'STT',
-      key: 'index',
-      width: 60,
-      align: 'center',
-      render: (_, __, index) => index + 1,
-    },
-    {
-      title: 'Họ và tên',
-      dataIndex: 'ho_ten',
-      key: 'ho_ten',
-      width: 200,
-      align: 'center',
-      render: (text: string, record) => {
-        const coQuan = record.DonViTrucThuoc?.CoQuanDonVi || record.CoQuanDonVi;
-        const donViTrucThuoc = record.DonViTrucThuoc;
-
-        const donViDisplay: string | null = donViTrucThuoc?.ten_don_vi
-          ? coQuan?.ten_don_vi
-            ? `${donViTrucThuoc.ten_don_vi} (${coQuan.ten_don_vi})`
-            : donViTrucThuoc.ten_don_vi
-          : coQuan?.ten_don_vi || null;
-
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <Text strong>{text}</Text>
-            {donViDisplay && (
-              <Text type="secondary" style={{ fontSize: '12px', marginTop: 4 }}>
-                {donViDisplay}
-              </Text>
-            )}
-          </div>
-        );
-      },
-    },
-    {
-      title: 'Ngày sinh',
-      dataIndex: 'ngay_sinh',
-      key: 'ngay_sinh',
-      width: 140,
-      align: 'center',
-      render: (date: string | undefined | null) => (date ? formatDate(date) : '-'),
-    },
-    {
-      title: 'Cấp bậc / Chức vụ',
-      key: 'cap_bac_chuc_vu',
-      width: 180,
-      align: 'center',
-      render: (_, record) => {
-        const capBac = record.cap_bac;
-        const chucVu = record.ChucVu?.ten_chuc_vu;
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <Text strong style={{ marginBottom: '4px' }}>
-              {capBac || '-'}
-            </Text>
-            <Text type="secondary" style={{ fontSize: '12px' }}>
-              {chucVu || '-'}
-            </Text>
-          </div>
-        );
-      },
-    },
-    {
-      title: 'Giới tính',
-      key: 'gioi_tinh',
-      width: 120,
-      align: 'center',
-      render: (_, record) => {
-        if (!record.gioi_tinh) {
-          return <Text type="danger">Chưa cập nhật</Text>;
-        }
-        return <Text>{record.gioi_tinh === GENDER.MALE ? 'Nam' : 'Nữ'}</Text>;
-      },
-    },
-    {
-      title: 'Ngày nhập ngũ',
-      key: 'ngay_nhap_ngu',
-      width: 150,
-      align: 'center',
-      render: (_, record) => {
-        if (!record.ngay_nhap_ngu) return <Text type="secondary">-</Text>;
-        return formatDate(record.ngay_nhap_ngu);
-      },
-    },
-    {
-      title: 'Ngày xuất ngũ',
-      key: 'ngay_xuat_ngu',
-      width: 150,
-      align: 'center',
-      render: (_, record) => {
-        if (!record.ngay_xuat_ngu) return <Text type="secondary">Chưa xuất ngũ</Text>;
-        return formatDate(record.ngay_xuat_ngu);
-      },
-    },
-    {
-      title: 'Tổng tháng',
-      key: 'tong_thang',
-      width: 150,
-      align: 'center',
-      render: (_, record) => {
-        const refYear = localNam ?? new Date().getFullYear();
-        const lastDayOfMonth = new Date(refYear, localThang, 0);
-        const result = calculateTotalMonths(record.ngay_nhap_ngu, record.ngay_xuat_ngu, lastDayOfMonth);
-        if (!result) return <Text type="secondary">-</Text>;
-
-        if (result.years > 0 && result.months > 0) {
-          return (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <Text strong>{result.years} năm</Text>
-              <Text type="secondary" style={{ fontSize: '12px', lineHeight: '1.2' }}>
-                {result.months} tháng
-              </Text>
-            </div>
-          );
-        } else if (result.years > 0) {
-          return <Text strong>{result.years} năm</Text>;
-        } else if (result.totalMonths > 0) {
-          return <Text strong>{result.totalMonths} tháng</Text>;
-        } else {
-          return <Text type="secondary">0 tháng</Text>;
-        }
-      },
-    },
+    sttColumn,
+    hoTenWithUnitColumn,
+    ngaySinhColumn,
+    capBacChucVuColumn,
+    gioiTinhColumn,
+    ngayNhapNguColumn,
+    ngayXuatNguColumn,
+    tongThangColumn(localNam, localThang),
     {
       title: 'Điều kiện HCCSVV',
       key: 'hccsvv_eligibility',
@@ -496,7 +389,6 @@ export function Step2SelectPersonnelNienHan({
           dataRows.forEach((row: ExcelRow, index: number) => {
             const rowNumber = index + 2; // +2: skip header + 0-based index
 
-            // Validate required fields
             const hoTen = row[0]?.toString().trim();
             const ngaySinh = row[1]?.toString().trim();
             const nam = row[2]?.toString().trim();
@@ -552,7 +444,6 @@ export function Step2SelectPersonnelNienHan({
             });
           });
 
-          // Remove duplicates from personnel IDs
           const uniquePersonnelIds = Array.from(new Set(processedPersonnelIds));
 
           try {
@@ -627,7 +518,6 @@ export function Step2SelectPersonnelNienHan({
 
         onTitleDataChange?.(titleData);
 
-        // Update nam from imported data if available
         if (result.titleData[0].nam) {
           onNamChange(result.titleData[0].nam);
         }
@@ -657,7 +547,7 @@ export function Step2SelectPersonnelNienHan({
       }
 
       const missingGender =
-        !record.gioi_tinh || (record.gioi_tinh !== 'NAM' && record.gioi_tinh !== 'NU');
+        isMissingGender(record.gioi_tinh);
       const missingNgayNhapNgu = !record.ngay_nhap_ngu;
       const eligibilityResult = getNienHanProposalEligibility(record);
       const canPropose = eligibilityResult.eligible;
@@ -675,7 +565,7 @@ export function Step2SelectPersonnelNienHan({
         if (result.eligible) return;
         if (bypassEligibility) {
           const missingGender =
-            !record.gioi_tinh || (record.gioi_tinh !== 'NAM' && record.gioi_tinh !== 'NU');
+            isMissingGender(record.gioi_tinh);
           if (!missingGender && record.ngay_nhap_ngu) {
             message.warning(
               `Cảnh báo: Quân nhân ${record.ho_ten} chưa đủ điều kiện khen thưởng niên hạn. Vẫn cho phép thêm khen thưởng quá khứ.`
@@ -840,7 +730,7 @@ export function Step2SelectPersonnelNienHan({
       {/* Warning for personnel missing gender or enlistment date */}
       {(() => {
         const missingGenderCount = filteredPersonnel.filter(
-          p => !p.gioi_tinh || (p.gioi_tinh !== 'NAM' && p.gioi_tinh !== 'NU')
+          p => isMissingGender(p.gioi_tinh)
         ).length;
         const missingNgayNhapNguCount = filteredPersonnel.filter(p => !p.ngay_nhap_ngu).length;
 
@@ -876,7 +766,7 @@ export function Step2SelectPersonnelNienHan({
         rowClassName={record => {
           // Highlight rows missing gender
           const missingGender =
-            !record.gioi_tinh || (record.gioi_tinh !== 'NAM' && record.gioi_tinh !== 'NU');
+            isMissingGender(record.gioi_tinh);
           if (missingGender) {
             return 'row-missing-gender';
           }

@@ -2,11 +2,7 @@
 
 import { Modal, Table, Tag, Empty } from 'antd';
 import { HistoryOutlined } from '@ant-design/icons';
-import {
-  PROPOSAL_STATUS,
-  PROPOSAL_STATUS_LABELS,
-  PROPOSAL_STATUS_COLORS,
-} from '@/constants/proposal.constants';
+import { getDanhHieuName } from '@/constants/danhHieu.constants';
 import type { ColumnsType } from 'antd/es/table';
 
 interface ScientificAchievement {
@@ -14,27 +10,11 @@ interface ScientificAchievement {
   nam: number;
   loai: 'DTKH' | 'SKKH';
   mo_ta: string;
-  status: string;
 }
 
-const LOAI_MAP: Record<string, { text: string; color: string }> = {
-  DTKH: { text: 'Đề tài khoa học', color: 'blue' },
-  SKKH: { text: 'Sáng kiến khoa học', color: 'green' },
-};
-
-const STATUS_MAP: Record<string, { text: string; color: string }> = {
-  [PROPOSAL_STATUS.PENDING]: {
-    text: PROPOSAL_STATUS_LABELS[PROPOSAL_STATUS.PENDING],
-    color: PROPOSAL_STATUS_COLORS[PROPOSAL_STATUS.PENDING],
-  },
-  [PROPOSAL_STATUS.APPROVED]: {
-    text: PROPOSAL_STATUS_LABELS[PROPOSAL_STATUS.APPROVED],
-    color: PROPOSAL_STATUS_COLORS[PROPOSAL_STATUS.APPROVED],
-  },
-  [PROPOSAL_STATUS.REJECTED]: {
-    text: PROPOSAL_STATUS_LABELS[PROPOSAL_STATUS.REJECTED],
-    color: PROPOSAL_STATUS_COLORS[PROPOSAL_STATUS.REJECTED],
-  },
+const LOAI_COLORS: Record<string, string> = {
+  DTKH: 'blue',
+  SKKH: 'green',
 };
 
 const columns: ColumnsType<ScientificAchievement> = [
@@ -51,27 +31,15 @@ const columns: ColumnsType<ScientificAchievement> = [
     key: 'loai',
     width: 160,
     align: 'center',
-    render: (loai: string) => {
-      const item = LOAI_MAP[loai] || { text: loai, color: 'default' };
-      return <Tag color={item.color}>{item.text}</Tag>;
-    },
+    render: (loai: string) => (
+      <Tag color={LOAI_COLORS[loai] || 'default'}>{getDanhHieuName(loai)}</Tag>
+    ),
   },
   {
     title: 'Mô tả',
     dataIndex: 'mo_ta',
     key: 'mo_ta',
     ellipsis: true,
-  },
-  {
-    title: 'Trạng thái',
-    dataIndex: 'status',
-    key: 'status',
-    width: 120,
-    align: 'center',
-    render: (status: string) => {
-      const item = STATUS_MAP[status] || { text: status, color: 'default' };
-      return <Tag color={item.color}>{item.text}</Tag>;
-    },
   },
 ];
 

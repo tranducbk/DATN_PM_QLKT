@@ -21,7 +21,7 @@ export async function fetchPersonnelForTemplate(
   personnelIds: string[]
 ): Promise<PersonnelTemplateRecord[]> {
   if (personnelIds.length === 0) return [];
-  return quanNhanRepository.findManyRaw({
+  const records = await quanNhanRepository.findManyRaw({
     where: { id: { in: personnelIds } },
     include: {
       ChucVu: true,
@@ -29,6 +29,10 @@ export async function fetchPersonnelForTemplate(
       DonViTrucThuoc: { select: { ten_don_vi: true } },
     },
   });
+
+  // `IN` does not preserve input order — reorder to the selected sequence so STT/rows match the modal.
+  const byId = new Map(records.map(r => [r.id, r]));
+  return personnelIds.map(id => byId.get(id)).filter(Boolean) as PersonnelTemplateRecord[];
 }
 
 /**

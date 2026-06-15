@@ -153,7 +153,7 @@ export function buildReviewColumns<T extends ProposalReviewRow>(
         align: 'center',
         render: (loai: string) => (
           <Tag color={loai === 'DTKH' ? 'blue' : 'green'}>
-            {loai === 'DTKH' ? 'Đề tài khoa học' : 'Sáng kiến khoa học'}
+            {getDanhHieuName(loai)}
           </Tag>
         ),
       },

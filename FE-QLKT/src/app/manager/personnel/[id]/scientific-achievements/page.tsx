@@ -3,12 +3,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Card, Button, Table, Modal, Space, Typography, Breadcrumb, message, Empty } from 'antd';
+import { Card, Button, Table, Space, Typography, Breadcrumb, message, Empty } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { LeftOutlined, HomeOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/http/apiClient';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
+import { THANH_TICH_KHOA_HOC_SHORT_LABELS } from '@/constants/danhHieu.constants';
 import type { PersonnelDetail } from '@/lib/types/personnelList';
 
 
@@ -29,8 +30,6 @@ export default function ManagerScientificAchievementsPage() {
   const [loading, setLoading] = useState(true);
   const [personnel, setPersonnel] = useState<PersonnelDetail | null>(null);
   const [achievements, setAchievements] = useState<AchievementRecord[]>([]);
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     try {
@@ -57,24 +56,6 @@ export default function ManagerScientificAchievementsPage() {
     loadData();
   }, [loadData]);
 
-  const handleDelete = async () => {
-    if (!deleteId) return;
-    try {
-      const res = await apiClient.deleteScientificAchievement(deleteId);
-
-      if (res.success) {
-        message.success('Xóa thành tích thành công');
-        setDeleteModalOpen(false);
-        setDeleteId(null);
-        loadData();
-      } else {
-        message.error(res.message || 'Có lỗi xảy ra khi xóa');
-      }
-    } catch (error) {
-      message.error('Có lỗi xảy ra khi xóa');
-    }
-  };
-
   const handleOpenDecisionFile = async (soQuyetDinh: string) => {
     await downloadDecisionFile(soQuyetDinh);
   };
@@ -94,11 +75,7 @@ export default function ManagerScientificAchievementsPage() {
       width: 150,
       align: 'center',
       render: (text: string) => {
-        const map: Record<string, string> = {
-          DTKH: 'ĐTKH',
-          SKKH: 'SKKH',
-        };
-        return map[text] || text || '-';
+        return THANH_TICH_KHOA_HOC_SHORT_LABELS[text] || text || '-';
       },
     },
     {
@@ -195,23 +172,6 @@ export default function ManagerScientificAchievementsPage() {
         </Card>
       )}
 
-      {/* Delete Confirmation Modal */}
-      <Modal
-        title="Xác nhận xóa"
-        open={deleteModalOpen}
-        onOk={handleDelete}
-        onCancel={() => {
-          setDeleteModalOpen(false);
-          setDeleteId(null);
-        }}
-        okText="Xóa"
-        cancelText="Hủy"
-        okButtonProps={{ danger: true }}
-      >
-        <Paragraph>
-          Bạn có chắc chắn muốn xóa thành tích khoa học này? Hành động này không thể hoàn tác.
-        </Paragraph>
-      </Modal>
     </div>
   );
 }

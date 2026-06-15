@@ -332,29 +332,42 @@ export function PositionHistoryView({ role }: PositionHistoryViewProps) {
       key: 'action',
       width: 150,
       align: 'center',
-      render: (_, record) => (
-        <Space size="small">
-          <Button
-            type="text"
-            icon={<EditOutlined />}
-            onClick={() => handleOpenDialog(record)}
-            title="Sửa"
-          />
-          <Popconfirm
-            title="Xác nhận xóa"
-            description="Bạn có chắc chắn muốn xóa lịch sử này?"
-            onConfirm={() => {
-              setDeleteId(record.id);
-              setDeleteModalOpen(true);
-            }}
-            okText="Xóa"
-            cancelText="Hủy"
-            okButtonProps={{ danger: true }}
-          >
-            <Button type="text" danger icon={<DeleteOutlined />} title="Xóa" />
-          </Popconfirm>
-        </Space>
-      ),
+      render: (_, record) => {
+        const isCurrent = !record.ngay_ket_thuc;
+        return (
+          <Space size="small">
+            <Button
+              type="text"
+              icon={<EditOutlined />}
+              onClick={() => handleOpenDialog(record)}
+              title="Sửa"
+            />
+            {isCurrent ? (
+              <Button
+                type="text"
+                danger
+                icon={<DeleteOutlined />}
+                disabled
+                title="Không thể xoá chức vụ hiện tại"
+              />
+            ) : (
+              <Popconfirm
+                title="Xác nhận xóa"
+                description="Bạn có chắc chắn muốn xóa lịch sử này?"
+                onConfirm={() => {
+                  setDeleteId(record.id);
+                  setDeleteModalOpen(true);
+                }}
+                okText="Xóa"
+                cancelText="Hủy"
+                okButtonProps={{ danger: true }}
+              >
+                <Button type="text" danger icon={<DeleteOutlined />} title="Xóa" />
+              </Popconfirm>
+            )}
+          </Space>
+        );
+      },
     },
   ];
 

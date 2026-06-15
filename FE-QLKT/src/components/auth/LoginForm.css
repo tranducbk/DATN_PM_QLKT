@@ -173,7 +173,7 @@
 /* Login Card (glass) */
 .login-card {
   width: 100%;
-  max-width: 420px;
+  max-width: 500px;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.04) 100%);
   backdrop-filter: blur(24px) saturate(1.5);
   -webkit-backdrop-filter: blur(24px) saturate(1.5);
@@ -375,7 +375,7 @@
   background: rgba(239, 68, 68, 0.1) !important;
   border: 1px solid rgba(239, 68, 68, 0.2) !important;
   padding: 14px 44px 14px 16px !important;
-  align-items: flex-start !important;
+  align-items: center !important;
 }
 
 .login-alert .ant-alert-message {
@@ -388,11 +388,9 @@
 
 .login-alert .ant-alert-icon {
   color: #f87171 !important;
-  margin-top: 2px;
 }
 
 .login-alert .ant-alert-close-icon {
-  margin-top: 2px;
   margin-left: 8px;
 }
 

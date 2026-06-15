@@ -14,7 +14,6 @@ import {
   HCCSVV_YEARS_HANG_NHI,
   HCCSVV_YEARS_HANG_NHAT,
   getDanhHieuName,
-  DANH_HIEU_HCCSVV,
   AWARD_TAB_LABELS,
 } from '@/constants/danhHieu.constants';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
@@ -89,7 +88,6 @@ export function Step3SetTitlesNienHan({
       const personnelData = responses.filter(r => r.success).map(r => r.data);
       setPersonnel(personnelData);
 
-      // Fetch service profiles
       const profilesMap: Record<string, any> = {};
 
       await Promise.all(
@@ -109,7 +107,6 @@ export function Step3SetTitlesNienHan({
 
       setServiceProfilesMap(profilesMap);
 
-      // Initialize title data if empty
       if (titleData.length === 0) {
         const initialData = personnelData.map((p: Personnel) => ({
           personnel_id: p.id,
@@ -388,11 +385,6 @@ export function Step3SetTitlesNienHan({
       align: 'center',
       render: (_, record) => {
         const data = getTitleData(record.id);
-        const awardLabels: Record<string, string> = {
-          [DANH_HIEU_HCCSVV.HANG_BA]: getDanhHieuName(DANH_HIEU_HCCSVV.HANG_BA),
-          [DANH_HIEU_HCCSVV.HANG_NHI]: getDanhHieuName(DANH_HIEU_HCCSVV.HANG_NHI),
-          [DANH_HIEU_HCCSVV.HANG_NHAT]: getDanhHieuName(DANH_HIEU_HCCSVV.HANG_NHAT),
-        };
 
         if (bypassEligibility) {
           const eligibility = checkHCCSVVEligibilityForPersonnel(record);
@@ -429,7 +421,7 @@ export function Step3SetTitlesNienHan({
 
         return (
           <Text strong className={!data.danh_hieu ? 'text-red-500 dark:text-red-400' : ''}>
-            {data.danh_hieu ? awardLabels[data.danh_hieu] || data.danh_hieu : 'Chưa xác định'}
+            {data.danh_hieu ? getDanhHieuName(data.danh_hieu) : 'Chưa xác định'}
           </Text>
         );
       },
@@ -507,7 +499,6 @@ export function Step3SetTitlesNienHan({
           selectedRowKeys: selectedPersonnelIds,
           onChange: (selectedRowKeys: React.Key[]) => {
             onPersonnelChange(selectedRowKeys as string[]);
-            // Remove title data for deselected personnel
             const newTitleData = titleData.filter(d =>
               (selectedRowKeys as string[]).includes(d.personnel_id || '')
             );

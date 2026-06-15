@@ -23,10 +23,7 @@ import { apiClient } from '@/lib/http/apiClient';
 import { getApiErrorMessage } from '@/lib/http/apiError';
 import { ScientificAchievementHistoryModal } from './ScientificAchievementHistoryModal';
 import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
-import {
-  PROPOSAL_STATUS_LABELS,
-  PROPOSAL_STATUS_COLORS,
-} from '@/constants/proposal.constants';
+import { getDanhHieuName, THANH_TICH_KHOA_HOC_OPTIONS } from '@/constants/danhHieu.constants';
 import type { AnnualProfile } from '@/lib/types/personnelList';
 
 const { Text } = Typography;
@@ -103,7 +100,6 @@ export function Step3SetTitlesNCKH({
       const personnelData = responses.filter(r => r.success).map(r => r.data);
       setPersonnel(personnelData);
 
-      // Initialize title data if empty
       if (titleData.length === 0) {
         const initialData = personnelData.map((p: Personnel) => ({
           personnel_id: p.id,
@@ -303,10 +299,7 @@ export function Step3SetTitlesNCKH({
             size="middle"
             popupMatchSelectWidth={false}
             styles={{ popup: { root: { minWidth: 'max-content' } } }}
-            options={[
-              { label: 'Đề tài khoa học', value: 'DTKH' },
-              { label: 'Sáng kiến khoa học', value: 'SKKH' },
-            ]}
+            options={THANH_TICH_KHOA_HOC_OPTIONS}
           />
         );
       },
@@ -411,7 +404,6 @@ export function Step3SetTitlesNCKH({
           selectedRowKeys: selectedPersonnelIds,
           onChange: (selectedRowKeys: React.Key[]) => {
             onPersonnelChange(selectedRowKeys as string[]);
-            // Remove title data for deselected personnel
             const newTitleData = titleData.filter(d =>
               (selectedRowKeys as string[]).includes(d.personnel_id || '')
             );
@@ -489,31 +481,13 @@ export function Step3SetTitlesNCKH({
                             key: 'loai',
                             width: 150,
                             align: 'center',
-                            render: text => {
-                              const map: Record<string, string> = {
-                                NCKH: 'Đề tài khoa học',
-                                SKKH: 'Sáng kiến khoa học',
-                              };
-                              return map[text] || text;
-                            },
+                            render: text => getDanhHieuName(text as string),
                           },
                           {
                             title: 'Mô tả',
                             dataIndex: 'mo_ta',
                             key: 'mo_ta',
                             align: 'left',
-                          },
-                          {
-                            title: 'Trạng thái',
-                            dataIndex: 'status',
-                            key: 'status',
-                            width: 120,
-                            align: 'center',
-                            render: (status: string) => {
-                              const color = PROPOSAL_STATUS_COLORS[status] || 'orange';
-                              const text = PROPOSAL_STATUS_LABELS[status] || status;
-                              return <Tag color={color}>{text}</Tag>;
-                            },
                           },
                           {
                             title: 'Số QĐ',

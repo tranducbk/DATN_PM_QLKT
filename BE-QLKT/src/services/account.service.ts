@@ -16,6 +16,12 @@ import {
   ForbiddenError,
 } from '../middlewares/errorHandler';
 import type { Prisma } from '../generated/prisma';
+import profileService from './profile.service';
+import { adjustUnitCount } from './personnel/unitCount';
+import { rotatePositionHistory } from './personnel/positionHistory';
+import { writeSystemLog } from '../helpers/systemLogHelper';
+import { RESOURCE_SLUGS } from '../constants/resourceSlugs.constants';
+import { emitToUser } from '../utils/socketService';
 
 const ACCOUNT_QUAN_NHAN_INCLUDE = {
   QuanNhan: {
@@ -44,6 +50,9 @@ interface CreateAccountData {
 interface UpdateAccountData {
   role?: string;
   password?: string;
+  co_quan_don_vi_id?: string | null;
+  don_vi_truc_thuoc_id?: string | null;
+  chuc_vu_id?: string | null;
 }
 
 interface FormattedAccount {
@@ -399,34 +408,204 @@ class AccountService {
   }
 
   async updateAccount(id: string, data: UpdateAccountData): Promise<FormattedAccount> {
-    const { role, password } = data;
+    const { role, password, co_quan_don_vi_id, don_vi_truc_thuoc_id, chuc_vu_id } = data;
 
     const account = await accountRepository.findUniqueRaw({
       where: { id },
-      select: { id: true },
+      select: {
+        id: true,
+        role: true,
+        quan_nhan_id: true,
+        QuanNhan: {
+          select: {
+            id: true,
+            chuc_vu_id: true,
+            co_quan_don_vi_id: true,
+            don_vi_truc_thuoc_id: true,
+          },
+        },
+      },
     });
 
     if (!account) {
       throw new NotFoundError('Tài khoản');
     }
 
-    const updateData: Prisma.TaiKhoanUpdateInput = {};
+    const effectiveRole = role ?? account.role;
+    const roleChanging = !!role && role !== account.role;
+    const unitFieldsProvided =
+      co_quan_don_vi_id !== undefined ||
+      don_vi_truc_thuoc_id !== undefined ||
+      chuc_vu_id !== undefined;
 
+    // Roles split into two non-bridgeable groups: soldier accounts (MANAGER/USER, tied to a
+    // quân nhân) and admin accounts (SUPER_ADMIN/ADMIN, no quân nhân). Crossing groups is
+    // meaningless and error-prone, so a role change may only stay within its own group.
+    if (roleChanging) {
+      const targetIsSoldierRole = role === ROLES.MANAGER || role === ROLES.USER;
+      const accountIsSoldier = !!account.quan_nhan_id;
+      if (accountIsSoldier && !targetIsSoldierRole) {
+        throw new ValidationError(
+          'Tài khoản gắn với quân nhân chỉ có thể đổi giữa Chỉ huy đơn vị và Người dùng.'
+        );
+      }
+      if (!accountIsSoldier && targetIsSoldierRole) {
+        throw new ValidationError(
+          'Tài khoản quản trị chỉ có thể đổi giữa Quản trị viên và Cán bộ Phòng Chính trị.'
+        );
+      }
+    }
+
+    // Reassign the linked personnel's unit + position when the (new) role is unit-scoped and the
+    // role is changing or new unit/position values were supplied. ADMIN/SUPER_ADMIN carry no unit,
+    // so their personnel is left untouched.
+    const reassignUnit =
+      (effectiveRole === ROLES.MANAGER || effectiveRole === ROLES.USER) &&
+      !!account.QuanNhan &&
+      (roleChanging || unitFieldsProvided);
+
+    let resolvedUnit: {
+      chuc_vu_id: string;
+      co_quan_don_vi_id: string;
+      don_vi_truc_thuoc_id: string | null;
+    } | null = null;
+
+    if (reassignUnit) {
+      if (effectiveRole === ROLES.MANAGER) {
+        if (!co_quan_don_vi_id) {
+          throw new ValidationError(
+            'Tài khoản chỉ huy phải có Cơ quan đơn vị. Vui lòng chọn Cơ quan đơn vị.'
+          );
+        }
+        if (don_vi_truc_thuoc_id) {
+          throw new ValidationError(
+            'Tài khoản chỉ huy chỉ được chọn Cơ quan đơn vị, không được chọn Đơn vị trực thuộc.'
+          );
+        }
+      } else if (!co_quan_don_vi_id || !don_vi_truc_thuoc_id) {
+        throw new ValidationError(
+          'Tài khoản người dùng phải có đầy đủ Cơ quan đơn vị và Đơn vị trực thuộc. Vui lòng chọn cả hai.'
+        );
+      }
+
+      if (!chuc_vu_id) {
+        throw new ValidationError('Vui lòng chọn chức vụ');
+      }
+
+      const [coQuanDonVi, donViTrucThuoc] = await Promise.all([
+        coQuanDonViRepository.findIdById(co_quan_don_vi_id),
+        don_vi_truc_thuoc_id
+          ? donViTrucThuocRepository.findIdAndParentById(don_vi_truc_thuoc_id)
+          : null,
+      ]);
+
+      if (!coQuanDonVi) {
+        throw new NotFoundError('Cơ quan đơn vị');
+      }
+      if (don_vi_truc_thuoc_id) {
+        if (!donViTrucThuoc) {
+          throw new NotFoundError('Đơn vị trực thuộc');
+        }
+        if (donViTrucThuoc.co_quan_don_vi_id !== co_quan_don_vi_id) {
+          throw new ValidationError('Đơn vị trực thuộc không thuộc cơ quan đơn vị đã chọn');
+        }
+      }
+
+      const chucVu = await positionRepository.findUniqueRaw({
+        where: { id: chuc_vu_id },
+        select: { is_manager: true },
+      });
+      if (!chucVu) {
+        throw new NotFoundError('Chức vụ');
+      }
+      if (effectiveRole === ROLES.MANAGER && !chucVu.is_manager) {
+        throw new ValidationError(
+          'Tài khoản chỉ huy phải có chức vụ là Chỉ huy. Vui lòng chọn chức vụ có quyền chỉ huy.'
+        );
+      }
+
+      resolvedUnit = {
+        chuc_vu_id,
+        co_quan_don_vi_id,
+        don_vi_truc_thuoc_id: effectiveRole === ROLES.MANAGER ? null : don_vi_truc_thuoc_id,
+      };
+    }
+
+    const updateData: Prisma.TaiKhoanUncheckedUpdateInput = {};
     if (role) {
       updateData.role = role;
     }
-
     if (password) {
       this.validatePassword(password);
-      const hashedPassword = await bcrypt.hash(password, 10);
-      updateData.password_hash = hashedPassword;
+      updateData.password_hash = await bcrypt.hash(password, 10);
+    }
+    if (roleChanging) {
+      // Role change alters privileges and the role-based UI; invalidate the session so the user
+      // re-authenticates with the new role instead of running on a stale one.
+      updateData.refreshToken = null;
+      updateData.prevRefreshToken = null;
     }
 
-    const updatedAccount = await accountRepository.updateRaw({
-      where: { id },
-      data: updateData,
-      include: ACCOUNT_QUAN_NHAN_INCLUDE,
+    const updatedAccount = await prisma.$transaction(async tx => {
+      if (resolvedUnit && account.QuanNhan) {
+        const qn = account.QuanNhan;
+        const positionChanged = qn.chuc_vu_id !== resolvedUnit.chuc_vu_id;
+
+        await quanNhanRepository.update(
+          qn.id,
+          {
+            chuc_vu_id: resolvedUnit.chuc_vu_id,
+            co_quan_don_vi_id: resolvedUnit.co_quan_don_vi_id,
+            don_vi_truc_thuoc_id: resolvedUnit.don_vi_truc_thuoc_id,
+          },
+          tx
+        );
+
+        // Position change: rotate history (close open period, open new) so contribution months stay accurate.
+        if (positionChanged) {
+          await rotatePositionHistory(tx, qn.id, resolvedUnit.chuc_vu_id, new Date());
+        }
+
+        // Unit move: keep so_luong counters correct (decrement old, increment new).
+        const oldPrimaryUnitId = qn.don_vi_truc_thuoc_id || qn.co_quan_don_vi_id;
+        const newPrimaryUnitId = resolvedUnit.don_vi_truc_thuoc_id || resolvedUnit.co_quan_don_vi_id;
+        if (oldPrimaryUnitId !== newPrimaryUnitId) {
+          if (oldPrimaryUnitId) {
+            await adjustUnitCount(tx, oldPrimaryUnitId, !qn.don_vi_truc_thuoc_id, 'decrement');
+          }
+          if (newPrimaryUnitId) {
+            await adjustUnitCount(
+              tx,
+              newPrimaryUnitId,
+              !resolvedUnit.don_vi_truc_thuoc_id,
+              'increment'
+            );
+          }
+        }
+      }
+      return accountRepository.updateRaw(
+        { where: { id }, data: updateData, include: ACCOUNT_QUAN_NHAN_INCLUDE },
+        tx
+      );
     });
+
+    if (resolvedUnit && account.quan_nhan_id) {
+      try {
+        await profileService.recalculateAnnualProfile(account.quan_nhan_id);
+      } catch (recalcError) {
+        void writeSystemLog({
+          action: 'ERROR',
+          resource: RESOURCE_SLUGS.PERSONNEL,
+          description: `Lỗi tính lại hồ sơ hằng năm quân nhân ${account.quan_nhan_id}: ${recalcError}`,
+        });
+      }
+    }
+
+    if (roleChanging) {
+      emitToUser(id, 'force_logout', {
+        message: 'Vai trò tài khoản của bạn vừa được thay đổi. Vui lòng đăng nhập lại.',
+      });
+    }
 
     return {
       id: updatedAccount.id,

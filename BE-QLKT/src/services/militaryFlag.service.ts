@@ -204,7 +204,7 @@ class MilitaryFlagService {
           row: rowNumber,
           ho_ten,
           nam: namVal,
-          message: `Không tìm thấy quân nhân với ID ${personnelId}`,
+          message: `Không tìm thấy quân nhân tương ứng với mã trong file.`,
         });
         continue;
       }
@@ -529,6 +529,7 @@ class MilitaryFlagService {
           cap_bac: item.cap_bac ?? '',
           chuc_vu: item.chuc_vu ?? '',
           nam: item.nam,
+          thang: item.thang,
           so_quyet_dinh: item.so_quyet_dinh ?? '',
           ghi_chu: item.ghi_chu ?? '',
           don_vi:
@@ -615,7 +616,12 @@ class MilitaryFlagService {
     await militaryFlagRepository.delete(id);
 
     try {
-      await notificationHelper.notifyOnAwardDeleted(award, personnel, 'HCQKQT', adminUsername);
+      await notificationHelper.notifyOnAwardDeleted(
+        award,
+        personnel,
+        PROPOSAL_TYPES.HC_QKQT,
+        adminUsername
+      );
     } catch (error) {
       void writeSystemLog({
         action: 'ERROR',

@@ -88,7 +88,6 @@ export default function BulkAddAnnualRewardsPage() {
   }, []);
 
   useEffect(() => {
-    // Filter personnel based on search and unit
     let filtered = [...personnelList];
 
     if (searchText) {
@@ -133,7 +132,6 @@ export default function BulkAddAnnualRewardsPage() {
     }
   };
 
-  // Format date helper
   const formatDate = (date: DateInput) => {
     if (!date) return null;
     const d = typeof date === 'string' ? new Date(date) : date;

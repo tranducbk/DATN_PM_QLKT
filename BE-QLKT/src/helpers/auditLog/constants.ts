@@ -1,7 +1,6 @@
 import { prisma } from '../../models';
 import { formatDate } from '../datetimeHelper';
 import { PrismaClient } from '../../generated/prisma';
-import { ROLES } from '../../constants/roles.constants';
 import { quanNhanRepository } from '../../repositories/quanNhan.repository';
 import { coQuanDonViRepository, donViTrucThuocRepository } from '../../repositories/unit.repository';
 import { positionRepository } from '../../repositories/position.repository';
@@ -13,19 +12,6 @@ const FALLBACK = {
   NO_POSITION: 'Chưa có chức vụ',
   NO_FILE: 'Không có file',
 } as const;
-
-const ROLE_NAMES: Record<string, string> = {
-  [ROLES.USER]: 'Người dùng',
-  [ROLES.MANAGER]: 'Quản lý',
-  [ROLES.ADMIN]: 'Quản trị viên',
-  [ROLES.SUPER_ADMIN]: 'Quản trị viên cấp cao',
-};
-
-const ACHIEVEMENT_TYPE_NAMES: Record<string, string> = {
-  DTKH: 'Đề tài khoa học',
-  SKKH: 'Sáng kiến khoa học',
-  NCKH: 'Nghiên cứu khoa học',
-};
 
 const parseResponseData = (responseData: unknown): Record<string, unknown> | null => {
   try {
@@ -196,8 +182,6 @@ const getFileName = (req: { file?: { originalname?: string } }): string => {
 export {
   FALLBACK,
   getFileName,
-  ROLE_NAMES,
-  ACHIEVEMENT_TYPE_NAMES,
   parseResponseData,
   getUnitNameFromChucVu,
   getUnitNameFromUnitId,

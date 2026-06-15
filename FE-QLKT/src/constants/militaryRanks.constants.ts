@@ -21,5 +21,3 @@ export const MILITARY_RANKS = [
   'Thượng tướng',
   'Đại tướng',
 ] as const;
-
-export type MilitaryRank = (typeof MILITARY_RANKS)[number];

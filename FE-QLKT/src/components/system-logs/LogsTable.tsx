@@ -9,7 +9,7 @@ import {
   ThunderboltOutlined,
   FileTextOutlined,
 } from '@ant-design/icons';
-import { getActionLabel, ACTION_LABELS } from './constants';
+import { getActionLabel } from './constants';
 import { formatDateTimeFull } from '@/lib/utils';
 
 export interface LogEntry {
@@ -95,10 +95,7 @@ export function LogsTable({ logs, loading, selectedRowKeys, onSelectionChange }:
       key: 'action',
       width: 160,
       align: 'center',
-      sorter: (a, b) =>
-        (ACTION_LABELS[a.action] || a.action || '').localeCompare(
-          ACTION_LABELS[b.action] || b.action || ''
-        ),
+      sorter: (a, b) => getActionLabel(a.action).localeCompare(getActionLabel(b.action)),
       render: (action: string) => (
         <span className="text-sm font-medium">{getActionLabel(action)}</span>
       ),

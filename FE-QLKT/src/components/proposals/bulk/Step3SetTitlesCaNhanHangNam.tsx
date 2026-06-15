@@ -22,24 +22,10 @@ import { PersonnelRewardHistoryModal } from './PersonnelRewardHistoryModal';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { formatDate } from '@/lib/utils';
 import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
-import {
-  PROPOSAL_STATUS_COLORS,
-  getProposalStatusLabel,
-  PROPOSAL_TYPES,
-} from '@/constants/proposal.constants';
-import { DANH_HIEU_CA_NHAN_HANG_NAM } from '@/constants/danhHieu.constants';
+import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
+import { DANH_HIEU_CA_NHAN_HANG_NAM, getDanhHieuName } from '@/constants/danhHieu.constants';
 
 const { Text } = Typography;
-
-const CSTDCS_DANH_HIEU_LABELS: Record<string, string> = {
-  CSTDCS: 'Chiến sĩ thi đua cơ sở',
-  CSTT: 'Chiến sĩ tiên tiến',
-};
-
-const NCKH_LOAI_LABELS: Record<string, string> = {
-  NCKH: 'Đề tài khoa học',
-  SKKH: 'Sáng kiến khoa học',
-};
 
 const NHOM_CSTDCS_CSTT = new Set<string>([
   DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS,
@@ -581,7 +567,6 @@ export function Step3SetTitlesCaNhanHangNam({
           selectedRowKeys: selectedPersonnelIds,
           onChange: (selectedRowKeys: React.Key[]) => {
             onPersonnelChange(selectedRowKeys as string[]);
-            // Remove title data for deselected personnel
             const newTitleData = titleData.filter(d =>
               (selectedRowKeys as string[]).includes(d.personnel_id || '')
             );
@@ -661,7 +646,7 @@ export function Step3SetTitlesCaNhanHangNam({
                             key: 'danh_hieu',
                             width: 150,
                             align: 'center',
-                            render: text => CSTDCS_DANH_HIEU_LABELS[text as string] || text,
+                            render: text => getDanhHieuName(text as string),
                           },
                           {
                             title: 'Nhận BKBQP',
@@ -752,25 +737,13 @@ export function Step3SetTitlesCaNhanHangNam({
                             key: 'loai',
                             width: 150,
                             align: 'center',
-                            render: text => NCKH_LOAI_LABELS[text as string] || text,
+                            render: text => getDanhHieuName(text as string),
                           },
                           {
                             title: 'Mô tả',
                             dataIndex: 'mo_ta',
                             key: 'mo_ta',
                             align: 'left',
-                          },
-                          {
-                            title: 'Trạng thái',
-                            dataIndex: 'status',
-                            key: 'status',
-                            width: 120,
-                            align: 'center',
-                            render: (status: string) => (
-                              <Tag color={PROPOSAL_STATUS_COLORS[status] || 'default'}>
-                                {getProposalStatusLabel(status)}
-                              </Tag>
-                            ),
                           },
                           {
                             title: 'Số QĐ',

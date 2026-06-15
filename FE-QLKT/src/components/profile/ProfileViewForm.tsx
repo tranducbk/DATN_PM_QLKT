@@ -12,6 +12,7 @@ import { LoadingState } from '@/components/shared/LoadingState';
 import { getAntdThemeConfig } from '@/lib/antdTheme';
 import { getApiErrorMessage } from '@/lib/http/apiError';
 import { getRoleInfo } from '@/constants/roles.constants';
+import { GENDER } from '@/constants/gender.constants';
 import type { PersonnelDetail } from '@/lib/types/personnelList';
 
 
@@ -126,9 +127,9 @@ export function ProfileViewForm({
                       {
                         label: 'Giới tính',
                         value:
-                          personnelData.gioi_tinh === 'NAM'
+                          personnelData.gioi_tinh === GENDER.MALE
                             ? 'Nam'
-                            : personnelData.gioi_tinh === 'NU'
+                            : personnelData.gioi_tinh === GENDER.FEMALE
                               ? 'Nữ'
                               : '-',
                       },

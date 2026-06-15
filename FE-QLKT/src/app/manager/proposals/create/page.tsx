@@ -300,7 +300,6 @@ export default function CreateProposalPage() {
       titleData
     );
 
-  // Handle next step
   const handleNext = async () => {
     if (
       currentStep === 1 &&
@@ -350,7 +349,6 @@ export default function CreateProposalPage() {
     }
   };
 
-  // Handle previous step
   const handlePrev = () => {
     if (currentStep == 2) {
       setTitleData([]);
@@ -358,7 +356,6 @@ export default function CreateProposalPage() {
     setCurrentStep(currentStep - 1);
   };
 
-  // Handle submit
   const handleSubmit = async () => {
     try {
       setLoading(true);
@@ -454,7 +451,6 @@ export default function CreateProposalPage() {
 
       sessionStorage.removeItem(PROPOSAL_DRAFT_KEY);
 
-      // Reset form
       setCurrentStep(0);
       setProposalType(PROPOSAL_TYPES.CA_NHAN_HANG_NAM);
       setNam(new Date().getFullYear());
@@ -476,7 +472,6 @@ export default function CreateProposalPage() {
     }
   };
 
-  // Render step content
   const renderStepContent = () => {
     switch (currentStep) {
       case 0: // Step 1: Choose Type

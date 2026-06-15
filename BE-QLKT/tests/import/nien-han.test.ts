@@ -127,7 +127,7 @@ describe('tenureMedal.service - previewImport', () => {
     const result = await tenureMedalService.previewImport(buffer);
 
     expect(result.valid).toHaveLength(0);
-    expect(result.errors[0].message).toBe(IMPORT_NIEN_HAN_PERSONNEL_NOT_FOUND('qn-missing'));
+    expect(result.errors[0].message).toBe(IMPORT_NIEN_HAN_PERSONNEL_NOT_FOUND);
   });
 
   it('QN chưa đủ 10 năm cho HCCSVV_HANG_BA → errors "Chưa đủ thời gian phục vụ"', async () => {

@@ -2,6 +2,7 @@ import {
   CONG_HIEN_BASE_REQUIRED_MONTHS,
   CONG_HIEN_FEMALE_REQUIRED_MONTHS,
 } from '@/constants/danhHieu.constants';
+import { GENDER } from '@/constants/gender.constants';
 
 export type CongHienGroup = '0.7' | '0.8' | '0.9-1.0';
 
@@ -59,7 +60,7 @@ export const formatMonthsToText = (totalMonths: number): string => {
 };
 
 export const getContributionRequiredMonths = (gender?: string | null): number =>
-  gender === 'NU' ? CONG_HIEN_FEMALE_REQUIRED_MONTHS : CONG_HIEN_BASE_REQUIRED_MONTHS;
+  gender === GENDER.FEMALE ? CONG_HIEN_FEMALE_REQUIRED_MONTHS : CONG_HIEN_BASE_REQUIRED_MONTHS;
 
 export const getHighestEligibleContributionMedal = (
   months07: number,

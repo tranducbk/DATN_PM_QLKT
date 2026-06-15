@@ -1,7 +1,8 @@
 import type { Prisma } from '../../generated/prisma';
 import { Request, Response } from 'express';
 import { normalizeParam } from '../paginationHelper';
-import { FALLBACK, ROLE_NAMES } from './constants';
+import { FALLBACK } from './constants';
+import { ROLE_LABELS } from '../../constants/roles.constants';
 import { accountRepository } from '../../repositories/account.repository';
 
 
@@ -16,7 +17,7 @@ const accounts: Record<
   CREATE: (req: Request, res: Response, responseData: unknown): string => {
     const username = req.body?.username || FALLBACK.UNKNOWN;
     const role = req.body?.role || '';
-    const roleName = ROLE_NAMES[role] || role;
+    const roleName = ROLE_LABELS[role] ?? role;
 
     let hoTen = '';
     try {
@@ -39,7 +40,7 @@ const accounts: Record<
     const accountId = normalizeParam(req.params?.id);
     const role = req.body?.role || '';
     const hasPassword = !!req.body?.password;
-    const roleName = ROLE_NAMES[role] || role;
+    const roleName = ROLE_LABELS[role] ?? role;
 
     let username = req.body?.username || '';
     let hoTen = '';

@@ -124,6 +124,7 @@ class HCCSVVService {
           cap_bac: item.cap_bac ?? '',
           chuc_vu: item.chuc_vu ?? '',
           nam: item.nam,
+          thang: item.thang,
           danh_hieu: item.danh_hieu,
           so_quyet_dinh: item.so_quyet_dinh ?? '',
           ghi_chu: item.ghi_chu ?? '',
@@ -209,7 +210,12 @@ class HCCSVVService {
     }
 
     try {
-      await notificationHelper.notifyOnAwardDeleted(award, personnel, 'HCCSVV', adminUsername);
+      await notificationHelper.notifyOnAwardDeleted(
+        award,
+        personnel,
+        PROPOSAL_TYPES.NIEN_HAN,
+        adminUsername
+      );
     } catch (notifyError) {
       void writeSystemLog({
         action: 'ERROR',

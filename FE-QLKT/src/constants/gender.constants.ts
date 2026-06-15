@@ -3,4 +3,11 @@ export const GENDER = {
   FEMALE: 'NU',
 } as const;
 
-export type Gender = (typeof GENDER)[keyof typeof GENDER];
+/**
+ * True when gioi_tinh is missing or not a recognized GENDER value.
+ * @param value - Raw gioi_tinh value
+ * @returns Whether the value is absent or invalid
+ */
+export function isMissingGender(value: string | null | undefined): boolean {
+  return value !== GENDER.MALE && value !== GENDER.FEMALE;
+}

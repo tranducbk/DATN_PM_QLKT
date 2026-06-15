@@ -24,6 +24,7 @@ import { getApiErrorMessage } from '@/lib/http/apiError';
 import dayjs from 'dayjs';
 import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
 import { ROLES } from '@/constants/roles.constants';
+import { isMissingGender } from '@/constants/gender.constants';
 import { VietnamAddressCascader } from '@/components/shared/VietnamAddressCascader';
 import type { ManagerPositionRow } from '@/lib/types/personnelList';
 
@@ -262,7 +263,7 @@ export default function ManagerPersonnelEditPage() {
     try {
       setLoading(true);
 
-      if (!values.gioi_tinh || (values.gioi_tinh !== 'NAM' && values.gioi_tinh !== 'NU')) {
+      if (isMissingGender(values.gioi_tinh)) {
         message.error('Vui lòng chọn giới tính');
         setLoading(false);
         return;
@@ -390,7 +391,7 @@ export default function ManagerPersonnelEditPage() {
                           if (!value) {
                             return Promise.reject(new Error('Vui lòng chọn giới tính'));
                           }
-                          if (value !== 'NAM' && value !== 'NU') {
+                          if (isMissingGender(value)) {
                             return Promise.reject(new Error('Giới tính phải là Nam hoặc Nữ'));
                           }
                           return Promise.resolve();
