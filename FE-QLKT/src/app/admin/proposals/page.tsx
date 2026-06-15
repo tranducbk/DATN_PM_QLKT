@@ -326,7 +326,6 @@ export default function AdminProposalsPage() {
     },
   ];
 
-  // Get unique years
   const years = Array.from(new Set(proposals.map(p => p.nam))).sort((a, b) => b - a);
 
   const tabItems = [

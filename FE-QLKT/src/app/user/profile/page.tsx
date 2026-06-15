@@ -31,8 +31,9 @@ import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   ELIGIBILITY_STATUS,
-  ELIGIBILITY_STATUS_MAP,
+  getEligibilityStatusMeta,
 } from '@/constants/eligibilityStatus.constants';
+import { GENDER } from '@/constants/gender.constants';
 import type {
   PersonnelDetail,
   ServiceProfile,
@@ -78,8 +79,7 @@ export default function UserProfilePage() {
   const [commemorationMedals, setCommemorationMedals] = useState<MedalData | null>(null);
 
   const getStatusTag = (status: string | undefined) => {
-    const s =
-      ELIGIBILITY_STATUS_MAP[status ?? ''] || ELIGIBILITY_STATUS_MAP[ELIGIBILITY_STATUS.CHUA_DU];
+    const s = getEligibilityStatusMeta(status);
     return <Tag color={s.color}>{s.label}</Tag>;
   };
 
@@ -292,7 +292,7 @@ export default function UserProfilePage() {
                       hasReceived={!!commemorationMedals?.hasReceived}
                       receivedAt={getReceivedMonthYearText(commemorationMedals)}
                       yearsRequired={
-                        personnelInfo.gioi_tinh === 'NAM'
+                        personnelInfo.gioi_tinh === GENDER.MALE
                           ? KNC_YEARS_REQUIRED_NAM
                           : KNC_YEARS_REQUIRED_NU
                       }

@@ -90,7 +90,7 @@ class CommemorativeMedalController {
       userRole: user.role,
       action: AUDIT_ACTIONS.IMPORT_PREVIEW,
       resource: AWARD_SLUGS.COMMEMORATIVE_MEDALS,
-      description: `Tải lên file "${Buffer.from(file.originalname, 'latin1').toString('utf8')}" để review ${AWARD_LABEL}: ${result.valid?.length ?? 0} hợp lệ, ${result.errors?.length ?? 0} lỗi`,
+      description: `Tải lên file "${Buffer.from(file.originalname, 'latin1').toString('utf8')}" để xem trước ${AWARD_LABEL}: ${result.valid?.length ?? 0} hợp lệ, ${result.errors?.length ?? 0} lỗi`,
       payload: {
         filename: Buffer.from(file.originalname, 'latin1').toString('utf8'),
         total: result.total,

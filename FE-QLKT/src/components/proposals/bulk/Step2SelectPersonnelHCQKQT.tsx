@@ -19,6 +19,15 @@ import { formatDate } from '@/lib/utils';
 import { apiClient } from '@/lib/http/apiClient';
 import { calculateTotalMonths } from './serviceDuration';
 import { usePersonnelList } from './usePersonnelList';
+import {
+  sttColumn,
+  hoTenWithUnitColumn,
+  ngaySinhColumn,
+  capBacChucVuColumn,
+  ngayNhapNguColumn,
+  ngayXuatNguColumn,
+  tongThangColumn,
+} from './step2Columns';
 import type { Step2Personnel as Personnel } from './types';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { DANH_HIEU_DAC_BIET, HCQKQT_YEARS_REQUIRED, AWARD_TAB_LABELS } from '@/constants/danhHieu.constants';
@@ -130,7 +139,6 @@ export function Step2SelectPersonnelHCQKQT({
 
   const refDate = new Date(localNam ?? CURRENT_YEAR, localThang, 0);
 
-  // Check whether a personnel meets the HC_QKQT eligibility requirement
   const checkEligibleForHCQKQT = (record: Personnel): { eligible: boolean; reason?: string } => {
     if (alreadyReceivedMap[record.id]) {
       return { eligible: false, reason: 'Đã nhận' };
@@ -178,116 +186,13 @@ export function Step2SelectPersonnelHCQKQT({
   });
 
   const columns: ColumnsType<Personnel> = [
-    {
-      title: 'STT',
-      key: 'index',
-      width: 60,
-      align: 'center',
-      render: (_, __, index) => index + 1,
-    },
-    {
-      title: 'Họ và tên',
-      dataIndex: 'ho_ten',
-      key: 'ho_ten',
-      width: 200,
-      align: 'center',
-      render: (text: string, record) => {
-        const coQuan = record.DonViTrucThuoc?.CoQuanDonVi || record.CoQuanDonVi;
-        const donViTrucThuoc = record.DonViTrucThuoc;
-
-        const donViDisplay: string | null = donViTrucThuoc?.ten_don_vi
-          ? coQuan?.ten_don_vi
-            ? `${donViTrucThuoc.ten_don_vi} (${coQuan.ten_don_vi})`
-            : donViTrucThuoc.ten_don_vi
-          : coQuan?.ten_don_vi || null;
-
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <Text strong>{text}</Text>
-            {donViDisplay && (
-              <Text type="secondary" style={{ fontSize: '12px', marginTop: 4 }}>
-                {donViDisplay}
-              </Text>
-            )}
-          </div>
-        );
-      },
-    },
-    {
-      title: 'Ngày sinh',
-      dataIndex: 'ngay_sinh',
-      key: 'ngay_sinh',
-      width: 140,
-      align: 'center',
-      render: (date: string | undefined | null) => (date ? formatDate(date) : '-'),
-    },
-    {
-      title: 'Cấp bậc / Chức vụ',
-      key: 'cap_bac_chuc_vu',
-      width: 180,
-      align: 'center',
-      render: (_, record) => {
-        const capBac = record.cap_bac;
-        const chucVu = record.ChucVu?.ten_chuc_vu;
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <Text strong style={{ marginBottom: '4px' }}>
-              {capBac || '-'}
-            </Text>
-            <Text type="secondary" style={{ fontSize: '12px' }}>
-              {chucVu || '-'}
-            </Text>
-          </div>
-        );
-      },
-    },
-    {
-      title: 'Ngày nhập ngũ',
-      key: 'ngay_nhap_ngu',
-      width: 150,
-      align: 'center',
-      render: (_, record) => {
-        if (!record.ngay_nhap_ngu) return <Text type="secondary">-</Text>;
-        return formatDate(record.ngay_nhap_ngu);
-      },
-    },
-    {
-      title: 'Ngày xuất ngũ',
-      key: 'ngay_xuat_ngu',
-      width: 150,
-      align: 'center',
-      render: (_, record) => {
-        if (!record.ngay_xuat_ngu) return <Text type="secondary">Chưa xuất ngũ</Text>;
-        return formatDate(record.ngay_xuat_ngu);
-      },
-    },
-    {
-      title: 'Tổng tháng',
-      key: 'tong_thang',
-      width: 150,
-      align: 'center',
-      render: (_, record) => {
-        const result = calculateTotalMonths(record.ngay_nhap_ngu, record.ngay_xuat_ngu, refDate);
-        if (!result) return <Text type="secondary">-</Text>;
-
-        if (result.years > 0 && result.months > 0) {
-          return (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <Text strong>{result.years} năm</Text>
-              <Text type="secondary" style={{ fontSize: '12px', lineHeight: '1.2' }}>
-                {result.months} tháng
-              </Text>
-            </div>
-          );
-        } else if (result.years > 0) {
-          return <Text strong>{result.years} năm</Text>;
-        } else if (result.totalMonths > 0) {
-          return <Text strong>{result.totalMonths} tháng</Text>;
-        } else {
-          return <Text type="secondary">0 tháng</Text>;
-        }
-      },
-    },
+    sttColumn,
+    hoTenWithUnitColumn,
+    ngaySinhColumn,
+    capBacChucVuColumn,
+    ngayNhapNguColumn,
+    ngayXuatNguColumn,
+    tongThangColumn(localNam, localThang),
     {
       title: 'Đủ điều kiện',
       key: 'du_dieu_kien',
@@ -355,7 +260,6 @@ export function Step2SelectPersonnelHCQKQT({
           dataRows.forEach((row: ExcelRow, index: number) => {
             const rowNumber = index + 2; // +2: skip header + 0-based index
 
-            // Validate required fields
             const hoTen = row[0]?.toString().trim();
             const ngaySinh = row[1]?.toString().trim();
             const nam = row[2]?.toString().trim();
@@ -406,7 +310,6 @@ export function Step2SelectPersonnelHCQKQT({
             });
           });
 
-          // Remove duplicates from personnel IDs
           const uniquePersonnelIds = Array.from(new Set(processedPersonnelIds));
 
           try {
@@ -484,7 +387,6 @@ export function Step2SelectPersonnelHCQKQT({
 
         onTitleDataChange?.(titleData);
 
-        // Update nam from imported data if available
         if (result.titleData[0].nam) {
           onNamChange(result.titleData[0].nam);
         }

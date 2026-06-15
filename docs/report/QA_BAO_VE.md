@@ -981,7 +981,7 @@ FE socket                       BE Socket.IO middleware                FE useSoc
 
 File: `FE/src/hooks/useSocket.ts:65-90`.
 
-**Custom event `tokenRefreshed`** đáng chú ý: Khi axios interceptor (REST flow) refresh token, nó dispatch event này → useSocket lắng nghe → update `socket.auth.token` luôn → khỏi phải refresh 2 lần (1 bởi axios, 1 bởi socket).
+**Custom event `tokenRefreshed`** đáng chú ý: Khi axios interceptor (REST flow) refresh token, nó dispatch event này → useSocket lắng nghe → cập nhật `tokenRef.current` luôn (token mới được gửi ở lần reconnect kế) → khỏi phải refresh 2 lần (1 bởi axios, 1 bởi socket). Chi tiết cơ chế `tokenRef` và lý do đổi từ `socket.auth.token` xem A.24.
 
 #### Pha 4 — Force logout cross-device
 
@@ -1059,6 +1059,69 @@ Socket.IO mặc định thử upgrade lên WebSocket sau khi handshake bằng HT
 - "Sao không lưu auth token vào cookie httpOnly thay handshake `auth: {token}`?" → "Cookie tự gửi mỗi request, an toàn hơn localStorage, nhưng cross-origin (FE 3000 ↔ BE 4000) cần config phức tạp + CSRF token. Em chọn handshake auth cho đơn giản, chấp nhận rủi ro XSS."
 - "Vì sao verify token ở handshake mà không verify lại mỗi event?" → "Verify mỗi event tốn ~0.5 ms × hàng nghìn event/s → quá tốn. Token chỉ verify lúc connect; nếu user bị revoke giữa session → BE đóng connection bằng `socket.disconnect()` từ event handler `force_logout` flow."
 - "Có rate-limit Socket.IO event không?" → "Chưa. Socket.IO có thư viện `socket.io-rate-limiter` nhưng em chưa setup vì user nội bộ. Đã ghi hướng phát triển."
+
+---
+
+### A.24 — Vì sao thông báo "Đã kết nối lại máy chủ" hiện liên tục, và đã sửa thế nào?
+
+**Ngắn:** Toast hiện lặp vì hai lỗi cộng dồn: (1) **mỗi lần access token được làm mới, socket bị huỷ rồi dựng lại** → tạo một chu kỳ "mất kết nối → kết nối lại"; (2) toast "Đã kết nối lại máy chủ" **hiện ngay**, trong khi toast "Mất kết nối" lại **debounce 3 giây** → mỗi lần chớp tắt dưới 3s, người dùng không thấy "Mất kết nối" nhưng vẫn thấy "Đã kết nối lại". Đã sửa: giữ socket sống xuyên suốt phiên đăng nhập (đọc token qua `ref`, đổi dependency của effect từ `[token]` sang `[hasToken]`), và chỉ báo "đã kết nối lại" nếu trước đó đã thực sự hiện cảnh báo mất kết nối.
+
+**Triệu chứng:** Đang dùng bình thường (không rớt mạng) mà cứ sau một lúc lại nảy toast xanh "Đã kết nối lại máy chủ.", trong khi **không hề** thấy toast vàng "Mất kết nối máy chủ…" trước đó.
+
+**Nguyên nhân 1 — socket bị dựng lại mỗi lần refresh token (gốc rễ).** Chuỗi 5 bước:
+
+```
+1. Access token hết hạn (hoặc socket báo TOKEN_EXPIRED) → refresh →
+   window.dispatchEvent('tokenRefreshed')
+2. AuthContext nghe 'tokenRefreshed' → loadAuth() → setUser({...}) tạo OBJECT user MỚI
+   (dù dữ liệu y hệt, tham chiếu khác)
+3. MainLayout có useEffect phụ thuộc [user] → user đổi tham chiếu →
+   setAccessToken(localStorage.getItem('accessToken')) → state accessToken đổi GIÁ TRỊ
+4. useSocket có useEffect phụ thuộc [token] → token đổi →
+   cleanup: socket.disconnect()  → status 'disconnected'
+   tạo socket mới → 'connect'      → status 'connected'
+5. ConnectionStatusToast thấy disconnected → connected → toast "Đã kết nối lại máy chủ"
+```
+
+Tức là việc làm mới token (chuyện bình thường, ~30 phút/lần, hoặc khi socket tự refresh lúc `TOKEN_EXPIRED`) vô tình **phá và dựng lại cả kết nối realtime** — hoàn toàn không cần thiết.
+
+**Nguyên nhân 2 — logic toast bất đối xứng (đây là cái mắt thấy).** Trong `FE/src/components/MainLayout.tsx`:
+- "Mất kết nối máy chủ…" được **debounce 3 giây** (chủ ý: chớp tắt ngắn thì đừng làm phiền).
+- "Đã kết nối lại máy chủ." lại bắn **ngay lập tức** khi `disconnected → connected`.
+
+→ Một chu kỳ teardown/rebuild ở Nguyên nhân 1 chỉ mất vài trăm ms (< 3s): cảnh báo "mất kết nối" bị huỷ trước khi kịp hiện, nhưng "đã kết nối lại" thì vẫn hiện. Người dùng chỉ thấy **một nửa** của cặp toast → cảm giác "tự nhiên báo kết nối lại".
+
+**Cách sửa 1 — giữ socket sống qua refresh (`FE/src/hooks/useSocket.ts`):**
+
+| | Trước | Sau |
+|---|---|---|
+| Dependency của effect | `[token]` (đổi mỗi lần refresh → dựng lại socket) | `[hasToken]` (boolean — chỉ đổi khi đăng nhập / đăng xuất) |
+| Cách gửi token | `auth: { token }` (chốt cứng lúc tạo socket) | `auth: cb => cb({ token: tokenRef.current })` (đọc token mới nhất ở **mỗi** lần (re)connect) |
+| Khi có token mới | `socket.auth.token = newToken` | `tokenRef.current = newToken` |
+
+`tokenRef` là một `useRef` luôn trỏ tới token mới nhất (gán lại mỗi render) nhưng **không** nằm trong dependency của effect. Nhờ vậy token xoay vòng được gửi **tại chỗ** ở lần reconnect kế — socket.io gọi lại hàm `auth` mỗi lần kết nối — thay vì phải huỷ và dựng lại socket. Khi đăng xuất, `token` về `null` → `hasToken = false` → cleanup ngắt socket như cũ.
+
+**Cách sửa 2 — chỉ báo "đã kết nối lại" nếu đã từng báo "mất kết nối" (`FE/src/components/MainLayout.tsx`):**
+
+```ts
+const warnedRef = useRef(false);
+// khi cảnh báo mất kết nối THỰC SỰ hiện (sau debounce 3s):
+message.warning('Mất kết nối máy chủ…'); warnedRef.current = true;
+// khi nối lại:
+if (warnedRef.current) { message.success('Đã kết nối lại máy chủ.'); warnedRef.current = false; }
+```
+
+→ Chớp tắt < 3s: cảnh báo bị huỷ, `warnedRef` vẫn `false` → **không** hiện toast nối lại. Chỉ mất kết nối thật (≥ 3s, đã hiện cảnh báo) mới hiện "đã kết nối lại" đúng một lần.
+
+**Kết quả:** Refresh token không còn làm chớp socket; và kể cả có chớp nhẹ vì lý do khác (máy sleep, blip mạng < 3s) thì cũng im lặng. Toast "đã kết nối lại" chỉ xuất hiện khi có gián đoạn thật sự kéo dài.
+
+**Nếu hội đồng hỏi:**
+- *"Đây là lỗi loại gì — logic hay hiệu năng?"* → Cả hai góc: một lỗi **vòng đời React** (effect dùng giá trị thay đổi liên tục làm dependency nên tái tạo tài nguyên thừa) và một lỗi **UX** (debounce bất đối xứng giữa hai trạng thái của cùng một sự kiện).
+- *"Sao không bỏ luôn toast cho gọn?"* → Toast vẫn cần cho gián đoạn thật (LAN rớt, server restart) để người dùng biết tạm thời mất realtime; chỉ cần loại các lần báo "giả".
+- *"Đổi `[token]` → `[hasToken]` có khiến socket gửi token cũ không?"* → Không. Hàm `auth` đọc `tokenRef.current` ở mỗi lần reconnect (luôn mới nhất); thêm nữa sự kiện `tokenRefreshed` chủ động gọi `socket.connect()` để áp token mới ngay.
+- *"Có ảnh hưởng tới force-logout hay thông báo realtime không?"* → Không. Việc join room `user_<id>`, nhận `new_notification`, `force_logout` giữ nguyên; chỉ thay đổi cách quản lý vòng đời và token của **một** kết nối duy nhất.
+
+> Mục này cập nhật Pha 3 của A.23: bước `socket.auth.token = newToken` trong sơ đồ nay là `tokenRef.current = newToken`.
 
 ---
 
@@ -2429,9 +2492,19 @@ model TaiKhoan {
 }
 ```
 
-**Khi xoá QuanNhan:** Postgres tự xoá TaiKhoan, DanhHieuHangNam liên quan.
+**Ngắn:** Lược đồ có **47 khoá ngoại**, mỗi cái khai báo rõ hành vi khi xoá bản ghi cha — **không** dùng 2 chế độ mà **3 chế độ**:
 
-**Tránh accidentally cascade:** Dùng `onDelete: Restrict` cho FK quan trọng (vd: `FileQuyetDinh` không cho xoá khi còn bản ghi tham chiếu).
+| `onDelete` | Số FK | Ý nghĩa khi xoá cha | Ví dụ |
+|---|---|---|---|
+| **Cascade** | 29 | Xoá luôn bản ghi con | Xoá `QuanNhan` → xoá `TaiKhoan`, `DanhHieuHangNam`, lịch sử chức vụ, mọi bảng khen thưởng |
+| **Restrict** | 14 | Chặn xoá cha khi còn con tham chiếu | `FileQuyetDinh` không cho xoá khi còn award trỏ tới; `ChucVu` (`QuanNhan.chuc_vu_id`) không cho xoá khi còn người giữ |
+| **SetNull** | 4 | Giữ con, gán FK = null | Xoá tài khoản người duyệt → đề xuất/log **vẫn còn**, chỉ set `nguoi_duyet_id`/`nguoi_thuc_hien_id` = null (không mất lịch sử nghiệp vụ) |
+
+**Khi xoá QuanNhan:** ở tầng DB Postgres tự cascade sang `TaiKhoan`, `DanhHieuHangNam`… NHƯNG đường xoá thật trong code **không** chỉ dựa cascade DB — service xoá tay từng bảng con trong một transaction rồi mới xoá `QuanNhan` (xem R.12), vì cần đồng thời giảm `so_luong` của đơn vị (cascade DB không làm được) và kiểm soát thứ tự xoá.
+
+**Lưu ý `onUpdate: Cascade` đi kèm `Restrict`:** các FK trỏ `FileQuyetDinh.so_quyet_dinh` đặt `onDelete: Restrict` (chặn xoá QĐ đang dùng) nhưng `onUpdate: Cascade` (sửa số QĐ thì tự lan sang mọi award) — xem F.18 / mục về rename.
+
+**Vị trí:** `BE-QLKT/prisma/schema.prisma` (toàn bộ khai báo `onDelete`/`onUpdate`).
 
 ### F.20 — Transaction với isolation level
 
@@ -2767,6 +2840,90 @@ Next.js tự code-split theo route. Bundle initial ~ 250 KB gzipped.
 - Permission lookup (~5 ms saving / request).
 - Dashboard statistics (refresh mỗi 5 phút).
 - Đơn vị tree (ít thay đổi, có thể cache 1 giờ).
+
+### G.7 — File Excel danh sách sinh ra thế nào? Có giới hạn số dòng đọc không?
+
+**Ngắn:** File `.xlsx` sinh server-side bằng ExcelJS theo cấu hình (`buildTemplate(config)`), không nối chuỗi tay. Luồng: FE chọn quân nhân → gửi `personnel_ids` → BE fetch song song (quân nhân + số quyết định) → ghi từng dòng → tô màu/kẻ ô/căn lề/gắn dropdown. **Giới hạn tuỳ luồng**: file mẫu prefill đọc *hết* số đã chọn (không cap riêng), còn export cap cứng 10.000 dòng và import (đọc file upload) cap cứng 5.000 dòng.
+
+**Code render (rút gọn):**
+```typescript
+// services/excel/templateData.service.ts — fetch + giữ đúng thứ tự đã chọn
+const records = await quanNhanRepository.findManyRaw({
+  where: { id: { in: personnelIds } },              // KHÔNG có take → đọc hết số đã chọn
+  include: { ChucVu: true, CoQuanDonVi: {...}, DonViTrucThuoc: {...} },
+});
+const byId = new Map(records.map(r => [r.id, r]));   // IN không giữ thứ tự mảng...
+return personnelIds.map(id => byId.get(id)).filter(Boolean);  // ...nên map lại theo thứ tự FE gửi
+
+// helpers/excel/excelTemplateHelper.ts — prefillPersonnelRows: ghi từng dòng
+personnelList.forEach(person => {
+  for (let r = 0; r < (repeatMap[person.id] || 1); r++) {       // số dòng/người do modal chọn
+    stt++;
+    worksheet.addRow({ stt, id: person.id, ho_ten, ngay_sinh, cap_bac, chuc_vu, ... });
+  }
+});
+// rồi style theo thứ tự: styleHeaderRow → applyReadonlyFill (tô vàng cột khoá)
+//   → dataValidation (dropdown cấp bậc / danh hiệu / số QĐ) → applyThinBordersToGrid → applyAlignment
+```
+
+**Bảng giới hạn (đọc tới đâu):**
+
+| Luồng | Giới hạn | Hằng số | Enforce |
+|---|---|---|---|
+| File mẫu — prefill quân nhân đã chọn | **Không cap riêng** — đọc hết số đã chọn | — | `fetchPersonnelForTemplate` (`WHERE id IN`) |
+| File mẫu — dropdown số quyết định | 200 số QĐ mới nhất (theo `nam desc`) | `MAX_DECISION_DROPDOWN = 200` | `fetchDecisionsForTemplate` (`take`) |
+| File mẫu — dropdown quá dài | chuỗi > 250 ký tự → đẩy sang sheet ẩn `_QuyetDinh` | `EXCEL_INLINE_VALIDATION_MAX_LENGTH = 250` | `createDecisionValidation` |
+| File mẫu trống (chưa chọn ai) | đệm 50 dòng để gõ tay | `MIN_TEMPLATE_ROWS = 50` | `buildTemplate` |
+| **Xuất dữ liệu (export)** | **tối đa 10.000 dòng** | `EXPORT_FETCH_LIMIT = 10_000` | `exportToExcel` (`take`) |
+| **Đọc file upload (import)** | **tối đa 5.000 dòng, vượt là chặn** | `MAX_EXCEL_ROWS = 5000` | `excelImportHelper` (`rowCount > MAX → throw`) |
+
+**Vì sao file mẫu không cap mà import/export thì cap:** file mẫu chỉ ghi đúng tập quân nhân admin đã chọn ở UI (danh sách chọn phân trang 100/trang, ghi `addRow` tuyến tính O(n) trong bộ nhớ), nên không có rủi ro đọc tràn. Ngược lại import nhận file *bên ngoài* (không kiểm soát kích thước) nên phải chặn 5.000; export quét DB nên giới hạn 10.000 tránh kéo cả bảng.
+
+**Phản biện thường gặp:** "Lỡ admin chọn 10.000 quân nhân cho file mẫu thì sao?" → "Hiện không có hard cap ở bước prefill — ExcelJS ghi tuyến tính nên vẫn chạy, nhưng import phía sau đã chặn ở 5.000 dòng nên thực tế không vượt được. Nếu cần, thêm `take` cho `fetchPersonnelForTemplate` là đủ — em ghi nhận là điểm có thể siết thêm."
+
+### G.8 — Cơ chế đọc file Excel import và bắt lỗi như thế nào?
+
+**Ngắn:** Đọc theo **2 lượt** (two-pass) để tránh N+1, và bắt lỗi theo mô hình **gom lỗi (accumulate), không fail-fast**: lỗi nặng (sai cấu trúc file) thì `throw` chặn cả file; lỗi từng dòng thì đẩy vào mảng `errors` rồi `continue` — dòng hợp lệ vẫn import được, cuối cùng trả `{ imported, total, errors[] }`.
+
+**Lượt đọc:**
+
+1. **Nạp file:** `loadWorkbook(buffer)` — multer dùng `memoryStorage` nên file ở RAM (`buffer`), ExcelJS parse thẳng, không ghi đĩa.
+2. **Chọn + kiểm sheet:** `getAndValidateWorksheet` bỏ qua sheet ẩn (`_CapBac`, `_QuyetDinh`); chặn nếu sheet thiếu / `rowCount === 0` / `rowCount > 5000` (`MAX_EXCEL_ROWS`) → `throw ValidationError` (chặn cả file).
+3. **Map header linh hoạt:** `parseHeaderMap` + `getHeaderCol` đọc hàng 1, map tên cột → chỉ số cột, chấp nhận **nhiều alias** (`id|ma_quan_nhan|personnel_id`, `ho_va_ten|ho_ten|hoten|ten`...) để không vỡ khi header gõ tay khác dấu/khoảng trắng. Thiếu cột bắt buộc (id, năm, danh hiệu) hoặc sai loại mẫu (sheet đơn vị) → `throw`.
+4. **Pass 1 — gom khoá để batch query:** lặp dòng 2→`rowCount` chỉ để gom `personnelIds` + `allYears` *distinct*. Sau đó query **1 lần** ra `personnelMap`, `existingAwardKeys`, `existingRewardByKey`, pending proposals theo năm → tất cả đổ vào `Map`/`Set` cho lookup **O(1)** (tránh query trong vòng lặp).
+5. **Pass 2 — validate từng dòng:** lặp lại dòng 2→`rowCount`, đọc cell, kiểm tra tuần tự; mỗi lỗi `errors.push("Dòng N: ...")` + `continue`.
+
+**Thứ tự kiểm lỗi mỗi dòng (dừng dòng ngay khi gặp lỗi đầu tiên):**
+```typescript
+for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
+  // ... đọc cell ...
+  if (!idValue && !namVal && !danh_hieu_raw) continue;          // dòng trống → bỏ qua, không tính total
+  total++;
+  if (missingFields.length) { errors.push(`Dòng ${rowNumber}: Thiếu ${...}`); continue; }   // thiếu id/năm/danh hiệu
+  const personnel = personnelById.get(personnelId);
+  if (!personnel)            { errors.push(`Dòng ${rowNumber}: Không tìm thấy quân nhân ...`); continue; }
+  if (!Number.isInteger(nam))                 { errors.push(`... Giá trị năm không hợp lệ`); continue; }
+  if (nam < 1900 || nam > currentYear)        { errors.push(`... Năm phải từ 1900 đến ${currentYear}`); continue; }
+  if (!validDanhHieu.has(resolvedDanhHieu))   { errors.push(`... Danh hiệu "..." không đúng`); continue; }
+  if (seenInFile.has(fileKey))                { errors.push(`... trùng lặp trong file`); continue; }
+  if (existingAwardKeys.has(...))             { errors.push(`... đã được duyệt trước đó`); continue; }
+  if (hasPendingProposal)                     { errors.push(`... đã có ... năm ...`); continue; }   // trùng đề xuất PENDING cùng người/năm/danh hiệu
+  if (missingInfoFields.length)               { errors.push(`... Thiếu cấp bậc/chức vụ (cả file lẫn hệ thống)`); continue; }
+  rowsToProcess.push({ ... });                                  // dòng hợp lệ
+}
+```
+
+Các tầng kiểm: **cấu trúc** (sheet, cột) → **bắt buộc** (thiếu field) → **tồn tại** (ID có trong DB?) → **hợp lệ giá trị** (năm, danh hiệu thuộc whitelist) → **trùng lặp** (trùng trong file, trùng đã duyệt, trùng đang chờ duyệt) → **đủ thông tin phụ** (cấp bậc/chức vụ).
+
+**Ghi DB:** chỉ `rowsToProcess` (dòng hợp lệ) được ghi trong **một** `prisma.$transaction` (timeout 30s = `IMPORT_TRANSACTION_TIMEOUT`) → atomic, all-or-nothing cho phần hợp lệ.
+
+**Hai chế độ:**
+- `previewImport(buffer)` — chỉ đọc + validate, trả `{ valid[], invalid[], summary }` để FE render trang xem trước, **chưa ghi DB**.
+- `importFromExcelBuffer(buffer)` — validate rồi ghi luôn trong transaction.
+
+**Hiển thị lỗi cho user:** FE (`ExcelImportSection`) show tối đa **5 lỗi đầu** (`errors.slice(0,5)`) + "Còn N lỗi khác..." để không ngập màn hình.
+
+**Phản biện thường gặp:** "Sao đọc 2 lượt, không gộp 1?" → "Lượt 1 chỉ gom ID/năm để batch query một phát (tránh N+1 — nếu validate ngay trong khi đọc thì mỗi dòng phải query DB). Lượt 2 validate trên dữ liệu đã nạp sẵn vào Map nên toàn bộ chỉ tốn 2 lần quét bộ nhớ + 1 cụm query, không phải `rowCount` query." Điểm từng cần siết (đã xử lý): trước đây message *"Không tìm thấy quân nhân với ID <CUID>"* in cả ID kỹ thuật ra cho user; nay đổi sang *"Không tìm thấy quân nhân tương ứng với mã trong file."* (bỏ CUID), đồng bộ ở cả 7 vị trí import, theo rule không leak ID nội bộ.
 
 ---
 
@@ -4893,7 +5050,35 @@ Tuy nhiên em **không tự tin về tuning chi tiết** — chưa cấu hình a
 
 ### R.12 — Xoá một quân nhân thì dữ liệu liên quan xử lý thế nào?
 
-**Ngắn:** Phần lớn khoá ngoại đặt `ON DELETE CASCADE` nên xoá quân nhân kéo theo xoá hồ sơ và khen thưởng của họ. Riêng khoá ngoại tới `FileQuyetDinh` đặt `RESTRICT` để không xoá nhầm quyết định đang được tham chiếu, và `chuc_vu_id` đặt `RESTRICT` để không xoá chức vụ đang có người giữ.
+**Ngắn:** Phần lớn khoá ngoại đặt `ON DELETE CASCADE` nên xoá quân nhân kéo theo xoá hồ sơ và khen thưởng của họ. Riêng khoá ngoại tới `FileQuyetDinh` đặt `RESTRICT` để không xoá nhầm quyết định đang được tham chiếu, và `chuc_vu_id` đặt `RESTRICT` để không xoá chức vụ đang có người giữ. (Toàn lược đồ: 29 FK Cascade, 14 Restrict, 4 SetNull — xem F.19.)
+
+**Chi tiết — không chỉ dựa cascade DB:** Cascade ở tầng Postgres là *lưới an toàn cuối*, nhưng đường xoá thật là một **transaction trong service**: xoá tay từng bảng con rồi mới xoá `QuanNhan`, đồng thời giảm `so_luong` của đơn vị (việc cascade DB không làm được). Service cũng chặn xoá nếu role không đủ quyền (chỉ ADMIN/SUPER_ADMIN) và chặn tự-xoá-chính-mình.
+
+```typescript
+// src/services/personnel.service.ts — deletePersonnel()
+await prisma.$transaction(async prismaTx => {
+  if (personnel.TaiKhoan) await accountRepository.delete(personnel.TaiKhoan.id, prismaTx);
+  await positionHistoryRepository.deleteMany({ quan_nhan_id: id }, prismaTx);
+  await scientificAchievementRepository.deleteMany({ quan_nhan_id: id }, prismaTx);
+  await danhHieuHangNamRepository.deleteManyByPersonnelId(id, prismaTx);
+  // ... contribution / militaryFlag / commemorative / tenure / adhoc / profile snapshots
+  await quanNhanRepository.delete(String(id), prismaTx);
+  if (unitId) await adjustUnitCount(prismaTx, unitId, isCoQuanDonVi, 'decrement'); // <- cascade DB không làm được
+});
+```
+
+**Logic nằm ở file nào:**
+
+| Việc | File / vị trí |
+|---|---|
+| Khai báo cascade/restrict/setnull (47 FK) | `BE-QLKT/prisma/schema.prisma` |
+| Xoá quân nhân (transaction + giảm `so_luong` + check quyền) | `src/services/personnel.service.ts` → `deletePersonnel()` |
+| Xoá tài khoản (kèm xoá quân nhân nếu là tài khoản cá nhân) | `src/services/account.service.ts` |
+| Xoá từng loại khen thưởng | `src/services/<award>.service.ts` → `src/repositories/<award>.repository.ts` (`delete`) |
+| Chặn xoá quyết định đang được award tham chiếu (`Restrict`) | `src/services/decision.service.ts` |
+| Giảm số lượng quân nhân của đơn vị sau khi xoá | `adjustUnitCount()` (gọi trong cùng transaction) |
+
+**Phản biện thường gặp:** "Đã có cascade ở DB rồi, sao còn xoá tay trong code?" → "Vì xoá quân nhân kèm một nghiệp vụ mà DB không biết: giảm `so_luong` của đơn vị. Em gói tất cả trong một transaction để hoặc xoá trọn vẹn cả con lẫn cập nhật đếm, hoặc rollback hết — cascade DB chỉ là lưới an toàn nếu sót đường nào."
 
 ### R.13 — Gần đây mới thêm khoá ngoại `nguoi_tao_id`, `nguoi_duyet_id` cho danh hiệu đơn vị — trước đó toàn vẹn dữ liệu thế nào?
 

@@ -3,11 +3,11 @@ import {
   RESOURCE_TYPES,
   ROLES,
   emitNotificationToUser,
-  DANH_HIEU_MAP,
   getDanhHieuName,
   getDisplayName,
 } from './helpers';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
+import { getAwardLabelByProposalType } from '../../constants/awardResource.constants';
 import { accountRepository } from '../../repositories/account.repository';
 import { notificationRepository } from '../../repositories/notification.repository';
 import { coQuanDonViRepository, donViTrucThuocRepository } from '../../repositories/unit.repository';
@@ -44,16 +44,7 @@ export async function notifyOnBulkAwardAdded(
     const notifications: NotificationInput[] = [];
     const adminDisplayName = await getDisplayName(adminUsername);
 
-    const bulkAwardTypeMap: Record<string, string> = {
-      CA_NHAN_HANG_NAM: 'Danh hiệu hằng năm',
-      DON_VI_HANG_NAM: 'Danh hiệu đơn vị hằng năm',
-      NCKH: 'Thành tích khoa học',
-      NIEN_HAN: 'Huy chương Chiến sĩ vẻ vang',
-      HC_QKQT: 'Huy chương Quân kỳ quyết thắng',
-      KNC_VSNXD_QDNDVN: DANH_HIEU_MAP.KNC_VSNXD_QDNDVN,
-      CONG_HIEN: 'Huân chương Bảo vệ Tổ quốc',
-    };
-    const awardTypeName = bulkAwardTypeMap[awardType] || awardType;
+    const awardTypeName = getAwardLabelByProposalType(awardType);
 
     if (personnelIds && personnelIds.length > 0) {
       const accounts = await accountRepository.findManyRaw({
@@ -167,7 +158,10 @@ export async function notifyOnBulkAwardAdded(
           message: message,
           resource: RESOURCE_TYPES.AWARDS,
           tai_nguyen_id: personnel.id,
-          link: `/user/dashboard`,
+          link:
+            account.role === ROLES.MANAGER
+              ? `/manager/personnel/${personnel.id}`
+              : `/user/dashboard`,
         });
 
         const donViId = personnel.co_quan_don_vi_id || personnel.don_vi_truc_thuoc_id;

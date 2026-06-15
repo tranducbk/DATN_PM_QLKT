@@ -86,6 +86,12 @@ export function useSocket(
 
   const tokenRefreshHandlerRef = useRef<((e: Event) => void) | null>(null);
 
+  // Always holds the latest token without being a socket-effect dependency, so a
+  // token refresh updates the auth payload in place instead of rebuilding the socket.
+  const tokenRef = useRef(token);
+  tokenRef.current = token;
+  const hasToken = Boolean(token);
+
   const [connectionStatus, setConnectionStatus] = useState<SocketConnectionStatus>('disconnected');
 
   const updateStatus = useCallback((status: SocketConnectionStatus) => {
@@ -94,10 +100,12 @@ export function useSocket(
   }, []);
 
   useEffect(() => {
-    if (!token) return;
+    if (!hasToken) return;
 
     const socket = io(SOCKET_URL, {
-      auth: { token },
+      // Read the freshest token on every (re)connect so a rotated token is sent
+      // without tearing the socket down and back up.
+      auth: (cb: (data: object) => void) => cb({ token: tokenRef.current }),
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionDelay: 1000,
@@ -121,7 +129,7 @@ export function useSocket(
           const newToken = res.data?.data?.accessToken;
           if (newToken) {
             localStorage.setItem('accessToken', newToken);
-            (socket.auth as Record<string, string>).token = newToken;
+            tokenRef.current = newToken;
             window.dispatchEvent(new CustomEvent('tokenRefreshed', { detail: { accessToken: newToken } }));
             socket.connect();
           }
@@ -131,8 +139,8 @@ export function useSocket(
         return;
       }
       const latestToken = localStorage.getItem('accessToken');
-      if (latestToken && latestToken !== (socket.auth as Record<string, string>)?.token) {
-        (socket.auth as Record<string, string>).token = latestToken;
+      if (latestToken && latestToken !== tokenRef.current) {
+        tokenRef.current = latestToken;
       }
     });
 
@@ -141,8 +149,8 @@ export function useSocket(
 
     const handleTokenRefreshed = (e: Event) => {
       const newToken = (e as CustomEvent).detail?.accessToken;
-      if (newToken && socket) {
-        (socket.auth as Record<string, string>).token = newToken;
+      if (newToken) {
+        tokenRef.current = newToken;
         if (!socket.connected) socket.connect();
       }
     };
@@ -160,7 +168,7 @@ export function useSocket(
       socketRef.current = null;
       updateStatus('disconnected');
     };
-  }, [token, updateStatus]);
+  }, [hasToken, updateStatus]);
 
   return { socketRef, connectionStatus };
 }

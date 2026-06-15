@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { ROLES } from '../constants/roles.constants';
+import { ROLES, ROLE_LABELS } from '../constants/roles.constants';
 import { accountRepository } from '../repositories/account.repository';
 import { JwtUser } from '../types/express';
 import { JWT_SECRET } from '../configs';
@@ -127,7 +127,7 @@ const checkRole = (allowedRoles: string[]) => {
     if (!allowedRoles.includes(req.user.role)) {
       res.status(403).json({
         success: false,
-        message: `Chỉ ${allowedRoles.join(', ')} mới có quyền thực hiện thao tác này.`,
+        message: `Chỉ ${allowedRoles.map(r => ROLE_LABELS[r] ?? r).join(', ')} mới có quyền thực hiện thao tác này.`,
       });
       return;
     }

@@ -1,9 +1,9 @@
 import type { Prisma } from '../../generated/prisma';
 import { Request, Response } from 'express';
 import { normalizeParam } from '../paginationHelper';
+import { getDanhHieuName } from '../../constants/danhHieu.constants';
 import {
   FALLBACK,
-  ACHIEVEMENT_TYPE_NAMES,
   parseResponseData,
   getUnitNameFromChucVu,
   getUnitNameFromUnitId,
@@ -331,7 +331,7 @@ const scientificAchievements: Record<
     const nam = req.body?.nam || '';
     const personnelId = req.body?.personnel_id || req.body?.quan_nhan_id || null;
 
-    const loaiName = ACHIEVEMENT_TYPE_NAMES[loai] || loai || FALLBACK.UNKNOWN;
+    const loaiName = getDanhHieuName(loai);
 
     let hoTen = '';
     if (personnelId) {
@@ -362,7 +362,7 @@ const scientificAchievements: Record<
     const nam = req.body?.nam || '';
     const achievementId = normalizeParam(req.params?.id);
 
-    const loaiName = ACHIEVEMENT_TYPE_NAMES[loai] || loai || FALLBACK.UNKNOWN;
+    const loaiName = getDanhHieuName(loai);
 
     let hoTen = '';
     try {
@@ -402,7 +402,7 @@ const scientificAchievements: Record<
       }
     } catch {}
 
-    const loaiName = ACHIEVEMENT_TYPE_NAMES[loai] || loai || FALLBACK.UNKNOWN;
+    const loaiName = getDanhHieuName(loai);
 
     if (hoTen && loai) {
       return `Xóa thành tích khoa học: ${loaiName}${

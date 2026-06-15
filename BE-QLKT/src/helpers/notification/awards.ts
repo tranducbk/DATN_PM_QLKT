@@ -10,7 +10,7 @@ import {
 } from './helpers';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 import { AWARD_SLUGS } from '../../constants/awardSlugs.constants';
-import { AWARD_RESOURCE } from '../../constants/awardResource.constants';
+import { AWARD_RESOURCE, getAwardLabelByProposalType } from '../../constants/awardResource.constants';
 import { isFeatureEnabled } from '../settingsHelper';
 import { accountRepository } from '../../repositories/account.repository';
 import { notificationRepository } from '../../repositories/notification.repository';
@@ -128,12 +128,7 @@ async function notifyUserOnAchievementApproved(
 
   const approverDisplayName = await getDisplayName(approverUsername);
 
-  const loaiMap: Record<string, string> = {
-    DTKH: 'Đề tài khoa học',
-    SKKH: 'Sáng kiến khoa học',
-    NCKH: 'Nghiên cứu khoa học',
-  };
-  const loaiName = loaiMap[achievement.loai] || achievement.loai || 'Thành tích khoa học';
+  const loaiName = getDanhHieuName(achievement.loai);
 
   const notification = await notificationRepository.create({
     nguoi_nhan_id: account.id,
@@ -162,15 +157,7 @@ async function notifyOnAwardDeleted(
     const notifications: NotificationInput[] = [];
     const adminDisplayName = await getDisplayName(adminUsername);
 
-    const awardTypeNameMap: Record<string, string> = {
-      HCCSVV: 'Huy chương Chiến sĩ vẻ vang',
-      HCBVTQ: 'Huân chương Bảo vệ Tổ quốc',
-      KNC_VSNXD_QDNDVN: DANH_HIEU_MAP.KNC_VSNXD_QDNDVN,
-      HCQKQT: 'Huy chương Quân kỳ quyết thắng',
-      CA_NHAN_HANG_NAM: 'Danh hiệu hằng năm',
-      NCKH: 'Thành tích khoa học',
-    };
-    const awardTypeName = awardTypeNameMap[awardType] || awardType;
+    const awardTypeName = getAwardLabelByProposalType(awardType);
 
     const nam = award.nam || '';
 
@@ -285,12 +272,6 @@ async function notifyUsersOnAwardApproved(
         if (dh && DANH_HIEU_MAP[dh]) {
           userAwards.push(`${DANH_HIEU_MAP[dh]}${item.nam ? ` (năm ${item.nam})` : ''}`);
         }
-        if (item.nhan_bkbqp) {
-          userAwards.push(`${DANH_HIEU_MAP.BKBQP}${item.nam ? ` (năm ${item.nam})` : ''}`);
-        }
-        if (item.nhan_cstdtq) {
-          userAwards.push(`${DANH_HIEU_MAP.CSTDTQ}${item.nam ? ` (năm ${item.nam})` : ''}`);
-        }
       });
 
       const userNienHan = nienHanData.filter(
@@ -340,7 +321,10 @@ async function notifyUsersOnAwardApproved(
         message: message,
         resource: RESOURCE_TYPES.PROPOSALS,
         tai_nguyen_id: proposal.id,
-        link: `/user/dashboard`,
+        link:
+          account.role === ROLES.MANAGER
+            ? `/manager/personnel/${account.quan_nhan_id}`
+            : `/user/dashboard`,
       });
     }
 
@@ -385,16 +369,7 @@ async function notifyAdminsOnBulkBypass(
     if (admins.length === 0) return 0;
 
     const saDisplayName = await getDisplayName(saUsername);
-    const bulkAwardTypeMap: Record<string, string> = {
-      CA_NHAN_HANG_NAM: 'Danh hiệu hằng năm',
-      DON_VI_HANG_NAM: 'Danh hiệu đơn vị hằng năm',
-      NCKH: 'Thành tích khoa học',
-      NIEN_HAN: 'Huy chương Chiến sĩ vẻ vang',
-      HC_QKQT: 'Huy chương Quân kỳ quyết thắng',
-      KNC_VSNXD_QDNDVN: DANH_HIEU_MAP.KNC_VSNXD_QDNDVN,
-      CONG_HIEN: 'Huân chương Bảo vệ Tổ quốc',
-    };
-    const awardTypeName = bulkAwardTypeMap[awardType] || awardType;
+    const awardTypeName = getAwardLabelByProposalType(awardType);
     const targetCount = personnelIds.length + unitIds.length;
     const targetText =
       awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM

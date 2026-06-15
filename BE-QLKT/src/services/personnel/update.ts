@@ -2,7 +2,7 @@ import type { Prisma } from '../../generated/prisma';
 import { prisma } from '../../models';
 import { quanNhanRepository } from '../../repositories/quanNhan.repository';
 import { positionRepository } from '../../repositories/position.repository';
-import { positionHistoryRepository } from '../../repositories/positionHistory.repository';
+import { rotatePositionHistory } from './positionHistory';
 import {
   coQuanDonViRepository,
   donViTrucThuocRepository,
@@ -14,7 +14,6 @@ import { NotFoundError, ValidationError, ForbiddenError } from '../../middleware
 import profileService from '../profile.service';
 import * as notificationHelper from '../../helpers/notification';
 import { writeSystemLog } from '../../helpers/systemLogHelper';
-import { calculateTenureMonthsWithDayPrecision } from '../../helpers/serviceYearsHelper';
 import { adjustUnitCount } from './unitCount';
 
 type DateInput = Date | null;
@@ -256,6 +255,14 @@ export async function updatePersonnel(
     updateData.don_vi_truc_thuoc_id = personnel.don_vi_truc_thuoc_id;
   }
 
+  // A MANAGER must stay at CQDV level: a DVTT would set both unit fields and collapse its
+  // proposal scope onto the parent CQDV (it would see sibling units). Demote to USER first.
+  if (personnel.TaiKhoan?.role === ROLES.MANAGER && updateData.don_vi_truc_thuoc_id) {
+    throw new ValidationError(
+      'Tài khoản chỉ huy chỉ được ở cấp Cơ quan đơn vị. Vui lòng hạ quyền xuống Người dùng trước khi chuyển vào Đơn vị trực thuộc.'
+    );
+  }
+
   // Only ADMIN/SUPER_ADMIN may transfer a personnel to another unit or change their current position;
   // MANAGER edits other info within their own unit only.
   if (userRole === ROLES.MANAGER) {
@@ -277,53 +284,9 @@ export async function updatePersonnel(
   const { updatedPersonnel, unitTransferInfo } = await prisma.$transaction(async prismaTx => {
     const txUpdatedPersonnel = await quanNhanRepository.update(String(id), updateData, prismaTx);
 
-    // If position changed, close old history and create new history row.
+    // If position changed, close old history and open a new one.
     if (positionId && positionId !== personnel.chuc_vu_id) {
-      const today = new Date();
-
-      const oldHistories = await positionHistoryRepository.findManyRaw(
-        {
-          where: {
-            quan_nhan_id: id,
-            ngay_ket_thuc: null,
-          },
-        },
-        prismaTx
-      );
-
-      for (const oldHistory of oldHistories) {
-        const ngayBatDauOld = new Date(oldHistory.ngay_bat_dau);
-        const soThangOld = calculateTenureMonthsWithDayPrecision(ngayBatDauOld, today);
-
-        await positionHistoryRepository.update(
-          oldHistory.id,
-          {
-            ngay_ket_thuc: today,
-            so_thang: soThangOld,
-          },
-          prismaTx
-        );
-      }
-
-      const newChucVu = await positionRepository.findUniqueRaw(
-        {
-          where: { id: positionId },
-          select: { he_so_chuc_vu: true },
-        },
-        prismaTx
-      );
-
-      await positionHistoryRepository.create(
-        {
-          quan_nhan_id: id,
-          chuc_vu_id: positionId,
-          he_so_chuc_vu: Number(newChucVu?.he_so_chuc_vu ?? 0),
-          ngay_bat_dau: today,
-          ngay_ket_thuc: null,
-          so_thang: null,
-        },
-        prismaTx
-      );
+      await rotatePositionHistory(prismaTx, id, positionId, new Date());
     }
 
     let txUnitTransferInfo = null;

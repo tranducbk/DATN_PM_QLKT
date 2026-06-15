@@ -2,6 +2,9 @@
  * Constants cho Dev Zone
  */
 
+import { AWARD_TYPE_REGISTRY } from './awardTypeRegistry.constants';
+import { PROPOSAL_TYPES } from './proposalTypes.constants';
+
 export const DEV_ZONE_API = '/api/dev-zone';
 
 export const DEV_SESSION_KEY = 'dev_zone_session';
@@ -19,44 +22,24 @@ export const CRON_PRESETS = [
   { label: 'Tùy chỉnh', value: 'custom' },
 ] as const;
 
-/** Award types for the enable/disable toggle. */
-export const AWARD_TYPE_OPTIONS = [
-  {
-    key: 'annual',
-    label: 'Khen thưởng cá nhân hằng năm',
-    description: 'Nhập dữ liệu, file mẫu, thêm đồng loạt',
-  },
-  {
-    key: 'unit',
-    label: 'Khen thưởng đơn vị hằng năm',
-    description: 'Nhập dữ liệu, file mẫu, thêm đồng loạt',
-  },
-  {
-    key: 'hccsvv',
-    label: 'Huy chương Chiến sĩ vẻ vang',
-    description: 'Nhập dữ liệu, file mẫu, thêm đồng loạt',
-  },
-  {
-    key: 'contribution',
-    label: 'Huân chương Bảo vệ Tổ quốc',
-    description: 'Nhập dữ liệu, file mẫu, thêm đồng loạt',
-  },
-  {
-    key: 'commemoration',
-    label: 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
-    description: 'Nhập dữ liệu, file mẫu, thêm đồng loạt',
-  },
-  {
-    key: 'militaryFlag',
-    label: 'HC Quân kỳ quyết thắng',
-    description: 'Nhập dữ liệu, file mẫu, thêm đồng loạt',
-  },
-  {
-    key: 'scientific',
-    label: 'Thành tích Nghiên cứu khoa học',
-    description: 'Nhập dữ liệu, file mẫu, thêm đồng loạt',
-  },
-] as const;
+const AWARD_TOGGLE_DESCRIPTION = 'Nhập dữ liệu, file mẫu, thêm đồng loạt';
+
+/** Award enable/disable toggles. `key` feeds the `allow_<key>` flag; labels come from AWARD_TYPE_REGISTRY. */
+export const AWARD_TYPE_OPTIONS = (
+  [
+    ['annual', PROPOSAL_TYPES.CA_NHAN_HANG_NAM],
+    ['unit', PROPOSAL_TYPES.DON_VI_HANG_NAM],
+    ['hccsvv', PROPOSAL_TYPES.NIEN_HAN],
+    ['contribution', PROPOSAL_TYPES.CONG_HIEN],
+    ['commemoration', PROPOSAL_TYPES.KNC_VSNXD_QDNDVN],
+    ['militaryFlag', PROPOSAL_TYPES.HC_QKQT],
+    ['scientific', PROPOSAL_TYPES.NCKH],
+  ] as const
+).map(([key, proposalType]) => ({
+  key,
+  label: AWARD_TYPE_REGISTRY[proposalType].label,
+  description: AWARD_TOGGLE_DESCRIPTION,
+}));
 
 export const SYSTEM_FEATURE_OPTIONS = [
   {

@@ -463,7 +463,7 @@ class ScientificAchievementService {
           ho_ten,
           nam: namVal,
           loai: loai_raw,
-          message: `Không tìm thấy quân nhân với ID ${personnelId}`,
+          message: `Không tìm thấy quân nhân tương ứng với mã trong file.`,
         });
         continue;
       }

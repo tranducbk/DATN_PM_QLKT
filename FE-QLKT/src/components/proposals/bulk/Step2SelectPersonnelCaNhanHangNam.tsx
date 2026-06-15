@@ -226,7 +226,6 @@ export function Step2SelectPersonnelCaNhanHangNam({
 
       onTitleDataChange(titleData);
 
-      // Update nam from imported data if available
       if (result.titleData[0]?.nam) {
         onNamChange(result.titleData[0].nam);
       }

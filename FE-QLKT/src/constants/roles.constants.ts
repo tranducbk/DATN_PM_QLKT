@@ -1,3 +1,5 @@
+import { UNKNOWN_LABEL } from './labels.constants';
+
 export const ROLES = {
   SUPER_ADMIN: 'SUPER_ADMIN',
   ADMIN: 'ADMIN',
@@ -28,9 +30,9 @@ export function roleSelectOptions(roles: Role[]): { value: Role; label: string }
 }
 
 export function getRoleInfo(role?: string): { label: string; color: string } {
-  if (!role) return { label: 'Không xác định', color: 'default' };
+  if (!role) return { label: UNKNOWN_LABEL, color: 'default' };
   return {
-    label: ROLE_LABELS[role] || role,
-    color: ROLE_COLORS[role] || 'default',
+    label: ROLE_LABELS[role] ?? role,
+    color: ROLE_COLORS[role] ?? 'default',
   };
 }

@@ -75,7 +75,7 @@ class ContributionAwardService {
       decisionNumbers,
       repeatMap,
       danhHieuOptions: HCBVTQ_TEMPLATE_OPTIONS,
-      editableColumnLetters: ['J', 'K'],
+      editableColumnLetters: ['J', 'K', 'L'],
     });
   }
 
@@ -193,6 +193,7 @@ class ContributionAwardService {
             item.QuanNhan?.DonViTrucThuoc?.ten_don_vi ??
             '',
           nam: item.nam,
+          thang: item.thang,
           danh_hieu: getDanhHieuName(item.danh_hieu),
           thoi_gian_nhom_0_7: convertThoiGian(item.thoi_gian_nhom_0_7),
           thoi_gian_nhom_0_8: convertThoiGian(item.thoi_gian_nhom_0_8),
@@ -286,7 +287,12 @@ class ContributionAwardService {
     }
 
     try {
-      await notificationHelper.notifyOnAwardDeleted(award, personnel, 'HCBVTQ', adminUsername);
+      await notificationHelper.notifyOnAwardDeleted(
+        award,
+        personnel,
+        PROPOSAL_TYPES.CONG_HIEN,
+        adminUsername
+      );
     } catch (notifyError) {
       void writeSystemLog({
         action: 'ERROR',

@@ -135,7 +135,7 @@ class PositionHistoryService {
           },
         },
       },
-      orderBy: { ngay_bat_dau: 'desc' },
+      orderBy: [{ ngay_bat_dau: 'desc' }, { ngay_ket_thuc: { sort: 'desc', nulls: 'first' } }],
     });
 
     const today = new Date();
@@ -451,6 +451,14 @@ class PositionHistoryService {
 
     if (!history) {
       throw new NotFoundError('Lịch sử chức vụ');
+    }
+
+    // The open-ended period is the personnel's current position; deleting it would leave
+    // QuanNhan.chuc_vu_id pointing at a position with no history and drop the ongoing tenure.
+    if (!history.ngay_ket_thuc) {
+      throw new ValidationError(
+        'Không thể xoá chức vụ hiện tại (giai đoạn đang đảm nhiệm). Chức vụ hiện tại được thay đổi ở mục cập nhật thông tin quân nhân.'
+      );
     }
 
     await positionHistoryRepository.delete(id);

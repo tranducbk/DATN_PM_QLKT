@@ -7,11 +7,13 @@
  *   DANH_HIEU_MAP, CONG_HIEN_HE_SO_GROUPS, CONG_HIEN_HE_SO_RANGES.
  *
  * FE-only utilities (intentionally not shared): THANH_TICH_KHOA_HOC*,
- *   AWARD_TAB_LABELS, AWARD_TYPE_MAP, DANH_HIEU_OPTIONS, CONG_HIEN_BASE_REQUIRED_MONTHS.
+ *   AWARD_TAB_LABELS, DANH_HIEU_OPTIONS, CONG_HIEN_BASE_REQUIRED_MONTHS.
  *
  * BE-only utilities live in the BE copy (Excel parsing, NCKH label-to-code resolver,
  * HCBVTQ_RANK_KEYS). When adding a NEW shared code, update BOTH files in the same commit.
  */
+
+import { EMPTY_LABEL, UNKNOWN_LABEL } from './labels.constants';
 
 export const DANH_HIEU_CA_NHAN_HANG_NAM = {
   CSTDCS: 'CSTDCS',
@@ -113,6 +115,12 @@ export const DANH_HIEU_MAP: Record<string, string> = {
   SKKH: 'Sáng kiến khoa học',
 };
 
+/** Select options for NCKH achievement type (Đề tài / Sáng kiến khoa học). */
+export const THANH_TICH_KHOA_HOC_OPTIONS = Object.values(THANH_TICH_KHOA_HOC).map(code => ({
+  value: code,
+  label: DANH_HIEU_MAP[code],
+}));
+
 export const DANH_HIEU_SHORT_MAP: Record<string, string> = {
   CSTDCS: 'Chiến sĩ thi đua cơ sở',
   CSTT: 'Chiến sĩ tiên tiến',
@@ -143,15 +151,6 @@ export const LOAI_KHEN_THUONG_OPTIONS = Object.entries(LOAI_DE_XUAT_MAP).map(([v
   value,
 }));
 
-export const AWARD_TYPE_MAP: Record<string, string> = {
-  ANNUAL_PERSONAL: 'Khen thưởng cá nhân hằng năm',
-  ANNUAL_UNIT: 'Khen thưởng đơn vị hằng năm',
-  CONTRIBUTION: 'Huân chương Bảo vệ Tổ quốc',
-  TENURE: 'Huy chương Chiến sĩ vẻ vang',
-  ADHOC: 'Khen thưởng đột xuất',
-  SCIENTIFIC: 'Thành tích Nghiên cứu khoa học',
-};
-
 export const DANH_HIEU_OPTIONS = {
   CA_NHAN_HANG_NAM: ['CSTDCS', 'CSTT', 'BKBQP', 'CSTDTQ', 'BKTTCP'],
   DON_VI_HANG_NAM: ['ĐVQT', 'ĐVTT', 'BKBQP', 'BKTTCP'],
@@ -159,15 +158,13 @@ export const DANH_HIEU_OPTIONS = {
   CONG_HIEN: ['HCBVTQ_HANG_BA', 'HCBVTQ_HANG_NHI', 'HCBVTQ_HANG_NHAT'],
 } as const;
 
-const EMPTY_LABEL = '-';
-
 /**
  * @param danhHieu - Mã danh hiệu
  * @returns Tên tiếng Việt hoặc mã gốc nếu không tìm thấy
  */
 export function getDanhHieuName(danhHieu: string | null | undefined): string {
   if (!danhHieu) return EMPTY_LABEL;
-  return DANH_HIEU_MAP[danhHieu] || danhHieu;
+  return DANH_HIEU_MAP[danhHieu] ?? danhHieu;
 }
 
 /**
@@ -188,7 +185,7 @@ export function getRankLabel(danhHieu: string | null | undefined): string {
  */
 export function getLoaiDeXuatName(loaiDeXuat: string | null | undefined): string {
   if (!loaiDeXuat) return EMPTY_LABEL;
-  return LOAI_DE_XUAT_MAP[loaiDeXuat] || loaiDeXuat;
+  return LOAI_DE_XUAT_MAP[loaiDeXuat] ?? loaiDeXuat;
 }
 
 export type AwardType =
@@ -357,7 +354,7 @@ export const KNC_YEARS_REQUIRED_NAM = 25;
 export const KNC_YEARS_REQUIRED_NU = 20;
 
 export function getLoaiKhenThuongByDanhHieu(danhHieu: string | null | undefined): string {
-  if (!danhHieu) return 'Chưa xác định';
+  if (!danhHieu) return UNKNOWN_LABEL;
   if (danhHieu.startsWith('HCBVTQ')) return LOAI_DE_XUAT_MAP.CONG_HIEN;
   if (danhHieu.startsWith('HCCSVV')) return LOAI_DE_XUAT_MAP.NIEN_HAN;
   if (['CSTDCS', 'CSTT', 'BKBQP', 'CSTDTQ', 'BKTTCP'].includes(danhHieu))

@@ -35,6 +35,7 @@ import {
   AWARD_TAB_DANH_HIEU,
   AWARD_TAB_LABELS,
   AWARD_TAB_META,
+  getDanhHieuName,
   type AwardType,
 } from '@/constants/danhHieu.constants';
 
@@ -414,12 +415,7 @@ export default function AdminAwardsPage() {
         align: 'center',
         render: (_: unknown, record: AwardTableRow) => {
           // Only visible on the NCKH tab (filtered below)
-          const loaiMap: Record<string, string> = {
-            DTKH: 'Đề tài khoa học',
-            SKKH: 'Sáng kiến khoa học',
-          };
-          const loai = record.loai ?? '';
-          return <Text>{loaiMap[loai] || loai || '-'}</Text>;
+          return <Text>{record.loai ? getDanhHieuName(record.loai) : '-'}</Text>;
         },
       },
       {

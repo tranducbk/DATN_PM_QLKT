@@ -68,7 +68,6 @@ export function PositionForm({ position, units = [], onSuccess, onClose }: Posit
         is_manager: isDonViTrucThuoc ? false : values.is_manager || false,
       };
 
-      // Add optional fields
       if (
         values.he_so_chuc_vu !== undefined &&
         values.he_so_chuc_vu !== null &&

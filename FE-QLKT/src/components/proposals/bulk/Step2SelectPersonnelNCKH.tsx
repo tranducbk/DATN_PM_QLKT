@@ -164,7 +164,6 @@ export function Step2SelectPersonnelNCKH({
           dataRows.forEach((row: ExcelRow, index: number) => {
             const rowNumber = index + 2; // +2: skip header + 0-based index
 
-            // Validate required fields
             const hoTen = row[1]?.toString().trim();
             const ngaySinh = row[2]?.toString().trim();
             const nam = row[3]?.toString().trim();
@@ -219,7 +218,6 @@ export function Step2SelectPersonnelNCKH({
             });
           });
 
-          // Remove duplicates from personnel IDs
           const uniquePersonnelIds = Array.from(new Set(processedPersonnelIds));
 
           try {
@@ -299,7 +297,6 @@ export function Step2SelectPersonnelNCKH({
 
         onTitleDataChange?.(titleData);
 
-        // Update nam from imported data if available
         if (result.titleData[0].nam) {
           onNamChange(result.titleData[0].nam);
         }

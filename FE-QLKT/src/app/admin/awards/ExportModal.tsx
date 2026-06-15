@@ -13,6 +13,7 @@ import {
   AWARD_TAB_FILENAME,
   AWARD_TAB_META,
   INDIVIDUAL_AWARD_TABS,
+  THANH_TICH_KHOA_HOC_OPTIONS,
   type AwardType,
 } from '@/constants/danhHieu.constants';
 import { MODAL_TABLE_PREVIEW_PAGE_SIZE, FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
@@ -151,7 +152,6 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
       if (danhHieu) params.danh_hieu = danhHieu;
       if (donViId) params.don_vi_id = donViId;
 
-      // Add personnel/unit selection params
       if (selectedPersonnelIds.length > 0) {
         params.personnel_ids = selectedPersonnelIds.join(',');
       }
@@ -401,10 +401,7 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
               value={danhHieu}
               onChange={v => setDanhHieu(v)}
               style={{ width: '100%' }}
-              options={[
-                { value: 'DTKH', label: 'Đề tài khoa học' },
-                { value: 'SKKH', label: 'Sáng kiến khoa học' },
-              ]}
+              options={THANH_TICH_KHOA_HOC_OPTIONS}
             />
           </div>
         )}

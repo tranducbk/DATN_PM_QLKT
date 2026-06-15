@@ -38,6 +38,9 @@ interface UpdateAccountQuery {
 interface UpdateAccountBody {
   role?: Role;
   password?: string;
+  co_quan_don_vi_id?: string;
+  don_vi_truc_thuoc_id?: string;
+  chuc_vu_id?: string;
 }
 
 interface ResetPasswordBody {
@@ -166,11 +169,17 @@ class AccountController {
     if (!id) {
       return ResponseHelper.badRequest(res, 'Thiếu id tài khoản');
     }
-    const { role, password } = body;
+    const { role, password, co_quan_don_vi_id, don_vi_truc_thuoc_id, chuc_vu_id } = body;
     const userRole = user?.role;
 
-    if (!role && !password) {
-      return ResponseHelper.badRequest(res, 'Vui lòng cung cấp vai trò hoặc mật khẩu mới');
+    if (
+      !role &&
+      !password &&
+      co_quan_don_vi_id === undefined &&
+      don_vi_truc_thuoc_id === undefined &&
+      chuc_vu_id === undefined
+    ) {
+      return ResponseHelper.badRequest(res, 'Vui lòng cung cấp thông tin cần cập nhật');
     }
 
     const updateData: Record<string, unknown> = {};
@@ -216,6 +225,10 @@ class AccountController {
       }
       updateData.password = password;
     }
+
+    if (co_quan_don_vi_id !== undefined) updateData.co_quan_don_vi_id = co_quan_don_vi_id;
+    if (don_vi_truc_thuoc_id !== undefined) updateData.don_vi_truc_thuoc_id = don_vi_truc_thuoc_id;
+    if (chuc_vu_id !== undefined) updateData.chuc_vu_id = chuc_vu_id;
 
     const result = await accountService.updateAccount(id, updateData);
     return ResponseHelper.success(res, { data: result, message: 'Cập nhật tài khoản thành công' });

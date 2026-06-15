@@ -260,7 +260,7 @@ describe('militaryFlag.service - previewImport', () => {
     const result = await militaryFlagService.previewImport(buffer);
 
     expect(result.valid).toHaveLength(0);
-    expect(result.errors[0].message).toBe(IMPORT_HCQKQT_PERSONNEL_NOT_FOUND('qn-missing'));
+    expect(result.errors[0].message).toBe(IMPORT_HCQKQT_PERSONNEL_NOT_FOUND);
   });
 });
 

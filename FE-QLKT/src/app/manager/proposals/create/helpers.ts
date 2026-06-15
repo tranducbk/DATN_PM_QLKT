@@ -1,5 +1,6 @@
 import { PROPOSAL_TYPES, type ProposalType } from '@/constants/proposal.constants';
 import { HCQKQT_YEARS_REQUIRED } from '@/constants/danhHieu.constants';
+import { isMissingGender } from '@/constants/gender.constants';
 import type { TitleDataItem } from '@/lib/types/proposal';
 
 interface PersonnelWithMilitaryInfo {
@@ -66,7 +67,7 @@ export function buildKNCValidationError(
   context: 'next' | 'submit'
 ): string | null {
   const missingGender = personnelData.filter(
-    p => !p.gioi_tinh || (p.gioi_tinh !== 'NAM' && p.gioi_tinh !== 'NU')
+    p => isMissingGender(p.gioi_tinh)
   );
   const missingNgayNhapNgu = personnelData.filter(p => !p.ngay_nhap_ngu);
   if (missingGender.length === 0 && missingNgayNhapNgu.length === 0) return null;

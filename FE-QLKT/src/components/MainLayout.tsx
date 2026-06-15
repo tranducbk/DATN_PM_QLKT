@@ -28,6 +28,7 @@ import {
   BulbFilled,
   LockOutlined,
   BellOutlined,
+  ExclamationCircleFilled,
 } from '@ant-design/icons';
 import { useRouter, usePathname } from 'next/navigation';
 import { useTheme } from './ThemeProvider';
@@ -109,6 +110,7 @@ const DISCONNECT_TOAST_DEBOUNCE_MS = 3000;
 function ConnectionStatusToast({ status }: { status: SocketConnectionStatus }) {
   const { message } = App.useApp();
   const prevStatusRef = useRef<SocketConnectionStatus | null>(null);
+  const warnedRef = useRef(false);
 
   useEffect(() => {
     const prev = prevStatusRef.current;
@@ -119,11 +121,17 @@ function ConnectionStatusToast({ status }: { status: SocketConnectionStatus }) {
     if (status === 'disconnected' && prev === 'connected') {
       const timer = setTimeout(() => {
         message.warning('Mất kết nối máy chủ. Đang thử kết nối lại...');
+        warnedRef.current = true;
       }, DISCONNECT_TOAST_DEBOUNCE_MS);
       return () => clearTimeout(timer);
     }
+    // Only announce reconnection if the loss actually surfaced a warning — a blip that
+    // recovers within the debounce window must not pop a lone "reconnected" toast.
     if (status === 'connected' && prev === 'disconnected') {
-      message.success('Đã kết nối lại máy chủ.');
+      if (warnedRef.current) {
+        message.success('Đã kết nối lại máy chủ.');
+        warnedRef.current = false;
+      }
     }
   }, [status, message]);
 
@@ -241,12 +249,25 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
   const handleForceLogout = useCallback(
     (data: { message: string }) => {
       Modal.warning({
-        title: 'Phiên đăng nhập đã kết thúc',
-        content: data.message || 'Tài khoản của bạn đã được đăng nhập ở nơi khác.',
+        icon: null,
+        centered: true,
+        width: 400,
         okText: 'Đăng nhập lại',
+        okButtonProps: { size: 'large', block: true },
         onOk: () => {
           authLogout();
         },
+        content: (
+          <div style={{ textAlign: 'center', padding: '8px 4px 0' }}>
+            <ExclamationCircleFilled style={{ fontSize: 44, color: '#faad14' }} />
+            <div style={{ fontSize: 18, fontWeight: 600, margin: '14px 0 8px' }}>
+              Phiên đăng nhập đã kết thúc
+            </div>
+            <div style={{ fontSize: 14, opacity: 0.85, lineHeight: 1.6 }}>
+              {data.message || 'Tài khoản của bạn đã được đăng nhập ở nơi khác.'}
+            </div>
+          </div>
+        ),
       });
     },
     [authLogout]

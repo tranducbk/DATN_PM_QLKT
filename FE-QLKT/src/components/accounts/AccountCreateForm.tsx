@@ -92,10 +92,12 @@ export function AccountCreateForm() {
 
   const filteredPositions = (() => {
     if (selectedRole === ROLES.MANAGER && selectedCoQuanDonViId) {
-      return positions.filter(p => p.co_quan_don_vi_id === selectedCoQuanDonViId);
+      return positions.filter(p => p.co_quan_don_vi_id === selectedCoQuanDonViId && p.is_manager);
     }
     if (selectedRole === ROLES.USER && selectedDonViTrucThuocId) {
-      return positions.filter(p => p.don_vi_truc_thuoc_id === selectedDonViTrucThuocId);
+      return positions.filter(
+        p => p.don_vi_truc_thuoc_id === selectedDonViTrucThuocId && !p.is_manager
+      );
     }
     return [];
   })();

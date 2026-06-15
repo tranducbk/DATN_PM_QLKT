@@ -272,7 +272,7 @@ class UnitAnnualAwardController {
       userRole: user.role,
       action: AUDIT_ACTIONS.IMPORT_PREVIEW,
       resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
-      description: `Tải lên file "${file.originalname ? Buffer.from(file.originalname, 'latin1').toString('utf8') : 'Excel'}" để review ${AWARD_LABEL}: ${result.valid?.length || 0} hợp lệ, ${result.errors?.length || 0} lỗi`,
+      description: `Tải lên file "${file.originalname ? Buffer.from(file.originalname, 'latin1').toString('utf8') : 'Excel'}" để xem trước ${AWARD_LABEL}: ${result.valid?.length || 0} hợp lệ, ${result.errors?.length || 0} lỗi`,
       payload: {
         filename: file.originalname
           ? Buffer.from(file.originalname, 'latin1').toString('utf8')

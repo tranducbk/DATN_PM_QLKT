@@ -1,4 +1,5 @@
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
+import { isMissingGender } from '@/constants/gender.constants';
 import {
   AWARD_TAB_LABELS,
   HCCSVV_YEARS_HANG_BA,
@@ -94,7 +95,7 @@ export function evaluateNienHanProposalEligibility(
   proposalMonth: number,
   serviceProfile: ServiceProfileLike | undefined
 ): NienHanEligibility {
-  if (!record.gioi_tinh || (record.gioi_tinh !== 'NAM' && record.gioi_tinh !== 'NU')) {
+  if (isMissingGender(record.gioi_tinh)) {
     return { eligible: false, reason: 'Quân nhân chưa cập nhật giới tính' };
   }
   if (!record.ngay_nhap_ngu) {
@@ -174,7 +175,7 @@ export function getNienHanSortPriority(
   serviceProfile: ServiceProfileLike | undefined
 ): number {
   const missingGender =
-    !record.gioi_tinh || (record.gioi_tinh !== 'NAM' && record.gioi_tinh !== 'NU');
+    isMissingGender(record.gioi_tinh);
   if (missingGender) return 3;
   if (!record.ngay_nhap_ngu) return 3;
 

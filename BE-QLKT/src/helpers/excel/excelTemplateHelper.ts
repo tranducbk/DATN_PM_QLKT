@@ -106,11 +106,25 @@ const HEADER_FILL: ExcelJS.FillPattern = {
   fgColor: { argb: 'FFD3D3D3' },
 };
 
+const YELLOW_ARGB = 'FFFFFFCC';
+
 const YELLOW_FILL: ExcelJS.FillPattern = {
   type: 'pattern',
   pattern: 'solid',
-  fgColor: { argb: 'FFFFFFCC' },
+  fgColor: { argb: YELLOW_ARGB },
 };
+
+/** Column keys that read better centered (index, dates, short codes); all others align left, never right. */
+const CENTER_ALIGNED_KEYS = new Set([
+  'stt',
+  'ngay_sinh',
+  'cap_bac',
+  'nam',
+  'thang',
+  'so_quyet_dinh',
+  'ma_don_vi',
+  'loai',
+]);
 
 const RED_FILL: ExcelJS.FillPattern = {
   type: 'pattern',
@@ -219,12 +233,40 @@ export function applyConditionalFormatting(
           type: 'expression',
           formulae: [`LEN(TRIM(${col}2))>0`],
           style: {
-            fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFCC' } },
+            fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: YELLOW_ARGB } },
           },
           priority: 1,
         },
       ],
     });
+  });
+}
+
+/**
+ * Aligns the grid: header centered, data cells centered for index/date/code columns and left otherwise.
+ * Never right-aligns, so numeric columns (STT, year) don't drift to the right edge.
+ * @param worksheet - Sheet to mutate in place
+ * @param columns - Column definitions; `key` drives per-column alignment
+ * @param maxRows - Inclusive last row
+ * @returns void
+ */
+export function applyAlignment(
+  worksheet: ExcelJS.Worksheet,
+  columns: TemplateColumn[],
+  maxRows: number
+): void {
+  const headerRow = worksheet.getRow(1);
+  columns.forEach((col, idx) => {
+    const colNumber = idx + 1;
+    const horizontal = CENTER_ALIGNED_KEYS.has(col.key) ? 'center' : 'left';
+    headerRow.getCell(colNumber).alignment = {
+      horizontal: 'center',
+      vertical: 'middle',
+      wrapText: true,
+    };
+    for (let rowNum = 2; rowNum <= maxRows; rowNum++) {
+      worksheet.getRow(rowNum).getCell(colNumber).alignment = { horizontal, vertical: 'middle' };
+    }
   });
 }
 
@@ -346,7 +388,8 @@ export async function buildTemplate(config: TemplateConfig): Promise<ExcelJS.Wor
     });
   }
 
-  const maxRows = Math.max(totalDataRows + 1, MIN_TEMPLATE_ROWS);
+  // Prefilled templates stop exactly at the data; only blank templates pad to MIN_TEMPLATE_ROWS for manual entry.
+  const maxRows = totalDataRows > 0 ? totalDataRows + 1 : MIN_TEMPLATE_ROWS;
 
   if (readonlyColumns.length > 0) {
     applyReadonlyFill(worksheet, readonlyColumns, maxRows);
@@ -413,6 +456,7 @@ export async function buildTemplate(config: TemplateConfig): Promise<ExcelJS.Wor
   }
 
   applyThinBordersToGrid(worksheet, maxRows, columns.length);
+  applyAlignment(worksheet, columns, maxRows);
 
   return workbook;
 }

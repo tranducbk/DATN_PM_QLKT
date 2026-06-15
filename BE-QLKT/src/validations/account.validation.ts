@@ -20,6 +20,9 @@ export const createAccount = z.object({
 export const updateAccount = z.object({
   role: z.enum([ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER, ROLES.USER]).optional(),
   password: z.string().min(8).optional(),
+  co_quan_don_vi_id: z.string().trim().optional(),
+  don_vi_truc_thuoc_id: z.string().trim().optional(),
+  chuc_vu_id: z.string().trim().optional(),
 });
 
 export const resetPassword = z.object({

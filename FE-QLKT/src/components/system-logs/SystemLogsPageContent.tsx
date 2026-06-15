@@ -16,7 +16,7 @@ import { FileTextOutlined, FundOutlined, HomeOutlined, DeleteOutlined, ReloadOut
 import { LogsFilter, LogsFilterValues } from '@/components/system-logs/LogsFilter';
 import { LogsTable, LogEntry } from '@/components/system-logs/LogsTable';
 import { apiClient } from '@/lib/http/apiClient';
-import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
+import { DEFAULT_ANTD_TABLE_PAGINATION, DEFAULT_PAGE_SIZE } from '@/constants/pagination.constants';
 import { useTheme } from '@/components/ThemeProvider';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { useDevZone } from '@/contexts/DevZoneContext';
@@ -63,7 +63,7 @@ export function SystemLogsPageContent({ basePath }: SystemLogsPageContentProps) 
   const [deleting, setDeleting] = useState(false);
   const [pagination, setPagination] = useState({
     current: 1,
-    pageSize: DEFAULT_ANTD_TABLE_PAGINATION.pageSize,
+    pageSize: DEFAULT_PAGE_SIZE,
     total: 0,
   });
   const [filters, setFilters] = useState<LogsFilterValues>({

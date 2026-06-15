@@ -64,6 +64,7 @@ export interface UnitOptionRow {
 export interface ManagerPositionRow {
   id: string;
   ten_chuc_vu?: string;
+  is_manager?: boolean;
   co_quan_don_vi_id?: string | null;
   don_vi_truc_thuoc_id?: string | null;
   DonViTrucThuoc?: {

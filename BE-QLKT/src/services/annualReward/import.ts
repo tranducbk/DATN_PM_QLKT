@@ -150,7 +150,7 @@ export async function importFromExcelBuffer(buffer: Buffer): Promise<ImportResul
     }
     const personnel = personnelById.get(personnelId);
     if (!personnel) {
-      errors.push(`Dòng ${rowNumber}: Không tìm thấy quân nhân với ID ${personnelId}`);
+      errors.push(`Dòng ${rowNumber}: Không tìm thấy quân nhân tương ứng với mã trong file.`);
       continue;
     }
 
@@ -475,7 +475,7 @@ export async function previewImport(buffer: Buffer): Promise<PreviewResult> {
         ho_ten,
         nam: namVal,
         danh_hieu: danh_hieu_raw,
-        message: `Không tìm thấy quân nhân với ID ${personnelId}`,
+        message: `Không tìm thấy quân nhân tương ứng với mã trong file.`,
       });
       continue;
     }

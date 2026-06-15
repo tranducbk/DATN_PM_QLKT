@@ -198,14 +198,7 @@ export function PersonnelRewardHistoryModal({
       key: 'loai',
       width: 150,
       align: 'center',
-      render: text => {
-        const map: Record<string, string> = {
-          NCKH: 'Đề tài khoa học',
-          DTKH: 'Đề tài khoa học',
-          SKKH: 'Sáng kiến khoa học',
-        };
-        return map[text] || text;
-      },
+      render: text => getDanhHieuName(text),
     },
     {
       title: 'Mô tả',

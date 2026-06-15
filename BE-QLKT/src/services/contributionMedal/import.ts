@@ -197,7 +197,7 @@ export async function previewImport(buffer: Buffer) {
         ho_ten,
         nam: namVal,
         danh_hieu: danh_hieu_raw,
-        message: `Không tìm thấy quân nhân với ID ${personnelId}`,
+        message: `Không tìm thấy quân nhân tương ứng với mã trong file.`,
       });
       continue;
     }

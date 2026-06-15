@@ -1,6 +1,7 @@
 import type { ProposalType } from './proposalTypes.constants';
 import { isProposalType } from './proposalTypes.constants';
 import { AWARD_TYPE_REGISTRY } from './awardTypeRegistry.constants';
+import { EMPTY_LABEL } from './labels.constants';
 
 export { PROPOSAL_TYPES, type ProposalType, isProposalType } from './proposalTypes.constants';
 
@@ -9,8 +10,6 @@ export const PROPOSAL_STATUS = {
   APPROVED: 'APPROVED',
   REJECTED: 'REJECTED',
 } as const;
-
-export type ProposalStatus = (typeof PROPOSAL_STATUS)[keyof typeof PROPOSAL_STATUS];
 
 export const PROPOSAL_STATUS_LABELS: Record<string, string> = {
   PENDING: 'Chờ duyệt',
@@ -25,8 +24,8 @@ export const PROPOSAL_STATUS_COLORS: Record<string, string> = {
 };
 
 export function getProposalStatusLabel(status: string | undefined | null): string {
-  if (status == null || status === '') return '-';
-  return PROPOSAL_STATUS_LABELS[status] || status;
+  if (!status) return EMPTY_LABEL;
+  return PROPOSAL_STATUS_LABELS[status] ?? status;
 }
 
 export const PROPOSAL_TYPES_REQUIRING_MONTH = new Set<ProposalType>(
@@ -44,7 +43,7 @@ export const PROPOSAL_TYPE_LABELS: Record<ProposalType, string> = Object.fromEnt
 ) as Record<ProposalType, string>;
 
 export function getProposalTypeLabel(type: string | undefined | null): string {
-  if (type == null || type === '') return '-';
+  if (!type) return EMPTY_LABEL;
   return isProposalType(type) ? PROPOSAL_TYPE_LABELS[type] : type;
 }
 

@@ -9,6 +9,7 @@ import { LeftOutlined, HomeOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/http/apiClient';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
+import { THANH_TICH_KHOA_HOC_SHORT_LABELS } from '@/constants/danhHieu.constants';
 import type { PersonnelDetail } from '@/lib/types/personnelList';
 
 
@@ -74,11 +75,7 @@ export default function ManagerScientificAchievementsPage() {
       width: 150,
       align: 'center',
       render: (text: string) => {
-        const map: Record<string, string> = {
-          DTKH: 'ĐTKH',
-          SKKH: 'SKKH',
-        };
-        return map[text] || text || '-';
+        return THANH_TICH_KHOA_HOC_SHORT_LABELS[text] || text || '-';
       },
     },
     {

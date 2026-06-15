@@ -3,10 +3,13 @@ import type { TablePaginationConfig } from 'antd';
 // Keep DEFAULT_PAGE_SIZE in sync with BE DEFAULT_LIMIT (paginationHelper.ts).
 export const DEFAULT_PAGE_SIZE = 20;
 
-export const PAGE_SIZE_OPTIONS: string[] = ['20', '50', '100'];
+const PAGE_SIZE_OPTIONS: string[] = ['20', '50', '100'];
 
+// Use `defaultPageSize` (uncontrolled) so AntD Table's size changer works when this
+// config is spread without an external pageSize state. A static `pageSize` would be a
+// controlled value and revert every change back to it.
 export const DEFAULT_ANTD_TABLE_PAGINATION = {
-  pageSize: DEFAULT_PAGE_SIZE,
+  defaultPageSize: DEFAULT_PAGE_SIZE,
   showSizeChanger: true,
   pageSizeOptions: PAGE_SIZE_OPTIONS,
   showLessItems: true,
@@ -14,7 +17,7 @@ export const DEFAULT_ANTD_TABLE_PAGINATION = {
 
 /** Compact pagination for selection tables inside modals — small, centered, hidden on single page. */
 export const MODAL_TABLE_PAGINATION: TablePaginationConfig = {
-  pageSize: DEFAULT_PAGE_SIZE,
+  defaultPageSize: DEFAULT_PAGE_SIZE,
   size: 'small',
   showSizeChanger: true,
   pageSizeOptions: PAGE_SIZE_OPTIONS,

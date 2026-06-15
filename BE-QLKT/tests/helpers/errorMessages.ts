@@ -202,16 +202,16 @@ export function nckhDuplicateMessage(hoTen: string, moTa: string, nam: number): 
 
 /** HCCSVV (NIEN_HAN) Excel-import preview/confirm error messages. */
 export const IMPORT_NIEN_HAN_MISSING_DECISION = 'Thiếu số quyết định';
-export const IMPORT_NIEN_HAN_PERSONNEL_NOT_FOUND = (id: string) =>
-  `Không tìm thấy quân nhân với ID ${id}`;
+export const IMPORT_NIEN_HAN_PERSONNEL_NOT_FOUND =
+  'Không tìm thấy quân nhân tương ứng với mã trong file.';
 export const IMPORT_NIEN_HAN_MISSING_FIELDS = (fields: string[]) =>
   `Thiếu ${fields.join(', ')}`;
 export const IMPORT_NIEN_HAN_NOT_ENOUGH_SERVICE_PREFIX = (danhHieuName: string, requiredYears: number) =>
   `Chưa đủ thời gian phục vụ cho ${danhHieuName} (yêu cầu ${requiredYears} năm`;
 
 /** HC_QKQT Excel-import error messages. */
-export const IMPORT_HCQKQT_PERSONNEL_NOT_FOUND = (id: string) =>
-  `Không tìm thấy quân nhân với ID ${id}`;
+export const IMPORT_HCQKQT_PERSONNEL_NOT_FOUND =
+  'Không tìm thấy quân nhân tương ứng với mã trong file.';
 export const IMPORT_HCQKQT_ALREADY_AWARDED = (nam: number) =>
   `Quân nhân đã có HC QKQT trên hệ thống (năm ${nam})`;
 export const IMPORT_HCQKQT_NOT_ENOUGH_YEARS_PREFIX = 'Chưa đủ 25 năm phục vụ';

@@ -3,7 +3,7 @@
 import { Modal, Descriptions, Typography, Spin, Tag, Divider, Empty } from 'antd';
 import { HistoryOutlined } from '@ant-design/icons';
 
-import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
+import { ELIGIBILITY_STATUS, getEligibilityStatusMeta } from '@/constants/eligibilityStatus.constants';
 import { AWARD_TAB_LABELS } from '@/constants/danhHieu.constants';
 
 const { Text, Title } = Typography;
@@ -13,11 +13,6 @@ const HCCSVV_ROWS = [
   { label: 'hạng Nhì', statusKey: 'hccsvv_hang_nhi_status', danhHieu: 'HCCSVV_HANG_NHI' },
   { label: 'hạng Nhất', statusKey: 'hccsvv_hang_nhat_status', danhHieu: 'HCCSVV_HANG_NHAT' },
 ] as const;
-
-const STATUS_CONFIG: Record<string, { color?: string; text: string }> = {
-  DA_NHAN: { color: 'green', text: 'Đã nhận' },
-  DU_DIEU_KIEN: { color: 'orange', text: 'Đủ điều kiện' },
-};
 
 interface ServiceHistoryModalProps {
   visible: boolean;
@@ -59,10 +54,10 @@ export function ServiceHistoryModal({
             <Descriptions bordered column={1} size="small" style={{ marginBottom: 24 }}>
               {HCCSVV_ROWS.map(({ label, statusKey, danhHieu }) => {
                 const status = serviceProfile[statusKey];
-                const config = STATUS_CONFIG[status] || { text: 'Chưa đủ điều kiện' };
+                const config = getEligibilityStatusMeta(status);
                 return (
                   <Descriptions.Item key={danhHieu} label={label}>
-                    <Tag color={config.color}>{config.text}</Tag>
+                    <Tag color={config.color}>{config.label}</Tag>
                     {status === ELIGIBILITY_STATUS.DA_NHAN && namNhan[danhHieu] && (
                       <Text type="secondary" style={{ marginLeft: 8 }}>
                         {namNhan[danhHieu].thang

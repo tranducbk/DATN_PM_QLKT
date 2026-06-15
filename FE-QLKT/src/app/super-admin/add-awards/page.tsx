@@ -115,7 +115,6 @@ export default function SuperAdminAddAwardsPage() {
     }
   }, [currentStep, selectedPersonnelIds, fetchPersonnelDetails]);
 
-  // Validate current step
   const canProceedToNextStep = () => {
     switch (currentStep) {
       case 0:
@@ -138,7 +137,6 @@ export default function SuperAdminAddAwardsPage() {
     }
   };
 
-  // Handle next step
   const handleNext = async () => {
     if (canProceedToNextStep()) {
       setCurrentStep(currentStep + 1);
@@ -159,7 +157,6 @@ export default function SuperAdminAddAwardsPage() {
     }
   };
 
-  // Handle previous step
   const handlePrev = () => {
     if (currentStep === 2) {
       setTitleData([]);
@@ -167,7 +164,6 @@ export default function SuperAdminAddAwardsPage() {
     setCurrentStep(currentStep - 1);
   };
 
-  // Handle submit
   const handleSubmit = async () => {
     try {
       const missingDecision = selectedPersonnelIds.some(
@@ -234,7 +230,6 @@ export default function SuperAdminAddAwardsPage() {
     }
   };
 
-  // Render step content
   const renderStepContent = () => {
     switch (currentStep) {
       case 0:
@@ -593,7 +588,6 @@ export default function SuperAdminAddAwardsPage() {
     }
   };
 
-  // Handle decision modal success
   const handleDecisionSuccess = (decision: any) => {
     const newMap = { ...decisionDataMap };
     selectedPersonnelForDecision.forEach(id => {

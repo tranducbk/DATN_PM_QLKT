@@ -115,7 +115,7 @@ export function LogsFilter({ onFilterChange }: LogsFilterProps) {
       title={
         <div className="flex items-center gap-2">
           <FilterOutlined className="text-blue-500" />
-          <span className="text-gray-700 dark:text-gray-300 font-semibold">Bộ lọc tìm kiếm</span>
+          <span className="font-semibold">Bộ lọc tìm kiếm</span>
         </div>
       }
       extra={

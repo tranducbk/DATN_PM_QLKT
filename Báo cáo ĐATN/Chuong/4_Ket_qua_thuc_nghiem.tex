@@ -85,7 +85,7 @@ Khi người dùng truy cập trang hồ sơ một quân nhân, dòng dữ liệ
 \begin{enumerate}
     \item \textbf{Route} \texttt{GET /api/profiles/annual/:personnel\_id} (định nghĩa tại \texttt{routes/profile.route.ts}) tiếp nhận yêu cầu, đi qua middleware \texttt{verifyToken}; quyền xem hồ sơ của chính mình được kiểm ở tầng service nên route không cần guard theo vai trò.
     \item \textbf{Controller} \texttt{profileController.getAnnualProfile} (tại \texttt{controllers/profile.controller.ts}) đọc tham số \texttt{personnel\_id}, gọi service tương ứng, gói kết quả qua \texttt{ResponseHelper.success}.
-    \item \textbf{Service} \texttt{profileService.recalculateAnnualProfile} (tại \texttt{services/profile/annual.ts}) thực thi logic: nạp danh sách \texttt{DanhHieuHangNam} qua repository, gọi \texttt{computeChainContext} để dẫn xuất ngữ cảnh chuỗi, lặp qua \texttt{PERSONAL\_CHAIN\_AWARDS} và gọi \texttt{checkChainEligibility} cho mỗi cấp, ghi kết quả vào bảng suy diễn \texttt{HoSoHangNam}.
+    \item \textbf{Service} \texttt{profileService.recalculateAnnualProfile} (tại \texttt{services/profile/annual.ts}) thực thi logic: nạp danh sách \texttt{DanhHieuHangNam} qua repository, gọi \texttt{computeChainContext} để tính ngữ cảnh chuỗi, lặp qua \texttt{PERSONAL\_CHAIN\_AWARDS} và gọi \texttt{checkChainEligibility} cho mỗi cấp, ghi kết quả vào bảng suy diễn \texttt{HoSoHangNam}.
     \item \textbf{Eligibility module} \texttt{services/eligibility/chainEligibility.ts} chứa hàm \texttt{checkChainEligibility(config, context, hasReceivedLifetime)} là hàm thuần, không truy vấn cơ sở dữ liệu, dễ kiểm chứng với mọi bộ đầu vào.
     \item \textbf{Repository} \texttt{repositories/danhHieu.repository.ts} cung cấp các phương thức \texttt{findManyByPersonnelId}, \texttt{upsertByPersonnelYear}.
     \item \textbf{Prisma Client} thực thi truy vấn SQL tới bảng \texttt{danh\_hieu\_hang\_nam}.
@@ -204,7 +204,7 @@ Ngoài tám trang trên, trang nhập Excel (vùng kéo thả tệp kèm bảng 
 
 Bảng màu của hệ thống kế thừa mặc định của Ant Design 5 (gam xanh đại dương cho hành động chính, đỏ cho hành động xoá, vàng cho cảnh báo, xanh lá cho thành công) với một số tinh chỉnh nhỏ qua Tailwind CSS để phù hợp đặc thù môi trường quân sự (giảm độ bão hoà của các màu phụ để giao diện trông trang trọng hơn).
 
-Hệ chữ chính dùng phông \texttt{Inter} (sans-serif) cho phần thân nội dung do khả năng hiển thị tốt với tiếng Việt có dấu, và phông \texttt{Source Code Pro} cho khu vực hiển thị mã quyết định và mã định danh kỹ thuật (CCCD, mã quyết định) để dễ đọc các chuỗi số dài.
+Hệ thống phông chữ chủ đạo sử dụng phông \texttt{Inter} (sans-serif) cho phần thân nội dung do khả năng hiển thị tốt với tiếng Việt có dấu, và phông \texttt{Source Code Pro} cho khu vực hiển thị mã quyết định và mã định danh kỹ thuật (CCCD, mã quyết định) để dễ đọc các chuỗi số dài.
 
 Khoảng cách (spacing) được chuẩn hoá theo thang 4 px của Tailwind. Tất cả các thẻ (Card) có lề trong tối thiểu 16 px để tránh nội dung sát mép. Bán kính bo góc được chọn 6 px cho mọi phần tử để tạo cảm giác hiện đại nhưng vẫn nghiêm túc.
 
@@ -236,7 +236,7 @@ Hai luồng nghiệp vụ phức tạp và tiêu biểu nhất là tạo đề x
     \label{fig:tuantu-dexuat}
 \end{figure}
 
-\textbf{Luồng phê duyệt đề xuất} (Hình~\ref{fig:tuantu-pheduyet}): Cán bộ Phòng Chính trị mở chi tiết đề xuất $\rightarrow$ bấm ``Phê duyệt'' $\rightarrow$ frontend gửi yêu cầu HTTP \texttt{POST /api/proposals/:id/approve} $\rightarrow$ chuỗi middleware $\rightarrow$ \texttt{approveProposal} chạy tiền kiểm (\texttt{validation.preflight}, \texttt{strategy.validateApprove}, kiểm tra trùng lặp và số quyết định) $\rightarrow$ \texttt{decisionMappings.attach} $\rightarrow$ mở giao dịch Prisma gồm \texttt{strategy.importInTransaction} và cập nhật \texttt{BangDeXuat.status = APPROVED} $\rightarrow$ commit $\rightarrow$ tính lại hồ sơ suy diễn $\rightarrow$ ghi nhật ký hệ thống $\rightarrow$ phát sự kiện Socket.IO.
+\textbf{Luồng phê duyệt đề xuất} (Hình~\ref{fig:tuantu-pheduyet}): Cán bộ Phòng Chính trị mở chi tiết đề xuất $\rightarrow$ bấm ``Phê duyệt'' $\rightarrow$ frontend gửi yêu cầu HTTP \texttt{POST /api/proposals/:id/approve} $\rightarrow$ chuỗi middleware $\rightarrow$ \texttt{approveProposal} chạy bước kiểm tra trước (\texttt{validation.preflight}, \texttt{strategy.validateApprove}, kiểm tra trùng lặp và số quyết định) $\rightarrow$ \texttt{decisionMappings.attach} $\rightarrow$ mở giao dịch Prisma gồm \texttt{strategy.importInTransaction} và cập nhật \texttt{BangDeXuat.status = APPROVED} $\rightarrow$ commit $\rightarrow$ tính lại hồ sơ suy diễn $\rightarrow$ ghi nhật ký hệ thống $\rightarrow$ phát sự kiện Socket.IO.
 
 \begin{figure}[H]
     \centering
@@ -817,7 +817,7 @@ Phần này trình bày các ảnh chụp màn hình tiêu biểu của sản ph
 {\raggedright
 Phần này tóm tắt năm thành phần kỹ thuật trọng yếu của kho mã nguồn để người đọc nắm cách tổ chức bên trong, không trích nguyên đoạn mã.
 
-\textbf{Hàm \texttt{computeChainContext} dẫn xuất ngữ cảnh chuỗi.} Đặt tại \texttt{BE-QLKT/src/services/profile/annual.ts}. Đầu vào gồm danh sách bản ghi \texttt{DanhHieuHangNam} của một quân nhân, độ dài chuỗi CSTĐCS hiện tại và năm xét. Đầu ra là đối tượng \texttt{ChainContext} chứa năm bắt đầu chuỗi, năm gần nhất nhận BKBTBQP / CSTĐTQ / BKTTCP còn nằm trong cửa sổ chuỗi, số năm CSTĐCS tích luỹ từ lần cuối nhận mỗi cấp và số chu kỳ đã lỡ. Hàm hoàn toàn thuần (không truy vấn cơ sở dữ liệu) nên dễ kiểm chứng với nhiều bộ dữ liệu mẫu phủ các kịch bản từ chu kỳ vừa đủ đến lỡ nhiều chu kỳ.
+\textbf{Hàm \texttt{computeChainContext} tính ngữ cảnh chuỗi.} Đặt tại \texttt{BE-QLKT/src/services/profile/annual.ts}. Đầu vào gồm danh sách bản ghi \texttt{DanhHieuHangNam} của một quân nhân, độ dài chuỗi CSTĐCS hiện tại và năm xét. Đầu ra là đối tượng \texttt{ChainContext} chứa năm bắt đầu chuỗi, năm gần nhất nhận BKBTBQP / CSTĐTQ / BKTTCP còn nằm trong cửa sổ chuỗi, số năm CSTĐCS tích luỹ từ lần cuối nhận mỗi cấp và số chu kỳ đã lỡ. Hàm hoàn toàn thuần (không truy vấn cơ sở dữ liệu) nên dễ kiểm chứng với nhiều bộ dữ liệu mẫu bao quát các kịch bản từ chu kỳ vừa đủ đến lỡ nhiều chu kỳ.
 
 \textbf{Chuỗi middleware bảo mật năm tầng.} Mỗi yêu cầu làm thay đổi dữ liệu đi qua tuần tự: \texttt{verifyToken} (xác thực Access Token), \texttt{checkRole} (phân quyền vai trò), \texttt{writeLimiter} (giới hạn tốc độ), middleware tải lên tệp đính kèm (\texttt{multer}), \texttt{auditLog} (ghi nhật ký), rồi mới đến controller. Mỗi tầng giải quyết một mối quan tâm độc lập và tái sử dụng được giữa các route, phản ánh nguyên tắc đơn trách nhiệm.
 
@@ -825,10 +825,12 @@ Phần này tóm tắt năm thành phần kỹ thuật trọng yếu của kho m
 
 \textbf{Hàm \texttt{checkChainEligibility} thực thi quy tắc chuỗi.} Đặt tại \texttt{BE-QLKT/src/services/eligibility/chainEligibility.ts}. Đầu vào gồm cấu hình cấp danh hiệu (\texttt{ChainAwardConfig}), ngữ cảnh chuỗi (\texttt{ChainStreaks}), cờ ``đã nhận'' (\texttt{hasReceived}) và số cờ tiền điều kiện trong khung xét (\texttt{FlagsInWindow}). Logic ba bước: chặn nhận lại nếu là BKTTCP cá nhân đã có; kiểm tra đủ chu kỳ (\texttt{streakLength} $\ge$ \texttt{cycleYears} và là bội số của \texttt{cycleYears}); kiểm tra đủ cờ tiền điều kiện trong khung xét cùng yêu cầu NCKH (nếu cấp danh hiệu yêu cầu). Trả về \texttt{EligibilityResult \{ eligible, reason \}} kèm thông điệp tiếng Việt.
 
-\textbf{Strategy registry cho bảy loại đề xuất.} Tại \texttt{BE-QLKT/src/services/proposal/strategies/index.ts}, đối tượng \texttt{REGISTRY} ánh xạ mỗi \texttt{ProposalType} sang một thực thể tuân giao diện \texttt{ProposalStrategy}. Bảy strategy đã đăng ký gồm \texttt{caNhanHangNamStrategy}, \texttt{donViHangNamStrategy}, \texttt{hccsvvStrategy}, \texttt{hcqkqtStrategy}, \texttt{kncStrategy}, \texttt{hcbvtqStrategy}, \texttt{nckhStrategy}; hai strategy đơn huân chương (\texttt{hcqkqtStrategy}, \texttt{kncStrategy}) chia sẻ logic qua \texttt{singleMedalImporter}. Hàm \texttt{requireProposalStrategy(type)} trả về strategy tương ứng hoặc ném lỗi nếu chưa đăng ký. Để bổ sung loại đề xuất mới chỉ cần tạo tệp triển khai mới, thêm một dòng đăng ký vào \texttt{REGISTRY} và bổ sung khoá vào hằng số \texttt{PROPOSAL\_TYPES}.\par}
+\textbf{Strategy registry cho bảy loại đề xuất.} Tại \texttt{BE-QLKT/src/services/proposal/strategies/index.ts}, đối tượng \texttt{REGISTRY} ánh xạ các \texttt{ProposalType} đi qua luồng đề xuất--phê duyệt sang thực thể tuân giao diện \texttt{ProposalStrategy} (riêng khen thưởng đột xuất được quản lý ngoài luồng này nên không có strategy tương ứng). Bảy strategy đã đăng ký gồm \texttt{caNhanHangNamStrategy}, \texttt{donViHangNamStrategy}, \texttt{hccsvvStrategy}, \texttt{hcqkqtStrategy}, \texttt{kncStrategy}, \texttt{hcbvtqStrategy}, \texttt{nckhStrategy}; hai strategy đơn huân chương (\texttt{hcqkqtStrategy}, \texttt{kncStrategy}) chia sẻ logic qua \texttt{singleMedalImporter}. Hàm \texttt{getProposalStrategy(type)} trả về strategy tương ứng, hoặc \texttt{null} nếu loại chưa đăng ký. Để bổ sung loại đề xuất mới chỉ cần tạo tệp triển khai mới, thêm một dòng đăng ký vào \texttt{REGISTRY} và bổ sung khoá vào hằng số \texttt{PROPOSAL\_TYPES}.\par}
 
 \section{Kiểm thử}
 \label{section:4.4}
+
+Hệ thống được kiểm thử theo hai hướng bổ trợ nhau: kiểm thử hộp đen thủ công các chức năng nghiệp vụ qua giao diện (Mục~\ref{subsection:4.4.1}) và kiểm thử tự động bằng Jest cho các quy tắc nghiệp vụ lõi phía backend (Mục~\ref{subsection:4.4.1b}). Ngoài ra, sản phẩm còn được kiểm thử tương thích trên nhiều dòng máy và trình duyệt (Mục~\ref{subsection:4.4.2}).
 
 \subsection{Kiểm thử hộp đen các chức năng nghiệp vụ}
 \label{subsection:4.4.1}
@@ -948,6 +950,13 @@ Các chức năng nghiệp vụ chính được kiểm thử hộp đen thủ c�
 3 & Đổi lịch sao lưu & Đổi chu kỳ từ 24 giờ sang 12 giờ & Hệ thống tự sao lưu theo lịch mới & Đạt \\ \hline
 \end{tabular}
 \end{table}
+
+\subsection{Kiểm thử tự động bằng Jest}
+\label{subsection:4.4.1b}
+
+Bên cạnh kiểm thử hộp đen thủ công, các quy tắc nghiệp vụ lõi phía backend được bao quát bởi một bộ kiểm thử tự động viết bằng Jest, tập trung vào những quy tắc dễ sai và khó kiểm soát bằng tay. Bộ kiểm thử gồm 83 tệp với hơn 900 trường hợp kiểm thử, chia thành kiểm thử đơn vị (giả lập cơ sở dữ liệu) và kiểm thử tích hợp (chạy trên cơ sở dữ liệu thật) qua hai cấu hình riêng \texttt{jest.config.ts} và \texttt{jest.integration.config.ts}.
+
+Trọng tâm là quy tắc xét chuỗi danh hiệu (\texttt{checkChainEligibility}, \texttt{computeChainContext}) với các kịch bản: chu kỳ vừa đủ, chu kỳ thừa, lỡ một và lỡ nhiều chu kỳ, cờ tiền điều kiện rơi khỏi cửa sổ trượt và chặn nhận lại danh hiệu một lần duy nhất. Ngoài ra, bộ kiểm thử còn phủ luồng phê duyệt đề xuất, phân quyền theo bốn vai trò, cơ chế xoay vòng refresh token và xác thực schema đầu vào. Việc tách các hàm quy tắc thành hàm thuần (Mục~\ref{subsection:4.1.4}) là điều kiện để kiểm thử độc lập với cơ sở dữ liệu, qua đó giữ cho hai tầng \texttt{computeEligibilityFlags} và \texttt{checkAwardEligibility} luôn cho kết quả nhất quán.
 
 \subsection{Kiểm thử tương thích}
 \label{subsection:4.4.2}

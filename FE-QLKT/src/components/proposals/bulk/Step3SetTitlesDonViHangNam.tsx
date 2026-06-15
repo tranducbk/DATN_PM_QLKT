@@ -132,7 +132,6 @@ export function Step3SetTitlesDonViHangNam({
 
         setUnits(formattedUnits);
 
-        // Initialize title data if empty
         if (titleData.length === 0 && formattedUnits.length > 0) {
           const initialData: TitleData[] = formattedUnits.map((unit: Unit) => ({
             don_vi_id: unit.id,
@@ -498,7 +497,6 @@ export function Step3SetTitlesDonViHangNam({
           selectedRowKeys: selectedUnitIds,
           onChange: (selectedRowKeys: React.Key[]) => {
             onUnitChange(selectedRowKeys as string[]);
-            // Remove title data for deselected units
             const newTitleData = titleData.filter(d =>
               (selectedRowKeys as string[]).includes(d.don_vi_id || '')
             );

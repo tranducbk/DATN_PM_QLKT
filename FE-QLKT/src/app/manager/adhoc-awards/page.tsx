@@ -146,7 +146,6 @@ export default function ManagerAdhocAwardsPage() {
     setSearchDraft(INITIAL_TABLE_FILTERS.searchText);
   };
 
-  // Get unique years from awards for filter dropdown
   const availableYears = useMemo(() => {
     const years = Array.from(new Set(awards.map(a => a.nam))).sort((a, b) => b - a);
     return years;
@@ -160,17 +159,14 @@ export default function ManagerAdhocAwardsPage() {
   // FILTERED TABLE DATA
   const filteredAwards = useMemo(() => {
     return awards.filter(award => {
-      // Filter by year
       if (tableFilters.year && award.nam !== tableFilters.year) {
         return false;
       }
 
-      // Filter by type
       if (tableFilters.type !== 'ALL' && award.doi_tuong !== tableFilters.type) {
         return false;
       }
 
-      // Filter by search text (name, decision number, note, award form)
       if (tableFilters.searchText) {
         const searchLower = tableFilters.searchText.toLowerCase();
         const name =

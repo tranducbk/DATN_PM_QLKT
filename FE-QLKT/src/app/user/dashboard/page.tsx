@@ -38,6 +38,7 @@ import dynamic from 'next/dynamic';
 import { useState, useEffect } from 'react';
 import { apiClient } from '@/lib/http/apiClient';
 import { calculateServiceMonthsWithToday } from '@/lib/award/serviceTimeHelpers';
+import { GENDER } from '@/constants/gender.constants';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { useTheme } from '@/components/ThemeProvider';
 import { LoadingState } from '@/components/shared/LoadingState';
@@ -144,7 +145,6 @@ export default function UserDashboard() {
     (contributionProfile?.months_08 || 0) +
     (contributionProfile?.months_0910 || 0);
 
-  // Calculate progress for medals
   const getProgressData = (status: string, current: number, target: number) => {
     if (status === ELIGIBILITY_STATUS.DA_NHAN) return { percent: 100, color: '#52c41a' };
     if (status === ELIGIBILITY_STATUS.DU_DIEU_KIEN) return { percent: 100, color: '#1890ff' };
@@ -356,9 +356,9 @@ export default function UserDashboard() {
                     : 'Chưa có dữ liệu'}
                 </Descriptions.Item>
                 <Descriptions.Item label="Giới tính" labelStyle={{ fontWeight: 500 }}>
-                  {personnelInfo.gioi_tinh === 'NAM'
+                  {personnelInfo.gioi_tinh === GENDER.MALE
                     ? 'Nam'
-                    : personnelInfo.gioi_tinh === 'NU'
+                    : personnelInfo.gioi_tinh === GENDER.FEMALE
                       ? 'Nữ'
                       : 'Chưa có dữ liệu'}
                 </Descriptions.Item>
@@ -691,7 +691,7 @@ export default function UserDashboard() {
 
                     {(() => {
                       // Target months by gender: male 120, female 80 (2/3 of male)
-                      const isFemale = personnelInfo?.gioi_tinh === 'NU';
+                      const isFemale = personnelInfo?.gioi_tinh === GENDER.FEMALE;
                       const targetMonths = isFemale ? 80 : 120;
 
                       const hangBaMonths =

@@ -375,8 +375,8 @@ export default function AdminDashboard() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className={`text-xs font-medium uppercase tracking-wide mb-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Vai trò</p>
-                      <Tag color={ROLE_COLORS[user?.role || ''] || 'blue'} style={{ fontSize: 13, padding: '2px 10px', margin: 0 }}>
-                        {ROLE_LABELS[user?.role?.toUpperCase() || ''] || displayName}
+                      <Tag color={ROLE_COLORS[user?.role?.toUpperCase() ?? ''] ?? 'blue'} style={{ fontSize: 13, padding: '2px 10px', margin: 0 }}>
+                        {ROLE_LABELS[user?.role?.toUpperCase() ?? ''] ?? displayName}
                       </Tag>
                     </div>
                   </div>

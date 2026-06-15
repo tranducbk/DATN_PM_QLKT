@@ -48,3 +48,18 @@ export const AWARD_RESOURCE: Record<AwardSlug, AwardResourceMeta> = {
     proposalType: null,
   },
 };
+
+const PROPOSAL_TYPE_TO_LABEL: Record<string, string> = Object.fromEntries(
+  Object.values(AWARD_RESOURCE)
+    .filter(meta => meta.proposalType)
+    .map(meta => [meta.proposalType, meta.vi])
+);
+
+/**
+ * Returns the Vietnamese award label for a proposal type code, sourced from AWARD_LABELS.
+ * @param proposalType - Proposal type code (e.g. 'CA_NHAN_HANG_NAM', 'NIEN_HAN', 'NCKH')
+ * @returns Display label, or the original code when the type is unrecognized
+ */
+export function getAwardLabelByProposalType(proposalType: string): string {
+  return PROPOSAL_TYPE_TO_LABEL[proposalType] ?? proposalType;
+}

@@ -10,11 +10,7 @@ import { apiClient } from '@/lib/http/apiClient';
 import { getApiErrorMessage } from '@/lib/http/apiError';
 import { PositionHistoryModal } from './PositionHistoryModal';
 import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
-import {
-  AWARD_TAB_LABELS,
-  DANH_HIEU_HCBVTQ,
-  getDanhHieuName,
-} from '@/constants/danhHieu.constants';
+import { AWARD_TAB_LABELS, getDanhHieuName } from '@/constants/danhHieu.constants';
 import {
   calculateContributionMonthsByGroup,
   formatMonthsToText,
@@ -113,7 +109,6 @@ export function Step3SetTitlesCongHien({
         return getHighestEligibleContributionMedal(m07, m08, m0910, required) || undefined;
       };
 
-      // Initialize title data if empty
       if (titleData.length === 0) {
         const initialData = personnelData.map((p: Personnel) => {
           const m07 = monthsByGroup(p.id, '0.7');
@@ -330,15 +325,10 @@ export function Step3SetTitlesCongHien({
       align: 'center',
       render: (_, record) => {
         const data = getTitleData(record.id);
-        const awardLabels: Record<string, string> = {
-          [DANH_HIEU_HCBVTQ.HANG_NHAT]: getDanhHieuName(DANH_HIEU_HCBVTQ.HANG_NHAT),
-          [DANH_HIEU_HCBVTQ.HANG_NHI]: getDanhHieuName(DANH_HIEU_HCBVTQ.HANG_NHI),
-          [DANH_HIEU_HCBVTQ.HANG_BA]: getDanhHieuName(DANH_HIEU_HCBVTQ.HANG_BA),
-        };
 
         return (
           <Text strong className={!data.danh_hieu ? 'text-red-500 dark:text-red-400' : ''}>
-            {data.danh_hieu ? awardLabels[data.danh_hieu] || data.danh_hieu : 'Chưa xác định'}
+            {data.danh_hieu ? getDanhHieuName(data.danh_hieu) : 'Chưa xác định'}
           </Text>
         );
       },
@@ -439,7 +429,6 @@ export function Step3SetTitlesCongHien({
           selectedRowKeys: selectedPersonnelIds,
           onChange: (selectedRowKeys: React.Key[]) => {
             onPersonnelChange(selectedRowKeys as string[]);
-            // Remove title data for deselected personnel
             const newTitleData = titleData.filter(d =>
               (selectedRowKeys as string[]).includes(d.personnel_id || '')
             );

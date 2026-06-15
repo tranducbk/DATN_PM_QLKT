@@ -42,9 +42,8 @@ export const annualRewards: Record<
     }
 
     const xepLoai = req.body?.xep_loai || '';
-    const danhHieuDisplay = danhHieuName || FALLBACK.UNKNOWN;
     const namDisplay = nam || FALLBACK.UNKNOWN;
-    let description = `Tạo danh hiệu hằng năm: ${danhHieuDisplay}${
+    let description = `Tạo danh hiệu hằng năm: ${danhHieuName}${
       hoTen ? ` cho quân nhân ${hoTen}` : ''
     } - Năm ${namDisplay}`;
     if (xepLoai) {
@@ -78,9 +77,8 @@ export const annualRewards: Record<
     }
 
     const xepLoai = req.body?.xep_loai || '';
-    const danhHieuDisplay = danhHieuName || FALLBACK.UNKNOWN;
     const namDisplay = nam || FALLBACK.UNKNOWN;
-    let description = `Cập nhật danh hiệu hằng năm: ${danhHieuDisplay}${
+    let description = `Cập nhật danh hiệu hằng năm: ${danhHieuName}${
       hoTen ? ` cho quân nhân ${hoTen}` : ''
     } - Năm ${namDisplay}`;
     if (xepLoai) {
@@ -148,7 +146,7 @@ export const annualRewards: Record<
       // best-effort — audit description must not throw
     }
 
-    const danhHieuName = getDanhHieuName(danhHieu) || FALLBACK.UNKNOWN;
+    const danhHieuName = getDanhHieuName(danhHieu);
     const namDisplay = nam || FALLBACK.UNKNOWN;
 
     let description = `Thêm đồng loạt danh hiệu hằng năm: ${danhHieuName} - Năm ${namDisplay}`;

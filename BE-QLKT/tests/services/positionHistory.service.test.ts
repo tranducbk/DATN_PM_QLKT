@@ -344,6 +344,26 @@ describe('positionHistory.service - deletePositionHistory', () => {
     );
     expect(prismaMock.lichSuChucVu.delete).not.toHaveBeenCalled();
   });
+
+  it('xóa chức vụ hiện tại (ngay_ket_thuc = null) → ValidationError, không gọi delete', async () => {
+    const current = {
+      id: 'lscv-current',
+      quan_nhan_id: PERSONNEL_ID,
+      chuc_vu_id: CHUC_VU_ID,
+      he_so_chuc_vu: 0.7,
+      ngay_bat_dau: new Date('2024-01-01'),
+      ngay_ket_thuc: null,
+      so_thang: null,
+    };
+    prismaMock.lichSuChucVu.findUnique.mockResolvedValueOnce(current);
+
+    await expectError(
+      positionHistoryService.deletePositionHistory(current.id),
+      ValidationError,
+      /chức vụ hiện tại/
+    );
+    expect(prismaMock.lichSuChucVu.delete).not.toHaveBeenCalled();
+  });
 });
 
 describe('positionHistory.service - getPositionHistory', () => {
@@ -394,9 +414,13 @@ describe('positionHistory.service - getPositionHistory', () => {
     // Khi
     const result = await positionHistoryService.getPositionHistory(PERSONNEL_ID);
 
-    // Thì: orderBy = { ngay_bat_dau: 'desc' }; bản ghi mở được tính lại so_thang
+    // Thì: orderBy ngay_bat_dau DESC, tie-break đưa bản ghi đang mở (ngay_ket_thuc null) lên đầu;
+    // bản ghi mở được tính lại so_thang
     const findArgs = prismaMock.lichSuChucVu.findMany.mock.calls[0][0];
-    expect(findArgs.orderBy).toEqual({ ngay_bat_dau: 'desc' });
+    expect(findArgs.orderBy).toEqual([
+      { ngay_bat_dau: 'desc' },
+      { ngay_ket_thuc: { sort: 'desc', nulls: 'first' } },
+    ]);
     expect(result).toHaveLength(2);
     const openRecord = result.find(r => r.id === 'lscv-open');
     expect(openRecord?.so_thang).toBeGreaterThanOrEqual(4);

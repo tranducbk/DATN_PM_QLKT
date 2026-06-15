@@ -3,5 +3,3 @@ export const ELIGIBILITY_STATUS = {
   DU_DIEU_KIEN: 'DU_DIEU_KIEN',
   DA_NHAN: 'DA_NHAN',
 } as const;
-
-export type EligibilityStatus = (typeof ELIGIBILITY_STATUS)[keyof typeof ELIGIBILITY_STATUS];
