@@ -200,6 +200,9 @@ class ProposalController {
 
   getPdfFile = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as GetPdfFileParams;
+    // resolveIdParam gom kiểu param Express (string | string[]) về 1 chuỗi.
+    // decodeURIComponent khôi phục tên file tiếng Việt đã bị URL-encode
+    // (vd "Quy%E1%BA%BFt.pdf" → "Quyết.pdf") để khớp đúng file trên disk.
     const filename = decodeURIComponent(resolveIdParam(params.filename || ''));
 
     // ─── PATH TRAVERSAL GUARD ───────────────────────────────────────

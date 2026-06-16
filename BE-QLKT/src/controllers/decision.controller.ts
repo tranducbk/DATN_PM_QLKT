@@ -203,9 +203,14 @@ class DecisionController {
 
   getFilePath = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as SoQuyetDinhParams;
+    // normalizeParam gom kiểu param Express (string | string[]) về 1 chuỗi.
     const raw = normalizeParam(params.soQuyetDinh);
     if (!raw) return ResponseHelper.badRequest(res, 'Thiếu soQuyetDinh');
 
+    // Số QĐ chứa "/" (vd "123/QĐ-BQP") → URL-encode thành "%2F"; decode để khớp
+    // key trong DB. KHÔNG cần guard "/" như getPdfFile vì raw chỉ dùng làm tham
+    // số truy vấn Prisma (DB key), không ghép vào đường dẫn file → không có
+    // path traversal.
     const result = await decisionService.getFilePathBySoQuyetDinh(decodeURIComponent(raw));
     if (!result.success) {
       return res
