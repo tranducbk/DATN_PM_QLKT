@@ -2,7 +2,7 @@
 
 > Tài liệu tự học để bảo vệ ĐATN. Tập trung vào **sơ đồ gói (package)**, **sơ đồ lớp (class)** và **ý nghĩa stereotype mức thiết kế**. Mọi class/method/đường dẫn trong tài liệu **trích trực tiếp từ mã nguồn dự án** (có ghi `file:dòng` để tự kiểm chứng), không bịa.
 >
-> Phạm vi: chỉ các hình kỹ thuật trong báo cáo `SOICT_DATN_Tran_Anh_Duc_20220120/` (Chương 4 – Thiết kế kiến trúc). Hình UI/wireframe/use-case/ERD chỉ điểm qua ở cuối.
+> Phạm vi: chỉ các hình kỹ thuật trong báo cáo `Báo cáo ĐATN/` (Chương 4 – Thiết kế kiến trúc). Hình UI/wireframe/use-case/ERD chỉ điểm qua ở cuối.
 >
 > Render PDF: `pandoc docs/GIAI_THICH_SO_DO_BAO_CAO.md -o giai_thich.pdf --pdf-engine=xelatex -V mainfont="Times New Roman"`.
 

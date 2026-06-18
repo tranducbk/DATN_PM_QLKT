@@ -3,6 +3,7 @@ import { DANH_HIEU_CA_NHAN_HANG_NAM } from '../../constants/danhHieu.constants';
 import { PERSONAL_CHAIN_AWARDS, findChainAwardConfig } from '../../constants/chainAwards.constants';
 import {
   checkChainEligibility,
+  countFlagInWindow,
   type EligibilityResult,
   type FlagsInWindow,
 } from './chainEligibility';
@@ -16,17 +17,6 @@ const FLAG_COLUMN_MAP: Record<string, keyof DanhHieuHangNam> = {
 /** Maps a chain award code to its boolean flag column on `DanhHieuHangNam`. */
 export function flagColumnFor(code: string): keyof DanhHieuHangNam | '' {
   return FLAG_COLUMN_MAP[code] ?? '';
-}
-
-function countFlagInWindow(
-  danhHieuList: Array<Record<string, unknown> & { nam: number }>,
-  year: number,
-  rangeYears: number,
-  flagKey: string
-): number {
-  const endYear = year - 1;
-  const startYear = endYear - rangeYears + 1;
-  return danhHieuList.filter(r => r[flagKey] === true && r.nam >= startYear && r.nam <= endYear).length;
 }
 
 /**

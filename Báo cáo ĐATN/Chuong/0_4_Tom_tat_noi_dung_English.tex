@@ -6,10 +6,16 @@
 \end{center}
 \vspace{1cm}
 
-Emulation and commendation in units under the Ministry of National Defence operate under the Law on Emulation and Commendation No.\,06/2022/QH15 and its implementing decrees. At the Military Science Academy, the personal annual track alone forms a three-tier chain: the Ministry of National Defence Certificate of Merit (BKBTBQP), the All-Forces Emulation Soldier title (CSTDTQ) and the Prime Minister's Certificate of Merit (BKTTCP). Each tier has its own sliding-window cycle (2, 3 and 7 years) and several flag conditions to cross-check, making manual review on spreadsheets highly error-prone.
+Emulation and commendation in units under the Ministry of National Defence operate under the Law on Emulation and Commendation No.\,06/2022/QH15 and its implementing decrees.
+At the Military Science Academy, the personal annual track alone forms a three-tier chain: the Ministry of National Defence Certificate of Merit (BKBQP), the All-Forces Emulation Soldier title (CSTDTQ) and the Prime Minister's Certificate of Merit (BKTTCP).
+Each tier has its own sliding-window cycle (2, 3 and 7 years) and several flag conditions to cross-check, making manual review on spreadsheets highly error-prone.
 
-This thesis develops a web information system supporting the Political Department of the Academy throughout the lifecycle of seven commendation groups: personal annual, unit annual, length-of-service medals, contribution medals, commemorative medals, military flag medals and scientific achievements. The platform covers proposal creation, automatic chain-eligibility checking, approval, audit logging and decision document export. It cuts per-soldier eligibility check time from tens of minutes on spreadsheets to under one second, while preserving a complete audit trail for post-hoc verification.
+This thesis develops a web information system supporting the Political Department of the Academy throughout the lifecycle of seven commendation groups: personal annual, unit annual, length-of-service medals, contribution medals, commemorative medals, military flag medals and scientific achievements.
+The platform covers proposal creation, automatic chain-eligibility checking, approval with the signed decision attached, audit logging and management of decision documents.
+It cuts per-soldier eligibility check time from tens of minutes on spreadsheets to under one second, while preserving a complete audit trail for post-hoc verification.
 
-The system is deployed as a web application on the Academy's internal network. Chain-award rules sit in a central configuration table so that new awards can be added without rewriting the eligibility logic. The deliverable supports four authorisation levels matching the military organisational structure (SuperAdmin, Admin, Manager, User), has been tested against the main business scenarios -- combining manual black-box testing through the interface with an automated Jest suite for the core eligibility rules -- and is ready for pilot deployment at the Political Department.
+The system is deployed as a web application on the Academy's internal network.
+Chain-award rules sit in a central configuration table so that new awards can be added without rewriting the eligibility logic.
+The deliverable supports four authorisation levels matching the military organisational structure (SuperAdmin, Admin, Manager, User), has been tested against the main business scenarios -- combining manual black-box testing through the interface with an automated Jest suite for the core eligibility rules -- and is ready for pilot deployment at the Political Department.
 
 \end{document}

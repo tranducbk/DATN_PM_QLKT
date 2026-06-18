@@ -407,11 +407,11 @@ describe('unitAnnualAward.service - recalculateAnnualUnit (chain flags)', () => 
 
     const upsertArgs = prismaMock.hoSoDonViHangNam.upsert.mock.calls[0][0];
     expect(upsertArgs.update.dvqt_lien_tuc).toBe(14);
-    expect(upsertArgs.update.du_dieu_kien_bk_thu_tuong).toBe(true);
+    expect(upsertArgs.update.du_dieu_kien_bkttcp).toBe(true);
     expect(upsertArgs.update.goi_y).toBe(suggestionMessages.unitEligibleBkttcp);
   });
 
-  it('7y ĐVQT + BKBQP lệch mốc chu kỳ (2022) → du_dieu_kien_bk_tong_cuc = false (streak thô, không reset theo lần nhận)', async () => {
+  it('7y ĐVQT + BKBQP lệch mốc chu kỳ (2022) → du_dieu_kien_bkbqp = false (streak thô, không reset theo lần nhận)', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-recalc-bkbqp-offcycle' });
     const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2018, 2024, {
       2022: { nhan_bkbqp: true },
@@ -426,10 +426,10 @@ describe('unitAnnualAward.service - recalculateAnnualUnit (chain flags)', () => 
 
     const upsertArgs = prismaMock.hoSoDonViHangNam.upsert.mock.calls[0][0];
     expect(upsertArgs.update.dvqt_lien_tuc).toBe(7);
-    expect(upsertArgs.update.du_dieu_kien_bk_tong_cuc).toBe(false);
+    expect(upsertArgs.update.du_dieu_kien_bkbqp).toBe(false);
   });
 
-  it('Cùng input → recalc.du_dieu_kien_bk_tong_cuc khớp checkUnitAwardEligibility(BKBQP) (hai đường không được lệch)', async () => {
+  it('Cùng input → recalc.du_dieu_kien_bkbqp khớp checkUnitAwardEligibility(BKBQP) (hai đường không được lệch)', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-recalc-api-consistency' });
     const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2018, 2024, {
       2022: { nhan_bkbqp: true },
@@ -442,7 +442,7 @@ describe('unitAnnualAward.service - recalculateAnnualUnit (chain flags)', () => 
     prismaMock.hoSoDonViHangNam.upsert.mockImplementationOnce(async (args: any) => args.create);
     await unitAnnualAwardService.recalculateAnnualUnit(cqdv.id, 2025);
     const recalcEligible =
-      prismaMock.hoSoDonViHangNam.upsert.mock.calls[0][0].update.du_dieu_kien_bk_tong_cuc;
+      prismaMock.hoSoDonViHangNam.upsert.mock.calls[0][0].update.du_dieu_kien_bkbqp;
 
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
     prismaMock.danhHieuDonViHangNam.count.mockResolvedValueOnce(0);
@@ -471,11 +471,11 @@ describe('unitAnnualAward.service - recalculateAnnualUnit (chain flags)', () => 
 
     const upsertArgs = prismaMock.hoSoDonViHangNam.upsert.mock.calls[0][0];
     expect(upsertArgs.update.dvqt_lien_tuc).toBe(21);
-    expect(upsertArgs.update.du_dieu_kien_bk_thu_tuong).toBe(false);
+    expect(upsertArgs.update.du_dieu_kien_bkttcp).toBe(false);
     expect(upsertArgs.update.goi_y).toBe(suggestionMessages.unitNotEligible);
   });
 
-  it('7y ĐVQT + 3 BKBQP → recalc set du_dieu_kien_bk_thu_tuong = true', async () => {
+  it('7y ĐVQT + 3 BKBQP → recalc set du_dieu_kien_bkttcp = true', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-recalc-2' });
     const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2017, 2023, {
       2018: { nhan_bkbqp: true },
@@ -492,8 +492,8 @@ describe('unitAnnualAward.service - recalculateAnnualUnit (chain flags)', () => 
 
     const upsertArgs = prismaMock.hoSoDonViHangNam.upsert.mock.calls[0][0];
     expect(upsertArgs.update.dvqt_lien_tuc).toBe(7);
-    expect(upsertArgs.update.du_dieu_kien_bk_tong_cuc).toBe(false);
-    expect(upsertArgs.update.du_dieu_kien_bk_thu_tuong).toBe(true);
+    expect(upsertArgs.update.du_dieu_kien_bkbqp).toBe(false);
+    expect(upsertArgs.update.du_dieu_kien_bkttcp).toBe(true);
     expect(upsertArgs.update.goi_y).toBe(suggestionMessages.unitEligibleBkttcp);
   });
 });

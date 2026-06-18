@@ -14,6 +14,25 @@ export interface ChainStreaks {
 export type FlagsInWindow = Record<string, number>;
 
 /**
+ * Counts rows whose `flagKey` is true within the trailing window `[year-rangeYears, year-1]`.
+ * @param danhHieuList - Annual title rows (personal or unit)
+ * @param year - Evaluation anchor year (window ends at year-1)
+ * @param rangeYears - Window length in years (typically the award's cycleYears)
+ * @param flagKey - Boolean flag column to count (e.g. `nhan_bkbqp`)
+ * @returns Count of matching rows in the window
+ */
+export function countFlagInWindow(
+  danhHieuList: Array<Record<string, unknown> & { nam: number }>,
+  year: number,
+  rangeYears: number,
+  flagKey: string
+): number {
+  const endYear = year - 1;
+  const startYear = endYear - rangeYears + 1;
+  return danhHieuList.filter(r => r[flagKey] === true && r.nam >= startYear && r.nam <= endYear).length;
+}
+
+/**
  * Builds a concise insufficient-eligibility reason.
  * @param award - Award config
  * @param streaks - Current streak counters
@@ -60,16 +79,16 @@ export function checkChainEligibility(
     };
   }
 
-  const cycleMet =
+  const isCycleComplete =
     streaks.streakLength >= award.cycleYears &&
     streaks.streakLength % award.cycleYears === 0;
-  const flagsMet = award.requiredFlags.every(f => {
+  const hasRequiredFlags = award.requiredFlags.every(f => {
     const have = flagsInWindow[f.code] ?? 0;
     return award.isLifetime ? have === f.count : have >= f.count;
   });
-  const nckhMet = !award.requiresNCKH || streaks.nckhStreak >= streaks.streakLength;
+  const hasEnoughResearch = !award.requiresNCKH || streaks.nckhStreak >= streaks.streakLength;
 
-  if (cycleMet && flagsMet && nckhMet) {
+  if (isCycleComplete && hasRequiredFlags && hasEnoughResearch) {
     return { eligible: true, reason: `Đủ điều kiện ${name}.` };
   }
 

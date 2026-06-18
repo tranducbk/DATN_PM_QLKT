@@ -4,35 +4,63 @@
 \section{Kết luận}
 \label{section:6.1}
 
-Sau quá trình nghiên cứu, phân tích và xây dựng, đồ án đã xây dựng được phần mềm Quản lý Khen thưởng tại Học viện Khoa học Quân sự (PM QLKT) với các kết quả sau.
+Sau quá trình nghiên cứu, phân tích và xây dựng, đồ án đã xây dựng được phần mềm quản lý khen thưởng tại Học viện Khoa học Quân sự (PM QLKT) với các kết quả sau.
 
-Về mặt nghiệp vụ, hệ thống bao quát bảy nhóm khen thưởng đặc thù. Đó là khen thưởng cá nhân hằng năm theo chuỗi CSTĐCS, BKBTBQP, CSTĐTQ và BKTTCP; khen thưởng đơn vị hằng năm theo chuỗi ĐVQT, BKBTBQP và BKTTCP; Huy chương Chiến sĩ vẻ vang (HCCSVV) theo các mốc 10/15/20 năm; Huân chương Bảo vệ Tổ quốc (HCBVTQ) dựa trên thời gian giữ chức vụ theo nhóm hệ số; Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN; Huy chương Quân kỳ quyết thắng (HCQKQT, 25 năm phục vụ); và thành tích nghiên cứu khoa học. Mỗi nhóm có tiêu chuẩn xét riêng nhưng cùng dùng chung một quy trình đề xuất, phê duyệt và chung tầng dữ liệu, kiến trúc phần mềm.
+Về mặt nghiệp vụ, hệ thống bao quát bảy nhóm khen thưởng đặc thù.
+Đó là khen thưởng cá nhân hằng năm theo chuỗi CSTĐCS, BKBQP, CSTĐTQ và BKTTCP; khen thưởng đơn vị hằng năm theo chuỗi ĐVQT, BKBQP và BKTTCP; Huy chương Chiến sĩ vẻ vang (HCCSVV) theo các mốc 10/15/20 năm; Huân chương Bảo vệ Tổ quốc (HCBVTQ) dựa trên thời gian giữ chức vụ theo nhóm hệ số; Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN; Huy chương Quân kỳ quyết thắng (HCQKQT, 25 năm phục vụ); và thành tích nghiên cứu khoa học.
+Mỗi nhóm có tiêu chuẩn xét riêng nhưng cùng dùng chung quy trình đề xuất, phê duyệt, chung tầng dữ liệu và kiến trúc phần mềm.
 
-Về mặt kỹ thuật, hệ thống tổ chức theo kiến trúc phân tầng từ tầng định tuyến đến tầng truy cập dữ liệu. Hệ thống dùng cơ sở dữ liệu quan hệ chuẩn hoá, xác thực bằng JWT có cơ chế làm mới luân phiên và ghi nhật ký hệ thống đầy đủ. Quy tắc chuỗi cá nhân và đơn vị, các kịch bản lỡ đợt, khung xét lùi theo từng năm và quy tắc chặn nhận lại với danh hiệu một lần duy nhất đều đã được kiểm chứng bằng bộ kiểm thử tự động cùng nhiều bộ dữ liệu mẫu.
+Về mặt kỹ thuật, hệ thống tổ chức theo kiến trúc phân tầng từ tầng định tuyến đến tầng truy cập dữ liệu.
+Hệ thống dùng cơ sở dữ liệu quan hệ chuẩn hoá, xác thực bằng JWT có cơ chế làm mới luân phiên và ghi nhật ký hệ thống đầy đủ.
+Quy tắc chuỗi cá nhân và đơn vị, các kịch bản lỡ đợt, điều kiện theo khoảng năm gần nhất tính lùi và quy tắc chặn nhận lại với danh hiệu một lần duy nhất đều đã được kiểm chứng bằng bộ kiểm thử tự động cùng nhiều bộ dữ liệu mẫu.
 
-Đóng góp nổi bật của đồ án là đưa quy tắc chuỗi danh hiệu vào một bảng cấu hình tập trung. Bảng này mô tả số năm chu kỳ, danh hiệu tiền điều kiện kèm số lượng yêu cầu, có yêu cầu nghiên cứu khoa học hay không, và danh hiệu nhận một lần duy nhất hay có thể lặp lại. Một hàm xét điều kiện duy nhất đọc cấu hình này, cho phép bổ sung danh hiệu mới chỉ bằng cách thêm phần tử cấu hình mà không phải sửa logic xét điều kiện. Tương tự, bảy loại đề xuất đều tuân theo cùng giao diện Strategy với một registry trung tâm. Cách tổ chức này giảm đáng kể các nhánh điều kiện cứng trong mã nguồn và mở đường cho việc bổ sung loại đề xuất mới trong vài tệp riêng lẻ.
+Đóng góp nổi bật của đồ án là đưa quy tắc chuỗi danh hiệu vào một bảng cấu hình tập trung.
+Bảng này mô tả số năm chu kỳ, danh hiệu tiền điều kiện kèm số lượng yêu cầu, có yêu cầu nghiên cứu khoa học hay không, và danh hiệu nhận một lần duy nhất hay có thể lặp lại.
+Một hàm xét điều kiện duy nhất đọc cấu hình này, cho phép bổ sung danh hiệu mới chỉ bằng cách thêm phần tử cấu hình mà không phải sửa logic xét điều kiện.
+Tương tự, bảy loại đề xuất đều tuân theo cùng giao diện Strategy với một registry trung tâm.
+Cách tổ chức này giảm đáng kể các nhánh điều kiện cứng trong mã nguồn và mở đường cho việc bổ sung loại đề xuất mới trong vài tệp riêng lẻ.
 
-Bên cạnh các kết quả đạt được, đồ án còn một số hạn chế. Thứ nhất, phần triển khai hiện chỉ ở môi trường mạng nội bộ Học viện trên một máy chủ đơn lẻ, chưa đánh giá được khả năng vận hành ở quy mô nhiều cơ sở. Thứ hai, các báo cáo thống kê hiện chủ yếu dưới dạng bảng và biểu đồ tĩnh, chưa cung cấp công cụ phân tích so sánh giữa các đơn vị trong chuỗi thời gian dài. Thứ ba, hệ thống chưa tích hợp chữ ký số quân đội; các quyết định khen thưởng được quản lý dưới dạng tệp PDF ký tay, phù hợp với quy trình hiện hành của Học viện.
+Bên cạnh các kết quả đạt được, đồ án còn một số hạn chế.
+Thứ nhất, phần triển khai hiện chỉ ở môi trường mạng nội bộ Học viện trên một máy chủ đơn lẻ, chưa đánh giá được khả năng vận hành ở quy mô nhiều cơ sở.
+Thứ hai, các báo cáo thống kê hiện chủ yếu dưới dạng bảng và biểu đồ tĩnh, chưa cung cấp công cụ phân tích so sánh giữa các đơn vị trong chuỗi thời gian dài.
+Thứ ba, hệ thống chưa tích hợp chữ ký số quân đội; các quyết định khen thưởng được quản lý dưới dạng tệp PDF ký tay, phù hợp với quy trình hiện hành của Học viện.
 
-Trong quá trình thực hiện, đồ án rút ra một số kinh nghiệm chuyên môn, bao gồm: (i) tách biệt quy tắc nghiệp vụ phức tạp ra khỏi mã nguồn thông qua cấu hình tập trung; (ii) thiết kế kiến trúc phân tầng với ranh giới rõ giữa các tầng; (iii) phân tích kịch bản phức tạp trong chu kỳ trượt danh hiệu; và (iv) chuyển đổi văn bản pháp lý và quy chế nội bộ thành thiết kế kỹ thuật.
+Trong quá trình thực hiện, đồ án rút ra một số kinh nghiệm chuyên môn, bao gồm: (i) tách biệt quy tắc nghiệp vụ phức tạp ra khỏi mã nguồn thông qua cấu hình tập trung; (ii) thiết kế kiến trúc phân tầng với ranh giới rõ giữa các tầng; (iii) phân tích các tình huống phức tạp khi điều kiện danh hiệu được xét theo khoảng năm gần nhất tính lùi; và (iv) chuyển đổi văn bản pháp lý và quy chế nội bộ thành thiết kế kỹ thuật.
 
 \section{Hướng phát triển}
 \label{section:6.2}
 
 Trên nền tảng đã xây dựng, đồ án đề xuất sáu hướng phát triển cho phiên bản kế tiếp.
 
-\textbf{(i) Mở rộng các danh hiệu chuỗi cao hơn BKTTCP.} Hệ thống hiện dừng ở Bằng khen của Thủ tướng Chính phủ. Phiên bản tiếp theo có thể bổ sung Anh hùng Lực lượng vũ trang nhân dân, Anh hùng Lao động và các danh hiệu vinh dự nhà nước khác. Hướng này khả thi nhờ thiết kế \texttt{ChainAwardConfig} đã có, khi chỉ cần thêm phần tử mới vào mảng cấu hình và bổ sung quy tắc xét điều kiện tương ứng.
+\textbf{(i) Mở rộng các danh hiệu chuỗi cao hơn BKTTCP.} Hệ thống hiện dừng ở Bằng khen của Thủ tướng Chính phủ.
+Phiên bản tiếp theo có thể bổ sung Anh hùng Lực lượng vũ trang nhân dân, Anh hùng Lao động và các danh hiệu vinh dự nhà nước khác.
+Hướng này khả thi nhờ thiết kế cấu hình chuỗi danh hiệu đã có, khi chỉ cần thêm một dòng cấu hình mới và bổ sung quy tắc xét điều kiện tương ứng.
 
-\textbf{(ii) Bổ sung các loại khen thưởng ngoài bảy nhóm hiện tại.} Ngoài bảy nhóm đã hỗ trợ, công tác thi đua tại Học viện và các đơn vị quân đội còn nhiều loại khen thưởng khác. Theo Điều 8 Luật Thi đua, Khen thưởng, có thể kể đến khen thưởng phong trào thi đua theo chuyên đề như an toàn giao thông hay học tập và làm theo tư tưởng Hồ Chí Minh, và khen thưởng đối ngoại với các hình thức như Huân chương Hữu nghị dành cho cá nhân, tập thể người nước ngoài. Kiến trúc Strategy đã chuẩn hoá cho bảy loại hiện tại cho phép mở rộng bằng cách bổ sung một Strategy mới và đăng ký vào registry trung tâm, mà không phải sửa tầng phê duyệt chung.
+\textbf{(ii) Bổ sung các loại khen thưởng ngoài bảy nhóm hiện tại.} Ngoài bảy nhóm đã hỗ trợ, công tác thi đua tại Học viện và các đơn vị quân đội còn nhiều loại khen thưởng khác.
+Theo Điều 8 Luật Thi đua, Khen thưởng, có thể kể đến khen thưởng phong trào thi đua theo chuyên đề như an toàn giao thông hay học tập và làm theo tư tưởng Hồ Chí Minh, và khen thưởng đối ngoại với các hình thức như Huân chương Hữu nghị dành cho cá nhân, tập thể người nước ngoài.
+Kiến trúc Strategy đã chuẩn hoá cho bảy loại hiện tại cho phép mở rộng bằng cách bổ sung một Strategy mới và đăng ký vào registry trung tâm, mà không phải sửa tầng phê duyệt chung.
 
-\textbf{(iii) Triển khai cho nhiều đơn vị trong toàn quân.} Phiên bản hiện tại thiết kế cho riêng Học viện Khoa học Quân sự với cây tổ chức hai cấp gồm cơ quan đơn vị và đơn vị trực thuộc. Hướng tiếp theo là mở rộng mô hình tổ chức thành nhiều cấp như Quân khu, Quân đoàn, Học viện, Trường và Đơn vị cơ sở. Cùng với đó là hỗ trợ multi-tenancy để các đơn vị khác trong toàn quân dùng chung hạ tầng phần mềm mà vẫn cách ly dữ liệu nghiệp vụ. Khi đó, hệ thống có thể trở thành nền tảng dùng chung cấp Bộ Quốc phòng thay vì giải pháp riêng của một học viện.
+\textbf{(iii) Triển khai cho nhiều đơn vị trong toàn quân.} Phiên bản hiện tại thiết kế cho riêng Học viện Khoa học Quân sự với cây tổ chức hai cấp gồm cơ quan đơn vị và đơn vị trực thuộc.
+Hướng tiếp theo là mở rộng mô hình tổ chức thành nhiều cấp như Quân khu, Quân đoàn, Học viện, Trường và Đơn vị cơ sở.
+Cùng với đó là hỗ trợ multi-tenancy để các đơn vị khác trong toàn quân dùng chung hạ tầng phần mềm mà vẫn cách ly dữ liệu nghiệp vụ.
+Khi đó, hệ thống có thể trở thành nền tảng dùng chung cấp Bộ Quốc phòng thay vì giải pháp riêng của một học viện.
 
-\textbf{(iv) Tích hợp ký số quân đội.} Bổ sung mô-đun ký số PDF quyết định khen thưởng theo chuẩn PKCS\#7 với chữ ký số do hệ thống PKI của Bộ Quốc phòng cấp. Khi đó, PDF tải lên mang chữ ký số hợp lệ và có thể xác thực ngược về cơ quan ký. Điều này góp phần giảm nhu cầu xử lý và lưu kho bản giấy trong quy trình ký duyệt.
+\textbf{(iv) Tích hợp ký số quân đội.} Bổ sung mô-đun ký số PDF quyết định khen thưởng theo chuẩn PKCS\#7 với chữ ký số do hệ thống PKI của Bộ Quốc phòng cấp.
+Khi đó, PDF tải lên mang chữ ký số hợp lệ và có thể xác thực ngược về cơ quan ký.
+Điều này góp phần giảm nhu cầu xử lý và lưu kho bản giấy trong quy trình ký duyệt.
 
-\textbf{(v) Hộp thoại trao đổi (chat) trong hệ thống.} Bổ sung kênh nhắn tin trực tiếp giữa các vai trò Chỉ huy đơn vị, Phòng Chính trị và quân nhân ngay trong ứng dụng. Kênh này cho phép gửi kèm tệp đính kèm trong quá trình lập, trao đổi và phê duyệt đề xuất, thay cho việc liên hệ qua điện thoại hay giấy tờ. Hướng này tận dụng được hạ tầng Socket.IO thời gian thực đã dùng cho thông báo và cơ chế tải tệp đính kèm sẵn có. Nhờ đó, mọi trao đổi được gom về một nơi và lưu vết gắn với từng đề xuất, giúp quá trình sử dụng thuận tiện và minh bạch hơn.
+\textbf{(v) Hộp thoại trao đổi (chat) trong hệ thống.} Bổ sung kênh nhắn tin trực tiếp giữa các vai trò Chỉ huy đơn vị, Phòng Chính trị và quân nhân ngay trong ứng dụng.
+Kênh này cho phép gửi kèm tệp đính kèm trong quá trình lập, trao đổi và phê duyệt đề xuất, thay cho việc liên hệ qua điện thoại hay giấy tờ.
+Hướng này tận dụng được hạ tầng Socket.IO thời gian thực đã dùng cho thông báo và cơ chế tải tệp đính kèm sẵn có.
+Nhờ đó, mọi trao đổi được gom về một nơi và lưu vết gắn với từng đề xuất, giúp quá trình sử dụng thuận tiện và minh bạch hơn.
 
-\textbf{(vi) Trợ lý AI gợi ý và phân tích khen thưởng.} Tích hợp mô hình ngôn ngữ lớn (LLM) nhằm: (a) tự động gợi ý danh sách quân nhân nên đưa vào mỗi đợt đề xuất dựa trên dữ liệu điều kiện đã tính sẵn; (b) phân tích sâu hồ sơ khen thưởng của từng quân nhân, tóm tắt quá trình khen thưởng và dự báo các mốc danh hiệu sắp tới bằng ngôn ngữ tự nhiên; (c) phát hiện bất thường như bỏ sót, trùng lặp hay lệch chu kỳ, và phân tích so sánh giữa các đơn vị qua nhiều năm liên tiếp, qua đó khắc phục hạn chế về công cụ phân tích nêu ở Mục~\ref{section:6.1}. Hệ thống đã có sẵn dữ liệu khen thưởng có cấu trúc cho mỗi quân nhân cùng động cơ xét điều kiện. Đây là nền tảng để lớp AI khai thác mà không phải xây lại logic nghiệp vụ; tuy nhiên lớp này chỉ đóng vai trò hỗ trợ, không thay thế quyết định của cán bộ, và cần được đánh giá kỹ về độ tin cậy và bảo mật dữ liệu trước khi triển khai.
+\textbf{(vi) Trợ lý AI gợi ý và phân tích khen thưởng.} Tích hợp mô hình ngôn ngữ lớn (LLM) nhằm: (a) tự động gợi ý danh sách quân nhân nên đưa vào mỗi đợt đề xuất dựa trên dữ liệu điều kiện đã tính sẵn; (b) phân tích sâu hồ sơ khen thưởng của từng quân nhân, tóm tắt quá trình khen thưởng và dự báo các mốc danh hiệu sắp tới bằng ngôn ngữ tự nhiên; (c) phát hiện bất thường như bỏ sót, trùng lặp hay lệch chu kỳ, và phân tích so sánh giữa các đơn vị qua nhiều năm liên tiếp, qua đó khắc phục hạn chế về công cụ phân tích nêu ở Mục~\ref{section:6.1}.
+Hệ thống đã có sẵn dữ liệu khen thưởng có cấu trúc cho mỗi quân nhân cùng động cơ xét điều kiện.
+Đây là nền tảng để lớp AI khai thác mà không phải xây lại logic nghiệp vụ; tuy nhiên lớp này chỉ đóng vai trò hỗ trợ, không thay thế quyết định của cán bộ, và cần được đánh giá kỹ về độ tin cậy và bảo mật dữ liệu trước khi triển khai.
 
-Sáu hướng được sắp xếp theo độ ưu tiên giảm dần. Các hướng (i), (ii), (iv) và (v) khả thi trong sáu tháng kế tiếp nhờ kiến trúc cấu hình kết hợp Strategy và hạ tầng Socket.IO đã có. Hướng (iii) và (vi) cần thời gian dài hơn. Hướng (iii) phụ thuộc vào quyết định mở rộng phạm vi sử dụng, còn hướng (vi) cần thời gian tích hợp và đánh giá độ tin cậy của mô hình AI trước khi đưa vào hỗ trợ ra quyết định khen thưởng.
+Sáu hướng được sắp xếp theo độ ưu tiên giảm dần.
+Các hướng (i), (ii), (iv) và (v) khả thi trong sáu tháng kế tiếp nhờ kiến trúc cấu hình kết hợp Strategy và hạ tầng Socket.IO đã có.
+Hướng (iii) và (vi) cần thời gian dài hơn.
+Hướng (iii) phụ thuộc vào quyết định mở rộng phạm vi sử dụng, còn hướng (vi) cần thời gian tích hợp và đánh giá độ tin cậy của mô hình AI trước khi đưa vào hỗ trợ ra quyết định khen thưởng.
 
 \end{document}

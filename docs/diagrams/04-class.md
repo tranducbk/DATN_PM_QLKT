@@ -418,7 +418,6 @@ classDiagram
         -String danh_hieu
         -Boolean nhan_bkbqp
         -Boolean nhan_bkttcp
-        -String status
         -String nguoi_tao_id
     }
     class KhenThuongDotXuat {
@@ -460,8 +459,8 @@ classDiagram
     class HoSoDonViHangNam {
         -Int nam
         -Int dvqt_lien_tuc
-        -Boolean du_dieu_kien_bk_tong_cuc
-        -Boolean du_dieu_kien_bk_thu_tuong
+        -Boolean du_dieu_kien_bkbqp
+        -Boolean du_dieu_kien_bkttcp
     }
     class TrangThaiHoSo {
         <<enumeration>>
@@ -641,7 +640,7 @@ classDiagram
   - `KhenThuongHCCSVV` (HCCSVV — niên hạn), `KhenThuongHCBVTQ` (HCBVTQ — 120 tháng hệ số),
   - `HuanChuongQuanKyQuyetThang` (HCQKQT — từ ngày nhập ngũ), `KyNiemChuongVSNXDQDNDVN` (KNC — 20/25 năm).
   - Service tương ứng (không vẽ): `tenureMedalService` / `contributionMedalService` / `militaryFlagService` / `commemorativeMedalService`.
-- **`DanhHieuDonViHangNam`**: khen thưởng đơn vị, có `status` riêng — duyệt thẳng trong bảng này, **không qua `BangDeXuat`**. `KhenThuongDotXuat`: ADMIN ghi thẳng, không qua duyệt, không Strategy.
+- **`DanhHieuDonViHangNam`**: khen thưởng đơn vị, chỉ lưu danh hiệu đã duyệt (không có cột `status`) — đề xuất/duyệt đi qua `BangDeXuat` giống cá nhân. `KhenThuongDotXuat`: ADMIN ghi thẳng, không qua duyệt, không Strategy.
 - **`FileQuyetDinh` = hub cross-cutting**: liên kết **8 bảng khen thưởng** qua FK natural-key `so_quyet_dinh` (`onUpdate: Cascade` để cascade rename, `onDelete: Restrict`). Sơ đồ vẽ đủ 8 liên kết.
 - **Cross-cutting khác** (không vẽ ở đây, xem ERD §06): `ThongBao` (Socket.IO realtime), `SystemLog` (nhật ký), `SystemSetting` — đều theo pattern Controller → Service → Entity.
 

@@ -16,7 +16,6 @@ import {
   INVALID_DANH_HIEU_ERROR,
   MIXED_DON_VI_HANG_NAM_ERROR,
 } from '../validation';
-import { PROPOSAL_STATUS } from '../../../constants/proposalStatus.constants';
 import type { EditedProposalData, ProposalDanhHieuItem } from '../../../types/proposal';
 import type {
   ProposalStrategy,
@@ -250,7 +249,6 @@ class DonViHangNamStrategy implements ProposalStrategy {
           data.nhan_bkttcp = true;
           data.so_quyet_dinh_bkttcp = soQuyetDinhBKTTCP;
         }
-        data.status = PROPOSAL_STATUS.APPROVED;
         data.nguoi_duyet_id = adminId;
         data.ngay_duyet = new Date();
         data.ghi_chu = item.ghi_chu || null;
@@ -274,7 +272,6 @@ class DonViHangNamStrategy implements ProposalStrategy {
             so_quyet_dinh_bkbqp: isBkbqp ? soQuyetDinhBKBQP : null,
             nhan_bkttcp: isBkttcp,
             so_quyet_dinh_bkttcp: isBkttcp ? soQuyetDinhBKTTCP : null,
-            status: PROPOSAL_STATUS.APPROVED,
             nguoi_tao_id: adminId,
             nguoi_duyet_id: adminId,
             ngay_duyet: new Date(),

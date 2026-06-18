@@ -1,0 +1,297 @@
+# PM QLKT - Phần mềm Quản lý Khen thưởng
+
+Monorepo gồm 2 phần: `FE-QLKT` (Next.js) và `BE-QLKT` (Express + Prisma).
+
+## Quick Commands
+
+```bash
+# Backend
+cd BE-QLKT && npm run dev          # Dev server (tsx watch)
+cd BE-QLKT && npm run build        # Compile TypeScript
+cd BE-QLKT && npm run typecheck    # Type check only
+cd BE-QLKT && npm run format       # Prettier format
+
+# Frontend
+cd FE-QLKT && npm run dev          # Next.js dev
+cd FE-QLKT && npm run build        # Production build
+cd FE-QLKT && npm run typecheck    # Type check only
+cd FE-QLKT && npm run lint         # ESLint
+cd FE-QLKT && npm run format       # Prettier format
+
+# Database
+cd BE-QLKT && npx prisma migrate dev    # Run migrations
+cd BE-QLKT && npx prisma generate       # Generate client
+cd BE-QLKT && npx prisma studio         # DB GUI
+cd BE-QLKT && npx prisma db push        # Sync schema (dev only, no migration file)
+```
+
+## Architecture
+
+```
+PM QLKT/
+├── FE-QLKT/          # Next.js 14 (App Router) + Ant Design + Tailwind
+└── BE-QLKT/          # Express + TypeScript + Prisma + PostgreSQL
+```
+
+- **4 roles**: SUPER_ADMIN > ADMIN > MANAGER > USER
+- **7 award types**: Annual, Unit Annual, Tenure Medals (`tenure-medals`), Contribution (`contribution-medals`), Commemorative Medal (`commemorative-medals`), Military Flag (`military-flag`), Scientific Achievement
+- **Annual chain awards** (cá nhân): BKBQP (2y CSTDCS), CSTDTQ (3y + 1 BKBQP trong cửa sổ trượt 3y), BKTTCP (7y + 3 BKBQP + 2 CSTDTQ trong 7y cuối). Mỗi loại cần NCKH mỗi năm. Flag fields: `nhan_bkbqp/cstdtq/bkttcp` + `so_quyet_dinh_*/ghi_chu_*`.
+- **Annual chain awards** (đơn vị): BKBQP (2y ĐVQT), BKTTCP (7y + 3 BKBQP trong 7y cuối). Không có CSTDTQ. Không có NCKH.
+- **Chain cycle semantics** — quan trọng:
+  - **Cycle repeats** mỗi `cycleYears`: BKBQP cứ mỗi 2y, CSTDTQ mỗi 3y, BKTTCP mỗi 7y. Eligibility = `streak >= cycleYears && streak % cycleYears === 0` cộng với điều kiện flags/NCKH.
+  - **Lỡ đợt**: nếu đến mốc đề nghị mà không đề xuất, cycle tiếp tục đếm — đến chu kỳ sau (cộng `cycleYears` năm) lại được xét, KHÔNG cần đứt chuỗi CSTDCS/ĐVQT.
+  - **BKBQP/CSTDTQ/BKTTCP đơn vị**: `isLifetime: false`. Có thể nhận lặp lại sau mỗi cycle.
+  - **BKTTCP cá nhân**: `isLifetime: true` — sau khi nhận 1 lần, lifetime block với message "Đã có BKTTCP. Phần mềm chưa hỗ trợ các danh hiệu cao hơn BKTTCP, sẽ phát triển trong thời gian tới." (không có "một lần duy nhất" tách riêng nữa).
+  - **CSTDTQ BKBQP-trong-3y**: cửa sổ trượt 3 năm cuối từ `year-1`. BKBQP của chu kỳ trước tự rơi ra → bắt buộc có BKBQP mới ở chu kỳ hiện tại.
+  - **Unit BKTTCP BKBQP-trong-7y**: cửa sổ trượt 7 năm cuối. BKBQP cũ rơi ra giống CSTDTQ.
+  - **Personal BKTTCP**: dùng `bkbqpIn7Years === 3` và `cstdtqIn7Years === 2` strict (vì lifetime). Unit BKTTCP non-lifetime dùng `>= 3`.
+- **Eligibility logic**: `computeEligibilityFlags` (recalc profile) và `checkAwardEligibility` (API validation) MUST khớp nhau. Cùng dùng `chainEligibility.checkChainEligibility` cho rule core; `computeEligibilityFlags` áp lifetime block riêng cho personal BKTTCP qua `hasReceivedBKTTCP` flag.
+- **Recalc goi_y order** (personal): `hasReceivedBKTTCP` → "chưa hỗ trợ cao hơn" trước; rồi `du_dieu_kien_bkttcp/cstdtq/bkbqp` → eligible message; cuối cùng "Chưa đủ ĐK BKBQP/CSTDTQ".
+- **Real-time**: Socket.IO for notifications
+- **Auth**: JWT (access + refresh tokens)
+
+## Naming Conventions
+
+### File Naming
+| Type | Pattern | Example |
+|------|---------|---------|
+| React component | PascalCase.tsx | `LoginForm.tsx`, `PersonnelTable.tsx` |
+| Hook | camelCase.ts | `useFetch.ts`, `useAuthGuard.ts` |
+| Utility/lib | camelCase.ts | `apiClient.ts`, `apiError.ts` |
+| Constants | camelCase.constants.ts | `roles.constants.ts`, `danhHieu.constants.ts` |
+| BE Controller | camelCase.controller.ts | `account.controller.ts` |
+| BE Service | camelCase.service.ts | `account.service.ts` |
+| BE Route | camelCase.route.ts | `account.route.ts` |
+| BE Validation | camelCase.validation.ts | `account.validation.ts` |
+
+### Code Naming
+- Constants: `UPPER_SNAKE_CASE` with `as const` (`ROLES`, `ELIGIBILITY_STATUS`)
+- Functions/variables: `camelCase`
+- React components: `PascalCase` (named exports, NOT default exports)
+- Prisma models: `PascalCase` with `@@map("snake_case")`
+- DB fields: `snake_case` (Vietnamese names: `ho_ten`, `ngay_sinh`)
+- Types/Interfaces: `PascalCase` (`ApiResponse<T>`, `PaginatedData<T>`)
+
+### Imports
+- FE uses path alias `@/*` mapping to `src/*`
+- Order: React/Next → external libs → internal `@/` imports
+- Named exports only (no default exports for components)
+
+## Key Patterns
+
+### Backend
+- **Layered**: Route → Middleware → Controller → Service → Prisma
+- **Middleware chain**: `verifyToken → requireAdmin (or other checkRole guard) → validate(schema) → auditLog(options) → controller.method`
+- **Async errors**: Wrap controllers with `catchAsync()` helper
+- **Responses**: Always use `ResponseHelper.success()`, `.created()`, `.paginated()`, `.badRequest()`, `.notFound()`, etc.
+- **List APIs**: Luôn dùng `ResponseHelper.paginated()` để trả `data` + `pagination.total` — kể cả khi chưa phân trang thật (default limit cao)
+- **Unit priority**: Khi xác định đơn vị của quân nhân, luôn ưu tiên `don_vi_truc_thuoc_id || co_quan_don_vi_id` (DVTT trước, CQDV sau — vì CQDV có thể là đơn vị cha)
+- **Unit count (`so_luong`)**: Khi thay đổi đơn vị quân nhân, dùng `if/else` (chỉ increment/decrement 1 đơn vị), không dùng 2 `if` riêng biệt (tránh đếm dư)
+- **Validation**: Zod schemas in `validations/` directory
+- **Error classes**: `AppError`, `NotFoundError`, `ForbiddenError`
+- **Type declarations**: Khai báo `interface`/`type` ở đầu file (sau imports), không khai báo inline trong function body. Đặc biệt `req.body`, `req.query`, `req.params` phải được cast sang named interface/type — không dùng `req.body as { field?: string }` trực tiếp
+- **Fire-and-forget logs**: `writeSystemLog` trong catch block phải dùng `void writeSystemLog(...)` — không bỏ qua promise hoàn toàn
+- **Rename resource slug**: Khi đổi tên resource (vd: `hccsvv` → `tenure-medals`), phải cập nhật đồng bộ: tên biến, export name, import, audit log map, notification map, route path, FE API URL. Sau đó chạy migration SQL để cập nhật `system_logs.resource` và `notifications.resource` trong DB (`UPDATE system_logs SET resource = 'new-slug' WHERE resource = 'old-slug'`)
+- **Audit log helpers**: Tên biến local phải match resource slug (vd: `const tenureMedals = buildAwardTypeHelpers('tenure-medals')` — không dùng tên cũ `hccsvv`)
+- **Audit log imports trong routes**: `getResourceId` lấy từ `middlewares/auditLog`; `getLogDescription` lấy từ `helpers/auditLog`. Không import `getResourceId` từ helpers
+- **Best-effort catches**: Bare `catch` dùng khi swallow hoàn toàn (không cần biết lỗi gì). Dùng `catch (error) { console.error('...context...', error); }` khi muốn surface lỗi để debug nhưng không được throw (vd: audit log payload builder). `console.error` trong catch block của audit helpers là chấp nhận được — khác với `console.log` trong business logic
+- **DB column rename**: Khi đổi tên cột có dữ liệu, KHÔNG dùng `db push` (sẽ drop + recreate → mất data). Thay vào đó: (1) viết script dùng `prisma.$executeRawUnsafe('ALTER TABLE x RENAME COLUMN old TO "new"')` trong `src/scripts/`, (2) chạy script để đổi tên cột trong DB, (3) sau đó mới `db push` để sync schema — lúc này Prisma thấy cột đã đúng tên, không drop gì cả.
+- **Backup**: SQL text backup (`backups/*.sql`) sinh bởi `backup.service.ts`. Schedule + toggle qua DevZone (`/api/dev-zone/backup/*`). Download/delete qua `/api/backups` (SUPER_ADMIN only). Backup logs (`resource: 'backup'`) trong system_logs chỉ SUPER_ADMIN xem được — service tự filter cho role thấp hơn
+- **System log visibility**: `resource: 'backup'` restricted to SUPER_ADMIN in `systemLogs.service.ts`. Khi thêm resource mới chỉ dành cho SUPER_ADMIN, áp dụng cùng pattern: check `userRole !== ROLES.SUPER_ADMIN` trong `getLogs` và `getResources`
+
+### Frontend
+- **API client**: `apiClient` object in `lib/api/index.ts` — single entry point for all API calls
+- **Forms**: Ant Design Form + Zod schemas in `lib/schemas.ts`
+- **State**: React Context for auth (`AuthContext`), custom hooks for data (`useFetch`, `useMutation`)
+- **UI text**: All user-facing text in Vietnamese
+- **Date formatting**: Always use `formatDate()`, `formatDateTime()` from `lib/utils.ts`
+- **Conditional rendering**: Dùng multiple `{condition && <Component />}` blocks riêng thay vì ternary lồng nhau — tránh `condition ? <A /> : otherCondition ? <B /> : null`
+
+## JSDoc Standards
+
+Exported functions phải có JSDoc chuẩn:
+```typescript
+/**
+ * Brief description (1 dòng).
+ * @param paramName - Mô tả param
+ * @returns Mô tả return value
+ * @throws ErrorClass - Khi nào throw (nếu có)
+ */
+```
+
+- Exported functions: **bắt buộc** `@param` + `@returns`
+- Private/internal functions: 1 dòng mô tả là đủ
+- Interfaces/Types: optional 1-line English description — omit if the name is self-explanatory; only doc individual fields if non-obvious
+- **Không** comment giải thích WHAT code làm — code phải tự giải thích qua naming
+- **Chỉ** comment WHY (hidden constraints, workarounds, business rules)
+- **Không** dùng section dividers (`// ─── ... ───`, `// -----------`)
+- **Không** viết JSDoc template rỗng như `/** getXxx API wrapper. @returns API response payload */` — chỉ viết khi có gì non-obvious cần giải thích
+- **Route JSDoc** (`@desc`, `@access`): luôn giữ tiếng Anh — không đổi sang tiếng Việt
+
+## Inline Comment Rules (STRICT)
+
+- **Language: English only** — no Vietnamese, no mixed Vietnamese/English. This applies to all inline comments AND JSDoc for interfaces/types (1-line description must be English, or omit entirely if obvious from the name)
+- **WHY not WHAT**: Delete any comment that just restates what the next line does
+  - ❌ `// Check if personnel exists` before `const p = await prisma.quanNhan.findUnique(...)`
+  - ❌ `// Validate year` before `if (nam < 2000 || nam > 2100)`
+  - ❌ `// Delete record` before `await prisma.x.delete(...)`
+  - ❌ `// intentionally not pre-filled` hoặc `// intentionally left empty` — code tự nói lên điều đó
+  - ❌ `// Ensure X exists`, `// Validate X`, `// Compute X`, `// Build X`, `// Parse X` — đây là WHAT, không phải WHY
+  - ✅ `// DVTT takes priority — increment CQDV only when no DVTT (avoid double-counting)`
+  - ✅ `// Skip initial mount — only fire on subsequent status changes`
+  - ✅ `// HC BVTQ is a one-time lifetime award, no duplicates allowed`
+- **Section headings** like `// BƯỚC 1:`, `// BƯỚC 2:` are banned — extract into functions instead
+- **Short**: ≤ 80 chars; if it needs more, the code needs to be renamed/refactored instead
+
+## Code Quality Standards
+
+### Module splitting
+- **1 helper file = 1 responsibility** (vd: `excelImportHelper` = import, `excelTemplateHelper` = template)
+- File > 500 dòng → xem xét tách
+- Service > 800 dòng → tách logic phức tạp vào helper riêng
+- File > 1000 dòng (vd: `approve.ts` 2001 LOC) → **bắt buộc** tách theo pattern:
+  - `<feature>.ts` (orchestration mỏng, < 500 LOC, public API + flow chính)
+  - `<feature>/types.ts` (shared interfaces/types — không có logic)
+  - `<feature>/<concern>.ts` (mỗi file 1 concern: validation, import, mapping, ...)
+  - Pattern này áp dụng cho cả BE service lẫn FE page (`page.tsx` + `[id]/types.ts` + `[id]/helpers.ts`)
+- Nếu 3+ services có logic giống nhau → extract vào shared helper
+- FE: API file > 500 dòng → tách theo domain (`api/awards.ts`, `api/personnel.ts`)
+- Page > 1000 dòng → tách `types.ts` + `helpers.ts` co-located trước khi tách JSX components
+
+### Strategy pattern cho dispatch theo type
+Khi có ≥ 4 nhánh `if/else` dispatch theo enum/type (vd: 7 loại đề xuất, 4 loại danh hiệu):
+- Tạo `interface XxxStrategy` với các method common (`buildPayload`, `validate`, `import`, ...)
+- Mỗi type có 1 file `<type>Strategy.ts` implement interface
+- Tạo `strategies/index.ts` với REGISTRY map type → instance
+- Caller dispatch qua `getStrategy(type).method(...)` thay vì `if/else`
+- Không để `importInTransaction` no-op stub — phải implement đầy đủ hoặc xoá khỏi interface
+
+### Khi xoá legacy code
+- Khi migrate từ pattern cũ sang mới (vd: legacy `importXxx` → strategy), phải xoá hẳn legacy function. Không để dual-path "for backwards compat" trong cùng file
+- Sau khi xoá legacy: chạy `grep` tên function cũ để verify không còn reference
+- Cleanup unused imports ngay sau khi xoá function — đừng để dangling import
+
+### Variable declarations
+- Dùng `const` thay `let` khi giá trị không cần reassign — chỉ dùng `let` khi thực sự cần thay đổi giá trị sau khai báo
+- Không dùng `let` để khai báo biến rồi gán lại ngay trong `if/else` — thay bằng ternary hoặc tách hàm
+- Không khai báo biến mà không dùng (unused variable). Nếu biến chỉ dùng cho side-effect trong tương lai thì chưa được phép khai báo trước.
+- Khi validate theo mốc đề xuất có `nam/thang`, luôn chuẩn hóa alias cục bộ (`proposalYear`, `proposalMonth`) và dùng nhất quán trong cùng block; tránh trộn trực tiếp `proposal.nam` với alias gây khó đọc.
+- Validate thời gian theo tháng/năm phải theo thứ tự: (1) input hợp lệ, (2) không trước tháng/năm đề xuất, (3) không trước tháng/năm quyết định (nếu có `nam_quyet_dinh`/`thang_quyet_dinh`). **Nhưng phải verify FE thực sự gửi field đó trước khi thêm validation** — `grep -rn "<field>" FE-QLKT/src/`; nếu FE không gán thì field luôn `undefined` ở BE → dead code. Hai strategy khác nhau có thể có FE payload khác nhau, không copy-paste validation mù quáng.
+
+### DRY (Don't Repeat Yourself)
+- Magic numbers → extract vào `constants/` (vd: `MAX_EXCEL_ROWS`, `MIN_TEMPLATE_ROWS`)
+- Logic lặp 2+ lần → extract function
+- Zod schemas giống nhau → tạo base schema rồi `.extend()`
+- FE columns giống nhau → dùng factory functions với optional params
+- **Trước khi tạo helper/map mới**: BẮT BUỘC `grep` constants/ và lib/ tìm xem đã có chưa. Vd: định viết `Record<string, string> = { BKBQP: '...', CSTDTQ: '...' }` thì phải dùng `DANH_HIEU_MAP` / `getDanhHieuName()` từ `constants/danhHieu.constants.ts` thay vì duplicate.
+- **Khi extract helper từ page lớn**: kiểm tra `constants/`, `lib/`, `lib/award/`, `lib/proposal/` trước. Chỉ tạo helper local nếu không có sẵn.
+
+### Performance
+- Independent DB queries → `Promise.all()` thay vì sequential `await`
+- N+1 queries → batch query trước loop (`findMany({ where: { in: [...] } })` + `Map`)
+- Không query trong loop — collect IDs trước, query 1 lần
+- Excel: dùng `loadWorkbook()` + `getAndValidateWorksheet()` từ helpers
+
+### Security
+- Validate `req.body` bằng Zod trước khi pass vào service
+- Filter composition: dùng `AND` khi combine multiple where conditions, không overwrite
+- Zod object schema mặc định strip unknown keys — không dùng `.passthrough()` trừ khi thực sự cần
+
+### User-facing error messages
+- **Không bao giờ leak technical ID** (CUID, UUID, internal field names) vào message hiển thị cho user.
+  - ❌ `Không tìm thấy quân nhân với ID: clxyz123abc`
+  - ❌ `Thiếu personnel_id trong dữ liệu: {JSON.stringify(item)}`
+  - ❌ `Lỗi import HC_QKQT personnel_id xyz: TypeError: Cannot read property...`
+  - ✅ `Không tìm thấy thông tin quân nhân khi xử lý ... vui lòng tải lại đề xuất.`
+  - ✅ `Có lỗi xảy ra khi lưu Huân chương Quân kỳ quyết thắng, vui lòng thử lại.`
+- Fallback name khi `ho_ten` null: dùng `'một quân nhân'` / `'Một đơn vị'`, **không** dùng `record.id`
+- Catch block: log technical detail vào `console.error` hoặc `writeSystemLog` (giữ lại stack/personnel_id để debug), nhưng push message generic vào `acc.errors`/throw cho user
+- Khi sửa error message, **phải update test assertions** tương ứng trong `tests/approve/`, `tests/scenarios/`, ... — chạy `grep` text cũ trong tests trước khi commit
+
+### Type safety
+- Không dùng `any[]` cho payload arrays — luôn type qua interface trong `types/proposal.ts` hoặc tương đương
+- Khi interface có thêm field mới (vd: `nam_nhan`, `thang_nhan`), update interface tập trung 1 chỗ thay vì cast tại usage site
+- Index signature `[key: string]: unknown` chỉ dùng cho forward-compat — phải có explicit field cho mọi field code đang access
+- Cast Prisma JSON columns: dùng `Prisma.XxxUpdateInput` cast 1 lần ở boundary, không cast `as any` tại mỗi field
+
+### Khi thêm feature mới (Excel import/export)
+1. Define columns trong service, gọi `buildTemplate(config)` — không viết inline
+2. Preview import: dùng `loadWorkbook()` + `getAndValidateWorksheet()` + `batchQueryPersonnel()`
+3. Confirm import: dùng `runConfirmTransaction()` + Zod validation trên route
+4. Constants: thêm vào `excel.constants.ts`, không hardcode
+5. FE: dùng `createPreviewImport(url)` / `createConfirmImport(url)` factory
+
+### Refactor workflow (BẮT BUỘC theo thứ tự)
+1. **Trước khi sửa**: chạy `npm run typecheck` + `npx jest` để xác lập baseline (số test pass)
+2. **Sau MỖI thay đổi nhỏ** (1 file hoặc 1 logical unit): chạy lại typecheck + tests, không gộp nhiều thay đổi rồi mới test
+3. **Khi refactor file lớn** (split, rename, extract):
+   - Tạo file đích trước, copy code sang
+   - Update imports tại file gốc (không xoá ngay)
+   - Verify typecheck pass
+   - Mới xoá code cũ ở file gốc
+   - Verify lại typecheck + tests
+4. **Nếu test fail vì assertion text** (vd: error message changed): update test assertion, không revert code
+5. **FE refactor UI/JSX**: không tự refactor blind nếu không có browser test. Thay vào đó:
+   - Extract types/helpers (pure functions) là an toàn — refactor được
+   - Extract JSX components / hook logic → cần user xác nhận test trên browser được
+6. **Cleanup pass cuối**: `grep` các unused imports/symbols sau khi xoá function → xoá luôn
+
+## Do NOT
+
+- Use default exports for React components
+- Use underscore prefix for unused params (just name them normally)
+- Hardcode status/role strings — use constants from `constants/` directory
+- Use `console.log` in production code — use system log (`writeSystemLog`). Exception: `console.error` trong catch block của audit/log helpers là cho phép
+- Create new files for one-time utilities — add to existing helper files
+- Mix Vietnamese and English in the same identifier
+- Use `as never` type assertions — use proper type casts
+- Write redundant aliases (`const pageNum = page`) — use original variable
+- Copy-paste logic across services — extract to shared helper first
+- Write generic JSDoc like `/** getXxx API wrapper. @returns API response payload */` — omit JSDoc if there's nothing meaningful to add
+- Change route `@desc` or `@access` comments to Vietnamese — keep them in English always
+- Use `catch (e)` or `catch (error)` when the variable is not used and not logged — use bare `catch` instead. Nếu cần log lỗi, dùng `catch (error) { console.error('...context...', error); }`
+- Declare `interface`/`type` inline inside function bodies — always declare at the top of the file
+
+## Documentation sync (báo cáo ĐATN)
+
+**Rule:** code is the single source of truth — báo cáo/slide/diagram bám theo code, không ngược lại. Khi sửa code làm thay đổi thứ mà tài liệu đang mô tả (port, script name, dependency, kiến trúc, schema, route, eligibility rule, số liệu test, UC behavior), **bắt buộc** mở file liên quan dưới đây và update đồng bộ trong cùng commit. Refactor thuần nội bộ (rename biến, extract helper, chia file) không cần đồng bộ doc.
+
+> **⚠️ Báo cáo chính giờ là bản LaTeX** tại `Báo cáo ĐATN/` (`DoAn.tex` + `Chuong/*.tex`). `docs/report/BAO_CAO.md` **đã ngừng dùng** — KHÔNG sync vào nó nữa. Bảng dưới đây nhắc `docs/report/BAO_CAO.md` chỉ còn để tham chiếu lịch sử; thay bằng `Chuong/*.tex` tương ứng: §2 khảo sát → `2_Khao_sat.tex`, §3 công nghệ → `3_Cong_nghe.tex`, §4 thiết kế/triển khai/kiểm thử → `4_Ket_qua_thuc_nghiem.tex`, §5 đóng góp → `5_Giai_phap_dong_gop.tex`, kết luận/hướng phát triển → `6_Ket_luan.tex`.
+
+### Doc index — file nào chứa gì
+
+| File | Nội dung | Khi nào động vào |
+|---|---|---|
+| `docs/report/BAO_CAO.md` | Báo cáo chính 5 chương (giới thiệu / khảo sát yêu cầu / công nghệ / thiết kế-triển khai / đóng góp). §4.5 chứa hướng dẫn cài đặt + deploy (port, script, pm2, nginx). §4.1.7 chứa thiết kế DB | Đổi behavior người dùng/admin nhìn thấy, đổi tech, đổi số liệu |
+| `docs/slides/defense.marp.md` | Source slides Marp — 11 slide chính | Đổi tech stack, kiến trúc, demo flow, số test |
+| `docs/slides/defense.html` | Slides đã render từ `defense.marp.md` | Re-render mỗi khi marp.md đổi |
+| `docs/slides/slide-content.md` | Bản nháp text dài cho slide (lời nói) | Đổi nội dung slides chính |
+| `docs/diagrams/01-use-case.md` | Use case tổng + 8 phân rã | Thêm UC mới, đổi role/permission |
+| `docs/diagrams/02-activity.md` | Activity diagram — quy trình duyệt đề xuất | Đổi proposal flow / state |
+| `docs/diagrams/03-architecture.md` | Sơ đồ kiến trúc layers | Đổi cấu trúc folder/layer |
+| `docs/diagrams/04-class.md` | Class diagram domain model | Đổi service/strategy/repository structure |
+| `docs/diagrams/05-sequence.md` | Sequence diagram các flow chính | Đổi flow login / submit / approve |
+| `docs/diagrams/06-erd.md` | ERD schema DB | Đổi `schema.prisma` (model, FK, field) |
+| `docs/diagrams/07-deployment.md` | Deployment topology (PM2, Nginx, port) | Đổi port, deploy config |
+| `docs/diagrams/08-use-case-specs.md` | Đặc tả chi tiết UC (precondition, flow, postcondition) | Đổi UC behavior cụ thể |
+| `docs/diagrams/plagiarism-warnings.md` | Cảnh báo trùng lặp với báo cáo mẫu HUST | Khi viết phần dễ trùng |
+| `docs/diagrams/README.md` | Mục lục thư mục diagrams + hướng dẫn render | Thêm sơ đồ mới |
+| `docs/PLAN_BAO_CAO.md` | Kế hoạch viết báo cáo (timeline, todo) | Đổi scope/timeline báo cáo |
+| `docs/SAMPLE_REPORT_OUTLINE.md` | Phân tích báo cáo mẫu HUST 2024.2 — chỉ tham khảo cấu trúc, không sửa | (read-only) |
+| `docs/PROJECT_REVIEW.md` | Code review priority list (CRITICAL §3 / MEDIUM §4 / LOW §5) | Đánh dấu DONE/PARTIAL khi fix xong, thêm issue mới phát hiện |
+| `BE-QLKT/AGENTS.md` | Rule BE-specific (anti-pattern AP-1 → AP-9, eligibility, repository pattern) | Đổi BE convention/architecture |
+| `FE-QLKT/AGENTS.md` | Rule FE-specific | Đổi FE convention/architecture |
+
+### Sync triggers — đổi gì thì check file nào
+
+| Loại thay đổi | File phải check |
+|---|---|
+| Đổi port BE/FE, đổi script `npm run *`, dependency mới (vd: Joi → Zod) | `docs/report/BAO_CAO.md` §3.x (công nghệ) + §4.5 (cài đặt + deploy) · `docs/diagrams/07-deployment.md` · `docs/slides/defense.marp.md` (slide tech stack + deployment) |
+| Đổi `schema.prisma` (model, field, FK) | `docs/diagrams/06-erd.md` · `docs/report/BAO_CAO.md` §4.1.7 |
+| Thêm/sửa UC, đổi role permission | `docs/diagrams/01-use-case.md` + `08-use-case-specs.md` · `docs/report/BAO_CAO.md` §2.2 + §2.3 |
+| Đổi proposal flow / approve flow | `docs/diagrams/02-activity.md` + `05-sequence.md` · `docs/report/BAO_CAO.md` §5.2 · slide "Quy trình đề xuất" |
+| Đổi eligibility rule chuỗi danh hiệu | `BE-QLKT/AGENTS.md` §Chain awards · `docs/report/BAO_CAO.md` §5.1 · slide "Chuỗi danh hiệu" |
+| Đổi tech stack (lib, framework version) | `docs/report/BAO_CAO.md` Chương 3 · `docs/slides/defense.marp.md` §Tech Stack |
+| Đổi số test / coverage / số liệu kpi | `docs/report/BAO_CAO.md` §4.4 + §5.x (kết quả định lượng) · slide "Kiểm thử" |
+| Refactor lớn (split file, extract module, đổi layer) | `docs/report/BAO_CAO.md` §4.1 · `docs/diagrams/03-architecture.md` + `04-class.md` |
+| Fix issue trong docs/PROJECT_REVIEW.md | Đánh dấu trạng thái mới (DONE/PARTIAL) ngay trong file đó kèm 1 dòng evidence |

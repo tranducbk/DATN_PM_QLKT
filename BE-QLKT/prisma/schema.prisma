@@ -516,8 +516,8 @@ model HoSoDonViHangNam {
   tong_dvqt                 Int      @default(0)
   tong_dvqt_json            Json? // Lưu chi tiết tong DVQT dạng JSON
   dvqt_lien_tuc             Int      @default(0)
-  du_dieu_kien_bk_tong_cuc  Boolean  @default(false)
-  du_dieu_kien_bk_thu_tuong Boolean  @default(false)
+  du_dieu_kien_bkbqp  Boolean  @default(false)
+  du_dieu_kien_bkttcp Boolean  @default(false)
   goi_y                     String?  @db.Text
   createdAt                 DateTime @default(now()) @db.Timestamp(0)
   updatedAt                 DateTime @updatedAt @db.Timestamp(0)
@@ -547,7 +547,6 @@ model DanhHieuDonViHangNam {
   nhan_bkttcp          Boolean   @default(false)
   so_quyet_dinh_bkttcp String?   @db.VarChar(100)
   ghi_chu_bkttcp       String?   @db.Text
-  status               String    @default("PENDING") @db.VarChar(20)
   nguoi_tao_id         String    @db.VarChar(30)
   nguoi_duyet_id       String?   @db.VarChar(30)
   ngay_duyet           DateTime? @db.Timestamp(0)

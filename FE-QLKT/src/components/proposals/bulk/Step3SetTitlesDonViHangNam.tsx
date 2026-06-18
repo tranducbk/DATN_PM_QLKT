@@ -207,14 +207,14 @@ export function Step3SetTitlesDonViHangNam({
     // Use prefetched annual profile for this unit to determine eligibility
     const profile = allUnitAnnualAwards[id];
     if (profile) {
-      // du_dieu_kien_bk_tong_cuc -> eligible for unit BKBQP (2-year ĐVQT cycle)
-      if (profile.du_dieu_kien_bk_tong_cuc === false) {
+      // du_dieu_kien_bkbqp -> eligible for unit BKBQP (2-year ĐVQT cycle)
+      if (profile.du_dieu_kien_bkbqp === false) {
         allOptions = allOptions.filter(
           opt => opt.value !== DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP
         );
       }
-      // du_dieu_kien_bk_thu_tuong -> eligible for unit BKTTCP (7-year ĐVQT cycle)
-      if (profile.du_dieu_kien_bk_thu_tuong === false) {
+      // du_dieu_kien_bkttcp -> eligible for unit BKTTCP (7-year ĐVQT cycle)
+      if (profile.du_dieu_kien_bkttcp === false) {
         allOptions = allOptions.filter(
           opt => opt.value !== DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP
         );

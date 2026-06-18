@@ -23,23 +23,6 @@ interface IdParams {
   id?: string;
 }
 
-interface ApproveBody {
-  so_quyet_dinh?: string;
-  file_quyet_dinh?: string;
-  nhan_bkbqp?: boolean;
-  so_quyet_dinh_bkbqp?: string;
-  file_quyet_dinh_bkbqp?: string;
-  nhan_bkttcp?: boolean;
-  so_quyet_dinh_bkttcp?: string;
-  file_quyet_dinh_bkttcp?: string;
-  nguoi_duyet_id?: string;
-}
-
-interface RejectBody {
-  ghi_chu?: string;
-  nguoi_duyet_id?: string;
-}
-
 interface RecalculateBody {
   don_vi_id?: string;
   nam?: number;
@@ -50,14 +33,6 @@ interface UpsertBody {
   nam?: number;
   danh_hieu?: string;
   so_quyet_dinh?: string;
-  ghi_chu?: string;
-  nguoi_tao_id?: string;
-}
-
-interface ProposeBody {
-  don_vi_id?: string;
-  nam?: number;
-  danh_hieu?: string;
   ghi_chu?: string;
   nguoi_tao_id?: string;
 }
@@ -159,52 +134,6 @@ class UnitAnnualAwardController {
       data,
       message: 'Lưu khen thưởng đơn vị hằng năm thành công',
     });
-  });
-
-  propose = catchAsync(async (req: Request, res: Response) => {
-    const user = req.user;
-    const body = req.body as ProposeBody;
-    const data = await service.propose({
-      don_vi_id: body.don_vi_id,
-      nam: body.nam,
-      danh_hieu: body.danh_hieu,
-      ghi_chu: body.ghi_chu,
-      nguoi_tao_id: user?.id || body.nguoi_tao_id,
-      userRole: user?.role,
-      userQuanNhanId: user?.quan_nhan_id,
-    });
-    return ResponseHelper.created(res, {
-      data,
-      message: 'Đã gửi đề xuất khen thưởng đơn vị. Hãy chờ admin duyệt',
-    });
-  });
-
-  approve = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as IdParams;
-    const user = req.user;
-    const body = req.body as ApproveBody;
-    const data = await service.approve(params.id, {
-      so_quyet_dinh: body.so_quyet_dinh,
-      nhan_bkbqp: body.nhan_bkbqp,
-      so_quyet_dinh_bkbqp: body.so_quyet_dinh_bkbqp,
-      file_quyet_dinh_bkbqp: body.file_quyet_dinh_bkbqp,
-      nhan_bkttcp: body.nhan_bkttcp,
-      so_quyet_dinh_bkttcp: body.so_quyet_dinh_bkttcp,
-      file_quyet_dinh_bkttcp: body.file_quyet_dinh_bkttcp,
-      nguoi_duyet_id: user?.id || (body.nguoi_duyet_id as string | undefined),
-    });
-    return ResponseHelper.success(res, { data, message: 'Đã phê duyệt đề xuất' });
-  });
-
-  reject = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as IdParams;
-    const user = req.user;
-    const body = req.body as RejectBody;
-    const data = await service.reject(String(params.id), {
-      ghi_chu: body.ghi_chu as string | undefined,
-      nguoi_duyet_id: user?.id || (body.nguoi_duyet_id as string | undefined),
-    });
-    return ResponseHelper.success(res, { data, message: 'Đã từ chối đề xuất' });
   });
 
   recalculate = catchAsync(async (req: Request, res: Response) => {

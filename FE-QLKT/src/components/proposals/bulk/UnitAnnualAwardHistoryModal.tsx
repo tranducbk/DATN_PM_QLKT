@@ -30,8 +30,8 @@ interface UnitAnnualAward {
 export interface UnitAnnualAwards {
   tong_dvqt?: number;
   dvqt_lien_tuc?: number;
-  du_dieu_kien_bk_tong_cuc?: boolean;
-  du_dieu_kien_bk_thu_tuong?: boolean;
+  du_dieu_kien_bkbqp?: boolean;
+  du_dieu_kien_bkttcp?: boolean;
   tong_dvqt_json?: UnitAnnualAward[];
   goi_y?: string | null;
 }
@@ -186,14 +186,14 @@ export function UnitAnnualAwardHistoryModal({
                 {bkttcpCount} lần
               </Descriptions.Item>
               <Descriptions.Item label="Đủ điều kiện BK của Bộ trưởng Bộ Quốc phòng">
-                {annualAwards?.du_dieu_kien_bk_tong_cuc ? (
+                {annualAwards?.du_dieu_kien_bkbqp ? (
                   <Tag color="green">Có</Tag>
                 ) : (
                   <Tag>Chưa đủ</Tag>
                 )}
               </Descriptions.Item>
               <Descriptions.Item label="Đủ điều kiện BK của Thủ tướng Chính phủ">
-                {annualAwards?.du_dieu_kien_bk_thu_tuong ? (
+                {annualAwards?.du_dieu_kien_bkttcp ? (
                   <Tag color="gold">Có</Tag>
                 ) : (
                   <Tag>Chưa đủ</Tag>

@@ -467,7 +467,6 @@ export async function confirmImport(validItems: UnitAnnualAwardValidItem[], admi
         const createData: Prisma.DanhHieuDonViHangNamUncheckedCreateInput = {
           nam: item.nam,
           danh_hieu: finalDanhHieu,
-          status: PROPOSAL_STATUS.APPROVED,
           nguoi_tao_id: adminId,
           ...sharedData,
           ...(item.is_co_quan_don_vi

@@ -42,7 +42,7 @@ afterEach(() => {
 const ADMIN_ID = 'acc-admin-2';
 
 describe('approveProposal — DON_VI_HANG_NAM', () => {
-  it('duyệt thành công với ĐVQT (CQDV) → upsert đúng don_vi và status APPROVED', async () => {
+  it('duyệt thành công với ĐVQT (CQDV) → create đúng don_vi, đề xuất chuyển APPROVED', async () => {
     // Given: đề xuất đơn vị hằng năm PENDING với 1 item ĐVQT cho CQDV
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-uv-1' });
     const item = makeProposalItemDonVi({
@@ -85,13 +85,12 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
       null
     );
 
-    // Then: create đúng don_vi và status APPROVED
+    // Then: create đúng don_vi (danh hiệu không còn cột status)
     expect(prismaMock.danhHieuDonViHangNam.create).toHaveBeenCalledTimes(1);
     const createArgs = prismaMock.danhHieuDonViHangNam.create.mock.calls[0][0];
     expect(createArgs.data.danh_hieu).toBe(DANH_HIEU_DON_VI_HANG_NAM.DVQT);
     expect(createArgs.data.co_quan_don_vi_id).toBe(cqdv.id);
     expect(createArgs.data.don_vi_truc_thuoc_id).toBeNull();
-    expect(createArgs.data.status).toBe(PROPOSAL_STATUS.APPROVED);
 
     expect(prismaMock.bangDeXuat.updateMany).toHaveBeenCalledTimes(1);
     expect(prismaMock.bangDeXuat.updateMany.mock.calls[0][0].data.status).toBe(

@@ -31,7 +31,6 @@ Table DanhHieuDonViHangNam {
   nhan_bkttcp boolean [not null, default: false]
   so_quyet_dinh_bkttcp varchar(100)
   ghi_chu_bkttcp text
-  status varchar(20) [not null, default: 'PENDING']
   nguoi_tao_id varchar(30) [not null]
   nguoi_duyet_id varchar(30)
   ngay_duyet timestamp
@@ -53,8 +52,8 @@ Table HoSoDonViHangNam {
   tong_dvqt int [not null, default: 0]
   tong_dvqt_json jsonb
   dvqt_lien_tuc int [not null, default: 0]
-  du_dieu_kien_bk_tong_cuc boolean [not null, default: false]
-  du_dieu_kien_bk_thu_tuong boolean [not null, default: false]
+  du_dieu_kien_bkbqp boolean [not null, default: false]
+  du_dieu_kien_bkttcp boolean [not null, default: false]
   goi_y text
   createdAt timestamp [not null]
   updatedAt timestamp [not null]

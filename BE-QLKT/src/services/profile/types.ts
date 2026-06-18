@@ -27,18 +27,6 @@ export interface NCKHYearsResult {
   years: number[];
 }
 
-export interface ChainContext {
-  chainStartYear: number;
-  lastBkbqpYear: number | null;
-  lastCstdtqYear: number | null;
-  lastBkttcpYear: number | null;
-  streakSinceLastBkbqp: number;
-  streakSinceLastCstdtq: number;
-  streakSinceLastBkttcp: number;
-  missedBkbqp: number;
-  missedCstdtq: number;
-}
-
 export interface AnnualStreakResult {
   personnel: QuanNhan & {
     DanhHieuHangNam: DanhHieuHangNam[];
@@ -50,7 +38,6 @@ export interface AnnualStreakResult {
   nckh_lien_tuc: number;
   bkbqp_lien_tuc: number;
   cstdtq_lien_tuc: number;
-  chainContext: ChainContext;
 }
 
 export interface TenureProfileUpdate {

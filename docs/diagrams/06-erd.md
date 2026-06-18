@@ -311,8 +311,8 @@ erDiagram
         int tong_dvqt
         json tong_dvqt_json
         int dvqt_lien_tuc
-        boolean du_dieu_kien_bk_tong_cuc
-        boolean du_dieu_kien_bk_thu_tuong
+        boolean du_dieu_kien_bkbqp
+        boolean du_dieu_kien_bkttcp
         string goi_y
     }
     DanhHieuDonViHangNam {
@@ -328,7 +328,6 @@ erDiagram
         boolean nhan_bkttcp
         string so_quyet_dinh_bkttcp
         string ghi_chu_bkttcp
-        string status
         string ghi_chu
         string nguoi_tao_id FK
         string nguoi_duyet_id FK
@@ -672,7 +671,6 @@ erDiagram
         string so_quyet_dinh_bkbqp
         boolean nhan_bkttcp "đơn vị"
         string so_quyet_dinh_bkttcp
-        string status
         string ghi_chu
         string nguoi_tao_id FK
         string nguoi_duyet_id FK
@@ -685,8 +683,8 @@ erDiagram
         int tong_dvqt
         json tong_dvqt_json "chi tiết ĐVQT"
         int dvqt_lien_tuc "streak ĐVQT"
-        boolean du_dieu_kien_bk_tong_cuc
-        boolean du_dieu_kien_bk_thu_tuong
+        boolean du_dieu_kien_bkbqp
+        boolean du_dieu_kien_bkttcp
         string goi_y
     }
     FileQuyetDinh {

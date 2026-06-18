@@ -447,7 +447,7 @@ describe('Chain cycle scenarios - unit BKTTCP (lặp lại sau mỗi 7 năm)', (
 
     const upsertArgs = prismaMock.hoSoDonViHangNam.upsert.mock.calls[0][0];
     expect(upsertArgs.update.dvqt_lien_tuc).toBe(14);
-    expect(upsertArgs.update.du_dieu_kien_bk_thu_tuong).toBe(true);
+    expect(upsertArgs.update.du_dieu_kien_bkttcp).toBe(true);
   });
 
   it('Lỡ BKTTCP chu kỳ 1 (năm 2016 không nhận) + chu kỳ 2 đủ BKBQP → recalc năm 14 vẫn eligible', async () => {
@@ -472,7 +472,7 @@ describe('Chain cycle scenarios - unit BKTTCP (lặp lại sau mỗi 7 năm)', (
 
     const upsertArgs = prismaMock.hoSoDonViHangNam.upsert.mock.calls[0][0];
     expect(upsertArgs.update.dvqt_lien_tuc).toBe(14);
-    expect(upsertArgs.update.du_dieu_kien_bk_thu_tuong).toBe(true);
+    expect(upsertArgs.update.du_dieu_kien_bkttcp).toBe(true);
   });
 
   it('14y ĐVQT chưa từng nhận BKTTCP, 3 BKBQP cụm chu kỳ 1 (năm 2/4/6) + chu kỳ 2 không có BKBQP → not eligible (cửa sổ 7y trượt)', async () => {
@@ -494,7 +494,7 @@ describe('Chain cycle scenarios - unit BKTTCP (lặp lại sau mỗi 7 năm)', (
 
     const upsertArgs = prismaMock.hoSoDonViHangNam.upsert.mock.calls[0][0];
     expect(upsertArgs.update.dvqt_lien_tuc).toBe(14);
-    expect(upsertArgs.update.du_dieu_kien_bk_thu_tuong).toBe(false);
+    expect(upsertArgs.update.du_dieu_kien_bkttcp).toBe(false);
   });
 
   it('21y ĐVQT, đã nhận BKTTCP năm 2009 + 2016, chu kỳ 3 đủ BKBQP (2018/20/22) → eligible BKTTCP lần 3', async () => {
@@ -518,7 +518,7 @@ describe('Chain cycle scenarios - unit BKTTCP (lặp lại sau mỗi 7 năm)', (
 
     const upsertArgs = prismaMock.hoSoDonViHangNam.upsert.mock.calls[0][0];
     expect(upsertArgs.update.dvqt_lien_tuc).toBe(21);
-    expect(upsertArgs.update.du_dieu_kien_bk_thu_tuong).toBe(true);
+    expect(upsertArgs.update.du_dieu_kien_bkttcp).toBe(true);
   });
 });
 

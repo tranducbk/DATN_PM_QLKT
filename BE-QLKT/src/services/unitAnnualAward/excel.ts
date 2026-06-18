@@ -10,7 +10,6 @@ import {
 } from '../../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 import { ROLES } from '../../constants/roles.constants';
-import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
 import { sanitizeRowData } from '../../helpers/excel/excelHelper';
 import { applyThinBordersToGrid, styleHeaderRow } from '../../helpers/excel/excelTemplateHelper';
 import {
@@ -185,7 +184,7 @@ export async function exportToExcel(
 ) {
   const { nam, danh_hieu } = filters;
 
-  const where: Record<string, any> = { status: PROPOSAL_STATUS.APPROVED };
+  const where: Record<string, any> = {};
   if (nam) where.nam = nam;
   if (danh_hieu) where.danh_hieu = danh_hieu;
 
@@ -247,7 +246,7 @@ export async function getStatistics(
 ) {
   const { nam } = filters;
 
-  const where: Record<string, any> = { status: PROPOSAL_STATUS.APPROVED };
+  const where: Record<string, any> = {};
   if (nam) where.nam = nam;
 
   if (userRole === ROLES.MANAGER && userQuanNhanId) {

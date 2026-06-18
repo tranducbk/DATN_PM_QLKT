@@ -12,7 +12,7 @@ import { RESOURCE_SLUGS } from '../../constants/resourceSlugs.constants';
 import { AWARD_SLUGS } from '../../constants/awardSlugs.constants';
 import { type EligibilityResult } from '../eligibility/chainEligibility';
 import { evaluatePersonalChain } from '../eligibility/personalChainEvaluator';
-import type { AnnualStreakResult, ChainContext, NCKHYearsResult, RecalculateResult, SpecialCaseResult } from './types';
+import type { AnnualStreakResult, NCKHYearsResult, RecalculateResult, SpecialCaseResult } from './types';
 
 /**
  * Loads or creates the annual profile with unit and position context.
@@ -145,70 +145,6 @@ export function countCSTDTQInStreak(danhHieuList: DanhHieuHangNam[], year: numbe
 }
 
 /**
- * Latest year within `[chainStartYear, year-1]` where `flagKey` is true; null when none.
- * @param danhHieuList - Annual title rows
- * @param flagKey - Boolean flag column (`nhan_bkbqp`, `nhan_cstdtq`, `nhan_bkttcp`)
- * @param chainStartYear - First year of the current CSTDCS streak
- * @param year - Evaluation anchor year
- */
-export function lastFlagYearInChain(
-  danhHieuList: Array<{ nam: number } & Record<string, unknown>>,
-  flagKey: string,
-  chainStartYear: number,
-  year: number
-): number | null {
-  let max = -1;
-  for (const r of danhHieuList) {
-    if (r[flagKey] === true && r.nam >= chainStartYear && r.nam <= year - 1 && r.nam > max) {
-      max = r.nam;
-    }
-  }
-  return max < 0 ? null : max;
-}
-
-/**
- * Builds chain-cycle context — derives anchor years and "streak since last flag"
- * for each chain award without storing extra DB columns. The anchor for the next
- * award cycle is `lastFlagYear + 1`; when nothing received yet the anchor falls
- * back to the chain's first CSTDCS year.
- * @param danhHieuList - Annual title rows for this person
- * @param cstdcsLienTuc - Continuous CSTDCS streak count anchored at `year - 1`
- * @param year - Evaluation anchor year
- */
-export function computeChainContext(
-  danhHieuList: Array<{ nam: number } & Record<string, unknown>>,
-  cstdcsLienTuc: number,
-  year: number
-): ChainContext {
-  const chainStartYear = year - cstdcsLienTuc;
-  const lastBkbqpYear = lastFlagYearInChain(danhHieuList, 'nhan_bkbqp', chainStartYear, year);
-  const lastCstdtqYear = lastFlagYearInChain(danhHieuList, 'nhan_cstdtq', chainStartYear, year);
-  const lastBkttcpYear = lastFlagYearInChain(danhHieuList, 'nhan_bkttcp', chainStartYear, year);
-
-  const streakSinceLastBkbqp =
-    lastBkbqpYear !== null ? year - lastBkbqpYear - 1 : cstdcsLienTuc;
-  const streakSinceLastCstdtq =
-    lastCstdtqYear !== null ? year - lastCstdtqYear - 1 : cstdcsLienTuc;
-  const streakSinceLastBkttcp =
-    lastBkttcpYear !== null ? year - lastBkttcpYear - 1 : cstdcsLienTuc;
-
-  const missedBkbqp = streakSinceLastBkbqp >= 2 ? Math.floor((streakSinceLastBkbqp - 1) / 2) : 0;
-  const missedCstdtq = streakSinceLastCstdtq >= 3 ? Math.floor((streakSinceLastCstdtq - 1) / 3) : 0;
-
-  return {
-    chainStartYear,
-    lastBkbqpYear,
-    lastCstdtqYear,
-    lastBkttcpYear,
-    streakSinceLastBkbqp,
-    streakSinceLastCstdtq,
-    streakSinceLastBkttcp,
-    missedBkbqp,
-    missedCstdtq,
-  };
-}
-
-/**
  * Whether approved NCKH exists for any year in the candidate list.
  * @param nckhList - Approved `ThanhTichKhoaHoc` rows
  * @param years - Years to intersect (e.g. streak window)
@@ -302,7 +238,6 @@ export async function computeAnnualStreaks(personnelId: string, year: number): P
 
   const bkbqp_lien_tuc = countBKBQPInStreak(danhHieuList, year, cstdcs_lien_tuc);
   const cstdtq_lien_tuc = countCSTDTQInStreak(danhHieuList, year, cstdcs_lien_tuc);
-  const chainContext = computeChainContext(danhHieuList, cstdcs_lien_tuc, year);
 
   return {
     personnel,
@@ -312,7 +247,6 @@ export async function computeAnnualStreaks(personnelId: string, year: number): P
     nckh_lien_tuc,
     bkbqp_lien_tuc,
     cstdtq_lien_tuc,
-    chainContext,
   };
 }
 

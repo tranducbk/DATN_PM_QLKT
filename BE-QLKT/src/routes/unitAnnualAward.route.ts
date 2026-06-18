@@ -118,10 +118,10 @@ router.get('/:id', verifyToken, requireManager, unitAnnualAwardController.getByI
 
 /**
  * @route   POST /api/unit-annual-awards
- * @desc    Create a unit annual award (direct entry of an already-approved award)
+ * @desc    Create a unit annual award (admin direct entry of a granted award)
  * @access  ADMIN only
  */
-// Direct entry writes status APPROVED, bypassing propose->approve — restricted to ADMIN
+// Admin direct entry — award is granted immediately, restricted to ADMIN
 router.post(
   '/',
   verifyToken,
@@ -138,7 +138,7 @@ router.post(
 
 /**
  * @route   PUT /api/unit-annual-awards/:id
- * @desc    Update a unit annual award (direct entry of an already-approved award)
+ * @desc    Update a unit annual award (admin direct entry of a granted award)
  * @access  ADMIN only
  */
 router.put(
@@ -171,61 +171,6 @@ router.delete(
     getResourceId: getResourceId.fromParams('id'),
   }),
   unitAnnualAwardController.remove
-);
-
-/**
- * @route   POST /api/unit-annual-awards/propose
- * @desc    Submit a unit annual award proposal
- * @access  ADMIN, MANAGER
- */
-router.post(
-  '/propose',
-  verifyToken,
-  requireManager,
-  validate(unitAnnualAwardValidation.proposeUnitAnnualAward),
-  auditLog({
-    action: AUDIT_ACTIONS.PROPOSE,
-    resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
-    getDescription: getLogDescription(AWARD_SLUGS.UNIT_ANNUAL_AWARDS, 'PROPOSE'),
-    getResourceId: () => null,
-  }),
-  unitAnnualAwardController.propose
-);
-
-/**
- * @route   POST /api/unit-annual-awards/:id/approve
- * @desc    Approve a unit annual award proposal
- * @access  ADMIN
- */
-router.post(
-  '/:id/approve',
-  verifyToken,
-  requireAdminOnly,
-  auditLog({
-    action: AUDIT_ACTIONS.APPROVE,
-    resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
-    getDescription: getLogDescription(AWARD_SLUGS.UNIT_ANNUAL_AWARDS, 'APPROVE'),
-    getResourceId: getResourceId.fromParams('id'),
-  }),
-  unitAnnualAwardController.approve
-);
-
-/**
- * @route   POST /api/unit-annual-awards/:id/reject
- * @desc    Reject a unit annual award proposal
- * @access  ADMIN
- */
-router.post(
-  '/:id/reject',
-  verifyToken,
-  requireAdminOnly,
-  auditLog({
-    action: AUDIT_ACTIONS.REJECT,
-    resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
-    getDescription: getLogDescription(AWARD_SLUGS.UNIT_ANNUAL_AWARDS, 'REJECT'),
-    getResourceId: getResourceId.fromParams('id'),
-  }),
-  unitAnnualAwardController.reject
 );
 
 /**

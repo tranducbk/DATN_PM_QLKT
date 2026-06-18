@@ -51,7 +51,6 @@ Table DanhHieuDonViHangNam {
   nhan_bkttcp boolean [not null, default: false]
   so_quyet_dinh_bkttcp varchar(100)
   ghi_chu_bkttcp text
-  status varchar(20) [not null, default: 'PENDING']
   nguoi_tao_id varchar(30) [not null]
   nguoi_duyet_id varchar(30)
   ngay_duyet timestamp

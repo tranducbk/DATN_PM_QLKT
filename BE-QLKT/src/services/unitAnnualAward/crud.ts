@@ -11,7 +11,6 @@ import {
   DANH_HIEU_DON_VI_BANG_KHEN,
 } from '../../constants/danhHieu.constants';
 import { ROLES } from '../../constants/roles.constants';
-import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
 import { NotFoundError, ValidationError, ForbiddenError } from '../../middlewares/errorHandler';
 import { resolveUnit, buildUnitIdFields } from '../../helpers/unitHelper';
 import { validateDecisionNumbers } from '../eligibility/decisionNumberValidation';
@@ -24,149 +23,6 @@ const defaultDeps: UnitAnnualAwardDeps = {
   getSubUnits: async () => [],
 };
 
-/**
- * Ensures a MANAGER may only act on a unit within their own parent organization.
- * @param donViId - Target unit ID
- * @param userRole - Requesting user's role
- * @param userQuanNhanId - Requesting user's personnel ID
- * @returns Nothing
- * @throws ForbiddenError - When a MANAGER targets a unit outside their scope
- * @throws NotFoundError - When the unit or the requesting user cannot be found
- */
-async function assertCanManageUnit(donViId: string, userRole?: string, userQuanNhanId?: string) {
-  if (userRole === ROLES.ADMIN || userRole === ROLES.SUPER_ADMIN || !userRole) {
-    return;
-  }
-  if (userRole !== ROLES.MANAGER || !userQuanNhanId) {
-    throw new ForbiddenError('Không có quyền thực hiện thao tác này');
-  }
-
-  const donVi =
-    (await coQuanDonViRepository.findById(donViId)) ||
-    (await donViTrucThuocRepository.findById(donViId));
-  if (!donVi) throw new NotFoundError('Đơn vị');
-
-  const user = await quanNhanRepository.findUnitScope(userQuanNhanId);
-  if (!user) throw new NotFoundError('Thông tin người dùng');
-
-  const targetCoQuanId =
-    'co_quan_don_vi_id' in donVi && donVi.co_quan_don_vi_id ? donVi.co_quan_don_vi_id : donVi.id;
-  if (!user.co_quan_don_vi_id || user.co_quan_don_vi_id !== targetCoQuanId) {
-    throw new ForbiddenError('Không có quyền đề xuất khen thưởng cho đơn vị này');
-  }
-}
-
-export async function propose(
-  { don_vi_id, nam, danh_hieu, ghi_chu, nguoi_tao_id, userRole, userQuanNhanId },
-  deps: UnitAnnualAwardDeps = defaultDeps
-) {
-  const year = Number(nam);
-  const unitId = don_vi_id;
-
-  await assertCanManageUnit(unitId, userRole, userQuanNhanId);
-
-  const { isCoQuanDonVi } = await resolveUnit(unitId);
-
-  const record = await danhHieuDonViHangNamRepository.upsert({
-    where: isCoQuanDonVi
-      ? { unique_co_quan_don_vi_nam_dh: { co_quan_don_vi_id: unitId, nam: year } }
-      : { unique_don_vi_truc_thuoc_nam_dh: { don_vi_truc_thuoc_id: unitId, nam: year } },
-    update: {
-      danh_hieu: danh_hieu || null,
-      ghi_chu: ghi_chu || null,
-      status: PROPOSAL_STATUS.PENDING,
-    },
-    create: {
-      ...buildUnitIdFields(unitId, isCoQuanDonVi),
-      nam: year,
-      danh_hieu: danh_hieu || null,
-      ghi_chu: ghi_chu || null,
-      nguoi_tao_id: nguoi_tao_id,
-      status: PROPOSAL_STATUS.PENDING,
-    },
-    include: { CoQuanDonVi: true, DonViTrucThuoc: true },
-  });
-
-  await deps.recalculateAnnualUnit(unitId, year);
-
-  return record;
-}
-
-export async function approve(
-  id,
-  {
-    so_quyet_dinh,
-    nhan_bkbqp,
-    so_quyet_dinh_bkbqp,
-    file_quyet_dinh_bkbqp,
-    nhan_bkttcp,
-    so_quyet_dinh_bkttcp,
-    file_quyet_dinh_bkttcp,
-    nguoi_duyet_id,
-  },
-  deps: UnitAnnualAwardDeps = defaultDeps
-) {
-  const updateData: Record<string, any> = {
-    status: PROPOSAL_STATUS.APPROVED,
-    nguoi_duyet_id: nguoi_duyet_id,
-    ngay_duyet: new Date(),
-    so_quyet_dinh: so_quyet_dinh || null,
-  };
-
-  if (nhan_bkbqp !== undefined) {
-    updateData.nhan_bkbqp = nhan_bkbqp;
-  }
-  if (so_quyet_dinh_bkbqp !== undefined) {
-    updateData.so_quyet_dinh_bkbqp = so_quyet_dinh_bkbqp || null;
-  }
-  if (file_quyet_dinh_bkbqp !== undefined) {
-    updateData.file_quyet_dinh_bkbqp = file_quyet_dinh_bkbqp || null;
-  }
-
-  if (nhan_bkttcp !== undefined) {
-    updateData.nhan_bkttcp = nhan_bkttcp;
-  }
-  if (so_quyet_dinh_bkttcp !== undefined) {
-    updateData.so_quyet_dinh_bkttcp = so_quyet_dinh_bkttcp || null;
-  }
-  if (file_quyet_dinh_bkttcp !== undefined) {
-    updateData.file_quyet_dinh_bkttcp = file_quyet_dinh_bkttcp || null;
-  }
-
-  const updatedDanhHieu = await danhHieuDonViHangNamRepository.updateRaw({
-    where: { id: String(id) },
-    data: updateData,
-    include: { CoQuanDonVi: true, DonViTrucThuoc: true },
-  });
-
-  const donViId = updatedDanhHieu.co_quan_don_vi_id || updatedDanhHieu.don_vi_truc_thuoc_id;
-  await deps.recalculateAnnualUnit(donViId, updatedDanhHieu.nam);
-
-  return updatedDanhHieu;
-}
-
-export async function reject(
-  id: string,
-  { ghi_chu, nguoi_duyet_id }: { ghi_chu: string; nguoi_duyet_id: string },
-  deps: UnitAnnualAwardDeps = defaultDeps
-) {
-  const rejectedDanhHieu = await danhHieuDonViHangNamRepository.updateRaw({
-    where: { id: String(id) },
-    data: {
-      status: PROPOSAL_STATUS.REJECTED,
-      ghi_chu: ghi_chu ?? null,
-      nguoi_duyet_id: nguoi_duyet_id,
-      ngay_duyet: new Date(),
-    },
-    include: { CoQuanDonVi: true, DonViTrucThuoc: true },
-  });
-
-  const donViId = rejectedDanhHieu.co_quan_don_vi_id || rejectedDanhHieu.don_vi_truc_thuoc_id;
-  await deps.recalculateAnnualUnit(donViId, rejectedDanhHieu.nam);
-
-  return rejectedDanhHieu;
-}
-
 export async function getSubUnits(coQuanDonViId) {
   const subUnits = await donViTrucThuocRepository.findIdsByCoQuanDonViId(coQuanDonViId);
   return subUnits.map(u => u.id);
@@ -178,14 +34,12 @@ export async function list({
   year,
   donViId,
   danhHieu,
-  status,
   userRole,
   userQuanNhanId,
 }: Record<string, any> = {}, deps: UnitAnnualAwardDeps = defaultDeps) {
   const where: Record<string, any> = {};
   if (year) where.nam = Number(year);
   if (danhHieu) where.danh_hieu = danhHieu;
-  where.status = status != null && status !== '' ? status : PROPOSAL_STATUS.APPROVED;
 
   let allowedUnitIds: string[] | null = null;
   if ((userRole === ROLES.USER || userRole === ROLES.MANAGER) && userQuanNhanId) {
@@ -390,7 +244,6 @@ export async function upsert({
       ...(isBkttcp && so_quyet_dinh && { so_quyet_dinh_bkttcp: so_quyet_dinh }),
       ...(isBkttcp && ghi_chu && { ghi_chu_bkttcp: ghi_chu }),
       nguoi_tao_id: nguoi_tao_id,
-      status: PROPOSAL_STATUS.APPROVED,
     },
     include: { CoQuanDonVi: true, DonViTrucThuoc: true },
   });
@@ -508,8 +361,8 @@ export async function getAnnualUnit(donViId: string, year: number) {
         tong_dvqt: 0,
         tong_dvqt_json: [],
         dvqt_lien_tuc: 0,
-        du_dieu_kien_bk_tong_cuc: false,
-        du_dieu_kien_bk_thu_tuong: false,
+        du_dieu_kien_bkbqp: false,
+        du_dieu_kien_bkttcp: false,
         goi_y: 'Chưa có dữ liệu để tính toán. Vui lòng nhập danh hiệu đơn vị.',
       },
       include: {
@@ -561,7 +414,6 @@ export async function getUnitAnnualAwards(
   const danhHieuRecords = await danhHieuDonViHangNamRepository.findMany({
     where: {
       OR: [{ co_quan_don_vi_id: donViId }, { don_vi_truc_thuoc_id: donViId }],
-      status: PROPOSAL_STATUS.APPROVED,
     },
     orderBy: { nam: 'desc' },
   });

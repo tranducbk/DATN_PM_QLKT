@@ -136,9 +136,9 @@ Source files (sửa logic chuỗi phải đụng tất cả):
 ```
 src/constants/chainAwards.constants.ts        # PERSONAL_CHAIN_AWARDS, UNIT_CHAIN_AWARDS configs
 src/services/eligibility/chainEligibility.ts  # checkChainEligibility (core rule, dùng cho cả personal & unit)
-src/services/profile/annual.ts                # personal: lastFlagYearInChain, computeChainContext,
-                                              #   computeEligibilityFlags, checkAwardEligibility, recalculateAnnualProfile
-src/services/profile/types.ts                 # ChainContext, AnnualStreakResult
+src/services/profile/annual.ts                # personal: computeEligibilityFlags, checkAwardEligibility,
+                                              #   recalculateAnnualProfile
+src/services/profile/types.ts                 # AnnualStreakResult
 src/services/unitAnnualAward/eligibility.ts   # unit: cùng pattern, async DB
 ```
 
@@ -152,7 +152,7 @@ src/services/unitAnnualAward/eligibility.ts   # unit: cùng pattern, async DB
   - Unit BKTTCP count BKBQP: cửa sổ trượt 7y cuối từ `year-1`.
   - Personal BKTTCP count BKBQP/CSTDTQ: cửa sổ trượt 7y cuối, strict `=== 3` và `=== 2`.
 
-**Khi sửa rule chuỗi**: phải update cả `computeEligibilityFlags` (recalc) và `checkAwardEligibility` (API) để khớp; cập nhật tests trong `tests/services/eligibility-{bkbqp,cstdtq,bkttcp}-{personal,unit}.test.ts`, `chainContext.test.ts`, `chainCycleScenarios.test.ts`.
+**Khi sửa rule chuỗi**: phải update cả `computeEligibilityFlags` (recalc) và `checkAwardEligibility` (API) để khớp; cập nhật tests trong `tests/services/eligibility-{bkbqp,cstdtq,bkttcp}-{personal,unit}.test.ts`, `chainCycleScenarios.test.ts`.
 
 **Khi đổi message**: update keys trong `tests/helpers/errorMessages.ts` (`eligibilityReasons`, `unitEligibilityReasons`, `suggestionMessages`) — single source cho assertion-grade messages.
 

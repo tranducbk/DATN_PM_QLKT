@@ -120,7 +120,7 @@ export function calculateHCCSVV(
 
 /**
  * Computes a higher HCCSVV tier only when the prerequisite lower tier is received.
- * @param prerequisiteMet - Whether the lower tier is already DA_NHAN
+ * @param hasPrerequisite - Whether the lower tier is already DA_NHAN
  * @param ngayNhapNgu - Enlistment date
  * @param soNam - Required years for this tier
  * @param currentStatus - Current tier status
@@ -129,14 +129,14 @@ export function calculateHCCSVV(
  * @returns Tier eligibility snapshot, or a blank CHUA_DU snapshot when the prerequisite is unmet
  */
 function computeNextTier(
-  prerequisiteMet: boolean,
+  hasPrerequisite: boolean,
   ngayNhapNgu: Date | null | undefined,
   soNam: number,
   currentStatus: string,
   hangName: string,
   existingNgay: Date | null | undefined
 ): HCCSVVCalcResult {
-  if (!prerequisiteMet) {
+  if (!hasPrerequisite) {
     return { status: ELIGIBILITY_STATUS.CHUA_DU, ngay: null, goiY: '' };
   }
 
