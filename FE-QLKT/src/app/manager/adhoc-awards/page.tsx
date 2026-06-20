@@ -37,7 +37,6 @@ import { useDebounce } from '@/hooks/useDebounce';
 
 const { Title, Text } = Typography;
 
-// TYPES
 interface AdhocAward {
   id: string;
   loai: string;
@@ -87,7 +86,6 @@ const INITIAL_TABLE_FILTERS: TableFilters = {
   type: 'ALL',
 };
 
-// MAIN COMPONENT
 export default function ManagerAdhocAwardsPage() {
   // Data states
   const [awards, setAwards] = useState<AdhocAward[]>([]);
@@ -101,7 +99,6 @@ export default function ManagerAdhocAwardsPage() {
   const [tableFilters, setTableFilters] = useState<TableFilters>(INITIAL_TABLE_FILTERS);
   const [searchDraft, setSearchDraft] = useState(INITIAL_TABLE_FILTERS.searchText);
 
-  // DATA FETCHING
   const fetchAwards = useCallback(async () => {
     try {
       setLoading(true);
@@ -341,7 +338,6 @@ export default function ManagerAdhocAwardsPage() {
     },
   ];
 
-  // RENDER
   return (
     <div style={{ padding: 24 }}>
       <PageBreadcrumb items={[{ title: 'Khen thưởng đột xuất' }]} />

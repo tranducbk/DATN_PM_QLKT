@@ -2,17 +2,11 @@ import { NOTIFICATION_TYPES, RESOURCE_TYPES } from '../../constants/notification
 import { ROLES, ROLE_LABELS } from '../../constants/roles.constants';
 import { emitNotificationToUser } from '../../utils/socketService';
 import { accountRepository } from '../../repositories/account.repository';
-import { notificationRepository } from '../../repositories/notification.repository';
 import {
   DANH_HIEU_MAP,
   LOAI_DE_XUAT_MAP,
   getDanhHieuName,
 } from '../../constants/danhHieu.constants';
-
-interface Recipient {
-  id: string;
-  role: string;
-}
 
 /**
  * Formats a human-readable proposal type label.
@@ -58,45 +52,6 @@ async function getDisplayName(username: string): Promise<string> {
   }
 }
 
-/**
- * Persists and emits system notifications for a recipient list.
- * @param recipients - Target recipients
- * @param type - Notification type
- * @param title - Notification title
- * @param message - Notification message
- * @param resource - Optional resource type
- * @param resourceId - Optional resource ID
- * @param link - Optional navigation link
- * @returns Number of notifications created
- */
-async function sendSystemNotification(
-  recipients: Recipient[],
-  type: string,
-  title: string,
-  message: string,
-  resource: string | null = null,
-  resourceId: string | null = null,
-  link: string | null = null
-): Promise<number> {
-  const notifications = recipients.map(recipient => ({
-    nguoi_nhan_id: recipient.id,
-    recipient_role: recipient.role,
-    type,
-    title,
-    message,
-    resource,
-    tai_nguyen_id: resourceId || null,
-    link,
-  }));
-
-  if (notifications.length > 0) {
-    await notificationRepository.createMany(notifications);
-    notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
-  }
-
-  return notifications.length;
-}
-
 export {
   NOTIFICATION_TYPES,
   RESOURCE_TYPES,
@@ -107,5 +62,4 @@ export {
   getDanhHieuName,
   formatProposalType,
   getDisplayName,
-  sendSystemNotification,
 };

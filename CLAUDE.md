@@ -35,6 +35,7 @@ PM QLKT/
 
 - **4 roles**: SUPER_ADMIN > ADMIN > MANAGER > USER
 - **7 award types**: Annual, Unit Annual, Tenure Medals (`tenure-medals`), Contribution (`contribution-medals`), Commemorative Medal (`commemorative-medals`), Military Flag (`military-flag`), Scientific Achievement
+- **Kỷ niệm chương là CATEGORY nhiều loại** (BẮT BUỘC khi đụng `commemorative-medals`): hiện chỉ có `KNC_VSNXD_QDNDVN` nhưng SẼ thêm nhiều loại kỷ niệm chương khác. KHÔNG hardcode 1 loại như thể là duy nhất. Thiết kế theo registry giống `DANH_HIEU_HCBVTQ` (category + nhiều danh hiệu con): label category dùng `AWARD_LABELS[COMMEMORATIVE_MEDALS]` (nên là "Kỷ niệm chương" generic), tên từng loại để trong 1 map `DANH_HIEU_KY_NIEM_CHUONG`; eligibility/validation/import dispatch theo danh hiệu con qua registry, không `if (danh_hieu === KNC_VSNXD_QDNDVN)`. Áp dụng tương tự cho mọi award type có nhiều hạng/loại.
 - **Annual chain awards** (cá nhân): BKBQP (2y CSTDCS), CSTDTQ (3y + 1 BKBQP trong cửa sổ trượt 3y), BKTTCP (7y + 3 BKBQP + 2 CSTDTQ trong 7y cuối). Mỗi loại cần NCKH mỗi năm. Flag fields: `nhan_bkbqp/cstdtq/bkttcp` + `so_quyet_dinh_*/ghi_chu_*`.
 - **Annual chain awards** (đơn vị): BKBQP (2y ĐVQT), BKTTCP (7y + 3 BKBQP trong 7y cuối). Không có CSTDTQ. Không có NCKH.
 - **Chain cycle semantics** — quan trọng:

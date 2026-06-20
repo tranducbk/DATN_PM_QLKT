@@ -22,7 +22,7 @@ export function calculateServiceMonths(
  * @param endDate - Interval end
  * @returns Number of covered calendar months
  */
-export function calculateCoveredMonthsByMonth(
+function calculateCoveredMonthsByMonth(
   startDate: Date,
   endDate: Date
 ): number {
@@ -112,4 +112,34 @@ export function formatServiceDuration(totalMonths: number): string {
   if (years > 0 && months > 0) return `${years} năm ${months} tháng`;
   if (years > 0) return `${years} năm`;
   return `${months} tháng`;
+}
+
+interface DurationAggregate {
+  years?: number | null;
+  months?: number | null;
+}
+
+/**
+ * Coerces a stored thoi_gian value (aggregate object, number, or JSON string) to total months.
+ * Shared by medal Excel exports so contribution/commemorative stay in sync.
+ * @param value - thoi_gian field value from an award row
+ * @returns Total months, '' when empty, or the raw string when JSON is unparseable
+ */
+export function durationToMonths(value: unknown): number | string {
+  if (!value) return '';
+  if (typeof value === 'number') return value;
+  if (typeof value === 'object') {
+    const agg = value as DurationAggregate;
+    return (agg.years ?? 0) * 12 + (agg.months ?? 0);
+  }
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value) as DurationAggregate;
+      return (parsed.years ?? 0) * 12 + (parsed.months ?? 0);
+    } catch (error) {
+      console.error('Failed to parse thoi_gian JSON for award export:', error);
+      return value;
+    }
+  }
+  return '';
 }

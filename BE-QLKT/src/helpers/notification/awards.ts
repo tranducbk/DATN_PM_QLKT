@@ -436,11 +436,31 @@ async function notifyOnImport(
   }
 }
 
+/**
+ * Fire-and-forget wrapper around notifyOnImport for controllers — import notifications
+ * must never block or fail the import response (notifyOnImport already swallows its own errors).
+ * @param adminId - Admin who ran the import
+ * @param awardResource - Award slug
+ * @param importedCount - Number of rows imported
+ * @param personnelIds - Affected personnel ids (individual awards)
+ * @param unitIds - Affected unit ids (unit awards)
+ */
+function safeNotifyImport(
+  adminId: string,
+  awardResource: string,
+  importedCount: number,
+  personnelIds: string[] = [],
+  unitIds: string[] = []
+): void {
+  void notifyOnImport(adminId, awardResource, importedCount, personnelIds, unitIds);
+}
+
 export {
   notifyOnAwardDeleted,
   notifyUsersOnAwardApproved,
   notifyAdminsOnBulkBypass,
   notifyOnImport,
+  safeNotifyImport,
 };
 
 export { notifyOnBulkAwardAdded, notifyOnUnitAwardDeleted } from './awardsBulkAdded';

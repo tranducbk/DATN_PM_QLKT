@@ -663,7 +663,7 @@ export async function confirmImport(
   for (const item of validItems) {
     if (pendingKeys.has(`${item.personnel_id}_${item.nam}`)) {
       pendingConflicts.push(
-        `${hoTenMap.get(item.personnel_id) || item.ho_ten || item.personnel_id} năm ${item.nam}: đang có đề xuất chờ duyệt`
+        `${hoTenMap.get(item.personnel_id) || item.ho_ten || 'một quân nhân'} năm ${item.nam}: đang có đề xuất chờ duyệt`
       );
     }
   }

@@ -14,6 +14,7 @@ import { writeSystemLog } from '../helpers/systemLogHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { logMessages } from '../constants/logMessages.constants';
 import { buildTemplate, styleHeaderRow } from '../helpers/excel/excelTemplateHelper';
+import { durationToMonths } from '../helpers/serviceYearsHelper';
 import { fetchTemplateData } from './excel/templateData.service';
 import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 import { AWARD_LABELS } from '../constants/awardLabels.constants';
@@ -155,31 +156,6 @@ class CommemorativeMedalService {
 
     styleHeaderRow(worksheet);
 
-    const convertThoiGian = thoiGian => {
-      if (!thoiGian) return '';
-      if (typeof thoiGian === 'object') {
-        const years = thoiGian.years || 0;
-        const months = thoiGian.months || 0;
-        return years * 12 + months;
-      } else if (typeof thoiGian === 'number') {
-        return thoiGian;
-      } else if (typeof thoiGian === 'string') {
-        try {
-          const parsed = JSON.parse(thoiGian);
-          const years = parsed.years || 0;
-          const months = parsed.months || 0;
-          return years * 12 + months;
-        } catch (error) {
-          console.error(
-            'Failed to parse thoi_gian JSON when exporting commemorative medals:',
-            error
-          );
-          return thoiGian;
-        }
-      }
-      return '';
-    };
-
     data.forEach((item, index) => {
       worksheet.addRow(
         sanitizeRowData({
@@ -192,7 +168,7 @@ class CommemorativeMedalService {
           thang: item.thang,
           cap_bac: item.cap_bac,
           chuc_vu: item.chuc_vu,
-          thoi_gian: convertThoiGian(item.thoi_gian),
+          thoi_gian: durationToMonths(item.thoi_gian),
           so_quyet_dinh: item.so_quyet_dinh,
           ghi_chu: item.ghi_chu ?? '',
         })

@@ -52,7 +52,7 @@ import { FileAttachmentList } from '@/components/proposals/FileAttachmentList';
 import { ProposalStatusTag } from '@/components/proposals/ProposalStatusTag';
 import { InfoNote } from '@/components/shared/InfoNote';
 import { useTheme } from '@/components/ThemeProvider';
-import { type CongHienHeSoGroup } from '@/constants/danhHieu.constants';
+import { type ContributionCoefficientGroup } from '@/constants/danhHieu.constants';
 import type { ServiceTimeRow } from '@/lib/award/serviceTimeHelpers';
 import {
   PROPOSAL_REVIEW_CARD_TITLES,
@@ -282,7 +282,7 @@ export default function ProposalDetailPage() {
     }
   }, [id, fetchProposalDetail]);
 
-  const totalTimeByGroup = (personnelId: string, group: CongHienHeSoGroup) =>
+  const totalTimeByGroup = (personnelId: string, group: ContributionCoefficientGroup) =>
     calculateTotalTimeByGroup(positionHistoriesMap[personnelId] || [], group);
 
   const handleReject = async () => {

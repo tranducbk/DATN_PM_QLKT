@@ -30,28 +30,28 @@ Mỗi nhóm có tiêu chuẩn xét duyệt riêng, lại lưu rải rác trong n
 
 Thứ ba, các tệp dùng chung không có cơ chế lưu vết thao tác (audit log).
 Khi một bản ghi bị sửa hay xoá, hệ thống không lưu lại ai thực hiện, vào thời điểm nào và vì lý do gì, khiến việc truy vết, rà soát về sau gặp nhiều khó khăn.
-Phân quyền cũng chỉ dừng ở mức thư mục dùng chung, chưa phản ánh được cây tổ chức thực tế của Học viện gồm cấp Phòng, cấp Khoa và từng quân nhân.
+Phân quyền cũng chỉ dừng ở mức thư mục dùng chung, chưa phản ánh được cơ cấu tổ chức thực tế của Học viện gồm cấp Phòng, cấp Khoa và từng quân nhân.
 
 Những hạn chế trên cho thấy Học viện cần một phần mềm chuyên dụng, bám sát chính đặc thù của công tác khen thưởng tại đơn vị.
 Phần mềm phải thay thế việc đối chiếu thủ công lịch sử danh hiệu bằng cơ chế tự động kiểm tra các điều kiện khen thưởng chuỗi.
-Đồng thời, phần mềm cần hợp nhất bảy nhóm nghiệp vụ đang nằm rải rác về một nơi, ghi vết mọi thao tác sửa đổi dữ liệu và phân quyền theo đúng cây tổ chức từ cấp Phòng, cấp Khoa đến từng quân nhân.
+Đồng thời, phần mềm cần hợp nhất bảy nhóm nghiệp vụ đang nằm rải rác về một nơi, ghi vết mọi thao tác sửa đổi dữ liệu và phân quyền theo đúng cơ cấu tổ chức từ cấp Phòng, cấp Khoa đến từng quân nhân.
 Đây chính là bài toán mà đồ án hướng tới giải quyết.
 
 \section{Mục tiêu và phạm vi đề tài}
 \label{section:1.2}
 
-Để khắc phục những hạn chế nêu trên, \textbf{mục tiêu chính} của đồ án là xây dựng một hệ thống web hỗ trợ Phòng Chính trị Học viện Khoa học Quân sự thực hiện các nhóm nhiệm vụ chính sau:
+Để khắc phục những hạn chế nêu trên, mục tiêu chính của đồ án là xây dựng một hệ thống web hỗ trợ Phòng Chính trị Học viện Khoa học Quân sự thực hiện các nhóm nhiệm vụ chính sau:
 
 \begin{enumerate}
-    \item \textbf{Quản lý danh mục lõi}: quân nhân, đơn vị theo cấu trúc cây Cơ quan đơn vị và Đơn vị trực thuộc, chức vụ và lịch sử biến động chức vụ.
-    \item \textbf{Đề xuất và phê duyệt khen thưởng}: tạo đợt đề xuất cho cả bảy nhóm danh hiệu với bộ lọc hỗ trợ tra cứu nhanh theo đơn vị/năm/giới tính/mốc phục vụ; quy trình phê duyệt nhiều bước, lưu tệp PDF quyết định kèm số quyết định; đồng thời quản lý các quyết định khen thưởng đột xuất phát sinh ngoài chu kỳ.
+    \item \textbf{Quản lý hồ sơ và danh mục cơ bản}: quân nhân, đơn vị theo cơ cấu hai cấp gồm Cơ quan đơn vị và Đơn vị trực thuộc, chức vụ và lịch sử biến động chức vụ.
+    \item \textbf{Đề xuất và phê duyệt khen thưởng}: tạo đợt đề xuất cho bảy nhóm danh hiệu với bộ lọc hỗ trợ tra cứu nhanh theo đơn vị, năm, giới tính và mốc thời gian phục vụ; quy trình phê duyệt nhiều bước, lưu tệp PDF quyết định kèm số quyết định. Riêng khen thưởng đột xuất phát sinh ngoài chu kỳ được ghi nhận trực tiếp dưới dạng quyết định, không qua bước đề xuất.
     \item \textbf{Tự động hoá nghiệp vụ}: kiểm tra điều kiện chuỗi danh hiệu cho cá nhân (BKBQP, CSTĐTQ, BKTTCP) và đơn vị (BKBQP, BKTTCP), tự động sinh nội dung gợi ý bằng tiếng Việt, nhập lịch sử khen thưởng từ Excel theo cơ chế xem trước rồi xác nhận, và xuất danh sách theo nhiều tiêu chí. Quá trình nhập tuân thủ nguyên tắc toàn vẹn giao dịch: hoặc ghi nhận toàn bộ, hoặc hoàn tác hoàn toàn.
     \item \textbf{Bảo mật và truy vết}: phân quyền theo bốn cấp tương ứng đặc thù tổ chức. Quản trị viên cấp cao quản trị hạ tầng, Cán bộ Phòng Chính trị toàn quyền nghiệp vụ, Chỉ huy đơn vị đề xuất trong phạm vi đơn vị, còn Người dùng tra cứu hồ sơ cá nhân. Toàn bộ thao tác làm thay đổi dữ liệu đều được ghi vào nhật ký hệ thống.
     \item \textbf{Vận hành}: sao lưu cơ sở dữ liệu định kỳ và quản lý nhật ký hệ thống.
 \end{enumerate}
 
 \textbf{Phạm vi đề tài} giới hạn trong các nhiệm vụ trực tiếp phục vụ công tác xét khen thưởng.
-Phần mềm vận hành tập trung trên máy chủ của Học viện, truy cập qua mạng nội bộ và không xuất bản ra Internet công cộng để đáp ứng yêu cầu bảo mật quân sự.
+Phần mềm vận hành tập trung trên máy chủ của Học viện, truy cập qua mạng nội bộ và không công khai ra Internet công cộng để đáp ứng yêu cầu bảo mật quân sự.
 Đồ án không bao gồm các nghiệp vụ tiền lương, phụ cấp, hồ sơ y tế, đánh giá cán bộ định kỳ và các quy trình hành chính khác.
 Việc tích hợp với hệ thống quản lý nhân sự tổng thể của Bộ Quốc phòng cũng nằm ngoài phạm vi do vượt khỏi trọng tâm khen thưởng.
 
@@ -68,7 +68,7 @@ Các sự kiện phê duyệt, từ chối, xoá đề xuất và nhập Excel k
 Đóng góp chính của đồ án nằm ở việc tự động hoá nghiệp vụ xét khen thưởng, vốn có nhiều điều kiện phụ thuộc theo thời gian và dễ phát sinh sai lệch khi xử lý thủ công.
 Nổi bật là cơ chế xét điều kiện chuỗi danh hiệu thống nhất cho cả cá nhân và đơn vị. Bên cạnh đó, bảy nhóm khen thưởng vốn rời rạc được hợp nhất vào một quy trình chung từ đề xuất, phê duyệt đến gắn quyết định. Cuối cùng, nhật ký hệ thống ghi vết mọi thao tác làm thay đổi dữ liệu.
 Các đóng góp này được phân tích chi tiết trong Chương~\ref{chapter:SolutionAndContribution}.
-Sản phẩm đã được kiểm thử thủ công qua giao diện, kết hợp bộ kiểm thử tự động bao phủ các kịch bản nghiệp vụ lõi.
+Sản phẩm đã được kiểm thử thủ công qua giao diện, kết hợp bộ kiểm thử tự động bao phủ các kịch bản nghiệp vụ cốt lõi.
 Trên cơ sở đó, phần mềm có thể dùng để triển khai thử nghiệm tại Phòng Chính trị Học viện.
 
 \section{Bố cục đồ án}

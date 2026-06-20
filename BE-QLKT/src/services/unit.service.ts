@@ -212,21 +212,6 @@ class UnitService {
     }
   }
 
-  async isDescendant(ancestorId: string, descendantId: string): Promise<boolean> {
-    try {
-      if (ancestorId === descendantId) return true;
-
-      const descendant = await donViTrucThuocRepository.findById(descendantId);
-
-      if (!descendant) return false;
-
-      return descendant.co_quan_don_vi_id === ancestorId;
-    } catch (error) {
-      console.error('Failed to resolve unit hierarchy relation:', error);
-      return false;
-    }
-  }
-
   /**
    * Block unit deletion while related records still exist; every FK to a unit is
    * onDelete: Cascade, so an unchecked delete would silently wipe award history.

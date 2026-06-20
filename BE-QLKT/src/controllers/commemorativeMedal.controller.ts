@@ -17,7 +17,7 @@ import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { logMessages } from '../constants/logMessages.constants';
 import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 import { AWARD_LABELS } from '../constants/awardLabels.constants';
-import { notifyOnImport } from '../helpers/notification';
+import { safeNotifyImport } from '../helpers/notification';
 
 const AWARD_LABEL = AWARD_LABELS[AWARD_SLUGS.COMMEMORATIVE_MEDALS];
 
@@ -114,14 +114,7 @@ class CommemorativeMedalController {
       payload: { imported: result.imported ?? items.length },
     });
     const personnelIds = items.map((i: { personnel_id: string }) => i.personnel_id);
-    notifyOnImport(
-      user.id,
-      AWARD_SLUGS.COMMEMORATIVE_MEDALS,
-      result.imported ?? items.length,
-      personnelIds
-    ).catch(e => {
-      console.error('[commemorative-medals] notifyOnImport failed:', e);
-    });
+    safeNotifyImport(user.id, AWARD_SLUGS.COMMEMORATIVE_MEDALS, result.imported ?? items.length, personnelIds);
 
     return ResponseHelper.success(res, { data: result, message: 'Import dữ liệu thành công' });
   });

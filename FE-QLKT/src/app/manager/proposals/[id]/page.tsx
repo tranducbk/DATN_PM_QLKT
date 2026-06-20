@@ -33,7 +33,7 @@ import { InfoNote } from '@/components/shared/InfoNote';
 import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import { useTheme } from '@/components/ThemeProvider';
 import { getAntdTableThemeConfig } from '@/lib/antdTheme';
-import { DANH_HIEU_MAP, type CongHienHeSoGroup } from '@/constants/danhHieu.constants';
+import { DANH_HIEU_MAP, type ContributionCoefficientGroup } from '@/constants/danhHieu.constants';
 import {
   PROPOSAL_REVIEW_CARD_TITLES,
   PROPOSAL_STATUS,
@@ -162,7 +162,7 @@ export default function ManagerProposalDetailPage() {
 
   const renderContributionGroupDuration = (
     record: DanhHieuItem,
-    group: CongHienHeSoGroup,
+    group: ContributionCoefficientGroup,
     dataField: 'thoi_gian_nhom_0_7' | 'thoi_gian_nhom_0_8' | 'thoi_gian_nhom_0_9_1_0'
   ) => {
     const display = getDurationDisplay(record[dataField]);

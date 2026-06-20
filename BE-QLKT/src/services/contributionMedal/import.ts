@@ -18,9 +18,9 @@ import {
   formatDanhHieuList,
   resolveDanhHieuCode,
   DANH_HIEU_HCBVTQ,
-  CONG_HIEN_BASE_REQUIRED_MONTHS,
-  CONG_HIEN_FEMALE_REQUIRED_MONTHS,
-  CONG_HIEN_HE_SO_GROUPS,
+  CONTRIBUTION_BASE_REQUIRED_MONTHS,
+  CONTRIBUTION_FEMALE_REQUIRED_MONTHS,
+  CONTRIBUTION_COEFFICIENT_GROUPS,
 } from '../../constants/danhHieu.constants';
 import { ValidationError } from '../../middlewares/errorHandler';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
@@ -28,11 +28,9 @@ import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
 import { GENDER } from '../../constants/gender.constants';
 import { AWARD_EXCEL_SHEETS } from '../../constants/awardExcel.constants';
 import { IMPORT_TRANSACTION_TIMEOUT } from '../../constants/excel.constants';
-import { calculateTenureMonthsWithDayPrecision } from '../../helpers/serviceYearsHelper';
-import {
-  validateHCBVTQHighestRank,
-  type PositionMonthsByGroup,
-} from '../../helpers/awardValidation/contributionMedalHighestRank';
+import { validateHCBVTQHighestRank } from '../../helpers/awardValidation/contributionMedalHighestRank';
+import { evaluateHCBVTQRank } from '../eligibility/hcbvtqEligibility';
+import { aggregatePositionMonthsByGroup } from '../eligibility/contributionMonthsAggregator';
 import type { ContributionAwardValidItem } from './types';
 
 /**
@@ -315,47 +313,16 @@ export async function previewImport(buffer: Buffer) {
       continue;
     }
 
-    // Eligibility: minimum position tenure per salary-band group
     const positionHistories = positionHistoriesMap.get(personnelId) ?? [];
+    const monthsByGroup = aggregatePositionMonthsByGroup(positionHistories, new Date());
+    const months0_7 = monthsByGroup[CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_07];
+    const months0_8 = monthsByGroup[CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_08];
+    const months0_9_1_0 = monthsByGroup[CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_09_10];
 
-    const today = new Date();
-    const getTotalMonths = (group: string) => {
-      let total = 0;
-      positionHistories.forEach(h => {
-        const heSo = Number(h.ChucVu?.he_so_chuc_vu) || 0;
-        let match = false;
-        if (group === CONG_HIEN_HE_SO_GROUPS.LEVEL_07) match = heSo >= 0.7 && heSo < 0.8;
-        else if (group === CONG_HIEN_HE_SO_GROUPS.LEVEL_08) match = heSo >= 0.8 && heSo < 0.9;
-        else if (group === CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10) match = heSo >= 0.9 && heSo <= 1.0;
-        if (!match) return;
+    const eligibility = evaluateHCBVTQRank(danh_hieu, monthsByGroup, personnel.gioi_tinh);
+    const baseMonths = eligibility.requiredMonths;
 
-        let months = h.so_thang;
-        if ((months === null || months === undefined) && h.ngay_bat_dau && !h.ngay_ket_thuc) {
-          const start = new Date(h.ngay_bat_dau);
-          months = calculateTenureMonthsWithDayPrecision(start, today);
-        }
-        if (months) total += Number(months);
-      });
-      return total;
-    };
-
-    const months0_7 = getTotalMonths(CONG_HIEN_HE_SO_GROUPS.LEVEL_07);
-    const months0_8 = getTotalMonths(CONG_HIEN_HE_SO_GROUPS.LEVEL_08);
-    const months0_9_1_0 = getTotalMonths(CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10);
-
-    const isFemale = personnel.gioi_tinh === GENDER.FEMALE;
-    const baseMonths = isFemale ? CONG_HIEN_FEMALE_REQUIRED_MONTHS : CONG_HIEN_BASE_REQUIRED_MONTHS;
-
-    let eligible = false;
-    if (danh_hieu === DANH_HIEU_HCBVTQ.HANG_NHAT) {
-      eligible = months0_9_1_0 >= baseMonths;
-    } else if (danh_hieu === DANH_HIEU_HCBVTQ.HANG_NHI) {
-      eligible = months0_8 + months0_9_1_0 >= baseMonths;
-    } else if (danh_hieu === DANH_HIEU_HCBVTQ.HANG_BA) {
-      eligible = months0_7 + months0_8 + months0_9_1_0 >= baseMonths;
-    }
-
-    if (!eligible) {
+    if (!eligibility.eligible) {
       const totalDisplay = `nhóm 0.7: ${months0_7} tháng, nhóm 0.8: ${months0_8} tháng, nhóm 0.9-1.0: ${months0_9_1_0} tháng`;
       errors.push({
         row: rowNumber,
@@ -367,12 +334,6 @@ export async function previewImport(buffer: Buffer) {
       continue;
     }
 
-    // Reject rank lower than highest qualifying for the personnel.
-    const monthsByGroup: PositionMonthsByGroup = {
-      [CONG_HIEN_HE_SO_GROUPS.LEVEL_07]: months0_7,
-      [CONG_HIEN_HE_SO_GROUPS.LEVEL_08]: months0_8,
-      [CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10]: months0_9_1_0,
-    };
     const downgradeError = validateHCBVTQHighestRank(danh_hieu, monthsByGroup, baseMonths);
     if (downgradeError) {
       errors.push({
@@ -485,45 +446,14 @@ export async function confirmImport(validItems: ContributionAwardValidItem[]) {
     list.push(h);
     positionsMap.set(h.quan_nhan_id, list);
   }
-  const today = new Date();
-  const getMonths = (personnelId: string, group: string): number => {
-    const histories = positionsMap.get(personnelId) ?? [];
-    let total = 0;
-    histories.forEach(h => {
-      const heSo = Number(h.ChucVu?.he_so_chuc_vu) || 0;
-      let match = false;
-      if (group === CONG_HIEN_HE_SO_GROUPS.LEVEL_07) match = heSo >= 0.7 && heSo < 0.8;
-      else if (group === CONG_HIEN_HE_SO_GROUPS.LEVEL_08) match = heSo >= 0.8 && heSo < 0.9;
-      else if (group === CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10) match = heSo >= 0.9 && heSo <= 1.0;
-      if (!match) return;
-      let months = h.so_thang;
-      if ((months === null || months === undefined) && h.ngay_bat_dau && !h.ngay_ket_thuc) {
-        months = calculateTenureMonthsWithDayPrecision(new Date(h.ngay_bat_dau), today);
-      }
-      if (months) total += Number(months);
-    });
-    return total;
-  };
   const downgradeErrors: string[] = [];
   for (const item of validItems) {
-    const months: PositionMonthsByGroup = {
-      [CONG_HIEN_HE_SO_GROUPS.LEVEL_07]: getMonths(
-        item.personnel_id,
-        CONG_HIEN_HE_SO_GROUPS.LEVEL_07
-      ),
-      [CONG_HIEN_HE_SO_GROUPS.LEVEL_08]: getMonths(
-        item.personnel_id,
-        CONG_HIEN_HE_SO_GROUPS.LEVEL_08
-      ),
-      [CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10]: getMonths(
-        item.personnel_id,
-        CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10
-      ),
-    };
+    const histories = positionsMap.get(item.personnel_id) ?? [];
+    const months = aggregatePositionMonthsByGroup(histories, new Date());
     const isFemale = genderMap.get(item.personnel_id) === GENDER.FEMALE;
     const requiredMonths = isFemale
-      ? CONG_HIEN_FEMALE_REQUIRED_MONTHS
-      : CONG_HIEN_BASE_REQUIRED_MONTHS;
+      ? CONTRIBUTION_FEMALE_REQUIRED_MONTHS
+      : CONTRIBUTION_BASE_REQUIRED_MONTHS;
     const downgradeError = validateHCBVTQHighestRank(item.danh_hieu, months, requiredMonths);
     if (downgradeError) {
       downgradeErrors.push(`${item.ho_ten}: ${downgradeError}`);

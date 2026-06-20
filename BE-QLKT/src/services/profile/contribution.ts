@@ -1,14 +1,16 @@
-import type { QuanNhan, LichSuChucVu } from '../../generated/prisma';
 import { quanNhanRepository } from '../../repositories/quanNhan.repository';
+import { aggregatePositionMonthsByGroup } from '../eligibility/contributionMonthsAggregator';
 import { contributionMedalRepository } from '../../repositories/contributionMedal.repository';
 import { contributionProfileRepository } from '../../repositories/contributionProfile.repository';
 import { ELIGIBILITY_STATUS } from '../../constants/eligibilityStatus.constants';
 import { NotFoundError } from '../../middlewares/errorHandler';
 import {
   DANH_HIEU_HCBVTQ,
-  CONG_HIEN_BASE_REQUIRED_MONTHS,
-  CONG_HIEN_FEMALE_REQUIRED_MONTHS,
+  CONTRIBUTION_BASE_REQUIRED_MONTHS,
+  CONTRIBUTION_FEMALE_REQUIRED_MONTHS,
+  CONTRIBUTION_COEFFICIENT_GROUPS,
   HCBVTQ_RANK_KEYS,
+  cumulativeMonthsForHcbvtqRank,
   getLoaiDeXuatName,
   type HcbvtqRankKey,
 } from '../../constants/danhHieu.constants';
@@ -16,7 +18,7 @@ import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 import { GENDER } from '../../constants/gender.constants';
 import type { HCBVTQCalcResult } from './types';
 
-const CONG_HIEN_LABEL = getLoaiDeXuatName(PROPOSAL_TYPES.CONG_HIEN);
+const CONTRIBUTION_LABEL = getLoaiDeXuatName(PROPOSAL_TYPES.CONG_HIEN);
 
 /**
  * Loads or creates the contribution profile with months and tier statuses.
@@ -84,62 +86,6 @@ export async function getContributionProfile(personnelId: string) {
 export async function recalculateContributionProfile(
   personnelId: string
 ): Promise<{ message: string }> {
-  const checkEligibleForRank = (
-    personnel: QuanNhan & { LichSuChucVu: LichSuChucVu[] },
-    rank: HcbvtqRankKey
-  ): boolean => {
-    const months0_9_1_0 = getTotalMonthsByGroup(personnel.LichSuChucVu, '0.9-1.0');
-    const months0_8 = getTotalMonthsByGroup(personnel.LichSuChucVu, '0.8');
-    const months0_7 = getTotalMonthsByGroup(personnel.LichSuChucVu, '0.7');
-    const baseRequiredMonths = CONG_HIEN_BASE_REQUIRED_MONTHS;
-    const femaleRequiredMonths = CONG_HIEN_FEMALE_REQUIRED_MONTHS;
-
-    const requiredMonths =
-      personnel?.gioi_tinh === GENDER.FEMALE ? femaleRequiredMonths : baseRequiredMonths;
-
-    if (rank === HCBVTQ_RANK_KEYS.HANG_NHAT) {
-      return months0_9_1_0 >= requiredMonths;
-    } else if (rank === HCBVTQ_RANK_KEYS.HANG_NHI) {
-      return months0_8 + months0_9_1_0 >= requiredMonths;
-    } else if (rank === HCBVTQ_RANK_KEYS.HANG_BA) {
-      return months0_7 + months0_8 + months0_9_1_0 >= requiredMonths;
-    }
-
-    return false;
-  };
-  const getTotalMonthsByGroup = (
-    histories: LichSuChucVu[],
-    group: '0.7' | '0.8' | '0.9-1.0'
-  ): number => {
-    let totalMonths = 0;
-
-    histories.forEach(history => {
-      const heSo = Number(history.he_so_chuc_vu) || 0;
-      let belongsToGroup = false;
-
-      if (group === '0.7') {
-        belongsToGroup = heSo >= 0.7 && heSo < 0.8;
-      } else if (group === '0.8') {
-        belongsToGroup = heSo >= 0.8 && heSo < 0.9;
-      } else if (group === '0.9-1.0') {
-        belongsToGroup = heSo >= 0.9 && heSo <= 1.0;
-      }
-      const monthDiff = (start: Date, end: Date): number => {
-        const s = new Date(start);
-        const e = new Date(end);
-
-        return (e.getFullYear() - s.getFullYear()) * 12 + (e.getMonth() - s.getMonth());
-      };
-
-      if (belongsToGroup) {
-        // so_thang is null for current position — calculate from start date
-        totalMonths += history.so_thang || monthDiff(history.ngay_bat_dau, new Date());
-      }
-    });
-
-    return totalMonths;
-  };
-
   const selectedPersonnel = await quanNhanRepository.findUniqueRaw({
     where: { id: personnelId },
     include: {
@@ -158,38 +104,40 @@ export async function recalculateContributionProfile(
     throw new NotFoundError('Quân nhân');
   }
 
+  const monthsByGroup = aggregatePositionMonthsByGroup(selectedPersonnel.LichSuChucVu, new Date());
+  const requiredMonths =
+    selectedPersonnel.gioi_tinh === GENDER.FEMALE
+      ? CONTRIBUTION_FEMALE_REQUIRED_MONTHS
+      : CONTRIBUTION_BASE_REQUIRED_MONTHS;
+  const isEligibleForRank = (rank: HcbvtqRankKey): boolean =>
+    cumulativeMonthsForHcbvtqRank(monthsByGroup, rank) >= requiredMonths;
+
   const personnelHCBVTQ = await contributionMedalRepository.findManyRaw({
     where: { quan_nhan_id: personnelId },
   });
 
-  // Award hierarchy: lower rank must be received (DA_NHAN) before higher rank can be proposed
+  // Award hierarchy: lower rank must be received (DA_NHAN) before a higher rank can be proposed.
   const hcbvtqBa = personnelHCBVTQ.find(kt => kt.danh_hieu === DANH_HIEU_HCBVTQ.HANG_BA)
-    ? {
-        status: ELIGIBILITY_STATUS.DA_NHAN,
-      }
-    : (await checkEligibleForRank(selectedPersonnel, HCBVTQ_RANK_KEYS.HANG_BA))
+    ? { status: ELIGIBILITY_STATUS.DA_NHAN }
+    : isEligibleForRank(HCBVTQ_RANK_KEYS.HANG_BA)
       ? { status: ELIGIBILITY_STATUS.DU_DIEU_KIEN }
       : { status: ELIGIBILITY_STATUS.CHUA_DU };
 
   const hcbvtqNhi = personnelHCBVTQ.find(kt => kt.danh_hieu === DANH_HIEU_HCBVTQ.HANG_NHI)
-    ? {
-        status: ELIGIBILITY_STATUS.DA_NHAN,
-      }
-    : (await checkEligibleForRank(selectedPersonnel, HCBVTQ_RANK_KEYS.HANG_NHI))
+    ? { status: ELIGIBILITY_STATUS.DA_NHAN }
+    : isEligibleForRank(HCBVTQ_RANK_KEYS.HANG_NHI)
       ? { status: ELIGIBILITY_STATUS.DU_DIEU_KIEN }
       : { status: ELIGIBILITY_STATUS.CHUA_DU };
 
   const hcbvtqNhat = personnelHCBVTQ.find(kt => kt.danh_hieu === DANH_HIEU_HCBVTQ.HANG_NHAT)
-    ? {
-        status: ELIGIBILITY_STATUS.DA_NHAN,
-      }
-    : (await checkEligibleForRank(selectedPersonnel, HCBVTQ_RANK_KEYS.HANG_NHAT))
+    ? { status: ELIGIBILITY_STATUS.DA_NHAN }
+    : isEligibleForRank(HCBVTQ_RANK_KEYS.HANG_NHAT)
       ? { status: ELIGIBILITY_STATUS.DU_DIEU_KIEN }
       : { status: ELIGIBILITY_STATUS.CHUA_DU };
 
-  const months0_7 = getTotalMonthsByGroup(selectedPersonnel.LichSuChucVu, '0.7');
-  const months0_8 = getTotalMonthsByGroup(selectedPersonnel.LichSuChucVu, '0.8');
-  const months0_9_1_0 = getTotalMonthsByGroup(selectedPersonnel.LichSuChucVu, '0.9-1.0');
+  const months0_7 = monthsByGroup[CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_07];
+  const months0_8 = monthsByGroup[CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_08];
+  const months0_9_1_0 = monthsByGroup[CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_09_10];
 
   const contributionData = {
     hcbvtq_total_months: months0_7 + months0_8 + months0_9_1_0,
@@ -224,7 +172,7 @@ export async function recalculateContributionProfile(
     });
   }
 
-  return { message: `Tính toán lại hồ sơ ${CONG_HIEN_LABEL} thành công` };
+  return { message: `Tính toán lại hồ sơ ${CONTRIBUTION_LABEL} thành công` };
 }
 
 /**
@@ -255,7 +203,7 @@ export function calculateHCBVTQ(
     return {
       status: ELIGIBILITY_STATUS.DU_DIEU_KIEN,
       ngay: new Date(),
-      goiY: `Đủ điều kiện xét ${CONG_HIEN_LABEL} Hạng ${rank} (đã công tác ${years} năm).`,
+      goiY: `Đủ điều kiện xét ${CONTRIBUTION_LABEL} Hạng ${rank} (đã công tác ${years} năm).`,
     };
   }
 
@@ -269,7 +217,7 @@ export function calculateHCBVTQ(
     ngay: null,
     goiY:
       remainingYears > 0
-        ? `Còn ${remainingYears} năm ${remainingMonthsOnly} tháng nữa mới đủ điều kiện xét ${CONG_HIEN_LABEL} Hạng ${rank}.`
-        : `Còn ${remainingMonthsOnly} tháng nữa mới đủ điều kiện xét ${CONG_HIEN_LABEL} Hạng ${rank}.`,
+        ? `Còn ${remainingYears} năm ${remainingMonthsOnly} tháng nữa mới đủ điều kiện xét ${CONTRIBUTION_LABEL} Hạng ${rank}.`
+        : `Còn ${remainingMonthsOnly} tháng nữa mới đủ điều kiện xét ${CONTRIBUTION_LABEL} Hạng ${rank}.`,
   };
 }

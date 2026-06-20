@@ -1,6 +1,6 @@
 import {
-  CONG_HIEN_BASE_REQUIRED_MONTHS,
-  CONG_HIEN_FEMALE_REQUIRED_MONTHS,
+  CONTRIBUTION_BASE_REQUIRED_MONTHS,
+  CONTRIBUTION_FEMALE_REQUIRED_MONTHS,
   DANH_HIEU_HCBVTQ,
 } from '@/constants/danhHieu.constants';
 import { GENDER } from '@/constants/gender.constants';
@@ -55,7 +55,7 @@ export const calculateContributionMonthsByGroup = (
 export const formatMonthsToText = formatMonths;
 
 export const getContributionRequiredMonths = (gender?: string | null): number =>
-  gender === GENDER.FEMALE ? CONG_HIEN_FEMALE_REQUIRED_MONTHS : CONG_HIEN_BASE_REQUIRED_MONTHS;
+  gender === GENDER.FEMALE ? CONTRIBUTION_FEMALE_REQUIRED_MONTHS : CONTRIBUTION_BASE_REQUIRED_MONTHS;
 
 export const getHighestEligibleContributionMedal = (
   months07: number,

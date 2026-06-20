@@ -7,7 +7,7 @@ import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { logMessages } from '../constants/logMessages.constants';
 import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 import { AWARD_LABELS } from '../constants/awardLabels.constants';
-import { notifyOnImport, notifyOnUnitAwardDeleted } from '../helpers/notification';
+import { safeNotifyImport, notifyOnUnitAwardDeleted } from '../helpers/notification';
 import { logImportPreview, getAdminUsername } from '../helpers/controllerHelper';
 
 const AWARD_LABEL = AWARD_LABELS[AWARD_SLUGS.UNIT_ANNUAL_AWARDS];
@@ -229,15 +229,7 @@ class UnitAnnualAwardController {
       payload: { imported: result.imported ?? items.length },
     });
     const unitIds = items.map((i: { unit_id: string }) => i.unit_id);
-    notifyOnImport(
-      user.id,
-      AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
-      result.imported ?? items.length,
-      [],
-      unitIds
-    ).catch(e => {
-      console.error('[unit-annual-awards] notifyOnImport failed:', e);
-    });
+    safeNotifyImport(user.id, AWARD_SLUGS.UNIT_ANNUAL_AWARDS, result.imported ?? items.length, [], unitIds);
     return ResponseHelper.success(res, { data: result, message: 'Thao tác thành công' });
   });
 

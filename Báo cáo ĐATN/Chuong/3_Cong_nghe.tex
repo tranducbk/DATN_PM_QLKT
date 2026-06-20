@@ -12,7 +12,7 @@ Phiên bản 14 ra mắt tháng 11 năm 2023 đưa App Router lên thành mô h�
 App Router tổ chức ứng dụng dưới dạng cây thư mục: mỗi thư mục con ánh xạ thành một đoạn URL và có thể chứa các tệp trang, bố cục, trạng thái tải và trạng thái lỗi tương ứng.
 
 Khác biệt kỹ thuật chính của App Router so với Pages Router là khả năng kết hợp Server Components (thành phần React render phía máy chủ) với Client Components trong cùng một cây thư mục, kèm cơ chế tách mã theo từng route.
-Trong PM QLKT, do backend được tách thành một API server Express độc lập và việc xác thực dựa trên JWT lưu phía trình duyệt, phần lớn trang được hiện thực bằng Client Component lấy dữ liệu qua REST; các thành phần này khai báo \texttt{'use client'} ở đầu tệp.
+Trong PM QLKT, do backend được tách thành một API server Express độc lập và việc xác thực dựa trên JWT lưu phía trình duyệt, phần lớn trang được xây dựng bằng Client Component lấy dữ liệu qua REST; các thành phần này khai báo \texttt{'use client'} ở đầu tệp.
 Việc thiên về Client Component không làm mất giá trị của App Router, bởi những lợi ích đồ án khai thác thực sự nằm ở định tuyến theo cấu trúc thư mục, bố cục lồng nhau theo từng nhánh vai trò và tách bundle JavaScript theo từng route.
 Nhờ tách bundle theo route, mỗi vai trò chỉ tải về phần mã của những trang thuộc phạm vi mình, giảm dung lượng tải lần đầu. Ngược lại, một ứng dụng React thuần ghép với router phía trình duyệt thường nạp toàn bộ mã trong một gói duy nhất.
 Đó là khác biệt chính khiến Next.js được ưu tiên hơn React thuần ghép với một router rời.
@@ -45,7 +45,7 @@ Ngoài ra, một lớp bao bọc dùng chung tự chuyển lỗi từ các handl
 Bộ giới hạn áp ngưỡng chặt hơn cho nhóm route xác thực, tối đa 30 yêu cầu trong 5 phút trên mỗi địa chỉ IP nhằm cản các đợt thử mật khẩu liên tiếp, và ngưỡng rộng hơn cho nhóm route ghi dữ liệu, tối đa 30 yêu cầu trong 15 phút.
 
 Hai phương án backend khác cũng được cân nhắc.
-Fastify cho thông lượng cao hơn Express trong một số benchmark nhưng dùng cơ chế xác thực gắn cứng với JSON Schema, gây trùng lặp với Zod đã chọn cho frontend ở Mục~\ref{section:3.7}.
+Fastify cho thông lượng cao hơn Express trong một số benchmark nhưng dùng cơ chế xác thực gắn cứng với JSON Schema, gây trùng lặp với Zod đã chọn cho cả hai phía ở Mục~\ref{section:3.7}.
 NestJS cung cấp kiến trúc module hoá rõ ràng với decorator nhưng buộc đội ngũ học một framework áp đặt nhiều quy ước và tăng số lượng lớp trừu tượng, chẳng hạn Module, Provider và Guard.
 Chi phí học này không tương xứng với quy mô một đồ án 23 model, trong khi chênh lệch hiệu năng không phải nút thắt với tải dự kiến của hệ thống.
 Express được chọn vì ba lý do bám sát nhu cầu dự án: chuỗi middleware đủ linh hoạt cho mẫu năm bước nói trên, hệ sinh thái plugin dày với Helmet, express-rate-limit và Multer đều được dùng trực tiếp, và khả năng chuyển sang Fastify hoặc NestJS về sau vẫn để ngỏ nếu nhu cầu thay đổi.
@@ -108,13 +108,13 @@ Thư viện cung cấp khái niệm ``phòng'' (room) cho phép phát thông đi
 
 PM QLKT dùng Socket.IO cho hai trường hợp.
 Một là, khi Cán bộ Phòng Chính trị nhập tệp Excel hàng trăm bản ghi, máy chủ phát sự kiện tiến độ theo phần trăm hoàn thành để giao diện cập nhật thanh tiến trình, tránh polling từ phía trình duyệt.
-Hai là, khi đề xuất được phê duyệt, máy chủ phát thông điệp tới các kết nối Chỉ huy đơn vị của đơn vị liên quan; giao diện hiển thị thông báo dạng pop-up (toast notification) ở góc màn hình mà không phải làm mới trang.
+Hai là, khi đề xuất được phê duyệt, máy chủ phát thông điệp tới các kết nối Chỉ huy đơn vị của đơn vị liên quan; giao diện hiển thị thông báo nổi ở góc màn hình mà không phải làm mới trang.
 Kết nối Socket.IO xác thực bằng JWT lấy từ \texttt{localStorage}, truyền kèm token ở giai đoạn handshake; máy chủ dùng cùng khoá bí mật với REST để xác minh, giữ logic xác thực hợp nhất giữa REST và WebSocket.
 
 \section{JSON Web Token với cơ chế làm mới luân phiên}
 \label{section:3.6}
 
-Để xác thực không trạng thái giữa frontend và API server tách rời, hệ thống áp dụng JWT theo chuẩn RFC 7519 \cite{rfc7519}, hiện thực bằng thư viện jsonwebtoken 9.
+Để xác thực không trạng thái giữa frontend và API server tách rời, hệ thống áp dụng JWT theo chuẩn RFC 7519 \cite{rfc7519}, triển khai bằng thư viện jsonwebtoken 9.
 Mỗi phiên đăng nhập sinh hai token: Access Token thời hạn ngắn (30 phút) ký bằng một khoá bí mật, chứa định danh người dùng, mã vai trò và liên kết quân nhân, gửi kèm mỗi yêu cầu HTTP qua header \texttt{Authorization: Bearer}; Refresh Token thời hạn dài (2 ngày) ký bằng một khoá bí mật riêng, chỉ dùng để cấp Access Token mới khi token hiện tại hết hạn.
 Frontend chỉ lưu Access Token trong \texttt{localStorage}; Refresh Token do backend đặt trong một cookie \texttt{HttpOnly} giới hạn ở phạm vi các route xác thực nên mã JavaScript phía trình duyệt không đọc được, giảm rủi ro bị đánh cắp qua tấn công XSS.
 Backend đồng thời lưu Refresh Token vào cột \texttt{refreshToken} của bảng \texttt{TaiKhoan} để giữ khả năng thu hồi từ phía máy chủ.
@@ -122,7 +122,7 @@ Backend đồng thời lưu Refresh Token vào cột \texttt{refreshToken} của
 Cơ chế làm mới luân phiên phát hành cặp Access Token và Refresh Token mới ở mỗi lần làm mới, ghi đè cột \texttt{refreshToken} và lưu token vừa bị thay vào cột \texttt{prevRefreshToken} trong 15 giây.
 Trong 15 giây đó, nếu một tab khác gọi làm mới chậm hơn, hệ thống trả lại token vừa cấp thay vì sinh token mới, nhờ vậy các tab không bị đăng xuất nhầm lẫn nhau; sau đó, mọi lần dùng lại Refresh Token cũ đều bị từ chối vì không còn khớp giá trị trong cơ sở dữ liệu.
 Khi Refresh Token bị đánh cắp, chỉ bên làm mới đầu tiên (trong khoảng thời gian ân hạn) thành công, còn lần dùng lại sau đó sẽ thất bại.
-Đồng thời quản trị viên có thể buộc đăng xuất bằng cách xoá cột \texttt{refreshToken}.
+Đồng thời Quản trị viên có thể buộc đăng xuất bằng cách xoá cột \texttt{refreshToken}.
 Hai khoá bí mật riêng biệt cho hai loại token theo nguyên tắc phòng thủ nhiều lớp: nếu một khoá bị lộ, chỉ một loại token bị ảnh hưởng.
 Mật khẩu trước khi lưu vào \texttt{TaiKhoan} được băm bằng bcrypt 5 với hệ số chi phí 10 \cite{bcrypt}.
 Hệ số này cân bằng giữa thời gian băm một mật khẩu, đo trên máy phát triển vào khoảng vài chục mili giây cho mỗi lần xác thực, và độ khó vét cạn nếu cơ sở dữ liệu bị rò rỉ.
@@ -148,8 +148,8 @@ Khác với các thư viện chỉ sinh CSV hay HTML giả lập Excel, ExcelJS 
 
 ExcelJS hỗ trợ hai quy trình trao đổi dữ liệu trong PM QLKT.
 Khi xuất tệp mẫu nhập liệu cho mỗi nhóm khen thưởng, máy chủ sinh một workbook có sheet dữ liệu đặt tên theo loại khen thưởng, ví dụ ``Danh hiệu hằng năm'', ``HCCSVV'' hay ``NCKH''; sheet cố định cấu trúc cột, áp Data Validation cho cột danh hiệu để chỉ chấp nhận các giá trị hợp lệ và đính chú thích tiếng Việt giải thích từng cột.
-Khi nhập tệp Excel do người dùng tải lên, máy chủ đọc tuần tự từng dòng, đối chiếu với schema Zod và các ràng buộc Prisma, rồi gom kết quả vào màn hình xem trước trước khi ghi xuống cơ sở dữ liệu.
-Bước xác nhận chạy trong một transaction Prisma để đảm bảo nguyên tắc all-or-nothing: nếu có bất kỳ dòng nào gặp lỗi tại thời điểm ghi, toàn bộ thao tác được hoàn tác.
+Khi nhập tệp Excel do người dùng tải lên, máy chủ đọc tuần tự từng dòng, đối chiếu với lược đồ Zod và các ràng buộc Prisma, rồi gom kết quả vào màn hình xem trước trước khi ghi xuống cơ sở dữ liệu.
+Bước xác nhận chạy trong một giao dịch để đảm bảo nguyên tắc toàn vẹn: nếu có bất kỳ dòng nào gặp lỗi tại thời điểm ghi, toàn bộ thao tác được hoàn tác.
 
 \section*{Kết chương}
 

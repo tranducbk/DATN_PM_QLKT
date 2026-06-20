@@ -3,8 +3,8 @@ import { HistoryOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import {
-  CONG_HIEN_HE_SO_GROUPS,
-  type CongHienHeSoGroup,
+  CONTRIBUTION_COEFFICIENT_GROUPS,
+  type ContributionCoefficientGroup,
   getDanhHieuName,
 } from '@/constants/danhHieu.constants';
 import { PROPOSAL_STATUS, PROPOSAL_TYPES } from '@/constants/proposal.constants';
@@ -17,7 +17,7 @@ const { Text } = Typography;
 interface CaNhanHangNamColumnsDeps {
   proposal: ProposalDetail;
   personnelDetails: Record<string, ServiceTimeRow>;
-  totalTimeByGroup: (personnelId: string, group: CongHienHeSoGroup) => string;
+  totalTimeByGroup: (personnelId: string, group: ContributionCoefficientGroup) => string;
   updateNienHan: (index: number, fields: Partial<DanhHieuItem>) => void;
   handleOpenDecisionFile: (soQuyetDinh: string) => void;
   handleViewPersonnelHistory: (record: DanhHieuItem) => void;
@@ -166,7 +166,7 @@ export function buildCaNhanHangNamColumns(
               const display = getDurationDisplay(record.thoi_gian_nhom_0_7);
               return display
                 ? display
-                : totalTimeByGroup(record.personnel_id ?? '', CONG_HIEN_HE_SO_GROUPS.LEVEL_07);
+                : totalTimeByGroup(record.personnel_id ?? '', CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_07);
             },
           },
           {
@@ -178,7 +178,7 @@ export function buildCaNhanHangNamColumns(
               const display = getDurationDisplay(record.thoi_gian_nhom_0_8);
               return display
                 ? display
-                : totalTimeByGroup(record.personnel_id ?? '', CONG_HIEN_HE_SO_GROUPS.LEVEL_08);
+                : totalTimeByGroup(record.personnel_id ?? '', CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_08);
             },
           },
           {
@@ -190,7 +190,7 @@ export function buildCaNhanHangNamColumns(
               const display = getDurationDisplay(record.thoi_gian_nhom_0_9_1_0);
               return display
                 ? display
-                : totalTimeByGroup(record.personnel_id ?? '', CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10);
+                : totalTimeByGroup(record.personnel_id ?? '', CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_09_10);
             },
           },
         ]

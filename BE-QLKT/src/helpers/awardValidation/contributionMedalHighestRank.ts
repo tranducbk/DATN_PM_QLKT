@@ -1,11 +1,12 @@
 import {
-  CONG_HIEN_HE_SO_GROUPS,
   DANH_HIEU_HCBVTQ,
+  HCBVTQ_RANKS_HIGH_TO_LOW,
+  cumulativeMonthsForHcbvtqRank,
   getDanhHieuName,
-  type CongHienHeSoGroup,
+  type ContributionCoefficientGroup,
 } from '../../constants/danhHieu.constants';
 
-export type PositionMonthsByGroup = Record<CongHienHeSoGroup, number>;
+export type PositionMonthsByGroup = Record<ContributionCoefficientGroup, number>;
 
 const RANK_ORDER = [
   DANH_HIEU_HCBVTQ.HANG_BA,
@@ -23,12 +24,11 @@ export function getHighestQualifyingHCBVTQRank(
   months: PositionMonthsByGroup,
   requiredMonths: number
 ): string | null {
-  const m07 = months[CONG_HIEN_HE_SO_GROUPS.LEVEL_07] ?? 0;
-  const m08 = months[CONG_HIEN_HE_SO_GROUPS.LEVEL_08] ?? 0;
-  const m0910 = months[CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10] ?? 0;
-  if (m0910 >= requiredMonths) return DANH_HIEU_HCBVTQ.HANG_NHAT;
-  if (m08 + m0910 >= requiredMonths) return DANH_HIEU_HCBVTQ.HANG_NHI;
-  if (m07 + m08 + m0910 >= requiredMonths) return DANH_HIEU_HCBVTQ.HANG_BA;
+  for (const rank of HCBVTQ_RANKS_HIGH_TO_LOW) {
+    if (cumulativeMonthsForHcbvtqRank(months, rank) >= requiredMonths) {
+      return DANH_HIEU_HCBVTQ[rank];
+    }
+  }
   return null;
 }
 

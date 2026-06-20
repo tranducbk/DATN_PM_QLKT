@@ -7,8 +7,8 @@ import {
   DANH_HIEU_HCBVTQ,
   DANH_HIEU_DAC_BIET,
   DANH_HIEU_MAP,
-  CONG_HIEN_HE_SO_GROUPS,
-  CONG_HIEN_HE_SO_RANGES,
+  CONTRIBUTION_COEFFICIENT_GROUPS,
+  CONTRIBUTION_COEFFICIENT_RANGES,
 } from '../../src/constants/danhHieu.constants';
 
 const FE_CONSTS_PATH = path.resolve(
@@ -76,18 +76,18 @@ describe('danhHieu constants — BE/FE sync', () => {
     expect(extractObjectLiteral(feSource, 'DANH_HIEU_DAC_BIET')).toEqual(DANH_HIEU_DAC_BIET);
   });
 
-  it('CONG_HIEN_HE_SO_GROUPS matches', () => {
-    expect(extractObjectLiteral(feSource, 'CONG_HIEN_HE_SO_GROUPS')).toEqual(
-      CONG_HIEN_HE_SO_GROUPS
+  it('CONTRIBUTION_COEFFICIENT_GROUPS matches', () => {
+    expect(extractObjectLiteral(feSource, 'CONTRIBUTION_COEFFICIENT_GROUPS')).toEqual(
+      CONTRIBUTION_COEFFICIENT_GROUPS
     );
   });
 
-  it('CONG_HIEN_HE_SO_RANGES matches', () => {
+  it('CONTRIBUTION_COEFFICIENT_RANGES matches', () => {
     expect(
-      extractObjectLiteral(feSource, 'CONG_HIEN_HE_SO_RANGES', {
-        CONG_HIEN_HE_SO_GROUPS,
+      extractObjectLiteral(feSource, 'CONTRIBUTION_COEFFICIENT_RANGES', {
+        CONTRIBUTION_COEFFICIENT_GROUPS,
       })
-    ).toEqual(CONG_HIEN_HE_SO_RANGES);
+    ).toEqual(CONTRIBUTION_COEFFICIENT_RANGES);
   });
 
   it('DANH_HIEU_MAP entries match for shared codes', () => {

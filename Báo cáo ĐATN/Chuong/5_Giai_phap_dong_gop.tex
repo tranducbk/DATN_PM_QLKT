@@ -68,7 +68,7 @@ Hệ quả là không thể xác định ai đã thực hiện thay đổi và v
 \subsection*{Giải pháp}
 Mỗi đề xuất được mô hình hoá thành một bản ghi trong bảng \texttt{BangDeXuat} và đi qua ba trạng thái: chờ duyệt, đã duyệt và bị từ chối.
 Dù có bảy loại khác nhau, tất cả đều tuân theo một giao diện chung (\texttt{ProposalStrategy}) quy định những bước chuẩn: dựng dữ liệu khi gửi, kiểm tra khi phê duyệt, ghi dữ liệu trong giao dịch và sinh thông điệp kết quả.
-Khi phê duyệt, hệ thống kiểm tra trước điều kiện và số quyết định, rồi mở một giao dịch Prisma để ghi danh hiệu vào bảng nghiệp vụ, gắn số quyết định và cập nhật trạng thái đề xuất.
+Khi phê duyệt, hệ thống kiểm tra trước điều kiện và số quyết định, rồi mở một giao dịch để ghi danh hiệu vào bảng nghiệp vụ, gắn số quyết định và cập nhật trạng thái đề xuất.
 Chỉ sau khi giao dịch hoàn tất, hệ thống mới tính lại hồ sơ điều kiện của các quân nhân liên quan.
 Cuối cùng, hệ thống lưu một bản ghi nhật ký kèm trạng thái trước và sau khi thay đổi.
 Toàn bộ thao tác làm thay đổi dữ liệu đều được ghi vào nhật ký hệ thống theo một tập 20 loại hành động đã chuẩn hoá, gồm các thao tác nghiệp vụ như tạo, sửa, xoá, nhập, xuất, phê duyệt, từ chối, đề xuất, tính lại, sao lưu và ghi hàng loạt, cùng các sự kiện hệ thống như đăng nhập, đăng xuất, đổi mật khẩu và vượt giới hạn tốc độ.
@@ -110,9 +110,9 @@ Việc sử dụng script SQL trực tiếp tiềm ẩn nhiều rủi ro về t�
 
 \subsection*{Giải pháp}
 Đồ án xây dựng quy trình nhập Excel hai bước.
-Bước xem trước đọc toàn bộ tệp rồi đối chiếu với schema Zod và các quy tắc nghiệp vụ (số căn cước phải tồn tại, năm hợp lệ, danh hiệu nằm trong danh mục cho phép sau khi chuẩn hoá viết tắt), sau đó trả về hai danh sách: dòng hợp lệ và dòng lỗi kèm chỉ số dòng và mô tả.
+Bước xem trước đọc toàn bộ tệp rồi đối chiếu với lược đồ Zod và các quy tắc nghiệp vụ (số căn cước phải tồn tại, năm hợp lệ, danh hiệu nằm trong danh mục cho phép sau khi chuẩn hoá viết tắt), sau đó trả về hai danh sách: dòng hợp lệ và dòng lỗi kèm chỉ số dòng và mô tả.
 Cán bộ rà soát, tải tệp xuống sửa rồi tải lại; bước này chưa ghi bất cứ thay đổi nào xuống cơ sở dữ liệu.
-Bước xác nhận mở một giao dịch Prisma duy nhất và ghi tuần tự các dòng hợp lệ; nếu bất kỳ dòng nào lỗi (chẳng hạn xuất hiện một bản ghi trùng cùng quân nhân và năm do dữ liệu mới phát sinh trong khoảng giữa hai bước), toàn bộ giao dịch được hoàn tác và cơ sở dữ liệu trở về nguyên trạng.
+Bước xác nhận mở một giao dịch duy nhất và ghi tuần tự các dòng hợp lệ; nếu bất kỳ dòng nào lỗi (chẳng hạn xuất hiện một bản ghi trùng cùng quân nhân và năm do dữ liệu mới phát sinh trong khoảng giữa hai bước), toàn bộ giao dịch được hoàn tác và cơ sở dữ liệu trở về nguyên trạng.
 Mỗi loại nghiệp vụ có một chiến lược nhập riêng theo cùng một giao diện chung, nhờ đó các luồng nhập luôn nhất quán với nhau.
 
 \subsection*{Kết quả đạt được}
@@ -120,7 +120,7 @@ Quy trình nhập hai bước cho phép di chuyển khối dữ liệu lịch s�
 Cơ chế xem trước phát hiện sớm các dòng sai trước khi ghi, còn cơ chế giao dịch đảm bảo nếu có lỗi ở bất kỳ dòng nào thì toàn bộ lần nhập được hoàn tác và không bản ghi nào lọt vào cơ sở dữ liệu ở trạng thái dở dang.
 Một bước chuẩn hoá tên danh hiệu chấp nhận nhiều biến thể viết tắt của cùng một danh hiệu rồi quy về một mã chuẩn duy nhất, nhờ đó giảm đáng kể công sức dọn dẹp dữ liệu nguồn trước khi nhập.
 
-\section{Phân quyền theo cây đơn vị, nhật ký đầy đủ và sao lưu định kỳ}
+\section{Phân quyền theo cơ cấu tổ chức, nhật ký đầy đủ và sao lưu định kỳ}
 \label{section:5.5}
 
 \subsection*{Thực trạng}
@@ -150,7 +150,7 @@ Việc khôi phục từ bản sao lưu hoàn tất nhanh chóng, có thể đá
 \section*{Kết chương}
 
 Chương này đã phân tích năm đóng góp nổi bật của đồ án theo cấu trúc thực trạng, giải pháp và kết quả.
-Năm đóng góp đó gồm: cơ chế xét điều kiện chuỗi danh hiệu thống nhất cho cá nhân và đơn vị; quy trình đề xuất, phê duyệt và lưu vết thao tác đã được số hoá; cơ chế tính lại tổng thể kèm gợi ý đề nghị chủ động; quy trình nhập Excel hàng loạt có giao dịch và kiểm tra trước; và mô hình phân quyền theo cây đơn vị kết hợp nhật ký đầy đủ và sao lưu định kỳ.
+Năm đóng góp đó gồm: cơ chế xét điều kiện chuỗi danh hiệu thống nhất cho cá nhân và đơn vị; quy trình đề xuất, phê duyệt và lưu vết thao tác đã được số hoá; cơ chế tính lại tổng thể kèm gợi ý đề nghị chủ động; quy trình nhập Excel hàng loạt có giao dịch và kiểm tra trước; và mô hình phân quyền theo cơ cấu tổ chức kết hợp nhật ký đầy đủ và sao lưu định kỳ.
 Những đóng góp này được tổng kết cùng các hướng phát triển tiếp theo ở Chương~\ref{chapter:conclusion}.
 
 \end{document}

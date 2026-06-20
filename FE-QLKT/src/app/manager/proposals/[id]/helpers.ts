@@ -1,28 +1,28 @@
 import {
-  CONG_HIEN_HE_SO_GROUPS,
-  CONG_HIEN_HE_SO_RANGES,
-  type CongHienHeSoGroup,
+  CONTRIBUTION_COEFFICIENT_GROUPS,
+  CONTRIBUTION_COEFFICIENT_RANGES,
+  type ContributionCoefficientGroup,
 } from '@/constants/danhHieu.constants';
 import { PROPOSAL_TYPES, type ProposalType } from '@/constants/proposal.constants';
 import type { DurationDisplay, PositionHistoryEntry } from './types';
 
 export const CONG_HIEN_GROUP_COLUMNS: Array<{
-  key: CongHienHeSoGroup;
+  key: ContributionCoefficientGroup;
   title: string;
   dataField: 'thoi_gian_nhom_0_7' | 'thoi_gian_nhom_0_8' | 'thoi_gian_nhom_0_9_1_0';
 }> = [
   {
-    key: CONG_HIEN_HE_SO_GROUPS.LEVEL_07,
+    key: CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_07,
     title: 'Tổng thời gian (0.7)',
     dataField: 'thoi_gian_nhom_0_7',
   },
   {
-    key: CONG_HIEN_HE_SO_GROUPS.LEVEL_08,
+    key: CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_08,
     title: 'Tổng thời gian (0.8)',
     dataField: 'thoi_gian_nhom_0_8',
   },
   {
-    key: CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10,
+    key: CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_09_10,
     title: 'Tổng thời gian (0.9-1.0)',
     dataField: 'thoi_gian_nhom_0_9_1_0',
   },
@@ -72,13 +72,13 @@ export const getDurationDisplay = (value: unknown): string | null => {
 
 export const calculateTotalTimeByGroup = (
   histories: PositionHistoryEntry[],
-  group: CongHienHeSoGroup
+  group: ContributionCoefficientGroup
 ): string => {
   let totalMonths = 0;
 
   histories.forEach((history: PositionHistoryEntry) => {
     const heSo = Number(history.he_so_chuc_vu) || 0;
-    const range = CONG_HIEN_HE_SO_RANGES[group];
+    const range = CONTRIBUTION_COEFFICIENT_RANGES[group];
     const belongsToGroup = range
       ? heSo >= range.min && (range.includeMax ? heSo <= range.max : heSo < range.max)
       : false;

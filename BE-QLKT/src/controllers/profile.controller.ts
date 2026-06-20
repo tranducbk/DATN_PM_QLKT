@@ -9,7 +9,7 @@ import { getLoaiDeXuatName } from '../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 
 const NIEN_HAN_LABEL = getLoaiDeXuatName(PROPOSAL_TYPES.NIEN_HAN);
-const CONG_HIEN_LABEL = getLoaiDeXuatName(PROPOSAL_TYPES.CONG_HIEN);
+const CONTRIBUTION_LABEL = getLoaiDeXuatName(PROPOSAL_TYPES.CONG_HIEN);
 
 interface PersonnelIdParams {
   personnel_id?: string;
@@ -82,7 +82,7 @@ class ProfileController {
     await profileService.recalculateContributionProfile(personnel_id);
     const result = await profileService.getContributionProfile(personnel_id);
     return ResponseHelper.success(res, {
-      message: `Lấy hồ sơ ${CONG_HIEN_LABEL} thành công`,
+      message: `Lấy hồ sơ ${CONTRIBUTION_LABEL} thành công`,
       data: result,
     });
   });

@@ -4,10 +4,10 @@
  * Shared (must stay value-identical with BE):
  *   DANH_HIEU_CA_NHAN_HANG_NAM, DANH_HIEU_DON_VI_HANG_NAM,
  *   DANH_HIEU_HCCSVV, DANH_HIEU_HCBVTQ, DANH_HIEU_DAC_BIET,
- *   DANH_HIEU_MAP, CONG_HIEN_HE_SO_GROUPS, CONG_HIEN_HE_SO_RANGES.
+ *   DANH_HIEU_MAP, CONTRIBUTION_COEFFICIENT_GROUPS, CONTRIBUTION_COEFFICIENT_RANGES.
  *
  * FE-only utilities (intentionally not shared): THANH_TICH_KHOA_HOC*,
- *   AWARD_TAB_LABELS, DANH_HIEU_OPTIONS, CONG_HIEN_BASE_REQUIRED_MONTHS.
+ *   AWARD_TAB_LABELS, DANH_HIEU_OPTIONS, CONTRIBUTION_BASE_REQUIRED_MONTHS.
  *
  * BE-only utilities live in the BE copy (Excel parsing, NCKH label-to-code resolver,
  * HCBVTQ_RANK_KEYS). When adding a NEW shared code, update BOTH files in the same commit.
@@ -40,29 +40,29 @@ export const DANH_HIEU_HCBVTQ = {
   HANG_NHAT: 'HCBVTQ_HANG_NHAT',
 } as const;
 
-export const CONG_HIEN_HE_SO_GROUPS = {
+export const CONTRIBUTION_COEFFICIENT_GROUPS = {
   LEVEL_07: '0.7',
   LEVEL_08: '0.8',
   LEVEL_09_10: '0.9-1.0',
 } as const;
 
-export type CongHienHeSoGroup =
-  (typeof CONG_HIEN_HE_SO_GROUPS)[keyof typeof CONG_HIEN_HE_SO_GROUPS];
+export type ContributionCoefficientGroup =
+  (typeof CONTRIBUTION_COEFFICIENT_GROUPS)[keyof typeof CONTRIBUTION_COEFFICIENT_GROUPS];
 
-export const CONG_HIEN_HE_SO_RANGES: Record<
-  CongHienHeSoGroup,
+export const CONTRIBUTION_COEFFICIENT_RANGES: Record<
+  ContributionCoefficientGroup,
   { min: number; max: number; includeMax: boolean }
 > = {
-  [CONG_HIEN_HE_SO_GROUPS.LEVEL_07]: { min: 0.7, max: 0.8, includeMax: false },
-  [CONG_HIEN_HE_SO_GROUPS.LEVEL_08]: { min: 0.8, max: 0.9, includeMax: false },
-  [CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10]: { min: 0.9, max: 1.0, includeMax: true },
+  [CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_07]: { min: 0.7, max: 0.8, includeMax: false },
+  [CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_08]: { min: 0.8, max: 0.9, includeMax: false },
+  [CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_09_10]: { min: 0.9, max: 1.0, includeMax: true },
 };
 
 /** Minimum service months for HCBVTQ baseline (male). */
-export const CONG_HIEN_BASE_REQUIRED_MONTHS = 120;
+export const CONTRIBUTION_BASE_REQUIRED_MONTHS = 120;
 /** Female requirement = 2/3 of male baseline. */
-export const CONG_HIEN_FEMALE_REQUIRED_MONTHS = Math.round(
-  CONG_HIEN_BASE_REQUIRED_MONTHS * (2 / 3)
+export const CONTRIBUTION_FEMALE_REQUIRED_MONTHS = Math.round(
+  CONTRIBUTION_BASE_REQUIRED_MONTHS * (2 / 3)
 );
 
 export const DANH_HIEU_DAC_BIET = {

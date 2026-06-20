@@ -85,16 +85,16 @@ class AwardBulkService {
 
     if (type === PROPOSAL_TYPES.NCKH) {
       const validNCKHCodes = Object.keys(DANH_HIEU_NCKH);
-      for (const item of titleData) {
+      titleData.forEach((item, index) => {
         if (!item.loai || !validNCKHCodes.includes(item.loai)) {
           errors.push(
-            `Thành tích khoa học phải có loại hợp lệ: ${validNCKHCodes.join(', ')} (quân nhân: ${item.personnel_id})`
+            `Dòng ${index + 1}: Thành tích khoa học phải có loại hợp lệ (${validNCKHCodes.join(', ')})`
           );
         }
         if (!item.mo_ta || item.mo_ta.trim() === '') {
-          errors.push(`Thành tích khoa học phải có mô tả (quân nhân: ${item.personnel_id})`);
+          errors.push(`Dòng ${index + 1}: Thành tích khoa học phải có mô tả`);
         }
-      }
+      });
     }
 
     if (type === PROPOSAL_TYPES.DON_VI_HANG_NAM) {

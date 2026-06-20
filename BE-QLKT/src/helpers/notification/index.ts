@@ -1,4 +1,4 @@
-import { getDisplayName, sendSystemNotification } from './helpers';
+import { getDisplayName } from './helpers';
 import {
   notifyAdminsOnProposalSubmission,
   notifyManagerOnProposalApproval,
@@ -12,12 +12,12 @@ import {
   notifyOnUnitAwardDeleted,
   notifyAdminsOnBulkBypass,
   notifyOnImport,
+  safeNotifyImport,
 } from './awards';
 import { notifyOnPersonnelTransfer, notifyOnPersonnelDeleted } from './personnel';
 
 export {
   getDisplayName,
-  sendSystemNotification,
   notifyAdminsOnProposalSubmission,
   notifyManagerOnProposalApproval,
   notifyManagerOnProposalRejection,
@@ -28,6 +28,7 @@ export {
   notifyOnUnitAwardDeleted,
   notifyAdminsOnBulkBypass,
   notifyOnImport,
+  safeNotifyImport,
   notifyOnPersonnelTransfer,
   notifyOnPersonnelDeleted,
 };

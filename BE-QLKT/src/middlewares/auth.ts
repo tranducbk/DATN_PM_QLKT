@@ -1,6 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { ROLES, ROLE_LABELS } from '../constants/roles.constants';
+import {
+  ROLE_LABELS,
+  CAPABILITIES,
+  rolesWithCapability,
+  type Capability,
+} from '../constants/roles.constants';
 import { accountRepository } from '../repositories/account.repository';
 import { JwtUser } from '../types/express';
 import { JWT_SECRET } from '../configs';
@@ -63,8 +68,6 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction): Pro
   }
 };
 
-const requireAuth = verifyToken;
-
 /**
  * Creates role-based authorization middleware.
  * @param allowedRoles - Roles allowed to access the endpoint
@@ -92,20 +95,28 @@ const checkRole = (allowedRoles: string[]) => {
   };
 };
 
+/**
+ * Builds authorization middleware from a capability — the allowed roles are derived
+ * from ROLE_CAPABILITIES, so adding a role only requires editing the matrix.
+ * @param capability - Capability key the route requires
+ * @returns Express middleware allowing roles that hold the capability
+ */
+const requireCapability = (capability: Capability) => checkRole(rolesWithCapability(capability));
+
 /** Middleware allowing only SUPER_ADMIN role. */
-const requireSuperAdmin = checkRole([ROLES.SUPER_ADMIN]);
+const requireSuperAdmin = requireCapability(CAPABILITIES.SUPER_ADMIN_ONLY);
 /** Middleware allowing SUPER_ADMIN and ADMIN roles (shared system management). */
-const requireAdmin = checkRole([ROLES.SUPER_ADMIN, ROLES.ADMIN]);
+const requireAdmin = requireCapability(CAPABILITIES.SYSTEM_MANAGEMENT);
 /** Middleware allowing only ADMIN role (business operations — excludes SUPER_ADMIN). */
-const requireAdminOnly = checkRole([ROLES.ADMIN]);
+const requireAdminOnly = requireCapability(CAPABILITIES.ADMIN_BUSINESS);
 /** Middleware allowing SUPER_ADMIN, ADMIN, and MANAGER roles. */
-const requireManager = checkRole([ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER]);
+const requireManager = requireCapability(CAPABILITIES.PERSONNEL_MANAGEMENT);
 /** Middleware allowing ADMIN and MANAGER roles (proposal business — excludes SUPER_ADMIN). */
-const requireAdminOrManager = checkRole([ROLES.ADMIN, ROLES.MANAGER]);
+const requireAdminOrManager = requireCapability(CAPABILITIES.PROPOSAL_BUSINESS);
 
 export {
   verifyToken,
-  requireAuth,
+  requireCapability,
   requireSuperAdmin,
   requireAdmin,
   requireAdminOnly,

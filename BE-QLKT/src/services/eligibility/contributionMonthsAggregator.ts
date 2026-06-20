@@ -1,14 +1,14 @@
 import {
-  CONG_HIEN_HE_SO_GROUPS,
-  CONG_HIEN_HE_SO_RANGES,
-  type CongHienHeSoGroup,
+  CONTRIBUTION_COEFFICIENT_GROUPS,
+  CONTRIBUTION_COEFFICIENT_RANGES,
+  type ContributionCoefficientGroup,
 } from '../../constants/danhHieu.constants';
 import { recalcPositionMonths } from '../../helpers/serviceYearsHelper';
 
 export interface PositionMonthsByGroup {
-  [CONG_HIEN_HE_SO_GROUPS.LEVEL_07]: number;
-  [CONG_HIEN_HE_SO_GROUPS.LEVEL_08]: number;
-  [CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10]: number;
+  [CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_07]: number;
+  [CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_08]: number;
+  [CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_09_10]: number;
 }
 
 export interface PositionHistoryEntry {
@@ -23,9 +23,9 @@ export interface PositionHistoryEntry {
  * @param heSo - Hệ số chức vụ value
  * @returns Matching group key or null
  */
-export function classifyHeSoGroup(heSo: number): CongHienHeSoGroup | null {
-  for (const group of Object.values(CONG_HIEN_HE_SO_GROUPS)) {
-    const range = CONG_HIEN_HE_SO_RANGES[group];
+export function classifyCoefficientGroup(heSo: number): ContributionCoefficientGroup | null {
+  for (const group of Object.values(CONTRIBUTION_COEFFICIENT_GROUPS)) {
+    const range = CONTRIBUTION_COEFFICIENT_RANGES[group];
     if (!range) continue;
     const inRange =
       heSo >= range.min && (range.includeMax ? heSo <= range.max : heSo < range.max);
@@ -42,13 +42,13 @@ export function classifyHeSoGroup(heSo: number): CongHienHeSoGroup | null {
  */
 export function sumMonthsByGroup(histories: PositionHistoryEntry[]): PositionMonthsByGroup {
   const totals: PositionMonthsByGroup = {
-    [CONG_HIEN_HE_SO_GROUPS.LEVEL_07]: 0,
-    [CONG_HIEN_HE_SO_GROUPS.LEVEL_08]: 0,
-    [CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10]: 0,
+    [CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_07]: 0,
+    [CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_08]: 0,
+    [CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_09_10]: 0,
   };
   for (const history of histories) {
     const heSo = Number(history.he_so_chuc_vu) || 0;
-    const group = classifyHeSoGroup(heSo);
+    const group = classifyCoefficientGroup(heSo);
     if (!group) continue;
     if (history.so_thang === null || history.so_thang === undefined) continue;
     totals[group] += Number(history.so_thang);

@@ -10,11 +10,8 @@ import { militaryFlagRepository } from '../../repositories/militaryFlag.reposito
 import { proposalRepository } from '../../repositories/proposal.repository';
 import { scientificAchievementRepository } from '../../repositories/scientificAchievement.repository';
 import { tenureMedalRepository } from '../../repositories/tenureMedal.repository';
-import { getLoaiDeXuatName } from '../../constants/danhHieu.constants';
-import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
-
-const CONG_HIEN_LABEL = getLoaiDeXuatName(PROPOSAL_TYPES.CONG_HIEN);
-const NIEN_HAN_LABEL = getLoaiDeXuatName(PROPOSAL_TYPES.NIEN_HAN);
+import { AWARD_LABELS } from '../../constants/awardLabels.constants';
+import { AWARD_SLUGS } from '../../constants/awardSlugs.constants';
 
 export interface DecisionUsageSummary {
   inUse: boolean;
@@ -175,17 +172,17 @@ function jsonContainsSqd(raw: unknown, keys: readonly string[], soQuyetDinh: str
 export function formatUsageError(soQuyetDinh: string, usage: DecisionUsageSummary): string {
   const lines: string[] = [`Không thể xóa quyết định "${soQuyetDinh}" vì đang được sử dụng:`];
   const labels: Array<[number, string]> = [
-    [usage.awardCounts.thanhTichKhoaHoc, 'Thành tích khoa học'],
-    [usage.awardCounts.danhHieuHangNamMain, 'Danh hiệu hằng năm cá nhân'],
+    [usage.awardCounts.thanhTichKhoaHoc, AWARD_LABELS[AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS]],
+    [usage.awardCounts.danhHieuHangNamMain, `${AWARD_LABELS[AWARD_SLUGS.ANNUAL_REWARDS]} cá nhân`],
     [usage.awardCounts.danhHieuHangNamBkbqp, 'BKBQP cá nhân'],
     [usage.awardCounts.danhHieuHangNamCstdtq, 'CSTDTQ cá nhân'],
     [usage.awardCounts.danhHieuHangNamBkttcp, 'BKTTCP cá nhân'],
-    [usage.awardCounts.contributionMedal, CONG_HIEN_LABEL],
-    [usage.awardCounts.militaryFlag, 'Huy chương Quân kỳ quyết thắng'],
-    [usage.awardCounts.commemorativeMedal, 'Kỷ niệm chương'],
-    [usage.awardCounts.tenureMedal, NIEN_HAN_LABEL],
-    [usage.awardCounts.adhocAward, 'Khen thưởng đột xuất'],
-    [usage.awardCounts.danhHieuDonViHangNamMain, 'Danh hiệu hằng năm đơn vị'],
+    [usage.awardCounts.contributionMedal, AWARD_LABELS[AWARD_SLUGS.CONTRIBUTION_MEDALS]],
+    [usage.awardCounts.militaryFlag, AWARD_LABELS[AWARD_SLUGS.MILITARY_FLAG]],
+    [usage.awardCounts.commemorativeMedal, AWARD_LABELS[AWARD_SLUGS.COMMEMORATIVE_MEDALS]],
+    [usage.awardCounts.tenureMedal, AWARD_LABELS[AWARD_SLUGS.TENURE_MEDALS]],
+    [usage.awardCounts.adhocAward, AWARD_LABELS[AWARD_SLUGS.ADHOC_AWARDS]],
+    [usage.awardCounts.danhHieuDonViHangNamMain, AWARD_LABELS[AWARD_SLUGS.UNIT_ANNUAL_AWARDS]],
     [usage.awardCounts.danhHieuDonViHangNamBkbqp, 'BKBQP đơn vị'],
     [usage.awardCounts.danhHieuDonViHangNamBkttcp, 'BKTTCP đơn vị'],
   ];

@@ -15,7 +15,7 @@ import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { logMessages } from '../constants/logMessages.constants';
 import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 import { AWARD_LABELS } from '../constants/awardLabels.constants';
-import { notifyOnImport } from '../helpers/notification';
+import { safeNotifyImport } from '../helpers/notification';
 
 const AWARD_LABEL = AWARD_LABELS[AWARD_SLUGS.MILITARY_FLAG];
 
@@ -100,19 +100,7 @@ class MilitaryFlagController {
       payload: { imported: result.imported ?? items.length },
     });
     const personnelIds = items.map((i: { personnel_id: string }) => i.personnel_id);
-    notifyOnImport(
-      user.id,
-      AWARD_SLUGS.MILITARY_FLAG,
-      result.imported ?? items.length,
-      personnelIds
-    ).catch(
-      e =>
-        void writeSystemLog({
-          action: AUDIT_ACTIONS.ERROR,
-          resource: AWARD_SLUGS.MILITARY_FLAG,
-          description: logMessages.notifyError('nhập dữ liệu', AWARD_LABEL, e),
-        })
-    );
+    safeNotifyImport(user.id, AWARD_SLUGS.MILITARY_FLAG, result.imported ?? items.length, personnelIds);
     return ResponseHelper.success(res, { data: result, message: 'Thao tác thành công' });
   });
 

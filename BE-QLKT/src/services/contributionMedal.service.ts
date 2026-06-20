@@ -11,6 +11,7 @@ import { writeSystemLog } from '../helpers/systemLogHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { logMessages } from '../constants/logMessages.constants';
 import { buildTemplate, styleHeaderRow } from '../helpers/excel/excelTemplateHelper';
+import { durationToMonths } from '../helpers/serviceYearsHelper';
 import { fetchTemplateData } from './excel/templateData.service';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
@@ -31,7 +32,7 @@ export type { ContributionAwardValidItem } from './contributionMedal/types';
 
 const AWARD_LABEL = AWARD_LABELS[AWARD_SLUGS.CONTRIBUTION_MEDALS];
 
-class ContributionAwardService {
+class ContributionMedalService {
   /**
    * Export template Excel for Contribution Awards (HCBVTQ) import.
    * @param personnelIds - Pre-fill with selected personnel
@@ -132,31 +133,6 @@ class ContributionAwardService {
 
     styleHeaderRow(worksheet);
 
-    const convertThoiGian = thoiGian => {
-      if (!thoiGian) return '';
-      if (typeof thoiGian === 'object') {
-        const years = thoiGian.years ?? 0;
-        const months = thoiGian.months ?? 0;
-        return years * 12 + months;
-      } else if (typeof thoiGian === 'number') {
-        return thoiGian;
-      } else if (typeof thoiGian === 'string') {
-        try {
-          const parsed = JSON.parse(thoiGian);
-          const years = parsed.years ?? 0;
-          const months = parsed.months ?? 0;
-          return years * 12 + months;
-        } catch (error) {
-          console.error(
-            'Failed to parse thoi_gian JSON when exporting contribution medals:',
-            error
-          );
-          return thoiGian;
-        }
-      }
-      return '';
-    };
-
     data.forEach((item, index) => {
       worksheet.addRow(
         sanitizeRowData({
@@ -173,9 +149,9 @@ class ContributionAwardService {
           nam: item.nam,
           thang: item.thang,
           danh_hieu: getDanhHieuName(item.danh_hieu),
-          thoi_gian_nhom_0_7: convertThoiGian(item.thoi_gian_nhom_0_7),
-          thoi_gian_nhom_0_8: convertThoiGian(item.thoi_gian_nhom_0_8),
-          thoi_gian_nhom_0_9_1_0: convertThoiGian(item.thoi_gian_nhom_0_9_1_0),
+          thoi_gian_nhom_0_7: durationToMonths(item.thoi_gian_nhom_0_7),
+          thoi_gian_nhom_0_8: durationToMonths(item.thoi_gian_nhom_0_8),
+          thoi_gian_nhom_0_9_1_0: durationToMonths(item.thoi_gian_nhom_0_9_1_0),
           so_quyet_dinh: item.so_quyet_dinh ?? '',
           ghi_chu: item.ghi_chu ?? '',
         })
@@ -288,4 +264,4 @@ class ContributionAwardService {
   }
 }
 
-export default new ContributionAwardService();
+export default new ContributionMedalService();

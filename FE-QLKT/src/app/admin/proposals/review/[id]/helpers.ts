@@ -1,6 +1,6 @@
 import {
-  CONG_HIEN_HE_SO_RANGES,
-  type CongHienHeSoGroup,
+  CONTRIBUTION_COEFFICIENT_RANGES,
+  type ContributionCoefficientGroup,
 } from '@/constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 import type {
@@ -17,13 +17,13 @@ import type {
  */
 export function calculateTotalTimeByGroup(
   histories: PositionHistoryEntry[],
-  group: CongHienHeSoGroup
+  group: ContributionCoefficientGroup
 ): string {
   let totalMonths = 0;
 
   histories.forEach(history => {
     const heSo = Number(history.he_so_chuc_vu) || 0;
-    const range = CONG_HIEN_HE_SO_RANGES[group];
+    const range = CONTRIBUTION_COEFFICIENT_RANGES[group];
     const belongsToGroup = range
       ? heSo >= range.min && (range.includeMax ? heSo <= range.max : heSo < range.max)
       : false;

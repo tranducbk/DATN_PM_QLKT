@@ -41,3 +41,53 @@ export function canManageRole(actorRole?: string, targetRole?: string): boolean 
   const targetRank = ROLE_RANK[targetRole as Role] ?? 0;
   return actorRank > targetRank;
 }
+
+// Capability = a permission grouping. Authorization derives from ROLE_CAPABILITIES so
+// adding a role means adding one matrix row, not editing scattered role comparisons.
+export const CAPABILITIES = {
+  SUPER_ADMIN_ONLY: 'SUPER_ADMIN_ONLY',
+  SYSTEM_MANAGEMENT: 'SYSTEM_MANAGEMENT',
+  ADMIN_BUSINESS: 'ADMIN_BUSINESS',
+  PERSONNEL_MANAGEMENT: 'PERSONNEL_MANAGEMENT',
+  PROPOSAL_BUSINESS: 'PROPOSAL_BUSINESS',
+} as const;
+
+export type Capability = (typeof CAPABILITIES)[keyof typeof CAPABILITIES];
+
+export const ROLE_CAPABILITIES: Record<Role, Capability[]> = {
+  [ROLES.SUPER_ADMIN]: [
+    CAPABILITIES.SUPER_ADMIN_ONLY,
+    CAPABILITIES.SYSTEM_MANAGEMENT,
+    CAPABILITIES.PERSONNEL_MANAGEMENT,
+  ],
+  [ROLES.ADMIN]: [
+    CAPABILITIES.SYSTEM_MANAGEMENT,
+    CAPABILITIES.ADMIN_BUSINESS,
+    CAPABILITIES.PERSONNEL_MANAGEMENT,
+    CAPABILITIES.PROPOSAL_BUSINESS,
+  ],
+  [ROLES.MANAGER]: [CAPABILITIES.PERSONNEL_MANAGEMENT, CAPABILITIES.PROPOSAL_BUSINESS],
+  [ROLES.USER]: [],
+};
+
+/**
+ * Whether a role has a capability.
+ * @param role - Role to check (undefined treated as no capabilities)
+ * @param capability - Capability key
+ * @returns true when the role's matrix row includes the capability
+ */
+export function hasCapability(role: string | undefined, capability: Capability): boolean {
+  if (!role) return false;
+  return (ROLE_CAPABILITIES[role as Role] ?? []).includes(capability);
+}
+
+/**
+ * Lists the roles granted a capability — used to build route guards from the matrix.
+ * @param capability - Capability key
+ * @returns Roles whose matrix row includes the capability
+ */
+export function rolesWithCapability(capability: Capability): Role[] {
+  return (Object.keys(ROLE_CAPABILITIES) as Role[]).filter(role =>
+    ROLE_CAPABILITIES[role].includes(capability)
+  );
+}

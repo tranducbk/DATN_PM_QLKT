@@ -4,7 +4,7 @@ import { contributionMedalRepository } from '../../../repositories/contributionM
 import { contributionProfileRepository } from '../../../repositories/contributionProfile.repository';
 import { PROPOSAL_TYPES } from '../../../constants/proposalTypes.constants';
 import {
-  CONG_HIEN_HE_SO_GROUPS,
+  CONTRIBUTION_COEFFICIENT_GROUPS,
   DANH_HIEU_HCBVTQ,
   getDanhHieuName,
   getLoaiDeXuatName,
@@ -20,12 +20,12 @@ import { formatPersonnelLabel } from './personnelLabel';
 import {
   aggregatePositionMonthsByGroup,
   type PositionMonthsByGroup,
-} from '../../eligibility/congHienMonthsAggregator';
+} from '../../eligibility/contributionMonthsAggregator';
 import {
   evaluateHCBVTQRank,
   getMonthsByGroup,
   loadHCBVTQEvaluationContext,
-  requiredCongHienMonths,
+  requiredContributionMonths,
 } from '../../eligibility/hcbvtqEligibility';
 import { collectPersonnelDuplicateErrors } from '../../eligibility/personnelDuplicateCheck';
 import type { EditedProposalData, ProposalCongHienItem } from '../../../types/proposal';
@@ -38,7 +38,7 @@ import type {
   SubmitValidationResult,
 } from './proposalStrategy';
 
-const CONG_HIEN_LABEL = getLoaiDeXuatName(PROPOSAL_TYPES.CONG_HIEN);
+const CONTRIBUTION_LABEL = getLoaiDeXuatName(PROPOSAL_TYPES.CONG_HIEN);
 
 interface CongHienInputItem {
   personnel_id?: string;
@@ -152,9 +152,9 @@ class HcbvtqStrategy implements ProposalStrategy {
           const monthsByGroup = aggregatePositionMonthsByGroup(histories, cutoffDate);
           return {
             ...baseData,
-            thoi_gian_nhom_0_7: formatTime(monthsByGroup[CONG_HIEN_HE_SO_GROUPS.LEVEL_07]),
-            thoi_gian_nhom_0_8: formatTime(monthsByGroup[CONG_HIEN_HE_SO_GROUPS.LEVEL_08]),
-            thoi_gian_nhom_0_9_1_0: formatTime(monthsByGroup[CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10]),
+            thoi_gian_nhom_0_7: formatTime(monthsByGroup[CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_07]),
+            thoi_gian_nhom_0_8: formatTime(monthsByGroup[CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_08]),
+            thoi_gian_nhom_0_9_1_0: formatTime(monthsByGroup[CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_09_10]),
           };
         } catch (error) {
           console.error('ProposalSubmit.fetchPositionHistory failed', {
@@ -206,22 +206,22 @@ class HcbvtqStrategy implements ProposalStrategy {
       const hoTen =
         personnel?.ho_ten || evalCtx.hoTenByPersonnel.get(item.personnel_id) || 'một quân nhân';
       const gioiTinh = evalCtx.genderByPersonnel.get(item.personnel_id) ?? null;
-      const requiredMonths = requiredCongHienMonths(gioiTinh);
+      const requiredMonths = requiredContributionMonths(gioiTinh);
       const months: PositionMonthsByGroup = {
-        [CONG_HIEN_HE_SO_GROUPS.LEVEL_07]: getMonthsByGroup(
+        [CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_07]: getMonthsByGroup(
           evalCtx,
           item.personnel_id,
-          CONG_HIEN_HE_SO_GROUPS.LEVEL_07
+          CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_07
         ),
-        [CONG_HIEN_HE_SO_GROUPS.LEVEL_08]: getMonthsByGroup(
+        [CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_08]: getMonthsByGroup(
           evalCtx,
           item.personnel_id,
-          CONG_HIEN_HE_SO_GROUPS.LEVEL_08
+          CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_08
         ),
-        [CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10]: getMonthsByGroup(
+        [CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_09_10]: getMonthsByGroup(
           evalCtx,
           item.personnel_id,
-          CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10
+          CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_09_10
         ),
       };
 
@@ -238,7 +238,7 @@ class HcbvtqStrategy implements ProposalStrategy {
         const requiredYearsText = formatServiceDuration(result.requiredMonths);
         const genderText = gioiTinh === GENDER.FEMALE ? ' (Nữ giảm 1/3 thời gian)' : '';
         errors.push(
-          `Quân nhân "${hoTen}" không đủ điều kiện đề xuất ${CONG_HIEN_LABEL} ${result.rankName}. ` +
+          `Quân nhân "${hoTen}" không đủ điều kiện đề xuất ${CONTRIBUTION_LABEL} ${result.rankName}. ` +
             `Yêu cầu: ít nhất ${requiredYearsText}${genderText}. Hiện tại: ${totalYearsText}. ` +
             `Vui lòng kiểm tra lại lịch sử chức vụ của quân nhân này.`
         );
@@ -271,7 +271,7 @@ class HcbvtqStrategy implements ProposalStrategy {
     for (const item of congHienData) {
       try {
         if (!item.personnel_id) {
-          acc.errors.push(`Thiếu thông tin quân nhân khi xử lý ${CONG_HIEN_LABEL}.`);
+          acc.errors.push(`Thiếu thông tin quân nhân khi xử lý ${CONTRIBUTION_LABEL}.`);
           continue;
         }
         const personnel = await quanNhanRepository.findUniqueRaw(
@@ -280,7 +280,7 @@ class HcbvtqStrategy implements ProposalStrategy {
         );
         if (!personnel) {
           acc.errors.push(
-            `Không tìm thấy thông tin quân nhân khi xử lý ${CONG_HIEN_LABEL}. ` +
+            `Không tìm thấy thông tin quân nhân khi xử lý ${CONTRIBUTION_LABEL}. ` +
               'Quân nhân có thể đã bị xoá khỏi hệ thống — vui lòng tải lại đề xuất.'
           );
           continue;
@@ -292,7 +292,7 @@ class HcbvtqStrategy implements ProposalStrategy {
 
         if (!namNhan || !thangNhan || thangNhan < 1 || thangNhan > 12) {
           acc.errors.push(
-            `${formatPersonnelLabel(personnel)} thiếu tháng/năm nhận ${CONG_HIEN_LABEL}`
+            `${formatPersonnelLabel(personnel)} thiếu tháng/năm nhận ${CONTRIBUTION_LABEL}`
           );
           continue;
         }
@@ -318,7 +318,7 @@ class HcbvtqStrategy implements ProposalStrategy {
           continue;
         }
         if (!item.danh_hieu) {
-          acc.errors.push(`${formatPersonnelLabel(personnel)} chưa chọn hạng ${CONG_HIEN_LABEL}.`);
+          acc.errors.push(`${formatPersonnelLabel(personnel)} chưa chọn hạng ${CONTRIBUTION_LABEL}.`);
           continue;
         }
 
@@ -362,7 +362,7 @@ class HcbvtqStrategy implements ProposalStrategy {
             const existingDanhHieuName = getDanhHieuName(existingCongHien.danh_hieu);
             const newDanhHieuName = getDanhHieuName(item.danh_hieu);
             acc.errors.push(
-              `Quân nhân "${personnel.ho_ten}" đã có ${CONG_HIEN_LABEL} "${existingDanhHieuName}" (năm ${existingCongHien.nam}). ` +
+              `Quân nhân "${personnel.ho_ten}" đã có ${CONTRIBUTION_LABEL} "${existingDanhHieuName}" (năm ${existingCongHien.nam}). ` +
                 `Không thể lưu danh hiệu "${newDanhHieuName}" vì hạng thấp hơn hoặc bằng.`
             );
             continue;
@@ -421,13 +421,13 @@ class HcbvtqStrategy implements ProposalStrategy {
           personnel_id: item.personnel_id,
           error,
         });
-        acc.errors.push(`Có lỗi xảy ra khi lưu ${CONG_HIEN_LABEL}, vui lòng thử lại.`);
+        acc.errors.push(`Có lỗi xảy ra khi lưu ${CONTRIBUTION_LABEL}, vui lòng thử lại.`);
       }
     }
   }
 
   buildSuccessMessage(acc: ImportAccumulator): string {
-    return `Đã phê duyệt ${CONG_HIEN_LABEL} cho ${acc.affectedPersonnelIds.size} quân nhân`;
+    return `Đã phê duyệt ${CONTRIBUTION_LABEL} cho ${acc.affectedPersonnelIds.size} quân nhân`;
   }
 }
 

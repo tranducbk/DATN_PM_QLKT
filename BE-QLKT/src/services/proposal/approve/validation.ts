@@ -2,7 +2,7 @@ import { scientificAchievementRepository } from '../../../repositories/scientifi
 import { buildCutoffDate, formatServiceDuration } from '../../../helpers/serviceYearsHelper';
 import { PROPOSAL_TYPES } from '../../../constants/proposalTypes.constants';
 import {
-  CONG_HIEN_HE_SO_GROUPS,
+  CONTRIBUTION_COEFFICIENT_GROUPS,
   DANH_HIEU_CA_NHAN_HANG_NAM,
   DANH_HIEU_CA_NHAN_CO_BAN,
   DANH_HIEU_CA_NHAN_BANG_KHEN,
@@ -27,12 +27,12 @@ import {
 } from '../validation';
 import { validateDecisionNumbers } from '../../eligibility/decisionNumberValidation';
 import { collectPersonnelDuplicateErrors } from '../../eligibility/personnelDuplicateCheck';
-import type { PositionMonthsByGroup } from '../../eligibility/congHienMonthsAggregator';
+import type { PositionMonthsByGroup } from '../../eligibility/contributionMonthsAggregator';
 import {
   evaluateHCBVTQRank,
   getMonthsByGroup,
   loadHCBVTQEvaluationContext,
-  requiredCongHienMonths,
+  requiredContributionMonths,
 } from '../../eligibility/hcbvtqEligibility';
 import {
   batchEvaluateServiceYears,
@@ -48,7 +48,7 @@ import type {
 } from '../../../types/proposal';
 import type { ProposalContext, DecisionInputMap } from './types';
 
-const CONG_HIEN_LABEL = getLoaiDeXuatName(PROPOSAL_TYPES.CONG_HIEN);
+const CONTRIBUTION_LABEL = getLoaiDeXuatName(PROPOSAL_TYPES.CONG_HIEN);
 
 /** Collects "duplicate award" errors for personal annual proposals. */
 async function collectCaNhanHangNamDuplicates(
@@ -299,22 +299,22 @@ async function collectCongHienEligibilityErrors(
     if (!item.danh_hieu || !item.personnel_id) continue;
     const hoTen = evalCtx.hoTenByPersonnel.get(item.personnel_id) || item.personnel_id;
     const gioiTinh = evalCtx.genderByPersonnel.get(item.personnel_id) ?? null;
-    const requiredMonths = requiredCongHienMonths(gioiTinh);
+    const requiredMonths = requiredContributionMonths(gioiTinh);
     const months: PositionMonthsByGroup = {
-      [CONG_HIEN_HE_SO_GROUPS.LEVEL_07]: getMonthsByGroup(
+      [CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_07]: getMonthsByGroup(
         evalCtx,
         item.personnel_id,
-        CONG_HIEN_HE_SO_GROUPS.LEVEL_07
+        CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_07
       ),
-      [CONG_HIEN_HE_SO_GROUPS.LEVEL_08]: getMonthsByGroup(
+      [CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_08]: getMonthsByGroup(
         evalCtx,
         item.personnel_id,
-        CONG_HIEN_HE_SO_GROUPS.LEVEL_08
+        CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_08
       ),
-      [CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10]: getMonthsByGroup(
+      [CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_09_10]: getMonthsByGroup(
         evalCtx,
         item.personnel_id,
-        CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10
+        CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_09_10
       ),
     };
 
@@ -331,7 +331,7 @@ async function collectCongHienEligibilityErrors(
       const requiredYearsText = formatServiceDuration(result.requiredMonths);
       const genderText = gioiTinh === GENDER.FEMALE ? ' (Nữ giảm 1/3 thời gian)' : '';
       errors.push(
-        `${hoTen}: Không đủ điều kiện ${CONG_HIEN_LABEL} ${result.rankName}. ` +
+        `${hoTen}: Không đủ điều kiện ${CONTRIBUTION_LABEL} ${result.rankName}. ` +
           `Yêu cầu: ${requiredYearsText}${genderText}. Hiện tại: ${totalYearsText}.`
       );
     }

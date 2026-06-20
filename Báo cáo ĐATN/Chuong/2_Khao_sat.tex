@@ -32,7 +32,7 @@ Từ kết quả khảo sát, rút ra bốn nhóm vấn đề chính:
     \item Quy trình thủ công chưa có cơ chế lưu vết chỉnh sửa, gây khó truy vết khi phát hiện sai sót.
 \end{enumerate}
 
-Các đặc thù nghiệp vụ trên đòi hỏi một hệ thống có thể lưu trữ tập trung và liên kết các loại bản ghi, tự động kiểm tra điều kiện theo bộ quy tắc đã được lập trình sẵn, phân quyền theo cây tổ chức, và ghi nhật ký cho mọi thao tác làm thay đổi dữ liệu nghiệp vụ.
+Các đặc thù nghiệp vụ trên đòi hỏi một hệ thống có thể lưu trữ tập trung và liên kết các loại bản ghi, tự động kiểm tra điều kiện theo bộ quy tắc đã được lập trình sẵn, phân quyền theo cơ cấu tổ chức, và ghi nhật ký cho mọi thao tác làm thay đổi dữ liệu nghiệp vụ.
 
 \section{Tổng quan chức năng}
 \label{section:2.2}
@@ -69,9 +69,9 @@ Quân nhân là thực thể trung tâm, liên kết tới hầu hết các bả
 Phân rã chức năng gồm các use case con thể hiện ở Hình~\ref{fig:usecase-quannhan}:
 
 \begin{itemize}
-    \item \textbf{Tạo mới quân nhân}: chỉ Cán bộ Phòng Chính trị có quyền. Quân nhân được khởi tạo cùng lúc với tài khoản: cán bộ nhập tên đăng nhập, chọn vai trò, đơn vị và chức vụ; hệ thống kiểm tra trùng tên đăng nhập rồi tạo bản ghi quân nhân (họ tên tạm lấy theo tên đăng nhập) cùng tài khoản trong một giao dịch. Họ tên đầy đủ, ngày sinh, ngày nhập ngũ và các thông tin khác được bổ sung sau qua chức năng cập nhật.
+    \item \textbf{Tạo mới quân nhân}: chỉ Cán bộ Phòng Chính trị có quyền. Quân nhân được khởi tạo cùng lúc với tài khoản: cán bộ nhập tên đăng nhập, chọn vai trò, đơn vị và chức vụ; hệ thống kiểm tra trùng tên đăng nhập rồi tạo bản ghi quân nhân (họ tên tạm lấy theo tên đăng nhập) cùng tài khoản; cả hai hoặc cùng được tạo, hoặc cùng không khi có lỗi. Họ tên đầy đủ, ngày sinh, ngày nhập ngũ và các thông tin khác được bổ sung sau qua chức năng cập nhật.
     \item \textbf{Cập nhật thông tin}: Cán bộ Phòng Chính trị sửa được toàn bộ. Chỉ huy đơn vị sửa được thông tin chung của quân nhân thuộc đơn vị mình nhưng không được đổi đơn vị và chức vụ. Bản thân quân nhân chỉ sửa được địa chỉ, số điện thoại, email.
-    \item \textbf{Chuyển đơn vị}: chỉ Cán bộ Phòng Chính trị. Khi chuyển, hệ thống cập nhật số lượng quân nhân của đơn vị cũ (giảm 1) và đơn vị mới (tăng 1) trong cùng một transaction. Toàn bộ lịch sử khen thưởng của quân nhân được giữ nguyên, không tạo bản ghi mới hay xoá bản ghi cũ.
+    \item \textbf{Chuyển đơn vị}: chỉ Cán bộ Phòng Chính trị. Khi chuyển, hệ thống cập nhật số lượng quân nhân của đơn vị cũ (giảm 1) và đơn vị mới (tăng 1); hoặc cả hai thay đổi cùng thành công, hoặc cùng được hoàn tác khi có lỗi. Toàn bộ lịch sử khen thưởng của quân nhân được giữ nguyên, không tạo bản ghi mới hay xoá bản ghi cũ.
     \item \textbf{Quản lý lịch sử chức vụ}: Cán bộ Phòng Chính trị nhập danh sách các giai đoạn quân nhân giữ chức vụ với hệ số tương ứng, gồm cả giai đoạn hiện tại đang đảm nhiệm. Chỉ huy đơn vị chỉ được bổ sung các giai đoạn chức vụ đã kết thúc và bắt buộc có ngày kết thúc, không được thêm giai đoạn hiện tại đang mở vì đổi chức vụ hiện tại thuộc quyền Cán bộ Phòng Chính trị. Dữ liệu này là đầu vào cho thuật toán xét khen thưởng HCBVTQ.
     \item \textbf{Thêm/sửa/xoá thủ công qua biểu mẫu}: dữ liệu quân nhân được quản lý trực tiếp qua biểu mẫu trên giao diện; chức năng nhập/xuất Excel hàng loạt theo quy trình xem trước rồi xác nhận ở Mục~\ref{subsection:2.2.7} chỉ áp dụng cho dữ liệu khen thưởng.
 \end{itemize}
@@ -86,11 +86,11 @@ Phân rã chức năng gồm các use case con thể hiện ở Hình~\ref{fig:u
 \subsection{Biểu đồ use case phân rã chức năng quản lý đơn vị và chức vụ}
 \label{subsection:2.2.3}
 
-Cấu trúc tổ chức của Học viện được mô hình hoá thành cây hai cấp.
+Cấu trúc tổ chức của Học viện được mô hình hoá thành cơ cấu hai cấp.
 Bảng \texttt{CoQuanDonVi} (cơ quan đơn vị) lưu các đơn vị cấp cha; bảng \texttt{DonViTrucThuoc} (đơn vị trực thuộc) lưu các đơn vị con thuộc một cơ quan đơn vị duy nhất.
 Khi nhập thông tin quân nhân, một trong hai trường \texttt{co\_quan\_don\_vi\_id} hoặc \texttt{don\_vi\_truc\_thuoc\_id} sẽ được điền, không bao giờ điền cả hai cùng lúc.
 
-Nhóm chức năng quản lý đơn vị bao gồm các use case con: tạo mới cơ quan đơn vị, tạo mới đơn vị trực thuộc thuộc một cơ quan đơn vị cụ thể, cập nhật thông tin, xoá (chỉ thực hiện được khi không còn quân nhân nào thuộc đơn vị) và xem cây tổ chức dưới dạng cây phân cấp trên giao diện.
+Nhóm chức năng quản lý đơn vị bao gồm các use case con: tạo mới cơ quan đơn vị, tạo mới đơn vị trực thuộc thuộc một cơ quan đơn vị cụ thể, cập nhật thông tin, xoá (chỉ thực hiện được khi không còn quân nhân nào thuộc đơn vị) và xem cơ cấu tổ chức dưới dạng cây phân cấp trên giao diện.
 Bảng \texttt{ChucVu} quản lý danh mục chức vụ kèm hệ số \texttt{he\_so\_chuc\_vu} nhận giá trị từ 0 đến 1{,}0 với một chữ số thập phân tuỳ chức danh, và liên kết tới cơ quan đơn vị hoặc đơn vị trực thuộc mà chức vụ đó thuộc về.
 Hệ số chức vụ là dữ liệu đầu vào trực tiếp cho thuật toán tính thời gian giữ chức vụ phục vụ xét HCBVTQ theo nhóm hệ số 0{,}7, 0{,}8 và 0{,}9 đến 1{,}0.
 Các use case của nhóm chức năng quản lý đơn vị và chức vụ được thể hiện ở Hình~\ref{fig:usecase-donvi}.
@@ -177,9 +177,9 @@ Chức năng nhập Excel hàng loạt cung cấp tệp mẫu chuẩn để cán
 Quy trình gồm bốn use case con, thể hiện ở Hình~\ref{fig:uc-excel}:
 
 \begin{itemize}
-    \item \textbf{Tải tệp mẫu}: hệ thống sinh tệp Excel có cấu trúc cột chuẩn theo từng loại khen thưởng (danh hiệu hằng năm, khen thưởng đơn vị hằng năm, HCCSVV, HCBVTQ, ...) cùng các Data Validation rule cho phép chọn từ danh sách thả xuống ngay trong tệp.
-    \item \textbf{Xem trước}: sau khi cán bộ điền dữ liệu và tải tệp lên, hệ thống đọc nội dung từng dòng, đối chiếu với schema Zod và các quy tắc nghiệp vụ, sau đó hiển thị kết quả gồm các dòng hợp lệ và các dòng có lỗi kèm chỉ số dòng và mô tả lỗi. Bước này không ghi vào cơ sở dữ liệu.
-    \item \textbf{Xác nhận}: cán bộ kiểm tra danh sách hợp lệ rồi xác nhận. Hệ thống mở một transaction Prisma, ghi tuần tự từng dòng; nếu xảy ra lỗi tại bất kỳ dòng nào, toàn bộ thao tác được hủy bỏ và cơ sở dữ liệu giữ nguyên trạng thái trước khi nhập.
+    \item \textbf{Tải tệp mẫu}: hệ thống sinh tệp Excel có cấu trúc cột chuẩn theo từng loại khen thưởng (danh hiệu hằng năm, khen thưởng đơn vị hằng năm, HCCSVV, HCBVTQ, ...) cùng các ràng buộc kiểm tra dữ liệu cho phép chọn từ danh sách thả xuống ngay trong tệp.
+    \item \textbf{Xem trước}: sau khi cán bộ điền dữ liệu và tải tệp lên, hệ thống đọc nội dung từng dòng, đối chiếu với lược đồ Zod và các quy tắc nghiệp vụ, sau đó hiển thị kết quả gồm các dòng hợp lệ và các dòng có lỗi kèm chỉ số dòng và mô tả lỗi. Bước này không ghi vào cơ sở dữ liệu.
+    \item \textbf{Xác nhận}: cán bộ kiểm tra danh sách hợp lệ rồi xác nhận. Hệ thống ghi tuần tự từng dòng; nếu xảy ra lỗi tại bất kỳ dòng nào, toàn bộ thao tác được hủy bỏ và cơ sở dữ liệu giữ nguyên trạng thái trước khi nhập.
     \item \textbf{Xuất danh sách}: cho phép xuất kết quả khen thưởng theo nhiều tiêu chí (theo năm, theo đơn vị, theo loại danh hiệu) ra tệp Excel có định dạng phù hợp với mẫu báo cáo nội bộ của Học viện.
 \end{itemize}
 
@@ -193,11 +193,11 @@ Quy trình gồm bốn use case con, thể hiện ở Hình~\ref{fig:uc-excel}:
 \subsection{Biểu đồ use case phân rã chức năng quản lý quyết định khen thưởng}
 \label{subsection:2.2.8a}
 
-Mọi danh hiệu, huân/huy chương sau khi được phê duyệt đều gắn với một \textbf{quyết định khen thưởng} (bảng \texttt{FileQuyetDinh}).
+Mọi danh hiệu, huân/huy chương sau khi được phê duyệt đều gắn với một quyết định khen thưởng (bảng \texttt{FileQuyetDinh}).
 Một quyết định lưu số quyết định duy nhất, ngày ký, người ký, tệp PDF đính kèm và loại khen thưởng.
 Quyết định này được tham chiếu bởi tám bảng khen thưởng qua khoá ngoại tự nhiên \texttt{so\_quyet\_dinh}.
 Nhóm chức năng này do Cán bộ Phòng Chính trị quản lý, gồm các use case con: xem danh sách quyết định, tìm kiếm và lọc, tải lên tệp PDF quyết định, cập nhật thông tin, tải xuống tệp PDF và xoá.
-Thao tác \textbf{xoá} có thêm bước kiểm tra ràng buộc.
+Thao tác xoá có thêm bước kiểm tra ràng buộc.
 Nếu quyết định đang được ít nhất một bản ghi khen thưởng tham chiếu thì hệ thống chặn xoá để bảo toàn tính toàn vẹn liên kết giữa quyết định và các danh hiệu đã trao.
 Các use case của nhóm chức năng quản lý quyết định được thể hiện ở Hình~\ref{fig:usecase-quyetdinh}.
 
@@ -241,7 +241,7 @@ Bên cạnh biểu đồ use case, ba quy trình nghiệp vụ phức tạp nh�
 Chỉ huy đơn vị chọn các đối tượng đủ điều kiện, thiết lập danh hiệu cụ thể rồi gửi đề xuất.
 Hệ thống lưu vào bảng \texttt{BangDeXuat} ở trạng thái \texttt{PENDING} và phát thông báo thời gian thực tới Cán bộ Phòng Chính trị.
 Cán bộ Phòng Chính trị mở danh sách chờ duyệt, đối chiếu từng đối tượng và bổ sung số quyết định trước khi phê duyệt; nếu cần thay đổi hạng danh hiệu, Cán bộ Phòng Chính trị từ chối kèm lý do để Chỉ huy đơn vị đề xuất lại với hạng đúng.
-Khi phê duyệt, hệ thống mở một transaction để (a) chuyển trạng thái đề xuất sang \texttt{APPROVED}, (b) ghi các bản ghi danh hiệu/khen thưởng vào bảng tương ứng (\texttt{DanhHieuHangNam}, \texttt{KhenThuongHCCSVV}, \dots), (c) gắn số quyết định và đường dẫn tệp PDF, (d) ghi nhật ký hệ thống, (e) thông báo tới Chỉ huy đơn vị đã đề xuất và (f) tính lại các hồ sơ điều kiện liên quan.
+Khi phê duyệt, hệ thống mở một giao dịch để (a) chuyển trạng thái đề xuất sang \texttt{APPROVED}, (b) ghi các bản ghi danh hiệu/khen thưởng vào bảng tương ứng (\texttt{DanhHieuHangNam}, \texttt{KhenThuongHCCSVV}, \dots), (c) gắn số quyết định và đường dẫn tệp PDF, (d) ghi nhật ký hệ thống, (e) thông báo tới Chỉ huy đơn vị đã đề xuất và (f) tính lại các hồ sơ điều kiện liên quan.
 Toàn bộ luồng đề xuất và phê duyệt được thể hiện ở Hình~\ref{fig:activity-quytrinh}.
 
 \begin{figure}[H]
@@ -257,10 +257,10 @@ Sau đó, với mỗi cấp danh hiệu, hệ thống đối chiếu số liệu
 
 \textbf{Quy trình C: Nhập tệp Excel hàng loạt.} Cán bộ Phòng Chính trị tải lên tệp Excel chứa danh sách bản ghi cần nhập.
 Hệ thống đọc tệp ở backend theo loại khen thưởng (vd: \texttt{DanhHieuHangNam}, \texttt{ThanhTichKhoaHoc}) và đọc từng dòng.
-Mỗi dòng được kiểm tra qua schema Zod và các quy tắc nghiệp vụ liên quan (vd: tìm được quân nhân theo CCCD, đơn vị phải tồn tại).
+Mỗi dòng được kiểm tra qua lược đồ Zod và các quy tắc nghiệp vụ liên quan (vd: tìm được quân nhân theo CCCD, đơn vị phải tồn tại).
 Các dòng hợp lệ và lỗi được tổng hợp vào một kết quả xem trước trả về frontend.
 Cán bộ xem trước, đối chiếu, có thể quay lại sửa tệp Excel rồi tải lên lại.
-Khi xác nhận, backend mở transaction Prisma, ghi tuần tự các dòng hợp lệ; nếu có bất kỳ lỗi nào tại thời điểm ghi, transaction được rollback hoàn toàn.
+Khi xác nhận, backend ghi tuần tự các dòng hợp lệ; nếu có bất kỳ lỗi nào tại thời điểm ghi, toàn bộ thao tác bị huỷ bỏ và cơ sở dữ liệu giữ nguyên như trước.
 Luồng nhập Excel hai bước được thể hiện ở Hình~\ref{fig:activity-excel}.
 
 \begin{figure}[H]
@@ -330,7 +330,7 @@ Bốn use case quản trị gồm Quản lý đơn vị, Sao lưu dữ liệu, Q
 \hline
 \textbf{Tên use case} & \multicolumn{3}{l|}{Tạo mới quân nhân (cấp tài khoản và khởi tạo hồ sơ)} \\ \hline
 \textbf{Tác nhân} & \multicolumn{3}{l|}{SuperAdmin, Admin} \\ \hline
-\textbf{Tiền điều kiện} & \multicolumn{3}{p{10.4cm}|}{Đã đăng nhập với vai trò SuperAdmin hoặc Admin; cây tổ chức (cơ quan đơn vị/đơn vị trực thuộc) và danh mục chức vụ đã có dữ liệu.} \\ \hline
+\textbf{Tiền điều kiện} & \multicolumn{3}{p{10.4cm}|}{Đã đăng nhập với vai trò SuperAdmin hoặc Admin; cơ cấu tổ chức (cơ quan đơn vị/đơn vị trực thuộc) và danh mục chức vụ đã có dữ liệu.} \\ \hline
 \multirow{9}{*}{\parbox{3.2cm}{\centering\textbf{Luồng sự kiện chính}\\\textbf{(Thành công)}}}
  & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
  & 1. & Admin & Truy cập ``Quản lý quân nhân'' và bấm ``Thêm Quân nhân'' \\ \cline{2-4}
@@ -377,7 +377,7 @@ Bốn use case quản trị gồm Quản lý đơn vị, Sao lưu dữ liệu, Q
 \hline
 \textbf{Tên use case} & \multicolumn{3}{l|}{Tạo đề xuất khen thưởng cho một đợt} \\ \hline
 \textbf{Tác nhân} & \multicolumn{3}{l|}{Admin, Manager} \\ \hline
-\textbf{Tiền điều kiện} & \multicolumn{3}{p{10.4cm}|}{Đã đăng nhập; có ít nhất một quân nhân thuộc phạm vi quản lý của Manager.} \\ \hline
+\textbf{Tiền điều kiện} & \multicolumn{3}{p{10.4cm}|}{Đã đăng nhập; có ít nhất một quân nhân thuộc phạm vi quản lý của Chỉ huy đơn vị.} \\ \hline
 \multirow{11}{*}{\parbox{3.2cm}{\centering\textbf{Luồng sự kiện chính}\\\textbf{(Thành công)}}}
  & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
  & 1. & Người dùng đăng nhập & Truy cập ``Đề xuất khen thưởng'' và bấm ``Tạo đề xuất mới'' \\ \cline{2-4}
@@ -389,13 +389,13 @@ Bốn use case quản trị gồm Quản lý đơn vị, Sao lưu dữ liệu, Q
  & 7. & Người dùng đăng nhập & Bước 4: tải lên các tệp đính kèm minh chứng (nếu có) \\ \cline{2-4}
  & 8. & Người dùng đăng nhập & Bước 5: xem lại toàn bộ thông tin và bấm ``Gửi đề xuất'' \\ \cline{2-4}
  & 9. & Hệ thống & Xác thực dữ liệu, tạo bản ghi đề xuất ở trạng thái chờ duyệt \\ \cline{2-4}
- & 10. & Hệ thống & Phát thông báo thời gian thực tới các Admin liên quan \\ \hline
+ & 10. & Hệ thống & Phát thông báo thời gian thực tới các Cán bộ Phòng Chính trị liên quan \\ \hline
 \multirow{4}{*}{\parbox{3cm}{\centering\textbf{Luồng sự kiện}\\\textbf{thay thế}}}
  & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
- & 2a. & Hệ thống & Manager chọn loại Đột xuất (ngoài quyền hạn), từ chối với lỗi 403; giao diện cũng ẩn loại này với Manager \\ \cline{2-4}
+ & 2a. & Hệ thống & Chỉ huy đơn vị chọn loại Đột xuất (ngoài quyền hạn), từ chối với lỗi 403; giao diện cũng ẩn loại này với Chỉ huy đơn vị \\ \cline{2-4}
  & 5a. & Hệ thống & Có đối tượng chưa đủ điều kiện, hệ thống từ chối và báo lỗi, không cho thêm \\ \cline{2-4}
  & 8a. & Hệ thống & Bản nháp được lưu liên tục ở \texttt{sessionStorage}; khi rời trang hoặc gửi lỗi, dữ liệu không bị mất \\ \hline
-\textbf{Hậu điều kiện} & \multicolumn{3}{p{10.4cm}|}{Bản ghi đề xuất được tạo ở trạng thái chờ duyệt; thông báo đã gửi tới Admin; nhật ký \texttt{action = CREATE, resource = proposals} được ghi cùng tóm tắt loại và số lượng đối tượng.} \\ \hline
+\textbf{Hậu điều kiện} & \multicolumn{3}{p{10.4cm}|}{Bản ghi đề xuất được tạo ở trạng thái chờ duyệt; thông báo đã gửi tới Cán bộ Phòng Chính trị; nhật ký \texttt{action = CREATE, resource = proposals} được ghi cùng tóm tắt loại và số lượng đối tượng.} \\ \hline
 \end{tabular}
 \end{table}
 
@@ -433,12 +433,12 @@ Bốn use case quản trị gồm Quản lý đơn vị, Sao lưu dữ liệu, Q
  & 2. & Admin & Đối chiếu danh sách đối tượng và danh hiệu \\ \cline{2-4}
  & 3. & Admin & Nhập số quyết định, tháng và năm nhận; có thể đính kèm tệp PDF quyết định \\ \cline{2-4}
  & 4. & Admin & Bấm ``Phê duyệt'' \\ \cline{2-4}
- & 5. & Hệ thống & Mở giao dịch ghi danh hiệu, chuyển trạng thái, gắn quyết định; sau khi commit, tính lại hồ sơ điều kiện \\ \cline{2-4}
- & 6. & Hệ thống & Phát thông báo thời gian thực tới Manager đã đề xuất và các quân nhân được khen \\ \cline{2-4}
+ & 5. & Hệ thống & Mở giao dịch ghi danh hiệu, chuyển trạng thái, gắn quyết định; sau khi ghi xong, tính lại hồ sơ điều kiện \\ \cline{2-4}
+ & 6. & Hệ thống & Phát thông báo thời gian thực tới Chỉ huy đơn vị đã đề xuất và các quân nhân được khen \\ \cline{2-4}
  & 7. & Hệ thống & Ghi nhật ký hành động phê duyệt kèm mô tả chi tiết \\ \hline
 \multirow{5}{*}{\parbox{3cm}{\centering\textbf{Luồng sự kiện}\\\textbf{thay thế}}}
  & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
- & 3a. & Admin & Phát hiện hạng danh hiệu sai $\rightarrow$ chuyển sang luồng từ chối kèm lý do (5b); Manager đề xuất lại với hạng đúng \\ \cline{2-4}
+ & 3a. & Admin & Phát hiện hạng danh hiệu sai $\rightarrow$ chuyển sang luồng từ chối kèm lý do (5b); Chỉ huy đơn vị đề xuất lại với hạng đúng \\ \cline{2-4}
  & 4a. & Hệ thống & Thiếu số quyết định cho danh hiệu bắt buộc, hệ thống chặn và yêu cầu nhập đủ \\ \cline{2-4}
  & 5b. & Admin & Từ chối thay vì phê duyệt: trạng thái chuyển ``Từ chối'' kèm lý do \\ \cline{2-4}
  & 5c. & Hệ thống & Lỗi tại bước ghi (vd: vi phạm quy tắc một lần duy nhất), huỷ toàn bộ giao dịch \\ \hline
@@ -541,7 +541,7 @@ Bốn use case quản trị gồm Quản lý đơn vị, Sao lưu dữ liệu, Q
 \hline
 \textbf{Tên use case} & \multicolumn{3}{l|}{Quản lý đơn vị (cơ quan đơn vị / đơn vị trực thuộc) và chức vụ} \\ \hline
 \textbf{Tác nhân} & \multicolumn{3}{l|}{SuperAdmin, Admin} \\ \hline
-\textbf{Tiền điều kiện} & \multicolumn{3}{p{10.4cm}|}{Đã đăng nhập với vai trò có quyền chỉnh sửa cây tổ chức.} \\ \hline
+\textbf{Tiền điều kiện} & \multicolumn{3}{p{10.4cm}|}{Đã đăng nhập với vai trò có quyền chỉnh sửa cơ cấu tổ chức.} \\ \hline
 \multirow{9}{*}{\parbox{3.2cm}{\centering\textbf{Luồng sự kiện chính}\\\textbf{(Thành công)}}}
  & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
  & 1. & Admin & Thêm cơ quan đơn vị cấp trên: nhập mã đơn vị và tên đơn vị \\ \cline{2-4}
@@ -670,7 +670,7 @@ Thông báo mới được đẩy theo thời gian thực qua Socket.IO và chè
 
 Danh mục danh hiệu được khai báo thành hằng số dùng chung phía giao diện nên mọi thành phần tham chiếu trực tiếp mà không phát sinh yêu cầu mạng.
 Trạng thái xác thực người dùng được chia sẻ toàn ứng dụng qua một React Context dùng chung.
-Cây cơ quan đơn vị/đơn vị trực thuộc và danh mục chức vụ được truy vấn từ máy chủ tại các trang cần dùng.
+Cơ cấu cơ quan đơn vị, đơn vị trực thuộc và danh mục chức vụ được truy vấn từ máy chủ tại các trang cần dùng.
 
 \subsection{Bảo mật}
 \label{subsection:2.4.2}
@@ -714,8 +714,8 @@ Chi tiết cài đặt được trình bày tại Chương~\ref{chapter:Experime
 Một sai lệch nhỏ giữa các bản ghi có thể dẫn tới quyết định sai, chẳng hạn bỏ sót quân nhân đủ điều kiện hoặc đề xuất nhầm chu kỳ.
 Vì vậy, tính nhất quán dữ liệu được đặt ngang hàng với bảo mật.
 
-\textbf{Giao dịch ACID cho nghiệp vụ trên nhiều thực thể.} Các nghiệp vụ có thao tác ghi/đọc trên nhiều thực thể (bảng) cùng lúc được đóng gói trong transaction Prisma theo các nguyên tắc kiểm soát đồng thời tiêu chuẩn \cite{bernstein1981concurrency}.
-Khi phê duyệt một đề xuất gồm 50 quân nhân, hệ thống thực hiện trong một transaction: 50 lần ghi \texttt{DanhHieuHangNam}, cập nhật trạng thái đề xuất và gắn số quyết định.
+\textbf{Giao dịch ACID cho nghiệp vụ trên nhiều thực thể.} Các nghiệp vụ có thao tác ghi/đọc trên nhiều thực thể (bảng) cùng lúc được đóng gói trong một giao dịch theo các nguyên tắc kiểm soát đồng thời tiêu chuẩn \cite{bernstein1981concurrency}.
+Khi phê duyệt một đề xuất gồm 50 quân nhân, hệ thống thực hiện trong một giao dịch: 50 lần ghi \texttt{DanhHieuHangNam}, cập nhật trạng thái đề xuất và gắn số quyết định.
 Hoặc tất cả thành công, hoặc cơ sở dữ liệu trở về trạng thái trước phê duyệt nếu một bước gặp lỗi.
 Việc ghi nhật ký và tính lại hồ sơ điều kiện được thực hiện ngay sau khi giao dịch hoàn tất.
 

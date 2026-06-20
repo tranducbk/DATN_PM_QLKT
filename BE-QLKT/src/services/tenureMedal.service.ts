@@ -30,7 +30,7 @@ export type { HccsvvValidItem } from './tenureMedal/types';
 
 const AWARD_LABEL = AWARD_LABELS[AWARD_SLUGS.TENURE_MEDALS];
 
-class HCCSVVService {
+class TenureMedalService {
   /**
    * Export template Excel for HCCSVV import
    */
@@ -238,4 +238,4 @@ class HCCSVVService {
   }
 }
 
-export default new HCCSVVService();
+export default new TenureMedalService();

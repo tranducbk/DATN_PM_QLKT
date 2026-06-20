@@ -130,7 +130,7 @@ const RED_FILL: ExcelJS.FillPattern = {
 };
 
 /** Thin border on all sides for consistent import templates. */
-export const THIN_BORDER_ALL_SIDES: Partial<ExcelJS.Borders> = {
+const THIN_BORDER_ALL_SIDES: Partial<ExcelJS.Borders> = {
   top: { style: 'thin' },
   bottom: { style: 'thin' },
   left: { style: 'thin' },

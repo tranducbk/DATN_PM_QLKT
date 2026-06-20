@@ -18,7 +18,7 @@ import {
   getAdminUsername,
   logImportPreview,
 } from '../helpers/controllerHelper';
-import { notifyOnImport } from '../helpers/notification';
+import { safeNotifyImport } from '../helpers/notification';
 
 const AWARD_LABEL = AWARD_LABELS[AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS];
 
@@ -262,14 +262,7 @@ class ScientificAchievementController {
       payload: { imported: result.imported || items.length },
     });
     const personnelIds = items.map((i: { personnel_id: string }) => i.personnel_id);
-    notifyOnImport(
-      user.id,
-      AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS,
-      result.imported || items.length,
-      personnelIds
-    ).catch(e => {
-      console.error('[scientific-achievements] notifyOnImport failed:', e);
-    });
+    safeNotifyImport(user.id, AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS, result.imported || items.length, personnelIds);
     return ResponseHelper.success(res, { message: 'Thao tác thành công', data: result });
   });
 }
